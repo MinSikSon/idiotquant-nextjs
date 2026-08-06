@@ -24,7 +24,7 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
-import { LiquidityBadge, trAmtEok, isHalted, isManaged } from "./components/LiquidityBadge";
+import { LiquidityBadge, trAmtEok, isHalted, isManaged, isDelisting, w52Position } from "./components/LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,6 +53,18 @@ const MIX_COLORS = ['#15803d', '#16a34a', '#3faf6d', '#6ec492', '#93a89b', '#a8a
 
 // 일 거래대금 하한 프리셋 (단위: 억원, 0 = 미적용)
 const TR_AMT_PRESETS = [1, 3, 10, 50];
+// 52주 구간에서 현재가 위치의 상한(%). 0=저점, 100=고점 → 낮게 잡을수록 저점권만 남는다.
+const W52_POS_PRESETS = [10, 25, 50];
+
+/** 시장 구분. KIS 는 "KOSPI"/"KOSDAQ"/"KONEX" 외에 "코스피" 같은 표기도 섞어 보낸다. */
+function marketOf(i: any): string {
+    const raw = String(i?.market ?? "").trim().toUpperCase();
+    if (!raw) return "";
+    if (raw.includes("KOSDAQ") || raw.includes("코스닥")) return "KOSDAQ";
+    if (raw.includes("KONEX") || raw.includes("코넥스")) return "KONEX";
+    if (raw.includes("KOSPI") || raw.includes("코스피") || raw.includes("유가")) return "KOSPI";
+    return raw;
+}
 
 // 업종명 — 워커는 sector 로 저장한다(inquire-price 의 bstp_kor_isnm). 예전 응답 호환으로 industry 도 본다.
 const sectorOf = (i: any): string => String(i?.sector ?? i?.industry ?? "").trim();
@@ -122,7 +134,10 @@ interface ScreenerFilters {
     excludePreferred: boolean;
     excludeHalted: boolean;
     excludeManaged: boolean;
+    excludeDelisting: boolean;
     sectors: Set<string>;
+    markets: Set<string>;
+    maxW52Pos: number;
     minTrAmt: number;
     minMarketCap: number;
     maxPbr: number;
@@ -132,17 +147,19 @@ interface ScreenerFilters {
 }
 
 // 필터 그룹 — 서랍 카드 순서와 1:1. 누적 카운트(→N)는 이 순서대로 쌓아 계산한다.
-type FilterGroupKey = "mktcap" | "pbr" | "per" | "ncav" | "profit" | "sector" | "liquidity" | "exclude";
-const FILTER_GROUP_ORDER: FilterGroupKey[] = ["mktcap", "pbr", "per", "ncav", "profit", "sector", "liquidity", "exclude"];
+type FilterGroupKey = "mktcap" | "pbr" | "per" | "ncav" | "profit" | "market" | "sector" | "w52" | "liquidity" | "exclude";
+const FILTER_GROUP_ORDER: FilterGroupKey[] = ["mktcap", "pbr", "per", "ncav", "profit", "market", "sector", "w52", "liquidity", "exclude"];
 const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = {
     mktcap:  { minMarketCap: 0 },
     pbr:     { maxPbr: 0 },
     per:     { maxPer: 0 },
     ncav:    { minNcav: 0 },
     profit:  { minRoe: 0, excludeDeficit: false },
+    market:    { markets: new Set<string>() },
     sector:    { sectors: new Set<string>() },
+    w52:       { maxW52Pos: 0 },
     liquidity: { minTrAmt: 0 },
-    exclude:   { excludeHoldings: false, excludePreferred: false, excludeHalted: false, excludeManaged: false },
+    exclude:   { excludeHoldings: false, excludePreferred: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false },
 };
 
 function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<string, any>[] {
@@ -177,12 +194,15 @@ function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<s
     if (f.minRoe > 0)  out = out.filter(item => roeOf(item) >= f.minRoe);
 
     if (f.sectors.size > 0) out = out.filter(item => f.sectors.has(sectorOf(item)));
+    if (f.markets.size > 0) out = out.filter(item => f.markets.has(marketOf(item)));
     // 값이 아직 없는 종목은 통과시킨다. 배포 직후처럼 일부만 채워진 구간에서 "모르는 것"을
     // "조건 위반"으로 취급하면 목록이 통째로 비어 고장난 것처럼 보인다.
     // (아래 두 서랍 카드는 애초에 데이터가 있을 때만 뜨므로 정상 상태에서는 이 경로가 드물다.)
     if (f.minTrAmt > 0) out = out.filter(item => { const v = trAmtEok(item); return v === null || v >= f.minTrAmt; });
+    if (f.maxW52Pos > 0) out = out.filter(item => { const v = w52Position(item); return v === null || v <= f.maxW52Pos; });
     if (f.excludeHalted) out = out.filter(item => !isHalted(item));
     if (f.excludeManaged) out = out.filter(item => !isManaged(item));
+    if (f.excludeDelisting) out = out.filter(item => !isDelisting(item));
 
     return out;
 }
@@ -487,10 +507,11 @@ function DrawerCard({ label, remain, dashed, span2, children }: {
 }
 
 // 서랍 안의 프리셋 칩 — 활성 값을 다시 누르면 해제
-function DrawerChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function DrawerChip({ active, onClick, children, title }: { active: boolean; onClick: () => void; children: React.ReactNode; title?: string }) {
     return (
         <button
             onClick={onClick}
+            title={title}
             className={cn(
                 "px-2.5 py-1 rounded-[7px] text-[11px] font-bold border transition-colors",
                 active
@@ -595,12 +616,21 @@ function ScreenerContent() {
     const [excludePreferred, setExcludePreferred] = useState(() => initExclude('preferred'));
     const [excludeHalted, setExcludeHalted] = useState(() => initExclude('halted'));
     const [excludeManaged, setExcludeManaged] = useState(() => initExclude('managed'));
+    const [excludeDelisting, setExcludeDelisting] = useState(() => initExclude('delisting'));
     // 업종 다중 선택 (URL param: sectors, 쉼표 구분)
     const [sectors, setSectors] = useState<Set<string>>(() => {
         const urlS = searchParams.get('sectors');
         const src = urlS ?? (Array.isArray(saved.sectors) ? saved.sectors.join(',') : '');
         return new Set((src || '').split(',').map(v => v.trim()).filter(Boolean));
     });
+    // 시장 다중 선택 (URL param: markets, 쉼표 구분)
+    const [markets, setMarkets] = useState<Set<string>>(() => {
+        const urlM = searchParams.get('markets');
+        const src = urlM ?? (Array.isArray(saved.markets) ? saved.markets.join(',') : '');
+        return new Set((src || '').split(',').map(v => v.trim().toUpperCase()).filter(Boolean));
+    });
+    // 52주 위치 상한 (%, URL param: w52)
+    const [maxW52Pos, setMaxW52Pos] = useState<number>(() => initNum('w52', 'w52', W52_POS_PRESETS));
     // 일 거래대금 하한 (단위: 억원, URL param: mintr)
     const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
@@ -674,9 +704,12 @@ function ScreenerContent() {
             excludePreferred ? 'preferred' : null,
             excludeHalted ? 'halted' : null,
             excludeManaged ? 'managed' : null,
+            excludeDelisting ? 'delisting' : null,
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
         if (sectors.size > 0) params.set('sectors', Array.from(sectors).join(','));
+        if (markets.size > 0) params.set('markets', Array.from(markets).join(','));
+        if (maxW52Pos > 0) params.set('w52', String(maxW52Pos));
         if (minTrAmt > 0) params.set('mintr', String(minTrAmt));
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
         if (maxPbr > 0) params.set('maxpbr', String(maxPbr));
@@ -688,7 +721,7 @@ function ScreenerContent() {
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -708,9 +741,12 @@ function ScreenerContent() {
             excludePreferred ? 'preferred' : null,
             excludeHalted ? 'halted' : null,
             excludeManaged ? 'managed' : null,
+            excludeDelisting ? 'delisting' : null,
         ].filter(Boolean);
         if (excludeArr.length) snapshot.exclude = excludeArr;
         if (sectors.size > 0) snapshot.sectors = Array.from(sectors);
+        if (markets.size > 0) snapshot.markets = Array.from(markets);
+        if (maxW52Pos > 0) snapshot.w52 = maxW52Pos;
         if (minTrAmt > 0) snapshot.mintr = minTrAmt;
         if (minMarketCap > 0) snapshot.mincap = minMarketCap;
         if (maxPbr > 0) snapshot.maxpbr = maxPbr;
@@ -731,7 +767,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
+    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
     const handleShare = useCallback(async () => {
@@ -832,10 +868,10 @@ function ScreenerContent() {
         strategies: activeStrategyIds,
         mode: filterMode,
         q: searchQuery,
-        excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged,
-        sectors, minTrAmt,
+        excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting,
+        sectors, markets, maxW52Pos, minTrAmt,
         minMarketCap, maxPbr, maxPer, minRoe, minNcav,
-    }), [activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
+    }), [activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
 
     const baseList = useMemo(
         () => (showLikedOnly ? normalizedLikedList : ncavDailyList.list) as Record<string, any>[],
@@ -922,8 +958,8 @@ function ScreenerContent() {
     const funnel = useMemo(() => {
         const none: ScreenerFilters = {
             strategies: new Set(), mode: 'OR', q: '',
-            excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeHalted: false, excludeManaged: false,
-            sectors: new Set<string>(), minTrAmt: 0,
+            excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false,
+            sectors: new Set<string>(), markets: new Set<string>(), maxW52Pos: 0, minTrAmt: 0,
             minMarketCap: 0, maxPbr: 0, maxPer: 0, minRoe: 0, minNcav: 0,
         };
         const steps: { label: string; patch: Partial<ScreenerFilters> }[] = [
@@ -932,7 +968,8 @@ function ScreenerContent() {
             { label: '검색',      patch: { q: filters.q } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
             { label: '수익·제외', patch: { minRoe: filters.minRoe, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred } },
-            { label: '업종·유동성', patch: { sectors: filters.sectors, minTrAmt: filters.minTrAmt, excludeHalted: filters.excludeHalted, excludeManaged: filters.excludeManaged } },
+            { label: '시장·업종', patch: { markets: filters.markets, sectors: filters.sectors } },
+            { label: '위치·유동성', patch: { maxW52Pos: filters.maxW52Pos, minTrAmt: filters.minTrAmt, excludeHalted: filters.excludeHalted, excludeManaged: filters.excludeManaged, excludeDelisting: filters.excludeDelisting } },
         ];
         let acc = { ...none };
         return steps.map(s => {
@@ -977,9 +1014,9 @@ function ScreenerContent() {
         : null;
     const scanningInProgress = ncavDailyList.scanningInProgress;
 
-    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors.size > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
+    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || excludeHalted || excludeManaged || sectors.size > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
     // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
@@ -990,6 +1027,18 @@ function ScreenerContent() {
     const hasHaltData = useMemo(() => baseList.some(i => i.temp_stop_yn != null || i.stat_cls_code != null), [baseList]);
     // 관리종목은 전용 플래그(migration 0014) 우선, 옛 데이터는 stat_cls_code(51) 로도 잡힌다.
     const hasManagedData = useMemo(() => baseList.some(i => i.mang_issu_cls_code != null || i.stat_cls_code != null), [baseList]);
+    // 정리매매는 전용 플래그(sltr_yn)뿐이라 대체 경로가 없다.
+    const hasDelistData = useMemo(() => baseList.some(i => i.sltr_yn != null), [baseList]);
+    const hasW52Data = useMemo(() => baseList.some(i => w52Position(i) !== null), [baseList]);
+    // 시장 선택지 — 지금 목록에 실제로 있는 시장만, 종목이 많은 순으로.
+    const marketOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const i of baseList) {
+            const m = marketOf(i);
+            if (m) counts.set(m, (counts.get(m) ?? 0) + 1);
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    }, [baseList]);
     // 업종 선택지 — 지금 목록에 실제로 있는 업종만, 종목이 많은 순으로.
     const sectorOptions = useMemo(() => {
         const counts = new Map<string, number>();
@@ -1028,10 +1077,13 @@ function ScreenerContent() {
         excludePreferred && { label: '우선주 제외',              override: { excludePreferred: false } as Partial<ScreenerFilters>, clear: () => setExcludePreferred(false) },
         excludeHalted    && { label: '거래정지 제외',             override: { excludeHalted: false } as Partial<ScreenerFilters>,    clear: () => setExcludeHalted(false) },
         excludeManaged   && { label: '관리종목 제외',             override: { excludeManaged: false } as Partial<ScreenerFilters>,   clear: () => setExcludeManaged(false) },
+        excludeDelisting && { label: '정리매매 제외',             override: { excludeDelisting: false } as Partial<ScreenerFilters>, clear: () => setExcludeDelisting(false) },
         minTrAmt > 0     && { label: `거래대금 ${minTrAmt}억+`,   override: { minTrAmt: 0 } as Partial<ScreenerFilters>,             clear: () => setMinTrAmt(0) },
+        maxW52Pos > 0    && { label: `52주 저점권 ${maxW52Pos}%`, override: { maxW52Pos: 0 } as Partial<ScreenerFilters>,            clear: () => setMaxW52Pos(0) },
         sectors.size > 0 && { label: `업종 ${sectors.size}개`,    override: { sectors: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setSectors(new Set()) },
+        markets.size > 0 && { label: `시장 ${Array.from(markets).join('·')}`, override: { markets: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setMarkets(new Set()) },
     ].filter(Boolean) as { label: string; override: Partial<ScreenerFilters>; clear: () => void }[]),
-    [minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeHalted, excludeManaged, minTrAmt, sectors]);
+    [minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
 
     // 결과가 0개일 때 — "무엇을 풀면 몇 개가 돌아오는지"를 짚어준다. 그냥 "없습니다"로 끝내면
     // 어떤 조건이 결과를 죽였는지 사용자가 하나씩 꺼보며 찾아야 한다.
@@ -1047,7 +1099,8 @@ function ScreenerContent() {
     const clearDetailFilters = useCallback(() => {
         setMinMarketCap(0); setMaxPbr(0); setMaxPer(0); setMinRoe(0); setMinNcav(0);
         setExcludeHoldings(false); setExcludeDeficit(false); setExcludePreferred(false);
-        setExcludeHalted(false); setExcludeManaged(false); setSectors(new Set()); setMinTrAmt(0);
+        setExcludeHalted(false); setExcludeManaged(false); setExcludeDelisting(false);
+        setSectors(new Set()); setMarkets(new Set()); setMaxW52Pos(0); setMinTrAmt(0);
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -1353,8 +1406,11 @@ function ScreenerContent() {
                         if (excludePreferred) chips.push({ key: 'pref', label: '우선주 제외', clear: () => setExcludePreferred(false) });
                         if (excludeHalted)   chips.push({ key: 'halt', label: '거래정지 제외', clear: () => setExcludeHalted(false) });
                         if (excludeManaged)  chips.push({ key: 'mang', label: '관리종목 제외', clear: () => setExcludeManaged(false) });
+                        if (excludeDelisting) chips.push({ key: 'slt', label: '정리매매 제외', clear: () => setExcludeDelisting(false) });
                         if (minTrAmt > 0)    chips.push({ key: 'tr',   label: `거래대금 ${minTrAmt}억+`, clear: () => { setMinTrAmt(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (maxW52Pos > 0)   chips.push({ key: 'w52',  label: `52주 저점권 ${maxW52Pos}%`, clear: () => { setMaxW52Pos(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (sectors.size > 0) chips.push({ key: 'sec', label: `업종 ${sectors.size}개`, clear: () => { setSectors(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (markets.size > 0) chips.push({ key: 'mkt', label: `시장 ${Array.from(markets).join('·')}`, clear: () => { setMarkets(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
                         // 칩이 없어도 걸린 조건(정렬·관심·전략)이 있으면 초기화 경로는 남겨야 한다.
                         if (chips.length === 0 && !hasActiveFilters) return null;
                         return (
@@ -1513,6 +1569,30 @@ function ScreenerContent() {
                                 />
                             </DrawerCard>
 
+                            {/* 시장 — 코스닥은 같은 지표라도 변동성·유동성 성격이 다르다. */}
+                            {marketOptions.length > 1 && (
+                                <DrawerCard label="시장" remain={cumulativeCounts.market}>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        {marketOptions.map(([mk, n]) => (
+                                            <DrawerChip
+                                                key={mk}
+                                                active={markets.has(mk)}
+                                                onClick={() => {
+                                                    setMarkets(prev => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(mk)) next.delete(mk); else next.add(mk);
+                                                        return next;
+                                                    });
+                                                    setDisplayCount(DAILY_PAGE_SIZE);
+                                                }}
+                                            >
+                                                {mk} <span className="opacity-60 font-mono">{n}</span>
+                                            </DrawerChip>
+                                        ))}
+                                    </div>
+                                </DrawerCard>
+                            )}
+
                             {/* 업종 — 저PBR·NCAV 결과는 한 업종에 몰리기 쉽다. 골라서 좁히거나 덜어낸다. */}
                             {hasSectorData && sectorOptions.length > 0 && (
                                 <DrawerCard label="업종" remain={cumulativeCounts.sector} span2>
@@ -1542,6 +1622,25 @@ function ScreenerContent() {
                                             업종 선택 해제
                                         </button>
                                     )}
+                                </DrawerCard>
+                            )}
+
+                            {/* 52주 위치 — 0%면 52주 저점, 100%면 고점. 낮을수록 덜 오른 구간이다.
+                                "싸다"의 근거는 아니지만, 이미 크게 오른 종목을 걸러내는 데 쓴다. */}
+                            {hasW52Data && (
+                                <DrawerCard label="52주 위치" remain={cumulativeCounts.w52}>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        {W52_POS_PRESETS.map(v => (
+                                            <DrawerChip
+                                                key={v}
+                                                active={maxW52Pos === v}
+                                                title={`현재가가 52주 저점~고점 구간의 아래쪽 ${v}% 안에 있는 종목`}
+                                                onClick={() => { setMaxW52Pos(maxW52Pos === v ? 0 : v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                            >
+                                                저점권 {v}%
+                                            </DrawerChip>
+                                        ))}
+                                    </div>
                                 </DrawerCard>
                             )}
 
@@ -1595,6 +1694,16 @@ function ScreenerContent() {
                                             delta={excludeManaged
                                                 ? countWith({ excludeManaged: false }) - filteredList.length
                                                 : filteredList.length - countWith({ excludeManaged: true })}
+                                        />
+                                    )}
+                                    {hasDelistData && (
+                                        <DrawerCheck
+                                            checked={excludeDelisting}
+                                            onChange={v => { setExcludeDelisting(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                            label="정리매매 제외"
+                                            delta={excludeDelisting
+                                                ? countWith({ excludeDelisting: false }) - filteredList.length
+                                                : filteredList.length - countWith({ excludeDelisting: true })}
                                         />
                                     )}
                                 </div>

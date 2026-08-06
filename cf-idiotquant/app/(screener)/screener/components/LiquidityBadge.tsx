@@ -42,6 +42,39 @@ export function isManaged(i: any): boolean {
     return isY(i?.mang_issu_cls_code) || statCode(i) === "51";
 }
 
+/**
+ * 정리매매 — 상장폐지가 확정되어 마지막 매매 기간에 들어간 종목.
+ * NCAV 스크리너에서 특히 위험하다: 폐지가 정해지면 주가가 먼저 무너지므로 청산가치 대비
+ * 극단적으로 싸 보이고, 그래서 상위에 올라온다. 회수 가능한 싼 값이 아니라 없어지는 값이다.
+ */
+export function isDelisting(i: any): boolean {
+    return isY(i?.sltr_yn);
+}
+
+/** 투자유의 — 거래소가 붙이는 주의 환기. */
+export function isCautionAdvised(i: any): boolean {
+    return isY(i?.invt_caful_yn);
+}
+
+/** 단기과열 — 전용 플래그가 없으면 stat_cls_code 59 로 떨어진다. */
+export function isOverheated(i: any): boolean {
+    return isY(i?.short_over_yn) || statCode(i) === "59";
+}
+
+/**
+ * 52주 구간에서 현재가가 선 위치(0=저점, 100=고점). 값이 없거나 구간이 0이면 null.
+ * 저점 근처는 "싸다"가 아니라 "덜 올랐다"는 뜻일 뿐이라, 판단이 아니라 위치만 돌려준다.
+ */
+export function w52Position(i: any): number | null {
+    const hi = Number(i?.w52_hgpr);
+    const lo = Number(i?.w52_lwpr);
+    const px = Number(i?.last_price);
+    if (![hi, lo, px].every(Number.isFinite)) return null;
+    if (hi <= lo || px <= 0) return null;
+    // 장중 신고가/신저가면 구간을 벗어날 수 있다 — 0~100 으로 눕힌다
+    return Math.max(0, Math.min(100, ((px - lo) / (hi - lo)) * 100));
+}
+
 /** 시장경고 등급 — 없으면 null. */
 export function marketWarn(i: any): "투자주의" | "투자경고" | "투자위험" | null {
     const code = String(i?.mrkt_warn_cls_code ?? "").trim();
@@ -62,6 +95,8 @@ const AMBER = "px-1.5 py-0.5 rounded text-[9.5px] font-black bg-amber-50 text-am
 
 export function LiquidityBadge({ item }: { item: any }) {
     // 심각한 것 하나만 보여준다. 배지를 여러 개 달면 좁은 화면에서 종목명을 밀어낸다.
+    // 순서 = 심각도. 정리매매가 맨 앞인 이유는 되돌릴 수 없는 유일한 상태이기 때문이다.
+    if (isDelisting(item)) return <span className={ROSE} title="상장폐지가 확정되어 정리매매 중입니다">정리매매</span>;
     if (isHalted(item)) return <span className={ROSE}>거래정지</span>;
     if (isManaged(item)) return <span className={ROSE}>관리종목</span>;
 
@@ -70,6 +105,9 @@ export function LiquidityBadge({ item }: { item: any }) {
     if (warn === "투자경고" || warn === "투자위험") {
         return <span className={ROSE}>{warn}</span>;
     }
+
+    if (isCautionAdvised(item)) return <span className={AMBER}>투자유의</span>;
+    if (isOverheated(item)) return <span className={AMBER} title="단기과열 지정 — 주가가 단기간에 급등한 상태입니다">단기과열</span>;
 
     const v = trAmtEok(item);
     if (v === null || v >= LOW_TR_AMT_EOK) return null;
