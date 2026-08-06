@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import PortfolioLegoTower from "@/components/profile/portfolioLegoTower";
+// 위험 배지는 스크리너와 같은 기준·같은 모양이어야 한다 — 같은 종목이 두 화면에서
+// 다르게 보이면 어느 쪽을 믿어야 할지 알 수 없다. 그래서 판정까지 한 모듈에서 가져온다.
+import { LiquidityBadge, w52Position } from "@/app/(screener)/screener/components/LiquidityBadge";
 
 const STRATEGY_BADGE: Record<string, string> = {
     ncav:           "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
@@ -331,9 +334,12 @@ export default function ProfilePage() {
                                                     US
                                                 </span>
                                             )}
+                                            {/* 담아두고 잊은 사이 상태가 바뀐 종목을 여기서 알린다.
+                                                정상 종목에는 아무것도 붙지 않는다. */}
+                                            <LiquidityBadge item={item} />
                                         </div>
-                                        {/* 지표 요약 */}
-                                        <div className="flex items-center gap-2.5 mt-0.5">
+                                        {/* 지표 요약 — 항목이 늘어 좁은 화면에서는 줄바꿈시킨다 */}
+                                        <div className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap mt-0.5">
                                             {item.ncav_ratio != null && item.ncav_ratio > 0 && (
                                                 <span className={cn(
                                                     "text-[10px] font-mono font-bold",
@@ -347,6 +353,23 @@ export default function ProfilePage() {
                                             )}
                                             {item.per != null && item.per > 0 && (
                                                 <span className="text-[10px] text-neutral-400 font-mono">PER {item.per.toFixed(1)}</span>
+                                            )}
+                                            {/* 52주 구간에서 현재가가 선 위치. 0=저점, 100=고점.
+                                                "싸다"의 근거는 아니지만, 담아둔 뒤 얼마나 움직였는지가 한눈에 보인다. */}
+                                            {(() => {
+                                                const pos = w52Position(item);
+                                                if (pos === null) return null;
+                                                return (
+                                                    <span
+                                                        className="text-[10px] text-neutral-400 font-mono"
+                                                        title={`52주 저점~고점 구간에서 ${pos.toFixed(0)}% 지점 (0=저점, 100=고점)`}
+                                                    >
+                                                        52주 {pos.toFixed(0)}%
+                                                    </span>
+                                                );
+                                            })()}
+                                            {item.sector && (
+                                                <span className="text-[10px] text-neutral-400">{item.sector}</span>
                                             )}
                                         </div>
                                         {item.strategies.length > 0 && (
