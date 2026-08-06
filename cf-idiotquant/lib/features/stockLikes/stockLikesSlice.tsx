@@ -19,6 +19,21 @@ export interface LikedStockItem {
     current_assets: number | null;
     total_liabilities: number | null;
     net_income: number | null;
+    // 아래는 stock_data_daily LEFT JOIN 결과 — 아직 스캔되지 않은 종목은 전부 null 이다.
+    // 워커 배포 전에는 필드 자체가 없으므로 옵셔널로 둔다.
+    sector?: string | null;
+    market?: string | null;
+    acml_tr_pbmn?: number | null;
+    w52_hgpr?: number | null;
+    w52_lwpr?: number | null;
+    // 위험 플래그는 KIS 원문 문자열을 그대로 담는다 (해석은 LiquidityBadge 에서)
+    stat_cls_code?: string | null;
+    temp_stop_yn?: string | null;
+    mang_issu_cls_code?: string | null;
+    sltr_yn?: string | null;
+    invt_caful_yn?: string | null;
+    short_over_yn?: string | null;
+    mrkt_warn_cls_code?: string | null;
 }
 
 interface StockLikesState {

@@ -13,7 +13,11 @@ import {
 import { cn } from "@/lib/utils";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
+import { computeSolidity } from "@/lib/utils/portfolioSolidity";
 import PortfolioLegoTower from "@/components/profile/portfolioLegoTower";
+// 위험 배지는 스크리너와 같은 기준·같은 모양이어야 한다 — 같은 종목이 두 화면에서
+// 다르게 보이면 어느 쪽을 믿어야 할지 알 수 없다. 그래서 판정까지 한 모듈에서 가져온다.
+import { LiquidityBadge, w52Position } from "@/app/(screener)/screener/components/LiquidityBadge";
 
 const STRATEGY_BADGE: Record<string, string> = {
     ncav:           "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
@@ -70,10 +74,11 @@ export default function ProfilePage() {
         roe: Number(item.bps) > 0 ? (Number(item.eps) / Number(item.bps)) * 100 : null,
     }));
 
-    // 포트폴리오 탄탄함 — 관심 종목의 저평가 점수 평균 + 등급 분포
+    // 포트폴리오 탄탄함 — 저평가 점수를 거래상태·업종 쏠림으로 깎은 값 (computeSolidity 주석 참고)
     const scored = likedList.map(item => computeValueScore(item));
-    const solidity = scored.length ? Math.round(scored.reduce((a, v) => a + v.score, 0) / scored.length) : 0;
-    const solidityLabel = solidity >= 70 ? "매우 탄탄" : solidity >= 50 ? "탄탄" : solidity >= 35 ? "보통" : "보강 필요";
+    const solid = computeSolidity(likedList);
+    const solidity = solid.score;
+    const solidityLabel = solid.label;
     const toneCounts = scored.reduce((acc, v) => { acc[v.tone] = (acc[v.tone] ?? 0) + 1; return acc; }, {} as Record<string, number>);
 
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
@@ -265,6 +270,34 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
+                        {/* 왜 깎였는지 — 근거 없이 낮은 숫자만 보여주면 예전보다 못하다.
+                            깎일 이유가 없으면 이 줄 자체가 뜨지 않는다. */}
+                        {solidity < solid.base && (
+                            <div className="px-5 -mt-1 pb-3 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] text-neutral-400">
+                                    저평가 <span className="font-mono font-bold">{solid.base}</span>
+                                    <span className="mx-1">→</span>
+                                    탄탄함 <span className="font-mono font-bold">{solidity}</span>
+                                </span>
+                                {solid.riskCount > 0 && (
+                                    <span
+                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                                        title="정리매매·거래정지·관리종목·시장경고·저유동 종목은 지금 팔기 어려워 탄탄함에 온전히 기여하지 못합니다"
+                                    >
+                                        거래 위험 {solid.riskCount}종목
+                                    </span>
+                                )}
+                                {solid.concentrationPenalty > 0 && solid.topSector && (
+                                    <span
+                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                                        title="한 업종에 몰리면 개별 종목이 좋아도 함께 무너집니다"
+                                    >
+                                        {solid.topSector.name} {Math.round(solid.topSector.ratio * 100)}% 쏠림
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
                         {/* 등급 분포 */}
                         <div className="px-5 pb-4 flex flex-wrap gap-1.5">
                             {TONE_ORDER.filter(t => toneCounts[t]).map(t => (
@@ -331,9 +364,12 @@ export default function ProfilePage() {
                                                     US
                                                 </span>
                                             )}
+                                            {/* 담아두고 잊은 사이 상태가 바뀐 종목을 여기서 알린다.
+                                                정상 종목에는 아무것도 붙지 않는다. */}
+                                            <LiquidityBadge item={item} />
                                         </div>
-                                        {/* 지표 요약 */}
-                                        <div className="flex items-center gap-2.5 mt-0.5">
+                                        {/* 지표 요약 — 항목이 늘어 좁은 화면에서는 줄바꿈시킨다 */}
+                                        <div className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap mt-0.5">
                                             {item.ncav_ratio != null && item.ncav_ratio > 0 && (
                                                 <span className={cn(
                                                     "text-[10px] font-mono font-bold",
@@ -347,6 +383,23 @@ export default function ProfilePage() {
                                             )}
                                             {item.per != null && item.per > 0 && (
                                                 <span className="text-[10px] text-neutral-400 font-mono">PER {item.per.toFixed(1)}</span>
+                                            )}
+                                            {/* 52주 구간에서 현재가가 선 위치. 0=저점, 100=고점.
+                                                "싸다"의 근거는 아니지만, 담아둔 뒤 얼마나 움직였는지가 한눈에 보인다. */}
+                                            {(() => {
+                                                const pos = w52Position(item);
+                                                if (pos === null) return null;
+                                                return (
+                                                    <span
+                                                        className="text-[10px] text-neutral-400 font-mono"
+                                                        title={`52주 저점~고점 구간에서 ${pos.toFixed(0)}% 지점 (0=저점, 100=고점)`}
+                                                    >
+                                                        52주 {pos.toFixed(0)}%
+                                                    </span>
+                                                );
+                                            })()}
+                                            {item.sector && (
+                                                <span className="text-[10px] text-neutral-400">{item.sector}</span>
                                             )}
                                         </div>
                                         {item.strategies.length > 0 && (
