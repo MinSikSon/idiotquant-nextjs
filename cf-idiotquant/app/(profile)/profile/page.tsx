@@ -13,8 +13,20 @@ import {
 import { cn } from "@/lib/utils";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
-import { computeSolidity } from "@/lib/utils/portfolioSolidity";
+import { computeSolidity, quadrantOf, type SolidityPoint } from "@/lib/utils/portfolioSolidity";
 import SolidityPlane from "@/components/profile/solidityPlane";
+
+// 아직 아무것도 담지 않은 사용자에게 좌표평면이 무엇을 말하는지 보여주기 위한 예시.
+// 실제 종목이 아니며 카드 머리에 "예시"라고 못박는다 — 자기 종목으로 오해하면
+// 담기도 전에 위험 신호를 본 것이 된다.
+const SAMPLE_POINTS: SolidityPoint[] = [
+    { name: "싸고 팔 수 있는 종목", ticker: "s1", value: 86, safety: 100 },
+    { name: "싸고 팔 수 있는 종목", ticker: "s2", value: 72, safety: 100 },
+    { name: "싸고 팔 수 있는 종목", ticker: "s3", value: 64, safety: 90 },
+    { name: "특별히 싸지 않은 종목", ticker: "s4", value: 34, safety: 100 },
+    { name: "상장폐지가 정해진 종목", ticker: "s5", value: 95, safety: 30 },
+    { name: "관리종목으로 지정된 종목", ticker: "s6", value: 78, safety: 50 },
+].map(p => ({ ...p, quadrant: quadrantOf(p.value, p.safety) }));
 import PortfolioLegoTower from "@/components/profile/portfolioLegoTower";
 // 위험 배지는 스크리너와 같은 기준·같은 모양이어야 한다 — 같은 종목이 두 화면에서
 // 다르게 보이면 어느 쪽을 믿어야 할지 알 수 없다. 그래서 판정까지 한 모듈에서 가져온다.
@@ -85,7 +97,14 @@ export default function ProfilePage() {
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
     const isAdmin = (session?.user as any)?.role === "admin";
 
+    // 아직 아무것도 담지 않은 사용자. 불러오는 중에는 켜지 않는다 — 목록이 있는 사용자에게
+    // 온보딩 카드가 잠깐 떴다 사라지면 방금 본 것이 무엇인지 알 수 없다.
+    const isNewUser = likesState === "fulfilled" && likedList.length === 0;
+
     const DELETE_CONFIRM_PHRASE = "탈퇴";
+    // 회원 탈퇴는 한 단계 안에 둔다. 가입 직후 화면에서 가장 큰 액션이 계정 삭제일 이유가 없다.
+    // 경로를 없애는 것이 아니라 실수로 누를 자리에서 치우는 것이다.
+    const [showDanger, setShowDanger] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState("");
     const [deleting, setDeleting] = useState(false);
@@ -143,8 +162,82 @@ export default function ProfilePage() {
 
                 {/* Header */}
                 <h1 className="text-lg font-black text-neutral-900 dark:text-neutral-50 px-1">
-                    내 계정
+                    {isNewUser ? "시작하기" : "내 계정"}
                 </h1>
+
+                {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
+                    지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}
+                {isNewUser && (
+                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                3단계 중 1단계
+                            </span>
+                            <span className="text-[10px] font-bold text-neutral-400 font-mono tabular-nums">1 / 3</span>
+                        </div>
+                        <div className="px-5">
+                            <div className="h-1 rounded-full bg-neutral-100 dark:bg-[#35332e] overflow-hidden">
+                                <div className="h-full w-1/3 rounded-full bg-[#16a34a]" />
+                            </div>
+                        </div>
+                        <ol className="px-5 pt-3 pb-1 flex flex-col gap-1.5">
+                            {[
+                                { done: true, label: "가입했습니다" },
+                                { done: false, now: true, label: "싼 종목을 찾아 관심에 담기" },
+                                { done: false, label: "탄탄함으로 위험한 종목 걸러내기" },
+                            ].map((s, i) => (
+                                <li key={i} className="flex items-center gap-2">
+                                    <span className={cn(
+                                        "w-3 h-3 rounded-full shrink-0 border-2",
+                                        s.done
+                                            ? "bg-[#16a34a] border-[#16a34a]"
+                                            : s.now
+                                                ? "border-[#16a34a]"
+                                                : "border-neutral-200 dark:border-[#3f3d37]"
+                                    )} />
+                                    <span className={cn(
+                                        "text-xs",
+                                        s.done
+                                            ? "text-neutral-400 dark:text-neutral-500"
+                                            : s.now
+                                                ? "font-black text-neutral-800 dark:text-neutral-100"
+                                                : "text-neutral-400 dark:text-neutral-500"
+                                    )}>
+                                        {s.label}
+                                    </span>
+                                </li>
+                            ))}
+                        </ol>
+                        <div className="px-5 pt-2.5 pb-4">
+                            <Link
+                                href="/screener"
+                                className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold transition-colors"
+                            >
+                                싼 종목 찾아보기
+                                <ChevronRight size={15} />
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
+                {/* 담기 전에 무엇을 보게 되는지 — 담을 이유를 설명해야 할 자리에서
+                    핵심 개념을 숨기고 있었다. */}
+                {isNewUser && (
+                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                        <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Blocks size={12} className="text-[#16a34a]" />
+                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                    탄탄함이란
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-[#35332e] text-neutral-500 dark:text-neutral-400">
+                                예시
+                            </span>
+                        </div>
+                        <SolidityPlane points={SAMPLE_POINTS} value={72} safety={78} trapCount={2} sample />
+                    </div>
+                )}
 
                 {/* Profile card */}
                 <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
@@ -319,7 +412,9 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* 관심 종목 */}
+                {/* 관심 종목 — 비었을 때는 위의 시작하기 카드가 같은 말을 더 잘 하므로 띄우지 않는다.
+                    "종목이 없습니다 / 발굴 페이지에서 추가해보세요"를 두 번 보여줄 이유가 없다. */}
+                {!isNewUser && (
                 <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
                     <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
@@ -451,6 +546,7 @@ export default function ProfilePage() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Account actions */}
                 <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
@@ -473,7 +569,16 @@ export default function ProfilePage() {
 
                     <div className="border-t border-neutral-200/70 dark:border-[#35332e]" />
 
-                    {!confirmingDelete ? (
+                    {/* 탈퇴는 접어 둔다 — 로그아웃 바로 아래에서 가장 큰 빨간 버튼일 이유가 없다.
+                        열려 있는 동안에는 지금과 똑같이 동작한다. */}
+                    {!showDanger && !confirmingDelete ? (
+                        <button
+                            onClick={() => setShowDanger(true)}
+                            className="w-full px-5 py-3 text-left text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                        >
+                            계정 설정 더 보기
+                        </button>
+                    ) : !confirmingDelete ? (
                         <button
                             onClick={() => setConfirmingDelete(true)}
                             disabled={isAdmin}
