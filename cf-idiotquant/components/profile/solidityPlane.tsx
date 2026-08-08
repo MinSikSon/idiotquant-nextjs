@@ -47,13 +47,15 @@ const px = (v: number) => PAD.l + v;
 const py = (v: number) => PAD.t + (100 - v);   // Y 는 위가 큰 값
 
 export default function SolidityPlane({
-    points, value, safety, trapCount,
+    points, value, safety, trapCount, sample = false,
 }: {
     points: SolidityPoint[];
     /** 포트폴리오 평균 — 큰 표식 */
     value: number;
     safety: number;
     trapCount: number;
+    /** 아직 담은 종목이 없는 사용자에게 개념만 보여주는 예시. 오른쪽 설명이 바뀐다. */
+    sample?: boolean;
 }) {
     const uid = useId();
     const [active, setActive] = useState<SolidityPoint | null>(null);
@@ -199,6 +201,17 @@ export default function SolidityPlane({
                                     : "text-neutral-500 dark:text-neutral-400"
                             )}>
                                 {QUADRANT_LABEL[active.quadrant]} — {QUADRANT_DESC[active.quadrant]}
+                            </p>
+                        </div>
+                    ) : sample ? (
+                        <div>
+                            <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+                                가로는 <b className="font-black text-[#16a34a] dark:text-[#22c55e]">얼마나 싼가</b>,
+                                세로는 <b className="font-black text-[#16a34a] dark:text-[#22c55e]">지금 팔 수 있는가</b>입니다.
+                            </p>
+                            <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1.5">
+                                오른쪽 아래 <b className="font-bold text-rose-600 dark:text-rose-400">함정</b>은
+                                싼 이유가 상장폐지인 종목입니다. 관심 종목을 담으면 여기 들어온 것을 알려드립니다.
                             </p>
                         </div>
                     ) : trapCount > 0 ? (
