@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import { computeSolidity } from "@/lib/utils/portfolioSolidity";
+import SolidityPlane from "@/components/profile/solidityPlane";
 import PortfolioLegoTower from "@/components/profile/portfolioLegoTower";
 // 위험 배지는 스크리너와 같은 기준·같은 모양이어야 한다 — 같은 종목이 두 화면에서
 // 다르게 보이면 어느 쪽을 믿어야 할지 알 수 없다. 그래서 판정까지 한 모듈에서 가져온다.
@@ -269,6 +270,15 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* 지수를 두 축으로 편 좌표평면 — 같은 72점이라도 "싸지만 위험"과
+                            "안 싸지만 안전"은 전혀 다른 상태다. 막대 하나로는 구분되지 않는다. */}
+                        <SolidityPlane
+                            points={solid.points}
+                            value={solid.base}
+                            safety={solid.safety}
+                            trapCount={solid.trapCount}
+                        />
 
                         {/* 왜 깎였는지 — 근거 없이 낮은 숫자만 보여주면 예전보다 못하다.
                             깎일 이유가 없으면 이 줄 자체가 뜨지 않는다. */}
