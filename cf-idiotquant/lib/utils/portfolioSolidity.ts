@@ -17,11 +17,45 @@ import {
     isCautionAdvised, isOverheated, trAmtEok, LOW_TR_AMT_EOK,
 } from "./stockRisk";
 
+/**
+ * 좌표평면의 사분면.
+ *  trap — 싼데 회수가 어렵다. NCAV 스크리너에서 가장 위험한 자리다.
+ *         폐지가 확정되면 주가가 먼저 무너져 저평가 점수가 *올라가므로*,
+ *         싸다는 이유만 보면 오히려 상위에 온다.
+ */
+export type Quadrant = "solid" | "trap" | "plain" | "weak";
+
+/** 회수 가능성 경계. 0.3·0.5·0.7 은 목록에서 빨간 배지가 붙는 종목과 정확히 같은 집합이다. */
+export const SAFETY_LINE = 75;
+/** 저평가 경계 — 점수 중간 */
+export const VALUE_LINE = 50;
+
+export function quadrantOf(value: number, safety: number): Quadrant {
+    if (safety >= SAFETY_LINE) return value >= VALUE_LINE ? "solid" : "plain";
+    return value >= VALUE_LINE ? "trap" : "weak";
+}
+
+export interface SolidityPoint {
+    name: string;
+    ticker: string;
+    /** X — 저평가 0~100 */
+    value: number;
+    /** Y — 회수 가능성 0~100 */
+    safety: number;
+    quadrant: Quadrant;
+}
+
 export interface SolidityBreakdown {
     score: number;              // 0~100 — 화면에 크게 찍히는 값
     label: string;
-    /** 위험 반영 전 평균 저평가 점수 — 얼마나 깎였는지 보여주기 위해 남긴다 */
+    /** 위험 반영 전 평균 저평가 점수 — 좌표평면의 X. 얼마나 깎였는지도 이 값으로 보여준다 */
     base: number;
+    /** 평균 회수 가능성 0~100 — 좌표평면의 Y */
+    safety: number;
+    /** 종목별 좌표 */
+    points: SolidityPoint[];
+    /** 함정 사분면(싼데 회수 어려움)에 있는 종목 수 */
+    trapCount: number;
     /** 감점된 종목 수 */
     riskCount: number;
     /** 업종 쏠림 감점 (0이면 없음) */
@@ -64,7 +98,10 @@ const MIN_FOR_CONCENTRATION = 4;
 
 export function computeSolidity(items: any[]): SolidityBreakdown {
     if (!items?.length) {
-        return { score: 0, label: labelOf(0), base: 0, riskCount: 0, concentrationPenalty: 0, topSector: null };
+        return {
+            score: 0, label: labelOf(0), base: 0, safety: 0,
+            points: [], trapCount: 0, riskCount: 0, concentrationPenalty: 0, topSector: null,
+        };
     }
 
     const factors = items.map(riskFactor);
@@ -73,6 +110,22 @@ export function computeSolidity(items: any[]): SolidityBreakdown {
     const base = Math.round(scores.reduce((a, s) => a + s, 0) / items.length);
     const adjusted = scores.reduce((a, s, idx) => a + s * factors[idx], 0) / items.length;
     const riskCount = factors.filter(f => f < 1).length;
+    const safety = Math.round((factors.reduce((a, f) => a + f, 0) / items.length) * 100);
+
+    // 종목별 좌표 — 평면의 값은 지수와 같은 재료에서 나와야 한다.
+    // 한 화면에서 점의 위치와 아래 숫자가 어긋나면 어느 쪽도 못 믿는다.
+    const points: SolidityPoint[] = items.map((it, idx) => {
+        const v = Math.round(scores[idx]);
+        const s = Math.round(factors[idx] * 100);
+        return {
+            name: String(it?.stock_name ?? it?.name ?? it?.ticker ?? ""),
+            ticker: String(it?.ticker ?? ""),
+            value: v,
+            safety: s,
+            quadrant: quadrantOf(v, s),
+        };
+    });
+    const trapCount = points.filter(p => p.quadrant === "trap").length;
 
     // 업종 쏠림 — 업종을 아는 종목들 안에서만 따진다
     const sectors = items.map(i => String(i?.sector ?? "").trim()).filter(Boolean);
@@ -90,5 +143,8 @@ export function computeSolidity(items: any[]): SolidityBreakdown {
     }
 
     const score = Math.max(0, Math.min(100, Math.round(adjusted) - concentrationPenalty));
-    return { score, label: labelOf(score), base, riskCount, concentrationPenalty, topSector };
+    return {
+        score, label: labelOf(score), base, safety,
+        points, trapCount, riskCount, concentrationPenalty, topSector,
+    };
 }
