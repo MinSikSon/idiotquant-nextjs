@@ -58,7 +58,7 @@ export function TodayDiscovery({
           </div>
           <Link
             href="/screener"
-            className="text-[11.5px] font-bold text-[#16a34a] dark:text-[#22c55e] hover:opacity-70 transition-opacity shrink-0"
+            className="inline-flex items-center min-h-[44px] px-2 -mx-2 text-[11.5px] font-bold text-[#16a34a] dark:text-[#22c55e] hover:opacity-70 transition-opacity shrink-0"
           >
             {totalCount > 0 ? `${totalCount}개 전체 보기 →` : "발굴 결과 보기 →"}
           </Link>
