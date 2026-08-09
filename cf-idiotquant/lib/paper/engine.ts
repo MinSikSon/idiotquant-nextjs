@@ -1,4 +1,6 @@
-// 모의투자 매매 규칙 (클라이언트 판).
+// 리플레이 매매 규칙 (클라이언트 판).
+//
+// 과거 일봉을 하루씩 넘기며 그날 종가로 사고파는 게임이라 실시간 장 시간 개념이 없다.
 //
 // 워커에 같은 규칙의 JS 판이 있다(idiotquant-backend/src/lib/paperEngine.js).
 // 비로그인 사용자는 이 파일로 계산하고 로그인 사용자는 워커에서 계산하므로, 두 파일의
@@ -37,15 +39,6 @@ export interface SellQuote {
     net: number; costOut: number; realized: number;
 }
 export interface QuoteError { ok: false; error: string }
-
-/** 정규장 09:00~15:30 KST, 주말 제외. 공휴일은 다루지 않는다(휴장일에도 열린 것으로 본다). */
-export function isMarketOpen(nowMs: number = Date.now()): boolean {
-    const kst = new Date(nowMs + 9 * 60 * 60 * 1000); // +9h 이므로 UTC 게터가 KST 시각
-    const day = kst.getUTCDay();
-    if (day === 0 || day === 6) return false;
-    const minutes = kst.getUTCHours() * 60 + kst.getUTCMinutes();
-    return minutes >= 9 * 60 && minutes < 15 * 60 + 30;
-}
 
 export function quoteBuy(args: { price: number; qty: number; cash: number }): BuyQuote | QuoteError {
     const price = Math.floor(Number(args.price) || 0);

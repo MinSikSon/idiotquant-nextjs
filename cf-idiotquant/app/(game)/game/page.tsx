@@ -1,618 +1,429 @@
 "use client";
 
-// 모의투자 — 가상 현금 1,000만원으로 실제 현재가에 사고팔아 본다.
+// 블라인드 차트 리플레이 — 어느 종목인지, 언제인지 모르는 60 거래일을 하루씩 넘기며 사고판다.
 //
-// 스크리너가 "싸게 나온 회사"를 찾아 주는 데서 끝나 있었는데, 그 다음 행동(사보기)이 없었다.
-// 여기가 그 자리다.
+// 앞 20일은 컨텍스트로 한 번에 열어 준다(판단 근거가 있어야 한다). 나머지 40일은 하루씩.
+// 끝나면 수익률과 정답(종목명·기간)을 열고, 그냥 사서 들고 있었을 때와 나란히 놓는다.
 //
-// 로그인하면 계좌가 D1 에 저장되고(워커 /user/paper), 아니면 localStorage 에만 남는다.
-// 두 경로가 같은 스냅샷 모양을 쓰므로 화면은 어느 쪽인지 신경 쓰지 않는다.
-//
-// 값이 두 종류라는 점만 주의: **체결가는 KIS 실시간 현재가**이고, **평가금액은 스캔가**다.
-// 스캔은 2,000종목을 롤링으로 도느라 최대 12시간 지연되므로, 화면에 기준일을 같이 적는다.
+// 로그인하면 워커가 캔들을 쥐고 하루씩 흘려 준다(/user/replay) — 코인과 최고기록이 서버에
+// 남으므로 브라우저에서 앞날을 볼 수 있으면 그 기록이 거짓이 되기 때문이다. 비로그인은
+// 브라우저 안에서 굴리고 기록을 남기지 않는다.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import {
-    Wallet, TrendingUp, Coins, RotateCcw, Search, Heart, Layers, ArrowRight, Clock,
-} from "lucide-react";
+import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { reqGetNcavDailyList, selectNcavDailyList, type NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
-import { getDeck } from "@/lib/features/deck/deckAPI";
-import { getInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentAPI";
+import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
-import { SEED, isMarketOpen, avgPrice } from "@/lib/paper/engine";
-import { loadLocal, resetLocal, applyLocalOrder, emptySnapshot } from "@/lib/paper/localAccount";
-import type { PaperSnapshot, PaperPositionRow } from "@/lib/paper/types";
-import { getPaperAccount, placePaperOrder, resetPaperAccount } from "@/lib/features/paper/paperAPI";
+import { avgPrice } from "@/lib/paper/engine";
+import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem } from "@/lib/paper/round";
+import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
+import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound } from "@/lib/features/paper/replayAPI";
 
 import {
     fmtKrw, KpiCard, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
-    SectionPanel, SectionHeader, EmptyState, TabButton,
-    useToast, ToastContainer, LoadingState,
+    SectionPanel, SectionHeader, useToast, ToastContainer,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
 import { safeNum } from "@/lib/utils/numbers";
 
-// recharts 를 초기 번들에서 뺀다 (balanceKrView 와 같은 방식)
-const PortfolioChartSection = dynamic(
-    () => import("@/components/balance/portfolioChart").then(m => ({ default: m.PortfolioChartSection })),
-    { ssr: false, loading: () => <div className="h-64 rounded-2xl bg-neutral-100 dark:bg-[#242320] animate-pulse" /> },
-);
-
-type BuyTab = "scan" | "likes" | "deck";
-
-interface Candidate {
-    ticker: string;
-    name: string;
-    last_price: number;
-    ncav_ratio?: number;
-    per?: number;
-    pbr?: number;
-}
+// recharts 를 초기 번들에서 뺀다
+const LineChart = dynamic(() => import("@/components/LineChart"), {
+    ssr: false,
+    loading: () => <div className="h-64 rounded-2xl bg-neutral-100 dark:bg-[#242320] animate-pulse" />,
+});
 
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+const fmtDate = (d?: string | null) => (d && d.length === 8 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}` : "");
 
-/** KIS 실시간 현재가. 체결은 항상 이 값으로 한다(스캔가로 체결하면 옛 가격에 살 수 있다). */
-async function fetchLivePrice(ticker: string): Promise<number> {
-    const res: any = await getInquirePrice(ticker);
-    return safeNum(res?.output?.stck_prpr);
-}
-
-export default function PaperTradingPage() {
+export default function ReplayGamePage() {
     const dispatch = useAppDispatch();
-    const { data: session, status } = useSession();
-    const isLoggedIn = status === "authenticated" && !!session?.user;
+    const { status } = useSession();
+    const isLoggedIn = status === "authenticated";
 
     const ncav = useAppSelector(selectNcavDailyList);
-    const likedList = useAppSelector(selectLikedList);
     const { toasts, addToast, removeToast } = useToast();
 
-    const [snapshot, setSnapshot] = useState<PaperSnapshot | null>(null);
-    const [deckTickers, setDeckTickers] = useState<Set<string>>(new Set());
-    const [tab, setTab] = useState<BuyTab>("scan");
-    const [query, setQuery] = useState("");
-    const [pending, setPending] = useState<string | null>(null);
-    const [marketOpen, setMarketOpen] = useState(true);
-    const [confirmReset, setConfirmReset] = useState(false);
+    const [round, setRound] = useState<ReplayRound | null>(null);
+    const [history, setHistory] = useState<ReplayHistoryItem[]>([]);
+    const [coins, setCoins] = useState(0);
+    const [bestReturn, setBestReturn] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [busy, setBusy] = useState(false);
+    const [qty, setQty] = useState(10);
 
-    // 장 상태는 1분마다 다시 본다 — 09:00 에 화면을 열어 둔 사람이 새로고침 없이 주문할 수 있어야 한다
-    useEffect(() => {
-        const tick = () => setMarketOpen(isMarketOpen());
-        tick();
-        const id = setInterval(tick, 60_000);
-        return () => clearInterval(id);
-    }, []);
+    // 비로그인 판을 만들 때 쓸 종목 풀. 로그인은 서버가 알아서 뽑는다.
+    useEffect(() => { if (!isLoggedIn) dispatch(reqGetNcavDailyList("latest")); }, [isLoggedIn, dispatch]);
 
-    useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
-    useEffect(() => { if (isLoggedIn) dispatch(reqGetMyLikes()); }, [isLoggedIn, dispatch]);
+    const localPool = useMemo(
+        () => (Array.isArray(ncav.list) ? ncav.list : [])
+            .filter(r => r?.ticker && r?.name && safeNum(r.last_price) > 0)
+            .map(r => ({ ticker: r.ticker, name: r.name })),
+        [ncav.list],
+    );
 
-    // 계좌 적재 — 로그인 여부가 정해진 뒤에만 움직인다(로딩 중에 로컬을 띄우면 깜빡인다)
+    // 진행 중이던 판 이어받기
     useEffect(() => {
         if (status === "loading") return;
         let cancelled = false;
 
         if (!isLoggedIn) {
-            setSnapshot(loadLocal());
+            setRound(loadLocal());
+            setLoading(false);
             return;
         }
-        getPaperAccount().then(res => {
+        getReplayState().then(res => {
             if (cancelled) return;
-            if (res.success) setSnapshot({ account: res.account, positions: res.positions, orders: res.orders });
-            else setSnapshot(emptySnapshot());
+            if (res.success) {
+                setRound(res.round);
+                setHistory(res.history ?? []);
+                setCoins(res.wallet?.coins ?? 0);
+                setBestReturn(res.wallet?.best_return ?? null);
+            }
+            setLoading(false);
         });
         return () => { cancelled = true; };
     }, [isLoggedIn, status]);
 
-    useEffect(() => {
-        if (!isLoggedIn) { setDeckTickers(new Set()); return; }
-        let cancelled = false;
-        getDeck().then((res: any) => {
-            if (cancelled || !res?.success || !Array.isArray(res.data)) return;
-            setDeckTickers(new Set(res.data.map((r: any) => String(r.ticker))));
-        }).catch(() => { });
-        return () => { cancelled = true; };
-    }, [isLoggedIn]);
-
-    // 스캔 목록 = 매수 후보이자 평가용 시세표. 한 번 받아 두 군데에 쓴다.
-    const scanList: NcavDailyItem[] = useMemo(
-        () => (Array.isArray(ncav.list) ? ncav.list : []).filter(r => r?.ticker && r?.name && safeNum(r.last_price) > 0),
-        [ncav.list],
-    );
-    const priceMap = useMemo(() => {
-        const m = new Map<string, number>();
-        for (const r of scanList) m.set(r.ticker, safeNum(r.last_price));
-        return m;
-    }, [scanList]);
-    const nameMap = useMemo(() => {
-        const m = new Map<string, string>();
-        for (const r of scanList) m.set(r.ticker, r.name);
-        return m;
-    }, [scanList]);
-
-    // 관심 종목의 KR 키는 6자리 코드가 아니라 종목명이다(screener 가 그렇게 저장한다).
-    // 스캔 목록의 이름→코드로 되돌려야 주문을 넣을 수 있고, 못 찾은 건 후보에서 빠진다.
-    const codeByName = useMemo(() => {
-        const m = new Map<string, string>();
-        for (const r of scanList) m.set(r.name, r.ticker);
-        return m;
-    }, [scanList]);
-
-    const candidates: Candidate[] = useMemo(() => {
-        const base: Candidate[] = scanList.map(r => ({
-            ticker: r.ticker, name: r.name, last_price: safeNum(r.last_price),
-            ncav_ratio: safeNum(r.ncav_ratio), per: safeNum(r.per), pbr: safeNum(r.pbr),
-        }));
-
-        let rows = base;
-        if (tab === "likes") {
-            const wanted = new Set<string>();
-            for (const l of likedList) {
-                if (l.is_us) continue;
-                const code = /^\d{6}$/.test(l.ticker) ? l.ticker : codeByName.get(l.ticker) ?? (l.stock_name ? codeByName.get(l.stock_name) : undefined);
-                if (code) wanted.add(code);
-            }
-            rows = base.filter(c => wanted.has(c.ticker));
-        } else if (tab === "deck") {
-            rows = base.filter(c => deckTickers.has(c.ticker));
-        }
-
-        const q = query.trim();
-        if (q) rows = rows.filter(c => c.name.includes(q) || c.ticker.includes(q));
-
-        // 싼 순으로 — 이 게임에서 보여줄 순서는 NCAV 비율이 높은 쪽이다
-        return rows.sort((a, b) => (b.ncav_ratio ?? 0) - (a.ncav_ratio ?? 0)).slice(0, 60);
-    }, [scanList, tab, likedList, codeByName, deckTickers, query]);
-
-    // ── 평가 ────────────────────────────────────────────────
-    const valued = useMemo(() => {
-        const rows = (snapshot?.positions ?? []).map(p => {
-            const price = priceMap.get(p.ticker) ?? safeNum(p.last_price);
-            const marketValue = price * p.qty;
-            const unrealized = marketValue - p.cost_basis;
-            return {
-                ...p,
-                name: p.name ?? nameMap.get(p.ticker) ?? p.ticker,
-                price,
-                avg: avgPrice(p),
-                marketValue,
-                unrealized,
-                rate: p.cost_basis > 0 ? (unrealized / p.cost_basis) * 100 : 0,
-            };
-        });
-        const totalValue = rows.reduce((s, r) => s + r.marketValue, 0);
-        const totalCost = rows.reduce((s, r) => s + r.cost_basis, 0);
-        return { rows, totalValue, totalCost, unrealized: totalValue - totalCost };
-    }, [snapshot?.positions, priceMap, nameMap]);
-
-    const account = snapshot?.account;
-    const totalAssets = (account?.cash ?? 0) + valued.totalValue;
-    const seed = account?.seed ?? SEED;
-    const totalPnl = totalAssets - seed;
-    const totalRate = seed > 0 ? (totalPnl / seed) * 100 : 0;
-
-    const scanDate = ncav.scanDate ?? snapshot?.positions.find(p => p.scan_date)?.scan_date ?? null;
-
-    // ── 주문 ────────────────────────────────────────────────
-    const order = useCallback(async (side: "buy" | "sell", ticker: string, name: string | null, qty: number) => {
-        if (!marketOpen) { addToast("error", "정규장(09:00~15:30)에만 체결됩니다."); return; }
-        if (qty <= 0) return;
-        setPending(`${side}:${ticker}`);
+    const start = useCallback(async () => {
+        setBusy(true);
         try {
             if (isLoggedIn) {
-                // 체결가는 서버가 실시간으로 잡는다
-                const res = await placePaperOrder(side, ticker, qty, name);
+                const res = await startReplayRound();
                 if (!res.success) { addToast("error", res.error); return; }
-                setSnapshot({ account: res.account, positions: res.positions, orders: res.orders });
-                const f = res.filled;
-                addToast("success", `${name ?? ticker} ${qty}주 ${side === "buy" ? "매수" : "매도"} 체결 · ${fmtKrw(f?.price ?? 0)}`);
+                setRound(res.round);
             } else {
-                const price = await fetchLivePrice(ticker);
-                if (!(price > 0)) { addToast("error", "현재가를 가져오지 못했습니다."); return; }
-                const cur = snapshot ?? loadLocal();
-                const res = applyLocalOrder(cur, { side, ticker, name, qty, price });
-                if (!res.ok) { addToast("error", res.error); return; }
-                setSnapshot(res.snapshot);
-                addToast("success", `${name ?? ticker} ${qty}주 ${side === "buy" ? "매수" : "매도"} 체결 · ${fmtKrw(price)}`);
+                if (!localPool.length) { addToast("error", "종목 목록을 아직 불러오는 중입니다."); return; }
+                const built = await buildLocalRound(localPool);
+                if (!built) { addToast("error", "판을 만들지 못했습니다. 다시 시도해주세요."); return; }
+                setRound(built);
             }
-        } catch {
-            addToast("error", "주문 처리 중 오류가 났습니다.");
+            setQty(10);
         } finally {
-            setPending(null);
+            setBusy(false);
         }
-    }, [isLoggedIn, marketOpen, snapshot, addToast]);
+    }, [isLoggedIn, localPool, addToast]);
 
-    const doReset = useCallback(async () => {
-        setConfirmReset(false);
-        if (isLoggedIn) {
-            const res = await resetPaperAccount();
-            if (!res.success) { addToast("error", res.error); return; }
-            setSnapshot({ account: res.account, positions: res.positions, orders: res.orders });
-        } else {
-            setSnapshot(resetLocal());
+    const advance = useCallback(async (trade?: { side: "buy" | "sell"; qty: number } | null) => {
+        if (!round || round.status !== "playing") return;
+        setBusy(true);
+        try {
+            if (isLoggedIn) {
+                const res = await advanceReplayRound(round.id, trade);
+                if (!res.success) { addToast("error", res.error); return; }
+                setRound(res.round);
+                if (res.done) {
+                    const st = await getReplayState();
+                    if (st.success) {
+                        setHistory(st.history ?? []);
+                        setCoins(st.wallet?.coins ?? 0);
+                        setBestReturn(st.wallet?.best_return ?? null);
+                    }
+                }
+            } else {
+                const res = advanceLocal(round, trade);
+                if (!res.ok) { addToast("error", res.error); return; }
+                setRound(res.round);
+            }
+        } finally {
+            setBusy(false);
         }
-        addToast("success", "계좌를 초기화했습니다.");
-    }, [isLoggedIn, addToast]);
+    }, [round, isLoggedIn, addToast]);
 
-    if (!snapshot) return <LoadingState message="모의투자 계좌를 불러오는 중..." />;
+    const giveUp = useCallback(async () => {
+        if (!round || round.status !== "playing") return;
+        setBusy(true);
+        try {
+            if (isLoggedIn) {
+                const res = await giveUpReplayRound(round.id);
+                if (!res.success) { addToast("error", res.error); return; }
+                setRound(res.round);
+                const st = await getReplayState();
+                if (st.success) { setHistory(st.history ?? []); setCoins(st.wallet?.coins ?? 0); setBestReturn(st.wallet?.best_return ?? null); }
+            } else {
+                setRound(giveUpLocal(round));
+            }
+        } finally {
+            setBusy(false);
+        }
+    }, [round, isLoggedIn, addToast]);
+
+    const reset = useCallback(() => {
+        if (!isLoggedIn) saveLocal(null);
+        setRound(null);
+    }, [isLoggedIn]);
+
+    // ── 화면에 그릴 값 ───────────────────────────────────────
+    // 로컬 라운드는 캔들을 전부 들고 있으므로 여기서 cursor 까지만 잘라야 미래가 안 보인다.
+    const visible = useMemo(
+        () => (round ? round.candles.slice(0, round.status === "done" ? round.candles.length : round.cursor) : []),
+        [round],
+    );
+    const today = visible[visible.length - 1];
+    const price = today?.c ?? 0;
+    const marketValue = price * (round?.qty ?? 0);
+    const totalAssets = (round?.cash ?? 0) + marketValue;
+    const totalPnl = totalAssets - (round?.seed ?? 0);
+    const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
+    const avg = round ? avgPrice({ qty: round.qty, cost_basis: round.cost_basis }) : 0;
+
+    const maxBuy = price > 0 ? Math.floor((round?.cash ?? 0) / price) : 0;
+
+    if (loading) {
+        return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1917] flex items-center justify-center text-sm text-neutral-400">불러오는 중…</div>;
+    }
 
     return (
         <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1917] pb-24">
             <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-5 py-6 sm:py-10 flex flex-col gap-5">
+            <div className="max-w-4xl mx-auto px-4 sm:px-5 py-6 sm:py-10 flex flex-col gap-5">
 
-                {/* ── 머리 ─────────────────────────────── */}
-                <header className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] mb-1.5">
-                            Paper Trading
-                        </p>
-                        <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white break-keep">
-                            가상 1,000만원으로 연습하기
-                        </h1>
-                        <p className="text-[13px] text-neutral-500 dark:text-neutral-400 mt-1.5 break-keep">
-                            실제 현재가로 체결됩니다. 진짜 돈은 오가지 않습니다.
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setConfirmReset(true)}
-                        className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] transition-colors"
-                    >
-                        <RotateCcw size={14} /> 계좌 초기화
-                    </button>
-                </header>
+                {!round && <StartScreen onStart={start} busy={busy} isLoggedIn={isLoggedIn} coins={coins} bestReturn={bestReturn} history={history} />}
 
-                {!isLoggedIn && (
-                    <div className="rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-3 text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
-                        지금은 이 브라우저에만 저장됩니다.{" "}
-                        <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
-                        하면 계좌가 계정에 저장돼 다른 기기에서도 이어집니다.
-                    </div>
-                )}
-
-                {!marketOpen && (
-                    <div className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-4 py-3 text-[13px] text-neutral-500 dark:text-neutral-400 flex items-center gap-2 break-keep">
-                        <Clock size={15} className="shrink-0" />
-                        지금은 장이 닫혀 있습니다. 정규장 09:00~15:30(KST)에만 체결됩니다.
-                    </div>
-                )}
-
-                {/* ── 계좌 요약 ────────────────────────── */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <KpiCard
-                        label="총 자산" value={fmtKrw(totalAssets)}
-                        sub={`시드 ${fmtKrw(seed)}`}
-                        icon={<Wallet size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500"
-                    />
-                    <KpiCard
-                        label="예수금" value={fmtKrw(account?.cash ?? 0)}
-                        sub={`보유 ${valued.rows.length}종목`}
-                        icon={<Coins size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500"
-                    />
-                    <KpiCard
-                        label="평가손익" value={fmtKrw(valued.unrealized)}
-                        sub={`실현 ${fmtKrw(account?.realized ?? 0)}`}
-                        icon={<PnlIcon positive={valued.unrealized >= 0} />}
-                        iconBg={pnlIconBg(valued.unrealized >= 0)}
-                        valueColor={pnlValueColor(valued.unrealized >= 0)}
-                        accentColor={pnlAccentColor(valued.unrealized >= 0)}
-                    />
-                    <KpiCard
-                        label="수익률" value={pct(totalRate)}
-                        sub={`수수료 누적 ${fmtKrw(account?.fees_paid ?? 0)}`}
-                        icon={<TrendingUp size={15} />}
-                        iconBg={pnlIconBg(totalPnl >= 0)}
-                        valueColor={pnlValueColor(totalPnl >= 0)}
-                        accentColor={pnlAccentColor(totalPnl >= 0)}
-                    />
-                </div>
-
-                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 break-keep -mt-1">
-                    체결가는 실시간 현재가, 평가금액은 스캔가 기준입니다
-                    {scanDate ? ` (${scanDate.slice(0, 4)}-${scanDate.slice(4, 6)}-${scanDate.slice(6, 8)})` : ""}.
-                    스캔은 종목을 돌아가며 갱신해 최대 반나절 늦을 수 있습니다.
-                </p>
-
-                {/* ── 보유 종목 ────────────────────────── */}
-                <SectionPanel>
-                    <SectionHeader icon={<Layers size={16} />} title="보유 종목" subtitle={`${valued.rows.length}종목`} />
-                    {valued.rows.length === 0 ? (
-                        <EmptyState message="아직 산 종목이 없습니다. 아래에서 골라 보세요." icon={<Layers size={20} />} />
-                    ) : (
-                        <>
-                            {/* 모바일은 카드. 표를 가로 스크롤에 맡기면 매도 버튼이 화면 밖으로 나가
-                                스크롤을 발견한 사람만 팔 수 있게 된다. */}
-                            <ul className="sm:hidden flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26]">
-                                {valued.rows.map(r => (
-                                    <PositionCard
-                                        key={r.ticker} row={r} marketOpen={marketOpen}
-                                        pending={pending === `sell:${r.ticker}`}
-                                        onSell={qty => order("sell", r.ticker, r.name, qty)}
-                                    />
-                                ))}
-                            </ul>
-
-                            <div className="hidden sm:block overflow-x-auto -mx-1">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="text-[10px] font-black uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                                            <th className="text-left py-2 px-2">종목</th>
-                                            <th className="text-right py-2 px-2">수량</th>
-                                            <th className="text-right py-2 px-2">평단</th>
-                                            <th className="text-right py-2 px-2">현재가</th>
-                                            <th className="text-right py-2 px-2">평가손익</th>
-                                            <th className="text-right py-2 px-2">매도</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {valued.rows.map(r => (
-                                            <PositionRow
-                                                key={r.ticker} row={r} marketOpen={marketOpen}
-                                                pending={pending === `sell:${r.ticker}`}
-                                                onSell={qty => order("sell", r.ticker, r.name, qty)}
-                                            />
-                                        ))}
-                                    </tbody>
-                                </table>
+                {round && (
+                    <>
+                        <header className="flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] mb-1.5">
+                                    {round.status === "done" ? "Result" : `Day ${round.cursor - CONTEXT_DAYS + 1} / ${TOTAL_DAYS - CONTEXT_DAYS + 1}`}
+                                </p>
+                                <h1 className="text-xl sm:text-2xl font-black text-neutral-900 dark:text-white break-keep">
+                                    {round.status === "done" ? "한 판 끝" : "이 회사, 지금 사시겠습니까?"}
+                                </h1>
                             </div>
-                        </>
-                    )}
-                </SectionPanel>
+                            {round.status === "playing" ? (
+                                <button onClick={giveUp} disabled={busy}
+                                    className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                    <Flag size={14} /> 여기서 그만
+                                </button>
+                            ) : (
+                                <button onClick={reset}
+                                    className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] hover:opacity-90 transition-opacity">
+                                    <RotateCcw size={14} /> 한 판 더
+                                </button>
+                            )}
+                        </header>
 
-                {/* ── 비중 ─────────────────────────────── */}
-                {/* 한 종목뿐이면 도넛이 100% 원 하나라 아무것도 알려주지 않는다 — 둘부터 그린다 */}
-                {valued.rows.length > 1 && (
-                    <PortfolioChartSection
-                        isUs={false}
-                        isLoading={false}
-                        output1={valued.rows.map(r => ({
-                            prdt_name: r.name,
-                            evlu_amt: String(r.marketValue),
-                            evlu_pfls_rt: r.rate.toFixed(2),
-                        }))}
-                    />
-                )}
+                        {round.status === "done" && <ResultBanner round={round} />}
 
-                {/* ── 매수 ─────────────────────────────── */}
-                <SectionPanel>
-                    <SectionHeader icon={<Search size={16} />} title="사기" subtitle="오늘 스캔에서 찾은 회사들" />
+                        {/* ── 차트 ────────────────────────── */}
+                        <SectionPanel>
+                            <SectionHeader
+                                icon={<TrendingUp size={16} />}
+                                title={round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
+                                subtitle={round.status === "done"
+                                    ? `${round.ticker} · ${fmtDate(round.start_date)} ~ ${fmtDate(round.end_date)}`
+                                    : "종목명과 시기는 끝나야 열립니다"}
+                            />
+                            <LineChart
+                                height={260}
+                                category_array={visible.map(c => c.d.slice(4))}
+                                data_array={[
+                                    { name: "종가", data: visible.map(c => c.c) },
+                                    ...(round.qty > 0 ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }] : []),
+                                ]}
+                            />
+                        </SectionPanel>
 
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <TabButton active={tab === "scan"} onClick={() => setTab("scan")}>오늘 싸게 나온 회사</TabButton>
-                        <TabButton active={tab === "likes"} onClick={() => setTab("likes")}>
-                            <span className="inline-flex items-center gap-1"><Heart size={12} /> 관심종목</span>
-                        </TabButton>
-                        <TabButton active={tab === "deck"} onClick={() => setTab("deck")}>
-                            <span className="inline-flex items-center gap-1"><Layers size={12} /> 내가 모은 종목</span>
-                        </TabButton>
-                    </div>
-
-                    <div className="relative mb-4">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                        <input
-                            value={query} onChange={e => setQuery(e.target.value)}
-                            placeholder="종목명 또는 코드"
-                            className="w-full min-h-[44px] pl-9 pr-3 rounded-xl text-sm bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#e3b34a]/40"
-                        />
-                    </div>
-
-                    {ncav.state === "pending" && scanList.length === 0 ? (
-                        <div className="h-40 rounded-xl bg-neutral-100 dark:bg-[#1a1917] animate-pulse" />
-                    ) : candidates.length === 0 ? (
-                        <EmptyState
-                            message={
-                                tab === "likes" ? (isLoggedIn ? "관심종목 중 오늘 스캔에 잡힌 국내 종목이 없습니다." : "로그인하면 관심종목을 불러옵니다.")
-                                    : tab === "deck" ? (isLoggedIn ? "수집한 종목 중 오늘 스캔에 잡힌 게 없습니다." : "로그인하면 수집한 종목을 불러옵니다.")
-                                        : "오늘 스캔 결과가 아직 없습니다."
-                            }
-                            icon={<Search size={20} />}
-                        />
-                    ) : (
-                        <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26]">
-                            {candidates.map(c => (
-                                <CandidateRow
-                                    key={c.ticker} candidate={c} marketOpen={marketOpen}
-                                    cash={account?.cash ?? 0}
-                                    pending={pending === `buy:${c.ticker}`}
-                                    onBuy={qty => order("buy", c.ticker, c.name, qty)}
-                                />
-                            ))}
-                        </ul>
-                    )}
-                </SectionPanel>
-
-                {/* ── 거래 내역 ────────────────────────── */}
-                {snapshot.orders.length > 0 && (
-                    <SectionPanel>
-                        <SectionHeader icon={<Clock size={16} />} title="거래 내역" subtitle={`최근 ${snapshot.orders.length}건`} />
-                        <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
-                            {snapshot.orders.map(o => (
-                                <li key={o.id} className="flex items-center justify-between gap-3 py-2.5">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className={cn(
-                                            "text-[10px] font-black px-1.5 py-0.5 rounded shrink-0",
-                                            o.side === "buy"
-                                                ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-                                                : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]",
-                                        )}>
-                                            {o.side === "buy" ? "매수" : "매도"}
-                                        </span>
-                                        <span className="font-bold text-neutral-900 dark:text-white truncate">
-                                            {o.name ?? nameMap.get(o.ticker) ?? o.ticker}
-                                        </span>
-                                        <span className="text-[11px] text-neutral-400 shrink-0">{o.qty}주</span>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <div className="font-mono text-xs text-neutral-700 dark:text-neutral-300">{fmtKrw(o.price)}</div>
-                                        {o.realized !== null && (
-                                            <div className={cn("font-mono text-[11px]", pnlValueColor(o.realized >= 0))}>
-                                                {o.realized >= 0 ? "+" : ""}{fmtKrw(o.realized)}
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </SectionPanel>
-                )}
-
-                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 break-keep text-center">
-                    수수료 매수·매도 각 0.015%, 매도 시 증권거래세 0.18%를 반영합니다.
-                </p>
-            </div>
-
-            {confirmReset && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-5" onClick={() => setConfirmReset(false)}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#242320] p-6 flex flex-col gap-4" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-black text-neutral-900 dark:text-white">계좌를 초기화할까요?</h2>
-                        <p className="text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
-                            보유 종목과 거래 내역이 모두 지워지고 예수금이 {fmtKrw(SEED)}으로 돌아갑니다. 되돌릴 수 없습니다.
-                        </p>
-                        <div className="flex gap-2 justify-end">
-                            <button onClick={() => setConfirmReset(false)}
-                                className="min-h-[44px] px-4 rounded-xl text-sm font-bold text-neutral-500 hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
-                                취소
-                            </button>
-                            <button onClick={doReset}
-                                className="min-h-[44px] px-4 rounded-xl text-sm font-black text-white bg-red-500 hover:bg-red-600">
-                                초기화
-                            </button>
+                        {/* ── 계좌 ────────────────────────── */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                            <KpiCard label="총 자산" value={fmtKrw(totalAssets)} sub={`시드 ${fmtKrw(round.seed)}`}
+                                icon={<Wallet size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
+                            <KpiCard label="예수금" value={fmtKrw(round.cash)} sub={round.qty > 0 ? `보유 ${round.qty}주` : "보유 없음"}
+                                icon={<Coins size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
+                            <KpiCard
+                                label={round.status === "done" ? "마지막 가격" : "현재가"}
+                                value={fmtKrw(price)}
+                                sub={round.qty > 0 ? `평단 ${fmtKrw(avg)}` : round.status === "done" ? "청산 완료" : "아직 안 삼"}
+                                icon={<Eye size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
+                            <KpiCard label="수익률" value={pct(totalRate)} sub={`실현 ${fmtKrw(round.realized)}`}
+                                icon={<PnlIcon positive={totalPnl >= 0} />}
+                                iconBg={pnlIconBg(totalPnl >= 0)}
+                                valueColor={pnlValueColor(totalPnl >= 0)}
+                                accentColor={pnlAccentColor(totalPnl >= 0)} />
                         </div>
-                    </div>
+
+                        {/* ── 조작 ────────────────────────── */}
+                        {round.status === "playing" && (
+                            <SectionPanel>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black text-neutral-400 uppercase tracking-wider shrink-0">수량</span>
+                                        <input
+                                            type="number" min={1} value={qty} aria-label="주문 수량"
+                                            onChange={e => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                                            className="w-24 min-h-[44px] px-3 rounded-xl text-sm text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white"
+                                        />
+                                        <div className="flex gap-1.5 flex-wrap">
+                                            {[10, 50, 100].map(n => (
+                                                <button key={n} onClick={() => setQty(n)}
+                                                    className="min-h-[36px] px-2.5 rounded-lg text-[11px] font-bold text-neutral-500 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
+                                                    {n}
+                                                </button>
+                                            ))}
+                                            <button onClick={() => setQty(Math.max(1, maxBuy))} disabled={maxBuy < 1}
+                                                className="min-h-[36px] px-2.5 rounded-lg text-[11px] font-bold text-neutral-500 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
+                                                최대
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* 라벨을 짧게 — "사고 하루 넘기기"는 390px 3열에서 두 줄로 쪼개진다.
+                                        어느 쪽을 눌러도 하루가 지나간다는 건 아래 한 줄로 말한다. */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button onClick={() => advance({ side: "buy", qty })} disabled={busy || maxBuy < 1}
+                                            className="min-h-[52px] rounded-xl text-[15px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                            사기
+                                        </button>
+                                        <button onClick={() => advance(null)} disabled={busy}
+                                            className="min-h-[52px] rounded-xl text-[15px] font-black text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                            관망
+                                        </button>
+                                        <button onClick={() => advance({ side: "sell", qty })} disabled={busy || round.qty < 1}
+                                            className="min-h-[52px] rounded-xl text-[15px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                            팔기
+                                        </button>
+                                    </div>
+
+                                    <p className="text-[11px] text-neutral-400 dark:text-neutral-500 break-keep leading-[1.7]">
+                                        어느 쪽을 눌러도 하루가 지나갑니다. 그날 종가로 체결되고,
+                                        수수료는 매수·매도 각 0.015%, 매도 시 증권거래세 0.18%입니다.
+                                        마지막 날에는 남은 주식이 자동으로 정리됩니다.
+                                    </p>
+                                </div>
+                            </SectionPanel>
+                        )}
+
+                        {round.status === "done" && !isLoggedIn && (
+                            <div className="rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-3 text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
+                                <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
+                                하면 기록과 코인이 쌓입니다.
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
+function StartScreen({ onStart, busy, isLoggedIn, coins, bestReturn, history }: {
+    onStart: () => void; busy: boolean; isLoggedIn: boolean;
+    coins: number; bestReturn: number | null; history: ReplayHistoryItem[];
+}) {
+    return (
+        <>
+            <header>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] mb-1.5">
+                    Blind Replay
+                </p>
+                <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white break-keep">
+                    어느 회사인지 모른 채,<br />60일을 살아보기
+                </h1>
+                <p className="text-[13px] sm:text-[15px] text-neutral-500 dark:text-neutral-400 mt-3 leading-[1.8] break-keep max-w-md">
+                    종목명도 날짜도 가린 실제 과거 차트를 하루씩 넘기며 사고팝니다.
+                    끝나면 성적과 정답을 함께 엽니다.
+                </p>
+            </header>
+
+            <SectionPanel>
+                <ul className="flex flex-col gap-3 text-[14px] text-neutral-600 dark:text-neutral-300">
+                    {[
+                        `가상 1,000만원으로 시작합니다.`,
+                        `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
+                        `그냥 사서 들고 있었을 때와 나란히 놓고 채점합니다.`,
+                    ].map((line, i) => (
+                        <li key={i} className="flex gap-3 break-keep">
+                            <span className="font-mono text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-1 shrink-0">
+                                {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span>{line}</span>
+                        </li>
+                    ))}
+                </ul>
+
+                <button onClick={onStart} disabled={busy}
+                    className="mt-6 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
+                    <Play size={16} strokeWidth={2.6} />
+                    {busy ? "판을 만드는 중…" : "한 판 시작"}
+                </button>
+            </SectionPanel>
+
+            {isLoggedIn && (
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <KpiCard label="코인" value={coins.toLocaleString()} sub="판을 이길 때마다 쌓입니다"
+                        icon={<Coins size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
+                    <KpiCard label="최고 수익률" value={bestReturn === null ? "—" : pct(bestReturn)} sub={`${history.length}판 완료`}
+                        icon={<TrendingUp size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
                 </div>
             )}
-        </div>
-    );
-}
 
-type ValuedRow = PaperPositionRow & {
-    name: string; price: number; avg: number; marketValue: number; unrealized: number; rate: number;
-};
-
-/** 수량 입력 + 팔기 버튼. 표와 카드가 같은 걸 쓴다. */
-function SellControl({ held, marketOpen, pending, onSell }: {
-    held: number; marketOpen: boolean; pending: boolean; onSell: (qty: number) => void;
-}) {
-    const [qty, setQty] = useState(1);
-    return (
-        <div className="flex items-center gap-1.5 justify-end">
-            <input
-                type="number" min={1} max={held} value={qty}
-                onChange={e => setQty(Math.max(1, Math.min(held, Math.floor(Number(e.target.value) || 1))))}
-                aria-label="매도 수량"
-                className="w-14 min-h-[38px] px-2 rounded-lg text-xs text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white"
-            />
-            <button
-                onClick={() => onSell(qty)}
-                disabled={!marketOpen || pending}
-                className="min-h-[38px] px-3 rounded-lg text-[11px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-            >
-                {pending ? "…" : "팔기"}
-            </button>
-        </div>
-    );
-}
-
-// ─────────────────────────────────────────────────────────
-// 보유 — 모바일 카드
-// ─────────────────────────────────────────────────────────
-function PositionCard({ row, marketOpen, pending, onSell }: {
-    row: ValuedRow; marketOpen: boolean; pending: boolean; onSell: (qty: number) => void;
-}) {
-    const up = row.unrealized >= 0;
-    return (
-        <li className="py-3 flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <div className="font-bold text-neutral-900 dark:text-white truncate">{row.name}</div>
-                    <div className="text-[11px] text-neutral-400 font-mono">{row.ticker} · {row.qty}주</div>
-                </div>
-                <div className={cn("text-right font-mono shrink-0", pnlValueColor(up))}>
-                    <div className="text-sm font-black">{up ? "+" : ""}{fmtKrw(row.unrealized)}</div>
-                    <div className="text-[11px]">{pct(row.rate)}</div>
-                </div>
-            </div>
-            <div className="flex items-end justify-between gap-3">
-                <div className="text-[11px] text-neutral-400 font-mono leading-relaxed">
-                    평단 {fmtKrw(row.avg)}<br />현재 {fmtKrw(row.price)}
-                </div>
-                <SellControl held={row.qty} marketOpen={marketOpen} pending={pending} onSell={onSell} />
-            </div>
-        </li>
+            {history.length > 0 && (
+                <SectionPanel>
+                    <SectionHeader icon={<Flag size={16} />} title="지난 판" subtitle={`최근 ${history.length}판`} />
+                    <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
+                        {history.map(h => {
+                            const win = (h.final_return ?? 0) >= 0;
+                            const beat = (h.final_return ?? 0) > (h.bh_return ?? 0);
+                            return (
+                                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5">
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
+                                        <div className="text-[11px] text-neutral-400 font-mono">{fmtDate(h.start_date)} ~ {fmtDate(h.end_date)}</div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
+                                        <div className="text-[11px] text-neutral-400">
+                                            그냥 보유 {pct(h.bh_return ?? 0)}{beat ? " · 이김" : ""}
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </SectionPanel>
+            )}
+        </>
     );
 }
 
 // ─────────────────────────────────────────────────────────
-// 보유 — 데스크탑 한 줄
-// ─────────────────────────────────────────────────────────
-function PositionRow({ row, marketOpen, pending, onSell }: {
-    row: ValuedRow;
-    marketOpen: boolean; pending: boolean; onSell: (qty: number) => void;
-}) {
-    const up = row.unrealized >= 0;
+function ResultBanner({ round }: { round: ReplayRound }) {
+    const mine = round.final_return ?? 0;
+    const bh = round.bh_return ?? 0;
+    const beat = mine > bh;
 
     return (
-        <tr className="border-t border-neutral-100 dark:border-[#2c2a26]">
-            <td className="py-3 px-2">
-                <div className="font-bold text-neutral-900 dark:text-white">{row.name}</div>
-                <div className="text-[11px] text-neutral-400 font-mono">{row.ticker}</div>
-            </td>
-            <td className="py-3 px-2 text-right font-mono text-neutral-700 dark:text-neutral-300">{row.qty}</td>
-            <td className="py-3 px-2 text-right font-mono text-neutral-500 text-xs">{fmtKrw(row.avg)}</td>
-            <td className="py-3 px-2 text-right font-mono text-neutral-700 dark:text-neutral-300 text-xs">{fmtKrw(row.price)}</td>
-            <td className={cn("py-3 px-2 text-right font-mono", pnlValueColor(up))}>
-                <div className="text-xs font-black">{up ? "+" : ""}{fmtKrw(row.unrealized)}</div>
-                <div className="text-[11px]">{pct(row.rate)}</div>
-            </td>
-            <td className="py-3 px-2">
-                <SellControl held={row.qty} marketOpen={marketOpen} pending={pending} onSell={onSell} />
-            </td>
-        </tr>
-    );
-}
-
-// ─────────────────────────────────────────────────────────
-// 후보 한 줄 — 수량을 정해 산다
-// ─────────────────────────────────────────────────────────
-function CandidateRow({ candidate, marketOpen, cash, pending, onBuy }: {
-    candidate: Candidate; marketOpen: boolean; cash: number; pending: boolean; onBuy: (qty: number) => void;
-}) {
-    const [qty, setQty] = useState(1);
-    const cost = candidate.last_price * qty;
-    const affordable = cost <= cash;
-
-    return (
-        <li className="flex items-center justify-between gap-3 py-3">
-            <div className="min-w-0">
-                <div className="font-bold text-neutral-900 dark:text-white truncate">{candidate.name}</div>
-                <div className="text-[11px] text-neutral-400 flex items-center gap-2">
-                    <span className="font-mono">{candidate.ticker}</span>
-                    <span className="font-mono">{fmtKrw(candidate.last_price)}</span>
-                    {(candidate.ncav_ratio ?? 0) > 0 && (
-                        <span className="text-[#a1730a] dark:text-[#e3b34a] font-bold">NCAV {candidate.ncav_ratio!.toFixed(2)}</span>
-                    )}
+        <SectionPanel className={cn("border-2", beat ? "border-[#e3b34a]/60" : "border-neutral-200 dark:border-[#35332e]")}>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1">내 수익률</p>
+                        <p className={cn("text-3xl sm:text-4xl font-black font-mono", pnlValueColor(mine >= 0))}>{pct(mine)}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1">그냥 사서 들고 있었다면</p>
+                        <p className={cn("text-xl font-black font-mono", pnlValueColor(bh >= 0))}>{pct(bh)}</p>
+                    </div>
                 </div>
+
+                <p className="text-[14px] font-bold break-keep text-neutral-700 dark:text-neutral-200">
+                    {beat
+                        ? `그냥 들고 있는 것보다 ${(mine - bh).toFixed(2)}%p 더 벌었습니다.`
+                        : `그냥 들고 있었으면 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
+                </p>
+
+                {(round.coins_earned ?? 0) > 0 && (
+                    <p className="text-[13px] text-[#a1730a] dark:text-[#e3b34a] font-bold inline-flex items-center gap-1.5">
+                        <Coins size={14} /> 코인 {round.coins_earned} 획득
+                    </p>
+                )}
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-                <input
-                    type="number" min={1} value={qty}
-                    onChange={e => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-                    className="w-14 min-h-[36px] px-2 rounded-lg text-xs text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white"
-                />
-                <button
-                    onClick={() => onBuy(qty)}
-                    disabled={!marketOpen || pending || !affordable}
-                    title={!affordable ? "예수금이 부족합니다" : undefined}
-                    className="min-h-[36px] px-3 rounded-lg text-[11px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1 whitespace-nowrap"
-                >
-                    {pending ? "…" : <>사기 <ArrowRight size={11} /></>}
-                </button>
-            </div>
-        </li>
+        </SectionPanel>
     );
 }
