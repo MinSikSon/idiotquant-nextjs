@@ -947,7 +947,7 @@ export default function HomePage() {
             </div>
 
             <h1
-              className="reveal text-[2.3rem] sm:text-[3rem] lg:text-[3.4rem] font-black leading-[1.14] tracking-tight text-neutral-900 dark:text-white break-keep text-balance"
+              className="reveal text-[clamp(2rem,7.5vw,2.3rem)] sm:text-[3rem] lg:text-[3.4rem] font-black leading-[1.28] text-neutral-900 dark:text-white break-keep text-balance"
               style={delay(80)}
             >
               주식 고르는 일,<br />
@@ -958,7 +958,7 @@ export default function HomePage() {
             </h1>
 
             <p
-              className="reveal mt-5 text-sm sm:text-base text-neutral-600 dark:text-white/60 break-keep leading-relaxed max-w-md"
+              className="reveal mt-5 text-[15px] sm:text-base text-neutral-600 dark:text-white/60 break-keep leading-[1.75] sm:leading-[1.85] max-w-xl"
               style={delay(160)}
             >
               어려운 건 저희가 합니다. 매일 아침
@@ -969,7 +969,7 @@ export default function HomePage() {
             <div className="reveal mt-8" style={delay(240)}>
               <Link
                 href="/screener?mincap=500"
-                className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-base shadow-[0_14px_38px_rgba(217,165,42,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
+                className="group inline-flex items-center gap-2 px-5 sm:px-7 py-4 rounded-full bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] sm:text-base shadow-[0_14px_38px_rgba(217,165,42,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
               >
                 <Filter size={17} strokeWidth={2.6} />
                 오늘 싸게 나온 회사 보기
@@ -993,17 +993,17 @@ export default function HomePage() {
 
       {/* ── 발굴 — 스플릿 2단 ─────────────────────────────────────── */}
       <section className="relative border-b border-neutral-100 dark:border-[#1c2f26] bg-[#faf9f7] dark:bg-[#0a1510]/85">
-        <div className="max-w-4xl mx-auto px-5 py-20 md:py-32 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+        <div className="max-w-4xl mx-auto px-5 py-20 md:py-40 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="reveal h-52 sm:h-72 rounded-3xl border border-neutral-200/70 dark:border-[#22402f] bg-gradient-to-b from-[#fdf6e9] to-white dark:from-[#1c1608] dark:to-[#0a1510] overflow-hidden">
             <SpinArt kind="coin" />
           </div>
 
           <div className="reveal" style={delay(120)}>
             <StepLabel tag="DISCOVER" />
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 dark:text-white mb-3 break-keep text-balance">
+            <h2 className="text-2xl sm:text-3xl font-black leading-[1.36] sm:leading-[1.36] text-neutral-900 dark:text-white mb-3 break-keep text-balance">
               돌을 많이 뒤집는 쪽이 이깁니다
             </h2>
-            <p className="text-sm text-neutral-500 dark:text-white/55 leading-relaxed break-keep mb-6 max-w-sm">
+            <p className="text-[15px] text-neutral-500 dark:text-white/55 leading-[1.75] sm:leading-[1.85] break-keep mb-6 max-w-md">
               사람이 {scannedCount > 0 ? `${scannedCount.toLocaleString()}곳의 ` : "상장사 "}재무제표를 하나씩 들추면 며칠이 걸립니다.
               여기선 아침에 끝나 있습니다. 가입도 필요 없습니다.
             </p>
@@ -1016,7 +1016,7 @@ export default function HomePage() {
           01과 좌우만 뒤집으면 같은 레이아웃이 두 번 반복돼 리듬이 죽는다 → 큰 아트 패널 하나에
           텍스트 셀·기능 셀 2개를 붙인 비대칭 벤토로 짠다. */}
       <section className="relative border-b border-neutral-100 dark:border-[#1c2f26] bg-white dark:bg-[#08120d]/85">
-        <div className="max-w-4xl mx-auto px-5 py-20 md:py-32">
+        <div className="max-w-4xl mx-auto px-5 py-20 md:py-40">
           <div className="grid md:grid-cols-5 gap-4">
             <div className="reveal md:col-span-3 h-52 sm:h-72 md:h-auto md:min-h-[22rem] rounded-3xl border border-neutral-200/70 dark:border-[#22402f] bg-gradient-to-b from-[#eafaf0] to-white dark:from-[#0e2016] dark:to-[#08120d] overflow-hidden">
               <SpinArt kind="gem" />
@@ -1028,10 +1028,10 @@ export default function HomePage() {
                 style={delay(120)}
               >
                 <StepLabel tag="ANALYZE" />
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 dark:text-white mb-3 break-keep text-balance">
+                <h2 className="text-2xl sm:text-3xl font-black leading-[1.36] sm:leading-[1.36] text-neutral-900 dark:text-white mb-3 break-keep text-balance">
                   값을 먼저 정하고, 그다음에 가격을 봅니다
                 </h2>
-                <p className="text-sm text-neutral-500 dark:text-white/55 leading-relaxed break-keep mb-6">
+                <p className="text-[15px] text-neutral-500 dark:text-white/55 leading-[1.75] sm:leading-[1.85] break-keep mb-6">
                   이 회사가 얼마짜리인지 다섯 가지 방법으로 따로 계산합니다.
                   답이 하나로 모이지 않는다는 것 자체가 중요한 정보입니다.
                 </p>
@@ -1048,10 +1048,10 @@ export default function HomePage() {
                     className="reveal rounded-3xl border border-neutral-200/70 dark:border-[#22402f] bg-white dark:bg-[#101b15]/95 p-5"
                     style={delay(200 + i * 80)}
                   >
-                    <p className="text-[13px] font-black tracking-tight text-neutral-900 dark:text-white mb-1 break-keep">
+                    <p className="text-[13px] font-black text-neutral-900 dark:text-white mb-1 break-keep">
                       {f.t}
                     </p>
-                    <p className="text-[11px] text-neutral-400 dark:text-white/40 leading-relaxed break-keep">
+                    <p className="text-[11px] text-neutral-400 dark:text-white/40 leading-[1.8] break-keep">
                       {f.d}
                     </p>
                   </div>
@@ -1073,13 +1073,13 @@ export default function HomePage() {
           앞선 섹션들이 전부 밝은 중립색이라, 같은 톤으로 두면 CTA가 본문에 묻힌다 →
           풀블리드 딥그린 패널로 뒤집어 페이지에서 가장 대비가 큰 블록으로 만든다. */}
       {!isLoggedIn && !sessionLoading && (
-        <section className="relative overflow-hidden py-20 md:py-28 px-5 bg-[#0d2a1a] dark:bg-[#0b2416]">
+        <section className="relative overflow-hidden py-20 md:py-40 px-5 bg-[#0d2a1a] dark:bg-[#0b2416]">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[42rem] h-[26rem] rounded-full bg-[#16a34a]/25 blur-3xl" />
             <div className="absolute -bottom-32 right-0 w-[28rem] h-[20rem] rounded-full bg-[#facc15]/10 blur-3xl" />
           </div>
           <div className="max-w-md mx-auto text-center relative">
-            <h2 className="reveal text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight leading-tight break-keep text-balance">
+            <h2 className="reveal text-3xl sm:text-4xl font-black text-white mb-4 leading-[1.36] sm:leading-[1.36] break-keep text-balance">
               찾았으면, 잊어버리기 전에 적어둡시다
             </h2>
             <ul className="space-y-3 mb-8 text-left inline-block">
@@ -1133,7 +1133,7 @@ export default function HomePage() {
               { label: "계산기", href: "/calculator" },
             ].map(l => (
               <Link key={l.label} href={l.href}
-                className="text-xs text-neutral-400 hover:text-neutral-700 dark:text-white/50 dark:hover:text-white transition-colors font-medium"
+                className="inline-flex items-center min-h-[44px] px-2 -mx-2 text-xs text-neutral-400 hover:text-neutral-700 dark:text-white/50 dark:hover:text-white transition-colors font-medium"
               >
                 {l.label}
               </Link>
