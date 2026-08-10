@@ -172,6 +172,22 @@ export default function ReplayGamePage() {
 
     const maxBuy = price > 0 ? Math.floor((round?.cash ?? 0) / price) : 0;
 
+    // 사고판 지점을 차트에 찍는다. 빨강이 매수, 초록이 매도 — 버튼 색과 같다.
+    // 수량 라벨은 체결이 적을 때만 붙인다. 많아지면 서로 겹쳐 오히려 안 읽힌다.
+    const markers = useMemo(() => {
+        const orders = round?.orders ?? [];
+        const withLabel = orders.length <= 8;
+        return orders
+            .filter(o => o.day_index < visible.length)
+            .map(o => ({
+                x: visible[o.day_index].d.slice(4),
+                y: o.price,
+                color: o.side === "buy" ? "#ef4444" : "#16a34a",
+                label: withLabel ? `${o.side === "buy" ? "+" : "−"}${o.qty}` : undefined,
+                labelPosition: o.side === "buy" ? "bottom" : "top",
+            }));
+    }, [round, visible]);
+
     // 계좌 4칸. 모바일 압축 줄과 데스크톱 카드가 같은 값을 쓰도록 한 곳에서 만든다.
     const stats = round ? [
         {
@@ -283,6 +299,7 @@ export default function ReplayGamePage() {
                                 <div className="absolute inset-0">
                                     <LineChart
                                         height="100%"
+                                        markers={markers}
                                         legend_disable={round.qty < 1}
                                         category_array={visible.map(c => c.d.slice(4))}
                                         data_array={[
