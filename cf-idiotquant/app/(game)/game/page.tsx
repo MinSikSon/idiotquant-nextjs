@@ -18,7 +18,7 @@ import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye } from "lucide-re
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
-import { avgPrice } from "@/lib/paper/engine";
+import { avgPrice, quoteBuy } from "@/lib/paper/engine";
 import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound } from "@/lib/features/paper/replayAPI";
@@ -170,7 +170,16 @@ export default function ReplayGamePage() {
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
     const avg = round ? avgPrice({ qty: round.qty, cost_basis: round.cost_basis }) : 0;
 
-    const maxBuy = price > 0 ? Math.floor((round?.cash ?? 0) / price) : 0;
+    // cash / price 만으로는 수수료가 빠진다 — 현금이 가격으로 딱 나누어떨어지면
+    // 최대매수를 누르고 사기를 눌렀을 때 "현금이 부족합니다"로 거절당한다.
+    // 실제 견적(quoteBuy)으로 확인해 들어가는 수량까지 줄인다. 한두 번이면 끝난다.
+    const maxBuy = useMemo(() => {
+        const cash = round?.cash ?? 0;
+        if (price <= 0) return 0;
+        let n = Math.floor(cash / price);
+        while (n > 0 && !quoteBuy({ price, qty: n, cash }).ok) n--;
+        return n;
+    }, [price, round?.cash]);
 
     // 사고판 지점을 차트에 찍는다. 빨강이 매수, 초록이 매도 — 버튼 색과 같다.
     // 수량 라벨은 체결이 적을 때만 붙인다. 많아지면 서로 겹쳐 오히려 안 읽힌다.
@@ -339,9 +348,15 @@ export default function ReplayGamePage() {
                                                     {n}
                                                 </button>
                                             ))}
+                                            {/* 수량 칸 하나를 사기·팔기가 같이 쓰므로 "최대"도 한쪽만
+                                                가리킬 수 없다. 현금 기준과 보유 기준을 따로 둔다. */}
                                             <button onClick={() => setQty(Math.max(1, maxBuy))} disabled={maxBuy < 1}
-                                                className="min-h-[36px] px-2 sm:px-2.5 rounded-lg text-[11px] font-bold text-neutral-500 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
-                                                최대
+                                                className="min-h-[36px] px-1.5 sm:px-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold whitespace-nowrap text-red-500/90 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
+                                                최대매수
+                                            </button>
+                                            <button onClick={() => setQty(round.qty)} disabled={round.qty < 1}
+                                                className="min-h-[36px] px-1.5 sm:px-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold whitespace-nowrap text-[#16a34a] border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
+                                                전량매도
                                             </button>
                                         </div>
                                     </div>
