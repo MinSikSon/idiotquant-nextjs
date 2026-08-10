@@ -15,8 +15,17 @@ export interface Candle {
     c: number;
 }
 
+/** 체결 하나. 차트에 매매 시점을 찍는 데 쓴다. day_index 는 몇 번째 캔들인지(0-based). */
+export interface ReplayOrder {
+    day_index: number;
+    side: "buy" | "sell";
+    qty: number;
+    price: number;
+}
+
 /** 서버 `_publicRound` 와 같은 모양. 진행 중에는 정답과 미래 캔들이 비어 있다. */
 export interface ReplayRound {
+    orders: ReplayOrder[];
     id: string;
     cursor: number;
     total_days: number;

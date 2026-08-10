@@ -9,6 +9,7 @@ import {
     YAxis,
     ResponsiveContainer,
     Legend,
+    ReferenceDot,
 } from "recharts";
 import { useTheme } from "next-themes";
 
@@ -92,9 +93,12 @@ export default function LineChart(props: any) {
     const isMiniMode = props.height <= 36 || props.show_yaxis_label === false;
 
     // 차트 외곽 마진 설정 (미니모드일 때는 패딩 공백 없이 영역을 꽉 채우도록 수치 극소화)
-    const chartMargin = isMiniMode 
+    // 마커 라벨은 점 바깥에 그려진다. 마지막 캔들에 찍힌 마커는 오른쪽 끝에 붙으므로
+    // 기본 마진(10)으로는 라벨이 잘린다 — 마커가 있을 때만 상/우 여백을 넓힌다.
+    const hasMarkers = !!props.markers?.length;
+    const chartMargin = isMiniMode
         ? { top: 2, right: 2, left: 2, bottom: 2 }
-        : { top: 10, right: 10, left: 0, bottom: 5 };
+        : { top: hasMarkers ? 18 : 10, right: hasMarkers ? 24 : 10, left: 0, bottom: 5 };
 
     return (
         <ResponsiveContainer width={props.width ?? "100%"} height={props.height ?? 120}>
@@ -184,6 +188,28 @@ export default function LineChart(props: any) {
                         />
                     );
                 })}
+
+                {/* 선택 옵션: 특정 지점에 점을 찍는다. x 는 category_array 의 값과 같아야 한다.
+                    (모의투자에서 매수·매도 시점을 표시하는 데 쓴다) */}
+                {props.markers?.map((m: any, i: number) => (
+                    <ReferenceDot
+                        key={`marker_${i}`}
+                        x={m.x}
+                        y={m.y}
+                        r={4}
+                        fill={m.color}
+                        stroke={mode === "dark" ? "#09090b" : "#ffffff"}
+                        strokeWidth={1.5}
+                        label={m.label ? {
+                            value: m.label,
+                            position: m.labelPosition ?? "top",
+                            fontSize: 9,
+                            fontWeight: 700,
+                            fontFamily: "var(--font-mono)",
+                            fill: m.color,
+                        } : undefined}
+                    />
+                ))}
             </AreaChart>
         </ResponsiveContainer>
     );

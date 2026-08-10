@@ -7,7 +7,7 @@
 // 매매 규칙은 lib/paper/engine.ts, 판의 규칙은 lib/paper/round.ts 한 곳에서만 나온다.
 
 import { SEED, quoteBuy, quoteSell, applyBuy, applySell, type BuyQuote, type SellQuote } from "./engine";
-import { TOTAL_DAYS, CONTEXT_DAYS, buyAndHoldReturn, coinsFor, type Candle, type ReplayRound } from "./round";
+import { TOTAL_DAYS, CONTEXT_DAYS, buyAndHoldReturn, coinsFor, type Candle, type ReplayRound, type ReplayOrder } from "./round";
 import { getInquireDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentAPI";
 
 const KEY = "iq:replay:v1";
@@ -58,6 +58,7 @@ export async function buildLocalRound(pool: { ticker: string; name: string }[]):
                 total_days: TOTAL_DAYS,
                 cash: SEED, seed: SEED, qty: 0, cost_basis: 0, realized: 0, fees_paid: 0,
                 status: "playing",
+                orders: [],
                 candles: full,           // 로컬은 전부 들고 있고 화면에서 cursor 까지만 그린다
                 ticker: pick.ticker, name: pick.name,
                 start_date: full[0].d, end_date: full[full.length - 1].d,
@@ -79,7 +80,8 @@ export function loadLocal(): ReplayRound | null {
         if (!raw) return null;
         const parsed = JSON.parse(raw) as ReplayRound;
         if (!Array.isArray(parsed?.candles) || typeof parsed?.cursor !== "number") return null;
-        return parsed;
+        // orders 를 넣기 전에 저장된 판이 남아 있을 수 있다
+        return { ...parsed, orders: Array.isArray(parsed.orders) ? parsed.orders : [] };
     } catch {
         return null;
     }
@@ -100,6 +102,7 @@ function finish(round: ReplayRound): ReplayRound {
     const lastPrice = round.candles[lastIdx]?.c ?? 0;
 
     let { cash, realized, fees_paid: fees, qty, cost_basis } = round;
+    const orders = [...round.orders];
     if (qty > 0 && lastPrice > 0) {
         const q = quoteSell({ price: lastPrice, qty, position: { ticker: round.ticker!, name: round.name, qty, cost_basis } });
         if (q.ok) {
@@ -107,6 +110,7 @@ function finish(round: ReplayRound): ReplayRound {
             cash += s.net;
             realized += s.realized;
             fees += s.fee;
+            orders.push({ day_index: lastIdx, side: "sell", qty, price: s.price });
             qty = 0;
             cost_basis = 0;
         }
@@ -119,6 +123,7 @@ function finish(round: ReplayRound): ReplayRound {
 
     const done: ReplayRound = {
         ...round, cash, realized, fees_paid: fees, qty: 0, cost_basis: 0,
+        orders,
         status: "done",
         final_return: finalReturn,
         bh_return: bhReturn,
@@ -147,6 +152,9 @@ export function advanceLocal(round: ReplayRound, trade?: { side: "buy" | "sell";
             : quoteSell({ price: today.c, qty: trade.qty, position });
         if (!q.ok) return { ok: false, error: q.error };
 
+        // 몇 번째 캔들에서 체결됐는지 — 차트에 찍을 자리다
+        const order: ReplayOrder = { day_index: round.cursor - 1, side: q.side, qty: q.qty, price: q.price };
+
         if (q.side === "buy") {
             const b = q as BuyQuote;
             const pos = applyBuy(position, b);
@@ -156,6 +164,7 @@ export function advanceLocal(round: ReplayRound, trade?: { side: "buy" | "sell";
             const pos = applySell(position, s);
             next = { ...next, cash: next.cash + s.net, realized: next.realized + s.realized, fees_paid: next.fees_paid + s.fee, ...pos };
         }
+        next = { ...next, orders: [...next.orders, order] };
     }
 
     const nextCursor = next.cursor + 1;
