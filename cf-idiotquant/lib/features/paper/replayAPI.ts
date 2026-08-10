@@ -15,7 +15,16 @@ async function replayRequest(method: "GET" | "POST", body?: object) {
         let json: any = null;
         try { json = text ? JSON.parse(text) : null; } catch { /* 비 JSON 응답(예: 404 HTML) */ }
         if (!json || typeof json !== "object") {
-            return { success: false, status: res.status, error: text ? text.slice(0, 100) : `HTTP ${res.status}` };
+            // 원문은 콘솔에만. 예전에 이 자리에서 text.slice(0,100) 을 그대로 에러 메시지로 써서
+            // Cloudflare 오류 페이지의 <!DOCTYPE html ... 이 토스트에 뜬 적이 있다.
+            console.error("[replay] 예상치 못한 응답", res.status, text.slice(0, 500));
+            return {
+                success: false,
+                status: res.status,
+                error: res.status === 404 ? "서버에 아직 이 기능이 없습니다. 잠시 후 다시 시도해주세요."
+                    : res.status >= 500 ? "서버에서 판을 준비하지 못했습니다. 잠시 후 다시 시도해주세요."
+                        : "서버 응답을 이해하지 못했습니다.",
+            };
         }
         return { ...json, status: res.status };
     } catch {
