@@ -1,6 +1,11 @@
 "use client";
 
-// 블라인드 차트 리플레이 — 어느 종목인지, 언제인지 모르는 60 거래일을 하루씩 넘기며 사고판다.
+// 내 운용사 — 블라인드 차트 리플레이를 "분기 운용" 으로 감싼 게임.
+//
+// 한 판은 언제나 시드 1,000만원이라 실력만 잰다. 그 성적을 보고 고객이 돈을 맡기거나
+// 빼가고(AUM), 회사는 맡은 돈에서 보수를 받아 리서치 도구를 산다. 규칙은 lib/paper/firm.ts.
+//
+// 판 자체는 그대로다 — 어느 종목인지, 언제인지 모르는 60 거래일을 하루씩 넘기며 사고판다.
 //
 // 앞 20일은 컨텍스트로 한 번에 열어 준다(판단 근거가 있어야 한다). 나머지 40일은 하루씩.
 // 끝나면 수익률과 정답(종목명·기간)을 열고, 그냥 사서 들고 있었을 때와 나란히 놓는다.
@@ -13,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye } from "lucide-react";
+import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -21,7 +26,9 @@ import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorit
 import { avgPrice, quoteBuy } from "@/lib/paper/engine";
 import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
-import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound } from "@/lib/features/paper/replayAPI";
+import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool } from "@/lib/features/paper/replayAPI";
+import { TOOLS, INITIAL_AUM, rankOf, fmtMoney, type Firm } from "@/lib/paper/firm";
+import { movingAverage, bollinger } from "@/lib/paper/indicators";
 
 import {
     fmtKrw, KpiCard, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
@@ -49,8 +56,10 @@ export default function ReplayGamePage() {
 
     const [round, setRound] = useState<ReplayRound | null>(null);
     const [history, setHistory] = useState<ReplayHistoryItem[]>([]);
-    const [coins, setCoins] = useState(0);
+    const [firm, setFirm] = useState<Firm | null>(null);
     const [bestReturn, setBestReturn] = useState<number | null>(null);
+    // 산 도구 중 지금 켜 둔 것. 사자마자 켜진다.
+    const [activeTools, setActiveTools] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [qty, setQty] = useState(10);
@@ -80,8 +89,9 @@ export default function ReplayGamePage() {
             if (res.success) {
                 setRound(res.round);
                 setHistory(res.history ?? []);
-                setCoins(res.wallet?.coins ?? 0);
+                setFirm(res.firm ?? null);
                 setBestReturn(res.wallet?.best_return ?? null);
+                setActiveTools(res.firm?.tools ?? []);
             }
             setLoading(false);
         });
@@ -119,7 +129,7 @@ export default function ReplayGamePage() {
                     const st = await getReplayState();
                     if (st.success) {
                         setHistory(st.history ?? []);
-                        setCoins(st.wallet?.coins ?? 0);
+                        setFirm(st.firm ?? null);
                         setBestReturn(st.wallet?.best_return ?? null);
                     }
                 }
@@ -142,7 +152,7 @@ export default function ReplayGamePage() {
                 if (!res.success) { addToast("error", res.error); return; }
                 setRound(res.round);
                 const st = await getReplayState();
-                if (st.success) { setHistory(st.history ?? []); setCoins(st.wallet?.coins ?? 0); setBestReturn(st.wallet?.best_return ?? null); }
+                if (st.success) { setHistory(st.history ?? []); setFirm(st.firm ?? null); setBestReturn(st.wallet?.best_return ?? null); }
             } else {
                 setRound(giveUpLocal(round));
             }
@@ -180,6 +190,43 @@ export default function ReplayGamePage() {
         while (n > 0 && !quoteBuy({ price, qty: n, cash }).ok) n--;
         return n;
     }, [price, round?.cash]);
+
+    const purchase = useCallback(async (toolId: string) => {
+        setBusy(true);
+        try {
+            const res = await buyTool(toolId);
+            if (!res.success) { addToast("error", res.error); return; }
+            setFirm(res.firm ?? null);
+            setActiveTools(res.firm?.tools ?? []);   // 사면 바로 켠다
+            addToast("success", "도구를 들였습니다. 다음 분기부터 차트에 나타납니다.");
+        } finally {
+            setBusy(false);
+        }
+    }, [addToast]);
+
+    const toggleTool = useCallback((id: string) => {
+        setActiveTools(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+    }, []);
+
+    // 해금하고 켜 둔 리서치 도구를 가격 위에 겹쳐 그린다.
+    // 별도 영역을 만들지 않는 이유는 모바일에서 차트 높이를 더 쓸 수 없기 때문이다.
+    const overlays = useMemo(() => {
+        const owned = firm?.tools ?? [];
+        const on = (id: string) => owned.includes(id) && activeTools.includes(id);
+        const closes = visible.map(c => c.c);
+        const out: { name: string; data: (number | null)[]; color: string; dash?: string }[] = [];
+
+        if (on("ma")) {
+            out.push({ name: "5일선", data: movingAverage(closes, 5), color: "#f59e0b" });
+            out.push({ name: "20일선", data: movingAverage(closes, 20), color: "#8b5cf6" });
+        }
+        if (on("bb")) {
+            const b = bollinger(closes, 20, 2);
+            out.push({ name: "밴드상단", data: b.upper, color: "#94a3b8", dash: "3 3" });
+            out.push({ name: "밴드하단", data: b.lower, color: "#94a3b8", dash: "3 3" });
+        }
+        return out;
+    }, [firm?.tools, activeTools, visible]);
 
     // 사고판 지점을 차트에 찍는다. 빨강이 매수, 초록이 매도 — 버튼 색과 같다.
     // 수량 라벨은 체결이 적을 때만 붙인다. 많아지면 서로 겹쳐 오히려 안 읽힌다.
@@ -242,7 +289,13 @@ export default function ReplayGamePage() {
                     : "py-6 sm:py-10 pb-10 md:pb-24 gap-5",
             )}>
 
-                {!round && <StartScreen onStart={start} busy={busy} isLoggedIn={isLoggedIn} coins={coins} bestReturn={bestReturn} history={history} />}
+                {!round && (
+                    <FirmDashboard
+                        onStart={start} busy={busy} isLoggedIn={isLoggedIn}
+                        firm={firm} bestReturn={bestReturn} history={history}
+                        onBuy={purchase} activeTools={activeTools} onToggle={toggleTool}
+                    />
+                )}
 
                 {round && (
                     <>
@@ -250,13 +303,15 @@ export default function ReplayGamePage() {
                         <header className="flex items-center justify-between gap-3 shrink-0">
                             <div className="min-w-0">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] sm:mb-1.5">
-                                    {round.status === "done" ? "Result" : `Day ${round.cursor - CONTEXT_DAYS + 1} / ${TOTAL_DAYS - CONTEXT_DAYS + 1}`}
+                                    {round.status === "done"
+                                        ? `${(firm?.quarters ?? 0) || 1}분기 보고서`
+                                        : `${(firm?.quarters ?? 0) + 1}분기 · Day ${round.cursor - CONTEXT_DAYS + 1}/${TOTAL_DAYS - CONTEXT_DAYS + 1}`}
                                 </p>
                                 <h1 className="hidden sm:block text-xl sm:text-2xl font-black text-neutral-900 dark:text-white break-keep">
-                                    {round.status === "done" ? "한 판 끝" : "이 회사, 지금 사시겠습니까?"}
+                                    {round.status === "done" ? "분기 운용 종료" : "이 회사, 지금 사시겠습니까?"}
                                 </h1>
                                 <p className="sm:hidden text-[15px] font-black text-neutral-900 dark:text-white leading-tight">
-                                    {round.status === "done" ? "한 판 끝" : "사시겠습니까?"}
+                                    {round.status === "done" ? "분기 종료" : "사시겠습니까?"}
                                 </p>
                             </div>
                             {round.status === "playing" ? (
@@ -267,12 +322,12 @@ export default function ReplayGamePage() {
                             ) : (
                                 <button onClick={reset}
                                     className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] hover:opacity-90 transition-opacity">
-                                    <RotateCcw size={14} /> 한 판 더
+                                    <RotateCcw size={14} /> 다음 분기
                                 </button>
                             )}
                         </header>
 
-                        {round.status === "done" && <ResultBanner round={round} />}
+                        {round.status === "done" && <QuarterReport round={round} isLoggedIn={isLoggedIn} />}
 
                         {/* ── 차트 ──────────────────────────
                             남는 세로 공간을 전부 차트가 가져간다. 화면이 작으면 차트만 줄고
@@ -309,6 +364,7 @@ export default function ReplayGamePage() {
                                     <LineChart
                                         height="100%"
                                         markers={markers}
+                                        overlays={overlays}
                                         legend_disable={round.qty < 1}
                                         category_array={visible.map(c => c.d.slice(4))}
                                         data_array={[
@@ -394,7 +450,7 @@ export default function ReplayGamePage() {
                         {round.status === "done" && !isLoggedIn && (
                             <div className="shrink-0 rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-2.5 text-[12px] sm:text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
                                 <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
-                                하면 기록과 코인이 쌓입니다.
+                                하면 이 성적이 회사에 반영됩니다.
                             </div>
                         )}
                     </>
@@ -417,37 +473,56 @@ function MiniStat({ label, value, sub, valueColor }: { label: string; value: str
 }
 
 // ─────────────────────────────────────────────────────────
-function StartScreen({ onStart, busy, isLoggedIn, coins, bestReturn, history }: {
+/** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
+function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, onBuy, activeTools, onToggle }: {
     onStart: () => void; busy: boolean; isLoggedIn: boolean;
-    coins: number; bestReturn: number | null; history: ReplayHistoryItem[];
+    firm: Firm | null; bestReturn: number | null; history: ReplayHistoryItem[];
+    onBuy: (id: string) => void; activeTools: string[]; onToggle: (id: string) => void;
 }) {
+    const aum = firm?.aum ?? INITIAL_AUM;
+    const owned = firm?.tools ?? [];
+
     return (
         <>
             <header>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] mb-1.5">
-                    Blind Replay
+                    {isLoggedIn ? firm?.rank ?? rankOf(aum) : "체험 운용"}
                 </p>
-                <h1 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white break-keep">
-                    어느 회사인지 모른 채,<br />60일을 살아보기
+                <h1 className="text-xl sm:text-3xl font-black text-neutral-900 dark:text-white break-keep">
+                    {firm?.name ?? "내 운용사"}
                 </h1>
-                {/* 아래 규칙 목록과 같은 말이라, 화면이 좁으면 접는다 */}
+                {/* 아래 규칙·수치와 같은 말이라, 화면이 좁으면 접는다 */}
                 <p className="hidden sm:block text-[13px] sm:text-[15px] text-neutral-500 dark:text-neutral-400 mt-3 leading-[1.8] break-keep max-w-md">
-                    종목명도 날짜도 가린 실제 과거 차트를 하루씩 넘기며 사고팝니다.
-                    끝나면 성적과 정답을 함께 엽니다.
+                    분기마다 모델 포트폴리오 1,000만원으로 실력을 증명합니다.
+                    고객은 그 성적을 보고 돈을 맡기거나 뺍니다.
                 </p>
             </header>
 
-            <SectionPanel>
-                <ul className="flex flex-col gap-3 text-[14px] text-neutral-600 dark:text-neutral-300">
+            {isLoggedIn ? (
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <MiniStat label="고객 자금 AUM" value={fmtMoney(aum)} sub={firm?.rank ?? rankOf(aum)} />
+                    <MiniStat label="회사 자금" value={fmtMoney(firm?.cash ?? 0)} sub="누적 보수" />
+                    <MiniStat label="운용 분기" value={`${firm?.quarters ?? 0}분기`} sub={`${history.length}건 기록`} />
+                    <MiniStat label="최고 수익률" value={bestReturn === null ? "—" : pct(bestReturn)} sub="한 분기 최고" />
+                </div>
+            ) : (
+                <div className="rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-3 text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
+                    <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
+                    하면 내 운용사가 생기고, 성적이 고객 자금과 보수로 쌓입니다.
+                </div>
+            )}
+
+            <SectionPanel className="p-3 sm:p-5">
+                <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
                     {[
-                        `가상 1,000만원으로 시작합니다.`,
+                        `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
                         `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
                         // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
                         `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
-                        `그냥 사서 들고 있었을 때와 나란히 놓고 채점합니다.`,
+                        `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
                     ].map((line, i) => (
                         <li key={i} className="flex gap-3 break-keep">
-                            <span className="font-mono text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-1 shrink-0">
+                            <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-0.5 shrink-0">
                                 {String(i + 1).padStart(2, "0")}
                             </span>
                             <span>{line}</span>
@@ -456,34 +531,52 @@ function StartScreen({ onStart, busy, isLoggedIn, coins, bestReturn, history }: 
                 </ul>
 
                 <button onClick={onStart} disabled={busy}
-                    className="mt-6 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
+                    className="mt-3 sm:mt-5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
                     <Play size={16} strokeWidth={2.6} />
-                    {busy ? "판을 만드는 중…" : "한 판 시작"}
+                    {busy ? "종목을 고르는 중…" : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
                 </button>
             </SectionPanel>
 
             {isLoggedIn && (
-                <>
-                    <div className="grid grid-cols-2 gap-2 sm:hidden">
-                        <MiniStat label="코인" value={coins.toLocaleString()} sub="이길 때마다 쌓입니다" />
-                        <MiniStat label="최고 수익률" value={bestReturn === null ? "—" : pct(bestReturn)} sub={`${history.length}판 완료`} />
-                    </div>
-                    <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
-                        <KpiCard label="코인" value={coins.toLocaleString()} sub="판을 이길 때마다 쌓입니다"
-                            icon={<Coins size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
-                        <KpiCard label="최고 수익률" value={bestReturn === null ? "—" : pct(bestReturn)} sub={`${history.length}판 완료`}
-                            icon={<TrendingUp size={15} />} iconBg="bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500" />
-                    </div>
-                </>
+                <SectionPanel className="p-4 sm:p-5">
+                    <SectionHeader icon={<Building2 size={16} />} title="리서치실"
+                        subtitle={`회사 자금 ${fmtMoney(firm?.cash ?? 0)}원`} />
+                    <ul className="flex flex-col gap-2">
+                        {TOOLS.map(t => {
+                            const have = owned.includes(t.id);
+                            const on = activeTools.includes(t.id);
+                            return (
+                                <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 dark:border-[#35332e] px-3 py-2">
+                                    <div className="min-w-0">
+                                        <div className="text-[13px] font-black text-neutral-900 dark:text-white truncate">{t.name}</div>
+                                        <div className="text-[11px] text-neutral-400 truncate">{t.detail}</div>
+                                    </div>
+                                    {have ? (
+                                        <button onClick={() => onToggle(t.id)}
+                                            className={cn("shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold border transition-colors",
+                                                on ? "border-[#16a34a]/50 text-[#16a34a]" : "border-neutral-200 dark:border-[#35332e] text-neutral-400")}>
+                                            <Check size={12} /> {on ? "켜짐" : "꺼짐"}
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => onBuy(t.id)} disabled={busy || (firm?.cash ?? 0) < t.price}
+                                            className="shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
+                                            <Lock size={12} /> {fmtMoney(t.price)}
+                                        </button>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </SectionPanel>
             )}
 
             {history.length > 0 && (
-                <SectionPanel>
-                    <SectionHeader icon={<Flag size={16} />} title="지난 판" subtitle={`최근 ${history.length}판`} />
+                <SectionPanel className="p-4 sm:p-5">
+                    <SectionHeader icon={<Flag size={16} />} title="지난 분기" subtitle={`최근 ${history.length}분기`} />
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
                         {history.map(h => {
                             const win = (h.final_return ?? 0) >= 0;
-                            const beat = (h.final_return ?? 0) > (h.bh_return ?? 0);
+                            const flow = (h.aum_after ?? 0) - (h.aum_before ?? 0);
                             return (
                                 <li key={h.id} className="flex items-center justify-between gap-3 py-2.5">
                                     <div className="min-w-0">
@@ -493,7 +586,12 @@ function StartScreen({ onStart, busy, isLoggedIn, coins, bestReturn, history }: 
                                     <div className="text-right shrink-0">
                                         <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
                                         <div className="text-[11px] text-neutral-400">
-                                            그냥 보유 {pct(h.bh_return ?? 0)}{beat ? " · 이김" : ""}
+                                            벤치마크 {pct(h.bh_return ?? 0)}
+                                            {h.aum_after !== null && (
+                                                <span className={cn("ml-1 font-bold", pnlValueColor(flow >= 0))}>
+                                                    · 자금 {flow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(flow))}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </li>
@@ -507,35 +605,56 @@ function StartScreen({ onStart, busy, isLoggedIn, coins, bestReturn, history }: 
 }
 
 // ─────────────────────────────────────────────────────────
-function ResultBanner({ round }: { round: ReplayRound }) {
+/** 분기 보고서 — 성적과 그것이 회사에 미친 결과를 나란히. */
+function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
     const mine = round.final_return ?? 0;
     const bh = round.bh_return ?? 0;
     const beat = mine > bh;
 
+    // 정산은 서버가 남긴 값을 그대로 쓴다 — 규칙이 바뀌어도 지난 기록은 그때 값이어야 한다.
+    const settled = round.aum_before !== null && round.aum_after !== null;
+    const flow = settled ? round.aum_after! - round.aum_before! : 0;
+    const flowPct = settled && round.aum_before! > 0 ? (flow / round.aum_before!) * 100 : 0;
+    const feeTotal = (round.fee_base ?? 0) + (round.fee_perf ?? 0);
+
     return (
         <SectionPanel className={cn("shrink-0 border-2 p-3 sm:p-5", beat ? "border-[#e3b34a]/60" : "border-neutral-200 dark:border-[#35332e]")}>
-            <div className="flex flex-col gap-1.5 sm:gap-4">
+            <div className="flex flex-col gap-1.5 sm:gap-3">
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">내 수익률</p>
                         <p className={cn("text-2xl sm:text-4xl font-black font-mono", pnlValueColor(mine >= 0))}>{pct(mine)}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">그냥 사서 들고 있었다면</p>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">벤치마크</p>
                         <p className={cn("text-lg sm:text-xl font-black font-mono", pnlValueColor(bh >= 0))}>{pct(bh)}</p>
                     </div>
                 </div>
 
                 <p className="text-[12px] sm:text-[14px] font-bold break-keep text-neutral-700 dark:text-neutral-200">
                     {beat
-                        ? `그냥 들고 있는 것보다 ${(mine - bh).toFixed(2)}%p 더 벌었습니다.`
-                        : `그냥 들고 있었으면 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
-                    {(round.coins_earned ?? 0) > 0 && (
-                        <span className="text-[#a1730a] dark:text-[#e3b34a] inline-flex items-center gap-1 ml-2">
-                            <Coins size={13} /> 코인 +{round.coins_earned}
-                        </span>
-                    )}
+                        ? `벤치마크보다 ${(mine - bh).toFixed(2)}%p 더 벌었습니다.`
+                        : `벤치마크가 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
                 </p>
+
+                {settled ? (
+                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px] sm:text-[13px] border-t border-neutral-100 dark:border-[#35332e] pt-1.5 sm:pt-3">
+                        <span className="text-neutral-500 dark:text-neutral-400">
+                            고객 자금{" "}
+                            <b className={pnlValueColor(flow >= 0)}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</b>
+                            {" → "}
+                            <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(round.aum_after!)}</b>
+                        </span>
+                        <span className="text-[#a1730a] dark:text-[#e3b34a] font-bold">
+                            보수 +{fmtMoney(feeTotal)}
+                            <span className="font-normal opacity-70"> (운용 {fmtMoney(round.fee_base ?? 0)} · 성과 {fmtMoney(round.fee_perf ?? 0)})</span>
+                        </span>
+                    </div>
+                ) : isLoggedIn ? null : (
+                    <p className="text-[11px] text-neutral-400 border-t border-neutral-100 dark:border-[#35332e] pt-1.5">
+                        체험 운용이라 회사에는 반영되지 않았습니다.
+                    </p>
+                )}
             </div>
         </SectionPanel>
     );

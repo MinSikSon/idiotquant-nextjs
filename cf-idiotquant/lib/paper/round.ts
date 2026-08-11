@@ -43,7 +43,12 @@ export interface ReplayRound {
     end_date: string | null;
     final_return: number | null;
     bh_return: number | null;
-    coins_earned: number | null;
+    // 분기 정산 — 끝난 판에만 있다. 규칙이 바뀌어도 지난 기록은 그때 값 그대로여야 해서
+    // 다시 계산하지 않고 서버가 남긴 값을 그대로 쓴다.
+    aum_before: number | null;
+    aum_after: number | null;
+    fee_base: number | null;
+    fee_perf: number | null;
 }
 
 export interface ReplayHistoryItem {
@@ -54,7 +59,10 @@ export interface ReplayHistoryItem {
     end_date: string | null;
     final_return: number | null;
     bh_return: number | null;
-    coins_earned: number | null;
+    aum_before: number | null;
+    aum_after: number | null;
+    fee_base: number | null;
+    fee_perf: number | null;
     created_at: number;
 }
 
@@ -66,11 +74,3 @@ export function buyAndHoldReturn(candles: Candle[]): number {
     return ((last - first) / first) * 100;
 }
 
-/** 수익률과 Buy & Hold 대비 성과로 코인을 준다. */
-export function coinsFor(finalReturn: number, bhReturn: number): number {
-    let coins = 0;
-    if (finalReturn >= 10) coins += 30;
-    else if (finalReturn >= 0) coins += 10;
-    if (finalReturn > bhReturn) coins += 20;
-    return coins;
-}

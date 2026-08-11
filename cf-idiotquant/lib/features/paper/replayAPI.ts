@@ -2,6 +2,7 @@
 // 비로그인은 lib/paper/localRound.ts 가 같은 모양을 브라우저 안에서 다룬다.
 
 import type { ReplayRound, ReplayHistoryItem } from "@/lib/paper/round";
+import type { Firm } from "@/lib/paper/firm";
 
 async function replayRequest(method: "GET" | "POST", body?: object) {
     try {
@@ -39,6 +40,7 @@ export type ReplayResponse =
         done?: boolean;
         history?: ReplayHistoryItem[];
         wallet?: { coins: number; best_streak: number; best_return: number | null };
+        firm?: Firm;
     }
     | { success: false; status: number; error: string };
 
@@ -58,3 +60,10 @@ export const advanceReplayRound = (roundId: string, trade?: { side: "buy" | "sel
 
 export const giveUpReplayRound = (roundId: string): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "giveup", round_id: roundId });
+
+/** 리서치 도구 구매. 성공하면 갱신된 firm 이 온다. */
+export const buyTool = (toolId: string): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "buy-tool", tool_id: toolId });
+
+export const renameFirm = (name: string): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "rename-firm", name });
