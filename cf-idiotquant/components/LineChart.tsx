@@ -80,14 +80,19 @@ export default function LineChart(props: any) {
     const data = useMemo(() => {
         const categories = props.category_array || [];
         const series = props.data_array || [];
+        const overlays = props.overlays || [];
         return categories.map((label: any, idx: number) => {
             const row: any = { label };
             series.forEach((s: any) => {
                 row[s.name] = s.data[idx] ?? null;
             });
+            // 보조지표 — 값이 없는 앞 구간은 null 로 두어 선이 바닥까지 떨어지지 않게 한다
+            overlays.forEach((o: any) => {
+                row[o.name] = o.data[idx] ?? null;
+            });
             return row;
         });
-    }, [props.data_array, props.category_array]);
+    }, [props.data_array, props.category_array, props.overlays]);
 
     // 상단 미니바 혹은 인라인 배치를 판단하는 플래그
     const isMiniMode = props.height <= 36 || props.show_yaxis_label === false;
@@ -188,6 +193,28 @@ export default function LineChart(props: any) {
                         />
                     );
                 })}
+
+                {/* 선택 옵션: 가격 위에 겹쳐 그리는 보조지표(이동평균선·볼린저밴드).
+                    별도 영역을 만들지 않고 겹치는 이유는 모바일에서 차트 높이를 더 못 쓰기
+                    때문이다. 면은 칠하지 않고 얇은 선만 남긴다. */}
+                {props.overlays?.map((o: any) => (
+                    <Area
+                        key={`ov_${o.name}`}
+                        type="monotone"
+                        dataKey={o.name}
+                        name={o.name}
+                        stroke={o.color}
+                        strokeWidth={1.2}
+                        strokeDasharray={o.dash}
+                        fill="none"
+                        fillOpacity={0}
+                        dot={false}
+                        activeDot={false}
+                        isAnimationActive={false}
+                        legendType="none"
+                        connectNulls={false}
+                    />
+                ))}
 
                 {/* 선택 옵션: 특정 지점에 점을 찍는다. x 는 category_array 의 값과 같아야 한다.
                     (모의투자에서 매수·매도 시점을 표시하는 데 쓴다) */}

@@ -7,7 +7,7 @@
 // 매매 규칙은 lib/paper/engine.ts, 판의 규칙은 lib/paper/round.ts 한 곳에서만 나온다.
 
 import { SEED, quoteBuy, quoteSell, applyBuy, applySell, type BuyQuote, type SellQuote } from "./engine";
-import { TOTAL_DAYS, CONTEXT_DAYS, buyAndHoldReturn, coinsFor, type Candle, type ReplayRound, type ReplayOrder } from "./round";
+import { TOTAL_DAYS, CONTEXT_DAYS, buyAndHoldReturn, type Candle, type ReplayRound, type ReplayOrder } from "./round";
 import { getInquireDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentAPI";
 
 const KEY = "iq:replay:v1";
@@ -62,7 +62,9 @@ export async function buildLocalRound(pool: { ticker: string; name: string }[]):
                 candles: full,           // 로컬은 전부 들고 있고 화면에서 cursor 까지만 그린다
                 ticker: pick.ticker, name: pick.name,
                 start_date: full[0].d, end_date: full[full.length - 1].d,
-                final_return: null, bh_return: null, coins_earned: null,
+                final_return: null, bh_return: null,
+                // 체험 운용에는 회사가 없다 — 정산은 로그인해야 붙는다
+                aum_before: null, aum_after: null, fee_base: null, fee_perf: null,
             };
             saveLocal(round);
             return round;
@@ -81,7 +83,12 @@ export function loadLocal(): ReplayRound | null {
         const parsed = JSON.parse(raw) as ReplayRound;
         if (!Array.isArray(parsed?.candles) || typeof parsed?.cursor !== "number") return null;
         // orders 를 넣기 전에 저장된 판이 남아 있을 수 있다
-        return { ...parsed, orders: Array.isArray(parsed.orders) ? parsed.orders : [] };
+        return {
+            ...parsed,
+            orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+            aum_before: parsed.aum_before ?? null, aum_after: parsed.aum_after ?? null,
+            fee_base: parsed.fee_base ?? null, fee_perf: parsed.fee_perf ?? null,
+        };
     } catch {
         return null;
     }
@@ -127,7 +134,6 @@ function finish(round: ReplayRound): ReplayRound {
         status: "done",
         final_return: finalReturn,
         bh_return: bhReturn,
-        coins_earned: coinsFor(finalReturn, bhReturn),  // 로컬은 표시만 하고 지갑에 넣지 않는다
     };
     saveLocal(done);
     return done;
