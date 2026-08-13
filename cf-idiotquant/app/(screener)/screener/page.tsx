@@ -20,7 +20,7 @@ import { computeValueScore } from "@/lib/utils/valueScore";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
 import { ValueMedal } from "@/components/valueMedal";
-import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "./components/GroupedResults";
+import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
@@ -90,6 +90,8 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
     ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
 };
 const DEFAULT_VIEW: ViewMode = 'ratio';
+// 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
+const GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3';
 // URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
 const parseViewMode = (v: string | null | undefined): ViewMode =>
     (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
@@ -657,7 +659,7 @@ function ScreenerContent() {
     // 묶어 보기 / 뷰 모드 — 기본값이 none·table 이라 배포 직후 동작은 그대로다
     const [groupMode, setGroupMode] = useState<GroupMode>(() => {
         const v = (searchParams.get('group') ?? saved.group) as GroupMode;
-        return (['sector', 'strategy', 'grade'] as GroupMode[]).includes(v) ? v : 'none';
+        return (['sector', 'strategy'] as GroupMode[]).includes(v) ? v : 'none';
     });
     const [viewMode, setViewMode] = useState<ViewMode>(
         () => parseViewMode(searchParams.get('view') ?? saved.view)
@@ -926,7 +928,25 @@ function ScreenerContent() {
     // 묶어 보기는 전체 결과를 대상으로 한다 — 페이지를 넘길 때마다 그룹 개수가 변하면
     // "이 전략에 12개"라는 숫자를 믿을 수 없다. 대신 상위 2개 그룹만 펼쳐 DOM을 작게 유지한다.
     const groups = useMemo(() => buildGroups(filteredList, groupMode), [filteredList, groupMode]);
-    useEffect(() => { setOpenGroups(defaultOpenGroups(buildGroups(filteredList, groupMode))); }, [groupMode]); // eslint-disable-line react-hooks/exhaustive-deps
+    // 그룹 구성이 달라지면 펼침 상태를 다시 잡는다. groupMode 만 보면 필터를 바꿔 그룹이
+    // 통째로 바뀌었을 때 옛 키가 남아 "전부 접힘"이 된다.
+    const groupSignature = (groups ?? []).map(g => g.key).join('|');
+    useEffect(() => { setOpenGroups(defaultOpenGroups(groups)); }, [groupSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 묶기는 뷰 모드와 무관하게 같은 동작이라 props 를 한 번만 만든다 —
+    // 예전에는 데스크톱 표에만 붙어 있어서 기본 뷰(비율)와 폰에서는 눌러도 아무 일이 없었다.
+    const groupedProps = {
+        groups: groups ?? [],
+        open: openGroups,
+        onToggle: (key: string) => setOpenGroups(prev => {
+            const next = new Set(prev);
+            if (!next.delete(key)) next.add(key);
+            return next;
+        }),
+        hint: (g: Group) => groupMode === 'strategy'
+            ? (STRATEGY_PRESETS.find(p => p.id === g.key)?.formula ?? '')
+            : '',
+    };
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = !groups && filteredList.length > displayCount;
@@ -1915,7 +1935,6 @@ function ScreenerContent() {
                                     { id: 'none',     label: '안 묶기' },
                                     { id: 'sector',   label: '업종', disabled: !hasSectorData },
                                     { id: 'strategy', label: '전략' },
-                                    { id: 'grade',    label: '등급' },
                                 ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
                                     <button
                                         key={o.id}
@@ -1945,17 +1964,35 @@ function ScreenerContent() {
                         <ResultSummary list={filteredList} />
 
                         {viewMode === 'ratio' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {visibleList.map((item: any) => (
-                                    <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
-                                ))}
-                            </div>
+                            groups ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                    <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
+                                        renderRow={(item: any) => (
+                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        )} />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {visibleList.map((item: any) => (
+                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                    ))}
+                                </div>
+                            )
                         ) : viewMode === 'card' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {visibleList.map((item: any) => (
-                                    <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
-                                ))}
-                            </div>
+                            groups ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                    <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
+                                        renderRow={(item: any) => (
+                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        )} />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {visibleList.map((item: any) => (
+                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                    ))}
+                                </div>
+                            )
                         ) : (
                         <>
                         {/* 데스크탑 테이블 */}
@@ -1971,17 +2008,7 @@ function ScreenerContent() {
                                     <div />
                                 </div>
                                 {groups ? (
-                                    <GroupedResults
-                                        groups={groups}
-                                        open={openGroups}
-                                        onToggle={key => setOpenGroups(prev => {
-                                            const next = new Set(prev);
-                                            if (!next.delete(key)) next.add(key);
-                                            return next;
-                                        })}
-                                        hint={g => groupMode === 'strategy'
-                                            ? (STRATEGY_PRESETS.find(p => p.id === g.key)?.formula ?? '')
-                                            : ''}
+                                    <GroupedResults {...groupedProps}
                                         renderRow={(item: any) => (
                                             <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         )}
@@ -1996,11 +2023,23 @@ function ScreenerContent() {
                             </div>
                         </div>
 
-                        {/* 모바일 카드 */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
-                            {visibleList.map((item: any) => (
-                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
-                            ))}
+                        {/* 모바일 카드 — 데스크톱 표와 같은 묶기를 여기서도 해 준다.
+                            예전에는 이 블록이 묶기를 무시해, 폰에서는 버튼을 눌러도 아무 일이 없었다. */}
+                        <div className="md:hidden">
+                            {groups ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                    <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3"
+                                        renderRow={(item: any) => (
+                                            <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                        )} />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {visibleList.map((item: any) => (
+                                        <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         </>
                         )}

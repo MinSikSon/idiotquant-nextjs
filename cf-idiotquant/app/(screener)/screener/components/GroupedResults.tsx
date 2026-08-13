@@ -8,7 +8,7 @@ import SectorSprite, { SECTOR_COLOR } from "./SectorSprite";
 /* 결과를 묶어 읽게 만드는 부분. 낱개 147행을 훑는 것보다 "이 전략 12개는 PBR 중위 0.4" 처럼
    덩어리로 읽는 편이 판단이 빠르다. */
 
-export type GroupMode = "none" | "sector" | "strategy" | "grade";
+export type GroupMode = "none" | "sector" | "strategy";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
@@ -36,9 +36,9 @@ export interface Group {
 export function buildGroups(list: Item[], mode: GroupMode): Group[] | null {
     if (mode === "none") return null;
     const keyOf = (i: Item): string =>
-        mode === "sector"   ? (i.sector ?? i.industry ?? "기타")
-      : mode === "strategy" ? (STRATEGY_PRESETS_CLIENT.find(p => p.clientFilter?.(i))?.id ?? i.strategies?.[0] ?? "미분류")
-      : computeValueScore(i).medal;
+        mode === "sector"
+            ? (i.sector ?? i.industry ?? "기타")
+            : (STRATEGY_PRESETS_CLIENT.find(p => p.clientFilter?.(i))?.id ?? i.strategies?.[0] ?? "미분류");
 
     const map = new Map<string, Item[]>();
     for (const i of list) {
@@ -77,13 +77,15 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 }
 
 export function GroupedResults({
-    groups, open, onToggle, renderRow, hint,
+    groups, open, onToggle, renderRow, hint, bodyClassName = "pl-[30px]",
 }: {
     groups: Group[];
     open: Set<string>;
     onToggle: (key: string) => void;
     renderRow: (item: Item) => React.ReactNode;
     hint?: (g: Group) => string;
+    /** 그룹 본문 감싸개. 카드·비율 뷰는 격자라 그 격자 클래스를 그대로 넘긴다. */
+    bodyClassName?: string;
 }) {
     const hiddenCount = groups.filter(g => !open.has(g.key)).length;
 
@@ -115,7 +117,7 @@ export function GroupedResults({
                             <Stat label="ROE 중위" value={g.medRoe > 0 ? `${g.medRoe.toFixed(1)}%` : "—"} />
                             <Stat label="최고점" value={String(g.best)} accent />
                         </button>
-                        {isOpen && <div className="pl-[30px]">{g.rows.map(renderRow)}</div>}
+                        {isOpen && <div className={bodyClassName}>{g.rows.map(renderRow)}</div>}
                     </div>
                 );
             })}
