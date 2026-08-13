@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { computeValueScore } from "@/lib/utils/valueScore";
 import { STRATEGY_LABEL, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import SectorSprite, { SECTOR_COLOR } from "./SectorSprite";
 
@@ -30,7 +29,6 @@ export interface Group {
     rows: Item[];
     medPbr: number;
     medRoe: number;
-    best: number;
 }
 
 export function buildGroups(list: Item[], mode: GroupMode): Group[] | null {
@@ -55,7 +53,6 @@ export function buildGroups(list: Item[], mode: GroupMode): Group[] | null {
             rows,
             medPbr: median(rows.map(r => num(r.pbr))),
             medRoe: median(rows.map(r => roeOf(r))),
-            best: Math.max(...rows.map(r => computeValueScore(r).score)),
         }))
         .sort((a, b) => b.rows.length - a.rows.length);
 }
@@ -115,7 +112,6 @@ export function GroupedResults({
                             <span className="flex-1" />
                             <Stat label="PBR 중위" value={g.medPbr > 0 ? g.medPbr.toFixed(2) : "—"} />
                             <Stat label="ROE 중위" value={g.medRoe > 0 ? `${g.medRoe.toFixed(1)}%` : "—"} />
-                            <Stat label="최고점" value={String(g.best)} accent />
                         </button>
                         {isOpen && <div className={bodyClassName}>{g.rows.map(renderRow)}</div>}
                     </div>

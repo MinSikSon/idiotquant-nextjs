@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { computeValueScore } from "@/lib/utils/valueScore";
 import { STRATEGY_LABEL, STRATEGY_ACTIVE_CLS, STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 
 /* 표 위 요약 — 147행을 스크롤하기 전에 "이 결과가 대체로 어떤 모양인지"를 먼저 준다. */
@@ -36,8 +35,9 @@ export function ResultSummary({ list }: { list: Item[] }) {
   const scatter = list.filter(i => num(i.pbr) > 0);
   const xMax = Math.max(p95(scatter.map(i => num(i.pbr))), 0.1);
   const yMax = Math.max(p95(scatter.map(i => roeOf(i))), 1);
+  // 점 크기는 일정하게 둔다. 예전에는 저평가 점수로 키웠는데, 등급 기준이 모호해 화면에서
+  // 감춘 이상 "왜 이 점이 큰가"를 설명할 수 없는 채로 눈길만 끄는 셈이었다.
   const dots = scatter.map(i => {
-    const score = computeValueScore(i).score;
     const strategy = STRATEGY_PRESETS_CLIENT.find(p => p.clientFilter?.(i))?.id ?? i.strategies?.[0];
     return {
       ticker: i.ticker,
@@ -46,26 +46,13 @@ export function ResultSummary({ list }: { list: Item[] }) {
       roe: roeOf(i),
       x: Math.min(num(i.pbr) / xMax, 1) * 100,
       y: Math.min(Math.max(roeOf(i), 0) / yMax, 1) * 100,
-      size: 7 + (score / 100) * 7,
+      size: 9,
       color: (strategy && STRATEGY_HEX[strategy]) || "#a3a3a3",
-      score,
     };
   });
-  const topDot = dots.reduce<(typeof dots)[number] | null>((a, d) => (!a || d.score > a.score ? d : a), null);
-
-  // ③ 등급 분포 — 메달 종류는 valueScore의 tier()가 정한다(여기서 구간을 다시 쓰지 않는다)
-  const byGrade = [...list.reduce((m, i) => {
-    const v = computeValueScore(i);
-    const cur = m.get(v.medal);
-    m.set(v.medal, { medal: v.medal, label: v.label, n: (cur?.n ?? 0) + 1, score: v.score });
-    return m;
-  }, new Map<string, { medal: string; label: string; n: number; score: number }>()).values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4);
-  const maxGrade = Math.max(...byGrade.map(g => g.n), 1);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1.05fr_1.25fr_0.9fr] gap-3 mb-4">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-3 mb-4">
 
       <div className={CARD}>
         <p className={TITLE}>전략 분포</p>
@@ -94,20 +81,11 @@ export function ResultSummary({ list }: { list: Item[] }) {
           {dots.map(d => (
             <span
               key={d.ticker}
-              title={`${d.name} · PBR ${d.pbr.toFixed(2)} · ROE ${d.roe.toFixed(1)}% · 점수 ${d.score}`}
+              title={`${d.name} · PBR ${d.pbr.toFixed(2)} · ROE ${d.roe.toFixed(1)}%`}
               className="absolute rounded-full opacity-75 -translate-x-1/2 translate-y-1/2 ring-[1.5px] ring-white dark:ring-[#242320]"
               style={{ left: `${d.x}%`, bottom: `${d.y}%`, width: d.size, height: d.size, background: d.color }}
             />
           ))}
-          {/* 라벨은 자기 점 바로 위에 붙인다 — 위치를 클램프하면 가리키는 점과 떨어져 뜬다 */}
-          {topDot && (
-            <span
-              className="absolute -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded-md bg-neutral-900 text-white text-[9.5px] font-bold pointer-events-none"
-              style={{ left: `${topDot.x}%`, bottom: `calc(${topDot.y}% + ${topDot.size / 2 + 4}px)` }}
-            >
-              최고점 {topDot.name} <span className="text-[#86efac] font-mono">{topDot.score}</span>
-            </span>
-          )}
         </div>
         <div className="flex justify-between mt-1.5 text-[9.5px] font-mono text-neutral-300 dark:text-neutral-600">
           <span>PBR 0 · ROE 0</span>
@@ -116,21 +94,6 @@ export function ResultSummary({ list }: { list: Item[] }) {
         </div>
       </div>
 
-      <div className={CARD}>
-        <p className={TITLE}>등급 분포</p>
-        <div className="flex flex-col gap-2">
-          {byGrade.map(g => (
-            <div key={g.medal} className="flex items-center gap-2">
-              <span className="text-[13px] shrink-0" aria-hidden>{g.medal}</span>
-              <span className="w-10 shrink-0 text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400">{g.label}</span>
-              <span className="flex-1 h-[7px] rounded-full bg-[#f5f4f1] dark:bg-[#2c2b27] overflow-hidden">
-                <span className="block h-full rounded-full bg-[#16a34a] opacity-50" style={{ width: `${(g.n / maxGrade) * 100}%` }} />
-              </span>
-              <span className="w-8 shrink-0 text-right text-[10.5px] font-mono tabular-nums text-neutral-400">{g.n}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
