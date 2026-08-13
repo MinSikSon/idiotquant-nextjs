@@ -1,7 +1,7 @@
 // 리플레이 라운드 API — 로그인 사용자 (백엔드 /user/replay).
 // 비로그인은 lib/paper/localRound.ts 가 같은 모양을 브라우저 안에서 다룬다.
 
-import type { ReplayRound, ReplayHistoryItem } from "@/lib/paper/round";
+import type { ReplayRound, ReplayHistoryItem, HabitSummary } from "@/lib/paper/round";
 import type { Firm } from "@/lib/paper/firm";
 
 async function replayRequest(method: "GET" | "POST", body?: object) {
@@ -41,6 +41,7 @@ export type ReplayResponse =
         history?: ReplayHistoryItem[];
         wallet?: { coins: number; best_streak: number; best_return: number | null };
         firm?: Firm;
+        habits?: HabitSummary | null;
     }
     | { success: false; status: number; error: string };
 

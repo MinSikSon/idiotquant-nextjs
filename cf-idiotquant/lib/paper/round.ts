@@ -21,6 +21,37 @@ export interface ReplayOrder {
     side: "buy" | "sell";
     qty: number;
     price: number;
+    auto?: number;   // 1 = 마지막 날 강제 청산 (플레이어가 누른 게 아니다)
+}
+
+/**
+ * 매매 습관 — 판에서 관찰된 사실. 계산은 워커(src/lib/habits.js)에서만 하고 여기는 받아
+ * 그리기만 한다. 프론트에 규칙 사본을 또 만들지 않으려는 선택이다.
+ *
+ * null 인 값은 "표본이 없어 말할 수 없다"는 뜻이다 — 0 으로 바꿔 그리면 안 된다.
+ */
+export interface RoundHabits {
+    trades: number;
+    buys: number;
+    sells: number;
+    closedLots: number;
+    tradableDays: number;
+    turnover: number | null;
+    holdDays: number | null;
+    entryTrend: number | null;
+    chaseRatio: number | null;
+    gainHoldDays: number | null;
+    lossHoldDays: number | null;
+    disposition: number | null;
+    biteShare: number | null;
+    maxExposure: number;
+    watchRatio: number | null;
+}
+
+/** 여러 분기를 합친 습관. 기록이 없으면 서버가 null 을 준다. */
+export interface HabitSummary extends Omit<RoundHabits, "buys" | "sells" | "maxExposure"> {
+    quarters: number;
+    maxExposure: number | null;
 }
 
 /** 서버 `_publicRound` 와 같은 모양. 진행 중에는 정답과 미래 캔들이 비어 있다. */
@@ -49,6 +80,7 @@ export interface ReplayRound {
     aum_after: number | null;
     fee_base: number | null;
     fee_perf: number | null;
+    habits: RoundHabits | null;
 }
 
 export interface ReplayHistoryItem {
@@ -63,6 +95,7 @@ export interface ReplayHistoryItem {
     aum_after: number | null;
     fee_base: number | null;
     fee_perf: number | null;
+    habits: RoundHabits | null;
     created_at: number;
 }
 

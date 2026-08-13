@@ -18,13 +18,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check } from "lucide-react";
+import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check, Activity } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { avgPrice, quoteBuy } from "@/lib/paper/engine";
-import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem } from "@/lib/paper/round";
+import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool } from "@/lib/features/paper/replayAPI";
 import { TOOLS, INITIAL_AUM, rankOf, fmtMoney, type Firm } from "@/lib/paper/firm";
@@ -57,6 +57,7 @@ export default function ReplayGamePage() {
     const [round, setRound] = useState<ReplayRound | null>(null);
     const [history, setHistory] = useState<ReplayHistoryItem[]>([]);
     const [firm, setFirm] = useState<Firm | null>(null);
+    const [habits, setHabits] = useState<HabitSummary | null>(null);
     const [bestReturn, setBestReturn] = useState<number | null>(null);
     // 산 도구 중 지금 켜 둔 것. 사자마자 켜진다.
     const [activeTools, setActiveTools] = useState<string[]>([]);
@@ -90,6 +91,7 @@ export default function ReplayGamePage() {
                 setRound(res.round);
                 setHistory(res.history ?? []);
                 setFirm(res.firm ?? null);
+                setHabits(res.habits ?? null);
                 setBestReturn(res.wallet?.best_return ?? null);
                 setActiveTools(res.firm?.tools ?? []);
             }
@@ -130,6 +132,7 @@ export default function ReplayGamePage() {
                     if (st.success) {
                         setHistory(st.history ?? []);
                         setFirm(st.firm ?? null);
+                        setHabits(st.habits ?? null);
                         setBestReturn(st.wallet?.best_return ?? null);
                     }
                 }
@@ -152,7 +155,7 @@ export default function ReplayGamePage() {
                 if (!res.success) { addToast("error", res.error); return; }
                 setRound(res.round);
                 const st = await getReplayState();
-                if (st.success) { setHistory(st.history ?? []); setFirm(st.firm ?? null); setBestReturn(st.wallet?.best_return ?? null); }
+                if (st.success) { setHistory(st.history ?? []); setFirm(st.firm ?? null); setHabits(st.habits ?? null); setBestReturn(st.wallet?.best_return ?? null); }
             } else {
                 setRound(giveUpLocal(round));
             }
@@ -292,7 +295,7 @@ export default function ReplayGamePage() {
                 {!round && (
                     <FirmDashboard
                         onStart={start} busy={busy} isLoggedIn={isLoggedIn}
-                        firm={firm} bestReturn={bestReturn} history={history}
+                        firm={firm} bestReturn={bestReturn} history={history} habits={habits}
                         onBuy={purchase} activeTools={activeTools} onToggle={toggleTool}
                     />
                 )}
@@ -359,7 +362,7 @@ export default function ReplayGamePage() {
                                 크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 패널을
                                 뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
                                 상자를 주면 줄어드는 쪽도 따라온다. */}
-                            <div className="relative flex-1 min-h-[120px] sm:min-h-[260px] overflow-hidden">
+                            <div className="relative flex-1 min-h-[100px] sm:min-h-[260px] overflow-hidden">
                                 <div className="absolute inset-0">
                                     <LineChart
                                         height="100%"
@@ -461,6 +464,37 @@ export default function ReplayGamePage() {
 }
 
 // ─────────────────────────────────────────────────────────
+/**
+ * 이번 분기 매매를 한 줄로. 말할 수 없는 값(null)은 아예 빼서 문장을 짧게 만든다 —
+ * "오른 뒤 매수 —%" 처럼 빈 칸을 보여 주면 읽는 사람이 의미를 지어낸다.
+ */
+function habitLine(h: RoundHabits): string {
+    // 조각은 셋까지 — 넷이면 375px 에서 두 줄로 접혀 결과 화면이 한 장을 넘긴다.
+    // 관망 비율은 대시보드 습관 카드에 있다.
+    const parts = [`체결 ${h.trades}회`];
+    if (h.holdDays !== null) parts.push(`평균 ${h.holdDays}일 보유`);
+    if (h.chaseRatio !== null) parts.push(`오른 뒤 매수 ${h.chaseRatio}%`);
+    return parts.join(" · ");
+}
+
+/** 습관 한 줄. 표본이 없으면 그 줄만 "아직 알 수 없음" 으로 둔다 — 카드를 통째로 숨기지 않는다. */
+function HabitRow({ label, value, note }: { label: string; value: string | null; note?: string }) {
+    return (
+        <li className="flex items-baseline gap-2">
+            <span className="w-8 shrink-0 text-[10px] font-black uppercase tracking-wider text-neutral-400">{label}</span>
+            {value !== null ? (
+                <>
+                    <span className="font-bold text-neutral-900 dark:text-white">{value}</span>
+                    {note && <span className="text-[11px] text-neutral-400 truncate">{note}</span>}
+                </>
+            ) : (
+                <span className="text-neutral-400">아직 알 수 없음{note ? ` — ${note}` : ""}</span>
+            )}
+        </li>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
 /** 모바일용 압축 지표 한 칸. 화면을 한 장으로 유지하려고 KpiCard 대신 쓴다. */
 function MiniStat({ label, value, sub, valueColor }: { label: string; value: string; sub: string; valueColor?: string }) {
     return (
@@ -474,9 +508,10 @@ function MiniStat({ label, value, sub, valueColor }: { label: string; value: str
 
 // ─────────────────────────────────────────────────────────
 /** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
-function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, onBuy, activeTools, onToggle }: {
+function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle }: {
     onStart: () => void; busy: boolean; isLoggedIn: boolean;
     firm: Firm | null; bestReturn: number | null; history: ReplayHistoryItem[];
+    habits: HabitSummary | null;
     onBuy: (id: string) => void; activeTools: string[]; onToggle: (id: string) => void;
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
@@ -570,6 +605,32 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, o
                 </SectionPanel>
             )}
 
+            {habits && habits.trades > 0 && (
+                <SectionPanel className="p-4 sm:p-5">
+                    <SectionHeader icon={<Activity size={16} />} title="매매 습관"
+                        subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`} />
+                    <ul className="flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
+                        <HabitRow label="보유"
+                            value={habits.holdDays !== null ? `평균 ${habits.holdDays}일` : null}
+                            note={habits.turnover !== null ? `회전율 ${habits.turnover}회` : undefined} />
+                        <HabitRow label="진입"
+                            value={habits.chaseRatio !== null ? `오른 뒤 매수 ${habits.chaseRatio}%` : null}
+                            note={habits.entryTrend !== null ? `직전 5일 ${pct(habits.entryTrend)}` : undefined} />
+                        <HabitRow label="처분"
+                            value={habits.disposition !== null ? `이익 ${habits.gainHoldDays}일 / 손실 ${habits.lossHoldDays}일` : null}
+                            note={habits.disposition !== null
+                                ? (habits.disposition > 0 ? "이익을 빨리 실현하는 편" : habits.disposition < 0 ? "손실을 빨리 정리하는 편" : "양쪽이 비슷")
+                                : "이익·손실 매도가 둘 다 있어야 볼 수 있습니다"} />
+                        <HabitRow label="투입"
+                            value={habits.biteShare !== null ? `한 번에 ${habits.biteShare}%` : null}
+                            note={habits.watchRatio !== null ? `관망 ${habits.watchRatio}%` : undefined} />
+                    </ul>
+                    <p className="mt-3 text-[10px] text-neutral-400 break-keep leading-[1.6]">
+                        이 게임에서 관찰된 값입니다. 표본이 적으면 다음 분기에 크게 달라질 수 있습니다.
+                    </p>
+                </SectionPanel>
+            )}
+
             {history.length > 0 && (
                 <SectionPanel className="p-4 sm:p-5">
                     <SectionHeader icon={<Flag size={16} />} title="지난 분기" subtitle={`최근 ${history.length}분기`} />
@@ -636,6 +697,12 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                         ? `벤치마크보다 ${(mine - bh).toFixed(2)}%p 더 벌었습니다.`
                         : `벤치마크가 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
                 </p>
+
+                {round.habits && round.habits.trades > 0 && (
+                    <p className="text-[11px] sm:text-[12px] text-neutral-400 dark:text-neutral-500 break-keep">
+                        {habitLine(round.habits)}
+                    </p>
+                )}
 
                 {settled ? (
                     <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px] sm:text-[13px] border-t border-neutral-100 dark:border-[#35332e] pt-1.5 sm:pt-3">

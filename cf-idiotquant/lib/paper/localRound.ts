@@ -65,6 +65,7 @@ export async function buildLocalRound(pool: { ticker: string; name: string }[]):
                 final_return: null, bh_return: null,
                 // 체험 운용에는 회사가 없다 — 정산은 로그인해야 붙는다
                 aum_before: null, aum_after: null, fee_base: null, fee_perf: null,
+                habits: null,   // 체험 운용은 서버가 없어 습관도 안 붙는다
             };
             saveLocal(round);
             return round;
@@ -88,6 +89,7 @@ export function loadLocal(): ReplayRound | null {
             orders: Array.isArray(parsed.orders) ? parsed.orders : [],
             aum_before: parsed.aum_before ?? null, aum_after: parsed.aum_after ?? null,
             fee_base: parsed.fee_base ?? null, fee_perf: parsed.fee_perf ?? null,
+            habits: parsed.habits ?? null,
         };
     } catch {
         return null;
