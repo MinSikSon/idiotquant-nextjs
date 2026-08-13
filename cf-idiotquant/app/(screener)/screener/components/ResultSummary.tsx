@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 
 /* 표 위 요약 — 147행을 스크롤하기 전에 "이 결과가 대체로 어떤 모양인지"를 먼저 준다. */
@@ -16,7 +17,8 @@ const p95 = (xs: number[]) => {
 };
 
 const CARD = "rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-[15px] py-3.5";
-const TITLE = "text-[10px] font-extrabold uppercase tracking-[0.08em] text-neutral-400 mb-2.5";
+// 축 눈금 — 예전에는 neutral-300 이라 배경과 거의 구분되지 않았다. 축을 읽으라고 둔 글자다.
+const AXIS = "text-[10px] font-mono tabular-nums text-neutral-400 dark:text-neutral-500";
 
 export function ResultSummary({ list }: { list: Item[] }) {
   if (list.length === 0) return null;
@@ -50,28 +52,57 @@ export function ResultSummary({ list }: { list: Item[] }) {
     <div className="mb-4">
 
       <div className={CARD}>
-        <p className={TITLE}>싼 정도 × 버는 정도</p>
-        <div className="relative h-[132px] border-l border-b border-neutral-200 dark:border-[#35332e]">
-          {/* 우상단(싸고 잘 버는 쪽)으로 갈수록 옅은 초록 — 어느 방향이 좋은지 눈으로 알려준다 */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent to-[#16a34a]/[0.055] pointer-events-none" />
-          {[25, 50, 75].map(v => (
-            <div key={v} className="absolute inset-x-0 border-t border-dashed border-[#f2f0ec] dark:border-[#2c2b27]" style={{ bottom: `${v}%` }} />
-          ))}
-          {/* 색 = 전략. 위 '결과 분포' 카드의 전략 띠가 같은 색을 쓰므로 그게 곧 범례다. */}
-          {dots.map(d => (
-            <span
-              key={d.ticker}
-              title={`${d.name} · PBR ${d.pbr.toFixed(2)} · ROE ${d.roe.toFixed(1)}%`}
-              className="absolute rounded-full opacity-75 -translate-x-1/2 translate-y-1/2 ring-[1.5px] ring-white dark:ring-[#242320]"
-              style={{ left: `${d.x}%`, bottom: `${d.y}%`, width: d.size, height: d.size, background: d.color }}
-            />
-          ))}
+        <div className="flex items-baseline justify-between gap-2 mb-2.5">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-neutral-400">싼 정도 × 버는 정도</p>
+          <span className="text-[10px] text-neutral-400 shrink-0">색 = 전략</span>
         </div>
-        <div className="flex justify-between mt-1.5 text-[9.5px] font-mono text-neutral-300 dark:text-neutral-600">
-          <span>PBR 0 · ROE 0</span>
-          <span className="font-sans">색 = 전략</span>
-          <span>PBR {xMax.toFixed(2)} · ROE {yMax.toFixed(0)}%</span>
+
+        <div className="flex gap-1.5">
+          {/* 세로축 눈금 — 위가 큰 값. 축 이름(ROE)을 값 옆에 붙여 두면 무엇을 재는 축인지
+              범례를 찾지 않아도 안다. */}
+          <div className="w-[52px] shrink-0 h-[132px] flex flex-col justify-between items-end">
+            {/* 눈금 글자의 가운데가 그 값의 높이에 오도록 위아래 끝만 반 칸씩 당긴다 */}
+            <span className={cn(AXIS, "-translate-y-1/2")}>ROE {yMax.toFixed(0)}%</span>
+            <span className={AXIS}>{(yMax / 2).toFixed(0)}%</span>
+            <span className={cn(AXIS, "translate-y-1/2")}>0%</span>
+          </div>
+
+          <div className="relative flex-1 h-[132px] border-l border-b border-neutral-200 dark:border-[#35332e]">
+            {/* 좌상단(PBR 낮고 ROE 높은 쪽)으로 갈수록 옅은 초록 — 어느 방향이 좋은지 눈으로
+                알려준다. 가로축이 PBR 이라 오른쪽은 비싼 쪽이다. */}
+            <div className="absolute inset-0 bg-gradient-to-tl from-transparent to-[#16a34a]/[0.055] pointer-events-none" />
+            {[25, 50, 75].map(v => (
+              <div key={`h${v}`} className="absolute inset-x-0 border-t border-dashed border-[#e7e4de] dark:border-[#3a3833]" style={{ bottom: `${v}%` }} />
+            ))}
+            {/* 세로 격자 — 가로축 눈금(0 · 중간 · 최대)을 눈으로 따라가게 해 준다 */}
+            {[25, 50, 75].map(v => (
+              <div key={`v${v}`} className="absolute inset-y-0 border-l border-dashed border-[#e7e4de] dark:border-[#3a3833]" style={{ left: `${v}%` }} />
+            ))}
+            {/* 색 = 전략. 위 '결과 분포' 카드의 전략 띠가 같은 색을 쓰므로 그게 곧 범례다. */}
+            {dots.map(d => (
+              <span
+                key={d.ticker}
+                title={`${d.name} · PBR ${d.pbr.toFixed(2)} · ROE ${d.roe.toFixed(1)}%`}
+                className="absolute rounded-full opacity-75 -translate-x-1/2 translate-y-1/2 ring-[1.5px] ring-white dark:ring-[#242320]"
+                style={{ left: `${d.x}%`, bottom: `${d.y}%`, width: d.size, height: d.size, background: d.color }}
+              />
+            ))}
+          </div>
         </div>
+
+        {/* 가로축 눈금 — 왼쪽 여백은 세로축 눈금 칸과 같은 폭이라 0 이 축 시작점에 선다 */}
+        <div className="flex gap-1.5 mt-1">
+          <span className="w-[52px] shrink-0" />
+          <div className="flex-1 flex justify-between">
+            <span className={AXIS}>PBR 0</span>
+            <span className={AXIS}>{(xMax / 2).toFixed(2)}</span>
+            <span className={AXIS}>{xMax.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
+          가로 = PBR(낮을수록 쌈) · 세로 = ROE(높을수록 잘 범) — <span className="font-bold text-[#16a34a]">왼쪽 위</span>가 싸면서 잘 버는 쪽입니다.
+        </p>
       </div>
 
     </div>
