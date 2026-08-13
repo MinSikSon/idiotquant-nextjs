@@ -3,7 +3,6 @@
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiquidityBadge } from "./LiquidityBadge";
-import { ValueMedal } from "@/components/valueMedal";
 import { ratioMetrics, barPct } from "./ratioMetrics";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,7 +59,6 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
             className="cursor-pointer rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-4 hover:border-[#86efac] dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
         >
             <div className="flex items-start gap-2 mb-3">
-                <ValueMedal item={item} />
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">

@@ -3,7 +3,6 @@
 import { Heart, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiquidityBadge } from "./LiquidityBadge";
-import { ValueMedal } from "@/components/valueMedal";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import SectorSprite, { SECTOR_COLOR } from "./SectorSprite";
 
@@ -83,7 +82,6 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
 
             <div className="p-4">
                 <div className="flex items-start gap-2 mb-3">
-                    <ValueMedal item={item} />
                     <div className="min-w-0 flex-1">
                         <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">

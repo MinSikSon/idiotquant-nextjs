@@ -16,11 +16,9 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { computeValueScore } from "@/lib/utils/valueScore";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
-import { ValueMedal } from "@/components/valueMedal";
-import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "./components/GroupedResults";
+import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
@@ -36,7 +34,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-type DiscoverySortKey = "value_score" | "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
+type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
 type SortOrder = "asc" | "desc";
 
 // 밸류에이션 필터 프리셋 (0 = 미적용)
@@ -90,6 +88,8 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
     ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
 };
 const DEFAULT_VIEW: ViewMode = 'ratio';
+// 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
+const GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3';
 // URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
 const parseViewMode = (v: string | null | undefined): ViewMode =>
     (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
@@ -293,7 +293,6 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0 flex items-center gap-2">
-                <ValueMedal item={item} />
                 <div className="min-w-0">
                     <p className="font-bold text-sm text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
@@ -397,7 +396,6 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
             <div className="flex items-start justify-between gap-2 mb-4">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <ValueMedal item={item} size="lg" />
                     </div>
                     <p className="font-bold text-base text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -557,7 +555,10 @@ function DrawerCheck({ checked, onChange, label, delta }: {
 // =========================================================================
 // 메인 스크리너
 // =========================================================================
-const VALID_SORT_KEYS: DiscoverySortKey[] = ["value_score", "ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
+// 기본 정렬. 예전엔 저평가 점수순이었는데 등급·점수를 화면에서 감추면서 보이지 않는
+// 값으로 순서가 정해지게 돼, 목록에 실제로 보이는 NCAV 비율을 기준으로 바꿨다.
+const DEFAULT_SORT: DiscoverySortKey = "ncav_ratio";
+const VALID_SORT_KEYS: DiscoverySortKey[] = ["ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
 
 function ScreenerContent() {
     const dispatch = useAppDispatch();
@@ -603,7 +604,7 @@ function ScreenerContent() {
     const [showGuide, setShowGuide] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>(() => {
         const s = (searchParams.get('sort') ?? saved.sort) as DiscoverySortKey;
-        return VALID_SORT_KEYS.includes(s) ? s : 'value_score';
+        return VALID_SORT_KEYS.includes(s) ? s : DEFAULT_SORT;
     });
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         (searchParams.get('order') ?? saved.order) === 'asc' ? 'asc' : 'desc'
@@ -657,7 +658,7 @@ function ScreenerContent() {
     // 묶어 보기 / 뷰 모드 — 기본값이 none·table 이라 배포 직후 동작은 그대로다
     const [groupMode, setGroupMode] = useState<GroupMode>(() => {
         const v = (searchParams.get('group') ?? saved.group) as GroupMode;
-        return (['sector', 'strategy', 'grade'] as GroupMode[]).includes(v) ? v : 'none';
+        return (['sector', 'strategy'] as GroupMode[]).includes(v) ? v : 'none';
     });
     const [viewMode, setViewMode] = useState<ViewMode>(
         () => parseViewMode(searchParams.get('view') ?? saved.view)
@@ -694,7 +695,7 @@ function ScreenerContent() {
             params.set('strategies', Array.from(activeStrategyIds).join(','));
         if (filterMode !== 'OR')
             params.set('mode', filterMode);
-        if (sortKey !== 'value_score')
+        if (sortKey !== DEFAULT_SORT)
             params.set('sort', sortKey);
         if (sortOrder !== 'desc')
             params.set('order', sortOrder);
@@ -733,7 +734,7 @@ function ScreenerContent() {
         const snapshot: Record<string, any> = {};
         if (activeStrategyIds.size > 0) snapshot.strategies = Array.from(activeStrategyIds);
         if (filterMode !== 'OR') snapshot.mode = filterMode;
-        if (sortKey !== 'value_score') snapshot.sort = sortKey;
+        if (sortKey !== DEFAULT_SORT) snapshot.sort = sortKey;
         if (sortOrder !== 'desc') snapshot.order = sortOrder;
         const excludeArr = [
             excludeHoldings ? 'holdings' : null,
@@ -882,11 +883,6 @@ function ScreenerContent() {
         const list = [...applyFilters(baseList, filters)];
 
         list.sort((a, b) => {
-            if (sortKey === "value_score") {
-                const sa = computeValueScore(a).score;
-                const sb = computeValueScore(b).score;
-                return sortOrder === "asc" ? sa - sb : sb - sa;
-            }
             if (sortKey === "ticker") {
                 return sortOrder === "asc"
                     ? (a.ticker ?? "").localeCompare(b.ticker ?? "")
@@ -926,7 +922,25 @@ function ScreenerContent() {
     // 묶어 보기는 전체 결과를 대상으로 한다 — 페이지를 넘길 때마다 그룹 개수가 변하면
     // "이 전략에 12개"라는 숫자를 믿을 수 없다. 대신 상위 2개 그룹만 펼쳐 DOM을 작게 유지한다.
     const groups = useMemo(() => buildGroups(filteredList, groupMode), [filteredList, groupMode]);
-    useEffect(() => { setOpenGroups(defaultOpenGroups(buildGroups(filteredList, groupMode))); }, [groupMode]); // eslint-disable-line react-hooks/exhaustive-deps
+    // 그룹 구성이 달라지면 펼침 상태를 다시 잡는다. groupMode 만 보면 필터를 바꿔 그룹이
+    // 통째로 바뀌었을 때 옛 키가 남아 "전부 접힘"이 된다.
+    const groupSignature = (groups ?? []).map(g => g.key).join('|');
+    useEffect(() => { setOpenGroups(defaultOpenGroups(groups)); }, [groupSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 묶기는 뷰 모드와 무관하게 같은 동작이라 props 를 한 번만 만든다 —
+    // 예전에는 데스크톱 표에만 붙어 있어서 기본 뷰(비율)와 폰에서는 눌러도 아무 일이 없었다.
+    const groupedProps = {
+        groups: groups ?? [],
+        open: openGroups,
+        onToggle: (key: string) => setOpenGroups(prev => {
+            const next = new Set(prev);
+            if (!next.delete(key)) next.add(key);
+            return next;
+        }),
+        hint: (g: Group) => groupMode === 'strategy'
+            ? (STRATEGY_PRESETS.find(p => p.id === g.key)?.formula ?? '')
+            : '',
+    };
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = !groups && filteredList.length > displayCount;
@@ -1016,7 +1030,7 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
     // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
@@ -1120,7 +1134,7 @@ function ScreenerContent() {
         const p = new URLSearchParams(qs);
         setActiveStrategyIds(new Set((p.get('strategies') ?? '').split(',').filter(id => STRATEGY_PRESETS.some(s => s.id === id))));
         setFilterMode(p.get('mode') === 'AND' ? 'AND' : 'OR');
-        setSortKey(VALID_SORT_KEYS.includes(p.get('sort') as DiscoverySortKey) ? p.get('sort') as DiscoverySortKey : 'value_score');
+        setSortKey(VALID_SORT_KEYS.includes(p.get('sort') as DiscoverySortKey) ? p.get('sort') as DiscoverySortKey : DEFAULT_SORT);
         setSortOrder(p.get('order') === 'asc' ? 'asc' : 'desc');
         const ex = p.get('exclude')?.split(',') ?? [];
         setExcludeHoldings(ex.includes('holdings'));
@@ -1252,19 +1266,19 @@ function ScreenerContent() {
                             />
                         </div>
 
-                        {/* 정렬 — 점수순 (활성 시 반전) */}
+                        {/* 정렬 — NCAV 비율순 (활성 시 반전) */}
                         <button
-                            onClick={() => { setSortKey("value_score"); setSortOrder("desc"); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            title="저평가 점수 높은 순으로 정렬 (NCAV·PBR·PER·ROE 종합)"
+                            onClick={() => { setSortKey(DEFAULT_SORT); setSortOrder(sortKey === DEFAULT_SORT && sortOrder === "desc" ? "asc" : "desc"); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            title="NCAV 비율 높은 순으로 정렬 (순유동자산 ÷ 시가총액)"
                             className={cn(
                                 "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
-                                sortKey === "value_score"
+                                sortKey === DEFAULT_SORT
                                     ? "bg-neutral-900 dark:bg-white border-neutral-900 dark:border-white text-white dark:text-neutral-900"
                                     : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
                             )}
                         >
-                            점수순
-                            <span className="font-mono text-[10px]">{sortKey === "value_score" && sortOrder === "asc" ? "↑" : "↓"}</span>
+                            NCAV순
+                            <span className="font-mono text-[10px]">{sortKey === DEFAULT_SORT && sortOrder === "asc" ? "↑" : "↓"}</span>
                         </button>
 
                         {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
@@ -1915,7 +1929,6 @@ function ScreenerContent() {
                                     { id: 'none',     label: '안 묶기' },
                                     { id: 'sector',   label: '업종', disabled: !hasSectorData },
                                     { id: 'strategy', label: '전략' },
-                                    { id: 'grade',    label: '등급' },
                                 ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
                                     <button
                                         key={o.id}
@@ -1945,17 +1958,35 @@ function ScreenerContent() {
                         <ResultSummary list={filteredList} />
 
                         {viewMode === 'ratio' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {visibleList.map((item: any) => (
-                                    <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
-                                ))}
-                            </div>
+                            groups ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                    <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
+                                        renderRow={(item: any) => (
+                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        )} />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {visibleList.map((item: any) => (
+                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                    ))}
+                                </div>
+                            )
                         ) : viewMode === 'card' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {visibleList.map((item: any) => (
-                                    <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
-                                ))}
-                            </div>
+                            groups ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                    <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
+                                        renderRow={(item: any) => (
+                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        )} />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {visibleList.map((item: any) => (
+                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                    ))}
+                                </div>
+                            )
                         ) : (
                         <>
                         {/* 데스크탑 테이블 */}
@@ -1971,17 +2002,7 @@ function ScreenerContent() {
                                     <div />
                                 </div>
                                 {groups ? (
-                                    <GroupedResults
-                                        groups={groups}
-                                        open={openGroups}
-                                        onToggle={key => setOpenGroups(prev => {
-                                            const next = new Set(prev);
-                                            if (!next.delete(key)) next.add(key);
-                                            return next;
-                                        })}
-                                        hint={g => groupMode === 'strategy'
-                                            ? (STRATEGY_PRESETS.find(p => p.id === g.key)?.formula ?? '')
-                                            : ''}
+                                    <GroupedResults {...groupedProps}
                                         renderRow={(item: any) => (
                                             <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         )}
@@ -1996,11 +2017,23 @@ function ScreenerContent() {
                             </div>
                         </div>
 
-                        {/* 모바일 카드 */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
-                            {visibleList.map((item: any) => (
-                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
-                            ))}
+                        {/* 모바일 카드 — 데스크톱 표와 같은 묶기를 여기서도 해 준다.
+                            예전에는 이 블록이 묶기를 무시해, 폰에서는 버튼을 눌러도 아무 일이 없었다. */}
+                        <div className="md:hidden">
+                            {groups ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                    <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3"
+                                        renderRow={(item: any) => (
+                                            <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                        )} />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {visibleList.map((item: any) => (
+                                        <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         </>
                         )}
