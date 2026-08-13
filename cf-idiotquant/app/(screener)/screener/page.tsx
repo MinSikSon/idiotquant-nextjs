@@ -1955,7 +1955,7 @@ function ScreenerContent() {
 
                         {/* 숫자를 읽는 법 + 결과가 대체로 어떤 모양인지 — 스크롤 전에 먼저 준다 */}
                         <TermStrip />
-                        <ResultSummary list={filteredList} groupMode={groupMode} />
+                        <ResultSummary list={filteredList} />
 
                         {viewMode === 'ratio' ? (
                             groups ? (
