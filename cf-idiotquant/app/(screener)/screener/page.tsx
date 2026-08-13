@@ -23,7 +23,7 @@ import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { LiquidityBadge, trAmtEok, isHalted, isManaged, isDelisting, w52Position } from "./components/LiquidityBadge";
-import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS } from "@/lib/constants/strategies";
+import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
@@ -48,6 +48,10 @@ const isPreferredStock = (name: string): boolean => /\d*우[A-C]?$/.test((name ?
 // 업종 분포 띠 색 — 앱 강조색(초록)에서 단계적으로 옅어지고, 마지막은 "그 외"용 중립색.
 // 두 테마 모두 같은 값을 쓴다: 채도가 있는 면 위에 흰 글씨라 바탕색이 바뀌어도 대비가 유지된다.
 const MIX_COLORS = ['#15803d', '#16a34a', '#3faf6d', '#6ec492', '#93a89b', '#a8a29e'];
+// 전략 띠는 전략 고유색을 그대로 쓴다 — 요약의 산점도 점도 같은 색이라 이 범례가 그쪽 범례를 겸한다.
+const STRATEGY_HEX_BY_LABEL: Record<string, string> = Object.fromEntries(
+    Object.entries(STRATEGY_HEX).map(([id, hex]) => [STRATEGY_LABEL[id] ?? id, hex])
+);
 
 // 일 거래대금 하한 프리셋 (단위: 억원, 0 = 미적용)
 const TR_AMT_PRESETS = [1, 3, 10, 50];
@@ -66,6 +70,86 @@ function marketOf(i: any): string {
 
 // 업종명 — 워커는 sector 로 저장한다(inquire-price 의 bstp_kor_isnm). 예전 응답 호환으로 industry 도 본다.
 const sectorOf = (i: any): string => String(i?.sector ?? i?.industry ?? "").trim();
+// 대표 전략 — 한 종목이 여러 전략에 걸리므로 비율 띠를 그리려면 하나로 정해야 한다.
+// 규칙은 전략 묶기(buildGroups)·요약 산점도의 점 색과 같아야 한다: 프리셋 순서상 첫 번째,
+// 없으면 백엔드가 붙여 준 첫 전략. 뒤쪽 폴백을 빼먹으면 어느 프리셋에도 안 걸린 종목이
+// 띠에서만 사라져 합계가 전체보다 적어지고, 점 색의 범례로도 성립하지 않는다.
+// (칩에 붙는 "NCAV 26" 같은 숫자는 겹침을 그대로 센 값이라 여기 합계와 다르다.)
+const primaryStrategyOf = (i: any): string =>
+    STRATEGY_PRESETS.find(p => p.clientFilter?.(i))?.id ?? i?.strategies?.[0] ?? "";
+
+interface Mix {
+    segs: { name: string; n: number; pct: number; color: string }[];
+    known: number;
+    top3Pct: number;
+    topNames: string[];
+}
+
+/**
+ * 비율 띠 하나 분량의 집계. 상위 top 개 + '그 외'.
+ *
+ * keyOf 가 빈 문자열을 주면 그 종목은 세지 않는다 — 업종이 비어 있는 종목이 "기타"라는
+ * 이름으로 띠를 차지하는 것보다, 아예 빼고 분모를 줄이는 편이 정직하다.
+ * 셀 게 4개도 안 되거나 종류가 하나뿐이면 띠를 그리지 않는다(null).
+ *
+ * top 은 업종처럼 종류가 수십 개일 때 띠와 범례가 감당 못 하는 걸 막는 장치다.
+ * 전략 띠는 산점도 점 색의 범례를 겸하므로 자르지 않는다(Infinity) — '그 외'로 묶는 순간
+ * 그 색의 점이 화면에서 설명되지 않는다.
+ */
+function buildMix(list: any[], keyOf: (i: any) => string, colorAt: (idx: number, name: string) => string, top = 5): Mix | null {
+    if (list.length < 4) return null;
+    const counts = new Map<string, number>();
+    let known = 0;
+    for (const i of list) {
+        const k = keyOf(i);
+        if (!k) continue;
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+        known++;
+    }
+    if (known < 4 || counts.size < 2) return null;
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    const head = sorted.slice(0, top);
+    const restCount = sorted.slice(top).reduce((acc, [, n]) => acc + n, 0);
+    const segs = head.map(([name, n], idx) => ({ name, n, pct: (n / known) * 100, color: colorAt(idx, name) }));
+    if (restCount > 0) segs.push({ name: '그 외', n: restCount, pct: (restCount / known) * 100, color: MIX_COLORS[5] });
+    const top3 = sorted.slice(0, 3).reduce((acc, [, n]) => acc + n, 0);
+    return { segs, known, top3Pct: (top3 / known) * 100, topNames: sorted.slice(0, 3).map(([nm]) => nm) };
+}
+
+/** 비율 띠 한 줄. 좁은 화면에서는 띠 안에 이름을 넣을 자리가 없어 이름은 항상 아래 범례가 맡고,
+    띠 안에는 넉넉한 조각에만 퍼센트를 얹는다. */
+function MixRow({ label, mix }: { label: string; mix: Mix }) {
+    return (
+        <div className="flex items-start gap-2.5">
+            <span className="w-7 shrink-0 pt-[5px] text-[10.5px] font-extrabold text-neutral-400">{label}</span>
+            <div className="flex-1 min-w-0">
+                <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-[#3a3834]">
+                    {mix.segs.map(seg => (
+                        <div
+                            key={seg.name}
+                            title={`${seg.name} ${seg.n}종목 (${seg.pct.toFixed(0)}%)`}
+                            style={{ width: `${seg.pct}%`, minWidth: '3px', background: seg.color }}
+                            className="relative flex items-center justify-center"
+                        >
+                            {seg.pct >= 15 && (
+                                <span className="text-[9.5px] font-black text-white tabular-nums">{seg.pct.toFixed(0)}%</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                    {mix.segs.map(seg => (
+                        <span key={seg.name} className="inline-flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                            <i className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: seg.color }} />
+                            <span className="font-semibold">{seg.name}</span>
+                            <span className="font-mono tabular-nums text-neutral-400">{seg.n}</span>
+                        </span>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
 // 거래대금·거래정지 판정은 배지와 같은 기준을 써야 하므로 LiquidityBadge 모듈에서 가져온다.
 
 
@@ -945,28 +1029,21 @@ function ScreenerContent() {
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = !groups && filteredList.length > displayCount;
 
-    // 업종 분포 — 지금 화면에 있는 목록 기준. 저PBR·NCAV 결과는 업황이 꺾인 산업 하나로
+    // 결과 분포 — 지금 화면에 있는 목록 기준. 저PBR·NCAV 결과는 업황이 꺾인 산업 하나로
     // 뒤덮이기 쉬운데, 표를 위에서부터 읽으면 그게 "싼 회사가 많다"로 보인다.
-    const sectorMix = useMemo(() => {
-        if (filteredList.length < 4) return null;
-        const counts = new Map<string, number>();
-        let known = 0;
-        for (const i of filteredList) {
-            const sec = sectorOf(i);
-            if (!sec) continue;
-            counts.set(sec, (counts.get(sec) ?? 0) + 1);
-            known++;
-        }
-        if (known < 4 || counts.size < 2) return null;
-        const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-        const head = sorted.slice(0, 5);
-        const restCount = sorted.slice(5).reduce((acc, [, n]) => acc + n, 0);
-        const segs = head.map(([name, n], idx) => ({ name, n, pct: (n / known) * 100, color: MIX_COLORS[idx] }));
-        if (restCount > 0) segs.push({ name: '그 외', n: restCount, pct: (restCount / known) * 100, color: MIX_COLORS[5] });
-        const top3 = sorted.slice(0, 3).reduce((acc, [, n]) => acc + n, 0);
-        return { segs, known, top3Pct: (top3 / known) * 100, topNames: sorted.slice(0, 3).map(([nm]) => nm) };
-        // 업종이 하나도 없는 응답이면 known 이 0 이라 위에서 null 로 빠진다 — 별도 플래그 불필요.
-    }, [filteredList]);
+    const sectorMix = useMemo(() => buildMix(filteredList, sectorOf, idx => MIX_COLORS[idx]), [filteredList]);
+    // 전략도 같은 자리에서 본다. 예전에는 표 위 요약 카드가 따로 세었는데, 분포를 두 군데서
+    // 보여 주면 어느 쪽을 읽어야 할지 알 수 없어 한 카드로 합쳤다.
+    const strategyMix = useMemo(
+        () => buildMix(
+            filteredList,
+            i => { const id = primaryStrategyOf(i); return id ? (STRATEGY_LABEL[id] ?? id) : ""; },
+            // 색과 폴백 회색은 산점도 점과 같은 값이어야 범례가 성립한다.
+            (idx, name) => STRATEGY_HEX_BY_LABEL[name] ?? "#a3a3a3",
+            Infinity,
+        ),
+        [filteredList]
+    );
 
     // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
     const funnel = useMemo(() => {
@@ -1879,39 +1956,20 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length > 0 && (
                     <>
-                        {/* 업종 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
-                            좁은 화면에서는 띠 안에 이름을 넣을 자리가 없으므로 이름은 항상 아래
-                            범례가 맡고, 띠 안에는 넉넉한 조각에만 퍼센트를 얹는다. */}
-                        {sectorMix && (
+                        {/* 결과 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
+                            업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
+                            나란히 놓아야 "이 업황 하나에 이 전략 하나" 같은 쏠림이 눈에 띈다. */}
+                        {(sectorMix || strategyMix) && (
                             <div className="mb-3 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-3.5 py-3">
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
-                                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">업종 분포</span>
-                                    <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">{sectorMix.known}종목</span>
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
+                                    <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">{filteredList.length}종목</span>
                                 </div>
-                                <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-[#3a3834]">
-                                    {sectorMix.segs.map(seg => (
-                                        <div
-                                            key={seg.name}
-                                            title={`${seg.name} ${seg.n}종목 (${seg.pct.toFixed(0)}%)`}
-                                            style={{ width: `${seg.pct}%`, minWidth: '3px', background: seg.color }}
-                                            className="relative flex items-center justify-center"
-                                        >
-                                            {seg.pct >= 15 && (
-                                                <span className="text-[9.5px] font-black text-white tabular-nums">{seg.pct.toFixed(0)}%</span>
-                                            )}
-                                        </div>
-                                    ))}
+                                <div className="flex flex-col gap-3">
+                                    {sectorMix && <MixRow label="업종" mix={sectorMix} />}
+                                    {strategyMix && <MixRow label="전략" mix={strategyMix} />}
                                 </div>
-                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                                    {sectorMix.segs.map(seg => (
-                                        <span key={seg.name} className="inline-flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                            <i className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: seg.color }} />
-                                            <span className="font-semibold">{seg.name}</span>
-                                            <span className="font-mono tabular-nums text-neutral-400">{seg.n}</span>
-                                        </span>
-                                    ))}
-                                </div>
-                                {sectorMix.top3Pct >= 60 && (
+                                {sectorMix && sectorMix.top3Pct >= 60 && (
                                     <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-[#35332e] text-[11.5px] leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
                                         상위 3개 업종({sectorMix.topNames.join(' · ')})이 {sectorMix.top3Pct.toFixed(0)}%를 차지합니다.
                                         여기서 고르면 사실상 그 업황에 거는 셈입니다.

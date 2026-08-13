@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { STRATEGY_LABEL, STRATEGY_ACTIVE_CLS, STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
+import { STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 
 /* 표 위 요약 — 147행을 스크롤하기 전에 "이 결과가 대체로 어떤 모양인지"를 먼저 준다. */
 
@@ -22,15 +21,10 @@ const TITLE = "text-[10px] font-extrabold uppercase tracking-[0.08em] text-neutr
 export function ResultSummary({ list }: { list: Item[] }) {
   if (list.length === 0) return null;
 
-  // ① 전략 분포 — 업종 분포는 묶기 버튼 위 띠가 맡는다(집중도 경고까지 거기 붙어 있다).
-  //    여기서 또 세면 같은 화면에 '업종 분포'가 두 번 뜬다. 한 번 그렇게 만들었다가 되돌렸다.
-  const byStrategy = STRATEGY_PRESETS_CLIENT
-    .map(p => ({ id: p.id, label: STRATEGY_LABEL[p.id] ?? p.id, n: list.filter(i => p.clientFilter?.(i)).length }))
-    .filter(s => s.n > 0)
-    .sort((a, b) => b.n - a.n);   // 이 카드가 산점도 색의 범례라서 자르지 않는다
-  const maxStrategy = Math.max(...byStrategy.map(s => s.n), 1);
-
-  // ② 산점도 — 축 상한을 데이터에서 뽑는다. 고정 범위(PBR 1.0 / ROE 20%)를 쓰면 저평가
+  // 분포(업종·전략)는 묶기 버튼 위 '결과 분포' 카드가 맡는다 — 같은 목록을 두 군데서
+  // 세면 어느 쪽을 읽어야 할지 알 수 없다. 여기 남는 건 산점도 하나뿐이고,
+  // 점 색의 범례는 그 카드의 전략 띠가 겸한다(같은 STRATEGY_HEX 를 쓴다).
+  // 산점도 — 축 상한을 데이터에서 뽑는다. 고정 범위(PBR 1.0 / ROE 20%)를 쓰면 저평가
   //    모집단이 전부 좌하단 구석에 뭉쳐 아무것도 구분되지 않는다. 이상치 하나가 축을 잡아먹지
   //    않게 상한은 95분위로 잡고, 그보다 큰 값은 가장자리로 클램프한다.
   const scatter = list.filter(i => num(i.pbr) > 0);
@@ -53,22 +47,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-3 mb-4">
-
-      <div className={CARD}>
-        <p className={TITLE}>전략 분포</p>
-        <div className="flex flex-col gap-2">
-          {byStrategy.map(s => (
-            <div key={s.id} className="flex items-center gap-2">
-              <span className="w-14 shrink-0 text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 truncate">{s.label}</span>
-              <span className="flex-1 h-[7px] rounded-full bg-[#f5f4f1] dark:bg-[#2c2b27] overflow-hidden">
-                <span className={cn("block h-full rounded-full", STRATEGY_ACTIVE_CLS[s.id])} style={{ width: `${(s.n / maxStrategy) * 100}%` }} />
-              </span>
-              <span className="w-8 shrink-0 text-right text-[10.5px] font-mono tabular-nums text-neutral-400">{s.n}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="mb-4">
 
       <div className={CARD}>
         <p className={TITLE}>싼 정도 × 버는 정도</p>
@@ -78,7 +57,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
           {[25, 50, 75].map(v => (
             <div key={v} className="absolute inset-x-0 border-t border-dashed border-[#f2f0ec] dark:border-[#2c2b27]" style={{ bottom: `${v}%` }} />
           ))}
-          {/* 색 = 전략. 왼쪽 '전략 분포' 카드가 같은 색을 쓰므로 그게 곧 범례다. */}
+          {/* 색 = 전략. 위 '결과 분포' 카드의 전략 띠가 같은 색을 쓰므로 그게 곧 범례다. */}
           {dots.map(d => (
             <span
               key={d.ticker}
