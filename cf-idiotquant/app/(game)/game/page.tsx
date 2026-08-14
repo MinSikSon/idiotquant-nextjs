@@ -23,7 +23,7 @@ import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock,
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
-import { avgPrice, quoteBuy } from "@/lib/paper/engine";
+import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
 import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool } from "@/lib/features/paper/replayAPI";
@@ -183,6 +183,22 @@ export default function ReplayGamePage() {
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
     const avg = round ? avgPrice({ qty: round.qty, cost_basis: round.cost_basis }) : 0;
 
+    // ── 벤치마크 ─────────────────────────────────────────────
+    // 분기 정산의 성과보수는 "그냥 사서 들고 있었을 때"와의 차이로 매긴다(firm.ts 의 settleQuarter).
+    // 그 잣대를 끝나고서야 보여 줄 이유가 없다 — 40일 내내 "잘하고 있나"에 답이 없던 자리다.
+    //
+    // 재는 시작점은 캔들 0번이 아니라 거래를 시작하는 날(컨텍스트 마지막 날)이다.
+    // 워커의 _finish 가 candles.slice(CONTEXT_DAYS - 1) 로 재므로, 여기서 0번부터 재면
+    // 화면의 숫자와 정산이 다른 잣대를 쓰게 된다.
+    const benchBase = round?.candles?.[CONTEXT_DAYS - 1]?.c ?? 0;
+    const bhRate = benchBase > 0 && price > 0 ? ((price - benchBase) / benchBase) * 100 : 0;
+    const edge = totalRate - bhRate;                                   // %p. 양수면 그냥 들고 있는 것보다 낫다
+    const tradedDays = round ? Math.max(0, round.cursor - CONTEXT_DAYS) : 0;
+    // 첫 며칠은 차이가 크게 요동쳐 읽을 값이 못 된다. 닷새 지나고부터 말한다.
+    const benchNote = round && round.status === "playing" && tradedDays >= 5 && benchBase > 0
+        ? `그냥 들고 ${pct(bhRate)} · 나 ${pct(totalRate)} (${edge >= 0 ? "+" : ""}${edge.toFixed(1)}%p)`
+        : null;
+
     // cash / price 만으로는 수수료가 빠진다 — 현금이 가격으로 딱 나누어떨어지면
     // 최대매수를 누르고 사기를 눌렀을 때 "현금이 부족합니다"로 거절당한다.
     // 실제 견적(quoteBuy)으로 확인해 들어가는 수량까지 줄인다. 한두 번이면 끝난다.
@@ -217,7 +233,7 @@ export default function ReplayGamePage() {
         const owned = firm?.tools ?? [];
         const on = (id: string) => owned.includes(id) && activeTools.includes(id);
         const closes = visible.map(c => c.c);
-        const out: { name: string; data: (number | null)[]; color: string; dash?: string }[] = [];
+        const out: { name: string; data: (number | null)[]; color: string; dash?: string; legend?: boolean }[] = [];
 
         if (on("ma")) {
             out.push({ name: "5일선", data: movingAverage(closes, 5), color: "#f59e0b" });
@@ -228,8 +244,41 @@ export default function ReplayGamePage() {
             out.push({ name: "밴드상단", data: b.upper, color: "#94a3b8", dash: "3 3" });
             out.push({ name: "밴드하단", data: b.lower, color: "#94a3b8", dash: "3 3" });
         }
+
+        // 내 자산 곡선. 가격선이 곧 "그냥 사서 들고 있었을 때"라 비교 상대는 이미 화면에 있고,
+        // 없던 건 내 쪽이었다. 같은 축에 얹으려고 시드를 거래 시작가로 환산한다 —
+        // 두 선이 같은 점에서 출발하므로 벌어진 만큼이 그대로 초과 성과다.
+        //
+        // 값은 체결 기록으로 되짚는다. 진행 중 응답에는 지난 날의 잔고가 없고, 수수료를 빼면
+        // 곡선이 실제 계좌와 어긋난다. 규칙 사본을 새로 만들지 않으려고 engine 의 견적을 그대로 쓴다.
+        if (round && benchBase > 0) {
+            // orders 가 없는 응답(예전 워커·부분 응답)에도 화면이 살아 있어야 한다.
+            // 마커 쪽이 이미 같은 이유로 ?? [] 를 쓰고 있다.
+            const byDay = new Map<number, typeof round.orders>();
+            for (const o of round.orders ?? []) {
+                const a = byDay.get(o.day_index);
+                if (a) a.push(o); else byDay.set(o.day_index, [o]);
+            }
+            let cash = round.seed;
+            let pos = { ticker: "", name: null as string | null, qty: 0, cost_basis: 0 };
+            const mine: (number | null)[] = [];
+            visible.forEach((c, i) => {
+                for (const o of byDay.get(i) ?? []) {
+                    if (o.side === "buy") {
+                        const q = quoteBuy({ price: o.price, qty: o.qty, cash });
+                        if (q.ok) { cash -= q.total; pos = { ...pos, ...applyBuy(pos, q) }; }
+                    } else {
+                        const q = quoteSell({ price: o.price, qty: o.qty, position: pos });
+                        if (q.ok) { cash += q.net; pos = { ...pos, ...applySell(pos, q) }; }
+                    }
+                }
+                // 거래 시작 전에는 비교할 것이 없어 비워 둔다
+                mine.push(i >= CONTEXT_DAYS - 1 ? Math.round((cash + pos.qty * c.c) / round.seed * benchBase) : null);
+            });
+            out.unshift({ name: "내 성과", data: mine, color: "#0ea5e9", legend: true });
+        }
         return out;
-    }, [firm?.tools, activeTools, visible]);
+    }, [firm?.tools, activeTools, visible, round, benchBase]);
 
     // 사고판 지점을 차트에 찍는다. 빨강이 매수, 초록이 매도 — 버튼 색과 같다.
     // 수량 라벨은 체결이 적을 때만 붙인다. 많아지면 서로 겹쳐 오히려 안 읽힌다.
@@ -343,10 +392,14 @@ export default function ReplayGamePage() {
                                 <h2 className="text-[13px] font-black text-neutral-900 dark:text-neutral-100 shrink-0">
                                     {round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
                                 </h2>
-                                <p className="text-[10px] text-neutral-400 truncate">
+                                {/* 진행 중에는 이 자리를 벤치마크 비교가 쓴다 — 종목·시기 안내는
+                                    한 번 읽으면 되는 문장이고, 이쪽은 매일 달라진다. */}
+                                <p className={cn("text-[10px] truncate", benchNote ? "font-bold" : "text-neutral-400")}>
                                     {round.status === "done"
-                                        ? `${round.ticker} · ${fmtDate(round.start_date)}~${fmtDate(round.end_date)}`
-                                        : "종목·시기는 끝나야 열립니다"}
+                                        ? <span className="text-neutral-400">{`${round.ticker} · ${fmtDate(round.start_date)}~${fmtDate(round.end_date)}`}</span>
+                                        : benchNote
+                                            ? <span className={edge >= 0 ? "text-[#16a34a]" : "text-red-500"}>{benchNote}</span>
+                                            : <span className="text-neutral-400">종목·시기는 끝나야 열립니다</span>}
                                 </p>
                             </div>
                             <div className="hidden sm:block">
@@ -355,7 +408,7 @@ export default function ReplayGamePage() {
                                     title={round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
                                     subtitle={round.status === "done"
                                         ? `${round.ticker} · ${fmtDate(round.start_date)} ~ ${fmtDate(round.end_date)}`
-                                        : "종목명과 시기는 끝나야 열립니다"}
+                                        : benchNote ?? "종목명과 시기는 끝나야 열립니다"}
                                 />
                             </div>
                             {/* recharts 의 ResponsiveContainer 는 부모 높이가 flex 로 정해지면 한 번 잰
