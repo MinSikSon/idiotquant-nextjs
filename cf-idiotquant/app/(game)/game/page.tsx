@@ -62,6 +62,22 @@ const RESERVE_KINDS: { id: Reservation["kind"]; label: string; hint: string }[] 
 ];
 const reserveLabel = (k: string) => RESERVE_KINDS.find(r => r.id === k)?.label ?? k;
 
+// 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 주식 수를 손으로 적는 것보다 이쪽이
+// 실제로 하는 생각("반은 실어 보자")에 가깝고, 폰에서 한 손으로 굴러간다.
+const BUY_PARTS = [
+    { pct: 10, label: "10%" },
+    { pct: 25, label: "25%" },
+    { pct: 50, label: "50%" },
+    { pct: 100, label: "최대" },
+];
+const SELL_PARTS = [
+    { pct: 25, label: "25%" },
+    { pct: 50, label: "50%" },
+    { pct: 100, label: "전부" },
+];
+// 예약 가격도 값을 적는 대신 지금 값에서 얼마나 떨어진 자리인지로 고른다.
+const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
+
 // 여러 날 건너뛰기를 멈추는 문턱. 이만큼 움직인 날은 지나치면 손쓸 수 없다.
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
@@ -86,12 +102,12 @@ export default function ReplayGamePage() {
     const [activeTools, setActiveTools] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
-    const [qty, setQty] = useState(10);
     // 예약 패널 — 접었다 편다. 모바일은 한 화면이 빡빡해 기본은 접어 둔다.
     const [reserveOpen, setReserveOpen] = useState(false);
     const [resKind, setResKind] = useState<Reservation["kind"]>("buy_limit");
-    const [resPrice, setResPrice] = useState(0);
-    const [resQty, setResQty] = useState(10);
+    // 값 대신 "지금 값에서 몇 % 떨어진 자리"와 "얼마만큼"으로 고른다.
+    const [resStep, setResStep] = useState(5);
+    const [resPart, setResPart] = useState(50);
 
     // 비로그인 판을 만들 때 쓸 종목 풀. 로그인은 서버가 알아서 뽑는다.
     useEffect(() => { if (!isLoggedIn) dispatch(reqGetNcavDailyList("latest")); }, [isLoggedIn, dispatch]);
@@ -141,7 +157,6 @@ export default function ReplayGamePage() {
                 if (!built) { addToast("error", "판을 만들지 못했습니다. 다시 시도해주세요."); return; }
                 setRound(built);
             }
-            setQty(10);
         } finally {
             setBusy(false);
         }
@@ -260,29 +275,44 @@ export default function ReplayGamePage() {
         ? `그냥 들고 ${pct(bhRate)} · 나 ${pct(totalRate)} (${edge >= 0 ? "+" : ""}${edge.toFixed(1)}%p)`
         : null;
 
-    // cash / price 만으로는 수수료가 빠진다 — 현금이 가격으로 딱 나누어떨어지면
-    // 최대매수를 누르고 사기를 눌렀을 때 "현금이 부족합니다"로 거절당한다.
-    // 실제 견적(quoteBuy)으로 확인해 들어가는 수량까지 줄인다. 한두 번이면 끝난다.
-    const maxBuy = useMemo(() => {
-        const cash = round?.cash ?? 0;
-        if (price <= 0) return 0;
-        let n = Math.floor(cash / price);
-        while (n > 0 && !quoteBuy({ price, qty: n, cash }).ok) n--;
+    // 현금의 pct% 로 살 수 있는 주식 수. 수수료까지 넣어 실제로 통과하는 수량까지 줄인다.
+    const buyQtyFor = useCallback((pct: number, atPrice = price) => {
+        const cash = Math.floor((round?.cash ?? 0) * pct / 100);
+        if (atPrice <= 0 || cash <= 0) return 0;
+        let n = Math.floor(cash / atPrice);
+        while (n > 0 && !quoteBuy({ price: atPrice, qty: n, cash }).ok) n--;
         return n;
-    }, [price, round?.cash]);
+    }, [round?.cash, price]);
+
+    /** 보유의 pct%. 100% 는 남김없이 — 1주라도 남으면 "전부"가 거짓말이 된다. */
+    const sellQtyFor = useCallback((pct: number) => {
+        const held = round?.qty ?? 0;
+        if (held <= 0) return 0;
+        return pct >= 100 ? held : Math.max(1, Math.min(held, Math.floor(held * pct / 100)));
+    }, [round?.qty]);
+
+    // 예약 가격 — 익절은 위로, 나머지는 아래로.
+    const resPriceAt = useCallback((step: number) =>
+        Math.max(1, Math.round(price * (resKind === "take_profit" ? 1 + step / 100 : 1 - step / 100))),
+        [price, resKind]);
+    // 예약 수량 — 사는 예약은 그 가격 기준 현금 비율, 파는 예약은 보유 비율.
+    const resQtyFor = useCallback((part: number) =>
+        resKind === "buy_limit" ? buyQtyFor(part, resPriceAt(resStep)) : sellQtyFor(part),
+        [resKind, resStep, buyQtyFor, sellQtyFor, resPriceAt]);
 
     const reserve = useCallback(async () => {
         if (!round) return;
         setBusy(true);
         try {
-            const res = await reserveOrder(round.id, { kind: resKind, price: resPrice, qty: resQty });
+            const p = resPriceAt(resStep), n = resQtyFor(resPart);
+            const res = await reserveOrder(round.id, { kind: resKind, price: p, qty: n });
             if (!res.success) { addToast("error", res.error); return; }
             setRound(res.round);
-            addToast("success", `${reserveLabel(resKind)} ${resPrice.toLocaleString()}원 ${resQty}주를 걸어 뒀습니다.`);
+            addToast("success", `${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
         } finally {
             setBusy(false);
         }
-    }, [round, resKind, resPrice, resQty, addToast]);
+    }, [round, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast]);
 
     const unreserve = useCallback(async (index: number) => {
         if (!round) return;
@@ -555,58 +585,68 @@ export default function ReplayGamePage() {
                         {round.status === "playing" && (
                             <SectionPanel className="shrink-0 p-3 sm:p-5">
                                 <div className="flex flex-col gap-2 sm:gap-4">
-                                    <div className="flex items-center gap-1.5 sm:gap-2">
-                                        <span className="text-[10px] sm:text-xs font-black text-neutral-400 uppercase tracking-wider shrink-0">수량</span>
-                                        <input
-                                            type="number" min={1} value={qty} aria-label="주문 수량"
-                                            onChange={e => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-                                            className="w-16 sm:w-24 min-h-[40px] sm:min-h-[44px] px-2 sm:px-3 rounded-xl text-sm text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white"
-                                        />
-                                        <div className="flex gap-1 sm:gap-1.5 flex-1 justify-end">
-                                            {[10, 50, 100].map(n => (
-                                                <button key={n} onClick={() => setQty(n)}
-                                                    className="min-h-[36px] px-2 sm:px-2.5 rounded-lg text-[11px] font-bold text-neutral-500 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
-                                                    {n}
-                                                </button>
-                                            ))}
-                                            {/* 수량 칸 하나를 사기·팔기가 같이 쓰므로 "최대"도 한쪽만
-                                                가리킬 수 없다. 현금 기준과 보유 기준을 따로 둔다. */}
-                                            <button onClick={() => setQty(Math.max(1, maxBuy))} disabled={maxBuy < 1}
-                                                className="min-h-[36px] px-1.5 sm:px-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold whitespace-nowrap text-red-500/90 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
-                                                최대매수
-                                            </button>
-                                            <button onClick={() => setQty(round.qty)} disabled={round.qty < 1}
-                                                className="min-h-[36px] px-1.5 sm:px-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold whitespace-nowrap text-[#16a34a] border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
-                                                전량매도
-                                            </button>
+                                    {/* 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 누르면 그 자리에서 체결되고
+                                        하루가 지나간다 — 수량을 적고 다시 사기를 누르던 두 걸음을 한 걸음으로. */}
+                                    <div className="grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center">
+                                        <span className="text-[10.5px] font-black text-red-500">사기</span>
+                                        <div className="grid grid-cols-4 gap-1.5">
+                                            {BUY_PARTS.map(part => {
+                                                const n = buyQtyFor(part.pct);
+                                                return (
+                                                    <button key={part.pct} aria-label={`사기 ${part.label}`}
+                                                        onClick={() => advance({ side: "buy", qty: n })} disabled={busy || n < 1}
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        {part.label}
+                                                        <span className="text-[9px] font-bold opacity-80">{n > 0 ? `${n}주` : "—"}</span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                    </div>
 
-                                    {/* 라벨을 짧게 — "사고 하루 넘기기"는 390px 3열에서 두 줄로 쪼개진다.
-                                        어느 쪽을 눌러도 하루가 지나간다는 건 아래 한 줄로 말한다. */}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button onClick={() => advance({ side: "buy", qty })} disabled={busy || maxBuy < 1}
-                                            className="min-h-[52px] rounded-xl text-[15px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                            사기
-                                        </button>
-                                        {/* 마지막 날에는 관망 자리가 '들고 가기'가 된다 — 41일 안에 반드시
-                                            정리해야 하는 규칙이 길게 보는 전략을 무조건 불리하게 만들었다(개선안 ⑧).
-                                            넘긴 보유는 넘길 때 종가로 다시 산 셈이 되고, 다음 분기도 시드는 그대로다. */}
+                                        <span className="text-[10.5px] font-black text-[#16a34a]">팔기</span>
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            {SELL_PARTS.map(part => {
+                                                const n = sellQtyFor(part.pct);
+                                                return (
+                                                    <button key={part.pct} aria-label={`팔기 ${part.label}`}
+                                                        onClick={() => advance({ side: "sell", qty: n })} disabled={busy || n < 1}
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        {part.label}
+                                                        <span className="text-[9px] font-bold opacity-70">{n > 0 ? `${n}주` : "—"}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* 사기·팔기와 같은 줄 문법 — 관망도 "얼마나"를 고른다.
+                                            마지막 날에는 남은 보유를 다음 분기로 넘길 수 있다(개선안 ⑧). */}
+                                        <span className="text-[10.5px] font-black text-neutral-400">관망</span>
                                         {canCarry ? (
-                                            <button onClick={() => advance(null, true)} disabled={busy}
-                                                className="min-h-[52px] rounded-xl text-[13.5px] font-black text-[#a1730a] dark:text-[#e3b34a] border border-[#e3b34a]/50 hover:bg-[#faf1dc] dark:hover:bg-[#2a2211] disabled:opacity-40 transition-colors">
-                                                들고 가기
-                                            </button>
+                                            <div className="grid grid-cols-2 gap-1.5">
+                                                <button onClick={() => advance(null, true)} disabled={busy}
+                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-[#a1730a] dark:text-[#e3b34a] border border-[#e3b34a]/50 hover:bg-[#faf1dc] dark:hover:bg-[#2a2211] disabled:opacity-40 transition-colors">
+                                                    들고 가기
+                                                </button>
+                                                <button onClick={() => advance(null)} disabled={busy}
+                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                    정리하고 끝
+                                                </button>
+                                            </div>
                                         ) : (
-                                            <button onClick={() => advance(null)} disabled={busy}
-                                                className="min-h-[52px] rounded-xl text-[15px] font-black text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                                관망
-                                            </button>
+                                            <div className="grid grid-cols-3 gap-1.5">
+                                                <button onClick={() => advance(null)} disabled={busy}
+                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                    하루
+                                                </button>
+                                                {SKIP_STEPS.map(n => (
+                                                    <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        {n}일
+                                                        <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         )}
-                                        <button onClick={() => advance({ side: "sell", qty })} disabled={busy || round.qty < 1}
-                                            className="min-h-[52px] rounded-xl text-[15px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                                            팔기
-                                        </button>
                                     </div>
 
                                     {/* 예약 — 41일 내내 화면 앞에 앉아 있지 않아도 되게(개선안 ②).
@@ -617,7 +657,7 @@ export default function ReplayGamePage() {
                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                 {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 —
                                                     orders 가 같은 이유로 ?? [] 를 쓴다. */}
-                                                <button onClick={() => { setReserveOpen(v => !v); if (!resPrice) setResPrice(price); }}
+                                                <button onClick={() => setReserveOpen(v => !v)}
                                                     className="min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
                                                     예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
                                                 </button>
@@ -641,16 +681,47 @@ export default function ReplayGamePage() {
                                                             {k.label}
                                                         </button>
                                                     ))}
-                                                    <input type="number" min={1} value={resPrice} aria-label="예약 가격"
-                                                        onChange={e => setResPrice(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-                                                        className="w-[86px] min-h-[32px] px-2 rounded-lg text-[12px] text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white" />
-                                                    <input type="number" min={1} value={resQty} aria-label="예약 수량"
-                                                        onChange={e => setResQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-                                                        className="w-[58px] min-h-[32px] px-2 rounded-lg text-[12px] text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white" />
-                                                    <button onClick={reserve} disabled={busy || resPrice < 1}
-                                                        className="min-h-[32px] px-3 rounded-lg text-[11px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] disabled:opacity-40">
-                                                        걸기
-                                                    </button>
+                                                    {/* 값을 적는 대신 지금 값에서 얼마나 떨어진 자리인지로 고른다. */}
+                                                    <div className="flex items-center gap-1 w-full">
+                                                        <span className="text-[10px] font-black text-neutral-400 shrink-0 w-8">자리</span>
+                                                        {(resKind === "take_profit" ? RESERVE_STEPS.up : RESERVE_STEPS.down).map(step => {
+                                                            const target = resPriceAt(step);
+                                                            return (
+                                                                <button key={step} onClick={() => setResStep(step)}
+                                                                    aria-label={`${resKind === "take_profit" ? "+" : "-"}${step}%`}
+                                                                    className={cn("flex-1 min-h-[34px] rounded-lg text-[11px] font-bold border transition-colors flex flex-col items-center justify-center leading-none gap-0.5",
+                                                                        resStep === step
+                                                                            ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                                    {resKind === "take_profit" ? "+" : "−"}{step}%
+                                                                    <span className="text-[9px] font-mono opacity-70">{target.toLocaleString()}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1 w-full">
+                                                        <span className="text-[10px] font-black text-neutral-400 shrink-0 w-8">수량</span>
+                                                        {(resKind === "buy_limit" ? BUY_PARTS : SELL_PARTS).map(part => {
+                                                            const n = resQtyFor(part.pct);
+                                                            return (
+                                                                <button key={part.pct} onClick={() => setResPart(part.pct)}
+                                                                    aria-label={`예약 수량 ${part.label}`} disabled={n < 1}
+                                                                    className={cn("flex-1 min-h-[34px] rounded-lg text-[11px] font-bold border transition-colors flex flex-col items-center justify-center leading-none gap-0.5 disabled:opacity-30",
+                                                                        resPart === part.pct
+                                                                            ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                                    {part.label}
+                                                                    <span className="text-[9px] font-mono opacity-70">{n > 0 ? `${n}주` : "—"}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        <button onClick={reserve} disabled={busy || resQtyFor(resPart) < 1}
+                                                            className="shrink-0 min-h-[34px] px-3 rounded-lg text-[11px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] disabled:opacity-40">
+                                                            걸기
+                                                        </button>
+                                                    </div>
+
                                                     <span className="text-[10px] text-neutral-400 dark:text-neutral-500 w-full">
                                                         걸어 둔 값에 그날 가격이 닿으면 체결됩니다. 갭으로 건너뛴 날은 시가로 체결됩니다.
                                                     </span>
@@ -658,21 +729,6 @@ export default function ReplayGamePage() {
                                             )}
                                         </div>
                                     )}
-
-                                    {/* 여러 날 건너뛰기 — 아무 일도 없는 날의 클릭이 이 게임에서 가장 많다.
-                                        한 번에 최대 며칠까지는 위 SKIP_STEPS 로 정한다. */}
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] sm:text-xs font-black text-neutral-400 uppercase tracking-wider shrink-0">건너뛰기</span>
-                                        {SKIP_STEPS.map(n => (
-                                            <button key={n} onClick={() => skipDays(n)} disabled={busy}
-                                                className="min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
-                                                {n}일
-                                            </button>
-                                        ))}
-                                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">
-                                            ±{JUMP_STOP_PCT}% 움직인 날에는 멈춥니다
-                                        </span>
-                                    </div>
 
                                     {/* 모바일은 한 줄만. 수수료·자동청산 규칙은 시작 화면에 적어 뒀다. */}
                                     <p className="sm:hidden text-[10px] text-neutral-400 dark:text-neutral-500 text-center">
