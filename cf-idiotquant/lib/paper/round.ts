@@ -54,9 +54,24 @@ export interface HabitSummary extends Omit<RoundHabits, "buys" | "sells" | "maxE
     maxExposure: number | null;
 }
 
+/** 예약 한 건. kind 는 워커의 RESERVE_KINDS 와 같아야 한다. */
+export interface Reservation {
+    kind: "buy_limit" | "stop_loss" | "take_profit";
+    price: number;
+    qty: number;
+}
+
 /** 서버 `_publicRound` 와 같은 모양. 진행 중에는 정답과 미래 캔들이 비어 있다. */
 export interface ReplayRound {
     orders: ReplayOrder[];
+    /** 블라인드 중에도 열어 주는 업종. 예전 판·체험 운용은 null. */
+    sector: string | null;
+    /** 판의 성격(plunge·range·peak·mixed). 컨텍스트 구간만 보고 붙인 값이라 정답이 새지 않는다. */
+    scenario: string | null;
+    /** 걸어 둔 예약. 체결 판정과 체결가 규칙은 워커(src/lib/reservations.js)에만 있다. */
+    pending: Reservation[];
+    /** 이 분기를 다음으로 이월했는가. 이월했으면 정답(종목명)은 아직 열리지 않는다. */
+    carried?: boolean;
     id: string;
     cursor: number;
     total_days: number;

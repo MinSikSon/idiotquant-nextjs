@@ -211,7 +211,9 @@ export default function LineChart(props: any) {
                         dot={false}
                         activeDot={false}
                         isAnimationActive={false}
-                        legendType="none"
+                        // 보조지표는 범례를 차지하지 않는다(작은 화면에서 이름만 늘어난다).
+                        // 다만 legend 를 켠 겹선은 무슨 선인지 알아야 해서 범례에 넣는다.
+                        legendType={o.legend ? "line" : "none"}
                         connectNulls={false}
                     />
                 ))}

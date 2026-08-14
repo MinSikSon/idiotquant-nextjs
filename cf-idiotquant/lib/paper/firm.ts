@@ -20,6 +20,13 @@ const PERF_FEE_PCT = 10;    // 초과수익분의 10%
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+/** 다음 분기로 넘긴 보유. 종목은 알려 주지 않는다 — 이어지는 판도 블라인드여야 한다. */
+export interface Carry {
+    qty: number;
+    price: number;
+    sector: string | null;
+}
+
 export interface Firm {
     name: string | null;
     aum: number;
@@ -27,6 +34,7 @@ export interface Firm {
     quarters: number;
     tools: string[];
     rank: string;
+    carry?: Carry | null;
 }
 
 export interface Tool {
