@@ -29,6 +29,7 @@ import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from
 import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool } from "@/lib/features/paper/replayAPI";
 import { TOOLS, INITIAL_AUM, rankOf, fmtMoney, type Firm } from "@/lib/paper/firm";
 import { movingAverage, bollinger } from "@/lib/paper/indicators";
+import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
 import {
     fmtKrw, KpiCard, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
@@ -42,6 +43,16 @@ const LineChart = dynamic(() => import("@/components/LineChart"), {
     ssr: false,
     loading: () => <div className="h-full min-h-[120px] rounded-2xl bg-neutral-100 dark:bg-[#242320] animate-pulse" />,
 });
+
+// 판의 성격. id 는 워커 src/lib/scenario.js 와 같아야 한다 — 규칙은 서버에만 있고
+// 여기는 이름만 안다(습관과 같은 방식이다).
+const SCENARIOS: { id: string; label: string; hint: string }[] = [
+    { id: "plunge", label: "급락 뒤", hint: "고점에서 크게 빠진 자리" },
+    { id: "range", label: "지루한 횡보", hint: "위아래로 별로 안 움직인 구간" },
+    { id: "peak", label: "고점 근처", hint: "최근 고점 가까이 붙어 있는 자리" },
+];
+const scenarioLabel = (id?: string | null) =>
+    id === "mixed" ? "보통" : (SCENARIOS.find(s => s.id === id)?.label ?? null);
 
 // 여러 날 건너뛰기를 멈추는 문턱. 이만큼 움직인 날은 지나치면 손쓸 수 없다.
 const JUMP_STOP_PCT = 7;
@@ -104,11 +115,11 @@ export default function ReplayGamePage() {
         return () => { cancelled = true; };
     }, [isLoggedIn, status]);
 
-    const start = useCallback(async () => {
+    const start = useCallback(async (scenario?: string | null) => {
         setBusy(true);
         try {
             if (isLoggedIn) {
-                const res = await startReplayRound();
+                const res = await startReplayRound(scenario);
                 if (!res.success) { addToast("error", res.error); return; }
                 setRound(res.round);
             } else {
@@ -428,8 +439,17 @@ export default function ReplayGamePage() {
                             라야 내용 높이가 바닥이 되고, 자리가 정말 모자라면 바깥이 스크롤된다. */}
                         <SectionPanel className="flex-1 flex flex-col p-3 sm:p-5">
                             <div className="sm:hidden flex items-baseline justify-between gap-2 mb-1.5 shrink-0">
-                                <h2 className="text-[13px] font-black text-neutral-900 dark:text-neutral-100 shrink-0">
+                                <h2 className="text-[13px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
                                     {round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
+                                    {/* 업종만 열어 준다 — 가격 말고 붙잡을 것 하나(개선안 ⑤) */}
+                                    {round.sector && (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2a26] text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
+                                            <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
+                                                <SectorSprite sector={round.sector} color={sectorAccent(round.sector)} />
+                                            </span>
+                                            {round.sector}
+                                        </span>
+                                    )}
                                 </h2>
                                 {/* 진행 중에는 이 자리를 벤치마크 비교가 쓴다 — 종목·시기 안내는
                                     한 번 읽으면 되는 문장이고, 이쪽은 매일 달라진다. */}
@@ -443,6 +463,15 @@ export default function ReplayGamePage() {
                             </div>
                             <div className="hidden sm:block">
                                 <SectionHeader
+                                    badge={round.sector ? (
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-[#2c2a26] text-[11px] font-bold text-neutral-600 dark:text-neutral-300">
+                                            <span className="w-[24px] h-[17px] rounded-[3px] overflow-hidden shrink-0">
+                                                <SectorSprite sector={round.sector} color={sectorAccent(round.sector)} />
+                                            </span>
+                                            {round.sector}
+                                            {scenarioLabel(round.scenario) && <span className="opacity-60">· {scenarioLabel(round.scenario)}</span>}
+                                        </span>
+                                    ) : undefined}
                                     icon={<TrendingUp size={16} />}
                                     title={round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
                                     subtitle={round.status === "done"
@@ -616,13 +645,15 @@ function MiniStat({ label, value, sub, valueColor }: { label: string; value: str
 // ─────────────────────────────────────────────────────────
 /** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
 function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle }: {
-    onStart: () => void; busy: boolean; isLoggedIn: boolean;
+    onStart: (scenario?: string | null) => void; busy: boolean; isLoggedIn: boolean;
     firm: Firm | null; bestReturn: number | null; history: ReplayHistoryItem[];
     habits: HabitSummary | null;
     onBuy: (id: string) => void; activeTools: string[]; onToggle: (id: string) => void;
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
     const owned = firm?.tools ?? [];
+    // 고른 판 성격. null 이면 아무 자리나.
+    const [want, setWant] = useState<string | null>(null);
 
     return (
         <>
@@ -672,8 +703,38 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     ))}
                 </ul>
 
-                <button onClick={onStart} disabled={busy}
-                    className="mt-3 sm:mt-5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
+                {/* 판 고르기 — 무작위만 있으면 배움이 안 쌓인다. 같은 성격의 판을 여러 번 겪어야
+                    "나는 급락 뒤에 너무 빨리 산다" 같은 습관이 드러난다(개선안 ⑦).
+                    성격은 서버가 컨텍스트 구간만 보고 붙이므로 정답이 새지 않는다. */}
+                {isLoggedIn && (
+                    <div className="mt-3 sm:mt-5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1.5">어떤 자리에서 시작할까요</p>
+                        <div className="flex gap-1.5 flex-wrap">
+                            <button onClick={() => setWant(null)} disabled={busy}
+                                className={cn("min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border transition-colors disabled:opacity-40",
+                                    want === null
+                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                                        : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
+                                아무 자리나
+                            </button>
+                            {SCENARIOS.map(sc => (
+                                <button key={sc.id} onClick={() => setWant(sc.id)} disabled={busy} title={sc.hint}
+                                    className={cn("min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border transition-colors disabled:opacity-40",
+                                        want === sc.id
+                                            ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
+                                    {sc.label}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-1.5 text-[10.5px] text-neutral-400 dark:text-neutral-500 break-keep">
+                            고른 자리가 안 나오면 만들어진 판으로 시작합니다. 실제로 어떤 자리였는지는 차트 옆에 적힙니다.
+                        </p>
+                    </div>
+                )}
+
+                <button onClick={() => onStart(want)} disabled={busy}
+                    className="mt-2.5 sm:mt-4 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
                     <Play size={16} strokeWidth={2.6} />
                     {busy ? "종목을 고르는 중…" : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
                 </button>

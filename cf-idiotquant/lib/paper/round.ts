@@ -57,6 +57,10 @@ export interface HabitSummary extends Omit<RoundHabits, "buys" | "sells" | "maxE
 /** 서버 `_publicRound` 와 같은 모양. 진행 중에는 정답과 미래 캔들이 비어 있다. */
 export interface ReplayRound {
     orders: ReplayOrder[];
+    /** 블라인드 중에도 열어 주는 업종. 예전 판·체험 운용은 null. */
+    sector: string | null;
+    /** 판의 성격(plunge·range·peak·mixed). 컨텍스트 구간만 보고 붙인 값이라 정답이 새지 않는다. */
+    scenario: string | null;
     id: string;
     cursor: number;
     total_days: number;

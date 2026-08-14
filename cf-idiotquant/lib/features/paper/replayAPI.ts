@@ -47,7 +47,8 @@ export type ReplayResponse =
 
 export const getReplayState = (): Promise<ReplayResponse> => replayRequest("GET");
 
-export const startReplayRound = (): Promise<ReplayResponse> => replayRequest("POST", { action: "start" });
+export const startReplayRound = (scenario?: string | null): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "start", ...(scenario ? { scenario } : {}) });
 
 /**
  * 하루 진행. 체결가는 서버가 그날 종가로 잡으므로 price 를 보내지 않는다.
