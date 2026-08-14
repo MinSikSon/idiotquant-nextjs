@@ -43,6 +43,10 @@ const LineChart = dynamic(() => import("@/components/LineChart"), {
     loading: () => <div className="h-full min-h-[120px] rounded-2xl bg-neutral-100 dark:bg-[#242320] animate-pulse" />,
 });
 
+// 여러 날 건너뛰기를 멈추는 문턱. 이만큼 움직인 날은 지나치면 손쓸 수 없다.
+const JUMP_STOP_PCT = 7;
+const SKIP_STEPS = [3, 5];
+
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const fmtDate = (d?: string | null) => (d && d.length === 8 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}` : "");
 
@@ -119,13 +123,17 @@ export default function ReplayGamePage() {
         }
     }, [isLoggedIn, localPool, addToast]);
 
-    const advance = useCallback(async (trade?: { side: "buy" | "sell"; qty: number } | null) => {
-        if (!round || round.status !== "playing") return;
+    // 어느 판에서 출발하는지 인자로 받는다 — 여러 날 건너뛰기가 앞선 응답을 이어받아야 해서,
+    // 클로저에 잡힌 옛 round 로는 비로그인 경로(advanceLocal)가 같은 날을 반복한다.
+    const advanceFrom = useCallback(async (
+        from: ReplayRound, trade?: { side: "buy" | "sell"; qty: number } | null,
+    ): Promise<ReplayRound | null> => {
+        if (from.status !== "playing") return null;
         setBusy(true);
         try {
             if (isLoggedIn) {
-                const res = await advanceReplayRound(round.id, trade);
-                if (!res.success) { addToast("error", res.error); return; }
+                const res = await advanceReplayRound(from.id, trade);
+                if (!res.success) { addToast("error", res.error); return null; }
                 setRound(res.round);
                 if (res.done) {
                     const st = await getReplayState();
@@ -136,15 +144,41 @@ export default function ReplayGamePage() {
                         setBestReturn(st.wallet?.best_return ?? null);
                     }
                 }
-            } else {
-                const res = advanceLocal(round, trade);
-                if (!res.ok) { addToast("error", res.error); return; }
-                setRound(res.round);
+                return res.round;
             }
+            const res = advanceLocal(from, trade);
+            if (!res.ok) { addToast("error", res.error); return null; }
+            setRound(res.round);
+            return res.round;
         } finally {
             setBusy(false);
         }
-    }, [round, isLoggedIn, addToast]);
+    }, [isLoggedIn, addToast]);
+
+    const advance = useCallback(async (trade?: { side: "buy" | "sell"; qty: number } | null) => {
+        if (!round) return;
+        await advanceFrom(round, trade);
+    }, [round, advanceFrom]);
+
+    // 여러 날 한 번에 넘기기. 아무 일도 없는 날의 클릭을 없애되, 큰 폭으로 움직인 날에는
+    // 반드시 세운다 — 지나치고 나면 손쓸 수 없는 게 그런 날이다.
+    const skipDays = useCallback(async (n: number) => {
+        if (!round || round.status !== "playing") return;
+        let cur: ReplayRound | null = round;
+        for (let i = 0; i < n && cur; i++) {
+            const before = cur.candles[cur.cursor - 1]?.c ?? 0;
+            const next: ReplayRound | null = await advanceFrom(cur, null);
+            if (!next) break;
+            cur = next;
+            if (next.status !== "playing") break;
+            const after = next.candles[next.cursor - 1]?.c ?? 0;
+            const move = before > 0 ? ((after - before) / before) * 100 : 0;
+            if (Math.abs(move) >= JUMP_STOP_PCT) {
+                addToast("info", `하루에 ${move >= 0 ? "+" : ""}${move.toFixed(1)}% 움직여 여기서 멈췄습니다.`);
+                break;
+            }
+        }
+    }, [round, advanceFrom, addToast]);
 
     const giveUp = useCallback(async () => {
         if (!round || round.status !== "playing") return;
@@ -244,6 +278,11 @@ export default function ReplayGamePage() {
             out.push({ name: "밴드상단", data: b.upper, color: "#94a3b8", dash: "3 3" });
             out.push({ name: "밴드하단", data: b.lower, color: "#94a3b8", dash: "3 3" });
         }
+
+        // 하루가 얼마나 흔들렸는지. 같은 종가라도 하루 안에서 15% 오갔던 날과 조용한 날은
+        // 완전히 다른 날인데, 종가 선 하나로는 둘이 똑같아 보인다. 고가·저가는 이미 캔들에 있다.
+        out.push({ name: "고가", data: visible.map(c => c.h || null), color: "#c5bfb2" });
+        out.push({ name: "저가", data: visible.map(c => c.l || null), color: "#c5bfb2" });
 
         // 내 자산 곡선. 가격선이 곧 "그냥 사서 들고 있었을 때"라 비교 상대는 이미 화면에 있고,
         // 없던 건 내 쪽이었다. 같은 축에 얹으려고 시드를 거래 시작가로 환산한다 —
@@ -490,6 +529,21 @@ export default function ReplayGamePage() {
                                         </button>
                                     </div>
 
+                                    {/* 여러 날 건너뛰기 — 아무 일도 없는 날의 클릭이 이 게임에서 가장 많다.
+                                        한 번에 최대 며칠까지는 위 SKIP_STEPS 로 정한다. */}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] sm:text-xs font-black text-neutral-400 uppercase tracking-wider shrink-0">건너뛰기</span>
+                                        {SKIP_STEPS.map(n => (
+                                            <button key={n} onClick={() => skipDays(n)} disabled={busy}
+                                                className="min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
+                                                {n}일
+                                            </button>
+                                        ))}
+                                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">
+                                            ±{JUMP_STOP_PCT}% 움직인 날에는 멈춥니다
+                                        </span>
+                                    </div>
+
                                     {/* 모바일은 한 줄만. 수수료·자동청산 규칙은 시작 화면에 적어 뒀다. */}
                                     <p className="sm:hidden text-[10px] text-neutral-400 dark:text-neutral-500 text-center">
                                         어느 쪽을 눌러도 하루가 지나갑니다 · 그날 종가로 체결
@@ -719,6 +773,23 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
 }
 
 // ─────────────────────────────────────────────────────────
+/**
+ * 정산 결과를 고객의 말로 옮긴다. 새로 계산하는 것은 없다 — 이미 나온 자금 유출입과
+ * 등급 변화를 문장으로 바꿀 뿐이다. 과하게 쓰면 유치해지므로 사실만 담는다.
+ */
+function clientNote(flow: number, flowPct: number, rankBefore: string, rankAfter: string): string {
+    const money = fmtMoney(Math.abs(flow));
+    const head =
+        flowPct >= 30 ? `성과를 보고 큰돈이 들어왔습니다. 신규 자금 ${money}.`
+            : flowPct >= 10 ? `고객이 자금을 더 맡겼습니다. +${money}.`
+                : flowPct > 0 ? `고객들이 조금씩 더 맡겼습니다. +${money}.`
+                    : flowPct === 0 ? "고객 자금은 그대로입니다."
+                        : flowPct > -10 ? `일부 고객이 자금을 뺐습니다. −${money}.`
+                            : `환매 요청이 몰렸습니다. −${money}.`;
+    if (rankBefore === rankAfter) return head;
+    return `${head} 회사가 ${rankBefore} 에서 ${rankAfter} 로 ${flow >= 0 ? "올라섰습니다" : "내려앉았습니다"}.`;
+}
+
 /** 분기 보고서 — 성적과 그것이 회사에 미친 결과를 나란히. */
 function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
     const mine = round.final_return ?? 0;
@@ -757,8 +828,14 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                     </p>
                 )}
 
+                {settled && (
+                    <p className="text-[11.5px] sm:text-[13px] font-bold break-keep text-[#a1730a] dark:text-[#e3b34a] border-t border-neutral-100 dark:border-[#35332e] pt-1.5 sm:pt-3">
+                        {clientNote(flow, flowPct, rankOf(round.aum_before!), rankOf(round.aum_after!))}
+                    </p>
+                )}
+
                 {settled ? (
-                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px] sm:text-[13px] border-t border-neutral-100 dark:border-[#35332e] pt-1.5 sm:pt-3">
+                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px] sm:text-[13px]">
                         <span className="text-neutral-500 dark:text-neutral-400">
                             고객 자금{" "}
                             <b className={pnlValueColor(flow >= 0)}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</b>
