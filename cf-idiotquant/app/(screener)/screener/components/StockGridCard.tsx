@@ -4,7 +4,7 @@ import { Heart, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiquidityBadge } from "./LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
-import SectorSprite, { SECTOR_COLOR } from "./SectorSprite";
+import SectorSprite, { sectorAccent } from "./SectorSprite";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
@@ -71,7 +71,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
             <div className="relative h-[72px] border-b border-neutral-100 dark:border-[#35332e]">
                 <SectorSprite
                     sector={sector}
-                    color={sector ? SECTOR_COLOR[sector] : (strategy ? STRATEGY_HEX[strategy] : "#16a34a")}
+                    color={sectorAccent(sector) ?? (strategy ? STRATEGY_HEX[strategy] : "#16a34a")}
                 />
                 {(sector || strategy) && (
                     <span className="absolute left-2 top-2 px-1.5 py-0.5 rounded bg-white/80 dark:bg-black/50 text-[9.5px] font-bold text-neutral-600 dark:text-neutral-300">
