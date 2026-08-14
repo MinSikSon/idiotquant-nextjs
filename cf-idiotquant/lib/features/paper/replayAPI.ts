@@ -57,8 +57,12 @@ export const startReplayRound = (scenario?: string | null): Promise<ReplayRespon
  * non-GET body 에 PDNO·ORD_QTY·buyOrSell 을 끼워 넣고 buyOrSell 은 값이 없으면 "sell" 로
  * 채운다. 그 이름을 피해야 매수가 매도로 새지 않는다.
  */
-export const advanceReplayRound = (roundId: string, trade?: { side: "buy" | "sell"; qty: number } | null): Promise<ReplayResponse> =>
-    replayRequest("POST", { action: "advance", round_id: roundId, trade: trade ?? undefined });
+export const advanceReplayRound = (
+    roundId: string,
+    trade?: { side: "buy" | "sell"; qty: number } | null,
+    carry?: boolean,
+): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "advance", round_id: roundId, trade: trade ?? undefined, ...(carry ? { carry: true } : {}) });
 
 export const giveUpReplayRound = (roundId: string): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "giveup", round_id: roundId });

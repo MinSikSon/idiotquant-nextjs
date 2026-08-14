@@ -69,6 +69,7 @@ export async function buildLocalRound(pool: { ticker: string; name: string }[]):
                 sector: null,     // 업종·판 성격도 서버가 붙인다
                 scenario: null,
                 pending: [],      // 예약 체결 규칙은 워커에만 있다 — 체험 운용은 지원하지 않는다
+                carried: false,   // 이월도 회사가 있어야 한다
             };
             saveLocal(round);
             return round;

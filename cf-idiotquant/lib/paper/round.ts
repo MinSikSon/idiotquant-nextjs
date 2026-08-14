@@ -70,6 +70,8 @@ export interface ReplayRound {
     scenario: string | null;
     /** 걸어 둔 예약. 체결 판정과 체결가 규칙은 워커(src/lib/reservations.js)에만 있다. */
     pending: Reservation[];
+    /** 이 분기를 다음으로 이월했는가. 이월했으면 정답(종목명)은 아직 열리지 않는다. */
+    carried?: boolean;
     id: string;
     cursor: number;
     total_days: number;

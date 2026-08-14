@@ -150,13 +150,13 @@ export default function ReplayGamePage() {
     // 어느 판에서 출발하는지 인자로 받는다 — 여러 날 건너뛰기가 앞선 응답을 이어받아야 해서,
     // 클로저에 잡힌 옛 round 로는 비로그인 경로(advanceLocal)가 같은 날을 반복한다.
     const advanceFrom = useCallback(async (
-        from: ReplayRound, trade?: { side: "buy" | "sell"; qty: number } | null,
+        from: ReplayRound, trade?: { side: "buy" | "sell"; qty: number } | null, carry?: boolean,
     ): Promise<ReplayRound | null> => {
         if (from.status !== "playing") return null;
         setBusy(true);
         try {
             if (isLoggedIn) {
-                const res = await advanceReplayRound(from.id, trade);
+                const res = await advanceReplayRound(from.id, trade, carry);
                 if (!res.success) { addToast("error", res.error); return null; }
                 setRound(res.round);
                 if (res.done) {
@@ -179,9 +179,9 @@ export default function ReplayGamePage() {
         }
     }, [isLoggedIn, addToast]);
 
-    const advance = useCallback(async (trade?: { side: "buy" | "sell"; qty: number } | null) => {
+    const advance = useCallback(async (trade?: { side: "buy" | "sell"; qty: number } | null, carry?: boolean) => {
         if (!round) return;
-        await advanceFrom(round, trade);
+        await advanceFrom(round, trade, carry);
     }, [round, advanceFrom]);
 
     // 여러 날 한 번에 넘기기. 아무 일도 없는 날의 클릭을 없애되, 큰 폭으로 움직인 날에는
@@ -252,6 +252,9 @@ export default function ReplayGamePage() {
     const bhRate = benchBase > 0 && price > 0 ? ((price - benchBase) / benchBase) * 100 : 0;
     const edge = totalRate - bhRate;                                   // %p. 양수면 그냥 들고 있는 것보다 낫다
     const tradedDays = round ? Math.max(0, round.cursor - CONTEXT_DAYS) : 0;
+    // 마지막 날에 보유가 남아 있으면 다음 분기로 넘길 수 있다. 회사가 있어야 이어진다.
+    const canCarry = !!round && isLoggedIn && round.status === "playing"
+        && round.cursor >= TOTAL_DAYS && round.qty > 0;
     // 첫 며칠은 차이가 크게 요동쳐 읽을 값이 못 된다. 닷새 지나고부터 말한다.
     const benchNote = round && round.status === "playing" && tradedDays >= 5 && benchBase > 0
         ? `그냥 들고 ${pct(bhRate)} · 나 ${pct(totalRate)} (${edge >= 0 ? "+" : ""}${edge.toFixed(1)}%p)`
@@ -586,10 +589,20 @@ export default function ReplayGamePage() {
                                             className="min-h-[52px] rounded-xl text-[15px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                                             사기
                                         </button>
-                                        <button onClick={() => advance(null)} disabled={busy}
-                                            className="min-h-[52px] rounded-xl text-[15px] font-black text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                            관망
-                                        </button>
+                                        {/* 마지막 날에는 관망 자리가 '들고 가기'가 된다 — 41일 안에 반드시
+                                            정리해야 하는 규칙이 길게 보는 전략을 무조건 불리하게 만들었다(개선안 ⑧).
+                                            넘긴 보유는 넘길 때 종가로 다시 산 셈이 되고, 다음 분기도 시드는 그대로다. */}
+                                        {canCarry ? (
+                                            <button onClick={() => advance(null, true)} disabled={busy}
+                                                className="min-h-[52px] rounded-xl text-[13.5px] font-black text-[#a1730a] dark:text-[#e3b34a] border border-[#e3b34a]/50 hover:bg-[#faf1dc] dark:hover:bg-[#2a2211] disabled:opacity-40 transition-colors">
+                                                들고 가기
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => advance(null)} disabled={busy}
+                                                className="min-h-[52px] rounded-xl text-[15px] font-black text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                관망
+                                            </button>
+                                        )}
                                         <button onClick={() => advance({ side: "sell", qty })} disabled={busy || round.qty < 1}
                                             className="min-h-[52px] rounded-xl text-[15px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                                             팔기
@@ -791,10 +804,22 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     ))}
                 </ul>
 
+                {firm?.carry && (
+                    <div className="mt-3 sm:mt-4 rounded-xl border border-[#e3b34a]/50 bg-[#faf1dc] dark:bg-[#2a2211] px-3.5 py-2.5">
+                        <p className="text-[11.5px] sm:text-[12.5px] font-bold text-[#a1730a] dark:text-[#e3b34a] break-keep">
+                            지난 분기에서 {firm.carry.qty}주를 들고 왔습니다 (주당 {fmtKrw(firm.carry.price)}
+                            {firm.carry.sector ? ` · ${firm.carry.sector}` : ""}). 같은 회사로 이어서 시작합니다.
+                        </p>
+                        <p className="mt-1 text-[10.5px] text-[#a1730a]/80 dark:text-[#e3b34a]/70 break-keep">
+                            시드는 이번에도 1,000만원입니다 — 그중 일부가 이미 그 회사에 들어가 있습니다.
+                        </p>
+                    </div>
+                )}
+
                 {/* 판 고르기 — 무작위만 있으면 배움이 안 쌓인다. 같은 성격의 판을 여러 번 겪어야
                     "나는 급락 뒤에 너무 빨리 산다" 같은 습관이 드러난다(개선안 ⑦).
                     성격은 서버가 컨텍스트 구간만 보고 붙이므로 정답이 새지 않는다. */}
-                {isLoggedIn && (
+                {isLoggedIn && !firm?.carry && (
                     <div className="mt-3 sm:mt-5">
                         <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1.5">어떤 자리에서 시작할까요</p>
                         <div className="flex gap-1.5 flex-wrap">
@@ -824,7 +849,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                 <button onClick={() => onStart(want)} disabled={busy}
                     className="mt-2.5 sm:mt-4 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
                     <Play size={16} strokeWidth={2.6} />
-                    {busy ? "종목을 고르는 중…" : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
+                    {busy ? "종목을 고르는 중…" : firm?.carry ? `${(firm?.quarters ?? 0) + 1}분기 이어서 운용` : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
                 </button>
             </SectionPanel>
 
@@ -964,6 +989,12 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                         <p className={cn("text-lg sm:text-xl font-black font-mono", pnlValueColor(bh >= 0))}>{pct(bh)}</p>
                     </div>
                 </div>
+
+                {round.carried && (
+                    <p className="text-[11.5px] sm:text-[13px] font-bold break-keep text-[#a1730a] dark:text-[#e3b34a]">
+                        {round.qty}주를 다음 분기로 넘겼습니다. 아직 들고 있으므로 어떤 회사였는지는 열지 않습니다.
+                    </p>
+                )}
 
                 <p className="text-[12px] sm:text-[14px] font-bold break-keep text-neutral-700 dark:text-neutral-200">
                     {beat
