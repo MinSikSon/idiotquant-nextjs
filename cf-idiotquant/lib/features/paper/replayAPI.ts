@@ -1,7 +1,7 @@
 // 리플레이 라운드 API — 로그인 사용자 (백엔드 /user/replay).
 // 비로그인은 lib/paper/localRound.ts 가 같은 모양을 브라우저 안에서 다룬다.
 
-import type { ReplayRound, ReplayHistoryItem, HabitSummary } from "@/lib/paper/round";
+import type { ReplayRound, ReplayHistoryItem, HabitSummary, Reservation } from "@/lib/paper/round";
 import type { Firm } from "@/lib/paper/firm";
 
 async function replayRequest(method: "GET" | "POST", body?: object) {
@@ -69,3 +69,11 @@ export const buyTool = (toolId: string): Promise<ReplayResponse> =>
 
 export const renameFirm = (name: string): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "rename-firm", name });
+
+/** 예약 걸기 — 얼마가 되면 사고, 얼마가 되면 판다. 체결 규칙은 서버에만 있다. */
+export const reserveOrder = (roundId: string, reservation: Reservation): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "reserve", round_id: roundId, reservation });
+
+/** 자리(index)로 지운다 — 같은 조건을 두 번 걸 수도 있어 값으로는 못 고른다. */
+export const cancelReserve = (roundId: string, index: number): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "cancel-reserve", round_id: roundId, index });

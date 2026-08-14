@@ -24,9 +24,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary } from "@/lib/paper/round";
+import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
-import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool } from "@/lib/features/paper/replayAPI";
+import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
 import { TOOLS, INITIAL_AUM, rankOf, fmtMoney, type Firm } from "@/lib/paper/firm";
 import { movingAverage, bollinger } from "@/lib/paper/indicators";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
@@ -54,6 +54,14 @@ const SCENARIOS: { id: string; label: string; hint: string }[] = [
 const scenarioLabel = (id?: string | null) =>
     id === "mixed" ? "보통" : (SCENARIOS.find(s => s.id === id)?.label ?? null);
 
+// 예약 종류. id 와 이름은 워커 src/lib/reservations.js 의 RESERVE_KINDS·RESERVE_LABEL 과 같아야 한다.
+const RESERVE_KINDS: { id: Reservation["kind"]; label: string; hint: string }[] = [
+    { id: "buy_limit", label: "지정가 매수", hint: "이 값까지 내려오면 산다" },
+    { id: "stop_loss", label: "손절", hint: "이 값까지 내려오면 판다" },
+    { id: "take_profit", label: "익절", hint: "이 값을 넘으면 판다" },
+];
+const reserveLabel = (k: string) => RESERVE_KINDS.find(r => r.id === k)?.label ?? k;
+
 // 여러 날 건너뛰기를 멈추는 문턱. 이만큼 움직인 날은 지나치면 손쓸 수 없다.
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
@@ -79,6 +87,11 @@ export default function ReplayGamePage() {
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [qty, setQty] = useState(10);
+    // 예약 패널 — 접었다 편다. 모바일은 한 화면이 빡빡해 기본은 접어 둔다.
+    const [reserveOpen, setReserveOpen] = useState(false);
+    const [resKind, setResKind] = useState<Reservation["kind"]>("buy_limit");
+    const [resPrice, setResPrice] = useState(0);
+    const [resQty, setResQty] = useState(10);
 
     // 비로그인 판을 만들 때 쓸 종목 풀. 로그인은 서버가 알아서 뽑는다.
     useEffect(() => { if (!isLoggedIn) dispatch(reqGetNcavDailyList("latest")); }, [isLoggedIn, dispatch]);
@@ -254,6 +267,31 @@ export default function ReplayGamePage() {
         while (n > 0 && !quoteBuy({ price, qty: n, cash }).ok) n--;
         return n;
     }, [price, round?.cash]);
+
+    const reserve = useCallback(async () => {
+        if (!round) return;
+        setBusy(true);
+        try {
+            const res = await reserveOrder(round.id, { kind: resKind, price: resPrice, qty: resQty });
+            if (!res.success) { addToast("error", res.error); return; }
+            setRound(res.round);
+            addToast("success", `${reserveLabel(resKind)} ${resPrice.toLocaleString()}원 ${resQty}주를 걸어 뒀습니다.`);
+        } finally {
+            setBusy(false);
+        }
+    }, [round, resKind, resPrice, resQty, addToast]);
+
+    const unreserve = useCallback(async (index: number) => {
+        if (!round) return;
+        setBusy(true);
+        try {
+            const res = await cancelReserve(round.id, index);
+            if (!res.success) { addToast("error", res.error); return; }
+            setRound(res.round);
+        } finally {
+            setBusy(false);
+        }
+    }, [round, addToast]);
 
     const purchase = useCallback(async (toolId: string) => {
         setBusy(true);
@@ -557,6 +595,56 @@ export default function ReplayGamePage() {
                                             팔기
                                         </button>
                                     </div>
+
+                                    {/* 예약 — 41일 내내 화면 앞에 앉아 있지 않아도 되게(개선안 ②).
+                                        체결 판정과 체결가 규칙은 전부 워커에 있다. 여기는 걸고 지우기만 한다.
+                                        기본은 접어 둔다 — 폰에서 한 화면이 이미 빡빡하다. */}
+                                    {isLoggedIn && (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 —
+                                                    orders 가 같은 이유로 ?? [] 를 쓴다. */}
+                                                <button onClick={() => { setReserveOpen(v => !v); if (!resPrice) setResPrice(price); }}
+                                                    className="min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
+                                                    예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
+                                                </button>
+                                                {(round.pending ?? []).map((r, i) => (
+                                                    <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[36px] px-2 rounded-lg text-[10.5px] font-bold bg-[#faf1dc] dark:bg-[#2a2211] text-[#a1730a] dark:text-[#e3b34a]">
+                                                        {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
+                                                        <button onClick={() => unreserve(i)} disabled={busy}
+                                                            className="ml-0.5 px-1 rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-40" aria-label="예약 취소">×</button>
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            {reserveOpen && (
+                                                <div className="flex items-center gap-1.5 flex-wrap rounded-xl border border-neutral-200 dark:border-[#35332e] p-2">
+                                                    {RESERVE_KINDS.map(k => (
+                                                        <button key={k.id} onClick={() => setResKind(k.id)} title={k.hint}
+                                                            className={cn("min-h-[32px] px-2.5 rounded-lg text-[10.5px] font-bold border transition-colors",
+                                                                resKind === k.id
+                                                                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                                                                    : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                            {k.label}
+                                                        </button>
+                                                    ))}
+                                                    <input type="number" min={1} value={resPrice} aria-label="예약 가격"
+                                                        onChange={e => setResPrice(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                                                        className="w-[86px] min-h-[32px] px-2 rounded-lg text-[12px] text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white" />
+                                                    <input type="number" min={1} value={resQty} aria-label="예약 수량"
+                                                        onChange={e => setResQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                                                        className="w-[58px] min-h-[32px] px-2 rounded-lg text-[12px] text-right font-mono bg-neutral-50 dark:bg-[#1a1917] border border-neutral-200 dark:border-[#35332e] text-neutral-900 dark:text-white" />
+                                                    <button onClick={reserve} disabled={busy || resPrice < 1}
+                                                        className="min-h-[32px] px-3 rounded-lg text-[11px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] disabled:opacity-40">
+                                                        걸기
+                                                    </button>
+                                                    <span className="text-[10px] text-neutral-400 dark:text-neutral-500 w-full">
+                                                        걸어 둔 값에 그날 가격이 닿으면 체결됩니다. 갭으로 건너뛴 날은 시가로 체결됩니다.
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* 여러 날 건너뛰기 — 아무 일도 없는 날의 클릭이 이 게임에서 가장 많다.
                                         한 번에 최대 며칠까지는 위 SKIP_STEPS 로 정한다. */}
