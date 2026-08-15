@@ -451,14 +451,16 @@ export default function ReplayGamePage() {
 
             <div className={cn(
                 "max-w-4xl mx-auto px-4 sm:px-5 flex flex-col",
-                // 판이 열려 있는 동안은 모바일에서 스크롤 없이 한 화면에 담는다 — 차트를 보고
-                // 버튼을 누르는 게 매일 반복되는 동작이라, 그 둘이 같은 화면에 있어야 한다.
-                // layout.tsx 의 main 이 상단 헤더 48 + 하단 탭 64 를 이미 비워 두므로 그만큼 뺀다.
+                // 판이 열려 있는 동안은 넓이와 상관없이 한 화면에 담는다 — 차트를 보고 버튼을
+                // 누르는 게 매일 반복되는 동작이라, 그 둘이 같은 화면에 있어야 한다.
+                // 모바일은 layout.tsx 의 main 이 상단 헤더 48 + 하단 탭 64 를 이미 비워 두므로
+                // 그만큼 빼고, md 부터는 그 크롬이 없어 화면 높이를 그대로 쓴다.
                 // 100dvh 라야 모바일 브라우저 주소창이 접혔다 펴져도 어긋나지 않는다.
+                // 위아래 여백은 판이 도는 동안만 얇게 — 남는 자리는 차트가 가져간다.
                 // overflow-y-auto 는 안전장치다. 아주 작은 화면에서 고정 부분만으로도 자리가
                 // 모자라면 잘리는 대신 스크롤된다 — 버튼이 화면 밖으로 사라지면 판을 못 이어간다.
                 round
-                    ? "h-[calc(100dvh-112px)] md:h-auto overflow-y-auto md:overflow-visible py-3 sm:py-6 md:py-10 gap-3 sm:gap-4 md:pb-24"
+                    ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-3 sm:py-4 gap-3 sm:gap-4"
                     : "py-6 sm:py-10 pb-10 md:pb-24 gap-5",
             )}>
 
@@ -554,7 +556,7 @@ export default function ReplayGamePage() {
                                 크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 패널을
                                 뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
                                 상자를 주면 줄어드는 쪽도 따라온다. */}
-                            <div className="relative flex-1 min-h-[100px] sm:min-h-[260px] overflow-hidden">
+                            <div className="relative flex-1 min-h-[100px] sm:min-h-[180px] overflow-hidden">
                                 <div className="absolute inset-0">
                                     <LineChart
                                         height="100%"
@@ -574,10 +576,12 @@ export default function ReplayGamePage() {
                         {/* ── 계좌 ──────────────────────────
                             모바일은 눌러야 할 버튼에 자리를 내주려고 줄로 압축하고,
                             넓은 화면에서는 원래 카드를 그대로 쓴다. 값은 stats 한 곳에서 온다. */}
-                        <div className="grid grid-cols-2 gap-2 sm:hidden shrink-0">
+                        <div className="grid grid-cols-2 lg:hidden gap-2 shrink-0">
                             {stats.map(s => <MiniStat key={s.label} {...s} />)}
                         </div>
-                        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {/* 카드는 네 칸이 한 줄로 들어가는 넓이(lg)에서만. 그보다 좁으면 두 줄이 되어
+                            283px 을 먹고 버튼을 화면 밖으로 밀어낸다. */}
+                        <div className="hidden lg:grid grid-cols-4 gap-4 shrink-0">
                             {stats.map(s => <KpiCard key={s.label} {...s} />)}
                         </div>
 
