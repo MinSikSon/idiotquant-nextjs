@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check, Activity } from "lucide-react";
+import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check, Activity, ChevronDown } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -420,16 +420,16 @@ export default function ReplayGamePage() {
     // 계좌 4칸. 모바일 압축 줄과 데스크톱 카드가 같은 값을 쓰도록 한 곳에서 만든다.
     const stats = round ? [
         {
-            label: "총 자산", value: fmtKrw(totalAssets), sub: `시드 ${fmtKrw(round.seed)}`,
+            label: "내 돈", value: fmtKrw(totalAssets), sub: `시작 ${fmtKrw(round.seed)}`,
             icon: <Wallet size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
-            label: "예수금", value: fmtKrw(round.cash), sub: round.qty > 0 ? `보유 ${round.qty}주` : "보유 없음",
+            label: "현금", value: fmtKrw(round.cash), sub: round.qty > 0 ? `${round.qty}주 갖고 있음` : "아직 없음",
             icon: <Coins size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
             label: round.status === "done" ? "마지막 가격" : "현재가", value: fmtKrw(price),
-            sub: round.qty > 0 ? `평단 ${fmtKrw(avg)}` : round.status === "done" ? "청산 완료" : "아직 안 삼",
+            sub: round.qty > 0 ? `산 값 ${fmtKrw(avg)}` : round.status === "done" ? "정리됨" : "아직 안 삼",
             icon: <Eye size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
@@ -451,15 +451,19 @@ export default function ReplayGamePage() {
 
             <div className={cn(
                 "max-w-4xl mx-auto px-4 sm:px-5 flex flex-col",
-                // 판이 열려 있는 동안은 모바일에서 스크롤 없이 한 화면에 담는다 — 차트를 보고
-                // 버튼을 누르는 게 매일 반복되는 동작이라, 그 둘이 같은 화면에 있어야 한다.
-                // layout.tsx 의 main 이 상단 헤더 48 + 하단 탭 64 를 이미 비워 두므로 그만큼 뺀다.
+                // 판이 열려 있는 동안은 넓이와 상관없이 한 화면에 담는다 — 차트를 보고 버튼을
+                // 누르는 게 매일 반복되는 동작이라, 그 둘이 같은 화면에 있어야 한다.
+                // 모바일은 layout.tsx 의 main 이 상단 헤더 48 + 하단 탭 64 를 이미 비워 두므로
+                // 그만큼 빼고, md 부터는 그 크롬이 없어 화면 높이를 그대로 쓴다.
                 // 100dvh 라야 모바일 브라우저 주소창이 접혔다 펴져도 어긋나지 않는다.
+                // 위아래 여백은 판이 도는 동안만 얇게 — 남는 자리는 차트가 가져간다.
                 // overflow-y-auto 는 안전장치다. 아주 작은 화면에서 고정 부분만으로도 자리가
                 // 모자라면 잘리는 대신 스크롤된다 — 버튼이 화면 밖으로 사라지면 판을 못 이어간다.
                 round
-                    ? "h-[calc(100dvh-112px)] md:h-auto overflow-y-auto md:overflow-visible py-3 sm:py-6 md:py-10 gap-3 sm:gap-4 md:pb-24"
-                    : "py-6 sm:py-10 pb-10 md:pb-24 gap-5",
+                    ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-2 sm:py-4 gap-2 sm:gap-4"
+                    // 시작 화면도 폰에서는 붙여 놓는다 — 아래 탭 바 64px 이 이미 비어 있어
+                    // pb-10 까지 주면 빈 자리만 늘어난다.
+                    : "py-4 sm:py-10 pb-4 md:pb-24 gap-3 sm:gap-5",
             )}>
 
                 {!round && (
@@ -508,7 +512,7 @@ export default function ReplayGamePage() {
                         {/* min-h-0 을 주면 안 된다 — flex 가 패널을 내용보다 작게 줄여 차트가 패널을
                             뚫고 나온다(320px 에서 계좌 카드 위에 겹쳐 그려졌다). 기본값 min-height:auto
                             라야 내용 높이가 바닥이 되고, 자리가 정말 모자라면 바깥이 스크롤된다. */}
-                        <SectionPanel className="flex-1 flex flex-col p-3 sm:p-5">
+                        <SectionPanel className="flex-1 flex flex-col p-2.5 sm:p-5">
                             <div className="sm:hidden flex items-baseline justify-between gap-2 mb-1.5 shrink-0">
                                 <h2 className="text-[13px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
                                     {round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
@@ -554,7 +558,7 @@ export default function ReplayGamePage() {
                                 크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 패널을
                                 뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
                                 상자를 주면 줄어드는 쪽도 따라온다. */}
-                            <div className="relative flex-1 min-h-[100px] sm:min-h-[260px] overflow-hidden">
+                            <div className="relative flex-1 min-h-[100px] sm:min-h-[180px] overflow-hidden">
                                 <div className="absolute inset-0">
                                     <LineChart
                                         height="100%"
@@ -572,18 +576,39 @@ export default function ReplayGamePage() {
                         </SectionPanel>
 
                         {/* ── 계좌 ──────────────────────────
-                            모바일은 눌러야 할 버튼에 자리를 내주려고 줄로 압축하고,
-                            넓은 화면에서는 원래 카드를 그대로 쓴다. 값은 stats 한 곳에서 온다. */}
-                        <div className="grid grid-cols-2 gap-2 sm:hidden shrink-0">
-                            {stats.map(s => <MiniStat key={s.label} {...s} />)}
+                            폰에서는 카드 대신 두 줄. 카드 넉 장이 128px 을 먹어 차트가 100px 까지
+                            눌리고 그래도 자리가 모자랐다. 같은 값 넉 개가 두 줄이면 52px 이다. */}
+                        <div className="lg:hidden shrink-0 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2.5 py-1 flex flex-col gap-0.5">
+                            <div className="flex items-baseline justify-between gap-2 text-[12px]">
+                                <span className="truncate">
+                                    <span className="text-neutral-400 mr-1">내 돈</span>
+                                    <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(totalAssets)}</b>
+                                    <span className="text-neutral-400 ml-1.5 mr-1">지금</span>
+                                    <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(price)}</b>
+                                </span>
+                                <b className={cn("font-mono font-black shrink-0", pnlValueColor(totalPnl >= 0))}>{pct(totalRate)}</b>
+                            </div>
+                            <div className="flex items-baseline justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
+                                <span className="shrink-0">
+                                    <span className="text-neutral-400 mr-1">현금</span>
+                                    <b className="font-mono">{fmtKrw(round.cash)}</b>
+                                </span>
+                                <span className="truncate">
+                                    {round.qty > 0
+                                        ? `${round.qty}주 갖고 있음 · 산 값 ${fmtKrw(avg)}`
+                                        : round.status === "done" ? "정리됨" : "아직 안 삼"}
+                                </span>
+                            </div>
                         </div>
-                        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {/* 카드는 네 칸이 한 줄로 들어가는 넓이(lg)에서만. 그보다 좁으면 두 줄이 되어
+                            283px 을 먹고 버튼을 화면 밖으로 밀어낸다. */}
+                        <div className="hidden lg:grid grid-cols-4 gap-4 shrink-0">
                             {stats.map(s => <KpiCard key={s.label} {...s} />)}
                         </div>
 
                         {/* ── 조작 ────────────────────────── */}
                         {round.status === "playing" && (
-                            <SectionPanel className="shrink-0 p-3 sm:p-5">
+                            <SectionPanel className="shrink-0 p-2.5 sm:p-5">
                                 <div className="flex flex-col gap-2 sm:gap-4">
                                     {/* 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 누르면 그 자리에서 체결되고
                                         하루가 지나간다 — 수량을 적고 다시 사기를 누르던 두 걸음을 한 걸음으로. */}
@@ -730,10 +755,8 @@ export default function ReplayGamePage() {
                                         </div>
                                     )}
 
-                                    {/* 모바일은 한 줄만. 수수료·자동청산 규칙은 시작 화면에 적어 뒀다. */}
-                                    <p className="sm:hidden text-[10px] text-neutral-400 dark:text-neutral-500 text-center">
-                                        어느 쪽을 눌러도 하루가 지나갑니다 · 그날 종가로 체결
-                                    </p>
+                                    {/* 폰에서는 이 안내를 접는다 — 같은 말이 시작 화면 "규칙 보기" 에 있고,
+                                        여기 23px 이 차트 높이로 간다. */}
                                     <p className="hidden sm:block text-[11px] text-neutral-400 dark:text-neutral-500 break-keep leading-[1.7]">
                                         어느 쪽을 눌러도 하루가 지나갑니다. 그날 종가로 체결되고,
                                         수수료는 매수·매도 각 0.015%, 매도 시 증권거래세 0.18%입니다.
@@ -788,14 +811,27 @@ function HabitRow({ label, value, note }: { label: string; value: string | null;
 }
 
 // ─────────────────────────────────────────────────────────
-/** 모바일용 압축 지표 한 칸. 화면을 한 장으로 유지하려고 KpiCard 대신 쓴다. */
-function MiniStat({ label, value, sub, valueColor }: { label: string; value: string; sub: string; valueColor?: string }) {
+/**
+ * 접히는 패널. 시작 화면에서 당장 필요한 건 "시작" 하나뿐이고, 리서치실·습관·지난 분기는
+ * 궁금할 때 여는 것이다. 접어 두면 요약 한 줄만 남아 시작 버튼이 첫 화면에 들어온다.
+ */
+function Fold({ icon, title, subtitle, children }: {
+    icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode;
+}) {
     return (
-        <div className="rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2.5 py-1.5">
-            <p className="text-[9px] font-black uppercase tracking-wider text-neutral-400">{label}</p>
-            <p className={cn("text-[14px] font-black font-mono leading-tight truncate", valueColor ?? "text-neutral-900 dark:text-white")}>{value}</p>
-            <p className="text-[10px] text-neutral-400 truncate">{sub}</p>
-        </div>
+        <SectionPanel className="p-3.5 sm:p-5">
+            <details className="group">
+                <summary className="cursor-pointer list-none flex items-center gap-2.5">
+                    <span className="p-1.5 bg-[#faf9f7] dark:bg-[#35332e] rounded-lg text-neutral-500 dark:text-neutral-400 shrink-0">{icon}</span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-black text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</span>
+                        <span className="block text-[11px] text-neutral-500 truncate">{subtitle}</span>
+                    </span>
+                    <ChevronDown size={16} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-3.5 pt-3.5 border-t border-neutral-100 dark:border-[#35332e]/80">{children}</div>
+            </details>
+        </SectionPanel>
     );
 }
 
@@ -828,14 +864,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                 </p>
             </header>
 
-            {isLoggedIn ? (
-                <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                    <MiniStat label="고객 자금 AUM" value={fmtMoney(aum)} sub={firm?.rank ?? rankOf(aum)} />
-                    <MiniStat label="회사 자금" value={fmtMoney(firm?.cash ?? 0)} sub="누적 보수" />
-                    <MiniStat label="운용 분기" value={`${firm?.quarters ?? 0}분기`} sub={`${history.length}건 기록`} />
-                    <MiniStat label="최고 수익률" value={bestReturn === null ? "—" : pct(bestReturn)} sub="한 분기 최고" />
-                </div>
-            ) : (
+            {!isLoggedIn && (
                 <div className="rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-3 text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
                     <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
                     하면 내 운용사가 생기고, 성적이 고객 자금과 보수로 쌓입니다.
@@ -843,23 +872,6 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
             )}
 
             <SectionPanel className="p-3 sm:p-5">
-                <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
-                    {[
-                        `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
-                        `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
-                        // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
-                        `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
-                        `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
-                    ].map((line, i) => (
-                        <li key={i} className="flex gap-3 break-keep">
-                            <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-0.5 shrink-0">
-                                {String(i + 1).padStart(2, "0")}
-                            </span>
-                            <span>{line}</span>
-                        </li>
-                    ))}
-                </ul>
-
                 {firm?.carry && (
                     <div className="mt-3 sm:mt-4 rounded-xl border border-[#e3b34a]/50 bg-[#faf1dc] dark:bg-[#2a2211] px-3.5 py-2.5">
                         <p className="text-[11.5px] sm:text-[12.5px] font-bold text-[#a1730a] dark:text-[#e3b34a] break-keep">
@@ -896,8 +908,9 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                                 </button>
                             ))}
                         </div>
+                        {/* 두 문장이면 폰에서 두 줄이 된다 — 실제로 어떤 자리였는지는 차트 옆에 적힌다. */}
                         <p className="mt-1.5 text-[10.5px] text-neutral-400 dark:text-neutral-500 break-keep">
-                            고른 자리가 안 나오면 만들어진 판으로 시작합니다. 실제로 어떤 자리였는지는 차트 옆에 적힙니다.
+                            고른 자리가 안 나오면 만들어진 판으로 시작합니다.
                         </p>
                     </div>
                 )}
@@ -907,12 +920,47 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     <Play size={16} strokeWidth={2.6} />
                     {busy ? "종목을 고르는 중…" : firm?.carry ? `${(firm?.quarters ?? 0) + 1}분기 이어서 운용` : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
                 </button>
+
+                {/* 회사 현황은 한 줄로. 자세한 건 아래 리서치실·지난 분기에 다 있다. */}
+                {isLoggedIn && (
+                    <p className="mt-3 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
+                        맡은 돈 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(aum)}</b>
+                        {" · "}회사 금고 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(firm?.cash ?? 0)}</b>
+                        {" · "}{firm?.quarters ?? 0}분기 운용
+                        {bestReturn !== null && <>{" · "}최고 <b className={pnlValueColor(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
+                    </p>
+                )}
+
+                {/* 규칙은 한 번 읽으면 되는 글이다. 매번 시작 버튼 앞을 막고 서 있을 이유가 없다. */}
+                <details className="group mt-3">
+                    <summary className="cursor-pointer list-none text-[11.5px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                        규칙 보기 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
+                    </summary>
+                    <div className="mt-2.5">
+                <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
+                    {[
+                        `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
+                        `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
+                        // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
+                        `사기·팔기·관망 — 어느 쪽을 눌러도 하루가 지나갑니다.`,
+                        `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
+                        `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
+                    ].map((line, i) => (
+                        <li key={i} className="flex gap-3 break-keep">
+                            <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-0.5 shrink-0">
+                                {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span>{line}</span>
+                        </li>
+                    ))}
+                </ul>
+                    </div>
+                </details>
             </SectionPanel>
 
             {isLoggedIn && (
-                <SectionPanel className="p-4 sm:p-5">
-                    <SectionHeader icon={<Building2 size={16} />} title="리서치실"
-                        subtitle={`회사 자금 ${fmtMoney(firm?.cash ?? 0)}원`} />
+                <Fold icon={<Building2 size={16} />} title="리서치실"
+                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${owned.length}/${TOOLS.length}`}>
                     <ul className="flex flex-col gap-2">
                         {TOOLS.map(t => {
                             const have = owned.includes(t.id);
@@ -939,13 +987,12 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                             );
                         })}
                     </ul>
-                </SectionPanel>
+                </Fold>
             )}
 
             {habits && habits.trades > 0 && (
-                <SectionPanel className="p-4 sm:p-5">
-                    <SectionHeader icon={<Activity size={16} />} title="매매 습관"
-                        subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`} />
+                <Fold icon={<Activity size={16} />} title="매매 습관"
+                    subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`}>
                     <ul className="flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
                         <HabitRow label="보유"
                             value={habits.holdDays !== null ? `평균 ${habits.holdDays}일` : null}
@@ -965,12 +1012,12 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     <p className="mt-3 text-[10px] text-neutral-400 break-keep leading-[1.6]">
                         이 게임에서 관찰된 값입니다. 표본이 적으면 다음 분기에 크게 달라질 수 있습니다.
                     </p>
-                </SectionPanel>
+                </Fold>
             )}
 
             {history.length > 0 && (
-                <SectionPanel className="p-4 sm:p-5">
-                    <SectionHeader icon={<Flag size={16} />} title="지난 분기" subtitle={`최근 ${history.length}분기`} />
+                <Fold icon={<Flag size={16} />} title="지난 분기"
+                    subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
                         {history.map(h => {
                             const win = (h.final_return ?? 0) >= 0;
@@ -996,7 +1043,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                             );
                         })}
                     </ul>
-                </SectionPanel>
+                </Fold>
             )}
         </>
     );
