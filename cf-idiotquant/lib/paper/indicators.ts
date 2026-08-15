@@ -14,6 +14,49 @@ export function movingAverage(closes: number[], period: number): (number | null)
     return out;
 }
 
+/** 돌파선 — 지난 period 일의 최고가·최저가. 오늘을 포함한다(오늘 신고가면 오늘 값이 상단). */
+export function donchian(highs: number[], lows: number[], period = 20): {
+    upper: (number | null)[]; lower: (number | null)[];
+} {
+    const upper: (number | null)[] = [];
+    const lower: (number | null)[] = [];
+    for (let i = 0; i < highs.length; i++) {
+        if (i < period - 1) { upper.push(null); lower.push(null); continue; }
+        upper.push(Math.max(...highs.slice(i - period + 1, i + 1)));
+        lower.push(Math.min(...lows.slice(i - period + 1, i + 1)));
+    }
+    return { upper, lower };
+}
+
+/**
+ * 변동폭 — 최근 period 일의 하루 폭(True Range) 평균을 종가 위아래로 그린다.
+ *
+ * True Range 는 전날 종가까지 셈에 넣는다. 갭으로 뛴 날은 고가−저가만으로는 실제로 움직인
+ * 폭이 안 나오기 때문이다.
+ */
+export function atrBand(
+    candles: { o: number; h: number; l: number; c: number }[], period = 14,
+): { upper: (number | null)[]; lower: (number | null)[] } {
+    const tr: number[] = [];
+    for (let i = 0; i < candles.length; i++) {
+        const { h, l, c } = candles[i];
+        const pc = i > 0 ? candles[i - 1].c : c;
+        tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+    }
+    const upper: (number | null)[] = [];
+    const lower: (number | null)[] = [];
+    let sum = 0;
+    for (let i = 0; i < candles.length; i++) {
+        sum += tr[i];
+        if (i >= period) sum -= tr[i - period];
+        if (i < period - 1) { upper.push(null); lower.push(null); continue; }
+        const atr = sum / period;
+        upper.push(Math.round(candles[i].c + atr));
+        lower.push(Math.round(candles[i].c - atr));
+    }
+    return { upper, lower };
+}
+
 /** 볼린저밴드 — 이동평균 ± 표준편차 × mult. */
 export function bollinger(closes: number[], period = 20, mult = 2): {
     upper: (number | null)[]; lower: (number | null)[];

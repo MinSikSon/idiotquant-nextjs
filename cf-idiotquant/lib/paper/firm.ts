@@ -13,10 +13,14 @@
 export const INITIAL_AUM = 100_000_000;
 export const MIN_AUM = 10_000_000;
 
-const FLOW_MIN = -40;
-const FLOW_MAX = 50;
-const BASE_FEE_BP = 25;     // 연 1% ÷ 4분기
-const PERF_FEE_PCT = 10;    // 초과수익분의 10%
+// 화면이 "고객 돈이 왜 이만큼 들고 났는지"를 설명하려면 식의 계수까지 알아야 한다.
+// 문장에 숫자를 다시 적으면 규칙이 바뀔 때 설명만 옛말이 된다.
+export const FLOW_MIN = -40;
+export const FLOW_MAX = 50;
+export const FLOW_EXCESS_MULT = 3;    // 벤치마크 초과 1%p 당 유입 3%
+export const FLOW_LOSS_MULT = 1.5;    // 절대 손실 1% 당 유출 1.5%
+export const BASE_FEE_BP = 25;        // 연 1% ÷ 4분기
+export const PERF_FEE_PCT = 10;       // 초과수익분의 10%
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -42,13 +46,15 @@ export interface Tool {
     name: string;
     detail: string;
     price: number;
+    /** 화면에 그대로 나가는 설명. "무엇을 그리는가" 가 아니라 "어떻게 읽는가". */
+    hint: string;
 }
 
 /** 분기 성적 → 고객 자금 유출입률(%). 벤치마크 초과가 주된 동력, 절대 손실은 따로 벌을 받는다. */
 export function flowRate(finalReturn: number, bhReturn: number): number {
     const excess = (Number(finalReturn) || 0) - (Number(bhReturn) || 0);
     const loss = Math.min(Number(finalReturn) || 0, 0);
-    return clamp(excess * 3 + loss * 1.5, FLOW_MIN, FLOW_MAX);
+    return clamp(excess * FLOW_EXCESS_MULT + loss * FLOW_LOSS_MULT, FLOW_MIN, FLOW_MAX);
 }
 
 export function nextAum(aum: number, finalReturn: number, bhReturn: number): number {
@@ -80,8 +86,22 @@ export function rankOf(aum: number): string {
 }
 
 export const TOOLS: Tool[] = [
-    { id: "ma", name: "이동평균선", detail: "5일·20일", price: 300_000 },
-    { id: "bb", name: "볼린저밴드", detail: "20일 · 2σ", price: 1_000_000 },
+    {
+        id: "ma", name: "이동평균선", detail: "5일·20일", price: 300_000,
+        hint: "최근 5일과 20일의 평균 가격. 짧은 선이 긴 선 위에 있으면 오름세, 아래면 내림세로 본다.",
+    },
+    {
+        id: "dc", name: "돌파선", detail: "20일 최고·최저", price: 800_000,
+        hint: "지난 20일 안에서 가장 비쌌던 값과 가장 쌌던 값. 위를 뚫으면 20일 신고가, 아래를 뚫으면 신저가다.",
+    },
+    {
+        id: "bb", name: "볼린저밴드", detail: "20일 · 2σ", price: 1_000_000,
+        hint: "20일 평균에서 표준편차 2배만큼 위아래로 그은 선. 밖으로 나가면 평소보다 많이 움직인 날이다.",
+    },
+    {
+        id: "atr", name: "변동폭", detail: "14일 평균 하루 폭", price: 2_000_000,
+        hint: "최근 14일 동안 하루에 오르내린 폭의 평균을 현재가 위아래로. 손절 자리를 이 폭보다 좁게 잡으면 그냥 흔들림에 털린다.",
+    },
 ];
 
 export function settleQuarter(aum: number, finalReturn: number, bhReturn: number) {
