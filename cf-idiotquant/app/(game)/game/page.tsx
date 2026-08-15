@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check, Activity } from "lucide-react";
+import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check, Activity, ChevronDown } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -420,16 +420,16 @@ export default function ReplayGamePage() {
     // 계좌 4칸. 모바일 압축 줄과 데스크톱 카드가 같은 값을 쓰도록 한 곳에서 만든다.
     const stats = round ? [
         {
-            label: "총 자산", value: fmtKrw(totalAssets), sub: `시드 ${fmtKrw(round.seed)}`,
+            label: "내 돈", value: fmtKrw(totalAssets), sub: `시작 ${fmtKrw(round.seed)}`,
             icon: <Wallet size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
-            label: "예수금", value: fmtKrw(round.cash), sub: round.qty > 0 ? `보유 ${round.qty}주` : "보유 없음",
+            label: "현금", value: fmtKrw(round.cash), sub: round.qty > 0 ? `${round.qty}주 갖고 있음` : "아직 없음",
             icon: <Coins size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
             label: round.status === "done" ? "마지막 가격" : "현재가", value: fmtKrw(price),
-            sub: round.qty > 0 ? `평단 ${fmtKrw(avg)}` : round.status === "done" ? "청산 완료" : "아직 안 삼",
+            sub: round.qty > 0 ? `산 값 ${fmtKrw(avg)}` : round.status === "done" ? "정리됨" : "아직 안 삼",
             icon: <Eye size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
@@ -800,6 +800,31 @@ function MiniStat({ label, value, sub, valueColor }: { label: string; value: str
 }
 
 // ─────────────────────────────────────────────────────────
+/**
+ * 접히는 패널. 시작 화면에서 당장 필요한 건 "시작" 하나뿐이고, 리서치실·습관·지난 분기는
+ * 궁금할 때 여는 것이다. 접어 두면 요약 한 줄만 남아 시작 버튼이 첫 화면에 들어온다.
+ */
+function Fold({ icon, title, subtitle, children }: {
+    icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode;
+}) {
+    return (
+        <SectionPanel className="p-3.5 sm:p-5">
+            <details className="group">
+                <summary className="cursor-pointer list-none flex items-center gap-2.5">
+                    <span className="p-1.5 bg-[#faf9f7] dark:bg-[#35332e] rounded-lg text-neutral-500 dark:text-neutral-400 shrink-0">{icon}</span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-black text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</span>
+                        <span className="block text-[11px] text-neutral-500 truncate">{subtitle}</span>
+                    </span>
+                    <ChevronDown size={16} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-3.5 pt-3.5 border-t border-neutral-100 dark:border-[#35332e]/80">{children}</div>
+            </details>
+        </SectionPanel>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
 /** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
 function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle }: {
     onStart: (scenario?: string | null) => void; busy: boolean; isLoggedIn: boolean;
@@ -828,14 +853,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                 </p>
             </header>
 
-            {isLoggedIn ? (
-                <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                    <MiniStat label="고객 자금 AUM" value={fmtMoney(aum)} sub={firm?.rank ?? rankOf(aum)} />
-                    <MiniStat label="회사 자금" value={fmtMoney(firm?.cash ?? 0)} sub="누적 보수" />
-                    <MiniStat label="운용 분기" value={`${firm?.quarters ?? 0}분기`} sub={`${history.length}건 기록`} />
-                    <MiniStat label="최고 수익률" value={bestReturn === null ? "—" : pct(bestReturn)} sub="한 분기 최고" />
-                </div>
-            ) : (
+            {!isLoggedIn && (
                 <div className="rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-3 text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
                     <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
                     하면 내 운용사가 생기고, 성적이 고객 자금과 보수로 쌓입니다.
@@ -843,23 +861,6 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
             )}
 
             <SectionPanel className="p-3 sm:p-5">
-                <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
-                    {[
-                        `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
-                        `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
-                        // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
-                        `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
-                        `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
-                    ].map((line, i) => (
-                        <li key={i} className="flex gap-3 break-keep">
-                            <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-0.5 shrink-0">
-                                {String(i + 1).padStart(2, "0")}
-                            </span>
-                            <span>{line}</span>
-                        </li>
-                    ))}
-                </ul>
-
                 {firm?.carry && (
                     <div className="mt-3 sm:mt-4 rounded-xl border border-[#e3b34a]/50 bg-[#faf1dc] dark:bg-[#2a2211] px-3.5 py-2.5">
                         <p className="text-[11.5px] sm:text-[12.5px] font-bold text-[#a1730a] dark:text-[#e3b34a] break-keep">
@@ -907,12 +908,46 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     <Play size={16} strokeWidth={2.6} />
                     {busy ? "종목을 고르는 중…" : firm?.carry ? `${(firm?.quarters ?? 0) + 1}분기 이어서 운용` : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
                 </button>
+
+                {/* 회사 현황은 한 줄로. 자세한 건 아래 리서치실·지난 분기에 다 있다. */}
+                {isLoggedIn && (
+                    <p className="mt-3 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
+                        맡은 돈 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(aum)}</b>
+                        {" · "}회사 금고 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(firm?.cash ?? 0)}</b>
+                        {" · "}{firm?.quarters ?? 0}분기 운용
+                        {bestReturn !== null && <>{" · "}최고 <b className={pnlValueColor(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
+                    </p>
+                )}
+
+                {/* 규칙은 한 번 읽으면 되는 글이다. 매번 시작 버튼 앞을 막고 서 있을 이유가 없다. */}
+                <details className="group mt-3">
+                    <summary className="cursor-pointer list-none text-[11.5px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                        규칙 보기 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
+                    </summary>
+                    <div className="mt-2.5">
+                <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
+                    {[
+                        `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
+                        `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
+                        // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
+                        `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
+                        `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
+                    ].map((line, i) => (
+                        <li key={i} className="flex gap-3 break-keep">
+                            <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-0.5 shrink-0">
+                                {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span>{line}</span>
+                        </li>
+                    ))}
+                </ul>
+                    </div>
+                </details>
             </SectionPanel>
 
             {isLoggedIn && (
-                <SectionPanel className="p-4 sm:p-5">
-                    <SectionHeader icon={<Building2 size={16} />} title="리서치실"
-                        subtitle={`회사 자금 ${fmtMoney(firm?.cash ?? 0)}원`} />
+                <Fold icon={<Building2 size={16} />} title="리서치실"
+                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${owned.length}/${TOOLS.length}`}>
                     <ul className="flex flex-col gap-2">
                         {TOOLS.map(t => {
                             const have = owned.includes(t.id);
@@ -939,13 +974,12 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                             );
                         })}
                     </ul>
-                </SectionPanel>
+                </Fold>
             )}
 
             {habits && habits.trades > 0 && (
-                <SectionPanel className="p-4 sm:p-5">
-                    <SectionHeader icon={<Activity size={16} />} title="매매 습관"
-                        subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`} />
+                <Fold icon={<Activity size={16} />} title="매매 습관"
+                    subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`}>
                     <ul className="flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
                         <HabitRow label="보유"
                             value={habits.holdDays !== null ? `평균 ${habits.holdDays}일` : null}
@@ -965,12 +999,12 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     <p className="mt-3 text-[10px] text-neutral-400 break-keep leading-[1.6]">
                         이 게임에서 관찰된 값입니다. 표본이 적으면 다음 분기에 크게 달라질 수 있습니다.
                     </p>
-                </SectionPanel>
+                </Fold>
             )}
 
             {history.length > 0 && (
-                <SectionPanel className="p-4 sm:p-5">
-                    <SectionHeader icon={<Flag size={16} />} title="지난 분기" subtitle={`최근 ${history.length}분기`} />
+                <Fold icon={<Flag size={16} />} title="지난 분기"
+                    subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
                         {history.map(h => {
                             const win = (h.final_return ?? 0) >= 0;
@@ -996,7 +1030,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                             );
                         })}
                     </ul>
-                </SectionPanel>
+                </Fold>
             )}
         </>
     );
