@@ -460,8 +460,10 @@ export default function ReplayGamePage() {
                 // overflow-y-auto 는 안전장치다. 아주 작은 화면에서 고정 부분만으로도 자리가
                 // 모자라면 잘리는 대신 스크롤된다 — 버튼이 화면 밖으로 사라지면 판을 못 이어간다.
                 round
-                    ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-3 sm:py-4 gap-3 sm:gap-4"
-                    : "py-6 sm:py-10 pb-10 md:pb-24 gap-5",
+                    ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-2 sm:py-4 gap-2 sm:gap-4"
+                    // 시작 화면도 폰에서는 붙여 놓는다 — 아래 탭 바 64px 이 이미 비어 있어
+                    // pb-10 까지 주면 빈 자리만 늘어난다.
+                    : "py-4 sm:py-10 pb-4 md:pb-24 gap-3 sm:gap-5",
             )}>
 
                 {!round && (
@@ -510,7 +512,7 @@ export default function ReplayGamePage() {
                         {/* min-h-0 을 주면 안 된다 — flex 가 패널을 내용보다 작게 줄여 차트가 패널을
                             뚫고 나온다(320px 에서 계좌 카드 위에 겹쳐 그려졌다). 기본값 min-height:auto
                             라야 내용 높이가 바닥이 되고, 자리가 정말 모자라면 바깥이 스크롤된다. */}
-                        <SectionPanel className="flex-1 flex flex-col p-3 sm:p-5">
+                        <SectionPanel className="flex-1 flex flex-col p-2.5 sm:p-5">
                             <div className="sm:hidden flex items-baseline justify-between gap-2 mb-1.5 shrink-0">
                                 <h2 className="text-[13px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
                                     {round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
@@ -574,10 +576,29 @@ export default function ReplayGamePage() {
                         </SectionPanel>
 
                         {/* ── 계좌 ──────────────────────────
-                            모바일은 눌러야 할 버튼에 자리를 내주려고 줄로 압축하고,
-                            넓은 화면에서는 원래 카드를 그대로 쓴다. 값은 stats 한 곳에서 온다. */}
-                        <div className="grid grid-cols-2 lg:hidden gap-2 shrink-0">
-                            {stats.map(s => <MiniStat key={s.label} {...s} />)}
+                            폰에서는 카드 대신 두 줄. 카드 넉 장이 128px 을 먹어 차트가 100px 까지
+                            눌리고 그래도 자리가 모자랐다. 같은 값 넉 개가 두 줄이면 52px 이다. */}
+                        <div className="lg:hidden shrink-0 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2.5 py-1 flex flex-col gap-0.5">
+                            <div className="flex items-baseline justify-between gap-2 text-[12px]">
+                                <span className="truncate">
+                                    <span className="text-neutral-400 mr-1">내 돈</span>
+                                    <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(totalAssets)}</b>
+                                    <span className="text-neutral-400 ml-1.5 mr-1">지금</span>
+                                    <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(price)}</b>
+                                </span>
+                                <b className={cn("font-mono font-black shrink-0", pnlValueColor(totalPnl >= 0))}>{pct(totalRate)}</b>
+                            </div>
+                            <div className="flex items-baseline justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
+                                <span className="shrink-0">
+                                    <span className="text-neutral-400 mr-1">현금</span>
+                                    <b className="font-mono">{fmtKrw(round.cash)}</b>
+                                </span>
+                                <span className="truncate">
+                                    {round.qty > 0
+                                        ? `${round.qty}주 갖고 있음 · 산 값 ${fmtKrw(avg)}`
+                                        : round.status === "done" ? "정리됨" : "아직 안 삼"}
+                                </span>
+                            </div>
                         </div>
                         {/* 카드는 네 칸이 한 줄로 들어가는 넓이(lg)에서만. 그보다 좁으면 두 줄이 되어
                             283px 을 먹고 버튼을 화면 밖으로 밀어낸다. */}
@@ -587,7 +608,7 @@ export default function ReplayGamePage() {
 
                         {/* ── 조작 ────────────────────────── */}
                         {round.status === "playing" && (
-                            <SectionPanel className="shrink-0 p-3 sm:p-5">
+                            <SectionPanel className="shrink-0 p-2.5 sm:p-5">
                                 <div className="flex flex-col gap-2 sm:gap-4">
                                     {/* 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 누르면 그 자리에서 체결되고
                                         하루가 지나간다 — 수량을 적고 다시 사기를 누르던 두 걸음을 한 걸음으로. */}
@@ -734,10 +755,8 @@ export default function ReplayGamePage() {
                                         </div>
                                     )}
 
-                                    {/* 모바일은 한 줄만. 수수료·자동청산 규칙은 시작 화면에 적어 뒀다. */}
-                                    <p className="sm:hidden text-[10px] text-neutral-400 dark:text-neutral-500 text-center">
-                                        어느 쪽을 눌러도 하루가 지나갑니다 · 그날 종가로 체결
-                                    </p>
+                                    {/* 폰에서는 이 안내를 접는다 — 같은 말이 시작 화면 "규칙 보기" 에 있고,
+                                        여기 23px 이 차트 높이로 간다. */}
                                     <p className="hidden sm:block text-[11px] text-neutral-400 dark:text-neutral-500 break-keep leading-[1.7]">
                                         어느 쪽을 눌러도 하루가 지나갑니다. 그날 종가로 체결되고,
                                         수수료는 매수·매도 각 0.015%, 매도 시 증권거래세 0.18%입니다.
@@ -788,18 +807,6 @@ function HabitRow({ label, value, note }: { label: string; value: string | null;
                 <span className="text-neutral-400">아직 알 수 없음{note ? ` — ${note}` : ""}</span>
             )}
         </li>
-    );
-}
-
-// ─────────────────────────────────────────────────────────
-/** 모바일용 압축 지표 한 칸. 화면을 한 장으로 유지하려고 KpiCard 대신 쓴다. */
-function MiniStat({ label, value, sub, valueColor }: { label: string; value: string; sub: string; valueColor?: string }) {
-    return (
-        <div className="rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2.5 py-1.5">
-            <p className="text-[9px] font-black uppercase tracking-wider text-neutral-400">{label}</p>
-            <p className={cn("text-[14px] font-black font-mono leading-tight truncate", valueColor ?? "text-neutral-900 dark:text-white")}>{value}</p>
-            <p className="text-[10px] text-neutral-400 truncate">{sub}</p>
-        </div>
     );
 }
 
@@ -901,8 +908,9 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                                 </button>
                             ))}
                         </div>
+                        {/* 두 문장이면 폰에서 두 줄이 된다 — 실제로 어떤 자리였는지는 차트 옆에 적힌다. */}
                         <p className="mt-1.5 text-[10.5px] text-neutral-400 dark:text-neutral-500 break-keep">
-                            고른 자리가 안 나오면 만들어진 판으로 시작합니다. 실제로 어떤 자리였는지는 차트 옆에 적힙니다.
+                            고른 자리가 안 나오면 만들어진 판으로 시작합니다.
                         </p>
                     </div>
                 )}
@@ -934,6 +942,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                         `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
                         `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
                         // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
+                        `사기·팔기·관망 — 어느 쪽을 눌러도 하루가 지나갑니다.`,
                         `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
                         `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
                     ].map((line, i) => (
