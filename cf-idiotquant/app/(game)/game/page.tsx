@@ -27,8 +27,11 @@ import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/
 import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
-import { TOOLS, INITIAL_AUM, rankOf, fmtMoney, type Firm } from "@/lib/paper/firm";
-import { movingAverage, bollinger } from "@/lib/paper/indicators";
+import {
+    TOOLS, INITIAL_AUM, MIN_AUM, rankOf, fmtMoney, flowRate, type Firm,
+    FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
+} from "@/lib/paper/firm";
+import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
 import {
@@ -333,7 +336,7 @@ export default function ReplayGamePage() {
             if (!res.success) { addToast("error", res.error); return; }
             setFirm(res.firm ?? null);
             setActiveTools(res.firm?.tools ?? []);   // 사면 바로 켠다
-            addToast("success", "도구를 들였습니다. 다음 분기부터 차트에 나타납니다.");
+            addToast("success", "도구를 들였습니다. 차트 위 이름을 눌러 판이 도는 중에도 껐다 켤 수 있습니다.");
         } finally {
             setBusy(false);
         }
@@ -342,6 +345,12 @@ export default function ReplayGamePage() {
     const toggleTool = useCallback((id: string) => {
         setActiveTools(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
     }, []);
+
+    // 산 도구. 판 화면의 on/off 칩과 대시보드 리서치실이 같은 목록을 쓴다.
+    const ownedTools = useMemo(
+        () => TOOLS.filter(t => (firm?.tools ?? []).includes(t.id)),
+        [firm?.tools],
+    );
 
     // 해금하고 켜 둔 리서치 도구를 가격 위에 겹쳐 그린다.
     // 별도 영역을 만들지 않는 이유는 모바일에서 차트 높이를 더 쓸 수 없기 때문이다.
@@ -355,10 +364,20 @@ export default function ReplayGamePage() {
             out.push({ name: "5일선", data: movingAverage(closes, 5), color: "#f59e0b" });
             out.push({ name: "20일선", data: movingAverage(closes, 20), color: "#8b5cf6" });
         }
+        if (on("dc")) {
+            const d = donchian(visible.map(c => c.h || c.c), visible.map(c => c.l || c.c), 20);
+            out.push({ name: "20일 최고", data: d.upper, color: "#0d9488" });
+            out.push({ name: "20일 최저", data: d.lower, color: "#0d9488" });
+        }
         if (on("bb")) {
             const b = bollinger(closes, 20, 2);
             out.push({ name: "밴드상단", data: b.upper, color: "#94a3b8", dash: "3 3" });
             out.push({ name: "밴드하단", data: b.lower, color: "#94a3b8", dash: "3 3" });
+        }
+        if (on("atr")) {
+            const a = atrBand(visible.map(c => ({ o: c.o || c.c, h: c.h || c.c, l: c.l || c.c, c: c.c })), 14);
+            out.push({ name: "변동폭 위", data: a.upper, color: "#d946ef", dash: "2 4" });
+            out.push({ name: "변동폭 아래", data: a.lower, color: "#d946ef", dash: "2 4" });
         }
 
         // 하루가 얼마나 흔들렸는지. 같은 종가라도 하루 안에서 15% 오갔던 날과 조용한 날은
@@ -554,6 +573,26 @@ export default function ReplayGamePage() {
                                         : benchNote ?? "종목명과 시기는 끝나야 열립니다"}
                                 />
                             </div>
+                            {/* 산 도구는 판이 도는 중에도 껐다 켤 수 있다. 선이 넷씩 겹치면 정작
+                                가격이 안 보이는데, 그때마다 판을 접고 대시보드로 갈 수는 없다.
+                                산 사람에게만 보이므로 안 산 사람의 화면은 그대로다. */}
+                            {ownedTools.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1 mb-1.5 shrink-0">
+                                    {ownedTools.map(t => {
+                                        const on = activeTools.includes(t.id);
+                                        return (
+                                            <button key={t.id} onClick={() => toggleTool(t.id)} title={t.hint}
+                                                aria-label={`${t.name} ${on ? "끄기" : "켜기"}`}
+                                                className={cn("inline-flex items-center gap-1 min-h-[26px] px-2 rounded-lg text-[10.5px] font-bold border transition-colors",
+                                                    on
+                                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                                                        : "text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                {t.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                             {/* recharts 의 ResponsiveContainer 는 부모 높이가 flex 로 정해지면 한 번 잰
                                 크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 패널을
                                 뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
@@ -812,6 +851,55 @@ function HabitRow({ label, value, note }: { label: string; value: string | null;
 
 // ─────────────────────────────────────────────────────────
 /**
+ * 고객 돈이 왜 늘고 주는지, 보수는 어디서 나오는지.
+ *
+ * 숫자는 전부 규칙(firm.ts)에서 가져오고 예시는 실제 `flowRate` 를 돌려 만든다 — 문장에
+ * 값을 다시 적으면 규칙이 바뀔 때 설명만 옛말이 된다.
+ *
+ * 자리는 "규칙 보기" 안이다. 시작 화면에 카드를 하나 더 세우면 폰에서 한 화면이 깨진다.
+ */
+function MoneyFlowNote() {
+    const ex = (mine: number, bh: number) =>
+        `내 ${pct(mine)} · 벤치마크 ${pct(bh)} → 고객 돈 ${flowRate(mine, bh) >= 0 ? "+" : ""}${flowRate(mine, bh).toFixed(1)}%`;
+
+    const Row = ({ k, v }: { k: string; v: string }) => (
+        <li className="flex gap-2 break-keep">
+            <span className="shrink-0 w-[52px] text-neutral-400">{k}</span>
+            <span className="text-neutral-600 dark:text-neutral-300">{v}</span>
+        </li>
+    );
+
+    return (
+        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-col gap-2.5 text-[11.5px] sm:text-[13px] leading-[1.6]">
+            <div>
+                <p className="font-black text-neutral-900 dark:text-white mb-1">고객 돈은 왜 늘고 줄까</p>
+                <p className="text-neutral-500 dark:text-neutral-400 break-keep">
+                    고객은 벤치마크(그냥 사서 들고 있기)와 견줘서 돈을 맡기거나 뺍니다.
+                    지수만큼도 못 벌면 굳이 나에게 맡길 이유가 없고, 덜 잃었어도 잃은 건 잃은 겁니다.
+                </p>
+                <ul className="mt-1.5 flex flex-col gap-1">
+                    <Row k="식" v={`(내 수익률 − 벤치마크) × ${FLOW_EXCESS_MULT} + 손실분 × ${FLOW_LOSS_MULT}`} />
+                    <Row k="한 분기" v={`${FLOW_MIN}% ~ +${FLOW_MAX}% 안에서만 움직입니다`} />
+                    <Row k="이겼을 때" v={ex(8, 5)} />
+                    <Row k="둘 다 손실" v={ex(-4, -6)} />
+                    <Row k="졌을 때" v={ex(2, 9)} />
+                    <Row k="하한" v={`아무리 잃어도 ${fmtMoney(MIN_AUM)}원 아래로는 내려가지 않습니다`} />
+                </ul>
+            </div>
+            <div>
+                <p className="font-black text-neutral-900 dark:text-white mb-1">내 회사 돈(보수)은 어디서 나오나</p>
+                <ul className="flex flex-col gap-1">
+                    <Row k="운용보수" v={`맡은 돈 × ${(BASE_FEE_BP / 100).toFixed(2)}% — 성적과 무관하게 분기마다 (연 ${(BASE_FEE_BP * 4 / 100).toFixed(0)}%)`} />
+                    <Row k="성과보수" v={`맡은 돈 × 초과수익(%p) × ${PERF_FEE_PCT}% — 벤치마크를 이겼을 때만`} />
+                    <Row k="쓰는 곳" v="리서치실 도구를 사는 데 씁니다. 판의 시드 1,000만원과는 다른 주머니입니다." />
+                </ul>
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
+/**
  * 접히는 패널. 시작 화면에서 당장 필요한 건 "시작" 하나뿐이고, 리서치실·습관·지난 분기는
  * 궁금할 때 여는 것이다. 접어 두면 요약 한 줄만 남아 시작 버튼이 첫 화면에 들어온다.
  */
@@ -934,7 +1022,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                 {/* 규칙은 한 번 읽으면 되는 글이다. 매번 시작 버튼 앞을 막고 서 있을 이유가 없다. */}
                 <details className="group mt-3">
                     <summary className="cursor-pointer list-none text-[11.5px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                        규칙 보기 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
+                        규칙과 고객 돈 보기 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
                     </summary>
                     <div className="mt-2.5">
                 <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
@@ -954,6 +1042,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                         </li>
                     ))}
                 </ul>
+                        <MoneyFlowNote />
                     </div>
                 </details>
             </SectionPanel>
@@ -966,10 +1055,15 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                             const have = owned.includes(t.id);
                             const on = activeTools.includes(t.id);
                             return (
-                                <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 dark:border-[#35332e] px-3 py-2">
+                                <li key={t.id} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 dark:border-[#35332e] px-3 py-2">
                                     <div className="min-w-0">
-                                        <div className="text-[13px] font-black text-neutral-900 dark:text-white truncate">{t.name}</div>
-                                        <div className="text-[11px] text-neutral-400 truncate">{t.detail}</div>
+                                        <div className="text-[13px] font-black text-neutral-900 dark:text-white truncate">
+                                            {t.name} <span className="text-[11px] font-bold text-neutral-400">{t.detail}</span>
+                                        </div>
+                                        {/* 읽는 법을 적어 둔다 — 이름만 보고는 사도 쓸 줄 모른다 */}
+                                        <p className="mt-0.5 text-[11px] leading-[1.5] text-neutral-500 dark:text-neutral-400 break-keep">
+                                            {t.hint}
+                                        </p>
                                     </div>
                                     {have ? (
                                         <button onClick={() => onToggle(t.id)}
@@ -1068,6 +1162,48 @@ function clientNote(flow: number, flowPct: number, rankBefore: string, rankAfter
 }
 
 /** 분기 보고서 — 성적과 그것이 회사에 미친 결과를 나란히. */
+/**
+ * 이번 분기 숫자가 어떻게 나왔는지. 접어 둔다 — 한 화면을 지켜야 하고, 매번 볼 것도 아니다.
+ *
+ * 값은 서버가 남긴 정산 결과를 그대로 쓰고, 여기서는 그 값이 어느 식에서 나왔는지만
+ * 늘어놓는다. 다시 계산하면 규칙이 바뀐 뒤 지난 기록의 설명이 틀려진다.
+ */
+function FeeMath({ round, mine, bh }: { round: ReplayRound; mine: number; bh: number }) {
+    const aum = round.aum_before ?? 0;
+    const excess = mine - bh;
+    const loss = Math.min(mine, 0);
+    const flowPct = aum > 0 ? ((round.aum_after ?? 0) - aum) / aum * 100 : 0;
+    const raw = excess * FLOW_EXCESS_MULT + loss * FLOW_LOSS_MULT;
+    const capped = Math.abs(raw - flowPct) > 0.05;   // 상·하한에 걸렸나
+
+    const Line = ({ k, v }: { k: string; v: string }) => (
+        <li className="flex gap-2 break-keep">
+            <span className="shrink-0 w-[52px] text-neutral-400">{k}</span>
+            <span className="font-mono text-neutral-600 dark:text-neutral-300">{v}</span>
+        </li>
+    );
+
+    return (
+        <details className="group w-full">
+            <summary className="cursor-pointer list-none text-[11px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                계산식 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
+            </summary>
+            <ul className="mt-1.5 flex flex-col gap-1 text-[11px] sm:text-[12px] leading-[1.6]">
+                <Line k="초과수익" v={`${pct(mine)} − ${pct(bh)} = ${excess >= 0 ? "+" : ""}${excess.toFixed(2)}%p`} />
+                <Line k="운용보수" v={`${fmtMoney(aum)} × ${(BASE_FEE_BP / 100).toFixed(2)}% = ${(round.fee_base ?? 0).toLocaleString()}원`} />
+                <Line k="성과보수" v={excess > 0
+                    ? `${fmtMoney(aum)} × ${excess.toFixed(2)}%p × ${PERF_FEE_PCT}% = ${(round.fee_perf ?? 0).toLocaleString()}원`
+                    : "벤치마크를 못 이겨 없음"} />
+                <Line k="고객 돈" v={`${excess >= 0 ? "+" : ""}${excess.toFixed(2)}%p × ${FLOW_EXCESS_MULT}${loss < 0 ? ` ${(loss * FLOW_LOSS_MULT).toFixed(1)}(손실 ${loss.toFixed(2)}% × ${FLOW_LOSS_MULT})` : ""} = ${raw >= 0 ? "+" : ""}${raw.toFixed(1)}%`} />
+                {capped && (
+                    <Line k="" v={`한 분기 한도 ${FLOW_MIN}%~+${FLOW_MAX}% 에 걸려 ${flowPct >= 0 ? "+" : ""}${flowPct.toFixed(1)}% 적용`} />
+                )}
+                <Line k="맡은 돈" v={`${fmtMoney(aum)} → ${fmtMoney(round.aum_after ?? 0)}`} />
+            </ul>
+        </details>
+    );
+}
+
 function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
     const mine = round.final_return ?? 0;
     const bh = round.bh_return ?? 0;
@@ -1129,6 +1265,7 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                             보수 +{fmtMoney(feeTotal)}
                             <span className="font-normal opacity-70"> (운용 {fmtMoney(round.fee_base ?? 0)} · 성과 {fmtMoney(round.fee_perf ?? 0)})</span>
                         </span>
+                        <FeeMath round={round} mine={mine} bh={bh} />
                     </div>
                 ) : isLoggedIn ? null : (
                     <p className="text-[11px] text-neutral-400 border-t border-neutral-100 dark:border-[#35332e] pt-1.5">
