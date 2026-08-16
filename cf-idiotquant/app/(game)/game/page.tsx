@@ -697,18 +697,29 @@ export default function ReplayGamePage() {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-3 gap-1.5">
-                                                <button onClick={() => advance(null)} disabled={busy}
-                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                                    하루
-                                                </button>
-                                                {SKIP_STEPS.map(n => (
-                                                    <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
-                                                        {n}일
-                                                        <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
+                                            // 예약 버튼이 이 줄 끝에 붙는다 — 따로 한 줄을 쓰면 44px 을 먹고,
+                                            // 그만큼이 차트에서 빠진다. 마지막 날에는 걸어도 체결될 날이 없어 안 띄운다.
+                                            <div className="flex gap-1.5">
+                                                <div className="grid grid-cols-3 gap-1.5 flex-1 min-w-0">
+                                                    <button onClick={() => advance(null)} disabled={busy}
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                        하루
                                                     </button>
-                                                ))}
+                                                    {SKIP_STEPS.map(n => (
+                                                        <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
+                                                            className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            {n}일
+                                                            <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {isLoggedIn && (
+                                                    <button onClick={() => setReserveOpen(v => !v)}
+                                                        className="shrink-0 min-h-[46px] px-2.5 rounded-xl text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
+                                                        {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
+                                                        예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -717,14 +728,10 @@ export default function ReplayGamePage() {
                                         체결 판정과 체결가 규칙은 전부 워커에 있다. 여기는 걸고 지우기만 한다.
                                         기본은 접어 둔다 — 폰에서 한 화면이 이미 빡빡하다. */}
                                     {isLoggedIn && (
-                                        <div className="flex flex-col gap-2">
+                                        <div className={cn("flex flex-col gap-2",
+                                            // 걸어 둔 예약도 없고 접혀 있으면 이 블록은 자리를 차지하지 않는다
+                                            !reserveOpen && (round.pending ?? []).length === 0 && "hidden")}>
                                             <div className="flex items-center gap-1.5 flex-wrap">
-                                                {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 —
-                                                    orders 가 같은 이유로 ?? [] 를 쓴다. */}
-                                                <button onClick={() => setReserveOpen(v => !v)}
-                                                    className="min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
-                                                    예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
-                                                </button>
                                                 {(round.pending ?? []).map((r, i) => (
                                                     <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[36px] px-2 rounded-lg text-[10.5px] font-bold bg-[#faf1dc] dark:bg-[#2a2211] text-[#a1730a] dark:text-[#e3b34a]">
                                                         {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
