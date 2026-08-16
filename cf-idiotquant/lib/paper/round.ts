@@ -74,7 +74,13 @@ export interface ReplayRound {
     carried?: boolean;
     id: string;
     cursor: number;
+    /** 이 판의 캔들 수. 반기 창을 달력으로 자르면 판마다 다르다. */
     total_days: number;
+    /** 미리 보여 준 구간의 캔들 수. 벤치마크 기준일이 여기서 나온다. */
+    context_days?: number;
+    /** 몇 번째 반기인가(0부터). 캠페인 없이 굴린 판·체험 운용은 null. */
+    half_index?: number | null;
+    campaign_id?: string | null;
     cash: number;
     seed: number;
     qty: number;
@@ -96,6 +102,25 @@ export interface ReplayRound {
     fee_base: number | null;
     fee_perf: number | null;
     habits: RoundHabits | null;
+}
+
+/**
+ * 캠페인 — "몇 년을 굴릴 것인가". 기간을 고르면 그만큼 전으로 돌아가 달력 45일짜리
+ * 반기(1-1 … 4-2)를 차례로 굴린다. 규칙과 계산은 전부 워커(lib/campaign.js)에 있다.
+ */
+export interface Campaign {
+    id: string;
+    years: number;
+    start_date: string;
+    half_index: number;
+    total_halves: number;
+    status: "playing" | "done";
+    /** 몇 년차인지. 20년이면 라벨(1-1)만으로는 구분이 안 된다. */
+    year: number;
+    /** "1-1" … "4-2" */
+    half_label: string;
+    done_halves: number;
+    ended_at: number | null;
 }
 
 export interface ReplayHistoryItem {

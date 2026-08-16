@@ -1,7 +1,7 @@
 // 리플레이 라운드 API — 로그인 사용자 (백엔드 /user/replay).
 // 비로그인은 lib/paper/localRound.ts 가 같은 모양을 브라우저 안에서 다룬다.
 
-import type { ReplayRound, ReplayHistoryItem, HabitSummary, Reservation } from "@/lib/paper/round";
+import type { ReplayRound, ReplayHistoryItem, HabitSummary, Reservation, Campaign } from "@/lib/paper/round";
 import type { Firm } from "@/lib/paper/firm";
 
 async function replayRequest(method: "GET" | "POST", body?: object) {
@@ -42,10 +42,18 @@ export type ReplayResponse =
         wallet?: { coins: number; best_streak: number; best_return: number | null };
         firm?: Firm;
         habits?: HabitSummary | null;
+        /** 굴러가는 캠페인. null 이면 기간부터 골라야 한다. */
+        campaign?: Campaign | null;
+        year_choices?: number[];
+        existed?: boolean;
     }
     | { success: false; status: number; error: string };
 
 export const getReplayState = (): Promise<ReplayResponse> => replayRequest("GET");
+
+/** 기간을 골라 캠페인을 연다. 굴러가는 게 있으면 서버가 그걸 그대로 준다. */
+export const startCampaign = (years: number): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "start-campaign", years });
 
 export const startReplayRound = (scenario?: string | null): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "start", ...(scenario ? { scenario } : {}) });

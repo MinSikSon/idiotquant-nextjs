@@ -29,14 +29,15 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation } from "@/lib/paper/round";
+import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
-import { getReplayState, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
+import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
 import {
     TOOLS, INITIAL_AUM, MIN_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
+import { YEAR_CHOICES, halfOf, totalHalves } from "@/lib/paper/campaign";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
 import {
@@ -109,6 +110,10 @@ export default function ReplayGamePage() {
     const [round, setRound] = useState<ReplayRound | null>(null);
     const [history, setHistory] = useState<ReplayHistoryItem[]>([]);
     const [firm, setFirm] = useState<Firm | null>(null);
+    // 굴러가는 캠페인. null 이면 아직 기간을 안 골랐다(또는 방금 끝났다).
+    const [campaign, setCampaign] = useState<Campaign | null>(null);
+    // 방금 기간이 끝난 캠페인 — 최종 리포트를 띄울 때까지 들고 있는다.
+    const [endedCampaign, setEndedCampaign] = useState<Campaign | null>(null);
     const [habits, setHabits] = useState<HabitSummary | null>(null);
     const [bestReturn, setBestReturn] = useState<number | null>(null);
     // 산 도구 중 지금 켜 둔 것. 사자마자 켜진다.
@@ -151,11 +156,26 @@ export default function ReplayGamePage() {
                 setHabits(res.habits ?? null);
                 setBestReturn(res.wallet?.best_return ?? null);
                 setActiveTools(res.firm?.tools ?? []);
+                setCampaign(res.campaign ?? null);
             }
             setLoading(false);
         });
         return () => { cancelled = true; };
     }, [isLoggedIn, status]);
+
+    /** 기간을 골라 캠페인을 연다. 이 뒤에야 반기를 시작할 수 있다. */
+    const openCampaign = useCallback(async (years: number) => {
+        setBusy(true);
+        try {
+            const res = await startCampaign(years);
+            if (!res.success) { addToast("error", res.error); return; }
+            setCampaign(res.campaign ?? null);
+            setEndedCampaign(null);
+            addToast("success", `${years}년을 굴립니다. ${years}년 전으로 돌아갑니다.`);
+        } finally {
+            setBusy(false);
+        }
+    }, [addToast]);
 
     const start = useCallback(async (scenario?: string | null) => {
         setBusy(true);
@@ -194,6 +214,9 @@ export default function ReplayGamePage() {
                         setFirm(st.firm ?? null);
                         setHabits(st.habits ?? null);
                         setBestReturn(st.wallet?.best_return ?? null);
+                        // 마지막 반기였으면 굴러가는 캠페인이 없다 — 그때는 기간이 끝난 것이다.
+                        if (campaign && !st.campaign) setEndedCampaign(campaign);
+                        setCampaign(st.campaign ?? null);
                     }
                 }
                 return res.round;
@@ -205,7 +228,7 @@ export default function ReplayGamePage() {
         } finally {
             setBusy(false);
         }
-    }, [isLoggedIn, addToast]);
+    }, [isLoggedIn, addToast, campaign]);
 
     const advance = useCallback(async (trade?: { side: "buy" | "sell"; qty: number } | null, carry?: boolean) => {
         if (!round) return;
@@ -241,14 +264,19 @@ export default function ReplayGamePage() {
                 if (!res.success) { addToast("error", res.error); return; }
                 setRound(res.round);
                 const st = await getReplayState();
-                if (st.success) { setHistory(st.history ?? []); setFirm(st.firm ?? null); setHabits(st.habits ?? null); setBestReturn(st.wallet?.best_return ?? null); }
+                if (st.success) {
+                    setHistory(st.history ?? []); setFirm(st.firm ?? null);
+                    setHabits(st.habits ?? null); setBestReturn(st.wallet?.best_return ?? null);
+                    if (campaign && !st.campaign) setEndedCampaign(campaign);
+                    setCampaign(st.campaign ?? null);
+                }
             } else {
                 setRound(giveUpLocal(round));
             }
         } finally {
             setBusy(false);
         }
-    }, [round, isLoggedIn, addToast]);
+    }, [round, isLoggedIn, addToast, campaign]);
 
     const reset = useCallback(() => {
         if (!isLoggedIn) saveLocal(null);
@@ -269,6 +297,16 @@ export default function ReplayGamePage() {
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
     const avg = round ? avgPrice({ qty: round.qty, cost_basis: round.cost_basis }) : 0;
 
+    // 판 길이와 컨텍스트 길이는 판마다 다르다 — 반기 창을 달력으로 자르면 그 안의 거래일
+    // 수가 공휴일·연휴에 따라 달라진다. 서버가 준 값을 쓰고, 없으면(비로그인 로컬 판)
+    // 예전 상수로 읽는다.
+    const ctxDays = round?.context_days ?? CONTEXT_DAYS;
+    const totalDays = round?.total_days ?? TOTAL_DAYS;
+    // "2-1반기" — 캠페인이 없던 시절 판이나 비로그인 판은 그냥 "이번 판".
+    const halfTitle = round?.half_index != null
+        ? `${halfOf(round.half_index).year}년차 ${halfOf(round.half_index).label}반기`
+        : "이번 판";
+
     // ── 벤치마크 ─────────────────────────────────────────────
     // 분기 정산의 성과보수는 "그냥 사서 들고 있었을 때"와의 차이로 매긴다(firm.ts 의 settleQuarter).
     // 그 잣대를 끝나고서야 보여 줄 이유가 없다 — 40일 내내 "잘하고 있나"에 답이 없던 자리다.
@@ -276,13 +314,13 @@ export default function ReplayGamePage() {
     // 재는 시작점은 캔들 0번이 아니라 거래를 시작하는 날(컨텍스트 마지막 날)이다.
     // 워커의 _finish 가 candles.slice(CONTEXT_DAYS - 1) 로 재므로, 여기서 0번부터 재면
     // 화면의 숫자와 정산이 다른 잣대를 쓰게 된다.
-    const benchBase = round?.candles?.[CONTEXT_DAYS - 1]?.c ?? 0;
+    const benchBase = round?.candles?.[ctxDays - 1]?.c ?? 0;
     const bhRate = benchBase > 0 && price > 0 ? ((price - benchBase) / benchBase) * 100 : 0;
     const edge = totalRate - bhRate;                                   // %p. 양수면 그냥 들고 있는 것보다 낫다
-    const tradedDays = round ? Math.max(0, round.cursor - CONTEXT_DAYS) : 0;
+    const tradedDays = round ? Math.max(0, round.cursor - ctxDays) : 0;
     // 마지막 날에 보유가 남아 있으면 다음 분기로 넘길 수 있다. 회사가 있어야 이어진다.
     const canCarry = !!round && isLoggedIn && round.status === "playing"
-        && round.cursor >= TOTAL_DAYS && round.qty > 0;
+        && round.cursor >= totalDays && round.qty > 0;
     // 첫 며칠은 차이가 크게 요동쳐 읽을 값이 못 된다. 닷새 지나고부터 말한다.
     const benchNote = round && round.status === "playing" && tradedDays >= 5 && benchBase > 0
         ? `그냥 들고 ${pct(bhRate)} · 나 ${pct(totalRate)} (${edge >= 0 ? "+" : ""}${edge.toFixed(1)}%p)`
@@ -432,7 +470,7 @@ export default function ReplayGamePage() {
                     }
                 }
                 // 거래 시작 전에는 비교할 것이 없어 비워 둔다
-                mine.push(i >= CONTEXT_DAYS - 1 ? Math.round((cash + pos.qty * c.c) / round.seed * benchBase) : null);
+                mine.push(i >= ctxDays - 1 ? Math.round((cash + pos.qty * c.c) / round.seed * benchBase) : null);
             });
             out.unshift({ name: "내 성과", data: mine, color: "#0ea5e9", legend: true });
         }
@@ -509,6 +547,8 @@ export default function ReplayGamePage() {
                         onStart={start} busy={busy} isLoggedIn={isLoggedIn}
                         firm={firm} bestReturn={bestReturn} history={history} habits={habits}
                         onBuy={purchase} activeTools={activeTools} onToggle={toggleTool}
+                        campaign={campaign} endedCampaign={endedCampaign}
+                        onOpenCampaign={openCampaign} onClearEnded={() => setEndedCampaign(null)}
                     />
                 )}
 
@@ -521,7 +561,7 @@ export default function ReplayGamePage() {
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] sm:mb-1.5">
                                     {round.status === "done"
                                         ? `${(firm?.quarters ?? 0) || 1}분기 보고서`
-                                        : `${(firm?.quarters ?? 0) + 1}분기 · Day ${round.cursor - CONTEXT_DAYS + 1}/${TOTAL_DAYS - CONTEXT_DAYS + 1}`}
+                                        : `${halfTitle} · Day ${round.cursor - ctxDays + 1}/${totalDays - ctxDays + 1}`}
                                 </p>
                                 <h1 className="hidden sm:block text-xl sm:text-2xl font-black text-neutral-900 dark:text-white break-keep">
                                     {round.status === "done" ? "분기 운용 종료" : "이 회사, 지금 사시겠습니까?"}
@@ -559,7 +599,7 @@ export default function ReplayGamePage() {
                                 <span className="text-[11px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
                                     {round.status === "done"
                                         ? (round.name ?? "차트")
-                                        : `DAY ${round.cursor - CONTEXT_DAYS + 1}/${TOTAL_DAYS - CONTEXT_DAYS + 1}`}
+                                        : `${halfTitle} ${round.cursor - ctxDays + 1}/${totalDays - ctxDays + 1}일`}
                                     {/* 업종만 열어 준다 — 가격 말고 붙잡을 것 하나(개선안 ⑤) */}
                                     {round.sector && (
                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2a26] text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
@@ -983,11 +1023,16 @@ function Fold({ icon, title, subtitle, children }: {
 
 // ─────────────────────────────────────────────────────────
 /** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
-function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle }: {
+function FirmDashboard({
+    onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle,
+    campaign, endedCampaign, onOpenCampaign, onClearEnded,
+}: {
     onStart: (scenario?: string | null) => void; busy: boolean; isLoggedIn: boolean;
     firm: Firm | null; bestReturn: number | null; history: ReplayHistoryItem[];
     habits: HabitSummary | null;
     onBuy: (id: string) => void; activeTools: string[]; onToggle: (id: string) => void;
+    campaign: Campaign | null; endedCampaign: Campaign | null;
+    onOpenCampaign: (years: number) => void; onClearEnded: () => void;
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
     const owned = firm?.tools ?? [];
@@ -1030,10 +1075,47 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     </div>
                 )}
 
+                {/* 기간이 끝났다 — 반기를 다 굴렸으면 여기서 한 번 정리하고 새 기간으로 간다.
+                    (자세한 최종 리포트는 다음 단계에서 붙인다) */}
+                {isLoggedIn && endedCampaign && (
+                    <div className="rounded-xl border border-[#e3b34a]/60 bg-[#faf1dc] dark:bg-[#2a2211] px-3.5 py-3">
+                        <p className="text-[13px] font-black text-[#a1730a] dark:text-[#e3b34a] break-keep">
+                            {endedCampaign.years}년 투자를 마쳤습니다 — {endedCampaign.total_halves}반기 전부.
+                        </p>
+                        <p className="mt-1 text-[11.5px] text-[#a1730a]/80 dark:text-[#e3b34a]/70 break-keep">
+                            맡은 돈 {fmtMoney(aum)} · 지난 분기 기록은 아래에 남아 있습니다.
+                        </p>
+                        <button onClick={onClearEnded}
+                            className="mt-2 min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border border-[#e3b34a]/60 text-[#a1730a] dark:text-[#e3b34a]">
+                            새 기간 고르기
+                        </button>
+                    </div>
+                )}
+
+                {/* 기간 고르기 — 캠페인이 없을 때만. 도중에는 바꿀 수 없다(지나온 반기가
+                    어느 기간의 것이었는지 알 수 없어진다). */}
+                {isLoggedIn && !campaign && !endedCampaign && (
+                    <div className="mt-1">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1.5">몇 년을 굴릴까요</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                            {YEAR_CHOICES.map(y => (
+                                <button key={y} onClick={() => onOpenCampaign(y)} disabled={busy}
+                                    className="min-h-[44px] rounded-xl text-[13px] font-black border border-neutral-200 dark:border-[#35332e] text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                    {y}년
+                                    <span className="text-[9px] font-bold text-neutral-400">{totalHalves(y)}반기</span>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-1.5 text-[10.5px] text-neutral-400 dark:text-neutral-500 break-keep">
+                            고른 만큼 과거로 돌아가 한 반기(달력 45일)씩 굴려 옵니다. 도중에는 바꿀 수 없습니다.
+                        </p>
+                    </div>
+                )}
+
                 {/* 판 고르기 — 무작위만 있으면 배움이 안 쌓인다. 같은 성격의 판을 여러 번 겪어야
                     "나는 급락 뒤에 너무 빨리 산다" 같은 습관이 드러난다(개선안 ⑦).
                     성격은 서버가 컨텍스트 구간만 보고 붙이므로 정답이 새지 않는다. */}
-                {isLoggedIn && !firm?.carry && (
+                {isLoggedIn && campaign && !firm?.carry && (
                     <div className="mt-3 sm:mt-5">
                         <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1.5">어떤 자리에서 시작할까요</p>
                         <div className="flex gap-1.5 flex-wrap">
@@ -1061,11 +1143,26 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     </div>
                 )}
 
-                <button onClick={() => onStart(want)} disabled={busy}
-                    className="mt-2.5 sm:mt-4 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
-                    <Play size={16} strokeWidth={2.6} />
-                    {busy ? "종목을 고르는 중…" : firm?.carry ? `${(firm?.quarters ?? 0) + 1}분기 이어서 운용` : `${(firm?.quarters ?? 0) + 1}분기 운용 시작`}
-                </button>
+                {/* 비로그인 체험은 캠페인 없이 한 판만 굴린다 — 기간을 고를 회사가 없다. */}
+                {(!isLoggedIn || campaign) && (
+                    <button onClick={() => onStart(want)} disabled={busy}
+                        className="mt-2.5 sm:mt-4 w-full inline-flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
+                        <span className="inline-flex items-center gap-2">
+                            <Play size={16} strokeWidth={2.6} />
+                            {busy ? "종목을 고르는 중…"
+                                : !campaign ? "체험 한 판"
+                                    : `${campaign.year}년차 ${campaign.half_label}반기 ${firm?.carry ? "이어서" : "시작"}`}
+                        </span>
+                        {/* 어디까지 왔나 — 20년이면 라벨만으로는 감이 안 온다. 버튼 안에 두면
+                            줄을 따로 쓰지 않는다(폰에서 한 화면이 빡빡하다). */}
+                        {campaign && !busy && (
+                            <span className="text-[9.5px] font-bold opacity-70">
+                                {campaign.years}년 중 {campaign.done_halves}/{campaign.total_halves}반기 지남 ·{" "}
+                                {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
+                            </span>
+                        )}
+                    </button>
+                )}
 
                 {/* 회사 현황은 한 줄로. 자세한 건 아래 리서치실·지난 분기에 다 있다. */}
                 {isLoggedIn && (
@@ -1085,8 +1182,8 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                     <div className="mt-2.5">
                 <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
                     {[
-                        `시드 1,000만원으로 60 거래일(한 분기)을 운용합니다.`,
-                        `앞 ${CONTEXT_DAYS}일을 먼저 보고, 남은 ${TOTAL_DAYS - CONTEXT_DAYS}일을 하루씩 넘깁니다.`,
+                        `시드 1,000만원으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
+                        `한 반기는 달력 45일입니다. 앞 한 달을 먼저 보고, 그다음부터 하루씩 넘깁니다.`,
                         // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
                         `사기·팔기·관망 — 어느 쪽을 눌러도 하루가 지나갑니다.`,
                         `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
