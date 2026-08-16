@@ -48,6 +48,11 @@ import { cn } from "@/lib/utils";
 import { safeNum } from "@/lib/utils/numbers";
 
 // recharts 를 초기 번들에서 뺀다
+// 캔들차트 — 상세 화면 전용. 개요는 판 전체 곡선이라 선 차트가 맞다.
+const CandleChart = dynamic(() => import("@/components/CandleChart"), {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse rounded-xl bg-neutral-100 dark:bg-[#2c2a26]" />,
+});
 const LineChart = dynamic(() => import("@/components/LineChart"), {
     ssr: false,
     loading: () => <div className="h-full min-h-[120px] rounded-2xl bg-neutral-100 dark:bg-[#242320] animate-pulse" />,
@@ -90,6 +95,11 @@ const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
 // 여러 날 건너뛰기를 멈추는 문턱. 이만큼 움직인 날은 지나치면 손쓸 수 없다.
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
+
+// 개요의 두 선. 벤치마크는 뒤로 물러난 흐린 점선, 내 성과는 진한 실선 — 색이 비슷하면
+// 어느 쪽이 나인지 매번 범례를 봐야 한다.
+const BENCH_COLOR = "#94a3b8";
+const MINE_COLOR = "#3b82f6";
 
 // 도구가 그리는 선 색. 차트와 on/off 칩이 같은 색을 써야 어느 칩이 어느 선인지 안다.
 const TOOL_COLOR: Record<string, string> = {
@@ -494,10 +504,12 @@ export default function ReplayGamePage() {
     // 차트 위에 얹는 범례. 늘 그려지는 선만 넣는다 — 도구가 그리는 선은 바로 위 칩이
     // 이름과 색을 같이 보여 준다. 여기에 다 넣으면 여덟 줄이 되어 그림을 덮는다.
     const legendItems = useMemo(() => {
-        if (overview) return [{ name: "그냥 나눠 담기", color: "#3b82f6" }, { name: "내 성과", color: "#0ea5e9" }];
-        const out = [{ name: "종가", color: "#3b82f6" }, { name: "하루 폭", color: "#c5bfb2" }];
+        // 개요의 두 선은 한눈에 갈라져야 한다 — 벤치마크는 흐린 점선, 내 성과는 진한 실선.
+        if (overview) return [{ name: "그냥 나눠 담기", color: BENCH_COLOR }, { name: "내 성과", color: MINE_COLOR }];
+        // 상세는 캔들이라 종가·하루 폭을 따로 적을 것이 없다(오르면 빨강, 내리면 파랑).
+        const out: { name: string; color: string }[] = [];
         if (heldQty > 0) out.push({ name: "내 평단", color: "#e3b34a" });
-        if (benchBase > 0 && holdings.length <= 1) out.push({ name: "내 성과", color: "#0ea5e9" });
+        if (benchBase > 0 && holdings.length <= 1) out.push({ name: "내 성과", color: MINE_COLOR });
         return out;
     }, [heldQty, benchBase, holdings.length, overview]);
 
@@ -538,14 +550,9 @@ export default function ReplayGamePage() {
         // 개요는 판 전체 이야기다 — 종목별 지표·고저 대신 내 성과 곡선 하나만 얹는다.
         if (overview) {
             return portfolioCurve
-                ? [{ name: "내 성과", data: portfolioCurve, color: "#0ea5e9", legend: true }]
+                ? [{ name: "내 성과", data: portfolioCurve, color: MINE_COLOR, legend: true }]
                 : [];
         }
-
-        // 하루가 얼마나 흔들렸는지. 같은 종가라도 하루 안에서 15% 오갔던 날과 조용한 날은
-        // 완전히 다른 날인데, 종가 선 하나로는 둘이 똑같아 보인다. 고가·저가는 이미 캔들에 있다.
-        out.push({ name: "고가", data: visible.map(c => c.h || null), color: "#c5bfb2" });
-        out.push({ name: "저가", data: visible.map(c => c.l || null), color: "#c5bfb2" });
 
         // 내 자산 곡선. 가격선이 곧 "그냥 사서 들고 있었을 때"라 비교 상대는 이미 화면에 있고,
         // 없던 건 내 쪽이었다. 같은 축에 얹으려고 시드를 거래 시작가로 환산한다 —
@@ -580,7 +587,7 @@ export default function ReplayGamePage() {
                 // 거래 시작 전에는 비교할 것이 없어 비워 둔다
                 mine.push(i >= ctxDays - 1 ? Math.round((cash + pos.qty * c.c) / round.seed * benchBase) : null);
             });
-            out.unshift({ name: "내 성과", data: mine, color: "#0ea5e9", legend: true });
+            out.unshift({ name: "내 성과", data: mine, color: MINE_COLOR, legend: true });
         }
         return out;
     }, [firm?.tools, activeTools, visible, round, benchBase, holdings.length, overview, portfolioCurve]);
@@ -598,7 +605,7 @@ export default function ReplayGamePage() {
                 y: o.price,
                 color: o.side === "buy" ? "#ef4444" : "#16a34a",
                 label: withLabel ? `${o.side === "buy" ? "+" : "−"}${o.qty}` : undefined,
-                labelPosition: o.side === "buy" ? "bottom" : "top",
+                labelPosition: (o.side === "buy" ? "bottom" : "top") as "bottom" | "top",
             }));
     }, [round, sel, visible, overview]);
 
@@ -829,7 +836,10 @@ export default function ReplayGamePage() {
                                 크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 패널을
                                 뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
                                 상자를 주면 줄어드는 쪽도 따라온다. */}
-                            <div className="relative flex-1 min-h-[100px] sm:min-h-[180px] overflow-hidden">
+                            {/* overflow 를 열어 둔다 — 위쪽 캔들을 찍었을 때 설명이 차트 천장에
+                                잘려 값이 안 보였다. 차트가 상자를 뚫는 문제는 아래 absolute
+                                inset-0 이 막고 있어서, 여기서 잘라 낼 이유가 없다. */}
+                            <div className="relative flex-1 min-h-[100px] sm:min-h-[180px]">
                                 {/* 범례는 차트 위에 얹는다. recharts 범례는 그림 상자 안에서 30px 을
                                     떼어 가는데, 그 30px 은 곧 그래프가 낮아진다는 뜻이다.
                                     겹쳐 놓으면 자리를 안 먹고, 클릭은 통과시켜 차트 조작을 막지 않는다. */}
@@ -842,20 +852,29 @@ export default function ReplayGamePage() {
                                     ))}
                                 </div>
                                 <div className="absolute inset-0">
-                                    <LineChart
-                                        height="100%"
-                                        markers={markers}
-                                        overlays={overlays}
-                                        legend_disable={true}
-                                        category_array={visible.map(c => c.d.slice(4))}
-                                        data_array={overview
-                                            ? [{ name: "그냥 나눠 담기", data: visible.map(c => c.c), color: "#3b82f6" }]
-                                            : [
-                                                // 색을 못박는다 — 범례 점이 같은 색을 써야 한다(테마마다 달라지면 어긋난다)
-                                                { name: "종가", data: visible.map(c => c.c), color: "#3b82f6" },
-                                                ...(heldQty > 0 ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }] : []),
+                                    {overview ? (
+                                        // 개요는 판 전체 이야기 — 값이 아니라 흐름이라 선이 맞다
+                                        <LineChart
+                                            height="100%"
+                                            overlays={overlays}
+                                            legend_disable={true}
+                                            category_array={visible.map(c => c.d.slice(4))}
+                                            data_array={[{ name: "그냥 나눠 담기", data: visible.map(c => c.c), color: BENCH_COLOR, dash: "4 3" }]}
+                                        />
+                                    ) : (
+                                        // 상세는 캔들 — 같은 종가라도 하루 안에서 얼마나 오갔는지가 보인다
+                                        <CandleChart
+                                            height="100%"
+                                            candles={visible}
+                                            markers={markers}
+                                            overlays={[
+                                                ...(heldQty > 0
+                                                    ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }]
+                                                    : []),
+                                                ...overlays.map(o => ({ name: o.name, data: o.data, color: o.color, dash: o.dash })),
                                             ]}
-                                    />
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </SectionPanel>
