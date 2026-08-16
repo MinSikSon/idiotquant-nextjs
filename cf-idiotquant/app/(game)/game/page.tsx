@@ -21,7 +21,7 @@ import { useSession } from "next-auth/react";
 // 아이콘은 뜻이 겹치지 않게 고른다. 예전에는 Flag 가 "그만"과 "지난 분기" 두 곳에 쓰여
 // 같은 그림이 전혀 다른 일을 가리켰다.
 import {
-    Play, TrendingUp, Coins, Wallet, Tag, ArrowRight, X, EyeOff,
+    Play, TrendingUp, Coins, Wallet, Tag, ArrowRight, ArrowLeft, X, EyeOff,
     FlaskConical, History, Footprints, Lock, Check, ChevronDown,
 } from "lucide-react";
 
@@ -29,9 +29,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { CONTEXT_DAYS, TOTAL_DAYS, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
+import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
-import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
+import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
 import {
     TOOLS, INITIAL_AUM, MIN_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
@@ -114,6 +114,9 @@ export default function ReplayGamePage() {
     const [campaign, setCampaign] = useState<Campaign | null>(null);
     // 지금 자세히 보고 있는 자리(종목). 판이 바뀌면 첫 자리로 돌아간다.
     const [slot, setSlot] = useState(0);
+    // 네 종목을 한눈에 보는 개요(phase 2)와 한 종목을 파고드는 상세를 오간다.
+    // 종목이 하나뿐인 판(체험 운용·옛 판)에는 개요가 없다 — 볼 것이 하나뿐이다.
+    const [detail, setDetail] = useState(false);
     // 방금 기간이 끝난 캠페인 — 최종 리포트를 띄울 때까지 들고 있는다.
     const [endedCampaign, setEndedCampaign] = useState<Campaign | null>(null);
     const [habits, setHabits] = useState<HabitSummary | null>(null);
@@ -185,7 +188,7 @@ export default function ReplayGamePage() {
             if (isLoggedIn) {
                 const res = await startReplayRound(scenario);
                 if (!res.success) { addToast("error", res.error); return; }
-                setSlot(0);   // 새 판은 첫 자리부터 본다
+                setSlot(0); setDetail(false);   // 새 판은 개요부터, 첫 자리부터
                 setRound(res.round);
             } else {
                 if (!localPool.length) { addToast("error", "종목 목록을 아직 불러오는 중입니다."); return; }
@@ -239,6 +242,26 @@ export default function ReplayGamePage() {
         if (!round) return;
         await advanceFrom(round, trade, carry);
     }, [round, advanceFrom]);
+
+    /**
+     * 오늘 사고팔기 — 날짜는 그대로다(phase 2).
+     *
+     * 종목이 넷이면 같은 날 둘을 사고 하나를 파는 게 당연한 일이다. 시간은 관망 줄에서만
+     * 흐른다(phase 3). 체험 운용은 종목 하나짜리라 예전처럼 매매가 곧 하루다.
+     */
+    const trade = useCallback(async (side: "buy" | "sell", qty: number, atSlot: number) => {
+        if (!round || round.status !== "playing" || qty < 1) return;
+        if (!isLoggedIn) { await advanceFrom(round, { side, qty }); return; }
+
+        setBusy(true);
+        try {
+            const res = await tradeReplayRound(round.id, { side, qty, slot: atSlot });
+            if (!res.success) { addToast("error", res.error); return; }
+            setRound(res.round);
+        } finally {
+            setBusy(false);
+        }
+    }, [round, isLoggedIn, advanceFrom, addToast]);
 
     // 여러 날 한 번에 넘기기. 아무 일도 없는 날의 클릭을 없애되, 큰 폭으로 움직인 날에는
     // 반드시 세운다 — 지나치고 나면 손쓸 수 없는 게 그런 날이다.
@@ -294,13 +317,23 @@ export default function ReplayGamePage() {
     const holdings = round?.holdings ?? [];
     const sel = holdings.find(h => h.slot === slot) ?? holdings[0] ?? null;
 
-    /** 그 자리에서 지금까지 열린 캔들. 로컬 라운드는 전부 들고 있어 여기서 잘라야 한다. */
-    const visible = useMemo(() => {
-        const src = sel?.candles ?? round?.candles ?? [];
-        return round ? src.slice(0, round.status === "done" ? src.length : round.cursor) : [];
-    }, [round, sel]);
+    // 네 종목을 한눈에 보는 개요(phase 2)인가, 한 종목을 파고드는 상세인가.
+    // 종목이 하나뿐인 판에는 개요가 없다 — 볼 것이 하나뿐이다.
+    const overview = holdings.length > 1 && !detail;
 
-    const today = visible[visible.length - 1];
+    /** 지금까지 열린 구간만. 로컬 라운드는 캔들을 전부 들고 있어 여기서 잘라야 한다. */
+    const openOnly = useCallback((src: Candle[]): Candle[] =>
+        (round ? src.slice(0, round.status === "done" ? src.length : round.cursor) : []),
+        [round]);
+
+    /** 고른 자리의 캔들 — 값·평단·매매 수량이 여기서 나온다. */
+    const selVisible = useMemo(
+        () => openOnly(sel?.candles ?? round?.candles ?? []), [openOnly, sel, round]);
+    /** 차트에 그릴 것 — 개요면 판 전체 지수, 상세면 그 종목. */
+    const visible = useMemo(
+        () => (overview ? openOnly(round?.candles ?? []) : selVisible), [overview, openOnly, round, selVisible]);
+
+    const today = selVisible[selVisible.length - 1];
     const price = today?.c ?? 0;
     // 고른 자리의 보유 — 사고팔기 버튼이 보는 값이다
     const heldQty = sel ? sel.qty : (round?.qty ?? 0);
@@ -419,14 +452,54 @@ export default function ReplayGamePage() {
         setActiveTools(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
     }, []);
 
+    /**
+     * 판 전체(현금 + 네 자리 평가금액)의 값을 지수 눈금으로 옮긴 곡선.
+     *
+     * 벤치마크(네 종목을 1/4 씩 담은 지수)와 같은 축에 놓아야 "그냥 나눠 담았을 때보다
+     * 나은가"가 그림으로 보인다. 값은 체결 기록으로 되짚는다 — 진행 중 응답에는 지난 날의
+     * 잔고가 없고, 수수료를 빼면 곡선이 실제 계좌와 어긋난다.
+     */
+    const portfolioCurve = useMemo(() => {
+        if (!round || holdings.length < 2 || benchBase <= 0) return null;
+        const byDay = new Map<number, { slot: number; side: string; qty: number; price: number }[]>();
+        for (const h of holdings) {
+            for (const o of h.orders ?? []) {
+                const a = byDay.get(o.day_index);
+                const rec = { slot: h.slot, side: o.side, qty: o.qty, price: o.price };
+                if (a) a.push(rec); else byDay.set(o.day_index, [rec]);
+            }
+        }
+        let cash = round.seed;
+        const pos = new Map<number, { ticker: string; name: string | null; qty: number; cost_basis: number }>();
+        for (const h of holdings) pos.set(h.slot, { ticker: String(h.slot), name: null, qty: 0, cost_basis: 0 });
+
+        const out: (number | null)[] = [];
+        for (let i = 0; i < visible.length; i++) {
+            for (const o of byDay.get(i) ?? []) {
+                const p = pos.get(o.slot)!;
+                if (o.side === "buy") {
+                    const q = quoteBuy({ price: o.price, qty: o.qty, cash });
+                    if (q.ok) { cash -= q.total; Object.assign(p, applyBuy(p, q)); }
+                } else {
+                    const q = quoteSell({ price: o.price, qty: o.qty, position: p });
+                    if (q.ok) { cash += q.net; Object.assign(p, applySell(p, q)); }
+                }
+            }
+            const mv = holdings.reduce((a, h) => a + (pos.get(h.slot)?.qty ?? 0) * (h.candles[i]?.c ?? 0), 0);
+            out.push(i >= ctxDays - 1 ? Math.round(((cash + mv) / round.seed) * benchBase) : null);
+        }
+        return out;
+    }, [round, holdings, visible.length, benchBase, ctxDays]);
+
     // 차트 위에 얹는 범례. 늘 그려지는 선만 넣는다 — 도구가 그리는 선은 바로 위 칩이
     // 이름과 색을 같이 보여 준다. 여기에 다 넣으면 여덟 줄이 되어 그림을 덮는다.
     const legendItems = useMemo(() => {
+        if (overview) return [{ name: "그냥 나눠 담기", color: "#3b82f6" }, { name: "내 성과", color: "#0ea5e9" }];
         const out = [{ name: "종가", color: "#3b82f6" }, { name: "하루 폭", color: "#c5bfb2" }];
         if (heldQty > 0) out.push({ name: "내 평단", color: "#e3b34a" });
         if (benchBase > 0 && holdings.length <= 1) out.push({ name: "내 성과", color: "#0ea5e9" });
         return out;
-    }, [heldQty, benchBase, holdings.length]);
+    }, [heldQty, benchBase, holdings.length, overview]);
 
     // 산 도구. 판 화면의 on/off 칩과 대시보드 리서치실이 같은 목록을 쓴다.
     const ownedTools = useMemo(
@@ -460,6 +533,13 @@ export default function ReplayGamePage() {
             const a = atrBand(visible.map(c => ({ o: c.o || c.c, h: c.h || c.c, l: c.l || c.c, c: c.c })), 14);
             out.push({ name: "변동폭 위", data: a.upper, color: TOOL_COLOR.atr, dash: "2 4" });
             out.push({ name: "변동폭 아래", data: a.lower, color: TOOL_COLOR.atr, dash: "2 4" });
+        }
+
+        // 개요는 판 전체 이야기다 — 종목별 지표·고저 대신 내 성과 곡선 하나만 얹는다.
+        if (overview) {
+            return portfolioCurve
+                ? [{ name: "내 성과", data: portfolioCurve, color: "#0ea5e9", legend: true }]
+                : [];
         }
 
         // 하루가 얼마나 흔들렸는지. 같은 종가라도 하루 안에서 15% 오갔던 날과 조용한 날은
@@ -503,12 +583,13 @@ export default function ReplayGamePage() {
             out.unshift({ name: "내 성과", data: mine, color: "#0ea5e9", legend: true });
         }
         return out;
-    }, [firm?.tools, activeTools, visible, round, benchBase, holdings.length]);
+    }, [firm?.tools, activeTools, visible, round, benchBase, holdings.length, overview, portfolioCurve]);
 
     // 사고판 지점을 차트에 찍는다. 빨강이 매수, 초록이 매도 — 버튼 색과 같다.
     // 수량 라벨은 체결이 적을 때만 붙인다. 많아지면 서로 겹쳐 오히려 안 읽힌다.
     const markers = useMemo(() => {
-        const orders = sel?.orders ?? round?.orders ?? [];
+        // 개요 차트는 지수 눈금이라 종목 체결가를 찍을 수 없다 — 자리마다 값이 다르다
+        const orders = overview ? [] : (sel?.orders ?? round?.orders ?? []);
         const withLabel = orders.length <= 8;
         return orders
             .filter(o => o.day_index < visible.length)
@@ -519,7 +600,7 @@ export default function ReplayGamePage() {
                 label: withLabel ? `${o.side === "buy" ? "+" : "−"}${o.qty}` : undefined,
                 labelPosition: o.side === "buy" ? "bottom" : "top",
             }));
-    }, [round, sel, visible]);
+    }, [round, sel, visible, overview]);
 
     // 계좌 4칸. 모바일 압축 줄과 데스크톱 카드가 같은 값을 쓰도록 한 곳에서 만든다.
     const stats = round ? [
@@ -629,7 +710,7 @@ export default function ReplayGamePage() {
                                         ? (round.name ?? "차트")
                                         : `${halfTitle} ${round.cursor - ctxDays + 1}/${totalDays - ctxDays + 1}일`}
                                     {/* 업종만 열어 준다 — 가격 말고 붙잡을 것 하나(개선안 ⑤) */}
-                                    {(sel?.sector ?? round.sector) && (
+                                    {!overview && (sel?.sector ?? round.sector) && (
                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2a26] text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
                                             <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
                                                 <SectorSprite sector={sel?.sector ?? round.sector ?? undefined} color={sectorAccent(sel?.sector ?? round.sector ?? undefined)} />
@@ -647,7 +728,12 @@ export default function ReplayGamePage() {
                                             ? <span className={edge >= 0 ? "text-[#16a34a]" : "text-red-500"}>{benchNote}</span>
                                             : <span className="text-neutral-400">종목·시기는 끝나야 열립니다</span>}
                                 </p>
-                                {round.status === "playing" ? (
+                                {holdings.length > 1 && !overview ? (
+                                    <button onClick={() => setDetail(false)} aria-label="목록으로"
+                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e]">
+                                        <ArrowLeft size={11} /> 목록
+                                    </button>
+                                ) : round.status === "playing" ? (
                                     <button onClick={giveUp} disabled={busy} aria-label="그만"
                                         className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] disabled:opacity-40">
                                         <X size={11} /> 그만
@@ -678,19 +764,21 @@ export default function ReplayGamePage() {
                                 />
                             </div>
                             {/* 네 종목의 간략한 현황. 누르면 그 종목의 차트로 바뀌고 매매도 그 종목에
-                                들어간다. 업종 그림과 수익률만 둔다 — 여기에 더 얹으면 차트가 낮아진다. */}
+                                들어간다(phase 2). 상세에서는 자리만 옮기는 좁은 칩으로 줄어든다. */}
                             {holdings.length > 1 && (
-                                <div className="grid grid-cols-4 gap-1 mb-1.5 shrink-0">
+                                <div className={cn("grid grid-cols-4 gap-1 mb-1.5 shrink-0", overview && "gap-1.5")}>
                                     {holdings.map(h => {
                                         const last = lastCloseOf(h);
                                         const on = h.slot === (sel?.slot ?? 0);
                                         const rate = h.qty > 0 && h.cost_basis > 0
                                             ? ((last * h.qty - h.cost_basis) / h.cost_basis) * 100 : null;
                                         return (
-                                            <button key={h.slot} onClick={() => setSlot(h.slot)}
+                                            <button key={h.slot}
+                                                onClick={() => { setSlot(h.slot); setDetail(true); }}
                                                 aria-label={`${h.slot + 1}번 종목${h.qty > 0 ? ` 보유 ${h.qty}주` : ""}`}
-                                                className={cn("min-h-[38px] px-1 rounded-lg border text-[10px] font-bold transition-colors flex flex-col items-center justify-center gap-0.5 leading-none",
-                                                    on
+                                                className={cn("px-1 rounded-lg border text-[10px] font-bold transition-colors flex flex-col items-center justify-center gap-0.5 leading-none",
+                                                    overview ? "min-h-[54px]" : "min-h-[38px]",
+                                                    !overview && on
                                                         ? "border-neutral-900 dark:border-white bg-neutral-100 dark:bg-[#2c2a26] text-neutral-900 dark:text-white"
                                                         : "border-neutral-200 dark:border-[#35332e] text-neutral-400")}>
                                                 <span className="flex items-center gap-1 truncate max-w-full">
@@ -705,6 +793,10 @@ export default function ReplayGamePage() {
                                                         {rate !== null ? pct(rate) : `${h.qty}주`}
                                                     </span>
                                                     : <span className="opacity-60">안 삼</span>}
+                                                {/* 개요에서는 값도 같이 — 눌러 들어가기 전에 견줄 수 있어야 한다 */}
+                                                {overview && (
+                                                    <span className="font-mono text-[9px] text-neutral-400">{fmtKrw(last)}</span>
+                                                )}
                                             </button>
                                         );
                                     })}
@@ -713,7 +805,7 @@ export default function ReplayGamePage() {
                             {/* 산 도구는 판이 도는 중에도 껐다 켤 수 있다. 선이 넷씩 겹치면 정작
                                 가격이 안 보이는데, 그때마다 판을 접고 대시보드로 갈 수는 없다.
                                 산 사람에게만 보이므로 안 산 사람의 화면은 그대로다. */}
-                            {ownedTools.length > 0 && (
+                            {ownedTools.length > 0 && !overview && (
                                 <div className="flex flex-wrap items-center gap-1 mb-1.5 shrink-0">
                                     {ownedTools.map(t => {
                                         const on = activeTools.includes(t.id);
@@ -756,11 +848,13 @@ export default function ReplayGamePage() {
                                         overlays={overlays}
                                         legend_disable={true}
                                         category_array={visible.map(c => c.d.slice(4))}
-                                        data_array={[
-                                            // 색을 못박는다 — 범례 점이 같은 색을 써야 한다(테마마다 달라지면 어긋난다)
-                                            { name: "종가", data: visible.map(c => c.c), color: "#3b82f6" },
-                                            ...(heldQty > 0 ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }] : []),
-                                        ]}
+                                        data_array={overview
+                                            ? [{ name: "그냥 나눠 담기", data: visible.map(c => c.c), color: "#3b82f6" }]
+                                            : [
+                                                // 색을 못박는다 — 범례 점이 같은 색을 써야 한다(테마마다 달라지면 어긋난다)
+                                                { name: "종가", data: visible.map(c => c.c), color: "#3b82f6" },
+                                                ...(heldQty > 0 ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }] : []),
+                                            ]}
                                     />
                                 </div>
                             </div>
@@ -774,8 +868,17 @@ export default function ReplayGamePage() {
                                 <span className="truncate">
                                     <span className="text-neutral-400 mr-1">내 돈</span>
                                     <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(totalAssets)}</b>
-                                    <span className="text-neutral-400 ml-1.5 mr-1">지금</span>
-                                    <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(price)}</b>
+                                    {overview
+                                        ? <>
+                                            <span className="text-neutral-400 ml-1.5 mr-1">보유</span>
+                                            <b className="font-mono font-black text-neutral-900 dark:text-white">
+                                                {holdings.filter(h => h.qty > 0).length}/{holdings.length}종목
+                                            </b>
+                                        </>
+                                        : <>
+                                            <span className="text-neutral-400 ml-1.5 mr-1">지금</span>
+                                            <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(price)}</b>
+                                        </>}
                                 </span>
                                 <b className={cn("font-mono font-black shrink-0", pnlValueColor(totalPnl >= 0))}>{pct(totalRate)}</b>
                             </div>
@@ -785,9 +888,11 @@ export default function ReplayGamePage() {
                                     <b className="font-mono">{fmtKrw(round.cash)}</b>
                                 </span>
                                 <span className="truncate">
-                                    {heldQty > 0
-                                        ? `${heldQty}주 갖고 있음 · 산 값 ${fmtKrw(avg)}`
-                                        : round.status === "done" ? "정리됨" : "아직 안 삼"}
+                                    {overview
+                                        ? "종목을 눌러 자세히 보고 사고팝니다"
+                                        : heldQty > 0
+                                            ? `${heldQty}주 갖고 있음 · 산 값 ${fmtKrw(avg)}`
+                                            : round.status === "done" ? "정리됨" : "아직 안 삼"}
                                 </span>
                             </div>
                         </div>
@@ -801,16 +906,18 @@ export default function ReplayGamePage() {
                         {round.status === "playing" && (
                             <SectionPanel className="shrink-0 p-2.5 sm:p-5">
                                 <div className="flex flex-col gap-2 sm:gap-4">
-                                    {/* 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 누르면 그 자리에서 체결되고
-                                        하루가 지나간다 — 수량을 적고 다시 사기를 누르던 두 걸음을 한 걸음으로. */}
-                                    <div className="grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center">
+                                    {/* 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 그 자리에서 체결되고
+                                        **날짜는 그대로다** — 같은 날 네 종목을 다 만질 수 있어야 한다.
+                                        시간은 아래 관망 줄에서만 흐른다(phase 3). */}
+                                    <div className={cn("grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center",
+                                        overview && "hidden")}>
                                         <span className="text-[10.5px] font-black text-red-500">사기</span>
                                         <div className="grid grid-cols-4 gap-1.5">
                                             {BUY_PARTS.map(part => {
                                                 const n = buyQtyFor(part.pct);
                                                 return (
                                                     <button key={part.pct} aria-label={`사기 ${part.label}`}
-                                                        onClick={() => advance({ side: "buy", qty: n, slot: sel?.slot ?? 0 })} disabled={busy || n < 1}
+                                                        onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
                                                         className="min-h-[46px] rounded-xl text-[13px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[9px] font-bold opacity-80">{n > 0 ? `${n}주` : "—"}</span>
@@ -825,7 +932,7 @@ export default function ReplayGamePage() {
                                                 const n = sellQtyFor(part.pct);
                                                 return (
                                                     <button key={part.pct} aria-label={`팔기 ${part.label}`}
-                                                        onClick={() => advance({ side: "sell", qty: n, slot: sel?.slot ?? 0 })} disabled={busy || n < 1}
+                                                        onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={busy || n < 1}
                                                         className="min-h-[46px] rounded-xl text-[13px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[9px] font-bold opacity-70">{n > 0 ? `${n}주` : "—"}</span>
@@ -834,8 +941,13 @@ export default function ReplayGamePage() {
                                             })}
                                         </div>
 
-                                        {/* 사기·팔기와 같은 줄 문법 — 관망도 "얼마나"를 고른다.
-                                            마지막 날에는 남은 보유를 다음 분기로 넘길 수 있다(개선안 ⑧). */}
+                                    </div>
+
+                                    {/* ── phase 3 · 시간 ──
+                                        개요에서만 시간이 흐른다. 상세에서 하루가 지나가 버리면 두 번째
+                                        종목을 볼 때는 이미 다음 날이라 같은 날 넷을 만질 수 없다. */}
+                                    <div className={cn("grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center",
+                                        holdings.length > 1 && !overview && "hidden")}>
                                         <span className="text-[10.5px] font-black text-neutral-400">관망</span>
                                         {canCarry ? (
                                             <div className="grid grid-cols-2 gap-1.5">
@@ -1010,6 +1122,73 @@ function HabitRow({ label, value, note }: { label: string; value: string | null;
 
 // ─────────────────────────────────────────────────────────
 /**
+ * phase 4 — 기간 종료 리포트.
+ *
+ * 반기 하나하나의 성적은 이미 지난 분기 목록에 있다. 여기서 답할 것은 그보다 큰 질문이다:
+ * **N년을 굴려서 회사가 어디로 갔는가.** 그래서 맡은 돈의 시작과 끝, 등급, 벌어들인 보수,
+ * 그리고 벤치마크를 몇 번이나 이겼는지를 놓는다.
+ *
+ * 숫자는 전부 서버가 남긴 값이다 — 규칙이 바뀌어도 지난 기록은 그때 값 그대로여야 한다.
+ */
+function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
+    campaign: Campaign; firm: Firm | null; history: ReplayHistoryItem[];
+    habits: HabitSummary | null; bestReturn: number | null; onClear: () => void;
+}) {
+    const aum = firm?.aum ?? INITIAL_AUM;
+    const grown = aum >= INITIAL_AUM;
+    // 목록은 최근 몇 판만 온다 — 그래서 "지난 N반기 중" 이라고 적는다(전부라고 하면 거짓말이다)
+    const seen = history.length;
+    const beats = history.filter(h => (h.final_return ?? 0) > (h.bh_return ?? 0)).length;
+    const avg = seen ? history.reduce((a, h) => a + (h.final_return ?? 0), 0) / seen : 0;
+
+    const Row = ({ k, v, tone }: { k: string; v: string; tone?: string }) => (
+        <li className="flex items-baseline justify-between gap-3">
+            <span className="text-neutral-400 shrink-0">{k}</span>
+            <b className={cn("font-mono text-right", tone ?? "text-neutral-900 dark:text-white")}>{v}</b>
+        </li>
+    );
+
+    return (
+        <SectionPanel className="p-4 sm:p-5 border-2 border-[#e3b34a]/60">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a]">
+                {campaign.years}년 운용 종료
+            </p>
+            <h2 className="mt-1 text-[17px] sm:text-xl font-black text-neutral-900 dark:text-white break-keep">
+                {campaign.total_halves}반기를 다 굴렸습니다
+            </h2>
+            <p className="mt-1 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
+                {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
+                {" "}{campaign.years}년, 맡은 돈이 {fmtMoney(INITIAL_AUM)}에서 {fmtMoney(aum)}
+                {grown ? "으로 늘었습니다." : "으로 줄었습니다."}
+            </p>
+
+            <ul className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
+                <Row k="맡은 돈" v={`${fmtMoney(INITIAL_AUM)} → ${fmtMoney(aum)}`}
+                    tone={pnlValueColor(grown)} />
+                <Row k="등급" v={`${rankOf(INITIAL_AUM)} → ${firm?.rank ?? rankOf(aum)}`} />
+                <Row k="회사 금고" v={`${fmtMoney(firm?.cash ?? 0)}원`} />
+                <Row k="굴린 반기" v={`${firm?.quarters ?? campaign.total_halves}반기`} />
+                {seen > 0 && <Row k={`최근 ${seen}반기 평균`} v={pct(avg)} tone={pnlValueColor(avg >= 0)} />}
+                {seen > 0 && <Row k="벤치마크 이긴 반기" v={`${beats}/${seen}반기`} />}
+                {bestReturn !== null && <Row k="가장 잘한 반기" v={pct(bestReturn)} tone={pnlValueColor(bestReturn >= 0)} />}
+                {habits && habits.trades > 0 && (
+                    <Row k="매매 습관" v={`체결 ${habits.trades}회${habits.holdDays !== null ? ` · 평균 ${habits.holdDays}일 보유` : ""}`} />
+                )}
+            </ul>
+
+            <button onClick={onClear}
+                className="mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[46px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] text-[#2a1c00] font-black text-[14px]">
+                <Play size={15} strokeWidth={2.6} /> 새 기간 고르기
+            </button>
+            <p className="mt-1.5 text-[10.5px] text-neutral-400 break-keep">
+                회사는 그대로입니다 — 맡은 돈과 리서치실 도구를 가지고 다음 기간을 시작합니다.
+            </p>
+        </SectionPanel>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
+/**
  * 고객 돈이 왜 늘고 주는지, 보수는 어디서 나오는지.
  *
  * 숫자는 전부 규칙(firm.ts)에서 가져오고 예시는 실제 `flowRate` 를 돌려 만든다 — 문장에
@@ -1140,21 +1319,10 @@ function FirmDashboard({
                     </div>
                 )}
 
-                {/* 기간이 끝났다 — 반기를 다 굴렸으면 여기서 한 번 정리하고 새 기간으로 간다.
-                    (자세한 최종 리포트는 다음 단계에서 붙인다) */}
+                {/* phase 4 — 기간이 끝났다. 여기가 한 번의 투자 인생을 통째로 돌아보는 자리다. */}
                 {isLoggedIn && endedCampaign && (
-                    <div className="rounded-xl border border-[#e3b34a]/60 bg-[#faf1dc] dark:bg-[#2a2211] px-3.5 py-3">
-                        <p className="text-[13px] font-black text-[#a1730a] dark:text-[#e3b34a] break-keep">
-                            {endedCampaign.years}년 투자를 마쳤습니다 — {endedCampaign.total_halves}반기 전부.
-                        </p>
-                        <p className="mt-1 text-[11.5px] text-[#a1730a]/80 dark:text-[#e3b34a]/70 break-keep">
-                            맡은 돈 {fmtMoney(aum)} · 지난 분기 기록은 아래에 남아 있습니다.
-                        </p>
-                        <button onClick={onClearEnded}
-                            className="mt-2 min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border border-[#e3b34a]/60 text-[#a1730a] dark:text-[#e3b34a]">
-                            새 기간 고르기
-                        </button>
-                    </div>
+                    <FinalReport campaign={endedCampaign} firm={firm} history={history}
+                        habits={habits} bestReturn={bestReturn} onClear={onClearEnded} />
                 )}
 
                 {/* 기간 고르기 — 캠페인이 없을 때만. 도중에는 바꿀 수 없다(지나온 반기가

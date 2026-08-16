@@ -65,6 +65,12 @@ export const startReplayRound = (scenario?: string | null): Promise<ReplayRespon
  * non-GET body 에 PDNO·ORD_QTY·buyOrSell 을 끼워 넣고 buyOrSell 은 값이 없으면 "sell" 로
  * 채운다. 그 이름을 피해야 매수가 매도로 새지 않는다.
  */
+/** 오늘 사고팔기 — 날짜는 넘기지 않는다. 하루에 네 종목을 다 만질 수 있어야 한다. */
+export const tradeReplayRound = (
+    roundId: string,
+    trade: { side: "buy" | "sell"; qty: number; slot?: number },
+): Promise<ReplayResponse> => replayRequest("POST", { action: "trade", round_id: roundId, trade });
+
 export const advanceReplayRound = (
     roundId: string,
     trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null,
