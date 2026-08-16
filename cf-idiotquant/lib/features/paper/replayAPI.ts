@@ -1,7 +1,7 @@
 // 리플레이 라운드 API — 로그인 사용자 (백엔드 /user/replay).
 // 비로그인은 lib/paper/localRound.ts 가 같은 모양을 브라우저 안에서 다룬다.
 
-import type { ReplayRound, ReplayHistoryItem, HabitSummary, Reservation } from "@/lib/paper/round";
+import type { ReplayRound, ReplayHistoryItem, HabitSummary, Reservation, Campaign } from "@/lib/paper/round";
 import type { Firm } from "@/lib/paper/firm";
 
 async function replayRequest(method: "GET" | "POST", body?: object) {
@@ -42,10 +42,18 @@ export type ReplayResponse =
         wallet?: { coins: number; best_streak: number; best_return: number | null };
         firm?: Firm;
         habits?: HabitSummary | null;
+        /** 굴러가는 캠페인. null 이면 기간부터 골라야 한다. */
+        campaign?: Campaign | null;
+        year_choices?: number[];
+        existed?: boolean;
     }
     | { success: false; status: number; error: string };
 
 export const getReplayState = (): Promise<ReplayResponse> => replayRequest("GET");
+
+/** 기간을 골라 캠페인을 연다. 굴러가는 게 있으면 서버가 그걸 그대로 준다. */
+export const startCampaign = (years: number): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "start-campaign", years });
 
 export const startReplayRound = (scenario?: string | null): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "start", ...(scenario ? { scenario } : {}) });
@@ -57,9 +65,15 @@ export const startReplayRound = (scenario?: string | null): Promise<ReplayRespon
  * non-GET body 에 PDNO·ORD_QTY·buyOrSell 을 끼워 넣고 buyOrSell 은 값이 없으면 "sell" 로
  * 채운다. 그 이름을 피해야 매수가 매도로 새지 않는다.
  */
+/** 오늘 사고팔기 — 날짜는 넘기지 않는다. 하루에 네 종목을 다 만질 수 있어야 한다. */
+export const tradeReplayRound = (
+    roundId: string,
+    trade: { side: "buy" | "sell"; qty: number; slot?: number },
+): Promise<ReplayResponse> => replayRequest("POST", { action: "trade", round_id: roundId, trade });
+
 export const advanceReplayRound = (
     roundId: string,
-    trade?: { side: "buy" | "sell"; qty: number } | null,
+    trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null,
     carry?: boolean,
 ): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "advance", round_id: roundId, trade: trade ?? undefined, ...(carry ? { carry: true } : {}) });

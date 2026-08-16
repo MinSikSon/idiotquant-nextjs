@@ -150,7 +150,8 @@ export type LocalAdvance =
     | { ok: false; error: string };
 
 /** 하루 진행. trade 가 있으면 그날(= 마지막 공개 캔들) 종가로 먼저 체결한다. */
-export function advanceLocal(round: ReplayRound, trade?: { side: "buy" | "sell"; qty: number } | null): LocalAdvance {
+// 체험 운용은 종목 하나짜리 판이라 slot 은 받기만 하고 쓰지 않는다(언제나 0번).
+export function advanceLocal(round: ReplayRound, trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null): LocalAdvance {
     if (round.status !== "playing") return { ok: false, error: "이미 끝난 판입니다." };
     const today = round.candles[round.cursor - 1];
     if (!today) return { ok: false, error: "캔들이 손상됐습니다." };
