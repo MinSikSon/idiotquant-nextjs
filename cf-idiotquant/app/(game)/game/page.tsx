@@ -85,6 +85,11 @@ const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
 
+// 도구가 그리는 선 색. 차트와 on/off 칩이 같은 색을 써야 어느 칩이 어느 선인지 안다.
+const TOOL_COLOR: Record<string, string> = {
+    ma: "#f59e0b", dc: "#0d9488", bb: "#94a3b8", atr: "#d946ef",
+};
+
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const fmtDate = (d?: string | null) => (d && d.length === 8 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}` : "");
 
@@ -346,6 +351,15 @@ export default function ReplayGamePage() {
         setActiveTools(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
     }, []);
 
+    // 차트 위에 얹는 범례. 늘 그려지는 선만 넣는다 — 도구가 그리는 선은 바로 위 칩이
+    // 이름과 색을 같이 보여 준다. 여기에 다 넣으면 여덟 줄이 되어 그림을 덮는다.
+    const legendItems = useMemo(() => {
+        const out = [{ name: "종가", color: "#3b82f6" }, { name: "하루 폭", color: "#c5bfb2" }];
+        if ((round?.qty ?? 0) > 0) out.push({ name: "내 평단", color: "#e3b34a" });
+        if (benchBase > 0) out.push({ name: "내 성과", color: "#0ea5e9" });
+        return out;
+    }, [round?.qty, benchBase]);
+
     // 산 도구. 판 화면의 on/off 칩과 대시보드 리서치실이 같은 목록을 쓴다.
     const ownedTools = useMemo(
         () => TOOLS.filter(t => (firm?.tools ?? []).includes(t.id)),
@@ -361,23 +375,23 @@ export default function ReplayGamePage() {
         const out: { name: string; data: (number | null)[]; color: string; dash?: string; legend?: boolean }[] = [];
 
         if (on("ma")) {
-            out.push({ name: "5일선", data: movingAverage(closes, 5), color: "#f59e0b" });
+            out.push({ name: "5일선", data: movingAverage(closes, 5), color: TOOL_COLOR.ma });
             out.push({ name: "20일선", data: movingAverage(closes, 20), color: "#8b5cf6" });
         }
         if (on("dc")) {
             const d = donchian(visible.map(c => c.h || c.c), visible.map(c => c.l || c.c), 20);
-            out.push({ name: "20일 최고", data: d.upper, color: "#0d9488" });
-            out.push({ name: "20일 최저", data: d.lower, color: "#0d9488" });
+            out.push({ name: "20일 최고", data: d.upper, color: TOOL_COLOR.dc });
+            out.push({ name: "20일 최저", data: d.lower, color: TOOL_COLOR.dc });
         }
         if (on("bb")) {
             const b = bollinger(closes, 20, 2);
-            out.push({ name: "밴드상단", data: b.upper, color: "#94a3b8", dash: "3 3" });
-            out.push({ name: "밴드하단", data: b.lower, color: "#94a3b8", dash: "3 3" });
+            out.push({ name: "밴드상단", data: b.upper, color: TOOL_COLOR.bb, dash: "3 3" });
+            out.push({ name: "밴드하단", data: b.lower, color: TOOL_COLOR.bb, dash: "3 3" });
         }
         if (on("atr")) {
             const a = atrBand(visible.map(c => ({ o: c.o || c.c, h: c.h || c.c, l: c.l || c.c, c: c.c })), 14);
-            out.push({ name: "변동폭 위", data: a.upper, color: "#d946ef", dash: "2 4" });
-            out.push({ name: "변동폭 아래", data: a.lower, color: "#d946ef", dash: "2 4" });
+            out.push({ name: "변동폭 위", data: a.upper, color: TOOL_COLOR.atr, dash: "2 4" });
+            out.push({ name: "변동폭 아래", data: a.lower, color: TOOL_COLOR.atr, dash: "2 4" });
         }
 
         // 하루가 얼마나 흔들렸는지. 같은 종가라도 하루 안에서 15% 오갔던 날과 조용한 날은
@@ -495,8 +509,9 @@ export default function ReplayGamePage() {
 
                 {round && (
                     <>
-                        {/* 모바일에서는 한 줄. 큰 제목은 넓은 화면에서만 — 매일 다시 읽을 문장은 아니다. */}
-                        <header className="flex items-center justify-between gap-3 shrink-0">
+                        {/* 폰에서는 이 줄을 아예 두지 않는다 — 날짜와 그만 버튼은 차트 제목 줄로
+                            옮겼고, 그렇게 비운 48px 이 전부 차트로 간다. */}
+                        <header className="hidden sm:flex items-center justify-between gap-3 shrink-0">
                             <div className="min-w-0">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] sm:mb-1.5">
                                     {round.status === "done"
@@ -532,9 +547,14 @@ export default function ReplayGamePage() {
                             뚫고 나온다(320px 에서 계좌 카드 위에 겹쳐 그려졌다). 기본값 min-height:auto
                             라야 내용 높이가 바닥이 되고, 자리가 정말 모자라면 바깥이 스크롤된다. */}
                         <SectionPanel className="flex-1 flex flex-col p-2.5 sm:p-5">
-                            <div className="sm:hidden flex items-baseline justify-between gap-2 mb-1.5 shrink-0">
-                                <h2 className="text-[13px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
-                                    {round.status === "done" ? (round.name ?? "차트") : "블라인드 차트"}
+                            {/* 폰 전용 한 줄 — 며칠째인지 · 업종 · 벤치마크 · 그만(또는 다음 분기).
+                                제목("블라인드 차트")은 뺐다. 매일 다시 읽을 말이 아니고, 그 자리가
+                                차트 높이다. */}
+                            <div className="sm:hidden flex items-center justify-between gap-1.5 mb-1.5 shrink-0">
+                                <span className="text-[11px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
+                                    {round.status === "done"
+                                        ? (round.name ?? "차트")
+                                        : `DAY ${round.cursor - CONTEXT_DAYS + 1}/${TOTAL_DAYS - CONTEXT_DAYS + 1}`}
                                     {/* 업종만 열어 준다 — 가격 말고 붙잡을 것 하나(개선안 ⑤) */}
                                     {round.sector && (
                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2a26] text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
@@ -544,7 +564,7 @@ export default function ReplayGamePage() {
                                             {round.sector}
                                         </span>
                                     )}
-                                </h2>
+                                </span>
                                 {/* 진행 중에는 이 자리를 벤치마크 비교가 쓴다 — 종목·시기 안내는
                                     한 번 읽으면 되는 문장이고, 이쪽은 매일 달라진다. */}
                                 <p className={cn("text-[10px] truncate", benchNote ? "font-bold" : "text-neutral-400")}>
@@ -554,6 +574,17 @@ export default function ReplayGamePage() {
                                             ? <span className={edge >= 0 ? "text-[#16a34a]" : "text-red-500"}>{benchNote}</span>
                                             : <span className="text-neutral-400">종목·시기는 끝나야 열립니다</span>}
                                 </p>
+                                {round.status === "playing" ? (
+                                    <button onClick={giveUp} disabled={busy} aria-label="그만"
+                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] disabled:opacity-40">
+                                        <Flag size={11} /> 그만
+                                    </button>
+                                ) : (
+                                    <button onClick={reset} aria-label="다음 분기"
+                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00]">
+                                        <RotateCcw size={11} /> 다음 분기
+                                    </button>
+                                )}
                             </div>
                             <div className="hidden sm:block">
                                 <SectionHeader
@@ -587,6 +618,9 @@ export default function ReplayGamePage() {
                                                     on
                                                         ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
                                                         : "text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                {/* 칩이 곧 그 도구의 범례다 — 색으로 어느 선인지 알려 준다 */}
+                                                <span className="w-1.5 h-1.5 rounded-full shrink-0"
+                                                    style={{ backgroundColor: on ? TOOL_COLOR[t.id] : "transparent", boxShadow: on ? "none" : `inset 0 0 0 1px ${TOOL_COLOR[t.id]}` }} />
                                                 {t.name}
                                             </button>
                                         );
@@ -598,15 +632,27 @@ export default function ReplayGamePage() {
                                 뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
                                 상자를 주면 줄어드는 쪽도 따라온다. */}
                             <div className="relative flex-1 min-h-[100px] sm:min-h-[180px] overflow-hidden">
+                                {/* 범례는 차트 위에 얹는다. recharts 범례는 그림 상자 안에서 30px 을
+                                    떼어 가는데, 그 30px 은 곧 그래프가 낮아진다는 뜻이다.
+                                    겹쳐 놓으면 자리를 안 먹고, 클릭은 통과시켜 차트 조작을 막지 않는다. */}
+                                <div className="absolute top-0 left-[38px] z-10 flex flex-wrap items-center gap-x-2 gap-y-0.5 pointer-events-none">
+                                    {legendItems.map(l => (
+                                        <span key={l.name} className="inline-flex items-center gap-1 text-[9px] font-bold text-neutral-400 dark:text-neutral-500">
+                                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: l.color }} />
+                                            {l.name}
+                                        </span>
+                                    ))}
+                                </div>
                                 <div className="absolute inset-0">
                                     <LineChart
                                         height="100%"
                                         markers={markers}
                                         overlays={overlays}
-                                        legend_disable={round.qty < 1}
+                                        legend_disable={true}
                                         category_array={visible.map(c => c.d.slice(4))}
                                         data_array={[
-                                            { name: "종가", data: visible.map(c => c.c) },
+                                            // 색을 못박는다 — 범례 점이 같은 색을 써야 한다(테마마다 달라지면 어긋난다)
+                                            { name: "종가", data: visible.map(c => c.c), color: "#3b82f6" },
                                             ...(round.qty > 0 ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }] : []),
                                         ]}
                                     />
@@ -697,18 +743,29 @@ export default function ReplayGamePage() {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-3 gap-1.5">
-                                                <button onClick={() => advance(null)} disabled={busy}
-                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                                    하루
-                                                </button>
-                                                {SKIP_STEPS.map(n => (
-                                                    <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
-                                                        {n}일
-                                                        <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
+                                            // 예약 버튼이 이 줄 끝에 붙는다 — 따로 한 줄을 쓰면 44px 을 먹고,
+                                            // 그만큼이 차트에서 빠진다. 마지막 날에는 걸어도 체결될 날이 없어 안 띄운다.
+                                            <div className="flex gap-1.5">
+                                                <div className="grid grid-cols-3 gap-1.5 flex-1 min-w-0">
+                                                    <button onClick={() => advance(null)} disabled={busy}
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                        하루
                                                     </button>
-                                                ))}
+                                                    {SKIP_STEPS.map(n => (
+                                                        <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
+                                                            className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            {n}일
+                                                            <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {isLoggedIn && (
+                                                    <button onClick={() => setReserveOpen(v => !v)}
+                                                        className="shrink-0 min-h-[46px] px-2.5 rounded-xl text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
+                                                        {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
+                                                        예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -717,14 +774,10 @@ export default function ReplayGamePage() {
                                         체결 판정과 체결가 규칙은 전부 워커에 있다. 여기는 걸고 지우기만 한다.
                                         기본은 접어 둔다 — 폰에서 한 화면이 이미 빡빡하다. */}
                                     {isLoggedIn && (
-                                        <div className="flex flex-col gap-2">
+                                        <div className={cn("flex flex-col gap-2",
+                                            // 걸어 둔 예약도 없고 접혀 있으면 이 블록은 자리를 차지하지 않는다
+                                            !reserveOpen && (round.pending ?? []).length === 0 && "hidden")}>
                                             <div className="flex items-center gap-1.5 flex-wrap">
-                                                {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 —
-                                                    orders 가 같은 이유로 ?? [] 를 쓴다. */}
-                                                <button onClick={() => setReserveOpen(v => !v)}
-                                                    className="min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
-                                                    예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
-                                                </button>
                                                 {(round.pending ?? []).map((r, i) => (
                                                     <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[36px] px-2 rounded-lg text-[10.5px] font-bold bg-[#faf1dc] dark:bg-[#2a2211] text-[#a1730a] dark:text-[#e3b34a]">
                                                         {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
