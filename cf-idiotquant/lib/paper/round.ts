@@ -22,6 +22,7 @@ export interface ReplayOrder {
     qty: number;
     price: number;
     auto?: number;   // 1 = 마지막 날 강제 청산 (플레이어가 누른 게 아니다)
+    slot?: number;   // 어느 종목인가. 자리가 없던 옛 주문은 0번으로 읽는다
 }
 
 /**
@@ -62,8 +63,30 @@ export interface Reservation {
 }
 
 /** 서버 `_publicRound` 와 같은 모양. 진행 중에는 정답과 미래 캔들이 비어 있다. */
+/**
+ * 한 자리(slot)의 종목. 한 반기에 넷을 함께 굴린다.
+ *
+ * 현금과 시드는 판에 하나뿐이고 넷이 나눠 쓴다. 값·보유·체결은 자리마다 따로다.
+ * 진행 중에는 ticker·name 이 null 이다 — 블라인드가 무너지면 이 게임이 아니다.
+ */
+export interface ReplayHolding {
+    slot: number;
+    qty: number;
+    cost_basis: number;
+    realized: number;
+    carried: boolean;
+    sector: string | null;
+    scenario: string | null;
+    candles: Candle[];
+    ticker: string | null;
+    name: string | null;
+    orders: ReplayOrder[];
+}
+
 export interface ReplayRound {
     orders: ReplayOrder[];
+    /** 자리마다 종목 하나. 옛 판·체험 운용에는 없다(그때는 종목이 하나뿐이었다). */
+    holdings?: ReplayHolding[];
     /** 블라인드 중에도 열어 주는 업종. 예전 판·체험 운용은 null. */
     sector: string | null;
     /** 판의 성격(plunge·range·peak·mixed). 컨텍스트 구간만 보고 붙인 값이라 정답이 새지 않는다. */

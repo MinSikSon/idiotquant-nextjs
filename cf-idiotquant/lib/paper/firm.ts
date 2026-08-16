@@ -38,7 +38,8 @@ export interface Firm {
     quarters: number;
     tools: string[];
     rank: string;
-    carry?: Carry | null;
+    /** 다음 반기로 넘긴 자리들. 넷 중 둘만 들고 갈 수도 있다. */
+    carry?: Carry[] | null;
 }
 
 export interface Tool {

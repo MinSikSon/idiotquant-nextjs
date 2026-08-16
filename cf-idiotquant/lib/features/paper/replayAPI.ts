@@ -67,7 +67,7 @@ export const startReplayRound = (scenario?: string | null): Promise<ReplayRespon
  */
 export const advanceReplayRound = (
     roundId: string,
-    trade?: { side: "buy" | "sell"; qty: number } | null,
+    trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null,
     carry?: boolean,
 ): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "advance", round_id: roundId, trade: trade ?? undefined, ...(carry ? { carry: true } : {}) });
