@@ -146,6 +146,26 @@ export interface Campaign {
     ended_at: number | null;
 }
 
+/**
+ * 지난 분기의 한 자리. 넷을 합친 수익률만 보면 어느 종목이 벌고 어느 종목이 까먹었는지가
+ * 안 보여서 다음 판에 고칠 것도 안 보인다.
+ *
+ * 이월한 자리는 다음 판에서 아직 굴리는 중이라 ticker·name 이 null 이다(자리 단위로 가린다).
+ */
+export interface HistoryStock {
+    slot: number;
+    ticker: string | null;
+    name: string | null;
+    sector: string | null;
+    /** 이 자리가 이 분기에 만든 실현손익(원). 마지막 날 강제 청산까지 포함한다 */
+    realized: number;
+    /** 이 자리에 넣은 매수대금(수수료 포함). 0 이면 한 번도 안 산 자리다 */
+    invested: number;
+    /** 플레이어가 누른 체결 수 — 강제 청산은 안 센다 */
+    trades: number;
+    carried: boolean;
+}
+
 export interface ReplayHistoryItem {
     id: string;
     /** 이월한 분기는 아직 그 회사를 들고 있어 정답을 열지 않는다 — 그때는 둘 다 null */
@@ -161,6 +181,8 @@ export interface ReplayHistoryItem {
     fee_base: number | null;
     fee_perf: number | null;
     habits: RoundHabits | null;
+    /** 자리별 성적. 종목 하나로 굴리던 옛 판에는 없어서 빈 배열이다 */
+    stocks?: HistoryStock[];
     created_at: number;
 }
 

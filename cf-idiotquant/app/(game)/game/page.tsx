@@ -29,7 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
+import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
 import {
@@ -1281,6 +1281,109 @@ function Fold({ icon, title, subtitle, children }: {
 }
 
 // ─────────────────────────────────────────────────────────
+/**
+ * 지난 분기 한 줄. 한 반기에 네 종목이라 합쳐 놓으면 "+3%" 만 남고 어느 종목이 벌고 어느
+ * 종목이 까먹었는지가 사라진다. 줄을 펼치면 자리별 성적이 나온다.
+ *
+ * 자리 기록이 없는 옛 판(종목 하나로 굴리던 시절)은 펼칠 것이 없어 그냥 한 줄이다.
+ */
+function PastHalf({ h }: { h: ReplayHistoryItem }) {
+    const win = (h.final_return ?? 0) >= 0;
+    const flow = (h.aum_after ?? 0) - (h.aum_before ?? 0);
+    const stocks = h.stocks ?? [];
+
+    const head = (
+        <>
+            <div className="min-w-0">
+                {/* 이월한 분기는 아직 그 회사를 들고 있다 — 목록에서도 열지 않는다.
+                    여기서 열면 이어지는 판이 블라인드가 아니게 된다. */}
+                {h.carried ? (
+                    <div className="font-bold text-[#a1730a] dark:text-[#e3b34a] truncate flex items-center gap-1">
+                        <EyeOff size={13} className="shrink-0" /> 아직 들고 있음
+                    </div>
+                ) : (
+                    <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
+                )}
+                {/* 한 줄로 끊는다 — 모바일에서 이 줄이 접히면 카드 하나가 세 줄이 된다.
+                    자리 기록이 있으면 "정리하면 열립니다"를 빼는데, 어느 자리가 아직 열려
+                    있는지는 펼치면 자리마다 나오기 때문이다(같은 말을 두 번 적지 않는다). */}
+                <div className="text-[11px] text-neutral-400 font-mono truncate">
+                    {h.carried ? `${fmtDate(h.start_date)} ~` : `${fmtDate(h.start_date)} ~ ${fmtDate(h.end_date)}`}
+                    {stocks.length === 0 && h.carried ? " · 정리하면 열립니다" : ""}
+                </div>
+            </div>
+            <div className="text-right shrink-0">
+                <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
+                <div className="text-[11px] text-neutral-400">
+                    벤치마크 {pct(h.bh_return ?? 0)}
+                    {h.aum_after !== null && (
+                        <span className={cn("ml-1 font-bold", pnlValueColor(flow >= 0))}>
+                            · 자금 {flow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(flow))}
+                        </span>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+
+    if (stocks.length === 0) {
+        return <li className="flex items-center justify-between gap-3 py-2.5">{head}</li>;
+    }
+
+    return (
+        <li>
+            <details className="group/half">
+                <summary className="cursor-pointer list-none flex items-center justify-between gap-2 py-2.5">
+                    {head}
+                    <ChevronDown size={14} className="shrink-0 text-neutral-400 transition-transform group-open/half:rotate-180" />
+                </summary>
+                <ul className="pb-2.5 flex flex-col gap-1">
+                    {stocks.map(s => <PastStock key={s.slot} s={s} />)}
+                </ul>
+            </details>
+        </li>
+    );
+}
+
+/** 지난 분기의 한 자리. 손익은 원으로, 그 옆에 넣은 돈 대비 몇 %였는지. */
+function PastStock({ s }: { s: HistoryStock }) {
+    const rate = s.invested > 0 ? (s.realized / s.invested) * 100 : null;
+    return (
+        <li className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-[#faf9f7] dark:bg-[#2c2a26]/60">
+            <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
+                    <SectorSprite sector={s.sector ?? undefined} color={sectorAccent(s.sector ?? undefined)} />
+                </span>
+                {/* 이월한 자리는 다음 판에서 아직 굴리는 중이라 이름을 못 연다 */}
+                {s.carried ? (
+                    <span className="truncate text-[12px] font-bold text-[#a1730a] dark:text-[#e3b34a] flex items-center gap-1">
+                        <EyeOff size={11} className="shrink-0" /> 들고 감
+                    </span>
+                ) : (
+                    <span className="truncate text-[12px] font-bold text-neutral-800 dark:text-neutral-100">
+                        {s.name ?? s.sector ?? `${s.slot + 1}번`}
+                    </span>
+                )}
+            </span>
+            <span className="shrink-0 text-right">
+                {s.invested > 0 ? (
+                    <>
+                        <span className={cn("font-mono text-[12px] font-black", pnlValueColor(s.realized >= 0))}>
+                            {s.realized >= 0 ? "+" : "−"}{fmtMoney(Math.abs(s.realized))}
+                        </span>
+                        <span className="ml-1.5 text-[10px] text-neutral-400 font-mono">
+                            {rate !== null && `${pct(rate)} · `}{s.trades}번
+                        </span>
+                    </>
+                ) : (
+                    <span className="text-[10px] text-neutral-400">안 삼</span>
+                )}
+            </span>
+        </li>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
 /** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
 function FirmDashboard({
     onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle,
@@ -1520,41 +1623,7 @@ function FirmDashboard({
                 <Fold icon={<History size={16} />} title="지난 분기"
                     subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
-                        {history.map(h => {
-                            const win = (h.final_return ?? 0) >= 0;
-                            const flow = (h.aum_after ?? 0) - (h.aum_before ?? 0);
-                            return (
-                                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5">
-                                    <div className="min-w-0">
-                                        {/* 이월한 분기는 아직 그 회사를 들고 있다 — 목록에서도 열지 않는다.
-                                            여기서 열면 이어지는 판이 블라인드가 아니게 된다. */}
-                                        {h.carried ? (
-                                            <div className="font-bold text-[#a1730a] dark:text-[#e3b34a] truncate flex items-center gap-1">
-                                                <EyeOff size={13} className="shrink-0" /> 아직 들고 있음
-                                            </div>
-                                        ) : (
-                                            <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
-                                        )}
-                                        <div className="text-[11px] text-neutral-400 font-mono">
-                                            {h.carried
-                                                ? `${fmtDate(h.start_date)} ~ · 정리하면 열립니다`
-                                                : `${fmtDate(h.start_date)} ~ ${fmtDate(h.end_date)}`}
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
-                                        <div className="text-[11px] text-neutral-400">
-                                            벤치마크 {pct(h.bh_return ?? 0)}
-                                            {h.aum_after !== null && (
-                                                <span className={cn("ml-1 font-bold", pnlValueColor(flow >= 0))}>
-                                                    · 자금 {flow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(flow))}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </li>
-                            );
-                        })}
+                        {history.map(h => <PastHalf key={h.id} h={h} />)}
                     </ul>
                 </Fold>
             )}
