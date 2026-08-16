@@ -100,8 +100,10 @@ export interface ReplayRound {
 
 export interface ReplayHistoryItem {
     id: string;
-    ticker: string;
+    /** 이월한 분기는 아직 그 회사를 들고 있어 정답을 열지 않는다 — 그때는 둘 다 null */
+    ticker: string | null;
     name: string | null;
+    carried?: boolean;
     start_date: string | null;
     end_date: string | null;
     final_return: number | null;

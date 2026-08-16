@@ -18,7 +18,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Play, Flag, TrendingUp, Coins, Wallet, RotateCcw, Eye, Building2, Lock, Check, Activity, ChevronDown } from "lucide-react";
+// 아이콘은 뜻이 겹치지 않게 고른다. 예전에는 Flag 가 "그만"과 "지난 분기" 두 곳에 쓰여
+// 같은 그림이 전혀 다른 일을 가리켰다.
+import {
+    Play, TrendingUp, Coins, Wallet, Tag, ArrowRight, X, EyeOff,
+    FlaskConical, History, Footprints, Lock, Check, ChevronDown,
+} from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -463,7 +468,7 @@ export default function ReplayGamePage() {
         {
             label: round.status === "done" ? "마지막 가격" : "현재가", value: fmtKrw(price),
             sub: round.qty > 0 ? `산 값 ${fmtKrw(avg)}` : round.status === "done" ? "정리됨" : "아직 안 삼",
-            icon: <Eye size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
+            icon: <Tag size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
         },
         {
             label: "수익률", value: pct(totalRate), sub: `실현 ${fmtKrw(round.realized)}`,
@@ -528,12 +533,12 @@ export default function ReplayGamePage() {
                             {round.status === "playing" ? (
                                 <button onClick={giveUp} disabled={busy}
                                     className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                    <Flag size={14} /> 그만
+                                    <X size={14} /> 그만
                                 </button>
                             ) : (
                                 <button onClick={reset}
                                     className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] hover:opacity-90 transition-opacity">
-                                    <RotateCcw size={14} /> 다음 분기
+                                    <ArrowRight size={14} /> 다음 분기
                                 </button>
                             )}
                         </header>
@@ -577,12 +582,12 @@ export default function ReplayGamePage() {
                                 {round.status === "playing" ? (
                                     <button onClick={giveUp} disabled={busy} aria-label="그만"
                                         className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] disabled:opacity-40">
-                                        <Flag size={11} /> 그만
+                                        <X size={11} /> 그만
                                     </button>
                                 ) : (
                                     <button onClick={reset} aria-label="다음 분기"
                                         className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00]">
-                                        <RotateCcw size={11} /> 다음 분기
+                                        <ArrowRight size={11} /> 다음 분기
                                     </button>
                                 )}
                             </div>
@@ -1101,7 +1106,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
             </SectionPanel>
 
             {isLoggedIn && (
-                <Fold icon={<Building2 size={16} />} title="리서치실"
+                <Fold icon={<FlaskConical size={16} />} title="리서치실"
                     subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${owned.length}/${TOOLS.length}`}>
                     <ul className="flex flex-col gap-2">
                         {TOOLS.map(t => {
@@ -1138,7 +1143,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
             )}
 
             {habits && habits.trades > 0 && (
-                <Fold icon={<Activity size={16} />} title="매매 습관"
+                <Fold icon={<Footprints size={16} />} title="매매 습관"
                     subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`}>
                     <ul className="flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
                         <HabitRow label="보유"
@@ -1163,7 +1168,7 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
             )}
 
             {history.length > 0 && (
-                <Fold icon={<Flag size={16} />} title="지난 분기"
+                <Fold icon={<History size={16} />} title="지난 분기"
                     subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
                         {history.map(h => {
@@ -1172,8 +1177,20 @@ function FirmDashboard({ onStart, busy, isLoggedIn, firm, bestReturn, history, h
                             return (
                                 <li key={h.id} className="flex items-center justify-between gap-3 py-2.5">
                                     <div className="min-w-0">
-                                        <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
-                                        <div className="text-[11px] text-neutral-400 font-mono">{fmtDate(h.start_date)} ~ {fmtDate(h.end_date)}</div>
+                                        {/* 이월한 분기는 아직 그 회사를 들고 있다 — 목록에서도 열지 않는다.
+                                            여기서 열면 이어지는 판이 블라인드가 아니게 된다. */}
+                                        {h.carried ? (
+                                            <div className="font-bold text-[#a1730a] dark:text-[#e3b34a] truncate flex items-center gap-1">
+                                                <EyeOff size={13} className="shrink-0" /> 아직 들고 있음
+                                            </div>
+                                        ) : (
+                                            <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
+                                        )}
+                                        <div className="text-[11px] text-neutral-400 font-mono">
+                                            {h.carried
+                                                ? `${fmtDate(h.start_date)} ~ · 정리하면 열립니다`
+                                                : `${fmtDate(h.start_date)} ~ ${fmtDate(h.end_date)}`}
+                                        </div>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
