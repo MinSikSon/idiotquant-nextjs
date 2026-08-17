@@ -2,7 +2,7 @@
 
 // 내 운용사 — 블라인드 차트 리플레이를 "분기 운용" 으로 감싼 게임.
 //
-// 한 판은 언제나 시드 1,000만원이라 실력만 잰다. 그 성적을 보고 고객이 돈을 맡기거나
+// 한 반기는 그때 맡고 있는 돈을 그대로 굴린다. 그 성적이 맡은 돈에 곱해지고, 고객이 돈을 맡기거나
 // 빼가고(AUM), 회사는 맡은 돈에서 보수를 받아 리서치 도구를 산다. 규칙은 lib/paper/firm.ts.
 //
 // 판 자체는 그대로다 — 어느 종목인지, 언제인지 모르는 60 거래일을 하루씩 넘기며 사고판다.
@@ -33,7 +33,7 @@ import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHis
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
 import {
-    TOOLS, INITIAL_AUM, MIN_AUM, rankOf, fmtMoney, flowRate, type Firm,
+    TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
@@ -1279,7 +1279,8 @@ function MoneyFlowNote() {
                     <Row k="이겼을 때" v={ex(8, 5)} />
                     <Row k="둘 다 손실" v={ex(-4, -6)} />
                     <Row k="졌을 때" v={ex(2, 9)} />
-                    <Row k="하한" v={`아무리 잃어도 ${fmtMoney(MIN_AUM)}원 아래로는 내려가지 않습니다`} />
+                    <Row k="순서" v="먼저 이번 반기 수익률이 맡은 돈에 곱해지고, 그다음 고객이 들고 납니다" />
+                    <Row k="하한" v="없습니다. 크게 잃으면 다음 반기에 굴릴 돈도 그만큼 줄어듭니다" />
                 </ul>
             </div>
             <div>
@@ -1287,7 +1288,7 @@ function MoneyFlowNote() {
                 <ul className="flex flex-col gap-1">
                     <Row k="운용보수" v={`맡은 돈 × ${(BASE_FEE_BP / 100).toFixed(2)}% — 성적과 무관하게 분기마다 (연 ${(BASE_FEE_BP * 4 / 100).toFixed(0)}%)`} />
                     <Row k="성과보수" v={`맡은 돈 × 초과수익(%p) × ${PERF_FEE_PCT}% — 벤치마크를 이겼을 때만`} />
-                    <Row k="쓰는 곳" v="리서치실 도구를 사는 데 씁니다. 판의 시드 1,000만원과는 다른 주머니입니다." />
+                    <Row k="쓰는 곳" v="리서치실 도구를 사는 데 씁니다. 굴리는 돈과는 다른 주머니입니다." />
                 </ul>
             </div>
         </div>
@@ -1451,7 +1452,7 @@ function FirmDashboard({
                 </h1>
                 {/* 아래 규칙·수치와 같은 말이라, 화면이 좁으면 접는다 */}
                 <p className="hidden sm:block text-[13px] sm:text-[15px] text-neutral-500 dark:text-neutral-400 mt-3 leading-[1.8] break-keep max-w-md">
-                    분기마다 모델 포트폴리오 1,000만원으로 실력을 증명합니다.
+                    맡은 돈을 반기마다 굴립니다. 번 만큼 다음 반기가 커집니다.
                     고객은 그 성적을 보고 돈을 맡기거나 뺍니다.
                 </p>
             </header>
@@ -1475,7 +1476,7 @@ function FirmDashboard({
                             같은 회사로 이어서 시작합니다.
                         </p>
                         <p className="mt-1 text-[10.5px] text-[#a1730a]/80 dark:text-[#e3b34a]/70 break-keep">
-                            시드는 이번에도 1,000만원입니다 — 그중 일부가 이미 그 회사들에 들어가 있습니다.
+                            이번 반기에 굴릴 돈 중 일부가 이미 그 회사들에 들어가 있습니다.
                         </p>
                     </div>
                 )}
@@ -1576,7 +1577,7 @@ function FirmDashboard({
                     <div className="mt-2.5">
                 <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
                     {[
-                        `시드 1,000만원으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
+                        `지금 맡고 있는 돈으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
                         `한 반기는 달력 45일입니다. 앞 한 달을 먼저 보고, 그다음부터 하루씩 넘깁니다.`,
                         // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
                         `사기·팔기·관망 — 어느 쪽을 눌러도 하루가 지나갑니다.`,

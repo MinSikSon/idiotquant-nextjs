@@ -5,13 +5,15 @@
 // 한쪽을 고치면 반드시 다른 쪽도 고칠 것.
 // (레포가 갈라져 있어 코드를 공유할 수 없어 감수하는 중복이다 — engine·round 와 같은 사정)
 //
-// ── 왜 시드는 고정인데 AUM 은 자라는가 ──────────────────────────────────
-// 한 판은 언제나 1,000만원짜리 모델 포트폴리오로 굴린다 — 실력만 재기 위해서다.
-// 고객은 그 성적(트랙레코드)을 보고 돈을 맡기고, 회사는 맡은 돈에서 보수를 받는다.
-// 성적은 실력, AUM 은 그 실력이 벌어들이는 것.
+// ── 맡은 돈이 곧 굴리는 돈이다 ──────────────────────────────────────────
+// 한 반기의 시드는 그 시점의 AUM 이다. 반기가 끝나면 그 수익률이 AUM 에 그대로 곱해지고,
+// 거기에 고객 유출입이 더해진다. 잘하면 다음 반기가 커지고 못하면 줄어든다.
+// 하한은 없다 — 크게 잃으면 굴릴 돈도 그만큼 줄어든 채로 간다.
 
 export const INITIAL_AUM = 100_000_000;
-export const MIN_AUM = 10_000_000;
+
+/** 계산이 성립하는 최소치(0 나눗셈 방지). 게임 규칙이 아니다 — 워커의 MIN_CAPITAL 과 같다. */
+const MIN_CAPITAL = 1;
 
 // 화면이 "고객 돈이 왜 이만큼 들고 났는지"를 설명하려면 식의 계수까지 알아야 한다.
 // 문장에 숫자를 다시 적으면 규칙이 바뀔 때 설명만 옛말이 된다.
@@ -58,9 +60,11 @@ export function flowRate(finalReturn: number, bhReturn: number): number {
     return clamp(excess * FLOW_EXCESS_MULT + loss * FLOW_LOSS_MULT, FLOW_MIN, FLOW_MAX);
 }
 
+/** 운용 성과가 먼저 곱해지고(맡은 돈을 굴렸으니), 그다음 고객이 들고 난다. */
 export function nextAum(aum: number, finalReturn: number, bhReturn: number): number {
-    const base = Math.max(Number(aum) || 0, MIN_AUM);
-    return Math.max(Math.round(base * (1 + flowRate(finalReturn, bhReturn) / 100)), MIN_AUM);
+    const base = Math.max(Number(aum) || 0, MIN_CAPITAL);
+    const grown = base * (1 + (Number(finalReturn) || 0) / 100);
+    return Math.max(Math.round(grown * (1 + flowRate(finalReturn, bhReturn) / 100)), MIN_CAPITAL);
 }
 
 export function baseFee(aum: number): number {
@@ -106,7 +110,7 @@ export const TOOLS: Tool[] = [
 ];
 
 export function settleQuarter(aum: number, finalReturn: number, bhReturn: number) {
-    const before = Math.max(Number(aum) || 0, MIN_AUM);
+    const before = Math.max(Number(aum) || 0, MIN_CAPITAL);
     const fee = baseFee(before);
     const perf = perfFee(before, finalReturn, bhReturn);
     const after = nextAum(before, finalReturn, bhReturn);
