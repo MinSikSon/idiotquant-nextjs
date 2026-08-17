@@ -126,6 +126,29 @@ const TOOL_COLOR: Record<string, string> = {
     ma: "#f59e0b", dc: "#0d9488", bb: "#94a3b8", atr: "#d946ef",
 };
 
+/**
+ * 카드 안 미니 추세선. 값이 아니라 **모양**을 본다 — 네 종목 중 어느 게 오르는 중인지
+ * 알려고 하나씩 눌러 들어가지 않아도 되게 하는 것이 전부다.
+ *
+ * recharts 를 네 번 띄우면 무거워서 폴리라인 하나로 직접 그린다.
+ */
+function Spark({ data, color }: { data: number[]; color: string }) {
+    const W = 44, H = 14, PAD = 1.5;
+    if (data.length < 2) return <svg width={W} height={H} aria-hidden="true" />;
+    const lo = Math.min(...data), hi = Math.max(...data);
+    const span = hi - lo || 1;
+    const pts = data.map((v, i) =>
+        `${PAD + (i / (data.length - 1)) * (W - PAD * 2)},${H - PAD - ((v - lo) / span) * (H - PAD * 2)}`);
+    const [lx, ly] = pts[pts.length - 1].split(",");
+    return (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" className="shrink-0">
+            <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="1.4"
+                strokeLinejoin="round" strokeLinecap="round" />
+            <circle cx={lx} cy={ly} r="1.7" fill={color} />
+        </svg>
+    );
+}
+
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const fmtDate = (d?: string | null) => (d && d.length === 8 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}` : "");
 
@@ -369,6 +392,13 @@ export default function ReplayGamePage() {
     const heldQty = sel ? sel.qty : (round?.qty ?? 0);
     const heldCost = sel ? sel.cost_basis : (round?.cost_basis ?? 0);
     const avg = avgPrice({ qty: heldQty, cost_basis: heldCost });
+
+    /** 그 자리의 최근 25일 종가. 카드 미니 추세선이 쓴다. */
+    const closesOf = useCallback((h: { candles: { c: number }[] }) => {
+        if (!round) return [];
+        const upto = round.status === "done" ? h.candles.length : round.cursor;
+        return h.candles.slice(Math.max(0, upto - 25), upto).map(c => c.c);
+    }, [round]);
 
     /** 그 자리의 마지막 공개 종가. 자리마다 값이 달라 계좌 합계를 낼 때 쓴다. */
     const lastCloseOf = useCallback((h: { candles: { c: number }[] }) => {
@@ -812,6 +842,9 @@ export default function ReplayGamePage() {
                                         const on = h.slot === (sel?.slot ?? 0);
                                         const rate = h.qty > 0 && h.cost_basis > 0
                                             ? ((last * h.qty - h.cost_basis) / h.cost_basis) * 100 : null;
+                                        // 추세선은 그 종목의 최근 25일. 구간 등락 부호로 색을 정한다(시장색).
+                                        const closes = overview ? closesOf(h) : [];
+                                        const trendUp = closes.length > 1 && closes[closes.length - 1] >= closes[0];
                                         return (
                                             <button key={h.slot}
                                                 onClick={() => { setSlot(h.slot); setDetail(true); }}
@@ -828,15 +861,14 @@ export default function ReplayGamePage() {
                                                     {/* 진행 중에는 이름이 없다 — 업종이 그 종목을 부르는 이름이 된다 */}
                                                     <span className="truncate">{h.name ?? h.sector ?? `${h.slot + 1}번`}</span>
                                                 </span>
+                                                {/* 개요에서는 추세선을 함께. 값(현재가)만으로는 종목마다 자릿수가 달라
+                                                    견줄 수가 없었고, 오르는 중인지 알려면 하나씩 눌러 봐야 했다. */}
+                                                {overview && <Spark data={closes} color={trendUp ? UP_COLOR : DOWN_COLOR} />}
                                                 {h.qty > 0
                                                     ? <span className={cn("font-mono", rate !== null ? pnlText(rate >= 0) : "")}>
                                                         {rate !== null ? pct(rate) : `${h.qty}주`}
                                                     </span>
                                                     : <span className="opacity-60">안 삼</span>}
-                                                {/* 개요에서는 값도 같이 — 눌러 들어가기 전에 견줄 수 있어야 한다 */}
-                                                {overview && (
-                                                    <span className="font-mono text-[9px] text-neutral-400">{fmtKrw(last)}</span>
-                                                )}
                                             </button>
                                         );
                                     })}
