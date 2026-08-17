@@ -365,6 +365,19 @@ export default function ReplayGamePage() {
     const totalPnl = totalAssets - (round?.seed ?? 0);
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
 
+    /**
+     * 자리별 비중 — 내 돈에서 그 종목이 차지하는 몫(%). 나머지가 현금이다.
+     *
+     * 수익률만 보면 "한 종목에 몰빵했는데 조금 올랐다"와 "고르게 담았는데 조금 올랐다"가
+     * 똑같아 보인다. 다음에 얼마를 더 살지는 결국 지금 얼마를 담고 있느냐로 정해진다.
+     */
+    const weights = useMemo(() => holdings.map(h => ({
+        slot: h.slot,
+        sector: h.sector,
+        pct: totalAssets > 0 ? ((h.qty * lastCloseOf(h)) / totalAssets) * 100 : 0,
+    })), [holdings, totalAssets, lastCloseOf]);
+    const cashPct = totalAssets > 0 ? ((round?.cash ?? 0) / totalAssets) * 100 : 100;
+
     // 판 길이와 컨텍스트 길이는 판마다 다르다 — 반기 창을 달력으로 자르면 그 안의 거래일
     // 수가 공휴일·연휴에 따라 달라진다. 서버가 준 값을 쓰고, 없으면(비로그인 로컬 판)
     // 예전 상수로 읽는다.
@@ -809,6 +822,30 @@ export default function ReplayGamePage() {
                                     })}
                                 </div>
                             )}
+                            {/* 비중 한 줄. 어느 종목에 얼마를 담고 있는지는 다음 매매를 정하는 값인데,
+                                카드의 수익률만으로는 몰빵과 고르게 담기가 구별되지 않는다.
+                                띠 하나면 넷과 현금이 한눈에 들어오고 세로로 16px 밖에 안 먹는다.
+                                업종 색이 겹칠 수 있어(같은 업종 둘) 칸마다 경계선을 둔다. */}
+                            {holdings.length > 1 && (
+                                <div className="flex items-center gap-1.5 mb-1.5 shrink-0">
+                                    <span className="text-[9px] font-black text-neutral-400 shrink-0">비중</span>
+                                    <div className="flex-1 flex h-[16px] rounded-md overflow-hidden bg-neutral-100 dark:bg-[#2c2a26]">
+                                        {weights.filter(w => w.pct > 0.5).map(w => (
+                                            <div key={w.slot} title={`${w.slot + 1}번 종목 비중 ${w.pct.toFixed(1)}%`}
+                                                style={{ width: `${w.pct}%`, backgroundColor: sectorAccent(w.sector ?? undefined) }}
+                                                className={cn("flex items-center justify-center text-[8.5px] font-black text-white/95 border-r border-white/50 dark:border-black/30 overflow-hidden",
+                                                    // 지금 보고 있는 자리는 어느 칸인지 알아야 한다
+                                                    !overview && w.slot === (sel?.slot ?? 0) && "ring-1 ring-inset ring-neutral-900 dark:ring-white")}>
+                                                {w.pct >= 11 ? `${Math.round(w.pct)}%` : ""}
+                                            </div>
+                                        ))}
+                                        <div className="flex-1 flex items-center justify-center text-[8.5px] font-bold text-neutral-400 overflow-hidden whitespace-nowrap"
+                                            title={`현금 ${cashPct.toFixed(1)}%`}>
+                                            {cashPct >= 14 ? `현금 ${Math.round(cashPct)}%` : ""}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {/* 산 도구는 판이 도는 중에도 껐다 켤 수 있다. 선이 넷씩 겹치면 정작
                                 가격이 안 보이는데, 그때마다 판을 접고 대시보드로 갈 수는 없다.
                                 산 사람에게만 보이므로 안 산 사람의 화면은 그대로다. */}
@@ -910,7 +947,9 @@ export default function ReplayGamePage() {
                                     {overview
                                         ? "종목을 눌러 자세히 보고 사고팝니다"
                                         : heldQty > 0
-                                            ? `${heldQty}주 갖고 있음 · 산 값 ${fmtKrw(avg)}`
+                                            // 비중을 산 값보다 앞에 둔다 — 좁은 폰에서 뒤가 잘리는데,
+                                            // 얼마에 샀는지보다 지금 얼마나 담고 있는지가 다음 매매를 정한다.
+                                            ? `${heldQty}주 갖고 있음 · 비중 ${(weights.find(w => w.slot === (sel?.slot ?? 0))?.pct ?? 0).toFixed(1)}% · 산 값 ${fmtKrw(avg)}`
                                             : round.status === "done" ? "정리됨" : "아직 안 삼"}
                                 </span>
                             </div>
