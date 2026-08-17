@@ -457,14 +457,24 @@ export default function ReplayGamePage() {
         ? `그냥 들고 ${pct(bhRate)} · 나 ${pct(totalRate)} (${edge >= 0 ? "+" : ""}${edge.toFixed(1)}%p)`
         : null;
 
-    // 현금의 pct% 로 살 수 있는 주식 수. 수수료까지 넣어 실제로 통과하는 수량까지 줄인다.
+    /**
+     * **내 돈**(현금 + 자리별 평가금액)의 pct% 어치로 살 수 있는 주식 수.
+     *
+     * 현금 기준이 아니라 총자산 기준이다 — 현금 기준으로 25% 를 네 번 누르면
+     * 25 → 19 → 14 → 10% 로 줄어들어 네 종목을 고르게 담을 수가 없었다.
+     * 내 돈 기준이면 25% 를 네 번 눌러 균등 매수가 그대로 된다.
+     *
+     * 살 돈은 어차피 현금을 넘을 수 없으므로 현금으로 한 번 자른다(그래서 현금이
+     * 모자라면 버튼에 적힌 주수가 그만큼 줄어든다). "최대"만 현금 전액이다.
+     */
     const buyQtyFor = useCallback((pct: number, atPrice = price) => {
-        const cash = Math.floor((round?.cash ?? 0) * pct / 100);
-        if (atPrice <= 0 || cash <= 0) return 0;
-        let n = Math.floor(cash / atPrice);
-        while (n > 0 && !quoteBuy({ price: atPrice, qty: n, cash }).ok) n--;
+        const cash = round?.cash ?? 0;
+        const budget = pct >= 100 ? cash : Math.min(cash, Math.floor(totalAssets * pct / 100));
+        if (atPrice <= 0 || budget <= 0) return 0;
+        let n = Math.floor(budget / atPrice);
+        while (n > 0 && !quoteBuy({ price: atPrice, qty: n, cash: budget }).ok) n--;
         return n;
-    }, [round?.cash, price]);
+    }, [round?.cash, totalAssets, price]);
 
     /** 보유의 pct%. 100% 는 남김없이 — 1주라도 남으면 "전부"가 거짓말이 된다. */
     const sellQtyFor = useCallback((pct: number) => {
@@ -1027,7 +1037,12 @@ export default function ReplayGamePage() {
                                         시간은 아래 관망 줄에서만 흐른다(phase 3). */}
                                     <div className={cn("grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center",
                                         overview && "hidden")}>
-                                        <span className="text-[10.5px] font-black text-red-500">사기</span>
+                                        {/* 기준을 적어 둔다 — 사기는 내 돈, 팔기는 보유.
+                                            안 적으면 같은 25% 가 두 가지 뜻이 된다. */}
+                                        <span className="leading-[1.15]">
+                                            <span className="block text-[10.5px] font-black text-[#e14b4b]">사기</span>
+                                            <span className="block text-[8px] font-bold text-neutral-400">내 돈</span>
+                                        </span>
                                         <div className="grid grid-cols-4 gap-1.5">
                                             {BUY_PARTS.map(part => {
                                                 const n = buyQtyFor(part.pct);
@@ -1042,7 +1057,10 @@ export default function ReplayGamePage() {
                                             })}
                                         </div>
 
-                                        <span className="text-[10.5px] font-black text-[#3b82f6]">팔기</span>
+                                        <span className="leading-[1.15]">
+                                            <span className="block text-[10.5px] font-black text-[#3b82f6]">팔기</span>
+                                            <span className="block text-[8px] font-bold text-neutral-400">보유</span>
+                                        </span>
                                         <div className="grid grid-cols-3 gap-1.5">
                                             {SELL_PARTS.map(part => {
                                                 const n = sellQtyFor(part.pct);
@@ -1638,7 +1656,8 @@ function FirmDashboard({
                         `지금 맡고 있는 돈으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
                         `한 반기는 달력 45일입니다. 앞 한 달을 먼저 보고, 그다음부터 하루씩 넘깁니다.`,
                         // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
-                        `사기·팔기·관망 — 어느 쪽을 눌러도 하루가 지나갑니다.`,
+                        `사기는 내 돈 기준 비율입니다 — 네 종목에 고르게 담으려면 25%씩 누르면 됩니다.`,
+                        `사고파는 것으로는 날이 안 갑니다. 하루는 관망에서만 지나갑니다.`,
                         `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
                         `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
                     ].map((line, i) => (
