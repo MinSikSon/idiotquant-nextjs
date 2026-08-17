@@ -2,7 +2,7 @@
 
 // 내 운용사 — 블라인드 차트 리플레이를 "분기 운용" 으로 감싼 게임.
 //
-// 한 판은 언제나 시드 1,000만원이라 실력만 잰다. 그 성적을 보고 고객이 돈을 맡기거나
+// 한 반기는 그때 맡고 있는 돈을 그대로 굴린다. 그 성적이 맡은 돈에 곱해지고, 고객이 돈을 맡기거나
 // 빼가고(AUM), 회사는 맡은 돈에서 보수를 받아 리서치 도구를 산다. 규칙은 lib/paper/firm.ts.
 //
 // 판 자체는 그대로다 — 어느 종목인지, 언제인지 모르는 60 거래일을 하루씩 넘기며 사고판다.
@@ -29,11 +29,11 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
+import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
 import {
-    TOOLS, INITIAL_AUM, MIN_AUM, rankOf, fmtMoney, flowRate, type Firm,
+    TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
@@ -364,6 +364,19 @@ export default function ReplayGamePage() {
     const totalAssets = (round?.cash ?? 0) + marketValue;
     const totalPnl = totalAssets - (round?.seed ?? 0);
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
+
+    /**
+     * 자리별 비중 — 내 돈에서 그 종목이 차지하는 몫(%). 나머지가 현금이다.
+     *
+     * 수익률만 보면 "한 종목에 몰빵했는데 조금 올랐다"와 "고르게 담았는데 조금 올랐다"가
+     * 똑같아 보인다. 다음에 얼마를 더 살지는 결국 지금 얼마를 담고 있느냐로 정해진다.
+     */
+    const weights = useMemo(() => holdings.map(h => ({
+        slot: h.slot,
+        sector: h.sector,
+        pct: totalAssets > 0 ? ((h.qty * lastCloseOf(h)) / totalAssets) * 100 : 0,
+    })), [holdings, totalAssets, lastCloseOf]);
+    const cashPct = totalAssets > 0 ? ((round?.cash ?? 0) / totalAssets) * 100 : 100;
 
     // 판 길이와 컨텍스트 길이는 판마다 다르다 — 반기 창을 달력으로 자르면 그 안의 거래일
     // 수가 공휴일·연휴에 따라 달라진다. 서버가 준 값을 쓰고, 없으면(비로그인 로컬 판)
@@ -809,6 +822,30 @@ export default function ReplayGamePage() {
                                     })}
                                 </div>
                             )}
+                            {/* 비중 한 줄. 어느 종목에 얼마를 담고 있는지는 다음 매매를 정하는 값인데,
+                                카드의 수익률만으로는 몰빵과 고르게 담기가 구별되지 않는다.
+                                띠 하나면 넷과 현금이 한눈에 들어오고 세로로 16px 밖에 안 먹는다.
+                                업종 색이 겹칠 수 있어(같은 업종 둘) 칸마다 경계선을 둔다. */}
+                            {holdings.length > 1 && (
+                                <div className="flex items-center gap-1.5 mb-1.5 shrink-0">
+                                    <span className="text-[9px] font-black text-neutral-400 shrink-0">비중</span>
+                                    <div className="flex-1 flex h-[16px] rounded-md overflow-hidden bg-neutral-100 dark:bg-[#2c2a26]">
+                                        {weights.filter(w => w.pct > 0.5).map(w => (
+                                            <div key={w.slot} title={`${w.slot + 1}번 종목 비중 ${w.pct.toFixed(1)}%`}
+                                                style={{ width: `${w.pct}%`, backgroundColor: sectorAccent(w.sector ?? undefined) }}
+                                                className={cn("flex items-center justify-center text-[8.5px] font-black text-white/95 border-r border-white/50 dark:border-black/30 overflow-hidden",
+                                                    // 지금 보고 있는 자리는 어느 칸인지 알아야 한다
+                                                    !overview && w.slot === (sel?.slot ?? 0) && "ring-1 ring-inset ring-neutral-900 dark:ring-white")}>
+                                                {w.pct >= 11 ? `${Math.round(w.pct)}%` : ""}
+                                            </div>
+                                        ))}
+                                        <div className="flex-1 flex items-center justify-center text-[8.5px] font-bold text-neutral-400 overflow-hidden whitespace-nowrap"
+                                            title={`현금 ${cashPct.toFixed(1)}%`}>
+                                            {cashPct >= 14 ? `현금 ${Math.round(cashPct)}%` : ""}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {/* 산 도구는 판이 도는 중에도 껐다 켤 수 있다. 선이 넷씩 겹치면 정작
                                 가격이 안 보이는데, 그때마다 판을 접고 대시보드로 갈 수는 없다.
                                 산 사람에게만 보이므로 안 산 사람의 화면은 그대로다. */}
@@ -910,7 +947,9 @@ export default function ReplayGamePage() {
                                     {overview
                                         ? "종목을 눌러 자세히 보고 사고팝니다"
                                         : heldQty > 0
-                                            ? `${heldQty}주 갖고 있음 · 산 값 ${fmtKrw(avg)}`
+                                            // 비중을 산 값보다 앞에 둔다 — 좁은 폰에서 뒤가 잘리는데,
+                                            // 얼마에 샀는지보다 지금 얼마나 담고 있는지가 다음 매매를 정한다.
+                                            ? `${heldQty}주 갖고 있음 · 비중 ${(weights.find(w => w.slot === (sel?.slot ?? 0))?.pct ?? 0).toFixed(1)}% · 산 값 ${fmtKrw(avg)}`
                                             : round.status === "done" ? "정리됨" : "아직 안 삼"}
                                 </span>
                             </div>
@@ -1240,7 +1279,8 @@ function MoneyFlowNote() {
                     <Row k="이겼을 때" v={ex(8, 5)} />
                     <Row k="둘 다 손실" v={ex(-4, -6)} />
                     <Row k="졌을 때" v={ex(2, 9)} />
-                    <Row k="하한" v={`아무리 잃어도 ${fmtMoney(MIN_AUM)}원 아래로는 내려가지 않습니다`} />
+                    <Row k="순서" v="먼저 이번 반기 수익률이 맡은 돈에 곱해지고, 그다음 고객이 들고 납니다" />
+                    <Row k="하한" v="없습니다. 크게 잃으면 다음 반기에 굴릴 돈도 그만큼 줄어듭니다" />
                 </ul>
             </div>
             <div>
@@ -1248,7 +1288,7 @@ function MoneyFlowNote() {
                 <ul className="flex flex-col gap-1">
                     <Row k="운용보수" v={`맡은 돈 × ${(BASE_FEE_BP / 100).toFixed(2)}% — 성적과 무관하게 분기마다 (연 ${(BASE_FEE_BP * 4 / 100).toFixed(0)}%)`} />
                     <Row k="성과보수" v={`맡은 돈 × 초과수익(%p) × ${PERF_FEE_PCT}% — 벤치마크를 이겼을 때만`} />
-                    <Row k="쓰는 곳" v="리서치실 도구를 사는 데 씁니다. 판의 시드 1,000만원과는 다른 주머니입니다." />
+                    <Row k="쓰는 곳" v="리서치실 도구를 사는 데 씁니다. 굴리는 돈과는 다른 주머니입니다." />
                 </ul>
             </div>
         </div>
@@ -1281,6 +1321,109 @@ function Fold({ icon, title, subtitle, children }: {
 }
 
 // ─────────────────────────────────────────────────────────
+/**
+ * 지난 분기 한 줄. 한 반기에 네 종목이라 합쳐 놓으면 "+3%" 만 남고 어느 종목이 벌고 어느
+ * 종목이 까먹었는지가 사라진다. 줄을 펼치면 자리별 성적이 나온다.
+ *
+ * 자리 기록이 없는 옛 판(종목 하나로 굴리던 시절)은 펼칠 것이 없어 그냥 한 줄이다.
+ */
+function PastHalf({ h }: { h: ReplayHistoryItem }) {
+    const win = (h.final_return ?? 0) >= 0;
+    const flow = (h.aum_after ?? 0) - (h.aum_before ?? 0);
+    const stocks = h.stocks ?? [];
+
+    const head = (
+        <>
+            <div className="min-w-0">
+                {/* 이월한 분기는 아직 그 회사를 들고 있다 — 목록에서도 열지 않는다.
+                    여기서 열면 이어지는 판이 블라인드가 아니게 된다. */}
+                {h.carried ? (
+                    <div className="font-bold text-[#a1730a] dark:text-[#e3b34a] truncate flex items-center gap-1">
+                        <EyeOff size={13} className="shrink-0" /> 아직 들고 있음
+                    </div>
+                ) : (
+                    <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
+                )}
+                {/* 한 줄로 끊는다 — 모바일에서 이 줄이 접히면 카드 하나가 세 줄이 된다.
+                    자리 기록이 있으면 "정리하면 열립니다"를 빼는데, 어느 자리가 아직 열려
+                    있는지는 펼치면 자리마다 나오기 때문이다(같은 말을 두 번 적지 않는다). */}
+                <div className="text-[11px] text-neutral-400 font-mono truncate">
+                    {h.carried ? `${fmtDate(h.start_date)} ~` : `${fmtDate(h.start_date)} ~ ${fmtDate(h.end_date)}`}
+                    {stocks.length === 0 && h.carried ? " · 정리하면 열립니다" : ""}
+                </div>
+            </div>
+            <div className="text-right shrink-0">
+                <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
+                <div className="text-[11px] text-neutral-400">
+                    벤치마크 {pct(h.bh_return ?? 0)}
+                    {h.aum_after !== null && (
+                        <span className={cn("ml-1 font-bold", pnlValueColor(flow >= 0))}>
+                            · 자금 {flow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(flow))}
+                        </span>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+
+    if (stocks.length === 0) {
+        return <li className="flex items-center justify-between gap-3 py-2.5">{head}</li>;
+    }
+
+    return (
+        <li>
+            <details className="group/half">
+                <summary className="cursor-pointer list-none flex items-center justify-between gap-2 py-2.5">
+                    {head}
+                    <ChevronDown size={14} className="shrink-0 text-neutral-400 transition-transform group-open/half:rotate-180" />
+                </summary>
+                <ul className="pb-2.5 flex flex-col gap-1">
+                    {stocks.map(s => <PastStock key={s.slot} s={s} />)}
+                </ul>
+            </details>
+        </li>
+    );
+}
+
+/** 지난 분기의 한 자리. 손익은 원으로, 그 옆에 넣은 돈 대비 몇 %였는지. */
+function PastStock({ s }: { s: HistoryStock }) {
+    const rate = s.invested > 0 ? (s.realized / s.invested) * 100 : null;
+    return (
+        <li className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-[#faf9f7] dark:bg-[#2c2a26]/60">
+            <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
+                    <SectorSprite sector={s.sector ?? undefined} color={sectorAccent(s.sector ?? undefined)} />
+                </span>
+                {/* 이월한 자리는 다음 판에서 아직 굴리는 중이라 이름을 못 연다 */}
+                {s.carried ? (
+                    <span className="truncate text-[12px] font-bold text-[#a1730a] dark:text-[#e3b34a] flex items-center gap-1">
+                        <EyeOff size={11} className="shrink-0" /> 들고 감
+                    </span>
+                ) : (
+                    <span className="truncate text-[12px] font-bold text-neutral-800 dark:text-neutral-100">
+                        {s.name ?? s.sector ?? `${s.slot + 1}번`}
+                    </span>
+                )}
+            </span>
+            <span className="shrink-0 text-right">
+                {s.invested > 0 ? (
+                    <>
+                        <span className={cn("font-mono text-[12px] font-black", pnlValueColor(s.realized >= 0))}>
+                            {s.realized >= 0 ? "+" : "−"}{fmtMoney(Math.abs(s.realized))}
+                        </span>
+                        <span className="ml-1.5 text-[10px] text-neutral-400 font-mono">
+                            {rate !== null && `${pct(rate)} · `}{s.trades}번
+                        </span>
+                    </>
+                ) : (
+                    <span className="text-[10px] text-neutral-400">안 삼</span>
+                )}
+            </span>
+        </li>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
 /** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
 function FirmDashboard({
     onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle,
@@ -1309,7 +1452,7 @@ function FirmDashboard({
                 </h1>
                 {/* 아래 규칙·수치와 같은 말이라, 화면이 좁으면 접는다 */}
                 <p className="hidden sm:block text-[13px] sm:text-[15px] text-neutral-500 dark:text-neutral-400 mt-3 leading-[1.8] break-keep max-w-md">
-                    분기마다 모델 포트폴리오 1,000만원으로 실력을 증명합니다.
+                    맡은 돈을 반기마다 굴립니다. 번 만큼 다음 반기가 커집니다.
                     고객은 그 성적을 보고 돈을 맡기거나 뺍니다.
                 </p>
             </header>
@@ -1333,7 +1476,7 @@ function FirmDashboard({
                             같은 회사로 이어서 시작합니다.
                         </p>
                         <p className="mt-1 text-[10.5px] text-[#a1730a]/80 dark:text-[#e3b34a]/70 break-keep">
-                            시드는 이번에도 1,000만원입니다 — 그중 일부가 이미 그 회사들에 들어가 있습니다.
+                            이번 반기에 굴릴 돈 중 일부가 이미 그 회사들에 들어가 있습니다.
                         </p>
                     </div>
                 )}
@@ -1434,7 +1577,7 @@ function FirmDashboard({
                     <div className="mt-2.5">
                 <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
                     {[
-                        `시드 1,000만원으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
+                        `지금 맡고 있는 돈으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
                         `한 반기는 달력 45일입니다. 앞 한 달을 먼저 보고, 그다음부터 하루씩 넘깁니다.`,
                         // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
                         `사기·팔기·관망 — 어느 쪽을 눌러도 하루가 지나갑니다.`,
@@ -1520,41 +1663,7 @@ function FirmDashboard({
                 <Fold icon={<History size={16} />} title="지난 분기"
                     subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
-                        {history.map(h => {
-                            const win = (h.final_return ?? 0) >= 0;
-                            const flow = (h.aum_after ?? 0) - (h.aum_before ?? 0);
-                            return (
-                                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5">
-                                    <div className="min-w-0">
-                                        {/* 이월한 분기는 아직 그 회사를 들고 있다 — 목록에서도 열지 않는다.
-                                            여기서 열면 이어지는 판이 블라인드가 아니게 된다. */}
-                                        {h.carried ? (
-                                            <div className="font-bold text-[#a1730a] dark:text-[#e3b34a] truncate flex items-center gap-1">
-                                                <EyeOff size={13} className="shrink-0" /> 아직 들고 있음
-                                            </div>
-                                        ) : (
-                                            <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
-                                        )}
-                                        <div className="text-[11px] text-neutral-400 font-mono">
-                                            {h.carried
-                                                ? `${fmtDate(h.start_date)} ~ · 정리하면 열립니다`
-                                                : `${fmtDate(h.start_date)} ~ ${fmtDate(h.end_date)}`}
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
-                                        <div className="text-[11px] text-neutral-400">
-                                            벤치마크 {pct(h.bh_return ?? 0)}
-                                            {h.aum_after !== null && (
-                                                <span className={cn("ml-1 font-bold", pnlValueColor(flow >= 0))}>
-                                                    · 자금 {flow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(flow))}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </li>
-                            );
-                        })}
+                        {history.map(h => <PastHalf key={h.id} h={h} />)}
                     </ul>
                 </Fold>
             )}
