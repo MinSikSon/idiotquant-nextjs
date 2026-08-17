@@ -41,7 +41,7 @@ import { YEAR_CHOICES, halfOf, totalHalves } from "@/lib/paper/campaign";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
 import {
-    fmtKrw, KpiCard, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
+    fmtKrw, KpiCard, PnlIcon,
     SectionPanel, SectionHeader, useToast, ToastContainer,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
@@ -96,10 +96,30 @@ const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
 
-// 개요의 두 선. 벤치마크는 뒤로 물러난 흐린 점선, 내 성과는 진한 실선 — 색이 비슷하면
-// 어느 쪽이 나인지 매번 범례를 봐야 한다.
+// ── 이 화면의 색 규칙 ────────────────────────────────────────────────
+//
+//   빨강 = 오름 · 사기    파랑 = 내림 · 팔기
+//   금색 = 내 것(평단·성과·비중·켜 둔 도구)    회색 = 벤치마크(상대)
+//
+// 초록은 쓰지 않는다. 예전에는 손실 수익률이 초록이라 "내렸다"가 캔들(파랑)과
+// 글자(초록) 두 색이었고, 그 파랑은 개요의 "내 성과" 선과도 겹쳤다. 국내 증권앱
+// 관습으로 맞추면 색이 네 계열에서 세 계열로 준다.
+//
+// 공용 pnlText(잔고·스크리너와 공유)는 손실이 초록이다. 그 화면들까지 바꾸는 건
+// 이 작업 범위 밖이라, 게임 안에서만 쓰는 함수를 따로 둔다.
+const UP_COLOR = "#e14b4b";
+const DOWN_COLOR = "#3b82f6";
+const MINE_COLOR = "#e3b34a";
 const BENCH_COLOR = "#94a3b8";
-const MINE_COLOR = "#3b82f6";
+
+/** 오르면 빨강, 내리면 파랑. */
+const pnlText = (positive: boolean) => (positive ? "text-[#e14b4b]" : "text-[#3b82f6]");
+const pnlBg = (positive: boolean) => (positive
+    ? "bg-red-50 dark:bg-red-950/40 text-[#e14b4b]"
+    : "bg-blue-50 dark:bg-blue-950/40 text-[#3b82f6]");
+const pnlAccent = (positive: boolean) => (positive
+    ? "bg-red-400 dark:bg-red-600"
+    : "bg-[#3b82f6] dark:bg-[#2563eb]");
 
 // 도구가 그리는 선 색. 차트와 on/off 칩이 같은 색을 써야 어느 칩이 어느 선인지 안다.
 const TOOL_COLOR: Record<string, string> = {
@@ -616,7 +636,7 @@ export default function ReplayGamePage() {
             .map(o => ({
                 x: visible[o.day_index].d.slice(4),
                 y: o.price,
-                color: o.side === "buy" ? "#ef4444" : "#16a34a",
+                color: o.side === "buy" ? UP_COLOR : DOWN_COLOR,
                 label: withLabel ? `${o.side === "buy" ? "+" : "−"}${o.qty}` : undefined,
                 labelPosition: (o.side === "buy" ? "bottom" : "top") as "bottom" | "top",
             }));
@@ -639,8 +659,8 @@ export default function ReplayGamePage() {
         },
         {
             label: "수익률", value: pct(totalRate), sub: `실현 ${fmtKrw(round.realized)}`,
-            icon: <PnlIcon positive={totalPnl >= 0} />, iconBg: pnlIconBg(totalPnl >= 0),
-            valueColor: pnlValueColor(totalPnl >= 0), accentColor: pnlAccentColor(totalPnl >= 0),
+            icon: <PnlIcon positive={totalPnl >= 0} />, iconBg: pnlBg(totalPnl >= 0),
+            valueColor: pnlText(totalPnl >= 0), accentColor: pnlAccent(totalPnl >= 0),
         },
     ] : [];
 
@@ -745,7 +765,7 @@ export default function ReplayGamePage() {
                                     {round.status === "done"
                                         ? <span className="text-neutral-400">{`${round.ticker} · ${fmtDate(round.start_date)}~${fmtDate(round.end_date)}`}</span>
                                         : benchNote
-                                            ? <span className={edge >= 0 ? "text-[#16a34a]" : "text-red-500"}>{benchNote}</span>
+                                            ? <span className={pnlText(edge >= 0)}>{benchNote}</span>
                                             : <span className="text-neutral-400">종목·시기는 끝나야 열립니다</span>}
                                 </p>
                                 {holdings.length > 1 && !overview ? (
@@ -809,7 +829,7 @@ export default function ReplayGamePage() {
                                                     <span className="truncate">{h.name ?? h.sector ?? `${h.slot + 1}번`}</span>
                                                 </span>
                                                 {h.qty > 0
-                                                    ? <span className={cn("font-mono", rate !== null ? pnlValueColor(rate >= 0) : "")}>
+                                                    ? <span className={cn("font-mono", rate !== null ? pnlText(rate >= 0) : "")}>
                                                         {rate !== null ? pct(rate) : `${h.qty}주`}
                                                     </span>
                                                     : <span className="opacity-60">안 삼</span>}
@@ -905,8 +925,10 @@ export default function ReplayGamePage() {
                                             candles={visible}
                                             markers={markers}
                                             overlays={[
+                                                // 평단은 흐름이 아니라 "수준"이다 — 점선으로 둔다. 종목이 하나뿐인
+                                                // 판에서는 같은 차트에 금색 성과 곡선도 올라와서, 색만으로는 둘이 안 갈린다.
                                                 ...(heldQty > 0
-                                                    ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: "#e3b34a" }]
+                                                    ? [{ name: "내 평단", data: visible.map(() => Math.round(avg)), color: MINE_COLOR, dash: "5 3" }]
                                                     : []),
                                                 ...overlays.map(o => ({ name: o.name, data: o.data, color: o.color, dash: o.dash })),
                                             ]}
@@ -920,10 +942,12 @@ export default function ReplayGamePage() {
                             폰에서는 카드 대신 두 줄. 카드 넉 장이 128px 을 먹어 차트가 100px 까지
                             눌리고 그래도 자리가 모자랐다. 같은 값 넉 개가 두 줄이면 52px 이다. */}
                         <div className="lg:hidden shrink-0 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2.5 py-1 flex flex-col gap-0.5">
+                            {/* 굴리는 돈이 이 줄의 주인공이다 — 한 단계 키우고, 등락률은 칩으로
+                                떼어 색을 한 곳에 모은다. 나머지는 라벨로 눕힌다. */}
                             <div className="flex items-baseline justify-between gap-2 text-[12px]">
                                 <span className="truncate">
                                     <span className="text-neutral-400 mr-1">내 돈</span>
-                                    <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(totalAssets)}</b>
+                                    <b className="font-mono font-black text-[14px] tracking-tight text-neutral-900 dark:text-white">{fmtKrw(totalAssets)}</b>
                                     {overview
                                         ? <>
                                             <span className="text-neutral-400 ml-1.5 mr-1">보유</span>
@@ -936,7 +960,9 @@ export default function ReplayGamePage() {
                                             <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(price)}</b>
                                         </>}
                                 </span>
-                                <b className={cn("font-mono font-black shrink-0", pnlValueColor(totalPnl >= 0))}>{pct(totalRate)}</b>
+                                <b className={cn("font-mono font-black shrink-0 px-1.5 py-0.5 rounded-md text-[11.5px]", pnlBg(totalPnl >= 0))}>
+                                    {totalPnl >= 0 ? "▲" : "▼"} {Math.abs(totalRate).toFixed(2)}%
+                                </b>
                             </div>
                             <div className="flex items-baseline justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
                                 <span className="shrink-0">
@@ -976,7 +1002,7 @@ export default function ReplayGamePage() {
                                                 return (
                                                     <button key={part.pct} aria-label={`사기 ${part.label}`}
                                                         onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-white bg-red-500 hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-white bg-[#e14b4b] hover:bg-[#c93c3c] disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[9px] font-bold opacity-80">{n > 0 ? `${n}주` : "—"}</span>
                                                     </button>
@@ -984,14 +1010,14 @@ export default function ReplayGamePage() {
                                             })}
                                         </div>
 
-                                        <span className="text-[10.5px] font-black text-[#16a34a]">팔기</span>
+                                        <span className="text-[10.5px] font-black text-[#3b82f6]">팔기</span>
                                         <div className="grid grid-cols-3 gap-1.5">
                                             {SELL_PARTS.map(part => {
                                                 const n = sellQtyFor(part.pct);
                                                 return (
                                                     <button key={part.pct} aria-label={`팔기 ${part.label}`}
                                                         onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={busy || n < 1}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-[#16a34a] border border-[#16a34a]/40 hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-[#3b82f6] border border-[#3b82f6]/40 hover:bg-blue-50 dark:hover:bg-[#0b1e3a]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[9px] font-bold opacity-70">{n > 0 ? `${n}주` : "—"}</span>
                                                     </button>
@@ -1222,13 +1248,13 @@ function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
 
             <ul className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
                 <Row k="맡은 돈" v={`${fmtMoney(INITIAL_AUM)} → ${fmtMoney(aum)}`}
-                    tone={pnlValueColor(grown)} />
+                    tone={pnlText(grown)} />
                 <Row k="등급" v={`${rankOf(INITIAL_AUM)} → ${firm?.rank ?? rankOf(aum)}`} />
                 <Row k="회사 금고" v={`${fmtMoney(firm?.cash ?? 0)}원`} />
                 <Row k="굴린 반기" v={`${firm?.quarters ?? campaign.total_halves}반기`} />
-                {seen > 0 && <Row k={`최근 ${seen}반기 평균`} v={pct(avg)} tone={pnlValueColor(avg >= 0)} />}
+                {seen > 0 && <Row k={`최근 ${seen}반기 평균`} v={pct(avg)} tone={pnlText(avg >= 0)} />}
                 {seen > 0 && <Row k="벤치마크 이긴 반기" v={`${beats}/${seen}반기`} />}
-                {bestReturn !== null && <Row k="가장 잘한 반기" v={pct(bestReturn)} tone={pnlValueColor(bestReturn >= 0)} />}
+                {bestReturn !== null && <Row k="가장 잘한 반기" v={pct(bestReturn)} tone={pnlText(bestReturn >= 0)} />}
                 {habits && habits.trades > 0 && (
                     <Row k="매매 습관" v={`체결 ${habits.trades}회${habits.holdDays !== null ? ` · 평균 ${habits.holdDays}일 보유` : ""}`} />
                 )}
@@ -1353,11 +1379,11 @@ function PastHalf({ h }: { h: ReplayHistoryItem }) {
                 </div>
             </div>
             <div className="text-right shrink-0">
-                <div className={cn("font-mono text-xs font-black", pnlValueColor(win))}>{pct(h.final_return ?? 0)}</div>
+                <div className={cn("font-mono text-xs font-black", pnlText(win))}>{pct(h.final_return ?? 0)}</div>
                 <div className="text-[11px] text-neutral-400">
                     벤치마크 {pct(h.bh_return ?? 0)}
                     {h.aum_after !== null && (
-                        <span className={cn("ml-1 font-bold", pnlValueColor(flow >= 0))}>
+                        <span className={cn("ml-1 font-bold", pnlText(flow >= 0))}>
                             · 자금 {flow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(flow))}
                         </span>
                     )}
@@ -1408,7 +1434,7 @@ function PastStock({ s }: { s: HistoryStock }) {
             <span className="shrink-0 text-right">
                 {s.invested > 0 ? (
                     <>
-                        <span className={cn("font-mono text-[12px] font-black", pnlValueColor(s.realized >= 0))}>
+                        <span className={cn("font-mono text-[12px] font-black", pnlText(s.realized >= 0))}>
                             {s.realized >= 0 ? "+" : "−"}{fmtMoney(Math.abs(s.realized))}
                         </span>
                         <span className="ml-1.5 text-[10px] text-neutral-400 font-mono">
@@ -1565,7 +1591,7 @@ function FirmDashboard({
                         맡은 돈 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(aum)}</b>
                         {" · "}회사 금고 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(firm?.cash ?? 0)}</b>
                         {" · "}{firm?.quarters ?? 0}분기 운용
-                        {bestReturn !== null && <>{" · "}최고 <b className={pnlValueColor(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
+                        {bestReturn !== null && <>{" · "}최고 <b className={pnlText(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
                     </p>
                 )}
 
@@ -1618,7 +1644,7 @@ function FirmDashboard({
                                     {have ? (
                                         <button onClick={() => onToggle(t.id)}
                                             className={cn("shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold border transition-colors",
-                                                on ? "border-[#16a34a]/50 text-[#16a34a]" : "border-neutral-200 dark:border-[#35332e] text-neutral-400")}>
+                                                on ? "border-[#e3b34a]/60 text-[#a1730a] dark:text-[#e3b34a]" : "border-neutral-200 dark:border-[#35332e] text-neutral-400")}>
                                             <Check size={12} /> {on ? "켜짐" : "꺼짐"}
                                         </button>
                                     ) : (
@@ -1749,11 +1775,11 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">내 수익률</p>
-                        <p className={cn("text-2xl sm:text-4xl font-black font-mono", pnlValueColor(mine >= 0))}>{pct(mine)}</p>
+                        <p className={cn("text-2xl sm:text-4xl font-black font-mono", pnlText(mine >= 0))}>{pct(mine)}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">벤치마크</p>
-                        <p className={cn("text-lg sm:text-xl font-black font-mono", pnlValueColor(bh >= 0))}>{pct(bh)}</p>
+                        <p className={cn("text-lg sm:text-xl font-black font-mono", pnlText(bh >= 0))}>{pct(bh)}</p>
                     </div>
                 </div>
 
@@ -1785,7 +1811,7 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                     <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px] sm:text-[13px]">
                         <span className="text-neutral-500 dark:text-neutral-400">
                             고객 자금{" "}
-                            <b className={pnlValueColor(flow >= 0)}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</b>
+                            <b className={pnlText(flow >= 0)}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</b>
                             {" → "}
                             <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(round.aum_after!)}</b>
                         </span>
