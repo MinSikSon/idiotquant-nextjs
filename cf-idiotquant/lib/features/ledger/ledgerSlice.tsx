@@ -32,7 +32,13 @@ export const ledgerSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         setLedgerMonth: create.reducer((state, action: PayloadAction<string>) => {
+            if (state.month === action.payload) return;
             state.month = action.payload;
+            // 이전 달 내역을 비운다. 남겨두면 새 응답이 오기 전까지 8월 제목 아래에
+            // 7월 합계가 떠 있게 된다 — 잠깐이라도 틀린 숫자를 보여주지 않는다.
+            state.entries = [];
+            state.state = "pending";
+            state.error = null;
         }),
 
         reqGetLedger: create.asyncThunk(
@@ -43,11 +49,15 @@ export const ledgerSlice = createAppSlice({
             },
             {
                 pending: (state) => { state.state = "pending"; state.error = null; },
+                // ◀▶ 를 연달아 누르면 먼저 보낸 요청이 나중에 도착할 수 있다. 그대로 반영하면
+                // 화면은 8월인데 목록은 6월인 상태가 된다 — 지금 보고 있는 달의 응답만 받는다.
                 fulfilled: (state, action) => {
+                    if (action.meta.arg !== state.month) return;
                     state.entries = (action.payload?.data ?? []) as LedgerEntry[];
                     state.state = "fulfilled";
                 },
                 rejected: (state, action) => {
+                    if (action.meta.arg !== state.month) return;
                     state.state = "rejected";
                     state.error = action.error?.message ?? null;
                 },
