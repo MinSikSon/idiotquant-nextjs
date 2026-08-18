@@ -275,7 +275,14 @@ export default function ReplayGamePage() {
     const [resPart, setResPart] = useState(50);
 
     // 비로그인 판을 만들 때 쓸 종목 풀. 로그인은 서버가 알아서 뽑는다.
-    useEffect(() => { if (!isLoggedIn) dispatch(reqGetNcavDailyList("latest")); }, [isLoggedIn, dispatch]);
+    //
+    // status 가 "loading" 인 동안은 부르지 않는다 — 세션이 확정되기 전에는 isLoggedIn 이
+    // false 라, 로그인한 사람도 들어오자마자 이 목록을 한 번 받아 갔다(쓰지도 않는데).
+    // 풀은 종목 이름·값만 쓰므로 200개면 충분하다(2,500개는 압축 전 1.3MB 다).
+    useEffect(() => {
+        if (status === "loading" || isLoggedIn) return;
+        dispatch(reqGetNcavDailyList({ date: "latest", limit: 200 }));
+    }, [status, isLoggedIn, dispatch]);
 
     const localPool = useMemo(
         () => (Array.isArray(ncav.list) ? ncav.list : [])

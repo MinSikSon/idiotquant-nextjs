@@ -897,12 +897,15 @@ export default function HomePage() {
   // 랜딩도 발굴 결과를 직접 읽는다 — 제품 설명만으로는 다시 올 이유가 생기지 않는다.
   const dispatch = useAppDispatch();
   const ncavDailyList = useAppSelector(selectNcavDailyList);
-  useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
+  // 랜딩이 그리는 건 미리보기 3행 + 오늘의 발굴 4행, 모두 합쳐 일곱 줄이다. 그런데
+  // 2,500행을 받고 있었다(한 행 570바이트 → 압축 전 1.3MB). 정렬 여유를 두고 60행만
+  // 받는다 — 개수는 목록 길이가 아니라 meta.matched(전체 수)로 읽는다.
+  useEffect(() => { dispatch(reqGetNcavDailyList({ date: "latest", limit: 60 })); }, [dispatch]);
 
   const scanLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
-  const matchedCount = ncavDailyList.list.length;
-  // meta.total 은 스캔 대상 전체 수. 아직 안 왔으면 조건 충족 수로라도 채운다.
-  const scannedCount = ncavDailyList.total || matchedCount;
+  // 조건에 맞은 전체 수. 목록은 그중 일부만 받아 오므로 length 로 세면 안 된다.
+  const matchedCount = ncavDailyList.total || ncavDailyList.list.length;
+  const scannedCount = matchedCount;
   const scanDate = ncavDailyList.scanDate;
   const formattedScanDate = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
