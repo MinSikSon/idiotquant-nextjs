@@ -43,10 +43,19 @@ export const getQuantRuleDesc: any = async () => {
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 
-export const getScanDailyList: any = async (date?: string, strategy?: string) => {
+/**
+ * 발굴 목록.
+ *
+ * `limit` 은 화면이 실제로 그리는 만큼만 받으라고 있는 값이다. 기본 2,500 은 스크리너처럼
+ * 목록 전체를 클라이언트에서 거르고 정렬하는 화면을 위한 것이고, 미리보기만 그리는 화면은
+ * 훨씬 작은 값을 준다 — 한 행이 570바이트라 2,400행이면 압축 전 1.3MB 다.
+ *
+ * 몇 개가 조건에 맞았는지는 목록 길이가 아니라 응답의 `meta.matched` 로 읽는다.
+ */
+export const getScanDailyList: any = async (date?: string, strategy?: string, limit = 2500) => {
     const dateParam = date ?? "latest";
     const strategyParam = strategy ?? "all";
-    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=2500&sort=ncav_ratio&order=desc`;
+    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=${limit}&sort=ncav_ratio&order=desc`;
     return getAlgorithmTradeRequest(subUrl);
 }
 

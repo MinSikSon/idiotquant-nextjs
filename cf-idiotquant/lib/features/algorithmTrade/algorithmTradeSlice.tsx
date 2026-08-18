@@ -413,8 +413,11 @@ export const algorithmTradeSlice = createAppSlice({
             }
         ),
         reqGetNcavDailyList: create.asyncThunk(
-            async (date?: string) => {
-                const result = await getScanDailyList(date);
+            // limit 을 주면 그만큼만 받는다. 미리보기만 그리는 화면(홈·게임 종목 풀)이 쓴다.
+            async (arg?: string | { date?: string; limit?: number }) => {
+                const date = typeof arg === "string" ? arg : arg?.date;
+                const limit = typeof arg === "object" ? arg?.limit : undefined;
+                const result = await getScanDailyList(date, undefined, limit);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
@@ -428,7 +431,8 @@ export const algorithmTradeSlice = createAppSlice({
                             ? item.strategies
                             : (() => { try { return JSON.parse(item.strategies ?? "[]"); } catch { return []; } })(),
                     }));
-                    state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
+                    // matched = 조건에 맞는 전체 수(limit 과 무관). 없으면 옛 응답이라 total 로 읽는다.
+                    state.ncavDailyList.total = action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.scanningInProgress = action.payload?.meta?.scanningInProgress ?? false;
                     state.ncavDailyList.state = "fulfilled";
                     const rawScanDate = action.payload?.meta?.scanDate;
@@ -438,7 +442,7 @@ export const algorithmTradeSlice = createAppSlice({
                     if (scanDate) {
                         state.ncavDailyList.scanDate = scanDate;
                         if (!state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
-                            const total = action.payload?.meta?.total ?? 0;
+                            const total = action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
                             const merged = [...state.ncavDailyDates.dates, {
                                 scan_date: scanDate,
                                 cnt: total,
