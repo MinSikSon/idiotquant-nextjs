@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -60,6 +61,7 @@ export default function LedgerPage() {
     const [fCategory, setFCategory] = useState("salary");
     const [fAmount, setFAmount] = useState("");
     const [fMemo, setFMemo] = useState("");
+    const [formError, setFormError] = useState<string | null>(null);
 
     const thisMonth = currentMonthKst();
 
@@ -102,13 +104,20 @@ export default function LedgerPage() {
         changeKind("income");
         setFAmount("");
         setFMemo("");
+        setFormError(null);
         setFormOpen(true);
     }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         const amount = Number(fAmount.replace(/[^\d]/g, ""));
-        if (!amount) return;
+        // "0" 은 입력값이 있는 상태라 저장 버튼이 열려 있다. 여기서 조용히 되돌아가면
+        // 눌러도 아무 일이 없는 것처럼 보이므로 이유를 적어준다.
+        if (!amount) {
+            setFormError("금액은 0보다 커야 합니다.");
+            return;
+        }
+        setFormError(null);
 
         const result = await dispatch(reqAddLedgerEntry({
             entry_date: fDate,
@@ -125,16 +134,55 @@ export default function LedgerPage() {
         if (entered !== month) dispatch(setLedgerMonth(entered));
     }
 
+    // 수정 기능이 없어 삭제가 유일한 되돌리기 수단인데, 그 삭제에는 되돌리기가 없다.
+    // 무엇을 지우는지 보여주고 한 번 묻는다.
+    function handleDelete(entry: { id: number; entry_date: string; kind: LedgerKind; category: string; amount: number }) {
+        const what = `${entry.entry_date} ${categoryLabel(entry.kind, entry.category)} ${entry.amount.toLocaleString("ko-KR")}원`;
+        if (!window.confirm(`${what}\n\n이 내역을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+        dispatch(reqDeleteLedgerEntry(entry.id));
+    }
+
+    // 미들웨어가 로그아웃 상태를 막아주지만, 보고 있는 사이 세션이 만료되면 여기로 떨어진다.
+    // 그때 빈 목록을 그대로 두면 "기록이 없습니다"가 떠서 내역이 지워진 것처럼 보인다.
+    const signedOut = status === "unauthenticated";
     const loading = status === "loading" || (loadState === "pending" && entries.length === 0);
+
+    const header = (
+        <PageHeader
+            emoji="📒"
+            title="가계부"
+            meta={<><span>로그인 사용자 전용</span><span aria-hidden>·</span><span>내 계정에만 저장됩니다</span></>}
+            containerClassName="max-w-3xl mx-auto px-4 sm:px-7"
+        />
+    );
+
+    if (signedOut) {
+        return (
+            <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+                {header}
+                <div className="max-w-3xl mx-auto px-4 sm:px-7 py-5">
+                    <div className={cn(CARD_CLS, "py-12 px-4 text-center")}>
+                        <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
+                            로그인이 풀렸습니다.
+                        </p>
+                        <p className="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+                            기록은 그대로 있습니다. 다시 로그인하면 이어서 보입니다.
+                        </p>
+                        <Link
+                            href="/login?callbackUrl=/ledger"
+                            className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black transition-colors"
+                        >
+                            다시 로그인
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
-            <PageHeader
-                emoji="📒"
-                title="가계부"
-                meta={<><span>로그인 사용자 전용</span><span aria-hidden>·</span><span>내 계정에만 저장됩니다</span></>}
-                containerClassName="max-w-3xl mx-auto px-4 sm:px-7"
-            />
+            {header}
 
             <div className="max-w-3xl mx-auto px-4 sm:px-7 py-5 space-y-3.5">
 
@@ -293,8 +341,10 @@ export default function LedgerPage() {
                                 value={fMemo} onChange={e => setFMemo(e.target.value)} className={CTL_CLS} />
                         </div>
 
-                        {error && (
-                            <p className="text-xs font-bold text-red-600 dark:text-red-400">{error}</p>
+                        {(formError ?? error) && (
+                            <p role="alert" className="text-xs font-bold text-red-600 dark:text-red-400">
+                                {formError ?? error}
+                            </p>
                         )}
 
                         <div className="flex justify-end gap-2 pt-0.5">
@@ -337,7 +387,9 @@ export default function LedgerPage() {
                                 const isIncome = e.kind === "income";
                                 return (
                                     <div key={e.id} className="group grid grid-cols-[auto_auto_1fr_auto_28px] items-center gap-2.5 px-4 py-2.5 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors">
-                                        <span className="hidden sm:block text-[11px] font-bold tabular-nums text-neutral-400">
+                                        {/* 날짜는 어느 화면에서도 지우지 않는다 — 같은 항목·같은 금액이
+                                            두 줄이면 날짜 말고는 구분할 단서가 없다. */}
+                                        <span className="text-[11px] font-bold tabular-nums text-neutral-400">
                                             {e.entry_date.slice(5).replace("-", ".")}
                                         </span>
                                         <span className={cn(
@@ -357,10 +409,12 @@ export default function LedgerPage() {
                                         </span>
                                         <button
                                             type="button"
-                                            onClick={() => dispatch(reqDeleteLedgerEntry(e.id))}
+                                            onClick={() => handleDelete(e)}
                                             disabled={mutating}
-                                            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-400 disabled:cursor-not-allowed transition-all"
-                                            aria-label={`${e.entry_date} 내역 삭제`}
+                                            // 터치 기기에는 hover 가 없다. sm 아래에서는 항상 보이게 두고,
+                                            // 마우스가 있는 화면에서만 hover 로 드러낸다.
+                                            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-400 disabled:cursor-not-allowed transition-all"
+                                            aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category)} 내역 삭제`}
                                         >
                                             <Trash2 size={14} />
                                         </button>
