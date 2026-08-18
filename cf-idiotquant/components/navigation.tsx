@@ -19,6 +19,7 @@ import {
   Wallet,
   MoreHorizontal,
   ChevronDown,
+  NotebookText,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -30,6 +31,7 @@ type NavItem = {
   exact?: boolean;
   badge?: string;
   adminOnly?: boolean;
+  authOnly?: boolean;   // 로그인해야 보이는 항목 (미들웨어가 어차피 막지만, 못 쓸 메뉴를 띄우지 않는다)
 };
 
 // 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎). 모의투자는 admin 전용.
@@ -44,6 +46,7 @@ const MAIN_NAV: NavItem[] = [
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
+  { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
@@ -207,8 +210,10 @@ export function NavbarWithSimpleLinks() {
   const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
   const isAdmin = (session?.user as any)?.role === "admin";
 
-  // '더 보기' — 보조 메뉴(계산기) 접기/펼치기. 해당 경로에 있으면 자동 노출.
-  const moreActive = MORE_NAV.some(i => active(pathname, i.href));
+  // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
+  // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
+  const moreNav = MORE_NAV.filter(i => !i.authOnly || status === "authenticated");
+  const moreActive = moreNav.some(i => active(pathname, i.href));
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const showMore = moreOpen || moreActive;
@@ -284,7 +289,7 @@ export function NavbarWithSimpleLinks() {
             <span className="flex-1 truncate text-left">더 보기</span>
             <ChevronDown size={14} className={cn("shrink-0 text-neutral-400 transition-transform", showMore && "rotate-180")} />
           </button>
-          {showMore && MORE_NAV.map(item => (
+          {showMore && moreNav.map(item => (
             <SideItem
               key={item.href}
               href={item.href}
@@ -389,7 +394,7 @@ export function NavbarWithSimpleLinks() {
         <>
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setMoreSheet(false)} />
           <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
-            {MORE_NAV.map(item => {
+            {moreNav.map(item => {
               const Icon = item.icon;
               const isActive = active(pathname, item.href);
               return (
