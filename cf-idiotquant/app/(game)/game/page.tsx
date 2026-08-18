@@ -37,7 +37,7 @@ import {
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
-import { YEAR_CHOICES, halfOf, totalHalves } from "@/lib/paper/campaign";
+import { YEAR_CHOICES, halfOf, totalHalves, halfLabel, HALVES_PER_YEAR } from "@/lib/paper/campaign";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
 import {
@@ -146,6 +146,91 @@ function Spark({ data, color }: { data: number[]; color: string }) {
                 strokeLinejoin="round" strokeLinecap="round" />
             <circle cx={lx} cy={ly} r="1.7" fill={color} />
         </svg>
+    );
+}
+
+/**
+ * 반기 트랙 — 이번 해 여덟 칸. 이긴 반기는 빨강, 진 반기는 파랑, 지금은 금색.
+ *
+ * "3년 중 6/24반기 지남"은 문자열이라 어디쯤 왔는지도, 어떻게 왔는지도 안 보인다.
+ * 20년이면 160반기라 전부 늘어놓을 수는 없어서 **이번 해 것만** 그린다 — 지나온
+ * 전부는 지난 분기의 자금 곡선이 맡는다.
+ */
+function HalfTrack({ campaign, history }: { campaign: Campaign; history: ReplayHistoryItem[] }) {
+    const yearStart = Math.floor(campaign.half_index / HALVES_PER_YEAR) * HALVES_PER_YEAR;
+    const done = new Map<number, ReplayHistoryItem>();
+    for (const h of history) {
+        if (h.campaign_id === campaign.id && typeof h.half_index === "number") done.set(h.half_index, h);
+    }
+    return (
+        <span className="flex gap-[3px] w-full max-w-[190px]" aria-label="반기별 성적">
+            {Array.from({ length: HALVES_PER_YEAR }, (_, i) => {
+                const idx = yearStart + i;
+                const rec = done.get(idx);
+                const now = idx === campaign.half_index;
+                const won = rec ? (rec.final_return ?? 0) >= (rec.bh_return ?? 0) : false;
+                return (
+                    <i key={idx}
+                        title={rec ? `${halfLabel(idx)}반기 ${pct(rec.final_return ?? 0)}` : `${halfLabel(idx)}반기`}
+                        className={cn("flex-1 h-[7px] rounded-[2px]",
+                            now ? "bg-[#2a1c00]"
+                                : rec ? (won ? "bg-[#e14b4b]" : "bg-[#3b82f6]")
+                                    : "bg-black/15")} />
+                );
+            })}
+        </span>
+    );
+}
+
+/**
+ * 자금 곡선 — 이 게임의 서사는 맡은 돈이 불거나 주는 이야기다. 그런데 그 곡선을
+ * 볼 수 있는 화면이 어디에도 없었다.
+ *
+ * 값은 정산 때 서버가 남긴 aum_before/after 를 그대로 잇는다(다시 계산하지 않는다).
+ * 벤치마크는 같은 반기의 bh_return 을 복리로 굴린 것 — 같은 돈으로 그냥 나눠 담았으면.
+ */
+function MoneyCurve({ history }: { history: ReplayHistoryItem[] }) {
+    const rows = history.filter(h => h.aum_before !== null && h.aum_after !== null).slice().reverse();
+    if (rows.length < 2) return null;
+
+    const mine = [rows[0].aum_before!, ...rows.map(h => h.aum_after!)];
+    const bench: number[] = [rows[0].aum_before!];
+    for (const h of rows) bench.push(bench[bench.length - 1] * (1 + (h.bh_return ?? 0) / 100));
+
+    const W = 280, H = 76, PAD = 3;
+    const lo = Math.min(...mine, ...bench), hi = Math.max(...mine, ...bench);
+    const span = hi - lo || 1;
+    const at = (arr: number[], i: number) =>
+        `${PAD + (i / (arr.length - 1)) * (W - PAD * 2)},${H - PAD - ((arr[i] - lo) / span) * (H - PAD * 2)}`;
+    const line = (arr: number[]) => arr.map((_, i) => at(arr, i)).join(" ");
+    const grew = mine[mine.length - 1] - mine[0];
+
+    return (
+        <div className="mb-3">
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">맡은 돈</span>
+                <span className="text-[11px] font-mono">
+                    <b className="text-neutral-900 dark:text-white">{fmtMoney(mine[mine.length - 1])}</b>
+                    <b className={cn("ml-1.5", pnlText(grew >= 0))}>
+                        {grew >= 0 ? "▲" : "▼"} {fmtMoney(Math.abs(grew))}
+                    </b>
+                </span>
+            </div>
+            <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="76" preserveAspectRatio="none"
+                role="img" aria-label={`${rows.length}반기 자금 곡선`}>
+                <polyline points={line(bench)} fill="none" stroke={BENCH_COLOR} strokeWidth="1.4" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
+                <polyline points={line(mine)} fill="none" stroke={MINE_COLOR} strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            </svg>
+            <div className="flex items-center gap-3 mt-1 text-[9.5px] font-bold">
+                <span className="flex items-center gap-1 text-[#a1730a] dark:text-[#e3b34a]">
+                    <i className="w-2.5 h-[2px] bg-[#e3b34a] block" /> 내 자금
+                </span>
+                <span className="flex items-center gap-1 text-neutral-400">
+                    <i className="w-2.5 h-[2px] bg-[#94a3b8] block" /> 그냥 나눠 담기
+                </span>
+                <span className="ml-auto text-neutral-400 font-mono">{rows.length}반기</span>
+            </div>
+        </div>
     );
 }
 
@@ -1280,46 +1365,89 @@ function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
     habits: HabitSummary | null; bestReturn: number | null; onClear: () => void;
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
-    const grown = aum >= INITIAL_AUM;
-    // 목록은 최근 몇 판만 온다 — 그래서 "지난 N반기 중" 이라고 적는다(전부라고 하면 거짓말이다)
-    const seen = history.length;
-    const beats = history.filter(h => (h.final_return ?? 0) > (h.bh_return ?? 0)).length;
-    const avg = seen ? history.reduce((a, h) => a + (h.final_return ?? 0), 0) / seen : 0;
 
-    const Row = ({ k, v, tone }: { k: string; v: string; tone?: string }) => (
-        <li className="flex items-baseline justify-between gap-3">
-            <span className="text-neutral-400 shrink-0">{k}</span>
-            <b className={cn("font-mono text-right", tone ?? "text-neutral-900 dark:text-white")}>{v}</b>
-        </li>
+    // 이 캠페인의 반기들만. 목록은 최근 몇 판만 오므로 전부를 덮지 못할 수 있다 —
+    // 덮은 만큼만 세고, 덮었는지 여부에 따라 말을 바꾼다(전부라고 하면 거짓말이다).
+    const rows = history
+        .filter(h => h.campaign_id === campaign.id && h.aum_before !== null && h.aum_after !== null)
+        .slice().reverse();
+    const seen = rows.length;
+    const whole = seen >= campaign.total_halves;
+    // 캠페인을 시작할 때 맡고 있던 돈. 기록 밖이면 알 수 없어 첫 캠페인 기준으로 읽는다.
+    const startAum = rows[0]?.aum_before ?? INITIAL_AUM;
+    const grown = aum >= startAum;
+    // 연 환산은 캠페인 전체를 덮었을 때만 말이 된다.
+    const cagr = whole && startAum > 0
+        ? (Math.pow(aum / startAum, 1 / Math.max(1, campaign.years)) - 1) * 100
+        : null;
+
+    const beats = rows.filter(h => (h.final_return ?? 0) > (h.bh_return ?? 0)).length;
+
+    // 최대 낙폭 — 길게 굴릴수록 "언제 얼마나 무너졌는가"가 성적보다 오래 남는다.
+    const curve = seen ? [startAum, ...rows.map(h => h.aum_after!)] : [];
+    let peak = curve[0] ?? 0, worst = 0;
+    for (const v of curve) {
+        peak = Math.max(peak, v);
+        if (peak > 0) worst = Math.min(worst, ((v - peak) / peak) * 100);
+    }
+
+    const Cell = ({ k, v, tone }: { k: string; v: string; tone?: string }) => (
+        <div>
+            <p className="text-[9.5px] font-black uppercase tracking-wider text-neutral-400 mb-0.5">{k}</p>
+            <b className={cn("font-mono text-[13px] sm:text-[15px]", tone ?? "text-neutral-900 dark:text-white")}>{v}</b>
+        </div>
     );
 
     return (
-        <SectionPanel className="p-4 sm:p-5 border-2 border-[#e3b34a]/60">
+        <SectionPanel className="p-4 sm:p-5 border-2 border-[#e3b34a]/60 pop-in">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a]">
-                {campaign.years}년 운용 종료
-            </p>
-            <h2 className="mt-1 text-[17px] sm:text-xl font-black text-neutral-900 dark:text-white break-keep">
-                {campaign.total_halves}반기를 다 굴렸습니다
-            </h2>
-            <p className="mt-1 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
-                {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
-                {" "}{campaign.years}년, 맡은 돈이 {fmtMoney(INITIAL_AUM)}에서 {fmtMoney(aum)}
-                {grown ? "으로 늘었습니다." : "으로 줄었습니다."}
+                {campaign.years}년 운용 종료 · {campaign.total_halves}반기
             </p>
 
-            <ul className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
-                <Row k="맡은 돈" v={`${fmtMoney(INITIAL_AUM)} → ${fmtMoney(aum)}`}
-                    tone={pnlText(grown)} />
-                <Row k="등급" v={`${rankOf(INITIAL_AUM)} → ${firm?.rank ?? rankOf(aum)}`} />
-                <Row k="회사 금고" v={`${fmtMoney(firm?.cash ?? 0)}원`} />
-                <Row k="굴린 반기" v={`${firm?.quarters ?? campaign.total_halves}반기`} />
-                {seen > 0 && <Row k={`최근 ${seen}반기 평균`} v={pct(avg)} tone={pnlText(avg >= 0)} />}
-                {seen > 0 && <Row k="벤치마크 이긴 반기" v={`${beats}/${seen}반기`} />}
-                {bestReturn !== null && <Row k="가장 잘한 반기" v={pct(bestReturn)} tone={pnlText(bestReturn >= 0)} />}
-                {habits && habits.trades > 0 && (
-                    <Row k="매매 습관" v={`체결 ${habits.trades}회${habits.holdDays !== null ? ` · 평균 ${habits.holdDays}일 보유` : ""}`} />
+            {/* 이 카드가 답할 질문은 하나다 — N년을 굴려서 회사가 어디로 갔는가. */}
+            <div className="mt-1.5 flex items-end justify-between gap-3 flex-wrap">
+                <h2 className="text-[19px] sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white font-mono">
+                    {fmtMoney(startAum)} <span className="text-neutral-400">→</span>{" "}
+                    <span className={pnlText(grown)}>{fmtMoney(aum)}</span>
+                </h2>
+                {cagr !== null && (
+                    <span className={cn("font-mono font-black text-[15px] sm:text-lg", pnlText(cagr >= 0))}>
+                        연 {pct(cagr)}
+                    </span>
                 )}
-            </ul>
+            </div>
+            <p className="mt-1 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
+                {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터 {campaign.years}년 ·{" "}
+                {rankOf(startAum)} → {firm?.rank ?? rankOf(aum)}
+                {!whole && seen > 0 && ` · 아래 숫자는 기록에 남은 ${seen}반기 기준입니다`}
+            </p>
+
+            {seen > 1 && (
+                <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e]">
+                    <MoneyCurve history={history.filter(h => h.campaign_id === campaign.id)} />
+                </div>
+            )}
+
+            <div className="mt-1 grid grid-cols-3 gap-2 sm:gap-3">
+                <Cell k="벤치마크 이김" v={seen ? `${beats}/${seen}반기` : "—"} />
+                <Cell k="최대 낙폭" v={seen ? pct(worst) : "—"} tone={pnlText(false)} />
+                <Cell k="회사 금고" v={fmtMoney(firm?.cash ?? 0)} />
+            </div>
+
+            {(habits?.trades ?? 0) > 0 && (
+                <p className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] text-[11.5px] sm:text-[12.5px] text-neutral-500 dark:text-neutral-400 break-keep">
+                    {[`체결 ${habits!.trades}회`,
+                        habits!.holdDays !== null ? `평균 ${habits!.holdDays}일 보유` : null,
+                        habits!.chaseRatio !== null ? `오른 뒤 매수 ${habits!.chaseRatio}%` : null,
+                    ].filter(Boolean).join(" · ")}
+                    {habits!.disposition !== null && (
+                        <span className="text-[#a1730a] dark:text-[#e3b34a] font-bold">
+                            {" · "}{habits!.disposition > 0 ? "이익을 빨리 실현하는 편" : habits!.disposition < 0 ? "손실을 빨리 정리하는 편" : "양쪽이 비슷"}
+                        </span>
+                    )}
+                    {bestReturn !== null && <>{" · "}가장 잘한 반기 <b className={pnlText(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
+                </p>
+            )}
 
             <button onClick={onClear}
                 className="mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[46px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] text-[#2a1c00] font-black text-[14px]">
@@ -1638,10 +1766,13 @@ function FirmDashboard({
                         {/* 어디까지 왔나 — 20년이면 라벨만으로는 감이 안 온다. 버튼 안에 두면
                             줄을 따로 쓰지 않는다(폰에서 한 화면이 빡빡하다). */}
                         {campaign && !busy && (
-                            <span className="text-[9.5px] font-bold opacity-70">
-                                {campaign.years}년 중 {campaign.done_halves}/{campaign.total_halves}반기 지남 ·{" "}
-                                {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
-                            </span>
+                            <>
+                                <span className="text-[9.5px] font-bold opacity-70">
+                                    {campaign.years}년 중 {campaign.done_halves}/{campaign.total_halves}반기 지남 ·{" "}
+                                    {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
+                                </span>
+                                <HalfTrack campaign={campaign} history={history} />
+                            </>
                         )}
                     </button>
                 )}
@@ -1750,6 +1881,7 @@ function FirmDashboard({
             {history.length > 0 && (
                 <Fold icon={<History size={16} />} title="지난 분기"
                     subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
+                    <MoneyCurve history={history} />
                     <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
                         {history.map(h => <PastHalf key={h.id} h={h} />)}
                     </ul>

@@ -183,6 +183,9 @@ export interface ReplayHistoryItem {
     habits: RoundHabits | null;
     /** 자리별 성적. 종목 하나로 굴리던 옛 판에는 없어서 빈 배열이다 */
     stocks?: HistoryStock[];
+    /** 어느 캠페인의 몇 번째 반기였나. 캠페인 없이 굴린 옛 판은 둘 다 null */
+    campaign_id?: string | null;
+    half_index?: number | null;
     created_at: number;
 }
 
