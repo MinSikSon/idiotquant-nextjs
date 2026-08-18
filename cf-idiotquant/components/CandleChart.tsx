@@ -39,9 +39,13 @@ const UP = "#e14b4b";
 const DOWN = "#3b82f6";
 
 function CandleShape(props: any) {
-    const { x, y, width, height, payload } = props;
+    const { x, y, width, height, payload, index, growLast, lastIndex } = props;
     const { o, h, l, c } = payload;
     if (!(h > 0) || !(l > 0)) return null;
+
+    // 오늘 새로 열린 캔들만 자라며 들어온다. 하루를 넘겼는데 화면이 그냥 다시 그려지면
+    // 무엇이 달라졌는지 눈이 못 따라간다. 새 날짜는 새 요소라 마운트될 때 한 번만 돈다.
+    const fresh = growLast && index === lastIndex;
 
     const span = h - l;
     // 저가~고가가 height 픽셀이다. 그 사이 값은 비례로 찍는다.
@@ -58,7 +62,7 @@ function CandleShape(props: any) {
     const cx = x + width / 2;
 
     return (
-        <g>
+        <g className={fresh ? "candle-in" : undefined}>
             {/* 꼬리 — 그날 오간 폭 */}
             <line x1={cx} x2={cx} y1={y} y2={y + height} stroke={color} strokeWidth={1} />
             <rect x={bx} y={bodyTop} width={bw} height={bodyH} fill={color} stroke={color} />
@@ -106,12 +110,14 @@ function CandleTooltip({ active, payload, label }: any) {
 }
 
 export default function CandleChart({
-    candles, overlays = [], markers = [], height = "100%",
+    candles, overlays = [], markers = [], height = "100%", growLast = false,
 }: {
     candles: Candle[];
     overlays?: CandleOverlay[];
     markers?: CandleMarker[];
     height?: number | string;
+    /** 마지막(오늘) 캔들이 자라며 들어오게 한다 — 진행 중인 판에서만 뜻이 있다. */
+    growLast?: boolean;
 }) {
     const { theme } = useTheme();
     const textColor = theme === "dark" ? "#9ca3af" : "#4b5563";
@@ -160,7 +166,8 @@ export default function CandleChart({
                     wrapperStyle={{ zIndex: 30, pointerEvents: "none" }}
                 />
 
-                <Bar dataKey="range" shape={<CandleShape />} isAnimationActive={false} />
+                <Bar dataKey="range" isAnimationActive={false}
+                    shape={<CandleShape growLast={growLast} lastIndex={data.length - 1} />} />
 
                 {overlays.map(ov => (
                     <Line
