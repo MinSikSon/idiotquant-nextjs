@@ -1,6 +1,9 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getLedger, addLedgerEntry, deleteLedgerEntry, type LedgerEntry, type NewLedgerEntry } from "./ledgerAPI";
+import {
+    getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry,
+    type LedgerEntry, type NewLedgerEntry,
+} from "./ledgerAPI";
 
 /** 사용자가 보는 달은 KST 기준이다 — UTC 로 세면 매달 1일 오전 9시 전에 지난달이 열린다. */
 export function currentMonthKst(): string {
@@ -89,6 +92,35 @@ export const ledgerSlice = createAppSlice({
             }
         ),
 
+        reqUpdateLedgerEntry: create.asyncThunk(
+            async ({ id, entry }: { id: number; entry: NewLedgerEntry }) => {
+                const result = await updateLedgerEntry(id, entry);
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
+            {
+                pending: (state) => { state.mutating = true; state.error = null; },
+                fulfilled: (state, action) => {
+                    state.mutating = false;
+                    const entry = action.payload?.data as LedgerEntry | undefined;
+                    if (!entry) return;
+                    // 날짜를 다른 달로 옮겼으면 이 달 목록에서 빠진다 — 화면이 그 달로
+                    // 따라가면서 다시 조회하므로 여기서는 지우기만 한다.
+                    if (!entry.entry_date.startsWith(state.month)) {
+                        state.entries = state.entries.filter((e) => e.id !== entry.id);
+                        return;
+                    }
+                    state.entries = state.entries
+                        .map((e) => (e.id === entry.id ? entry : e))
+                        .sort(byRecent);
+                },
+                rejected: (state, action) => {
+                    state.mutating = false;
+                    state.error = action.error?.message ?? null;
+                },
+            }
+        ),
+
         reqDeleteLedgerEntry: create.asyncThunk(
             async (id: number) => {
                 const result = await deleteLedgerEntry(id);
@@ -117,7 +149,9 @@ export const ledgerSlice = createAppSlice({
     },
 });
 
-export const { setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqDeleteLedgerEntry } = ledgerSlice.actions;
+export const {
+    setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
+} = ledgerSlice.actions;
 export const {
     selectLedgerMonth,
     selectLedgerEntries,

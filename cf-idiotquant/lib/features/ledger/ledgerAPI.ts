@@ -33,5 +33,8 @@ export const getLedger = (month: string) => ledgerRequest(`/user/ledger?month=${
 
 export const addLedgerEntry = (entry: NewLedgerEntry) => ledgerRequest("/user/ledger", "POST", entry);
 
-// 삭제 id 는 쿼리로 보낸다 — 프록시가 non-GET body 에 주문 필드를 병합하기 때문.
+// 수정·삭제의 id 는 쿼리로 보낸다 — 프록시가 non-GET body 에 주문 필드를 병합하기 때문.
+export const updateLedgerEntry = (id: number, entry: NewLedgerEntry) =>
+    ledgerRequest(`/user/ledger?id=${id}`, "PUT", entry);
+
 export const deleteLedgerEntry = (id: number) => ledgerRequest(`/user/ledger?id=${id}`, "DELETE");
