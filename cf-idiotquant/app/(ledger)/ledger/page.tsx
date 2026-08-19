@@ -61,6 +61,31 @@ function dayLabel(date: string) {
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("ko-KR")}`;
 
+/** 달력 칸은 50px 남짓이라 원 단위가 들어가지 않는다. 만·천으로 접는다. */
+function compactWon(n: number) {
+    if (n >= 10000) {
+        const man = n / 10000;
+        // 100만이 넘어가면 소수점이 오히려 읽기를 방해한다
+        return `${man >= 100 ? Math.round(man) : Math.round(man * 10) / 10}만`;
+    }
+    if (n >= 1000) return `${Math.round(n / 1000)}천`;
+    return String(n);
+}
+
+/** 그 달의 달력 칸. 앞뒤 빈칸은 null — 일요일 시작. */
+function monthGrid(month: string): (string | null)[] {
+    const [y, m] = month.split("-").map(Number);
+    const lead = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+
+    const cells: (string | null)[] = Array(lead).fill(null);
+    for (let d = 1; d <= last; d++) {
+        cells.push(`${month}-${String(d).padStart(2, "0")}`);
+    }
+    while (cells.length % 7) cells.push(null);
+    return cells;
+}
+
 /** 모바일에서 0 을 여섯 번 치는 게 가장 성가시다. 지금 값에 더한다. */
 const QUICK_ADD = [10000, 50000, 100000];
 
@@ -76,6 +101,7 @@ export default function LedgerPage() {
     const error = useAppSelector(selectLedgerError);
 
     const [barKind, setBarKind] = useState<LedgerKind>("income");
+    const [calendarOpen, setCalendarOpen] = useState(false);
 
     /* 시트 — editingId 가 null 이면 기입, 값이 있으면 그 줄을 수정한다 */
     const [sheetOpen, setSheetOpen] = useState(false);
@@ -165,6 +191,17 @@ export default function LedgerPage() {
             .sort((a, b) => b.sum - a.sum);
     }, [entries, barKind, income, expense]);
 
+    /* 달력 한 칸에 얹을 그날 수입·지출. 그 달 내역이 이미 전부 있어 요청이 더 필요 없다. */
+    const byDay = useMemo(() => {
+        const map = new Map<string, { income: number; expense: number }>();
+        for (const e of entries) {
+            const cur = map.get(e.entry_date) ?? { income: 0, expense: 0 };
+            cur[e.kind] += e.amount;
+            map.set(e.entry_date, cur);
+        }
+        return map;
+    }, [entries]);
+
     /* 날짜로 묶는다 — entries 가 이미 날짜 내림차순이라 Map 삽입 순서가 곧 표시 순서다. */
     const days = useMemo(() => {
         const map = new Map<string, LedgerEntry[]>();
@@ -207,16 +244,30 @@ export default function LedgerPage() {
         setToast("항목을 지웠습니다 (기록은 그대로)");
     }
 
-    function openAdd() {
+    function openAdd(date?: string) {
         setEditingId(null);
         setAskDelete(false);
-        setFDate(month === thisMonth ? todayKst() : `${month}-01`);
+        setFDate(date ?? (month === thisMonth ? todayKst() : `${month}-01`));
         changeKind("income");
         setFAmount("");
         setFMemo("");
         setFormError(null);
         setSheetOpen(true);
         setTimeout(() => amountRef.current?.focus(), 60);
+    }
+
+    /* 달력에서 날짜를 누르면 — 기록이 있으면 그 줄로 데려가고, 없으면 그 날짜로 기입을 연다.
+       빈 칸을 눌렀을 때 아무 일도 안 하면 달력이 읽기 전용 그림이 되어버린다. */
+    function pickDay(date: string) {
+        setCalendarOpen(false);
+        if (byDay.has(date)) {
+            requestAnimationFrame(() => {
+                document.getElementById(`ledger-day-${date}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+            return;
+        }
+        openAdd(date);
     }
 
     function openEdit(entry: LedgerEntry) {
@@ -365,40 +416,126 @@ export default function LedgerPage() {
 
             <div className="max-w-3xl mx-auto px-4 sm:px-7 py-5 space-y-3.5">
 
-                {/* ① 월 선택 — 터치 타겟 44px */}
-                <div className={cn(CARD_CLS, "flex items-center justify-center gap-1 p-1.5")}>
-                    <button
-                        type="button"
-                        onClick={() => dispatch(setLedgerMonth(shiftMonth(month, -1)))}
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors"
-                        aria-label="이전 달"
-                    >
-                        <ChevronLeft size={18} strokeWidth={2.4} />
-                    </button>
+                {/* ① 월 선택 — 터치 타겟 44px. 달을 누르면 달력이 아래로 펼쳐진다. */}
+                <div className={CARD_CLS}>
+                    <div className="flex items-center justify-center gap-1 p-1.5">
+                        <button
+                            type="button"
+                            onClick={() => dispatch(setLedgerMonth(shiftMonth(month, -1)))}
+                            className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors"
+                            aria-label="이전 달"
+                        >
+                            <ChevronLeft size={18} strokeWidth={2.4} />
+                        </button>
 
-                    {/* 반 년 전으로 가려고 ◀ 를 여섯 번 누르게 두지 않는다. */}
-                    <label className="relative flex-1 sm:flex-none sm:min-w-[150px] h-11 flex items-center justify-center gap-1.5 rounded-xl text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white cursor-pointer hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] focus-within:ring-1 focus-within:ring-[#16a34a] transition-colors">
-                        {Number(month.slice(0, 4))}년 {Number(month.slice(5, 7))}월
-                        <ChevronDown size={13} strokeWidth={2.6} className="text-neutral-400" />
-                        <input
-                            type="month"
-                            value={month}
-                            max={thisMonth}
-                            onChange={e => { if (e.target.value) dispatch(setLedgerMonth(e.target.value)); }}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            aria-label="월 선택"
-                        />
-                    </label>
+                        <button
+                            type="button"
+                            onClick={() => setCalendarOpen(v => !v)}
+                            aria-expanded={calendarOpen}
+                            className="flex-1 sm:flex-none sm:min-w-[150px] h-11 flex items-center justify-center gap-1.5 rounded-xl text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors"
+                        >
+                            {Number(month.slice(0, 4))}년 {Number(month.slice(5, 7))}월
+                            <ChevronDown
+                                size={13} strokeWidth={2.6}
+                                className={cn("text-neutral-400 transition-transform", calendarOpen && "rotate-180")}
+                            />
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => dispatch(setLedgerMonth(shiftMonth(month, 1)))}
-                        disabled={month >= thisMonth}
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
-                        aria-label="다음 달"
-                    >
-                        <ChevronRight size={18} strokeWidth={2.4} />
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => dispatch(setLedgerMonth(shiftMonth(month, 1)))}
+                            disabled={month >= thisMonth}
+                            className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+                            aria-label="다음 달"
+                        >
+                            <ChevronRight size={18} strokeWidth={2.4} />
+                        </button>
+                    </div>
+
+                    {calendarOpen && (
+                        <div className="px-2 pb-2.5 border-t border-neutral-100 dark:border-[#35332e]">
+                            <div className="grid grid-cols-7 pt-2 pb-1">
+                                {WEEKDAY.map((w, i) => (
+                                    <div key={w} className={cn(
+                                        "text-center text-[10px] font-black",
+                                        i === 0 ? "text-red-400" : i === 6 ? "text-sky-400" : "text-neutral-400"
+                                    )}>
+                                        {w}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-y-0.5">
+                                {monthGrid(month).map((date, i) => {
+                                    if (!date) return <div key={`pad-${i}`} />;
+                                    const day = byDay.get(date);
+                                    const isToday = date === todayKst();
+                                    const future = date > todayKst();
+                                    return (
+                                        <button
+                                            key={date}
+                                            type="button"
+                                            onClick={() => pickDay(date)}
+                                            className={cn(
+                                                "flex flex-col items-center justify-start gap-0.5 py-1 rounded-lg min-h-[44px] transition-colors",
+                                                "hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]",
+                                                future && "opacity-40"
+                                            )}
+                                            aria-label={`${Number(date.slice(8))}일${day ? ` 지출 ${won(day.expense)}` : " 기록 없음"}`}
+                                        >
+                                            <span className={cn(
+                                                "w-6 h-[18px] flex items-center justify-center rounded-full text-[11px] font-black tabular-nums",
+                                                isToday
+                                                    ? "bg-[#16a34a] text-white"
+                                                    : i % 7 === 0 ? "text-red-500"
+                                                        : i % 7 === 6 ? "text-sky-500"
+                                                            : "text-neutral-700 dark:text-neutral-300"
+                                            )}>
+                                                {Number(date.slice(8))}
+                                            </span>
+
+                                            {/* '사용금액'이 먼저다. 지출이 없고 수입만 있는 날은 수입을 보여준다. */}
+                                            {day && day.expense > 0 ? (
+                                                <span className="text-[9px] font-black tabular-nums leading-none text-red-500 dark:text-red-400">
+                                                    {compactWon(day.expense)}
+                                                </span>
+                                            ) : day && day.income > 0 ? (
+                                                <span className="text-[9px] font-black tabular-nums leading-none text-[#16a34a]">
+                                                    {compactWon(day.income)}
+                                                </span>
+                                            ) : (
+                                                <span className="h-[9px]" />
+                                            )}
+
+                                            {/* 지출과 수입이 같은 날 있으면 점 하나로 알린다 */}
+                                            <span className={cn(
+                                                "w-1 h-1 rounded-full",
+                                                day && day.expense > 0 && day.income > 0 ? "bg-[#16a34a]" : "bg-transparent"
+                                            )} />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 mt-1.5 pt-2 border-t border-neutral-100 dark:border-[#35332e]">
+                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                    날짜를 누르면 그 날로 이동합니다
+                                </span>
+                                {/* 몇 해 전으로 가려고 ◀ 를 스무 번 누르게 두지 않는다 */}
+                                <label className="relative shrink-0 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#3a3834] text-[11px] font-bold text-neutral-500 dark:text-neutral-400 cursor-pointer hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors">
+                                    다른 달
+                                    <input
+                                        type="month"
+                                        value={month}
+                                        max={thisMonth}
+                                        onChange={e => { if (e.target.value) dispatch(setLedgerMonth(e.target.value)); }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        aria-label="다른 달 선택"
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ② 요약 — 좁은 화면에서는 잔액을 크게 한 줄, 수입·지출은 아래 두 칸 */}
@@ -488,7 +625,7 @@ export default function LedgerPage() {
                 {/* ④ 기입 — 데스크톱은 흐름 안의 버튼, 모바일은 아래 고정 FAB */}
                 <button
                     type="button"
-                    onClick={openAdd}
+                    onClick={() => openAdd()}
                     className="hidden sm:flex w-full items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[13px] font-black transition-colors"
                 >
                     <Plus size={15} strokeWidth={2.6} />
@@ -520,7 +657,10 @@ export default function LedgerPage() {
                         <div>
                             {days.map(day => (
                                 <div key={day.date}>
-                                    <div className="flex items-baseline justify-between gap-3 px-4 py-1.5 bg-[#faf9f7] dark:bg-[#1f1e1b] border-y border-neutral-100 dark:border-[#35332e]">
+                                    <div
+                                        id={`ledger-day-${day.date}`}
+                                        className="flex items-baseline justify-between gap-3 px-4 py-1.5 bg-[#faf9f7] dark:bg-[#1f1e1b] border-y border-neutral-100 dark:border-[#35332e] scroll-mt-20"
+                                    >
                                         <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 tabular-nums">
                                             {dayLabel(day.date)}
                                         </span>
@@ -591,7 +731,7 @@ export default function LedgerPage() {
             {!sheetOpen && (
                 <button
                     type="button"
-                    onClick={openAdd}
+                    onClick={() => openAdd()}
                     className="sm:hidden fixed right-4 bottom-[76px] z-40 min-h-[52px] px-5 rounded-full bg-[#16a34a] text-white text-sm font-black flex items-center gap-1.5 shadow-lg shadow-[#16a34a]/40 active:scale-95 transition-transform"
                 >
                     <Plus size={18} strokeWidth={2.8} />
