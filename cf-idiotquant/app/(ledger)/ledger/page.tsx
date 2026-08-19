@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, X } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -11,12 +11,13 @@ import { PageHeader } from "@/components/pageHeader";
 import type { LedgerEntry, NewLedgerEntry } from "@/lib/features/ledger/ledgerAPI";
 import {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
-    selectLedgerMonth, selectLedgerEntries, selectLedgerState,
+    reqGetLedgerCategories, reqAddLedgerCategory, reqDeleteLedgerCategory,
+    selectLedgerMonth, selectLedgerEntries, selectLedgerState, selectLedgerCategories,
     selectLedgerMutating, selectLedgerError,
     currentMonthKst,
 } from "@/lib/features/ledger/ledgerSlice";
 import {
-    categoriesOf, categoryLabel, type LedgerKind,
+    categoriesOf, categoryLabel, customKey, type LedgerKind,
 } from "@/lib/features/ledger/categories";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
@@ -70,6 +71,7 @@ export default function LedgerPage() {
     const month = useAppSelector(selectLedgerMonth);
     const entries = useAppSelector(selectLedgerEntries);
     const loadState = useAppSelector(selectLedgerState);
+    const customCategories = useAppSelector(selectLedgerCategories);
     const mutating = useAppSelector(selectLedgerMutating);
     const error = useAppSelector(selectLedgerError);
 
@@ -87,6 +89,11 @@ export default function LedgerPage() {
     const [formError, setFormError] = useState<string | null>(null);
     const amountRef = useRef<HTMLInputElement>(null);
 
+    // 항목 만들기 — 시트 안에서 칩 줄 아래로 펼친다
+    const [newCatOpen, setNewCatOpen] = useState(false);
+    const [newCatLabel, setNewCatLabel] = useState("");
+    const newCatRef = useRef<HTMLInputElement>(null);
+
     // 시트가 목록을 가리므로 저장 결과는 시트 위에 뜨는 토스트로 알린다.
     const [toast, setToast] = useState<string | null>(null);
     const [justAddedId, setJustAddedId] = useState<number | null>(null);
@@ -102,6 +109,12 @@ export default function LedgerPage() {
         if (status !== "authenticated") return;
         dispatch(reqGetLedger(month));
     }, [dispatch, status, month]);
+
+    // 항목은 월과 무관하다 — 화면이 열릴 때 한 번만 가져온다.
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        dispatch(reqGetLedgerCategories());
+    }, [dispatch, status]);
 
     useEffect(() => {
         if (!toast) return;
@@ -136,15 +149,19 @@ export default function LedgerPage() {
     const buckets = useMemo(() => {
         const total = barKind === "income" ? income : expense;
         if (!total) return [];
-        return categoriesOf(barKind)
-            .map(c => ({
-                label: c.label,
-                sum: entries
-                    .filter(e => e.kind === barKind && e.category === c.key)
-                    .reduce((s, e) => s + e.amount, 0),
+        /* 지운 항목으로 적어둔 내역도 막대에 나와야 한다 — 목록을 돌지 않고
+           내역에 실제로 쓰인 키를 모아 접는다. */
+        const sums = new Map<string, number>();
+        for (const e of entries) {
+            if (e.kind !== barKind) continue;
+            sums.set(e.category, (sums.get(e.category) ?? 0) + e.amount);
+        }
+        return [...sums]
+            .map(([key, sum]) => ({
+                label: categoryLabel(barKind, key),
+                sum,
+                pct: Math.round((sum / total) * 100),
             }))
-            .filter(b => b.sum > 0)
-            .map(b => ({ ...b, pct: Math.round((b.sum / total) * 100) }))
             .sort((a, b) => b.sum - a.sum);
     }, [entries, barKind, income, expense]);
 
@@ -166,8 +183,28 @@ export default function LedgerPage() {
     /* ─── 시트 열고 닫기 ───────────────────────────────────────── */
     function changeKind(kind: LedgerKind, keep?: string) {
         setFKind(kind);
-        const list = categoriesOf(kind);
+        setNewCatOpen(false);
+        const list = categoriesOf(kind, customCategories);
         setFCategory(keep && list.some(c => c.key === keep) ? keep : list[0].key);
+    }
+
+    async function handleAddCategory() {
+        const label = newCatLabel.trim();
+        if (!label) return;
+        const result = await dispatch(reqAddLedgerCategory({ kind: fKind, label }));
+        if (result.meta.requestStatus !== "fulfilled") return;
+        // 방금 만든 항목을 바로 고른 상태로 둔다 — 만들고 또 눌러야 하면 두 번 일하는 셈이다.
+        setFCategory(customKey(label));
+        setNewCatLabel("");
+        setNewCatOpen(false);
+    }
+
+    async function handleDeleteCategory(id: number, label: string) {
+        const result = await dispatch(reqDeleteLedgerCategory(id));
+        if (result.meta.requestStatus !== "fulfilled") return;
+        // 고른 항목이 사라졌으면 첫 칸으로 되돌린다.
+        if (fCategory === customKey(label)) setFCategory(categoriesOf(fKind, [])[0].key);
+        setToast("항목을 지웠습니다 (기록은 그대로)");
     }
 
     function openAdd() {
@@ -666,28 +703,88 @@ export default function LedgerPage() {
                         <div className="flex flex-col gap-1.5 mb-3">
                             <span className={FIELD_LABEL_CLS}>항목</span>
                             <div className="flex flex-wrap gap-1.5">
-                                {categoriesOf(fKind).map(c => {
+                                {categoriesOf(fKind, customCategories).map(c => {
                                     const on = c.key === fCategory;
+                                    const mine = c.id !== undefined;
                                     return (
-                                        <button
-                                            key={c.key}
-                                            type="button"
-                                            onClick={() => setFCategory(c.key)}
-                                            aria-pressed={on}
-                                            className={cn(
-                                                CHIP_CLS,
-                                                on
-                                                    ? fKind === "income"
-                                                        ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                                        : "bg-red-600 border-red-600 text-white"
-                                                    : "bg-[#faf9f7] dark:bg-[#1a1915] border-neutral-200 dark:border-[#35332e] text-neutral-600 dark:text-neutral-400"
+                                        <span key={c.key} className="inline-flex">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFCategory(c.key)}
+                                                aria-pressed={on}
+                                                className={cn(
+                                                    CHIP_CLS,
+                                                    // 내가 만든 항목은 고른 동안만 × 가 붙으므로 오른쪽을 붙여 잇는다
+                                                    on && mine && "rounded-r-none border-r-0",
+                                                    on
+                                                        ? fKind === "income"
+                                                            ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                                            : "bg-red-600 border-red-600 text-white"
+                                                        : "bg-[#faf9f7] dark:bg-[#1a1915] border-neutral-200 dark:border-[#35332e] text-neutral-600 dark:text-neutral-400"
+                                                )}
+                                            >
+                                                {c.label}
+                                            </button>
+                                            {/* 지우기는 고른 항목에만 — 칩마다 × 가 붙으면 고르다가 지운다.
+                                                항목만 사라지고 그 항목으로 적어둔 기록은 남는다. */}
+                                            {on && mine && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteCategory(c.id!, c.label)}
+                                                    disabled={mutating}
+                                                    className={cn(
+                                                        CHIP_CLS, "w-9 px-0 rounded-l-none border-l-0 flex items-center justify-center",
+                                                        fKind === "income"
+                                                            ? "bg-[#16a34a] border-[#16a34a] text-white/80 hover:text-white"
+                                                            : "bg-red-600 border-red-600 text-white/80 hover:text-white"
+                                                    )}
+                                                    aria-label={`${c.label} 항목 지우기`}
+                                                >
+                                                    <X size={14} strokeWidth={2.6} />
+                                                </button>
                                             )}
-                                        >
-                                            {c.label}
-                                        </button>
+                                        </span>
                                     );
                                 })}
+
+                                {!newCatOpen && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setNewCatOpen(true); setTimeout(() => newCatRef.current?.focus(), 30); }}
+                                        className={cn(CHIP_CLS, "flex items-center gap-1 border-dashed border-neutral-300 dark:border-[#4a4641] bg-transparent text-neutral-500 dark:text-neutral-400")}
+                                    >
+                                        <Plus size={13} strokeWidth={2.8} />
+                                        항목
+                                    </button>
+                                )}
                             </div>
+
+                            {newCatOpen && (
+                                <div className="flex gap-1.5">
+                                    <input
+                                        ref={newCatRef}
+                                        type="text"
+                                        maxLength={12}
+                                        placeholder={fKind === "income" ? "예: 부업" : "예: 여행"}
+                                        value={newCatLabel}
+                                        onChange={e => setNewCatLabel(e.target.value)}
+                                        onKeyDown={e => {
+                                            // 시트가 form 안이라 Enter 가 저장으로 새면 항목만 만들려다 기입이 된다.
+                                            if (e.key === "Enter") { e.preventDefault(); handleAddCategory(); }
+                                        }}
+                                        className={cn(CTL_CLS, "flex-1")}
+                                    />
+                                    <button type="button" onClick={handleAddCategory}
+                                        disabled={mutating || !newCatLabel.trim()}
+                                        className="min-h-[44px] px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black disabled:opacity-50 transition-colors">
+                                        추가
+                                    </button>
+                                    <button type="button" onClick={() => { setNewCatOpen(false); setNewCatLabel(""); }}
+                                        className="min-h-[44px] px-3 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-xs font-black text-neutral-500">
+                                        취소
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* 날짜 — 대부분 오늘이라 빠른 선택을 앞에 둔다 */}
