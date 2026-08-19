@@ -91,6 +91,10 @@ export default function LedgerPage() {
     const [toast, setToast] = useState<string | null>(null);
     const [justAddedId, setJustAddedId] = useState<number | null>(null);
 
+    // 아래로 끌어서 닫기. 손잡이를 그려놓고 안 잡히면 잡아당겨보고 실망한다.
+    const [dragY, setDragY] = useState(0);
+    const dragStartRef = useRef<number | null>(null);
+
     const thisMonth = currentMonthKst();
     const editing = editingId !== null;
 
@@ -116,7 +120,7 @@ export default function LedgerPage() {
         function onKey(ev: KeyboardEvent) {
             if (ev.key !== "Escape") return;
             if (askDelete) { setAskDelete(false); return; }
-            if (sheetOpen) setSheetOpen(false);
+            if (sheetOpen) { setSheetOpen(false); setDragY(0); dragStartRef.current = null; }
         }
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
@@ -192,6 +196,35 @@ export default function LedgerPage() {
     const amountValue = () => Number(fAmount.replace(/[^\d]/g, ""));
     const setAmountNumber = (n: number) => setFAmount(n ? n.toLocaleString("ko-KR") : "");
 
+    function closeSheet() {
+        setSheetOpen(false);
+        setDragY(0);
+        dragStartRef.current = null;
+    }
+
+    /* 손잡이·제목 줄에서만 잡는다 — 본문은 스크롤 영역이라 여기서 잡으면 둘이 싸운다.
+       90px 넘게 내리면 닫고, 덜 내리면 제자리로 돌아온다. */
+    const CLOSE_AT = 90;
+
+    function onDragStart(e: React.PointerEvent) {
+        // 데스크톱에서는 가운데 뜨는 대화상자라 끌어내릴 이유가 없다.
+        if (window.matchMedia("(min-width: 640px)").matches) return;
+        dragStartRef.current = e.clientY;
+        e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    function onDragMove(e: React.PointerEvent) {
+        if (dragStartRef.current === null) return;
+        setDragY(Math.max(0, e.clientY - dragStartRef.current));
+    }
+
+    function onDragEnd() {
+        if (dragStartRef.current === null) return;
+        dragStartRef.current = null;
+        if (dragY > CLOSE_AT) closeSheet();
+        else setDragY(0);
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         const amount = amountValue();
@@ -216,7 +249,7 @@ export default function LedgerPage() {
             // 수정은 한 건만 고치러 들어온 흐름이라 저장하면 닫는다.
             const result = await dispatch(reqUpdateLedgerEntry({ id: editingId, entry: payload }));
             if (result.meta.requestStatus !== "fulfilled") return;
-            setSheetOpen(false);
+            closeSheet();
             setToast("수정했습니다");
             if (entered !== month) dispatch(setLedgerMonth(entered));
             return;
@@ -239,7 +272,7 @@ export default function LedgerPage() {
         if (editingId === null) return;
         const result = await dispatch(reqDeleteLedgerEntry(editingId));
         if (result.meta.requestStatus !== "fulfilled") return;
-        setSheetOpen(false);
+        closeSheet();
         setToast("삭제했습니다");
     }
 
@@ -534,24 +567,36 @@ export default function LedgerPage() {
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
                     <div
                         className="absolute inset-0 bg-neutral-900/45"
-                        onClick={() => setSheetOpen(false)}
+                        // 끄는 만큼 뒷배경이 옅어져 "닫히는 중"이 눈에 보인다
+                        style={dragY ? { opacity: Math.max(0, 1 - dragY / 260) } : undefined}
+                        onClick={closeSheet}
                         aria-hidden
                     />
                     <form
                         onSubmit={handleSubmit}
-                        className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-[#242320] border-t sm:border border-neutral-200 dark:border-[#35332e] rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl"
+                        style={dragY ? { transform: `translateY(${dragY}px)`, transition: "none" } : undefined}
+                        className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-[#242320] border-t sm:border border-neutral-200 dark:border-[#35332e] rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl transition-transform duration-200"
                     >
-                        <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-[#35332e] mx-auto mt-1 mb-3" aria-hidden />
+                        {/* 손잡이·제목 줄이 드래그 영역 — 본문은 스크롤이라 여기서만 잡는다 */}
+                        <div
+                            onPointerDown={onDragStart}
+                            onPointerMove={onDragMove}
+                            onPointerUp={onDragEnd}
+                            onPointerCancel={onDragEnd}
+                            className="touch-none select-none sm:touch-auto"
+                        >
+                            <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-[#35332e] mx-auto mt-1 mb-3" aria-hidden />
 
-                        <div className="flex items-baseline justify-between gap-3 mb-3">
-                            <h2 className="text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white">
-                                {editing ? "수정하기" : "기입하기"}
-                            </h2>
-                            {editing && (
-                                <span className="text-[11px] text-neutral-400 tabular-nums">
-                                    {fDate.replace(/-/g, ".")} 기록
-                                </span>
-                            )}
+                            <div className="flex items-baseline justify-between gap-3 mb-3">
+                                <h2 className="text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white">
+                                    {editing ? "수정하기" : "기입하기"}
+                                </h2>
+                                {editing && (
+                                    <span className="text-[11px] text-neutral-400 tabular-nums">
+                                        {fDate.replace(/-/g, ".")} 기록
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* 구분 */}
@@ -699,7 +744,7 @@ export default function LedgerPage() {
                                         삭제
                                     </button>
                                 )}
-                                <button type="button" onClick={() => setSheetOpen(false)}
+                                <button type="button" onClick={closeSheet}
                                     className="min-h-[50px] px-4 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-sm font-black text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-[#2c2b27] transition-colors">
                                     {editing ? "취소" : "닫기"}
                                 </button>
