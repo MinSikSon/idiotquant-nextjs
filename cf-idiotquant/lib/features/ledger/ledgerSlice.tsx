@@ -2,8 +2,10 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import {
     getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry,
+    getLedgerCategories, addLedgerCategory, deleteLedgerCategory,
     type LedgerEntry, type NewLedgerEntry,
 } from "./ledgerAPI";
+import type { LedgerKind, StoredCategory } from "./categories";
 
 /** 사용자가 보는 달은 KST 기준이다 — UTC 로 세면 매달 1일 오전 9시 전에 지난달이 열린다. */
 export function currentMonthKst(): string {
@@ -18,6 +20,7 @@ interface LedgerState {
     state: "init" | "pending" | "fulfilled" | "rejected";
     month: string;              // 'YYYY-MM'
     entries: LedgerEntry[];
+    categories: StoredCategory[];   // 사용자가 만든 항목 (프리셋은 categories.ts 상수)
     mutating: boolean;
     error: string | null;
 }
@@ -26,6 +29,7 @@ const initialState: LedgerState = {
     state: "init",
     month: currentMonthKst(),
     entries: [],
+    categories: [],
     mutating: false,
     error: null,
 };
@@ -92,6 +96,64 @@ export const ledgerSlice = createAppSlice({
             }
         ),
 
+        /* ── 사용자 항목 ── 월과 무관해서 화면이 열릴 때 한 번만 부른다 ── */
+        reqGetLedgerCategories: create.asyncThunk(
+            async () => {
+                const result = await getLedgerCategories();
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
+            {
+                fulfilled: (state, action) => {
+                    state.categories = (action.payload?.data ?? []) as StoredCategory[];
+                },
+                // 항목을 못 불러와도 프리셋으로는 기입할 수 있다 — 화면을 막지 않는다.
+                rejected: () => {},
+            }
+        ),
+
+        reqAddLedgerCategory: create.asyncThunk(
+            async ({ kind, label }: { kind: LedgerKind; label: string }) => {
+                const result = await addLedgerCategory(kind, label);
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
+            {
+                pending: (state) => { state.mutating = true; state.error = null; },
+                fulfilled: (state, action) => {
+                    state.mutating = false;
+                    const category = action.payload?.data as StoredCategory | undefined;
+                    if (!category) return;
+                    // 같은 이름을 다시 넣으면 워커가 기존 행을 그대로 준다 — 중복으로 쌓지 않는다.
+                    if (state.categories.some((c) => c.id === category.id)) return;
+                    state.categories = [...state.categories, category];
+                },
+                rejected: (state, action) => {
+                    state.mutating = false;
+                    state.error = action.error?.message ?? null;
+                },
+            }
+        ),
+
+        reqDeleteLedgerCategory: create.asyncThunk(
+            async (id: number) => {
+                const result = await deleteLedgerCategory(id);
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return id;
+            },
+            {
+                pending: (state) => { state.mutating = true; state.error = null; },
+                fulfilled: (state, action) => {
+                    state.mutating = false;
+                    state.categories = state.categories.filter((c) => c.id !== action.payload);
+                },
+                rejected: (state, action) => {
+                    state.mutating = false;
+                    state.error = action.error?.message ?? null;
+                },
+            }
+        ),
+
         reqUpdateLedgerEntry: create.asyncThunk(
             async ({ id, entry }: { id: number; entry: NewLedgerEntry }) => {
                 const result = await updateLedgerEntry(id, entry);
@@ -143,6 +205,7 @@ export const ledgerSlice = createAppSlice({
     selectors: {
         selectLedgerMonth: (state) => state.month,
         selectLedgerEntries: (state) => state.entries,
+        selectLedgerCategories: (state) => state.categories,
         selectLedgerState: (state) => state.state,
         selectLedgerMutating: (state) => state.mutating,
         selectLedgerError: (state) => state.error,
@@ -151,10 +214,12 @@ export const ledgerSlice = createAppSlice({
 
 export const {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
+    reqGetLedgerCategories, reqAddLedgerCategory, reqDeleteLedgerCategory,
 } = ledgerSlice.actions;
 export const {
     selectLedgerMonth,
     selectLedgerEntries,
+    selectLedgerCategories,
     selectLedgerState,
     selectLedgerMutating,
     selectLedgerError,

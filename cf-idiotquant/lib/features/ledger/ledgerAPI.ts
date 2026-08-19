@@ -1,4 +1,4 @@
-import type { LedgerKind } from "./categories";
+import type { LedgerKind, StoredCategory } from "./categories";
 
 export interface LedgerEntry {
     id: number;
@@ -38,3 +38,14 @@ export const updateLedgerEntry = (id: number, entry: NewLedgerEntry) =>
     ledgerRequest(`/user/ledger?id=${id}`, "PUT", entry);
 
 export const deleteLedgerEntry = (id: number) => ledgerRequest(`/user/ledger?id=${id}`, "DELETE");
+
+/* 사용자가 만든 항목 — 칩으로 무엇을 보여줄지만 정한다. 지워도 과거 내역은 그대로 남는다. */
+export type { StoredCategory };
+
+export const getLedgerCategories = () => ledgerRequest("/user/ledger/categories");
+
+export const addLedgerCategory = (kind: LedgerKind, label: string) =>
+    ledgerRequest("/user/ledger/categories", "POST", { kind, label });
+
+export const deleteLedgerCategory = (id: number) =>
+    ledgerRequest(`/user/ledger/categories?id=${id}`, "DELETE");
