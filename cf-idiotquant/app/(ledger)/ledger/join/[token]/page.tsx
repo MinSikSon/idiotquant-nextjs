@@ -14,6 +14,10 @@ import {
     getLedgerInvite, acceptLedgerInvite, type LedgerInvitePreview,
 } from "@/lib/features/ledger/ledgerAPI";
 
+// 토큰이 주소에 들어가는 유일한 동적 라우트다 — 정적으로 구울 수 없고,
+// Cloudflare Pages 빌드는 그런 경로에 edge 런타임을 요구한다.
+export const runtime = "edge";
+
 const CARD_CLS =
     "bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl";
 
