@@ -2,11 +2,11 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import {
     getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry,
-    getLedgerCategories, addLedgerCategory, deleteLedgerCategory,
+    getLedgerCategories, addLedgerCategory, renameLedgerCategory, deleteLedgerCategory,
     getLedgerAccess, createLedgerInvite,
     type LedgerEntry, type NewLedgerEntry, type LedgerAccess, type LedgerMember,
 } from "./ledgerAPI";
-import type { LedgerKind, StoredCategory } from "./categories";
+import { catKey, frozenKey, type LedgerKind, type StoredCategory } from "./categories";
 
 /** 사용자가 보는 달은 KST 기준이다 — UTC 로 세면 매달 1일 오전 9시 전에 지난달이 열린다. */
 export function currentMonthKst(): string {
@@ -206,8 +206,31 @@ export const ledgerSlice = createAppSlice({
             }
         ),
 
+        /** 이름 바꾸기 — 항목 한 줄만 갈아끼운다. 내역은 이 항목의 id 를 가리키고
+         *  있어 화면의 라벨이 저절로 따라온다(다시 조회할 것이 없다). */
+        reqRenameLedgerCategory: create.asyncThunk(
+            async ({ id, label }: { id: number; label: string }, { getState }) => {
+                const result = await renameLedgerCategory(ownerOf(getState), id, label);
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
+            {
+                pending: (state) => { state.mutating = true; state.error = null; },
+                fulfilled: (state, action) => {
+                    state.mutating = false;
+                    const category = action.payload?.data as StoredCategory | undefined;
+                    if (!category) return;
+                    state.categories = state.categories.map((c) => (c.id === category.id ? category : c));
+                },
+                rejected: (state, action) => {
+                    state.mutating = false;
+                    state.error = action.error?.message ?? null;
+                },
+            }
+        ),
+
         reqDeleteLedgerCategory: create.asyncThunk(
-            async (id: number, { getState }) => {
+            async ({ id }: { id: number; label: string }, { getState }) => {
                 const result = await deleteLedgerCategory(ownerOf(getState), id);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return id;
@@ -217,6 +240,13 @@ export const ledgerSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     state.mutating = false;
                     state.categories = state.categories.filter((c) => c.id !== action.payload);
+                    // 워커가 지우기 직전에 그 내역들을 custom:<라벨> 로 굳혔다. 화면의 내역도
+                    // 같은 값으로 맞춰두지 않으면 다시 조회하기 전까지 "지운 항목"으로 보인다.
+                    const frozen = frozenKey(action.meta.arg.label);
+                    const key = catKey(action.payload);
+                    state.entries = state.entries.map((e) =>
+                        e.category === key ? { ...e, category: frozen } : e
+                    );
                 },
                 rejected: (state, action) => {
                     state.mutating = false;
@@ -289,7 +319,7 @@ export const ledgerSlice = createAppSlice({
 
 export const {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
-    reqGetLedgerCategories, reqAddLedgerCategory, reqDeleteLedgerCategory,
+    reqGetLedgerCategories, reqAddLedgerCategory, reqRenameLedgerCategory, reqDeleteLedgerCategory,
     setActiveOwner, clearLedgerInvite, reqGetLedgerAccess, reqCreateLedgerInvite,
 } = ledgerSlice.actions;
 export const {

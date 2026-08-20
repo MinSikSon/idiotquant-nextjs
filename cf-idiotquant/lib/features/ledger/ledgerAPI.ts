@@ -75,6 +75,10 @@ export const getLedgerCategories = (owner: Owner) =>
 export const addLedgerCategory = (owner: Owner, kind: LedgerKind, label: string) =>
     ledgerRequest(`/user/ledger/categories${q(own(owner))}`, "POST", { kind, label });
 
+/* 이름만 바꾼다. 내역은 이 항목의 id 를 가리키고 있어 한 행만 고치면 전부 따라온다. */
+export const renameLedgerCategory = (owner: Owner, id: number, label: string) =>
+    ledgerRequest(`/user/ledger/categories${q(`id=${id}`, own(owner))}`, "PUT", { label });
+
 export const deleteLedgerCategory = (owner: Owner, id: number) =>
     ledgerRequest(`/user/ledger/categories${q(`id=${id}`, own(owner))}`, "DELETE");
 
