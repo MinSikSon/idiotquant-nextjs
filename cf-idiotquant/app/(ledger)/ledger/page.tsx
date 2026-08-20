@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Users, Link2, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Pencil, Users, Link2, Check } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
 import type { LedgerEntry, NewLedgerEntry } from "@/lib/features/ledger/ledgerAPI";
 import {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
-    reqGetLedgerCategories, reqAddLedgerCategory, reqDeleteLedgerCategory,
+    reqGetLedgerCategories, reqAddLedgerCategory, reqRenameLedgerCategory, reqDeleteLedgerCategory,
     setActiveOwner, clearLedgerInvite, reqGetLedgerAccess, reqCreateLedgerInvite,
     selectLedgerMonth, selectLedgerEntries, selectLedgerState, selectLedgerCategories,
     selectActiveOwner, selectLedgerAccess, selectLedgerMembers, selectLedgerInviteToken,
@@ -19,7 +19,7 @@ import {
     currentMonthKst,
 } from "@/lib/features/ledger/ledgerSlice";
 import {
-    categoriesOf, categoryLabel, customKey, type LedgerKind,
+    categoriesOf, categoryLabel, catKey, type LedgerKind, type StoredCategory,
 } from "@/lib/features/ledger/categories";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
@@ -130,6 +130,8 @@ export default function LedgerPage() {
     // 항목 만들기 — 시트 안에서 칩 줄 아래로 펼친다
     const [newCatOpen, setNewCatOpen] = useState(false);
     const [newCatLabel, setNewCatLabel] = useState("");
+    /** null 이면 새로 만드는 중, 값이 있으면 그 항목의 이름을 고치는 중 — 입력 줄은 하나다. */
+    const [catEditId, setCatEditId] = useState<number | null>(null);
     const newCatRef = useRef<HTMLInputElement>(null);
 
     // 시트가 목록을 가리므로 저장 결과는 시트 위에 뜨는 토스트로 알린다.
@@ -202,7 +204,7 @@ export default function LedgerPage() {
         }
         return [...sums]
             .map(([key, sum]) => ({
-                label: categoryLabel(barKind, key),
+                label: categoryLabel(barKind, key, customCategories),
                 sum,
                 pct: Math.round((sum / total) * 100),
             }))
@@ -238,27 +240,52 @@ export default function LedgerPage() {
     /* ─── 시트 열고 닫기 ───────────────────────────────────────── */
     function changeKind(kind: LedgerKind, keep?: string) {
         setFKind(kind);
-        setNewCatOpen(false);
+        closeCatForm();
         const list = categoriesOf(kind, customCategories);
         setFCategory(keep && list.some(c => c.key === keep) ? keep : list[0].key);
     }
 
-    async function handleAddCategory() {
+    function closeCatForm() {
+        setNewCatOpen(false);
+        setNewCatLabel("");
+        setCatEditId(null);
+    }
+
+    function openCatForm(edit?: { id: number; label: string }) {
+        setCatEditId(edit?.id ?? null);
+        setNewCatLabel(edit?.label ?? "");
+        setNewCatOpen(true);
+        setTimeout(() => newCatRef.current?.select(), 30);
+    }
+
+    /** 입력 줄 하나가 만들기와 이름 고치기를 겸한다 — 열려 있는 동안 무엇을 하는지는 catEditId 가 안다. */
+    async function handleSaveCategory() {
         const label = newCatLabel.trim();
         if (!label) return;
+
+        if (catEditId !== null) {
+            const result = await dispatch(reqRenameLedgerCategory({ id: catEditId, label }));
+            if (result.meta.requestStatus !== "fulfilled") return;
+            // 내역은 이 항목의 id 를 가리키고 있어 목록·막대의 이름이 저절로 따라온다.
+            closeCatForm();
+            setToast("이름을 바꿨습니다");
+            return;
+        }
+
         const result = await dispatch(reqAddLedgerCategory({ kind: fKind, label }));
         if (result.meta.requestStatus !== "fulfilled") return;
         // 방금 만든 항목을 바로 고른 상태로 둔다 — 만들고 또 눌러야 하면 두 번 일하는 셈이다.
-        setFCategory(customKey(label));
-        setNewCatLabel("");
-        setNewCatOpen(false);
+        const created = (result.payload as { data?: StoredCategory } | undefined)?.data;
+        if (created) setFCategory(catKey(created.id));
+        closeCatForm();
     }
 
     async function handleDeleteCategory(id: number, label: string) {
-        const result = await dispatch(reqDeleteLedgerCategory(id));
+        const result = await dispatch(reqDeleteLedgerCategory({ id, label }));
         if (result.meta.requestStatus !== "fulfilled") return;
         // 고른 항목이 사라졌으면 첫 칸으로 되돌린다.
-        if (fCategory === customKey(label)) setFCategory(categoriesOf(fKind, [])[0].key);
+        if (fCategory === catKey(id)) setFCategory(categoriesOf(fKind, [])[0].key);
+        closeCatForm();
         setToast("항목을 지웠습니다 (기록은 그대로)");
     }
 
@@ -752,7 +779,7 @@ export default function LedgerPage() {
                                                             ? "bg-[#dcfce7]/70 dark:bg-[#052e16]/40"
                                                             : "hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
                                                     )}
-                                                    aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category)} ${e.amount.toLocaleString("ko-KR")}원 수정`}
+                                                    aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category, customCategories)} ${e.amount.toLocaleString("ko-KR")}원 수정`}
                                                 >
                                                     <span className={cn(
                                                         "text-[11px] font-black px-2 py-0.5 rounded-md whitespace-nowrap",
@@ -760,7 +787,7 @@ export default function LedgerPage() {
                                                             ? "bg-[#dcfce7] text-[#16a34a] dark:bg-[#052e16]/60 dark:text-[#16a34a]"
                                                             : "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400"
                                                     )}>
-                                                        {categoryLabel(e.kind, e.category)}
+                                                        {categoryLabel(e.kind, e.category, customCategories)}
                                                     </span>
                                                     <span className={cn(
                                                         "text-xs truncate",
@@ -1016,23 +1043,40 @@ export default function LedgerPage() {
                                             >
                                                 {c.label}
                                             </button>
-                                            {/* 지우기는 고른 항목에만 — 칩마다 × 가 붙으면 고르다가 지운다.
-                                                항목만 사라지고 그 항목으로 적어둔 기록은 남는다. */}
+                                            {/* 이름 고치기·지우기는 고른 항목에만 — 칩마다 붙으면 고르다가 누른다.
+                                                이름을 바꿔도 그 항목으로 적어둔 기록은 새 이름으로 함께 따라오고,
+                                                지우면 항목만 사라지고 기록은 그때의 이름으로 남는다. */}
                                             {on && mine && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteCategory(c.id!, c.label)}
-                                                    disabled={mutating}
-                                                    className={cn(
-                                                        CHIP_CLS, "w-9 px-0 rounded-l-none border-l-0 flex items-center justify-center",
-                                                        fKind === "income"
-                                                            ? "bg-[#16a34a] border-[#16a34a] text-white/80 hover:text-white"
-                                                            : "bg-red-600 border-red-600 text-white/80 hover:text-white"
-                                                    )}
-                                                    aria-label={`${c.label} 항목 지우기`}
-                                                >
-                                                    <X size={14} strokeWidth={2.6} />
-                                                </button>
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openCatForm({ id: c.id!, label: c.label })}
+                                                        disabled={mutating}
+                                                        className={cn(
+                                                            CHIP_CLS, "w-9 px-0 rounded-none border-l-0 border-r-0 flex items-center justify-center",
+                                                            fKind === "income"
+                                                                ? "bg-[#16a34a] border-[#16a34a] text-white/80 hover:text-white"
+                                                                : "bg-red-600 border-red-600 text-white/80 hover:text-white"
+                                                        )}
+                                                        aria-label={`${c.label} 항목 이름 바꾸기`}
+                                                    >
+                                                        <Pencil size={13} strokeWidth={2.6} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteCategory(c.id!, c.label)}
+                                                        disabled={mutating}
+                                                        className={cn(
+                                                            CHIP_CLS, "w-9 px-0 rounded-l-none border-l-0 flex items-center justify-center",
+                                                            fKind === "income"
+                                                                ? "bg-[#16a34a] border-[#16a34a] text-white/80 hover:text-white"
+                                                                : "bg-red-600 border-red-600 text-white/80 hover:text-white"
+                                                        )}
+                                                        aria-label={`${c.label} 항목 지우기`}
+                                                    >
+                                                        <X size={14} strokeWidth={2.6} />
+                                                    </button>
+                                                </>
                                             )}
                                         </span>
                                     );
@@ -1041,7 +1085,7 @@ export default function LedgerPage() {
                                 {!newCatOpen && (
                                     <button
                                         type="button"
-                                        onClick={() => { setNewCatOpen(true); setTimeout(() => newCatRef.current?.focus(), 30); }}
+                                        onClick={() => openCatForm()}
                                         className={cn(CHIP_CLS, "flex items-center gap-1 border-dashed border-neutral-300 dark:border-[#4a4641] bg-transparent text-neutral-500 dark:text-neutral-400")}
                                     >
                                         <Plus size={13} strokeWidth={2.8} />
@@ -1061,20 +1105,26 @@ export default function LedgerPage() {
                                         onChange={e => setNewCatLabel(e.target.value)}
                                         onKeyDown={e => {
                                             // 시트가 form 안이라 Enter 가 저장으로 새면 항목만 만들려다 기입이 된다.
-                                            if (e.key === "Enter") { e.preventDefault(); handleAddCategory(); }
+                                            if (e.key === "Enter") { e.preventDefault(); handleSaveCategory(); }
                                         }}
                                         className={cn(CTL_CLS, "flex-1")}
+                                        aria-label={catEditId !== null ? "항목 새 이름" : "새 항목 이름"}
                                     />
-                                    <button type="button" onClick={handleAddCategory}
+                                    <button type="button" onClick={handleSaveCategory}
                                         disabled={mutating || !newCatLabel.trim()}
                                         className="min-h-[44px] px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black disabled:opacity-50 transition-colors">
-                                        추가
+                                        {catEditId !== null ? "저장" : "추가"}
                                     </button>
-                                    <button type="button" onClick={() => { setNewCatOpen(false); setNewCatLabel(""); }}
+                                    <button type="button" onClick={closeCatForm}
                                         className="min-h-[44px] px-3 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-xs font-black text-neutral-500">
                                         취소
                                     </button>
                                 </div>
+                            )}
+                            {catEditId !== null && (
+                                <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
+                                    이름만 바뀝니다 — 이 항목으로 적어둔 기록은 그대로 따라옵니다.
+                                </p>
                             )}
                         </div>
 
