@@ -8,6 +8,14 @@ export interface LedgerEntry {
     amount: number;       // 원 단위 양수. 부호는 kind 가 정한다.
     memo: string | null;
     created_at: number;
+    /* 누가 적었고 누가 고쳤는가. 이름은 워커가 users 에서 붙여 준다 —
+       남의 가계부를 볼 때 프론트에는 id 로 이름을 찾을 표가 없다.
+       0028 이전에 적힌 내역은 전부 null 이다. */
+    created_by?: string | null;
+    created_by_name?: string | null;
+    updated_by?: string | null;
+    updated_by_name?: string | null;
+    updated_at?: number | null;
 }
 
 export interface NewLedgerEntry {
