@@ -20,13 +20,28 @@ export interface NewLedgerEntry {
 
 async function ledgerRequest(subUrl: string, method = "GET", body?: object) {
     const url = `/api/proxy${subUrl}`;
-    const res = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-    return res.json();
+
+    let res: Response;
+    try {
+        res = await fetch(url, {
+            method,
+            credentials: "include",
+            headers: { "content-type": "application/json" },
+            ...(body ? { body: JSON.stringify(body) } : {}),
+        });
+    } catch {
+        return { success: false, error: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요." };
+    }
+
+    // 워커가 예외를 던지면 JSON 대신 오류 페이지가 돌아온다. 그대로 res.json() 을 부르면
+    // 브라우저가 만든 파싱 오류(사파리는 "The string did not match the expected pattern.")가
+    // 그대로 화면에 뜨는데, 무엇이 잘못됐는지 알 길이 없다 — 우리 형식으로 바꿔 돌려준다.
+    const text = await res.text();
+    try {
+        return JSON.parse(text);
+    } catch {
+        return { success: false, error: `서버 응답을 읽지 못했습니다 (HTTP ${res.status}).` };
+    }
 }
 
 /* owner 는 "어느 가계부인가" 다. 비우면 내 것 — 워커도 같은 규칙이라
