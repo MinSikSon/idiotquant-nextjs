@@ -3,16 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Users, Link2, Check } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/pageHeader";
+import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
 import type { LedgerEntry, NewLedgerEntry } from "@/lib/features/ledger/ledgerAPI";
 import {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
     reqGetLedgerCategories, reqAddLedgerCategory, reqDeleteLedgerCategory,
+    setActiveOwner, clearLedgerInvite, reqGetLedgerAccess, reqCreateLedgerInvite,
     selectLedgerMonth, selectLedgerEntries, selectLedgerState, selectLedgerCategories,
+    selectActiveOwner, selectLedgerAccess, selectLedgerMembers, selectLedgerInviteToken,
     selectLedgerMutating, selectLedgerError,
     currentMonthKst,
 } from "@/lib/features/ledger/ledgerSlice";
@@ -89,6 +91,10 @@ function monthGrid(month: string): (string | null)[] {
 /** 모바일에서 0 을 여섯 번 치는 게 가장 성가시다. 지금 값에 더한다. */
 const QUICK_ADD = [10000, 50000, 100000];
 
+/** 초대 링크. 카톡으로 그대로 붙여넣을 수 있게 절대 주소로 만든다. */
+const inviteUrl = (token: string) =>
+    `${typeof window === "undefined" ? "" : window.location.origin}/ledger/join/${token}`;
+
 export default function LedgerPage() {
     const { status } = useSession();
     const dispatch = useAppDispatch();
@@ -97,11 +103,17 @@ export default function LedgerPage() {
     const entries = useAppSelector(selectLedgerEntries);
     const loadState = useAppSelector(selectLedgerState);
     const customCategories = useAppSelector(selectLedgerCategories);
+    const activeOwner = useAppSelector(selectActiveOwner);
+    const ledgers = useAppSelector(selectLedgerAccess);
+    const members = useAppSelector(selectLedgerMembers);
+    const inviteToken = useAppSelector(selectLedgerInviteToken);
     const mutating = useAppSelector(selectLedgerMutating);
     const error = useAppSelector(selectLedgerError);
 
     const [barKind, setBarKind] = useState<LedgerKind>("income");
     const [calendarOpen, setCalendarOpen] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     /* 시트 — editingId 가 null 이면 기입, 값이 있으면 그 줄을 수정한다 */
     const [sheetOpen, setSheetOpen] = useState(false);
@@ -134,12 +146,18 @@ export default function LedgerPage() {
     useEffect(() => {
         if (status !== "authenticated") return;
         dispatch(reqGetLedger(month));
-    }, [dispatch, status, month]);
+    }, [dispatch, status, month, activeOwner]);
 
-    // 항목은 월과 무관하다 — 화면이 열릴 때 한 번만 가져온다.
+    // 항목은 월과 무관하지만 가계부마다 다르다 — 가계부가 바뀌면 다시 가져온다.
     useEffect(() => {
         if (status !== "authenticated") return;
         dispatch(reqGetLedgerCategories());
+    }, [dispatch, status, activeOwner]);
+
+    // 볼 수 있는 가계부 목록. 초대를 수락하고 돌아왔을 때도 여기서 반영된다.
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        dispatch(reqGetLedgerAccess());
     }, [dispatch, status]);
 
     useEffect(() => {
@@ -368,12 +386,33 @@ export default function LedgerPage() {
     const signedOut = status === "unauthenticated";
     const loading = status === "loading" || (loadState === "pending" && entries.length === 0);
 
+    /* 남의 가계부를 보고 있으면 그 사실이 제목에 드러나야 한다 —
+       어느 장부에 적고 있는지 모르면 잘못 적는다. */
+    const activeLedger = ledgers.find(l => l.owner_user_id === activeOwner);
+    const viewingShared = activeOwner !== null;
+
     const header = (
         <PageHeader
             emoji="📒"
-            title="가계부"
-            meta={<><span>로그인 사용자 전용</span><span aria-hidden>·</span><span>내 계정에만 저장됩니다</span></>}
+            title={viewingShared ? `${activeLedger?.owner_name ?? "공유"}님의 가계부` : "가계부"}
+            meta={
+                viewingShared
+                    ? <><span>함께 쓰는 가계부</span><span aria-hidden>·</span><span>기입·수정이 모두 반영됩니다</span></>
+                    : members.length > 0
+                        ? <><span>{members.length}명과 함께 쓰는 중</span><span aria-hidden>·</span><span>내 계정에 저장됩니다</span></>
+                        : <><span>로그인 사용자 전용</span><span aria-hidden>·</span><span>내 계정에만 저장됩니다</span></>
+            }
             containerClassName="max-w-3xl mx-auto px-4 sm:px-7"
+            actions={
+                <button
+                    type="button"
+                    onClick={() => { setShareOpen(true); setCopied(false); dispatch(clearLedgerInvite()); }}
+                    className={PAGE_ACTION_CLS}
+                >
+                    <Users size={14} />
+                    공유
+                </button>
+            }
         />
     );
 
@@ -415,6 +454,32 @@ export default function LedgerPage() {
             )}
 
             <div className="max-w-3xl mx-auto px-4 sm:px-7 py-5 space-y-3.5">
+
+                {/* ⓪ 가계부 전환 — 볼 수 있는 가계부가 둘 이상일 때만 나온다.
+                    혼자 쓰는 사람에게는 없던 UI 가 생기지 않는다. */}
+                {ledgers.length > 1 && (
+                    <div className={cn(CARD_CLS, "flex gap-1.5 p-1.5 overflow-x-auto")}>
+                        {ledgers.map(l => {
+                            const on = l.is_mine ? activeOwner === null : activeOwner === l.owner_user_id;
+                            return (
+                                <button
+                                    key={l.owner_user_id}
+                                    type="button"
+                                    onClick={() => dispatch(setActiveOwner(l.is_mine ? null : l.owner_user_id))}
+                                    aria-pressed={on}
+                                    className={cn(
+                                        "shrink-0 min-h-[40px] px-3.5 rounded-xl text-[13px] font-bold transition-colors",
+                                        on
+                                            ? "bg-[#16a34a] text-white"
+                                            : "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
+                                    )}
+                                >
+                                    {l.is_mine ? "내 가계부" : `${l.owner_name ?? "공유"}님`}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* ① 월 선택 — 터치 타겟 44px. 달을 누르면 달력이 아래로 펼쳐진다. */}
                 <div className={CARD_CLS}>
@@ -737,6 +802,92 @@ export default function LedgerPage() {
                     <Plus size={18} strokeWidth={2.8} />
                     기입
                 </button>
+            )}
+
+            {/* ── 공유 시트 ── */}
+            {shareOpen && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                    <div className="absolute inset-0 bg-neutral-900/45" onClick={() => setShareOpen(false)} aria-hidden />
+                    <div className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-[#242320] border-t sm:border border-neutral-200 dark:border-[#35332e] rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl">
+                        <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-[#35332e] mx-auto mt-1 mb-3" aria-hidden />
+                        <h2 className="text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white mb-1">
+                            함께 쓰기
+                        </h2>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                            초대한 사람은 <b className="text-neutral-700 dark:text-neutral-300">내 가계부의 모든 내역을 보고 함께 기입·수정</b>할 수 있습니다.
+                        </p>
+
+                        {/* 지금 들어와 있는 사람 */}
+                        <div className="flex flex-col gap-1.5 mb-4">
+                            <span className={FIELD_LABEL_CLS}>함께 쓰는 사람</span>
+                            {members.length === 0 ? (
+                                <p className="text-xs text-neutral-400 dark:text-neutral-500 py-1">아직 없습니다.</p>
+                            ) : (
+                                <div className="flex flex-col gap-1">
+                                    {members.map(m => (
+                                        <div key={m.user_id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915]">
+                                            <span className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-[10px] font-black text-neutral-700 dark:text-neutral-200">
+                                                {m.name?.[0] ?? "?"}
+                                            </span>
+                                            <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
+                                                {m.name ?? "이름 없음"}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 초대 링크 */}
+                        <div className="flex flex-col gap-1.5">
+                            <span className={FIELD_LABEL_CLS}>초대 링크</span>
+                            {inviteToken ? (
+                                <>
+                                    <div className="px-3 py-2.5 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] text-[11px] font-mono break-all text-neutral-600 dark:text-neutral-400">
+                                        {inviteUrl(inviteToken)}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            await navigator.clipboard?.writeText(inviteUrl(inviteToken));
+                                            setCopied(true);
+                                            setToast("링크를 복사했습니다");
+                                        }}
+                                        className="min-h-[48px] rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-black flex items-center justify-center gap-1.5 transition-colors"
+                                    >
+                                        {copied ? <Check size={16} strokeWidth={2.6} /> : <Link2 size={16} strokeWidth={2.4} />}
+                                        {copied ? "복사했습니다" : "링크 복사"}
+                                    </button>
+                                    <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        한 사람만 쓸 수 있고 7일 뒤 만료됩니다. 받는 분이 회원이 아니어도 링크를 열면 카카오 가입 후 바로 들어옵니다.
+                                    </p>
+                                </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => dispatch(reqCreateLedgerInvite())}
+                                    disabled={mutating}
+                                    className="min-h-[48px] rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-black flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
+                                >
+                                    <Link2 size={16} strokeWidth={2.4} />
+                                    {mutating ? "만드는 중…" : "초대 링크 만들기"}
+                                </button>
+                            )}
+                        </div>
+
+                        {error && (
+                            <p role="alert" className="mt-3 text-xs font-bold text-red-600 dark:text-red-400">{error}</p>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={() => setShareOpen(false)}
+                            className="w-full min-h-[48px] mt-3 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-sm font-black text-neutral-600 dark:text-neutral-400"
+                        >
+                            닫기
+                        </button>
+                    </div>
+                </div>
             )}
 
             {/* ── 기입·수정 시트 ── */}
