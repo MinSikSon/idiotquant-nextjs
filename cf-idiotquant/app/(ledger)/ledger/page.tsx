@@ -177,7 +177,8 @@ export default function LedgerPage() {
 
     useEffect(() => {
         if (!toast) return;
-        const t = setTimeout(() => setToast(null), 1600);
+        // "저장했습니다" 는 스쳐도 되지만, 무엇이 잘못됐다는 말은 읽을 시간이 있어야 한다.
+        const t = setTimeout(() => setToast(null), toast.length > 20 ? 3200 : 1600);
         return () => clearTimeout(t);
     }, [toast]);
 
@@ -253,8 +254,15 @@ export default function LedgerPage() {
     /* ─── 끌어 옮기기 ─────────────────────────────────────────── */
     async function handleReorder(date: string, ids: number[]) {
         const result = await dispatch(reqReorderLedgerEntries({ date, ids }));
-        // 낙관적으로 옮겨둔 자리는 되돌릴 수가 없다 — 실패하면 그 달을 다시 읽는다.
-        if (result.meta.requestStatus !== "fulfilled") dispatch(reqGetLedger(month));
+        if (result.meta.requestStatus === "fulfilled") return;
+
+        // 낙관적으로 옮겨둔 자리는 되돌릴 수가 없다 — 그 달을 다시 읽어 서버 순서로 맞춘다.
+        dispatch(reqGetLedger(month));
+
+        // 그리고 왜 돌아왔는지 말한다. 말없이 제자리로 가면 끌기가 고장 난 것처럼 보인다 —
+        // 실제로는 워커가 거절했거나 아직 그 경로를 모르는 것이다.
+        const reason = (result as unknown as { error?: { message?: string } }).error?.message;
+        setToast(`자리를 저장하지 못했습니다 — ${reason ?? "잠시 후 다시 시도해 주세요"}`);
     }
 
     const { dragId, dropTarget, rowProps, dayProps, consumeDragClick } =
