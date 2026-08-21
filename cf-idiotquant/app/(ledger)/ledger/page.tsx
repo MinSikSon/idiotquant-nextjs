@@ -11,6 +11,7 @@ import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
 import type { LedgerEntry, NewLedgerEntry } from "@/lib/features/ledger/ledgerAPI";
 import {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
+    reqReorderLedgerEntries,
     reqGetLedgerCategories, reqAddLedgerCategory, reqRenameLedgerCategory, reqDeleteLedgerCategory,
     setActiveOwner, clearLedgerInvite, reqGetLedgerAccess, reqCreateLedgerInvite,
     selectLedgerMonth, selectLedgerEntries, selectLedgerState, selectLedgerCategories,
@@ -21,6 +22,7 @@ import {
 import {
     categoriesOf, categoryLabel, catKey, type LedgerKind, type StoredCategory,
 } from "@/lib/features/ledger/categories";
+import { useEntryDrag } from "./useEntryDrag";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
 const CTL_CLS =
@@ -247,6 +249,16 @@ export default function LedgerPage() {
             net: items.reduce((s, e) => s + (e.kind === "income" ? e.amount : -e.amount), 0),
         }));
     }, [entries]);
+
+    /* ─── 끌어 옮기기 ─────────────────────────────────────────── */
+    async function handleReorder(date: string, ids: number[]) {
+        const result = await dispatch(reqReorderLedgerEntries({ date, ids }));
+        // 낙관적으로 옮겨둔 자리는 되돌릴 수가 없다 — 실패하면 그 달을 다시 읽는다.
+        if (result.meta.requestStatus !== "fulfilled") dispatch(reqGetLedger(month));
+    }
+
+    const { dragId, dropTarget, rowProps, dayProps, consumeDragClick } =
+        useEntryDrag({ days, onDrop: handleReorder });
 
     /* ─── 시트 열고 닫기 ───────────────────────────────────────── */
     function changeKind(kind: LedgerKind, keep?: string) {
@@ -739,9 +751,18 @@ export default function LedgerPage() {
                 <section className={cn(CARD_CLS, "overflow-hidden")}>
                     <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-[#35332e]">
                         <h2 className={FIELD_LABEL_CLS}>내역</h2>
-                        {entries.length > 0 && (
-                            <span className="text-[11px] font-bold text-neutral-400">{entries.length}건</span>
-                        )}
+                        <div className="flex items-baseline gap-2">
+                            {/* 손잡이를 줄마다 붙이면 목록이 시끄러워진다 — 한 줄로 알린다 */}
+                            {entries.length > 1 && (
+                                <span className="text-[11px] font-bold text-neutral-300 dark:text-neutral-600">
+                                    <span className="sm:hidden">꾹 눌러 끌기</span>
+                                    <span className="hidden sm:inline">꾹 눌러 끌면 순서·날짜가 바뀝니다</span>
+                                </span>
+                            )}
+                            {entries.length > 0 && (
+                                <span className="text-[11px] font-bold text-neutral-400">{entries.length}건</span>
+                            )}
+                        </div>
                     </div>
 
                     {loading ? (
@@ -762,7 +783,12 @@ export default function LedgerPage() {
                                 <div key={day.date}>
                                     <div
                                         id={`ledger-day-${day.date}`}
-                                        className="flex items-baseline justify-between gap-3 px-4 py-1.5 bg-[#faf9f7] dark:bg-[#1f1e1b] border-y border-neutral-100 dark:border-[#35332e] scroll-mt-20"
+                                        {...dayProps(day.date)}
+                                        className={cn(
+                                            "flex items-baseline justify-between gap-3 px-4 py-1.5 bg-[#faf9f7] dark:bg-[#1f1e1b] border-y border-neutral-100 dark:border-[#35332e] scroll-mt-20",
+                                            // 머리글 위에 놓으면 그 날 맨 위로 간다 — 그 사실을 색으로 알린다
+                                            dropTarget?.date === day.date && dropTarget.index === 0 && "bg-[#dcfce7] dark:bg-[#052e16]/60"
+                                        )}
                                     >
                                         <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 tabular-nums">
                                             {dayLabel(day.date)}
@@ -776,19 +802,32 @@ export default function LedgerPage() {
                                     </div>
 
                                     <div className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
-                                        {day.items.map(e => {
+                                        {day.items.map((e, i) => {
                                             const isIncome = e.kind === "income";
+                                            const lifted = dragId === e.id;
+                                            // 놓을 자리는 줄 사이의 선이다 — i 앞, 그리고 마지막이면 뒤에도.
+                                            const lineBefore = dropTarget?.date === day.date && dropTarget.index === i && i > 0;
+                                            const lineAfter =
+                                                dropTarget?.date === day.date &&
+                                                dropTarget.index === i + 1 &&
+                                                i === day.items.length - 1;
                                             return (
-                                                /* 줄 전체가 수정 진입점 — 작은 아이콘을 겨눌 필요가 없다 */
+                                                /* 줄 전체가 수정 진입점 — 작은 아이콘을 겨눌 필요가 없다.
+                                                   꾹 누르면 들려서 순서·날짜를 바꾼다(useEntryDrag). */
                                                 <button
                                                     key={e.id}
                                                     type="button"
-                                                    onClick={() => openEdit(e)}
+                                                    {...rowProps(e.id, day.date)}
+                                                    onClick={() => { if (!consumeDragClick()) openEdit(e); }}
                                                     className={cn(
-                                                        "w-full grid grid-cols-[auto_1fr_auto_auto] items-center gap-2.5 px-3 sm:px-4 py-2.5 min-h-[56px] text-left transition-colors",
-                                                        justAddedId === e.id
-                                                            ? "bg-[#dcfce7]/70 dark:bg-[#052e16]/40"
-                                                            : "hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
+                                                        "w-full grid grid-cols-[auto_1fr_auto_auto] items-center gap-2.5 px-3 sm:px-4 py-2.5 min-h-[56px] text-left transition-colors select-none",
+                                                        lineBefore && "shadow-[inset_0_2px_0_0_#16a34a]",
+                                                        lineAfter && "shadow-[inset_0_-2px_0_0_#16a34a]",
+                                                        lifted
+                                                            ? "opacity-45 bg-[#f5f0e8] dark:bg-[#2c2b27]"
+                                                            : justAddedId === e.id
+                                                                ? "bg-[#dcfce7]/70 dark:bg-[#052e16]/40"
+                                                                : "hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
                                                     )}
                                                     aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category, customCategories)} ${e.amount.toLocaleString("ko-KR")}원 수정`}
                                                 >

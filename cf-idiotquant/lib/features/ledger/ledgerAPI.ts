@@ -16,6 +16,8 @@ export interface LedgerEntry {
     updated_by?: string | null;
     updated_by_name?: string | null;
     updated_at?: number | null;
+    /** 같은 날 안에서 손으로 정한 순서. 작을수록 위. 0029 이전 줄은 null 이다. */
+    position?: number | null;
 }
 
 export interface NewLedgerEntry {
@@ -73,6 +75,11 @@ export const updateLedgerEntry = (owner: Owner, id: number, entry: NewLedgerEntr
 
 export const deleteLedgerEntry = (owner: Owner, id: number) =>
     ledgerRequest(`/user/ledger${q(`id=${id}`, own(owner))}`, "DELETE");
+
+/** "이 날의 순서는 이것이다". 같은 날 안에서 자리를 바꾼 것도, 다른 날에서
+ *  끌어온 것도 도착한 날의 목록으로는 똑같이 표현된다 — 그래서 부르는 곳도 하나다. */
+export const reorderLedgerEntries = (owner: Owner, date: string, ids: number[]) =>
+    ledgerRequest(`/user/ledger/reorder${q(`date=${date}`, own(owner))}`, "POST", { ids });
 
 /* 사용자가 만든 항목 — 칩으로 무엇을 보여줄지만 정한다. 지워도 과거 내역은 그대로 남는다. */
 export type { StoredCategory };

@@ -1,7 +1,7 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import {
-    getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry,
+    getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry, reorderLedgerEntries,
     getLedgerCategories, addLedgerCategory, renameLedgerCategory, deleteLedgerCategory,
     getLedgerAccess, createLedgerInvite,
     type LedgerEntry, type NewLedgerEntry, type LedgerAccess, type LedgerMember,
@@ -18,9 +18,13 @@ export function currentMonthKst(): string {
 const ownerOf = (getState: () => unknown) =>
     (getState() as { ledger: { activeOwner: string | null } }).ledger.activeOwner;
 
-/** 최신 날짜가 위. 같은 날은 나중에 넣은 것이 위로 온다 (워커 ORDER BY 와 같은 기준). */
+/** 최신 날짜가 위. 같은 날은 손으로 정한 순서(position)를 따르고, 그 다음이 id 다.
+ *  워커 ORDER BY 와 글자 그대로 같은 기준이어야 한다 — 다르면 저장 직후 화면과
+ *  다시 불러온 화면의 줄 순서가 달라진다. position 이 없던 시절 줄은 -id 로 센다. */
+const posOf = (e: LedgerEntry) => e.position ?? -e.id;
+
 const byRecent = (a: LedgerEntry, b: LedgerEntry) =>
-    b.entry_date.localeCompare(a.entry_date) || b.id - a.id;
+    b.entry_date.localeCompare(a.entry_date) || posOf(a) - posOf(b) || b.id - a.id;
 
 interface LedgerState {
     state: "init" | "pending" | "fulfilled" | "rejected";
@@ -108,6 +112,44 @@ export const ledgerSlice = createAppSlice({
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
+            }
+        ),
+
+        /**
+         * 끌어놓기 — "이 날의 순서는 이것이다" 하나만 보낸다.
+         * 같은 날 안에서 자리를 바꾼 것도, 다른 날에서 끌어온 것도 도착한 날의
+         * 목록으로는 똑같아서, 부르는 쪽도 받는 쪽도 구분할 일이 없다.
+         */
+        reqReorderLedgerEntries: create.asyncThunk(
+            async ({ date, ids }: { date: string; ids: number[] }, { getState }) => {
+                const result = await reorderLedgerEntries(ownerOf(getState), date, ids);
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
+            {
+                // 손을 떼는 순간 자리가 잡혀 있어야 한다. 응답을 기다리면 줄이 원래
+                // 자리로 튕겼다가 다시 옮겨가는 게 보인다.
+                pending: (state, action) => {
+                    state.error = null;
+                    const { date, ids } = action.meta.arg;
+                    state.entries = state.entries
+                        .map((e) => {
+                            const index = ids.indexOf(e.id);
+                            return index === -1 ? e : { ...e, entry_date: date, position: index };
+                        })
+                        .sort(byRecent);
+                },
+                // 워커가 그 날을 다시 읽어 준다 — 수정자까지 맞춰진 값으로 갈아끼운다.
+                fulfilled: (state, action) => {
+                    const moved = (action.payload?.data?.entries ?? []) as LedgerEntry[];
+                    if (moved.length === 0) return;
+                    const movedIds = new Set(moved.map((e) => e.id));
+                    state.entries = [...state.entries.filter((e) => !movedIds.has(e.id)), ...moved]
+                        .sort(byRecent);
+                },
+                // 되돌리기는 화면이 그 달을 다시 읽어서 한다 — 여기서 dispatch 하면
+                // 슬라이스가 자기 자신을 부르는 모양이 된다.
+                rejected: (state, action) => { state.error = action.error?.message ?? null; },
             }
         ),
 
@@ -319,6 +361,7 @@ export const ledgerSlice = createAppSlice({
 
 export const {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
+    reqReorderLedgerEntries,
     reqGetLedgerCategories, reqAddLedgerCategory, reqRenameLedgerCategory, reqDeleteLedgerCategory,
     setActiveOwner, clearLedgerInvite, reqGetLedgerAccess, reqCreateLedgerInvite,
 } = ledgerSlice.actions;
