@@ -60,6 +60,12 @@ function dayLabel(date: string) {
     return `${d}일 (${WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
 }
 
+/** epoch 초 → '8월 20일'. 워커는 UTC 로 도니 보는 사람 기준으로 9시간 당겨 읽는다. */
+function stampKst(sec: number) {
+    const d = new Date((sec + 9 * 60 * 60) * 1000);
+    return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`;
+}
+
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("ko-KR")}`;
 
@@ -144,6 +150,11 @@ export default function LedgerPage() {
 
     const thisMonth = currentMonthKst();
     const editing = editingId !== null;
+    const editingEntry = editingId === null ? null : entries.find(e => e.id === editingId) ?? null;
+
+    /* 기록자를 보여줄 이유는 "누가 넣었지"를 물을 사람이 있을 때뿐이다.
+       혼자 쓰는 가계부에서는 답이 언제나 나 하나라 줄만 늘어난다. */
+    const shared = activeOwner !== null || members.length > 0;
 
     useEffect(() => {
         if (status !== "authenticated") return;
@@ -1152,6 +1163,22 @@ export default function LedgerPage() {
                             <input id="f-memo" type="text" maxLength={40} placeholder="예: 삼성전자 반기 배당"
                                 value={fMemo} onChange={e => setFMemo(e.target.value)} className={CTL_CLS} />
                         </div>
+
+                        {/* 누가 적었고 누가 고쳤는가 — 함께 쓰는 가계부에서만.
+                            0028 이전 내역은 기록이 없어 줄 자체를 띄우지 않는다(빈칸도, 지어낸 이름도 두지 않는다). */}
+                        {shared && editingEntry?.created_by && (
+                            <div className="mb-3 pt-3 border-t border-neutral-100 dark:border-[#2c2b27] flex flex-col gap-0.5">
+                                <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
+                                    기록 {editingEntry.created_by_name ?? "알 수 없음"} · {stampKst(editingEntry.created_at)}
+                                </p>
+                                {/* 고친 적이 없으면 기록 줄과 같은 말이 된다 — 달라졌을 때만 보탠다. */}
+                                {editingEntry.updated_at != null && editingEntry.updated_at !== editingEntry.created_at && (
+                                    <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
+                                        수정 {editingEntry.updated_by_name ?? "알 수 없음"} · {stampKst(editingEntry.updated_at)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
                         {(formError ?? error) && (
                             <p role="alert" className="mb-3 text-xs font-bold text-red-600 dark:text-red-400">
