@@ -1,0 +1,219 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { BookmarkIcon, TrashIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import {
+    reqGetCalculatorRuns, reqAddCalculatorRun, reqDeleteCalculatorRun,
+    selectCalculatorRuns, selectCalculatorSaving, selectCalculatorError,
+} from "@/lib/features/calculator/calculatorSlice";
+import type { CalculatorRun } from "@/lib/features/calculator/calculatorAPI";
+import type { CalcMode } from "./modes";
+
+function cn(...inputs: (string | boolean | undefined | null)[]) {
+    return inputs.filter(Boolean).join(" ");
+}
+
+const MODE_LABEL: Record<CalcMode, string> = { simple: "간단", standard: "표준", expert: "전문" };
+
+/** epoch 초 → '8월 21일 14:03'. 워커는 UTC 로 도니 보는 사람 기준으로 당겨 읽는다. */
+function stampKst(sec: number) {
+    const d = new Date((sec + 9 * 60 * 60) * 1000);
+    const hh = String(d.getUTCHours()).padStart(2, "0");
+    const mm = String(d.getUTCMinutes()).padStart(2, "0");
+    return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${hh}:${mm}`;
+}
+
+/** 만원 단위 → '12억 3,400만원'. 계산기 본문의 표기와 같은 규칙이다. */
+function formatMan(valueInMan: number) {
+    if (!valueInMan || isNaN(valueInMan)) return "0원";
+    const sign = valueInMan < 0 ? "-" : "";
+    const abs = Math.abs(valueInMan);
+    const eok = Math.floor(abs / 10000);
+    const man = Math.floor(abs % 10000);
+    const parts = [eok > 0 && `${eok.toLocaleString()}억`, man > 0 && `${man.toLocaleString()}만`].filter(Boolean);
+    return `${sign}${parts.join(" ") || "0"}원`;
+}
+
+interface Props {
+    mode: CalcMode;
+    /** 지금 화면의 입력값과 결과 — 저장 버튼이 그대로 실어 보낸다. */
+    snapshot: () => {
+        inputs: Record<string, unknown>;
+        finalValue: number;
+        finalRate: number;
+        totalInvestment: number;
+    };
+    /** 불러오기 — 저장해둔 입력값과 단계를 화면에 되돌린다. */
+    onLoad: (inputs: Record<string, unknown>, mode: CalcMode) => void;
+}
+
+/**
+ * 저장해둔 계산.
+ *
+ * 계산기 자체는 로그인 없이 쓰는 화면이라, 이 칸만 로그인한 사람에게 열린다.
+ * 안 열린 사람에게도 무엇이 있는지는 보여준다 — 없는 척하면 기능이 있는 줄도 모른다.
+ */
+export default function CalculatorHistory({ mode, snapshot, onLoad }: Props) {
+    const { status } = useSession();
+    const dispatch = useAppDispatch();
+
+    const runs = useAppSelector(selectCalculatorRuns);
+    const saving = useAppSelector(selectCalculatorSaving);
+    const error = useAppSelector(selectCalculatorError);
+
+    const [label, setLabel] = useState("");
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        if (status === "authenticated") dispatch(reqGetCalculatorRuns());
+    }, [dispatch, status]);
+
+    async function handleSave() {
+        const { inputs, finalValue, finalRate, totalInvestment } = snapshot();
+        const result = await dispatch(reqAddCalculatorRun({
+            label: label.trim(), mode, inputs, finalValue, finalRate, totalInvestment,
+        }));
+        if (result.meta.requestStatus !== "fulfilled") return;
+        setLabel("");
+        setOpen(true);
+    }
+
+    function handleLoad(run: CalculatorRun) {
+        try {
+            onLoad(JSON.parse(run.inputs), run.mode);
+        } catch {
+            // 저장된 JSON 이 깨졌다면 되돌릴 방법이 없다. 조용히 넘기지 않고 지우게 둔다.
+        }
+    }
+
+    const shell = (children: React.ReactNode) => (
+        <div className="bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <BookmarkIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                <h3 className="text-xs sm:text-sm font-black tracking-tight text-neutral-900 dark:text-neutral-50">
+                    저장한 계산
+                </h3>
+                {runs.length > 0 && (
+                    <span className="text-[10px] font-bold text-neutral-400">{runs.length}개</span>
+                )}
+            </div>
+            {children}
+        </div>
+    );
+
+    if (status === "loading") {
+        return shell(<div className="h-9 bg-[#faf9f7] dark:bg-[#1f1e1b] rounded-xl animate-pulse" />);
+    }
+
+    if (status !== "authenticated") {
+        return shell(
+            <>
+                <p className="text-[11px] sm:text-xs font-semibold text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                    로그인하면 지금 조건을 이름 붙여 저장하고,
+                    <br />나중에 그대로 불러와 비교할 수 있습니다.
+                </p>
+                <Link
+                    href="/login?callbackUrl=/calculator"
+                    className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[11px] font-black transition-colors"
+                >
+                    카카오로 로그인
+                </Link>
+            </>
+        );
+    }
+
+    return shell(
+        <>
+            <div className="flex gap-1.5">
+                <input
+                    type="text"
+                    maxLength={30}
+                    placeholder="이름 (선택) — 예: 공격적 10%"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+                    className="flex-1 min-w-0 bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-300 dark:border-[#3a3834] rounded-xl px-3 py-2 text-[11px] sm:text-xs font-bold text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#16a34a] transition-shadow"
+                />
+                <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-3.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[11px] font-black shrink-0 disabled:opacity-50 transition-colors"
+                >
+                    {saving ? "저장 중…" : "저장"}
+                </button>
+            </div>
+
+            {error && (
+                <p role="alert" className="mt-2 text-[11px] font-bold text-rose-600 dark:text-rose-400">{error}</p>
+            )}
+
+            {runs.length === 0 ? (
+                <p className="mt-3 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
+                    아직 저장한 계산이 없습니다.
+                </p>
+            ) : (
+                <>
+                    {/* 목록이 길어지면 이 칸이 화면을 다 먹는다 — 처음엔 세 줄만 편다. */}
+                    <ul className="mt-3 space-y-1.5">
+                        {(open ? runs : runs.slice(0, 3)).map((run) => (
+                            <li
+                                key={run.id}
+                                className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e]"
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[11px] font-black text-neutral-900 dark:text-neutral-50 truncate">
+                                            {run.label || stampKst(run.created_at)}
+                                        </span>
+                                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 shrink-0">
+                                            {MODE_LABEL[run.mode] ?? run.mode}
+                                        </span>
+                                    </div>
+                                    <span className={cn(
+                                        "block text-[10px] font-bold tabular-nums mt-0.5",
+                                        run.final_value < 0 ? "text-rose-600 dark:text-rose-400" : "text-[#16a34a]"
+                                    )}>
+                                        {run.final_value < 0 ? "고갈" : "남음"} {formatMan(run.final_value)}
+                                    </span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleLoad(run)}
+                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-[#16a34a] hover:bg-white dark:hover:bg-[#242320] transition-colors shrink-0"
+                                    aria-label={`${run.label || stampKst(run.created_at)} 불러오기`}
+                                >
+                                    <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => dispatch(reqDeleteCalculatorRun(run.id))}
+                                    disabled={saving}
+                                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-white dark:hover:bg-[#242320] transition-colors shrink-0"
+                                    aria-label={`${run.label || stampKst(run.created_at)} 삭제`}
+                                >
+                                    <TrashIcon className="w-3.5 h-3.5" />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+
+                    {runs.length > 3 && (
+                        <button
+                            type="button"
+                            onClick={() => setOpen(!open)}
+                            className="mt-2 text-[10px] font-black text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                        >
+                            {open ? "접기" : `${runs.length - 3}개 더 보기`}
+                        </button>
+                    )}
+                </>
+            )}
+        </>
+    );
+}

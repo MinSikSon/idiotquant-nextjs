@@ -22,6 +22,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import ResultChart from "./ResultChart";
+import {
+    CALC_MODES, isCalcMode, maskByMode, assumptionsOf,
+    showsGrowthRates, showsBasicToggles, showsAdvancedToggles, showsTable, showsLayoutTools,
+    type CalcMode,
+} from "./modes";
+import CalculatorHistory from "./CalculatorHistory";
 
 function cn(...inputs: (string | boolean | undefined | null)[]) {
     return inputs.filter(Boolean).join(" ");
@@ -110,6 +116,7 @@ const DEFAULT_INPUTS: CalcInputs = {
 
 const LOCAL_STORAGE_KEY = "asset_lifetime_calc_inputs";
 const LAYOUT_STORAGE_KEY = "asset_lifetime_layout_order_v1";
+const MODE_STORAGE_KEY = "asset_lifetime_mode_v1";
 
 const DEFAULT_LEFT_LAYOUT = ["core-investment", "life-cycle", "incremental-flows"];
 const DEFAULT_RIGHT_LAYOUT = ["summary-card", "callout-tips", "chart-view", "table-report"];
@@ -170,12 +177,14 @@ const parseInputsFromParamsOrStorage = (params: Pick<URLSearchParams, "get">): C
     };
 };
 
-const serializeInputs = (inputs: CalcInputs) => {
+const serializeInputs = (inputs: CalcInputs, mode: CalcMode) => {
     const params = new URLSearchParams();
     Object.entries(inputs).forEach(([key, value]) => {
         if (typeof value === "number" && !Number.isFinite(value)) return;
         params.set(key, String(value));
     });
+    // 단계가 곧 계산 조건이다 — 안 실으면 링크를 받은 사람이 다른 숫자를 본다.
+    params.set("mode", mode);
     return params.toString();
 };
 
@@ -217,6 +226,8 @@ function CalculatorContent() {
     const inputFrameRef = useRef<number | null>(null);
     const [copied, setCopied] = useState(false);
     const [inputs, setInputs] = useState<CalcInputs>(DEFAULT_INPUTS);
+    /** 무엇을 보여줄지와 무엇으로 계산할지를 함께 정한다 (modes.ts). */
+    const [mode, setMode] = useState<CalcMode>("standard");
 
     const [leftOrder, setLeftOrder] = useState<string[]>(DEFAULT_LEFT_LAYOUT);
     const [rightOrder, setRightOrder] = useState<string[]>(DEFAULT_RIGHT_LAYOUT);
@@ -238,8 +249,17 @@ function CalculatorContent() {
         if (didParseInitialUrlRef.current) return;
         didParseInitialUrlRef.current = true;
 
-        const parsedInputs = parseInputsFromParamsOrStorage(new URLSearchParams(window.location.search));
+        const params = new URLSearchParams(window.location.search);
+        const parsedInputs = parseInputsFromParamsOrStorage(params);
         latestInputsRef.current = parsedInputs;
+
+        const urlMode = params.get("mode");
+        if (isCalcMode(urlMode)) {
+            setMode(urlMode);
+        } else {
+            const savedMode = localStorage.getItem(MODE_STORAGE_KEY);
+            if (isCalcMode(savedMode)) setMode(savedMode);
+        }
         setInputs((previousInputs) => areInputsEqual(previousInputs, parsedInputs) ? previousInputs : parsedInputs);
 
         if (typeof window !== "undefined") {
@@ -278,6 +298,17 @@ function CalculatorContent() {
     }, [leftOrder, rightOrder]);
 
     useEffect(() => {
+        try {
+            localStorage.setItem(MODE_STORAGE_KEY, mode);
+        } catch (e) {
+            console.error("Failed to save mode to localStorage", e);
+        }
+        // 화면에서 사라진 기능은 켜진 채로 두지 않는다 — 간단/표준에서 순서 바꾸기가
+        // 켜져 있으면 잡히지도 않는 손잡이만 남는다.
+        if (!showsLayoutTools(mode)) setIsReorderEnabled(false);
+    }, [mode]);
+
+    useEffect(() => {
         return () => {
             if (inputFrameRef.current !== null) {
                 cancelAnimationFrame(inputFrameRef.current);
@@ -306,7 +337,14 @@ function CalculatorContent() {
         setRightOrder(DEFAULT_RIGHT_LAYOUT);
     };
 
+    /* 이 단계에서 실제로 쓰이는 값. 안 보이는 설정이 결과를 바꾸지 않도록,
+       화면에 없는 항목은 여기서 꺼진 값으로 덮인다. 원본(inputs)은 그대로 남아
+       전문으로 돌아오면 켜뒀던 설정이 살아 있다. */
+    const effective = useMemo(() => maskByMode(inputs, mode), [inputs, mode]);
+    const assumptions = useMemo(() => assumptionsOf(mode), [mode]);
+
     const proficiency = useMemo(() => {
+        const inputs = effective;   // 숙련도도 "실제로 적용된 것" 만 센다
         let score = 0;
         const reasons: string[] = [];
 
@@ -357,7 +395,7 @@ function CalculatorContent() {
             level = 3;
             label = "전략가";
             color = "text-[#15803d] bg-[#f0fdf4] border-[#bbf7d0] dark:text-[#86efac] dark:bg-[#052e16]/40 dark:border-[#14532d]/60";
-            iconColor = "text-[#f0fdf4]0 dark:text-[#16a34a]";
+            iconColor = "text-[#16a34a] dark:text-[#16a34a]";
             desc = "명목 화폐의 함정을 벗어나 실질 가치(구매력)와 은퇴 후 숨은 마찰 비용을 심도 있게 계산하는 기획자입니다.";
         } else if (clamped >= 30) {
             level = 2;
@@ -368,7 +406,7 @@ function CalculatorContent() {
         }
 
         return { score: clamped, level, label, color, iconColor, desc, reasons };
-    }, [inputs]);
+    }, [effective]);
 
     const results = useMemo(() => {
         const {
@@ -376,7 +414,7 @@ function CalculatorContent() {
             interestRate, contributions, contributionGrowthRate,
             monthlyExpense, expenseGrowthRate, taxRate, applyTax, realValueMode,
             applyIsaIsaGold, applyInsurancePremium, applyNationalPension
-        } = inputs;
+        } = effective;
 
         let currentBalance = investmentAmount;
         let totalInvested = investmentAmount;
@@ -484,12 +522,12 @@ function CalculatorContent() {
             finalRateOfReturn: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
             chartData: snapshots,
         };
-    }, [inputs]);
+    }, [effective]);
 
     const handleShareLink = async () => {
         try {
             const shareUrl = new URL(window.location.href);
-            shareUrl.search = serializeInputs(inputs);
+            shareUrl.search = serializeInputs(inputs, mode);
             await navigator.clipboard.writeText(shareUrl.toString());
             setCopied(true);
             setTimeout(() => setCopied(false), 2500);
@@ -532,7 +570,8 @@ function CalculatorContent() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center sm:justify-end">
+                    <div className={cn("grid gap-1.5 w-full sm:flex sm:w-auto sm:items-center sm:justify-end", showsLayoutTools(mode) ? "grid-cols-3" : "grid-cols-1")}>
+                        {showsLayoutTools(mode) && (
                         <button
                             onClick={() => setIsReorderEnabled(!isReorderEnabled)}
                             className={cn(
@@ -545,7 +584,9 @@ function CalculatorContent() {
                             <Bars3Icon className="w-3.5 h-3.5 shrink-0" />
                             <span>{isReorderEnabled ? "순서 ON" : "순서 OFF"}</span>
                         </button>
+                        )}
 
+                        {showsLayoutTools(mode) && (
                         <button
                             onClick={resetLayout}
                             className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-[#faf9f7] dark:bg-[#242320] hover:bg-neutral-200 dark:hover:bg-[#242320] text-neutral-700 dark:text-neutral-300 transition-colors border border-neutral-200 dark:border-[#3a3834]/60 shadow-xs text-center leading-tight sm:leading-none"
@@ -553,6 +594,7 @@ function CalculatorContent() {
                             <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" />
                             <span>위치 초기화</span>
                         </button>
+                        )}
 
                         <button
                             onClick={handleShareLink}
@@ -567,6 +609,37 @@ function CalculatorContent() {
                             <span>{copied ? "복사 완료!" : "리포트 공유"}</span>
                         </button>
                     </div>
+                </div>
+
+                {/* 복잡도 — 이 화면에서 가장 먼저 하는 선택이라 맨 위에 둔다.
+                    무엇을 보여줄지와 무엇으로 계산할지를 함께 정한다(modes.ts). */}
+                <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl">
+                        {CALC_MODES.map((m) => (
+                            <button
+                                key={m.key}
+                                onClick={() => setMode(m.key)}
+                                aria-pressed={mode === m.key}
+                                className={cn(
+                                    "py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black transition-colors",
+                                    mode === m.key
+                                        ? "bg-[#16a34a] text-white"
+                                        : "text-neutral-500 dark:text-neutral-400 hover:bg-[#faf9f7] dark:hover:bg-[#1a1915]"
+                                )}
+                            >
+                                {m.label}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-[11px] sm:text-xs font-semibold text-neutral-500 dark:text-neutral-400 px-1">
+                        {CALC_MODES.find((m) => m.key === mode)?.hint}
+                    </p>
+                    {/* 안 보이는 설정이 결과를 바꾸지 않게 했으니, 무엇을 대신 정해뒀는지는 말해야 한다. */}
+                    {assumptions.length > 0 && (
+                        <p className="text-[10px] sm:text-[11px] font-bold text-neutral-400 dark:text-neutral-500 px-1">
+                            이 단계의 가정 — {assumptions.join(" · ")}
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
@@ -587,7 +660,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "core-investment"} />
                                         <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}>
-                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10 transition-all duration-200">
 
                                                 {/* 모바일 터치 피드백을 위한 touch-action: none 및 넉넉한 터치 패딩 공간 확보 */}
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
@@ -615,7 +688,7 @@ function CalculatorContent() {
                                                     <InputGroup label="초기 투자 시드" tooltip="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-[#16a34a] dark:text-[#16a34a]">
                                                         <div className="flex gap-2">
                                                             <div className="relative flex-1">
-                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 focus:ring-2 focus:ring-[#f0fdf4]0 outline-none transition-shadow" />
+                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 focus:ring-2 focus:ring-[#16a34a] outline-none transition-shadow" />
                                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 text-[11px] sm:text-xs font-bold">만원</div>
                                                             </div>
                                                             <StepButtons value={inputs.investmentAmount} step={500} min={0} max={100000000} onChange={(v) => updateInput("investmentAmount", v)} />
@@ -635,6 +708,7 @@ function CalculatorContent() {
                                                     showQuickButtons={true}
                                                 />
 
+                                                {showsBasicToggles(mode) && (
                                                 <div className="p-3 sm:p-4 bg-[#faf9f7] dark:bg-[#242320]/30 rounded-xl sm:rounded-2xl border border-neutral-200 dark:border-[#35332e] space-y-2 sm:space-y-3">
                                                     <span className="text-[11px] sm:text-xs font-black text-neutral-800 dark:text-neutral-200 block px-1">과세 및 헷지 변수</span>
                                                     <div className="flex flex-col gap-0.5">
@@ -642,7 +716,9 @@ function CalculatorContent() {
                                                         <ToggleButton checked={inputs.realValueMode} onChange={(v) => updateInput("realValueMode", v)} label="물가상승 반영 (실질가치)" tooltip="연 2.5% 인플레이션을 반영하여 미래 금액을 현재 가치로 조정합니다." />
                                                     </div>
                                                 </div>
+                                                )}
 
+                                                {showsAdvancedToggles(mode) && (
                                                 <div className="p-3 sm:p-4 bg-[#f0fdf4]/30 dark:bg-[#052e16]/10 rounded-xl sm:rounded-2xl border border-[#dcfce7] dark:border-[#14532d]/30 space-y-2 sm:space-y-3">
                                                     <span className="text-[11px] sm:text-xs font-black text-[#15803d] dark:text-[#16a34a] block px-1 flex items-center gap-1.5"><ShieldCheckIcon className="w-3.5 h-3.5 shrink-0" /> 실전 정밀 검증 패널티 & 혜택</span>
                                                     <div className="flex flex-col gap-0.5">
@@ -651,6 +727,7 @@ function CalculatorContent() {
                                                         <ToggleButton checked={inputs.applyNationalPension} onChange={(v) => updateInput("applyNationalPension", v)} label="만 65세 국민연금 수령 (월 +120만)" tooltip="연금 수령 나이 도달 시 매달 실질 가치 기준의 안정 자금이 계좌에 주입됩니다." />
                                                     </div>
                                                 </div>
+                                                )}
                                             </div>
                                         </SectionWrapper>
                                     </Reorder.Item>
@@ -670,7 +747,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "life-cycle"} />
                                         <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}>
-                                            <div className="space-y-4 sm:space-y-5 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-5 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10 transition-all duration-200">
 
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                     <div
@@ -717,7 +794,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "incremental-flows"} />
                                         <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}>
-                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10 transition-all duration-200">
 
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                     <div
@@ -743,11 +820,13 @@ function CalculatorContent() {
                                                 <div className="space-y-3 sm:space-y-4 pt-6">
                                                     <InputGroup label="초기 매월 저축액" tooltip="은퇴 전 근로 기간 동안 매달 투자 계좌에 적립할 원금입니다." value={formatKrw(inputs.contributions)}>
                                                         <div className="flex gap-2">
-                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#f0fdf4]0 transition-shadow" />
+                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#16a34a] transition-shadow" />
                                                             <StepButtons value={inputs.contributions} step={50} min={0} max={5000} onChange={(v) => updateInput("contributions", v)} />
                                                         </div>
                                                     </InputGroup>
+                                                    {showsGrowthRates(mode) && (
                                                     <PercentRateSlider label="복리 저축 매년 증액률" tooltip="연봉 상승을 반영해 매년 월 적립액을 복리로 늘려나가는 엔진입니다." value={inputs.contributionGrowthRate} min={0} max={15} step={0.1} onChange={(v) => updateInput("contributionGrowthRate", v)} accentColor="blue" />
+                                                    )}
                                                 </div>
                                                 <div className="h-px bg-[#faf9f7] dark:bg-[#242320]" />
                                                 <div className="space-y-3 sm:space-y-4">
@@ -757,7 +836,9 @@ function CalculatorContent() {
                                                             <StepButtons value={inputs.monthlyExpense} step={50} min={0} max={5000} onChange={(v) => updateInput("monthlyExpense", v)} />
                                                         </div>
                                                     </InputGroup>
+                                                    {showsGrowthRates(mode) && (
                                                     <PercentRateSlider label="매년 물가 연동 지출 상승률" tooltip="인플레이션에 의해 은퇴 후 생활비 지출이 매년 늘어나는 현상을 반영합니다." value={inputs.expenseGrowthRate} min={0} max={15} step={0.1} onChange={(v) => updateInput("expenseGrowthRate", v)} accentColor="rose" />
+                                                    )}
                                                 </div>
                                             </div>
                                         </SectionWrapper>
@@ -784,7 +865,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "summary-card"} />
-                                        <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-neutral-950 border-neutral-800 dark:bg-[#242320] dark:border-[#35332e]/80 text-white group/card border-t-4 group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-neutral-950 to-rose-950/30")}>
+                                        <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-neutral-950 border-neutral-800 dark:bg-[#242320] dark:border-[#35332e]/80 text-white group/card border-t-4 group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-neutral-950 to-rose-950/30")}>
 
                                             <div className="absolute right-4 top-4 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -798,7 +879,7 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all text-neutral-300",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-neutral-900 border-neutral-700 text-[#16a34a] ring-1 ring-[#f0fdf4]0/30 shadow-xs"
+                                                            ? "cursor-grab active:cursor-grabbing bg-neutral-900 border-neutral-700 text-[#16a34a] ring-1 ring-[#16a34a]/30 shadow-xs"
                                                             : "opacity-25 bg-neutral-900/40 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
@@ -856,7 +937,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "callout-tips"} />
-                                        <div className="relative group/card border-t-4 border-transparent group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10 transition-all duration-200 rounded-xl sm:rounded-[2rem] pt-2">
+                                        <div className="relative group/card border-t-4 border-transparent group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10 transition-all duration-200 rounded-xl sm:rounded-[2rem] pt-2">
 
                                             <div className="absolute right-3 -top-2 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -870,7 +951,7 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-[#242320] text-[#16a34a] dark:text-[#16a34a] border-neutral-200 dark:border-[#35332e] shadow-xs ring-1 ring-[#f0fdf4]0/30"
+                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-[#242320] text-[#16a34a] dark:text-[#16a34a] border-neutral-200 dark:border-[#35332e] shadow-xs ring-1 ring-[#16a34a]/30"
                                                             : "opacity-0 pointer-events-none"
                                                     )}
                                                 >
@@ -904,7 +985,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "chart-view"} />
-                                        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10 transition-all duration-200">
+                                        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10 transition-all duration-200">
 
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -939,6 +1020,7 @@ function CalculatorContent() {
                                 );
                             }
                             if (panelId === "table-report") {
+                                if (!showsTable(mode)) return null;
                                 return (
                                     <Reorder.Item
                                         key="table-report"
@@ -951,7 +1033,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "table-report"} />
-                                        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#f0fdf4]0 group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#f0fdf4]0/10 transition-all duration-200">
+                                        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#16a34a] group-active/item:ring-4 group-active/item:ring-[#16a34a]/20 dark:group-active/item:ring-[#16a34a]/10 transition-all duration-200">
 
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -1041,6 +1123,27 @@ function CalculatorContent() {
                             return null;
                         })}
                     </Reorder.Group>
+
+                    {/* 순서 바꾸기 대상에 넣지 않는다 — 저장 목록은 리포트가 아니라 도구다. */}
+                    <div className="lg:col-span-7 lg:col-start-6">
+                        <CalculatorHistory
+                            mode={mode}
+                            snapshot={() => ({
+                                // 저장하는 것은 화면에 입력한 원본이다. 단계는 따로 실으므로
+                                // 불러왔을 때 그때의 가정으로 똑같이 다시 계산된다.
+                                inputs: { ...inputs },
+                                finalValue: results.finalValue,
+                                finalRate: results.finalRateOfReturn,
+                                totalInvestment: results.totalInvestment,
+                            })}
+                            onLoad={(saved, savedMode) => {
+                                const next = { ...DEFAULT_INPUTS, ...(saved as Partial<CalcInputs>) };
+                                latestInputsRef.current = next;
+                                setInputs(next);
+                                setMode(savedMode);
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -1051,8 +1154,8 @@ function DragIndicatorOverlay({ desktopType, isEnabled }: { desktopType: string;
     if (!isEnabled) return null;
     return (
         <div className="absolute inset-x-0 -top-5 bottom-full h-5 pointer-events-none flex flex-col items-center justify-center opacity-0 group-active/item:opacity-100 transition-opacity duration-150 z-50">
-            <div className="w-full border-t-2 border-dashed border-[#f0fdf4]0/80 dark:border-[#16a34a]/80" />
-            <div className="absolute bg-[#16a34a] text-white dark:bg-[#f0fdf4]0 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-[#16a34a]/20 whitespace-nowrap border border-[#16a34a]/20">
+            <div className="w-full border-t-2 border-dashed border-[#16a34a]/80 dark:border-[#16a34a]/80" />
+            <div className="absolute bg-[#16a34a] text-white dark:bg-[#16a34a] text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-[#16a34a]/20 whitespace-nowrap border border-[#16a34a]/20">
                 <ChevronUpIcon className="w-3 h-3 animate-bounce" />
                 <span className="hidden lg:inline">{desktopType}</span>
                 <span className="inline lg:hidden">전체 리스트 상하 순서 교체</span>
@@ -1173,7 +1276,7 @@ function PercentRateSlider({
     };
 
     const accentColors = {
-        blue: "accent-[#16a34a] dark:accent-[#f0fdf4]0",
+        blue: "accent-[#16a34a] dark:accent-[#16a34a]",
         rose: "accent-rose-600 dark:accent-rose-500"
     };
 
