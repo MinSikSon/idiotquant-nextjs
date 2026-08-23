@@ -1,12 +1,12 @@
-import type { CalcMode } from "@/app/(calculator)/calculator/modes";
+import type { Detail } from "@/app/(calculator)/calculator/calc";
 
 /** 저장해둔 계산 한 줄. inputs 는 워커가 건드리지 않고 그대로 돌려주는 JSON 문자열이다. */
 export interface CalculatorRun {
     id: number;
     label: string | null;
-    mode: CalcMode;
+    mode: Detail;
     inputs: string;
-    final_value: number;        // 만원. 목표 나이에 남은 자산
+    final_value: number;        // 만원. 만기 평가금액
     final_rate: number;         // %
     total_investment: number;   // 만원
     created_at: number;
@@ -14,7 +14,7 @@ export interface CalculatorRun {
 
 export interface NewCalculatorRun {
     label?: string;
-    mode: CalcMode;
+    mode: Detail;
     inputs: Record<string, unknown>;
     finalValue: number;
     finalRate: number;
