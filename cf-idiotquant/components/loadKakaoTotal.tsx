@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef } from "react";
 
-import { getCookie, clearCookie } from "./util";
+import { getCookie, clearCookie } from "@/lib/utils/cookies";
 import { selectKakaoTatalState, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getCloudFlareUserInfo, selectCloudflareUserInfo } from "@/lib/features/cloudflare/cloudflareSlice";

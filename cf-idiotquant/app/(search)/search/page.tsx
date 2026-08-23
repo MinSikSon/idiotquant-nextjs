@@ -12,7 +12,7 @@ function SearchRedirect() {
         router.replace(ticker ? `/analyze?ticker=${encodeURIComponent(ticker)}` : '/analyze');
     }, [router, searchParams]);
     return (
-        <div className="flex items-center justify-center min-h-screen bg-[#fcfaf7] dark:bg-[#1a1915]">
+        <div className="flex items-center justify-center min-h-screen bg-[#fcfaf7] dark:bg-surface-dark-canvas">
             <Loader2 className="animate-spin text-[#16a34a]" size={24} />
         </div>
     );
@@ -21,7 +21,7 @@ function SearchRedirect() {
 export default function SearchPage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-[#fcfaf7] dark:bg-[#1a1915]">
+            <div className="flex items-center justify-center min-h-screen bg-[#fcfaf7] dark:bg-surface-dark-canvas">
                 <Loader2 className="animate-spin text-[#16a34a]" size={24} />
             </div>
         }>

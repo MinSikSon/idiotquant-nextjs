@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils";
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
   "flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px] border text-xs font-bold transition-colors " +
-  "bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] " +
-  "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-[#2c2b27] " +
+  "bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border " +
+  "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 
 export function PageHeader({
@@ -39,7 +39,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "bg-white dark:bg-[#1f1e1b] border-t-[3px] border-t-[#16a34a] border-b border-neutral-200 dark:border-[#3a3834]",
+        "bg-white dark:bg-surface-dark border-t-[3px] border-t-[#16a34a] border-b border-neutral-200 dark:border-surface-dark-border",
         className
       )}
     >
@@ -79,7 +79,7 @@ export function ContextBar({
   containerClassName?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1f1e1b] border-t-[3px] border-t-[#16a34a] border-b border-neutral-100 dark:border-[#35332e]/60">
+    <div className="bg-white dark:bg-surface-dark border-t-[3px] border-t-[#16a34a] border-b border-neutral-100 dark:border-border-subtle-dark/60">
       <div className={cn(containerClassName, "py-2.5 flex items-center justify-between gap-2")}>
         <div className="flex items-center gap-1.5 min-w-0">
           {emoji && <span className="text-[11px] leading-none shrink-0" aria-hidden>{emoji}</span>}

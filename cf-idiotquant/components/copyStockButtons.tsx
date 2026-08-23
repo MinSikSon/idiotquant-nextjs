@@ -73,7 +73,7 @@ async function writeClipboard(text: string): Promise<boolean> {
 }
 
 const BTN_CLS =
-  "inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 dark:border-[#35332e] dark:bg-[#242320] dark:hover:bg-[#2c2b27]";
+  "inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:hover:bg-surface-dark-hover";
 
 export function CopyStockButtons({ rows, label, className }: { rows: CopyStock[]; label?: string; className?: string }) {
   const [copied, setCopied] = useState<null | "names" | "details">(null);

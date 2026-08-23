@@ -60,7 +60,7 @@ const RESULT_TONE_CLS: Record<string, string> = {
   green: "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 dark:text-[#4ade80]",
   amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
   red: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
-  neutral: "bg-neutral-100 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400",
+  neutral: "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
 };
 
 function StatusBadge({ lr }: { lr?: LastResult }) {
@@ -77,7 +77,7 @@ function StatusBadge({ lr }: { lr?: LastResult }) {
 
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#242320] px-3 py-2.5">
+    <div className="rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card px-3 py-2.5">
       <div className="flex items-center gap-1.5 text-neutral-400 dark:text-neutral-500 mb-1">
         {icon}
         <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
@@ -129,8 +129,8 @@ export default function TradingActivityPanel({
       <div className={cn(
         "flex items-center gap-3 rounded-xl border px-4 py-3 mb-4",
         open
-          ? "border-[#86efac] dark:border-[#166534] bg-[#f0fdf4] dark:bg-[#14532d]/20"
-          : "border-neutral-200 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#242320]"
+          ? "border-brand-light-hover dark:border-[#166534] bg-[#f0fdf4] dark:bg-[#14532d]/20"
+          : "border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card"
       )}>
         <span className="relative flex h-2.5 w-2.5 shrink-0">
           {open && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16a34a] opacity-60" />}
@@ -145,7 +145,7 @@ export default function TradingActivityPanel({
         {onRefresh && (
           <button
             onClick={onRefresh}
-            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-white dark:bg-[#1f1e1b] border border-neutral-200 dark:border-[#35332e] hover:border-[#16a34a]/50 transition-colors"
+            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-white dark:bg-surface-dark border border-neutral-200 dark:border-border-subtle-dark hover:border-[#16a34a]/50 transition-colors"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
             새로고침
@@ -166,10 +166,10 @@ export default function TradingActivityPanel({
         <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">현재 매매 대상</p>
         <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#35332e] mb-4">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark mb-4">
         <table className="w-full text-sm text-left min-w-[500px]">
           <thead>
-            <tr className="bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e]">
+            <tr className="bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark">
               {["종목", "그룹", "상태", "NCAV", "예산(토큰)"].map((h, i) => (
                 <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
               ))}
@@ -184,7 +184,7 @@ export default function TradingActivityPanel({
                 const grp = s.group_id ? gmap.get(s.group_id) : undefined;
                 const ncav = Number(s.ncavRatio);
                 return (
-                  <tr key={`${s.symbol}-${i}`} className="hover:bg-[#faf9f7] dark:hover:bg-[#242320]/50">
+                  <tr key={`${s.symbol}-${i}`} className="hover:bg-surface-canvas dark:hover:bg-surface-dark-card/50">
                     <td className="px-3 py-2">
                       <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate max-w-[120px]">{nm}</p>
                       {nm !== s.symbol && <p className="text-[10px] text-neutral-400 font-mono">{s.symbol}</p>}
@@ -207,10 +207,10 @@ export default function TradingActivityPanel({
 
       {/* 최근 자동 체결 */}
       <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a] mb-2">최근 자동 체결</p>
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#35332e]">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
         <table className="w-full text-sm text-left min-w-[460px]">
           <thead>
-            <tr className="bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e]">
+            <tr className="bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark">
               {["시각", "종목", "구분", "수량", "체결가"].map((h, i) => (
                 <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
               ))}
@@ -228,7 +228,7 @@ export default function TradingActivityPanel({
                 const code = country === "US" ? (l.symbol ?? "") : (l.stock_code ?? "");
                 const ts = Number.isFinite(l.ts) ? new Date(l.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
                 return (
-                  <tr key={`${code}-${l.ts}-${i}`} className="hover:bg-[#faf9f7] dark:hover:bg-[#242320]/50">
+                  <tr key={`${code}-${l.ts}-${i}`} className="hover:bg-surface-canvas dark:hover:bg-surface-dark-card/50">
                     <td className="px-3 py-2 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">{ts}</td>
                     <td className="px-3 py-2">
                       <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate max-w-[120px]">{name}</p>

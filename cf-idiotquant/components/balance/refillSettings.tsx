@@ -24,7 +24,7 @@ function FlowNode({ label, value, sub, accent }: { label: string; value: string;
             "flex-1 min-w-0 rounded-xl border px-3 py-2.5 flex flex-col gap-0.5 " +
             (accent
                 ? "border-[#bbf7d0] dark:border-[#166534]/60 bg-[#f0fdf4] dark:bg-[#052e16]/20"
-                : "border-neutral-200/70 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1f1e1b]")
+                : "border-neutral-200/70 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark")
         }>
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{label}</span>
             <span className={"text-sm font-black tabular-nums truncate " + (accent ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-800 dark:text-neutral-100")}>{value}</span>
@@ -73,7 +73,7 @@ export default function RefillSettings({
             </div>
 
             {/* 월 예산 조절 */}
-            <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl p-3.5">
+            <div className="bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl p-3.5">
                 <div className="flex items-center gap-1.5 mb-1">
                     <Coins size={13} className="text-[#16a34a]" />
                     <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">월 예산 (총 리필량)</span>
@@ -92,7 +92,7 @@ export default function RefillSettings({
                             value={budget}
                             onChange={(e) => setBudget(e.target.value)}
                             disabled={!isMaster || !data.has_account}
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 tabular-nums outline-none focus:border-[#16a34a] disabled:opacity-50"
+                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 tabular-nums outline-none focus:border-[#16a34a] disabled:opacity-50"
                         />
                     </div>
                     <button

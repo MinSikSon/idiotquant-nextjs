@@ -18,7 +18,7 @@ function CountryToggle({ country, onChange }: { country: Country; onChange: (c: 
     { id: "us", label: "미국", flag: "🇺🇸" },
   ];
   return (
-    <div className="flex items-center gap-1 bg-[#faf9f7] dark:bg-[#35332e] p-1 rounded-xl">
+    <div className="flex items-center gap-1 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl">
       {items.map(it => (
         <button
           key={it.id}
@@ -26,7 +26,7 @@ function CountryToggle({ country, onChange }: { country: Country; onChange: (c: 
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap",
             country === it.id
-              ? "bg-white dark:bg-[#1a1915] text-neutral-950 dark:text-white shadow-sm"
+              ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-sm"
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300"
           )}
         >

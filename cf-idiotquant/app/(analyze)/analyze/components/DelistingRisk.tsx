@@ -6,7 +6,7 @@ import {
   AlertTriangle, CheckCircle2, XCircle, ShieldAlert,
   Minus, TrendingUp, TrendingDown, Eye,
 } from "lucide-react";
-import { fmtJoEok } from "@/components/utils/financeCalc";
+import { fmtJoEok } from "@/lib/utils/financeCalc";
 
 interface DelistingRiskProps {
   kiBS: any;
@@ -55,8 +55,8 @@ const STATUS_COLOR: Record<CriterionStatus, string> = {
 const STATUS_ROW_CLS: Record<CriterionStatus, string> = {
   "위험": "bg-red-50/70 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40",
   "주의": "bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/40",
-  "양호": "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-100 dark:border-[#35332e]",
-  "—":    "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-100 dark:border-[#35332e]",
+  "양호": "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark",
+  "—":    "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark",
 };
 
 const OVERALL_CONFIG = {
@@ -80,7 +80,7 @@ function OpBar({ val, max }: { val: number; max: number }) {
   const isPos = val >= 0;
   return (
     <div className="flex-1 flex items-center gap-1.5 min-w-0">
-      <div className="flex-1 h-2.5 bg-neutral-100 dark:bg-[#35332e] rounded-full overflow-hidden">
+      <div className="flex-1 h-2.5 bg-neutral-100 dark:bg-surface-dark-muted rounded-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all", isPos ? "bg-emerald-400 dark:bg-emerald-500" : "bg-red-400 dark:bg-red-500")}
           style={{ width: `${pct}%` }}
@@ -279,12 +279,12 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
   const cfg = OVERALL_CONFIG[overall];
 
   return (
-    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
 
       {/* ── 헤더 ── */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between shrink-0">
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-[#faf9f7] dark:bg-[#242320] rounded-lg flex items-center justify-center border border-neutral-200 dark:border-[#3a3834] shrink-0">
+          <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <ShieldAlert size={14} className="text-neutral-500 dark:text-neutral-400" />
           </div>
           <div>
@@ -411,7 +411,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         )}
 
         {/* ── 푸터 ─────────────────────────────────────────────────── */}
-        <p className="text-[9px] text-neutral-400 pt-2 leading-relaxed border-t border-neutral-100 dark:border-[#35332e]">
+        <p className="text-[9px] text-neutral-400 pt-2 leading-relaxed border-t border-neutral-100 dark:border-border-subtle-dark">
           유가증권시장 상장규정 제47조 · 코스닥시장 상장규정 제38조 기준. 재무데이터는 DART 공시 기준이며
           실제 관리종목 지정 여부는 KRX 심사 결과에 따릅니다.
         </p>

@@ -74,8 +74,8 @@ function SideItem({
       className={cn(
         "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-all duration-150",
         isActive
-          ? "bg-[#ede8df]/80 dark:bg-[#35332e] text-neutral-900 dark:text-neutral-50 font-semibold"
-          : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
+          ? "bg-surface-muted/80 dark:bg-surface-dark-muted text-neutral-900 dark:text-neutral-50 font-semibold"
+          : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
       )}
     >
       {emoji && isActive ? (
@@ -93,7 +93,7 @@ function SideItem({
           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
           isActive
             ? "bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a]"
-            : "bg-neutral-200/60 dark:bg-[#35332e] text-neutral-500 dark:text-neutral-400"
+            : "bg-neutral-200/60 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400"
         )}>
           {badge}
         </span>
@@ -114,7 +114,7 @@ function TabItem({
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
         isActive
-          ? "text-[#16a34a] dark:text-[#16a34a] bg-[#faf9f7] dark:bg-[#35332e]"
+          ? "text-[#16a34a] dark:text-[#16a34a] bg-surface-canvas dark:bg-surface-dark-muted"
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
@@ -132,19 +132,19 @@ function TabItem({
 function SidebarUser({ session, status }: { session: any; status: string }) {
   if (status === "loading") {
     return (
-      <div className="mx-3 mb-4 h-10 bg-[#faf9f7] dark:bg-[#242320] rounded-xl animate-pulse" />
+      <div className="mx-3 mb-4 h-10 bg-surface-canvas dark:bg-surface-dark-card rounded-xl animate-pulse" />
     );
   }
 
   if (status === "authenticated") {
     return (
       <div className="px-3 pb-4">
-        <div className="flex items-center gap-1 px-1 py-0.5 rounded-xl bg-[#faf9f7] dark:bg-[#2c2b27]">
+        <div className="flex items-center gap-1 px-1 py-0.5 rounded-xl bg-surface-canvas dark:bg-surface-dark-hover">
           <Link
             href="/profile"
-            className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg hover:bg-[#ede8df]/60 dark:hover:bg-[#35332e] transition-colors min-w-0"
+            className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg hover:bg-surface-muted/60 dark:hover:bg-surface-dark-muted transition-colors min-w-0"
           >
-            <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
+            <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
               {session?.user?.name?.[0] ?? "U"}
             </div>
             <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 truncate min-w-0">
@@ -186,7 +186,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     return (
       <Link
         href="/profile"
-        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-[#16a34a]/50 transition-all"
+        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-[#16a34a]/50 transition-all"
       >
         {session?.user?.name?.[0] ?? "U"}
       </Link>
@@ -239,7 +239,7 @@ export function NavbarWithSimpleLinks() {
   return (
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 bg-white dark:bg-[#1f1e1b] border-r border-neutral-200/70 dark:border-[#3a3834]">
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 bg-white dark:bg-surface-dark border-r border-neutral-200/70 dark:border-surface-dark-border">
 
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#2c2b27] shrink-0">
@@ -282,7 +282,7 @@ export function NavbarWithSimpleLinks() {
               "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
               moreActive
                 ? "text-neutral-900 dark:text-neutral-50"
-                : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
+                : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
             )}
           >
             <MoreHorizontal size={16} strokeWidth={1.8} className="shrink-0" />
@@ -342,7 +342,7 @@ export function NavbarWithSimpleLinks() {
       </aside>
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#3a3834] flex items-center justify-between px-4">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-b border-neutral-200/70 dark:border-surface-dark-border flex items-center justify-between px-4">
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <div className="w-6 h-6 bg-[#16a34a] rounded-md flex items-center justify-center shadow-sm shadow-[#16a34a]/25 shrink-0">
@@ -363,7 +363,7 @@ export function NavbarWithSimpleLinks() {
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-surface-dark-border flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 모의투자는 admin 전용 — 사이드바(MAIN_NAV의 adminOnly)와 같은 기준 */}
         {isAdmin && (
@@ -380,7 +380,7 @@ export function NavbarWithSimpleLinks() {
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
             moreActive || moreSheet
-              ? "text-[#16a34a] dark:text-[#16a34a] bg-[#faf9f7] dark:bg-[#35332e]"
+              ? "text-[#16a34a] dark:text-[#16a34a] bg-surface-canvas dark:bg-surface-dark-muted"
               : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
           )}
         >
@@ -393,7 +393,7 @@ export function NavbarWithSimpleLinks() {
       {moreSheet && (
         <>
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setMoreSheet(false)} />
-          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
             {moreNav.map(item => {
               const Icon = item.icon;
               const isActive = active(pathname, item.href);
@@ -405,8 +405,8 @@ export function NavbarWithSimpleLinks() {
                   className={cn(
                     "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                     isActive
-                      ? "bg-[#faf9f7] dark:bg-[#35332e] text-[#16a34a]"
-                      : "text-neutral-600 dark:text-neutral-300 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
+                      ? "bg-surface-canvas dark:bg-surface-dark-muted text-[#16a34a]"
+                      : "text-neutral-600 dark:text-neutral-300 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                   )}
                 >
                   <Icon size={16} className={cn("shrink-0", isActive && "text-[#16a34a]")} />

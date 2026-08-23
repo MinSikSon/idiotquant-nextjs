@@ -1,4 +1,4 @@
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/lib/utils/cookies";
 import { StarredStock, UserInfo } from "./cloudflareSlice";
 
 export const getUserInfo: any = async () => {

@@ -86,7 +86,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   const hasPartialFill = Number(item.ft_ccld_qty || 0) > 0;
 
   return (
-    <tr className="hover:bg-[#f5f0e8] dark:hover:bg-[#242320]/40 transition-colors group">
+    <tr className="hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card/40 transition-colors group">
       <td className="py-3.5 px-4">
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {formatTime(item.ord_tmd)}
@@ -140,7 +140,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
             : isNccs
             ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-            : "bg-[#faf9f7] text-neutral-500 dark:bg-[#242320]"
+            : "bg-surface-canvas text-neutral-500 dark:bg-surface-dark-card"
         )}>
           {item.prcs_stat_name || (isNccs ? "대기" : "-")}
         </span>
@@ -500,8 +500,8 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
               tradingStatus.US
-                ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
-                : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
+                ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-brand-light-hover dark:border-[#166534]"
+                : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
               (tradingStatus.state === "pending" || tradingStatus.US === null) && "opacity-60 cursor-not-allowed"
             )}
           >
@@ -509,7 +509,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             {tradingStatus.US === null ? "자동매매" : tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
           </button>
           {exRate > 0 && (
-            <div className="flex items-center gap-2 bg-white dark:bg-[#242320] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
+            <div className="flex items-center gap-2 bg-white dark:bg-surface-dark-card px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
               <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
               <span className="text-sm font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
                 {exRate.toLocaleString()}원
@@ -684,7 +684,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                   usCapital.state === "pending"
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : usCapital.stock_list?.length > 0
-                    ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
+                    ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
                     : null
                 }
               />
@@ -740,7 +740,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : usQuantRule.is_override
                     ? <span className="text-[10px] font-mono text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">기본값</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
                 }
               />
               <QuantRuleEditor
@@ -763,7 +763,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 badge={
                   usActivity.state === "pending"
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">최근 {usActivity.logs.length}건</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">최근 {usActivity.logs.length}건</span>
                 }
               />
               <TradingActivityPanel
@@ -798,7 +798,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 }
               />
 
-              <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#35332e]">
+              <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-border-subtle-dark">
                 <table className="w-full text-sm text-left min-w-[860px]">
                   <TableHeader headers={[
                     { label: "주문시각 / 번호" },

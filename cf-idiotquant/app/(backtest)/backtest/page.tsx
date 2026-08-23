@@ -386,7 +386,7 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
     const returnGradId = `retGrad_${ticker}`;
 
     return (
-        <div className="bg-[#f0fdf4]/40 dark:bg-[#052e16]/10 border-b border-neutral-100 dark:border-[#35332e] px-4 sm:px-6 py-5">
+        <div className="bg-[#f0fdf4]/40 dark:bg-[#052e16]/10 border-b border-neutral-100 dark:border-border-subtle-dark px-4 sm:px-6 py-5">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <p className="text-sm font-black text-neutral-800 dark:text-neutral-200">
@@ -516,7 +516,7 @@ function PortfolioOverviewChart({ result, loading, strategy, synthetic }: {
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-40">
+            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-40">
                 <Loader2 size={20} className="animate-spin text-[#16a34a]/50" />
             </div>
         );
@@ -531,8 +531,8 @@ function PortfolioOverviewChart({ result, loading, strategy, synthetic }: {
     const maxAbs = Math.max(...chartData.map(d => Math.abs(d.pct)), 0.1);
 
     return (
-        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-2">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-2">
                 <p className="text-sm font-black text-neutral-900 dark:text-white">구간별 수익률</p>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
                     {strategyLabel[strategy] ?? strategy}
@@ -643,7 +643,7 @@ function PortfolioChart({ result, loading, strategy }: {
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
+            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-48">
                 <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
             </div>
         );
@@ -651,7 +651,7 @@ function PortfolioChart({ result, loading, strategy }: {
 
     if (!result || result.candidate_count === 0) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
+            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-36">
                 <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
             </div>
         );
@@ -664,9 +664,9 @@ function PortfolioChart({ result, loading, strategy }: {
     const hasTickerSeries = (result.ticker_series?.length ?? 0) > 0;
 
     return (
-        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between gap-3 flex-wrap">
+            <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                     <TrendingUp size={15} className={isPositive ? "text-emerald-500" : "text-red-500"} />
                     <p className="text-sm font-black text-neutral-900 dark:text-white">포트폴리오 수익률 추이</p>
@@ -682,7 +682,7 @@ function PortfolioChart({ result, loading, strategy }: {
                                 "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
                                 showLines
                                     ? "bg-emerald-600 border-emerald-600 text-white"
-                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-emerald-400 dark:hover:border-emerald-600"
+                                    : "border-neutral-200 dark:border-border-subtle-dark text-neutral-500 dark:text-neutral-400 hover:border-emerald-400 dark:hover:border-emerald-600"
                             )}
                         >
                             종목별
@@ -777,11 +777,11 @@ function PortfolioChart({ result, loading, strategy }: {
 
             {/* Summary row */}
             <div className="px-5 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
-                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                <div className="bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">기간</p>
                     <p className="text-xs font-black mt-0.5">{result.summary.days}일</p>
                 </div>
-                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                <div className="bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">승률</p>
                     <p className="text-xs font-black mt-0.5">
                         {result.time_series.length > 0
@@ -872,7 +872,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
+            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-48">
                 <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
             </div>
         );
@@ -880,7 +880,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
 
     if (effectiveCandidates.length === 0) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-6 flex flex-col items-center justify-center gap-2 text-center">
+            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-6 flex flex-col items-center justify-center gap-2 text-center">
                 <Info size={20} className="text-neutral-300" />
                 <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">표시할 후보 종목이 없습니다</p>
                 <p className="text-[11px] text-neutral-400 max-w-xs leading-relaxed">
@@ -892,7 +892,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
 
     if (snapshotData.length === 0) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center gap-3">
+            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center gap-3">
                 <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
                 <div>
                     <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
@@ -911,9 +911,9 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
     const chartHeight = Math.max(180, snapshotData.length * 24);
 
     return (
-        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between gap-3 flex-wrap">
+            <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                     <TrendingUp size={15} className={isPositive ? "text-emerald-500" : "text-red-500"} />
                     <p className="text-sm font-black text-neutral-900 dark:text-white">종목별 수익률 스냅샷</p>
@@ -994,15 +994,15 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
 
             {/* Summary row */}
             <div className="px-5 pb-4 grid grid-cols-3 gap-2">
-                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                <div className="bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">후보 수</p>
                     <p className="text-xs font-black mt-0.5">{effectiveCount}개</p>
                 </div>
-                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                <div className="bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">커버</p>
                     <p className="text-xs font-black mt-0.5">{snapshotData.length}개 ({Math.round(snapshotData.length / effectiveCount * 100)}%)</p>
                 </div>
-                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                <div className="bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">승률</p>
                     <p className={cn(
                         "text-xs font-black mt-0.5",
@@ -1389,10 +1389,10 @@ function BacktestContent() {
     const datesLoading = datesState.state === 'pending' || datesState.state === 'init';
 
     return (
-        <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100">
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
             {/* ── Header ── */}
-            <div className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
+            <div className="bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-[#16a34a]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
                     <div className="flex items-start justify-between gap-3">
                         <div>
@@ -1443,9 +1443,9 @@ function BacktestContent() {
                             const hasAnyFilter = filterStrategies.size > 0 || minMarketCap > 0 || excludeHoldings || excludeDeficit || searchQuery !== '' || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all';
                             const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
                             return (
-                            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                                 {/* ── 전략 필터 (전체 9종) ── */}
-                                <div className="px-5 sm:px-6 pt-4 pb-3 border-b border-neutral-100 dark:border-[#35332e]">
+                                <div className="px-5 sm:px-6 pt-4 pb-3 border-b border-neutral-100 dark:border-border-subtle-dark">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider shrink-0">전략</span>
                                         {STRATEGY_PRESETS_CLIENT.map(preset => {
@@ -1460,7 +1460,7 @@ function BacktestContent() {
                                                         "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-all",
                                                         isActive
                                                             ? cn(STRATEGY_BADGE[preset.id], 'border-current')
-                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-transparent"
+                                                            : "border-neutral-200 dark:border-border-subtle-dark text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-transparent"
                                                     )}
                                                 >
                                                     {preset.label}
@@ -1469,7 +1469,7 @@ function BacktestContent() {
                                             );
                                         })}
                                         {filterStrategies.size >= 2 && (
-                                            <div className="flex rounded-lg border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+                                            <div className="flex rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                                 {(['OR', 'AND'] as const).map(mode => (
                                                     <button
                                                         key={mode}
@@ -1501,7 +1501,7 @@ function BacktestContent() {
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             placeholder="종목명·티커"
-                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
+                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
                                         />
                                         {searchQuery && (
                                             <button onClick={() => setSearchQuery('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none">×</button>
@@ -1515,7 +1515,7 @@ function BacktestContent() {
                                                 className={cn(
                                                     "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
                                                     idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
-                                                    filterNcav === v ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative" : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    filterNcav === v ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                 )}
                                             >{v === 'all' ? 'NCAV' : `≥${v}x`}</button>
                                         ))}
@@ -1533,7 +1533,7 @@ function BacktestContent() {
                                                             ? v === 'win' ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
                                                               : v === 'loss' ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
                                                               : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
-                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                            : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                     )}
                                                 >{v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}</button>
                                             ))}
@@ -1547,7 +1547,7 @@ function BacktestContent() {
                                                 className={cn(
                                                     "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
                                                     idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
-                                                    filterPbr === v ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative" : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    filterPbr === v ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                 )}
                                             >{v === 'all' ? 'PBR' : `≤${v}`}</button>
                                         ))}
@@ -1560,7 +1560,7 @@ function BacktestContent() {
                                                 className={cn(
                                                     "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
                                                     idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
-                                                    filterPer === v ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative" : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    filterPer === v ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                 )}
                                             >{v === 'all' ? 'PER' : `≤${v}`}</button>
                                         ))}
@@ -1572,8 +1572,8 @@ function BacktestContent() {
                                         className={cn(
                                             "flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
                                             filterOpen || minMarketCap > 0 || excludeHoldings || excludeDeficit
-                                                ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
-                                                : "bg-white dark:bg-transparent border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
+                                                : "bg-white dark:bg-transparent border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                         )}
                                     >
                                         <SlidersHorizontal size={10} />
@@ -1595,7 +1595,7 @@ function BacktestContent() {
                                         "ml-auto flex items-baseline gap-1 px-2.5 py-1 rounded-lg border",
                                         hasAnyFilter
                                             ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#bbf7d0] dark:border-[#166534]/50"
-                                            : "bg-[#faf9f7] dark:bg-[#1a1915] border-neutral-200 dark:border-[#35332e]"
+                                            : "bg-surface-canvas dark:bg-surface-dark-canvas border-neutral-200 dark:border-border-subtle-dark"
                                     )}>
                                         <span className={cn(
                                             "text-sm font-black tabular-nums leading-none",
@@ -1635,7 +1635,7 @@ function BacktestContent() {
 
                                 {/* ── 고급 필터 확장 패널 ── */}
                                 {filterOpen && (
-                                    <div className="px-5 sm:px-6 pb-4 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-wrap items-center gap-x-5 gap-y-3">
+                                    <div className="px-5 sm:px-6 pb-4 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-center gap-x-5 gap-y-3">
                                         {/* 시가총액 */}
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">시가총액</span>
@@ -1647,12 +1647,12 @@ function BacktestContent() {
                                                         "px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
                                                         minMarketCap === p.value
                                                             ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                                            : "bg-white dark:bg-transparent border-neutral-200 dark:border-[#35332e] text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                            : "bg-white dark:bg-transparent border-neutral-200 dark:border-border-subtle-dark text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                     )}
                                                 >{p.label}</button>
                                             ))}
                                         </div>
-                                        <div className="w-px h-4 bg-neutral-200 dark:bg-[#4a4641] hidden sm:block" />
+                                        <div className="w-px h-4 bg-neutral-200 dark:bg-surface-dark-elevated hidden sm:block" />
                                         {/* 제외 조건 */}
                                         <div className="flex items-center gap-4 flex-wrap">
                                             <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">제외</span>
@@ -1673,7 +1673,7 @@ function BacktestContent() {
                         })()}
 
                         {/* ── View Tabs ── */}
-                        <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
+                        <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-border-subtle-dark -mb-2">
                             {(['history', 'portfolio', 'stocks'] as const).map(tab => {
                                 const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
                                 return (
@@ -1700,7 +1700,7 @@ function BacktestContent() {
                                             "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
                                             splitAdjusted
                                                 ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-500"
-                                                : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300"
+                                                : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300"
                                         )}
                                     >
                                         병합조정 {splitAdjusted ? 'ON' : 'OFF'}
@@ -1728,7 +1728,7 @@ function BacktestContent() {
                         <>
 
                         {/* ── Bar Chart ── */}
-                        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                                     일별 후보 수 추이 (필터 반영)
@@ -1802,7 +1802,7 @@ function BacktestContent() {
                                           }
                                         : { label: '평균 PER', value: stats.avgPer > 0 ? stats.avgPer.toFixed(1) : '—', color: '' },
                                 ].map(card => (
-                                    <div key={card.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-4 text-center">
+                                    <div key={card.label} className="bg-white dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark p-4 text-center">
                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{card.label}</p>
                                         <p className={cn("text-lg font-black mt-1 font-mono tabular-nums", card.color || "text-neutral-900 dark:text-white")}>
                                             {card.value}
@@ -1819,7 +1819,7 @@ function BacktestContent() {
                         {viewTab === 'portfolio' && (
                         <>
                             {loadingPortfolio ? (
-                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-48">
                                     <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
                                 </div>
                             ) : augmentedPortfolioResult ? (
@@ -1850,7 +1850,7 @@ function BacktestContent() {
                                 </>
                             ) : (
                                 /* 후보 없음 또는 가격 데이터 없음 */
-                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-6 flex flex-col items-center justify-center gap-2 text-center">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-6 flex flex-col items-center justify-center gap-2 text-center">
                                     <Info size={20} className="text-neutral-300" />
                                     <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">표시할 데이터가 없습니다</p>
                                     <p className="text-[11px] text-neutral-400 max-w-xs leading-relaxed">
@@ -1862,7 +1862,7 @@ function BacktestContent() {
                             {/* ── 종목별 수익률 스냅샷 (포트폴리오 탭 하단) ── */}
                             {!loadingPortfolio && currentPriceMap.size > 0 && (
                                 <>
-                                    <div className="border-t border-neutral-200 dark:border-[#35332e] pt-4">
+                                    <div className="border-t border-neutral-200 dark:border-border-subtle-dark pt-4">
                                         <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
                                             종목별 수익률 스냅샷
                                         </p>
@@ -1888,8 +1888,8 @@ function BacktestContent() {
                         <>
 
                         {/* ── Table ── */}
-                        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
-                            <div className="px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-3">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+                            <div className="px-5 sm:px-6 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-3">
                                 <p className="text-sm font-black text-neutral-900 dark:text-white">
                                     {formattedSelectedDate ? `${formattedSelectedDate} 후보 종목` : '후보 종목'}
                                 </p>
@@ -1931,7 +1931,7 @@ function BacktestContent() {
                                     <div className="hidden md:block overflow-x-auto">
                                         {/* Header */}
                                         <div className={cn(
-                                            "grid gap-4 items-center px-6 py-3.5 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#35332e]",
+                                            "grid gap-4 items-center px-6 py-3.5 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark",
                                             isLatestDate
                                                 ? "grid-cols-[minmax(160px,2.5fr)_80px_90px_90px_68px_68px_48px]"
                                                 : "grid-cols-[minmax(160px,2.5fr)_80px_90px_90px_80px_68px_68px_48px]"
@@ -1959,10 +1959,10 @@ function BacktestContent() {
                                                 <div key={item.ticker}>
                                                     <div
                                                         className={cn(
-                                                            "grid gap-4 items-center px-6 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0 cursor-pointer transition-colors",
+                                                            "grid gap-4 items-center px-6 py-4 border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 cursor-pointer transition-colors",
                                                             isExpanded
                                                                 ? "bg-[#f0fdf4]/60 dark:bg-[#052e16]/20"
-                                                                : "hover:bg-[#f0fdf4]/30 dark:hover:bg-[#1f1e1b]/60",
+                                                                : "hover:bg-[#f0fdf4]/30 dark:hover:bg-surface-dark/60",
                                                             isLatestDate
                                                                 ? "grid-cols-[minmax(160px,2.5fr)_80px_90px_90px_68px_68px_48px]"
                                                                 : "grid-cols-[minmax(160px,2.5fr)_80px_90px_90px_80px_68px_68px_48px]"
@@ -1981,12 +1981,12 @@ function BacktestContent() {
                                                             return (
                                                                 <div className="flex flex-wrap gap-1">
                                                                     {strats.slice(0, 2).map(s => (
-                                                                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", STRATEGY_BADGE[s] ?? "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500")}>
+                                                                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", STRATEGY_BADGE[s] ?? "bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-500")}>
                                                                             {STRATEGY_LABEL[s] ?? s}
                                                                         </span>
                                                                     ))}
                                                                     {strats.length > 2 && (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-400">
+                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-400">
                                                                             +{strats.length - 2}
                                                                         </span>
                                                                     )}
@@ -2106,14 +2106,14 @@ function BacktestContent() {
                                                                     ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                                                                     : ncav >= 0.7
                                                                     ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
-                                                                    : "bg-[#faf9f7] dark:bg-[#1f1e1b] text-neutral-500"
+                                                                    : "bg-surface-canvas dark:bg-surface-dark text-neutral-500"
                                                             )}>
                                                                 {ncav > 0 ? `${ncav.toFixed(2)}x` : '—'}
                                                             </div>
                                                         </div>
 
                                                         <div className="grid grid-cols-3 gap-2">
-                                                            <div className="text-center p-2.5 bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl">
+                                                            <div className="text-center p-2.5 bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl">
                                                                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">기준가</p>
                                                                 <p className="text-xs font-mono font-bold mt-0.5 tabular-nums">
                                                                     {item.last_price > 0 ? item.last_price.toLocaleString() : '—'}
@@ -2121,7 +2121,7 @@ function BacktestContent() {
                                                             </div>
 
                                                             {!isLatestDate ? (
-                                                                <div className="text-center p-2.5 bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl">
+                                                                <div className="text-center p-2.5 bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl">
                                                                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">수익률</p>
                                                                     <p className={cn(
                                                                         "text-xs font-mono font-bold mt-0.5 tabular-nums",
@@ -2137,7 +2137,7 @@ function BacktestContent() {
                                                                     </p>
                                                                 </div>
                                                             ) : (
-                                                                <div className="text-center p-2.5 bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl">
+                                                                <div className="text-center p-2.5 bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl">
                                                                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">PBR</p>
                                                                     <p className="text-xs font-mono font-bold mt-0.5">
                                                                         {safeNum(item.pbr) > 0 ? safeNum(item.pbr).toFixed(2) : '—'}
@@ -2145,7 +2145,7 @@ function BacktestContent() {
                                                                 </div>
                                                             )}
 
-                                                            <div className="text-center p-2.5 bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl">
+                                                            <div className="text-center p-2.5 bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl">
                                                                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">PER</p>
                                                                 <p className="text-xs font-mono font-bold mt-0.5">
                                                                     {safeNum(item.per) > 0 ? safeNum(item.per).toFixed(1) : '—'}
@@ -2192,7 +2192,7 @@ export default function BacktestPage() {
 
     if (status === "loading") {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+            <div className="flex items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
                 <Loader2 className="animate-spin text-[#16a34a]" size={24} />
             </div>
         );
@@ -2200,7 +2200,7 @@ export default function BacktestPage() {
 
     if (!isAdmin) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] gap-3">
+            <div className="flex flex-col items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas gap-3">
                 <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">준비 중인 기능입니다.</p>
             </div>
         );
@@ -2208,7 +2208,7 @@ export default function BacktestPage() {
 
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+            <div className="flex items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
                 <Loader2 className="animate-spin text-[#16a34a]" size={24} />
             </div>
         }>

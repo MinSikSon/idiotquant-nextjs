@@ -67,7 +67,7 @@ export function TodayDiscovery({
         <div className="rounded-xl border border-neutral-200 dark:border-[#22402f] overflow-hidden bg-white dark:bg-[#101b15]">
 
           {/* 헤더 행 — 좁은 폭에서는 지표 컬럼을 접고 종목·전략만 남긴다 */}
-          <div className="hidden sm:grid gap-3.5 items-center sm:grid-cols-[minmax(0,2.4fr)_minmax(0,1.1fr)_74px_62px_62px_66px] px-[18px] py-2.5 bg-[#faf9f7] dark:bg-[#0c1712] border-b border-neutral-200 dark:border-[#22402f]">
+          <div className="hidden sm:grid gap-3.5 items-center sm:grid-cols-[minmax(0,2.4fr)_minmax(0,1.1fr)_74px_62px_62px_66px] px-[18px] py-2.5 bg-surface-canvas dark:bg-[#0c1712] border-b border-neutral-200 dark:border-[#22402f]">
             {["종목", "전략"].map(h => (
               <span key={h} className="text-[10px] font-bold text-neutral-400 dark:text-white/35 uppercase tracking-[0.07em]">{h}</span>
             ))}
@@ -105,7 +105,7 @@ export function TodayDiscovery({
                     className={cn(
                       ROW_GRID,
                       "px-[18px] py-[13px] border-b border-neutral-100 dark:border-[#18271f] last:border-0",
-                      "hover:bg-[#faf9f7] dark:hover:bg-[#13211a] transition-colors"
+                      "hover:bg-surface-canvas dark:hover:bg-[#13211a] transition-colors"
                     )}
                   >
                     {/* 종목 */}
@@ -122,7 +122,7 @@ export function TodayDiscovery({
                       {strategy && (
                         <span className={cn(
                           "inline-block px-1.5 py-0.5 rounded text-[10px] font-bold",
-                          STRATEGY_BADGE[strategy] ?? "bg-[#faf9f7] text-neutral-500 dark:bg-white/10 dark:text-white/70"
+                          STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500 dark:bg-white/10 dark:text-white/70"
                         )}>
                           {STRATEGY_LABEL[strategy] ?? strategy}
                         </span>
@@ -148,7 +148,7 @@ export function TodayDiscovery({
               {rest > 0 && (
                 <Link
                   href="/screener"
-                  className="block px-[18px] py-3 bg-[#faf9f7] dark:bg-[#0c1712] text-center text-[11.5px] font-bold text-[#16a34a] dark:text-[#22c55e] hover:opacity-70 transition-opacity"
+                  className="block px-[18px] py-3 bg-surface-canvas dark:bg-[#0c1712] text-center text-[11.5px] font-bold text-[#16a34a] dark:text-[#22c55e] hover:opacity-70 transition-opacity"
                 >
                   나머지 {rest}개 종목 보기 →
                 </Link>

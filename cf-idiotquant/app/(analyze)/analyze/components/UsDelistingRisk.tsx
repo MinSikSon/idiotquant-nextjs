@@ -76,8 +76,8 @@ const STATUS_COLOR: Record<Status, string> = {
 const STATUS_ROW_CLS: Record<Status, string> = {
   "위험": "bg-red-50/70 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40",
   "주의": "bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/40",
-  "양호": "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-100 dark:border-[#35332e]",
-  "—":    "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-100 dark:border-[#35332e]",
+  "양호": "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark",
+  "—":    "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark",
 };
 
 const OVERALL_CONFIG: Record<Exclude<Status, "—">, { badge: string; sub: string }> = {
@@ -99,7 +99,7 @@ function OpBar({ val, max }: { val: number; max: number }) {
   const pct = max > 0 ? Math.min(Math.abs(val) / max, 1) * 100 : 0;
   const isPos = val >= 0;
   return (
-    <div className="flex-1 h-2.5 bg-neutral-100 dark:bg-[#35332e] rounded-full overflow-hidden">
+    <div className="flex-1 h-2.5 bg-neutral-100 dark:bg-surface-dark-muted rounded-full overflow-hidden">
       <div
         className={cn("h-full rounded-full transition-all",
           isPos ? "bg-emerald-400 dark:bg-emerald-500" : "bg-red-400 dark:bg-red-500"
@@ -276,7 +276,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
 
   if (!result) {
     return (
-      <div className="w-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-6">
+      <div className="w-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-6">
         <p className="text-sm text-neutral-500">재무 데이터 없음 — Finnhub 10-K 미제공 종목</p>
       </div>
     );
@@ -287,9 +287,9 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   const cfg = OVERALL_CONFIG[overallGrade as Exclude<Status, "—">] ?? OVERALL_CONFIG["양호"];
 
   return (
-    <div className="w-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+    <div className="w-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark">
         <div className="flex items-center gap-2">
           <ShieldAlert size={16} className="text-neutral-500 dark:text-neutral-400" />
           <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">미국 상장유지 위험도</span>

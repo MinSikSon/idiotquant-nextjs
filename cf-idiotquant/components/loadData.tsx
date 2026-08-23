@@ -7,8 +7,8 @@ import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoLis
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
 import { setCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
-import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
-import { getCookie, isValidCookie } from "./util";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/lib/utils/strategy";
+import { getCookie, isValidCookie } from "@/lib/utils/cookies";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 const DEBUG = false;

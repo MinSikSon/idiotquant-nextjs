@@ -212,7 +212,7 @@ export default function TickerMapPage() {
   const isClientPaginated = country === "US";
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] px-4 py-8">
+    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-8">
       <div className="max-w-5xl mx-auto space-y-5">
 
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -231,25 +231,25 @@ export default function TickerMapPage() {
         </div>
 
         {isAdmin && showAddForm && (
-          <div className="bg-white dark:bg-[#242320] border border-[#16a34a]/30 rounded-2xl p-4 space-y-3">
+          <div className="bg-white dark:bg-surface-dark-card border border-[#16a34a]/30 rounded-2xl p-4 space-y-3">
             <p className="text-xs font-black text-neutral-500 uppercase tracking-wider">새 오버라이드 추가</p>
             <div className="flex flex-wrap gap-2">
               <input
                 value={addTicker}
                 onChange={e => setAddTicker(e.target.value.toUpperCase())}
                 placeholder="티커 (예: 005930, AAPL)"
-                className="flex-1 min-w-[120px] px-3 py-2 bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
+                className="flex-1 min-w-[120px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
               />
               <input
                 value={addName}
                 onChange={e => setAddName(e.target.value)}
                 placeholder="종목명 (예: 삼성전자, Apple Inc.)"
-                className="flex-1 min-w-[160px] px-3 py-2 bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
+                className="flex-1 min-w-[160px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
               />
               <select
                 value={addCountry}
                 onChange={e => setAddCountry(e.target.value)}
-                className="px-3 py-2 bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
+                className="px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
               >
                 <option value="KR">국내(KR)</option>
                 <option value="US">미국(US)</option>
@@ -263,7 +263,7 @@ export default function TickerMapPage() {
               </button>
               <button
                 onClick={() => { setShowAddForm(false); setAddError(null); }}
-                className="px-3 py-2 bg-neutral-100 dark:bg-[#35332e] text-neutral-500 rounded-xl text-xs font-black hover:bg-neutral-200 dark:hover:bg-[#4a4641] transition-colors"
+                className="px-3 py-2 bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 rounded-xl text-xs font-black hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
               >
                 <X size={12} />
               </button>
@@ -273,7 +273,7 @@ export default function TickerMapPage() {
         )}
 
         <div className="flex flex-wrap gap-2 items-center">
-          <div className="flex rounded-xl border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+          <div className="flex rounded-xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             {COUNTRY_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -282,7 +282,7 @@ export default function TickerMapPage() {
                   "px-3 py-1.5 text-xs font-black transition-colors",
                   country === opt.value
                     ? "bg-[#16a34a] text-white"
-                    : "bg-white dark:bg-[#242320] text-neutral-500 hover:bg-neutral-50 dark:hover:bg-[#35332e]"
+                    : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
                 )}
               >{opt.label}</button>
             ))}
@@ -298,13 +298,13 @@ export default function TickerMapPage() {
                   "px-2.5 py-1 rounded-lg font-bold transition-colors",
                   source === opt.value
                     ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                    : "bg-neutral-100 dark:bg-[#35332e] text-neutral-500 hover:bg-neutral-200 dark:hover:bg-[#4a4641]"
+                    : "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated"
                 )}
               >{opt.label}</button>
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[300px] bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl px-3 py-1.5">
+          <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-[300px] bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-3 py-1.5">
             <Search size={12} className="text-neutral-400 shrink-0" />
             <input
               value={q}
@@ -318,7 +318,7 @@ export default function TickerMapPage() {
           <button
             onClick={() => load(page)}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-neutral-100 dark:bg-[#35332e] text-neutral-500 hover:bg-neutral-200 dark:hover:bg-[#4a4641] transition-colors"
+            className="p-1.5 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
           >
             <RefreshCw size={13} className={(loading || usBaseLoading) ? "animate-spin" : ""} />
           </button>
@@ -337,11 +337,11 @@ export default function TickerMapPage() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-100 dark:border-[#35332e]">
+                <tr className="border-b border-neutral-100 dark:border-border-subtle-dark">
                   <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">티커</th>
                   <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">종목명</th>
                   <th className="px-4 py-3 text-left text-[10px] font-black text-neutral-400 uppercase tracking-widest">국가</th>
@@ -359,7 +359,7 @@ export default function TickerMapPage() {
                   <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">결과 없음</td></tr>
                 )}
                 {rows.map(row => (
-                  <tr key={row.ticker} className="hover:bg-[#f5f0e8] dark:hover:bg-[#2a2825] transition-colors group">
+                  <tr key={row.ticker} className="hover:bg-surface-muted-hover dark:hover:bg-[#2a2825] transition-colors group">
                     <td className="px-4 py-3">
                       <span className="font-mono font-black text-xs text-neutral-900 dark:text-white">{row.ticker}</span>
                     </td>
@@ -371,12 +371,12 @@ export default function TickerMapPage() {
                             value={editName}
                             onChange={e => setEditName(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") handleEditSave(row.ticker); if (e.key === "Escape") setEditingTicker(null); }}
-                            className="flex-1 px-2 py-1 text-xs border border-[#16a34a] rounded-lg bg-[#faf9f7] dark:bg-[#1a1915] focus:outline-none dark:text-white"
+                            className="flex-1 px-2 py-1 text-xs border border-[#16a34a] rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas focus:outline-none dark:text-white"
                           />
                           <button onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="p-1 text-[#16a34a] hover:bg-[#f0fdf4] rounded-lg">
                             {editLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                           </button>
-                          <button onClick={() => setEditingTicker(null)} className="p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-[#35332e] rounded-lg">
+                          <button onClick={() => setEditingTicker(null)} className="p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted rounded-lg">
                             <X size={12} />
                           </button>
                         </div>
@@ -401,7 +401,7 @@ export default function TickerMapPage() {
                       <span className={cn(
                         "text-[10px] font-black px-2 py-0.5 rounded-full",
                         row.source === "hardcoded"
-                          ? "bg-neutral-100 dark:bg-[#35332e] text-neutral-500"
+                          ? "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500"
                           : "bg-[#dcfce7] dark:bg-[#052e16]/30 text-[#16a34a]"
                       )}>{row.source === "hardcoded" ? "기본" : "오버라이드"}</span>
                     </td>
@@ -411,7 +411,7 @@ export default function TickerMapPage() {
                           {editingTicker !== row.ticker && (
                             <button
                               onClick={() => { setEditingTicker(row.ticker); setEditName(row.name); }}
-                              className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-[#35332e] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+                              className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-surface-dark-muted text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
                               title="이름 수정 (오버라이드 저장)"
                             >
                               <Edit3 size={13} />
@@ -426,7 +426,7 @@ export default function TickerMapPage() {
                                 >확인</button>
                                 <button
                                   onClick={() => setDeletingTicker(null)}
-                                  className="px-2 py-1 rounded-lg bg-neutral-100 dark:bg-[#35332e] text-neutral-500 text-[10px] font-black"
+                                  className="px-2 py-1 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 text-[10px] font-black"
                                 >취소</button>
                               </div>
                             ) : (
@@ -449,7 +449,7 @@ export default function TickerMapPage() {
           </div>
 
           {meta.pages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-100 dark:border-[#35332e]">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
               <span className="text-[11px] text-neutral-400 font-mono">
                 {((meta.page - 1) * meta.limit) + 1}–{Math.min(meta.page * meta.limit, meta.total)} / {meta.total.toLocaleString()}
               </span>
@@ -457,7 +457,7 @@ export default function TickerMapPage() {
                 <button
                   onClick={() => load(meta.page - 1)}
                   disabled={meta.page <= 1 || loading}
-                  className="p-1.5 rounded-lg bg-neutral-100 dark:bg-[#35332e] text-neutral-500 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-[#4a4641] transition-colors"
+                  className="p-1.5 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
                 >
                   <ChevronLeft size={13} />
                 </button>
@@ -467,7 +467,7 @@ export default function TickerMapPage() {
                 <button
                   onClick={() => load(meta.page + 1)}
                   disabled={meta.page >= meta.pages || loading}
-                  className="p-1.5 rounded-lg bg-neutral-100 dark:bg-[#35332e] text-neutral-500 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-[#4a4641] transition-colors"
+                  className="p-1.5 rounded-lg bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 disabled:opacity-40 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated transition-colors"
                 >
                   <ChevronRight size={13} />
                 </button>

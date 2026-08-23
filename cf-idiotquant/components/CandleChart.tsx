@@ -81,7 +81,7 @@ function CandleTooltip({ active, payload, label }: any) {
     const lines = payload.filter((p: any) => p.dataKey !== "range" && p.value != null);
 
     return (
-        <div className="bg-white/90 dark:bg-[#1a1915]/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-neutral-200/60 dark:border-[#35332e]/80 shadow-xl text-[11px]">
+        <div className="bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-neutral-200/60 dark:border-border-subtle-dark/80 shadow-xl text-[11px]">
             <p className="text-neutral-400 font-bold mb-1 font-mono tracking-wider">{label}</p>
             <div className="grid grid-cols-[auto_auto] gap-x-2 gap-y-0.5 font-mono">
                 <span className="text-neutral-400">시</span><span className="text-neutral-700 dark:text-neutral-200">{row.o?.toLocaleString()}</span>
@@ -93,7 +93,7 @@ function CandleTooltip({ active, payload, label }: any) {
                 </span>
             </div>
             {lines.length > 0 && (
-                <div className="mt-1 pt-1 border-t border-neutral-100 dark:border-[#35332e] flex flex-col gap-0.5">
+                <div className="mt-1 pt-1 border-t border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-0.5">
                     {lines.map((p: any) => (
                         <div key={p.dataKey} className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color ?? p.stroke }} />

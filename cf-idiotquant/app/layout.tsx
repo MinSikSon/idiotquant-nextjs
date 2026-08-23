@@ -181,7 +181,7 @@ export default function RootLayout({
         notoSerifKr.variable,
         jetbrainsMono.variable,
         "min-h-screen font-sans antialiased",
-        "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-50"
+        "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-50"
       )}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }} />

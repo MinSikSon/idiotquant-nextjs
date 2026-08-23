@@ -73,18 +73,18 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
     }
   };
 
-  const inputCls = "w-full rounded-lg border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-[#1a1915] px-3 py-2 text-sm";
+  const inputCls = "w-full rounded-lg border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-surface-dark-canvas px-3 py-2 text-sm";
   const exists = !!info?.exists;
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] p-4">
+    <div className="rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-canvas p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 dark:text-neutral-400">
           <KeyRound className="w-3.5 h-3.5" />
           {exists ? "등록된 계정" : "계정 미등록"}
           {exists && (
             <span className={cn("ml-1 rounded-full px-2 py-0.5 text-[10px] font-black",
-              info?.is_active ? "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30" : "bg-neutral-100 text-neutral-500 dark:bg-[#35332e]")}>
+              info?.is_active ? "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30" : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
               <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{info?.is_active ? "대상" : "제외"}
             </span>
           )}

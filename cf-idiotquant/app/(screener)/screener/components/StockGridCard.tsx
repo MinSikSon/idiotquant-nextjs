@@ -65,10 +65,10 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden hover:border-[#86efac] dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
+            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
         >
             {/* 헤더 — 주가 시리즈가 응답에 없어 차트 스프라이트는 생략하고 한 장을 100% 폭으로 */}
-            <div className="relative h-[72px] border-b border-neutral-100 dark:border-[#35332e]">
+            <div className="relative h-[72px] border-b border-neutral-100 dark:border-border-subtle-dark">
                 <SectorSprite
                     sector={sector}
                     color={sectorAccent(sector) ?? (strategy ? STRATEGY_HEX[strategy] : "#16a34a")}
@@ -100,12 +100,12 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                 </div>
 
                 {strategy && (
-                    <span className={cn("inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mb-3", STRATEGY_BADGE[strategy] ?? "bg-[#faf9f7] text-neutral-500")}>
+                    <span className={cn("inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mb-3", STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500")}>
                         {STRATEGY_LABEL[strategy] ?? strategy}
                     </span>
                 )}
 
-                <div className="grid grid-cols-4 gap-1 py-2.5 border-y border-neutral-100 dark:border-[#35332e]">
+                <div className="grid grid-cols-4 gap-1 py-2.5 border-y border-neutral-100 dark:border-border-subtle-dark">
                     <Metric label="NCAV" value={ncav > 0 ? `${ncav.toFixed(2)}x` : "—"} ok={ncav >= 1} />
                     <Metric label="PBR" value={pbr > 0 ? pbr.toFixed(2) : "—"} ok={pbr > 0 && pbr < 1} />
                     <Metric label="ROE" value={roe > 0 ? `${roe.toFixed(1)}%` : "—"} ok={roe >= 8} />
@@ -127,7 +127,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
 
                 <button
                     onClick={e => { e.stopPropagation(); onClick(item.ticker, item.name); }}
-                    className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-[#faf9f7] dark:bg-[#1f1e1b] hover:bg-[#16a34a] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-colors"
+                    className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-surface-canvas dark:bg-surface-dark hover:bg-[#16a34a] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-colors"
                 >
                     분석 <ChevronRight size={12} />
                 </button>

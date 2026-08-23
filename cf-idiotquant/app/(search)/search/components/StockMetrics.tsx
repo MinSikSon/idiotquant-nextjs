@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { formatKoreanUnit } from "../../../../components/utils/financeCalc";
+import { formatKoreanUnit } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Calendar, DollarSign, Coins,
@@ -26,7 +26,7 @@ function MetricCard({ m }: { m: MetricItem }) {
       "p-3.5 rounded-xl border relative group cursor-help transition-colors select-none",
       m.highlight
         ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/40"
-        : "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-100 dark:border-[#35332e] hover:border-neutral-200 dark:hover:border-neutral-700"
+        : "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark hover:border-neutral-200 dark:hover:border-neutral-700"
     )}>
       <p className={cn(
         "text-[9px] font-bold uppercase tracking-wider mb-1.5 truncate",
@@ -52,7 +52,7 @@ function MetricCard({ m }: { m: MetricItem }) {
       )}
 
       {/* 호버 툴팁 */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-neutral-900 dark:bg-[#242320] text-white text-[10px] p-2.5 rounded-xl shadow-lg border border-neutral-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-neutral-900 dark:bg-surface-dark-card text-white text-[10px] p-2.5 rounded-xl shadow-lg border border-neutral-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
         <p className="font-bold text-neutral-400 text-[9px] pb-1 mb-1 tracking-widest font-mono uppercase border-b border-neutral-700">{m.label}</p>
         <p className="text-neutral-200 font-medium">{m.desc}</p>
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-neutral-900 dark:border-t-neutral-800" />
@@ -67,7 +67,7 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
     <div className="flex items-center gap-2 mb-2.5">
       <span className="text-neutral-400">{icon}</span>
       <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">{label}</span>
-      <div className="flex-1 h-px bg-neutral-100 dark:bg-[#35332e]" />
+      <div className="flex-1 h-px bg-neutral-100 dark:bg-surface-dark-muted" />
     </div>
   );
 }
@@ -177,12 +177,12 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
   const volumeMetrics    = metrics.filter(m => m.type === "volume");
 
   return (
-    <div className="w-full h-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm flex flex-col">
+    <div className="w-full h-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm flex flex-col">
 
       {/* ── 헤더 ── */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between shrink-0">
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-[#faf9f7] dark:bg-[#242320] rounded-lg flex items-center justify-center border border-neutral-200 dark:border-[#3a3834] shrink-0">
+          <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <BarChart3 size={14} className="text-neutral-500 dark:text-neutral-400" />
           </div>
           <div>

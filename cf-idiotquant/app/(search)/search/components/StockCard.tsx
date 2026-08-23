@@ -58,7 +58,7 @@ const GRADE_CONFIG = {
   B: {
     border:     "#a1a1aa",
     topBarCls:  "bg-gradient-to-r from-neutral-400 to-neutral-300",
-    badgeCls:   "bg-neutral-200 text-neutral-700 dark:bg-[#4a4641] dark:text-neutral-200",
+    badgeCls:   "bg-neutral-200 text-neutral-700 dark:bg-surface-dark-elevated dark:text-neutral-200",
     labelCls:   "text-neutral-500 dark:text-neutral-400",
     tintCls:    "from-neutral-50/30 dark:from-neutral-900/10",
     dotCls:     "bg-neutral-400",
@@ -161,7 +161,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
   ];
 
   return (
-    <div className="w-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+    <div className="w-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
 
       {/* ── 등급 컬러 상단 바 (3px) ── */}
       <div className={cn("h-[3px] w-full", cfg.topBarCls)} />
@@ -172,7 +172,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
         {/* 로고 + 종목명 + 등급 */}
         <div className="flex items-center gap-4">
           {/* 로고 */}
-          <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-white dark:bg-white shrink-0 flex items-center justify-center overflow-hidden">
+          <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-border-subtle-dark bg-white dark:bg-white shrink-0 flex items-center justify-center overflow-hidden">
             {!imgError ? (
               <Image
                 key={stock?.ticker}
@@ -202,7 +202,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
                     {stock?.ticker} · {market}
                   </p>
                   {sector && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 text-neutral-600 dark:bg-[#35332e] dark:text-neutral-300">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 text-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-300">
                       {sector}
                     </span>
                   )}
@@ -236,7 +236,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
         </div>
 
         {/* ── 등급 레이블 스트립 ── */}
-        <div className="mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-neutral-200/70 dark:border-[#35332e]/70 bg-white/60 dark:bg-[#1a1915]/50">
+        <div className="mt-4 flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-neutral-200/70 dark:border-border-subtle-dark/70 bg-white/60 dark:bg-surface-dark-canvas/50">
           <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", cfg.dotCls)} />
           <span className={cn("text-[9px] font-black uppercase tracking-[0.15em] font-mono shrink-0", cfg.labelCls)}>
             {cfg.label}
@@ -255,7 +255,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
             <Activity size={9} className="text-neutral-400" />
             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">가격 추이</p>
           </div>
-          <div className="h-[68px] rounded-xl overflow-hidden border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1a1915]">
+          <div className="h-[68px] rounded-xl overflow-hidden border border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas">
             <LineChart
               data_array={[{ name: "P", data: chartConfig.data, color: cfg.chartColor }]}
               category_array={chartConfig.categories}
@@ -284,9 +284,9 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
       ) : null}
 
       {/* ── 핵심 지표 ── gap-px + 셀 배경으로 구분선을 그린다. 2열로 접혀도 선이 어긋나지 않는다. */}
-      <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-[#35332e]">
+      <div className="border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-surface-dark-muted">
         {statsRow.map(({ label, value, desc, colorCls }) => (
-          <div key={label} className="bg-white dark:bg-[#242320] px-4 py-3.5 flex flex-col gap-1">
+          <div key={label} className="bg-white dark:bg-surface-dark-card px-4 py-3.5 flex flex-col gap-1">
             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
             <p className={cn("text-[17px] font-black font-mono tabular-nums leading-none", colorCls)}>
               {value}
@@ -297,7 +297,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
       </div>
 
       {/* ── 복사 ── 카드가 이미 종목명·티커·지표를 다 들고 있어 복사 대상도 여기서 만든다 */}
-      <div className="border-t border-neutral-100 dark:border-[#35332e] px-4 py-2 flex items-center justify-end gap-2">
+      <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-4 py-2 flex items-center justify-end gap-2">
         <span className="text-[11px] text-neutral-400 font-medium">복사</span>
         <CopyStockButtons rows={[{
           name: stock?.name,

@@ -19,7 +19,7 @@ const DETAIL_KEY = "compound_calc_detail_v1";
    카드도 그림자도 쓰지 않는다. 구획은 전부 괘선이 나눈다 —
    인쇄된 금융 서식의 문법이고, 이 화면이 빌려온 것도 그것이다. */
 
-const RULE = "border-neutral-200 dark:border-[#35332e]";
+const RULE = "border-neutral-200 dark:border-border-subtle-dark";
 const RULE_HARD = "border-neutral-400 dark:border-[#55514a]";
 
 const ROW_CLS = cn(
@@ -32,7 +32,7 @@ const NUM_CLS = "font-mono tabular-nums";
 
 const INPUT_CLS = cn(
     "font-mono tabular-nums text-[15px] font-bold text-right",
-    "text-neutral-900 dark:text-neutral-50 bg-white dark:bg-[#242320]",
+    "text-neutral-900 dark:text-neutral-50 bg-white dark:bg-surface-dark-card",
     "border rounded-[2px] px-2.5 py-1.5 w-full sm:w-[150px]", RULE_HARD,
     "focus:outline-none focus:ring-2 focus:ring-[#16a34a]",
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -74,7 +74,7 @@ function Segmented<T extends string | number>({
                         i > 0 && cn("border-l", RULE),
                         value === o.v
                             ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915]"
-                            : "bg-white dark:bg-[#242320] text-neutral-600 dark:text-neutral-400 hover:bg-[#f2efe9] dark:hover:bg-[#2c2b27]",
+                            : "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
                         "focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:z-10"
                     )}
                 >
@@ -87,7 +87,7 @@ function Segmented<T extends string | number>({
 
 export default function CompoundCalculatorPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]" />}>
+        <Suspense fallback={<div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas" />}>
             <Calculator />
         </Suspense>
     );
@@ -149,7 +149,7 @@ function Calculator() {
     const stamp = loss ? "원금 손실" : result.final >= result.principal * 2 ? "원금 2배 이상" : null;
 
     return (
-        <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] px-5 pt-8 pb-24">
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-5 pt-8 pb-24">
             <div className="max-w-[860px] mx-auto">
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
@@ -169,7 +169,7 @@ function Calculator() {
                             RULE_HARD,
                             copied
                                 ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                : "bg-white dark:bg-[#242320] text-neutral-700 dark:text-neutral-300 hover:bg-[#f2efe9] dark:hover:bg-[#2c2b27]"
+                                : "bg-white dark:bg-surface-dark-card text-neutral-700 dark:text-neutral-300 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover"
                         )}
                     >
                         {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}

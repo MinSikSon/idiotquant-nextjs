@@ -19,7 +19,7 @@ import {
 export const runtime = "edge";
 
 const CARD_CLS =
-    "bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl";
+    "bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl";
 
 /**
  * 초대 수락 화면.
@@ -79,7 +79,7 @@ export default function LedgerJoinPage() {
     );
 
     const shell = (children: React.ReactNode) => (
-        <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             {header}
             <div className="max-w-lg mx-auto px-4 sm:px-7 py-6">
                 <div className={cn(CARD_CLS, "py-10 px-5 text-center")}>{children}</div>
@@ -89,7 +89,7 @@ export default function LedgerJoinPage() {
 
     // middleware 가 막아주지만, 세션이 정리되는 찰나에 여기로 떨어질 수 있다.
     if (status === "loading" || (status === "authenticated" && loading)) {
-        return shell(<div className="h-6 w-40 mx-auto bg-[#faf9f7] dark:bg-[#1f1e1b] rounded animate-pulse" />);
+        return shell(<div className="h-6 w-40 mx-auto bg-surface-canvas dark:bg-surface-dark rounded animate-pulse" />);
     }
 
     if (status === "unauthenticated") {
@@ -114,7 +114,7 @@ export default function LedgerJoinPage() {
                 <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                     {error ?? "초대를 찾을 수 없습니다."}
                 </p>
-                <Link href="/ledger" className="inline-block mt-4 px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-[#3a3834] text-xs font-black text-neutral-600 dark:text-neutral-400">
+                <Link href="/ledger" className="inline-block mt-4 px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-surface-dark-border text-xs font-black text-neutral-600 dark:text-neutral-400">
                     내 가계부로
                 </Link>
             </>

@@ -117,7 +117,7 @@ export interface KoreaInvestmentBalance {
 function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   const isBuy = item.ord_dvsn_name?.includes("매수") || item.sll_buy_dvsn_cd === "02";
   return (
-    <tr className="hover:bg-[#f5f0e8] dark:hover:bg-[#242320]/40 transition-colors group">
+    <tr className="hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card/40 transition-colors group">
       <td className="py-3.5 px-4">
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {isNccs ? "대기 중" : formatTime(item.ccld_time)}
@@ -494,7 +494,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           {currentKakaoUser && (
             <>
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-              <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#242320] px-2 py-0.5 rounded-md">
+              <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-surface-dark-card px-2 py-0.5 rounded-md">
                 <User size={10} />
                 {currentKakaoUser.value?.nickname || balanceKey}
               </span>
@@ -520,8 +520,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           className={cn(
             "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
             tradingStatus.KR
-              ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
-              : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
+              ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-brand-light-hover dark:border-[#166534]"
+              : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
             (tradingStatus.state === "pending" || tradingStatus.KR === null) && "opacity-60 cursor-not-allowed"
           )}
         >
@@ -530,7 +530,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
         </button>
       )}
       footerBadge={
-        <span className="text-[10px] font-mono text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] px-2.5 py-1 rounded-lg">
+        <span className="text-[10px] font-mono text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-1 rounded-lg">
           ID: {String(balanceKey).slice(0, 8) || "N/A"}
         </span>
       }
@@ -570,7 +570,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                   value={isFirstLoad ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
                   sub={isFirstLoad ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
                   icon={<Percent size={15} />}
-                  iconBg="bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
+                  iconBg="bg-surface-canvas dark:bg-surface-dark-card text-neutral-500"
                   valueColor={pnlValueColor(isPnlPositive)}
                   accentColor={pnlAccentColor(isPnlPositive)}
                 />
@@ -661,7 +661,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                   krCapital.state === "pending"
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : krCapital.stock_list?.length > 0
-                    ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
+                    ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
                     : null
                 }
               />
@@ -719,7 +719,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : krQuantRule.is_override
                     ? <span className="text-[10px] font-mono text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">기본값</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
                 }
               />
               <RefillSettings
@@ -727,7 +727,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 isMaster={isMaster}
                 onSave={doSaveBudget}
               />
-              <div className="h-px bg-neutral-100 dark:bg-[#35332e] my-4" />
+              <div className="h-px bg-neutral-100 dark:bg-surface-dark-muted my-4" />
               <QuantRuleEditor
                 data={krQuantRule}
                 isMaster={isMaster}
@@ -748,7 +748,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 badge={
                   krActivity.state === "pending"
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">최근 {krActivity.logs.length}건</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">최근 {krActivity.logs.length}건</span>
                 }
               />
               <TradingActivityPanel
@@ -780,7 +780,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 }
               />
 
-              <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#35332e]">
+              <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-border-subtle-dark">
                 <table className="w-full text-sm text-left min-w-[600px]">
                   <TableHeader headers={[
                     { label: "주문시간 / 번호" },

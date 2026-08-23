@@ -123,7 +123,7 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
         <div className="flex items-start gap-2.5">
             <span className="w-7 shrink-0 pt-[5px] text-[10.5px] font-extrabold text-neutral-400">{label}</span>
             <div className="flex-1 min-w-0">
-                <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-[#3a3834]">
+                <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-surface-dark-border">
                     {mix.segs.map(seg => (
                         <div
                             key={seg.name}
@@ -201,7 +201,7 @@ function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): s
     if (!highlight || !(key in highlight)) return "";
     return highlight[key]!(item)
         ? "px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60 text-emerald-600 dark:text-emerald-400 font-bold"
-        : "px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2b27] text-neutral-400";
+        : "px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-surface-dark-hover text-neutral-400";
 }
 
 // =========================================================================
@@ -292,7 +292,7 @@ function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<s
 }
 
 const TOOLTIP_CLS =
-    "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 shadow-lg text-neutral-200 leading-relaxed " +
+    "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-neutral-900 dark:bg-surface-dark-card border border-neutral-700/60 shadow-lg text-neutral-200 leading-relaxed " +
     "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 " +
     "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
 
@@ -316,7 +316,7 @@ function StrategyCell({ label, count, active, activeCls, title, onClick }: {
                 "flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-[10px] border text-center leading-none transition-all",
                 active
                     ? activeCls
-                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
+                    : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-surface-dark-card"
             )}
         >
             <span className="text-[11.5px] font-extrabold truncate max-w-full px-1">{label}</span>
@@ -373,7 +373,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
     return (
         <div
-            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px] gap-4 items-center px-6 py-5 hover:bg-[#f0fdf4]/40 dark:hover:bg-[#242320]/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-[#35332e] last:border-0"
+            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px] gap-4 items-center px-6 py-5 hover:bg-[#f0fdf4]/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0 flex items-center gap-2">
@@ -388,12 +388,12 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
             <div className="flex flex-wrap gap-1">
                 {strategies.slice(0, 2).map(s => (
-                    <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-[#faf9f7] text-neutral-500")}>
+                    <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
                         {STRATEGY_LABEL[s] ?? s}
                     </span>
                 ))}
                 {strategies.length > 2 && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-500">
                         +{strategies.length - 2}
                     </span>
                 )}
@@ -447,7 +447,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                     <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                 </button>
                 <button
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#faf9f7] dark:bg-[#242320] group-hover:bg-[#16a34a] group-hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-[#16a34a] group-hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
                     onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
                 >
                     분석
@@ -474,7 +474,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
 
     return (
         <div
-            className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 cursor-pointer hover:border-[#86efac] dark:hover:border-[#15803d]/50 hover:shadow-md transition-all active:scale-[0.99]"
+            className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 cursor-pointer hover:border-brand-light-hover dark:hover:border-[#15803d]/50 hover:shadow-md transition-all active:scale-[0.99]"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="flex items-start justify-between gap-2 mb-4">
@@ -505,7 +505,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                             ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                             : ncav >= 0.7
                             ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
-                            : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500",
+                            : "bg-surface-canvas dark:bg-surface-dark-card text-neutral-500",
                         highlight && "ncav_ratio" in highlight && "ring-2 ring-emerald-400/60 dark:ring-emerald-500/50"
                     )}>
                         {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
@@ -516,7 +516,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
             {strategies.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-4">
                     {strategies.map(s => (
-                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-[#faf9f7] text-neutral-500")}>
+                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
                             {STRATEGY_LABEL[s] ?? s}
                         </span>
                     ))}
@@ -535,7 +535,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                         <div key={m.label} title={m.key === "roe" ? ROE_BASIS_HINT : undefined} className={cn(
                             "text-center p-3.5 rounded-xl",
                             rel && met ? "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60"
-                                : "bg-[#faf9f7] dark:bg-[#242320]/60"
+                                : "bg-surface-canvas dark:bg-surface-dark-card/60"
                         )}>
                             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
                             <p className={cn(
@@ -547,7 +547,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                 })}
             </div>
 
-            <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#faf9f7] dark:bg-[#242320] hover:bg-[#16a34a] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all">
+            <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-surface-canvas dark:bg-surface-dark-card hover:bg-[#16a34a] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all">
                 상세 분석
                 <ChevronRight size={12} />
             </button>
@@ -571,7 +571,7 @@ function DrawerCard({ label, remain, dashed, span2, children }: {
 }) {
     return (
         <div className={cn(
-            "rounded-xl px-4 py-3.5 bg-white dark:bg-[#242320]",
+            "rounded-xl px-4 py-3.5 bg-white dark:bg-surface-dark-card",
             dashed
                 ? "border border-dashed border-[#bbf7d0] dark:border-[#166534]/60"
                 : "border border-[#dcfce7] dark:border-[#166534]/40",
@@ -598,7 +598,7 @@ function DrawerChip({ active, onClick, children, title }: { active: boolean; onC
                 "px-2.5 py-1 rounded-[7px] text-[11px] font-bold border transition-colors",
                 active
                     ? "bg-[#16a34a] border-[#16a34a] text-white"
-                    : "bg-[#faf9f7] dark:bg-[#1f1e1b] border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
+                    : "bg-surface-canvas dark:bg-surface-dark border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
             )}
         >
             {children}
@@ -617,7 +617,7 @@ function DrawerCheck({ checked, onChange, label, delta }: {
                     "w-[15px] h-[15px] rounded-[5px] flex items-center justify-center shrink-0 transition-colors",
                     checked
                         ? "bg-[#16a34a]"
-                        : "bg-white dark:bg-[#1f1e1b] border-[1.5px] border-neutral-300 dark:border-[#4a4641]"
+                        : "bg-white dark:bg-surface-dark border-[1.5px] border-neutral-300 dark:border-[#4a4641]"
                 )}
             >
                 {checked && <Check size={10} className="text-white" strokeWidth={3.5} />}
@@ -1231,7 +1231,7 @@ function ScreenerContent() {
 
     return (
         <Tooltip.Provider delayDuration={300}>
-        <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100">
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             <PageHeader
@@ -1281,8 +1281,8 @@ function ScreenerContent() {
 
             {/* ── 전략 탭 + 통합 툴바 (sticky) ── */}
             <div className={cn(
-                "sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md",
-                "border-b border-neutral-200 dark:border-[#3a3834]"
+                "sticky top-0 z-30 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-md",
+                "border-b border-neutral-200 dark:border-surface-dark-border"
             )}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-7">
 
@@ -1339,7 +1339,7 @@ function ScreenerContent() {
                                 value={searchQuery}
                                 onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
                                 placeholder="종목명 또는 코드로 검색"
-                                className="w-full pl-8 pr-3 py-2 text-xs font-medium bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#3a3834] rounded-[10px] outline-none focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+                                className="w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-[10px] outline-none focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             />
                         </div>
 
@@ -1351,7 +1351,7 @@ function ScreenerContent() {
                                 "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
                                 sortKey === DEFAULT_SORT
                                     ? "bg-neutral-900 dark:bg-white border-neutral-900 dark:border-white text-white dark:text-neutral-900"
-                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
+                                    : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-surface-dark-card"
                             )}
                         >
                             NCAV순
@@ -1369,8 +1369,8 @@ function ScreenerContent() {
                                 filterOpen
                                     ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
                                     : activeFilterCount > 0
-                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
-                                        : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
+                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
+                                        : "bg-white dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
                             )}
                         >
                             <SlidersHorizontal size={12} />
@@ -1388,7 +1388,7 @@ function ScreenerContent() {
                         </button>
 
                         {/* 표 ↔ 카드 ↔ 비율 */}
-                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-surface-dark-hover">
                             {([['table', '☰'], ['card', '▦'], ['ratio', '▤']] as const).map(([id, icon]) => (
                                 <button
                                     key={id}
@@ -1397,7 +1397,7 @@ function ScreenerContent() {
                                     className={cn(
                                         "px-2.5 py-1.5 rounded-lg text-xs transition-colors",
                                         viewMode === id
-                                            ? "bg-white dark:bg-[#1f1e1b] text-neutral-900 dark:text-white shadow-sm"
+                                            ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm"
                                             : "text-neutral-500 dark:text-neutral-400"
                                     )}
                                 >
@@ -1416,7 +1416,7 @@ function ScreenerContent() {
                                 "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
                                 showLikedOnly
                                     ? "bg-rose-500 border-rose-500 text-white shadow-sm"
-                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-[#242320]"
+                                    : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
                             )}
                         >
                             <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
@@ -1424,7 +1424,7 @@ function ScreenerContent() {
                             {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                             <span className={cn(
                                 "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                showLikedOnly ? "bg-white/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
+                                showLikedOnly ? "bg-white/20" : "bg-surface-canvas dark:bg-surface-dark-elevated text-neutral-500"
                             )}>
                                 {likedTickers.size}
                             </span>
@@ -1442,7 +1442,7 @@ function ScreenerContent() {
                                 return (
                                     <span key={id} className={cn(
                                         "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded",
-                                        STRATEGY_BADGE[id] ?? "bg-[#faf9f7] text-neutral-500"
+                                        STRATEGY_BADGE[id] ?? "bg-surface-canvas text-neutral-500"
                                     )}>
                                         {preset.label}
                                         <button onClick={() => toggleStrategy(id)} className="hover:opacity-70">
@@ -1452,14 +1452,14 @@ function ScreenerContent() {
                                 );
                             })}
                             {/* OR / AND 토글 */}
-                            <div className="flex items-center rounded-full border border-neutral-200 dark:border-[#3a3834] overflow-hidden text-[10px] font-black">
+                            <div className="flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[10px] font-black">
                                 <button
                                     onClick={() => setFilterMode('OR')}
                                     className={cn(
                                         "px-2 py-0.5 transition-colors",
                                         filterMode === 'OR'
                                             ? "bg-[#16a34a] text-white"
-                                            : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#242320]"
+                                            : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card"
                                     )}
                                 >
                                     OR
@@ -1467,10 +1467,10 @@ function ScreenerContent() {
                                 <button
                                     onClick={() => setFilterMode('AND')}
                                     className={cn(
-                                        "px-2 py-0.5 transition-colors border-l border-neutral-200 dark:border-[#3a3834]",
+                                        "px-2 py-0.5 transition-colors border-l border-neutral-200 dark:border-surface-dark-border",
                                         filterMode === 'AND'
                                             ? "bg-[#16a34a] text-white"
-                                            : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#242320]"
+                                            : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card"
                                     )}
                                 >
                                     AND
@@ -1588,7 +1588,7 @@ function ScreenerContent() {
                                         value={minMarketCap || ''}
                                         onChange={e => { setMinMarketCap(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }}
                                         placeholder="0"
-                                        className="w-20 px-2 py-1 rounded-md font-mono tabular-nums bg-[#faf9f7] dark:bg-[#1f1e1b] border border-neutral-200 dark:border-[#3a3834] outline-none focus:border-[#16a34a]"
+                                        className="w-20 px-2 py-1 rounded-md font-mono tabular-nums bg-surface-canvas dark:bg-surface-dark border border-neutral-200 dark:border-surface-dark-border outline-none focus:border-[#16a34a]"
                                     />
                                     <span className="text-neutral-400">~</span>
                                     <span className="text-neutral-300 dark:text-neutral-600">제한 없음</span>
@@ -1852,7 +1852,7 @@ function ScreenerContent() {
 
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
-                <div className="bg-white dark:bg-[#242320] border-b border-neutral-200 dark:border-[#35332e]">
+                <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
@@ -1872,13 +1872,13 @@ function ScreenerContent() {
                                         "text-left p-3.5 rounded-xl border-2 transition-all",
                                         activeStrategyIds.has(preset.id)
                                             ? "border-[#16a34a] dark:border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/20"
-                                            : "border-neutral-200 dark:border-[#3a3834] hover:border-neutral-300 dark:hover:border-neutral-600 bg-[#faf9f7] dark:bg-[#242320]/50"
+                                            : "border-neutral-200 dark:border-surface-dark-border hover:border-neutral-300 dark:hover:border-neutral-600 bg-surface-canvas dark:bg-surface-dark-card/50"
                                     )}
                                 >
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className={cn(
                                             "text-[10px] font-extrabold px-2 py-0.5 rounded",
-                                            STRATEGY_BADGE[preset.id] ?? "bg-[#faf9f7] text-neutral-500"
+                                            STRATEGY_BADGE[preset.id] ?? "bg-surface-canvas text-neutral-500"
                                         )}>
                                             {preset.label}
                                         </span>
@@ -1914,7 +1914,7 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-                        <div className="p-4 bg-[#faf9f7] dark:bg-[#242320] rounded-2xl">
+                        <div className="p-4 bg-surface-canvas dark:bg-surface-dark-card rounded-2xl">
                             {showLikedOnly
                                 ? <Heart size={24} className="text-neutral-400" />
                                 : <Search size={24} className="text-neutral-400" />
@@ -1960,7 +1960,7 @@ function ScreenerContent() {
                             업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
                             나란히 놓아야 "이 업황 하나에 이 전략 하나" 같은 쏠림이 눈에 띈다. */}
                         {(sectorMix || strategyMix) && (
-                            <div className="mb-3 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-3.5 py-3">
+                            <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3.5 py-3">
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
                                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
                                     <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">{filteredList.length}종목</span>
@@ -1970,7 +1970,7 @@ function ScreenerContent() {
                                     {strategyMix && <MixRow label="전략" mix={strategyMix} />}
                                 </div>
                                 {sectorMix && sectorMix.top3Pct >= 60 && (
-                                    <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-[#35332e] text-[11.5px] leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
+                                    <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-border-subtle-dark text-[11.5px] leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
                                         상위 3개 업종({sectorMix.topNames.join(' · ')})이 {sectorMix.top3Pct.toFixed(0)}%를 차지합니다.
                                         여기서 고르면 사실상 그 업황에 거는 셈입니다.
                                     </p>
@@ -1982,7 +1982,7 @@ function ScreenerContent() {
                             묶기는 "무엇을 걸러낼지"가 아니라 "고른 결과를 어떻게 늘어놓을지"라
                             결과 바로 위가 제자리다. */}
                         <div className="flex items-center gap-2 flex-wrap mb-3">
-                            <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                            <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-surface-dark-hover">
                                 {([
                                     { id: 'none',     label: '안 묶기' },
                                     { id: 'sector',   label: '업종', disabled: !hasSectorData },
@@ -1997,7 +1997,7 @@ function ScreenerContent() {
                                             "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
                                             o.disabled && "opacity-40 cursor-not-allowed",
                                             groupMode === o.id
-                                                ? "bg-white dark:bg-[#1f1e1b] font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                                ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white shadow-sm"
                                                 : "font-bold text-neutral-500 dark:text-neutral-400"
                                         )}
                                     >
@@ -2017,7 +2017,7 @@ function ScreenerContent() {
 
                         {viewMode === 'ratio' ? (
                             groups ? (
-                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
@@ -2032,7 +2032,7 @@ function ScreenerContent() {
                             )
                         ) : viewMode === 'card' ? (
                             groups ? (
-                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
@@ -2049,8 +2049,8 @@ function ScreenerContent() {
                         <>
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
-                            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
-                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-4 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#35332e]">
+                            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark">
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
@@ -2079,7 +2079,7 @@ function ScreenerContent() {
                             예전에는 이 블록이 묶기를 무시해, 폰에서는 버튼을 눌러도 아무 일이 없었다. */}
                         <div className="md:hidden">
                             {groups ? (
-                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
                                     <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3"
                                         renderRow={(item: any) => (
                                             <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
@@ -2100,7 +2100,7 @@ function ScreenerContent() {
                             <div className="flex justify-center mt-10">
                                 <button
                                     onClick={() => setDisplayCount(c => c + DAILY_PAGE_SIZE)}
-                                    className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-[#4a4641] hover:text-neutral-900 dark:hover:text-white transition-all"
+                                    className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-[#4a4641] hover:text-neutral-900 dark:hover:text-white transition-all"
                                 >
                                     더 보기 ({filteredList.length - displayCount}개 남음)
                                 </button>
@@ -2120,7 +2120,7 @@ function ScreenerContent() {
 export default function ScreenerPage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+            <div className="flex items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
                 <Loader2 className="animate-spin text-[#16a34a]" size={24} />
             </div>
         }>

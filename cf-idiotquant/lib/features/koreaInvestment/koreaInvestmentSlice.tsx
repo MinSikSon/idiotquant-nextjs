@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { registerCookie } from "@/components/util";
+import { registerCookie } from "@/lib/utils/cookies";
 import {
   getInquireBalanceApi,
   postTokenApi,

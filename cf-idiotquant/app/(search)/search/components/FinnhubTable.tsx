@@ -236,7 +236,7 @@ function YoYBadge({ pct }: { pct: number | null }) {
 const TAB_TRIGGER_BASE = [
     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-150",
     "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200",
-    "data-[state=active]:bg-white dark:data-[state=active]:bg-[#4a4641]",
+    "data-[state=active]:bg-white dark:data-[state=active]:bg-surface-dark-elevated",
     "data-[state=active]:shadow-sm",
 ].join(" ");
 
@@ -253,8 +253,8 @@ function SectionTable({
         <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 dark:border-[#35332e]">
-                        <th className="sticky left-0 z-10 bg-white dark:bg-[#242320] px-5 py-3 text-left min-w-[12rem] w-48">
+                    <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
+                        <th className="sticky left-0 z-10 bg-white dark:bg-surface-dark-card px-5 py-3 text-left min-w-[12rem] w-48">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 font-mono select-none">
                                 Financial Metric
                             </span>
@@ -292,7 +292,7 @@ function SectionTable({
                             <tr>
                                 <td
                                     colSpan={columns.length + 1}
-                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-[#242320]"
+                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-surface-dark-card"
                                 >
                                     <div className={cn(
                                         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest font-mono select-none",
@@ -312,18 +312,18 @@ function SectionTable({
                                     <tr
                                         key={rowIdx}
                                         className={cn(
-                                            "group border-b border-neutral-100 dark:border-[#35332e]/50 transition-colors duration-100",
+                                            "group border-b border-neutral-100 dark:border-border-subtle-dark/50 transition-colors duration-100",
                                             item.isTotal
-                                                ? "bg-[#faf9f7]/80 dark:bg-[#242320]/20 hover:bg-[#f5f0e8]/70 dark:hover:bg-[#242320]/40"
-                                                : "hover:bg-[#f5f0e8]/60 dark:hover:bg-[#242320]/10"
+                                                ? "bg-surface-canvas/80 dark:bg-surface-dark-card/20 hover:bg-surface-muted-hover/70 dark:hover:bg-surface-dark-card/40"
+                                                : "hover:bg-surface-muted-hover/60 dark:hover:bg-surface-dark-card/10"
                                         )}
                                     >
                                         {/* Label */}
                                         <td className={cn(
                                             "sticky left-0 z-10 px-5 py-3 transition-colors duration-100",
                                             item.isTotal
-                                                ? "bg-[#faf9f7] dark:bg-[#242320]/20 group-hover:bg-[#f5f0e8]/70 dark:group-hover:bg-[#35332e]/40"
-                                                : "bg-white dark:bg-[#242320] group-hover:bg-[#f5f0e8]/60 dark:group-hover:bg-[#35332e]/10"
+                                                ? "bg-surface-canvas dark:bg-surface-dark-card/20 group-hover:bg-surface-muted-hover/70 dark:group-hover:bg-surface-dark-muted/40"
+                                                : "bg-white dark:bg-surface-dark-card group-hover:bg-surface-muted-hover/60 dark:group-hover:bg-surface-dark-muted/10"
                                         )}>
                                             <div className="flex items-center gap-2">
                                                 {item.isTotal
@@ -400,7 +400,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
     if (!columns.length) return null;
 
     const footer = (
-        <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-[#35332e]">
+        <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse shrink-0" />
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
                 Finnhub · SEC Fundamentals · US-GAAP · USD
@@ -417,8 +417,8 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
         <div className={cn("w-full", className)}>
             <Tabs.Root defaultValue="bs">
                 {/* Tab Bar */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-[#35332e] bg-[#faf9f7]/50 dark:bg-[#242320]/20">
-                    <Tabs.List className="flex gap-1 bg-[#faf9f7] dark:bg-[#242320] rounded-lg p-1">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/50 dark:bg-surface-dark-card/20">
+                    <Tabs.List className="flex gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
                             className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-[#15803d] dark:data-[state=active]:text-[#86efac]")}

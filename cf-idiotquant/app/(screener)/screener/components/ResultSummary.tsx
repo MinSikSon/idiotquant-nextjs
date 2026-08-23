@@ -16,7 +16,7 @@ const p95 = (xs: number[]) => {
   return v.length ? v[Math.min(v.length - 1, Math.floor(v.length * 0.95))] : 0;
 };
 
-const CARD = "rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-[15px] py-3.5";
+const CARD = "rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-[15px] py-3.5";
 // 축 눈금 — 예전에는 neutral-300 이라 배경과 거의 구분되지 않았다. 축을 읽으라고 둔 글자다.
 const AXIS = "text-[10px] font-mono tabular-nums text-neutral-400 dark:text-neutral-500";
 
@@ -67,7 +67,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
             <span className={cn(AXIS, "translate-y-1/2")}>0%</span>
           </div>
 
-          <div className="relative flex-1 h-[132px] border-l border-b border-neutral-200 dark:border-[#35332e]">
+          <div className="relative flex-1 h-[132px] border-l border-b border-neutral-200 dark:border-border-subtle-dark">
             {/* 좌상단(PBR 낮고 ROE 높은 쪽)으로 갈수록 옅은 초록 — 어느 방향이 좋은지 눈으로
                 알려준다. 가로축이 PBR 이라 오른쪽은 비싼 쪽이다. */}
             <div className="absolute inset-0 bg-gradient-to-tl from-transparent to-[#16a34a]/[0.055] pointer-events-none" />
@@ -138,7 +138,7 @@ export function TermStrip() {
       {open && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3">
           {TERMS.map(t => (
-            <div key={t.term} className="rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-white dark:bg-[#242320] px-3 py-2.5">
+            <div key={t.term} className="rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-white dark:bg-surface-dark-card px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[11.5px] font-extrabold text-neutral-900 dark:text-neutral-100">{t.term}</span>
                 <span className="px-1.5 py-0.5 rounded-full bg-[#dcfce7] dark:bg-[#052e16]/60 text-[#16a34a] text-[10px] font-mono font-bold">{t.rule}</span>

@@ -94,13 +94,13 @@ export function GroupedResults({
                     <div key={g.key}>
                         <button
                             onClick={() => onToggle(g.key)}
-                            className="w-full flex items-center gap-2.5 px-[18px] py-2.5 bg-[#fbfbf9] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e] hover:bg-[#f5f4f1] dark:hover:bg-[#2c2b27] transition-colors text-left"
+                            className="w-full flex items-center gap-2.5 px-[18px] py-2.5 bg-[#fbfbf9] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark hover:bg-[#f5f4f1] dark:hover:bg-surface-dark-hover transition-colors text-left"
                         >
                             <span className={cn("text-[10px] text-neutral-400 transition-transform shrink-0", !isOpen && "-rotate-90")}>▾</span>
                             {/* 폰에서는 한 줄에 이름·개수까지 들어가야 해서 아이콘을 한 단계 줄인다.
                                 20×14 격자 비율(1.4)은 유지해야 도트가 정수 배로 떨어진다. */}
                             {g.sector && (
-                                <span className="w-[30px] h-[21px] sm:w-[42px] sm:h-[30px] shrink-0 rounded-[5px] overflow-hidden border border-neutral-200 dark:border-[#35332e]">
+                                <span className="w-[30px] h-[21px] sm:w-[42px] sm:h-[30px] shrink-0 rounded-[5px] overflow-hidden border border-neutral-200 dark:border-border-subtle-dark">
                                     <SectorSprite sector={g.sector} color={sectorAccent(g.sector)} />
                                 </span>
                             )}
@@ -120,7 +120,7 @@ export function GroupedResults({
                 );
             })}
             {hiddenCount > 0 && (
-                <p className="px-[18px] py-3 bg-[#faf9f7] dark:bg-[#1f1e1b] text-center text-[11.5px] font-bold text-neutral-500 dark:text-neutral-400">
+                <p className="px-[18px] py-3 bg-surface-canvas dark:bg-surface-dark text-center text-[11.5px] font-bold text-neutral-500 dark:text-neutral-400">
                     접힌 {hiddenCount}개 그룹은 헤더를 눌러 펼칠 수 있습니다
                 </p>
             )}

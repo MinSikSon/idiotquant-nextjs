@@ -233,12 +233,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                     setIsDropdownOpen(true);
                                 }}
                                 placeholder={isUs ? "티커 또는 미국 ETF 검색..." : "종목코드 또는 국내 주식 검색..."}
-                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent dark:text-white"
+                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-transparent dark:text-white"
                             />
                             {searchQuery && (
                                 <button 
                                     onClick={() => setSearchQuery("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[#f5f0e8] dark:hover:bg-[#35332e] rounded-full text-neutral-400"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted rounded-full text-neutral-400"
                                 >
                                     <X size={12} />
                                 </button>
@@ -249,13 +249,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {isDropdownOpen && searchQuery.trim() && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl shadow-xl z-20 divide-y divide-neutral-100 dark:divide-[#35332e]">
+                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl shadow-xl z-20 divide-y divide-neutral-100 dark:divide-[#35332e]">
                                     {filteredSearchResults.length > 0 ? (
                                         filteredSearchResults.map((stock) => (
                                             <div
                                                 key={stock.pdno}
                                                 onClick={() => handleOpenOrderModal(stock)}
-                                                className="flex items-center justify-between p-3.5 hover:bg-[#f5f1eb] dark:hover:bg-[#35332e]/50 cursor-pointer transition-colors group"
+                                                className="flex items-center justify-between p-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-muted/50 cursor-pointer transition-colors group"
                                             >
                                                 <div className="flex flex-col">
                                                     <span className="text-xs font-black dark:text-neutral-200 group-hover:text-[#16a34a] transition-colors">
@@ -279,7 +279,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-neutral-200 dark:bg-[#35332e] rounded text-[10px] font-black text-neutral-600 dark:text-neutral-400 shrink-0">
+                        <span className="px-2 py-1 bg-neutral-200 dark:bg-surface-dark-muted rounded text-[10px] font-black text-neutral-600 dark:text-neutral-400 shrink-0">
                             {isUs ? "KRW (고시환율 정산)" : "KRW"}
                         </span>
                         <button
@@ -299,7 +299,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {/* 메인 요약 카드 (계좌 선택기는 페이지 상단 AccountSelector로 이동됨) */}
-            <div className="bg-white dark:bg-[#242320] rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-surface-dark-card rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-[#35332e]">
                     <SummaryItem
                         label="평가 손익률"
@@ -328,7 +328,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
                         isError
                             ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50"
-                            : "bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#35332e]"
+                            : "bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-border-subtle-dark"
                     }`}>
                         {isError
                             ? <AlertCircle size={18} className="text-red-500 mt-0.5 shrink-0" />
@@ -343,7 +343,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             })()}
 
             {/* 테이블 섹션 */}
-            <div className="overflow-hidden bg-white dark:bg-[#242320] rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-surface-dark-card rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
                 <SortableBalanceTable
                     inventoryData={props.kiBalance.output1 || []}
                     isUs={isUs}
@@ -392,7 +392,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
             <span className={`mt-0.5 inline-flex w-fit items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
                 g.assigned && g.active
                     ? "bg-[#16a34a]/10 text-[#16a34a]"
-                    : "bg-neutral-100 text-neutral-400 dark:bg-[#35332e] dark:text-neutral-400"
+                    : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted dark:text-neutral-400"
             }`}>
                 <FolderOpen className="w-2.5 h-2.5" /> {g.name}
             </span>
@@ -479,7 +479,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                         <div className="flex gap-2 pt-1 flex-wrap">
                             <button
                                 onClick={() => goAnalyze(item)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-[#35332e] text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-black transition-colors hover:bg-neutral-200 dark:hover:bg-[#4a4641]"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-surface-dark-muted text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-black transition-colors hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated"
                             >
                                 <BarChart3 size={12} /> 분석
                             </button>
@@ -508,7 +508,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
         <>
             {/* 잔고 목록 복사 (종목명만 / 상세) */}
             {copyRows.length > 0 && (
-                <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-neutral-100 dark:border-[#35332e]">
+                <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-neutral-100 dark:border-border-subtle-dark">
                     <span className="text-[11px] text-neutral-400 font-medium">잔고 복사</span>
                     <CopyStockButtons rows={copyRows} label="잔고" />
                 </div>
@@ -523,7 +523,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[900px]">
                     <thead>
-                        <tr className="bg-[#fcfaf7] dark:bg-[#35332e]/50 border-b border-neutral-100 dark:border-[#35332e]">
+                        <tr className="bg-[#fcfaf7] dark:bg-surface-dark-muted/50 border-b border-neutral-100 dark:border-border-subtle-dark">
                             <th className="p-4 text-center w-16 text-[10px] font-black text-neutral-400 uppercase">#</th>
                             <TableHeader label="종목명" sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label="보유수량" sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
@@ -546,7 +546,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                             const isPositive = profitRt >= 0;
 
                             return (
-                                <tr key={idx} className="group hover:bg-[#f5f1eb] dark:hover:bg-[#35332e]/30 transition-colors">
+                                <tr key={idx} className="group hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-muted/30 transition-colors">
                                     <td className="p-4 text-center font-mono text-xs text-neutral-400">{idx + 1}</td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
@@ -581,7 +581,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => goAnalyze(item)}
-                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-[#4a4641] rounded-lg text-neutral-500 transition-colors"
+                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated rounded-lg text-neutral-500 transition-colors"
                                                 title="종목 분석"
                                             >
                                                 <BarChart3 size={16} />
@@ -618,7 +618,7 @@ function TableHeader({ label, sortKey, align = "left", currentConfig, onSort }: 
     const isActive = currentConfig.key === sortKey;
     return (
         <th
-            className={`p-4 cursor-pointer select-none transition-colors hover:bg-[#f5f0e8] dark:hover:bg-[#35332e] ${align === "right" ? "text-right" : "text-left"}`}
+            className={`p-4 cursor-pointer select-none transition-colors hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted ${align === "right" ? "text-right" : "text-left"}`}
             onClick={() => onSort(sortKey)}
         >
             <div className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
@@ -743,7 +743,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-[2rem] p-6 shadow-2xl space-y-6 relative mx-4">
+            <div className="w-full max-w-md bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-[2rem] p-6 shadow-2xl space-y-6 relative mx-4">
                 
                 <div className="flex items-center justify-between">
                     <div>
@@ -753,12 +753,12 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                             {pdno} • {isUs ? `미국(US) [${excgCd}]` : "국내(KR)"}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-[#f5f0e8] dark:hover:bg-[#35332e] rounded-xl text-neutral-400 transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted rounded-xl text-neutral-400 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="grid grid-cols-2 p-1 bg-[#faf9f7] dark:bg-[#35332e] rounded-xl">
+                <div className="grid grid-cols-2 p-1 bg-surface-canvas dark:bg-surface-dark-muted rounded-xl">
                     <button
                         onClick={() => setBuyOrSell("buy")}
                         className={`py-2.5 text-sm font-black rounded-lg transition-all ${buyOrSell === "buy" ? "bg-rose-500 text-white shadow-md" : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"}`}
@@ -786,7 +786,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                 min={isUs ? "0.01" : "1"}
                                 value={price}
                                 onChange={(e) => { setPrice(e.target.value); if (priceError) setPriceError(""); }}
-                                className={`w-full bg-[#fcfaf7] dark:bg-[#35332e]/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-[#16a34a] dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-[#35332e]"}`}
+                                className={`w-full bg-[#fcfaf7] dark:bg-surface-dark-muted/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-[#16a34a] dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-border-subtle-dark"}`}
                                 placeholder={isUs ? "0.00" : "0"}
                             />
                         </div>
@@ -806,7 +806,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                 </button>
                             )}
                         </div>
-                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-[#35332e]"}`}>
+                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-border-subtle-dark"}`}>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -814,13 +814,13 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                     setQty(String(v));
                                     if (qtyError) setQtyError("");
                                 }}
-                                className="px-4 py-3 text-lg font-black text-neutral-500 hover:bg-[#f5f0e8] dark:hover:bg-[#35332e] transition-colors select-none"
+                                className="px-4 py-3 text-lg font-black text-neutral-500 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted transition-colors select-none"
                             >−</button>
                             <input
                                 type="number"
                                 value={qty}
                                 onChange={(e) => { setQty(e.target.value); if (qtyError) setQtyError(""); }}
-                                className="flex-1 bg-[#fcfaf7] dark:bg-[#35332e]/50 text-center font-mono font-bold text-sm focus:outline-none dark:text-white py-3 min-w-0"
+                                className="flex-1 bg-[#fcfaf7] dark:bg-surface-dark-muted/50 text-center font-mono font-bold text-sm focus:outline-none dark:text-white py-3 min-w-0"
                                 placeholder="1"
                                 min="1"
                             />
@@ -831,14 +831,14 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                     setQty(String(v));
                                     if (qtyError) setQtyError("");
                                 }}
-                                className="px-4 py-3 text-lg font-black text-neutral-500 hover:bg-[#f5f0e8] dark:hover:bg-[#35332e] transition-colors select-none"
+                                className="px-4 py-3 text-lg font-black text-neutral-500 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted transition-colors select-none"
                             >+</button>
                         </div>
                         {qtyError && <p className="text-xs text-rose-500 font-medium">{qtyError}</p>}
                     </div>
                 </div>
 
-                <div className="p-4 bg-[#fcfaf7] dark:bg-[#35332e]/40 border border-neutral-100 dark:border-[#35332e] rounded-2xl flex justify-between items-center text-sm">
+                <div className="p-4 bg-[#fcfaf7] dark:bg-surface-dark-muted/40 border border-neutral-100 dark:border-border-subtle-dark rounded-2xl flex justify-between items-center text-sm">
                     <span className="font-bold text-neutral-400">예상 총 금액</span>
                     <span className="font-mono font-black dark:text-white">
                         {isUs
@@ -851,7 +851,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                 <button
                     disabled={isPending}
                     onClick={handleSubmitOrder}
-                    className={`w-full py-3.5 rounded-xl text-white text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg ${buyOrSell === "buy" ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" : "bg-[#16a34a] hover:bg-[#15803d] shadow-[#16a34a]/20"} disabled:bg-neutral-300 dark:disabled:bg-[#4a4641]`}
+                    className={`w-full py-3.5 rounded-xl text-white text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg ${buyOrSell === "buy" ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" : "bg-[#16a34a] hover:bg-[#15803d] shadow-[#16a34a]/20"} disabled:bg-neutral-300 dark:disabled:bg-surface-dark-elevated`}
                 >
                     {isPending ? (
                         <>

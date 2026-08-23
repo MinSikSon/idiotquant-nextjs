@@ -24,7 +24,7 @@ export function SectionNav({
   onMobileTabChange?: (id: string) => void;
 }) {
   return (
-    <nav className="sticky top-0 z-30 bg-white/90 dark:bg-[#1f1e1b]/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#35332e] transition-colors duration-300">
+    <nav className="sticky top-0 z-30 bg-white/90 dark:bg-surface-dark/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-border-subtle-dark transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4">
 
         {/* 모바일 탭바 */}
@@ -55,8 +55,8 @@ export function SectionNav({
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all shrink-0",
                 mobileTab === id
-                  ? "bg-[#ede8df]/80 dark:bg-[#35332e] text-neutral-900 dark:text-neutral-50 font-semibold"
-                  : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
+                  ? "bg-surface-muted/80 dark:bg-surface-dark-muted text-neutral-900 dark:text-neutral-50 font-semibold"
+                  : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
               )}
             >
               <span className="shrink-0">{icon}</span>

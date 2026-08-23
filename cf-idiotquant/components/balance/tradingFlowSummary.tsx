@@ -100,7 +100,7 @@ export default function TradingFlowSummary({
               "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all shrink-0 disabled:opacity-60",
               isOn
                 ? "bg-[#16a34a] text-white border-[#16a34a] hover:bg-[#15803d]"
-                : "bg-white dark:bg-[#242320] text-neutral-500 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400"
+                : "bg-white dark:bg-surface-dark-card text-neutral-500 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400"
             )}
           >
             <Power size={13} />
@@ -114,12 +114,12 @@ export default function TradingFlowSummary({
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1.5">
             <div className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white dark:bg-[#242320]",
-              s.ok ? "border-[#bbf7d0] dark:border-[#166534]/60" : "border-neutral-200 dark:border-[#35332e]"
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white dark:bg-surface-dark-card",
+              s.ok ? "border-[#bbf7d0] dark:border-[#166534]/60" : "border-neutral-200 dark:border-border-subtle-dark"
             )}>
               <span className={cn(
                 "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
-                s.ok ? "bg-[#16a34a] text-white" : "bg-neutral-200 dark:bg-[#4a4641] text-neutral-400"
+                s.ok ? "bg-[#16a34a] text-white" : "bg-neutral-200 dark:bg-surface-dark-elevated text-neutral-400"
               )}>
                 {s.ok ? <Check size={10} strokeWidth={3} /> : <span className="text-[9px] font-black">{i + 1}</span>}
               </span>

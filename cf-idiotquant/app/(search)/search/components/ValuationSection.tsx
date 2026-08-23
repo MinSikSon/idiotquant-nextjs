@@ -19,7 +19,7 @@ import {
   calculateUsDCF,
   calculateUsMultipliers,
   ValuationResult,
-} from "@/components/utils/financeCalc";
+} from "@/lib/utils/financeCalc";
 
 type ValuationModelType = "NCAV" | "SRIM" | "DCF" | "PER" | "PEG" | "PBR" | string;
 type FilterTabType = "ALL" | "ASSET" | "EARNING";
@@ -160,9 +160,9 @@ const DEFAULT_CONFIG: ModelConfig = {
   icon: <BarChart3 size={14} />,
   dotBg: "bg-neutral-500",
   accentLine: "bg-neutral-400",
-  iconBg: "bg-[#faf9f7] dark:bg-[#242320]",
+  iconBg: "bg-surface-canvas dark:bg-surface-dark-card",
   iconColor: "text-neutral-500 dark:text-neutral-400",
-  badgeClass: "bg-[#faf9f7] dark:bg-[#242320] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-[#3a3834]",
+  badgeClass: "bg-surface-canvas dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-surface-dark-border",
   textColor: "text-neutral-600 dark:text-neutral-400",
 };
 
@@ -299,13 +299,13 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
-        <div className="px-3 sm:px-5 pt-5 pb-6 border-b border-neutral-100 dark:border-[#35332e]">
+        <div className="px-3 sm:px-5 pt-5 pb-6 border-b border-neutral-100 dark:border-border-subtle-dark">
           <div className="flex items-center gap-2 mb-3">
             <Target size={13} className="text-neutral-400 shrink-0" />
             <span className="text-[13.5px] font-extrabold text-neutral-700 dark:text-neutral-200 tracking-tight">
               모델별 적정주가
             </span>
-            <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-md uppercase tracking-wider">
+            <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-md uppercase tracking-wider">
               {axis.rows.length} Models
             </span>
           </div>
@@ -320,7 +320,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
-          <div className="rounded-[10px] overflow-hidden border border-neutral-100 dark:border-[#35332e]">
+          <div className="rounded-[10px] overflow-hidden border border-neutral-100 dark:border-border-subtle-dark">
             {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
                 축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
                 12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
@@ -353,7 +353,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               return (
                 <div
                   key={r.type}
-                  className={cn(AXIS_GRID, "px-3 sm:px-4 py-2.5 bg-white dark:bg-[#242320] border-t border-neutral-100 dark:border-[#35332e]")}
+                  className={cn(AXIS_GRID, "px-3 sm:px-4 py-2.5 bg-white dark:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
                 >
                   <div className="min-w-0">
                     <p className="text-[12px] font-bold text-neutral-900 dark:text-neutral-100 truncate">{r.config.name}</p>
@@ -363,7 +363,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
                       행 패딩(py-2.5)은 -inset-y-2.5 로 넘겨 다음 행 선과 맞붙는다. */}
                   <div className="relative self-stretch min-h-4">
-                    <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 rounded-full bg-[#f2f0ec] dark:bg-[#2c2b27]" />
+                    <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 rounded-full bg-[#f2f0ec] dark:bg-surface-dark-hover" />
                     {axis.curPrice > 0 && (
                       <>
                         <div
@@ -411,7 +411,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
         <div className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}>
 
           {/* 필터 탭 */}
-          <div className="px-5 py-3 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-1">
+          <div className="px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-1">
             {([
               { id: "ALL",     label: "전체",     count: models.length },
               { id: "ASSET",   label: "자산가치", count: assetCount },
@@ -424,7 +424,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150",
                   activeTab === tab.id
                     ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                    : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#242320] hover:text-neutral-800 dark:hover:text-neutral-200"
+                    : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card hover:text-neutral-800 dark:hover:text-neutral-200"
                 )}
               >
                 {tab.label}
@@ -432,7 +432,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   "text-[9px] font-black px-1.5 py-0.5 rounded-full",
                   activeTab === tab.id
                     ? "bg-white/20 dark:bg-black/20"
-                    : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500 dark:text-neutral-500"
+                    : "bg-surface-canvas dark:bg-surface-dark-card text-neutral-500 dark:text-neutral-500"
                 )}>
                   {tab.count}
                 </span>
@@ -510,7 +510,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden flex flex-col">
 
       {/* 상단 컬러 액센트 라인 */}
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />
@@ -518,7 +518,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {/* 카드 헤더 */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between cursor-pointer hover:bg-[#f5f0e8]/50 dark:hover:bg-[#2c2b27]/50 transition-colors select-none"
+        className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between cursor-pointer hover:bg-surface-muted-hover/50 dark:hover:bg-surface-dark-hover/50 transition-colors select-none"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
@@ -542,7 +542,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
             <p className="text-[10px] font-mono text-neutral-400 mt-0.5 truncate">{result.formula}</p>
           </div>
         </div>
-        <div className="shrink-0 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-[#f5f0e8] dark:hover:bg-[#242320] transition-colors ml-2">
+        <div className="shrink-0 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card transition-colors ml-2">
           {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </div>
       </div>
@@ -551,7 +551,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {isExpanded && (
         <>
           {/* 모델 설명 */}
-          <div className="px-5 py-3.5 border-b border-neutral-50 dark:border-[#35332e]/60 bg-[#faf9f7]/30 dark:bg-[#242320]/10">
+          <div className="px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
               {config.description.summary}
             </p>
@@ -559,11 +559,11 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
           {/* 핵심 지표 그리드 */}
           {extendedMetrics.length > 0 && (
-            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-[#35332e]">
+            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
               {extendedMetrics.map((m: any, i: number) => (
                 <div
                   key={i}
-                  className="p-3 bg-[#faf9f7] dark:bg-[#242320]/50 rounded-xl border border-neutral-100 dark:border-[#35332e]"
+                  className="p-3 bg-surface-canvas dark:bg-surface-dark-card/50 rounded-xl border border-neutral-100 dark:border-border-subtle-dark"
                 >
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider mb-1 truncate">
                     {m.label}
@@ -580,7 +580,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-[#faf9f7] dark:bg-[#242320]/30">
+                <tr className="bg-surface-canvas dark:bg-surface-dark-card/30">
                   {result.headers.map((h: any, i: number) => (
                     <th
                       key={i}
@@ -604,10 +604,10 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     <tr
                       key={idx}
                       className={cn(
-                        "border-t border-neutral-100 dark:border-[#35332e] transition-colors",
+                        "border-t border-neutral-100 dark:border-border-subtle-dark transition-colors",
                         isBase
-                          ? "bg-[#faf9f7]/80 dark:bg-[#242320]/30"
-                          : "hover:bg-[#f5f0e8]/40 dark:hover:bg-[#242320]/10"
+                          ? "bg-surface-canvas/80 dark:bg-surface-dark-card/30"
+                          : "hover:bg-surface-muted-hover/40 dark:hover:bg-surface-dark-card/10"
                       )}
                     >
                       <td className="px-5 py-3 whitespace-nowrap">
@@ -653,7 +653,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
 
           {/* 푸터 노트 */}
-          <div className="px-5 py-3 border-t border-neutral-100 dark:border-[#35332e] bg-[#faf9f7]/30 dark:bg-[#242320]/10 flex items-start gap-2">
+          <div className="px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
             <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
               {result.footerNotice}

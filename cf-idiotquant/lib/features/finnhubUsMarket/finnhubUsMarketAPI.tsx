@@ -1,6 +1,6 @@
 // fmp : financial modeling prep (https://site.financialmodelingprep.com/)
 
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/lib/utils/cookies";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 
 export const getFinnhubUsFinancialsReported: any = async (PDNO: string) => {

@@ -114,7 +114,7 @@ export default function PrivacyPage() {
                 </p>
             </Section>
 
-            <p className="mt-8 pt-6 border-t border-neutral-100 dark:border-[#35332e] text-xs text-neutral-400 dark:text-neutral-500">
+            <p className="mt-8 pt-6 border-t border-neutral-100 dark:border-border-subtle-dark text-xs text-neutral-400 dark:text-neutral-500">
                 본 방침은 {EFFECTIVE_DATE}부터 시행합니다.
             </p>
         </div>

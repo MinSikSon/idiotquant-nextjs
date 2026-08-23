@@ -20,7 +20,7 @@ const GRADES = [
   { grade: "SS",  range: "NCAV +150%↑", desc: "강한 저평가",   bg: "bg-amber-500",  text: "text-white" },
   { grade: "S",   range: "NCAV +100%↑", desc: "저평가",        bg: "bg-emerald-500", text: "text-white" },
   { grade: "A",   range: "NCAV +50%↑",  desc: "적정 이하",     bg: "bg-slate-500",  text: "text-white" },
-  { grade: "B",   range: "NCAV 0%↑",    desc: "적정가",        bg: "bg-neutral-200 dark:bg-[#4a4641]", text: "text-neutral-700 dark:text-neutral-200" },
+  { grade: "B",   range: "NCAV 0%↑",    desc: "적정가",        bg: "bg-neutral-200 dark:bg-surface-dark-elevated", text: "text-neutral-700 dark:text-neutral-200" },
   { grade: "F",   range: "NCAV 0% 미만", desc: "고평가",       bg: "bg-red-500",    text: "text-white" },
 ];
 
@@ -43,14 +43,14 @@ const MOCK_VALUATION = [
 
 export const SearchGuide = () => {
   return (
-    <div className="w-full min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+    <div className="w-full min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-16 pb-12 px-4">
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[280px] bg-[#16a34a]/5 dark:bg-[#16a34a]/7 blur-[120px] rounded-full -z-10" />
 
         <div className="max-w-2xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm mb-7">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-sm mb-7">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -69,7 +69,7 @@ export const SearchGuide = () => {
             NCAV · PBR · S-RIM · DCF · PER · PEG — 국내·미국 종목의 본질 가치를 즉시 산출합니다.
           </p>
 
-          <div className="flex items-center gap-3 max-w-sm mx-auto px-4 py-3 bg-white dark:bg-[#242320] border-2 border-dashed border-neutral-300 dark:border-[#3a3834] rounded-2xl mb-6 text-neutral-400 cursor-default">
+          <div className="flex items-center gap-3 max-w-sm mx-auto px-4 py-3 bg-white dark:bg-surface-dark-card border-2 border-dashed border-neutral-300 dark:border-surface-dark-border rounded-2xl mb-6 text-neutral-400 cursor-default">
             <Search className="w-4 h-4 shrink-0" />
             <span className="text-sm font-medium flex-1 text-left">위 검색창에 종목명 또는 티커 입력</span>
             <ArrowRight className="w-4 h-4 shrink-0 opacity-40" />
@@ -98,7 +98,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ── Output Preview ── */}
-      <section className="px-4 pb-16 border-t border-neutral-200 dark:border-[#35332e] pt-12">
+      <section className="px-4 pb-16 border-t border-neutral-200 dark:border-border-subtle-dark pt-12">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">Output Preview</p>
@@ -113,7 +113,7 @@ export const SearchGuide = () => {
               { label: "PER",       value: "12.5x", desc: "주가 / 순이익",       color: "text-neutral-700 dark:text-neutral-200" },
               { label: "EPS",       value: "₩6.3K", desc: "주당 순이익",         color: "text-neutral-700 dark:text-neutral-200" },
             ].map(m => (
-              <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-3.5 shadow-sm">
+              <div key={m.label} className="bg-white dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark p-3.5 shadow-sm">
                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">{m.label}</p>
                 <p className={cn("text-xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
                 <p className="text-[9px] text-neutral-400 mt-1">{m.desc}</p>
@@ -121,17 +121,17 @@ export const SearchGuide = () => {
             ))}
           </div>
 
-          <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-2">
+          <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-2">
               <BarChart3 className="w-3.5 h-3.5 text-neutral-400" />
               <span className="text-xs font-extrabold text-neutral-700 dark:text-neutral-300">모델별 목표주가</span>
-              <span className="ml-auto text-[9px] font-mono font-black text-neutral-400 bg-[#faf9f7] dark:bg-[#1a1915] px-2 py-0.5 rounded uppercase tracking-wider">Sample</span>
+              <span className="ml-auto text-[9px] font-mono font-black text-neutral-400 bg-surface-canvas dark:bg-surface-dark-canvas px-2 py-0.5 rounded uppercase tracking-wider">Sample</span>
             </div>
             <div className="p-4 space-y-1.5">
               {MOCK_VALUATION.map(r => (
                 <div key={r.model} className="flex items-center gap-3 px-3 py-2 rounded-xl">
                   <span className="w-10 text-[11px] font-black font-mono text-neutral-500 dark:text-neutral-400 shrink-0">{r.model}</span>
-                  <div className="flex-1 h-1.5 bg-[#faf9f7] dark:bg-[#1a1915] rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-surface-canvas dark:bg-surface-dark-canvas rounded-full overflow-hidden">
                     <div className={cn("h-full rounded-full", r.up ? "bg-emerald-500" : "bg-red-400")} style={{ width: `${r.pct}%` }} />
                   </div>
                   <span className="text-xs font-black font-mono text-neutral-700 dark:text-neutral-300 tabular-nums w-14 text-right">₩{r.target}</span>
@@ -151,7 +151,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ── Grade + Models ── */}
-      <section className="px-4 py-14 border-t border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1f1e1b]">
+      <section className="px-4 py-14 border-t border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark">
         <div className="max-w-3xl mx-auto space-y-12">
 
           {/* Grade scale */}
@@ -164,7 +164,7 @@ export const SearchGuide = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
               {GRADES.map(g => (
-                <div key={g.grade} className="flex flex-col items-center gap-2.5 p-3.5 bg-[#faf9f7] dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] text-center">
+                <div key={g.grade} className="flex flex-col items-center gap-2.5 p-3.5 bg-surface-canvas dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark text-center">
                   <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black font-mono shadow-sm", g.bg, g.text)}>
                     {g.grade}
                   </span>
@@ -176,7 +176,7 @@ export const SearchGuide = () => {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 px-4 py-3 bg-[#faf9f7] dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] text-xs">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3 bg-surface-canvas dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark text-xs">
               <span className="text-neutral-500 dark:text-neutral-400 font-medium">그레이엄 기준</span>
               <code className="font-mono font-black text-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/30 px-2.5 py-1 rounded-lg border border-[#bbf7d0]/50 dark:border-[#166534]/40">
                 시가총액 {'<'} NCAV × 0.67
@@ -195,7 +195,7 @@ export const SearchGuide = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {MODELS.map(m => (
-                <div key={m.name} className="flex items-center gap-3.5 p-3.5 bg-[#faf9f7] dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e]">
+                <div key={m.name} className="flex items-center gap-3.5 p-3.5 bg-surface-canvas dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
                   <div className={cn("px-2.5 py-1.5 rounded-lg font-black font-mono text-sm tracking-tight shrink-0 min-w-[3.5rem] text-center", m.bg, m.color)}>
                     {m.name}
                   </div>
@@ -211,7 +211,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-neutral-200 dark:border-[#35332e] py-8 px-4">
+      <footer className="border-t border-neutral-200 dark:border-border-subtle-dark py-8 px-4">
         <div className="max-w-3xl mx-auto flex flex-col items-center gap-4">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] text-neutral-400 dark:text-neutral-600 font-mono font-bold">
             {["Korea Investment API", "Finnhub US Market", "DART 공시 연동"].map(s => (

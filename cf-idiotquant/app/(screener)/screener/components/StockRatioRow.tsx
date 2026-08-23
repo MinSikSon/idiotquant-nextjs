@@ -20,7 +20,7 @@ function Bar({ label, value, scale, color, hint }: {
     return (
         <div className="flex items-center gap-2" title={hint}>
             <span className="w-[52px] shrink-0 text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</span>
-            <div className="relative flex-1 h-[18px] rounded-md bg-[#f2f0ec] dark:bg-[#2c2b27] overflow-hidden">
+            <div className="relative flex-1 h-[18px] rounded-md bg-[#f2f0ec] dark:bg-surface-dark-hover overflow-hidden">
                 <div
                     className={cn("absolute inset-y-0 left-0 rounded-md transition-[width] duration-500", color)}
                     style={{ width: `${barPct(value, scale)}%` }}
@@ -56,7 +56,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-4 hover:border-[#86efac] dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
+            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 hover:border-brand-light-hover dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
         >
             <div className="flex items-start gap-2 mb-3">
                 <div className="min-w-0 flex-1">
@@ -85,7 +85,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
                      hint="시가총액 — 시장이 이 회사에 매긴 값" />
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-3 gap-1">
+            <div className="mt-3 pt-2.5 border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-3 gap-1">
                 <Ratio label="순유동/시총" value={m.ncavMultiple} ok={(m.ncavMultiple ?? 0) >= 1}
                        hint="(유동자산 − 부채총계) ÷ 시가총액. 1x 이상이면 청산가치가 시가총액보다 큽니다." />
                 <Ratio label="부채/유동자산" value={m.debtToAssets} ok={m.debtToAssets !== null && m.debtToAssets < 1}

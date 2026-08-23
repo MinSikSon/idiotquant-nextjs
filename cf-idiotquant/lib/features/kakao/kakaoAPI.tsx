@@ -1,4 +1,4 @@
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/lib/utils/cookies";
 import { UserInfo } from "../cloudflare/cloudflareSlice";
 import { KakaoMessage } from "../login/loginSlice";
 

@@ -114,7 +114,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
   return (
     <div className={cn("w-full space-y-4", className)}>
       {/* 헤더 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 dark:border-[#35332e] dark:bg-[#1a1915]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex items-center gap-2">
           <div className="rounded-lg bg-[#16a34a]/10 p-1.5 text-[#16a34a]">
             <SlidersHorizontal className="h-4 w-4" />
@@ -127,7 +127,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
           </div>
         </div>
         {!isMaster && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-[10px] font-bold text-neutral-400 dark:bg-[#35332e]">
+          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-[10px] font-bold text-neutral-400 dark:bg-surface-dark-muted">
             <Lock className="h-3 w-3" /> 읽기 전용
           </span>
         )}
@@ -148,10 +148,10 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
           const defaultVal = fmtDefault(k);
           return (
             <div key={k} className={cn(
-              "rounded-xl border bg-white p-3 dark:bg-[#1a1915] transition-colors",
+              "rounded-xl border bg-white p-3 dark:bg-surface-dark-canvas transition-colors",
               changed
                 ? "border-[#16a34a] ring-1 ring-[#16a34a]/30 dark:border-[#16a34a]"
-                : "border-neutral-200 dark:border-[#35332e]"
+                : "border-neutral-200 dark:border-border-subtle-dark"
             )}>
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
@@ -173,7 +173,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                     "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                     val
                       ? "bg-[#16a34a] text-white"
-                      : "bg-neutral-200 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400",
+                      : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
                     !isMaster && "cursor-not-allowed opacity-60"
                   )}
                 >
@@ -186,7 +186,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
                   placeholder="쉼표로 구분 (예: 홀딩스, 지주)"
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-xs text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-[#35332e] dark:bg-[#242320] dark:text-neutral-200"
+                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-xs text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               ) : (
                 <input
@@ -195,7 +195,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   disabled={!isMaster}
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-sm font-bold text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-[#35332e] dark:bg-[#242320] dark:text-neutral-200"
+                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-sm font-bold text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               )}
               {defaultVal != null && (
@@ -225,7 +225,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
           <button
             type="button"
             onClick={handleReset}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-500 transition-colors hover:bg-neutral-50 dark:border-[#35332e] dark:bg-[#242320] dark:text-neutral-400"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-500 transition-colors hover:bg-neutral-50 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-400"
           >
             <RotateCcw className="h-3.5 w-3.5" /> 기본값으로
           </button>

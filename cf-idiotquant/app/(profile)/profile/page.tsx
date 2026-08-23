@@ -62,12 +62,12 @@ const TONE_CSS: Record<ValueTone, string> = {
     treasure: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
     diamond: "bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
     gold: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300",
-    silver: "bg-neutral-100 text-neutral-600 dark:bg-[#35332e] dark:text-neutral-300",
+    silver: "bg-neutral-100 text-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-300",
     bronze: "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300",
     iron: "bg-zinc-100 text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-400",
     raw: "bg-stone-100 text-stone-600 dark:bg-stone-900/40 dark:text-stone-400",
     clay: "bg-lime-100 text-lime-800 dark:bg-lime-950/40 dark:text-lime-500",
-    explore: "bg-neutral-100 text-neutral-500 dark:bg-[#2c2b27] dark:text-neutral-500",
+    explore: "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-hover dark:text-neutral-500",
 };
 
 export default function ProfilePage() {
@@ -146,7 +146,7 @@ export default function ProfilePage() {
 
     if (status === "loading") {
         return (
-            <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] flex items-center justify-center">
+            <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-[#16a34a] animate-spin" />
             </div>
         );
@@ -157,7 +157,7 @@ export default function ProfilePage() {
     const initial = session.user?.name?.[0]?.toUpperCase() ?? "U";
 
     return (
-        <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] px-4 py-8 md:py-12">
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-8 md:py-12">
             <div className="mx-auto max-w-sm space-y-4">
 
                 {/* Header */}
@@ -168,7 +168,7 @@ export default function ProfilePage() {
                 {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
                     지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 3단계 중 1단계
@@ -176,7 +176,7 @@ export default function ProfilePage() {
                             <span className="text-[10px] font-bold text-neutral-400 font-mono tabular-nums">1 / 3</span>
                         </div>
                         <div className="px-5">
-                            <div className="h-1 rounded-full bg-neutral-100 dark:bg-[#35332e] overflow-hidden">
+                            <div className="h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
                                 <div className="h-full w-1/3 rounded-full bg-[#16a34a]" />
                             </div>
                         </div>
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                 {/* 담기 전에 무엇을 보게 되는지 — 담을 이유를 설명해야 할 자리에서
                     핵심 개념을 숨기고 있었다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                         <div className="px-5 pt-4 pb-1 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <Blocks size={12} className="text-[#16a34a]" />
@@ -231,7 +231,7 @@ export default function ProfilePage() {
                                     탄탄함이란
                                 </span>
                             </div>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-[#35332e] text-neutral-500 dark:text-neutral-400">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400">
                                 예시
                             </span>
                         </div>
@@ -240,9 +240,9 @@ export default function ProfilePage() {
                 )}
 
                 {/* Profile card */}
-                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                     <div className="flex items-center gap-4 px-5 py-5">
-                        <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-base font-black shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-base font-black shrink-0">
                             {initial}
                         </div>
                         <div className="min-w-0">
@@ -265,7 +265,7 @@ export default function ProfilePage() {
 
                 {/* Admin: Portfolio section */}
                 {isMasterUser && (
-                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 Portfolio
@@ -274,9 +274,9 @@ export default function ProfilePage() {
                         <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
                             <Link
                                 href="/balance-kr"
-                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-[#2c2b27] transition-colors group"
+                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0">
                                     <Eye size={15} className="text-neutral-500 dark:text-neutral-400" />
                                 </div>
                                 <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -286,9 +286,9 @@ export default function ProfilePage() {
                             </Link>
                             <Link
                                 href="/balance-us"
-                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-[#2c2b27] transition-colors group"
+                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0">
+                                <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0">
                                     <DollarSign size={15} className="text-neutral-500 dark:text-neutral-400" />
                                 </div>
                                 <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -302,7 +302,7 @@ export default function ProfilePage() {
 
                 {/* Admin section */}
                 {isAdmin && (
-                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 Admin
@@ -311,7 +311,7 @@ export default function ProfilePage() {
                         <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
                             <Link
                                 href="/admin"
-                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-[#2c2b27] transition-colors group"
+                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
                                     <ShieldCheck size={15} className="text-[#16a34a]" />
@@ -327,7 +327,7 @@ export default function ProfilePage() {
 
                 {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
                 {likedList.length > 0 && (
-                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <Blocks size={12} className="text-[#16a34a]" />
@@ -344,7 +344,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* 탄탄함 지수 */}
-                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-[#35332e]">
+                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="shrink-0">
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
                                 <p className="text-3xl font-black text-[#16a34a] tabular-nums leading-none mt-1">
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                                         블록 {Math.min(likedList.length, 18)}{likedList.length > 18 ? ` / ${likedList.length}` : ""}
                                     </span>
                                 </div>
-                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-[#35332e] overflow-hidden">
+                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
                                     <div className="h-full rounded-full bg-gradient-to-r from-[#16a34a] to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
                                 </div>
                             </div>
@@ -415,7 +415,7 @@ export default function ProfilePage() {
                 {/* 관심 종목 — 비었을 때는 위의 시작하기 카드가 같은 말을 더 잘 하므로 띄우지 않는다.
                     "종목이 없습니다 / 발굴 페이지에서 추가해보세요"를 두 번 보여줄 이유가 없다. */}
                 {!isNewUser && (
-                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                     <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                             <Heart size={11} className="text-rose-500" fill="currentColor" />
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                                 관심 종목
                             </span>
                             {likedList.length > 0 && (
-                                <span className="text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-[#35332e] px-1.5 py-0.5 rounded-full">
+                                <span className="text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-surface-dark-muted px-1.5 py-0.5 rounded-full">
                                     {likedList.length}
                                 </span>
                             )}
@@ -549,7 +549,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Account actions */}
-                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                     <div className="px-5 pt-4 pb-1">
                         <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                             계정
@@ -559,7 +559,7 @@ export default function ProfilePage() {
                         onClick={() => signOut({ callbackUrl: "/" })}
                         className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
+                        <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
                             <LogOut size={15} className="text-neutral-500 dark:text-neutral-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
                         </div>
                         <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
@@ -567,7 +567,7 @@ export default function ProfilePage() {
                         </span>
                     </button>
 
-                    <div className="border-t border-neutral-200/70 dark:border-[#35332e]" />
+                    <div className="border-t border-neutral-200/70 dark:border-border-subtle-dark" />
 
                     {/* 탈퇴는 접어 둔다 — 로그아웃 바로 아래에서 가장 큰 빨간 버튼일 이유가 없다.
                         열려 있는 동안에는 지금과 똑같이 동작한다. */}
@@ -584,7 +584,7 @@ export default function ProfilePage() {
                             disabled={isAdmin}
                             className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
-                            <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
+                            <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
                                 <Trash2 size={15} className="text-red-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
                             </div>
                             <div className="flex-1">
@@ -623,7 +623,7 @@ export default function ProfilePage() {
                                 <button
                                     onClick={cancelDelete}
                                     disabled={deleting}
-                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-[#35332e] hover:bg-neutral-200 dark:hover:bg-[#403d37] transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-surface-dark-muted hover:bg-neutral-200 dark:hover:bg-[#403d37] transition-colors disabled:opacity-50"
                                 >
                                     취소
                                 </button>

@@ -26,7 +26,7 @@ import { useEntryDrag } from "./useEntryDrag";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
 const CTL_CLS =
-    "w-full px-3 min-h-[44px] bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] " +
+    "w-full px-3 min-h-[44px] bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark " +
     "rounded-xl text-sm font-bold text-neutral-900 dark:text-white " +
     "focus:outline-none focus:ring-1 focus:ring-[#16a34a] focus:border-[#16a34a]";
 
@@ -34,7 +34,7 @@ const FIELD_LABEL_CLS =
     "text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest";
 
 const CARD_CLS =
-    "bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl";
+    "bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl";
 
 const CHIP_CLS =
     "min-h-[40px] px-3.5 rounded-xl border text-[13px] font-bold transition-colors";
@@ -476,7 +476,7 @@ export default function LedgerPage() {
 
     if (signedOut) {
         return (
-            <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+            <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
                 {header}
                 <div className="max-w-3xl mx-auto px-4 sm:px-7 py-5">
                     <div className={cn(CARD_CLS, "py-12 px-4 text-center")}>
@@ -499,7 +499,7 @@ export default function LedgerPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             {header}
 
             {toast && (
@@ -529,7 +529,7 @@ export default function LedgerPage() {
                                         "shrink-0 min-h-[40px] px-3.5 rounded-xl text-[13px] font-bold transition-colors",
                                         on
                                             ? "bg-[#16a34a] text-white"
-                                            : "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
+                                            : "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                                     )}
                                 >
                                     {l.is_mine ? "내 가계부" : `${l.owner_name ?? "공유"}님`}
@@ -545,7 +545,7 @@ export default function LedgerPage() {
                         <button
                             type="button"
                             onClick={() => dispatch(setLedgerMonth(shiftMonth(month, -1)))}
-                            className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors"
+                            className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover transition-colors"
                             aria-label="이전 달"
                         >
                             <ChevronLeft size={18} strokeWidth={2.4} />
@@ -555,7 +555,7 @@ export default function LedgerPage() {
                             type="button"
                             onClick={() => setCalendarOpen(v => !v)}
                             aria-expanded={calendarOpen}
-                            className="flex-1 sm:flex-none sm:min-w-[150px] h-11 flex items-center justify-center gap-1.5 rounded-xl text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors"
+                            className="flex-1 sm:flex-none sm:min-w-[150px] h-11 flex items-center justify-center gap-1.5 rounded-xl text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover transition-colors"
                         >
                             {Number(month.slice(0, 4))}년 {Number(month.slice(5, 7))}월
                             <ChevronDown
@@ -568,7 +568,7 @@ export default function LedgerPage() {
                             type="button"
                             onClick={() => dispatch(setLedgerMonth(shiftMonth(month, 1)))}
                             disabled={month >= thisMonth}
-                            className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+                            className="w-11 h-11 rounded-xl flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
                             aria-label="다음 달"
                         >
                             <ChevronRight size={18} strokeWidth={2.4} />
@@ -576,7 +576,7 @@ export default function LedgerPage() {
                     </div>
 
                     {calendarOpen && (
-                        <div className="px-2 pb-2.5 border-t border-neutral-100 dark:border-[#35332e]">
+                        <div className="px-2 pb-2.5 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="grid grid-cols-7 pt-2 pb-1">
                                 {WEEKDAY.map((w, i) => (
                                     <div key={w} className={cn(
@@ -601,7 +601,7 @@ export default function LedgerPage() {
                                             onClick={() => pickDay(date)}
                                             className={cn(
                                                 "flex flex-col items-center justify-start gap-0.5 py-1 rounded-lg min-h-[44px] transition-colors",
-                                                "hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]",
+                                                "hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover",
                                                 future && "opacity-40"
                                             )}
                                             aria-label={`${Number(date.slice(8))}일${day ? ` 지출 ${won(day.expense)}` : " 기록 없음"}`}
@@ -640,12 +640,12 @@ export default function LedgerPage() {
                                 })}
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 mt-1.5 pt-2 border-t border-neutral-100 dark:border-[#35332e]">
+                            <div className="flex items-center justify-between gap-2 mt-1.5 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark">
                                 <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
                                     날짜를 누르면 그 날로 이동합니다
                                 </span>
                                 {/* 몇 해 전으로 가려고 ◀ 를 스무 번 누르게 두지 않는다 */}
-                                <label className="relative shrink-0 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#3a3834] text-[11px] font-bold text-neutral-500 dark:text-neutral-400 cursor-pointer hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] transition-colors">
+                                <label className="relative shrink-0 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-surface-dark-border text-[11px] font-bold text-neutral-500 dark:text-neutral-400 cursor-pointer hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover transition-colors">
                                     다른 달
                                     <input
                                         type="month"
@@ -663,7 +663,7 @@ export default function LedgerPage() {
 
                 {/* ② 요약 — 좁은 화면에서는 잔액을 크게 한 줄, 수입·지출은 아래 두 칸 */}
                 <div className={CARD_CLS}>
-                    <div className="px-4 pt-3.5 pb-3 text-center border-b border-neutral-100 dark:border-[#35332e] sm:hidden">
+                    <div className="px-4 pt-3.5 pb-3 text-center border-b border-neutral-100 dark:border-border-subtle-dark sm:hidden">
                         <div className={FIELD_LABEL_CLS}>잔액</div>
                         <div className={cn(
                             "mt-0.5 text-[27px] font-black tracking-[-0.03em] tabular-nums",
@@ -673,13 +673,13 @@ export default function LedgerPage() {
                         </div>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3">
-                        <div className="py-3 px-2 text-center border-r border-neutral-100 dark:border-[#35332e]">
+                        <div className="py-3 px-2 text-center border-r border-neutral-100 dark:border-border-subtle-dark">
                             <div className={FIELD_LABEL_CLS}>수입</div>
                             <div className="mt-1 text-[15px] sm:text-[17px] font-black tracking-[-0.02em] tabular-nums text-[#16a34a]">
                                 {loading ? "—" : won(income)}
                             </div>
                         </div>
-                        <div className="py-3 px-2 text-center sm:border-r sm:border-neutral-100 sm:dark:border-[#35332e]">
+                        <div className="py-3 px-2 text-center sm:border-r sm:border-neutral-100 sm:dark:border-border-subtle-dark">
                             <div className={FIELD_LABEL_CLS}>지출</div>
                             <div className="mt-1 text-[15px] sm:text-[17px] font-black tracking-[-0.02em] tabular-nums text-red-600 dark:text-red-400">
                                 {loading ? "—" : won(expense)}
@@ -699,9 +699,9 @@ export default function LedgerPage() {
 
                 {/* ③ 항목별 막대 */}
                 <section className={CARD_CLS}>
-                    <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-[#35332e]">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
                         <h2 className={FIELD_LABEL_CLS}>항목별</h2>
-                        <div className="flex rounded-[10px] border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+                        <div className="flex rounded-[10px] border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                             {(["income", "expense"] as LedgerKind[]).map(k => (
                                 <button
                                     key={k}
@@ -712,7 +712,7 @@ export default function LedgerPage() {
                                         "px-3 min-h-[34px] text-[11px] font-black transition-colors",
                                         barKind === k
                                             ? k === "income" ? "bg-[#16a34a] text-white" : "bg-red-600 text-white"
-                                            : "bg-white dark:bg-[#242320] text-neutral-500 hover:bg-neutral-50 dark:hover:bg-[#35332e]"
+                                            : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
                                     )}
                                 >
                                     {k === "income" ? "수입" : "지출"}
@@ -734,7 +734,7 @@ export default function LedgerPage() {
                                     {b.sum.toLocaleString("ko-KR")}
                                     <span className="ml-1.5 text-[11px] font-medium text-neutral-400">{b.pct}%</span>
                                 </span>
-                                <span className="col-span-2 h-2 rounded-full bg-neutral-100 dark:bg-[#2c2b27] overflow-hidden">
+                                <span className="col-span-2 h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-hover overflow-hidden">
                                     <span
                                         className={cn("block h-full rounded-full transition-all duration-300", barKind === "income" ? "bg-[#16a34a]" : "bg-red-500")}
                                         style={{ width: `${Math.max(b.pct, 2)}%` }}
@@ -757,7 +757,7 @@ export default function LedgerPage() {
 
                 {/* ⑤ 내역 */}
                 <section className={cn(CARD_CLS, "overflow-hidden")}>
-                    <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-[#35332e]">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
                         <h2 className={FIELD_LABEL_CLS}>내역</h2>
                         <div className="flex items-baseline gap-2">
                             {/* 손잡이를 줄마다 붙이면 목록이 시끄러워진다 — 한 줄로 알린다 */}
@@ -776,7 +776,7 @@ export default function LedgerPage() {
                     {loading ? (
                         <div className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
                             {[0, 1, 2].map(i => (
-                                <div key={i} className="h-[56px] bg-[#faf9f7] dark:bg-[#1f1e1b] animate-pulse" />
+                                <div key={i} className="h-[56px] bg-surface-canvas dark:bg-surface-dark animate-pulse" />
                             ))}
                         </div>
                     ) : entries.length === 0 ? (
@@ -793,7 +793,7 @@ export default function LedgerPage() {
                                         id={`ledger-day-${day.date}`}
                                         {...dayProps(day.date)}
                                         className={cn(
-                                            "flex items-baseline justify-between gap-3 px-4 py-1.5 bg-[#faf9f7] dark:bg-[#1f1e1b] border-y border-neutral-100 dark:border-[#35332e] scroll-mt-20",
+                                            "flex items-baseline justify-between gap-3 px-4 py-1.5 bg-surface-canvas dark:bg-surface-dark border-y border-neutral-100 dark:border-border-subtle-dark scroll-mt-20",
                                             // 머리글 위에 놓으면 그 날 맨 위로 간다 — 그 사실을 색으로 알린다
                                             dropTarget?.date === day.date && dropTarget.index === 0 && "bg-[#dcfce7] dark:bg-[#052e16]/60"
                                         )}
@@ -832,10 +832,10 @@ export default function LedgerPage() {
                                                         lineBefore && "shadow-[inset_0_2px_0_0_#16a34a]",
                                                         lineAfter && "shadow-[inset_0_-2px_0_0_#16a34a]",
                                                         lifted
-                                                            ? "opacity-45 bg-[#f5f0e8] dark:bg-[#2c2b27]"
+                                                            ? "opacity-45 bg-surface-muted-hover dark:bg-surface-dark-hover"
                                                             : justAddedId === e.id
                                                                 ? "bg-[#dcfce7]/70 dark:bg-[#052e16]/40"
-                                                                : "hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
+                                                                : "hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                                                     )}
                                                     aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category, customCategories)} ${e.amount.toLocaleString("ko-KR")}원 수정`}
                                                 >
@@ -893,8 +893,8 @@ export default function LedgerPage() {
             {shareOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
                     <div className="absolute inset-0 bg-neutral-900/45" onClick={() => setShareOpen(false)} aria-hidden />
-                    <div className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-[#242320] border-t sm:border border-neutral-200 dark:border-[#35332e] rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl">
-                        <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-[#35332e] mx-auto mt-1 mb-3" aria-hidden />
+                    <div className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-surface-dark-card border-t sm:border border-neutral-200 dark:border-border-subtle-dark rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl">
+                        <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-surface-dark-muted mx-auto mt-1 mb-3" aria-hidden />
                         <h2 className="text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white mb-1">
                             함께 쓰기
                         </h2>
@@ -910,8 +910,8 @@ export default function LedgerPage() {
                             ) : (
                                 <div className="flex flex-col gap-1">
                                     {members.map(m => (
-                                        <div key={m.user_id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915]">
-                                            <span className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-[10px] font-black text-neutral-700 dark:text-neutral-200">
+                                        <div key={m.user_id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-canvas dark:bg-surface-dark-canvas">
+                                            <span className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-[10px] font-black text-neutral-700 dark:text-neutral-200">
                                                 {m.name?.[0] ?? "?"}
                                             </span>
                                             <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
@@ -928,7 +928,7 @@ export default function LedgerPage() {
                             <span className={FIELD_LABEL_CLS}>초대 링크</span>
                             {inviteToken ? (
                                 <>
-                                    <div className="px-3 py-2.5 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] text-[11px] font-mono break-all text-neutral-600 dark:text-neutral-400">
+                                    <div className="px-3 py-2.5 rounded-xl bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark text-[11px] font-mono break-all text-neutral-600 dark:text-neutral-400">
                                         {inviteUrl(inviteToken)}
                                     </div>
                                     <button
@@ -967,7 +967,7 @@ export default function LedgerPage() {
                         <button
                             type="button"
                             onClick={() => setShareOpen(false)}
-                            className="w-full min-h-[48px] mt-3 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-sm font-black text-neutral-600 dark:text-neutral-400"
+                            className="w-full min-h-[48px] mt-3 rounded-xl border border-neutral-200 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark-canvas text-sm font-black text-neutral-600 dark:text-neutral-400"
                         >
                             닫기
                         </button>
@@ -988,7 +988,7 @@ export default function LedgerPage() {
                     <form
                         onSubmit={handleSubmit}
                         style={dragY ? { transform: `translateY(${dragY}px)`, transition: "none" } : undefined}
-                        className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-[#242320] border-t sm:border border-neutral-200 dark:border-[#35332e] rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl transition-transform duration-200"
+                        className="relative w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-surface-dark-card border-t sm:border border-neutral-200 dark:border-border-subtle-dark rounded-t-3xl sm:rounded-2xl px-4 pt-2 pb-5 sm:pb-4 shadow-2xl transition-transform duration-200"
                     >
                         {/* 손잡이·제목 줄이 드래그 영역 — 본문은 스크롤이라 여기서만 잡는다 */}
                         <div
@@ -998,7 +998,7 @@ export default function LedgerPage() {
                             onPointerCancel={onDragEnd}
                             className="touch-none select-none sm:touch-auto"
                         >
-                            <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-[#35332e] mx-auto mt-1 mb-3" aria-hidden />
+                            <div className="sm:hidden w-9 h-1 rounded-full bg-neutral-200 dark:bg-surface-dark-muted mx-auto mt-1 mb-3" aria-hidden />
 
                             <div className="flex items-baseline justify-between gap-3 mb-3">
                                 <h2 className="text-[15px] font-black tracking-[-0.02em] text-neutral-900 dark:text-white">
@@ -1015,7 +1015,7 @@ export default function LedgerPage() {
                         {/* 구분 */}
                         <div className="flex flex-col gap-1.5 mb-3">
                             <span className={FIELD_LABEL_CLS}>구분</span>
-                            <div className="flex rounded-xl border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+                            <div className="flex rounded-xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                 {(["income", "expense"] as LedgerKind[]).map(k => (
                                     <button
                                         key={k}
@@ -1026,7 +1026,7 @@ export default function LedgerPage() {
                                             "flex-1 min-h-[46px] text-sm font-black transition-colors",
                                             fKind === k
                                                 ? k === "income" ? "bg-[#16a34a] text-white" : "bg-red-600 text-white"
-                                                : "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-500"
+                                                : "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-500"
                                         )}
                                     >
                                         {k === "income" ? "수입" : "지출"}
@@ -1038,7 +1038,7 @@ export default function LedgerPage() {
                         {/* 금액 — 이 화면에서 가장 자주 치는 값이라 가장 크게 */}
                         <div className="flex flex-col gap-1.5 mb-3">
                             <label htmlFor="f-amt" className={FIELD_LABEL_CLS}>금액</label>
-                            <div className="flex items-baseline gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] focus-within:border-[#16a34a] focus-within:ring-1 focus-within:ring-[#16a34a]">
+                            <div className="flex items-baseline gap-1.5 px-3.5 py-2.5 rounded-2xl bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark focus-within:border-[#16a34a] focus-within:ring-1 focus-within:ring-[#16a34a]">
                                 <input
                                     ref={amountRef}
                                     id="f-amt" type="text" inputMode="numeric" required placeholder="0"
@@ -1059,7 +1059,7 @@ export default function LedgerPage() {
                                         key={v}
                                         type="button"
                                         onClick={() => { setAmountNumber(amountValue() + v); setFormError(null); }}
-                                        className={cn(CHIP_CLS, "flex-1 border-neutral-200 dark:border-[#3a3834] bg-white dark:bg-[#242320] text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]")}
+                                        className={cn(CHIP_CLS, "flex-1 border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover")}
                                     >
                                         +{(v / 10000).toLocaleString("ko-KR")}만
                                     </button>
@@ -1067,7 +1067,7 @@ export default function LedgerPage() {
                                 <button
                                     type="button"
                                     onClick={() => { setFAmount(""); amountRef.current?.focus(); }}
-                                    className={cn(CHIP_CLS, "w-11 px-0 border-neutral-200 dark:border-[#3a3834] bg-white dark:bg-[#242320] text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]")}
+                                    className={cn(CHIP_CLS, "w-11 px-0 border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover")}
                                     aria-label="금액 지우기"
                                 >
                                     ←
@@ -1096,7 +1096,7 @@ export default function LedgerPage() {
                                                         ? fKind === "income"
                                                             ? "bg-[#16a34a] border-[#16a34a] text-white"
                                                             : "bg-red-600 border-red-600 text-white"
-                                                        : "bg-[#faf9f7] dark:bg-[#1a1915] border-neutral-200 dark:border-[#35332e] text-neutral-600 dark:text-neutral-400"
+                                                        : "bg-surface-canvas dark:bg-surface-dark-canvas border-neutral-200 dark:border-border-subtle-dark text-neutral-600 dark:text-neutral-400"
                                                 )}
                                             >
                                                 {c.label}
@@ -1174,7 +1174,7 @@ export default function LedgerPage() {
                                         {catEditId !== null ? "저장" : "추가"}
                                     </button>
                                     <button type="button" onClick={closeCatForm}
-                                        className="min-h-[44px] px-3 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-xs font-black text-neutral-500">
+                                        className="min-h-[44px] px-3 rounded-xl border border-neutral-200 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark-canvas text-xs font-black text-neutral-500">
                                         취소
                                     </button>
                                 </div>
@@ -1191,11 +1191,11 @@ export default function LedgerPage() {
                             <label htmlFor="f-date" className={FIELD_LABEL_CLS}>날짜</label>
                             <div className="flex gap-1.5 items-center">
                                 <button type="button" onClick={() => setFDate(todayKst())}
-                                    className={cn(CHIP_CLS, "border-neutral-200 dark:border-[#3a3834] bg-white dark:bg-[#242320] text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]")}>
+                                    className={cn(CHIP_CLS, "border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover")}>
                                     오늘
                                 </button>
                                 <button type="button" onClick={() => setFDate(shiftDay(todayKst(), -1))}
-                                    className={cn(CHIP_CLS, "border-neutral-200 dark:border-[#3a3834] bg-white dark:bg-[#242320] text-neutral-600 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]")}>
+                                    className={cn(CHIP_CLS, "border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover")}>
                                     어제
                                 </button>
                                 <input id="f-date" type="date" required value={fDate}
@@ -1240,7 +1240,7 @@ export default function LedgerPage() {
                                     삭제할까요? 되돌릴 수 없습니다.
                                 </span>
                                 <button type="button" onClick={() => setAskDelete(false)}
-                                    className="min-h-[50px] px-4 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-sm font-black text-neutral-600 dark:text-neutral-400">
+                                    className="min-h-[50px] px-4 rounded-xl border border-neutral-200 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark-canvas text-sm font-black text-neutral-600 dark:text-neutral-400">
                                     취소
                                 </button>
                                 <button type="button" onClick={handleDelete} disabled={mutating}
@@ -1257,7 +1257,7 @@ export default function LedgerPage() {
                                     </button>
                                 )}
                                 <button type="button" onClick={closeSheet}
-                                    className="min-h-[50px] px-4 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1915] text-sm font-black text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-[#2c2b27] transition-colors">
+                                    className="min-h-[50px] px-4 rounded-xl border border-neutral-200 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark-canvas text-sm font-black text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover transition-colors">
                                     {editing ? "취소" : "닫기"}
                                 </button>
                                 <button type="submit" disabled={mutating || !fAmount}

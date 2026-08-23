@@ -11,7 +11,7 @@ const BENEFITS = [
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-[#faf9f7] dark:bg-[#1a1915]">
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-surface-canvas dark:bg-surface-dark-canvas">
 
             <div className="relative w-full max-w-sm flex flex-col gap-8">
 
@@ -32,10 +32,10 @@ export default function LoginPage() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
 
                     {/* Card header */}
-                    <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-[#35332e]">
+                    <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-border-subtle-dark">
                         <h1 className="text-[1.6rem] font-black leading-tight text-neutral-900 dark:text-white">
                             저평가 종목을<br />매일 발굴해드립니다
                         </h1>
@@ -45,7 +45,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* Benefits */}
-                    <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-[#35332e]">
+                    <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-border-subtle-dark">
                         {BENEFITS.map((b) => (
                             <div key={b.label} className="flex items-start gap-3">
                                 <div className="mt-0.5 w-5 h-5 rounded-full bg-[#dcfce7] dark:bg-[#052e16]/60 flex items-center justify-center shrink-0">
@@ -63,14 +63,14 @@ export default function LoginPage() {
 
                     {/* Login area */}
                     <div className="px-8 py-6">
-                        <Suspense fallback={<div className="w-full h-12 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] animate-pulse" />}>
+                        <Suspense fallback={<div className="w-full h-12 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted animate-pulse" />}>
                             <LoginAuthWrapper />
                         </Suspense>
 
                         <div className="flex items-center gap-3 my-5">
-                            <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
+                            <div className="flex-1 h-px bg-surface-canvas dark:bg-surface-dark-card" />
                             <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-600 uppercase tracking-widest">무료 · 1초 가입</span>
-                            <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
+                            <div className="flex-1 h-px bg-surface-canvas dark:bg-surface-dark-card" />
                         </div>
 
                         <div className="flex justify-center gap-4 text-[11px] text-neutral-400 dark:text-neutral-500">

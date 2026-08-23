@@ -914,7 +914,7 @@ export default function HomePage() {
   // 랜딩은 히어로부터 푸터까지 하나의 어두운 무대로 간다. 밝은 섹션이 섞이면 히어로에서
   // 만든 분위기가 다음 스크롤에서 끊긴다. 테마와 무관하게 이 톤 하나만 쓴다.
   return (
-    <div className="relative min-h-screen bg-[#faf9f7] dark:bg-[#050d09]">
+    <div className="relative min-h-screen bg-surface-canvas dark:bg-[#050d09]">
 
       {/* ── 페이지 전체 배경 ────────────────────────────────────────
           3D 씬을 히어로 안이 아니라 뷰포트에 고정해 둔다. 그래야 스크롤을 내려도 금화가
@@ -995,7 +995,7 @@ export default function HomePage() {
       </section>
 
       {/* ── 발굴 — 스플릿 2단 ─────────────────────────────────────── */}
-      <section className="relative border-b border-neutral-100 dark:border-[#1c2f26] bg-[#faf9f7] dark:bg-[#0a1510]/85">
+      <section className="relative border-b border-neutral-100 dark:border-[#1c2f26] bg-surface-canvas dark:bg-[#0a1510]/85">
         <div className="max-w-4xl mx-auto px-5 py-20 md:py-40 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="reveal h-52 sm:h-72 rounded-3xl border border-neutral-200/70 dark:border-[#22402f] bg-gradient-to-b from-[#fdf6e9] to-white dark:from-[#1c1608] dark:to-[#0a1510] overflow-hidden">
             <SpinArt kind="coin" />

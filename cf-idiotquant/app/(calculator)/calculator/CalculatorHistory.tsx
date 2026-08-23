@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { TrashIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+import { Trash2, Undo2 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -97,7 +97,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
     );
 
     if (status === "loading") {
-        return shell(<div className="h-9 bg-[#f2efe9] dark:bg-[#1f1e1b] rounded-[2px] animate-pulse" />);
+        return shell(<div className="h-9 bg-[#f2efe9] dark:bg-surface-dark rounded-[2px] animate-pulse" />);
     }
 
     if (status !== "authenticated") {
@@ -127,7 +127,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-                    className="flex-1 min-w-0 bg-white dark:bg-[#242320] border border-neutral-400 dark:border-[#55514a] rounded-[2px] px-3 py-2 text-[12px] font-bold text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#16a34a]"
+                    className="flex-1 min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-400 dark:border-[#55514a] rounded-[2px] px-3 py-2 text-[12px] font-bold text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#16a34a]"
                 />
                 <button
                     type="button"
@@ -154,14 +154,14 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                         {(open ? runs : runs.slice(0, 3)).map((run) => (
                             <li
                                 key={run.id}
-                                className="flex items-center gap-2 py-2 border-b border-neutral-200 dark:border-[#35332e]"
+                                className="flex items-center gap-2 py-2 border-b border-neutral-200 dark:border-border-subtle-dark"
                             >
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-[12px] font-bold text-neutral-900 dark:text-neutral-50 truncate">
                                             {run.label || stampKst(run.created_at)}
                                         </span>
-                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] border border-neutral-300 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 shrink-0">
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] border border-neutral-300 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 shrink-0">
                                             {DETAIL_LABEL[run.mode] ?? run.mode}
                                         </span>
                                     </div>
@@ -178,19 +178,19 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => handleLoad(run)}
-                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-[#16a34a] hover:bg-white dark:hover:bg-[#242320] transition-colors shrink-0"
+                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-[#16a34a] hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
                                     aria-label={`${run.label || stampKst(run.created_at)} 불러오기`}
                                 >
-                                    <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
+                                    <Undo2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => dispatch(reqDeleteCalculatorRun(run.id))}
                                     disabled={saving}
-                                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-white dark:hover:bg-[#242320] transition-colors shrink-0"
+                                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
                                     aria-label={`${run.label || stampKst(run.created_at)} 삭제`}
                                 >
-                                    <TrashIcon className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                             </li>
                         ))}

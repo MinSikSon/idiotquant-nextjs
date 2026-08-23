@@ -55,7 +55,7 @@ const CandleChart = dynamic(() => import("@/components/CandleChart"), {
 });
 const LineChart = dynamic(() => import("@/components/LineChart"), {
     ssr: false,
-    loading: () => <div className="h-full min-h-[120px] rounded-2xl bg-neutral-100 dark:bg-[#242320] animate-pulse" />,
+    loading: () => <div className="h-full min-h-[120px] rounded-2xl bg-neutral-100 dark:bg-surface-dark-card animate-pulse" />,
 });
 
 // 판의 성격. id 는 워커 src/lib/scenario.js 와 같아야 한다 — 규칙은 서버에만 있고
@@ -802,13 +802,13 @@ export default function ReplayGamePage() {
     ] : [];
 
     if (loading) {
-        return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1917] flex items-center justify-center text-sm text-neutral-400">불러오는 중…</div>;
+        return <div className="min-h-screen bg-surface-canvas dark:bg-[#1a1917] flex items-center justify-center text-sm text-neutral-400">불러오는 중…</div>;
     }
 
     return (
         // min-h-screen 을 그대로 쓰면 main 의 pt-48 + pb-64 가 더해져 내용과 무관하게 112px 이
         // 항상 스크롤된다. 모바일에서는 크롬을 뺀 높이를 바닥으로 삼는다.
-        <div className={cn("bg-[#faf9f7] dark:bg-[#1a1917]", round ? "md:min-h-screen" : "min-h-[calc(100dvh-112px)] md:min-h-screen")}>
+        <div className={cn("bg-surface-canvas dark:bg-[#1a1917]", round ? "md:min-h-screen" : "min-h-[calc(100dvh-112px)] md:min-h-screen")}>
             <ToastContainer toasts={toasts} onRemove={removeToast} />
 
             <div className={cn(
@@ -858,7 +858,7 @@ export default function ReplayGamePage() {
                             </div>
                             {round.status === "playing" ? (
                                 <button onClick={giveUp} disabled={busy}
-                                    className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                    className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
                                     <X size={14} /> 그만
                                 </button>
                             ) : (
@@ -908,12 +908,12 @@ export default function ReplayGamePage() {
                                 </p>
                                 {holdings.length > 1 && !overview ? (
                                     <button onClick={() => setDetail(false)} aria-label="목록으로"
-                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e]">
+                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark">
                                         <ArrowLeft size={11} /> 목록
                                     </button>
                                 ) : round.status === "playing" ? (
                                     <button onClick={giveUp} disabled={busy} aria-label="그만"
-                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-[#35332e] disabled:opacity-40">
+                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-border-subtle-dark disabled:opacity-40">
                                         <X size={11} /> 그만
                                     </button>
                                 ) : (
@@ -961,7 +961,7 @@ export default function ReplayGamePage() {
                                                     overview ? "min-h-[54px]" : "min-h-[38px]",
                                                     !overview && on
                                                         ? "border-neutral-900 dark:border-white bg-neutral-100 dark:bg-[#2c2a26] text-neutral-900 dark:text-white"
-                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400")}>
+                                                        : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400")}>
                                                 <span className="flex items-center gap-1 truncate max-w-full">
                                                     <span className="w-[15px] h-[11px] rounded-[2px] overflow-hidden shrink-0">
                                                         <SectorSprite sector={h.sector ?? undefined} color={sectorAccent(h.sector ?? undefined)} />
@@ -1021,7 +1021,7 @@ export default function ReplayGamePage() {
                                                 className={cn("inline-flex items-center gap-1 min-h-[26px] px-2 rounded-lg text-[10.5px] font-bold border transition-colors",
                                                     on
                                                         ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                        : "text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                        : "text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
                                                 {/* 칩이 곧 그 도구의 범례다 — 색으로 어느 선인지 알려 준다 */}
                                                 <span className="w-1.5 h-1.5 rounded-full shrink-0"
                                                     style={{ backgroundColor: on ? TOOL_COLOR[t.id] : "transparent", boxShadow: on ? "none" : `inset 0 0 0 1px ${TOOL_COLOR[t.id]}` }} />
@@ -1085,7 +1085,7 @@ export default function ReplayGamePage() {
                             폰에서는 카드 대신 두 줄. 카드 넉 장이 128px 을 먹어 차트가 100px 까지
                             눌리고 그래도 자리가 모자랐다. 같은 값 넉 개가 두 줄이면 52px 이다. */}
                         <div key={`acct-${filled}`}
-                            className={cn("lg:hidden shrink-0 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2.5 py-1 flex flex-col gap-0.5",
+                            className={cn("lg:hidden shrink-0 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-2.5 py-1 flex flex-col gap-0.5",
                                 filled > 0 && "flash-mine")}>
                             {/* 굴리는 돈이 이 줄의 주인공이다 — 한 단계 키우고, 등락률은 칩으로
                                 떼어 색을 한 곳에 모은다. 나머지는 라벨로 눕힌다. */}
@@ -1193,7 +1193,7 @@ export default function ReplayGamePage() {
                                                     들고 가기
                                                 </button>
                                                 <button onClick={() => advance(null)} disabled={busy}
-                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
                                                     정리하고 끝
                                                 </button>
                                             </div>
@@ -1203,12 +1203,12 @@ export default function ReplayGamePage() {
                                             <div className="flex gap-1.5">
                                                 <div className="grid grid-cols-3 gap-1.5 flex-1 min-w-0">
                                                     <button onClick={() => advance(null)} disabled={busy}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
                                                         하루
                                                     </button>
                                                     {SKIP_STEPS.map(n => (
                                                         <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
-                                                            className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
                                                             {n}일
                                                             <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
                                                         </button>
@@ -1216,7 +1216,7 @@ export default function ReplayGamePage() {
                                                 </div>
                                                 {isLoggedIn && (
                                                     <button onClick={() => setReserveOpen(v => !v)}
-                                                        className="shrink-0 min-h-[46px] px-2.5 rounded-xl text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
+                                                        className="shrink-0 min-h-[46px] px-2.5 rounded-xl text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
                                                         {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
                                                         예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
                                                     </button>
@@ -1243,13 +1243,13 @@ export default function ReplayGamePage() {
                                             </div>
 
                                             {reserveOpen && (
-                                                <div className="flex items-center gap-1.5 flex-wrap rounded-xl border border-neutral-200 dark:border-[#35332e] p-2">
+                                                <div className="flex items-center gap-1.5 flex-wrap rounded-xl border border-neutral-200 dark:border-border-subtle-dark p-2">
                                                     {RESERVE_KINDS.map(k => (
                                                         <button key={k.id} onClick={() => setResKind(k.id)} title={k.hint}
                                                             className={cn("min-h-[32px] px-2.5 rounded-lg text-[10.5px] font-bold border transition-colors",
                                                                 resKind === k.id
                                                                     ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                                    : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                                    : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
                                                             {k.label}
                                                         </button>
                                                     ))}
@@ -1264,7 +1264,7 @@ export default function ReplayGamePage() {
                                                                     className={cn("flex-1 min-h-[34px] rounded-lg text-[11px] font-bold border transition-colors flex flex-col items-center justify-center leading-none gap-0.5",
                                                                         resStep === step
                                                                             ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
                                                                     {resKind === "take_profit" ? "+" : "−"}{step}%
                                                                     <span className="text-[9px] font-mono opacity-70">{target.toLocaleString()}</span>
                                                                 </button>
@@ -1282,7 +1282,7 @@ export default function ReplayGamePage() {
                                                                     className={cn("flex-1 min-h-[34px] rounded-lg text-[11px] font-bold border transition-colors flex flex-col items-center justify-center leading-none gap-0.5 disabled:opacity-30",
                                                                         resPart === part.pct
                                                                             ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e]")}>
+                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
                                                                     {part.label}
                                                                     <span className="text-[9px] font-mono opacity-70">{n > 0 ? `${n}주` : "—"}</span>
                                                                 </button>
@@ -1430,7 +1430,7 @@ function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
             </p>
 
             {seen > 1 && (
-                <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e]">
+                <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark">
                     <MoneyCurve history={history.filter(h => h.campaign_id === campaign.id)} />
                 </div>
             )}
@@ -1442,7 +1442,7 @@ function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
             </div>
 
             {(habits?.trades ?? 0) > 0 && (
-                <p className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] text-[11.5px] sm:text-[12.5px] text-neutral-500 dark:text-neutral-400 break-keep">
+                <p className="mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark text-[11.5px] sm:text-[12.5px] text-neutral-500 dark:text-neutral-400 break-keep">
                     {[`체결 ${habits!.trades}회`,
                         habits!.holdDays !== null ? `평균 ${habits!.holdDays}일 보유` : null,
                         habits!.chaseRatio !== null ? `오른 뒤 매수 ${habits!.chaseRatio}%` : null,
@@ -1488,7 +1488,7 @@ function MoneyFlowNote() {
     );
 
     return (
-        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-col gap-2.5 text-[11.5px] sm:text-[13px] leading-[1.6]">
+        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2.5 text-[11.5px] sm:text-[13px] leading-[1.6]">
             <div>
                 <p className="font-black text-neutral-900 dark:text-white mb-1">고객 돈은 왜 늘고 줄까</p>
                 <p className="text-neutral-500 dark:text-neutral-400 break-keep">
@@ -1529,14 +1529,14 @@ function Fold({ icon, title, subtitle, children }: {
         <SectionPanel className="p-3.5 sm:p-5">
             <details className="group">
                 <summary className="cursor-pointer list-none flex items-center gap-2.5">
-                    <span className="p-1.5 bg-[#faf9f7] dark:bg-[#35332e] rounded-lg text-neutral-500 dark:text-neutral-400 shrink-0">{icon}</span>
+                    <span className="p-1.5 bg-surface-canvas dark:bg-surface-dark-muted rounded-lg text-neutral-500 dark:text-neutral-400 shrink-0">{icon}</span>
                     <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-black text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</span>
                         <span className="block text-[11px] text-neutral-500 truncate">{subtitle}</span>
                     </span>
                     <ChevronDown size={16} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
                 </summary>
-                <div className="mt-3.5 pt-3.5 border-t border-neutral-100 dark:border-[#35332e]/80">{children}</div>
+                <div className="mt-3.5 pt-3.5 border-t border-neutral-100 dark:border-border-subtle-dark/80">{children}</div>
             </details>
         </SectionPanel>
     );
@@ -1611,7 +1611,7 @@ function PastHalf({ h }: { h: ReplayHistoryItem }) {
 function PastStock({ s }: { s: HistoryStock }) {
     const rate = s.invested > 0 ? (s.realized / s.invested) * 100 : null;
     return (
-        <li className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-[#faf9f7] dark:bg-[#2c2a26]/60">
+        <li className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-surface-canvas dark:bg-[#2c2a26]/60">
             <span className="flex items-center gap-1.5 min-w-0">
                 <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
                     <SectorSprite sector={s.sector ?? undefined} color={sectorAccent(s.sector ?? undefined)} />
@@ -1717,7 +1717,7 @@ function FirmDashboard({
                         <div className="grid grid-cols-4 gap-1.5">
                             {YEAR_CHOICES.map(y => (
                                 <button key={y} onClick={() => onOpenCampaign(y)} disabled={busy}
-                                    className="min-h-[44px] rounded-xl text-[13px] font-black border border-neutral-200 dark:border-[#35332e] text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                    className="min-h-[44px] rounded-xl text-[13px] font-black border border-neutral-200 dark:border-border-subtle-dark text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
                                     {y}년
                                     <span className="text-[9px] font-bold text-neutral-400">{totalHalves(y)}반기</span>
                                 </button>
@@ -1740,7 +1740,7 @@ function FirmDashboard({
                                 className={cn("min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border transition-colors disabled:opacity-40",
                                     want === null
                                         ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                        : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
+                                        : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
                                 아무 자리나
                             </button>
                             {SCENARIOS.map(sc => (
@@ -1748,7 +1748,7 @@ function FirmDashboard({
                                     className={cn("min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border transition-colors disabled:opacity-40",
                                         want === sc.id
                                             ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
+                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
                                     {sc.label}
                                 </button>
                             ))}
@@ -1831,7 +1831,7 @@ function FirmDashboard({
                             const have = owned.includes(t.id);
                             const on = activeTools.includes(t.id);
                             return (
-                                <li key={t.id} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 dark:border-[#35332e] px-3 py-2">
+                                <li key={t.id} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark px-3 py-2">
                                     <div className="min-w-0">
                                         <div className="text-[13px] font-black text-neutral-900 dark:text-white truncate">
                                             {t.name} <span className="text-[11px] font-bold text-neutral-400">{t.detail}</span>
@@ -1844,12 +1844,12 @@ function FirmDashboard({
                                     {have ? (
                                         <button onClick={() => onToggle(t.id)}
                                             className={cn("shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold border transition-colors",
-                                                on ? "border-[#e3b34a]/60 text-[#a1730a] dark:text-[#e3b34a]" : "border-neutral-200 dark:border-[#35332e] text-neutral-400")}>
+                                                on ? "border-[#e3b34a]/60 text-[#a1730a] dark:text-[#e3b34a]" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400")}>
                                             <Check size={12} /> {on ? "켜짐" : "꺼짐"}
                                         </button>
                                     ) : (
                                         <button onClick={() => onBuy(t.id)} disabled={busy || (firm?.cash ?? 0) < t.price}
-                                            className="shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-[#35332e] hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
+                                            className="shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
                                             <Lock size={12} /> {fmtMoney(t.price)}
                                         </button>
                                     )}
@@ -1971,7 +1971,7 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
     const feeTotal = (round.fee_base ?? 0) + (round.fee_perf ?? 0);
 
     return (
-        <SectionPanel className={cn("shrink-0 border-2 p-3 sm:p-5 pop-in", beat ? "border-[#e3b34a]/60" : "border-neutral-200 dark:border-[#35332e]")}>
+        <SectionPanel className={cn("shrink-0 border-2 p-3 sm:p-5 pop-in", beat ? "border-[#e3b34a]/60" : "border-neutral-200 dark:border-border-subtle-dark")}>
             <div className="flex flex-col gap-1.5 sm:gap-3">
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                     <div>
@@ -2004,7 +2004,7 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
 
                 {settled && (
                     // 등급이 바뀌는 건 자주 없는 일이다 — 그 줄만 한 번 물들여 눈에 띄게 한다
-                    <p className={cn("text-[11.5px] sm:text-[13px] font-bold break-keep text-[#a1730a] dark:text-[#e3b34a] border-t border-neutral-100 dark:border-[#35332e] pt-1.5 sm:pt-3",
+                    <p className={cn("text-[11.5px] sm:text-[13px] font-bold break-keep text-[#a1730a] dark:text-[#e3b34a] border-t border-neutral-100 dark:border-border-subtle-dark pt-1.5 sm:pt-3",
                         rankOf(round.aum_before!) !== rankOf(round.aum_after!) && "flash-mine rounded-md px-1")}>
                         {clientNote(flow, flowPct, rankOf(round.aum_before!), rankOf(round.aum_after!))}
                     </p>
@@ -2025,7 +2025,7 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
                         <FeeMath round={round} mine={mine} bh={bh} />
                     </div>
                 ) : isLoggedIn ? null : (
-                    <p className="text-[11px] text-neutral-400 border-t border-neutral-100 dark:border-[#35332e] pt-1.5">
+                    <p className="text-[11px] text-neutral-400 border-t border-neutral-100 dark:border-border-subtle-dark pt-1.5">
                         체험 운용이라 회사에는 반영되지 않았습니다.
                     </p>
                 )}

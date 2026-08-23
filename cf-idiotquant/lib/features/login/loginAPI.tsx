@@ -1,4 +1,4 @@
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/lib/utils/cookies";
 import { KakaoMessage } from "./loginSlice";
 
 export const setLoginStatus: any = async () => {

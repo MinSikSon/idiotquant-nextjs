@@ -53,6 +53,40 @@ const config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+
+        // 브랜드 액센트 (시그니처 그린)
+        brand: {
+          DEFAULT: "#16a34a",
+          hover: "#15803d",
+          light: "#dcfce7",
+          "light-hover": "#86efac",
+        },
+
+        // 라이트 모드 표면
+        surface: {
+          canvas: "#faf9f7",
+          card: "#ffffff",
+          muted: "#ede8df",
+          "muted-hover": "#f5f0e8",
+        },
+
+        // 다크 모드 표면 (7단계 계층)
+        "surface-dark": {
+          canvas: "#1a1915",
+          DEFAULT: "#1f1e1b",
+          card: "#242320",
+          hover: "#2c2b27",
+          muted: "#35332e",
+          border: "#3a3834",
+          elevated: "#4a4641",
+        },
+
+        // 테두리
+        "border-subtle": {
+          DEFAULT: "#e5e5e5",
+          dark: "#35332e",
+          "dark-strong": "#3a3834",
+        },
       },
     },
   },

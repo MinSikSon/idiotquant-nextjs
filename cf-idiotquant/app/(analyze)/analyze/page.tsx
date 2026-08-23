@@ -130,56 +130,56 @@ import {
   calculateUsNcavRatio, calculateUsNcavValue,
   getKrNcavGrade, getKrSRIMTargetPrice,
   getUsNcavGrade, calculateUsSRIM,
-} from '../../../components/utils/financeCalc';
+} from '@/lib/utils/financeCalc';
 
 // =========================================================================
 // 스켈레톤 컴포넌트
 // =========================================================================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden animate-pulse">
-    <div className="h-[3px] w-full bg-neutral-200 dark:bg-[#35332e]" />
+  <div className="w-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden animate-pulse">
+    <div className="h-[3px] w-full bg-neutral-200 dark:bg-surface-dark-muted" />
     <div className="p-5 space-y-4">
       <div className="flex items-center gap-4">
-        <div className="w-[52px] h-[52px] bg-[#faf9f7] dark:bg-[#1a1915] rounded-2xl border border-neutral-100 dark:border-[#35332e] shrink-0" />
+        <div className="w-[52px] h-[52px] bg-surface-canvas dark:bg-surface-dark-canvas rounded-2xl border border-neutral-100 dark:border-border-subtle-dark shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="flex justify-between">
-            <div className="h-4 bg-neutral-200 dark:bg-[#35332e] rounded w-2/3" />
-            <div className="h-6 w-10 bg-neutral-200 dark:bg-[#35332e] rounded-lg" />
+            <div className="h-4 bg-neutral-200 dark:bg-surface-dark-muted rounded w-2/3" />
+            <div className="h-6 w-10 bg-neutral-200 dark:bg-surface-dark-muted rounded-lg" />
           </div>
-          <div className="h-3 bg-neutral-200 dark:bg-[#35332e] rounded w-1/3" />
-          <div className="h-6 bg-neutral-200 dark:bg-[#35332e] rounded w-1/2 mt-1" />
+          <div className="h-3 bg-neutral-200 dark:bg-surface-dark-muted rounded w-1/3" />
+          <div className="h-6 bg-neutral-200 dark:bg-surface-dark-muted rounded w-1/2 mt-1" />
         </div>
       </div>
-      <div className="h-10 bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl border border-neutral-100 dark:border-[#35332e]" />
+      <div className="h-10 bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl border border-neutral-100 dark:border-border-subtle-dark" />
     </div>
     <div className="px-5 pb-4">
-      <div className="h-[68px] bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl border border-neutral-100 dark:border-[#35332e]" />
+      <div className="h-[68px] bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl border border-neutral-100 dark:border-border-subtle-dark" />
     </div>
     {/* 카드의 지표 4칸 + 복사줄과 같은 구성 */}
-    <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-[#35332e]">
+    <div className="border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-surface-dark-muted">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-white dark:bg-[#242320] px-4 py-3.5 flex flex-col gap-1.5">
-          <div className="h-2 w-10 bg-neutral-200 dark:bg-[#35332e] rounded" />
-          <div className="h-4 w-14 bg-neutral-200 dark:bg-[#35332e] rounded" />
-          <div className="h-2 w-16 bg-neutral-200 dark:bg-[#35332e] rounded" />
+        <div key={i} className="bg-white dark:bg-surface-dark-card px-4 py-3.5 flex flex-col gap-1.5">
+          <div className="h-2 w-10 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
+          <div className="h-4 w-14 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
+          <div className="h-2 w-16 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
         </div>
       ))}
     </div>
-    <div className="border-t border-neutral-100 dark:border-[#35332e] px-4 py-2 flex justify-end">
-      <div className="h-5 w-28 bg-neutral-200 dark:bg-[#35332e] rounded-md" />
+    <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-4 py-2 flex justify-end">
+      <div className="h-5 w-28 bg-neutral-200 dark:bg-surface-dark-muted rounded-md" />
     </div>
   </div>
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
 const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-[#242320] rounded w-1/3 mb-5" />
+  <div className="w-full h-[380px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark animate-pulse p-6">
+    <div className="h-5 bg-neutral-200 dark:bg-surface-dark-card rounded w-1/3 mb-5" />
     <div className="grid grid-cols-2 gap-3">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="p-4 bg-[#faf9f7] dark:bg-[#242320]/50 rounded-xl space-y-2">
-          <div className="h-3 bg-neutral-200 dark:bg-[#4a4641] rounded w-1/2" />
-          <div className="h-5 bg-neutral-200 dark:bg-[#4a4641] rounded w-3/4" />
+        <div key={i} className="p-4 bg-surface-canvas dark:bg-surface-dark-card/50 rounded-xl space-y-2">
+          <div className="h-3 bg-neutral-200 dark:bg-surface-dark-elevated rounded w-1/2" />
+          <div className="h-5 bg-neutral-200 dark:bg-surface-dark-elevated rounded w-3/4" />
         </div>
       ))}
     </div>
@@ -188,17 +188,17 @@ const MetricsSkeleton = memo(() => (
 MetricsSkeleton.displayName = 'MetricsSkeleton';
 
 const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[280px] bg-white dark:bg-[#242320] rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-[#242320] rounded w-1/3 mb-5" />
+  <div className="w-full h-[280px] bg-white dark:bg-surface-dark-card rounded-2xl animate-pulse p-6">
+    <div className="h-5 bg-neutral-200 dark:bg-surface-dark-card rounded w-1/3 mb-5" />
     <div className="space-y-3">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#242320] rounded-xl" />)}
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-surface-dark-card rounded-xl" />)}
     </div>
   </div>
 ));
 ValuationSkeleton.displayName = 'ValuationSkeleton';
 
 const SearchSkeleton = memo(() => (
-  <div className="w-full h-11 bg-[#faf9f7] dark:bg-[#242320] rounded-xl animate-pulse" />
+  <div className="w-full h-11 bg-surface-canvas dark:bg-surface-dark-card rounded-xl animate-pulse" />
 ));
 SearchSkeleton.displayName = 'SearchSkeleton';
 
@@ -206,11 +206,11 @@ SearchSkeleton.displayName = 'SearchSkeleton';
 const ResultSkeleton = memo(() => (
   <div className="space-y-5 animate-in fade-in duration-300">
     {/* 종합 판단 (레이블 + 결론 + 체크 4개) */}
-    <div className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-5 sm:p-6 animate-pulse">
-      <div className="h-2.5 w-44 bg-neutral-200 dark:bg-[#35332e] rounded mb-3" />
-      <div className="h-4 w-2/3 bg-neutral-200 dark:bg-[#35332e] rounded" />
+    <div className="rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-5 sm:p-6 animate-pulse">
+      <div className="h-2.5 w-44 bg-neutral-200 dark:bg-surface-dark-muted rounded mb-3" />
+      <div className="h-4 w-2/3 bg-neutral-200 dark:bg-surface-dark-muted rounded" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3.5">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-9 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-100 dark:border-[#35332e]" />)}
+        {[...Array(4)].map((_, i) => <div key={i} className="h-9 rounded-xl bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-100 dark:border-border-subtle-dark" />)}
       </div>
     </div>
     <StockCardSkeleton />
@@ -382,7 +382,7 @@ const VERDICT_TONE = {
     text: 'text-[#14532d] dark:text-[#bbf7d0]',
   },
   neutral: {
-    box: 'bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834]',
+    box: 'bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border',
     label: 'text-neutral-400',
     text: 'text-neutral-600 dark:text-neutral-300',
   },
@@ -588,10 +588,10 @@ function AnalyzeContent() {
     ? buildVerdict({ ncavMultiple, pbr: stockData.pbr, per: stockData.per, roe })
     : null;
 
-  if (!hasMounted) return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]" />;
+  if (!hasMounted) return <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas" />;
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 antialiased">
+    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 antialiased">
 
       {/* ── Toast ── */}
       <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
@@ -601,7 +601,7 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
+      <header className="sticky top-0 z-30 bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-[#16a34a]">
         {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
         {(!isPriceLoaded || searchOpen) && (
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2">
@@ -615,7 +615,7 @@ function AnalyzeContent() {
             </div>
             {isPriceLoaded && (
               <button onClick={() => setSearchOpen(false)} aria-label="검색 닫기"
-                className="shrink-0 p-2 rounded-xl border border-neutral-200 dark:border-[#3a3834] text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
+                className="shrink-0 p-2 rounded-xl border border-neutral-200 dark:border-surface-dark-border text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
                 <X size={14} />
               </button>
             )}
@@ -638,7 +638,7 @@ function AnalyzeContent() {
               {headerPrice}
             </span>
             {gradeLabel && (
-              <span className="shrink-0 px-2 py-0.5 rounded-lg text-[11px] font-black font-mono border border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-300">
+              <span className="shrink-0 px-2 py-0.5 rounded-lg text-[11px] font-black font-mono border border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-300">
                 {gradeLabel}
               </span>
             )}
@@ -651,7 +651,7 @@ function AnalyzeContent() {
                   "p-2 rounded-xl border transition-all",
                   isInWatchlist
                     ? "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/50 dark:text-rose-400"
-                    : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-rose-500 dark:bg-[#242320]/40 dark:border-[#3a3834]"
+                    : "text-neutral-500 bg-surface-canvas border-neutral-200 hover:text-rose-500 dark:bg-surface-dark-card/40 dark:border-surface-dark-border"
                 )}
               >
                 <Heart size={14} fill={isInWatchlist ? "currentColor" : "none"} />
@@ -665,14 +665,14 @@ function AnalyzeContent() {
                     ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
                     : shareStatus === 'error'
                     ? "bg-rose-50 text-rose-600 border-rose-200"
-                    : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-neutral-700 dark:bg-[#242320]/40 dark:border-[#3a3834]"
+                    : "text-neutral-500 bg-surface-canvas border-neutral-200 hover:text-neutral-700 dark:bg-surface-dark-card/40 dark:border-surface-dark-border"
                 )}
               >
                 {shareStatus === 'copied' ? <Check size={14} /> : shareStatus === 'error' ? <AlertCircle size={14} /> : <Share2 size={14} />}
               </button>
               {!searchOpen && (
                 <button onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색"
-                  className="p-2 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#242320]/40 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
+                  className="p-2 rounded-xl border border-neutral-200 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark-card/40 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
                   <Search size={14} />
                 </button>
               )}
@@ -693,7 +693,7 @@ function AnalyzeContent() {
                   className={cn(
                     "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
                     activeTab === key
-                      ? "bg-white dark:bg-[#1f1e1b] text-[#16a34a] shadow-sm"
+                      ? "bg-white dark:bg-surface-dark text-[#16a34a] shadow-sm"
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                   )}
                 >
@@ -706,7 +706,7 @@ function AnalyzeContent() {
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
-          <div className="border-t border-neutral-100 dark:border-[#35332e]/50 bg-[#faf9f7]/50 dark:bg-[#242320]/30">
+          <div className="border-t border-neutral-100 dark:border-border-subtle-dark/50 bg-surface-canvas/50 dark:bg-surface-dark-card/30">
             {popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -716,7 +716,7 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#35332e] hover:border-[#16a34a]/70 hover:text-[#16a34a] dark:hover:text-[#16a34a] transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-[#16a34a]/70 hover:text-[#16a34a] dark:hover:text-[#16a34a] transition-all whitespace-nowrap"
                     >
                       <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#16a34a] text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
@@ -726,12 +726,12 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className={cn("max-w-4xl mx-auto px-4 py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-[#35332e]/40")}>
+              <div className={cn("max-w-4xl mx-auto px-4 py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-[#16a34a] dark:text-neutral-400 dark:hover:text-[#16a34a] hover:bg-white dark:hover:bg-[#242320]/40 rounded-lg border border-neutral-200/60 dark:border-[#35332e] transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-[#16a34a] dark:text-neutral-400 dark:hover:text-[#16a34a] hover:bg-white dark:hover:bg-surface-dark-card/40 rounded-lg border border-neutral-200/60 dark:border-border-subtle-dark transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -768,7 +768,7 @@ function AnalyzeContent() {
                     className="w-full flex items-center gap-1 sm:hidden text-left"
                   >
                     <span className={cn(
-                      "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black font-mono tabular-nums bg-white/70 dark:bg-[#1a1915]/50",
+                      "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
                       VERDICT_TONE[verdict.tone].label
                     )}>
                       {verdict.metCount}/{verdict.checks.length}
@@ -784,12 +784,12 @@ function AnalyzeContent() {
 
                   {/* 펼친 내용 — 좁은 폭이라 한 줄에 하나씩. 기준을 같이 적어야 왜 ✓/✕ 인지 읽힌다 */}
                   {verdictOpen && (
-                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-[#3a3834]/70 flex flex-col gap-1.5 sm:hidden">
+                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-surface-dark-border/70 flex flex-col gap-1.5 sm:hidden">
                       {verdict.checks.map(c => (
                         <div key={c.label} className="flex items-center gap-2">
                           <span className={cn(
                             "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
-                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-[#4a4641]"
+                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
                           </span>
@@ -816,10 +816,10 @@ function AnalyzeContent() {
                     <div className="grid grid-cols-2 gap-2 mt-3.5">
                       {verdict.checks.map(c => (
                         <div key={c.label}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-[#3a3834]/70 bg-white/70 dark:bg-[#1a1915]/40">
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-surface-dark-border/70 bg-white/70 dark:bg-surface-dark-canvas/40">
                           <span className={cn(
                             "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
-                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-[#4a4641]"
+                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
                           </span>
@@ -906,7 +906,7 @@ function AnalyzeContent() {
                 )}
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className={cn("bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm", activeTab !== 'strategy' && 'hidden')}>
+                <div className={cn("bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-1 shadow-sm", activeTab !== 'strategy' && 'hidden')}>
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
@@ -945,7 +945,7 @@ function AnalyzeContent() {
                         <p className="text-[10.5px] text-neutral-400">
                           {krOrUs === 'KR' ? 'DART 공시 기준 · 억 원' : 'US-GAAP 기준 · USD'}
                         </p>
-                        <div className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                        <div className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-surface-dark-hover">
                           {([['bars', '막대'], ['table', '표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}
@@ -954,7 +954,7 @@ function AnalyzeContent() {
                               className={cn(
                                 "px-2.5 py-1 rounded-lg text-[11px] transition-colors",
                                 financeView === mode
-                                  ? "bg-white dark:bg-[#1f1e1b] font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                  ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white shadow-sm"
                                   : "font-bold text-neutral-500 dark:text-neutral-400"
                               )}
                             >
@@ -969,7 +969,7 @@ function AnalyzeContent() {
                           ? <FinancialBars {...buildKrBars(data.kiBS, data.kiIS)} unit="eok" />
                           : <FinancialBars {...buildUsBars(data.finnhubData?.data ?? [])} unit="usd" />
                       ) : (
-                        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                           <div className="overflow-x-auto">
                             {krOrUs === 'KR'
                               ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
@@ -986,7 +986,7 @@ function AnalyzeContent() {
               ) : (
               /* 탭 하나 분량의 패널 한 장 — 실제로 표시되는 것도 선택된 탭 하나뿐이다 */
               <div className="animate-pulse">
-                <div className="h-[520px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
+                <div className="h-[520px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark" />
               </div>
               )}
             </div>
@@ -995,7 +995,7 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-[#35332e]">
+      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-[#16a34a]" strokeWidth={2.5} />
@@ -1018,8 +1018,8 @@ function AnalyzeContent() {
 export default function AnalyzePage() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-[#faf9f7] dark:bg-[#1a1915] min-h-screen">
-        <div className="p-4 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
+      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-surface-canvas dark:bg-surface-dark-canvas min-h-screen">
+        <div className="p-4 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
           <Loader2 className="animate-spin text-[#16a34a] dark:text-[#16a34a]" size={24} />
         </div>
         <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-widest font-mono uppercase">

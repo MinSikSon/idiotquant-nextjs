@@ -1,6 +1,5 @@
 import { cleansing, isAllValid } from "@/lib/DataCleansing";
 
-
 function filteredByNcavStrategy(arrFinancialMarketInfo: any) {
     function compareTwo(array: any, key1: any, key2: any) {
         return array.filter((item: any) => isAllValid(item[key1], item[key2], true) && Number(item[key1]) >= Number(item[key2]));
@@ -96,7 +95,6 @@ export function GetArrayFilteredByStrategyExample(stockCompanyInfo: any) {
     addWeight(arraySorted2);
     // 시가총액 하위 20% cut-line
     const cutLine = Number(arraySorted2.length * 0.2).toFixed(0);
-    // console.log(`cut-line(${cutLine}) 시가총액: ${Util.UnitConversion(arraySorted2[cutLine]['시가총액'], true)}, `, arraySorted2[cutLine]);
 
     // sort(PER)
     let arraySorted3 = new Array(...arraySorted2);
@@ -111,7 +109,6 @@ export function GetArrayFilteredByStrategyExample(stockCompanyInfo: any) {
         return Number(a['weight']) - Number(b['weight']);
     });
 
-    // console.log(`arraySorted4`, arraySorted4);
     const arrSelectedStockCompany = arraySorted4.slice(0, 40);
 
     const companyList = new Array();

@@ -1,4 +1,4 @@
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/lib/utils/cookies";
 
 export const postTimestamp: any = async (data: any) => {
     const authToken = getCookie("authToken");

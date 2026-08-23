@@ -50,7 +50,7 @@ export function BalanceShell({
   sections: BalanceSection[];
 }) {
   return (
-    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] transition-colors duration-300">
+    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas transition-colors duration-300">
 
       <ToastContainer toasts={toasts} onRemove={onRemoveToast} />
 
@@ -67,7 +67,7 @@ export function BalanceShell({
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#242320] animate-pulse" />
+              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-surface-dark-card animate-pulse" />
             )}
           </div>
 

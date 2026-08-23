@@ -169,8 +169,8 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
 // ── 명세서 한 장 ─────────────────────────────────────────────────────────
 function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
     return (
-        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-[#35332e] flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h4 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100">{model.title}</h4>
                 <span className="font-mono text-[10px] text-neutral-400">
                     {model.periods[0]} → {model.periods[model.periods.length - 1]}
@@ -179,7 +179,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             </div>
 
             {model.stacks.length > 0 && (
-                <div className="px-5 py-4 bg-[#faf9f7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e] flex flex-col gap-3.5">
+                <div className="px-5 py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-3.5">
                     <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-neutral-400">
                         한눈에 · {model.periods[0]}
                     </span>

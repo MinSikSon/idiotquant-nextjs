@@ -23,7 +23,7 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 const PLAN_CLASS: Record<string, string> = {
-  free: "bg-neutral-100 dark:bg-[#35332e] text-neutral-500 dark:text-neutral-400",
+  free: "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400",
   pro: "bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a]",
   business: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
 };
@@ -113,7 +113,7 @@ export default function AdminPage() {
       <div className="flex flex-wrap gap-2 mb-6">
         <Link
           href="/admin/ticker-map"
-          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a] hover:text-[#16a34a] transition-colors group"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a] hover:text-[#16a34a] transition-colors group"
         >
           <BookOpen size={13} className="text-neutral-400 group-hover:text-[#16a34a] transition-colors" />
           종목명 매핑 관리
@@ -122,7 +122,7 @@ export default function AdminPage() {
       </div>
 
       {/* 재가입 쿨다운 설정 */}
-      <div className="bg-white dark:bg-[#1f1e1b] border border-neutral-200/70 dark:border-[#3a3834] rounded-xl p-5 mb-6">
+      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-1">
           <Clock size={14} className="text-neutral-400" />
           <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">재가입 쿨다운</span>
@@ -135,7 +135,7 @@ export default function AdminPage() {
             max={3650}
             value={cooldownDays}
             onChange={(e) => setCooldownDays(e.target.value)}
-            className="w-28 px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-[#16a34a]"
+            className="w-28 px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-[#16a34a]"
           />
           <span className="text-sm text-neutral-500 dark:text-neutral-400">일</span>
           <button
@@ -157,7 +157,7 @@ export default function AdminPage() {
           { label: "Business",   value: users.filter(u => u.plan === "business").length },
           { label: "어드민",     value: users.filter(u => u.role === "admin").length },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-[#1f1e1b] border border-neutral-200/70 dark:border-[#3a3834] rounded-xl p-4">
+          <div key={stat.label} className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl p-4">
             <p className="text-xs text-neutral-400 mb-1">{stat.label}</p>
             <p className="text-2xl font-black text-neutral-900 dark:text-white">
               {loading ? "—" : stat.value}
@@ -167,7 +167,7 @@ export default function AdminPage() {
       </div>
 
       {/* User Table */}
-      <div className="bg-white dark:bg-[#1f1e1b] border border-neutral-200/70 dark:border-[#3a3834] rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-[#2c2b27]">
           <Users size={14} className="text-neutral-400" />
           <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">카카오 가입자 목록</span>
@@ -186,7 +186,7 @@ export default function AdminPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-100 dark:border-[#2c2b27] bg-[#faf9f7] dark:bg-[#242320]">
+                <tr className="border-b border-neutral-100 dark:border-[#2c2b27] bg-surface-canvas dark:bg-surface-dark-card">
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이름</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이메일</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">플랜</th>
@@ -197,10 +197,10 @@ export default function AdminPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#2c2b27]">
                 {users.map(u => (
-                  <tr key={u.id} className="hover:bg-[#faf9f7] dark:hover:bg-[#242320] transition-colors">
+                  <tr key={u.id} className="hover:bg-surface-canvas dark:hover:bg-surface-dark-card transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-[#35332e] flex items-center justify-center text-[10px] font-black text-neutral-600 dark:text-neutral-300 shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-surface-dark-muted flex items-center justify-center text-[10px] font-black text-neutral-600 dark:text-neutral-300 shrink-0">
                           {u.name?.[0] ?? "?"}
                         </div>
                         <span className="font-medium text-neutral-800 dark:text-neutral-200">{u.name ?? "—"}</span>

@@ -26,7 +26,7 @@ export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?
     }, [status, router, callbackUrl])
 
     if (status === "loading") {
-        return <div className="w-full h-12 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] animate-pulse" />
+        return <div className="w-full h-12 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted animate-pulse" />
     }
 
     if (session) {
