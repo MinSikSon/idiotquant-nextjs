@@ -20,7 +20,8 @@ import {
     currentMonthKst,
 } from "@/lib/features/ledger/ledgerSlice";
 import {
-    categoriesOf, categoryLabel, catKey, type LedgerKind, type StoredCategory,
+    categoriesOf, categoryLabel, catKey, KIND_ORDER, KIND_STYLE,
+    type LedgerKind, type StoredCategory,
 } from "@/lib/features/ledger/categories";
 import { useEntryDrag } from "./useEntryDrag";
 
@@ -38,6 +39,13 @@ const CARD_CLS =
 
 const CHIP_CLS =
     "min-h-[40px] px-3.5 rounded-xl border text-[13px] font-bold transition-colors";
+
+/** 새 항목 입력칸의 예시 — 구분마다 떠올릴 것이 다르다. */
+const NEW_CAT_HINT: Record<LedgerKind, string> = {
+    income: "예: 부업",
+    expense: "예: 여행",
+    saving: "예: 청약",
+};
 
 /* ─── 날짜 유틸 — 사용자가 보는 달·오늘은 KST 기준이다 ─────────── */
 const todayKst = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -199,15 +207,22 @@ export default function LedgerPage() {
         return () => window.removeEventListener("keydown", onKey);
     }, [askDelete, sheetOpen]);
 
-    /* 요약·항목별 — 그 달 내역이 이미 전부 있으므로 여기서 한 번 접는다. */
-    const { income, expense, net } = useMemo(() => {
-        const income = entries.filter(e => e.kind === "income").reduce((s, e) => s + e.amount, 0);
-        const expense = entries.filter(e => e.kind === "expense").reduce((s, e) => s + e.amount, 0);
-        return { income, expense, net: income - expense };
+    /* 요약·항목별 — 그 달 내역이 이미 전부 있으므로 여기서 한 번 접는다.
+       저축은 쓴 돈이 아니라 옮긴 돈이라 소비와 따로 세지만, 지갑에서는 똑같이
+       나가므로 남은 돈에서는 둘 다 뺀다. */
+    const totals = useMemo(() => {
+        const sums: Record<LedgerKind, number> = { income: 0, expense: 0, saving: 0 };
+        for (const e of entries) sums[e.kind] += e.amount;
+        return sums;
     }, [entries]);
 
+    const { income, expense, saving } = totals;
+    const net = income - expense - saving;
+    /* 저축률은 번 돈 중 얼마를 남겼는가다 — 수입이 없는 달엔 뜻이 없어 감춘다. */
+    const savingRate = income > 0 ? Math.round((saving / income) * 100) : null;
+
     const buckets = useMemo(() => {
-        const total = barKind === "income" ? income : expense;
+        const total = totals[barKind];
         if (!total) return [];
         /* 지운 항목으로 적어둔 내역도 막대에 나와야 한다 — 목록을 돌지 않고
            내역에 실제로 쓰인 키를 모아 접는다. */
@@ -223,13 +238,13 @@ export default function LedgerPage() {
                 pct: Math.round((sum / total) * 100),
             }))
             .sort((a, b) => b.sum - a.sum);
-    }, [entries, barKind, income, expense]);
+    }, [entries, barKind, totals]);
 
-    /* 달력 한 칸에 얹을 그날 수입·지출. 그 달 내역이 이미 전부 있어 요청이 더 필요 없다. */
+    /* 달력 한 칸에 얹을 그날 구분별 합. 그 달 내역이 이미 전부 있어 요청이 더 필요 없다. */
     const byDay = useMemo(() => {
-        const map = new Map<string, { income: number; expense: number }>();
+        const map = new Map<string, Record<LedgerKind, number>>();
         for (const e of entries) {
-            const cur = map.get(e.entry_date) ?? { income: 0, expense: 0 };
+            const cur = map.get(e.entry_date) ?? { income: 0, expense: 0, saving: 0 };
             cur[e.kind] += e.amount;
             map.set(e.entry_date, cur);
         }
@@ -594,6 +609,11 @@ export default function LedgerPage() {
                                     const day = byDay.get(date);
                                     const isToday = date === todayKst();
                                     const future = date > todayKst();
+                                    /* 칸 하나에 숫자는 하나뿐이다 — '사용금액'이 먼저고,
+                                       없으면 수입, 그것도 없으면 저축을 보여준다. */
+                                    const shown = day && (["expense", "income", "saving"] as LedgerKind[])
+                                        .find(k => day[k] > 0);
+                                    const kinds = day ? KIND_ORDER.filter(k => day[k] > 0).length : 0;
                                     return (
                                         <button
                                             key={date}
@@ -604,7 +624,7 @@ export default function LedgerPage() {
                                                 "hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover",
                                                 future && "opacity-40"
                                             )}
-                                            aria-label={`${Number(date.slice(8))}일${day ? ` 지출 ${won(day.expense)}` : " 기록 없음"}`}
+                                            aria-label={`${Number(date.slice(8))}일${day && shown ? ` ${KIND_STYLE[shown].label} ${won(day[shown])}` : " 기록 없음"}`}
                                         >
                                             <span className={cn(
                                                 "w-6 h-[18px] flex items-center justify-center rounded-full text-[11px] font-black tabular-nums",
@@ -617,23 +637,21 @@ export default function LedgerPage() {
                                                 {Number(date.slice(8))}
                                             </span>
 
-                                            {/* '사용금액'이 먼저다. 지출이 없고 수입만 있는 날은 수입을 보여준다. */}
-                                            {day && day.expense > 0 ? (
-                                                <span className="text-[9px] font-black tabular-nums leading-none text-red-500 dark:text-red-400">
-                                                    {compactWon(day.expense)}
-                                                </span>
-                                            ) : day && day.income > 0 ? (
-                                                <span className="text-[9px] font-black tabular-nums leading-none text-[#16a34a]">
-                                                    {compactWon(day.income)}
+                                            {day && shown ? (
+                                                <span className={cn(
+                                                    "text-[9px] font-black tabular-nums leading-none",
+                                                    shown === "expense" ? "text-red-500 dark:text-red-400" : KIND_STYLE[shown].amount
+                                                )}>
+                                                    {compactWon(day[shown])}
                                                 </span>
                                             ) : (
                                                 <span className="h-[9px]" />
                                             )}
 
-                                            {/* 지출과 수입이 같은 날 있으면 점 하나로 알린다 */}
+                                            {/* 한 날에 구분이 둘 이상이면 가려진 것이 있다는 뜻으로 점 하나 */}
                                             <span className={cn(
                                                 "w-1 h-1 rounded-full",
-                                                day && day.expense > 0 && day.income > 0 ? "bg-[#16a34a]" : "bg-transparent"
+                                                kinds > 1 ? "bg-[#16a34a]" : "bg-transparent"
                                             )} />
                                         </button>
                                     );
@@ -661,39 +679,37 @@ export default function LedgerPage() {
                     )}
                 </div>
 
-                {/* ② 요약 — 좁은 화면에서는 잔액을 크게 한 줄, 수입·지출은 아래 두 칸 */}
+                {/* ② 요약 — 남은 돈을 크게 한 줄, 아래에 수입·소비·저축 세 칸.
+                    소비와 저축을 한 칸에 묶으면 "이번 달 얼마 썼나"를 다시 셈해야 한다. */}
                 <div className={CARD_CLS}>
-                    <div className="px-4 pt-3.5 pb-3 text-center border-b border-neutral-100 dark:border-border-subtle-dark sm:hidden">
-                        <div className={FIELD_LABEL_CLS}>잔액</div>
+                    <div className="px-4 pt-3.5 pb-3 text-center border-b border-neutral-100 dark:border-border-subtle-dark">
+                        <div className={FIELD_LABEL_CLS}>남은 돈</div>
                         <div className={cn(
                             "mt-0.5 text-[27px] font-black tracking-[-0.03em] tabular-nums",
                             net < 0 ? "text-red-600 dark:text-red-400" : "text-[#16a34a]"
                         )}>
                             {loading ? "—" : `${net > 0 ? "+" : ""}${won(net)}`}
                         </div>
+                        {!loading && savingRate !== null && (
+                            <div className="mt-1 text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tabular-nums">
+                                저축률 {savingRate}%
+                            </div>
+                        )}
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3">
-                        <div className="py-3 px-2 text-center border-r border-neutral-100 dark:border-border-subtle-dark">
-                            <div className={FIELD_LABEL_CLS}>수입</div>
-                            <div className="mt-1 text-[15px] sm:text-[17px] font-black tracking-[-0.02em] tabular-nums text-[#16a34a]">
-                                {loading ? "—" : won(income)}
+                    <div className="grid grid-cols-3 divide-x divide-neutral-100 dark:divide-border-subtle-dark">
+                        {(["income", "expense", "saving"] as LedgerKind[]).map(k => (
+                            <div key={k} className="py-3 px-2 text-center">
+                                <div className={FIELD_LABEL_CLS}>
+                                    {k === "expense" ? "소비" : KIND_STYLE[k].label}
+                                </div>
+                                <div className={cn(
+                                    "mt-1 text-[15px] sm:text-[17px] font-black tracking-[-0.02em] tabular-nums",
+                                    k === "expense" ? "text-red-600 dark:text-red-400" : KIND_STYLE[k].amount
+                                )}>
+                                    {loading ? "—" : won(totals[k])}
+                                </div>
                             </div>
-                        </div>
-                        <div className="py-3 px-2 text-center sm:border-r sm:border-neutral-100 sm:dark:border-border-subtle-dark">
-                            <div className={FIELD_LABEL_CLS}>지출</div>
-                            <div className="mt-1 text-[15px] sm:text-[17px] font-black tracking-[-0.02em] tabular-nums text-red-600 dark:text-red-400">
-                                {loading ? "—" : won(expense)}
-                            </div>
-                        </div>
-                        <div className="hidden sm:block py-3 px-2 text-center">
-                            <div className={FIELD_LABEL_CLS}>잔액</div>
-                            <div className={cn(
-                                "mt-1 text-[17px] font-black tracking-[-0.02em] tabular-nums",
-                                net < 0 ? "text-red-600 dark:text-red-400" : "text-[#16a34a]"
-                            )}>
-                                {loading ? "—" : `${net > 0 ? "+" : ""}${won(net)}`}
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
 
@@ -702,7 +718,7 @@ export default function LedgerPage() {
                     <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
                         <h2 className={FIELD_LABEL_CLS}>항목별</h2>
                         <div className="flex rounded-[10px] border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                            {(["income", "expense"] as LedgerKind[]).map(k => (
+                            {KIND_ORDER.map(k => (
                                 <button
                                     key={k}
                                     type="button"
@@ -711,11 +727,11 @@ export default function LedgerPage() {
                                     className={cn(
                                         "px-3 min-h-[34px] text-[11px] font-black transition-colors",
                                         barKind === k
-                                            ? k === "income" ? "bg-[#16a34a] text-white" : "bg-red-600 text-white"
+                                            ? KIND_STYLE[k].solid
                                             : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
                                     )}
                                 >
-                                    {k === "income" ? "수입" : "지출"}
+                                    {KIND_STYLE[k].label}
                                 </button>
                             ))}
                         </div>
@@ -724,7 +740,7 @@ export default function LedgerPage() {
                     <div className="px-4 py-3.5 flex flex-col gap-3">
                         {buckets.length === 0 ? (
                             <div className="py-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
-                                이 달에 기록된 {barKind === "income" ? "수입" : "지출"}이 없습니다.
+                                이 달에 기록된 {KIND_STYLE[barKind].label}이 없습니다.
                             </div>
                         ) : buckets.map(b => (
                             /* 이름과 막대를 위아래로 — "주식 배당" 같은 긴 이름이 잘리지 않는다 */
@@ -736,7 +752,7 @@ export default function LedgerPage() {
                                 </span>
                                 <span className="col-span-2 h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-hover overflow-hidden">
                                     <span
-                                        className={cn("block h-full rounded-full transition-all duration-300", barKind === "income" ? "bg-[#16a34a]" : "bg-red-500")}
+                                        className={cn("block h-full rounded-full transition-all duration-300", KIND_STYLE[barKind].bar)}
                                         style={{ width: `${Math.max(b.pct, 2)}%` }}
                                     />
                                 </span>
@@ -811,7 +827,7 @@ export default function LedgerPage() {
 
                                     <div className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
                                         {day.items.map((e, i) => {
-                                            const isIncome = e.kind === "income";
+                                            const style = KIND_STYLE[e.kind];
                                             const lifted = dragId === e.id;
                                             // 놓을 자리는 줄 사이의 선이다 — i 앞, 그리고 마지막이면 뒤에도.
                                             const lineBefore = dropTarget?.date === day.date && dropTarget.index === i && i > 0;
@@ -841,9 +857,7 @@ export default function LedgerPage() {
                                                 >
                                                     <span className={cn(
                                                         "text-[11px] font-black px-2 py-0.5 rounded-md whitespace-nowrap",
-                                                        isIncome
-                                                            ? "bg-[#dcfce7] text-[#16a34a] dark:bg-[#052e16]/60 dark:text-[#16a34a]"
-                                                            : "bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400"
+                                                        style.badge
                                                     )}>
                                                         {categoryLabel(e.kind, e.category, customCategories)}
                                                     </span>
@@ -855,9 +869,9 @@ export default function LedgerPage() {
                                                     </span>
                                                     <span className={cn(
                                                         "text-[13px] font-black tabular-nums whitespace-nowrap",
-                                                        isIncome ? "text-[#16a34a]" : "text-neutral-900 dark:text-neutral-100"
+                                                        style.amount
                                                     )}>
-                                                        {isIncome ? "+" : "−"}{e.amount.toLocaleString("ko-KR")}
+                                                        {e.kind === "income" ? "+" : "−"}{e.amount.toLocaleString("ko-KR")}
                                                     </span>
                                                     <ChevronRight size={15} strokeWidth={2.4} className="text-neutral-300 dark:text-neutral-600" />
                                                 </button>
@@ -1016,7 +1030,7 @@ export default function LedgerPage() {
                         <div className="flex flex-col gap-1.5 mb-3">
                             <span className={FIELD_LABEL_CLS}>구분</span>
                             <div className="flex rounded-xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                                {(["income", "expense"] as LedgerKind[]).map(k => (
+                                {KIND_ORDER.map(k => (
                                     <button
                                         key={k}
                                         type="button"
@@ -1025,11 +1039,11 @@ export default function LedgerPage() {
                                         className={cn(
                                             "flex-1 min-h-[46px] text-sm font-black transition-colors",
                                             fKind === k
-                                                ? k === "income" ? "bg-[#16a34a] text-white" : "bg-red-600 text-white"
+                                                ? KIND_STYLE[k].solid
                                                 : "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-500"
                                         )}
                                     >
-                                        {k === "income" ? "수입" : "지출"}
+                                        {KIND_STYLE[k].label}
                                     </button>
                                 ))}
                             </div>
@@ -1093,9 +1107,7 @@ export default function LedgerPage() {
                                                     // 내가 만든 항목은 고른 동안만 × 가 붙으므로 오른쪽을 붙여 잇는다
                                                     on && mine && "rounded-r-none border-r-0",
                                                     on
-                                                        ? fKind === "income"
-                                                            ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                                            : "bg-red-600 border-red-600 text-white"
+                                                        ? KIND_STYLE[fKind].solid
                                                         : "bg-surface-canvas dark:bg-surface-dark-canvas border-neutral-200 dark:border-border-subtle-dark text-neutral-600 dark:text-neutral-400"
                                                 )}
                                             >
@@ -1112,9 +1124,7 @@ export default function LedgerPage() {
                                                         disabled={mutating}
                                                         className={cn(
                                                             CHIP_CLS, "w-9 px-0 rounded-none border-l-0 border-r-0 flex items-center justify-center",
-                                                            fKind === "income"
-                                                                ? "bg-[#16a34a] border-[#16a34a] text-white/80 hover:text-white"
-                                                                : "bg-red-600 border-red-600 text-white/80 hover:text-white"
+                                                            KIND_STYLE[fKind].solid, "text-white/80 hover:text-white"
                                                         )}
                                                         aria-label={`${c.label} 항목 이름 바꾸기`}
                                                     >
@@ -1126,9 +1136,7 @@ export default function LedgerPage() {
                                                         disabled={mutating}
                                                         className={cn(
                                                             CHIP_CLS, "w-9 px-0 rounded-l-none border-l-0 flex items-center justify-center",
-                                                            fKind === "income"
-                                                                ? "bg-[#16a34a] border-[#16a34a] text-white/80 hover:text-white"
-                                                                : "bg-red-600 border-red-600 text-white/80 hover:text-white"
+                                                            KIND_STYLE[fKind].solid, "text-white/80 hover:text-white"
                                                         )}
                                                         aria-label={`${c.label} 항목 지우기`}
                                                     >
@@ -1158,7 +1166,7 @@ export default function LedgerPage() {
                                         ref={newCatRef}
                                         type="text"
                                         maxLength={12}
-                                        placeholder={fKind === "income" ? "예: 부업" : "예: 여행"}
+                                        placeholder={NEW_CAT_HINT[fKind]}
                                         value={newCatLabel}
                                         onChange={e => setNewCatLabel(e.target.value)}
                                         onKeyDown={e => {
