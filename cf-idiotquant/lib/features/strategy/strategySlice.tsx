@@ -1,8 +1,38 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
-import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strategy/image";
+
+/* 원래 components/tableExample8 이 들고 있던 표 모양.
+   그 컴포넌트가 정리되면서 사라졌는데, 이 두 타입은 화면이 아니라 이 슬라이스가
+   만드는 데이터의 모양이라 여기로 옮겨 왔다 — 쓰는 곳이 여기 하나뿐이다. */
+export interface Example8TableHeadType {
+    head: string;
+    desc?: string;
+    customeStyle?: string;
+}
+
+export interface Example8TableRowType {
+    id: any;
+    column_1?: any;
+    column_2: any;
+    column_3: any;
+    column_4: any;
+    expectedRateOfReturnColor?: any;
+    column_5?: any;
+    column_6: any;
+    column_7?: any;
+    column_8?: any;
+    column_9?: any;
+    column_10?: any;
+    column_11?: any;
+    column_12?: any;
+    bgColor?: any;
+    column_13?: any;
+    column_14?: any;
+    column_15?: any;
+    column_16?: any;
+}
 
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
