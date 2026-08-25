@@ -66,20 +66,35 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         backendHeaders.set('Content-Type', 'application/json');
 
         // 3. 인증 세션 바인딩
+        //
+        // 워커는 이 Authorization 토큰을 열어보고 "누구인가"를 정한다. X-User-Id 는
+        // 이제 신원이 아니다 — 워커가 검증된 값으로 덮어쓰므로, 여기서 보내는 것은
+        // INTERNAL_JWT_SECRET 을 아직 넣지 않은 배포를 위한 임시 통로일 뿐이다.
+        //
+        // 서명 키는 서버 전용이어야 한다. 예전에 쓰던 NEXT_PUBLIC_ 이름은 Next.js 에게
+        // "브라우저로 내보내라"는 뜻이라, 클라이언트 컴포넌트가 한 번만 참조해도
+        // 서명 키가 방문자 번들에 실린다.
         if (session?.user) {
-            const secret = new TextEncoder().encode(process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
-            const s2sToken = await new SignJWT({
-                userId: (session.user as any).id,
-                role: (session.user as any).role
-            })
-                .setProtectedHeader({ alg: 'HS256' })
-                .setExpirationTime('1m')
-                .sign(secret);
+            const secret = process.env.INTERNAL_JWT_SECRET;
 
-            backendHeaders.set('Authorization', `Bearer ${s2sToken}`);
+            // 키가 아직 없는 배포에서 통째로 죽지 않게 한다. 이때 워커도 시크릿이
+            // 없는 상태라 예전처럼 헤더로 동작한다 — 양쪽에 키를 넣는 순간 검증이 켜진다.
+            if (secret) {
+                const s2sToken = await new SignJWT({
+                    userId: (session.user as any).id,
+                    role: (session.user as any).role
+                })
+                    .setProtectedHeader({ alg: 'HS256' })
+                    .setExpirationTime('1m')
+                    .sign(new TextEncoder().encode(secret));
+
+                backendHeaders.set('Authorization', `Bearer ${s2sToken}`);
+            } else {
+                console.warn("[Proxy] INTERNAL_JWT_SECRET 미설정 — 신원 검증 없이 헤더로만 보냅니다.");
+            }
+
             backendHeaders.set("X-User-Id", (session.user as any).id);
             backendHeaders.set("X-User-Role", (session.user as any).role);
-            backendHeaders.set("X-Internal-Secret", process.env.NEXT_PUBLIC_JWT_SECRET_KEY || "");
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
