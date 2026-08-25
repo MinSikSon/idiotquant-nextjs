@@ -22,11 +22,15 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupM
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
-import { LiquidityBadge, trAmtEok, isHalted, isManaged, isDelisting, w52Position } from "./components/LiquidityBadge";
+import { LiquidityBadge, trAmtEok, w52Position } from "./components/LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
+import {
+    safeNum, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
+    resolveStrategies, primaryStrategyOf,
+    applyFilters, sortList, FILTER_GROUP_ORDER, GROUP_DEFAULTS, DEFAULT_SORT, VALID_SORT_KEYS,
+    type ScreenerFilters, type FilterGroupKey, type DiscoverySortKey, type SortOrder,
+} from "./filters";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
 import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Share2, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -34,16 +38,12 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
-type SortOrder = "asc" | "desc";
 
 // 밸류에이션 필터 프리셋 (0 = 미적용)
 const PBR_MAX_PRESETS = [0.5, 0.7, 1.0];   // PBR 이하
 const PER_MAX_PRESETS = [5, 10, 15];        // PER 이하
 const ROE_MIN_PRESETS = [5, 10, 15];        // ROE(%) 이상
 const NCAV_MIN_PRESETS = [0.7, 1.0, 1.5];   // NCAV 비율 이상
-// 우선주: 종목명이 '우' / '우B' / '우C' 등으로 끝남
-const isPreferredStock = (name: string): boolean => /\d*우[A-C]?$/.test((name ?? "").trim());
 
 // 업종 분포 띠 색 — 앱 강조색(초록)에서 단계적으로 옅어지고, 마지막은 "그 외"용 중립색.
 // 두 테마 모두 같은 값을 쓴다: 채도가 있는 면 위에 흰 글씨라 바탕색이 바뀌어도 대비가 유지된다.
@@ -59,24 +59,11 @@ const TR_AMT_PRESETS = [1, 3, 10, 50];
 const W52_POS_PRESETS = [10, 25, 50];
 
 /** 시장 구분. KIS 는 "KOSPI"/"KOSDAQ"/"KONEX" 외에 "코스피" 같은 표기도 섞어 보낸다. */
-function marketOf(i: any): string {
-    const raw = String(i?.market ?? "").trim().toUpperCase();
-    if (!raw) return "";
-    if (raw.includes("KOSDAQ") || raw.includes("코스닥")) return "KOSDAQ";
-    if (raw.includes("KONEX") || raw.includes("코넥스")) return "KONEX";
-    if (raw.includes("KOSPI") || raw.includes("코스피") || raw.includes("유가")) return "KOSPI";
-    return raw;
-}
-
-// 업종명 — 워커는 sector 로 저장한다(inquire-price 의 bstp_kor_isnm). 예전 응답 호환으로 industry 도 본다.
-const sectorOf = (i: any): string => String(i?.sector ?? i?.industry ?? "").trim();
 // 대표 전략 — 한 종목이 여러 전략에 걸리므로 비율 띠를 그리려면 하나로 정해야 한다.
 // 규칙은 전략 묶기(buildGroups)·요약 산점도의 점 색과 같아야 한다: 프리셋 순서상 첫 번째,
 // 없으면 백엔드가 붙여 준 첫 전략. 뒤쪽 폴백을 빼먹으면 어느 프리셋에도 안 걸린 종목이
 // 띠에서만 사라져 합계가 전체보다 적어지고, 점 색의 범례로도 성립하지 않는다.
 // (칩에 붙는 "NCAV 26" 같은 숫자는 겹침을 그대로 센 값이라 여기 합계와 다르다.)
-const primaryStrategyOf = (i: any): string =>
-    STRATEGY_PRESETS.find(p => p.clientFilter?.(i))?.id ?? i?.strategies?.[0] ?? "";
 
 interface Mix {
     segs: { name: string; n: number; pct: number; color: string }[];
@@ -155,13 +142,6 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
 
 // 백엔드 strategies + 프론트엔드 clientFilter 병합 (백엔드 미분류 종목도 표시)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function resolveStrategies(item: Record<string, any>): string[] {
-    const base = new Set<string>(item.strategies ?? []);
-    for (const preset of STRATEGY_PRESETS) {
-        if (preset.clientFilter && preset.clientFilter(item)) base.add(preset.id);
-    }
-    return Array.from(base);
-}
 
 // 단일 전략 선택 시 강조할 지표 컬럼 + 기준 충족 판정. 키는 전략의 기준이 되는 컬럼.
 // table: 표 · card: 카드 · ratio: 자산·부채·시총 비율 비교
@@ -179,11 +159,9 @@ const parseViewMode = (v: string | null | undefined): ViewMode =>
     (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
 type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
 type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
-const roeOf = (i: any) => safeNum(i.bps) > 0 ? (safeNum(i.eps) / safeNum(i.bps)) * 100 : 0;
 // 상세 분석 화면의 S-RIM 카드는 ROE를 당기순이익÷자본총계(연결 전체)로 계산해 값이 다르다.
 // 같은 이름으로 다른 값이 보이면 데이터 오류로 오해하므로 양쪽에 기준을 명시한다.
 const ROE_BASIS_HINT = "ROE = EPS ÷ BPS (지배주주 기준). 상세 분석의 S-RIM 카드는 당기순이익÷자본총계(연결 전체) 기준이라 지주회사 등에서는 값이 다를 수 있습니다.";
-const grahamOk = (i: any) => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && safeNum(i.per) * safeNum(i.pbr) < 22.5;
 const STRATEGY_HIGHLIGHT: Record<string, HighlightMap> = {
     ncav:           { ncav_ratio: i => safeNum(i.ncav_ratio) >= 1.0 },
     near_ncav:      { ncav_ratio: i => safeNum(i.ncav_ratio) >= 0.7 && safeNum(i.ncav_ratio) < 1.0 },
@@ -209,87 +187,9 @@ function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): s
 // "지금과 조금 다른 조건"으로 같은 필터를 여러 번 돌려야 한다. 화면에 그리는 목록과
 // 카운트가 서로 다른 로직을 쓰면 숫자가 어긋나므로 반드시 같은 함수를 공유한다.
 // =========================================================================
-interface ScreenerFilters {
-    strategies: Set<string>;
-    mode: "OR" | "AND";
-    q: string;
-    excludeHoldings: boolean;
-    excludeDeficit: boolean;
-    excludePreferred: boolean;
-    excludeHalted: boolean;
-    excludeManaged: boolean;
-    excludeDelisting: boolean;
-    sectors: Set<string>;
-    markets: Set<string>;
-    maxW52Pos: number;
-    minTrAmt: number;
-    minMarketCap: number;
-    maxPbr: number;
-    maxPer: number;
-    minRoe: number;
-    minNcav: number;
-}
 
 // 필터 그룹 — 서랍 카드 순서와 1:1. 누적 카운트(→N)는 이 순서대로 쌓아 계산한다.
-type FilterGroupKey = "mktcap" | "pbr" | "per" | "ncav" | "profit" | "market" | "sector" | "w52" | "liquidity" | "exclude";
-const FILTER_GROUP_ORDER: FilterGroupKey[] = ["mktcap", "pbr", "per", "ncav", "profit", "market", "sector", "w52", "liquidity", "exclude"];
-const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = {
-    mktcap:  { minMarketCap: 0 },
-    pbr:     { maxPbr: 0 },
-    per:     { maxPer: 0 },
-    ncav:    { minNcav: 0 },
-    profit:  { minRoe: 0, excludeDeficit: false },
-    market:    { markets: new Set<string>() },
-    sector:    { sectors: new Set<string>() },
-    w52:       { maxW52Pos: 0 },
-    liquidity: { minTrAmt: 0 },
-    exclude:   { excludeHoldings: false, excludePreferred: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false },
-};
 
-function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<string, any>[] {
-    let out = list;
-
-    if (f.strategies.size > 0) {
-        const check = f.mode === "AND" ? "every" : "some";
-        const ids = Array.from(f.strategies);
-        out = out.filter(item =>
-            ids[check](stratId => {
-                const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
-                return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId);
-            })
-        );
-    }
-
-    if (f.q) {
-        const q = f.q.toLowerCase();
-        out = out.filter(item =>
-            (item.ticker ?? "").toLowerCase().includes(q) ||
-            (item.name ?? "").toLowerCase().includes(q)
-        );
-    }
-
-    if (f.excludeHoldings)  out = out.filter(item => !item.name?.includes("홀딩스"));
-    if (f.excludeDeficit)   out = out.filter(item => safeNum(item.eps) > 0);
-    if (f.excludePreferred) out = out.filter(item => !isPreferredStock(item.name ?? ""));
-    if (f.minMarketCap > 0) out = out.filter(item => safeNum(item.market_cap) >= f.minMarketCap);
-    if (f.maxPbr > 0)  out = out.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= f.maxPbr);
-    if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer);
-    if (f.minNcav > 0) out = out.filter(item => safeNum(item.ncav_ratio) >= f.minNcav);
-    if (f.minRoe > 0)  out = out.filter(item => roeOf(item) >= f.minRoe);
-
-    if (f.sectors.size > 0) out = out.filter(item => f.sectors.has(sectorOf(item)));
-    if (f.markets.size > 0) out = out.filter(item => f.markets.has(marketOf(item)));
-    // 값이 아직 없는 종목은 통과시킨다. 배포 직후처럼 일부만 채워진 구간에서 "모르는 것"을
-    // "조건 위반"으로 취급하면 목록이 통째로 비어 고장난 것처럼 보인다.
-    // (아래 두 서랍 카드는 애초에 데이터가 있을 때만 뜨므로 정상 상태에서는 이 경로가 드물다.)
-    if (f.minTrAmt > 0) out = out.filter(item => { const v = trAmtEok(item); return v === null || v >= f.minTrAmt; });
-    if (f.maxW52Pos > 0) out = out.filter(item => { const v = w52Position(item); return v === null || v <= f.maxW52Pos; });
-    if (f.excludeHalted) out = out.filter(item => !isHalted(item));
-    if (f.excludeManaged) out = out.filter(item => !isManaged(item));
-    if (f.excludeDelisting) out = out.filter(item => !isDelisting(item));
-
-    return out;
-}
 
 const TOOLTIP_CLS =
     "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-neutral-900 dark:bg-surface-dark-card border border-neutral-700/60 shadow-lg text-neutral-200 leading-relaxed " +
@@ -641,8 +541,6 @@ function DrawerCheck({ checked, onChange, label, delta }: {
 // =========================================================================
 // 기본 정렬. 예전엔 저평가 점수순이었는데 등급·점수를 화면에서 감추면서 보이지 않는
 // 값으로 순서가 정해지게 돼, 목록에 실제로 보이는 NCAV 비율을 기준으로 바꿨다.
-const DEFAULT_SORT: DiscoverySortKey = "ncav_ratio";
-const VALID_SORT_KEYS: DiscoverySortKey[] = ["ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
 
 function ScreenerContent() {
     const dispatch = useAppDispatch();
@@ -964,25 +862,7 @@ function ScreenerContent() {
     );
 
     const filteredList = useMemo(() => {
-        const list = [...applyFilters(baseList, filters)];
-
-        list.sort((a, b) => {
-            if (sortKey === "ticker") {
-                return sortOrder === "asc"
-                    ? (a.ticker ?? "").localeCompare(b.ticker ?? "")
-                    : (b.ticker ?? "").localeCompare(a.ticker ?? "");
-            }
-            if (sortKey === "roe") {
-                const ra = safeNum(a.bps) > 0 ? (safeNum(a.eps) / safeNum(a.bps)) * 100 : -Infinity;
-                const rb = safeNum(b.bps) > 0 ? (safeNum(b.eps) / safeNum(b.bps)) * 100 : -Infinity;
-                return sortOrder === "asc" ? ra - rb : rb - ra;
-            }
-            const va = safeNum(a[sortKey]);
-            const vb = safeNum(b[sortKey]);
-            return sortOrder === "asc" ? va - vb : vb - va;
-        });
-
-        return list;
+        return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
 
     // 조건 하나만 다르게 걸었을 때 남는 개수 — 서랍의 −N 표기용
