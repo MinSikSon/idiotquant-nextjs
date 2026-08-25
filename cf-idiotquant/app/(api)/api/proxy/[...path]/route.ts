@@ -34,24 +34,6 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const method = req.method;
         const isGetOrHead = ['GET', 'HEAD'].includes(method);
 
-        // 순수 파라미터 추출 및 정제
-        const PDNO = urlObj.searchParams.get("PDNO") || "";
-        const rawAction = urlObj.searchParams.get("buyOrSell") || "";
-        const ORD_QTY = urlObj.searchParams.get("ORD_QTY") || "1";
-        const normalizedAction = rawAction.toLowerCase().includes("buy") ? "buy" : "sell";
-
-        // 주소창 값 표준화 업데이트 (GET 요청일 때만 쿼리 파라미터 유지)
-        if (urlObj.searchParams.has("buyOrSell")) {
-            urlObj.searchParams.set("buyOrSell", normalizedAction);
-        }
-
-        // 💡 [추가 보정]: POST 주문 요청일 경우 URL에 주문 정보가 중복 노출되어 한투 게이트웨이 파서와 충돌하는 것을 방지
-        if (!isGetOrHead) {
-            urlObj.searchParams.delete("PDNO");
-            urlObj.searchParams.delete("buyOrSell");
-            urlObj.searchParams.delete("ORD_QTY");
-        }
-
         const search = urlObj.search;
 
         // 2. 백엔드로 보낼 헤더 구성
@@ -105,28 +87,24 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
             headers: backendHeaders,
         };
 
-        // 💡 [핵심 교정 2]: 스트림 소비 분리 및 한투 API 스키마 단일화 최적화
+        /* 본문은 보낸 그대로 넘긴다.
+         *
+         * 예전에는 여기서 모든 non-GET 본문에 PDNO·buyOrSell·ORD_QTY 를 끼워 넣고,
+         * 같은 값을 쿼리에서 지웠다. 주문 경로 하나를 맞추려던 것이 가계부·계산기·
+         * 관심종목 요청에까지 주문 필드를 실어 보냈고, 그래서 워커 라우트마다
+         * "필요한 키만 뽑아 쓴다"는 회피 코드가 붙었다.
+         *
+         * 옮겨줄 필요가 없다 — 워커의 주문 라우트는 이미 본문을 먼저 보고 없으면
+         * 쿼리를 본다(bodyData.PDNO || url.searchParams.get("PDNO")). 국내 주문은
+         * 본문에, 해외 주문은 쿼리에 값을 싣는데 양쪽 다 그대로 도착한다.
+         *
+         * 방향 정규화도 걷어냈다. 여기 있던 규칙은
+         *   includes("buy") ? "buy" : "sell"
+         * 라서 값이 비거나 깨지면 조용히 **매도**가 됐다. 워커는 buy/sell 둘 중
+         * 하나로 읽히지 않으면 주문을 거절한다 — 틀린 주문을 내는 것보다 낫다.
+         */
         if (!isGetOrHead) {
-            let incomingBody = {};
-            try {
-                // ⚠️ Edge 환경 크래시 방지를 위해 비-GET문 스코프 내에서만 정확히 스트림 텍스트 파싱을 실행합니다.
-                const text = await req.text();
-                if (text) {
-                    incomingBody = JSON.parse(text);
-                }
-            } catch (e) {
-                console.warn("[Proxy Request] Body parsing pass or plain text detected.");
-            }
-
-            // 한투와 Cloudflare가 공통으로 기대하는 Payload 스키마 단일화 병합
-            const finalBody = {
-                PDNO: PDNO || (incomingBody as any).PDNO || (incomingBody as any).pdno,
-                buyOrSell: normalizedAction || (incomingBody as any).buyOrSell,
-                ORD_QTY: ORD_QTY || (incomingBody as any).ORD_QTY || (incomingBody as any).ord_qty || "1",
-                ...incomingBody
-            };
-
-            fetchOptions.body = JSON.stringify(finalBody);
+            fetchOptions.body = await req.text();
         }
 
         // 경로와 메서드만 남긴다. 본문에는 가계부 금액·메모가, 쿼리에는 가계부 주인의
