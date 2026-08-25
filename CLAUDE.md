@@ -75,6 +75,7 @@ All commands run inside `cf-idiotquant/`:
 | `npm run dev` | Local dev server (`next dev`) |
 | `npm run build` | Production build |
 | `npx tsc --noEmit` | Type check (pre-push) |
+| `npm test` | 단위 테스트 (`test/*.test.ts`, node --test) |
 
 ## Folder Structure
 

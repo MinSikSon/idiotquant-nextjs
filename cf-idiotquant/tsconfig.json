@@ -15,6 +15,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // test/ 의 테스트는 node --test 가 직접 실행한다. 노드는 상대 경로 import 에
+    // 확장자를 요구하므로(./calc.ts) tsc 도 그 표기를 받아들여야 같은 파일을
+    // 타입 검사할 수 있다. noEmit 전용 옵션이라 빌드 산출물에는 영향이 없다.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
