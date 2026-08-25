@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test --experimental-strip-types \"test/**/*.test.ts\""
   },
   "dependencies": {
     "@auth/core": "^0.41.1",
