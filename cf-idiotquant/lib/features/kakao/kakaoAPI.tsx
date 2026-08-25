@@ -1,4 +1,5 @@
 import { getCookie } from "@/lib/utils/cookies";
+import { apiRequest } from "../apiRequest";
 import { UserInfo } from "../cloudflare/cloudflareSlice";
 import { KakaoMessage } from "../login/loginSlice";
 
@@ -109,22 +110,6 @@ export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
 }
 
 
-export const getKakaoMemberList: any = async () => {
-    // const authToken = getCookie("authToken");
-
-    const url = `/api/proxy/kakao/member/list`
-    const options: RequestInit = {
-        method: "GET", // GET -> OPTION -> POST
-        credentials: "include",  // include credentials (like cookies) in the request
-        headers: {
-            "content-type": "application/json; utf-8",
-            // ...additionalHeaders,
-            // "authToken": authToken,
-        },
-        // body: JSON.stringify({})
-    };
-    // const res = await fetch(url, options);
-    const res = await fetch(url, options);
-
-    return res.json();
-}
+/* 이 파일에서 프록시를 거치는 유일한 호출이다. 위의 것들은 워커를 브라우저에서
+   직접 부르고 authToken 쿠키로 인증하는 옛 경로라 apiRequest 로 옮기면 인증이 달라진다. */
+export const getKakaoMemberList: any = () => apiRequest("/kakao/member/list");

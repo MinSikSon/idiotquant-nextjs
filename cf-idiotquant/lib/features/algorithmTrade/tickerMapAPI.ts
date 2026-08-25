@@ -1,3 +1,5 @@
+import { apiRequest } from "../apiRequest";
+
 export interface TickerRow {
   ticker: string;
   name: string;
@@ -28,27 +30,18 @@ export async function fetchTickerMap(params: {
   if (params.limit) sp.set("limit", String(params.limit));
   if (params.source) sp.set("source", params.source);
 
-  const res = await fetch(`/api/proxy/ticker-map?${sp.toString()}`);
-  const json = await res.json();
+  const json = await apiRequest(`/ticker-map?${sp.toString()}`);
   if (!json.success) throw new Error(json.error ?? "불러오기 실패");
   return { data: json.data, meta: json.meta };
 }
 
 export async function upsertTickerMap(ticker: string, name: string, country = "KR"): Promise<TickerRow> {
-  const res = await fetch("/api/proxy/ticker-map", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ticker, name, country }),
-  });
-  const json = await res.json();
+  const json = await apiRequest("/ticker-map", { method: "POST", body: { ticker, name, country } });
   if (!json.success) throw new Error(json.error ?? "저장 실패");
   return json.data;
 }
 
 export async function deleteTickerMap(ticker: string): Promise<void> {
-  const res = await fetch(`/api/proxy/ticker-map/${encodeURIComponent(ticker)}`, {
-    method: "DELETE",
-  });
-  const json = await res.json();
+  const json = await apiRequest(`/ticker-map/${encodeURIComponent(ticker)}`, { method: "DELETE" });
   if (!json.success) throw new Error(json.error ?? "삭제 실패");
 }
