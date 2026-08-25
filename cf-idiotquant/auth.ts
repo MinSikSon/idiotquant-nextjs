@@ -8,13 +8,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
     const node_env = env?.NODE_ENV;
     const db = env?.DB || env?.db;
 
-    // 💡 상세 로그 추가 (데이터가 안 들어올 때 원인 파악용)
-    console.log("--- Auth Debug Logic ---");
-    console.log("Path:", req?.nextUrl?.pathname);
-    console.log(`node_env:`, node_env);
-    console.log("DB Binding Type:", typeof db);
-    console.log("Is Adapter assigned?:", db, !!db, env?.DB, env?.db);
-    console.log("------------------------");
+    // 이 블록은 요청마다 돈다 — 다섯 줄짜리 디버그를 남겨두면 로그가 그것만으로 찬다.
+    // 게다가 db 바인딩 객체를 통째로 찍고 있었다. 정말 알아야 할 것(설정이 빠졌는가)만
+    // 아래에서 오류로 남긴다.
+    if (!db && node_env !== "development") {
+        console.error("CRITICAL: D1 binding is missing — 세션이 저장되지 않습니다.");
+    }
 
     // 💡 중요: 환경 변수가 제대로 안 읽힐 경우를 대비해 로그 출력
     if (!env?.AUTH_SECRET) {
@@ -30,14 +29,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
 
         events: {
             async createUser({ user }) {
-                console.log("!!! createUser Event Triggered !!!", user.id);
                 if (db) {
                     try {
-                        const res = await db.prepare(`
+                        // user.id 를 로그에 남기지 않는다 — 그 값이 곧 그 사람의 가계부 주소다.
+                        await db.prepare(`
                           INSERT OR IGNORE INTO usage_limits (userId, usageCount, maxLimit)
                           VALUES (?, 0, 10)
                         `).bind(user.id).run();
-                        console.log("D1 Success:", res);
                     } catch (e) {
                         console.error("D1 Insert Error:", e);
                     }

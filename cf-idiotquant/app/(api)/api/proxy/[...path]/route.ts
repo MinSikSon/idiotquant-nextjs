@@ -127,10 +127,11 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
             };
 
             fetchOptions.body = JSON.stringify(finalBody);
-            console.log(`[Proxy Clean POST Body Payload]`, fetchOptions.body);
         }
 
-        console.log(`[Proxy Fetch Execution] Target: ${backendUrl} [Method: ${method}]`);
+        // 경로와 메서드만 남긴다. 본문에는 가계부 금액·메모가, 쿼리에는 가계부 주인의
+        // user id(?owner=)가 실려 있어서 그대로 찍으면 로그가 곧 사본이 된다.
+        console.log(`[Proxy] ${method} /${path}`);
         const response = await fetch(backendUrl, fetchOptions);
 
         const newResponseHeaders = new Headers(response.headers);
@@ -140,7 +141,9 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
 
         if (response.status >= 500) {
             const errText = await response.text();
-            console.error(`[Proxy 500 Error Origin Response From Worker]:`, errText);
+            // 워커가 무엇 때문에 죽었는지("no such table …")는 남겨야 고칠 수 있다.
+            // 다만 통째로 받아 적지는 않는다 — 오류 본문에 무엇이 실릴지는 워커 사정이다.
+            console.error(`[Proxy] ${method} /${path} → ${response.status}:`, errText.slice(0, 300));
             return new NextResponse(errText, {
                 status: response.status,
                 headers: newResponseHeaders
