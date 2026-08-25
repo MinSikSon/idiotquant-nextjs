@@ -1,3 +1,4 @@
+import { apiRequest } from "../apiRequest";
 import type { Detail } from "@/app/(calculator)/calculator/calc";
 
 /** 저장해둔 계산 한 줄. inputs 는 워커가 건드리지 않고 그대로 돌려주는 JSON 문자열이다. */
@@ -21,28 +22,9 @@ export interface NewCalculatorRun {
     totalInvestment: number;
 }
 
-/* 가계부와 같은 이유로 본문을 텍스트로 먼저 받는다 — 워커가 오류 페이지를 주면
-   res.json() 이 브라우저가 만든 파싱 오류를 던져, 무엇이 잘못됐는지 알 수 없다. */
-async function calculatorRequest(subUrl: string, method = "GET", body?: object) {
-    let res: Response;
-    try {
-        res = await fetch(`/api/proxy${subUrl}`, {
-            method,
-            credentials: "include",
-            headers: { "content-type": "application/json" },
-            ...(body ? { body: JSON.stringify(body) } : {}),
-        });
-    } catch {
-        return { success: false, error: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요." };
-    }
-
-    const text = await res.text();
-    try {
-        return JSON.parse(text);
-    } catch {
-        return { success: false, error: `서버 응답을 읽지 못했습니다 (HTTP ${res.status}).` };
-    }
-}
+/* 응답이 JSON 이 아닐 때의 처리는 lib/features/apiRequest.ts 한 곳에 있다. */
+const calculatorRequest = (subUrl: string, method = "GET", body?: object) =>
+    apiRequest(subUrl, { method, body });
 
 export const getCalculatorRuns = () => calculatorRequest("/user/calculator");
 

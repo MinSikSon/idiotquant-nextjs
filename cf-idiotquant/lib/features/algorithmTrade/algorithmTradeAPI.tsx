@@ -1,5 +1,6 @@
 
 import { AdditionalHeaders } from "../koreaInvestment/koreaInvestmentAPI";
+import { apiRequest } from "../apiRequest";
 
 export const getCapitalToken: any = async () => {
     const subUrl = `/algorithm/trade/kr/capital/token`;
@@ -82,16 +83,5 @@ export const getPortfolioOverview = async (strategy: string) =>
     getAlgorithmTradeRequest(`/scan/portfolio/overview?strategy=${encodeURIComponent(strategy)}`);
 
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `/api/proxy${subUrl}`;
-    const options: RequestInit = {
-        method: "GET",
-        credentials: "include",  // include credentials (like cookies) in the request
-        headers: {
-            "content-type": "application/json; utf-8",
-            ...additionalHeaders,
-        },
-    };
-    const res = await fetch(url, options);
-
-    return res.json();
+    return apiRequest(subUrl, { headers: additionalHeaders as Record<string, string> | undefined });
 }

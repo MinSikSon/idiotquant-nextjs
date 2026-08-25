@@ -1,33 +1,8 @@
-export const getFinancialInfoWithMarketInfo: any = async (year: string, quarter: string) => {
-    // console.log(`[getFinancialInfo]`, year, quarter);
-    const url = `/api/proxy/stock/financial-info-with-market-info?year=${year}&quarter=${quarter}`
-    const res = await fetch(url, {
-        credentials: "include",  // include credentials (like cookies) in the request
-    });
+import { apiRequest } from "../apiRequest";
 
-    // console.log(`[getFinancialInfo] res`, res);
+export const getFinancialInfoWithMarketInfo: any = (year: string, quarter: string) =>
+    apiRequest(`/stock/financial-info-with-market-info?year=${year}&quarter=${quarter}`);
 
-    return res.json();
-}
+export const getUsNcavList: any = () => apiRequest(`/strategy/us/ncav/list`);
 
-export const getUsNcavList: any = async () => {
-    const url = `/api/proxy/strategy/us/ncav/list`
-    const res = await fetch(url, {
-        credentials: "include",  // include credentials (like cookies) in the request
-    });
-
-    // console.log(`[getFinancialInfo] res`, res);
-
-    return res.json();
-}
-
-export const getNcavLatest: any = async () => {
-    const url = `/api/proxy/strategy/all/ncav/date/latest`
-    const res = await fetch(url, {
-        credentials: "include",  // include credentials (like cookies) in the request
-    });
-
-    // console.log(`[getFinancialInfo] res`, res);
-
-    return res.json();
-}
+export const getNcavLatest: any = () => apiRequest(`/strategy/all/ncav/date/latest`);

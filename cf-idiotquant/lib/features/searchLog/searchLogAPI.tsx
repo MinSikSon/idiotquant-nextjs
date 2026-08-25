@@ -1,23 +1,8 @@
-export const postSearchLog = async (data: { ticker: string; name: string; isUs: boolean }) => {
-    const url = `/api/proxy/api/search-log/`;
-    const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json; utf-8" },
-        body: JSON.stringify(data)
-    });
-    return res.json();
-};
+import { apiRequest } from "../apiRequest";
 
-export const getSearchLog = async (count: string) => {
-    const url = `/api/proxy/api/search-log/`;
-    const res = await fetch(url, {
-        method: "GET",
-        credentials: "include",
-        headers: { 
-            "content-type": "application/json; utf-8",
-            "count": count 
-        },
-    });
-    return res.json();
-};
+export const postSearchLog = (data: { ticker: string; name: string; isUs: boolean }) =>
+    apiRequest("/api/search-log/", { method: "POST", body: data });
+
+// count 는 이 엔드포인트가 쿼리가 아니라 헤더로 받는다.
+export const getSearchLog = (count: string) =>
+    apiRequest("/api/search-log/", { headers: { count } });
