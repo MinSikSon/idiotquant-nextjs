@@ -101,6 +101,57 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
     );
 }
 
+/**
+ * 상세 단계의 수익률 행 — 눈금과 입력칸을 함께 둔다.
+ *
+ * 상세는 정확히 치라고 있는 단계라 입력칸을 뺄 수 없다. 그렇다고 수익률처럼 이리저리
+ * 흔들어 보는 값을 숫자로만 두면 한 번 고치는 데 손이 많이 간다. 굵게는 끌고 정확히는
+ * 치도록 둘 다 둔다 — 같은 값을 보고 같은 값을 고치므로 어긋날 자리가 없다.
+ *
+ * 눈금은 0.5%p 로 끊고 입력칸은 0.1%p 다. 눈금으로 7%까지 간 뒤 7.3%가 필요하면
+ * 그때 숫자를 치면 된다.
+ */
+function RateFieldRow({ id, label, hint, value, onChange }: {
+    id: string;
+    label: string;
+    hint: string;
+    value: number;
+    onChange: (v: number) => void;
+}) {
+    const { min, step } = SLIDER_RANGE.rate;
+    // 한계 밖의 값을 쳐 넣었으면 눈금을 거기까지 늘린다(손잡이와 숫자가 어긋나지 않게).
+    const lo = Math.min(min, value);
+    const hi = Math.max(SLIDER_RANGE.rate.max, value);
+
+    return (
+        <div className={ROW_CLS}>
+            <label htmlFor={id} className={LABEL_CLS}>
+                {label}<span className={HINT_CLS}>{hint}</span>
+            </label>
+            <div className="flex items-center gap-3">
+                <input
+                    type="range"
+                    min={lo} max={hi} step={step}
+                    value={value}
+                    onChange={(e) => onChange(Number(e.target.value))}
+                    aria-label={`${label} 눈금`}
+                    aria-valuetext={`${value.toFixed(1)}%`}
+                    className={cn(
+                        "flex-1 min-w-0 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-[2px]"
+                    )}
+                />
+                <input
+                    id={id} type="number" inputMode="decimal" step={0.1} value={value}
+                    onChange={(e) => onChange(Number(e.target.value))}
+                    className={cn(INPUT_CLS, "w-[92px] sm:w-[92px] shrink-0")}
+                />
+                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400 shrink-0">%</span>
+            </div>
+        </div>
+    );
+}
+
 function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateMode) => void }) {
     return (
         <div className={cn("flex items-center justify-between gap-3 py-2.5 border-b", RULE)}>
@@ -379,38 +430,20 @@ function Calculator() {
 
                         <RateModeRow value={inputs.rateMode} onChange={(v) => set("rateMode", v)} />
                         {inputs.rateMode === "fixed" ? (
-                            <div className={ROW_CLS}>
-                                <label htmlFor="rate" className={LABEL_CLS}>
-                                    연 수익률<span className={HINT_CLS}>세전 기준</span>
-                                </label>
-                                <div className="flex items-center gap-2">
-                                    <input id="rate" type="number" inputMode="decimal" step={0.1} value={inputs.rate}
-                                        onChange={(e) => set("rate", Number(e.target.value))} className={INPUT_CLS} />
-                                    <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
-                                </div>
-                            </div>
+                            <RateFieldRow
+                                id="rate" label="연 수익률" hint="세전 기준"
+                                value={inputs.rate} onChange={(v) => set("rate", v)}
+                            />
                         ) : (
                             <>
-                                <div className={ROW_CLS}>
-                                    <label htmlFor="rateMin" className={LABEL_CLS}>
-                                        가장 나쁜 해<span className={HINT_CLS}>이 아래로는 안 떨어진다고 볼 때</span>
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <input id="rateMin" type="number" inputMode="decimal" step={0.1} value={inputs.rateMin}
-                                            onChange={(e) => set("rateMin", Number(e.target.value))} className={INPUT_CLS} />
-                                        <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
-                                    </div>
-                                </div>
-                                <div className={ROW_CLS}>
-                                    <label htmlFor="rateMax" className={LABEL_CLS}>
-                                        가장 좋은 해<span className={HINT_CLS}>이 위로는 안 오른다고 볼 때</span>
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <input id="rateMax" type="number" inputMode="decimal" step={0.1} value={inputs.rateMax}
-                                            onChange={(e) => set("rateMax", Number(e.target.value))} className={INPUT_CLS} />
-                                        <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
-                                    </div>
-                                </div>
+                                <RateFieldRow
+                                    id="rateMin" label="가장 나쁜 해" hint="이 아래로는 안 떨어진다고 볼 때"
+                                    value={inputs.rateMin} onChange={(v) => set("rateMin", v)}
+                                />
+                                <RateFieldRow
+                                    id="rateMax" label="가장 좋은 해" hint="이 위로는 안 오른다고 볼 때"
+                                    value={inputs.rateMax} onChange={(v) => set("rateMax", v)}
+                                />
                                 <RerollRow onReroll={reroll} />
                             </>
                         )}
