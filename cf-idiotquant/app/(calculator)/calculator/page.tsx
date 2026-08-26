@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Share2, Check, Dice5 } from "lucide-react";
+import { Share2, Check, Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import GrowthChart from "./GrowthChart";
@@ -28,10 +28,18 @@ const DIVIDE = "border-neutral-100 dark:border-border-subtle-dark";
 
 const ROW_CLS = cn(
     "grid grid-cols-1 sm:grid-cols-[168px_1fr] gap-1.5 sm:gap-x-5 sm:items-center",
-    "px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE
+    "px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE
 );
 const LABEL_CLS = "text-[13px] font-bold text-neutral-700 dark:text-neutral-300";
-const HINT_CLS = "block text-[11px] font-medium text-neutral-500 dark:text-neutral-400";
+
+/* 좁은 화면에서 접히는 부연 설명.
+   설명글은 한 줄씩은 짧아도 전부 합치면 휴대폰 화면 몇 개 분량이라, 처음 오는 사람에게는
+   도움이 되지만 두 번째부터는 눈금까지 가는 길을 늘리기만 한다. ⓘ 를 누르면 최상위
+   div 의 data-help 가 켜져 한꺼번에 펼쳐진다 — 넓은 화면에서는 접지 않는다.
+   여러 컴포넌트가 같이 쓰는 규칙이라 prop 을 층층이 내리는 대신 CSS 로 잇는다. */
+const FOLD = "hidden group-data-[help=on]:block sm:block";
+
+const HINT_CLS = cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-neutral-400");
 const NUM_CLS = "font-[family-name:var(--font-mono)] tabular-nums";
 
 const INPUT_CLS = cn(
@@ -42,6 +50,9 @@ const INPUT_CLS = cn(
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
 
+/** 연도별 명세에서 처음에 펴 두는 줄 수. */
+const TABLE_PREVIEW = 10;
+
 /** 손을 올리면 살짝 뜬다 — 홈의 버튼이 전부 이렇게 움직인다. */
 const LIFT = "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out";
 
@@ -49,7 +60,7 @@ const LIFT = "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] tr
    가장 작은 장치라, 계산기도 이걸 쓴다. */
 function StepLabel({ tag }: { tag: string }) {
     return (
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-2 sm:mb-3">
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] dark:text-[#22c55e] shrink-0">
                 {tag}
             </span>
@@ -85,7 +96,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
     const max = Math.max(range.max, value);
 
     return (
-        <div className={cn("px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE)}>
+        <div className={cn("px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             <div className="flex items-baseline justify-between gap-3">
                 <label htmlFor={id} className={LABEL_CLS}>
                     {label}
@@ -109,7 +120,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                 onChange={(e) => onChange(Number(e.target.value))}
                 aria-valuetext={`${format(value)}${unit}`}
                 className={cn(
-                    "w-full mt-2.5 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
+                    "w-full mt-2 sm:mt-2.5 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-lg"
                 )}
             />
@@ -174,7 +185,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
 
 function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateMode) => void }) {
     return (
-        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE)}>
+        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             <span className={LABEL_CLS}>
                 수익률
                 <span className={HINT_CLS}>
@@ -195,10 +206,10 @@ function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateM
 
 function RerollRow({ onReroll }: { onReroll: () => void }) {
     return (
-        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE)}>
+        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             {/* 한 번 굴린 결과는 "일어날 수 있는 하나"일 뿐이다. 그 사실을 적어 두지 않으면
                 마음에 드는 숫자가 나올 때까지 굴리고 그걸 예상으로 삼게 된다. */}
-            <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 leading-relaxed">
+            <span className={cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-neutral-400 leading-relaxed")}>
                 아래 결과는 이 범위에서 나올 수 있는 <b className="font-bold text-neutral-700 dark:text-neutral-300">여러 갈래 중 하나</b>입니다.
                 <br className="hidden sm:block" /> 몇 번 굴려 보면 같은 조건이라도 결과가 얼마나 벌어지는지 보입니다.
             </span>
@@ -206,7 +217,7 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
                 type="button"
                 onClick={onReroll}
                 className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border shrink-0",
+                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border shrink-0 ml-auto",
                     "border-neutral-200 dark:border-surface-dark-border",
                     "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-700 dark:text-neutral-300",
                     "hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60", LIFT,
@@ -222,14 +233,14 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
 
 function SectionHead({ tag, title, note }: { tag: string; title: string; note?: string }) {
     return (
-        <div className="mt-10 mb-3">
+        <div className="mt-6 sm:mt-10 mb-2.5 sm:mb-3">
             <StepLabel tag={tag} />
             <div className="flex items-baseline gap-3 flex-wrap">
                 <h2 className="text-[19px] sm:text-[21px] font-black tracking-tight text-neutral-900 dark:text-white break-keep">
                     {title}
                 </h2>
                 {note && (
-                    <span className="ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right">
+                    <span className={cn(FOLD, "ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right")}>
                         {note}
                     </span>
                 )}
@@ -282,6 +293,10 @@ function Calculator() {
     const [inputs, setInputs] = useState<CalcInputs>(DEFAULTS);
     const [detail, setDetail] = useState<Detail>("simple");
     const [copied, setCopied] = useState(false);
+    /* 좁은 화면에서만 접히는 설명글(FOLD)의 스위치. 넓은 화면은 이 값과 무관하게 늘 보인다. */
+    const [showHelp, setShowHelp] = useState(false);
+    /* 연도별 명세는 40년이면 40줄이다 — 처음엔 앞쪽만 편다. */
+    const [tableOpen, setTableOpen] = useState(false);
     const readUrlRef = useRef(false);
 
     /* 주소가 있으면 주소, 없으면 지난번에 쓰던 값. 링크로 받은 조건이 항상 이긴다. */
@@ -337,8 +352,16 @@ function Calculator() {
     const loss = result.profit < 0;
     const stamp = loss ? "원금 손실" : result.final >= result.principal * 2 ? "원금 2배 이상" : null;
 
+    /* 연도별 명세는 40년을 고르면 40줄이라, 휴대폰에서는 이 표 하나가 화면 몇 개를 먹는다.
+       만기 금액은 위 결과 칸에 이미 크게 적혀 있으니 표는 앞쪽만 펴 둔다. */
+    const yearRows = result.rows.filter((d) => d.year > 0);
+    const shownRows = tableOpen ? yearRows : yearRows.slice(0, TABLE_PREVIEW);
+
     return (
-        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-5 pt-8 pb-24">
+        <div
+            className="group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 sm:px-5 pt-5 sm:pt-8 pb-20 sm:pb-24"
+            data-help={showHelp ? "on" : "off"}
+        >
             <div className="max-w-[860px] mx-auto">
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
@@ -349,27 +372,46 @@ function Calculator() {
                             복리 수익률 계산기
                         </h1>
                     </div>
-                    <button
-                        type="button"
-                        onClick={share}
-                        className={cn(
-                            "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
-                            copied
-                                ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
-                                     "text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60")
-                        )}
-                    >
-                        {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}
-                        {copied ? "링크 복사됨" : "조건 공유"}
-                    </button>
+                    <div className="flex items-center gap-2 ml-auto">
+                        {/* 설명 스위치는 좁은 화면에만 둔다 — 넓은 화면에서는 접는 것이 없으니
+                            눌러도 아무 일이 일어나지 않는 버튼이 된다. */}
+                        <button
+                            type="button"
+                            onClick={() => setShowHelp((v) => !v)}
+                            aria-pressed={showHelp}
+                            className={cn(
+                                "sm:hidden inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
+                                showHelp
+                                    ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                    : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
+                                         "text-neutral-700 dark:text-neutral-300")
+                            )}
+                        >
+                            <Info size={13} strokeWidth={2.4} />
+                            설명
+                        </button>
+                        <button
+                            type="button"
+                            onClick={share}
+                            className={cn(
+                                "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
+                                copied
+                                    ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                    : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
+                                         "text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60")
+                            )}
+                        >
+                            {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}
+                            {copied ? "링크 복사됨" : "조건 공유"}
+                        </button>
+                    </div>
                 </header>
 
                 {/* ── 입력 ──────────────────────────────────────── */}
                 <SectionHead tag="INPUT" title="조건" note="금액 단위: 만원" />
 
                 <div className={cn(CARD, "overflow-hidden")}>
-                    <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b", DIVIDE)}>
+                    <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b", DIVIDE)}>
                     <span className={LABEL_CLS}>표시 항목</span>
                     <Segmented
                         label="표시 항목"
@@ -534,7 +576,7 @@ function Calculator() {
                 </div>
 
                 {!detailed && (
-                    <p className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-3 px-1">
+                    <p className={cn(FOLD, "text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-3 px-1")}>
                         이 단계의 가정 — {SIMPLE_ASSUMPTIONS.join(" · ")}
                     </p>
                 )}
@@ -542,7 +584,7 @@ function Calculator() {
                 {/* ── 결과 ──────────────────────────────────────── */}
                 <SectionHead tag="RESULT" title="결과" note={basisOf(effective)} />
 
-<div className={cn(CARD, "flex items-end justify-between gap-5 flex-wrap px-5 py-6")}>
+                <div className={cn(CARD, "flex items-end justify-between gap-5 flex-wrap px-4 sm:px-5 py-4 sm:py-6")}>
                     <div>
                         <div className="text-[10px] font-black tracking-[0.15em] text-neutral-500 dark:text-neutral-400 uppercase">
                             만기 평가금액
@@ -577,7 +619,7 @@ function Calculator() {
                         { k: "연평균 (CAGR)", v: pct(result.cagr), tone: result.cagr < 0 ? "loss" : "gain" },
                     ].map((cell, i) => (
                         <div key={cell.k} className={cn(
-                            "px-4 py-4",
+                            "px-4 py-3 sm:py-4",
                             i < 3 && cn("sm:border-r", DIVIDE),
                             i < 2 && cn("border-b sm:border-b-0", DIVIDE)
                         )}>
@@ -595,7 +637,7 @@ function Calculator() {
 
                 {/* ── 그래프 ────────────────────────────────────── */}
                 <SectionHead tag="GROWTH" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
-                <div className="mt-4">
+                <div className="mt-3 sm:mt-4">
                     <GrowthChart rows={result.rows} />
                 </div>
 
@@ -611,7 +653,7 @@ function Calculator() {
                                 ).map((h, i) => (
                                     <th key={h} className={cn(
                                         "text-[11px] font-semibold tracking-[0.1em] text-neutral-500 dark:text-neutral-400",
-                                        cn("py-2.5 px-3 whitespace-nowrap border-b", DIVIDE),
+                                        cn("py-2 sm:py-2.5 px-2.5 sm:px-3 whitespace-nowrap border-b", DIVIDE),
                                         i === 0 ? "text-left" : "text-right"
                                     )}>
                                         {h}
@@ -620,14 +662,17 @@ function Calculator() {
                             </tr>
                         </thead>
                         <tbody>
-                            {result.rows.filter((d) => d.year > 0).map((d, i, arr) => {
+                            {shownRows.map((d, i, arr) => {
                                 const profit = d.value - d.principal;
                                 const rate = d.principal > 0 ? (d.value / d.principal - 1) * 100 : 0;
                                 const tone = profit < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-[#16a34a] dark:text-[#2fa85a]";
-                                const last = i === arr.length - 1;
-                                const cell = cn("py-2.5 px-3 border-b", last ? "border-neutral-200 dark:border-surface-dark-border" : DIVIDE);
+                                const bottom = i === arr.length - 1;
+                                /* 굵게는 "만기"라는 뜻이다 — 표를 접었을 때 앞줄에 찍히면 거짓말이 된다. */
+                                const final = d.year === yearRows.length;
+                                const cell = cn("py-2 sm:py-2.5 px-2.5 sm:px-3 border-b",
+                                    bottom ? "border-neutral-200 dark:border-surface-dark-border" : DIVIDE);
                                 return (
-                                    <tr key={d.year} className={cn(last && "font-semibold")}>
+                                    <tr key={d.year} className={cn(final && "font-semibold")}>
                                         <td className={cn(cell, "text-neutral-500 dark:text-neutral-400")}>{d.year}년</td>
                                         {/* 그 해에 실제로 뽑힌 수익률 — 이 열이 있어야 "매년 다르다"가 보인다. */}
                                         {ranged && (
@@ -655,9 +700,26 @@ function Calculator() {
                     </table>
                 </div>
 
+                {yearRows.length > TABLE_PREVIEW && (
+                    <button
+                        type="button"
+                        onClick={() => setTableOpen((v) => !v)}
+                        aria-expanded={tableOpen}
+                        className={cn(
+                            "mt-2 w-full text-[11.5px] font-bold py-2.5 rounded-xl border",
+                            "border-neutral-200 dark:border-surface-dark-border",
+                            "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300",
+                            "hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60",
+                            "focus:outline-none focus:ring-2 focus:ring-[#16a34a]", LIFT
+                        )}
+                    >
+                        {tableOpen ? "접기" : `나머지 ${yearRows.length - TABLE_PREVIEW}년 더 보기`}
+                    </button>
+                )}
+
                 {/* ── 저장한 계산 ───────────────────────────────── */}
                 <SectionHead tag="SAVED" title="저장한 계산" note="로그인한 사람만" />
-                <div className="mt-4">
+                <div className="mt-3 sm:mt-4">
                     <CalculatorHistory
                         detail={detail}
                         snapshot={() => ({
@@ -674,7 +736,7 @@ function Calculator() {
                 </div>
 
                 {/* ── 각주 ──────────────────────────────────────── */}
-                <div className={cn(CARD, "mt-10 px-5 py-4")}>
+                <div className={cn(CARD, FOLD, "mt-6 sm:mt-10 px-5 py-4")}>
                     <ol className="list-decimal pl-5 space-y-0.5 marker:font-mono">
                         {[
                             "적립금은 매월 초 납입되고, 이자는 매월 발생하여 선택한 주기마다 원금에 편입됩니다.",
