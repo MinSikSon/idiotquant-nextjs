@@ -15,28 +15,48 @@ import {
 const STORAGE_KEY = "compound_calc_inputs_v1";
 const DETAIL_KEY = "compound_calc_detail_v1";
 
-/* ─── 서식 조각 ───────────────────────────────────────────────
-   카드도 그림자도 쓰지 않는다. 구획은 전부 괘선이 나눈다 —
-   인쇄된 금융 서식의 문법이고, 이 화면이 빌려온 것도 그것이다. */
+/* ─── 조각 ───────────────────────────────────────────────────
+   홈 화면의 문법을 그대로 쓴다 — 둥근 카드, 굵은 제목, 초록 머리표,
+   손을 올리면 살짝 뜨는 버튼. 예전의 인쇄 서식(각진 모서리·괘선)은 그 자체로는
+   단정했지만 이 앱의 다른 화면과 남처럼 보였다. */
 
-const RULE = "border-neutral-200 dark:border-border-subtle-dark";
-const RULE_HARD = "border-neutral-400 dark:border-[#55514a]";
+const CARD = cn(
+    "rounded-2xl border bg-white dark:bg-surface-dark-card",
+    "border-neutral-200 dark:border-border-subtle-dark"
+);
+const DIVIDE = "border-neutral-100 dark:border-border-subtle-dark";
 
 const ROW_CLS = cn(
     "grid grid-cols-1 sm:grid-cols-[168px_1fr] gap-1.5 sm:gap-x-5 sm:items-center",
-    "py-2.5 sm:py-3 border-b", RULE
+    "px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE
 );
 const LABEL_CLS = "text-[13px] font-bold text-neutral-700 dark:text-neutral-300";
 const HINT_CLS = "block text-[11px] font-medium text-neutral-500 dark:text-neutral-400";
-const NUM_CLS = "font-mono tabular-nums";
+const NUM_CLS = "font-[family-name:var(--font-mono)] tabular-nums";
 
 const INPUT_CLS = cn(
-    "font-mono tabular-nums text-[15px] font-bold text-right",
-    "text-neutral-900 dark:text-neutral-50 bg-white dark:bg-surface-dark-card",
-    "border rounded-[2px] px-2.5 py-1.5 w-full sm:w-[150px]", RULE_HARD,
-    "focus:outline-none focus:ring-2 focus:ring-[#16a34a]",
+    "font-[family-name:var(--font-mono)] tabular-nums text-[15px] font-bold text-right",
+    "text-neutral-900 dark:text-neutral-50 bg-surface-canvas dark:bg-surface-dark-canvas",
+    "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-3 py-2 w-full sm:w-[150px]",
+    "focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-[#16a34a]",
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
+
+/** 손을 올리면 살짝 뜬다 — 홈의 버튼이 전부 이렇게 움직인다. */
+const LIFT = "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out";
+
+/* 홈의 섹션 머리표 — 초록 영문 태그 + 가는 선. 페이지가 "같은 시리즈"로 읽히게 하는
+   가장 작은 장치라, 계산기도 이걸 쓴다. */
+function StepLabel({ tag }: { tag: string }) {
+    return (
+        <div className="flex items-center gap-3 mb-3">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] dark:text-[#22c55e] shrink-0">
+                {tag}
+            </span>
+            <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
+        </div>
+    );
+}
 
 /* 간단 단계에서 쓰는 눈금 범위.
    sanitize 의 한계값(초기 100만만원 등)을 그대로 쓰면 눈금 한 칸이 수백만원이라
@@ -65,7 +85,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
     const max = Math.max(range.max, value);
 
     return (
-        <div className={cn("py-2.5 sm:py-3 border-b", RULE)}>
+        <div className={cn("px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE)}>
             <div className="flex items-baseline justify-between gap-3">
                 <label htmlFor={id} className={LABEL_CLS}>
                     {label}
@@ -90,7 +110,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                 aria-valuetext={`${format(value)}${unit}`}
                 className={cn(
                     "w-full mt-2.5 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-[2px]"
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-lg"
                 )}
             />
             <div className="flex justify-between text-[10.5px] text-neutral-500 dark:text-neutral-400 -mt-0.5">
@@ -138,7 +158,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
                     aria-valuetext={`${value.toFixed(1)}%`}
                     className={cn(
                         "flex-1 min-w-0 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-[2px]"
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-lg"
                     )}
                 />
                 <input
@@ -154,7 +174,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
 
 function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateMode) => void }) {
     return (
-        <div className={cn("flex items-center justify-between gap-3 py-2.5 border-b", RULE)}>
+        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE)}>
             <span className={LABEL_CLS}>
                 수익률
                 <span className={HINT_CLS}>
@@ -175,7 +195,7 @@ function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateM
 
 function RerollRow({ onReroll }: { onReroll: () => void }) {
     return (
-        <div className={cn("flex items-center justify-between gap-3 py-2.5 border-b", RULE)}>
+        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b last:border-b-0", DIVIDE)}>
             {/* 한 번 굴린 결과는 "일어날 수 있는 하나"일 뿐이다. 그 사실을 적어 두지 않으면
                 마음에 드는 숫자가 나올 때까지 굴리고 그걸 예상으로 삼게 된다. */}
             <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 leading-relaxed">
@@ -186,10 +206,10 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
                 type="button"
                 onClick={onReroll}
                 className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-[2px] border shrink-0 transition-colors",
-                    RULE_HARD,
-                    "bg-white dark:bg-surface-dark-card text-neutral-700 dark:text-neutral-300",
-                    "hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
+                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border shrink-0",
+                    "border-neutral-200 dark:border-surface-dark-border",
+                    "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-700 dark:text-neutral-300",
+                    "hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60", LIFT,
                     "focus:outline-none focus:ring-2 focus:ring-[#16a34a]"
                 )}
             >
@@ -200,17 +220,20 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
     );
 }
 
-function SectionHead({ title, note }: { title: string; note?: string }) {
+function SectionHead({ tag, title, note }: { tag: string; title: string; note?: string }) {
     return (
-        <div className="flex items-baseline gap-3 mt-8 pb-1.5 border-b border-neutral-900 dark:border-neutral-100">
-            <h2 className="font-bold text-[15px] tracking-[0.22em] text-neutral-900 dark:text-neutral-50">
-                {title}
-            </h2>
-            {note && (
-                <span className="ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right">
-                    {note}
-                </span>
-            )}
+        <div className="mt-10 mb-3">
+            <StepLabel tag={tag} />
+            <div className="flex items-baseline gap-3 flex-wrap">
+                <h2 className="text-[19px] sm:text-[21px] font-black tracking-tight text-neutral-900 dark:text-white break-keep">
+                    {title}
+                </h2>
+                {note && (
+                    <span className="ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right">
+                        {note}
+                    </span>
+                )}
+            </div>
         </div>
     );
 }
@@ -224,7 +247,7 @@ function Segmented<T extends string | number>({
     label: string;
 }) {
     return (
-        <div role="group" aria-label={label} className={cn("inline-flex border rounded-[2px] overflow-hidden w-fit", RULE_HARD)}>
+        <div role="group" aria-label={label} className={cn("inline-flex rounded-xl overflow-hidden w-fit border border-neutral-200 dark:border-surface-dark-border")}>
             {options.map((o, i) => (
                 <button
                     key={String(o.v)}
@@ -233,7 +256,7 @@ function Segmented<T extends string | number>({
                     aria-pressed={value === o.v}
                     className={cn(
                         "text-[12.5px] font-bold px-3.5 py-1.5 min-h-[36px] transition-colors",
-                        i > 0 && cn("border-l", RULE),
+                        i > 0 && "border-l border-neutral-200 dark:border-surface-dark-border",
                         value === o.v
                             ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915]"
                             : "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
@@ -319,23 +342,22 @@ function Calculator() {
             <div className="max-w-[860px] mx-auto">
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
-                <header className={cn(
-                    "flex items-end justify-between gap-5 flex-wrap",
-                    "border-t-[3px] border-neutral-900 dark:border-neutral-100 border-b", RULE_HARD,
-                    "pt-3.5 pb-2.5"
-                )}>
-                    <h1 className="font-bold text-[22px] sm:text-[30px] tracking-[0.06em] text-neutral-900 dark:text-neutral-50">
-                        복리 수익률 계산서
-                    </h1>
+                <header className="flex items-end justify-between gap-5 flex-wrap">
+                    <div>
+                        <StepLabel tag="COMPOUND CALCULATOR" />
+                        <h1 className="text-[26px] sm:text-[34px] font-black tracking-tight leading-[1.28] text-neutral-900 dark:text-white break-keep">
+                            복리 수익률 계산기
+                        </h1>
+                    </div>
                     <button
                         type="button"
                         onClick={share}
                         className={cn(
-                            "inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-[2px] border transition-colors",
-                            RULE_HARD,
+                            "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
                             copied
                                 ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                : "bg-white dark:bg-surface-dark-card text-neutral-700 dark:text-neutral-300 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover"
+                                : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
+                                     "text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60")
                         )}
                     >
                         {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}
@@ -344,9 +366,10 @@ function Calculator() {
                 </header>
 
                 {/* ── 입력 ──────────────────────────────────────── */}
-                <SectionHead title="입 력" note="금액 단위: 만원" />
+                <SectionHead tag="INPUT" title="조건" note="금액 단위: 만원" />
 
-                <div className={cn("flex items-center justify-between py-2.5 border-b", RULE)}>
+                <div className={cn(CARD, "overflow-hidden")}>
+                    <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b", DIVIDE)}>
                     <span className={LABEL_CLS}>표시 항목</span>
                     <Segmented
                         label="표시 항목"
@@ -508,22 +531,20 @@ function Calculator() {
                         </div>
                     </>
                 )}
+                </div>
 
                 {!detailed && (
-                    <p className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 pt-2.5">
+                    <p className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-3 px-1">
                         이 단계의 가정 — {SIMPLE_ASSUMPTIONS.join(" · ")}
                     </p>
                 )}
 
                 {/* ── 결과 ──────────────────────────────────────── */}
-                <SectionHead title="결 과" note={basisOf(effective)} />
+                <SectionHead tag="RESULT" title="결과" note={basisOf(effective)} />
 
-                <div className={cn(
-                    "flex items-end justify-between gap-5 flex-wrap",
-                    "border-t border-b-[3px] border-double", RULE_HARD, "py-5"
-                )}>
+<div className={cn(CARD, "flex items-end justify-between gap-5 flex-wrap px-5 py-6")}>
                     <div>
-                        <div className="text-[11px] font-bold tracking-[0.2em] text-neutral-500 dark:text-neutral-400 uppercase">
+                        <div className="text-[10px] font-black tracking-[0.15em] text-neutral-500 dark:text-neutral-400 uppercase">
                             만기 평가금액
                         </div>
                         <div className={cn(
@@ -542,20 +563,24 @@ function Calculator() {
 
                     {/* 도장 — 결과가 한눈에 좋은지 나쁜지. 어중간할 때는 찍지 않는다. */}
                     {stamp && (
-                        <div className="font-bold text-[13px] tracking-[0.3em] px-3.5 py-1.5 pl-[18px] border-2 border-[#b91c1c] dark:border-[#ef6a6a] text-[#b91c1c] dark:text-[#ef6a6a] opacity-85 -rotate-[4deg] whitespace-nowrap">
+                        <div className="text-[11px] font-black tracking-wide px-3 py-1.5 rounded-full bg-[#fef2f2] dark:bg-[#450a0a]/40 text-[#b91c1c] dark:text-[#ef6a6a] whitespace-nowrap">
                             {stamp}
                         </div>
                     )}
                 </div>
 
-                <div className={cn("grid grid-cols-2 sm:grid-cols-4 border-b", RULE)}>
+                <div className={cn(CARD, "grid grid-cols-2 sm:grid-cols-4 mt-3 overflow-hidden")}>
                     {[
                         { k: "총 납입 원금", v: won(result.principal), tone: "" },
                         { k: "총 투자수익", v: won(result.profit), tone: loss ? "loss" : "gain" },
                         { k: "누적 수익률", v: pct(result.cumret), tone: result.cumret < 0 ? "loss" : "gain" },
                         { k: "연평균 (CAGR)", v: pct(result.cagr), tone: result.cagr < 0 ? "loss" : "gain" },
                     ].map((cell, i) => (
-                        <div key={cell.k} className={cn("py-3.5 pr-4", i < 3 && cn("sm:border-r", RULE), i < 2 && cn("border-b sm:border-b-0", RULE))}>
+                        <div key={cell.k} className={cn(
+                            "px-4 py-4",
+                            i < 3 && cn("sm:border-r", DIVIDE),
+                            i < 2 && cn("border-b sm:border-b-0", DIVIDE)
+                        )}>
                             <div className="text-[11.5px] text-neutral-500 dark:text-neutral-400">{cell.k}</div>
                             <div className={cn(
                                 NUM_CLS, "text-[19px] font-semibold mt-0.5",
@@ -569,14 +594,14 @@ function Calculator() {
                 </div>
 
                 {/* ── 그래프 ────────────────────────────────────── */}
-                <SectionHead title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
+                <SectionHead tag="GROWTH" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
                 <div className="mt-4">
                     <GrowthChart rows={result.rows} />
                 </div>
 
                 {/* ── 표 ────────────────────────────────────────── */}
-                <SectionHead title="연도별 명세" note="단위: 만원" />
-                <div className="overflow-x-auto mt-1.5">
+                <SectionHead tag="BREAKDOWN" title="연도별 명세" note="단위: 만원" />
+                <div className={cn(CARD, "overflow-x-auto mt-3 p-1.5")}>
                     <table className="w-full border-collapse text-[13px]">
                         <thead>
                             <tr>
@@ -586,7 +611,7 @@ function Calculator() {
                                 ).map((h, i) => (
                                     <th key={h} className={cn(
                                         "text-[11px] font-semibold tracking-[0.1em] text-neutral-500 dark:text-neutral-400",
-                                        "py-2 px-2.5 whitespace-nowrap border-b border-neutral-900 dark:border-neutral-100",
+                                        cn("py-2.5 px-3 whitespace-nowrap border-b", DIVIDE),
                                         i === 0 ? "text-left" : "text-right"
                                     )}>
                                         {h}
@@ -600,7 +625,7 @@ function Calculator() {
                                 const rate = d.principal > 0 ? (d.value / d.principal - 1) * 100 : 0;
                                 const tone = profit < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-[#16a34a] dark:text-[#2fa85a]";
                                 const last = i === arr.length - 1;
-                                const cell = cn("py-2 px-2.5 border-b", last ? RULE_HARD : RULE);
+                                const cell = cn("py-2.5 px-3 border-b", last ? "border-neutral-200 dark:border-surface-dark-border" : DIVIDE);
                                 return (
                                     <tr key={d.year} className={cn(last && "font-semibold")}>
                                         <td className={cn(cell, "text-neutral-500 dark:text-neutral-400")}>{d.year}년</td>
@@ -631,7 +656,7 @@ function Calculator() {
                 </div>
 
                 {/* ── 저장한 계산 ───────────────────────────────── */}
-                <SectionHead title="저장한 계산" note="로그인한 사람만" />
+                <SectionHead tag="SAVED" title="저장한 계산" note="로그인한 사람만" />
                 <div className="mt-4">
                     <CalculatorHistory
                         detail={detail}
@@ -649,7 +674,7 @@ function Calculator() {
                 </div>
 
                 {/* ── 각주 ──────────────────────────────────────── */}
-                <div className={cn("mt-8 pt-3.5 border-t", RULE)}>
+                <div className={cn(CARD, "mt-10 px-5 py-4")}>
                     <ol className="list-decimal pl-5 space-y-0.5 marker:font-mono">
                         {[
                             "적립금은 매월 초 납입되고, 이자는 매월 발생하여 선택한 주기마다 원금에 편입됩니다.",
