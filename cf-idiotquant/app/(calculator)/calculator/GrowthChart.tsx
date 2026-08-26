@@ -141,7 +141,7 @@ export default function GrowthChart({ rows }: Props) {
 
             {at && hover !== null && (
                 <div
-                    className="absolute pointer-events-none bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915] rounded-[2px] px-2.5 py-2 text-[11px] leading-relaxed whitespace-nowrap z-10"
+                    className="absolute pointer-events-none bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915] rounded-xl px-2.5 py-2 text-[11px] leading-relaxed whitespace-nowrap z-10"
                     style={{
                         left: `min(max(${(X(hover) / W) * 100}% - 60px, 0px), calc(100% - 190px))`,
                         top: `max(${(Y(at.value) / H) * 100}% - 74px, 0px)`,
