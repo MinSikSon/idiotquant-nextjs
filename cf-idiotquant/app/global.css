@@ -77,11 +77,21 @@ html { scroll-behavior: smooth; }
 }
 .pop-in { animation: pop-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+/* 시작 화면의 "PRESS ANY KEY", 결과 화면의 "NEW RECORD".
+   페이드가 아니라 딱딱 끊어야 그 시절 것으로 읽힌다 — steps(1) 이 그 일을 한다. */
+@keyframes retro-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.retro-blink { animation: retro-blink 1.1s steps(1, end) infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .animate-float { animation: none; }
   /* 연출은 뜻이 아니라 덤이다 — 끄면 결과 화면만 남는다 */
   .candle-in, .flash-mine, .reveal-answer, .pop-in { animation: none; }
+  /* 깜빡임은 끄되 글자는 남긴다 — 사라지면 "아무 키나 누르세요"를 못 읽는다 */
+  .retro-blink { animation: none; opacity: 1; }
 }
 

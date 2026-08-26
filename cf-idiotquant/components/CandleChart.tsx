@@ -110,7 +110,7 @@ function CandleTooltip({ active, payload, label }: any) {
 }
 
 export default function CandleChart({
-    candles, overlays = [], markers = [], height = "100%", growLast = false,
+    candles, overlays = [], markers = [], height = "100%", growLast = false, forceTheme,
 }: {
     candles: Candle[];
     overlays?: CandleOverlay[];
@@ -118,8 +118,16 @@ export default function CandleChart({
     height?: number | string;
     /** 마지막(오늘) 캔들이 자라며 들어오게 한다 — 진행 중인 판에서만 뜻이 있다. */
     growLast?: boolean;
+    /**
+     * 앱 테마를 무시하고 이 명암으로 그린다.
+     *
+     * 차트가 늘 어두운 바탕 위에 놓이는 자리가 있다(게임의 브라운관 화면). 거기서는 앱이
+     * 밝은 테마여도 축 글자가 검정으로 나와 검은 배경에서 사라진다.
+     */
+    forceTheme?: "dark" | "light";
 }) {
-    const { theme } = useTheme();
+    const { theme: appTheme } = useTheme();
+    const theme = forceTheme ?? appTheme;
     const textColor = theme === "dark" ? "#9ca3af" : "#4b5563";
 
     const data = useMemo(() => candles.map((c, i) => {
