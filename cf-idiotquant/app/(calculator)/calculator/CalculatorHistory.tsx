@@ -144,7 +144,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
             )}
 
             {runs.length === 0 ? (
-                <p className="mt-3 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
+                <p className="mt-3 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
                     아직 저장한 계산이 없습니다.
                 </p>
             ) : (
@@ -187,7 +187,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                     type="button"
                                     onClick={() => dispatch(reqDeleteCalculatorRun(run.id))}
                                     disabled={saving}
-                                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
+                                    className="p-1.5 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-rose-600 hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
                                     aria-label={`${run.label || stampKst(run.created_at)} 삭제`}
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -200,7 +200,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                         <button
                             type="button"
                             onClick={() => setOpen(!open)}
-                            className="mt-2 text-[10px] font-black text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                            className="mt-2 text-[10px] font-black text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                         >
                             {open ? "접기" : `${runs.length - 3}개 더 보기`}
                         </button>

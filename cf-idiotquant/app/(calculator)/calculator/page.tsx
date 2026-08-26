@@ -27,7 +27,7 @@ const ROW_CLS = cn(
     "py-2.5 sm:py-3 border-b", RULE
 );
 const LABEL_CLS = "text-[13px] font-bold text-neutral-700 dark:text-neutral-300";
-const HINT_CLS = "block text-[11px] font-medium text-neutral-400 dark:text-neutral-500";
+const HINT_CLS = "block text-[11px] font-medium text-neutral-500 dark:text-neutral-400";
 const NUM_CLS = "font-mono tabular-nums";
 
 const INPUT_CLS = cn(
@@ -38,14 +38,77 @@ const INPUT_CLS = cn(
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
 
+/* 간단 단계에서 쓰는 눈금 범위.
+   sanitize 의 한계값(초기 100만만원 등)을 그대로 쓰면 눈금 한 칸이 수백만원이라
+   손가락으로 원하는 값을 짚을 수가 없다. 여기 값은 "흔히 넣는 범위"이고,
+   그 밖의 값이 필요하면 상세 단계에서 직접 친다. */
+const SLIDER_RANGE = {
+    initial: { min: 0, max: 20_000, step: 100 },   // 0 ~ 2억 (만원)
+    monthly: { min: 0, max: 500, step: 10 },       // 0 ~ 500만원
+    rate: { min: -10, max: 30, step: 0.5 },        // %
+    years: { min: 1, max: 40, step: 1 },
+} as const;
+
+function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
+    id: string;
+    label: string;
+    hint?: string;
+    unit: string;
+    value: number;
+    range: { min: number; max: number; step: number };
+    format: (v: number) => string;
+    onChange: (v: number) => void;
+}) {
+    /* 상세에서 눈금 밖의 값을 넣어두고 넘어오면 손잡이는 끝에 붙는데 숫자는 다른 값이라
+       읽는 사람이 어느 쪽을 믿어야 할지 알 수 없다. 눈금을 그 값까지 넓혀 늘 일치시킨다. */
+    const min = Math.min(range.min, value);
+    const max = Math.max(range.max, value);
+
+    return (
+        <div className={cn("py-2.5 sm:py-3 border-b", RULE)}>
+            <div className="flex items-baseline justify-between gap-3">
+                <label htmlFor={id} className={LABEL_CLS}>
+                    {label}
+                    {hint && <span className={HINT_CLS}>{hint}</span>}
+                </label>
+                {/* 값을 크게 먼저 읽힌다 — 눈금을 움직이는 동안 보는 건 이 숫자다. */}
+                <div className="flex items-baseline gap-1 shrink-0">
+                    <span className={cn(NUM_CLS, "text-[19px] font-semibold text-neutral-900 dark:text-neutral-50")}>
+                        {format(value)}
+                    </span>
+                    <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">{unit}</span>
+                </div>
+            </div>
+            <input
+                id={id}
+                type="range"
+                min={min}
+                max={max}
+                step={range.step}
+                value={value}
+                onChange={(e) => onChange(Number(e.target.value))}
+                aria-valuetext={`${format(value)}${unit}`}
+                className={cn(
+                    "w-full mt-2.5 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-[2px]"
+                )}
+            />
+            <div className="flex justify-between text-[10.5px] text-neutral-500 dark:text-neutral-400 -mt-0.5">
+                <span>{format(min)}</span>
+                <span>{format(max)}</span>
+            </div>
+        </div>
+    );
+}
+
 function SectionHead({ title, note }: { title: string; note?: string }) {
     return (
         <div className="flex items-baseline gap-3 mt-8 pb-1.5 border-b border-neutral-900 dark:border-neutral-100">
-            <h2 className="font-serif font-bold text-[15px] tracking-[0.22em] text-neutral-900 dark:text-neutral-50">
+            <h2 className="font-bold text-[15px] tracking-[0.22em] text-neutral-900 dark:text-neutral-50">
                 {title}
             </h2>
             {note && (
-                <span className="ml-auto text-[11px] font-medium text-neutral-400 dark:text-neutral-500 text-right">
+                <span className="ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right">
                     {note}
                 </span>
             )}
@@ -158,7 +221,7 @@ function Calculator() {
                     "border-t-[3px] border-neutral-900 dark:border-neutral-100 border-b", RULE_HARD,
                     "pt-3.5 pb-2.5"
                 )}>
-                    <h1 className="font-serif font-bold text-[22px] sm:text-[30px] tracking-[0.06em] text-neutral-900 dark:text-neutral-50">
+                    <h1 className="font-bold text-[22px] sm:text-[30px] tracking-[0.06em] text-neutral-900 dark:text-neutral-50">
                         복리 수익률 계산서
                     </h1>
                     <button
@@ -190,47 +253,80 @@ function Calculator() {
                     />
                 </div>
 
-                <div className={ROW_CLS}>
-                    <label htmlFor="initial" className={LABEL_CLS}>
-                        초기 투자금<span className={HINT_CLS}>지금 넣어둘 목돈</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                        <input id="initial" type="number" inputMode="numeric" step={100} value={inputs.initial}
-                            onChange={(e) => set("initial", Number(e.target.value))} className={INPUT_CLS} />
-                        <span className="text-[12.5px] text-neutral-400">만원</span>
-                    </div>
-                </div>
+                {/* 간단 단계는 눈금으로 — 값을 정확히 아는 게 아니라 "이쯤이면 얼마"를
+                    가늠하는 단계다. 정확한 값이 필요하면 상세에서 직접 친다. */}
+                {!detailed ? (
+                    <>
+                        <SliderRow
+                            id="initial" label="초기 투자금" hint="지금 넣어둘 목돈" unit="만원"
+                            value={inputs.initial} range={SLIDER_RANGE.initial}
+                            format={(v) => v.toLocaleString("ko-KR")}
+                            onChange={(v) => set("initial", v)}
+                        />
+                        <SliderRow
+                            id="monthly" label="매월 적립금" hint="매달 추가로 넣을 돈" unit="만원"
+                            value={inputs.monthly} range={SLIDER_RANGE.monthly}
+                            format={(v) => v.toLocaleString("ko-KR")}
+                            onChange={(v) => set("monthly", v)}
+                        />
+                        <SliderRow
+                            id="rate" label="연 수익률" hint="세전 기준" unit="%"
+                            value={inputs.rate} range={SLIDER_RANGE.rate}
+                            format={(v) => v.toFixed(1)}
+                            onChange={(v) => set("rate", v)}
+                        />
+                        <SliderRow
+                            id="years" label="투자 기간" unit="년"
+                            value={inputs.years} range={SLIDER_RANGE.years}
+                            format={(v) => String(v)}
+                            onChange={(v) => set("years", v)}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div className={ROW_CLS}>
+                            <label htmlFor="initial" className={LABEL_CLS}>
+                                초기 투자금<span className={HINT_CLS}>지금 넣어둘 목돈</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input id="initial" type="number" inputMode="numeric" step={100} value={inputs.initial}
+                                    onChange={(e) => set("initial", Number(e.target.value))} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">만원</span>
+                            </div>
+                        </div>
 
-                <div className={ROW_CLS}>
-                    <label htmlFor="monthly" className={LABEL_CLS}>
-                        매월 적립금<span className={HINT_CLS}>매달 추가로 넣을 돈</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                        <input id="monthly" type="number" inputMode="numeric" step={10} value={inputs.monthly}
-                            onChange={(e) => set("monthly", Number(e.target.value))} className={INPUT_CLS} />
-                        <span className="text-[12.5px] text-neutral-400">만원</span>
-                    </div>
-                </div>
+                        <div className={ROW_CLS}>
+                            <label htmlFor="monthly" className={LABEL_CLS}>
+                                매월 적립금<span className={HINT_CLS}>매달 추가로 넣을 돈</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input id="monthly" type="number" inputMode="numeric" step={10} value={inputs.monthly}
+                                    onChange={(e) => set("monthly", Number(e.target.value))} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">만원</span>
+                            </div>
+                        </div>
 
-                <div className={ROW_CLS}>
-                    <label htmlFor="rate" className={LABEL_CLS}>
-                        연 수익률<span className={HINT_CLS}>세전 기준</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                        <input id="rate" type="number" inputMode="decimal" step={0.1} value={inputs.rate}
-                            onChange={(e) => set("rate", Number(e.target.value))} className={INPUT_CLS} />
-                        <span className="text-[12.5px] text-neutral-400">%</span>
-                    </div>
-                </div>
+                        <div className={ROW_CLS}>
+                            <label htmlFor="rate" className={LABEL_CLS}>
+                                연 수익률<span className={HINT_CLS}>세전 기준</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input id="rate" type="number" inputMode="decimal" step={0.1} value={inputs.rate}
+                                    onChange={(e) => set("rate", Number(e.target.value))} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
+                            </div>
+                        </div>
 
-                <div className={ROW_CLS}>
-                    <label htmlFor="years" className={LABEL_CLS}>투자 기간</label>
-                    <div className="flex items-center gap-2">
-                        <input id="years" type="number" inputMode="numeric" step={1} value={inputs.years}
-                            onChange={(e) => set("years", Number(e.target.value))} className={INPUT_CLS} />
-                        <span className="text-[12.5px] text-neutral-400">년</span>
-                    </div>
-                </div>
+                        <div className={ROW_CLS}>
+                            <label htmlFor="years" className={LABEL_CLS}>투자 기간</label>
+                            <div className="flex items-center gap-2">
+                                <input id="years" type="number" inputMode="numeric" step={1} value={inputs.years}
+                                    onChange={(e) => set("years", Number(e.target.value))} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">년</span>
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {detailed && (
                     <>
@@ -276,14 +372,14 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <input id="inflation" type="number" inputMode="decimal" step={0.1} value={inputs.inflation}
                                     onChange={(e) => set("inflation", Number(e.target.value))} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-400">%</span>
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
                             </div>
                         </div>
                     </>
                 )}
 
                 {!detailed && (
-                    <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 pt-2.5">
+                    <p className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 pt-2.5">
                         이 단계의 가정 — {SIMPLE_ASSUMPTIONS.join(" · ")}
                     </p>
                 )}
@@ -296,7 +392,7 @@ function Calculator() {
                     "border-t border-b-[3px] border-double", RULE_HARD, "py-5"
                 )}>
                     <div>
-                        <div className="text-[11px] font-bold tracking-[0.2em] text-neutral-400 dark:text-neutral-500 uppercase">
+                        <div className="text-[11px] font-bold tracking-[0.2em] text-neutral-500 dark:text-neutral-400 uppercase">
                             만기 평가금액
                         </div>
                         <div className={cn(
@@ -306,7 +402,7 @@ function Calculator() {
                             {won(result.final)}
                         </div>
                         {effective.inflation > 0 && (
-                            <p className="text-[12.5px] text-neutral-400 dark:text-neutral-500 mt-1.5">
+                            <p className="text-[12.5px] text-neutral-500 dark:text-neutral-400 mt-1.5">
                                 물가 {effective.inflation.toFixed(1)}% 반영 시 오늘의 구매력으로{" "}
                                 <strong className="font-bold text-neutral-600 dark:text-neutral-300">{won(result.real)}</strong>
                             </p>
@@ -315,7 +411,7 @@ function Calculator() {
 
                     {/* 도장 — 결과가 한눈에 좋은지 나쁜지. 어중간할 때는 찍지 않는다. */}
                     {stamp && (
-                        <div className="font-serif font-bold text-[13px] tracking-[0.3em] px-3.5 py-1.5 pl-[18px] border-2 border-[#b91c1c] dark:border-[#ef6a6a] text-[#b91c1c] dark:text-[#ef6a6a] opacity-85 -rotate-[4deg] whitespace-nowrap">
+                        <div className="font-bold text-[13px] tracking-[0.3em] px-3.5 py-1.5 pl-[18px] border-2 border-[#b91c1c] dark:border-[#ef6a6a] text-[#b91c1c] dark:text-[#ef6a6a] opacity-85 -rotate-[4deg] whitespace-nowrap">
                             {stamp}
                         </div>
                     )}
@@ -329,7 +425,7 @@ function Calculator() {
                         { k: "연평균 (CAGR)", v: pct(result.cagr), tone: result.cagr < 0 ? "loss" : "gain" },
                     ].map((cell, i) => (
                         <div key={cell.k} className={cn("py-3.5 pr-4", i < 3 && cn("sm:border-r", RULE), i < 2 && cn("border-b sm:border-b-0", RULE))}>
-                            <div className="text-[11.5px] text-neutral-400 dark:text-neutral-500">{cell.k}</div>
+                            <div className="text-[11.5px] text-neutral-500 dark:text-neutral-400">{cell.k}</div>
                             <div className={cn(
                                 NUM_CLS, "text-[19px] font-semibold mt-0.5",
                                 cell.tone === "gain" && "text-[#16a34a] dark:text-[#2fa85a]",
@@ -355,7 +451,7 @@ function Calculator() {
                             <tr>
                                 {["연차", "납입 원금", "투자수익", "평가금액", "수익률"].map((h, i) => (
                                     <th key={h} className={cn(
-                                        "text-[11px] font-semibold tracking-[0.1em] text-neutral-400 dark:text-neutral-500",
+                                        "text-[11px] font-semibold tracking-[0.1em] text-neutral-500 dark:text-neutral-400",
                                         "py-2 px-2.5 whitespace-nowrap border-b border-neutral-900 dark:border-neutral-100",
                                         i === 0 ? "text-left" : "text-right"
                                     )}>
@@ -373,7 +469,7 @@ function Calculator() {
                                 const cell = cn("py-2 px-2.5 border-b", last ? RULE_HARD : RULE);
                                 return (
                                     <tr key={d.year} className={cn(last && "font-semibold")}>
-                                        <td className={cn(cell, "text-neutral-400 dark:text-neutral-500")}>{d.year}년</td>
+                                        <td className={cn(cell, "text-neutral-500 dark:text-neutral-400")}>{d.year}년</td>
                                         <td className={cn(cell, NUM_CLS, "text-right")}>
                                             {Math.round(d.principal).toLocaleString("ko-KR")}
                                         </td>
@@ -420,7 +516,7 @@ function Calculator() {
                             "연평균(CAGR)은 원금이 한 번에 들어갔다고 본 근사값입니다 — 적립식에서는 실제보다 낮게 나옵니다.",
                             "이 계산서는 단순 모형이며 거래비용·환율·중도 인출을 반영하지 않습니다.",
                         ].map((n) => (
-                            <li key={n} className="text-[11.5px] text-neutral-400 dark:text-neutral-500 leading-[1.85]">
+                            <li key={n} className="text-[11.5px] text-neutral-500 dark:text-neutral-400 leading-[1.85]">
                                 {n}
                             </li>
                         ))}
