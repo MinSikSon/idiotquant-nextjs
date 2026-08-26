@@ -63,7 +63,9 @@ const CustomTooltip = ({ active, payload, label, mode }: any) => {
 
 export default function LineChart(props: any) {
     const { theme } = useTheme();
-    const mode = theme === "dark" ? "dark" : "light";
+    // forceTheme — 앱 테마를 무시하고 이 명암으로 그린다. 늘 어두운 바탕 위에 놓이는
+    // 자리(게임의 브라운관 화면)에서 밝은 테마의 축 글자가 사라지는 것을 막는다.
+    const mode = (props.forceTheme ?? theme) === "dark" ? "dark" : "light";
 
     const textColor = tailwindPalette[mode].text;
 

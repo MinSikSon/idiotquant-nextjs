@@ -2,6 +2,17 @@
 
 // 내 운용사 — 블라인드 차트 리플레이를 "분기 운용" 으로 감싼 게임.
 //
+// ── 화면 넷 ──────────────────────────────────────────────────────────
+//
+//   시작(title) → 준비(setup) → 진행(play) → 결과(result) → (다시 준비)
+//
+// 예전에는 시작·준비·결과가 "대시보드" 한 화면에 겹쳐 있었다. 판이 없을 때 그 화면이
+// 로고이자 설정이자 성적표였고, 그래서 무엇을 하는 화면인지가 상태에 따라 달라졌다.
+// 지금은 한 화면이 한 가지 일만 한다 — 어느 화면에 있는지는 아래 `screen` 하나가 정한다.
+//
+// 겉모습은 90년대 기기다(app/(game)/game/retro.tsx). 이 화면만 브라운관 안이라
+// 밝은 테마를 따로 두지 않는다 — 아케이드 기기는 낮에도 어둡다.
+//
 // 한 반기는 그때 맡고 있는 돈을 그대로 굴린다. 그 성적이 맡은 돈에 곱해지고, 고객이 돈을 맡기거나
 // 빼가고(AUM), 회사는 맡은 돈에서 보수를 받아 리서치 도구를 산다. 규칙은 lib/paper/firm.ts.
 //
@@ -21,14 +32,14 @@ import { useSession } from "next-auth/react";
 // 아이콘은 뜻이 겹치지 않게 고른다. 예전에는 Flag 가 "그만"과 "지난 분기" 두 곳에 쓰여
 // 같은 그림이 전혀 다른 일을 가리켰다.
 import {
-    Play, TrendingUp, Coins, Wallet, Tag, ArrowRight, ArrowLeft, X, EyeOff,
+    Play, ArrowLeft, EyeOff,
     FlaskConical, History, Footprints, Lock, Check, ChevronDown,
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
-import { avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
+import { SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
 import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
@@ -40,10 +51,8 @@ import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicat
 import { YEAR_CHOICES, halfOf, totalHalves, halfLabel, HALVES_PER_YEAR } from "@/lib/paper/campaign";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
-import {
-    fmtKrw, KpiCard, PnlIcon,
-    SectionPanel, SectionHeader, useToast, ToastContainer,
-} from "@/components/balance/shared";
+import { fmtKrw, useToast, ToastContainer } from "@/components/balance/shared";
+import { Win, Sunken, Crt, RetroBtn, PixelSlider, StatLine, Blink, R, OUT, IN, PIXEL } from "./retro";
 import { cn } from "@/lib/utils";
 import { safeNum } from "@/lib/utils/numbers";
 
@@ -107,19 +116,21 @@ const SKIP_STEPS = [3, 5];
 //
 // 공용 pnlText(잔고·스크리너와 공유)는 손실이 초록이다. 그 화면들까지 바꾸는 건
 // 이 작업 범위 밖이라, 게임 안에서만 쓰는 함수를 따로 둔다.
+//
+// 목업은 초록 BUY · 빨강 SELL 이지만 그건 서구 관습이다. 이 앱은 국내 증권앱을 따라
+// 빨강이 사기·오름이고, 그 규칙이 차트 캔들부터 버튼까지 화면 전체를 관통한다.
+// 겉모습을 바꾸자고 이 규칙을 뒤집으면 같은 화면 안에서 빨강이 두 뜻을 갖는다.
 const UP_COLOR = "#e14b4b";
 const DOWN_COLOR = "#3b82f6";
 const MINE_COLOR = "#e3b34a";
 const BENCH_COLOR = "#94a3b8";
 
-/** 오르면 빨강, 내리면 파랑. */
-const pnlText = (positive: boolean) => (positive ? "text-[#e14b4b]" : "text-[#3b82f6]");
-const pnlBg = (positive: boolean) => (positive
-    ? "bg-red-50 dark:bg-red-950/40 text-[#e14b4b]"
-    : "bg-blue-50 dark:bg-blue-950/40 text-[#3b82f6]");
-const pnlAccent = (positive: boolean) => (positive
-    ? "bg-red-400 dark:bg-red-600"
-    : "bg-[#3b82f6] dark:bg-[#2563eb]");
+// 같은 빨강·파랑이라도 바탕이 다르면 읽히는 밝기가 다르다. 창 몸통은 밝은 회색이고
+// 브라운관 안은 검정이라, 한 쌍만 두면 어느 한쪽에서 반드시 흐려진다.
+/** 창 몸통(밝은 회색) 위 — 어둡게. */
+const pnlText = (positive: boolean) => (positive ? "text-[#9e1414]" : "text-[#1d4ed8]");
+/** 브라운관(검정) 안 — 밝게. */
+const pnlLit = (positive: boolean) => (positive ? "text-[#ff6b6b]" : "text-[#6aa9ff]");
 
 // 도구가 그리는 선 색. 차트와 on/off 칩이 같은 색을 써야 어느 칩이 어느 선인지 안다.
 const TOOL_COLOR: Record<string, string> = {
@@ -163,7 +174,7 @@ function HalfTrack({ campaign, history }: { campaign: Campaign; history: ReplayH
         if (h.campaign_id === campaign.id && typeof h.half_index === "number") done.set(h.half_index, h);
     }
     return (
-        <span className="flex gap-[3px] w-full max-w-[190px]" aria-label="반기별 성적">
+        <span className="flex gap-[2px] w-full" aria-label="반기별 성적">
             {Array.from({ length: HALVES_PER_YEAR }, (_, i) => {
                 const idx = yearStart + i;
                 const rec = done.get(idx);
@@ -172,10 +183,10 @@ function HalfTrack({ campaign, history }: { campaign: Campaign; history: ReplayH
                 return (
                     <i key={idx}
                         title={rec ? `${halfLabel(idx)}반기 ${pct(rec.final_return ?? 0)}` : `${halfLabel(idx)}반기`}
-                        className={cn("flex-1 h-[7px] rounded-[2px]",
-                            now ? "bg-[#2a1c00]"
+                        className={cn("flex-1 h-[8px]",
+                            now ? "bg-[#5cf08f]"
                                 : rec ? (won ? "bg-[#e14b4b]" : "bg-[#3b82f6]")
-                                    : "bg-black/15")} />
+                                    : "bg-white/12")} />
                 );
             })}
         </span>
@@ -206,29 +217,32 @@ function MoneyCurve({ history }: { history: ReplayHistoryItem[] }) {
     const grew = mine[mine.length - 1] - mine[0];
 
     return (
-        <div className="mb-3">
-            <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">맡은 돈</span>
-                <span className="text-[11px] font-mono">
-                    <b className="text-neutral-900 dark:text-white">{fmtMoney(mine[mine.length - 1])}</b>
+        <div className="mb-2">
+            <div className="flex items-baseline justify-between gap-2 mb-1 text-[11px]">
+                <span className="font-bold uppercase tracking-[0.08em]" style={{ color: R.inkDim }}>맡은 돈</span>
+                <span className="tabular-nums">
+                    <b style={{ color: R.ink }}>{fmtMoney(mine[mine.length - 1])}</b>
                     <b className={cn("ml-1.5", pnlText(grew >= 0))}>
                         {grew >= 0 ? "▲" : "▼"} {fmtMoney(Math.abs(grew))}
                     </b>
                 </span>
             </div>
-            <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="76" preserveAspectRatio="none"
-                role="img" aria-label={`${rows.length}반기 자금 곡선`}>
-                <polyline points={line(bench)} fill="none" stroke={BENCH_COLOR} strokeWidth="1.4" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
-                <polyline points={line(mine)} fill="none" stroke={MINE_COLOR} strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-            </svg>
-            <div className="flex items-center gap-3 mt-1 text-[9.5px] font-bold">
-                <span className="flex items-center gap-1 text-[#a1730a] dark:text-[#e3b34a]">
+            {/* 곡선은 브라운관 안에 — 이 화면에서 선이 그어지는 자리는 전부 검다. */}
+            <Crt className="px-1 py-1">
+                <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="72" preserveAspectRatio="none"
+                    role="img" aria-label={`${rows.length}반기 자금 곡선`}>
+                    <polyline points={line(bench)} fill="none" stroke={BENCH_COLOR} strokeWidth="1.4" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />
+                    <polyline points={line(mine)} fill="none" stroke={MINE_COLOR} strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                </svg>
+            </Crt>
+            <div className="flex items-center gap-3 mt-1 text-[11px]">
+                <span className="flex items-center gap-1" style={{ color: "#7a4f00" }}>
                     <i className="w-2.5 h-[2px] bg-[#e3b34a] block" /> 내 자금
                 </span>
-                <span className="flex items-center gap-1 text-neutral-400">
+                <span className="flex items-center gap-1" style={{ color: R.inkDim }}>
                     <i className="w-2.5 h-[2px] bg-[#94a3b8] block" /> 그냥 나눠 담기
                 </span>
-                <span className="ml-auto text-neutral-400 font-mono">{rows.length}반기</span>
+                <span className="ml-auto tabular-nums" style={{ color: R.inkDim }}>{rows.length}반기</span>
             </div>
         </div>
     );
@@ -269,6 +283,8 @@ export default function ReplayGamePage() {
     const markFilled = useCallback(() => setFilled(n => n + 1), []);
     // 예약 패널 — 접었다 편다. 모바일은 한 화면이 빡빡해 기본은 접어 둔다.
     const [reserveOpen, setReserveOpen] = useState(false);
+    // 시작 화면을 지났나. 이것만은 데이터로 알 수 없어 따로 든다.
+    const [entered, setEntered] = useState(false);
     const [resKind, setResKind] = useState<Reservation["kind"]>("buy_limit");
     // 값 대신 "지금 값에서 몇 % 떨어진 자리"와 "얼마만큼"으로 고른다.
     const [resStep, setResStep] = useState(5);
@@ -779,273 +795,224 @@ export default function ReplayGamePage() {
             }));
     }, [round, sel, visible, overview]);
 
-    // 계좌 4칸. 모바일 압축 줄과 데스크톱 카드가 같은 값을 쓰도록 한 곳에서 만든다.
-    const stats = round ? [
-        {
-            label: "내 돈", value: fmtKrw(totalAssets), sub: `시작 ${fmtKrw(round.seed)}`,
-            icon: <Wallet size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
-        },
-        {
-            label: "현금", value: fmtKrw(round.cash), sub: heldQty > 0 ? `${heldQty}주 갖고 있음` : "아직 없음",
-            icon: <Coins size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
-        },
-        {
-            label: round.status === "done" ? "마지막 가격" : "현재가", value: fmtKrw(price),
-            sub: heldQty > 0 ? `산 값 ${fmtKrw(avg)}` : round.status === "done" ? "정리됨" : "아직 안 삼",
-            icon: <Tag size={15} />, iconBg: "bg-neutral-100 dark:bg-[#2c2a26] text-neutral-500",
-        },
-        {
-            label: "수익률", value: pct(totalRate), sub: `실현 ${fmtKrw(round.realized)}`,
-            icon: <PnlIcon positive={totalPnl >= 0} />, iconBg: pnlBg(totalPnl >= 0),
-            valueColor: pnlText(totalPnl >= 0), accentColor: pnlAccent(totalPnl >= 0),
-        },
-    ] : [];
+    /**
+     * 어느 화면인가.
+     *
+     * 새 상태를 만들지 않고 있는 것에서 읽는다 — 화면 번호를 따로 들고 있으면 그것과
+     * 데이터가 어긋나는 순간이 반드시 생긴다(판은 끝났는데 화면은 아직 진행 중 같은).
+     * `entered` 하나만 새로 둔다: 시작 화면을 지났느냐는 데이터로는 알 수 없다.
+     */
+    const screen: "title" | "setup" | "play" | "result" =
+        round ? (round.status === "done" ? "result" : "play")
+            : endedCampaign ? "result"
+                : entered ? "setup" : "title";
 
     if (loading) {
-        return <div className="min-h-screen bg-surface-canvas dark:bg-[#1a1917] flex items-center justify-center text-sm text-neutral-400">불러오는 중…</div>;
+        return (
+            <div className={cn(PIXEL, "min-h-screen grid place-items-center text-[11px]")}
+                style={{ background: R.bg, color: R.neon }}>
+                <Blink>NOW LOADING…</Blink>
+            </div>
+        );
     }
 
     return (
-        // min-h-screen 을 그대로 쓰면 main 의 pt-48 + pb-64 가 더해져 내용과 무관하게 112px 이
-        // 항상 스크롤된다. 모바일에서는 크롬을 뺀 높이를 바닥으로 삼는다.
-        <div className={cn("bg-surface-canvas dark:bg-[#1a1917]", round ? "md:min-h-screen" : "min-h-[calc(100dvh-112px)] md:min-h-screen")}>
+        // 이 화면은 브라운관 안이다 — 앱이 밝은 테마여도 여기는 늘 어둡다.
+        // min-h-screen 을 그대로 쓰면 layout 의 상단 48 + 하단 탭 64 가 더해져 내용과
+        // 무관하게 112px 이 항상 스크롤된다. 모바일에서는 그 크롬을 뺀 높이를 바닥으로 삼는다.
+        <div className={cn(PIXEL, "min-h-[calc(100dvh-112px)] md:min-h-screen")} style={{ background: R.bg }}>
             <ToastContainer toasts={toasts} onRemove={removeToast} />
 
             <div className={cn(
-                "max-w-4xl mx-auto px-4 sm:px-5 flex flex-col",
-                // 판이 열려 있는 동안은 넓이와 상관없이 한 화면에 담는다 — 차트를 보고 버튼을
+                "max-w-4xl mx-auto px-3 sm:px-5 flex flex-col",
+                // 판이 도는 동안은 넓이와 상관없이 한 화면에 담는다 — 차트를 보고 버튼을
                 // 누르는 게 매일 반복되는 동작이라, 그 둘이 같은 화면에 있어야 한다.
-                // 모바일은 layout.tsx 의 main 이 상단 헤더 48 + 하단 탭 64 를 이미 비워 두므로
-                // 그만큼 빼고, md 부터는 그 크롬이 없어 화면 높이를 그대로 쓴다.
-                // 100dvh 라야 모바일 브라우저 주소창이 접혔다 펴져도 어긋나지 않는다.
-                // 위아래 여백은 판이 도는 동안만 얇게 — 남는 자리는 차트가 가져간다.
                 // overflow-y-auto 는 안전장치다. 아주 작은 화면에서 고정 부분만으로도 자리가
-                // 모자라면 잘리는 대신 스크롤된다 — 버튼이 화면 밖으로 사라지면 판을 못 이어간다.
-                round
-                    ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-2 sm:py-4 gap-2 sm:gap-4"
-                    // 시작 화면도 폰에서는 붙여 놓는다 — 아래 탭 바 64px 이 이미 비어 있어
-                    // pb-10 까지 주면 빈 자리만 늘어난다.
-                    : "py-4 sm:py-10 pb-4 md:pb-24 gap-3 sm:gap-5",
+                // 모자라면 잘리는 대신 스크롤된다 — 버튼이 화면 밖으로 나가면 판을 못 이어간다.
+                screen === "play"
+                    ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-2 sm:py-3 gap-2"
+                    : "py-3 sm:py-8 pb-8 md:pb-24 gap-2.5",
             )}>
 
-                {!round && (
-                    <FirmDashboard
-                        onStart={start} busy={busy} isLoggedIn={isLoggedIn}
-                        firm={firm} bestReturn={bestReturn} history={history} habits={habits}
-                        onBuy={purchase} activeTools={activeTools} onToggle={toggleTool}
-                        campaign={campaign} endedCampaign={endedCampaign}
-                        onOpenCampaign={openCampaign} onClearEnded={() => setEndedCampaign(null)}
+                {/* ① 시작 ─────────────────────────────────────── */}
+                {screen === "title" && (
+                    <TitleScreen
+                        isLoggedIn={isLoggedIn} firm={firm} campaign={campaign}
+                        bestReturn={bestReturn} onEnter={() => setEntered(true)}
                     />
                 )}
 
+                {/* ② 준비 ─────────────────────────────────────── */}
+                {screen === "setup" && (
+                    <SetupScreen
+                        isLoggedIn={isLoggedIn} busy={busy} firm={firm} campaign={campaign}
+                        history={history} habits={habits} activeTools={activeTools}
+                        onOpenCampaign={openCampaign} onStart={start} onBuyTool={purchase}
+                        onToggleTool={toggleTool} onBack={() => setEntered(false)}
+                    />
+                )}
+
+                {/* ③ 진행 · ④ 결과(반기) ───────────────────────
+                    판이 끝난 화면도 차트를 그대로 쓴다 — 45일을 가린 끝에 이름이 열리는
+                    자리가 바로 그 차트라, 결과를 다른 데로 옮기면 열리는 순간이 사라진다. */}
                 {round && (
                     <>
-                        {/* 폰에서는 이 줄을 아예 두지 않는다 — 날짜와 그만 버튼은 차트 제목 줄로
-                            옮겼고, 그렇게 비운 48px 이 전부 차트로 간다. */}
-                        <header className="hidden sm:flex items-center justify-between gap-3 shrink-0">
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] sm:mb-1.5">
-                                    {round.status === "done"
-                                        ? `${(firm?.quarters ?? 0) || 1}분기 보고서`
-                                        : `${halfTitle} · Day ${round.cursor - ctxDays + 1}/${totalDays - ctxDays + 1}`}
-                                </p>
-                                <h1 className="hidden sm:block text-xl sm:text-2xl font-black text-neutral-900 dark:text-white break-keep">
-                                    {round.status === "done" ? "분기 운용 종료" : "이 회사, 지금 사시겠습니까?"}
-                                </h1>
-                                <p className="sm:hidden text-[15px] font-black text-neutral-900 dark:text-white leading-tight">
-                                    {round.status === "done" ? "분기 종료" : "사시겠습니까?"}
-                                </p>
-                            </div>
-                            {round.status === "playing" ? (
-                                <button onClick={giveUp} disabled={busy}
-                                    className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                    <X size={14} /> 그만
-                                </button>
-                            ) : (
-                                <button onClick={reset}
-                                    className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] hover:opacity-90 transition-opacity">
-                                    <ArrowRight size={14} /> 다음 분기
-                                </button>
-                            )}
-                        </header>
+                        {round.status === "done" && (
+                            <Win tone="neon" title="GAME OVER — 반기 종료"
+                                right={isLoggedIn ? `${(firm?.quarters ?? 0) || 1}분기` : "체험 운용"}
+                                className="shrink-0 pop-in">
+                                <HalfScore round={round} isLoggedIn={isLoggedIn} />
+                            </Win>
+                        )}
 
-                        {round.status === "done" && <QuarterReport round={round} isLoggedIn={isLoggedIn} />}
-
-                        {/* ── 차트 ──────────────────────────
-                            남는 세로 공간을 전부 차트가 가져간다. 화면이 작으면 차트만 줄고
-                            계좌·버튼은 그대로 남는다 — 판을 이어가는 데 필요한 건 그쪽이다. */}
-                        {/* min-h-0 을 주면 안 된다 — flex 가 패널을 내용보다 작게 줄여 차트가 패널을
-                            뚫고 나온다(320px 에서 계좌 카드 위에 겹쳐 그려졌다). 기본값 min-height:auto
-                            라야 내용 높이가 바닥이 되고, 자리가 정말 모자라면 바깥이 스크롤된다. */}
-                        <SectionPanel className="flex-1 flex flex-col p-2.5 sm:p-5">
-                            {/* 폰 전용 한 줄 — 며칠째인지 · 업종 · 벤치마크 · 그만(또는 다음 분기).
-                                제목("블라인드 차트")은 뺐다. 매일 다시 읽을 말이 아니고, 그 자리가
-                                차트 높이다. */}
-                            <div className="sm:hidden flex items-center justify-between gap-1.5 mb-1.5 shrink-0">
-                                <span className="text-[11px] font-black text-neutral-900 dark:text-neutral-100 shrink-0 flex items-center gap-1.5">
-                                    {round.status === "done"
-                                        // 45일을 가린 끝에 열리는 이름이다 — 그냥 바뀌면 아무 일도 아닌 게 된다
-                                        ? <span className="reveal-answer">{round.name ?? "차트"}</span>
-                                        : `${halfTitle} ${round.cursor - ctxDays + 1}/${totalDays - ctxDays + 1}일`}
-                                    {/* 업종만 열어 준다 — 가격 말고 붙잡을 것 하나(개선안 ⑤) */}
-                                    {!overview && (sel?.sector ?? round.sector) && (
-                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2a26] text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
-                                            <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
-                                                <SectorSprite sector={sel?.sector ?? round.sector ?? undefined} color={sectorAccent(sel?.sector ?? round.sector ?? undefined)} />
-                                            </span>
-                                            {sel?.sector ?? round.sector}
+                        <Win
+                            className={cn("flex flex-col", round.status === "playing" && "flex-1")}
+                            bodyClass="flex flex-col gap-1.5 flex-1"
+                            title={round.status === "done"
+                                // 45일을 가린 끝에 열리는 이름이다 — 그냥 바뀌면 아무 일도 아닌 게 된다
+                                ? <span className="reveal-answer">{sel?.name ?? round.name ?? "차트"}</span>
+                                : `블라인드 차트 · ${halfTitle}`}
+                            right={round.status === "done"
+                                ? <span className="reveal-answer">{fmtDate(round.start_date)}~{fmtDate(round.end_date)}</span>
+                                : `DAY ${round.cursor - ctxDays + 1}/${totalDays - ctxDays + 1}`}
+                            onClose={round.status === "playing" ? giveUp : undefined}
+                            closeLabel="이 반기 그만두기"
+                        >
+                            {/* 업종과 벤치마크 한 줄. 업종만 열어 준다 — 가격 말고 붙잡을 것 하나.
+                                벤치마크는 정산의 잣대라 끝나고서야 보여 줄 이유가 없다. */}
+                            <div className="flex items-center gap-2 shrink-0 min-h-[16px]">
+                                {(sel?.sector ?? round.sector) && !overview && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: R.ink }}>
+                                        <span className="w-[17px] h-[12px] overflow-hidden shrink-0">
+                                            <SectorSprite sector={sel?.sector ?? round.sector ?? undefined} color={sectorAccent(sel?.sector ?? round.sector ?? undefined)} />
                                         </span>
-                                    )}
-                                </span>
-                                {/* 진행 중에는 이 자리를 벤치마크 비교가 쓴다 — 종목·시기 안내는
-                                    한 번 읽으면 되는 문장이고, 이쪽은 매일 달라진다. */}
-                                <p className={cn("text-[10px] truncate", benchNote ? "font-bold" : "text-neutral-400")}>
-                                    {round.status === "done"
-                                        ? <span className="text-neutral-400 reveal-answer">{`${round.ticker} · ${fmtDate(round.start_date)}~${fmtDate(round.end_date)}`}</span>
-                                        : benchNote
-                                            ? <span className={pnlText(edge >= 0)}>{benchNote}</span>
-                                            : <span className="text-neutral-400">종목·시기는 끝나야 열립니다</span>}
-                                </p>
-                                {holdings.length > 1 && !overview ? (
-                                    <button onClick={() => setDetail(false)} aria-label="목록으로"
-                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark">
-                                        <ArrowLeft size={11} /> 목록
-                                    </button>
-                                ) : round.status === "playing" ? (
-                                    <button onClick={giveUp} disabled={busy} aria-label="그만"
-                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-border-subtle-dark disabled:opacity-40">
-                                        <X size={11} /> 그만
-                                    </button>
-                                ) : (
-                                    <button onClick={reset} aria-label="다음 분기"
-                                        className="shrink-0 inline-flex items-center gap-1 min-h-[28px] px-2 rounded-lg text-[10.5px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00]">
-                                        <ArrowRight size={11} /> 다음 분기
-                                    </button>
+                                        {sel?.sector ?? round.sector}
+                                        {scenarioLabel(sel?.scenario ?? round.scenario) && (
+                                            <span style={{ color: R.inkDim }}>· {scenarioLabel(sel?.scenario ?? round.scenario)}</span>
+                                        )}
+                                    </span>
                                 )}
+                                <span className={cn("ml-auto text-[11px] truncate",
+                                    benchNote ? pnlText(edge >= 0) : "")}
+                                    style={benchNote ? undefined : { color: R.inkDim }}>
+                                    {round.status === "done"
+                                        ? <span className="reveal-answer">{sel?.ticker ?? round.ticker}</span>
+                                        : benchNote ?? "종목·시기는 끝나야 열립니다"}
+                                </span>
                             </div>
-                            <div className="hidden sm:block">
-                                <SectionHeader
-                                    badge={(sel?.sector ?? round.sector) ? (
-                                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-[#2c2a26] text-[11px] font-bold text-neutral-600 dark:text-neutral-300">
-                                            <span className="w-[24px] h-[17px] rounded-[3px] overflow-hidden shrink-0">
-                                                <SectorSprite sector={sel?.sector ?? round.sector ?? undefined} color={sectorAccent(sel?.sector ?? round.sector ?? undefined)} />
-                                            </span>
-                                            {sel?.sector ?? round.sector}
-                                            {scenarioLabel(sel?.scenario ?? round.scenario) && <span className="opacity-60">· {scenarioLabel(sel?.scenario ?? round.scenario)}</span>}
-                                        </span>
-                                    ) : undefined}
-                                    icon={<TrendingUp size={16} />}
-                                    title={round.status === "done" ? (sel?.name ?? round.name ?? "차트") : `블라인드 차트 ${holdings.length ? `· ${halfTitle}` : ""}`}
-                                    subtitle={round.status === "done"
-                                        ? `${sel?.ticker ?? round.ticker} · ${fmtDate(round.start_date)} ~ ${fmtDate(round.end_date)}`
-                                        : benchNote ?? "종목명과 시기는 끝나야 열립니다"}
-                                />
-                            </div>
+
                             {/* 네 종목의 간략한 현황. 누르면 그 종목의 차트로 바뀌고 매매도 그 종목에
-                                들어간다(phase 2). 상세에서는 자리만 옮기는 좁은 칩으로 줄어든다. */}
+                                들어간다. 상세에서는 자리만 옮기는 좁은 칩으로 줄어든다. */}
                             {holdings.length > 1 && (
-                                <div className={cn("grid grid-cols-4 gap-1 mb-1.5 shrink-0", overview && "gap-1.5")}>
-                                    {holdings.map(h => {
-                                        const last = lastCloseOf(h);
-                                        const on = h.slot === (sel?.slot ?? 0);
-                                        const rate = h.qty > 0 && h.cost_basis > 0
-                                            ? ((last * h.qty - h.cost_basis) / h.cost_basis) * 100 : null;
-                                        // 추세선은 그 종목의 최근 25일. 구간 등락 부호로 색을 정한다(시장색).
-                                        const closes = overview ? closesOf(h) : [];
-                                        const trendUp = closes.length > 1 && closes[closes.length - 1] >= closes[0];
-                                        return (
-                                            <button key={h.slot}
-                                                onClick={() => { setSlot(h.slot); setDetail(true); }}
-                                                aria-label={`${h.slot + 1}번 종목${h.qty > 0 ? ` 보유 ${h.qty}주` : ""}`}
-                                                className={cn("px-1 rounded-lg border text-[10px] font-bold transition-colors flex flex-col items-center justify-center gap-0.5 leading-none",
-                                                    overview ? "min-h-[54px]" : "min-h-[38px]",
-                                                    !overview && on
-                                                        ? "border-neutral-900 dark:border-white bg-neutral-100 dark:bg-[#2c2a26] text-neutral-900 dark:text-white"
-                                                        : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400")}>
-                                                <span className="flex items-center gap-1 truncate max-w-full">
-                                                    <span className="w-[15px] h-[11px] rounded-[2px] overflow-hidden shrink-0">
-                                                        <SectorSprite sector={h.sector ?? undefined} color={sectorAccent(h.sector ?? undefined)} />
+                                <div className="flex items-stretch gap-1 shrink-0">
+                                    {!overview && (
+                                        <RetroBtn size="sm" onClick={() => setDetail(false)} aria-label="목록으로"
+                                            className="shrink-0 flex items-center">
+                                            <ArrowLeft size={11} />
+                                        </RetroBtn>
+                                    )}
+                                    <div className="grid grid-cols-4 gap-1 flex-1 min-w-0">
+                                        {holdings.map(h => {
+                                            const last = lastCloseOf(h);
+                                            const on = h.slot === (sel?.slot ?? 0);
+                                            const rate = h.qty > 0 && h.cost_basis > 0
+                                                ? ((last * h.qty - h.cost_basis) / h.cost_basis) * 100 : null;
+                                            // 추세선은 그 종목의 최근 25일. 구간 등락 부호로 색을 정한다(시장색).
+                                            const closes = overview ? closesOf(h) : [];
+                                            const trendUp = closes.length > 1 && closes[closes.length - 1] >= closes[0];
+                                            return (
+                                                <button key={h.slot}
+                                                    onClick={() => { setSlot(h.slot); setDetail(true); }}
+                                                    aria-label={`${h.slot + 1}번 종목${h.qty > 0 ? ` 보유 ${h.qty}주` : ""}`}
+                                                    aria-pressed={!overview && on}
+                                                    className={cn("px-1 text-[11px] flex flex-col items-center justify-center gap-0.5 leading-none",
+                                                        overview ? "min-h-[52px]" : "min-h-[34px]")}
+                                                    style={{
+                                                        background: R.face, color: R.ink,
+                                                        boxShadow: !overview && on ? IN : OUT,
+                                                    }}>
+                                                    <span className="flex items-center gap-1 truncate max-w-full">
+                                                        <span className="w-[15px] h-[11px] overflow-hidden shrink-0">
+                                                            <SectorSprite sector={h.sector ?? undefined} color={sectorAccent(h.sector ?? undefined)} />
+                                                        </span>
+                                                        {/* 진행 중에는 이름이 없다 — 업종이 그 종목을 부르는 이름이 된다 */}
+                                                        <span className={cn("truncate", h.name && round.status === "done" && "reveal-answer")}>
+                                                            {h.name ?? h.sector ?? `${h.slot + 1}번`}
+                                                        </span>
                                                     </span>
-                                                    {/* 진행 중에는 이름이 없다 — 업종이 그 종목을 부르는 이름이 된다 */}
-                                                    <span className={cn("truncate", h.name && round.status === "done" && "reveal-answer")}>
-                                                        {h.name ?? h.sector ?? `${h.slot + 1}번`}
-                                                    </span>
-                                                </span>
-                                                {/* 개요에서는 추세선을 함께. 값(현재가)만으로는 종목마다 자릿수가 달라
-                                                    견줄 수가 없었고, 오르는 중인지 알려면 하나씩 눌러 봐야 했다. */}
-                                                {overview && <Spark data={closes} color={trendUp ? UP_COLOR : DOWN_COLOR} />}
-                                                {h.qty > 0
-                                                    ? <span className={cn("font-mono", rate !== null ? pnlText(rate >= 0) : "")}>
-                                                        {rate !== null ? pct(rate) : `${h.qty}주`}
-                                                    </span>
-                                                    : <span className="opacity-60">안 삼</span>}
-                                            </button>
-                                        );
-                                    })}
+                                                    {/* 개요에서는 추세선을 함께. 값(현재가)만으로는 종목마다 자릿수가 달라
+                                                        견줄 수가 없었고, 오르는 중인지 알려면 하나씩 눌러 봐야 했다. */}
+                                                    {overview && <Spark data={closes} color={trendUp ? UP_COLOR : DOWN_COLOR} />}
+                                                    {h.qty > 0
+                                                        ? <span className={rate !== null ? pnlText(rate >= 0) : ""}>
+                                                            {rate !== null ? pct(rate) : `${h.qty}주`}
+                                                        </span>
+                                                        : <span style={{ color: R.inkDim }}>안 삼</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
+
                             {/* 비중 한 줄. 어느 종목에 얼마를 담고 있는지는 다음 매매를 정하는 값인데,
                                 카드의 수익률만으로는 몰빵과 고르게 담기가 구별되지 않는다.
                                 띠 하나면 넷과 현금이 한눈에 들어오고 세로로 16px 밖에 안 먹는다.
                                 업종 색이 겹칠 수 있어(같은 업종 둘) 칸마다 경계선을 둔다. */}
                             {holdings.length > 1 && (
-                                <div className="flex items-center gap-1.5 mb-1.5 shrink-0">
-                                    <span className="text-[9px] font-black text-neutral-400 shrink-0">비중</span>
-                                    <div className="flex-1 flex h-[16px] rounded-md overflow-hidden bg-neutral-100 dark:bg-[#2c2a26]">
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className="text-[11px] shrink-0" style={{ color: R.inkDim }}>비중</span>
+                                    <div className="flex-1 flex h-[14px]" style={{ background: R.faceLo, boxShadow: IN }}>
                                         {weights.filter(w => w.pct > 0.5).map(w => (
                                             <div key={w.slot} title={`${w.slot + 1}번 종목 비중 ${w.pct.toFixed(1)}%`}
                                                 style={{ width: `${w.pct}%`, backgroundColor: sectorAccent(w.sector ?? undefined) }}
-                                                className={cn("flex items-center justify-center text-[8.5px] font-black text-white/95 border-r border-white/50 dark:border-black/30 overflow-hidden",
+                                                className={cn("flex items-center justify-center text-[11px] text-white/95 border-r border-black/30 overflow-hidden",
                                                     // 지금 보고 있는 자리는 어느 칸인지 알아야 한다
-                                                    !overview && w.slot === (sel?.slot ?? 0) && "ring-1 ring-inset ring-neutral-900 dark:ring-white")}>
-                                                {w.pct >= 11 ? `${Math.round(w.pct)}%` : ""}
+                                                    !overview && w.slot === (sel?.slot ?? 0) && "ring-1 ring-inset ring-white")}>
+                                                {w.pct >= 14 ? `${Math.round(w.pct)}` : ""}
                                             </div>
                                         ))}
-                                        <div className="flex-1 flex items-center justify-center text-[8.5px] font-bold text-neutral-400 overflow-hidden whitespace-nowrap"
-                                            title={`현금 ${cashPct.toFixed(1)}%`}>
-                                            {cashPct >= 14 ? `현금 ${Math.round(cashPct)}%` : ""}
+                                        <div className="flex-1 flex items-center justify-center text-[11px] overflow-hidden whitespace-nowrap"
+                                            style={{ color: R.inkDim }} title={`현금 ${cashPct.toFixed(1)}%`}>
+                                            {cashPct >= 20 ? `현금 ${Math.round(cashPct)}%` : ""}
                                         </div>
                                     </div>
                                 </div>
                             )}
+
                             {/* 산 도구는 판이 도는 중에도 껐다 켤 수 있다. 선이 넷씩 겹치면 정작
-                                가격이 안 보이는데, 그때마다 판을 접고 대시보드로 갈 수는 없다.
+                                가격이 안 보이는데, 그때마다 판을 접고 준비 화면으로 갈 수는 없다.
                                 산 사람에게만 보이므로 안 산 사람의 화면은 그대로다. */}
                             {ownedTools.length > 0 && !overview && (
-                                <div className="flex flex-wrap items-center gap-1 mb-1.5 shrink-0">
+                                <div className="flex flex-wrap items-center gap-1 shrink-0">
                                     {ownedTools.map(t => {
                                         const on = activeTools.includes(t.id);
                                         return (
-                                            <button key={t.id} onClick={() => toggleTool(t.id)} title={t.hint}
-                                                aria-label={`${t.name} ${on ? "끄기" : "켜기"}`}
-                                                className={cn("inline-flex items-center gap-1 min-h-[26px] px-2 rounded-lg text-[10.5px] font-bold border transition-colors",
-                                                    on
-                                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                        : "text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
+                                            <RetroBtn key={t.id} size="sm" selected={on} onClick={() => toggleTool(t.id)}
+                                                title={t.hint} aria-label={`${t.name} ${on ? "끄기" : "켜기"}`}
+                                                className="inline-flex items-center gap-1">
                                                 {/* 칩이 곧 그 도구의 범례다 — 색으로 어느 선인지 알려 준다 */}
-                                                <span className="w-1.5 h-1.5 rounded-full shrink-0"
+                                                <span className="w-1.5 h-1.5 shrink-0"
                                                     style={{ backgroundColor: on ? TOOL_COLOR[t.id] : "transparent", boxShadow: on ? "none" : `inset 0 0 0 1px ${TOOL_COLOR[t.id]}` }} />
                                                 {t.name}
-                                            </button>
+                                            </RetroBtn>
                                         );
                                     })}
                                 </div>
                             )}
+
                             {/* recharts 의 ResponsiveContainer 는 부모 높이가 flex 로 정해지면 한 번 잰
-                                크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 패널을
-                                뚫고 나와 계좌 카드 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
+                                크기를 붙들고 있어 칸이 줄어도 그대로 그린다 — 320px 에서 차트가 상자를
+                                뚫고 나와 계좌 위에 겹쳐 그려졌다. absolute inset-0 으로 실제 픽셀
                                 상자를 주면 줄어드는 쪽도 따라온다. */}
-                            {/* overflow 를 열어 둔다 — 위쪽 캔들을 찍었을 때 설명이 차트 천장에
-                                잘려 값이 안 보였다. 차트가 상자를 뚫는 문제는 아래 absolute
-                                inset-0 이 막고 있어서, 여기서 잘라 낼 이유가 없다. */}
-                            <div className="relative flex-1 min-h-[100px] sm:min-h-[180px]">
+                            <Crt className={cn("flex-1", round.status === "done" ? "min-h-[180px]" : "min-h-[110px] sm:min-h-[200px]")}>
                                 {/* 범례는 차트 위에 얹는다. recharts 범례는 그림 상자 안에서 30px 을
                                     떼어 가는데, 그 30px 은 곧 그래프가 낮아진다는 뜻이다.
                                     겹쳐 놓으면 자리를 안 먹고, 클릭은 통과시켜 차트 조작을 막지 않는다. */}
                                 <div className="absolute top-0 left-[38px] z-10 flex flex-wrap items-center gap-x-2 gap-y-0.5 pointer-events-none">
                                     {legendItems.map(l => (
-                                        <span key={l.name} className="inline-flex items-center gap-1 text-[9px] font-bold text-neutral-400 dark:text-neutral-500">
-                                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: l.color }} />
+                                        <span key={l.name} className="inline-flex items-center gap-1 text-[11px]" style={{ color: `${R.inkHi}99` }}>
+                                            <span className="w-1.5 h-1.5" style={{ backgroundColor: l.color }} />
                                             {l.name}
                                         </span>
                                     ))}
@@ -1055,6 +1022,7 @@ export default function ReplayGamePage() {
                                         // 개요는 판 전체 이야기 — 값이 아니라 흐름이라 선이 맞다
                                         <LineChart
                                             height="100%"
+                                            forceTheme="dark"
                                             overlays={overlays}
                                             legend_disable={true}
                                             category_array={visible.map(c => c.d.slice(4))}
@@ -1064,6 +1032,7 @@ export default function ReplayGamePage() {
                                         // 상세는 캔들 — 같은 종가라도 하루 안에서 얼마나 오갔는지가 보인다
                                         <CandleChart
                                             height="100%"
+                                            forceTheme="dark"
                                             candles={visible}
                                             growLast={round.status === "playing"}
                                             markers={markers}
@@ -1078,251 +1047,234 @@ export default function ReplayGamePage() {
                                         />
                                     )}
                                 </div>
-                            </div>
-                        </SectionPanel>
+                            </Crt>
+                        </Win>
 
-                        {/* ── 계좌 ──────────────────────────
-                            폰에서는 카드 대신 두 줄. 카드 넉 장이 128px 을 먹어 차트가 100px 까지
-                            눌리고 그래도 자리가 모자랐다. 같은 값 넉 개가 두 줄이면 52px 이다. */}
-                        <div key={`acct-${filled}`}
-                            className={cn("lg:hidden shrink-0 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-2.5 py-1 flex flex-col gap-0.5",
-                                filled > 0 && "flash-mine")}>
-                            {/* 굴리는 돈이 이 줄의 주인공이다 — 한 단계 키우고, 등락률은 칩으로
-                                떼어 색을 한 곳에 모은다. 나머지는 라벨로 눕힌다. */}
-                            <div className="flex items-baseline justify-between gap-2 text-[12px]">
-                                <span className="truncate">
-                                    <span className="text-neutral-400 mr-1">내 돈</span>
-                                    <b className="font-mono font-black text-[14px] tracking-tight text-neutral-900 dark:text-white">{fmtKrw(totalAssets)}</b>
-                                    {overview
-                                        ? <>
-                                            <span className="text-neutral-400 ml-1.5 mr-1">보유</span>
-                                            <b className="font-mono font-black text-neutral-900 dark:text-white">
-                                                {holdings.filter(h => h.qty > 0).length}/{holdings.length}종목
-                                            </b>
-                                        </>
-                                        : <>
-                                            <span className="text-neutral-400 ml-1.5 mr-1">지금</span>
-                                            <b className="font-mono font-black text-neutral-900 dark:text-white">{fmtKrw(price)}</b>
-                                        </>}
-                                </span>
-                                <b className={cn("font-mono font-black shrink-0 px-1.5 py-0.5 rounded-md text-[11.5px]", pnlBg(totalPnl >= 0))}>
-                                    {totalPnl >= 0 ? "▲" : "▼"} {Math.abs(totalRate).toFixed(2)}%
-                                </b>
+                        {/* ── 계좌 ───────────────────────────────
+                            예전에는 폰용 두 줄과 데스크톱용 카드 넉 장이 따로 있었다. 같은 값을
+                            두 벌로 그리면 한쪽만 고치는 날이 온다 — 파인 칸 넷으로 합친다. */}
+                        <Win key={`acct-${filled}`} title="ACCOUNT"
+                            right={`시작 ${fmtKrw(round.seed)}`}
+                            className={cn("shrink-0", filled > 0 && "flash-mine")}>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+                                <AcctCell k="내 돈" v={fmtKrw(totalAssets)}
+                                    sub={overview ? `${holdings.filter(h => h.qty > 0).length}/${holdings.length}종목 보유` : undefined} />
+                                <AcctCell k="현금" v={fmtKrw(round.cash)}
+                                    sub={heldQty > 0 ? `${heldQty}주 갖고 있음` : "아직 없음"} />
+                                <AcctCell k={round.status === "done" ? "마지막 가격" : "현재가"} v={fmtKrw(price)}
+                                    sub={heldQty > 0 ? `산 값 ${fmtKrw(avg)}` : round.status === "done" ? "정리됨" : "아직 안 삼"} />
+                                <AcctCell k="수익률" v={pct(totalRate)} tone={pnlText(totalPnl >= 0)}
+                                    sub={`실현 ${fmtKrw(round.realized)}`} />
                             </div>
-                            <div className="flex items-baseline justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
-                                <span className="shrink-0">
-                                    <span className="text-neutral-400 mr-1">현금</span>
-                                    <b className="font-mono">{fmtKrw(round.cash)}</b>
-                                </span>
-                                <span className="truncate">
-                                    {overview
-                                        ? "종목을 눌러 자세히 보고 사고팝니다"
-                                        : heldQty > 0
-                                            // 비중을 산 값보다 앞에 둔다 — 좁은 폰에서 뒤가 잘리는데,
-                                            // 얼마에 샀는지보다 지금 얼마나 담고 있는지가 다음 매매를 정한다.
-                                            ? `${heldQty}주 갖고 있음 · 비중 ${(weights.find(w => w.slot === (sel?.slot ?? 0))?.pct ?? 0).toFixed(1)}% · 산 값 ${fmtKrw(avg)}`
-                                            : round.status === "done" ? "정리됨" : "아직 안 삼"}
-                                </span>
-                            </div>
-                        </div>
-                        {/* 카드는 네 칸이 한 줄로 들어가는 넓이(lg)에서만. 그보다 좁으면 두 줄이 되어
-                            283px 을 먹고 버튼을 화면 밖으로 밀어낸다. */}
-                        <div className="hidden lg:grid grid-cols-4 gap-4 shrink-0">
-                            {stats.map(s => <KpiCard key={s.label} {...s} />)}
-                        </div>
+                        </Win>
 
-                        {/* ── 조작 ────────────────────────── */}
+                        {/* ── 조작 ─────────────────────────────── */}
                         {round.status === "playing" && (
-                            <SectionPanel className="shrink-0 p-2.5 sm:p-5">
-                                <div className="flex flex-col gap-2 sm:gap-4">
-                                    {/* 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 그 자리에서 체결되고
+                            <Win title="BUY / SELL ORDER" className="shrink-0"
+                                right={overview && holdings.length > 1 ? "종목을 눌러 들어가면 매매" : undefined}>
+                                <div className="flex flex-col gap-1.5">
+                                    {/* 살 때는 내 돈의 몇 %, 팔 때는 보유의 몇 %. 그 자리에서 체결되고
                                         **날짜는 그대로다** — 같은 날 네 종목을 다 만질 수 있어야 한다.
-                                        시간은 아래 관망 줄에서만 흐른다(phase 3). */}
-                                    <div className={cn("grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center",
+                                        시간은 아래 관망 줄에서만 흐른다. */}
+                                    <div className={cn("grid grid-cols-[38px_1fr] gap-x-1.5 gap-y-1.5 items-center",
                                         overview && "hidden")}>
                                         {/* 기준을 적어 둔다 — 사기는 내 돈, 팔기는 보유.
                                             안 적으면 같은 25% 가 두 가지 뜻이 된다. */}
-                                        <span className="leading-[1.15]">
-                                            <span className="block text-[10.5px] font-black text-[#e14b4b]">사기</span>
-                                            <span className="block text-[8px] font-bold text-neutral-400">내 돈</span>
+                                        <span className="leading-[1.2]">
+                                            <span className="block text-[11px] font-bold" style={{ color: "#9e1414" }}>사기</span>
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>내 돈</span>
                                         </span>
-                                        <div className="grid grid-cols-4 gap-1.5">
+                                        <div className="grid grid-cols-4 gap-1">
                                             {BUY_PARTS.map(part => {
                                                 const n = buyQtyFor(part.pct);
                                                 return (
-                                                    <button key={part.pct} aria-label={`사기 ${part.label}`}
+                                                    <RetroBtn key={part.pct} tone="buy" aria-label={`사기 ${part.label}`}
                                                         onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-white bg-[#e14b4b] hover:bg-[#c93c3c] disabled:opacity-30 disabled:cursor-not-allowed transition-[background-color,transform] active:scale-[0.96] motion-reduce:active:scale-100 flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
-                                                        <span className="text-[9px] font-bold opacity-80">{n > 0 ? `${n}주` : "—"}</span>
-                                                    </button>
+                                                        <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
+                                                    </RetroBtn>
                                                 );
                                             })}
                                         </div>
 
-                                        <span className="leading-[1.15]">
-                                            <span className="block text-[10.5px] font-black text-[#3b82f6]">팔기</span>
-                                            <span className="block text-[8px] font-bold text-neutral-400">보유</span>
+                                        <span className="leading-[1.2]">
+                                            <span className="block text-[11px] font-bold" style={{ color: "#1d4ed8" }}>팔기</span>
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>보유</span>
                                         </span>
-                                        <div className="grid grid-cols-3 gap-1.5">
+                                        <div className="grid grid-cols-3 gap-1">
                                             {SELL_PARTS.map(part => {
                                                 const n = sellQtyFor(part.pct);
                                                 return (
-                                                    <button key={part.pct} aria-label={`팔기 ${part.label}`}
+                                                    <RetroBtn key={part.pct} tone="sell" aria-label={`팔기 ${part.label}`}
                                                         onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={busy || n < 1}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-[#3b82f6] border border-[#3b82f6]/40 hover:bg-blue-50 dark:hover:bg-[#0b1e3a]/50 disabled:opacity-30 disabled:cursor-not-allowed transition-[background-color,transform] active:scale-[0.96] motion-reduce:active:scale-100 flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
-                                                        <span className="text-[9px] font-bold opacity-70">{n > 0 ? `${n}주` : "—"}</span>
-                                                    </button>
+                                                        <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
+                                                    </RetroBtn>
                                                 );
                                             })}
                                         </div>
-
                                     </div>
 
-                                    {/* ── phase 3 · 시간 ──
+                                    {/* ── 시간 ──
                                         개요에서만 시간이 흐른다. 상세에서 하루가 지나가 버리면 두 번째
                                         종목을 볼 때는 이미 다음 날이라 같은 날 넷을 만질 수 없다. */}
-                                    <div className={cn("grid grid-cols-[34px_1fr] gap-x-2 gap-y-1.5 items-center",
+                                    <div className={cn("grid grid-cols-[38px_1fr] gap-x-1.5 items-center",
                                         holdings.length > 1 && !overview && "hidden")}>
-                                        <span className="text-[10.5px] font-black text-neutral-400">관망</span>
+                                        <span className="text-[11px] font-bold" style={{ color: R.inkDim }}>관망</span>
                                         {canCarry ? (
-                                            <div className="grid grid-cols-2 gap-1.5">
-                                                <button onClick={() => advance(null, true)} disabled={busy}
-                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-[#a1730a] dark:text-[#e3b34a] border border-[#e3b34a]/50 hover:bg-[#faf1dc] dark:hover:bg-[#2a2211] disabled:opacity-40 transition-colors">
-                                                    들고 가기
-                                                </button>
-                                                <button onClick={() => advance(null)} disabled={busy}
-                                                    className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
-                                                    정리하고 끝
-                                                </button>
+                                            <div className="grid grid-cols-2 gap-1">
+                                                <RetroBtn tone="warn" onClick={() => advance(null, true)} disabled={busy}
+                                                    className="min-h-[42px]">들고 가기</RetroBtn>
+                                                <RetroBtn onClick={() => advance(null)} disabled={busy}
+                                                    className="min-h-[42px]">정리하고 끝</RetroBtn>
                                             </div>
                                         ) : (
-                                            // 예약 버튼이 이 줄 끝에 붙는다 — 따로 한 줄을 쓰면 44px 을 먹고,
-                                            // 그만큼이 차트에서 빠진다. 마지막 날에는 걸어도 체결될 날이 없어 안 띄운다.
-                                            <div className="flex gap-1.5">
-                                                <div className="grid grid-cols-3 gap-1.5 flex-1 min-w-0">
-                                                    <button onClick={() => advance(null)} disabled={busy}
-                                                        className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors">
+                                            // 예약 버튼이 이 줄 끝에 붙는다 — 따로 한 줄을 쓰면 그만큼이 차트에서
+                                            // 빠진다. 마지막 날에는 걸어도 체결될 날이 없어 안 띄운다.
+                                            <div className="flex gap-1">
+                                                <div className="grid grid-cols-3 gap-1 flex-1 min-w-0">
+                                                    <RetroBtn onClick={() => advance(null)} disabled={busy} className="min-h-[42px]">
                                                         하루
-                                                    </button>
+                                                    </RetroBtn>
                                                     {SKIP_STEPS.map(n => (
-                                                        <button key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
-                                                            className="min-h-[46px] rounded-xl text-[13px] font-black text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
+                                                        <RetroBtn key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
+                                                            className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                             {n}일
-                                                            <span className="text-[9px] font-bold opacity-60">±{JUMP_STOP_PCT}%면 멈춤</span>
-                                                        </button>
+                                                            <span className="text-[11px] font-normal opacity-70">±{JUMP_STOP_PCT}%면 멈춤</span>
+                                                        </RetroBtn>
                                                     ))}
                                                 </div>
                                                 {isLoggedIn && (
-                                                    <button onClick={() => setReserveOpen(v => !v)}
-                                                        className="shrink-0 min-h-[46px] px-2.5 rounded-xl text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26]">
+                                                    <RetroBtn onClick={() => setReserveOpen(v => !v)} className="shrink-0 min-h-[42px]">
                                                         {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
-                                                        예약 {(round.pending ?? []).length > 0 && <b className="text-[#e3b34a]">{(round.pending ?? []).length}</b>} {reserveOpen ? "▾" : "▸"}
-                                                    </button>
+                                                        예약{(round.pending ?? []).length > 0 && ` ${(round.pending ?? []).length}`} {reserveOpen ? "▾" : "▸"}
+                                                    </RetroBtn>
                                                 )}
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* 예약 — 41일 내내 화면 앞에 앉아 있지 않아도 되게(개선안 ②).
+                                    {/* 예약 — 41일 내내 화면 앞에 앉아 있지 않아도 되게.
                                         체결 판정과 체결가 규칙은 전부 워커에 있다. 여기는 걸고 지우기만 한다.
                                         기본은 접어 둔다 — 폰에서 한 화면이 이미 빡빡하다. */}
                                     {isLoggedIn && (
-                                        <div className={cn("flex flex-col gap-2",
+                                        <div className={cn("flex flex-col gap-1.5",
                                             // 걸어 둔 예약도 없고 접혀 있으면 이 블록은 자리를 차지하지 않는다
                                             !reserveOpen && (round.pending ?? []).length === 0 && "hidden")}>
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                {(round.pending ?? []).map((r, i) => (
-                                                    <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[36px] px-2 rounded-lg text-[10.5px] font-bold bg-[#faf1dc] dark:bg-[#2a2211] text-[#a1730a] dark:text-[#e3b34a]">
-                                                        {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
-                                                        <button onClick={() => unreserve(i)} disabled={busy}
-                                                            className="ml-0.5 px-1 rounded hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-40" aria-label="예약 취소">×</button>
-                                                    </span>
-                                                ))}
-                                            </div>
+                                            {(round.pending ?? []).length > 0 && (
+                                                <div className="flex items-center gap-1 flex-wrap">
+                                                    {(round.pending ?? []).map((r, i) => (
+                                                        <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[28px] px-1.5 text-[11px]"
+                                                            style={{ background: R.faceLo, boxShadow: IN, color: R.ink }}>
+                                                            {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
+                                                            <button onClick={() => unreserve(i)} disabled={busy}
+                                                                className="ml-0.5 px-1 disabled:opacity-40" aria-label="예약 취소"
+                                                                style={{ color: "#9e1414" }}>×</button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                             {reserveOpen && (
-                                                <div className="flex items-center gap-1.5 flex-wrap rounded-xl border border-neutral-200 dark:border-border-subtle-dark p-2">
+                                                <Sunken className="flex items-center gap-1 flex-wrap">
                                                     {RESERVE_KINDS.map(k => (
-                                                        <button key={k.id} onClick={() => setResKind(k.id)} title={k.hint}
-                                                            className={cn("min-h-[32px] px-2.5 rounded-lg text-[10.5px] font-bold border transition-colors",
-                                                                resKind === k.id
-                                                                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                                    : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
+                                                        <RetroBtn key={k.id} size="sm" selected={resKind === k.id}
+                                                            onClick={() => setResKind(k.id)} title={k.hint}>
                                                             {k.label}
-                                                        </button>
+                                                        </RetroBtn>
                                                     ))}
                                                     {/* 값을 적는 대신 지금 값에서 얼마나 떨어진 자리인지로 고른다. */}
                                                     <div className="flex items-center gap-1 w-full">
-                                                        <span className="text-[10px] font-black text-neutral-400 shrink-0 w-8">자리</span>
+                                                        <span className="text-[11px] shrink-0 w-8" style={{ color: R.ink }}>자리</span>
                                                         {(resKind === "take_profit" ? RESERVE_STEPS.up : RESERVE_STEPS.down).map(step => {
                                                             const target = resPriceAt(step);
                                                             return (
-                                                                <button key={step} onClick={() => setResStep(step)}
+                                                                <RetroBtn key={step} selected={resStep === step} onClick={() => setResStep(step)}
                                                                     aria-label={`${resKind === "take_profit" ? "+" : "-"}${step}%`}
-                                                                    className={cn("flex-1 min-h-[34px] rounded-lg text-[11px] font-bold border transition-colors flex flex-col items-center justify-center leading-none gap-0.5",
-                                                                        resStep === step
-                                                                            ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
+                                                                    className="flex-1 min-h-[32px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                                     {resKind === "take_profit" ? "+" : "−"}{step}%
-                                                                    <span className="text-[9px] font-mono opacity-70">{target.toLocaleString()}</span>
-                                                                </button>
+                                                                    <span className="text-[11px] font-normal opacity-70">{target.toLocaleString()}</span>
+                                                                </RetroBtn>
                                                             );
                                                         })}
                                                     </div>
 
                                                     <div className="flex items-center gap-1 w-full">
-                                                        <span className="text-[10px] font-black text-neutral-400 shrink-0 w-8">수량</span>
+                                                        <span className="text-[11px] shrink-0 w-8" style={{ color: R.ink }}>수량</span>
                                                         {(resKind === "buy_limit" ? BUY_PARTS : SELL_PARTS).map(part => {
                                                             const n = resQtyFor(part.pct);
                                                             return (
-                                                                <button key={part.pct} onClick={() => setResPart(part.pct)}
-                                                                    aria-label={`예약 수량 ${part.label}`} disabled={n < 1}
-                                                                    className={cn("flex-1 min-h-[34px] rounded-lg text-[11px] font-bold border transition-colors flex flex-col items-center justify-center leading-none gap-0.5 disabled:opacity-30",
-                                                                        resPart === part.pct
-                                                                            ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark")}>
+                                                                <RetroBtn key={part.pct} selected={resPart === part.pct} disabled={n < 1}
+                                                                    onClick={() => setResPart(part.pct)} aria-label={`예약 수량 ${part.label}`}
+                                                                    className="flex-1 min-h-[32px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                                     {part.label}
-                                                                    <span className="text-[9px] font-mono opacity-70">{n > 0 ? `${n}주` : "—"}</span>
-                                                                </button>
+                                                                    <span className="text-[11px] font-normal opacity-70">{n > 0 ? `${n}주` : "—"}</span>
+                                                                </RetroBtn>
                                                             );
                                                         })}
-                                                        <button onClick={reserve} disabled={busy || resQtyFor(resPart) < 1}
-                                                            className="shrink-0 min-h-[34px] px-3 rounded-lg text-[11px] font-black text-white bg-[#0d2a1a] dark:bg-[#e3b34a] dark:text-[#2a1c00] disabled:opacity-40">
-                                                            걸기
-                                                        </button>
+                                                        <RetroBtn tone="go" onClick={reserve} disabled={busy || resQtyFor(resPart) < 1}
+                                                            className="shrink-0 min-h-[32px]">걸기</RetroBtn>
                                                     </div>
 
-                                                    <span className="text-[10px] text-neutral-400 dark:text-neutral-500 w-full">
+                                                    <span className="text-[11px] w-full leading-[1.6]" style={{ color: R.inkDim }}>
                                                         걸어 둔 값에 그날 가격이 닿으면 체결됩니다. 갭으로 건너뛴 날은 시가로 체결됩니다.
                                                     </span>
-                                                </div>
+                                                </Sunken>
                                             )}
                                         </div>
                                     )}
 
-                                    {/* 폰에서는 이 안내를 접는다 — 같은 말이 시작 화면 "규칙 보기" 에 있고,
-                                        여기 23px 이 차트 높이로 간다. */}
-                                    <p className="hidden sm:block text-[11px] text-neutral-400 dark:text-neutral-500 break-keep leading-[1.7]">
-                                        어느 쪽을 눌러도 하루가 지나갑니다. 그날 종가로 체결되고,
+                                    {/* 폰에서는 이 안내를 접는다 — 같은 말이 준비 화면 "규칙 보기" 에 있고,
+                                        여기 한 줄이 차트 높이로 간다. */}
+                                    <p className="hidden sm:block text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                                        관망 쪽을 누르면 하루가 지나갑니다. 그날 종가로 체결되고,
                                         수수료는 매수·매도 각 0.015%, 매도 시 증권거래세 0.18%입니다.
                                         마지막 날에는 남은 주식이 자동으로 정리됩니다.
                                     </p>
                                 </div>
-                            </SectionPanel>
+                            </Win>
                         )}
 
-                        {round.status === "done" && !isLoggedIn && (
-                            <div className="shrink-0 rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-2.5 text-[12px] sm:text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
-                                <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
-                                하면 이 성적이 회사에 반영됩니다.
-                            </div>
+                        {round.status === "done" && (
+                            <>
+                                {!isLoggedIn && (
+                                    <Win title="체험 운용" className="shrink-0">
+                                        <p className="text-[13px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                                            <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
+                                            하면 이 성적이 회사에 반영되고, 다음 반기를 이어서 굴립니다.
+                                        </p>
+                                    </Win>
+                                )}
+                                <RetroBtn tone="go" size="lg" onClick={reset} className="w-full shrink-0">
+                                    {endedCampaign ? "최종 결과 ▶" : "다음 반기 ▶"}
+                                </RetroBtn>
+                            </>
                         )}
                     </>
                 )}
+
+                {/* ④ 결과(기간 종료) ──────────────────────────
+                    반기 하나하나의 성적은 지난 분기 목록에 있다. 여기서 답할 것은 그보다 큰
+                    질문이다 — N년을 굴려서 회사가 어디로 갔는가. */}
+                {screen === "result" && !round && endedCampaign && (
+                    <CampaignResult campaign={endedCampaign} firm={firm} history={history}
+                        habits={habits} bestReturn={bestReturn} onClear={() => setEndedCampaign(null)} />
+                )}
             </div>
         </div>
+    );
+}
+
+/** 계좌 창의 한 칸. 파인 자리 = 읽는 곳. */
+function AcctCell({ k, v, sub, tone }: { k: string; v: string; sub?: string; tone?: string }) {
+    return (
+        <Sunken className="px-2 py-1.5">
+            <div className="text-[11px] truncate" style={{ color: R.inkDim }}>{k}</div>
+            <div className={cn("text-[11px] font-bold tabular-nums truncate", tone)} style={tone ? undefined : { color: R.ink }}>{v}</div>
+            {sub && <div className="text-[11px] truncate" style={{ color: R.inkDim }}>{sub}</div>}
+        </Sunken>
     );
 }
 
@@ -1343,15 +1295,15 @@ function habitLine(h: RoundHabits): string {
 /** 습관 한 줄. 표본이 없으면 그 줄만 "아직 알 수 없음" 으로 둔다 — 카드를 통째로 숨기지 않는다. */
 function HabitRow({ label, value, note }: { label: string; value: string | null; note?: string }) {
     return (
-        <li className="flex items-baseline gap-2">
-            <span className="w-8 shrink-0 text-[10px] font-black uppercase tracking-wider text-neutral-400">{label}</span>
+        <li className="flex items-baseline gap-2 text-[11px]">
+            <span className="w-8 shrink-0 font-bold" style={{ color: R.inkDim }}>{label}</span>
             {value !== null ? (
                 <>
-                    <span className="font-bold text-neutral-900 dark:text-white">{value}</span>
-                    {note && <span className="text-[11px] text-neutral-400 truncate">{note}</span>}
+                    <span className="font-bold" style={{ color: R.ink }}>{value}</span>
+                    {note && <span className="truncate" style={{ color: R.inkDim }}>{note}</span>}
                 </>
             ) : (
-                <span className="text-neutral-400">아직 알 수 없음{note ? ` — ${note}` : ""}</span>
+                <span style={{ color: R.inkDim }}>아직 알 수 없음{note ? ` — ${note}` : ""}</span>
             )}
         </li>
     );
@@ -1359,7 +1311,7 @@ function HabitRow({ label, value, note }: { label: string; value: string | null;
 
 // ─────────────────────────────────────────────────────────
 /**
- * phase 4 — 기간 종료 리포트.
+ * ④ 결과 — 기간이 끝났다.
  *
  * 반기 하나하나의 성적은 이미 지난 분기 목록에 있다. 여기서 답할 것은 그보다 큰 질문이다:
  * **N년을 굴려서 회사가 어디로 갔는가.** 그래서 맡은 돈의 시작과 끝, 등급, 벌어들인 보수,
@@ -1367,7 +1319,7 @@ function HabitRow({ label, value, note }: { label: string; value: string | null;
  *
  * 숫자는 전부 서버가 남긴 값이다 — 규칙이 바뀌어도 지난 기록은 그때 값 그대로여야 한다.
  */
-function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
+function CampaignResult({ campaign, firm, history, habits, bestReturn, onClear }: {
     campaign: Campaign; firm: Firm | null; history: ReplayHistoryItem[];
     habits: HabitSummary | null; bestReturn: number | null; onClear: () => void;
 }) {
@@ -1398,72 +1350,88 @@ function FinalReport({ campaign, firm, history, habits, bestReturn, onClear }: {
         if (peak > 0) worst = Math.min(worst, ((v - peak) / peak) * 100);
     }
 
-    const Cell = ({ k, v, tone }: { k: string; v: string; tone?: string }) => (
-        <div>
-            <p className="text-[9.5px] font-black uppercase tracking-wider text-neutral-400 mb-0.5">{k}</p>
-            <b className={cn("font-mono text-[13px] sm:text-[15px]", tone ?? "text-neutral-900 dark:text-white")}>{v}</b>
-        </div>
-    );
+    /**
+     * 기록 경신 — 이 기간 안에서 역대 최고 반기가 나왔나.
+     *
+     * `bestReturn` 은 역대 최고이고 `rows` 는 이 기간의 반기들이니, 이 기간 최고가
+     * 역대 최고와 같으면 여기서 세운 기록이다. 목록이 기간 전체를 못 덮을 수 있어
+     * 놓치는 쪽(안 띄우는 쪽)으로만 틀린다 — 없는 기록을 축하하지는 않는다.
+     */
+    const bestHere = seen ? Math.max(...rows.map(h => h.final_return ?? 0)) : null;
+    const newRecord = bestReturn !== null && bestHere !== null && bestHere >= bestReturn - 1e-9;
 
     return (
-        <SectionPanel className="p-4 sm:p-5 border-2 border-[#e3b34a]/60 pop-in">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a]">
-                {campaign.years}년 운용 종료 · {campaign.total_halves}반기
-            </p>
-
-            {/* 이 카드가 답할 질문은 하나다 — N년을 굴려서 회사가 어디로 갔는가. */}
-            <div className="mt-1.5 flex items-end justify-between gap-3 flex-wrap">
-                <h2 className="text-[19px] sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white font-mono">
-                    {fmtMoney(startAum)} <span className="text-neutral-400">→</span>{" "}
-                    <span className={pnlText(grown)}>{fmtMoney(aum)}</span>
-                </h2>
-                {cagr !== null && (
-                    <span className={cn("font-mono font-black text-[15px] sm:text-lg", pnlText(cagr >= 0))}>
-                        연 {pct(cagr)}
-                    </span>
-                )}
-            </div>
-            <p className="mt-1 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
-                {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터 {campaign.years}년 ·{" "}
-                {rankOf(startAum)} → {firm?.rank ?? rankOf(aum)}
-                {!whole && seen > 0 && ` · 아래 숫자는 기록에 남은 ${seen}반기 기준입니다`}
-            </p>
+        <>
+            <Win tone="neon" title="GAME OVER — RESULTS"
+                right={`${campaign.years}년 · ${campaign.total_halves}반기`} className="pop-in">
+                {/* 이 화면이 답할 질문은 하나다 — N년을 굴려서 회사가 어디로 갔는가. */}
+                <Crt className="px-3 py-3">
+                    <p className="text-[11px]" style={{ color: `${R.inkHi}99` }}>맡은 돈</p>
+                    <p className="text-[22px] sm:text-[33px] leading-tight font-bold tabular-nums" style={{ color: R.inkHi }}>
+                        {fmtMoney(startAum)} <span style={{ color: `${R.inkHi}66` }}>→</span>{" "}
+                        <span className={pnlLit(grown)}>{fmtMoney(aum)}</span>
+                    </p>
+                    {cagr !== null && (
+                        <p className={cn("mt-1 text-[11px] font-bold tabular-nums", pnlLit(cagr >= 0))}>
+                            연 {pct(cagr)}
+                        </p>
+                    )}
+                </Crt>
+                <p className="mt-1.5 text-[11px] break-keep leading-[1.7]" style={{ color: R.ink }}>
+                    {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터 {campaign.years}년 ·{" "}
+                    {rankOf(startAum)} → {firm?.rank ?? rankOf(aum)}
+                    {!whole && seen > 0 && ` · 아래 숫자는 기록에 남은 ${seen}반기 기준입니다`}
+                </p>
+            </Win>
 
             {seen > 1 && (
-                <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark">
+                <Win title="PROFIT / LOSS GRAPH">
                     <MoneyCurve history={history.filter(h => h.campaign_id === campaign.id)} />
-                </div>
+                </Win>
             )}
 
-            <div className="mt-1 grid grid-cols-3 gap-2 sm:gap-3">
-                <Cell k="벤치마크 이김" v={seen ? `${beats}/${seen}반기` : "—"} />
-                <Cell k="최대 낙폭" v={seen ? pct(worst) : "—"} tone={pnlText(false)} />
-                <Cell k="회사 금고" v={fmtMoney(firm?.cash ?? 0)} />
-            </div>
+            <Win title="TOTAL WEALTH STATISTICS">
+                <Sunken className="flex flex-col">
+                    <StatLine label="최종 맡은 돈" value={fmtMoney(aum)} />
+                    <StatLine label="연평균" value={cagr !== null ? pct(cagr) : "—"}
+                        tone={cagr !== null ? (cagr >= 0 ? "#9e1414" : "#1d4ed8") : undefined} />
+                    <StatLine label="벤치마크 이김" value={seen ? `${beats}/${seen}반기` : "—"} />
+                    <StatLine label="최대 낙폭" value={seen ? pct(worst) : "—"} tone="#1d4ed8" />
+                    <StatLine label="가장 잘한 반기" value={bestReturn !== null ? pct(bestReturn) : "—"}
+                        tone={bestReturn !== null ? (bestReturn >= 0 ? "#9e1414" : "#1d4ed8") : undefined} />
+                    <StatLine label="총 체결" value={(habits?.trades ?? 0) > 0 ? `${habits!.trades}회` : "—"} />
+                    <StatLine label="회사 금고" value={fmtMoney(firm?.cash ?? 0)} />
+                    <StatLine label="등급" value={firm?.rank ?? rankOf(aum)} mono={false} />
+                </Sunken>
 
-            {(habits?.trades ?? 0) > 0 && (
-                <p className="mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark text-[11.5px] sm:text-[12.5px] text-neutral-500 dark:text-neutral-400 break-keep">
-                    {[`체결 ${habits!.trades}회`,
-                        habits!.holdDays !== null ? `평균 ${habits!.holdDays}일 보유` : null,
-                        habits!.chaseRatio !== null ? `오른 뒤 매수 ${habits!.chaseRatio}%` : null,
-                    ].filter(Boolean).join(" · ")}
-                    {habits!.disposition !== null && (
-                        <span className="text-[#a1730a] dark:text-[#e3b34a] font-bold">
-                            {" · "}{habits!.disposition > 0 ? "이익을 빨리 실현하는 편" : habits!.disposition < 0 ? "손실을 빨리 정리하는 편" : "양쪽이 비슷"}
-                        </span>
-                    )}
-                    {bestReturn !== null && <>{" · "}가장 잘한 반기 <b className={pnlText(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
+                {(habits?.trades ?? 0) > 0 && (
+                    <p className="mt-1.5 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                        {[habits!.holdDays !== null ? `평균 ${habits!.holdDays}일 보유` : null,
+                            habits!.chaseRatio !== null ? `오른 뒤 매수 ${habits!.chaseRatio}%` : null,
+                        ].filter(Boolean).join(" · ")}
+                        {habits!.disposition !== null && (
+                            <span className="font-bold" style={{ color: "#7a4f00" }}>
+                                {habits!.holdDays !== null || habits!.chaseRatio !== null ? " · " : ""}
+                                {habits!.disposition > 0 ? "이익을 빨리 실현하는 편" : habits!.disposition < 0 ? "손실을 빨리 정리하는 편" : "양쪽이 비슷"}
+                            </span>
+                        )}
+                    </p>
+                )}
+            </Win>
+
+            {newRecord && (
+                <p className={cn(PIXEL, "text-center text-[22px] font-bold")} style={{ color: R.pink }}>
+                    <Blink>★ NEW RECORD ★</Blink>
                 </p>
             )}
 
-            <button onClick={onClear}
-                className="mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[46px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] text-[#2a1c00] font-black text-[14px]">
-                <Play size={15} strokeWidth={2.6} /> 새 기간 고르기
-            </button>
-            <p className="mt-1.5 text-[10.5px] text-neutral-400 break-keep">
+            <RetroBtn tone="go" size="lg" onClick={onClear} className="w-full inline-flex items-center justify-center gap-2">
+                <Play size={15} strokeWidth={2.6} /> RESTART — 새 기간 고르기
+            </RetroBtn>
+            <p className="text-[11px] break-keep text-center" style={{ color: `${R.inkHi}80` }}>
                 회사는 그대로입니다 — 맡은 돈과 리서치실 도구를 가지고 다음 기간을 시작합니다.
             </p>
-        </SectionPanel>
+        </>
     );
 }
 
@@ -1482,16 +1450,17 @@ function MoneyFlowNote() {
 
     const Row = ({ k, v }: { k: string; v: string }) => (
         <li className="flex gap-2 break-keep">
-            <span className="shrink-0 w-[52px] text-neutral-400">{k}</span>
-            <span className="text-neutral-600 dark:text-neutral-300">{v}</span>
+            <span className="shrink-0 w-[56px]" style={{ color: R.inkDim }}>{k}</span>
+            <span style={{ color: R.ink }}>{v}</span>
         </li>
     );
 
     return (
-        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2.5 text-[11.5px] sm:text-[13px] leading-[1.6]">
+        <div className="mt-2 pt-2 border-t flex flex-col gap-2.5 text-[11px] leading-[1.75]"
+            style={{ borderColor: `${R.ink}30` }}>
             <div>
-                <p className="font-black text-neutral-900 dark:text-white mb-1">고객 돈은 왜 늘고 줄까</p>
-                <p className="text-neutral-500 dark:text-neutral-400 break-keep">
+                <p className="font-bold mb-1" style={{ color: R.ink }}>고객 돈은 왜 늘고 줄까</p>
+                <p className="break-keep" style={{ color: R.inkDim }}>
                     고객은 벤치마크(그냥 사서 들고 있기)와 견줘서 돈을 맡기거나 뺍니다.
                     지수만큼도 못 벌면 굳이 나에게 맡길 이유가 없고, 덜 잃었어도 잃은 건 잃은 겁니다.
                 </p>
@@ -1506,7 +1475,7 @@ function MoneyFlowNote() {
                 </ul>
             </div>
             <div>
-                <p className="font-black text-neutral-900 dark:text-white mb-1">내 회사 돈(보수)은 어디서 나오나</p>
+                <p className="font-bold mb-1" style={{ color: R.ink }}>내 회사 돈(보수)은 어디서 나오나</p>
                 <ul className="flex flex-col gap-1">
                     <Row k="운용보수" v={`맡은 돈 × ${(BASE_FEE_BP / 100).toFixed(2)}% — 성적과 무관하게 분기마다 (연 ${(BASE_FEE_BP * 4 / 100).toFixed(0)}%)`} />
                     <Row k="성과보수" v={`맡은 돈 × 초과수익(%p) × ${PERF_FEE_PCT}% — 벤치마크를 이겼을 때만`} />
@@ -1526,19 +1495,19 @@ function Fold({ icon, title, subtitle, children }: {
     icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode;
 }) {
     return (
-        <SectionPanel className="p-3.5 sm:p-5">
+        <div style={{ background: R.face, boxShadow: OUT }} className="p-2">
             <details className="group">
-                <summary className="cursor-pointer list-none flex items-center gap-2.5">
-                    <span className="p-1.5 bg-surface-canvas dark:bg-surface-dark-muted rounded-lg text-neutral-500 dark:text-neutral-400 shrink-0">{icon}</span>
+                <summary className="cursor-pointer list-none flex items-center gap-2">
+                    <span className="p-1 shrink-0" style={{ background: R.faceLo, boxShadow: IN, color: R.inkHi }}>{icon}</span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[14px] font-black text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</span>
-                        <span className="block text-[11px] text-neutral-500 truncate">{subtitle}</span>
+                        <span className="block text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: R.ink }}>{title}</span>
+                        <span className="block text-[11px] truncate" style={{ color: R.inkDim }}>{subtitle}</span>
                     </span>
-                    <ChevronDown size={16} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" />
+                    <ChevronDown size={14} className="shrink-0 transition-transform group-open:rotate-180" style={{ color: R.inkDim }} />
                 </summary>
-                <div className="mt-3.5 pt-3.5 border-t border-neutral-100 dark:border-border-subtle-dark/80">{children}</div>
+                <div className="mt-2 pt-2 border-t" style={{ borderColor: `${R.ink}30` }}>{children}</div>
             </details>
-        </SectionPanel>
+        </div>
     );
 }
 
@@ -1560,23 +1529,23 @@ function PastHalf({ h }: { h: ReplayHistoryItem }) {
                 {/* 이월한 분기는 아직 그 회사를 들고 있다 — 목록에서도 열지 않는다.
                     여기서 열면 이어지는 판이 블라인드가 아니게 된다. */}
                 {h.carried ? (
-                    <div className="font-bold text-[#a1730a] dark:text-[#e3b34a] truncate flex items-center gap-1">
-                        <EyeOff size={13} className="shrink-0" /> 아직 들고 있음
+                    <div className="font-bold truncate flex items-center gap-1 text-[11px]" style={{ color: "#7a4f00" }}>
+                        <EyeOff size={12} className="shrink-0" /> 아직 들고 있음
                     </div>
                 ) : (
-                    <div className="font-bold text-neutral-900 dark:text-white truncate">{h.name ?? h.ticker}</div>
+                    <div className="font-bold truncate text-[11px]" style={{ color: R.ink }}>{h.name ?? h.ticker}</div>
                 )}
-                {/* 한 줄로 끊는다 — 모바일에서 이 줄이 접히면 카드 하나가 세 줄이 된다.
+                {/* 한 줄로 끊는다 — 모바일에서 이 줄이 접히면 한 칸이 세 줄이 된다.
                     자리 기록이 있으면 "정리하면 열립니다"를 빼는데, 어느 자리가 아직 열려
                     있는지는 펼치면 자리마다 나오기 때문이다(같은 말을 두 번 적지 않는다). */}
-                <div className="text-[11px] text-neutral-400 font-mono truncate">
+                <div className="text-[11px] tabular-nums truncate" style={{ color: R.inkDim }}>
                     {h.carried ? `${fmtDate(h.start_date)} ~` : `${fmtDate(h.start_date)} ~ ${fmtDate(h.end_date)}`}
                     {stocks.length === 0 && h.carried ? " · 정리하면 열립니다" : ""}
                 </div>
             </div>
             <div className="text-right shrink-0">
-                <div className={cn("font-mono text-xs font-black", pnlText(win))}>{pct(h.final_return ?? 0)}</div>
-                <div className="text-[11px] text-neutral-400">
+                <div className={cn("text-[11px] font-bold tabular-nums", pnlText(win))}>{pct(h.final_return ?? 0)}</div>
+                <div className="text-[11px]" style={{ color: R.inkDim }}>
                     벤치마크 {pct(h.bh_return ?? 0)}
                     {h.aum_after !== null && (
                         <span className={cn("ml-1 font-bold", pnlText(flow >= 0))}>
@@ -1597,7 +1566,7 @@ function PastHalf({ h }: { h: ReplayHistoryItem }) {
             <details className="group/half">
                 <summary className="cursor-pointer list-none flex items-center justify-between gap-2 py-2.5">
                     {head}
-                    <ChevronDown size={14} className="shrink-0 text-neutral-400 transition-transform group-open/half:rotate-180" />
+                    <ChevronDown size={13} className="shrink-0 transition-transform group-open/half:rotate-180" style={{ color: R.inkDim }} />
                 </summary>
                 <ul className="pb-2.5 flex flex-col gap-1">
                     {stocks.map(s => <PastStock key={s.slot} s={s} />)}
@@ -1611,18 +1580,18 @@ function PastHalf({ h }: { h: ReplayHistoryItem }) {
 function PastStock({ s }: { s: HistoryStock }) {
     const rate = s.invested > 0 ? (s.realized / s.invested) * 100 : null;
     return (
-        <li className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-surface-canvas dark:bg-[#2c2a26]/60">
+        <li className="flex items-center justify-between gap-2 px-1.5 py-1" style={{ background: R.faceLo, boxShadow: IN }}>
             <span className="flex items-center gap-1.5 min-w-0">
-                <span className="w-[17px] h-[12px] rounded-[3px] overflow-hidden shrink-0">
+                <span className="w-[17px] h-[12px] overflow-hidden shrink-0">
                     <SectorSprite sector={s.sector ?? undefined} color={sectorAccent(s.sector ?? undefined)} />
                 </span>
                 {/* 이월한 자리는 다음 판에서 아직 굴리는 중이라 이름을 못 연다 */}
                 {s.carried ? (
-                    <span className="truncate text-[12px] font-bold text-[#a1730a] dark:text-[#e3b34a] flex items-center gap-1">
+                    <span className="truncate text-[11px] font-bold flex items-center gap-1" style={{ color: "#7a4f00" }}>
                         <EyeOff size={11} className="shrink-0" /> 들고 감
                     </span>
                 ) : (
-                    <span className="truncate text-[12px] font-bold text-neutral-800 dark:text-neutral-100">
+                    <span className="truncate text-[11px] font-bold" style={{ color: R.ink }}>
                         {s.name ?? s.sector ?? `${s.slot + 1}번`}
                     </span>
                 )}
@@ -1630,15 +1599,15 @@ function PastStock({ s }: { s: HistoryStock }) {
             <span className="shrink-0 text-right">
                 {s.invested > 0 ? (
                     <>
-                        <span className={cn("font-mono text-[12px] font-black", pnlText(s.realized >= 0))}>
+                        <span className={cn("text-[11px] font-bold tabular-nums", pnlText(s.realized >= 0))}>
                             {s.realized >= 0 ? "+" : "−"}{fmtMoney(Math.abs(s.realized))}
                         </span>
-                        <span className="ml-1.5 text-[10px] text-neutral-400 font-mono">
+                        <span className="ml-1.5 text-[11px] tabular-nums" style={{ color: R.inkDim }}>
                             {rate !== null && `${pct(rate)} · `}{s.trades}번
                         </span>
                     </>
                 ) : (
-                    <span className="text-[10px] text-neutral-400">안 삼</span>
+                    <span className="text-[11px]" style={{ color: R.inkDim }}>안 삼</span>
                 )}
             </span>
         </li>
@@ -1646,212 +1615,362 @@ function PastStock({ s }: { s: HistoryStock }) {
 }
 
 // ─────────────────────────────────────────────────────────
-/** 회사 대시보드 — 판이 없을 때. 시작 버튼까지 한 화면에 들어와야 한다. */
-function FirmDashboard({
-    onStart, busy, isLoggedIn, firm, bestReturn, history, habits, onBuy, activeTools, onToggle,
-    campaign, endedCampaign, onOpenCampaign, onClearEnded,
+/**
+ * 시작 화면 뒤에 깔리는 그림 — 픽셀 봉차트 능선.
+ *
+ * 사람 그림 대신 이걸 두는 이유는 두 가지다. 하나는 이 게임이 실제로 보여 주는 것이
+ * 캔들이라는 것이고, 다른 하나는 그림 파일을 늘리지 않고 끝난다는 것이다.
+ *
+ * 값은 손으로 적은 고정 배열이다 — 무작위로 만들면 서버가 그린 것과 브라우저가 그린 것이
+ * 달라 하이드레이션에서 어긋난다.
+ */
+const TITLE_CANDLES = [
+    [3, 7], [5, 9], [4, 11], [8, 13], [6, 10], [9, 15], [12, 18], [10, 16],
+    [13, 20], [11, 17], [14, 22], [17, 25], [15, 21], [12, 19], [16, 24],
+    [19, 28], [22, 31], [20, 27], [23, 33], [26, 36], [24, 32], [27, 38],
+] as const;
+
+function TitleArt() {
+    const W = TITLE_CANDLES.length * 6;
+    return (
+        // 아래 절반에만 깔고 흐리게 둔다. 글자 뒤로 봉이 지나가면 한글 획과 봉의 몸통이
+        // 뒤엉켜 둘 다 안 읽힌다 — 배경은 배경으로 남아야 한다.
+        <svg viewBox={`0 0 ${W} 40`} width="100%" height="55%" preserveAspectRatio="none"
+            aria-hidden className="absolute inset-x-0 bottom-0 opacity-[0.16]">
+            {TITLE_CANDLES.map(([lo, hi], i) => {
+                const up = i === 0 || hi >= TITLE_CANDLES[i - 1][1];
+                return (
+                    <rect key={i} x={i * 6 + 1} y={40 - hi} width={4} height={Math.max(1, hi - lo)}
+                        fill={up ? UP_COLOR : DOWN_COLOR} />
+                );
+            })}
+        </svg>
+    );
+}
+
+/**
+ * ① 시작.
+ *
+ * 여기서 할 수 있는 일은 하나다 — 들어가기. 예전 대시보드는 이 자리에서 기간도 고르고
+ * 도구도 사고 지난 성적도 봤는데, 그러면 "무엇을 하는 화면인가"가 상태마다 달라진다.
+ *
+ * 다만 이어서 굴리는 사람에게는 여기가 리셋처럼 보이면 안 되므로, 회사가 어디까지 왔는지
+ * 한 칸으로 적어 둔다.
+ */
+function TitleScreen({ isLoggedIn, firm, campaign, bestReturn, onEnter }: {
+    isLoggedIn: boolean; firm: Firm | null; campaign: Campaign | null;
+    bestReturn: number | null; onEnter: () => void;
+}) {
+    // "아무 키나 누르세요" 는 적어만 두면 거짓말이 된다 — 실제로 듣는다.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            // 탭 이동 중이거나 조합키를 누른 것은 "아무 키"가 아니다.
+            if (e.key === "Tab" || e.metaKey || e.ctrlKey || e.altKey) return;
+            onEnter();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onEnter]);
+
+    return (
+        <Win title="IDIOTQUANT ARCADE" right="1998" className="pop-in">
+            <Crt className="px-4 py-8 sm:py-14 flex flex-col items-center text-center">
+                <TitleArt />
+                <div className="relative">
+                    <p className="text-[11px] tracking-[0.3em]" style={{ color: `${R.inkHi}99` }}>STOCK TRADING SIMULATION</p>
+                    <h1 className="mt-2 text-[33px] sm:text-[44px] leading-none font-bold"
+                        style={{ color: R.neon, textShadow: `0 0 12px ${R.neon}66, 3px 3px 0 #0a1013` }}>
+                        내 운용사
+                    </h1>
+                    <p className="mt-2 text-[11px] tracking-[0.2em]" style={{ color: R.pink }}>BLIND CHART REPLAY</p>
+
+                    <p className="mt-6 text-[11px] leading-[1.9] break-keep max-w-[22em] mx-auto" style={{ color: `${R.inkHi}cc` }}>
+                        어느 종목인지, 언제인지 모르는 차트를 하루씩 넘기며 사고팝니다.
+                        <br />반기 성적이 맡은 돈에 곱해지고, 고객이 돈을 맡기거나 빼갑니다.
+                    </p>
+
+                    <RetroBtn tone="go" size="lg" onClick={onEnter} className="mt-7 min-w-[180px]">
+                        START
+                    </RetroBtn>
+                    <p className="mt-3 text-[11px]" style={{ color: `${R.inkHi}88` }}>
+                        <Blink>PRESS ANY KEY</Blink>
+                    </p>
+                </div>
+            </Crt>
+
+            {/* 이어하기 — 이 화면이 처음부터 다시 시작하는 자리가 아니라는 것을 말해 준다. */}
+            <div className="mt-1.5">
+                {isLoggedIn ? (
+                    <Sunken className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]" >
+                        <span style={{ color: `${R.inkHi}99` }}>SAVE DATA</span>
+                        <span style={{ color: R.inkHi }}>{firm?.name ?? "내 운용사"}</span>
+                        <span style={{ color: R.amber }}>{firm?.rank ?? rankOf(firm?.aum ?? INITIAL_AUM)}</span>
+                        <span className="tabular-nums" style={{ color: R.inkHi }}>{fmtMoney(firm?.aum ?? INITIAL_AUM)}</span>
+                        <span className="tabular-nums" style={{ color: `${R.inkHi}99` }}>{firm?.quarters ?? 0}반기</span>
+                        {bestReturn !== null && (
+                            <span className={cn("tabular-nums", pnlLit(bestReturn >= 0))}>최고 {pct(bestReturn)}</span>
+                        )}
+                        {campaign && (
+                            <span className="tabular-nums ml-auto" style={{ color: R.neon }}>
+                                {campaign.years}년 {campaign.done_halves}/{campaign.total_halves}반기 진행 중
+                            </span>
+                        )}
+                    </Sunken>
+                ) : (
+                    <Sunken className="text-[11px] leading-[1.8] break-keep" style={{ color: R.inkHi }}>
+                        <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold" style={{ color: R.neon }}>로그인</Link>
+                        하면 내 운용사가 생기고, 성적이 고객 자금과 보수로 쌓입니다.
+                        로그인 없이도 한 판은 그대로 굴려 볼 수 있습니다.
+                    </Sunken>
+                )}
+            </div>
+        </Win>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
+/**
+ * ② 준비 — 목업의 GAME SETUP.
+ *
+ * 목업은 여기서 종목을 고르지만 이 게임은 종목을 가린 채로 하는 게임이라, 그 자리에는
+ * **어떤 자리에서 시작할지**(급락 뒤·횡보·고점 근처)를 놓는다. 고를 수 있는 것 중에
+ * 정답을 새지 않는 것은 그것뿐이다 — 성격은 서버가 컨텍스트 구간만 보고 붙인다.
+ *
+ * 굴릴 돈도 목업처럼 눈금으로 고를 수는 없다. 그 값은 회사가 지금까지 벌어 온 결과라
+ * 여기서 정하는 것이 아니다. 눈금 대신 읽는 칸으로 둔다.
+ */
+function SetupScreen({
+    isLoggedIn, busy, firm, campaign, history, habits,
+    activeTools, onOpenCampaign, onStart, onBuyTool, onToggleTool, onBack,
 }: {
-    onStart: (scenario?: string | null) => void; busy: boolean; isLoggedIn: boolean;
-    firm: Firm | null; bestReturn: number | null; history: ReplayHistoryItem[];
-    habits: HabitSummary | null;
-    onBuy: (id: string) => void; activeTools: string[]; onToggle: (id: string) => void;
-    campaign: Campaign | null; endedCampaign: Campaign | null;
-    onOpenCampaign: (years: number) => void; onClearEnded: () => void;
+    isLoggedIn: boolean; busy: boolean; firm: Firm | null; campaign: Campaign | null;
+    history: ReplayHistoryItem[]; habits: HabitSummary | null; activeTools: string[];
+    onOpenCampaign: (years: number) => void;
+    onStart: (scenario?: string | null) => void;
+    onBuyTool: (id: string) => void;
+    onToggleTool: (id: string) => void;
+    onBack: () => void;
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
     const owned = firm?.tools ?? [];
     // 고른 판 성격. null 이면 아무 자리나.
     const [want, setWant] = useState<string | null>(null);
+    // 기간 눈금. 캠페인을 열기 전까지만 뜻이 있다.
+    const [years, setYears] = useState<number>(YEAR_CHOICES[0]);
+
+    // 이월이 있으면 자리를 고를 수 없다 — 이미 들고 있는 회사로 이어 가는 판이다.
+    const canPickScenario = isLoggedIn && !!campaign && !firm?.carry?.length;
 
     return (
         <>
-            <header>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a1730a] dark:text-[#e3b34a] mb-1.5">
-                    {isLoggedIn ? firm?.rank ?? rankOf(aum) : "체험 운용"}
-                </p>
-                <h1 className="text-xl sm:text-3xl font-black text-neutral-900 dark:text-white break-keep">
-                    {firm?.name ?? "내 운용사"}
-                </h1>
-                {/* 아래 규칙·수치와 같은 말이라, 화면이 좁으면 접는다 */}
-                <p className="hidden sm:block text-[13px] sm:text-[15px] text-neutral-500 dark:text-neutral-400 mt-3 leading-[1.8] break-keep max-w-md">
-                    맡은 돈을 반기마다 굴립니다. 번 만큼 다음 반기가 커집니다.
-                    고객은 그 성적을 보고 돈을 맡기거나 뺍니다.
-                </p>
-            </header>
+            <Win title="GAME SETUP" onClose={onBack} closeLabel="시작 화면으로" className="pop-in">
+                {/* ── 이번 판이 어떤 판인가 ──────────────────────
+                    로그인 전에는 고를 수 있는 것이 하나도 없다(기간도 자리도 회사가 있어야
+                    생긴다). 그렇다고 시작 버튼만 놓인 빈 창을 준비 화면이라 부를 수는 없어서,
+                    무엇을 하러 들어가는지를 여기서 알려 준다. */}
+                <Win title="이번 판 / BRIEFING" className="mb-1.5">
+                    <Sunken className="flex flex-col">
+                        <StatLine label="굴릴 돈" value={isLoggedIn ? fmtMoney(aum) : fmtKrw(SEED)} />
+                        <StatLine label="판 길이"
+                            value={isLoggedIn ? "달력 45일" : `${TOTAL_DAYS}거래일`} />
+                        <StatLine label="먼저 보는 구간"
+                            value={isLoggedIn ? "앞 한 달" : `앞 ${CONTEXT_DAYS}일`} />
+                        <StatLine label="가려진 것" value="종목명 · 시기" mono={false} />
+                    </Sunken>
 
-            {!isLoggedIn && (
-                <div className="rounded-2xl border border-[#e3b34a]/40 bg-[#fdf6e9] dark:bg-[#1c1608] px-4 py-3 text-[13px] text-[#8a6206] dark:text-[#e3b34a] break-keep">
-                    <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
-                    하면 내 운용사가 생기고, 성적이 고객 자금과 보수로 쌓입니다.
-                </div>
-            )}
+                    {!isLoggedIn && (
+                        <>
+                            <p className="mt-1.5 mb-1 text-[11px] font-bold" style={{ color: R.inkDim }}>
+                                로그인하면 열립니다
+                            </p>
+                            <div className="grid grid-cols-2 gap-1">
+                                {[`기간 선택 (${YEAR_CHOICES[0]}~${YEAR_CHOICES[YEAR_CHOICES.length - 1]}년)`,
+                                    "시작할 자리 고르기", "리서치실 도구", "성적 · 매매 습관 기록",
+                                ].map(x => (
+                                    <div key={x} className="flex items-center gap-1 px-1.5 py-1.5 text-[11px]"
+                                        style={{ background: R.faceLo, boxShadow: IN, color: R.inkDim }}>
+                                        <Lock size={11} className="shrink-0" />
+                                        <span className="truncate">{x}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="mt-1.5 text-[11px] leading-[1.8] break-keep" style={{ color: R.ink }}>
+                                <Link href="/login?callbackUrl=%2Fgame" className="underline font-bold">로그인</Link>
+                                하지 않아도 아래에서 한 판은 그대로 굴려 볼 수 있습니다. 다만 기록은 남지 않습니다.
+                            </p>
+                        </>
+                    )}
+                </Win>
 
-            <SectionPanel className="p-3 sm:p-5">
+                {/* ── 자리 고르기 (목업의 ASSET SELECTION) ────────── */}
+                {canPickScenario && (
+                    <Win title="자리 선택 / SCENARIO" className="mb-1.5">
+                        <div className="grid grid-cols-2 gap-1">
+                            {[{ id: null, label: "아무 자리나", hint: "서버가 뽑는 대로" }, ...SCENARIOS].map(sc => (
+                                <RetroBtn key={sc.id ?? "any"} selected={want === sc.id} disabled={busy}
+                                    onClick={() => setWant(sc.id)} title={sc.hint}
+                                    className="min-h-[42px] flex items-center gap-1.5 justify-start text-left normal-case">
+                                    {/* 고른 줄에만 커서를 둔다 — 이 시대 메뉴가 그랬다 */}
+                                    <span className="w-[8px] shrink-0" style={{ color: R.ink }}>{want === sc.id ? "▶" : ""}</span>
+                                    <span className="min-w-0">
+                                        <span className="block truncate">{sc.label}</span>
+                                        <span className="block text-[11px] font-normal truncate" style={{ color: R.inkDim }}>{sc.hint}</span>
+                                    </span>
+                                </RetroBtn>
+                            ))}
+                        </div>
+                        <p className="mt-1 text-[11px] break-keep" style={{ color: R.inkDim }}>
+                            고른 자리가 안 나오면 만들어진 판으로 시작합니다.
+                        </p>
+                    </Win>
+                )}
+
+                {/* ── 기간 (목업의 PERIOD SELECTION) ──────────────── */}
+                {isLoggedIn && (
+                    <Win title="기간 선택 / PERIOD" className="mb-1.5">
+                        {!campaign ? (
+                            <>
+                                <div className="flex items-baseline justify-between gap-2 text-[11px] mb-1">
+                                    <span style={{ color: R.ink }}>굴릴 기간</span>
+                                    <span className="font-bold tabular-nums" style={{ color: R.ink }}>
+                                        {years}년 · {totalHalves(years)}반기
+                                    </span>
+                                </div>
+                                {/* 눈금은 연수 목록의 **자리 번호**를 움직인다. 1·3·5·10 처럼 띄엄띄엄한
+                                    값이라 연수 자체를 min/max 로 두면 목록에 없는 해에 손잡이가 선다. */}
+                                <PixelSlider
+                                    id="setup-years"
+                                    min={0} max={YEAR_CHOICES.length - 1} step={1}
+                                    value={Math.max(0, YEAR_CHOICES.indexOf(years))}
+                                    onChange={(i) => setYears(YEAR_CHOICES[i] ?? YEAR_CHOICES[0])}
+                                    leftLabel={`${YEAR_CHOICES[0]}년`}
+                                    rightLabel={`${YEAR_CHOICES[YEAR_CHOICES.length - 1]}년`}
+                                    valueText={`${years}년`}
+                                    disabled={busy}
+                                />
+                                <div className="flex items-baseline justify-between gap-2 text-[11px] mt-2">
+                                    <span style={{ color: R.ink }}>굴릴 돈</span>
+                                    <span className="font-bold tabular-nums" style={{ color: R.ink }}>{fmtMoney(aum)}</span>
+                                </div>
+                                {/* 목업은 여기도 눈금이지만, 이 값은 고르는 것이 아니라 지금까지의 결과다.
+                                    움직이지 않는 것에 손잡이를 달면 한 번은 잡아당겨 본다. */}
+                                <Sunken className="mt-1 py-1">
+                                    <div className="text-[11px] tabular-nums" style={{ color: R.ink }}>
+                                        {firm?.rank ?? rankOf(aum)} · 회사 금고 {fmtMoney(firm?.cash ?? 0)}
+                                    </div>
+                                </Sunken>
+                                <p className="mt-1 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                                    고른 만큼 과거로 돌아가 한 반기(달력 45일)씩 굴려 옵니다. 도중에는 바꿀 수 없습니다.
+                                </p>
+                                <RetroBtn tone="go" onClick={() => onOpenCampaign(years)} disabled={busy}
+                                    className="mt-1.5 w-full min-h-[42px]">
+                                    CONFIRM — {years}년 시작
+                                </RetroBtn>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                                    <span style={{ color: R.ink }}>
+                                        {campaign.years}년 중 {campaign.done_halves}/{campaign.total_halves}반기
+                                    </span>
+                                    <span className="tabular-nums" style={{ color: R.inkDim }}>
+                                        {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
+                                    </span>
+                                </div>
+                                <Sunken className="mt-1 py-1.5">
+                                    <HalfTrack campaign={campaign} history={history} />
+                                </Sunken>
+                                <div className="flex items-baseline justify-between gap-2 text-[11px] mt-1.5">
+                                    <span style={{ color: R.ink }}>굴릴 돈</span>
+                                    <span className="font-bold tabular-nums" style={{ color: R.ink }}>{fmtMoney(aum)}</span>
+                                </div>
+                            </>
+                        )}
+                    </Win>
+                )}
+
                 {/* 이월은 자리마다 — 넷 중 둘만 들고 올 수도 있다 */}
                 {!!firm?.carry?.length && (
-                    <div className="mt-3 sm:mt-4 rounded-xl border border-[#e3b34a]/50 bg-[#faf1dc] dark:bg-[#2a2211] px-3.5 py-2.5">
-                        <p className="text-[11.5px] sm:text-[12.5px] font-bold text-[#a1730a] dark:text-[#e3b34a] break-keep">
+                    <Sunken className="mb-1.5">
+                        <p className="text-[11px] break-keep leading-[1.8]" style={{ color: R.amber }}>
                             지난 반기에서 {firm.carry.length}종목을 들고 왔습니다
                             {" ("}
                             {firm.carry.map(c => `${c.qty}주${c.sector ? ` · ${c.sector}` : ""}`).join(", ")}
                             {"). "}
-                            같은 회사로 이어서 시작합니다.
+                            같은 회사로 이어서 시작합니다 — 굴릴 돈 중 일부가 이미 그 회사들에 들어가 있습니다.
                         </p>
-                        <p className="mt-1 text-[10.5px] text-[#a1730a]/80 dark:text-[#e3b34a]/70 break-keep">
-                            이번 반기에 굴릴 돈 중 일부가 이미 그 회사들에 들어가 있습니다.
-                        </p>
-                    </div>
-                )}
-
-                {/* phase 4 — 기간이 끝났다. 여기가 한 번의 투자 인생을 통째로 돌아보는 자리다. */}
-                {isLoggedIn && endedCampaign && (
-                    <FinalReport campaign={endedCampaign} firm={firm} history={history}
-                        habits={habits} bestReturn={bestReturn} onClear={onClearEnded} />
-                )}
-
-                {/* 기간 고르기 — 캠페인이 없을 때만. 도중에는 바꿀 수 없다(지나온 반기가
-                    어느 기간의 것이었는지 알 수 없어진다). */}
-                {isLoggedIn && !campaign && !endedCampaign && (
-                    <div className="mt-1">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1.5">몇 년을 굴릴까요</p>
-                        <div className="grid grid-cols-4 gap-1.5">
-                            {YEAR_CHOICES.map(y => (
-                                <button key={y} onClick={() => onOpenCampaign(y)} disabled={busy}
-                                    className="min-h-[44px] rounded-xl text-[13px] font-black border border-neutral-200 dark:border-border-subtle-dark text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40 transition-colors flex flex-col items-center justify-center leading-none gap-0.5">
-                                    {y}년
-                                    <span className="text-[9px] font-bold text-neutral-400">{totalHalves(y)}반기</span>
-                                </button>
-                            ))}
-                        </div>
-                        <p className="mt-1.5 text-[10.5px] text-neutral-400 dark:text-neutral-500 break-keep">
-                            고른 만큼 과거로 돌아가 한 반기(달력 45일)씩 굴려 옵니다. 도중에는 바꿀 수 없습니다.
-                        </p>
-                    </div>
-                )}
-
-                {/* 판 고르기 — 무작위만 있으면 배움이 안 쌓인다. 같은 성격의 판을 여러 번 겪어야
-                    "나는 급락 뒤에 너무 빨리 산다" 같은 습관이 드러난다(개선안 ⑦).
-                    성격은 서버가 컨텍스트 구간만 보고 붙이므로 정답이 새지 않는다. */}
-                {isLoggedIn && campaign && !firm?.carry?.length && (
-                    <div className="mt-3 sm:mt-5">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 mb-1.5">어떤 자리에서 시작할까요</p>
-                        <div className="flex gap-1.5 flex-wrap">
-                            <button onClick={() => setWant(null)} disabled={busy}
-                                className={cn("min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border transition-colors disabled:opacity-40",
-                                    want === null
-                                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                        : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
-                                아무 자리나
-                            </button>
-                            {SCENARIOS.map(sc => (
-                                <button key={sc.id} onClick={() => setWant(sc.id)} disabled={busy} title={sc.hint}
-                                    className={cn("min-h-[36px] px-3 rounded-lg text-[11.5px] font-bold border transition-colors disabled:opacity-40",
-                                        want === sc.id
-                                            ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                                            : "text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26]")}>
-                                    {sc.label}
-                                </button>
-                            ))}
-                        </div>
-                        {/* 두 문장이면 폰에서 두 줄이 된다 — 실제로 어떤 자리였는지는 차트 옆에 적힌다. */}
-                        <p className="mt-1.5 text-[10.5px] text-neutral-400 dark:text-neutral-500 break-keep">
-                            고른 자리가 안 나오면 만들어진 판으로 시작합니다.
-                        </p>
-                    </div>
+                    </Sunken>
                 )}
 
                 {/* 비로그인 체험은 캠페인 없이 한 판만 굴린다 — 기간을 고를 회사가 없다. */}
                 {(!isLoggedIn || campaign) && (
-                    <button onClick={() => onStart(want)} disabled={busy}
-                        className="mt-2.5 sm:mt-4 w-full inline-flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl bg-gradient-to-b from-[#f7dc8c] to-[#d9a52a] hover:from-[#ffe7a4] hover:to-[#e6b13a] text-[#2a1c00] font-black text-[15px] disabled:opacity-50 transition-all">
-                        <span className="inline-flex items-center gap-2">
-                            <Play size={16} strokeWidth={2.6} />
-                            {busy ? "종목을 고르는 중…"
-                                : !campaign ? "체험 한 판"
-                                    : `${campaign.year}년차 ${campaign.half_label}반기 ${firm?.carry?.length ? "이어서" : "시작"}`}
-                        </span>
-                        {/* 어디까지 왔나 — 20년이면 라벨만으로는 감이 안 온다. 버튼 안에 두면
-                            줄을 따로 쓰지 않는다(폰에서 한 화면이 빡빡하다). */}
-                        {campaign && !busy && (
-                            <>
-                                <span className="text-[9.5px] font-bold opacity-70">
-                                    {campaign.years}년 중 {campaign.done_halves}/{campaign.total_halves}반기 지남 ·{" "}
-                                    {campaign.start_date.slice(0, 4)}년 {Number(campaign.start_date.slice(4, 6))}월부터
-                                </span>
-                                <HalfTrack campaign={campaign} history={history} />
-                            </>
-                        )}
-                    </button>
-                )}
-
-                {/* 회사 현황은 한 줄로. 자세한 건 아래 리서치실·지난 분기에 다 있다. */}
-                {isLoggedIn && (
-                    <p className="mt-3 text-[11.5px] sm:text-[13px] text-neutral-500 dark:text-neutral-400 break-keep">
-                        맡은 돈 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(aum)}</b>
-                        {" · "}회사 금고 <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(firm?.cash ?? 0)}</b>
-                        {" · "}{firm?.quarters ?? 0}분기 운용
-                        {bestReturn !== null && <>{" · "}최고 <b className={pnlText(bestReturn >= 0)}>{pct(bestReturn)}</b></>}
-                    </p>
+                    <RetroBtn tone="go" size="lg" onClick={() => onStart(want)} disabled={busy}
+                        className="w-full inline-flex items-center justify-center gap-2">
+                        <Play size={16} strokeWidth={2.6} />
+                        {busy ? "종목을 고르는 중…"
+                            : !campaign ? "체험 한 판 시작"
+                                : `${campaign.year}년차 ${campaign.half_label}반기 ${firm?.carry?.length ? "이어서" : "시작"}`}
+                    </RetroBtn>
                 )}
 
                 {/* 규칙은 한 번 읽으면 되는 글이다. 매번 시작 버튼 앞을 막고 서 있을 이유가 없다. */}
-                <details className="group mt-3">
-                    <summary className="cursor-pointer list-none text-[11.5px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                <details className="group mt-1.5">
+                    <summary className="cursor-pointer list-none text-[11px] font-bold" style={{ color: R.inkDim }}>
                         규칙과 고객 돈 보기 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
                     </summary>
-                    <div className="mt-2.5">
-                <ul className="flex flex-col gap-1.5 sm:gap-3 text-[12px] sm:text-[14px] leading-[1.5] sm:leading-normal text-neutral-600 dark:text-neutral-300">
-                    {[
-                        `지금 맡고 있는 돈으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
-                        `한 반기는 달력 45일입니다. 앞 한 달을 먼저 보고, 그다음부터 하루씩 넘깁니다.`,
-                        // 판이 도는 중에는 화면이 좁아 이 규칙을 적을 자리가 없다 — 여기서 한 번 말한다.
-                        `사기는 내 돈 기준 비율입니다 — 네 종목에 고르게 담으려면 25%씩 누르면 됩니다.`,
-                        `사고파는 것으로는 날이 안 갑니다. 하루는 관망에서만 지나갑니다.`,
-                        `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
-                        `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
-                    ].map((line, i) => (
-                        <li key={i} className="flex gap-3 break-keep">
-                            <span className="font-mono text-[10px] sm:text-[11px] font-black text-[#a1730a] dark:text-[#e3b34a] pt-0.5 shrink-0">
-                                {String(i + 1).padStart(2, "0")}
-                            </span>
-                            <span>{line}</span>
-                        </li>
-                    ))}
-                </ul>
+                    <div className="mt-1.5">
+                        <ul className="flex flex-col gap-1.5 text-[11px] leading-[1.7]" style={{ color: R.ink }}>
+                            {[
+                                `지금 맡고 있는 돈으로 한 반기를 운용합니다. 1년은 8반기(1-1 … 4-2)입니다.`,
+                                `한 반기는 달력 45일입니다. 앞 한 달을 먼저 보고, 그다음부터 하루씩 넘깁니다.`,
+                                `사기는 내 돈 기준 비율입니다 — 네 종목에 고르게 담으려면 25%씩 누르면 됩니다.`,
+                                `사고파는 것으로는 날이 안 갑니다. 하루는 관망에서만 지나갑니다.`,
+                                `체결은 그날 종가. 수수료 0.015%, 매도 거래세 0.18%. 마지막 날 자동 청산.`,
+                                `벤치마크(그냥 사서 들고 있기)와 견주어 고객 자금이 들고 납니다.`,
+                            ].map((line, i) => (
+                                <li key={i} className="flex gap-2 break-keep">
+                                    <span className="tabular-nums font-bold shrink-0" style={{ color: "#7a4f00" }}>
+                                        {String(i + 1).padStart(2, "0")}
+                                    </span>
+                                    <span>{line}</span>
+                                </li>
+                            ))}
+                        </ul>
                         <MoneyFlowNote />
                     </div>
                 </details>
-            </SectionPanel>
+            </Win>
 
             {isLoggedIn && (
-                <Fold icon={<FlaskConical size={16} />} title="리서치실"
+                <Fold icon={<FlaskConical size={14} />} title="리서치실"
                     subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${owned.length}/${TOOLS.length}`}>
-                    <ul className="flex flex-col gap-2">
+                    <ul className="flex flex-col gap-1">
                         {TOOLS.map(t => {
                             const have = owned.includes(t.id);
                             const on = activeTools.includes(t.id);
                             return (
-                                <li key={t.id} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark px-3 py-2">
+                                <li key={t.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
+                                    style={{ background: R.faceLo, boxShadow: IN }}>
                                     <div className="min-w-0">
-                                        <div className="text-[13px] font-black text-neutral-900 dark:text-white truncate">
-                                            {t.name} <span className="text-[11px] font-bold text-neutral-400">{t.detail}</span>
+                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>
+                                            {t.name} <span className="font-normal" style={{ color: R.inkDim }}>{t.detail}</span>
                                         </div>
                                         {/* 읽는 법을 적어 둔다 — 이름만 보고는 사도 쓸 줄 모른다 */}
-                                        <p className="mt-0.5 text-[11px] leading-[1.5] text-neutral-500 dark:text-neutral-400 break-keep">
+                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
                                             {t.hint}
                                         </p>
                                     </div>
                                     {have ? (
-                                        <button onClick={() => onToggle(t.id)}
-                                            className={cn("shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold border transition-colors",
-                                                on ? "border-[#e3b34a]/60 text-[#a1730a] dark:text-[#e3b34a]" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400")}>
-                                            <Check size={12} /> {on ? "켜짐" : "꺼짐"}
-                                        </button>
+                                        <RetroBtn size="sm" selected={on} onClick={() => onToggleTool(t.id)}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Check size={11} /> {on ? "켜짐" : "꺼짐"}
+                                        </RetroBtn>
                                     ) : (
-                                        <button onClick={() => onBuy(t.id)} disabled={busy || (firm?.cash ?? 0) < t.price}
-                                            className="shrink-0 inline-flex items-center gap-1 min-h-[36px] px-3 rounded-lg text-[11px] font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-border-subtle-dark hover:bg-neutral-100 dark:hover:bg-[#2c2a26] disabled:opacity-40">
-                                            <Lock size={12} /> {fmtMoney(t.price)}
-                                        </button>
+                                        <RetroBtn size="sm" onClick={() => onBuyTool(t.id)}
+                                            disabled={busy || (firm?.cash ?? 0) < t.price}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Lock size={11} /> {fmtMoney(t.price)}
+                                        </RetroBtn>
                                     )}
                                 </li>
                             );
@@ -1861,9 +1980,9 @@ function FirmDashboard({
             )}
 
             {habits && habits.trades > 0 && (
-                <Fold icon={<Footprints size={16} />} title="매매 습관"
+                <Fold icon={<Footprints size={14} />} title="매매 습관"
                     subtitle={`${habits.quarters}분기 · 체결 ${habits.trades}회`}>
-                    <ul className="flex flex-col gap-1.5 text-[12px] sm:text-[13px]">
+                    <ul className="flex flex-col gap-1">
                         <HabitRow label="보유"
                             value={habits.holdDays !== null ? `평균 ${habits.holdDays}일` : null}
                             note={habits.turnover !== null ? `회전율 ${habits.turnover}회` : undefined} />
@@ -1879,17 +1998,17 @@ function FirmDashboard({
                             value={habits.biteShare !== null ? `한 번에 ${habits.biteShare}%` : null}
                             note={habits.watchRatio !== null ? `관망 ${habits.watchRatio}%` : undefined} />
                     </ul>
-                    <p className="mt-3 text-[10px] text-neutral-400 break-keep leading-[1.6]">
+                    <p className="mt-2 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
                         이 게임에서 관찰된 값입니다. 표본이 적으면 다음 분기에 크게 달라질 수 있습니다.
                     </p>
                 </Fold>
             )}
 
             {history.length > 0 && (
-                <Fold icon={<History size={16} />} title="지난 분기"
-                    subtitle={`최근 ${history.length}분기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
+                <Fold icon={<History size={14} />} title="지난 반기"
+                    subtitle={`최근 ${history.length}반기 · 마지막 ${pct(history[0]?.final_return ?? 0)}`}>
                     <MoneyCurve history={history} />
-                    <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-[#2c2a26] text-sm">
+                    <ul className="flex flex-col divide-y" style={{ borderColor: `${R.ink}25` }}>
                         {history.map(h => <PastHalf key={h.id} h={h} />)}
                     </ul>
                 </Fold>
@@ -1933,17 +2052,17 @@ function FeeMath({ round, mine, bh }: { round: ReplayRound; mine: number; bh: nu
 
     const Line = ({ k, v }: { k: string; v: string }) => (
         <li className="flex gap-2 break-keep">
-            <span className="shrink-0 w-[52px] text-neutral-400">{k}</span>
-            <span className="font-mono text-neutral-600 dark:text-neutral-300">{v}</span>
+            <span className="shrink-0 w-[56px]" style={{ color: R.inkDim }}>{k}</span>
+            <span className="tabular-nums" style={{ color: R.ink }}>{v}</span>
         </li>
     );
 
     return (
         <details className="group w-full">
-            <summary className="cursor-pointer list-none text-[11px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+            <summary className="cursor-pointer list-none text-[11px] font-bold" style={{ color: R.inkDim }}>
                 계산식 <span className="group-open:hidden">▸</span><span className="hidden group-open:inline">▾</span>
             </summary>
-            <ul className="mt-1.5 flex flex-col gap-1 text-[11px] sm:text-[12px] leading-[1.6]">
+            <ul className="mt-1.5 flex flex-col gap-1 text-[11px] leading-[1.7]">
                 <Line k="초과수익" v={`${pct(mine)} − ${pct(bh)} = ${excess >= 0 ? "+" : ""}${excess.toFixed(2)}%p`} />
                 <Line k="운용보수" v={`${fmtMoney(aum)} × ${(BASE_FEE_BP / 100).toFixed(2)}% = ${(round.fee_base ?? 0).toLocaleString()}원`} />
                 <Line k="성과보수" v={excess > 0
@@ -1959,7 +2078,13 @@ function FeeMath({ round, mine, bh }: { round: ReplayRound; mine: number; bh: nu
     );
 }
 
-function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
+/**
+ * 반기 성적표 — 목업의 TOTAL WEALTH STATISTICS 자리.
+ *
+ * 창은 바깥(결과 화면)이 씌운다. 여기는 안에 들어갈 것만 그린다 — 같은 내용이
+ * 진행 화면 위에 얹히던 시절의 흔적(패널·테두리)을 들고 있을 이유가 없다.
+ */
+function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
     const mine = round.final_return ?? 0;
     const bh = round.bh_return ?? 0;
     const beat = mine > bh;
@@ -1971,65 +2096,63 @@ function QuarterReport({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: 
     const feeTotal = (round.fee_base ?? 0) + (round.fee_perf ?? 0);
 
     return (
-        <SectionPanel className={cn("shrink-0 border-2 p-3 sm:p-5 pop-in", beat ? "border-[#e3b34a]/60" : "border-neutral-200 dark:border-border-subtle-dark")}>
-            <div className="flex flex-col gap-1.5 sm:gap-3">
-                <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">내 수익률</p>
-                        <p className={cn("text-2xl sm:text-4xl font-black font-mono", pnlText(mine >= 0))}>{pct(mine)}</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400 sm:mb-1">벤치마크</p>
-                        <p className={cn("text-lg sm:text-xl font-black font-mono", pnlText(bh >= 0))}>{pct(bh)}</p>
-                    </div>
+        <div className="flex flex-col gap-1.5">
+            {/* 두 수익률은 브라운관 안에 넣는다 — 이 화면에서 가장 먼저 읽힐 것이고,
+                검은 바탕 위 큰 숫자는 이 시대 기계가 성적을 말하던 방식이다. */}
+            <Crt className="px-3 py-2.5 flex items-end justify-between gap-3 flex-wrap">
+                <div>
+                    <p className="text-[11px]" style={{ color: `${R.inkHi}99` }}>내 수익률</p>
+                    <p className={cn("text-[33px] sm:text-[44px] leading-none font-bold tabular-nums", pnlLit(mine >= 0))}>
+                        {pct(mine)}
+                    </p>
                 </div>
+                <div className="text-right">
+                    <p className="text-[11px]" style={{ color: `${R.inkHi}99` }}>벤치마크</p>
+                    <p className={cn("text-[22px] leading-none font-bold tabular-nums", pnlLit(bh >= 0))}>{pct(bh)}</p>
+                </div>
+            </Crt>
 
-                {round.carried && (
-                    <p className="text-[11.5px] sm:text-[13px] font-bold break-keep text-[#a1730a] dark:text-[#e3b34a]">
-                        {round.qty}주를 다음 분기로 넘겼습니다. 아직 들고 있으므로 어떤 회사였는지는 열지 않습니다.
-                    </p>
-                )}
+            <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: R.ink }}>
+                {beat
+                    ? `벤치마크보다 ${(mine - bh).toFixed(2)}%p 더 벌었습니다.`
+                    : `벤치마크가 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
+            </p>
 
-                <p className="text-[12px] sm:text-[14px] font-bold break-keep text-neutral-700 dark:text-neutral-200">
-                    {beat
-                        ? `벤치마크보다 ${(mine - bh).toFixed(2)}%p 더 벌었습니다.`
-                        : `벤치마크가 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
+            {round.carried && (
+                <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: "#7a4f00" }}>
+                    {round.qty}주를 다음 반기로 넘겼습니다. 아직 들고 있으므로 어떤 회사였는지는 열지 않습니다.
                 </p>
+            )}
 
-                {round.habits && round.habits.trades > 0 && (
-                    <p className="text-[11px] sm:text-[12px] text-neutral-400 dark:text-neutral-500 break-keep">
-                        {habitLine(round.habits)}
-                    </p>
-                )}
+            {round.habits && round.habits.trades > 0 && (
+                <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                    {habitLine(round.habits)}
+                </p>
+            )}
 
-                {settled && (
-                    // 등급이 바뀌는 건 자주 없는 일이다 — 그 줄만 한 번 물들여 눈에 띄게 한다
-                    <p className={cn("text-[11.5px] sm:text-[13px] font-bold break-keep text-[#a1730a] dark:text-[#e3b34a] border-t border-neutral-100 dark:border-border-subtle-dark pt-1.5 sm:pt-3",
-                        rankOf(round.aum_before!) !== rankOf(round.aum_after!) && "flash-mine rounded-md px-1")}>
+            {settled ? (
+                <>
+                    {/* 등급이 바뀌는 건 자주 없는 일이다 — 그 줄만 한 번 물들여 눈에 띄게 한다 */}
+                    <p className={cn("text-[13px] font-bold break-keep leading-[1.7]",
+                        rankOf(round.aum_before!) !== rankOf(round.aum_after!) && "flash-mine px-1")}
+                        style={{ color: "#7a4f00" }}>
                         {clientNote(flow, flowPct, rankOf(round.aum_before!), rankOf(round.aum_after!))}
                     </p>
-                )}
-
-                {settled ? (
-                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px] sm:text-[13px]">
-                        <span className="text-neutral-500 dark:text-neutral-400">
-                            고객 자금{" "}
-                            <b className={pnlText(flow >= 0)}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</b>
-                            {" → "}
-                            <b className="text-neutral-900 dark:text-white font-mono">{fmtMoney(round.aum_after!)}</b>
-                        </span>
-                        <span className="text-[#a1730a] dark:text-[#e3b34a] font-bold">
-                            보수 +{fmtMoney(feeTotal)}
-                            <span className="font-normal opacity-70"> (운용 {fmtMoney(round.fee_base ?? 0)} · 성과 {fmtMoney(round.fee_perf ?? 0)})</span>
-                        </span>
-                        <FeeMath round={round} mine={mine} bh={bh} />
-                    </div>
-                ) : isLoggedIn ? null : (
-                    <p className="text-[11px] text-neutral-400 border-t border-neutral-100 dark:border-border-subtle-dark pt-1.5">
-                        체험 운용이라 회사에는 반영되지 않았습니다.
-                    </p>
-                )}
-            </div>
-        </SectionPanel>
+                    <Sunken className="flex flex-col">
+                        <StatLine label="고객 자금" tone={flow >= 0 ? "#9e1414" : "#1d4ed8"}
+                            value={`${flowPct >= 0 ? "+" : ""}${flowPct.toFixed(1)}%`} />
+                        <StatLine label="맡은 돈" value={fmtMoney(round.aum_after!)} />
+                        <StatLine label="보수" tone="#7a4f00" value={`+${fmtMoney(feeTotal)}`} />
+                        <StatLine label="└ 운용 · 성과"
+                            value={`${fmtMoney(round.fee_base ?? 0)} · ${fmtMoney(round.fee_perf ?? 0)}`} />
+                    </Sunken>
+                    <FeeMath round={round} mine={mine} bh={bh} />
+                </>
+            ) : isLoggedIn ? null : (
+                <p className="text-[11px]" style={{ color: R.inkDim }}>
+                    체험 운용이라 회사에는 반영되지 않았습니다.
+                </p>
+            )}
+        </div>
     );
 }
