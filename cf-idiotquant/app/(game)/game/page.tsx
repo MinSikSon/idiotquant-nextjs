@@ -40,6 +40,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 import { SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
+import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder } from "@/lib/paper/sizing";
 import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
@@ -98,6 +99,11 @@ const SELL_PARTS = [
     { pct: 50, label: "50%" },
     { pct: 100, label: "전부" },
 ];
+// 등분 매수 — 남은 현금을 몇 번에 나눠 쏠까. 비율 매수와 기준이 다르다(sizing.ts 참고).
+// 2~5 면 실제로 쓰는 범위를 덮는다. 더 잘게는 비율 쪽이나 비중 맞추기로 간다.
+const BUY_SPLITS = [2, 3, 4, 5];
+// 비중 맞추기 눈금. 5%p 로 끊으면 손가락으로 짚을 수 있고 25·50·75 가 정확히 잡힌다.
+const FIT_STEP = 5;
 // 예약 가격도 값을 적는 대신 지금 값에서 얼마나 떨어진 자리인지로 고른다.
 const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
 
@@ -285,6 +291,11 @@ export default function ReplayGamePage() {
     const [reserveOpen, setReserveOpen] = useState(false);
     // 시작 화면을 지났나. 이것만은 데이터로 알 수 없어 따로 든다.
     const [entered, setEntered] = useState(false);
+    // 사기 줄의 눈금 — 내 돈의 몇 %(part)냐, 현금을 몇 등분한 한 몫(split)이냐.
+    const [buyMode, setBuyMode] = useState<"part" | "split">("part");
+    // 비중 맞추기 패널. 예약과 같은 방식으로 접었다 편다.
+    const [fitOpen, setFitOpen] = useState(false);
+    const [target, setTarget] = useState(50);
     const [resKind, setResKind] = useState<Reservation["kind"]>("buy_limit");
     // 값 대신 "지금 값에서 몇 % 떨어진 자리"와 "얼마만큼"으로 고른다.
     const [resStep, setResStep] = useState(5);
@@ -570,31 +581,26 @@ export default function ReplayGamePage() {
         ? `그냥 들고 ${pct(bhRate)} · 나 ${pct(totalRate)} (${edge >= 0 ? "+" : ""}${edge.toFixed(1)}%p)`
         : null;
 
-    /**
-     * **내 돈**(현금 + 자리별 평가금액)의 pct% 어치로 살 수 있는 주식 수.
-     *
-     * 현금 기준이 아니라 총자산 기준이다 — 현금 기준으로 25% 를 네 번 누르면
-     * 25 → 19 → 14 → 10% 로 줄어들어 네 종목을 고르게 담을 수가 없었다.
-     * 내 돈 기준이면 25% 를 네 번 눌러 균등 매수가 그대로 된다.
-     *
-     * 살 돈은 어차피 현금을 넘을 수 없으므로 현금으로 한 번 자른다(그래서 현금이
-     * 모자라면 버튼에 적힌 주수가 그만큼 줄어든다). "최대"만 현금 전액이다.
-     */
-    const buyQtyFor = useCallback((pct: number, atPrice = price) => {
-        const cash = round?.cash ?? 0;
-        const budget = pct >= 100 ? cash : Math.min(cash, Math.floor(totalAssets * pct / 100));
-        if (atPrice <= 0 || budget <= 0) return 0;
-        let n = Math.floor(budget / atPrice);
-        while (n > 0 && !quoteBuy({ price: atPrice, qty: n, cash: budget }).ok) n--;
-        return n;
-    }, [round?.cash, totalAssets, price]);
+    // 몇 주를 살까·팔까 하는 셈은 전부 lib/paper/sizing.ts 에 있다(테스트가 붙어 있다).
+    // 여기서는 지금 화면의 값을 그 함수들에 넘겨 주기만 한다.
+    const buyQtyFor = useCallback((pct: number, atPrice = price) =>
+        partBuyQty({ pct, price: atPrice, cash: round?.cash ?? 0, totalAssets }),
+        [round?.cash, totalAssets, price]);
 
-    /** 보유의 pct%. 100% 는 남김없이 — 1주라도 남으면 "전부"가 거짓말이 된다. */
-    const sellQtyFor = useCallback((pct: number) => {
-        const held = heldQty;
-        if (held <= 0) return 0;
-        return pct >= 100 ? held : Math.max(1, Math.min(held, Math.floor(held * pct / 100)));
-    }, [heldQty]);
+    const sellQtyFor = useCallback((pct: number) => sellPartQty(heldQty, pct), [heldQty]);
+
+    /** 현금을 n등분한 한 몫 — 사기 줄이 등분 모드일 때. */
+    const splitQtyFor = useCallback((parts: number) =>
+        splitBuyQty({ parts, price, cash: round?.cash ?? 0 }),
+        [round?.cash, price]);
+
+    /** 이 종목이 내 돈에서 지금 차지하는 몫. 종목이 하나뿐인 판에서는 곧 주식 비중이다. */
+    const myPct = totalAssets > 0 ? (heldQty * price / totalAssets) * 100 : 0;
+
+    /** 목표 비중까지 사거나 파는 주문. 되돌릴 것이 없으면 null 이라 버튼이 죽는다. */
+    const fitOrder = useMemo(() => rebalanceOrder({
+        targetPct: target, price, cash: round?.cash ?? 0, held: heldQty, totalAssets,
+    }), [target, price, round?.cash, heldQty, totalAssets]);
 
     // 예약 가격 — 익절은 위로, 나머지는 아래로.
     const resPriceAt = useCallback((step: number) =>
@@ -1051,51 +1057,92 @@ export default function ReplayGamePage() {
                         </Win>
 
                         {/* ── 계좌 ───────────────────────────────
-                            예전에는 폰용 두 줄과 데스크톱용 카드 넉 장이 따로 있었다. 같은 값을
-                            두 벌로 그리면 한쪽만 고치는 날이 온다 — 파인 칸 넷으로 합친다. */}
+                            한 줄이다. 예전에는 값마다 칸을 하나씩 주고 그 밑에 부연을 달아 두 줄을
+                            썼는데, 그 두 줄은 차트에서 나온 자리였다.
+
+                            값 넷을 한 줄에 다 넣으면 폰에서 접히므로 뜻으로 가른다 — 가격(현재가·
+                            산 값)은 창 이름 옆에, 내 계좌(내 돈·현금·성적)는 본문에. */}
                         <Win key={`acct-${filled}`} title="ACCOUNT"
-                            right={`시작 ${fmtKrw(round.seed)}`}
+                            right={
+                                <>
+                                    {round.status === "done" ? "종가" : "현재가"} {fmtKrw(price)}
+                                    {heldQty > 0 && ` · 산 값 ${fmtKrw(avg)}`}
+                                </>
+                            }
                             className={cn("shrink-0", filled > 0 && "flash-mine")}>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-                                <AcctCell k="내 돈" v={fmtKrw(totalAssets)}
-                                    sub={overview ? `${holdings.filter(h => h.qty > 0).length}/${holdings.length}종목 보유` : undefined} />
-                                <AcctCell k="현금" v={fmtKrw(round.cash)}
-                                    sub={heldQty > 0 ? `${heldQty}주 갖고 있음` : "아직 없음"} />
-                                <AcctCell k={round.status === "done" ? "마지막 가격" : "현재가"} v={fmtKrw(price)}
-                                    sub={heldQty > 0 ? `산 값 ${fmtKrw(avg)}` : round.status === "done" ? "정리됨" : "아직 안 삼"} />
-                                <AcctCell k="수익률" v={pct(totalRate)} tone={pnlText(totalPnl >= 0)}
-                                    sub={`실현 ${fmtKrw(round.realized)}`} />
-                            </div>
+                            {/* 내 돈·현금은 억·만으로 줄인다. 원 단위로 적으면 360px 에서 줄이 접혀
+                                한 줄로 만든 뜻이 없어지고, 이 화면의 다른 곳(준비·결과)은 이미
+                                억·만으로 말하고 있었다. 정확한 값이 필요한 자리는 따로 있다 —
+                                가격은 위 이름줄에 원 단위로, 살 주식 수는 버튼에 그대로 적힌다. */}
+                            <Sunken className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2 py-1 text-[11px]">
+                                <AcctVal k="내 돈" v={fmtMoney(totalAssets)} />
+                                <AcctVal k="현금" v={fmtMoney(round.cash)} />
+                                <AcctVal
+                                    k={overview ? `보유 ${holdings.filter(h => h.qty > 0).length}/${holdings.length}` : heldQty > 0 ? `${heldQty}주` : "미보유"}
+                                    v={pct(totalRate)} tone={pnlText(totalPnl >= 0)} />
+                            </Sunken>
                         </Win>
 
                         {/* ── 조작 ─────────────────────────────── */}
                         {round.status === "playing" && (
                             <Win title="BUY / SELL ORDER" className="shrink-0"
-                                right={overview && holdings.length > 1 ? "종목을 눌러 들어가면 매매" : undefined}>
+                                right={overview && holdings.length > 1 ? "종목을 눌러 들어가면 매매" : (
+                                    // 창의 모드는 창 이름 옆에 둔다. 아래 줄에 끼워 넣으면 매매 버튼과
+                                    // 섞여서, 누르면 주문이 나가는 것과 눈금만 바뀌는 것이 구별되지 않는다.
+                                    <span className="flex items-center gap-1">
+                                        <RetroBtn size="sm" selected={buyMode === "split"}
+                                            onClick={() => setBuyMode(m => m === "split" ? "part" : "split")}
+                                            title="현금을 몇 등분해서 살지로 바꾼다"
+                                            aria-pressed={buyMode === "split"}>1/N</RetroBtn>
+                                        <RetroBtn size="sm" selected={fitOpen}
+                                            onClick={() => {
+                                                // 열 때 손잡이를 지금 비중에 놓는다. 엉뚱한 값에서 시작하면
+                                                // 열자마자 "맞추기"가 큰 주문이 되어 있다.
+                                                if (!fitOpen) setTarget(Math.round(myPct / 5) * 5);
+                                                setFitOpen(v => !v);
+                                            }}
+                                            title="주식과 현금의 비율을 맞춘다"
+                                            aria-pressed={fitOpen}>비중</RetroBtn>
+                                    </span>
+                                )}>
                                 <div className="flex flex-col gap-1.5">
-                                    {/* 살 때는 내 돈의 몇 %, 팔 때는 보유의 몇 %. 그 자리에서 체결되고
-                                        **날짜는 그대로다** — 같은 날 네 종목을 다 만질 수 있어야 한다.
-                                        시간은 아래 관망 줄에서만 흐른다. */}
+                                    {/* 살 때는 내 돈의 몇 %(또는 현금의 1/n), 팔 때는 보유의 몇 %.
+                                        그 자리에서 체결되고 **날짜는 그대로다** — 같은 날 네 종목을
+                                        다 만질 수 있어야 한다. 시간은 아래 관망 줄에서만 흐른다. */}
                                     <div className={cn("grid grid-cols-[38px_1fr] gap-x-1.5 gap-y-1.5 items-center",
                                         overview && "hidden")}>
-                                        {/* 기준을 적어 둔다 — 사기는 내 돈, 팔기는 보유.
-                                            안 적으면 같은 25% 가 두 가지 뜻이 된다. */}
+                                        {/* 기준을 적어 둔다 — 안 적으면 같은 25% 가 두 가지 뜻이 되고,
+                                            등분 모드에서는 아예 다른 셈(현금 기준)이 된다. */}
                                         <span className="leading-[1.2]">
                                             <span className="block text-[11px] font-bold" style={{ color: "#9e1414" }}>사기</span>
-                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>내 돈</span>
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>
+                                                {buyMode === "split" ? "현금" : "내 돈"}
+                                            </span>
                                         </span>
                                         <div className="grid grid-cols-4 gap-1">
-                                            {BUY_PARTS.map(part => {
-                                                const n = buyQtyFor(part.pct);
-                                                return (
-                                                    <RetroBtn key={part.pct} tone="buy" aria-label={`사기 ${part.label}`}
-                                                        onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
-                                                        className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
-                                                        {part.label}
-                                                        <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
-                                                    </RetroBtn>
-                                                );
-                                            })}
+                                            {buyMode === "split"
+                                                ? BUY_SPLITS.map(parts => {
+                                                    const n = splitQtyFor(parts);
+                                                    return (
+                                                        <RetroBtn key={parts} tone="buy" aria-label={`현금 ${parts}등분 매수`}
+                                                            onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
+                                                            className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            1/{parts}
+                                                            <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
+                                                        </RetroBtn>
+                                                    );
+                                                })
+                                                : BUY_PARTS.map(part => {
+                                                    const n = buyQtyFor(part.pct);
+                                                    return (
+                                                        <RetroBtn key={part.pct} tone="buy" aria-label={`사기 ${part.label}`}
+                                                            onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
+                                                            className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            {part.label}
+                                                            <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
+                                                        </RetroBtn>
+                                                    );
+                                                })}
                                         </div>
 
                                         <span className="leading-[1.2]">
@@ -1116,6 +1163,43 @@ export default function ReplayGamePage() {
                                             })}
                                         </div>
                                     </div>
+
+                                    {/* ── 비중 맞추기 ──
+                                        "몇 주를 살까" 가 아니라 "얼마를 담고 있을까" 로 묻는다. 사고팔기를
+                                        가르지 않는 이유는, 목표를 정하면 사야 할지 팔아야 할지가 이미
+                                        정해져 있기 때문이다 — 그걸 다시 사람에게 묻는 것은 일이다.
+
+                                        종목이 하나뿐인 판에서는 이 눈금이 곧 주식과 현금의 비율이고,
+                                        넷이면 이 자리에 얼마를 담을지가 된다(넷 다 25% 면 균등 배분). */}
+                                    {fitOpen && !overview && (
+                                        <Sunken className="flex flex-col gap-1">
+                                            <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                                                <span style={{ color: R.ink }}>
+                                                    목표 <b className="tabular-nums">{target}%</b>
+                                                    <span style={{ color: R.inkDim }}> · 지금 {myPct.toFixed(1)}% · 현금 {cashPct.toFixed(1)}%</span>
+                                                </span>
+                                            </div>
+                                            <PixelSlider
+                                                id="fit-target"
+                                                min={0} max={100} step={FIT_STEP}
+                                                value={target} onChange={setTarget}
+                                                leftLabel="전부 현금" rightLabel="전부 주식"
+                                                valueText={`목표 비중 ${target}%`}
+                                                disabled={busy}
+                                            />
+                                            <RetroBtn
+                                                // 할 일이 없을 때는 색을 빼 둔다 — 흐려진 빨강은 "살 수 있는데 막힌 것"으로 읽힌다
+                                                tone={!fitOrder ? "plain" : fitOrder.side === "sell" ? "sell" : "buy"}
+                                                disabled={busy || !fitOrder}
+                                                onClick={() => fitOrder && trade(fitOrder.side, fitOrder.qty, sel?.slot ?? 0)}
+                                                className="min-h-[38px] w-full">
+                                                {/* 무엇이 일어날지 버튼에 적는다 — "맞추기" 만으로는 사는지 파는지 모른다 */}
+                                                {fitOrder
+                                                    ? `${fitOrder.side === "buy" ? "사서" : "팔아서"} ${target}% 로 맞추기 · ${fitOrder.qty}주`
+                                                    : "이미 목표에 있습니다"}
+                                            </RetroBtn>
+                                        </Sunken>
+                                    )}
 
                                     {/* ── 시간 ──
                                         개요에서만 시간이 흐른다. 상세에서 하루가 지나가 버리면 두 번째
@@ -1267,14 +1351,13 @@ export default function ReplayGamePage() {
     );
 }
 
-/** 계좌 창의 한 칸. 파인 자리 = 읽는 곳. */
-function AcctCell({ k, v, sub, tone }: { k: string; v: string; sub?: string; tone?: string }) {
+/** 계좌 한 줄의 값 하나 — 흐린 이름과 진한 값이 나란히. */
+function AcctVal({ k, v, tone }: { k: string; v: string; tone?: string }) {
     return (
-        <Sunken className="px-2 py-1.5">
-            <div className="text-[11px] truncate" style={{ color: R.inkDim }}>{k}</div>
-            <div className={cn("text-[11px] font-bold tabular-nums truncate", tone)} style={tone ? undefined : { color: R.ink }}>{v}</div>
-            {sub && <div className="text-[11px] truncate" style={{ color: R.inkDim }}>{sub}</div>}
-        </Sunken>
+        <span className="whitespace-nowrap">
+            <span style={{ color: R.inkDim }}>{k} </span>
+            <b className={cn("font-bold tabular-nums", tone)} style={tone ? undefined : { color: R.ink }}>{v}</b>
+        </span>
     );
 }
 
