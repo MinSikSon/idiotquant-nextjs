@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { simulate, sanitize, maskDetail, DEFAULTS, TAX_RATE, type CalcInputs } from "../app/(calculator)/calculator/calc.ts";
+import { simulate, sanitize, maskDetail, yearlyRates, serialize, parse, DEFAULTS, TAX_RATE, type CalcInputs } from "@/app/(calculator)/calculator/calc";
 
 const base = (over: Partial<CalcInputs> = {}): CalcInputs => ({
     ...DEFAULTS, initial: 0, monthly: 0, tax: false, inflation: 0, ...over,
@@ -113,4 +113,90 @@ test("간단 단계는 화면에 없는 조건을 계산에서도 뺀다", () =>
 
     // 상세로 돌아오면 고쳐둔 조건이 그대로 살아 있어야 한다.
     assert.deepEqual(maskDetail(custom, "detailed"), custom);
+});
+
+/* ── 범위 수익률 (해마다 무작위) ─────────────────────────────── */
+
+/* base() 는 initial·monthly 가 0 이라 그대로 쓰면 final 이 늘 0 이고, 씨앗을 바꿔도
+   0 === 0 으로 통과해버린다. 범위 테스트에는 굴릴 돈이 있어야 한다. */
+const ranged = (over: Partial<CalcInputs> = {}): CalcInputs =>
+    base({ initial: 1000, rateMode: "range", rateMin: 0, rateMax: 14, seed: 42, years: 10, ...over });
+
+test("같은 씨앗이면 언제나 같은 결과 — 새로 그릴 때마다 숫자가 바뀌면 안 된다", () => {
+    const a = simulate(ranged());
+    const b = simulate(ranged());
+    assert.equal(a.final, b.final);
+    assert.deepEqual(a.rows.map(r => r.rate), b.rows.map(r => r.rate));
+});
+
+test("씨앗이 다르면 다른 갈래가 나온다", () => {
+    const a = simulate(ranged({ seed: 1 }));
+    const b = simulate(ranged({ seed: 2 }));
+    assert.notEqual(a.final, b.final);
+});
+
+test("뽑힌 수익률은 전부 범위 안에 있다", () => {
+    for (const seed of [1, 7, 99, 12345]) {
+        for (const r of yearlyRates(ranged({ seed, rateMin: -5, rateMax: 20, years: 40 }))) {
+            assert.ok(r >= -5 && r <= 20, `범위를 벗어났다: ${r} (seed ${seed})`);
+        }
+    }
+});
+
+test("해마다 값이 달라진다 — 한 번 뽑아 전부에 쓰는 게 아니다", () => {
+    const rates = yearlyRates(ranged({ years: 20 }));
+    assert.ok(new Set(rates).size > 5, `너무 적게 갈린다: ${new Set(rates).size}가지`);
+});
+
+test("하한과 상한이 같으면 고정 모드와 정확히 같은 결과", () => {
+    // 범위 폭이 0 이면 무작위가 개입할 여지가 없다 — 여기서 어긋나면 배선이 잘못된 것이다.
+    const fixed = simulate(base({ initial: 1000, rate: 7, years: 15 }));
+    const band = simulate(ranged({ rateMin: 7, rateMax: 7, years: 15 }));
+    near(band.final, fixed.final);
+    near(band.principal, fixed.principal);
+});
+
+test("고정 모드는 rateMin·rateMax 를 무시한다", () => {
+    const a = simulate(base({ initial: 1000, rate: 7, years: 10 }));
+    const b = simulate(base({ initial: 1000, rate: 7, years: 10, rateMin: -50, rateMax: 100 }));
+    near(a.final, b.final);
+});
+
+test("해마다 다른 값이 실제로 계산에 쓰인다", () => {
+    // 연 1회 편입이면 각 해의 평가금액 증가율이 그 해 수익률과 같아야 한다.
+    const r = simulate(ranged({ periods: 1, monthly: 0, initial: 1000, years: 5, tax: false }));
+    for (let i = 1; i < r.rows.length; i++) {
+        const grew = r.rows[i].value / r.rows[i - 1].value - 1;
+        near(grew * 100, r.rows[i].rate!, 1e-6);
+    }
+});
+
+test("행마다 그 해 수익률이 실려 나온다 (0년차 제외)", () => {
+    const r = simulate(ranged({ years: 5 }));
+    assert.equal(r.rows[0].rate, undefined, "0년차에는 수익률이 없다");
+    assert.equal(r.rows.filter(x => x.year > 0).every(x => typeof x.rate === "number"), true);
+});
+
+test("sanitize 는 뒤집힌 범위를 바로잡는다", () => {
+    const s = sanitize({ rateMode: "range", rateMin: 20, rateMax: 3 });
+    assert.equal(s.rateMin, 3);
+    assert.equal(s.rateMax, 20);
+});
+
+test("sanitize 는 깨진 씨앗을 1 로 되돌린다", () => {
+    assert.equal(sanitize({ seed: NaN }).seed, 1);
+    assert.equal(sanitize({ seed: 0 }).seed, 1);
+    assert.equal(sanitize({ seed: -5 }).seed, 5);
+});
+
+test("링크에 방식·범위·씨앗이 실려 그대로 돌아온다", () => {
+    // 씨앗이 안 실리면 링크를 받은 사람이 다른 숫자를 본다.
+    const inputs = ranged({ seed: 777, rateMin: 2.5, rateMax: 11 });
+    const back = parse(new URLSearchParams(serialize(inputs, "detailed")))!;
+
+    assert.equal(back.inputs.rateMode, "range");
+    assert.equal(back.inputs.rateMin, 2.5);
+    assert.equal(back.inputs.rateMax, 11);
+    assert.equal(back.inputs.seed, 777);
+    assert.equal(simulate(back.inputs).final, simulate(inputs).final);
 });

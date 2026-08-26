@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Share2, Check } from "lucide-react";
+import { Share2, Check, Dice5 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import GrowthChart from "./GrowthChart";
@@ -9,7 +9,7 @@ import CalculatorHistory from "./CalculatorHistory";
 import {
     DEFAULTS, TAX_RATE, SIMPLE_ASSUMPTIONS, PERIOD_LABEL,
     sanitize, maskDetail, simulate, serialize, parse, won, pct, basisOf,
-    type CalcInputs, type Detail, type Periods,
+    type CalcInputs, type Detail, type Periods, type RateMode,
 } from "./calc";
 
 const STORAGE_KEY = "compound_calc_inputs_v1";
@@ -97,6 +97,54 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                 <span>{format(min)}</span>
                 <span>{format(max)}</span>
             </div>
+        </div>
+    );
+}
+
+function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateMode) => void }) {
+    return (
+        <div className={cn("flex items-center justify-between gap-3 py-2.5 border-b", RULE)}>
+            <span className={LABEL_CLS}>
+                수익률
+                <span className={HINT_CLS}>
+                    {value === "fixed"
+                        ? "해마다 같은 수익률로 계산합니다"
+                        : "해마다 범위 안에서 무작위로 뽑습니다"}
+                </span>
+            </span>
+            <Segmented
+                label="수익률 방식"
+                value={value}
+                onChange={onChange}
+                options={[{ v: "fixed" as RateMode, label: "고정" }, { v: "range" as RateMode, label: "범위" }]}
+            />
+        </div>
+    );
+}
+
+function RerollRow({ onReroll }: { onReroll: () => void }) {
+    return (
+        <div className={cn("flex items-center justify-between gap-3 py-2.5 border-b", RULE)}>
+            {/* 한 번 굴린 결과는 "일어날 수 있는 하나"일 뿐이다. 그 사실을 적어 두지 않으면
+                마음에 드는 숫자가 나올 때까지 굴리고 그걸 예상으로 삼게 된다. */}
+            <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                아래 결과는 이 범위에서 나올 수 있는 <b className="font-bold text-neutral-700 dark:text-neutral-300">여러 갈래 중 하나</b>입니다.
+                <br className="hidden sm:block" /> 몇 번 굴려 보면 같은 조건이라도 결과가 얼마나 벌어지는지 보입니다.
+            </span>
+            <button
+                type="button"
+                onClick={onReroll}
+                className={cn(
+                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-[2px] border shrink-0 transition-colors",
+                    RULE_HARD,
+                    "bg-white dark:bg-surface-dark-card text-neutral-700 dark:text-neutral-300",
+                    "hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
+                    "focus:outline-none focus:ring-2 focus:ring-[#16a34a]"
+                )}
+            >
+                <Dice5 size={13} strokeWidth={2.2} />
+                다시 굴리기
+            </button>
         </div>
     );
 }
@@ -197,6 +245,9 @@ function Calculator() {
     const set = <K extends keyof CalcInputs>(key: K, value: CalcInputs[K]) =>
         setInputs((prev) => sanitize({ ...prev, [key]: value }));
 
+    /* 씨앗만 바꾼다. 조건은 그대로 두고 "다른 갈래"만 다시 뽑는 것이다. */
+    const reroll = () => set("seed", Math.floor(Math.random() * 1_000_000) + 1);
+
     async function share() {
         try {
             const url = new URL(window.location.href);
@@ -208,6 +259,7 @@ function Calculator() {
     }
 
     const detailed = detail === "detailed";
+    const ranged = effective.rateMode === "range";
     const loss = result.profit < 0;
     const stamp = loss ? "원금 손실" : result.final >= result.principal * 2 ? "원금 2배 이상" : null;
 
@@ -269,12 +321,31 @@ function Calculator() {
                             format={(v) => v.toLocaleString("ko-KR")}
                             onChange={(v) => set("monthly", v)}
                         />
-                        <SliderRow
-                            id="rate" label="연 수익률" hint="세전 기준" unit="%"
-                            value={inputs.rate} range={SLIDER_RANGE.rate}
-                            format={(v) => v.toFixed(1)}
-                            onChange={(v) => set("rate", v)}
-                        />
+                        <RateModeRow value={inputs.rateMode} onChange={(v) => set("rateMode", v)} />
+                        {inputs.rateMode === "fixed" ? (
+                            <SliderRow
+                                id="rate" label="연 수익률" hint="세전 기준" unit="%"
+                                value={inputs.rate} range={SLIDER_RANGE.rate}
+                                format={(v) => v.toFixed(1)}
+                                onChange={(v) => set("rate", v)}
+                            />
+                        ) : (
+                            <>
+                                <SliderRow
+                                    id="rateMin" label="가장 나쁜 해" hint="이 아래로는 안 떨어진다고 볼 때" unit="%"
+                                    value={inputs.rateMin} range={SLIDER_RANGE.rate}
+                                    format={(v) => v.toFixed(1)}
+                                    onChange={(v) => set("rateMin", v)}
+                                />
+                                <SliderRow
+                                    id="rateMax" label="가장 좋은 해" hint="이 위로는 안 오른다고 볼 때" unit="%"
+                                    value={inputs.rateMax} range={SLIDER_RANGE.rate}
+                                    format={(v) => v.toFixed(1)}
+                                    onChange={(v) => set("rateMax", v)}
+                                />
+                                <RerollRow onReroll={reroll} />
+                            </>
+                        )}
                         <SliderRow
                             id="years" label="투자 기간" unit="년"
                             value={inputs.years} range={SLIDER_RANGE.years}
@@ -306,16 +377,43 @@ function Calculator() {
                             </div>
                         </div>
 
-                        <div className={ROW_CLS}>
-                            <label htmlFor="rate" className={LABEL_CLS}>
-                                연 수익률<span className={HINT_CLS}>세전 기준</span>
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <input id="rate" type="number" inputMode="decimal" step={0.1} value={inputs.rate}
-                                    onChange={(e) => set("rate", Number(e.target.value))} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
+                        <RateModeRow value={inputs.rateMode} onChange={(v) => set("rateMode", v)} />
+                        {inputs.rateMode === "fixed" ? (
+                            <div className={ROW_CLS}>
+                                <label htmlFor="rate" className={LABEL_CLS}>
+                                    연 수익률<span className={HINT_CLS}>세전 기준</span>
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input id="rate" type="number" inputMode="decimal" step={0.1} value={inputs.rate}
+                                        onChange={(e) => set("rate", Number(e.target.value))} className={INPUT_CLS} />
+                                    <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <>
+                                <div className={ROW_CLS}>
+                                    <label htmlFor="rateMin" className={LABEL_CLS}>
+                                        가장 나쁜 해<span className={HINT_CLS}>이 아래로는 안 떨어진다고 볼 때</span>
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input id="rateMin" type="number" inputMode="decimal" step={0.1} value={inputs.rateMin}
+                                            onChange={(e) => set("rateMin", Number(e.target.value))} className={INPUT_CLS} />
+                                        <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
+                                    </div>
+                                </div>
+                                <div className={ROW_CLS}>
+                                    <label htmlFor="rateMax" className={LABEL_CLS}>
+                                        가장 좋은 해<span className={HINT_CLS}>이 위로는 안 오른다고 볼 때</span>
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input id="rateMax" type="number" inputMode="decimal" step={0.1} value={inputs.rateMax}
+                                            onChange={(e) => set("rateMax", Number(e.target.value))} className={INPUT_CLS} />
+                                        <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
+                                    </div>
+                                </div>
+                                <RerollRow onReroll={reroll} />
+                            </>
+                        )}
 
                         <div className={ROW_CLS}>
                             <label htmlFor="years" className={LABEL_CLS}>투자 기간</label>
@@ -449,7 +547,10 @@ function Calculator() {
                     <table className="w-full border-collapse text-[13px]">
                         <thead>
                             <tr>
-                                {["연차", "납입 원금", "투자수익", "평가금액", "수익률"].map((h, i) => (
+                                {(ranged
+                                    ? ["연차", "그 해", "납입 원금", "투자수익", "평가금액", "누적"]
+                                    : ["연차", "납입 원금", "투자수익", "평가금액", "수익률"]
+                                ).map((h, i) => (
                                     <th key={h} className={cn(
                                         "text-[11px] font-semibold tracking-[0.1em] text-neutral-500 dark:text-neutral-400",
                                         "py-2 px-2.5 whitespace-nowrap border-b border-neutral-900 dark:border-neutral-100",
@@ -470,6 +571,15 @@ function Calculator() {
                                 return (
                                     <tr key={d.year} className={cn(last && "font-semibold")}>
                                         <td className={cn(cell, "text-neutral-500 dark:text-neutral-400")}>{d.year}년</td>
+                                        {/* 그 해에 실제로 뽑힌 수익률 — 이 열이 있어야 "매년 다르다"가 보인다. */}
+                                        {ranged && (
+                                            <td className={cn(
+                                                cell, NUM_CLS, "text-right",
+                                                (d.rate ?? 0) < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-neutral-700 dark:text-neutral-300"
+                                            )}>
+                                                {pct(d.rate ?? 0)}
+                                            </td>
+                                        )}
                                         <td className={cn(cell, NUM_CLS, "text-right")}>
                                             {Math.round(d.principal).toLocaleString("ko-KR")}
                                         </td>
