@@ -39,5 +39,8 @@ export const metadata: Metadata = {
 };
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
-    return <div className={galmuri.variable}>{children}</div>;
+    // id 는 표시용이 아니라 표식이다. global.css 의 html:has(#game-canvas) 규칙이 이걸 보고
+    // 문서 뿌리까지 기기의 어둠으로 칠한다 — 고무줄 스크롤로 드러나는 자리가 거기다.
+    // 페이지가 아니라 레이아웃에 다는 이유는 불러오는 중에도 그 어둠이 있어야 해서다.
+    return <div id="game-canvas" className={galmuri.variable}>{children}</div>;
 }
