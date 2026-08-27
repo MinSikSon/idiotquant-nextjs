@@ -1,7 +1,12 @@
 // 리플레이 라운드 API — 로그인 사용자 (백엔드 /user/replay).
-// 비로그인은 lib/paper/localRound.ts 가 같은 모양을 브라우저 안에서 다룬다.
+//
+// 판을 굴리는 것은 브라우저다(lib/paper/half.ts). 여기 남은 것은 판을 만들고, 굴리는
+// 중에 체크포인트를 흘려 보내고, 반기가 끝나면 결과를 제출하는 세 가지뿐이다 —
+// 예전에는 매수 한 번, 하루 넘기기 한 번마다 이 파일을 거쳤다.
+//
+// 비로그인은 lib/paper/localRound.ts 가 판 만드는 일까지 브라우저 안에서 한다.
 
-import type { ReplayRound, ReplayHistoryItem, HabitSummary, Reservation, Campaign } from "@/lib/paper/round";
+import type { ReplayRound, ReplayHistoryItem, HabitSummary, Campaign } from "@/lib/paper/round";
 import type { Firm } from "@/lib/paper/firm";
 
 async function replayRequest(method: "GET" | "POST", body?: object) {
@@ -58,28 +63,11 @@ export const startCampaign = (years: number): Promise<ReplayResponse> =>
 export const startReplayRound = (scenario?: string | null): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "start", ...(scenario ? { scenario } : {}) });
 
-/**
- * 하루 진행. 체결가는 서버가 그날 종가로 잡으므로 price 를 보내지 않는다.
- *
- * 필드명이 trade.side / trade.qty 인 것은 취향이 아니다 — app/(api)/api/proxy 가 모든
- * non-GET body 에 PDNO·ORD_QTY·buyOrSell 을 끼워 넣고 buyOrSell 은 값이 없으면 "sell" 로
- * 채운다. 그 이름을 피해야 매수가 매도로 새지 않는다.
+/*
+ * 하루 진행(advance)·사고팔기(trade)·예약(reserve·cancel-reserve)·중도 포기(giveup) 은
+ * 여기서 사라졌다 — 판이 브라우저 안에서 돌면서 부를 일이 없어졌다. 워커 쪽 액션은
+ * 그대로 살아 있으므로 되돌려야 할 일이 생기면 이 자리에 다시 쓰면 된다.
  */
-/** 오늘 사고팔기 — 날짜는 넘기지 않는다. 하루에 네 종목을 다 만질 수 있어야 한다. */
-export const tradeReplayRound = (
-    roundId: string,
-    trade: { side: "buy" | "sell"; qty: number; slot?: number },
-): Promise<ReplayResponse> => replayRequest("POST", { action: "trade", round_id: roundId, trade });
-
-export const advanceReplayRound = (
-    roundId: string,
-    trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null,
-    carry?: boolean,
-): Promise<ReplayResponse> =>
-    replayRequest("POST", { action: "advance", round_id: roundId, trade: trade ?? undefined, ...(carry ? { carry: true } : {}) });
-
-export const giveUpReplayRound = (roundId: string): Promise<ReplayResponse> =>
-    replayRequest("POST", { action: "giveup", round_id: roundId });
 
 /** 리서치 도구 구매. 성공하면 갱신된 firm 이 온다. */
 export const buyTool = (toolId: string): Promise<ReplayResponse> =>
@@ -88,10 +76,28 @@ export const buyTool = (toolId: string): Promise<ReplayResponse> =>
 export const renameFirm = (name: string): Promise<ReplayResponse> =>
     replayRequest("POST", { action: "rename-firm", name });
 
-/** 예약 걸기 — 얼마가 되면 사고, 얼마가 되면 판다. 체결 규칙은 서버에만 있다. */
-export const reserveOrder = (roundId: string, reservation: Reservation): Promise<ReplayResponse> =>
-    replayRequest("POST", { action: "reserve", round_id: roundId, reservation });
+/**
+ * 반기 마감 — 브라우저가 굴린 결과를 제출한다. 서버가 정산까지 채워 돌려준다.
+ * 결과 화면이 쓸 것(지난 분기·회사·지갑·습관·캠페인)도 이 응답에 함께 온다.
+ */
+export const submitHalf = (payload: object): Promise<ReplayResponse> =>
+    replayRequest("POST", { action: "submit", ...payload });
 
-/** 자리(index)로 지운다 — 같은 조건을 두 번 걸 수도 있어 값으로는 못 고른다. */
-export const cancelReserve = (roundId: string, index: number): Promise<ReplayResponse> =>
-    replayRequest("POST", { action: "cancel-reserve", round_id: roundId, index });
+/**
+ * 진행 중 체크포인트 — 기기를 바꿔도 굴리던 판이 살아 있게 한다.
+ *
+ * **응답을 기다리지 않는다.** 화면을 멈추게 할 이유가 없고, 실패해도 판은 브라우저
+ * 안에서 계속 돈다(마지막 체크포인트 이후의 진행만 다른 기기에서 사라진다).
+ * keepalive 는 탭을 닫는 중에도 요청이 끝까지 가게 한다.
+ */
+export function checkpointHalf(payload: object): void {
+    try {
+        void fetch("/api/proxy/user/replay", {
+            method: "POST",
+            credentials: "include",
+            keepalive: true,
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "checkpoint", ...payload }),
+        }).catch(() => { /* 판은 계속 돈다 */ });
+    } catch { /* 〃 */ }
+}

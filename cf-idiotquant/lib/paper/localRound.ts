@@ -68,7 +68,7 @@ export async function buildLocalRound(pool: { ticker: string; name: string }[]):
                 habits: null,     // 체험 운용은 서버가 없어 습관도 안 붙는다
                 sector: null,     // 업종·판 성격도 서버가 붙인다
                 scenario: null,
-                pending: [],      // 예약 체결 규칙은 워커에만 있다 — 체험 운용은 지원하지 않는다
+                pending: [],      // 체험 운용은 예약을 지원하지 않는다 (화면에서도 버튼을 안 띄운다)
                 carried: false,   // 이월도 회사가 있어야 한다
             };
             saveLocal(round);

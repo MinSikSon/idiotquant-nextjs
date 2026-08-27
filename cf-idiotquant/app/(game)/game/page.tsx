@@ -43,7 +43,10 @@ import { SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/
 import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, fitToValue, equalWeightPlan } from "@/lib/paper/sizing";
 import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
-import { getReplayState, startCampaign, startReplayRound, advanceReplayRound, tradeReplayRound, giveUpReplayRound, buyTool, reserveOrder, cancelReserve } from "@/lib/features/paper/replayAPI";
+import {
+    halfTrade, halfAdvance, halfGiveUp, halfReserve, halfCancel, halfSubmission, halfCheckpoint,
+} from "@/lib/paper/half";
+import { getReplayState, startCampaign, startReplayRound, buyTool, submitHalf, checkpointHalf } from "@/lib/features/paper/replayAPI";
 import {
     TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
@@ -120,8 +123,18 @@ const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
 // 자동 재생 한 칸의 간격. 41일이 약 11초 — 캔들이 자라는 게 보이면서 지루하지는 않다.
-// 로그인 판은 하루마다 서버를 다녀오므로 실제로는 이보다 조금 느리게 흐른다.
+// 판이 브라우저 안에서 도는 지금은 이 간격이 그대로 지켜진다(예전에는 하루마다 서버를
+// 다녀오느라 뚝뚝 끊겼다).
 const PLAY_MS = 260;
+
+/**
+ * 체크포인트를 흘려 보내기 전에 기다리는 시간.
+ *
+ * 판은 브라우저 안에서 돌지만 기기를 바꿔도 이어지려면 진행이 서버에도 남아야 한다.
+ * 매 수마다 보내면 왕복을 없앤 뜻이 없어지므로, 손이 멈춘 뒤 한 번만 보낸다
+ * (자동 재생 중에는 260ms 마다 미뤄져 끝나고 한 번 나간다).
+ */
+const CHECKPOINT_MS = 4_000;
 
 /** 화면에 기억해 두는 설정. 판이 바뀌어도, 새로고침해도 남는다. */
 const PREFS_KEY = "iq:game:prefs:v1";
@@ -428,40 +441,100 @@ export default function ReplayGamePage() {
         }
     }, [isLoggedIn, localPool, addToast]);
 
-    // 어느 판에서 출발하는지 인자로 받는다 — 여러 날 건너뛰기가 앞선 응답을 이어받아야 해서,
-    // 클로저에 잡힌 옛 round 로는 비로그인 경로(advanceLocal)가 같은 날을 반복한다.
+    /* ── 진행을 서버에 흘려 보낸다 ────────────────────────────────────
+       판은 브라우저 안에서 돌지만(lib/paper/half.ts) 기기를 바꿔도 이어지려면 진행이
+       서버에도 남아야 한다. 손이 멈춘 뒤 한 번만 보내고, 응답은 기다리지 않는다. */
+    const cpTimer = useRef<number | null>(null);
+    const cpRound = useRef<ReplayRound | null>(null);
+
+    /** 밀린 체크포인트를 지운다. 보내지 않는다. */
+    const dropCheckpoint = useCallback(() => {
+        if (cpTimer.current) { window.clearTimeout(cpTimer.current); cpTimer.current = null; }
+        const r = cpRound.current;
+        cpRound.current = null;
+        return r;
+    }, []);
+
+    const flushCheckpoint = useCallback(() => {
+        const r = dropCheckpoint();
+        if (r && r.status === "playing") checkpointHalf(halfCheckpoint(r));
+    }, [dropCheckpoint]);
+
+    const queueCheckpoint = useCallback((r: ReplayRound) => {
+        if (!isLoggedIn || r.status !== "playing") return;
+        cpRound.current = r;
+        if (cpTimer.current) window.clearTimeout(cpTimer.current);
+        cpTimer.current = window.setTimeout(flushCheckpoint, CHECKPOINT_MS);
+    }, [isLoggedIn, flushCheckpoint]);
+
+    // 탭을 닫거나 다른 화면으로 갈 때 밀린 체크포인트를 보낸다. keepalive 라 닫는 중에도 간다.
+    useEffect(() => {
+        window.addEventListener("pagehide", flushCheckpoint);
+        return () => { window.removeEventListener("pagehide", flushCheckpoint); flushCheckpoint(); };
+    }, [flushCheckpoint]);
+
+    /**
+     * 반기 마감 — 브라우저가 굴린 결과를 제출하고, 서버가 정산까지 채운 판으로 갈아 끼운다.
+     *
+     * 결과 화면이 쓸 것(지난 분기·회사·지갑·습관·캠페인)이 이 응답에 함께 온다 — 예전에는
+     * 마감하고 상태를 한 번 더 물어봤는데, 반기당 왕복을 둘로 줄이는 것이 이 작업의 요지다.
+     */
+    const submit = useCallback(async (finished: ReplayRound) => {
+        // 밀린 체크포인트는 버린다 — 제출이 그보다 나중이고 더 많은 것을 담고 있다.
+        dropCheckpoint();
+        let res = await submitHalf(halfSubmission(finished));
+        if (!res.success && res.status === 0) res = await submitHalf(halfSubmission(finished));
+        if (!res.success) {
+            // 화면에는 결과가 떠 있지만 서버에는 아직 진행 중인 판이다. 새로고침하면 마지막
+            // 체크포인트에서 이어지므로, 무슨 일이 났는지 말해 주는 것이 할 수 있는 전부다.
+            addToast("error", "결과를 저장하지 못했습니다. 새로고침하면 굴리던 판에서 이어집니다.");
+            return;
+        }
+        setRound(res.round);
+        setHistory(res.history ?? []);
+        setFirm(res.firm ?? null);
+        setHabits(res.habits ?? null);
+        setBestReturn(res.wallet?.best_return ?? null);
+        // 마지막 반기였으면 굴러가는 캠페인이 없다 — 그때는 기간이 끝난 것이다.
+        if (campaign && !res.campaign) setEndedCampaign(campaign);
+        setCampaign(res.campaign ?? null);
+    }, [campaign, addToast, flushCheckpoint]);
+
+    // 어느 판에서 출발하는지 인자로 받는다 — 여러 날 건너뛰기가 앞선 판을 이어받아야 해서,
+    // 클로저에 잡힌 옛 round 로는 같은 날을 반복한다.
+    //
+    // trade 는 체험 운용에만 온다. 종목이 하나뿐이던 시절에는 "사면 하루가 지난다"였는데,
+    // 넷을 굴리는 판에서는 같은 날 둘을 사고 하나를 파는 게 당연한 일이라 시간과 매매를
+    // 갈라 뒀다(로그인 판의 매매는 tradeFrom 이 받는다).
     const advanceFrom = useCallback(async (
         from: ReplayRound, trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null, carry?: boolean,
     ): Promise<ReplayRound | null> => {
         if (from.status !== "playing") return null;
-        setBusy(true);
-        try {
-            if (isLoggedIn) {
-                const res = await advanceReplayRound(from.id, trade, carry);
-                if (!res.success) { addToast("error", res.error); return null; }
+
+        if (!isLoggedIn) {
+            setBusy(true);
+            try {
+                const res = advanceLocal(from, trade);
+                if (!res.ok) { addToast("error", res.error); return null; }
                 setRound(res.round);
-                if (res.done) {
-                    const st = await getReplayState();
-                    if (st.success) {
-                        setHistory(st.history ?? []);
-                        setFirm(st.firm ?? null);
-                        setHabits(st.habits ?? null);
-                        setBestReturn(st.wallet?.best_return ?? null);
-                        // 마지막 반기였으면 굴러가는 캠페인이 없다 — 그때는 기간이 끝난 것이다.
-                        if (campaign && !st.campaign) setEndedCampaign(campaign);
-                        setCampaign(st.campaign ?? null);
-                    }
-                }
                 return res.round;
+            } finally {
+                setBusy(false);
             }
-            const res = advanceLocal(from, trade);
-            if (!res.ok) { addToast("error", res.error); return null; }
-            setRound(res.round);
-            return res.round;
-        } finally {
-            setBusy(false);
         }
-    }, [isLoggedIn, addToast, campaign]);
+
+        // 하루 넘기기는 브라우저 안에서 끝난다 — 캔들이 이미 여기 있다.
+        const res = halfAdvance(from, { carry: carry === true });
+        if (!res.ok) { addToast("error", res.error); return null; }
+        setRound(res.round);
+        if (res.done) {
+            setBusy(true);
+            try { await submit(res.round); } finally { setBusy(false); }
+        } else {
+            queueCheckpoint(res.round);
+        }
+        return res.round;
+    }, [isLoggedIn, addToast, submit, queueCheckpoint]);
 
     const advance = useCallback(async (
         trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null, carry?: boolean,
@@ -489,12 +562,15 @@ export default function ReplayGamePage() {
             if (res) markFilled();
             return res;
         }
-        const res = await tradeReplayRound(from.id, { side, qty, slot: atSlot });
-        if (!res.success) { addToast("error", res.error); return null; }
+        // 체결은 브라우저 안에서 끝난다. 예전에는 여기서 서버를 다녀왔고, 그동안 사기·팔기·
+        // 관망 버튼이 전부 회색으로 죽어 있었다.
+        const res = halfTrade(from, { side, qty, slot: atSlot });
+        if (!res.ok) { addToast("error", res.error); return null; }
         setRound(res.round);
         markFilled();
+        queueCheckpoint(res.round);
         return res.round;
-    }, [isLoggedIn, advanceFrom, addToast, markFilled]);
+    }, [isLoggedIn, advanceFrom, addToast, markFilled, queueCheckpoint]);
 
     const trade = useCallback(async (side: "buy" | "sell", qty: number, atSlot: number) => {
         if (!round) return;
@@ -543,9 +619,8 @@ export default function ReplayGamePage() {
     /**
      * 지금 주문을 낼 수 없는 상태.
      *
-     * 재생 중에 매매를 열어 두면 두 가지가 곤란하다. 하나는 하루가 넘어갈 때마다 busy 가
-     * 깜빡여 버튼이 켜졌다 꺼졌다 하는 것이고, 다른 하나는 어느 날 가격에 체결된 것인지
-     * 누른 사람도 모르게 되는 것이다. 재생은 보는 시간이고, 사려면 세우면 된다.
+     * 재생 중에 매매를 열어 두면 어느 날 가격에 체결된 것인지 누른 사람도 모르게 된다.
+     * 재생은 보는 시간이고, 사려면 세우면 된다.
      */
     const locked = busy || auto;
 
@@ -626,24 +701,16 @@ export default function ReplayGamePage() {
         if (!round || round.status !== "playing") return;
         setBusy(true);
         try {
-            if (isLoggedIn) {
-                const res = await giveUpReplayRound(round.id);
-                if (!res.success) { addToast("error", res.error); return; }
-                setRound(res.round);
-                const st = await getReplayState();
-                if (st.success) {
-                    setHistory(st.history ?? []); setFirm(st.firm ?? null);
-                    setHabits(st.habits ?? null); setBestReturn(st.wallet?.best_return ?? null);
-                    if (campaign && !st.campaign) setEndedCampaign(campaign);
-                    setCampaign(st.campaign ?? null);
-                }
-            } else {
-                setRound(giveUpLocal(round));
-            }
+            if (!isLoggedIn) { setRound(giveUpLocal(round)); return; }
+            // 중도 포기도 반기가 끝난 것이다 — 그날 종가로 청산하고 그대로 제출한다.
+            const res = halfGiveUp(round);
+            if (!res.ok) { addToast("error", res.error); return; }
+            setRound(res.round);
+            await submit(res.round);
         } finally {
             setBusy(false);
         }
-    }, [round, isLoggedIn, addToast, campaign]);
+    }, [round, isLoggedIn, addToast, submit]);
 
     const reset = useCallback(() => {
         if (!isLoggedIn) saveLocal(null);
@@ -677,7 +744,12 @@ export default function ReplayGamePage() {
     // 종목이 하나뿐인 판에는 개요가 없다 — 볼 것이 하나뿐이다.
     const overview = holdings.length > 1 && !detail;
 
-    /** 지금까지 열린 구간만. 로컬 라운드는 캔들을 전부 들고 있어 여기서 잘라야 한다. */
+    /**
+     * 지금까지 열린 구간만.
+     *
+     * 판은 캔들을 전부 들고 있다 — 브라우저 안에서 굴러가야 해서다. 화면에 그리는 것은
+     * 반드시 이걸 거친다. 여기를 빼먹으면 앞날이 차트에 그대로 그려진다.
+     */
     const openOnly = useCallback((src: Candle[]): Candle[] =>
         (round ? src.slice(0, round.status === "done" ? src.length : round.cursor) : []),
         [round]);
@@ -826,35 +898,27 @@ export default function ReplayGamePage() {
         resKind === "buy_limit" ? buyQtyFor(part, resPriceAt(resStep)) : sellQtyFor(part),
         [resKind, resStep, buyQtyFor, sellQtyFor, resPriceAt]);
 
-    const reserve = useCallback(async () => {
+    const reserve = useCallback(() => {
         if (!round) return;
-        setBusy(true);
-        try {
-            const p = resPriceAt(resStep), n = resQtyFor(resPart);
-            // 지금 보고 있는 자리에 건다. 값도 수량도 이 자리 것으로 잡았으니 판정도
-            // 이 자리에서 나야 한다 — 안 보내면 워커가 0번으로 읽는다.
-            const at = sel?.slot ?? 0;
-            const res = await reserveOrder(round.id, { kind: resKind, price: p, qty: n, slot: at });
-            if (!res.success) { addToast("error", res.error); return; }
-            setRound(res.round);
-            const where = holdings.length > 1 ? `${slotName(holdings[at])} · ` : "";
-            addToast("success", `${where}${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
-        } finally {
-            setBusy(false);
-        }
-    }, [round, sel, holdings, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast]);
+        const p = resPriceAt(resStep), n = resQtyFor(resPart);
+        // 지금 보고 있는 자리에 건다. 값도 수량도 이 자리 것으로 잡았으니 판정도
+        // 이 자리에서 나야 한다 — 안 보내면 0번 자리 예약이 된다.
+        const at = sel?.slot ?? 0;
+        const res = halfReserve(round, { kind: resKind, price: p, qty: n, slot: at });
+        if (!res.ok) { addToast("error", res.error); return; }
+        setRound(res.round);
+        queueCheckpoint(res.round);
+        const where = holdings.length > 1 ? `${slotName(holdings[at])} · ` : "";
+        addToast("success", `${where}${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
+    }, [round, sel, holdings, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast, queueCheckpoint]);
 
-    const unreserve = useCallback(async (index: number) => {
+    const unreserve = useCallback((index: number) => {
         if (!round) return;
-        setBusy(true);
-        try {
-            const res = await cancelReserve(round.id, index);
-            if (!res.success) { addToast("error", res.error); return; }
-            setRound(res.round);
-        } finally {
-            setBusy(false);
-        }
-    }, [round, addToast]);
+        const res = halfCancel(round, index);
+        if (!res.ok) { addToast("error", res.error); return; }
+        setRound(res.round);
+        queueCheckpoint(res.round);
+    }, [round, addToast, queueCheckpoint]);
 
     const purchase = useCallback(async (toolId: string) => {
         setBusy(true);
@@ -1479,8 +1543,7 @@ export default function ReplayGamePage() {
                                             // 예약 버튼이 이 줄 끝에 붙는다 — 따로 한 줄을 쓰면 그만큼이 차트에서
                                             // 빠진다. 마지막 날에는 걸어도 체결될 날이 없어 안 띄운다.
                                             <div className="flex gap-1">
-                                                {/* 재생만은 busy 로 막지 않는다 — 한 칸 넘어갈 때마다 busy 가 잠깐
-                                                    켜지는데, 그 사이에 멈춤이 안 눌리면 세울 방법이 없어진다. */}
+                                                {/* 재생만은 locked 로 막지 않는다 — 재생 중에도 멈출 수 있어야 한다 */}
                                                 <RetroBtn onClick={auto ? stopAuto : startAuto}
                                                     tone={auto ? "warn" : "plain"} aria-pressed={auto}
                                                     aria-label={auto ? "재생 멈춤 (스페이스)" : "자동 재생 (스페이스)"}
