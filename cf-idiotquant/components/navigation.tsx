@@ -3,6 +3,7 @@
 import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { R } from "@/lib/retroPalette";
 import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import { cn } from "@/lib/utils";
@@ -104,19 +105,26 @@ function SideItem({
 
 /* ─── BOTTOM TAB ITEM (mobile) ────────────────────────────────────── */
 function TabItem({
-  href, label, icon: Icon, emoji, isActive,
+  href, label, icon: Icon, emoji, isActive, retro,
 }: {
   href: string; label: string; icon?: any; emoji?: string; isActive: boolean;
+  /** /game 에서는 이 바도 기기의 일부다 — 색만 바꿔 끼운다. */
+  retro?: boolean;
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
+        "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 transition-colors",
+        // 각진 모서리도 일체감의 일부다. 이 기기에는 둥근 것이 없다.
+        retro ? "rounded-none" : "rounded-xl",
+        // 안 고른 탭은 레트로에서도 같은 회색을 쓴다 — 옆의 '더보기' 는 TabItem 이
+        // 아니라 이 색을 클래스로 갖고 있어서, 여기만 따로 칠하면 둘이 어긋난다.
         isActive
-          ? "text-[#16a34a] dark:text-[#16a34a] bg-surface-canvas dark:bg-surface-dark-muted"
+          ? (retro ? "" : "text-[#16a34a] dark:text-[#16a34a] bg-surface-canvas dark:bg-surface-dark-muted")
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
+      style={retro && isActive ? { color: R.neon } : undefined}
     >
       {emoji && isActive ? (
         <span className="text-[19px] leading-none h-5 flex items-center" aria-hidden>{emoji}</span>
@@ -214,6 +222,18 @@ export function NavbarWithSimpleLinks() {
   // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
   const moreNav = MORE_NAV.filter(i => !i.authOnly || status === "authenticated");
   const moreActive = moreNav.some(i => active(pathname, i.href));
+
+  /* /game 은 90년대 기기 한 대다. 위아래 바가 흰 앱 껍데기로 남아 있으면 기기가 그
+     안에 얹힌 다른 물건으로 보인다 — 같은 어둠에 같은 모서리로 맞춘다.
+     구조는 그대로 두고 색과 모서리만 바꿔 끼운다: 이 바는 모든 화면이 쓰는 것이라
+     게임 때문에 배치가 달라지면 다른 화면이 그 값을 치른다. */
+  const retro = pathname.startsWith("/game");
+  /* 바 안의 글자·아이콘 색을 하나하나 바꾸지 않는다. 이 바들은 이미 어두운 바탕용
+     dark: 변형을 다 갖고 있으므로, 바에 `dark` 를 씌워 그 색을 쓰게 한다(tailwind 는
+     class 기반이라 앱 테마와 무관하게 이 안에서만 켜진다). 바탕만 기기와 같은 어둠으로
+     덮으면 끝이고, 나중에 메뉴가 늘어도 색을 또 손볼 일이 없다. */
+  const retroBar = { background: R.bg, borderColor: R.lo } as const;
+  const retroScope = retro ? "dark" : "";
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const showMore = moreOpen || moreActive;
@@ -239,7 +259,9 @@ export function NavbarWithSimpleLinks() {
   return (
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 bg-white dark:bg-surface-dark border-r border-neutral-200/70 dark:border-surface-dark-border">
+      <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r", retroScope,
+        retro ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
+        style={retro ? retroBar : undefined}>
 
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#2c2b27] shrink-0">
@@ -342,7 +364,9 @@ export function NavbarWithSimpleLinks() {
       </aside>
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-b border-neutral-200/70 dark:border-surface-dark-border flex items-center justify-between px-4">
+      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-4", retroScope,
+        retro ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
+        style={retro ? retroBar : undefined}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <div className="w-6 h-6 bg-[#16a34a] rounded-md flex items-center justify-center shadow-sm shadow-[#16a34a]/25 shrink-0">
@@ -363,17 +387,19 @@ export function NavbarWithSimpleLinks() {
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-surface-dark-border flex items-center px-3">
-        <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
+      <nav className={cn("md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3", retroScope,
+        retro ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
+        style={retro ? retroBar : undefined}>
+        <TabItem retro={retro} href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 모의투자는 admin 전용 — 사이드바(MAIN_NAV의 adminOnly)와 같은 기준 */}
         {isAdmin && (
-          <TabItem href="/game"       label="모의투자" icon={Wallet} isActive={pathname.startsWith("/game")} />
+          <TabItem retro={retro} href="/game"       label="모의투자" icon={Wallet} isActive={pathname.startsWith("/game")} />
         )}
-        <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
+        <TabItem retro={retro} href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         {isAdmin && (
-          <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
+          <TabItem retro={retro} href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
         )}
-        <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
+        <TabItem retro={retro} href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <button
           type="button"
           onClick={() => setMoreSheet(v => !v)}
