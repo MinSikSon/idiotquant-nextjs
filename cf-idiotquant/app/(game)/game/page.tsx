@@ -1045,7 +1045,7 @@ export default function ReplayGamePage() {
         // 이 화면은 브라운관 안이다 — 앱이 밝은 테마여도 여기는 늘 어둡다.
         // min-h-screen 을 그대로 쓰면 layout 의 상단 48 + 하단 탭 64 가 더해져 내용과
         // 무관하게 112px 이 항상 스크롤된다. 모바일에서는 그 크롬을 뺀 높이를 바닥으로 삼는다.
-        <div className={cn(PIXEL, "min-h-[calc(100dvh-112px)] md:min-h-screen")} style={{ background: R.bg }}>
+        <div className={cn(PIXEL, "min-h-[calc(100dvh-112px)] md:min-h-[100dvh]")} style={{ background: R.bg }}>
             <ToastContainer toasts={toasts} onRemove={removeToast} />
 
             <div className={cn(
@@ -1057,6 +1057,9 @@ export default function ReplayGamePage() {
                 screen === "play"
                     ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-2 sm:py-3 gap-2"
                     : "py-3 sm:py-8 pb-8 md:pb-24 gap-2.5",
+                // 시작 화면은 창 하나뿐이라 위에 붙여 두면 아래가 통째로 빈다.
+                // 남는 자리를 위아래로 나눠 기기가 화면 한가운데 놓이게 한다.
+                screen === "title" && "min-h-[calc(100dvh-112px)] md:min-h-[100dvh] justify-center",
             )}>
 
                 {/* ① 시작 ─────────────────────────────────────── */}
