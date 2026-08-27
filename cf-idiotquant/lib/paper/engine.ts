@@ -55,7 +55,12 @@ export function quoteBuy(args: { price: number; qty: number; cash: number }): Bu
     return { ok: true, side: "buy", price, qty, gross, fee, total };
 }
 
-export function quoteSell(args: { price: number; qty: number; position?: PaperPosition | null }): SellQuote | QuoteError {
+// 보유분에서 읽는 것은 수량과 원가뿐이다. 종목 이름까지 요구하면 자리(slot)만 들고 있는
+// 쪽이 쓸 수 없는 값을 지어내야 한다.
+export function quoteSell(args: {
+    price: number; qty: number;
+    position?: (Partial<PaperPosition> & Pick<PaperPosition, "qty" | "cost_basis">) | null;
+}): SellQuote | QuoteError {
     const price = Math.floor(Number(args.price) || 0);
     const qty = Math.floor(Number(args.qty) || 0);
     if (price <= 0) return { ok: false, error: "현재가를 가져오지 못했습니다." };
