@@ -60,6 +60,13 @@ export interface Reservation {
     kind: "buy_limit" | "stop_loss" | "take_profit";
     price: number;
     qty: number;
+    /**
+     * 어느 자리(종목)에 건 예약인가.
+     *
+     * 체결 판정은 이 자리의 캔들로 난다(워커 _fillReservations). 안 보내면 0번 —
+     * 종목이 하나뿐이던 시절 예약과 같은 취급이라 옛 기록도 그대로 읽힌다.
+     */
+    slot?: number;
 }
 
 /** 서버 `_publicRound` 와 같은 모양. 진행 중에는 정답과 미래 캔들이 비어 있다. */

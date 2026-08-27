@@ -86,6 +86,15 @@ const RESERVE_KINDS: { id: Reservation["kind"]; label: string; hint: string }[] 
 ];
 const reserveLabel = (k: string) => RESERVE_KINDS.find(r => r.id === k)?.label ?? k;
 
+/**
+ * 그 자리를 뭐라고 부를까.
+ *
+ * 판이 도는 동안은 종목명이 없다 — 업종이 그 자리를 부르는 이름이 된다. 업종도 없으면
+ * 자리 번호로 부른다. 예약 칩과 종목 칩이 같은 이름을 써야 "이 예약이 저 종목 것" 이 보인다.
+ */
+const slotName = (h?: { slot: number; sector: string | null; name: string | null } | null) =>
+    h ? (h.name ?? h.sector ?? `${h.slot + 1}번`) : "";
+
 // 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 주식 수를 손으로 적는 것보다 이쪽이
 // 실제로 하는 생각("반은 실어 보자")에 가깝고, 폰에서 한 손으로 굴러간다.
 const BUY_PARTS = [
@@ -822,14 +831,18 @@ export default function ReplayGamePage() {
         setBusy(true);
         try {
             const p = resPriceAt(resStep), n = resQtyFor(resPart);
-            const res = await reserveOrder(round.id, { kind: resKind, price: p, qty: n });
+            // 지금 보고 있는 자리에 건다. 값도 수량도 이 자리 것으로 잡았으니 판정도
+            // 이 자리에서 나야 한다 — 안 보내면 워커가 0번으로 읽는다.
+            const at = sel?.slot ?? 0;
+            const res = await reserveOrder(round.id, { kind: resKind, price: p, qty: n, slot: at });
             if (!res.success) { addToast("error", res.error); return; }
             setRound(res.round);
-            addToast("success", `${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
+            const where = holdings.length > 1 ? `${slotName(holdings[at])} · ` : "";
+            addToast("success", `${where}${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
         } finally {
             setBusy(false);
         }
-    }, [round, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast]);
+    }, [round, sel, holdings, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast]);
 
     const unreserve = useCallback(async (index: number) => {
         if (!round) return;
@@ -1150,7 +1163,7 @@ export default function ReplayGamePage() {
                                                         </span>
                                                         {/* 진행 중에는 이름이 없다 — 업종이 그 종목을 부르는 이름이 된다 */}
                                                         <span className={cn("truncate", h.name && round.status === "done" && "reveal-answer")}>
-                                                            {h.name ?? h.sector ?? `${h.slot + 1}번`}
+                                                            {slotName(h)}
                                                         </span>
                                                     </span>
                                                     {/* 개요에서는 추세선을 함께. 값(현재가)만으로는 종목마다 자릿수가 달라
@@ -1306,6 +1319,18 @@ export default function ReplayGamePage() {
                                                 onClick={() => setBuyMode(m => m === "split" ? "part" : "split")}
                                                 title="내 돈을 몇 등분해서 살지로 바꾼다"
                                                 aria-pressed={buyMode === "split"}>1/N</RetroBtn>
+                                        )}
+                                        {/* 예약도 자리 하나에 거는 것이라 1/N 과 같은 자리다. 한때 관망 줄에
+                                            있었는데, 그 줄은 개요에만 보여서 정작 종목을 골라 들어가면
+                                            예약을 열 방법이 없었다 — 값도 수량도 그 종목 것으로 잡히는데. */}
+                                        {!overview && isLoggedIn && (
+                                            <RetroBtn size="sm" selected={reserveOpen} disabled={auto}
+                                                onClick={() => setReserveOpen(v => !v)}
+                                                title="이 종목에 지정가·손절·익절을 걸어 둔다"
+                                                aria-pressed={reserveOpen}>
+                                                {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
+                                                예약{(round.pending ?? []).length > 0 && ` ${(round.pending ?? []).length}`}
+                                            </RetroBtn>
                                         )}
                                         <RetroBtn size="sm" selected={fitOpen}
                                             // 열 때 손잡이를 지금 비중으로 끌어다 놓지 않는다. 한때 그렇게
@@ -1473,12 +1498,6 @@ export default function ReplayGamePage() {
                                                         </RetroBtn>
                                                     ))}
                                                 </div>
-                                                {isLoggedIn && (
-                                                    <RetroBtn onClick={() => setReserveOpen(v => !v)} disabled={auto} className="shrink-0 min-h-[42px] px-2">
-                                                        {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
-                                                        예약{(round.pending ?? []).length > 0 && ` ${(round.pending ?? []).length}`} {reserveOpen ? "▾" : "▸"}
-                                                    </RetroBtn>
-                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1492,20 +1511,41 @@ export default function ReplayGamePage() {
                                             !reserveOpen && (round.pending ?? []).length === 0 && "hidden")}>
                                             {(round.pending ?? []).length > 0 && (
                                                 <div className="flex items-center gap-1 flex-wrap">
-                                                    {(round.pending ?? []).map((r, i) => (
-                                                        <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[28px] px-1.5 text-[11px]"
-                                                            style={{ background: R.faceLo, boxShadow: IN, color: R.ink }}>
-                                                            {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
-                                                            <button onClick={() => unreserve(i)} disabled={busy}
-                                                                className="ml-0.5 px-1 disabled:opacity-40" aria-label="예약 취소"
-                                                                style={{ color: "#9e1414" }}>×</button>
-                                                        </span>
-                                                    ))}
+                                                    {(round.pending ?? []).map((r, i) => {
+                                                        // 자리를 안 적은 옛 예약은 0번으로 읽는다(워커와 같은 규칙).
+                                                        const at = holdings[r.slot ?? 0];
+                                                        return (
+                                                            <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[28px] px-1.5 text-[11px]"
+                                                                style={{ background: R.faceLo, boxShadow: IN, color: R.ink }}>
+                                                                {/* 어느 종목 예약인지 먼저 — 넷을 굴리면 이것부터 알아야 한다 */}
+                                                                {holdings.length > 1 && at && (
+                                                                    <span className="inline-flex items-center gap-1 font-bold">
+                                                                        <span className="w-[15px] h-[11px] overflow-hidden shrink-0">
+                                                                            <SectorSprite sector={at.sector ?? undefined} color={sectorAccent(at.sector ?? undefined)} />
+                                                                        </span>
+                                                                        {slotName(at)}
+                                                                    </span>
+                                                                )}
+                                                                {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
+                                                                <button onClick={() => unreserve(i)} disabled={busy}
+                                                                    className="ml-0.5 px-1 disabled:opacity-40" aria-label="예약 취소"
+                                                                    style={{ color: "#9e1414" }}>×</button>
+                                                            </span>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
 
                                             {reserveOpen && (
                                                 <Sunken className="flex items-center gap-1 flex-wrap">
+                                                    {/* 어느 자리에 걸리는지 먼저 말한다 — 값도 수량도 이 자리 것으로
+                                                        잡히므로, 다른 종목을 보며 건 줄 알면 판정이 어긋난 것처럼 보인다. */}
+                                                    {holdings.length > 1 && (
+                                                        <span className="w-full text-[11px]" style={{ color: R.ink }}>
+                                                            <b>{slotName(sel)}</b>
+                                                            <span style={{ color: R.inkDim }}>에 겁니다 · 다른 종목은 눌러 들어가서 거세요</span>
+                                                        </span>
+                                                    )}
                                                     {RESERVE_KINDS.map(k => (
                                                         <RetroBtn key={k.id} size="sm" selected={resKind === k.id}
                                                             onClick={() => setResKind(k.id)} title={k.hint}>
