@@ -29,6 +29,23 @@
 
 html { scroll-behavior: smooth; }
 
+/* ── 게임 화면의 바탕은 문서 뿌리까지 ──
+   /game 은 앱 테마와 무관하게 브라운관 안이고, 그 어둠은 페이지 안쪽 div 에 칠해져 있다.
+   그런데 끝까지 내린 뒤 한 번 더 당기면(고무줄 스크롤) 화면 밖이 잠깐 드러나는데, 그 자리를
+   칠하는 것은 페이지가 아니라 **문서 뿌리**다 — body 의 밝은 캔버스가 흰 띠로 튀어나왔다.
+   그래서 뿌리에도 같은 어둠을 칠하고, 애초에 튕기지 않게 한다(게임은 한 화면이라 이어서
+   스크롤될 곳이 없다). 페이지 쪽 규칙이 아니라 여기 있어야 하는 이유가 그것이다.
+
+   #game-canvas 는 app/(game)/layout.tsx 가 다는 표식이다. 색은 lib/retroPalette.ts 의 R.bg
+   와 같아야 한다 — CSS 가 TS 를 못 읽어 한 곳에서 읽지 못하는 자리라, 한쪽을 바꾸면
+   다른 쪽도 바꾼다.
+
+   :has() 를 못 읽는 옛 브라우저는 지금까지처럼 동작한다(고무줄에 밝은 띠). 기능이 아니라
+   마감이라 그렇게 물러나도 된다. */
+html:has(#game-canvas),
+html:has(#game-canvas) body { background-color: #0b0f10; }
+html:has(#game-canvas) { overscroll-behavior-y: none; }
+
 /* ── Scroll reveal ──
    IntersectionObserver가 .is-in을 붙이면 올라오며 나타난다. 관측 전 기본값이 숨김이므로
    JS가 실패하면 콘텐츠가 영영 안 보인다 → no-js 대비로 reduce-motion에서는 항상 보이게 둔다.
