@@ -25,14 +25,14 @@
 // 남으므로 브라우저에서 앞날을 볼 수 있으면 그 기록이 거짓이 되기 때문이다. 비로그인은
 // 브라우저 안에서 굴리고 기록을 남기지 않는다.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 // 아이콘은 뜻이 겹치지 않게 고른다. 예전에는 Flag 가 "그만"과 "지난 분기" 두 곳에 쓰여
 // 같은 그림이 전혀 다른 일을 가리켰다.
 import {
-    Play, ArrowLeft, EyeOff,
+    Play, Pause, ArrowLeft, EyeOff,
     FlaskConical, History, Footprints, Lock, Check, ChevronDown,
 } from "lucide-react";
 
@@ -86,6 +86,15 @@ const RESERVE_KINDS: { id: Reservation["kind"]; label: string; hint: string }[] 
 ];
 const reserveLabel = (k: string) => RESERVE_KINDS.find(r => r.id === k)?.label ?? k;
 
+/**
+ * 그 자리를 뭐라고 부를까.
+ *
+ * 판이 도는 동안은 종목명이 없다 — 업종이 그 자리를 부르는 이름이 된다. 업종도 없으면
+ * 자리 번호로 부른다. 예약 칩과 종목 칩이 같은 이름을 써야 "이 예약이 저 종목 것" 이 보인다.
+ */
+const slotName = (h?: { slot: number; sector: string | null; name: string | null } | null) =>
+    h ? (h.name ?? h.sector ?? `${h.slot + 1}번`) : "";
+
 // 살 때는 현금의 몇 %, 팔 때는 보유의 몇 %. 주식 수를 손으로 적는 것보다 이쪽이
 // 실제로 하는 생각("반은 실어 보자")에 가깝고, 폰에서 한 손으로 굴러간다.
 const BUY_PARTS = [
@@ -110,6 +119,12 @@ const RESERVE_STEPS = { down: [3, 5, 10], up: [5, 10, 20] };
 // 여러 날 건너뛰기를 멈추는 문턱. 이만큼 움직인 날은 지나치면 손쓸 수 없다.
 const JUMP_STOP_PCT = 7;
 const SKIP_STEPS = [3, 5];
+// 자동 재생 한 칸의 간격. 41일이 약 11초 — 캔들이 자라는 게 보이면서 지루하지는 않다.
+// 로그인 판은 하루마다 서버를 다녀오므로 실제로는 이보다 조금 느리게 흐른다.
+const PLAY_MS = 260;
+
+/** 화면에 기억해 두는 설정. 판이 바뀌어도, 새로고침해도 남는다. */
+const PREFS_KEY = "iq:game:prefs:v1";
 
 // ── 이 화면의 색 규칙 ────────────────────────────────────────────────
 //
@@ -302,11 +317,36 @@ export default function ReplayGamePage() {
     const [reserveOpen, setReserveOpen] = useState(false);
     // 시작 화면을 지났나. 이것만은 데이터로 알 수 없어 따로 든다.
     const [entered, setEntered] = useState(false);
-    // 사기 줄의 눈금 — 내 돈의 몇 %(part)냐, 현금을 몇 등분한 한 몫(split)이냐.
+    // 사기 줄의 눈금 — 내 돈의 몇 %(part)냐, 내 돈을 몇 등분한 한 몫(split)이냐.
     const [buyMode, setBuyMode] = useState<"part" | "split">("part");
     // 비중 맞추기 패널. 예약과 같은 방식으로 접었다 편다.
     const [fitOpen, setFitOpen] = useState(false);
     const [target, setTarget] = useState(50);
+    // 어떤 자리에서 시작할까(준비 화면에서 고른 값). 결과 화면에서 바로 다음 반기를
+    // 시작할 때도 이 값을 쓴다 — 매번 같은 자리를 고르는 사람에게 준비 화면은 문일 뿐이다.
+    const [wantScenario, setWantScenario] = useState<string | null>(null);
+
+    /* 골라 둔 것을 기억한다. 반기마다 같은 값을 다시 맞추는 것이 이 화면에서 가장
+       잦은 헛손질이었다. 계산기가 쓰는 방식과 같다 — 깨져 있으면 기본값으로 시작한다. */
+    const prefsRead = useRef(false);
+    useEffect(() => {
+        if (prefsRead.current) return;
+        prefsRead.current = true;
+        try {
+            const raw = localStorage.getItem(PREFS_KEY);
+            if (!raw) return;
+            const p = JSON.parse(raw);
+            if (p.buyMode === "part" || p.buyMode === "split") setBuyMode(p.buyMode);
+            if (typeof p.target === "number" && p.target >= 0 && p.target <= 100) setTarget(p.target);
+            if (p.wantScenario === null || SCENARIOS.some(s => s.id === p.wantScenario)) setWantScenario(p.wantScenario ?? null);
+        } catch { /* 기본값으로 시작한다 — 화면을 막을 일은 아니다 */ }
+    }, []);
+    useEffect(() => {
+        if (!prefsRead.current) return;
+        try {
+            localStorage.setItem(PREFS_KEY, JSON.stringify({ buyMode, target, wantScenario }));
+        } catch { /* 저장 못 해도 판은 돈다 */ }
+    }, [buyMode, target, wantScenario]);
     const [resKind, setResKind] = useState<Reservation["kind"]>("buy_limit");
     // 값 대신 "지금 값에서 몇 % 떨어진 자리"와 "얼마만큼"으로 고른다.
     const [resStep, setResStep] = useState(5);
@@ -486,6 +526,102 @@ export default function ReplayGamePage() {
         }
     }, [round, advanceFrom, addToast]);
 
+    /**
+     * 자동 재생 — 41일을 손으로 넘기지 않는다.
+     *
+     * 건너뛰기(skipDays)와 같은 규칙으로 서되, 세울 이유를 하나 더 본다: 걸어 둔 예약이
+     * 체결되면 멈춘다. 예약이 걸렸다는 건 "여기 오면 봐 달라"고 표시해 둔 자리라,
+     * 그냥 지나가면 걸어 둔 뜻이 없어진다.
+     *
+     * 멈춤 스위치는 ref 다. 상태로만 두면 돌고 있는 루프가 옛 값을 보고 못 선다.
+     */
+    const autoRef = useRef(false);
+    const [auto, setAuto] = useState(false);
+
+    const stopAuto = useCallback(() => { autoRef.current = false; setAuto(false); }, []);
+
+    /**
+     * 지금 주문을 낼 수 없는 상태.
+     *
+     * 재생 중에 매매를 열어 두면 두 가지가 곤란하다. 하나는 하루가 넘어갈 때마다 busy 가
+     * 깜빡여 버튼이 켜졌다 꺼졌다 하는 것이고, 다른 하나는 어느 날 가격에 체결된 것인지
+     * 누른 사람도 모르게 되는 것이다. 재생은 보는 시간이고, 사려면 세우면 된다.
+     */
+    const locked = busy || auto;
+
+    const startAuto = useCallback(async () => {
+        if (!round || round.status !== "playing" || autoRef.current) return;
+        autoRef.current = true;
+        setAuto(true);
+        try {
+            let cur: ReplayRound | null = round;
+            while (autoRef.current && cur && cur.status === "playing") {
+                const before = cur.candles[cur.cursor - 1]?.c ?? 0;
+                const pendingBefore = (cur.pending ?? []).length;
+
+                const next: ReplayRound | null = await advanceFrom(cur, null);
+                if (!next) break;
+                cur = next;
+                if (next.status !== "playing") break;
+
+                const after = next.candles[next.cursor - 1]?.c ?? 0;
+                const move = before > 0 ? ((after - before) / before) * 100 : 0;
+                if (Math.abs(move) >= JUMP_STOP_PCT) {
+                    addToast("info", `하루에 ${move >= 0 ? "+" : ""}${move.toFixed(1)}% 움직여 멈췄습니다.`);
+                    break;
+                }
+                if ((next.pending ?? []).length < pendingBefore) {
+                    addToast("info", "예약이 체결되어 멈췄습니다.");
+                    break;
+                }
+                await new Promise(r => setTimeout(r, PLAY_MS));
+            }
+        } finally {
+            autoRef.current = false;
+            setAuto(false);
+        }
+    }, [round, advanceFrom, addToast]);
+
+    // 판이 끝나거나 화면을 떠나면 재생도 끝난다. 루프가 남아 돌면 다음 판의 첫날이
+    // 저 혼자 지나간다.
+    useEffect(() => {
+        if (!round || round.status !== "playing") autoRef.current = false;
+    }, [round]);
+    useEffect(() => () => { autoRef.current = false; }, []);
+
+    /**
+     * 판이 도는 동안의 키보드.
+     *
+     * 41일을 넘기는 동작만 손에서 뗀다. **사고파는 키는 두지 않는다** — 이 게임에는
+     * 되돌리기가 없어서, 한 번 잘못 누른 매수는 수수료와 거래세를 물고 되팔아야만
+     * 없앨 수 있다. 그런 것을 한 글쇠에 걸어 두지 않는다.
+     */
+    useEffect(() => {
+        if (!round || round.status !== "playing") return;
+        // holdings 는 아래에서 만든다 — 여기서 쓰면 선언 전에 읽는 꼴이라 판에서 바로 꺼낸다.
+        const slots = round.holdings?.length ?? 0;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            // 글자를 치는 중이면 그건 이 화면에 하는 말이 아니다
+            const t = e.target as HTMLElement | null;
+            if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+
+            if (e.key === " " || e.key === "Spacebar") {
+                // 스페이스를 막지 않으면 페이지가 스크롤되고, 눌러 둔 버튼이 다시 눌린다
+                e.preventDefault();
+                if (autoRef.current) stopAuto(); else startAuto();
+                return;
+            }
+            if (autoRef.current) return;   // 재생 중에는 재생/멈춤 말고는 받지 않는다
+            if (e.key === "ArrowRight") { e.preventDefault(); advance(null); return; }
+            if (e.key === "Escape" && slots > 1) { setDetail(false); return; }
+            const n = Number(e.key);
+            if (slots > 1 && n >= 1 && n <= slots) { setSlot(n - 1); setDetail(true); }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [round, startAuto, stopAuto, advance]);
+
     const giveUp = useCallback(async () => {
         if (!round || round.status !== "playing") return;
         setBusy(true);
@@ -513,6 +649,23 @@ export default function ReplayGamePage() {
         if (!isLoggedIn) saveLocal(null);
         setRound(null);
     }, [isLoggedIn]);
+
+    /**
+     * 결과 화면에서 곧바로 다음 반기로.
+     *
+     * 예전에는 [다음 반기] 로 준비 화면에 갔다가 거기서 [시작] 을 다시 눌러야 했다. 자리
+     * 성격을 매번 고르지 않는 사람에게 준비 화면은 지나가는 문일 뿐이라, 기억해 둔 자리로
+     * 바로 연다. 바꾸고 싶으면 그 옆의 "준비 화면" 으로 간다.
+     *
+     * 기간이 끝났거나(최종 결과를 봐야 한다) 굴러가는 캠페인이 없으면(기간부터 골라야
+     * 한다) 판을 열지 않는다 — 그때는 준비 화면이 지나가는 문이 아니다.
+     */
+    const nextHalf = useCallback(async () => {
+        reset();
+        if (endedCampaign) return;
+        if (isLoggedIn && !campaign) return;
+        await start(wantScenario);
+    }, [reset, endedCampaign, isLoggedIn, campaign, start, wantScenario]);
 
     // ── 화면에 그릴 값 ───────────────────────────────────────
     // 한 반기에 종목 넷. 화면은 한 번에 하나를 자세히 보여 주고(고른 자리), 계좌는 넷을 합친다.
@@ -678,14 +831,18 @@ export default function ReplayGamePage() {
         setBusy(true);
         try {
             const p = resPriceAt(resStep), n = resQtyFor(resPart);
-            const res = await reserveOrder(round.id, { kind: resKind, price: p, qty: n });
+            // 지금 보고 있는 자리에 건다. 값도 수량도 이 자리 것으로 잡았으니 판정도
+            // 이 자리에서 나야 한다 — 안 보내면 워커가 0번으로 읽는다.
+            const at = sel?.slot ?? 0;
+            const res = await reserveOrder(round.id, { kind: resKind, price: p, qty: n, slot: at });
             if (!res.success) { addToast("error", res.error); return; }
             setRound(res.round);
-            addToast("success", `${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
+            const where = holdings.length > 1 ? `${slotName(holdings[at])} · ` : "";
+            addToast("success", `${where}${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
         } finally {
             setBusy(false);
         }
-    }, [round, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast]);
+    }, [round, sel, holdings, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast]);
 
     const unreserve = useCallback(async (index: number) => {
         if (!round) return;
@@ -917,6 +1074,7 @@ export default function ReplayGamePage() {
                         history={history} habits={habits} activeTools={activeTools}
                         onOpenCampaign={openCampaign} onStart={start} onBuyTool={purchase}
                         onToggleTool={toggleTool} onBack={() => setEntered(false)}
+                        want={wantScenario} onWant={setWantScenario}
                     />
                 )}
 
@@ -1005,7 +1163,7 @@ export default function ReplayGamePage() {
                                                         </span>
                                                         {/* 진행 중에는 이름이 없다 — 업종이 그 종목을 부르는 이름이 된다 */}
                                                         <span className={cn("truncate", h.name && round.status === "done" && "reveal-answer")}>
-                                                            {h.name ?? h.sector ?? `${h.slot + 1}번`}
+                                                            {slotName(h)}
                                                         </span>
                                                     </span>
                                                     {/* 개요에서는 추세선을 함께. 값(현재가)만으로는 종목마다 자릿수가 달라
@@ -1162,13 +1320,24 @@ export default function ReplayGamePage() {
                                                 title="내 돈을 몇 등분해서 살지로 바꾼다"
                                                 aria-pressed={buyMode === "split"}>1/N</RetroBtn>
                                         )}
+                                        {/* 예약도 자리 하나에 거는 것이라 1/N 과 같은 자리다. 한때 관망 줄에
+                                            있었는데, 그 줄은 개요에만 보여서 정작 종목을 골라 들어가면
+                                            예약을 열 방법이 없었다 — 값도 수량도 그 종목 것으로 잡히는데. */}
+                                        {!overview && isLoggedIn && (
+                                            <RetroBtn size="sm" selected={reserveOpen} disabled={auto}
+                                                onClick={() => setReserveOpen(v => !v)}
+                                                title="이 종목에 지정가·손절·익절을 걸어 둔다"
+                                                aria-pressed={reserveOpen}>
+                                                {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
+                                                예약{(round.pending ?? []).length > 0 && ` ${(round.pending ?? []).length}`}
+                                            </RetroBtn>
+                                        )}
                                         <RetroBtn size="sm" selected={fitOpen}
-                                            onClick={() => {
-                                                // 열 때 손잡이를 지금 비중에 놓는다. 엉뚱한 값에서 시작하면
-                                                // 열자마자 버튼이 큰 주문이 되어 있다.
-                                                if (!fitOpen) setTarget(Math.round(stockPct / FIT_STEP) * FIT_STEP);
-                                                setFitOpen(v => !v);
-                                            }}
+                                            // 열 때 손잡이를 지금 비중으로 끌어다 놓지 않는다. 한때 그렇게
+                                            // 했는데(열자마자 큰 주문이 되어 있지 않게), 그러면 기억해 둔
+                                            // 목표가 열 때마다 지워진다. 큰 주문이 걱정될 자리는 아니다 —
+                                            // 아래 버튼이 사는지 파는지 몇 주인지를 그대로 적고 있다.
+                                            onClick={() => setFitOpen(v => !v)}
                                             title={manySlots ? "현금 비중을 남기고 전 종목을 균등하게 담는다" : "주식과 현금의 비율을 맞춘다"}
                                             aria-pressed={fitOpen}>비중</RetroBtn>
                                     </span>
@@ -1192,7 +1361,7 @@ export default function ReplayGamePage() {
                                                     const n = splitQtyFor(parts);
                                                     return (
                                                         <RetroBtn key={parts} tone="buy" aria-label={`내 돈 ${parts}등분 매수`}
-                                                            onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
+                                                            onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={locked || n < 1}
                                                             className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                             1/{parts}
                                                             <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
@@ -1203,7 +1372,7 @@ export default function ReplayGamePage() {
                                                     const n = buyQtyFor(part.pct);
                                                     return (
                                                         <RetroBtn key={part.pct} tone="buy" aria-label={`사기 ${part.label}`}
-                                                            onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={busy || n < 1}
+                                                            onClick={() => trade("buy", n, sel?.slot ?? 0)} disabled={locked || n < 1}
                                                             className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                             {part.label}
                                                             <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
@@ -1221,7 +1390,7 @@ export default function ReplayGamePage() {
                                                 const n = sellQtyFor(part.pct);
                                                 return (
                                                     <RetroBtn key={part.pct} tone="sell" aria-label={`팔기 ${part.label}`}
-                                                        onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={busy || n < 1}
+                                                        onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={locked || n < 1}
                                                         className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
@@ -1266,7 +1435,7 @@ export default function ReplayGamePage() {
                                             {manySlots ? (
                                                 <RetroBtn
                                                     tone={fitPlan?.orders.length ? "go" : "plain"}
-                                                    disabled={busy || !fitPlan?.orders.length}
+                                                    disabled={locked || !fitPlan?.orders.length}
                                                     onClick={balanceAll}
                                                     className="min-h-[38px] w-full">
                                                     {fitPlan?.orders.length
@@ -1278,7 +1447,7 @@ export default function ReplayGamePage() {
                                                 <RetroBtn
                                                     // 할 일이 없을 때는 색을 빼 둔다 — 흐려진 빨강은 "살 수 있는데 막힌 것"으로 읽힌다
                                                     tone={!fitOrder ? "plain" : fitOrder.side === "sell" ? "sell" : "buy"}
-                                                    disabled={busy || !fitOrder}
+                                                    disabled={locked || !fitOrder}
                                                     onClick={() => fitOrder && trade(fitOrder.side, fitOrder.qty, sel?.slot ?? 0)}
                                                     className="min-h-[38px] w-full">
                                                     {/* 무엇이 일어날지 버튼에 적는다 — "맞추기" 만으로는 사는지 파는지 모른다 */}
@@ -1298,35 +1467,37 @@ export default function ReplayGamePage() {
                                         <span className="text-[11px] font-bold" style={{ color: R.inkDim }}>관망</span>
                                         {canCarry ? (
                                             <div className="grid grid-cols-2 gap-1">
-                                                <RetroBtn tone="warn" onClick={() => advance(null, true)} disabled={busy}
+                                                <RetroBtn tone="warn" onClick={() => advance(null, true)} disabled={locked}
                                                     className="min-h-[42px]">들고 가기</RetroBtn>
-                                                <RetroBtn onClick={() => advance(null)} disabled={busy}
+                                                <RetroBtn onClick={() => advance(null)} disabled={locked}
                                                     className="min-h-[42px]">정리하고 끝</RetroBtn>
                                             </div>
                                         ) : (
                                             // 예약 버튼이 이 줄 끝에 붙는다 — 따로 한 줄을 쓰면 그만큼이 차트에서
                                             // 빠진다. 마지막 날에는 걸어도 체결될 날이 없어 안 띄운다.
                                             <div className="flex gap-1">
+                                                {/* 재생만은 busy 로 막지 않는다 — 한 칸 넘어갈 때마다 busy 가 잠깐
+                                                    켜지는데, 그 사이에 멈춤이 안 눌리면 세울 방법이 없어진다. */}
+                                                <RetroBtn onClick={auto ? stopAuto : startAuto}
+                                                    tone={auto ? "warn" : "plain"} aria-pressed={auto}
+                                                    aria-label={auto ? "재생 멈춤 (스페이스)" : "자동 재생 (스페이스)"}
+                                                    className="shrink-0 min-h-[42px] px-2.5">
+                                                    {auto ? <Pause size={14} strokeWidth={2.6} /> : <Play size={14} strokeWidth={2.6} />}
+                                                </RetroBtn>
                                                 <div className="grid grid-cols-3 gap-1 flex-1 min-w-0">
-                                                    <RetroBtn onClick={() => advance(null)} disabled={busy} className="min-h-[42px]">
+                                                    <RetroBtn onClick={() => advance(null)} disabled={busy || auto} className="min-h-[42px] px-1">
                                                         하루
                                                     </RetroBtn>
                                                     {SKIP_STEPS.map(n => (
                                                         // px 를 줄인다 — 로그인 판은 이 줄에 예약 버튼까지 들어와서
                                                         // 기본 여백으로는 "±7%면 멈춤"이 두 줄로 접힌다
-                                                        <RetroBtn key={n} onClick={() => skipDays(n)} disabled={busy} aria-label={`${n}일`}
+                                                        <RetroBtn key={n} onClick={() => skipDays(n)} disabled={busy || auto} aria-label={`${n}일`}
                                                             className="min-h-[42px] px-1 flex flex-col items-center justify-center leading-none gap-0.5">
                                                             {n}일
                                                             <span className="text-[11px] font-normal opacity-70">±{JUMP_STOP_PCT}%면 멈춤</span>
                                                         </RetroBtn>
                                                     ))}
                                                 </div>
-                                                {isLoggedIn && (
-                                                    <RetroBtn onClick={() => setReserveOpen(v => !v)} className="shrink-0 min-h-[42px]">
-                                                        {/* pending 이 없는 응답(0020 배포 전 워커)에도 화면이 살아 있어야 한다 */}
-                                                        예약{(round.pending ?? []).length > 0 && ` ${(round.pending ?? []).length}`} {reserveOpen ? "▾" : "▸"}
-                                                    </RetroBtn>
-                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1340,20 +1511,41 @@ export default function ReplayGamePage() {
                                             !reserveOpen && (round.pending ?? []).length === 0 && "hidden")}>
                                             {(round.pending ?? []).length > 0 && (
                                                 <div className="flex items-center gap-1 flex-wrap">
-                                                    {(round.pending ?? []).map((r, i) => (
-                                                        <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[28px] px-1.5 text-[11px]"
-                                                            style={{ background: R.faceLo, boxShadow: IN, color: R.ink }}>
-                                                            {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
-                                                            <button onClick={() => unreserve(i)} disabled={busy}
-                                                                className="ml-0.5 px-1 disabled:opacity-40" aria-label="예약 취소"
-                                                                style={{ color: "#9e1414" }}>×</button>
-                                                        </span>
-                                                    ))}
+                                                    {(round.pending ?? []).map((r, i) => {
+                                                        // 자리를 안 적은 옛 예약은 0번으로 읽는다(워커와 같은 규칙).
+                                                        const at = holdings[r.slot ?? 0];
+                                                        return (
+                                                            <span key={`${r.kind}-${i}`} className="inline-flex items-center gap-1 min-h-[28px] px-1.5 text-[11px]"
+                                                                style={{ background: R.faceLo, boxShadow: IN, color: R.ink }}>
+                                                                {/* 어느 종목 예약인지 먼저 — 넷을 굴리면 이것부터 알아야 한다 */}
+                                                                {holdings.length > 1 && at && (
+                                                                    <span className="inline-flex items-center gap-1 font-bold">
+                                                                        <span className="w-[15px] h-[11px] overflow-hidden shrink-0">
+                                                                            <SectorSprite sector={at.sector ?? undefined} color={sectorAccent(at.sector ?? undefined)} />
+                                                                        </span>
+                                                                        {slotName(at)}
+                                                                    </span>
+                                                                )}
+                                                                {reserveLabel(r.kind)} {r.price.toLocaleString()}원 {r.qty}주
+                                                                <button onClick={() => unreserve(i)} disabled={busy}
+                                                                    className="ml-0.5 px-1 disabled:opacity-40" aria-label="예약 취소"
+                                                                    style={{ color: "#9e1414" }}>×</button>
+                                                            </span>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
 
                                             {reserveOpen && (
                                                 <Sunken className="flex items-center gap-1 flex-wrap">
+                                                    {/* 어느 자리에 걸리는지 먼저 말한다 — 값도 수량도 이 자리 것으로
+                                                        잡히므로, 다른 종목을 보며 건 줄 알면 판정이 어긋난 것처럼 보인다. */}
+                                                    {holdings.length > 1 && (
+                                                        <span className="w-full text-[11px]" style={{ color: R.ink }}>
+                                                            <b>{slotName(sel)}</b>
+                                                            <span style={{ color: R.inkDim }}>에 겁니다 · 다른 종목은 눌러 들어가서 거세요</span>
+                                                        </span>
+                                                    )}
                                                     {RESERVE_KINDS.map(k => (
                                                         <RetroBtn key={k.id} size="sm" selected={resKind === k.id}
                                                             onClick={() => setResKind(k.id)} title={k.hint}>
@@ -1422,9 +1614,22 @@ export default function ReplayGamePage() {
                                         </p>
                                     </Win>
                                 )}
-                                <RetroBtn tone="go" size="lg" onClick={reset} className="w-full shrink-0">
-                                    {endedCampaign ? "최종 결과 ▶" : "다음 반기 ▶"}
+                                {/* 준비 화면을 거치지 않고 바로 다음 판을 연다. 자리 성격을 매번
+                                    고르지 않는 사람에게는 그 화면이 지나가는 문일 뿐이었다. */}
+                                <RetroBtn tone="go" size="lg" onClick={nextHalf} disabled={busy}
+                                    className="w-full shrink-0">
+                                    {endedCampaign ? "최종 결과 ▶"
+                                        : isLoggedIn && !campaign ? "기간 고르기 ▶"
+                                            : busy ? "판을 여는 중…" : "다음 반기 ▶"}
                                 </RetroBtn>
+                                {/* 조건을 바꾸고 싶은 사람에게는 여전히 문이 있다 */}
+                                {!endedCampaign && (
+                                    <button type="button" onClick={reset} disabled={busy}
+                                        className={cn(PIXEL, "text-[11px] text-center shrink-0 disabled:opacity-40")}
+                                        style={{ color: `${R.inkHi}80` }}>
+                                        준비 화면에서 자리 고르기
+                                    </button>
+                                )}
                             </>
                         )}
                     </>
@@ -1916,6 +2121,7 @@ function TitleScreen({ isLoggedIn, firm, campaign, bestReturn, onEnter }: {
 function SetupScreen({
     isLoggedIn, busy, firm, campaign, history, habits,
     activeTools, onOpenCampaign, onStart, onBuyTool, onToggleTool, onBack,
+    want, onWant,
 }: {
     isLoggedIn: boolean; busy: boolean; firm: Firm | null; campaign: Campaign | null;
     history: ReplayHistoryItem[]; habits: HabitSummary | null; activeTools: string[];
@@ -1924,11 +2130,13 @@ function SetupScreen({
     onBuyTool: (id: string) => void;
     onToggleTool: (id: string) => void;
     onBack: () => void;
+    /** 고른 판 성격. null 이면 아무 자리나. 페이지가 들고 있다 — 결과 화면에서 바로
+        다음 반기를 열 때도 같은 값을 쓰고, 새로고침해도 남아야 한다. */
+    want: string | null;
+    onWant: (v: string | null) => void;
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
     const owned = firm?.tools ?? [];
-    // 고른 판 성격. null 이면 아무 자리나.
-    const [want, setWant] = useState<string | null>(null);
     // 기간 눈금. 캠페인을 열기 전까지만 뜻이 있다.
     const [years, setYears] = useState<number>(YEAR_CHOICES[0]);
 
@@ -1982,7 +2190,7 @@ function SetupScreen({
                         <div className="grid grid-cols-2 gap-1">
                             {[{ id: null, label: "아무 자리나", hint: "서버가 뽑는 대로" }, ...SCENARIOS].map(sc => (
                                 <RetroBtn key={sc.id ?? "any"} selected={want === sc.id} disabled={busy}
-                                    onClick={() => setWant(sc.id)} title={sc.hint}
+                                    onClick={() => onWant(sc.id)} title={sc.hint}
                                     className="min-h-[42px] flex items-center gap-1.5 justify-start text-left normal-case">
                                     {/* 고른 줄에만 커서를 둔다 — 이 시대 메뉴가 그랬다 */}
                                     <span className="w-[8px] shrink-0" style={{ color: R.ink }}>{want === sc.id ? "▶" : ""}</span>
