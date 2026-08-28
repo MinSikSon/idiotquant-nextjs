@@ -7,9 +7,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { quoteBuy } from "@/lib/paper/engine";
+import { quoteBuy, quoteShort } from "@/lib/paper/engine";
 import {
     qtyWithinBudget, partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, equalWeightPlan,
+    shortQtyWithinCash, partShortQty,
 } from "@/lib/paper/sizing";
 
 /* ── 예산 안에서 최대 ─────────────────────────────────────────── */
@@ -293,4 +294,29 @@ test("비중은 0~100 밖으로 나가지 않는다", () => {
     );
     assert.deepEqual(equalWeightPlan({ slots: four([10, 10, 10, 10]), cash: 0, stockPct: -20 }).orders.map(o => o.side),
         ["sell", "sell", "sell", "sell"]);
+});
+
+/* ── 빌려 팔 수 있는 만큼 ─────────────────────────────────────── */
+
+test("나온 주수는 담보 안에 들어가고, 한 주 더 빌리면 넘친다", () => {
+    for (const [cash, price] of [[1_000_000, 7_310], [10_000_000, 56_589], [50_000, 49_900]]) {
+        const n = shortQtyWithinCash(cash, price);
+        assert.ok(n > 0, `빌려 팔 수 있어야 한다 (${cash}/${price})`);
+        assert.equal(quoteShort({ price, qty: n, cash }).ok, true, "담보를 넘었다");
+        assert.equal(quoteShort({ price, qty: n + 1, cash }).ok, false, "한 주를 덜 빌렸다");
+    }
+});
+
+test("공매도 비율은 매수 비율과 같은 눈금이다 — 내 돈 기준", () => {
+    const args = { price: 10_000, cash: 10_000_000, totalAssets: 10_000_000 };
+    const half = partShortQty({ ...args, pct: 50 });
+    const quarter = partShortQty({ ...args, pct: 25 });
+    assert.ok(Math.abs(half - quarter * 2) <= 1, `${half} vs ${quarter}×2`);
+    // 현금이 모자라면 현금으로 잘린다
+    assert.ok(partShortQty({ price: 10_000, cash: 1_000_000, totalAssets: 10_000_000, pct: 50 }) <= 101);
+});
+
+test("돈이 없으면 빌려 팔 수도 없다", () => {
+    assert.equal(shortQtyWithinCash(0, 10_000), 0);
+    assert.equal(shortQtyWithinCash(1_000_000, 0), 0);
 });

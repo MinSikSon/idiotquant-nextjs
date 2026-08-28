@@ -8,9 +8,112 @@
 // ── 맡은 돈이 곧 굴리는 돈이다 ──────────────────────────────────────────
 // 한 반기의 시드는 그 시점의 AUM 이다. 반기가 끝나면 그 수익률이 AUM 에 그대로 곱해지고,
 // 거기에 고객 유출입이 더해진다. 잘하면 다음 반기가 커지고 못하면 줄어든다.
-// 하한은 없다 — 크게 잃으면 굴릴 돈도 그만큼 줄어든 채로 간다.
+// 다만 끝없이 줄지는 않는다 — 최고점 대비 너무 많이 잃으면 회사가 문을 닫는다.
+
+import type { SeasonClient } from "./season";
+import { SHORT_CALL_PCT } from "./engine";
 
 export const INITIAL_AUM = 100_000_000;
+
+/**
+ * 최고점 대비 이만큼은 남아 있어야 문을 안 닫는다(%).
+ *
+ * 아무리 잃어도 판이 계속 굴러가면 손절도 비중 조절도 할 이유가 없다 — 벤치마크 초과에
+ * 붙는 유입(×3)이 손실에 붙는 유출(×1.5)보다 커서, 늘 최대한 몰아넣는 쪽이 기대값에서
+ * 앞선다. 문을 닫는 선이 있어야 그 꼬리에 값이 매겨진다.
+ *
+ * 절대 금액이 아니라 최고점 대비인 이유: 1억을 굴리든 100억을 굴리든 "맡은 돈의 60% 가
+ * 사라지면 회사가 못 버틴다"는 규모와 무관하게 성립한다.
+ */
+export const RUIN_KEEP_PCT = 40;
+
+/**
+ * 한 주도 안 산 반기의 고객 유출률(%).
+ *
+ * 관망도 전략이지만 40일 내내 한 주도 안 산 반기는 운용이 아니다. 하락장에서는 그게
+ * 벤치마크를 이기는 가장 쉬운 길이라, 그대로 두면 "아무것도 하지 않기"가 최적 전략이
+ * 되어 게임이 멈춘다. 한 번이라도 사면 보통 규칙으로 돌아간다.
+ */
+export const IDLE_FLOW = -10;
+
+/* ── 부서 — 금고를 써서 회사를 키운다 ────────────────────────────
+   리서치 도구가 "차트를 더 잘 보게" 해 준다면, 부서는 **판의 규칙 자체를 바꾼다.**
+
+   저장은 도구와 같은 `firms.tools` 배열을 쓴다 — 컬럼을 늘리지 않으려는 선택이다.
+   산 것이 도구인지 부서인지는 id 로 갈린다(DEPARTMENTS 에 있으면 부서).
+
+   왜 필요했나: 금고에 돈이 들어올 길은 늘었는데(운용보수·성과보수·목표 보상) 나갈
+   길이 도구 넷뿐이라, 다 사고 나면 쌓이기만 했다. */
+
+export interface Department {
+    id: string;
+    name: string;
+    price: number;
+    /** 화면에 그대로 나가는 한 줄. "무엇이 달라지는가" 를 적는다. */
+    effect: string;
+}
+
+/** 부서가 열어 주는 것. 안 산 회사는 전부 기본값이다. */
+export interface Perks {
+    /** 한 판에 걸 수 있는 예약 건수 */
+    maxReservations: number;
+    /** 최고점 대비 이만큼은 남아야 문을 안 닫는다(%) */
+    ruinKeepPct: number;
+    /** 평가손실이 담보의 이만큼을 넘으면 강제 청산(%) */
+    shortCallPct: number;
+    /** 고객 유입의 초과 배수에 곱한다 */
+    flowExcessMult: number;
+}
+
+/** 예약 데스크가 없을 때의 예약 한도. 워커 reservations.js 의 MAX_RESERVATIONS 와 같다. */
+export const BASE_RESERVATIONS = 3;
+
+export const DEPARTMENTS: Department[] = [
+    {
+        id: "desk", name: "예약 데스크", price: 3_000_000,
+        effect: "걸어 둘 수 있는 예약이 3건에서 5건으로 늘어납니다. 네 자리에 미리 계획을 깔아 둘 수 있습니다.",
+    },
+    {
+        id: "risk", name: "리스크 관리팀", price: 8_000_000,
+        effect: "문을 닫는 선이 최고점의 40%에서 30%로 내려가고, 공매도 강제 청산도 담보의 80%에서 90%까지 버팁니다.",
+    },
+    {
+        id: "ir", name: "IR팀", price: 20_000_000,
+        effect: "벤치마크를 이겼을 때 들어오는 고객 자금이 20% 더 많아집니다. 잘한 반기가 더 크게 굴러갑니다.",
+    },
+];
+
+export function departmentById(id: string): Department | null {
+    return DEPARTMENTS.find(d => d.id === id) ?? null;
+}
+
+/**
+ * 산 부서로 규칙이 어떻게 달라지는가.
+ *
+ * 목록을 그대로 넘기면 되게 만들어 둔다 — 부서를 하나 더할 때 부르는 쪽을 안 고치려는
+ * 것이고, 부서가 없던 시절 회사(빈 배열)도 그대로 기본값을 받는다.
+ */
+export function perksOf(tools?: string[] | null): Perks {
+    const has = (id: string) => Array.isArray(tools) && tools.includes(id);
+    return {
+        maxReservations: has("desk") ? 5 : BASE_RESERVATIONS,
+        ruinKeepPct: has("risk") ? 30 : RUIN_KEEP_PCT,
+        shortCallPct: has("risk") ? 90 : SHORT_CALL_PCT,
+        flowExcessMult: has("ir") ? 1.2 : 1,
+    };
+}
+
+/** 정산에 얹히는 이번 반기의 사정. */
+export interface SettleOpts {
+    /** 이번 반기에 맡긴 쪽. 없으면(옛 판) 예전 규칙 그대로. */
+    client?: SeasonClient | null;
+    /** 한 주도 안 샀는가. */
+    idle?: boolean;
+    /** 여태 맡았던 돈의 최고점. 파산 판정에 쓴다. */
+    peak?: number;
+    /** 산 부서가 열어 준 것. 안 주면 기본값(부서 없음). */
+    perks?: Perks | null;
+}
 
 /** 계산이 성립하는 최소치(0 나눗셈 방지). 게임 규칙이 아니다 — 워커의 MIN_CAPITAL 과 같다. */
 const MIN_CAPITAL = 1;
@@ -36,6 +139,8 @@ export interface Carry {
 export interface Firm {
     name: string | null;
     aum: number;
+    /** 여태 맡았던 돈의 최고점. 여기서 RUIN_KEEP_PCT 아래로 떨어지면 문을 닫는다. */
+    peak_aum?: number;
     cash: number;
     quarters: number;
     tools: string[];
@@ -53,28 +158,49 @@ export interface Tool {
     hint: string;
 }
 
-/** 분기 성적 → 고객 자금 유출입률(%). 벤치마크 초과가 주된 동력, 절대 손실은 따로 벌을 받는다. */
-export function flowRate(finalReturn: number, bhReturn: number): number {
+/** 고객 성격의 배수. 고객이 없으면(옛 판) 1 — 예전 규칙 그대로 굴러간다. */
+const mult = (v: number | undefined) => (Number.isFinite(Number(v)) ? Number(v) : 1);
+
+/**
+ * 분기 성적 → 고객 자금 유출입률(%). 벤치마크 초과가 주된 동력, 절대 손실은 따로 벌을 받는다.
+ *
+ * 같은 성적이라도 연기금 앞에서는 손실이 두 배로 아프고 헤지펀드 앞에서는 초과분만 센다.
+ */
+export function flowRate(finalReturn: number, bhReturn: number, opts: SettleOpts = {}): number {
+    if (opts.idle) return IDLE_FLOW;
     const excess = (Number(finalReturn) || 0) - (Number(bhReturn) || 0);
     const loss = Math.min(Number(finalReturn) || 0, 0);
-    return clamp(excess * FLOW_EXCESS_MULT + loss * FLOW_LOSS_MULT, FLOW_MIN, FLOW_MAX);
+    return clamp(
+        // IR팀은 **들어오는 쪽만** 키운다 — 빠지는 쪽까지 키우면 부서를 사고 더 위험해진다.
+        excess * FLOW_EXCESS_MULT * mult(opts.client?.excess) * mult(opts.perks?.flowExcessMult)
+        + loss * FLOW_LOSS_MULT * mult(opts.client?.loss),
+        FLOW_MIN, FLOW_MAX,
+    );
 }
 
 /** 운용 성과가 먼저 곱해지고(맡은 돈을 굴렸으니), 그다음 고객이 들고 난다. */
-export function nextAum(aum: number, finalReturn: number, bhReturn: number): number {
+export function nextAum(aum: number, finalReturn: number, bhReturn: number, opts: SettleOpts = {}): number {
     const base = Math.max(Number(aum) || 0, MIN_CAPITAL);
     const grown = base * (1 + (Number(finalReturn) || 0) / 100);
-    return Math.max(Math.round(grown * (1 + flowRate(finalReturn, bhReturn) / 100)), MIN_CAPITAL);
+    return Math.max(Math.round(grown * (1 + flowRate(finalReturn, bhReturn, opts) / 100)), MIN_CAPITAL);
 }
 
 export function baseFee(aum: number): number {
     return Math.floor((Math.max(Number(aum) || 0, 0) * BASE_FEE_BP) / 10_000);
 }
 
-export function perfFee(aum: number, finalReturn: number, bhReturn: number): number {
+/**
+ * 성과보수 — 벤치마크를 이겼을 때만. 한 주도 안 산 반기에는 주지 않는다: 하락장에
+ * 현금으로 앉아 생긴 초과분은 운용의 결과가 아니고, 그걸로 보수까지 받으면 관망이
+ * 곧 벌이가 된다.
+ */
+export function perfFee(aum: number, finalReturn: number, bhReturn: number, opts: SettleOpts = {}): number {
+    if (opts.idle) return 0;
     const excess = (Number(finalReturn) || 0) - (Number(bhReturn) || 0);
     if (!(excess > 0)) return 0;
-    return Math.floor((Math.max(Number(aum) || 0, 0) * excess * PERF_FEE_PCT) / 10_000);
+    return Math.floor(
+        (Math.max(Number(aum) || 0, 0) * excess * PERF_FEE_PCT * mult(opts.client?.perf)) / 10_000,
+    );
 }
 
 const RANKS = [
@@ -109,16 +235,32 @@ export const TOOLS: Tool[] = [
     },
 ];
 
-export function settleQuarter(aum: number, finalReturn: number, bhReturn: number) {
+/**
+ * 문을 닫을 만큼 잃었는가. 최고점을 모르면(옛 기록) 판단하지 않는다 — 규칙이 없던
+ * 시절의 회사를 뒤늦게 폐업시키는 것은 사용자가 겪은 적 없는 벌이다.
+ */
+export function isRuined(peak: number | null | undefined, aum: number, keepPct = RUIN_KEEP_PCT): boolean {
+    const p = Math.max(Number(peak) || 0, 0);
+    if (!(p > 0)) return false;
+    return (Number(aum) || 0) < Math.floor((p * keepPct) / 100);
+}
+
+export function settleQuarter(aum: number, finalReturn: number, bhReturn: number, opts: SettleOpts = {}) {
     const before = Math.max(Number(aum) || 0, MIN_CAPITAL);
     const fee = baseFee(before);
-    const perf = perfFee(before, finalReturn, bhReturn);
-    const after = nextAum(before, finalReturn, bhReturn);
+    const perf = perfFee(before, finalReturn, bhReturn, opts);
+    const after = nextAum(before, finalReturn, bhReturn, opts);
+    // 이번 반기를 시작할 때의 맡은 돈도 최고점 후보다 — 최고점을 기록한 적 없는 회사도
+    // 첫 정산부터 규칙이 걸리게.
+    const peakBefore = Math.max(Number(opts.peak) || 0, before);
     return {
         aumBefore: before, aumAfter: after,
-        flowRate: flowRate(finalReturn, bhReturn),
+        flowRate: flowRate(finalReturn, bhReturn, opts),
         feeBase: fee, feePerf: perf, feeTotal: fee + perf,
         rankBefore: rankOf(before), rankAfter: rankOf(after),
+        peakBefore, peakAfter: Math.max(peakBefore, after),
+        ruined: isRuined(peakBefore, after, opts.perks?.ruinKeepPct ?? RUIN_KEEP_PCT),
+        idle: !!opts.idle,
     };
 }
 

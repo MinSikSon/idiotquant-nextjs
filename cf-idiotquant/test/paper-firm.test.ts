@@ -9,8 +9,11 @@ import assert from "node:assert/strict";
 import {
     flowRate, nextAum, baseFee, perfFee, settleQuarter, rankOf, fmtMoney,
     INITIAL_AUM, FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT,
-    BASE_FEE_BP, PERF_FEE_PCT,
+    BASE_FEE_BP, PERF_FEE_PCT, isRuined, IDLE_FLOW,
+    TOOLS, DEPARTMENTS, perksOf, BASE_RESERVATIONS, RUIN_KEEP_PCT,
 } from "@/lib/paper/firm";
+import { SHORT_CALL_PCT } from "@/lib/paper/engine";
+import { CLIENTS } from "@/lib/paper/season";
 
 const near = (got: number, want: number, tol = 1e-9) =>
     assert.ok(Math.abs(got - want) <= Math.abs(want) * tol + 1e-9, `${got} ≉ ${want}`);
@@ -109,4 +112,128 @@ test("억·만 단위로 짧게 — 모바일 칸을 넘기지 않는다", () =>
     assert.equal(fmtMoney(9_999), "9,999");
     assert.equal(fmtMoney(-100_000_000), "-1억");
     assert.equal(fmtMoney(0), "0");
+});
+
+/* ── 문을 닫는 선, 그리고 관망 ─────────────────────────────────
+   워커(src/lib/firmRules.js)와 같은 규칙이다. 한쪽을 고치면 여기서 깨져야 한다. */
+
+test("최고점의 40% 아래로 떨어지면 문을 닫는다", () => {
+    assert.equal(isRuined(100_000_000, 40_000_000), false, "정확히 40% 면 아직 버틴다");
+    assert.equal(isRuined(100_000_000, 39_999_999), true);
+    // 규모와 무관하게 같은 비율로 걸린다
+    assert.equal(isRuined(10_000_000_000, 3_900_000_000), true);
+    assert.equal(isRuined(10_000_000_000, 4_100_000_000), false);
+});
+
+test("최고점을 모르면 판정하지 않는다 — 규칙이 없던 시절의 회사를 뒤늦게 벌하지 않는다", () => {
+    assert.equal(isRuined(0, 1), false);
+    assert.equal(isRuined(null, 1), false);
+    assert.equal(isRuined(undefined, 1), false);
+});
+
+test("최고점은 이번 반기를 시작할 때의 맡은 돈도 후보다", () => {
+    // 최고점을 기록한 적 없는 회사(peak 0)도 첫 정산부터 규칙이 걸려야 한다
+    const s = settleQuarter(INITIAL_AUM, -5, 0);
+    assert.equal(s.peakBefore, INITIAL_AUM);
+    assert.ok(s.peakAfter >= INITIAL_AUM || s.peakAfter === s.aumAfter);
+});
+
+test("최고점은 뒤로 가지 않는다", () => {
+    const s = settleQuarter(50_000_000, 1, 0, { peak: 200_000_000 });
+    assert.equal(s.peakBefore, 200_000_000);
+    assert.equal(s.peakAfter, 200_000_000, "잘한 반기라도 예전 최고점을 못 넘으면 그대로다");
+});
+
+test("한 주도 안 산 반기는 성적과 무관하게 고객이 떠나고 성과보수가 없다", () => {
+    // 하락장에서 현금으로 앉아 벤치마크를 크게 이긴 상황
+    const played = settleQuarter(INITIAL_AUM, 0, -12);
+    assert.ok(played.flowRate > 0, "굴렸다면 초과분만큼 들어온다");
+    assert.ok(played.feePerf > 0);
+
+    const idle = settleQuarter(INITIAL_AUM, 0, -12, { idle: true });
+    assert.equal(idle.flowRate, IDLE_FLOW);
+    assert.equal(idle.feePerf, 0, "운용하지 않고 성과보수를 받으면 관망이 벌이가 된다");
+    assert.ok(idle.feeBase > 0, "운용보수는 맡은 돈에서 나오므로 그대로 받는다");
+    assert.ok(idle.aumAfter < played.aumAfter);
+});
+
+test("고객에 따라 같은 성적이 다르게 평가된다", () => {
+    const pension = CLIENTS.find(c => c.id === "pension")!;
+    const hedge = CLIENTS.find(c => c.id === "hedge")!;
+    // 벤치마크는 이겼지만 절대 손실이 난 반기 — 고객 성격이 가장 갈리는 자리
+    const a = settleQuarter(INITIAL_AUM, -5, -12, { client: pension });
+    const b = settleQuarter(INITIAL_AUM, -5, -12, { client: hedge });
+    assert.ok(b.aumAfter > a.aumAfter, "헤지펀드는 초과분을, 연기금은 손실을 더 크게 본다");
+    assert.ok(b.feePerf > a.feePerf, "성과보수 배수도 다르다");
+});
+
+test("고객이 없으면 예전 규칙 그대로", () => {
+    const plain = settleQuarter(INITIAL_AUM, 5, 1);
+    const nulled = settleQuarter(INITIAL_AUM, 5, 1, { client: null });
+    assert.equal(plain.aumAfter, nulled.aumAfter);
+    assert.equal(plain.feePerf, nulled.feePerf);
+});
+
+/* ── 부서 ────────────────────────────────────────────────────── */
+
+test("부서를 안 산 회사는 전부 기본값이다", () => {
+    const none = perksOf([]);
+    assert.equal(none.maxReservations, BASE_RESERVATIONS);
+    assert.equal(none.ruinKeepPct, RUIN_KEEP_PCT);
+    assert.equal(none.shortCallPct, SHORT_CALL_PCT);
+    assert.equal(none.flowExcessMult, 1);
+    // 부서가 없던 시절 회사는 tools 자체가 없다
+    assert.deepEqual(perksOf(null), none);
+    assert.deepEqual(perksOf(undefined), none);
+});
+
+test("리서치 도구만 산 회사는 규칙이 안 바뀐다", () => {
+    // 도구와 부서가 같은 tools 배열에 섞여 저장된다 — 도구 id 가 새면 규칙이 흔들린다
+    assert.deepEqual(perksOf(TOOLS.map(t => t.id)), perksOf([]));
+});
+
+test("예약 데스크는 걸 수 있는 예약을 늘린다", () => {
+    assert.ok(perksOf(["desk"]).maxReservations > BASE_RESERVATIONS);
+});
+
+test("리스크 관리팀은 문 닫는 선을 낮추고 마진콜을 늦춘다", () => {
+    const p = perksOf(["risk"]);
+    assert.ok(p.ruinKeepPct < RUIN_KEEP_PCT);
+    assert.ok(p.shortCallPct > SHORT_CALL_PCT);
+
+    // 기본 규칙으로는 문을 닫는 손실이 리스크 관리팀이 있으면 넘어간다
+    const peak = INITIAL_AUM, aum = Math.round(peak * 0.35);
+    assert.equal(isRuined(peak, aum, RUIN_KEEP_PCT), true);
+    assert.equal(isRuined(peak, aum, p.ruinKeepPct), false);
+});
+
+test("IR팀은 잘한 반기의 유입만 키운다", () => {
+    const ir = perksOf(["ir"]);
+    const won = flowRate(10, 0), wonIr = flowRate(10, 0, { perks: ir });
+    assert.ok(wonIr > won, "초과분에 배수가 붙는다");
+    near(wonIr, won * ir.flowExcessMult);
+
+    const lost = flowRate(-10, 0);
+    assert.equal(flowRate(-10, 0, { perks: ir }), lost, "못한 반기의 유출은 그대로다");
+});
+
+test("부서는 정산에 그대로 실린다", () => {
+    const plain = settleQuarter(INITIAL_AUM, 10, 0);
+    const withIr = settleQuarter(INITIAL_AUM, 10, 0, { perks: perksOf(["ir"]) });
+    assert.ok(withIr.aumAfter > plain.aumAfter);
+
+    // 파산 판정도 부서를 본다
+    const aum = Math.round(INITIAL_AUM * 0.35);
+    assert.equal(settleQuarter(aum, 0, 0, { peak: INITIAL_AUM }).ruined, true);
+    assert.equal(
+        settleQuarter(aum, 0, 0, { peak: INITIAL_AUM, perks: perksOf(["risk"]) }).ruined, false,
+    );
+});
+
+test("부서 가격은 회사가 감당할 수 있는 순서로 오른다", () => {
+    const prices = DEPARTMENTS.map(d => d.price);
+    assert.deepEqual(prices, [...prices].sort((a, b) => a - b));
+    assert.equal(new Set(DEPARTMENTS.map(d => d.id)).size, DEPARTMENTS.length);
+    // 도구와 id 가 겹치면 무엇을 산 것인지 갈리지 않는다
+    for (const d of DEPARTMENTS) assert.equal(TOOLS.some(t => t.id === d.id), false, d.id);
 });

@@ -33,25 +33,31 @@ import { useSession } from "next-auth/react";
 // 같은 그림이 전혀 다른 일을 가리켰다.
 import {
     Play, Pause, ArrowLeft, EyeOff,
-    FlaskConical, History, Footprints, Lock, Check, ChevronDown,
+    FlaskConical, History, Footprints, Lock, Check, ChevronDown, Building2,
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
-import { SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, fitToValue, equalWeightPlan } from "@/lib/paper/sizing";
+import {
+    SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell,
+    quoteShort, quoteCover, applyCover, shortPnl,
+} from "@/lib/paper/engine";
+import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, fitToValue, equalWeightPlan, partShortQty } from "@/lib/paper/sizing";
 import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import {
     halfTrade, halfAdvance, halfGiveUp, halfReserve, halfCancel, halfSubmission, halfCheckpoint,
+    type TradeSide,
 } from "@/lib/paper/half";
 import { getReplayState, startCampaign, startReplayRound, buyTool, submitHalf, checkpointHalf } from "@/lib/features/paper/replayAPI";
 import {
     TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
+    DEPARTMENTS, perksOf,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
+import { seasonOf, type Season } from "@/lib/paper/season";
 import { YEAR_CHOICES, halfOf, totalHalves, halfLabel, HALVES_PER_YEAR } from "@/lib/paper/campaign";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
@@ -316,10 +322,16 @@ export default function ReplayGamePage() {
     const [detail, setDetail] = useState(false);
     // 방금 기간이 끝난 캠페인 — 최종 리포트를 띄울 때까지 들고 있는다.
     const [endedCampaign, setEndedCampaign] = useState<Campaign | null>(null);
+    // 방금 회사가 문을 닫았다. 서버만 아는 값이다 — 판정에 쓰는 최고점이 이미 새 회사
+    // 값으로 덮여 있어 화면이 스스로 되짚을 수 없다.
+    const [ruined, setRuined] = useState(false);
     const [habits, setHabits] = useState<HabitSummary | null>(null);
     const [bestReturn, setBestReturn] = useState<number | null>(null);
     // 산 도구 중 지금 켜 둔 것. 사자마자 켜진다.
     const [activeTools, setActiveTools] = useState<string[]>([]);
+    // 산 부서가 이 판의 규칙을 얼마나 바꾸는가. 예약 한도와 마진콜 선이 여기서 나온다.
+    // (정산은 워커가 같은 걸 다시 계산한다 — 화면 값을 믿고 저장하지 않는다)
+    const perks = useMemo(() => perksOf(firm?.tools), [firm?.tools]);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     // 체결 직후 계좌 줄을 한 번 물들인다. 값이 어디서 달라졌는지 눈이 못 따라가서,
@@ -332,6 +344,14 @@ export default function ReplayGamePage() {
     const [entered, setEntered] = useState(false);
     // 사기 줄의 눈금 — 내 돈의 몇 %(part)냐, 내 돈을 몇 등분한 한 몫(split)이냐.
     const [buyMode, setBuyMode] = useState<"part" | "split">("part");
+    /**
+     * 매매 줄을 빌려서 팔기(공매도)로 바꾼다.
+     *
+     * 줄을 넷으로 늘리는 대신 두 줄을 갈아 끼운다 — 화면 높이가 그대로고, 지금 무엇을
+     * 하려는지가 한눈에 갈린다. 기억해 두지 않는다(설정에 안 넣는다): 다음에 들어왔을 때
+     * 공매도 줄이 먼저 떠 있으면 사려다 빌려 파는 사고가 난다.
+     */
+    const [shortMode, setShortMode] = useState(false);
     // 비중 맞추기 패널. 예약과 같은 방식으로 접었다 편다.
     const [fitOpen, setFitOpen] = useState(false);
     const [target, setTarget] = useState(50);
@@ -495,10 +515,12 @@ export default function ReplayGamePage() {
         setFirm(res.firm ?? null);
         setHabits(res.habits ?? null);
         setBestReturn(res.wallet?.best_return ?? null);
+        setRuined(!!res.ruined);
         // 마지막 반기였으면 굴러가는 캠페인이 없다 — 그때는 기간이 끝난 것이다.
-        if (campaign && !res.campaign) setEndedCampaign(campaign);
+        // 문을 닫아도 캠페인이 사라지지만 그건 완주가 아니라 폐업이라 따로 말한다.
+        if (campaign && !res.campaign && !res.ruined) setEndedCampaign(campaign);
         setCampaign(res.campaign ?? null);
-    }, [campaign, addToast, flushCheckpoint]);
+    }, [campaign, addToast, dropCheckpoint]);
 
     // 어느 판에서 출발하는지 인자로 받는다 — 여러 날 건너뛰기가 앞선 판을 이어받아야 해서,
     // 클로저에 잡힌 옛 round 로는 같은 날을 반복한다.
@@ -524,9 +546,16 @@ export default function ReplayGamePage() {
         }
 
         // 하루 넘기기는 브라우저 안에서 끝난다 — 캔들이 이미 여기 있다.
-        const res = halfAdvance(from, { carry: carry === true });
+        const res = halfAdvance(from, { carry: carry === true, perks });
         if (!res.ok) { addToast("error", res.error); return null; }
         setRound(res.round);
+        // 강제 청산은 내가 누른 게 아니라 담보가 못 버틴 것이다. 조용히 지나가면
+        // 다음 화면에서 "빌린 게 왜 없지" 가 된다.
+        if (res.called) {
+            addToast("error", res.called > 1
+                ? `담보가 못 버텨 ${res.called}자리를 강제로 갚았습니다.`
+                : "담보가 못 버텨 강제로 갚았습니다.");
+        }
         if (res.done) {
             setBusy(true);
             try { await submit(res.round); } finally { setBusy(false); }
@@ -534,7 +563,7 @@ export default function ReplayGamePage() {
             queueCheckpoint(res.round);
         }
         return res.round;
-    }, [isLoggedIn, addToast, submit, queueCheckpoint]);
+    }, [isLoggedIn, perks, addToast, submit, queueCheckpoint]);
 
     const advance = useCallback(async (
         trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null, carry?: boolean,
@@ -554,10 +583,12 @@ export default function ReplayGamePage() {
      * `busy` 는 여기서 건드리지 않는다. 한 건짜리와 여러 건짜리가 각자 감싼다.
      */
     const tradeFrom = useCallback(async (
-        from: ReplayRound, side: "buy" | "sell", qty: number, atSlot: number,
+        from: ReplayRound, side: TradeSide, qty: number, atSlot: number,
     ): Promise<ReplayRound | null> => {
         if (from.status !== "playing" || qty < 1) return null;
         if (!isLoggedIn) {
+            // 체험 운용은 롱만이다 — 화면에서도 공매도 토글을 안 띄운다.
+            if (side !== "buy" && side !== "sell") return null;
             const res = await advanceFrom(from, { side, qty });
             if (res) markFilled();
             return res;
@@ -572,7 +603,7 @@ export default function ReplayGamePage() {
         return res.round;
     }, [isLoggedIn, advanceFrom, addToast, markFilled, queueCheckpoint]);
 
-    const trade = useCallback(async (side: "buy" | "sell", qty: number, atSlot: number) => {
+    const trade = useCallback(async (side: TradeSide, qty: number, atSlot: number) => {
         if (!round) return;
         setBusy(true);
         try {
@@ -633,6 +664,7 @@ export default function ReplayGamePage() {
             while (autoRef.current && cur && cur.status === "playing") {
                 const before = cur.candles[cur.cursor - 1]?.c ?? 0;
                 const pendingBefore = (cur.pending ?? []).length;
+                const owedBefore = (cur.holdings ?? []).reduce((a, h) => a + (h.short_qty ?? 0), 0);
 
                 const next: ReplayRound | null = await advanceFrom(cur, null);
                 if (!next) break;
@@ -649,6 +681,9 @@ export default function ReplayGamePage() {
                     addToast("info", "예약이 체결되어 멈췄습니다.");
                     break;
                 }
+                // 재생 중에는 내가 갚을 수 없다 — 빌린 것이 줄었으면 강제 청산뿐이다.
+                // (무슨 일이 났는지는 advanceFrom 이 이미 알렸다)
+                if ((next.holdings ?? []).reduce((a, h) => a + (h.short_qty ?? 0), 0) < owedBefore) break;
                 await new Promise(r => setTimeout(r, PLAY_MS));
             }
         } finally {
@@ -745,6 +780,18 @@ export default function ReplayGamePage() {
     const overview = holdings.length > 1 && !detail;
 
     /**
+     * 이번 반기의 고객과 목표.
+     *
+     * 판이 들고 있는 값(campaign_id·half_index)을 먼저 본다 — 반기가 끝나면 캠페인은
+     * 다음 칸으로 밀리므로, 결과 화면에서 campaign 을 보면 방금 끝낸 반기가 아니라
+     * 다음 반기의 목표가 뜬다.
+     */
+    const season = useMemo(
+        () => seasonOf(round?.campaign_id ?? campaign?.id, round?.half_index ?? campaign?.half_index),
+        [round?.campaign_id, round?.half_index, campaign?.id, campaign?.half_index],
+    );
+
+    /**
      * 지금까지 열린 구간만.
      *
      * 판은 캔들을 전부 들고 있다 — 브라우저 안에서 굴러가야 해서다. 화면에 그리는 것은
@@ -783,7 +830,18 @@ export default function ReplayGamePage() {
     const marketValue = holdings.length
         ? holdings.reduce((a, h) => a + h.qty * lastCloseOf(h), 0)
         : price * (round?.qty ?? 0);
-    const totalAssets = (round?.cash ?? 0) + marketValue;
+
+    /**
+     * 빌려서 판 것의 평가손익과, 그 때문에 묶여 있는 담보.
+     *
+     * 담보는 이미 현금에서 빠져 있다(공매도할 때 나갔다). 그래서 내 돈에 더할 것은
+     * **평가손익뿐**이다 — 담보까지 더하면 같은 돈을 두 번 세게 된다.
+     */
+    const shortPnlNow = holdings.reduce((a, h) => a + shortPnl(
+        { short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0 }, lastCloseOf(h)), 0);
+    const lockedCollateral = holdings.reduce((a, h) => a + (h.short_basis ?? 0), 0);
+
+    const totalAssets = (round?.cash ?? 0) + marketValue + shortPnlNow;
     const totalPnl = totalAssets - (round?.seed ?? 0);
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
 
@@ -836,6 +894,18 @@ export default function ReplayGamePage() {
         [round?.cash, totalAssets, price]);
 
     const sellQtyFor = useCallback((pct: number) => sellPartQty(heldQty, pct), [heldQty]);
+
+    /* ── 빌려서 팔기 ────────────────────────────────────────────
+       담보는 **묶이지 않은** 현금에서만 나온다 — 한 자리에 걸어 둔 만큼 다른 자리에 쓸
+       돈이 줄어야 "빌린 돈으로 더 크게 굴리는 길은 없다"가 지켜진다. */
+    const freeCash = Math.max(0, (round?.cash ?? 0) - lockedCollateral);
+    const shortQtyFor = useCallback((pct: number) =>
+        partShortQty({ pct, price, cash: freeCash, totalAssets }),
+        [freeCash, totalAssets, price]);
+
+    /** 이 자리에서 빌린 수량과 담보. 갚기 줄이 보는 값이다. */
+    const owedQty = sel?.short_qty ?? 0;
+    const coverQtyFor = useCallback((pct: number) => sellPartQty(owedQty, pct), [owedQty]);
 
     /** 내 돈을 n등분한 한 몫 — 사기 줄이 등분 모드일 때. */
     const splitQtyFor = useCallback((parts: number) =>
@@ -904,13 +974,13 @@ export default function ReplayGamePage() {
         // 지금 보고 있는 자리에 건다. 값도 수량도 이 자리 것으로 잡았으니 판정도
         // 이 자리에서 나야 한다 — 안 보내면 0번 자리 예약이 된다.
         const at = sel?.slot ?? 0;
-        const res = halfReserve(round, { kind: resKind, price: p, qty: n, slot: at });
+        const res = halfReserve(round, { kind: resKind, price: p, qty: n, slot: at }, perks);
         if (!res.ok) { addToast("error", res.error); return; }
         setRound(res.round);
         queueCheckpoint(res.round);
         const where = holdings.length > 1 ? `${slotName(holdings[at])} · ` : "";
         addToast("success", `${where}${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
-    }, [round, sel, holdings, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast, queueCheckpoint]);
+    }, [round, sel, holdings, perks, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast, queueCheckpoint]);
 
     const unreserve = useCallback((index: number) => {
         if (!round) return;
@@ -927,7 +997,9 @@ export default function ReplayGamePage() {
             if (!res.success) { addToast("error", res.error); return; }
             setFirm(res.firm ?? null);
             setActiveTools(res.firm?.tools ?? []);   // 사면 바로 켠다
-            addToast("success", "도구를 들였습니다. 차트 위 이름을 눌러 판이 도는 중에도 껐다 켤 수 있습니다.");
+            addToast("success", DEPARTMENTS.some(d => d.id === toolId)
+                ? "부서를 열었습니다. 다음 반기부터 바뀐 규칙으로 굴러갑니다."
+                : "도구를 들였습니다. 차트 위 이름을 눌러 판이 도는 중에도 껐다 켤 수 있습니다.");
         } finally {
             setBusy(false);
         }
@@ -956,21 +1028,37 @@ export default function ReplayGamePage() {
         }
         let cash = round.seed;
         const pos = new Map<number, { ticker: string; name: string | null; qty: number; cost_basis: number }>();
-        for (const h of holdings) pos.set(h.slot, { ticker: String(h.slot), name: null, qty: 0, cost_basis: 0 });
+        // 빌려서 판 자리도 따라간다 — 안 그리면 공매도로 굴린 반기의 곡선이 통째로 거짓이 된다.
+        const shorts = new Map<number, { short_qty: number; short_basis: number }>();
+        for (const h of holdings) {
+            pos.set(h.slot, { ticker: String(h.slot), name: null, qty: 0, cost_basis: 0 });
+            shorts.set(h.slot, { short_qty: 0, short_basis: 0 });
+        }
 
         const out: (number | null)[] = [];
         for (let i = 0; i < visible.length; i++) {
             for (const o of byDay.get(i) ?? []) {
                 const p = pos.get(o.slot)!;
+                const s = shorts.get(o.slot)!;
                 if (o.side === "buy") {
                     const q = quoteBuy({ price: o.price, qty: o.qty, cash });
                     if (q.ok) { cash -= q.total; Object.assign(p, applyBuy(p, q)); }
-                } else {
+                } else if (o.side === "sell") {
                     const q = quoteSell({ price: o.price, qty: o.qty, position: p });
                     if (q.ok) { cash += q.net; Object.assign(p, applySell(p, q)); }
+                } else if (o.side === "short") {
+                    // 개시에는 현금이 안 움직인다 — 담보만 묶인다(engine.ts).
+                    const q = quoteShort({ price: o.price, qty: o.qty, cash: Number.MAX_SAFE_INTEGER });
+                    if (q.ok) { s.short_qty += q.qty; s.short_basis += q.net; }
+                } else {
+                    const q = quoteCover({ price: o.price, qty: o.qty, position: s });
+                    if (q.ok) { cash += q.realized; Object.assign(s, applyCover(s, q)); }
                 }
             }
-            const mv = holdings.reduce((a, h) => a + (pos.get(h.slot)?.qty ?? 0) * (h.candles[i]?.c ?? 0), 0);
+            const mv = holdings.reduce((a, h) => {
+                const c = h.candles[i]?.c ?? 0;
+                return a + (pos.get(h.slot)?.qty ?? 0) * c + shortPnl(shorts.get(h.slot), c);
+            }, 0);
             out.push(i >= ctxDays - 1 ? Math.round(((cash + mv) / round.seed) * benchBase) : null);
         }
         return out;
@@ -993,6 +1081,7 @@ export default function ReplayGamePage() {
         () => TOOLS.filter(t => (firm?.tools ?? []).includes(t.id)),
         [firm?.tools],
     );
+
 
     // 해금하고 켜 둔 리서치 도구를 가격 위에 겹쳐 그린다.
     // 별도 영역을 만들지 않는 이유는 모바일에서 차트 높이를 더 쓸 수 없기 때문이다.
@@ -1054,7 +1143,7 @@ export default function ReplayGamePage() {
                     if (o.side === "buy") {
                         const q = quoteBuy({ price: o.price, qty: o.qty, cash });
                         if (q.ok) { cash -= q.total; pos = { ...pos, ...applyBuy(pos, q) }; }
-                    } else {
+                    } else if (o.side === "sell") {
                         const q = quoteSell({ price: o.price, qty: o.qty, position: pos });
                         if (q.ok) { cash += q.net; pos = { ...pos, ...applySell(pos, q) }; }
                     }
@@ -1078,9 +1167,12 @@ export default function ReplayGamePage() {
             .map(o => ({
                 x: visible[o.day_index].d.slice(4),
                 y: o.price,
-                color: o.side === "buy" ? UP_COLOR : DOWN_COLOR,
-                label: withLabel ? `${o.side === "buy" ? "+" : "−"}${o.qty}` : undefined,
-                labelPosition: (o.side === "buy" ? "bottom" : "top") as "bottom" | "top",
+                // 방향이 같으면 같은 색이다 — 사기·갚기는 사는 쪽(빨강), 팔기·빌려팔기는 파는 쪽(파랑).
+                color: (o.side === "buy" || o.side === "cover") ? UP_COLOR : DOWN_COLOR,
+                label: withLabel
+                    ? `${(o.side === "buy" || o.side === "cover") ? "+" : "−"}${o.qty}${o.side === "short" || o.side === "cover" ? "*" : ""}`
+                    : undefined,
+                labelPosition: ((o.side === "buy" || o.side === "cover") ? "bottom" : "top") as "bottom" | "top",
             }));
     }, [round, sel, visible, overview]);
 
@@ -1154,7 +1246,8 @@ export default function ReplayGamePage() {
                             <Win tone="neon" title="GAME OVER — 반기 종료"
                                 right={isLoggedIn ? `${(firm?.quarters ?? 0) || 1}분기` : "체험 운용"}
                                 className="shrink-0 pop-in">
-                                <HalfScore round={round} isLoggedIn={isLoggedIn} />
+                                <HalfScore round={round} isLoggedIn={isLoggedIn} season={season} ruined={ruined}
+                                    keepPct={perks.ruinKeepPct} />
                             </Win>
                         )}
 
@@ -1241,6 +1334,15 @@ export default function ReplayGamePage() {
                                                             {rate !== null ? pct(rate) : `${h.qty}주`}
                                                         </span>
                                                         : <span style={{ color: R.inkDim }}>안 삼</span>}
+                                                    {/* 그 자리가 어떤 구간에 앉아 있는지. 값이 아니라 성격이라
+                                                        자리끼리 견줄 수 있는 유일한 정보다 — 이게 없으면 "어디에
+                                                        얼마를" 를 차트 모양만 보고 정하게 된다. 컨텍스트 구간만
+                                                        보고 붙인 값이라 정답이 새지 않는다. */}
+                                                    {overview && scenarioLabel(h.scenario) && (
+                                                        <span className="truncate max-w-full" style={{ color: R.inkDim }}>
+                                                            {scenarioLabel(h.scenario)}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             );
                                         })}
@@ -1363,11 +1465,34 @@ export default function ReplayGamePage() {
                                 가격은 위 이름줄에 원 단위로, 살 주식 수는 버튼에 그대로 적힌다. */}
                             <Sunken className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2 py-1 text-[11px]">
                                 <AcctVal k="내 돈" v={fmtMoney(totalAssets)} />
-                                <AcctVal k="현금" v={fmtMoney(round.cash)} />
+                                {/* 담보가 잡혀 있으면 현금 자리에 쓸 수 있는 돈을 보여 준다 —
+                                    총액만 보이면 "현금이 있는데 왜 못 사지" 가 된다. */}
+                                <AcctVal k={lockedCollateral > 0 ? "쓸 현금" : "현금"}
+                                    v={fmtMoney(lockedCollateral > 0 ? freeCash : round.cash)} />
                                 <AcctVal
                                     k={overview ? `보유 ${holdings.filter(h => h.qty > 0).length}/${holdings.length}` : heldQty > 0 ? `${heldQty}주` : "미보유"}
                                     v={pct(totalRate)} tone={pnlText(totalPnl >= 0)} />
                             </Sunken>
+                            {/* 빌려서 판 것이 있으면 한 줄. 담보는 이미 현금에서 묶여 있고,
+                                내 돈에 더해진 것은 평가손익뿐이다. */}
+                            {lockedCollateral > 0 && (
+                                <Sunken className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2 py-1 text-[11px]">
+                                    <AcctVal k="빌려 판 것" v={`${holdings.reduce((a, h) => a + (h.short_qty ?? 0), 0)}주`} />
+                                    <AcctVal k="묶인 담보" v={fmtMoney(lockedCollateral)} />
+                                    <AcctVal k="평가손익" v={fmtMoney(shortPnlNow)} tone={pnlText(shortPnlNow >= 0)} />
+                                </Sunken>
+                            )}
+                            {/* 이번 반기의 목표 한 줄. 판정은 반기가 닫힐 때 나므로 여기서는
+                                진행률을 그리지 않는다 — 중간 숫자를 띄우면 그걸 맞추려고
+                                굴리게 되고, 목표는 마지막 하루에 뒤집히는 종류의 것이다. */}
+                            {season && round.status === "playing" && (
+                                <p className="mt-1 px-0.5 text-[11px] leading-[1.4] break-keep"
+                                    title={`${season.client.name} — ${season.client.blurb}\n목표: ${season.mission.detail}`}>
+                                    <b style={{ color: "#9e1414" }}>목표</b>{" "}
+                                    <span style={{ color: R.ink }}>{season.mission.label}</span>
+                                    <span style={{ color: R.inkDim }}> · {season.client.name}</span>
+                                </p>
+                            )}
                         </Win>
 
                         {/* ── 조작 ─────────────────────────────── */}
@@ -1381,7 +1506,15 @@ export default function ReplayGamePage() {
                                     // 비중은 반대로 개요에 더 맞는다. 전 자리를 한 번에 다루므로
                                     // 자리를 고를 필요가 없고, 오히려 넷을 한눈에 보며 정하는 값이다.
                                     <span className="flex items-center gap-1">
-                                        {!overview && (
+                                        {/* 빌려서 팔기. 줄을 넷으로 늘리는 대신 두 줄을 갈아 끼운다 —
+                                            화면 높이가 그대로고, 지금 무엇을 하려는지가 한눈에 갈린다. */}
+                                        {!overview && isLoggedIn && (
+                                            <RetroBtn size="sm" selected={shortMode} tone={shortMode ? "warn" : "plain"}
+                                                onClick={() => setShortMode(v => !v)}
+                                                title="빌려서 먼저 팔고 나중에 사서 갚는다. 값이 내려가면 번다"
+                                                aria-pressed={shortMode}>공매도</RetroBtn>
+                                        )}
+                                        {!overview && !shortMode && (
                                             <RetroBtn size="sm" selected={buyMode === "split"}
                                                 onClick={() => setBuyMode(m => m === "split" ? "part" : "split")}
                                                 title="내 돈을 몇 등분해서 살지로 바꾼다"
@@ -1418,12 +1551,30 @@ export default function ReplayGamePage() {
                                         {/* 기준을 적어 둔다 — 안 적으면 같은 25% 가 두 가지 뜻이 되고,
                                             등분 모드에서는 아예 다른 셈(현금 기준)이 된다. */}
                                         <span className="leading-[1.2]">
-                                            <span className="block text-[11px] font-bold" style={{ color: "#9e1414" }}>사기</span>
-                                            {/* 비율이든 등분이든 기준은 내 돈 하나다 — 눈금만 다르다 */}
-                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>내 돈</span>
+                                            <span className="block text-[11px] font-bold" style={{ color: "#9e1414" }}>
+                                                {/* 38px 칸이라 네 글자는 줄바꿈이 난다 */}
+                                                {shortMode ? "빌려서" : "사기"}
+                                            </span>
+                                            {/* 비율이든 등분이든 기준은 내 돈 하나다 — 눈금만 다르다.
+                                                공매도의 담보는 묶이지 않은 현금에서만 나온다. */}
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>
+                                                {shortMode ? "담보" : "내 돈"}
+                                            </span>
                                         </span>
-                                        <div className="grid grid-cols-4 gap-1">
-                                            {buyMode === "split"
+                                        <div className={cn("grid gap-1", shortMode ? "grid-cols-3" : "grid-cols-4")}>
+                                            {shortMode
+                                                ? SELL_PARTS.map(part => {
+                                                    const n = shortQtyFor(part.pct);
+                                                    return (
+                                                        <RetroBtn key={part.pct} tone="warn" aria-label={`빌려서 팔기 ${part.label}`}
+                                                            onClick={() => trade("short", n, sel?.slot ?? 0)} disabled={locked || n < 1}
+                                                            className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            {part.label}
+                                                            <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
+                                                        </RetroBtn>
+                                                    );
+                                                })
+                                                : buyMode === "split"
                                                 ? BUY_SPLITS.map(parts => {
                                                     const n = splitQtyFor(parts);
                                                     return (
@@ -1449,15 +1600,21 @@ export default function ReplayGamePage() {
                                         </div>
 
                                         <span className="leading-[1.2]">
-                                            <span className="block text-[11px] font-bold" style={{ color: "#1d4ed8" }}>팔기</span>
-                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>보유</span>
+                                            <span className="block text-[11px] font-bold" style={{ color: "#1d4ed8" }}>
+                                                {shortMode ? "갚기" : "팔기"}
+                                            </span>
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>
+                                                {shortMode ? "빌린 것" : "보유"}
+                                            </span>
                                         </span>
                                         <div className="grid grid-cols-3 gap-1">
                                             {SELL_PARTS.map(part => {
-                                                const n = sellQtyFor(part.pct);
+                                                const n = shortMode ? coverQtyFor(part.pct) : sellQtyFor(part.pct);
                                                 return (
-                                                    <RetroBtn key={part.pct} tone="sell" aria-label={`팔기 ${part.label}`}
-                                                        onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={locked || n < 1}
+                                                    <RetroBtn key={part.pct} tone="sell"
+                                                        aria-label={`${shortMode ? "갚기" : "팔기"} ${part.label}`}
+                                                        onClick={() => trade(shortMode ? "cover" : "sell", n, sel?.slot ?? 0)}
+                                                        disabled={locked || n < 1}
                                                         className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
@@ -1466,6 +1623,15 @@ export default function ReplayGamePage() {
                                             })}
                                         </div>
                                     </div>
+
+                                    {/* 공매도 줄에서만. 규칙이 낯선 자리라 무엇이 걸려 있는지 한 줄로 적는다. */}
+                                    {shortMode && !overview && (
+                                        <p className="text-[11px] break-keep leading-[1.6]" style={{ color: R.inkDim }}>
+                                            빌려서 먼저 팝니다. 값이 내려가면 벌고, 올라가면 잃습니다.
+                                            판 값만큼 현금이 담보로 묶이고, 평가손실이 담보의 {perks.shortCallPct}%를 넘으면
+                                            그날 종가로 강제 청산됩니다. 반기가 끝나면 남은 것은 자동으로 갚습니다.
+                                        </p>
+                                    )}
 
                                     {/* ── 비중 맞추기 ──
                                         "몇 주를 살까" 가 아니라 "얼마를 담고 있을까" 로 묻는다. 사고팔기를
@@ -2209,6 +2375,9 @@ function SetupScreen({
     // 이월이 있으면 자리를 고를 수 없다 — 이미 들고 있는 회사로 이어 가는 판이다.
     const canPickScenario = isLoggedIn && !!campaign && !firm?.carry?.length;
 
+    // 이번 반기에 누가 맡겼고 무엇을 해내야 하는가. 기간을 열기 전에는 없다.
+    const season = seasonOf(campaign?.id, campaign?.half_index);
+
     return (
         <>
             <Win title="GAME SETUP" onClose={onBack} closeLabel="시작 화면으로" className="pop-in">
@@ -2249,6 +2418,25 @@ function SetupScreen({
                         </>
                     )}
                 </Win>
+
+                {/* ── 이번 반기의 고객과 목표 ──────────────────────
+                    반기마다 다르다. 저장된 값이 아니라 (캠페인, 반기 번호)에서 파생하므로
+                    준비 화면에서도 미리 읽을 수 있다 — 어떤 판을 하러 들어가는지 알고
+                    들어가야 "이번엔 이렇게 굴려 보자"가 생긴다. */}
+                {season && (
+                    <Win title="이번 반기 / MANDATE" className="mb-1.5">
+                        <Sunken className="flex flex-col gap-1">
+                            <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                                <b>{season.client.name}</b>
+                                <span style={{ color: R.inkDim }}> · {season.client.blurb}</span>
+                            </p>
+                            <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                                <b style={{ color: "#9e1414" }}>목표</b> {season.mission.detail}
+                                <span style={{ color: R.inkDim }}> 해내면 회사 자금 {fmtMoney(season.mission.reward)}.</span>
+                            </p>
+                        </Sunken>
+                    </Win>
+                )}
 
                 {/* ── 자리 고르기 (목업의 ASSET SELECTION) ────────── */}
                 {canPickScenario && (
@@ -2391,7 +2579,7 @@ function SetupScreen({
 
             {isLoggedIn && (
                 <Fold icon={<FlaskConical size={14} />} title="리서치실"
-                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${owned.length}/${TOOLS.length}`}>
+                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${TOOLS.filter(t => owned.includes(t.id)).length}/${TOOLS.length}`}>
                     <ul className="flex flex-col gap-1">
                         {TOOLS.map(t => {
                             const have = owned.includes(t.id);
@@ -2418,6 +2606,42 @@ function SetupScreen({
                                             disabled={busy || (firm?.cash ?? 0) < t.price}
                                             className="shrink-0 inline-flex items-center gap-1">
                                             <Lock size={11} /> {fmtMoney(t.price)}
+                                        </RetroBtn>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </Fold>
+            )}
+
+            {isLoggedIn && (
+                <Fold icon={<Building2 size={14} />} title="회사 키우기"
+                    subtitle={`부서 ${owned.filter(id => DEPARTMENTS.some(d => d.id === id)).length}/${DEPARTMENTS.length} · 금고에서 냅니다`}>
+                    {/* 도구는 차트를 더 잘 보게 해 주고, 부서는 판의 규칙을 바꾼다.
+                        섞어 놓으면 "산 것" 목록이 길어지기만 해서 칸을 따로 뒀다. */}
+                    <ul className="flex flex-col gap-1">
+                        {DEPARTMENTS.map(d => {
+                            const have = owned.includes(d.id);
+                            return (
+                                <li key={d.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
+                                    style={{ background: R.faceLo, boxShadow: IN }}>
+                                    <div className="min-w-0">
+                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>{d.name}</div>
+                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
+                                            {d.effect}
+                                        </p>
+                                    </div>
+                                    {have ? (
+                                        <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-bold"
+                                            style={{ color: "#1a6b2a" }}>
+                                            <Check size={11} /> 개설
+                                        </span>
+                                    ) : (
+                                        <RetroBtn size="sm" onClick={() => onBuyTool(d.id)}
+                                            disabled={busy || (firm?.cash ?? 0) < d.price}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Lock size={11} /> {fmtMoney(d.price)}
                                         </RetroBtn>
                                     )}
                                 </li>
@@ -2532,7 +2756,15 @@ function FeeMath({ round, mine, bh }: { round: ReplayRound; mine: number; bh: nu
  * 창은 바깥(결과 화면)이 씌운다. 여기는 안에 들어갈 것만 그린다 — 같은 내용이
  * 진행 화면 위에 얹히던 시절의 흔적(패널·테두리)을 들고 있을 이유가 없다.
  */
-function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
+function HalfScore({ round, isLoggedIn, season, ruined, keepPct }: {
+    round: ReplayRound; isLoggedIn: boolean;
+    /** 이 반기의 고객과 목표. 캠페인 없이 굴린 판·체험 운용에는 없다. */
+    season: Season | null;
+    /** 이 반기로 회사가 문을 닫았는가. 서버가 알려 준 값이다. */
+    ruined: boolean;
+    /** 문을 닫는 선(%). 리스크 관리팀이 있으면 낮다. */
+    keepPct: number;
+}) {
     const mine = round.final_return ?? 0;
     const bh = round.bh_return ?? 0;
     const beat = mine > bh;
@@ -2566,10 +2798,35 @@ function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: bool
                     : `벤치마크가 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
             </p>
 
+            {/* 이번 반기의 목표. 해냈는지는 반기가 닫힐 때 정해져 판에 적혀 온다. */}
+            {season && round.mission_ok !== null && round.mission_ok !== undefined && (
+                <p className={cn("text-[13px] font-bold break-keep leading-[1.7]",
+                    round.mission_ok && "flash-mine px-1")}
+                    style={{ color: round.mission_ok ? "#7a4f00" : R.inkDim }}>
+                    {round.mission_ok
+                        ? `목표 달성 — ${season.mission.label}. 회사 자금 ${fmtMoney(season.mission.reward)}이 들어왔습니다.`
+                        : `목표를 놓쳤습니다 — ${season.mission.label}.`}
+                </p>
+            )}
+
             {round.carried && (
                 <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: "#7a4f00" }}>
                     {round.qty}주를 다음 반기로 넘겼습니다. 아직 들고 있으므로 어떤 회사였는지는 열지 않습니다.
                 </p>
+            )}
+
+            {/* 폐업. 이 화면에서 가장 큰 소식이라 정산 칸보다 앞에 둔다 —
+                아래 숫자들은 "그래서 얼마였나" 이고, 이건 "회사가 없어졌다" 이다. */}
+            {ruined && (
+                <Sunken className="px-2 py-1.5">
+                    <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: "#9e1414" }}>
+                        맡은 돈이 최고점의 {keepPct}% 아래로 내려가 회사가 문을 닫았습니다.
+                    </p>
+                    <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                        굴리던 기간도 여기서 끝납니다. 회사는 {fmtMoney(INITIAL_AUM)}으로 다시 차렸고,
+                        이름과 사 둔 도구, 모아 둔 자금은 그대로 남아 있습니다.
+                    </p>
+                </Sunken>
             )}
 
             {round.habits && round.habits.trades > 0 && (
@@ -2587,6 +2844,9 @@ function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: bool
                         {clientNote(flow, flowPct, rankOf(round.aum_before!), rankOf(round.aum_after!))}
                     </p>
                     <Sunken className="flex flex-col">
+                        {/* 누가 이 성적을 평가했는지. 같은 수익률도 고객에 따라 다르게 잡히므로,
+                            유출입 숫자만 보여 주면 왜 이만큼인지 되짚을 길이 없다. */}
+                        {season && <StatLine label="고객" value={season.client.name} mono={false} />}
                         <StatLine label="고객 자금" tone={flow >= 0 ? "#9e1414" : "#1d4ed8"}
                             value={`${flowPct >= 0 ? "+" : ""}${flowPct.toFixed(1)}%`} />
                         <StatLine label="맡은 돈" value={fmtMoney(round.aum_after!)} />

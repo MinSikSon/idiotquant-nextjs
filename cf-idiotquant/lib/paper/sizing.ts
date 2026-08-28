@@ -10,7 +10,7 @@
 // 체결 규칙(수수료·세금)은 engine.ts 한 곳에만 있다. 여기서 수수료를 다시 계산하지 않고
 // 견적을 물어보는 이유는, 두 벌로 두면 어느 날 한쪽만 고쳐지기 때문이다.
 
-import { quoteBuy } from "./engine";
+import { quoteBuy, quoteShort } from "./engine";
 
 /**
  * 예산 안에서 살 수 있는 최대 주수.
@@ -35,6 +35,33 @@ export function qtyWithinBudget(budget: number, price: number): number {
  * 살 돈은 어차피 현금을 넘을 수 없으므로 현금으로 한 번 자른다(그래서 현금이 모자라면
  * 버튼에 적힌 주수가 그만큼 줄어든다). 100%(최대)만 현금 전액이다.
  */
+/**
+ * 담보 안에서 빌려 팔 수 있는 최대 주수.
+ *
+ * 공매도는 판 대금을 쥐지 않고 그대로 담보로 묶으므로(engine.ts), 걸리는 것은 현금뿐이다.
+ * 사는 쪽과 달리 수수료가 담보를 **깎아 주는** 방향이라 한 주 더 들어갈 때가 있는데,
+ * 견적에 물어보는 방식이라 그 차이도 저절로 맞는다.
+ */
+export function shortQtyWithinCash(cash: number, price: number): number {
+    if (!(price > 0) || !(cash > 0)) return 0;
+    let n = Math.floor(cash / price);
+    // 수수료만큼 담보가 줄어 한 주가 더 들어가는 경우
+    while (quoteShort({ price, qty: n + 1, cash }).ok) n++;
+    while (n > 0 && !quoteShort({ price, qty: n, cash }).ok) n--;
+    return n;
+}
+
+/**
+ * **내 돈**의 pct% 어치를 빌려 판다. 비율 매수와 같은 기준·같은 눈금이다.
+ *
+ * 담보는 현금에서 나가므로 현금으로 한 번 자른다(비율 매수가 그러는 것과 같다).
+ */
+export function partShortQty(args: { pct: number; price: number; cash: number; totalAssets: number }): number {
+    const { pct, price, cash, totalAssets } = args;
+    const budget = pct >= 100 ? cash : Math.min(cash, Math.floor(totalAssets * pct / 100));
+    return shortQtyWithinCash(budget, price);
+}
+
 export function partBuyQty(args: { pct: number; price: number; cash: number; totalAssets: number }): number {
     const { pct, price, cash, totalAssets } = args;
     const budget = pct >= 100 ? cash : Math.min(cash, Math.floor(totalAssets * pct / 100));

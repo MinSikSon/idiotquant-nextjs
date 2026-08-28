@@ -68,26 +68,29 @@ export type ValidateResult =
  * 자리를 안 보내면 0번으로 본다 — 종목이 하나뿐이던 시절 예약과 같은 취급이다.
  *
  * @param slots 이 판의 자리 수. 그 밖의 자리는 거절한다.
+ * @param maxRes 걸 수 있는 건수. 예약 데스크를 들이면 늘어난다(firm.ts 의 perksOf).
  */
 export function validateReservation(
     input: Partial<Reservation> | null | undefined, pendingCount: number, slots = 1,
+    maxRes = MAX_RESERVATIONS,
 ): ValidateResult {
     const kind = String(input?.kind ?? "") as Reservation["kind"];
     const price = Math.floor(Number(input?.price) || 0);
     const qty = Math.floor(Number(input?.qty) || 0);
     const slot = input?.slot == null ? 0 : Math.floor(Number(input.slot));
-    const max = Math.max(1, Math.floor(Number(slots) || 1));
+    // 자리 수 상한. 예약 건수 상한(maxRes)과는 다른 값이다.
+    const slotMax = Math.max(1, Math.floor(Number(slots) || 1));
 
     if (!(RESERVE_KINDS as readonly string[]).includes(kind)) {
         return { ok: false, error: "예약 종류가 올바르지 않습니다." };
     }
     if (!(price > 0)) return { ok: false, error: "가격은 1원 이상이어야 합니다." };
     if (!(qty > 0)) return { ok: false, error: "수량은 1주 이상이어야 합니다." };
-    if (!Number.isInteger(slot) || slot < 0 || slot >= max) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= slotMax) {
         return { ok: false, error: "없는 자리입니다." };
     }
-    if (pendingCount >= MAX_RESERVATIONS) {
-        return { ok: false, error: `예약은 ${MAX_RESERVATIONS}건까지 걸 수 있습니다.` };
+    if (pendingCount >= maxRes) {
+        return { ok: false, error: `예약은 ${maxRes}건까지 걸 수 있습니다.` };
     }
     return { ok: true, res: { kind, price, qty, slot } };
 }

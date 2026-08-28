@@ -93,6 +93,127 @@ export function applySell(position: PaperPosition, q: SellQuote): { qty: number;
     };
 }
 
+/* ── 공매도 ────────────────────────────────────────────────────────
+   빌린 주식을 먼저 팔고 나중에 사서 갚는다. 값이 내려가면 번다.
+
+   ── 왜 넣었나 ──────────────────────────────────────────────────
+   살 수만 있으면 크게 빠지는 반기에는 할 수 있는 게 없다 — 사면 잃고, 안 사면
+   관망 패널티를 받는다. 대응할 수단 없이 벌만 주는 자리가 된다.
+
+   ── 돈이 어떻게 도는가 ──────────────────────────────────────────
+   판 대금을 손에 쥐지 않는다. **그 돈이 그대로 담보로 묶인다.**
+
+     공매도  현금은 그대로 두고, 판 값만큼이 담보로 묶인다(그만큼 살 돈이 준다)
+     갚기    담보가 풀리고, 그 사이의 값 차이가 손익으로 현금에 반영된다
+
+   그래서 "공매도하려면 묶이지 않은 현금이 그만큼 있어야 한다"가 규칙의 전부다 —
+   빌린 돈으로 더 크게 굴리는(레버리지) 길은 열지 않았다. 담보 100%.
+
+   개시에 현금이 안 움직이는 것이 중요하다. 담보를 현금에서 빼고 평가손익까지 더하면
+   같은 돈을 두 번 세게 된다. 지금은 내 돈 = 현금 + 롱 평가금액 + 공매도 평가손익 으로
+   딱 떨어진다. 수수료·세금은 담보(short_basis)를 그만큼 깎아 둬서, 개시 직후의 평가손익이
+   정확히 -수수료가 된다. */
+
+/** 빌려서 판 자리. 갚을 것이 얼마이고, 담보로 묶인 돈이 얼마인가. */
+export interface ShortPosition {
+    short_qty: number;
+    /** 팔아서 받은 돈(수수료·세금 뺀 실수령)의 합계. 그대로 묶인 담보이기도 하다. */
+    short_basis: number;
+}
+
+export interface ShortQuote {
+    ok: true; side: "short"; price: number; qty: number; gross: number; fee: number;
+    /** 묶이는 담보 = 실수령(수수료·세금 뺀 값). 현금은 움직이지 않는다. */
+    net: number;
+}
+export interface CoverQuote {
+    ok: true; side: "cover"; price: number; qty: number; gross: number; fee: number;
+    /** 갚는 데 드는 돈 */
+    cost: number;
+    /** 풀리는 담보 몫 */
+    basisOut: number;
+    /** 이 거래로 확정되는 손익. 현금이 이만큼 움직인다(개시 수수료까지 이미 반영돼 있다). */
+    realized: number;
+}
+
+/**
+ * 평가손실이 담보의 이만큼을 넘으면 강제로 갚게 한다(%).
+ *
+ * 빌린 것이 무섭지 않으면 넣은 뜻이 없다. 값이 오르는 데는 끝이 없어서, 이 선이 없으면
+ * 담보보다 큰 빚을 지고 현금이 음수가 되는 판이 나온다.
+ */
+export const SHORT_CALL_PCT = 80;
+
+/**
+ * 공매도 개시. 담보가 모자라면 거절한다.
+ *
+ * @param cash **묶이지 않은** 현금. 이미 걸어 둔 담보는 부르는 쪽이 빼고 준다.
+ */
+export function quoteShort(args: { price: number; qty: number; cash: number }): ShortQuote | QuoteError {
+    const price = Math.floor(Number(args.price) || 0);
+    const qty = Math.floor(Number(args.qty) || 0);
+    if (price <= 0) return { ok: false, error: "현재가를 가져오지 못했습니다." };
+    if (qty <= 0) return { ok: false, error: "수량은 1주 이상이어야 합니다." };
+
+    const gross = price * qty;
+    // 빌려서 파는 것도 파는 것이다 — 매도 수수료와 거래세를 그대로 낸다.
+    const fee = cut(gross, SELL_FEE_NUM) + cut(gross, SELL_TAX_NUM);
+    if (gross > args.cash) {
+        return { ok: false, error: `담보가 부족합니다. 필요 ${gross.toLocaleString()}원 / 남은 현금 ${Math.floor(args.cash).toLocaleString()}원` };
+    }
+    // 담보는 실수령으로 잡는다 — 그래야 개시 직후의 평가손익이 정확히 -수수료가 된다.
+    return { ok: true, side: "short", price, qty, gross, fee, net: gross - fee };
+}
+
+/** 환매수 — 사서 갚는다. */
+export function quoteCover(args: {
+    price: number; qty: number; position?: ShortPosition | null;
+}): CoverQuote | QuoteError {
+    const price = Math.floor(Number(args.price) || 0);
+    const qty = Math.floor(Number(args.qty) || 0);
+    if (price <= 0) return { ok: false, error: "현재가를 가져오지 못했습니다." };
+    if (qty <= 0) return { ok: false, error: "수량은 1주 이상이어야 합니다." };
+
+    const owed = Math.floor(Number(args.position?.short_qty) || 0);
+    if (owed < qty) return { ok: false, error: `갚을 수량이 부족합니다. 빌린 것 ${owed}주` };
+
+    const gross = price * qty;
+    const fee = cut(gross, BUY_FEE_NUM);
+    const cost = gross + fee;
+    // 갚는 수량만큼의 담보. 전부 갚으면(qty === owed) short_basis 와 정확히 같아져 0 이 된다.
+    const basisOut = Math.round(((Number(args.position?.short_basis) || 0) * qty) / owed);
+    return { ok: true, side: "cover", price, qty, gross, fee, cost, basisOut, realized: basisOut - cost };
+}
+
+/** 갚고 난 자리. 담보가 풀리고 빌린 수량이 준다. */
+export function applyCover(position: ShortPosition, q: CoverQuote): ShortPosition {
+    const nextQty = position.short_qty - q.qty;
+    return {
+        short_qty: nextQty,
+        short_basis: nextQty === 0 ? 0 : position.short_basis - q.basisOut,
+    };
+}
+
+/**
+ * 지금 값으로 쳤을 때 이 공매도의 평가손익. 값이 내려갔으면 양수다.
+ *
+ * 담보(short_basis)는 팔았을 때 받은 돈이고, 지금 갚으려면 price × qty 가 든다.
+ */
+export function shortPnl(position: ShortPosition | null | undefined, price: number): number {
+    const qty = Math.floor(Number(position?.short_qty) || 0);
+    if (qty <= 0) return 0;
+    return (Number(position?.short_basis) || 0) - Math.floor(Number(price) || 0) * qty;
+}
+
+/** 담보가 못 버티는가 — 평가손실이 담보의 SHORT_CALL_PCT 를 넘었는가. */
+export function shortCalled(
+    position: ShortPosition | null | undefined, price: number, callPct = SHORT_CALL_PCT,
+): boolean {
+    const basis = Number(position?.short_basis) || 0;
+    if (!(basis > 0) || !((Number(position?.short_qty) || 0) > 0)) return false;
+    return -shortPnl(position, price) > (basis * callPct) / 100;
+}
+
 /** 평단가 — 저장하지 않고 항상 여기서 파생시킨다. */
 export function avgPrice(position: Pick<PaperPosition, "qty" | "cost_basis">): number {
     if (position.qty <= 0) return 0;

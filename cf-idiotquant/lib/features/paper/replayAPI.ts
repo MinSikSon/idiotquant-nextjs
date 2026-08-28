@@ -43,6 +43,8 @@ export type ReplayResponse =
         success: true; status: number;
         round: ReplayRound | null;
         done?: boolean;
+        /** 회사가 문을 닫았다. 이때도 campaign 이 null 이 되므로 기간 완주와 가려야 한다. */
+        ruined?: boolean;
         history?: ReplayHistoryItem[];
         wallet?: { coins: number; best_streak: number; best_return: number | null };
         firm?: Firm;
