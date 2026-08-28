@@ -11,6 +11,7 @@ import {
     halfTrade, halfAdvance, halfGiveUp, halfReserve, halfCancel, finishHalf, halfSubmission, lockedOf,
 } from "@/lib/paper/half";
 import { SEED } from "@/lib/paper/engine";
+import { perksOf } from "@/lib/paper/firm";
 import type { Candle, ReplayHolding, ReplayRound } from "@/lib/paper/round";
 
 const TOTAL = 60;
@@ -168,6 +169,19 @@ test("예약 지우기는 자리로 — 같은 조건을 두 번 걸 수도 있�
     r = ok(halfCancel(r, 0));
     assert.equal(r.pending.length, 1);
     assert.equal(halfCancel(r, 5).ok, false);
+});
+
+test("예약 데스크가 있으면 네 번째 예약도 걸린다", () => {
+    const one = { kind: "stop_loss", price: 9_000, qty: 1, slot: 0 } as const;
+    let r = makeRound();
+    for (let i = 0; i < 3; i++) r = ok(halfReserve(r, one));
+    assert.equal(halfReserve(r, one).ok, false, "부서가 없으면 3건에서 막힌다");
+
+    const desk = perksOf(["desk"]);
+    const more = halfReserve(r, one, desk);
+    assert.equal(more.ok, true);
+    if (!more.ok) return;
+    assert.equal(more.round.pending.length, 4);
 });
 
 /* ── 반기 마감 ───────────────────────────────────────────────── */
@@ -378,6 +392,26 @@ test("버틸 만하면 강제로 갚지 않는다", () => {
     if (!res.ok) return;
     assert.equal(res.called, 0);
     assert.equal(res.round.holdings![0].short_qty, 100);
+});
+
+test("리스크 관리팀이 있으면 같은 손실을 버틴다", () => {
+    // 담보의 80% 는 넘고 90% 는 안 넘는 손실
+    const spike = makeRound({
+        holdings: [
+            holding(0, i => (i < CONTEXT ? 10_000 : 18_500)),
+            holding(1, () => 20_000), holding(2, () => 5_000), holding(3, () => 1_000),
+        ],
+    });
+    const shorted = ok(halfTrade(spike, { side: "short", qty: 100, slot: 0 }));
+
+    const plain = halfAdvance(shorted);
+    assert.equal(plain.ok && plain.called, 1, "기본 규칙으로는 잡혀야 하는 손실이다");
+
+    const saved = halfAdvance(shorted, { perks: perksOf(["risk"]) });
+    assert.equal(saved.ok, true);
+    if (!saved.ok) return;
+    assert.equal(saved.called, 0);
+    assert.equal(saved.round.holdings![0].short_qty, 100);
 });
 
 test("빌린 주식은 이월되지 않는다 — 마감 때 무조건 갚는다", () => {

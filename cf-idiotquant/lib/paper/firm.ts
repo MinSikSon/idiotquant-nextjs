@@ -11,6 +11,7 @@
 // 다만 끝없이 줄지는 않는다 — 최고점 대비 너무 많이 잃으면 회사가 문을 닫는다.
 
 import type { SeasonClient } from "./season";
+import { SHORT_CALL_PCT } from "./engine";
 
 export const INITIAL_AUM = 100_000_000;
 
@@ -35,6 +36,73 @@ export const RUIN_KEEP_PCT = 40;
  */
 export const IDLE_FLOW = -10;
 
+/* ── 부서 — 금고를 써서 회사를 키운다 ────────────────────────────
+   리서치 도구가 "차트를 더 잘 보게" 해 준다면, 부서는 **판의 규칙 자체를 바꾼다.**
+
+   저장은 도구와 같은 `firms.tools` 배열을 쓴다 — 컬럼을 늘리지 않으려는 선택이다.
+   산 것이 도구인지 부서인지는 id 로 갈린다(DEPARTMENTS 에 있으면 부서).
+
+   왜 필요했나: 금고에 돈이 들어올 길은 늘었는데(운용보수·성과보수·목표 보상) 나갈
+   길이 도구 넷뿐이라, 다 사고 나면 쌓이기만 했다. */
+
+export interface Department {
+    id: string;
+    name: string;
+    price: number;
+    /** 화면에 그대로 나가는 한 줄. "무엇이 달라지는가" 를 적는다. */
+    effect: string;
+}
+
+/** 부서가 열어 주는 것. 안 산 회사는 전부 기본값이다. */
+export interface Perks {
+    /** 한 판에 걸 수 있는 예약 건수 */
+    maxReservations: number;
+    /** 최고점 대비 이만큼은 남아야 문을 안 닫는다(%) */
+    ruinKeepPct: number;
+    /** 평가손실이 담보의 이만큼을 넘으면 강제 청산(%) */
+    shortCallPct: number;
+    /** 고객 유입의 초과 배수에 곱한다 */
+    flowExcessMult: number;
+}
+
+/** 예약 데스크가 없을 때의 예약 한도. 워커 reservations.js 의 MAX_RESERVATIONS 와 같다. */
+export const BASE_RESERVATIONS = 3;
+
+export const DEPARTMENTS: Department[] = [
+    {
+        id: "desk", name: "예약 데스크", price: 3_000_000,
+        effect: "걸어 둘 수 있는 예약이 3건에서 5건으로 늘어납니다. 네 자리에 미리 계획을 깔아 둘 수 있습니다.",
+    },
+    {
+        id: "risk", name: "리스크 관리팀", price: 8_000_000,
+        effect: "문을 닫는 선이 최고점의 40%에서 30%로 내려가고, 공매도 강제 청산도 담보의 80%에서 90%까지 버팁니다.",
+    },
+    {
+        id: "ir", name: "IR팀", price: 20_000_000,
+        effect: "벤치마크를 이겼을 때 들어오는 고객 자금이 20% 더 많아집니다. 잘한 반기가 더 크게 굴러갑니다.",
+    },
+];
+
+export function departmentById(id: string): Department | null {
+    return DEPARTMENTS.find(d => d.id === id) ?? null;
+}
+
+/**
+ * 산 부서로 규칙이 어떻게 달라지는가.
+ *
+ * 목록을 그대로 넘기면 되게 만들어 둔다 — 부서를 하나 더할 때 부르는 쪽을 안 고치려는
+ * 것이고, 부서가 없던 시절 회사(빈 배열)도 그대로 기본값을 받는다.
+ */
+export function perksOf(tools?: string[] | null): Perks {
+    const has = (id: string) => Array.isArray(tools) && tools.includes(id);
+    return {
+        maxReservations: has("desk") ? 5 : BASE_RESERVATIONS,
+        ruinKeepPct: has("risk") ? 30 : RUIN_KEEP_PCT,
+        shortCallPct: has("risk") ? 90 : SHORT_CALL_PCT,
+        flowExcessMult: has("ir") ? 1.2 : 1,
+    };
+}
+
 /** 정산에 얹히는 이번 반기의 사정. */
 export interface SettleOpts {
     /** 이번 반기에 맡긴 쪽. 없으면(옛 판) 예전 규칙 그대로. */
@@ -43,6 +111,8 @@ export interface SettleOpts {
     idle?: boolean;
     /** 여태 맡았던 돈의 최고점. 파산 판정에 쓴다. */
     peak?: number;
+    /** 산 부서가 열어 준 것. 안 주면 기본값(부서 없음). */
+    perks?: Perks | null;
 }
 
 /** 계산이 성립하는 최소치(0 나눗셈 방지). 게임 규칙이 아니다 — 워커의 MIN_CAPITAL 과 같다. */
@@ -101,7 +171,8 @@ export function flowRate(finalReturn: number, bhReturn: number, opts: SettleOpts
     const excess = (Number(finalReturn) || 0) - (Number(bhReturn) || 0);
     const loss = Math.min(Number(finalReturn) || 0, 0);
     return clamp(
-        excess * FLOW_EXCESS_MULT * mult(opts.client?.excess)
+        // IR팀은 **들어오는 쪽만** 키운다 — 빠지는 쪽까지 키우면 부서를 사고 더 위험해진다.
+        excess * FLOW_EXCESS_MULT * mult(opts.client?.excess) * mult(opts.perks?.flowExcessMult)
         + loss * FLOW_LOSS_MULT * mult(opts.client?.loss),
         FLOW_MIN, FLOW_MAX,
     );
@@ -168,10 +239,10 @@ export const TOOLS: Tool[] = [
  * 문을 닫을 만큼 잃었는가. 최고점을 모르면(옛 기록) 판단하지 않는다 — 규칙이 없던
  * 시절의 회사를 뒤늦게 폐업시키는 것은 사용자가 겪은 적 없는 벌이다.
  */
-export function isRuined(peak: number | null | undefined, aum: number): boolean {
+export function isRuined(peak: number | null | undefined, aum: number, keepPct = RUIN_KEEP_PCT): boolean {
     const p = Math.max(Number(peak) || 0, 0);
     if (!(p > 0)) return false;
-    return (Number(aum) || 0) < Math.floor((p * RUIN_KEEP_PCT) / 100);
+    return (Number(aum) || 0) < Math.floor((p * keepPct) / 100);
 }
 
 export function settleQuarter(aum: number, finalReturn: number, bhReturn: number, opts: SettleOpts = {}) {
@@ -188,7 +259,7 @@ export function settleQuarter(aum: number, finalReturn: number, bhReturn: number
         feeBase: fee, feePerf: perf, feeTotal: fee + perf,
         rankBefore: rankOf(before), rankAfter: rankOf(after),
         peakBefore, peakAfter: Math.max(peakBefore, after),
-        ruined: isRuined(peakBefore, after),
+        ruined: isRuined(peakBefore, after, opts.perks?.ruinKeepPct ?? RUIN_KEEP_PCT),
         idle: !!opts.idle,
     };
 }

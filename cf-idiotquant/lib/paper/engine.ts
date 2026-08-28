@@ -206,10 +206,12 @@ export function shortPnl(position: ShortPosition | null | undefined, price: numb
 }
 
 /** 담보가 못 버티는가 — 평가손실이 담보의 SHORT_CALL_PCT 를 넘었는가. */
-export function shortCalled(position: ShortPosition | null | undefined, price: number): boolean {
+export function shortCalled(
+    position: ShortPosition | null | undefined, price: number, callPct = SHORT_CALL_PCT,
+): boolean {
     const basis = Number(position?.short_basis) || 0;
     if (!(basis > 0) || !((Number(position?.short_qty) || 0) > 0)) return false;
-    return -shortPnl(position, price) > (basis * SHORT_CALL_PCT) / 100;
+    return -shortPnl(position, price) > (basis * callPct) / 100;
 }
 
 /** 평단가 — 저장하지 않고 항상 여기서 파생시킨다. */

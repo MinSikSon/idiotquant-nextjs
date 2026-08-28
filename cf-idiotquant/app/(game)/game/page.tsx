@@ -33,7 +33,7 @@ import { useSession } from "next-auth/react";
 // 같은 그림이 전혀 다른 일을 가리켰다.
 import {
     Play, Pause, ArrowLeft, EyeOff,
-    FlaskConical, History, Footprints, Lock, Check, ChevronDown,
+    FlaskConical, History, Footprints, Lock, Check, ChevronDown, Building2,
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -41,7 +41,7 @@ import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorit
 
 import {
     SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell,
-    quoteShort, quoteCover, applyCover, shortPnl, SHORT_CALL_PCT,
+    quoteShort, quoteCover, applyCover, shortPnl,
 } from "@/lib/paper/engine";
 import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, fitToValue, equalWeightPlan, partShortQty } from "@/lib/paper/sizing";
 import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
@@ -54,7 +54,7 @@ import { getReplayState, startCampaign, startReplayRound, buyTool, submitHalf, c
 import {
     TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
-    RUIN_KEEP_PCT,
+    DEPARTMENTS, perksOf,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
 import { seasonOf, type Season } from "@/lib/paper/season";
@@ -329,6 +329,9 @@ export default function ReplayGamePage() {
     const [bestReturn, setBestReturn] = useState<number | null>(null);
     // 산 도구 중 지금 켜 둔 것. 사자마자 켜진다.
     const [activeTools, setActiveTools] = useState<string[]>([]);
+    // 산 부서가 이 판의 규칙을 얼마나 바꾸는가. 예약 한도와 마진콜 선이 여기서 나온다.
+    // (정산은 워커가 같은 걸 다시 계산한다 — 화면 값을 믿고 저장하지 않는다)
+    const perks = useMemo(() => perksOf(firm?.tools), [firm?.tools]);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     // 체결 직후 계좌 줄을 한 번 물들인다. 값이 어디서 달라졌는지 눈이 못 따라가서,
@@ -543,7 +546,7 @@ export default function ReplayGamePage() {
         }
 
         // 하루 넘기기는 브라우저 안에서 끝난다 — 캔들이 이미 여기 있다.
-        const res = halfAdvance(from, { carry: carry === true });
+        const res = halfAdvance(from, { carry: carry === true, perks });
         if (!res.ok) { addToast("error", res.error); return null; }
         setRound(res.round);
         // 강제 청산은 내가 누른 게 아니라 담보가 못 버틴 것이다. 조용히 지나가면
@@ -560,7 +563,7 @@ export default function ReplayGamePage() {
             queueCheckpoint(res.round);
         }
         return res.round;
-    }, [isLoggedIn, addToast, submit, queueCheckpoint]);
+    }, [isLoggedIn, perks, addToast, submit, queueCheckpoint]);
 
     const advance = useCallback(async (
         trade?: { side: "buy" | "sell"; qty: number; slot?: number } | null, carry?: boolean,
@@ -971,13 +974,13 @@ export default function ReplayGamePage() {
         // 지금 보고 있는 자리에 건다. 값도 수량도 이 자리 것으로 잡았으니 판정도
         // 이 자리에서 나야 한다 — 안 보내면 0번 자리 예약이 된다.
         const at = sel?.slot ?? 0;
-        const res = halfReserve(round, { kind: resKind, price: p, qty: n, slot: at });
+        const res = halfReserve(round, { kind: resKind, price: p, qty: n, slot: at }, perks);
         if (!res.ok) { addToast("error", res.error); return; }
         setRound(res.round);
         queueCheckpoint(res.round);
         const where = holdings.length > 1 ? `${slotName(holdings[at])} · ` : "";
         addToast("success", `${where}${reserveLabel(resKind)} ${p.toLocaleString()}원 ${n}주를 걸어 뒀습니다.`);
-    }, [round, sel, holdings, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast, queueCheckpoint]);
+    }, [round, sel, holdings, perks, resKind, resStep, resPart, resPriceAt, resQtyFor, addToast, queueCheckpoint]);
 
     const unreserve = useCallback((index: number) => {
         if (!round) return;
@@ -994,7 +997,9 @@ export default function ReplayGamePage() {
             if (!res.success) { addToast("error", res.error); return; }
             setFirm(res.firm ?? null);
             setActiveTools(res.firm?.tools ?? []);   // 사면 바로 켠다
-            addToast("success", "도구를 들였습니다. 차트 위 이름을 눌러 판이 도는 중에도 껐다 켤 수 있습니다.");
+            addToast("success", DEPARTMENTS.some(d => d.id === toolId)
+                ? "부서를 열었습니다. 다음 반기부터 바뀐 규칙으로 굴러갑니다."
+                : "도구를 들였습니다. 차트 위 이름을 눌러 판이 도는 중에도 껐다 켤 수 있습니다.");
         } finally {
             setBusy(false);
         }
@@ -1076,6 +1081,7 @@ export default function ReplayGamePage() {
         () => TOOLS.filter(t => (firm?.tools ?? []).includes(t.id)),
         [firm?.tools],
     );
+
 
     // 해금하고 켜 둔 리서치 도구를 가격 위에 겹쳐 그린다.
     // 별도 영역을 만들지 않는 이유는 모바일에서 차트 높이를 더 쓸 수 없기 때문이다.
@@ -1240,7 +1246,8 @@ export default function ReplayGamePage() {
                             <Win tone="neon" title="GAME OVER — 반기 종료"
                                 right={isLoggedIn ? `${(firm?.quarters ?? 0) || 1}분기` : "체험 운용"}
                                 className="shrink-0 pop-in">
-                                <HalfScore round={round} isLoggedIn={isLoggedIn} season={season} ruined={ruined} />
+                                <HalfScore round={round} isLoggedIn={isLoggedIn} season={season} ruined={ruined}
+                                    keepPct={perks.ruinKeepPct} />
                             </Win>
                         )}
 
@@ -1621,7 +1628,7 @@ export default function ReplayGamePage() {
                                     {shortMode && !overview && (
                                         <p className="text-[11px] break-keep leading-[1.6]" style={{ color: R.inkDim }}>
                                             빌려서 먼저 팝니다. 값이 내려가면 벌고, 올라가면 잃습니다.
-                                            판 값만큼 현금이 담보로 묶이고, 평가손실이 담보의 {SHORT_CALL_PCT}%를 넘으면
+                                            판 값만큼 현금이 담보로 묶이고, 평가손실이 담보의 {perks.shortCallPct}%를 넘으면
                                             그날 종가로 강제 청산됩니다. 반기가 끝나면 남은 것은 자동으로 갚습니다.
                                         </p>
                                     )}
@@ -2572,7 +2579,7 @@ function SetupScreen({
 
             {isLoggedIn && (
                 <Fold icon={<FlaskConical size={14} />} title="리서치실"
-                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${owned.length}/${TOOLS.length}`}>
+                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${TOOLS.filter(t => owned.includes(t.id)).length}/${TOOLS.length}`}>
                     <ul className="flex flex-col gap-1">
                         {TOOLS.map(t => {
                             const have = owned.includes(t.id);
@@ -2599,6 +2606,42 @@ function SetupScreen({
                                             disabled={busy || (firm?.cash ?? 0) < t.price}
                                             className="shrink-0 inline-flex items-center gap-1">
                                             <Lock size={11} /> {fmtMoney(t.price)}
+                                        </RetroBtn>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </Fold>
+            )}
+
+            {isLoggedIn && (
+                <Fold icon={<Building2 size={14} />} title="회사 키우기"
+                    subtitle={`부서 ${owned.filter(id => DEPARTMENTS.some(d => d.id === id)).length}/${DEPARTMENTS.length} · 금고에서 냅니다`}>
+                    {/* 도구는 차트를 더 잘 보게 해 주고, 부서는 판의 규칙을 바꾼다.
+                        섞어 놓으면 "산 것" 목록이 길어지기만 해서 칸을 따로 뒀다. */}
+                    <ul className="flex flex-col gap-1">
+                        {DEPARTMENTS.map(d => {
+                            const have = owned.includes(d.id);
+                            return (
+                                <li key={d.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
+                                    style={{ background: R.faceLo, boxShadow: IN }}>
+                                    <div className="min-w-0">
+                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>{d.name}</div>
+                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
+                                            {d.effect}
+                                        </p>
+                                    </div>
+                                    {have ? (
+                                        <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-bold"
+                                            style={{ color: "#1a6b2a" }}>
+                                            <Check size={11} /> 개설
+                                        </span>
+                                    ) : (
+                                        <RetroBtn size="sm" onClick={() => onBuyTool(d.id)}
+                                            disabled={busy || (firm?.cash ?? 0) < d.price}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Lock size={11} /> {fmtMoney(d.price)}
                                         </RetroBtn>
                                     )}
                                 </li>
@@ -2713,12 +2756,14 @@ function FeeMath({ round, mine, bh }: { round: ReplayRound; mine: number; bh: nu
  * 창은 바깥(결과 화면)이 씌운다. 여기는 안에 들어갈 것만 그린다 — 같은 내용이
  * 진행 화면 위에 얹히던 시절의 흔적(패널·테두리)을 들고 있을 이유가 없다.
  */
-function HalfScore({ round, isLoggedIn, season, ruined }: {
+function HalfScore({ round, isLoggedIn, season, ruined, keepPct }: {
     round: ReplayRound; isLoggedIn: boolean;
     /** 이 반기의 고객과 목표. 캠페인 없이 굴린 판·체험 운용에는 없다. */
     season: Season | null;
     /** 이 반기로 회사가 문을 닫았는가. 서버가 알려 준 값이다. */
     ruined: boolean;
+    /** 문을 닫는 선(%). 리스크 관리팀이 있으면 낮다. */
+    keepPct: number;
 }) {
     const mine = round.final_return ?? 0;
     const bh = round.bh_return ?? 0;
@@ -2775,7 +2820,7 @@ function HalfScore({ round, isLoggedIn, season, ruined }: {
             {ruined && (
                 <Sunken className="px-2 py-1.5">
                     <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: "#9e1414" }}>
-                        맡은 돈이 최고점의 {RUIN_KEEP_PCT}% 아래로 내려가 회사가 문을 닫았습니다.
+                        맡은 돈이 최고점의 {keepPct}% 아래로 내려가 회사가 문을 닫았습니다.
                     </p>
                     <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
                         굴리던 기간도 여기서 끝납니다. 회사는 {fmtMoney(INITIAL_AUM)}으로 다시 차렸고,

@@ -27,6 +27,7 @@ import {
 import { computeHabits } from "./habits";
 import { triggered, validateReservation } from "./reservations";
 import { seasonOf, missionMet } from "./season";
+import type { Perks } from "./firm";
 import {
     CONTEXT_DAYS, buyAndHoldReturn, carryQty,
     type ReplayHolding, type ReplayOrder, type ReplayRound, type Reservation,
@@ -213,13 +214,13 @@ export function halfTrade(
  * 값이 오르는 데는 끝이 없어서, 이 선이 없으면 담보보다 큰 빚을 지고 현금이 음수가 되는
  * 판이 나온다. 플레이어가 누른 게 아니므로 auto 를 달아 습관에서 뺀다.
  */
-function marginCalls(round: ReplayRound, dayIdx: number): { round: ReplayRound; called: number } {
+function marginCalls(round: ReplayRound, dayIdx: number, perks?: Perks | null): { round: ReplayRound; called: number } {
     let next = round;
     let called = 0;
     for (const h of holdingsOf(round)) {
         const pos = { short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0 };
         const price = h.candles[dayIdx]?.c ?? 0;
-        if (!(pos.short_qty > 0) || !(price > 0) || !shortCalled(pos, price)) continue;
+        if (!(pos.short_qty > 0) || !(price > 0) || !shortCalled(pos, price, perks?.shortCallPct)) continue;
 
         const q = quoteCover({ price, qty: pos.short_qty, position: pos });
         if (!q.ok) continue;
@@ -376,7 +377,7 @@ export function finishHalf(round: ReplayRound, { carry = false }: { carry?: bool
  * 마지막 날에 닿으면 자동 청산하고 반기를 닫는다.
  */
 export function halfAdvance(
-    round: ReplayRound, { carry = false }: { carry?: boolean } = {},
+    round: ReplayRound, { carry = false, perks }: { carry?: boolean; perks?: Perks | null } = {},
 ): HalfResult {
     if (round.status !== "playing") return { ok: false, error: "이미 끝난 판입니다." };
 
@@ -391,7 +392,7 @@ export function halfAdvance(
     const moved = { ...round, cursor: nextCursor };
     // 예약 체결이 먼저다 — 걸어 둔 것이 담보를 채워 마진콜을 면하게 할 수도 있다.
     const filled = fillReservations(moved, nextCursor - 1);
-    const { round: next, called } = marginCalls(filled, nextCursor - 1);
+    const { round: next, called } = marginCalls(filled, nextCursor - 1, perks);
     return { ok: true, round: next, done: false, called };
 }
 
@@ -402,10 +403,14 @@ export function halfGiveUp(round: ReplayRound): HalfResult {
 }
 
 /** 예약 걸기. */
-export function halfReserve(round: ReplayRound, input: Partial<Reservation>): HalfResult {
+export function halfReserve(
+    round: ReplayRound, input: Partial<Reservation>, perks?: Perks | null,
+): HalfResult {
     if (round.status !== "playing") return { ok: false, error: "이미 끝난 판입니다." };
     const pending = round.pending ?? [];
-    const v = validateReservation(input, pending.length, Math.max(1, holdingsOf(round).length));
+    const v = validateReservation(
+        input, pending.length, Math.max(1, holdingsOf(round).length), perks?.maxReservations,
+    );
     if (!v.ok) return { ok: false, error: v.error };
     return { ok: true, round: { ...round, pending: [...pending, v.res] } };
 }
