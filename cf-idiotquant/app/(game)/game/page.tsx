@@ -2,13 +2,20 @@
 
 // 내 운용사 — 블라인드 차트 리플레이를 "분기 운용" 으로 감싼 게임.
 //
-// ── 화면 넷 ──────────────────────────────────────────────────────────
+// ── 단계 여섯 ────────────────────────────────────────────────────────
 //
-//   시작(title) → 준비(setup) → 진행(play) → 결과(result) → (다시 준비)
+//   시작(title) → 설정(setup) → ( 준비(ready) → 게임(play) → 반기 종료(halfEnd) ) × n → 종료(end)
 //
-// 예전에는 시작·준비·결과가 "대시보드" 한 화면에 겹쳐 있었다. 판이 없을 때 그 화면이
+// 가운데 셋은 반기마다 되풀이되고 나머지 셋은 기간에 한 번씩이다. 그 구분이 화면에
+// 안 보이면 반기가 끝날 때마다 "설정을 또 해야 하나" 가 된다 — PhaseBar 가 줄 하나로 말한다.
+//
+// 설정은 **고르는 곳**(기간·자리·회사)이고 준비는 **읽는 곳**(뽑힌 자리·이번 고객과 목표)이다.
+// 예전에는 설정에서 [시작] 을 누르면 종목이 뽑히면서 곧바로 차트로 떨어져, 무엇을 하러
+// 들어왔는지 읽을 자리가 그 사이에 없었다.
+//
+// 예전에는 시작·설정·결과가 "대시보드" 한 화면에 겹쳐 있었다. 판이 없을 때 그 화면이
 // 로고이자 설정이자 성적표였고, 그래서 무엇을 하는 화면인지가 상태에 따라 달라졌다.
-// 지금은 한 화면이 한 가지 일만 한다 — 어느 화면에 있는지는 아래 `screen` 하나가 정한다.
+// 지금은 한 화면이 한 가지 일만 한다 — 어느 단계인지는 아래 `phase` 하나가 정한다.
 //
 // 겉모습은 90년대 기기다(app/(game)/game/retro.tsx). 이 화면만 브라운관 안이라
 // 밝은 테마를 따로 두지 않는다 — 아케이드 기기는 낮에도 어둡다.
@@ -54,7 +61,7 @@ import { getReplayState, startCampaign, startReplayRound, buyTool, submitHalf, c
 import {
     TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
-    DEPARTMENTS, perksOf,
+    DEPARTMENTS, perksOf, type Perks,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
 import { seasonOf, type Season } from "@/lib/paper/season";
@@ -86,6 +93,22 @@ const SCENARIOS: { id: string; label: string; hint: string }[] = [
 ];
 const scenarioLabel = (id?: string | null) =>
     id === "mixed" ? "보통" : (SCENARIOS.find(s => s.id === id)?.label ?? null);
+
+/* ── 단계 ────────────────────────────────────────────────────────
+   시작 → 설정 → (준비 → 게임 → 반기 종료) × n → 종료.
+
+   가운데 셋은 반기마다 되풀이되고 나머지 셋은 한 번씩이다. 그 구분이 화면에 안 보이면
+   반기가 끝날 때마다 "설정을 또 해야 하나" 가 된다.
+
+   화면 번호를 상태로 들지 않고 데이터에서 읽는다 — 따로 들면 그것과 데이터가 어긋나는
+   순간이 반드시 생긴다(판은 끝났는데 화면은 아직 진행 중 같은). */
+const PHASE_ORDER = ["title", "setup", "ready", "play", "halfEnd", "end"] as const;
+type Phase = typeof PHASE_ORDER[number];
+const PHASE_LABEL: Record<Phase, string> = {
+    title: "시작", setup: "설정", ready: "준비", play: "게임", halfEnd: "반기 종료", end: "종료",
+};
+/** 반기마다 되풀이되는 구간. 표시줄에서 한 칸에 묶인다. */
+const LOOP_PHASES: Phase[] = ["ready", "play", "halfEnd"];
 
 // 예약 종류. id 와 이름은 워커 src/lib/reservations.js 의 RESERVE_KINDS·RESERVE_LABEL 과 같아야 한다.
 const RESERVE_KINDS: { id: Reservation["kind"]; label: string; hint: string }[] = [
@@ -342,6 +365,16 @@ export default function ReplayGamePage() {
     const [reserveOpen, setReserveOpen] = useState(false);
     // 시작 화면을 지났나. 이것만은 데이터로 알 수 없어 따로 든다.
     const [entered, setEntered] = useState(false);
+    /**
+     * 준비 화면에서 [장 열기] 를 눌렀나.
+     *
+     * 종목이 뽑히자마자 차트로 떨어뜨리면 무엇을 하러 들어왔는지 읽을 자리가 없다.
+     * 뽑힌 자리 넷과 이번 고객·목표를 한 번 보여 준 뒤에 들어간다.
+     *
+     * 새로고침해도 아직 하루도 안 넘긴 판이면 준비 화면이 다시 뜬다 — 시작한 적이
+     * 없으니 그게 맞다(아래 phase 계산이 데이터로 한 번 더 거른다).
+     */
+    const [briefed, setBriefed] = useState(false);
     // 사기 줄의 눈금 — 내 돈의 몇 %(part)냐, 내 돈을 몇 등분한 한 몫(split)이냐.
     const [buyMode, setBuyMode] = useState<"part" | "split">("part");
     /**
@@ -355,8 +388,8 @@ export default function ReplayGamePage() {
     // 비중 맞추기 패널. 예약과 같은 방식으로 접었다 편다.
     const [fitOpen, setFitOpen] = useState(false);
     const [target, setTarget] = useState(50);
-    // 어떤 자리에서 시작할까(준비 화면에서 고른 값). 결과 화면에서 바로 다음 반기를
-    // 시작할 때도 이 값을 쓴다 — 매번 같은 자리를 고르는 사람에게 준비 화면은 문일 뿐이다.
+    // 어떤 자리에서 시작할까(설정 화면에서 고른 값). 결과 화면에서 바로 다음 반기를
+    // 시작할 때도 이 값을 쓴다 — 매번 같은 자리를 고르는 사람에게 설정은 문일 뿐이다.
     const [wantScenario, setWantScenario] = useState<string | null>(null);
 
     /* 골라 둔 것을 기억한다. 반기마다 같은 값을 다시 맞추는 것이 이 화면에서 가장
@@ -449,11 +482,13 @@ export default function ReplayGamePage() {
                 const res = await startReplayRound(scenario);
                 if (!res.success) { addToast("error", res.error); return; }
                 setSlot(0); setDetail(false);   // 새 판은 개요부터, 첫 자리부터
+                setBriefed(false);              // 새 판은 준비 화면부터
                 setRound(res.round);
             } else {
                 if (!localPool.length) { addToast("error", "종목 목록을 아직 불러오는 중입니다."); return; }
                 const built = await buildLocalRound(localPool);
                 if (!built) { addToast("error", "판을 만들지 못했습니다. 다시 시도해주세요."); return; }
+                setBriefed(false);
                 setRound(built);
             }
         } finally {
@@ -755,12 +790,12 @@ export default function ReplayGamePage() {
     /**
      * 결과 화면에서 곧바로 다음 반기로.
      *
-     * 예전에는 [다음 반기] 로 준비 화면에 갔다가 거기서 [시작] 을 다시 눌러야 했다. 자리
-     * 성격을 매번 고르지 않는 사람에게 준비 화면은 지나가는 문일 뿐이라, 기억해 둔 자리로
-     * 바로 연다. 바꾸고 싶으면 그 옆의 "준비 화면" 으로 간다.
+     * 설정 화면을 건너뛰고 기억해 둔 자리로 종목을 뽑아 **준비 화면**으로 간다. 자리
+     * 성격을 매번 고르지 않는 사람에게 설정은 지나가는 문일 뿐이다. 바꾸고 싶으면 그
+     * 옆의 "설정으로" 를 누른다.
      *
      * 기간이 끝났거나(최종 결과를 봐야 한다) 굴러가는 캠페인이 없으면(기간부터 골라야
-     * 한다) 판을 열지 않는다 — 그때는 준비 화면이 지나가는 문이 아니다.
+     * 한다) 판을 열지 않는다 — 그때는 설정이 지나가는 문이 아니다.
      */
     const nextHalf = useCallback(async () => {
         reset();
@@ -1177,16 +1212,44 @@ export default function ReplayGamePage() {
     }, [round, sel, visible, overview]);
 
     /**
-     * 어느 화면인가.
+     * 아직 아무것도 안 한 판인가 — 하루도 안 넘겼고 체결도 예약도 없다.
      *
-     * 새 상태를 만들지 않고 있는 것에서 읽는다 — 화면 번호를 따로 들고 있으면 그것과
-     * 데이터가 어긋나는 순간이 반드시 생긴다(판은 끝났는데 화면은 아직 진행 중 같은).
-     * `entered` 하나만 새로 둔다: 시작 화면을 지났느냐는 데이터로는 알 수 없다.
+     * 준비 화면을 데이터로 한 번 더 거르는 자리다. `briefed` 만 보면 새로고침할 때마다
+     * 굴리던 판이 준비 화면으로 돌아간다.
      */
-    const screen: "title" | "setup" | "play" | "result" =
-        round ? (round.status === "done" ? "result" : "play")
-            : endedCampaign ? "result"
+    const untouched = !!round && round.status === "playing"
+        && round.cursor <= ctxDays
+        && (round.orders?.length ?? 0) === 0
+        && (round.pending?.length ?? 0) === 0
+        && !(round.holdings ?? []).some(h => (h.orders?.length ?? 0) > 0);
+
+    /**
+     * 어느 단계인가. 시작 → 설정 → (준비 → 게임 → 반기 종료) × n → 종료.
+     *
+     * 새 상태를 만들지 않고 있는 것에서 읽는다 — 단계 번호를 따로 들고 있으면 그것과
+     * 데이터가 어긋나는 순간이 반드시 생긴다(판은 끝났는데 화면은 아직 진행 중 같은).
+     * 데이터로 알 수 없는 둘만 따로 든다: 시작 화면을 지났나(entered), 준비 화면에서
+     * 장을 열었나(briefed).
+     */
+    const phase: Phase =
+        round ? (round.status === "done" ? "halfEnd"
+            : (!briefed && untouched) ? "ready" : "play")
+            : endedCampaign ? "end"
                 : entered ? "setup" : "title";
+
+    /**
+     * 반복 구간의 몇 바퀴째인가. 표시줄이 "(준비-게임-반기 종료) × n" 의 n 을 말한다.
+     *
+     * 반기가 끝나면 캠페인은 다음 칸으로 밀리므로, 판이 들고 있는 번호를 먼저 본다.
+     */
+    const loopNote = !isLoggedIn ? "체험 한 판" : (() => {
+        const c = campaign ?? endedCampaign;
+        if (!c) return null;
+        // 기간이 끝났으면 몇 번째가 아니라 몇 바퀴를 돌았는가다
+        if (!round && endedCampaign) return `${c.total_halves}반기 끝`;
+        const idx = round?.half_index ?? c.done_halves ?? 0;
+        return `${Math.min(idx + 1, c.total_halves)}/${c.total_halves}반기`;
+    })();
 
     if (loading) {
         return (
@@ -1210,24 +1273,28 @@ export default function ReplayGamePage() {
                 // 누르는 게 매일 반복되는 동작이라, 그 둘이 같은 화면에 있어야 한다.
                 // overflow-y-auto 는 안전장치다. 아주 작은 화면에서 고정 부분만으로도 자리가
                 // 모자라면 잘리는 대신 스크롤된다 — 버튼이 화면 밖으로 나가면 판을 못 이어간다.
-                screen === "play"
+                phase === "play"
                     ? "h-[calc(100dvh-112px)] md:h-[100dvh] overflow-y-auto py-2 sm:py-3 gap-2"
                     : "py-3 sm:py-8 pb-8 md:pb-24 gap-2.5",
                 // 시작 화면은 창 하나뿐이라 위에 붙여 두면 아래가 통째로 빈다.
                 // 남는 자리를 위아래로 나눠 기기가 화면 한가운데 놓이게 한다.
-                screen === "title" && "min-h-[calc(100dvh-112px)] md:min-h-[100dvh] justify-center",
+                phase === "title" && "min-h-[calc(100dvh-112px)] md:min-h-[100dvh] justify-center",
             )}>
 
+                {/* 지금 어느 단계인가. 판이 도는 중에도 남겨 둔다 — 한 줄이라 차트 높이를
+                    거의 안 먹고, 반기가 되풀이되는 구간이라는 사실이 그때 가장 필요하다. */}
+                <PhaseBar phase={phase} loopNote={loopNote} />
+
                 {/* ① 시작 ─────────────────────────────────────── */}
-                {screen === "title" && (
+                {phase === "title" && (
                     <TitleScreen
                         isLoggedIn={isLoggedIn} firm={firm} campaign={campaign}
                         bestReturn={bestReturn} onEnter={() => setEntered(true)}
                     />
                 )}
 
-                {/* ② 준비 ─────────────────────────────────────── */}
-                {screen === "setup" && (
+                {/* ② 설정 — 기간과 회사. 반기마다 다시 하지 않는다. ───── */}
+                {phase === "setup" && (
                     <SetupScreen
                         isLoggedIn={isLoggedIn} busy={busy} firm={firm} campaign={campaign}
                         history={history} habits={habits} activeTools={activeTools}
@@ -1237,10 +1304,20 @@ export default function ReplayGamePage() {
                     />
                 )}
 
-                {/* ③ 진행 · ④ 결과(반기) ───────────────────────
+                {/* ③ 준비 — 종목은 뽑혔고 아직 하루도 안 넘겼다 ───────
+                    뽑히자마자 차트로 떨어뜨리면 무엇을 하러 들어왔는지 읽을 자리가 없다. */}
+                {phase === "ready" && round && (
+                    <ReadyScreen
+                        round={round} season={season} isLoggedIn={isLoggedIn} busy={busy}
+                        halfTitle={halfTitle} ctxDays={ctxDays} totalDays={totalDays}
+                        perks={perks} onOpen={() => setBriefed(true)}
+                    />
+                )}
+
+                {/* ④ 게임 · ⑤ 반기 종료 ───────────────────────
                     판이 끝난 화면도 차트를 그대로 쓴다 — 45일을 가린 끝에 이름이 열리는
                     자리가 바로 그 차트라, 결과를 다른 데로 옮기면 열리는 순간이 사라진다. */}
-                {round && (
+                {(phase === "play" || phase === "halfEnd") && round && (
                     <>
                         {round.status === "done" && (
                             <Win tone="neon" title="GAME OVER — 반기 종료"
@@ -1846,8 +1923,9 @@ export default function ReplayGamePage() {
                                         </p>
                                     </Win>
                                 )}
-                                {/* 준비 화면을 거치지 않고 바로 다음 판을 연다. 자리 성격을 매번
-                                    고르지 않는 사람에게는 그 화면이 지나가는 문일 뿐이었다. */}
+                                {/* 설정 화면을 건너뛰고 바로 다음 반기를 연다 — 기억해 둔 자리로
+                                    종목을 뽑아 준비 화면으로 간다. 자리를 매번 고르지 않는
+                                    사람에게 설정은 지나가는 문일 뿐이다. */}
                                 <RetroBtn tone="go" size="lg" onClick={nextHalf} disabled={busy}
                                     className="w-full shrink-0">
                                     {endedCampaign ? "최종 결과 ▶"
@@ -1859,7 +1937,7 @@ export default function ReplayGamePage() {
                                     <button type="button" onClick={reset} disabled={busy}
                                         className={cn(PIXEL, "text-[11px] text-center shrink-0 disabled:opacity-40")}
                                         style={{ color: `${R.inkHi}80` }}>
-                                        준비 화면에서 자리 고르기
+                                        설정으로 — 자리 고르기
                                     </button>
                                 )}
                             </>
@@ -1867,10 +1945,10 @@ export default function ReplayGamePage() {
                     </>
                 )}
 
-                {/* ④ 결과(기간 종료) ──────────────────────────
+                {/* ⑥ 종료(기간 끝) ──────────────────────────
                     반기 하나하나의 성적은 지난 분기 목록에 있다. 여기서 답할 것은 그보다 큰
                     질문이다 — N년을 굴려서 회사가 어디로 갔는가. */}
-                {screen === "result" && !round && endedCampaign && (
+                {phase === "end" && endedCampaign && (
                     <CampaignResult campaign={endedCampaign} firm={firm} history={history}
                         habits={habits} bestReturn={bestReturn} onClear={() => setEndedCampaign(null)} />
                 )}
@@ -2350,6 +2428,179 @@ function TitleScreen({ isLoggedIn, firm, campaign, bestReturn, onEnter }: {
  * 굴릴 돈도 목업처럼 눈금으로 고를 수는 없다. 그 값은 회사가 지금까지 벌어 온 결과라
  * 여기서 정하는 것이 아니다. 눈금 대신 읽는 칸으로 둔다.
  */
+/**
+ * 지금 어느 단계인가.
+ *
+ * 여섯 칸을 그냥 늘어놓으면 반기가 끝날 때마다 "설정을 또 해야 하나" 가 된다. 되풀이되는
+ * 셋(준비·게임·반기 종료)을 한 칸에 묶고 그 옆에 몇 바퀴째인지를 붙여, 되풀이가 어디서
+ * 시작해 어디서 끝나는지를 줄 하나로 말한다.
+ *
+ * 좁은 화면에서는 가로로 밀린다 — 줄바꿈하면 묶인 칸이 갈라져 뜻이 사라진다.
+ */
+function PhaseBar({ phase, loopNote }: { phase: Phase; loopNote: string | null }) {
+    const at = PHASE_ORDER.indexOf(phase);
+    const chip = (id: Phase) => {
+        const i = PHASE_ORDER.indexOf(id);
+        const now = id === phase;
+        return (
+            <span key={id} aria-current={now ? "step" : undefined}
+                className={cn("px-1.5 py-0.5 text-[11px] leading-none whitespace-nowrap", now && "font-bold")}
+                style={now
+                    ? { background: R.neon, color: R.bg, boxShadow: OUT }
+                    // 지나온 칸은 읽히게, 앞으로 올 칸은 흐리게. 어디까지 왔는지가 색으로 남는다.
+                    : { background: R.face, color: i < at ? R.ink : R.inkDim, boxShadow: OUT, opacity: i < at ? 1 : 0.6 }}>
+                {PHASE_LABEL[id]}
+            </span>
+        );
+    };
+    const arrow = (k: string) => (
+        <span key={k} aria-hidden className="text-[11px] leading-none px-0.5" style={{ color: `${R.inkHi}55` }}>›</span>
+    );
+    const inLoop = LOOP_PHASES.includes(phase);
+
+    return (
+        <nav aria-label="진행 단계" className="shrink-0 -mx-1 px-1 overflow-x-auto">
+            <div className="flex items-center gap-0.5 w-max py-0.5">
+                {chip("title")}
+                {arrow("a")}
+                {chip("setup")}
+                {arrow("b")}
+                {/* 되풀이되는 구간 — 파인 면으로 한 덩어리라는 것을 보인다 */}
+                <span className="flex items-center gap-0.5 px-1 py-0.5"
+                    style={{ background: R.faceLo, boxShadow: IN }}>
+                    {chip("ready")}
+                    {arrow("c")}
+                    {chip("play")}
+                    {arrow("d")}
+                    {chip("halfEnd")}
+                    <span className="pl-1 text-[11px] leading-none whitespace-nowrap tabular-nums"
+                        style={{ color: inLoop ? R.ink : R.inkDim }}>
+                        ↺ {loopNote ?? "반기마다"}
+                    </span>
+                </span>
+                {arrow("e")}
+                {chip("end")}
+            </div>
+        </nav>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
+/**
+ * 준비 — 종목은 뽑혔고 아직 하루도 안 넘겼다.
+ *
+ * 예전에는 [시작] 을 누르면 종목이 뽑히면서 곧바로 차트로 떨어졌다. 무엇을 하러 들어왔는지
+ * (누가 맡겼고, 무엇을 해내야 하고, 어떤 자리 넷이 뽑혔는지) 읽을 자리가 그 사이에 없어서,
+ * 첫 며칠은 화면을 파악하는 데 쓰였다.
+ *
+ * 여기서 여는 것은 이미 개요 화면에 있는 것들뿐이다 — 업종과 자리 성격. 이름도 시기도
+ * 그대로 가려 둔다. 앞 한 달 차트를 여기서 그리지 않는 것도 같은 이유다: 그건 게임 안에서
+ * 볼 것이지, 들어가기 전에 훑을 것이 아니다.
+ */
+function ReadyScreen({
+    round, season, isLoggedIn, busy, halfTitle, ctxDays, totalDays, perks, onOpen,
+}: {
+    round: ReplayRound;
+    season: Season | null;
+    isLoggedIn: boolean;
+    busy: boolean;
+    halfTitle: string;
+    ctxDays: number;
+    totalDays: number;
+    perks: Perks;
+    onOpen: () => void;
+}) {
+    const holdings = round.holdings ?? [];
+    const carried = holdings.filter(h => h.carried);
+    // 하루씩 넘길 날 수. 앞 구간은 이미 보여 준 자리라 세지 않는다.
+    const playDays = Math.max(1, totalDays - ctxDays + 1);
+
+    return (
+        <Win title="BRIEFING — 준비" right={halfTitle} className="pop-in">
+            <p className="text-[13px] leading-[1.75] break-keep mb-1.5" style={{ color: R.ink }}>
+                종목이 정해졌습니다. <b>이름과 시기는 가려져 있습니다.</b> 앞 {ctxDays}일을 먼저 보고,
+                거기서부터 하루씩 {playDays}일을 넘깁니다.
+            </p>
+
+            <Sunken className="flex flex-col mb-1.5">
+                <StatLine label="굴릴 돈" value={`${fmtMoney(round.seed)}원`} />
+                <StatLine label="자리" value={`${holdings.length || 1}종목`} />
+                <StatLine label="걸어 둘 예약" value={`${perks.maxReservations}건`} />
+                <StatLine label="강제 청산" value={`담보의 ${perks.shortCallPct}%`} />
+            </Sunken>
+
+            {/* 이번 반기의 고객과 목표. 설정 화면에서 이미 한 번 봤지만, 판에 들어가기
+                직전에 한 번 더 읽는 것이 이 화면이 있는 이유의 절반이다. */}
+            {season && (
+                <Win title="이번 반기 / MANDATE" className="mb-1.5">
+                    <Sunken className="flex flex-col gap-1">
+                        <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                            <b>{season.client.name}</b>
+                            <span style={{ color: R.inkDim }}> · {season.client.blurb}</span>
+                        </p>
+                        <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                            <b style={{ color: "#9e1414" }}>목표</b> {season.mission.detail}
+                            <span style={{ color: R.inkDim }}> 해내면 회사 자금 {fmtMoney(season.mission.reward)}.</span>
+                        </p>
+                    </Sunken>
+                </Win>
+            )}
+
+            {/* 뽑힌 자리 넷. 업종과 성격은 진행 중에도 열려 있는 값이라 여기서 미리 봐도
+                정답이 새지 않는다 — 오히려 "어디에 얼마를" 을 들어가기 전에 정할 수 있다. */}
+            {holdings.length > 1 && (
+                <Win title="뽑힌 자리 / SLOTS" className="mb-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+                        {holdings.map(h => (
+                            <div key={h.slot} className="px-1.5 py-1.5 flex flex-col gap-0.5 min-w-0"
+                                style={{ background: R.faceLo, boxShadow: IN }}>
+                                <span className="flex items-center gap-1 text-[11px] truncate" style={{ color: R.ink }}>
+                                    <span className="w-[15px] h-[11px] overflow-hidden shrink-0">
+                                        <SectorSprite sector={h.sector ?? undefined} color={sectorAccent(h.sector ?? undefined)} />
+                                    </span>
+                                    <span className="truncate font-bold">{slotName(h)}</span>
+                                </span>
+                                <span className="text-[11px] truncate" style={{ color: R.inkDim }}>
+                                    {scenarioLabel(h.scenario) ?? "성격 미상"}
+                                </span>
+                                {h.carried && (
+                                    <span className="text-[11px] truncate" style={{ color: R.amber }}>
+                                        이월 {h.qty}주
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-1 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                        성격은 앞 구간만 보고 붙인 값입니다 — 앞으로 어떻게 될지는 말해 주지 않습니다.
+                    </p>
+                </Win>
+            )}
+
+            {carried.length > 0 && (
+                <Sunken className="mb-1.5">
+                    <p className="text-[11px] break-keep leading-[1.8]" style={{ color: R.amber }}>
+                        지난 반기에서 {carried.length}종목을 들고 왔습니다. 굴릴 돈 중 일부가 이미
+                        그 회사들에 들어가 있고, 그 자리는 이름이 아직 열리지 않습니다.
+                    </p>
+                </Sunken>
+            )}
+
+            <RetroBtn tone="go" size="lg" onClick={onOpen} disabled={busy}
+                className="w-full inline-flex items-center justify-center gap-2">
+                <Play size={16} strokeWidth={2.6} /> 장 열기 ▶
+            </RetroBtn>
+
+            {!isLoggedIn && (
+                <p className="mt-1.5 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                    체험 운용입니다. 기록은 남지 않고, 자리도 하나뿐입니다.
+                </p>
+            )}
+        </Win>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
 function SetupScreen({
     isLoggedIn, busy, firm, campaign, history, habits,
     activeTools, onOpenCampaign, onStart, onBuyTool, onToggleTool, onBack,
@@ -2419,28 +2670,20 @@ function SetupScreen({
                     )}
                 </Win>
 
-                {/* ── 이번 반기의 고객과 목표 ──────────────────────
-                    반기마다 다르다. 저장된 값이 아니라 (캠페인, 반기 번호)에서 파생하므로
-                    준비 화면에서도 미리 읽을 수 있다 — 어떤 판을 하러 들어가는지 알고
-                    들어가야 "이번엔 이렇게 굴려 보자"가 생긴다. */}
-                {season && (
-                    <Win title="이번 반기 / MANDATE" className="mb-1.5">
-                        <Sunken className="flex flex-col gap-1">
-                            <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
-                                <b>{season.client.name}</b>
-                                <span style={{ color: R.inkDim }}> · {season.client.blurb}</span>
-                            </p>
-                            <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
-                                <b style={{ color: "#9e1414" }}>목표</b> {season.mission.detail}
-                                <span style={{ color: R.inkDim }}> 해내면 회사 자금 {fmtMoney(season.mission.reward)}.</span>
-                            </p>
-                        </Sunken>
-                    </Win>
-                )}
-
-                {/* ── 자리 고르기 (목업의 ASSET SELECTION) ────────── */}
+                {/* ── 자리 고르기 (목업의 ASSET SELECTION) ──────────
+                    고객과 목표를 한 줄로 얹어 둔다. 전문은 준비 화면에 있고 여기 있는 것은
+                    **고르는 데 필요한 만큼**이다 — "잃지 않고 이기기" 가 걸린 반기에
+                    고점 근처를 고르는 것과 횡보를 고르는 것은 다른 선택이다. */}
                 {canPickScenario && (
                     <Win title="자리 선택 / SCENARIO" className="mb-1.5">
+                        {season && (
+                            <Sunken className="mb-1 py-1">
+                                <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.inkDim }}>
+                                    이번 반기 <b style={{ color: R.ink }}>{season.client.name}</b>
+                                    {" · 목표 "}<b style={{ color: R.ink }}>{season.mission.label}</b>
+                                </p>
+                            </Sunken>
+                        )}
                         <div className="grid grid-cols-2 gap-1">
                             {[{ id: null, label: "아무 자리나", hint: "서버가 뽑는 대로" }, ...SCENARIOS].map(sc => (
                                 <RetroBtn key={sc.id ?? "any"} selected={want === sc.id} disabled={busy}
@@ -2544,8 +2787,8 @@ function SetupScreen({
                         className="w-full inline-flex items-center justify-center gap-2">
                         <Play size={16} strokeWidth={2.6} />
                         {busy ? "종목을 고르는 중…"
-                            : !campaign ? "체험 한 판 시작"
-                                : `${campaign.year}년차 ${campaign.half_label}반기 ${firm?.carry?.length ? "이어서" : "시작"}`}
+                            : !campaign ? "체험 한 판 — 준비로 ▶"
+                                : `${campaign.year}년차 ${campaign.half_label}반기 ${firm?.carry?.length ? "이어서" : ""} 준비 ▶`}
                     </RetroBtn>
                 )}
 
