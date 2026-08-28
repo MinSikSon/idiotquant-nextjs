@@ -1298,6 +1298,7 @@ export default function ReplayGamePage() {
                     <SetupScreen
                         isLoggedIn={isLoggedIn} busy={busy} firm={firm} campaign={campaign}
                         history={history} habits={habits} activeTools={activeTools}
+                        perks={perks}
                         onOpenCampaign={openCampaign} onStart={start} onBuyTool={purchase}
                         onToggleTool={toggleTool} onBack={() => setEntered(false)}
                         want={wantScenario} onWant={setWantScenario}
@@ -1308,9 +1309,11 @@ export default function ReplayGamePage() {
                     뽑히자마자 차트로 떨어뜨리면 무엇을 하러 들어왔는지 읽을 자리가 없다. */}
                 {phase === "ready" && round && (
                     <ReadyScreen
-                        round={round} season={season} isLoggedIn={isLoggedIn} busy={busy}
+                        round={round} season={season} firm={firm} isLoggedIn={isLoggedIn} busy={busy}
                         halfTitle={halfTitle} ctxDays={ctxDays} totalDays={totalDays}
-                        perks={perks} onOpen={() => setBriefed(true)}
+                        perks={perks} activeTools={activeTools}
+                        onBuyTool={purchase} onToggleTool={toggleTool}
+                        onOpen={() => setBriefed(true)}
                     />
                 )}
 
@@ -2429,6 +2432,104 @@ function TitleScreen({ isLoggedIn, firm, campaign, bestReturn, onEnter }: {
  * 여기서 정하는 것이 아니다. 눈금 대신 읽는 칸으로 둔다.
  */
 /**
+ * 회사 금고를 쓰는 곳 — 리서치 도구와 부서.
+ *
+ * **설정과 준비 양쪽에 붙는다.** 보수는 반기마다 들어오는데 쓸 자리가 설정에만 있으면,
+ * [다음 반기 ▶] 로 설정을 건너뛰는 사람은 번 돈을 쓸 화면을 영영 안 지나간다.
+ * 한 벌만 두고 두 자리에서 부른다 — 목록이 갈라지면 한쪽에만 새 부서가 생긴다.
+ */
+function FirmShop({ firm, activeTools, busy, onBuyTool, onToggleTool }: {
+    firm: Firm | null;
+    activeTools: string[];
+    busy: boolean;
+    onBuyTool: (id: string) => void;
+    onToggleTool: (id: string) => void;
+}) {
+    const owned = firm?.tools ?? [];
+    return (
+        <>
+            <Fold icon={<FlaskConical size={14} />} title="리서치실"
+                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${TOOLS.filter(t => owned.includes(t.id)).length}/${TOOLS.length}`}>
+                    <ul className="flex flex-col gap-1">
+                        {TOOLS.map(t => {
+                            const have = owned.includes(t.id);
+                            const on = activeTools.includes(t.id);
+                            return (
+                                <li key={t.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
+                                    style={{ background: R.faceLo, boxShadow: IN }}>
+                                    <div className="min-w-0">
+                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>
+                                            {t.name} <span className="font-normal" style={{ color: R.inkDim }}>{t.detail}</span>
+                                        </div>
+                                        {/* 읽는 법을 적어 둔다 — 이름만 보고는 사도 쓸 줄 모른다 */}
+                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
+                                            {t.hint}
+                                        </p>
+                                    </div>
+                                    {have ? (
+                                        <RetroBtn size="sm" selected={on} onClick={() => onToggleTool(t.id)}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Check size={11} /> {on ? "켜짐" : "꺼짐"}
+                                        </RetroBtn>
+                                    ) : (
+                                        <RetroBtn size="sm" onClick={() => onBuyTool(t.id)}
+                                            disabled={busy || (firm?.cash ?? 0) < t.price}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Lock size={11} /> {fmtMoney(t.price)}
+                                        </RetroBtn>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+            </Fold>
+
+            <Fold icon={<Building2 size={14} />} title="회사 키우기"
+                    subtitle={`부서 ${owned.filter(id => DEPARTMENTS.some(d => d.id === id)).length}/${DEPARTMENTS.length} · 금고에서 냅니다`}>
+                    {/* 도구는 차트를 더 잘 보게 해 주고, 부서는 판의 규칙을 바꾼다.
+                        섞어 놓으면 "산 것" 목록이 길어지기만 해서 칸을 따로 뒀다. */}
+                    <ul className="flex flex-col gap-1">
+                        {DEPARTMENTS.map(d => {
+                            const have = owned.includes(d.id);
+                            return (
+                                <li key={d.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
+                                    style={{ background: R.faceLo, boxShadow: IN }}>
+                                    <div className="min-w-0">
+                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>{d.name}</div>
+                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
+                                            {d.effect}
+                                        </p>
+                                    </div>
+                                    {have ? (
+                                        <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-bold"
+                                            style={{ color: "#1a6b2a" }}>
+                                            <Check size={11} /> 개설
+                                        </span>
+                                    ) : (
+                                        <RetroBtn size="sm" onClick={() => onBuyTool(d.id)}
+                                            disabled={busy || (firm?.cash ?? 0) < d.price}
+                                            className="shrink-0 inline-flex items-center gap-1">
+                                            <Lock size={11} /> {fmtMoney(d.price)}
+                                        </RetroBtn>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+            </Fold>
+        </>
+    );
+}
+
+/** 지금 금고로 살 수 있는 것이 몇 개인가. 없으면 0. */
+function affordableCount(firm: Firm | null): number {
+    const owned = firm?.tools ?? [];
+    const cash = firm?.cash ?? 0;
+    return [...TOOLS, ...DEPARTMENTS].filter(x => !owned.includes(x.id) && cash >= x.price).length;
+}
+
+// ─────────────────────────────────────────────────────────
+/**
  * 지금 어느 단계인가.
  *
  * 여섯 칸을 그냥 늘어놓으면 반기가 끝날 때마다 "설정을 또 해야 하나" 가 된다. 되풀이되는
@@ -2498,19 +2599,25 @@ function PhaseBar({ phase, loopNote }: { phase: Phase; loopNote: string | null }
  * 볼 것이지, 들어가기 전에 훑을 것이 아니다.
  */
 function ReadyScreen({
-    round, season, isLoggedIn, busy, halfTitle, ctxDays, totalDays, perks, onOpen,
+    round, season, firm, isLoggedIn, busy, halfTitle, ctxDays, totalDays, perks,
+    activeTools, onBuyTool, onToggleTool, onOpen,
 }: {
     round: ReplayRound;
     season: Season | null;
+    firm: Firm | null;
     isLoggedIn: boolean;
     busy: boolean;
     halfTitle: string;
     ctxDays: number;
     totalDays: number;
     perks: Perks;
+    activeTools: string[];
+    onBuyTool: (id: string) => void;
+    onToggleTool: (id: string) => void;
     onOpen: () => void;
 }) {
     const holdings = round.holdings ?? [];
+    const canBuy = affordableCount(firm);
     const carried = holdings.filter(h => h.carried);
     // 하루씩 넘길 날 수. 앞 구간은 이미 보여 준 자리라 세지 않는다.
     const playDays = Math.max(1, totalDays - ctxDays + 1);
@@ -2586,6 +2693,23 @@ function ReadyScreen({
                 </Sunken>
             )}
 
+            {/* 금고를 쓰는 자리. 장을 열기 **전**이라야 이번 반기부터 규칙이 달라진다 —
+                [다음 반기 ▶] 로 설정을 건너뛴 사람에게는 여기가 유일한 상점이다. */}
+            {isLoggedIn && (
+                <div className="flex flex-col gap-1.5 mb-1.5">
+                    {canBuy > 0 && (
+                        <Sunken className="py-1">
+                            <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.amber }}>
+                                회사 금고에 {fmtMoney(firm?.cash ?? 0)}원이 있습니다 —
+                                지금 살 수 있는 것이 {canBuy}개. 장을 열기 전에 사면 이번 반기부터 적용됩니다.
+                            </p>
+                        </Sunken>
+                    )}
+                    <FirmShop firm={firm} activeTools={activeTools} busy={busy}
+                        onBuyTool={onBuyTool} onToggleTool={onToggleTool} />
+                </div>
+            )}
+
             <RetroBtn tone="go" size="lg" onClick={onOpen} disabled={busy}
                 className="w-full inline-flex items-center justify-center gap-2">
                 <Play size={16} strokeWidth={2.6} /> 장 열기 ▶
@@ -2602,12 +2726,14 @@ function ReadyScreen({
 
 // ─────────────────────────────────────────────────────────
 function SetupScreen({
-    isLoggedIn, busy, firm, campaign, history, habits,
+    isLoggedIn, busy, firm, campaign, history, habits, perks,
     activeTools, onOpenCampaign, onStart, onBuyTool, onToggleTool, onBack,
     want, onWant,
 }: {
     isLoggedIn: boolean; busy: boolean; firm: Firm | null; campaign: Campaign | null;
     history: ReplayHistoryItem[]; habits: HabitSummary | null; activeTools: string[];
+    /** 산 부서가 연 규칙. 회사 칸이 "무엇이 달라져 있나" 를 이 값으로 말한다. */
+    perks: Perks;
     onOpenCampaign: (years: number) => void;
     onStart: (scenario?: string | null) => void;
     onBuyTool: (id: string) => void;
@@ -2620,6 +2746,11 @@ function SetupScreen({
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
     const owned = firm?.tools ?? [];
+    // 파산 선은 최고점 대비다. 최고점을 모르는 옛 회사(0)는 판정하지 않으므로 줄도 안 그린다.
+    const peak = firm?.peak_aum ?? 0;
+    const ruinLine = peak > 0 ? Math.floor((peak * perks.ruinKeepPct) / 100) : 0;
+    // "여기서 얼마를 더 잃으면" — 최고점이 아니라 지금 기준이라야 읽고 바로 쓸 수 있다.
+    const dropToRuin = aum > 0 ? Math.max(0, Math.round((1 - ruinLine / aum) * 100)) : 0;
     // 기간 눈금. 캠페인을 열기 전까지만 뜻이 있다.
     const [years, setYears] = useState<number>(YEAR_CHOICES[0]);
 
@@ -2669,6 +2800,46 @@ function SetupScreen({
                         </>
                     )}
                 </Win>
+
+                {/* ── 회사가 지금 어떤 상태인가 ────────────────────
+                    맡은 돈은 BRIEFING 의 "굴릴 돈" 으로 보였지만 그것뿐이었다. 등급은
+                    기간을 고르기 전에만 떴고, 최고점·파산 선·산 것이 연 규칙은 어디에도
+                    없었다. 그러면 잘 굴린 것이 무엇을 바꿨는지 볼 자리가 없다.
+
+                    기간이 열린 뒤에만 뜬다 — 그 전에는 회사가 아직 굴러가지 않는다. */}
+                {isLoggedIn && campaign && (
+                    <Win title="회사 / FIRM" right={firm?.rank ?? rankOf(aum)} className="mb-1.5">
+                        <Sunken className="flex flex-col mb-1.5">
+                            <StatLine label="맡은 돈" value={`${fmtMoney(aum)}원`} />
+                            {peak > 0 && (
+                                <StatLine label="최고점" value={`${fmtMoney(peak)}원`} />
+                            )}
+                            {ruinLine > 0 && (
+                                <StatLine label="문 닫는 선" value={`${fmtMoney(ruinLine)}원`} tone="#9e1414" />
+                            )}
+                            <StatLine label="회사 금고" value={`${fmtMoney(firm?.cash ?? 0)}원`} tone="#7a4f00" />
+                        </Sunken>
+
+                        {ruinLine > 0 && (
+                            <p className="mb-1.5 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                                최고점의 {perks.ruinKeepPct}%입니다. 여기서 {dropToRuin}%를 더 잃으면 회사가 문을 닫습니다.
+                            </p>
+                        )}
+
+                        {/* 산 것이 무엇을 바꿔 놨는가. 개수(도구 2/4)는 상점이 말하고,
+                            여기서는 그래서 규칙이 어떻게 됐는지를 말한다. */}
+                        <Sunken className="mb-1.5 py-1">
+                            <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                                <b style={{ color: R.ink }}>지금 규칙</b> 예약 {perks.maxReservations}건 ·
+                                강제 청산 담보의 {perks.shortCallPct}% ·
+                                이겼을 때 고객 유입 {perks.flowExcessMult === 1 ? "그대로" : `×${perks.flowExcessMult}`}
+                            </p>
+                        </Sunken>
+
+                        {/* 반기마다 맡은 돈이 어떻게 움직였나. 두 반기부터 그린다. */}
+                        <MoneyCurve history={history} />
+                    </Win>
+                )}
 
                 {/* ── 자리 고르기 (목업의 ASSET SELECTION) ──────────
                     고객과 목표를 한 줄로 얹어 둔다. 전문은 준비 화면에 있고 여기 있는 것은
@@ -2759,10 +2930,6 @@ function SetupScreen({
                                 <Sunken className="mt-1 py-1.5">
                                     <HalfTrack campaign={campaign} history={history} />
                                 </Sunken>
-                                <div className="flex items-baseline justify-between gap-2 text-[11px] mt-1.5">
-                                    <span style={{ color: R.ink }}>굴릴 돈</span>
-                                    <span className="font-bold tabular-nums" style={{ color: R.ink }}>{fmtMoney(aum)}</span>
-                                </div>
                             </>
                         )}
                     </Win>
@@ -2821,77 +2988,8 @@ function SetupScreen({
             </Win>
 
             {isLoggedIn && (
-                <Fold icon={<FlaskConical size={14} />} title="리서치실"
-                    subtitle={`회사 금고 ${fmtMoney(firm?.cash ?? 0)}원 · 도구 ${TOOLS.filter(t => owned.includes(t.id)).length}/${TOOLS.length}`}>
-                    <ul className="flex flex-col gap-1">
-                        {TOOLS.map(t => {
-                            const have = owned.includes(t.id);
-                            const on = activeTools.includes(t.id);
-                            return (
-                                <li key={t.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
-                                    style={{ background: R.faceLo, boxShadow: IN }}>
-                                    <div className="min-w-0">
-                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>
-                                            {t.name} <span className="font-normal" style={{ color: R.inkDim }}>{t.detail}</span>
-                                        </div>
-                                        {/* 읽는 법을 적어 둔다 — 이름만 보고는 사도 쓸 줄 모른다 */}
-                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
-                                            {t.hint}
-                                        </p>
-                                    </div>
-                                    {have ? (
-                                        <RetroBtn size="sm" selected={on} onClick={() => onToggleTool(t.id)}
-                                            className="shrink-0 inline-flex items-center gap-1">
-                                            <Check size={11} /> {on ? "켜짐" : "꺼짐"}
-                                        </RetroBtn>
-                                    ) : (
-                                        <RetroBtn size="sm" onClick={() => onBuyTool(t.id)}
-                                            disabled={busy || (firm?.cash ?? 0) < t.price}
-                                            className="shrink-0 inline-flex items-center gap-1">
-                                            <Lock size={11} /> {fmtMoney(t.price)}
-                                        </RetroBtn>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </Fold>
-            )}
-
-            {isLoggedIn && (
-                <Fold icon={<Building2 size={14} />} title="회사 키우기"
-                    subtitle={`부서 ${owned.filter(id => DEPARTMENTS.some(d => d.id === id)).length}/${DEPARTMENTS.length} · 금고에서 냅니다`}>
-                    {/* 도구는 차트를 더 잘 보게 해 주고, 부서는 판의 규칙을 바꾼다.
-                        섞어 놓으면 "산 것" 목록이 길어지기만 해서 칸을 따로 뒀다. */}
-                    <ul className="flex flex-col gap-1">
-                        {DEPARTMENTS.map(d => {
-                            const have = owned.includes(d.id);
-                            return (
-                                <li key={d.id} className="flex items-start justify-between gap-2 px-2 py-1.5"
-                                    style={{ background: R.faceLo, boxShadow: IN }}>
-                                    <div className="min-w-0">
-                                        <div className="text-[11px] font-bold truncate" style={{ color: R.ink }}>{d.name}</div>
-                                        <p className="mt-0.5 text-[11px] leading-[1.6] break-keep" style={{ color: R.inkDim }}>
-                                            {d.effect}
-                                        </p>
-                                    </div>
-                                    {have ? (
-                                        <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 text-[11px] font-bold"
-                                            style={{ color: "#1a6b2a" }}>
-                                            <Check size={11} /> 개설
-                                        </span>
-                                    ) : (
-                                        <RetroBtn size="sm" onClick={() => onBuyTool(d.id)}
-                                            disabled={busy || (firm?.cash ?? 0) < d.price}
-                                            className="shrink-0 inline-flex items-center gap-1">
-                                            <Lock size={11} /> {fmtMoney(d.price)}
-                                        </RetroBtn>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </Fold>
+                <FirmShop firm={firm} activeTools={activeTools} busy={busy}
+                    onBuyTool={onBuyTool} onToggleTool={onToggleTool} />
             )}
 
             {habits && habits.trades > 0 && (
