@@ -1298,6 +1298,7 @@ export default function ReplayGamePage() {
                     <SetupScreen
                         isLoggedIn={isLoggedIn} busy={busy} firm={firm} campaign={campaign}
                         history={history} habits={habits} activeTools={activeTools}
+                        perks={perks}
                         onOpenCampaign={openCampaign} onStart={start} onBuyTool={purchase}
                         onToggleTool={toggleTool} onBack={() => setEntered(false)}
                         want={wantScenario} onWant={setWantScenario}
@@ -2725,12 +2726,14 @@ function ReadyScreen({
 
 // ─────────────────────────────────────────────────────────
 function SetupScreen({
-    isLoggedIn, busy, firm, campaign, history, habits,
+    isLoggedIn, busy, firm, campaign, history, habits, perks,
     activeTools, onOpenCampaign, onStart, onBuyTool, onToggleTool, onBack,
     want, onWant,
 }: {
     isLoggedIn: boolean; busy: boolean; firm: Firm | null; campaign: Campaign | null;
     history: ReplayHistoryItem[]; habits: HabitSummary | null; activeTools: string[];
+    /** 산 부서가 연 규칙. 회사 칸이 "무엇이 달라져 있나" 를 이 값으로 말한다. */
+    perks: Perks;
     onOpenCampaign: (years: number) => void;
     onStart: (scenario?: string | null) => void;
     onBuyTool: (id: string) => void;
@@ -2743,6 +2746,11 @@ function SetupScreen({
 }) {
     const aum = firm?.aum ?? INITIAL_AUM;
     const owned = firm?.tools ?? [];
+    // 파산 선은 최고점 대비다. 최고점을 모르는 옛 회사(0)는 판정하지 않으므로 줄도 안 그린다.
+    const peak = firm?.peak_aum ?? 0;
+    const ruinLine = peak > 0 ? Math.floor((peak * perks.ruinKeepPct) / 100) : 0;
+    // "여기서 얼마를 더 잃으면" — 최고점이 아니라 지금 기준이라야 읽고 바로 쓸 수 있다.
+    const dropToRuin = aum > 0 ? Math.max(0, Math.round((1 - ruinLine / aum) * 100)) : 0;
     // 기간 눈금. 캠페인을 열기 전까지만 뜻이 있다.
     const [years, setYears] = useState<number>(YEAR_CHOICES[0]);
 
@@ -2792,6 +2800,46 @@ function SetupScreen({
                         </>
                     )}
                 </Win>
+
+                {/* ── 회사가 지금 어떤 상태인가 ────────────────────
+                    맡은 돈은 BRIEFING 의 "굴릴 돈" 으로 보였지만 그것뿐이었다. 등급은
+                    기간을 고르기 전에만 떴고, 최고점·파산 선·산 것이 연 규칙은 어디에도
+                    없었다. 그러면 잘 굴린 것이 무엇을 바꿨는지 볼 자리가 없다.
+
+                    기간이 열린 뒤에만 뜬다 — 그 전에는 회사가 아직 굴러가지 않는다. */}
+                {isLoggedIn && campaign && (
+                    <Win title="회사 / FIRM" right={firm?.rank ?? rankOf(aum)} className="mb-1.5">
+                        <Sunken className="flex flex-col mb-1.5">
+                            <StatLine label="맡은 돈" value={`${fmtMoney(aum)}원`} />
+                            {peak > 0 && (
+                                <StatLine label="최고점" value={`${fmtMoney(peak)}원`} />
+                            )}
+                            {ruinLine > 0 && (
+                                <StatLine label="문 닫는 선" value={`${fmtMoney(ruinLine)}원`} tone="#9e1414" />
+                            )}
+                            <StatLine label="회사 금고" value={`${fmtMoney(firm?.cash ?? 0)}원`} tone="#7a4f00" />
+                        </Sunken>
+
+                        {ruinLine > 0 && (
+                            <p className="mb-1.5 text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                                최고점의 {perks.ruinKeepPct}%입니다. 여기서 {dropToRuin}%를 더 잃으면 회사가 문을 닫습니다.
+                            </p>
+                        )}
+
+                        {/* 산 것이 무엇을 바꿔 놨는가. 개수(도구 2/4)는 상점이 말하고,
+                            여기서는 그래서 규칙이 어떻게 됐는지를 말한다. */}
+                        <Sunken className="mb-1.5 py-1">
+                            <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                                <b style={{ color: R.ink }}>지금 규칙</b> 예약 {perks.maxReservations}건 ·
+                                강제 청산 담보의 {perks.shortCallPct}% ·
+                                이겼을 때 고객 유입 {perks.flowExcessMult === 1 ? "그대로" : `×${perks.flowExcessMult}`}
+                            </p>
+                        </Sunken>
+
+                        {/* 반기마다 맡은 돈이 어떻게 움직였나. 두 반기부터 그린다. */}
+                        <MoneyCurve history={history} />
+                    </Win>
+                )}
 
                 {/* ── 자리 고르기 (목업의 ASSET SELECTION) ──────────
                     고객과 목표를 한 줄로 얹어 둔다. 전문은 준비 화면에 있고 여기 있는 것은
@@ -2882,10 +2930,6 @@ function SetupScreen({
                                 <Sunken className="mt-1 py-1.5">
                                     <HalfTrack campaign={campaign} history={history} />
                                 </Sunken>
-                                <div className="flex items-baseline justify-between gap-2 text-[11px] mt-1.5">
-                                    <span style={{ color: R.ink }}>굴릴 돈</span>
-                                    <span className="font-bold tabular-nums" style={{ color: R.ink }}>{fmtMoney(aum)}</span>
-                                </div>
                             </>
                         )}
                     </Win>
