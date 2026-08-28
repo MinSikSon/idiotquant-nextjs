@@ -50,8 +50,10 @@ import { getReplayState, startCampaign, startReplayRound, buyTool, submitHalf, c
 import {
     TOOLS, INITIAL_AUM, rankOf, fmtMoney, flowRate, type Firm,
     FLOW_MIN, FLOW_MAX, FLOW_EXCESS_MULT, FLOW_LOSS_MULT, BASE_FEE_BP, PERF_FEE_PCT,
+    RUIN_KEEP_PCT,
 } from "@/lib/paper/firm";
 import { movingAverage, bollinger, donchian, atrBand } from "@/lib/paper/indicators";
+import { seasonOf, type Season } from "@/lib/paper/season";
 import { YEAR_CHOICES, halfOf, totalHalves, halfLabel, HALVES_PER_YEAR } from "@/lib/paper/campaign";
 import SectorSprite, { sectorAccent } from "@/app/(screener)/screener/components/SectorSprite";
 
@@ -316,6 +318,9 @@ export default function ReplayGamePage() {
     const [detail, setDetail] = useState(false);
     // 방금 기간이 끝난 캠페인 — 최종 리포트를 띄울 때까지 들고 있는다.
     const [endedCampaign, setEndedCampaign] = useState<Campaign | null>(null);
+    // 방금 회사가 문을 닫았다. 서버만 아는 값이다 — 판정에 쓰는 최고점이 이미 새 회사
+    // 값으로 덮여 있어 화면이 스스로 되짚을 수 없다.
+    const [ruined, setRuined] = useState(false);
     const [habits, setHabits] = useState<HabitSummary | null>(null);
     const [bestReturn, setBestReturn] = useState<number | null>(null);
     // 산 도구 중 지금 켜 둔 것. 사자마자 켜진다.
@@ -495,10 +500,12 @@ export default function ReplayGamePage() {
         setFirm(res.firm ?? null);
         setHabits(res.habits ?? null);
         setBestReturn(res.wallet?.best_return ?? null);
+        setRuined(!!res.ruined);
         // 마지막 반기였으면 굴러가는 캠페인이 없다 — 그때는 기간이 끝난 것이다.
-        if (campaign && !res.campaign) setEndedCampaign(campaign);
+        // 문을 닫아도 캠페인이 사라지지만 그건 완주가 아니라 폐업이라 따로 말한다.
+        if (campaign && !res.campaign && !res.ruined) setEndedCampaign(campaign);
         setCampaign(res.campaign ?? null);
-    }, [campaign, addToast, flushCheckpoint]);
+    }, [campaign, addToast, dropCheckpoint]);
 
     // 어느 판에서 출발하는지 인자로 받는다 — 여러 날 건너뛰기가 앞선 판을 이어받아야 해서,
     // 클로저에 잡힌 옛 round 로는 같은 날을 반복한다.
@@ -743,6 +750,18 @@ export default function ReplayGamePage() {
     // 네 종목을 한눈에 보는 개요(phase 2)인가, 한 종목을 파고드는 상세인가.
     // 종목이 하나뿐인 판에는 개요가 없다 — 볼 것이 하나뿐이다.
     const overview = holdings.length > 1 && !detail;
+
+    /**
+     * 이번 반기의 고객과 목표.
+     *
+     * 판이 들고 있는 값(campaign_id·half_index)을 먼저 본다 — 반기가 끝나면 캠페인은
+     * 다음 칸으로 밀리므로, 결과 화면에서 campaign 을 보면 방금 끝낸 반기가 아니라
+     * 다음 반기의 목표가 뜬다.
+     */
+    const season = useMemo(
+        () => seasonOf(round?.campaign_id ?? campaign?.id, round?.half_index ?? campaign?.half_index),
+        [round?.campaign_id, round?.half_index, campaign?.id, campaign?.half_index],
+    );
 
     /**
      * 지금까지 열린 구간만.
@@ -1154,7 +1173,7 @@ export default function ReplayGamePage() {
                             <Win tone="neon" title="GAME OVER — 반기 종료"
                                 right={isLoggedIn ? `${(firm?.quarters ?? 0) || 1}분기` : "체험 운용"}
                                 className="shrink-0 pop-in">
-                                <HalfScore round={round} isLoggedIn={isLoggedIn} />
+                                <HalfScore round={round} isLoggedIn={isLoggedIn} season={season} ruined={ruined} />
                             </Win>
                         )}
 
@@ -1241,6 +1260,15 @@ export default function ReplayGamePage() {
                                                             {rate !== null ? pct(rate) : `${h.qty}주`}
                                                         </span>
                                                         : <span style={{ color: R.inkDim }}>안 삼</span>}
+                                                    {/* 그 자리가 어떤 구간에 앉아 있는지. 값이 아니라 성격이라
+                                                        자리끼리 견줄 수 있는 유일한 정보다 — 이게 없으면 "어디에
+                                                        얼마를" 를 차트 모양만 보고 정하게 된다. 컨텍스트 구간만
+                                                        보고 붙인 값이라 정답이 새지 않는다. */}
+                                                    {overview && scenarioLabel(h.scenario) && (
+                                                        <span className="truncate max-w-full" style={{ color: R.inkDim }}>
+                                                            {scenarioLabel(h.scenario)}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             );
                                         })}
@@ -1368,6 +1396,17 @@ export default function ReplayGamePage() {
                                     k={overview ? `보유 ${holdings.filter(h => h.qty > 0).length}/${holdings.length}` : heldQty > 0 ? `${heldQty}주` : "미보유"}
                                     v={pct(totalRate)} tone={pnlText(totalPnl >= 0)} />
                             </Sunken>
+                            {/* 이번 반기의 목표 한 줄. 판정은 반기가 닫힐 때 나므로 여기서는
+                                진행률을 그리지 않는다 — 중간 숫자를 띄우면 그걸 맞추려고
+                                굴리게 되고, 목표는 마지막 하루에 뒤집히는 종류의 것이다. */}
+                            {season && round.status === "playing" && (
+                                <p className="mt-1 px-0.5 text-[11px] leading-[1.4] break-keep"
+                                    title={`${season.client.name} — ${season.client.blurb}\n목표: ${season.mission.detail}`}>
+                                    <b style={{ color: "#9e1414" }}>목표</b>{" "}
+                                    <span style={{ color: R.ink }}>{season.mission.label}</span>
+                                    <span style={{ color: R.inkDim }}> · {season.client.name}</span>
+                                </p>
+                            )}
                         </Win>
 
                         {/* ── 조작 ─────────────────────────────── */}
@@ -2209,6 +2248,9 @@ function SetupScreen({
     // 이월이 있으면 자리를 고를 수 없다 — 이미 들고 있는 회사로 이어 가는 판이다.
     const canPickScenario = isLoggedIn && !!campaign && !firm?.carry?.length;
 
+    // 이번 반기에 누가 맡겼고 무엇을 해내야 하는가. 기간을 열기 전에는 없다.
+    const season = seasonOf(campaign?.id, campaign?.half_index);
+
     return (
         <>
             <Win title="GAME SETUP" onClose={onBack} closeLabel="시작 화면으로" className="pop-in">
@@ -2249,6 +2291,25 @@ function SetupScreen({
                         </>
                     )}
                 </Win>
+
+                {/* ── 이번 반기의 고객과 목표 ──────────────────────
+                    반기마다 다르다. 저장된 값이 아니라 (캠페인, 반기 번호)에서 파생하므로
+                    준비 화면에서도 미리 읽을 수 있다 — 어떤 판을 하러 들어가는지 알고
+                    들어가야 "이번엔 이렇게 굴려 보자"가 생긴다. */}
+                {season && (
+                    <Win title="이번 반기 / MANDATE" className="mb-1.5">
+                        <Sunken className="flex flex-col gap-1">
+                            <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                                <b>{season.client.name}</b>
+                                <span style={{ color: R.inkDim }}> · {season.client.blurb}</span>
+                            </p>
+                            <p className="text-[11px] leading-[1.7] break-keep" style={{ color: R.ink }}>
+                                <b style={{ color: "#9e1414" }}>목표</b> {season.mission.detail}
+                                <span style={{ color: R.inkDim }}> 해내면 회사 자금 {fmtMoney(season.mission.reward)}.</span>
+                            </p>
+                        </Sunken>
+                    </Win>
+                )}
 
                 {/* ── 자리 고르기 (목업의 ASSET SELECTION) ────────── */}
                 {canPickScenario && (
@@ -2532,7 +2593,13 @@ function FeeMath({ round, mine, bh }: { round: ReplayRound; mine: number; bh: nu
  * 창은 바깥(결과 화면)이 씌운다. 여기는 안에 들어갈 것만 그린다 — 같은 내용이
  * 진행 화면 위에 얹히던 시절의 흔적(패널·테두리)을 들고 있을 이유가 없다.
  */
-function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: boolean }) {
+function HalfScore({ round, isLoggedIn, season, ruined }: {
+    round: ReplayRound; isLoggedIn: boolean;
+    /** 이 반기의 고객과 목표. 캠페인 없이 굴린 판·체험 운용에는 없다. */
+    season: Season | null;
+    /** 이 반기로 회사가 문을 닫았는가. 서버가 알려 준 값이다. */
+    ruined: boolean;
+}) {
     const mine = round.final_return ?? 0;
     const bh = round.bh_return ?? 0;
     const beat = mine > bh;
@@ -2566,10 +2633,35 @@ function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: bool
                     : `벤치마크가 ${(bh - mine).toFixed(2)}%p 더 벌었습니다.`}
             </p>
 
+            {/* 이번 반기의 목표. 해냈는지는 반기가 닫힐 때 정해져 판에 적혀 온다. */}
+            {season && round.mission_ok !== null && round.mission_ok !== undefined && (
+                <p className={cn("text-[13px] font-bold break-keep leading-[1.7]",
+                    round.mission_ok && "flash-mine px-1")}
+                    style={{ color: round.mission_ok ? "#7a4f00" : R.inkDim }}>
+                    {round.mission_ok
+                        ? `목표 달성 — ${season.mission.label}. 회사 자금 ${fmtMoney(season.mission.reward)}이 들어왔습니다.`
+                        : `목표를 놓쳤습니다 — ${season.mission.label}.`}
+                </p>
+            )}
+
             {round.carried && (
                 <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: "#7a4f00" }}>
                     {round.qty}주를 다음 반기로 넘겼습니다. 아직 들고 있으므로 어떤 회사였는지는 열지 않습니다.
                 </p>
+            )}
+
+            {/* 폐업. 이 화면에서 가장 큰 소식이라 정산 칸보다 앞에 둔다 —
+                아래 숫자들은 "그래서 얼마였나" 이고, 이건 "회사가 없어졌다" 이다. */}
+            {ruined && (
+                <Sunken className="px-2 py-1.5">
+                    <p className="text-[13px] font-bold break-keep leading-[1.7]" style={{ color: "#9e1414" }}>
+                        맡은 돈이 최고점의 {RUIN_KEEP_PCT}% 아래로 내려가 회사가 문을 닫았습니다.
+                    </p>
+                    <p className="text-[11px] break-keep leading-[1.7]" style={{ color: R.inkDim }}>
+                        굴리던 기간도 여기서 끝납니다. 회사는 {fmtMoney(INITIAL_AUM)}으로 다시 차렸고,
+                        이름과 사 둔 도구, 모아 둔 자금은 그대로 남아 있습니다.
+                    </p>
+                </Sunken>
             )}
 
             {round.habits && round.habits.trades > 0 && (
@@ -2587,6 +2679,9 @@ function HalfScore({ round, isLoggedIn }: { round: ReplayRound; isLoggedIn: bool
                         {clientNote(flow, flowPct, rankOf(round.aum_before!), rankOf(round.aum_after!))}
                     </p>
                     <Sunken className="flex flex-col">
+                        {/* 누가 이 성적을 평가했는지. 같은 수익률도 고객에 따라 다르게 잡히므로,
+                            유출입 숫자만 보여 주면 왜 이만큼인지 되짚을 길이 없다. */}
+                        {season && <StatLine label="고객" value={season.client.name} mono={false} />}
                         <StatLine label="고객 자금" tone={flow >= 0 ? "#9e1414" : "#1d4ed8"}
                             value={`${flowPct >= 0 ? "+" : ""}${flowPct.toFixed(1)}%`} />
                         <StatLine label="맡은 돈" value={fmtMoney(round.aum_after!)} />

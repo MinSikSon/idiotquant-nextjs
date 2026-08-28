@@ -270,3 +270,38 @@ test("제출에는 캔들이 없다 — 서버가 이미 갖고 있다", () => {
     assert.ok(!JSON.stringify(s).includes('"ticker"'), "정답은 서버가 쥐고 있다");
     assert.equal(typeof s.final_return, "number");
 });
+
+/* ── 반기 목표 ───────────────────────────────────────────────── */
+
+test("반기가 닫히면 목표 달성 여부가 판에 적힌다", () => {
+    // camp-mission 의 0번 반기가 어떤 목표인지는 seasonOf 가 정한다 — 여기서는 "판정이
+    // 실제로 돌아서 true/false 중 하나가 적히는가"만 본다(어떤 목표인지는 season 테스트).
+    let r = makeRound({ cursor: TOTAL, campaign_id: "camp-mission", half_index: 0 });
+    r = ok(halfTrade(r, { side: "buy", qty: 100, slot: 0 }));
+    const fin = ok(halfAdvance(r));
+
+    assert.equal(typeof fin.mission_ok, "boolean", "목표가 있는 판인데 판정이 없다");
+    assert.equal(halfSubmission(fin).mission_ok, fin.mission_ok, "제출에도 실려 가야 서버가 보상을 준다");
+});
+
+test("캠페인 없이 굴린 판에는 목표가 없다", () => {
+    const fin = finishHalf({ ...makeRound(), cursor: TOTAL, campaign_id: null });
+    assert.equal(fin.mission_ok, null);
+    assert.equal(halfSubmission(fin).mission_ok, null);
+});
+
+test("목표 판정은 그 반기에 실제로 한 것으로 난다", () => {
+    // 자리 셋에 담고 벤치마크를 크게 이기면 어떤 목표든 걸릴 수 있게 세 자리를 산다.
+    // 여기서 보는 것은 판정이 주문 기록을 읽는다는 것이다 — 아무것도 안 한 판과 달라야 한다.
+    const base = makeRound({ cursor: TOTAL, campaign_id: "camp-mission", half_index: 0 });
+    let busy = base;
+    for (const slot of [0, 1, 2]) busy = ok(halfTrade(busy, { side: "buy", qty: 50, slot }));
+
+    const idleFin = finishHalf(base);
+    const busyFin = finishHalf(busy);
+    assert.notEqual(
+        `${idleFin.mission_ok}/${idleFin.habits!.trades}`,
+        `${busyFin.mission_ok}/${busyFin.habits!.trades}`,
+        "한 주도 안 산 판과 셋을 담은 판의 판정 근거가 같다",
+    );
+});

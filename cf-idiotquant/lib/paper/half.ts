@@ -23,6 +23,7 @@
 import { quoteBuy, quoteSell } from "./engine";
 import { computeHabits } from "./habits";
 import { triggered, validateReservation } from "./reservations";
+import { seasonOf, missionMet } from "./season";
 import {
     CONTEXT_DAYS, buyAndHoldReturn, carryQty,
     type ReplayHolding, type ReplayOrder, type ReplayRound, type Reservation,
@@ -230,6 +231,21 @@ export function finishHalf(round: ReplayRound, { carry = false }: { carry?: bool
     // 얹어 주는 셈이다. 첫 매수 가능일(contextDays-1) 종가가 기준점이다.
     const bhReturn = buyAndHoldReturn(candles.slice(contextDaysOf(round) - 1, lastIdx + 1));
 
+    // 이번 반기의 목표를 해냈는가. 목표 자체는 (campaign_id, half_index) 에서 파생하므로
+    // 판에 적혀 있지 않아도 여기서 다시 뽑을 수 있다. 서버도 같은 값을 뽑아 보상 액수를
+    // 정한다 — 여기서 보내는 것은 해냈는지 여부뿐이다.
+    const season = seasonOf(round.campaign_id, round.half_index);
+    const mine = round.orders.filter(o => o.side === "buy" && !o.auto);
+    const missionOk = season
+        ? missionMet(season.mission, {
+            excess: finalReturn - bhReturn,
+            finalReturn,
+            turnover: habits.turnover,
+            maxExposure: habits.maxExposure,
+            slotsUsed: new Set(mine.map(o => o.slot ?? 0)).size,
+        })
+        : null;
+
     return {
         ...next,
         qty: keptQty,
@@ -238,6 +254,7 @@ export function finishHalf(round: ReplayRound, { carry = false }: { carry?: bool
         final_return: finalReturn,
         bh_return: bhReturn,
         habits,
+        mission_ok: missionOk,
         carried: keptQty > 0,
         pending: [],
     };
@@ -301,6 +318,8 @@ export function halfSubmission(round: ReplayRound) {
         final_return: round.final_return,
         bh_return: round.bh_return,
         habits: round.habits,
+        // 해냈는지만 보낸다. 보상 액수는 서버가 자기 목록에서 읽는다.
+        mission_ok: round.mission_ok ?? null,
         carried: !!round.carried,
         holdings: holdingsOf(round).map(h => ({
             slot: h.slot, qty: h.qty, cost_basis: h.cost_basis,
@@ -317,6 +336,7 @@ export function halfSubmission(round: ReplayRound) {
 /** 이어 하기용 체크포인트 — 진행 중 상태. 기기를 바꿔도 판이 살아 있게 한다. */
 export function halfCheckpoint(round: ReplayRound) {
     const s = halfSubmission(round);
+    // 진행 중에는 목표 달성도 정산도 없다 — 반기가 닫혀야 정해진다.
     return {
         round_id: s.round_id, cursor: s.cursor, cash: s.cash, qty: s.qty,
         cost_basis: s.cost_basis, realized: s.realized, fees_paid: s.fees_paid,

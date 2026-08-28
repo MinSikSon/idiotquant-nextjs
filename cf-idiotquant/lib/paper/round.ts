@@ -142,6 +142,13 @@ export interface ReplayRound {
     fee_base: number | null;
     fee_perf: number | null;
     habits: RoundHabits | null;
+    /**
+     * 이번 반기의 목표를 해냈는가. null 이면 목표가 없던 판이다(캠페인 없이 굴렸거나 옛 기록).
+     *
+     * 어떤 목표였는지는 저장하지 않는다 — campaign_id 와 half_index 로 다시 뽑는다
+     * (lib/paper/season.ts 의 seasonOf).
+     */
+    mission_ok?: boolean | null;
 }
 
 /**
