@@ -20,7 +20,10 @@
 //
 // 모든 함수는 받은 판을 고치지 않고 새 판을 돌려준다 — React 상태로 그대로 쓰기 위해서다.
 
-import { quoteBuy, quoteSell } from "./engine";
+import {
+    quoteBuy, quoteSell, quoteShort, quoteCover, applyCover, shortCalled,
+    type ShortQuote, type CoverQuote,
+} from "./engine";
 import { computeHabits } from "./habits";
 import { triggered, validateReservation } from "./reservations";
 import { seasonOf, missionMet } from "./season";
@@ -30,8 +33,15 @@ import {
 } from "./round";
 
 export type HalfResult =
-    | { ok: true; round: ReplayRound; done?: boolean }
+    | {
+        ok: true; round: ReplayRound; done?: boolean;
+        /** 담보가 못 버텨 강제로 갚은 자리 수. 화면이 재생을 세우고 알린다. */
+        called?: number;
+    }
     | { ok: false; error: string };
+
+/** 사고팔기의 네 가지. short·cover 는 빌려서 팔고 사서 갚는 것이다. */
+export type TradeSide = "buy" | "sell" | "short" | "cover";
 
 /** 미리 보여 준 구간. 반기 창을 달력으로 자르면 판마다 달라서 판에 적혀 온다. */
 function contextDaysOf(round: ReplayRound): number {
@@ -41,6 +51,16 @@ function contextDaysOf(round: ReplayRound): number {
 
 function holdingsOf(round: ReplayRound): ReplayHolding[] {
     return round.holdings ?? [];
+}
+
+/**
+ * 공매도로 묶여 있는 현금.
+ *
+ * 현금은 판에 하나뿐이라 담보도 판 전체로 센다 — 한 자리에 걸어 둔 담보만큼 다른 자리에
+ * 쓸 돈이 줄어야 "빌린 돈으로 더 크게 굴리는 길은 없다"가 지켜진다.
+ */
+export function lockedOf(round: ReplayRound): number {
+    return holdingsOf(round).reduce((a, h) => a + (h.short_basis ?? 0), 0);
 }
 
 /**
@@ -98,18 +118,67 @@ function applyFill(
 }
 
 /**
+ * 빌려서 팔거나(short) 사서 갚는(cover) 것을 판에 반영한다.
+ *
+ * 롱과 갈라 둔 이유는 돈이 도는 길이 다르기 때문이다 — 롱은 사면 현금이 나가고 팔면
+ * 들어오지만, 공매도는 **판 대금을 손에 쥐지 않고 그대로 담보로 묶는다**(engine.ts).
+ * 판 전체의 qty·cost_basis 는 롱의 것이라 여기서 건드리지 않는다.
+ */
+function applyShortFill(
+    round: ReplayRound,
+    { slot, dayIdx, auto }: { slot: number; dayIdx: number; auto?: boolean },
+    q: ShortQuote | CoverQuote,
+): ReplayRound {
+    const opening = q.side === "short";
+
+    const order: ReplayOrder = {
+        day_index: dayIdx,
+        side: opening ? "short" : "cover",
+        qty: q.qty,
+        price: q.price,
+        slot,
+        fee: q.fee,
+        realized: opening ? null : q.realized,
+        ...(auto ? { auto: 1 } : {}),
+    };
+
+    return {
+        ...round,
+        // 개시에는 현금이 움직이지 않는다 — 담보만 묶인다(engine.ts). 갚을 때 손익이 들어온다.
+        cash: opening ? round.cash : round.cash + q.realized,
+        realized: opening ? round.realized : round.realized + q.realized,
+        fees_paid: round.fees_paid + q.fee,
+        orders: [...round.orders, order],
+        holdings: holdingsOf(round).map(h => {
+            if (h.slot !== slot) return h;
+            const pos = { short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0 };
+            const next = opening
+                ? { short_qty: pos.short_qty + q.qty, short_basis: pos.short_basis + q.net }
+                : applyCover(pos, q);
+            return {
+                ...h, ...next,
+                realized: opening ? h.realized : h.realized + q.realized,
+                orders: [...h.orders, order],
+            };
+        }),
+    };
+}
+
+/**
  * 오늘 사고팔기 — **날짜는 넘기지 않는다**.
  *
  * 종목이 넷이면 같은 날 둘을 사고 하나를 파는 게 당연한 일이라 시간과 매매를 묶어 둘 수
  * 없다. 시간은 halfAdvance 가 옮긴다.
  */
+const TRADE_SIDES: TradeSide[] = ["buy", "sell", "short", "cover"];
+
 export function halfTrade(
-    round: ReplayRound, trade: { side: "buy" | "sell"; qty: number; slot?: number },
+    round: ReplayRound, trade: { side: TradeSide; qty: number; slot?: number },
 ): HalfResult {
     if (round.status !== "playing") return { ok: false, error: "이미 끝난 판입니다." };
 
-    const side = trade?.side === "buy" ? "buy" : trade?.side === "sell" ? "sell" : null;
-    if (!side) return { ok: false, error: "side는 buy 또는 sell이어야 합니다." };
+    const side = TRADE_SIDES.includes(trade?.side) ? trade.side : null;
+    if (!side) return { ok: false, error: "side가 올바르지 않습니다." };
     const qty = Math.floor(Number(trade?.qty) || 0);
 
     const slot = Math.max(0, Math.floor(Number(trade?.slot) || 0));
@@ -121,12 +190,43 @@ export function halfTrade(
     const price = hold.candles[dayIdx]?.c;
     if (!(price > 0)) return { ok: false, error: "그날은 이 종목을 거래할 수 없습니다." };
 
+    if (side === "short" || side === "cover") {
+        const q = side === "short"
+            // 담보는 **묶이지 않은** 현금에서만 나온다 — 이미 걸어 둔 것을 빼고 준다.
+            ? quoteShort({ price, qty, cash: round.cash - lockedOf(round) })
+            : quoteCover({ price, qty, position: { short_qty: hold.short_qty ?? 0, short_basis: hold.short_basis ?? 0 } });
+        if (!q.ok) return { ok: false, error: q.error };
+        return { ok: true, round: applyShortFill(round, { slot, dayIdx }, q) };
+    }
+
     const q = side === "buy"
         ? quoteBuy({ price, qty, cash: round.cash })
         : quoteSell({ price, qty, position: { qty: hold.qty, cost_basis: hold.cost_basis } });
     if (!q.ok) return { ok: false, error: q.error };
 
     return { ok: true, round: applyFill(round, { slot, dayIdx }, q) };
+}
+
+/**
+ * 담보가 못 버티는 자리를 그날 종가로 강제 청산한다.
+ *
+ * 값이 오르는 데는 끝이 없어서, 이 선이 없으면 담보보다 큰 빚을 지고 현금이 음수가 되는
+ * 판이 나온다. 플레이어가 누른 게 아니므로 auto 를 달아 습관에서 뺀다.
+ */
+function marginCalls(round: ReplayRound, dayIdx: number): { round: ReplayRound; called: number } {
+    let next = round;
+    let called = 0;
+    for (const h of holdingsOf(round)) {
+        const pos = { short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0 };
+        const price = h.candles[dayIdx]?.c ?? 0;
+        if (!(pos.short_qty > 0) || !(price > 0) || !shortCalled(pos, price)) continue;
+
+        const q = quoteCover({ price, qty: pos.short_qty, position: pos });
+        if (!q.ok) continue;
+        next = applyShortFill(next, { slot: h.slot, dayIdx, auto: true }, q);
+        called++;
+    }
+    return { round: next, called };
 }
 
 /**
@@ -203,6 +303,16 @@ export function finishHalf(round: ReplayRound, { carry = false }: { carry?: bool
     let keptQty = 0;
     let carryValue = 0;
 
+    // 빌린 주식은 이월되지 않는다 — 남의 것이라 다음 반기로 들고 갈 수 없다.
+    // 롱을 정리하기 전에 먼저 갚는다(현금이 그만큼 오가야 청산 계산이 맞는다).
+    for (const h of holdings) {
+        const pos = { short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0 };
+        const price = h.candles[lastIdx]?.c ?? 0;
+        if (!(pos.short_qty > 0) || !(price > 0)) continue;
+        const q = quoteCover({ price, qty: pos.short_qty, position: pos });
+        if (q.ok) next = applyShortFill(next, { slot: h.slot, dayIdx: lastIdx, auto: true }, q);
+    }
+
     for (const h of holdings) {
         const price = h.candles[lastIdx]?.c ?? 0;
         const keepQty = carry ? carryQty(h.qty, price, perSlotSeed) : 0;
@@ -235,7 +345,8 @@ export function finishHalf(round: ReplayRound, { carry = false }: { carry?: bool
     // 판에 적혀 있지 않아도 여기서 다시 뽑을 수 있다. 서버도 같은 값을 뽑아 보상 액수를
     // 정한다 — 여기서 보내는 것은 해냈는지 여부뿐이다.
     const season = seasonOf(round.campaign_id, round.half_index);
-    const mine = round.orders.filter(o => o.side === "buy" && !o.auto);
+    // 빌려서 판 자리도 담은 자리다 — 분산 목표가 롱만 세면 공매도로 굴린 반기가 억울해진다.
+    const mine = round.orders.filter(o => (o.side === "buy" || o.side === "short") && !o.auto);
     const missionOk = season
         ? missionMet(season.mission, {
             excess: finalReturn - bhReturn,
@@ -278,7 +389,10 @@ export function halfAdvance(
     }
 
     const moved = { ...round, cursor: nextCursor };
-    return { ok: true, round: fillReservations(moved, nextCursor - 1), done: false };
+    // 예약 체결이 먼저다 — 걸어 둔 것이 담보를 채워 마진콜을 면하게 할 수도 있다.
+    const filled = fillReservations(moved, nextCursor - 1);
+    const { round: next, called } = marginCalls(filled, nextCursor - 1);
+    return { ok: true, round: next, done: false, called };
 }
 
 /** 중도 포기 — 그날까지로 반기를 닫는다. */
@@ -323,6 +437,8 @@ export function halfSubmission(round: ReplayRound) {
         carried: !!round.carried,
         holdings: holdingsOf(round).map(h => ({
             slot: h.slot, qty: h.qty, cost_basis: h.cost_basis,
+            // 마감된 판에는 늘 0 이다(빌린 것은 이월되지 않는다). 체크포인트에서만 값이 산다.
+            short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0,
             realized: h.realized, carried: !!h.carried,
         })),
         orders: round.orders.map(o => ({

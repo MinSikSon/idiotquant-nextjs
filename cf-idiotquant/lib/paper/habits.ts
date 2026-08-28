@@ -104,9 +104,14 @@ export function computeHabits({ candles, orders, cursor, seed, contextDays }: {
 
     // ── 4. 투입 강도 · 관망 ───────────────────────────────────
     // 한 번에 얼마나 넣었나 — 그 시점 총자산 대비. 시드에서 시작해 체결을 따라간다.
+    //
+    // 여기서 세는 것은 **롱 비중**이다. 공매도(short·cover)는 돈이 도는 길이 달라
+    // (판 대금을 쥐지 않고 담보로 묶는다) 같은 걸음으로 따라갈 수 없어 건너뛴다.
+    // 그래서 maxExposure·biteShare 는 "주식을 얼마나 실었나"를 뜻한다.
     let cash = seed, qty = 0, maxExposure = 0;
     const bites: { qty: number; share: number }[] = [];
     for (const o of manual) {
+        if (o.side !== "buy" && o.side !== "sell") continue;
         const price = cs[o.day_index]?.c ?? o.price;
         const assetsBefore = cash + qty * price;
         if (o.side === "buy") {

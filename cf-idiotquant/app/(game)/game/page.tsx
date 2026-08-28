@@ -39,12 +39,16 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
-import { SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell } from "@/lib/paper/engine";
-import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, fitToValue, equalWeightPlan } from "@/lib/paper/sizing";
+import {
+    SEED, avgPrice, quoteBuy, quoteSell, applyBuy, applySell,
+    quoteShort, quoteCover, applyCover, shortPnl, SHORT_CALL_PCT,
+} from "@/lib/paper/engine";
+import { partBuyQty, splitBuyQty, sellPartQty, rebalanceOrder, fitToValue, equalWeightPlan, partShortQty } from "@/lib/paper/sizing";
 import { CONTEXT_DAYS, TOTAL_DAYS, type Candle, type ReplayRound, type ReplayHistoryItem, type HistoryStock, type RoundHabits, type HabitSummary, type Reservation, type Campaign } from "@/lib/paper/round";
 import { buildLocalRound, loadLocal, saveLocal, advanceLocal, giveUpLocal } from "@/lib/paper/localRound";
 import {
     halfTrade, halfAdvance, halfGiveUp, halfReserve, halfCancel, halfSubmission, halfCheckpoint,
+    type TradeSide,
 } from "@/lib/paper/half";
 import { getReplayState, startCampaign, startReplayRound, buyTool, submitHalf, checkpointHalf } from "@/lib/features/paper/replayAPI";
 import {
@@ -337,6 +341,14 @@ export default function ReplayGamePage() {
     const [entered, setEntered] = useState(false);
     // 사기 줄의 눈금 — 내 돈의 몇 %(part)냐, 내 돈을 몇 등분한 한 몫(split)이냐.
     const [buyMode, setBuyMode] = useState<"part" | "split">("part");
+    /**
+     * 매매 줄을 빌려서 팔기(공매도)로 바꾼다.
+     *
+     * 줄을 넷으로 늘리는 대신 두 줄을 갈아 끼운다 — 화면 높이가 그대로고, 지금 무엇을
+     * 하려는지가 한눈에 갈린다. 기억해 두지 않는다(설정에 안 넣는다): 다음에 들어왔을 때
+     * 공매도 줄이 먼저 떠 있으면 사려다 빌려 파는 사고가 난다.
+     */
+    const [shortMode, setShortMode] = useState(false);
     // 비중 맞추기 패널. 예약과 같은 방식으로 접었다 편다.
     const [fitOpen, setFitOpen] = useState(false);
     const [target, setTarget] = useState(50);
@@ -534,6 +546,13 @@ export default function ReplayGamePage() {
         const res = halfAdvance(from, { carry: carry === true });
         if (!res.ok) { addToast("error", res.error); return null; }
         setRound(res.round);
+        // 강제 청산은 내가 누른 게 아니라 담보가 못 버틴 것이다. 조용히 지나가면
+        // 다음 화면에서 "빌린 게 왜 없지" 가 된다.
+        if (res.called) {
+            addToast("error", res.called > 1
+                ? `담보가 못 버텨 ${res.called}자리를 강제로 갚았습니다.`
+                : "담보가 못 버텨 강제로 갚았습니다.");
+        }
         if (res.done) {
             setBusy(true);
             try { await submit(res.round); } finally { setBusy(false); }
@@ -561,10 +580,12 @@ export default function ReplayGamePage() {
      * `busy` 는 여기서 건드리지 않는다. 한 건짜리와 여러 건짜리가 각자 감싼다.
      */
     const tradeFrom = useCallback(async (
-        from: ReplayRound, side: "buy" | "sell", qty: number, atSlot: number,
+        from: ReplayRound, side: TradeSide, qty: number, atSlot: number,
     ): Promise<ReplayRound | null> => {
         if (from.status !== "playing" || qty < 1) return null;
         if (!isLoggedIn) {
+            // 체험 운용은 롱만이다 — 화면에서도 공매도 토글을 안 띄운다.
+            if (side !== "buy" && side !== "sell") return null;
             const res = await advanceFrom(from, { side, qty });
             if (res) markFilled();
             return res;
@@ -579,7 +600,7 @@ export default function ReplayGamePage() {
         return res.round;
     }, [isLoggedIn, advanceFrom, addToast, markFilled, queueCheckpoint]);
 
-    const trade = useCallback(async (side: "buy" | "sell", qty: number, atSlot: number) => {
+    const trade = useCallback(async (side: TradeSide, qty: number, atSlot: number) => {
         if (!round) return;
         setBusy(true);
         try {
@@ -640,6 +661,7 @@ export default function ReplayGamePage() {
             while (autoRef.current && cur && cur.status === "playing") {
                 const before = cur.candles[cur.cursor - 1]?.c ?? 0;
                 const pendingBefore = (cur.pending ?? []).length;
+                const owedBefore = (cur.holdings ?? []).reduce((a, h) => a + (h.short_qty ?? 0), 0);
 
                 const next: ReplayRound | null = await advanceFrom(cur, null);
                 if (!next) break;
@@ -656,6 +678,9 @@ export default function ReplayGamePage() {
                     addToast("info", "예약이 체결되어 멈췄습니다.");
                     break;
                 }
+                // 재생 중에는 내가 갚을 수 없다 — 빌린 것이 줄었으면 강제 청산뿐이다.
+                // (무슨 일이 났는지는 advanceFrom 이 이미 알렸다)
+                if ((next.holdings ?? []).reduce((a, h) => a + (h.short_qty ?? 0), 0) < owedBefore) break;
                 await new Promise(r => setTimeout(r, PLAY_MS));
             }
         } finally {
@@ -802,7 +827,18 @@ export default function ReplayGamePage() {
     const marketValue = holdings.length
         ? holdings.reduce((a, h) => a + h.qty * lastCloseOf(h), 0)
         : price * (round?.qty ?? 0);
-    const totalAssets = (round?.cash ?? 0) + marketValue;
+
+    /**
+     * 빌려서 판 것의 평가손익과, 그 때문에 묶여 있는 담보.
+     *
+     * 담보는 이미 현금에서 빠져 있다(공매도할 때 나갔다). 그래서 내 돈에 더할 것은
+     * **평가손익뿐**이다 — 담보까지 더하면 같은 돈을 두 번 세게 된다.
+     */
+    const shortPnlNow = holdings.reduce((a, h) => a + shortPnl(
+        { short_qty: h.short_qty ?? 0, short_basis: h.short_basis ?? 0 }, lastCloseOf(h)), 0);
+    const lockedCollateral = holdings.reduce((a, h) => a + (h.short_basis ?? 0), 0);
+
+    const totalAssets = (round?.cash ?? 0) + marketValue + shortPnlNow;
     const totalPnl = totalAssets - (round?.seed ?? 0);
     const totalRate = round?.seed ? (totalPnl / round.seed) * 100 : 0;
 
@@ -855,6 +891,18 @@ export default function ReplayGamePage() {
         [round?.cash, totalAssets, price]);
 
     const sellQtyFor = useCallback((pct: number) => sellPartQty(heldQty, pct), [heldQty]);
+
+    /* ── 빌려서 팔기 ────────────────────────────────────────────
+       담보는 **묶이지 않은** 현금에서만 나온다 — 한 자리에 걸어 둔 만큼 다른 자리에 쓸
+       돈이 줄어야 "빌린 돈으로 더 크게 굴리는 길은 없다"가 지켜진다. */
+    const freeCash = Math.max(0, (round?.cash ?? 0) - lockedCollateral);
+    const shortQtyFor = useCallback((pct: number) =>
+        partShortQty({ pct, price, cash: freeCash, totalAssets }),
+        [freeCash, totalAssets, price]);
+
+    /** 이 자리에서 빌린 수량과 담보. 갚기 줄이 보는 값이다. */
+    const owedQty = sel?.short_qty ?? 0;
+    const coverQtyFor = useCallback((pct: number) => sellPartQty(owedQty, pct), [owedQty]);
 
     /** 내 돈을 n등분한 한 몫 — 사기 줄이 등분 모드일 때. */
     const splitQtyFor = useCallback((parts: number) =>
@@ -975,21 +1023,37 @@ export default function ReplayGamePage() {
         }
         let cash = round.seed;
         const pos = new Map<number, { ticker: string; name: string | null; qty: number; cost_basis: number }>();
-        for (const h of holdings) pos.set(h.slot, { ticker: String(h.slot), name: null, qty: 0, cost_basis: 0 });
+        // 빌려서 판 자리도 따라간다 — 안 그리면 공매도로 굴린 반기의 곡선이 통째로 거짓이 된다.
+        const shorts = new Map<number, { short_qty: number; short_basis: number }>();
+        for (const h of holdings) {
+            pos.set(h.slot, { ticker: String(h.slot), name: null, qty: 0, cost_basis: 0 });
+            shorts.set(h.slot, { short_qty: 0, short_basis: 0 });
+        }
 
         const out: (number | null)[] = [];
         for (let i = 0; i < visible.length; i++) {
             for (const o of byDay.get(i) ?? []) {
                 const p = pos.get(o.slot)!;
+                const s = shorts.get(o.slot)!;
                 if (o.side === "buy") {
                     const q = quoteBuy({ price: o.price, qty: o.qty, cash });
                     if (q.ok) { cash -= q.total; Object.assign(p, applyBuy(p, q)); }
-                } else {
+                } else if (o.side === "sell") {
                     const q = quoteSell({ price: o.price, qty: o.qty, position: p });
                     if (q.ok) { cash += q.net; Object.assign(p, applySell(p, q)); }
+                } else if (o.side === "short") {
+                    // 개시에는 현금이 안 움직인다 — 담보만 묶인다(engine.ts).
+                    const q = quoteShort({ price: o.price, qty: o.qty, cash: Number.MAX_SAFE_INTEGER });
+                    if (q.ok) { s.short_qty += q.qty; s.short_basis += q.net; }
+                } else {
+                    const q = quoteCover({ price: o.price, qty: o.qty, position: s });
+                    if (q.ok) { cash += q.realized; Object.assign(s, applyCover(s, q)); }
                 }
             }
-            const mv = holdings.reduce((a, h) => a + (pos.get(h.slot)?.qty ?? 0) * (h.candles[i]?.c ?? 0), 0);
+            const mv = holdings.reduce((a, h) => {
+                const c = h.candles[i]?.c ?? 0;
+                return a + (pos.get(h.slot)?.qty ?? 0) * c + shortPnl(shorts.get(h.slot), c);
+            }, 0);
             out.push(i >= ctxDays - 1 ? Math.round(((cash + mv) / round.seed) * benchBase) : null);
         }
         return out;
@@ -1073,7 +1137,7 @@ export default function ReplayGamePage() {
                     if (o.side === "buy") {
                         const q = quoteBuy({ price: o.price, qty: o.qty, cash });
                         if (q.ok) { cash -= q.total; pos = { ...pos, ...applyBuy(pos, q) }; }
-                    } else {
+                    } else if (o.side === "sell") {
                         const q = quoteSell({ price: o.price, qty: o.qty, position: pos });
                         if (q.ok) { cash += q.net; pos = { ...pos, ...applySell(pos, q) }; }
                     }
@@ -1097,9 +1161,12 @@ export default function ReplayGamePage() {
             .map(o => ({
                 x: visible[o.day_index].d.slice(4),
                 y: o.price,
-                color: o.side === "buy" ? UP_COLOR : DOWN_COLOR,
-                label: withLabel ? `${o.side === "buy" ? "+" : "−"}${o.qty}` : undefined,
-                labelPosition: (o.side === "buy" ? "bottom" : "top") as "bottom" | "top",
+                // 방향이 같으면 같은 색이다 — 사기·갚기는 사는 쪽(빨강), 팔기·빌려팔기는 파는 쪽(파랑).
+                color: (o.side === "buy" || o.side === "cover") ? UP_COLOR : DOWN_COLOR,
+                label: withLabel
+                    ? `${(o.side === "buy" || o.side === "cover") ? "+" : "−"}${o.qty}${o.side === "short" || o.side === "cover" ? "*" : ""}`
+                    : undefined,
+                labelPosition: ((o.side === "buy" || o.side === "cover") ? "bottom" : "top") as "bottom" | "top",
             }));
     }, [round, sel, visible, overview]);
 
@@ -1391,11 +1458,23 @@ export default function ReplayGamePage() {
                                 가격은 위 이름줄에 원 단위로, 살 주식 수는 버튼에 그대로 적힌다. */}
                             <Sunken className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2 py-1 text-[11px]">
                                 <AcctVal k="내 돈" v={fmtMoney(totalAssets)} />
-                                <AcctVal k="현금" v={fmtMoney(round.cash)} />
+                                {/* 담보가 잡혀 있으면 현금 자리에 쓸 수 있는 돈을 보여 준다 —
+                                    총액만 보이면 "현금이 있는데 왜 못 사지" 가 된다. */}
+                                <AcctVal k={lockedCollateral > 0 ? "쓸 현금" : "현금"}
+                                    v={fmtMoney(lockedCollateral > 0 ? freeCash : round.cash)} />
                                 <AcctVal
                                     k={overview ? `보유 ${holdings.filter(h => h.qty > 0).length}/${holdings.length}` : heldQty > 0 ? `${heldQty}주` : "미보유"}
                                     v={pct(totalRate)} tone={pnlText(totalPnl >= 0)} />
                             </Sunken>
+                            {/* 빌려서 판 것이 있으면 한 줄. 담보는 이미 현금에서 묶여 있고,
+                                내 돈에 더해진 것은 평가손익뿐이다. */}
+                            {lockedCollateral > 0 && (
+                                <Sunken className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-2 py-1 text-[11px]">
+                                    <AcctVal k="빌려 판 것" v={`${holdings.reduce((a, h) => a + (h.short_qty ?? 0), 0)}주`} />
+                                    <AcctVal k="묶인 담보" v={fmtMoney(lockedCollateral)} />
+                                    <AcctVal k="평가손익" v={fmtMoney(shortPnlNow)} tone={pnlText(shortPnlNow >= 0)} />
+                                </Sunken>
+                            )}
                             {/* 이번 반기의 목표 한 줄. 판정은 반기가 닫힐 때 나므로 여기서는
                                 진행률을 그리지 않는다 — 중간 숫자를 띄우면 그걸 맞추려고
                                 굴리게 되고, 목표는 마지막 하루에 뒤집히는 종류의 것이다. */}
@@ -1420,7 +1499,15 @@ export default function ReplayGamePage() {
                                     // 비중은 반대로 개요에 더 맞는다. 전 자리를 한 번에 다루므로
                                     // 자리를 고를 필요가 없고, 오히려 넷을 한눈에 보며 정하는 값이다.
                                     <span className="flex items-center gap-1">
-                                        {!overview && (
+                                        {/* 빌려서 팔기. 줄을 넷으로 늘리는 대신 두 줄을 갈아 끼운다 —
+                                            화면 높이가 그대로고, 지금 무엇을 하려는지가 한눈에 갈린다. */}
+                                        {!overview && isLoggedIn && (
+                                            <RetroBtn size="sm" selected={shortMode} tone={shortMode ? "warn" : "plain"}
+                                                onClick={() => setShortMode(v => !v)}
+                                                title="빌려서 먼저 팔고 나중에 사서 갚는다. 값이 내려가면 번다"
+                                                aria-pressed={shortMode}>공매도</RetroBtn>
+                                        )}
+                                        {!overview && !shortMode && (
                                             <RetroBtn size="sm" selected={buyMode === "split"}
                                                 onClick={() => setBuyMode(m => m === "split" ? "part" : "split")}
                                                 title="내 돈을 몇 등분해서 살지로 바꾼다"
@@ -1457,12 +1544,30 @@ export default function ReplayGamePage() {
                                         {/* 기준을 적어 둔다 — 안 적으면 같은 25% 가 두 가지 뜻이 되고,
                                             등분 모드에서는 아예 다른 셈(현금 기준)이 된다. */}
                                         <span className="leading-[1.2]">
-                                            <span className="block text-[11px] font-bold" style={{ color: "#9e1414" }}>사기</span>
-                                            {/* 비율이든 등분이든 기준은 내 돈 하나다 — 눈금만 다르다 */}
-                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>내 돈</span>
+                                            <span className="block text-[11px] font-bold" style={{ color: "#9e1414" }}>
+                                                {/* 38px 칸이라 네 글자는 줄바꿈이 난다 */}
+                                                {shortMode ? "빌려서" : "사기"}
+                                            </span>
+                                            {/* 비율이든 등분이든 기준은 내 돈 하나다 — 눈금만 다르다.
+                                                공매도의 담보는 묶이지 않은 현금에서만 나온다. */}
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>
+                                                {shortMode ? "담보" : "내 돈"}
+                                            </span>
                                         </span>
-                                        <div className="grid grid-cols-4 gap-1">
-                                            {buyMode === "split"
+                                        <div className={cn("grid gap-1", shortMode ? "grid-cols-3" : "grid-cols-4")}>
+                                            {shortMode
+                                                ? SELL_PARTS.map(part => {
+                                                    const n = shortQtyFor(part.pct);
+                                                    return (
+                                                        <RetroBtn key={part.pct} tone="warn" aria-label={`빌려서 팔기 ${part.label}`}
+                                                            onClick={() => trade("short", n, sel?.slot ?? 0)} disabled={locked || n < 1}
+                                                            className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
+                                                            {part.label}
+                                                            <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
+                                                        </RetroBtn>
+                                                    );
+                                                })
+                                                : buyMode === "split"
                                                 ? BUY_SPLITS.map(parts => {
                                                     const n = splitQtyFor(parts);
                                                     return (
@@ -1488,15 +1593,21 @@ export default function ReplayGamePage() {
                                         </div>
 
                                         <span className="leading-[1.2]">
-                                            <span className="block text-[11px] font-bold" style={{ color: "#1d4ed8" }}>팔기</span>
-                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>보유</span>
+                                            <span className="block text-[11px] font-bold" style={{ color: "#1d4ed8" }}>
+                                                {shortMode ? "갚기" : "팔기"}
+                                            </span>
+                                            <span className="block text-[11px]" style={{ color: R.inkDim }}>
+                                                {shortMode ? "빌린 것" : "보유"}
+                                            </span>
                                         </span>
                                         <div className="grid grid-cols-3 gap-1">
                                             {SELL_PARTS.map(part => {
-                                                const n = sellQtyFor(part.pct);
+                                                const n = shortMode ? coverQtyFor(part.pct) : sellQtyFor(part.pct);
                                                 return (
-                                                    <RetroBtn key={part.pct} tone="sell" aria-label={`팔기 ${part.label}`}
-                                                        onClick={() => trade("sell", n, sel?.slot ?? 0)} disabled={locked || n < 1}
+                                                    <RetroBtn key={part.pct} tone="sell"
+                                                        aria-label={`${shortMode ? "갚기" : "팔기"} ${part.label}`}
+                                                        onClick={() => trade(shortMode ? "cover" : "sell", n, sel?.slot ?? 0)}
+                                                        disabled={locked || n < 1}
                                                         className="min-h-[42px] flex flex-col items-center justify-center leading-none gap-0.5">
                                                         {part.label}
                                                         <span className="text-[11px] font-normal opacity-85">{n > 0 ? `${n}주` : "—"}</span>
@@ -1505,6 +1616,15 @@ export default function ReplayGamePage() {
                                             })}
                                         </div>
                                     </div>
+
+                                    {/* 공매도 줄에서만. 규칙이 낯선 자리라 무엇이 걸려 있는지 한 줄로 적는다. */}
+                                    {shortMode && !overview && (
+                                        <p className="text-[11px] break-keep leading-[1.6]" style={{ color: R.inkDim }}>
+                                            빌려서 먼저 팝니다. 값이 내려가면 벌고, 올라가면 잃습니다.
+                                            판 값만큼 현금이 담보로 묶이고, 평가손실이 담보의 {SHORT_CALL_PCT}%를 넘으면
+                                            그날 종가로 강제 청산됩니다. 반기가 끝나면 남은 것은 자동으로 갚습니다.
+                                        </p>
+                                    )}
 
                                     {/* ── 비중 맞추기 ──
                                         "몇 주를 살까" 가 아니라 "얼마를 담고 있을까" 로 묻는다. 사고팔기를

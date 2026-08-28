@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 
 import {
     quoteBuy, quoteSell, applyBuy, applySell, avgPrice,
+    quoteShort, quoteCover, applyCover, shortPnl, shortCalled, SHORT_CALL_PCT,
     SEED, BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
     type BuyQuote, type SellQuote,
 } from "@/lib/paper/engine";
@@ -127,4 +128,82 @@ test("실현손익 = 받은 돈 − 판 만큼의 원가", () => {
     const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: pos }));
     assert.equal(q.realized, q.net - q.costOut);
     assert.ok(q.realized > 0, "50만원에 사서 70만원에 팔았으면 이익이어야 한다");
+});
+
+/* ── 공매도 ────────────────────────────────────────────────────
+   빌린 주식을 먼저 팔고 나중에 사서 갚는다. 판 대금은 손에 쥐지 않고 그대로 담보가 된다. */
+
+test("공매도는 판 값만큼 현금을 담보로 묶는다 — 현금 자체는 안 움직인다", () => {
+    const q = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
+    assert.equal(q.ok, true);
+    if (!q.ok) return;
+    assert.equal(q.gross, 1_000_000);
+    // 빌려서 파는 것도 파는 것이다 — 매도 수수료와 거래세를 그대로 낸다
+    assert.equal(q.fee, 150 + 1800);
+    // 담보는 실수령으로 잡는다 → 개시 직후 평가손익이 정확히 -수수료가 된다
+    assert.equal(q.net, 1_000_000 - 1950);
+    assert.equal(shortPnl({ short_qty: 100, short_basis: q.net }, 10_000), -1950);
+});
+
+test("담보가 모자라면 공매도할 수 없다 — 빌린 돈으로 더 크게 굴리는 길은 없다", () => {
+    assert.equal(quoteShort({ price: 10_000, qty: 100, cash: 500_000 }).ok, false);
+});
+
+test("값이 내려가면 번다 — 왕복 손익이 값 차이에서 비용을 뺀 것과 같다", () => {
+    const open = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
+    assert.equal(open.ok, true);
+    if (!open.ok) return;
+
+    const close = quoteCover({ price: 9_000, qty: 100, position: { short_qty: 100, short_basis: open.net } });
+    assert.equal(close.ok, true);
+    if (!close.ok) return;
+
+    // 개시에는 현금이 안 움직이고, 갚을 때 손익만 들어온다
+    assert.equal(close.realized, (10_000 - 9_000) * 100 - open.fee - close.fee, "판 값 − 산 값 − 비용");
+    assert.ok(close.realized > 0);
+});
+
+test("값이 오르면 잃는다", () => {
+    const open = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
+    if (!open.ok) return;
+    const close = quoteCover({ price: 11_000, qty: 100, position: { short_qty: 100, short_basis: open.net } });
+    assert.equal(close.ok, true);
+    if (!close.ok) return;
+    assert.ok(close.realized < 0);
+});
+
+test("전부 갚으면 담보가 정확히 0 이 된다 — 남으면 가짜 손익이 생긴다", () => {
+    const pos = { short_qty: 100, short_basis: 998_050 };
+    const q = quoteCover({ price: 9_000, qty: 100, position: pos });
+    if (!q.ok) return;
+    assert.equal(q.basisOut, pos.short_basis);
+    assert.deepEqual(applyCover(pos, q), { short_qty: 0, short_basis: 0 });
+});
+
+test("나눠 갚으면 담보도 그만큼만 풀린다", () => {
+    const pos = { short_qty: 100, short_basis: 1_000_000 };
+    const q = quoteCover({ price: 9_000, qty: 40, position: pos });
+    if (!q.ok) return;
+    assert.equal(q.basisOut, 400_000);
+    assert.deepEqual(applyCover(pos, q), { short_qty: 60, short_basis: 600_000 });
+});
+
+test("빌린 것보다 많이 갚을 수는 없다", () => {
+    assert.equal(quoteCover({ price: 9_000, qty: 101, position: { short_qty: 100, short_basis: 1_000_000 } }).ok, false);
+    assert.equal(quoteCover({ price: 9_000, qty: 1, position: null }).ok, false);
+});
+
+test("평가손익은 값이 내려간 만큼", () => {
+    const pos = { short_qty: 100, short_basis: 1_000_000 };
+    assert.equal(shortPnl(pos, 9_000), 100_000);
+    assert.equal(shortPnl(pos, 11_000), -100_000);
+    assert.equal(shortPnl(null, 9_000), 0);
+});
+
+test(`평가손실이 담보의 ${SHORT_CALL_PCT}% 를 넘으면 담보가 못 버틴다`, () => {
+    const pos = { short_qty: 100, short_basis: 1_000_000 };   // 주당 10,000 에 판 셈
+    assert.equal(shortCalled(pos, 17_000), false, "손실 70만 — 아직 버틴다");
+    assert.equal(shortCalled(pos, 18_000), false, "손실 80만 — 선까지는 버틴다");
+    assert.equal(shortCalled(pos, 18_100), true);
+    assert.equal(shortCalled(null, 99_999), false);
 });

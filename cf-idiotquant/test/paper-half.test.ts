@@ -8,7 +8,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    halfTrade, halfAdvance, halfGiveUp, halfReserve, halfCancel, finishHalf, halfSubmission,
+    halfTrade, halfAdvance, halfGiveUp, halfReserve, halfCancel, finishHalf, halfSubmission, lockedOf,
 } from "@/lib/paper/half";
 import { SEED } from "@/lib/paper/engine";
 import type { Candle, ReplayHolding, ReplayRound } from "@/lib/paper/round";
@@ -304,4 +304,115 @@ test("목표 판정은 그 반기에 실제로 한 것으로 난다", () => {
         `${busyFin.mission_ok}/${busyFin.habits!.trades}`,
         "한 주도 안 산 판과 셋을 담은 판의 판정 근거가 같다",
     );
+});
+
+/* ── 공매도 ─────────────────────────────────────────────────── */
+
+test("공매도하면 담보가 묶이고 빌린 수량이 는다 — 날짜는 그대로", () => {
+    const r0 = makeRound();
+    const r = ok(halfTrade(r0, { side: "short", qty: 100, slot: 0 }));
+
+    assert.equal(r.cursor, CONTEXT);
+    assert.equal(r.holdings![0].short_qty, 100);
+    assert.equal(r.holdings![0].qty, 0, "롱 수량은 그대로다");
+    // 10,000 × 100 = 100만, 수수료·세금 1,950 → 실수령 998,050 이 묶인다
+    assert.equal(r.holdings![0].short_basis, 998_050);
+    assert.equal(r.cash, SEED, "개시에는 현금이 안 움직인다 — 담보만 묶인다");
+    assert.equal(lockedOf(r), 998_050, "묶인 만큼 살 돈이 준다");
+    assert.equal(r.fees_paid, 1_950);
+    assert.equal(r.orders[0].side, "short");
+});
+
+test("현금보다 많이 빌려 팔 수는 없다 — 레버리지는 없다", () => {
+    assert.equal(halfTrade(makeRound(), { side: "short", qty: 10_000, slot: 0 }).ok, false);
+    assert.equal(halfTrade(makeRound(), { side: "cover", qty: 1, slot: 0 }).ok, false, "빌린 게 없으면 갚을 것도 없다");
+});
+
+test("값이 내려간 뒤 갚으면 번다", () => {
+    // 0번 자리만 컨텍스트 뒤에 반토막 난다
+    const drop = makeRound({
+        holdings: [
+            holding(0, i => (i < CONTEXT ? 10_000 : 5_000)),
+            holding(1, () => 20_000), holding(2, () => 5_000), holding(3, () => 1_000),
+        ],
+    });
+    let r = ok(halfTrade(drop, { side: "short", qty: 100, slot: 0 }));
+    r = ok(halfAdvance(r));                                     // 5,000 으로 내려온 날
+    r = ok(halfTrade(r, { side: "cover", qty: 100, slot: 0 }));
+
+    assert.equal(r.holdings![0].short_qty, 0);
+    assert.equal(r.holdings![0].short_basis, 0, "전부 갚으면 담보가 0 이 된다");
+    assert.ok(r.cash > SEED, "값이 반토막 났는데 못 벌었다");
+    assert.ok(r.realized > 0);
+});
+
+test("담보가 못 버티면 그날 강제로 갚는다", () => {
+    // 0번 자리가 컨텍스트 뒤에 두 배가 된다 — 담보의 80% 를 넘는 손실
+    const spike = makeRound({
+        holdings: [
+            holding(0, i => (i < CONTEXT ? 10_000 : 20_000)),
+            holding(1, () => 20_000), holding(2, () => 5_000), holding(3, () => 1_000),
+        ],
+    });
+    const shorted = ok(halfTrade(spike, { side: "short", qty: 100, slot: 0 }));
+    const res = halfAdvance(shorted);
+    assert.equal(res.ok, true);
+    if (!res.ok) return;
+
+    assert.equal(res.called, 1, "담보가 못 버티는데 안 잡혔다");
+    assert.equal(res.round.holdings![0].short_qty, 0);
+    const forced = res.round.orders.filter(o => o.side === "cover" && o.auto);
+    assert.equal(forced.length, 1, "강제 청산은 auto 라 습관에서 빠져야 한다");
+    assert.ok(res.round.cash < SEED, "두 배가 됐으면 크게 잃는다");
+});
+
+test("버틸 만하면 강제로 갚지 않는다", () => {
+    const mild = makeRound({
+        holdings: [
+            holding(0, i => (i < CONTEXT ? 10_000 : 15_000)),   // 손실 50만 < 담보의 80%
+            holding(1, () => 20_000), holding(2, () => 5_000), holding(3, () => 1_000),
+        ],
+    });
+    const shorted = ok(halfTrade(mild, { side: "short", qty: 100, slot: 0 }));
+    const res = halfAdvance(shorted);
+    if (!res.ok) return;
+    assert.equal(res.called, 0);
+    assert.equal(res.round.holdings![0].short_qty, 100);
+});
+
+test("빌린 주식은 이월되지 않는다 — 마감 때 무조건 갚는다", () => {
+    let r = makeRound({ cursor: TOTAL });
+    r = ok(halfTrade(r, { side: "short", qty: 100, slot: 0 }));
+    r = ok(halfTrade(r, { side: "buy", qty: 10, slot: 1 }));
+    const fin = ok(halfAdvance(r, { carry: true }));
+
+    assert.equal(fin.holdings![0].short_qty, 0, "남의 것을 다음 반기로 들고 갈 수는 없다");
+    assert.equal(fin.holdings![0].short_basis, 0);
+    assert.equal(fin.holdings![1].qty, 10, "롱은 이월된다");
+    assert.equal(fin.orders.filter(o => o.side === "cover" && o.auto).length, 1);
+});
+
+test("공매도만 하고 끝낸 반기도 수익률이 잡힌다", () => {
+    const drop = makeRound({
+        cursor: TOTAL,
+        holdings: [
+            holding(0, i => (i < TOTAL - 1 ? 10_000 : 5_000)),
+            holding(1, () => 20_000), holding(2, () => 5_000), holding(3, () => 1_000),
+        ],
+    });
+    // 마지막 날 직전 값(10,000)에 빌려 팔고, 마감이 5,000 에 갚는다
+    const r = ok(halfTrade({ ...drop, cursor: TOTAL - 1 }, { side: "short", qty: 500, slot: 0 }));
+    const fin = finishHalf({ ...r, cursor: TOTAL });
+
+    assert.ok(fin.final_return! > 0, `공매도로 벌었는데 수익률이 ${fin.final_return}`);
+    assert.equal(fin.holdings![0].short_qty, 0);
+});
+
+test("공매도는 롱 비중(maxExposure)에 섞이지 않는다", () => {
+    let r = makeRound({ cursor: TOTAL });
+    r = ok(halfTrade(r, { side: "short", qty: 100, slot: 0 }));
+    const fin = finishHalf(r);
+    // 롱을 한 주도 안 샀으므로 롱 비중은 0 이어야 한다 — 공매도를 매도로 세면 음수가 된다
+    assert.equal(fin.habits!.maxExposure, 0);
+    assert.equal(fin.habits!.trades, 1, "그래도 체결 한 번은 한 것이다");
 });

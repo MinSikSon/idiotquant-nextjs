@@ -21,7 +21,12 @@ export interface Candle {
 /** 체결 하나. 차트에 매매 시점을 찍는 데 쓴다. day_index 는 몇 번째 캔들인지(0-based). */
 export interface ReplayOrder {
     day_index: number;
-    side: "buy" | "sell";
+    /**
+     * buy·sell 은 내 돈으로 사고파는 것, short·cover 는 빌려서 팔고 사서 갚는 것이다.
+     * 넷을 한 목록에 섞어 두는 이유는 차트 마커와 성과 곡선이 "그날 무슨 일이 있었나"를
+     * 한 줄로 읽어야 해서다 — 목록이 둘이면 두 곳을 합치는 코드가 세 군데 생긴다.
+     */
+    side: "buy" | "sell" | "short" | "cover";
     qty: number;
     price: number;
     auto?: number;   // 1 = 마지막 날 강제 청산 (플레이어가 누른 게 아니다)
@@ -90,6 +95,12 @@ export interface ReplayHolding {
     slot: number;
     qty: number;
     cost_basis: number;
+    /**
+     * 빌려서 판 수량과 그때 받은 돈(= 묶인 담보). 0032 배포 전 워커 응답에는 없어서
+     * 물음표를 붙여 뒀다 — 읽는 쪽은 항상 `?? 0` 으로 받는다.
+     */
+    short_qty?: number;
+    short_basis?: number;
     realized: number;
     carried: boolean;
     sector: string | null;
