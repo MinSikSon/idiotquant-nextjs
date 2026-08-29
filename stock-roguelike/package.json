@@ -1,0 +1,20 @@
+{
+  "name": "stock-roguelike",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "모바일 세로형 주식 모의투자 로그라이크 — 12턴 한 판, 전략 카드와 유물.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2"
+  }
+}

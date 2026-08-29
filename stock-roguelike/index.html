@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <!-- 폰이 본체다. 확대·축소를 막고 상태바 뒤까지 화면으로 쓴다. -->
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0f10" />
+    <meta name="description" content="12턴 안에 굴려 보는 주식 로그라이크. 전략 카드와 유물로 매 판이 달라집니다." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>STOCK ROGUELIKE</title>
+
+    <style>
+        /* 레트로 다크 — 캔버스 밖도 기기의 어둠이어야 화면 경계가 안 드러난다.
+           고무줄 스크롤로 드러나는 자리가 문서 뿌리라, html 부터 칠한다. */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #0b0f10;
+            overflow: hidden;
+            overscroll-behavior: none;
+            /* 두 번 탭했을 때 확대되지 않게. 버튼을 빠르게 두 번 누르는 게임이다. */
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            color-scheme: dark;
+        }
+
+        body {
+            display: grid;
+            place-items: center;
+            font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+        }
+
+        #game {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+        }
+
+        /* 픽셀 격자를 살린다. 브라우저가 부드럽게 늘이면 도트가 뭉갠다. */
+        #game canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            display: block;
+        }
+
+        /* 엔진이 올라오기 전 잠깐 보이는 자리. 캔버스가 붙으면 덮인다. */
+        #boot {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: #5cf08f;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            pointer-events: none;
+        }
+
+        #boot.gone {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game"></div>
+    <div id="boot">NOW LOADING…</div>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
