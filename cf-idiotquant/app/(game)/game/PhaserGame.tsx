@@ -44,6 +44,26 @@ export default function PhaserGame({ insightPoints = 0, className }: PhaserGameP
 
         (async () => {
             try {
+                // next/font 가 만든 패밀리 이름은 빌드마다 바뀌는 해시라 손으로 못 적는다.
+                // host 에 걸어 둔 font-family 의 계산값을 그대로 읽어 간다.
+                const family = getComputedStyle(host).fontFamily || "monospace";
+
+                // 캔버스는 글꼴을 CSS 로 못 받는다 — 그릴 때 이미 와 있어야 하고, 나중에
+                // 와도 다시 안 그려진다. 게다가 캔버스에 쓰는 것만으로는 브라우저가 웹폰트를
+                // 받아 오지 않으므로, 쓸 글자를 주고 **직접 받아 둔다**.
+                //
+                // 패밀리마다 따로, 그리고 실패를 삼킨다. 목록에는 next/font 가 끼워 넣은
+                // 대체 페이스(local() 로 기기 글꼴을 가리킨다)가 섞여 있고 그건 기기에
+                // 따라 없을 수도 있다 — 글꼴 한 줄 때문에 판이 안 켜지면 안 된다.
+                if (document.fonts) {
+                    await Promise.allSettled(
+                        family.split(",").map(f =>
+                            document.fonts.load(`400 14px ${f.trim()}`, "0123456789 매수 매도 관망")),
+                    );
+                    await document.fonts.ready;
+                }
+                if (cancelled || !hostRef.current) return;
+
                 // 여기서 처음으로 Phaser 가 로드된다. 이 줄이 도는 시점은 언제나 브라우저다.
                 const { createGameConfig } = await import("@/lib/game/config");
                 const PhaserLib = (await import("phaser")).default;
@@ -52,7 +72,9 @@ export default function PhaserGame({ insightPoints = 0, className }: PhaserGameP
                 if (cancelled || !hostRef.current) return;
 
                 gameRef.current = new PhaserLib.Game(
-                    createGameConfig({ parent: hostRef.current, insightPoints }),
+                    createGameConfig({
+                        parent: hostRef.current, insightPoints, fontFamily: family,
+                    }),
                 );
             } catch (e) {
                 if (!cancelled) {
@@ -77,6 +99,12 @@ export default function PhaserGame({ insightPoints = 0, className }: PhaserGameP
     return (
         <div
             ref={hostRef}
+            // 캔버스가 읽어 갈 글꼴은 여기 한 줄이 정한다. 라틴·숫자는 Plex Mono, 한글은
+            // Plex Sans KR, 둘 다 못 오면 시스템 고정폭. 변수는 (game)/layout.tsx 가 건다.
+            style={{
+                fontFamily:
+                    'var(--font-plex-mono), var(--font-plex-kr), ui-monospace, "SFMono-Regular", Menlo, monospace',
+            }}
             className={
                 className ??
                 "grid w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block [&>canvas]:[image-rendering:pixelated]"

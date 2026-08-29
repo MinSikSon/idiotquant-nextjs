@@ -18,6 +18,11 @@ export interface GameOptions {
     parent: HTMLElement;
     /** 지난 런에서 넘어온 인사이트. 없으면 0 부터. */
     insightPoints?: number;
+    /**
+     * 실제로 그릴 글꼴 이름. next/font 가 만든 해시 이름이라 React 쪽이 DOM 에서 읽어
+     * 넘긴다. 안 주면 theme 의 시스템 고정폭으로 떨어진다.
+     */
+    fontFamily?: string;
 }
 
 /**
@@ -53,9 +58,12 @@ export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
         banner: false,
 
         scene: [TradingScene],
-        // 씬은 init(data) 로 이 값을 받는다.
+        // 씬은 init(data) 와 fontOf(scene) 로 이 값들을 받는다.
         callbacks: {
-            preBoot: game => game.registry.set("insightPoints", o.insightPoints ?? 0),
+            preBoot: game => {
+                game.registry.set("insightPoints", o.insightPoints ?? 0);
+                if (o.fontFamily) game.registry.set("fontFamily", o.fontFamily);
+            },
         },
     };
 }

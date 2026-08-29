@@ -1,65 +1,125 @@
-// 카드와 유물. 여기도 **Phaser 를 모른다.**
+// 덱·카드·유물. 여기도 **Phaser 를 모른다.**
 //
-// 카드는 한 턴짜리이고 유물은 판 내내 남는다. 그 둘이 합쳐진 결과가 TurnBuff 하나로 나가고,
-// 엔진은 그 덩어리만 받는다 — 카드를 하나 더 만들어도 엔진의 함수 모양이 안 바뀐다.
+// ── 덱빌딩 ──────────────────────────────────────────────────────
+// 카드는 전역 풀에서 아무거나 나오지 않는다. **내 덱에서 뽑는다.**
+//
+//   시작 덱 6장 → 매 턴 3장 뽑기 → 한 장 쓰고 셋 다 버린 더미로
+//   → 덱이 마르면 버린 더미를 섞어 다시 덱으로
+//
+// 그래서 판 도중에 얻은 카드가 실제로 손에 잡히고, 덱이 두꺼워질수록 원하는 카드가
+// 덜 나온다. "센 카드를 얻는 것" 과 "덱을 얇게 유지하는 것" 이 맞서는 자리가 이것이다.
+//
+// 저주는 그 맞섬을 값으로 만든다 — 가장 센 카드에는 저주가 딸려 온다.
+//
+// 카드는 한 턴짜리이고 유물은 판 내내 남는다. 그 둘이 합쳐진 결과가 TurnBuff 하나로
+// 나가고, 엔진은 그 덩어리만 받는다 — 카드를 하나 더 만들어도 엔진의 모양이 안 바뀐다.
 
-import type { PlayerState, Relic, StrategyCard, TurnBuff } from "./types";
+import type { CardKind, DeckState, PlayerState, Relic, StrategyCard, TurnBuff } from "./types";
 import { NO_BUFF } from "./types";
 
 /** 한 턴에 손에 들어오는 카드 수. */
 export const HAND_SIZE = 3;
+
+/** 카드 보상이 뜨는 턴(그 턴을 **끝냈을 때**). 12턴 중 셋. */
+export const REWARD_TURNS = [3, 6, 9];
+
+/** 보상으로 고르라고 내미는 장 수. */
+export const OFFER_SIZE = 3;
 
 /** 카드 한 장이 무엇을 하는가. 정의와 효과를 한자리에 둔다 — 갈라 두면 반드시 어긋난다. */
 interface CardDef {
     id: string;
     name: string;
     type: StrategyCard["type"];
+    kind: CardKind;
     effectDescription: string;
     apply: (b: TurnBuff) => TurnBuff;
+    /** 이 카드를 얻으면 덱에 함께 들어오는 저주. 센 카드가 치르는 값이다. */
+    curse?: string;
 }
 
-const CARD_POOL: CardDef[] = [
+const CARDS: CardDef[] = [
+    /* ── 시작 덱 ─────────────────────────────────────────
+       약하지만 셋 다 "덜 다치게" 하는 쪽이다. 판을 뒤집으려면 보상 카드가 필요하다. */
     {
-        id: "insider", name: "인사이더 호재", type: "price",
-        effectDescription: "이번 턴 주가가 확실히 오릅니다 (+12%p).",
-        apply: b => ({ ...b, priceBias: b.priceBias + 0.12 }),
-    },
-    {
-        id: "leak", name: "미공개 정보", type: "price",
-        effectDescription: "이번 턴 주가에 +20%p. 대신 다음 판까지 소문이 남습니다.",
-        apply: b => ({ ...b, priceBias: b.priceBias + 0.20 }),
-    },
-    {
-        id: "nofee", name: "손절 수수료 면제", type: "trade",
-        effectDescription: "이번 턴 매도 수수료와 거래세를 내지 않습니다.",
-        apply: b => ({ ...b, feeWaived: true }),
-    },
-    {
-        id: "rebound", name: "급반등 유도", type: "price",
-        effectDescription: "이번 턴에 내리면 그 폭만큼 되돌려 올립니다.",
-        apply: b => ({ ...b, reboundRatio: Math.max(b.reboundRatio, 1) }),
-    },
-    {
-        id: "shield", name: "방어막", type: "price",
-        effectDescription: "이번 턴 하락폭이 절반으로 줄어듭니다.",
-        apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.5) }),
-    },
-    {
-        id: "volatile", name: "변동성 폭발", type: "price",
-        effectDescription: "이번 턴 변동폭이 두 배가 됩니다. 위로든 아래로든.",
-        apply: b => ({ ...b, volatilityMult: b.volatilityMult * 2 }),
-    },
-    {
-        id: "steady", name: "관망 지시", type: "price",
+        id: "steady", name: "관망 지시", type: "price", kind: "starter",
         effectDescription: "이번 턴 변동폭이 절반으로 줄어듭니다.",
         apply: b => ({ ...b, volatilityMult: b.volatilityMult * 0.5 }),
     },
     {
-        id: "pump", name: "작전 세력", type: "price",
-        effectDescription: "이번 턴 +8%p, 그리고 변동폭도 1.5배.",
+        id: "shield", name: "방어막", type: "price", kind: "starter",
+        effectDescription: "이번 턴 하락폭이 절반으로 줄어듭니다.",
+        apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.5) }),
+    },
+    {
+        id: "insider", name: "인사이더 호재", type: "price", kind: "starter",
+        effectDescription: "이번 턴 주가가 확실히 오릅니다 (+12%p).",
+        apply: b => ({ ...b, priceBias: b.priceBias + 0.12 }),
+    },
+    {
+        id: "nofee", name: "손절 수수료 면제", type: "trade", kind: "starter",
+        effectDescription: "이번 턴 매도 수수료와 거래세를 내지 않습니다.",
+        apply: b => ({ ...b, feeWaived: true }),
+    },
+
+    /* ── 보상 ────────────────────────────────────────────
+       판을 뒤집는 카드들. 위의 둘에는 저주가 딸려 온다. */
+    {
+        id: "rebound", name: "급반등 유도", type: "price", kind: "reward",
+        effectDescription: "이번 턴에 내리면 그 폭만큼 되돌려 올립니다.",
+        apply: b => ({ ...b, reboundRatio: Math.max(b.reboundRatio, 1) }),
+    },
+    {
+        id: "volatile", name: "변동성 폭발", type: "price", kind: "reward",
+        effectDescription: "이번 턴 변동폭이 두 배가 됩니다. 위로든 아래로든.",
+        apply: b => ({ ...b, volatilityMult: b.volatilityMult * 2 }),
+    },
+    {
+        id: "bunker", name: "벙커", type: "price", kind: "reward",
+        effectDescription: "이번 턴 하락폭이 없는 것이나 마찬가지가 됩니다.",
+        apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.9) }),
+    },
+    {
+        id: "pump", name: "작전 세력", type: "price", kind: "reward",
+        effectDescription: "이번 턴 +8%p, 변동폭 1.5배. 대신 뒷말이 남습니다.",
         apply: b => ({ ...b, priceBias: b.priceBias + 0.08, volatilityMult: b.volatilityMult * 1.5 }),
+        curse: "rumor",
+    },
+    {
+        id: "leak", name: "미공개 정보", type: "price", kind: "reward",
+        effectDescription: "이번 턴 +20%p. 이런 건 반드시 대가가 따릅니다.",
+        apply: b => ({ ...b, priceBias: b.priceBias + 0.20 }),
+        curse: "probe",
+    },
+
+    /* ── 저주 ────────────────────────────────────────────
+       손에 잡히면 그 턴을 버리게 만든다. 덱이 두꺼워질수록 자주 잡힌다. */
+    {
+        id: "rumor", name: "뒷말", type: "price", kind: "curse",
+        effectDescription: "저주 — 변동폭만 1.5배가 됩니다. 방향은 안 도와줍니다.",
+        apply: b => ({ ...b, volatilityMult: b.volatilityMult * 1.5 }),
+    },
+    {
+        id: "probe", name: "당국 조사", type: "price", kind: "curse",
+        effectDescription: "저주 — 이번 턴 −6%p.",
+        apply: b => ({ ...b, priceBias: b.priceBias - 0.06 }),
+    },
+    {
+        id: "delay", name: "공시 지연", type: "price", kind: "curse",
+        effectDescription: "저주 — 아무 일도 일어나지 않습니다.",
+        apply: b => b,
     },
 ];
+
+/** 판을 시작할 때 손에 쥐는 덱. 같은 카드가 여러 장이라 뽑는 맛이 생긴다. */
+const STARTING_DECK = ["steady", "steady", "shield", "shield", "insider", "nofee"];
+
+function defOf(id: string): CardDef | undefined {
+    return CARDS.find(c => c.id === id);
+}
+
+/** 보상으로 내밀 수 있는 것 — 저주는 고를 수 없다. */
+const REWARD_IDS = CARDS.filter(c => c.kind === "reward").map(c => c.id);
 
 /** 유물 — 한 번 얻으면 판이 끝날 때까지 남는다. */
 const RELIC_POOL: Relic[] = [
@@ -82,6 +142,10 @@ const RELIC_POOL: Relic[] = [
     {
         id: "ledger", name: "비밀 장부", triggerType: "onTurnEnd",
         description: "오른 턴마다 인사이트 +1.",
+    },
+    {
+        id: "shredder", name: "파쇄기", triggerType: "onTurnStart",
+        description: "저주를 손에 쥐면 그 자리에서 덱 밖으로 버립니다.",
     },
 ];
 
@@ -117,13 +181,158 @@ export class RoguelikeManager {
     /** 이 판에서 들고 있는 유물. */
     relics: Relic[] = [];
 
+    /** 아직 안 뽑은 장(카드 id). 앞에서부터 뽑는다. */
+    private drawPile: string[] = [];
+    /** 쓴 것과 안 쓴 것 모두 여기로 온다. 덱이 마르면 섞어서 되돌린다. */
+    private discardPile: string[] = [];
+
     private rand: () => number;
     /** 이번 턴에 고른 카드. 턴이 넘어가면 비워진다. */
     private picked: CardDef | null = null;
+    /** uid 를 만드는 counter. 같은 카드 여러 장을 구별하는 값이다. */
+    private seq = 0;
 
     constructor(seed: number) {
         // 엔진과 같은 시드를 쓰되 흩어 둔다. 그대로 쓰면 주가와 카드가 같은 수열을 밟는다.
         this.rand = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+        this.resetDeck();
+    }
+
+    /* ── 덱 ─────────────────────────────────────────────── */
+
+    /** 시작 덱으로 되돌린다. 판을 새로 열 때 한 번. */
+    resetDeck(): void {
+        this.drawPile = this.shuffled(STARTING_DECK);
+        this.discardPile = [];
+        this.hand = [];
+        this.picked = null;
+    }
+
+    private shuffled(ids: readonly string[]): string[] {
+        const out = [...ids];
+        // Fisher-Yates. 시드에서 나온 난수라 같은 시드면 같은 순서다.
+        for (let i = out.length - 1; i > 0; i--) {
+            const j = Math.floor(this.rand() * (i + 1));
+            [out[i], out[j]] = [out[j]!, out[i]!];
+        }
+        return out;
+    }
+
+    /** 덱에 한 장 넣는다. 보상으로 고른 카드와, 거기 딸린 저주가 이리로 온다. */
+    addToDeck(cardId: string): void {
+        if (!defOf(cardId)) return;
+        // 버린 더미에 넣는다 — 방금 얻은 카드가 이번 턴에 바로 잡히면 보상이 아니라 마술이다.
+        this.discardPile.push(cardId);
+    }
+
+    /** 덱에서 한 장을 영영 뺀다. 파쇄기가 저주를 버릴 때 쓴다. */
+    private removeFromDeck(cardId: string): boolean {
+        for (const pile of [this.drawPile, this.discardPile]) {
+            const i = pile.indexOf(cardId);
+            if (i >= 0) { pile.splice(i, 1); return true; }
+        }
+        return false;
+    }
+
+    get deckState(): DeckState {
+        const all = [...this.drawPile, ...this.discardPile, ...this.hand.map(c => c.id)];
+        return {
+            draw: this.drawPile.length,
+            discard: this.discardPile.length,
+            total: all.length,
+            curses: all.filter(id => defOf(id)?.kind === "curse").length,
+        };
+    }
+
+    /* ── 손패 ───────────────────────────────────────────── */
+
+    /**
+     * 턴이 시작될 때 덱에서 세 장. 지난 턴 손패는 통째로 버린 더미로 간다.
+     *
+     * 덱이 모자라면 버린 더미를 섞어 되돌린다 — 그래서 얻은 카드가 언젠가는 반드시
+     * 손에 잡히고, 덱이 두꺼울수록 그 "언젠가" 가 멀어진다.
+     */
+    dealHand(): StrategyCard[] {
+        this.discardPile.push(...this.hand.map(c => c.id));
+        this.hand = [];
+        this.picked = null;
+
+        const drawn: string[] = [];
+        for (let i = 0; i < HAND_SIZE; i++) {
+            if (this.drawPile.length === 0) {
+                if (this.discardPile.length === 0) break;   // 덱이 통째로 비었다(파쇄기)
+                this.drawPile = this.shuffled(this.discardPile);
+                this.discardPile = [];
+            }
+            drawn.push(this.drawPile.shift()!);
+        }
+
+        this.hand = drawn.map(id => {
+            const d = defOf(id)!;
+            return {
+                uid: `c${this.seq++}`,
+                id: d.id, name: d.name, type: d.type, kind: d.kind,
+                effectDescription: d.effectDescription, isUsed: false,
+            };
+        });
+        return this.hand;
+    }
+
+    /**
+     * 카드를 고른다. 한 턴에 한 장뿐이다 — 여러 장을 겹치면 첫 턴에 판이 끝난다.
+     * @param uid 그 **장**의 번호. 같은 카드가 두 장 잡혔을 때 어느 쪽인지 갈라야 한다.
+     */
+    playCard(uid: string): boolean {
+        if (this.picked) return false;
+        const card = this.hand.find(c => c.uid === uid);
+        if (!card) return false;
+        const def = defOf(card.id);
+        if (!def) return false;
+
+        this.picked = def;
+        for (const c of this.hand) c.isUsed = c.uid === uid;
+        return true;
+    }
+
+    get pickedCard(): StrategyCard | null {
+        return this.hand.find(c => c.isUsed) ?? null;
+    }
+
+    /* ── 보상 ───────────────────────────────────────────── */
+
+    /** 이 턴을 끝냈을 때 카드 보상이 뜨는가. */
+    isRewardTurn(turn: number): boolean {
+        return REWARD_TURNS.includes(turn);
+    }
+
+    /**
+     * 고르라고 내미는 카드들. **덱에 넣지는 않는다** — 고른 뒤에 takeReward 를 부른다.
+     * 저주는 여기 안 나온다. 저주는 센 카드에 딸려 오는 것이지 고르는 것이 아니다.
+     */
+    offerCards(): StrategyCard[] {
+        return sample(REWARD_IDS, OFFER_SIZE, this.rand).map(id => {
+            const d = defOf(id)!;
+            return {
+                uid: `r${this.seq++}`,
+                id: d.id, name: d.name, type: d.type, kind: d.kind,
+                effectDescription: d.effectDescription, isUsed: false,
+                // 값을 고르기 전에 보여 준다. 고르고 나서 알게 되면 그건 고른 것이 아니다.
+                ...(d.curse ? { curseName: defOf(d.curse)?.name } : {}),
+            };
+        });
+    }
+
+    /**
+     * 보상을 받는다. 저주가 딸린 카드면 저주도 함께 덱에 들어간다.
+     * @returns 함께 들어온 저주의 이름. 없으면 null — 화면이 그 사실을 말해야 한다.
+     */
+    takeReward(cardId: string): string | null {
+        const def = defOf(cardId);
+        if (!def) return null;
+        this.addToDeck(def.id);
+        if (!def.curse) return null;
+        this.addToDeck(def.curse);
+        return defOf(def.curse)?.name ?? null;
     }
 
     /* ── 유물 ───────────────────────────────────────────── */
@@ -153,39 +362,6 @@ export class RoguelikeManager {
         return this.relics.some(r => r.id === id);
     }
 
-    /* ── 손패 ───────────────────────────────────────────── */
-
-    /** 턴이 시작될 때 세 장을 새로 깐다. 지난 턴에 고른 것은 여기서 지워진다. */
-    dealHand(): StrategyCard[] {
-        this.picked = null;
-        this.hand = sample(CARD_POOL, HAND_SIZE, this.rand).map(d => ({
-            id: d.id,
-            name: d.name,
-            type: d.type,
-            effectDescription: d.effectDescription,
-            isUsed: false,
-        }));
-        return this.hand;
-    }
-
-    /**
-     * 카드를 고른다. 한 턴에 한 장뿐이다 — 여러 장을 겹치면 첫 턴에 판이 끝난다.
-     * @returns 골라졌으면 true. 이미 고른 뒤면 false.
-     */
-    playCard(cardId: string): boolean {
-        if (this.picked) return false;
-        const def = CARD_POOL.find(c => c.id === cardId);
-        if (!def) return false;
-
-        this.picked = def;
-        for (const c of this.hand) c.isUsed = c.id === cardId;
-        return true;
-    }
-
-    get pickedCard(): StrategyCard | null {
-        return this.hand.find(c => c.isUsed) ?? null;
-    }
-
     /* ── 이번 턴의 효과 ───────────────────────────────────── */
 
     /**
@@ -205,13 +381,28 @@ export class RoguelikeManager {
 
     /* ── 유물 발동 ───────────────────────────────────────── */
 
-    /** 턴이 열릴 때 터지는 유물. 화면에 띄울 문구를 돌려준다. */
+    /**
+     * 턴이 열릴 때 터지는 유물. 손패를 깐 **뒤에** 불러야 한다 — 파쇄기가 손패를 본다.
+     * @returns 화면에 띄울 문구들.
+     */
     onTurnStart(player: PlayerState): string[] {
         const fired: string[] = [];
+
         if (this.has("compass")) {
             player.insightPoints += 1;
             fired.push("낡은 나침반 — 인사이트 +1");
         }
+
+        // 파쇄기 — 손에 잡힌 저주를 덱 밖으로. 덱을 얇게 만드는 유일한 길이다.
+        if (this.has("shredder")) {
+            const curses = this.hand.filter(c => c.kind === "curse");
+            for (const c of curses) {
+                this.hand = this.hand.filter(x => x.uid !== c.uid);
+                this.removeFromDeck(c.id);
+                fired.push(`파쇄기 — ${c.name} 을(를) 태웠습니다`);
+            }
+        }
+
         return fired;
     }
 

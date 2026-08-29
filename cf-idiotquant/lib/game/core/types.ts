@@ -28,12 +28,33 @@ export interface Stock {
  */
 export type CardType = "price" | "trade" | "instant";
 
+/**
+ * 카드가 어디서 오는가.
+ *
+ *   starter  시작 덱에 들어 있는 것. 약하지만 안정적이다.
+ *   reward   판 도중 보상으로 얻는 것. 세다.
+ *   curse    센 카드에 딸려 오는 것. 덱을 더럽힌다.
+ */
+export type CardKind = "starter" | "reward" | "curse";
+
 export interface StrategyCard {
+    /**
+     * 이 **장**의 번호. 같은 카드를 덱에 두 장 넣을 수 있으므로 id 로는 한 장을 못 짚는다.
+     * 손패에서 무엇을 골랐는지, 어느 장을 버렸는지가 전부 이 값으로 갈린다.
+     */
+    uid: string;
+    /** 카드의 **종류**. 효과는 이 값으로 찾는다. */
     id: string;
     name: string;
     type: CardType;
+    kind: CardKind;
     effectDescription: string;
     isUsed: boolean;
+    /**
+     * 이 카드를 **얻으면** 덱에 함께 들어오는 저주의 이름. 보상 화면이 값을 미리 말하는
+     * 자리라 여기 둔다 — 고르고 나서 알게 되면 그건 고른 것이 아니다.
+     */
+    curseName?: string;
 }
 
 /** 유물이 언제 터지는가. */
@@ -100,6 +121,18 @@ export interface TickResult {
 export type TradeResult =
     | { ok: true; side: "buy" | "sell"; qty: number; price: number; fee: number; cash: number }
     | { ok: false; error: string };
+
+/** 덱이 지금 어떤 상태인가. HUD 한 줄이 이걸 읽는다. */
+export interface DeckState {
+    /** 아직 안 뽑은 장 수 */
+    draw: number;
+    /** 버린 더미 */
+    discard: number;
+    /** 덱 전체 */
+    total: number;
+    /** 그중 저주 — 덱이 얼마나 더러운가 */
+    curses: number;
+}
 
 /** 판이 끝났을 때의 성적. */
 export interface RunSummary {

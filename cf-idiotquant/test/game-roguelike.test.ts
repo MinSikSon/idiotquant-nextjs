@@ -1,15 +1,18 @@
-// 로그라이크 코어 — 카드·유물·진행.
+// 로그라이크 코어 — 덱·카드·유물·진행.
 //
 // 카드 효과는 전부 TurnBuff 한 덩어리로 모여 엔진에 넘어간다. 그래서 엔진을 안 켜고도
 // "이 카드가 무엇을 하는가" 를 여기서 그대로 볼 수 있다.
+//
+// 카드는 전역 풀이 아니라 **내 덱**에서 뽑힌다. 그래서 여기서 확인할 것이 하나 늘었다 —
+// 얻은 카드가 실제로 손에 잡히는가, 그리고 덱이 두꺼워진 값을 치르는가.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { RoguelikeManager, HAND_SIZE } from "@/lib/game/core/RoguelikeManager";
+import { RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE } from "@/lib/game/core/RoguelikeManager";
 import { applyRun, isNewBest, EMPTY, type Progress } from "@/lib/game/core/progress";
 import { NO_BUFF } from "@/lib/game/core/types";
-import type { RunSummary } from "@/lib/game/core/types";
+import type { RunSummary, StrategyCard } from "@/lib/game/core/types";
 
 const run = (returnPct: number, earnedIP = 1, idle = false): RunSummary => ({
     returnPct, earnedIP, idle,
@@ -17,13 +20,24 @@ const run = (returnPct: number, earnedIP = 1, idle = false): RunSummary => ({
     finalEquity: Math.round(10_000_000 * (1 + returnPct / 100)),
 });
 
+/** 그 카드가 손에 잡힐 때까지 턴을 넘긴다. 덱에서 뽑는 이상 몇 턴 걸릴 수 있다. */
+function drawUntil(r: RoguelikeManager, id: string, tries = 80): StrategyCard {
+    for (let i = 0; i < tries; i++) {
+        const got = r.dealHand().find(c => c.id === id);
+        if (got) return got;
+    }
+    throw new Error(`${id} 가 ${tries}턴 안에 안 잡혔다`);
+}
+
 /* ── 손패 ───────────────────────────────────────────────────── */
 
-test("한 턴에 세 장을 깐다 — 겹치지 않는다", () => {
+test("한 턴에 세 장을 깐다 — 같은 카드가 두 장일 수 있다", () => {
+    // 시작 덱에 관망 지시가 둘, 방어막이 둘이다. 겹쳐 잡히는 것이 정상이고, 그래서
+    // 손패를 짚는 열쇠가 id 가 아니라 uid 다.
     const r = new RoguelikeManager(1);
     const hand = r.dealHand();
     assert.equal(hand.length, HAND_SIZE);
-    assert.equal(new Set(hand.map(c => c.id)).size, HAND_SIZE);
+    assert.equal(new Set(hand.map(c => c.uid)).size, HAND_SIZE, "uid 가 겹쳤다");
     assert.ok(hand.every(c => !c.isUsed));
 });
 
@@ -46,8 +60,8 @@ test("한 턴에 한 장만 고를 수 있다", () => {
     // 여러 장을 겹치면 첫 턴에 판이 끝난다
     const r = new RoguelikeManager(3);
     const hand = r.dealHand();
-    assert.equal(r.playCard(hand[0]!.id), true);
-    assert.equal(r.playCard(hand[1]!.id), false);
+    assert.equal(r.playCard(hand[0]!.uid), true);
+    assert.equal(r.playCard(hand[1]!.uid), false);
     assert.equal(hand.filter(c => c.isUsed).length, 1);
 });
 
@@ -60,11 +74,117 @@ test("없는 카드는 안 골라진다", () => {
 test("새 손패를 깔면 지난 턴의 선택이 지워진다", () => {
     const r = new RoguelikeManager(5);
     const first = r.dealHand();
-    r.playCard(first[0]!.id);
+    r.playCard(first[0]!.uid);
     assert.notDeepEqual(r.buildBuff(), NO_BUFF);
 
     r.dealHand();
     assert.deepEqual(r.buildBuff(), NO_BUFF, "지난 턴 카드가 남았다");
+});
+
+/* ── 덱 ─────────────────────────────────────────────────────── */
+
+test("시작 덱은 여섯 장이고, 뽑아도 총 장수는 안 변한다", () => {
+    const r = new RoguelikeManager(1);
+    assert.equal(r.deckState.total, 6);
+    assert.equal(r.deckState.curses, 0);
+
+    r.dealHand();
+    const d = r.deckState;
+    assert.equal(d.draw, 3, "세 장 뽑았으면 셋이 남아야 한다");
+    assert.equal(d.total, 6, "뽑는다고 덱이 줄면 안 된다");
+});
+
+test("덱이 마르면 버린 더미를 섞어 되돌린다", () => {
+    // 여섯 장짜리 덱에서 세 장씩 계속 뽑아도 손패가 마르지 않아야 한다.
+    const r = new RoguelikeManager(2);
+    for (let turn = 0; turn < 12; turn++) {
+        assert.equal(r.dealHand().length, HAND_SIZE, `${turn}턴에 손패가 모자랐다`);
+        assert.equal(r.deckState.total, 6, `${turn}턴에 장수가 새어 나갔다`);
+    }
+});
+
+test("얻은 카드는 이번 턴에 안 잡히고, 언젠가는 반드시 잡힌다", () => {
+    const r = new RoguelikeManager(3);
+    r.dealHand();
+    r.addToDeck("leak");
+    // 버린 더미로 들어가므로 지금 손에는 없다 — 보상이 마술이 되면 안 된다.
+    assert.equal(r.hand.some(c => c.id === "leak"), false);
+    assert.equal(r.deckState.total, 7);
+
+    assert.equal(drawUntil(r, "leak").id, "leak");
+});
+
+test("덱이 두꺼워지면 원하는 카드가 덜 잡힌다", () => {
+    // 로그라이크의 값이 여기 있다. 같은 카드를 두고 덱만 불려서 잡히는 빈도를 잰다.
+    const rate = (padding: number) => {
+        const r = new RoguelikeManager(11);
+        r.addToDeck("leak");
+        for (let i = 0; i < padding; i++) r.addToDeck("delay");
+        let hits = 0;
+        for (let t = 0; t < 120; t++) {
+            if (r.dealHand().some(c => c.id === "leak")) hits++;
+        }
+        return hits;
+    };
+
+    assert.ok(rate(0) > rate(14), "덱을 불려도 잡히는 빈도가 안 줄었다");
+});
+
+/* ── 보상과 저주 ────────────────────────────────────────────── */
+
+test("보상은 3·6·9턴을 끝냈을 때만 뜬다", () => {
+    const r = new RoguelikeManager(4);
+    assert.deepEqual(REWARD_TURNS, [3, 6, 9]);
+    for (let t = 1; t <= 12; t++) {
+        assert.equal(r.isRewardTurn(t), REWARD_TURNS.includes(t), `${t}턴`);
+    }
+});
+
+test("보상으로 저주를 내밀지는 않는다", () => {
+    for (let seed = 0; seed < 20; seed++) {
+        const offer = new RoguelikeManager(seed).offerCards();
+        assert.equal(offer.length, OFFER_SIZE);
+        assert.ok(offer.every(c => c.kind === "reward"), `시드 ${seed} 에 저주가 섞였다`);
+        assert.equal(new Set(offer.map(c => c.id)).size, OFFER_SIZE, "같은 카드를 두 번 내밀었다");
+    }
+});
+
+test("센 카드는 고르기 전에 값을 말한다", () => {
+    // 저주 이름이 카드에 실려 나와야 화면이 "고른다" 를 만들 수 있다.
+    const r = new RoguelikeManager(5);
+    const cursed = ["pump", "leak"];
+    for (let seed = 0; seed < 40; seed++) {
+        for (const c of new RoguelikeManager(seed).offerCards()) {
+            assert.equal(!!c.curseName, cursed.includes(c.id), `${c.id} 의 저주 표시가 틀렸다`);
+        }
+    }
+    assert.equal(r.takeReward("bunker"), null, "저주 없는 카드가 저주를 물고 왔다");
+});
+
+test("저주가 딸린 카드를 받으면 저주도 함께 덱에 들어간다", () => {
+    const r = new RoguelikeManager(6);
+    const before = r.deckState.total;
+
+    const curse = r.takeReward("leak");
+    assert.equal(curse, "당국 조사");
+    assert.equal(r.deckState.total, before + 2, "카드와 저주, 둘이 들어와야 한다");
+    assert.equal(r.deckState.curses, 1);
+});
+
+test("파쇄기는 손에 잡힌 저주를 덱 밖으로 버린다", () => {
+    const r = new RoguelikeManager(7);
+    r.relics = [{ id: "shredder", name: "파쇄기", triggerType: "onTurnStart", description: "" }];
+    r.takeReward("pump");
+    assert.equal(r.deckState.curses, 1);
+
+    const p = { cash: 0, shares: 0, avgPrice: 0, currentTurn: 1, maxTurns: 12, insightPoints: 0 };
+    for (let t = 0; t < 40 && r.deckState.curses > 0; t++) {
+        r.dealHand();
+        r.onTurnStart(p);
+    }
+
+    assert.equal(r.deckState.curses, 0, "저주가 안 타 없어졌다");
+    assert.equal(r.hand.some(c => c.kind === "curse"), false, "탄 카드가 손에 남았다");
 });
 
 /* ── 버프 합성 ──────────────────────────────────────────────── */
@@ -77,7 +197,6 @@ test("아무것도 없으면 아무 일도 안 일어난다", () => {
 });
 
 test("카드마다 건드리는 곳이 다르다", () => {
-    // 카드가 나올 때까지 손패를 다시 깐다 — 카드 풀에서 뽑히는 것이라 시드마다 다르다
     const want: Record<string, (b: ReturnType<RoguelikeManager["buildBuff"]>) => boolean> = {
         insider: b => b.priceBias > 0,
         nofee: b => b.feeWaived,
@@ -85,19 +204,17 @@ test("카드마다 건드리는 곳이 다르다", () => {
         shield: b => b.downshieldRatio > 0,
         volatile: b => b.volatilityMult > 1,
         steady: b => b.volatilityMult < 1,
+        bunker: b => b.downshieldRatio > 0.5,
     };
 
     for (const [id, check] of Object.entries(want)) {
-        let hit = false;
-        for (let seed = 0; seed < 60 && !hit; seed++) {
-            const r = new RoguelikeManager(seed);
-            r.relics = [];
-            if (!r.dealHand().some(c => c.id === id)) continue;
-            r.playCard(id);
-            assert.equal(check(r.buildBuff()), true, `${id} 가 아무것도 안 바꿨다`);
-            hit = true;
-        }
-        assert.equal(hit, true, `${id} 카드가 60개 시드에서 한 번도 안 나왔다`);
+        const r = new RoguelikeManager(7);
+        r.relics = [];
+        // 시작 덱에 없는 카드(보상)는 넣어 두고 잡는다. 덱에서 뽑는 이상 다른 길이 없다.
+        r.addToDeck(id);
+        const card = drawUntil(r, id);
+        assert.equal(r.playCard(card.uid), true, `${id} 를 못 골랐다`);
+        assert.equal(check(r.buildBuff()), true, `${id} 가 아무것도 안 바꿨다`);
     }
 });
 
@@ -109,16 +226,11 @@ test("유물이 먼저 깔리고 카드가 그 위에 쌓인다", () => {
     const onlyRelic = r.buildBuff();
     assert.ok(onlyRelic.priceBias > 0, "유물이 안 얹혔다");
 
-    // 같은 자리를 건드리는 카드가 나올 때까지 찾는다
-    for (let seed = 0; seed < 60; seed++) {
-        const r2 = new RoguelikeManager(seed);
-        r2.relics = [...r.relics];
-        if (!r2.dealHand().some(c => c.id === "insider")) continue;
-        r2.playCard("insider");
-        assert.ok(r2.buildBuff().priceBias > onlyRelic.priceBias, "카드가 유물을 덮었다");
-        return;
-    }
-    assert.fail("인사이더 호재가 60개 시드에서 한 번도 안 나왔다");
+    const r2 = new RoguelikeManager(7);
+    r2.relics = [...r.relics];
+    const card = drawUntil(r2, "insider");
+    r2.playCard(card.uid);
+    assert.ok(r2.buildBuff().priceBias > onlyRelic.priceBias, "카드가 유물을 덮었다");
 });
 
 test("단골 브로커는 카드 없이도 수수료를 면제한다", () => {
