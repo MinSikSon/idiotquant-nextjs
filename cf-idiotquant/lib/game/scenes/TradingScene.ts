@@ -19,6 +19,7 @@ import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
 import type { Relic, TradeResult } from "@/lib/game/core/types";
+import { loadProgress, recordRun } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { W, H, BAND, PAD, C, S, FONT, FS, money, pct, tone } from "@/lib/game/ui/theme";
@@ -112,8 +113,12 @@ export class TradingScene extends Phaser.Scene {
     constructor() { super("trading"); }
 
     init(data: { insightPoints?: number }) {
-        // 첫 판은 config.ts 가 registry 에 넣어 준 값에서, 재시작은 restart(data) 에서 온다.
-        this.carriedIP = data?.insightPoints ?? (this.game.registry.get("insightPoints") as number) ?? 0;
+        // 이어서 굴리는 판(restart)은 넘겨받은 값을, 새로 켠 판은 저장된 진행을 쓴다.
+        // config 가 값을 준 경우(임베드·테스트)는 그것이 이긴다.
+        this.carriedIP =
+            data?.insightPoints
+            ?? (this.game.registry.get("insightPoints") as number | undefined)
+            ?? loadProgress().insightPoints;
         this.busy = false;
     }
 
@@ -368,6 +373,9 @@ export class TradingScene extends Phaser.Scene {
     private finish() {
         this.engine.liquidate();
         const sum = this.engine.summarize();
+        // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만
+        // 그건 이 판 안의 값이고, 판을 넘어 남는 것은 progress 가 들고 있다.
+        const { progress, newBest } = recordRun(sum);
         this.refresh();
 
         const box = this.add.container(0, 0);
@@ -390,14 +398,17 @@ export class TradingScene extends Phaser.Scene {
                 wordWrap: { width: pw - 30 },
             }).setOrigin(0.5, 0));
 
-        t(py + 22, "RUN COMPLETE", FS.md, S.inkDim);
+        t(py + 22, newBest ? "RUN COMPLETE — 새 기록" : "RUN COMPLETE", FS.md,
+            newBest ? S.neon : S.inkDim);
         t(py + 48, pct(sum.returnPct), FS.xxl, tone(sum.returnPct));
         t(py + 100, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
         t(py + 134, sum.idle
             ? "한 주도 사지 않았습니다 — 인사이트 없음"
             : `인사이트 +${sum.earnedIP}`, FS.md, sum.idle ? S.danger : S.gold);
-        t(py + 162, `누적 IP ${this.engine.player.insightPoints}`, FS.sm, S.inkDim);
-        t(py + 186, this.rogue.relics.length > 0
+        t(py + 162, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`, FS.sm, S.inkDim);
+        t(py + 182, progress.bestReturn !== null ? `최고 기록 ${pct(progress.bestReturn)}` : "",
+            FS.sm, newBest ? S.neon : S.inkDim);
+        t(py + 204, this.rogue.relics.length > 0
             ? `유물 ${this.rogue.relics.map(r => r.name).join(" · ")}`
             : "유물 없음", FS.xs, S.inkDim);
 
@@ -405,7 +416,7 @@ export class TradingScene extends Phaser.Scene {
             "RESTART >", () => {
                 box.destroy(true);
                 // 인사이트만 들고 다음 런으로. 유물도 카드도 새로 뽑힌다.
-                this.scene.restart({ insightPoints: this.engine.player.insightPoints });
+                this.scene.restart({ insightPoints: progress.insightPoints });
             }, { tone: "go", size: FS.lg });
         box.add(restart.root);
     }
