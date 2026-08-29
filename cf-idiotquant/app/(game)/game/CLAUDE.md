@@ -25,11 +25,14 @@
 
 | 규칙이 말하는 곳 | 이 레포의 자리 | 지금 무엇이 있나 |
 |---|---|---|
-| `src/core/StockEngine.ts` | `lib/paper/engine.ts` · `lib/paper/localRound.ts` | 체결·수수료·거래세·청산. **테스트가 붙어 있다** |
-| `src/core/RoguelikeManager.ts` | (아직 없음) | 카드·유물을 넣을 때 `lib/game/` 아래에 만든다 |
-| `src/scenes/TradingScene.ts` | `lib/game/scenes/PlayScene.ts` | Phaser 렌더링·입력 |
-| — | `lib/game/{theme,ui,chart,data,boot}.ts` | 색·조각·캔들·데이터·부팅 |
-| — | `app/(game)/game/page.tsx` · `GameCanvas.tsx` | 캔버스를 붙이는 React 껍데기 |
+| `src/core/StockEngine.ts` | `lib/game/core/StockEngine.ts` | 12턴 주가 틱·체결·수수료. **Phaser 를 모른다** |
+| `src/core/RoguelikeManager.ts` | `lib/game/core/RoguelikeManager.ts` | 덱·손패·보상·저주·유물. 여기도 Phaser 를 모른다 |
+| `src/scenes/TradingScene.ts` | `lib/game/scenes/TradingScene.ts` | Phaser 렌더링·입력·오버레이 |
+| — | `lib/game/core/{types,progress}.ts` | 값의 모양 / 판을 넘어 남는 것(localStorage) |
+| — | `lib/game/components/{PixelCandleChart,CardHandContainer}.ts` | 차트·손패 |
+| — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
+| — | `app/(game)/game/roguelike/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
+| — | `lib/paper/*` · `lib/game/{theme,ui,chart,data,boot}.ts` | **다른 게임**(블라인드 차트 `/game`). 헷갈리지 말 것 |
 | — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용 |
 
 **"순수 로직과 Phaser 뷰를 가른다"** 는 규칙은 이미 지켜지고 있다. Scene 은 규칙을
@@ -41,15 +44,18 @@
 
 1. **Vite 가 아니다.** Next.js 15 App Router 안이고, Phaser 는 `/game` 에 들어올 때만
    `dynamic(..., { ssr: false })` 로 내려간다. `vite.config.*` 를 만들지 말 것.
-2. **해상도가 390x844 가 아니라 360x640** 이다(`lib/game/theme.ts` 의 `W`·`H`).
-   `pixelArt: true`, `Scale.FIT` 는 규칙대로다. 390x844 로 옮기면 390px 폰에서 배율이
-   정확히 1.0 이 되어 픽셀 폰트가 더 또렷해지지만, 세로가 204px 늘어 세 Scene 의 배치를
-   전부 다시 잡아야 한다. **옮길 때는 세 Scene 을 같이 고칠 것.**
-3. **로그라이크가 아직 없다.** 지금은 12턴이 아니라 캔들 41일 한 판이고, 카드도 유물도
-   없다. 넣을 때 붙일 자리:
-   - 턴 = `advanceLocal` 한 번. 판 길이는 `lib/paper/round.ts` 의 `TOTAL_DAYS`·`CONTEXT_DAYS`
-   - 카드 패·유물 발동 = 새 `RoguelikeManager` (순수 함수로)
-   - 화면 = `PlayScene` 아래쪽 매매 버튼 자리
+2. **게임이 둘이다.** `/game` 은 블라인드 차트(360x640, `lib/game/theme.ts`·`lib/paper`),
+   `/game/roguelike` 는 이 규칙이 말하는 12턴 로그라이크(390x844, `lib/game/core`·
+   `lib/game/ui/theme.ts`)다. 파일 이름이 비슷하니 고치기 전에 어느 쪽인지 확인할 것.
+3. **카드는 전역 풀이 아니라 덱에서 뽑힌다.** 시작 덱 6장 → 매 턴 3장 → 쓴 것도 안 쓴
+   것도 버린 더미로 → 마르면 섞어 되돌린다. 그래서:
+   - 손패를 짚는 열쇠는 `id`(카드 종류)가 아니라 **`uid`(그 장)** 다. 시작 덱에만도 같은
+     카드가 두 장씩 있어 `id` 로 짚으면 두 장이 함께 눌린다.
+   - 3·6·9턴을 끝내면 보상 카드 셋 중 하나를 덱에 넣는다(`REWARD_TURNS`). **건너뛸 수
+     있다** — 덱이 두꺼워지면 원하는 카드가 덜 잡히는 것이 이 게임의 값이다.
+   - 가장 센 카드(`pump`·`leak`)에는 저주가 딸려 온다. 유물 `shredder` 만이 덱을 얇게 한다.
+   - `TradingScene.beginTurn` 은 **`dealHand()` 를 `onTurnStart()` 보다 먼저** 부른다.
+     파쇄기가 손에 잡힌 저주를 보고 태우는 유물이라 순서를 바꾸면 조용히 안 터진다.
 
 ### 손대면 안 되는 것
 
@@ -62,8 +68,12 @@
 캔버스는 DOM 셀렉터가 없어 Playwright 가 **좌표로** 누른다. 배치를 바꾸면 테스트가 조용히
 어긋나므로, Scene 배치를 고쳤으면 스크린샷으로 눈으로 확인한다.
 
+글꼴도 마찬가지다. 캔버스는 CSS 로 글꼴을 못 받으므로 `PhaserGame.tsx` 가 host 의
+계산된 `font-family` 를 읽어 registry 에 넣고, Scene 은 `fontOf(scene)` 으로 꺼내 쓴다.
+`theme.ts` 의 `FONT` 를 직접 쓰면 웹폰트가 아니라 시스템 고정폭으로 그려진다.
+
 ```
 npx tsc --noEmit          # 에러 0
-npm test                  # lib/paper 규칙 테스트
-npm run build             # /game 라우트가 뜨는지
+npm test                  # lib/paper + lib/game/core 규칙 테스트
+npm run build             # /game · /game/roguelike 라우트가 뜨는지
 ```

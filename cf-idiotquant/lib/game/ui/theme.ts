@@ -2,6 +2,10 @@
 //
 // 컴포넌트마다 색을 적어 두면 어느 날 한쪽만 바뀐다. 씬이 셋만 돼도 그렇다.
 
+// 타입만 받는다 — 이 파일이 Phaser 를 실제로 부르면 상수를 읽으려던 자리가 전부
+// 브라우저 전용이 된다. `import type` 은 컴파일에서 통째로 지워진다.
+import type Phaser from "phaser";
+
 /** 설계 해상도 — 폰 세로 화면. 실제 기기에는 Scale.FIT 로 늘어난다. */
 export const W = 390;
 export const H = 844;
@@ -48,8 +52,19 @@ export const S = {
     danger: "#ff5ec8",
 } as const;
 
-/** 도트 느낌을 살리려면 굵기 없는 고정폭이 낫다. 시스템 글꼴만 쓴다(웹폰트 없음). */
+/** 웹폰트가 아직 안 왔거나 못 읽었을 때 떨어지는 자리. 굵기 없는 고정폭이면 된다. */
 export const FONT = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
+
+/**
+ * 실제로 그릴 글꼴.
+ *
+ * next/font 가 만든 패밀리 이름은 빌드마다 바뀌는 해시라 여기 손으로 적을 수 없다.
+ * React 껍데기(PhaserGame.tsx)가 DOM 에서 읽어 registry 에 넣어 둔 값을 쓰고, 그게
+ * 없으면 위의 시스템 고정폭으로 떨어진다 — 글꼴 하나 때문에 판이 안 켜지면 안 된다.
+ */
+export function fontOf(scene: Phaser.Scene): string {
+    return (scene.game.registry.get("fontFamily") as string) || FONT;
+}
 
 export const FS = { xs: 10, sm: 12, md: 14, lg: 18, xl: 26, xxl: 40 } as const;
 

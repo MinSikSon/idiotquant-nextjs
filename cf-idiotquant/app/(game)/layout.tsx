@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
 
 /**
  * 한글 픽셀 폰트 — 게임 라우트에만.
@@ -22,6 +23,31 @@ const galmuri = localFont({
     fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 });
 
+/**
+ * 로그라이크가 쓰는 글꼴 — 숫자와 라틴은 IBM Plex Mono, 한글은 IBM Plex Sans KR.
+ *
+ * 고정폭 하나로 끝나지 않는 이유: Plex Mono 에는 한글이 없다. 한글만 시스템 글꼴로
+ * 떨어지면 카드 이름과 HUD 숫자가 서로 다른 시대의 물건처럼 보인다.
+ *
+ * KR 쪽은 `subsets` 를 안 준다 — next/font 가 아는 이 글꼴의 subset 목록에 `korean` 이
+ * 없어서, 이름을 붙여 고르면 오히려 한글이 빠진다. 대신 preload 를 끈다(subset 을 안
+ * 주면 preload 를 켤 수 없고, 어차피 unicode-range 로 갈려 있어 브라우저가 쓰는 조각만
+ * 받아 간다).
+ */
+const plexMono = IBM_Plex_Mono({
+    weight: ["400", "600"],
+    subsets: ["latin"],
+    variable: "--font-plex-mono",
+    display: "swap",
+});
+
+const plexKr = IBM_Plex_Sans_KR({
+    weight: ["400", "600"],
+    preload: false,
+    variable: "--font-plex-kr",
+    display: "swap",
+});
+
 export const metadata: Metadata = {
     title: "내 운용사 - 블라인드 차트 리플레이 투자 게임",
     description:
@@ -42,5 +68,12 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     // id 는 표시용이 아니라 표식이다. global.css 의 html:has(#game-canvas) 규칙이 이걸 보고
     // 문서 뿌리까지 기기의 어둠으로 칠한다 — 고무줄 스크롤로 드러나는 자리가 거기다.
     // 페이지가 아니라 레이아웃에 다는 이유는 불러오는 중에도 그 어둠이 있어야 해서다.
-    return <div id="game-canvas" className={galmuri.variable}>{children}</div>;
+    return (
+        <div
+            id="game-canvas"
+            className={`${galmuri.variable} ${plexMono.variable} ${plexKr.variable}`}
+        >
+            {children}
+        </div>
+    );
 }

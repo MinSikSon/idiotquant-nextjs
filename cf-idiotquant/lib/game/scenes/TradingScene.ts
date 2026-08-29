@@ -18,11 +18,11 @@
 import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
-import type { Relic, TradeResult } from "@/lib/game/core/types";
+import type { Relic, StrategyCard, TradeResult } from "@/lib/game/core/types";
 import { loadProgress, recordRun } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
-import { W, H, BAND, PAD, C, S, FONT, FS, money, pct, tone } from "@/lib/game/ui/theme";
+import { W, H, BAND, PAD, C, S, FS, fontOf, money, pct, tone } from "@/lib/game/ui/theme";
 
 /* ── 버튼 ───────────────────────────────────────────────────── */
 
@@ -52,7 +52,7 @@ function makeButton(
     const root = scene.add.container(x, y);
     const g = scene.add.graphics();
     const t = scene.add.text(w / 2, h / 2, text, {
-        fontFamily: FONT, fontSize: `${o.size ?? FS.md}px`, color: skin.ink, align: "center",
+        fontFamily: fontOf(scene), fontSize: `${o.size ?? FS.md}px`, color: skin.ink, align: "center",
     }).setOrigin(0.5);
 
     let enabled = true;
@@ -98,6 +98,7 @@ export class TradingScene extends Phaser.Scene {
     private ipText!: Phaser.GameObjects.Text;
     private newsText!: Phaser.GameObjects.Text;
     private posText!: Phaser.GameObjects.Text;
+    private deckText!: Phaser.GameObjects.Text;
 
     private relicRow!: Phaser.GameObjects.Container;
     private buyHalfBtn!: Btn;
@@ -159,11 +160,11 @@ export class TradingScene extends Phaser.Scene {
         g.beginPath(); g.moveTo(0, b.y + b.h - 0.5); g.lineTo(W, b.y + b.h - 0.5); g.strokePath();
 
         const mk = (x: number, y: number, size: number, color: string, origin = 0) =>
-            this.add.text(x, y, "", { fontFamily: FONT, fontSize: `${size}px`, color })
+            this.add.text(x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
                 .setOrigin(origin, 0);
 
         this.add.text(PAD, b.y + 8, "TOTAL", {
-            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.inkDim,
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
         this.equityText = mk(PAD, b.y + 20, FS.xl, S.ink);
 
@@ -172,9 +173,13 @@ export class TradingScene extends Phaser.Scene {
         this.cashText = mk(W - PAD, b.y + 44, FS.xs, S.inkDim, 1);
         this.posText = mk(PAD, b.y + 54, FS.sm, S.inkDim);
 
+        // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
+        // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
+        this.deckText = mk(W - PAD, b.y + 58, FS.xs, S.inkDim, 1);
+
         // 뉴스 티커 — 한 줄. 넘치면 잘리게 두고 줄바꿈하지 않는다(HUD 높이가 고정이다).
         this.newsText = this.add.text(PAD, b.y + 78, "", {
-            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.gold, fixedWidth: W - PAD * 2,
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold, fixedWidth: W - PAD * 2,
         });
     }
 
@@ -189,7 +194,7 @@ export class TradingScene extends Phaser.Scene {
         // 종목 이름은 차트 위에 겹쳐 둔다 — 칸을 따로 만들면 차트가 그만큼 준다.
         this.add.text(W - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
             `${this.engine.stock.name} ${this.engine.stock.ticker}`, {
-            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.inkDim,
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         }).setOrigin(1, 0);
     }
 
@@ -199,12 +204,12 @@ export class TradingScene extends Phaser.Scene {
         const b = BAND.cards;
 
         this.add.text(PAD, b.y + 4, "RELICS", {
-            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.inkDim,
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
         this.relicRow = this.add.container(PAD, b.y + 18);
 
         this.add.text(PAD, b.y + 52, "STRATEGY — 한 턴에 한 장", {
-            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.inkDim,
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
 
         this.hand = new CardHandContainer(this, {
@@ -220,7 +225,7 @@ export class TradingScene extends Phaser.Scene {
 
         if (this.rogue.relics.length === 0) {
             this.relicRow.add(this.add.text(0, 6, "없음", {
-                fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.inkDim,
+                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
             }));
             return;
         }
@@ -232,7 +237,7 @@ export class TradingScene extends Phaser.Scene {
             g.lineStyle(1, C.gold, 1).strokeRect(x + 0.5, 0.5, size - 1, size - 1);
 
             const ch = this.add.text(x + size / 2, size / 2, relic.name.slice(0, 1), {
-                fontFamily: FONT, fontSize: `${FS.md}px`, color: S.gold,
+                fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
             }).setOrigin(0.5);
 
             // 폰에는 hover 가 없다 — 누르면 설명이 뉴스 줄에 뜬다.
@@ -268,8 +273,11 @@ export class TradingScene extends Phaser.Scene {
     /* ── 턴 ─────────────────────────────────────────────── */
 
     private beginTurn() {
+        // 순서가 중요하다: 손패를 **먼저** 깔고 유물을 터뜨린다. 파쇄기는 손에 잡힌 저주를
+        // 보고 태우는 유물이라, 반대로 하면 태울 것이 아직 없다.
+        this.rogue.dealHand();
         const fired = this.rogue.onTurnStart(this.engine.player);
-        this.hand.setHand(this.rogue.dealHand());
+        this.hand.setHand(this.rogue.hand);
         this.renderRelics();
         this.busy = false;
 
@@ -278,11 +286,13 @@ export class TradingScene extends Phaser.Scene {
         else this.say(`${this.engine.player.currentTurn}턴 — 카드를 고르고 매매하세요.`, S.inkDim);
     }
 
-    private onPickCard(id: string) {
+    /** @param uid 그 **장**의 번호. 덱에 같은 카드가 여러 장이라 id 로는 못 짚는다. */
+    private onPickCard(uid: string) {
         if (this.busy) return;
-        const card = this.rogue.hand.find(c => c.id === id);
-        if (this.rogue.playCard(id) && card) {
-            this.say(`${card.name} — ${card.effectDescription}`, S.neon);
+        const card = this.rogue.hand.find(c => c.uid === uid);
+        if (this.rogue.playCard(uid) && card) {
+            this.say(`${card.name} — ${card.effectDescription}`,
+                card.kind === "curse" ? S.danger : S.neon);
         }
     }
 
@@ -309,6 +319,8 @@ export class TradingScene extends Phaser.Scene {
         if (this.busy) return;
         this.busy = true;
 
+        // advanceTurn 뒤에는 이미 다음 턴 번호다. 보상은 **끝낸** 턴을 보고 뜬다.
+        const finished = this.engine.player.currentTurn;
         const buff = this.rogue.buildBuff();
         const tickRes = this.engine.tick(buff);
         const endFired = this.rogue.onTurnEnd(this.engine.player, tickRes.changePct);
@@ -332,8 +344,103 @@ export class TradingScene extends Phaser.Scene {
         // 봉이 하나 자라는 것을 눈이 따라갈 시간을 준다. 바로 넘기면 무엇이 변했는지 모른다.
         this.time.delayedCall(420, () => {
             if (this.engine.isOver) this.finish();
+            else if (this.rogue.isRewardTurn(finished)) this.showReward();
             else this.beginTurn();
         });
+    }
+
+    /* ── 카드 보상 (3·6·9턴을 끝냈을 때) ──────────────────── */
+
+    /**
+     * 덱에 넣을 카드를 고르는 자리. **건너뛸 수 있다** — 그게 이 화면의 요점이다.
+     *
+     * 센 카드는 덱을 두껍게 만들고(원하는 카드가 덜 잡힌다) 어떤 것은 저주까지 끌고 온다.
+     * 그래서 "안 고르는 것" 이 늘 손해가 아니고, 그 판단이 로그라이크의 몸통이다.
+     */
+    private showReward() {
+        const offer = this.rogue.offerCards();
+        // 보상 풀이 마르는 일은 없지만, 비면 그냥 다음 턴으로 넘긴다.
+        if (offer.length === 0) { this.beginTurn(); return; }
+
+        const rowH = 72, rowGap = 8;
+        const pw = W - 40, px = 20;
+        const ph = 58 + offer.length * (rowH + rowGap) + 62;
+        const py = Math.round((H - ph) / 2);
+
+        const box = this.add.container(0, 0);
+        const g = this.add.graphics();
+        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, H);
+        g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
+        g.lineStyle(2, C.gold, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
+        box.add(g);
+        // 오버레이 뒤를 못 누르게. busy 가 아직 true 라 눌려도 아무 일이 없지만, 눌린
+        // 것처럼 보이는 것만으로도 화면이 거짓말을 한다.
+        box.add(this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive());
+
+        box.add(this.add.text(W / 2, py + 16, "CARD REWARD", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
+        }).setOrigin(0.5, 0));
+        box.add(this.add.text(W / 2, py + 32, "한 장을 덱에 넣습니다", {
+            fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
+        }).setOrigin(0.5, 0));
+
+        const close = (note: string, color: string) => {
+            box.destroy(true);
+            this.beginTurn();
+            this.say(note, color);
+        };
+
+        offer.forEach((card, i) => {
+            box.add(this.makeOfferRow(
+                px + 16, py + 58 + i * (rowH + rowGap), pw - 32, rowH, card,
+                () => {
+                    const curse = this.rogue.takeReward(card.id);
+                    close(
+                        curse ? `${card.name} 획득 — 저주 ${curse} 도 덱에` : `${card.name} 을(를) 덱에`,
+                        curse ? S.danger : S.neon,
+                    );
+                },
+            ));
+        });
+
+        const skip = makeButton(this, px + 16, py + ph - 62, pw - 32, 46,
+            "건너뛰기 — 덱을 얇게", () => close("덱을 그대로 뒀습니다", S.inkDim),
+            { tone: "plain", size: FS.sm });
+        box.add(skip.root);
+    }
+
+    /** 보상 카드 한 줄. 딸린 저주가 있으면 **고르기 전에** 이름을 보여 준다. */
+    private makeOfferRow(
+        x: number, y: number, w: number, h: number,
+        card: StrategyCard, onTake: () => void,
+    ): Phaser.GameObjects.Container {
+        const root = this.add.container(x, y);
+        const cursed = !!card.curseName;
+        const edge = cursed ? C.danger : C.neon;
+
+        const g = this.add.graphics();
+        g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
+        g.lineStyle(1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+
+        const name = this.add.text(10, 9, card.name, {
+            fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: cursed ? S.danger : S.neon,
+        });
+        const desc = this.add.text(10, 32, card.effectDescription, {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
+            wordWrap: { width: w - 20 }, lineSpacing: 2,
+        });
+
+        const zone = this.add.zone(0, 0, w, h).setOrigin(0, 0)
+            .setInteractive({ useHandCursor: true });
+        zone.on("pointerup", onTake);
+
+        root.add([g, name, desc, zone]);
+        if (cursed) {
+            root.add(this.add.text(w - 10, 11, `+저주 ${card.curseName}`, {
+                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.danger,
+            }).setOrigin(1, 0));
+        }
+        return root;
     }
 
     /* ── 그리기 ─────────────────────────────────────────── */
@@ -348,6 +455,13 @@ export class TradingScene extends Phaser.Scene {
         this.cashText.setText(`현금 ${money(p.cash)}`);
         this.turnText.setText(`TURN ${Math.min(p.currentTurn, p.maxTurns)}/${p.maxTurns}`);
         this.ipText.setText(`IP ${p.insightPoints}`);
+
+        // 남은 장 / 덱 전체. 저주가 섞이면 그 수를 붙이고 색을 바꾼다 — 덱이 더러워진 것을
+        // 숫자 하나로 알아야 다음 보상에서 건너뛸 마음이 생긴다.
+        const d = this.rogue.deckState;
+        this.deckText
+            .setText(d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses}` : `DECK ${d.draw}/${d.total}`)
+            .setColor(d.curses > 0 ? S.danger : S.inkDim);
 
         this.posText.setText(
             p.shares > 0
@@ -394,7 +508,7 @@ export class TradingScene extends Phaser.Scene {
         const mid = W / 2;
         const t = (y: number, s: string, size: number, color: string) =>
             box.add(this.add.text(mid, y, s, {
-                fontFamily: FONT, fontSize: `${size}px`, color, align: "center",
+                fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
                 wordWrap: { width: pw - 30 },
             }).setOrigin(0.5, 0));
 
