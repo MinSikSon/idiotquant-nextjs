@@ -4,8 +4,8 @@
 // RoguelikeManager 가 정한다 — 그래서 카드를 하나 더 만들 때 이 파일을 안 고친다.
 
 import Phaser from "phaser";
-import type { StrategyCard } from "@/core/types";
-import { C, S, FONT, FS } from "@/ui/theme";
+import type { StrategyCard } from "@/lib/game/core/types";
+import { C, S, FONT, FS } from "@/lib/game/ui/theme";
 
 export interface CardHandOpts {
     x: number;

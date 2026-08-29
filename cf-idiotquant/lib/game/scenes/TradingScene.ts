@@ -1,6 +1,6 @@
-// 판이 도는 화면. 코어가 낸 값을 그리고, 손가락이 누른 것을 코어로 넘긴다.
+// 판이 도는 화면 — 도트 스타일 기본 틀.
 //
-// **여기에 규칙을 쓰지 않는다.** 주가도 체결도 카드 효과도 전부 src/core 에서 온다.
+// **여기에 규칙을 쓰지 않는다.** 주가도 체결도 카드 효과도 전부 lib/game/core 에서 온다.
 // 이 파일에 `price * 1.1` 같은 식이 생기면 그건 코어로 가야 할 것이 새어 나온 것이다.
 //
 // ── 한 턴의 순서 ────────────────────────────────────────────────
@@ -9,16 +9,21 @@
 //
 // 매매가 tick 앞에 오는 것이 이 게임의 전부다. **주가가 움직이기 전에** 살지 말지를
 // 정해야 해서, 카드로 읽은 것을 손에 쥐고 거는 판이 된다.
+//
+// ── 늘릴 자리 ───────────────────────────────────────────────────
+//   · 종목을 여럿으로   → StockEngine 을 배열로 들고 chart 를 자리마다
+//   · 상점·이벤트 턴    → Scene 을 하나 더 만들고 config.ts 의 scene 배열에 얹는다
+//   · 연출(체결 이펙트) → this.tweens. 엔진은 안 건드린다
 
 import Phaser from "phaser";
-import { StockEngine, START_CASH } from "@/core/StockEngine";
-import { RoguelikeManager } from "@/core/RoguelikeManager";
-import type { Relic, TradeResult } from "@/core/types";
-import { PixelCandleChart } from "@/components/PixelCandleChart";
-import { CardHandContainer } from "@/components/CardHandContainer";
-import { W, H, BAND, PAD, C, S, FONT, FS, money, pct, tone } from "@/ui/theme";
+import { StockEngine } from "@/lib/game/core/StockEngine";
+import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
+import type { Relic, TradeResult } from "@/lib/game/core/types";
+import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
+import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
+import { W, H, BAND, PAD, C, S, FONT, FS, money, pct, tone } from "@/lib/game/ui/theme";
 
-/* ── 작은 조각들 ─────────────────────────────────────────────── */
+/* ── 버튼 ───────────────────────────────────────────────────── */
 
 interface BtnOpts {
     tone?: "plain" | "buy" | "sell" | "go";
@@ -72,11 +77,7 @@ function makeButton(
 
     return {
         root,
-        setEnabled(v: boolean) {
-            enabled = v;
-            root.setAlpha(v ? 1 : 0.35);
-            draw(false);
-        },
+        setEnabled(v: boolean) { enabled = v; root.setAlpha(v ? 1 : 0.35); draw(false); },
         setLabel(s: string) { t.setText(s); },
     };
 }
@@ -105,14 +106,14 @@ export class TradingScene extends Phaser.Scene {
 
     /** 턴을 넘기는 동안 두 번 눌리지 않게. */
     private busy = false;
-
     /** 판을 넘어 남는 것. 재시작할 때 이 값만 들고 간다. */
     private carriedIP = 0;
 
     constructor() { super("trading"); }
 
     init(data: { insightPoints?: number }) {
-        this.carriedIP = data?.insightPoints ?? 0;
+        // 첫 판은 config.ts 가 registry 에 넣어 준 값에서, 재시작은 restart(data) 에서 온다.
+        this.carriedIP = data?.insightPoints ?? (this.game.registry.get("insightPoints") as number) ?? 0;
         this.busy = false;
     }
 
@@ -125,12 +126,22 @@ export class TradingScene extends Phaser.Scene {
         this.rogue = new RoguelikeManager(seed);
         this.rogue.grantStartingRelics(this.carriedIP);
 
+        this.drawDotGrid();
         this.buildHud();
         this.buildChart();
         this.buildCardArea();
         this.buildActions();
 
         this.beginTurn();
+    }
+
+    /** 화면 전체에 깔리는 도트. 이게 있어야 어두운 바탕이 "꺼진 화면" 이 아니라 기기가 된다. */
+    private drawDotGrid() {
+        const g = this.add.graphics();
+        g.fillStyle(C.line, 0.22);
+        for (let y = 6; y < H; y += 14) {
+            for (let x = 6; x < W; x += 14) g.fillRect(x, y, 1, 1);
+        }
     }
 
     /* ── ① 상단 HUD (y 0~100) ─────────────────────────────── */
@@ -154,13 +165,11 @@ export class TradingScene extends Phaser.Scene {
         this.turnText = mk(W - PAD, b.y + 8, FS.sm, S.neon, 1);
         this.ipText = mk(W - PAD, b.y + 26, FS.sm, S.gold, 1);
         this.cashText = mk(W - PAD, b.y + 44, FS.xs, S.inkDim, 1);
-
         this.posText = mk(PAD, b.y + 54, FS.sm, S.inkDim);
 
         // 뉴스 티커 — 한 줄. 넘치면 잘리게 두고 줄바꿈하지 않는다(HUD 높이가 고정이다).
         this.newsText = this.add.text(PAD, b.y + 78, "", {
-            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.gold,
-            fixedWidth: W - PAD * 2,
+            fontFamily: FONT, fontSize: `${FS.xs}px`, color: S.gold, fixedWidth: W - PAD * 2,
         });
     }
 
@@ -172,7 +181,6 @@ export class TradingScene extends Phaser.Scene {
             x: PAD, y: b.y + PAD, width: W - PAD * 2, height: b.h - PAD * 2,
         });
 
-        this.add.text(PAD + 6, b.y + PAD + 4, "", { fontFamily: FONT, fontSize: `${FS.xs}px` });
         // 종목 이름은 차트 위에 겹쳐 둔다 — 칸을 따로 만들면 차트가 그만큼 준다.
         this.add.text(W - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
             `${this.engine.stock.name} ${this.engine.stock.ticker}`, {
@@ -238,7 +246,6 @@ export class TradingScene extends Phaser.Scene {
         const w = W - PAD * 2;
         const gap = 8;
         const third = Math.floor((w - gap * 2) / 3);
-
         const rowY = b.y + 10;
         const rowH = 62;
 
@@ -311,12 +318,11 @@ export class TradingScene extends Phaser.Scene {
             if (got) relicNote = `유물 획득 — ${got.name}`;
         }
 
-        const parts = [
-            tickRes.news ?? `${pct(tickRes.changePct)}`,
+        this.say([
+            tickRes.news ?? pct(tickRes.changePct),
             ...endFired,
             ...(relicNote ? [relicNote] : []),
-        ];
-        this.say(parts.join(" · "), tickRes.changePct >= 0 ? S.up : S.down);
+        ].join(" · "), tickRes.changePct >= 0 ? S.up : S.down);
 
         // 봉이 하나 자라는 것을 눈이 따라갈 시간을 준다. 바로 넘기면 무엇이 변했는지 모른다.
         this.time.delayedCall(420, () => {
@@ -354,8 +360,7 @@ export class TradingScene extends Phaser.Scene {
 
     /** 뉴스 티커 한 줄. 길면 잘라 둔다 — HUD 높이는 고정이다. */
     private say(msg: string, color: string) {
-        const line = msg.length > 46 ? `${msg.slice(0, 45)}…` : msg;
-        this.newsText.setText(line).setColor(color);
+        this.newsText.setText(msg.length > 46 ? `${msg.slice(0, 45)}…` : msg).setColor(color);
     }
 
     /* ── ⑤ 결산 오버레이 ─────────────────────────────────── */
@@ -376,8 +381,7 @@ export class TradingScene extends Phaser.Scene {
         box.add(g);
 
         // 오버레이 뒤쪽이 눌리면 안 된다. 판은 끝났다.
-        const blocker = this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive();
-        box.add(blocker);
+        box.add(this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive());
 
         const mid = W / 2;
         const t = (y: number, s: string, size: number, color: string) =>
@@ -389,27 +393,20 @@ export class TradingScene extends Phaser.Scene {
         t(py + 22, "RUN COMPLETE", FS.md, S.inkDim);
         t(py + 48, pct(sum.returnPct), FS.xxl, tone(sum.returnPct));
         t(py + 100, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
-
         t(py + 134, sum.idle
             ? "한 주도 사지 않았습니다 — 인사이트 없음"
             : `인사이트 +${sum.earnedIP}`, FS.md, sum.idle ? S.danger : S.gold);
-
         t(py + 162, `누적 IP ${this.engine.player.insightPoints}`, FS.sm, S.inkDim);
         t(py + 186, this.rogue.relics.length > 0
             ? `유물 ${this.rogue.relics.map(r => r.name).join(" · ")}`
             : "유물 없음", FS.xs, S.inkDim);
 
-        const bw = pw - 40;
-        const restart = makeButton(this, px + 20, py + ph - 74, bw, 54,
+        const restart = makeButton(this, px + 20, py + ph - 74, pw - 40, 54,
             "RESTART >", () => {
                 box.destroy(true);
                 // 인사이트만 들고 다음 런으로. 유물도 카드도 새로 뽑힌다.
                 this.scene.restart({ insightPoints: this.engine.player.insightPoints });
             }, { tone: "go", size: FS.lg });
         box.add(restart.root);
-
     }
 }
-
-/** 화면 밖에서 초기 자산을 알아야 할 때가 있다(테스트·표시). */
-export { START_CASH };

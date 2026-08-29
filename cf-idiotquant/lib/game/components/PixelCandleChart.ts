@@ -6,8 +6,8 @@
 // 매 턴 `render()` 를 다시 부른다. 12봉짜리라 통째로 다시 그려도 싸다.
 
 import Phaser from "phaser";
-import type { Candle } from "@/core/types";
-import { C, S, FONT, FS } from "@/ui/theme";
+import type { Candle } from "@/lib/game/core/types";
+import { C, S, FONT, FS } from "@/lib/game/ui/theme";
 
 /** 화면에 남기는 봉의 수. 한 판이 12턴이라 판 전체가 한눈에 들어온다. */
 export const VISIBLE_BARS = 12;
