@@ -76,12 +76,12 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             const root = this.scene.add.container(i * (cw + GAP), 0);
             const bg = this.scene.add.graphics();
 
-            const name = this.scene.add.text(cw / 2, 10, card.name, {
+            const name = this.scene.add.text(cw / 2, 8, card.name, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.sm}px`, color: curse ? S.danger : S.ink,
                 align: "center", wordWrap: { width: cw - 12 },
             }).setOrigin(0.5, 0);
 
-            const desc = this.scene.add.text(cw / 2, 38, card.effectDescription, {
+            const desc = this.scene.add.text(cw / 2, 30, card.effectDescription, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
                 align: "center", wordWrap: { width: cw - 14 }, lineSpacing: 2,
             }).setOrigin(0.5, 0);

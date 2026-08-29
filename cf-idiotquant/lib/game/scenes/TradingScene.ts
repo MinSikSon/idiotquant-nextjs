@@ -22,7 +22,8 @@ import type { Relic, StrategyCard, TradeResult } from "@/lib/game/core/types";
 import { loadProgress, recordRun } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
-import { W, H, BAND, PAD, C, S, FS, fontOf, money, pct, tone } from "@/lib/game/ui/theme";
+import { W, PAD, C, S, FS, bandsOf, fontOf, money, pct, tone } from "@/lib/game/ui/theme";
+import type { Bands } from "@/lib/game/ui/theme";
 
 /* ── 버튼 ───────────────────────────────────────────────────── */
 
@@ -111,6 +112,11 @@ export class TradingScene extends Phaser.Scene {
     /** 판을 넘어 남는 것. 재시작할 때 이 값만 들고 간다. */
     private carriedIP = 0;
 
+    /** 이 기기에서의 설계 세로. 폭만 390 으로 고정이고 세로는 화면 비율에서 나온다. */
+    private H = 0;
+    /** 그 세로로 나눈 네 띠. 남는 세로는 차트가 가져간다. */
+    private band!: Bands;
+
     constructor() { super("trading"); }
 
     init(data: { insightPoints?: number }) {
@@ -125,6 +131,11 @@ export class TradingScene extends Phaser.Scene {
 
     create() {
         this.cameras.main.setBackgroundColor(C.bg);
+
+        // config 가 기기 비율에서 낸 값이 그대로 들어온다. 씬은 모듈 상수가 아니라
+        // **자기 크기**를 보고 자리를 잡는다 — 그래야 폰마다 다른 세로를 받아들인다.
+        this.H = this.scale.height;
+        this.band = bandsOf(this.H);
 
         const seed = (Math.random() * 0xffffffff) >>> 0;
         this.engine = new StockEngine(seed);
@@ -145,7 +156,7 @@ export class TradingScene extends Phaser.Scene {
     private drawDotGrid() {
         const g = this.add.graphics();
         g.fillStyle(C.line, 0.22);
-        for (let y = 6; y < H; y += 14) {
+        for (let y = 6; y < this.H; y += 14) {
             for (let x = 6; x < W; x += 14) g.fillRect(x, y, 1, 1);
         }
     }
@@ -153,7 +164,7 @@ export class TradingScene extends Phaser.Scene {
     /* ── ① 상단 HUD (y 0~100) ─────────────────────────────── */
 
     private buildHud() {
-        const b = BAND.hud;
+        const b = this.band.hud;
         const g = this.add.graphics();
         g.fillStyle(C.panel, 1).fillRect(0, b.y, W, b.h);
         g.lineStyle(1, C.line, 1);
@@ -186,7 +197,7 @@ export class TradingScene extends Phaser.Scene {
     /* ── ② 차트 (y 100~450) ───────────────────────────────── */
 
     private buildChart() {
-        const b = BAND.chart;
+        const b = this.band.chart;
         this.chart = new PixelCandleChart(this, {
             x: PAD, y: b.y + PAD, width: W - PAD * 2, height: b.h - PAD * 2,
         });
@@ -201,7 +212,7 @@ export class TradingScene extends Phaser.Scene {
     /* ── ③ 유물 + 카드 (y 450~650) ────────────────────────── */
 
     private buildCardArea() {
-        const b = BAND.cards;
+        const b = this.band.cards;
 
         this.add.text(PAD, b.y + 4, "RELICS", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
@@ -252,12 +263,17 @@ export class TradingScene extends Phaser.Scene {
     /* ── ④ 하단 엄지 영역 (y 650~844) ─────────────────────── */
 
     private buildActions() {
-        const b = BAND.action;
+        const b = this.band.action;
         const w = W - PAD * 2;
         const gap = 8;
         const third = Math.floor((w - gap * 2) / 3);
         const rowY = b.y + 10;
-        const rowH = 62;
+
+        // 버튼 높이를 띠에서 나눠 갖는다. 62·72 로 못박아 두면 세로가 짧은 폰에서 띠(최소
+        // 150) 밖으로 6px 이 밀려 나간다. 아래쪽 24px 은 홈 인디케이터 자리로 비워 둔다.
+        const avail = b.h - 10 - 12 - 24;
+        const rowH = Math.round(Math.min(66, Math.max(50, avail * 0.45)));
+        const nextH = Math.max(52, avail - rowH);
 
         this.buyHalfBtn = makeButton(this, PAD, rowY, third, rowH,
             "50%\nBUY", () => this.doTrade("half"), { tone: "buy", size: FS.md });
@@ -266,7 +282,7 @@ export class TradingScene extends Phaser.Scene {
         this.sellBtn = makeButton(this, PAD + (third + gap) * 2, rowY, third, rowH,
             "ALL\nSELL", () => this.doTrade("sell"), { tone: "sell", size: FS.md });
 
-        this.nextBtn = makeButton(this, PAD, rowY + rowH + 12, w, 72,
+        this.nextBtn = makeButton(this, PAD, rowY + rowH + 12, w, nextH,
             "NEXT TURN >", () => this.endTurn(), { tone: "go", size: FS.lg });
     }
 
@@ -365,17 +381,17 @@ export class TradingScene extends Phaser.Scene {
         const rowH = 72, rowGap = 8;
         const pw = W - 40, px = 20;
         const ph = 58 + offer.length * (rowH + rowGap) + 62;
-        const py = Math.round((H - ph) / 2);
+        const py = Math.round((this.H - ph) / 2);
 
         const box = this.add.container(0, 0);
         const g = this.add.graphics();
-        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, H);
+        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, this.H);
         g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
         g.lineStyle(2, C.gold, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
         box.add(g);
         // 오버레이 뒤를 못 누르게. busy 가 아직 true 라 눌려도 아무 일이 없지만, 눌린
         // 것처럼 보이는 것만으로도 화면이 거짓말을 한다.
-        box.add(this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive());
+        box.add(this.add.zone(0, 0, W, this.H).setOrigin(0, 0).setInteractive());
 
         box.add(this.add.text(W / 2, py + 16, "CARD REWARD", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
@@ -494,16 +510,17 @@ export class TradingScene extends Phaser.Scene {
 
         const box = this.add.container(0, 0);
         const g = this.add.graphics();
-        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, H);
+        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, this.H);
 
-        const pw = W - 40, ph = 320;
-        const px = 20, py = Math.round((H - ph) / 2);
+        // 글자가 커진 만큼 칸도 키운다. 유물 줄이 두 줄로 늘어나도 버튼을 안 밀어야 한다.
+        const pw = W - 40, ph = 348;
+        const px = 20, py = Math.round((this.H - ph) / 2);
         g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
         g.lineStyle(2, C.neon, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
         box.add(g);
 
         // 오버레이 뒤쪽이 눌리면 안 된다. 판은 끝났다.
-        box.add(this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive());
+        box.add(this.add.zone(0, 0, W, this.H).setOrigin(0, 0).setInteractive());
 
         const mid = W / 2;
         const t = (y: number, s: string, size: number, color: string) =>
@@ -512,17 +529,17 @@ export class TradingScene extends Phaser.Scene {
                 wordWrap: { width: pw - 30 },
             }).setOrigin(0.5, 0));
 
-        t(py + 22, newBest ? "RUN COMPLETE — 새 기록" : "RUN COMPLETE", FS.md,
+        t(py + 20, newBest ? "RUN COMPLETE — 새 기록" : "RUN COMPLETE", FS.md,
             newBest ? S.neon : S.inkDim);
-        t(py + 48, pct(sum.returnPct), FS.xxl, tone(sum.returnPct));
-        t(py + 100, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
-        t(py + 134, sum.idle
+        t(py + 50, pct(sum.returnPct), FS.xxl, tone(sum.returnPct));
+        t(py + 108, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
+        t(py + 142, sum.idle
             ? "한 주도 사지 않았습니다 — 인사이트 없음"
             : `인사이트 +${sum.earnedIP}`, FS.md, sum.idle ? S.danger : S.gold);
-        t(py + 162, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`, FS.sm, S.inkDim);
-        t(py + 182, progress.bestReturn !== null ? `최고 기록 ${pct(progress.bestReturn)}` : "",
+        t(py + 172, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`, FS.sm, S.inkDim);
+        t(py + 194, progress.bestReturn !== null ? `최고 기록 ${pct(progress.bestReturn)}` : "",
             FS.sm, newBest ? S.neon : S.inkDim);
-        t(py + 204, this.rogue.relics.length > 0
+        t(py + 218, this.rogue.relics.length > 0
             ? `유물 ${this.rogue.relics.map(r => r.name).join(" · ")}`
             : "유물 없음", FS.xs, S.inkDim);
 
