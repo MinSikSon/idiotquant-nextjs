@@ -363,7 +363,13 @@ export default function ReplayGamePage() {
     const markFilled = useCallback(() => setFilled(n => n + 1), []);
     // 예약 패널 — 접었다 편다. 모바일은 한 화면이 빡빡해 기본은 접어 둔다.
     const [reserveOpen, setReserveOpen] = useState(false);
-    // 시작 화면을 지났나. 이것만은 데이터로 알 수 없어 따로 든다.
+    /**
+     * 시작 화면을 지났나. 이것만은 데이터로 알 수 없어 따로 든다.
+     *
+     * "버튼을 눌렀나" 가 아니라 **"판을 손에 쥔 적이 있나"** 다. 굴리던 판을 이어받아
+     * 들어온 사람은 시작 화면을 지난 적이 없는데, 그대로 두면 반기가 끝나고 판을 비울 때
+     * 설정이 아니라 시작 화면으로 떨어진다 — 방금 굴리던 회사를 두고 로고로 나가는 꼴이다.
+     */
     const [entered, setEntered] = useState(false);
     /**
      * 준비 화면에서 [장 열기] 를 눌렀나.
@@ -441,13 +447,16 @@ export default function ReplayGamePage() {
         let cancelled = false;
 
         if (!isLoggedIn) {
-            setRound(loadLocal());
+            const local = loadLocal();
+            if (local) setEntered(true);   // 이어받았으면 이미 판 안이다
+            setRound(local);
             setLoading(false);
             return;
         }
         getReplayState().then(res => {
             if (cancelled) return;
             if (res.success) {
+                if (res.round) setEntered(true);
                 setRound(res.round);
                 setHistory(res.history ?? []);
                 setFirm(res.firm ?? null);
@@ -483,12 +492,14 @@ export default function ReplayGamePage() {
                 if (!res.success) { addToast("error", res.error); return; }
                 setSlot(0); setDetail(false);   // 새 판은 개요부터, 첫 자리부터
                 setBriefed(false);              // 새 판은 준비 화면부터
+                setEntered(true);
                 setRound(res.round);
             } else {
                 if (!localPool.length) { addToast("error", "종목 목록을 아직 불러오는 중입니다."); return; }
                 const built = await buildLocalRound(localPool);
                 if (!built) { addToast("error", "판을 만들지 못했습니다. 다시 시도해주세요."); return; }
                 setBriefed(false);
+                setEntered(true);
                 setRound(built);
             }
         } finally {
