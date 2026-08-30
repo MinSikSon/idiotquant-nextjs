@@ -35,6 +35,8 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
     private nowLabel: Phaser.GameObjects.Text;
     /** 읽어 낸 국면. 카드를 써야 채워진다. */
     private readLabel: Phaser.GameObjects.Text;
+    /** 유령 봉이 몇 턴 뒤인지(+1 · +2). 예보의 지속을 그림으로 말한다. */
+    private ghostLabels: Phaser.GameObjects.Text[] = [];
 
     constructor(scene: Phaser.Scene, o: ChartOpts) {
         super(scene, o.x, o.y);
@@ -52,8 +54,9 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         this.loLabel = mk("left");
         this.nowLabel = mk("right");
         this.readLabel = mk("right").setColor(S.gold);
+        this.ghostLabels = [0, 1].map(() => mk("left").setColor(S.inkDim).setVisible(false));
 
-        this.add([this.frame, this.plot, this.hiLabel, this.loLabel, this.nowLabel, this.readLabel]);
+        this.add([this.frame, this.plot, this.hiLabel, this.loLabel, this.nowLabel, this.readLabel, ...this.ghostLabels]);
         scene.add.existing(this);
 
         this.drawFrame();
@@ -147,6 +150,7 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         // ── 예보 — 아직 오지 않은 봉을 유령으로 그린다 ──────────────────
         // 이 게임의 정보 카드가 값어치를 갖는 자리다. 뉴스 한 줄로 "다음 턴 상승" 이라고
         // 말해 주는 것과, 지금 보고 있는 차트에 그 봉이 미리 서 있는 것은 다른 일이다.
+        for (const gl of this.ghostLabels) gl.setVisible(false);
         if (peek.length > 0) {
             let ghostFrom = bars[bars.length - 1]!.c;
             for (let k = 0; k < Math.min(2, peek.length); k++) {
@@ -163,6 +167,14 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
                     cx - Math.floor(bodyW / 2) + 0.5, Math.round(Math.min(yFrom, yTo)) + 0.5,
                     bodyW - 1, Math.round(bh),
                 );
+                // 몇 턴 뒤인지 — 예보가 언제까지 유효한지를 그림 옆에 적어 둔다.
+                const gl = this.ghostLabels[k];
+                if (gl) {
+                    gl.setVisible(true)
+                        .setPosition(cx - Math.floor(bodyW / 2), this.boxH - FS.xs - 4)
+                        .setText(`+${k + 1}`)
+                        .setColor(pct >= 0 ? S.up : S.down);
+                }
                 ghostFrom = to;
             }
         }

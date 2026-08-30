@@ -53,13 +53,13 @@ const CARDS: CardDef[] = [
        읽는 것 셋, 버티는 것 둘, 싸게 사는 것 하나. 이 여섯 장으로도 국면은 읽힌다. */
     {
         id: "peek", name: "예고 시황", type: "instant", kind: "starter",
-        effectDescription: "다음 턴 등락을 미리 봅니다. 차트에 유령 봉으로 그려집니다.",
+        effectDescription: "다음 턴 등락을 차트에 미리 그려 줍니다.",
         when: "무엇을 할지 모르겠을 때. 보고 나서 다음 턴에 크기를 정하면 됩니다.",
         apply: b => ({ ...b, peekTurns: Math.max(b.peekTurns, 1) }),
     },
     {
         id: "analyst", name: "애널리스트 리포트", type: "instant", kind: "starter",
-        effectDescription: "지금 국면(상승·하락·횡보)을 알려 줍니다.",
+        effectDescription: "지금이 상승장인지 하락장인지 알려 줍니다.",
         when: "판을 열자마자. 국면 하나를 알면 서너 턴을 안심하고 굴립니다.",
         apply: b => ({ ...b, revealRegime: true }),
     },
@@ -95,21 +95,21 @@ const CARDS: CardDef[] = [
     },
     {
         id: "stoploss", name: "손절 예약", type: "trade", kind: "reward",
-        effectDescription: "이번 턴 8% 넘게 빠지면 그 자리에서 자동으로 전량 매도합니다.",
+        effectDescription: "8% 넘게 빠지면 그 자리에서 전량 매도합니다.",
         when: "아무것도 못 읽은 채 들고 가야 할 때. 최악만 잘라 냅니다.",
         apply: b => ({ ...b, stopLoss: Math.max(b.stopLoss, 0.08) }),
         idleWhen: p => p.shares === 0,
     },
     {
         id: "tipoff", name: "내부자 제보", type: "instant", kind: "reward",
-        effectDescription: "지금 국면과, 그 국면이 몇 턴 남았는지까지 알려 줍니다.",
+        effectDescription: "지금 국면과 몇 턴 남았는지까지 알려 줍니다.",
         when: "국면이 슬슬 끝날 것 같을 때. 언제 내릴지를 정확히 짚어 줍니다.",
         apply: b => ({ ...b, revealRegime: true, revealClock: true }),
         curse: "probe",
     },
     {
         id: "margin", name: "신용 융자", type: "trade", kind: "reward",
-        effectDescription: "이번 턴만 현금의 두 배까지 살 수 있습니다. 모자란 만큼은 빚입니다.",
+        effectDescription: "이번 턴만 현금의 두 배까지 삽니다. 모자란 만큼은 빚.",
         when: "다음 턴 상승을 확실히 읽었을 때만. 틀리면 청산선이 두 배로 빨리 옵니다.",
         apply: b => ({ ...b, buyingPowerMult: Math.max(b.buyingPowerMult, 2) }),
         curse: "debt",
@@ -178,8 +178,16 @@ export function startingDeckOf(upgrades: readonly string[]): string[] {
     return deck;
 }
 
-/** 보상으로 내밀 수 있는 것 — 저주는 고를 수 없다. */
-const REWARD_IDS = CARDS.filter(c => c.kind === "reward").map(c => c.id);
+/**
+ * 처음부터 열려 있는 보상 카드. 나머지는 경력 인사이트로 열린다(progress.UNLOCKS).
+ *
+ * 다섯 장이 처음부터 다 나오면 세 판이면 다 본다. 시작을 얇게 두면 판을 거듭할 이유와
+ * 다양성이 같은 곳에서 나온다.
+ */
+const BASE_REWARD_IDS = ["forecast", "bunker", "stoploss"];
+
+/** 처음부터 들고 있는 유물. 나머지는 해금된다. */
+const BASE_RELIC_IDS = ["compass", "vest", "broker"];
 
 /** 유물 — 한 번 얻으면 판이 끝날 때까지 남는다. 도감도 이 목록을 읽는다. */
 export const RELIC_POOL: Relic[] = [
@@ -253,15 +261,59 @@ export class RoguelikeManager {
     private seq = 0;
     /** 이 판이 시작한 덱. resetDeck 이 여기로 되돌린다. */
     private baseDeck: string[];
+    /** 경력으로 열어 둔 카드·유물 id. 보상과 유물 후보가 여기서 넓어진다. */
+    private unlocked: Set<string>;
+
+    /**
+     * 아직 안 보여 준 예보. **턴이 넘어가도 남는다.**
+     *
+     * 정밀 예보가 "다음 두 턴" 이라면서 다음 턴에 사라지면 그건 거짓말이다. 본 것을
+     * 여기 들고 있다가 한 턴씩 덜어 내야 두 턴짜리가 두 턴짜리가 된다.
+     */
+    private carriedPeek: number[] = [];
 
     /**
      * @param upgrades 판을 넘어 박아 둔 강화 카드들. 시작 덱 앞자리를 대신한다.
      */
-    constructor(seed: number, upgrades: readonly string[] = []) {
+    /**
+     * @param upgrades 판을 넘어 박아 둔 강화 카드들. 시작 덱 앞자리를 대신한다.
+     * @param unlocked 경력으로 열어 둔 카드·유물 id.
+     */
+    constructor(seed: number, upgrades: readonly string[] = [], unlocked: readonly string[] = []) {
         // 엔진과 같은 시드를 쓰되 흩어 둔다. 그대로 쓰면 주가와 카드가 같은 수열을 밟는다.
         this.rand = mulberry32((seed ^ 0x9e3779b9) >>> 0);
         this.baseDeck = startingDeckOf(upgrades);
+        this.unlocked = new Set(unlocked);
         this.resetDeck();
+    }
+
+    /** 지금 보상으로 나올 수 있는 카드. */
+    get rewardPool(): string[] {
+        return CARDS.filter(c => c.kind === "reward"
+            && (BASE_REWARD_IDS.includes(c.id) || this.unlocked.has(c.id))).map(c => c.id);
+    }
+
+    /** 지금 나올 수 있는 유물. */
+    get relicPool(): Relic[] {
+        return RELIC_POOL.filter(r => BASE_RELIC_IDS.includes(r.id) || this.unlocked.has(r.id));
+    }
+
+    /** 남은 예보. 화면이 유령 봉을 몇 개 그릴지가 여기서 나온다. */
+    get peekLeft(): number[] {
+        return [...this.carriedPeek];
+    }
+
+    /**
+     * 이번 턴에 읽은 것을 들고 간다. 턴이 넘어갈 때 앞에서 한 칸 덜어 낸다.
+     * 더 멀리 보는 예보를 새로 쓰면 그것으로 갈아 끼운다.
+     */
+    rememberPeek(next: readonly number[]): void {
+        if (next.length > this.carriedPeek.length) this.carriedPeek = [...next];
+    }
+
+    /** 한 턴이 지났다. 예보를 한 칸 당긴다. */
+    consumePeek(): void {
+        this.carriedPeek = this.carriedPeek.slice(1);
     }
 
     /** 강화를 하나 더 얹고 덱을 새로 세운다. 판을 열기 **전에만** 부른다. */
@@ -272,7 +324,9 @@ export class RoguelikeManager {
 
     /** 강화로 고르라고 내미는 카드들. 저주는 안 나온다. */
     offerUpgrades(n = OFFER_SIZE): StrategyCard[] {
-        return sample(UPGRADE_POOL, n, this.rand).map(id => {
+        // 강화도 열린 것 안에서만. 아직 못 본 카드를 시작 덱에 박을 수는 없다.
+        const pool = UPGRADE_POOL.filter(id => BASE_REWARD_IDS.includes(id) || this.unlocked.has(id));
+        return sample(pool, n, this.rand).map(id => {
             const d = defOf(id)!;
             return {
                 uid: `u${this.seq++}`,
@@ -409,7 +463,7 @@ export class RoguelikeManager {
      * 저주는 여기 안 나온다. 저주는 센 카드에 딸려 오는 것이지 고르는 것이 아니다.
      */
     offerCards(): StrategyCard[] {
-        return sample(REWARD_IDS, OFFER_SIZE, this.rand).map(id => {
+        return sample(this.rewardPool, OFFER_SIZE, this.rand).map(id => {
             const d = defOf(id)!;
             return {
                 uid: `r${this.seq++}`,
@@ -442,8 +496,9 @@ export class RoguelikeManager {
      * 쌓아 둔 인사이트가 많을수록 하나 더 — 이게 판을 넘어 이어지는 유일한 성장이다.
      */
     grantStartingRelics(insightPoints: number): Relic[] {
-        const n = Math.min(RELIC_POOL.length, 1 + Math.floor(insightPoints / 15));
-        this.relics = sample(RELIC_POOL, n, this.rand);
+        const pool = this.relicPool;
+        const n = Math.min(pool.length, 1 + Math.floor(insightPoints / 15));
+        this.relics = sample(pool, n, this.rand);
         return this.relics;
     }
 
@@ -456,7 +511,7 @@ export class RoguelikeManager {
      */
     offerRelics(n = OFFER_SIZE): Relic[] {
         const owned = new Set(this.relics.map(r => r.id));
-        return sample(RELIC_POOL.filter(r => !owned.has(r.id)), n, this.rand);
+        return sample(this.relicPool.filter(r => !owned.has(r.id)), n, this.rand);
     }
 
     /** 고른 유물을 받는다. 이미 있거나 없는 것이면 아무 일도 안 한다. */

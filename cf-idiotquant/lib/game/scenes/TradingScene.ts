@@ -23,11 +23,12 @@
 
 import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
-import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
+import { CARD_LIST, RELIC_POOL, RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
 import type { MarketRead, Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
 import { MAX_TIER } from "@/lib/game/core/StockEngine";
 import {
-    canUpgrade, loadProgress, nextUpgradeCost, purchaseUpgrade, recordRun, type Progress,
+    canUpgrade, loadProgress, newlyUnlocked, nextUpgradeCost, purchaseUpgrade, recordRun,
+    unlockedIds, UNLOCKS, type Progress,
 } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
@@ -93,6 +94,19 @@ function makeButton(
     };
 }
 
+/** 해금된 것의 이름. 카드든 유물이든 한자리에서 찾는다. */
+function nameOfUnlock(id: string): string {
+    return CARD_LIST.find(c => c.id === id)?.name
+        ?? RELIC_POOL.find(r => r.id === id)?.name
+        ?? id;
+}
+
+/** 다음 해금까지 얼마 남았는가. 없으면 다 모았다고 말한다. */
+function nextUnlockNote(careerIP: number): string {
+    const next = UNLOCKS.find(u => careerIP < u.at);
+    return next ? `${nameOfUnlock(next.id)}까지 ${next.at - careerIP}` : "모두 열림";
+}
+
 /** 오버레이 안쪽 칸이 이보다 낮으면 세로로 늘어놓을 자리가 없다 — 눕혀서 편다. */
 const TALL_ENOUGH = 420;
 
@@ -113,6 +127,7 @@ export class TradingScene extends Phaser.Scene {
     private posText!: Phaser.GameObjects.Text;
     private deckText!: Phaser.GameObjects.Text;
     private totalLabel!: Phaser.GameObjects.Text;
+    private activeLabel!: Phaser.GameObjects.Text;
 
     private relicRow!: Phaser.GameObjects.Container;
     private buyHalfBtn!: Btn;
@@ -141,7 +156,11 @@ export class TradingScene extends Phaser.Scene {
     private upgradeOffer: StrategyCard[] | null = null;
     /** 네 턴마다 뜨는 유물 고르기. 고를 때까지 다음 턴이 안 열린다. */
     private relicOffer: Relic[] | null = null;
-    private ended: { sum: RunSummary; progress: Progress; newBest: boolean } | null = null;
+    private ended: {
+        sum: RunSummary; progress: Progress; newBest: boolean;
+        /** 이번 판으로 새로 열린 카드·유물. 다시 켤 이유를 그 자리에서 보여 준다. */
+        unlocked: { id: string; kind: "card" | "relic"; at: number }[];
+    } | null = null;
     /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
     private overlay: Phaser.GameObjects.Container | null = null;
 
@@ -179,7 +198,7 @@ export class TradingScene extends Phaser.Scene {
         const saved = loadProgress();
         this.engine = new StockEngine(seed, saved.tier);
         this.engine.player.insightPoints = this.carriedIP;
-        this.rogue = new RoguelikeManager(seed, saved.upgrades);
+        this.rogue = new RoguelikeManager(seed, saved.upgrades, unlockedIds(saved.careerIP));
         this.rogue.grantStartingRelics(this.carriedIP);
 
         this.buildAll();
@@ -302,12 +321,14 @@ export class TradingScene extends Phaser.Scene {
         const b = this.band.cards;
         const L = b.x + PAD;
 
-        this.add.text(L, b.y + 4, "RELICS", {
+        this.add.text(L, b.y + 4, "RELICS — 판 끝까지", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
         this.relicRow = this.add.container(L, b.y + 18);
 
-        this.add.text(L, b.y + 52, "STRATEGY — 한 턴에 한 장", {
+        // 지금 무엇이 켜져 있고 **언제까지 가는지**. 카드가 한 턴짜리라는 것도, 예보가
+        // 몇 턴 남았는지도 화면 어디에도 없었다.
+        this.activeLabel = this.add.text(L, b.y + 52, "", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
 
@@ -411,7 +432,8 @@ export class TradingScene extends Phaser.Scene {
 
         // 유물만으로도 보이는 것이 있다(낡은 나침반·증권가 핫라인). 카드를 고르기 전에
         // 이미 읽혀 있어야 그 카드를 쓸지 말지를 정할 수 있다.
-        this.marketRead = this.engine.read(this.rogue.buildBuff());
+        // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있으면 그것도 함께 보인다.
+        this.marketRead = this.mergeRead(this.engine.read(this.rogue.buildBuff()));
         this.refresh();
         if (fired.length > 0) this.say(fired.join(" · "), S.gold);
         else this.say(`${this.engine.player.currentTurn}턴 — 카드를 고르고 매매하세요.`, S.inkDim);
@@ -435,7 +457,9 @@ export class TradingScene extends Phaser.Scene {
 
         // 정보 카드는 **고른 즉시** 값어치가 나와야 한다. 턴을 넘겨야 보이면 그건 정보가
         // 아니라 도박이다.
-        this.marketRead = this.engine.read(this.rogue.buildBuff());
+        const fresh = this.engine.read(this.rogue.buildBuff());
+        this.rogue.rememberPeek(fresh.next);
+        this.marketRead = this.mergeRead(fresh);
 
         // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
         // 카드면 그 사실을, 아니면 언제 쓰는 카드인지를 말해 준다.
@@ -445,6 +469,10 @@ export class TradingScene extends Phaser.Scene {
             this.say(`${card.name} — ${this.rogue.whenOf(card.id)}`,
                 card.kind === "curse" ? S.danger : S.neon);
         }
+
+        // 읽은 것을 그 자리에서 그린다. 이게 없으면 예보도 국면도 "켜짐" 줄도 다음 턴이
+        // 되어서야 나타난다 — 정보 카드를 고른 보람이 한 턴 늦게 온다.
+        this.refresh();
     }
 
     private doTrade(kind: "half" | "all" | "sell") {
@@ -479,6 +507,7 @@ export class TradingScene extends Phaser.Scene {
         this.engine.advanceTurn();
         this.refresh();
 
+        this.rogue.consumePeek();
         this.marketRead = null;
         this.say([
             tickRes.news ?? pct(tickRes.changePct),
@@ -497,6 +526,32 @@ export class TradingScene extends Phaser.Scene {
             else if (relicTurn) this.showRelicOffer();
             else this.beginTurn();
         });
+    }
+
+    /**
+     * 이번 턴에 새로 읽은 것과, 지난 턴에 봐 둔 것을 합친다.
+     *
+     * 정밀 예보는 "다음 두 턴" 이다. 턴이 넘어갈 때 통째로 지워 버리면 둘째 턴치는
+     * 한 번도 안 쓰이고 사라진다 — 그러면 예고 시황과 다를 것이 없다.
+     */
+    private mergeRead(fresh: MarketRead): MarketRead {
+        this.rogue.rememberPeek(fresh.next);
+        const left = this.rogue.peekLeft;
+        return { ...fresh, next: left.length > fresh.next.length ? left : fresh.next };
+    }
+
+    /** "지금 켜짐" 한 줄. 무엇이 켜져 있고 언제까지 가는지. */
+    private refreshActive() {
+        const picked = this.rogue.pickedCard;
+        const peekLeft = this.marketRead?.next.length ?? 0;
+
+        const bits: string[] = [];
+        if (picked) bits.push(`${picked.name} · 이번 턴까지`);
+        if (peekLeft > 0) bits.push(`예보 ${peekLeft}턴치`);
+
+        this.activeLabel
+            .setText(bits.length > 0 ? `켜짐 — ${bits.join(" · ")}` : "STRATEGY — 한 턴에 한 장")
+            .setColor(bits.length > 0 ? S.gold : S.inkDim);
     }
 
     /* ── 오버레이 공통 ────────────────────────────────────── */
@@ -799,8 +854,9 @@ export class TradingScene extends Phaser.Scene {
         const sum = this.engine.summarize();
         // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만
         // 그건 이 판 안의 값이고, 판을 넘어 남는 것은 progress 가 들고 있다.
+        const before = loadProgress().careerIP;
         const { progress, newBest } = recordRun(sum);
-        this.ended = { sum, progress, newBest };
+        this.ended = { sum, progress, newBest, unlocked: newlyUnlocked(before, progress.careerIP) };
         this.refresh();
         this.drawResult();
     }
@@ -846,12 +902,17 @@ export class TradingScene extends Phaser.Scene {
             : progress.tier >= MAX_TIER ? `차수 ${MAX_TIER} — 끝까지 올랐습니다`
                 : `차수 ${progress.tier} — 다음 판은 청산선이 더 높습니다`;
         t(py + at[4]!, tierNote, FS.sm, bust ? S.danger : S.gold);
-        t(py + at[5]! - 2, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`,
-            FS.xs, S.inkDim);
-        t(py + at[6]!, [
-            progress.bestReturn !== null ? `최고 ${pct(progress.bestReturn)}` : "",
+        t(py + at[5]! - 2, [
+            `IP ${progress.insightPoints}`,
             `강화 ${progress.upgrades.length}/4`,
-        ].filter(Boolean).join(" · "), FS.xs, newBest ? S.neon : bust ? S.danger : S.inkDim);
+            progress.bestReturn !== null ? `최고 ${pct(progress.bestReturn)}` : "",
+        ].filter(Boolean).join(" · "), FS.xs, newBest ? S.neon : S.inkDim);
+        // 경력 인사이트는 청산돼도 안 깎이는 유일한 값이다. 못한 판 뒤에 이 줄이
+        // 그래도 올라 있어야 다시 켤 마음이 생긴다.
+        const unlockNote = r.unlocked.length > 0
+            ? `새로 열림 — ${r.unlocked.map(u => nameOfUnlock(u.id)).join(" · ")}`
+            : `경력 ${progress.careerIP} · ${nextUnlockNote(progress.careerIP)}`;
+        t(py + at[6]!, unlockNote, FS.xs, r.unlocked.length > 0 ? S.gold : S.inkDim);
 
         const btnH = tight ? 44 : 54;
         const restart = makeButton(this, px + 20, py + ph - btnH - (tight ? 14 : 20), pw - 40, btnH,
@@ -870,6 +931,7 @@ export class TradingScene extends Phaser.Scene {
         const p = e.player;
 
         this.chart.render(e.stock.history, this.marketRead);
+        this.refreshActive();
 
         this.equityText.setText(money(e.equity)).setColor(tone(e.totalReturnPct));
 
