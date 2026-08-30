@@ -623,6 +623,27 @@ test("이번 턴에 고른 카드는 합성에 안 끌려간다", () => {
     assert.deepEqual(r.takeMerges(), []);
 });
 
+test("판을 열 때 넘어온 덱에 셋이 있으면 그 자리에서 합쳐진다", () => {
+    // 보상을 건너뛰고 판을 끝냈거나 저장이 옛 규칙으로 쌓였으면 셋이 그대로 넘어온다.
+    // 판을 여는 자리에서 한 번 훑어야 "셋이면 합쳐진다" 가 언제나 참이 된다.
+    const r = new RoguelikeManager(21, ["peek", "peek", "peek", "hedge"]);
+    assert.deepEqual([...r.deck].sort(), ["forecast", "hedge"]);
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+});
+
+test("셋째 장이 될 카드는 고르기 전에 무엇이 되는지 말한다", () => {
+    const r = new RoguelikeManager(22, ["peek", "peek", "blackout", "blackout"]);
+
+    assert.equal(r.mergePreview("peek"), "정밀 예보");
+    assert.equal(r.mergePreview("blackout"), "", "저주는 사라지므로 빈 문자열");
+    assert.equal(r.mergePreview("hedge"), null, "한 장도 없는데 합성이 뜬다");
+    assert.equal(r.mergePreview("forecast"), null, "위층이 없는데 합성이 뜬다");
+
+    // 실제로 넣어 보면 예고한 그대로다.
+    r.addToDeck("peek");
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+});
+
 test("보상에 기본 카드가 섞여 나온다 — 합성이 닿을 수 있는 유일한 길", () => {
     // 보상 카드는 위층이 없어 안 합쳐지고, 처음 세 장은 서로 다르다. 보상 풀에 기본
     // 카드가 없으면 셋이 모일 길이 아예 없어 합성이 죽은 규칙이 된다.

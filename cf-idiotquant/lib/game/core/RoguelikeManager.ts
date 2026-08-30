@@ -20,7 +20,13 @@ import { NO_BUFF } from "./types";
 /** 한 턴에 손에 들어오는 카드 수. */
 export const HAND_SIZE = 3;
 
-/** 카드 보상이 뜨는 턴(그 턴을 **끝냈을 때**). 12턴 중 셋. */
+/**
+ * 보상이 뜨는 턴(그 턴을 **끝냈을 때**). 12턴 중 셋.
+ *
+ * 카드와 유물이 **같은 자리**에서 나온다. 예전에는 카드가 3·6·9턴, 유물이 4·8턴이라
+ * 판 중간에 무언가 뜨는 턴이 다섯이었고, 언제 무엇이 오는지 셀 수가 없었다. 3턴마다
+ * 한 번, 그 자리에서 카드 하나와 유물 하나를 고른다.
+ */
 export const REWARD_TURNS = [3, 6, 9];
 
 /** 보상으로 고르라고 내미는 장 수. */
@@ -315,6 +321,11 @@ export class RoguelikeManager {
         // 저장이 상했거나 카드가 없어졌을 수 있다. 모르는 id 는 조용히 버린다.
         const kept = carriedDeck.filter(id => defOf(id));
         this.drawPile = this.shuffled(kept.length > 0 ? kept : openingDeck(this.rand));
+
+        // 넘어온 덱에 이미 셋이 모여 있을 수 있다 — 보상을 건너뛰고 판을 끝냈거나, 저장이
+        // 옛 규칙으로 쌓였거나. 판을 여는 자리에서 한 번 훑어야 "셋이면 합쳐진다" 가
+        // 언제나 참이 된다.
+        for (const id of new Set(this.drawPile)) this.mergeAt(id);
     }
 
     /**
@@ -420,6 +431,22 @@ export class RoguelikeManager {
         const inPiles = this.drawPile.filter(id => id === cardId).length
             + this.discardPile.filter(id => id === cardId).length;
         return inPiles + this.hand.filter(c => c.id === cardId && !c.isUsed).length;
+    }
+
+    /**
+     * 이 카드를 **한 장 더 넣으면** 합성이 터지는가. 터지면 무엇이 되는지 돌려준다.
+     *
+     * 합성이 조용히 일어나면 덱에서 카드가 사라진 것처럼 보인다. 고르기 **전에** 이걸
+     * 알려 줘야 "약한 카드를 모아 강화한다" 가 선택이 된다 — 지금 센 카드를 집을 것인가,
+     * 이 한 장으로 셋을 채울 것인가.
+     *
+     * @returns 합쳐져서 될 카드 이름. 사라지는 저주면 빈 문자열. 안 터지면 null.
+     */
+    mergePreview(cardId: string): string | null {
+        const def = defOf(cardId);
+        if (!def || def.mergesTo === undefined) return null;
+        if (this.removableCount(cardId) !== MERGE_COUNT - 1) return null;
+        return def.mergesTo ? defOf(def.mergesTo)?.name ?? "" : "";
     }
 
     /** 방금 일어난 합성을 가져간다. 한 번 읽으면 비워진다. */

@@ -192,14 +192,16 @@ export default function CardsPage() {
                             <dd className="text-[#e9f2ea]">
                                 같은 카드 {MERGE_COUNT}장 → 한 장으로
                                 <span className="text-[#7d8f88]">
-                                    {" "}· 저주는 {MERGE_COUNT}장이 모이면 사라집니다
+                                    {" "}· 셋째 장이 될 카드는 보상 칸에 금색으로 표시됩니다
+                                    · 저주는 {MERGE_COUNT}장이 모이면 사라집니다
                                 </span>
                             </dd>
                         </div>
                         <div>
                             <dt className="text-[#7d8f88]">유물</dt>
                             <dd className="text-[#e9f2ea]">
-                                4·8턴을 끝냈을 때 {OFFER_SIZE}개 중 하나
+                                카드를 고른 <span className="text-[#e9f2ea]">바로 다음</span>에{" "}
+                                {OFFER_SIZE}개 중 하나
                                 <span className="text-[#7d8f88]"> · 판 끝까지 남습니다</span>
                             </dd>
                         </div>
