@@ -11,13 +11,14 @@ import assert from "node:assert/strict";
 
 import {
     RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE, UPGRADE_POOL, UPGRADE_SLOTS,
-    startingDeckOf,
+    startingDeckOf, CARD_LIST, RELIC_POOL,
 } from "@/lib/game/core/RoguelikeManager";
 import {
     applyRun, isNewBest, buyUpgrade, canUpgrade, nextUpgradeCost, UPGRADE_COSTS,
     EMPTY, type Progress,
 } from "@/lib/game/core/progress";
 import { NO_BUFF } from "@/lib/game/core/types";
+import { MAX_TIER, TIER_BUST_STEP, BUST_RATIO, bustRatioFor, StockEngine } from "@/lib/game/core/StockEngine";
 import type { RunSummary, StrategyCard } from "@/lib/game/core/types";
 
 const run = (returnPct: number, earnedIP = 1, idle = false): RunSummary => ({
@@ -265,16 +266,39 @@ test("유물은 겹쳐서 안 나온다", () => {
     for (let seed = 0; seed < 20; seed++) {
         const r = new RoguelikeManager(seed);
         r.grantStartingRelics(200);
-        for (let i = 0; i < 10; i++) r.grantRandomRelic();
+        for (let i = 0; i < 10; i++) {
+            for (const cand of r.offerRelics()) r.takeRelic(cand.id);
+        }
         assert.equal(new Set(r.relics.map(x => x.id)).size, r.relics.length, `시드 ${seed}`);
     }
+});
+
+test("이미 들고 있는 유물은 후보로 안 나온다", () => {
+    // 셋 중에 고르라고 해 놓고 이미 가진 것을 내밀면 고를 것이 하나 줄어든다.
+    const r = new RoguelikeManager(21);
+    r.grantStartingRelics(0);
+    const owned = new Set(r.relics.map(x => x.id));
+    assert.ok(r.offerRelics().every(c => !owned.has(c.id)));
+});
+
+test("고른 유물만 들어온다", () => {
+    const r = new RoguelikeManager(22);
+    r.relics = [];
+    const offer = r.offerRelics();
+    assert.equal(offer.length, OFFER_SIZE);
+
+    const got = r.takeRelic(offer[1]!.id);
+    assert.equal(got?.id, offer[1]!.id);
+    assert.deepEqual(r.relics.map(x => x.id), [offer[1]!.id], "안 고른 것까지 들어왔다");
+    assert.equal(r.takeRelic(offer[1]!.id), null, "같은 것을 두 번 받았다");
+    assert.equal(r.takeRelic("없는유물"), null);
 });
 
 test("다 모으면 더 안 준다", () => {
     const r = new RoguelikeManager(10);
     r.grantStartingRelics(999);
     const full = r.relics.length;
-    assert.equal(r.grantRandomRelic(), null);
+    assert.deepEqual(r.offerRelics(), [], "내밀 것이 없어야 한다");
     assert.equal(r.relics.length, full);
 });
 
@@ -297,6 +321,90 @@ test("비밀 장부는 오른 턴에만 터진다", () => {
     assert.equal(p.insightPoints, 0, "내린 턴에 터졌다");
     r.onTurnEnd(p, 3);
     assert.equal(p.insightPoints, 1);
+});
+
+/* ── 차수 — 다시 켤 이유 ────────────────────────────────────── */
+
+test("완주하면 차수가 오르고 청산되면 내려간다", () => {
+    const up = applyRun({ ...EMPTY, tier: 2 }, run(10, 5));
+    assert.equal(up.tier, 3);
+
+    const down = applyRun({ ...EMPTY, tier: 3 }, bust());
+    assert.equal(down.tier, 2, "청산은 한 차수만 깎는다");
+});
+
+test("차수는 0 아래로도 최대치 위로도 안 간다", () => {
+    assert.equal(applyRun({ ...EMPTY, tier: 0 }, bust()).tier, 0);
+    assert.equal(applyRun({ ...EMPTY, tier: MAX_TIER }, run(10, 5)).tier, MAX_TIER);
+});
+
+test("관망만 한 판으로는 차수를 못 올린다", () => {
+    // 12턴을 흘려보내 차수만 쌓는 길을 막는다.
+    const next = applyRun({ ...EMPTY, tier: 1 }, run(0, 0, true));
+    assert.equal(next.tier, 1);
+    assert.equal(next.runs, 1, "그래도 판은 센다");
+});
+
+test("차수가 오를수록 청산선이 바짝 붙는다", () => {
+    assert.equal(bustRatioFor(0), BUST_RATIO);
+    assert.ok(Math.abs(bustRatioFor(3) - (BUST_RATIO + 3 * TIER_BUST_STEP)) < 1e-9);
+    // 저장이 상해도 범위를 안 벗어난다.
+    assert.equal(bustRatioFor(-5), BUST_RATIO);
+    assert.equal(bustRatioFor(999), bustRatioFor(MAX_TIER));
+
+    const low = new StockEngine(1, 0), high = new StockEngine(1, 4);
+    assert.ok(high.bustLine > low.bustLine, "높은 차수가 더 헐거웠다");
+});
+
+test("차수가 높으면 같은 성적에 인사이트를 더 준다", () => {
+    const earn = (tier: number) => {
+        const e = new StockEngine(31, tier);
+        e.buyHalf();
+        for (let t = 0; t < 12; t++) { e.tick(NO_BUFF); e.advanceTurn(); }
+        e.liquidate();
+        return e.summarize();
+    };
+    const a = earn(0), b = earn(4);
+    // 같은 시드라 주가도 성적도 같아야 하고, 차이는 배수에서만 나야 한다.
+    assert.ok(Math.abs(a.returnPct - b.returnPct) < 1e-9, "판이 달라져 견줄 수 없다");
+    if (!a.bankrupt && !b.bankrupt) assert.ok(b.earnedIP > a.earnedIP);
+});
+
+/* ── 카드를 언제 쓰는가 ─────────────────────────────────────── */
+
+test("카드마다 언제 쓰는지가 적혀 있다", () => {
+    // 효과만 있고 쓰임이 없으면 무엇을 고를지가 안 보인다. 도감이 읽는 줄이기도 하다.
+    for (const c of CARD_LIST) {
+        assert.ok(c.when.length > 5, `${c.id} 에 when 이 없다`);
+        assert.ok(c.effectDescription.length > 5, `${c.id} 에 설명이 없다`);
+    }
+});
+
+test("화면에 나가는 글에 마크다운이 섞이지 않는다", () => {
+    // 이 문자열들은 캔버스의 뉴스 줄과 도감에 **날것으로** 찍힌다. 강조 표시를 남기면
+    // 별표가 그대로 보인다 — 실제로 한 번 그랬다.
+    for (const c of CARD_LIST) {
+        for (const [field, text] of [["when", c.when], ["설명", c.effectDescription]] as const) {
+            assert.ok(!/[*_`]/.test(text), `${c.id} 의 ${field} 에 마크다운이 있다: ${text}`);
+        }
+    }
+    for (const r of RELIC_POOL) {
+        assert.ok(!/[*_`]/.test(r.description), `${r.id} 의 설명에 마크다운이 있다`);
+        assert.ok(r.description.length > 5, `${r.id} 에 설명이 없다`);
+    }
+});
+
+test("현금만 쥐고 있으면 지킬 것도 팔 것도 없다", () => {
+    const r = new RoguelikeManager(41);
+    const broke = { shares: 0, cash: 10_000_000, price: 1000 };
+    const held = { shares: 100, cash: 0, price: 1000 };
+
+    for (const id of ["shield", "nofee", "rebound", "bunker"]) {
+        assert.equal(r.isIdle(id, broke), true, `${id} 가 현금일 때도 쓸모 있다고 한다`);
+        assert.equal(r.isIdle(id, held), false, `${id} 가 보유 중인데 쓸모없다고 한다`);
+    }
+    // 가격을 올리는 카드는 사고 나서 쓰는 것이라 "지금 쓸모없음" 으로는 안 가른다.
+    assert.equal(r.isIdle("insider", broke), false);
 });
 
 /* ── 시작 덱 강화 ───────────────────────────────────────────── */

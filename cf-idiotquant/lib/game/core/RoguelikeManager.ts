@@ -27,15 +27,25 @@ export const REWARD_TURNS = [3, 6, 9];
 export const OFFER_SIZE = 3;
 
 /** 카드 한 장이 무엇을 하는가. 정의와 효과를 한자리에 둔다 — 갈라 두면 반드시 어긋난다. */
-interface CardDef {
+export interface CardDef {
     id: string;
     name: string;
     type: StrategyCard["type"];
     kind: CardKind;
     effectDescription: string;
+    /**
+     * **언제 쓰는 카드인가.** 효과만 적어 두면 무엇을 고를지가 안 보인다 — 도감과
+     * 화면이 같이 읽는 한 줄이다.
+     */
+    when: string;
     apply: (b: TurnBuff) => TurnBuff;
     /** 이 카드를 얻으면 덱에 함께 들어오는 저주. 센 카드가 치르는 값이다. */
     curse?: string;
+    /**
+     * 지금 이 카드가 아무 일도 못 하는가. 손패에서 흐리게 칠할 근거다.
+     * 안 주면 언제나 쓸모가 있다는 뜻이다.
+     */
+    idleWhen?: (p: { shares: number; cash: number; price: number }) => boolean;
 }
 
 const CARDS: CardDef[] = [
@@ -44,22 +54,28 @@ const CARDS: CardDef[] = [
     {
         id: "steady", name: "관망 지시", type: "price", kind: "starter",
         effectDescription: "이번 턴 변동폭이 절반으로 줄어듭니다.",
+        when: "크게 물려 있을 때. 오르지도 내리지도 않게 붙잡아 둡니다.",
         apply: b => ({ ...b, volatilityMult: b.volatilityMult * 0.5 }),
     },
     {
         id: "shield", name: "방어막", type: "price", kind: "starter",
         effectDescription: "이번 턴 하락폭이 절반으로 줄어듭니다.",
+        when: "주식을 들고 있을 때. 현금만 있으면 지킬 것이 없습니다.",
         apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.5) }),
+        idleWhen: p => p.shares === 0,
     },
     {
         id: "insider", name: "인사이더 호재", type: "price", kind: "starter",
         effectDescription: "이번 턴 주가가 확실히 오릅니다 (+7%p).",
+        when: "사고 나서 넘기는 턴. 현금만 쥔 채 쓰면 살 값만 올려 놓습니다.",
         apply: b => ({ ...b, priceBias: b.priceBias + 0.07 }),
     },
     {
         id: "nofee", name: "손절 수수료 면제", type: "trade", kind: "starter",
         effectDescription: "이번 턴 매도 수수료와 거래세를 내지 않습니다.",
+        when: "이번 턴에 팔 때. 안 팔면 아무 일도 안 합니다.",
         apply: b => ({ ...b, feeWaived: true }),
+        idleWhen: p => p.shares === 0,
     },
 
     /* ── 보상 ────────────────────────────────────────────
@@ -67,27 +83,34 @@ const CARDS: CardDef[] = [
     {
         id: "rebound", name: "급반등 유도", type: "price", kind: "reward",
         effectDescription: "이번 턴에 내리면 그 하락을 없던 일로 만듭니다.",
+        when: "들고 있는데 다음 턴이 불안할 때. 오르는 턴은 안 건드립니다.",
         apply: b => ({ ...b, reboundRatio: Math.max(b.reboundRatio, 1) }),
+        idleWhen: p => p.shares === 0,
     },
     {
         id: "volatile", name: "변동성 폭발", type: "price", kind: "reward",
         effectDescription: "이번 턴 변동폭이 두 배가 됩니다. 위로든 아래로든.",
+        when: "뒤가 없을 때. 방어 카드와 겹쳐 써야 도박이 아니게 됩니다.",
         apply: b => ({ ...b, volatilityMult: b.volatilityMult * 2 }),
     },
     {
         id: "bunker", name: "벙커", type: "price", kind: "reward",
         effectDescription: "이번 턴 하락폭이 없는 것이나 마찬가지가 됩니다.",
+        when: "청산선이 코앞일 때. 한 턴을 통째로 버텨 냅니다.",
         apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.9) }),
+        idleWhen: p => p.shares === 0,
     },
     {
         id: "pump", name: "작전 세력", type: "price", kind: "reward",
         effectDescription: "이번 턴 +8%p, 변동폭 1.5배. 대신 뒷말이 남습니다.",
+        when: "많이 사 둔 턴. 변동폭까지 커지니 방어 없이는 양날입니다.",
         apply: b => ({ ...b, priceBias: b.priceBias + 0.08, volatilityMult: b.volatilityMult * 1.5 }),
         curse: "rumor",
     },
     {
         id: "leak", name: "미공개 정보", type: "price", kind: "reward",
         effectDescription: "이번 턴 +20%p. 이런 건 반드시 대가가 따릅니다.",
+        when: "올인한 턴에 한 번. 판을 뒤집는 대신 덱에 저주가 남습니다.",
         apply: b => ({ ...b, priceBias: b.priceBias + 0.20 }),
         curse: "probe",
     },
@@ -97,19 +120,28 @@ const CARDS: CardDef[] = [
     {
         id: "rumor", name: "뒷말", type: "price", kind: "curse",
         effectDescription: "저주 — 변동폭만 1.5배가 됩니다. 방향은 안 도와줍니다.",
+        when: "쓸 일이 없습니다. 현금일 때 흘려보내는 것이 그나마 낫습니다.",
         apply: b => ({ ...b, volatilityMult: b.volatilityMult * 1.5 }),
     },
     {
         id: "probe", name: "당국 조사", type: "price", kind: "curse",
         effectDescription: "저주 — 이번 턴 −6%p.",
+        when: "쓸 일이 없습니다. 현금일 때 흘려보내세요.",
         apply: b => ({ ...b, priceBias: b.priceBias - 0.06 }),
     },
     {
         id: "delay", name: "공시 지연", type: "price", kind: "curse",
         effectDescription: "저주 — 아무 일도 일어나지 않습니다.",
+        when: "한 턴을 버리는 카드입니다. 셋 다 저주면 이걸 고르세요.",
         apply: b => b,
     },
 ];
+
+/**
+ * 카드 전부. **도감이 이 배열을 그대로 그린다** — 화면용 사본을 따로 두면 어느 날
+ * 한쪽만 바뀐다. `apply` 는 함수라 화면이 못 쓰지만, 나머지는 그대로 읽을 수 있다.
+ */
+export const CARD_LIST: readonly CardDef[] = CARDS;
 
 function defOf(id: string): CardDef | undefined {
     return CARDS.find(c => c.id === id);
@@ -145,8 +177,8 @@ export function startingDeckOf(upgrades: readonly string[]): string[] {
 /** 보상으로 내밀 수 있는 것 — 저주는 고를 수 없다. */
 const REWARD_IDS = CARDS.filter(c => c.kind === "reward").map(c => c.id);
 
-/** 유물 — 한 번 얻으면 판이 끝날 때까지 남는다. */
-const RELIC_POOL: Relic[] = [
+/** 유물 — 한 번 얻으면 판이 끝날 때까지 남는다. 도감도 이 목록을 읽는다. */
+export const RELIC_POOL: Relic[] = [
     {
         id: "compass", name: "낡은 나침반", triggerType: "onTurnStart",
         description: "매 턴 시작에 인사이트 +1.",
@@ -346,6 +378,21 @@ export class RoguelikeManager {
         return this.hand.find(c => c.isUsed) ?? null;
     }
 
+    /**
+     * 이 카드가 **지금** 아무 일도 못 하는가.
+     *
+     * 손절 수수료 면제를 현금만 쥔 채 쓰면 그 턴은 통째로 버려진다. 그걸 눌러 보고
+     * 나서야 아는 것보다, 흐리게라도 미리 보이는 편이 낫다.
+     */
+    isIdle(cardId: string, p: { shares: number; cash: number; price: number }): boolean {
+        return defOf(cardId)?.idleWhen?.(p) ?? false;
+    }
+
+    /** 이 카드를 언제 쓰는가. 고른 순간 화면이 함께 읽어 준다. */
+    whenOf(cardId: string): string {
+        return defOf(cardId)?.when ?? "";
+    }
+
     /* ── 보상 ───────────────────────────────────────────── */
 
     /** 이 턴을 끝냈을 때 카드 보상이 뜨는가. */
@@ -396,12 +443,23 @@ export class RoguelikeManager {
         return this.relics;
     }
 
-    /** 판 도중에 하나 더. 화면이 "유물을 얻었다" 를 띄울 수 있게 얻은 것을 돌려준다. */
-    grantRandomRelic(): Relic | null {
+    /**
+     * 판 도중에 얻을 유물 후보. **아직 안 준다** — 고른 뒤에 takeRelic 을 부른다.
+     *
+     * 예전에는 네 턴마다 하나가 그냥 굴러들어왔다. 그러면 유물이 무엇이었는지 모른 채
+     * 판이 끝나고, 무슨 소용인지도 모르게 된다. 셋 중에 고르게 하면 그 순간 셋을 다
+     * 읽게 되고, 들고 있는 것이 "내가 고른 것" 이 된다.
+     */
+    offerRelics(n = OFFER_SIZE): Relic[] {
         const owned = new Set(this.relics.map(r => r.id));
-        const left = RELIC_POOL.filter(r => !owned.has(r.id));
-        if (left.length === 0) return null;
-        const got = left[Math.floor(this.rand() * left.length)]!;
+        return sample(RELIC_POOL.filter(r => !owned.has(r.id)), n, this.rand);
+    }
+
+    /** 고른 유물을 받는다. 이미 있거나 없는 것이면 아무 일도 안 한다. */
+    takeRelic(relicId: string): Relic | null {
+        if (this.relics.some(r => r.id === relicId)) return null;
+        const got = RELIC_POOL.find(r => r.id === relicId);
+        if (!got) return null;
         this.relics.push(got);
         return got;
     }

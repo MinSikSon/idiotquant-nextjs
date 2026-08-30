@@ -10,6 +10,9 @@ import Phaser from "phaser";
 import type { StrategyCard } from "@/lib/game/core/types";
 import { C, S, FS, fontOf } from "@/lib/game/ui/theme";
 
+/** 지금 아무 일도 못 하는 카드인가. 씬이 계좌를 보고 답한다. */
+export type IdleCheck = (card: StrategyCard) => boolean;
+
 export interface CardHandOpts {
     x: number;
     y: number;
@@ -28,6 +31,8 @@ interface CardView {
     uid: string;
     /** 저주는 다른 색으로 칠한다 — 무엇을 쥐었는지 한눈에 보여야 한다. */
     curse: boolean;
+    /** 지금은 아무 일도 못 하는 카드. 눌리기는 하되 흐리게 둔다. */
+    idle: boolean;
 }
 
 const GAP = 8;
@@ -52,8 +57,14 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
         scene.add.existing(this);
     }
 
-    /** 새 손패를 깐다. 지난 턴 카드는 여기서 사라진다. */
-    setHand(cards: StrategyCard[]): void {
+    /**
+     * 새 손패를 깐다. 지난 턴 카드는 여기서 사라진다.
+     *
+     * @param isIdle 지금 아무 일도 못 하는 카드를 가려낸다. 손절 수수료 면제를 현금만
+     *               쥔 채 쓰면 그 턴이 통째로 버려지는데, 눌러 보고 나서야 아는 것보다
+     *               흐리게라도 미리 보이는 편이 낫다.
+     */
+    setHand(cards: StrategyCard[], isIdle?: IdleCheck): void {
         for (const v of this.views) v.root.destroy(true);
         this.views = [];
         this.empty?.destroy();
@@ -73,6 +84,7 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
         cards.forEach((card, i) => {
             const curse = card.kind === "curse";
+            const idle = isIdle?.(card) ?? false;
             const root = this.scene.add.container(i * (cw + GAP), 0);
             const bg = this.scene.add.graphics();
 
@@ -95,7 +107,7 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             root.add([bg, name, desc, zone]);
             this.add(root);
 
-            const view: CardView = { root, bg, name, desc, zone, uid: card.uid, curse };
+            const view: CardView = { root, bg, name, desc, zone, uid: card.uid, curse, idle };
             this.views.push(view);
 
             this.paint(view, cw, "idle");
@@ -148,7 +160,8 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             g.fillStyle(accent, 1).fillRect(2, 2, cw - 4, 3);
         }
 
-        v.root.setAlpha(state === "dimmed" ? 0.35 : 1);
+        // 흐리게 — 고르지 않은 카드(0.35)와 "지금 소용없는" 카드(0.5)를 갈라 둔다.
+        v.root.setAlpha(state === "dimmed" ? 0.35 : v.idle ? 0.5 : 1);
         v.name.setColor(state === "picked" ? (v.curse ? S.danger : S.neon)
             : (v.curse ? S.danger : S.ink));
     }
