@@ -15,7 +15,7 @@ import {
 } from "@/lib/game/core/RoguelikeManager";
 import {
     applyRun, isNewBest, buyUpgrade, canUpgrade, nextUpgradeCost, UPGRADE_COSTS,
-    EMPTY, type Progress,
+    UNLOCKS, unlockedIds, newlyUnlocked, EMPTY, type Progress,
 } from "@/lib/game/core/progress";
 import { NO_BUFF } from "@/lib/game/core/types";
 import { MAX_TIER, TIER_BUST_STEP, BUST_RATIO, bustRatioFor, StockEngine } from "@/lib/game/core/StockEngine";
@@ -347,6 +347,102 @@ test("비밀 장부는 오른 턴에만 터진다", () => {
     assert.equal(p.insightPoints, 0, "내린 턴에 터졌다");
     r.onTurnEnd(p, 3);
     assert.equal(p.insightPoints, 1);
+});
+
+/* ── 경력 인사이트 — 오직 오르는 것 ─────────────────────────── */
+
+test("경력 인사이트는 청산돼도 안 깎인다", () => {
+    // 다른 것은 다 뒷걸음질할 수 있다. 이 하나만은 판을 굴린 것 자체를 세어 준다.
+    const rich: Progress = { ...EMPTY, insightPoints: 90, careerIP: 200, upgrades: ["bunker"] };
+    const after = applyRun(rich, bust());
+
+    assert.equal(after.insightPoints, 45, "쓰는 인사이트는 절반이 맞다");
+    assert.deepEqual(after.upgrades, []);
+    assert.equal(after.careerIP, 200, "경력이 깎였다");
+});
+
+test("경력 인사이트는 쓴다고 줄지 않는다", () => {
+    const p: Progress = { ...EMPTY, insightPoints: 100, careerIP: 100 };
+    const bought = buyUpgrade(p, "bunker");
+    assert.equal(bought.insightPoints, 100 - UPGRADE_COSTS[0]!);
+    assert.equal(bought.careerIP, 100, "강화를 샀다고 경력이 줄었다");
+});
+
+test("굴릴수록 경력만 계속 오른다", () => {
+    let p: Progress = { ...EMPTY };
+    for (let i = 0; i < 6; i++) p = applyRun(p, i % 2 === 0 ? run(20, 11) : bust());
+    assert.equal(p.careerIP, 33, "번 것만 더해져야 한다 (11 x 3)");
+    assert.equal(p.busts, 3);
+});
+
+/* ── 해금 ───────────────────────────────────────────────────── */
+
+test("경력이 쌓이면 하나씩 열린다", () => {
+    assert.deepEqual(unlockedIds(0), []);
+    for (const u of UNLOCKS) {
+        assert.equal(unlockedIds(u.at - 1).includes(u.id), false, `${u.id} 가 일찍 열렸다`);
+        assert.equal(unlockedIds(u.at).includes(u.id), true, `${u.id} 가 안 열렸다`);
+    }
+    assert.equal(unlockedIds(99_999).length, UNLOCKS.length, "다 열려야 한다");
+});
+
+test("이번 판으로 새로 열린 것만 알려 준다", () => {
+    const first = UNLOCKS[0]!;
+    assert.deepEqual(newlyUnlocked(0, first.at).map(u => u.id), [first.id]);
+    assert.deepEqual(newlyUnlocked(first.at, first.at + 1), [], "이미 열린 것을 또 알렸다");
+});
+
+test("안 열린 카드는 보상으로 안 나온다", () => {
+    const locked = new RoguelikeManager(3);                       // 해금 없음
+    const open = new RoguelikeManager(3, [], UNLOCKS.map(u => u.id));
+
+    const lockedIds = new Set(locked.rewardPool);
+    assert.equal(lockedIds.has("tipoff"), false, "안 열린 카드가 풀에 있다");
+    assert.equal(lockedIds.has("margin"), false);
+    assert.ok(lockedIds.has("bunker"), "처음부터 있어야 할 카드가 없다");
+
+    assert.ok(open.rewardPool.length > locked.rewardPool.length, "해금이 풀을 안 넓혔다");
+    for (let seed = 0; seed < 20; seed++) {
+        const offer = new RoguelikeManager(seed).offerCards();
+        assert.ok(offer.every(c => lockedIds.has(c.id)), `시드 ${seed} 에 안 열린 카드가 나왔다`);
+    }
+});
+
+test("안 열린 유물도 안 나온다", () => {
+    const locked = new RoguelikeManager(4);
+    const open = new RoguelikeManager(4, [], UNLOCKS.map(u => u.id));
+    assert.equal(locked.relicPool.some(r => r.id === "hotline"), false);
+    assert.ok(open.relicPool.some(r => r.id === "hotline"));
+
+    locked.relics = [];
+    assert.ok(locked.offerRelics().every(r => locked.relicPool.some(x => x.id === r.id)));
+
+    locked.grantStartingRelics(999);
+    assert.equal(locked.relics.length, locked.relicPool.length, "안 열린 것까지 쥐여 줬다");
+});
+
+/* ── 예보가 몇 턴 가는가 ────────────────────────────────────── */
+
+test("정밀 예보는 다음 턴에도 남는다", () => {
+    // "두 턴" 이라면서 한 턴 만에 사라지면 예고 시황과 다를 것이 없다.
+    const r = new RoguelikeManager(5);
+    r.rememberPeek([3.2, -1.4]);
+    assert.deepEqual(r.peekLeft, [3.2, -1.4]);
+
+    r.consumePeek();
+    assert.deepEqual(r.peekLeft, [-1.4], "둘째 턴치가 사라졌다");
+
+    r.consumePeek();
+    assert.deepEqual(r.peekLeft, [], "다 쓰고도 남았다");
+});
+
+test("더 멀리 보는 예보만 갈아 끼운다", () => {
+    const r = new RoguelikeManager(6);
+    r.rememberPeek([1, 2]);
+    r.rememberPeek([9]);                    // 한 턴짜리로는 덮지 않는다
+    assert.deepEqual(r.peekLeft, [1, 2]);
+    r.rememberPeek([7, 8, 9]);
+    assert.deepEqual(r.peekLeft, [7, 8, 9]);
 });
 
 /* ── 차수 — 다시 켤 이유 ────────────────────────────────────── */

@@ -12,7 +12,7 @@ import Link from "next/link";
 import { CARD_LIST, RELIC_POOL, UPGRADE_SLOTS, UPGRADE_POOL } from "@/lib/game/core/RoguelikeManager";
 import { REWARD_TURNS, HAND_SIZE, OFFER_SIZE } from "@/lib/game/core/RoguelikeManager";
 import { BUST_RATIO, MAX_TIER, MAX_TURNS, START_CASH, TIER_BUST_STEP, TIER_IP_STEP } from "@/lib/game/core/StockEngine";
-import { UPGRADE_COSTS } from "@/lib/game/core/progress";
+import { UNLOCKS, UPGRADE_COSTS } from "@/lib/game/core/progress";
 
 export const metadata: Metadata = {
     title: "카드 도감 - 주식 로그라이크",
@@ -29,12 +29,28 @@ const KIND_STYLE = {
     curse: { label: "저주", ring: "border-[#ff5ec8]", ink: "text-[#ff5ec8]" },
 } as const;
 
+/** 이 id 가 경력 몇에서 열리는가. 처음부터 있는 것은 null. */
+function unlockAt(id: string): number | null {
+    return UNLOCKS.find(u => u.id === id)?.at ?? null;
+}
+
+function LockTag({ id }: { id: string }) {
+    const at = unlockAt(id);
+    if (at === null) return null;
+    return (
+        <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#e3b34a] ring-1 ring-[#e3b34a]">
+            경력 {at} 에 열림
+        </span>
+    );
+}
+
 function Card({ card }: { card: (typeof CARD_LIST)[number] }) {
     const skin = KIND_STYLE[card.kind];
     return (
         <li className={`rounded-xl border bg-[#141c1e] p-4 ${skin.ring}`}>
             <div className="flex items-baseline justify-between gap-3">
                 <h3 className={`text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
+                <LockTag id={card.id} />
                 {card.curse && (
                     <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#ff5ec8] ring-1 ring-[#ff5ec8]">
                         저주가 딸려 옵니다
@@ -130,6 +146,13 @@ export default function CardsPage() {
                             </dd>
                         </div>
                         <div>
+                            <dt className="text-[#7d8f88]">카드 지속</dt>
+                            <dd className="text-[#e9f2ea]">
+                                쓴 턴 하나
+                                <span className="text-[#7d8f88]"> · 예보만 본 턴 수만큼 이어집니다</span>
+                            </dd>
+                        </div>
+                        <div>
                             <dt className="text-[#7d8f88]">카드 보상</dt>
                             <dd className="text-[#e9f2ea]">
                                 {REWARD_TURNS.join("·")}턴을 끝냈을 때 {OFFER_SIZE}장 중 하나
@@ -140,6 +163,7 @@ export default function CardsPage() {
                             <dt className="text-[#7d8f88]">유물</dt>
                             <dd className="text-[#e9f2ea]">
                                 4·8턴을 끝냈을 때 {OFFER_SIZE}개 중 하나
+                                <span className="text-[#7d8f88]"> · 판 끝까지 남습니다</span>
                             </dd>
                         </div>
                     </dl>
@@ -163,6 +187,13 @@ export default function CardsPage() {
                                 잡히는 확률은 그대로고 질만 오릅니다.</span>
                         </li>
                         <li>
+                            <span className="text-[#e3b34a]">경력 인사이트</span> — 판마다 번 것이
+                            그대로 더해집니다. <span className="text-[#e9f2ea]">쓰지도 잃지도 않는
+                            유일한 값</span>이라, 청산돼도 이것만은 오릅니다. 카드와 유물이 여기서
+                            열립니다:{" "}
+                            {UNLOCKS.map(u => `${u.at}`).join(" · ")}.
+                        </li>
+                        <li>
                             <span className="text-[#e3b34a]">차수</span> — 완주하면 +1, 청산되면 −1
                             (최대 {MAX_TIER}). 차수마다 청산선이 {Math.round(TIER_BUST_STEP * 100)}%p
                             올라오고 인사이트를 {Math.round(TIER_IP_STEP * 100)}% 더 줍니다.
@@ -171,7 +202,8 @@ export default function CardsPage() {
                     </ul>
                     <p className="mt-3 border-t border-[#2f4046] pt-3 text-[12px] leading-relaxed text-[#ff5ec8]">
                         청산되면 인사이트가 절반이 되고 시작 덱 강화가 전부 사라집니다. 그 판에서 번
-                        인사이트도 0입니다.
+                        인사이트도 0입니다.{" "}
+                        <span className="text-[#7d8f88]">경력 인사이트만은 안 깎입니다.</span>
                     </p>
                 </section>
 
@@ -207,7 +239,10 @@ export default function CardsPage() {
                     <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                         {RELIC_POOL.map(r => (
                             <li key={r.id} className="rounded-xl border border-[#e3b34a] bg-[#141c1e] p-4">
-                                <h3 className="text-[15px] font-bold text-[#e3b34a]">{r.name}</h3>
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <h3 className="text-[15px] font-bold text-[#e3b34a]">{r.name}</h3>
+                                    <LockTag id={r.id} />
+                                </div>
                                 <p className="mt-2 text-[13px] leading-relaxed text-[#e9f2ea]">
                                     {r.description}
                                 </p>

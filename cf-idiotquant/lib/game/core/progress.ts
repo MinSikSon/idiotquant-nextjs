@@ -30,6 +30,16 @@ export interface Progress {
     /** 청산으로 끝난 판의 수. */
     busts: number;
     /**
+     * **경력 인사이트** — 판마다 번 것을 그대로 더한다. 쓰지도, 잃지도 않는다.
+     *
+     * 인사이트(`insightPoints`)는 강화에 쓰이고 청산되면 절반이 된다. 그래서 못한 판이
+     * 이어지면 눈에 보이는 것이 전부 뒷걸음질한다 — 다시 켤 이유가 사라진다.
+     *
+     * 이 값만은 **오직 오른다.** 청산돼도, 강화에 다 써도 남는 유일한 것이고, 카드와
+     * 유물이 해금되는 기준이기도 하다. 한 판을 굴린 것 자체가 어딘가에 남는다.
+     */
+    careerIP: number;
+    /**
      * 지금 차수. 완주하면 오르고 청산되면 내려간다.
      *
      * 강화도 유물도 언젠가 다 차서, 그 뒤로 다시 켤 이유가 없었다. 차수는 끝이 없는
@@ -39,8 +49,39 @@ export interface Progress {
 }
 
 export const EMPTY: Progress = {
-    insightPoints: 0, bestReturn: null, runs: 0, upgrades: [], busts: 0, tier: 0,
+    insightPoints: 0, bestReturn: null, runs: 0, upgrades: [], busts: 0, careerIP: 0, tier: 0,
 };
+
+/**
+ * 해금 — 경력 인사이트가 쌓이면 보상 풀에 새로 들어오는 것들.
+ *
+ * 첫 판의 보상이 다섯 장 다 나오면 세 판 만에 다 본다. 시작은 얇게 두고 굴릴수록
+ * 넓어지게 하면, 판을 거듭할 이유와 다양성이 같은 곳에서 나온다.
+ */
+export interface Unlock {
+    id: string;
+    kind: "card" | "relic";
+    /** 이 경력 인사이트에서 열린다. */
+    at: number;
+}
+
+export const UNLOCKS: readonly Unlock[] = [
+    { id: "ledger", kind: "relic", at: 40 },
+    { id: "tipoff", kind: "card", at: 70 },
+    { id: "hotline", kind: "relic", at: 110 },
+    { id: "margin", kind: "card", at: 160 },
+    { id: "shredder", kind: "relic", at: 220 },
+];
+
+/** 지금 열려 있는 것들의 id. 처음부터 있던 것은 여기 안 들어간다. */
+export function unlockedIds(careerIP: number): string[] {
+    return UNLOCKS.filter(u => careerIP >= u.at).map(u => u.id);
+}
+
+/** 이번 판으로 새로 열린 것. 결산이 그 자리에서 알려 준다. */
+export function newlyUnlocked(before: number, after: number): Unlock[] {
+    return UNLOCKS.filter(u => before < u.at && after >= u.at);
+}
 
 /**
  * 강화 한 장의 값. 앞에서부터 차례로 든다 — 네 번째 자리가 가장 비싸다.
@@ -80,6 +121,7 @@ function clean(raw: unknown): Progress {
     const runs = Number(o.runs);
     const busts = Number(o.busts);
     const tier = Number(o.tier);
+    const career = Number(o.careerIP);
     return {
         insightPoints: Number.isFinite(ip) && ip > 0 ? Math.floor(ip) : 0,
         bestReturn: Number.isFinite(best) ? best : null,
@@ -90,6 +132,7 @@ function clean(raw: unknown): Progress {
             ? o.upgrades.filter((x): x is string => typeof x === "string").slice(0, UPGRADE_COSTS.length)
             : [],
         busts: Number.isFinite(busts) && busts > 0 ? Math.floor(busts) : 0,
+        careerIP: Number.isFinite(career) && career > 0 ? Math.floor(career) : 0,
         tier: Number.isFinite(tier) ? Math.max(0, Math.min(MAX_TIER, Math.floor(tier))) : 0,
     };
 }
@@ -107,8 +150,12 @@ export function applyRun(prev: Progress, run: RunSummary): Progress {
 
     // 청산 — 쌓아 둔 것이 실제로 깎이는 유일한 자리다. 강화는 전부 날아가고 인사이트는
     // 절반이 된다. 최고 기록과 판 수는 남긴다(그것도 지운 기록의 일부다).
+    // 경력은 청산돼도 안 깎인다. 번 것은 번 것이다.
+    const careerIP = prev.careerIP + Math.max(0, run.earnedIP);
+
     if (run.bankrupt) {
         return {
+            careerIP,
             insightPoints: Math.floor(prev.insightPoints / 2),
             bestReturn,
             runs: prev.runs + 1,
@@ -120,6 +167,7 @@ export function applyRun(prev: Progress, run: RunSummary): Progress {
     }
 
     return {
+        careerIP,
         insightPoints: prev.insightPoints + Math.max(0, run.earnedIP),
         bestReturn,
         runs: prev.runs + 1,
