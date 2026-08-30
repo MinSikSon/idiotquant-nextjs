@@ -31,7 +31,8 @@ import {
 } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
-import { PAD, C, S, FS, bandsOf, designSize, fontOf, money, pct, tone } from "@/lib/game/ui/theme";
+import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
+import { PAD, C, S, FS, bandsOf, designSize, fontOf, money, pct, tone, type LogKind } from "@/lib/game/ui/theme";
 import type { Bands } from "@/lib/game/ui/theme";
 
 /* ── 버튼 ───────────────────────────────────────────────────── */
@@ -109,6 +110,14 @@ function nextUnlockNote(careerIP: number): string {
 /** 오버레이 안쪽 칸이 이보다 낮으면 세로로 늘어놓을 자리가 없다 — 눕혀서 편다. */
 const TALL_ENOUGH = 420;
 
+/**
+ * 로그를 몇 줄까지 들고 있을까.
+ *
+ * 한 판이 열두 턴이라 백 줄을 넘길 일이 드물지만, 자금과 덱이 판을 넘어 이어지므로
+ * 계속 굴리면 언젠가는 넘는다. 되감아 볼 수 있는 만큼만 남기고 앞에서 버린다.
+ */
+const LOG_KEEP = 300;
+
 /* ── 씬 ─────────────────────────────────────────────────────── */
 
 export class TradingScene extends Phaser.Scene {
@@ -122,11 +131,17 @@ export class TradingScene extends Phaser.Scene {
     private cashText!: Phaser.GameObjects.Text;
     private turnText!: Phaser.GameObjects.Text;
     private ipText!: Phaser.GameObjects.Text;
-    private newsText!: Phaser.GameObjects.Text;
     private posText!: Phaser.GameObjects.Text;
     private deckText!: Phaser.GameObjects.Text;
     private totalLabel!: Phaser.GameObjects.Text;
     private activeLabel!: Phaser.GameObjects.Text;
+
+    private logView!: GameLog;
+    /**
+     * 쌓인 로그. **컨테이너가 아니라 씬이 들고 있다** — 화면을 돌리면 그린 것이 통째로
+     * 부서지므로, 뷰가 들고 있으면 판이 도는 중에 지나온 기록이 날아간다.
+     */
+    private logs: LogEntry[] = [];
 
     private relicRow!: Phaser.GameObjects.Container;
     private buyHalfBtn!: Btn;
@@ -228,6 +243,12 @@ export class TradingScene extends Phaser.Scene {
             this.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
         });
 
+        // 로그는 판을 넘어 이어진다. 어디서 새 판이 열렸는지가 안 보이면 지난 판의 줄과
+        // 섞여 읽힌다.
+        this.log(saved.runs > 0
+            ? `▶ ${saved.runs + 1}판째 — ${money(saved.bankroll)} · 덱 ${this.rogue.deckState.total}장 · 차수 ${saved.tier}`
+            : `▶ 새 게임 — ${money(saved.bankroll)}`, "system", true);
+
         // 이어하기인지 새 게임인지를 먼저 말한다. 결산에서 바로 이어 굴릴 때는 건너뛴다.
         if (this.skipIntro) this.beginTurn();
         else { this.intro = { saved, confirmReset: false }; this.drawIntro(); }
@@ -242,9 +263,9 @@ export class TradingScene extends Phaser.Scene {
 
     private buildAll() {
         this.drawDotGrid();
-        this.buildHud();
+        this.buildLog();
         this.buildChart();
-        this.buildCardArea();
+        this.buildFirm();
         this.buildActions();
     }
 
@@ -288,38 +309,13 @@ export class TradingScene extends Phaser.Scene {
         }
     }
 
-    /* ── ① HUD ────────────────────────────────────────────── */
+    /* ── ① 로그 ───────────────────────────────────────────── */
 
-    private buildHud() {
-        const b = this.band.hud;
-        const g = this.add.graphics();
-        g.fillStyle(C.panel, 1).fillRect(b.x, b.y, b.w, b.h);
-        g.lineStyle(1, C.line, 1);
-        g.beginPath(); g.moveTo(b.x, b.y + b.h - 0.5); g.lineTo(b.x + b.w, b.y + b.h - 0.5); g.strokePath();
-
-        const L = b.x + PAD, R = b.x + b.w - PAD;
-        const mk = (x: number, y: number, size: number, color: string, origin = 0) =>
-            this.add.text(x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
-                .setOrigin(origin, 0);
-
-        this.totalLabel = this.add.text(L, b.y + 8, "TOTAL", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        });
-        this.equityText = mk(L, b.y + 20, FS.xl, S.ink);
-
-        this.turnText = mk(R, b.y + 8, FS.sm, S.neon, 1);
-        this.ipText = mk(R, b.y + 26, FS.sm, S.gold, 1);
-        this.cashText = mk(R, b.y + 44, FS.xs, S.inkDim, 1);
-        this.posText = mk(L, b.y + 54, FS.sm, S.inkDim);
-
-        // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
-        // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
-        this.deckText = mk(R, b.y + 58, FS.xs, S.inkDim, 1);
-
-        // 뉴스 티커 — 한 줄. 넘치면 잘리게 두고 줄바꿈하지 않는다(HUD 높이가 고정이다).
-        this.newsText = this.add.text(L, b.y + 78, "", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold, fixedWidth: b.w - PAD * 2,
-        });
+    private buildLog() {
+        const b = this.band.log;
+        this.logView = new GameLog(this, { x: b.x, y: b.y, width: b.w, height: b.h });
+        // 화면을 돌려도 쌓인 것은 그대로다 — 목록은 씬이 들고 있고 이 칸은 그리기만 한다.
+        this.logView.setEntries(this.logs);
     }
 
     /* ── ② 차트 ───────────────────────────────────────────── */
@@ -337,25 +333,53 @@ export class TradingScene extends Phaser.Scene {
         }).setOrigin(1, 0);
     }
 
-    /* ── ③ 유물 + 카드 ────────────────────────────────────── */
+    /* ── ③ 운용 상황 — 나는 지금 어떤 상태인가 ─────────────── */
 
-    private buildCardArea() {
-        const b = this.band.cards;
-        const L = b.x + PAD;
+    /**
+     * 자산·현금·보유·덱·유물, 그리고 손패를 한 칸에 모은다.
+     *
+     * 예전에는 자산이 맨 위(HUD), 유물과 손패가 아래에 따로 있었다. 그러면 "지금 내가
+     * 무엇을 들고 있나" 를 보려고 눈이 화면을 두 번 오간다. 로그가 맨 위로 올라온 김에
+     * **나에 대한 것을 한자리에** 모았다 — 로그(무슨 일이) → 차트(시장은) → 여기(나는)
+     * → 버튼(무엇을 할까) 순으로 읽힌다.
+     */
+    private buildFirm() {
+        const b = this.band.firm;
+        const L = b.x + PAD, R = b.x + b.w - PAD;
 
-        this.add.text(L, b.y + 4, "RELICS — 판 끝까지", {
+        const g = this.add.graphics();
+        g.lineStyle(1, C.line, 1);
+        g.beginPath(); g.moveTo(b.x, b.y + 0.5); g.lineTo(b.x + b.w, b.y + 0.5); g.strokePath();
+
+        const mk = (x: number, y: number, size: number, color: string, origin = 0) =>
+            this.add.text(x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
+                .setOrigin(origin, 0);
+
+        this.totalLabel = this.add.text(L, b.y + 6, "TOTAL", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
-        this.relicRow = this.add.container(L, b.y + 18);
+        this.equityText = mk(L, b.y + 18, FS.xl, S.ink);
+        this.posText = mk(L, b.y + 50, FS.sm, S.inkDim);
+
+        this.turnText = mk(R, b.y + 6, FS.sm, S.neon, 1);
+        this.ipText = mk(R, b.y + 24, FS.sm, S.gold, 1);
+        this.cashText = mk(R, b.y + 42, FS.xs, S.inkDim, 1);
+        // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
+        // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
+        this.deckText = mk(R, b.y + 56, FS.xs, S.inkDim, 1);
+
+        this.relicRow = this.add.container(L, b.y + 70);
 
         // 지금 무엇이 켜져 있고 **언제까지 가는지**. 카드가 한 턴짜리라는 것도, 예보가
         // 몇 턴 남았는지도 화면 어디에도 없었다.
-        this.activeLabel = this.add.text(L, b.y + 52, "", {
+        this.activeLabel = this.add.text(L, b.y + 100, "", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
 
+        const handTop = b.y + 116;
         this.hand = new CardHandContainer(this, {
-            x: L, y: b.y + 68, width: b.w - PAD * 2, height: b.h - 76,
+            x: L, y: handTop, width: b.w - PAD * 2,
+            height: Math.max(56, b.y + b.h - 6 - handTop),
             onPick: uid => this.onPickCard(uid),
         });
     }
@@ -385,7 +409,7 @@ export class TradingScene extends Phaser.Scene {
             // 폰에는 hover 가 없다 — 누르면 설명이 뉴스 줄에 뜬다.
             const zone = this.add.zone(x, 0, size, size).setOrigin(0, 0)
                 .setInteractive({ useHandCursor: true });
-            zone.on("pointerup", () => this.say(`${relic.name} — ${relic.description}`, S.gold));
+            zone.on("pointerup", () => this.log(`유물 ${relic.name} — ${relic.description}`, "relic"));
 
             this.relicRow.add([g, ch, zone]);
         });
@@ -461,9 +485,12 @@ export class TradingScene extends Phaser.Scene {
         // 줄었는지 모른 채 첫 턴을 맞으면 카드가 사라진 것처럼 보인다.
         const opening = this.openingMerges;
         this.openingMerges = [];
-        if (opening.length > 0) this.say(opening.join(" · "), S.gold);
-        else if (fired.length > 0) this.say(fired.join(" · "), S.gold);
-        else this.say(`${this.engine.player.currentTurn}턴 — 카드를 고르고 매매하세요.`, S.inkDim);
+
+        // 턴의 마디를 먼저 찍는다 — 로그가 쌓이면 이 줄이 눈금이 된다.
+        this.log(`— ${this.engine.player.currentTurn}턴 · ${this.engine.stock.name} ${this.engine.stock.currentPrice.toLocaleString()}원`,
+            "turn", true);
+        for (const m of opening) this.log(m, "system");
+        for (const f of fired) this.log(f, "relic");
     }
 
     /**
@@ -491,10 +518,10 @@ export class TradingScene extends Phaser.Scene {
         // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
         // 카드면 그 사실을, 아니면 언제 쓰는 카드인지를 말해 준다.
         if (this.idleCheck(card)) {
-            this.say(`${card.name} — 지금은 아무 일도 안 합니다`, S.danger);
+            this.log(`카드 ${card.name} — 지금은 아무 일도 안 합니다`, "warn");
         } else {
-            this.say(`${card.name} — ${this.rogue.whenOf(card.id)}`,
-                card.kind === "curse" ? S.danger : S.neon);
+            this.log(`카드 ${card.name} — ${card.shortDescription}`,
+                card.kind === "curse" ? "warn" : "card");
         }
 
         // 읽은 것을 그 자리에서 그린다. 이게 없으면 예보도 국면도 "켜짐" 줄도 다음 턴이
@@ -502,21 +529,46 @@ export class TradingScene extends Phaser.Scene {
         this.refresh();
     }
 
+    /**
+     * 사고판다. **한 번의 매매가 여러 줄로 남는다** — 체결, 현금이 얼마에서 얼마가
+     * 되었는지, 수수료를 얼마 냈는지, 판 것이면 실현 손익까지.
+     *
+     * 한 줄로 뭉치면 "얼마 벌었나" 를 매번 머리로 빼야 한다. 갈라 두면 로그를 훑는 것만
+     * 으로 이번 판에서 수수료로 얼마가 나갔는지가 보인다.
+     */
     private doTrade(kind: "half" | "all" | "sell") {
         if (this.busy) return;
         const buff = this.rogue.buildBuff();
+        const p = this.engine.player;
+        // 체결이 상태를 바꾸기 전에 찍어 둔다. 뒤에서는 이 값을 다시 못 만든다.
+        const before = { cash: p.cash, avg: p.avgPrice };
 
         let res: TradeResult;
         if (kind === "half") res = this.engine.buyHalf(buff);
         else if (kind === "all") res = this.engine.buyAll(buff);
         else res = this.engine.sellAll(buff);
 
-        if (!res.ok) { this.say(res.error, S.danger); return; }
+        if (!res.ok) { this.log(res.error, "warn"); return; }
 
-        const verb = res.side === "buy" ? "매수" : "매도";
-        const feeNote = res.fee === 0 && res.side === "sell" ? " (수수료 면제)" : "";
-        this.say(`${verb} ${res.qty.toLocaleString()}주 @ ${res.price.toLocaleString()}${feeNote}`,
-            res.side === "buy" ? S.up : S.down);
+        const won = (v: number) => `${Math.round(v).toLocaleString()}원`;
+        const lines: [string, LogKind][] = [
+            [`${res.side === "buy" ? "매수" : "매도"} ${res.qty.toLocaleString()}주 @ ${res.price.toLocaleString()}원`,
+                res.side === "buy" ? "buy" : "sell"],
+        ];
+
+        // 판 것이면 이번 거래로 실제로 번 돈. 수수료를 뺀 뒤의 값이라 손에 남는 것과 같다.
+        if (res.side === "sell") {
+            const realized = (res.price - before.avg) * res.qty - res.fee;
+            lines.push([`실현 손익 ${realized >= 0 ? "+" : "−"}${won(Math.abs(realized))}`,
+                realized >= 0 ? "up" : "down"]);
+        }
+
+        lines.push([`현금 ${money(before.cash)} → ${money(p.cash)}`, "cash"]);
+        lines.push([res.fee === 0
+            ? "수수료·거래세 면제 — 0원"
+            : `수수료·거래세 −${won(res.fee)}`, "fee"]);
+
+        this.logAll(lines);
         this.refresh();
     }
 
@@ -531,16 +583,22 @@ export class TradingScene extends Phaser.Scene {
         const tickRes = this.engine.tick(buff);
         const endFired = this.rogue.onTurnEnd(this.engine.player, tickRes.changePct);
 
+        // 주가가 움직인 것은 **끝낸 턴의 일**이다. advanceTurn 뒤에 적으면 로그의 턴
+        // 번호가 하나씩 밀려, 다음 턴이 열리기도 전에 그 턴의 등락이 있었던 것처럼 읽힌다.
+        const moved: [string, LogKind][] = [[
+            `시장 ${pct(tickRes.changePct)} → ${this.engine.stock.currentPrice.toLocaleString()}원`,
+            tickRes.changePct >= 0 ? "up" : "down",
+        ]];
+        if (tickRes.news) moved.push([`뉴스 ${tickRes.news}`, tickRes.changePct >= 0 ? "up" : "down"]);
+        if (this.engine.stoppedOut) moved.push(["손절 예약 발동 — 전량 매도", "warn"]);
+        for (const f of endFired) moved.push([f, "relic"]);
+        this.logAll(moved);
+
         this.engine.advanceTurn();
         this.refresh();
 
         this.rogue.consumePeek();
         this.marketRead = null;
-        this.say([
-            tickRes.news ?? pct(tickRes.changePct),
-            ...(this.engine.stoppedOut ? ["손절 예약 발동 — 전량 매도"] : []),
-            ...endFired,
-        ].join(" · "), tickRes.changePct >= 0 ? S.up : S.down);
 
         // 봉이 하나 자라는 것을 눈이 따라갈 시간을 준다. 바로 넘기면 무엇이 변했는지 모른다.
         this.time.delayedCall(420, () => {
@@ -737,7 +795,7 @@ export class TradingScene extends Phaser.Scene {
                 this.relicOffer = null;
                 this.closeOverlay();
                 this.beginTurn();
-                this.say(`유물 ${relic.name} — ${relic.description}`, S.gold);
+                this.log(`유물 획득 ${relic.name} — ${relic.description}`, "relic");
             }));
         });
     }
@@ -814,10 +872,10 @@ export class TradingScene extends Phaser.Scene {
 
         // 카드를 고르든 건너뛰든 **유물 고르기로 이어진다.** 3턴마다 한 번, 이 자리에서
         // 손(카드)과 기울기(유물)를 나란히 정한다.
-        const close = (note: string, color: string) => {
+        const close = (lines: [string, LogKind][]) => {
             this.offer = null;
             this.closeOverlay();
-            this.say(note, color);
+            this.logAll(lines);
             this.showRelicOffer();
         };
 
@@ -834,20 +892,19 @@ export class TradingScene extends Phaser.Scene {
                 const curse = this.rogue.takeReward(card.id);
                 // 셋째 장이 들어오면 그 자리에서 합쳐진다. 조용히 바뀌면 덱에서 카드가
                 // 사라진 것처럼 보이므로 무엇이 무엇이 되었는지 말해 준다.
-                const merged = this.rogue.takeMerges()
-                    .map(m => m.to ? `${m.from} ×3 → ${m.to}` : `${m.from} ×3 소멸`);
-                close(
-                    [
-                        curse ? `${card.name} 획득 — 저주 ${curse} 도 덱에` : `${card.name} 을(를) 덱에`,
-                        ...merged,
-                    ].join(" · "),
-                    merged.length > 0 ? S.gold : curse ? S.danger : S.neon,
-                );
+                const lines: [string, LogKind][] = [
+                    [`카드 획득 ${card.name}`, "card"],
+                ];
+                if (curse) lines.push([`저주 ${curse} 도 함께 덱에`, "warn"]);
+                for (const m of this.rogue.takeMerges()) {
+                    lines.push([m.to ? `합성 ${m.from} ×3 → ${m.to}` : `합성 ${m.from} ×3 소멸`, "system"]);
+                }
+                close(lines);
             }));
         });
 
         const skip = makeButton(this, px + 16, py + ph - 62, inner, 46,
-            "건너뛰기 — 덱을 얇게", () => close("덱을 그대로 뒀습니다", S.inkDim),
+            "건너뛰기 — 덱을 얇게", () => close([["카드를 안 받았습니다 — 덱을 그대로", "turn"]]),
             { tone: "plain", size: FS.sm });
         box.add(skip.root);
     }
@@ -920,6 +977,16 @@ export class TradingScene extends Phaser.Scene {
         const before = loadProgress().careerIP;
         const { progress, newBest } = recordRun(sum);
         this.ended = { sum, progress, newBest, unlocked: newlyUnlocked(before, progress.careerIP) };
+
+        this.logMark([
+            [sum.ruined ? "■ GAME OVER — 자본잠식" : "■ 판 종료", sum.ruined ? "warn" : "system"],
+            [`${money(sum.startEquity)} → ${money(sum.finalEquity)} (${pct(sum.returnPct)})`,
+                sum.returnPct >= 0 ? "up" : "down"],
+            [sum.ruined ? "자금과 덱이 처음으로 돌아갑니다"
+                : sum.idle ? "한 주도 사지 않았습니다 — 인사이트 없음"
+                    : `인사이트 +${sum.earnedIP}`,
+                sum.ruined || sum.idle ? "warn" : "fee"],
+        ]);
         this.refresh();
         this.drawResult();
     }
@@ -1016,9 +1083,9 @@ export class TradingScene extends Phaser.Scene {
             .setText(d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses}` : `DECK ${d.draw}/${d.total}`)
             .setColor(d.curses > 0 ? S.danger : S.inkDim);
 
-        // 가로에서는 HUD 가 왼쪽 칸만 쓴다(390 이 아니라 324 남짓). 긴 형태를 그대로 쓰면
-        // 오른쪽 끝의 DECK 줄과 부딪히므로, 좁을 때는 평단을 접고 주수와 손익만 남긴다.
-        const narrowHud = this.band.hud.w < 360;
+        // 가로에서는 운용 상황이 오른쪽 칸만 쓴다(390 이 아니라 300 남짓). 긴 형태를 그대로
+        // 쓰면 오른쪽 끝의 DECK 줄과 부딪히므로, 좁을 때는 평단을 접고 주수와 손익만 남긴다.
+        const narrowHud = this.band.firm.w < 360;
         this.posText.setText(
             p.shares === 0 ? "보유 없음"
                 : narrowHud
@@ -1034,20 +1101,28 @@ export class TradingScene extends Phaser.Scene {
         this.nextBtn.setEnabled(!this.busy);
     }
 
-    /** 뉴스 티커 한 줄. 길면 잘라 둔다 — HUD 높이는 고정이다. */
-    private say(msg: string, color: string) {
-        // 가로에서는 HUD 가 왼쪽 칸만 쓰므로 들어가는 글자 수가 다르다. 폭에서 낸다.
-        //
-        // 한글은 고정폭 글꼴에서도 라틴 문자의 **두 배** 폭이라, 글자 수로 자르면 한글
-        // 문장이 칸을 넘어 잘린 채 그려진다. 한글을 두 칸으로 세어 폭으로 자른다.
-        const room = Math.floor((this.band.hud.w - PAD * 2) / (FS.xs * 0.6));
-        const wide = (ch: string) => (ch.charCodeAt(0) > 0x1100 ? 2 : 1);
+    /* ── 로그 ───────────────────────────────────────────── */
 
-        let used = 0, cut = msg.length;
-        for (let i = 0; i < msg.length; i++) {
-            used += wide(msg[i]!);
-            if (used > room - 1) { cut = i; break; }
-        }
-        this.newsText.setText(cut < msg.length ? `${msg.slice(0, cut)}…` : msg).setColor(color);
+    /**
+     * 로그에 한 줄. **덮이지 않고 쌓인다.**
+     *
+     * 예전의 한 줄짜리 뉴스는 다음 일이 일어나면 덮였다. 매수 결과와 수수료를 같은 줄에
+     * 욱여넣어야 했고, 그마저도 다음 매매 한 번에 사라졌다. 지금은 각각이 제 줄로 남는다.
+     */
+    private log(text: string, kind: LogKind, bare = false) {
+        this.logs.push({ turn: bare ? 0 : this.engine?.player.currentTurn ?? 0, kind, text });
+        // 한 판에 백 줄을 넘길 일이 없지만, 판을 이어 굴리면 언젠가는 넘는다.
+        if (this.logs.length > LOG_KEEP) this.logs.splice(0, this.logs.length - LOG_KEEP);
+        this.logView?.setEntries(this.logs);
+    }
+
+    /** 여러 줄을 한꺼번에. 앞의 줄이 뒤에 밀려 사라지지 않게 순서대로 쌓는다. */
+    private logAll(lines: [string, LogKind][]) {
+        for (const [text, kind] of lines) this.log(text, kind);
+    }
+
+    /** 판이 열리고 닫히는 마디. 턴 번호를 안 붙이고, 줄 자체가 눈금이 된다. */
+    private logMark(lines: [string, LogKind][]) {
+        for (const [text, kind] of lines) this.log(text, kind, true);
     }
 }

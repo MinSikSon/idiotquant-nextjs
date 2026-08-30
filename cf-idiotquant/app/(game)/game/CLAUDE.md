@@ -29,7 +29,7 @@
 | `src/core/RoguelikeManager.ts` | `lib/game/core/RoguelikeManager.ts` | 덱·손패·보상·저주·유물. 여기도 Phaser 를 모른다 |
 | `src/scenes/TradingScene.ts` | `lib/game/scenes/TradingScene.ts` | Phaser 렌더링·입력·오버레이 |
 | — | `lib/game/core/{types,progress}.ts` | 값의 모양 / 판을 넘어 남는 것(localStorage) |
-| — | `lib/game/components/{PixelCandleChart,CardHandContainer}.ts` | 차트·손패 |
+| — | `lib/game/components/{PixelCandleChart,CardHandContainer,GameLog}.ts` | 차트·손패·로그 |
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
 | — | `app/(game)/game/cards/page.tsx` | 도감. **코어 정의를 그대로 그린다** — 값을 다시 적지 말 것 |
@@ -122,7 +122,25 @@
    주고 "처음부터 다시" 를 두 번 눌러 지운다), 아니면 새 게임이다. 결산의 `NEXT RUN >`
    은 `skipIntro: true` 로 건너뛴다 — 방금 그 성적표가 같은 것을 말했다.
 
-9. **손패는 두 번 눌러야 쓰인다.** 카드 칸은 세로 70~120px 이라 효과 설명을 통째로 넣으면
+9. **화면은 로그 → 차트 → 운용 상황 → 버튼 순이다**(`bandsOf`). 위에서 아래로 "무슨 일이
+   있었나 → 시장은 어떤가 → 나는 어떤 상태인가 → 무엇을 할까" 로 읽힌다. 가로에서는
+   왼쪽이 로그·차트, 오른쪽이 상황·버튼이다.
+   - **로그는 덮이지 않고 쌓인다**(`GameLog`). 예전의 한 줄짜리 뉴스는 다음 일이 일어나면
+     덮여서, 얼마에 샀고 수수료를 얼마 냈는지를 그 순간 못 보면 영영 못 봤다.
+   - 매매 한 번이 **여러 줄**로 남는다: 체결 · (판 것이면) 실현 손익 · 현금이 얼마에서
+     얼마로 · 수수료·거래세. 한 줄로 뭉치면 "얼마 벌었나" 를 매번 머리로 빼야 한다.
+   - 줄의 색은 `theme.LOG` 한 곳에서 나온다(매수 초록 · 매도 빨강 · 현금 흰색 · 수수료
+     금색 · 카드 네온 · 유물 금색 · 덱 변화 파랑 · 나쁜 소식 분홍 · 턴 마디 흐리게).
+     한 색이면 스무 줄이 쌓인 뒤에는 그냥 회색 벽이다.
+   - **목록은 씬이 들고 있다**(`TradingScene.logs`). 화면을 돌리면 그린 것이 통째로
+     부서지므로 뷰가 들고 있으면 지나온 기록이 날아간다. 로그는 `scene.restart` 도
+     넘어가 판을 잇는 일지가 된다.
+   - 등락은 **끝낸 턴의 일**이라 `advanceTurn()` 앞에서 적는다. 뒤에서 적으면 턴 번호가
+     하나씩 밀린다.
+   - 한 줄은 한 줄이다. 줄바꿈을 허용하면 줄 높이가 제각각이 되어 스크롤을 줄 단위로
+     못 잡는다 — 넘치는 글자는 자른다(한글은 두 칸으로 센다).
+
+10. **손패는 두 번 눌러야 쓰인다.** 카드 칸은 세로 70~120px 이라 효과 설명을 통째로 넣으면
    글자가 겹친다. 접힘(이름 + `shortDescription` 한 줄) → 탭 → 펼침(`effectDescription`·
    `when`) → 탭 → 사용. 펼침 칸은 손패 위를 덮으며 **내용을 재고 나서** 높이를 정한다
    (`CardHandContainer.openDetail`) — 칸을 먼저 못박으면 설명이 한 줄 길어질 때 겹친다.

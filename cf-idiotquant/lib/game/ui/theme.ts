@@ -61,35 +61,44 @@ export function designSize(hostW: number, hostH: number): DesignSize {
 export interface Band { x: number; y: number; w: number; h: number }
 export interface Bands {
     portrait: boolean;
-    hud: Band;
+    /** 로그 — 무슨 일이 있었는지가 쌓이는 채팅창. */
+    log: Band;
     chart: Band;
-    cards: Band;
+    /** 운용 상황 — 자산·현금·보유·덱·유물, 그리고 손패. */
+    firm: Band;
     action: Band;
 }
 
 /**
  * 격자를 네 자리로 나눈다.
  *
- * **세로**는 위에서 아래로 넷. 원핸드 조작이라 아래로 갈수록 손이 닿아야 하는 것이 온다.
- * HUD 는 글자 줄 높이라 고정이고, 손패와 버튼이 최소치를 먼저 가져간 뒤 **남는 세로는
- * 전부 차트**로 간다.
+ * **세로**는 위에서 아래로 넷: 로그 → 차트 → 운용 상황 → 버튼.
  *
- * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(HUD·차트), 오른쪽에 만지는 것(손패·버튼)을
+ * 위에서 아래로 "무슨 일이 있었나 → 시장은 어떤가 → 나는 어떤 상태인가 → 무엇을 할까"
+ * 로 읽힌다. 원핸드 조작이라 아래로 갈수록 손이 닿아야 하는 것이 오는 것과도 맞는다.
+ * 로그·상황·버튼이 최소치를 먼저 가져간 뒤 **남는 세로는 전부 차트**로 간다.
+ *
+ * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(로그·차트), 오른쪽에 만지는 것(상황·버튼)을
  * 둔다 — 눕힌 폰은 세로가 280px 뿐이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
  */
 export function bandsOf(w: number, h: number): Bands {
-    const hud = 100;
-
     if (w / h < LANDSCAPE_RATIO) {
-        const action = clamp(h * 0.23, 148, 194);
-        const cards = clamp(h * 0.24, 148, 200);
-        const chart = Math.max(136, h - hud - action - cards);
+        // 아래 세 최소치의 합(410)에 차트의 최소(130)를 더하면 세로의 하한(540)과 딱 맞는다.
+        // 하나라도 올리면 가장 작은 화면에서 넷째 칸이 화면 밖으로 밀린다.
+        //
+        // 로그의 비율(0.17)은 **한 번의 매매가 남기는 줄 수**에서 나왔다. 매도 한 번이
+        // 네 줄(체결·실현 손익·현금·수수료)이라, 네 줄만 보이면 매매 한 번에 앞이 통째로
+        // 밀려 나간다. 다섯에서 일곱 줄이면 턴의 마디와 함께 읽힌다.
+        const logH = clamp(h * 0.17, 92, 150);
+        const action = clamp(h * 0.20, 128, 180);
+        const firm = clamp(h * 0.29, 190, 268);
+        const chart = Math.max(130, h - logH - action - firm);
         return {
             portrait: true,
-            hud: { x: 0, y: 0, w, h: hud },
-            chart: { x: 0, y: hud, w, h: chart },
-            cards: { x: 0, y: hud + chart, w, h: cards },
-            action: { x: 0, y: hud + chart + cards, w, h: action },
+            log: { x: 0, y: 0, w, h: logH },
+            chart: { x: 0, y: logH, w, h: chart },
+            firm: { x: 0, y: logH + chart, w, h: firm },
+            action: { x: 0, y: logH + chart + firm, w, h: action },
         };
     }
 
@@ -99,11 +108,12 @@ export function bandsOf(w: number, h: number): Bands {
     const right = w - left;
     // 가로에서는 매매 버튼 넷이 **한 줄**로 간다. 폭은 남고 세로는 모자란 자리다.
     const action = clamp(h * 0.28, 76, 110);
+    const logH = clamp(h * 0.28, 84, 116);
     return {
         portrait: false,
-        hud: { x: 0, y: 0, w: left, h: hud },
-        chart: { x: 0, y: hud, w: left, h: h - hud },
-        cards: { x: left, y: 0, w: right, h: h - action },
+        log: { x: 0, y: 0, w: left, h: logH },
+        chart: { x: 0, y: logH, w: left, h: h - logH },
+        firm: { x: left, y: 0, w: right, h: h - action },
         action: { x: left, y: h - action, w: right, h: action },
     };
 }
@@ -147,6 +157,37 @@ export const S = {
  * 카드가 열두 장이 되면 이름만으로는 안 갈린다. **무엇을 하는 카드인가**(읽는다·건다·
  * 막는다·저주)를 색과 한 글자 표시로 먼저 말해 두면, 손패 셋을 훑는 데 한 호흡이면 된다.
  */
+/**
+ * 로그 한 줄의 색.
+ *
+ * 로그가 한 색이면 스무 줄이 쌓인 뒤에는 그냥 회색 벽이다. **행동의 갈래**를 색으로
+ * 갈라 두면 훑는 것만으로 "샀고, 수수료를 냈고, 시장이 내렸다" 가 읽힌다. 줄 왼쪽의
+ * 작은 색 조각(`chip`)이 글자색과 같은 뜻이라, 글자를 읽기 전에 색이 먼저 온다.
+ */
+export const LOG = {
+    /** 턴이 열렸다. 로그의 마디 — 흐리게 둔다. */
+    turn: { ink: S.inkDim, chip: C.line },
+    buy: { ink: S.up, chip: C.up },
+    sell: { ink: S.down, chip: C.down },
+    /** 현금이 얼마에서 얼마가 되었나. */
+    cash: { ink: S.ink, chip: C.ink },
+    /** 수수료·거래세 — 낸 것도 안 낸 것도 여기로. */
+    fee: { ink: S.gold, chip: C.gold },
+    /** 카드를 골랐다. */
+    card: { ink: S.neon, chip: C.neon },
+    /** 유물을 얻었거나 터졌다. */
+    relic: { ink: S.gold, chip: C.gold },
+    /** 시장이 움직였다. */
+    up: { ink: S.up, chip: C.up },
+    down: { ink: S.down, chip: C.down },
+    /** 덱이 바뀌었다(합성·해금) — 시장과 안 헷갈리게 파랑. */
+    system: { ink: S.steel, chip: C.steel },
+    /** 손절 발동·자본잠식 같은 나쁜 소식. */
+    warn: { ink: S.danger, chip: C.danger },
+} as const;
+
+export type LogKind = keyof typeof LOG;
+
 export const LANE = {
     info: { color: C.neon, ink: S.neon, tag: "정보" },
     act: { color: C.gold, ink: S.gold, tag: "집행" },
