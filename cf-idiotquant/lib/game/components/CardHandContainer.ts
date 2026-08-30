@@ -76,12 +76,14 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             const root = this.scene.add.container(i * (cw + GAP), 0);
             const bg = this.scene.add.graphics();
 
-            const name = this.scene.add.text(cw / 2, 8, card.name, {
+            const name = this.scene.add.text(cw / 2, 6, card.name, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.sm}px`, color: curse ? S.danger : S.ink,
                 align: "center", wordWrap: { width: cw - 12 },
             }).setOrigin(0.5, 0);
 
-            const desc = this.scene.add.text(cw / 2, 30, card.effectDescription, {
+            // 설명은 이름이 **실제로 차지한 높이** 아래에서 시작한다. 고정값을 쓰면 칸이
+            // 좁아 이름이 두 줄이 되는 순간(가로 배치가 그렇다) 설명 위에 겹쳐 찍힌다.
+            const desc = this.scene.add.text(cw / 2, name.y + name.height + 4, card.effectDescription, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
                 align: "center", wordWrap: { width: cw - 14 }, lineSpacing: 2,
             }).setOrigin(0.5, 0);

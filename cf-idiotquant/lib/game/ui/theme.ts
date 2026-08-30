@@ -7,53 +7,104 @@
 import type Phaser from "phaser";
 
 /**
- * 설계 **폭**. 이것만 고정이다.
+ * 세로일 때의 설계 폭. 그리고 아래 모든 치수가 기준으로 삼는 값이다.
  *
- * 세로까지 844 로 못박아 두면 Scale.FIT 이 둘 중 작은 쪽에 맞추느라, 세로가 짧은 폰에서
- * 화면 전체를 통째로 줄여 버린다 — iPhone SE(375×667)에서는 배율이 0.66 까지 떨어져
- * 좌우 119px 이 검은 띠로 버려지고 글씨도 그만큼 작아졌다.
+ * 설계 격자를 390x844 로 통째로 못박아 두면 Scale.FIT 이 둘 중 작은 쪽에 맞추느라 화면
+ * 전체를 줄인다 — iPhone SE 세로에서 배율이 0.66 까지 떨어져 좌우 119px 이 검은 띠가
+ * 됐고, 가로로 돌리면 위아래가 통째로 남았다.
  *
- * 그래서 폭만 고정하고 **세로는 기기에서 받아 온다**(`heightFor`). 그러면 배율이 언제나
- * 정확히 `화면폭 / 390` 이라 좌우 여백이 0 이고, 글씨는 화면이 넓을수록 커진다.
+ * 그래서 **짧은 쪽을 고정하고 긴 쪽을 기기에서 받는다**(`designSize`).
  */
 export const W = 390;
 
-/** 기준 세로. 이 값일 때 아래 띠가 원래 설계대로 나뉜다. */
+/** 기준 세로. 크기를 못 잴 때 떨어지는 자리이기도 하다. */
 export const H = 844;
 
+const clamp = (v: number, lo: number, hi: number) => Math.round(Math.min(hi, Math.max(lo, v)));
+
 /**
- * 기기 크기에서 설계 세로를 낸다. 폭을 390 으로 맞췄을 때 세로가 얼마가 되는가.
+ * 가로로 눕혔다고 볼 최소 비율.
  *
- * 위아래로 지나치게 벌어진 자리(데스크톱의 넓은 칸 등)에서는 띠가 무너지므로 가둬 둔다.
+ * 단순히 "폭 > 세로" 로 가르면 조금 납작한 창(430x300 같은)까지 두 칸으로 쪼개져 손패
+ * 세 장이 51px 씩으로 눌린다. 두 칸이 값어치를 하려면 폭이 세로의 1.5배는 돼야 한다.
  */
-export function heightFor(hostW: number, hostH: number): number {
-    if (!(hostW > 0) || !(hostH > 0)) return H;
-    // 아래 하한은 bandsOf 의 최소 띠 넷을 더한 값이다. 이보다 낮추면 마지막 띠가 캔버스
-    // 밖으로 밀려 버튼이 잘린다. iPhone SE(375×667)가 정확히 이 값에 떨어진다.
-    return Math.round(Math.min(1100, Math.max(540, (W * hostH) / hostW)));
+const LANDSCAPE_RATIO = 1.5;
+
+export interface DesignSize {
+    width: number;
+    height: number;
+    /** 세로 배치인가. 화면이 아니라 **이 격자**의 모양을 말한다. */
+    portrait: boolean;
 }
 
-export interface Band { y: number; h: number }
-export interface Bands { hud: Band; chart: Band; cards: Band; action: Band }
+/**
+ * 기기가 준 칸에서 설계 격자를 낸다. 여기서 나온 값이 곧 FIT 의 기준이라, 이 비율이
+ * 칸의 비율과 같으면 여백이 0 이 된다.
+ */
+export function designSize(hostW: number, hostH: number): DesignSize {
+    if (!(hostW > 0) || !(hostH > 0)) return { width: W, height: H, portrait: true };
+
+    if (hostW / hostH < LANDSCAPE_RATIO) {
+        // 세로 — 폭을 390 으로 고정한다. 폰 폭은 360~430 에 몰려 있어 배율이 0.92~1.10 이다.
+        return { width: W, height: clamp((W * hostH) / hostW, 540, 1100), portrait: true };
+    }
+
+    // 가로 — 이번에는 세로가 짧은 쪽이다. 폰을 눕히면 앱 크롬을 뺀 세로가 280px 남짓뿐이라
+    // 되도록 1:1 로 그린다(그래야 글씨가 안 줄어든다). 아래위 한계는 띠가 무너지지 않을
+    // 최소치와, 큰 화면에서 글씨가 지나치게 커지지 않을 최대치다.
+    const height = clamp(hostH, 300, 460);
+    // 폭의 아래 한계는 비율의 하한(1.5) × 세로의 하한(300)이다. 그래서 이 값이 걸리는
+    // 일은 없고 — 걸리면 격자 비율이 칸과 어긋나 여백이 생긴다 — 순전히 안전망이다.
+    return { width: clamp((height * hostW) / hostH, 450, 1400), height, portrait: false };
+}
+
+export interface Band { x: number; y: number; w: number; h: number }
+export interface Bands {
+    portrait: boolean;
+    hud: Band;
+    chart: Band;
+    cards: Band;
+    action: Band;
+}
 
 /**
- * 화면을 넷으로 나눈 띠. 원핸드 조작이라 **아래로 갈수록 중요한 것**이 온다 —
- * 엄지가 닿는 자리에 버튼이 있어야 한다.
+ * 격자를 네 자리로 나눈다.
  *
- * HUD 는 글자 줄 높이라 고정이고, 손패와 버튼은 손가락이 닿을 최소치를 먼저 가져간다.
- * **남는 세로는 전부 차트로 간다** — 늘릴 값어치가 있는 것이 거기뿐이다.
+ * **세로**는 위에서 아래로 넷. 원핸드 조작이라 아래로 갈수록 손이 닿아야 하는 것이 온다.
+ * HUD 는 글자 줄 높이라 고정이고, 손패와 버튼이 최소치를 먼저 가져간 뒤 **남는 세로는
+ * 전부 차트**로 간다.
+ *
+ * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(HUD·차트), 오른쪽에 만지는 것(손패·버튼)을
+ * 둔다 — 눕힌 폰은 세로가 280px 뿐이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
  */
-export function bandsOf(h: number): Bands {
-    const clamp = (v: number, lo: number, hi: number) => Math.round(Math.min(hi, Math.max(lo, v)));
+export function bandsOf(w: number, h: number): Bands {
     const hud = 100;
-    const action = clamp(h * 0.23, 148, 194);
-    const cards = clamp(h * 0.24, 148, 200);
-    const chart = Math.max(136, h - hud - action - cards);
+
+    if (w / h < LANDSCAPE_RATIO) {
+        const action = clamp(h * 0.23, 148, 194);
+        const cards = clamp(h * 0.24, 148, 200);
+        const chart = Math.max(136, h - hud - action - cards);
+        return {
+            portrait: true,
+            hud: { x: 0, y: 0, w, h: hud },
+            chart: { x: 0, y: hud, w, h: chart },
+            cards: { x: 0, y: hud + chart, w, h: cards },
+            action: { x: 0, y: hud + chart + cards, w, h: action },
+        };
+    }
+
+    // 오른쪽 칸에는 카드 셋과 버튼 넷이 나란히 들어간다. 왼쪽에 더 주면 그 여덟 개가
+    // 전부 좁아져 이름과 라벨이 잘린다 — 차트는 폭이 조금 줄어도 읽힌다.
+    const left = Math.round(w * 0.52);
+    const right = w - left;
+    // 가로에서는 매매 버튼 넷이 **한 줄**로 간다. 폭은 남고 세로는 모자란 자리다.
+    const action = clamp(h * 0.28, 76, 110);
     return {
-        hud: { y: 0, h: hud },
-        chart: { y: hud, h: chart },
-        cards: { y: hud + chart, h: cards },
-        action: { y: hud + chart + cards, h: action },
+        portrait: false,
+        hud: { x: 0, y: 0, w: left, h: hud },
+        chart: { x: 0, y: hud, w: left, h: h - hud },
+        cards: { x: left, y: 0, w: right, h: h - action },
+        action: { x: left, y: h - action, w: right, h: action },
     };
 }
 

@@ -52,6 +52,14 @@ const nextConfig = {
     },
     reactStrictMode: false,
     // reactStrictMode: true,
+
+    // 로그라이크가 /game 으로 올라오면서 /game/roguelike 가 비었다. 하루짜리 주소지만
+    // 내비게이션과 문서가 가리키고 있었으므로 404 로 두지 않는다.
+    async redirects() {
+        return [
+            { source: '/game/roguelike', destination: '/game', permanent: true },
+        ];
+    },
 };
 
 import bundleAnalyzer from '@next/bundle-analyzer';

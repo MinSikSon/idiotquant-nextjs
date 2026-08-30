@@ -10,7 +10,7 @@
 // 브라우저이고, window 가 있다.
 
 import Phaser from "phaser";
-import { W, C, heightFor } from "@/lib/game/ui/theme";
+import { C, designSize } from "@/lib/game/ui/theme";
 import { TradingScene } from "@/lib/game/scenes/TradingScene";
 
 export interface GameOptions {
@@ -33,15 +33,15 @@ export interface GameOptions {
  * 켤 때까지 아무 일도 안 일어나서, 모듈을 미리 받아 두는 것과 켜는 것을 가를 수 있다.
  */
 export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
-    // 폭은 390 으로 고정하고 세로만 이 기기에 맞춰 받는다. 그래야 FIT 의 배율이 정확히
-    // `화면폭 / 390` 이 되어 좌우에 검은 띠가 안 생긴다 — 세로까지 고정하면 세로가 짧은
-    // 폰에서 FIT 이 세로에 맞추느라 화면 전체를 줄여 버린다.
-    const height = heightFor(o.parent.clientWidth, o.parent.clientHeight);
+    // 짧은 쪽을 고정하고 긴 쪽을 이 칸에서 받는다. 그래야 FIT 의 배율이 칸에 정확히
+    // 맞아떨어져 여백이 0 이 된다 — 격자를 통째로 고정하면 FIT 이 둘 중 작은 쪽에
+    // 맞추느라 화면을 줄이고 나머지를 검은 띠로 남긴다.
+    const { width, height } = designSize(o.parent.clientWidth, o.parent.clientHeight);
 
     return {
         type: Phaser.AUTO,
         parent: o.parent,
-        width: W,
+        width,
         height,
         backgroundColor: C.bg,
 

@@ -48,18 +48,20 @@ const plexKr = IBM_Plex_Sans_KR({
     display: "swap",
 });
 
+// /game 은 이제 로그라이크다. 블라인드 차트는 /game/blind 로 내려갔고, 그쪽 메타데이터는
+// game/blind/layout.tsx 가 따로 들고 있다 — 검색에서 찾던 말이 그 화면을 따라가야 한다.
 export const metadata: Metadata = {
-    title: "내 운용사 - 블라인드 차트 리플레이 투자 게임",
+    title: "주식 로그라이크 - 12턴 카드 덱빌딩 모의투자",
     description:
-        "어느 종목인지 모르는 차트를 하루씩 넘기며 사고팝니다. 반기마다 성적이 맡은 돈에 곱해지고, 고객이 돈을 맡기거나 빼갑니다. 종목명과 시기는 판이 끝나야 열립니다.",
+        "12턴 한 판. 매 턴 덱에서 전략 카드 세 장을 뽑아 한 장을 쓰고 사고팝니다. 3·6·9턴에 카드를 얻어 덱을 키우되, 센 카드에는 저주가 딸려 옵니다. 판이 끝나면 인사이트가 남아 다음 판의 유물이 됩니다.",
     keywords: [
-        "주식 게임", "투자 시뮬레이션", "블라인드 차트", "차트 리플레이",
-        "모의투자", "주식 연습", "매매 습관",
+        "주식 게임", "로그라이크", "덱빌딩", "투자 시뮬레이션",
+        "모의투자", "주식 연습", "카드 게임",
     ],
     alternates: { canonical: "https://idiotquant.com/game" },
     openGraph: {
-        title: "내 운용사 | IdiotQuant",
-        description: "어느 종목인지 모르는 차트를 하루씩 넘기며 굴리는 투자 게임.",
+        title: "주식 로그라이크 | IdiotQuant",
+        description: "12턴 한 판. 카드를 뽑아 사고팔고, 덱을 키우며 다음 판을 노립니다.",
         url: "https://idiotquant.com/game",
     },
 };
