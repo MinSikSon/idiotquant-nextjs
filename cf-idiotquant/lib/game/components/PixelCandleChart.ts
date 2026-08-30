@@ -6,7 +6,8 @@
 // 매 턴 `render()` 를 다시 부른다. 12봉짜리라 통째로 다시 그려도 싸다.
 
 import Phaser from "phaser";
-import type { Candle } from "@/lib/game/core/types";
+import type { Candle, MarketRead } from "@/lib/game/core/types";
+import { regimeLabel } from "@/lib/game/core/StockEngine";
 import { C, S, FS, fontOf } from "@/lib/game/ui/theme";
 
 /** 화면에 남기는 봉의 수. 한 판이 12턴이라 판 전체가 한눈에 들어온다. */
@@ -32,6 +33,8 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
     private hiLabel: Phaser.GameObjects.Text;
     private loLabel: Phaser.GameObjects.Text;
     private nowLabel: Phaser.GameObjects.Text;
+    /** 읽어 낸 국면. 카드를 써야 채워진다. */
+    private readLabel: Phaser.GameObjects.Text;
 
     constructor(scene: Phaser.Scene, o: ChartOpts) {
         super(scene, o.x, o.y);
@@ -48,8 +51,9 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         this.hiLabel = mk("left");
         this.loLabel = mk("left");
         this.nowLabel = mk("right");
+        this.readLabel = mk("right").setColor(S.gold);
 
-        this.add([this.frame, this.plot, this.hiLabel, this.loLabel, this.nowLabel]);
+        this.add([this.frame, this.plot, this.hiLabel, this.loLabel, this.nowLabel, this.readLabel]);
         scene.add.existing(this);
 
         this.drawFrame();
@@ -73,8 +77,11 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
 
     /**
      * @param history 봉 전체. 뒤에서 VISIBLE_BARS 개만 그린다.
+     * @param read    카드로 **읽어 낸 것**. 예보는 마지막 봉 다음에 유령 봉으로 그리고,
+     *                국면은 모서리에 쓴다. 뉴스 줄에 띄우지 않는 이유는 그 줄이 매매
+     *                한 번에 덮이기 때문이다 — 크기를 정하는 동안 보여야 할 정보다.
      */
-    render(history: readonly Candle[]): void {
+    render(history: readonly Candle[], read?: MarketRead | null): void {
         const g = this.plot;
         g.clear();
 
@@ -95,7 +102,10 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
 
         // 칸은 **항상 12개**로 나눈다. 봉 개수로 나누면 턴이 갈 때마다 폭이 변해
         // 차트 전체가 좌우로 요동친다.
-        const step = (right - left) / VISIBLE_BARS;
+        const peek = read?.next ?? [];
+        // 예보가 있으면 그만큼 칸을 더 나눈다. 유령 봉이 화면 밖으로 나가면 안 된다.
+        const slots = VISIBLE_BARS + Math.min(2, peek.length);
+        const step = (right - left) / slots;
         const bodyW = Math.max(3, Math.floor(step * 0.58));
 
         // 이동평균 — 봉보다 먼저 그려 뒤에 깔린다.
@@ -134,6 +144,29 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
             g.fillRect(cx - Math.floor(bodyW / 2), Math.round(Math.min(yo, yc)), bodyW, Math.round(bh));
         }
 
+        // ── 예보 — 아직 오지 않은 봉을 유령으로 그린다 ──────────────────
+        // 이 게임의 정보 카드가 값어치를 갖는 자리다. 뉴스 한 줄로 "다음 턴 상승" 이라고
+        // 말해 주는 것과, 지금 보고 있는 차트에 그 봉이 미리 서 있는 것은 다른 일이다.
+        if (peek.length > 0) {
+            let ghostFrom = bars[bars.length - 1]!.c;
+            for (let k = 0; k < Math.min(2, peek.length); k++) {
+                const pct = peek[k]!;
+                const to = Math.max(1, ghostFrom * (1 + pct / 100));
+                const cx = Math.round(left + step * (bars.length + k) + step / 2);
+                const col = pct >= 0 ? C.up : C.down;
+
+                const yFrom = py(ghostFrom), yTo = py(to);
+                const bh = Math.max(2, Math.abs(yTo - yFrom));
+                // 테두리만 — 채우면 진짜 봉과 헷갈린다. 아직 안 온 것이어야 한다.
+                g.lineStyle(1, col, 0.85);
+                g.strokeRect(
+                    cx - Math.floor(bodyW / 2) + 0.5, Math.round(Math.min(yFrom, yTo)) + 0.5,
+                    bodyW - 1, Math.round(bh),
+                );
+                ghostFrom = to;
+            }
+        }
+
         // 마지막 봉의 종가에 가로 점선 — "지금 얼마" 가 한눈에 들어와야 한다.
         const last = bars[bars.length - 1]!;
         const ly = Math.round(py(last.c)) + 0.5;
@@ -146,5 +179,12 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
             .setPosition(this.boxW - 4, Math.max(3, Math.min(this.boxH - FS.xs - 4, ly - FS.xs - 3)))
             .setText(last.c.toLocaleString())
             .setColor(last.c >= last.o ? S.up : S.down);
+
+        // 읽어 낸 국면은 차트 오른쪽 위에. 남은 턴까지 읽었으면 함께 쓴다.
+        const regime = read?.regime
+            ? `국면 ${regimeLabel(read.regime)}${read.turnsLeft !== null && read.turnsLeft !== undefined
+                ? ` · ${read.turnsLeft}턴 남음` : ""}`
+            : "";
+        this.readLabel.setPosition(this.boxW - 4, 3).setText(regime);
     }
 }

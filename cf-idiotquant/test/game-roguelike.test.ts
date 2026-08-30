@@ -116,23 +116,23 @@ test("덱이 마르면 버린 더미를 섞어 되돌린다", () => {
 test("얻은 카드는 이번 턴에 안 잡히고, 언젠가는 반드시 잡힌다", () => {
     const r = new RoguelikeManager(3);
     r.dealHand();
-    r.addToDeck("leak");
+    r.addToDeck("margin");
     // 버린 더미로 들어가므로 지금 손에는 없다 — 보상이 마술이 되면 안 된다.
-    assert.equal(r.hand.some(c => c.id === "leak"), false);
+    assert.equal(r.hand.some(c => c.id === "margin"), false);
     assert.equal(r.deckState.total, 7);
 
-    assert.equal(drawUntil(r, "leak").id, "leak");
+    assert.equal(drawUntil(r, "margin").id, "margin");
 });
 
 test("덱이 두꺼워지면 원하는 카드가 덜 잡힌다", () => {
     // 로그라이크의 값이 여기 있다. 같은 카드를 두고 덱만 불려서 잡히는 빈도를 잰다.
     const rate = (padding: number) => {
         const r = new RoguelikeManager(11);
-        r.addToDeck("leak");
-        for (let i = 0; i < padding; i++) r.addToDeck("delay");
+        r.addToDeck("margin");
+        for (let i = 0; i < padding; i++) r.addToDeck("blackout");
         let hits = 0;
         for (let t = 0; t < 120; t++) {
-            if (r.dealHand().some(c => c.id === "leak")) hits++;
+            if (r.dealHand().some(c => c.id === "margin")) hits++;
         }
         return hits;
     };
@@ -162,7 +162,7 @@ test("보상으로 저주를 내밀지는 않는다", () => {
 test("센 카드는 고르기 전에 값을 말한다", () => {
     // 저주 이름이 카드에 실려 나와야 화면이 "고른다" 를 만들 수 있다.
     const r = new RoguelikeManager(5);
-    const cursed = ["pump", "leak"];
+    const cursed = ["tipoff", "margin"];
     for (let seed = 0; seed < 40; seed++) {
         for (const c of new RoguelikeManager(seed).offerCards()) {
             assert.equal(!!c.curseName, cursed.includes(c.id), `${c.id} 의 저주 표시가 틀렸다`);
@@ -175,8 +175,8 @@ test("저주가 딸린 카드를 받으면 저주도 함께 덱에 들어간다"
     const r = new RoguelikeManager(6);
     const before = r.deckState.total;
 
-    const curse = r.takeReward("leak");
-    assert.equal(curse, "당국 조사");
+    const curse = r.takeReward("margin");
+    assert.equal(curse, "이자 상환");
     assert.equal(r.deckState.total, before + 2, "카드와 저주, 둘이 들어와야 한다");
     assert.equal(r.deckState.curses, 1);
 });
@@ -184,7 +184,7 @@ test("저주가 딸린 카드를 받으면 저주도 함께 덱에 들어간다"
 test("파쇄기는 손에 잡힌 저주를 덱 밖으로 버린다", () => {
     const r = new RoguelikeManager(7);
     r.relics = [{ id: "shredder", name: "파쇄기", triggerType: "onTurnStart", description: "" }];
-    r.takeReward("pump");
+    r.takeReward("tipoff");
     assert.equal(r.deckState.curses, 1);
 
     const p = { cash: 0, shares: 0, avgPrice: 0, currentTurn: 1, maxTurns: 12, insightPoints: 0 };
@@ -207,20 +207,25 @@ test("아무것도 없으면 아무 일도 안 일어난다", () => {
 });
 
 test("카드마다 건드리는 곳이 다르다", () => {
+    // 세 갈래(정보·집행·방어)가 정말로 서로 다른 자리를 건드리는지.
     const want: Record<string, (b: ReturnType<RoguelikeManager["buildBuff"]>) => boolean> = {
-        insider: b => b.priceBias > 0,
-        nofee: b => b.feeWaived,
-        rebound: b => b.reboundRatio > 0,
-        shield: b => b.downshieldRatio > 0,
-        volatile: b => b.volatilityMult > 1,
-        steady: b => b.volatilityMult < 1,
+        peek: b => b.peekTurns >= 1,
+        forecast: b => b.peekTurns >= 2,
+        analyst: b => b.revealRegime,
+        tipoff: b => b.revealRegime && b.revealClock,
+        hedge: b => b.moveMult < 1,
         bunker: b => b.downshieldRatio > 0.5,
+        stoploss: b => b.stopLoss > 0,
+        nofee: b => b.feeMult === 0,
+        margin: b => b.buyingPowerMult > 1,
+        blackout: b => b.blind,
+        probe: b => b.feeMult > 1,
+        debt: b => b.cashDrainPct > 0,
     };
 
     for (const [id, check] of Object.entries(want)) {
         const r = new RoguelikeManager(7);
         r.relics = [];
-        // 시작 덱에 없는 카드(보상)는 넣어 두고 잡는다. 덱에서 뽑는 이상 다른 길이 없다.
         r.addToDeck(id);
         const card = drawUntil(r, id);
         assert.equal(r.playCard(card.uid), true, `${id} 를 못 골랐다`);
@@ -228,26 +233,47 @@ test("카드마다 건드리는 곳이 다르다", () => {
     }
 });
 
+test("카드는 주가를 밀지 않는다", () => {
+    // 예전엔 "이번 턴 +7%p" 같은 카드가 있었다. 트레이더가 시세를 조종하는 셈이라
+    // 앞뒤가 안 맞았고, 고를 때 큰 숫자 말고 기준이 없었다. TurnBuff 에 그 자리가
+    // 남아 있지 않다는 것이 그 규칙을 지키는 방법이다.
+    const keys = Object.keys(NO_BUFF);
+    for (const banned of ["priceBias", "reboundRatio"]) {
+        assert.equal(keys.includes(banned), false, `${banned} 가 되살아났다`);
+    }
+});
+
 test("유물이 먼저 깔리고 카드가 그 위에 쌓인다", () => {
     const r = new RoguelikeManager(7);
     r.dealHand();
-    r.relics = [{ id: "hotline", name: "증권가 핫라인", triggerType: "onTurnStart", description: "" }];
+    r.relics = [{ id: "compass", name: "낡은 나침반", triggerType: "onTurnStart", description: "" }];
 
-    const onlyRelic = r.buildBuff();
-    assert.ok(onlyRelic.priceBias > 0, "유물이 안 얹혔다");
+    // 나침반만으로도 국면은 읽힌다
+    assert.equal(r.buildBuff().revealRegime, true, "유물이 안 얹혔다");
 
+    // 그 위에 내부자 제보를 쌓으면 남은 턴까지 열린다
     const r2 = new RoguelikeManager(7);
     r2.relics = [...r.relics];
-    const card = drawUntil(r2, "insider");
+    r2.addToDeck("tipoff");
+    const card = drawUntil(r2, "tipoff");
     r2.playCard(card.uid);
-    assert.ok(r2.buildBuff().priceBias > onlyRelic.priceBias, "카드가 유물을 덮었다");
+    const b = r2.buildBuff();
+    assert.equal(b.revealRegime, true);
+    assert.equal(b.revealClock, true, "카드가 유물 위에 안 쌓였다");
 });
 
 test("단골 브로커는 카드 없이도 수수료를 면제한다", () => {
     const r = new RoguelikeManager(8);
     r.dealHand();
     r.relics = [{ id: "broker", name: "단골 브로커", triggerType: "onTrade", description: "" }];
-    assert.equal(r.buildBuff().feeWaived, true);
+    assert.equal(r.buildBuff().feeMult, 0);
+});
+
+test("증권가 핫라인은 카드 없이도 다음 턴을 보여 준다", () => {
+    const r = new RoguelikeManager(9);
+    r.dealHand();
+    r.relics = [{ id: "hotline", name: "증권가 핫라인", triggerType: "onTurnStart", description: "" }];
+    assert.ok(r.buildBuff().peekTurns >= 1);
 });
 
 /* ── 유물 ───────────────────────────────────────────────────── */
@@ -357,17 +383,18 @@ test("차수가 오를수록 청산선이 바짝 붙는다", () => {
 });
 
 test("차수가 높으면 같은 성적에 인사이트를 더 준다", () => {
+    // 차수는 시장 자체도 바꾸므로(국면이 짧아지고 뉴스가 잦아진다) 같은 시드라도 판이
+    // 달라진다. 그래서 성적을 **똑같이 맞춰 놓고** 배수만 견준다.
     const earn = (tier: number) => {
         const e = new StockEngine(31, tier);
-        e.buyHalf();
-        for (let t = 0; t < 12; t++) { e.tick(NO_BUFF); e.advanceTurn(); }
+        e.buyAll();
+        e.stock.currentPrice = Math.round(e.player.avgPrice * 1.4);   // 성적을 손으로 고정
         e.liquidate();
         return e.summarize();
     };
     const a = earn(0), b = earn(4);
-    // 같은 시드라 주가도 성적도 같아야 하고, 차이는 배수에서만 나야 한다.
-    assert.ok(Math.abs(a.returnPct - b.returnPct) < 1e-9, "판이 달라져 견줄 수 없다");
-    if (!a.bankrupt && !b.bankrupt) assert.ok(b.earnedIP > a.earnedIP);
+    assert.ok(Math.abs(a.returnPct - b.returnPct) < 1, `성적이 ${a.returnPct} vs ${b.returnPct}`);
+    assert.ok(b.earnedIP > a.earnedIP, `차수 4 가 ${b.earnedIP}, 차수 0 이 ${a.earnedIP}`);
 });
 
 /* ── 카드를 언제 쓰는가 ─────────────────────────────────────── */
@@ -399,30 +426,32 @@ test("현금만 쥐고 있으면 지킬 것도 팔 것도 없다", () => {
     const broke = { shares: 0, cash: 10_000_000, price: 1000 };
     const held = { shares: 100, cash: 0, price: 1000 };
 
-    for (const id of ["shield", "nofee", "rebound", "bunker"]) {
+    for (const id of ["hedge", "bunker", "stoploss"]) {
         assert.equal(r.isIdle(id, broke), true, `${id} 가 현금일 때도 쓸모 있다고 한다`);
         assert.equal(r.isIdle(id, held), false, `${id} 가 보유 중인데 쓸모없다고 한다`);
     }
     // 가격을 올리는 카드는 사고 나서 쓰는 것이라 "지금 쓸모없음" 으로는 안 가른다.
-    assert.equal(r.isIdle("insider", broke), false);
+    // 읽는 카드는 현금이든 보유든 언제나 값어치가 있다.
+    assert.equal(r.isIdle("peek", broke), false);
+    assert.equal(r.isIdle("analyst", broke), false);
 });
 
 /* ── 시작 덱 강화 ───────────────────────────────────────────── */
 
 test("강화가 없으면 시작 덱은 여섯 장 그대로다", () => {
     assert.deepEqual(startingDeckOf([]),
-        ["steady", "steady", "shield", "shield", "insider", "nofee"]);
+        ["peek", "peek", "hedge", "hedge", "analyst", "nofee"]);
 });
 
 test("강화는 앞자리부터 갈아 끼우고, 덱 크기는 안 변한다", () => {
     // 덱이 불어나면 원하는 카드가 덜 잡힌다. 강화의 요점은 **크기가 아니라 질**이다.
-    const one = startingDeckOf(["rebound"]);
+    const one = startingDeckOf(["forecast"]);
     assert.equal(one.length, 6);
-    assert.deepEqual(one, ["rebound", "steady", "shield", "shield", "insider", "nofee"]);
+    assert.deepEqual(one, ["forecast", "peek", "hedge", "hedge", "analyst", "nofee"]);
 
-    const four = startingDeckOf(["rebound", "bunker", "volatile", "insider"]);
+    const four = startingDeckOf(["forecast", "bunker", "stoploss", "tipoff"]);
     assert.equal(four.length, 6);
-    assert.deepEqual(four.slice(4), ["insider", "nofee"], "뒤의 두 장은 안 건드린다");
+    assert.deepEqual(four.slice(4), ["analyst", "nofee"], "뒤의 두 장은 안 건드린다");
 });
 
 test("모르는 카드 이름은 조용히 무시한다", () => {
@@ -431,35 +460,48 @@ test("모르는 카드 이름은 조용히 무시한다", () => {
 });
 
 test("강화한 카드가 실제로 손에 잡힌다", () => {
-    const r = new RoguelikeManager(1, ["rebound"]);
+    const r = new RoguelikeManager(1, ["forecast"]);
     assert.equal(r.deckState.total, 6, "강화가 덱을 불리면 안 된다");
-    assert.equal(drawUntil(r, "rebound").id, "rebound");
+    assert.equal(drawUntil(r, "forecast").id, "forecast");
 });
 
 test("강화로 저주를 사지는 못한다", () => {
     // 시작 덱에 저주를 영구히 박는 것은 강화가 아니라 벌이다.
-    assert.equal(UPGRADE_POOL.includes("pump"), false);
-    assert.equal(UPGRADE_POOL.includes("leak"), false);
+    for (const id of ["blackout", "probe", "debt"]) {
+        assert.equal(UPGRADE_POOL.includes(id), false, `저주 ${id} 를 강화로 살 수 있다`);
+    }
     for (let seed = 0; seed < 20; seed++) {
         const offer = new RoguelikeManager(seed).offerUpgrades();
         assert.ok(offer.every(c => UPGRADE_POOL.includes(c.id)), `시드 ${seed}`);
-        assert.ok(offer.every(c => !c.curseName));
+        // 저주가 딸린 카드(내부자 제보)도 **강화로 살 때는 저주 없이** 들어온다.
+        assert.ok(offer.every(c => c.kind !== "curse"), `시드 ${seed} 에 저주가 섞였다`);
+        assert.ok(offer.every(c => !c.curseName), "강화 후보가 저주를 달고 나왔다");
     }
+});
+
+test("강화로 산 카드는 저주를 안 끌고 온다", () => {
+    // 보상으로 얻을 때(takeReward)는 저주가 딸리지만, 인사이트로 살 때는 값을 따로
+    // 치른 것이므로 저주가 안 붙는다. 그 차이가 강화의 값어치다.
+    const r = new RoguelikeManager(2);
+    const before = r.deckState.total;
+    r.applyUpgrades(["tipoff"]);
+    assert.equal(r.deckState.total, before, "강화가 덱을 불렸다");
+    assert.equal(r.deckState.curses, 0, "강화가 저주를 끌고 왔다");
 });
 
 test("갈아 끼울 자리는 넷뿐이다", () => {
     assert.equal(UPGRADE_SLOTS, 4);
     assert.equal(UPGRADE_COSTS.length, UPGRADE_SLOTS);
-    const full: Progress = { ...EMPTY, insightPoints: 999, upgrades: ["rebound", "bunker", "volatile", "insider"] };
+    const full: Progress = { ...EMPTY, insightPoints: 999, upgrades: ["forecast", "bunker", "stoploss", "tipoff"] };
     assert.equal(nextUpgradeCost(full), null);
     assert.equal(canUpgrade(full), false);
-    assert.deepEqual(buyUpgrade(full, "rebound"), full, "다섯 번째는 안 팔린다");
+    assert.deepEqual(buyUpgrade(full, "forecast"), full, "다섯 번째는 안 팔린다");
 });
 
 test("값이 모자라면 안 팔린다", () => {
     const poor: Progress = { ...EMPTY, insightPoints: UPGRADE_COSTS[0]! - 1 };
     assert.equal(canUpgrade(poor), false);
-    assert.deepEqual(buyUpgrade(poor, "rebound"), poor);
+    assert.deepEqual(buyUpgrade(poor, "forecast"), poor);
 });
 
 test("살수록 비싸진다", () => {
@@ -467,7 +509,7 @@ test("살수록 비싸진다", () => {
     const paid: number[] = [];
     for (let i = 0; i < UPGRADE_SLOTS; i++) {
         const before = p.insightPoints;
-        p = buyUpgrade(p, "rebound");
+        p = buyUpgrade(p, "forecast");
         paid.push(before - p.insightPoints);
     }
     assert.deepEqual(paid, [...UPGRADE_COSTS]);
@@ -479,7 +521,7 @@ test("살수록 비싸진다", () => {
 test("청산되면 인사이트가 절반이 되고 강화가 날아간다", () => {
     const rich: Progress = {
         ...EMPTY, insightPoints: 90, runs: 4, bestReturn: 40,
-        upgrades: ["rebound", "bunker"],
+        upgrades: ["forecast", "bunker"],
     };
     const after = applyRun(rich, bust());
 
