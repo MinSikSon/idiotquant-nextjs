@@ -10,25 +10,39 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE, UPGRADE_POOL, UPGRADE_SLOTS,
-    startingDeckOf, CARD_LIST, RELIC_POOL,
+    RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE,
+    MERGE_COUNT, OPENING_DECK_SIZE, openingDeck, CARD_LIST, RELIC_POOL,
 } from "@/lib/game/core/RoguelikeManager";
 import {
-    applyRun, isNewBest, buyUpgrade, canUpgrade, nextUpgradeCost, UPGRADE_COSTS,
+    applyRun, isNewBest, isRuined, RUIN_LINE,
     UNLOCKS, unlockedIds, newlyUnlocked, EMPTY, type Progress,
 } from "@/lib/game/core/progress";
 import { NO_BUFF } from "@/lib/game/core/types";
-import { MAX_TIER, TIER_BUST_STEP, BUST_RATIO, bustRatioFor, StockEngine } from "@/lib/game/core/StockEngine";
+import { MAX_TIER, SEED_CASH, StockEngine } from "@/lib/game/core/StockEngine";
 import type { RunSummary, StrategyCard } from "@/lib/game/core/types";
 
-const run = (returnPct: number, earnedIP = 1, idle = false): RunSummary => ({
-    returnPct, earnedIP, idle, bankrupt: false,
-    startEquity: 10_000_000,
-    finalEquity: Math.round(10_000_000 * (1 + returnPct / 100)),
+const run = (returnPct: number, earnedIP = 1, idle = false, deck: string[] = []): RunSummary => ({
+    returnPct, earnedIP, idle, ruined: false, deck,
+    startEquity: SEED_CASH,
+    finalEquity: Math.round(SEED_CASH * (1 + returnPct / 100)),
 });
 
-/** 청산으로 끝난 판. 엔진이 그렇듯 인사이트는 한 점도 안 준다. */
-const bust = (returnPct = -65): RunSummary => ({ ...run(returnPct, 0), bankrupt: true });
+/** 자본잠식으로 끝난 판. 엔진이 그렇듯 인사이트는 한 점도 안 준다. */
+const ruin = (): RunSummary => ({
+    ...run(-95, 0), ruined: true, finalEquity: Math.round(RUIN_LINE / 2),
+});
+
+/** openingDeck 에 넘길 난수. 코어의 것과 같은 식이라 결과가 재현된다. */
+function mulberry(seed: number): () => number {
+    let a = seed >>> 0;
+    return () => {
+        a = (a + 0x6d2b79f5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
 
 /** 그 카드가 손에 잡힐 때까지 턴을 넘긴다. 덱에서 뽑는 이상 몇 턴 걸릴 수 있다. */
 function drawUntil(r: RoguelikeManager, id: string, tries = 80): StrategyCard {
@@ -93,8 +107,8 @@ test("새 손패를 깔면 지난 턴의 선택이 지워진다", () => {
 
 /* ── 덱 ─────────────────────────────────────────────────────── */
 
-test("시작 덱은 여섯 장이고, 뽑아도 총 장수는 안 변한다", () => {
-    const r = new RoguelikeManager(1);
+test("뽑아도 총 장수는 안 변한다", () => {
+    const r = new RoguelikeManager(1, ["peek", "analyst", "hedge", "nofee", "forecast", "bunker"]);
     assert.equal(r.deckState.total, 6);
     assert.equal(r.deckState.curses, 0);
 
@@ -105,11 +119,11 @@ test("시작 덱은 여섯 장이고, 뽑아도 총 장수는 안 변한다", ()
 });
 
 test("덱이 마르면 버린 더미를 섞어 되돌린다", () => {
-    // 여섯 장짜리 덱에서 세 장씩 계속 뽑아도 손패가 마르지 않아야 한다.
+    // 세 장짜리 덱에서 세 장씩 계속 뽑아도 손패가 마르지 않아야 한다.
     const r = new RoguelikeManager(2);
     for (let turn = 0; turn < 12; turn++) {
         assert.equal(r.dealHand().length, HAND_SIZE, `${turn}턴에 손패가 모자랐다`);
-        assert.equal(r.deckState.total, 6, `${turn}턴에 장수가 새어 나갔다`);
+        assert.equal(r.deckState.total, OPENING_DECK_SIZE, `${turn}턴에 장수가 새어 나갔다`);
     }
 });
 
@@ -119,7 +133,7 @@ test("얻은 카드는 이번 턴에 안 잡히고, 언젠가는 반드시 잡�
     r.addToDeck("margin");
     // 버린 더미로 들어가므로 지금 손에는 없다 — 보상이 마술이 되면 안 된다.
     assert.equal(r.hand.some(c => c.id === "margin"), false);
-    assert.equal(r.deckState.total, 7);
+    assert.equal(r.deckState.total, OPENING_DECK_SIZE + 1);
 
     assert.equal(drawUntil(r, "margin").id, "margin");
 });
@@ -154,7 +168,7 @@ test("보상으로 저주를 내밀지는 않는다", () => {
     for (let seed = 0; seed < 20; seed++) {
         const offer = new RoguelikeManager(seed).offerCards();
         assert.equal(offer.length, OFFER_SIZE);
-        assert.ok(offer.every(c => c.kind === "reward"), `시드 ${seed} 에 저주가 섞였다`);
+        assert.ok(offer.every(c => c.kind !== "curse"), `시드 ${seed} 에 저주가 섞였다`);
         assert.equal(new Set(offer.map(c => c.id)).size, OFFER_SIZE, "같은 카드를 두 번 내밀었다");
     }
 });
@@ -351,28 +365,26 @@ test("비밀 장부는 오른 턴에만 터진다", () => {
 
 /* ── 경력 인사이트 — 오직 오르는 것 ─────────────────────────── */
 
-test("경력 인사이트는 청산돼도 안 깎인다", () => {
-    // 다른 것은 다 뒷걸음질할 수 있다. 이 하나만은 판을 굴린 것 자체를 세어 준다.
-    const rich: Progress = { ...EMPTY, insightPoints: 90, careerIP: 200, upgrades: ["bunker"] };
-    const after = applyRun(rich, bust());
+test("경력 인사이트는 자본잠식돼도 안 깎인다", () => {
+    // 다른 것은 다 처음으로 돌아간다. 이 하나만은 판을 굴린 것 자체를 세어 준다.
+    const rich: Progress = {
+        ...EMPTY, bankroll: 40_000_000, deck: ["peek", "bunker"],
+        insightPoints: 90, careerIP: 200, tier: 3,
+    };
+    const after = applyRun(rich, ruin());
 
-    assert.equal(after.insightPoints, 45, "쓰는 인사이트는 절반이 맞다");
-    assert.deepEqual(after.upgrades, []);
+    assert.equal(after.bankroll, SEED_CASH, "자금이 안 되돌아갔다");
+    assert.deepEqual(after.deck, [], "덱이 남았다");
+    assert.equal(after.insightPoints, 0);
+    assert.equal(after.tier, 0);
     assert.equal(after.careerIP, 200, "경력이 깎였다");
-});
-
-test("경력 인사이트는 쓴다고 줄지 않는다", () => {
-    const p: Progress = { ...EMPTY, insightPoints: 100, careerIP: 100 };
-    const bought = buyUpgrade(p, "bunker");
-    assert.equal(bought.insightPoints, 100 - UPGRADE_COSTS[0]!);
-    assert.equal(bought.careerIP, 100, "강화를 샀다고 경력이 줄었다");
 });
 
 test("굴릴수록 경력만 계속 오른다", () => {
     let p: Progress = { ...EMPTY };
-    for (let i = 0; i < 6; i++) p = applyRun(p, i % 2 === 0 ? run(20, 11) : bust());
+    for (let i = 0; i < 6; i++) p = applyRun(p, i % 2 === 0 ? run(20, 11) : ruin());
     assert.equal(p.careerIP, 33, "번 것만 더해져야 한다 (11 x 3)");
-    assert.equal(p.busts, 3);
+    assert.equal(p.ruins, 3);
 });
 
 /* ── 해금 ───────────────────────────────────────────────────── */
@@ -447,16 +459,15 @@ test("더 멀리 보는 예보만 갈아 끼운다", () => {
 
 /* ── 차수 — 다시 켤 이유 ────────────────────────────────────── */
 
-test("완주하면 차수가 오르고 청산되면 내려간다", () => {
+test("완주하면 차수가 오르고 자본잠식이면 0 으로 돌아간다", () => {
     const up = applyRun({ ...EMPTY, tier: 2 }, run(10, 5));
     assert.equal(up.tier, 3);
 
-    const down = applyRun({ ...EMPTY, tier: 3 }, bust());
-    assert.equal(down.tier, 2, "청산은 한 차수만 깎는다");
+    const down = applyRun({ ...EMPTY, tier: 3 }, ruin());
+    assert.equal(down.tier, 0, "자본잠식은 게임 자체가 끝나는 것이다");
 });
 
-test("차수는 0 아래로도 최대치 위로도 안 간다", () => {
-    assert.equal(applyRun({ ...EMPTY, tier: 0 }, bust()).tier, 0);
+test("차수는 최대치 위로 안 간다", () => {
     assert.equal(applyRun({ ...EMPTY, tier: MAX_TIER }, run(10, 5)).tier, MAX_TIER);
 });
 
@@ -467,15 +478,12 @@ test("관망만 한 판으로는 차수를 못 올린다", () => {
     assert.equal(next.runs, 1, "그래도 판은 센다");
 });
 
-test("차수가 오를수록 청산선이 바짝 붙는다", () => {
-    assert.equal(bustRatioFor(0), BUST_RATIO);
-    assert.ok(Math.abs(bustRatioFor(3) - (BUST_RATIO + 3 * TIER_BUST_STEP)) < 1e-9);
-    // 저장이 상해도 범위를 안 벗어난다.
-    assert.equal(bustRatioFor(-5), BUST_RATIO);
-    assert.equal(bustRatioFor(999), bustRatioFor(MAX_TIER));
-
+test("차수가 올라도 자본잠식선은 그대로다", () => {
+    // 차수가 바꾸는 것은 시장(국면 길이·뉴스 빈도)이지 지는 선이 아니다. 자금이 판을
+    // 넘어 이어지므로 선까지 따라 오르면 잘 굴린 사람이 더 높은 곳에서 죽는다.
     const low = new StockEngine(1, 0), high = new StockEngine(1, 4);
-    assert.ok(high.bustLine > low.bustLine, "높은 차수가 더 헐거웠다");
+    assert.equal(low.ruinLine, RUIN_LINE);
+    assert.equal(high.ruinLine, RUIN_LINE);
 });
 
 test("차수가 높으면 같은 성적에 인사이트를 더 준다", () => {
@@ -531,119 +539,153 @@ test("현금만 쥐고 있으면 지킬 것도 팔 것도 없다", () => {
     assert.equal(r.isIdle("peek", broke), false);
     assert.equal(r.isIdle("analyst", broke), false);
 });
+/* ── 시작 덱 — 무작위 세 장 ─────────────────────────────────── */
 
-/* ── 시작 덱 강화 ───────────────────────────────────────────── */
-
-test("강화가 없으면 시작 덱은 여섯 장 그대로다", () => {
-    assert.deepEqual(startingDeckOf([]),
-        ["peek", "peek", "hedge", "hedge", "analyst", "nofee"]);
-});
-
-test("강화는 앞자리부터 갈아 끼우고, 덱 크기는 안 변한다", () => {
-    // 덱이 불어나면 원하는 카드가 덜 잡힌다. 강화의 요점은 **크기가 아니라 질**이다.
-    const one = startingDeckOf(["forecast"]);
-    assert.equal(one.length, 6);
-    assert.deepEqual(one, ["forecast", "peek", "hedge", "hedge", "analyst", "nofee"]);
-
-    const four = startingDeckOf(["forecast", "bunker", "stoploss", "tipoff"]);
-    assert.equal(four.length, 6);
-    assert.deepEqual(four.slice(4), ["analyst", "nofee"], "뒤의 두 장은 안 건드린다");
-});
-
-test("모르는 카드 이름은 조용히 무시한다", () => {
-    // 저장이 상해도 판은 굴러가야 한다.
-    assert.deepEqual(startingDeckOf(["없는카드"]), startingDeckOf([]));
-});
-
-test("강화한 카드가 실제로 손에 잡힌다", () => {
-    const r = new RoguelikeManager(1, ["forecast"]);
-    assert.equal(r.deckState.total, 6, "강화가 덱을 불리면 안 된다");
-    assert.equal(drawUntil(r, "forecast").id, "forecast");
-});
-
-test("강화로 저주를 사지는 못한다", () => {
-    // 시작 덱에 저주를 영구히 박는 것은 강화가 아니라 벌이다.
-    for (const id of ["blackout", "probe", "debt"]) {
-        assert.equal(UPGRADE_POOL.includes(id), false, `저주 ${id} 를 강화로 살 수 있다`);
-    }
+test("아주 처음에는 기본 카드 중 무작위 세 장으로 연다", () => {
+    const starters = new Set(CARD_LIST.filter(c => c.kind === "starter").map(c => c.id));
     for (let seed = 0; seed < 20; seed++) {
-        const offer = new RoguelikeManager(seed).offerUpgrades();
-        assert.ok(offer.every(c => UPGRADE_POOL.includes(c.id)), `시드 ${seed}`);
-        // 저주가 딸린 카드(내부자 제보)도 **강화로 살 때는 저주 없이** 들어온다.
-        assert.ok(offer.every(c => c.kind !== "curse"), `시드 ${seed} 에 저주가 섞였다`);
-        assert.ok(offer.every(c => !c.curseName), "강화 후보가 저주를 달고 나왔다");
+        const deck = openingDeck(mulberry(seed));
+        assert.equal(deck.length, OPENING_DECK_SIZE, `시드 ${seed}`);
+        assert.ok(deck.every(id => starters.has(id)), `시드 ${seed} 에 기본 카드가 아닌 것이 섞였다`);
+        assert.equal(new Set(deck).size, deck.length, "같은 카드가 두 장 나왔다");
     }
 });
 
-test("강화로 산 카드는 저주를 안 끌고 온다", () => {
-    // 보상으로 얻을 때(takeReward)는 저주가 딸리지만, 인사이트로 살 때는 값을 따로
-    // 치른 것이므로 저주가 안 붙는다. 그 차이가 강화의 값어치다.
-    const r = new RoguelikeManager(2);
-    const before = r.deckState.total;
-    r.applyUpgrades(["tipoff"]);
-    assert.equal(r.deckState.total, before, "강화가 덱을 불렸다");
-    assert.equal(r.deckState.curses, 0, "강화가 저주를 끌고 왔다");
+test("덱을 안 넘겨주면 무작위 세 장, 넘겨주면 그대로 쓴다", () => {
+    assert.equal(new RoguelikeManager(1).deckState.total, OPENING_DECK_SIZE);
+
+    const carried = ["forecast", "bunker", "stoploss", "nofee", "peek"];
+    const r = new RoguelikeManager(1, carried);
+    assert.equal(r.deckState.total, carried.length);
+    assert.deepEqual([...r.deck].sort(), [...carried].sort());
 });
 
-test("갈아 끼울 자리는 넷뿐이다", () => {
-    assert.equal(UPGRADE_SLOTS, 4);
-    assert.equal(UPGRADE_COSTS.length, UPGRADE_SLOTS);
-    const full: Progress = { ...EMPTY, insightPoints: 999, upgrades: ["forecast", "bunker", "stoploss", "tipoff"] };
-    assert.equal(nextUpgradeCost(full), null);
-    assert.equal(canUpgrade(full), false);
-    assert.deepEqual(buyUpgrade(full, "forecast"), full, "다섯 번째는 안 팔린다");
+test("저장이 상해도 판은 굴러간다", () => {
+    // 모르는 id 는 조용히 버린다. 전부 모르는 것이면 새 게임처럼 연다.
+    const r = new RoguelikeManager(2, ["없는카드", "peek", "또없는카드"]);
+    assert.deepEqual(r.deck, ["peek"]);
+    assert.equal(new RoguelikeManager(2, ["없는카드"]).deckState.total, OPENING_DECK_SIZE);
 });
 
-test("값이 모자라면 안 팔린다", () => {
-    const poor: Progress = { ...EMPTY, insightPoints: UPGRADE_COSTS[0]! - 1 };
-    assert.equal(canUpgrade(poor), false);
-    assert.deepEqual(buyUpgrade(poor, "forecast"), poor);
+test("판이 끝나면 덱이 그대로 다음 판으로 넘어간다", () => {
+    const first = new RoguelikeManager(3);
+    first.dealHand();
+    first.addToDeck("stoploss");
+    const carried = first.deck;
+
+    const second = new RoguelikeManager(4, carried);
+    assert.deepEqual([...second.deck].sort(), [...carried].sort(), "덱이 새어 나갔다");
 });
 
-test("살수록 비싸진다", () => {
-    let p: Progress = { ...EMPTY, insightPoints: 500 };
-    const paid: number[] = [];
-    for (let i = 0; i < UPGRADE_SLOTS; i++) {
-        const before = p.insightPoints;
-        p = buyUpgrade(p, "forecast");
-        paid.push(before - p.insightPoints);
+/* ── 합성 — 같은 카드 셋을 한 장으로 ────────────────────────── */
+
+test("같은 카드 셋이 모이면 한 장으로 합쳐진다", () => {
+    const r = new RoguelikeManager(5, ["peek", "peek"]);
+    r.addToDeck("peek");
+
+    assert.deepEqual(r.deck, ["forecast"], "셋이 한 장이 안 됐다");
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+    assert.deepEqual(r.takeMerges(), [], "합성 알림을 두 번 읽었다");
+});
+
+test("셋씩 여러 번 모여 있으면 그만큼 한꺼번에 합쳐진다", () => {
+    // 아홉 장이 세 장이 된다. 덱이 두꺼워지는 것을 막는 것이 합성의 일이다.
+    const r = new RoguelikeManager(6, Array(8).fill("peek"));
+    r.addToDeck("peek");
+    assert.deepEqual(r.deck, ["forecast", "forecast", "forecast"]);
+    assert.equal(r.takeMerges().length, 3);
+});
+
+test("보상 카드는 더 위가 없어 안 합쳐진다", () => {
+    const r = new RoguelikeManager(7, ["forecast", "forecast"]);
+    r.addToDeck("forecast");
+    assert.equal(r.deckState.total, 3, "위가 없는데 합쳐졌다");
+    assert.deepEqual(r.takeMerges(), []);
+});
+
+test("저주 셋은 그대로 사라진다", () => {
+    // 파쇄기 말고 저주를 덜어 내는 유일한 길이다.
+    const r = new RoguelikeManager(8, ["blackout", "blackout", "peek"]);
+    r.addToDeck("blackout");
+
+    assert.deepEqual(r.deck, ["peek"]);
+    assert.deepEqual(r.takeMerges(), [{ from: "정보 차단", to: null }]);
+});
+
+test("이번 턴에 고른 카드는 합성에 안 끌려간다", () => {
+    // 효과가 이미 걸린 카드를 도로 가져가면 화면과 결과가 어긋난다.
+    const r = new RoguelikeManager(9, ["peek", "peek"]);
+    const picked = r.dealHand().find(c => c.id === "peek")!;
+    r.playCard(picked.uid);
+
+    r.addToDeck("peek");
+    assert.equal(r.deck.filter(id => id === "peek").length, 3, "고른 장까지 태웠다");
+    assert.deepEqual(r.takeMerges(), []);
+});
+
+test("보상에 기본 카드가 섞여 나온다 — 합성이 닿을 수 있는 유일한 길", () => {
+    // 보상 카드는 위층이 없어 안 합쳐지고, 처음 세 장은 서로 다르다. 보상 풀에 기본
+    // 카드가 없으면 셋이 모일 길이 아예 없어 합성이 죽은 규칙이 된다.
+    const pool = new Set(new RoguelikeManager(11).rewardPool);
+    for (const c of CARD_LIST.filter(c => c.kind === "starter")) {
+        assert.ok(pool.has(c.id), `${c.name} 이(가) 보상으로 안 나온다`);
     }
-    assert.deepEqual(paid, [...UPGRADE_COSTS]);
-    assert.equal(p.upgrades.length, UPGRADE_SLOTS);
+    assert.equal([...pool].some(id => CARD_LIST.find(c => c.id === id)?.kind === "curse"), false,
+        "저주가 보상으로 나온다");
 });
 
-/* ── 청산 ───────────────────────────────────────────────────── */
+test("합쳐진 카드가 실제로 손에 잡힌다", () => {
+    const r = new RoguelikeManager(10, ["hedge", "hedge", "nofee"]);
+    r.addToDeck("hedge");
+    assert.equal(drawUntil(r, "bunker").id, "bunker");
+});
 
-test("청산되면 인사이트가 절반이 되고 강화가 날아간다", () => {
+/* ── 자본잠식 — 지는 방법 ───────────────────────────────────── */
+
+test("자금이 잠식선 아래면 끝이다", () => {
+    assert.equal(isRuined(RUIN_LINE), false, "선 위는 살아 있다");
+    assert.equal(isRuined(RUIN_LINE - 1), true);
+    assert.equal(isRuined(0), true);
+});
+
+test("자본잠식이면 자금·덱·차수·인사이트가 처음으로 돌아간다", () => {
     const rich: Progress = {
-        ...EMPTY, insightPoints: 90, runs: 4, bestReturn: 40,
-        upgrades: ["forecast", "bunker"],
+        ...EMPTY, bankroll: 80_000_000, deck: ["forecast", "bunker"],
+        insightPoints: 90, runs: 4, bestReturn: 40, tier: 5,
     };
-    const after = applyRun(rich, bust());
+    const after = applyRun(rich, ruin());
 
-    assert.equal(after.insightPoints, 45, "절반이 아니다");
-    assert.deepEqual(after.upgrades, [], "강화가 남았다");
-    assert.equal(after.busts, 1);
-    assert.equal(after.runs, 5, "청산된 판도 판이다");
+    assert.equal(after.bankroll, SEED_CASH);
+    assert.deepEqual(after.deck, []);
+    assert.equal(after.insightPoints, 0);
+    assert.equal(after.tier, 0);
+    assert.equal(after.ruins, 1);
+    assert.equal(after.runs, 5, "자본잠식된 판도 판이다");
     assert.equal(after.bestReturn, 40, "최고 기록까지 지우지는 않는다");
 });
 
-test("청산은 인사이트를 안 준다", () => {
+test("자본잠식은 인사이트를 안 준다", () => {
     // 엔진이 earnedIP 를 0 으로 내주지만, 값이 새어 들어와도 여기서 막힌다.
-    const p = applyRun({ ...EMPTY, insightPoints: 10 }, { ...bust(), earnedIP: 99 });
-    assert.equal(p.insightPoints, 5);
+    const p = applyRun({ ...EMPTY, insightPoints: 10 }, { ...ruin(), earnedIP: 99 });
+    assert.equal(p.insightPoints, 0);
 });
 
-test("무사히 끝낸 판은 강화를 지키지 않는다 — 그대로 들고 간다", () => {
-    const p: Progress = { ...EMPTY, insightPoints: 10, upgrades: ["bunker"] };
-    const after = applyRun(p, run(5, 4));
-    assert.deepEqual(after.upgrades, ["bunker"]);
+test("무사히 끝낸 판은 자금과 덱을 그대로 들고 간다", () => {
+    const p: Progress = { ...EMPTY, insightPoints: 10, bankroll: 12_000_000 };
+    const after = applyRun(p, run(5, 4, false, ["peek", "bunker"]));
+
+    assert.equal(after.bankroll, Math.round(SEED_CASH * 1.05), "판의 최종 자산이 다음 자금이다");
+    assert.deepEqual(after.deck, ["peek", "bunker"]);
     assert.equal(after.insightPoints, 14);
-    assert.equal(after.busts, 0);
+    assert.equal(after.ruins, 0);
+    assert.equal(after.tier, 1);
 });
 
-test("인사이트가 0 이면 청산돼도 0 아래로는 안 간다", () => {
-    assert.equal(applyRun(EMPTY, bust()).insightPoints, 0);
+test("잘 굴린 자금은 다음 판의 시작 자금이 된다", () => {
+    const e = new StockEngine(21, 0, 55_000_000);
+    assert.equal(e.player.cash, 55_000_000);
+    assert.equal(e.equity, 55_000_000);
+    assert.equal(e.summarize().startEquity, 55_000_000);
 });
 
 /* ── 진행(판을 넘어 남는 것) ────────────────────────────────── */

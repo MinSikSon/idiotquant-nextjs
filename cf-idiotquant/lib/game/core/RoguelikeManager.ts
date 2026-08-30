@@ -14,7 +14,7 @@
 // 카드는 한 턴짜리이고 유물은 판 내내 남는다. 그 둘이 합쳐진 결과가 TurnBuff 하나로
 // 나가고, 엔진은 그 덩어리만 받는다 — 카드를 하나 더 만들어도 엔진의 모양이 안 바뀐다.
 
-import type { CardKind, DeckState, PlayerState, Relic, StrategyCard, TurnBuff } from "./types";
+import type { CardKind, CardLane, DeckState, PlayerState, Relic, StrategyCard, TurnBuff } from "./types";
 import { NO_BUFF } from "./types";
 
 /** 한 턴에 손에 들어오는 카드 수. */
@@ -30,14 +30,30 @@ export const OFFER_SIZE = 3;
 export interface CardDef {
     id: string;
     name: string;
-    type: StrategyCard["type"];
+    /** 무엇을 하는 갈래인가. 손패의 색이 이걸 그대로 따라간다. */
+    lane: CardLane;
     kind: CardKind;
+    /**
+     * **손패에 늘 붙어 있는 한 줄.** 석 자에서 예닐곱 자.
+     *
+     * 판을 굴리는 동안 필요한 것은 "무슨 카드인지" 하나뿐이다. 자세한 설명을 카드마다
+     * 붙여 두면 세 장이 나란히 선 자리에서 글자가 서로를 밟는다.
+     */
+    shortDescription: string;
     effectDescription: string;
     /**
      * **언제 쓰는 카드인가.** 효과만 적어 두면 무엇을 고를지가 안 보인다 — 도감과
      * 화면이 같이 읽는 한 줄이다.
      */
     when: string;
+    /**
+     * 같은 카드 셋이 모였을 때 무엇이 되는가.
+     *
+     * - id 를 주면 그 카드 한 장으로 합쳐진다.
+     * - `null` 이면 셋이 그대로 사라진다 — 저주를 덜어 내는 유일한 길이다.
+     * - 안 주면 안 합쳐진다. 보상 카드가 여기 해당한다(더 위가 없다).
+     */
+    mergesTo?: string | null;
     apply: (b: TurnBuff) => TurnBuff;
     /** 이 카드를 얻으면 덱에 함께 들어오는 저주. 센 카드가 치르는 값이다. */
     curse?: string;
@@ -49,91 +65,111 @@ export interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-    /* ── 시작 덱 ─────────────────────────────────────────
-       읽는 것 셋, 버티는 것 둘, 싸게 사는 것 하나. 이 여섯 장으로도 국면은 읽힌다. */
+    /* ── 기본 ────────────────────────────────────────────
+       판을 열 때 이 넷 중에서 무작위로 셋을 쥔다. 셋이 모이면 아래의 보상 카드가 된다. */
     {
-        id: "peek", name: "예고 시황", type: "instant", kind: "starter",
+        id: "peek", name: "예고 시황", lane: "info", kind: "starter",
+        shortDescription: "다음 1턴 미리보기",
         effectDescription: "다음 턴 등락을 차트에 미리 그려 줍니다.",
         when: "무엇을 할지 모르겠을 때. 보고 나서 다음 턴에 크기를 정하면 됩니다.",
+        mergesTo: "forecast",
         apply: b => ({ ...b, peekTurns: Math.max(b.peekTurns, 1) }),
     },
     {
-        id: "analyst", name: "애널리스트 리포트", type: "instant", kind: "starter",
+        id: "analyst", name: "애널리스트 리포트", lane: "info", kind: "starter",
+        shortDescription: "국면 공개",
         effectDescription: "지금이 상승장인지 하락장인지 알려 줍니다.",
         when: "판을 열자마자. 국면 하나를 알면 서너 턴을 안심하고 굴립니다.",
+        mergesTo: "tipoff",
         apply: b => ({ ...b, revealRegime: true }),
     },
     {
-        id: "hedge", name: "헤지", type: "price", kind: "starter",
+        id: "hedge", name: "헤지", lane: "guard", kind: "starter",
+        shortDescription: "등락 절반",
         effectDescription: "이번 턴 등락이 절반으로 줄어듭니다. 오르는 쪽도 함께.",
         when: "들고는 있는데 방향을 모를 때. 이득도 절반이라 확신이 있으면 쓰지 마세요.",
+        mergesTo: "bunker",
         apply: b => ({ ...b, moveMult: b.moveMult * 0.5 }),
         idleWhen: p => p.shares === 0,
     },
     {
-        id: "nofee", name: "수수료 면제", type: "trade", kind: "starter",
+        id: "nofee", name: "수수료 면제", lane: "act", kind: "starter",
+        shortDescription: "수수료 0",
         effectDescription: "이번 턴 매매 수수료와 거래세를 내지 않습니다.",
         when: "사고팔기를 자주 하는 판에서. 아무 매매도 안 하면 소용없습니다.",
+        mergesTo: "margin",
         apply: b => ({ ...b, feeMult: 0 }),
         idleWhen: p => p.shares === 0 && p.cash < p.price,
     },
 
     /* ── 보상 ────────────────────────────────────────────
-       더 멀리 보거나, 더 크게 걸거나, 더 단단히 막는다. 아래 둘에는 저주가 딸린다. */
+       더 멀리 보거나, 더 크게 걸거나, 더 단단히 막는다. 여기가 위층이라 더 안 합쳐진다. */
     {
-        id: "forecast", name: "정밀 예보", type: "instant", kind: "reward",
+        id: "forecast", name: "정밀 예보", lane: "info", kind: "reward",
+        shortDescription: "다음 2턴 미리보기",
         effectDescription: "다음 두 턴 등락을 미리 봅니다.",
         when: "언제나. 두 턴을 보면 언제 타고 언제 내릴지가 그 자리에서 정해집니다.",
         apply: b => ({ ...b, peekTurns: Math.max(b.peekTurns, 2) }),
     },
     {
-        id: "bunker", name: "벙커", type: "price", kind: "reward",
+        id: "bunker", name: "벙커", lane: "guard", kind: "reward",
+        shortDescription: "하락 90% 차단",
         effectDescription: "이번 턴 하락을 90% 막습니다. 오르는 쪽은 그대로.",
         when: "예보에 큰 하락이 찍혔는데 팔기는 아까울 때.",
         apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.9) }),
         idleWhen: p => p.shares === 0,
     },
     {
-        id: "stoploss", name: "손절 예약", type: "trade", kind: "reward",
+        id: "stoploss", name: "손절 예약", lane: "guard", kind: "reward",
+        shortDescription: "-8%면 전량 매도",
         effectDescription: "8% 넘게 빠지면 그 자리에서 전량 매도합니다.",
         when: "아무것도 못 읽은 채 들고 가야 할 때. 최악만 잘라 냅니다.",
         apply: b => ({ ...b, stopLoss: Math.max(b.stopLoss, 0.08) }),
         idleWhen: p => p.shares === 0,
     },
     {
-        id: "tipoff", name: "내부자 제보", type: "instant", kind: "reward",
+        id: "tipoff", name: "내부자 제보", lane: "info", kind: "reward",
+        shortDescription: "국면 + 남은 턴",
         effectDescription: "지금 국면과 몇 턴 남았는지까지 알려 줍니다.",
         when: "국면이 슬슬 끝날 것 같을 때. 언제 내릴지를 정확히 짚어 줍니다.",
         apply: b => ({ ...b, revealRegime: true, revealClock: true }),
         curse: "probe",
     },
     {
-        id: "margin", name: "신용 융자", type: "trade", kind: "reward",
+        id: "margin", name: "신용 융자", lane: "act", kind: "reward",
+        shortDescription: "매수력 2배",
         effectDescription: "이번 턴만 현금의 두 배까지 삽니다. 모자란 만큼은 빚.",
-        when: "다음 턴 상승을 확실히 읽었을 때만. 틀리면 청산선이 두 배로 빨리 옵니다.",
+        when: "다음 턴 상승을 확실히 읽었을 때만. 틀리면 자본잠식이 두 배로 빨리 옵니다.",
         apply: b => ({ ...b, buyingPowerMult: Math.max(b.buyingPowerMult, 2) }),
         curse: "debt",
         idleWhen: p => p.cash < p.price,
     },
 
     /* ── 저주 ────────────────────────────────────────────
-       손에 잡히면 그 턴이 아깝다. 덱이 두꺼워질수록 자주 잡힌다. */
+       손에 잡히면 그 턴이 아깝다. 덱이 두꺼워질수록 자주 잡힌다.
+       셋이 모이면 그대로 사라진다 — 저주를 덜어 내는 유일한 길이다. */
     {
-        id: "blackout", name: "정보 차단", type: "instant", kind: "curse",
+        id: "blackout", name: "정보 차단", lane: "curse", kind: "curse",
+        shortDescription: "저주 — 아무것도 못 봄",
         effectDescription: "저주 — 이번 턴은 무엇을 써도 아무것도 못 봅니다.",
         when: "쓸 일이 없습니다. 읽을 것이 없는 턴에 흘려보내세요.",
+        mergesTo: null,
         apply: b => ({ ...b, blind: true }),
     },
     {
-        id: "probe", name: "당국 조사", type: "trade", kind: "curse",
+        id: "probe", name: "당국 조사", lane: "curse", kind: "curse",
+        shortDescription: "저주 — 수수료 3배",
         effectDescription: "저주 — 이번 턴 수수료와 거래세가 세 배가 됩니다.",
         when: "쓸 일이 없습니다. 매매를 안 할 턴에 흘려보내세요.",
+        mergesTo: null,
         apply: b => ({ ...b, feeMult: b.feeMult * 3 }),
     },
     {
-        id: "debt", name: "이자 상환", type: "instant", kind: "curse",
+        id: "debt", name: "이자 상환", lane: "curse", kind: "curse",
+        shortDescription: "저주 — 현금 5% 이자",
         effectDescription: "저주 — 이번 턴 현금의 5%가 이자로 빠져나갑니다.",
         when: "쓸 일이 없습니다. 현금이 적을 때 흘려보내는 것이 그나마 낫습니다.",
+        mergesTo: null,
         apply: b => ({ ...b, cashDrainPct: b.cashDrainPct + 0.05 }),
     },
 ];
@@ -148,34 +184,29 @@ function defOf(id: string): CardDef | undefined {
     return CARDS.find(c => c.id === id);
 }
 
-/**
- * 판을 시작할 때 손에 쥐는 덱. 같은 카드가 여러 장이라 뽑는 맛이 생긴다.
- *
- * **앞의 네 자리**(예고 둘, 헤지 둘)는 인사이트로 영구히 갈아 끼울 수 있다. 뒤의 둘은
- * 안 바꾼다 — 국면을 읽는 눈(애널리스트)과 싸게 사고파는 길(수수료 면제)이 없으면
- * 강화 없는 첫 판이 못 굴러간다.
- */
-const STARTING_DECK = ["peek", "peek", "hedge", "hedge", "analyst", "nofee"];
+/** 아주 처음에 무작위로 쥐는 장 수. */
+export const OPENING_DECK_SIZE = 3;
 
-/** 갈아 끼울 수 있는 자리 수. STARTING_DECK 앞에서부터 이만큼이다. */
-export const UPGRADE_SLOTS = 4;
+/** 같은 카드가 이만큼 모이면 합쳐진다. */
+export const MERGE_COUNT = 3;
 
 /**
- * 강화로 살 수 있는 카드.
+ * 맨 처음 덱 — 기본 카드 넷 중 **무작위 셋**.
  *
- * 내부자 제보는 저주가 딸리지만 여기 넣는다 — 강화로 살 때는 **저주 없이** 들어온다
- * (`takeReward` 를 안 거친다). 판마다 한 번씩 얻는 것과 시작 덱에 박아 두는 것은
- * 다른 일이고, 값도 인사이트로 따로 치른다.
+ * 고정 여섯 장이던 시절에는 첫 턴이 늘 똑같았다. 셋을 무작위로 쥐면 첫 턴부터 이번 판이
+ * 무엇을 못 보는 판인지가 갈리고, 그 빈자리를 3턴마다 얻는 카드로 메우게 된다.
  */
-export const UPGRADE_POOL = ["forecast", "bunker", "stoploss", "tipoff"];
+export function openingDeck(rand: () => number): string[] {
+    const starters = CARDS.filter(c => c.kind === "starter").map(c => c.id);
+    return sample(starters, OPENING_DECK_SIZE, rand);
+}
 
-/** 강화를 얹은 시작 덱. 모르는 카드 이름은 조용히 무시한다(저장이 상했을 때). */
-export function startingDeckOf(upgrades: readonly string[]): string[] {
-    const deck = [...STARTING_DECK];
-    upgrades.slice(0, UPGRADE_SLOTS).forEach((id, i) => {
-        if (defOf(id)) deck[i] = id;
-    });
-    return deck;
+/** 합성 한 번의 결과. 화면이 이걸 그대로 문장으로 만든다. */
+export interface MergeResult {
+    /** 합쳐진 카드 이름. */
+    from: string;
+    /** 무엇이 되었는가. 사라졌으면 null. */
+    to: string | null;
 }
 
 /**
@@ -259,10 +290,10 @@ export class RoguelikeManager {
     private picked: CardDef | null = null;
     /** uid 를 만드는 counter. 같은 카드 여러 장을 구별하는 값이다. */
     private seq = 0;
-    /** 이 판이 시작한 덱. resetDeck 이 여기로 되돌린다. */
-    private baseDeck: string[];
     /** 경력으로 열어 둔 카드·유물 id. 보상과 유물 후보가 여기서 넓어진다. */
     private unlocked: Set<string>;
+    /** 아직 화면이 안 읽어 간 합성 결과. */
+    private pendingMerges: MergeResult[] = [];
 
     /**
      * 아직 안 보여 준 예보. **턴이 넘어가도 남는다.**
@@ -273,24 +304,30 @@ export class RoguelikeManager {
     private carriedPeek: number[] = [];
 
     /**
-     * @param upgrades 판을 넘어 박아 둔 강화 카드들. 시작 덱 앞자리를 대신한다.
-     */
-    /**
-     * @param upgrades 판을 넘어 박아 둔 강화 카드들. 시작 덱 앞자리를 대신한다.
+     * @param carriedDeck 지난 판에서 넘어온 덱. **비어 있으면 새 게임** — 무작위 셋으로 연다.
      * @param unlocked 경력으로 열어 둔 카드·유물 id.
      */
-    constructor(seed: number, upgrades: readonly string[] = [], unlocked: readonly string[] = []) {
+    constructor(seed: number, carriedDeck: readonly string[] = [], unlocked: readonly string[] = []) {
         // 엔진과 같은 시드를 쓰되 흩어 둔다. 그대로 쓰면 주가와 카드가 같은 수열을 밟는다.
         this.rand = mulberry32((seed ^ 0x9e3779b9) >>> 0);
-        this.baseDeck = startingDeckOf(upgrades);
         this.unlocked = new Set(unlocked);
-        this.resetDeck();
+
+        // 저장이 상했거나 카드가 없어졌을 수 있다. 모르는 id 는 조용히 버린다.
+        const kept = carriedDeck.filter(id => defOf(id));
+        this.drawPile = this.shuffled(kept.length > 0 ? kept : openingDeck(this.rand));
     }
 
-    /** 지금 보상으로 나올 수 있는 카드. */
+    /**
+     * 지금 보상으로 나올 수 있는 카드. **기본 카드도 함께 나온다.**
+     *
+     * 센 카드만 내밀면 합성이 죽는다 — 보상 카드는 위층이 없어 안 합쳐지고, 기본 카드는
+     * 처음 세 장이 서로 다르므로 셋이 모일 길이 없어진다. 기본 카드를 섞어 두면 그 자리가
+     * 진짜 선택이 된다: 지금 센 것을 집을 것인가, 약한 것을 모아 나중에 합칠 것인가.
+     */
     get rewardPool(): string[] {
-        return CARDS.filter(c => c.kind === "reward"
-            && (BASE_REWARD_IDS.includes(c.id) || this.unlocked.has(c.id))).map(c => c.id);
+        return CARDS.filter(c => c.kind === "starter"
+            || (c.kind === "reward" && (BASE_REWARD_IDS.includes(c.id) || this.unlocked.has(c.id))))
+            .map(c => c.id);
     }
 
     /** 지금 나올 수 있는 유물. */
@@ -316,34 +353,15 @@ export class RoguelikeManager {
         this.carriedPeek = this.carriedPeek.slice(1);
     }
 
-    /** 강화를 하나 더 얹고 덱을 새로 세운다. 판을 열기 **전에만** 부른다. */
-    applyUpgrades(upgrades: readonly string[]): void {
-        this.baseDeck = startingDeckOf(upgrades);
-        this.resetDeck();
-    }
-
-    /** 강화로 고르라고 내미는 카드들. 저주는 안 나온다. */
-    offerUpgrades(n = OFFER_SIZE): StrategyCard[] {
-        // 강화도 열린 것 안에서만. 아직 못 본 카드를 시작 덱에 박을 수는 없다.
-        const pool = UPGRADE_POOL.filter(id => BASE_REWARD_IDS.includes(id) || this.unlocked.has(id));
-        return sample(pool, n, this.rand).map(id => {
-            const d = defOf(id)!;
-            return {
-                uid: `u${this.seq++}`,
-                id: d.id, name: d.name, type: d.type, kind: d.kind,
-                effectDescription: d.effectDescription, isUsed: false,
-            };
-        });
-    }
-
     /* ── 덱 ─────────────────────────────────────────────── */
 
-    /** 시작 덱으로 되돌린다. 판을 새로 열 때 한 번. */
-    resetDeck(): void {
-        this.drawPile = this.shuffled(this.baseDeck);
-        this.discardPile = [];
-        this.hand = [];
-        this.picked = null;
+    /**
+     * 지금 덱 전부(카드 id). 뽑을 것·버린 것·손에 든 것을 합친 것이다.
+     *
+     * 판이 끝나면 이 목록이 그대로 저장되어 다음 판의 시작 덱이 된다.
+     */
+    get deck(): string[] {
+        return [...this.drawPile, ...this.discardPile, ...this.hand.map(c => c.id)];
     }
 
     private shuffled(ids: readonly string[]): string[] {
@@ -356,19 +374,69 @@ export class RoguelikeManager {
         return out;
     }
 
-    /** 덱에 한 장 넣는다. 보상으로 고른 카드와, 거기 딸린 저주가 이리로 온다. */
+    /**
+     * 덱에 한 장 넣는다. 보상으로 고른 카드와, 거기 딸린 저주가 이리로 온다.
+     *
+     * 넣고 나서 곧바로 합성을 본다 — 셋째 장이 들어오는 순간이 합쳐지는 순간이다.
+     */
     addToDeck(cardId: string): void {
         if (!defOf(cardId)) return;
         // 버린 더미에 넣는다 — 방금 얻은 카드가 이번 턴에 바로 잡히면 보상이 아니라 마술이다.
         this.discardPile.push(cardId);
+        this.mergeAt(cardId);
     }
 
-    /** 덱에서 한 장을 영영 뺀다. 파쇄기가 저주를 버릴 때 쓴다. */
+    /**
+     * 같은 카드가 셋 모였으면 합친다. 합친 결과가 또 셋이 될 수 있어 될 때까지 돈다.
+     *
+     * 덱이 3턴마다 한 장씩 두꺼워지는데 합성이 없으면 원하는 카드가 영영 안 잡힌다.
+     * 셋을 하나로 바꾸는 이 규칙이 "얇게 유지하기" 와 "세게 만들기" 를 같은 행동으로 묶는다.
+     */
+    private mergeAt(cardId: string): void {
+        const queue = [cardId];
+        while (queue.length > 0) {
+            const id = queue.shift()!;
+            const def = defOf(id);
+            if (!def || def.mergesTo === undefined) continue;   // 위층이 없다
+
+            while (this.removableCount(id) >= MERGE_COUNT) {
+                for (let i = 0; i < MERGE_COUNT; i++) this.removeFromDeck(id);
+                const to = def.mergesTo;
+                this.pendingMerges.push({ from: def.name, to: to ? defOf(to)?.name ?? null : null });
+                if (!to) continue;                              // 저주 — 셋이 그냥 사라진다
+                this.discardPile.push(to);
+                queue.push(to);
+            }
+        }
+    }
+
+    /**
+     * 지금 실제로 빼낼 수 있는 같은 카드의 수.
+     *
+     * 손에 든 장도 덱의 일부라 함께 세지만, **이번 턴에 고른 한 장은 뺀다** — 효과가
+     * 이미 걸려 있는 카드를 도로 가져가면 화면과 결과가 어긋난다.
+     */
+    private removableCount(cardId: string): number {
+        const inPiles = this.drawPile.filter(id => id === cardId).length
+            + this.discardPile.filter(id => id === cardId).length;
+        return inPiles + this.hand.filter(c => c.id === cardId && !c.isUsed).length;
+    }
+
+    /** 방금 일어난 합성을 가져간다. 한 번 읽으면 비워진다. */
+    takeMerges(): MergeResult[] {
+        const out = this.pendingMerges;
+        this.pendingMerges = [];
+        return out;
+    }
+
+    /** 덱에서 한 장을 영영 뺀다. 파쇄기와 합성이 쓴다. 손패에 있으면 손패에서 뺀다. */
     private removeFromDeck(cardId: string): boolean {
-        for (const pile of [this.drawPile, this.discardPile]) {
+        for (const pile of [this.discardPile, this.drawPile]) {
             const i = pile.indexOf(cardId);
             if (i >= 0) { pile.splice(i, 1); return true; }
         }
+        const j = this.hand.findIndex(c => c.id === cardId && !c.isUsed);
+        if (j >= 0) { this.hand.splice(j, 1); return true; }
         return false;
     }
 
@@ -405,15 +473,22 @@ export class RoguelikeManager {
             drawn.push(this.drawPile.shift()!);
         }
 
-        this.hand = drawn.map(id => {
-            const d = defOf(id)!;
-            return {
-                uid: `c${this.seq++}`,
-                id: d.id, name: d.name, type: d.type, kind: d.kind,
-                effectDescription: d.effectDescription, isUsed: false,
-            };
-        });
+        this.hand = drawn.map(id => this.toCard(defOf(id)!, "c"));
         return this.hand;
+    }
+
+    /** 정의 한 줄을 화면이 쥘 수 있는 **한 장**으로 만든다. uid 가 그 장의 이름표다. */
+    private toCard(d: CardDef, prefix: string): StrategyCard {
+        return {
+            uid: `${prefix}${this.seq++}`,
+            id: d.id, name: d.name, lane: d.lane, kind: d.kind,
+            shortDescription: d.shortDescription,
+            effectDescription: d.effectDescription,
+            when: d.when,
+            isUsed: false,
+            // 값을 고르기 전에 보여 준다. 고르고 나서 알게 되면 그건 고른 것이 아니다.
+            ...(d.curse ? { curseName: defOf(d.curse)?.name } : {}),
+        };
     }
 
     /**
@@ -463,16 +538,7 @@ export class RoguelikeManager {
      * 저주는 여기 안 나온다. 저주는 센 카드에 딸려 오는 것이지 고르는 것이 아니다.
      */
     offerCards(): StrategyCard[] {
-        return sample(this.rewardPool, OFFER_SIZE, this.rand).map(id => {
-            const d = defOf(id)!;
-            return {
-                uid: `r${this.seq++}`,
-                id: d.id, name: d.name, type: d.type, kind: d.kind,
-                effectDescription: d.effectDescription, isUsed: false,
-                // 값을 고르기 전에 보여 준다. 고르고 나서 알게 되면 그건 고른 것이 아니다.
-                ...(d.curse ? { curseName: defOf(d.curse)?.name } : {}),
-            };
-        });
+        return sample(this.rewardPool, OFFER_SIZE, this.rand).map(id => this.toCard(defOf(id)!, "r"));
     }
 
     /**

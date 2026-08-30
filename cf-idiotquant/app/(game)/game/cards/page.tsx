@@ -9,23 +9,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CARD_LIST, RELIC_POOL, UPGRADE_SLOTS, UPGRADE_POOL } from "@/lib/game/core/RoguelikeManager";
-import { REWARD_TURNS, HAND_SIZE, OFFER_SIZE } from "@/lib/game/core/RoguelikeManager";
-import { BUST_RATIO, MAX_TIER, MAX_TURNS, START_CASH, TIER_BUST_STEP, TIER_IP_STEP } from "@/lib/game/core/StockEngine";
-import { UNLOCKS, UPGRADE_COSTS } from "@/lib/game/core/progress";
+import {
+    CARD_LIST, RELIC_POOL, REWARD_TURNS, HAND_SIZE, OFFER_SIZE,
+    MERGE_COUNT, OPENING_DECK_SIZE,
+} from "@/lib/game/core/RoguelikeManager";
+import { MAX_TIER, MAX_TURNS, RUIN_LINE, SEED_CASH, TIER_IP_STEP } from "@/lib/game/core/StockEngine";
+import { UNLOCKS } from "@/lib/game/core/progress";
 
 export const metadata: Metadata = {
     title: "카드 도감 - 주식 로그라이크",
     description:
-        "12턴 주식 로그라이크의 전략 카드·저주·유물 전체 목록과, 각 카드를 언제 쓰는지. 청산선·시작 덱 강화·차수 규칙도 함께 정리했습니다.",
+        "12턴 주식 로그라이크의 전략 카드·저주·유물 전체 목록과, 각 카드를 언제 쓰는지. 자금 이월·자본잠식·카드 합성 규칙도 함께 정리했습니다.",
     alternates: { canonical: "https://idiotquant.com/game/cards" },
 };
 
 /* ── 조각 ───────────────────────────────────────────────────── */
 
-const KIND_STYLE = {
-    starter: { label: "시작 덱", ring: "border-[#2f4046]", ink: "text-[#e9f2ea]" },
-    reward: { label: "보상", ring: "border-[#5cf08f]", ink: "text-[#5cf08f]" },
+/** 갈래 — 무엇을 하는 카드인가. 캔버스의 손패 색(theme.LANE)과 같은 뜻이다. */
+const LANE_STYLE = {
+    info: { label: "정보", ring: "border-[#5cf08f]", ink: "text-[#5cf08f]" },
+    act: { label: "집행", ring: "border-[#e3b34a]", ink: "text-[#e3b34a]" },
+    guard: { label: "방어", ring: "border-[#6fb6ff]", ink: "text-[#6fb6ff]" },
     curse: { label: "저주", ring: "border-[#ff5ec8]", ink: "text-[#ff5ec8]" },
 } as const;
 
@@ -44,12 +48,31 @@ function LockTag({ id }: { id: string }) {
     );
 }
 
+/** 셋을 모으면 무엇이 되는가. 도감이 코어의 `mergesTo` 를 그대로 읽는다. */
+function MergeLine({ card }: { card: (typeof CARD_LIST)[number] }) {
+    if (card.mergesTo === undefined) return null;
+    const to = card.mergesTo === null
+        ? "사라집니다"
+        : `${CARD_LIST.find(c => c.id === card.mergesTo)?.name ?? card.mergesTo} 한 장`;
+    return (
+        <p className="mt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+            <span className="text-[#e3b34a]">합성 </span>
+            {MERGE_COUNT}장을 모으면 → {to}
+        </p>
+    );
+}
+
 function Card({ card }: { card: (typeof CARD_LIST)[number] }) {
-    const skin = KIND_STYLE[card.kind];
+    const skin = LANE_STYLE[card.lane];
     return (
         <li className={`rounded-xl border bg-[#141c1e] p-4 ${skin.ring}`}>
-            <div className="flex items-baseline justify-between gap-3">
-                <h3 className={`text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
+            {/* 뱃지가 셋까지 붙는다(갈래·해금·저주). 감싸지 않으면 이름이 한 글자씩
+                세로로 접혀 읽을 수 없게 된다 — 신용 융자가 실제로 그랬다. */}
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <h3 className={`mr-auto text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${skin.ink} ring-current`}>
+                    {skin.label}
+                </span>
                 <LockTag id={card.id} />
                 {card.curse && (
                     <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#ff5ec8] ring-1 ring-[#ff5ec8]">
@@ -57,11 +80,14 @@ function Card({ card }: { card: (typeof CARD_LIST)[number] }) {
                     </span>
                 )}
             </div>
-            <p className="mt-2 text-[13px] leading-relaxed text-[#e9f2ea]">{card.effectDescription}</p>
+            {/* 손패에 늘 붙는 한 줄과, 펼쳤을 때 나오는 설명을 같은 순서로 보여 준다. */}
+            <p className="mt-2 text-[12px] text-[#7d8f88]">{card.shortDescription}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-[#e9f2ea]">{card.effectDescription}</p>
             <p className="mt-2 border-t border-[#2f4046] pt-2 text-[12px] leading-relaxed text-[#7d8f88]">
                 <span className="text-[#e3b34a]">언제 </span>
                 {card.when}
             </p>
+            <MergeLine card={card} />
         </li>
     );
 }
@@ -83,10 +109,7 @@ function Section({ title, note, children }: {
 export default function CardsPage() {
     const byKind = (k: (typeof CARD_LIST)[number]["kind"]) => CARD_LIST.filter(c => c.kind === k);
     const man = (v: number) => `${Math.round(v / 10_000).toLocaleString()}만`;
-    const upgradable = UPGRADE_POOL
-        .map(id => CARD_LIST.find(c => c.id === id)?.name)
-        .filter(Boolean)
-        .join(" · ");
+    const starters = byKind("starter").map(c => c.name).join(" · ");
 
     return (
         <div className="min-h-screen bg-[#0b0f10] font-[family-name:var(--font-plex-mono)]">
@@ -97,7 +120,9 @@ export default function CardsPage() {
                     <p className="mt-2 text-[13px] leading-relaxed text-[#7d8f88]">
                         한 판은 {MAX_TURNS}턴입니다. 매 턴 덱에서 {HAND_SIZE}장을 뽑아{" "}
                         <span className="text-[#e9f2ea]">한 장만</span> 쓰고, 셋 다 버린 더미로 갑니다.
-                        덱이 마르면 버린 더미를 섞어 다시 덱이 됩니다.
+                        덱이 마르면 버린 더미를 섞어 다시 덱이 됩니다. 손패의 카드는 한 줄 요약만
+                        보이고, <span className="text-[#e9f2ea]">누르면 자세한 설명</span>이 펼쳐지며
+                        한 번 더 누르면 씁니다.
                     </p>
                     <div className="mt-4 rounded-xl border border-[#5cf08f] bg-[#141c1e] p-4">
                         <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">
@@ -134,12 +159,15 @@ export default function CardsPage() {
                     <dl className="mt-3 grid gap-3 text-[13px] sm:grid-cols-2">
                         <div>
                             <dt className="text-[#7d8f88]">시작 자금</dt>
-                            <dd className="text-[#e9f2ea]">{man(START_CASH)}</dd>
+                            <dd className="text-[#e9f2ea]">
+                                {man(SEED_CASH)}
+                                <span className="text-[#7d8f88]"> · 다음 판은 이번 판의 최종 자산으로</span>
+                            </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">청산선 (게임 오버)</dt>
+                            <dt className="text-[#7d8f88]">자본잠식 (게임 오버)</dt>
                             <dd className="text-[#ff6b4a]">
-                                시작 자금의 {Math.round(BUST_RATIO * 100)}%
+                                {man(RUIN_LINE)} 미만
                                 <span className="text-[#7d8f88]">
                                     {" "}— 아래로 떨어지면 {MAX_TURNS}턴을 못 채우고 끝
                                 </span>
@@ -153,10 +181,19 @@ export default function CardsPage() {
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">카드 보상</dt>
+                            <dt className="text-[#7d8f88]">카드 획득</dt>
                             <dd className="text-[#e9f2ea]">
-                                {REWARD_TURNS.join("·")}턴을 끝냈을 때 {OFFER_SIZE}장 중 하나
+                                {REWARD_TURNS.join("·")}턴을 끝냈을 때 {OFFER_SIZE}장 중 하나를 덱에
                                 <span className="text-[#7d8f88]"> (건너뛸 수 있음)</span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-[#7d8f88]">합성</dt>
+                            <dd className="text-[#e9f2ea]">
+                                같은 카드 {MERGE_COUNT}장 → 한 장으로
+                                <span className="text-[#7d8f88]">
+                                    {" "}· 저주는 {MERGE_COUNT}장이 모이면 사라집니다
+                                </span>
                             </dd>
                         </div>
                         <div>
@@ -176,47 +213,52 @@ export default function CardsPage() {
                     </h2>
                     <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[#e9f2ea]">
                         <li>
-                            <span className="text-[#e3b34a]">인사이트</span> — 판마다 쌓입니다. 15당
-                            시작 유물이 하나씩 늘고(최대 {RELIC_POOL.length}개), 시작 덱 강화의 값으로도 씁니다.
+                            <span className="text-[#e3b34a]">자금</span> — 판이 끝나면 그 판의 최종
+                            자산이 다음 판의 시작 자금이 됩니다. 판은 끝이 아니라{" "}
+                            <span className="text-[#e9f2ea]">장이 넘어가는 자리</span>입니다.
                         </li>
                         <li>
-                            <span className="text-[#e3b34a]">시작 덱 강화</span> — 판을 열기 전에 시작 덱
-                            여섯 장 중 앞 {UPGRADE_SLOTS}자리를 영구히 갈아 끼웁니다. 값은{" "}
-                            {UPGRADE_COSTS.join(" / ")}. 고를 수 있는 것: {upgradable}.
-                            <span className="text-[#7d8f88]"> 덱 크기는 늘 6이라 원하는 카드가
-                                잡히는 확률은 그대로고 질만 오릅니다.</span>
+                            <span className="text-[#e3b34a]">덱</span> — 카드도 그대로 넘어갑니다.
+                            아주 처음에만 기본 카드 중 무작위 {OPENING_DECK_SIZE}장으로 열고, 그 뒤로는
+                            {REWARD_TURNS.join("·")}턴마다 한 장씩 늘어납니다.
+                            <span className="text-[#7d8f88]"> 같은 카드 {MERGE_COUNT}장이 모이면
+                                한 장으로 합쳐져 덱이 두꺼워지는 것을 막습니다.</span>
+                        </li>
+                        <li>
+                            <span className="text-[#e3b34a]">인사이트</span> — 판마다 쌓입니다. 15당
+                            시작 유물이 하나씩 늘어납니다(최대 {RELIC_POOL.length}개).
                         </li>
                         <li>
                             <span className="text-[#e3b34a]">경력 인사이트</span> — 판마다 번 것이
                             그대로 더해집니다. <span className="text-[#e9f2ea]">쓰지도 잃지도 않는
-                            유일한 값</span>이라, 청산돼도 이것만은 오릅니다. 카드와 유물이 여기서
+                            유일한 값</span>이라, 자본잠식돼도 이것만은 오릅니다. 카드와 유물이 여기서
                             열립니다:{" "}
                             {UNLOCKS.map(u => `${u.at}`).join(" · ")}.
                         </li>
                         <li>
-                            <span className="text-[#e3b34a]">차수</span> — 완주하면 +1, 청산되면 −1
-                            (최대 {MAX_TIER}). 차수마다 청산선이 {Math.round(TIER_BUST_STEP * 100)}%p
-                            올라오고 인사이트를 {Math.round(TIER_IP_STEP * 100)}% 더 줍니다.
-                            <span className="text-[#7d8f88]"> 위험을 사서 성장을 앞당기는 자리입니다.</span>
+                            <span className="text-[#e3b34a]">차수</span> — 완주하면 +1 (최대 {MAX_TIER}).
+                            차수가 오르면 국면이 짧아지고 뉴스가 잦아져 읽기 어려워지는 대신,
+                            인사이트를 {Math.round(TIER_IP_STEP * 100)}%씩 더 줍니다.
+                            <span className="text-[#7d8f88]"> 한 주도 안 산 판은 차수가 안 오릅니다.</span>
                         </li>
                     </ul>
                     <p className="mt-3 border-t border-[#2f4046] pt-3 text-[12px] leading-relaxed text-[#ff5ec8]">
-                        청산되면 인사이트가 절반이 되고 시작 덱 강화가 전부 사라집니다. 그 판에서 번
-                        인사이트도 0입니다.{" "}
+                        자금이 {man(RUIN_LINE)} 아래로 떨어지면 자본잠식 — 거기서 게임이 끝납니다.
+                        자금·덱·차수·인사이트가 전부 처음으로 돌아갑니다.{" "}
                         <span className="text-[#7d8f88]">경력 인사이트만은 안 깎입니다.</span>
                     </p>
                 </section>
 
                 <Section
-                    title="시작 덱"
-                    note="여섯 장으로 시작합니다 — 예고 시황 둘, 헤지 둘, 애널리스트 리포트 하나, 수수료 면제 하나. 읽는 눈 셋과 버티는 손 둘, 그리고 싸게 사고파는 길 하나입니다."
+                    title="기본 카드"
+                    note={`아주 처음에는 이 넷 중 무작위 ${OPENING_DECK_SIZE}장으로 시작합니다 (${starters}). 무엇이 빠졌는지가 그 판의 성격이 되고, 그 빈자리를 ${REWARD_TURNS.join("·")}턴의 보상으로 메웁니다. 셋을 모으면 아래 보상 카드로 합쳐집니다.`}
                 >
                     {byKind("starter").map(c => <Card key={c.id} card={c} />)}
                 </Section>
 
                 <Section
                     title="보상 카드"
-                    note="더 멀리 보거나, 더 크게 걸거나, 더 단단히 막습니다. 내부자 제보와 신용 융자에는 저주가 딸려 와 덱이 그만큼 더러워집니다 — 안 고르는 것이 늘 손해는 아닙니다."
+                    note="더 멀리 보거나, 더 크게 걸거나, 더 단단히 막습니다. 위층이 없어 합쳐지지는 않으니, 지금 센 것을 집을지 기본 카드를 모아 나중에 합칠지가 매번의 선택입니다. 내부자 제보와 신용 융자에는 저주가 딸려 와 덱이 그만큼 더러워집니다 — 안 고르는 것이 늘 손해는 아닙니다."
                 >
                     {byKind("reward").map(c => <Card key={c.id} card={c} />)}
                 </Section>
@@ -239,8 +281,8 @@ export default function CardsPage() {
                     <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                         {RELIC_POOL.map(r => (
                             <li key={r.id} className="rounded-xl border border-[#e3b34a] bg-[#141c1e] p-4">
-                                <div className="flex items-baseline justify-between gap-3">
-                                    <h3 className="text-[15px] font-bold text-[#e3b34a]">{r.name}</h3>
+                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                    <h3 className="mr-auto text-[15px] font-bold text-[#e3b34a]">{r.name}</h3>
                                     <LockTag id={r.id} />
                                 </div>
                                 <p className="mt-2 text-[13px] leading-relaxed text-[#e9f2ea]">

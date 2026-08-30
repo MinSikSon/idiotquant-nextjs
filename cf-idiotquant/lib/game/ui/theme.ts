@@ -124,6 +124,7 @@ export const C = {
     gold: 0xe3b34a,
     neon: 0x5cf08f,
     danger: 0xff5ec8,
+    steel: 0x6fb6ff,  // 방어 — 차가운 파랑
 } as const;
 
 export const S = {
@@ -137,6 +138,20 @@ export const S = {
     gold: "#e3b34a",
     neon: "#5cf08f",
     danger: "#ff5ec8",
+    steel: "#6fb6ff",
+} as const;
+
+/**
+ * 카드 갈래별 색과 표시.
+ *
+ * 카드가 열두 장이 되면 이름만으로는 안 갈린다. **무엇을 하는 카드인가**(읽는다·건다·
+ * 막는다·저주)를 색과 한 글자 표시로 먼저 말해 두면, 손패 셋을 훑는 데 한 호흡이면 된다.
+ */
+export const LANE = {
+    info: { color: C.neon, ink: S.neon, tag: "정보" },
+    act: { color: C.gold, ink: S.gold, tag: "집행" },
+    guard: { color: C.steel, ink: S.steel, tag: "방어" },
+    curse: { color: C.danger, ink: S.danger, tag: "저주" },
 } as const;
 
 /** 웹폰트가 아직 안 왔거나 못 읽었을 때 떨어지는 자리. 굵기 없는 고정폭이면 된다. */
