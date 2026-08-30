@@ -27,8 +27,7 @@ import { CARD_LIST, RELIC_POOL, RoguelikeManager } from "@/lib/game/core/Rogueli
 import type { MarketRead, Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
 import { MAX_TIER } from "@/lib/game/core/StockEngine";
 import {
-    canUpgrade, loadProgress, newlyUnlocked, nextUpgradeCost, purchaseUpgrade, recordRun,
-    unlockedIds, UNLOCKS, type Progress,
+    loadProgress, newlyUnlocked, recordRun, unlockedIds, UNLOCKS, type Progress,
 } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
@@ -152,8 +151,6 @@ export class TradingScene extends Phaser.Scene {
      * 성적을 다시 저장하면 안 된다. 그래서 재료만 들고 있다가 같은 것으로 다시 그린다.
      */
     private offer: StrategyCard[] | null = null;
-    /** 판을 열기 전 강화 고르기. 고르거나 넘길 때까지 판이 안 시작된다. */
-    private upgradeOffer: StrategyCard[] | null = null;
     /** 네 턴마다 뜨는 유물 고르기. 고를 때까지 다음 턴이 안 열린다. */
     private relicOffer: Relic[] | null = null;
     private ended: {
@@ -183,7 +180,6 @@ export class TradingScene extends Phaser.Scene {
             ?? loadProgress().insightPoints;
         this.busy = false;
         this.offer = null;
-        this.upgradeOffer = null;
         this.relicOffer = null;
         this.marketRead = null;
         this.ended = null;
@@ -196,9 +192,10 @@ export class TradingScene extends Phaser.Scene {
 
         const seed = (Math.random() * 0xffffffff) >>> 0;
         const saved = loadProgress();
-        this.engine = new StockEngine(seed, saved.tier);
+        // 자금도 덱도 지난 판에서 그대로 넘어온다 — 판은 끝이 아니라 장이 넘어가는 자리다.
+        this.engine = new StockEngine(seed, saved.tier, saved.bankroll);
         this.engine.player.insightPoints = this.carriedIP;
-        this.rogue = new RoguelikeManager(seed, saved.upgrades, unlockedIds(saved.careerIP));
+        this.rogue = new RoguelikeManager(seed, saved.deck, unlockedIds(saved.careerIP));
         this.rogue.grantStartingRelics(this.carriedIP);
 
         this.buildAll();
@@ -210,9 +207,7 @@ export class TradingScene extends Phaser.Scene {
             this.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
         });
 
-        // 인사이트가 모였으면 판을 열기 전에 시작 덱을 손볼 기회를 준다.
-        if (canUpgrade(saved)) this.showUpgrade();
-        else this.beginTurn();
+        this.beginTurn();
     }
 
     /** 지금 격자를 재고 띠를 나눈다. 켤 때 한 번, 돌릴 때마다 한 번. */
@@ -252,7 +247,6 @@ export class TradingScene extends Phaser.Scene {
 
         // 떠 있던 오버레이는 같은 재료로 다시 그린다 — 후보를 다시 뽑지 않는다.
         if (this.ended) this.drawResult();
-        else if (this.upgradeOffer) this.drawUpgrade();
         else if (this.relicOffer) this.drawRelicOffer();
         else if (this.offer) this.drawReward();
     }
@@ -662,75 +656,6 @@ export class TradingScene extends Phaser.Scene {
         return root;
     }
 
-    /* ── 시작 덱 강화 (판을 열기 전) ───────────────────────── */
-
-    /**
-     * 인사이트를 **쓰는** 유일한 자리.
-     *
-     * 유물은 IP 75 에서 여섯 개로 차 버려 그 뒤로 인사이트가 갈 곳이 없었다. 여기서는
-     * 시작 덱 여섯 장 중 약한 앞자리를 영구히 갈아 끼운다 — 덱이 불어나지 않으므로
-     * 원하는 카드가 잡히는 확률은 그대로고 질만 오른다.
-     *
-     * 그리고 이것이 **청산될 때 잃는 것**이다. 그래서 판마다 무겁게 굴리게 된다.
-     */
-    private showUpgrade() {
-        this.upgradeOffer = this.rogue.offerUpgrades();
-        if (this.upgradeOffer.length === 0) { this.upgradeOffer = null; this.beginTurn(); return; }
-        this.drawUpgrade();
-    }
-
-    private drawUpgrade() {
-        const offer = this.upgradeOffer;
-        if (!offer) return;
-        const saved = loadProgress();
-        const cost = nextUpgradeCost(saved);
-        if (cost === null) { this.upgradeOffer = null; this.beginTurn(); return; }
-
-        const stacked = this.designH < TALL_ENOUGH;
-        const n = offer.length;
-        const gap = 8;
-        const pw = Math.min(this.designW - 40, stacked ? 660 : 350);
-        const cellH = stacked ? 96 : 72;
-        const rows = stacked ? 1 : n;
-        const ph = 58 + rows * cellH + (rows - 1) * gap + 62;
-
-        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
-        const mid = px + pw / 2;
-
-        box.add(this.add.text(mid, py + 16, `UPGRADE — 인사이트 ${cost}`, {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
-        }).setOrigin(0.5, 0));
-        box.add(this.add.text(mid, py + 32, "시작 덱의 약한 카드 한 장을 영구히 바꿉니다", {
-            fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
-        }).setOrigin(0.5, 0));
-
-        const close = (note: string, color: string) => {
-            this.upgradeOffer = null;
-            this.closeOverlay();
-            this.beginTurn();
-            this.say(note, color);
-        };
-
-        const inner = pw - 32;
-        const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
-
-        offer.forEach((card, i) => {
-            const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
-            const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
-            box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, () => {
-                const next = purchaseUpgrade(card.id);
-                // 산 값이 실제로 반영됐을 때만 덱을 다시 세운다.
-                this.rogue.applyUpgrades(next.upgrades);
-                close(`시작 덱에 ${card.name} — 남은 인사이트 ${next.insightPoints}`, S.gold);
-            }));
-        });
-
-        const skip = makeButton(this, px + 16, py + ph - 62, inner, 46,
-            "아껴 두기", () => close("인사이트를 아꼈습니다", S.inkDim),
-            { tone: "plain", size: FS.sm });
-        box.add(skip.root);
-    }
-
     /* ── 카드 보상 (3·6·9턴을 끝냈을 때) ──────────────────── */
 
     /**
@@ -791,9 +716,16 @@ export class TradingScene extends Phaser.Scene {
             const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
             box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, () => {
                 const curse = this.rogue.takeReward(card.id);
+                // 셋째 장이 들어오면 그 자리에서 합쳐진다. 조용히 바뀌면 덱에서 카드가
+                // 사라진 것처럼 보이므로 무엇이 무엇이 되었는지 말해 준다.
+                const merged = this.rogue.takeMerges()
+                    .map(m => m.to ? `${m.from} ×3 → ${m.to}` : `${m.from} ×3 소멸`);
                 close(
-                    curse ? `${card.name} 획득 — 저주 ${curse} 도 덱에` : `${card.name} 을(를) 덱에`,
-                    curse ? S.danger : S.neon,
+                    [
+                        curse ? `${card.name} 획득 — 저주 ${curse} 도 덱에` : `${card.name} 을(를) 덱에`,
+                        ...merged,
+                    ].join(" · "),
+                    merged.length > 0 ? S.gold : curse ? S.danger : S.neon,
                 );
             }));
         });
@@ -851,7 +783,8 @@ export class TradingScene extends Phaser.Scene {
 
     private finish() {
         this.engine.liquidate();
-        const sum = this.engine.summarize();
+        // 덱을 함께 넘긴다 — 이 목록이 그대로 다음 판의 시작 덱이 된다.
+        const sum = this.engine.summarize(this.rogue.deck);
         // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만
         // 그건 이 판 안의 값이고, 판을 넘어 남는 것은 progress 가 들고 있다.
         const before = loadProgress().careerIP;
@@ -872,7 +805,7 @@ export class TradingScene extends Phaser.Scene {
         const pw = Math.min(this.designW - 40, tight ? 460 : 350);
         const ph = tight ? 246 : 348;
 
-        const { box, px, py } = this.openOverlay(pw, ph, r.sum.bankrupt ? C.danger : C.neon);
+        const { box, px, py } = this.openOverlay(pw, ph, sum.ruined ? C.danger : C.neon);
         const mid = px + pw / 2;
 
         const t = (y: number, s: string, size: number, color: string) =>
@@ -884,27 +817,26 @@ export class TradingScene extends Phaser.Scene {
         // [제목, 수익률, 자산, 인사이트, 누적, 최고, 유물] 의 y 오프셋
         const at = tight ? [12, 32, 74, 100, 122, 142, 162] : [20, 50, 108, 142, 172, 194, 218];
 
-        const bust = sum.bankrupt;
+        const ruined = sum.ruined;
         t(py + at[0]!,
-            bust ? "LIQUIDATED — 청산" : newBest ? "RUN COMPLETE — 새 기록" : "RUN COMPLETE",
-            tight ? FS.sm : FS.md, bust ? S.danger : newBest ? S.neon : S.inkDim);
+            ruined ? "GAME OVER — 자본잠식" : newBest ? "다음 판으로 — 새 기록" : "다음 판으로",
+            tight ? FS.sm : FS.md, ruined ? S.danger : newBest ? S.neon : S.inkDim);
         t(py + at[1]!, pct(sum.returnPct), tight ? FS.xl : FS.xxl, tone(sum.returnPct));
         t(py + at[2]!, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
-        // 청산은 못 번 것이 아니라 **잃은 것**이다. 무엇이 사라졌는지 그 자리에서 말한다.
+        // 자본잠식은 못 번 것이 아니라 **끝난 것**이다. 무엇이 사라졌는지 그 자리에서 말한다.
         t(py + at[3]!,
-            bust ? "인사이트 절반 · 시작 덱 강화 초기화"
+            ruined ? "자금과 덱이 처음으로 돌아갑니다"
                 : sum.idle ? "한 주도 사지 않았습니다 — 인사이트 없음"
                     : `인사이트 +${sum.earnedIP}`,
-            tight ? FS.sm : FS.md, bust || sum.idle ? S.danger : S.gold);
-        // 차수가 오른 것이 곧 "다시 켤 이유" 다. 성적보다 이 줄이 먼저 눈에 들어와야 한다.
-        const tierNote = bust
-            ? `차수 ${progress.tier} 로 내려갔습니다`
-            : progress.tier >= MAX_TIER ? `차수 ${MAX_TIER} — 끝까지 올랐습니다`
-                : `차수 ${progress.tier} — 다음 판은 청산선이 더 높습니다`;
-        t(py + at[4]!, tierNote, FS.sm, bust ? S.danger : S.gold);
+            tight ? FS.sm : FS.md, ruined || sum.idle ? S.danger : S.gold);
+        // 다음 판이 무엇을 들고 시작하는지. 자금과 덱이 이어지는 것이 이 게임의 뼈대다.
+        const carryNote = ruined
+            ? `다시 ${money(progress.bankroll)} · 카드 3장으로`
+            : `다음 판 ${money(progress.bankroll)} · 덱 ${progress.deck.length}장`;
+        t(py + at[4]!, carryNote, FS.sm, ruined ? S.danger : S.gold);
         t(py + at[5]! - 2, [
             `IP ${progress.insightPoints}`,
-            `강화 ${progress.upgrades.length}/4`,
+            `차수 ${progress.tier}/${MAX_TIER}`,
             progress.bestReturn !== null ? `최고 ${pct(progress.bestReturn)}` : "",
         ].filter(Boolean).join(" · "), FS.xs, newBest ? S.neon : S.inkDim);
         // 경력 인사이트는 청산돼도 안 깎이는 유일한 값이다. 못한 판 뒤에 이 줄이
@@ -916,7 +848,7 @@ export class TradingScene extends Phaser.Scene {
 
         const btnH = tight ? 44 : 54;
         const restart = makeButton(this, px + 20, py + ph - btnH - (tight ? 14 : 20), pw - 40, btnH,
-            r.sum.bankrupt ? "다시 처음부터 >" : "RESTART >", () => {
+            sum.ruined ? "다시 처음부터 >" : "NEXT RUN >", () => {
                 this.closeOverlay();
                 // 인사이트만 들고 다음 런으로. 유물도 카드도 새로 뽑힌다.
                 this.scene.restart({ insightPoints: progress.insightPoints });
@@ -935,11 +867,11 @@ export class TradingScene extends Phaser.Scene {
 
         this.equityText.setText(money(e.equity)).setColor(tone(e.totalReturnPct));
 
-        // 청산선이 눈에 보여야 그 선을 피할 수 있다. 가까워졌을 때만 띄운다 — 늘 떠 있으면
-        // 읽히지 않는 배경이 된다. 1.2 배는 시작 자금의 90% 언저리다.
-        const near = e.equity < e.bustLine * 1.2;
+        // 자본잠식선이 눈에 보여야 그 선을 피할 수 있다. 가까워졌을 때만 띄운다 — 늘 떠
+        // 있으면 읽히지 않는 배경이 된다.
+        const near = e.equity < e.ruinLine * 1.5;
         this.totalLabel
-            .setText(near ? `TOTAL · 청산선 ${money(e.bustLine)}`
+            .setText(near ? `TOTAL · 잠식선 ${money(e.ruinLine)}`
                 : e.tier > 0 ? `TOTAL · 차수 ${e.tier}` : "TOTAL")
             .setColor(near ? S.danger : e.tier > 0 ? S.gold : S.inkDim);
         this.cashText.setText(`현금 ${money(p.cash)}`);
@@ -974,7 +906,17 @@ export class TradingScene extends Phaser.Scene {
     /** 뉴스 티커 한 줄. 길면 잘라 둔다 — HUD 높이는 고정이다. */
     private say(msg: string, color: string) {
         // 가로에서는 HUD 가 왼쪽 칸만 쓰므로 들어가는 글자 수가 다르다. 폭에서 낸다.
-        const max = Math.max(24, Math.floor((this.band.hud.w - PAD * 2) / 7));
-        this.newsText.setText(msg.length > max ? `${msg.slice(0, max - 1)}…` : msg).setColor(color);
+        //
+        // 한글은 고정폭 글꼴에서도 라틴 문자의 **두 배** 폭이라, 글자 수로 자르면 한글
+        // 문장이 칸을 넘어 잘린 채 그려진다. 한글을 두 칸으로 세어 폭으로 자른다.
+        const room = Math.floor((this.band.hud.w - PAD * 2) / (FS.xs * 0.6));
+        const wide = (ch: string) => (ch.charCodeAt(0) > 0x1100 ? 2 : 1);
+
+        let used = 0, cut = msg.length;
+        for (let i = 0; i < msg.length; i++) {
+            used += wide(msg[i]!);
+            if (used > room - 1) { cut = i; break; }
+        }
+        this.newsText.setText(cut < msg.length ? `${msg.slice(0, cut)}…` : msg).setColor(color);
     }
 }

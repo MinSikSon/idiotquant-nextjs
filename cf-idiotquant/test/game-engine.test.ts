@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    StockEngine, START_CASH, MAX_TURNS, BUST_RATIO,
+    StockEngine, SEED_CASH, MAX_TURNS, RUIN_LINE,
     BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
 } from "@/lib/game/core/StockEngine";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
@@ -26,11 +26,11 @@ function playOut(e: StockEngine, b: TurnBuff = NO_BUFF) {
 
 test("판은 현금 1,000만과 1턴에서 시작한다", () => {
     const e = new StockEngine(1);
-    assert.equal(e.player.cash, START_CASH);
+    assert.equal(e.player.cash, SEED_CASH);
     assert.equal(e.player.shares, 0);
     assert.equal(e.player.currentTurn, 1);
     assert.equal(e.player.maxTurns, MAX_TURNS);
-    assert.equal(e.equity, START_CASH);
+    assert.equal(e.equity, SEED_CASH);
     assert.equal(e.totalReturnPct, 0);
 });
 
@@ -170,11 +170,11 @@ test("사고 바로 팔면 수수료만큼 손해다", () => {
     const e = new StockEngine(53);
     e.buyAll();
     e.sellAll();
-    assert.ok(e.player.cash < START_CASH, `사고 팔았는데 ${e.player.cash} 다`);
+    assert.ok(e.player.cash < SEED_CASH, `사고 팔았는데 ${e.player.cash} 다`);
 
-    const lost = START_CASH - e.player.cash;
+    const lost = SEED_CASH - e.player.cash;
     const bp = (BUY_FEE_NUM + SELL_FEE_NUM + SELL_TAX_NUM) / 100_000;
-    assert.ok(lost < START_CASH * bp * 1.1, `수수료보다 많이 잃었다: ${lost}`);
+    assert.ok(lost < SEED_CASH * bp * 1.1, `수수료보다 많이 잃었다: ${lost}`);
 });
 
 /* ── 주가 ───────────────────────────────────────────────────── */
@@ -376,9 +376,9 @@ test("한 주도 안 산 판은 인사이트가 0 이다", () => {
     assert.equal(e.player.insightPoints, 0);
 });
 
-test("청산선 위에서 끝냈으면 잃었어도 인사이트가 남는다", () => {
-    // 바닥이 0 이 아니다 — 한 판을 **끝까지 굴린 것** 자체에 값을 준다. 다만 청산되면
-    // 그 값도 사라진다(아래 청산 테스트). 그 둘을 가르는 것이 청산선이다.
+test("잠식선 위에서 끝냈으면 잃었어도 인사이트가 남는다", () => {
+    // 바닥이 0 이 아니다 — 한 판을 **끝까지 굴린 것** 자체에 값을 준다. 다만 자본잠식되면
+    // 그 값도 사라진다(아래 테스트). 그 둘을 가르는 것이 잠식선이다.
     let checked = 0;
     for (const seed of [107, 131, 149, 151, 163]) {
         const e = new StockEngine(seed);
@@ -387,11 +387,11 @@ test("청산선 위에서 끝냈으면 잃었어도 인사이트가 남는다", 
         e.liquidate();
         const sum = e.summarize();
         assert.equal(sum.idle, false);
-        if (sum.bankrupt) continue;               // 청산된 판은 여기서 볼 것이 아니다
+        if (sum.ruined) continue;               // 자본잠식된 판은 여기서 볼 것이 아니다
         assert.ok(sum.earnedIP >= 1, `${sum.returnPct}% 인데 IP 가 ${sum.earnedIP} 다`);
         checked++;
     }
-    assert.ok(checked > 0, "청산선 위에서 끝난 판이 하나도 없다");
+    assert.ok(checked > 0, "잠식선 위에서 끝난 판이 하나도 없다");
 });
 
 test("잘한 판일수록 인사이트가 많다", () => {
@@ -411,9 +411,9 @@ test("정산은 시작 자산 대비로 잰다", () => {
     e.liquidate();
     const sum = e.summarize();
 
-    assert.equal(sum.startEquity, START_CASH);
+    assert.equal(sum.startEquity, SEED_CASH);
     assert.equal(sum.finalEquity, e.equity);
-    assert.ok(Math.abs(sum.returnPct - ((sum.finalEquity - START_CASH) / START_CASH) * 100) < 1e-9);
+    assert.ok(Math.abs(sum.returnPct - ((sum.finalEquity - SEED_CASH) / SEED_CASH) * 100) < 1e-9);
 });
 
 test("끝난 판도 총자산 계산이 맞는다", () => {
@@ -423,56 +423,59 @@ test("끝난 판도 총자산 계산이 맞는다", () => {
     assert.equal(e.equity, e.player.cash + e.player.shares * e.stock.currentPrice);
 });
 
-/* ── 청산 — 지는 방법 ───────────────────────────────────────── */
+/* ── 자본잠식 — 지는 방법 ───────────────────────────────────────── */
 
-test("청산선은 시작 자금의 75% 다", () => {
+test("자본잠식선은 판마다 안 움직인다", () => {
+    // 자금이 이어지므로 잠식선도 이어져야 한다. 시작 자금을 따라 올라가면 잘 굴린
+    // 사람일수록 더 높은 곳에서 죽는다 — 이어지는 자금과 어긋난다.
     const e = new StockEngine(200);
-    assert.equal(e.bustLine, Math.round(START_CASH * BUST_RATIO));
-    assert.equal(e.isBust, false, "시작하자마자 청산일 수는 없다");
+    assert.equal(e.ruinLine, RUIN_LINE);
+    assert.equal(new StockEngine(200, 0, SEED_CASH * 5).ruinLine, RUIN_LINE);
+    assert.equal(e.isRuined, false, "시작하자마자 자본잠식일 수는 없다");
     assert.equal(e.isOver, false);
 });
 
-test("청산선 아래로 떨어지면 12턴을 못 채우고 끝난다", () => {
+test("자본잠식선 아래로 떨어지면 12턴을 못 채우고 끝난다", () => {
     const e = new StockEngine(201);
     e.buyAll();
-    // 들고 있는 주식이 반의 반이 되도록 주가를 직접 끌어내린다. 엔진의 난수를 기다리는
-    // 대신 상태를 세워 두는 편이 규칙 하나만 보게 해 준다.
-    e.stock.currentPrice = Math.max(1, Math.floor(e.stock.currentPrice * 0.25));
+    // 들고 있는 주식이 십분의 일이 되도록 주가를 직접 끌어내린다. 엔진의 난수를
+    // 기다리는 대신 상태를 세워 두는 편이 규칙 하나만 보게 해 준다.
+    e.stock.currentPrice = Math.max(1, Math.floor(e.stock.currentPrice * 0.1));
 
-    assert.ok(e.equity < e.bustLine, "판을 못 세웠다");
-    assert.equal(e.isBust, true);
+    assert.ok(e.equity < e.ruinLine, "판을 못 세웠다");
+    assert.equal(e.isRuined, true);
     assert.equal(e.isOver, true, "턴이 남았어도 끝난 것이다");
     assert.ok(e.player.currentTurn <= MAX_TURNS);
 });
 
-test("청산된 판은 인사이트를 한 점도 안 준다", () => {
+test("자본잠식된 판은 인사이트를 한 점도 안 준다", () => {
     const e = new StockEngine(202);
     e.buyAll();
-    e.stock.currentPrice = Math.max(1, Math.floor(e.stock.currentPrice * 0.2));
+    e.stock.currentPrice = Math.max(1, Math.floor(e.stock.currentPrice * 0.1));
     e.liquidate();
 
     const sum = e.summarize();
-    assert.equal(sum.bankrupt, true);
-    assert.equal(sum.earnedIP, 0, "청산인데 점수를 줬다");
+    assert.equal(sum.ruined, true);
+    assert.equal(sum.earnedIP, 0, "자본잠식인데 점수를 줬다");
     assert.equal(e.player.insightPoints, 0);
 });
 
-test("살아서 끝낸 판은 청산이 아니다", () => {
+test("살아서 끝낸 판은 자본잠식이 아니다", () => {
     const e = new StockEngine(203);
     e.buyHalf();
     playOut(e);
     e.liquidate();
     const sum = e.summarize();
 
-    // 12턴을 채웠으면 성적이 나빠도 청산선 위에 있는 한 청산이 아니다.
-    assert.equal(sum.bankrupt, e.equity < e.bustLine);
-    if (!sum.bankrupt) assert.ok(sum.earnedIP >= 0);
+    // 12턴을 채웠으면 성적이 나빠도 잠식선 위에 있는 한 자본잠식이 아니다.
+    assert.equal(sum.ruined, e.equity < e.ruinLine);
+    if (!sum.ruined) assert.ok(sum.earnedIP >= 0);
 });
 
-test("현금만 들고 있으면 청산되지 않는다", () => {
-    // 청산은 주가에 물려 잃는 것이지, 가만히 있다고 오는 것이 아니다.
+test("현금만 들고 있으면 자본잠식되지 않는다", () => {
+    // 자본잠식은 주가에 물려 잃는 것이지, 가만히 있다고 오는 것이 아니다.
     const e = new StockEngine(204);
     playOut(e);
-    assert.equal(e.isBust, false);
-    assert.equal(e.summarize().bankrupt, false);
+    assert.equal(e.isRuined, false);
+    assert.equal(e.summarize().ruined, false);
 });

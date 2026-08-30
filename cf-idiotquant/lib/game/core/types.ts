@@ -23,10 +23,17 @@ export interface Stock {
 }
 
 /**
- * 전략 카드의 종류. 무엇을 건드리는지로 갈라 둔다 —
- * `price` 는 다음 틱의 주가를, `trade` 는 체결 규칙을, `instant` 는 즉시 계좌를 건드린다.
+ * 카드가 어느 갈래인가. **화면의 색과 표식이 여기서 나온다.**
+ *
+ *   info   정보 — 앞으로 무엇이 올지 본다
+ *   act    집행 — 이번 턴 무엇을 할 수 있는가
+ *   guard  방어 — 맞을 것을 덜 맞는다
+ *   curse  저주 — 그 턴을 버리게 만든다
+ *
+ * 카드가 열두 장인데 전부 같은 회색 상자면 무엇이 무엇인지 볼 수 없다. 갈래가 색이면
+ * 손패 셋을 읽기 전에 이미 "읽을 것 / 할 것 / 막을 것" 이 갈린다.
  */
-export type CardType = "price" | "trade" | "instant";
+export type CardLane = "info" | "act" | "guard" | "curse";
 
 /**
  * 카드가 어디서 오는가.
@@ -46,9 +53,14 @@ export interface StrategyCard {
     /** 카드의 **종류**. 효과는 이 값으로 찾는다. */
     id: string;
     name: string;
-    type: CardType;
+    lane: CardLane;
     kind: CardKind;
+    /** 손패에 늘 보이는 한 줄. 셋을 한눈에 훑을 수 있어야 한다. */
+    shortDescription: string;
+    /** 눌러서 펼쳤을 때 나오는 것. */
     effectDescription: string;
+    /** 언제 쓰는 카드인가. 자세히 펼쳤을 때 함께 나온다. */
+    when: string;
     isUsed: boolean;
     /**
      * 이 카드를 **얻으면** 덱에 함께 들어오는 저주의 이름. 보상 화면이 값을 미리 말하는
@@ -197,6 +209,8 @@ export interface RunSummary {
     earnedIP: number;
     /** 종목을 안 사고 12턴을 흘려보냈는가 */
     idle: boolean;
-    /** 12턴을 못 채우고 청산선 아래로 떨어졌는가. 이 판은 **진 것**이다. */
-    bankrupt: boolean;
+    /** 자본잠식선 아래로 떨어졌는가. **게임이 끝난다** — 자금도 덱도 처음으로 돌아간다. */
+    ruined: boolean;
+    /** 판이 끝났을 때의 덱. 다음 판이 이것으로 시작한다. */
+    deck: string[];
 }

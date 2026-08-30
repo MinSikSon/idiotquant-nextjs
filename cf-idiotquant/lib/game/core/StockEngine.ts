@@ -25,7 +25,13 @@ import { NO_BUFF } from "./types";
 
 /* ── 상수 ───────────────────────────────────────────────────── */
 
-export const START_CASH = 10_000_000;
+/**
+ * 게임을 처음 켤 때, 그리고 자본잠식으로 다시 시작할 때의 돈.
+ *
+ * 판마다 여기로 되돌아가지 **않는다** — 자금은 판을 넘어 이어진다(progress.bankroll).
+ * 이 값은 오직 "맨 처음" 을 뜻한다.
+ */
+export const SEED_CASH = 10_000_000;
 export const MAX_TURNS = 12;
 
 // 수수료는 분수로 두고 정수 연산으로 계산한다. 0.00015 를 곱하면
@@ -88,24 +94,21 @@ const NEWS_MAX = 0.13;
 const TICK_CAP = 0.45;
 
 /**
- * 청산선 — 시작 자금의 이 비율 아래로 떨어지면 12턴을 못 채우고 그 자리에서 끝난다.
- * 맡긴 돈이 회수되는 것이지 빚을 지는 것은 아니라, 코드에서는 `bust` 로 부른다.
- */
-export const BUST_RATIO = 0.75;
-
-/**
- * 차수 — 판을 넘어 오르내리는 난이도. 완주하면 오르고 청산되면 내려간다.
- * 오를수록 청산선이 바짝 붙고, 대신 인사이트를 더 준다.
+ * 차수 — 판을 넘어 오르내리는 난이도. 완주하면 오르고 자본잠식이면 0 으로 돌아간다.
+ *
+ * 오를수록 국면이 짧아지고 뉴스가 잦아진다(`marketFor`) — 청산선만 올리던 시절에는
+ * 잘 읽는 사람에게 차수가 아무 의미가 없었다(측정: 차수 0에서도 4에서도 청산 0%).
  */
 export const MAX_TIER = 7;
-export const TIER_BUST_STEP = 0.02;
 export const TIER_IP_STEP = 0.15;
 
-/** 그 차수의 청산선 비율. */
-export function bustRatioFor(tier: number): number {
-    const t = Math.max(0, Math.min(MAX_TIER, Math.floor(tier)));
-    return BUST_RATIO + t * TIER_BUST_STEP;
-}
+/**
+ * 자본잠식선 — 자금이 이 아래로 떨어지면 게임이 끝난다.
+ *
+ * 처음 자금의 20%. 이 아래로 가면 한 판으로 되돌리는 것이 사실상 불가능해지므로,
+ * 질질 끄는 대신 그 자리에서 끊고 다시 시작하게 한다.
+ */
+export const RUIN_LINE = Math.round(SEED_CASH * 0.2);
 
 const GOOD_NEWS = [
     "깜짝 실적 — 시장 예상 크게 상회",
@@ -201,7 +204,14 @@ export class StockEngine {
     /** 이번 턴에 손절이 걸렸는가. 화면이 그 사실을 말할 수 있게 남겨 둔다. */
     private lastStopLoss = false;
 
-    constructor(seed: number = (Math.random() * 0xffffffff) >>> 0, tier = 0) {
+    /**
+     * @param startCash 이 판을 시작하는 돈. 판을 넘어 이어진 자금이 그대로 들어온다.
+     */
+    constructor(
+        seed: number = (Math.random() * 0xffffffff) >>> 0,
+        tier = 0,
+        startCash: number = SEED_CASH,
+    ) {
         this.seed = seed >>> 0;
         this.tier = Math.max(0, Math.min(MAX_TIER, Math.floor(tier)));
         this.rand = mulberry32(this.seed);
@@ -228,11 +238,12 @@ export class StockEngine {
             volatility: pick.vol,
             history,
         };
+        const cash = Math.max(0, Math.floor(startCash));
         this.player = {
-            cash: START_CASH, shares: 0, avgPrice: 0,
+            cash, shares: 0, avgPrice: 0,
             currentTurn: 1, maxTurns: MAX_TURNS, insightPoints: 0,
         };
-        this.startEquity = START_CASH;
+        this.startEquity = cash;
     }
 
     /** 국면을 이어 붙여 판 전체의 등락을 미리 짠다. */
@@ -289,14 +300,20 @@ export class StockEngine {
         return ((this.equity - this.startEquity) / this.startEquity) * 100;
     }
 
-    get bustLine(): number {
-        return Math.round(this.startEquity * bustRatioFor(this.tier));
-    }
+    /**
+     * 자본잠식선 — 자산이 이 아래면 게임이 끝난다.
+     *
+     * 판마다 다시 그어지는 선이 아니라 **게임 전체에 하나뿐인 바닥**이다. 자금이
+     * 이어지므로, 이번 판을 잘 굴려 불려 두면 그만큼 이 선에서 멀어진다.
+     */
+    get ruinLine(): number { return RUIN_LINE; }
 
-    get isBust(): boolean { return this.equity < this.bustLine; }
+    /** 지금 자본잠식인가. */
+    get isRuined(): boolean { return this.equity < RUIN_LINE; }
 
+    /** 판이 끝났는가. 12턴을 채웠거나, **자본잠식이거나**. */
     get isOver(): boolean {
-        return this.player.currentTurn > this.player.maxTurns || this.isBust;
+        return this.player.currentTurn > this.player.maxTurns || this.isRuined;
     }
 
     /** 지난 턴에 손절이 걸렸는가. */
@@ -440,15 +457,18 @@ export class StockEngine {
 
     /* ── 정산 ───────────────────────────────────────────── */
 
-    summarize(): RunSummary {
+    summarize(deck: readonly string[] = []): RunSummary {
         const finalEquity = this.equity;
         const returnPct = ((finalEquity - this.startEquity) / this.startEquity) * 100;
         const idle = !this.traded;
-        const bankrupt = this.isBust;
-        const base = idle || bankrupt ? 0 : Math.max(1, Math.round(returnPct / 2) + 1);
+        const ruined = this.isRuined;
+        const base = idle || ruined ? 0 : Math.max(1, Math.round(returnPct / 2) + 1);
         const earnedIP = Math.round(base * (1 + this.tier * TIER_IP_STEP));
 
         this.player.insightPoints += earnedIP;
-        return { returnPct, startEquity: this.startEquity, finalEquity, earnedIP, idle, bankrupt };
+        return {
+            returnPct, startEquity: this.startEquity, finalEquity, earnedIP, idle, ruined,
+            deck: [...deck],
+        };
     }
 }

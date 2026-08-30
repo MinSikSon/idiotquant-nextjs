@@ -95,19 +95,34 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         const left = padX, right = this.boxW - padX;
         const top = padY, bottom = this.boxH - padY;
 
+        const peek = read?.next ?? [];
+
+        // 유령 봉의 값을 **범위를 재기 전에** 낸다. 예보가 지금 보이는 폭을 넘어가는
+        // 일이 흔한데(하루 −8% 면 바로 벗어난다), 범위에 안 넣으면 그 봉이 차트 밖에
+        // 그려져 아래 유물 줄 위에 얹힌다. Graphics 에는 클리핑이 없다.
+        const ghosts: number[] = [];
+        let ghostFrom = bars[bars.length - 1]!.c;
+        for (let k = 0; k < Math.min(2, peek.length); k++) {
+            ghostFrom = Math.max(1, ghostFrom * (1 + peek[k]! / 100));
+            ghosts.push(ghostFrom);
+        }
+
         let lo = Infinity, hi = -Infinity;
         for (const b of bars) {
             if (b.l < lo) lo = b.l;
             if (b.h > hi) hi = b.h;
+        }
+        for (const v of ghosts) {
+            if (v < lo) lo = v;
+            if (v > hi) hi = v;
         }
         const span = hi - lo || 1;
         const py = (v: number) => bottom - ((v - lo) / span) * (bottom - top);
 
         // 칸은 **항상 12개**로 나눈다. 봉 개수로 나누면 턴이 갈 때마다 폭이 변해
         // 차트 전체가 좌우로 요동친다.
-        const peek = read?.next ?? [];
         // 예보가 있으면 그만큼 칸을 더 나눈다. 유령 봉이 화면 밖으로 나가면 안 된다.
-        const slots = VISIBLE_BARS + Math.min(2, peek.length);
+        const slots = VISIBLE_BARS + ghosts.length;
         const step = (right - left) / slots;
         const bodyW = Math.max(3, Math.floor(step * 0.58));
 
@@ -151,11 +166,11 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         // 이 게임의 정보 카드가 값어치를 갖는 자리다. 뉴스 한 줄로 "다음 턴 상승" 이라고
         // 말해 주는 것과, 지금 보고 있는 차트에 그 봉이 미리 서 있는 것은 다른 일이다.
         for (const gl of this.ghostLabels) gl.setVisible(false);
-        if (peek.length > 0) {
+        if (ghosts.length > 0) {
             let ghostFrom = bars[bars.length - 1]!.c;
-            for (let k = 0; k < Math.min(2, peek.length); k++) {
+            for (let k = 0; k < ghosts.length; k++) {
                 const pct = peek[k]!;
-                const to = Math.max(1, ghostFrom * (1 + pct / 100));
+                const to = ghosts[k]!;
                 const cx = Math.round(left + step * (bars.length + k) + step / 2);
                 const col = pct >= 0 ? C.up : C.down;
 
@@ -170,8 +185,12 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
                 // 몇 턴 뒤인지 — 예보가 언제까지 유효한지를 그림 옆에 적어 둔다.
                 const gl = this.ghostLabels[k];
                 if (gl) {
+                    // 봉 바로 위에 붙인다. 아래 칸에 두면 저·고가 라벨과 종목 이름이
+                    // 이미 앉아 있는 줄이라 글자끼리 겹친다.
+                    const ly2 = Math.max(top + 1,
+                        Math.min(bottom - FS.xs - 1, Math.min(yFrom, yTo) - FS.xs - 2));
                     gl.setVisible(true)
-                        .setPosition(cx - Math.floor(bodyW / 2), this.boxH - FS.xs - 4)
+                        .setPosition(cx - Math.floor(bodyW / 2), ly2)
                         .setText(`+${k + 1}`)
                         .setColor(pct >= 0 ? S.up : S.down);
                 }
