@@ -50,90 +50,91 @@ export interface CardDef {
 
 const CARDS: CardDef[] = [
     /* ── 시작 덱 ─────────────────────────────────────────
-       약하지만 셋 다 "덜 다치게" 하는 쪽이다. 판을 뒤집으려면 보상 카드가 필요하다. */
+       읽는 것 셋, 버티는 것 둘, 싸게 사는 것 하나. 이 여섯 장으로도 국면은 읽힌다. */
     {
-        id: "steady", name: "관망 지시", type: "price", kind: "starter",
-        effectDescription: "이번 턴 변동폭이 절반으로 줄어듭니다.",
-        when: "크게 물려 있을 때. 오르지도 내리지도 않게 붙잡아 둡니다.",
-        apply: b => ({ ...b, volatilityMult: b.volatilityMult * 0.5 }),
+        id: "peek", name: "예고 시황", type: "instant", kind: "starter",
+        effectDescription: "다음 턴 등락을 미리 봅니다. 차트에 유령 봉으로 그려집니다.",
+        when: "무엇을 할지 모르겠을 때. 보고 나서 다음 턴에 크기를 정하면 됩니다.",
+        apply: b => ({ ...b, peekTurns: Math.max(b.peekTurns, 1) }),
     },
     {
-        id: "shield", name: "방어막", type: "price", kind: "starter",
-        effectDescription: "이번 턴 하락폭이 절반으로 줄어듭니다.",
-        when: "주식을 들고 있을 때. 현금만 있으면 지킬 것이 없습니다.",
-        apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.5) }),
+        id: "analyst", name: "애널리스트 리포트", type: "instant", kind: "starter",
+        effectDescription: "지금 국면(상승·하락·횡보)을 알려 줍니다.",
+        when: "판을 열자마자. 국면 하나를 알면 서너 턴을 안심하고 굴립니다.",
+        apply: b => ({ ...b, revealRegime: true }),
+    },
+    {
+        id: "hedge", name: "헤지", type: "price", kind: "starter",
+        effectDescription: "이번 턴 등락이 절반으로 줄어듭니다. 오르는 쪽도 함께.",
+        when: "들고는 있는데 방향을 모를 때. 이득도 절반이라 확신이 있으면 쓰지 마세요.",
+        apply: b => ({ ...b, moveMult: b.moveMult * 0.5 }),
         idleWhen: p => p.shares === 0,
     },
     {
-        id: "insider", name: "인사이더 호재", type: "price", kind: "starter",
-        effectDescription: "이번 턴 주가가 확실히 오릅니다 (+7%p).",
-        when: "사고 나서 넘기는 턴. 현금만 쥔 채 쓰면 살 값만 올려 놓습니다.",
-        apply: b => ({ ...b, priceBias: b.priceBias + 0.07 }),
-    },
-    {
-        id: "nofee", name: "손절 수수료 면제", type: "trade", kind: "starter",
-        effectDescription: "이번 턴 매도 수수료와 거래세를 내지 않습니다.",
-        when: "이번 턴에 팔 때. 안 팔면 아무 일도 안 합니다.",
-        apply: b => ({ ...b, feeWaived: true }),
-        idleWhen: p => p.shares === 0,
+        id: "nofee", name: "수수료 면제", type: "trade", kind: "starter",
+        effectDescription: "이번 턴 매매 수수료와 거래세를 내지 않습니다.",
+        when: "사고팔기를 자주 하는 판에서. 아무 매매도 안 하면 소용없습니다.",
+        apply: b => ({ ...b, feeMult: 0 }),
+        idleWhen: p => p.shares === 0 && p.cash < p.price,
     },
 
     /* ── 보상 ────────────────────────────────────────────
-       판을 뒤집는 카드들. 위의 둘에는 저주가 딸려 온다. */
+       더 멀리 보거나, 더 크게 걸거나, 더 단단히 막는다. 아래 둘에는 저주가 딸린다. */
     {
-        id: "rebound", name: "급반등 유도", type: "price", kind: "reward",
-        effectDescription: "이번 턴에 내리면 그 하락을 없던 일로 만듭니다.",
-        when: "들고 있는데 다음 턴이 불안할 때. 오르는 턴은 안 건드립니다.",
-        apply: b => ({ ...b, reboundRatio: Math.max(b.reboundRatio, 1) }),
-        idleWhen: p => p.shares === 0,
-    },
-    {
-        id: "volatile", name: "변동성 폭발", type: "price", kind: "reward",
-        effectDescription: "이번 턴 변동폭이 두 배가 됩니다. 위로든 아래로든.",
-        when: "뒤가 없을 때. 방어 카드와 겹쳐 써야 도박이 아니게 됩니다.",
-        apply: b => ({ ...b, volatilityMult: b.volatilityMult * 2 }),
+        id: "forecast", name: "정밀 예보", type: "instant", kind: "reward",
+        effectDescription: "다음 두 턴 등락을 미리 봅니다.",
+        when: "언제나. 두 턴을 보면 언제 타고 언제 내릴지가 그 자리에서 정해집니다.",
+        apply: b => ({ ...b, peekTurns: Math.max(b.peekTurns, 2) }),
     },
     {
         id: "bunker", name: "벙커", type: "price", kind: "reward",
-        effectDescription: "이번 턴 하락폭이 없는 것이나 마찬가지가 됩니다.",
-        when: "청산선이 코앞일 때. 한 턴을 통째로 버텨 냅니다.",
+        effectDescription: "이번 턴 하락을 90% 막습니다. 오르는 쪽은 그대로.",
+        when: "예보에 큰 하락이 찍혔는데 팔기는 아까울 때.",
         apply: b => ({ ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.9) }),
         idleWhen: p => p.shares === 0,
     },
     {
-        id: "pump", name: "작전 세력", type: "price", kind: "reward",
-        effectDescription: "이번 턴 +8%p, 변동폭 1.5배. 대신 뒷말이 남습니다.",
-        when: "많이 사 둔 턴. 변동폭까지 커지니 방어 없이는 양날입니다.",
-        apply: b => ({ ...b, priceBias: b.priceBias + 0.08, volatilityMult: b.volatilityMult * 1.5 }),
-        curse: "rumor",
+        id: "stoploss", name: "손절 예약", type: "trade", kind: "reward",
+        effectDescription: "이번 턴 8% 넘게 빠지면 그 자리에서 자동으로 전량 매도합니다.",
+        when: "아무것도 못 읽은 채 들고 가야 할 때. 최악만 잘라 냅니다.",
+        apply: b => ({ ...b, stopLoss: Math.max(b.stopLoss, 0.08) }),
+        idleWhen: p => p.shares === 0,
     },
     {
-        id: "leak", name: "미공개 정보", type: "price", kind: "reward",
-        effectDescription: "이번 턴 +20%p. 이런 건 반드시 대가가 따릅니다.",
-        when: "올인한 턴에 한 번. 판을 뒤집는 대신 덱에 저주가 남습니다.",
-        apply: b => ({ ...b, priceBias: b.priceBias + 0.20 }),
+        id: "tipoff", name: "내부자 제보", type: "instant", kind: "reward",
+        effectDescription: "지금 국면과, 그 국면이 몇 턴 남았는지까지 알려 줍니다.",
+        when: "국면이 슬슬 끝날 것 같을 때. 언제 내릴지를 정확히 짚어 줍니다.",
+        apply: b => ({ ...b, revealRegime: true, revealClock: true }),
         curse: "probe",
+    },
+    {
+        id: "margin", name: "신용 융자", type: "trade", kind: "reward",
+        effectDescription: "이번 턴만 현금의 두 배까지 살 수 있습니다. 모자란 만큼은 빚입니다.",
+        when: "다음 턴 상승을 확실히 읽었을 때만. 틀리면 청산선이 두 배로 빨리 옵니다.",
+        apply: b => ({ ...b, buyingPowerMult: Math.max(b.buyingPowerMult, 2) }),
+        curse: "debt",
+        idleWhen: p => p.cash < p.price,
     },
 
     /* ── 저주 ────────────────────────────────────────────
-       손에 잡히면 그 턴을 버리게 만든다. 덱이 두꺼워질수록 자주 잡힌다. */
+       손에 잡히면 그 턴이 아깝다. 덱이 두꺼워질수록 자주 잡힌다. */
     {
-        id: "rumor", name: "뒷말", type: "price", kind: "curse",
-        effectDescription: "저주 — 변동폭만 1.5배가 됩니다. 방향은 안 도와줍니다.",
-        when: "쓸 일이 없습니다. 현금일 때 흘려보내는 것이 그나마 낫습니다.",
-        apply: b => ({ ...b, volatilityMult: b.volatilityMult * 1.5 }),
+        id: "blackout", name: "정보 차단", type: "instant", kind: "curse",
+        effectDescription: "저주 — 이번 턴은 무엇을 써도 아무것도 못 봅니다.",
+        when: "쓸 일이 없습니다. 읽을 것이 없는 턴에 흘려보내세요.",
+        apply: b => ({ ...b, blind: true }),
     },
     {
-        id: "probe", name: "당국 조사", type: "price", kind: "curse",
-        effectDescription: "저주 — 이번 턴 −6%p.",
-        when: "쓸 일이 없습니다. 현금일 때 흘려보내세요.",
-        apply: b => ({ ...b, priceBias: b.priceBias - 0.06 }),
+        id: "probe", name: "당국 조사", type: "trade", kind: "curse",
+        effectDescription: "저주 — 이번 턴 수수료와 거래세가 세 배가 됩니다.",
+        when: "쓸 일이 없습니다. 매매를 안 할 턴에 흘려보내세요.",
+        apply: b => ({ ...b, feeMult: b.feeMult * 3 }),
     },
     {
-        id: "delay", name: "공시 지연", type: "price", kind: "curse",
-        effectDescription: "저주 — 아무 일도 일어나지 않습니다.",
-        when: "한 턴을 버리는 카드입니다. 셋 다 저주면 이걸 고르세요.",
-        apply: b => b,
+        id: "debt", name: "이자 상환", type: "instant", kind: "curse",
+        effectDescription: "저주 — 이번 턴 현금의 5%가 이자로 빠져나갑니다.",
+        when: "쓸 일이 없습니다. 현금이 적을 때 흘려보내는 것이 그나마 낫습니다.",
+        apply: b => ({ ...b, cashDrainPct: b.cashDrainPct + 0.05 }),
     },
 ];
 
@@ -150,20 +151,23 @@ function defOf(id: string): CardDef | undefined {
 /**
  * 판을 시작할 때 손에 쥐는 덱. 같은 카드가 여러 장이라 뽑는 맛이 생긴다.
  *
- * **앞의 네 자리**(관망 둘, 방어막 둘)는 인사이트로 영구히 갈아 끼울 수 있다. 뒤의 둘은
- * 안 바꾼다 — 인사이더 호재와 수수료 면제는 이 게임을 굴리는 최소한이고, 그것까지
- * 사라지면 강화 없는 첫 판이 못 굴러간다.
+ * **앞의 네 자리**(예고 둘, 헤지 둘)는 인사이트로 영구히 갈아 끼울 수 있다. 뒤의 둘은
+ * 안 바꾼다 — 국면을 읽는 눈(애널리스트)과 싸게 사고파는 길(수수료 면제)이 없으면
+ * 강화 없는 첫 판이 못 굴러간다.
  */
-const STARTING_DECK = ["steady", "steady", "shield", "shield", "insider", "nofee"];
+const STARTING_DECK = ["peek", "peek", "hedge", "hedge", "analyst", "nofee"];
 
 /** 갈아 끼울 수 있는 자리 수. STARTING_DECK 앞에서부터 이만큼이다. */
 export const UPGRADE_SLOTS = 4;
 
 /**
- * 강화로 살 수 있는 카드. 저주가 딸린 것은 뺀다 — 시작 덱에 저주를 영구히 박아 두면
- * 그건 강화가 아니라 벌이다.
+ * 강화로 살 수 있는 카드.
+ *
+ * 내부자 제보는 저주가 딸리지만 여기 넣는다 — 강화로 살 때는 **저주 없이** 들어온다
+ * (`takeReward` 를 안 거친다). 판마다 한 번씩 얻는 것과 시작 덱에 박아 두는 것은
+ * 다른 일이고, 값도 인사이트로 따로 치른다.
  */
-export const UPGRADE_POOL = ["rebound", "bunker", "volatile", "insider"];
+export const UPGRADE_POOL = ["forecast", "bunker", "stoploss", "tipoff"];
 
 /** 강화를 얹은 시작 덱. 모르는 카드 이름은 조용히 무시한다(저장이 상했을 때). */
 export function startingDeckOf(upgrades: readonly string[]): string[] {
@@ -181,11 +185,11 @@ const REWARD_IDS = CARDS.filter(c => c.kind === "reward").map(c => c.id);
 export const RELIC_POOL: Relic[] = [
     {
         id: "compass", name: "낡은 나침반", triggerType: "onTurnStart",
-        description: "매 턴 시작에 인사이트 +1.",
+        description: "매 턴 지금 국면이 보입니다. 카드를 안 써도 됩니다.",
     },
     {
         id: "hotline", name: "증권가 핫라인", triggerType: "onTurnStart",
-        description: "매 턴 주가에 +1%p 가 얹힙니다.",
+        description: "매 턴 다음 등락이 보입니다. 이 판에서 가장 센 유물입니다.",
     },
     {
         id: "vest", name: "방탄 조끼", triggerType: "onTurnStart",
@@ -193,7 +197,7 @@ export const RELIC_POOL: Relic[] = [
     },
     {
         id: "broker", name: "단골 브로커", triggerType: "onTrade",
-        description: "매도 수수료와 거래세를 항상 면제받습니다.",
+        description: "수수료와 거래세를 항상 면제받습니다.",
     },
     {
         id: "ledger", name: "비밀 장부", triggerType: "onTurnEnd",
@@ -478,9 +482,10 @@ export class RoguelikeManager {
     buildBuff(): TurnBuff {
         let b: TurnBuff = { ...NO_BUFF };
 
-        if (this.has("hotline")) b = { ...b, priceBias: b.priceBias + 0.01 };
+        if (this.has("compass")) b = { ...b, revealRegime: true };
+        if (this.has("hotline")) b = { ...b, peekTurns: Math.max(b.peekTurns, 1) };
         if (this.has("vest")) b = { ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.2) };
-        if (this.has("broker")) b = { ...b, feeWaived: true };
+        if (this.has("broker")) b = { ...b, feeMult: 0 };
 
         return this.picked ? this.picked.apply(b) : b;
     }

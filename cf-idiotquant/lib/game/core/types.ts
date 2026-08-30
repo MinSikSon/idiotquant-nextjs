@@ -81,32 +81,85 @@ export interface PlayerState {
 }
 
 /**
+ * 시장의 **숨은 국면**. 3~5턴 이어지다 다른 것으로 바뀐다.
+ *
+ * 이것이 이 게임의 심장이다. 예전 주가는 순수 랜덤워크라 오른 턴 다음에 또 오를 확률이
+ * 51.6% — 사실상 동전 던지기였고, 그래서 차트가 장식이었다. 추세를 읽는 정책과 아무렇게나
+ * 누르는 정책의 성적이 구분되지 않았다.
+ *
+ * 국면이 이어지면 **과거 봉이 미래를 말하기 시작한다.** 초록이 몇 개 이어지면 상승
+ * 국면일 확률이 높고, 그러면 탈 값어치가 있다. 하락 국면에 들고 있으면 진짜로 죽는다 —
+ * 그래서 비로소 **현금이 정답인 순간**이 생긴다.
+ */
+export type Regime = "bull" | "bear" | "chop";
+
+/**
  * 카드가 이번 턴에 열어 주는 것. 한 턴이 지나면 사라진다.
  *
- * 카드마다 필드를 따로 두지 않고 이 한 덩어리로 모은 이유: 카드를 하나 더 만들 때
- * 엔진의 함수 시그니처를 안 고치려는 것이다. 새 효과는 여기에 필드 하나만 는다.
+ * ── 카드는 주가를 밀지 않는다 ─────────────────────────────────
+ * 예전에는 "이번 턴 +7%p" 같은 카드가 있었다. 트레이더가 시세를 조종하는 셈이라
+ * 앞뒤가 안 맞았고, 고를 때 "큰 숫자" 말고 기준이 없었다.
+ *
+ * 지금 카드가 바꾸는 것은 **시장이 아니라 나**다. 세 갈래뿐이다.
+ *
+ *   정보  앞으로 무엇이 올지 본다      (peekTurns · revealRegime · revealClock)
+ *   집행  이번 턴 무엇을 할 수 있는가   (feeMult · buyingPowerMult · stopLoss)
+ *   방어  맞을 것을 덜 맞는다          (moveMult · downshieldRatio)
+ *
+ * 한 덩어리로 모아 두는 이유는 그대로다 — 카드를 하나 더 만들 때 엔진의 함수 모양을
+ * 안 고치려는 것이다.
  */
 export interface TurnBuff {
-    /** 다음 틱의 수익률에 그대로 더한다(0.1 = +10%p). 인사이더 호재. */
-    priceBias: number;
-    /** 변동폭 배수. 1 이면 그대로, 2 면 두 배로 흔들린다. */
-    volatilityMult: number;
-    /** 내렸을 때만 그 하락폭을 이만큼 되돌린다(0.5 = 절반 회복). 급반등 유도. */
-    reboundRatio: number;
-    /** 내리는 쪽 폭만 이만큼 줄인다(0.5 = 절반). 방어막. */
+    /** 이번 턴 등락을 이만큼 곱한다(0.5 = 절반, 2 = 두 배). 헤지·증폭. */
+    moveMult: number;
+    /** 내리는 쪽 폭만 이만큼 줄인다(0.9 = 90% 막음). 벙커·방탄 조끼. */
     downshieldRatio: number;
-    /** 이번 턴 매도 수수료·세금을 면제한다. */
-    feeWaived: boolean;
+    /** 이번 턴 수수료·거래세 배수. 0 이면 면제, 3 이면 세 배. */
+    feeMult: number;
+    /** 이번 턴 매수 한도 배수. 2 면 현금의 두 배까지 살 수 있다(신용). */
+    buyingPowerMult: number;
+    /** 하락이 이 값을 넘으면 그 턴에 자동으로 전량 매도(0.08 = −8%). 0 이면 없음. */
+    stopLoss: number;
+    /** 앞으로 몇 턴의 등락을 미리 보는가. 0 이면 못 본다. */
+    peekTurns: number;
+    /** 지금 국면을 알려 주는가. */
+    revealRegime: boolean;
+    /** 지금 국면이 몇 턴 남았는지 알려 주는가. */
+    revealClock: boolean;
+    /** 이번 턴 현금에서 이 비율만큼 빠져나간다(0.05 = 5%). 이자. */
+    cashDrainPct: number;
+    /** 저주 — 이번 턴은 무엇을 써도 안 보인다. */
+    blind: boolean;
 }
 
 /** 아무 카드도 안 쓴 턴. */
 export const NO_BUFF: TurnBuff = {
-    priceBias: 0,
-    volatilityMult: 1,
-    reboundRatio: 0,
+    moveMult: 1,
     downshieldRatio: 0,
-    feeWaived: false,
+    feeMult: 1,
+    buyingPowerMult: 1,
+    stopLoss: 0,
+    peekTurns: 0,
+    revealRegime: false,
+    revealClock: false,
+    cashDrainPct: 0,
+    blind: false,
 };
+
+/**
+ * 지금 **읽어 낸 것**. 화면은 이것만 그린다 — 엔진이 아는 전부를 그리면 게임이 없다.
+ *
+ * 판의 주가는 시드에서 통째로 미리 정해져 있다. 그래서 예보는 없던 미래를 만드는 것이
+ * 아니라 **이미 정해진 것을 앞당겨 보는 것**이다. 정보가 곧 값어치가 되는 자리다.
+ */
+export interface MarketRead {
+    /** 앞으로의 등락률(%). 본 만큼만 채워진다. 방어 카드를 쓰면 실제로는 달라진다. */
+    next: number[];
+    /** 지금 국면. 못 읽었으면 null. */
+    regime: Regime | null;
+    /** 이 국면이 몇 턴 더 가는가. 못 읽었으면 null. */
+    turnsLeft: number | null;
+}
 
 /** 한 틱이 실제로 무엇을 했는가. 화면이 뉴스 티커에 그대로 쓴다. */
 export interface TickResult {

@@ -24,7 +24,7 @@
 import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
-import type { Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
+import type { MarketRead, Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
 import { MAX_TIER } from "@/lib/game/core/StockEngine";
 import {
     canUpgrade, loadProgress, nextUpgradeCost, purchaseUpgrade, recordRun, type Progress,
@@ -145,6 +145,14 @@ export class TradingScene extends Phaser.Scene {
     /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
     private overlay: Phaser.GameObjects.Container | null = null;
 
+    /**
+     * 이번 턴에 **읽어 낸 것**. 카드를 고르는 순간 채워지고 턴이 넘어가면 지워진다.
+     *
+     * 뉴스 줄이 아니라 차트에 그리는 이유: 뉴스 줄은 매매 한 번에 덮인다. 예보는
+     * "얼마나 걸지" 를 정하는 내내 눈앞에 있어야 하는 정보다.
+     */
+    private marketRead: MarketRead | null = null;
+
     constructor() { super("trading"); }
 
     init(data: { insightPoints?: number }) {
@@ -158,6 +166,7 @@ export class TradingScene extends Phaser.Scene {
         this.offer = null;
         this.upgradeOffer = null;
         this.relicOffer = null;
+        this.marketRead = null;
         this.ended = null;
         this.overlay = null;
     }
@@ -400,6 +409,9 @@ export class TradingScene extends Phaser.Scene {
         this.renderRelics();
         this.busy = false;
 
+        // 유물만으로도 보이는 것이 있다(낡은 나침반·증권가 핫라인). 카드를 고르기 전에
+        // 이미 읽혀 있어야 그 카드를 쓸지 말지를 정할 수 있다.
+        this.marketRead = this.engine.read(this.rogue.buildBuff());
         this.refresh();
         if (fired.length > 0) this.say(fired.join(" · "), S.gold);
         else this.say(`${this.engine.player.currentTurn}턴 — 카드를 고르고 매매하세요.`, S.inkDim);
@@ -420,6 +432,10 @@ export class TradingScene extends Phaser.Scene {
         if (this.busy) return;
         const card = this.rogue.hand.find(c => c.uid === uid);
         if (!this.rogue.playCard(uid) || !card) return;
+
+        // 정보 카드는 **고른 즉시** 값어치가 나와야 한다. 턴을 넘겨야 보이면 그건 정보가
+        // 아니라 도박이다.
+        this.marketRead = this.engine.read(this.rogue.buildBuff());
 
         // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
         // 카드면 그 사실을, 아니면 언제 쓰는 카드인지를 말해 준다.
@@ -463,8 +479,12 @@ export class TradingScene extends Phaser.Scene {
         this.engine.advanceTurn();
         this.refresh();
 
-        this.say([tickRes.news ?? pct(tickRes.changePct), ...endFired].join(" · "),
-            tickRes.changePct >= 0 ? S.up : S.down);
+        this.marketRead = null;
+        this.say([
+            tickRes.news ?? pct(tickRes.changePct),
+            ...(this.engine.stoppedOut ? ["손절 예약 발동 — 전량 매도"] : []),
+            ...endFired,
+        ].join(" · "), tickRes.changePct >= 0 ? S.up : S.down);
 
         // 네 턴마다 유물 하나 — 다만 **고르게** 한다. 그냥 굴러들어오면 무엇을 들고
         // 있는지도 모른 채 판이 끝나고, 그래서 유물이 무슨 소용인지 알 길이 없었다.
@@ -849,7 +869,7 @@ export class TradingScene extends Phaser.Scene {
         const e = this.engine;
         const p = e.player;
 
-        this.chart.render(e.stock.history);
+        this.chart.render(e.stock.history, this.marketRead);
 
         this.equityText.setText(money(e.equity)).setColor(tone(e.totalReturnPct));
 

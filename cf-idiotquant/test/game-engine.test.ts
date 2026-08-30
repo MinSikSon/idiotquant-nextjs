@@ -103,12 +103,14 @@ test("두 번 나눠 사면 평단이 둘 사이에 놓인다", () => {
     if (!first.ok) return;
     const p1 = e.player.avgPrice;
 
-    e.tick(buff({ priceBias: 0.2 }));   // 값이 오른 뒤
+    // 값이 오를지 내릴지는 국면이 정한다. 방향을 가정하지 말고 **사이에 놓이는지**만 본다.
+    for (let i = 0; i < 3; i++) e.tick();
     const second = e.buyHalf();
     if (!second.ok) return;
 
-    assert.ok(e.player.avgPrice > p1, "비싸게 더 샀는데 평단이 안 올랐다");
-    assert.ok(e.player.avgPrice < second.price * 1.01, "평단이 두 번째 값보다 비싸다");
+    const lo = Math.min(first.price, second.price), hi = Math.max(first.price, second.price);
+    assert.ok(e.player.avgPrice >= lo * 0.99, `평단 ${e.player.avgPrice} 이 둘보다 싸다`);
+    assert.ok(e.player.avgPrice <= hi * 1.02, `평단 ${e.player.avgPrice} 이 둘보다 비싸다`);
     assert.equal(e.player.shares, first.qty + second.qty);
 });
 
@@ -154,7 +156,7 @@ test("수수료 면제 카드는 세금까지 면제한다", () => {
 
     const waived = new StockEngine(41);
     waived.buyAll();
-    const b = waived.sellAll(buff({ feeWaived: true }));
+    const b = waived.sellAll(buff({ feeMult: 0 }));
 
     assert.equal(a.ok && b.ok, true);
     if (!a.ok || !b.ok) return;
@@ -177,42 +179,129 @@ test("사고 바로 팔면 수수료만큼 손해다", () => {
 
 /* ── 주가 ───────────────────────────────────────────────────── */
 
-test("인사이더 호재는 주가를 올린다", () => {
-    // 한 판만 보면 랜덤워크에 묻힌다. 여러 시드에서 평균이 갈리는지를 본다.
-    let plain = 0, boosted = 0;
-    for (let seed = 0; seed < 40; seed++) {
-        plain += new StockEngine(seed).tick(NO_BUFF).changePct;
-        boosted += new StockEngine(seed).tick(buff({ priceBias: 0.12 })).changePct;
-    }
-    assert.ok(boosted > plain + 40 * 8, `호재가 안 먹었다: ${plain / 40} → ${boosted / 40}`);
+test("판의 등락은 시드에서 미리 정해진다 — 예보는 그것을 앞당겨 볼 뿐이다", () => {
+    // 이 성질이 없으면 "예보" 는 정보가 아니라 그냥 좋은 일이 일어나는 카드가 된다.
+    const e = new StockEngine(301);
+    const seen = e.read(buff({ peekTurns: 2 })).next;
+    assert.equal(seen.length, 2);
+
+    const first = e.tick().changePct;
+    assert.ok(Math.abs(first - seen[0]!) < 0.5, `예보 ${seen[0]}% 인데 실제 ${first}%`);
+    const second = e.tick().changePct;
+    assert.ok(Math.abs(second - seen[1]!) < 0.5, `둘째 턴 예보가 어긋났다`);
 });
 
-test("방어막은 내릴 때만 듣는다", () => {
-    for (let seed = 0; seed < 40; seed++) {
-        const bare = new StockEngine(seed).tick(NO_BUFF).changePct;
-        const shielded = new StockEngine(seed).tick(buff({ downshieldRatio: 0.5 })).changePct;
-        if (bare < 0) assert.ok(shielded > bare, `시드 ${seed}: 하락을 안 줄였다`);
-        else assert.ok(Math.abs(shielded - bare) < 1e-9, `시드 ${seed}: 상승까지 건드렸다`);
+test("카드를 안 쓰면 아무것도 안 보인다", () => {
+    const r = new StockEngine(302).read(NO_BUFF);
+    assert.deepEqual(r.next, []);
+    assert.equal(r.regime, null);
+    assert.equal(r.turnsLeft, null);
+});
+
+test("정보 차단은 무엇을 읽어도 가린다", () => {
+    // 저주 하나가 그 턴의 정보를 통째로 지운다.
+    const e = new StockEngine(303);
+    const r = e.read(buff({ peekTurns: 2, revealRegime: true, revealClock: true, blind: true }));
+    assert.deepEqual(r.next, []);
+    assert.equal(r.regime, null);
+});
+
+test("국면은 세 종류뿐이고 몇 턴씩 이어진다", () => {
+    // 이어지지 않으면 차트에 읽을 것이 없다. 이 게임의 심장이다.
+    let runs = 0, total = 0;
+    for (let seed = 0; seed < 60; seed++) {
+        const e = new StockEngine(seed);
+        let prev: string | null = null, len = 0;
+        for (let t = 0; t < 12; t++) {
+            const now = e.read(buff({ revealRegime: true })).regime!;
+            assert.ok(["bull", "bear", "chop"].includes(now));
+            if (now === prev) len++;
+            else { if (prev !== null) { runs++; total += len; } prev = now; len = 1; }
+            e.tick();
+        }
+    }
+    const avg = total / runs;
+    assert.ok(avg >= 2 && avg <= 6, `국면이 평균 ${avg.toFixed(1)}턴 — 너무 짧거나 길다`);
+});
+
+test("오른 턴 다음에 또 오를 확률이 동전보다 높다", () => {
+    // 51.6% 이던 시절엔 차트가 장식이었다. 읽을 것이 생겼는지를 재는 유일한 잣대다.
+    let up = 0, again = 0;
+    for (let seed = 0; seed < 300; seed++) {
+        const e = new StockEngine(seed);
+        let prev = 0;
+        for (let t = 0; t < 12; t++) {
+            const c = e.tick().changePct;
+            if (prev > 0) { up++; if (c > 0) again++; }
+            prev = c;
+        }
+    }
+    const rate = again / up;
+    assert.ok(rate > 0.56, `오른 턴 다음 상승 확률이 ${(rate * 100).toFixed(1)}% — 읽을 것이 없다`);
+});
+
+test("헤지는 위아래를 함께 줄인다", () => {
+    for (let seed = 0; seed < 30; seed++) {
+        const bare = new StockEngine(seed).tick().changePct;
+        const hedged = new StockEngine(seed).tick(buff({ moveMult: 0.5 })).changePct;
+        assert.ok(Math.abs(hedged) <= Math.abs(bare) + 0.01, `시드 ${seed}: 헤지가 키웠다`);
+        if (Math.abs(bare) > 1) {
+            assert.ok(Math.sign(hedged) === Math.sign(bare), `시드 ${seed}: 방향이 뒤집혔다`);
+        }
     }
 });
 
-test("급반등은 하락을 없던 일로 만들 뿐, 오른 턴으로 뒤집지는 않는다", () => {
-    // 뒤집어 주면 이 카드 한 장이 "내린 턴이 오히려 이득" 이 되어 판을 이기는 버튼이 된다.
-    // 되돌리는 데서 멈춰야 방어 카드로 남는다.
-    let healed = 0, down = 0;
-    for (let seed = 0; seed < 40; seed++) {
-        const bare = new StockEngine(seed).tick(NO_BUFF).changePct;
-        if (bare >= 0) continue;
-        down++;
-
-        const rebounded = new StockEngine(seed).tick(buff({ reboundRatio: 1 })).changePct;
-        assert.ok(rebounded > bare, `시드 ${seed}: 되돌리지 못했다`);
-        // 반올림 한 자리를 감안해 0 근처까지만 올라오면 된다.
-        assert.ok(rebounded <= 0.5, `시드 ${seed}: ${rebounded}% — 오른 턴으로 뒤집혔다`);
-        healed++;
+test("벙커는 내릴 때만 듣는다", () => {
+    for (let seed = 0; seed < 30; seed++) {
+        const bare = new StockEngine(seed).tick().changePct;
+        const guarded = new StockEngine(seed).tick(buff({ downshieldRatio: 0.9 })).changePct;
+        if (bare < 0) assert.ok(guarded > bare, `시드 ${seed}: 하락을 못 막았다`);
+        else assert.ok(Math.abs(guarded - bare) < 1e-9, `시드 ${seed}: 상승까지 건드렸다`);
     }
-    assert.ok(down > 0, "내린 턴이 하나도 없어 견줄 수가 없다");
-    assert.equal(healed, down);
+});
+
+test("손절 예약은 정해 둔 만큼 빠졌을 때만 던진다", () => {
+    let fired = 0, held = 0;
+    for (let seed = 0; seed < 60; seed++) {
+        const e = new StockEngine(seed);
+        e.buyAll();
+        const b = buff({ stopLoss: 0.08 });
+        const res = e.tick(b);
+        if (res.changePct <= -8) {
+            assert.equal(e.player.shares, 0, `시드 ${seed}: ${res.changePct}% 인데 안 던졌다`);
+            assert.equal(e.stoppedOut, true);
+            fired++;
+        } else {
+            assert.ok(e.player.shares > 0, `시드 ${seed}: ${res.changePct}% 인데 던졌다`);
+            held++;
+        }
+    }
+    assert.ok(fired > 0 && held > 0, "한쪽만 나와 견줄 수가 없다");
+});
+
+test("신용은 현금보다 많이 사게 하고, 그만큼 빚이 된다", () => {
+    const plain = new StockEngine(304); plain.buyAll();
+    const lev = new StockEngine(304); lev.buyAll(buff({ buyingPowerMult: 2 }));
+
+    assert.ok(lev.player.shares > plain.player.shares, "신용인데 더 못 샀다");
+    assert.ok(lev.player.cash < 0, "빚이 안 생겼다");
+    assert.ok(lev.equity < plain.equity + 1, "공짜로 자산이 늘었다");
+});
+
+test("이자는 현금에서만 빠진다", () => {
+    const e = new StockEngine(305);
+    const before = e.player.cash;
+    e.tick(buff({ cashDrainPct: 0.05 }));
+    assert.equal(e.player.cash, before - Math.floor(before * 0.05));
+});
+
+test("수수료 배수는 세 배로도 간다", () => {
+    const one = new StockEngine(306); one.buyAll();
+    const three = new StockEngine(306); three.buyAll();
+    const a = one.sellAll();
+    const b = three.sellAll(buff({ feeMult: 3 }));
+    assert.ok(a.ok && b.ok);
+    if (a.ok && b.ok) assert.equal(b.fee, a.fee * 3);
 });
 
 test("카드가 겹쳐도 하루에 주가가 두 배가 되지는 않는다", () => {
@@ -221,7 +310,7 @@ test("카드가 겹쳐도 하루에 주가가 두 배가 되지는 않는다", (
     for (let seed = 0; seed < 30; seed++) {
         const e = new StockEngine(seed);
         const open = e.stock.currentPrice;
-        e.tick(buff({ priceBias: 5, volatilityMult: 10 }));
+        e.tick(buff({ moveMult: 10 }));
         assert.ok(e.stock.currentPrice <= Math.round(open * 1.45),
             `시드 ${seed}: ${open} → ${e.stock.currentPrice}`);
     }
@@ -230,7 +319,7 @@ test("카드가 겹쳐도 하루에 주가가 두 배가 되지는 않는다", (
 test("주가는 0 아래로 안 내려간다", () => {
     const e = new StockEngine(61);
     for (let i = 0; i < 200; i++) {
-        e.tick(buff({ priceBias: -5, volatilityMult: 10 }));
+        e.tick(buff({ moveMult: 10, downshieldRatio: 0 }));
         assert.ok(e.stock.currentPrice > 0, `${i}번째에 ${e.stock.currentPrice} 가 됐다`);
     }
 });
@@ -307,10 +396,10 @@ test("청산선 위에서 끝냈으면 잃었어도 인사이트가 남는다", 
 
 test("잘한 판일수록 인사이트가 많다", () => {
     const bad = new StockEngine(109);
-    bad.buyAll(); playOut(bad, buff({ priceBias: -0.05 })); bad.liquidate();
+    bad.buyAll(); playOut(bad, buff({ moveMult: 1 })); bad.liquidate();
 
     const good = new StockEngine(109);
-    good.buyAll(); playOut(good, buff({ priceBias: 0.05 })); good.liquidate();
+    good.buyAll(); playOut(good, buff({ downshieldRatio: 1 })); good.liquidate();
 
     assert.ok(good.summarize().earnedIP > bad.summarize().earnedIP);
 });
@@ -336,7 +425,7 @@ test("끝난 판도 총자산 계산이 맞는다", () => {
 
 /* ── 청산 — 지는 방법 ───────────────────────────────────────── */
 
-test("청산선은 시작 자금의 40% 다", () => {
+test("청산선은 시작 자금의 75% 다", () => {
     const e = new StockEngine(200);
     assert.equal(e.bustLine, Math.round(START_CASH * BUST_RATIO));
     assert.equal(e.isBust, false, "시작하자마자 청산일 수는 없다");

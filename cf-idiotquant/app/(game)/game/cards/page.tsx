@@ -83,6 +83,27 @@ export default function CardsPage() {
                         <span className="text-[#e9f2ea]">한 장만</span> 쓰고, 셋 다 버린 더미로 갑니다.
                         덱이 마르면 버린 더미를 섞어 다시 덱이 됩니다.
                     </p>
+                    <div className="mt-4 rounded-xl border border-[#5cf08f] bg-[#141c1e] p-4">
+                        <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">
+                            한 턴에 하는 일
+                        </h2>
+                        <p className="mt-2 text-[13px] leading-relaxed text-[#e9f2ea]">
+                            <span className="text-[#5cf08f]">읽고</span> →{" "}
+                            <span className="text-[#5cf08f]">얼마나 걸지 정하고</span> →{" "}
+                            <span className="text-[#5cf08f]">막습니다.</span>
+                        </p>
+                        <p className="mt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+                            시장에는 <span className="text-[#e9f2ea]">숨은 국면</span>이 있습니다.
+                            상승·하락·횡보가 몇 턴씩 이어지다 바뀝니다. 그래서 차트의 지난 봉이
+                            다음 봉을 짐작하게 해 주고, 하락 국면에 들고 있으면 진짜로 청산됩니다 —
+                            현금이 정답인 순간이 있습니다.
+                        </p>
+                        <p className="mt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+                            <span className="text-[#e3b34a]">카드는 주가를 밀지 않습니다.</span>{" "}
+                            바꾸는 것은 시장이 아니라 나입니다 — 무엇을 볼 수 있는가(정보),
+                            무엇을 할 수 있는가(집행), 얼마나 맞을 것인가(방어).
+                        </p>
+                    </div>
                     <Link
                         href="/game"
                         className="mt-4 inline-block rounded-lg border border-[#5cf08f] px-3 py-1.5 text-[12px] text-[#5cf08f]"
@@ -156,14 +177,14 @@ export default function CardsPage() {
 
                 <Section
                     title="시작 덱"
-                    note="여섯 장으로 시작합니다 — 관망 지시 둘, 방어막 둘, 인사이더 호재 하나, 손절 수수료 면제 하나. 약하지만 덜 다치게 하는 쪽입니다."
+                    note="여섯 장으로 시작합니다 — 예고 시황 둘, 헤지 둘, 애널리스트 리포트 하나, 수수료 면제 하나. 읽는 눈 셋과 버티는 손 둘, 그리고 싸게 사고파는 길 하나입니다."
                 >
                     {byKind("starter").map(c => <Card key={c.id} card={c} />)}
                 </Section>
 
                 <Section
                     title="보상 카드"
-                    note="판을 뒤집는 카드들. 아래 둘에는 저주가 딸려 와 덱이 그만큼 더러워집니다 — 안 고르는 것이 늘 손해는 아닙니다."
+                    note="더 멀리 보거나, 더 크게 걸거나, 더 단단히 막습니다. 내부자 제보와 신용 융자에는 저주가 딸려 와 덱이 그만큼 더러워집니다 — 안 고르는 것이 늘 손해는 아닙니다."
                 >
                     {byKind("reward").map(c => <Card key={c.id} card={c} />)}
                 </Section>
@@ -178,8 +199,9 @@ export default function CardsPage() {
                 <section className="mt-10">
                     <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#e3b34a]">유물</h2>
                     <p className="mt-1 text-[12px] leading-relaxed text-[#7d8f88]">
-                        카드가 한 턴짜리라면 유물은 <span className="text-[#e9f2ea]">판 전체의 기울기</span>를
-                        바꿉니다. 한 번 얻으면 그 판이 끝날 때까지 남고, 다음 판에는 인사이트가 정한
+                        카드가 한 턴짜리라면 유물은 <span className="text-[#e9f2ea]">판 내내 켜져 있는 카드</span>입니다.
+                        낡은 나침반은 애널리스트 리포트를, 증권가 핫라인은 예고 시황을 매 턴 공짜로 줍니다 —
+                        그만큼 카드 한 장을 다른 데 쓸 수 있게 됩니다. 한 번 얻으면 그 판이 끝날 때까지 남고, 다음 판에는 인사이트가 정한
                         수만큼 새로 뽑습니다.
                     </p>
                     <ul className="mt-4 grid gap-3 sm:grid-cols-2">
