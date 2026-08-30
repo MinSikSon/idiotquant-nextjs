@@ -9,16 +9,25 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE } from "@/lib/game/core/RoguelikeManager";
-import { applyRun, isNewBest, EMPTY, type Progress } from "@/lib/game/core/progress";
+import {
+    RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE, UPGRADE_POOL, UPGRADE_SLOTS,
+    startingDeckOf,
+} from "@/lib/game/core/RoguelikeManager";
+import {
+    applyRun, isNewBest, buyUpgrade, canUpgrade, nextUpgradeCost, UPGRADE_COSTS,
+    EMPTY, type Progress,
+} from "@/lib/game/core/progress";
 import { NO_BUFF } from "@/lib/game/core/types";
 import type { RunSummary, StrategyCard } from "@/lib/game/core/types";
 
 const run = (returnPct: number, earnedIP = 1, idle = false): RunSummary => ({
-    returnPct, earnedIP, idle,
+    returnPct, earnedIP, idle, bankrupt: false,
     startEquity: 10_000_000,
     finalEquity: Math.round(10_000_000 * (1 + returnPct / 100)),
 });
+
+/** 청산으로 끝난 판. 엔진이 그렇듯 인사이트는 한 점도 안 준다. */
+const bust = (returnPct = -65): RunSummary => ({ ...run(returnPct, 0), bankrupt: true });
 
 /** 그 카드가 손에 잡힐 때까지 턴을 넘긴다. 덱에서 뽑는 이상 몇 턴 걸릴 수 있다. */
 function drawUntil(r: RoguelikeManager, id: string, tries = 80): StrategyCard {
@@ -288,6 +297,107 @@ test("비밀 장부는 오른 턴에만 터진다", () => {
     assert.equal(p.insightPoints, 0, "내린 턴에 터졌다");
     r.onTurnEnd(p, 3);
     assert.equal(p.insightPoints, 1);
+});
+
+/* ── 시작 덱 강화 ───────────────────────────────────────────── */
+
+test("강화가 없으면 시작 덱은 여섯 장 그대로다", () => {
+    assert.deepEqual(startingDeckOf([]),
+        ["steady", "steady", "shield", "shield", "insider", "nofee"]);
+});
+
+test("강화는 앞자리부터 갈아 끼우고, 덱 크기는 안 변한다", () => {
+    // 덱이 불어나면 원하는 카드가 덜 잡힌다. 강화의 요점은 **크기가 아니라 질**이다.
+    const one = startingDeckOf(["rebound"]);
+    assert.equal(one.length, 6);
+    assert.deepEqual(one, ["rebound", "steady", "shield", "shield", "insider", "nofee"]);
+
+    const four = startingDeckOf(["rebound", "bunker", "volatile", "insider"]);
+    assert.equal(four.length, 6);
+    assert.deepEqual(four.slice(4), ["insider", "nofee"], "뒤의 두 장은 안 건드린다");
+});
+
+test("모르는 카드 이름은 조용히 무시한다", () => {
+    // 저장이 상해도 판은 굴러가야 한다.
+    assert.deepEqual(startingDeckOf(["없는카드"]), startingDeckOf([]));
+});
+
+test("강화한 카드가 실제로 손에 잡힌다", () => {
+    const r = new RoguelikeManager(1, ["rebound"]);
+    assert.equal(r.deckState.total, 6, "강화가 덱을 불리면 안 된다");
+    assert.equal(drawUntil(r, "rebound").id, "rebound");
+});
+
+test("강화로 저주를 사지는 못한다", () => {
+    // 시작 덱에 저주를 영구히 박는 것은 강화가 아니라 벌이다.
+    assert.equal(UPGRADE_POOL.includes("pump"), false);
+    assert.equal(UPGRADE_POOL.includes("leak"), false);
+    for (let seed = 0; seed < 20; seed++) {
+        const offer = new RoguelikeManager(seed).offerUpgrades();
+        assert.ok(offer.every(c => UPGRADE_POOL.includes(c.id)), `시드 ${seed}`);
+        assert.ok(offer.every(c => !c.curseName));
+    }
+});
+
+test("갈아 끼울 자리는 넷뿐이다", () => {
+    assert.equal(UPGRADE_SLOTS, 4);
+    assert.equal(UPGRADE_COSTS.length, UPGRADE_SLOTS);
+    const full: Progress = { ...EMPTY, insightPoints: 999, upgrades: ["rebound", "bunker", "volatile", "insider"] };
+    assert.equal(nextUpgradeCost(full), null);
+    assert.equal(canUpgrade(full), false);
+    assert.deepEqual(buyUpgrade(full, "rebound"), full, "다섯 번째는 안 팔린다");
+});
+
+test("값이 모자라면 안 팔린다", () => {
+    const poor: Progress = { ...EMPTY, insightPoints: UPGRADE_COSTS[0]! - 1 };
+    assert.equal(canUpgrade(poor), false);
+    assert.deepEqual(buyUpgrade(poor, "rebound"), poor);
+});
+
+test("살수록 비싸진다", () => {
+    let p: Progress = { ...EMPTY, insightPoints: 500 };
+    const paid: number[] = [];
+    for (let i = 0; i < UPGRADE_SLOTS; i++) {
+        const before = p.insightPoints;
+        p = buyUpgrade(p, "rebound");
+        paid.push(before - p.insightPoints);
+    }
+    assert.deepEqual(paid, [...UPGRADE_COSTS]);
+    assert.equal(p.upgrades.length, UPGRADE_SLOTS);
+});
+
+/* ── 청산 ───────────────────────────────────────────────────── */
+
+test("청산되면 인사이트가 절반이 되고 강화가 날아간다", () => {
+    const rich: Progress = {
+        ...EMPTY, insightPoints: 90, runs: 4, bestReturn: 40,
+        upgrades: ["rebound", "bunker"],
+    };
+    const after = applyRun(rich, bust());
+
+    assert.equal(after.insightPoints, 45, "절반이 아니다");
+    assert.deepEqual(after.upgrades, [], "강화가 남았다");
+    assert.equal(after.busts, 1);
+    assert.equal(after.runs, 5, "청산된 판도 판이다");
+    assert.equal(after.bestReturn, 40, "최고 기록까지 지우지는 않는다");
+});
+
+test("청산은 인사이트를 안 준다", () => {
+    // 엔진이 earnedIP 를 0 으로 내주지만, 값이 새어 들어와도 여기서 막힌다.
+    const p = applyRun({ ...EMPTY, insightPoints: 10 }, { ...bust(), earnedIP: 99 });
+    assert.equal(p.insightPoints, 5);
+});
+
+test("무사히 끝낸 판은 강화를 지키지 않는다 — 그대로 들고 간다", () => {
+    const p: Progress = { ...EMPTY, insightPoints: 10, upgrades: ["bunker"] };
+    const after = applyRun(p, run(5, 4));
+    assert.deepEqual(after.upgrades, ["bunker"]);
+    assert.equal(after.insightPoints, 14);
+    assert.equal(after.busts, 0);
+});
+
+test("인사이트가 0 이면 청산돼도 0 아래로는 안 간다", () => {
+    assert.equal(applyRun(EMPTY, bust()).insightPoints, 0);
 });
 
 /* ── 진행(판을 넘어 남는 것) ────────────────────────────────── */

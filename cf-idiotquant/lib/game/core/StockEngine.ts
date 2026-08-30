@@ -15,6 +15,25 @@ import type {
 export const START_CASH = 10_000_000;
 export const MAX_TURNS = 12;
 
+/**
+ * 청산선 — 시작 자금의 이 비율 아래로 떨어지면 12턴을 못 채우고 그 자리에서 끝난다.
+ * 맡긴 돈이 회수되는 것이지 빚을 지는 것은 아니라, 코드에서는 `bust` 로 부른다.
+ *
+ * 이 게임에는 **지는 방법**이 있어야 한다. 지금까지는 얼마를 잃든 12턴을 채웠고, 그래서
+ * 올인이 언제나 옳았다. 잃을 것이 생겨야 카드 한 장, 매수 한 번이 무거워진다.
+ *
+ * 0.75 는 눈대중이 아니라 재서 고른 값이다(600판 x 4가지 방식):
+ *
+ *     선      맨몸 올인   맨몸 절반   강화2   강화4
+ *     0.70      5%         0%        0%      0%
+ *     0.75      8%         0%        1%      1%     ← 여기
+ *     0.85     19%         5%        7%      5%
+ *
+ * 아무것도 못 쌓은 채 올인하면 열두 판에 한 번쯤 잘리고, 절반만 사거나 시작 덱을
+ * 강화해 두면 거의 안 잘린다. **쌓은 것이 곧 안전**이 되는 자리를 만드는 값이다.
+ */
+export const BUST_RATIO = 0.75;
+
 // 수수료는 분수로 두고 정수 연산으로 계산한다. 0.00015 를 곱하면
 // 700000 * 0.00015 === 104.99999999999999 라 floor 가 105 대신 104 를 준다.
 const FEE_DENOM = 100_000;
@@ -176,8 +195,19 @@ export class StockEngine {
         return ((this.equity - this.startEquity) / this.startEquity) * 100;
     }
 
+    /** 이 아래로 떨어지면 청산이다. 화면이 경고를 띄우는 근거이기도 하다. */
+    get bustLine(): number {
+        return Math.round(this.startEquity * BUST_RATIO);
+    }
+
+    /** 지금 청산 상태인가. */
+    get isBust(): boolean {
+        return this.equity < this.bustLine;
+    }
+
+    /** 판이 끝났는가. 12턴을 채웠거나, **청산됐거나**. */
     get isOver(): boolean {
-        return this.player.currentTurn > this.player.maxTurns;
+        return this.player.currentTurn > this.player.maxTurns || this.isBust;
     }
 
     /* ── 한 턴 ───────────────────────────────────────────── */
@@ -191,8 +221,8 @@ export class StockEngine {
     tick(buff: TurnBuff): TickResult {
         const vol = this.stock.volatility * Math.max(0, buff.volatilityMult);
 
-        // ① 랜덤워크 — 평균 0 에 살짝 위쪽으로 기운다(주식은 길게 보면 오른다는 정도의 기울기)
-        let change = (this.rand() - 0.48) * 2 * vol;
+        // ① 랜덤워크 — 평균 0. 위로 기울여 두면 그냥 들고만 있어도 이기는 판이 된다.
+        let change = (this.rand() - 0.5) * 2 * vol;
 
         // ② 뉴스 충격
         let news: string | null = null;
@@ -208,8 +238,10 @@ export class StockEngine {
         if (change < 0 && buff.downshieldRatio > 0) {
             change *= 1 - Math.min(1, buff.downshieldRatio);
         }
+        // 반등은 내린 만큼을 **되돌릴 뿐** 그 위로 밀어 올리지 않는다. 2배로 얹으면 내린
+        // 턴이 오른 턴이 되어, 이 카드 한 장이 판을 이기는 버튼이 된다.
         if (change < 0 && buff.reboundRatio > 0) {
-            change += -change * Math.min(1, buff.reboundRatio) * 2;
+            change += -change * Math.min(1, buff.reboundRatio);
         }
         change += buff.priceBias;
 
@@ -307,9 +339,11 @@ export class StockEngine {
         const finalEquity = this.equity;
         const returnPct = ((finalEquity - this.startEquity) / this.startEquity) * 100;
         const idle = !this.traded;
-        const earnedIP = idle ? 0 : Math.max(1, Math.round(returnPct / 2) + 1);
+        // 청산된 판은 한 점도 안 준다. 그래야 "어차피 12턴 채우면 되니 올인" 이 안 된다.
+        const bankrupt = this.isBust;
+        const earnedIP = idle || bankrupt ? 0 : Math.max(1, Math.round(returnPct / 2) + 1);
 
         this.player.insightPoints += earnedIP;
-        return { returnPct, startEquity: this.startEquity, finalEquity, earnedIP, idle };
+        return { returnPct, startEquity: this.startEquity, finalEquity, earnedIP, idle, bankrupt };
     }
 }
