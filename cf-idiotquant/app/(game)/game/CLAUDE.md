@@ -32,6 +32,7 @@
 | — | `lib/game/components/{PixelCandleChart,CardHandContainer}.ts` | 차트·손패 |
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
+| — | `app/(game)/game/cards/page.tsx` | 도감. **코어 정의를 그대로 그린다** — 값을 다시 적지 말 것 |
 | — | `lib/paper/*` · `lib/game/{theme,ui,chart,data,boot}.ts` | **다른 게임**(블라인드 차트 `/game/blind`). 헷갈리지 말 것 |
 | — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용 |
 
@@ -40,7 +41,7 @@
 새 규칙을 넣을 때도 **Scene 안에 계산을 쓰지 말고** `lib/paper` 또는 `lib/game` 의 순수
 함수로 만든 뒤 부른다 — 그래야 테스트가 붙는다.
 
-### 지금과 다른 것 셋
+### 지금과 다른 것들
 
 1. **Vite 가 아니다.** Next.js 15 App Router 안이고, Phaser 는 `/game` 에 들어올 때만
    `dynamic(..., { ssr: false })` 로 내려간다. `vite.config.*` 를 만들지 말 것.
@@ -56,6 +57,17 @@
    - 가장 센 카드(`pump`·`leak`)에는 저주가 딸려 온다. 유물 `shredder` 만이 덱을 얇게 한다.
    - `TradingScene.beginTurn` 은 **`dealHand()` 를 `onTurnStart()` 보다 먼저** 부른다.
      파쇄기가 손에 잡힌 저주를 보고 태우는 유물이라 순서를 바꾸면 조용히 안 터진다.
+   - 4·8턴을 끝내면 유물도 **셋 중에 고른다**(`offerRelics` → `takeRelic`). 그냥 주면
+     무엇을 들고 있는지 모른 채 판이 끝나 유물이 왜 있는지 알 수 없게 된다.
+   - 카드 정의(`CARD_LIST`)와 유물(`RELIC_POOL`)은 코어가 내보내고 도감이 그대로 읽는다.
+     `when`·`effectDescription`·유물 `description` 은 캔버스와 도감에 **날것으로** 찍히니
+     마크다운을 넣지 말 것(테스트가 막는다).
+   - 카드에 `idleWhen` 을 주면 지금 소용없는 카드가 손패에서 흐려진다. 무엇을 고를지가
+     안 보인다는 것이 이 게임의 오래된 약점이었다.
+
+4. **차수가 반복 플레이의 축이다.** 완주하면 +1, 청산되면 −1(`progress.tier`). 차수마다
+   청산선이 2%p 올라오고 인사이트를 15% 더 준다. 강화(넷)도 유물(여섯)도 언젠가 차지만
+   차수는 안 찬다 — 다시 켤 이유를 여기에 둔다.
 
 ### 손대면 안 되는 것
 
@@ -84,5 +96,5 @@ Scale.RESIZE 모드용이라 FIT 에서는 표시 크기가 옛 비율로 남으
 ```
 npx tsc --noEmit          # 에러 0
 npm test                  # lib/paper + lib/game/core 규칙 테스트
-npm run build             # /game · /game/roguelike 라우트가 뜨는지
+npm run build             # /game · /game/cards · /game/blind 라우트가 뜨는지
 ```

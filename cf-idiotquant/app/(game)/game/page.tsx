@@ -50,10 +50,10 @@ export default function RoguelikePage() {
             </div>
 
             {/* 눕히면 세로 28px 이 아깝다. 링크는 세로로 되돌리면 다시 나온다. */}
-            <div className="shrink-0 py-1.5 text-center [@media(max-height:500px)]:hidden">
-                <Link href="/game/blind" className="font-mono text-[11px] text-[#3c4844] underline">
-                    블라인드 차트로
-                </Link>
+            <div className="shrink-0 py-1.5 text-center font-mono text-[11px] text-[#3c4844] [@media(max-height:500px)]:hidden">
+                <Link href="/game/cards" className="underline">카드 도감</Link>
+                <span className="px-2">·</span>
+                <Link href="/game/blind" className="underline">블라인드 차트로</Link>
             </div>
         </div>
     );

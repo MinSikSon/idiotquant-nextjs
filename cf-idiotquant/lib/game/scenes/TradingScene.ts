@@ -25,6 +25,7 @@ import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
 import type { Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
+import { MAX_TIER } from "@/lib/game/core/StockEngine";
 import {
     canUpgrade, loadProgress, nextUpgradeCost, purchaseUpgrade, recordRun, type Progress,
 } from "@/lib/game/core/progress";
@@ -138,6 +139,8 @@ export class TradingScene extends Phaser.Scene {
     private offer: StrategyCard[] | null = null;
     /** 판을 열기 전 강화 고르기. 고르거나 넘길 때까지 판이 안 시작된다. */
     private upgradeOffer: StrategyCard[] | null = null;
+    /** 네 턴마다 뜨는 유물 고르기. 고를 때까지 다음 턴이 안 열린다. */
+    private relicOffer: Relic[] | null = null;
     private ended: { sum: RunSummary; progress: Progress; newBest: boolean } | null = null;
     /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
     private overlay: Phaser.GameObjects.Container | null = null;
@@ -154,6 +157,7 @@ export class TradingScene extends Phaser.Scene {
         this.busy = false;
         this.offer = null;
         this.upgradeOffer = null;
+        this.relicOffer = null;
         this.ended = null;
         this.overlay = null;
     }
@@ -163,9 +167,9 @@ export class TradingScene extends Phaser.Scene {
         this.measure();
 
         const seed = (Math.random() * 0xffffffff) >>> 0;
-        this.engine = new StockEngine(seed);
-        this.engine.player.insightPoints = this.carriedIP;
         const saved = loadProgress();
+        this.engine = new StockEngine(seed, saved.tier);
+        this.engine.player.insightPoints = this.carriedIP;
         this.rogue = new RoguelikeManager(seed, saved.upgrades);
         this.rogue.grantStartingRelics(this.carriedIP);
 
@@ -213,7 +217,7 @@ export class TradingScene extends Phaser.Scene {
         this.buildAll();
 
         this.renderRelics();
-        this.hand.setHand(this.rogue.hand);
+        this.hand.setHand(this.rogue.hand, this.idleCheck);
         const picked = this.rogue.pickedCard;
         if (picked) this.hand.lock(picked.uid);
         this.refresh();
@@ -221,6 +225,7 @@ export class TradingScene extends Phaser.Scene {
         // 떠 있던 오버레이는 같은 재료로 다시 그린다 — 후보를 다시 뽑지 않는다.
         if (this.ended) this.drawResult();
         else if (this.upgradeOffer) this.drawUpgrade();
+        else if (this.relicOffer) this.drawRelicOffer();
         else if (this.offer) this.drawReward();
     }
 
@@ -391,7 +396,7 @@ export class TradingScene extends Phaser.Scene {
         // 보고 태우는 유물이라, 반대로 하면 태울 것이 아직 없다.
         this.rogue.dealHand();
         const fired = this.rogue.onTurnStart(this.engine.player);
-        this.hand.setHand(this.rogue.hand);
+        this.hand.setHand(this.rogue.hand, this.idleCheck);
         this.renderRelics();
         this.busy = false;
 
@@ -400,12 +405,28 @@ export class TradingScene extends Phaser.Scene {
         else this.say(`${this.engine.player.currentTurn}턴 — 카드를 고르고 매매하세요.`, S.inkDim);
     }
 
+    /**
+     * 지금 이 계좌에서 아무 일도 못 하는 카드인가. 손패가 흐리게 칠할 근거다.
+     * 화살표 함수라 setHand 에 그대로 넘길 수 있다.
+     */
+    private idleCheck = (card: StrategyCard): boolean => this.rogue.isIdle(card.id, {
+        shares: this.engine.player.shares,
+        cash: this.engine.player.cash,
+        price: this.engine.stock.currentPrice,
+    });
+
     /** @param uid 그 **장**의 번호. 덱에 같은 카드가 여러 장이라 id 로는 못 짚는다. */
     private onPickCard(uid: string) {
         if (this.busy) return;
         const card = this.rogue.hand.find(c => c.uid === uid);
-        if (this.rogue.playCard(uid) && card) {
-            this.say(`${card.name} — ${card.effectDescription}`,
+        if (!this.rogue.playCard(uid) || !card) return;
+
+        // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
+        // 카드면 그 사실을, 아니면 언제 쓰는 카드인지를 말해 준다.
+        if (this.idleCheck(card)) {
+            this.say(`${card.name} — 지금은 아무 일도 안 합니다`, S.danger);
+        } else {
+            this.say(`${card.name} — ${this.rogue.whenOf(card.id)}`,
                 card.kind === "curse" ? S.danger : S.neon);
         }
     }
@@ -442,23 +463,18 @@ export class TradingScene extends Phaser.Scene {
         this.engine.advanceTurn();
         this.refresh();
 
-        // 네 턴마다 유물 하나. 판이 길어질수록 세지는 감각이 여기서 나온다.
-        let relicNote: string | null = null;
-        if (!this.engine.isOver && (this.engine.player.currentTurn - 1) % 4 === 0) {
-            const got = this.rogue.grantRandomRelic();
-            if (got) relicNote = `유물 획득 — ${got.name}`;
-        }
+        this.say([tickRes.news ?? pct(tickRes.changePct), ...endFired].join(" · "),
+            tickRes.changePct >= 0 ? S.up : S.down);
 
-        this.say([
-            tickRes.news ?? pct(tickRes.changePct),
-            ...endFired,
-            ...(relicNote ? [relicNote] : []),
-        ].join(" · "), tickRes.changePct >= 0 ? S.up : S.down);
+        // 네 턴마다 유물 하나 — 다만 **고르게** 한다. 그냥 굴러들어오면 무엇을 들고
+        // 있는지도 모른 채 판이 끝나고, 그래서 유물이 무슨 소용인지 알 길이 없었다.
+        const relicTurn = !this.engine.isOver && (this.engine.player.currentTurn - 1) % 4 === 0;
 
         // 봉이 하나 자라는 것을 눈이 따라갈 시간을 준다. 바로 넘기면 무엇이 변했는지 모른다.
         this.time.delayedCall(420, () => {
             if (this.engine.isOver) this.finish();
             else if (this.rogue.isRewardTurn(finished)) this.showReward();
+            else if (relicTurn) this.showRelicOffer();
             else this.beginTurn();
         });
     }
@@ -490,6 +506,85 @@ export class TradingScene extends Phaser.Scene {
     private closeOverlay() {
         this.overlay?.destroy(true);
         this.overlay = null;
+    }
+
+    /* ── 유물 고르기 (4·8턴을 끝냈을 때) ──────────────────── */
+
+    /**
+     * 유물은 판이 끝날 때까지 남는 **패시브**다. 카드가 한 턴짜리라면 유물은 판 전체의
+     * 기울기를 바꾼다 — 그 차이가 안 보이면 유물이 왜 있는지 알 수 없다.
+     *
+     * 그래서 셋을 내밀어 읽고 고르게 한다. 고른 순간 무엇을 들고 가는지 알게 되고,
+     * 남은 턴 내내 그 선택이 따라온다.
+     */
+    private showRelicOffer() {
+        const offer = this.rogue.offerRelics();
+        if (offer.length === 0) { this.beginTurn(); return; }   // 다 모았다
+        this.relicOffer = offer;
+        this.drawRelicOffer();
+    }
+
+    private drawRelicOffer() {
+        const offer = this.relicOffer;
+        if (!offer) return;
+
+        const stacked = this.designH < TALL_ENOUGH;
+        const n = offer.length;
+        const gap = 8;
+        const pw = Math.min(this.designW - 40, stacked ? 660 : 350);
+        const cellH = stacked ? 96 : 72;
+        const rows = stacked ? 1 : n;
+        const ph = 58 + rows * cellH + (rows - 1) * gap + 20;
+
+        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
+        const mid = px + pw / 2;
+
+        box.add(this.add.text(mid, py + 16, "RELIC — 판이 끝날 때까지", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
+        }).setOrigin(0.5, 0));
+        box.add(this.add.text(mid, py + 32, "하나를 고르세요", {
+            fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
+        }).setOrigin(0.5, 0));
+
+        const inner = pw - 32;
+        const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
+
+        offer.forEach((relic, i) => {
+            const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
+            const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
+            box.add(this.makeInfoCell(x, y, cellW, cellH, relic.name, relic.description, C.gold, () => {
+                this.rogue.takeRelic(relic.id);
+                this.relicOffer = null;
+                this.closeOverlay();
+                this.beginTurn();
+                this.say(`유물 ${relic.name} — ${relic.description}`, S.gold);
+            }));
+        });
+    }
+
+    /** 이름 한 줄 + 설명 한 덩이짜리 고르기 칸. 유물처럼 저주가 없는 것에 쓴다. */
+    private makeInfoCell(
+        x: number, y: number, w: number, h: number,
+        title: string, body: string, edge: number, onPick: () => void,
+    ): Phaser.GameObjects.Container {
+        const root = this.add.container(x, y);
+        const g = this.add.graphics();
+        g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
+        g.lineStyle(1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+
+        const name = this.add.text(10, 9, title, {
+            fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
+        });
+        const desc = this.add.text(10, name.y + name.height + 4, body, {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
+            wordWrap: { width: w - 20 }, lineSpacing: 2,
+        });
+        const zone = this.add.zone(0, 0, w, h).setOrigin(0, 0)
+            .setInteractive({ useHandCursor: true });
+        zone.on("pointerup", onPick);
+
+        root.add([g, name, desc, zone]);
+        return root;
     }
 
     /* ── 시작 덱 강화 (판을 열기 전) ───────────────────────── */
@@ -725,15 +820,18 @@ export class TradingScene extends Phaser.Scene {
                 : sum.idle ? "한 주도 사지 않았습니다 — 인사이트 없음"
                     : `인사이트 +${sum.earnedIP}`,
             tight ? FS.sm : FS.md, bust || sum.idle ? S.danger : S.gold);
-        t(py + at[4]!, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`, FS.sm, S.inkDim);
-        t(py + at[5]!, progress.bestReturn !== null ? `최고 기록 ${pct(progress.bestReturn)}` : "",
-            FS.sm, newBest ? S.neon : S.inkDim);
-        t(py + at[6]!, progress.upgrades.length > 0
-            ? `시작 덱 강화 ${progress.upgrades.length}/4`
-            : this.rogue.relics.length > 0
-                ? `유물 ${this.rogue.relics.map(r2 => r2.name).join(" · ")}`
-                : "유물 없음",
-            FS.xs, bust ? S.danger : S.inkDim);
+        // 차수가 오른 것이 곧 "다시 켤 이유" 다. 성적보다 이 줄이 먼저 눈에 들어와야 한다.
+        const tierNote = bust
+            ? `차수 ${progress.tier} 로 내려갔습니다`
+            : progress.tier >= MAX_TIER ? `차수 ${MAX_TIER} — 끝까지 올랐습니다`
+                : `차수 ${progress.tier} — 다음 판은 청산선이 더 높습니다`;
+        t(py + at[4]!, tierNote, FS.sm, bust ? S.danger : S.gold);
+        t(py + at[5]! - 2, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`,
+            FS.xs, S.inkDim);
+        t(py + at[6]!, [
+            progress.bestReturn !== null ? `최고 ${pct(progress.bestReturn)}` : "",
+            `강화 ${progress.upgrades.length}/4`,
+        ].filter(Boolean).join(" · "), FS.xs, newBest ? S.neon : bust ? S.danger : S.inkDim);
 
         const btnH = tight ? 44 : 54;
         const restart = makeButton(this, px + 20, py + ph - btnH - (tight ? 14 : 20), pw - 40, btnH,
@@ -759,8 +857,9 @@ export class TradingScene extends Phaser.Scene {
         // 읽히지 않는 배경이 된다. 1.2 배는 시작 자금의 90% 언저리다.
         const near = e.equity < e.bustLine * 1.2;
         this.totalLabel
-            .setText(near ? `TOTAL · 청산선 ${money(e.bustLine)}` : "TOTAL")
-            .setColor(near ? S.danger : S.inkDim);
+            .setText(near ? `TOTAL · 청산선 ${money(e.bustLine)}`
+                : e.tier > 0 ? `TOTAL · 차수 ${e.tier}` : "TOTAL")
+            .setColor(near ? S.danger : e.tier > 0 ? S.gold : S.inkDim);
         this.cashText.setText(`현금 ${money(p.cash)}`);
         this.turnText.setText(`TURN ${Math.min(p.currentTurn, p.maxTurns)}/${p.maxTurns}`);
         this.ipText.setText(`IP ${p.insightPoints}`);

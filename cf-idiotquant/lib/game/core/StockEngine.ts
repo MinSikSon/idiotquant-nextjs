@@ -34,6 +34,23 @@ export const MAX_TURNS = 12;
  */
 export const BUST_RATIO = 0.75;
 
+/**
+ * 차수 — 판을 넘어 오르내리는 난이도.
+ *
+ * 강화가 넷이면 차 버리고 유물도 여섯이면 끝이라, 그 뒤로는 같은 판을 반복할 뿐이었다.
+ * 차수는 **완주하면 오르고 청산되면 내려간다.** 오를수록 청산선이 바짝 붙고, 대신
+ * 인사이트를 더 준다 — 위험을 사서 성장을 앞당기는 자리다.
+ */
+export const MAX_TIER = 7;
+export const TIER_BUST_STEP = 0.02;   // 차수마다 청산선이 2%p 씩 올라온다
+export const TIER_IP_STEP = 0.15;     // 차수마다 인사이트가 15% 더
+
+/** 그 차수의 청산선 비율. */
+export function bustRatioFor(tier: number): number {
+    const t = Math.max(0, Math.min(MAX_TIER, Math.floor(tier)));
+    return BUST_RATIO + t * TIER_BUST_STEP;
+}
+
 // 수수료는 분수로 두고 정수 연산으로 계산한다. 0.00015 를 곱하면
 // 700000 * 0.00015 === 104.99999999999999 라 floor 가 105 대신 104 를 준다.
 const FEE_DENOM = 100_000;
@@ -151,8 +168,12 @@ export class StockEngine {
     /** 한 번이라도 샀는가. 12턴을 그냥 흘려보낸 판을 가려내는 데 쓴다. */
     private traded = false;
 
-    constructor(seed: number = (Math.random() * 0xffffffff) >>> 0) {
+    /** 이 판의 차수. 청산선과 인사이트 배수가 여기서 나온다. */
+    readonly tier: number;
+
+    constructor(seed: number = (Math.random() * 0xffffffff) >>> 0, tier = 0) {
         this.seed = seed >>> 0;
+        this.tier = Math.max(0, Math.min(MAX_TIER, Math.floor(tier)));
         this.rand = mulberry32(this.seed);
         this.stock = createStock(this.rand);
         this.player = {
@@ -197,7 +218,7 @@ export class StockEngine {
 
     /** 이 아래로 떨어지면 청산이다. 화면이 경고를 띄우는 근거이기도 하다. */
     get bustLine(): number {
-        return Math.round(this.startEquity * BUST_RATIO);
+        return Math.round(this.startEquity * bustRatioFor(this.tier));
     }
 
     /** 지금 청산 상태인가. */
@@ -341,7 +362,9 @@ export class StockEngine {
         const idle = !this.traded;
         // 청산된 판은 한 점도 안 준다. 그래야 "어차피 12턴 채우면 되니 올인" 이 안 된다.
         const bankrupt = this.isBust;
-        const earnedIP = idle || bankrupt ? 0 : Math.max(1, Math.round(returnPct / 2) + 1);
+        // 차수가 높을수록 같은 성적에 더 준다. 그게 위험을 사는 값이다.
+        const base = idle || bankrupt ? 0 : Math.max(1, Math.round(returnPct / 2) + 1);
+        const earnedIP = Math.round(base * (1 + this.tier * TIER_IP_STEP));
 
         this.player.insightPoints += earnedIP;
         return { returnPct, startEquity: this.startEquity, finalEquity, earnedIP, idle, bankrupt };

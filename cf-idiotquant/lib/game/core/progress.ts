@@ -9,6 +9,7 @@
 // 넣으면 브라우저 없이 규칙을 돌려 볼 수 없게 된다.
 
 import type { RunSummary } from "./types";
+import { MAX_TIER } from "./StockEngine";
 
 const KEY = "iq:rogue:v1";
 
@@ -28,10 +29,17 @@ export interface Progress {
     upgrades: string[];
     /** 청산으로 끝난 판의 수. */
     busts: number;
+    /**
+     * 지금 차수. 완주하면 오르고 청산되면 내려간다.
+     *
+     * 강화도 유물도 언젠가 다 차서, 그 뒤로 다시 켤 이유가 없었다. 차수는 끝이 없는
+     * 쪽의 축이다 — 올릴수록 청산선이 붙고 인사이트가 늘어난다.
+     */
+    tier: number;
 }
 
 export const EMPTY: Progress = {
-    insightPoints: 0, bestReturn: null, runs: 0, upgrades: [], busts: 0,
+    insightPoints: 0, bestReturn: null, runs: 0, upgrades: [], busts: 0, tier: 0,
 };
 
 /**
@@ -71,6 +79,7 @@ function clean(raw: unknown): Progress {
     const best = Number(o.bestReturn);
     const runs = Number(o.runs);
     const busts = Number(o.busts);
+    const tier = Number(o.tier);
     return {
         insightPoints: Number.isFinite(ip) && ip > 0 ? Math.floor(ip) : 0,
         bestReturn: Number.isFinite(best) ? best : null,
@@ -81,6 +90,7 @@ function clean(raw: unknown): Progress {
             ? o.upgrades.filter((x): x is string => typeof x === "string").slice(0, UPGRADE_COSTS.length)
             : [],
         busts: Number.isFinite(busts) && busts > 0 ? Math.floor(busts) : 0,
+        tier: Number.isFinite(tier) ? Math.max(0, Math.min(MAX_TIER, Math.floor(tier))) : 0,
     };
 }
 
@@ -104,6 +114,8 @@ export function applyRun(prev: Progress, run: RunSummary): Progress {
             runs: prev.runs + 1,
             upgrades: [],
             busts: prev.busts + 1,
+            // 한 차수 내려간다. 다시 올라올 발판은 남겨 둔다.
+            tier: Math.max(0, prev.tier - 1),
         };
     }
 
@@ -113,6 +125,8 @@ export function applyRun(prev: Progress, run: RunSummary): Progress {
         runs: prev.runs + 1,
         upgrades: prev.upgrades,
         busts: prev.busts,
+        // 관망만 한 판은 차수를 안 올린다. 12턴을 흘려보내 올리는 길을 막는다.
+        tier: run.idle ? prev.tier : Math.min(MAX_TIER, prev.tier + 1),
     };
 }
 

@@ -22,6 +22,7 @@ import {
   ChevronDown,
   NotebookText,
   Dices,
+  BookOpen,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -51,6 +52,7 @@ const MORE_NAV: NavItem[] = [
   { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
   // /game 이 로그라이크가 됐다(메인 탭의 "모의투자"). 여기 남는 것은 그 자리에서
   // 밀려난 블라인드 차트로 가는 문이다.
+  { label: "카드 도감",    href: "/game/cards", icon: BookOpen               },
   { label: "블라인드 차트", href: "/game/blind", icon: Dices                  },
 ];
 
