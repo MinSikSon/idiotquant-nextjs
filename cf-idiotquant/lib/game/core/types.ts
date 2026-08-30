@@ -140,8 +140,10 @@ export interface RunSummary {
     returnPct: number;
     startEquity: number;
     finalEquity: number;
-    /** 이 판에서 번 인사이트 포인트 */
+    /** 이 판에서 번 인사이트 포인트. 청산된 판은 0 이다. */
     earnedIP: number;
     /** 종목을 안 사고 12턴을 흘려보냈는가 */
     idle: boolean;
+    /** 12턴을 못 채우고 청산선 아래로 떨어졌는가. 이 판은 **진 것**이다. */
+    bankrupt: boolean;
 }

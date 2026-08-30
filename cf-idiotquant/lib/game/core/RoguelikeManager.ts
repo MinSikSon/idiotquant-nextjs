@@ -53,8 +53,8 @@ const CARDS: CardDef[] = [
     },
     {
         id: "insider", name: "인사이더 호재", type: "price", kind: "starter",
-        effectDescription: "이번 턴 주가가 확실히 오릅니다 (+12%p).",
-        apply: b => ({ ...b, priceBias: b.priceBias + 0.12 }),
+        effectDescription: "이번 턴 주가가 확실히 오릅니다 (+7%p).",
+        apply: b => ({ ...b, priceBias: b.priceBias + 0.07 }),
     },
     {
         id: "nofee", name: "손절 수수료 면제", type: "trade", kind: "starter",
@@ -66,7 +66,7 @@ const CARDS: CardDef[] = [
        판을 뒤집는 카드들. 위의 둘에는 저주가 딸려 온다. */
     {
         id: "rebound", name: "급반등 유도", type: "price", kind: "reward",
-        effectDescription: "이번 턴에 내리면 그 폭만큼 되돌려 올립니다.",
+        effectDescription: "이번 턴에 내리면 그 하락을 없던 일로 만듭니다.",
         apply: b => ({ ...b, reboundRatio: Math.max(b.reboundRatio, 1) }),
     },
     {
@@ -111,11 +111,35 @@ const CARDS: CardDef[] = [
     },
 ];
 
-/** 판을 시작할 때 손에 쥐는 덱. 같은 카드가 여러 장이라 뽑는 맛이 생긴다. */
-const STARTING_DECK = ["steady", "steady", "shield", "shield", "insider", "nofee"];
-
 function defOf(id: string): CardDef | undefined {
     return CARDS.find(c => c.id === id);
+}
+
+/**
+ * 판을 시작할 때 손에 쥐는 덱. 같은 카드가 여러 장이라 뽑는 맛이 생긴다.
+ *
+ * **앞의 네 자리**(관망 둘, 방어막 둘)는 인사이트로 영구히 갈아 끼울 수 있다. 뒤의 둘은
+ * 안 바꾼다 — 인사이더 호재와 수수료 면제는 이 게임을 굴리는 최소한이고, 그것까지
+ * 사라지면 강화 없는 첫 판이 못 굴러간다.
+ */
+const STARTING_DECK = ["steady", "steady", "shield", "shield", "insider", "nofee"];
+
+/** 갈아 끼울 수 있는 자리 수. STARTING_DECK 앞에서부터 이만큼이다. */
+export const UPGRADE_SLOTS = 4;
+
+/**
+ * 강화로 살 수 있는 카드. 저주가 딸린 것은 뺀다 — 시작 덱에 저주를 영구히 박아 두면
+ * 그건 강화가 아니라 벌이다.
+ */
+export const UPGRADE_POOL = ["rebound", "bunker", "volatile", "insider"];
+
+/** 강화를 얹은 시작 덱. 모르는 카드 이름은 조용히 무시한다(저장이 상했을 때). */
+export function startingDeckOf(upgrades: readonly string[]): string[] {
+    const deck = [...STARTING_DECK];
+    upgrades.slice(0, UPGRADE_SLOTS).forEach((id, i) => {
+        if (defOf(id)) deck[i] = id;
+    });
+    return deck;
 }
 
 /** 보상으로 내밀 수 있는 것 — 저주는 고를 수 없다. */
@@ -129,7 +153,7 @@ const RELIC_POOL: Relic[] = [
     },
     {
         id: "hotline", name: "증권가 핫라인", triggerType: "onTurnStart",
-        description: "매 턴 주가에 +1.5%p 가 얹힙니다.",
+        description: "매 턴 주가에 +1%p 가 얹힙니다.",
     },
     {
         id: "vest", name: "방탄 조끼", triggerType: "onTurnStart",
@@ -191,18 +215,42 @@ export class RoguelikeManager {
     private picked: CardDef | null = null;
     /** uid 를 만드는 counter. 같은 카드 여러 장을 구별하는 값이다. */
     private seq = 0;
+    /** 이 판이 시작한 덱. resetDeck 이 여기로 되돌린다. */
+    private baseDeck: string[];
 
-    constructor(seed: number) {
+    /**
+     * @param upgrades 판을 넘어 박아 둔 강화 카드들. 시작 덱 앞자리를 대신한다.
+     */
+    constructor(seed: number, upgrades: readonly string[] = []) {
         // 엔진과 같은 시드를 쓰되 흩어 둔다. 그대로 쓰면 주가와 카드가 같은 수열을 밟는다.
         this.rand = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+        this.baseDeck = startingDeckOf(upgrades);
         this.resetDeck();
+    }
+
+    /** 강화를 하나 더 얹고 덱을 새로 세운다. 판을 열기 **전에만** 부른다. */
+    applyUpgrades(upgrades: readonly string[]): void {
+        this.baseDeck = startingDeckOf(upgrades);
+        this.resetDeck();
+    }
+
+    /** 강화로 고르라고 내미는 카드들. 저주는 안 나온다. */
+    offerUpgrades(n = OFFER_SIZE): StrategyCard[] {
+        return sample(UPGRADE_POOL, n, this.rand).map(id => {
+            const d = defOf(id)!;
+            return {
+                uid: `u${this.seq++}`,
+                id: d.id, name: d.name, type: d.type, kind: d.kind,
+                effectDescription: d.effectDescription, isUsed: false,
+            };
+        });
     }
 
     /* ── 덱 ─────────────────────────────────────────────── */
 
     /** 시작 덱으로 되돌린다. 판을 새로 열 때 한 번. */
     resetDeck(): void {
-        this.drawPile = this.shuffled(STARTING_DECK);
+        this.drawPile = this.shuffled(this.baseDeck);
         this.discardPile = [];
         this.hand = [];
         this.picked = null;
@@ -372,7 +420,7 @@ export class RoguelikeManager {
     buildBuff(): TurnBuff {
         let b: TurnBuff = { ...NO_BUFF };
 
-        if (this.has("hotline")) b = { ...b, priceBias: b.priceBias + 0.015 };
+        if (this.has("hotline")) b = { ...b, priceBias: b.priceBias + 0.01 };
         if (this.has("vest")) b = { ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.2) };
         if (this.has("broker")) b = { ...b, feeWaived: true };
 

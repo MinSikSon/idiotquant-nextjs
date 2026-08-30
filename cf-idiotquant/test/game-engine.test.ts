@@ -10,7 +10,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    StockEngine, START_CASH, MAX_TURNS, BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
+    StockEngine, START_CASH, MAX_TURNS, BUST_RATIO,
+    BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
 } from "@/lib/game/core/StockEngine";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
 
@@ -195,16 +196,23 @@ test("방어막은 내릴 때만 듣는다", () => {
     }
 });
 
-test("급반등은 내린 턴을 오른 턴으로 뒤집는다", () => {
-    let flipped = 0, down = 0;
+test("급반등은 하락을 없던 일로 만들 뿐, 오른 턴으로 뒤집지는 않는다", () => {
+    // 뒤집어 주면 이 카드 한 장이 "내린 턴이 오히려 이득" 이 되어 판을 이기는 버튼이 된다.
+    // 되돌리는 데서 멈춰야 방어 카드로 남는다.
+    let healed = 0, down = 0;
     for (let seed = 0; seed < 40; seed++) {
         const bare = new StockEngine(seed).tick(NO_BUFF).changePct;
         if (bare >= 0) continue;
         down++;
-        if (new StockEngine(seed).tick(buff({ reboundRatio: 1 })).changePct > 0) flipped++;
+
+        const rebounded = new StockEngine(seed).tick(buff({ reboundRatio: 1 })).changePct;
+        assert.ok(rebounded > bare, `시드 ${seed}: 되돌리지 못했다`);
+        // 반올림 한 자리를 감안해 0 근처까지만 올라오면 된다.
+        assert.ok(rebounded <= 0.5, `시드 ${seed}: ${rebounded}% — 오른 턴으로 뒤집혔다`);
+        healed++;
     }
     assert.ok(down > 0, "내린 턴이 하나도 없어 견줄 수가 없다");
-    assert.equal(flipped, down, `${down}번 중 ${flipped}번만 뒤집혔다`);
+    assert.equal(healed, down);
 });
 
 test("카드가 겹쳐도 하루에 주가가 두 배가 되지는 않는다", () => {
@@ -279,15 +287,22 @@ test("한 주도 안 산 판은 인사이트가 0 이다", () => {
     assert.equal(e.player.insightPoints, 0);
 });
 
-test("굴린 판은 잃었어도 인사이트가 남는다", () => {
-    // 바닥이 0 이 아니다 — 한 판을 끝까지 굴린 것 자체에 값을 준다
-    const e = new StockEngine(107);
-    e.buyAll();
-    playOut(e);
-    e.liquidate();
-    const sum = e.summarize();
-    assert.equal(sum.idle, false);
-    assert.ok(sum.earnedIP >= 1, `${sum.returnPct}% 인데 IP 가 ${sum.earnedIP} 다`);
+test("청산선 위에서 끝냈으면 잃었어도 인사이트가 남는다", () => {
+    // 바닥이 0 이 아니다 — 한 판을 **끝까지 굴린 것** 자체에 값을 준다. 다만 청산되면
+    // 그 값도 사라진다(아래 청산 테스트). 그 둘을 가르는 것이 청산선이다.
+    let checked = 0;
+    for (const seed of [107, 131, 149, 151, 163]) {
+        const e = new StockEngine(seed);
+        e.buyAll();
+        playOut(e);
+        e.liquidate();
+        const sum = e.summarize();
+        assert.equal(sum.idle, false);
+        if (sum.bankrupt) continue;               // 청산된 판은 여기서 볼 것이 아니다
+        assert.ok(sum.earnedIP >= 1, `${sum.returnPct}% 인데 IP 가 ${sum.earnedIP} 다`);
+        checked++;
+    }
+    assert.ok(checked > 0, "청산선 위에서 끝난 판이 하나도 없다");
 });
 
 test("잘한 판일수록 인사이트가 많다", () => {
@@ -317,4 +332,58 @@ test("끝난 판도 총자산 계산이 맞는다", () => {
     e.buyHalf();
     playOut(e);
     assert.equal(e.equity, e.player.cash + e.player.shares * e.stock.currentPrice);
+});
+
+/* ── 청산 — 지는 방법 ───────────────────────────────────────── */
+
+test("청산선은 시작 자금의 40% 다", () => {
+    const e = new StockEngine(200);
+    assert.equal(e.bustLine, Math.round(START_CASH * BUST_RATIO));
+    assert.equal(e.isBust, false, "시작하자마자 청산일 수는 없다");
+    assert.equal(e.isOver, false);
+});
+
+test("청산선 아래로 떨어지면 12턴을 못 채우고 끝난다", () => {
+    const e = new StockEngine(201);
+    e.buyAll();
+    // 들고 있는 주식이 반의 반이 되도록 주가를 직접 끌어내린다. 엔진의 난수를 기다리는
+    // 대신 상태를 세워 두는 편이 규칙 하나만 보게 해 준다.
+    e.stock.currentPrice = Math.max(1, Math.floor(e.stock.currentPrice * 0.25));
+
+    assert.ok(e.equity < e.bustLine, "판을 못 세웠다");
+    assert.equal(e.isBust, true);
+    assert.equal(e.isOver, true, "턴이 남았어도 끝난 것이다");
+    assert.ok(e.player.currentTurn <= MAX_TURNS);
+});
+
+test("청산된 판은 인사이트를 한 점도 안 준다", () => {
+    const e = new StockEngine(202);
+    e.buyAll();
+    e.stock.currentPrice = Math.max(1, Math.floor(e.stock.currentPrice * 0.2));
+    e.liquidate();
+
+    const sum = e.summarize();
+    assert.equal(sum.bankrupt, true);
+    assert.equal(sum.earnedIP, 0, "청산인데 점수를 줬다");
+    assert.equal(e.player.insightPoints, 0);
+});
+
+test("살아서 끝낸 판은 청산이 아니다", () => {
+    const e = new StockEngine(203);
+    e.buyHalf();
+    playOut(e);
+    e.liquidate();
+    const sum = e.summarize();
+
+    // 12턴을 채웠으면 성적이 나빠도 청산선 위에 있는 한 청산이 아니다.
+    assert.equal(sum.bankrupt, e.equity < e.bustLine);
+    if (!sum.bankrupt) assert.ok(sum.earnedIP >= 0);
+});
+
+test("현금만 들고 있으면 청산되지 않는다", () => {
+    // 청산은 주가에 물려 잃는 것이지, 가만히 있다고 오는 것이 아니다.
+    const e = new StockEngine(204);
+    playOut(e);
+    assert.equal(e.isBust, false);
+    assert.equal(e.summarize().bankrupt, false);
 });
