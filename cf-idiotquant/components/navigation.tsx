@@ -49,7 +49,9 @@ const MAIN_NAV: NavItem[] = [
 const MORE_NAV: NavItem[] = [
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
   { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
-  { label: "로그라이크", href: "/game/roguelike", icon: Dices                  },
+  // /game 이 로그라이크가 됐다(메인 탭의 "모의투자"). 여기 남는 것은 그 자리에서
+  // 밀려난 블라인드 차트로 가는 문이다.
+  { label: "블라인드 차트", href: "/game/blind", icon: Dices                  },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.

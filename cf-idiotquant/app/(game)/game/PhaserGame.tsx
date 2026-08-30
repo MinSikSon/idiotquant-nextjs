@@ -41,6 +41,7 @@ export default function PhaserGame({ insightPoints = 0, className }: PhaserGameP
         if (gameRef.current) return;
 
         let cancelled = false;
+        let ro: ResizeObserver | null = null;
 
         (async () => {
             try {
@@ -76,6 +77,24 @@ export default function PhaserGame({ insightPoints = 0, className }: PhaserGameP
                         parent: hostRef.current, insightPoints, fontFamily: family,
                     }),
                 );
+
+                // 화면을 돌리면 칸의 비율이 바뀐다. 설계 격자는 그 비율에서 나온 값이라
+                // 같이 바꿔 줘야 하고, 안 그러면 FIT 이 옛 격자를 맞추느라 검은 띠를 남긴다.
+                // 씬은 이 resize 를 듣고 **판을 그대로 둔 채** 그림만 다시 세운다.
+                const { designSize } = await import("@/lib/game/ui/theme");
+                if (cancelled) return;
+                ro = new ResizeObserver(() => {
+                    const game = gameRef.current, el = hostRef.current;
+                    if (!game || !el) return;
+                    const { width, height } = designSize(el.clientWidth, el.clientHeight);
+                    if (game.scale.width === width && game.scale.height === height) return;
+                    // resize() 가 아니라 setGameSize() + refresh() 다. resize() 는 Scale.RESIZE
+                    // 모드용이라, FIT 에서는 격자만 바뀌고 표시 크기가 **옛 비율로** 남는다
+                    // (세로 390x696 에서 가로로 돌리면 캔버스가 219x390 으로 그려졌다).
+                    game.scale.setGameSize(width, height);
+                    game.scale.refresh();
+                });
+                ro.observe(host);
             } catch (e) {
                 if (!cancelled) {
                     console.error("[PhaserGame] 게임을 켜지 못했습니다", e);
@@ -86,6 +105,7 @@ export default function PhaserGame({ insightPoints = 0, className }: PhaserGameP
 
         return () => {
             cancelled = true;
+            ro?.disconnect();
             // true 를 줘야 캔버스까지 DOM 에서 걷어 간다. 안 주면 화면을 나갔다 와도
             // 죽은 캔버스가 남아 쌓인다.
             gameRef.current?.destroy(true);

@@ -31,8 +31,8 @@
 | — | `lib/game/core/{types,progress}.ts` | 값의 모양 / 판을 넘어 남는 것(localStorage) |
 | — | `lib/game/components/{PixelCandleChart,CardHandContainer}.ts` | 차트·손패 |
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
-| — | `app/(game)/game/roguelike/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
-| — | `lib/paper/*` · `lib/game/{theme,ui,chart,data,boot}.ts` | **다른 게임**(블라인드 차트 `/game`). 헷갈리지 말 것 |
+| — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
+| — | `lib/paper/*` · `lib/game/{theme,ui,chart,data,boot}.ts` | **다른 게임**(블라인드 차트 `/game/blind`). 헷갈리지 말 것 |
 | — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용 |
 
 **"순수 로직과 Phaser 뷰를 가른다"** 는 규칙은 이미 지켜지고 있다. Scene 은 규칙을
@@ -44,9 +44,9 @@
 
 1. **Vite 가 아니다.** Next.js 15 App Router 안이고, Phaser 는 `/game` 에 들어올 때만
    `dynamic(..., { ssr: false })` 로 내려간다. `vite.config.*` 를 만들지 말 것.
-2. **게임이 둘이다.** `/game` 은 블라인드 차트(360x640, `lib/game/theme.ts`·`lib/paper`),
-   `/game/roguelike` 는 이 규칙이 말하는 12턴 로그라이크(390x844, `lib/game/core`·
-   `lib/game/ui/theme.ts`)다. 파일 이름이 비슷하니 고치기 전에 어느 쪽인지 확인할 것.
+2. **게임이 둘이다.** `/game` 이 이 규칙이 말하는 12턴 로그라이크(`lib/game/core`·
+   `lib/game/ui/theme.ts`)이고, 블라인드 차트는 `/game/blind` 로 내려갔다(360x640,
+   `lib/game/theme.ts`·`lib/paper`). 파일 이름이 비슷하니 고치기 전에 어느 쪽인지 확인할 것.
 3. **카드는 전역 풀이 아니라 덱에서 뽑힌다.** 시작 덱 6장 → 매 턴 3장 → 쓴 것도 안 쓴
    것도 버린 더미로 → 마르면 섞어 되돌린다. 그래서:
    - 손패를 짚는 열쇠는 `id`(카드 종류)가 아니라 **`uid`(그 장)** 다. 시작 덱에만도 같은
@@ -66,7 +66,16 @@
 ### 검증
 
 캔버스는 DOM 셀렉터가 없어 Playwright 가 **좌표로** 누른다. 배치를 바꾸면 테스트가 조용히
-어긋나므로, Scene 배치를 고쳤으면 스크린샷으로 눈으로 확인한다.
+어긋나므로, Scene 배치를 고쳤으면 스크린샷으로 눈으로 확인한다. 좌표는 `bandsOf(w, h)` 를
+그대로 옮겨 적어 내야 한다 — 설계 격자가 기기마다 다르므로 상수로 박으면 한 기기에서만 맞는다.
+
+**설계 격자는 고정이 아니다.** 짧은 쪽만 고정하고 긴 쪽을 기기에서 받는다(`designSize`).
+그래서 씬은 `W`·`H` 같은 모듈 상수를 안 쓰고 `this.scale.width/height` 와 자기 띠의
+`b.x`·`b.w` 만 본다. 새 요소를 넣을 때 `W` 를 쓰면 가로 배치에서 왼쪽 칸을 넘어간다.
+
+화면을 돌리면 React 껍데기가 `scale.setGameSize()` + `refresh()` 로 격자를 바꾸고, 씬은
+`RESIZE` 를 듣고 **엔진을 그대로 둔 채** 그림만 다시 세운다(`relayout`). `scale.resize()` 는
+Scale.RESIZE 모드용이라 FIT 에서는 표시 크기가 옛 비율로 남으니 쓰지 말 것.
 
 글꼴도 마찬가지다. 캔버스는 CSS 로 글꼴을 못 받으므로 `PhaserGame.tsx` 가 host 의
 계산된 `font-family` 를 읽어 registry 에 넣고, Scene 은 `fontOf(scene)` 으로 꺼내 쓴다.

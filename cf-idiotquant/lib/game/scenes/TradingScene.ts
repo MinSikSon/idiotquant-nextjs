@@ -4,11 +4,17 @@
 // 이 파일에 `price * 1.1` 같은 식이 생기면 그건 코어로 가야 할 것이 새어 나온 것이다.
 //
 // ── 한 턴의 순서 ────────────────────────────────────────────────
-//   턴 열림 → 유물(onTurnStart) → 카드 세 장 → [매매] → [NEXT TURN]
+//   턴 열림 → 손패 세 장 → 유물(onTurnStart) → [매매] → [NEXT TURN]
 //   → 카드+유물을 합친 buff 로 tick → 유물(onTurnEnd) → 다음 턴
 //
 // 매매가 tick 앞에 오는 것이 이 게임의 전부다. **주가가 움직이기 전에** 살지 말지를
 // 정해야 해서, 카드로 읽은 것을 손에 쥐고 거는 판이 된다.
+//
+// ── 자리는 씬이 정하지 않는다 ───────────────────────────────────
+// 네 칸의 좌표는 `bandsOf(w, h)` 가 준다. 세로면 위에서 아래로 넷, 가로면 왼쪽·오른쪽
+// 두 칸이다. 이 파일은 **받은 사각형 안에** 그릴 뿐이라, 배치를 하나 더 만들 때 여기를
+// 안 고친다. 그래서 아래 build* 들은 `W` 같은 모듈 상수를 절대 안 쓴다 — 자기 띠의
+// `b.x`·`b.w` 만 본다.
 //
 // ── 늘릴 자리 ───────────────────────────────────────────────────
 //   · 종목을 여럿으로   → StockEngine 을 배열로 들고 chart 를 자리마다
@@ -18,11 +24,12 @@
 import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 import { RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
-import type { Relic, StrategyCard, TradeResult } from "@/lib/game/core/types";
-import { loadProgress, recordRun } from "@/lib/game/core/progress";
+import type { Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
+import { loadProgress, recordRun, type Progress } from "@/lib/game/core/progress";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
-import { W, H, BAND, PAD, C, S, FS, fontOf, money, pct, tone } from "@/lib/game/ui/theme";
+import { PAD, C, S, FS, bandsOf, designSize, fontOf, money, pct, tone } from "@/lib/game/ui/theme";
+import type { Bands } from "@/lib/game/ui/theme";
 
 /* ── 버튼 ───────────────────────────────────────────────────── */
 
@@ -83,6 +90,9 @@ function makeButton(
     };
 }
 
+/** 오버레이 안쪽 칸이 이보다 낮으면 세로로 늘어놓을 자리가 없다 — 눕혀서 편다. */
+const TALL_ENOUGH = 420;
+
 /* ── 씬 ─────────────────────────────────────────────────────── */
 
 export class TradingScene extends Phaser.Scene {
@@ -111,6 +121,22 @@ export class TradingScene extends Phaser.Scene {
     /** 판을 넘어 남는 것. 재시작할 때 이 값만 들고 간다. */
     private carriedIP = 0;
 
+    /** 이 기기에서의 설계 격자. 모듈 상수가 아니라 **자기 크기**를 보고 자리를 잡는다. */
+    private designW = 0;
+    private designH = 0;
+    private band!: Bands;
+
+    /**
+     * 지금 떠 있는 오버레이의 **내용**. 그린 것이 아니라 그릴 재료다.
+     *
+     * 화면을 돌리면 그리던 것을 전부 부수고 다시 세우는데, 그때 보상 후보를 다시 뽑거나
+     * 성적을 다시 저장하면 안 된다. 그래서 재료만 들고 있다가 같은 것으로 다시 그린다.
+     */
+    private offer: StrategyCard[] | null = null;
+    private ended: { sum: RunSummary; progress: Progress; newBest: boolean } | null = null;
+    /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
+    private overlay: Phaser.GameObjects.Container | null = null;
+
     constructor() { super("trading"); }
 
     init(data: { insightPoints?: number }) {
@@ -121,10 +147,14 @@ export class TradingScene extends Phaser.Scene {
             ?? (this.game.registry.get("insightPoints") as number | undefined)
             ?? loadProgress().insightPoints;
         this.busy = false;
+        this.offer = null;
+        this.ended = null;
+        this.overlay = null;
     }
 
     create() {
         this.cameras.main.setBackgroundColor(C.bg);
+        this.measure();
 
         const seed = (Math.random() * 0xffffffff) >>> 0;
         this.engine = new StockEngine(seed);
@@ -132,89 +162,134 @@ export class TradingScene extends Phaser.Scene {
         this.rogue = new RoguelikeManager(seed);
         this.rogue.grantStartingRelics(this.carriedIP);
 
+        this.buildAll();
+
+        // 화면을 돌리면 React 껍데기가 새 격자로 scale.resize 를 부른다. 그 순간 판을
+        // 버리면 안 되므로, 엔진은 그대로 두고 그림만 다시 세운다.
+        this.scale.on(Phaser.Scale.Events.RESIZE, this.relayout, this);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
+        });
+
+        this.beginTurn();
+    }
+
+    /** 지금 격자를 재고 띠를 나눈다. 켤 때 한 번, 돌릴 때마다 한 번. */
+    private measure() {
+        this.designW = this.scale.width;
+        this.designH = this.scale.height;
+        this.band = bandsOf(this.designW, this.designH);
+    }
+
+    private buildAll() {
         this.drawDotGrid();
         this.buildHud();
         this.buildChart();
         this.buildCardArea();
         this.buildActions();
+    }
 
-        this.beginTurn();
+    /**
+     * 화면이 돌아갔다. **판은 그대로 두고 그림만 다시 세운다.**
+     *
+     * 엔진과 매니저는 안 건드리므로 턴 수도, 보유도, 덱도 그대로다. 손패는 고른 카드까지
+     * 되살린다 — 골라 둔 것이 화면에서 풀리면 한 장 더 고를 수 있는 것처럼 보인다.
+     */
+    private relayout() {
+        if (!this.engine) return;           // create 중에 먼저 불릴 수 있다
+        this.measure();
+
+        this.children.removeAll(true);
+        this.overlay = null;
+        this.buildAll();
+
+        this.renderRelics();
+        this.hand.setHand(this.rogue.hand);
+        const picked = this.rogue.pickedCard;
+        if (picked) this.hand.lock(picked.uid);
+        this.refresh();
+
+        // 떠 있던 오버레이는 같은 재료로 다시 그린다 — 후보를 다시 뽑지 않는다.
+        if (this.ended) this.drawResult();
+        else if (this.offer) this.drawReward();
     }
 
     /** 화면 전체에 깔리는 도트. 이게 있어야 어두운 바탕이 "꺼진 화면" 이 아니라 기기가 된다. */
     private drawDotGrid() {
         const g = this.add.graphics();
         g.fillStyle(C.line, 0.22);
-        for (let y = 6; y < H; y += 14) {
-            for (let x = 6; x < W; x += 14) g.fillRect(x, y, 1, 1);
+        for (let y = 6; y < this.designH; y += 14) {
+            for (let x = 6; x < this.designW; x += 14) g.fillRect(x, y, 1, 1);
         }
     }
 
-    /* ── ① 상단 HUD (y 0~100) ─────────────────────────────── */
+    /* ── ① HUD ────────────────────────────────────────────── */
 
     private buildHud() {
-        const b = BAND.hud;
+        const b = this.band.hud;
         const g = this.add.graphics();
-        g.fillStyle(C.panel, 1).fillRect(0, b.y, W, b.h);
+        g.fillStyle(C.panel, 1).fillRect(b.x, b.y, b.w, b.h);
         g.lineStyle(1, C.line, 1);
-        g.beginPath(); g.moveTo(0, b.y + b.h - 0.5); g.lineTo(W, b.y + b.h - 0.5); g.strokePath();
+        g.beginPath(); g.moveTo(b.x, b.y + b.h - 0.5); g.lineTo(b.x + b.w, b.y + b.h - 0.5); g.strokePath();
 
+        const L = b.x + PAD, R = b.x + b.w - PAD;
         const mk = (x: number, y: number, size: number, color: string, origin = 0) =>
             this.add.text(x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
                 .setOrigin(origin, 0);
 
-        this.add.text(PAD, b.y + 8, "TOTAL", {
+        this.add.text(L, b.y + 8, "TOTAL", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
-        this.equityText = mk(PAD, b.y + 20, FS.xl, S.ink);
+        this.equityText = mk(L, b.y + 20, FS.xl, S.ink);
 
-        this.turnText = mk(W - PAD, b.y + 8, FS.sm, S.neon, 1);
-        this.ipText = mk(W - PAD, b.y + 26, FS.sm, S.gold, 1);
-        this.cashText = mk(W - PAD, b.y + 44, FS.xs, S.inkDim, 1);
-        this.posText = mk(PAD, b.y + 54, FS.sm, S.inkDim);
+        this.turnText = mk(R, b.y + 8, FS.sm, S.neon, 1);
+        this.ipText = mk(R, b.y + 26, FS.sm, S.gold, 1);
+        this.cashText = mk(R, b.y + 44, FS.xs, S.inkDim, 1);
+        this.posText = mk(L, b.y + 54, FS.sm, S.inkDim);
 
         // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
         // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
-        this.deckText = mk(W - PAD, b.y + 58, FS.xs, S.inkDim, 1);
+        this.deckText = mk(R, b.y + 58, FS.xs, S.inkDim, 1);
 
         // 뉴스 티커 — 한 줄. 넘치면 잘리게 두고 줄바꿈하지 않는다(HUD 높이가 고정이다).
-        this.newsText = this.add.text(PAD, b.y + 78, "", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold, fixedWidth: W - PAD * 2,
+        this.newsText = this.add.text(L, b.y + 78, "", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold, fixedWidth: b.w - PAD * 2,
         });
     }
 
-    /* ── ② 차트 (y 100~450) ───────────────────────────────── */
+    /* ── ② 차트 ───────────────────────────────────────────── */
 
     private buildChart() {
-        const b = BAND.chart;
+        const b = this.band.chart;
         this.chart = new PixelCandleChart(this, {
-            x: PAD, y: b.y + PAD, width: W - PAD * 2, height: b.h - PAD * 2,
+            x: b.x + PAD, y: b.y + PAD, width: b.w - PAD * 2, height: b.h - PAD * 2,
         });
 
         // 종목 이름은 차트 위에 겹쳐 둔다 — 칸을 따로 만들면 차트가 그만큼 준다.
-        this.add.text(W - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
+        this.add.text(b.x + b.w - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
             `${this.engine.stock.name} ${this.engine.stock.ticker}`, {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         }).setOrigin(1, 0);
     }
 
-    /* ── ③ 유물 + 카드 (y 450~650) ────────────────────────── */
+    /* ── ③ 유물 + 카드 ────────────────────────────────────── */
 
     private buildCardArea() {
-        const b = BAND.cards;
+        const b = this.band.cards;
+        const L = b.x + PAD;
 
-        this.add.text(PAD, b.y + 4, "RELICS", {
+        this.add.text(L, b.y + 4, "RELICS", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
-        this.relicRow = this.add.container(PAD, b.y + 18);
+        this.relicRow = this.add.container(L, b.y + 18);
 
-        this.add.text(PAD, b.y + 52, "STRATEGY — 한 턴에 한 장", {
+        this.add.text(L, b.y + 52, "STRATEGY — 한 턴에 한 장", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
 
         this.hand = new CardHandContainer(this, {
-            x: PAD, y: b.y + 68, width: W - PAD * 2, height: b.h - 76,
-            onPick: id => this.onPickCard(id),
+            x: L, y: b.y + 68, width: b.w - PAD * 2, height: b.h - 76,
+            onPick: uid => this.onPickCard(uid),
         });
     }
 
@@ -249,25 +324,54 @@ export class TradingScene extends Phaser.Scene {
         });
     }
 
-    /* ── ④ 하단 엄지 영역 (y 650~844) ─────────────────────── */
+    /* ── ④ 엄지 영역 ──────────────────────────────────────── */
 
     private buildActions() {
-        const b = BAND.action;
-        const w = W - PAD * 2;
+        const b = this.band.action;
         const gap = 8;
-        const third = Math.floor((w - gap * 2) / 3);
-        const rowY = b.y + 10;
-        const rowH = 62;
+        const w = b.w - PAD * 2;
+        const L = b.x + PAD;
 
-        this.buyHalfBtn = makeButton(this, PAD, rowY, third, rowH,
-            "50%\nBUY", () => this.doTrade("half"), { tone: "buy", size: FS.md });
-        this.allInBtn = makeButton(this, PAD + third + gap, rowY, third, rowH,
-            "ALL-IN", () => this.doTrade("all"), { tone: "buy", size: FS.md });
-        this.sellBtn = makeButton(this, PAD + (third + gap) * 2, rowY, third, rowH,
-            "ALL\nSELL", () => this.doTrade("sell"), { tone: "sell", size: FS.md });
+        if (this.band.portrait) {
+            // 세로 — 매매 셋을 한 줄에, NEXT 를 그 아래 넓게. 엄지가 아래에서 올라온다.
+            //
+            // 높이를 62·72 로 못박으면 세로가 짧은 폰에서 띠(최소 148) 밖으로 밀려 나간다.
+            // 아래 24px 은 홈 인디케이터 자리로 비워 둔다.
+            const avail = b.h - 10 - 12 - 24;
+            const rowH = Math.round(Math.min(66, Math.max(50, avail * 0.45)));
+            const nextH = Math.max(52, avail - rowH);
+            const third = Math.floor((w - gap * 2) / 3);
+            const rowY = b.y + 10;
 
-        this.nextBtn = makeButton(this, PAD, rowY + rowH + 12, w, 72,
-            "NEXT TURN >", () => this.endTurn(), { tone: "go", size: FS.lg });
+            this.buyHalfBtn = makeButton(this, L, rowY, third, rowH,
+                "50%\nBUY", () => this.doTrade("half"), { tone: "buy", size: FS.md });
+            this.allInBtn = makeButton(this, L + third + gap, rowY, third, rowH,
+                "ALL-IN", () => this.doTrade("all"), { tone: "buy", size: FS.md });
+            this.sellBtn = makeButton(this, L + (third + gap) * 2, rowY, third, rowH,
+                "ALL\nSELL", () => this.doTrade("sell"), { tone: "sell", size: FS.md });
+
+            this.nextBtn = makeButton(this, L, rowY + rowH + 12, w, nextH,
+                "NEXT TURN >", () => this.endTurn(), { tone: "go", size: FS.lg });
+            return;
+        }
+
+        // 가로 — 넷을 한 줄로. 눕힌 폰은 폭이 남고 세로가 모자란 자리라, 쌓으면 어느
+        // 버튼도 손가락이 닿을 높이가 안 나온다. 라벨도 좁은 칸에 맞춰 줄인다.
+        const quarter = Math.floor((w - gap * 3) / 4);
+        const y = b.y + 8;
+        const h = Math.max(48, b.h - 16);
+
+        // 넷으로 쪼갠 칸은 60px 남짓이라 md(16px) 로는 "ALL-IN" 이 테두리를 넘는다.
+        const size = FS.sm;
+
+        this.buyHalfBtn = makeButton(this, L, y, quarter, h,
+            "50%\nBUY", () => this.doTrade("half"), { tone: "buy", size });
+        this.allInBtn = makeButton(this, L + quarter + gap, y, quarter, h,
+            "ALL-IN", () => this.doTrade("all"), { tone: "buy", size });
+        this.sellBtn = makeButton(this, L + (quarter + gap) * 2, y, quarter, h,
+            "ALL\nSELL", () => this.doTrade("sell"), { tone: "sell", size });
+        this.nextBtn = makeButton(this, L + (quarter + gap) * 3, y, quarter, h,
+            "NEXT >", () => this.endTurn(), { tone: "go", size });
     }
 
     /* ── 턴 ─────────────────────────────────────────────── */
@@ -349,6 +453,35 @@ export class TradingScene extends Phaser.Scene {
         });
     }
 
+    /* ── 오버레이 공통 ────────────────────────────────────── */
+
+    /**
+     * 어두운 막 + 가운데 칸. 가로에서는 격자가 1400px 까지 넓어지므로 칸의 폭을 가둔다 —
+     * 안 그러면 글 한 줄이 화면을 가로질러 읽는 눈이 되돌아올 자리를 잃는다.
+     */
+    private openOverlay(pw: number, ph: number, edge: number) {
+        const box = this.add.container(0, 0);
+        const px = Math.round((this.designW - pw) / 2);
+        const py = Math.round((this.designH - ph) / 2);
+
+        const g = this.add.graphics();
+        g.fillStyle(0x000000, 0.82).fillRect(0, 0, this.designW, this.designH);
+        g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
+        g.lineStyle(2, edge, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
+        box.add(g);
+        // 오버레이 뒤를 못 누르게. busy 가 아직 true 라 눌려도 아무 일이 없지만, 눌린
+        // 것처럼 보이는 것만으로도 화면이 거짓말을 한다.
+        box.add(this.add.zone(0, 0, this.designW, this.designH).setOrigin(0, 0).setInteractive());
+
+        this.overlay = box;
+        return { box, px, py };
+    }
+
+    private closeOverlay() {
+        this.overlay?.destroy(true);
+        this.overlay = null;
+    }
+
     /* ── 카드 보상 (3·6·9턴을 끝냈을 때) ──────────────────── */
 
     /**
@@ -361,58 +494,76 @@ export class TradingScene extends Phaser.Scene {
         const offer = this.rogue.offerCards();
         // 보상 풀이 마르는 일은 없지만, 비면 그냥 다음 턴으로 넘긴다.
         if (offer.length === 0) { this.beginTurn(); return; }
+        this.offer = offer;
+        this.drawReward();
+    }
 
-        const rowH = 72, rowGap = 8;
-        const pw = W - 40, px = 20;
-        const ph = 58 + offer.length * (rowH + rowGap) + 62;
-        const py = Math.round((H - ph) / 2);
+    /**
+     * 보상 칸을 그린다. 후보는 이미 뽑혀 있다(`this.offer`) — 돌려도 다시 안 뽑는다.
+     *
+     * 세로로 늘어놓을 높이가 안 나오면 셋을 **가로로 편다**. 눕힌 폰은 세로 300px 남짓이라
+     * 세로 배치(360px)가 통째로 안 들어간다.
+     */
+    private drawReward() {
+        const offer = this.offer;
+        if (!offer) return;
 
-        const box = this.add.container(0, 0);
-        const g = this.add.graphics();
-        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, H);
-        g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
-        g.lineStyle(2, C.gold, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
-        box.add(g);
-        // 오버레이 뒤를 못 누르게. busy 가 아직 true 라 눌려도 아무 일이 없지만, 눌린
-        // 것처럼 보이는 것만으로도 화면이 거짓말을 한다.
-        box.add(this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive());
+        const stacked = this.designH < TALL_ENOUGH;
+        const n = offer.length;
+        const gap = 8;
 
-        box.add(this.add.text(W / 2, py + 16, "CARD REWARD", {
+        const pw = Math.min(this.designW - 40, stacked ? 660 : 350);
+        const cellH = stacked ? 96 : 72;
+        const rows = stacked ? 1 : n;
+        const ph = 58 + rows * cellH + (rows - 1) * gap + 62;
+
+        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
+        const mid = px + pw / 2;
+
+        box.add(this.add.text(mid, py + 16, "CARD REWARD", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(0.5, 0));
-        box.add(this.add.text(W / 2, py + 32, "한 장을 덱에 넣습니다", {
+        box.add(this.add.text(mid, py + 32, "한 장을 덱에 넣습니다", {
             fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
         }).setOrigin(0.5, 0));
 
         const close = (note: string, color: string) => {
-            box.destroy(true);
+            this.offer = null;
+            this.closeOverlay();
             this.beginTurn();
             this.say(note, color);
         };
 
+        const inner = pw - 32;
+        const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
+
         offer.forEach((card, i) => {
-            box.add(this.makeOfferRow(
-                px + 16, py + 58 + i * (rowH + rowGap), pw - 32, rowH, card,
-                () => {
-                    const curse = this.rogue.takeReward(card.id);
-                    close(
-                        curse ? `${card.name} 획득 — 저주 ${curse} 도 덱에` : `${card.name} 을(를) 덱에`,
-                        curse ? S.danger : S.neon,
-                    );
-                },
-            ));
+            const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
+            const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
+            box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, () => {
+                const curse = this.rogue.takeReward(card.id);
+                close(
+                    curse ? `${card.name} 획득 — 저주 ${curse} 도 덱에` : `${card.name} 을(를) 덱에`,
+                    curse ? S.danger : S.neon,
+                );
+            }));
         });
 
-        const skip = makeButton(this, px + 16, py + ph - 62, pw - 32, 46,
+        const skip = makeButton(this, px + 16, py + ph - 62, inner, 46,
             "건너뛰기 — 덱을 얇게", () => close("덱을 그대로 뒀습니다", S.inkDim),
             { tone: "plain", size: FS.sm });
         box.add(skip.root);
     }
 
-    /** 보상 카드 한 줄. 딸린 저주가 있으면 **고르기 전에** 이름을 보여 준다. */
-    private makeOfferRow(
+    /**
+     * 보상 카드 한 칸. 딸린 저주가 있으면 **고르기 전에** 이름을 보여 준다.
+     *
+     * @param stacked 가로로 편 좁은 칸인가. 그러면 저주 표시가 이름 옆에 못 들어가서
+     *                아래로 내려간다.
+     */
+    private makeOfferCell(
         x: number, y: number, w: number, h: number,
-        card: StrategyCard, onTake: () => void,
+        card: StrategyCard, stacked: boolean, onTake: () => void,
     ): Phaser.GameObjects.Container {
         const root = this.add.container(x, y);
         const cursed = !!card.curseName;
@@ -436,11 +587,75 @@ export class TradingScene extends Phaser.Scene {
 
         root.add([g, name, desc, zone]);
         if (cursed) {
-            root.add(this.add.text(w - 10, 11, `+저주 ${card.curseName}`, {
-                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.danger,
-            }).setOrigin(1, 0));
+            const tag = this.add.text(
+                stacked ? 10 : w - 10,
+                stacked ? h - 10 - FS.xs : 11,
+                `+저주 ${card.curseName}`,
+                { fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.danger },
+            ).setOrigin(stacked ? 0 : 1, 0);
+            root.add(tag);
         }
         return root;
+    }
+
+    /* ── 결산 ─────────────────────────────────────────────── */
+
+    private finish() {
+        this.engine.liquidate();
+        const sum = this.engine.summarize();
+        // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만
+        // 그건 이 판 안의 값이고, 판을 넘어 남는 것은 progress 가 들고 있다.
+        const { progress, newBest } = recordRun(sum);
+        this.ended = { sum, progress, newBest };
+        this.refresh();
+        this.drawResult();
+    }
+
+    /** 성적표. 다시 그려도 저장은 안 한다 — 값은 `this.ended` 에 이미 있다. */
+    private drawResult() {
+        const r = this.ended;
+        if (!r) return;
+        const { sum, progress, newBest } = r;
+
+        // 세로가 모자라면 줄 간격과 큰 숫자를 줄여 접는다. 눕힌 폰에서 348px 은 안 들어간다.
+        const tight = this.designH < TALL_ENOUGH;
+        const pw = Math.min(this.designW - 40, tight ? 460 : 350);
+        const ph = tight ? 246 : 348;
+
+        const { box, px, py } = this.openOverlay(pw, ph, C.neon);
+        const mid = px + pw / 2;
+
+        const t = (y: number, s: string, size: number, color: string) =>
+            box.add(this.add.text(mid, y, s, {
+                fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
+                wordWrap: { width: pw - 30 },
+            }).setOrigin(0.5, 0));
+
+        // [제목, 수익률, 자산, 인사이트, 누적, 최고, 유물] 의 y 오프셋
+        const at = tight ? [12, 32, 74, 100, 122, 142, 162] : [20, 50, 108, 142, 172, 194, 218];
+
+        t(py + at[0]!, newBest ? "RUN COMPLETE — 새 기록" : "RUN COMPLETE",
+            tight ? FS.sm : FS.md, newBest ? S.neon : S.inkDim);
+        t(py + at[1]!, pct(sum.returnPct), tight ? FS.xl : FS.xxl, tone(sum.returnPct));
+        t(py + at[2]!, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
+        t(py + at[3]!, sum.idle
+            ? "한 주도 사지 않았습니다 — 인사이트 없음"
+            : `인사이트 +${sum.earnedIP}`, tight ? FS.sm : FS.md, sum.idle ? S.danger : S.gold);
+        t(py + at[4]!, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`, FS.sm, S.inkDim);
+        t(py + at[5]!, progress.bestReturn !== null ? `최고 기록 ${pct(progress.bestReturn)}` : "",
+            FS.sm, newBest ? S.neon : S.inkDim);
+        t(py + at[6]!, this.rogue.relics.length > 0
+            ? `유물 ${this.rogue.relics.map(r2 => r2.name).join(" · ")}`
+            : "유물 없음", FS.xs, S.inkDim);
+
+        const btnH = tight ? 44 : 54;
+        const restart = makeButton(this, px + 20, py + ph - btnH - (tight ? 14 : 20), pw - 40, btnH,
+            "RESTART >", () => {
+                this.closeOverlay();
+                // 인사이트만 들고 다음 런으로. 유물도 카드도 새로 뽑힌다.
+                this.scene.restart({ insightPoints: progress.insightPoints });
+            }, { tone: "go", size: FS.lg });
+        box.add(restart.root);
     }
 
     /* ── 그리기 ─────────────────────────────────────────── */
@@ -463,10 +678,14 @@ export class TradingScene extends Phaser.Scene {
             .setText(d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses}` : `DECK ${d.draw}/${d.total}`)
             .setColor(d.curses > 0 ? S.danger : S.inkDim);
 
+        // 가로에서는 HUD 가 왼쪽 칸만 쓴다(390 이 아니라 324 남짓). 긴 형태를 그대로 쓰면
+        // 오른쪽 끝의 DECK 줄과 부딪히므로, 좁을 때는 평단을 접고 주수와 손익만 남긴다.
+        const narrowHud = this.band.hud.w < 360;
         this.posText.setText(
-            p.shares > 0
-                ? `보유 ${p.shares.toLocaleString()}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`
-                : "보유 없음",
+            p.shares === 0 ? "보유 없음"
+                : narrowHud
+                    ? `${p.shares.toLocaleString()}주 · ${pct(e.unrealizedPct)}`
+                    : `보유 ${p.shares.toLocaleString()}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`,
         ).setColor(p.shares > 0 ? tone(e.unrealizedPct) : S.inkDim);
 
         // 못 하는 것은 잠근다 — 눌러 보고 나서 안 된다고 듣는 것보다 낫다.
@@ -479,59 +698,8 @@ export class TradingScene extends Phaser.Scene {
 
     /** 뉴스 티커 한 줄. 길면 잘라 둔다 — HUD 높이는 고정이다. */
     private say(msg: string, color: string) {
-        this.newsText.setText(msg.length > 46 ? `${msg.slice(0, 45)}…` : msg).setColor(color);
-    }
-
-    /* ── ⑤ 결산 오버레이 ─────────────────────────────────── */
-
-    private finish() {
-        this.engine.liquidate();
-        const sum = this.engine.summarize();
-        // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만
-        // 그건 이 판 안의 값이고, 판을 넘어 남는 것은 progress 가 들고 있다.
-        const { progress, newBest } = recordRun(sum);
-        this.refresh();
-
-        const box = this.add.container(0, 0);
-        const g = this.add.graphics();
-        g.fillStyle(0x000000, 0.82).fillRect(0, 0, W, H);
-
-        const pw = W - 40, ph = 320;
-        const px = 20, py = Math.round((H - ph) / 2);
-        g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
-        g.lineStyle(2, C.neon, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
-        box.add(g);
-
-        // 오버레이 뒤쪽이 눌리면 안 된다. 판은 끝났다.
-        box.add(this.add.zone(0, 0, W, H).setOrigin(0, 0).setInteractive());
-
-        const mid = W / 2;
-        const t = (y: number, s: string, size: number, color: string) =>
-            box.add(this.add.text(mid, y, s, {
-                fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
-                wordWrap: { width: pw - 30 },
-            }).setOrigin(0.5, 0));
-
-        t(py + 22, newBest ? "RUN COMPLETE — 새 기록" : "RUN COMPLETE", FS.md,
-            newBest ? S.neon : S.inkDim);
-        t(py + 48, pct(sum.returnPct), FS.xxl, tone(sum.returnPct));
-        t(py + 100, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
-        t(py + 134, sum.idle
-            ? "한 주도 사지 않았습니다 — 인사이트 없음"
-            : `인사이트 +${sum.earnedIP}`, FS.md, sum.idle ? S.danger : S.gold);
-        t(py + 162, `누적 IP ${progress.insightPoints} · ${progress.runs}번째 판`, FS.sm, S.inkDim);
-        t(py + 182, progress.bestReturn !== null ? `최고 기록 ${pct(progress.bestReturn)}` : "",
-            FS.sm, newBest ? S.neon : S.inkDim);
-        t(py + 204, this.rogue.relics.length > 0
-            ? `유물 ${this.rogue.relics.map(r => r.name).join(" · ")}`
-            : "유물 없음", FS.xs, S.inkDim);
-
-        const restart = makeButton(this, px + 20, py + ph - 74, pw - 40, 54,
-            "RESTART >", () => {
-                box.destroy(true);
-                // 인사이트만 들고 다음 런으로. 유물도 카드도 새로 뽑힌다.
-                this.scene.restart({ insightPoints: progress.insightPoints });
-            }, { tone: "go", size: FS.lg });
-        box.add(restart.root);
+        // 가로에서는 HUD 가 왼쪽 칸만 쓰므로 들어가는 글자 수가 다르다. 폭에서 낸다.
+        const max = Math.max(24, Math.floor((this.band.hud.w - PAD * 2) / 7));
+        this.newsText.setText(msg.length > max ? `${msg.slice(0, max - 1)}…` : msg).setColor(color);
     }
 }
