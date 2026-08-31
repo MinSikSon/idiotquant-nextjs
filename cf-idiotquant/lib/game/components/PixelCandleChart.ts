@@ -8,7 +8,7 @@
 import Phaser from "phaser";
 import type { Candle, MarketRead } from "@/lib/game/core/types";
 import { regimeLabel } from "@/lib/game/core/StockEngine";
-import { C, S, FS, fontOf } from "@/lib/game/ui/theme";
+import { C, S, FS, fontOf, mkText } from "@/lib/game/ui/theme";
 
 /** 화면에 남기는 봉의 수. 한 판이 12턴이라 판 전체가 한눈에 들어온다. */
 export const VISIBLE_BARS = 12;
@@ -47,7 +47,7 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         this.plot = scene.add.graphics();
 
         const mk = (align: "left" | "right") =>
-            scene.add.text(0, 0, "", { fontFamily: fontOf(scene), fontSize: `${FS.xs}px`, color: S.inkDim })
+            mkText(scene, 0, 0, "", { fontFamily: fontOf(scene), fontSize: `${FS.xs}px`, color: S.inkDim })
                 .setOrigin(align === "right" ? 1 : 0, 0);
 
         this.hiLabel = mk("left");

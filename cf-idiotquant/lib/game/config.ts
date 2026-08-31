@@ -10,7 +10,7 @@
 // 브라우저이고, window 가 있다.
 
 import Phaser from "phaser";
-import { C, designSize } from "@/lib/game/ui/theme";
+import { C, designSize, pixelScale } from "@/lib/game/ui/theme";
 import { TradingScene } from "@/lib/game/scenes/TradingScene";
 
 export interface GameOptions {
@@ -38,11 +38,18 @@ export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
     // 맞추느라 화면을 줄이고 나머지를 검은 띠로 남긴다.
     const { width, height } = designSize(o.parent.clientWidth, o.parent.clientHeight);
 
+    // 캔버스 버퍼는 **기기 해상도로** 잡는다. 설계 격자 그대로 두면 DPR 3 폰에서 390px
+    // 짜리 그림이 1170 물리 픽셀로 늘려져(보간되어) 글자와 선이 번진다.
+    //
+    // 좌표까지 같이 커지지는 않는다 — 씬이 카메라를 k 배 확대해 두어서, 그리는 쪽은
+    // 여전히 설계 격자(390) 안에서 좌표를 적는다.
+    const k = pixelScale(typeof window === "undefined" ? 1 : window.devicePixelRatio);
+
     return {
         type: Phaser.AUTO,
         parent: o.parent,
-        width,
-        height,
+        width: width * k,
+        height: height * k,
         backgroundColor: C.bg,
 
         // 설계 격자로 그리고 기기에 맞춰 통째로 늘린다. 좌표를 한 격자로만 적으면 되고,
@@ -54,11 +61,11 @@ export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
 
         // **pixelArt 를 안 켠다.** 이 게임에는 스프라이트가 한 장도 없다 — 차트도 카드도
         // 전부 Graphics(도형)와 Text 다. pixelArt 는 그 대가로 두 가지를 한다:
-        // 안티에일리어싱을 끄고, 캔버스에 `image-rendering: pixelated` 를 건다.
-        // 설계 격자(390)가 DPR 3 폰에서 1170 물리 픽셀로 늘어나는데 거기에 최근접 확대가
-        // 걸리면 글자 한 획이 3×3 덩어리가 된다 — 글씨가 희미하고 거칠어 보이던 이유다.
+        // 안티에일리어싱을 끄고, 캔버스에 `image-rendering: pixelated` 를 건다. 그러면
+        // 글자 한 획이 계단이 된다 — 글씨가 거칠어 보이던 이유다.
         //
-        // roundPixels 는 남긴다. 1px 격자선과 캔들 몸통을 정수 좌표에 붙여 준다.
+        // roundPixels 는 남긴다. 버퍼가 물리 픽셀 격자가 된 지금은 이 반올림이 **물리
+        // 픽셀 단위**라, 1px 선과 글자가 픽셀 경계에 정확히 붙는다.
         roundPixels: true,
 
         // 폰에서 두 손가락 제스처가 입력을 가로채지 않게.
@@ -71,6 +78,8 @@ export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
         // 씬은 init(data) 와 fontOf(scene) 로 이 값들을 받는다.
         callbacks: {
             preBoot: game => {
+                // 씬과 컴포넌트가 이 값으로 카메라를 확대하고 글자를 굽는다.
+                game.registry.set("pixelScale", k);
                 // **줬을 때만 넣는다.** 0 을 넣어 두면 씬의
                 // `data ?? registry ?? loadProgress()` 에서 registry 가 언제나 이겨,
                 // 저장해 둔 인사이트가 한 번도 안 쓰인다(시작 유물이 늘 하나였다).

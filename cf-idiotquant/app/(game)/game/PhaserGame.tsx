@@ -86,7 +86,11 @@ export default function PhaserGame({ insightPoints, className }: PhaserGameProps
                 ro = new ResizeObserver(() => {
                     const game = gameRef.current, el = hostRef.current;
                     if (!game || !el) return;
-                    const { width, height } = designSize(el.clientWidth, el.clientHeight);
+                    // 격자는 config 가 켤 때 정한 배율(k)로 부풀려져 있다. 여기서 안 곱하면
+                    // 돌리는 순간 버퍼가 설계 크기로 줄어 다시 뿌예진다.
+                    const k = (game.registry.get("pixelScale") as number) || 1;
+                    const d = designSize(el.clientWidth, el.clientHeight);
+                    const width = d.width * k, height = d.height * k;
                     if (game.scale.width === width && game.scale.height === height) return;
                     // resize() 가 아니라 setGameSize() + refresh() 다. resize() 는 Scale.RESIZE
                     // 모드용이라, FIT 에서는 격자만 바뀌고 표시 크기가 **옛 비율로** 남는다

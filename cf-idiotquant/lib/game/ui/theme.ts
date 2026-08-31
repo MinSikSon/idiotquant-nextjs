@@ -58,6 +58,74 @@ export function designSize(hostW: number, hostH: number): DesignSize {
     return { width: clamp((height * hostW) / hostH, 450, 1400), height, portrait: false };
 }
 
+/* ── 물리 픽셀 ─────────────────────────────────────────────────── */
+
+/**
+ * 설계 격자 1 칸을 물리 픽셀 몇 개로 그릴까.
+ *
+ * 지금까지는 캔버스 버퍼가 설계 격자 크기(390) 그대로였다. DPR 3 폰에서는 그 390px 짜리
+ * 그림이 1170 물리 픽셀로 **늘려진다** — 브라우저가 사이를 보간하니 글자 획이 뭉개지고
+ * 선이 번진다. 게임 화면이 뿌옇던 이유가 이것이다.
+ *
+ * 고치는 길은 하나다: 버퍼를 기기 해상도로 잡고, 카메라를 그만큼 확대해 **좌표는 설계
+ * 격자 그대로** 두는 것. 그러면 이 파일 아래의 치수도, 씬의 `b.x`·`b.w` 도 안 바뀐다.
+ *
+ * 상한이 3인 이유: 그 위는 눈으로 안 갈리는데 채우는 픽셀만 제곱으로 는다(DPR 4 면
+ * 16배다). 하한이 1인 이유: 0.75 같은 값을 그대로 받으면 버퍼가 설계보다 작아진다.
+ */
+const MAX_PX = 3;
+
+export function pixelScale(dpr: number): number {
+    return Math.min(MAX_PX, Math.max(1, dpr || 1));
+}
+
+/**
+ * 이 게임이 실제로 그리는 배율. `config.ts` 가 켤 때 한 번 재서 registry 에 넣어 둔다.
+ *
+ * 매번 `devicePixelRatio` 를 다시 읽지 않는 이유: 창을 다른 모니터로 끌면 그 값이 바뀌는데,
+ * 그러면 이미 만들어 둔 글자와 새로 만드는 글자의 배율이 어긋난다.
+ */
+export function pxOf(scene: Phaser.Scene): number {
+    return (scene.game.registry.get("pixelScale") as number) || 1;
+}
+
+type TextStyle = Phaser.Types.GameObjects.Text.TextStyle;
+
+/** px 단위로 적힌 치수를 배율만큼 키운다. 글자 크기·줄바꿈 폭·줄 간격이 여기 걸린다. */
+function upscale(style: TextStyle, k: number): TextStyle {
+    const out: TextStyle = { ...style };
+    if (typeof style.fontSize === "string") out.fontSize = `${parseFloat(style.fontSize) * k}px`;
+    else if (typeof style.fontSize === "number") out.fontSize = style.fontSize * k;
+    if (style.wordWrap?.width) out.wordWrap = { ...style.wordWrap, width: style.wordWrap.width * k };
+    if (style.lineSpacing) out.lineSpacing = style.lineSpacing * k;
+    if (style.fixedWidth) out.fixedWidth = style.fixedWidth * k;
+    if (style.fixedHeight) out.fixedHeight = style.fixedHeight * k;
+    return out;
+}
+
+/**
+ * 글자를 **물리 픽셀 해상도로** 만든다. 캔버스에 글자를 얹는 자리는 전부 이 함수를 쓴다.
+ *
+ * Graphics 는 벡터라 카메라를 확대하면 저절로 선명해지지만, Text 는 글자를 텍스처에 한 번
+ * 구워서 붙이는 것이라 구울 때의 크기가 곧 화질이다. 12px 로 구운 것을 3배로 늘리면
+ * 12px 짜리 선명함밖에 안 나온다.
+ *
+ * 그래서 **36px 로 굽고 1/3 로 줄여 붙인다.** 화면에 차지하는 크기는
+ * `36 × (1/3) × 확대 3 = 36 물리 픽셀` 로 같은데, 텍스처에는 36px 만큼의 획이 들어 있다.
+ *
+ * Phaser 3 의 `TextStyle.resolution` 이 하던 일인데, Phaser 4 는 그 필드를 안 받는다.
+ *
+ * 주의: 줄인 뒤에는 `text.height` 가 텍스처의 높이(배율이 곱해진 값)라, 다음 줄의 자리를
+ * 잡을 때는 `displayHeight` 를 봐야 한다.
+ */
+export function mkText(
+    scene: Phaser.Scene, x: number, y: number, text: string, style: TextStyle,
+): Phaser.GameObjects.Text {
+    const k = pxOf(scene);
+    if (k === 1) return scene.add.text(x, y, text, style);
+    return scene.add.text(x, y, text, upscale(style, k)).setScale(1 / k);
+}
+
 export interface Band { x: number; y: number; w: number; h: number }
 export interface Bands {
     portrait: boolean;
