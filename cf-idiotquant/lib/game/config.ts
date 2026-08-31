@@ -66,7 +66,10 @@ export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
         // 씬은 init(data) 와 fontOf(scene) 로 이 값들을 받는다.
         callbacks: {
             preBoot: game => {
-                game.registry.set("insightPoints", o.insightPoints ?? 0);
+                // **줬을 때만 넣는다.** 0 을 넣어 두면 씬의
+                // `data ?? registry ?? loadProgress()` 에서 registry 가 언제나 이겨,
+                // 저장해 둔 인사이트가 한 번도 안 쓰인다(시작 유물이 늘 하나였다).
+                if (o.insightPoints !== undefined) game.registry.set("insightPoints", o.insightPoints);
                 if (o.fontFamily) game.registry.set("fontFamily", o.fontFamily);
             },
         },

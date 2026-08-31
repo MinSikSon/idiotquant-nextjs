@@ -33,8 +33,8 @@
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
 | — | `app/(game)/game/cards/page.tsx` | 도감. **코어 정의를 그대로 그린다** — 값을 다시 적지 말 것 |
-| — | `lib/paper/*` · `lib/game/{theme,ui,chart,data,boot}.ts` | **다른 게임**(블라인드 차트 `/game/blind`). 헷갈리지 말 것 |
-| — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용 |
+| — | `lib/paper/*` | 예전 모의투자 규칙. `/game/classic` 과 워커가 같이 쓴다 |
+| — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용, 링크는 없다 |
 
 **"순수 로직과 Phaser 뷰를 가른다"** 는 규칙은 이미 지켜지고 있다. Scene 은 규칙을
 직접 계산하지 않고 `advanceLocal(round, order)` 에 넘기고 돌아온 판을 다시 그릴 뿐이다.
@@ -45,9 +45,14 @@
 
 1. **Vite 가 아니다.** Next.js 15 App Router 안이고, Phaser 는 `/game` 에 들어올 때만
    `dynamic(..., { ssr: false })` 로 내려간다. `vite.config.*` 를 만들지 말 것.
-2. **게임이 둘이다.** `/game` 이 이 규칙이 말하는 12턴 로그라이크(`lib/game/core`·
-   `lib/game/ui/theme.ts`)이고, 블라인드 차트는 `/game/blind` 로 내려갔다(360x640,
-   `lib/game/theme.ts`·`lib/paper`). 파일 이름이 비슷하니 고치기 전에 어느 쪽인지 확인할 것.
+2. **게임은 `/game` 하나다.** 12턴 로그라이크(`lib/game/core`·`lib/game/ui/theme.ts`).
+   예전에 `/game/blind` 에 있던 블라인드 차트와 그 전용 모듈
+   (`lib/game/{boot,chart,data,theme,ui}.ts`, `scenes/{Ready,Play,Result}Scene.ts`)은
+   지웠다 — 되살릴 일이 있으면 git 이력에서 꺼낼 것.
+   - **메뉴에서 갈 수 있는 곳은 `/game` 뿐이다**(더 보기 안). 도감(`/game/cards`)은 게임
+     화면 아래의 링크로만 들어간다 — 게임을 안 켠 사람에게 카드 목록은 읽을 수 없는 글이다.
+   - 둘 다 **로그인 없이** 열린다(`middleware.ts` 의 공개 목록). 진행은 localStorage 에만
+     쌓이므로 계정이 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.
 3. **시장에 숨은 국면이 있다 — 이 게임의 심장이다.**
    상승·하락·횡보가 3~5턴씩 이어지다 바뀐다(`StockEngine.buildPlan`). 이것이 없으면
    차트가 장식이고 실력이 0이다 — 실제로 그랬다(오른 턴 다음 상승 확률 51.6%, 추세 추종
@@ -60,6 +65,9 @@
      있는가) · 방어(얼마나 맞는가).
    - 엔진이 아는 것을 화면에 그대로 주면 게임이 없다. 화면은 `engine.read(buff)` 가
      내준 것만 그린다.
+   - **`read` 와 `tick` 은 같은 식(`moveWith`)을 쓴다.** 예보의 첫 턴치에는 이번 턴의
+     카드가 얹혀 나온다 — 헤지를 든 채 −8% 봉을 보는데 실제로 −4% 가 오면 차트가
+     거짓말을 한 것이다. 둘째 턴치부터는 그 카드가 이미 만료라 계획 그대로다(테스트가 막는다).
    - 예보는 뉴스 줄이 아니라 **차트 위 유령 봉**으로 그린다. 뉴스 줄은 매매 한 번에
      덮이는데, 예보는 크기를 정하는 내내 눈앞에 있어야 하는 정보다.
    - 차수는 지는 선을 올리는 것이 아니라 **국면을 짧게, 뉴스를 잦게** 만든다(`marketFor`).
@@ -102,10 +110,17 @@
    `rewardPool`·`relicPool` 이 해금으로 넓힌다 — 새 카드를 추가하면 처음부터 열지, 해금에
    둘지를 정해야 한다.
 
-6. **예보는 여러 턴 간다.** 정밀 예보가 "두 턴" 이라면서 다음 턴에 사라지면 예고 시황과
-   다를 것이 없다. `rememberPeek`/`consumePeek` 이 남은 예보를 들고 가며 한 턴씩 덜어 내고,
-   씬은 `mergeRead` 로 새로 읽은 것과 합친다. 카드를 고른 뒤에는 **반드시 `refresh()`** —
-   안 부르면 예보도 국면도 "켜짐" 줄도 다음 턴에야 나타난다.
+6. **예보는 여러 턴 간다 — 다만 값이 아니라 턴 수를 들고 간다.** 정밀 예보가 "두 턴"
+   이라면서 다음 턴에 사라지면 예고 시황과 다를 것이 없다. `rememberPeek(turns)` /
+   `consumePeek()` 이 **남은 턴 수**만 세고, `buildBuff()` 가 그 수를 `peekTurns` 에
+   얹는다. 그림은 매번 `engine.read(buildBuff())` 가 새로 낸다.
+   - 예전에는 본 등락(%)을 그대로 들고 있다가 다음 턴에 다시 그렸다. 그러면 그 사이에
+     헤지를 들어도 그림이 안 바뀌고, 정보 차단을 쥐어도 지난 예보가 그대로 남았다 —
+     차트가 오지 않을 등락을 계속 가리켰다. 값을 캐시하지 말 것.
+   - 카드를 고른 뒤에는 **반드시 `refresh()`** — 안 부르면 예보도 국면도 "켜짐" 줄도
+     다음 턴에야 나타난다.
+   - 턴을 넘길 때는 `marketRead = null` 을 **`refresh()` 앞에** 둔다. 반대면 방금 결판난
+     턴의 유령 봉이 새 봉 옆에 한 번 더 그려진다.
 
 7. **자금과 덱이 판을 넘어 이어진다** (`progress.bankroll`·`progress.deck`). 판이 끝나면
    그 판의 최종 자산이 다음 판의 시작 자금이고, 덱도 그대로 넘어간다 — 판은 끝이 아니라
@@ -173,5 +188,5 @@ Scale.RESIZE 모드용이라 FIT 에서는 표시 크기가 옛 비율로 남으
 ```
 npx tsc --noEmit          # 에러 0
 npm test                  # lib/paper + lib/game/core 규칙 테스트
-npm run build             # /game · /game/cards · /game/blind 라우트가 뜨는지
+npm run build             # /game · /game/cards 라우트가 뜨는지
 ```

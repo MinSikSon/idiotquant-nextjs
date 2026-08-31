@@ -94,6 +94,23 @@ const NEWS_MAX = 0.13;
 const TICK_CAP = 0.45;
 
 /**
+ * 계획된 등락에 이번 턴의 카드·유물을 얹는다.
+ *
+ * **`tick` 과 `read` 가 같은 식을 쓴다.** 예전에는 `tick` 만 이 계산을 했고 `read` 는
+ * 계획을 날것으로 내줬다. 그래서 헤지를 든 채 예보를 보면 −8% 라 적혀 있는데 실제로는
+ * −4% 가 왔다 — 차트가 거짓말을 한 것이다. 식을 하나로 두면 그 어긋남이 다시 생길 수 없다.
+ */
+function moveWith(base: number, buff: TurnBuff): number {
+    let change = base;
+    // 하락 방어가 먼저다. 뒤에 오면 방어가 배율에 눌려 값이 달라진다.
+    if (change < 0 && buff.downshieldRatio > 0) {
+        change *= 1 - Math.min(1, buff.downshieldRatio);
+    }
+    change *= Math.max(0, buff.moveMult);
+    return Math.max(-TICK_CAP, Math.min(TICK_CAP, change));
+}
+
+/**
  * 차수 — 판을 넘어 오르내리는 난이도. 완주하면 오르고 자본잠식이면 0 으로 돌아간다.
  *
  * 오를수록 국면이 짧아지고 뉴스가 잦아진다(`marketFor`) — 청산선만 올리던 시절에는
@@ -331,7 +348,11 @@ export class StockEngine {
         return {
             next: this.plan
                 .slice(this.cursor, this.cursor + Math.max(0, buff.peekTurns))
-                .map(t => t.base * 100),
+                // **이번 턴 것에는 이번 턴의 카드가 얹힌다.** 계획된 등락을 날것으로
+                // 내주면 헤지를 든 채 −8% 예보를 보고 겁을 먹는데 실제로는 −4% 가 온다 —
+                // 화면이 거짓말을 하는 셈이다. 둘째 턴부터는 지금 든 카드가 이미 만료라
+                // 계획 그대로다(다만 tick 과 같은 한계는 씌운다).
+                .map((t, i) => moveWith(t.base, i === 0 ? buff : NO_BUFF) * 100),
             regime: buff.revealRegime && here ? here.regime : null,
             turnsLeft: buff.revealClock && here ? here.turnsLeft : null,
         };
@@ -350,12 +371,7 @@ export class StockEngine {
         this.cursor += 1;
         this.lastStopLoss = false;
 
-        let change = planned.base;
-        if (change < 0 && buff.downshieldRatio > 0) {
-            change *= 1 - Math.min(1, buff.downshieldRatio);
-        }
-        change *= Math.max(0, buff.moveMult);
-        change = Math.max(-TICK_CAP, Math.min(TICK_CAP, change));
+        const change = moveWith(planned.base, buff);
 
         const open = this.stock.currentPrice;
         const close = Math.max(100, Math.round(open * (1 + change)));

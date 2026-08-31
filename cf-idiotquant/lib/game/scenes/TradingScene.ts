@@ -478,8 +478,8 @@ export class TradingScene extends Phaser.Scene {
 
         // 유물만으로도 보이는 것이 있다(낡은 나침반·증권가 핫라인). 카드를 고르기 전에
         // 이미 읽혀 있어야 그 카드를 쓸지 말지를 정할 수 있다.
-        // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있으면 그것도 함께 보인다.
-        this.marketRead = this.mergeRead(this.engine.read(this.rogue.buildBuff()));
+        // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있으면 buildBuff 가 그 턴 수를 얹어 준다.
+        this.marketRead = this.engine.read(this.rogue.buildBuff());
         this.refresh();
         // 판을 열 때 넘어온 덱에서 합쳐진 것이 있으면 그것부터 말한다 — 덱 장수가 왜
         // 줄었는지 모른 채 첫 턴을 맞으면 카드가 사라진 것처럼 보인다.
@@ -511,9 +511,13 @@ export class TradingScene extends Phaser.Scene {
 
         // 정보 카드는 **고른 즉시** 값어치가 나와야 한다. 턴을 넘겨야 보이면 그건 정보가
         // 아니라 도박이다.
-        const fresh = this.engine.read(this.rogue.buildBuff());
-        this.rogue.rememberPeek(fresh.next);
-        this.marketRead = this.mergeRead(fresh);
+        //
+        // 여기서 다시 읽는 것이 중요하다. 고른 카드가 정보 카드가 아니어도(헤지·벙커)
+        // 이번 턴의 등락이 달라지므로, 이미 떠 있던 예보를 **그 카드가 반영된 값으로**
+        // 다시 그려야 한다. 안 그러면 −8% 라 적힌 봉을 보고 겁먹었는데 −4% 가 온다.
+        const buff = this.rogue.buildBuff();
+        this.rogue.rememberPeek(buff.peekTurns);
+        this.marketRead = this.engine.read(buff);
 
         // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
         // 카드면 그 사실을, 아니면 언제 쓰는 카드인지를 말해 준다.
@@ -595,10 +599,11 @@ export class TradingScene extends Phaser.Scene {
         this.logAll(moved);
 
         this.engine.advanceTurn();
-        this.refresh();
-
         this.rogue.consumePeek();
+        // **읽은 것을 먼저 지우고 나서 그린다.** 순서가 반대면 방금 결판난 턴의 유령 봉이
+        // 새 봉 옆에 한 번 더 그려져, 이미 온 등락을 아직 올 것처럼 가리킨다.
         this.marketRead = null;
+        this.refresh();
 
         // 봉이 하나 자라는 것을 눈이 따라갈 시간을 준다. 바로 넘기면 무엇이 변했는지 모른다.
         this.time.delayedCall(420, () => {
@@ -608,18 +613,6 @@ export class TradingScene extends Phaser.Scene {
             else if (this.rogue.isRewardTurn(finished)) this.showReward();
             else this.beginTurn();
         });
-    }
-
-    /**
-     * 이번 턴에 새로 읽은 것과, 지난 턴에 봐 둔 것을 합친다.
-     *
-     * 정밀 예보는 "다음 두 턴" 이다. 턴이 넘어갈 때 통째로 지워 버리면 둘째 턴치는
-     * 한 번도 안 쓰이고 사라진다 — 그러면 예고 시황과 다를 것이 없다.
-     */
-    private mergeRead(fresh: MarketRead): MarketRead {
-        this.rogue.rememberPeek(fresh.next);
-        const left = this.rogue.peekLeft;
-        return { ...fresh, next: left.length > fresh.next.length ? left : fresh.next };
     }
 
     /** "지금 켜짐" 한 줄. 무엇이 켜져 있고 언제까지 가는지. */
@@ -970,6 +963,9 @@ export class TradingScene extends Phaser.Scene {
 
     private finish() {
         this.engine.liquidate();
+        // 판이 끝났으니 예보가 가리킬 다음 턴이 없다. 안 지우면 성적표 뒤의 차트가
+        // 오지 않을 봉을 계속 그린다.
+        this.marketRead = null;
         // 덱을 함께 넘긴다 — 이 목록이 그대로 다음 판의 시작 덱이 된다.
         const sum = this.engine.summarize(this.rogue.deck);
         // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만

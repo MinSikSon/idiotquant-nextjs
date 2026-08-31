@@ -297,8 +297,6 @@ export default function CardsPage() {
 
                 <footer className="mt-12 border-t border-[#2f4046] pt-6 text-[12px] text-[#3c4844]">
                     <Link href="/game" className="underline">게임으로</Link>
-                    <span className="px-2">·</span>
-                    <Link href="/game/blind" className="underline">블라인드 차트</Link>
                 </footer>
             </div>
         </div>
