@@ -251,8 +251,11 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
         // 갈래 띠 — 접혀 있어도 무슨 갈래인지가 색으로 먼저 온다.
         g.fillStyle(lane.color, state === "picked" ? 1 : 0.7).fillRect(2, 2, cw - 4, 3);
 
-        // 흐리게 — 고르지 않은 카드(0.35)와 "지금 소용없는" 카드(0.5)를 갈라 둔다.
-        v.root.setAlpha(state === "dimmed" ? 0.35 : v.idle ? 0.5 : 1);
+        // 흐리게 — 고르지 않은 카드와 "지금 소용없는" 카드를 갈라 둔다.
+        //
+        // 알파는 콘트라스트를 그대로 깎는다: 7:1 짜리 글자도 0.35 를 곱하면 2:1 이 되어
+        // 안 읽힌다. 갈래가 보일 만큼만 낮추고, 글자는 읽히게 둔다.
+        v.root.setAlpha(state === "dimmed" ? 0.55 : v.idle ? 0.72 : 1);
         v.name.setColor(state === "picked" ? lane.ink : S.ink);
     }
 }

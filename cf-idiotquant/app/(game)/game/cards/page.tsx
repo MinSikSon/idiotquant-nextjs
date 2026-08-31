@@ -55,7 +55,7 @@ function MergeLine({ card }: { card: (typeof CARD_LIST)[number] }) {
         ? "사라집니다"
         : `${CARD_LIST.find(c => c.id === card.mergesTo)?.name ?? card.mergesTo} 한 장`;
     return (
-        <p className="mt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+        <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
             <span className="text-[#e3b34a]">합성 </span>
             {MERGE_COUNT}장을 모으면 → {to}
         </p>
@@ -81,9 +81,9 @@ function Card({ card }: { card: (typeof CARD_LIST)[number] }) {
                 )}
             </div>
             {/* 손패에 늘 붙는 한 줄과, 펼쳤을 때 나오는 설명을 같은 순서로 보여 준다. */}
-            <p className="mt-2 text-[12px] text-[#7d8f88]">{card.shortDescription}</p>
+            <p className="mt-2 text-[13px] text-[#9aada6]">{card.shortDescription}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-[#e9f2ea]">{card.effectDescription}</p>
-            <p className="mt-2 border-t border-[#2f4046] pt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+            <p className="mt-2 border-t border-[#2f4046] pt-2 text-[13px] leading-relaxed text-[#9aada6]">
                 <span className="text-[#e3b34a]">언제 </span>
                 {card.when}
             </p>
@@ -98,7 +98,7 @@ function Section({ title, note, children }: {
     return (
         <section className="mt-10">
             <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">{title}</h2>
-            <p className="mt-1 text-[12px] leading-relaxed text-[#7d8f88]">{note}</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-[#9aada6]">{note}</p>
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">{children}</ul>
         </section>
     );
@@ -117,7 +117,7 @@ export default function CardsPage() {
                 <header>
                     <p className="text-[11px] tracking-[0.2em] text-[#e3b34a]">CODEX</p>
                     <h1 className="mt-1 text-[24px] font-bold text-[#e9f2ea]">카드 도감</h1>
-                    <p className="mt-2 text-[13px] leading-relaxed text-[#7d8f88]">
+                    <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
                         한 판은 {MAX_TURNS}턴입니다. 매 턴 덱에서 {HAND_SIZE}장을 뽑아{" "}
                         <span className="text-[#e9f2ea]">한 장만</span> 쓰고, 셋 다 버린 더미로 갑니다.
                         덱이 마르면 버린 더미를 섞어 다시 덱이 됩니다. 손패의 카드는 한 줄 요약만
@@ -133,13 +133,13 @@ export default function CardsPage() {
                             <span className="text-[#5cf08f]">얼마나 걸지 정하고</span> →{" "}
                             <span className="text-[#5cf08f]">막습니다.</span>
                         </p>
-                        <p className="mt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+                        <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
                             시장에는 <span className="text-[#e9f2ea]">숨은 국면</span>이 있습니다.
                             상승·하락·횡보가 몇 턴씩 이어지다 바뀝니다. 그래서 차트의 지난 봉이
                             다음 봉을 짐작하게 해 주고, 하락 국면에 들고 있으면 진짜로 청산됩니다 —
                             현금이 정답인 순간이 있습니다.
                         </p>
-                        <p className="mt-2 text-[12px] leading-relaxed text-[#7d8f88]">
+                        <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
                             <span className="text-[#e3b34a]">카드는 주가를 밀지 않습니다.</span>{" "}
                             바꾸는 것은 시장이 아니라 나입니다 — 무엇을 볼 수 있는가(정보),
                             무엇을 할 수 있는가(집행), 얼마나 맞을 것인가(방어).
@@ -158,51 +158,51 @@ export default function CardsPage() {
                     <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">기본 규칙</h2>
                     <dl className="mt-3 grid gap-3 text-[13px] sm:grid-cols-2">
                         <div>
-                            <dt className="text-[#7d8f88]">시작 자금</dt>
+                            <dt className="text-[#9aada6]">시작 자금</dt>
                             <dd className="text-[#e9f2ea]">
                                 {man(SEED_CASH)}
-                                <span className="text-[#7d8f88]"> · 다음 판은 이번 판의 최종 자산으로</span>
+                                <span className="text-[#9aada6]"> · 다음 판은 이번 판의 최종 자산으로</span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">자본잠식 (게임 오버)</dt>
+                            <dt className="text-[#9aada6]">자본잠식 (게임 오버)</dt>
                             <dd className="text-[#ff6b4a]">
                                 {man(RUIN_LINE)} 미만
-                                <span className="text-[#7d8f88]">
+                                <span className="text-[#9aada6]">
                                     {" "}— 아래로 떨어지면 {MAX_TURNS}턴을 못 채우고 끝
                                 </span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">카드 지속</dt>
+                            <dt className="text-[#9aada6]">카드 지속</dt>
                             <dd className="text-[#e9f2ea]">
                                 쓴 턴 하나
-                                <span className="text-[#7d8f88]"> · 예보만 본 턴 수만큼 이어집니다</span>
+                                <span className="text-[#9aada6]"> · 예보만 본 턴 수만큼 이어집니다</span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">카드 획득</dt>
+                            <dt className="text-[#9aada6]">카드 획득</dt>
                             <dd className="text-[#e9f2ea]">
                                 {REWARD_TURNS.join("·")}턴을 끝냈을 때 {OFFER_SIZE}장 중 하나를 덱에
-                                <span className="text-[#7d8f88]"> (건너뛸 수 있음)</span>
+                                <span className="text-[#9aada6]"> (건너뛸 수 있음)</span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">합성</dt>
+                            <dt className="text-[#9aada6]">합성</dt>
                             <dd className="text-[#e9f2ea]">
                                 같은 카드 {MERGE_COUNT}장 → 한 장으로
-                                <span className="text-[#7d8f88]">
+                                <span className="text-[#9aada6]">
                                     {" "}· 셋째 장이 될 카드는 보상 칸에 금색으로 표시됩니다
                                     · 저주는 {MERGE_COUNT}장이 모이면 사라집니다
                                 </span>
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#7d8f88]">유물</dt>
+                            <dt className="text-[#9aada6]">유물</dt>
                             <dd className="text-[#e9f2ea]">
                                 카드를 고른 <span className="text-[#e9f2ea]">바로 다음</span>에{" "}
                                 {OFFER_SIZE}개 중 하나
-                                <span className="text-[#7d8f88]"> · 판 끝까지 남습니다</span>
+                                <span className="text-[#9aada6]"> · 판 끝까지 남습니다</span>
                             </dd>
                         </div>
                     </dl>
@@ -223,7 +223,7 @@ export default function CardsPage() {
                             <span className="text-[#e3b34a]">덱</span> — 카드도 그대로 넘어갑니다.
                             아주 처음에만 기본 카드 중 무작위 {OPENING_DECK_SIZE}장으로 열고, 그 뒤로는
                             {REWARD_TURNS.join("·")}턴마다 한 장씩 늘어납니다.
-                            <span className="text-[#7d8f88]"> 같은 카드 {MERGE_COUNT}장이 모이면
+                            <span className="text-[#9aada6]"> 같은 카드 {MERGE_COUNT}장이 모이면
                                 한 장으로 합쳐져 덱이 두꺼워지는 것을 막습니다.</span>
                         </li>
                         <li>
@@ -241,13 +241,13 @@ export default function CardsPage() {
                             <span className="text-[#e3b34a]">차수</span> — 완주하면 +1 (최대 {MAX_TIER}).
                             차수가 오르면 국면이 짧아지고 뉴스가 잦아져 읽기 어려워지는 대신,
                             인사이트를 {Math.round(TIER_IP_STEP * 100)}%씩 더 줍니다.
-                            <span className="text-[#7d8f88]"> 한 주도 안 산 판은 차수가 안 오릅니다.</span>
+                            <span className="text-[#9aada6]"> 한 주도 안 산 판은 차수가 안 오릅니다.</span>
                         </li>
                     </ul>
-                    <p className="mt-3 border-t border-[#2f4046] pt-3 text-[12px] leading-relaxed text-[#ff5ec8]">
+                    <p className="mt-3 border-t border-[#2f4046] pt-3 text-[13px] leading-relaxed text-[#ff5ec8]">
                         자금이 {man(RUIN_LINE)} 아래로 떨어지면 자본잠식 — 거기서 게임이 끝납니다.
                         자금·덱·차수·인사이트가 전부 처음으로 돌아갑니다.{" "}
-                        <span className="text-[#7d8f88]">경력 인사이트만은 안 깎입니다.</span>
+                        <span className="text-[#9aada6]">경력 인사이트만은 안 깎입니다.</span>
                     </p>
                 </section>
 
@@ -274,7 +274,7 @@ export default function CardsPage() {
 
                 <section className="mt-10">
                     <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#e3b34a]">유물</h2>
-                    <p className="mt-1 text-[12px] leading-relaxed text-[#7d8f88]">
+                    <p className="mt-1 text-[13px] leading-relaxed text-[#9aada6]">
                         카드가 한 턴짜리라면 유물은 <span className="text-[#e9f2ea]">판 내내 켜져 있는 카드</span>입니다.
                         낡은 나침반은 애널리스트 리포트를, 증권가 핫라인은 예고 시황을 매 턴 공짜로 줍니다 —
                         그만큼 카드 한 장을 다른 데 쓸 수 있게 됩니다. 한 번 얻으면 그 판이 끝날 때까지 남고, 다음 판에는 인사이트가 정한
@@ -295,7 +295,7 @@ export default function CardsPage() {
                     </ul>
                 </section>
 
-                <footer className="mt-12 border-t border-[#2f4046] pt-6 text-[12px] text-[#3c4844]">
+                <footer className="mt-12 border-t border-[#2f4046] pt-6 text-[12px] text-[#9aada6]">
                     <Link href="/game" className="underline">게임으로</Link>
                 </footer>
             </div>

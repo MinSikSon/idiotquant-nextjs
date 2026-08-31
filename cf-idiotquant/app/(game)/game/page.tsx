@@ -46,13 +46,13 @@ export default function RoguelikePage() {
         <div className="mx-auto flex h-[calc(100svh-112px)] max-w-[430px] flex-col bg-[#0b0f10] md:h-svh [@media(max-height:500px)]:max-w-none">
             {/* min-h-0 이 없으면 flex 자식이 안 줄어들어 링크 줄을 밖으로 밀어낸다. */}
             <div className="min-h-0 flex-1">
-                <PhaserGame className="grid h-full w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block [&>canvas]:[image-rendering:pixelated]" />
+                <PhaserGame className="grid h-full w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block" />
             </div>
 
             {/* 도감으로 가는 **유일한 문**이다. 메뉴에는 없다 — 게임을 안 켠 사람에게
                 카드 목록은 읽을 수 없는 글이다.
                 눕히면 세로 28px 이 아깝다. 링크는 세로로 되돌리면 다시 나온다. */}
-            <div className="shrink-0 py-1.5 text-center font-mono text-[11px] text-[#3c4844] [@media(max-height:500px)]:hidden">
+            <div className="shrink-0 py-2 text-center font-mono text-[12px] text-[#9aada6] [@media(max-height:500px)]:hidden">
                 <Link href="/game/cards" className="underline">카드 도감</Link>
             </div>
         </div>

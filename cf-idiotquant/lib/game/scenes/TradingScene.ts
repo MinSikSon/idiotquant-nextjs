@@ -359,14 +359,16 @@ export class TradingScene extends Phaser.Scene {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
         this.equityText = mk(L, b.y + 18, FS.xl, S.ink);
-        this.posText = mk(L, b.y + 50, FS.sm, S.inkDim);
+        this.posText = mk(L, b.y + 52, FS.sm, S.inkDim);
 
-        this.turnText = mk(R, b.y + 6, FS.sm, S.neon, 1);
+        // 오른쪽 넉 줄은 서로 1~2px 차이로 붙어 있다. 글자 크기를 올리면 아래 줄부터
+        // 밀리므로 여기 숫자는 FS 를 바꿀 때 같이 본다.
+        this.turnText = mk(R, b.y + 5, FS.sm, S.neon, 1);
         this.ipText = mk(R, b.y + 24, FS.sm, S.gold, 1);
-        this.cashText = mk(R, b.y + 42, FS.xs, S.inkDim, 1);
+        this.cashText = mk(R, b.y + 43, FS.xs, S.inkDim, 1);
         // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
         // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
-        this.deckText = mk(R, b.y + 56, FS.xs, S.inkDim, 1);
+        this.deckText = mk(R, b.y + 59, FS.xs, S.inkDim, 1);
 
         this.relicRow = this.add.container(L, b.y + 70);
 
@@ -689,7 +691,7 @@ export class TradingScene extends Phaser.Scene {
             }).setOrigin(0.5, 0));
 
         // [머리, 제목, 자금, 덱, 아래줄] 의 y 오프셋
-        const at = tight ? [12, 30, 62, 92, 116] : [18, 40, 82, 116, 144];
+        const at = tight ? [12, 30, 62, 94, 118] : [18, 40, 82, 120, 148];
 
         t(py + at[0]!, resuming ? "CONTINUE" : "NEW GAME", FS.xs, resuming ? S.gold : S.neon);
         t(py + at[1]!, resuming ? "이어하기" : "새 게임", tight ? FS.lg : FS.xl, S.ink);
@@ -1008,7 +1010,7 @@ export class TradingScene extends Phaser.Scene {
             }).setOrigin(0.5, 0));
 
         // [제목, 수익률, 자산, 인사이트, 누적, 최고, 유물] 의 y 오프셋
-        const at = tight ? [12, 32, 74, 100, 122, 142, 162] : [20, 50, 108, 142, 172, 194, 218];
+        const at = tight ? [12, 32, 74, 100, 122, 144, 164] : [20, 50, 108, 142, 172, 196, 220];
 
         const ruined = sum.ruined;
         t(py + at[0]!,
