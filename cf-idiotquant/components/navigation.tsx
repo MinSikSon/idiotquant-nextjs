@@ -21,8 +21,6 @@ import {
   MoreHorizontal,
   ChevronDown,
   NotebookText,
-  Dices,
-  BookOpen,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -37,10 +35,9 @@ type NavItem = {
   authOnly?: boolean;   // 로그인해야 보이는 항목 (미들웨어가 어차피 막지만, 못 쓸 메뉴를 띄우지 않는다)
 };
 
-// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎). 모의투자는 admin 전용.
+// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎).
 const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
-  { label: "모의투자", href: "/game",        icon: Wallet,     badge: "New", adminOnly: true },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
   { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search,     emoji: "💎"   },
@@ -50,10 +47,12 @@ const MAIN_NAV: NavItem[] = [
 const MORE_NAV: NavItem[] = [
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
   { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
-  // /game 이 로그라이크가 됐다(메인 탭의 "모의투자"). 여기 남는 것은 그 자리에서
-  // 밀려난 블라인드 차트로 가는 문이다.
-  { label: "카드 도감",    href: "/game/cards", icon: BookOpen               },
-  { label: "블라인드 차트", href: "/game/blind", icon: Dices                  },
+  // 모의투자는 주 메뉴가 아니라 여기 있다 — 매일 쓰는 도구가 아니라 가끔 켜는 게임이다.
+  // 로그인 없이도 굴러가므로 authOnly 를 안 붙인다.
+  //
+  // 카드 도감(/game/cards)은 **여기 없다.** 게임을 안 켠 사람에게 카드 목록은 읽을 수
+  // 없는 글이고, 게임을 켠 사람에게는 화면 안에 문이 있다.
+  { label: "모의투자",  href: "/game",        icon: Wallet },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
@@ -397,10 +396,7 @@ export function NavbarWithSimpleLinks() {
         retro ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
         style={retro ? retroBar : undefined}>
         <TabItem retro={retro} href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
-        {/* 모의투자는 admin 전용 — 사이드바(MAIN_NAV의 adminOnly)와 같은 기준 */}
-        {isAdmin && (
-          <TabItem retro={retro} href="/game"       label="모의투자" icon={Wallet} isActive={pathname.startsWith("/game")} />
-        )}
+        {/* 모의투자는 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
         <TabItem retro={retro} href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         {isAdmin && (
           <TabItem retro={retro} href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />

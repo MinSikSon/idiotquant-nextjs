@@ -48,8 +48,7 @@ const plexKr = IBM_Plex_Sans_KR({
     display: "swap",
 });
 
-// /game 은 이제 로그라이크다. 블라인드 차트는 /game/blind 로 내려갔고, 그쪽 메타데이터는
-// game/blind/layout.tsx 가 따로 들고 있다 — 검색에서 찾던 말이 그 화면을 따라가야 한다.
+// /game 은 로그라이크 하나다. 예전에 여기 있던 블라인드 차트(/game/blind)는 지웠다.
 export const metadata: Metadata = {
     title: "주식 로그라이크 - 12턴 카드 덱빌딩 모의투자",
     description:

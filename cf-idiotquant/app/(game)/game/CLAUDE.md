@@ -33,8 +33,8 @@
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
 | — | `app/(game)/game/cards/page.tsx` | 도감. **코어 정의를 그대로 그린다** — 값을 다시 적지 말 것 |
-| — | `lib/paper/*` · `lib/game/{theme,ui,chart,data,boot}.ts` | **다른 게임**(블라인드 차트 `/game/blind`). 헷갈리지 말 것 |
-| — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용 |
+| — | `lib/paper/*` | 예전 모의투자 규칙. `/game/classic` 과 워커가 같이 쓴다 |
+| — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용, 링크는 없다 |
 
 **"순수 로직과 Phaser 뷰를 가른다"** 는 규칙은 이미 지켜지고 있다. Scene 은 규칙을
 직접 계산하지 않고 `advanceLocal(round, order)` 에 넘기고 돌아온 판을 다시 그릴 뿐이다.
@@ -45,9 +45,14 @@
 
 1. **Vite 가 아니다.** Next.js 15 App Router 안이고, Phaser 는 `/game` 에 들어올 때만
    `dynamic(..., { ssr: false })` 로 내려간다. `vite.config.*` 를 만들지 말 것.
-2. **게임이 둘이다.** `/game` 이 이 규칙이 말하는 12턴 로그라이크(`lib/game/core`·
-   `lib/game/ui/theme.ts`)이고, 블라인드 차트는 `/game/blind` 로 내려갔다(360x640,
-   `lib/game/theme.ts`·`lib/paper`). 파일 이름이 비슷하니 고치기 전에 어느 쪽인지 확인할 것.
+2. **게임은 `/game` 하나다.** 12턴 로그라이크(`lib/game/core`·`lib/game/ui/theme.ts`).
+   예전에 `/game/blind` 에 있던 블라인드 차트와 그 전용 모듈
+   (`lib/game/{boot,chart,data,theme,ui}.ts`, `scenes/{Ready,Play,Result}Scene.ts`)은
+   지웠다 — 되살릴 일이 있으면 git 이력에서 꺼낼 것.
+   - **메뉴에서 갈 수 있는 곳은 `/game` 뿐이다**(더 보기 안). 도감(`/game/cards`)은 게임
+     화면 아래의 링크로만 들어간다 — 게임을 안 켠 사람에게 카드 목록은 읽을 수 없는 글이다.
+   - 둘 다 **로그인 없이** 열린다(`middleware.ts` 의 공개 목록). 진행은 localStorage 에만
+     쌓이므로 계정이 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.
 3. **시장에 숨은 국면이 있다 — 이 게임의 심장이다.**
    상승·하락·횡보가 3~5턴씩 이어지다 바뀐다(`StockEngine.buildPlan`). 이것이 없으면
    차트가 장식이고 실력이 0이다 — 실제로 그랬다(오른 턴 다음 상승 확률 51.6%, 추세 추종
@@ -183,5 +188,5 @@ Scale.RESIZE 모드용이라 FIT 에서는 표시 크기가 옛 비율로 남으
 ```
 npx tsc --noEmit          # 에러 0
 npm test                  # lib/paper + lib/game/core 규칙 테스트
-npm run build             # /game · /game/cards · /game/blind 라우트가 뜨는지
+npm run build             # /game · /game/cards 라우트가 뜨는지
 ```

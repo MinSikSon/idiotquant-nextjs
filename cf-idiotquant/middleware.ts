@@ -43,7 +43,12 @@ export default auth((req: any) => {
         path === "/search" ||
         path === "/analyze" ||
         path === "/screener" ||
-        path === "/game"
+        // 모의투자는 로그인 없이 굴러간다. 진행은 localStorage 에만 쌓이므로 계정이
+        // 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.
+        path === "/game" ||
+        // 도감은 게임 화면 안에서만 들어가는 문이다. 게임이 열려 있는데 도감에서
+        // 로그인을 요구하면 그 문이 닫힌 문이 된다.
+        path === "/game/cards"
     ) {
         return NextResponse.next();
     }
