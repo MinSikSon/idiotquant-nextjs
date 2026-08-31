@@ -23,7 +23,10 @@
 
 import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
-import { CARD_LIST, OPENING_DECK_SIZE, RELIC_POOL, RoguelikeManager } from "@/lib/game/core/RoguelikeManager";
+import {
+    CARD_LIST, MERGE_COUNT, OPENING_DECK_SIZE, RELIC_POOL, RoguelikeManager,
+    type DeckEntry, type MergeResult,
+} from "@/lib/game/core/RoguelikeManager";
 import type { MarketRead, Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
 import { MAX_TIER, MAX_TURNS, RUIN_LINE, SEED_CASH } from "@/lib/game/core/StockEngine";
 import {
@@ -33,7 +36,7 @@ import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import {
-    PAD, C, S, FS, bandsOf, designSize, fontOf, mkText, money, pct, pxOf, tone, type LogKind,
+    PAD, C, S, FS, LANE, bandsOf, designSize, fontOf, mkText, money, pct, pxOf, tone, type LogKind,
 } from "@/lib/game/ui/theme";
 import type { Bands } from "@/lib/game/ui/theme";
 
@@ -155,8 +158,8 @@ export class TradingScene extends Phaser.Scene {
     private busy = false;
     /** 결산에서 바로 이어 굴리는 길. 첫 화면을 건너뛴다. */
     private skipIntro = false;
-    /** 판을 열 때 넘어온 덱에서 일어난 합성. 첫 턴의 뉴스 줄이 이걸 말한다. */
-    private openingMerges: string[] = [];
+    /** 판을 열 때 넘어온 덱에서 일어난 합성. 첫 턴이 열릴 때 알림으로 나간다. */
+    private openingMerges: MergeResult[] = [];
     /** 판을 넘어 남는 것. 재시작할 때 이 값만 들고 간다. */
     private carriedIP = 0;
 
@@ -187,6 +190,19 @@ export class TradingScene extends Phaser.Scene {
         /** 이번 판으로 새로 열린 카드·유물. 다시 켤 이유를 그 자리에서 보여 준다. */
         unlocked: { id: string; kind: "card" | "relic"; at: number }[];
     } | null = null;
+    /**
+     * 방금 일어난 합성. **조용히 일어나면 덱에서 카드가 사라진 것처럼 보인다.**
+     *
+     * 로그 한 줄로도 적지만 그것만으로는 모자랐다 — 보상을 고른 직후에는 유물 고르기가
+     * 바로 덮어쓰고, 턴이 열릴 때는 그 위로 뉴스가 몇 줄 더 쌓인다. 판을 멈춰 세우고
+     * 무엇이 무엇이 되었는지를 말한 다음에 넘어간다.
+     *
+     * `next` 는 확인을 누르고 **어디로 가는가**다. 콜백을 들고 있으면 화면을 돌릴 때
+     * 되살릴 수가 없어서 갈 곳을 값으로 적는다.
+     */
+    private merged: { lines: MergeResult[]; next: "relic" | "stay" } | null = null;
+    /** 덱을 펼쳐 보는 중인가. 무엇을 몇 장 모았는지가 여기서만 보인다. */
+    private deckOpen = false;
     /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
     private overlay: Phaser.GameObjects.Container | null = null;
 
@@ -233,8 +249,7 @@ export class TradingScene extends Phaser.Scene {
 
         // 넘어온 덱에 이미 셋이 모여 있었으면 판을 여는 자리에서 합쳐진다. 무엇이
         // 무엇이 되었는지는 첫 턴의 뉴스 줄에서 말해 준다.
-        this.openingMerges = this.rogue.takeMerges()
-            .map(m => m.to ? `${m.from} ×3 → ${m.to}` : `${m.from} ×3 소멸`);
+        this.openingMerges = this.rogue.takeMerges();
 
         this.buildAll();
 
@@ -305,8 +320,10 @@ export class TradingScene extends Phaser.Scene {
         // 떠 있던 오버레이는 같은 재료로 다시 그린다 — 후보를 다시 뽑지 않는다.
         if (this.intro) this.drawIntro();
         else if (this.ended) this.drawResult();
+        else if (this.merged) this.drawMergedNotice();
         else if (this.relicOffer) this.drawRelicOffer();
         else if (this.offer) this.drawReward();
+        else if (this.deckOpen) this.drawDeck();
     }
 
     /** 화면 전체에 깔리는 도트. 이게 있어야 어두운 바탕이 "꺼진 화면" 이 아니라 기기가 된다. */
@@ -378,6 +395,17 @@ export class TradingScene extends Phaser.Scene {
         // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
         // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
         this.deckText = mk(R, b.y + 59, FS.xs, S.inkDim, 1);
+
+        // 덱 줄을 누르면 무엇을 몇 장 들고 있는지가 펼쳐진다. 합성이 얼마나 남았는지는
+        // 이 화면 어디에도 없었고, 그래서 보상 칸의 금색 테두리가 뜰 때까지 존재하지 않는
+        // 규칙이었다. 줄 자체가 버튼이라 화면에 새 자리를 안 만든다.
+        const deckZone = this.add.zone(R - 170, b.y + 55, 170, FS.xs + 9).setOrigin(0, 0)
+            .setInteractive({ useHandCursor: true });
+        deckZone.on("pointerup", () => {
+            if (this.overlay) return;       // 오버레이가 떠 있으면 그쪽이 먼저다
+            this.deckOpen = true;
+            this.drawDeck();
+        });
 
         this.relicRow = this.add.container(L, b.y + 70);
 
@@ -492,16 +520,28 @@ export class TradingScene extends Phaser.Scene {
         // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있으면 buildBuff 가 그 턴 수를 얹어 준다.
         this.marketRead = this.engine.read(this.rogue.buildBuff());
         this.refresh();
-        // 판을 열 때 넘어온 덱에서 합쳐진 것이 있으면 그것부터 말한다 — 덱 장수가 왜
-        // 줄었는지 모른 채 첫 턴을 맞으면 카드가 사라진 것처럼 보인다.
-        const opening = this.openingMerges;
+
+        // 합성은 두 자리에서 이 턴에 걸려 온다. 판을 열 때 넘어온 덱에서 합쳐진 것과,
+        // 방금 `dealHand` 가 지난 턴 손패를 되돌리면서 셋을 채운 것.
+        const merges = [...this.openingMerges, ...this.rogue.takeMerges()];
         this.openingMerges = [];
 
         // 턴의 마디를 먼저 찍는다 — 로그가 쌓이면 이 줄이 눈금이 된다.
         this.log(`— ${this.engine.player.currentTurn}턴 · ${this.engine.stock.name} ${this.engine.stock.currentPrice.toLocaleString()}원`,
             "turn", true);
-        for (const m of opening) this.log(m, "system");
+        this.logMerges(merges);
         for (const f of fired) this.log(f, "relic");
+
+        // 덱 장수가 왜 줄었는지 모른 채 턴을 맞으면 카드가 사라진 것처럼 보인다.
+        if (merges.length > 0) this.showMerged(merges, "stay");
+    }
+
+    /** 합성을 로그에도 남긴다. 알림은 한 번 닫으면 끝이고, 로그는 되감을 수 있다. */
+    private logMerges(merges: MergeResult[]) {
+        for (const m of merges) {
+            this.log(m.to ? `합성 ${m.from} ×${MERGE_COUNT} → ${m.to}`
+                : `합성 ${m.from} ×${MERGE_COUNT} 소멸`, "system");
+        }
     }
 
     /**
@@ -747,6 +787,137 @@ export class TradingScene extends Phaser.Scene {
         box.add(reset.root);
     }
 
+    /* ── 합성 알림 ────────────────────────────────────────── */
+
+    private showMerged(lines: MergeResult[], next: "relic" | "stay") {
+        this.merged = { lines, next };
+        this.drawMergedNotice();
+    }
+
+    /**
+     * 무엇이 무엇이 되었는가. **판을 멈춰 세우고 말한다.**
+     *
+     * 합성은 이 게임에서 덱이 얇아지는 두 길 중 하나인데, 카드 두 장이 조용히 사라지고
+     * 다른 한 장이 생긴다. 로그 한 줄로만 적으면 보상 뒤에는 유물 고르기가, 턴 머리에는
+     * 뉴스 몇 줄이 곧바로 그 위를 덮는다 — 덱이 왜 줄었는지 아무도 못 본다.
+     */
+    private drawMergedNotice() {
+        const m = this.merged;
+        if (!m) return;
+
+        const tight = this.designH < TALL_ENOUGH;
+        const n = m.lines.length;
+        const rowH = tight ? 26 : 34;
+        const pw = Math.min(this.designW - 40, tight ? 460 : 350);
+        const btnH = tight ? 40 : 48;
+        const head = tight ? 44 : 58;
+        const ph = head + n * rowH + 14 + btnH + 16;
+
+        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
+        const mid = px + pw / 2;
+
+        box.add(mkText(this, mid, py + (tight ? 10 : 16), "MERGE — 카드가 강화되었습니다", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
+        }).setOrigin(0.5, 0));
+        box.add(mkText(this, mid, py + (tight ? 24 : 34),
+            `같은 카드 ${MERGE_COUNT}장이 한 장으로`, {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
+        }).setOrigin(0.5, 0));
+
+        m.lines.forEach((line, i) => {
+            const y = py + head + i * rowH;
+            // 사라지는 저주는 화살표 뒤가 비어 있으면 안 된다 — "무엇이 되었나" 의 답이
+            // "없어졌다" 인 것과 화면이 잘린 것은 눈으로 안 갈린다.
+            box.add(mkText(this, mid, y,
+                line.to ? `${line.from} ×${MERGE_COUNT}  →  ${line.to}`
+                    : `${line.from} ×${MERGE_COUNT}  →  덱에서 사라짐`,
+                {
+                    fontFamily: fontOf(this), fontSize: `${tight ? FS.sm : FS.md}px`,
+                    color: line.to ? S.gold : S.danger, align: "center",
+                    wordWrap: { width: pw - 30 },
+                }).setOrigin(0.5, 0));
+        });
+
+        const ok = makeButton(this, px + 20, py + ph - btnH - 16, pw - 40, btnH,
+            m.next === "relic" ? "확인 — 유물 고르기 >" : "확인", () => {
+                const next = m.next;
+                this.merged = null;
+                this.closeOverlay();
+                if (next === "relic") this.showRelicOffer();
+            }, { tone: "go", size: FS.sm });
+        box.add(ok.root);
+    }
+
+    /* ── 덱 펼쳐 보기 ─────────────────────────────────────── */
+
+    /**
+     * 무엇을 몇 장 모았고, 어느 카드가 한 장만 더면 합쳐지는가.
+     *
+     * `DECK 4/9` 한 줄은 덱이 두꺼워진 것만 말하고 **무엇을 모으는 중인지**는 안 말한다.
+     * 그러면 합성이 보상 칸의 금색 테두리로만 존재하게 되어, 그 순간에만 있는 규칙이 된다.
+     */
+    private drawDeck() {
+        const list = this.rogue.deckList;
+        const tight = this.designH < TALL_ENOUGH;
+        const rowH = 20;
+        const head = 46;
+        const btnH = tight ? 36 : 42;
+
+        // 넘치면 잘라 낸다. 카드 종류가 이만큼 늘어날 일은 드물지만, 넘치는 순간
+        // 마지막 줄이 칸 밖에 찍혀 화면이 깨진 것처럼 보인다.
+        const room = Math.floor((this.designH - 40 - head - btnH - 24) / rowH);
+        const rows = list.slice(0, Math.max(1, room));
+        const cut = list.length - rows.length;
+
+        const pw = Math.min(this.designW - 40, 360);
+        const ph = head + rows.length * rowH + (cut > 0 ? rowH : 0) + 12 + btnH + 14;
+
+        const { box, px, py } = this.openOverlay(pw, ph, C.steel);
+        const L = px + 14, R = px + pw - 14;
+
+        box.add(mkText(this, px + pw / 2, py + 10, "DECK — 무엇을 몇 장 들고 있나", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.steel,
+        }).setOrigin(0.5, 0));
+        box.add(mkText(this, px + pw / 2, py + 26,
+            `같은 카드 ${MERGE_COUNT}장이면 한 장으로 합쳐집니다`, {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
+        }).setOrigin(0.5, 0));
+
+        rows.forEach((e, i) => {
+            const y = py + head + i * rowH;
+            const lane = LANE[e.lane];
+            // 왼쪽은 무엇을 몇 장, 오른쪽은 합성까지 얼마나. 한 줄에 붙여 쓰면 이름이
+            // 긴 카드에서 두 덩이가 서로를 밟는다.
+            box.add(mkText(this, L, y, `${lane.tag} ${e.name}`, {
+                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: lane.ink,
+            }));
+            box.add(mkText(this, R, y, this.mergeNote(e), {
+                fontFamily: fontOf(this), fontSize: `${FS.xs}px`,
+                color: e.ready ? S.gold : S.inkDim,
+            }).setOrigin(1, 0));
+        });
+
+        if (cut > 0) {
+            box.add(mkText(this, L, py + head + rows.length * rowH, `그 밖에 ${cut}종`, {
+                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
+            }));
+        }
+
+        const close = makeButton(this, px + 20, py + ph - btnH - 14, pw - 40, btnH, "닫기", () => {
+            this.deckOpen = false;
+            this.closeOverlay();
+        }, { tone: "plain", size: FS.sm });
+        box.add(close.root);
+    }
+
+    /** 이 카드가 합성까지 얼마나 남았는가. 오른쪽 끝에 붙는 한 덩이다. */
+    private mergeNote(e: DeckEntry): string {
+        const count = `×${e.count}`;
+        if (e.mergeInto === undefined) return `${count}  합성 없음`;
+        const to = e.mergeInto ?? "사라짐";
+        return e.ready ? `${count}  한 장 더 → ${to}` : `${count}  ${MERGE_COUNT}장 → ${to}`;
+    }
+
     /* ── 유물 고르기 (카드 보상 바로 다음) ─────────────────── */
 
     /**
@@ -876,11 +1047,15 @@ export class TradingScene extends Phaser.Scene {
 
         // 카드를 고르든 건너뛰든 **유물 고르기로 이어진다.** 3턴마다 한 번, 이 자리에서
         // 손(카드)과 기울기(유물)를 나란히 정한다.
-        const close = (lines: [string, LogKind][]) => {
+        // 합성이 터졌으면 **그 사이에 한 번 멈춘다.** 안 멈추면 유물 고르기가 곧바로
+        // 덮어써서, 방금 덱에서 두 장이 사라진 것을 아무도 못 본다.
+        const close = (lines: [string, LogKind][], merges: MergeResult[] = []) => {
             this.offer = null;
             this.closeOverlay();
             this.logAll(lines);
-            this.showRelicOffer();
+            this.logMerges(merges);
+            if (merges.length > 0) this.showMerged(merges, "relic");
+            else this.showRelicOffer();
         };
 
         const inner = pw - 32;
@@ -894,16 +1069,12 @@ export class TradingScene extends Phaser.Scene {
             const merge = this.rogue.mergePreview(card.id);
             box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, merge, () => {
                 const curse = this.rogue.takeReward(card.id);
-                // 셋째 장이 들어오면 그 자리에서 합쳐진다. 조용히 바뀌면 덱에서 카드가
-                // 사라진 것처럼 보이므로 무엇이 무엇이 되었는지 말해 준다.
                 const lines: [string, LogKind][] = [
                     [`카드 획득 ${card.name}`, "card"],
                 ];
                 if (curse) lines.push([`저주 ${curse} 도 함께 덱에`, "warn"]);
-                for (const m of this.rogue.takeMerges()) {
-                    lines.push([m.to ? `합성 ${m.from} ×3 → ${m.to}` : `합성 ${m.from} ×3 소멸`, "system"]);
-                }
-                close(lines);
+                // 셋째 장이 들어오면 그 자리에서 합쳐진다 — 알림으로 한 번 세운다.
+                close(lines, this.rogue.takeMerges());
             }));
         });
 
@@ -1085,10 +1256,17 @@ export class TradingScene extends Phaser.Scene {
 
         // 남은 장 / 덱 전체. 저주가 섞이면 그 수를 붙이고 색을 바꾼다 — 덱이 더러워진 것을
         // 숫자 하나로 알아야 다음 보상에서 건너뛸 마음이 생긴다.
+        //
+        // **한 장만 더면 합쳐지는 카드가 있으면 그것이 먼저다.** 덱을 얇게 하는 길이
+        // 지금 열려 있다는 뜻이라, 저주 수보다 이 줄에서 볼 값어치가 크다. 누르면
+        // 무엇이 그런지 펼쳐진다(`▸`).
         const d = this.rogue.deckState;
+        const ready = this.rogue.deckList.filter(e => e.ready).length;
         this.deckText
-            .setText(d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses}` : `DECK ${d.draw}/${d.total}`)
-            .setColor(d.curses > 0 ? S.danger : S.inkDim);
+            .setText(ready > 0 ? `DECK ${d.draw}/${d.total} · 합성 임박 ${ready} ▸`
+                : d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses} ▸`
+                    : `DECK ${d.draw}/${d.total} ▸`)
+            .setColor(ready > 0 ? S.gold : d.curses > 0 ? S.danger : S.inkDim);
 
         // 가로에서는 운용 상황이 오른쪽 칸만 쓴다(390 이 아니라 300 남짓). 긴 형태를 그대로
         // 쓰면 오른쪽 끝의 DECK 줄과 부딪히므로, 좁을 때는 평단을 접고 주수와 손익만 남긴다.

@@ -651,6 +651,59 @@ test("이번 턴에 고른 카드는 합성에 안 끌려간다", () => {
     assert.deepEqual(r.takeMerges(), []);
 });
 
+test("쓴 카드가 손에서 돌아오면 그때 합쳐진다", () => {
+    // 위 규칙의 뒷면이다. 손패가 덱으로 돌아가는 자리에서 다시 안 보면, 같은 카드 셋을
+    // 들고 있는데 영영 안 합쳐진다 — 셋을 모았는데 아무 일도 안 일어나는 판이 됐다.
+    const r = new RoguelikeManager(23, ["peek", "peek"]);
+    const picked = r.dealHand().find(c => c.id === "peek")!;
+    r.playCard(picked.uid);
+    r.addToDeck("peek");
+    assert.deepEqual(r.takeMerges(), [], "쓴 장을 그 턴에 태웠다");
+
+    r.dealHand();
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+    assert.equal(r.deck.filter(id => id === "peek").length, 0);
+    assert.equal(r.deck.filter(id => id === "forecast").length, 1);
+});
+
+/* ── 덱 펼쳐 보기 ───────────────────────────────────────────── */
+
+test("덱 목록은 종류별로 세고 합성이 임박한 것을 위로 올린다", () => {
+    const r = new RoguelikeManager(24, ["peek", "peek", "hedge", "forecast"]);
+    const list = r.deckList;
+
+    assert.equal(list[0]!.id, "peek", "한 장만 더면 합쳐지는 카드가 위가 아니다");
+    assert.equal(list[0]!.count, 2);
+    assert.equal(list[0]!.ready, true);
+    assert.equal(list[0]!.mergeInto, "정밀 예보");
+
+    const hedge = list.find(e => e.id === "hedge")!;
+    assert.equal(hedge.count, 1);
+    assert.equal(hedge.ready, false, "한 장뿐인데 임박이라고 한다");
+    assert.equal(hedge.mergeInto, "벙커");
+
+    // 위층이 없는 보상 카드는 키 자체가 없다 — 저주의 null(사라짐)과 다른 말이다.
+    const fc = list.find(e => e.id === "forecast")!;
+    assert.equal("mergeInto" in fc, false);
+    assert.equal(fc.ready, false);
+
+    assert.equal(list.reduce((s, e) => s + e.count, 0), r.deckState.total, "장수가 안 맞는다");
+});
+
+test("덱 목록은 저주가 사라지는 것도 말한다", () => {
+    const r = new RoguelikeManager(25, ["blackout", "blackout"]);
+    const e = r.deckList.find(c => c.id === "blackout")!;
+    assert.equal(e.ready, true);
+    assert.equal(e.mergeInto, null, "저주는 무엇이 되는 것이 아니라 사라진다");
+});
+
+test("덱 목록은 손에 든 장도 센다", () => {
+    // 손패도 덱의 일부다. 빼고 세면 카드를 뽑는 것만으로 덱이 줄어든 것처럼 보인다.
+    const r = new RoguelikeManager(26, ["peek", "peek", "hedge"]);
+    r.dealHand();
+    assert.equal(r.deckList.reduce((s, e) => s + e.count, 0), 3);
+});
+
 test("판을 열 때 넘어온 덱에 셋이 있으면 그 자리에서 합쳐진다", () => {
     // 보상을 건너뛰고 판을 끝냈거나 저장이 옛 규칙으로 쌓였으면 셋이 그대로 넘어온다.
     // 판을 여는 자리에서 한 번 훑어야 "셋이면 합쳐진다" 가 언제나 참이 된다.

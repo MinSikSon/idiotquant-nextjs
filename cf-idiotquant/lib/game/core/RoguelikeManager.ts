@@ -216,6 +216,28 @@ export interface MergeResult {
 }
 
 /**
+ * 덱에 무엇이 몇 장 있고, 합성까지 얼마 남았는가.
+ *
+ * `DECK 4/9` 한 줄로는 **무엇을 모으는 중인지**가 안 보인다. 합성은 이 게임에서 덱을
+ * 얇게 하는 두 길 중 하나인데, 자기가 어느 카드를 두 장 쥐고 있는지 모르면 보상 칸에서
+ * 금색 테두리가 뜰 때까지 그 선택이 존재하지 않는 것과 같다.
+ */
+export interface DeckEntry {
+    id: string;
+    name: string;
+    lane: CardLane;
+    /** 덱 전체에서 몇 장인가. 손패에 든 것도 덱의 일부라 함께 센다. */
+    count: number;
+    /**
+     * 셋을 채우면 무엇이 되는가. `CardDef.mergesTo` 와 같은 약속이되 id 가 아니라 **이름**이다.
+     * `null` 이면 사라지고(저주), 없으면 위층이 없어 안 합쳐지는 카드다.
+     */
+    mergeInto?: string | null;
+    /** 한 장만 더 모으면 합쳐진다. */
+    ready: boolean;
+}
+
+/**
  * 처음부터 열려 있는 보상 카드. 나머지는 경력 인사이트로 열린다(progress.UNLOCKS).
  *
  * 다섯 장이 처음부터 다 나오면 세 판이면 다 본다. 시작을 얇게 두면 판을 거듭할 이유와
@@ -482,6 +504,38 @@ export class RoguelikeManager {
         };
     }
 
+    /**
+     * 덱에 든 카드를 종류별로. **합성이 임박한 것이 맨 위**로 온다.
+     *
+     * 세는 자리가 `removableCount` 와 다르다는 점이 중요하다. 저기는 "지금 빼낼 수 있는
+     * 장 수"(이번 턴에 쓴 카드는 못 뺀다)이고, 여기는 **가진 장 수**다. 쓴 카드도 턴이
+     * 넘어가면 버린 더미로 돌아오므로, 목록에서 빼 버리면 덱에서 한 장이 사라진 것처럼 보인다.
+     */
+    get deckList(): DeckEntry[] {
+        const all = [...this.drawPile, ...this.discardPile, ...this.hand.map(c => c.id)];
+        const seen = new Map<string, number>();
+        for (const id of all) seen.set(id, (seen.get(id) ?? 0) + 1);
+
+        const out: DeckEntry[] = [];
+        for (const [id, count] of seen) {
+            const def = defOf(id);
+            if (!def) continue;
+            const e: DeckEntry = {
+                id, name: def.name, lane: def.lane, count,
+                ready: def.mergesTo !== undefined && count === MERGE_COUNT - 1,
+            };
+            // 없는 키와 `undefined` 를 가진 키를 가르려면 이렇게 넣어야 한다 — 저주의
+            // `null`(사라짐)과 보상 카드의 "위층 없음" 은 다른 말이다.
+            if (def.mergesTo !== undefined) {
+                e.mergeInto = def.mergesTo ? defOf(def.mergesTo)?.name ?? null : null;
+            }
+            out.push(e);
+        }
+        // 한 장만 더면 맨 위 → 많이 가진 것 → 이름순. 볼 이유가 큰 것부터 온다.
+        return out.sort((a, b) =>
+            Number(b.ready) - Number(a.ready) || b.count - a.count || a.name.localeCompare(b.name));
+    }
+
     /* ── 손패 ───────────────────────────────────────────── */
 
     /**
@@ -491,9 +545,18 @@ export class RoguelikeManager {
      * 손에 잡히고, 덱이 두꺼울수록 그 "언젠가" 가 멀어진다.
      */
     dealHand(): StrategyCard[] {
-        this.discardPile.push(...this.hand.map(c => c.id));
+        const returned = this.hand.map(c => c.id);
+        this.discardPile.push(...returned);
         this.hand = [];
         this.picked = null;
+
+        // **돌아온 카드로 셋이 채워졌으면 여기서 합쳐진다.**
+        //
+        // `removableCount` 는 이번 턴에 쓴 카드를 안 센다 — 효과가 걸린 카드를 도로
+        // 가져가면 화면과 결과가 어긋나기 때문이다. 그래서 두 장을 쥔 채 한 장을 쓰고
+        // 셋째 장을 보상으로 받으면 그 턴에는 합성이 안 터지고, 다음 턴에 손패가
+        // 돌아와도 아무도 다시 안 봤다 — 같은 카드 셋을 들고 있는데 영영 안 합쳐졌다.
+        for (const id of new Set(returned)) this.mergeAt(id);
 
         const drawn: string[] = [];
         for (let i = 0; i < HAND_SIZE; i++) {

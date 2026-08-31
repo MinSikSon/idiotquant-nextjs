@@ -62,32 +62,54 @@ function MergeLine({ card }: { card: (typeof CARD_LIST)[number] }) {
     );
 }
 
+/**
+ * 카드 한 장 — **접힌 채로 온다.**
+ *
+ * 열두 장을 전부 펼쳐 두면 한 화면에 두 장 반이 들어가고, 무엇이 있는지 훑으려면
+ * 스크롤을 열 번 굴려야 한다. 게임 안의 손패와 같은 순서로 읽히게 한다:
+ * 이름 + 한 줄 요약 → 누르면 효과·언제·합성.
+ *
+ * `<details>` 를 쓰는 이유는 하나다 — 이 페이지가 서버 컴포넌트다. 펼침을 상태로 들면
+ * 도감 전체가 클라이언트 번들로 내려가는데, 얻는 것이 여닫기 하나뿐이다.
+ */
 function Card({ card }: { card: (typeof CARD_LIST)[number] }) {
     const skin = LANE_STYLE[card.lane];
     return (
-        <li className={`rounded-xl border bg-[#141c1e] p-4 ${skin.ring}`}>
-            {/* 뱃지가 셋까지 붙는다(갈래·해금·저주). 감싸지 않으면 이름이 한 글자씩
-                세로로 접혀 읽을 수 없게 된다 — 신용 융자가 실제로 그랬다. */}
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <h3 className={`mr-auto text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
-                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${skin.ink} ring-current`}>
-                    {skin.label}
-                </span>
-                <LockTag id={card.id} />
-                {card.curse && (
-                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#ff5ec8] ring-1 ring-[#ff5ec8]">
-                        저주가 딸려 옵니다
-                    </span>
-                )}
-            </div>
-            {/* 손패에 늘 붙는 한 줄과, 펼쳤을 때 나오는 설명을 같은 순서로 보여 준다. */}
-            <p className="mt-2 text-[13px] text-[#9aada6]">{card.shortDescription}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-[#e9f2ea]">{card.effectDescription}</p>
-            <p className="mt-2 border-t border-[#2f4046] pt-2 text-[13px] leading-relaxed text-[#9aada6]">
-                <span className="text-[#e3b34a]">언제 </span>
-                {card.when}
-            </p>
-            <MergeLine card={card} />
+        <li className={`rounded-xl border bg-[#141c1e] ${skin.ring}`}>
+            <details className="group">
+                {/* summary 의 기본 삼각형을 지운다 — 갈래 뱃지와 나란히 서면 무엇이 표시인지
+                    헷갈린다. 여닫힘은 오른쪽 끝의 +/− 하나로만 말한다. */}
+                <summary className="cursor-pointer list-none p-4 [&::-webkit-details-marker]:hidden">
+                    {/* 뱃지가 셋까지 붙는다(갈래·해금·저주). 감싸지 않으면 이름이 한 글자씩
+                        세로로 접혀 읽을 수 없게 된다 — 신용 융자가 실제로 그랬다. */}
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <h3 className={`mr-auto text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
+                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${skin.ink} ring-current`}>
+                            {skin.label}
+                        </span>
+                        <LockTag id={card.id} />
+                        {card.curse && (
+                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#ff5ec8] ring-1 ring-[#ff5ec8]">
+                                저주가 딸려 옵니다
+                            </span>
+                        )}
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-2">
+                        {/* 접힌 동안 보이는 것은 손패에 붙는 그 한 줄이다. */}
+                        <p className="mr-auto text-[13px] text-[#9aada6]">{card.shortDescription}</p>
+                        <span className="shrink-0 text-[13px] text-[#e3b34a] group-open:hidden">＋ 자세히</span>
+                        <span className="hidden shrink-0 text-[13px] text-[#9aada6] group-open:inline">− 접기</span>
+                    </div>
+                </summary>
+                <div className="border-t border-[#2f4046] px-4 pb-4 pt-3">
+                    <p className="text-[13px] leading-relaxed text-[#e9f2ea]">{card.effectDescription}</p>
+                    <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
+                        <span className="text-[#e3b34a]">언제 </span>
+                        {card.when}
+                    </p>
+                    <MergeLine card={card} />
+                </div>
+            </details>
         </li>
     );
 }
@@ -99,7 +121,8 @@ function Section({ title, note, children }: {
         <section className="mt-10">
             <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">{title}</h2>
             <p className="mt-1 text-[13px] leading-relaxed text-[#9aada6]">{note}</p>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">{children}</ul>
+            {/* items-start — 한 장을 펼쳐도 옆 칸이 같이 늘어나지 않게. */}
+            <ul className="mt-4 grid items-start gap-3 sm:grid-cols-2">{children}</ul>
         </section>
     );
 }
@@ -122,7 +145,8 @@ export default function CardsPage() {
                         <span className="text-[#e9f2ea]">한 장만</span> 쓰고, 셋 다 버린 더미로 갑니다.
                         덱이 마르면 버린 더미를 섞어 다시 덱이 됩니다. 손패의 카드는 한 줄 요약만
                         보이고, <span className="text-[#e9f2ea]">누르면 자세한 설명</span>이 펼쳐지며
-                        한 번 더 누르면 씁니다.
+                        한 번 더 누르면 씁니다. 아래 목록도 같습니다 — 접힌 줄을 누르면 효과와
+                        합성이 펼쳐집니다.
                     </p>
                     <div className="mt-4 rounded-xl border border-[#5cf08f] bg-[#141c1e] p-4">
                         <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">
