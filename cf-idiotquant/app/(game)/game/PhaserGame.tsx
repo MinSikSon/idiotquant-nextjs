@@ -23,13 +23,13 @@ import { useEffect, useRef, useState } from "react";
 import type Phaser from "phaser";
 
 export interface PhaserGameProps {
-    /** 지난 런에서 넘어온 인사이트. 없으면 0 부터 시작한다. */
+    /** 지난 런에서 넘어온 인사이트. **안 주면 저장된 진행에서 읽는다** — 0 이 아니다. */
     insightPoints?: number;
     /** 캔버스 바깥 높이. 앱의 상·하단 크롬을 뺀 값을 준다. */
     className?: string;
 }
 
-export default function PhaserGame({ insightPoints = 0, className }: PhaserGameProps) {
+export default function PhaserGame({ insightPoints, className }: PhaserGameProps) {
     const hostRef = useRef<HTMLDivElement>(null);
     const gameRef = useRef<Phaser.Game | null>(null);
     const [error, setError] = useState<string | null>(null);

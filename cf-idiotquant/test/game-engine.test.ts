@@ -191,6 +191,34 @@ test("판의 등락은 시드에서 미리 정해진다 — 예보는 그것을 
     assert.ok(Math.abs(second - seen[1]!) < 0.5, `둘째 턴 예보가 어긋났다`);
 });
 
+test("예보는 **이번 턴 카드가 반영된** 값이다", () => {
+    // 이게 어긋나면 차트가 거짓말을 한다: 헤지를 들고 −8% 봉을 보며 겁먹었는데 −4% 가
+    // 온다. read 와 tick 이 같은 식(moveWith)을 쓰는지 여기서 지킨다.
+    for (const b of [
+        buff({ peekTurns: 1, moveMult: 0.5 }),
+        buff({ peekTurns: 1, downshieldRatio: 0.9 }),
+        buff({ peekTurns: 1, moveMult: 0.5, downshieldRatio: 0.9 }),
+    ]) {
+        for (const seed of [311, 313, 317, 331, 337]) {
+            const e = new StockEngine(seed);
+            const seen = e.read(b).next[0]!;
+            const real = e.tick(b).changePct;
+            assert.ok(Math.abs(real - seen) < 0.5,
+                `예보 ${seen.toFixed(2)}% 인데 실제 ${real.toFixed(2)}% (시드 ${seed})`);
+        }
+    }
+});
+
+test("둘째 턴치 예보에는 이번 턴 카드가 안 얹힌다", () => {
+    // 카드는 한 턴짜리다. 다음 턴에도 헤지가 걸린 것처럼 그리면 그것도 거짓말이다.
+    const e = new StockEngine(341);
+    const hedged = e.read(buff({ peekTurns: 2, moveMult: 0.5 }));
+    const plain = e.read(buff({ peekTurns: 2 }));
+
+    assert.ok(Math.abs(hedged.next[0]! - plain.next[0]! * 0.5) < 1e-9, "첫 턴에 카드가 안 얹혔다");
+    assert.equal(hedged.next[1], plain.next[1], "둘째 턴까지 카드가 얹혔다");
+});
+
 test("카드를 안 쓰면 아무것도 안 보인다", () => {
     const r = new StockEngine(302).read(NO_BUFF);
     assert.deepEqual(r.next, []);

@@ -103,7 +103,10 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         const ghosts: number[] = [];
         let ghostFrom = bars[bars.length - 1]!.c;
         for (let k = 0; k < Math.min(2, peek.length); k++) {
-            ghostFrom = Math.max(1, ghostFrom * (1 + peek[k]! / 100));
+            // 진짜 봉과 같이 **정수 원**으로 맞춘다. 이 값이 고·저가 라벨에도 들어가는데,
+            // 반올림을 안 하면 차트 구석에 21,376.808 같은 값이 찍힌다 — 원 단위로 도는
+            // 판에서 그건 없는 가격이다.
+            ghostFrom = Math.max(1, Math.round(ghostFrom * (1 + peek[k]! / 100)));
             ghosts.push(ghostFrom);
         }
 

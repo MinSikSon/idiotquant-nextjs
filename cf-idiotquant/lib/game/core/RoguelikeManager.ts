@@ -302,12 +302,17 @@ export class RoguelikeManager {
     private pendingMerges: MergeResult[] = [];
 
     /**
-     * 아직 안 보여 준 예보. **턴이 넘어가도 남는다.**
+     * 예보가 **몇 턴** 더 남았는가. 턴이 넘어가도 남는다.
      *
-     * 정밀 예보가 "다음 두 턴" 이라면서 다음 턴에 사라지면 그건 거짓말이다. 본 것을
-     * 여기 들고 있다가 한 턴씩 덜어 내야 두 턴짜리가 두 턴짜리가 된다.
+     * 정밀 예보가 "다음 두 턴" 이라면서 다음 턴에 사라지면 그건 거짓말이다. 남은 턴 수를
+     * 들고 있다가 한 턴씩 덜어 내야 두 턴짜리가 두 턴짜리가 된다.
+     *
+     * **값이 아니라 턴 수를 들고 있는 것이 요점이다.** 예전에는 본 등락(%)을 그대로
+     * 들고 있다가 다음 턴에 그대로 다시 그렸다. 그러면 그 사이에 헤지를 들어도 그림이
+     * 안 바뀌어, 차트가 오지 않을 등락을 계속 가리켰다. 지금은 턴 수만 남기고 그림은
+     * 매번 `engine.read(buildBuff())` 가 새로 낸다 — 지금 든 카드가 반영된 값이다.
      */
-    private carriedPeek: number[] = [];
+    private peekTurnsLeft = 0;
 
     /**
      * @param carriedDeck 지난 판에서 넘어온 덱. **비어 있으면 새 게임** — 무작위 셋으로 연다.
@@ -346,22 +351,22 @@ export class RoguelikeManager {
         return RELIC_POOL.filter(r => BASE_RELIC_IDS.includes(r.id) || this.unlocked.has(r.id));
     }
 
-    /** 남은 예보. 화면이 유령 봉을 몇 개 그릴지가 여기서 나온다. */
-    get peekLeft(): number[] {
-        return [...this.carriedPeek];
+    /** 예보가 몇 턴 더 남았는가. */
+    get peekLeft(): number {
+        return this.peekTurnsLeft;
     }
 
     /**
-     * 이번 턴에 읽은 것을 들고 간다. 턴이 넘어갈 때 앞에서 한 칸 덜어 낸다.
-     * 더 멀리 보는 예보를 새로 쓰면 그것으로 갈아 끼운다.
+     * 이번 턴에 몇 턴치를 봤는지 들고 간다. 더 멀리 보는 예보를 쓰면 그것으로 늘어난다.
+     * 짧은 것으로는 안 줄어든다 — 이미 본 것을 도로 뺏을 이유가 없다.
      */
-    rememberPeek(next: readonly number[]): void {
-        if (next.length > this.carriedPeek.length) this.carriedPeek = [...next];
+    rememberPeek(turns: number): void {
+        this.peekTurnsLeft = Math.max(this.peekTurnsLeft, Math.max(0, Math.floor(turns)));
     }
 
-    /** 한 턴이 지났다. 예보를 한 칸 당긴다. */
+    /** 한 턴이 지났다. 남은 예보를 한 턴 덜어 낸다. */
     consumePeek(): void {
-        this.carriedPeek = this.carriedPeek.slice(1);
+        this.peekTurnsLeft = Math.max(0, this.peekTurnsLeft - 1);
     }
 
     /* ── 덱 ─────────────────────────────────────────────── */
@@ -635,7 +640,10 @@ export class RoguelikeManager {
         if (this.has("vest")) b = { ...b, downshieldRatio: Math.max(b.downshieldRatio, 0.2) };
         if (this.has("broker")) b = { ...b, feeMult: 0 };
 
-        return this.picked ? this.picked.apply(b) : b;
+        const out = this.picked ? this.picked.apply(b) : b;
+        // 지난 턴에 봐 둔 예보가 아직 남아 있으면 이번 턴에도 그만큼 보인다. 여기서
+        // 얹어야 화면이 매번 **지금 든 카드가 반영된** 예보를 새로 받는다.
+        return { ...out, peekTurns: Math.max(out.peekTurns, this.peekTurnsLeft) };
     }
 
     /* ── 유물 발동 ───────────────────────────────────────── */

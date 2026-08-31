@@ -438,23 +438,51 @@ test("안 열린 유물도 안 나온다", () => {
 test("정밀 예보는 다음 턴에도 남는다", () => {
     // "두 턴" 이라면서 한 턴 만에 사라지면 예고 시황과 다를 것이 없다.
     const r = new RoguelikeManager(5);
-    r.rememberPeek([3.2, -1.4]);
-    assert.deepEqual(r.peekLeft, [3.2, -1.4]);
+    r.rememberPeek(2);
+    assert.equal(r.peekLeft, 2);
 
     r.consumePeek();
-    assert.deepEqual(r.peekLeft, [-1.4], "둘째 턴치가 사라졌다");
+    assert.equal(r.peekLeft, 1, "둘째 턴치가 사라졌다");
 
     r.consumePeek();
-    assert.deepEqual(r.peekLeft, [], "다 쓰고도 남았다");
+    assert.equal(r.peekLeft, 0);
+    r.consumePeek();
+    assert.equal(r.peekLeft, 0, "0 아래로 내려갔다");
 });
 
 test("더 멀리 보는 예보만 갈아 끼운다", () => {
     const r = new RoguelikeManager(6);
-    r.rememberPeek([1, 2]);
-    r.rememberPeek([9]);                    // 한 턴짜리로는 덮지 않는다
-    assert.deepEqual(r.peekLeft, [1, 2]);
-    r.rememberPeek([7, 8, 9]);
-    assert.deepEqual(r.peekLeft, [7, 8, 9]);
+    r.rememberPeek(2);
+    r.rememberPeek(1);                      // 한 턴짜리로는 이미 본 것을 못 뺏는다
+    assert.equal(r.peekLeft, 2);
+    r.rememberPeek(3);
+    assert.equal(r.peekLeft, 3);
+});
+
+test("남은 예보는 값이 아니라 **턴 수**다", () => {
+    // 값을 들고 있으면 그 사이에 헤지를 들어도 그림이 안 바뀌어, 차트가 오지 않을
+    // 등락을 계속 가리킨다. 턴 수만 남기고 그림은 매번 engine.read 가 새로 낸다.
+    const r = new RoguelikeManager(7);
+    r.rememberPeek(2);
+    assert.equal(typeof r.peekLeft, "number");
+    // 남은 예보는 buildBuff 를 타고 나가야 화면이 다시 읽을 수 있다.
+    assert.equal(r.buildBuff().peekTurns, 2, "남은 예보가 buff 에 안 실렸다");
+    r.consumePeek();
+    assert.equal(r.buildBuff().peekTurns, 1);
+});
+
+test("정보 차단은 들고 있던 예보까지 가린다", () => {
+    // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있어도, 이 저주를 쥔 턴에는 안 보여야 한다.
+    // 예전에는 씬이 들고 있던 값을 그대로 다시 그려서 저주가 아무 일도 안 했다.
+    const r = new RoguelikeManager(31, ["blackout", "peek", "hedge"]);
+    r.rememberPeek(2);
+
+    const card = drawUntil(r, "blackout");
+    assert.equal(r.playCard(card.uid), true);
+
+    const b = r.buildBuff();
+    assert.equal(b.blind, true);
+    assert.deepEqual(new StockEngine(41).read(b).next, [], "저주가 아무 일도 안 했다");
 });
 
 /* ── 차수 — 다시 켤 이유 ────────────────────────────────────── */
