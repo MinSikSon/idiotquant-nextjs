@@ -127,7 +127,7 @@ export default function PhaserGame({ insightPoints, className }: PhaserGameProps
             }}
             className={
                 className ??
-                "grid w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block [&>canvas]:[image-rendering:pixelated]"
+                "grid w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block"
             }
         >
             {error && (

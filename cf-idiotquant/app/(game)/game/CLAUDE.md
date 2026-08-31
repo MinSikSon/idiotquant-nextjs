@@ -2,7 +2,7 @@
 
 ## 1. Environment & Architecture
 - Framework: Phaser 4 (or latest Phaser 3.8x with Render Nodes), Vite, TypeScript.
-- Screen Resolution: Portrait 390x844 (FIT scale, pixelArt: true).
+- Screen Resolution: Portrait 390x844 (FIT scale).
 - Loop Design: 12 Turns per Run (3-5 min session), Deckbuilding strategy cards + passive relics.
 
 ## 2. Coding Guidelines
@@ -166,6 +166,24 @@
 `lib/paper/*` 는 **`/game/classic` 과 워커(idiotquant-worker)가 같이 쓴다.** 여기 규칙을
 바꾸면 세 곳이 함께 움직여야 하고, 워커에 같은 규칙의 JS 사본이 있다. 로그라이크용 규칙은
 `lib/paper` 를 고치지 말고 `lib/game` 아래에 새로 만들어 얹는다.
+
+### 읽히게 하는 것
+
+11. **`pixelArt` 를 켜지 말 것.** 이 게임에는 스프라이트가 한 장도 없다 — 차트도 카드도
+   전부 Graphics 와 Text 다. `pixelArt: true` 는 안티에일리어싱을 끄고 캔버스에
+   `image-rendering: pixelated` 를 건다. 설계 격자(390)가 DPR 3 폰에서 1170 물리 픽셀로
+   늘어나는데 거기에 최근접 확대가 걸리면 글자 한 획이 3×3 덩어리가 된다.
+   `roundPixels` 만 남긴다.
+   - 그래도 캔버스 버퍼는 설계 격자 크기(390)라 고배율 화면에서는 부드럽게 확대된 상태다.
+     물리 픽셀 1:1 로 그리려면 격자와 모든 치수를 통째로 다시 잡아야 한다(Phaser 4 는
+     `TextStyle.resolution` 을 안 받는다) — 지금은 안 한다.
+   - 색은 **재고 정한다.** `#3c4844` 는 바탕에서 2.0:1 이라 사실상 안 보였고,
+     `inkDim` 이던 `#7d8f88` 은 밝은 칸(`panelHi`)에서 4.1:1 로 모자랐다. 지금
+     `inkDim` 은 `#9aada6`(5.9~8.2:1) 이다.
+   - **알파가 곧 콘트라스트를 깎는다.** 손패를 0.35 로 흐리게 하면 7:1 짜리 글자가 2:1 이
+     되어 안 읽힌다. 갈래가 보일 만큼만 낮춘다(0.55 / 0.72).
+   - `FS.xs`(12) 가 이 화면 글자의 대부분이다. 이 값을 바꾸면 `GameLog.ROW` 로 줄 수가
+     바뀌고, `buildFirm` 의 오른쪽 넉 줄(5/24/43/59)이 아래부터 밀린다 — 같이 본다.
 
 ### 검증
 

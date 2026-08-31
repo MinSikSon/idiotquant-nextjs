@@ -125,12 +125,12 @@ export const C = {
     bg: 0x0b0f10,
     panel: 0x141c1e,
     panelHi: 0x222e31,
-    line: 0x2f4046,
+    line: 0x3d5159,
     screen: 0x070c0d,
     up: 0x5cf08f,     // 양봉 — 네온 그린
     down: 0xff6b4a,   // 음봉 — 레드/오렌지
     ink: 0xe9f2ea,
-    inkDim: 0x7d8f88,
+    inkDim: 0x9aada6,
     gold: 0xe3b34a,
     neon: 0x5cf08f,
     danger: 0xff5ec8,
@@ -140,23 +140,17 @@ export const C = {
 export const S = {
     bg: "#0b0f10",
     panel: "#141c1e",
-    line: "#2f4046",
+    line: "#3d5159",
     up: "#5cf08f",
     down: "#ff6b4a",
     ink: "#e9f2ea",
-    inkDim: "#7d8f88",
+    inkDim: "#9aada6",
     gold: "#e3b34a",
     neon: "#5cf08f",
     danger: "#ff5ec8",
     steel: "#6fb6ff",
 } as const;
 
-/**
- * 카드 갈래별 색과 표시.
- *
- * 카드가 열두 장이 되면 이름만으로는 안 갈린다. **무엇을 하는 카드인가**(읽는다·건다·
- * 막는다·저주)를 색과 한 글자 표시로 먼저 말해 두면, 손패 셋을 훑는 데 한 호흡이면 된다.
- */
 /**
  * 로그 한 줄의 색.
  *
@@ -188,6 +182,12 @@ export const LOG = {
 
 export type LogKind = keyof typeof LOG;
 
+/**
+ * 카드 갈래별 색과 표시.
+ *
+ * 카드가 열두 장이 되면 이름만으로는 안 갈린다. **무엇을 하는 카드인가**(읽는다·건다·
+ * 막는다·저주)를 색과 한 글자 표시로 먼저 말해 두면, 손패 셋을 훑는 데 한 호흡이면 된다.
+ */
 export const LANE = {
     info: { color: C.neon, ink: S.neon, tag: "정보" },
     act: { color: C.gold, ink: S.gold, tag: "집행" },
@@ -212,10 +212,12 @@ export function fontOf(scene: Phaser.Scene): string {
 /**
  * 글자 크기. 폰에서 읽히는 것이 먼저라 도트 느낌보다 크기를 택했다.
  *
- * 이 값은 설계 격자 기준이고 화면에서는 `화면폭 / 390` 이 곱해진다. 예전에는 그 배율이
- * 0.66~0.87 이라 14px 이 9~12px 로 보였다 — 폰에서 읽을 크기가 아니었다.
+ * 이 값은 설계 격자 기준이고 화면에서는 `화면폭 / 390` 이 곱해진다.
+ *
+ * `xs` 가 이 화면 글자의 대부분이다 — 로그 한 줄, 카드의 한 줄 요약, 라벨. 11px 은
+ * 폰에서 읽으라고 두기엔 작았다. 12 로 올리고 `sm` 도 한 칸 따라 올렸다.
  */
-export const FS = { xs: 11, sm: 13, md: 16, lg: 21, xl: 29, xxl: 42 } as const;
+export const FS = { xs: 12, sm: 14, md: 16, lg: 21, xl: 29, xxl: 42 } as const;
 
 /** "+3.20%" 처럼 부호를 붙인다. */
 export function pct(v: number): string {

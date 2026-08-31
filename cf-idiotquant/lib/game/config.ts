@@ -52,8 +52,13 @@ export function createGameConfig(o: GameOptions): Phaser.Types.Core.GameConfig {
             autoCenter: Phaser.Scale.CENTER_BOTH,
         },
 
-        // 도트를 살린다. 안티에일리어싱이 붙으면 1px 격자와 캔들 몸통이 흐려진다.
-        pixelArt: true,
+        // **pixelArt 를 안 켠다.** 이 게임에는 스프라이트가 한 장도 없다 — 차트도 카드도
+        // 전부 Graphics(도형)와 Text 다. pixelArt 는 그 대가로 두 가지를 한다:
+        // 안티에일리어싱을 끄고, 캔버스에 `image-rendering: pixelated` 를 건다.
+        // 설계 격자(390)가 DPR 3 폰에서 1170 물리 픽셀로 늘어나는데 거기에 최근접 확대가
+        // 걸리면 글자 한 획이 3×3 덩어리가 된다 — 글씨가 희미하고 거칠어 보이던 이유다.
+        //
+        // roundPixels 는 남긴다. 1px 격자선과 캔들 몸통을 정수 좌표에 붙여 준다.
         roundPixels: true,
 
         // 폰에서 두 손가락 제스처가 입력을 가로채지 않게.
