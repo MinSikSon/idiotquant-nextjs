@@ -171,12 +171,23 @@
 
 11. **`pixelArt` 를 켜지 말 것.** 이 게임에는 스프라이트가 한 장도 없다 — 차트도 카드도
    전부 Graphics 와 Text 다. `pixelArt: true` 는 안티에일리어싱을 끄고 캔버스에
-   `image-rendering: pixelated` 를 건다. 설계 격자(390)가 DPR 3 폰에서 1170 물리 픽셀로
-   늘어나는데 거기에 최근접 확대가 걸리면 글자 한 획이 3×3 덩어리가 된다.
+   `image-rendering: pixelated` 를 건다. 그러면 글자 한 획이 계단이 된다.
    `roundPixels` 만 남긴다.
-   - 그래도 캔버스 버퍼는 설계 격자 크기(390)라 고배율 화면에서는 부드럽게 확대된 상태다.
-     물리 픽셀 1:1 로 그리려면 격자와 모든 치수를 통째로 다시 잡아야 한다(Phaser 4 는
-     `TextStyle.resolution` 을 안 받는다) — 지금은 안 한다.
+   - **캔버스 버퍼는 기기 해상도로 잡는다** — 설계 격자 × `pixelScale(devicePixelRatio)`
+     (상한 3). 예전에는 버퍼가 설계 격자 크기(390)라 DPR 3 폰에서 1170 물리 픽셀로
+     늘려졌고, 그 보간이 화면이 뿌옇던 이유였다.
+   - **좌표는 여전히 설계 격자다.** `measure()` 가 `this.scale.width / k` 로 되돌리고
+     `cameras.main.setZoom(k).centerOn(...)` 로 (0,0)을 화면 (0,0)에 맞춘다. 그래서 이
+     문서의 치수도 `bandsOf` 도 안 바뀐다.
+   - **글자는 `mkText(scene, x, y, text, style)` 로만 만든다.** Graphics 는 벡터라 확대하면
+     저절로 선명해지지만 Text 는 굽는 크기가 곧 화질이라, 이 함수가 크기를 k 배로 굽고
+     `1/k` 로 줄여 붙인다(Phaser 4 는 `TextStyle.resolution` 을 안 받는다).
+     `scene.add.text` 를 직접 부르면 그 글자만 뿌옇다.
+     - 줄인 뒤에는 `text.height` 가 텍스처 높이라, 다음 줄 자리를 잡을 때는
+       **`displayHeight`** 를 본다.
+   - **포인터 좌표는 캔버스 좌표다.** `pointer.x/y` 는 설계 격자가 아니라 k 가 곱해진
+     값이라 드래그 거리를 재려면 나눠야 한다(`GameLog` 의 되감기). 입력 판정 자체는
+     Phaser 가 카메라 변환을 반영하므로 zone 좌표는 그대로 두면 된다.
    - 색은 **재고 정한다.** `#3c4844` 는 바탕에서 2.0:1 이라 사실상 안 보였고,
      `inkDim` 이던 `#7d8f88` 은 밝은 칸(`panelHi`)에서 4.1:1 로 모자랐다. 지금
      `inkDim` 은 `#9aada6`(5.9~8.2:1) 이다.
@@ -195,7 +206,8 @@
 그래서 씬은 `W`·`H` 같은 모듈 상수를 안 쓰고 `this.scale.width/height` 와 자기 띠의
 `b.x`·`b.w` 만 본다. 새 요소를 넣을 때 `W` 를 쓰면 가로 배치에서 왼쪽 칸을 넘어간다.
 
-화면을 돌리면 React 껍데기가 `scale.setGameSize()` + `refresh()` 로 격자를 바꾸고, 씬은
+화면을 돌리면 React 껍데기가 `scale.setGameSize()` + `refresh()` 로 격자를 바꾸고(여기서도
+**설계 격자 × k** 를 넘긴다 — 안 곱하면 돌리는 순간 버퍼가 줄어 다시 뿌예진다), 씬은
 `RESIZE` 를 듣고 **엔진을 그대로 둔 채** 그림만 다시 세운다(`relayout`). `scale.resize()` 는
 Scale.RESIZE 모드용이라 FIT 에서는 표시 크기가 옛 비율로 남으니 쓰지 말 것.
 

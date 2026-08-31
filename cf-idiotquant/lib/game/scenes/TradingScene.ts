@@ -32,7 +32,9 @@ import {
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
-import { PAD, C, S, FS, bandsOf, designSize, fontOf, money, pct, tone, type LogKind } from "@/lib/game/ui/theme";
+import {
+    PAD, C, S, FS, bandsOf, designSize, fontOf, mkText, money, pct, pxOf, tone, type LogKind,
+} from "@/lib/game/ui/theme";
 import type { Bands } from "@/lib/game/ui/theme";
 
 /* ── 버튼 ───────────────────────────────────────────────────── */
@@ -62,7 +64,7 @@ function makeButton(
     const skin = BTN_FACE[o.tone ?? "plain"];
     const root = scene.add.container(x, y);
     const g = scene.add.graphics();
-    const t = scene.add.text(w / 2, h / 2, text, {
+    const t = mkText(scene, w / 2, h / 2, text, {
         fontFamily: fontOf(scene), fontSize: `${o.size ?? FS.md}px`, color: skin.ink, align: "center",
     }).setOrigin(0.5);
 
@@ -256,8 +258,15 @@ export class TradingScene extends Phaser.Scene {
 
     /** 지금 격자를 재고 띠를 나눈다. 켤 때 한 번, 돌릴 때마다 한 번. */
     private measure() {
-        this.designW = this.scale.width;
-        this.designH = this.scale.height;
+        // 캔버스 버퍼는 기기 해상도(설계 × k)로 잡혀 있다. **카메라를 그만큼 확대해**
+        // 이 아래로는 전부 설계 격자 좌표로 되돌린다 — 그래야 치수를 한 벌만 들고 있으면
+        // 되고, 배율이 1 이든 3 이든 배치가 같다.
+        const k = pxOf(this);
+        this.designW = this.scale.width / k;
+        this.designH = this.scale.height / k;
+        // 확대만 하면 카메라가 격자 한가운데를 보므로 왼쪽·위가 잘린다. 설계 격자의
+        // 한가운데를 보게 해서 (0,0) 이 화면 (0,0) 에 오게 맞춘다.
+        this.cameras.main.setZoom(k).centerOn(this.designW / 2, this.designH / 2);
         this.band = bandsOf(this.designW, this.designH);
     }
 
@@ -327,7 +336,7 @@ export class TradingScene extends Phaser.Scene {
         });
 
         // 종목 이름은 차트 위에 겹쳐 둔다 — 칸을 따로 만들면 차트가 그만큼 준다.
-        this.add.text(b.x + b.w - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
+        mkText(this, b.x + b.w - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
             `${this.engine.stock.name} ${this.engine.stock.ticker}`, {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         }).setOrigin(1, 0);
@@ -352,10 +361,10 @@ export class TradingScene extends Phaser.Scene {
         g.beginPath(); g.moveTo(b.x, b.y + 0.5); g.lineTo(b.x + b.w, b.y + 0.5); g.strokePath();
 
         const mk = (x: number, y: number, size: number, color: string, origin = 0) =>
-            this.add.text(x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
+            mkText(this, x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
                 .setOrigin(origin, 0);
 
-        this.totalLabel = this.add.text(L, b.y + 6, "TOTAL", {
+        this.totalLabel = mkText(this, L, b.y + 6, "TOTAL", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
         this.equityText = mk(L, b.y + 18, FS.xl, S.ink);
@@ -374,7 +383,7 @@ export class TradingScene extends Phaser.Scene {
 
         // 지금 무엇이 켜져 있고 **언제까지 가는지**. 카드가 한 턴짜리라는 것도, 예보가
         // 몇 턴 남았는지도 화면 어디에도 없었다.
-        this.activeLabel = this.add.text(L, b.y + 100, "", {
+        this.activeLabel = mkText(this, L, b.y + 100, "", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
 
@@ -392,7 +401,7 @@ export class TradingScene extends Phaser.Scene {
         const size = 26, gap = 6;
 
         if (this.rogue.relics.length === 0) {
-            this.relicRow.add(this.add.text(0, 6, "없음", {
+            this.relicRow.add(mkText(this, 0, 6, "없음", {
                 fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
             }));
             return;
@@ -404,7 +413,7 @@ export class TradingScene extends Phaser.Scene {
             g.fillStyle(C.panelHi, 1).fillRect(x, 0, size, size);
             g.lineStyle(1, C.gold, 1).strokeRect(x + 0.5, 0.5, size - 1, size - 1);
 
-            const ch = this.add.text(x + size / 2, size / 2, relic.name.slice(0, 1), {
+            const ch = mkText(this, x + size / 2, size / 2, relic.name.slice(0, 1), {
                 fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
             }).setOrigin(0.5);
 
@@ -685,7 +694,7 @@ export class TradingScene extends Phaser.Scene {
         const mid = px + pw / 2;
 
         const t = (y: number, s: string, size: number, color: string) =>
-            box.add(this.add.text(mid, y, s, {
+            box.add(mkText(this, mid, y, s, {
                 fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
                 wordWrap: { width: pw - 30 },
             }).setOrigin(0.5, 0));
@@ -772,10 +781,10 @@ export class TradingScene extends Phaser.Scene {
         const { box, px, py } = this.openOverlay(pw, ph, C.gold);
         const mid = px + pw / 2;
 
-        box.add(this.add.text(mid, py + 16, "RELIC — 판이 끝날 때까지", {
+        box.add(mkText(this, mid, py + 16, "RELIC — 판이 끝날 때까지", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(0.5, 0));
-        box.add(this.add.text(mid, py + 32, "하나를 고르세요", {
+        box.add(mkText(this, mid, py + 32, "하나를 고르세요", {
             fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
         }).setOrigin(0.5, 0));
 
@@ -805,10 +814,10 @@ export class TradingScene extends Phaser.Scene {
         g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
         g.lineStyle(1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
 
-        const name = this.add.text(10, 9, title, {
+        const name = mkText(this, 10, 9, title, {
             fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
         });
-        const desc = this.add.text(10, name.y + name.height + 4, body, {
+        const desc = mkText(this, 10, name.y + name.displayHeight + 4, body, {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
             wordWrap: { width: w - 20 }, lineSpacing: 2,
         });
@@ -858,10 +867,10 @@ export class TradingScene extends Phaser.Scene {
         const { box, px, py } = this.openOverlay(pw, ph, C.gold);
         const mid = px + pw / 2;
 
-        box.add(this.add.text(mid, py + 16, "CARD REWARD — 이어서 유물", {
+        box.add(mkText(this, mid, py + 16, "CARD REWARD — 이어서 유물", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(0.5, 0));
-        box.add(this.add.text(mid, py + 32, "한 장을 덱에 넣습니다", {
+        box.add(mkText(this, mid, py + 32, "한 장을 덱에 넣습니다", {
             fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
         }).setOrigin(0.5, 0));
 
@@ -924,10 +933,10 @@ export class TradingScene extends Phaser.Scene {
         g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
         g.lineStyle(merge !== null ? 2 : 1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
 
-        const name = this.add.text(10, 9, card.name, {
+        const name = mkText(this, 10, 9, card.name, {
             fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: cursed ? S.danger : S.neon,
         });
-        const desc = this.add.text(10, 32, card.effectDescription, {
+        const desc = mkText(this, 10, 32, card.effectDescription, {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
             wordWrap: { width: w - 20 }, lineSpacing: 2,
         });
@@ -941,7 +950,7 @@ export class TradingScene extends Phaser.Scene {
         // 칸 바닥에서 위로 쌓는다. 좁은 칸에서 저주와 합성이 같은 줄에 앉으면 겹친다.
         let bottom = h - 10 - FS.xs;
         if (merge !== null) {
-            root.add(this.add.text(10, bottom,
+            root.add(mkText(this, 10, bottom,
                 merge === "" ? `모으면 ×3 → 사라짐` : `모으면 ×3 → ${merge}`,
                 { fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold },
             ));
@@ -950,7 +959,7 @@ export class TradingScene extends Phaser.Scene {
         if (cursed) {
             // 저주는 좁은 칸(가로 배치)에서만 아래로 내려온다. 넓으면 이름 옆이 비어 있다.
             const wide = !stacked && merge === null;
-            const tag = this.add.text(
+            const tag = mkText(this, 
                 wide ? w - 10 : 10,
                 wide ? 11 : bottom,
                 `+저주 ${card.curseName}`,
@@ -1004,7 +1013,7 @@ export class TradingScene extends Phaser.Scene {
         const mid = px + pw / 2;
 
         const t = (y: number, s: string, size: number, color: string) =>
-            box.add(this.add.text(mid, y, s, {
+            box.add(mkText(this, mid, y, s, {
                 fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
                 wordWrap: { width: pw - 30 },
             }).setOrigin(0.5, 0));

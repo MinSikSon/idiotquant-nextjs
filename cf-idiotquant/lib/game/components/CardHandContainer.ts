@@ -17,7 +17,7 @@
 
 import Phaser from "phaser";
 import type { StrategyCard } from "@/lib/game/core/types";
-import { C, S, FS, LANE, fontOf } from "@/lib/game/ui/theme";
+import { C, S, FS, LANE, fontOf, mkText } from "@/lib/game/ui/theme";
 
 /** 지금 아무 일도 못 하는 카드인가. 씬이 계좌를 보고 답한다. */
 export type IdleCheck = (card: StrategyCard) => boolean;
@@ -86,7 +86,7 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
         if (cards.length === 0) {
             // 파쇄기가 손패를 통째로 태웠을 때만 여기로 온다.
-            this.empty = this.scene.add.text(this.boxW / 2, this.boxH / 2, "이번 턴은 카드 없이", {
+            this.empty = mkText(this.scene, this.boxW / 2, this.boxH / 2, "이번 턴은 카드 없이", {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
             }).setOrigin(0.5);
             this.add(this.empty);
@@ -102,18 +102,18 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             const bg = this.scene.add.graphics();
 
             // 갈래 표시는 맨 위 한 줄. 색만으로는 밝은 화면에서 잘 안 갈린다.
-            const tag = this.scene.add.text(cw / 2, 5, lane.tag, {
+            const tag = mkText(this.scene, cw / 2, 5, lane.tag, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: lane.ink,
             }).setOrigin(0.5, 0);
 
-            const name = this.scene.add.text(cw / 2, tag.y + tag.height + 3, card.name, {
+            const name = mkText(this.scene, cw / 2, tag.y + tag.displayHeight + 3, card.name, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.sm}px`, color: S.ink,
                 align: "center", wordWrap: { width: cw - 12 },
             }).setOrigin(0.5, 0);
 
             // 설명은 이름이 **실제로 차지한 높이** 아래에서 시작한다. 고정값을 쓰면 칸이
             // 좁아 이름이 두 줄이 되는 순간(가로 배치가 그렇다) 설명 위에 겹쳐 찍힌다.
-            const desc = this.scene.add.text(cw / 2, name.y + name.height + 3, card.shortDescription, {
+            const desc = mkText(this.scene, cw / 2, name.y + name.displayHeight + 3, card.shortDescription, {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
                 align: "center", wordWrap: { width: cw - 14 }, lineSpacing: 2,
             }).setOrigin(0.5, 0);
@@ -157,22 +157,22 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
         // 먼저 0 을 기준으로 쌓아 **실제 높이를 재고**, 그 다음에 칸을 그 높이에 맞춘다.
         // 칸 크기를 먼저 못박으면 설명이 한 줄 길어지는 순간 안내 위에 겹쳐 찍힌다.
-        const head = this.scene.add.text(pad, 10, `${lane.tag} · ${v.card.name}`, {
+        const head = mkText(this.scene, pad, 10, `${lane.tag} · ${v.card.name}`, {
             fontFamily: fontOf(this.scene), fontSize: `${FS.md}px`, color: lane.ink,
             wordWrap: { width: w - pad * 2 - 56 },
         });
-        const close = this.scene.add.text(w - pad, 12, "닫기 ✕", {
+        const close = mkText(this.scene, w - pad, 12, "닫기 ✕", {
             fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
         }).setOrigin(1, 0);
-        const effect = this.scene.add.text(pad, head.y + head.height + 6, v.card.effectDescription, {
+        const effect = mkText(this.scene, pad, head.y + head.displayHeight + 6, v.card.effectDescription, {
             fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.ink,
             wordWrap: { width: w - pad * 2 }, lineSpacing: 3,
         });
-        const when = this.scene.add.text(pad, effect.y + effect.height + 6, v.card.when, {
+        const when = mkText(this.scene, pad, effect.y + effect.displayHeight + 6, v.card.when, {
             fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
             wordWrap: { width: w - pad * 2 }, lineSpacing: 3,
         });
-        const hint = this.scene.add.text(w / 2, when.y + when.height + 8,
+        const hint = mkText(this.scene, w / 2, when.y + when.displayHeight + 8,
             v.idle ? "지금은 아무 일도 안 합니다 — 한 번 더 누르면 사용"
                 : "한 번 더 누르면 사용합니다",
             {
@@ -183,7 +183,7 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
         // 필요한 만큼 위로 올라간다. 짧은 카드라도 최소 OPEN_RISE 는 올려 둔다 — 칸이
         // 카드마다 들쭉날쭉하면 눈이 매번 다시 자리를 찾는다.
-        const need = hint.y + hint.height + 10;
+        const need = hint.y + hint.displayHeight + 10;
         const y0 = Math.min(-OPEN_RISE, this.boxH - need);
         const h = this.boxH - y0;
         for (const t of [head, close, effect, when, hint]) t.y += y0;

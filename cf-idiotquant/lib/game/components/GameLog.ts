@@ -16,7 +16,7 @@
 // 남기고 싶을 때 여기를 안 고친다.
 
 import Phaser from "phaser";
-import { C, S, FS, LOG, fontOf, type LogKind } from "@/lib/game/ui/theme";
+import { C, S, FS, LOG, fontOf, mkText, pxOf, type LogKind } from "@/lib/game/ui/theme";
 
 export interface LogEntry {
     /**
@@ -80,14 +80,14 @@ export class GameLog extends Phaser.GameObjects.Container {
         // 줄은 **미리 만들어 두고 글자만 갈아 끼운다.** 매번 지웠다 만들면 로그가 쌓일수록
         // 턴을 넘길 때마다 수십 개의 Text 가 생겼다 사라진다.
         for (let i = 0; i < this.rows; i++) {
-            const t = scene.add.text(PADX + CHIP_W + 6, PADY + i * ROW, "", {
+            const t = mkText(scene, PADX + CHIP_W + 6, PADY + i * ROW, "", {
                 fontFamily: fontOf(scene), fontSize: `${FS.xs}px`, color: S.inkDim,
             });
             this.lines.push(t);
         }
 
         // 되감아 놓은 동안만 뜬다 — 지금 보는 것이 맨 아래가 아니라는 표시.
-        this.moreLabel = scene.add.text(this.boxW - PADX, this.boxH - PADY - FS.xs, "", {
+        this.moreLabel = mkText(scene, this.boxW - PADX, this.boxH - PADY - FS.xs, "", {
             fontFamily: fontOf(scene), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(1, 0);
 
@@ -97,9 +97,12 @@ export class GameLog extends Phaser.GameObjects.Container {
         const zone = scene.add.zone(0, 0, this.boxW, this.boxH).setOrigin(0, 0)
             .setInteractive({ useHandCursor: true, draggable: true });
         let anchor = 0;
+        // 포인터의 x·y 는 **캔버스 좌표**라 설계 격자가 아니다. 버퍼를 기기 해상도로 잡은
+        // 뒤로는 이 값이 배율만큼 크므로, 나눠서 설계 격자로 되돌린 뒤 줄 수를 센다.
+        const k = pxOf(scene);
         zone.on("dragstart", () => { anchor = this.scroll; });
         zone.on("drag", (_p: Phaser.Input.Pointer, _x: number, _y: number) => {
-            const dy = _p.y - _p.downY;
+            const dy = (_p.y - _p.downY) / k;
             this.setScroll(anchor + Math.round(dy / ROW));
         });
         this.add(zone);
