@@ -80,6 +80,11 @@ export function regimeLabel(r: Regime): string {
     return REGIME[r].label;
 }
 
+/** 저주에 막혀 아무것도 못 본 턴. */
+function blindRead(): MarketRead {
+    return { next: [], regime: null, regimeDrift: null, turnsLeft: null, nextRegime: null, nextDrift: null };
+}
+
 /**
  * 뉴스 — 국면 위에 얹히는 단발 충격.
  *
@@ -343,8 +348,12 @@ export class StockEngine {
      * 오직 이번 턴의 buff 가 정한다 — 그게 정보 카드에 값어치를 주는 유일한 방법이다.
      */
     read(buff: TurnBuff): MarketRead {
-        if (buff.blind) return { next: [], regime: null, turnsLeft: null };
+        if (buff.blind) return blindRead();
         const here = this.plan[this.cursor];
+        // 국면은 **한 겹씩** 벗겨진다. 카드가 강화될수록 깊이가 는다(TurnBuff.regimeDepth).
+        const depth = here ? Math.max(0, buff.regimeDepth) : 0;
+        const after = depth >= 3 ? this.regimeAfter() : null;
+
         return {
             next: this.plan
                 .slice(this.cursor, this.cursor + Math.max(0, buff.peekTurns))
@@ -353,9 +362,23 @@ export class StockEngine {
                 // 화면이 거짓말을 하는 셈이다. 둘째 턴부터는 지금 든 카드가 이미 만료라
                 // 계획 그대로다(다만 tick 과 같은 한계는 씌운다).
                 .map((t, i) => moveWith(t.base, i === 0 ? buff : NO_BUFF) * 100),
-            regime: buff.revealRegime && here ? here.regime : null,
-            turnsLeft: buff.revealClock && here ? here.turnsLeft : null,
+            regime: depth >= 1 ? here!.regime : null,
+            regimeDrift: depth >= 1 ? REGIME[here!.regime].drift * 100 : null,
+            turnsLeft: depth >= 2 ? here!.turnsLeft : null,
+            nextRegime: depth >= 3 ? after : null,
+            nextDrift: depth >= 4 && after ? REGIME[after].drift * 100 : null,
         };
+    }
+
+    /** 지금 국면 다음에 오는 것. 판이 여기서 끝나면 null. */
+    private regimeAfter(): Regime | null {
+        const now = this.plan[this.cursor]?.regime;
+        if (!now) return null;
+        for (let i = this.cursor + 1; i < this.plan.length; i++) {
+            const r = this.plan[i]!.regime;
+            if (r !== now) return r;
+        }
+        return null;
     }
 
     /* ── 한 턴 ───────────────────────────────────────────── */

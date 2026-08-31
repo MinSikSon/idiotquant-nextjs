@@ -24,7 +24,7 @@
 import Phaser from "phaser";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 import {
-    CARD_LIST, MERGE_COUNT, OPENING_DECK_SIZE, RELIC_POOL, RoguelikeManager,
+    CARD_LIST, MAX_LEVEL, MERGE_COUNT, OPENING_DECK_SIZE, RELIC_POOL, RoguelikeManager, cardKey,
     type DeckEntry, type MergeResult,
 } from "@/lib/game/core/RoguelikeManager";
 import type { MarketRead, Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
@@ -539,8 +539,8 @@ export class TradingScene extends Phaser.Scene {
     /** 합성을 로그에도 남긴다. 알림은 한 번 닫으면 끝이고, 로그는 되감을 수 있다. */
     private logMerges(merges: MergeResult[]) {
         for (const m of merges) {
-            this.log(m.to ? `합성 ${m.from} ×${MERGE_COUNT} → ${m.to}`
-                : `합성 ${m.from} ×${MERGE_COUNT} 소멸`, "system");
+            this.log(m.to ? `강화 ${m.from} ×${MERGE_COUNT} → ${m.to}`
+                : `강화 ${m.from} ×${MERGE_COUNT} 소멸`, "system");
         }
     }
 
@@ -548,7 +548,7 @@ export class TradingScene extends Phaser.Scene {
      * 지금 이 계좌에서 아무 일도 못 하는 카드인가. 손패가 흐리게 칠할 근거다.
      * 화살표 함수라 setHand 에 그대로 넘길 수 있다.
      */
-    private idleCheck = (card: StrategyCard): boolean => this.rogue.isIdle(card.id, {
+    private idleCheck = (card: StrategyCard): boolean => this.rogue.isIdle(cardKey(card.id, card.level), {
         shares: this.engine.player.shares,
         cash: this.engine.player.cash,
         price: this.engine.stock.currentPrice,
@@ -567,7 +567,7 @@ export class TradingScene extends Phaser.Scene {
         // 이번 턴의 등락이 달라지므로, 이미 떠 있던 예보를 **그 카드가 반영된 값으로**
         // 다시 그려야 한다. 안 그러면 −8% 라 적힌 봉을 보고 겁먹었는데 −4% 가 온다.
         const buff = this.rogue.buildBuff();
-        this.rogue.rememberPeek(buff.peekTurns);
+        this.rogue.remember(buff);
         this.marketRead = this.engine.read(buff);
 
         // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
@@ -636,7 +636,8 @@ export class TradingScene extends Phaser.Scene {
         const finished = this.engine.player.currentTurn;
         const buff = this.rogue.buildBuff();
         const tickRes = this.engine.tick(buff);
-        const endFired = this.rogue.onTurnEnd(this.engine.player, tickRes.changePct);
+        const endFired = this.rogue.onTurnEnd(
+            this.engine.player, tickRes.changePct, this.engine.stock.currentPrice);
 
         // 주가가 움직인 것은 **끝낸 턴의 일**이다. advanceTurn 뒤에 적으면 로그의 턴
         // 번호가 하나씩 밀려, 다음 턴이 열리기도 전에 그 턴의 등락이 있었던 것처럼 읽힌다.
@@ -650,7 +651,7 @@ export class TradingScene extends Phaser.Scene {
         this.logAll(moved);
 
         this.engine.advanceTurn();
-        this.rogue.consumePeek();
+        this.rogue.consumeTurn();
         // **읽은 것을 먼저 지우고 나서 그린다.** 순서가 반대면 방금 결판난 턴의 유령 봉이
         // 새 봉 옆에 한 번 더 그려져, 이미 온 등락을 아직 올 것처럼 가리킨다.
         this.marketRead = null;
@@ -670,10 +671,15 @@ export class TradingScene extends Phaser.Scene {
     private refreshActive() {
         const picked = this.rogue.pickedCard;
         const peekLeft = this.marketRead?.next.length ?? 0;
+        // 여러 턴 가는 것은 셋이다 — 예보·수수료 면제·손절 예약. 하나만 말하면 나머지
+        // 둘은 걸어 둔 줄도 모른 채 지나간다.
+        const left = this.rogue.lastingLeft;
 
         const bits: string[] = [];
         if (picked) bits.push(`${picked.name} · 이번 턴까지`);
         if (peekLeft > 0) bits.push(`예보 ${peekLeft}턴치`);
+        if (left.fee > 0) bits.push(`수수료 0 · ${left.fee}턴`);
+        if (left.stop > 0) bits.push(`손절 · ${left.stop}턴`);
 
         this.activeLabel
             .setText(bits.length > 0 ? `켜짐 — ${bits.join(" · ")}` : "STRATEGY — 한 턴에 한 장")
@@ -820,7 +826,7 @@ export class TradingScene extends Phaser.Scene {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(0.5, 0));
         box.add(mkText(this, mid, py + (tight ? 24 : 34),
-            `같은 카드 ${MERGE_COUNT}장이 한 장으로`, {
+            `같은 카드 ${MERGE_COUNT}장이 한 단계 위로`, {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         }).setOrigin(0.5, 0));
 
@@ -879,7 +885,7 @@ export class TradingScene extends Phaser.Scene {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.steel,
         }).setOrigin(0.5, 0));
         box.add(mkText(this, px + pw / 2, py + 26,
-            `같은 카드 ${MERGE_COUNT}장이면 한 장으로 합쳐집니다`, {
+            `같은 카드 ${MERGE_COUNT}장이면 한 단계 위로 (최대 +${MAX_LEVEL})`, {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         }).setOrigin(0.5, 0));
 
@@ -888,13 +894,20 @@ export class TradingScene extends Phaser.Scene {
             const lane = LANE[e.lane];
             // 왼쪽은 무엇을 몇 장, 오른쪽은 합성까지 얼마나. 한 줄에 붙여 쓰면 이름이
             // 긴 카드에서 두 덩이가 서로를 밟는다.
-            box.add(mkText(this, L, y, `${lane.tag} ${e.name}`, {
-                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: lane.ink,
-            }));
-            box.add(mkText(this, R, y, this.mergeNote(e), {
+            const note = mkText(this, R, y, this.mergeNote(e), {
                 fontFamily: fontOf(this), fontSize: `${FS.xs}px`,
                 color: e.ready ? S.gold : S.inkDim,
-            }).setOrigin(1, 0));
+            }).setOrigin(1, 0);
+            // 이름은 **오른쪽 덩이가 차지하고 남은 만큼**만 쓴다. 강화 표시가 붙으면서
+            // 이름이 길어져, 못 박아 두면 긴 이름에서 두 덩이가 겹쳐 찍힌다.
+            const name = mkText(this, L, y, `${lane.tag} ${e.name}`, {
+                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: lane.ink,
+            });
+            const room = R - note.displayWidth - 8 - L;
+            while (name.displayWidth > room && name.text.length > 3) {
+                name.setText(`${name.text.slice(0, -2)}…`);
+            }
+            box.add([name, note]);
         });
 
         if (cut > 0) {
@@ -913,8 +926,15 @@ export class TradingScene extends Phaser.Scene {
     /** 이 카드가 합성까지 얼마나 남았는가. 오른쪽 끝에 붙는 한 덩이다. */
     private mergeNote(e: DeckEntry): string {
         const count = `×${e.count}`;
-        if (e.mergeInto === undefined) return `${count}  합성 없음`;
-        const to = e.mergeInto ?? "사라짐";
+        // 더 오를 곳이 없는 두 가지를 갈라 말한다. 3강은 다 올린 것이고, 저주는 애초에
+        // 안 오르는 것이다 — 둘을 한 말로 뭉치면 3강이 손해처럼 읽힌다.
+        if (e.mergeInto === undefined) {
+            return e.level >= MAX_LEVEL ? `${count}  최대 강화` : `${count}  강화 없음`;
+        }
+        // **되는 카드 이름을 다시 안 쓴다.** 왼쪽에 이미 있고, 강화는 같은 카드가 한 단계
+        // 오르는 것이라 `+N` 하나면 말이 된다. 이름을 되풀이하면 긴 이름에서 두 덩이가
+        // 서로를 밟는다(애널리스트 리포트 +1 이 실제로 그랬다).
+        const to = e.mergeInto === null ? "사라짐" : `+${e.level + 1}`;
         return e.ready ? `${count}  한 장 더 → ${to}` : `${count}  ${MERGE_COUNT}장 → ${to}`;
     }
 
@@ -1066,9 +1086,9 @@ export class TradingScene extends Phaser.Scene {
             const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
             // 이 한 장이 셋째 장이면 **고르기 전에** 말해 준다. 그래야 "약한 카드를
             // 모아 강화한다" 가 선택이 된다.
-            const merge = this.rogue.mergePreview(card.id);
+            const merge = this.rogue.mergePreview(cardKey(card.id, card.level));
             box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, merge, () => {
-                const curse = this.rogue.takeReward(card.id);
+                const curse = this.rogue.takeReward(cardKey(card.id, card.level));
                 const lines: [string, LogKind][] = [
                     [`카드 획득 ${card.name}`, "card"],
                 ];
@@ -1263,7 +1283,7 @@ export class TradingScene extends Phaser.Scene {
         const d = this.rogue.deckState;
         const ready = this.rogue.deckList.filter(e => e.ready).length;
         this.deckText
-            .setText(ready > 0 ? `DECK ${d.draw}/${d.total} · 합성 임박 ${ready} ▸`
+            .setText(ready > 0 ? `DECK ${d.draw}/${d.total} · 강화 임박 ${ready} ▸`
                 : d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses} ▸`
                     : `DECK ${d.draw}/${d.total} ▸`)
             .setColor(ready > 0 ? S.gold : d.curses > 0 ? S.danger : S.inkDim);

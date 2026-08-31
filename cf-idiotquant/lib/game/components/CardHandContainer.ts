@@ -44,6 +44,17 @@ interface CardView {
 
 const GAP = 8;
 
+/**
+ * 강화 꼬리(` +2`)를 뗀 이름.
+ *
+ * 코어가 주는 `name` 은 `예고 시황 +2` 처럼 강화가 붙어 있다 — 로그와 합성 알림에서는
+ * 그래야 무엇이 무엇이 되었는지 말할 수 있다. 카드 칸에서는 금색 딱지가 같은 말을 이미
+ * 하고 있어서, 여기서만 뗀다.
+ */
+function baseName(card: StrategyCard): string {
+    return card.level > 0 ? card.name.replace(/ \+\d+$/, "") : card.name;
+}
+
 /** 펼침 칸이 위쪽(유물·켜짐 줄)으로 넘어가는 높이. 세로 폰에서 설명 넉 줄이 들어간다. */
 const OPEN_RISE = 64;
 
@@ -106,7 +117,22 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: lane.ink,
             }).setOrigin(0.5, 0);
 
-            const name = mkText(this.scene, cw / 2, tag.y + tag.displayHeight + 3, card.name, {
+            // 강화 표시 — **오른쪽 위 금색 `+N` 딱지.**
+            //
+            // 이름에도 `+2` 가 붙어 있지만(`card.name`) 그 두 글자는 세 장이 나란히 선
+            // 자리에서 눈에 안 들어온다. 색과 자리가 따로 있어야 "이건 올린 카드다" 가
+            // 글자를 읽기 전에 온다. 그래서 딱지를 붙이는 칸에서는 이름의 꼬리를 뗀다 —
+            // 같은 말이 한 칸에 두 번 있으면 좁은 카드에서 이름만 두 줄이 된다.
+            const badge: Phaser.GameObjects.GameObject[] = [];
+            if (card.level > 0) {
+                const g = this.scene.add.graphics();
+                g.fillStyle(C.gold, 1).fillRect(cw - 22, 4, 18, FS.xs + 5);
+                badge.push(g, mkText(this.scene, cw - 13, 6, `+${card.level}`, {
+                    fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.bg,
+                }).setOrigin(0.5, 0));
+            }
+
+            const name = mkText(this.scene, cw / 2, tag.y + tag.displayHeight + 3, baseName(card), {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.sm}px`, color: S.ink,
                 align: "center", wordWrap: { width: cw - 12 },
             }).setOrigin(0.5, 0);
@@ -122,7 +148,8 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
                 .setOrigin(0, 0)
                 .setInteractive({ useHandCursor: true });
 
-            root.add([bg, tag, name, desc, zone]);
+            // bg 가 맨 아래. 딱지는 그 위, 입력 zone 은 맨 위여야 한다.
+            root.add([bg, tag, ...badge, name, desc, zone]);
             this.add(root);
 
             const view: CardView = { root, bg, name, desc, tag, card, idle };
