@@ -1,16 +1,20 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'IdiotQuant - 무료 NCAV·저PBR·저PER 주식 스크리너',
-  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,400개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 데이터 기반 스마트 가치투자의 시작.',
+  // `absolute` 가 없으면 루트의 template(`%s | IdiotQuant`)이 한 번 더 붙어
+  // "IdiotQuant - … | IdiotQuant" 가 된다 — 검색 결과에서 브랜드가 두 번 나온다.
+  // 그리고 이 사이트가 무엇인지 첫 낱말로 말한다: 사람들은 "퀀트" 를 검색한다.
+  title: { absolute: '퀀트 주식 스크리너 - 무료 퀀트 투자 종목 발굴 | IdiotQuant' },
+  description: '퀀트(quant) 알고리즘이 매일 코스피·코스닥 2,400개 종목에 NCAV·저PBR·저PER·S-RIM 기준을 적용해 저평가 주식을 발굴합니다. 가입 없이 무료, 코드 없이 시작하는 퀀트 투자.',
   keywords: [
-    'NCAV 주식', '저PBR 주식', '저PER 주식', '퀀트 투자', '주식 스크리너',
+    '퀀트', 'quant', '퀀트 투자', '퀀트 주식', '퀀트 스크리너', '무료 퀀트',
+    'NCAV 주식', '저PBR 주식', '저PER 주식', '주식 스크리너',
     '저평가 주식', '주식 발굴', '퀀트 전략', '가치투자', '코스피 저평가 주식',
   ],
   alternates: { canonical: 'https://idiotquant.com' },
   openGraph: {
-    title: 'IdiotQuant - 무료 NCAV·저PBR·저PER 주식 스크리너',
-    description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다.',
+    title: '퀀트 주식 스크리너 - 무료 퀀트 투자 종목 발굴',
+    description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다. 가입 없이 무료.',
     url: 'https://idiotquant.com',
   },
 };
