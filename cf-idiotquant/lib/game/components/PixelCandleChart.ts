@@ -8,7 +8,7 @@
 import Phaser from "phaser";
 import type { Candle, MarketRead } from "@/lib/game/core/types";
 import { regimeLabel } from "@/lib/game/core/StockEngine";
-import { C, S, FS, fontOf, mkText } from "@/lib/game/ui/theme";
+import { C, S, FS, fontOf, mkText, pct } from "@/lib/game/ui/theme";
 
 /** 화면에 남기는 봉의 수. 한 판이 12턴이라 판 전체가 한눈에 들어온다. */
 export const VISIBLE_BARS = 12;
@@ -53,7 +53,7 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         this.hiLabel = mk("left");
         this.loLabel = mk("left");
         this.nowLabel = mk("right");
-        this.readLabel = mk("right").setColor(S.gold);
+        this.readLabel = mk("right").setColor(S.gold).setAlign("right").setLineSpacing(3);
         this.ghostLabels = [0, 1].map(() => mk("left").setColor(S.inkDim).setVisible(false));
 
         this.add([this.frame, this.plot, this.hiLabel, this.loLabel, this.nowLabel, this.readLabel, ...this.ghostLabels]);
@@ -209,16 +209,44 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
 
         this.hiLabel.setPosition(4, 3).setText(hi.toLocaleString());
         this.loLabel.setPosition(4, this.boxH - FS.xs - 4).setText(lo.toLocaleString());
+
+        // 읽어 낸 국면은 차트 오른쪽 위에. 읽은 깊이만큼 한 조각씩 붙는다.
+        //
+        // **기울기(턴당 평균 등락)가 첫 조각이다.** 예전에는 "국면 상승" 한 단어뿐이라,
+        // 그 카드를 쓰고도 얼마나 걸어야 할지가 안 정해졌다 — 읽은 것이 값이 되려면
+        // 단어가 숫자로 바뀌어야 한다.
+        //
+        // 다 벗겨진 3강은 조각이 넷이라 한 줄로는 차트를 가로지른다. **두 줄로 접는다** —
+        // 지금 국면이 윗줄, 다음에 올 것이 아랫줄이다.
+        const lines = readLines(read);
+        this.readLabel.setPosition(this.boxW - 4, 3).setText(lines);
+
+        // 지금 값은 국면 줄 **아래로** 밀어 둔다. 주가가 차트 위쪽에 붙은 판에서는 둘이
+        // 같은 자리를 잡아 글자가 겹쳐 찍혔다.
+        const readBottom = lines.length > 0 ? 3 + lines.length * (FS.xs + 3) : 3;
         this.nowLabel
-            .setPosition(this.boxW - 4, Math.max(3, Math.min(this.boxH - FS.xs - 4, ly - FS.xs - 3)))
+            .setPosition(this.boxW - 4,
+                Math.max(readBottom, Math.min(this.boxH - FS.xs - 4, ly - FS.xs - 3)))
             .setText(last.c.toLocaleString())
             .setColor(last.c >= last.o ? S.up : S.down);
-
-        // 읽어 낸 국면은 차트 오른쪽 위에. 남은 턴까지 읽었으면 함께 쓴다.
-        const regime = read?.regime
-            ? `국면 ${regimeLabel(read.regime)}${read.turnsLeft !== null && read.turnsLeft !== undefined
-                ? ` · ${read.turnsLeft}턴 남음` : ""}`
-            : "";
-        this.readLabel.setPosition(this.boxW - 4, 3).setText(regime);
     }
+}
+
+/**
+ * 국면 줄. 못 읽은 조각은 그냥 빠지고, 다음 국면까지 읽었으면 둘째 줄로 내려간다.
+ *
+ * 말을 짧게 두는 것이 요점이다 — "국면"·"남음" 같은 말은 자리만 먹고, 그 자리가
+ * 모자라면 차트의 고가·현재가와 부딪힌다.
+ */
+function readLines(read?: MarketRead | null): string[] {
+    if (!read?.regime) return [];
+    const now = [regimeLabel(read.regime)];
+    if (read.regimeDrift !== null) now.push(`턴당 ${pct(read.regimeDrift)}`);
+    if (read.turnsLeft !== null) now.push(`${read.turnsLeft}턴`);
+
+    const out = [now.join(" · ")];
+    if (read.nextRegime) {
+        out.push(`다음 ${regimeLabel(read.nextRegime)}${read.nextDrift !== null ? ` ${pct(read.nextDrift)}` : ""}`);
+    }
+    return out;
 }

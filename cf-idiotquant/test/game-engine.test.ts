@@ -229,7 +229,7 @@ test("카드를 안 쓰면 아무것도 안 보인다", () => {
 test("정보 차단은 무엇을 읽어도 가린다", () => {
     // 저주 하나가 그 턴의 정보를 통째로 지운다.
     const e = new StockEngine(303);
-    const r = e.read(buff({ peekTurns: 2, revealRegime: true, revealClock: true, blind: true }));
+    const r = e.read(buff({ peekTurns: 2, regimeDepth: 2, blind: true }));
     assert.deepEqual(r.next, []);
     assert.equal(r.regime, null);
 });
@@ -241,7 +241,7 @@ test("국면은 세 종류뿐이고 몇 턴씩 이어진다", () => {
         const e = new StockEngine(seed);
         let prev: string | null = null, len = 0;
         for (let t = 0; t < 12; t++) {
-            const now = e.read(buff({ revealRegime: true })).regime!;
+            const now = e.read(buff({ regimeDepth: 1 })).regime!;
             assert.ok(["bull", "bear", "chop"].includes(now));
             if (now === prev) len++;
             else { if (prev !== null) { runs++; total += len; } prev = now; len = 1; }

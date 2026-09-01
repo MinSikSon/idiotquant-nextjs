@@ -80,8 +80,8 @@ export interface Unlock {
  * 판을 거듭할 이유와 다양성이 같은 곳에서 나온다.
  */
 export const UNLOCKS: readonly Unlock[] = [
-    { id: "ledger", kind: "relic", at: 40 },
-    { id: "stoploss", kind: "card", at: 70 },
+    { id: "dividend", kind: "relic", at: 40 },
+    { id: "insider", kind: "card", at: 70 },
     { id: "hotline", kind: "relic", at: 110 },
     { id: "margin", kind: "card", at: 160 },
     { id: "shredder", kind: "relic", at: 220 },

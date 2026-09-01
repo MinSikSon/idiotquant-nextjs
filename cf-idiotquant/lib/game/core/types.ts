@@ -59,8 +59,13 @@ export interface StrategyCard {
     shortDescription: string;
     /** 눌러서 펼쳤을 때 나오는 것. */
     effectDescription: string;
-    /** 언제 쓰는 카드인가. 자세히 펼쳤을 때 함께 나온다. */
+    /** 언제 쓰는 카드인가. 자세히 펼쳤을 때 함께 나온다. 강화해도 안 바뀐다. */
     when: string;
+    /**
+     * 강화 단계(0~3). **`name` 에 이미 `+N` 이 붙어 있지만** 화면이 뱃지를 따로 그린다 —
+     * 이름 끝의 두 글자는 세 장이 나란히 선 자리에서 눈에 안 들어온다.
+     */
+    level: number;
     isUsed: boolean;
     /**
      * 이 카드를 **얻으면** 덱에 함께 들어오는 저주의 이름. 보상 화면이 값을 미리 말하는
@@ -134,10 +139,28 @@ export interface TurnBuff {
     stopLoss: number;
     /** 앞으로 몇 턴의 등락을 미리 보는가. 0 이면 못 본다. */
     peekTurns: number;
-    /** 지금 국면을 알려 주는가. */
-    revealRegime: boolean;
-    /** 지금 국면이 몇 턴 남았는지 알려 주는가. */
-    revealClock: boolean;
+    /**
+     * 몇 턴 동안 수수료·거래세를 안 내는가. 0 이면 이 카드로는 면제가 없다.
+     *
+     * `feeMult` 와 나뉘어 있는 이유: 저 값은 **이번 턴의 배수**이고 이것은 **남는 턴 수**다.
+     * 매니저가 세다가 남아 있는 동안 `feeMult` 를 0 으로 만든다 — 예보와 같은 구조다.
+     */
+    feeFreeTurns: number;
+    /** 손절 예약이 몇 턴 걸려 있는가. 위와 같은 이유로 `stopLoss` 와 나뉜다. */
+    stopLossTurns: number;
+    /**
+     * 국면을 **몇 겹까지** 읽는가. 0 이면 아무것도 못 본다.
+     *
+     *   1  지금 국면 + 턴당 평균 등락
+     *   2  + 이 국면이 몇 턴 남았는가
+     *   3  + 다음에 올 국면
+     *   4  + 다음 국면의 턴당 평균 등락
+     *
+     * 예전에는 `revealRegime` · `revealClock` 두 불리언이었다. 카드가 강화되며 정보가 한
+     * 겹씩 벗겨지는 지금은 **깊이 하나**가 그 순서를 그대로 말한다 — 불리언 넷을 늘어놓으면
+     * "무엇이 무엇보다 센가" 가 타입에서 안 보인다.
+     */
+    regimeDepth: number;
     /** 이번 턴 현금에서 이 비율만큼 빠져나간다(0.05 = 5%). 이자. */
     cashDrainPct: number;
     /** 저주 — 이번 턴은 무엇을 써도 안 보인다. */
@@ -152,8 +175,9 @@ export const NO_BUFF: TurnBuff = {
     buyingPowerMult: 1,
     stopLoss: 0,
     peekTurns: 0,
-    revealRegime: false,
-    revealClock: false,
+    feeFreeTurns: 0,
+    stopLossTurns: 0,
+    regimeDepth: 0,
     cashDrainPct: 0,
     blind: false,
 };
@@ -169,8 +193,19 @@ export interface MarketRead {
     next: number[];
     /** 지금 국면. 못 읽었으면 null. */
     regime: Regime | null;
+    /**
+     * 이 국면의 **턴당 평균 등락(%)**. 못 읽었으면 null.
+     *
+     * "상승" 이라는 단어 하나로는 얼마나 오르는지를 모른다. 국면을 읽는 카드가 값어치를
+     * 가지려면 그 단어가 숫자로 바뀌어야 한다 — 그래야 얼마나 걸지를 정할 수 있다.
+     */
+    regimeDrift: number | null;
     /** 이 국면이 몇 턴 더 가는가. 못 읽었으면 null. */
     turnsLeft: number | null;
+    /** 이 국면 다음에 올 것. 못 읽었거나 판이 끝나면 null. */
+    nextRegime: Regime | null;
+    /** 다음 국면의 턴당 평균 등락(%). 못 읽었으면 null. */
+    nextDrift: number | null;
 }
 
 /** 한 틱이 실제로 무엇을 했는가. 화면이 뉴스 티커에 그대로 쓴다. */

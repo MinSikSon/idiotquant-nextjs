@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import {
     RoguelikeManager, HAND_SIZE, REWARD_TURNS, OFFER_SIZE,
-    MERGE_COUNT, OPENING_DECK_SIZE, openingDeck, CARD_LIST, RELIC_POOL,
+    MAX_LEVEL, MERGE_COUNT, OPENING_DECK_SIZE, openingDeck, CARD_LIST, RELIC_POOL, cardKey,
 } from "@/lib/game/core/RoguelikeManager";
 import {
     applyRun, isNewBest, isRuined, RUIN_LINE,
@@ -44,13 +44,16 @@ function mulberry(seed: number): () => number {
     };
 }
 
-/** 그 카드가 손에 잡힐 때까지 턴을 넘긴다. 덱에서 뽑는 이상 몇 턴 걸릴 수 있다. */
-function drawUntil(r: RoguelikeManager, id: string, tries = 80): StrategyCard {
+/**
+ * 그 카드가 손에 잡힐 때까지 턴을 넘긴다. 덱에서 뽑는 이상 몇 턴 걸릴 수 있다.
+ * @param key 덱에 적힌 이름. 강화 단계까지 짚는다(`peek+1`).
+ */
+function drawUntil(r: RoguelikeManager, key: string, tries = 80): StrategyCard {
     for (let i = 0; i < tries; i++) {
-        const got = r.dealHand().find(c => c.id === id);
+        const got = r.dealHand().find(c => cardKey(c.id, c.level) === key);
         if (got) return got;
     }
-    throw new Error(`${id} 가 ${tries}턴 안에 안 잡혔다`);
+    throw new Error(`${key} 가 ${tries}턴 안에 안 잡혔다`);
 }
 
 /* ── 손패 ───────────────────────────────────────────────────── */
@@ -198,7 +201,7 @@ test("저주가 딸린 카드를 받으면 저주도 함께 덱에 들어간다"
 test("파쇄기는 손에 잡힌 저주를 덱 밖으로 버린다", () => {
     const r = new RoguelikeManager(7);
     r.relics = [{ id: "shredder", name: "파쇄기", triggerType: "onTurnStart", description: "" }];
-    r.takeReward("tipoff");
+    r.takeReward("insider");
     assert.equal(r.deckState.curses, 1);
 
     const p = { cash: 0, shares: 0, avgPrice: 0, currentTurn: 1, maxTurns: 12, insightPoints: 0 };
@@ -224,26 +227,26 @@ test("카드마다 건드리는 곳이 다르다", () => {
     // 세 갈래(정보·집행·방어)가 정말로 서로 다른 자리를 건드리는지.
     const want: Record<string, (b: ReturnType<RoguelikeManager["buildBuff"]>) => boolean> = {
         peek: b => b.peekTurns >= 1,
-        forecast: b => b.peekTurns >= 2,
-        analyst: b => b.revealRegime,
-        tipoff: b => b.revealRegime && b.revealClock,
+        "peek+2": b => b.peekTurns >= 3,
+        analyst: b => b.regimeDepth >= 1,
+        "analyst+1": b => b.regimeDepth >= 2,
         hedge: b => b.moveMult < 1,
-        bunker: b => b.downshieldRatio > 0.5,
+        "hedge+3": b => b.downshieldRatio > 0.5,
         stoploss: b => b.stopLoss > 0,
         nofee: b => b.feeMult === 0,
+        insider: b => b.peekTurns >= 2 && b.regimeDepth >= 2,
         margin: b => b.buyingPowerMult > 1,
         blackout: b => b.blind,
-        probe: b => b.feeMult > 1,
         debt: b => b.cashDrainPct > 0,
     };
 
-    for (const [id, check] of Object.entries(want)) {
+    for (const [key, check] of Object.entries(want)) {
         const r = new RoguelikeManager(7);
         r.relics = [];
-        r.addToDeck(id);
-        const card = drawUntil(r, id);
-        assert.equal(r.playCard(card.uid), true, `${id} 를 못 골랐다`);
-        assert.equal(check(r.buildBuff()), true, `${id} 가 아무것도 안 바꿨다`);
+        r.addToDeck(key);
+        const card = drawUntil(r, key);
+        assert.equal(r.playCard(card.uid), true, `${key} 를 못 골랐다`);
+        assert.equal(check(r.buildBuff()), true, `${key} 가 아무것도 안 바꿨다`);
     }
 });
 
@@ -263,17 +266,16 @@ test("유물이 먼저 깔리고 카드가 그 위에 쌓인다", () => {
     r.relics = [{ id: "compass", name: "낡은 나침반", triggerType: "onTurnStart", description: "" }];
 
     // 나침반만으로도 국면은 읽힌다
-    assert.equal(r.buildBuff().revealRegime, true, "유물이 안 얹혔다");
+    assert.equal(r.buildBuff().regimeDepth, 1, "유물이 안 얹혔다");
 
     // 그 위에 내부자 제보를 쌓으면 남은 턴까지 열린다
     const r2 = new RoguelikeManager(7);
     r2.relics = [...r.relics];
-    r2.addToDeck("tipoff");
-    const card = drawUntil(r2, "tipoff");
+    r2.addToDeck("insider");
+    const card = drawUntil(r2, "insider");
     r2.playCard(card.uid);
     const b = r2.buildBuff();
-    assert.equal(b.revealRegime, true);
-    assert.equal(b.revealClock, true, "카드가 유물 위에 안 쌓였다");
+    assert.ok(b.regimeDepth >= 2, "카드가 유물 위에 안 쌓였다");
 });
 
 test("단골 브로커는 카드 없이도 수수료를 면제한다", () => {
@@ -342,25 +344,34 @@ test("다 모으면 더 안 준다", () => {
     assert.equal(r.relics.length, full);
 });
 
-test("낡은 나침반은 턴마다 인사이트를 준다", () => {
+test("유물은 적혀 있는 것만 한다", () => {
+    // 낡은 나침반은 예전에 설명에 없는 "인사이트 +1" 을 매 턴 몰래 줬다. 유물 하나가
+    // 두 가지를 하면 셋 중에서 무엇 때문에 골랐는지를 알 수 없다.
     const r = new RoguelikeManager(11);
     r.relics = [{ id: "compass", name: "낡은 나침반", triggerType: "onTurnStart", description: "" }];
     const p = { cash: 0, shares: 0, avgPrice: 0, currentTurn: 1, maxTurns: 12, insightPoints: 0 };
 
-    const fired = r.onTurnStart(p);
-    assert.equal(p.insightPoints, 1);
-    assert.equal(fired.length, 1);
+    assert.deepEqual(r.onTurnStart(p), []);
+    assert.equal(p.insightPoints, 0, "적혀 있지 않은 일이 일어났다");
+    assert.equal(r.buildBuff().regimeDepth, 1, "적혀 있는 일이 안 일어났다");
 });
 
-test("비밀 장부는 오른 턴에만 터진다", () => {
+test("배당 통지서는 오른 턴에, 들고 있을 때만 터진다", () => {
+    // 예전의 "비밀 장부 — 인사이트 +1" 은 **다음** 판의 시작 유물 수를 정하는 값이라
+    // 이 판에서는 아무 일도 안 일어났다. 지금은 그 자리에서 현금이 는다.
     const r = new RoguelikeManager(12);
-    r.relics = [{ id: "ledger", name: "비밀 장부", triggerType: "onTurnEnd", description: "" }];
-    const p = { cash: 0, shares: 0, avgPrice: 0, currentTurn: 1, maxTurns: 12, insightPoints: 0 };
+    r.relics = [{ id: "dividend", name: "배당 통지서", triggerType: "onTurnEnd", description: "" }];
+    const p = { cash: 0, shares: 100, avgPrice: 1000, currentTurn: 1, maxTurns: 12, insightPoints: 0 };
 
-    r.onTurnEnd(p, -3);
-    assert.equal(p.insightPoints, 0, "내린 턴에 터졌다");
-    r.onTurnEnd(p, 3);
-    assert.equal(p.insightPoints, 1);
+    r.onTurnEnd(p, -3, 1000);
+    assert.equal(p.cash, 0, "내린 턴에 터졌다");
+
+    r.onTurnEnd(p, 3, 1000);
+    assert.equal(p.cash, 1000, "평가액 100,000 의 1% 가 아니다");
+
+    p.shares = 0;
+    r.onTurnEnd(p, 3, 1000);
+    assert.equal(p.cash, 1000, "한 주도 없는데 배당이 나왔다");
 });
 
 /* ── 경력 인사이트 — 오직 오르는 것 ─────────────────────────── */
@@ -409,9 +420,9 @@ test("안 열린 카드는 보상으로 안 나온다", () => {
     const open = new RoguelikeManager(3, [], UNLOCKS.map(u => u.id));
 
     const lockedIds = new Set(locked.rewardPool);
-    assert.equal(lockedIds.has("tipoff"), false, "안 열린 카드가 풀에 있다");
+    assert.equal(lockedIds.has("insider"), false, "안 열린 카드가 풀에 있다");
     assert.equal(lockedIds.has("margin"), false);
-    assert.ok(lockedIds.has("bunker"), "처음부터 있어야 할 카드가 없다");
+    assert.ok(lockedIds.has("stoploss"), "처음부터 있어야 할 카드가 없다");
 
     assert.ok(open.rewardPool.length > locked.rewardPool.length, "해금이 풀을 안 넓혔다");
     for (let seed = 0; seed < 20; seed++) {
@@ -435,39 +446,59 @@ test("안 열린 유물도 안 나온다", () => {
 
 /* ── 예보가 몇 턴 가는가 ────────────────────────────────────── */
 
-test("정밀 예보는 다음 턴에도 남는다", () => {
-    // "두 턴" 이라면서 한 턴 만에 사라지면 예고 시황과 다를 것이 없다.
+const peekBuff = (n: number) => ({ ...NO_BUFF, peekTurns: n });
+
+test("강화한 예보는 다음 턴에도 남는다", () => {
+    // "두 턴" 이라면서 한 턴 만에 사라지면 0강과 다를 것이 없다.
     const r = new RoguelikeManager(5);
-    r.rememberPeek(2);
-    assert.equal(r.peekLeft, 2);
+    r.remember(peekBuff(2));
+    assert.equal(r.lastingLeft.peek, 2);
 
-    r.consumePeek();
-    assert.equal(r.peekLeft, 1, "둘째 턴치가 사라졌다");
+    r.consumeTurn();
+    assert.equal(r.lastingLeft.peek, 1, "둘째 턴치가 사라졌다");
 
-    r.consumePeek();
-    assert.equal(r.peekLeft, 0);
-    r.consumePeek();
-    assert.equal(r.peekLeft, 0, "0 아래로 내려갔다");
+    r.consumeTurn();
+    assert.equal(r.lastingLeft.peek, 0);
+    r.consumeTurn();
+    assert.equal(r.lastingLeft.peek, 0, "0 아래로 내려갔다");
 });
 
 test("더 멀리 보는 예보만 갈아 끼운다", () => {
     const r = new RoguelikeManager(6);
-    r.rememberPeek(2);
-    r.rememberPeek(1);                      // 한 턴짜리로는 이미 본 것을 못 뺏는다
-    assert.equal(r.peekLeft, 2);
-    r.rememberPeek(3);
-    assert.equal(r.peekLeft, 3);
+    r.remember(peekBuff(2));
+    r.remember(peekBuff(1));                // 한 턴짜리로는 이미 본 것을 못 뺏는다
+    assert.equal(r.lastingLeft.peek, 2);
+    r.remember(peekBuff(3));
+    assert.equal(r.lastingLeft.peek, 3);
+});
+
+test("수수료 면제와 손절 예약도 걸어 둔 턴만큼 간다", () => {
+    // 강화의 축이 셋 다 "몇 턴 가는가" 다. 예보만 이어지고 나머지가 한 턴 만에 꺼지면
+    // 카드 설명("3턴 동안")이 거짓말이 된다.
+    const r = new RoguelikeManager(41);
+    r.remember({ ...NO_BUFF, feeFreeTurns: 3, stopLossTurns: 2 });
+
+    assert.equal(r.buildBuff().feeMult, 0);
+    assert.ok(r.buildBuff().stopLoss > 0);
+
+    r.consumeTurn();
+    r.consumeTurn();
+    assert.equal(r.buildBuff().feeMult, 0, "3턴짜리가 두 턴 만에 꺼졌다");
+    assert.equal(r.buildBuff().stopLoss, 0, "2턴짜리가 셋째 턴까지 남았다");
+
+    r.consumeTurn();
+    assert.equal(r.buildBuff().feeMult, 1);
 });
 
 test("남은 예보는 값이 아니라 **턴 수**다", () => {
     // 값을 들고 있으면 그 사이에 헤지를 들어도 그림이 안 바뀌어, 차트가 오지 않을
     // 등락을 계속 가리킨다. 턴 수만 남기고 그림은 매번 engine.read 가 새로 낸다.
     const r = new RoguelikeManager(7);
-    r.rememberPeek(2);
-    assert.equal(typeof r.peekLeft, "number");
+    r.remember(peekBuff(2));
+    assert.equal(typeof r.lastingLeft.peek, "number");
     // 남은 예보는 buildBuff 를 타고 나가야 화면이 다시 읽을 수 있다.
     assert.equal(r.buildBuff().peekTurns, 2, "남은 예보가 buff 에 안 실렸다");
-    r.consumePeek();
+    r.consumeTurn();
     assert.equal(r.buildBuff().peekTurns, 1);
 });
 
@@ -475,7 +506,7 @@ test("정보 차단은 들고 있던 예보까지 가린다", () => {
     // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있어도, 이 저주를 쥔 턴에는 안 보여야 한다.
     // 예전에는 씬이 들고 있던 값을 그대로 다시 그려서 저주가 아무 일도 안 했다.
     const r = new RoguelikeManager(31, ["blackout", "peek", "hedge"]);
-    r.rememberPeek(2);
+    r.remember(peekBuff(2));
 
     const card = drawUntil(r, "blackout");
     assert.equal(r.playCard(card.uid), true);
@@ -535,7 +566,12 @@ test("카드마다 언제 쓰는지가 적혀 있다", () => {
     // 효과만 있고 쓰임이 없으면 무엇을 고를지가 안 보인다. 도감이 읽는 줄이기도 하다.
     for (const c of CARD_LIST) {
         assert.ok(c.when.length > 5, `${c.id} 에 when 이 없다`);
-        assert.ok(c.effectDescription.length > 5, `${c.id} 에 설명이 없다`);
+        // 단계마다 따로 적혀 있어야 한다. 강화한 카드가 0강 설명을 달고 있으면
+        // 3턴 예보를 쥐고 "다음 1턴 미리보기" 를 읽게 된다.
+        c.levels.forEach((lv, i) => {
+            assert.ok(lv.effect.length > 5, `${c.id} +${i} 에 설명이 없다`);
+            assert.ok(lv.short.length > 2, `${c.id} +${i} 에 한 줄 요약이 없다`);
+        });
     }
 });
 
@@ -543,7 +579,9 @@ test("화면에 나가는 글에 마크다운이 섞이지 않는다", () => {
     // 이 문자열들은 캔버스의 뉴스 줄과 도감에 **날것으로** 찍힌다. 강조 표시를 남기면
     // 별표가 그대로 보인다 — 실제로 한 번 그랬다.
     for (const c of CARD_LIST) {
-        for (const [field, text] of [["when", c.when], ["설명", c.effectDescription]] as const) {
+        const texts = [["when", c.when] as const, ...c.levels.flatMap((lv, i) =>
+            [[`+${i} 설명`, lv.effect] as const, [`+${i} 요약`, lv.short] as const])];
+        for (const [field, text] of texts) {
             assert.ok(!/[*_`]/.test(text), `${c.id} 의 ${field} 에 마크다운이 있다: ${text}`);
         }
     }
@@ -558,7 +596,7 @@ test("현금만 쥐고 있으면 지킬 것도 팔 것도 없다", () => {
     const broke = { shares: 0, cash: 10_000_000, price: 1000 };
     const held = { shares: 100, cash: 0, price: 1000 };
 
-    for (const id of ["hedge", "bunker", "stoploss"]) {
+    for (const id of ["hedge", "hedge+2", "stoploss"]) {
         assert.equal(r.isIdle(id, broke), true, `${id} 가 현금일 때도 쓸모 있다고 한다`);
         assert.equal(r.isIdle(id, held), false, `${id} 가 보유 중인데 쓸모없다고 한다`);
     }
@@ -582,7 +620,7 @@ test("아주 처음에는 기본 카드 중 무작위 세 장으로 연다", () 
 test("덱을 안 넘겨주면 무작위 세 장, 넘겨주면 그대로 쓴다", () => {
     assert.equal(new RoguelikeManager(1).deckState.total, OPENING_DECK_SIZE);
 
-    const carried = ["forecast", "bunker", "stoploss", "nofee", "peek"];
+    const carried = ["peek+1", "hedge+3", "stoploss", "nofee", "peek"];
     const r = new RoguelikeManager(1, carried);
     assert.equal(r.deckState.total, carried.length);
     assert.deepEqual([...r.deck].sort(), [...carried].sort());
@@ -590,9 +628,16 @@ test("덱을 안 넘겨주면 무작위 세 장, 넘겨주면 그대로 쓴다",
 
 test("저장이 상해도 판은 굴러간다", () => {
     // 모르는 id 는 조용히 버린다. 전부 모르는 것이면 새 게임처럼 연다.
-    const r = new RoguelikeManager(2, ["없는카드", "peek", "또없는카드"]);
-    assert.deepEqual(r.deck, ["peek"]);
+    const r = new RoguelikeManager(2, ["없는카드", "peek", "또없는카드", "peek+9"]);
+    assert.deepEqual(r.deck, ["peek"], "없는 강화 단계까지 살아남았다");
     assert.equal(new RoguelikeManager(2, ["없는카드"]).deckState.total, OPENING_DECK_SIZE);
+});
+
+test("옛 저장의 카드는 같은 값의 강화 단계로 옮겨 온다", () => {
+    // 예전에는 셋을 모으면 **다른 카드**가 됐다. 그 이름들을 그냥 버리면 오래 굴린
+    // 사람의 덱에서 센 카드가 소리 없이 사라진다.
+    const r = new RoguelikeManager(51, ["forecast", "tipoff", "bunker", "probe"]);
+    assert.deepEqual([...r.deck].sort(), ["analyst+1", "hedge+3", "peek+1"]);
 });
 
 test("판이 끝나면 덱이 그대로 다음 판으로 넘어간다", () => {
@@ -611,8 +656,8 @@ test("같은 카드 셋이 모이면 한 장으로 합쳐진다", () => {
     const r = new RoguelikeManager(5, ["peek", "peek"]);
     r.addToDeck("peek");
 
-    assert.deepEqual(r.deck, ["forecast"], "셋이 한 장이 안 됐다");
-    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+    assert.deepEqual(r.deck, ["peek+1"], "셋이 한 장이 안 됐다");
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "예고 시황 +1" }]);
     assert.deepEqual(r.takeMerges(), [], "합성 알림을 두 번 읽었다");
 });
 
@@ -620,15 +665,24 @@ test("셋씩 여러 번 모여 있으면 그만큼 한꺼번에 합쳐진다", (
     // 아홉 장이 세 장이 된다. 덱이 두꺼워지는 것을 막는 것이 합성의 일이다.
     const r = new RoguelikeManager(6, Array(8).fill("peek"));
     r.addToDeck("peek");
-    assert.deepEqual(r.deck, ["forecast", "forecast", "forecast"]);
-    assert.equal(r.takeMerges().length, 3);
+    // 아홉 장이 셋이 되고, 그 셋이 다시 한 장이 된다 — 연쇄가 끝까지 돈다.
+    assert.deepEqual(r.deck, ["peek+2"]);
+    assert.equal(r.takeMerges().length, 4);
 });
 
-test("보상 카드는 더 위가 없어 안 합쳐진다", () => {
-    const r = new RoguelikeManager(7, ["forecast", "forecast"]);
-    r.addToDeck("forecast");
-    assert.equal(r.deckState.total, 3, "위가 없는데 합쳐졌다");
+test("3강이 끝이다 — 그 위로는 안 올라간다", () => {
+    const r = new RoguelikeManager(7, ["peek+3", "peek+3"]);
+    r.addToDeck("peek+3");
+    assert.equal(r.deckState.total, 3, "최대 강화 위로 올라갔다");
     assert.deepEqual(r.takeMerges(), []);
+    assert.deepEqual(r.deck, ["peek+3", "peek+3", "peek+3"]);
+});
+
+test("맨 카드 27장이 3강 한 장이 된다", () => {
+    // 3장이 한 단계이므로 3의 세제곱. 도감이 그대로 적어 두는 수다.
+    const r = new RoguelikeManager(71, Array(MERGE_COUNT ** MAX_LEVEL - 1).fill("hedge"));
+    r.addToDeck("hedge");
+    assert.deepEqual(r.deck, ["hedge+3"]);
 });
 
 test("저주 셋은 그대로 사라진다", () => {
@@ -651,25 +705,90 @@ test("이번 턴에 고른 카드는 합성에 안 끌려간다", () => {
     assert.deepEqual(r.takeMerges(), []);
 });
 
+test("쓴 카드가 손에서 돌아오면 그때 합쳐진다", () => {
+    // 위 규칙의 뒷면이다. 손패가 덱으로 돌아가는 자리에서 다시 안 보면, 같은 카드 셋을
+    // 들고 있는데 영영 안 합쳐진다 — 셋을 모았는데 아무 일도 안 일어나는 판이 됐다.
+    const r = new RoguelikeManager(23, ["peek", "peek"]);
+    const picked = r.dealHand().find(c => c.id === "peek")!;
+    r.playCard(picked.uid);
+    r.addToDeck("peek");
+    assert.deepEqual(r.takeMerges(), [], "쓴 장을 그 턴에 태웠다");
+
+    r.dealHand();
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "예고 시황 +1" }]);
+    assert.equal(r.deck.filter(k => k === "peek").length, 0);
+    assert.equal(r.deck.filter(k => k === "peek+1").length, 1);
+});
+
+/* ── 덱 펼쳐 보기 ───────────────────────────────────────────── */
+
+test("덱 목록은 단계별로 세고 강화가 임박한 것을 위로 올린다", () => {
+    const r = new RoguelikeManager(24, ["peek", "peek", "hedge", "nofee+3"]);
+    const list = r.deckList;
+
+    assert.equal(list[0]!.key, "peek", "한 장만 더면 합쳐지는 카드가 위가 아니다");
+    assert.equal(list[0]!.count, 2);
+    assert.equal(list[0]!.level, 0);
+    assert.equal(list[0]!.ready, true);
+    assert.equal(list[0]!.mergeInto, "예고 시황 +1");
+
+    const hedge = list.find(e => e.key === "hedge")!;
+    assert.equal(hedge.count, 1);
+    assert.equal(hedge.ready, false, "한 장뿐인데 임박이라고 한다");
+    assert.equal(hedge.mergeInto, "헤지 +1");
+
+    // 3강은 더 오를 곳이 없어 키 자체가 없다 — 저주의 null(사라짐)과 다른 말이다.
+    const top = list.find(e => e.key === "nofee+3")!;
+    assert.equal(top.level, MAX_LEVEL);
+    assert.equal(top.name, "수수료 면제 +3");
+    assert.equal("mergeInto" in top, false);
+    assert.equal(top.ready, false);
+
+    assert.equal(list.reduce((s, e) => s + e.count, 0), r.deckState.total, "장수가 안 맞는다");
+});
+
+test("같은 카드라도 단계가 다르면 따로 센다", () => {
+    // 0강 둘과 1강 둘은 서로 안 섞인다. 한 줄로 뭉치면 "한 장만 더" 가 거짓말이 된다.
+    const r = new RoguelikeManager(27, ["peek", "peek", "peek+1", "peek+1"]);
+    const list = r.deckList;
+    assert.equal(list.length, 2);
+    assert.equal(list.find(e => e.key === "peek")!.count, 2);
+    assert.equal(list.find(e => e.key === "peek+1")!.count, 2);
+    assert.ok(list.every(e => e.ready), "둘 다 한 장만 더면 오른다");
+});
+
+test("덱 목록은 저주가 사라지는 것도 말한다", () => {
+    const r = new RoguelikeManager(25, ["blackout", "blackout"]);
+    const e = r.deckList.find(c => c.id === "blackout")!;
+    assert.equal(e.ready, true);
+    assert.equal(e.mergeInto, null, "저주는 무엇이 되는 것이 아니라 사라진다");
+});
+
+test("덱 목록은 손에 든 장도 센다", () => {
+    // 손패도 덱의 일부다. 빼고 세면 카드를 뽑는 것만으로 덱이 줄어든 것처럼 보인다.
+    const r = new RoguelikeManager(26, ["peek", "peek", "hedge"]);
+    r.dealHand();
+    assert.equal(r.deckList.reduce((s, e) => s + e.count, 0), 3);
+});
+
 test("판을 열 때 넘어온 덱에 셋이 있으면 그 자리에서 합쳐진다", () => {
     // 보상을 건너뛰고 판을 끝냈거나 저장이 옛 규칙으로 쌓였으면 셋이 그대로 넘어온다.
     // 판을 여는 자리에서 한 번 훑어야 "셋이면 합쳐진다" 가 언제나 참이 된다.
     const r = new RoguelikeManager(21, ["peek", "peek", "peek", "hedge"]);
-    assert.deepEqual([...r.deck].sort(), ["forecast", "hedge"]);
-    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+    assert.deepEqual([...r.deck].sort(), ["hedge", "peek+1"]);
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "예고 시황 +1" }]);
 });
 
 test("셋째 장이 될 카드는 고르기 전에 무엇이 되는지 말한다", () => {
     const r = new RoguelikeManager(22, ["peek", "peek", "blackout", "blackout"]);
 
-    assert.equal(r.mergePreview("peek"), "정밀 예보");
+    assert.equal(r.mergePreview("peek"), "예고 시황 +1");
     assert.equal(r.mergePreview("blackout"), "", "저주는 사라지므로 빈 문자열");
     assert.equal(r.mergePreview("hedge"), null, "한 장도 없는데 합성이 뜬다");
-    assert.equal(r.mergePreview("forecast"), null, "위층이 없는데 합성이 뜬다");
 
     // 실제로 넣어 보면 예고한 그대로다.
     r.addToDeck("peek");
-    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "정밀 예보" }]);
+    assert.deepEqual(r.takeMerges(), [{ from: "예고 시황", to: "예고 시황 +1" }]);
 });
 
 test("보상에 기본 카드가 섞여 나온다 — 합성이 닿을 수 있는 유일한 길", () => {
@@ -686,7 +805,11 @@ test("보상에 기본 카드가 섞여 나온다 — 합성이 닿을 수 있�
 test("합쳐진 카드가 실제로 손에 잡힌다", () => {
     const r = new RoguelikeManager(10, ["hedge", "hedge", "nofee"]);
     r.addToDeck("hedge");
-    assert.equal(drawUntil(r, "bunker").id, "bunker");
+    const got = drawUntil(r, "hedge+1");
+    assert.equal(got.id, "hedge");
+    assert.equal(got.level, 1);
+    assert.equal(got.name, "헤지 +1", "강화 표시가 이름에 안 붙었다");
+    assert.equal(got.shortDescription, "하락 50% 차단", "0강 설명을 달고 나왔다");
 });
 
 /* ── 자본잠식 — 지는 방법 ───────────────────────────────────── */

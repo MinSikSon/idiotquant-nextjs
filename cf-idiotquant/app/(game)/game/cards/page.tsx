@@ -11,7 +11,7 @@ import Link from "next/link";
 
 import {
     CARD_LIST, RELIC_POOL, REWARD_TURNS, HAND_SIZE, OFFER_SIZE,
-    MERGE_COUNT, OPENING_DECK_SIZE,
+    MAX_LEVEL, MERGE_COUNT, OPENING_DECK_SIZE,
 } from "@/lib/game/core/RoguelikeManager";
 import { MAX_TIER, MAX_TURNS, RUIN_LINE, SEED_CASH, TIER_IP_STEP } from "@/lib/game/core/StockEngine";
 import { UNLOCKS } from "@/lib/game/core/progress";
@@ -48,46 +48,96 @@ function LockTag({ id }: { id: string }) {
     );
 }
 
-/** 셋을 모으면 무엇이 되는가. 도감이 코어의 `mergesTo` 를 그대로 읽는다. */
-function MergeLine({ card }: { card: (typeof CARD_LIST)[number] }) {
-    if (card.mergesTo === undefined) return null;
-    const to = card.mergesTo === null
-        ? "사라집니다"
-        : `${CARD_LIST.find(c => c.id === card.mergesTo)?.name ?? card.mergesTo} 한 장`;
+/**
+ * 강화 단계 전부. **도감이 코어의 `levels` 를 그대로 편다.**
+ *
+ * 이 목록이 있어야 "0강을 27장 모으면 3강" 이 그냥 규칙이 아니라 **볼 수 있는 것**이
+ * 된다 — 무엇을 향해 모으는지가 안 보이면 합성은 모아 놓고 놀라는 일일 뿐이다.
+ */
+function LevelTable({ card }: { card: (typeof CARD_LIST)[number] }) {
+    if (card.levels.length < 2) {
+        return (
+            <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
+                <span className="text-[#ff5ec8]">저주 </span>
+                강화되지 않습니다. {MERGE_COUNT}장이 모이면 덱에서 사라집니다.
+            </p>
+        );
+    }
     return (
-        <p className="mt-2 text-[13px] leading-relaxed text-[#9aada6]">
-            <span className="text-[#e3b34a]">합성 </span>
-            {MERGE_COUNT}장을 모으면 → {to}
-        </p>
+        <div className="mt-3 border-t border-[#2f4046] pt-3">
+            <p className="text-[12px] text-[#e3b34a]">
+                강화 — 같은 카드 {MERGE_COUNT}장이 한 단계
+            </p>
+            <ul className="mt-2 space-y-1.5">
+                {card.levels.map((lv, i) => (
+                    <li key={i} className="flex gap-2 text-[13px] leading-relaxed">
+                        <span
+                            className={`mt-0.5 h-fit shrink-0 rounded px-1.5 text-[11px] font-bold ${
+                                i === 0
+                                    ? "text-[#9aada6] ring-1 ring-[#2f4046]"
+                                    : "bg-[#e3b34a] text-[#0b0f10]"
+                            }`}
+                        >
+                            {i === 0 ? "맨것" : `+${i}`}
+                        </span>
+                        <span className="text-[#e9f2ea]">{lv.effect}</span>
+                    </li>
+                ))}
+            </ul>
+            <p className="mt-2 text-[12px] text-[#9aada6]">
+                +3 한 장은 맨 카드 {MERGE_COUNT ** MAX_LEVEL}장입니다.
+            </p>
+        </div>
     );
 }
 
+/**
+ * 카드 한 장 — **접힌 채로 온다.**
+ *
+ * 열두 장을 전부 펼쳐 두면 한 화면에 두 장 반이 들어가고, 무엇이 있는지 훑으려면
+ * 스크롤을 열 번 굴려야 한다. 게임 안의 손패와 같은 순서로 읽히게 한다:
+ * 이름 + 한 줄 요약 → 누르면 효과·언제·합성.
+ *
+ * `<details>` 를 쓰는 이유는 하나다 — 이 페이지가 서버 컴포넌트다. 펼침을 상태로 들면
+ * 도감 전체가 클라이언트 번들로 내려가는데, 얻는 것이 여닫기 하나뿐이다.
+ */
 function Card({ card }: { card: (typeof CARD_LIST)[number] }) {
     const skin = LANE_STYLE[card.lane];
     return (
-        <li className={`rounded-xl border bg-[#141c1e] p-4 ${skin.ring}`}>
-            {/* 뱃지가 셋까지 붙는다(갈래·해금·저주). 감싸지 않으면 이름이 한 글자씩
-                세로로 접혀 읽을 수 없게 된다 — 신용 융자가 실제로 그랬다. */}
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <h3 className={`mr-auto text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
-                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${skin.ink} ring-current`}>
-                    {skin.label}
-                </span>
-                <LockTag id={card.id} />
-                {card.curse && (
-                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#ff5ec8] ring-1 ring-[#ff5ec8]">
-                        저주가 딸려 옵니다
-                    </span>
-                )}
-            </div>
-            {/* 손패에 늘 붙는 한 줄과, 펼쳤을 때 나오는 설명을 같은 순서로 보여 준다. */}
-            <p className="mt-2 text-[13px] text-[#9aada6]">{card.shortDescription}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-[#e9f2ea]">{card.effectDescription}</p>
-            <p className="mt-2 border-t border-[#2f4046] pt-2 text-[13px] leading-relaxed text-[#9aada6]">
-                <span className="text-[#e3b34a]">언제 </span>
-                {card.when}
-            </p>
-            <MergeLine card={card} />
+        <li className={`rounded-xl border bg-[#141c1e] ${skin.ring}`}>
+            <details className="group">
+                {/* summary 의 기본 삼각형을 지운다 — 갈래 뱃지와 나란히 서면 무엇이 표시인지
+                    헷갈린다. 여닫힘은 오른쪽 끝의 +/− 하나로만 말한다. */}
+                <summary className="cursor-pointer list-none p-4 [&::-webkit-details-marker]:hidden">
+                    {/* 뱃지가 셋까지 붙는다(갈래·해금·저주). 감싸지 않으면 이름이 한 글자씩
+                        세로로 접혀 읽을 수 없게 된다 — 신용 융자가 실제로 그랬다. */}
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <h3 className={`mr-auto text-[15px] font-bold ${skin.ink}`}>{card.name}</h3>
+                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${skin.ink} ring-current`}>
+                            {skin.label}
+                        </span>
+                        <LockTag id={card.id} />
+                        {card.curse && (
+                            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold text-[#ff5ec8] ring-1 ring-[#ff5ec8]">
+                                저주가 딸려 옵니다
+                            </span>
+                        )}
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-2">
+                        {/* 접힌 동안 보이는 것은 손패에 붙는 그 한 줄이다. */}
+                        <p className="mr-auto text-[13px] text-[#9aada6]">{card.levels[0]!.short}</p>
+                        <span className="shrink-0 text-[13px] text-[#e3b34a] group-open:hidden">＋ 자세히</span>
+                        <span className="hidden shrink-0 text-[13px] text-[#9aada6] group-open:inline">− 접기</span>
+                    </div>
+                </summary>
+                <div className="border-t border-[#2f4046] px-4 pb-4 pt-3">
+                    <p className="text-[13px] leading-relaxed text-[#9aada6]">
+                        <span className="text-[#e3b34a]">언제 </span>
+                        {card.when}
+                    </p>
+                    <LevelTable card={card} />
+                </div>
+            </details>
         </li>
     );
 }
@@ -99,7 +149,8 @@ function Section({ title, note, children }: {
         <section className="mt-10">
             <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">{title}</h2>
             <p className="mt-1 text-[13px] leading-relaxed text-[#9aada6]">{note}</p>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">{children}</ul>
+            {/* items-start — 한 장을 펼쳐도 옆 칸이 같이 늘어나지 않게. */}
+            <ul className="mt-4 grid items-start gap-3 sm:grid-cols-2">{children}</ul>
         </section>
     );
 }
@@ -122,7 +173,8 @@ export default function CardsPage() {
                         <span className="text-[#e9f2ea]">한 장만</span> 쓰고, 셋 다 버린 더미로 갑니다.
                         덱이 마르면 버린 더미를 섞어 다시 덱이 됩니다. 손패의 카드는 한 줄 요약만
                         보이고, <span className="text-[#e9f2ea]">누르면 자세한 설명</span>이 펼쳐지며
-                        한 번 더 누르면 씁니다.
+                        한 번 더 누르면 씁니다. 아래 목록도 같습니다 — 접힌 줄을 누르면 효과와
+                        합성이 펼쳐집니다.
                     </p>
                     <div className="mt-4 rounded-xl border border-[#5cf08f] bg-[#141c1e] p-4">
                         <h2 className="text-[13px] font-bold tracking-[0.12em] text-[#5cf08f]">
@@ -188,12 +240,13 @@ export default function CardsPage() {
                             </dd>
                         </div>
                         <div>
-                            <dt className="text-[#9aada6]">합성</dt>
+                            <dt className="text-[#9aada6]">강화</dt>
                             <dd className="text-[#e9f2ea]">
-                                같은 카드 {MERGE_COUNT}장 → 한 장으로
+                                같은 카드 {MERGE_COUNT}장 → 한 단계 위로 (최대 +{MAX_LEVEL})
                                 <span className="text-[#9aada6]">
                                     {" "}· 셋째 장이 될 카드는 보상 칸에 금색으로 표시됩니다
-                                    · 저주는 {MERGE_COUNT}장이 모이면 사라집니다
+                                    · 강화한 카드는 손패에 금색 +N 딱지가 붙습니다
+                                    · 저주는 강화되지 않고 {MERGE_COUNT}장이 모이면 사라집니다
                                 </span>
                             </dd>
                         </div>
@@ -224,7 +277,7 @@ export default function CardsPage() {
                             아주 처음에만 기본 카드 중 무작위 {OPENING_DECK_SIZE}장으로 열고, 그 뒤로는
                             {REWARD_TURNS.join("·")}턴마다 한 장씩 늘어납니다.
                             <span className="text-[#9aada6]"> 같은 카드 {MERGE_COUNT}장이 모이면
-                                한 장으로 합쳐져 덱이 두꺼워지는 것을 막습니다.</span>
+                                한 단계 위 한 장이 되어, 덱이 두꺼워지는 것을 막으면서 세집니다.</span>
                         </li>
                         <li>
                             <span className="text-[#e3b34a]">인사이트</span> — 판마다 쌓입니다. 15당
@@ -253,14 +306,14 @@ export default function CardsPage() {
 
                 <Section
                     title="기본 카드"
-                    note={`아주 처음에는 이 넷 중 무작위 ${OPENING_DECK_SIZE}장으로 시작합니다 (${starters}). 무엇이 빠졌는지가 그 판의 성격이 되고, 그 빈자리를 ${REWARD_TURNS.join("·")}턴의 보상으로 메웁니다. 셋을 모으면 아래 보상 카드로 합쳐집니다.`}
+                    note={`아주 처음에는 이 넷 중 무작위 ${OPENING_DECK_SIZE}장으로 시작합니다 (${starters}). 무엇이 빠졌는지가 그 판의 성격이 되고, 그 빈자리를 ${REWARD_TURNS.join("·")}턴의 보상으로 메웁니다. 저주가 안 딸려 오고, 모으면 ${MAX_LEVEL}강까지 오릅니다.`}
                 >
                     {byKind("starter").map(c => <Card key={c.id} card={c} />)}
                 </Section>
 
                 <Section
                     title="보상 카드"
-                    note="더 멀리 보거나, 더 크게 걸거나, 더 단단히 막습니다. 위층이 없어 합쳐지지는 않으니, 지금 센 것을 집을지 기본 카드를 모아 나중에 합칠지가 매번의 선택입니다. 내부자 제보와 신용 융자에는 저주가 딸려 와 덱이 그만큼 더러워집니다 — 안 고르는 것이 늘 손해는 아닙니다."
+                    note={`기본 카드보다 세고, 이것들도 ${MAX_LEVEL}강까지 갑니다. 내부자 제보와 신용 융자에는 저주가 딸려 와 덱이 그만큼 더러워집니다 — 지금 센 것을 집을지, 덱을 얇게 두고 모으던 것을 마저 모을지가 매번의 선택입니다.`}
                 >
                     {byKind("reward").map(c => <Card key={c.id} card={c} />)}
                 </Section>
