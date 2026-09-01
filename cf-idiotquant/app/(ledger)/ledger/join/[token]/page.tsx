@@ -102,7 +102,7 @@ export default function LedgerJoinPage() {
                     href={`/login?callbackUrl=/ledger/join/${token}`}
                     className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black transition-colors"
                 >
-                    카카오로 계속하기
+                    로그인하고 계속하기
                 </Link>
             </>
         );

@@ -1105,7 +1105,7 @@ export default function HomePage() {
               <Link href="/login"
                 className="group inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white hover:bg-emerald-50 text-[#0d2a1a] font-bold text-base sm:text-lg shadow-xl shadow-[#031a0e]/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
               >
-                카카오로 무료 시작
+                무료로 시작하기
                 <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-300 ease-out" />
               </Link>
             </div>

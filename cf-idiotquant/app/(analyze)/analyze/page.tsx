@@ -892,14 +892,14 @@ function AnalyzeContent() {
                         전체 분석은 로그인 후 볼 수 있어요
                       </p>
                       <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 break-keep">
-                        카카오 30초 · 무료 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
+                        30초 가입 · 무료 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
                       </p>
                     </div>
                     <Link
                       href={loginHref}
                       className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white text-[13px] font-bold shadow-lg shadow-[#16a34a]/20 transition-all"
                     >
-                      카카오로 무료 로그인
+                      무료로 로그인하기
                       <ArrowRight size={14} />
                     </Link>
                   </div>
