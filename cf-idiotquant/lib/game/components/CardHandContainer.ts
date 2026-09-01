@@ -144,6 +144,11 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
                 align: "center", wordWrap: { width: cw - 14 }, lineSpacing: 2,
             }).setOrigin(0.5, 0);
 
+            // 칸을 넘으면 요약을 접는다. 낮은 화면에서는 칸이 60px 남짓이라, 이름이 두
+            // 줄이 되는 순간(좁은 칸에서 늘 그렇다) 요약이 테두리 밖 버튼 위에 찍혔다.
+            // 지우는 것이 아니라 **한 번 누르면 나오는 쪽으로 미루는** 것이다.
+            if (desc.y + desc.displayHeight > this.boxH - 4) desc.setVisible(false);
+
             const zone = this.scene.add.zone(0, 0, cw, this.boxH)
                 .setOrigin(0, 0)
                 .setInteractive({ useHandCursor: true });

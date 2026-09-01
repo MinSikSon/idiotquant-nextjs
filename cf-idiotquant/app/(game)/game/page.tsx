@@ -43,7 +43,10 @@ export default function RoguelikePage() {
         // md:hidden 으로 건다). md 부터는 왼쪽 사이드바뿐이라 세로를 통째로 쓴다. 눕힌
         // 폰은 폭이 md 를 넘어 이쪽으로 오므로, 세로 112px 을 게임이 돌려받는다.
         // 눕힌 폰에서는 430px 제한도 풀어 화면 폭을 다 쓰게 한다.
-        <div className="mx-auto flex h-[calc(100svh-112px)] max-w-[430px] flex-col bg-[#0b0f10] md:h-svh [@media(max-height:500px)]:max-w-none">
+        // lg 부터는 폭 제한을 푼다. 430px 로 묶어 두면 데스크톱에서 화면의 3분의 2가
+        // 검은 여백이 되고, 게임은 그 가운데 좁은 기둥으로 남는다. 폭이 풀리면 격자가
+        // 두 칸 배치로 넘어가 그 폭을 실제로 쓴다(designSize).
+        <div className="mx-auto flex h-[calc(100svh-112px)] max-w-[430px] flex-col bg-[#0b0f10] md:h-svh lg:max-w-none [@media(max-height:500px)]:max-w-none">
             {/* min-h-0 이 없으면 flex 자식이 안 줄어들어 링크 줄을 밖으로 밀어낸다. */}
             <div className="min-h-0 flex-1">
                 <PhaserGame className="grid h-full w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block" />
