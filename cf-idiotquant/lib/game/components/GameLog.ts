@@ -5,7 +5,8 @@
 // 수수료를 얼마 냈는지" 를 보려면 그 순간을 놓치지 않아야 했고, 놓치면 영영 못 봤다.
 //
 // 지금은 **쌓인다.** 새 줄이 아래에 붙고 오래된 것이 위로 밀려 나간다 — 채팅창과 같다.
-// 밀려 나간 줄도 사라지지는 않아서 드래그로 되감을 수 있다.
+// 밀려 나간 줄도 사라지지는 않아서 드래그로 되감을 수 있고, 칸을 톡 누르면 화면 가득
+// 펼쳐진다(`onOpen`). 판 위의 이 칸은 석 줄이라 되감기만으로는 스무 줄을 못 읽는다.
 //
 // ── 한 줄은 한 줄이다 ───────────────────────────────────────────
 // 줄바꿈을 허용하면 줄 높이가 제각각이 되어 "몇 줄이 들어가는가" 를 셀 수 없고, 그러면
@@ -33,7 +34,17 @@ export interface GameLogOpts {
     y: number;
     width: number;
     height: number;
+    /**
+     * 칸을 **톡 눌렀을 때**. 끌어서 되감는 것과 가른다 — 손가락이 움직였으면 안 부른다.
+     *
+     * 이 칸은 석 줄이라 여기서 읽을 수 있는 것은 방금 있었던 일뿐이다. 되감기는 있지만
+     * 세 줄짜리 창으로 스무 줄을 훑는 것은 되감기가 아니라 고문이다.
+     */
+    onOpen?: () => void;
 }
+
+/** 이만큼 안 움직였으면 끈 것이 아니라 누른 것이다(설계 격자 기준). */
+const TAP_SLOP = 6;
 
 /**
  * 줄 하나가 차지하는 세로. 글자 높이에 숨 쉴 틈을 더한 값이다.
@@ -60,12 +71,15 @@ export class GameLog extends Phaser.GameObjects.Container {
     private entries: LogEntry[] = [];
     /** 바닥에서 몇 줄 위로 되감아 놨는가. 0 이면 가장 최근 줄이 맨 아래다. */
     private scroll = 0;
+    /** 되감지 않은 동안 오른쪽 아래에 뜨는 말. 누를 데가 있다는 것을 이 두 글자가 말한다. */
+    private readonly hint: string;
 
     constructor(scene: Phaser.Scene, o: GameLogOpts) {
         super(scene, o.x, o.y);
         this.boxW = o.width;
         this.boxH = o.height;
         this.rows = Math.max(1, Math.floor((this.boxH - PADY * 2) / ROW));
+        this.hint = o.onOpen ? "전체 ▸" : "";
 
         this.bg = scene.add.graphics();
         this.bg.fillStyle(C.panel, 1).fillRect(0, 0, this.boxW, this.boxH);
@@ -105,6 +119,13 @@ export class GameLog extends Phaser.GameObjects.Container {
             const dy = (_p.y - _p.downY) / k;
             this.setScroll(anchor + Math.round(dy / ROW));
         });
+        // 끌지 않고 놓았으면 되감기가 아니라 "펼쳐 보겠다" 는 뜻이다.
+        zone.on("pointerup", (p: Phaser.Input.Pointer) => {
+            if (!o.onOpen) return;
+            if (Math.abs(p.x - p.downX) / k > TAP_SLOP) return;
+            if (Math.abs(p.y - p.downY) / k > TAP_SLOP) return;
+            o.onOpen();
+        });
         this.add(zone);
 
         scene.add.existing(this);
@@ -136,6 +157,11 @@ export class GameLog extends Phaser.GameObjects.Container {
     private render(): void {
         this.chips.clear();
 
+        // 오른쪽 아래 말을 **먼저** 정한다. 그것이 차지한 폭만큼 마지막 줄이 짧아져야
+        // 하는데, 나중에 정하면 그 폭을 모른 채 줄을 자르게 되어 둘이 겹쳐 찍힌다.
+        this.moreLabel.setText(this.scroll > 0 ? `↓ ${this.scroll}` : this.hint);
+        const gutter = this.moreLabel.text ? this.moreLabel.displayWidth + 8 : 0;
+
         const end = this.entries.length - this.scroll;
         const start = Math.max(0, end - this.rows);
         const shown = this.entries.slice(start, end);
@@ -147,13 +173,12 @@ export class GameLog extends Phaser.GameObjects.Container {
             const e = shown[i - top];
             if (!e) { t.setText(""); return; }
             const skin = LOG[e.kind];
-            t.setText(this.fit(e.turn > 0 ? `${e.turn}턴 ${e.text}` : e.text))
+            t.setText(this.fit(e.turn > 0 ? `${e.turn}턴 ${e.text}` : e.text,
+                i === this.rows - 1 ? gutter : 0))
                 .setColor(skin.ink);
             this.chips.fillStyle(skin.chip, 1)
                 .fillRect(PADX, t.y + 2, CHIP_W, FS.xs + 1);
         });
-
-        this.moreLabel.setText(this.scroll > 0 ? `↓ ${this.scroll}` : "");
     }
 
     /**
@@ -162,8 +187,8 @@ export class GameLog extends Phaser.GameObjects.Container {
      * 한글은 고정폭 글꼴에서도 라틴 문자의 **두 배** 폭이라 글자 수로 자르면 한글 줄만
      * 칸을 넘는다. 한글을 두 칸으로 세어 폭으로 자른다.
      */
-    private fit(s: string): string {
-        const room = Math.floor((this.boxW - PADX * 2 - CHIP_W - 6) / (FS.xs * 0.6));
+    private fit(s: string, gutter = 0): string {
+        const room = Math.floor((this.boxW - PADX * 2 - CHIP_W - 6 - gutter) / (FS.xs * 0.6));
         let used = 0;
         for (let i = 0; i < s.length; i++) {
             used += s.charCodeAt(i) > 0x1100 ? 2 : 1;
