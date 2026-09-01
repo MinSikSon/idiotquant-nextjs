@@ -452,7 +452,10 @@ export class StockEngine {
         if (price <= 0) return { ok: false, error: "가격을 읽지 못했습니다." };
 
         const feeMult = Math.max(0, buff?.feeMult ?? 1);
-        const perShare = price + Math.floor(cut(price, BUY_FEE_NUM) * feeMult);
+        // 한 주에 얹는 수수료는 **올려서** 잡는다. 내려서 잡으면 한 주마다 1원 미만이
+        // 모자라고, 그 부스러기가 주수만큼 쌓여 실제 수수료가 예산을 넘는다 — 자금이
+        // 조 단위가 되면 한 번의 전량 매수로 현금이 수천만 원 마이너스가 됐다.
+        const perShare = price + Math.ceil((price * BUY_FEE_NUM * feeMult) / FEE_DENOM);
         const qty = Math.floor(Math.max(0, budget) / Math.max(1, perShare));
         if (qty < 1) return { ok: false, error: "현금이 한 주 값에 못 미칩니다." };
 
