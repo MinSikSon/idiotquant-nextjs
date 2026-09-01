@@ -105,6 +105,7 @@ cf-idiotquant/
 - **Proxy** — `app/api/proxy/[...path]/route.ts` 가 모든 백엔드 호출을 `NEXT_PUBLIC_WORKER_BASE_URL`로 포워딩.
 - **Redux pattern** — `createAppSlice` + `create.asyncThunk`. fulfilled/rejected 핸들러에서 `result?.success === false` 시 throw해서 rejected 상태로 전환.
 - **D1 NCAV section** — `algorithmTrade` slice의 `ncavDailyList` / `ncavDailyDates` 상태. `/ncav/daily` 배포된 엔드포인트 사용. `/ncav/daily/dates` 미배포 시 `reqDiscoverNcavDates` thunk로 클라이언트 자동 탐색.
+- **Admin 미리보기** — `lib/viewAsUser.ts` (localStorage + 커스텀 이벤트). 관리자가 일반 사용자에게 보이는 메뉴를 확인하는 모드로, **표시만 접고 권한은 건드리지 않는다**. `middleware.ts` 는 이 값을 모르고 `/admin`·`/backtest`·`/balance` 는 그대로 열린다. 역할로 잠근 동작(회원 탈퇴 차단 등)은 미리보기가 아니라 **실제 역할**(`realAdmin`)로 판단할 것.
 
 ## PR 생성 규칙
 

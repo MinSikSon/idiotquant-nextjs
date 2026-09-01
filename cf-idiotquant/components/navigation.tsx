@@ -7,6 +7,7 @@ import { R } from "@/lib/retroPalette";
 import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import { cn } from "@/lib/utils";
+import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   Home,
   Filter,
@@ -21,6 +22,7 @@ import {
   MoreHorizontal,
   ChevronDown,
   NotebookText,
+  EyeOff,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -220,8 +222,12 @@ function MiniSession({ session, status }: { session: any; status: string }) {
 export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
-  const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
-  const isAdmin = (session?.user as any)?.role === "admin";
+  // 관리자가 일반 사용자 화면을 보는 중인가. **권한이 아니라 표시**만 접는다 —
+  // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
+  const viewAsUser = useViewAsUser();
+  const realAdmin = (session?.user as any)?.role === "admin";
+  const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
+  const isAdmin = realAdmin && !viewAsUser;
 
   // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
   // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
@@ -444,6 +450,25 @@ export function NavbarWithSimpleLinks() {
             })}
           </div>
         </>
+      )}
+
+      {/* ══ 일반 사용자 화면으로 보는 중 ══════════════════════════════
+          켜 놓고 잊으면 "메뉴가 왜 없지" 가 되므로 어디서나 보이는 자리에 둔다.
+          이 알약 자체가 끄는 버튼이다 — 내 계정까지 돌아가지 않아도 된다.
+          /game 에는 안 띄운다: 관리자 전용 메뉴가 없어 볼 것이 없고, 그 화면은
+          기기 한 대라 위에 뜬 버튼이 판을 가린다. */}
+      {realAdmin && viewAsUser && !retro && (
+        <button
+          type="button"
+          onClick={() => setViewAsUser(false)}
+          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-[236px] flex items-center gap-2 rounded-full border border-[#16a34a]/40 bg-[#052e16] px-3.5 py-2 text-[11px] font-bold text-[#dcfce7] shadow-lg hover:bg-[#064e2b] transition-colors"
+        >
+          <EyeOff size={13} className="shrink-0" />
+          일반 사용자 화면
+          <span className="rounded-full bg-[#16a34a] px-2 py-0.5 text-[10px] font-extrabold text-white">
+            끄기
+          </span>
+        </button>
       )}
     </>
   );
