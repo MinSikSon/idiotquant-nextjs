@@ -142,6 +142,9 @@ export class TradingScene extends Phaser.Scene {
     private totalLabel!: Phaser.GameObjects.Text;
     private activeLabel!: Phaser.GameObjects.Text;
 
+    /** 이 띠에서 자산 숫자의 **제 크기**. 조 단위가 되면 여기서부터 한 단계씩 줄인다. */
+    private equitySize: number = FS.xl;
+
     private logView!: GameLog;
     /**
      * 쌓인 로그. **컨테이너가 아니라 씬이 들고 있다** — 화면을 돌리면 그린 것이 통째로
@@ -443,7 +446,8 @@ export class TradingScene extends Phaser.Scene {
         // 좁거나 낮은 띠에서는 자산 숫자를 한 단계 줄인다. xl(29)은 위아래로 30px 을
         // 먹어서, 그대로 두면 아래의 보유 줄과 오른쪽 넉 줄이 같은 자리를 잡는다.
         const cramped = b.w < 260 || b.h < 190;
-        this.equityText = mk(L, b.y + 18, cramped ? FS.lg : FS.xl, S.ink);
+        this.equitySize = cramped ? FS.lg : FS.xl;
+        this.equityText = mk(L, b.y + 18, this.equitySize, S.ink);
         this.posText = mk(L, b.y + (cramped ? 44 : 52), FS.sm, S.inkDim);
 
         // 오른쪽 넉 줄은 서로 1~2px 차이로 붙어 있다. 글자 크기를 올리면 아래 줄부터
@@ -670,7 +674,12 @@ export class TradingScene extends Phaser.Scene {
 
         if (!res.ok) { this.log(res.error, "warn"); return; }
 
-        const won = (v: number) => `${Math.round(v).toLocaleString()}원`;
+        // 작은 값은 원 단위 그대로 — 수수료 몇 천 원이 이 게임의 살림이다. 다만 자금이
+        // 커지면 그 자리도 억을 넘어서, `1,234,567,890원` 은 로그 한 줄을 통째로 먹고
+        // 잘려 나간다. 억부터는 짧은 표기로 넘긴다.
+        const won = (v: number) => Math.abs(v) >= 100_000_000
+            ? money(v)
+            : `${Math.round(v).toLocaleString()}원`;
         const lines: [string, LogKind][] = [
             [`${res.side === "buy" ? "매수" : "매도"} ${res.qty.toLocaleString()}주 @ ${res.price.toLocaleString()}원`,
                 res.side === "buy" ? "buy" : "sell"],
@@ -1394,6 +1403,8 @@ export class TradingScene extends Phaser.Scene {
         this.cashText.setText(`현금 ${money(p.cash)}`);
         this.turnText.setText(`TURN ${Math.min(p.currentTurn, p.maxTurns)}/${p.maxTurns}`);
         this.ipText.setText(`IP ${p.insightPoints}`);
+        // 오른쪽 줄들의 폭이 정해진 뒤라야 자산 숫자에 남는 자리를 잴 수 있다.
+        this.fitEquity();
 
         // 남은 장 / 덱 전체. 저주가 섞이면 그 수를 붙이고 색을 바꾼다 — 덱이 더러워진 것을
         // 숫자 하나로 알아야 다음 보상에서 건너뛸 마음이 생긴다.
@@ -1409,15 +1420,25 @@ export class TradingScene extends Phaser.Scene {
                     : `DECK ${d.draw}/${d.total} ▸`)
             .setColor(ready > 0 ? S.gold : d.curses > 0 ? S.danger : S.inkDim);
 
-        // 가로에서는 운용 상황이 오른쪽 칸만 쓴다(390 이 아니라 300 남짓). 긴 형태를 그대로
-        // 쓰면 오른쪽 끝의 DECK 줄과 부딪히므로, 좁을 때는 평단을 접고 주수와 손익만 남긴다.
-        const w = this.band.firm.w;
-        this.posText.setText(
-            p.shares === 0 ? "보유 없음"
-                : w < 260 ? `${p.shares.toLocaleString()}주 ${pct(e.unrealizedPct)}`
-                    : w < 360 ? `${p.shares.toLocaleString()}주 · ${pct(e.unrealizedPct)}`
-                        : `보유 ${p.shares.toLocaleString()}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`,
-        ).setColor(p.shares > 0 ? tone(e.unrealizedPct) : S.inkDim);
+        // 보유 줄은 **자리에 들어가는 형태**를 고른다. 띠 폭으로만 정하던 시절에는 자금이
+        // 조 단위가 되어 주수가 아홉 자리(`116,727,816주`)가 되는 순간 오른쪽의 현금·DECK
+        // 줄 위로 넘어갔다 — 두 숫자가 겹치면 둘 다 못 읽는다.
+        // 주수도 억을 넘으면 자리 이름으로 줄인다. 정확한 수는 체결 로그가 들고 있다.
+        this.posText.setColor(p.shares > 0 ? tone(e.unrealizedPct) : S.inkDim);
+        if (p.shares === 0) {
+            this.posText.setText("보유 없음");
+        } else {
+            const n = p.shares.toLocaleString();
+            const short = p.shares >= 100_000_000 ? money(p.shares) : n;
+            const room = this.band.firm.w - PAD * 2
+                - Math.max(this.cashText.displayWidth, this.deckText.displayWidth) - 10;
+            this.setFirstFitting(this.posText, [
+                `보유 ${n}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`,
+                `${n}주 · ${pct(e.unrealizedPct)}`,
+                `${short}주 · ${pct(e.unrealizedPct)}`,
+                `${short}주`,
+            ], room);
+        }
 
         // 못 하는 것은 잠근다 — 눌러 보고 나서 안 된다고 듣는 것보다 낫다.
         const canBuy = p.cash >= e.stock.currentPrice && !this.busy;
@@ -1425,6 +1446,38 @@ export class TradingScene extends Phaser.Scene {
         this.allInBtn.setEnabled(canBuy);
         this.sellBtn.setEnabled(p.shares > 0 && !this.busy);
         this.nextBtn.setEnabled(!this.busy);
+    }
+
+    /**
+     * 자리에 들어가는 **첫 형태**를 골라 적는다. 긴 것부터 넘긴다.
+     *
+     * 다 안 들어가면 마지막(가장 짧은) 것이 남는다 — 넘치더라도 무엇이 잘렸는지가
+     * 짐작되는 쪽이, 옆 줄과 겹쳐 둘 다 못 읽는 것보다 낫다.
+     */
+    private setFirstFitting(t: Phaser.GameObjects.Text, forms: string[], room: number) {
+        for (const s of forms) {
+            t.setText(s);
+            if (t.displayWidth <= room) return;
+        }
+    }
+
+    /**
+     * 자산 숫자를 **남는 자리에 맞춰** 한 단계씩 줄인다.
+     *
+     * 자금이 판을 넘어 이어지므로 잘 굴리면 `1조 2,345억` 이 된다. 29px 로 그대로 그리면
+     * 오른쪽의 IP·현금 줄을 밟는데, 두 숫자가 겹치면 둘 다 못 읽는다. 자리 이름을 줄이는
+     * 대신(조를 억으로 밀면 자릿수만 늘어난다) 글자를 줄인다 — 큰 숫자일수록 작아진다.
+     */
+    private fitEquity() {
+        const k = pxOf(this);
+        const right = Math.max(this.ipText.displayWidth, this.cashText.displayWidth);
+        const room = this.band.firm.w - PAD * 2 - right - 10;
+        let size = this.equitySize;
+        this.equityText.setFontSize(size * k);
+        while (size > FS.md && this.equityText.displayWidth > room) {
+            size -= 2;
+            this.equityText.setFontSize(size * k);
+        }
     }
 
     /* ── 로그 ───────────────────────────────────────────── */

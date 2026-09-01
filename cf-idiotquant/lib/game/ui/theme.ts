@@ -374,18 +374,38 @@ export function pct(v: number): string {
     return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 }
 
-/** 화면 폭에 맞는 짧은 금액 표기. 1,234만 / 1억 2,340만 */
+/**
+ * 금액의 자리 이름. **큰 것부터** 늘어놓는다 — `money` 가 위에서부터 훑는다.
+ *
+ * 자금이 판을 넘어 이어지므로 잘 굴리면 억을 넘어 조까지 간다. 경은 거의 안 볼 자리지만
+ * 한 줄이면 되는 것이라 막아 둔다 — 없으면 `12345678억` 같은 것이 화면에 남는다.
+ */
+const SCALES = [
+    { at: 10_000_000_000_000_000, name: "경" },
+    { at: 1_000_000_000_000, name: "조" },
+    { at: 100_000_000, name: "억" },
+    { at: 10_000, name: "만" },
+] as const;
+
+/**
+ * 화면 폭에 맞는 짧은 금액 표기. 1,234만 / 1억 2,340만 / 3조 5,000억
+ *
+ * **윗자리 둘까지만 적는다.** 조 단위에서 만까지 붙이면 "3조 5,000억 1,234만" 이 되어
+ * 한 줄이 통째로 숫자가 되는데, 그 아랫자리는 판을 정할 때 아무 값도 안 한다.
+ */
 export function money(v: number): string {
     const n = Math.round(v);
     const neg = n < 0 ? "-" : "";
     const a = Math.abs(n);
-    if (a >= 100_000_000) {
-        const eok = Math.floor(a / 100_000_000);
-        const man = Math.floor((a % 100_000_000) / 10_000);
-        return `${neg}${eok}억${man ? ` ${man.toLocaleString()}만` : ""}`;
-    }
-    if (a >= 10_000) return `${neg}${Math.floor(a / 10_000).toLocaleString()}만`;
-    return `${neg}${a.toLocaleString()}`;
+
+    const i = SCALES.findIndex(s => a >= s.at);
+    if (i < 0) return `${neg}${a.toLocaleString()}`;
+
+    const top = SCALES[i]!;
+    const next = SCALES[i + 1];
+    const head = Math.floor(a / top.at);
+    const rest = next ? Math.floor((a % top.at) / next.at) : 0;
+    return `${neg}${head.toLocaleString()}${top.name}${rest ? ` ${rest.toLocaleString()}${next!.name}` : ""}`;
 }
 
 /** 오르면 초록, 내리면 주황. 이 게임은 네온 팔레트라 한국 시장색(빨강/파랑)을 안 쓴다. */

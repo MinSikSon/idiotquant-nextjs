@@ -507,3 +507,17 @@ test("현금만 들고 있으면 자본잠식되지 않는다", () => {
     assert.equal(e.isRuined, false);
     assert.equal(e.summarize().ruined, false);
 });
+
+test("전량 매수가 현금을 마이너스로 만들지 않는다 — 조 단위에서도", () => {
+    // 한 주에 얹는 수수료를 내려서 잡으면 부스러기가 주수만큼 쌓인다. 시드 자금에서는
+    // 몇 백 원이라 안 보이지만, 자금이 판을 넘어 이어져 조 단위가 되면 전량 매수 한 번에
+    // 현금이 수천만 원 마이너스로 찍혔다. 신용을 안 쓰면 빚이 생길 이유가 없다.
+    for (const cash of [SEED_CASH, 3_512_340_000_000]) {
+        for (let seed = 1; seed <= 20; seed++) {
+            const e = new StockEngine(seed, 0, cash);
+            const res = e.buyAll();
+            assert.ok(res.ok, `seed ${seed} — 살 수 있어야 한다`);
+            assert.ok(e.player.cash >= 0, `seed ${seed} · ${cash} → 현금 ${e.player.cash}`);
+        }
+    }
+});
