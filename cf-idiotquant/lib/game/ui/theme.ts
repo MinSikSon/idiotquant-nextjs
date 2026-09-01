@@ -30,6 +30,57 @@ const clamp = (v: number, lo: number, hi: number) => Math.round(Math.min(hi, Mat
  */
 const LANDSCAPE_RATIO = 1.5;
 
+/**
+ * 두 칸 배치가 값을 하려면 격자 폭이 최소 이만큼은 돼야 한다.
+ *
+ * 오른쪽 칸에 카드 셋과 버튼 넷이 나란히 선다. 폭 390 짜리 격자를 둘로 쪼개면 버튼 한
+ * 칸이 35px 이라 "ALL-IN" 이 테두리를 넘는다 — 그럴 바에는 좁더라도 쌓는 편이 낫다.
+ */
+const TWO_COL_MIN_W = 560;
+
+/**
+ * 세로로 넷을 쌓기에 넉넉한 격자 세로.
+ *
+ * 버튼 한 줄(64) + 운용 상황(190) + 차트(110) + 로그 두 줄(34) 의 합이다. 이보다 짧아도
+ * **쌓기는 한다** — 아래 `bandsOf` 가 운용 상황을 168 까지 줄여 준다. 다만 그때는 두 칸
+ * 배치가 더 나은지 먼저 따져 본다.
+ *
+ * ── 왜 자르지 않는가 ────────────────────────────────────────────
+ * 예전에는 세로 격자의 세로를 540 아래로 안 내려가게 **잘랐다.** 그러면 칸이 그보다
+ * 낮을 때 격자 비율이 칸의 비율과 어긋나고, Scale.FIT 은 둘 중 작은 쪽에 맞추느라
+ * 화면을 줄인다 — 390x338 짜리 칸에서 캔버스가 244 폭으로 줄고 좌우에 73px 씩 검은
+ * 띠가 남았다. 자르는 대신 **배치를 바꾸는** 것이 답이다.
+ */
+const STACK_MIN = 398;
+
+/** 차트가 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다. */
+const CHART_MIN = 110;
+/** 로그가 마지막까지 지키는 두 줄. 이보다 줄면 매매 한 번이 통째로 안 보인다. */
+const LOG_MIN = 34;
+/** 운용 상황 — 자산 넉 줄 + 유물 + 켜짐 줄 + 손패 한 칸. */
+const FIRM_MIN = 190;
+/** 그마저도 안 될 때. 유물·켜짐 줄을 위로 당겨 손패 한 칸을 겨우 남긴다. */
+const FIRM_TIGHT = 168;
+
+/**
+ * 이 격자를 **넷으로 쌓을 것인가, 두 칸으로 쪼갤 것인가.**
+ *
+ * `designSize` 와 `bandsOf` 가 같은 답을 내야 한다 — 둘이 갈리면 격자는 두 칸인데
+ * 그림은 넷으로 쌓여 화면이 통째로 어긋난다. 그래서 판단은 여기 한 곳에만 둔다.
+ */
+export function isStacked(w: number, h: number): boolean {
+    return !(w >= TWO_COL_MIN_W && w / h >= LANDSCAPE_RATIO);
+}
+
+/**
+ * 버튼 띠가 **두 줄**(매매 셋 + NEXT)을 담는 데 드는 세로. 위 10 + 줄 50 + 사이 12 +
+ * NEXT 52 다. `buildActions` 가 이 값으로 두 줄과 한 줄을 가른다 — 못 박아 두면 낮은
+ * 화면에서 NEXT 가 띠 밖으로 잘려 나가 판을 못 넘긴다.
+ */
+export const ACTION_TWO_ROW = 124;
+/** 넷을 한 줄로 세울 때 드는 세로. 버튼 48 + 위아래 16. */
+const ACTION_ONE_ROW = 64;
+
 export interface DesignSize {
     width: number;
     height: number;
@@ -44,18 +95,24 @@ export interface DesignSize {
 export function designSize(hostW: number, hostH: number): DesignSize {
     if (!(hostW > 0) || !(hostH > 0)) return { width: W, height: H, portrait: true };
 
-    if (hostW / hostH < LANDSCAPE_RATIO) {
-        // 세로 — 폭을 390 으로 고정한다. 폰 폭은 360~430 에 몰려 있어 배율이 0.92~1.10 이다.
-        return { width: W, height: clamp((W * hostH) / hostW, 540, 1100), portrait: true };
+    // 세로로 넷을 쌓았을 때의 격자 세로.
+    const stackedH = (W * hostH) / hostW;
+
+    if (stackedH >= STACK_MIN && isStacked(W, stackedH)) {
+        // 세로 — 폭을 390 으로 고정하고 **세로는 칸의 비율 그대로** 받는다.
+        return { width: W, height: Math.round(stackedH), portrait: true };
     }
 
-    // 가로 — 이번에는 세로가 짧은 쪽이다. 폰을 눕히면 앱 크롬을 뺀 세로가 280px 남짓뿐이라
-    // 되도록 1:1 로 그린다(그래야 글씨가 안 줄어든다). 아래위 한계는 띠가 무너지지 않을
-    // 최소치와, 큰 화면에서 글씨가 지나치게 커지지 않을 최대치다.
-    const height = clamp(hostH, 300, 460);
-    // 폭의 아래 한계는 비율의 하한(1.5) × 세로의 하한(300)이다. 그래서 이 값이 걸리는
-    // 일은 없고 — 걸리면 격자 비율이 칸과 어긋나 여백이 생긴다 — 순전히 안전망이다.
-    return { width: clamp((height * hostW) / hostH, 450, 1400), height, portrait: false };
+    // 가로(두 칸) — 이번에는 세로가 짧은 쪽이다. 폰을 눕히면 앱 크롬을 뺀 세로가 280px
+    // 남짓뿐이라 되도록 1:1 로 그린다(그래야 글씨가 안 줄어든다). 아래 한계는 띠가
+    // 무너지지 않을 최소치, 위 한계는 큰 화면에서 글씨가 지나치게 커지지 않을 최대치다 —
+    // 격자가 작을수록 FIT 배율이 커지고 글씨도 같이 커진다.
+    //
+    // **폭은 안 자른다.** 자르면 격자 비율이 칸과 어긋나 좌우에 검은 띠가 남는다.
+    const height = clamp(hostH, 300, 560);
+    const width = Math.round((height * hostW) / hostH);
+    // 폭이 모자라면 두 칸이 값을 못 한다 — 좁더라도 쌓는 편이 낫다.
+    return { width, height, portrait: isStacked(width, height) };
 }
 
 /* ── 물리 픽셀 ─────────────────────────────────────────────────── */
@@ -150,17 +207,35 @@ export interface Bands {
  * 둔다 — 눕힌 폰은 세로가 280px 뿐이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
  */
 export function bandsOf(w: number, h: number): Bands {
-    if (w / h < LANDSCAPE_RATIO) {
-        // 아래 세 최소치의 합(410)에 차트의 최소(130)를 더하면 세로의 하한(540)과 딱 맞는다.
-        // 하나라도 올리면 가장 작은 화면에서 넷째 칸이 화면 밖으로 밀린다.
+    if (isStacked(w, h)) {
+        // **네 띠가 겨루는 자리라 순서를 정해 뒀다.**
         //
-        // 로그의 비율(0.17)은 **한 번의 매매가 남기는 줄 수**에서 나왔다. 매도 한 번이
-        // 네 줄(체결·실현 손익·현금·수수료)이라, 네 줄만 보이면 매매 한 번에 앞이 통째로
-        // 밀려 나간다. 다섯에서 일곱 줄이면 턴의 마디와 함께 읽힌다.
-        const logH = clamp(h * 0.17, 92, 150);
-        const action = clamp(h * 0.20, 128, 180);
-        const firm = clamp(h * 0.29, 190, 268);
-        const chart = Math.max(130, h - logH - action - firm);
+        // 버튼과 운용 상황은 없으면 판을 못 굴리니 먼저 제 몫을 가져간다. 남는 것을
+        // 차트와 로그가 나누는데, 모자라면 **로그가 양보한다** — 로그는 지나간 일이고
+        // 차트는 지금 걸어야 할 판이다. 예전에는 로그가 17% 를 못박고 차트가 남은 것을
+        // 받아서, 낮은 화면에서 차트가 130px 짜리 띠로 눌렸다.
+        // 넉넉하면 190, 그러고도 아래 셋이 못 들어가면 168 까지 내준다.
+        let firm = clamp(h * 0.30, FIRM_MIN, 268);
+        const need = ACTION_ONE_ROW + CHART_MIN + LOG_MIN;
+        if (h - firm < need) firm = Math.max(FIRM_TIGHT, h - need);
+
+        // 버튼은 **두 줄이 들어가면 두 줄**, 아니면 넷을 한 줄로 세운다. 몫을 비율로만
+        // 정하면 낮은 화면에서 두 줄짜리 배치가 96px 짜리 띠에 들어가려다 NEXT 가 잘렸다.
+        const room = h - firm - CHART_MIN - LOG_MIN;
+        const action = room >= ACTION_TWO_ROW
+            ? clamp(h * 0.19, ACTION_TWO_ROW, 180)
+            : Math.max(ACTION_ONE_ROW, Math.min(room, 96));
+
+        // 로그의 비율은 **한 번의 매매가 남기는 줄 수**에서 나왔다. 매도 한 번이 네 줄
+        // (체결·실현 손익·현금·수수료)이라, 그만큼은 보여야 매매 한 번에 앞이 통째로
+        // 밀려 나가지 않는다. 두 줄(34)이 마지막 선이다.
+        let logH = clamp(h * 0.15, LOG_MIN, 150);
+        let chart = h - action - firm - logH;
+        if (chart < CHART_MIN) {
+            logH = Math.max(LOG_MIN, logH - (CHART_MIN - chart));
+            chart = h - action - firm - logH;
+        }
+
         return {
             portrait: true,
             log: { x: 0, y: 0, w, h: logH },

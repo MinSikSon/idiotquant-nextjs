@@ -36,7 +36,8 @@ import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import {
-    PAD, C, S, FS, LANE, bandsOf, designSize, fontOf, mkText, money, pct, pxOf, tone, type LogKind,
+    PAD, C, S, FS, LANE, ACTION_TWO_ROW, bandsOf, designSize, fontOf, mkText, money, pct, pxOf,
+    tone, type LogKind,
 } from "@/lib/game/ui/theme";
 import type { Bands } from "@/lib/game/ui/theme";
 
@@ -384,8 +385,11 @@ export class TradingScene extends Phaser.Scene {
         this.totalLabel = mkText(this, L, b.y + 6, "TOTAL", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
-        this.equityText = mk(L, b.y + 18, FS.xl, S.ink);
-        this.posText = mk(L, b.y + 52, FS.sm, S.inkDim);
+        // 좁거나 낮은 띠에서는 자산 숫자를 한 단계 줄인다. xl(29)은 위아래로 30px 을
+        // 먹어서, 그대로 두면 아래의 보유 줄과 오른쪽 넉 줄이 같은 자리를 잡는다.
+        const cramped = b.w < 260 || b.h < 190;
+        this.equityText = mk(L, b.y + 18, cramped ? FS.lg : FS.xl, S.ink);
+        this.posText = mk(L, b.y + (cramped ? 44 : 52), FS.sm, S.inkDim);
 
         // 오른쪽 넉 줄은 서로 1~2px 차이로 붙어 있다. 글자 크기를 올리면 아래 줄부터
         // 밀리므로 여기 숫자는 FS 를 바꿀 때 같이 본다.
@@ -407,15 +411,17 @@ export class TradingScene extends Phaser.Scene {
             this.drawDeck();
         });
 
-        this.relicRow = this.add.container(L, b.y + 70);
+        // 낮은 화면에서는 이 띠가 168 까지 줄어든다. 유물·켜짐 줄을 위로 당겨야 손패
+        // 한 칸이 남는다 — 자리를 못박아 두면 손패가 아래 버튼 위로 넘쳐 나간다.
+        this.relicRow = this.add.container(L, b.y + (cramped ? 64 : 70));
 
         // 지금 무엇이 켜져 있고 **언제까지 가는지**. 카드가 한 턴짜리라는 것도, 예보가
         // 몇 턴 남았는지도 화면 어디에도 없었다.
-        this.activeLabel = mkText(this, L, b.y + 100, "", {
+        this.activeLabel = mkText(this, L, b.y + (cramped ? 88 : 100), "", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
         });
 
-        const handTop = b.y + 116;
+        const handTop = b.y + (cramped ? 102 : 116);
         this.hand = new CardHandContainer(this, {
             x: L, y: handTop, width: b.w - PAD * 2,
             height: Math.max(56, b.y + b.h - 6 - handTop),
@@ -462,10 +468,12 @@ export class TradingScene extends Phaser.Scene {
         const w = b.w - PAD * 2;
         const L = b.x + PAD;
 
-        if (this.band.portrait) {
+        // 두 줄이 들어갈 만큼 띠가 높을 때만 두 줄이다. 비율로만 정하던 시절에는 낮은
+        // 화면에서 두 줄짜리 배치가 96px 짜리 띠에 들어가려다 NEXT 가 통째로 잘려,
+        // 턴을 넘길 수가 없었다.
+        if (this.band.portrait && b.h >= ACTION_TWO_ROW) {
             // 세로 — 매매 셋을 한 줄에, NEXT 를 그 아래 넓게. 엄지가 아래에서 올라온다.
             //
-            // 높이를 62·72 로 못박으면 세로가 짧은 폰에서 띠(최소 148) 밖으로 밀려 나간다.
             // 아래 24px 은 홈 인디케이터 자리로 비워 둔다.
             const avail = b.h - 10 - 12 - 24;
             const rowH = Math.round(Math.min(66, Math.max(50, avail * 0.45)));
@@ -485,13 +493,15 @@ export class TradingScene extends Phaser.Scene {
             return;
         }
 
-        // 가로 — 넷을 한 줄로. 눕힌 폰은 폭이 남고 세로가 모자란 자리라, 쌓으면 어느
-        // 버튼도 손가락이 닿을 높이가 안 나온다. 라벨도 좁은 칸에 맞춰 줄인다.
+        // 넷을 한 줄로 — 눕힌 폰과, 세로지만 두 줄이 안 들어가는 낮은 화면. 세로가
+        // 모자란 자리라 쌓으면 어느 버튼도 손가락이 닿을 높이가 안 나온다.
+        // 라벨도 좁은 칸에 맞춰 줄인다.
         const quarter = Math.floor((w - gap * 3) / 4);
         const y = b.y + 8;
         const h = Math.max(48, b.h - 16);
 
-        // 넷으로 쪼갠 칸은 60px 남짓이라 md(16px) 로는 "ALL-IN" 이 테두리를 넘는다.
+        // 넷으로 쪼갠 칸은 56px 남짓이라 md(16px) 로는 "ALL-IN" 이 테두리를 넘는다.
+        // 두 칸 배치의 최소 폭(TWO_COL_MIN_W)이 그 56px 을 보장한다.
         const size = FS.sm;
 
         this.buyHalfBtn = makeButton(this, L, y, quarter, h,
@@ -1290,12 +1300,12 @@ export class TradingScene extends Phaser.Scene {
 
         // 가로에서는 운용 상황이 오른쪽 칸만 쓴다(390 이 아니라 300 남짓). 긴 형태를 그대로
         // 쓰면 오른쪽 끝의 DECK 줄과 부딪히므로, 좁을 때는 평단을 접고 주수와 손익만 남긴다.
-        const narrowHud = this.band.firm.w < 360;
+        const w = this.band.firm.w;
         this.posText.setText(
             p.shares === 0 ? "보유 없음"
-                : narrowHud
-                    ? `${p.shares.toLocaleString()}주 · ${pct(e.unrealizedPct)}`
-                    : `보유 ${p.shares.toLocaleString()}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`,
+                : w < 260 ? `${p.shares.toLocaleString()}주 ${pct(e.unrealizedPct)}`
+                    : w < 360 ? `${p.shares.toLocaleString()}주 · ${pct(e.unrealizedPct)}`
+                        : `보유 ${p.shares.toLocaleString()}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`,
         ).setColor(p.shares > 0 ? tone(e.unrealizedPct) : S.inkDim);
 
         // 못 하는 것은 잠근다 — 눌러 보고 나서 안 된다고 듣는 것보다 낫다.
