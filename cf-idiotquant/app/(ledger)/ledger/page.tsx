@@ -958,7 +958,7 @@ export default function LedgerPage() {
                                         {copied ? "복사했습니다" : "링크 복사"}
                                     </button>
                                     <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                        한 사람만 쓸 수 있고 7일 뒤 만료됩니다. 받는 분이 회원이 아니어도 링크를 열면 카카오 가입 후 바로 들어옵니다.
+                                        한 사람만 쓸 수 있고 7일 뒤 만료됩니다. 받는 분이 회원이 아니어도 링크를 열면 가입 후 바로 들어옵니다.
                                     </p>
                                 </>
                             ) : (
