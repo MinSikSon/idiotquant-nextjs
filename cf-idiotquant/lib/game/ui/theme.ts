@@ -55,8 +55,16 @@ const STACK_MIN = 398;
 
 /** 차트가 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다. */
 const CHART_MIN = 110;
-/** 로그가 마지막까지 지키는 두 줄. 이보다 줄면 매매 한 번이 통째로 안 보인다. */
+/** 로그가 마지막까지 지키는 한 줄. */
 const LOG_MIN = 34;
+/**
+ * 로그의 위 한계 — **넉 줄**(`PADY*2 + 4 x GameLog.ROW`).
+ *
+ * 예전에는 로그가 세로의 15~17% 를 가져갔다. 폰에서 여섯 줄이면 화면의 한 뭉치라,
+ * 정작 걸어야 할 차트보다 지나간 일이 더 넓은 자리를 먹었다. 서너 줄이면 방금 무슨
+ * 일이 있었는지는 남고, 그 앞은 드래그로 되감는다.
+ */
+const LOG_MAX = 88;
 /** 운용 상황 — 자산 넉 줄 + 유물 + 켜짐 줄 + 손패 한 칸. */
 const FIRM_MIN = 190;
 /** 그마저도 안 될 때. 유물·켜짐 줄을 위로 당겨 손패 한 칸을 겨우 남긴다. */
@@ -226,10 +234,9 @@ export function bandsOf(w: number, h: number): Bands {
             ? clamp(h * 0.19, ACTION_TWO_ROW, 180)
             : Math.max(ACTION_ONE_ROW, Math.min(room, 96));
 
-        // 로그의 비율은 **한 번의 매매가 남기는 줄 수**에서 나왔다. 매도 한 번이 네 줄
-        // (체결·실현 손익·현금·수수료)이라, 그만큼은 보여야 매매 한 번에 앞이 통째로
-        // 밀려 나가지 않는다. 두 줄(34)이 마지막 선이다.
-        let logH = clamp(h * 0.15, LOG_MIN, 150);
+        // 로그는 **가장 적게 가져간다.** 지나간 일이고, 되감을 수 있고, 그 자리를
+        // 차트가 쓰는 편이 판에 도움이 된다.
+        let logH = clamp(h * 0.10, LOG_MIN, LOG_MAX);
         let chart = h - action - firm - logH;
         if (chart < CHART_MIN) {
             logH = Math.max(LOG_MIN, logH - (CHART_MIN - chart));
@@ -251,7 +258,7 @@ export function bandsOf(w: number, h: number): Bands {
     const right = w - left;
     // 가로에서는 매매 버튼 넷이 **한 줄**로 간다. 폭은 남고 세로는 모자란 자리다.
     const action = clamp(h * 0.28, 76, 110);
-    const logH = clamp(h * 0.28, 84, 116);
+    const logH = clamp(h * 0.20, LOG_MIN, LOG_MAX);
     return {
         portrait: false,
         log: { x: 0, y: 0, w: left, h: logH },
