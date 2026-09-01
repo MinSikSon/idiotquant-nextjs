@@ -1134,6 +1134,9 @@ export default function HomePage() {
               { label: "발굴", href: "/screener" },
               { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
+              // "퀀트" 로 검색해 들어오는 사람이 닿는 설명 글. 사이트맵에만 있으면
+              // 크롤러는 오지만 이 사이트 안에서는 아무 데서도 가리키지 않는 글이 된다.
+              { label: "퀀트란?", href: "/quant" },
             ].map(l => (
               <Link key={l.label} href={l.href}
                 className="inline-flex items-center min-h-[44px] px-2 -mx-2 text-xs text-neutral-400 hover:text-neutral-700 dark:text-white/50 dark:hover:text-white transition-colors font-medium"
