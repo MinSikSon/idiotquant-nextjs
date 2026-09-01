@@ -198,6 +198,17 @@ export class TradingScene extends Phaser.Scene {
     private toast: Phaser.GameObjects.Container | null = null;
     /** 덱을 펼쳐 보는 중인가. 무엇을 몇 장 모았는지가 여기서만 보인다. */
     private deckOpen = false;
+    /** 로그를 화면 가득 펼쳐 보는 중인가. 판 위의 칸은 석 줄뿐이다. */
+    private logOpen = false;
+    /**
+     * 보상 칸에서 짚어 둔 카드(uid) · 유물(id). **한 번 더 눌러야** 받는다.
+     *
+     * 예전에는 한 번 누르는 즉시 덱에 들어가고 화면이 닫혔다. 손패는 "눌러서 읽고 →
+     * 눌러서 쓴다" 인데 여기만 한 번에 정해져서, 읽어 보려고 누른 카드가 그대로 덱에
+     * 박혔다. 되돌릴 방법도 없다 — 3턴에 한 번뿐인 선택이라 더 그렇다.
+     */
+    private offerPick: string | null = null;
+    private relicPick: string | null = null;
     /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
     private overlay: Phaser.GameObjects.Container | null = null;
 
@@ -224,6 +235,9 @@ export class TradingScene extends Phaser.Scene {
         this.busy = false;
         this.offer = null;
         this.relicOffer = null;
+        this.offerPick = null;
+        this.relicPick = null;
+        this.logOpen = false;
         this.intro = null;
         this.marketRead = null;
         this.ended = null;
@@ -319,6 +333,7 @@ export class TradingScene extends Phaser.Scene {
         else if (this.relicOffer) this.drawRelicOffer();
         else if (this.offer) this.drawReward();
         else if (this.deckOpen) this.drawDeck();
+        else if (this.logOpen) this.drawLogAll();
     }
 
     /** 화면 전체에 깔리는 도트. 이게 있어야 어두운 바탕이 "꺼진 화면" 이 아니라 기기가 된다. */
@@ -334,9 +349,55 @@ export class TradingScene extends Phaser.Scene {
 
     private buildLog() {
         const b = this.band.log;
-        this.logView = new GameLog(this, { x: b.x, y: b.y, width: b.w, height: b.h });
+        this.logView = new GameLog(this, {
+            x: b.x, y: b.y, width: b.w, height: b.h,
+            onOpen: () => {
+                if (this.overlay) return;       // 오버레이가 떠 있으면 그쪽이 먼저다
+                this.logOpen = true;
+                this.drawLogAll();
+            },
+        });
         // 화면을 돌려도 쌓인 것은 그대로다 — 목록은 씬이 들고 있고 이 칸은 그리기만 한다.
         this.logView.setEntries(this.logs);
+    }
+
+    /**
+     * 로그를 화면 가득 펼친다.
+     *
+     * 판 위의 칸은 석 줄이다 — 차트가 넓어야 해서 그렇게 정했고, 그 판단은 그대로 둔다.
+     * 대신 **읽고 싶을 때 펼쳐 보는 자리**를 따로 둔다. 매매 한 번이 네 줄이라 석 줄짜리
+     * 칸으로는 방금 판 값이 얼마였는지도 이미 밀려 나간 뒤다.
+     *
+     * 칸을 새로 그리지 않고 같은 `GameLog` 를 크게 세운다 — 색·자르기·되감기가 한 벌이라
+     * 여기서만 다르게 보이는 일이 없다.
+     */
+    private drawLogAll() {
+        const pw = Math.min(this.designW - 24, 560);
+        const ph = Math.min(this.designH - 24, 640);
+        const btnH = 42;
+
+        const { box, px, py } = this.openOverlay(pw, ph, C.steel);
+
+        box.add(mkText(this, px + pw / 2, py + 10, "LOG — 있었던 일 전부", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.steel,
+        }).setOrigin(0.5, 0));
+        box.add(mkText(this, px + pw / 2, py + 26, "끌어서 되감습니다", {
+            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
+        }).setOrigin(0.5, 0));
+
+        // 오버레이의 막는 zone 보다 **나중에** 들어가야 여기서 되감기가 먹는다.
+        const view = new GameLog(this, {
+            x: px + 12, y: py + 44,
+            width: pw - 24, height: ph - 44 - btnH - 22,
+        });
+        view.setEntries(this.logs);
+        box.add(view);
+
+        const close = makeButton(this, px + 20, py + ph - btnH - 12, pw - 40, btnH, "닫기", () => {
+            this.logOpen = false;
+            this.closeOverlay();
+        }, { tone: "plain", size: FS.sm });
+        box.add(close.root);
     }
 
     /* ── ② 차트 ───────────────────────────────────────────── */
@@ -958,6 +1019,7 @@ export class TradingScene extends Phaser.Scene {
         const offer = this.rogue.offerRelics();
         if (offer.length === 0) { this.beginTurn(); return; }   // 다 모았다
         this.relicOffer = offer;
+        this.relicPick = null;
         this.drawRelicOffer();
     }
 
@@ -971,7 +1033,9 @@ export class TradingScene extends Phaser.Scene {
         const pw = Math.min(this.designW - 40, stacked ? 660 : 350);
         const cellH = stacked ? 96 : 72;
         const rows = stacked ? 1 : n;
-        const ph = 58 + rows * cellH + (rows - 1) * gap + 20;
+        // 카드 보상과 같은 자리에 확인 버튼 한 줄. 유물은 **판이 끝날 때까지** 가는 것이라
+        // 한 번 누르는 것으로 정해지면 안 된다.
+        const ph = 58 + rows * cellH + (rows - 1) * gap + 62;
 
         const { box, px, py } = this.openOverlay(pw, ph, C.gold);
         const mid = px + pw / 2;
@@ -979,35 +1043,58 @@ export class TradingScene extends Phaser.Scene {
         box.add(mkText(this, mid, py + 16, "RELIC — 판이 끝날 때까지", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(0.5, 0));
-        box.add(mkText(this, mid, py + 32, "하나를 고르세요", {
-            fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
+        box.add(mkText(this, mid, py + 32,
+            this.relicPick ? "한 번 더 누르면 받습니다" : "하나를 고르세요", {
+            fontFamily: fontOf(this), fontSize: `${FS.sm}px`,
+            color: this.relicPick ? S.gold : S.ink,
         }).setOrigin(0.5, 0));
 
         const inner = pw - 32;
         const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
 
+        const take = (relic: Relic) => {
+            this.rogue.takeRelic(relic.id);
+            this.relicOffer = null;
+            this.relicPick = null;
+            this.closeOverlay();
+            this.beginTurn();
+            this.log(`유물 획득 ${relic.name} — ${relic.description}`, "relic");
+        };
+
         offer.forEach((relic, i) => {
             const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
             const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
-            box.add(this.makeInfoCell(x, y, cellW, cellH, relic.name, relic.description, C.gold, () => {
-                this.rogue.takeRelic(relic.id);
-                this.relicOffer = null;
-                this.closeOverlay();
-                this.beginTurn();
-                this.log(`유물 획득 ${relic.name} — ${relic.description}`, "relic");
-            }));
+            const picked = this.relicPick === relic.id;
+            box.add(this.makeInfoCell(x, y, cellW, cellH, relic.name, relic.description, C.gold,
+                picked, () => {
+                    if (picked) { take(relic); return; }
+                    this.relicPick = relic.id;
+                    this.closeOverlay();
+                    this.drawRelicOffer();
+                }));
         });
+
+        // 건너뛸 수 없는 자리라(유물은 반드시 하나) 버튼은 확인 하나뿐이다. 고르기 전에는
+        // 흐리게 둔다 — 자리가 비면 칸이 들썩이고, 없으면 무엇을 해야 할지가 안 보인다.
+        const chosen = offer.find(r => r.id === this.relicPick);
+        const go = makeButton(this, px + 16, py + ph - 62, inner, 46,
+            chosen ? `받기 ▸ ${chosen.name}` : "하나를 고르세요",
+            () => { if (chosen) take(chosen); },
+            { tone: chosen ? "go" : "plain", size: FS.sm });
+        if (!chosen) go.setEnabled(false);
+        box.add(go.root);
     }
 
     /** 이름 한 줄 + 설명 한 덩이짜리 고르기 칸. 유물처럼 저주가 없는 것에 쓴다. */
     private makeInfoCell(
         x: number, y: number, w: number, h: number,
-        title: string, body: string, edge: number, onPick: () => void,
+        title: string, body: string, edge: number, picked: boolean, onPick: () => void,
     ): Phaser.GameObjects.Container {
         const root = this.add.container(x, y);
         const g = this.add.graphics();
         g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
-        g.lineStyle(1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+        g.lineStyle(picked ? 3 : 1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+        if (picked) g.fillStyle(edge, 1).fillRect(0, 0, 4, h);
 
         const name = mkText(this, 10, 9, title, {
             fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
@@ -1065,8 +1152,11 @@ export class TradingScene extends Phaser.Scene {
         box.add(mkText(this, mid, py + 16, "CARD REWARD — 이어서 유물", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
         }).setOrigin(0.5, 0));
-        box.add(mkText(this, mid, py + 32, "한 장을 덱에 넣습니다", {
-            fontFamily: fontOf(this), fontSize: `${FS.sm}px`, color: S.ink,
+        // 짚어 둔 장이 있으면 무엇을 눌러야 하는지가 이 줄에서 바뀐다.
+        box.add(mkText(this, mid, py + 32,
+            this.offerPick ? "한 번 더 누르면 덱에 들어갑니다" : "한 장을 고르세요", {
+            fontFamily: fontOf(this), fontSize: `${FS.sm}px`,
+            color: this.offerPick ? S.gold : S.ink,
         }).setOrigin(0.5, 0));
 
         // 카드를 고르든 건너뛰든 **유물 고르기로 이어진다.** 3턴마다 한 번, 이 자리에서
@@ -1075,6 +1165,7 @@ export class TradingScene extends Phaser.Scene {
         // 덮어써서, 방금 덱에서 두 장이 사라진 것을 아무도 못 본다.
         const close = (lines: [string, LogKind][], merges: MergeResult[] = []) => {
             this.offer = null;
+            this.offerPick = null;
             this.closeOverlay();
             this.logAll(lines);
             this.logMerges(merges);
@@ -1087,27 +1178,47 @@ export class TradingScene extends Phaser.Scene {
         const inner = pw - 32;
         const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
 
+        const take = (card: StrategyCard) => {
+            const curse = this.rogue.takeReward(cardKey(card.id, card.level));
+            const lines: [string, LogKind][] = [
+                [`카드 획득 ${card.name}`, "card"],
+            ];
+            if (curse) lines.push([`저주 ${curse} 도 함께 덱에`, "warn"]);
+            // 셋째 장이 들어오면 그 자리에서 합쳐진다 — 알림으로 한 번 세운다.
+            close(lines, this.rogue.takeMerges());
+        };
+        const skip = () => close([["카드를 안 받았습니다 — 덱을 그대로", "turn"]]);
+
         offer.forEach((card, i) => {
             const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
             const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
             // 이 한 장이 셋째 장이면 **고르기 전에** 말해 준다. 그래야 "약한 카드를
             // 모아 강화한다" 가 선택이 된다.
             const merge = this.rogue.mergePreview(cardKey(card.id, card.level));
-            box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, merge, () => {
-                const curse = this.rogue.takeReward(cardKey(card.id, card.level));
-                const lines: [string, LogKind][] = [
-                    [`카드 획득 ${card.name}`, "card"],
-                ];
-                if (curse) lines.push([`저주 ${curse} 도 함께 덱에`, "warn"]);
-                // 셋째 장이 들어오면 그 자리에서 합쳐진다 — 알림으로 한 번 세운다.
-                close(lines, this.rogue.takeMerges());
+            const picked = this.offerPick === card.uid;
+            box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, merge, picked, () => {
+                // 첫 탭은 **짚는 것**이다. 손패와 같은 순서 — 읽고 나서 정한다.
+                if (picked) { take(card); return; }
+                this.offerPick = card.uid;
+                this.closeOverlay();
+                this.drawReward();
             }));
         });
 
-        const skip = makeButton(this, px + 16, py + ph - 62, inner, 46,
-            "건너뛰기 — 덱을 얇게", () => close([["카드를 안 받았습니다 — 덱을 그대로", "turn"]]),
-            { tone: "plain", size: FS.sm });
-        box.add(skip.root);
+        // 짚어 두면 그 자리에서 받거나 건너뛴다. 짚기 전에는 건너뛰기 하나뿐이라
+        // 버튼 줄의 높이가 안 바뀐다 — 칸이 들썩이면 손가락이 자리를 다시 찾는다.
+        const btnY = py + ph - 62;
+        const chosen = offer.find(c => c.uid === this.offerPick);
+        if (chosen) {
+            const takeW = Math.floor((inner - gap) * 0.62);
+            box.add(makeButton(this, px + 16, btnY, takeW, 46, "받기 ▸", () => take(chosen),
+                { tone: "go", size: FS.sm }).root);
+            box.add(makeButton(this, px + 16 + takeW + gap, btnY, inner - takeW - gap, 46,
+                "건너뛰기", skip, { tone: "plain", size: FS.sm }).root);
+        } else {
+            box.add(makeButton(this, px + 16, btnY, inner, 46,
+                "건너뛰기 — 덱을 얇게", skip, { tone: "plain", size: FS.sm }).root);
+        }
     }
 
     /**
@@ -1116,10 +1227,12 @@ export class TradingScene extends Phaser.Scene {
      * @param stacked 가로로 편 좁은 칸인가. 그러면 저주 표시가 이름 옆에 못 들어가서
      *                아래로 내려간다.
      * @param merge   이 한 장이 셋째 장이면 무엇이 되는가(`mergePreview`). 없으면 null.
+     * @param picked  지금 짚어 둔 칸인가. 한 번 더 눌러야 받는다.
      */
     private makeOfferCell(
         x: number, y: number, w: number, h: number,
-        card: StrategyCard, stacked: boolean, merge: string | null, onTake: () => void,
+        card: StrategyCard, stacked: boolean, merge: string | null, picked: boolean,
+        onTap: () => void,
     ): Phaser.GameObjects.Container {
         const root = this.add.container(x, y);
         const cursed = !!card.curseName;
@@ -1128,7 +1241,9 @@ export class TradingScene extends Phaser.Scene {
 
         const g = this.add.graphics();
         g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
-        g.lineStyle(merge !== null ? 2 : 1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+        g.lineStyle(picked ? 3 : merge !== null ? 2 : 1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+        // 짚어 둔 칸은 테두리만으로는 안 갈린다 — 왼쪽에 굵은 띠를 하나 더 세운다.
+        if (picked) g.fillStyle(edge, 1).fillRect(0, 0, 4, h);
 
         const name = mkText(this, 10, 9, card.name, {
             fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: cursed ? S.danger : S.neon,
@@ -1140,7 +1255,7 @@ export class TradingScene extends Phaser.Scene {
 
         const zone = this.add.zone(0, 0, w, h).setOrigin(0, 0)
             .setInteractive({ useHandCursor: true });
-        zone.on("pointerup", onTake);
+        zone.on("pointerup", onTap);
 
         root.add([g, name, desc, zone]);
 
