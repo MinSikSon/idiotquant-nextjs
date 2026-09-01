@@ -192,16 +192,10 @@ export class TradingScene extends Phaser.Scene {
         unlocked: { id: string; kind: "card" | "relic"; at: number }[];
     } | null = null;
     /**
-     * 방금 일어난 합성. **조용히 일어나면 덱에서 카드가 사라진 것처럼 보인다.**
-     *
-     * 로그 한 줄로도 적지만 그것만으로는 모자랐다 — 보상을 고른 직후에는 유물 고르기가
-     * 바로 덮어쓰고, 턴이 열릴 때는 그 위로 뉴스가 몇 줄 더 쌓인다. 판을 멈춰 세우고
-     * 무엇이 무엇이 되었는지를 말한 다음에 넘어간다.
-     *
-     * `next` 는 확인을 누르고 **어디로 가는가**다. 콜백을 들고 있으면 화면을 돌릴 때
-     * 되살릴 수가 없어서 갈 곳을 값으로 적는다.
+     * 지금 떠 있는 강화 알림 띠. **오버레이가 아니라 잠깐 떴다 사라지는 것**이라
+     * 화면을 돌릴 때 되살리지 않는다 — 되살리면 지나간 알림이 다시 뜬다.
      */
-    private merged: { lines: MergeResult[]; next: "relic" | "stay" } | null = null;
+    private toast: Phaser.GameObjects.Container | null = null;
     /** 덱을 펼쳐 보는 중인가. 무엇을 몇 장 모았는지가 여기서만 보인다. */
     private deckOpen = false;
     /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
@@ -306,6 +300,7 @@ export class TradingScene extends Phaser.Scene {
 
         this.children.removeAll(true);
         this.overlay = null;
+        this.toast = null;      // 위에서 함께 부서졌다. 지나간 알림은 안 되살린다
         this.buildAll();
 
         this.renderRelics();
@@ -321,7 +316,6 @@ export class TradingScene extends Phaser.Scene {
         // 떠 있던 오버레이는 같은 재료로 다시 그린다 — 후보를 다시 뽑지 않는다.
         if (this.intro) this.drawIntro();
         else if (this.ended) this.drawResult();
-        else if (this.merged) this.drawMergedNotice();
         else if (this.relicOffer) this.drawRelicOffer();
         else if (this.offer) this.drawReward();
         else if (this.deckOpen) this.drawDeck();
@@ -543,7 +537,7 @@ export class TradingScene extends Phaser.Scene {
         for (const f of fired) this.log(f, "relic");
 
         // 덱 장수가 왜 줄었는지 모른 채 턴을 맞으면 카드가 사라진 것처럼 보인다.
-        if (merges.length > 0) this.showMerged(merges, "stay");
+        this.showMerged(merges);
     }
 
     /** 합성을 로그에도 남긴다. 알림은 한 번 닫으면 끝이고, 로그는 되감을 수 있다. */
@@ -803,65 +797,65 @@ export class TradingScene extends Phaser.Scene {
         box.add(reset.root);
     }
 
-    /* ── 합성 알림 ────────────────────────────────────────── */
-
-    private showMerged(lines: MergeResult[], next: "relic" | "stay") {
-        this.merged = { lines, next };
-        this.drawMergedNotice();
-    }
+    /* ── 강화 알림 ────────────────────────────────────────── */
 
     /**
-     * 무엇이 무엇이 되었는가. **판을 멈춰 세우고 말한다.**
+     * 무엇이 무엇이 되었는가. **판을 안 멈춘다.**
      *
-     * 합성은 이 게임에서 덱이 얇아지는 두 길 중 하나인데, 카드 두 장이 조용히 사라지고
-     * 다른 한 장이 생긴다. 로그 한 줄로만 적으면 보상 뒤에는 유물 고르기가, 턴 머리에는
-     * 뉴스 몇 줄이 곧바로 그 위를 덮는다 — 덱이 왜 줄었는지 아무도 못 본다.
+     * 예전에는 확인을 눌러야 넘어가는 창이었다. 강화는 덱이 두꺼워질수록 자주 터지는데,
+     * 그때마다 화면이 통째로 덮이고 손이 멈췄다 — 알림이 판보다 커진 셈이다.
+     *
+     * 지금은 차트 위에 잠깐 떴다 스스로 사라지는 띠다. 누를 것이 없고 아래를 안 가린다.
+     * 무엇이 되었는지는 **카드의 금색 `+N` 딱지**와 로그가 계속 들고 있으므로, 이 띠는
+     * "방금 무슨 일이 있었다" 만 말하면 된다.
      */
-    private drawMergedNotice() {
-        const m = this.merged;
-        if (!m) return;
+    private showMerged(lines: MergeResult[]) {
+        this.toast?.destroy(true);
+        this.toast = null;
+        if (lines.length === 0) return;
 
-        const tight = this.designH < TALL_ENOUGH;
-        const n = m.lines.length;
-        const rowH = tight ? 26 : 34;
-        const pw = Math.min(this.designW - 40, tight ? 460 : 350);
-        const btnH = tight ? 40 : 48;
-        const head = tight ? 44 : 58;
-        const ph = head + n * rowH + 14 + btnH + 16;
+        const b = this.band.chart;
+        const rowH = FS.sm + 6;
+        const w = b.w - PAD * 2;
+        const h = 10 + (lines.length + 1) * rowH + 6;
+        const x = b.x + PAD;
+        const y = b.y + PAD;
 
-        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
-        const mid = px + pw / 2;
+        const box = this.add.container(x, y);
+        // **오버레이보다 위에.** 보상을 고른 직후에도 뜨는데, 그때 유물 고르기 창이
+        // 뒤이어 열린다 — 넣은 순서로는 그 창에 가려진다.
+        box.setDepth(100);
 
-        box.add(mkText(this, mid, py + (tight ? 10 : 16), "MERGE — 카드가 강화되었습니다", {
+        const g = this.add.graphics();
+        g.fillStyle(C.panel, 0.96).fillRect(0, 0, w, h);
+        g.lineStyle(1, C.gold, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
+        g.fillStyle(C.gold, 1).fillRect(0, 0, 3, h);
+        box.add(g);
+
+        box.add(mkText(this, 10, 8, "강화", {
             fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
-        }).setOrigin(0.5, 0));
-        box.add(mkText(this, mid, py + (tight ? 24 : 34),
-            `같은 카드 ${MERGE_COUNT}장이 한 단계 위로`, {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(0.5, 0));
+        }));
 
-        m.lines.forEach((line, i) => {
-            const y = py + head + i * rowH;
+        lines.forEach((line, i) => {
             // 사라지는 저주는 화살표 뒤가 비어 있으면 안 된다 — "무엇이 되었나" 의 답이
             // "없어졌다" 인 것과 화면이 잘린 것은 눈으로 안 갈린다.
-            box.add(mkText(this, mid, y,
-                line.to ? `${line.from} ×${MERGE_COUNT}  →  ${line.to}`
-                    : `${line.from} ×${MERGE_COUNT}  →  덱에서 사라짐`,
+            box.add(mkText(this, 10, 10 + (i + 1) * rowH,
+                line.to ? `${line.from} ×${MERGE_COUNT} → ${line.to}`
+                    : `${line.from} ×${MERGE_COUNT} → 덱에서 사라짐`,
                 {
-                    fontFamily: fontOf(this), fontSize: `${tight ? FS.sm : FS.md}px`,
-                    color: line.to ? S.gold : S.danger, align: "center",
-                    wordWrap: { width: pw - 30 },
-                }).setOrigin(0.5, 0));
+                    fontFamily: fontOf(this), fontSize: `${FS.sm}px`,
+                    color: line.to ? S.gold : S.danger,
+                }));
         });
 
-        const ok = makeButton(this, px + 20, py + ph - btnH - 16, pw - 40, btnH,
-            m.next === "relic" ? "확인 — 유물 고르기 >" : "확인", () => {
-                const next = m.next;
-                this.merged = null;
-                this.closeOverlay();
-                if (next === "relic") this.showRelicOffer();
-            }, { tone: "go", size: FS.sm });
-        box.add(ok.root);
+        this.toast = box;
+        // 뜨고 → 머물고 → 사라진다. 판이 도는 동안 손이 멈추지 않아야 하므로 누를 것을
+        // 안 둔다. 다음 강화가 오면 위에서 이 띠부터 걷는다.
+        this.tweens.add({
+            targets: box, alpha: { from: 0, to: 1 }, duration: 160,
+            hold: 2600, yoyo: true,
+            onComplete: () => { box.destroy(true); if (this.toast === box) this.toast = null; },
+        });
     }
 
     /* ── 덱 펼쳐 보기 ─────────────────────────────────────── */
@@ -1084,8 +1078,10 @@ export class TradingScene extends Phaser.Scene {
             this.closeOverlay();
             this.logAll(lines);
             this.logMerges(merges);
-            if (merges.length > 0) this.showMerged(merges, "relic");
-            else this.showRelicOffer();
+            // 알림은 띄우기만 하고 **곧바로 유물 고르기로 간다.** 예전에는 확인을 한 번
+            // 더 눌러야 넘어갔는데, 3턴마다 오는 자리에서 그 한 번이 매번 손을 멈췄다.
+            this.showMerged(merges);
+            this.showRelicOffer();
         };
 
         const inner = pw - 32;
