@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, AlertTriangle, HelpCircle } from "lucide-react";
 import LineChart from "@/components/LineChart";
 import { CopyStockButtons } from "@/components/copyStockButtons";
 
@@ -20,6 +20,7 @@ const GRADE_CONFIG = {
     dotCls:     "bg-gradient-to-r from-pink-500 to-purple-500",
     label:      "PREMIUM NET-NET",
     desc:       "업사이드 ≥ +200% — 그레이엄 최고 등급",
+    cut:        "≥ +200%",
     chartColor: "#a855f7",
   },
   SS: {
@@ -31,6 +32,7 @@ const GRADE_CONFIG = {
     dotCls:     "bg-amber-500",
     label:      "DEEP VALUE ALPHA",
     desc:       "업사이드 ≥ +150% — 강력한 안전마진",
+    cut:        "≥ +150%",
     chartColor: "#f59e0b",
   },
   S: {
@@ -42,6 +44,7 @@ const GRADE_CONFIG = {
     dotCls:     "bg-[#16a34a]",
     label:      "DEEP VALUE",
     desc:       "업사이드 ≥ +100% — 그레이엄 기준 충족",
+    cut:        "≥ +100%",
     chartColor: "#16a34a",
   },
   A: {
@@ -53,6 +56,7 @@ const GRADE_CONFIG = {
     dotCls:     "bg-slate-400",
     label:      "STABLE ASSET",
     desc:       "업사이드 ≥ +50% — 안전마진 존재",
+    cut:        "≥ +50%",
     chartColor: "#64748b",
   },
   B: {
@@ -64,6 +68,7 @@ const GRADE_CONFIG = {
     dotCls:     "bg-neutral-400",
     label:      "FAIR VALUE",
     desc:       "업사이드 ≥ 0% — 공정 가치 구간",
+    cut:        "≥ 0%",
     chartColor: "#a1a1aa",
   },
   F: {
@@ -75,6 +80,7 @@ const GRADE_CONFIG = {
     dotCls:     "bg-red-500",
     label:      "OVERVALUED",
     desc:       "업사이드 < 0% — 고평가 가능성",
+    cut:        "< 0%",
     chartColor: "#ef4444",
   },
 } as const;
@@ -104,11 +110,15 @@ interface StockCardProps {
 // =========================================================================
 export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) => {
   const [imgError, setImgError] = useState(false);
+  /** 등급 배지를 눌렀나. 이 등급이 **어떻게 나온 값인지**를 그 자리에서 펼친다. */
+  const [gradeOpen, setGradeOpen] = useState(false);
 
   const gradeRaw  = stock?.grade;
   const grade     = (gradeRaw && typeof gradeRaw === "object"
     ? String((gradeRaw as any).grade || "B")
     : String(gradeRaw || "B")) as GradeKey;
+  // 재무를 못 읽으면 등급이 "N/A" 로 온다. 그때 B 의 기준을 펼치면 거짓말이 된다.
+  const gradeKnown = Object.prototype.hasOwnProperty.call(GRADE_CONFIG, grade);
   const cfg       = GRADE_CONFIG[grade] ?? DEFAULT_CFG;
 
   const ncavUpside  = Number(stock?.ncavScore ?? 0);
@@ -166,8 +176,9 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
       {/* ── 등급 컬러 상단 바 (3px) ── */}
       <div className={cn("h-[3px] w-full", cfg.topBarCls)} />
 
-      {/* ── 메인 정보 ── */}
-      <div className={cn("p-5 bg-gradient-to-br to-transparent", cfg.tintCls)}>
+      {/* ── 메인 정보 ── 좁은 화면에서는 카드 자신의 여백도 한 칸 줄인다. 페이지 여백과
+           겹쳐 글이 시작되는 자리가 화면 폭의 10분의 1을 넘어가면 그만큼 값이 잘린다. */}
+      <div className={cn("p-4 sm:p-5 bg-gradient-to-br to-transparent", cfg.tintCls)}>
 
         {/* 로고 + 종목명 + 등급 */}
         <div className="flex items-center gap-4">
@@ -208,13 +219,22 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
                   )}
                 </div>
               </div>
-              {/* 등급 배지 */}
-              <span className={cn(
-                "px-2.5 py-1 rounded-lg text-[13px] font-black font-mono shrink-0 shadow-sm",
-                cfg.badgeCls
-              )}>
+              {/* 등급 배지 — **누르면 이 등급이 어떻게 나왔는지**가 아래에 펼쳐진다.
+                  등급만 크게 띄워 놓고 기준을 어디에도 안 적으면, 읽는 사람은 그 글자를
+                  믿거나 무시하거나 둘 중 하나만 할 수 있다. */}
+              <button
+                type="button"
+                onClick={() => setGradeOpen(o => !o)}
+                aria-expanded={gradeOpen}
+                aria-label="등급 산정 기준 보기"
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] font-black font-mono shrink-0 shadow-sm transition-opacity hover:opacity-90",
+                  cfg.badgeCls
+                )}
+              >
                 {grade}
-              </span>
+                <HelpCircle size={11} className="opacity-80" />
+              </button>
             </div>
 
             {/* 가격 + 업사이드 */}
@@ -246,6 +266,74 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
             {cfg.desc}
           </span>
         </div>
+
+        {/* ── 등급 산정 기준 (배지를 눌렀을 때) ──
+            등급은 **하나의 값**으로 정해진다: NCAV 업사이드. 그 계산식과 잘린 자리를
+            같이 보여야 "왜 이 등급인가" 가 끝난다. 값을 여기서 다시 계산하지 않는다 —
+            배지에 쓴 업사이드(ncavScore)를 그대로 견준다. */}
+        {gradeOpen && (
+          <div className="mt-2 rounded-xl border border-neutral-200/70 dark:border-border-subtle-dark/70 bg-white/70 dark:bg-surface-dark-canvas/60 p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">
+              등급 산정 기준
+            </p>
+
+            {gradeKnown ? (
+              <>
+                <p className="mt-1.5 text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
+                  업사이드 = (순유동자산 − 총부채) ÷ 발행주식수 ÷ 현재가 − 1
+                </p>
+                <p className="mt-1 text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
+                  이 종목은{" "}
+                  <span className={cn("font-black font-mono tabular-nums", isUp ? "text-[#15803d] dark:text-[#16a34a]" : "text-red-600 dark:text-red-400")}>
+                    {isUp ? "+" : ""}{ncavUpside.toFixed(1)}%
+                  </span>
+                  {" "}라서 <span className="font-black">{grade}</span> 입니다.
+                </p>
+
+                <div className="mt-2.5 flex flex-col gap-px overflow-hidden rounded-lg border border-neutral-200/70 dark:border-border-subtle-dark/70">
+                  {(Object.keys(GRADE_CONFIG) as GradeKey[]).map(g => (
+                    <div
+                      key={g}
+                      className={cn(
+                        "flex items-center gap-2 px-2.5 py-1.5 text-[10.5px]",
+                        g === grade
+                          ? "bg-neutral-100 dark:bg-surface-dark-muted"
+                          : "bg-white/70 dark:bg-surface-dark-card/50",
+                      )}
+                    >
+                      <span className={cn(
+                        "w-8 shrink-0 font-black font-mono",
+                        g === grade ? "text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500",
+                      )}>
+                        {g}
+                      </span>
+                      <span className={cn(
+                        "w-16 shrink-0 font-mono tabular-nums",
+                        g === grade ? "text-neutral-700 dark:text-neutral-200" : "text-neutral-400 dark:text-neutral-500",
+                      )}>
+                        {GRADE_CONFIG[g].cut}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-neutral-400 dark:text-neutral-500">
+                        {GRADE_CONFIG[g].label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 등급이 무엇을 안 보는지까지 적는다 — 안 적으면 "좋은 회사" 로 읽힌다 */}
+                <p className="mt-2 text-[10px] text-neutral-400 dark:text-neutral-500 leading-relaxed break-keep">
+                  자산가치(그레이엄 NCAV) 하나만 봅니다. 수익성·성장·상장폐지 위험은 이 등급에
+                  들어가지 않으니 아래 지표와 함께 보세요.
+                </p>
+              </>
+            ) : (
+              <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+                재무 데이터를 읽지 못해 등급을 매기지 못했습니다. 등급은 순유동자산 기준
+                업사이드로 정해지는데, 그 값을 계산할 재무제표가 없습니다.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── 미니 차트 ── */}
