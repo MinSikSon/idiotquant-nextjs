@@ -4,7 +4,8 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff } from "lucide-react";
+import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectLikedList, selectLikesState,
@@ -94,8 +95,12 @@ export default function ProfilePage() {
     const solidityLabel = solid.label;
     const toneCounts = scored.reduce((acc, v) => { acc[v.tone] = (acc[v.tone] ?? 0) + 1; return acc; }, {} as Record<string, number>);
 
-    const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
-    const isAdmin = (session?.user as any)?.role === "admin";
+    // 관리자가 일반 사용자 화면을 보는 중인가. 스위치는 **접히지 않는다** — 이 화면의
+    // 관리자 칸이 통째로 사라지면 켜 놓고 끌 자리가 없어진다(lib/viewAsUser.ts).
+    const viewAsUser = useViewAsUser();
+    const realAdmin = (session?.user as any)?.role === "admin";
+    const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
+    const isAdmin = realAdmin && !viewAsUser;
 
     // 아직 아무것도 담지 않은 사용자. 불러오는 중에는 켜지 않는다 — 목록이 있는 사용자에게
     // 온보딩 카드가 잠깐 떴다 사라지면 방금 본 것이 무엇인지 알 수 없다.
@@ -300,8 +305,8 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* Admin section */}
-                {isAdmin && (
+                {/* Admin section — 미리보기 중에도 이 칸만은 남는다(끌 자리가 필요하다) */}
+                {realAdmin && (
                     <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
@@ -309,18 +314,57 @@ export default function ProfilePage() {
                             </span>
                         </div>
                         <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
-                            <Link
-                                href="/admin"
-                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
+                            {isAdmin && (
+                                <Link
+                                    href="/admin"
+                                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
+                                >
+                                    <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
+                                        <ShieldCheck size={15} className="text-[#16a34a]" />
+                                    </div>
+                                    <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                                        회원 관리
+                                    </span>
+                                    <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                                </Link>
+                            )}
+
+                            {/* 일반 사용자 화면으로 보기 — 관리자 전용 메뉴를 접어 두고 본다.
+                                권한은 그대로다: 주소를 직접 치면 관리자 화면이 열린다. */}
+                            <button
+                                type="button"
+                                onClick={() => setViewAsUser(!viewAsUser)}
+                                aria-pressed={viewAsUser}
+                                className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
-                                    <ShieldCheck size={15} className="text-[#16a34a]" />
+                                <div className={cn(
+                                    "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                                    viewAsUser
+                                        ? "bg-[#dcfce7] dark:bg-[#052e16]/50"
+                                        : "bg-surface-canvas dark:bg-surface-dark-muted",
+                                )}>
+                                    <EyeOff size={15} className={viewAsUser ? "text-[#16a34a]" : "text-neutral-500 dark:text-neutral-400"} />
                                 </div>
-                                <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                    회원 관리
+                                <span className="flex-1 min-w-0">
+                                    <span className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                                        일반 사용자 화면으로 보기
+                                    </span>
+                                    <span className="block text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        {viewAsUser
+                                            ? "관리자 메뉴를 접어 두고 있습니다 — 권한은 그대로입니다"
+                                            : "관리자에게만 보이는 메뉴를 숨겨 봅니다"}
+                                    </span>
                                 </span>
-                                <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
-                            </Link>
+                                <span className={cn(
+                                    "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                                    viewAsUser ? "bg-[#16a34a]" : "bg-neutral-200 dark:bg-[#3a3834]",
+                                )}>
+                                    <span className={cn(
+                                        "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
+                                        viewAsUser ? "left-[22px]" : "left-0.5",
+                                    )} />
+                                </span>
+                            </button>
                         </div>
                     </div>
                 )}
@@ -579,9 +623,11 @@ export default function ProfilePage() {
                             계정 설정 더 보기
                         </button>
                     ) : !confirmingDelete ? (
+                        // 잠금은 미리보기와 무관하게 **실제 역할**로 판단한다 — 화면을
+                        // 접었다고 못 하던 일이 되면 안 된다.
                         <button
                             onClick={() => setConfirmingDelete(true)}
-                            disabled={isAdmin}
+                            disabled={realAdmin}
                             className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                             <div className="w-8 h-8 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
@@ -592,7 +638,7 @@ export default function ProfilePage() {
                                     회원 탈퇴
                                 </span>
                                 <span className="block text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
-                                    {isAdmin ? "관리자 계정은 탈퇴할 수 없습니다" : "계정과 모든 데이터가 영구 삭제됩니다"}
+                                    {realAdmin ? "관리자 계정은 탈퇴할 수 없습니다" : "계정과 모든 데이터가 영구 삭제됩니다"}
                                 </span>
                             </div>
                         </button>
