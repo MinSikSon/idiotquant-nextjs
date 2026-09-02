@@ -99,7 +99,11 @@ export default function ProfilePage() {
     // 관리자 칸이 통째로 사라지면 켜 놓고 끌 자리가 없어진다(lib/viewAsUser.ts).
     const viewAsUser = useViewAsUser();
     const realAdmin = (session?.user as any)?.role === "admin";
-    const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
+    // 이름은 **자격이 아니다.** 카카오·구글 프로필 이름은 본인이 아무 값으로나 바꿀 수
+    // 있고, 같은 이름을 쓰는 다른 계정도 있다 — 실제로 일반 계정으로 로그인했는데 이름이
+    // 같아 Admin 배지가 떴다. 이름은 "여러 관리자 중 그 한 명" 을 가리는 데만 쓰고,
+    // 관리자인지 아닌지는 **역할**로 판단한다.
+    const isMasterUser = realAdmin && session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
     const isAdmin = realAdmin && !viewAsUser;
 
     // 아직 아무것도 담지 않은 사용자. 불러오는 중에는 켜지 않는다 — 목록이 있는 사용자에게

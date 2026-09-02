@@ -226,7 +226,9 @@ export function NavbarWithSimpleLinks() {
   // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
   const viewAsUser = useViewAsUser();
   const realAdmin = (session?.user as any)?.role === "admin";
-  const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
+  // 이름은 **자격이 아니다.** 프로필 이름은 본인이 바꿀 수 있고 같은 이름을 쓰는 계정도
+  // 있다. 이름은 "여러 관리자 중 그 한 명" 을 가리는 데만 쓰고, 관리자인지는 역할로 본다.
+  const isMasterUser = realAdmin && session?.user?.name === process.env.NEXT_PUBLIC_MASTER && !viewAsUser;
   const isAdmin = realAdmin && !viewAsUser;
 
   // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
