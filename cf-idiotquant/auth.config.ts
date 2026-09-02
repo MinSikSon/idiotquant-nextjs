@@ -16,8 +16,15 @@ export const authConfig = {
         // (OAuthAccountNotLinked). 켜 둔 이상 이메일이 곧 계정 열쇠이므로, 두 제공자
         // 모두 이메일을 검증해 주는 곳이어야 한다 — 카카오·구글 다 그렇다.
         Google({
-            clientId: process.env.AUTH_GOOGLE_ID,
-            clientSecret: process.env.AUTH_GOOGLE_SECRET,
+            // 이 프로젝트에는 `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` 이 이미 있다.
+            // 있는 이름을 그대로 쓴다 — 같은 값을 다른 이름으로 한 벌 더 두면 어느 쪽이
+            // 진짜인지 아무도 모르게 된다.
+            //
+            // 값이 없으면 next-auth 가 자기 규약(`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`)으로
+            // 채운다(`setEnvDefaults` 가 `??=` 로 넣는다). 그래서 둘 중 아무 이름으로 넣어도
+            // 켜지고, `GOOGLE_CLIENT_*` 가 있으면 그쪽이 이긴다.
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             allowDangerousEmailAccountLinking: true,
         }),
     ],

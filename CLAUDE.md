@@ -105,7 +105,7 @@ cf-idiotquant/
 - **Proxy** — `app/api/proxy/[...path]/route.ts` 가 모든 백엔드 호출을 `NEXT_PUBLIC_WORKER_BASE_URL`로 포워딩.
 - **Redux pattern** — `createAppSlice` + `create.asyncThunk`. fulfilled/rejected 핸들러에서 `result?.success === false` 시 throw해서 rejected 상태로 전환.
 - **D1 NCAV section** — `algorithmTrade` slice의 `ncavDailyList` / `ncavDailyDates` 상태. `/ncav/daily` 배포된 엔드포인트 사용. `/ncav/daily/dates` 미배포 시 `reqDiscoverNcavDates` thunk로 클라이언트 자동 탐색.
-- **로그인** — NextAuth(JWT 세션) + D1 어댑터. 제공자는 **카카오·구글 둘**이며 `auth.config.ts` 한 곳에서 정한다. 둘 다 `allowDangerousEmailAccountLinking: true` — **한쪽만 켜면 같은 이메일로 두 번째 제공자를 눌렀을 때 로그인이 막힌다**(OAuthAccountNotLinked). 새 제공자를 붙일 때는 환경변수(`AUTH_<제공자>_ID`/`_SECRET`), 로그인 버튼(`components/authButton.tsx`), 개인정보 처리방침의 수집항목·위탁 목록을 함께 고친다. 재가입 쿨다운(`/user/withdraw-status`)은 워커가 `kakaoId` 로만 조회하므로 **지금은 카카오만 막는다**.
+- **로그인** — NextAuth(JWT 세션) + D1 어댑터. 제공자는 **카카오·구글 둘**이며 `auth.config.ts` 한 곳에서 정한다. 둘 다 `allowDangerousEmailAccountLinking: true` — **한쪽만 켜면 같은 이메일로 두 번째 제공자를 눌렀을 때 로그인이 막힌다**(OAuthAccountNotLinked). 구글 자격증명은 **이미 있던 `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` 을 먼저 읽고**, 없으면 next-auth 규약(`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`)으로 떨어진다 — 같은 값을 두 이름으로 두지 않기 위해서다. 새 제공자를 붙일 때는 환경변수, 로그인 버튼(`components/authButton.tsx`), 개인정보 처리방침의 수집항목·위탁 목록을 함께 고친다. 재가입 쿨다운(`/user/withdraw-status`)은 워커가 `kakaoId` 로만 조회하므로 **지금은 카카오만 막는다**.
 - **Admin 미리보기** — `lib/viewAsUser.ts` (localStorage + 커스텀 이벤트). 관리자가 일반 사용자에게 보이는 메뉴를 확인하는 모드로, **표시만 접고 권한은 건드리지 않는다**. `middleware.ts` 는 이 값을 모르고 `/admin`·`/backtest`·`/balance` 는 그대로 열린다. 역할로 잠근 동작(회원 탈퇴 차단 등)은 미리보기가 아니라 **실제 역할**(`realAdmin`)로 판단할 것.
 
 ## PR 생성 규칙
