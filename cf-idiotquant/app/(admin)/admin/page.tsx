@@ -14,7 +14,26 @@ interface UserRow {
   role: string;
   createdAt: number | null;
   lastLoginAt: number | null;
+  /**
+   * 어떤 문으로 들어왔는가. 워커가 `accounts.provider` 를 이어 붙여 준다 — `"kakao,google"`.
+   *
+   * **한 사람이 둘을 다 가질 수 있다.** 같은 이메일이면 계정이 하나로 합쳐지므로
+   * (`allowDangerousEmailAccountLinking`) 카카오로 가입한 사람이 구글로도 들어올 수 있고,
+   * 그때 이 값에 둘이 함께 온다. 옛 워커가 이 필드를 안 주면 `undefined` 다.
+   */
+  providers?: string | null;
 }
+
+const PROVIDER_LABEL: Record<string, string> = {
+  kakao: "카카오",
+  google: "구글",
+};
+
+// 카카오는 자기 노란색, 구글은 흰 바탕 — 로그인 버튼과 같은 색이라 눈으로 바로 이어진다.
+const PROVIDER_CLASS: Record<string, string> = {
+  kakao: "bg-[#FEE500] text-[#191919]",
+  google: "bg-white text-[#1f1f1f] border border-neutral-300",
+};
 
 const PLAN_LABEL: Record<string, string> = {
   free: "Free",
@@ -170,7 +189,8 @@ export default function AdminPage() {
       <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-[#2c2b27]">
           <Users size={14} className="text-neutral-400" />
-          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">카카오 가입자 목록</span>
+          {/* 문이 둘이 됐으므로 "카카오 가입자" 가 아니다 — 가입 경로는 줄마다 배지로 적는다 */}
+          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">가입자 목록</span>
           {!loading && (
             <span className="ml-auto text-xs text-neutral-400">{users.length}명</span>
           )}
@@ -189,6 +209,7 @@ export default function AdminPage() {
                 <tr className="border-b border-neutral-100 dark:border-[#2c2b27] bg-surface-canvas dark:bg-surface-dark-card">
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이름</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이메일</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">가입 경로</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">플랜</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">역할</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">가입일</th>
@@ -207,6 +228,24 @@ export default function AdminPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-neutral-500 dark:text-neutral-400 text-xs">{u.email ?? "—"}</td>
+                    <td className="px-5 py-3">
+                      {/* 둘 다 있으면 둘 다 보인다 — 같은 이메일이면 계정이 합쳐지기 때문이다.
+                          옛 워커가 providers 를 안 주면 이 칸은 "—" 로 비워 둔다. */}
+                      <div className="flex items-center gap-1">
+                        {(u.providers ?? "").split(",").filter(Boolean).map(p => (
+                          <span
+                            key={p}
+                            className={cn(
+                              "text-[10px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap",
+                              PROVIDER_CLASS[p] ?? "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400"
+                            )}
+                          >
+                            {PROVIDER_LABEL[p] ?? p}
+                          </span>
+                        ))}
+                        {!u.providers && <span className="text-xs text-neutral-400">—</span>}
+                      </div>
+                    </td>
                     <td className="px-5 py-3">
                       <span className={cn(
                         "text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
@@ -234,7 +273,7 @@ export default function AdminPage() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-neutral-400 text-sm">가입자 없음</td>
+                    <td colSpan={7} className="px-5 py-10 text-center text-neutral-400 text-sm">가입자 없음</td>
                   </tr>
                 )}
               </tbody>
