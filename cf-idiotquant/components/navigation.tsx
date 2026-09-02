@@ -185,7 +185,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
         className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-colors shadow-sm"
       >
         <LogIn size={14} />
-        카카오 로그인
+        로그인
       </Link>
     </div>
   );
