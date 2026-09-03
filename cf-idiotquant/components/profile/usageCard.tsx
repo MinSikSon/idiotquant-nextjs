@@ -37,13 +37,25 @@ function toneOf(pct: number) {
 
 export default function UsageCard() {
     const [usage, setUsage] = useState<Usage | null>(null);
+    // 왜 못 읽었는지. 요청 자체가 실패한 경우와 워커가 "못 봤다" 고 답한 경우를 한 자리에
+    // 모은다. 이유를 버리고 "서버에 닿지 못했습니다" 로 뭉뚱그리면 404(라우트 미배포)와
+    // 403(권한)과 500(워커 오류)이 같은 문장이 되어, 어디를 고쳐야 하는지 알 수 없다.
+    const [reason, setReason] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let alive = true;
         apiRequest("/admin/usage").then(r => {
             if (!alive) return;
-            setUsage(r?.success === false ? null : r?.data ?? null);
+            if (r?.success === false) {
+                // status 를 함께 적는다 — 404 면 배포, 403 이면 권한, 500 이면 워커 로그다.
+                setReason(`${r.error ?? "요청이 실패했습니다."} (HTTP ${r.status})`);
+                setUsage(null);
+            } else {
+                const data = r?.data ?? null;
+                setUsage(data);
+                setReason(data?.available === false ? (data.reason ?? null) : null);
+            }
             setLoading(false);
         });
         return () => { alive = false; };
@@ -70,7 +82,7 @@ export default function UsageCard() {
                     <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
                         사용량을 읽지 못했습니다.
                         <span className="block mt-1 text-[11px] text-neutral-400 dark:text-neutral-500 break-words">
-                            {usage?.reason ?? "서버에 닿지 못했습니다."}
+                            {reason ?? "서버가 이유를 주지 않았습니다."}
                         </span>
                     </p>
                 )}
