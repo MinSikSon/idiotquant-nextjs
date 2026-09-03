@@ -16,6 +16,7 @@ import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons"
 import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import { computeSolidity, quadrantOf, type SolidityPoint } from "@/lib/utils/portfolioSolidity";
 import SolidityPlane from "@/components/profile/solidityPlane";
+import UsageCard from "@/components/profile/usageCard";
 
 // 아직 아무것도 담지 않은 사용자에게 좌표평면이 무엇을 말하는지 보여주기 위한 예시.
 // 실제 종목이 아니며 카드 머리에 "예시"라고 못박는다 — 자기 종목으로 오해하면
@@ -308,6 +309,10 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 )}
+
+                {/* 오늘 남은 무료 한도. 미리보기(viewAsUser) 중에는 접는다 — 일반 사용자에게
+                    보일 화면을 확인하는 모드이므로, 관리자에게만 보이는 칸은 그때 없어야 한다. */}
+                {isAdmin && <UsageCard />}
 
                 {/* Admin section — 미리보기 중에도 이 칸만은 남는다(끌 자리가 필요하다) */}
                 {realAdmin && (
