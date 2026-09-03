@@ -2,14 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState, useCallback, useRef, Suspense, memo } from "react";
+import { useEffect, useMemo, useState, useCallback, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
-    selectNcavDailyDates, selectNcavDailyList,
-    reqGetNcavDailyDates, reqGetNcavDailyList,
-    reqDiscoverNcavDates,
+    selectNcavDailyList, reqGetNcavDailyList,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import {
     selectLikedTickers, selectLikedList, selectTogglePending,
@@ -38,6 +36,10 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
+
+// 비로그인에게 보여 주는 줄 수. 검색엔진과 처음 온 사람에게 "무엇이 나오는 화면인지"는
+// 보여 주되, 목록 전체는 계정이 있어야 본다.
+const PREVIEW_SIZE = 10;
 
 // 밸류에이션 필터 프리셋 (0 = 미적용)
 const PBR_MAX_PRESETS = [0.5, 0.7, 1.0];   // PBR 이하
@@ -552,7 +554,6 @@ function ScreenerContent() {
     const requireLogin = useCallback(() => {
         router.push(`/login?callbackUrl=${encodeURIComponent(`/screener${window.location.search}`)}`);
     }, [router]);
-    const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
     const likedTickersArr = useAppSelector(selectLikedTickers);
     const likedList = useAppSelector(selectLikedList);
@@ -647,28 +648,22 @@ function ScreenerContent() {
     );
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
-    const hasDiscovered = useRef(false);
-
+    // 날짜 목록(/ncav/daily/dates)은 더 이상 받지 않는다. 이 화면은 그 값을 한 번도
+    // 그리지 않으면서 — 날짜를 쓰는 곳은 admin 전용 /backtest 다 — 받아만 왔는데,
+    // 하필 그게 D1 을 가장 많이 읽는 요청이었다. stock_data_daily 를 GROUP BY scan_date
+    // 로 훑는데 WHERE 가 없어 보관 중인 14일치가 통째로 읽히고, LIMIT 30 은 묶은 뒤에
+    // 걸려서 읽는 양을 줄이지 못한다.
+    //
+    // 날짜가 비었을 때 돌던 대체 탐색(reqDiscoverNcavDates)도 함께 뺀다. 그건 하루치를
+    // 훑는 요청을 일곱 번 더 보내는 것이라, 위를 없애고 이것만 남기면 오히려 늘어난다.
+    // 화면에 날짜 선택을 붙이는 날 둘을 함께 되살리면 된다.
     useEffect(() => {
-        dispatch(reqGetNcavDailyDates());
         dispatch(reqGetNcavDailyList("latest"));
     }, [dispatch]);
 
     useEffect(() => {
         if (isLoggedIn) dispatch(reqGetMyLikes());
     }, [dispatch, isLoggedIn]);
-
-    useEffect(() => {
-        if (
-            ncavDailyList.state === "fulfilled" &&
-            ncavDailyList.scanDate &&
-            !hasDiscovered.current &&
-            ncavDailyDates.dates.length < 2
-        ) {
-            hasDiscovered.current = true;
-            dispatch(reqDiscoverNcavDates(ncavDailyList.scanDate));
-        }
-    }, [ncavDailyList.state, ncavDailyList.scanDate, ncavDailyDates.dates.length, dispatch]);
 
     // 현재 필터 상태를 그대로 재현하는 쿼리 스트링 (URL 동기화 + 공유 링크 공용)
     const queryString = useMemo(() => {
@@ -906,8 +901,11 @@ function ScreenerContent() {
             : '',
     };
 
-    const visibleList = filteredList.slice(0, displayCount);
-    const hasMore = !groups && filteredList.length > displayCount;
+    // 비로그인은 앞 몇 줄만 본다. 목록을 아예 막지 않는 이유는 이 화면이 검색엔진이
+    // 들어오는 문이고, 빈 화면은 색인할 것이 없어서다.
+    const previewCapped = !isLoggedIn && filteredList.length > PREVIEW_SIZE;
+    const visibleList = filteredList.slice(0, isLoggedIn ? displayCount : PREVIEW_SIZE);
+    const hasMore = isLoggedIn && !groups && filteredList.length > displayCount;
 
     // 결과 분포 — 지금 화면에 있는 목록 기준. 저PBR·NCAV 결과는 업황이 꺾인 산업 하나로
     // 뒤덮이기 쉬운데, 표를 위에서부터 읽으면 그게 "싼 회사가 많다"로 보인다.
@@ -1974,6 +1972,24 @@ function ScreenerContent() {
                             )}
                         </div>
                         </>
+                        )}
+
+                        {previewCapped && (
+                            <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-6 text-center shadow-sm">
+                                <Lock size={18} className="mx-auto mb-3 text-neutral-400" />
+                                <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                                    {filteredList.length - PREVIEW_SIZE}개 종목이 더 있습니다
+                                </p>
+                                <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                                    전체 목록과 필터·정렬·과거 날짜 조회는 로그인하면 무료로 쓸 수 있습니다.
+                                </p>
+                                <button
+                                    onClick={requireLogin}
+                                    className="mt-4 px-6 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold transition-colors shadow-sm"
+                                >
+                                    로그인하고 전체 보기
+                                </button>
+                            </div>
                         )}
 
                         {hasMore && (
