@@ -548,7 +548,7 @@ function ScreenerContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { data: session } = useSession();
+    const { data: session, status: sessionStatus } = useSession();
     const isLoggedIn = !!session;
     // 비로그인 시 고급 필터/관심 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
     const requireLogin = useCallback(() => {
@@ -657,9 +657,18 @@ function ScreenerContent() {
     // 날짜가 비었을 때 돌던 대체 탐색(reqDiscoverNcavDates)도 함께 뺀다. 그건 하루치를
     // 훑는 요청을 일곱 번 더 보내는 것이라, 위를 없애고 이것만 남기면 오히려 늘어난다.
     // 화면에 날짜 선택을 붙이는 날 둘을 함께 되살리면 된다.
+    // 비로그인은 그릴 만큼만 받는다. 어차피 앞 PREVIEW_SIZE 줄만 보이는데 목록 전체를
+    // 받아 오면 압축 전 1.3MB 가 오간다(한 행 570바이트 × 2,400행). 크롤러와 처음 온
+    // 사람이 대부분이라 그 값이 곧 이 화면의 부하다.
+    //
+    // 세션이 정해지기 전에는 부르지 않는다. status 가 loading → authenticated 로 바뀌는
+    // 동안 두 번 부르면, 아끼려고 만든 분기가 요청을 하나 더 만드는 꼴이 된다.
     useEffect(() => {
-        dispatch(reqGetNcavDailyList("latest"));
-    }, [dispatch]);
+        if (sessionStatus === "loading") return;
+        dispatch(reqGetNcavDailyList(
+            isLoggedIn ? "latest" : { date: "latest", limit: PREVIEW_SIZE }
+        ));
+    }, [dispatch, sessionStatus, isLoggedIn]);
 
     useEffect(() => {
         if (isLoggedIn) dispatch(reqGetMyLikes());
@@ -901,9 +910,16 @@ function ScreenerContent() {
             : '',
     };
 
+    // 오늘 조건에 맞은 전체 개수. 비로그인은 목록을 PREVIEW_SIZE 만큼만 받으므로
+    // 받아 온 길이로 세면 "10개 발굴" 이 되어 버린다. 개수는 서버가 따로 세어 주는
+    // meta.matched 를 쓴다 — limit 과 무관한 값이다.
+    const matchedTotal = isLoggedIn
+        ? filteredList.length
+        : (ncavDailyList.total || filteredList.length);
+
     // 비로그인은 앞 몇 줄만 본다. 목록을 아예 막지 않는 이유는 이 화면이 검색엔진이
     // 들어오는 문이고, 빈 화면은 색인할 것이 없어서다.
-    const previewCapped = !isLoggedIn && filteredList.length > PREVIEW_SIZE;
+    const previewCapped = !isLoggedIn && matchedTotal > PREVIEW_SIZE;
     const visibleList = filteredList.slice(0, isLoggedIn ? displayCount : PREVIEW_SIZE);
     const hasMore = isLoggedIn && !groups && filteredList.length > displayCount;
 
@@ -1124,7 +1140,7 @@ function ScreenerContent() {
                     ) : (
                         <>
                             {!showLikedOnly && formattedDate && <><span className="font-mono">{formattedDate}</span><span>·</span></>}
-                            <span>조건 충족 <span className={cn("font-extrabold", isFiltered ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-300")}>{filteredList.length}개</span></span>
+                            <span>조건 충족 <span className={cn("font-extrabold", isFiltered ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-300")}>{matchedTotal}개</span></span>
                             {!showLikedOnly && ncavDailyList.list.length !== filteredList.length && (
                                 <span className="text-neutral-300 dark:text-neutral-600">(전체 {ncavDailyList.list.length}개 중)</span>
                             )}
@@ -1168,6 +1184,11 @@ function ScreenerContent() {
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
                         종목 수가 매번 다른 위치에 서고, 전략끼리 개수를 비교할 수가 없었다.
                         격자는 이름 위 / 개수 아래로 열을 맞추므로 훑는 것만으로 비교가 된다. */}
+                    {/* 전략별 개수는 비로그인에게 보여 주지 않는다. 목록을 PREVIEW_SIZE 만큼만
+                        받으므로 이 격자가 세는 것은 "오늘 이 전략에 몇 개" 가 아니라 "받아 온
+                        열 줄 중 몇 개" 가 된다. 거짓 숫자를 그리는 것보다 없는 편이 낫다.
+                        검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
+                    {isLoggedIn && <>
                     <div className="flex items-baseline gap-2 pt-3 pb-1.5">
                         <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
                         <span className="text-[10.5px] font-bold text-[#16a34a]">
@@ -1205,6 +1226,7 @@ function ScreenerContent() {
                             />
                         ))}
                     </div>
+                    </>}
 
                     {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
                         세로 공간만 먹고 무엇이 주된 조작인지 위계가 없었다. */}
@@ -1837,7 +1859,10 @@ function ScreenerContent() {
                         {/* 결과 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
                             업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
                             나란히 놓아야 "이 업황 하나에 이 전략 하나" 같은 쏠림이 눈에 띈다. */}
-                        {(sectorMix || strategyMix) && (
+                        {/* 업종·전략 비중도 같은 이유로 로그인한 사람에게만 보인다.
+                            열 줄로 만든 비중은 "오늘의 쏠림" 이 아니라 "그 열 줄의 쏠림" 이라,
+                            여기서 고르면 그 업황에 거는 셈이라는 경고까지 거짓이 된다. */}
+                        {isLoggedIn && (sectorMix || strategyMix) && (
                             <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3.5 py-3">
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
                                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
@@ -1978,7 +2003,7 @@ function ScreenerContent() {
                             <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-6 text-center shadow-sm">
                                 <Lock size={18} className="mx-auto mb-3 text-neutral-400" />
                                 <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                                    {filteredList.length - PREVIEW_SIZE}개 종목이 더 있습니다
+                                    {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                                     전체 목록과 필터·정렬·과거 날짜 조회는 로그인하면 무료로 쓸 수 있습니다.
