@@ -1,1507 +1,817 @@
-// 판이 도는 화면 — 도트 스타일 기본 틀.
+// 화면. **규칙은 하나도 여기서 계산하지 않는다** — `core/` 가 낸 값을 그릴 뿐이다.
 //
-// **여기에 규칙을 쓰지 않는다.** 주가도 체결도 카드 효과도 전부 lib/game/core 에서 온다.
-// 이 파일에 `price * 1.1` 같은 식이 생기면 그건 코어로 가야 할 것이 새어 나온 것이다.
+// ── 세 장소 ─────────────────────────────────────────────────────
+// 집에서 나가 회사에서 일하고 집으로 돌아온다. 그 리듬이 끊기는 날 가는 곳이 공원이다.
 //
-// ── 한 턴의 순서 ────────────────────────────────────────────────
-//   턴 열림 → 손패 세 장 → 유물(onTurnStart) → [매매] → [NEXT TURN]
-//   → 카드+유물을 합친 buff 로 tick → 유물(onTurnEnd) → 다음 턴
+//   집    시작 · 들고 나갈 여섯 장 고르기 · 내레이션 · 챕터 결산
+//   회사  12턴. 이 게임의 대부분
+//   공원  끝. 조건에 따라 다른 그림, 그리고 1997 로 돌아간다
 //
-// 매매가 tick 앞에 오는 것이 이 게임의 전부다. **주가가 움직이기 전에** 살지 말지를
-// 정해야 해서, 카드로 읽은 것을 손에 쥐고 거는 판이 된다.
+// 장소를 씬으로 가르지 않고 한 씬 안의 상태로 둔다 — 셋이 같은 챕터 띠와 같은 기억을
+// 보고 있어서, 씬을 넘기면 그 값을 매번 실어 날라야 한다.
 //
-// ── 자리는 씬이 정하지 않는다 ───────────────────────────────────
-// 네 칸의 좌표는 `bandsOf(w, h)` 가 준다. 세로면 위에서 아래로 넷, 가로면 왼쪽·오른쪽
-// 두 칸이다. 이 파일은 **받은 사각형 안에** 그릴 뿐이라, 배치를 하나 더 만들 때 여기를
-// 안 고친다. 그래서 아래 build* 들은 `W` 같은 모듈 상수를 절대 안 쓴다 — 자기 띠의
-// `b.x`·`b.w` 만 본다.
-//
-// ── 늘릴 자리 ───────────────────────────────────────────────────
-//   · 종목을 여럿으로   → StockEngine 을 배열로 들고 chart 를 자리마다
-//   · 상점·이벤트 턴    → Scene 을 하나 더 만들고 config.ts 의 scene 배열에 얹는다
-//   · 연출(체결 이펙트) → this.tweens. 엔진은 안 건드린다
+// ── 다시 그리는 방식 ────────────────────────────────────────────
+// 값이 바뀌면 **화면을 통째로 다시 그린다.** 예전 화면은 자리마다 부분 갱신을 했는데,
+// 띠가 여섯이고 장소가 셋이 되면서 "무엇이 바뀌면 어디를 고쳐야 하는가" 가 사람이 셀 수
+// 있는 수를 넘었다. 12턴짜리 판이라 통째로 그려도 싸고, 어긋날 자리가 없어진다.
 
 import Phaser from "phaser";
-import { StockEngine } from "@/lib/game/core/StockEngine";
+import { StockEngine, SEED_CASH, TRUST_MAX } from "@/lib/game/core/StockEngine";
+import { CHAPTERS } from "@/lib/game/core/chapters";
+import { DeckManager, HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
+import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
+import { decay, clampTrust, trustDelta, trustReason } from "@/lib/game/core/trust";
 import {
-    CARD_LIST, MAX_LEVEL, MERGE_COUNT, OPENING_DECK_SIZE, RELIC_POOL, RoguelikeManager, cardKey,
-    type DeckEntry, type MergeResult,
-} from "@/lib/game/core/RoguelikeManager";
-import type { MarketRead, Relic, RunSummary, StrategyCard, TradeResult } from "@/lib/game/core/types";
-import { MAX_TIER, MAX_TURNS, RUIN_LINE, SEED_CASH } from "@/lib/game/core/StockEngine";
+    SITUATION_BY_ID, EMPTY_FACTS, newlyEarned, nextUp,
+    type SituationFacts,
+} from "@/lib/game/core/situations";
 import {
-    loadProgress, newlyUnlocked, recordRun, resetProgress, unlockedIds, UNLOCKS, type Progress,
+    loadMemory, saveMemory, remember, regress, endReasonOf, type Memory,
 } from "@/lib/game/core/progress";
+import type { EndReason, MarketRead, StrategyCard, TurnBuff } from "@/lib/game/core/types";
+import { NO_BUFF } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
+import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
 import {
-    PAD, C, S, FS, LANE, ACTION_TWO_ROW, bandsOf, designSize, fontOf, mkText, money, pct, pxOf,
-    tone, type LogKind,
+    C, FS, LANE, PAD, S, bandsOf, designSize, fontOf, mkText, money,
+    type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
-import type { Bands } from "@/lib/game/ui/theme";
 
-/* ── 버튼 ───────────────────────────────────────────────────── */
+type Place = "home" | "office" | "park";
 
-interface BtnOpts {
-    tone?: "plain" | "buy" | "sell" | "go";
-    size?: number;
-}
-
-interface Btn {
-    root: Phaser.GameObjects.Container;
-    setEnabled(v: boolean): void;
-    setLabel(s: string): void;
-}
-
-const BTN_FACE = {
-    plain: { face: C.panel, edge: C.line, ink: S.ink },
-    buy: { face: 0x14361f, edge: C.up, ink: S.up },
-    sell: { face: 0x3a1a14, edge: C.down, ink: S.down },
-    go: { face: 0x123a2a, edge: C.neon, ink: S.neon },
-} as const;
-
-function makeButton(
-    scene: Phaser.Scene, x: number, y: number, w: number, h: number,
-    text: string, onClick: () => void, o: BtnOpts = {},
-): Btn {
-    const skin = BTN_FACE[o.tone ?? "plain"];
-    const root = scene.add.container(x, y);
-    const g = scene.add.graphics();
-    const t = mkText(scene, w / 2, h / 2, text, {
-        fontFamily: fontOf(scene), fontSize: `${o.size ?? FS.md}px`, color: skin.ink, align: "center",
-    }).setOrigin(0.5);
-
-    let enabled = true;
-    const draw = (pressed: boolean) => {
-        g.clear();
-        g.fillStyle(skin.face, 1).fillRect(0, 0, w, h);
-        g.lineStyle(pressed ? 3 : 2, skin.edge, 1).strokeRect(1, 1, w - 2, h - 2);
-        // 눌린 동안 안쪽에 선을 하나 더 — 손끝 말고 눈으로도 눌린 것이 보여야 한다.
-        if (pressed) g.lineStyle(1, skin.edge, 0.5).strokeRect(5, 5, w - 10, h - 10);
-    };
-    draw(false);
-
-    const zone = scene.add.zone(0, 0, w, h).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    root.add([g, t, zone]);
-
-    zone.on("pointerdown", () => { if (enabled) draw(true); });
-    zone.on("pointerout", () => { if (enabled) draw(false); });
-    zone.on("pointerup", () => {
-        if (!enabled) return;
-        draw(false);
-        onClick();
-    });
-
-    return {
-        root,
-        setEnabled(v: boolean) { enabled = v; root.setAlpha(v ? 1 : 0.35); draw(false); },
-        setLabel(s: string) { t.setText(s); },
-    };
-}
-
-/** 해금된 것의 이름. 카드든 유물이든 한자리에서 찾는다. */
-function nameOfUnlock(id: string): string {
-    return CARD_LIST.find(c => c.id === id)?.name
-        ?? RELIC_POOL.find(r => r.id === id)?.name
-        ?? id;
-}
-
-/** 다음 해금까지 얼마 남았는가. 없으면 다 모았다고 말한다. */
-function nextUnlockNote(careerIP: number): string {
-    const next = UNLOCKS.find(u => careerIP < u.at);
-    return next ? `${nameOfUnlock(next.id)}까지 ${next.at - careerIP}` : "모두 열림";
-}
-
-/** 오버레이 안쪽 칸이 이보다 낮으면 세로로 늘어놓을 자리가 없다 — 눕혀서 편다. */
-const TALL_ENOUGH = 420;
-
-/**
- * 로그를 몇 줄까지 들고 있을까.
- *
- * 한 판이 열두 턴이라 백 줄을 넘길 일이 드물지만, 자금과 덱이 판을 넘어 이어지므로
- * 계속 굴리면 언젠가는 넘는다. 되감아 볼 수 있는 만큼만 남기고 앞에서 버린다.
- */
-const LOG_KEEP = 300;
-
-/* ── 씬 ─────────────────────────────────────────────────────── */
+/** 로그가 들고 있는 줄 수. 넘치면 앞에서부터 버린다. */
+const LOG_KEEP = 200;
+/** 칩 줄에 세우는 바로가기 수. 마지막 한 자리는 시세판을 여는 칩이다. */
+const CHIP_SLOTS = 5;
 
 export class TradingScene extends Phaser.Scene {
+    /* ── 규칙 ─────────────────────────────────────────── */
+    private memory!: Memory;
     private engine!: StockEngine;
-    private rogue!: RoguelikeManager;
-    private chart!: PixelCandleChart;
-    private hand!: CardHandContainer;
+    private deck!: DeckManager;
+    private facts!: SituationFacts;
 
-    // HUD
-    private equityText!: Phaser.GameObjects.Text;
-    private cashText!: Phaser.GameObjects.Text;
-    private turnText!: Phaser.GameObjects.Text;
-    private ipText!: Phaser.GameObjects.Text;
-    private posText!: Phaser.GameObjects.Text;
-    private deckText!: Phaser.GameObjects.Text;
-    private totalLabel!: Phaser.GameObjects.Text;
-    private activeLabel!: Phaser.GameObjects.Text;
+    /* ── 장소와 화면 ──────────────────────────────────── */
+    private place: Place = "home";
+    private W = 390;
+    private H = 844;
+    private bands!: Bands;
 
-    /** 이 띠에서 자산 숫자의 **제 크기**. 조 단위가 되면 여기서부터 한 단계씩 줄인다. */
-    private equitySize: number = FS.xl;
+    /** 이 챕터에서 화면에 살아 있는 것들. 다시 그릴 때 통째로 지운다. */
+    private junk: Phaser.GameObjects.GameObject[] = [];
+    private chart: PixelCandleChart | null = null;
+    private hand: CardHandContainer | null = null;
+    private logView: GameLog | null = null;
+    private board: QuoteBoard | null = null;
 
-    private logView!: GameLog;
-    /**
-     * 쌓인 로그. **컨테이너가 아니라 씬이 들고 있다** — 화면을 돌리면 그린 것이 통째로
-     * 부서지므로, 뷰가 들고 있으면 판이 도는 중에 지나온 기록이 날아간다.
-     */
-    private logs: LogEntry[] = [];
-
-    private relicRow!: Phaser.GameObjects.Container;
-    private buyHalfBtn!: Btn;
-    private allInBtn!: Btn;
-    private sellBtn!: Btn;
-    private nextBtn!: Btn;
-
-    /** 턴을 넘기는 동안 두 번 눌리지 않게. */
-    private busy = false;
-    /** 결산에서 바로 이어 굴리는 길. 첫 화면을 건너뛴다. */
-    private skipIntro = false;
-    /** 판을 열 때 넘어온 덱에서 일어난 합성. 첫 턴이 열릴 때 알림으로 나간다. */
-    private openingMerges: MergeResult[] = [];
-    /** 판을 넘어 남는 것. 재시작할 때 이 값만 들고 간다. */
-    private carriedIP = 0;
-
-    /** 이 기기에서의 설계 격자. 모듈 상수가 아니라 **자기 크기**를 보고 자리를 잡는다. */
-    private designW = 0;
-    private designH = 0;
-    private band!: Bands;
-
-    /**
-     * 지금 떠 있는 오버레이의 **내용**. 그린 것이 아니라 그릴 재료다.
-     *
-     * 화면을 돌리면 그리던 것을 전부 부수고 다시 세우는데, 그때 보상 후보를 다시 뽑거나
-     * 성적을 다시 저장하면 안 된다. 그래서 재료만 들고 있다가 같은 것으로 다시 그린다.
-     */
-    private offer: StrategyCard[] | null = null;
-    /** 카드 보상 바로 뒤에 뜨는 유물 고르기. 고를 때까지 다음 턴이 안 열린다. */
-    private relicOffer: Relic[] | null = null;
-    /**
-     * 판을 열기 전 첫 화면. **이어하기인지 새 게임인지**를 여기서 가른다.
-     *
-     * 자금과 덱이 판을 넘어 이어지게 되면서, 캔버스를 열자마자 1턴이 시작되면 지금 굴리는
-     * 것이 지난 판의 이어짐인지 처음부터인지 알 길이 없어졌다. 시작 자금이 1,000만이
-     * 아닌 것을 보고 나서야 눈치채는 것은 화면이 말해 준 것이 아니다.
-     */
-    private intro: { saved: Progress; confirmReset: boolean } | null = null;
-    private ended: {
-        sum: RunSummary; progress: Progress; newBest: boolean;
-        /** 이번 판으로 새로 열린 카드·유물. 다시 켤 이유를 그 자리에서 보여 준다. */
-        unlocked: { id: string; kind: "card" | "relic"; at: number }[];
-    } | null = null;
-    /**
-     * 지금 떠 있는 강화 알림 띠. **오버레이가 아니라 잠깐 떴다 사라지는 것**이라
-     * 화면을 돌릴 때 되살리지 않는다 — 되살리면 지나간 알림이 다시 뜬다.
-     */
-    private toast: Phaser.GameObjects.Container | null = null;
-    /** 덱을 펼쳐 보는 중인가. 무엇을 몇 장 모았는지가 여기서만 보인다. */
-    private deckOpen = false;
-    /** 로그를 화면 가득 펼쳐 보는 중인가. 판 위의 칸은 석 줄뿐이다. */
-    private logOpen = false;
-    /**
-     * 보상 칸에서 짚어 둔 카드(uid) · 유물(id). **한 번 더 눌러야** 받는다.
-     *
-     * 예전에는 한 번 누르는 즉시 덱에 들어가고 화면이 닫혔다. 손패는 "눌러서 읽고 →
-     * 눌러서 쓴다" 인데 여기만 한 번에 정해져서, 읽어 보려고 누른 카드가 그대로 덱에
-     * 박혔다. 되돌릴 방법도 없다 — 3턴에 한 번뿐인 선택이라 더 그렇다.
-     */
-    private offerPick: string | null = null;
-    private relicPick: string | null = null;
-    /** 지금 화면에 떠 있는 오버레이. 다시 그릴 때 이것부터 걷어 낸다. */
-    private overlay: Phaser.GameObjects.Container | null = null;
-
-    /**
-     * 이번 턴에 **읽어 낸 것**. 카드를 고르는 순간 채워지고 턴이 넘어가면 지워진다.
-     *
-     * 뉴스 줄이 아니라 차트에 그리는 이유: 뉴스 줄은 매매 한 번에 덮인다. 예보는
-     * "얼마나 걸지" 를 정하는 내내 눈앞에 있어야 하는 정보다.
-     */
-    private marketRead: MarketRead | null = null;
+    /* ── 한 턴의 상태 ─────────────────────────────────── */
+    private entries: LogEntry[] = [];
+    private cards: StrategyCard[] = [];
+    private client: Client | null = null;
+    /** 이번 턴에 이미 권했는가. 고객이 한 명이라 한 번뿐이다. */
+    private recommendedThisTurn = false;
+    /** 이번 턴에 권한 종목과 그때의 근거. 다음 턴에 이걸로 정산한다. */
+    private pending: { id: string; thesis: string | null; client: Client; cost: number } | null = null;
+    private read: MarketRead | null = null;
+    /** 이번 챕터에 새로 겪은 것. 챕터 결산에서 기억으로 넘어간다. */
+    private earnedThisChapter: string[] = [];
+    /** 떠난 고객. 신뢰가 바닥을 칠 때 한 명씩 잃는다. */
+    private gone: string[] = [];
+    /** 공원에 왔다면 왜 왔는가. */
+    private ending: EndReason | null = null;
+    /** 집에서 덱을 고르는 중인가. */
+    private picking = false;
 
     constructor() { super("trading"); }
 
-    init(data: { insightPoints?: number; skipIntro?: boolean }) {
-        // 이어서 굴리는 판(restart)은 넘겨받은 값을, 새로 켠 판은 저장된 진행을 쓴다.
-        // config 가 값을 준 경우(임베드·테스트)는 그것이 이긴다.
-        this.carriedIP =
-            data?.insightPoints
-            ?? (this.game.registry.get("insightPoints") as number | undefined)
-            ?? loadProgress().insightPoints;
-        // 결산에서 바로 이어 굴릴 때는 첫 화면을 다시 안 띄운다 — 방금 그 자리에서
-        // 무엇을 들고 가는지 읽고 누른 참이다.
-        this.skipIntro = data?.skipIntro === true;
-        this.busy = false;
-        this.offer = null;
-        this.relicOffer = null;
-        this.offerPick = null;
-        this.relicPick = null;
-        this.logOpen = false;
-        this.intro = null;
-        this.marketRead = null;
-        this.ended = null;
-        this.overlay = null;
-    }
+    /* ── 켜기 ─────────────────────────────────────────── */
 
     create() {
-        this.cameras.main.setBackgroundColor(C.bg);
+        this.memory = loadMemory();
+        this.startCycle();
         this.measure();
-
-        const seed = (Math.random() * 0xffffffff) >>> 0;
-        const saved = loadProgress();
-        // 자금도 덱도 지난 판에서 그대로 넘어온다 — 판은 끝이 아니라 장이 넘어가는 자리다.
-        this.engine = new StockEngine(seed, saved.tier, saved.bankroll);
-        this.engine.player.insightPoints = this.carriedIP;
-        this.rogue = new RoguelikeManager(seed, saved.deck, unlockedIds(saved.careerIP));
-        this.rogue.grantStartingRelics(this.carriedIP);
-
-        // 넘어온 덱에 이미 셋이 모여 있었으면 판을 여는 자리에서 합쳐진다. 무엇이
-        // 무엇이 되었는지는 첫 턴의 뉴스 줄에서 말해 준다.
-        this.openingMerges = this.rogue.takeMerges();
-
-        this.buildAll();
-
-        // 화면을 돌리면 React 껍데기가 새 격자로 scale.resize 를 부른다. 그 순간 판을
-        // 버리면 안 되므로, 엔진은 그대로 두고 그림만 다시 세운다.
-        this.scale.on(Phaser.Scale.Events.RESIZE, this.relayout, this);
-        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-            this.scale.off(Phaser.Scale.Events.RESIZE, this.relayout, this);
-        });
-
-        // 로그는 판을 넘어 이어진다. 어디서 새 판이 열렸는지가 안 보이면 지난 판의 줄과
-        // 섞여 읽힌다.
-        this.log(saved.runs > 0
-            ? `▶ ${saved.runs + 1}판째 — ${money(saved.bankroll)} · 덱 ${this.rogue.deckState.total}장 · 차수 ${saved.tier}`
-            : `▶ 새 게임 — ${money(saved.bankroll)}`, "system", true);
-
-        // 이어하기인지 새 게임인지를 먼저 말한다. 결산에서 바로 이어 굴릴 때는 건너뛴다.
-        if (this.skipIntro) this.beginTurn();
-        else { this.intro = { saved, confirmReset: false }; this.drawIntro(); }
+        this.scale.on("resize", () => { this.measure(); this.redraw(); });
+        this.redraw();
     }
 
-    /** 지금 격자를 재고 띠를 나눈다. 켤 때 한 번, 돌릴 때마다 한 번. */
-    private measure() {
-        // 캔버스 버퍼는 기기 해상도(설계 × k)로 잡혀 있다. **카메라를 그만큼 확대해**
-        // 이 아래로는 전부 설계 격자 좌표로 되돌린다 — 그래야 치수를 한 벌만 들고 있으면
-        // 되고, 배율이 1 이든 3 이든 배치가 같다.
-        const k = pxOf(this);
-        this.designW = this.scale.width / k;
-        this.designH = this.scale.height / k;
-        // 확대만 하면 카메라가 격자 한가운데를 보므로 왼쪽·위가 잘린다. 설계 격자의
-        // 한가운데를 보게 해서 (0,0) 이 화면 (0,0) 에 오게 맞춘다.
-        this.cameras.main.setZoom(k).centerOn(this.designW / 2, this.designH / 2);
-        this.band = bandsOf(this.designW, this.designH);
+    /** 1997년 겨울부터 다시. 회귀가 이 함수를 다시 부른다. */
+    private startCycle(): void {
+        this.engine = new StockEngine((Math.random() * 0xffffffff) >>> 0, SEED_CASH);
+        this.facts = { ...this.memory.facts };
+        this.gone = [];
+        this.ending = null;
+        this.earnedThisChapter = [];
+        this.entries = [];
+        this.place = "home";
+        this.newDeck();
     }
 
-    private buildAll() {
-        this.drawDotGrid();
-        this.buildLog();
-        this.buildChart();
-        this.buildFirm();
-        this.buildActions();
+    private newDeck(): void {
+        const loadout = this.memory.loadout.length ? this.memory.loadout : this.memory.situations;
+        this.deck = new DeckManager((Math.random() * 0xffffffff) >>> 0, loadout.slice(0, LOADOUT_SIZE));
     }
 
-    /**
-     * 화면이 돌아갔다. **판은 그대로 두고 그림만 다시 세운다.**
-     *
-     * 엔진과 매니저는 안 건드리므로 턴 수도, 보유도, 덱도 그대로다. 손패는 고른 카드까지
-     * 되살린다 — 골라 둔 것이 화면에서 풀리면 한 장 더 고를 수 있는 것처럼 보인다.
-     */
-    private relayout() {
-        if (!this.engine) return;           // create 중에 먼저 불릴 수 있다
-        this.measure();
-
-        this.children.removeAll(true);
-        this.overlay = null;
-        this.toast = null;      // 위에서 함께 부서졌다. 지나간 알림은 안 되살린다
-        this.buildAll();
-
-        this.renderRelics();
-        // 첫 화면이 떠 있는 동안은 아직 한 턴도 안 깔았다. 손패를 세우면 빈 손패의
-        // 안내("이번 턴은 카드 없이")가 뒤에 찍혀 없는 사실을 말한다.
-        if (!this.intro) {
-            this.hand.setHand(this.rogue.hand, this.idleCheck);
-            const picked = this.rogue.pickedCard;
-            if (picked) this.hand.lock(picked.uid);
-        }
-        this.refresh();
-
-        // 떠 있던 오버레이는 같은 재료로 다시 그린다 — 후보를 다시 뽑지 않는다.
-        if (this.intro) this.drawIntro();
-        else if (this.ended) this.drawResult();
-        else if (this.relicOffer) this.drawRelicOffer();
-        else if (this.offer) this.drawReward();
-        else if (this.deckOpen) this.drawDeck();
-        else if (this.logOpen) this.drawLogAll();
+    private measure(): void {
+        const size = designSize(this.scale.width, this.scale.height);
+        this.W = size.width; this.H = size.height;
+        this.bands = bandsOf(this.W, this.H);
     }
 
-    /** 화면 전체에 깔리는 도트. 이게 있어야 어두운 바탕이 "꺼진 화면" 이 아니라 기기가 된다. */
-    private drawDotGrid() {
+    /* ── 다시 그리기 ──────────────────────────────────── */
+
+    private redraw(): void {
+        for (const o of this.junk) o.destroy();
+        this.junk = [];
+        this.chart?.destroy(); this.chart = null;
+        this.hand?.destroy(); this.hand = null;
+        this.logView?.destroy(); this.logView = null;
+        this.board?.close(); this.board = null;
+
+        this.cameras.main.setBackgroundColor(S.bg);
+        if (this.place === "home") this.drawHome();
+        else if (this.place === "park") this.drawPark();
+        else this.drawOffice();
+    }
+
+    private keep<T extends Phaser.GameObjects.GameObject>(o: T): T { this.junk.push(o); return o; }
+
+    private text(x: number, y: number, s: string, size: number, color: string, origin = 0): Phaser.GameObjects.Text {
+        const t = mkText(this, x, y, s, { fontFamily: fontOf(this), fontSize: `${size}px`, color });
+        t.setOrigin(origin, 0);
+        return this.keep(t);
+    }
+
+    private rect(x: number, y: number, w: number, h: number, color: number, alpha = 1): Phaser.GameObjects.Graphics {
         const g = this.add.graphics();
-        g.fillStyle(C.line, 0.22);
-        for (let y = 6; y < this.designH; y += 14) {
-            for (let x = 6; x < this.designW; x += 14) g.fillRect(x, y, 1, 1);
+        g.fillStyle(color, alpha).fillRect(x, y, w, h);
+        return this.keep(g);
+    }
+
+    /** 누를 수 있는 자리. 화면 어디든 이걸로 받는다. */
+    private tap(x: number, y: number, w: number, h: number, fn: () => void): void {
+        const z = this.add.zone(x, y, w, h).setOrigin(0, 0).setInteractive();
+        z.on("pointerup", fn);
+        this.keep(z);
+    }
+
+    /* ── 챕터 띠 ──────────────────────────────────────── */
+
+    /** 연·장, 신뢰 게이지, 빚. **셋 다 늘 보여야 한다.** */
+    private drawStrip(label: string): void {
+        const b = this.bands.strip;
+        this.rect(b.x, b.y, b.w, b.h, C.line, 1);
+        this.rect(b.x, b.y, b.w, b.h - 1, 0x2f4f56, 1);
+        const cy = b.y + b.h / 2 - FS.xs / 2;
+
+        this.text(PAD, cy, label, FS.xs, S.ink);
+
+        // 신뢰 — 열 칸. 낮아지면 색이 금색을 거쳐 분홍으로 간다.
+        const trust = this.engine.player.trust;
+        const on = Math.round((trust / TRUST_MAX) * 10);
+        const bw = 6, gap = 2;
+        const barsW = 10 * bw + 9 * gap;
+        const bx = b.w - PAD - barsW - 78;
+        this.text(bx - 26, cy, "신뢰", FS.xs, "#9fc0c4");
+        const col = trust <= 10 ? C.danger : trust <= 30 ? C.gold : C.up;
+        for (let i = 0; i < 10; i++) {
+            this.rect(bx + i * (bw + gap), b.y + 14, bw, 12, i < on ? col : 0x1b3238, 1);
+        }
+        // 빚 — 게이지가 아니라 숫자 한 줄. 0 이 되는 것이 게임 전체의 목표다.
+        const debt = this.engine.player.debt;
+        this.text(b.w - PAD, cy, debt > 0 ? `−${money(debt)}` : "빚 없음",
+            FS.xs, debt > 0 ? S.down : S.up, 1);
+    }
+
+    /* ── 집 ───────────────────────────────────────────── */
+
+    private drawHome(): void {
+        const ch = this.engine.chapter;
+        const idx = CHAPTERS.indexOf(ch);
+        this.drawStrip(`집 · ${ch.year}   ${this.memory.cycle}회차`);
+
+        const top = this.bands.strip.h;
+        const side = Math.min(this.W - PAD * 2, Math.round(this.H * 0.30));
+        const sx = (this.W - side) / 2;
+
+        // 장소 그림 자리 — **지금은 비어 있다.** 그림이 나중에 같은 자리로 온다.
+        this.rect(sx, top + 10, side, side, 0x0e1618, 1);
+        this.text(this.W / 2, top + 10 + side / 2 - FS.xxl / 2, "집", FS.xxl, S.gold, 0.5);
+        this.text(this.W / 2, top + 10 + side - 22, "그래픽 자리", FS.xs, "#3b4c50", 0.5);
+
+        let y = top + side + 22;
+        if (this.picking) { this.drawLoadoutPicker(y); return; }
+
+        // 내레이션 — 1인칭. 챕터가 열릴 때마다 여기서 읽는다.
+        for (const line of ch.narration) {
+            this.text(this.W / 2, y, line, FS.sm, "#9aada6", 0.5);
+            y += FS.sm + 8;
+        }
+
+        // 진행 중인 조건 — **채워지기 전에도 보인다.** 컨셉 이미지의 미션 패널에서 왔다.
+        y += 10;
+        const up = nextUp(this.facts, this.memory.situations, 3);
+        if (up.length > 0) {
+            this.text(PAD, y, "겪고 있는 것", FS.xs, "#4e5f58");
+            y += FS.xs + 8;
+            for (const s of up) {
+                const [now, goal] = s.progress(this.facts);
+                this.rect(PAD, y, this.W - PAD * 2, 22, 0x111a1c, 1);
+                this.rect(PAD, y, Math.round(((this.W - PAD * 2) * now) / goal), 22, 0x17332a, 1);
+                this.text(PAD + 6, y + 4, s.how, FS.xs, "#8d9c93");
+                this.text(this.W - PAD - 6, y + 4, `${now}/${goal}`, FS.xs, S.gold, 1);
+                y += 26;
+            }
+        }
+
+        // 아래 줄 — 무엇을 갖고 있고 무엇을 들고 나가는가.
+        const rows: Array<[string, string, string]> = [
+            ["모은 상황카드", `${this.memory.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
+            ["들고 나갈 것", `${this.memory.loadout.length}장`, S.ink],
+            ["맡은 돈", money(this.engine.equity), S.ink],
+        ];
+        y = this.bands.action.y - rows.length * 22 - 10;
+        for (const [k, v, col] of rows) {
+            this.rect(PAD, y + 20, this.W - PAD * 2, 1, 0x16211f, 1);
+            this.text(PAD, y, k, FS.xs, "#6d7f78");
+            this.text(this.W - PAD, y, v, FS.xs, col, 1);
+            y += 22;
+        }
+
+        this.buttons([
+            { label: "여섯 장 고른다", sub: `${this.memory.loadout.length}/${LOADOUT_SIZE}`, on: () => { this.picking = true; this.redraw(); } },
+            { label: "기억", sub: `${this.memory.cycle}회차`, on: null },
+            { label: "도감", sub: "", on: null },
+            { label: "나간다", sub: `${ch.year}`, primary: true, on: () => this.leaveHome() },
+        ]);
+    }
+
+    /** 들고 나갈 여섯 장. 모은 것이 늘어도 덱이 묽어지지 않게 한다. */
+    private drawLoadoutPicker(y0: number): void {
+        let y = y0;
+        this.text(PAD, y, `들고 나갈 여섯 장 — ${this.memory.loadout.length}/${LOADOUT_SIZE}`, FS.sm, S.gold);
+        y += FS.sm + 10;
+
+        for (const id of this.memory.situations) {
+            const s = SITUATION_BY_ID[id];
+            if (!s) continue;
+            const picked = this.memory.loadout.includes(id);
+            const h = 30;
+            this.rect(PAD, y, this.W - PAD * 2, h, picked ? 0x17332a : 0x111a1c, 1);
+            this.rect(PAD, y, 3, h, LANE[s.lane].color, 1);
+            this.text(PAD + 10, y + 4, s.name, FS.xs, picked ? S.ink : "#8d9c93");
+            this.text(PAD + 10, y + 17, s.short, FS.xs, "#55645d");
+            this.text(this.W - PAD - 6, y + 9, picked ? "◼" : "◻", FS.xs, picked ? S.gold : "#3c4844", 1);
+            this.tap(PAD, y, this.W - PAD * 2, h, () => this.toggleLoadout(id));
+            y += h + 3;
+        }
+
+        this.buttons([
+            { label: "되돌린다", sub: "", on: () => { this.picking = false; this.redraw(); } },
+            { label: "", sub: "", on: null },
+            { label: "", sub: "", on: null },
+            { label: "정했다", sub: `${this.memory.loadout.length}장`, primary: true,
+              on: () => { this.picking = false; saveMemory(this.memory); this.newDeck(); this.redraw(); } },
+        ]);
+    }
+
+    private toggleLoadout(id: string): void {
+        const at = this.memory.loadout.indexOf(id);
+        if (at >= 0) this.memory.loadout.splice(at, 1);
+        else if (this.memory.loadout.length < LOADOUT_SIZE) this.memory.loadout.push(id);
+        this.redraw();
+    }
+
+    private leaveHome(): void {
+        this.place = "office";
+        this.entries = [];
+        this.pushLog(`${this.engine.chapter.year}년. 사무실 문을 열었다.`, "turn");
+        this.beginTurn();
+    }
+
+    /* ── 회사 ─────────────────────────────────────────── */
+
+    private drawOffice(): void {
+        const e = this.engine;
+        const ch = e.chapter;
+        const half = e.player.currentTurn <= 6 ? "상" : "하";
+        this.drawStrip(`${ch.year}. ${half}반기 · ${ch.title}   ${e.player.currentTurn}/${e.player.maxTurns}`);
+
+        this.drawPlace();
+        this.drawLog();
+        this.drawChips();
+        this.drawChart();
+        this.drawFirm();
+        this.drawActions();
+    }
+
+    /**
+     * 장소 그림 자리 — **누르면 시세판이 열린다.**
+     *
+     * 초기 구현에는 그림이 없어 테두리와 글자뿐이다. 그래서 `▸ 시세판` 을 함께 적는다 —
+     * 누를 수 있다는 것이 안 보이면 기능에 닿지 못한다. 그림이 들어오면 그 안에
+     * 모니터가 그려지고 이 글자는 빠진다.
+     */
+    private drawPlace(): void {
+        const b = this.bands.place;
+        this.rect(b.x, b.y, b.w, b.h, 0x0e1618, 1);
+        const g = this.add.graphics();
+        g.lineStyle(1, 0x23343a, 1).strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+        this.keep(g);
+        this.text(b.x + b.w / 2, b.y + b.h / 2 - 14, "회사", FS.md, S.gold, 0.5);
+        this.text(b.x + b.w / 2, b.y + b.h / 2 + 6, "▸ 시세판", FS.xs, "#3b4c50", 0.5);
+        this.tap(b.x, b.y, b.w, b.h, () => this.openBoard());
+    }
+
+    private drawLog(): void {
+        const b = this.bands.log;
+        this.logView = new GameLog(this, { x: b.x, y: b.y, width: b.w, height: b.h });
+        this.add.existing(this.logView);
+        this.logView.setEntries(this.entries.slice(-LOG_KEEP));
+    }
+
+    /** 종목 칩 줄 — 바로가기 다섯 + 시세판을 여는 칩. */
+    private drawChips(): void {
+        const b = this.bands.chips;
+        this.rect(b.x, b.y, b.w, b.h, C.screen, 1);
+
+        const listed = this.engine.listed;
+        // 보유 중인 것과 지금 보고 있는 것이 먼저 온다 — 내 자리가 눈에 먼저 들어와야 한다.
+        const sorted = [...listed].sort((x, y) => {
+            const hx = this.engine.positionOf(x.id).shares > 0 ? 1 : 0;
+            const hy = this.engine.positionOf(y.id).shares > 0 ? 1 : 0;
+            if (hx !== hy) return hy - hx;
+            if (x.id === this.engine.focus) return -1;
+            if (y.id === this.engine.focus) return 1;
+            return y.listedAt - x.listedAt;
+        });
+        const shown = sorted.slice(0, CHIP_SLOTS);
+        const more = listed.length - shown.length;
+
+        const gap = 5;
+        const cw = (b.w - PAD * 2 - gap * CHIP_SLOTS) / (CHIP_SLOTS + 1);
+        const ch = b.h - 10;
+        for (let i = 0; i < CHIP_SLOTS + 1; i++) {
+            const x = PAD + i * (cw + gap);
+            const y = b.y + 5;
+            if (i === CHIP_SLOTS) {
+                this.rect(x, y, cw, ch, 0x15242a, 1);
+                this.text(x + cw / 2, y + 6, more > 0 ? `＋${more}` : "전체", FS.xs, "#8fb6bd", 0.5);
+                this.text(x + cw / 2, y + ch - 16, "시세판", FS.xs, "#4e6a70", 0.5);
+                this.tap(x, y, cw, ch, () => this.openBoard());
+                continue;
+            }
+            const s = shown[i];
+            if (!s) { this.rect(x, y, cw, ch, 0x0d1315, 1); continue; }
+
+            const sel = s.id === this.engine.focus;
+            const held = this.engine.positionOf(s.id).shares > 0;
+            this.rect(x, y, cw, ch, sel ? 0x1a2a2e : 0x111a1c, 1);
+            if (sel) {
+                const g = this.add.graphics();
+                g.lineStyle(1, C.gold, 1).strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+                this.keep(g);
+            }
+            if (held) this.rect(x + cw - 7, y + 3, 4, 4, C.gold, 1);
+
+            this.text(x + cw / 2, y + 4, s.name.slice(0, 2), FS.xs, sel ? S.gold : "#9aada6", 0.5);
+            const pct = this.engine.unrealizedPct(s.id);
+            const last = s.history[s.history.length - 1];
+            const prev = s.history[s.history.length - 2];
+            const move = last && prev ? ((last.c - prev.c) / prev.c) * 100 : 0;
+            const v = held ? pct : move;
+            this.text(x + cw / 2, y + ch - 16, `${v >= 0 ? "+" : ""}${v.toFixed(0)}`,
+                FS.xs, v >= 0 ? S.up : S.down, 0.5);
+            this.tap(x, y, cw, ch, () => { this.engine.setFocus(s.id); this.redraw(); });
         }
     }
 
-    /* ── ① 로그 ───────────────────────────────────────────── */
+    private drawChart(): void {
+        const b = this.bands.chart;
+        this.chart = new PixelCandleChart(this, { x: b.x, y: b.y, width: b.w, height: b.h });
+        this.add.existing(this.chart);
+        const s = this.engine.focusStock;
+        this.chart.render(s.history, this.read);
 
-    private buildLog() {
-        const b = this.band.log;
-        this.logView = new GameLog(this, {
-            x: b.x, y: b.y, width: b.w, height: b.h,
-            onOpen: () => {
-                if (this.overlay) return;       // 오버레이가 떠 있으면 그쪽이 먼저다
-                this.logOpen = true;
-                this.drawLogAll();
-            },
-        });
-        // 화면을 돌려도 쌓인 것은 그대로다 — 목록은 씬이 들고 있고 이 칸은 그리기만 한다.
-        this.logView.setEntries(this.logs);
+        this.text(b.x + PAD, b.y + 6, `${s.name} · β ${s.beta.toFixed(1)}`, FS.xs, "#9aada6");
+        if (this.read?.regime) {
+            const d = this.read.regimeDrift;
+            this.text(b.x + b.w - PAD, b.y + 6,
+                d === null ? "" : `턴당 ${d >= 0 ? "+" : ""}${d.toFixed(1)}%`,
+                FS.xs, d !== null && d >= 0 ? S.up : S.down, 1);
+        }
     }
 
-    /**
-     * 로그를 화면 가득 펼친다.
-     *
-     * 판 위의 칸은 석 줄이다 — 차트가 넓어야 해서 그렇게 정했고, 그 판단은 그대로 둔다.
-     * 대신 **읽고 싶을 때 펼쳐 보는 자리**를 따로 둔다. 매매 한 번이 네 줄이라 석 줄짜리
-     * 칸으로는 방금 판 값이 얼마였는지도 이미 밀려 나간 뒤다.
-     *
-     * 칸을 새로 그리지 않고 같은 `GameLog` 를 크게 세운다 — 색·자르기·되감기가 한 벌이라
-     * 여기서만 다르게 보이는 일이 없다.
-     */
-    private drawLogAll() {
-        const pw = Math.min(this.designW - 24, 560);
-        const ph = Math.min(this.designH - 24, 640);
-        const btnH = 42;
+    /** 운용 상황 — 고객 한 명, 내 처지 한 줄, 근거 한 줄, 그리고 손패. */
+    private drawFirm(): void {
+        const b = this.bands.firm;
+        this.rect(b.x, b.y, b.w, b.h, 0xa7b2a9, 1);
+        this.rect(b.x, b.y, b.w, 2, 0xd8e0d8, 1);
 
-        const { box, px, py } = this.openOverlay(pw, ph, C.steel);
+        let y = b.y + 8;
 
-        box.add(mkText(this, px + pw / 2, py + 10, "LOG — 있었던 일 전부", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.steel,
-        }).setOrigin(0.5, 0));
-        box.add(mkText(this, px + pw / 2, py + 26, "끌어서 되감습니다", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(0.5, 0));
+        // 고객 — 매 턴 한 명이 앞에 앉는다.
+        const c = this.client;
+        this.rect(PAD, y, b.w - PAD * 2, 46, 0x94a096, 1);
+        this.rect(PAD, y, 3, 46, c ? C.line : C.down, 1);
+        if (c) {
+            this.text(PAD + 9, y + 6, c.name, FS.xs, "#101614");
+            this.text(PAD + 9, y + 24, c.blurb, FS.xs, "#26332c");
+        } else {
+            this.text(PAD + 9, y + 16, "아무도 앉지 않았다.", FS.xs, "#7a2c1b");
+        }
+        y += 54;
 
-        // 오버레이의 막는 zone 보다 **나중에** 들어가야 여기서 되감기가 먹는다.
-        const view = new GameLog(this, {
-            x: px + 12, y: py + 44,
-            width: pw - 24, height: ph - 44 - btnH - 22,
-        });
-        view.setEntries(this.logs);
-        box.add(view);
+        // 내 처지 한 줄.
+        const eq = this.engine.equity;
+        this.text(PAD, y, "맡은 돈", FS.xs, "#3c4844");
+        this.text(PAD + 52, y, money(eq), FS.xs, eq >= SEED_CASH ? "#1d5c34" : "#8a2f1e");
+        const holds = Object.keys(this.engine.player.positions).length;
+        this.text(b.w - PAD, y, `보유 ${holds}종목`, FS.xs, "#3c4844", 1);
+        y += 22;
 
-        const close = makeButton(this, px + 20, py + ph - btnH - 12, pw - 40, btnH, "닫기", () => {
-            this.logOpen = false;
-            this.closeOverlay();
-        }, { tone: "plain", size: FS.sm });
-        box.add(close.root);
-    }
+        // 근거 — 이번 턴에 무엇을 근거로 대고 있는가.
+        const buff = this.deck.buildBuff();
+        const th = buff.thesis;
+        this.rect(PAD, y, b.w - PAD * 2, 24, th ? 0x7f9a86 : 0x8f9b91, 1);
+        this.text(PAD + 8, y + 6, "근거", FS.xs, "#3c4844");
+        this.text(PAD + 40, y + 6, th ?? (buff.noThesis ? "저주에 막혔다" : "없음"),
+            FS.xs, th ? "#123d24" : "#7a2c1b");
+        y += 30;
 
-    /* ── ② 차트 ───────────────────────────────────────────── */
-
-    private buildChart() {
-        const b = this.band.chart;
-        this.chart = new PixelCandleChart(this, {
-            x: b.x + PAD, y: b.y + PAD, width: b.w - PAD * 2, height: b.h - PAD * 2,
-        });
-
-        // 종목 이름은 차트 위에 겹쳐 둔다 — 칸을 따로 만들면 차트가 그만큼 준다.
-        mkText(this, b.x + b.w - PAD - 6, b.y + b.h - PAD - FS.xs - 4,
-            `${this.engine.stock.name} ${this.engine.stock.ticker}`, {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(1, 0);
-    }
-
-    /* ── ③ 운용 상황 — 나는 지금 어떤 상태인가 ─────────────── */
-
-    /**
-     * 자산·현금·보유·덱·유물, 그리고 손패를 한 칸에 모은다.
-     *
-     * 예전에는 자산이 맨 위(HUD), 유물과 손패가 아래에 따로 있었다. 그러면 "지금 내가
-     * 무엇을 들고 있나" 를 보려고 눈이 화면을 두 번 오간다. 로그가 맨 위로 올라온 김에
-     * **나에 대한 것을 한자리에** 모았다 — 로그(무슨 일이) → 차트(시장은) → 여기(나는)
-     * → 버튼(무엇을 할까) 순으로 읽힌다.
-     */
-    private buildFirm() {
-        const b = this.band.firm;
-        const L = b.x + PAD, R = b.x + b.w - PAD;
-
-        const g = this.add.graphics();
-        g.lineStyle(1, C.line, 1);
-        g.beginPath(); g.moveTo(b.x, b.y + 0.5); g.lineTo(b.x + b.w, b.y + 0.5); g.strokePath();
-
-        const mk = (x: number, y: number, size: number, color: string, origin = 0) =>
-            mkText(this, x, y, "", { fontFamily: fontOf(this), fontSize: `${size}px`, color })
-                .setOrigin(origin, 0);
-
-        this.totalLabel = mkText(this, L, b.y + 6, "TOTAL", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        });
-        // 좁거나 낮은 띠에서는 자산 숫자를 한 단계 줄인다. xl(29)은 위아래로 30px 을
-        // 먹어서, 그대로 두면 아래의 보유 줄과 오른쪽 넉 줄이 같은 자리를 잡는다.
-        const cramped = b.w < 260 || b.h < 190;
-        this.equitySize = cramped ? FS.lg : FS.xl;
-        this.equityText = mk(L, b.y + 18, this.equitySize, S.ink);
-        this.posText = mk(L, b.y + (cramped ? 44 : 52), FS.sm, S.inkDim);
-
-        // 오른쪽 넉 줄은 서로 1~2px 차이로 붙어 있다. 글자 크기를 올리면 아래 줄부터
-        // 밀리므로 여기 숫자는 FS 를 바꿀 때 같이 본다.
-        this.turnText = mk(R, b.y + 5, FS.sm, S.neon, 1);
-        this.ipText = mk(R, b.y + 24, FS.sm, S.gold, 1);
-        this.cashText = mk(R, b.y + 43, FS.xs, S.inkDim, 1);
-        // 덱이 지금 몇 장이고 그중 저주가 몇인가. 보상을 받을지 말지가 이 줄에서 갈린다 —
-        // 센 카드를 계속 집으면 덱이 두꺼워져 정작 그 카드가 안 잡힌다.
-        this.deckText = mk(R, b.y + 59, FS.xs, S.inkDim, 1);
-
-        // 덱 줄을 누르면 무엇을 몇 장 들고 있는지가 펼쳐진다. 합성이 얼마나 남았는지는
-        // 이 화면 어디에도 없었고, 그래서 보상 칸의 금색 테두리가 뜰 때까지 존재하지 않는
-        // 규칙이었다. 줄 자체가 버튼이라 화면에 새 자리를 안 만든다.
-        const deckZone = this.add.zone(R - 170, b.y + 55, 170, FS.xs + 9).setOrigin(0, 0)
-            .setInteractive({ useHandCursor: true });
-        deckZone.on("pointerup", () => {
-            if (this.overlay) return;       // 오버레이가 떠 있으면 그쪽이 먼저다
-            this.deckOpen = true;
-            this.drawDeck();
-        });
-
-        // 낮은 화면에서는 이 띠가 168 까지 줄어든다. 유물·켜짐 줄을 위로 당겨야 손패
-        // 한 칸이 남는다 — 자리를 못박아 두면 손패가 아래 버튼 위로 넘쳐 나간다.
-        this.relicRow = this.add.container(L, b.y + (cramped ? 64 : 70));
-
-        // 지금 무엇이 켜져 있고 **언제까지 가는지**. 카드가 한 턴짜리라는 것도, 예보가
-        // 몇 턴 남았는지도 화면 어디에도 없었다.
-        this.activeLabel = mkText(this, L, b.y + (cramped ? 88 : 100), "", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        });
-
-        const handTop = b.y + (cramped ? 102 : 116);
+        // 손패.
+        const handH = b.y + b.h - y - 8;
         this.hand = new CardHandContainer(this, {
-            x: L, y: handTop, width: b.w - PAD * 2,
-            height: Math.max(56, b.y + b.h - 6 - handTop),
+            x: b.x, y, width: b.w, height: handH,
             onPick: uid => this.onPickCard(uid),
         });
-    }
-
-    /** 유물 뱃지 — 작은 사각형에 첫 글자. 이름 전체를 쓰면 다섯 개가 안 들어간다. */
-    private renderRelics() {
-        this.relicRow.removeAll(true);
-        const size = 26, gap = 6;
-
-        if (this.rogue.relics.length === 0) {
-            this.relicRow.add(mkText(this, 0, 6, "없음", {
-                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-            }));
-            return;
-        }
-
-        this.rogue.relics.forEach((relic: Relic, i: number) => {
-            const x = i * (size + gap);
-            const g = this.add.graphics();
-            g.fillStyle(C.panelHi, 1).fillRect(x, 0, size, size);
-            g.lineStyle(1, C.gold, 1).strokeRect(x + 0.5, 0.5, size - 1, size - 1);
-
-            const ch = mkText(this, x + size / 2, size / 2, relic.name.slice(0, 1), {
-                fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
-            }).setOrigin(0.5);
-
-            // 폰에는 hover 가 없다 — 누르면 설명이 뉴스 줄에 뜬다.
-            const zone = this.add.zone(x, 0, size, size).setOrigin(0, 0)
-                .setInteractive({ useHandCursor: true });
-            zone.on("pointerup", () => this.log(`유물 ${relic.name} — ${relic.description}`, "relic"));
-
-            this.relicRow.add([g, ch, zone]);
-        });
-    }
-
-    /* ── ④ 엄지 영역 ──────────────────────────────────────── */
-
-    private buildActions() {
-        const b = this.band.action;
-        const gap = 8;
-        const w = b.w - PAD * 2;
-        const L = b.x + PAD;
-
-        // 두 줄이 들어갈 만큼 띠가 높을 때만 두 줄이다. 비율로만 정하던 시절에는 낮은
-        // 화면에서 두 줄짜리 배치가 96px 짜리 띠에 들어가려다 NEXT 가 통째로 잘려,
-        // 턴을 넘길 수가 없었다.
-        if (this.band.portrait && b.h >= ACTION_TWO_ROW) {
-            // 세로 — 매매 셋을 한 줄에, NEXT 를 그 아래 넓게. 엄지가 아래에서 올라온다.
-            //
-            // 아래 24px 은 홈 인디케이터 자리로 비워 둔다.
-            const avail = b.h - 10 - 12 - 24;
-            const rowH = Math.round(Math.min(66, Math.max(50, avail * 0.45)));
-            const nextH = Math.max(52, avail - rowH);
-            const third = Math.floor((w - gap * 2) / 3);
-            const rowY = b.y + 10;
-
-            this.buyHalfBtn = makeButton(this, L, rowY, third, rowH,
-                "50%\nBUY", () => this.doTrade("half"), { tone: "buy", size: FS.md });
-            this.allInBtn = makeButton(this, L + third + gap, rowY, third, rowH,
-                "ALL-IN", () => this.doTrade("all"), { tone: "buy", size: FS.md });
-            this.sellBtn = makeButton(this, L + (third + gap) * 2, rowY, third, rowH,
-                "ALL\nSELL", () => this.doTrade("sell"), { tone: "sell", size: FS.md });
-
-            this.nextBtn = makeButton(this, L, rowY + rowH + 12, w, nextH,
-                "NEXT TURN >", () => this.endTurn(), { tone: "go", size: FS.lg });
-            return;
-        }
-
-        // 넷을 한 줄로 — 눕힌 폰과, 세로지만 두 줄이 안 들어가는 낮은 화면. 세로가
-        // 모자란 자리라 쌓으면 어느 버튼도 손가락이 닿을 높이가 안 나온다.
-        // 라벨도 좁은 칸에 맞춰 줄인다.
-        const quarter = Math.floor((w - gap * 3) / 4);
-        const y = b.y + 8;
-        const h = Math.max(48, b.h - 16);
-
-        // 넷으로 쪼갠 칸은 56px 남짓이라 md(16px) 로는 "ALL-IN" 이 테두리를 넘는다.
-        // 두 칸 배치의 최소 폭(TWO_COL_MIN_W)이 그 56px 을 보장한다.
-        const size = FS.sm;
-
-        this.buyHalfBtn = makeButton(this, L, y, quarter, h,
-            "50%\nBUY", () => this.doTrade("half"), { tone: "buy", size });
-        this.allInBtn = makeButton(this, L + quarter + gap, y, quarter, h,
-            "ALL-IN", () => this.doTrade("all"), { tone: "buy", size });
-        this.sellBtn = makeButton(this, L + (quarter + gap) * 2, y, quarter, h,
-            "ALL\nSELL", () => this.doTrade("sell"), { tone: "sell", size });
-        this.nextBtn = makeButton(this, L + (quarter + gap) * 3, y, quarter, h,
-            "NEXT >", () => this.endTurn(), { tone: "go", size });
-    }
-
-    /* ── 턴 ─────────────────────────────────────────────── */
-
-    private beginTurn() {
-        // 순서가 중요하다: 손패를 **먼저** 깔고 유물을 터뜨린다. 파쇄기는 손에 잡힌 저주를
-        // 보고 태우는 유물이라, 반대로 하면 태울 것이 아직 없다.
-        this.rogue.dealHand();
-        const fired = this.rogue.onTurnStart(this.engine.player);
-        this.hand.setHand(this.rogue.hand, this.idleCheck);
-        this.renderRelics();
-        this.busy = false;
-
-        // 유물만으로도 보이는 것이 있다(낡은 나침반·증권가 핫라인). 카드를 고르기 전에
-        // 이미 읽혀 있어야 그 카드를 쓸지 말지를 정할 수 있다.
-        // 지난 턴에 정밀 예보로 봐 둔 것이 남아 있으면 buildBuff 가 그 턴 수를 얹어 준다.
-        this.marketRead = this.engine.read(this.rogue.buildBuff());
-        this.refresh();
-
-        // 합성은 두 자리에서 이 턴에 걸려 온다. 판을 열 때 넘어온 덱에서 합쳐진 것과,
-        // 방금 `dealHand` 가 지난 턴 손패를 되돌리면서 셋을 채운 것.
-        const merges = [...this.openingMerges, ...this.rogue.takeMerges()];
-        this.openingMerges = [];
-
-        // 턴의 마디를 먼저 찍는다 — 로그가 쌓이면 이 줄이 눈금이 된다.
-        this.log(`— ${this.engine.player.currentTurn}턴 · ${this.engine.stock.name} ${this.engine.stock.currentPrice.toLocaleString()}원`,
-            "turn", true);
-        this.logMerges(merges);
-        for (const f of fired) this.log(f, "relic");
-
-        // 덱 장수가 왜 줄었는지 모른 채 턴을 맞으면 카드가 사라진 것처럼 보인다.
-        this.showMerged(merges);
-    }
-
-    /** 합성을 로그에도 남긴다. 알림은 한 번 닫으면 끝이고, 로그는 되감을 수 있다. */
-    private logMerges(merges: MergeResult[]) {
-        for (const m of merges) {
-            this.log(m.to ? `강화 ${m.from} ×${MERGE_COUNT} → ${m.to}`
-                : `강화 ${m.from} ×${MERGE_COUNT} 소멸`, "system");
-        }
-    }
-
-    /**
-     * 지금 이 계좌에서 아무 일도 못 하는 카드인가. 손패가 흐리게 칠할 근거다.
-     * 화살표 함수라 setHand 에 그대로 넘길 수 있다.
-     */
-    private idleCheck = (card: StrategyCard): boolean => this.rogue.isIdle(cardKey(card.id, card.level), {
-        shares: this.engine.player.shares,
-        cash: this.engine.player.cash,
-        price: this.engine.stock.currentPrice,
-    });
-
-    /** @param uid 그 **장**의 번호. 덱에 같은 카드가 여러 장이라 id 로는 못 짚는다. */
-    private onPickCard(uid: string) {
-        if (this.busy) return;
-        const card = this.rogue.hand.find(c => c.uid === uid);
-        if (!this.rogue.playCard(uid) || !card) return;
-
-        // 정보 카드는 **고른 즉시** 값어치가 나와야 한다. 턴을 넘겨야 보이면 그건 정보가
-        // 아니라 도박이다.
-        //
-        // 여기서 다시 읽는 것이 중요하다. 고른 카드가 정보 카드가 아니어도(헤지·벙커)
-        // 이번 턴의 등락이 달라지므로, 이미 떠 있던 예보를 **그 카드가 반영된 값으로**
-        // 다시 그려야 한다. 안 그러면 −8% 라 적힌 봉을 보고 겁먹었는데 −4% 가 온다.
-        const buff = this.rogue.buildBuff();
-        this.rogue.remember(buff);
-        this.marketRead = this.engine.read(buff);
-
-        // 효과만 되뇌면 "그래서 지금 이걸 왜 골랐나" 가 안 남는다. 지금 소용이 없는
-        // 카드면 그 사실을, 아니면 언제 쓰는 카드인지를 말해 준다.
-        if (this.idleCheck(card)) {
-            this.log(`카드 ${card.name} — 지금은 아무 일도 안 합니다`, "warn");
-        } else {
-            this.log(`카드 ${card.name} — ${card.shortDescription}`,
-                card.kind === "curse" ? "warn" : "card");
-        }
-
-        // 읽은 것을 그 자리에서 그린다. 이게 없으면 예보도 국면도 "켜짐" 줄도 다음 턴이
-        // 되어서야 나타난다 — 정보 카드를 고른 보람이 한 턴 늦게 온다.
-        this.refresh();
-    }
-
-    /**
-     * 사고판다. **한 번의 매매가 여러 줄로 남는다** — 체결, 현금이 얼마에서 얼마가
-     * 되었는지, 수수료를 얼마 냈는지, 판 것이면 실현 손익까지.
-     *
-     * 한 줄로 뭉치면 "얼마 벌었나" 를 매번 머리로 빼야 한다. 갈라 두면 로그를 훑는 것만
-     * 으로 이번 판에서 수수료로 얼마가 나갔는지가 보인다.
-     */
-    private doTrade(kind: "half" | "all" | "sell") {
-        if (this.busy) return;
-        const buff = this.rogue.buildBuff();
-        const p = this.engine.player;
-        // 체결이 상태를 바꾸기 전에 찍어 둔다. 뒤에서는 이 값을 다시 못 만든다.
-        const before = { cash: p.cash, avg: p.avgPrice };
-
-        let res: TradeResult;
-        if (kind === "half") res = this.engine.buyHalf(buff);
-        else if (kind === "all") res = this.engine.buyAll(buff);
-        else res = this.engine.sellAll(buff);
-
-        if (!res.ok) { this.log(res.error, "warn"); return; }
-
-        // 작은 값은 원 단위 그대로 — 수수료 몇 천 원이 이 게임의 살림이다. 다만 자금이
-        // 커지면 그 자리도 억을 넘어서, `1,234,567,890원` 은 로그 한 줄을 통째로 먹고
-        // 잘려 나간다. 억부터는 짧은 표기로 넘긴다.
-        const won = (v: number) => Math.abs(v) >= 100_000_000
-            ? money(v)
-            : `${Math.round(v).toLocaleString()}원`;
-        const lines: [string, LogKind][] = [
-            [`${res.side === "buy" ? "매수" : "매도"} ${res.qty.toLocaleString()}주 @ ${res.price.toLocaleString()}원`,
-                res.side === "buy" ? "buy" : "sell"],
-        ];
-
-        // 판 것이면 이번 거래로 실제로 번 돈. 수수료를 뺀 뒤의 값이라 손에 남는 것과 같다.
-        if (res.side === "sell") {
-            const realized = (res.price - before.avg) * res.qty - res.fee;
-            lines.push([`실현 손익 ${realized >= 0 ? "+" : "−"}${won(Math.abs(realized))}`,
-                realized >= 0 ? "up" : "down"]);
-        }
-
-        lines.push([`현금 ${money(before.cash)} → ${money(p.cash)}`, "cash"]);
-        lines.push([res.fee === 0
-            ? "수수료·거래세 면제 — 0원"
-            : `수수료·거래세 −${won(res.fee)}`, "fee"]);
-
-        this.logAll(lines);
-        this.refresh();
-    }
-
-    /** 다음 턴으로. 여기서 주가가 움직인다. */
-    private endTurn() {
-        if (this.busy) return;
-        this.busy = true;
-
-        // advanceTurn 뒤에는 이미 다음 턴 번호다. 보상은 **끝낸** 턴을 보고 뜬다.
-        const finished = this.engine.player.currentTurn;
-        const buff = this.rogue.buildBuff();
-        const tickRes = this.engine.tick(buff);
-        const endFired = this.rogue.onTurnEnd(
-            this.engine.player, tickRes.changePct, this.engine.stock.currentPrice);
-
-        // 주가가 움직인 것은 **끝낸 턴의 일**이다. advanceTurn 뒤에 적으면 로그의 턴
-        // 번호가 하나씩 밀려, 다음 턴이 열리기도 전에 그 턴의 등락이 있었던 것처럼 읽힌다.
-        const moved: [string, LogKind][] = [[
-            `시장 ${pct(tickRes.changePct)} → ${this.engine.stock.currentPrice.toLocaleString()}원`,
-            tickRes.changePct >= 0 ? "up" : "down",
-        ]];
-        if (tickRes.news) moved.push([`뉴스 ${tickRes.news}`, tickRes.changePct >= 0 ? "up" : "down"]);
-        if (this.engine.stoppedOut) moved.push(["손절 예약 발동 — 전량 매도", "warn"]);
-        for (const f of endFired) moved.push([f, "relic"]);
-        this.logAll(moved);
-
-        this.engine.advanceTurn();
-        this.rogue.consumeTurn();
-        // **읽은 것을 먼저 지우고 나서 그린다.** 순서가 반대면 방금 결판난 턴의 유령 봉이
-        // 새 봉 옆에 한 번 더 그려져, 이미 온 등락을 아직 올 것처럼 가리킨다.
-        this.marketRead = null;
-        this.refresh();
-
-        // 봉이 하나 자라는 것을 눈이 따라갈 시간을 준다. 바로 넘기면 무엇이 변했는지 모른다.
-        this.time.delayedCall(420, () => {
-            if (this.engine.isOver) this.finish();
-            // 3턴마다 한 번, 카드와 유물을 **이어서** 고른다. 예전에는 카드가 3·6·9턴,
-            // 유물이 4·8턴이라 무언가 뜨는 턴이 다섯이었고 언제 무엇이 오는지 셀 수 없었다.
-            else if (this.rogue.isRewardTurn(finished)) this.showReward();
-            else this.beginTurn();
-        });
-    }
-
-    /** "지금 켜짐" 한 줄. 무엇이 켜져 있고 언제까지 가는지. */
-    private refreshActive() {
-        const picked = this.rogue.pickedCard;
-        const peekLeft = this.marketRead?.next.length ?? 0;
-        // 여러 턴 가는 것은 셋이다 — 예보·수수료 면제·손절 예약. 하나만 말하면 나머지
-        // 둘은 걸어 둔 줄도 모른 채 지나간다.
-        const left = this.rogue.lastingLeft;
-
-        const bits: string[] = [];
-        if (picked) bits.push(`${picked.name} · 이번 턴까지`);
-        if (peekLeft > 0) bits.push(`예보 ${peekLeft}턴치`);
-        if (left.fee > 0) bits.push(`수수료 0 · ${left.fee}턴`);
-        if (left.stop > 0) bits.push(`손절 · ${left.stop}턴`);
-
-        this.activeLabel
-            .setText(bits.length > 0 ? `켜짐 — ${bits.join(" · ")}` : "STRATEGY — 한 턴에 한 장")
-            .setColor(bits.length > 0 ? S.gold : S.inkDim);
-    }
-
-    /* ── 오버레이 공통 ────────────────────────────────────── */
-
-    /**
-     * 어두운 막 + 가운데 칸. 가로에서는 격자가 1400px 까지 넓어지므로 칸의 폭을 가둔다 —
-     * 안 그러면 글 한 줄이 화면을 가로질러 읽는 눈이 되돌아올 자리를 잃는다.
-     */
-    private openOverlay(pw: number, ph: number, edge: number) {
-        const box = this.add.container(0, 0);
-        const px = Math.round((this.designW - pw) / 2);
-        const py = Math.round((this.designH - ph) / 2);
-
-        const g = this.add.graphics();
-        g.fillStyle(0x000000, 0.82).fillRect(0, 0, this.designW, this.designH);
-        g.fillStyle(C.panel, 1).fillRect(px, py, pw, ph);
-        g.lineStyle(2, edge, 1).strokeRect(px + 1, py + 1, pw - 2, ph - 2);
-        box.add(g);
-        // 오버레이 뒤를 못 누르게. busy 가 아직 true 라 눌려도 아무 일이 없지만, 눌린
-        // 것처럼 보이는 것만으로도 화면이 거짓말을 한다.
-        box.add(this.add.zone(0, 0, this.designW, this.designH).setOrigin(0, 0).setInteractive());
-
-        this.overlay = box;
-        return { box, px, py };
-    }
-
-    private closeOverlay() {
-        this.overlay?.destroy(true);
-        this.overlay = null;
-    }
-
-    /* ── 첫 화면 — 이어하기인가 새 게임인가 ───────────────── */
-
-    /**
-     * 판을 열기 전에 **무엇을 들고 시작하는지** 말한다.
-     *
-     * 자금과 덱이 판을 넘어 이어지게 되면서 이 화면이 필요해졌다. 캔버스가 열리자마자
-     * 1턴이 뜨면 지금 굴리는 것이 지난 판의 이어짐인지 처음부터인지 알 수 없고, HUD 의
-     * 시작 자금이 1,000만이 아닌 것을 보고 눈치채는 것은 화면이 말해 준 것이 아니다.
-     */
-    private drawIntro() {
-        const it = this.intro;
-        if (!it) return;
-        const { saved } = it;
-        // 판을 한 번이라도 굴렸고 처음 상태가 아니면 이어하기다.
-        const resuming = saved.runs > 0;
-
-        const tight = this.designH < TALL_ENOUGH;
-        const pw = Math.min(this.designW - 40, tight ? 460 : 350);
-        const btnH = tight ? 44 : 54;
-        const ph = (tight ? 150 : 190) + btnH + (resuming ? 44 : 0);
-
-        const { box, px, py } = this.openOverlay(pw, ph, resuming ? C.gold : C.neon);
-        const mid = px + pw / 2;
-
-        const t = (y: number, s: string, size: number, color: string) =>
-            box.add(mkText(this, mid, y, s, {
-                fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
-                wordWrap: { width: pw - 30 },
-            }).setOrigin(0.5, 0));
-
-        // [머리, 제목, 자금, 덱, 아래줄] 의 y 오프셋
-        const at = tight ? [12, 30, 62, 94, 118] : [18, 40, 82, 120, 148];
-
-        t(py + at[0]!, resuming ? "CONTINUE" : "NEW GAME", FS.xs, resuming ? S.gold : S.neon);
-        t(py + at[1]!, resuming ? "이어하기" : "새 게임", tight ? FS.lg : FS.xl, S.ink);
-        t(py + at[2]!, money(saved.bankroll), tight ? FS.lg : FS.xl,
-            resuming ? tone(saved.bankroll - SEED_CASH) : S.ink);
-        t(py + at[3]!,
-            resuming
-                ? `덱 ${this.rogue.deckState.total}장 · 차수 ${saved.tier}/${MAX_TIER}`
-                : `카드 무작위 ${OPENING_DECK_SIZE}장으로 시작합니다`,
-            FS.sm, S.inkDim);
-        t(py + at[4]!,
-            resuming
-                ? `${saved.runs}판째 · 경력 ${saved.careerIP} · 자본잠식 ${saved.ruins}회`
-                : `${MAX_TURNS}턴 · 자금이 ${money(RUIN_LINE)} 아래로 가면 끝`,
-            FS.xs, S.inkDim);
-
-        const go = makeButton(this, px + 20, py + ph - btnH - (resuming ? 58 : 16), pw - 40, btnH,
-            resuming ? "이어하기 >" : "시작 >", () => {
-                this.intro = null;
-                this.closeOverlay();
-                this.beginTurn();
-            }, { tone: "go", size: FS.lg });
-        box.add(go.root);
-
-        if (!resuming) return;
-
-        // 처음부터 다시는 쌓아 둔 것을 전부 지운다 — 경력까지. 한 번 더 눌러야 실제로
-        // 지워진다. 오버레이를 하나 더 띄우는 대신 버튼 자신이 되묻는다.
-        const reset = makeButton(this, px + 20, py + ph - 48, pw - 40, 36,
-            it.confirmReset ? "정말 지웁니다 — 한 번 더" : "처음부터 다시",
-            () => {
-                if (!it.confirmReset) {
-                    it.confirmReset = true;
-                    this.closeOverlay();
-                    this.drawIntro();
-                    return;
-                }
-                resetProgress();
-                this.intro = null;
-                this.closeOverlay();
-                this.scene.restart({ insightPoints: 0, skipIntro: true });
-            },
-            { tone: it.confirmReset ? "sell" : "plain", size: FS.sm });
-        box.add(reset.root);
-    }
-
-    /* ── 강화 알림 ────────────────────────────────────────── */
-
-    /**
-     * 무엇이 무엇이 되었는가. **판을 안 멈춘다.**
-     *
-     * 예전에는 확인을 눌러야 넘어가는 창이었다. 강화는 덱이 두꺼워질수록 자주 터지는데,
-     * 그때마다 화면이 통째로 덮이고 손이 멈췄다 — 알림이 판보다 커진 셈이다.
-     *
-     * 지금은 차트 위에 잠깐 떴다 스스로 사라지는 띠다. 누를 것이 없고 아래를 안 가린다.
-     * 무엇이 되었는지는 **카드의 금색 `+N` 딱지**와 로그가 계속 들고 있으므로, 이 띠는
-     * "방금 무슨 일이 있었다" 만 말하면 된다.
-     */
-    private showMerged(lines: MergeResult[]) {
-        this.toast?.destroy(true);
-        this.toast = null;
-        if (lines.length === 0) return;
-
-        const b = this.band.chart;
-        const rowH = FS.sm + 6;
-        const w = b.w - PAD * 2;
-        const h = 10 + (lines.length + 1) * rowH + 6;
-        const x = b.x + PAD;
-        const y = b.y + PAD;
-
-        const box = this.add.container(x, y);
-        // **오버레이보다 위에.** 보상을 고른 직후에도 뜨는데, 그때 유물 고르기 창이
-        // 뒤이어 열린다 — 넣은 순서로는 그 창에 가려진다.
-        box.setDepth(100);
-
-        const g = this.add.graphics();
-        g.fillStyle(C.panel, 0.96).fillRect(0, 0, w, h);
-        g.lineStyle(1, C.gold, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
-        g.fillStyle(C.gold, 1).fillRect(0, 0, 3, h);
-        box.add(g);
-
-        box.add(mkText(this, 10, 8, "강화", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
+        this.add.existing(this.hand);
+        this.hand.setHand(this.cards, card => this.deck.isIdle(card, {
+            holdings: holds, cash: this.engine.player.cash,
         }));
-
-        lines.forEach((line, i) => {
-            // 사라지는 저주는 화살표 뒤가 비어 있으면 안 된다 — "무엇이 되었나" 의 답이
-            // "없어졌다" 인 것과 화면이 잘린 것은 눈으로 안 갈린다.
-            box.add(mkText(this, 10, 10 + (i + 1) * rowH,
-                line.to ? `${line.from} ×${MERGE_COUNT} → ${line.to}`
-                    : `${line.from} ×${MERGE_COUNT} → 덱에서 사라짐`,
-                {
-                    fontFamily: fontOf(this), fontSize: `${FS.sm}px`,
-                    color: line.to ? S.gold : S.danger,
-                }));
-        });
-
-        this.toast = box;
-        // 뜨고 → 머물고 → 사라진다. 판이 도는 동안 손이 멈추지 않아야 하므로 누를 것을
-        // 안 둔다. 다음 강화가 오면 위에서 이 띠부터 걷는다.
-        this.tweens.add({
-            targets: box, alpha: { from: 0, to: 1 }, duration: 160,
-            hold: 2600, yoyo: true,
-            onComplete: () => { box.destroy(true); if (this.toast === box) this.toast = null; },
-        });
     }
 
-    /* ── 덱 펼쳐 보기 ─────────────────────────────────────── */
-
-    /**
-     * 무엇을 몇 장 모았고, 어느 카드가 한 장만 더면 합쳐지는가.
-     *
-     * `DECK 4/9` 한 줄은 덱이 두꺼워진 것만 말하고 **무엇을 모으는 중인지**는 안 말한다.
-     * 그러면 합성이 보상 칸의 금색 테두리로만 존재하게 되어, 그 순간에만 있는 규칙이 된다.
-     */
-    private drawDeck() {
-        const list = this.rogue.deckList;
-        const tight = this.designH < TALL_ENOUGH;
-        const rowH = 20;
-        const head = 46;
-        const btnH = tight ? 36 : 42;
-
-        // 넘치면 잘라 낸다. 카드 종류가 이만큼 늘어날 일은 드물지만, 넘치는 순간
-        // 마지막 줄이 칸 밖에 찍혀 화면이 깨진 것처럼 보인다.
-        const room = Math.floor((this.designH - 40 - head - btnH - 24) / rowH);
-        const rows = list.slice(0, Math.max(1, room));
-        const cut = list.length - rows.length;
-
-        const pw = Math.min(this.designW - 40, 360);
-        const ph = head + rows.length * rowH + (cut > 0 ? rowH : 0) + 12 + btnH + 14;
-
-        const { box, px, py } = this.openOverlay(pw, ph, C.steel);
-        const L = px + 14, R = px + pw - 14;
-
-        box.add(mkText(this, px + pw / 2, py + 10, "DECK — 무엇을 몇 장 들고 있나", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.steel,
-        }).setOrigin(0.5, 0));
-        box.add(mkText(this, px + pw / 2, py + 26,
-            `같은 카드 ${MERGE_COUNT}장이면 한 단계 위로 (최대 +${MAX_LEVEL})`, {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(0.5, 0));
-
-        rows.forEach((e, i) => {
-            const y = py + head + i * rowH;
-            const lane = LANE[e.lane];
-            // 왼쪽은 무엇을 몇 장, 오른쪽은 합성까지 얼마나. 한 줄에 붙여 쓰면 이름이
-            // 긴 카드에서 두 덩이가 서로를 밟는다.
-            const note = mkText(this, R, y, this.mergeNote(e), {
-                fontFamily: fontOf(this), fontSize: `${FS.xs}px`,
-                color: e.ready ? S.gold : S.inkDim,
-            }).setOrigin(1, 0);
-            // 이름은 **오른쪽 덩이가 차지하고 남은 만큼**만 쓴다. 강화 표시가 붙으면서
-            // 이름이 길어져, 못 박아 두면 긴 이름에서 두 덩이가 겹쳐 찍힌다.
-            const name = mkText(this, L, y, `${lane.tag} ${e.name}`, {
-                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: lane.ink,
-            });
-            const room = R - note.displayWidth - 8 - L;
-            while (name.displayWidth > room && name.text.length > 3) {
-                name.setText(`${name.text.slice(0, -2)}…`);
-            }
-            box.add([name, note]);
-        });
-
-        if (cut > 0) {
-            box.add(mkText(this, L, py + head + rows.length * rowH, `그 밖에 ${cut}종`, {
-                fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-            }));
-        }
-
-        const close = makeButton(this, px + 20, py + ph - btnH - 14, pw - 40, btnH, "닫기", () => {
-            this.deckOpen = false;
-            this.closeOverlay();
-        }, { tone: "plain", size: FS.sm });
-        box.add(close.root);
-    }
-
-    /** 이 카드가 합성까지 얼마나 남았는가. 오른쪽 끝에 붙는 한 덩이다. */
-    private mergeNote(e: DeckEntry): string {
-        const count = `×${e.count}`;
-        // 더 오를 곳이 없는 두 가지를 갈라 말한다. 3강은 다 올린 것이고, 저주는 애초에
-        // 안 오르는 것이다 — 둘을 한 말로 뭉치면 3강이 손해처럼 읽힌다.
-        if (e.mergeInto === undefined) {
-            return e.level >= MAX_LEVEL ? `${count}  최대 강화` : `${count}  강화 없음`;
-        }
-        // **되는 카드 이름을 다시 안 쓴다.** 왼쪽에 이미 있고, 강화는 같은 카드가 한 단계
-        // 오르는 것이라 `+N` 하나면 말이 된다. 이름을 되풀이하면 긴 이름에서 두 덩이가
-        // 서로를 밟는다(애널리스트 리포트 +1 이 실제로 그랬다).
-        const to = e.mergeInto === null ? "사라짐" : `+${e.level + 1}`;
-        return e.ready ? `${count}  한 장 더 → ${to}` : `${count}  ${MERGE_COUNT}장 → ${to}`;
-    }
-
-    /* ── 유물 고르기 (카드 보상 바로 다음) ─────────────────── */
-
-    /**
-     * 유물은 판이 끝날 때까지 남는 **패시브**다. 카드가 한 턴짜리라면 유물은 판 전체의
-     * 기울기를 바꾼다 — 그 차이가 안 보이면 유물이 왜 있는지 알 수 없다.
-     *
-     * 그래서 셋을 내밀어 읽고 고르게 한다. 고른 순간 무엇을 들고 가는지 알게 되고,
-     * 남은 턴 내내 그 선택이 따라온다.
-     *
-     * 카드를 고르고 **바로 이어서** 뜬다. 카드 보상은 남은 판에 쓸 손을 정하고 유물은
-     * 판 전체의 기울기를 정하니, 같은 자리에서 둘을 나란히 보는 편이 읽힌다.
-     */
-    private showRelicOffer() {
-        const offer = this.rogue.offerRelics();
-        if (offer.length === 0) { this.beginTurn(); return; }   // 다 모았다
-        this.relicOffer = offer;
-        this.relicPick = null;
-        this.drawRelicOffer();
-    }
-
-    private drawRelicOffer() {
-        const offer = this.relicOffer;
-        if (!offer) return;
-
-        const stacked = this.designH < TALL_ENOUGH;
-        const n = offer.length;
-        const gap = 8;
-        const pw = Math.min(this.designW - 40, stacked ? 660 : 350);
-        const cellH = stacked ? 96 : 72;
-        const rows = stacked ? 1 : n;
-        // 카드 보상과 같은 자리에 확인 버튼 한 줄. 유물은 **판이 끝날 때까지** 가는 것이라
-        // 한 번 누르는 것으로 정해지면 안 된다.
-        const ph = 58 + rows * cellH + (rows - 1) * gap + 62;
-
-        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
-        const mid = px + pw / 2;
-
-        box.add(mkText(this, mid, py + 16, "RELIC — 판이 끝날 때까지", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
-        }).setOrigin(0.5, 0));
-        box.add(mkText(this, mid, py + 32,
-            this.relicPick ? "한 번 더 누르면 받습니다" : "하나를 고르세요", {
-            fontFamily: fontOf(this), fontSize: `${FS.sm}px`,
-            color: this.relicPick ? S.gold : S.ink,
-        }).setOrigin(0.5, 0));
-
-        const inner = pw - 32;
-        const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
-
-        const take = (relic: Relic) => {
-            this.rogue.takeRelic(relic.id);
-            this.relicOffer = null;
-            this.relicPick = null;
-            this.closeOverlay();
-            this.beginTurn();
-            this.log(`유물 획득 ${relic.name} — ${relic.description}`, "relic");
-        };
-
-        offer.forEach((relic, i) => {
-            const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
-            const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
-            const picked = this.relicPick === relic.id;
-            box.add(this.makeInfoCell(x, y, cellW, cellH, relic.name, relic.description, C.gold,
-                picked, () => {
-                    if (picked) { take(relic); return; }
-                    this.relicPick = relic.id;
-                    this.closeOverlay();
-                    this.drawRelicOffer();
-                }));
-        });
-
-        // 건너뛸 수 없는 자리라(유물은 반드시 하나) 버튼은 확인 하나뿐이다. 고르기 전에는
-        // 흐리게 둔다 — 자리가 비면 칸이 들썩이고, 없으면 무엇을 해야 할지가 안 보인다.
-        const chosen = offer.find(r => r.id === this.relicPick);
-        const go = makeButton(this, px + 16, py + ph - 62, inner, 46,
-            chosen ? `받기 ▸ ${chosen.name}` : "하나를 고르세요",
-            () => { if (chosen) take(chosen); },
-            { tone: chosen ? "go" : "plain", size: FS.sm });
-        if (!chosen) go.setEnabled(false);
-        box.add(go.root);
-    }
-
-    /** 이름 한 줄 + 설명 한 덩이짜리 고르기 칸. 유물처럼 저주가 없는 것에 쓴다. */
-    private makeInfoCell(
-        x: number, y: number, w: number, h: number,
-        title: string, body: string, edge: number, picked: boolean, onPick: () => void,
-    ): Phaser.GameObjects.Container {
-        const root = this.add.container(x, y);
-        const g = this.add.graphics();
-        g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
-        g.lineStyle(picked ? 3 : 1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
-        if (picked) g.fillStyle(edge, 1).fillRect(0, 0, 4, h);
-
-        const name = mkText(this, 10, 9, title, {
-            fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: S.gold,
-        });
-        const desc = mkText(this, 10, name.y + name.displayHeight + 4, body, {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-            wordWrap: { width: w - 20 }, lineSpacing: 2,
-        });
-        const zone = this.add.zone(0, 0, w, h).setOrigin(0, 0)
-            .setInteractive({ useHandCursor: true });
-        zone.on("pointerup", onPick);
-
-        root.add([g, name, desc, zone]);
-        return root;
-    }
-
-    /* ── 카드 보상 (3·6·9턴을 끝냈을 때) ──────────────────── */
-
-    /**
-     * 덱에 넣을 카드를 고르는 자리. **건너뛸 수 있다** — 그게 이 화면의 요점이다.
-     *
-     * 센 카드는 덱을 두껍게 만들고(원하는 카드가 덜 잡힌다) 어떤 것은 저주까지 끌고 온다.
-     * 그래서 "안 고르는 것" 이 늘 손해가 아니고, 그 판단이 로그라이크의 몸통이다.
-     */
-    private showReward() {
-        const offer = this.rogue.offerCards();
-        // 보상 풀이 마르는 일은 없지만, 비면 유물 자리로 바로 넘긴다.
-        if (offer.length === 0) { this.showRelicOffer(); return; }
-        this.offer = offer;
-        this.drawReward();
-    }
-
-    /**
-     * 보상 칸을 그린다. 후보는 이미 뽑혀 있다(`this.offer`) — 돌려도 다시 안 뽑는다.
-     *
-     * 세로로 늘어놓을 높이가 안 나오면 셋을 **가로로 편다**. 눕힌 폰은 세로 300px 남짓이라
-     * 세로 배치(360px)가 통째로 안 들어간다.
-     */
-    private drawReward() {
-        const offer = this.offer;
-        if (!offer) return;
-
-        const stacked = this.designH < TALL_ENOUGH;
-        const n = offer.length;
-        const gap = 8;
-
-        const pw = Math.min(this.designW - 40, stacked ? 660 : 350);
-        const cellH = stacked ? 96 : 72;
-        const rows = stacked ? 1 : n;
-        const ph = 58 + rows * cellH + (rows - 1) * gap + 62;
-
-        const { box, px, py } = this.openOverlay(pw, ph, C.gold);
-        const mid = px + pw / 2;
-
-        box.add(mkText(this, mid, py + 16, "CARD REWARD — 이어서 유물", {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold,
-        }).setOrigin(0.5, 0));
-        // 짚어 둔 장이 있으면 무엇을 눌러야 하는지가 이 줄에서 바뀐다.
-        box.add(mkText(this, mid, py + 32,
-            this.offerPick ? "한 번 더 누르면 덱에 들어갑니다" : "한 장을 고르세요", {
-            fontFamily: fontOf(this), fontSize: `${FS.sm}px`,
-            color: this.offerPick ? S.gold : S.ink,
-        }).setOrigin(0.5, 0));
-
-        // 카드를 고르든 건너뛰든 **유물 고르기로 이어진다.** 3턴마다 한 번, 이 자리에서
-        // 손(카드)과 기울기(유물)를 나란히 정한다.
-        // 합성이 터졌으면 **그 사이에 한 번 멈춘다.** 안 멈추면 유물 고르기가 곧바로
-        // 덮어써서, 방금 덱에서 두 장이 사라진 것을 아무도 못 본다.
-        const close = (lines: [string, LogKind][], merges: MergeResult[] = []) => {
-            this.offer = null;
-            this.offerPick = null;
-            this.closeOverlay();
-            this.logAll(lines);
-            this.logMerges(merges);
-            // 알림은 띄우기만 하고 **곧바로 유물 고르기로 간다.** 예전에는 확인을 한 번
-            // 더 눌러야 넘어갔는데, 3턴마다 오는 자리에서 그 한 번이 매번 손을 멈췄다.
-            this.showMerged(merges);
-            this.showRelicOffer();
-        };
-
-        const inner = pw - 32;
-        const cellW = stacked ? Math.floor((inner - gap * (n - 1)) / n) : inner;
-
-        const take = (card: StrategyCard) => {
-            const curse = this.rogue.takeReward(cardKey(card.id, card.level));
-            const lines: [string, LogKind][] = [
-                [`카드 획득 ${card.name}`, "card"],
-            ];
-            if (curse) lines.push([`저주 ${curse} 도 함께 덱에`, "warn"]);
-            // 셋째 장이 들어오면 그 자리에서 합쳐진다 — 알림으로 한 번 세운다.
-            close(lines, this.rogue.takeMerges());
-        };
-        const skip = () => close([["카드를 안 받았습니다 — 덱을 그대로", "turn"]]);
-
-        offer.forEach((card, i) => {
-            const x = px + 16 + (stacked ? i * (cellW + gap) : 0);
-            const y = py + 58 + (stacked ? 0 : i * (cellH + gap));
-            // 이 한 장이 셋째 장이면 **고르기 전에** 말해 준다. 그래야 "약한 카드를
-            // 모아 강화한다" 가 선택이 된다.
-            const merge = this.rogue.mergePreview(cardKey(card.id, card.level));
-            const picked = this.offerPick === card.uid;
-            box.add(this.makeOfferCell(x, y, cellW, cellH, card, stacked, merge, picked, () => {
-                // 첫 탭은 **짚는 것**이다. 손패와 같은 순서 — 읽고 나서 정한다.
-                if (picked) { take(card); return; }
-                this.offerPick = card.uid;
-                this.closeOverlay();
-                this.drawReward();
-            }));
-        });
-
-        // 짚어 두면 그 자리에서 받거나 건너뛴다. 짚기 전에는 건너뛰기 하나뿐이라
-        // 버튼 줄의 높이가 안 바뀐다 — 칸이 들썩이면 손가락이 자리를 다시 찾는다.
-        const btnY = py + ph - 62;
-        const chosen = offer.find(c => c.uid === this.offerPick);
-        if (chosen) {
-            const takeW = Math.floor((inner - gap) * 0.62);
-            box.add(makeButton(this, px + 16, btnY, takeW, 46, "받기 ▸", () => take(chosen),
-                { tone: "go", size: FS.sm }).root);
-            box.add(makeButton(this, px + 16 + takeW + gap, btnY, inner - takeW - gap, 46,
-                "건너뛰기", skip, { tone: "plain", size: FS.sm }).root);
-        } else {
-            box.add(makeButton(this, px + 16, btnY, inner, 46,
-                "건너뛰기 — 덱을 얇게", skip, { tone: "plain", size: FS.sm }).root);
-        }
-    }
-
-    /**
-     * 보상 카드 한 칸. 딸린 저주와 **합성**을 고르기 전에 보여 준다.
-     *
-     * @param stacked 가로로 편 좁은 칸인가. 그러면 저주 표시가 이름 옆에 못 들어가서
-     *                아래로 내려간다.
-     * @param merge   이 한 장이 셋째 장이면 무엇이 되는가(`mergePreview`). 없으면 null.
-     * @param picked  지금 짚어 둔 칸인가. 한 번 더 눌러야 받는다.
-     */
-    private makeOfferCell(
-        x: number, y: number, w: number, h: number,
-        card: StrategyCard, stacked: boolean, merge: string | null, picked: boolean,
-        onTap: () => void,
-    ): Phaser.GameObjects.Container {
-        const root = this.add.container(x, y);
-        const cursed = !!card.curseName;
-        // 합성이 걸린 칸은 금색으로 — 셋째 장이라는 것이 색으로 먼저 온다.
-        const edge = merge !== null ? C.gold : cursed ? C.danger : C.neon;
-
-        const g = this.add.graphics();
-        g.fillStyle(C.panelHi, 1).fillRect(0, 0, w, h);
-        g.lineStyle(picked ? 3 : merge !== null ? 2 : 1, edge, 1).strokeRect(0.5, 0.5, w - 1, h - 1);
-        // 짚어 둔 칸은 테두리만으로는 안 갈린다 — 왼쪽에 굵은 띠를 하나 더 세운다.
-        if (picked) g.fillStyle(edge, 1).fillRect(0, 0, 4, h);
-
-        const name = mkText(this, 10, 9, card.name, {
-            fontFamily: fontOf(this), fontSize: `${FS.md}px`, color: cursed ? S.danger : S.neon,
-        });
-        const desc = mkText(this, 10, 32, card.effectDescription, {
-            fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.inkDim,
-            wordWrap: { width: w - 20 }, lineSpacing: 2,
-        });
-
-        const zone = this.add.zone(0, 0, w, h).setOrigin(0, 0)
-            .setInteractive({ useHandCursor: true });
-        zone.on("pointerup", onTap);
-
-        root.add([g, name, desc, zone]);
-
-        // 칸 바닥에서 위로 쌓는다. 좁은 칸에서 저주와 합성이 같은 줄에 앉으면 겹친다.
-        let bottom = h - 10 - FS.xs;
-        if (merge !== null) {
-            root.add(mkText(this, 10, bottom,
-                merge === "" ? `모으면 ×3 → 사라짐` : `모으면 ×3 → ${merge}`,
-                { fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.gold },
-            ));
-            bottom -= FS.xs + 3;
-        }
-        if (cursed) {
-            // 저주는 좁은 칸(가로 배치)에서만 아래로 내려온다. 넓으면 이름 옆이 비어 있다.
-            const wide = !stacked && merge === null;
-            const tag = mkText(this, 
-                wide ? w - 10 : 10,
-                wide ? 11 : bottom,
-                `+저주 ${card.curseName}`,
-                { fontFamily: fontOf(this), fontSize: `${FS.xs}px`, color: S.danger },
-            ).setOrigin(wide ? 1 : 0, 0);
-            root.add(tag);
-        }
-        return root;
-    }
-
-    /* ── 결산 ─────────────────────────────────────────────── */
-
-    private finish() {
-        this.engine.liquidate();
-        // 판이 끝났으니 예보가 가리킬 다음 턴이 없다. 안 지우면 성적표 뒤의 차트가
-        // 오지 않을 봉을 계속 그린다.
-        this.marketRead = null;
-        // 덱을 함께 넘긴다 — 이 목록이 그대로 다음 판의 시작 덱이 된다.
-        const sum = this.engine.summarize(this.rogue.deck);
-        // 여기서 한 번만 저장한다. summarize 가 이미 player.insightPoints 를 올려 뒀지만
-        // 그건 이 판 안의 값이고, 판을 넘어 남는 것은 progress 가 들고 있다.
-        const before = loadProgress().careerIP;
-        const { progress, newBest } = recordRun(sum);
-        this.ended = { sum, progress, newBest, unlocked: newlyUnlocked(before, progress.careerIP) };
-
-        this.logMark([
-            [sum.ruined ? "■ GAME OVER — 자본잠식" : "■ 판 종료", sum.ruined ? "warn" : "system"],
-            [`${money(sum.startEquity)} → ${money(sum.finalEquity)} (${pct(sum.returnPct)})`,
-                sum.returnPct >= 0 ? "up" : "down"],
-            [sum.ruined ? "자금과 덱이 처음으로 돌아갑니다"
-                : sum.idle ? "한 주도 사지 않았습니다 — 인사이트 없음"
-                    : `인사이트 +${sum.earnedIP}`,
-                sum.ruined || sum.idle ? "warn" : "fee"],
+    /** 버튼은 동작이 아니라 **내가 하는 말**이다. */
+    private drawActions(): void {
+        const th = this.deck.buildBuff().thesis;
+        const held = Object.keys(this.engine.player.positions).length;
+        const done = this.recommendedThisTurn;
+        this.buttons([
+            {
+                label: done ? "권했다" : (th ? "권합니다" : "믿어보십시오"),
+                sub: done ? "이번 턴은 끝" : (th ? "근거 있음" : "근거 없음"),
+                primary: !done,
+                on: done || !this.client ? null : () => this.openBoard(),
+            },
+            { label: "거둡니다", sub: held > 0 ? `${held}종목` : "보유 없음",
+              on: held > 0 ? () => this.openBoard() : null },
+            { label: "기다리시죠", sub: "신뢰 −3", on: () => this.wait() },
+            { label: "다음", sub: `${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`,
+              primary: done, on: () => this.endTurn() },
         ]);
-        this.refresh();
-        this.drawResult();
     }
 
-    /** 성적표. 다시 그려도 저장은 안 한다 — 값은 `this.ended` 에 이미 있다. */
-    private drawResult() {
-        const r = this.ended;
-        if (!r) return;
-        const { sum, progress, newBest } = r;
+    private buttons(defs: Array<{ label: string; sub: string; primary?: boolean; on: (() => void) | null }>): void {
+        const b = this.bands.action;
+        this.rect(b.x, b.y, b.w, b.h, 0xa7b2a9, 1);
+        this.rect(b.x, b.y, b.w, 2, 0x4e5a53, 1);
 
-        // 세로가 모자라면 줄 간격과 큰 숫자를 줄여 접는다. 눕힌 폰에서 348px 은 안 들어간다.
-        const tight = this.designH < TALL_ENOUGH;
-        const pw = Math.min(this.designW - 40, tight ? 460 : 350);
-        const ph = tight ? 246 : 348;
-
-        const { box, px, py } = this.openOverlay(pw, ph, sum.ruined ? C.danger : C.neon);
-        const mid = px + pw / 2;
-
-        const t = (y: number, s: string, size: number, color: string) =>
-            box.add(mkText(this, mid, y, s, {
-                fontFamily: fontOf(this), fontSize: `${size}px`, color, align: "center",
-                wordWrap: { width: pw - 30 },
-            }).setOrigin(0.5, 0));
-
-        // [제목, 수익률, 자산, 인사이트, 누적, 최고, 유물] 의 y 오프셋
-        const at = tight ? [12, 32, 74, 100, 122, 144, 164] : [20, 50, 108, 142, 172, 196, 220];
-
-        const ruined = sum.ruined;
-        t(py + at[0]!,
-            ruined ? "GAME OVER — 자본잠식" : newBest ? "다음 판으로 — 새 기록" : "다음 판으로",
-            tight ? FS.sm : FS.md, ruined ? S.danger : newBest ? S.neon : S.inkDim);
-        t(py + at[1]!, pct(sum.returnPct), tight ? FS.xl : FS.xxl, tone(sum.returnPct));
-        t(py + at[2]!, `${money(sum.startEquity)} → ${money(sum.finalEquity)}`, FS.sm, S.ink);
-        // 자본잠식은 못 번 것이 아니라 **끝난 것**이다. 무엇이 사라졌는지 그 자리에서 말한다.
-        t(py + at[3]!,
-            ruined ? "자금과 덱이 처음으로 돌아갑니다"
-                : sum.idle ? "한 주도 사지 않았습니다 — 인사이트 없음"
-                    : `인사이트 +${sum.earnedIP}`,
-            tight ? FS.sm : FS.md, ruined || sum.idle ? S.danger : S.gold);
-        // 다음 판이 무엇을 들고 시작하는지. 자금과 덱이 이어지는 것이 이 게임의 뼈대다.
-        const carryNote = ruined
-            ? `다시 ${money(progress.bankroll)} · 카드 3장으로`
-            : `다음 판 ${money(progress.bankroll)} · 덱 ${progress.deck.length}장`;
-        t(py + at[4]!, carryNote, FS.sm, ruined ? S.danger : S.gold);
-        t(py + at[5]! - 2, [
-            `IP ${progress.insightPoints}`,
-            `차수 ${progress.tier}/${MAX_TIER}`,
-            progress.bestReturn !== null ? `최고 ${pct(progress.bestReturn)}` : "",
-        ].filter(Boolean).join(" · "), FS.xs, newBest ? S.neon : S.inkDim);
-        // 경력 인사이트는 청산돼도 안 깎이는 유일한 값이다. 못한 판 뒤에 이 줄이
-        // 그래도 올라 있어야 다시 켤 마음이 생긴다.
-        const unlockNote = r.unlocked.length > 0
-            ? `새로 열림 — ${r.unlocked.map(u => nameOfUnlock(u.id)).join(" · ")}`
-            : `경력 ${progress.careerIP} · ${nextUnlockNote(progress.careerIP)}`;
-        t(py + at[6]!, unlockNote, FS.xs, r.unlocked.length > 0 ? S.gold : S.inkDim);
-
-        const btnH = tight ? 44 : 54;
-        const restart = makeButton(this, px + 20, py + ph - btnH - (tight ? 14 : 20), pw - 40, btnH,
-            sum.ruined ? "다시 처음부터 >" : "NEXT RUN >", () => {
-                this.closeOverlay();
-                // 인사이트만 들고 다음 런으로. 유물도 카드도 새로 뽑힌다.
-                // 첫 화면은 건너뛴다 — 무엇을 들고 가는지 이 성적표가 방금 말했다.
-                this.scene.restart({ insightPoints: progress.insightPoints, skipIntro: true });
-            }, { tone: "go", size: FS.lg });
-        box.add(restart.root);
+        const gap = 7;
+        const cols = 2, rows = 2;
+        const cw = (b.w - PAD * 2 - gap) / cols;
+        const chh = (b.h - PAD * 2 - gap) / rows;
+        defs.forEach((d, i) => {
+            if (!d.label) return;
+            const x = PAD + (i % cols) * (cw + gap);
+            const y = b.y + PAD + Math.floor(i / cols) * (chh + gap);
+            const on = d.on !== null;
+            this.rect(x, y, cw, chh, on ? (d.primary ? 0x2f4f56 : 0x94a096) : 0x9aa69c, 1);
+            this.text(x + cw / 2, y + chh / 2 - (d.sub ? 14 : 8), d.label, FS.md,
+                on ? (d.primary ? "#e9f2ea" : "#101614") : "#3c4844", 0.5);
+            if (d.sub) {
+                this.text(x + cw / 2, y + chh / 2 + 6, d.sub, FS.xs,
+                    d.primary && on ? "#9fc0c4" : "#3c4844", 0.5);
+            }
+            if (on) this.tap(x, y, cw, chh, d.on!);
+        });
     }
 
-    /* ── 그리기 ─────────────────────────────────────────── */
+    /* ── 시세판 ───────────────────────────────────────── */
 
-    private refresh() {
-        const e = this.engine;
-        const p = e.player;
+    private openBoard(): void {
+        if (this.board?.isOpen) return;
+        this.board = new QuoteBoard({
+            scene: this, width: this.W, height: this.H, top: this.bands.strip.h,
+            rows: () => this.boardRows(),
+            thesis: () => this.deck.buildBuff().thesis,
+            alreadyRecommended: () => this.recommendedThisTurn,
+            clientName: () => this.client?.name ?? "아무도",
+            onBuy: id => this.recommend(id),
+            onSell: id => this.sell(id),
+            onClose: () => { this.board?.close(); this.board = null; this.redraw(); },
+        });
+        this.board.open();
+    }
 
-        this.chart.render(e.stock.history, this.marketRead);
-        this.refreshActive();
+    private boardRows(): BoardRow[] {
+        return this.engine.listed.map(s => {
+            const last = s.history[s.history.length - 1];
+            const prev = s.history[s.history.length - 2];
+            return {
+                stock: s,
+                price: s.currentPrice,
+                changePct: last && prev ? ((last.c - prev.c) / prev.c) * 100 : 0,
+                shares: this.engine.positionOf(s.id).shares,
+                pnlPct: this.engine.unrealizedPct(s.id),
+                isNew: s.listedAt === this.engine.absTurn,
+            };
+        });
+    }
 
-        this.equityText.setText(money(e.equity)).setColor(tone(e.totalReturnPct));
+    /* ── 권한다 · 거둔다 · 기다린다 ───────────────────── */
 
-        // 자본잠식선이 눈에 보여야 그 선을 피할 수 있다. 가까워졌을 때만 띄운다 — 늘 떠
-        // 있으면 읽히지 않는 배경이 된다.
-        const near = e.equity < e.ruinLine * 1.5;
-        this.totalLabel
-            .setText(near ? `TOTAL · 잠식선 ${money(e.ruinLine)}`
-                : e.tier > 0 ? `TOTAL · 차수 ${e.tier}` : "TOTAL")
-            .setColor(near ? S.danger : e.tier > 0 ? S.gold : S.inkDim);
-        this.cashText.setText(`현금 ${money(p.cash)}`);
-        this.turnText.setText(`TURN ${Math.min(p.currentTurn, p.maxTurns)}/${p.maxTurns}`);
-        this.ipText.setText(`IP ${p.insightPoints}`);
-        // 오른쪽 줄들의 폭이 정해진 뒤라야 자산 숫자에 남는 자리를 잴 수 있다.
-        this.fitEquity();
+    /**
+     * 권한다. **한 턴에 한 번뿐이다** — 고객이 한 명이니까.
+     *
+     * 근거가 없으면 고객이 거절할 수 있다. 박 대리는 거의 거절하고 어머니는 무조건 받는다.
+     * 거절당하면 아무 일도 안 일어나고 신뢰만 자연 감소한다.
+     */
+    private recommend(id: string): void {
+        if (this.recommendedThisTurn || !this.client) return;
+        const buff = this.deck.buildBuff();
+        const thesis = buff.thesis;
+        const c = this.client;
 
-        // 남은 장 / 덱 전체. 저주가 섞이면 그 수를 붙이고 색을 바꾼다 — 덱이 더러워진 것을
-        // 숫자 하나로 알아야 다음 보상에서 건너뛸 마음이 생긴다.
-        //
-        // **한 장만 더면 합쳐지는 카드가 있으면 그것이 먼저다.** 덱을 얇게 하는 길이
-        // 지금 열려 있다는 뜻이라, 저주 수보다 이 줄에서 볼 값어치가 크다. 누르면
-        // 무엇이 그런지 펼쳐진다(`▸`).
-        const d = this.rogue.deckState;
-        const ready = this.rogue.deckList.filter(e => e.ready).length;
-        this.deckText
-            .setText(ready > 0 ? `DECK ${d.draw}/${d.total} · 강화 임박 ${ready} ▸`
-                : d.curses > 0 ? `DECK ${d.draw}/${d.total} · 저주 ${d.curses} ▸`
-                    : `DECK ${d.draw}/${d.total} ▸`)
-            .setColor(ready > 0 ? S.gold : d.curses > 0 ? S.danger : S.inkDim);
+        if (!thesis && Math.random() > c.acceptsBlind) {
+            this.pushLog(`${c.name}이(가) 고개를 저었다. "근거가 뭡니까."`, "warn");
+            this.recommendedThisTurn = true;
+            this.closeBoardAndRedraw();
+            return;
+        }
 
-        // 보유 줄은 **자리에 들어가는 형태**를 고른다. 띠 폭으로만 정하던 시절에는 자금이
-        // 조 단위가 되어 주수가 아홉 자리(`116,727,816주`)가 되는 순간 오른쪽의 현금·DECK
-        // 줄 위로 넘어갔다 — 두 숫자가 겹치면 둘 다 못 읽는다.
-        // 주수도 억을 넘으면 자리 이름으로 줄인다. 정확한 수는 체결 로그가 들고 있다.
-        this.posText.setColor(p.shares > 0 ? tone(e.unrealizedPct) : S.inkDim);
-        if (p.shares === 0) {
-            this.posText.setText("보유 없음");
+        const before = this.engine.player.cash;
+        const r = this.engine.buyHalf(id, buff);
+        if (!r.ok) { this.pushLog(r.error, "warn"); this.closeBoardAndRedraw(); return; }
+
+        this.engine.setFocus(id);
+        this.recommendedThisTurn = true;
+        this.pending = { id, thesis, client: c, cost: before - this.engine.player.cash };
+        if (thesis) {
+            this.facts.thesisPlays += 1;
+            this.pushLog(`${c.name}에게 ${r.qty}주를 권했다. 근거는 「${thesis}」.`, "buy");
         } else {
-            const n = p.shares.toLocaleString();
-            const short = p.shares >= 100_000_000 ? money(p.shares) : n;
-            const room = this.band.firm.w - PAD * 2
-                - Math.max(this.cashText.displayWidth, this.deckText.displayWidth) - 10;
-            this.setFirstFitting(this.posText, [
-                `보유 ${n}주 · 평단 ${Math.round(p.avgPrice).toLocaleString()} · ${pct(e.unrealizedPct)}`,
-                `${n}주 · ${pct(e.unrealizedPct)}`,
-                `${short}주 · ${pct(e.unrealizedPct)}`,
-                `${short}주`,
-            ], room);
+            this.pushLog(`${c.name}에게 ${r.qty}주를 권했다. 근거는 대지 못했다.`, "buy");
+        }
+        if (r.fee > 0) this.pushLog(`수수료 ${money(r.fee)}.`, "fee");
+        this.closeBoardAndRedraw();
+    }
+
+    private sell(id: string): void {
+        const buff = this.deck.buildBuff();
+        const s = this.engine.stockOf(id);
+        const pnl = this.engine.unrealizedPct(id);
+        const r = this.engine.sellAll(id, buff);
+        if (!r.ok) { this.pushLog(r.error, "warn"); this.closeBoardAndRedraw(); return; }
+        this.pushLog(`${s?.name ?? "종목"}을(를) 거뒀다. ${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`,
+            pnl >= 0 ? "up" : "down");
+        // 권한 종목을 그 턴에 도로 팔면 정산은 그 결과로 한다.
+        if (this.pending?.id === id) this.pending = null;
+        this.closeBoardAndRedraw();
+    }
+
+    private wait(): void {
+        this.facts.waitsThisChapter += 1;
+        this.pushLog("오늘은 아무것도 권하지 않았다.", "turn");
+        this.endTurn();
+    }
+
+    private closeBoardAndRedraw(): void {
+        this.board?.close(); this.board = null;
+        this.redraw();
+    }
+
+    private onPickCard(uid: string): void {
+        if (!this.deck.playCard(uid)) return;
+        const card = this.cards.find(c => c.uid === uid);
+        if (card) this.pushLog(`「${card.name}」 — ${card.scene}`, "card");
+        this.read = this.engine.read(this.deck.buildBuff());
+        this.redraw();
+    }
+
+    /* ── 턴 ───────────────────────────────────────────── */
+
+    private beginTurn(): void {
+        this.cards = this.deck.dealHand();
+        this.client = clientAt(this.memory.cycle, this.engine.chapter.id, this.engine.player.currentTurn, this.gone);
+        this.recommendedThisTurn = false;
+        this.read = this.engine.read(this.deck.buildBuff());
+
+        const fresh = this.engine.newlyListed;
+        if (fresh) this.pushLog(`${fresh.name}이(가) 상장했다. ${fresh.blurb}.`, "system");
+        this.redraw();
+    }
+
+    /** 다음 턴으로. **여기서 주가가 움직이고 신뢰가 정산된다.** */
+    private endTurn(): void {
+        const buff = this.deck.buildBuff();
+        const results = this.engine.tick(buff);
+
+        const focus = results.find(r => r.id === this.engine.focus);
+        if (focus?.news) this.pushLog(focus.news, focus.changePct >= 0 ? "up" : "down");
+        if (focus) {
+            this.pushLog(`${this.engine.focusStock.name} ${focus.changePct >= 0 ? "+" : ""}${focus.changePct.toFixed(1)}%`,
+                focus.changePct >= 0 ? "up" : "down");
+            if (focus.changePct < this.facts.worstTurnPct) this.facts.worstTurnPct = focus.changePct;
+        }
+        for (const id of this.engine.stoppedOut) {
+            this.facts.stopHits += 1;
+            this.pushLog(`손절이 걸렸다. ${this.engine.stockOf(id)?.name ?? ""} 전부 팔렸다.`, "warn");
         }
 
-        // 못 하는 것은 잠근다 — 눌러 보고 나서 안 된다고 듣는 것보다 낫다.
-        const canBuy = p.cash >= e.stock.currentPrice && !this.busy;
-        this.buyHalfBtn.setEnabled(canBuy);
-        this.allInBtn.setEnabled(canBuy);
-        this.sellBtn.setEnabled(p.shares > 0 && !this.busy);
-        this.nextBtn.setEnabled(!this.busy);
+        this.settleTrust(buff);
+        this.deck.consumeTurn(buff);
+        this.pending = null;
+        this.engine.advanceTurn();
+
+        this.catchSituations();
+
+        if (this.engine.isOver) { this.finishChapter(); return; }
+        this.beginTurn();
     }
 
     /**
-     * 자리에 들어가는 **첫 형태**를 골라 적는다. 긴 것부터 넘긴다.
+     * 신뢰 정산 — **결과가 아니라 결과 × 근거.**
      *
-     * 다 안 들어가면 마지막(가장 짧은) 것이 남는다 — 넘치더라도 무엇이 잘렸는지가
-     * 짐작되는 쪽이, 옆 줄과 겹쳐 둘 다 못 읽는 것보다 낫다.
+     * 운으로 벌어도 오르지 않는다. 그 한 칸이 이 게임의 논지다.
      */
-    private setFirstFitting(t: Phaser.GameObjects.Text, forms: string[], room: number) {
-        for (const s of forms) {
-            t.setText(s);
-            if (t.displayWidth <= room) return;
+    private settleTrust(buff: TurnBuff): void {
+        let trust = this.engine.player.trust;
+
+        if (this.pending) {
+            const { thesis, client, id, cost } = this.pending;
+            const value = this.engine.positionOf(id).shares * this.engine.priceOf(id);
+            const gained = value > cost;
+            let d = trustDelta({ hadThesis: thesis !== null, gained, client });
+            if (d < 0 && thesis !== null && buff.softenLoss) d = Math.round(d / 2);
+
+            trust += d;
+            const why = trustReason({ hadThesis: thesis !== null, gained, client });
+            this.pushLog(`${client.name} — ${why}. 신뢰 ${d >= 0 ? "+" : ""}${d}`,
+                d > 0 ? "up" : d < 0 ? "warn" : "turn");
+
+            if (thesis !== null && !gained) this.facts.thesisLosses += 1;
+            if (thesis === null && !gained) this.facts.blindLosses += 1;
+            if (thesis === null && gained) this.facts.blindGains += 1;
+            // 김 부장 연속 — 근거를 대고 벌어 준 것만 센다.
+            if (client.id === "kim") {
+                this.facts.kimStreak = (thesis !== null && gained) ? this.facts.kimStreak + 1 : 0;
+            }
+        }
+
+        if (!buff.noDecay) trust = decay(trust);
+        this.engine.player.trust = clampTrust(trust, TRUST_MAX);
+
+        // 신뢰가 바닥에 가까우면 한 사람이 떠난다. **떠난 고객은 안 돌아온다.**
+        if (this.engine.player.trust <= 15 && this.client && this.gone.length < CLIENTS.length - 1) {
+            if (!this.gone.includes(this.client.id)) {
+                this.gone.push(this.client.id);
+                this.pushLog(`${this.client.name}이(가) 맡긴 돈을 거둬 갔다.`, "warn");
+            }
         }
     }
 
-    /**
-     * 자산 숫자를 **남는 자리에 맞춰** 한 단계씩 줄인다.
-     *
-     * 자금이 판을 넘어 이어지므로 잘 굴리면 `1조 2,345억` 이 된다. 29px 로 그대로 그리면
-     * 오른쪽의 IP·현금 줄을 밟는데, 두 숫자가 겹치면 둘 다 못 읽는다. 자리 이름을 줄이는
-     * 대신(조를 억으로 밀면 자릿수만 늘어난다) 글자를 줄인다 — 큰 숫자일수록 작아진다.
-     */
-    private fitEquity() {
-        const k = pxOf(this);
-        const right = Math.max(this.ipText.displayWidth, this.cashText.displayWidth);
-        const room = this.band.firm.w - PAD * 2 - right - 10;
-        let size = this.equitySize;
-        this.equityText.setFontSize(size * k);
-        while (size > FS.md && this.equityText.displayWidth > room) {
-            size -= 2;
-            this.equityText.setFontSize(size * k);
+    /** 조건을 채웠으면 **그 자리에서** 온다. 정해진 턴이 아니다. */
+    private catchSituations(): void {
+        const got = newlyEarned(this.facts, [...this.memory.situations, ...this.earnedThisChapter]);
+        for (const s of got) {
+            this.earnedThisChapter.push(s.id);
+            this.pushLog(`상황카드 — 「${s.name}」. ${s.scene}`, "system");
         }
     }
 
-    /* ── 로그 ───────────────────────────────────────────── */
+    /* ── 챕터가 끝났다 ────────────────────────────────── */
 
-    /**
-     * 로그에 한 줄. **덮이지 않고 쌓인다.**
-     *
-     * 예전의 한 줄짜리 뉴스는 다음 일이 일어나면 덮였다. 매수 결과와 수수료를 같은 줄에
-     * 욱여넣어야 했고, 그마저도 다음 매매 한 번에 사라졌다. 지금은 각각이 제 줄로 남는다.
-     */
-    private log(text: string, kind: LogKind, bare = false) {
-        this.logs.push({ turn: bare ? 0 : this.engine?.player.currentTurn ?? 0, kind, text });
-        // 한 판에 백 줄을 넘길 일이 없지만, 판을 이어 굴리면 언젠가는 넘는다.
-        if (this.logs.length > LOG_KEEP) this.logs.splice(0, this.logs.length - LOG_KEEP);
-        this.logView?.setEntries(this.logs);
+    private finishChapter(): void {
+        // 챕터 끝의 사실 — 조건 몇 개가 이 값을 본다.
+        this.facts.bestChapterEndTrust = Math.max(this.facts.bestChapterEndTrust, this.engine.player.trust);
+        this.facts.mostHoldingsAtChapterEnd = Math.max(
+            this.facts.mostHoldingsAtChapterEnd, Object.keys(this.engine.player.positions).length);
+        if (this.engine.isRuined) this.facts.everRuined = true;
+        this.catchSituations();
+
+        const idx = CHAPTERS.indexOf(this.engine.chapter);
+        const sum = this.engine.endChapter(this.earnedThisChapter);
+
+        this.memory = remember(this.memory, sum, idx);
+        this.memory.facts = { ...this.facts };
+        saveMemory(this.memory);
+        this.earnedThisChapter = [];
+        this.facts.waitsThisChapter = 0;
+
+        const end = endReasonOf({
+            debt: this.engine.player.debt,
+            trust: this.engine.player.trust,
+            ruined: this.engine.isRuined,
+            finalChapterDone: this.engine.isFinalChapter,
+        });
+        if (end) { this.ending = end; this.place = "park"; this.redraw(); return; }
+
+        if (!this.engine.startNextChapter()) { this.ending = "debtRemains"; this.place = "park"; this.redraw(); return; }
+        this.newDeck();
+        this.place = "home";
+        this.redraw();
     }
 
-    /** 여러 줄을 한꺼번에. 앞의 줄이 뒤에 밀려 사라지지 않게 순서대로 쌓는다. */
-    private logAll(lines: [string, LogKind][]) {
-        for (const [text, kind] of lines) this.log(text, kind);
+    /* ── 공원 ─────────────────────────────────────────── */
+
+    private readonly ENDINGS: Record<EndReason, { title: string; lines: string[] }> = {
+        debtCleared: { title: "갚았다", lines: ["빚이 0 이 됐다.", "공원을 지나 어디로든 갈 수 있다.", "루프가 끝났다."] },
+        debtRemains: { title: "아직", lines: ["2000년이 지났고 빚은 남았다.", "끝나지 않았다.", "벤치에 앉아 눈을 감으면 — 다시 1997년이다."] },
+        trustLost: { title: "폐업", lines: ["이제 아무도 나에게 맡기지 않는다.", "낮의 공원에는 나 같은 사람이 많았다.", "눈을 감으면 다시 1997년이다."] },
+        ruined: { title: "전부", lines: ["맡은 돈을 다 날렸다.", "설명할 것이 남아 있지 않았다.", "눈을 감으면 다시 1997년이다."] },
+    };
+
+    private drawPark(): void {
+        const reason = this.ending ?? "debtRemains";
+        const info = this.ENDINGS[reason];
+        const won = reason === "debtCleared";
+        this.drawStrip(`공원 · ${this.engine.chapter.year}   ${this.memory.cycle}회차`);
+
+        const top = this.bands.strip.h;
+        const side = Math.min(this.W - PAD * 2, Math.round(this.H * 0.28));
+        const sx = (this.W - side) / 2;
+        this.rect(sx, top + 10, side, side, 0x0e1618, 1);
+        this.text(this.W / 2, top + 10 + side / 2 - FS.xxl / 2, "공원", FS.xxl,
+            won ? S.up : S.danger, 0.5);
+        this.text(this.W / 2, top + 10 + side - 22, info.title, FS.xs, "#3b4c50", 0.5);
+
+        let y = top + side + 22;
+        for (const line of info.lines) {
+            this.text(this.W / 2, y, line, FS.sm, "#9aada6", 0.5);
+            y += FS.sm + 8;
+        }
+
+        // 끝나는 방법 넷 — 지금 걸린 것만 켜진다. **빚 완납만 루프를 끊는다.**
+        y += 8;
+        const ends: Array<[EndReason, string]> = [
+            ["debtCleared", "빚 완납 — 루프를 벗어난다"],
+            ["debtRemains", "빚 남음 — 1997 로"],
+            ["trustLost", "신뢰 0 — 1997 로"],
+            ["ruined", "자본잠식 — 1997 로"],
+        ];
+        const cw = (this.W - PAD * 2 - 2) / 2;
+        ends.forEach(([r, label], i) => {
+            const x = PAD + (i % 2) * (cw + 2);
+            const ry = y + Math.floor(i / 2) * 26;
+            const hit = r === reason;
+            this.rect(x, ry, cw, 24, hit ? (won ? 0x123d24 : 0x3d1226) : 0x111a1c, 1);
+            this.text(x + 6, ry + 6, label, FS.xs,
+                hit ? (won ? S.up : S.danger) : "#4e5f58");
+        });
+        y += 60;
+
+        // 남는 것과 사라지는 것.
+        const rows: Array<[string, string, string]> = [
+            ["남은 빚", this.engine.player.debt > 0 ? `−${money(this.engine.player.debt)}` : "0", this.engine.player.debt > 0 ? S.down : S.up],
+            ["떠난 사람", this.gone.length ? this.gone.map(id => CLIENTS.find(c => c.id === id)?.name ?? id).join(" · ") : "없다", S.down],
+            ["모은 상황카드", `${this.memory.situations.length} — 남는다`, S.up],
+            ["회차", `${this.memory.cycle}`, S.ink],
+        ];
+        y = this.bands.action.y - rows.length * 22 - 10;
+        for (const [k, v, col] of rows) {
+            this.rect(PAD, y + 20, this.W - PAD * 2, 1, 0x16211f, 1);
+            this.text(PAD, y, k, FS.xs, "#6d7f78");
+            this.text(this.W - PAD, y, v, FS.xs, col, 1);
+            y += 22;
+        }
+
+        this.buttons([
+            { label: "기록 보기", sub: "", on: null },
+            { label: "도감", sub: `${this.memory.situations.length}장`, on: null },
+            { label: "", sub: "", on: null },
+            {
+                label: won ? "여기서 끝" : "눈을 감는다",
+                sub: won ? "" : "1997 로",
+                primary: true,
+                on: () => this.goBack(reason),
+            },
+        ]);
     }
 
-    /** 판이 열리고 닫히는 마디. 턴 번호를 안 붙이고, 줄 자체가 눈금이 된다. */
-    private logMark(lines: [string, LogKind][]) {
-        for (const [text, kind] of lines) this.log(text, kind, true);
+    /** 1997년 겨울로. **기억만 들고 간다.** */
+    private goBack(reason: EndReason): void {
+        this.memory = regress({ ...this.memory, facts: this.facts }, reason);
+        saveMemory(this.memory);
+        this.startCycle();
+        this.pushLog("눈을 뜨니 다시 1997년 12월이었다.", "system");
+        this.redraw();
+    }
+
+    /* ── 로그 ─────────────────────────────────────────── */
+
+    private pushLog(text: string, kind: LogKind): void {
+        this.entries.push({ turn: this.engine?.player.currentTurn ?? 0, kind, text });
+        if (this.entries.length > LOG_KEEP) this.entries.splice(0, this.entries.length - LOG_KEEP);
     }
 }

@@ -1,220 +1,148 @@
-// 판을 넘어 남는 것.
+// 회차를 넘어 남는 것. **회귀의 규칙이 이 파일의 타입 하나에 들어 있다.**
 //
-// ── 판은 한 장(章)일 뿐이다 ────────────────────────────────────────
-// 예전에는 판마다 자금이 1,000만으로 되돌아갔다. 그러면 한 판을 아무리 말아먹어도
-// 다음 판이 똑같이 시작하므로, 판 안의 결정에 무게가 없다.
+// 판이 끝나면 다시 1997년 겨울이다. 돈도 신뢰도 고객도 빚도 그때로 되돌아가고
+// **기억만 남는다.** 그래서 이 파일은 남는 것과 사라지는 것을 **타입에서** 갈라 둔다 —
+// 한 덩어리에 섞어 두면 어느 날 반드시 하나가 잘못된 쪽에 붙는다.
 //
-// 지금은 **자금과 덱이 그대로 이어진다.** 이번 판에서 불린 돈으로 다음 판을 굴리고,
-// 이번 판에서 얻은 카드로 다음 판을 싸운다. 판은 끝이 아니라 장이 넘어가는 자리다.
+//   남는다 (기억)          사라진다 (1997 로)
+//   ─────────────────      ──────────────────
+//   모은 상황카드            맡은 돈 · 신뢰 · 빚
+//   회차 수 · 최고 기록      고객 (김 부장부터 다시)
+//   들고 나갈 여섯 장        상장 진행 (다시 셋부터)
 //
-// 그래서 지는 방법도 하나뿐이다 — **자본잠식.** 자금이 바닥나면 거기서 전부 끝난다.
-//
-// ── 순수한 것과 저장하는 것을 갈라 둔다 ────────────────────────────
-// `applyRun` 은 값을 받아 값을 주는 순수 함수라 테스트가 붙고, `recordRun` 만 저장을
-// 만진다. 코어(StockEngine·RoguelikeManager)는 여전히 저장을 모른다.
+// 루프를 끊는 것은 **빚 완납 하나뿐**이다. 나머지 셋(빚 남음·신뢰 0·자본잠식)은
+// 전부 1997년 집으로 돌아간다 — 공원은 끝이 아니라 회귀 지점이다.
 
-import type { RunSummary } from "./types";
-import { MAX_TIER, RUIN_LINE, SEED_CASH } from "./StockEngine";
+import type { ChapterSummary, EndReason } from "./types";
+import { EMPTY_FACTS, STARTER_IDS, type SituationFacts } from "./situations";
+import { LOADOUT_SIZE } from "./DeckManager";
 
-const KEY = "iq:rogue:v1";
+const KEY = "iq:rise:v1";
 
-/** 자본잠식선. 규칙 자체는 엔진이 들고 있고 여기서는 그대로 다시 내보낸다. */
-export { RUIN_LINE };
-
-export interface Progress {
-    /**
-     * 지금 굴리는 돈. **판을 넘어 이어진다.** 판이 끝나면 그 판의 최종 자산이 이 값이 된다.
-     * 자본잠식선 아래로 떨어지면 게임이 끝나고 시작 자금으로 되돌아간다.
-     */
-    bankroll: number;
-    /**
-     * 지금 덱(카드 id 목록). 이것도 이어진다.
-     *
-     * 비어 있으면 새 게임이라는 뜻이고, 그때 랜덤 세 장으로 시작한다. 3턴마다 한 장이
-     * 늘고, 같은 카드가 셋 모이면 한 장으로 합쳐진다 — 그 합성이 덱이 불어나는 것을 막는다.
-     */
-    deck: string[];
-    /** 판을 넘어 쌓이는 점수. 시작 유물 수를 정한다. */
-    insightPoints: number;
-    /**
-     * **경력 인사이트** — 판마다 번 것을 그대로 더한다. 쓰지도, 잃지도 않는다.
-     *
-     * 자금도 덱도 자본잠식이면 날아간다. 이 값만은 오직 오르고, 카드와 유물이 여기서
-     * 열린다. 한 판을 굴린 것 자체가 어딘가에 남는다.
-     */
-    careerIP: number;
-    /** 여태 가장 잘한 판의 수익률(%). 아직 없으면 null. */
-    bestReturn: number | null;
-    /** 굴린 판의 수. */
-    runs: number;
-    /** 자본잠식으로 끝난 횟수. */
-    ruins: number;
-    /** 지금 차수. 완주하면 오르고 자본잠식이면 0 으로 돌아간다. */
-    tier: number;
+/** 회차를 넘어 남는 것. */
+export interface Memory {
+    /** 몇 번째 회차인가. 1 부터. */
+    cycle: number;
+    /** 겪은 상황카드의 id. **처음 셋은 여기 이미 들어 있다.** */
+    situations: string[];
+    /** 다음 챕터에 들고 나갈 여섯 장. */
+    loadout: string[];
+    /** 조건이 읽는 사실. 회차를 넘어 남는 것만 여기 쌓인다. */
+    facts: SituationFacts;
+    /** 루프를 끊은 적이 있는가 — 빚을 다 갚아 본 적이 있는가. */
+    escaped: boolean;
+    /** 여태 가장 멀리 간 챕터(0=프롤로그). */
+    bestChapter: number;
 }
 
-export const EMPTY: Progress = {
-    bankroll: SEED_CASH,
-    deck: [],
-    insightPoints: 0,
-    careerIP: 0,
-    bestReturn: null,
-    runs: 0,
-    ruins: 0,
-    tier: 0,
+export const EMPTY: Memory = {
+    cycle: 1,
+    situations: [...STARTER_IDS],
+    loadout: [...STARTER_IDS],
+    facts: { ...EMPTY_FACTS },
+    escaped: false,
+    bestChapter: 0,
 };
-
-/* ── 해금 ───────────────────────────────────────────────────── */
-
-export interface Unlock {
-    id: string;
-    kind: "card" | "relic";
-    /** 이 경력 인사이트에서 열린다. */
-    at: number;
-}
-
-/**
- * 경력 인사이트가 쌓이면 보상 풀에 새로 들어오는 것들.
- *
- * 처음부터 다 나오면 세 판이면 다 본다. 시작을 얇게 두고 굴릴수록 넓어지게 하면,
- * 판을 거듭할 이유와 다양성이 같은 곳에서 나온다.
- */
-export const UNLOCKS: readonly Unlock[] = [
-    { id: "dividend", kind: "relic", at: 40 },
-    { id: "insider", kind: "card", at: 70 },
-    { id: "hotline", kind: "relic", at: 110 },
-    { id: "margin", kind: "card", at: 160 },
-    { id: "shredder", kind: "relic", at: 220 },
-];
-
-/** 지금 열려 있는 것들의 id. 처음부터 있던 것은 여기 안 들어간다. */
-export function unlockedIds(careerIP: number): string[] {
-    return UNLOCKS.filter(u => careerIP >= u.at).map(u => u.id);
-}
-
-/** 이번 판으로 새로 열린 것. 결산이 그 자리에서 알려 준다. */
-export function newlyUnlocked(before: number, after: number): Unlock[] {
-    return UNLOCKS.filter(u => before < u.at && after >= u.at);
-}
-
-/** 다음 해금까지 얼마 남았는가. 없으면 null. */
-export function nextUnlock(careerIP: number): Unlock | null {
-    return UNLOCKS.find(u => careerIP < u.at) ?? null;
-}
-
-/* ── 저장에서 읽기 ──────────────────────────────────────────── */
 
 const int = (v: unknown, min = 0) => {
     const n = Number(v);
-    return Number.isFinite(n) && n > min ? Math.floor(n) : min;
+    return Number.isFinite(n) ? Math.max(min, Math.floor(n)) : min;
 };
 
-/** 모르는 값이 들어와도 판이 안 깨지게 한 겹 거른다. */
-function clean(raw: unknown): Progress {
-    if (!raw || typeof raw !== "object") return { ...EMPTY, deck: [] };
+function normalize(raw: unknown): Memory {
+    if (!raw || typeof raw !== "object") return { ...EMPTY, facts: { ...EMPTY_FACTS } };
     const o = raw as Record<string, unknown>;
-    const best = Number(o.bestReturn);
-    const bankroll = Number(o.bankroll);
+    const situations = Array.isArray(o.situations)
+        ? [...new Set([...STARTER_IDS, ...o.situations.filter(x => typeof x === "string") as string[]])]
+        : [...STARTER_IDS];
+    const loadoutRaw = Array.isArray(o.loadout)
+        ? (o.loadout.filter(x => typeof x === "string") as string[]).filter(id => situations.includes(id))
+        : [];
+    const facts = (o.facts && typeof o.facts === "object")
+        ? { ...EMPTY_FACTS, ...(o.facts as Partial<SituationFacts>) }
+        : { ...EMPTY_FACTS };
     return {
-        // 0 원은 저장될 수 있는 값이라 int() 의 최소 0 규칙과 어긋난다. 따로 본다.
-        bankroll: Number.isFinite(bankroll) && bankroll >= 0 ? Math.floor(bankroll) : SEED_CASH,
-        deck: Array.isArray(o.deck) ? o.deck.filter((x): x is string => typeof x === "string") : [],
-        insightPoints: int(o.insightPoints),
-        careerIP: int(o.careerIP),
-        bestReturn: Number.isFinite(best) ? best : null,
-        runs: int(o.runs),
-        ruins: int(o.ruins),
-        tier: Math.max(0, Math.min(MAX_TIER, int(o.tier))),
+        cycle: Math.max(1, int(o.cycle, 1)),
+        situations,
+        loadout: (loadoutRaw.length ? loadoutRaw : situations).slice(0, LOADOUT_SIZE),
+        facts,
+        escaped: o.escaped === true,
+        bestChapter: int(o.bestChapter),
     };
 }
 
-/* ── 규칙 ───────────────────────────────────────────────────── */
+/* ── 한 챕터가 끝났다 ──────────────────────────────────────── */
 
-/** 이 자금으로 더 굴릴 수 있는가. */
-export function isRuined(bankroll: number): boolean {
-    return bankroll < RUIN_LINE;
+/** 새로 겪은 것을 기억에 넣는다. **이미 가진 것은 다시 안 들어간다.** */
+export function remember(prev: Memory, run: ChapterSummary, chapterIndex: number): Memory {
+    const situations = [...new Set([...prev.situations, ...run.earned])];
+    return {
+        ...prev,
+        situations,
+        // 새로 얻은 것은 아직 안 골랐으므로 덱에는 자동으로 안 들어간다 — 집에서 고른다.
+        loadout: prev.loadout.filter(id => situations.includes(id)),
+        bestChapter: Math.max(prev.bestChapter, chapterIndex),
+    };
+}
+
+/* ── 회귀 ─────────────────────────────────────────────────── */
+
+/**
+ * 판이 어떻게 끝났는가. **공원의 그림이 이 값으로 갈린다.**
+ *
+ * 순서가 중요하다 — 빚을 다 갚았으면 그것이 먼저다. 자본잠식과 신뢰 0 이 겹쳐도
+ * 화면은 하나만 말해야 한다.
+ */
+export function endReasonOf(p: { debt: number; trust: number; ruined: boolean; finalChapterDone: boolean }): EndReason | null {
+    if (p.debt <= 0) return "debtCleared";
+    if (p.ruined) return "ruined";
+    if (p.trust <= 0) return "trustLost";
+    if (p.finalChapterDone) return "debtRemains";
+    return null;
+}
+
+/** 이 끝이 루프를 끊는가. 넷 중 하나뿐이다. */
+export function breaksLoop(reason: EndReason): boolean {
+    return reason === "debtCleared";
 }
 
 /**
- * 한 판의 결과를 진행에 얹는다. **순수 함수다** — 저장은 안 한다.
+ * 1997년 겨울로 돌아간다.
  *
- * 자금과 덱이 그대로 넘어간다. 다만 그 자금이 자본잠식선 아래면 게임이 끝나고,
- * 자금·덱·차수·인사이트가 처음으로 돌아간다 — 경력만 남는다.
+ * **`facts.everRuined` 만은 회차를 넘어 남는다** — 「바닥을 본 적 있다」가 그 위에 서 있다.
+ * 다 날려 본 사람은 그 사실을 잊지 못한다.
  */
-export function applyRun(prev: Progress, run: RunSummary): Progress {
-    const careerIP = prev.careerIP + Math.max(0, run.earnedIP);
-    const bestReturn = prev.bestReturn === null || run.returnPct > prev.bestReturn
-        ? run.returnPct
-        : prev.bestReturn;
-
-    const base = {
-        careerIP,
-        bestReturn,
-        runs: prev.runs + 1,
-    };
-
-    if (isRuined(run.finalEquity)) {
-        // 자본잠식 — 쌓아 둔 것이 실제로 날아가는 유일한 자리다.
-        return {
-            ...base,
-            bankroll: SEED_CASH,
-            deck: [],
-            insightPoints: 0,
-            ruins: prev.ruins + 1,
-            tier: 0,
-        };
-    }
-
+export function regress(prev: Memory, reason: EndReason): Memory {
     return {
-        ...base,
-        bankroll: run.finalEquity,
-        deck: [...run.deck],
-        insightPoints: prev.insightPoints + Math.max(0, run.earnedIP),
-        ruins: prev.ruins,
-        // 관망만 한 판은 차수를 안 올린다. 12턴을 흘려보내 올리는 길을 막는다.
-        tier: run.idle ? prev.tier : Math.min(MAX_TIER, prev.tier + 1),
+        ...prev,
+        cycle: prev.cycle + 1,
+        escaped: prev.escaped || breaksLoop(reason),
+        facts: {
+            ...EMPTY_FACTS,
+            everRuined: prev.facts.everRuined || reason === "ruined",
+        },
     };
 }
 
-/** 이번 판이 기록을 갈아치웠는가. 화면이 "새 기록" 을 띄우는 근거다. */
-export function isNewBest(prev: Progress, run: RunSummary): boolean {
-    return prev.bestReturn === null || run.returnPct > prev.bestReturn;
-}
+/* ── 저장 ─────────────────────────────────────────────────── */
 
-/* ── 저장 ───────────────────────────────────────────────────
-   여기서만 localStorage 를 만진다. 프라이빗 모드나 용량 초과로 실패해도 판은 그대로
-   굴러가야 하므로 전부 삼킨다 — 기록이 안 남는 것과 게임이 멈추는 것은 다른 일이다. */
-
-export function loadProgress(): Progress {
+export function loadMemory(): Memory {
     try {
         const raw = localStorage.getItem(KEY);
-        return raw ? clean(JSON.parse(raw)) : { ...EMPTY, deck: [] };
+        return normalize(raw ? JSON.parse(raw) : null);
     } catch {
-        return { ...EMPTY, deck: [] };
+        return { ...EMPTY, facts: { ...EMPTY_FACTS } };
     }
 }
 
-export function saveProgress(p: Progress): void {
+export function saveMemory(m: Memory): void {
     try {
-        localStorage.setItem(KEY, JSON.stringify(p));
+        localStorage.setItem(KEY, JSON.stringify(m));
     } catch {
-        // 저장 못 해도 이번 판의 성적은 화면에 그대로 뜬다
+        // 사파리 시크릿 모드처럼 저장이 막힌 자리가 있다. 게임은 계속 돌아야 한다.
     }
 }
 
-/** 판이 끝났을 때 한 번. 저장하고 갱신된 진행을 돌려준다. */
-export function recordRun(run: RunSummary): { progress: Progress; newBest: boolean; ruined: boolean } {
-    const prev = loadProgress();
-    const next = applyRun(prev, run);
-    saveProgress(next);
-    return { progress: next, newBest: isNewBest(prev, run), ruined: isRuined(run.finalEquity) };
-}
-
-/** 처음부터 다시. 테스트와 디버깅용이다. */
-export function resetProgress(): void {
-    try {
-        localStorage.removeItem(KEY);
-    } catch {
-        // 지우지 못해도 할 수 있는 것이 없다
-    }
+export function resetMemory(): void {
+    try { localStorage.removeItem(KEY); } catch { /* 위와 같다 */ }
 }

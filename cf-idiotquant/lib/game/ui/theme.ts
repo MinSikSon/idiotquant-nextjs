@@ -194,61 +194,72 @@ export function mkText(
 export interface Band { x: number; y: number; w: number; h: number }
 export interface Bands {
     portrait: boolean;
-    /** 로그 — 무슨 일이 있었는지가 쌓이는 채팅창. */
+    /** 챕터 띠 — 연·장, 신뢰 게이지, 빚. 늘 맨 위에 붙어 있다. */
+    strip: Band;
+    /** 장소 그림이 들어갈 정사각. **지금은 비어 있고 나중에 그림이 같은 자리로 온다.** */
+    place: Band;
+    /** 로그 — 1인칭으로 무슨 일이 있었는지가 쌓인다. */
     log: Band;
+    /** 종목 칩 줄 — 바로가기 다섯 + 시세판을 여는 칩. */
+    chips: Band;
     chart: Band;
-    /** 운용 상황 — 자산·현금·보유·덱·유물, 그리고 손패. */
+    /** 운용 상황 — 고객·자산·근거, 그리고 손패. */
     firm: Band;
     action: Band;
 }
 
+/** 챕터 띠 — 신뢰와 빚은 늘 보여야 한다. */
+const STRIP_H = 40;
+/** 장소 그림 자리. 정사각이라 로그 높이도 이 값이 된다. */
+const PLACE = 88;
+/** 종목 칩 줄. 칩 하나가 58px 이고 여섯 개가 한 줄에 들어간다. */
+const CHIPS_H = 46;
+
 /**
- * 격자를 네 자리로 나눈다.
+ * 격자를 여섯 자리로 나눈다.
  *
- * **세로**는 위에서 아래로 넷: 로그 → 차트 → 운용 상황 → 버튼.
+ * **세로**는 위에서 아래로: 챕터 띠 → (장소 + 로그) → 종목 칩 → 차트 → 운용 상황 → 버튼.
  *
- * 위에서 아래로 "무슨 일이 있었나 → 시장은 어떤가 → 나는 어떤 상태인가 → 무엇을 할까"
- * 로 읽힌다. 원핸드 조작이라 아래로 갈수록 손이 닿아야 하는 것이 오는 것과도 맞는다.
- * 로그·상황·버튼이 최소치를 먼저 가져간 뒤 **남는 세로는 전부 차트**로 간다.
+ * "언제이고 내 처지가 어떤가 → 무슨 일이 있었나 → 무엇을 다룰 수 있나 → 시장은 어떤가 →
+ * 나는 어떤 상태인가 → 무엇을 말할까" 로 읽힌다. 원핸드 조작이라 아래로 갈수록 손이
+ * 닿아야 하는 것이 오는 것과도 맞는다.
  *
- * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(로그·차트), 오른쪽에 만지는 것(상황·버튼)을
- * 둔다 — 눕힌 폰은 세로가 280px 뿐이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
+ * 새로 든 174px(띠 40 + 장소 88 + 칩 46 − 옛 로그 84 + 상황 15)은 **거의 전부 차트가
+ * 낸다**(346 → 242). `CHART_MIN` 이 110 이라 아직 두 배 여유가 있고, 로그는 오른쪽으로
+ * 좁아지는 대신 세로가 늘어 석 줄에서 넉 줄이 된다 — 1인칭 문장은 시스템 로그보다 길다.
+ *
+ * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(장소·로그·칩·차트), 오른쪽에 만지는
+ * 것(상황·버튼)을 둔다 — 눕힌 폰은 세로가 280px 뿐이라 여섯을 쌓으면 어느 하나도 제
+ * 크기가 안 나온다.
  */
 export function bandsOf(w: number, h: number): Bands {
-    if (isStacked(w, h)) {
-        // **네 띠가 겨루는 자리라 순서를 정해 뒀다.**
-        //
-        // 버튼과 운용 상황은 없으면 판을 못 굴리니 먼저 제 몫을 가져간다. 남는 것을
-        // 차트와 로그가 나누는데, 모자라면 **로그가 양보한다** — 로그는 지나간 일이고
-        // 차트는 지금 걸어야 할 판이다. 예전에는 로그가 17% 를 못박고 차트가 남은 것을
-        // 받아서, 낮은 화면에서 차트가 130px 짜리 띠로 눌렸다.
-        // 넉넉하면 190, 그러고도 아래 셋이 못 들어가면 168 까지 내준다.
-        let firm = clamp(h * 0.30, FIRM_MIN, 268);
-        const need = ACTION_ONE_ROW + CHART_MIN + LOG_MIN;
-        if (h - firm < need) firm = Math.max(FIRM_TIGHT, h - need);
+    const strip: Band = { x: 0, y: 0, w, h: STRIP_H };
 
-        // 버튼은 **두 줄이 들어가면 두 줄**, 아니면 넷을 한 줄로 세운다. 몫을 비율로만
-        // 정하면 낮은 화면에서 두 줄짜리 배치가 96px 짜리 띠에 들어가려다 NEXT 가 잘렸다.
-        const room = h - firm - CHART_MIN - LOG_MIN;
+    if (isStacked(w, h)) {
+        const top = STRIP_H;
+        const place: Band = { x: 0, y: top, w: PLACE, h: PLACE };
+        const log: Band = { x: PLACE, y: top, w: w - PLACE, h: PLACE };
+        const chips: Band = { x: 0, y: top + PLACE, w, h: CHIPS_H };
+
+        // 운용 상황과 버튼이 먼저 제 몫을 가져간다 — 없으면 판을 못 굴린다.
+        const rest = h - top - PLACE - CHIPS_H;
+        let firm = clamp(rest * 0.42, FIRM_MIN, 268);
+        if (rest - firm < ACTION_ONE_ROW + CHART_MIN) firm = Math.max(FIRM_TIGHT, rest - ACTION_ONE_ROW - CHART_MIN);
+
+        const room = rest - firm - CHART_MIN;
         const action = room >= ACTION_TWO_ROW
             ? clamp(h * 0.19, ACTION_TWO_ROW, 180)
             : Math.max(ACTION_ONE_ROW, Math.min(room, 96));
 
-        // 로그는 **가장 적게 가져간다.** 지나간 일이고, 되감을 수 있고, 그 자리를
-        // 차트가 쓰는 편이 판에 도움이 된다.
-        let logH = clamp(h * 0.10, LOG_MIN, LOG_MAX);
-        let chart = h - action - firm - logH;
-        if (chart < CHART_MIN) {
-            logH = Math.max(LOG_MIN, logH - (CHART_MIN - chart));
-            chart = h - action - firm - logH;
-        }
+        const chart = rest - firm - action;
+        const chartY = top + PLACE + CHIPS_H;
 
         return {
             portrait: true,
-            log: { x: 0, y: 0, w, h: logH },
-            chart: { x: 0, y: logH, w, h: chart },
-            firm: { x: 0, y: logH + chart, w, h: firm },
-            action: { x: 0, y: logH + chart + firm, w, h: action },
+            strip, place, log, chips,
+            chart: { x: 0, y: chartY, w, h: chart },
+            firm: { x: 0, y: chartY + chart, w, h: firm },
+            action: { x: 0, y: chartY + chart + firm, w, h: action },
         };
     }
 
@@ -256,14 +267,18 @@ export function bandsOf(w: number, h: number): Bands {
     // 전부 좁아져 이름과 라벨이 잘린다 — 차트는 폭이 조금 줄어도 읽힌다.
     const left = Math.round(w * 0.52);
     const right = w - left;
-    // 가로에서는 매매 버튼 넷이 **한 줄**로 간다. 폭은 남고 세로는 모자란 자리다.
+    const top = STRIP_H;
     const action = clamp(h * 0.28, 76, 110);
-    const logH = clamp(h * 0.20, LOG_MIN, LOG_MAX);
+    // 눕힌 화면에서는 장소 정사각을 작게 줄인다. 세로가 귀하다.
+    const ph = Math.min(PLACE, Math.max(48, Math.round((h - top) * 0.22)));
     return {
         portrait: false,
-        log: { x: 0, y: 0, w: left, h: logH },
-        chart: { x: 0, y: logH, w: left, h: h - logH },
-        firm: { x: left, y: 0, w: right, h: h - action },
+        strip,
+        place: { x: 0, y: top, w: ph, h: ph },
+        log: { x: ph, y: top, w: left - ph, h: ph },
+        chips: { x: 0, y: top + ph, w: left, h: CHIPS_H },
+        chart: { x: 0, y: top + ph + CHIPS_H, w: left, h: h - top - ph - CHIPS_H },
+        firm: { x: left, y: top, w: right, h: h - top - action },
         action: { x: left, y: h - action, w: right, h: action },
     };
 }
