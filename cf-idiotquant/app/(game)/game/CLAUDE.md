@@ -25,16 +25,31 @@
 
 | 규칙이 말하는 곳 | 이 레포의 자리 | 지금 무엇이 있나 |
 |---|---|---|
-| `src/core/StockEngine.ts` | `lib/game/core/StockEngine.ts` | 12턴 주가 틱·체결·수수료. **Phaser 를 모른다** |
-| `src/core/RoguelikeManager.ts` | `lib/game/core/RoguelikeManager.ts` | 덱·손패·보상·저주·유물. 여기도 Phaser 를 모른다 |
-| `src/scenes/TradingScene.ts` | `lib/game/scenes/TradingScene.ts` | Phaser 렌더링·입력·오버레이 |
-| — | `lib/game/core/{types,progress}.ts` | 값의 모양 / 판을 넘어 남는 것(localStorage) |
-| — | `lib/game/components/{PixelCandleChart,CardHandContainer,GameLog}.ts` | 차트·손패·로그 |
-| — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴 |
+| `src/core/StockEngine.ts` | `lib/game/core/StockEngine.ts` | **아홉 종목의 전 구간(46봉)** · 체결·수수료·챕터 커서. **Phaser 를 모른다** |
+| `src/core/RoguelikeManager.ts` | `lib/game/core/DeckManager.ts` | 손패 셋을 돌린다. 유물·보상턴·합성·해금은 **없앴다** |
+| `src/scenes/TradingScene.ts` | `lib/game/scenes/TradingScene.ts` | 집·회사·공원 세 장소 · 1인칭 · 오버레이 |
+| — | `lib/game/core/chapters.ts` | **1997~2000 연대 스크립트**와 아홉 회사(β·상장 반기) |
+| — | `lib/game/core/situations.ts` | **상황카드** — 정의와 조건 판정(`met`/`progress`) |
+| — | `lib/game/core/clients.ts` · `trust.ts` | 맡긴 사람들 / 결과 × 근거 4분면 |
+| — | `lib/game/core/{types,progress}.ts` | 값의 모양 / **회귀**(회차를 넘어 남는 것, localStorage) |
+| — | `lib/game/components/{PixelCandleChart,CardHandContainer,GameLog,QuoteBoard}.ts` | 차트·손패·로그·**시세판** |
+| — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴·여섯 띠(`bandsOf`) |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
-| — | `app/(game)/game/cards/page.tsx` | 도감. **코어 정의를 그대로 그린다** — 값을 다시 적지 말 것 |
+| — | `app/(game)/game/cards/page.tsx` | **상황 도감**. 코어 정의를 그대로 그린다 — 값을 다시 적지 말 것 |
 | — | `lib/paper/*` | 예전 모의투자 규칙. `/game/classic` 과 워커가 같이 쓴다 |
 | — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용, 링크는 없다 |
+
+### 지금의 규칙 (위 1절과 어긋나는 자리)
+
+1절은 "12턴 1판 · 덱빌딩 + 패시브 유물" 이라고 적혀 있지만 **지금은 다르다.**
+
+- 한 판이 아니라 **연대**다 — 프롤로그 1997(4턴) + 1998·1999·2000(각 12턴).
+  주가는 전 구간이 한 줄로 이어지고 **보유가 챕터를 넘어 유지된다.**
+- 유물은 없다. 모으는 것은 **상황카드** 하나뿐이고, 정해진 턴이 아니라
+  **조건을 채우면 그 자리에서** 온다.
+- 관리하는 것은 돈이 아니라 **신뢰**다. 정산은 결과가 아니라 **결과 × 근거**로 한다 —
+  운으로 벌어도 신뢰는 오르지 않는다.
+- 판이 끝나면 **1997 로 회귀**한다. 겪은 상황카드만 남고, 빚을 다 갚아야 루프가 끝난다.
 
 **"순수 로직과 Phaser 뷰를 가른다"** 는 규칙은 이미 지켜지고 있다. Scene 은 규칙을
 직접 계산하지 않고 `advanceLocal(round, order)` 에 넘기고 돌아온 판을 다시 그릴 뿐이다.

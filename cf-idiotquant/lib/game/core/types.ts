@@ -20,6 +20,25 @@ export interface Stock {
     volatility: number;
     /** 0번이 가장 오래된 봉. 화면은 뒤에서 12개만 그린다. */
     history: Candle[];
+    /**
+     * 시장 국면에 얼마나 민감한가. 1 이 시장과 같이 움직이는 것이다.
+     *
+     * **국면은 시장에 하나뿐이고**(챕터가 정한다) 종목은 각자의 베타로 반응한다. 국면을
+     * 종목마다 따로 두면 2000년에 어떤 것은 오르고 어떤 것은 내려 "붕괴" 가 안 느껴진다.
+     * 방어주 0.5 와 닷컴 2.0 이 같은 하락 국면에서 네 배로 갈리는 것이 이 값의 전부다.
+     */
+    beta: number;
+    /** 이 종목이 상장하는 턴(전 구간 기준). 그 전에는 목록에도 안 나온다. */
+    listedAt: number;
+    /** 어떤 회사인가. 시세판이 한 줄로 쓴다. */
+    blurb: string;
+}
+
+/** 한 종목에 대한 내 자리. 안 들고 있으면 이 키가 아예 없다. */
+export interface Position {
+    shares: number;
+    /** 평단가. 나눗셈이라 소수를 허용한다. */
+    avgPrice: number;
 }
 
 /**
@@ -35,66 +54,52 @@ export interface Stock {
  */
 export type CardLane = "info" | "act" | "guard" | "curse";
 
-/**
- * 카드가 어디서 오는가.
- *
- *   starter  시작 덱에 들어 있는 것. 약하지만 안정적이다.
- *   reward   판 도중 보상으로 얻는 것. 세다.
- *   curse    센 카드에 딸려 오는 것. 덱을 더럽힌다.
- */
-export type CardKind = "starter" | "reward" | "curse";
-
 export interface StrategyCard {
     /**
-     * 이 **장**의 번호. 같은 카드를 덱에 두 장 넣을 수 있으므로 id 로는 한 장을 못 짚는다.
-     * 손패에서 무엇을 골랐는지, 어느 장을 버렸는지가 전부 이 값으로 갈린다.
+     * 이 **장**의 번호. 같은 판에서 손패·버린 더미를 오가는 동안 한 장을 짚는 값이다.
+     * 손패에서 무엇을 골랐는지가 전부 이 값으로 갈린다.
      */
     uid: string;
-    /** 카드의 **종류**. 효과는 이 값으로 찾는다. */
+    /** 어떤 **상황**인가. 효과는 이 값으로 찾는다(`core/situations.ts`). */
     id: string;
     name: string;
     lane: CardLane;
-    kind: CardKind;
     /** 손패에 늘 보이는 한 줄. 셋을 한눈에 훑을 수 있어야 한다. */
     shortDescription: string;
     /** 눌러서 펼쳤을 때 나오는 것. */
     effectDescription: string;
-    /** 언제 쓰는 카드인가. 자세히 펼쳤을 때 함께 나온다. 강화해도 안 바뀐다. */
+    /** 언제 쓰는 카드인가. */
     when: string;
-    /**
-     * 강화 단계(0~3). **`name` 에 이미 `+N` 이 붙어 있지만** 화면이 뱃지를 따로 그린다 —
-     * 이름 끝의 두 글자는 세 장이 나란히 선 자리에서 눈에 안 들어온다.
-     */
-    level: number;
+    /** 어떤 장면이었나. 이 카드가 기억이라는 것을 화면이 말하는 자리. */
+    scene: string;
+    /** 이 카드가 이번 턴의 **근거**가 되는가. 「내부자 제보」만 예외다. */
+    isThesis: boolean;
     isUsed: boolean;
-    /**
-     * 이 카드를 **얻으면** 덱에 함께 들어오는 저주의 이름. 보상 화면이 값을 미리 말하는
-     * 자리라 여기 둔다 — 고르고 나서 알게 되면 그건 고른 것이 아니다.
-     */
-    curseName?: string;
-}
-
-/** 유물이 언제 터지는가. */
-export type RelicTrigger = "onTurnStart" | "onTrade" | "onTurnEnd";
-
-export interface Relic {
-    id: string;
-    name: string;
-    description: string;
-    triggerType: RelicTrigger;
 }
 
 export interface PlayerState {
-    /** 현금(원). 시작은 1,000만. */
+    /** 현금(원). **내 돈이 아니라 맡은 돈이다.** */
     cash: number;
-    shares: number;
-    /** 평단가. 안 들고 있으면 0. */
-    avgPrice: number;
-    /** 1부터 시작한다. maxTurns 를 넘기면 판이 끝난 것이다. */
+    /**
+     * 종목별 자리. 안 들고 있는 종목은 키가 없다.
+     *
+     * 예전에는 `shares` 와 `avgPrice` 가 하나씩이었다 — 판에 종목이 하나뿐이었기 때문이다.
+     * 종목이 여럿이 되면서 "무엇을 권할까" 가 비로소 선택이 됐고, 그 선택이 여기 쌓인다.
+     */
+    positions: Record<string, Position>;
+    /** 1부터 시작한다. maxTurns 를 넘기면 챕터가 끝난 것이다. */
     currentTurn: number;
     maxTurns: number;
-    /** 판을 넘어 쌓이는 점수. 다음 런의 유물이 여기서 나온다. */
-    insightPoints: number;
+    /**
+     * **신뢰** — 맡긴 사람들의 인내. 0~100.
+     *
+     * 매 턴 저절로 줄어든다(사람들은 가만히 기다려 주지 않는다). 0 이 되면 그 자리에서
+     * 폐업이다. 이 게임에서 관리하는 것은 돈이 아니라 이 값이고, 그래서 **운으로 벌어도
+     * 오르지 않는다** — 근거를 댔는지가 함께 판정된다(`core/trust.ts`).
+     */
+    trust: number;
+    /** 1997 에 생긴 빚(원, 양수). 0 으로 만드는 것이 게임 전체의 목표다. */
+    debt: number;
 }
 
 /**
@@ -165,6 +170,23 @@ export interface TurnBuff {
     cashDrainPct: number;
     /** 저주 — 이번 턴은 무엇을 써도 안 보인다. */
     blind: boolean;
+    /**
+     * 이번 턴 신뢰가 저절로 줄지 않는다. 좋았던 날의 기억이 하루를 벌어 준다.
+     */
+    noDecay: boolean;
+    /** 근거를 댔는데도 잃었을 때, 그 손실의 신뢰 감소를 절반으로 만든다. */
+    softenLoss: boolean;
+    /** 저주 — 이번 턴은 근거를 댈 수 없다. 무엇을 들고 있든 「믿어보십시오」가 된다. */
+    noThesis: boolean;
+    /**
+     * 이번 턴 매수의 **근거**. 낸 정보 카드의 이름이 여기 들어가고, 없으면 null 이다.
+     *
+     * 근거 카드를 따로 만들지 않은 이유가 이 필드 하나다 — **정보를 사는 것과 근거를 대는
+     * 것이 같은 행위**이기 때문이다. 실제로도 그렇다. 근거란 알아본 것이다.
+     * 「내부자 제보」만은 예외로 여기 안 들어간다: 알아본 것이 아니라 얻어들은 것이라
+     * 고객은 받아들여도 신뢰는 오르지 않는다.
+     */
+    thesis: string | null;
 }
 
 /** 아무 카드도 안 쓴 턴. */
@@ -180,6 +202,10 @@ export const NO_BUFF: TurnBuff = {
     regimeDepth: 0,
     cashDrainPct: 0,
     blind: false,
+    noDecay: false,
+    softenLoss: false,
+    noThesis: false,
+    thesis: null,
 };
 
 /**
@@ -210,6 +236,8 @@ export interface MarketRead {
 
 /** 한 틱이 실제로 무엇을 했는가. 화면이 뉴스 티커에 그대로 쓴다. */
 export interface TickResult {
+    /** 어느 종목의 것인가. 한 턴에 상장한 모든 종목이 움직인다. */
+    id: string;
     candle: Candle;
     /** 이 턴의 등락률(%) */
     changePct: number;
@@ -219,7 +247,7 @@ export interface TickResult {
 
 /** 체결 하나의 결과. 실패하면 왜 안 됐는지를 준다. */
 export type TradeResult =
-    | { ok: true; side: "buy" | "sell"; qty: number; price: number; fee: number; cash: number }
+    | { ok: true; id: string; side: "buy" | "sell"; qty: number; price: number; fee: number; cash: number }
     | { ok: false; error: string };
 
 /** 덱이 지금 어떤 상태인가. HUD 한 줄이 이걸 읽는다. */
@@ -234,18 +262,28 @@ export interface DeckState {
     curses: number;
 }
 
-/** 판이 끝났을 때의 성적. */
-export interface RunSummary {
+/**
+ * 판이 어떻게 끝났는가. **공원의 그림이 이 값으로 갈린다.**
+ *
+ * 넷 중 `debtCleared` 하나만 회귀를 끊는다 — 나머지 셋은 1997년 겨울의 집으로 돌아간다.
+ */
+export type EndReason = "debtCleared" | "debtRemains" | "trustLost" | "ruined";
+
+/** 한 챕터가 끝났을 때의 성적. */
+export interface ChapterSummary {
     /** 시작 자산 대비 최종 자산(%) */
     returnPct: number;
     startEquity: number;
     finalEquity: number;
-    /** 이 판에서 번 인사이트 포인트. 청산된 판은 0 이다. */
-    earnedIP: number;
-    /** 종목을 안 사고 12턴을 흘려보냈는가 */
+    /** 끝났을 때의 신뢰와 남은 빚. */
+    trust: number;
+    debt: number;
+    /** 한 번도 안 권하고 12턴을 흘려보냈는가. */
     idle: boolean;
-    /** 자본잠식선 아래로 떨어졌는가. **게임이 끝난다** — 자금도 덱도 처음으로 돌아간다. */
+    /** 맡은 돈이 자본잠식선 아래로 떨어졌는가. */
     ruined: boolean;
-    /** 판이 끝났을 때의 덱. 다음 판이 이것으로 시작한다. */
-    deck: string[];
+    /** 신뢰가 0 이 됐는가. */
+    trustLost: boolean;
+    /** 이번 챕터에 **새로 겪은** 상황카드의 id. */
+    earned: string[];
 }

@@ -45,14 +45,13 @@ interface CardView {
 const GAP = 8;
 
 /**
- * 강화 꼬리(` +2`)를 뗀 이름.
+ * 카드에 붙는 이름. 상황카드는 강화되지 않으므로 손댈 것이 없다.
  *
- * 코어가 주는 `name` 은 `예고 시황 +2` 처럼 강화가 붙어 있다 — 로그와 합성 알림에서는
- * 그래야 무엇이 무엇이 되었는지 말할 수 있다. 카드 칸에서는 금색 딱지가 같은 말을 이미
- * 하고 있어서, 여기서만 뗀다.
+ * 예전에는 코어가 `예고 시황 +2` 처럼 강화 꼬리를 붙여 줘서 여기서 떼야 했다.
+ * 강화가 사라지면서 그 처리도 같이 없어졌다.
  */
 function baseName(card: StrategyCard): string {
-    return card.level > 0 ? card.name.replace(/ \+\d+$/, "") : card.name;
+    return card.name;
 }
 
 /** 펼침 칸이 위쪽(유물·켜짐 줄)으로 넘어가는 높이. 세로 폰에서 설명 넉 줄이 들어간다. */
@@ -117,19 +116,17 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: lane.ink,
             }).setOrigin(0.5, 0);
 
-            // 강화 표시 — **오른쪽 위 금색 `+N` 딱지.**
+            // 근거 표시 — **오른쪽 위 금색 점.**
             //
-            // 이름에도 `+2` 가 붙어 있지만(`card.name`) 그 두 글자는 세 장이 나란히 선
-            // 자리에서 눈에 안 들어온다. 색과 자리가 따로 있어야 "이건 올린 카드다" 가
-            // 글자를 읽기 전에 온다. 그래서 딱지를 붙이는 칸에서는 이름의 꼬리를 뗀다 —
-            // 같은 말이 한 칸에 두 번 있으면 좁은 카드에서 이름만 두 줄이 된다.
+            // 이 카드를 내면 이번 턴 매수에 근거가 붙는다는 뜻이다. 그게 이 게임에서
+            // 제일 중요한 한 가지라, 글자를 읽기 전에 색과 자리로 먼저 와야 한다.
+            // 「내부자 제보」는 정보 카드인데도 이 점이 없다 — 알아본 것이 아니라
+            // 얻어들은 것이라서 고객은 받아들여도 신뢰가 안 오른다.
             const badge: Phaser.GameObjects.GameObject[] = [];
-            if (card.level > 0) {
+            if (card.isThesis) {
                 const g = this.scene.add.graphics();
-                g.fillStyle(C.gold, 1).fillRect(cw - 22, 4, 18, FS.xs + 5);
-                badge.push(g, mkText(this.scene, cw - 13, 6, `+${card.level}`, {
-                    fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.bg,
-                }).setOrigin(0.5, 0));
+                g.fillStyle(C.gold, 1).fillRect(cw - 12, 5, 6, 6);
+                badge.push(g);
             }
 
             const name = mkText(this.scene, cw / 2, tag.y + tag.displayHeight + 3, baseName(card), {
