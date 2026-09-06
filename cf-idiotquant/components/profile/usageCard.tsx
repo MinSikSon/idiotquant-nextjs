@@ -62,7 +62,7 @@ export default function UsageCard() {
     }, []);
 
     return (
-        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             <div className="flex items-center gap-2 px-5 pt-4 pb-3">
                 <Gauge size={13} className="text-neutral-400" />
                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
@@ -74,7 +74,7 @@ export default function UsageCard() {
             </div>
 
             <div className="px-5 pb-5">
-                {loading && <div className="h-20 rounded-xl bg-surface-canvas dark:bg-surface-dark-hover animate-pulse" />}
+                {loading && <div className="h-20 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />}
 
                 {/* 못 읽었을 때 0 으로 그리지 않는다 — "한 방울도 안 썼다" 로 읽혀 정확히
                     반대로 안심하게 된다. 왜 못 읽었는지를 그대로 적는다. */}

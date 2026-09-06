@@ -89,7 +89,7 @@ export default function LedgerJoinPage() {
 
     // middleware 가 막아주지만, 세션이 정리되는 찰나에 여기로 떨어질 수 있다.
     if (status === "loading" || (status === "authenticated" && loading)) {
-        return shell(<div className="h-6 w-40 mx-auto bg-surface-canvas dark:bg-surface-dark rounded animate-pulse" />);
+        return shell(<div className="h-6 w-40 mx-auto bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />);
     }
 
     if (status === "unauthenticated") {

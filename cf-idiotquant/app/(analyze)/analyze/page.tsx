@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PAGE_WIDTH, PAGE_HEADER_CHROME } from '@/components/pageHeader';
+import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBars';
 
 // =========================================================================
@@ -199,7 +200,7 @@ const ValuationSkeleton = memo(() => (
 ValuationSkeleton.displayName = 'ValuationSkeleton';
 
 const SearchSkeleton = memo(() => (
-  <div className="w-full h-11 bg-surface-canvas dark:bg-surface-dark-card rounded-xl animate-pulse" />
+  <div className="w-full h-11 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
 ));
 SearchSkeleton.displayName = 'SearchSkeleton';
 
@@ -249,59 +250,10 @@ const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
 BlurGate.displayName = 'BlurGate';
 
 // =========================================================================
-// Toast
+// Toast — components/ui/toast.tsx 를 쓴다.
+// 예전에는 이 파일이 같은 것을 따로 갖고 있어서, 잔고·매매창의 알림은
+// 오른쪽에서 아이콘과 함께 들어오고 여기 알림만 위에서 아이콘 없이 들어왔다.
 // =========================================================================
-interface ToastNotification {
-  id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-  message: string;
-  duration?: number;
-}
-
-const TOAST_DEFAULT_DURATION = 4000;
-
-const Toast = memo(({ notification, onDismiss }: {
-  notification: ToastNotification;
-  onDismiss: (id: string) => void;
-}) => {
-  useEffect(() => {
-    const timer = setTimeout(() => onDismiss(notification.id), notification.duration || TOAST_DEFAULT_DURATION);
-    return () => clearTimeout(timer);
-  }, [notification, onDismiss]);
-
-  const colorMap = {
-    success: 'bg-emerald-50/95 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400',
-    error:   'bg-rose-50/95 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400',
-    info:    'bg-[#f0fdf4]/95 dark:bg-[#052e16]/50 border-[#bbf7d0] dark:border-[#14532d]/50 text-brand-hover dark:text-brand',
-    warning: 'bg-amber-50/95 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400',
-  };
-
-  return (
-    <div className={cn(
-      "flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md",
-      "animate-in slide-in-from-top-3 fade-in duration-300 pointer-events-auto",
-      colorMap[notification.type]
-    )}>
-      <span className="text-xs font-bold leading-normal flex-1">{notification.message}</span>
-      <button onClick={() => onDismiss(notification.id)}
-        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
-        <X size={14} />
-      </button>
-    </div>
-  );
-});
-Toast.displayName = 'Toast';
-
-const useToast = () => {
-  const [toasts, setToasts] = useState<ToastNotification[]>([]);
-  const addToast = useCallback((toast: Omit<ToastNotification, 'id'>) => {
-    setToasts(prev => [...prev, { ...toast, id: `toast-${Date.now()}-${Math.random()}` }]);
-  }, []);
-  const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-  return { toasts, addToast, dismissToast };
-};
 
 // StockCard에 전달할 기본 XP 프로필
 const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
@@ -408,7 +360,7 @@ function AnalyzeContent() {
 
   const { data: session } = useSession();
   const isLoggedIn = !!session;
-  const { toasts, addToast, dismissToast } = useToast();
+  const { toasts, addToast, removeToast: dismissToast } = useToast();
 
   const fromScreener = searchParams.get('from') === 'screener';
 
@@ -428,7 +380,7 @@ function AnalyzeContent() {
     dispatch(reqGetSearchLog('10'));
     dispatch(reqGetMyLikes());
     loadStaticStockData().then(setStaticStockData).catch(() => {
-      addToast({ type: 'error', message: '주식 데이터를 불러올 수 없습니다.' });
+      addToast('error', '주식 데이터를 불러올 수 없습니다.');
     });
   }, [dispatch, addToast]);
 
@@ -437,7 +389,7 @@ function AnalyzeContent() {
     if (!stockName) return;
     if (staticStockData.allTickers.length > 0 &&
         !staticStockData.allTickers.some(t => t.toLowerCase() === stockName.toLowerCase())) {
-      addToast({ type: 'error', message: `'${stockName}'은(는) 지원하지 않는 종목입니다.` });
+      addToast('error', `'${stockName}'은(는) 지원하지 않는 종목입니다.`);
       return;
     }
     startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(stockName)}`); });
@@ -456,7 +408,7 @@ function AnalyzeContent() {
       setTimeout(() => setShareStatus('idle'), 2500);
     } catch {
       setShareStatus('error');
-      addToast({ type: 'error', message: '링크 복사에 실패했습니다.' });
+      addToast('error', '링크 복사에 실패했습니다.');
       setTimeout(() => setShareStatus('idle'), 2500);
     }
   }, [name, addToast]);
@@ -471,7 +423,7 @@ function AnalyzeContent() {
   const handleToggleLike = useCallback(() => {
     if (!tickerFromUrl) return;
     if (!session?.user) {
-      addToast({ type: 'info', message: '로그인 후 관심 종목에 저장됩니다.' });
+      addToast('info', '로그인 후 관심 종목에 저장됩니다.');
       return;
     }
     dispatch(reqToggleLike({ ticker: tickerFromUrl, name: name ?? undefined, isUs: krOrUs === 'US' }));
@@ -594,12 +546,7 @@ function AnalyzeContent() {
   return (
     <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 antialiased">
 
-      {/* ── Toast ── */}
-      <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
-        <div className="space-y-2 pointer-events-auto">
-          {toasts.map(t => <Toast key={t.id} notification={t} onDismiss={dismissToast} />)}
-        </div>
-      </div>
+      <ToastContainer toasts={toasts} onRemove={dismissToast} />
 
       {/* ── 헤더 ── */}
       <header className={cn(PAGE_HEADER_CHROME, "sticky top-0 z-30")}>
@@ -976,7 +923,7 @@ function AnalyzeContent() {
                           ? <FinancialBars {...buildKrBars(data.kiBS, data.kiIS)} unit="eok" />
                           : <FinancialBars {...buildUsBars(data.finnhubData?.data ?? [])} unit="usd" />
                       ) : (
-                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                           <div className="overflow-x-auto">
                             {krOrUs === 'KR'
                               ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
@@ -1026,7 +973,7 @@ export default function AnalyzePage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-40 gap-5 bg-surface-canvas dark:bg-surface-dark-canvas min-h-screen">
-        <div className="p-4 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
+        <div className="p-4 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark">
           <Loader2 className="animate-spin text-brand dark:text-brand" size={24} />
         </div>
         <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-widest font-mono uppercase">

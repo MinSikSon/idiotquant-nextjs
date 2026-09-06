@@ -270,7 +270,7 @@ function PortfolioOverviewChart({ result, loading, strategy, synthetic }: {
     const maxAbs = Math.max(...chartData.map(d => Math.abs(d.pct)), 0.1);
 
     return (
-        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-2">
                 <p className="text-sm font-black text-neutral-900 dark:text-white">구간별 수익률</p>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand">
@@ -403,7 +403,7 @@ function PortfolioChart({ result, loading, strategy }: {
     const hasTickerSeries = (result.ticker_series?.length ?? 0) > 0;
 
     return (
-        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             {/* Header */}
             <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -650,7 +650,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
     const chartHeight = Math.max(180, snapshotData.length * 24);
 
     return (
-        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             {/* Header */}
             <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -1171,7 +1171,7 @@ function BacktestContent() {
                             const hasAnyFilter = filterStrategies.size > 0 || minMarketCap > 0 || excludeHoldings || excludeDeficit || searchQuery !== '' || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all';
                             const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
                             return (
-                            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                 {/* ── 전략 필터 (전체 9종) ── */}
                                 <div className="px-5 sm:px-6 pt-4 pb-3 border-b border-neutral-100 dark:border-border-subtle-dark">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -1530,7 +1530,7 @@ function BacktestContent() {
                                           }
                                         : { label: '평균 PER', value: stats.avgPer > 0 ? stats.avgPer.toFixed(1) : '—', color: '' },
                                 ].map(card => (
-                                    <div key={card.label} className="bg-white dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark p-4 text-center">
+                                    <div key={card.label} className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-4 text-center">
                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{card.label}</p>
                                         <p className={cn("text-lg font-black mt-1 font-mono tabular-nums", card.color || "text-neutral-900 dark:text-white")}>
                                             {card.value}

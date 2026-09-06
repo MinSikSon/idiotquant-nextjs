@@ -279,7 +279,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
   const cfg = OVERALL_CONFIG[overall];
 
   return (
-    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
 
       {/* ── 헤더 ── */}
       <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">

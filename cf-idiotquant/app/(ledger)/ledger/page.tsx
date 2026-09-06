@@ -792,7 +792,7 @@ export default function LedgerPage() {
                     {loading ? (
                         <div className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                             {[0, 1, 2].map(i => (
-                                <div key={i} className="h-[56px] bg-surface-canvas dark:bg-surface-dark animate-pulse" />
+                                <div key={i} className="h-[56px] bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
                             ))}
                         </div>
                     ) : entries.length === 0 ? (

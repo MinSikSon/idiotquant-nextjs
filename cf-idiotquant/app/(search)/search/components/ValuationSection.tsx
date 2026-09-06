@@ -510,7 +510,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col">
 
       {/* 상단 컬러 액센트 라인 */}
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />

@@ -17,7 +17,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
                     </Link>
                 </div>
 
-                <article className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm px-6 py-8 md:px-10 md:py-10">
+                <article className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-6 py-8 md:px-10 md:py-10">
                     {children}
                 </article>
 

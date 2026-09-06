@@ -32,7 +32,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
 
                     {/* Card header */}
                     <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-border-subtle-dark">
@@ -63,7 +63,7 @@ export default function LoginPage() {
 
                     {/* Login area */}
                     <div className="px-8 py-6">
-                        <Suspense fallback={<div className="w-full h-12 rounded-xl bg-surface-canvas dark:bg-surface-dark-muted animate-pulse" />}>
+                        <Suspense fallback={<div className="w-full h-12 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />}>
                             <LoginAuthWrapper />
                         </Suspense>
 

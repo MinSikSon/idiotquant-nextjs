@@ -184,7 +184,7 @@ export default function ProfilePage() {
                 {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
                     지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 3단계 중 1단계
@@ -239,7 +239,7 @@ export default function ProfilePage() {
                 {/* 담기 전에 무엇을 보게 되는지 — 담을 이유를 설명해야 할 자리에서
                     핵심 개념을 숨기고 있었다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <Blocks size={12} className="text-brand" />
@@ -256,7 +256,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Profile card */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="flex items-center gap-4 px-5 py-5">
                         <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-base font-black shrink-0">
                             {initial}
@@ -281,7 +281,7 @@ export default function ProfilePage() {
 
                 {/* Admin: Portfolio section */}
                 {isMasterUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 Portfolio
@@ -322,7 +322,7 @@ export default function ProfilePage() {
 
                 {/* Admin section — 미리보기 중에도 이 칸만은 남는다(끌 자리가 필요하다) */}
                 {realAdmin && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 Admin
@@ -386,7 +386,7 @@ export default function ProfilePage() {
 
                 {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
                 {likedList.length > 0 && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                                 <Blocks size={12} className="text-brand" />
@@ -474,7 +474,7 @@ export default function ProfilePage() {
                 {/* 관심 종목 — 비었을 때는 위의 시작하기 카드가 같은 말을 더 잘 하므로 띄우지 않는다.
                     "종목이 없습니다 / 발굴 페이지에서 추가해보세요"를 두 번 보여줄 이유가 없다. */}
                 {!isNewUser && (
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                             <Heart size={11} className="text-rose-500" fill="currentColor" />
@@ -608,7 +608,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Account actions */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="px-5 pt-4 pb-1">
                         <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                             계정

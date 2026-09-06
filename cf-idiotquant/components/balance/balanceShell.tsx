@@ -67,7 +67,7 @@ export function BalanceShell({
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-surface-dark-card animate-pulse" />
+              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
             )}
           </div>
 

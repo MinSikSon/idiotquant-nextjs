@@ -147,7 +147,7 @@ function TabItem({
 function SidebarUser({ session, status }: { session: any; status: string }) {
   if (status === "loading") {
     return (
-      <div className="mx-3 mb-4 h-10 bg-surface-canvas dark:bg-surface-dark-card rounded-xl animate-pulse" />
+      <div className="mx-3 mb-4 h-10 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
     );
   }
 

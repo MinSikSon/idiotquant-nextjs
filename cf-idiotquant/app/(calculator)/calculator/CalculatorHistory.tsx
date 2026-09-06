@@ -97,7 +97,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
     );
 
     if (status === "loading") {
-        return shell(<div className="h-9 bg-[#f2efe9] dark:bg-surface-dark rounded-xl animate-pulse" />);
+        return shell(<div className="h-9 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />);
     }
 
     if (status !== "authenticated") {

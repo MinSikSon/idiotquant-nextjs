@@ -113,7 +113,7 @@ export const SearchGuide = () => {
               { label: "PER",       value: "12.5x", desc: "주가 / 순이익",       color: "text-neutral-700 dark:text-neutral-200" },
               { label: "EPS",       value: "₩6.3K", desc: "주당 순이익",         color: "text-neutral-700 dark:text-neutral-200" },
             ].map(m => (
-              <div key={m.label} className="bg-white dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark p-3.5 shadow-sm">
+              <div key={m.label} className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-3.5 shadow-sm">
                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">{m.label}</p>
                 <p className={cn("text-xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
                 <p className="text-[9px] text-neutral-400 mt-1">{m.desc}</p>

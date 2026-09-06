@@ -15,20 +15,34 @@ const config = {
   mode: 'jit',
 
   /* 모서리 반경 — 역할이 값을 정한다.
-     아래 다섯 단계 밖의 임의값(rounded-[10px] 같은)은 쓰지 않는다. 같은 역할에
+     아래 여섯 단계 밖의 임의값(rounded-[10px] 같은)은 쓰지 않는다. 같은 역할에
      두 값이 생기는 순간 어느 쪽이 맞는지 아무도 모르게 되고, 실제로 그렇게 됐었다
      (헤더 액션 버튼만 10px, 나머지 같은 크기 버튼은 8px).
 
        rounded-sm     범례 표식 등 8~10px 짜리 작은 사각형
        rounded-md     표 안의 작은 태그 · 체크박스
-       rounded-lg     작은 컨트롤 — 아이콘 버튼, 칩, 입력, 세그먼트 토글
-       rounded-xl     카드 · 기본 버튼
-       rounded-2xl    패널 · 모달 · 시트
-       rounded-full   배지 · 칩 · 아바타 · 점
+       rounded-lg     작은 컨트롤 — 아이콘 버튼, 칩, 세그먼트 토글
+       rounded-xl     기본 버튼 · 입력 · 아이콘 상자 · 스켈레톤 블록
+       rounded-2xl    카드 · 패널 · 모달
+       rounded-full   배지 · 아바타 · 점
 
      rounded-3xl 은 (home) 히어로와 not-found·ErrorFallback 의 큰 일러스트
      면에만 쓴다. 랜딩은 공통 골격에서 빼기로 한 자리라 여기 규칙 밖이다.
   */
+
+  /* 로딩 자리표시자(animate-pulse 막대)의 색은 하나다:
+       bg-neutral-200 dark:bg-surface-dark-elevated
+     자리표시자는 보이라고 두는 것이라, 얹히는 카드보다 확실히 진해야 한다.
+     예전에는 색 조합이 열한 가지였고 balance/shared.tsx 의 한 스켈레톤 안에서도
+     막대마다 색이 갈렸다. 카드 모양 스켈레톤의 **껍데기**는 예외로, 카드 색
+     (bg-white dark:bg-surface-dark-card)을 그대로 쓴다 — 그건 자리표시자가
+     아니라 카드 자신이다.
+
+     카드 표면도 하나다:
+       bg-white dark:bg-surface-dark-card rounded-2xl
+       border border-neutral-200 dark:border-border-subtle-dark
+     shadow 는 얹지 않는다. 테두리가 이미 카드를 갈라 주고, 50개 카드에 전부
+     그림자를 깔면 무엇이 떠 있는 것인지가 사라진다. */
   theme: {
     extend: {
       backgroundImage: {
