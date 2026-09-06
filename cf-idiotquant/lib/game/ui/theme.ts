@@ -81,12 +81,12 @@ export function isStacked(w: number, h: number): boolean {
 }
 
 /**
- * 버튼 띠가 **두 줄**(매매 셋 + NEXT)을 담는 데 드는 세로. 위 10 + 줄 50 + 사이 12 +
- * NEXT 52 다. `buildActions` 가 이 값으로 두 줄과 한 줄을 가른다 — 못 박아 두면 낮은
- * 화면에서 NEXT 가 띠 밖으로 잘려 나가 판을 못 넘긴다.
+ * 버튼 띠의 바닥값. 버튼 48 + 위아래 16.
+ *
+ * **두 줄 배치는 없앴다.** 회사 화면의 버튼 넷 중 둘은 다른 둘과 같은 일을 해서
+ * (둘 다 시세판을 열고, 둘 다 턴을 넘겼다) 이제 어느 화면도 버튼이 둘을 넘지 않는다.
+ * 그래서 이 띠는 한 줄이면 되고, 두 줄에 주던 세로는 차트가 가져간다.
  */
-export const ACTION_TWO_ROW = 124;
-/** 넷을 한 줄로 세울 때 드는 세로. 버튼 48 + 위아래 16. */
 const ACTION_ONE_ROW = 64;
 
 export interface DesignSize {
@@ -282,7 +282,7 @@ function stackedBands(w: number, h: number): Bands {
     // 3) 그러고도 남는 세로는 상황·버튼이 비율로 받고, **나머지는 전부 차트**다.
     const body = h - strip - place - chips;
     let firm = clamp(body * 0.42, firm0, 268);
-    let action = clamp(h * 0.19, action0, 180);
+    let action = clamp(h * 0.11, action0, 96);
     if (body - firm - action < chart0) action = action0;
     if (body - firm - action < chart0) firm = Math.max(firm0, body - action - chart0);
     let chart = body - firm - action;
@@ -314,7 +314,7 @@ function splitBands(w: number, h: number): Bands {
     const right = w - left;
     const strip = clamp(h * 0.09, STRIP_MIN, STRIP_H);
     const top = strip;
-    const action = clamp(h * 0.28, 76, 110);
+    const action = clamp(h * 0.20, 64, 92);
 
     // 눕힌 화면에서는 세로가 귀하다. 장소 정사각을 줄이되 **정사각은 지킨다** —
     // 나중에 들어올 그림의 자리가 안 깨지게.
