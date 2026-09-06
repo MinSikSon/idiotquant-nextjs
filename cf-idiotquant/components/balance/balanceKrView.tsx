@@ -790,7 +790,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     { label: "체결가 / 수량", align: "text-right" },
                     { label: "미체결", align: "text-right" },
                   ]} />
-                  <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+                  <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                     {viewerTab === "ccnl" ? (
                       krCcnl.output?.length > 0
                         ? krCcnl.output.map((item, i) => (

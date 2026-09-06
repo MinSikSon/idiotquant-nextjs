@@ -281,7 +281,7 @@ export default function ProfilePage() {
                                 Portfolio
                             </span>
                         </div>
-                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             <Link
                                 href="/balance-kr"
                                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
@@ -322,7 +322,7 @@ export default function ProfilePage() {
                                 Admin
                             </span>
                         </div>
-                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             {isAdmin && (
                                 <Link
                                     href="/admin"
@@ -509,7 +509,7 @@ export default function ProfilePage() {
                             </p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             {likedList.map(item => (
                                 <div key={item.ticker} className="flex items-center gap-2 px-5 py-3">
                                     <div className="flex-1 min-w-0">

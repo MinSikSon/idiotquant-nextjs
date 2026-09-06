@@ -1093,7 +1093,7 @@ function GroupSection({
                 {onDeleteStock && <th className="px-4 py-2.5 w-10"></th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+            <tbody className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={colSpan} className="py-12 text-center">
@@ -1224,7 +1224,7 @@ function GroupSection({
         </div>
 
         {/* 모바일 카드 뷰 */}
-        <div className="md:hidden divide-y divide-neutral-100 dark:divide-[#35332e]">
+        <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
           {rows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 opacity-40">
               <Search className="w-8 h-8" />

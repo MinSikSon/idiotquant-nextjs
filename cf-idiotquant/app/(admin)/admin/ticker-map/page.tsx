@@ -349,7 +349,7 @@ export default function TickerMapPage() {
                   {isAdmin && <th className="px-4 py-3 text-center text-[10px] font-black text-neutral-400 uppercase tracking-widest">액션</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+              <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                 {(loading || usBaseLoading) && rows.length === 0 && (
                   <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">
                     {usBaseLoading ? "미국 종목 데이터 로딩 중… (최초 1회)" : "불러오는 중..."}

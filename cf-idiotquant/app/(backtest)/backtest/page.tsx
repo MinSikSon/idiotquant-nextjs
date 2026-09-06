@@ -1815,7 +1815,7 @@ function BacktestContent() {
                                     </div>
 
                                     {/* ── Mobile cards ── */}
-                                    <div className="md:hidden divide-y divide-neutral-100 dark:divide-[#35332e]">
+                                    <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                                         {sortedList.map(item => {
                                             const curPrice  = currentPriceMap.get(item.ticker);
                                             const returnPct = !isLatestDate && curPrice && item.last_price > 0

@@ -249,7 +249,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {isDropdownOpen && searchQuery.trim() && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl shadow-xl z-20 divide-y divide-neutral-100 dark:divide-[#35332e]">
+                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl shadow-xl z-20 divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                                     {filteredSearchResults.length > 0 ? (
                                         filteredSearchResults.map((stock) => (
                                             <div
@@ -300,7 +300,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
             {/* 메인 요약 카드 (계좌 선택기는 페이지 상단 AccountSelector로 이동됨) */}
             <div className="bg-white dark:bg-surface-dark-card rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-[#35332e]">
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-border-subtle-dark">
                     <SummaryItem
                         label="평가 손익률"
                         value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
@@ -431,7 +431,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
 
     // 모바일 카드 뷰
     const MobileCardList = () => (
-        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
             {sortedItems.length === 0 && (
                 <EmptyState message="보유 종목이 없습니다" />
             )}
@@ -534,7 +534,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                             <th className="p-4 text-center text-[10px] font-black text-neutral-400 uppercase">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                         {sortedItems.length === 0 && (
                             <EmptyRow colSpan={8} message="보유 종목이 없습니다" />
                         )}

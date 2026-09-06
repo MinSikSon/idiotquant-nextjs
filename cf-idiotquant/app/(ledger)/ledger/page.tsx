@@ -790,7 +790,7 @@ export default function LedgerPage() {
                     </div>
 
                     {loading ? (
-                        <div className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+                        <div className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                             {[0, 1, 2].map(i => (
                                 <div key={i} className="h-[56px] bg-surface-canvas dark:bg-surface-dark animate-pulse" />
                             ))}
@@ -825,7 +825,7 @@ export default function LedgerPage() {
                                         </span>
                                     </div>
 
-                                    <div className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+                                    <div className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                                         {day.items.map((e, i) => {
                                             const style = KIND_STYLE[e.kind];
                                             const lifted = dragId === e.id;

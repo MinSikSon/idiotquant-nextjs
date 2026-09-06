@@ -175,7 +175,7 @@ export default function TradingActivityPanel({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+          <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
             {activeStocks.length === 0 ? (
               <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">활성 그룹에 매매 대상 종목이 없습니다. (그룹 자동매매 ON + 조건 충족 필요)</td></tr>
             ) : (
@@ -216,7 +216,7 @@ export default function TradingActivityPanel({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+          <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
             {loading && logs.length === 0 ? (
               <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">불러오는 중…</td></tr>
             ) : logs.length === 0 ? (

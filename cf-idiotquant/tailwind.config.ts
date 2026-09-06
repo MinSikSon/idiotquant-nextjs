@@ -77,15 +77,23 @@ const config = {
           card: "#242320",
           hover: "#2c2b27",
           muted: "#35332e",
+          // 테두리는 아래 border-subtle.dark 와 같은 값이다. 이름이 둘인 것은
+          // 역사적 이유이고, 값이 갈라지면 안 된다 — 아래 주석 참고.
           border: "#3a3834",
           elevated: "#4a4641",
         },
 
-        // 테두리
+        // 테두리 — 다크 값은 단 하나다.
+        //
+        // 예전에는 border-subtle.dark(#35332e)와 surface-dark.border(#3a3834)가
+        // 서로 다른 값이면서 같은 용도로 섞여 쓰였다. 둘 중 #3a3834 로 모은다:
+        // #35332e 는 surface-dark.muted 와 정확히 같은 값이라, muted 배경 위에
+        // 얹힌 테두리가 다크 모드에서 보이지 않았다(analyze 의 지표 그리드,
+        // StockCard 의 지표 그리드, stockListTable 의 hover 셀 등).
+        // 테두리 토큰이 표면 토큰과 같은 값이면 테두리로서 할 일을 못 한다.
         "border-subtle": {
           DEFAULT: "#e5e5e5",
-          dark: "#35332e",
-          "dark-strong": "#3a3834",
+          dark: "#3a3834",
         },
       },
     },
