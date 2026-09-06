@@ -100,7 +100,7 @@ export function GroupedResults({
                             {/* 폰에서는 한 줄에 이름·개수까지 들어가야 해서 아이콘을 한 단계 줄인다.
                                 20×14 격자 비율(1.4)은 유지해야 도트가 정수 배로 떨어진다. */}
                             {g.sector && (
-                                <span className="w-[30px] h-[21px] sm:w-[42px] sm:h-[30px] shrink-0 rounded-[5px] overflow-hidden border border-neutral-200 dark:border-border-subtle-dark">
+                                <span className="w-[30px] h-[21px] sm:w-[42px] sm:h-[30px] shrink-0 rounded-md overflow-hidden border border-neutral-200 dark:border-border-subtle-dark">
                                     <SectorSprite sector={g.sector} color={sectorAccent(g.sector)} />
                                 </span>
                             )}

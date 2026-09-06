@@ -948,7 +948,7 @@ function AnalyzeContent() {
                         <p className="text-[10.5px] text-neutral-400">
                           {krOrUs === 'KR' ? 'DART 공시 기준 · 억 원' : 'US-GAAP 기준 · USD'}
                         </p>
-                        <div className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                        <div className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                           {([['bars', '막대'], ['table', '표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}

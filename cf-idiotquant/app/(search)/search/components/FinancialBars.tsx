@@ -50,7 +50,7 @@ function Stack({ row }: { row: StackRow }) {
                 <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
                     {row.legend.map(l => (
                         <span key={l.label} className="inline-flex items-center gap-1.5">
-                            <i className={cn("w-2 h-2 rounded-[2px] shrink-0", TONE_BG[l.tone])} />
+                            <i className={cn("w-2 h-2 rounded-sm shrink-0", TONE_BG[l.tone])} />
                             {l.label}
                         </span>
                     ))}

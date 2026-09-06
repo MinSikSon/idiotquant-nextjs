@@ -129,7 +129,7 @@ function MixRow({ label, mix }: { label: string; mix: Mix }) {
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
                     {mix.segs.map(seg => (
                         <span key={seg.name} className="inline-flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                            <i className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: seg.color }} />
+                            <i className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
                             <span className="font-semibold">{seg.name}</span>
                             <span className="font-mono tabular-nums text-neutral-400">{seg.n}</span>
                         </span>
@@ -215,7 +215,7 @@ function StrategyCell({ label, count, active, activeCls, title, onClick }: {
             title={title}
             aria-pressed={active}
             className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-[10px] border text-center leading-none transition-all",
+                "flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg border text-center leading-none transition-all",
                 active
                     ? activeCls
                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-surface-dark-card"
@@ -497,7 +497,7 @@ function DrawerChip({ active, onClick, children, title }: { active: boolean; onC
             onClick={onClick}
             title={title}
             className={cn(
-                "px-2.5 py-1 rounded-[7px] text-[11px] font-bold border transition-colors",
+                "px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors",
                 active
                     ? "bg-brand border-brand text-white"
                     : "bg-surface-canvas dark:bg-surface-dark border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
@@ -516,7 +516,7 @@ function DrawerCheck({ checked, onChange, label, delta }: {
         <label className="flex items-center gap-2.5 cursor-pointer select-none py-0.5">
             <span
                 className={cn(
-                    "w-[15px] h-[15px] rounded-[5px] flex items-center justify-center shrink-0 transition-colors",
+                    "w-[15px] h-[15px] rounded-md flex items-center justify-center shrink-0 transition-colors",
                     checked
                         ? "bg-brand"
                         : "bg-white dark:bg-surface-dark border-[1.5px] border-neutral-300 dark:border-[#4a4641]"
@@ -1239,7 +1239,7 @@ function ScreenerContent() {
                                 value={searchQuery}
                                 onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
                                 placeholder="종목명 또는 코드로 검색"
-                                className="w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-[10px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+                                className="w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             />
                         </div>
 
@@ -1248,7 +1248,7 @@ function ScreenerContent() {
                             onClick={() => { setSortKey(DEFAULT_SORT); setSortOrder(sortKey === DEFAULT_SORT && sortOrder === "desc" ? "asc" : "desc"); setDisplayCount(DAILY_PAGE_SIZE); }}
                             title="NCAV 비율 높은 순으로 정렬 (순유동자산 ÷ 시가총액)"
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
                                 sortKey === DEFAULT_SORT
                                     ? "bg-neutral-900 dark:bg-white border-neutral-900 dark:border-white text-white dark:text-neutral-900"
                                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-surface-dark-card"
@@ -1265,7 +1265,7 @@ function ScreenerContent() {
                         <button
                             onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-colors whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap",
                                 filterOpen
                                     ? "bg-brand border-brand text-white shadow-sm"
                                     : activeFilterCount > 0
@@ -1288,7 +1288,7 @@ function ScreenerContent() {
                         </button>
 
                         {/* 표 ↔ 카드 ↔ 비율 */}
-                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                             {([['table', '☰'], ['card', '▦'], ['ratio', '▤']] as const).map(([id, icon]) => (
                                 <button
                                     key={id}
@@ -1313,7 +1313,7 @@ function ScreenerContent() {
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
                                 showLikedOnly
                                     ? "bg-rose-500 border-rose-500 text-white shadow-sm"
                                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
@@ -1721,7 +1721,7 @@ function ScreenerContent() {
                                 )}
                                 <button
                                     onClick={saveCurrentSet}
-                                    className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-[9px] bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
+                                    className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
                                 >
                                     ＋ 내 필터로 저장
                                 </button>
@@ -1737,7 +1737,7 @@ function ScreenerContent() {
                 <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-brand-light dark:border-[#166534]/40">
                     <div className="max-w-7xl mx-auto px-4 sm:px-7 py-2.5 flex items-start gap-2">
                         <span className={cn(
-                            "shrink-0 mt-px px-1.5 py-0.5 rounded-[5px] text-[10px] font-extrabold",
+                            "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
                             STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-hover"
                         )}>
                             {bannerPreset.label}
@@ -1885,7 +1885,7 @@ function ScreenerContent() {
                             묶기는 "무엇을 걸러낼지"가 아니라 "고른 결과를 어떻게 늘어놓을지"라
                             결과 바로 위가 제자리다. */}
                         <div className="flex items-center gap-2 flex-wrap mb-3">
-                            <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                            <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                                 {([
                                     { id: 'none',     label: '안 묶기' },
                                     { id: 'sector',   label: '업종', disabled: !hasSectorData },

@@ -69,11 +69,11 @@ export default function GrowthChart({ rows }: Props) {
         <div className="relative">
             <div className="flex gap-4 text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-2.5">
                 <span className="inline-flex items-center gap-1.5">
-                    <i className="w-2.5 h-2.5 rounded-[1px] bg-[#1d4ed8] dark:bg-[#4f83e0]" />
+                    <i className="w-2.5 h-2.5 rounded-sm bg-[#1d4ed8] dark:bg-[#4f83e0]" />
                     납입 원금
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                    <i className="w-2.5 h-2.5 rounded-[1px] bg-brand dark:bg-[#2fa85a]" />
+                    <i className="w-2.5 h-2.5 rounded-sm bg-brand dark:bg-[#2fa85a]" />
                     투자수익
                 </span>
             </div>

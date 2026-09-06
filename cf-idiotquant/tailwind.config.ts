@@ -13,6 +13,22 @@ const config = {
   plugins: [require('@tailwindcss/typography')],
 
   mode: 'jit',
+
+  /* 모서리 반경 — 역할이 값을 정한다.
+     아래 다섯 단계 밖의 임의값(rounded-[10px] 같은)은 쓰지 않는다. 같은 역할에
+     두 값이 생기는 순간 어느 쪽이 맞는지 아무도 모르게 되고, 실제로 그렇게 됐었다
+     (헤더 액션 버튼만 10px, 나머지 같은 크기 버튼은 8px).
+
+       rounded-sm     범례 표식 등 8~10px 짜리 작은 사각형
+       rounded-md     표 안의 작은 태그 · 체크박스
+       rounded-lg     작은 컨트롤 — 아이콘 버튼, 칩, 입력, 세그먼트 토글
+       rounded-xl     카드 · 기본 버튼
+       rounded-2xl    패널 · 모달 · 시트
+       rounded-full   배지 · 칩 · 아바타 · 점
+
+     rounded-3xl 은 (home) 히어로와 not-found·ErrorFallback 의 큰 일러스트
+     면에만 쓴다. 랜딩은 공통 골격에서 빼기로 한 자리라 여기 규칙 밖이다.
+  */
   theme: {
     extend: {
       backgroundImage: {

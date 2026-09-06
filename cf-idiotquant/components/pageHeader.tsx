@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
-  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-[10px] border text-xs font-bold transition-colors " +
+  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border text-xs font-bold transition-colors " +
   "bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border " +
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "disabled:opacity-50 disabled:cursor-not-allowed shrink-0";

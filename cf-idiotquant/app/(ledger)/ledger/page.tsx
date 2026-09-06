@@ -717,7 +717,7 @@ export default function LedgerPage() {
                 <section className={CARD_CLS}>
                     <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
                         <h2 className={FIELD_LABEL_CLS}>항목별</h2>
-                        <div className="flex rounded-[10px] border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                        <div className="flex rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                             {KIND_ORDER.map(k => (
                                 <button
                                     key={k}
