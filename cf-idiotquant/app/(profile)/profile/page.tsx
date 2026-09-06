@@ -4,7 +4,13 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff, UserRound } from "lucide-react";
+import { PageHeader } from "@/components/pageHeader";
+
+/* 계정 화면은 카드 한 줄짜리 좁은 단이라 PAGE_WIDTH 프리셋(4xl/7xl)에 얹으면
+   글이 화면 끝까지 늘어난다. 헤더와 본문이 같은 값을 쓰기만 하면 되므로
+   프리셋 대신 이 한 곳에서 정한다. 좌우 패딩은 프리셋과 같다. */
+const PROFILE_CONTAINER = "max-w-sm mx-auto px-4 sm:px-6";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -167,13 +173,13 @@ export default function ProfilePage() {
     const initial = session.user?.name?.[0]?.toUpperCase() ?? "U";
 
     return (
-        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-8 md:py-12">
-            <div className="mx-auto max-w-sm space-y-4">
-
-                {/* Header */}
-                <h1 className="text-lg font-black text-neutral-900 dark:text-neutral-50 px-1">
-                    {isNewUser ? "시작하기" : "내 계정"}
-                </h1>
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
+            <PageHeader
+                containerClassName={PROFILE_CONTAINER}
+                icon={<UserRound size={18} />}
+                title={isNewUser ? "시작하기" : "내 계정"}
+            />
+            <div className={cn(PROFILE_CONTAINER, "py-6 md:py-10 space-y-4")}>
 
                 {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
                     지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}

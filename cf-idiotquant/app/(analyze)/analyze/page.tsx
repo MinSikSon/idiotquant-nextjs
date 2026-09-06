@@ -22,6 +22,7 @@ import {
   Search, Heart, X, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PAGE_WIDTH, PAGE_HEADER_CHROME } from '@/components/pageHeader';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBars';
 
 // =========================================================================
@@ -601,10 +602,10 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-brand">
+      <header className={cn(PAGE_HEADER_CHROME, "sticky top-0 z-30")}>
         {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
         {(!isPriceLoaded || searchOpen) && (
-          <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex items-center gap-2">
+          <div className={cn(PAGE_WIDTH.content, "py-4 flex items-center gap-2")}>
             <div className="flex-1">
               <SearchAutocomplete
                 placeHolder="국내 종목명 또는 미국 티커 입력"
@@ -624,7 +625,7 @@ function AnalyzeContent() {
 
         {/* 종목줄 — 스크롤을 내려도 지금 보는 종목이 헤더에 남는다 */}
         {isPriceLoaded && (
-          <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 flex items-center gap-2.5 animate-in fade-in duration-200">
+          <div className={cn(PAGE_WIDTH.content, "py-2.5 flex items-center gap-2.5 animate-in fade-in duration-200")}>
             <div className="min-w-0 flex-1">
               <p className="text-[13.5px] font-black text-neutral-900 dark:text-white truncate leading-tight">
                 {displayName}
@@ -683,7 +684,7 @@ function AnalyzeContent() {
         {/* 상세 분석 탭 — 헤더 안에 두면 스크롤 위치와 무관하게 항상 닿는다.
             재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
         {isPriceLoaded && (
-          <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-2.5">
+          <div className={cn(PAGE_WIDTH.content, "pb-2.5")}>
             <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#2a2825] rounded-xl">
               {DETAIL_TABS.map(({ key, label }) => (
                 <button
@@ -708,7 +709,7 @@ function AnalyzeContent() {
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
           <div className="border-t border-neutral-100 dark:border-border-subtle-dark/50 bg-surface-canvas/50 dark:bg-surface-dark-card/30">
             {popularStocks.length > 0 && (
-              <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-3">
+              <div className={cn(PAGE_WIDTH.content, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
                   <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">인기</span>
@@ -726,7 +727,7 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className={cn("max-w-4xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
+              <div className={cn(PAGE_WIDTH.content, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
@@ -744,10 +745,13 @@ function AnalyzeContent() {
       </header>
 
       {/* ── 메인 ── */}
-      {/* 모바일 좌우 여백은 12px 하나로 통일한다(헤더·푸터도 같은 값).
-          20px 짜리 바깥 여백에 카드 자신의 여백이 겹쳐 글이 시작되는 자리가 40px 이었다 —
-          390px 화면에서 그 둘을 합치면 폭의 5분의 1이 여백이다. 데스크톱은 그대로. */}
-      <main className="max-w-4xl mx-auto px-3 py-4 sm:p-8">
+      {/* 좌우 여백은 PAGE_WIDTH.content 하나를 따른다(헤더·푸터도 같은 값).
+          원래는 모바일 12px 을 따로 썼다 — 20px 바깥 여백에 카드 자신의 여백이 겹쳐
+          글이 시작되는 자리가 390px 화면에서 40px 이 되던 문제를 막으려던 것이다.
+          지금 프리셋은 16px 이라 그 합이 36px 이고, 무엇보다 페이지마다 본문
+          시작선이 다른 쪽이 더 크게 걸린다. 카드 여백이 다시 두꺼워지면 여기가
+          아니라 카드 쪽을 줄인다. */}
+      <main className={cn(PAGE_WIDTH.content, "py-4 sm:py-8")}>
 
         {!tickerFromUrl ? (
           <SearchGuide />
@@ -998,7 +1002,7 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-4xl mx-auto px-3 sm:px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark">
+      <footer className={cn(PAGE_WIDTH.content, "pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark")}>
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-brand" strokeWidth={2.5} />

@@ -17,6 +17,7 @@ import {
     getPortfolioSimulation,
 } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import { cn } from "@/lib/utils";
+import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 import { safeNum } from "@/lib/utils/numbers";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT, MKTCAP_PRESETS } from "@/lib/constants/strategies";
 import type { StrategyPreset } from "@/lib/constants/strategies";
@@ -1129,29 +1130,18 @@ function BacktestContent() {
     return (
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
-            {/* ── Header ── */}
-            <div className="bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-brand">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <History size={18} className="text-brand" strokeWidth={2.5} />
-                                <h1 className="text-xl font-black tracking-tight">전략 히스토리</h1>
-                                {formattedLatestDate && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-light dark:bg-[#052e16]/40 text-brand">
-                                        최신 {formattedLatestDate}
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-xs text-neutral-400 font-medium">
-                                기준일 후보 수 추이 · 기준일 대비 현재 주가 수익률 · 개별 종목 30일 차트
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                icon={<History size={18} strokeWidth={2.5} />}
+                title="전략 히스토리"
+                meta="기준일 후보 수 추이 · 기준일 대비 현재 주가 수익률 · 개별 종목 30일 차트"
+                actions={formattedLatestDate && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-light dark:bg-[#052e16]/40 text-brand">
+                        최신 {formattedLatestDate}
+                    </span>
+                )}
+            />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24">
+            <div className={cn(PAGE_WIDTH.data, "py-6 space-y-6 pb-24")}>
 
                 {/* Loading state */}
                 {datesLoading && (

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Users, Shield, ArrowRight, BookOpen, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 
 interface UserRow {
   id: string;
@@ -116,17 +117,14 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-5 py-10 md:py-14">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-9 h-9 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
-          <Shield size={18} className="text-brand" />
-        </div>
-        <div>
-          <h1 className="text-xl font-black text-neutral-900 dark:text-white tracking-tight">어드민 대시보드</h1>
-          <p className="text-xs text-neutral-400 mt-0.5">카카오 가입 회원 현황</p>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        width="content"
+        icon={<Shield size={18} />}
+        title="어드민 대시보드"
+        meta="카카오 가입 회원 현황"
+      />
+      <div className={cn(PAGE_WIDTH.content, "py-8 md:py-12")}>
 
       {/* 관리 메뉴 링크 */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -281,6 +279,7 @@ export default function AdminPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

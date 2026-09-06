@@ -10,8 +10,20 @@ import { cn } from "@/lib/utils";
    메타 정보 (12px)                              [액션들]
    ─────────────────────────────────────── 1px
 
-   제목 앞 이모지는 사이드바 nav 항목과 같은 것을 쓴다 — nav ↔ 헤더가 눈으로
-   이어져야 "지금 어느 메뉴에 있는지"가 한 번에 읽힌다.
+   ── 이 골격을 쓰지 않는 화면 (일부러 뺀 것이지 빠뜨린 것이 아니다) ──
+   (home) · (quant)   랜딩. 히어로가 첫 화면이라 여기에 머리를 얹으면 밋밋해진다.
+   (game)             브라운관 안이다. retroPalette.ts 가 색을 따로 정한다.
+   (calculator)       문서형 화면. StepLabel 눈썹 + 34px 제목이 의도된 편집 디자인이라
+                      20px 짜리 공통 제목으로 바꾸면 그 의도가 사라진다.
+   (legal)            가운데 정렬된 단독 문서. 자체 로고 머리를 이미 갖고 있다.
+   (analyze)          헤더에 제목이 없다 — 검색줄·종목줄·탭이 그 자리를 쓴다.
+                      대신 껍데기(PAGE_HEADER_CHROME)와 폭(PAGE_WIDTH)은 함께 쓴다.
+
+   제목 앞 표식은 사이드바 nav 항목과 같은 것을 쓴다 — nav ↔ 헤더가 눈으로
+   이어져야 "지금 어느 메뉴에 있는지"가 한 번에 읽힌다. nav 는 항목에 따라
+   이모지(발굴 🥇, 분석 💎)를 쓰기도 하고 lucide 아이콘을 쓰기도 하므로
+   여기도 emoji 와 icon 을 둘 다 받는다. 쓰는 쪽은 nav 가 쓰는 것을 그대로
+   넘기면 된다.
    ───────────────────────────────────────────────────────────────────────── */
 
 /* 본문 폭 — 화면 성격에 따라 둘 중 하나다.
@@ -28,6 +40,14 @@ export const PAGE_WIDTH = {
 
 export type PageWidth = keyof typeof PAGE_WIDTH;
 
+/* 헤더 껍데기 — 상단 3px 브랜드 선 + 흰 바탕 + 아래 실선.
+   "지금 페이지의 머리" 라는 신호는 이 세 줄이 전부다. 제목 골격(PageHeader)을
+   쓸 수 없는 화면도 이 껍데기는 같아야 한다 — analyze 의 헤더는 제목이 아니라
+   검색줄·종목줄·탭으로 채워지지만, 껍데기까지 따로 적을 이유는 없다. */
+export const PAGE_HEADER_CHROME =
+  "bg-white dark:bg-surface-dark border-t-[3px] border-t-brand " +
+  "border-b border-neutral-200 dark:border-surface-dark-border";
+
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
   "flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border text-xs font-bold transition-colors " +
@@ -37,6 +57,7 @@ export const PAGE_ACTION_CLS =
 
 export function PageHeader({
   emoji,
+  icon,
   title,
   meta,
   actions,
@@ -46,6 +67,8 @@ export function PageHeader({
   className,
 }: {
   emoji?: string;
+  /** nav 가 이모지 대신 lucide 아이콘을 쓰는 화면용. emoji 와 같은 자리에 들어간다. */
+  icon?: React.ReactNode;
   title: React.ReactNode;
   meta?: React.ReactNode;
   actions?: React.ReactNode;
@@ -60,7 +83,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "bg-white dark:bg-surface-dark border-t-[3px] border-t-brand border-b border-neutral-200 dark:border-surface-dark-border",
+        PAGE_HEADER_CHROME,
         sticky && "sticky top-0 z-30",
         className
       )}
@@ -70,6 +93,7 @@ export function PageHeader({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {emoji && <span className="text-[17px] leading-none shrink-0" aria-hidden>{emoji}</span>}
+              {!emoji && icon && <span className="shrink-0 text-brand flex items-center" aria-hidden>{icon}</span>}
               <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 dark:text-white truncate">
                 {title}
               </h1>

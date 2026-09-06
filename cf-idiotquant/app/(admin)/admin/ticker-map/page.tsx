@@ -3,10 +3,11 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  Search, Plus, Trash2, RefreshCw, AlertCircle,
+  Search, Plus, Trash2, RefreshCw, AlertCircle, BookOpen,
   ChevronLeft, ChevronRight, Edit3, Check, X, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 import {
   fetchTickerMap, upsertTickerMap, deleteTickerMap,
   type TickerRow, type TickerMapMeta,
@@ -212,23 +213,22 @@ export default function TickerMapPage() {
   const isClientPaginated = country === "US";
 
   return (
-    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-8">
-      <div className="max-w-5xl mx-auto space-y-5">
-
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">종목명 매핑 관리</h1>
-            <p className="text-sm text-neutral-400 mt-1">티커 코드 ↔ 종목명 오버라이드 조회 및 관리</p>
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => { setShowAddForm(v => !v); setAddError(null); }}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand-hover transition-colors"
-            >
-              <Plus size={14} /> 오버라이드 추가
-            </button>
-          )}
-        </div>
+    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
+      <PageHeader
+        width="content"
+        icon={<BookOpen size={18} />}
+        title="종목명 매핑 관리"
+        meta="티커 코드 ↔ 종목명 오버라이드 조회 및 관리"
+        actions={isAdmin && (
+          <button
+            onClick={() => { setShowAddForm(v => !v); setAddError(null); }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-brand text-white rounded-lg text-xs font-black hover:bg-brand-hover transition-colors"
+          >
+            <Plus size={14} /> 오버라이드 추가
+          </button>
+        )}
+      />
+      <div className={cn(PAGE_WIDTH.content, "py-6 space-y-5")}>
 
         {isAdmin && showAddForm && (
           <div className="bg-white dark:bg-surface-dark-card border border-brand/30 rounded-2xl p-4 space-y-3">
