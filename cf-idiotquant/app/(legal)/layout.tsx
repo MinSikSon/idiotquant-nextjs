@@ -8,11 +8,11 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
                 {/* Brand */}
                 <div className="flex justify-center mb-8">
                     <Link href="/" className="group flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#16a34a] rounded-2xl flex items-center justify-center shadow-sm shadow-[#16a34a]/20">
+                        <div className="w-10 h-10 bg-brand rounded-2xl flex items-center justify-center shadow-sm shadow-brand/20">
                             <span className="text-white text-[12px] font-black italic leading-none">IQ</span>
                         </div>
                         <span className="font-black tracking-tighter text-lg text-neutral-900 dark:text-white">
-                            IDIOT<span className="text-[#16a34a]">QUANT</span>
+                            IDIOT<span className="text-brand">QUANT</span>
                         </span>
                     </Link>
                 </div>

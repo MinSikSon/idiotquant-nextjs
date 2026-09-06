@@ -774,7 +774,7 @@ function StepLabel({ tag }: { tag: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="h-px flex-1 bg-neutral-200 dark:bg-[#22402f]" />
-      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] dark:text-[#22c55e] shrink-0">
+      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-brand dark:text-[#22c55e] shrink-0">
         {tag}
       </span>
     </div>
@@ -864,7 +864,7 @@ function HeroPreview({ list }: { list: Record<string, any>[] }) {
           {top.map(item => (
             <div key={item.ticker} className="flex items-center gap-2 px-3 py-2 border-b border-neutral-100 last:border-0">
               <span className="flex-1 text-[10.5px] font-bold text-neutral-800 truncate">{item.name}</span>
-              <span className="text-[10px] font-extrabold text-[#16a34a] shrink-0">
+              <span className="text-[10px] font-extrabold text-brand shrink-0">
                 {Number(item.ncav_ratio) > 0 ? `${Number(item.ncav_ratio).toFixed(2)}x` : "—"}
               </span>
             </div>
@@ -880,10 +880,10 @@ function StepCta({ href, children }: { href: string; children: React.ReactNode }
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-1.5 px-5 py-3 rounded-xl bg-white dark:bg-[#13211a] border border-neutral-200 dark:border-[#24402f] text-neutral-800 dark:text-white font-bold text-sm shadow-sm hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
+      className="group inline-flex items-center gap-1.5 px-5 py-3 rounded-xl bg-white dark:bg-[#13211a] border border-neutral-200 dark:border-[#24402f] text-neutral-800 dark:text-white font-bold text-sm shadow-sm hover:border-brand/50 dark:hover:border-[#22c55e]/60 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
     >
       {children}
-      <ArrowRight size={14} className="text-[#16a34a] dark:text-[#22c55e] group-hover:translate-x-0.5 transition-transform duration-300 ease-out" />
+      <ArrowRight size={14} className="text-brand dark:text-[#22c55e] group-hover:translate-x-0.5 transition-transform duration-300 ease-out" />
     </Link>
   );
 }
@@ -1078,7 +1078,7 @@ export default function HomePage() {
       {!isLoggedIn && !sessionLoading && (
         <section className="relative overflow-hidden py-20 md:py-40 px-5 bg-[#0d2a1a] dark:bg-[#0b2416]">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[42rem] h-[26rem] rounded-full bg-[#16a34a]/25 blur-3xl" />
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[42rem] h-[26rem] rounded-full bg-brand/25 blur-3xl" />
             <div className="absolute -bottom-32 right-0 w-[28rem] h-[20rem] rounded-full bg-[#facc15]/10 blur-3xl" />
           </div>
           <div className="max-w-md mx-auto text-center relative">
@@ -1124,7 +1124,7 @@ export default function HomePage() {
       <footer className="bg-white dark:bg-[#050d09]">
         <div className="max-w-4xl mx-auto px-5 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <TrendingUp size={14} className="text-[#16a34a] dark:text-[#22c55e] shrink-0" strokeWidth={2.5} />
+            <TrendingUp size={14} className="text-brand dark:text-[#22c55e] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-white/80">
               IDIOT QUANT
             </span>

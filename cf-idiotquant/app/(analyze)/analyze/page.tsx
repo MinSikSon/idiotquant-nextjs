@@ -235,7 +235,7 @@ const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
         <Link
           href={loginHref}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold shadow-md shadow-brand/20 transition-all"
         >
           <Lock size={13} />
           로그인하여 전체 보기
@@ -271,7 +271,7 @@ const Toast = memo(({ notification, onDismiss }: {
   const colorMap = {
     success: 'bg-emerald-50/95 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400',
     error:   'bg-rose-50/95 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400',
-    info:    'bg-[#f0fdf4]/95 dark:bg-[#052e16]/50 border-[#bbf7d0] dark:border-[#14532d]/50 text-[#15803d] dark:text-[#16a34a]',
+    info:    'bg-[#f0fdf4]/95 dark:bg-[#052e16]/50 border-[#bbf7d0] dark:border-[#14532d]/50 text-brand-hover dark:text-brand',
     warning: 'bg-amber-50/95 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400',
   };
 
@@ -377,8 +377,8 @@ function buildVerdict(m: VerdictMetrics) {
 
 const VERDICT_TONE = {
   good: {
-    box: 'bg-[#f0fdf4] dark:bg-[#052e16]/25 border-[#dcfce7] dark:border-[#166534]/40',
-    label: 'text-[#16a34a]',
+    box: 'bg-[#f0fdf4] dark:bg-[#052e16]/25 border-brand-light dark:border-[#166534]/40',
+    label: 'text-brand',
     text: 'text-[#14532d] dark:text-[#bbf7d0]',
   },
   neutral: {
@@ -601,7 +601,7 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-[#16a34a]">
+      <header className="sticky top-0 z-30 bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-brand">
         {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
         {(!isPriceLoaded || searchOpen) && (
           <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 flex items-center gap-2">
@@ -693,7 +693,7 @@ function AnalyzeContent() {
                   className={cn(
                     "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
                     activeTab === key
-                      ? "bg-white dark:bg-surface-dark text-[#16a34a] shadow-sm"
+                      ? "bg-white dark:bg-surface-dark text-brand shadow-sm"
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                   )}
                 >
@@ -716,9 +716,9 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-[#16a34a]/70 hover:text-[#16a34a] dark:hover:text-[#16a34a] transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand dark:hover:text-brand transition-all whitespace-nowrap"
                     >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#16a34a] text-white font-black text-[8px] shrink-0">{i + 1}</span>
+                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-brand text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -731,7 +731,7 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-[#16a34a] dark:text-neutral-400 dark:hover:text-[#16a34a] hover:bg-white dark:hover:bg-surface-dark-card/40 rounded-lg border border-neutral-200/60 dark:border-border-subtle-dark transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-brand dark:text-neutral-400 dark:hover:text-brand hover:bg-white dark:hover:bg-surface-dark-card/40 rounded-lg border border-neutral-200/60 dark:border-border-subtle-dark transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -792,7 +792,7 @@ function AnalyzeContent() {
                         <div key={c.label} className="flex items-center gap-2">
                           <span className={cn(
                             "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
-                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-surface-dark-elevated"
+                            c.ok ? "bg-brand" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
                           </span>
@@ -800,7 +800,7 @@ function AnalyzeContent() {
                           <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
                           <span className={cn(
                             "ml-auto text-[12px] font-black font-mono tabular-nums shrink-0",
-                            c.ok ? "text-[#16a34a] dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                            c.ok ? "text-brand dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
                           )}>
                             {c.value}
                           </span>
@@ -822,7 +822,7 @@ function AnalyzeContent() {
                           className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-surface-dark-border/70 bg-white/70 dark:bg-surface-dark-canvas/40">
                           <span className={cn(
                             "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
-                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-surface-dark-elevated"
+                            c.ok ? "bg-brand" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
                           </span>
@@ -831,7 +831,7 @@ function AnalyzeContent() {
                           <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
                           <span className={cn(
                             "ml-auto text-[12.5px] font-black font-mono tabular-nums shrink-0",
-                            c.ok ? "text-[#16a34a] dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                            c.ok ? "text-brand dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
                           )}>
                             {c.value}
                           </span>
@@ -900,7 +900,7 @@ function AnalyzeContent() {
                     </div>
                     <Link
                       href={loginHref}
-                      className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white text-[13px] font-bold shadow-lg shadow-[#16a34a]/20 transition-all"
+                      className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-brand hover:bg-brand-hover text-white text-[13px] font-bold shadow-lg shadow-brand/20 transition-all"
                     >
                       무료로 로그인하기
                       <ArrowRight size={14} />
@@ -1001,7 +1001,7 @@ function AnalyzeContent() {
       <footer className="max-w-4xl mx-auto px-3 sm:px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
-            <TrendingUp size={13} className="text-[#16a34a]" strokeWidth={2.5} />
+            <TrendingUp size={13} className="text-brand" strokeWidth={2.5} />
             <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
           <p className="text-[11px] text-neutral-400 dark:text-neutral-600 text-center max-w-md leading-relaxed">
@@ -1023,7 +1023,7 @@ export default function AnalyzePage() {
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-40 gap-5 bg-surface-canvas dark:bg-surface-dark-canvas min-h-screen">
         <div className="p-4 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
-          <Loader2 className="animate-spin text-[#16a34a] dark:text-[#16a34a]" size={24} />
+          <Loader2 className="animate-spin text-brand dark:text-brand" size={24} />
         </div>
         <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-widest font-mono uppercase">
           분석 엔진 초기화 중...

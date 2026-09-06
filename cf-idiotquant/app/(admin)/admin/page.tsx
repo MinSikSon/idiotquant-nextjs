@@ -43,7 +43,7 @@ const PLAN_LABEL: Record<string, string> = {
 
 const PLAN_CLASS: Record<string, string> = {
   free: "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400",
-  pro: "bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a]",
+  pro: "bg-brand-light dark:bg-[#052e16]/50 text-brand dark:text-brand",
   business: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
 };
 
@@ -119,8 +119,8 @@ export default function AdminPage() {
     <div className="max-w-4xl mx-auto px-5 py-10 md:py-14">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-9 h-9 rounded-xl bg-[#16a34a]/10 flex items-center justify-center shrink-0">
-          <Shield size={18} className="text-[#16a34a]" />
+        <div className="w-9 h-9 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+          <Shield size={18} className="text-brand" />
         </div>
         <div>
           <h1 className="text-xl font-black text-neutral-900 dark:text-white tracking-tight">어드민 대시보드</h1>
@@ -132,11 +132,11 @@ export default function AdminPage() {
       <div className="flex flex-wrap gap-2 mb-6">
         <Link
           href="/admin/ticker-map"
-          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a] hover:text-[#16a34a] transition-colors group"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-brand hover:text-brand transition-colors group"
         >
-          <BookOpen size={13} className="text-neutral-400 group-hover:text-[#16a34a] transition-colors" />
+          <BookOpen size={13} className="text-neutral-400 group-hover:text-brand transition-colors" />
           종목명 매핑 관리
-          <ArrowRight size={11} className="text-neutral-300 group-hover:text-[#16a34a] transition-colors" />
+          <ArrowRight size={11} className="text-neutral-300 group-hover:text-brand transition-colors" />
         </Link>
       </div>
 
@@ -154,13 +154,13 @@ export default function AdminPage() {
             max={3650}
             value={cooldownDays}
             onChange={(e) => setCooldownDays(e.target.value)}
-            className="w-28 px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-[#16a34a]"
+            className="w-28 px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-brand"
           />
           <span className="text-sm text-neutral-500 dark:text-neutral-400">일</span>
           <button
             onClick={saveCooldown}
             disabled={cooldownSaving || cooldownDays === ""}
-            className="ml-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ml-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cooldownSaving ? "저장 중…" : "저장"}
           </button>

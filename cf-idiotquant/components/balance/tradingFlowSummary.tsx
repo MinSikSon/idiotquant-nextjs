@@ -78,11 +78,11 @@ export default function TradingFlowSummary({
       {/* 헤더: 상태 + 토글 */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={cn("p-1.5 rounded-lg shrink-0", ready ? "bg-[#16a34a] text-white" : "bg-amber-400 text-white")}>
+          <span className={cn("p-1.5 rounded-lg shrink-0", ready ? "bg-brand text-white" : "bg-amber-400 text-white")}>
             {ready ? <Zap size={14} /> : <AlertTriangle size={14} />}
           </span>
           <div className="min-w-0">
-            <p className={cn("text-sm font-black leading-tight", ready ? "text-[#15803d] dark:text-[#16a34a]" : "text-amber-700 dark:text-amber-400")}>
+            <p className={cn("text-sm font-black leading-tight", ready ? "text-brand-hover dark:text-brand" : "text-amber-700 dark:text-amber-400")}>
               {ready ? "자동매매 가동 중" : "자동매매 대기"}
             </p>
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
@@ -99,7 +99,7 @@ export default function TradingFlowSummary({
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all shrink-0 disabled:opacity-60",
               isOn
-                ? "bg-[#16a34a] text-white border-[#16a34a] hover:bg-[#15803d]"
+                ? "bg-brand text-white border-brand hover:bg-brand-hover"
                 : "bg-white dark:bg-surface-dark-card text-neutral-500 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400"
             )}
           >
@@ -119,12 +119,12 @@ export default function TradingFlowSummary({
             )}>
               <span className={cn(
                 "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
-                s.ok ? "bg-[#16a34a] text-white" : "bg-neutral-200 dark:bg-surface-dark-elevated text-neutral-400"
+                s.ok ? "bg-brand text-white" : "bg-neutral-200 dark:bg-surface-dark-elevated text-neutral-400"
               )}>
                 {s.ok ? <Check size={10} strokeWidth={3} /> : <span className="text-[9px] font-black">{i + 1}</span>}
               </span>
               <span className="text-[11px] font-bold text-neutral-700 dark:text-neutral-200 whitespace-nowrap">{s.label}</span>
-              <span className={cn("text-[11px] font-mono font-bold whitespace-nowrap", s.ok ? "text-[#16a34a]" : "text-neutral-400")}>{s.detail}</span>
+              <span className={cn("text-[11px] font-mono font-bold whitespace-nowrap", s.ok ? "text-brand" : "text-neutral-400")}>{s.detail}</span>
             </div>
             {i < steps.length - 1 && <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 shrink-0" />}
           </div>

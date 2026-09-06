@@ -92,7 +92,7 @@ function SideItem({
         <Icon
           size={16}
           strokeWidth={isActive ? 2.2 : 1.8}
-          className={cn("shrink-0 transition-colors", isActive ? "text-[#16a34a] dark:text-[#16a34a]" : "")}
+          className={cn("shrink-0 transition-colors", isActive ? "text-brand dark:text-brand" : "")}
         />
       )}
       <span className="flex-1 truncate">{label}</span>
@@ -100,7 +100,7 @@ function SideItem({
         <span className={cn(
           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
           isActive
-            ? "bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a]"
+            ? "bg-brand-light dark:bg-[#052e16]/50 text-brand dark:text-brand"
             : "bg-neutral-200/60 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400"
         )}>
           {badge}
@@ -128,7 +128,7 @@ function TabItem({
         // 안 고른 탭은 레트로에서도 같은 회색을 쓴다 — 옆의 '더보기' 는 TabItem 이
         // 아니라 이 색을 클래스로 갖고 있어서, 여기만 따로 칠하면 둘이 어긋난다.
         isActive
-          ? (retro ? "" : "text-[#16a34a] dark:text-[#16a34a] bg-surface-canvas dark:bg-surface-dark-muted")
+          ? (retro ? "" : "text-brand dark:text-brand bg-surface-canvas dark:bg-surface-dark-muted")
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
       style={retro && isActive ? { color: R.neon } : undefined}
@@ -182,7 +182,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
     <div className="px-3 pb-4">
       <Link
         href="/login"
-        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-colors shadow-sm"
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors shadow-sm"
       >
         <LogIn size={14} />
         로그인
@@ -201,7 +201,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     return (
       <Link
         href="/profile"
-        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-[#16a34a]/50 transition-all"
+        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-brand/50 transition-all"
       >
         {session?.user?.name?.[0] ?? "U"}
       </Link>
@@ -211,7 +211,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
   return (
     <Link
       href="/login"
-      className="px-3 py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-colors"
+      className="px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
     >
       로그인
     </Link>
@@ -279,13 +279,13 @@ export function NavbarWithSimpleLinks() {
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#2c2b27] shrink-0">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-[#16a34a] rounded-lg flex items-center justify-center shadow-md shadow-[#16a34a]/25 shrink-0">
+            <div className="w-7 h-7 bg-brand rounded-lg flex items-center justify-center shadow-md shadow-brand/25 shrink-0">
               <span className="text-white text-[10px] font-black italic leading-none">IQ</span>
             </div>
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-              IDIOT<span className="text-[#16a34a]">QUANT</span>
+              IDIOT<span className="text-brand">QUANT</span>
             </span>
-            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-[#16a34a]/40 text-[#16a34a] dark:text-[#16a34a] bg-[#dcfce7]/60 dark:bg-[#052e16]/40">
+            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand dark:text-brand bg-brand-light/60 dark:bg-[#052e16]/40">
               BETA
             </span>
           </Link>
@@ -382,14 +382,14 @@ export function NavbarWithSimpleLinks() {
         style={retro ? retroBar : undefined}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
-            <div className="w-6 h-6 bg-[#16a34a] rounded-md flex items-center justify-center shadow-sm shadow-[#16a34a]/25 shrink-0">
+            <div className="w-6 h-6 bg-brand rounded-md flex items-center justify-center shadow-sm shadow-brand/25 shrink-0">
               <span className="text-white text-[9px] font-black italic leading-none">IQ</span>
             </div>
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-              IDIOT<span className="text-[#16a34a]">QUANT</span>
+              IDIOT<span className="text-brand">QUANT</span>
             </span>
           </Link>
-          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-[#16a34a]/40 text-[#16a34a] dark:text-[#16a34a] bg-[#dcfce7]/60 dark:bg-[#052e16]/40 shrink-0">
+          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand dark:text-brand bg-brand-light/60 dark:bg-[#052e16]/40 shrink-0">
             BETA
           </span>
         </div>
@@ -416,7 +416,7 @@ export function NavbarWithSimpleLinks() {
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
             moreActive || moreSheet
-              ? "text-[#16a34a] dark:text-[#16a34a] bg-surface-canvas dark:bg-surface-dark-muted"
+              ? "text-brand dark:text-brand bg-surface-canvas dark:bg-surface-dark-muted"
               : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
           )}
         >
@@ -441,11 +441,11 @@ export function NavbarWithSimpleLinks() {
                   className={cn(
                     "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                     isActive
-                      ? "bg-surface-canvas dark:bg-surface-dark-muted text-[#16a34a]"
+                      ? "bg-surface-canvas dark:bg-surface-dark-muted text-brand"
                       : "text-neutral-600 dark:text-neutral-300 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                   )}
                 >
-                  <Icon size={16} className={cn("shrink-0", isActive && "text-[#16a34a]")} />
+                  <Icon size={16} className={cn("shrink-0", isActive && "text-brand")} />
                   {item.label}
                 </Link>
               );
@@ -463,11 +463,11 @@ export function NavbarWithSimpleLinks() {
         <button
           type="button"
           onClick={() => setViewAsUser(false)}
-          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-[236px] flex items-center gap-2 rounded-full border border-[#16a34a]/40 bg-[#052e16] px-3.5 py-2 text-[11px] font-bold text-[#dcfce7] shadow-lg hover:bg-[#064e2b] transition-colors"
+          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-[236px] flex items-center gap-2 rounded-full border border-brand/40 bg-[#052e16] px-3.5 py-2 text-[11px] font-bold text-brand-light shadow-lg hover:bg-[#064e2b] transition-colors"
         >
           <EyeOff size={13} className="shrink-0" />
           일반 사용자 화면
-          <span className="rounded-full bg-[#16a34a] px-2 py-0.5 text-[10px] font-extrabold text-white">
+          <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-extrabold text-white">
             끄기
           </span>
         </button>

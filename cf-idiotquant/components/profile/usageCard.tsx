@@ -32,7 +32,7 @@ const ROWS = [
 function toneOf(pct: number) {
     if (pct >= 100) return { bar: "bg-red-500", text: "text-red-600 dark:text-red-400" };
     if (pct >= 80) return { bar: "bg-amber-500", text: "text-amber-600 dark:text-amber-500" };
-    return { bar: "bg-[#16a34a]", text: "text-neutral-500 dark:text-neutral-400" };
+    return { bar: "bg-brand", text: "text-neutral-500 dark:text-neutral-400" };
 }
 
 export default function UsageCard() {

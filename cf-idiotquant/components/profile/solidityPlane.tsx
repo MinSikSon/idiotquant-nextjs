@@ -146,7 +146,7 @@ export default function SolidityPlane({
                                     p.quadrant === "trap"
                                         ? "fill-rose-500 dark:fill-rose-400"
                                         : p.quadrant === "solid"
-                                            ? "fill-[#16a34a] dark:fill-[#22c55e]"
+                                            ? "fill-brand dark:fill-[#22c55e]"
                                             : "fill-neutral-300 dark:fill-[#57534a]"
                                 )}
                             >
@@ -206,8 +206,8 @@ export default function SolidityPlane({
                     ) : sample ? (
                         <div>
                             <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                                가로는 <b className="font-black text-[#16a34a] dark:text-[#22c55e]">얼마나 싼가</b>,
-                                세로는 <b className="font-black text-[#16a34a] dark:text-[#22c55e]">지금 팔 수 있는가</b>입니다.
+                                가로는 <b className="font-black text-brand dark:text-[#22c55e]">얼마나 싼가</b>,
+                                세로는 <b className="font-black text-brand dark:text-[#22c55e]">지금 팔 수 있는가</b>입니다.
                             </p>
                             <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1.5">
                                 오른쪽 아래 <b className="font-bold text-rose-600 dark:text-rose-400">함정</b>은
@@ -229,7 +229,7 @@ export default function SolidityPlane({
                         </div>
                     ) : (
                         <div>
-                            <p className="text-[11px] font-black text-[#16a34a] dark:text-[#22c55e]">
+                            <p className="text-[11px] font-black text-brand dark:text-[#22c55e]">
                                 함정 구역 없음
                             </p>
                             <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1">

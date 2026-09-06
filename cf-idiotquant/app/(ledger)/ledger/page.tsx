@@ -29,7 +29,7 @@ import { useEntryDrag } from "./useEntryDrag";
 const CTL_CLS =
     "w-full px-3 min-h-[44px] bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark " +
     "rounded-xl text-sm font-bold text-neutral-900 dark:text-white " +
-    "focus:outline-none focus:ring-1 focus:ring-[#16a34a] focus:border-[#16a34a]";
+    "focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand";
 
 const FIELD_LABEL_CLS =
     "text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest";
@@ -503,7 +503,7 @@ export default function LedgerPage() {
                         </p>
                         <Link
                             href="/login?callbackUrl=/ledger"
-                            className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black transition-colors"
+                            className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black transition-colors"
                         >
                             다시 로그인
                         </Link>
@@ -520,7 +520,7 @@ export default function LedgerPage() {
             {toast && (
                 <div
                     role="status"
-                    className="fixed top-[60px] md:top-5 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full bg-[#16a34a] text-white text-xs font-black shadow-lg shadow-[#16a34a]/30"
+                    className="fixed top-[60px] md:top-5 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full bg-brand text-white text-xs font-black shadow-lg shadow-brand/30"
                 >
                     {toast}
                 </div>
@@ -543,7 +543,7 @@ export default function LedgerPage() {
                                     className={cn(
                                         "shrink-0 min-h-[40px] px-3.5 rounded-xl text-[13px] font-bold transition-colors",
                                         on
-                                            ? "bg-[#16a34a] text-white"
+                                            ? "bg-brand text-white"
                                             : "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                                     )}
                                 >
@@ -629,7 +629,7 @@ export default function LedgerPage() {
                                             <span className={cn(
                                                 "w-6 h-[18px] flex items-center justify-center rounded-full text-[11px] font-black tabular-nums",
                                                 isToday
-                                                    ? "bg-[#16a34a] text-white"
+                                                    ? "bg-brand text-white"
                                                     : i % 7 === 0 ? "text-red-500"
                                                         : i % 7 === 6 ? "text-sky-500"
                                                             : "text-neutral-700 dark:text-neutral-300"
@@ -651,7 +651,7 @@ export default function LedgerPage() {
                                             {/* 한 날에 구분이 둘 이상이면 가려진 것이 있다는 뜻으로 점 하나 */}
                                             <span className={cn(
                                                 "w-1 h-1 rounded-full",
-                                                kinds > 1 ? "bg-[#16a34a]" : "bg-transparent"
+                                                kinds > 1 ? "bg-brand" : "bg-transparent"
                                             )} />
                                         </button>
                                     );
@@ -686,7 +686,7 @@ export default function LedgerPage() {
                         <div className={FIELD_LABEL_CLS}>남은 돈</div>
                         <div className={cn(
                             "mt-0.5 text-[27px] font-black tracking-[-0.03em] tabular-nums",
-                            net < 0 ? "text-red-600 dark:text-red-400" : "text-[#16a34a]"
+                            net < 0 ? "text-red-600 dark:text-red-400" : "text-brand"
                         )}>
                             {loading ? "—" : `${net > 0 ? "+" : ""}${won(net)}`}
                         </div>
@@ -765,7 +765,7 @@ export default function LedgerPage() {
                 <button
                     type="button"
                     onClick={() => openAdd()}
-                    className="hidden sm:flex w-full items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[13px] font-black transition-colors"
+                    className="hidden sm:flex w-full items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-brand hover:bg-brand-hover text-white text-[13px] font-black transition-colors"
                 >
                     <Plus size={15} strokeWidth={2.6} />
                     기입하기
@@ -811,7 +811,7 @@ export default function LedgerPage() {
                                         className={cn(
                                             "flex items-baseline justify-between gap-3 px-4 py-1.5 bg-surface-canvas dark:bg-surface-dark border-y border-neutral-100 dark:border-border-subtle-dark scroll-mt-20",
                                             // 머리글 위에 놓으면 그 날 맨 위로 간다 — 그 사실을 색으로 알린다
-                                            dropTarget?.date === day.date && dropTarget.index === 0 && "bg-[#dcfce7] dark:bg-[#052e16]/60"
+                                            dropTarget?.date === day.date && dropTarget.index === 0 && "bg-brand-light dark:bg-[#052e16]/60"
                                         )}
                                     >
                                         <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 tabular-nums">
@@ -819,7 +819,7 @@ export default function LedgerPage() {
                                         </span>
                                         <span className={cn(
                                             "text-[11px] font-black tabular-nums",
-                                            day.net < 0 ? "text-red-600 dark:text-red-400" : "text-[#16a34a]"
+                                            day.net < 0 ? "text-red-600 dark:text-red-400" : "text-brand"
                                         )}>
                                             {signed(day.net)}
                                         </span>
@@ -850,7 +850,7 @@ export default function LedgerPage() {
                                                         lifted
                                                             ? "opacity-45 bg-surface-muted-hover dark:bg-surface-dark-hover"
                                                             : justAddedId === e.id
-                                                                ? "bg-[#dcfce7]/70 dark:bg-[#052e16]/40"
+                                                                ? "bg-brand-light/70 dark:bg-[#052e16]/40"
                                                                 : "hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                                                     )}
                                                     aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category, customCategories)} ${e.amount.toLocaleString("ko-KR")}원 수정`}
@@ -896,7 +896,7 @@ export default function LedgerPage() {
                 <button
                     type="button"
                     onClick={() => openAdd()}
-                    className="sm:hidden fixed right-4 bottom-[76px] z-40 min-h-[52px] px-5 rounded-full bg-[#16a34a] text-white text-sm font-black flex items-center gap-1.5 shadow-lg shadow-[#16a34a]/40 active:scale-95 transition-transform"
+                    className="sm:hidden fixed right-4 bottom-[76px] z-40 min-h-[52px] px-5 rounded-full bg-brand text-white text-sm font-black flex items-center gap-1.5 shadow-lg shadow-brand/40 active:scale-95 transition-transform"
                 >
                     <Plus size={18} strokeWidth={2.8} />
                     기입
@@ -952,7 +952,7 @@ export default function LedgerPage() {
                                             setCopied(true);
                                             setToast("링크를 복사했습니다");
                                         }}
-                                        className="min-h-[48px] rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-black flex items-center justify-center gap-1.5 transition-colors"
+                                        className="min-h-[48px] rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-black flex items-center justify-center gap-1.5 transition-colors"
                                     >
                                         {copied ? <Check size={16} strokeWidth={2.6} /> : <Link2 size={16} strokeWidth={2.4} />}
                                         {copied ? "복사했습니다" : "링크 복사"}
@@ -966,7 +966,7 @@ export default function LedgerPage() {
                                     type="button"
                                     onClick={() => dispatch(reqCreateLedgerInvite())}
                                     disabled={mutating}
-                                    className="min-h-[48px] rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-black flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
+                                    className="min-h-[48px] rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-black flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors"
                                 >
                                     <Link2 size={16} strokeWidth={2.4} />
                                     {mutating ? "만드는 중…" : "초대 링크 만들기"}
@@ -1052,7 +1052,7 @@ export default function LedgerPage() {
                         {/* 금액 — 이 화면에서 가장 자주 치는 값이라 가장 크게 */}
                         <div className="flex flex-col gap-1.5 mb-3">
                             <label htmlFor="f-amt" className={FIELD_LABEL_CLS}>금액</label>
-                            <div className="flex items-baseline gap-1.5 px-3.5 py-2.5 rounded-2xl bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark focus-within:border-[#16a34a] focus-within:ring-1 focus-within:ring-[#16a34a]">
+                            <div className="flex items-baseline gap-1.5 px-3.5 py-2.5 rounded-2xl bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark focus-within:border-brand focus-within:ring-1 focus-within:ring-brand">
                                 <input
                                     ref={amountRef}
                                     id="f-amt" type="text" inputMode="numeric" required placeholder="0"
@@ -1178,7 +1178,7 @@ export default function LedgerPage() {
                                     />
                                     <button type="button" onClick={handleSaveCategory}
                                         disabled={mutating || !newCatLabel.trim()}
-                                        className="min-h-[44px] px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black disabled:opacity-50 transition-colors">
+                                        className="min-h-[44px] px-4 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black disabled:opacity-50 transition-colors">
                                         {catEditId !== null ? "저장" : "추가"}
                                     </button>
                                     <button type="button" onClick={closeCatForm}
@@ -1269,7 +1269,7 @@ export default function LedgerPage() {
                                     {editing ? "취소" : "닫기"}
                                 </button>
                                 <button type="submit" disabled={mutating || !fAmount}
-                                    className="flex-1 min-h-[50px] rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[15px] font-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    className="flex-1 min-h-[50px] rounded-xl bg-brand hover:bg-brand-hover text-white text-[15px] font-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                     {mutating ? "저장 중…" : editing ? "수정" : "저장"}
                                 </button>
                             </div>

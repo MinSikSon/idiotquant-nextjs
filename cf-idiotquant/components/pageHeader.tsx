@@ -39,7 +39,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "bg-white dark:bg-surface-dark border-t-[3px] border-t-[#16a34a] border-b border-neutral-200 dark:border-surface-dark-border",
+        "bg-white dark:bg-surface-dark border-t-[3px] border-t-brand border-b border-neutral-200 dark:border-surface-dark-border",
         className
       )}
     >
@@ -79,7 +79,7 @@ export function ContextBar({
   containerClassName?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-surface-dark border-t-[3px] border-t-[#16a34a] border-b border-neutral-100 dark:border-border-subtle-dark/60">
+    <div className="bg-white dark:bg-surface-dark border-t-[3px] border-t-brand border-b border-neutral-100 dark:border-border-subtle-dark/60">
       <div className={cn(containerClassName, "py-2.5 flex items-center justify-between gap-2")}>
         <div className="flex items-center gap-1.5 min-w-0">
           {emoji && <span className="text-[11px] leading-none shrink-0" aria-hidden>{emoji}</span>}

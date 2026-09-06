@@ -74,7 +74,7 @@ function SortTh({ label, sortKey: key, current, order, onToggle }: {
             className={cn(
                 "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
                 isActive
-                    ? "text-[#16a34a] dark:text-[#16a34a]"
+                    ? "text-brand dark:text-brand"
                     : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
             )}
         >
@@ -142,7 +142,7 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
                 </div>
                 <button
                     onClick={onNavigate}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
                 >
                     상세 분석
                     <ChevronRight size={11} />
@@ -151,7 +151,7 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
 
             {loading ? (
                 <div className="flex justify-center py-8">
-                    <Loader2 size={20} className="animate-spin text-[#16a34a]/40" />
+                    <Loader2 size={20} className="animate-spin text-brand/40" />
                 </div>
             ) : priceChartData.length === 0 ? (
                 <p className="text-center text-xs text-neutral-400 py-6">이력 데이터가 없습니다.</p>
@@ -255,7 +255,7 @@ function PortfolioOverviewChart({ result, loading, strategy, synthetic }: {
     if (loading) {
         return (
             <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-40">
-                <Loader2 size={20} className="animate-spin text-[#16a34a]/50" />
+                <Loader2 size={20} className="animate-spin text-brand/50" />
             </div>
         );
     }
@@ -272,7 +272,7 @@ function PortfolioOverviewChart({ result, loading, strategy, synthetic }: {
         <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-2">
                 <p className="text-sm font-black text-neutral-900 dark:text-white">구간별 수익률</p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand">
                     {strategyLabel[strategy] ?? strategy}
                 </span>
                 <span className="text-[10px] text-neutral-400 ml-1">선택 기준일 → 해당 시점 누적 수익률</span>
@@ -382,7 +382,7 @@ function PortfolioChart({ result, loading, strategy }: {
     if (loading) {
         return (
             <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-48">
-                <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
+                <Loader2 size={22} className="animate-spin text-brand/50" />
             </div>
         );
     }
@@ -408,7 +408,7 @@ function PortfolioChart({ result, loading, strategy }: {
                 <div className="flex items-center gap-2">
                     <TrendingUp size={15} className={isPositive ? "text-emerald-500" : "text-red-500"} />
                     <p className="text-sm font-black text-neutral-900 dark:text-white">포트폴리오 수익률 추이</p>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand">
                         {strategyLabel[strategy] ?? strategy}
                     </span>
                 </div>
@@ -611,7 +611,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
     if (loading) {
         return (
             <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-48">
-                <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
+                <Loader2 size={22} className="animate-spin text-brand/50" />
             </div>
         );
     }
@@ -631,7 +631,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
     if (snapshotData.length === 0) {
         return (
             <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center gap-3">
-                <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
+                <Loader2 size={16} className="animate-spin text-brand/50 shrink-0" />
                 <div>
                     <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
                         {effectiveCount}개 후보 — 최근 스캔 가격 로딩 중
@@ -655,7 +655,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
                 <div className="flex items-center gap-2">
                     <TrendingUp size={15} className={isPositive ? "text-emerald-500" : "text-red-500"} />
                     <p className="text-sm font-black text-neutral-900 dark:text-white">종목별 수익률 스냅샷</p>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand">
                         {strategyLabel[strategy] ?? strategy}
                     </span>
                 </div>
@@ -1130,15 +1130,15 @@ function BacktestContent() {
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
             {/* ── Header ── */}
-            <div className="bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-[#16a34a]">
+            <div className="bg-white dark:bg-surface-dark border-b border-neutral-200 dark:border-surface-dark-border border-t-[3px] border-t-brand">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
-                                <History size={18} className="text-[#16a34a]" strokeWidth={2.5} />
+                                <History size={18} className="text-brand" strokeWidth={2.5} />
                                 <h1 className="text-xl font-black tracking-tight">전략 히스토리</h1>
                                 {formattedLatestDate && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#dcfce7] dark:bg-[#052e16]/40 text-[#16a34a]">
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-light dark:bg-[#052e16]/40 text-brand">
                                         최신 {formattedLatestDate}
                                     </span>
                                 )}
@@ -1156,7 +1156,7 @@ function BacktestContent() {
                 {/* Loading state */}
                 {datesLoading && (
                     <div className="flex items-center justify-center py-24">
-                        <Loader2 size={28} className="animate-spin text-[#16a34a]/50" />
+                        <Loader2 size={28} className="animate-spin text-brand/50" />
                     </div>
                 )}
 
@@ -1215,7 +1215,7 @@ function BacktestContent() {
                                                         className={cn(
                                                             "px-2 py-1 text-[10px] font-bold transition-colors",
                                                             filterStrategyMode === mode
-                                                                ? "bg-[#16a34a] text-white"
+                                                                ? "bg-brand text-white"
                                                                 : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-600"
                                                         )}
                                                     >{mode}</button>
@@ -1225,7 +1225,7 @@ function BacktestContent() {
                                         {filterStrategies.size > 0 && (
                                             <button
                                                 onClick={() => setFilterStrategies(new Set())}
-                                                className="text-[10px] text-neutral-400 hover:text-[#16a34a] dark:hover:text-[#16a34a] ml-0.5"
+                                                className="text-[10px] text-neutral-400 hover:text-brand dark:hover:text-brand ml-0.5"
                                             >초기화</button>
                                         )}
                                     </div>
@@ -1239,7 +1239,7 @@ function BacktestContent() {
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             placeholder="종목명·티커"
-                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
+                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-brand/40"
                                         />
                                         {searchQuery && (
                                             <button onClick={() => setSearchQuery('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none">×</button>
@@ -1253,7 +1253,7 @@ function BacktestContent() {
                                                 className={cn(
                                                     "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
                                                     idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
-                                                    filterNcav === v ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    filterNcav === v ? "border-brand bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand z-10 relative" : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                 )}
                                             >{v === 'all' ? 'NCAV' : `≥${v}x`}</button>
                                         ))}
@@ -1270,7 +1270,7 @@ function BacktestContent() {
                                                         filterReturn === v
                                                             ? v === 'win' ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
                                                               : v === 'loss' ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
-                                                              : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                              : "border-brand bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand z-10 relative"
                                                             : "border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                     )}
                                                 >{v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}</button>
@@ -1310,14 +1310,14 @@ function BacktestContent() {
                                         className={cn(
                                             "flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
                                             filterOpen || minMarketCap > 0 || excludeHoldings || excludeDeficit
-                                                ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
+                                                ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-brand-hover dark:text-brand"
                                                 : "bg-white dark:bg-transparent border-neutral-200 dark:border-border-subtle-dark text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                         )}
                                     >
                                         <SlidersHorizontal size={10} />
                                         고급
                                         {(minMarketCap > 0 || excludeHoldings || excludeDeficit) && (
-                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#16a34a] text-white text-[8px] font-black">
+                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-brand text-white text-[8px] font-black">
                                                 {[minMarketCap > 0, excludeHoldings, excludeDeficit].filter(Boolean).length}
                                             </span>
                                         )}
@@ -1337,7 +1337,7 @@ function BacktestContent() {
                                     )}>
                                         <span className={cn(
                                             "text-sm font-black tabular-nums leading-none",
-                                            hasAnyFilter ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-200"
+                                            hasAnyFilter ? "text-brand-hover dark:text-brand" : "text-neutral-700 dark:text-neutral-200"
                                         )}>{filteredList.length}</span>
                                         <span className="text-[10px] font-bold text-neutral-400">개</span>
                                         {filteredList.length !== historicalList.length && (
@@ -1362,7 +1362,7 @@ function BacktestContent() {
                                         <div className="px-5 sm:px-6 pb-3 -mt-0.5 flex items-center gap-1.5 flex-wrap">
                                             <span className="text-[10px] text-neutral-400 font-medium">적용:</span>
                                             {chips.map(c => (
-                                                <span key={c.key} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-[#15803d] dark:text-[#16a34a]">
+                                                <span key={c.key} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-brand-hover dark:text-brand">
                                                     {c.label}
                                                     <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
                                                 </span>
@@ -1384,7 +1384,7 @@ function BacktestContent() {
                                                     className={cn(
                                                         "px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
                                                         minMarketCap === p.value
-                                                            ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                                            ? "bg-brand border-brand text-white"
                                                             : "bg-white dark:bg-transparent border-neutral-200 dark:border-border-subtle-dark text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-500"
                                                     )}
                                                 >{p.label}</button>
@@ -1399,7 +1399,7 @@ function BacktestContent() {
                                                 { label: '적자 기업', value: excludeDeficit, set: setExcludeDeficit },
                                             ].map(opt => (
                                                 <label key={opt.label} className="flex items-center gap-1.5 cursor-pointer select-none">
-                                                    <input type="checkbox" checked={opt.value} onChange={e => opt.set(e.target.checked)} className="rounded accent-[#16a34a]" />
+                                                    <input type="checkbox" checked={opt.value} onChange={e => opt.set(e.target.checked)} className="rounded accent-brand" />
                                                     <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400">{opt.label}</span>
                                                 </label>
                                             ))}
@@ -1421,7 +1421,7 @@ function BacktestContent() {
                                         className={cn(
                                             "px-4 pb-3 pt-1 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
                                             viewTab === tab
-                                                ? "border-[#16a34a] text-[#16a34a]"
+                                                ? "border-brand text-brand"
                                                 : "border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
                                         )}
                                     >
@@ -1452,9 +1452,9 @@ function BacktestContent() {
                             const help = TAB_HELP[viewTab as ViewTabId];
                             return (
                                 <div className="flex items-start gap-2.5 rounded-xl bg-[#f0fdf4] dark:bg-[#052e16]/20 border border-[#bbf7d0] dark:border-[#166534]/40 px-4 py-3">
-                                    <Info size={14} className="text-[#16a34a] shrink-0 mt-0.5" />
+                                    <Info size={14} className="text-brand shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-xs font-bold text-[#15803d] dark:text-[#4ade80]">{help.title}</p>
+                                        <p className="text-xs font-bold text-brand-hover dark:text-[#4ade80]">{help.title}</p>
                                         <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-0.5">{help.desc}</p>
                                     </div>
                                 </div>
@@ -1473,7 +1473,7 @@ function BacktestContent() {
                                 </p>
                                 {historyLoadedCount < datesState.dates.length && (
                                     <span className="flex items-center gap-1 text-[10px] text-neutral-400">
-                                        <Loader2 size={11} className="animate-spin text-[#16a34a]/60" />
+                                        <Loader2 size={11} className="animate-spin text-brand/60" />
                                         필터 반영 집계 중 {historyLoadedCount}/{datesState.dates.length}
                                     </span>
                                 )}
@@ -1515,7 +1515,7 @@ function BacktestContent() {
                                     선택한 기준일:
                                     <span className="font-bold text-neutral-700 dark:text-neutral-300 ml-1">{formattedSelectedDate}</span>
                                     {isLatestDate && (
-                                        <span className="ml-1.5 text-[10px] bg-[#dcfce7] dark:bg-[#052e16]/40 text-[#16a34a] px-1.5 py-0.5 rounded font-bold">
+                                        <span className="ml-1.5 text-[10px] bg-brand-light dark:bg-[#052e16]/40 text-brand px-1.5 py-0.5 rounded font-bold">
                                             최신
                                         </span>
                                     )}
@@ -1558,7 +1558,7 @@ function BacktestContent() {
                         <>
                             {loadingPortfolio ? (
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 flex items-center justify-center h-48">
-                                    <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
+                                    <Loader2 size={22} className="animate-spin text-brand/50" />
                                 </div>
                             ) : augmentedPortfolioResult ? (
                                 /* 항상 시계열 시뮬레이션 차트 표시 (데이터 부족 시 현재가 보간) */
@@ -1636,7 +1636,7 @@ function BacktestContent() {
                                     <span className={cn(
                                         "inline-flex items-baseline gap-1 px-2 py-0.5 rounded-md",
                                         filteredList.length !== historicalList.length
-                                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-[#15803d] dark:text-[#16a34a]"
+                                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-brand-hover dark:text-brand"
                                             : "text-neutral-400"
                                     )}>
                                         <span className="text-xs font-black tabular-nums">{filteredList.length}</span>
@@ -1653,7 +1653,7 @@ function BacktestContent() {
 
                             {loadingList ? (
                                 <div className="flex justify-center py-14">
-                                    <Loader2 size={24} className="animate-spin text-[#16a34a]/40" />
+                                    <Loader2 size={24} className="animate-spin text-brand/40" />
                                 </div>
                             ) : historicalList.length === 0 ? (
                                 <p className="text-center py-14 text-sm text-neutral-400">
@@ -1931,7 +1931,7 @@ export default function BacktestPage() {
     if (status === "loading") {
         return (
             <div className="flex items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
-                <Loader2 className="animate-spin text-[#16a34a]" size={24} />
+                <Loader2 className="animate-spin text-brand" size={24} />
             </div>
         );
     }
@@ -1947,7 +1947,7 @@ export default function BacktestPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
-                <Loader2 className="animate-spin text-[#16a34a]" size={24} />
+                <Loader2 className="animate-spin text-brand" size={24} />
             </div>
         }>
             <BacktestContent />

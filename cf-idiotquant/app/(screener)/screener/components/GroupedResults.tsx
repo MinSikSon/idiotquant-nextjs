@@ -67,7 +67,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
             <span className="text-[10px] text-neutral-400">{label}</span>
             <span className={cn(
                 "text-[11px] font-mono font-bold tabular-nums",
-                accent ? "text-[#16a34a]" : "text-neutral-600 dark:text-neutral-300"
+                accent ? "text-brand" : "text-neutral-600 dark:text-neutral-300"
             )}>{value}</span>
         </div>
     );
@@ -105,7 +105,7 @@ export function GroupedResults({
                                 </span>
                             )}
                             <span className="text-[12.5px] font-extrabold text-neutral-900 dark:text-neutral-100 shrink-0">{g.label}</span>
-                            <span className="px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] text-[10px] font-mono font-bold shrink-0">
+                            <span className="px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand text-[10px] font-mono font-bold shrink-0">
                                 {g.rows.length}개
                             </span>
                             {hint && (

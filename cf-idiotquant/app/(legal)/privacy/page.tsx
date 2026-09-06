@@ -101,7 +101,7 @@ export default function PrivacyPage() {
                 </p>
                 <ul className="mt-2 space-y-1 text-sm">
                     <li>· 개인정보 보호책임자: IDIOTQUANT 운영자</li>
-                    <li>· 연락처(이메일): <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#16a34a] underline underline-offset-2">{CONTACT_EMAIL}</a></li>
+                    <li>· 연락처(이메일): <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand underline underline-offset-2">{CONTACT_EMAIL}</a></li>
                 </ul>
                 <p className="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
                     개인정보 침해에 관한 상담이 필요한 경우 개인정보분쟁조정위원회(1833-6972),
@@ -126,7 +126,7 @@ export default function PrivacyPage() {
 function Section({ title, children, highlight }: { title: string; children: React.ReactNode; highlight?: boolean }) {
     return (
         <section className="mb-7">
-            <h2 className={`text-base font-bold mb-2.5 ${highlight ? "text-[#16a34a]" : "text-neutral-900 dark:text-white"}`}>
+            <h2 className={`text-base font-bold mb-2.5 ${highlight ? "text-brand" : "text-neutral-900 dark:text-white"}`}>
                 {title}
             </h2>
             <div className="text-sm leading-relaxed space-y-2">{children}</div>

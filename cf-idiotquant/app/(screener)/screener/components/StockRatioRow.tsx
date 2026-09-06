@@ -38,7 +38,7 @@ const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null
         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
         <p className={cn(
             "text-[13px] font-mono font-bold tabular-nums mt-0.5",
-            value === null ? "text-neutral-400" : ok ? "text-[#16a34a]" : "text-neutral-700 dark:text-neutral-200"
+            value === null ? "text-neutral-400" : ok ? "text-brand" : "text-neutral-700 dark:text-neutral-200"
         )}>
             {x(value)}
         </p>
@@ -56,7 +56,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 hover:border-brand-light-hover dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
+            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
         >
             <div className="flex items-start gap-2 mb-3">
                 <div className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-[#16a34a]"
+                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-brand"
                      hint="유동자산 — 1년 안에 현금화할 수 있는 자산" />
                 <Bar label="부채총계" value={m.liabilities} scale={m.scale} color="bg-[#d4525c]"
                      hint="부채총계 — 갚아야 할 돈 전체" />

@@ -91,11 +91,11 @@ export function CopyStockButtons({ rows, label, className }: { rows: CopyStock[]
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       <button type="button" onClick={() => handle("names")} className={BTN_CLS} title="종목명만 복사">
-        {copied === "names" ? <Check className="w-3 h-3 text-[#16a34a]" /> : <Copy className="w-3 h-3" />}
+        {copied === "names" ? <Check className="w-3 h-3 text-brand" /> : <Copy className="w-3 h-3" />}
         {copied === "names" ? "복사됨" : "종목명"}
       </button>
       <button type="button" onClick={() => handle("details")} className={BTN_CLS} title="종목명 + 지표 함께 복사">
-        {copied === "details" ? <Check className="w-3 h-3 text-[#16a34a]" /> : <Copy className="w-3 h-3" />}
+        {copied === "details" ? <Check className="w-3 h-3 text-brand" /> : <Copy className="w-3 h-3" />}
         {copied === "details" ? "복사됨" : "상세"}
       </button>
     </div>

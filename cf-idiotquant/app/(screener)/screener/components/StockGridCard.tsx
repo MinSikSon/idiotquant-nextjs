@@ -41,7 +41,7 @@ function cautions(i: Item): string[] {
 const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boolean }) => (
     <div className="text-center">
         <p className="text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-        <p className={cn("text-[13px] font-mono font-bold tabular-nums mt-0.5", ok ? "text-[#16a34a]" : "text-neutral-700 dark:text-neutral-200")}>
+        <p className={cn("text-[13px] font-mono font-bold tabular-nums mt-0.5", ok ? "text-brand" : "text-neutral-700 dark:text-neutral-200")}>
             {value}
         </p>
     </div>
@@ -65,7 +65,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-[#15803d]/60 hover:shadow-md transition-all"
+            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
         >
             {/* 헤더 — 주가 시리즈가 응답에 없어 차트 스프라이트는 생략하고 한 장을 100% 폭으로 */}
             <div className="relative h-[72px] border-b border-neutral-100 dark:border-border-subtle-dark">
@@ -114,7 +114,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
 
                 {why && (
                     <div className="mt-3">
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#16a34a] mb-1">왜 걸렸나</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-brand mb-1">왜 걸렸나</p>
                         <p className="text-[11.5px] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">{why}</p>
                     </div>
                 )}
@@ -127,7 +127,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
 
                 <button
                     onClick={e => { e.stopPropagation(); onClick(item.ticker, item.name); }}
-                    className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-surface-canvas dark:bg-surface-dark hover:bg-[#16a34a] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-colors"
+                    className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-surface-canvas dark:bg-surface-dark hover:bg-brand hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-colors"
                 >
                     분석 <ChevronRight size={12} />
                 </button>

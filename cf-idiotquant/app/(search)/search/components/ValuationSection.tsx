@@ -395,7 +395,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   </span>
                   <span className={cn(
                     "text-[11.5px] font-extrabold font-mono tabular-nums text-right",
-                    isPositive ? "text-[#16a34a] dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                    isPositive ? "text-brand dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
                   </span>
@@ -465,7 +465,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
             <Link
               href={loginHref}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold shadow-md shadow-brand/20 transition-all"
             >
               <Lock size={13} />
               로그인하여 세부 모델 보기
