@@ -46,7 +46,7 @@ const INPUT_CLS = cn(
     "font-[family-name:var(--font-mono)] tabular-nums text-[15px] font-bold text-right",
     "text-neutral-900 dark:text-neutral-50 bg-surface-canvas dark:bg-surface-dark-canvas",
     "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-3 py-2 w-full sm:w-[150px]",
-    "focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:border-[#16a34a]",
+    "focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand",
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
 
@@ -61,7 +61,7 @@ const LIFT = "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] tr
 function StepLabel({ tag }: { tag: string }) {
     return (
         <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] dark:text-[#22c55e] shrink-0">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-brand dark:text-[#22c55e] shrink-0">
                 {tag}
             </span>
             <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
@@ -120,8 +120,8 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                 onChange={(e) => onChange(Number(e.target.value))}
                 aria-valuetext={`${format(value)}${unit}`}
                 className={cn(
-                    "w-full mt-2 sm:mt-2.5 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-lg"
+                    "w-full mt-2 sm:mt-2.5 h-6 bg-transparent cursor-pointer accent-brand",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg"
                 )}
             />
             <div className="flex justify-between text-[10.5px] text-neutral-500 dark:text-neutral-400 -mt-0.5">
@@ -168,8 +168,8 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
                     aria-label={`${label} 눈금`}
                     aria-valuetext={`${value.toFixed(1)}%`}
                     className={cn(
-                        "flex-1 min-w-0 h-6 bg-transparent cursor-pointer accent-[#16a34a]",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16a34a] rounded-lg"
+                        "flex-1 min-w-0 h-6 bg-transparent cursor-pointer accent-brand",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg"
                     )}
                 />
                 <input
@@ -220,8 +220,8 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
                     "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border shrink-0 ml-auto",
                     "border-neutral-200 dark:border-surface-dark-border",
                     "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-700 dark:text-neutral-300",
-                    "hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60", LIFT,
-                    "focus:outline-none focus:ring-2 focus:ring-[#16a34a]"
+                    "hover:border-brand/50 dark:hover:border-[#22c55e]/60", LIFT,
+                    "focus:outline-none focus:ring-2 focus:ring-brand"
                 )}
             >
                 <Dice5 size={13} strokeWidth={2.2} />
@@ -271,7 +271,7 @@ function Segmented<T extends string | number>({
                         value === o.v
                             ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915]"
                             : "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
-                        "focus:outline-none focus:ring-2 focus:ring-[#16a34a] focus:z-10"
+                        "focus:outline-none focus:ring-2 focus:ring-brand focus:z-10"
                     )}
                 >
                     {o.label}
@@ -382,7 +382,7 @@ function Calculator() {
                             className={cn(
                                 "sm:hidden inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
                                 showHelp
-                                    ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                    ? "bg-brand border-brand text-white"
                                     : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
                                          "text-neutral-700 dark:text-neutral-300")
                             )}
@@ -396,9 +396,9 @@ function Calculator() {
                             className={cn(
                                 "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
                                 copied
-                                    ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                    ? "bg-brand border-brand text-white"
                                     : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
-                                         "text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60")
+                                         "text-neutral-700 dark:text-neutral-300 hover:border-brand/50 dark:hover:border-[#22c55e]/60")
                             )}
                         >
                             {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}
@@ -556,7 +556,7 @@ function Calculator() {
                             <span className={LABEL_CLS}>세금</span>
                             <label className="inline-flex items-center gap-2 text-[13px] font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer w-fit">
                                 <input type="checkbox" checked={inputs.tax} onChange={(e) => set("tax", e.target.checked)}
-                                    className="w-4 h-4 accent-[#16a34a] cursor-pointer" />
+                                    className="w-4 h-4 accent-brand cursor-pointer" />
                                 이자소득세 {TAX_RATE}% 차감
                             </label>
                         </div>
@@ -626,7 +626,7 @@ function Calculator() {
                             <div className="text-[11.5px] text-neutral-500 dark:text-neutral-400">{cell.k}</div>
                             <div className={cn(
                                 NUM_CLS, "text-[19px] font-semibold mt-0.5",
-                                cell.tone === "gain" && "text-[#16a34a] dark:text-[#2fa85a]",
+                                cell.tone === "gain" && "text-brand dark:text-[#2fa85a]",
                                 cell.tone === "loss" && "text-[#b91c1c] dark:text-[#ef6a6a]"
                             )}>
                                 {cell.v}
@@ -665,7 +665,7 @@ function Calculator() {
                             {shownRows.map((d, i, arr) => {
                                 const profit = d.value - d.principal;
                                 const rate = d.principal > 0 ? (d.value / d.principal - 1) * 100 : 0;
-                                const tone = profit < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-[#16a34a] dark:text-[#2fa85a]";
+                                const tone = profit < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-brand dark:text-[#2fa85a]";
                                 const bottom = i === arr.length - 1;
                                 /* 굵게는 "만기"라는 뜻이다 — 표를 접었을 때 앞줄에 찍히면 거짓말이 된다. */
                                 const final = d.year === yearRows.length;
@@ -709,8 +709,8 @@ function Calculator() {
                             "mt-2 w-full text-[11.5px] font-bold py-2.5 rounded-xl border",
                             "border-neutral-200 dark:border-surface-dark-border",
                             "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300",
-                            "hover:border-[#16a34a]/50 dark:hover:border-[#22c55e]/60",
-                            "focus:outline-none focus:ring-2 focus:ring-[#16a34a]", LIFT
+                            "hover:border-brand/50 dark:hover:border-[#22c55e]/60",
+                            "focus:outline-none focus:ring-2 focus:ring-brand", LIFT
                         )}
                     >
                         {tableOpen ? "접기" : `나머지 ${yearRows.length - TABLE_PREVIEW}년 더 보기`}

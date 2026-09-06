@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
 import {
-  Loader2, X, Check, AlertCircle,
-  CheckCircle2, Clock, ArrowUpRight, ArrowDownRight,
+  Loader2, CheckCircle2, Clock, ArrowUpRight, ArrowDownRight,
   RefreshCw, Activity, InboxIcon, ChevronDown, Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,73 +35,13 @@ export function fmtKrw(v: number | string) {
 }
 
 // =========================================================================
-// Toast 시스템
+// Toast 시스템 — components/ui/toast.tsx 로 옮겼다.
+// analyze 가 같은 것을 따로 갖고 있어 화면마다 알림이 다르게 나타났다.
+// 여기서 다시 내보내는 것은 이 파일을 통해 import 하던 곳(잔고 뷰, 매매창,
+// 모의투자)을 그대로 두기 위해서다.
 // =========================================================================
-export type ToastType = "success" | "error" | "info" | "warning";
-
-export interface ToastItem {
-  id: string;
-  type: ToastType;
-  message: string;
-}
-
-export function useToast() {
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  const addToast = useCallback((type: ToastType, message: string) => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setToasts(prev => [...prev, { id, type, message }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
-  }, []);
-
-  return { toasts, addToast, removeToast };
-}
-
-export const ToastNotification = memo(({ toast, onRemove }: { toast: ToastItem; onRemove: (id: string) => void }) => {
-  const colorMap: Record<ToastType, string> = {
-    success: "bg-emerald-50/95 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300",
-    error: "bg-red-50/95 dark:bg-red-950/60 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300",
-    info: "bg-[#f0fdf4]/95 dark:bg-[#052e16]/60 border-[#bbf7d0] dark:border-[#166534] text-[#166534] dark:text-[#86efac]",
-    warning: "bg-amber-50/95 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300",
-  };
-  const IconMap: Record<ToastType, React.ReactNode> = {
-    success: <Check size={13} />,
-    error: <AlertCircle size={13} />,
-    info: <AlertCircle size={13} />,
-    warning: <AlertCircle size={13} />,
-  };
-  return (
-    <div className={cn(
-      "flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md",
-      "animate-in slide-in-from-right-4 fade-in duration-300 pointer-events-auto max-w-sm",
-      colorMap[toast.type]
-    )}>
-      <span className="shrink-0">{IconMap[toast.type]}</span>
-      <span className="text-xs font-bold flex-1 leading-snug">{toast.message}</span>
-      <button
-        onClick={() => onRemove(toast.id)}
-        className="p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
-      >
-        <X size={11} />
-      </button>
-    </div>
-  );
-});
-ToastNotification.displayName = "ToastNotification";
-
-export function ToastContainer({ toasts, onRemove }: { toasts: ToastItem[]; onRemove: (id: string) => void }) {
-  return (
-    <div className="fixed top-4 right-4 z-[100] space-y-2 pointer-events-none">
-      {toasts.map(t => (
-        <ToastNotification key={t.id} toast={t} onRemove={onRemove} />
-      ))}
-    </div>
-  );
-}
+export { useToast, ToastNotification, ToastContainer } from "@/components/ui/toast";
+export type { ToastType, ToastItem } from "@/components/ui/toast";
 
 // =========================================================================
 // 공용 서브 컴포넌트
@@ -112,7 +50,7 @@ export function LoadingState({ message = "계좌 데이터를 불러오는 중..
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-surface-dark-canvas gap-3">
       <div className="p-4 rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
-        <Loader2 className="w-7 h-7 text-[#16a34a] animate-spin" />
+        <Loader2 className="w-7 h-7 text-brand animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -243,7 +181,7 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
   if (value === null) return <KpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-wider leading-tight">{label}</span>
@@ -384,15 +322,15 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
 export function pnlIconBg(positive: boolean) {
   return positive
     ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]";
+    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand";
 }
 
 export function pnlValueColor(positive: boolean) {
-  return positive ? "text-red-500" : "text-[#16a34a]";
+  return positive ? "text-red-500" : "text-brand";
 }
 
 export function pnlAccentColor(positive: boolean) {
-  return positive ? "bg-red-400 dark:bg-red-600" : "bg-[#16a34a] dark:bg-[#16a34a]";
+  return positive ? "bg-red-400 dark:bg-red-600" : "bg-brand dark:bg-brand";
 }
 
 // =========================================================================
@@ -400,15 +338,15 @@ export function pnlAccentColor(positive: boolean) {
 // =========================================================================
 export function KpiCardSkeleton() {
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
       <div className="flex items-center justify-between">
         <div className="h-3 w-20 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
-        <div className="h-8 w-8 bg-surface-canvas dark:bg-surface-dark-muted rounded-xl animate-pulse" />
+        <div className="h-8 w-8 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
       </div>
       <div>
         <div className="h-7 w-32 bg-neutral-200 dark:bg-surface-dark-elevated rounded-lg animate-pulse mb-2" />
-        <div className="h-3 w-24 bg-surface-canvas dark:bg-surface-dark-muted rounded animate-pulse" />
+        <div className="h-3 w-24 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
       </div>
     </div>
   );
@@ -420,12 +358,12 @@ export function UsdKpiCardSkeleton() {
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
       <div className="flex items-center justify-between">
         <div className="h-3 w-20 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
-        <div className="h-8 w-8 bg-surface-canvas dark:bg-surface-dark-muted rounded-xl animate-pulse" />
+        <div className="h-8 w-8 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
       </div>
       <div>
         <div className="h-7 w-32 bg-neutral-200 dark:bg-surface-dark-elevated rounded-lg animate-pulse mb-2" />
         <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark">
-          <div className="h-3 w-24 bg-surface-canvas dark:bg-surface-dark-muted rounded animate-pulse" />
+          <div className="h-3 w-24 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
         </div>
       </div>
     </div>
@@ -440,7 +378,7 @@ export function ChartSectionSkeleton() {
         {[1, 2, 3, 4, 5].map(i => (
           <div key={i} className="flex items-center gap-3">
             <div className="h-3 w-3 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse shrink-0" />
-            <div className="h-3 flex-1 bg-surface-canvas dark:bg-surface-dark-muted rounded animate-pulse" />
+            <div className="h-3 flex-1 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
             <div className="h-3 w-16 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse shrink-0" />
           </div>
         ))}
@@ -457,7 +395,7 @@ export function SectionPanel({ id, children, className }: { id?: string; childre
     <section
       id={id}
       className={cn(
-        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm p-5 md:p-6",
+        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 md:p-6",
         "animate-in fade-in duration-500",
         className
       )}

@@ -15,7 +15,7 @@ export default function NotFound({ warnText = "Oops! Not Found!" }: NotFoundProp
         
         {/* Animated Icon Section */}
         <div className="relative mb-8">
-          <div className="absolute inset-0 bg-[#16a34a]/20 blur-[60px] rounded-full animate-pulse" />
+          <div className="absolute inset-0 bg-brand/20 blur-[60px] rounded-full animate-pulse" />
           <div className="relative flex items-center justify-center w-24 h-24 rounded-3xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-xl">
             <Search className="w-10 h-10 text-green-50 animate-bounce" />
             <AlertCircle className="absolute -top-1 -right-1 w-6 h-6 text-red-500 fill-white dark:fill-neutral-900" />
@@ -42,7 +42,7 @@ export default function NotFound({ warnText = "Oops! Not Found!" }: NotFoundProp
 
         {/* Action Button */}
         <Link href="/" className="group relative">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-[#16a34a] to-emerald-400 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-300" />
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand to-emerald-400 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-300" />
           <button className="relative flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-surface-dark-card text-neutral-900 dark:text-white rounded-xl font-bold border border-neutral-200 dark:border-border-subtle-dark transition-all hover:scale-[1.02] active:scale-[0.98]">
             <Home className="w-4 h-4 text-green-50" />
             메인 페이지로 돌아가기

@@ -31,8 +31,8 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자산",
         labelEn: "ASSETS",
-        accent: "border-[#16a34a]/50 bg-[#f0fdf4] text-[#15803d] dark:bg-[#052e16]/40 dark:text-[#86efac]",
-        dotColor: "bg-[#16a34a]",
+        accent: "border-brand/50 bg-[#f0fdf4] text-brand-hover dark:bg-[#052e16]/40 dark:text-[#86efac]",
+        dotColor: "bg-brand",
         items: [
             {
                 label: "현금 및 현금성 자산",
@@ -270,7 +270,7 @@ function SectionTable({
                                 <div className="flex flex-col items-end gap-0.5">
                                     <span className={cn(
                                         "text-[9px] font-black uppercase tracking-wider font-mono",
-                                        idx === 0 ? "text-[#16a34a] dark:text-[#16a34a]" : "text-neutral-400 dark:text-neutral-500"
+                                        idx === 0 ? "text-brand dark:text-brand" : "text-neutral-400 dark:text-neutral-500"
                                     )}>
                                         {idx === 0 ? "Latest" : `FY T-${idx}`}
                                     </span>
@@ -421,7 +421,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
                     <Tabs.List className="flex gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
-                            className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-[#15803d] dark:data-[state=active]:text-[#86efac]")}
+                            className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-hover dark:data-[state=active]:text-[#86efac]")}
                         >
                             <BookOpen size={12} />
                             Balance Sheet

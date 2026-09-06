@@ -70,7 +70,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
           <div className="relative flex-1 h-[132px] border-l border-b border-neutral-200 dark:border-border-subtle-dark">
             {/* 좌상단(PBR 낮고 ROE 높은 쪽)으로 갈수록 옅은 초록 — 어느 방향이 좋은지 눈으로
                 알려준다. 가로축이 PBR 이라 오른쪽은 비싼 쪽이다. */}
-            <div className="absolute inset-0 bg-gradient-to-tl from-transparent to-[#16a34a]/[0.055] pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tl from-transparent to-brand/[0.055] pointer-events-none" />
             {[25, 50, 75].map(v => (
               <div key={`h${v}`} className="absolute inset-x-0 border-t border-dashed border-[#e7e4de] dark:border-[#3a3833]" style={{ bottom: `${v}%` }} />
             ))}
@@ -101,7 +101,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
         </div>
 
         <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
-          가로 = PBR(낮을수록 쌈) · 세로 = ROE(높을수록 잘 범) — <span className="font-bold text-[#16a34a]">왼쪽 위</span>가 싸면서 잘 버는 쪽입니다.
+          가로 = PBR(낮을수록 쌈) · 세로 = ROE(높을수록 잘 범) — <span className="font-bold text-brand">왼쪽 위</span>가 싸면서 잘 버는 쪽입니다.
         </p>
       </div>
 
@@ -141,7 +141,7 @@ export function TermStrip() {
             <div key={t.term} className="rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-white dark:bg-surface-dark-card px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[11.5px] font-extrabold text-neutral-900 dark:text-neutral-100">{t.term}</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-[#dcfce7] dark:bg-[#052e16]/60 text-[#16a34a] text-[10px] font-mono font-bold">{t.rule}</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-[#052e16]/60 text-brand text-[10px] font-mono font-bold">{t.rule}</span>
               </div>
               <p className="text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">{t.desc}</p>
             </div>

@@ -320,7 +320,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
-          <div className="rounded-[10px] overflow-hidden border border-neutral-100 dark:border-border-subtle-dark">
+          <div className="rounded-lg overflow-hidden border border-neutral-100 dark:border-border-subtle-dark">
             {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
                 축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
                 12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
@@ -395,7 +395,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   </span>
                   <span className={cn(
                     "text-[11.5px] font-extrabold font-mono tabular-nums text-right",
-                    isPositive ? "text-[#16a34a] dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                    isPositive ? "text-brand dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
                   </span>
@@ -465,7 +465,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
             <Link
               href={loginHref}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold shadow-md shadow-brand/20 transition-all"
             >
               <Lock size={13} />
               로그인하여 세부 모델 보기
@@ -510,7 +510,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col">
 
       {/* 상단 컬러 액센트 라인 */}
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />

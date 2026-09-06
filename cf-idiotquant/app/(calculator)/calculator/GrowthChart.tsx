@@ -69,11 +69,11 @@ export default function GrowthChart({ rows }: Props) {
         <div className="relative">
             <div className="flex gap-4 text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mb-2.5">
                 <span className="inline-flex items-center gap-1.5">
-                    <i className="w-2.5 h-2.5 rounded-[1px] bg-[#1d4ed8] dark:bg-[#4f83e0]" />
+                    <i className="w-2.5 h-2.5 rounded-sm bg-[#1d4ed8] dark:bg-[#4f83e0]" />
                     납입 원금
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                    <i className="w-2.5 h-2.5 rounded-[1px] bg-[#16a34a] dark:bg-[#2fa85a]" />
+                    <i className="w-2.5 h-2.5 rounded-sm bg-brand dark:bg-[#2fa85a]" />
                     투자수익
                 </span>
             </div>
@@ -103,12 +103,12 @@ export default function GrowthChart({ rows }: Props) {
                 ))}
 
                 <path d={area((d) => d.principal, () => 0)} className="fill-[#1d4ed8]/[0.13] dark:fill-[#4f83e0]/20" />
-                <path d={area((d) => d.value, (d) => d.principal)} className="fill-[#16a34a]/[0.14] dark:fill-[#2fa85a]/20" />
+                <path d={area((d) => d.value, (d) => d.principal)} className="fill-brand/[0.14] dark:fill-[#2fa85a]/20" />
 
                 {/* 두 띠 사이의 틈 — 종이색을 한 겹 깔아 경계가 붙어 보이지 않게 한다 */}
                 <path d={line((d) => d.principal)} fill="none" strokeWidth={4} className="stroke-[#faf9f7] dark:stroke-[#1a1915]" />
                 <path d={line((d) => d.principal)} fill="none" strokeWidth={2} className="stroke-[#1d4ed8] dark:stroke-[#4f83e0]" />
-                <path d={line((d) => d.value)} fill="none" strokeWidth={2} className="stroke-[#16a34a] dark:stroke-[#2fa85a]" />
+                <path d={line((d) => d.value)} fill="none" strokeWidth={2} className="stroke-brand dark:stroke-[#2fa85a]" />
 
                 {rows.map((d, i) =>
                     i % everyN === 0 || i === rows.length - 1 ? (
@@ -133,7 +133,7 @@ export default function GrowthChart({ rows }: Props) {
                         />
                         <circle
                             cx={X(hover)} cy={Y(at.value)} r={4} strokeWidth={2}
-                            className="fill-[#16a34a] dark:fill-[#2fa85a] stroke-[#faf9f7] dark:stroke-[#1a1915]"
+                            className="fill-brand dark:fill-[#2fa85a] stroke-[#faf9f7] dark:stroke-[#1a1915]"
                         />
                     </g>
                 )}

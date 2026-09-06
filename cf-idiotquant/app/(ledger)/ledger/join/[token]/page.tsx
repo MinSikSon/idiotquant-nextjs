@@ -74,14 +74,14 @@ export default function LedgerJoinPage() {
         <PageHeader
             emoji="📒"
             title="가계부 초대"
-            containerClassName="max-w-lg mx-auto px-4 sm:px-7"
+            containerClassName="max-w-lg mx-auto px-4 sm:px-6"
         />
     );
 
     const shell = (children: React.ReactNode) => (
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             {header}
-            <div className="max-w-lg mx-auto px-4 sm:px-7 py-6">
+            <div className="max-w-lg mx-auto px-4 sm:px-6 py-6">
                 <div className={cn(CARD_CLS, "py-10 px-5 text-center")}>{children}</div>
             </div>
         </div>
@@ -89,7 +89,7 @@ export default function LedgerJoinPage() {
 
     // middleware 가 막아주지만, 세션이 정리되는 찰나에 여기로 떨어질 수 있다.
     if (status === "loading" || (status === "authenticated" && loading)) {
-        return shell(<div className="h-6 w-40 mx-auto bg-surface-canvas dark:bg-surface-dark rounded animate-pulse" />);
+        return shell(<div className="h-6 w-40 mx-auto bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />);
     }
 
     if (status === "unauthenticated") {
@@ -100,7 +100,7 @@ export default function LedgerJoinPage() {
                 </p>
                 <Link
                     href={`/login?callbackUrl=/ledger/join/${token}`}
-                    className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black transition-colors"
+                    className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black transition-colors"
                 >
                     로그인하고 계속하기
                 </Link>
@@ -126,11 +126,11 @@ export default function LedgerJoinPage() {
     if (preview.already_member || preview.is_mine) {
         return shell(
             <>
-                <Check size={28} className="mx-auto mb-3 text-[#16a34a]" strokeWidth={2.4} />
+                <Check size={28} className="mx-auto mb-3 text-brand" strokeWidth={2.4} />
                 <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                     {preview.is_mine ? "내가 만든 초대입니다." : `이미 ${owner}님의 가계부에 들어와 있습니다.`}
                 </p>
-                <Link href="/ledger" className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-black transition-colors">
+                <Link href="/ledger" className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-black transition-colors">
                     가계부 열기
                 </Link>
             </>
@@ -152,7 +152,7 @@ export default function LedgerJoinPage() {
 
     return shell(
         <>
-            <Users size={28} className="mx-auto mb-3 text-[#16a34a]" strokeWidth={2.2} />
+            <Users size={28} className="mx-auto mb-3 text-brand" strokeWidth={2.2} />
             <p className="text-[15px] font-black text-neutral-900 dark:text-white">
                 {owner}님이 가계부에 초대했습니다
             </p>
@@ -166,7 +166,7 @@ export default function LedgerJoinPage() {
                 type="button"
                 onClick={handleAccept}
                 disabled={joining}
-                className="w-full min-h-[50px] mt-5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-black disabled:opacity-50 transition-colors"
+                className="w-full min-h-[50px] mt-5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-black disabled:opacity-50 transition-colors"
             >
                 {joining ? "들어가는 중…" : "수락하고 함께 쓰기"}
             </button>

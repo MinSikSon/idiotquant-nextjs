@@ -38,10 +38,10 @@ const GRADE_CONFIG = {
   S: {
     border:     "#16a34a",
     topBarCls:  "bg-gradient-to-r from-emerald-500 to-teal-400",
-    badgeCls:   "bg-gradient-to-r from-[#16a34a] to-teal-500 text-white",
-    labelCls:   "text-[#16a34a] dark:text-emerald-400",
+    badgeCls:   "bg-gradient-to-r from-brand to-teal-500 text-white",
+    labelCls:   "text-brand dark:text-emerald-400",
     tintCls:    "from-green-50/50 via-emerald-50/20 dark:from-green-950/15 dark:via-emerald-950/8",
-    dotCls:     "bg-[#16a34a]",
+    dotCls:     "bg-brand",
     label:      "DEEP VALUE",
     desc:       "업사이드 ≥ +100% — 그레이엄 기준 충족",
     cut:        "≥ +100%",
@@ -245,7 +245,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
               <span className={cn(
                 "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border",
                 isUp
-                  ? "bg-green-50 dark:bg-[#052e16]/30 border-green-200 dark:border-[#16a34a]/20 text-[#15803d] dark:text-[#16a34a]"
+                  ? "bg-green-50 dark:bg-[#052e16]/30 border-green-200 dark:border-brand/20 text-brand-hover dark:text-brand"
                   : "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400"
               )}>
                 {isUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
@@ -284,7 +284,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
                 </p>
                 <p className="mt-1 text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
                   이 종목은{" "}
-                  <span className={cn("font-black font-mono tabular-nums", isUp ? "text-[#15803d] dark:text-[#16a34a]" : "text-red-600 dark:text-red-400")}>
+                  <span className={cn("font-black font-mono tabular-nums", isUp ? "text-brand-hover dark:text-brand" : "text-red-600 dark:text-red-400")}>
                     {isUp ? "+" : ""}{ncavUpside.toFixed(1)}%
                   </span>
                   {" "}라서 <span className="font-black">{grade}</span> 입니다.

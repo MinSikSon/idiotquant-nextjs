@@ -9,7 +9,7 @@ import {
 // 토큰 하나에서 막대·점·스택 색이 전부 나온다 — 항목마다 색 클래스를 따로 붙이면
 // 다크 모드 대응이 두 배가 되고 색이 어긋나기 시작한다.
 const TONE_BG: Record<Tone, string> = {
-    green: "bg-[#16a34a]",
+    green: "bg-brand",
     rose: "bg-[#d4525c]",
     emerald: "bg-emerald-500",
     indigo: "bg-indigo-500",
@@ -50,7 +50,7 @@ function Stack({ row }: { row: StackRow }) {
                 <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
                     {row.legend.map(l => (
                         <span key={l.label} className="inline-flex items-center gap-1.5">
-                            <i className={cn("w-2 h-2 rounded-[2px] shrink-0", TONE_BG[l.tone])} />
+                            <i className={cn("w-2 h-2 rounded-sm shrink-0", TONE_BG[l.tone])} />
                             {l.label}
                         </span>
                     ))}
@@ -87,7 +87,7 @@ function DeltaBadge({ item }: { item: BarItem }) {
         <span className={cn(
             "font-mono text-[10.5px] font-bold tabular-nums",
             item.neutral || flat ? "text-neutral-400"
-                : good ? "text-[#16a34a] dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
+                : good ? "text-brand dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
         )}>
             {d.spanCount}기 {flat ? "±0.0%" : `${d.pct > 0 ? "+" : "−"}${Math.abs(d.pct).toFixed(1)}%`}
         </span>

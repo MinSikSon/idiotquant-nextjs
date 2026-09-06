@@ -4,7 +4,13 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks, EyeOff, UserRound } from "lucide-react";
+import { PageHeader } from "@/components/pageHeader";
+
+/* 계정 화면은 카드 한 줄짜리 좁은 단이라 PAGE_WIDTH 프리셋(4xl/7xl)에 얹으면
+   글이 화면 끝까지 늘어난다. 헤더와 본문이 같은 값을 쓰기만 하면 되므로
+   프리셋 대신 이 한 곳에서 정한다. 좌우 패딩은 프리셋과 같다. */
+const PROFILE_CONTAINER = "max-w-sm mx-auto px-4 sm:px-6";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -157,7 +163,7 @@ export default function ProfilePage() {
     if (status === "loading") {
         return (
             <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-[#16a34a] animate-spin" />
+                <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-brand animate-spin" />
             </div>
         );
     }
@@ -167,18 +173,18 @@ export default function ProfilePage() {
     const initial = session.user?.name?.[0]?.toUpperCase() ?? "U";
 
     return (
-        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-8 md:py-12">
-            <div className="mx-auto max-w-sm space-y-4">
-
-                {/* Header */}
-                <h1 className="text-lg font-black text-neutral-900 dark:text-neutral-50 px-1">
-                    {isNewUser ? "시작하기" : "내 계정"}
-                </h1>
+        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
+            <PageHeader
+                containerClassName={PROFILE_CONTAINER}
+                icon={<UserRound size={18} />}
+                title={isNewUser ? "시작하기" : "내 계정"}
+            />
+            <div className={cn(PROFILE_CONTAINER, "py-6 md:py-10 space-y-4")}>
 
                 {/* 아직 담은 종목이 없을 때만 — 다음에 할 일을 맨 위에 둔다.
                     지금까지 이 자리는 이름과 이메일이었는데, 사용자가 이미 아는 정보다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 3단계 중 1단계
@@ -187,7 +193,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="px-5">
                             <div className="h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
-                                <div className="h-full w-1/3 rounded-full bg-[#16a34a]" />
+                                <div className="h-full w-1/3 rounded-full bg-brand" />
                             </div>
                         </div>
                         <ol className="px-5 pt-3 pb-1 flex flex-col gap-1.5">
@@ -200,9 +206,9 @@ export default function ProfilePage() {
                                     <span className={cn(
                                         "w-3 h-3 rounded-full shrink-0 border-2",
                                         s.done
-                                            ? "bg-[#16a34a] border-[#16a34a]"
+                                            ? "bg-brand border-brand"
                                             : s.now
-                                                ? "border-[#16a34a]"
+                                                ? "border-brand"
                                                 : "border-neutral-200 dark:border-[#3f3d37]"
                                     )} />
                                     <span className={cn(
@@ -221,7 +227,7 @@ export default function ProfilePage() {
                         <div className="px-5 pt-2.5 pb-4">
                             <Link
                                 href="/screener"
-                                className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold transition-colors"
+                                className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold transition-colors"
                             >
                                 싼 종목 찾아보기
                                 <ChevronRight size={15} />
@@ -233,10 +239,10 @@ export default function ProfilePage() {
                 {/* 담기 전에 무엇을 보게 되는지 — 담을 이유를 설명해야 할 자리에서
                     핵심 개념을 숨기고 있었다. */}
                 {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-[#16a34a]" />
+                                <Blocks size={12} className="text-brand" />
                                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                     탄탄함이란
                                 </span>
@@ -250,7 +256,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Profile card */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="flex items-center gap-4 px-5 py-5">
                         <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-base font-black shrink-0">
                             {initial}
@@ -265,7 +271,7 @@ export default function ProfilePage() {
                                 </p>
                             )}
                             {isMasterUser && (
-                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a] uppercase tracking-tight">
+                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-light dark:bg-[#052e16]/50 text-brand dark:text-brand uppercase tracking-tight">
                                     Admin
                                 </span>
                             )}
@@ -275,13 +281,13 @@ export default function ProfilePage() {
 
                 {/* Admin: Portfolio section */}
                 {isMasterUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 Portfolio
                             </span>
                         </div>
-                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             <Link
                                 href="/balance-kr"
                                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
@@ -316,20 +322,20 @@ export default function ProfilePage() {
 
                 {/* Admin section — 미리보기 중에도 이 칸만은 남는다(끌 자리가 필요하다) */}
                 {realAdmin && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1">
                             <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                 Admin
                             </span>
                         </div>
-                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             {isAdmin && (
                                 <Link
                                     href="/admin"
                                     className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                                 >
-                                    <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
-                                        <ShieldCheck size={15} className="text-[#16a34a]" />
+                                    <div className="w-8 h-8 rounded-xl bg-brand-light dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
+                                        <ShieldCheck size={15} className="text-brand" />
                                     </div>
                                     <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                         회원 관리
@@ -349,10 +355,10 @@ export default function ProfilePage() {
                                 <div className={cn(
                                     "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
                                     viewAsUser
-                                        ? "bg-[#dcfce7] dark:bg-[#052e16]/50"
+                                        ? "bg-brand-light dark:bg-[#052e16]/50"
                                         : "bg-surface-canvas dark:bg-surface-dark-muted",
                                 )}>
-                                    <EyeOff size={15} className={viewAsUser ? "text-[#16a34a]" : "text-neutral-500 dark:text-neutral-400"} />
+                                    <EyeOff size={15} className={viewAsUser ? "text-brand" : "text-neutral-500 dark:text-neutral-400"} />
                                 </div>
                                 <span className="flex-1 min-w-0">
                                     <span className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -366,7 +372,7 @@ export default function ProfilePage() {
                                 </span>
                                 <span className={cn(
                                     "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-                                    viewAsUser ? "bg-[#16a34a]" : "bg-neutral-200 dark:bg-[#3a3834]",
+                                    viewAsUser ? "bg-brand" : "bg-neutral-200 dark:bg-[#3a3834]",
                                 )}>
                                     <span className={cn(
                                         "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
@@ -380,10 +386,10 @@ export default function ProfilePage() {
 
                 {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
                 {likedList.length > 0 && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-[#16a34a]" />
+                                <Blocks size={12} className="text-brand" />
                                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                     포트폴리오 탄탄함
                                 </span>
@@ -400,7 +406,7 @@ export default function ProfilePage() {
                         <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="shrink-0">
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
-                                <p className="text-3xl font-black text-[#16a34a] tabular-nums leading-none mt-1">
+                                <p className="text-3xl font-black text-brand tabular-nums leading-none mt-1">
                                     {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
                                 </p>
                             </div>
@@ -412,7 +418,7 @@ export default function ProfilePage() {
                                     </span>
                                 </div>
                                 <div className="h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
-                                    <div className="h-full rounded-full bg-gradient-to-r from-[#16a34a] to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
+                                    <div className="h-full rounded-full bg-gradient-to-r from-brand to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
                                 </div>
                             </div>
                         </div>
@@ -468,7 +474,7 @@ export default function ProfilePage() {
                 {/* 관심 종목 — 비었을 때는 위의 시작하기 카드가 같은 말을 더 잘 하므로 띄우지 않는다.
                     "종목이 없습니다 / 발굴 페이지에서 추가해보세요"를 두 번 보여줄 이유가 없다. */}
                 {!isNewUser && (
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                             <Heart size={11} className="text-rose-500" fill="currentColor" />
@@ -483,7 +489,7 @@ export default function ProfilePage() {
                         </div>
                         <Link
                             href="/screener?filter=liked"
-                            className="text-[10px] font-bold text-[#16a34a] hover:underline"
+                            className="text-[10px] font-bold text-brand hover:underline"
                         >
                             발굴 페이지에서 보기
                         </Link>
@@ -498,18 +504,18 @@ export default function ProfilePage() {
 
                     {likesState === "pending" || likesState === "init" ? (
                         <div className="px-5 py-5 flex justify-center">
-                            <div className="w-5 h-5 rounded-full border-2 border-neutral-200 border-t-[#16a34a] animate-spin" />
+                            <div className="w-5 h-5 rounded-full border-2 border-neutral-200 border-t-brand animate-spin" />
                         </div>
                     ) : likedList.length === 0 ? (
                         <div className="px-5 py-6 text-center">
                             <Heart size={22} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
                             <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">관심 종목이 없습니다</p>
                             <p className="text-[11px] text-neutral-400 mt-1">
-                                <Link href="/screener" className="text-[#16a34a] hover:underline font-bold">발굴 페이지</Link>에서 종목을 추가해보세요
+                                <Link href="/screener" className="text-brand hover:underline font-bold">발굴 페이지</Link>에서 종목을 추가해보세요
                             </p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                        <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
                             {likedList.map(item => (
                                 <div key={item.ticker} className="flex items-center gap-2 px-5 py-3">
                                     <div className="flex-1 min-w-0">
@@ -518,7 +524,7 @@ export default function ProfilePage() {
                                                 {item.stock_name ?? item.ticker}
                                             </span>
                                             {!!item.is_us && (
-                                                <span className="text-[9px] font-black px-1 py-0.5 rounded bg-[#f0fdf4] text-[#16a34a] shrink-0">
+                                                <span className="text-[9px] font-black px-1 py-0.5 rounded bg-[#f0fdf4] text-brand shrink-0">
                                                     US
                                                 </span>
                                             )}
@@ -578,7 +584,7 @@ export default function ProfilePage() {
                                     </div>
                                     <Link
                                         href={`/analyze?ticker=${encodeURIComponent(item.stock_name ?? item.ticker)}&from=screener`}
-                                        className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-[#16a34a] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/30 transition-colors"
+                                        className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-brand hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/30 transition-colors"
                                         title="분석 보기"
                                     >
                                         <ChevronRight size={14} />
@@ -602,7 +608,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Account actions */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200/70 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="px-5 pt-4 pb-1">
                         <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                             계정

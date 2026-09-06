@@ -67,7 +67,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
             <span className="text-[10px] text-neutral-400">{label}</span>
             <span className={cn(
                 "text-[11px] font-mono font-bold tabular-nums",
-                accent ? "text-[#16a34a]" : "text-neutral-600 dark:text-neutral-300"
+                accent ? "text-brand" : "text-neutral-600 dark:text-neutral-300"
             )}>{value}</span>
         </div>
     );
@@ -100,12 +100,12 @@ export function GroupedResults({
                             {/* 폰에서는 한 줄에 이름·개수까지 들어가야 해서 아이콘을 한 단계 줄인다.
                                 20×14 격자 비율(1.4)은 유지해야 도트가 정수 배로 떨어진다. */}
                             {g.sector && (
-                                <span className="w-[30px] h-[21px] sm:w-[42px] sm:h-[30px] shrink-0 rounded-[5px] overflow-hidden border border-neutral-200 dark:border-border-subtle-dark">
+                                <span className="w-[30px] h-[21px] sm:w-[42px] sm:h-[30px] shrink-0 rounded-md overflow-hidden border border-neutral-200 dark:border-border-subtle-dark">
                                     <SectorSprite sector={g.sector} color={sectorAccent(g.sector)} />
                                 </span>
                             )}
                             <span className="text-[12.5px] font-extrabold text-neutral-900 dark:text-neutral-100 shrink-0">{g.label}</span>
-                            <span className="px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] text-[10px] font-mono font-bold shrink-0">
+                            <span className="px-1.5 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand text-[10px] font-mono font-bold shrink-0">
                                 {g.rows.length}개
                             </span>
                             {hint && (

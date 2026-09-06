@@ -80,7 +80,7 @@ const WATCH_STATUS: EffStatus = { label: "관심", tone: "off" };
 function StatusBadge({ status }: { status?: EffStatus }) {
   if (!status) return <span className="text-neutral-300">-</span>;
   const map: Record<Tone, string> = {
-    active: "bg-[#16a34a] text-white",
+    active: "bg-brand text-white",
     idle: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     excluded: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
     off: "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
@@ -410,13 +410,13 @@ function StockListTable({
           <div className="flex items-center gap-2">
             <span className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
-              countryTradingActive ? "bg-[#16a34a] text-white" : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400"
+              countryTradingActive ? "bg-brand text-white" : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400"
             )}>
               <Power className="w-3.5 h-3.5" /> 자동매매 {countryTradingActive ? "ON" : "OFF"}
             </span>
             {countryTradingActive ? (
               <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                현재 <span className="text-[#16a34a]">{summary.active}종목</span> 매매중
+                현재 <span className="text-brand">{summary.active}종목</span> 매매중
                 <span className="ml-1 text-xs font-normal text-neutral-400">/ 운용 {summary.total}종목</span>
               </span>
             ) : (
@@ -424,7 +424,7 @@ function StockListTable({
             )}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-mono">
-            <span className="rounded-md bg-[#16a34a]/10 px-2 py-1 font-bold text-[#16a34a]">매매중 {summary.active}</span>
+            <span className="rounded-md bg-brand/10 px-2 py-1 font-bold text-brand">매매중 {summary.active}</span>
             <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">대기 {summary.idle}</span>
             <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">제외 {summary.excluded}</span>
           </div>
@@ -443,7 +443,7 @@ function StockListTable({
         {/* 동작 안내 */}
         <p className="mt-2 flex items-start gap-1 text-[10px] leading-relaxed text-neutral-400">
           <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b> → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-[#16a34a]">매매중</b>이 됩니다. <b className="font-bold text-rose-500">좋아요</b>는 관심목록이며, 매매하려면 <b className="font-bold text-[#16a34a]">복사</b>로 그룹에 넣으세요.
+          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b> → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-brand">매매중</b>이 됩니다. <b className="font-bold text-rose-500">좋아요</b>는 관심목록이며, 매매하려면 <b className="font-bold text-brand">복사</b>로 그룹에 넣으세요.
         </p>
 
         {/* 상태 설명 토글 */}
@@ -524,7 +524,7 @@ function StockListTable({
                     placeholder="그룹 이름"
                     className="w-28 rounded-md border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-surface-dark-canvas px-2 py-1 text-xs"
                   />
-                  <button onClick={commitCreate} className="rounded-md bg-[#16a34a] p-1.5 text-white hover:bg-[#15803d]">
+                  <button onClick={commitCreate} className="rounded-md bg-brand p-1.5 text-white hover:bg-brand-hover">
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => { setCreating(false); setNewGroupName(""); }} className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted">
@@ -534,7 +534,7 @@ function StockListTable({
               ) : (
                 <button
                   onClick={() => setCreating(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#16a34a]/40 bg-[#16a34a]/10 px-3 py-1.5 text-xs font-bold text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand hover:bg-brand/20 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> 새 그룹
                 </button>
@@ -546,8 +546,8 @@ function StockListTable({
 
       {/* ===== 선택 작업 바 (이동 / 복사) ===== */}
       {isMaster && picked.size > 0 && (
-        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-[#16a34a]/40 bg-[#f0fdf4] px-3 py-2.5 shadow-md dark:border-[#16a34a]/40 dark:bg-[#14532d]/30 sm:px-4">
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a]">
+        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-brand/40 bg-[#f0fdf4] px-3 py-2.5 shadow-md dark:border-brand/40 dark:bg-[#14532d]/30 sm:px-4">
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-brand">
             <ArrowRightLeft className="w-3.5 h-3.5" /> {pickedSymbols.length}개 선택
           </span>
           <button onClick={clearPick} className="rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-surface-dark-canvas sm:order-last sm:ml-auto">
@@ -556,7 +556,7 @@ function StockListTable({
           <select
             value={bulkTarget}
             onChange={(e) => setBulkTarget(e.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-[#16a34a]/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-surface-dark-canvas sm:flex-none"
+            className="min-w-0 flex-1 rounded-md border border-brand/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-surface-dark-canvas sm:flex-none"
           >
             <option value="">미지정</option>
             {realGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -565,7 +565,7 @@ function StockListTable({
             <button
               onClick={() => doCopyToGroup(bulkTarget || null)}
               title="좋아요 종목을 선택한 그룹의 운용 종목으로 복사 (원본 좋아요 유지)"
-              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#16a34a] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#15803d]"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-brand px-2.5 py-1.5 text-xs font-bold text-white hover:bg-brand-hover"
             >
               <Copy className="w-3.5 h-3.5" /> 복사
             </button>
@@ -573,7 +573,7 @@ function StockListTable({
           <button
             onClick={() => doBulkMove(bulkTarget || null)}
             title="운용 종목을 선택한 그룹으로 이동"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#16a34a]/40 bg-white px-2.5 py-1.5 text-xs font-bold text-[#16a34a] hover:bg-[#16a34a]/10 dark:bg-surface-dark-canvas"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-brand/40 bg-white px-2.5 py-1.5 text-xs font-bold text-brand hover:bg-brand/10 dark:bg-surface-dark-canvas"
           >
             <ArrowRightLeft className="w-3.5 h-3.5" /> 이동
           </button>
@@ -627,7 +627,7 @@ function StockListTable({
           key={g.id}
           sectionKey={g.id}
           title={g.name}
-          icon={<FolderOpen className="w-4 h-4 text-[#16a34a]" />}
+          icon={<FolderOpen className="w-4 h-4 text-brand" />}
           accent="green"
           count={(byGroup.get(g.id) ?? []).length}
           rows={byGroup.get(g.id) ?? []}
@@ -694,11 +694,11 @@ function StockListTable({
           <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-surface-dark-card animate-in zoom-in-95 duration-300">
             <div className="flex items-center justify-between border-b border-neutral-100 p-4 dark:border-border-subtle-dark">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-[#16a34a] p-1.5 text-white">
+                <div className="rounded-lg bg-brand p-1.5 text-white">
                   <BarChart3 className="h-4 w-4" />
                 </div>
                 <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  Strategy Analysis: <span className="text-[#16a34a]">{selectedDetail?.symbol}</span>
+                  Strategy Analysis: <span className="text-brand">{selectedDetail?.symbol}</span>
                 </h2>
               </div>
               <button onClick={closeModal} className="rounded-full p-2 text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted transition-colors">
@@ -728,7 +728,7 @@ function StockListTable({
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t border-neutral-100 bg-neutral-50/50 p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card/50">
-              <button onClick={closeModal} className="rounded-lg bg-[#16a34a] px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#16a34a]/20 hover:bg-[#15803d] active:scale-95 transition-all">
+              <button onClick={closeModal} className="rounded-lg bg-brand px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand/20 hover:bg-brand-hover active:scale-95 transition-all">
                 확인
               </button>
             </div>
@@ -815,7 +815,7 @@ function GroupSection({
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0) + (onDeleteStock ? 1 : 0);
 
   const accentBorder = accent === "rose" ? "border-rose-200 dark:border-rose-900/30"
-    : accent === "green" ? "border-[#16a34a]/20 dark:border-[#16a34a]/20"
+    : accent === "green" ? "border-brand/20 dark:border-brand/20"
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
@@ -844,7 +844,7 @@ function GroupSection({
               "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black",
               groupSide === "sell"
                 ? "bg-rose-500 text-white"
-                : "bg-[#16a34a]/10 text-[#16a34a]"
+                : "bg-brand/10 text-brand"
             )}>
               {groupSide === "sell" ? "매도" : "매수"}
             </span>
@@ -863,7 +863,7 @@ function GroupSection({
             {count}종목
           </span>
           {tokenTotal > 0 && (
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 rounded-full" title="이 그룹 예산(토큰) 합계">
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-[#f0fdf4] text-brand dark:bg-[#14532d]/30 rounded-full" title="이 그룹 예산(토큰) 합계">
               예산 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}
             </span>
           )}
@@ -875,7 +875,7 @@ function GroupSection({
                 checked={allChecked}
                 ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
                 onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
-                className="h-3.5 w-3.5 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                className="h-3.5 w-3.5 rounded border-neutral-300 text-brand focus:ring-brand"
               />
               전체
             </label>
@@ -890,7 +890,7 @@ function GroupSection({
           {conditionChips && conditionChips.length > 0 && (
             <div className="hidden md:flex items-center gap-1">
               {conditionChips.map((c, i) => (
-                <span key={i} className="rounded-full bg-[#16a34a]/10 px-2 py-0.5 text-[10px] font-mono text-[#16a34a]">{c}</span>
+                <span key={i} className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-mono text-brand">{c}</span>
               ))}
             </div>
           )}
@@ -909,7 +909,7 @@ function GroupSection({
               className={cn(
                 "rounded-lg p-1.5 transition-colors",
                 showRuleEditor
-                  ? "bg-[#16a34a]/10 text-[#16a34a]"
+                  ? "bg-brand/10 text-brand"
                   : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-surface-dark-muted dark:hover:text-neutral-200"
               )}
             >
@@ -927,7 +927,7 @@ function GroupSection({
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                 tradingActive
-                  ? "bg-[#16a34a] text-white hover:bg-[#15803d]"
+                  ? "bg-brand text-white hover:bg-brand-hover"
                   : "bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-surface-dark-muted dark:text-neutral-400"
               )}
             >
@@ -937,7 +937,7 @@ function GroupSection({
           ) : (
             <span className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
-              tradingActive ? "bg-[#16a34a]/10 text-[#16a34a]" : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted"
+              tradingActive ? "bg-brand/10 text-brand" : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted"
             )}>
               <Power className="w-3.5 h-3.5" />
               자동매매 {tradingActive ? "ON" : "OFF"}
@@ -956,13 +956,13 @@ function GroupSection({
       {showRuleEditor && onSaveGroupSettings && (
         <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-4 py-3">
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
-            <span className="col-span-2 text-[11px] font-bold text-[#16a34a] uppercase tracking-wider shrink-0">그룹 조건 설정</span>
+            <span className="col-span-2 text-[11px] font-bold text-brand uppercase tracking-wider shrink-0">그룹 조건 설정</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <label className="text-[11px] text-neutral-500 shrink-0">방향</label>
               <div className="inline-flex w-full sm:w-auto rounded-lg border border-neutral-300 dark:border-[#4a4641] overflow-hidden">
                 <button type="button" onClick={() => setDraftSide("buy")}
                   className={cn("flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
-                    draftSide === "buy" ? "bg-[#16a34a] text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
+                    draftSide === "buy" ? "bg-brand text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
                   매수
                 </button>
                 <button type="button" onClick={() => setDraftSide("sell")}
@@ -976,7 +976,7 @@ function GroupSection({
               <label className="text-[11px] text-neutral-500 shrink-0" title="켜면 NCAV 조건을 무시하고 예산으로 정액 매수 (ETF 등)">정액매수(DCA)</label>
               <button type="button" onClick={() => setDraftDca(v => !v)}
                 className={cn("w-full sm:w-auto px-2.5 py-1.5 sm:py-1 text-xs font-bold rounded-lg border transition-colors",
-                  draftDca ? "bg-[#16a34a] text-white border-[#16a34a]" : "bg-white dark:bg-surface-dark-canvas text-neutral-500 border-neutral-300 dark:border-[#4a4641]")}>
+                  draftDca ? "bg-brand text-white border-brand" : "bg-white dark:bg-surface-dark-canvas text-neutral-500 border-neutral-300 dark:border-[#4a4641]")}>
                 {draftDca ? "ON" : "OFF"}
               </button>
             </div>
@@ -1048,7 +1048,7 @@ function GroupSection({
                   });
                   setShowRuleEditor(false);
                 }}
-                className="rounded px-2.5 py-1 text-xs font-bold bg-[#16a34a] text-white hover:bg-[#15803d]"
+                className="rounded px-2.5 py-1 text-xs font-bold bg-brand text-white hover:bg-brand-hover"
               >
                 저장
               </button>
@@ -1078,7 +1078,7 @@ function GroupSection({
                       checked={allChecked}
                       ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
                       onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
-                      className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                      className="h-4 w-4 rounded border-neutral-300 text-brand focus:ring-brand"
                     />
                   </th>
                 )}
@@ -1093,7 +1093,7 @@ function GroupSection({
                 {onDeleteStock && <th className="px-4 py-2.5 w-10"></th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+            <tbody className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={colSpan} className="py-12 text-center">
@@ -1115,7 +1115,7 @@ function GroupSection({
                           type="checkbox"
                           checked={isPicked(row.symbol)}
                           onChange={() => onTogglePick(sectionKey, row.symbol)}
-                          className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                          className="h-4 w-4 rounded border-neutral-300 text-brand focus:ring-brand"
                         />
                       </td>
                     )}
@@ -1127,13 +1127,13 @@ function GroupSection({
                         <span className="flex min-w-0 flex-col items-start leading-tight">
                           {row.name ? (
                             <>
-                              <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight truncate max-w-[180px]">
+                              <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-brand transition-colors tracking-tight truncate max-w-[180px]">
                                 {row.name}
                               </span>
                               <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{row.symbol}</span>
                             </>
                           ) : (
-                            <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight">
+                            <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-brand transition-colors tracking-tight">
                               {row.symbol}
                             </span>
                           )}
@@ -1168,13 +1168,13 @@ function GroupSection({
                         {row.ncavRatio ?? "-"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
+                    <td className="px-4 py-3 text-right font-mono font-black text-brand dark:text-brand">
                       {row.movable ? (
                         <div className="flex flex-col items-end gap-1">
                           <span>{row.token?.toLocaleString() ?? 0}</span>
                           {monthlyPerStock > 0 && (
                             <div className="w-16 h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden" title={`종목당 월 예산 대비 ${Math.round(Math.min(1, (Number(row.token) || 0) / monthlyPerStock) * 100)}%`}>
-                              <div className="h-full bg-[#16a34a] rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
+                              <div className="h-full bg-brand rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
                             </div>
                           )}
                         </div>
@@ -1224,7 +1224,7 @@ function GroupSection({
         </div>
 
         {/* 모바일 카드 뷰 */}
-        <div className="md:hidden divide-y divide-neutral-100 dark:divide-[#35332e]">
+        <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
           {rows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 opacity-40">
               <Search className="w-8 h-8" />
@@ -1243,7 +1243,7 @@ function GroupSection({
                       type="checkbox"
                       checked={isPicked(row.symbol)}
                       onChange={() => onTogglePick(sectionKey, row.symbol)}
-                      className="h-5 w-5 shrink-0 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                      className="h-5 w-5 shrink-0 rounded border-neutral-300 text-brand focus:ring-brand"
                     />
                   )}
                   <button onClick={() => openDetail(row.raw)} className="flex min-w-0 items-center gap-1.5">
@@ -1285,10 +1285,10 @@ function GroupSection({
                 {row.movable && (
                   <div className="mt-2.5 flex items-center justify-between gap-2">
                     <span className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
-                      <span>예산 <b className="font-mono font-black text-[#16a34a]">{row.token?.toLocaleString() ?? 0}</b></span>
+                      <span>예산 <b className="font-mono font-black text-brand">{row.token?.toLocaleString() ?? 0}</b></span>
                       {monthlyPerStock > 0 && (
                         <span className="w-14 h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden inline-block" title={`종목당 월 예산 대비 ${Math.round(Math.min(1, (Number(row.token) || 0) / monthlyPerStock) * 100)}%`}>
-                          <span className="block h-full bg-[#16a34a] rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
+                          <span className="block h-full bg-brand rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
                         </span>
                       )}
                     </span>
@@ -1296,7 +1296,7 @@ function GroupSection({
                       <div className="flex flex-wrap justify-end gap-1">
                         {tokenAmounts.map(amt => (
                           <div key={`m-indiv-${amt}`} className="flex items-center overflow-hidden rounded-md border border-neutral-200 dark:border-border-subtle-dark">
-                            <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-[#16a34a] active:bg-[#f0fdf4] dark:active:bg-[#14532d]/30">
+                            <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-brand active:bg-[#f0fdf4] dark:active:bg-[#14532d]/30">
                               +{amt / 10000}만
                             </button>
                             <button onClick={() => doTokenMinusOne(amt, row.symbol)} className="border-l border-neutral-200 px-2 py-1.5 text-red-500 active:bg-red-50 dark:border-border-subtle-dark dark:active:bg-red-950">

@@ -104,11 +104,11 @@ export default function QuantPage() {
 
         {/* ── 머리 ── */}
         <header>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#16a34a]">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-brand">
             Quant Investing
           </p>
           <h1 className="mt-3 text-[26px] sm:text-[38px] font-black leading-[1.3] text-neutral-900 dark:text-white break-keep">
-            퀀트 투자란? 감이 아니라 <span className="text-[#16a34a]">숫자 규칙</span>으로 종목을 고르는 방법
+            퀀트 투자란? 감이 아니라 <span className="text-brand">숫자 규칙</span>으로 종목을 고르는 방법
           </h1>
           <p className="mt-5 text-[15px] sm:text-base leading-[1.85] text-neutral-600 dark:text-neutral-300 break-keep">
             퀀트(quant)는 정량(quantitative)의 줄임말입니다. 퀀트 투자는 <strong className="font-bold text-neutral-900 dark:text-white">
@@ -130,7 +130,7 @@ export default function QuantPage() {
           <div className="mt-6 grid gap-3">
             {STEPS.map(s => (
               <div key={s.n} className="flex gap-4 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 sm:p-5">
-                <span className="shrink-0 w-7 h-7 rounded-full bg-[#dcfce7] dark:bg-[#052e16]/60 text-[#16a34a] grid place-items-center text-[13px] font-black">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-brand-light dark:bg-[#052e16]/60 text-brand grid place-items-center text-[13px] font-black">
                   {s.n}
                 </span>
                 <div className="min-w-0">
@@ -163,7 +163,7 @@ export default function QuantPage() {
                 className="rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4"
               >
                 <h3 className="text-[14.5px] font-black text-neutral-900 dark:text-white">{s.label}</h3>
-                <p className="mt-1 font-mono text-[12.5px] text-[#16a34a] break-all">{s.formula}</p>
+                <p className="mt-1 font-mono text-[12.5px] text-brand break-all">{s.formula}</p>
                 <p className="mt-2 text-[13px] leading-[1.75] text-neutral-600 dark:text-neutral-300 break-keep">
                   {s.plain}
                 </p>
@@ -173,7 +173,7 @@ export default function QuantPage() {
 
           <Link
             href="/screener?mincap=500"
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#16a34a] hover:bg-[#15803d] px-5 py-3 text-[14px] font-bold text-white transition-colors"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand hover:bg-brand-hover px-5 py-3 text-[14px] font-bold text-white transition-colors"
           >
             오늘 이 기준에 걸린 종목 보기
             <ArrowRight size={15} />
@@ -211,10 +211,10 @@ export default function QuantPage() {
                 <Link
                   key={t.href}
                   href={t.href}
-                  className="group rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 sm:p-5 hover:border-[#16a34a]/60 transition-colors"
+                  className="group rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 sm:p-5 hover:border-brand/60 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Icon size={15} className="text-[#16a34a] shrink-0" />
+                    <Icon size={15} className="text-brand shrink-0" />
                     <h3 className="text-[14.5px] font-black text-neutral-900 dark:text-white break-keep">{t.title}</h3>
                   </div>
                   <p className="mt-1.5 text-[13px] leading-[1.8] text-neutral-600 dark:text-neutral-300 break-keep">{t.body}</p>

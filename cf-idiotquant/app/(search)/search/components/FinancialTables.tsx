@@ -19,8 +19,8 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자산",
         labelEn: "ASSETS",
-        accent: "border-[#16a34a]/50 bg-[#f0fdf4] text-[#15803d] dark:bg-[#052e16]/40 dark:text-[#86efac]",
-        dotColor: "bg-[#16a34a]",
+        accent: "border-brand/50 bg-[#f0fdf4] text-brand-hover dark:bg-[#052e16]/40 dark:text-[#86efac]",
+        dotColor: "bg-brand",
         rows: [
             { label: "유동자산", key: "cras", description: "1년 내 현금화 가능한 자산 — NCAV 청산가치의 핵심 안전마진 원천" },
             { label: "고정자산", key: "fxas", description: "설비·토지·무형자산 등 현금화에 1년 이상 소요되는 장기 자산" },
@@ -174,7 +174,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                     <div className="flex flex-col items-end gap-0.5">
                                         <span className={cn(
                                             "text-[9px] font-black uppercase tracking-wider font-mono",
-                                            i === 0 ? "text-[#16a34a] dark:text-[#16a34a]" : "text-neutral-400 dark:text-neutral-500"
+                                            i === 0 ? "text-brand dark:text-brand" : "text-neutral-400 dark:text-neutral-500"
                                         )}>
                                             {i === 0 ? "최근 결산" : `T − ${i}`}
                                         </span>
@@ -309,7 +309,7 @@ export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
                 <Tabs.List className="flex gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
                     <Tabs.Trigger
                         value="bs"
-                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-[#15803d] dark:data-[state=active]:text-[#86efac]")}
+                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-hover dark:data-[state=active]:text-[#86efac]")}
                     >
                         <BookOpen size={12} />
                         재무상태표

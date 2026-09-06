@@ -3,10 +3,11 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
-  Search, Plus, Trash2, RefreshCw, AlertCircle,
+  Search, Plus, Trash2, RefreshCw, AlertCircle, BookOpen,
   ChevronLeft, ChevronRight, Edit3, Check, X, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 import {
   fetchTickerMap, upsertTickerMap, deleteTickerMap,
   type TickerRow, type TickerMapMeta,
@@ -212,44 +213,43 @@ export default function TickerMapPage() {
   const isClientPaginated = country === "US";
 
   return (
-    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-8">
-      <div className="max-w-5xl mx-auto space-y-5">
-
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight">종목명 매핑 관리</h1>
-            <p className="text-sm text-neutral-400 mt-1">티커 코드 ↔ 종목명 오버라이드 조회 및 관리</p>
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => { setShowAddForm(v => !v); setAddError(null); }}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#16a34a] text-white rounded-xl text-xs font-black hover:bg-[#15803d] transition-colors"
-            >
-              <Plus size={14} /> 오버라이드 추가
-            </button>
-          )}
-        </div>
+    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
+      <PageHeader
+        width="content"
+        icon={<BookOpen size={18} />}
+        title="종목명 매핑 관리"
+        meta="티커 코드 ↔ 종목명 오버라이드 조회 및 관리"
+        actions={isAdmin && (
+          <button
+            onClick={() => { setShowAddForm(v => !v); setAddError(null); }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-brand text-white rounded-lg text-xs font-black hover:bg-brand-hover transition-colors"
+          >
+            <Plus size={14} /> 오버라이드 추가
+          </button>
+        )}
+      />
+      <div className={cn(PAGE_WIDTH.content, "py-6 space-y-5")}>
 
         {isAdmin && showAddForm && (
-          <div className="bg-white dark:bg-surface-dark-card border border-[#16a34a]/30 rounded-2xl p-4 space-y-3">
+          <div className="bg-white dark:bg-surface-dark-card border border-brand/30 rounded-2xl p-4 space-y-3">
             <p className="text-xs font-black text-neutral-500 uppercase tracking-wider">새 오버라이드 추가</p>
             <div className="flex flex-wrap gap-2">
               <input
                 value={addTicker}
                 onChange={e => setAddTicker(e.target.value.toUpperCase())}
                 placeholder="티커 (예: 005930, AAPL)"
-                className="flex-1 min-w-[120px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
+                className="flex-1 min-w-[120px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-mono focus:outline-none focus:ring-1 focus:ring-brand dark:text-white"
               />
               <input
                 value={addName}
                 onChange={e => setAddName(e.target.value)}
                 placeholder="종목명 (예: 삼성전자, Apple Inc.)"
-                className="flex-1 min-w-[160px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
+                className="flex-1 min-w-[160px] px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-brand dark:text-white"
               />
               <select
                 value={addCountry}
                 onChange={e => setAddCountry(e.target.value)}
-                className="px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
+                className="px-3 py-2 bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-brand dark:text-white"
               >
                 <option value="KR">국내(KR)</option>
                 <option value="US">미국(US)</option>
@@ -257,7 +257,7 @@ export default function TickerMapPage() {
               <button
                 onClick={handleAdd}
                 disabled={addLoading}
-                className="flex items-center gap-1 px-3 py-2 bg-[#16a34a] text-white rounded-xl text-xs font-black hover:bg-[#15803d] disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-3 py-2 bg-brand text-white rounded-xl text-xs font-black hover:bg-brand-hover disabled:opacity-50 transition-colors"
               >
                 {addLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />} 저장
               </button>
@@ -281,7 +281,7 @@ export default function TickerMapPage() {
                 className={cn(
                   "px-3 py-1.5 text-xs font-black transition-colors",
                   country === opt.value
-                    ? "bg-[#16a34a] text-white"
+                    ? "bg-brand text-white"
                     : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
                 )}
               >{opt.label}</button>
@@ -349,7 +349,7 @@ export default function TickerMapPage() {
                   {isAdmin && <th className="px-4 py-3 text-center text-[10px] font-black text-neutral-400 uppercase tracking-widest">액션</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+              <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
                 {(loading || usBaseLoading) && rows.length === 0 && (
                   <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">
                     {usBaseLoading ? "미국 종목 데이터 로딩 중… (최초 1회)" : "불러오는 중..."}
@@ -371,9 +371,9 @@ export default function TickerMapPage() {
                             value={editName}
                             onChange={e => setEditName(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") handleEditSave(row.ticker); if (e.key === "Escape") setEditingTicker(null); }}
-                            className="flex-1 px-2 py-1 text-xs border border-[#16a34a] rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas focus:outline-none dark:text-white"
+                            className="flex-1 px-2 py-1 text-xs border border-brand rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas focus:outline-none dark:text-white"
                           />
-                          <button onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="p-1 text-[#16a34a] hover:bg-[#f0fdf4] rounded-lg">
+                          <button onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="p-1 text-brand hover:bg-[#f0fdf4] rounded-lg">
                             {editLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                           </button>
                           <button onClick={() => setEditingTicker(null)} className="p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted rounded-lg">
@@ -402,7 +402,7 @@ export default function TickerMapPage() {
                         "text-[10px] font-black px-2 py-0.5 rounded-full",
                         row.source === "hardcoded"
                           ? "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500"
-                          : "bg-[#dcfce7] dark:bg-[#052e16]/30 text-[#16a34a]"
+                          : "bg-brand-light dark:bg-[#052e16]/30 text-brand"
                       )}>{row.source === "hardcoded" ? "기본" : "오버라이드"}</span>
                     </td>
                     {isAdmin && (

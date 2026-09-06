@@ -13,6 +13,36 @@ const config = {
   plugins: [require('@tailwindcss/typography')],
 
   mode: 'jit',
+
+  /* 모서리 반경 — 역할이 값을 정한다.
+     아래 여섯 단계 밖의 임의값(rounded-[10px] 같은)은 쓰지 않는다. 같은 역할에
+     두 값이 생기는 순간 어느 쪽이 맞는지 아무도 모르게 되고, 실제로 그렇게 됐었다
+     (헤더 액션 버튼만 10px, 나머지 같은 크기 버튼은 8px).
+
+       rounded-sm     범례 표식 등 8~10px 짜리 작은 사각형
+       rounded-md     표 안의 작은 태그 · 체크박스
+       rounded-lg     작은 컨트롤 — 아이콘 버튼, 칩, 세그먼트 토글
+       rounded-xl     기본 버튼 · 입력 · 아이콘 상자 · 스켈레톤 블록
+       rounded-2xl    카드 · 패널 · 모달
+       rounded-full   배지 · 아바타 · 점
+
+     rounded-3xl 은 (home) 히어로와 not-found·ErrorFallback 의 큰 일러스트
+     면에만 쓴다. 랜딩은 공통 골격에서 빼기로 한 자리라 여기 규칙 밖이다.
+  */
+
+  /* 로딩 자리표시자(animate-pulse 막대)의 색은 하나다:
+       bg-neutral-200 dark:bg-surface-dark-elevated
+     자리표시자는 보이라고 두는 것이라, 얹히는 카드보다 확실히 진해야 한다.
+     예전에는 색 조합이 열한 가지였고 balance/shared.tsx 의 한 스켈레톤 안에서도
+     막대마다 색이 갈렸다. 카드 모양 스켈레톤의 **껍데기**는 예외로, 카드 색
+     (bg-white dark:bg-surface-dark-card)을 그대로 쓴다 — 그건 자리표시자가
+     아니라 카드 자신이다.
+
+     카드 표면도 하나다:
+       bg-white dark:bg-surface-dark-card rounded-2xl
+       border border-neutral-200 dark:border-border-subtle-dark
+     shadow 는 얹지 않는다. 테두리가 이미 카드를 갈라 주고, 50개 카드에 전부
+     그림자를 깔면 무엇이 떠 있는 것인지가 사라진다. */
   theme: {
     extend: {
       backgroundImage: {
@@ -77,15 +107,23 @@ const config = {
           card: "#242320",
           hover: "#2c2b27",
           muted: "#35332e",
+          // 테두리는 아래 border-subtle.dark 와 같은 값이다. 이름이 둘인 것은
+          // 역사적 이유이고, 값이 갈라지면 안 된다 — 아래 주석 참고.
           border: "#3a3834",
           elevated: "#4a4641",
         },
 
-        // 테두리
+        // 테두리 — 다크 값은 단 하나다.
+        //
+        // 예전에는 border-subtle.dark(#35332e)와 surface-dark.border(#3a3834)가
+        // 서로 다른 값이면서 같은 용도로 섞여 쓰였다. 둘 중 #3a3834 로 모은다:
+        // #35332e 는 surface-dark.muted 와 정확히 같은 값이라, muted 배경 위에
+        // 얹힌 테두리가 다크 모드에서 보이지 않았다(analyze 의 지표 그리드,
+        // StockCard 의 지표 그리드, stockListTable 의 hover 셀 등).
+        // 테두리 토큰이 표면 토큰과 같은 값이면 테두리로서 할 일을 못 한다.
         "border-subtle": {
           DEFAULT: "#e5e5e5",
-          dark: "#35332e",
-          "dark-strong": "#3a3834",
+          dark: "#3a3834",
         },
       },
     },

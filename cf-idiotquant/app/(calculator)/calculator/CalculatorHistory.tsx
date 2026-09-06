@@ -97,7 +97,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
     );
 
     if (status === "loading") {
-        return shell(<div className="h-9 bg-[#f2efe9] dark:bg-surface-dark rounded-xl animate-pulse" />);
+        return shell(<div className="h-9 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />);
     }
 
     if (status !== "authenticated") {
@@ -109,7 +109,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                 </p>
                 <Link
                     href="/login?callbackUrl=/calculator"
-                    className="inline-block mt-3 px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[12px] font-bold transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
+                    className="inline-block mt-3 px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-[12px] font-bold transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
                 >
                     카카오로 로그인
                 </Link>
@@ -127,13 +127,13 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-                    className="flex-1 min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-xl px-3 py-2 text-[12px] font-bold text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#16a34a]"
+                    className="flex-1 min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-xl px-3 py-2 text-[12px] font-bold text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-brand"
                 />
                 <button
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-[12px] font-bold shrink-0 disabled:opacity-50 transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
+                    className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-[12px] font-bold shrink-0 disabled:opacity-50 transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0"
                 >
                     {saving ? "저장 중…" : "저장"}
                 </button>
@@ -169,7 +169,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                         "block text-[10px] font-bold font-[family-name:var(--font-mono)] tabular-nums mt-0.5",
                                         run.final_value < 0
                                             ? "text-[#b91c1c] dark:text-[#ef6a6a]"
-                                            : "text-[#16a34a] dark:text-[#2fa85a]"
+                                            : "text-brand dark:text-[#2fa85a]"
                                     )}>
                                         만기 {formatMan(run.final_value)}
                                     </span>
@@ -178,7 +178,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => handleLoad(run)}
-                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-[#16a34a] hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
+                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-brand hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
                                     aria-label={`${run.label || stampKst(run.created_at)} 불러오기`}
                                 >
                                     <Undo2 className="w-3.5 h-3.5" />

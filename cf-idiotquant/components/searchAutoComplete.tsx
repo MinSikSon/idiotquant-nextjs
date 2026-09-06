@@ -60,7 +60,7 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
         <span>
             {parts.map((part, index) => 
                 regex.test(part) ? (
-                    <mark key={index} className="bg-[#dcfce7] text-[#166534] dark:bg-[#052e16]/80 dark:text-emerald-300 font-bold px-0.5 rounded-xs">
+                    <mark key={index} className="bg-brand-light text-[#166534] dark:bg-[#052e16]/80 dark:text-emerald-300 font-bold px-0.5 rounded-xs">
                         {part}
                     </mark>
                 ) : (
@@ -170,13 +170,13 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-2xl border transition-all duration-300 ease-in-out",
                     "bg-surface-canvas/90 dark:bg-surface-dark/90 border-neutral-200/60 dark:border-border-subtle-dark/60 backdrop-blur-md",
                     isFocused 
-                        ? "bg-white dark:bg-surface-dark-canvas border-[#16a34a]/70 dark:border-[#16a34a]/70 ring-4 ring-[#16a34a]/10 dark:ring-[#16a34a]/15 shadow-lg"
+                        ? "bg-white dark:bg-surface-dark-canvas border-brand/70 dark:border-brand/70 ring-4 ring-brand/10 dark:ring-brand/15 shadow-lg"
                         : "hover:border-neutral-300 dark:hover:border-neutral-700"
                 )}
             >
                 <Search className={cn(
                     "h-4.5 w-4.5 transition-colors duration-200 shrink-0",
-                    isFocused ? "text-[#16a34a] dark:text-[#16a34a]" : "text-neutral-400 dark:text-neutral-500"
+                    isFocused ? "text-brand dark:text-brand" : "text-neutral-400 dark:text-neutral-500"
                 )} />
                 
                 <input
@@ -238,7 +238,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     {/* 상단 라벨링 정보 바 */}
                     <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-border-subtle-dark/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md z-10">
                         <span className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-[#16a34a] dark:text-[#16a34a]" />
+                            <Sparkles className="w-3 h-3 text-brand dark:text-brand" />
                             퀀트 인텔리전스 추천
                         </span>
                         {suggestions.length > 0 && selectedIndex >= 0 && (
@@ -261,7 +261,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                                     className={cn(
                                         "flex items-center justify-between text-xs py-2.5 px-3 cursor-pointer rounded-xl transition-all duration-150 font-medium my-0.5",
                                         isSelected
-                                            ? "bg-[#16a34a] dark:bg-[#16a34a] text-white font-bold shadow-sm translate-x-0.5"
+                                            ? "bg-brand dark:bg-brand text-white font-bold shadow-sm translate-x-0.5"
                                             : "text-neutral-700 dark:text-neutral-300 hover:bg-surface-muted-hover/70 dark:hover:bg-surface-dark-hover/70 hover:translate-x-0.5"
                                     )}
                                 >

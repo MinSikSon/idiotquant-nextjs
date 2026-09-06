@@ -116,7 +116,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-[#16a34a]/10 p-1.5 text-[#16a34a]">
+          <div className="rounded-lg bg-brand/10 p-1.5 text-brand">
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
@@ -150,13 +150,13 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             <div key={k} className={cn(
               "rounded-xl border bg-white p-3 dark:bg-surface-dark-canvas transition-colors",
               changed
-                ? "border-[#16a34a] ring-1 ring-[#16a34a]/30 dark:border-[#16a34a]"
+                ? "border-brand ring-1 ring-brand/30 dark:border-brand"
                 : "border-neutral-200 dark:border-border-subtle-dark"
             )}>
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
                   {meta.label}
-                  {changed && <span className="rounded bg-[#16a34a]/10 px-1.5 py-0.5 text-[9px] font-extrabold text-[#16a34a]">변경됨</span>}
+                  {changed && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[9px] font-extrabold text-brand">변경됨</span>}
                 </span>
                 <code className="text-[9px] text-neutral-300 dark:text-neutral-600">{k}</code>
               </div>
@@ -172,7 +172,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                     val
-                      ? "bg-[#16a34a] text-white"
+                      ? "bg-brand text-white"
                       : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
                     !isMaster && "cursor-not-allowed opacity-60"
                   )}
@@ -186,7 +186,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
                   placeholder="쉼표로 구분 (예: 홀딩스, 지주)"
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-xs text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
+                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-xs text-neutral-800 outline-none focus:border-brand disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               ) : (
                 <input
@@ -195,14 +195,14 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   disabled={!isMaster}
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-sm font-bold text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
+                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-sm font-bold text-neutral-800 outline-none focus:border-brand disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               )}
               {defaultVal != null && (
                 <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-neutral-400">
                   <span>기본값 <span className="font-mono">{defaultVal}</span></span>
                   {changed && isMaster && (
-                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-[#16a34a]">되돌리기</button>
+                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-brand">되돌리기</button>
                   )}
                 </div>
               )}
@@ -215,10 +215,10 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {isMaster && (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {changedCount > 0 && (
-            <span className="mr-auto text-xs font-bold text-[#16a34a]">{changedCount}개 변경됨</span>
+            <span className="mr-auto text-xs font-bold text-brand">{changedCount}개 변경됨</span>
           )}
           {data?.saveState === "fulfilled" && !dirty && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a]">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-brand">
               <CheckCircle2 className="h-3.5 w-3.5" /> 저장됨
             </span>
           )}
@@ -234,7 +234,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             onClick={handleSave}
             disabled={saving || !dirty || noAccount}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg bg-[#16a34a] px-5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#15803d] active:scale-95",
+              "inline-flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-brand-hover active:scale-95",
               (saving || !dirty || noAccount) && "cursor-not-allowed opacity-50"
             )}
           >

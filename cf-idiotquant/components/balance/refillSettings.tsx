@@ -27,7 +27,7 @@ function FlowNode({ label, value, sub, accent }: { label: string; value: string;
                 : "border-neutral-200/70 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark")
         }>
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{label}</span>
-            <span className={"text-sm font-black tabular-nums truncate " + (accent ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-800 dark:text-neutral-100")}>{value}</span>
+            <span className={"text-sm font-black tabular-nums truncate " + (accent ? "text-brand-hover dark:text-brand" : "text-neutral-800 dark:text-neutral-100")}>{value}</span>
             {sub && <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{sub}</span>}
         </div>
     );
@@ -75,7 +75,7 @@ export default function RefillSettings({
             {/* 월 예산 조절 */}
             <div className="bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl p-3.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                    <Coins size={13} className="text-[#16a34a]" />
+                    <Coins size={13} className="text-brand" />
                     <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">월 예산 (총 리필량)</span>
                 </div>
                 <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mb-2.5 leading-relaxed">
@@ -92,13 +92,13 @@ export default function RefillSettings({
                             value={budget}
                             onChange={(e) => setBudget(e.target.value)}
                             disabled={!isMaster || !data.has_account}
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 tabular-nums outline-none focus:border-[#16a34a] disabled:opacity-50"
+                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 tabular-nums outline-none focus:border-brand disabled:opacity-50"
                         />
                     </div>
                     <button
                         onClick={() => onSave(Math.trunc(Number(budget) || 0))}
                         disabled={!canSave}
-                        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand hover:bg-brand-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                         {saving ? "저장 중…" : "저장"}
                     </button>
