@@ -28,6 +28,11 @@ import {
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, type Memory,
 } from "@/lib/game/core/progress";
+import {
+    cutToHome, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
+} from "@/lib/game/core/interlude";
+import { drawInterlude } from "@/lib/game/components/Interlude";
+import { preloadArt, sliceArt, drawArt, type ArtKey } from "@/lib/game/ui/art";
 import type { EndReason, MarketRead, StrategyCard, TurnBuff } from "@/lib/game/core/types";
 import { NO_BUFF } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
@@ -83,15 +88,22 @@ export class TradingScene extends Phaser.Scene {
     private ending: EndReason | null = null;
     /** 집에서 덱을 고르는 중인가. */
     private picking = false;
+    /** 지금 덮여 있는 전환 막. 누르면 걷힌다. */
+    private cut: Cut | null = null;
 
     constructor() { super("trading"); }
 
     /* ── 켜기 ─────────────────────────────────────────── */
 
+    preload() { preloadArt(this); }
+
     create() {
+        sliceArt(this);
         this.memory = loadMemory();
-        this.startCycle();
+        // **띠부터 나눈다.** `startCycle` 이 집으로 가는 전환을 세우면서 화면을 그리는데,
+        // 그 전에 `measure()` 가 돌지 않으면 `this.bands` 가 없어 씬이 그 자리에서 죽는다.
         this.measure();
+        this.startCycle();
 
         // 화면을 돌리거나 주소창이 숨으면 React 껍데기가 새 격자로 `setGameSize` 를 부른다.
         // 그 순간 **판을 잃지 않고** 그림만 다시 세운다 — 규칙은 전부 `core/` 에 있어서
@@ -114,8 +126,33 @@ export class TradingScene extends Phaser.Scene {
         this.ending = null;
         this.earnedThisChapter = [];
         this.entries = [];
-        this.place = "home";
         this.newDeck();
+        this.go("home", cutToHome(this.engine.chapter, this.memory.cycle));
+    }
+
+    /**
+     * 장소를 바꾸는 **단 하나의 길.**
+     *
+     * 여태 `this.place = …; this.redraw()` 가 다섯 군데에 흩어져 있었다. 그래서 코드에서도
+     * 흐름이 안 보였고, 전환에 무엇을 끼워 넣으려면 다섯 곳을 다 고쳐야 했다. 여기 하나로
+     * 모으면 "장소가 바뀐다" 는 사건이 한 함수가 된다.
+     */
+    private go(to: Place, cut: Cut): void {
+        // 막 아래에 시세판이 남아 있으면 걷었을 때 엉뚱한 화면이 나온다.
+        this.board?.close();
+        this.board = null;
+        this.place = to;
+        this.cut = cut;
+        this.picking = false;
+        // 전환이 전환처럼 보이는 한 줄. 막이 이미 떠 있으므로 내용은 안 튄다.
+        this.cameras.main.fadeIn(180);
+        this.redraw();
+    }
+
+    /** 막을 걷는다. 여기서부터 아래 장소가 눌린다. */
+    private dismissCut(): void {
+        this.cut = null;
+        this.redraw();
     }
 
     private newDeck(): void {
@@ -162,6 +199,14 @@ export class TradingScene extends Phaser.Scene {
         if (this.place === "home") this.drawHome();
         else if (this.place === "park") this.drawPark();
         else this.drawOffice();
+
+        // 막은 **맨 마지막에.** z 순서로 위에 서야 아래 장소의 입력을 삼킨다.
+        // 여기 있으므로 화면을 돌려도(=redraw) 막이 공짜로 다시 선다.
+        if (this.cut) {
+            for (const o of drawInterlude(this, this.cut, this.W, this.H, () => this.dismissCut())) {
+                this.keep(o);
+            }
+        }
     }
 
     /** 집·공원의 버튼 띠 — 장소가 곧 화면이므로 가로에서도 전폭이다. */
@@ -202,6 +247,37 @@ export class TradingScene extends Phaser.Scene {
         const g = this.add.graphics();
         g.fillStyle(color, alpha).fillRect(x, y, w, h);
         return this.keep(g);
+    }
+
+    /**
+     * 집·공원의 큰 정사각. 그림이 있으면 그림, 없으면 이름과 「그래픽 자리」.
+     *
+     * 그림이 들어오면 **글자를 안 얹는다** — 밑에 캡션 한 줄이면 충분하고, 그림 한가운데
+     * 큰 글씨를 놓으면 둘 다 안 읽힌다.
+     */
+    private placeArt(
+        key: ArtKey, x: number, y: number, side: number, name: string,
+        nameColor: string = S.gold, caption?: string,
+    ): void {
+        this.rect(x, y, side, side, 0x0e1618, 1);
+        const art = drawArt(this, key, x, y, side, side);
+        for (const o of art ?? []) this.keep(o);
+
+        const g = this.add.graphics();
+        g.lineStyle(1, C.line, 1).strokeRect(x + 0.5, y + 0.5, side - 1, side - 1);
+        this.keep(g);
+
+        if (art) {
+            // **자리표시 문구를 그림 위에 얹지 않는다.** 캡션은 그림이 말 못 하는 것
+            // (공원이라면 어떻게 끝났는지)이 있을 때만 붙는다. 장소 이름은 챕터 띠에 이미 있다.
+            if (caption && side >= 120) {
+                this.text(x + side / 2, y + side - 20, caption, FS.xs, nameColor, 0.5);
+            }
+            return;
+        }
+        this.text(x + side / 2, y + side / 2 - FS.xxl / 2, name,
+            side >= 140 ? FS.xxl : FS.xl, nameColor, 0.5);
+        if (side >= 120) this.text(x + side / 2, y + side - 20, "그래픽 자리", FS.xs, "#3b4c50", 0.5);
     }
 
     /** 누를 수 있는 자리. 화면 어디든 이걸로 받는다. */
@@ -282,10 +358,7 @@ export class TradingScene extends Phaser.Scene {
         // 정사각은 남는 세로의 절반까지만. 그래야 아래 글이 설 자리가 남는다.
         const side = Math.max(56, Math.min(this.W - PAD * 2, Math.round(avail * 0.40)));
         const sx = (this.W - side) / 2;
-        this.rect(sx, top + 8, side, side, 0x0e1618, 1);
-        this.text(this.W / 2, top + 8 + side / 2 - FS.xxl / 2, "집",
-            side >= 140 ? FS.xxl : FS.xl, S.gold, 0.5);
-        if (side >= 120) this.text(this.W / 2, top + 8 + side - 20, "그래픽 자리", FS.xs, "#3b4c50", 0.5);
+        this.placeArt("home", sx, top + 8, side, "집");
 
         let y = top + 8 + side + 14;
         if (this.picking) { this.drawLoadoutPicker(y, rowsTop); return; }
@@ -379,9 +452,9 @@ export class TradingScene extends Phaser.Scene {
     }
 
     private leaveHome(): void {
-        this.place = "office";
         this.entries = [];
         this.pushLog(`${this.engine.chapter.year}년. 사무실 문을 열었다.`, "turn");
+        this.go("office", cutToOffice(this.engine.chapter));
         this.beginTurn();
     }
 
@@ -414,14 +487,26 @@ export class TradingScene extends Phaser.Scene {
         const b = this.bands.place;
         if (b.h <= 0) return;
         this.rect(b.x, b.y, b.w, b.h, 0x0e1618, 1);
+
+        // 그림이 들어왔다 — 책상 위 CRT 두 대. 주석이 예고하던 그 모니터다.
+        const art = drawArt(this, "office", b.x, b.y, b.w, b.h);
+        for (const o of art ?? []) this.keep(o);
+
         const g = this.add.graphics();
         g.lineStyle(1, 0x23343a, 1).strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
         this.keep(g);
-        // 정사각이 작아지면 글자도 같이 줄인다. 두 줄이 안 들어가면 이름만 남긴다.
+
+        // 그림이 있으면 이름은 빼고 **누를 수 있다는 표시만** 남긴다 — 그림 위에 글자를
+        // 두 줄 얹으면 둘 다 안 읽힌다.
         const twoLines = b.h >= 56;
-        this.text(b.x + b.w / 2, b.y + b.h / 2 - (twoLines ? 14 : FS.xs / 2),
-            "회사", twoLines ? FS.md : FS.xs, S.gold, 0.5);
-        if (twoLines) this.text(b.x + b.w / 2, b.y + b.h / 2 + 6, "▸ 시세판", FS.xs, "#3b4c50", 0.5);
+        if (art) {
+            if (twoLines) this.text(b.x + b.w / 2, b.y + b.h - 16, "▸ 시세판", FS.xs, S.gold, 0.5);
+        } else {
+            // 정사각이 작아지면 글자도 같이 줄인다. 두 줄이 안 들어가면 이름만 남긴다.
+            this.text(b.x + b.w / 2, b.y + b.h / 2 - (twoLines ? 14 : FS.xs / 2),
+                "회사", twoLines ? FS.md : FS.xs, S.gold, 0.5);
+            if (twoLines) this.text(b.x + b.w / 2, b.y + b.h / 2 + 6, "▸ 시세판", FS.xs, "#3b4c50", 0.5);
+        }
         this.tap(b.x, b.y, b.w, b.h, () => this.openBoard());
     }
 
@@ -841,6 +926,8 @@ export class TradingScene extends Phaser.Scene {
         this.catchSituations();
 
         const idx = CHAPTERS.indexOf(this.engine.chapter);
+        // 결산 머리에 쓸 연도. `startNextChapter()` 뒤에 읽으면 **다음 장의 연도**가 나온다.
+        const done = this.engine.chapter;
         const sum = this.engine.endChapter(this.earnedThisChapter);
 
         this.memory = remember(this.memory, sum, idx);
@@ -855,12 +942,18 @@ export class TradingScene extends Phaser.Scene {
             ruined: this.engine.isRuined,
             finalChapterDone: this.engine.isFinalChapter,
         });
-        if (end) { this.ending = end; this.place = "park"; this.redraw(); return; }
+        if (end) return this.toPark(end);
+        if (!this.engine.startNextChapter()) return this.toPark("debtRemains");
 
-        if (!this.engine.startNextChapter()) { this.ending = "debtRemains"; this.place = "park"; this.redraw(); return; }
         this.newDeck();
-        this.place = "home";
-        this.redraw();
+        // **여기가 결산이 처음 보이는 자리다.** 여태 `sum` 은 기억으로만 흘러들어가고
+        // 화면에 한 번도 안 나왔다. 집으로 돌아오는 전환이 그것을 말한다.
+        this.go("home", cutOnChapterEnd(done, sum, money));
+    }
+
+    private toPark(reason: EndReason): void {
+        this.ending = reason;
+        this.go("park", cutToPark(this.engine.chapter, reason, this.ENDINGS[reason].title));
     }
 
     /* ── 공원 ─────────────────────────────────────────── */
@@ -894,10 +987,8 @@ export class TradingScene extends Phaser.Scene {
 
         const side = Math.max(56, Math.min(this.W - PAD * 2, Math.round(avail * 0.36)));
         const sx = (this.W - side) / 2;
-        this.rect(sx, top + 8, side, side, 0x0e1618, 1);
-        this.text(this.W / 2, top + 8 + side / 2 - FS.xxl / 2, "공원",
-            side >= 140 ? FS.xxl : FS.xl, won ? S.up : S.danger, 0.5);
-        if (side >= 120) this.text(this.W / 2, top + 8 + side - 20, info.title, FS.xs, "#3b4c50", 0.5);
+        // **끝난 방식에 따라 그림이 갈린다** — 아직 굴러가는 둘은 벤치, 무너진 둘은 그 인물.
+        this.placeArt(`park-${reason}`, sx, top + 8, side, "공원", won ? S.up : S.danger, info.title);
 
         let y = top + 8 + side + 14;
         for (const line of info.lines) {
@@ -949,9 +1040,9 @@ export class TradingScene extends Phaser.Scene {
     private goBack(reason: EndReason): void {
         this.memory = regress({ ...this.memory, facts: this.facts }, reason);
         saveMemory(this.memory);
+        // `startCycle` 이 집으로 가는 전환까지 세운다 — 회귀와 첫 시작은 같은 길이다.
         this.startCycle();
         this.pushLog("눈을 뜨니 다시 1997년 12월이었다.", "system");
-        this.redraw();
     }
 
     /* ── 로그 ─────────────────────────────────────────── */

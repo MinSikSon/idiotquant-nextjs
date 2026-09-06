@@ -32,8 +32,11 @@
 | — | `lib/game/core/situations.ts` | **상황카드** — 정의와 조건 판정(`met`/`progress`) |
 | — | `lib/game/core/clients.ts` · `trust.ts` | 맡긴 사람들 / 결과 × 근거 4분면 |
 | — | `lib/game/core/{types,progress}.ts` | 값의 모양 / **회귀**(회차를 넘어 남는 것, localStorage) |
+| — | `lib/game/core/interlude.ts` | **전환 화면의 문구**와 `ArtKey`·`FRAMES`. Phaser 를 모른다 |
 | — | `lib/game/components/{PixelCandleChart,CardHandContainer,GameLog,QuoteBoard}.ts` | 차트·손패·로그·**시세판** |
+| — | `lib/game/components/Interlude.ts` | 장소가 바뀔 때 덮는 막. 클래스가 아니라 **그리기 함수** |
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴·여섯 띠(`bandsOf`) |
+| — | `lib/game/ui/art.ts` · `public/game-art/sheet.png` | 시트 한 장을 불러 **코드에서 잘라 쓴다** |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
 | — | `app/(game)/game/cards/page.tsx` | **상황 도감**. 코어 정의를 그대로 그린다 — 값을 다시 적지 말 것 |
 | — | `lib/paper/*` | 예전 모의투자 규칙. `/game/classic` 과 워커가 같이 쓴다 |
@@ -50,6 +53,33 @@
 - 관리하는 것은 돈이 아니라 **신뢰**다. 정산은 결과가 아니라 **결과 × 근거**로 한다 —
   운으로 벌어도 신뢰는 오르지 않는다.
 - 판이 끝나면 **1997 로 회귀**한다. 겪은 상황카드만 남고, 빚을 다 갚아야 루프가 끝난다.
+
+### 장소를 바꾸는 길은 하나다
+
+`TradingScene.go(place, cut)` **하나로만** 장소가 바뀐다. 예전에는
+`this.place = …; this.redraw()` 가 다섯 군데에 흩어져 있어서 흐름이 코드에서도 안 보였고,
+전환에 무엇을 끼워 넣으려면 다섯 곳을 다 고쳐야 했다. 새 장소나 새 전환을 붙일 때도
+**`go()` 를 거칠 것.**
+
+막(전환 화면)은 `redraw()` 의 **마지막**에 그린다. 그래서 두 가지가 공짜로 따라온다 —
+z 순서로 맨 위에 서서 아래 장소의 입력을 삼키고, 화면을 돌리면(=`redraw()`) 다시 선다.
+막을 별도 수명주기로 빼지 말 것.
+
+**챕터 결산은 회사→집 전환이 말한다.** `endChapter()` 가 내는 `ChapterSummary` 는 예전에
+`remember()` 로만 흘러들어가 화면에 한 번도 안 나왔다. 장소를 넷으로 늘리는 대신 그
+전환에 실었다(`cutOnChapterEnd`).
+
+### 그림
+
+`public/game-art/sheet.png` **한 장**(640×640)을 받아 `FRAMES` 표대로 잘라 쓴다. 원본
+컨셉 시트(1408×768, 1.7MB)에서 네 조각을 오려 2×2 로 붙인 것이고, 어디를 오렸는지는
+`ui/art.ts` 머리말에 적어 두었다 — **그 값이 없으면 그림을 다시 뽑을 때 처음부터
+다시 찍어야 한다.**
+
+- 엔딩 넷에 그림은 **둘**이다. 아직 굴러가는 둘은 벤치, 무너진 둘은 그 인물.
+- 시트가 없어도 게임은 돌아간다 — `drawArt` 가 `null` 을 돌려주고 부르는 쪽이
+  테두리와 「그래픽 자리」를 그린다. **자리표시 문구를 그림 위에 얹지 말 것.**
+- 밝은 만화체를 짙은 화면에 앉히려고 `ART_VEIL`(0.28) 한 겹을 덮는다. 진하기는 그 상수 하나다.
 
 **"순수 로직과 Phaser 뷰를 가른다"** 는 규칙은 이미 지켜지고 있다. Scene 은 규칙을
 직접 계산하지 않고 `advanceLocal(round, order)` 에 넘기고 돌아온 판을 다시 그릴 뿐이다.
