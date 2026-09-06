@@ -74,14 +74,14 @@ export default function LedgerJoinPage() {
         <PageHeader
             emoji="📒"
             title="가계부 초대"
-            containerClassName="max-w-lg mx-auto px-4 sm:px-7"
+            containerClassName="max-w-lg mx-auto px-4 sm:px-6"
         />
     );
 
     const shell = (children: React.ReactNode) => (
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             {header}
-            <div className="max-w-lg mx-auto px-4 sm:px-7 py-6">
+            <div className="max-w-lg mx-auto px-4 sm:px-6 py-6">
                 <div className={cn(CARD_CLS, "py-10 px-5 text-center")}>{children}</div>
             </div>
         </div>
