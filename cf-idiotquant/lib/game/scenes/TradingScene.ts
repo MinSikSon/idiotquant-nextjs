@@ -16,7 +16,7 @@
 // 있는 수를 넘었다. 12턴짜리 판이라 통째로 그려도 싸고, 어긋날 자리가 없어진다.
 
 import Phaser from "phaser";
-import { StockEngine, SEED_CASH, TRUST_MAX } from "@/lib/game/core/StockEngine";
+import { StockEngine, SEED_CASH, TRUST_MAX, regimeLabel } from "@/lib/game/core/StockEngine";
 import { CHAPTERS } from "@/lib/game/core/chapters";
 import { DeckManager, HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
 import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
@@ -35,8 +35,8 @@ import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
 import {
-    C, FS, LANE, PAD, S, bandsOf, designSize, fontOf, mkText, money,
-    type Bands, type LogKind,
+    ACTION_TWO_ROW, C, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pxOf,
+    type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
 type Place = "home" | "office" | "park";
@@ -92,9 +92,19 @@ export class TradingScene extends Phaser.Scene {
         this.memory = loadMemory();
         this.startCycle();
         this.measure();
-        this.scale.on("resize", () => { this.measure(); this.redraw(); });
+
+        // 화면을 돌리거나 주소창이 숨으면 React 껍데기가 새 격자로 `setGameSize` 를 부른다.
+        // 그 순간 **판을 잃지 않고** 그림만 다시 세운다 — 규칙은 전부 `core/` 에 있어서
+        // 화면을 통째로 지웠다 그려도 게임 상태는 그대로다.
+        this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize, this);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
+        });
+
         this.redraw();
     }
+
+    private onResize(): void { this.measure(); this.redraw(); }
 
     /** 1997년 겨울부터 다시. 회귀가 이 함수를 다시 부른다. */
     private startCycle(): void {
@@ -113,9 +123,28 @@ export class TradingScene extends Phaser.Scene {
         this.deck = new DeckManager((Math.random() * 0xffffffff) >>> 0, loadout.slice(0, LOADOUT_SIZE));
     }
 
+    /**
+     * 지금 격자를 재고 띠를 나눈다. 켤 때 한 번, 돌릴 때마다 한 번.
+     *
+     * ── 여기서 `designSize()` 를 부르면 안 된다 ─────────────────────
+     * `designSize` 는 **호스트 칸의 CSS 픽셀**을 받는 함수이고, 그건 이미
+     * `config.ts` 와 `PhaserGame.tsx` 가 불렀다. 씬이 보는 `this.scale.width` 는
+     * 그 결과에 `k` 를 곱한 **캔버스 버퍼**다 — 그걸 다시 넣으면 격자를 두 번 유도해
+     * 값이 틀어진다.
+     *
+     * ── 카메라를 k 배 확대한다 ─────────────────────────────────────
+     * 버퍼는 기기 해상도(설계 × k)로 잡혀 있다. 카메라를 그만큼 확대해야 이 아래로는
+     * 전부 설계 격자 좌표로 되돌아간다 — 그래야 치수를 한 벌만 들고 있으면 되고,
+     * 배율이 1 이든 3 이든 배치가 같다. **이 줄이 없으면 DPR 3 폰에서 게임이
+     * 좌상단 1/3 에만 그려진다.**
+     */
     private measure(): void {
-        const size = designSize(this.scale.width, this.scale.height);
-        this.W = size.width; this.H = size.height;
+        const k = pxOf(this);
+        this.W = this.scale.width / k;
+        this.H = this.scale.height / k;
+        // 확대만 하면 카메라가 격자 한가운데를 보므로 왼쪽·위가 잘린다. 설계 격자의
+        // 한가운데를 보게 해서 (0,0) 이 화면 (0,0) 에 오게 맞춘다.
+        this.cameras.main.setZoom(k).centerOn(this.W / 2, this.H / 2);
         this.bands = bandsOf(this.W, this.H);
     }
 
@@ -135,12 +164,38 @@ export class TradingScene extends Phaser.Scene {
         else this.drawOffice();
     }
 
+    /** 집·공원의 버튼 띠 — 장소가 곧 화면이므로 가로에서도 전폭이다. */
+    private get placeBar(): Band {
+        const h = Math.min(this.bands.action.h, Math.max(64, Math.round(this.H * 0.17)));
+        return { x: 0, y: this.H - h, w: this.W, h };
+    }
+
     private keep<T extends Phaser.GameObjects.GameObject>(o: T): T { this.junk.push(o); return o; }
 
     private text(x: number, y: number, s: string, size: number, color: string, origin = 0): Phaser.GameObjects.Text {
         const t = mkText(this, x, y, s, { fontFamily: fontOf(this), fontSize: `${size}px`, color });
         t.setOrigin(origin, 0);
         return this.keep(t);
+    }
+
+    /**
+     * 칸을 넘치면 글자를 줄여 넣는다.
+     *
+     * 버튼 넷이 한 줄로 서면 칸이 87px 인데 「여섯 장 고른다」는 그보다 넓다 —
+     * 가운데 정렬이라 양옆으로 흘러 화면 밖으로 잘렸다. 잘린 글자는 안 읽히므로
+     * **작아도 다 보이는 쪽**을 고른다.
+     */
+    private textFit(
+        x: number, y: number, str: string, size: number, color: string, origin: number, room: number,
+    ): Phaser.GameObjects.Text {
+        const t = this.text(x, y, str, size, color, origin);
+        // **`width` 가 아니라 `displayWidth` 다.** `mkText` 는 선명하게 그리려고 글자를
+        // k 배로 만들고 `1/k` 로 축소한다 — 그래서 `width` 는 실제로 보이는 폭의 k 배다.
+        // 그걸 그대로 재면 DPR 3 폰에서 멀쩡한 글자가 3분의 1로 줄어든다.
+        if (room > 0 && t.displayWidth > room) {
+            t.setFontSize(Math.max(10, Math.floor(size * (room / t.displayWidth))));
+        }
+        return t;
     }
 
     private rect(x: number, y: number, w: number, h: number, color: number, alpha = 1): Phaser.GameObjects.Graphics {
@@ -158,8 +213,14 @@ export class TradingScene extends Phaser.Scene {
 
     /* ── 챕터 띠 ──────────────────────────────────────── */
 
-    /** 연·장, 신뢰 게이지, 빚. **셋 다 늘 보여야 한다.** */
-    private drawStrip(label: string): void {
+    /**
+     * 연·장, 신뢰 게이지, 빚. **셋 다 늘 보여야 한다.**
+     *
+     * @param withBoard 칩 줄이 빠진 격자에서 여기에 시세판 여는 길을 남긴다.
+     *   짧은 화면에서 칩이 제일 먼저 양보하는데, 그렇다고 아홉 종목에 닿는 길까지
+     *   같이 사라지면 안 된다.
+     */
+    private drawStrip(label: string, withBoard = false): void {
         const b = this.bands.strip;
         this.rect(b.x, b.y, b.w, b.h, C.line, 1);
         this.rect(b.x, b.y, b.w, b.h - 1, 0x2f4f56, 1);
@@ -180,100 +241,134 @@ export class TradingScene extends Phaser.Scene {
         }
         // 빚 — 게이지가 아니라 숫자 한 줄. 0 이 되는 것이 게임 전체의 목표다.
         const debt = this.engine.player.debt;
-        this.text(b.w - PAD, cy, debt > 0 ? `−${money(debt)}` : "빚 없음",
+        const right = withBoard ? b.w - PAD - 54 : b.w - PAD;
+        this.text(right, cy, debt > 0 ? `−${money(debt)}` : "빚 없음",
             FS.xs, debt > 0 ? S.down : S.up, 1);
+
+        if (withBoard) {
+            const bw = 48, bx = b.w - PAD - bw, by = b.y + 6;
+            this.rect(bx, by, bw, b.h - 12, 0x15242a, 1);
+            this.text(bx + bw / 2, by + (b.h - 12) / 2 - FS.xs / 2, "시세판", FS.xs, "#8fb6bd", 0.5);
+            this.tap(bx, by, bw, b.h - 12, () => this.openBoard());
+        }
     }
 
     /* ── 집 ───────────────────────────────────────────── */
 
+    /**
+     * 집. **장소가 곧 화면이라 두 칸 배치를 안 쓴다** — 가로에서도 전폭이다.
+     *
+     * 세로가 짧으면 블록이 겹친다. 그래서 고정 오프셋으로 쌓지 않고 **남는 세로를 재서
+     * 들어가는 것만 그린다** — 요약 줄은 버튼 띠에서 위로 붙이고, 조건 줄은 그 위에
+     * 자리가 남을 때만 선다. 내레이션은 마지막까지 지킨다(이 화면의 이유다).
+     */
     private drawHome(): void {
         const ch = this.engine.chapter;
-        const idx = CHAPTERS.indexOf(ch);
         this.drawStrip(`집 · ${ch.year}   ${this.memory.cycle}회차`);
 
+        const bar = this.placeBar;
         const top = this.bands.strip.h;
-        const side = Math.min(this.W - PAD * 2, Math.round(this.H * 0.30));
-        const sx = (this.W - side) / 2;
+        const avail = bar.y - top;
 
-        // 장소 그림 자리 — **지금은 비어 있다.** 그림이 나중에 같은 자리로 온다.
-        this.rect(sx, top + 10, side, side, 0x0e1618, 1);
-        this.text(this.W / 2, top + 10 + side / 2 - FS.xxl / 2, "집", FS.xxl, S.gold, 0.5);
-        this.text(this.W / 2, top + 10 + side - 22, "그래픽 자리", FS.xs, "#3b4c50", 0.5);
-
-        let y = top + side + 22;
-        if (this.picking) { this.drawLoadoutPicker(y); return; }
-
-        // 내레이션 — 1인칭. 챕터가 열릴 때마다 여기서 읽는다.
-        for (const line of ch.narration) {
-            this.text(this.W / 2, y, line, FS.sm, "#9aada6", 0.5);
-            y += FS.sm + 8;
-        }
-
-        // 진행 중인 조건 — **채워지기 전에도 보인다.** 컨셉 이미지의 미션 패널에서 왔다.
-        y += 10;
-        const up = nextUp(this.facts, this.memory.situations, 3);
-        if (up.length > 0) {
-            this.text(PAD, y, "겪고 있는 것", FS.xs, "#4e5f58");
-            y += FS.xs + 8;
-            for (const s of up) {
-                const [now, goal] = s.progress(this.facts);
-                this.rect(PAD, y, this.W - PAD * 2, 22, 0x111a1c, 1);
-                this.rect(PAD, y, Math.round(((this.W - PAD * 2) * now) / goal), 22, 0x17332a, 1);
-                this.text(PAD + 6, y + 4, s.how, FS.xs, "#8d9c93");
-                this.text(this.W - PAD - 6, y + 4, `${now}/${goal}`, FS.xs, S.gold, 1);
-                y += 26;
-            }
-        }
-
-        // 아래 줄 — 무엇을 갖고 있고 무엇을 들고 나가는가.
+        // 요약 줄은 아래에 못 박는다 — 무엇을 갖고 있는지는 늘 보여야 한다.
         const rows: Array<[string, string, string]> = [
             ["모은 상황카드", `${this.memory.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
             ["들고 나갈 것", `${this.memory.loadout.length}장`, S.ink],
             ["맡은 돈", money(this.engine.equity), S.ink],
         ];
-        y = this.bands.action.y - rows.length * 22 - 10;
-        for (const [k, v, col] of rows) {
-            this.rect(PAD, y + 20, this.W - PAD * 2, 1, 0x16211f, 1);
-            this.text(PAD, y, k, FS.xs, "#6d7f78");
-            this.text(this.W - PAD, y, v, FS.xs, col, 1);
-            y += 22;
+        const rowsH = rows.length * 22;
+        const rowsTop = bar.y - rowsH - 8;
+
+        // 정사각은 남는 세로의 절반까지만. 그래야 아래 글이 설 자리가 남는다.
+        const side = Math.max(56, Math.min(this.W - PAD * 2, Math.round(avail * 0.40)));
+        const sx = (this.W - side) / 2;
+        this.rect(sx, top + 8, side, side, 0x0e1618, 1);
+        this.text(this.W / 2, top + 8 + side / 2 - FS.xxl / 2, "집",
+            side >= 140 ? FS.xxl : FS.xl, S.gold, 0.5);
+        if (side >= 120) this.text(this.W / 2, top + 8 + side - 20, "그래픽 자리", FS.xs, "#3b4c50", 0.5);
+
+        let y = top + 8 + side + 14;
+        if (this.picking) { this.drawLoadoutPicker(y, rowsTop); return; }
+
+        // 내레이션 — 들어가는 줄만.
+        for (const line of ch.narration) {
+            if (y + FS.sm > rowsTop) break;
+            this.textFit(this.W / 2, y, line, FS.sm, "#9aada6", 0.5, this.W - PAD * 2);
+            y += FS.sm + 7;
         }
 
+        // 겪고 있는 것 — 자리가 남을 때만. 조건은 채워지기 전에도 보여야 끌어당긴다.
+        const up = nextUp(this.facts, this.memory.situations, 3);
+        const needHead = FS.xs + 8;
+        if (up.length > 0 && y + needHead + 26 <= rowsTop) {
+            y += 8;
+            this.text(PAD, y, "겪고 있는 것", FS.xs, "#4e5f58");
+            y += needHead;
+            for (const s2 of up) {
+                if (y + 26 > rowsTop) break;
+                const [now, goal] = s2.progress(this.facts);
+                this.rect(PAD, y, this.W - PAD * 2, 22, 0x111a1c, 1);
+                this.rect(PAD, y, Math.round(((this.W - PAD * 2) * now) / goal), 22, 0x17332a, 1);
+                this.textFit(PAD + 6, y + 4, s2.how, FS.xs, "#8d9c93", 0, this.W - PAD * 2 - 64);
+                this.text(this.W - PAD - 6, y + 4, `${now}/${goal}`, FS.xs, S.gold, 1);
+                y += 26;
+            }
+        }
+
+        let ry = rowsTop;
+        for (const [k, v, col] of rows) {
+            this.rect(PAD, ry + 20, this.W - PAD * 2, 1, 0x16211f, 1);
+            this.text(PAD, ry, k, FS.xs, "#6d7f78");
+            this.text(this.W - PAD, ry, v, FS.xs, col, 1);
+            ry += 22;
+        }
+
+        // 죽은 버튼을 두지 않는다 — 넷을 세우면 칸이 87px 로 좁아져 글자가 잘린다.
         this.buttons([
-            { label: "여섯 장 고른다", sub: `${this.memory.loadout.length}/${LOADOUT_SIZE}`, on: () => { this.picking = true; this.redraw(); } },
-            { label: "기억", sub: `${this.memory.cycle}회차`, on: null },
-            { label: "도감", sub: "", on: null },
-            { label: "나간다", sub: `${ch.year}`, primary: true, on: () => this.leaveHome() },
-        ]);
+            { label: "여섯 장 고른다", sub: `${this.memory.loadout.length}/${LOADOUT_SIZE}`,
+              on: () => { this.picking = true; this.redraw(); } },
+            { label: "나간다", sub: ch.year, primary: true, on: () => this.leaveHome() },
+        ], bar);
     }
 
-    /** 들고 나갈 여섯 장. 모은 것이 늘어도 덱이 묽어지지 않게 한다. */
-    private drawLoadoutPicker(y0: number): void {
+    /**
+     * 들고 나갈 여섯 장. 모은 것이 늘어도 덱이 묽어지지 않게 한다.
+     *
+     * @param bottom 이 아래로는 못 그린다(버튼 띠와 요약 줄이 있다). 목록이 넘치면
+     *   거기서 끊고 **몇 장이 더 있는지**를 한 줄로 말한다 — 스크롤을 여기까지
+     *   만들 값어치는 없다. 어차피 고를 수 있는 것은 여섯 장뿐이다.
+     */
+    private drawLoadoutPicker(y0: number, bottom: number): void {
         let y = y0;
         this.text(PAD, y, `들고 나갈 여섯 장 — ${this.memory.loadout.length}/${LOADOUT_SIZE}`, FS.sm, S.gold);
         y += FS.sm + 10;
 
+        const h = 30;
+        let shown = 0;
         for (const id of this.memory.situations) {
             const s = SITUATION_BY_ID[id];
             if (!s) continue;
+            if (y + h > bottom) break;
             const picked = this.memory.loadout.includes(id);
-            const h = 30;
             this.rect(PAD, y, this.W - PAD * 2, h, picked ? 0x17332a : 0x111a1c, 1);
             this.rect(PAD, y, 3, h, LANE[s.lane].color, 1);
-            this.text(PAD + 10, y + 4, s.name, FS.xs, picked ? S.ink : "#8d9c93");
-            this.text(PAD + 10, y + 17, s.short, FS.xs, "#55645d");
+            this.textFit(PAD + 10, y + 4, s.name, FS.xs, picked ? S.ink : "#8d9c93", 0, this.W - PAD * 2 - 40);
+            this.textFit(PAD + 10, y + 17, s.short, FS.xs, "#55645d", 0, this.W - PAD * 2 - 40);
             this.text(this.W - PAD - 6, y + 9, picked ? "◼" : "◻", FS.xs, picked ? S.gold : "#3c4844", 1);
             this.tap(PAD, y, this.W - PAD * 2, h, () => this.toggleLoadout(id));
             y += h + 3;
+            shown += 1;
+        }
+        const left = this.memory.situations.length - shown;
+        if (left > 0 && y + FS.xs <= bottom) {
+            this.text(PAD, y, `그리고 ${left}장 더 — 화면을 돌리면 다 보입니다`, FS.xs, "#4e5f58");
         }
 
         this.buttons([
             { label: "되돌린다", sub: "", on: () => { this.picking = false; this.redraw(); } },
-            { label: "", sub: "", on: null },
-            { label: "", sub: "", on: null },
             { label: "정했다", sub: `${this.memory.loadout.length}장`, primary: true,
               on: () => { this.picking = false; saveMemory(this.memory); this.newDeck(); this.redraw(); } },
-        ]);
+        ], this.placeBar);
     }
 
     private toggleLoadout(id: string): void {
@@ -296,7 +391,9 @@ export class TradingScene extends Phaser.Scene {
         const e = this.engine;
         const ch = e.chapter;
         const half = e.player.currentTurn <= 6 ? "상" : "하";
-        this.drawStrip(`${ch.year}. ${half}반기 · ${ch.title}   ${e.player.currentTurn}/${e.player.maxTurns}`);
+        // 칩 줄이 없는 격자에서는 챕터 띠가 시세판 여는 길을 대신 든다.
+        const noChips = this.bands.chips.h <= 0;
+        this.drawStrip(`${ch.year}. ${half}반기 · ${ch.title}   ${e.player.currentTurn}/${e.player.maxTurns}`, noChips);
 
         this.drawPlace();
         this.drawLog();
@@ -315,17 +412,22 @@ export class TradingScene extends Phaser.Scene {
      */
     private drawPlace(): void {
         const b = this.bands.place;
+        if (b.h <= 0) return;
         this.rect(b.x, b.y, b.w, b.h, 0x0e1618, 1);
         const g = this.add.graphics();
         g.lineStyle(1, 0x23343a, 1).strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
         this.keep(g);
-        this.text(b.x + b.w / 2, b.y + b.h / 2 - 14, "회사", FS.md, S.gold, 0.5);
-        this.text(b.x + b.w / 2, b.y + b.h / 2 + 6, "▸ 시세판", FS.xs, "#3b4c50", 0.5);
+        // 정사각이 작아지면 글자도 같이 줄인다. 두 줄이 안 들어가면 이름만 남긴다.
+        const twoLines = b.h >= 56;
+        this.text(b.x + b.w / 2, b.y + b.h / 2 - (twoLines ? 14 : FS.xs / 2),
+            "회사", twoLines ? FS.md : FS.xs, S.gold, 0.5);
+        if (twoLines) this.text(b.x + b.w / 2, b.y + b.h / 2 + 6, "▸ 시세판", FS.xs, "#3b4c50", 0.5);
         this.tap(b.x, b.y, b.w, b.h, () => this.openBoard());
     }
 
     private drawLog(): void {
         const b = this.bands.log;
+        if (b.h <= 0) return;
         this.logView = new GameLog(this, { x: b.x, y: b.y, width: b.w, height: b.h });
         this.add.existing(this.logView);
         this.logView.setEntries(this.entries.slice(-LOG_KEEP));
@@ -334,6 +436,7 @@ export class TradingScene extends Phaser.Scene {
     /** 종목 칩 줄 — 바로가기 다섯 + 시세판을 여는 칩. */
     private drawChips(): void {
         const b = this.bands.chips;
+        if (b.h <= 0) return;   // 짧은 격자에서는 양보했다 — 챕터 띠가 시세판을 든다
         this.rect(b.x, b.y, b.w, b.h, C.screen, 1);
 
         const listed = this.engine.listed;
@@ -355,10 +458,15 @@ export class TradingScene extends Phaser.Scene {
         for (let i = 0; i < CHIP_SLOTS + 1; i++) {
             const x = PAD + i * (cw + gap);
             const y = b.y + 5;
+            // 줄이 낮으면 한 줄만 쓴다. 두 줄을 밀어 넣으면 글자가 서로 겹쳐
+            // 둘 다 안 읽힌다 — 눕힌 화면에서 실제로 그랬다.
+            const twoLines = ch >= 34;
             if (i === CHIP_SLOTS) {
                 this.rect(x, y, cw, ch, 0x15242a, 1);
-                this.text(x + cw / 2, y + 6, more > 0 ? `＋${more}` : "전체", FS.xs, "#8fb6bd", 0.5);
-                this.text(x + cw / 2, y + ch - 16, "시세판", FS.xs, "#4e6a70", 0.5);
+                const head = more > 0 ? `＋${more}` : "전체";
+                this.textFit(x + cw / 2, y + (twoLines ? 6 : ch / 2 - FS.xs / 2),
+                    twoLines ? head : "시세판", FS.xs, "#8fb6bd", 0.5, cw - 4);
+                if (twoLines) this.textFit(x + cw / 2, y + ch - 16, "시세판", FS.xs, "#4e6a70", 0.5, cw - 4);
                 this.tap(x, y, cw, ch, () => this.openBoard());
                 continue;
             }
@@ -375,14 +483,17 @@ export class TradingScene extends Phaser.Scene {
             }
             if (held) this.rect(x + cw - 7, y + 3, 4, 4, C.gold, 1);
 
-            this.text(x + cw / 2, y + 4, s.name.slice(0, 2), FS.xs, sel ? S.gold : "#9aada6", 0.5);
             const pct = this.engine.unrealizedPct(s.id);
             const last = s.history[s.history.length - 1];
             const prev = s.history[s.history.length - 2];
             const move = last && prev ? ((last.c - prev.c) / prev.c) * 100 : 0;
             const v = held ? pct : move;
-            this.text(x + cw / 2, y + ch - 16, `${v >= 0 ? "+" : ""}${v.toFixed(0)}`,
-                FS.xs, v >= 0 ? S.up : S.down, 0.5);
+            this.textFit(x + cw / 2, y + (twoLines ? 4 : ch / 2 - FS.xs / 2), s.name.slice(0, 2),
+                FS.xs, sel ? S.gold : "#9aada6", 0.5, cw - 4);
+            if (twoLines) {
+                this.textFit(x + cw / 2, y + ch - 16, `${v >= 0 ? "+" : ""}${v.toFixed(0)}`,
+                    FS.xs, v >= 0 ? S.up : S.down, 0.5, cw - 4);
+            }
             this.tap(x, y, cw, ch, () => { this.engine.setFocus(s.id); this.redraw(); });
         }
     }
@@ -394,18 +505,27 @@ export class TradingScene extends Phaser.Scene {
         const s = this.engine.focusStock;
         this.chart.render(s.history, this.read);
 
-        this.text(b.x + PAD, b.y + 6, `${s.name} · β ${s.beta.toFixed(1)}`, FS.xs, "#9aada6");
-        if (this.read?.regime) {
-            const d = this.read.regimeDrift;
-            this.text(b.x + b.w - PAD, b.y + 6,
-                d === null ? "" : `턴당 ${d >= 0 ? "+" : ""}${d.toFixed(1)}%`,
-                FS.xs, d !== null && d >= 0 ? S.up : S.down, 1);
+        // **가운데에 쓴다.** 차트가 왼쪽 위·아래와 오른쪽 아래에 가격 눈금을 그리므로,
+        // 모서리에 붙이면 숫자와 겹쳐 둘 다 안 읽힌다.
+        this.textFit(b.x + b.w / 2, b.y + 5, `${s.name} · β ${s.beta.toFixed(1)}`,
+            FS.xs, "#9aada6", 0.5, b.w - PAD * 2);
+        const d = this.read?.regime ? this.read.regimeDrift : null;
+        if (d !== null) {
+            this.textFit(b.x + b.w / 2, b.y + b.h - FS.xs - 5,
+                `${regimeLabel(this.read!.regime!)} · 턴당 ${d >= 0 ? "+" : ""}${d.toFixed(1)}%`,
+                FS.xs, d >= 0 ? S.up : S.down, 0.5, b.w - PAD * 2);
         }
     }
 
     /** 운용 상황 — 고객 한 명, 내 처지 한 줄, 근거 한 줄, 그리고 손패. */
     private drawFirm(): void {
         const b = this.bands.firm;
+        // **좌표는 전부 띠 상대값이다.** 가로(두 칸)에서 이 띠는 오른쪽 절반에 있어서,
+        // 절대 `PAD` 로 적으면 내용이 왼쪽 칸의 차트 위에 겹쳐 그려진다.
+        const x0 = b.x + PAD;
+        const iw = b.w - PAD * 2;
+        const xr = b.x + b.w - PAD;
+
         this.rect(b.x, b.y, b.w, b.h, 0xa7b2a9, 1);
         this.rect(b.x, b.y, b.w, 2, 0xd8e0d8, 1);
 
@@ -413,30 +533,31 @@ export class TradingScene extends Phaser.Scene {
 
         // 고객 — 매 턴 한 명이 앞에 앉는다.
         const c = this.client;
-        this.rect(PAD, y, b.w - PAD * 2, 46, 0x94a096, 1);
-        this.rect(PAD, y, 3, 46, c ? C.line : C.down, 1);
+        const clientH = Math.min(46, Math.max(28, Math.round(b.h * 0.17)));
+        this.rect(x0, y, iw, clientH, 0x94a096, 1);
+        this.rect(x0, y, 3, clientH, c ? C.line : C.down, 1);
         if (c) {
-            this.text(PAD + 9, y + 6, c.name, FS.xs, "#101614");
-            this.text(PAD + 9, y + 24, c.blurb, FS.xs, "#26332c");
+            this.textFit(x0 + 9, y + 5, c.name, FS.xs, "#101614", 0, iw - 18);
+            if (clientH >= 40) this.textFit(x0 + 9, y + 23, c.blurb, FS.xs, "#26332c", 0, iw - 18);
         } else {
-            this.text(PAD + 9, y + 16, "아무도 앉지 않았다.", FS.xs, "#7a2c1b");
+            this.text(x0 + 9, y + clientH / 2 - FS.xs / 2, "아무도 앉지 않았다.", FS.xs, "#7a2c1b");
         }
-        y += 54;
+        y += clientH + 8;
 
         // 내 처지 한 줄.
         const eq = this.engine.equity;
-        this.text(PAD, y, "맡은 돈", FS.xs, "#3c4844");
-        this.text(PAD + 52, y, money(eq), FS.xs, eq >= SEED_CASH ? "#1d5c34" : "#8a2f1e");
+        this.text(x0, y, "맡은 돈", FS.xs, "#3c4844");
+        this.text(x0 + 52, y, money(eq), FS.xs, eq >= SEED_CASH ? "#1d5c34" : "#8a2f1e");
         const holds = Object.keys(this.engine.player.positions).length;
-        this.text(b.w - PAD, y, `보유 ${holds}종목`, FS.xs, "#3c4844", 1);
+        this.text(xr, y, `보유 ${holds}종목`, FS.xs, "#3c4844", 1);
         y += 22;
 
         // 근거 — 이번 턴에 무엇을 근거로 대고 있는가.
         const buff = this.deck.buildBuff();
         const th = buff.thesis;
-        this.rect(PAD, y, b.w - PAD * 2, 24, th ? 0x7f9a86 : 0x8f9b91, 1);
-        this.text(PAD + 8, y + 6, "근거", FS.xs, "#3c4844");
-        this.text(PAD + 40, y + 6, th ?? (buff.noThesis ? "저주에 막혔다" : "없음"),
+        this.rect(x0, y, iw, 24, th ? 0x7f9a86 : 0x8f9b91, 1);
+        this.text(x0 + 8, y + 6, "근거", FS.xs, "#3c4844");
+        this.text(x0 + 40, y + 6, th ?? (buff.noThesis ? "저주에 막혔다" : "없음"),
             FS.xs, th ? "#123d24" : "#7a2c1b");
         y += 30;
 
@@ -472,26 +593,45 @@ export class TradingScene extends Phaser.Scene {
         ]);
     }
 
-    private buttons(defs: Array<{ label: string; sub: string; primary?: boolean; on: (() => void) | null }>): void {
-        const b = this.bands.action;
+    /**
+     * @param band 어느 띠에 세울까. 안 주면 회사 화면의 버튼 띠.
+     *   **집·공원은 두 칸 배치를 안 쓴다** — 장소가 곧 화면이라 가로에서도 전폭이다.
+     */
+    private buttons(
+        defs: Array<{ label: string; sub: string; primary?: boolean; on: (() => void) | null }>,
+        band?: Band,
+    ): void {
+        const b = band ?? this.bands.action;
         this.rect(b.x, b.y, b.w, b.h, 0xa7b2a9, 1);
         this.rect(b.x, b.y, b.w, 2, 0x4e5a53, 1);
 
         const gap = 7;
-        const cols = 2, rows = 2;
-        const cw = (b.w - PAD * 2 - gap) / cols;
-        const chh = (b.h - PAD * 2 - gap) / rows;
+        // **몇 개를 세우느냐로 칸을 나눈다.** 집·공원은 버튼이 둘이라 4칸 격자에 넣으면
+        // 왼쪽 절반에 몰리고 칸이 87px 로 좁아져 「여섯 장 고른다」가 줄어든다.
+        //
+        // 낮은 띠에서는 한 줄로 세운다 — 두 줄로 밀어 넣으면 글자가 칸 밖으로 잘려 나가
+        // 「다음」을 못 눌러 판이 멈춘다.
+        const live = defs.filter(d => d.label).length;
+        const twoRow = live > 2 && b.h >= 96;
+        const cols = twoRow ? 2 : Math.max(1, live);
+        const rows = twoRow ? Math.ceil(live / 2) : 1;
+        const cw = (b.w - PAD * 2 - gap * (cols - 1)) / cols;
+        const chh = (b.h - PAD * 2 - gap * (rows - 1)) / rows;
+
         defs.forEach((d, i) => {
             if (!d.label) return;
-            const x = PAD + (i % cols) * (cw + gap);
+            const x = b.x + PAD + (i % cols) * (cw + gap);
             const y = b.y + PAD + Math.floor(i / cols) * (chh + gap);
             const on = d.on !== null;
             this.rect(x, y, cw, chh, on ? (d.primary ? 0x2f4f56 : 0x94a096) : 0x9aa69c, 1);
-            this.text(x + cw / 2, y + chh / 2 - (d.sub ? 14 : 8), d.label, FS.md,
-                on ? (d.primary ? "#e9f2ea" : "#101614") : "#3c4844", 0.5);
-            if (d.sub) {
-                this.text(x + cw / 2, y + chh / 2 + 6, d.sub, FS.xs,
-                    d.primary && on ? "#9fc0c4" : "#3c4844", 0.5);
+            const showSub = Boolean(d.sub) && chh >= 40;
+            const size = cw < 84 ? FS.sm : FS.md;
+            const room = cw - 8;
+            this.textFit(x + cw / 2, y + chh / 2 - (showSub ? 14 : size / 2), d.label, size,
+                on ? (d.primary ? "#e9f2ea" : "#101614") : "#3c4844", 0.5, room);
+            if (showSub) {
+                this.textFit(x + cw / 2, y + chh / 2 + 6, d.sub, FS.xs,
+                    d.primary && on ? "#9fc0c4" : "#3c4844", 0.5, room);
             }
             if (on) this.tap(x, y, cw, chh, d.on!);
         });
@@ -732,28 +872,41 @@ export class TradingScene extends Phaser.Scene {
         ruined: { title: "전부", lines: ["맡은 돈을 다 날렸다.", "설명할 것이 남아 있지 않았다.", "눈을 감으면 다시 1997년이다."] },
     };
 
+    /** 공원. 집과 같은 예산 규칙 — **안 들어가는 블록은 안 그린다.** */
     private drawPark(): void {
         const reason = this.ending ?? "debtRemains";
         const info = this.ENDINGS[reason];
         const won = reason === "debtCleared";
         this.drawStrip(`공원 · ${this.engine.chapter.year}   ${this.memory.cycle}회차`);
 
+        const bar = this.placeBar;
         const top = this.bands.strip.h;
-        const side = Math.min(this.W - PAD * 2, Math.round(this.H * 0.28));
-        const sx = (this.W - side) / 2;
-        this.rect(sx, top + 10, side, side, 0x0e1618, 1);
-        this.text(this.W / 2, top + 10 + side / 2 - FS.xxl / 2, "공원", FS.xxl,
-            won ? S.up : S.danger, 0.5);
-        this.text(this.W / 2, top + 10 + side - 22, info.title, FS.xs, "#3b4c50", 0.5);
+        const avail = bar.y - top;
 
-        let y = top + side + 22;
+        const rows: Array<[string, string, string]> = [
+            ["남은 빚", this.engine.player.debt > 0 ? `−${money(this.engine.player.debt)}` : "0",
+                this.engine.player.debt > 0 ? S.down : S.up],
+            ["떠난 사람", this.gone.length
+                ? this.gone.map(id => CLIENTS.find(c => c.id === id)?.name ?? id).join(" · ") : "없다", S.down],
+            ["모은 상황카드", `${this.memory.situations.length} — 남는다`, S.up],
+        ];
+        const rowsTop = bar.y - rows.length * 22 - 8;
+
+        const side = Math.max(56, Math.min(this.W - PAD * 2, Math.round(avail * 0.36)));
+        const sx = (this.W - side) / 2;
+        this.rect(sx, top + 8, side, side, 0x0e1618, 1);
+        this.text(this.W / 2, top + 8 + side / 2 - FS.xxl / 2, "공원",
+            side >= 140 ? FS.xxl : FS.xl, won ? S.up : S.danger, 0.5);
+        if (side >= 120) this.text(this.W / 2, top + 8 + side - 20, info.title, FS.xs, "#3b4c50", 0.5);
+
+        let y = top + 8 + side + 14;
         for (const line of info.lines) {
-            this.text(this.W / 2, y, line, FS.sm, "#9aada6", 0.5);
-            y += FS.sm + 8;
+            if (y + FS.sm > rowsTop) break;
+            this.textFit(this.W / 2, y, line, FS.sm, "#9aada6", 0.5, this.W - PAD * 2);
+            y += FS.sm + 7;
         }
 
         // 끝나는 방법 넷 — 지금 걸린 것만 켜진다. **빚 완납만 루프를 끊는다.**
-        y += 8;
         const ends: Array<[EndReason, string]> = [
             ["debtCleared", "빚 완납 — 루프를 벗어난다"],
             ["debtRemains", "빚 남음 — 1997 로"],
@@ -761,42 +914,35 @@ export class TradingScene extends Phaser.Scene {
             ["ruined", "자본잠식 — 1997 로"],
         ];
         const cw = (this.W - PAD * 2 - 2) / 2;
-        ends.forEach(([r, label], i) => {
-            const x = PAD + (i % 2) * (cw + 2);
-            const ry = y + Math.floor(i / 2) * 26;
-            const hit = r === reason;
-            this.rect(x, ry, cw, 24, hit ? (won ? 0x123d24 : 0x3d1226) : 0x111a1c, 1);
-            this.text(x + 6, ry + 6, label, FS.xs,
-                hit ? (won ? S.up : S.danger) : "#4e5f58");
-        });
-        y += 60;
+        if (y + 8 + 50 <= rowsTop) {
+            y += 8;
+            ends.forEach(([r, label], i) => {
+                const x = PAD + (i % 2) * (cw + 2);
+                const ry = y + Math.floor(i / 2) * 26;
+                const hit = r === reason;
+                this.rect(x, ry, cw, 24, hit ? (won ? 0x123d24 : 0x3d1226) : 0x111a1c, 1);
+                this.textFit(x + 6, ry + 6, label, FS.xs,
+                    hit ? (won ? S.up : S.danger) : "#4e5f58", 0, cw - 12);
+            });
+        }
 
-        // 남는 것과 사라지는 것.
-        const rows: Array<[string, string, string]> = [
-            ["남은 빚", this.engine.player.debt > 0 ? `−${money(this.engine.player.debt)}` : "0", this.engine.player.debt > 0 ? S.down : S.up],
-            ["떠난 사람", this.gone.length ? this.gone.map(id => CLIENTS.find(c => c.id === id)?.name ?? id).join(" · ") : "없다", S.down],
-            ["모은 상황카드", `${this.memory.situations.length} — 남는다`, S.up],
-            ["회차", `${this.memory.cycle}`, S.ink],
-        ];
-        y = this.bands.action.y - rows.length * 22 - 10;
+        let ry = rowsTop;
         for (const [k, v, col] of rows) {
-            this.rect(PAD, y + 20, this.W - PAD * 2, 1, 0x16211f, 1);
-            this.text(PAD, y, k, FS.xs, "#6d7f78");
-            this.text(this.W - PAD, y, v, FS.xs, col, 1);
-            y += 22;
+            this.rect(PAD, ry + 20, this.W - PAD * 2, 1, 0x16211f, 1);
+            this.text(PAD, ry, k, FS.xs, "#6d7f78");
+            this.textFit(this.W - PAD, ry, v, FS.xs, col, 1, this.W / 2);
+            ry += 22;
         }
 
         this.buttons([
-            { label: "기록 보기", sub: "", on: null },
             { label: "도감", sub: `${this.memory.situations.length}장`, on: null },
-            { label: "", sub: "", on: null },
             {
                 label: won ? "여기서 끝" : "눈을 감는다",
                 sub: won ? "" : "1997 로",
                 primary: true,
                 on: () => this.goBack(reason),
             },
-        ]);
+        ], bar);
     }
 
     /** 1997년 겨울로. **기억만 들고 간다.** */

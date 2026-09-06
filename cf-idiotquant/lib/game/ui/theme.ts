@@ -208,12 +208,27 @@ export interface Bands {
     action: Band;
 }
 
-/** 챕터 띠 — 신뢰와 빚은 늘 보여야 한다. */
+/* ── 여섯 띠의 기본과 바닥 ────────────────────────────────────────
+   격자 세로는 기기 비율에서 오므로 `STACK_MIN`(398) 까지 짧아질 수 있다. 여섯 띠를
+   기본값으로만 쌓으면 174px 을 고정으로 먹어 차트가 음수가 된다 — 실제로 그랬다.
+
+   그래서 **양보하는 순서**를 정해 둔다. 뒤로 갈수록 먼저 줄어든다:
+
+     버튼 · 운용 상황 · 차트   안 줄인다 — 없으면 판이 안 굴러간다
+     챕터 띠                  40 → 28. 신뢰와 빚은 늘 보여야 하니 조금만
+     장소 + 로그              88 → 34. 정사각은 행 높이를 따라 같이 준다
+     종목 칩                  46 → 0.  **제일 먼저 포기한다**
+
+   칩을 먼저 버리는 이유: 칩은 *바로가기*이고 전체 목록은 시세판에 있다. 장소 정사각을
+   누르면 시세판이 열리므로, 칩이 없어도 아홉 종목에 전부 닿는다. 씬은 `chips.h === 0`
+   을 보고 `＋N` 을 챕터 띠로 옮긴다. */
 const STRIP_H = 40;
-/** 장소 그림 자리. 정사각이라 로그 높이도 이 값이 된다. */
+const STRIP_MIN = 28;
+/** 장소 그림 자리. 정사각이라 이 값이 곧 로그 행의 높이다. */
 const PLACE = 88;
 /** 종목 칩 줄. 칩 하나가 58px 이고 여섯 개가 한 줄에 들어간다. */
 const CHIPS_H = 46;
+const CHIPS_MIN = 30;
 
 /**
  * 격자를 여섯 자리로 나눈다.
@@ -224,60 +239,97 @@ const CHIPS_H = 46;
  * 나는 어떤 상태인가 → 무엇을 말할까" 로 읽힌다. 원핸드 조작이라 아래로 갈수록 손이
  * 닿아야 하는 것이 오는 것과도 맞는다.
  *
- * 새로 든 174px(띠 40 + 장소 88 + 칩 46 − 옛 로그 84 + 상황 15)은 **거의 전부 차트가
- * 낸다**(346 → 242). `CHART_MIN` 이 110 이라 아직 두 배 여유가 있고, 로그는 오른쪽으로
- * 좁아지는 대신 세로가 늘어 석 줄에서 넉 줄이 된다 — 1인칭 문장은 시스템 로그보다 길다.
+ * **넉넉하면** 차트가 남는 세로를 전부 가져간다. **모자라면** 위 표의 순서로 양보한다.
+ * 어느 쪽이든 **쌓이는 띠의 합은 정확히 `h`** 다 — 한 픽셀도 남거나 넘지 않는다.
  *
  * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(장소·로그·칩·차트), 오른쪽에 만지는
  * 것(상황·버튼)을 둔다 — 눕힌 폰은 세로가 280px 뿐이라 여섯을 쌓으면 어느 하나도 제
  * 크기가 안 나온다.
  */
 export function bandsOf(w: number, h: number): Bands {
-    const strip: Band = { x: 0, y: 0, w, h: STRIP_H };
+    if (isStacked(w, h)) return stackedBands(w, h);
+    return splitBands(w, h);
+}
 
-    if (isStacked(w, h)) {
-        const top = STRIP_H;
-        const place: Band = { x: 0, y: top, w: PLACE, h: PLACE };
-        const log: Band = { x: PLACE, y: top, w: w - PLACE, h: PLACE };
-        const chips: Band = { x: 0, y: top + PLACE, w, h: CHIPS_H };
+function stackedBands(w: number, h: number): Bands {
+    // **채우는 순서 = 중요한 순서.** 없으면 판이 안 굴러가는 것부터 제 몫을 가져가고,
+    // 남는 만큼만 위쪽 띠가 자란다. 그래서 격자가 아무리 짧아도 음수가 안 나온다.
+    //
+    // 거꾸로 읽으면 그것이 곧 **양보하는 순서**다: 칩 → 장소+로그 → 챕터 띠.
+    // 칩이 먼저인 이유는 그것이 바로가기일 뿐이고 전체 목록은 시세판에 있어서다.
+    // 장소 정사각까지 사라진 격자에서는 씬이 `＋N` 을 챕터 띠로 옮겨 시세판 길을 남긴다.
+    let left = Math.max(0, h);
 
-        // 운용 상황과 버튼이 먼저 제 몫을 가져간다 — 없으면 판을 못 굴린다.
-        const rest = h - top - PLACE - CHIPS_H;
-        let firm = clamp(rest * 0.42, FIRM_MIN, 268);
-        if (rest - firm < ACTION_ONE_ROW + CHART_MIN) firm = Math.max(FIRM_TIGHT, rest - ACTION_ONE_ROW - CHART_MIN);
+    const take = (want: number): number => {
+        const got = Math.min(want, left);
+        left -= got;
+        return got;
+    };
 
-        const room = rest - firm - CHART_MIN;
-        const action = room >= ACTION_TWO_ROW
-            ? clamp(h * 0.19, ACTION_TWO_ROW, 180)
-            : Math.max(ACTION_ONE_ROW, Math.min(room, 96));
+    // 1) 판을 굴리는 셋 + 신뢰·빚을 보여 주는 띠.
+    const action0 = take(ACTION_ONE_ROW);
+    const firm0 = take(FIRM_TIGHT);
+    const chart0 = take(CHART_MIN);
+    let strip = take(STRIP_MIN);
 
-        const chart = rest - firm - action;
-        const chartY = top + PLACE + CHIPS_H;
+    // 2) 남는 만큼 위쪽 띠가 자란다.
+    let place = take(LOG_MIN);              // 장소 정사각 + 로그 한 줄
+    strip += take(STRIP_H - STRIP_MIN);     // 챕터 띠를 제 크기로
+    let chips = take(CHIPS_MIN);            // 칩 줄 최소치
+    place += take(PLACE - LOG_MIN);         // 장소를 제 크기로
+    chips += take(CHIPS_H - CHIPS_MIN);     // 칩 줄을 제 크기로
 
-        return {
-            portrait: true,
-            strip, place, log, chips,
-            chart: { x: 0, y: chartY, w, h: chart },
-            firm: { x: 0, y: chartY + chart, w, h: firm },
-            action: { x: 0, y: chartY + chart + firm, w, h: action },
-        };
-    }
+    // 3) 그러고도 남는 세로는 상황·버튼이 비율로 받고, **나머지는 전부 차트**다.
+    const body = h - strip - place - chips;
+    let firm = clamp(body * 0.42, firm0, 268);
+    let action = clamp(h * 0.19, action0, 180);
+    if (body - firm - action < chart0) action = action0;
+    if (body - firm - action < chart0) firm = Math.max(firm0, body - action - chart0);
+    let chart = body - firm - action;
+    // 한 픽셀도 남거나 넘지 않게 — 합은 언제나 정확히 h 다.
+    if (chart < 0) { firm = Math.max(0, firm + chart); chart = body - firm - action; }
+    if (chart < 0) { action = Math.max(0, action + chart); chart = body - firm - action; }
+    if (chart < 0) chart = 0;
 
+    let y = 0;
+    const strip_ = { x: 0, y, w, h: strip }; y += strip;
+    const place_ = { x: 0, y, w: place, h: place };
+    const log_ = { x: place, y, w: w - place, h: place }; y += place;
+    const chips_ = { x: 0, y, w, h: chips }; y += chips;
+    const chart_ = { x: 0, y, w, h: chart }; y += chart;
+    const firm_ = { x: 0, y, w, h: firm }; y += firm;
+    const action_ = { x: 0, y, w, h: Math.max(0, h - y) };
+
+    return {
+        portrait: true,
+        strip: strip_, place: place_, log: log_,
+        chips: chips_, chart: chart_, firm: firm_, action: action_,
+    };
+}
+
+function splitBands(w: number, h: number): Bands {
     // 오른쪽 칸에는 카드 셋과 버튼 넷이 나란히 들어간다. 왼쪽에 더 주면 그 여덟 개가
     // 전부 좁아져 이름과 라벨이 잘린다 — 차트는 폭이 조금 줄어도 읽힌다.
     const left = Math.round(w * 0.52);
     const right = w - left;
-    const top = STRIP_H;
+    const strip = clamp(h * 0.09, STRIP_MIN, STRIP_H);
+    const top = strip;
     const action = clamp(h * 0.28, 76, 110);
-    // 눕힌 화면에서는 장소 정사각을 작게 줄인다. 세로가 귀하다.
-    const ph = Math.min(PLACE, Math.max(48, Math.round((h - top) * 0.22)));
+
+    // 눕힌 화면에서는 세로가 귀하다. 장소 정사각을 줄이되 **정사각은 지킨다** —
+    // 나중에 들어올 그림의 자리가 안 깨지게.
+    const roomLeft = h - top;
+    const chips = roomLeft - CHART_MIN > LOG_MIN + CHIPS_MIN ? CHIPS_MIN : 0;
+    const place = clamp((roomLeft - chips - CHART_MIN) * 0.5, LOG_MIN, Math.min(PLACE, left - 40));
+    const chart = roomLeft - place - chips;
+
     return {
         portrait: false,
-        strip,
-        place: { x: 0, y: top, w: ph, h: ph },
-        log: { x: ph, y: top, w: left - ph, h: ph },
-        chips: { x: 0, y: top + ph, w: left, h: CHIPS_H },
-        chart: { x: 0, y: top + ph + CHIPS_H, w: left, h: h - top - ph - CHIPS_H },
+        strip: { x: 0, y: 0, w, h: strip },
+        place: { x: 0, y: top, w: place, h: place },
+        log: { x: place, y: top, w: left - place, h: place },
+        chips: { x: 0, y: top + place, w: left, h: chips },
+        chart: { x: 0, y: top + place + chips, w: left, h: chart },
         firm: { x: left, y: top, w: right, h: h - top - action },
         action: { x: left, y: h - action, w: right, h: action },
     };
