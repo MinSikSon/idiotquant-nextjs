@@ -40,7 +40,7 @@ import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
 import {
-    ACTION_TWO_ROW, C, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pxOf,
+    C, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pxOf,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
@@ -77,6 +77,13 @@ export class TradingScene extends Phaser.Scene {
     private client: Client | null = null;
     /** 이번 턴에 이미 권했는가. 고객이 한 명이라 한 번뿐이다. */
     private recommendedThisTurn = false;
+    /**
+     * 이번 턴에 뭐라도 했는가 — 권했거나 거뒀거나.
+     *
+     * 「권했는가」와 따로 두는 이유: 거두기만 한 턴은 권한 것은 아니지만 **기다린 것도
+     * 아니다.** 이 값이 `endTurn` 에서 기다림을 셀지를 가른다.
+     */
+    private actedThisTurn = false;
     /** 이번 턴에 권한 종목과 그때의 근거. 다음 턴에 이걸로 정산한다. */
     private pending: { id: string; thesis: string | null; client: Client; cost: number } | null = null;
     private read: MarketRead | null = null;
@@ -302,7 +309,9 @@ export class TradingScene extends Phaser.Scene {
         this.rect(b.x, b.y, b.w, b.h - 1, 0x2f4f56, 1);
         const cy = b.y + b.h / 2 - FS.xs / 2;
 
-        this.text(PAD, cy, label, FS.xs, S.ink);
+        // **「신뢰」에 닿기 전에 끊는다.** 예전에는 폭을 안 재고 그려서, 턴이 두 자리가
+        // 되는 순간(1/12) 「1/12신뢰」로 붙어 둘 다 안 읽혔다.
+        this.textFit(PAD, cy, label, FS.xs, S.ink, 0, b.w - 208);
 
         // 신뢰 — 열 칸. 낮아지면 색이 금색을 거쳐 분홍으로 간다.
         const trust = this.engine.player.trust;
@@ -547,11 +556,11 @@ export class TradingScene extends Phaser.Scene {
             // 둘 다 안 읽힌다 — 눕힌 화면에서 실제로 그랬다.
             const twoLines = ch >= 34;
             if (i === CHIP_SLOTS) {
+                // **「시세판」이라고 두 번 쓰지 않는다.** 버튼 띠에 같은 이름의 버튼이
+                // 있고, 이 칸은 종목 칩 줄 끝에 있어 「전체」만으로 뜻이 선다.
                 this.rect(x, y, cw, ch, 0x15242a, 1);
-                const head = more > 0 ? `＋${more}` : "전체";
-                this.textFit(x + cw / 2, y + (twoLines ? 6 : ch / 2 - FS.xs / 2),
-                    twoLines ? head : "시세판", FS.xs, "#8fb6bd", 0.5, cw - 4);
-                if (twoLines) this.textFit(x + cw / 2, y + ch - 16, "시세판", FS.xs, "#4e6a70", 0.5, cw - 4);
+                this.textFit(x + cw / 2, y + ch / 2 - FS.xs / 2,
+                    more > 0 ? `＋${more}` : "전체", FS.xs, "#8fb6bd", 0.5, cw - 4);
                 this.tap(x, y, cw, ch, () => this.openBoard());
                 continue;
             }
@@ -659,22 +668,41 @@ export class TradingScene extends Phaser.Scene {
     }
 
     /** 버튼은 동작이 아니라 **내가 하는 말**이다. */
+    /**
+     * 이 턴에 할 수 있는 일은 **둘뿐이다** — 시세판을 열거나, 턴을 넘기거나.
+     *
+     * 예전에는 버튼이 넷이었는데 실제로 일어나는 일은 둘이었다.
+     * 「믿어보십시오」와 「거둡니다」는 **둘 다 시세판을 열 뿐이고**(체결은 시세판의 종목
+     * 줄에서 한다), 「기다리시죠」와 「다음」은 **둘 다 턴을 넘겼다.** 넷을 세워 두니
+     * 무엇을 눌러야 하는지가 흐려졌다 — 시세판을 여는 길은 장소 그림과 칩 줄까지 합쳐
+     * 넷이나 됐다.
+     *
+     * 겉만 흐린 것이 아니었다. **같은 행동이 어느 버튼을 눌렀느냐에 따라 다르게 세어졌다** —
+     * 안 권하고 넘기는 것은 어느 쪽이든 기다린 것인데 「기다리시죠」만
+     * 「기다릴 줄 알게 됐다」에 셌다. 그 셈은 이제 `endTurn` 이 한다.
+     */
     private drawActions(): void {
         const th = this.deck.buildBuff().thesis;
         const held = Object.keys(this.engine.player.positions).length;
         const done = this.recommendedThisTurn;
+
+        // 버튼이 둘뿐이므로 이번 턴의 상태는 부제가 진다 — 권할 수 있는지, 뭘 들고 있는지.
+        const sub = done
+            ? (held > 0 ? `권했다 · 보유 ${held}` : "권했다")
+            : (th ? `근거 있음${held > 0 ? ` · 보유 ${held}` : ""}`
+                  : `근거 없음${held > 0 ? ` · 보유 ${held}` : ""}`);
+
         this.buttons([
+            { label: "시세판", sub, primary: !done, on: () => this.openBoard() },
             {
-                label: done ? "권했다" : (th ? "권합니다" : "믿어보십시오"),
-                sub: done ? "이번 턴은 끝" : (th ? "근거 있음" : "근거 없음"),
-                primary: !done,
-                on: done || !this.client ? null : () => this.openBoard(),
+                label: "다음 턴",
+                // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
+                sub: done
+                    ? `${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`
+                    : "기다린다 · 신뢰 −3",
+                primary: done,
+                on: () => this.endTurn(),
             },
-            { label: "거둡니다", sub: held > 0 ? `${held}종목` : "보유 없음",
-              on: held > 0 ? () => this.openBoard() : null },
-            { label: "기다리시죠", sub: "신뢰 −3", on: () => this.wait() },
-            { label: "다음", sub: `${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`,
-              primary: done, on: () => this.endTurn() },
         ]);
     }
 
@@ -691,22 +719,19 @@ export class TradingScene extends Phaser.Scene {
         this.rect(b.x, b.y, b.w, 2, 0x4e5a53, 1);
 
         const gap = 7;
-        // **몇 개를 세우느냐로 칸을 나눈다.** 집·공원은 버튼이 둘이라 4칸 격자에 넣으면
-        // 왼쪽 절반에 몰리고 칸이 87px 로 좁아져 「여섯 장 고른다」가 줄어든다.
+        // **몇 개를 세우느냐로 칸을 나눈다.** 4칸 격자에 둘만 넣으면 왼쪽 절반에 몰리고
+        // 칸이 87px 로 좁아져 「여섯 장 고른다」가 줄어든다.
         //
-        // 낮은 띠에서는 한 줄로 세운다 — 두 줄로 밀어 넣으면 글자가 칸 밖으로 잘려 나가
-        // 「다음」을 못 눌러 판이 멈춘다.
+        // 두 줄 배치는 없앴다 — 이제 어느 화면도 버튼이 둘을 넘지 않는다.
         const live = defs.filter(d => d.label).length;
-        const twoRow = live > 2 && b.h >= 96;
-        const cols = twoRow ? 2 : Math.max(1, live);
-        const rows = twoRow ? Math.ceil(live / 2) : 1;
+        const cols = Math.max(1, live);
         const cw = (b.w - PAD * 2 - gap * (cols - 1)) / cols;
-        const chh = (b.h - PAD * 2 - gap * (rows - 1)) / rows;
+        const chh = b.h - PAD * 2;
 
         defs.forEach((d, i) => {
             if (!d.label) return;
-            const x = b.x + PAD + (i % cols) * (cw + gap);
-            const y = b.y + PAD + Math.floor(i / cols) * (chh + gap);
+            const x = b.x + PAD + i * (cw + gap);
+            const y = b.y + PAD;
             const on = d.on !== null;
             this.rect(x, y, cw, chh, on ? (d.primary ? 0x2f4f56 : 0x94a096) : 0x9aa69c, 1);
             const showSub = Boolean(d.sub) && chh >= 40;
@@ -770,7 +795,9 @@ export class TradingScene extends Phaser.Scene {
 
         if (!thesis && Math.random() > c.acceptsBlind) {
             this.pushLog(`${c.name}이(가) 고개를 저었다. "근거가 뭡니까."`, "warn");
+            // 거절당해도 **권하려 한 턴**이다 — 기다린 것으로 세지 않는다.
             this.recommendedThisTurn = true;
+            this.actedThisTurn = true;
             this.closeBoardAndRedraw();
             return;
         }
@@ -781,6 +808,7 @@ export class TradingScene extends Phaser.Scene {
 
         this.engine.setFocus(id);
         this.recommendedThisTurn = true;
+        this.actedThisTurn = true;
         this.pending = { id, thesis, client: c, cost: before - this.engine.player.cash };
         if (thesis) {
             this.facts.thesisPlays += 1;
@@ -800,15 +828,10 @@ export class TradingScene extends Phaser.Scene {
         if (!r.ok) { this.pushLog(r.error, "warn"); this.closeBoardAndRedraw(); return; }
         this.pushLog(`${s?.name ?? "종목"}을(를) 거뒀다. ${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`,
             pnl >= 0 ? "up" : "down");
+        this.actedThisTurn = true;
         // 권한 종목을 그 턴에 도로 팔면 정산은 그 결과로 한다.
         if (this.pending?.id === id) this.pending = null;
         this.closeBoardAndRedraw();
-    }
-
-    private wait(): void {
-        this.facts.waitsThisChapter += 1;
-        this.pushLog("오늘은 아무것도 권하지 않았다.", "turn");
-        this.endTurn();
     }
 
     private closeBoardAndRedraw(): void {
@@ -830,6 +853,7 @@ export class TradingScene extends Phaser.Scene {
         this.cards = this.deck.dealHand();
         this.client = clientAt(this.memory.cycle, this.engine.chapter.id, this.engine.player.currentTurn, this.gone);
         this.recommendedThisTurn = false;
+        this.actedThisTurn = false;
         this.read = this.engine.read(this.deck.buildBuff());
 
         const fresh = this.engine.newlyListed;
@@ -839,6 +863,14 @@ export class TradingScene extends Phaser.Scene {
 
     /** 다음 턴으로. **여기서 주가가 움직이고 신뢰가 정산된다.** */
     private endTurn(): void {
+        // 아무것도 안 하고 넘긴 턴은 기다린 것으로 센다. **버튼이 아니라 행동으로 센다** —
+        // 예전에는 「기다리시죠」로 넘긴 것만 세어서, 똑같이 흘려보낸 턴인데도 「다음」을
+        // 누르면 「기다릴 줄 알게 됐다」가 안 채워졌다.
+        if (!this.actedThisTurn) {
+            this.facts.waitsThisChapter += 1;
+            this.pushLog("오늘은 아무것도 하지 않았다.", "turn");
+        }
+
         const buff = this.deck.buildBuff();
         const results = this.engine.tick(buff);
 
@@ -1025,8 +1057,9 @@ export class TradingScene extends Phaser.Scene {
             ry += 22;
         }
 
+        // 「도감」은 눌러도 아무 일이 없는 죽은 버튼이었다. 도감으로 가는 길은 캔버스
+        // 아래의 「카드 도감」 링크에 이미 있고, 모은 장수는 위 요약 줄이 말한다.
         this.buttons([
-            { label: "도감", sub: `${this.memory.situations.length}장`, on: null },
             {
                 label: won ? "여기서 끝" : "눈을 감는다",
                 sub: won ? "" : "1997 로",
