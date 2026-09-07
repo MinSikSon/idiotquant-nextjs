@@ -40,7 +40,7 @@ import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
 import {
-    C, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pxOf,
+    C, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
@@ -287,11 +287,16 @@ export class TradingScene extends Phaser.Scene {
         if (side >= 120) this.text(x + side / 2, y + side - 20, "그래픽 자리", FS.xs, "#3b4c50", 0.5);
     }
 
-    /** 누를 수 있는 자리. 화면 어디든 이걸로 받는다. */
+    /**
+     * 누를 수 있는 자리. 화면 어디든 이걸로 받는다.
+     *
+     * 넓은 면(장소 그림·칩)은 **내리지 않고 그늘만 덮는다** — 그림 한 장이 통째로
+     * 2px 움직이면 눌린 게 아니라 흔들린 것으로 보인다.
+     */
     private tap(x: number, y: number, w: number, h: number, fn: () => void): void {
-        const z = this.add.zone(x, y, w, h).setOrigin(0, 0).setInteractive();
-        z.on("pointerup", fn);
-        this.keep(z);
+        const { zone, shade } = pressable(this, x, y, w, h, [], fn);
+        this.keep(shade);
+        this.keep(zone);
     }
 
     /* ── 챕터 띠 ──────────────────────────────────────── */
@@ -733,17 +738,22 @@ export class TradingScene extends Phaser.Scene {
             const x = b.x + PAD + i * (cw + gap);
             const y = b.y + PAD;
             const on = d.on !== null;
-            this.rect(x, y, cw, chh, on ? (d.primary ? 0x2f4f56 : 0x94a096) : 0x9aa69c, 1);
+            const face = this.rect(x, y, cw, chh, on ? (d.primary ? 0x2f4f56 : 0x94a096) : 0x9aa69c, 1);
             const showSub = Boolean(d.sub) && chh >= 40;
             const size = cw < 84 ? FS.sm : FS.md;
             const room = cw - 8;
-            this.textFit(x + cw / 2, y + chh / 2 - (showSub ? 14 : size / 2), d.label, size,
+            const label = this.textFit(x + cw / 2, y + chh / 2 - (showSub ? 14 : size / 2), d.label, size,
                 on ? (d.primary ? "#e9f2ea" : "#101614") : "#3c4844", 0.5, room);
-            if (showSub) {
-                this.textFit(x + cw / 2, y + chh / 2 + 6, d.sub, FS.xs,
-                    d.primary && on ? "#9fc0c4" : "#3c4844", 0.5, room);
-            }
-            if (on) this.tap(x, y, cw, chh, d.on!);
+            const subT = showSub
+                ? this.textFit(x + cw / 2, y + chh / 2 + 6, d.sub, FS.xs,
+                    d.primary && on ? "#9fc0c4" : "#3c4844", 0.5, room)
+                : null;
+            if (!on) return;
+            // 버튼은 **얼굴과 글자가 같이 내려간다** — 실제로 눌러 들어가는 느낌이 난다.
+            const parts = subT ? [face, label, subT] : [face, label];
+            const { zone, shade } = pressable(this, x, y, cw, chh, parts, d.on!);
+            this.keep(shade);
+            this.keep(zone);
         });
     }
 

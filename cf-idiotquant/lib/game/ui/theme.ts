@@ -479,3 +479,72 @@ export function money(v: number): string {
 export function tone(v: number): string {
     return v > 0 ? S.up : v < 0 ? S.down : S.inkDim;
 }
+
+/* ── 눌림 ─────────────────────────────────────────────────────── */
+
+/** 눌린 동안 덮는 그늘의 진하기. */
+const PRESS_SHADE = 0.32;
+/** 눌린 동안 내려가는 픽셀. 손가락 밑에서 실제로 들어가는 느낌이 난다. */
+const PRESS_DROP = 2;
+
+export interface Pressable {
+    /** 입력을 받는 판. 컨테이너에 넣을 때는 이것도 같이 넣는다. */
+    zone: Phaser.GameObjects.Zone;
+    /** 눌린 표시. **버튼 위에 그려져야 하므로 얼굴·글자 뒤에 추가할 것.** */
+    shade: Phaser.GameObjects.Graphics;
+}
+
+/**
+ * 누를 수 있는 자리에 **눌린 표시**를 붙인다.
+ *
+ * 이 게임은 캔버스라 브라우저가 해 주는 것이 하나도 없다 — `:active` 도 hover 도 없다.
+ * 그래서 눌렀는지 안 눌렸는지가 화면에 전혀 안 나타났고, 반응이 없으면 사람은 두 번
+ * 누른다. 눌린 동안 **그늘을 덮고 2px 내린다.**
+ *
+ * 손을 뗄 때가 아니라 **누를 때** 표시가 나야 한다. 그래서 `pointerdown` 에서 켜고,
+ * 뗄 때(`pointerup`) 실행한다. 누른 채로 밖으로 빠져나가면 **실행하지 않고 되돌린다** —
+ * 잘못 눌렀을 때 빠져나가 취소하는 것은 사람이 기대하는 동작이다.
+ *
+ * @param move 눌릴 때 같이 내려갈 것들(얼굴·글자). 비우면 그늘만 덮는다 —
+ *   칩이나 그림처럼 넓은 면은 내리면 오히려 어색하다.
+ * @param canTap 실행 직전에 한 번 더 묻는다. 시세판은 이걸로 "끌었으면 누른 것이
+ *   아니다" 를 판정한다.
+ */
+export function pressable(
+    scene: Phaser.Scene,
+    x: number, y: number, w: number, h: number,
+    move: Phaser.GameObjects.GameObject[],
+    onTap: () => void,
+    canTap: () => boolean = () => true,
+): Pressable {
+    const shade = scene.add.graphics();
+    shade.fillStyle(0x000000, PRESS_SHADE).fillRect(x, y, w, h);
+    shade.setVisible(false);
+
+    let down = false;
+    const shift = (dy: number) => {
+        for (const o of move) (o as unknown as { y: number }).y += dy;
+        shade.y += dy;
+    };
+    const press = () => {
+        if (down) return;
+        down = true;
+        shade.setVisible(true);
+        shift(PRESS_DROP);
+    };
+    const release = (fire: boolean) => {
+        if (!down) return;
+        down = false;
+        shade.setVisible(false);
+        shift(-PRESS_DROP);
+        if (fire && canTap()) onTap();
+    };
+
+    const zone = scene.add.zone(x, y, w, h).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    zone.on("pointerdown", press);
+    zone.on("pointerup", () => release(true));
+    zone.on("pointerout", () => release(false));
+    zone.on("pointerupoutside", () => release(false));
+
+    return { zone, shade };
+}
