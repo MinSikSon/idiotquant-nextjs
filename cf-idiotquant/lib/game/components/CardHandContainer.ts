@@ -23,7 +23,7 @@
 
 import Phaser from "phaser";
 import type { StrategyCard } from "@/lib/game/core/types";
-import { C, S, FS, LANE, fontOf, mkText } from "@/lib/game/ui/theme";
+import { C, S, FS, LANE, fontOf, mkText, pressable } from "@/lib/game/ui/theme";
 
 /** 지금 아무 일도 못 하는 카드인가. 씬이 계좌를 보고 답한다. */
 export type IdleCheck = (card: StrategyCard) => boolean;
@@ -147,24 +147,23 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             // 카드인지는 도감에서 읽고 온다는 전제다.
             if (desc.y + desc.displayHeight > this.boxH - 4) desc.setVisible(false);
 
-            const zone = this.scene.add.zone(0, 0, cw, this.boxH)
-                .setOrigin(0, 0)
-                .setInteractive({ useHandCursor: true });
-
-            // bg 가 맨 아래. 딱지는 그 위, 입력 zone 은 맨 위여야 한다.
-            root.add([bg, tag, ...badge, name, desc, zone]);
-            this.add(root);
-
             const view: CardView = { root, bg, name, desc, tag, card, idle };
-            this.views.push(view);
-            this.paint(view, cw, "idle");
 
             // 탭 한 번이 곧 사용이다. locked 는 이번 턴에 이미 한 장을 낸 경우다.
-            zone.on("pointerup", () => {
-                if (this.locked) return;
-                this.lockTo(card.uid);
-                this.onPick(card.uid);
-            });
+            // **되돌릴 수 없는 한 번**이라 눌린 표시가 특히 중요하다 — 눌린 채 손을
+            // 밖으로 빼면 실행하지 않고 되돌린다.
+            const { zone, shade } = pressable(
+                this.scene, 0, 0, cw, this.boxH, [bg, tag, ...badge, name, desc],
+                () => { this.lockTo(card.uid); this.onPick(card.uid); },
+                () => !this.locked,
+            );
+
+            // bg 가 맨 아래. 딱지는 그 위, 그늘과 입력 zone 은 맨 위여야 한다.
+            root.add([bg, tag, ...badge, name, desc, shade, zone]);
+            this.add(root);
+
+            this.views.push(view);
+            this.paint(view, cw, "idle");
         });
     }
 
