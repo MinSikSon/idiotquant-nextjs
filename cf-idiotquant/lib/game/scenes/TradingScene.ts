@@ -26,10 +26,10 @@ import {
     type SituationFacts,
 } from "@/lib/game/core/situations";
 import {
-    loadMemory, saveMemory, remember, regress, endReasonOf, type Memory,
+    loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
 } from "@/lib/game/core/progress";
 import {
-    cutToHome, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
+    cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
 import { preloadArt, sliceArt, drawArt, type ArtKey } from "@/lib/game/ui/art";
@@ -44,7 +44,20 @@ import {
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
-type Place = "home" | "office" | "park";
+/**
+ * 지금 무엇을 보고 있는가.
+ *
+ * **집·회사·공원은 장소고, 시작·끝은 판을 감싸는 틀이다.** 판이 어디서 시작해서 어디서
+ * 끝나는지가 화면에 없으면, 회귀가 「끝나고 다시 시작」이 아니라 「끝없이 굴러감」으로
+ * 보인다. 그래서 판 바깥에 화면 둘을 둔다.
+ *
+ *   시작  한 판을 시작하는 자리. 회차 기록이 여기 쌓인다
+ *   집    그 판의 준비 · 챕터 결산
+ *   회사  12턴
+ *   공원  이 판이 어떻게 끝났는가
+ *   끝    **빚을 다 갚았을 때만.** 여기서는 회귀하지 않는다
+ */
+type Screen = "title" | "home" | "office" | "park" | "ending";
 
 /** 로그가 들고 있는 줄 수. 넘치면 앞에서부터 버린다. */
 const LOG_KEEP = 200;
@@ -59,7 +72,7 @@ export class TradingScene extends Phaser.Scene {
     private facts!: SituationFacts;
 
     /* ── 장소와 화면 ──────────────────────────────────── */
-    private place: Place = "home";
+    private place: Screen = "title";
     private W = 390;
     private H = 844;
     private bands!: Bands;
@@ -110,7 +123,8 @@ export class TradingScene extends Phaser.Scene {
         // **띠부터 나눈다.** `startCycle` 이 집으로 가는 전환을 세우면서 화면을 그리는데,
         // 그 전에 `measure()` 가 돌지 않으면 `this.bands` 가 없어 씬이 그 자리에서 죽는다.
         this.measure();
-        this.startCycle();
+        // 켜면 **시작 화면**이다. 예전에는 곧장 집이라 시작한 지점이 없었다.
+        this.newRun(null);
 
         // 화면을 돌리거나 주소창이 숨으면 React 껍데기가 새 격자로 `setGameSize` 를 부른다.
         // 그 순간 **판을 잃지 않고** 그림만 다시 세운다 — 규칙은 전부 `core/` 에 있어서
@@ -125,8 +139,14 @@ export class TradingScene extends Phaser.Scene {
 
     private onResize(): void { this.measure(); this.redraw(); }
 
-    /** 1997년 겨울부터 다시. 회귀가 이 함수를 다시 부른다. */
-    private startCycle(): void {
+    /**
+     * 판 하나를 새로 차린다. **차리기만 하고 시작하지는 않는다.**
+     *
+     * 예전에는 이 함수가 곧장 집으로 들여보냈다. 그래서 게임을 켜면 이미 판이 굴러가는
+     * 중이었고, 회귀도 공원에서 집으로 곧장 이어져 **어디서 끝나고 어디서 시작하는지가
+     * 화면에 없었다.** 지금은 여기서 시작 화면까지만 가고, 판은 사람이 눌러야 시작된다.
+     */
+    private newRun(cut: Cut | null): void {
         this.engine = new StockEngine((Math.random() * 0xffffffff) >>> 0, SEED_CASH);
         this.facts = { ...this.memory.facts };
         this.gone = [];
@@ -134,7 +154,12 @@ export class TradingScene extends Phaser.Scene {
         this.earnedThisChapter = [];
         this.entries = [];
         this.newDeck();
-        this.go("home", cutToHome(this.engine.chapter, this.memory.cycle));
+        this.go("title", cut);
+    }
+
+    /** 시작 화면에서 「시작한다」를 눌렀다. 여기서부터 판이다. */
+    private beginRun(): void {
+        this.go("home", cutStartRun(this.engine.chapter, this.memory.cycle));
     }
 
     /**
@@ -144,7 +169,7 @@ export class TradingScene extends Phaser.Scene {
      * 흐름이 안 보였고, 전환에 무엇을 끼워 넣으려면 다섯 곳을 다 고쳐야 했다. 여기 하나로
      * 모으면 "장소가 바뀐다" 는 사건이 한 함수가 된다.
      */
-    private go(to: Place, cut: Cut): void {
+    private go(to: Screen, cut: Cut | null): void {
         // 막 아래에 시세판이 남아 있으면 걷었을 때 엉뚱한 화면이 나온다.
         this.board?.close();
         this.board = null;
@@ -203,7 +228,9 @@ export class TradingScene extends Phaser.Scene {
         this.board?.close(); this.board = null;
 
         this.cameras.main.setBackgroundColor(S.bg);
-        if (this.place === "home") this.drawHome();
+        if (this.place === "title") this.drawTitle();
+        else if (this.place === "ending") this.drawEnding();
+        else if (this.place === "home") this.drawHome();
         else if (this.place === "park") this.drawPark();
         else this.drawOffice();
 
@@ -341,6 +368,113 @@ export class TradingScene extends Phaser.Scene {
             this.text(bx + bw / 2, by + (b.h - 12) / 2 - FS.xs / 2, "시세판", FS.xs, "#8fb6bd", 0.5);
             this.tap(bx, by, bw, b.h - 12, () => this.openBoard());
         }
+    }
+
+    /* ── 시작과 끝 ────────────────────────────────────── */
+
+    /**
+     * 한 판의 문턱. **여기서 시작하고 여기로 돌아온다.**
+     *
+     * 회차와 기록을 보여 주는 자리이기도 하다. 회귀가 헛돌지 않는다는 것을 사람이 아는
+     * 방법은 하나뿐이다 — 도는 동안 **무엇이 쌓였는지가 보이는 것.**
+     */
+    private drawTitle(): void {
+        const m = this.memory;
+        const first = m.cycle <= 1;
+        const bar = this.placeBar;
+        const top = PAD;
+        const avail = bar.y - top;
+
+        const rows: Array<[string, string, string]> = [
+            ["회차", `${m.cycle}회차`, S.ink],
+            ["가장 멀리", CHAPTERS[m.bestChapter]?.year ?? CHAPTERS[0]!.year, S.ink],
+            ["모은 상황카드", `${m.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
+        ];
+        if (m.escaped) rows.push(["빚 완납", "해낸 적 있다", S.gold]);
+        const rowsTop = bar.y - rows.length * 22 - 8;
+
+        const side = Math.max(56, Math.min(this.W - PAD * 2, Math.round(avail * 0.34)));
+        const sx = (this.W - side) / 2;
+        this.placeArt("home", sx, top, side, "재기", S.gold);
+
+        let y = top + side + 16;
+        this.textFit(this.W / 2, y, "재기", FS.xxl, S.gold, 0.5, this.W - PAD * 2);
+        y += FS.xxl + 6;
+        this.textFit(this.W / 2, y, "1997년 12월, 서울", FS.sm, "#9aada6", 0.5, this.W - PAD * 2);
+        y += FS.sm + 14;
+
+        const line = first
+            ? "증권사를 나온 지 한 달이 됐다."
+            : m.escaped
+                ? "한 번 빠져나온 적이 있다. 다시 들어간다."
+                : "또 1997년이다. 이번에는 다르게 해 본다.";
+        if (y + FS.sm <= rowsTop) {
+            this.textFit(this.W / 2, y, line, FS.sm, "#8d9c93", 0.5, this.W - PAD * 2);
+        }
+
+        let ry = rowsTop;
+        for (const [k, v, col] of rows) {
+            this.rect(PAD, ry + 20, this.W - PAD * 2, 1, 0x16211f, 1);
+            this.text(PAD, ry, k, FS.xs, "#6d7f78");
+            this.textFit(this.W - PAD, ry, v, FS.xs, col, 1, this.W / 2);
+            ry += 22;
+        }
+
+        this.buttons([
+            { label: first ? "시작한다" : "다시 시작한다", sub: `${m.cycle}회차`,
+              primary: true, on: () => this.beginRun() },
+        ], bar);
+    }
+
+    /**
+     * 끝. **빚을 다 갚았을 때만 여기에 온다.**
+     *
+     * 이 화면의 존재 이유는 하나다 — 루프에 끝이 있다는 것을 보여 주는 것. 「처음부터」를
+     * 누르면 그때 비로소 새 판이고, 그것도 시작 화면으로 간다.
+     */
+    private drawEnding(): void {
+        const m = this.memory;
+        const bar = this.placeBar;
+        const top = PAD;
+        const avail = bar.y - top;
+
+        const rows: Array<[string, string, string]> = [
+            ["걸린 회차", `${m.cycle}회차`, S.gold],
+            ["모은 상황카드", `${m.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
+            ["남은 빚", "0", S.up],
+        ];
+        const rowsTop = bar.y - rows.length * 22 - 8;
+
+        const side = Math.max(56, Math.min(this.W - PAD * 2, Math.round(avail * 0.34)));
+        const sx = (this.W - side) / 2;
+        this.placeArt("park-debtCleared", sx, top, side, "공원", S.up, "갚았다");
+
+        let y = top + side + 16;
+        this.textFit(this.W / 2, y, "빚을 다 갚았다", FS.xl, S.up, 0.5, this.W - PAD * 2);
+        y += FS.xl + 10;
+
+        for (const s of [
+            "2000년의 겨울을 빚 없이 넘겼다.",
+            "공원을 지나 어디로든 갈 수 있다.",
+            "이 회차는 여기서 끝난다.",
+        ]) {
+            if (y + FS.sm > rowsTop) break;
+            this.textFit(this.W / 2, y, s, FS.sm, "#9aada6", 0.5, this.W - PAD * 2);
+            y += FS.sm + 7;
+        }
+
+        let ry = rowsTop;
+        for (const [k, v, col] of rows) {
+            this.rect(PAD, ry + 20, this.W - PAD * 2, 1, 0x16211f, 1);
+            this.text(PAD, ry, k, FS.xs, "#6d7f78");
+            this.textFit(this.W - PAD, ry, v, FS.xs, col, 1, this.W / 2);
+            ry += 22;
+        }
+
+        this.buttons([
+            { label: "처음부터", sub: "기억은 남는다", primary: true,
+              on: () => this.goBack("debtCleared") },
+        ], bar);
     }
 
     /* ── 집 ───────────────────────────────────────────── */
@@ -1011,7 +1145,8 @@ export class TradingScene extends Phaser.Scene {
     private drawPark(): void {
         const reason = this.ending ?? "debtRemains";
         const info = this.ENDINGS[reason];
-        const won = reason === "debtCleared";
+        // **규칙은 core 에 있다.** 화면이 조건을 다시 적으면 둘이 어긋난다.
+        const won = breaksLoop(reason);
         this.drawStrip(`공원 · ${this.engine.chapter.year}   ${this.memory.cycle}회차`);
 
         const bar = this.placeBar;
@@ -1069,23 +1204,30 @@ export class TradingScene extends Phaser.Scene {
 
         // 「도감」은 눌러도 아무 일이 없는 죽은 버튼이었다. 도감으로 가는 길은 캔버스
         // 아래의 「카드 도감」 링크에 이미 있고, 모은 장수는 위 요약 줄이 말한다.
+        //
+        // **이기면 회귀하지 않는다.** 예전에는 라벨만 「여기서 끝」이고 하는 일은 똑같이
+        // `goBack()` 이라, 빚을 다 갚아도 1997 로 되돌아갔다. `breaksLoop` 가 코드에
+        // 있는데 화면이 그걸 안 봤다.
         this.buttons([
-            {
-                label: won ? "여기서 끝" : "눈을 감는다",
-                sub: won ? "" : "1997 로",
-                primary: true,
-                on: () => this.goBack(reason),
-            },
+            won
+                ? { label: "끝냈다", sub: `${this.memory.cycle}회차`, primary: true,
+                    on: () => this.go("ending", cutEnded(this.memory.cycle)) }
+                : { label: "눈을 감는다", sub: "1997 로", primary: true,
+                    on: () => this.goBack(reason) },
         ], bar);
     }
 
-    /** 1997년 겨울로. **기억만 들고 간다.** */
+    /**
+     * 판이 끝났다. **회귀는 여기 한 곳에서만 일어난다.**
+     *
+     * 공원의 지는 엔딩 셋과 끝 화면의 「처음부터」가 모두 이리로 온다. 회차를 올려 저장하고
+     * **집이 아니라 시작 화면으로** 내보낸다 — 판과 판 사이에 문턱을 두어야 끝난 줄 안다.
+     */
     private goBack(reason: EndReason): void {
+        const cycle = this.memory.cycle;
         this.memory = regress({ ...this.memory, facts: this.facts }, reason);
         saveMemory(this.memory);
-        // `startCycle` 이 집으로 가는 전환까지 세운다 — 회귀와 첫 시작은 같은 길이다.
-        this.startCycle();
-        this.pushLog("눈을 뜨니 다시 1997년 12월이었다.", "system");
+        this.newRun(cutRegress(cycle));
     }
 
     /* ── 로그 ─────────────────────────────────────────── */

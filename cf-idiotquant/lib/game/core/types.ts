@@ -273,6 +273,12 @@ export type EndReason = "debtCleared" | "debtRemains" | "trustLost" | "ruined";
 export interface ChapterSummary {
     /** 시작 자산 대비 최종 자산(%) */
     returnPct: number;
+    /**
+     * 이 챕터에서 받은 보수. **빚은 이 값만큼만 줄어든다.**
+     *
+     * 손해를 본 챕터에는 0 이다. 신뢰가 높을수록 커진다 — `core/trust.ts` 의 `advisoryFee`.
+     */
+    fee: number;
     startEquity: number;
     finalEquity: number;
     /** 끝났을 때의 신뢰와 남은 빚. */
