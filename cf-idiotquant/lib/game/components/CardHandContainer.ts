@@ -6,14 +6,20 @@
 // id 가 아니라 uid 로 짚는 이유: 덱에 같은 카드가 여러 장 들어간다. 같은 카드가 두 장
 // 잡히는 일이 흔해서 id 로 짚으면 두 장이 함께 눌린 것처럼 보인다.
 //
-// ── 두 번 누르기 ────────────────────────────────────────────────
-// 카드 칸은 세로 70~120px 이다. 여기에 효과 설명을 통째로 넣으면 글자가 서로를 밟는다.
-// 그렇다고 설명을 지우면 무슨 카드인지 모르는 채 눌러야 한다.
+// ── 한 번 누르기 ────────────────────────────────────────────────
 //
-//   접힘 — 이름 + 한 줄  →  [탭]  →  펼침 — 효과 · 언제 쓰는가  →  [탭] → 사용
+//   [탭] → 사용
 //
-// 그래서 굴리는 동안은 한 줄만 보이고, 알고 싶을 때만 펼쳐서 읽는다. 잘못 눌렀으면
-// 펼침의 "닫기" 로 되돌아간다 — 한 번의 탭으로 그 턴이 정해지는 일이 없다.
+// 예전에는 두 번이었다. 첫 탭이 효과 설명을 펼치고 두 번째 탭이 카드를 냈다 — 카드 칸이
+// 세로 70~120px 뿐이라 효과 설명을 칸 안에 넣을 수 없었고, 모르는 채 누르는 것보다
+// 펼쳐서 읽히는 편이 낫다고 봤기 때문이다.
+//
+// 그 읽는 자리는 **카드 도감**(/game/cards)이 대신한다. 효과·언제 쓰나·얻는 법이 다 있고,
+// 게임 화면 아래 링크가 그리로 간다. 손패에서 매번 펼쳐 읽는 것은 판이 굴러가는 동안에는
+// 손이 한 번 더 가는 일이었다.
+//
+// 대신 **한 번의 탭이 그 턴의 카드를 정한다.** 되돌릴 수 없다. 그래서 칸에 남는 정보가
+// 중요하다 — 이름은 항상, 한 줄 요약은 칸이 허락하는 만큼 보인다.
 
 import Phaser from "phaser";
 import type { StrategyCard } from "@/lib/game/core/types";
@@ -54,9 +60,6 @@ function baseName(card: StrategyCard): string {
     return card.name;
 }
 
-/** 펼침 칸이 위쪽(유물·켜짐 줄)으로 넘어가는 높이. 세로 폰에서 설명 넉 줄이 들어간다. */
-const OPEN_RISE = 64;
-
 export class CardHandContainer extends Phaser.GameObjects.Container {
     // Container 가 이미 w·h 를 쓴다 — 겹치면 부모의 것을 덮어쓴다.
     private readonly boxW: number;
@@ -68,8 +71,6 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
     private empty: Phaser.GameObjects.Text | null = null;
     /** 이번 턴에 이미 골랐는가. 골랐으면 나머지는 안 눌린다. */
     private locked = false;
-    /** 지금 펼쳐 놓고 읽는 중인 칸. 접힘으로 돌아가면 없어진다. */
-    private detail: Phaser.GameObjects.Container | null = null;
 
     constructor(scene: Phaser.Scene, o: CardHandOpts) {
         super(scene, o.x, o.y);
@@ -87,7 +88,6 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
      *               흐리게라도 미리 보이는 편이 낫다.
      */
     setHand(cards: StrategyCard[], isIdle?: IdleCheck): void {
-        this.closeDetail();
         for (const v of this.views) v.root.destroy(true);
         this.views = [];
         this.empty?.destroy();
@@ -143,7 +143,8 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
             // 칸을 넘으면 요약을 접는다. 낮은 화면에서는 칸이 60px 남짓이라, 이름이 두
             // 줄이 되는 순간(좁은 칸에서 늘 그렇다) 요약이 테두리 밖 버튼 위에 찍혔다.
-            // 지우는 것이 아니라 **한 번 누르면 나오는 쪽으로 미루는** 것이다.
+            // 겹쳐 찍히는 것보다는 낫지만, 이 경우 이름만 보고 눌러야 한다 — 무슨
+            // 카드인지는 도감에서 읽고 온다는 전제다.
             if (desc.y + desc.displayHeight > this.boxH - 4) desc.setVisible(false);
 
             const zone = this.scene.add.zone(0, 0, cw, this.boxH)
@@ -158,94 +159,17 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             this.views.push(view);
             this.paint(view, cw, "idle");
 
-            // 첫 탭은 **읽는 것**이다. 여기서 카드가 쓰이지 않는다.
+            // 탭 한 번이 곧 사용이다. locked 는 이번 턴에 이미 한 장을 낸 경우다.
             zone.on("pointerup", () => {
                 if (this.locked) return;
-                this.openDetail(view);
+                this.lockTo(card.uid);
+                this.onPick(card.uid);
             });
         });
     }
 
     private cellW(n: number): number {
         return Math.floor((this.boxW - GAP * (Math.max(1, n) - 1)) / Math.max(1, n));
-    }
-
-    /* ── 펼침 ───────────────────────────────────────────── */
-
-    /**
-     * 자세한 설명을 손패 위에 통째로 덮는다. 좁은 칸 안에 밀어 넣지 않는 이유는 하나다 —
-     * 세로 폰의 카드 칸은 70px 남짓이라 어떻게 넣어도 글자가 겹친다.
-     */
-    private openDetail(v: CardView) {
-        this.closeDetail();
-
-        const lane = LANE[v.card.lane];
-        const w = this.boxW;
-        const pad = 12;
-        const box = this.scene.add.container(0, 0);
-
-        // 먼저 0 을 기준으로 쌓아 **실제 높이를 재고**, 그 다음에 칸을 그 높이에 맞춘다.
-        // 칸 크기를 먼저 못박으면 설명이 한 줄 길어지는 순간 안내 위에 겹쳐 찍힌다.
-        const head = mkText(this.scene, pad, 10, `${lane.tag} · ${v.card.name}`, {
-            fontFamily: fontOf(this.scene), fontSize: `${FS.md}px`, color: lane.ink,
-            wordWrap: { width: w - pad * 2 - 56 },
-        });
-        const close = mkText(this.scene, w - pad, 12, "닫기 ✕", {
-            fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(1, 0);
-        const effect = mkText(this.scene, pad, head.y + head.displayHeight + 6, v.card.effectDescription, {
-            fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.ink,
-            wordWrap: { width: w - pad * 2 }, lineSpacing: 3,
-        });
-        const when = mkText(this.scene, pad, effect.y + effect.displayHeight + 6, v.card.when, {
-            fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: S.inkDim,
-            wordWrap: { width: w - pad * 2 }, lineSpacing: 3,
-        });
-        const hint = mkText(this.scene, w / 2, when.y + when.displayHeight + 8,
-            v.idle ? "지금은 아무 일도 안 합니다 — 한 번 더 누르면 사용"
-                : "한 번 더 누르면 사용합니다",
-            {
-                fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`,
-                color: v.idle ? S.danger : lane.ink, align: "center",
-                wordWrap: { width: w - pad * 2 },
-            }).setOrigin(0.5, 0);
-
-        // 필요한 만큼 위로 올라간다. 짧은 카드라도 최소 OPEN_RISE 는 올려 둔다 — 칸이
-        // 카드마다 들쭉날쭉하면 눈이 매번 다시 자리를 찾는다.
-        const need = hint.y + hint.displayHeight + 10;
-        const y0 = Math.min(-OPEN_RISE, this.boxH - need);
-        const h = this.boxH - y0;
-        for (const t of [head, close, effect, when, hint]) t.y += y0;
-
-        const g = this.scene.add.graphics();
-        g.fillStyle(C.panelHi, 1).fillRect(0, y0, w, h);
-        g.lineStyle(2, lane.color, 1).strokeRect(1, y0 + 1, w - 2, h - 2);
-        g.fillStyle(lane.color, 1).fillRect(2, y0 + 2, w - 4, 3);
-        box.add(g);
-
-        // 두 번째 탭 = 사용. 칸 전체가 버튼이다.
-        const use = this.scene.add.zone(0, y0, w, h).setOrigin(0, 0)
-            .setInteractive({ useHandCursor: true });
-        use.on("pointerup", () => {
-            this.closeDetail();
-            this.lockTo(v.card.uid);
-            this.onPick(v.card.uid);
-        });
-
-        // 닫기는 **나중에** 얹는다. Phaser 는 맨 위 하나에만 입력을 주므로 이 순서가 곧
-        // "닫기가 사용을 이긴다" 는 규칙이다.
-        const closeZone = this.scene.add.zone(w - 80, y0, 80, 40).setOrigin(0, 0)
-            .setInteractive({ useHandCursor: true });
-        closeZone.on("pointerup", () => this.closeDetail());
-
-        box.add([head, close, effect, when, hint, use, closeZone]);
-        this.add(box);
-        this.detail = box;
-    }
-
-    private closeDetail() {
-        this.detail?.destroy(true);
-        this.detail = null;
     }
 
     /* ── 고름 ───────────────────────────────────────────── */
@@ -261,7 +185,6 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
     /** 밖에서(회전으로 다시 그릴 때 등) 고른 장을 화면에 맞춰 둘 수 있게 열어 둔다. */
     lock(uid: string): void {
-        this.closeDetail();
         this.lockTo(uid);
     }
 
