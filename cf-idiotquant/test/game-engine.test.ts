@@ -17,6 +17,7 @@ import {
     CHAPTERS, TOTAL_TURNS, UNIVERSE, newlyListedAt, regimeTimeline,
 } from "@/lib/game/core/chapters";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
+import { advisoryFee, FEE_BASE, FEE_BY_TRUST } from "@/lib/game/core/trust";
 
 const buff = (over: Partial<TurnBuff> = {}): TurnBuff => ({ ...NO_BUFF, ...over });
 
@@ -314,4 +315,53 @@ test("다른 시드는 세부만 다르고 국면은 같다", () => {
     playAll(a); playAll(b);
     const id = UNIVERSE[0]!.id;
     assert.notDeepEqual(a.stockOf(id)!.history, b.stockOf(id)!.history, "세부는 달라야 한다");
+});
+
+/* ── 보수 — 빚이 줄어드는 단 하나의 자리 ─────────────────────── */
+
+test("손해를 본 챕터에는 보수가 없다", () => {
+    assert.equal(advisoryFee(0, 100), 0);
+    assert.equal(advisoryFee(-1_000_000, 100), 0);
+});
+
+test("보수는 신뢰에 비례한다 — 신뢰가 곧 빚을 갚는 속도다", () => {
+    const profit = 10_000_000;
+    assert.equal(advisoryFee(profit, 0), Math.floor(profit * FEE_BASE));
+    assert.equal(advisoryFee(profit, 100), Math.floor(profit * (FEE_BASE + FEE_BY_TRUST)));
+    // 사이는 단조 증가한다.
+    let prev = -1;
+    for (let t = 0; t <= 100; t += 10) {
+        const f = advisoryFee(profit, t);
+        assert.ok(f > prev, `신뢰 ${t} 에서 보수가 안 늘었다`);
+        prev = f;
+    }
+    // 범위를 벗어난 신뢰도 상한·하한으로 잘린다.
+    assert.equal(advisoryFee(profit, 999), advisoryFee(profit, 100));
+    assert.equal(advisoryFee(profit, -5), advisoryFee(profit, 0));
+});
+
+test("챕터가 끝나면 보수만큼 빚이 줄고, 남은 빚에 이자가 붙는다", () => {
+    // 이 관계가 깨지면 빚이 다시 「늘기만」 하고 `debtCleared` 는 도달 불가능해진다.
+    const e = new StockEngine(4242, SEED_CASH);
+    const ch = e.chapter;
+    e.player.debt = 50_000_000;
+
+    const before = e.player.debt;
+    const sum = e.endChapter([]);
+
+    const expected = Math.round(Math.max(0, before - sum.fee) * (1 + ch.interest))
+        + (ch.debtOnEnd ?? 0);
+    assert.equal(e.player.debt, expected);
+    assert.ok(sum.fee >= 0);
+});
+
+test("보수가 빚보다 크면 빚은 0 에서 멈춘다 — 마이너스 빚은 없다", () => {
+    const e = new StockEngine(99, SEED_CASH);
+    e.player.debt = 1;
+    e.player.trust = 100;
+    // 프롤로그는 끝에 빚을 새로 지운다. 그 몫만 남고 이전 빚은 사라져야 한다.
+    const ch = e.chapter;
+    const sum = e.endChapter([]);
+    assert.ok(e.player.debt >= 0, "빚이 음수가 됐다");
+    if (sum.fee >= 1) assert.equal(e.player.debt, ch.debtOnEnd ?? 0);
 });

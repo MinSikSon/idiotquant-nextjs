@@ -25,6 +25,7 @@ import type {
     TurnBuff, ChapterSummary,
 } from "./types";
 import { NO_BUFF } from "./types";
+import { advisoryFee } from "./trust";
 import {
     CHAPTERS, CONTEXT_BARS, TOTAL_TURNS, UNIVERSE, chapterAtTurn, regimeTimeline,
     type Chapter, type StockDef,
@@ -562,11 +563,19 @@ export class StockEngine {
     endChapter(earned: readonly string[] = []): ChapterSummary {
         const finalEquity = this.equity;
         const returnPct = this.chapterReturnPct;
+
+        // **보수로 빚을 갚는다. 빚이 줄어드는 자리는 여기 하나뿐이다.**
+        // 이 줄이 없던 동안 빚은 늘기만 했고, 그래서 「빚을 다 갚으면 끝난다」는 규칙이
+        // 한 번도 성립할 수 없었다. 갚는 것은 맡은 돈이 아니라 내가 받은 보수다.
+        const fee = advisoryFee(finalEquity - this.chapterStartEquity, this.player.trust);
+        this.player.debt = Math.max(0, this.player.debt - fee);
+        // 남은 빚에만 이자가 붙는다. 갚고 나서 붙는 순서라 갚은 보람이 있다.
         this.player.debt = Math.round(this.player.debt * (1 + this.chapter.interest));
         if (this.chapter.debtOnEnd) this.player.debt += this.chapter.debtOnEnd;
 
         return {
             returnPct,
+            fee,
             startEquity: this.chapterStartEquity,
             finalEquity,
             trust: this.player.trust,

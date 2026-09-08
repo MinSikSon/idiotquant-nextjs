@@ -217,7 +217,7 @@ test("낸 카드는 버린 더미로 가고 다시 섞여 돌아온다", () => {
 /* ── 회귀 ──────────────────────────────────────────────────── */
 
 const summary = (over: Partial<ChapterSummary> = {}): ChapterSummary => ({
-    returnPct: 0, startEquity: 1, finalEquity: 1, trust: 50, debt: 0,
+    returnPct: 0, fee: 0, startEquity: 1, finalEquity: 1, trust: 50, debt: 0,
     idle: false, ruined: false, trustLost: false, earned: [], ...over,
 });
 
@@ -249,6 +249,21 @@ test("루프를 끊는 것은 빚 완납 하나뿐이다", () => {
     for (const r of ["debtRemains", "trustLost", "ruined"] as const) {
         assert.equal(breaksLoop(r), false, `${r} 는 1997 로 돌아가야 한다`);
     }
+});
+
+test("빚을 갚은 기록은 그 뒤 회차에도 남는다", () => {
+    // 시작 화면이 「해낸 적 있다」를 보여 주는 근거다. 이 기록이 없으면 회차가 쌓여도
+    // 무엇이 남았는지 알 수 없고, 회귀가 그냥 도는 것처럼 보인다.
+    const won = regress(EMPTY, "debtCleared");
+    assert.equal(won.escaped, true);
+    assert.equal(won.cycle, EMPTY.cycle + 1);
+
+    const later = regress(regress(won, "ruined"), "trustLost");
+    assert.equal(later.escaped, true, "한 번 빠져나온 기록은 지워지지 않는다");
+    assert.equal(later.cycle, EMPTY.cycle + 3);
+
+    // 반대로 진 판만으로는 이 기록이 안 생긴다.
+    assert.equal(regress(regress(EMPTY, "ruined"), "debtRemains").escaped, false);
 });
 
 test("끝난 이유는 하나만 말한다 — 빚을 갚았으면 그것이 먼저다", () => {

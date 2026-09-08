@@ -61,18 +61,40 @@ export interface Cut {
 }
 
 /**
- * 1997년 12월의 집. 게임을 켤 때와 **회귀했을 때** 둘 다 여기로 온다.
+ * 시작 화면에서 집으로. **한 판이 여기서 시작된다.**
  *
- * 첫 회차와 그 뒤가 다른 말을 해야 한다 — 두 번째부터는 "돌아왔다" 는 것이 이 화면의
- * 전부이기 때문이다.
+ * 예전에는 이 문구 하나가 「게임을 켰다」와 「회귀했다」를 겸했다. 그래서 판의 경계가
+ * 흐렸다 — 어디서 끝나고 어디서 시작하는지 화면에 표시가 없었다. 지금은 시작이 이 막이고
+ * 끝은 `cutRegress`·`cutEnded` 가 따로 진다.
  */
-export function cutToHome(ch: Chapter, cycle: number): Cut {
+export function cutStartRun(ch: Chapter, cycle: number): Cut {
     return {
         art: "home",
         head: `${ch.year}년 12월`,
-        lines: cycle <= 1
-            ? ["여기서부터다."]
-            : [`${cycle}회차`, "눈을 뜨니 다시 1997년 12월이었다."],
+        lines: cycle <= 1 ? ["여기서부터다."] : [`${cycle}회차`, "다시 여기서부터다."],
+    };
+}
+
+/**
+ * 공원에서 시작 화면으로. **판 하나가 끝났다는 표시다.**
+ *
+ * 지는 엔딩 셋은 전부 이리로 온다. 곧장 집으로 들여보내지 않는 이유는 하나다 —
+ * 그러면 끝난 줄 모르고 계속 굴러가는 것처럼 보인다. 판과 판 사이에는 문턱이 있어야 한다.
+ */
+export function cutRegress(cycle: number): Cut {
+    return {
+        art: "home",
+        head: `${cycle}회차 끝`,
+        lines: ["눈을 감았다 뜨니 다시 1997년 12월이었다.", `이제 ${cycle + 1}회차다.`],
+    };
+}
+
+/** 공원에서 끝 화면으로. **빚을 다 갚았을 때만 여기로 온다.** */
+export function cutEnded(cycle: number): Cut {
+    return {
+        art: "park-debtCleared",
+        head: "갚았다",
+        lines: [`${cycle}회차에 빚이 0 이 됐다.`, "더 돌아가지 않는다."],
     };
 }
 
@@ -98,8 +120,11 @@ export function cutOnChapterEnd(
     const lines: string[] = [
         `맡은 돈 ${sum.returnPct >= 0 ? "+" : ""}${sum.returnPct.toFixed(1)}%`,
         `신뢰 ${sum.trust}`,
-        sum.debt > 0 ? `남은 빚 ${fmtMoney(sum.debt)}` : "빚을 다 갚았다",
     ];
+    // **빚이 줄어드는 것을 눈으로 봐야 한다.** 보수 없이 남은 빚만 보이면 숫자가 왜
+    // 그렇게 됐는지 알 수 없고, 갚아 가는 중이라는 감각이 안 생긴다.
+    if (sum.fee > 0) lines.push(`보수 ${fmtMoney(sum.fee)} — 빚을 갚았다`);
+    lines.push(sum.debt > 0 ? `남은 빚 ${fmtMoney(sum.debt)}` : "빚을 다 갚았다");
     // 0 장은 정보가 아니다 — 줄을 아예 안 만든다.
     if (sum.earned.length > 0) lines.push(`새로 겪은 것 ${sum.earned.length}장`);
     // 12턴을 흘려보낸 것은 성적이 아니라 사건이다. 숫자보다 이 한 줄이 아프다.

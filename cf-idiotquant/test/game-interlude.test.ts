@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
-    cutToHome, cutToOffice, cutOnChapterEnd, cutToPark,
+    cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark,
     FRAMES, SHEET_SIZE, type ArtKey,
 } from "@/lib/game/core/interlude";
 import { CHAPTERS } from "@/lib/game/core/chapters";
@@ -24,7 +24,7 @@ const won = (v: number) => `${v}원`;
 
 function summary(over: Partial<ChapterSummary> = {}): ChapterSummary {
     return {
-        returnPct: 0, startEquity: 10_000_000, finalEquity: 10_000_000,
+        returnPct: 0, fee: 0, startEquity: 10_000_000, finalEquity: 10_000_000,
         trust: 50, debt: 0, idle: false, ruined: false, trustLost: false,
         earned: [], ...over,
     };
@@ -32,22 +32,37 @@ function summary(over: Partial<ChapterSummary> = {}): ChapterSummary {
 
 const joined = (lines: string[]) => lines.join(" / ");
 
-/* ── 집으로 — 첫 회차와 회귀는 다른 말을 해야 한다 ───────────── */
+/* ── 판의 시작과 끝 ─────────────────────────────────────────── */
 
-test("첫 회차와 회귀가 같은 말을 하지 않는다", () => {
-    const first = cutToHome(CH, 1);
-    const again = cutToHome(CH, 4);
+test("첫 회차와 그 뒤가 같은 말을 하지 않는다", () => {
+    const first = cutStartRun(CH, 1);
+    const again = cutStartRun(CH, 4);
 
     assert.notDeepEqual(first.lines, again.lines);
-    // 회귀에는 몇 번째인지가 들어 있어야 한다 — 그게 이 화면의 전부다.
     assert.ok(joined(again.lines).includes("4회차"), joined(again.lines));
     assert.ok(!joined(first.lines).includes("회차"), joined(first.lines));
     assert.equal(first.art, "home");
     assert.equal(again.art, "home");
 });
 
+test("회귀 막은 끝난 회차와 다음 회차를 둘 다 말한다", () => {
+    // 「끝났다」와 「다시 시작한다」가 한 화면에 같이 있어야 판의 경계가 보인다.
+    const cut = cutRegress(3);
+    assert.ok(cut.head.includes("3회차"), cut.head);
+    assert.ok(cut.head.includes("끝"), cut.head);
+    assert.ok(joined(cut.lines).includes("4회차"), joined(cut.lines));
+});
+
+test("끝 막은 회귀하지 않는다고 말한다", () => {
+    const cut = cutEnded(2);
+    assert.equal(cut.art, "park-debtCleared");
+    assert.ok(joined(cut.lines).includes("2회차"), joined(cut.lines));
+    // 이 한 줄이 「무한 회귀가 아니다」를 사람에게 말하는 자리다.
+    assert.ok(joined(cut.lines).includes("돌아가지 않는다"), joined(cut.lines));
+});
+
 test("집·회사 전환이 그 장의 연도를 말한다", () => {
-    assert.ok(cutToHome(CH, 1).head.includes(CH.year));
+    assert.ok(cutStartRun(CH, 1).head.includes(CH.year));
     const office = cutToOffice(CH);
     assert.equal(office.art, "office");
     assert.ok(office.head.includes(CH.year));
@@ -67,6 +82,16 @@ test("결산이 신뢰와 남은 빚을 그대로 싣는다", () => {
     const s = joined(cutOnChapterEnd(CH, summary({ trust: 63, debt: 30_000_000 }), won).lines);
     assert.ok(s.includes("63"), s);
     assert.ok(s.includes(won(30_000_000)), s);
+});
+
+test("보수를 받았으면 결산이 그것을 말한다", () => {
+    // 빚이 줄어드는 것을 눈으로 못 보면 갚아 가는 중이라는 감각이 안 생긴다.
+    const paid = joined(cutOnChapterEnd(CH, summary({ fee: 3_000_000, debt: 20_000_000 }), won).lines);
+    assert.ok(paid.includes("보수"), paid);
+    assert.ok(paid.includes(won(3_000_000)), paid);
+
+    const none = joined(cutOnChapterEnd(CH, summary({ fee: 0 }), won).lines);
+    assert.ok(!none.includes("보수"), none);
 });
 
 test("빚이 0 이면 숫자가 아니라 사건으로 말한다", () => {

@@ -58,3 +58,36 @@ export function clampTrust(v: number, max = 100): number {
 export function decay(trust: number): number {
     return clampTrust(trust - TRUST_DECAY);
 }
+
+/* ── 보수 ─────────────────────────────────────────────────── */
+
+/**
+ * 한 챕터가 끝나고 받는 보수. **이것만이 빚을 줄인다.**
+ *
+ * 여기 없던 규칙이다. 그래서 `endChapter` 는 이자를 곱하고 `debtOnEnd` 를 더하기만 했고,
+ * **빚을 줄이는 코드가 게임 어디에도 없었다.** `endReasonOf` 의 `debtCleared` 는 도달할 수
+ * 없었고, 그래서 「빚을 다 갚으면 루프가 끝난다」는 규칙이 말로만 있었다. 판은 언제나
+ * 자본잠식·신뢰 0·빚 남음 셋 중 하나로 끝났고, 끝없이 회귀했다.
+ *
+ * ── 왜 신뢰에 비례하나 ─────────────────────────────────────
+ * 맡은 돈은 고객 것이다. 그 돈으로 내 빚을 갚을 수는 없다. 갚는 것은 **내가 받은 보수**이고,
+ * 보수는 맡긴 사람이 얼마나 믿느냐에 달렸다. 그래서 이 게임에서 신뢰는 점수가 아니라
+ * **빚을 갚는 속도**가 된다 — 근거를 대고 벌어야 루프를 벗어난다는 논지가 여기서 닫힌다.
+ *
+ * 손해를 본 챕터에는 보수가 없다. 마이너스 보수를 받지는 않는다.
+ *
+ * @param profit 이번 챕터에서 늘어난 자산. 0 이하면 보수도 0.
+ * @param trust  챕터가 끝났을 때의 신뢰(0~100).
+ */
+export function advisoryFee(profit: number, trust: number): number {
+    if (profit <= 0) return 0;
+    const t = Math.max(0, Math.min(TRUST_MAX_FOR_FEE, trust)) / TRUST_MAX_FOR_FEE;
+    return Math.floor(profit * (FEE_BASE + FEE_BY_TRUST * t));
+}
+
+/** 신뢰가 0 이어도 받는 몫. 일은 했으니 아주 없지는 않다. */
+export const FEE_BASE = 0.30;
+/** 신뢰가 가득 찼을 때 여기까지 더 붙는다. 최대 보수율은 둘의 합이다. */
+export const FEE_BY_TRUST = 0.45;
+/** 보수율을 계산할 때 기준이 되는 신뢰 상한. */
+const TRUST_MAX_FOR_FEE = 100;
