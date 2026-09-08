@@ -68,12 +68,21 @@ const LOG_MIN = 34;
  */
 export const CLIENT_ROW = 40;
 /**
- * 이번 턴 줄 — **근거와 계좌 한 줄.** 손패가 있던 자리다.
+ * 로그가 가져가는 위 한계.
  *
- * 예전에는 여기에 카드 셋이 섰다(134~176px). 카드를 걷어 내면서 남은 것은 그 위에
- * 얹혀 있던 한 줄뿐이라, 띠도 한 줄 높이로 줄었다. 남는 세로는 전부 로그가 받는다.
+ * 종목 목록이 화면의 **본체**가 되면서 로그는 조연이 됐다. 안 막아 두면 긴 폰에서
+ * 로그가 남는 세로를 다 먹고 목록이 세 줄에 머문다 — 무엇을 고를지가 화면의 일인데.
  */
-const NOW_H = 30;
+const LOG_MAX = 120;
+/**
+ * 종목 목록 띠의 바닥값 — 머리 한 줄 + 목록 한 줄 + 고른 종목 판.
+ *
+ * 24(근거·계좌) + 56(줄 하나) + 124(판의 최소치)。 이보다 좁으면 목록이 통째로
+ * 가려지거나 판에서 버튼이 잘린다.
+ */
+const MARKET_MIN = 204;
+/** 목록 띠의 머리 한 줄 — 근거와 계좌. 씬이 그리고 목록은 그 아래에서 시작한다. */
+export const MARKET_HEAD = 24;
 
 /**
  * 이 격자를 **넷으로 쌓을 것인가, 두 칸으로 쪼갤 것인가.**
@@ -213,17 +222,19 @@ export interface Band { x: number; y: number; w: number; h: number }
  *
  *   strip   언제이고 내가 어떤가 — 연·반기·턴 · 에너지 · 빚
  *   log     무슨 일이 있었나     — 고객 한 줄 + 1인칭 기록
- *   now     이번 턴이 어떤가     — 근거 · 맡은 돈 · 보유
- *   action  무엇을 할까          — 버튼 둘
+ *   market  **무엇을 고를까**    — 근거·계좌 한 줄 + 종목 목록 + 고른 종목 판
+ *   action  무엇을 할까          — 「다음 턴」
  *
- * `now` 는 원래 손패 띠였다(134~176px). 카드를 걷어 내면서 그 위에 얹혀 있던 한 줄만
- * 남았고, 띠도 한 줄 높이가 됐다.
+ * `market` 이 화면의 **본체**다. 예전에는 종목 목록이 「시세판」이라는 별도 화면에
+ * 있었고 회사 화면에는 손패가 있었다. 그래서 종목을 고르려면 버튼을 눌러 화면을
+ * 옮기고 → 줄을 눌러 판을 열고 → 다시 눌러 체결하는 세 단계였고, **애초에 종목을
+ * 골라야 하는지조차 화면에 안 적혀 있었다.** 목록이 늘 떠 있으면 그 질문이 사라진다.
  */
 export interface Bands {
     portrait: boolean;
     strip: Band;
     log: Band;
-    now: Band;
+    market: Band;
     action: Band;
 }
 
@@ -231,9 +242,9 @@ export interface Bands {
    격자 세로는 기기 비율에서 오므로 `STACK_MIN`(398) 까지 짧아질 수 있다. 그래서
    **양보하는 순서**를 정해 둔다. 뒤로 갈수록 먼저 줄어든다:
 
-     버튼 · 이번 턴 줄  안 줄인다 — 없으면 판이 안 굴러간다
+     버튼 · 종목 목록   안 줄인다 — 없으면 판이 안 굴러간다
      챕터 띠            40 → 28. 에너지와 빚은 늘 보여야 하니 조금만
-     로그               남는 것을 받는다. 한 줄까지 준다
+     로그               74 → 120 사이. 남는 것은 목록이 가져간다
 
    판이 넷뿐이라 예전처럼 무엇을 통째로 버릴 일이 없다 — 칩 줄을 0 으로 만들고 씬이
    그 사실을 다시 확인하던 분기(`chips.h <= 0`)도 같이 사라졌다. */
@@ -254,41 +265,40 @@ function stackedBands(w: number, h: number): Bands {
     };
 
     const action = take(clamp(h * 0.11, ACTION_ONE_ROW, 96));
-    const now = take(NOW_H);
+    let market = take(MARKET_MIN);
     let strip = take(STRIP_MIN);
     let log = take(LOG_MIN + CLIENT_ROW);
     strip += take(STRIP_H - STRIP_MIN);
 
-    // 남는 세로는 **전부 로그가 받는다.** 고정 크롬이 셋뿐이라 겨룰 것이 없다.
-    log += take(left);
+    // 로그는 제 크기까지만 자라고, **남는 세로는 전부 목록이 가져간다.**
+    log += take(LOG_MAX - (LOG_MIN + CLIENT_ROW));
+    market += take(left);
 
     let y = 0;
     const strip_ = { x: 0, y, w, h: strip }; y += strip;
     const log_ = { x: 0, y, w, h: log }; y += log;
-    const now_ = { x: 0, y, w, h: now }; y += now;
+    const market_ = { x: 0, y, w, h: market }; y += market;
     // 한 픽셀도 남거나 넘지 않게 — 합은 언제나 정확히 h 다.
     const action_ = { x: 0, y, w, h: Math.max(0, h - y) };
 
-    return { portrait: true, strip: strip_, log: log_, now: now_, action: action_ };
+    return { portrait: true, strip: strip_, log: log_, market: market_, action: action_ };
 }
 
 function splitBands(w: number, h: number): Bands {
-    // 왼쪽에 읽는 것(로그), 오른쪽에 만지는 것(이번 턴 줄·버튼). 눕힌 폰은 세로가
-    // 300px 남짓이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
-    //
-    // 카드가 없어진 지금은 오른쪽에 한 줄과 버튼 둘뿐이라 폭을 절반으로 나눈다.
-    const left = Math.round(w * 0.5);
+    // **왼쪽이 목록이다.** 화면의 본체가 넓은 쪽을 가져간다. 오른쪽에 읽는 것(로그)과
+    // 「다음 턴」을 쌓는다 — 눕힌 폰은 세로가 300px 남짓이라 넷을 쌓으면 어느 하나도
+    // 제 크기가 안 나온다.
+    const left = Math.round(w * 0.58);
     const right = w - left;
     const strip = clamp(h * 0.09, STRIP_MIN, STRIP_H);
-    const action = clamp(h * 0.28, ACTION_ONE_ROW, 108);
-    const now = Math.min(NOW_H, Math.max(0, h - strip - action));
+    const action = clamp(h * 0.22, ACTION_ONE_ROW, 92);
 
     return {
         portrait: false,
         strip: { x: 0, y: 0, w, h: strip },
-        log: { x: 0, y: strip, w: left, h: h - strip },
-        now: { x: left, y: strip, w: right, h: now },
-        action: { x: left, y: strip + now, w: right, h: h - strip - now },
+        market: { x: 0, y: strip, w: left, h: h - strip },
+        log: { x: left, y: strip, w: right, h: h - strip - action },
+        action: { x: left, y: h - action, w: right, h: action },
     };
 }
 
