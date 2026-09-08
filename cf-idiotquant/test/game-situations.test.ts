@@ -13,9 +13,10 @@ import {
 import { DeckManager, HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
 import { CLIENTS, clientAt } from "@/lib/game/core/clients";
 import {
-    energyDelta, decay, clampEnergy, costOf, canPlay, ENERGY_DECAY,
+    energyDelta, decay, clampEnergy, ENERGY_DECAY,
     ENERGY_GAIN_WITH_THESIS, ENERGY_LOSS_WITH_THESIS, ENERGY_LOSS_BLIND,
 } from "@/lib/game/core/energy";
+import { researchBuff, RESEARCH_COST, RESEARCH_DEPTH } from "@/lib/game/core/research";
 import { ENERGY_START } from "@/lib/game/core/StockEngine";
 import { EMPTY, remember, regress, endReasonOf, breaksLoop } from "@/lib/game/core/progress";
 import type { ChapterSummary } from "@/lib/game/core/types";
@@ -67,26 +68,32 @@ test("에너지는 매 턴 저절로 준다 — 가만히 있어도 준다", () 
         "12턴을 흘려보내면 바닥이 보여야 한다");
 });
 
-test("카드를 내면 그 갈래만큼 든다 — 그래서 무엇을 낼지가 선택이 된다", () => {
-    // 값이 전부 같으면 아끼는 일이 안 생기고, 값이 없으면 매 턴 그냥 낸다.
-    assert.ok(costOf("info") > costOf("act"), "앞을 보는 일이 제일 많이 들어야 한다");
-    assert.ok(costOf("act") > costOf("guard"), "웅크리는 데는 덜 들어야 한다");
-    assert.equal(costOf("curse"), 0, "저주는 이미 벌이다 — 값까지 매기면 두 번 때린다");
-});
-
-test("맞힌 근거 한 번이 그 카드 값을 넘어선다", () => {
-    // 넘지 않으면 카드를 내는 쪽이 언제나 손해라 아무도 안 낸다.
+test("알아보는 값이 맞힌 근거의 값보다 싸다", () => {
+    // 비싸면 아무도 안 알아보고, 안 알아보면 이 게임의 규칙 절반이 안 돌아간다.
     const gained = energyDelta({ hadThesis: true, gained: true, client: kim });
-    assert.ok(gained > costOf("info"), `근거로 얻는 ${gained} 가 정보 카드 값보다 커야 한다`);
+    assert.ok(gained > RESEARCH_COST, `근거로 얻는 ${gained} 가 ${RESEARCH_COST} 보다 커야 한다`);
 });
 
-test("낼 힘이 없으면 못 낸다", () => {
-    assert.equal(canPlay(costOf("info"), "info"), true);
-    assert.equal(canPlay(costOf("info") - 1, "info"), false);
-    // 저주는 값이 0 이라 바닥에서도 나간다 — 안 그러면 덱에 영영 남는다.
-    assert.equal(canPlay(0, "curse"), true);
+test("알아보면 근거와 국면이 함께 열린다", () => {
+    // 둘이 갈리면 「알아봤는데 아무것도 안 보인다」거나 그 반대가 된다.
+    const none = researchBuff(null);
+    assert.equal(none.thesis, null);
+    assert.equal(none.regimeDepth, 0);
+
+    const got = researchBuff("동방해운");
+    assert.equal(got.thesis, "동방해운");
+    assert.equal(got.regimeDepth, RESEARCH_DEPTH);
 });
 
+test("알아보는 것 말고는 아무것도 안 열린다", () => {
+    // 카드가 채우던 손절·헤지·수수료 면제는 같이 사라졌다. 여기 값이 새로 생기면
+    // 그 규칙을 어디선가 만들었다는 뜻이다.
+    const b = researchBuff("동방해운");
+    assert.equal(b.stopLoss, 0);
+    assert.equal(b.moveMult, 1);
+    assert.equal(b.feeMult, 1);
+    assert.equal(b.blind, false);
+});
 test("에너지는 0~100 안에 갇힌다", () => {
     assert.equal(clampEnergy(-9), 0);
     assert.equal(clampEnergy(140), 100);

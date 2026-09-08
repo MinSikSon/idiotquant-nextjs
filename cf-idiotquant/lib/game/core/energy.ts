@@ -8,7 +8,8 @@
 // 지금 이 값 하나가 넷을 한다.
 //
 //   버틴다   매 턴 `ENERGY_DECAY` 만큼 줄고, 0 이면 판이 끝난다(`burnout`)
-//   쓴다     카드를 낼 때 `costOf(lane)` 만큼 든다 — **행동이 곧 소모다**
+//   쓴다     종목을 알아볼 때 `RESEARCH_COST` 만큼 든다 — **행동이 곧 소모다**
+//            (`core/research.ts`. 예전에는 카드를 내는 값이었다)
 //   번다     근거를 대고 맞히면 오른다 (아래 4분면)
 //   받는다   챕터 보수가 이 값에 비례한다 (`advisoryFee`)
 //
@@ -23,7 +24,6 @@
 // 돈을 벌어도, 그건 **설명할 수 없는** 수익이라 「그대로」 칸에 떨어진다. 회귀자만 아는
 // 미래는 김 부장에게 근거가 되지 못한다.
 
-import type { CardLane } from "./types";
 import type { Client } from "./clients";
 
 /** 매 턴 저절로 줄어드는 양. 하루가 지나가는 것만으로 드는 값이다. */
@@ -34,37 +34,6 @@ export const ENERGY_GAIN_WITH_THESIS = 8;
 export const ENERGY_LOSS_WITH_THESIS = 4;
 export const ENERGY_LOSS_BLIND = 15;
 
-/**
- * 카드 한 장을 내는 데 드는 에너지. **갈래마다 다르다 — 그래야 고르는 일이 된다.**
- *
- * 카드가 공짜이던 동안에는 손패 셋 중 하나를 매 턴 그냥 냈다. 안 낼 이유가 없었으니
- * 「무엇을 낼까」가 선택이 아니었다. 값이 붙으면 비로소 아끼는 턴이 생긴다.
- *
- *   정보 3  앞을 보는 일이 제일 많이 든다. 대신 근거가 되어 맞히면 그 이상 돌아온다.
- *   집행 2  손을 쓰는 일.
- *   방어 1  웅크리는 데는 덜 든다.
- *   저주 0  이미 벌이다. 값까지 매기면 두 번 때리는 셈이다.
- *
- * **아끼는 쪽이 공짜는 아니다.** 안 내고 넘긴 턴에도 `ENERGY_DECAY` 는 빠지고, 빚은
- * 챕터마다 이자로 늘고, 46턴이라는 시계는 계속 간다. 에너지를 아껴 오래 버틸 것인가
- * 써서 벌 것인가 — 그 저울이 이 표의 전부다.
- */
-export const COST_BY_LANE: Record<CardLane, number> = {
-    info: 3,
-    act: 2,
-    guard: 1,
-    curse: 0,
-};
-
-export function costOf(lane: CardLane): number {
-    return COST_BY_LANE[lane];
-}
-
-/** 이 카드를 낼 힘이 남았는가. 모자라면 손패에서 흐려지고 눌러도 안 나간다. */
-export function canPlay(energy: number, lane: CardLane): boolean {
-    return energy >= costOf(lane);
-}
-
 export interface Settlement {
     /** 근거를 대고 권했는가. */
     hadThesis: boolean;
@@ -74,8 +43,8 @@ export interface Settlement {
 }
 
 /**
- * 이 정산이 에너지를 얼마나 움직이는가. **자연 감소도 카드 값도 여기 안 들어간다** —
- * 그 둘은 권했든 안 했든 일어나는 일이라 `decay()` 와 `costOf()` 로 따로 뗀다.
+ * 이 정산이 에너지를 얼마나 움직이는가. **자연 감소도 알아보는 값도 여기 안 들어간다** —
+ * 그 둘은 권했든 안 했든 일어나는 일이라 `decay()` 와 `RESEARCH_COST` 로 따로 뗀다.
  */
 export function energyDelta(s: Settlement): number {
     if (s.hadThesis) {

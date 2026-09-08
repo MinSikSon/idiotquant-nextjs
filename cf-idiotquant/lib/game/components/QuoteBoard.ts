@@ -72,8 +72,15 @@ export interface BoardDeps {
     alreadyRecommended(): boolean;
     /** 지금 앞에 앉은 사람의 이름. 버튼이 누구에게 하는 말인지 말한다. */
     clientName(): string;
-    /** 지금 읽어 낸 국면. 카드로 읽지 못했으면 null — 차트가 그만큼만 말한다. */
+    /** 지금 읽어 낸 국면. 아직 안 알아봤으면 null — 차트가 그만큼만 말한다. */
     read(): MarketRead | null;
+    /** 이번 턴 알아본 종목의 id. 안 알아봤으면 null. */
+    researchedId(): string | null;
+    /** 한 종목을 알아보는 데 드는 에너지. */
+    researchCost(): number;
+    /** 지금 알아볼 수 있는가 — 이번 턴에 아직 안 알아봤고 에너지가 남았는가. */
+    canResearch(): boolean;
+    onResearch(id: string): void;
     onBuy(id: string): void;
     onSell(id: string): void;
     onClose(): void;
@@ -369,20 +376,44 @@ export class QuoteBoard {
             root.add(chart);
         }
 
-        // 근거 — 회사 화면에서 낸 것이 그대로 온다.
+        // 근거 — **여기서 만든다.**
+        //
+        // 예전에는 회사 화면에서 낸 카드의 결과를 그대로 읽기만 하는 죽은 줄이었다
+        // (늘 「근거 없음」이라고 적혀 있었다). 카드를 걷어 내면서 근거의 출처가
+        // 사라졌으므로, 그 줄을 **누를 수 있는 줄**로 만들었다 — 판을 하나 더 세우지
+        // 않고 죽은 줄을 살리는 자리다(`core/research.ts`).
         const th = this.d.thesis();
+        const mine = this.d.researchedId() === row.stock.id;
+        const can = this.d.canResearch();
+        const cost = this.d.researchCost();
+
+        const label = mine ? `근거 · ${row.stock.name}`
+            : th ? `근거는 ${th}에 걸려 있다`
+            : can ? `알아본다 · 에너지 ${cost}`
+            : "알아볼 힘이 없다";
+        const ink = mine ? "#7fdca6" : can ? S.gold : S.inkDim;
+
         const tg = scene.add.graphics();
-        tg.fillStyle(th ? 0x17332a : 0x2a1a16, 1).fillRect(PAD, thY, width - PAD * 2, 22);
+        tg.fillStyle(mine ? 0x17332a : 0x141c1e, 1).fillRect(PAD, thY, width - PAD * 2, 22);
+        if (can && !mine) tg.lineStyle(1, C.gold, 1).strokeRect(PAD + 0.5, thY + 0.5, width - PAD * 2 - 1, 21);
         root.add(tg);
-        root.add(mkText(scene, PAD + 6, thY + 4, th ? `근거 — ${th}` : "근거 없음", {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: th ? "#7fdca6" : S.down,
-        }));
+        const tt = mkText(scene, PAD + 6, thY + 4, label, {
+            fontFamily: f, fontSize: `${FS.xs}px`, color: ink,
+        });
+        root.add(tt);
+
+        if (can && !mine) {
+            const { zone, shade } = pressable(scene, PAD, thY, width - PAD * 2, 22, [tg, tt],
+                () => this.d.onResearch(row.stock.id), () => this.dragged <= DRAG_SLOP);
+            root.add(shade);
+            root.add(zone);
+        }
 
         // 체결 — 한 턴에 권하는 것은 한 번뿐이다.
         const half = (width - PAD * 2 - 6) / 2;
         const locked = this.d.alreadyRecommended();
         this.cell(root, PAD, btnY, half, btnH,
-            locked ? "이미 권했다" : (th ? "권합니다" : "믿어보십시오"),
+            locked ? "이미 권했다" : (mine ? "권합니다" : "믿어보십시오"),
             locked ? "이번 턴은 끝" : `${this.d.clientName()}에게`,
             locked ? null : () => this.d.onBuy(row.stock.id), !locked);
         this.cell(root, PAD + half + 6, btnY, half, btnH,

@@ -16,9 +16,8 @@ import { CHAPTERS, UNIVERSE, TOTAL_TURNS } from "@/lib/game/core/chapters";
 import { CLIENTS } from "@/lib/game/core/clients";
 import {
     ENERGY_DECAY, ENERGY_GAIN_WITH_THESIS, ENERGY_LOSS_WITH_THESIS, ENERGY_LOSS_BLIND,
-    COST_BY_LANE,
 } from "@/lib/game/core/energy";
-import { HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
+import { RESEARCH_COST } from "@/lib/game/core/research";
 import { ENERGY_START } from "@/lib/game/core/StockEngine";
 
 export const metadata: Metadata = {
@@ -45,11 +44,6 @@ function Situation({ s }: { s: (typeof SITUATIONS)[number] }) {
                         <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] ${skin.ink} bg-white/5`}>
                             {skin.label}
                         </span>
-                        {COST_BY_LANE[s.lane] > 0 && (
-                            <span className="shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-[#e3b34a]">
-                                에너지 {COST_BY_LANE[s.lane]}
-                            </span>
-                        )}
                         {starter && (
                             <span className="shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-[#9aada6]">
                                 처음부터
@@ -105,6 +99,12 @@ export default function CardsPage() {
                     아니라 조건을 채우면 그 자리에서 온다. 판이 끝나 1997 로 돌아가도
                     <b className="text-[#d8e0d8]"> 겪은 것은 남는다</b> — 그것이 다음 회차의 손패다.
                 </p>
+                <p className="mt-4 rounded-xl border border-[#e3b34a]/30 bg-[#e3b34a]/5 p-4 text-[14px] leading-relaxed text-[#8d9c93]">
+                    <b className="text-[#e3b34a]">아직 판에 안 들어갔다.</b> 손패는 화면을 복잡하게 만들어서
+                    걷어 냈고, 지금은 <b className="text-[#d8e0d8]">알아보고 · 권하고 · 기다리는</b> 세 가지로
+                    판을 굴린다. 아래 목록은 <b className="text-[#d8e0d8]">되살릴 때 쓸 설계</b>이지 지금
+                    모을 수 있는 것이 아니다.
+                </p>
             </header>
 
             <section className="mb-8">
@@ -131,7 +131,7 @@ export default function CardsPage() {
                 </h2>
                 <p className="mb-3 text-[14px] leading-relaxed text-[#8d9c93]">
                     <b className="text-[#d8e0d8]">버티는 힘이자 곧 목숨</b>이다. 매 턴 저절로 줄고,
-                    카드를 낼 때마다 그 갈래의 값만큼 든다. 0 이 되면 그 자리에서 판이 끝난다.
+                    종목을 알아볼 때마다 든다. 0 이 되면 그 자리에서 판이 끝난다.
                     챕터 보수도 이 값에 비례하므로 <b className="text-[#d8e0d8]">에너지가 곧 빚을
                     갚는 속도</b>이기도 하다.
                 </p>
@@ -146,29 +146,16 @@ export default function CardsPage() {
                                 <td className="p-3 font-mono">−{ENERGY_DECAY}</td>
                                 <td className="p-3">아무것도 안 해도 든다</td>
                             </tr>
-                            {(["info", "act", "guard"] as const).map(lane => (
-                                <tr key={lane} className="border-t border-white/5">
-                                    <td className={`p-3 ${LANE_STYLE[lane].ink}`}>
-                                        {LANE_STYLE[lane].label} 카드를 낸다
-                                    </td>
-                                    <td className="p-3 font-mono">−{COST_BY_LANE[lane]}</td>
-                                    <td className="p-3">
-                                        {lane === "info" ? "앞을 보는 일이 제일 많이 든다"
-                                            : lane === "act" ? "손을 쓰는 일"
-                                            : "웅크리는 데는 덜 든다"}
-                                    </td>
-                                </tr>
-                            ))}
                             <tr className="border-t border-white/5">
-                                <td className="p-3 text-[#ff5ec8]">저주 카드를 낸다</td>
-                                <td className="p-3 font-mono">−{COST_BY_LANE.curse}</td>
-                                <td className="p-3">이미 벌이다</td>
+                                <td className="p-3 text-[#5cf08f]">한 종목을 알아본다</td>
+                                <td className="p-3 font-mono">−{RESEARCH_COST}</td>
+                                <td className="p-3">앞을 보는 일이 제일 많이 든다. 대신 그 종목에 근거가 붙는다</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <p className="mb-8 text-[13px] leading-relaxed text-[#6d7f78]">
-                    아끼는 쪽이 공짜는 아니다 — 안 내고 넘긴 턴에도 빚은 이자로 늘고 {TOTAL_TURNS}턴이라는
+                    아끼는 쪽이 공짜는 아니다 — 안 알아보고 넘긴 턴에도 빚은 이자로 늘고 {TOTAL_TURNS}턴이라는
                     시계는 계속 간다. <b className="text-[#8d9c93]">아껴 오래 버틸 것인가 써서 벌 것인가</b>가
                     이 표의 전부다.
                 </p>
@@ -272,9 +259,8 @@ export default function CardsPage() {
                 <div className="rounded-xl border border-white/10 bg-[#141c1e] px-4 py-2 font-mono text-[13px]">
                     <Row k="한 챕터" v={`${CHAPTERS[1]!.turns}턴 (프롤로그만 ${CHAPTERS[0]!.turns}턴)`} />
                     <Row k="전 구간" v={`${TOTAL_TURNS}턴 · 1997~2000`} />
-                    <Row k="손패" v={`${HAND_SIZE}장`} />
-                    <Row k="들고 나가는 덱" v={`${LOADOUT_SIZE}장 — 집에서 고른다`} />
-                    <Row k="에너지" v={`${ENERGY_START} 에서 시작 · 매 턴 −${ENERGY_DECAY} · 카드 −${COST_BY_LANE.guard}~${COST_BY_LANE.info}`} />
+                    <Row k="에너지" v={`${ENERGY_START} 에서 시작 · 매 턴 −${ENERGY_DECAY} · 알아본다 −${RESEARCH_COST}`} />
+                    <Row k="한 턴에" v="알아보기 한 번 · 권하기 한 번" />
                     <Row k="루프를 끊는 것" v="빚 완납 하나뿐" />
                 </div>
             </section>

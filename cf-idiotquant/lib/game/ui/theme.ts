@@ -68,17 +68,12 @@ const LOG_MIN = 34;
  */
 export const CLIENT_ROW = 40;
 /**
- * 손패 띠의 바닥값 — 근거 한 줄 + 카드 한 칸.
+ * 이번 턴 줄 — **근거와 계좌 한 줄.** 손패가 있던 자리다.
  *
- * 카드는 갈래 딱지·값·이름 세 줄이라 92 아래로 내려가면 이름이 두 줄이 되면서 요약이
- * 접힌다. 근거 줄 26 + 여백 16 + 카드 92 = 134 가 "읽을 수 있는 최소" 다.
+ * 예전에는 여기에 카드 셋이 섰다(134~176px). 카드를 걷어 내면서 남은 것은 그 위에
+ * 얹혀 있던 한 줄뿐이라, 띠도 한 줄 높이로 줄었다. 남는 세로는 전부 로그가 받는다.
  */
-const HAND_MIN = 134;
-/**
- * 손패가 이보다 커져도 카드가 더 읽히지는 않는다 — 카드 안의 글은 위쪽 세 줄이 전부라
- * 칸만 길어지고 아래가 빈다. 남는 세로는 로그(그리고 그 뒤의 사무실 그림)가 가져간다.
- */
-const HAND_MAX = 176;
+const NOW_H = 30;
 
 /**
  * 이 격자를 **넷으로 쌓을 것인가, 두 칸으로 쪼갤 것인가.**
@@ -216,16 +211,19 @@ export interface Band { x: number; y: number; w: number; h: number }
  *
  * 남은 넷은 각각 한 가지만 말한다.
  *
- *   strip   언제이고 내가 어떤가   — 연·반기·턴 · 에너지 · 빚
- *   log     무슨 일이 있었나       — 고객 한 줄 + 1인칭 기록
- *   hand    내가 무엇을 낼 수 있나 — 근거·계좌 한 줄 + 카드 셋
- *   action  무엇을 할까            — 버튼 둘
+ *   strip   언제이고 내가 어떤가 — 연·반기·턴 · 에너지 · 빚
+ *   log     무슨 일이 있었나     — 고객 한 줄 + 1인칭 기록
+ *   now     이번 턴이 어떤가     — 근거 · 맡은 돈 · 보유
+ *   action  무엇을 할까          — 버튼 둘
+ *
+ * `now` 는 원래 손패 띠였다(134~176px). 카드를 걷어 내면서 그 위에 얹혀 있던 한 줄만
+ * 남았고, 띠도 한 줄 높이가 됐다.
  */
 export interface Bands {
     portrait: boolean;
     strip: Band;
     log: Band;
-    hand: Band;
+    now: Band;
     action: Band;
 }
 
@@ -233,7 +231,7 @@ export interface Bands {
    격자 세로는 기기 비율에서 오므로 `STACK_MIN`(398) 까지 짧아질 수 있다. 그래서
    **양보하는 순서**를 정해 둔다. 뒤로 갈수록 먼저 줄어든다:
 
-     버튼 · 손패        안 줄인다 — 없으면 판이 안 굴러간다
+     버튼 · 이번 턴 줄  안 줄인다 — 없으면 판이 안 굴러간다
      챕터 띠            40 → 28. 에너지와 빚은 늘 보여야 하니 조금만
      로그               남는 것을 받는다. 한 줄까지 준다
 
@@ -256,43 +254,41 @@ function stackedBands(w: number, h: number): Bands {
     };
 
     const action = take(clamp(h * 0.11, ACTION_ONE_ROW, 96));
-    let hand = take(HAND_MIN);
+    const now = take(NOW_H);
     let strip = take(STRIP_MIN);
     let log = take(LOG_MIN + CLIENT_ROW);
     strip += take(STRIP_H - STRIP_MIN);
 
-    // 남는 세로는 손패와 로그가 나눠 갖는다. **손패가 먼저다** — 카드가 안 읽히면
-    // 고를 수가 없고, 로그는 끌어서 되감을 수 있다.
-    hand += take(Math.min(HAND_MAX - HAND_MIN, Math.round(left * 0.55)));
+    // 남는 세로는 **전부 로그가 받는다.** 고정 크롬이 셋뿐이라 겨룰 것이 없다.
     log += take(left);
 
     let y = 0;
     const strip_ = { x: 0, y, w, h: strip }; y += strip;
     const log_ = { x: 0, y, w, h: log }; y += log;
-    const hand_ = { x: 0, y, w, h: hand }; y += hand;
+    const now_ = { x: 0, y, w, h: now }; y += now;
     // 한 픽셀도 남거나 넘지 않게 — 합은 언제나 정확히 h 다.
     const action_ = { x: 0, y, w, h: Math.max(0, h - y) };
 
-    return { portrait: true, strip: strip_, log: log_, hand: hand_, action: action_ };
+    return { portrait: true, strip: strip_, log: log_, now: now_, action: action_ };
 }
 
 function splitBands(w: number, h: number): Bands {
-    // 왼쪽에 읽는 것(로그), 오른쪽에 만지는 것(손패·버튼). 눕힌 폰은 세로가 300px
-    // 남짓이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
+    // 왼쪽에 읽는 것(로그), 오른쪽에 만지는 것(이번 턴 줄·버튼). 눕힌 폰은 세로가
+    // 300px 남짓이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
     //
-    // 폭은 오른쪽에 더 준다 — 카드 셋이 나란히 서야 해서다. 로그는 폭이 조금 줄어도
-    // 줄을 접어 읽히지만, 카드는 좁아지면 이름부터 잘린다.
-    const left = Math.round(w * 0.44);
+    // 카드가 없어진 지금은 오른쪽에 한 줄과 버튼 둘뿐이라 폭을 절반으로 나눈다.
+    const left = Math.round(w * 0.5);
     const right = w - left;
     const strip = clamp(h * 0.09, STRIP_MIN, STRIP_H);
-    const action = clamp(h * 0.20, ACTION_ONE_ROW, 92);
+    const action = clamp(h * 0.28, ACTION_ONE_ROW, 108);
+    const now = Math.min(NOW_H, Math.max(0, h - strip - action));
 
     return {
         portrait: false,
         strip: { x: 0, y: 0, w, h: strip },
         log: { x: 0, y: strip, w: left, h: h - strip },
-        hand: { x: left, y: strip, w: right, h: h - strip - action },
-        action: { x: left, y: h - action, w: right, h: action },
+        now: { x: left, y: strip, w: right, h: now },
+        action: { x: left, y: strip + now, w: right, h: h - strip - now },
     };
 }
 

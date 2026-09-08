@@ -30,7 +30,7 @@ for (let h = 300; h <= 560; h += 4) {
 
 /** 세로로 쌓이는 순서. 이 순서대로 맞물려야 한다. */
 function stack(b: Bands) {
-    return [b.strip, b.log, b.hand, b.action];
+    return [b.strip, b.log, b.now, b.action];
 }
 
 /* ── 세로 ───────────────────────────────────────────────────── */
@@ -67,12 +67,12 @@ test("세로 — 띠끼리 겹치지 않고 틈도 없다", () => {
     }
 });
 
-test("세로 — 버튼과 손패는 최소치를 지킨다", () => {
+test("세로 — 버튼과 이번 턴 줄은 최소치를 지킨다", () => {
     // 이 둘이 없으면 판이 안 굴러간다. 로그는 한 줄까지 양보하지만 이 둘은 안 준다.
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
         assert.ok(b.action.h >= 64, `h=${h}: 버튼 ${b.action.h}`);
-        assert.ok(b.hand.h >= 134, `h=${h}: 손패 ${b.hand.h}`);
+        assert.ok(b.now.h >= 30, `h=${h}: 이번 턴 줄 ${b.now.h}`);
     }
 });
 
@@ -84,17 +84,17 @@ test("세로 — 로그는 고객 한 줄을 얹고도 한 줄이 남는다", ()
     }
 });
 
-test("세로 — 넉넉해지면 로그가 남는 세로를 받는다", () => {
-    // 손패는 카드가 읽히는 선에서 멈춘다(HAND_MAX). 그 위로는 전부 로그가 가져가야
-    // 긴 폰에서 빈 자리가 안 생긴다.
+test("세로 — 남는 세로는 전부 로그가 받는다", () => {
+    // 고정 크롬이 셋(띠·이번 턴 줄·버튼)뿐이라 겨룰 것이 없다. 안 그러면 긴 폰에서
+    // 어딘가에 빈 자리가 생긴다.
     let prev = -1;
     for (const h of [560, 700, 844, 1000, 1200]) {
         const log = bandsOf(W, h).log.h;
         assert.ok(log > prev, `h=${h}: 로그가 안 늘었다(${prev} → ${log})`);
         prev = log;
     }
-    // 손패는 어느 지점에서 멈춘다 — 안 그러면 카드만 커지고 화면이 비어 보인다.
-    assert.equal(bandsOf(W, 1000).hand.h, bandsOf(W, 1200).hand.h, "손패가 끝없이 자란다");
+    // 이번 턴 줄은 한 줄이라 자라지 않는다.
+    assert.equal(bandsOf(W, 1000).now.h, bandsOf(W, 1200).now.h, "이번 턴 줄이 자란다");
 });
 
 test("세로 — 띠는 격자 폭을 다 쓴다", () => {
@@ -115,19 +115,10 @@ test("가로 — 읽는 것은 왼쪽, 만지는 것은 오른쪽", () => {
         const b = bandsOf(w, h);
         if (b.portrait) continue;   // 폭이 모자라면 쌓기로 떨어진다
         assert.equal(b.log.x, 0, `${w}×${h}: 로그가 왼쪽이 아니다`);
-        assert.equal(b.hand.x, b.action.x, `${w}×${h}: 손패와 버튼이 다른 칸에 있다`);
-        assert.ok(b.hand.x > 0, `${w}×${h}: 손패가 오른쪽 칸이 아니다`);
-        assert.equal(b.hand.x + b.hand.w, w, `${w}×${h}: 오른쪽 칸이 폭을 다 안 채운다`);
-        assert.equal(b.log.x + b.log.w, b.hand.x, `${w}×${h}: 두 칸 사이에 틈이 있다`);
-    }
-});
-
-test("가로 — 카드 셋이 서야 하므로 오른쪽 칸이 더 넓다", () => {
-    // 로그는 폭이 줄면 줄을 접어 읽히지만, 카드는 좁아지면 이름부터 잘린다.
-    for (const [w, h] of LANDSCAPE) {
-        const b = bandsOf(w, h);
-        if (b.portrait) continue;
-        assert.ok(b.hand.w > b.log.w, `${w}×${h}: 로그 ${b.log.w} ≥ 손패 ${b.hand.w}`);
+        assert.equal(b.now.x, b.action.x, `${w}×${h}: 이번 턴 줄과 버튼이 다른 칸에 있다`);
+        assert.ok(b.now.x > 0, `${w}×${h}: 이번 턴 줄이 오른쪽 칸이 아니다`);
+        assert.equal(b.now.x + b.now.w, w, `${w}×${h}: 오른쪽 칸이 폭을 다 안 채운다`);
+        assert.equal(b.log.x + b.log.w, b.now.x, `${w}×${h}: 두 칸 사이에 틈이 있다`);
     }
 });
 
@@ -149,7 +140,7 @@ test("가로 — 두 칸이 저마다 세로를 정확히 채운다", () => {
         const b = bandsOf(w, h);
         if (b.portrait) continue;
         assert.equal(b.strip.h + b.log.h, h, `${w}×${h}: 왼쪽 칸이 안 맞는다`);
-        assert.equal(b.strip.h + b.hand.h + b.action.h, h, `${w}×${h}: 오른쪽 칸이 안 맞는다`);
+        assert.equal(b.strip.h + b.now.h + b.action.h, h, `${w}×${h}: 오른쪽 칸이 안 맞는다`);
     }
 });
 
