@@ -28,6 +28,7 @@ import {
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
 } from "@/lib/game/core/progress";
+import { recordChapter, recordRun } from "@/lib/game/core/career";
 import {
     cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
 } from "@/lib/game/core/interlude";
@@ -1107,6 +1108,8 @@ export class TradingScene extends Phaser.Scene {
         const sum = this.engine.endChapter(this.earnedThisChapter);
 
         this.memory = remember(this.memory, sum, idx);
+        // 이력은 **챕터 단위**로 접는다 — 판을 끝까지 안 가고 창을 닫아도 남는다.
+        this.memory.career = recordChapter(this.memory.career, sum);
         this.memory.facts = { ...this.facts };
         saveMemory(this.memory);
         this.earnedThisChapter = [];
@@ -1127,8 +1130,16 @@ export class TradingScene extends Phaser.Scene {
         this.go("home", cutOnChapterEnd(done, sum, money));
     }
 
+    /**
+     * 판이 끝났다. **한 판에 정확히 한 번 지나는 자리라 이력을 여기서 접는다.**
+     *
+     * `goBack()` 에서 접으면 이긴 판(끝 화면으로 가는 길)이 빠지고, 끝 화면의 「처음부터」가
+     * 다시 `goBack()` 을 부르므로 같은 판을 두 번 세게 된다.
+     */
     private toPark(reason: EndReason): void {
         this.ending = reason;
+        this.memory.career = recordRun(this.memory.career, reason, this.facts, this.engine.player.debt);
+        saveMemory(this.memory);
         this.go("park", cutToPark(this.engine.chapter, reason, this.ENDINGS[reason].title));
     }
 

@@ -32,13 +32,15 @@
 | — | `lib/game/core/situations.ts` | **상황카드** — 정의와 조건 판정(`met`/`progress`) |
 | — | `lib/game/core/clients.ts` · `trust.ts` | 맡긴 사람들 / 결과 × 근거 4분면 |
 | — | `lib/game/core/{types,progress}.ts` | 값의 모양 / **회귀**(회차를 넘어 남는 것, localStorage) |
+| — | `lib/game/core/career.ts` | **이력** — 회귀가 못 지우는 누적. 판정에는 안 쓴다 |
 | — | `lib/game/core/interlude.ts` | **전환 화면의 문구**와 `ArtKey`·`FRAMES`. Phaser 를 모른다 |
 | — | `lib/game/components/{PixelCandleChart,CardHandContainer,GameLog,QuoteBoard}.ts` | 차트·손패·로그·**시세판** |
 | — | `lib/game/components/Interlude.ts` | 장소가 바뀔 때 덮는 막. 클래스가 아니라 **그리기 함수** |
 | — | `lib/game/{config.ts,ui/theme.ts}` | 부팅 설정 / 색·치수·글꼴·여섯 띠(`bandsOf`) |
 | — | `lib/game/ui/art.ts` · `public/game-art/sheet.png` | 시트 한 장을 불러 **코드에서 잘라 쓴다** |
 | — | `app/(game)/game/page.tsx` · `PhaserGame.tsx` | 캔버스를 붙이는 React 껍데기 |
-| — | `app/(game)/game/cards/page.tsx` | **상황 도감**. 코어 정의를 그대로 그린다 — 값을 다시 적지 말 것 |
+| — | `app/(game)/game/cards/page.tsx` | **상황 도감**(서버). 코어 정의를 그대로 그린다 — 값을 다시 적지 말 것 |
+| — | `app/(game)/game/status/page.tsx` | **이력**(클라이언트). localStorage 를 읽어 쌓인 것을 보여 준다 |
 | — | `lib/paper/*` | 예전 모의투자 규칙. `/game/classic` 과 워커가 같이 쓴다 |
 | — | `app/(game)/game/classic/` | 예전 React 화면(캠페인·부서·공매도). 참조용, 링크는 없다 |
 
@@ -85,6 +87,25 @@
 > **아직 균형이 안 맞는다.** 200판 × 세 정책으로 재 보니 누적 보수는 평균 80만~330만인데
 > 빚은 3천만에서 이자로 4천만까지 간다. **완납 0/200.** 숫자를 손대기 전에는 `debtCleared`
 > 가 여전히 안 나온다 — 빚 규모·이자·보수율 중 하나를 정해야 한다.
+
+### 쌓이는 것과 비워지는 것은 타입에서 갈라 둔다
+
+`Memory` 안에 비슷하게 생긴 두 덩어리가 있다. **정반대다.**
+
+| | `facts` (`SituationFacts`) | `career` (`Career`) |
+|---|---|---|
+| 언제까지 | **한 판.** `regress()` 가 비운다 | **영영.** `regress()` 가 안 건드린다 |
+| 무엇에 쓰나 | 상황카드 조건이 읽는다 — **판정에 쓰인다** | 이력 페이지가 읽는다 — **판정에 안 쓴다** |
+| 어디서 오르나 | 씬의 사건 자리마다 | `recordChapter`(챕터 끝) · `recordRun`(판 끝) |
+
+접는 자리를 둘로 나눈 이유가 있다. 챕터 것(보수·최고 신뢰·최고 자산)은 **챕터가 끝날 때**
+접어야 판을 끝까지 안 가고 창을 닫아도 남는다. 판 것(`facts` 합계·엔딩·남긴 빚)은
+**`toPark()` 에서** 접는다 — 한 판에 정확히 한 번 지나는 자리다. `goBack()` 에서 접으면
+이긴 판이 빠지고(끝 화면으로 가므로), 끝 화면의 「처음부터」가 다시 `goBack()` 을 부르니
+같은 판을 두 번 센다.
+
+**`career` 를 규칙이 읽기 시작하면 그때 이건 능력치 판이 된다.** 안 넣기로 한 것이니
+`core/` 어디에서도 읽지 말 것 — 지금은 화면 하나만 읽는다.
 
 ### 장소를 바꾸는 길은 하나다
 
@@ -162,10 +183,12 @@ z 순서로 맨 위에 서서 아래 장소의 입력을 삼키고, 화면을 �
    예전에 `/game/blind` 에 있던 블라인드 차트와 그 전용 모듈
    (`lib/game/{boot,chart,data,theme,ui}.ts`, `scenes/{Ready,Play,Result}Scene.ts`)은
    지웠다 — 되살릴 일이 있으면 git 이력에서 꺼낼 것.
-   - **메뉴에서 갈 수 있는 곳은 `/game` 뿐이다**(더 보기 안). 도감(`/game/cards`)은 게임
-     화면 아래의 링크로만 들어간다 — 게임을 안 켠 사람에게 카드 목록은 읽을 수 없는 글이다.
-   - 둘 다 **로그인 없이** 열린다(`middleware.ts` 의 공개 목록). 진행은 localStorage 에만
+   - **메뉴에서 갈 수 있는 곳은 `/game` 뿐이다**(더 보기 안). 도감(`/game/cards`)과
+     이력(`/game/status`)은 게임 화면 아래의 링크로만 들어간다 — 게임을 안 켠 사람에게
+     카드 목록도 누적 기록도 읽을 수 없는 글이다.
+   - 셋 다 **로그인 없이** 열린다(`middleware.ts` 의 공개 목록). 진행은 localStorage 에만
      쌓이므로 계정이 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.
+     **페이지를 하나 더 만들면 이 목록에 넣을 것** — 안 넣으면 로그인으로 튕긴다.
 3. **시장에 숨은 국면이 있다 — 이 게임의 심장이다.**
    상승·하락·횡보가 3~5턴씩 이어지다 바뀐다(`StockEngine.buildPlan`). 이것이 없으면
    차트가 장식이고 실력이 0이다 — 실제로 그랬다(오른 턴 다음 상승 확률 51.6%, 추세 추종
@@ -423,5 +446,5 @@ Scale.RESIZE 모드용이라 FIT 에서는 표시 크기가 옛 비율로 남으
 ```
 npx tsc --noEmit          # 에러 0
 npm test                  # lib/paper + lib/game/core 규칙 테스트
-npm run build             # /game · /game/cards 라우트가 뜨는지
+npm run build             # /game · /game/cards · /game/status 라우트가 뜨는지
 ```

@@ -226,9 +226,10 @@ export default function CardsPage() {
                 </div>
             </section>
 
-            <Link href="/game" className="font-mono text-[13px] text-[#5cf08f] underline underline-offset-4">
-                ← 게임으로
-            </Link>
+            <nav className="flex gap-5 font-mono text-[13px]">
+                <Link href="/game" className="text-[#5cf08f] underline underline-offset-4">← 게임으로</Link>
+                <Link href="/game/status" className="text-[#8d9c93] underline underline-offset-4">이력</Link>
+            </nav>
         </main>
     );
 }

@@ -9,6 +9,7 @@
 //   모은 상황카드            맡은 돈 · 신뢰 · 빚
 //   회차 수 · 최고 기록      고객 (김 부장부터 다시)
 //   들고 나갈 여섯 장        상장 진행 (다시 셋부터)
+//   이력 (`career`)         한 판의 사실 (`facts`)
 //
 // 루프를 끊는 것은 **빚 완납 하나뿐**이다. 나머지 셋(빚 남음·신뢰 0·자본잠식)은
 // 전부 1997년 집으로 돌아간다 — 공원은 끝이 아니라 회귀 지점이다.
@@ -16,6 +17,7 @@
 import type { ChapterSummary, EndReason } from "./types";
 import { EMPTY_FACTS, STARTER_IDS, type SituationFacts } from "./situations";
 import { LOADOUT_SIZE } from "./DeckManager";
+import { EMPTY_CAREER, normalizeCareer, type Career } from "./career";
 
 const KEY = "iq:rise:v1";
 
@@ -33,6 +35,13 @@ export interface Memory {
     escaped: boolean;
     /** 여태 가장 멀리 간 챕터(0=프롤로그). */
     bestChapter: number;
+    /**
+     * 지나온 이력. **`regress()` 가 손대지 않는 유일한 누적**이다(`core/career.ts`).
+     *
+     * `facts` 와 헷갈리기 쉬운데 정반대다 — `facts` 는 조건이 읽는 **이번 판의** 사실이고
+     * 판이 끝나면 비워진다. `career` 는 그 비워지기 직전에 접어 둔 합이다.
+     */
+    career: Career;
 }
 
 export const EMPTY: Memory = {
@@ -42,7 +51,17 @@ export const EMPTY: Memory = {
     facts: { ...EMPTY_FACTS },
     escaped: false,
     bestChapter: 0,
+    career: EMPTY_CAREER,
 };
+
+/** `EMPTY` 를 그대로 넘기면 중첩된 객체를 공유한다 — 매번 새로 뜬다. */
+const freshEmpty = (): Memory => ({
+    ...EMPTY,
+    situations: [...STARTER_IDS],
+    loadout: [...STARTER_IDS],
+    facts: { ...EMPTY_FACTS },
+    career: normalizeCareer(null),
+});
 
 const int = (v: unknown, min = 0) => {
     const n = Number(v);
@@ -50,7 +69,7 @@ const int = (v: unknown, min = 0) => {
 };
 
 function normalize(raw: unknown): Memory {
-    if (!raw || typeof raw !== "object") return { ...EMPTY, facts: { ...EMPTY_FACTS } };
+    if (!raw || typeof raw !== "object") return freshEmpty();
     const o = raw as Record<string, unknown>;
     const situations = Array.isArray(o.situations)
         ? [...new Set([...STARTER_IDS, ...o.situations.filter(x => typeof x === "string") as string[]])]
@@ -68,6 +87,7 @@ function normalize(raw: unknown): Memory {
         facts,
         escaped: o.escaped === true,
         bestChapter: int(o.bestChapter),
+        career: normalizeCareer(o.career),
     };
 }
 
@@ -131,7 +151,7 @@ export function loadMemory(): Memory {
         const raw = localStorage.getItem(KEY);
         return normalize(raw ? JSON.parse(raw) : null);
     } catch {
-        return { ...EMPTY, facts: { ...EMPTY_FACTS } };
+        return freshEmpty();
     }
 }
 
