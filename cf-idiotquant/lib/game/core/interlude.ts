@@ -25,7 +25,7 @@ export type ArtKey =
     | "office"
     | "park-debtCleared"
     | "park-debtRemains"
-    | "park-trustLost"
+    | "park-burnout"
     | "park-ruined";
 
 /** 시트 한 변. 프레임이 이 밖으로 나가면 안 된다 — 테스트가 본다. */
@@ -47,7 +47,7 @@ export const FRAMES: Record<ArtKey, readonly [number, number, number, number]> =
     office: [320, 0, 320, 320],
     "park-debtCleared": [0, 320, 320, 320],
     "park-debtRemains": [0, 320, 320, 320],
-    "park-trustLost": [320, 320, 320, 320],
+    "park-burnout": [320, 320, 320, 320],
     "park-ruined": [320, 320, 320, 320],
 };
 
@@ -119,7 +119,7 @@ export function cutOnChapterEnd(
 ): Cut {
     const lines: string[] = [
         `맡은 돈 ${sum.returnPct >= 0 ? "+" : ""}${sum.returnPct.toFixed(1)}%`,
-        `신뢰 ${sum.trust}`,
+        `에너지 ${sum.energy}`,
     ];
     // **빚이 줄어드는 것을 눈으로 봐야 한다.** 보수 없이 남은 빚만 보이면 숫자가 왜
     // 그렇게 됐는지 알 수 없고, 갚아 가는 중이라는 감각이 안 생긴다.

@@ -19,7 +19,7 @@ const facts = (over: Partial<SituationFacts> = {}): SituationFacts => ({ ...EMPT
 function summary(over: Partial<ChapterSummary> = {}): ChapterSummary {
     return {
         returnPct: 0, fee: 0, startEquity: 10_000_000, finalEquity: 10_000_000,
-        trust: 50, debt: 30_000_000, idle: false, ruined: false, trustLost: false,
+        energy: 50, debt: 30_000_000, idle: false, ruined: false, burnedOut: false,
         earned: [], ...over,
     };
 }
@@ -31,9 +31,9 @@ test("회귀해도 이력은 그대로 남는다", () => {
     const played = {
         ...EMPTY,
         facts: facts({ thesisPlays: 5, stopHits: 2 }),
-        career: recordChapter(EMPTY_CAREER, summary({ fee: 1_000_000, trust: 71 })),
+        career: recordChapter(EMPTY_CAREER, summary({ fee: 1_000_000, energy: 71 })),
     };
-    const after = regress(played, "trustLost");
+    const after = regress(played, "burnout");
 
     assert.deepEqual(after.career, played.career);
     // 반대로 `facts` 는 비워져야 한다 — 둘이 같은 자리에 있으면 안 된다.
@@ -50,13 +50,13 @@ test("챕터 결산을 기억에 넣어도 이력은 안 건드린다", () => {
 /* ── 챕터가 끝났다 ─────────────────────────────────────────── */
 
 test("보수가 쌓이고 최고 기록이 갱신된다", () => {
-    let c = recordChapter(EMPTY_CAREER, summary({ fee: 1_200_000, trust: 62, finalEquity: 14_000_000 }));
-    c = recordChapter(c, summary({ fee: 800_000, trust: 40, finalEquity: 9_000_000 }));
+    let c = recordChapter(EMPTY_CAREER, summary({ fee: 1_200_000, energy: 62, finalEquity: 14_000_000 }));
+    c = recordChapter(c, summary({ fee: 800_000, energy: 40, finalEquity: 9_000_000 }));
 
     assert.equal(c.chapters, 2);
     assert.equal(c.feePaid, 2_000_000);
     // 나중 챕터가 나빴다고 최고 기록이 내려가면 그건 기록이 아니다.
-    assert.equal(c.bestTrust, 62);
+    assert.equal(c.bestEnergy, 62);
     assert.equal(c.bestEquity, 14_000_000);
 });
 
@@ -70,14 +70,14 @@ test("손해 본 챕터는 보수를 안 더한다", () => {
 
 test("판이 끝나면 그 판의 사실이 이력에 접힌다", () => {
     const f = facts({ thesisPlays: 7, thesisLosses: 2, blindGains: 3, blindLosses: 4, stopHits: 1 });
-    let c = recordRun(EMPTY_CAREER, "trustLost", f, 28_000_000);
+    let c = recordRun(EMPTY_CAREER, "burnout", f, 28_000_000);
     c = recordRun(c, "ruined", f, 31_000_000);
 
     assert.equal(c.runs, 2);
     assert.equal(c.thesisPlays, 14);
     assert.equal(c.blindLosses, 8);
     assert.equal(c.stopHits, 2);
-    assert.equal(c.endings.trustLost, 1);
+    assert.equal(c.endings.burnout, 1);
     assert.equal(c.endings.ruined, 1);
     assert.equal(c.endings.debtCleared, 0);
 });
@@ -112,12 +112,12 @@ test("옛 저장에 이력이 없어도 빈 이력으로 뜬다", () => {
 });
 
 test("망가진 값은 0 으로 떨어진다", () => {
-    const c = normalizeCareer({ runs: "셋", feePaid: -9, bestTrust: 1.7, endings: { ruined: 2 }, leastDebt: "x" });
+    const c = normalizeCareer({ runs: "셋", feePaid: -9, bestEnergy: 1.7, endings: { ruined: 2 }, leastDebt: "x" });
     assert.equal(c.runs, 0);
     assert.equal(c.feePaid, 0);
-    assert.equal(c.bestTrust, 1);
+    assert.equal(c.bestEnergy, 1);
     assert.equal(c.endings.ruined, 2);
-    assert.equal(c.endings.trustLost, 0);
+    assert.equal(c.endings.burnout, 0);
     assert.equal(c.leastDebt, null);
 });
 

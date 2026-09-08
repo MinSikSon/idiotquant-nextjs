@@ -2,7 +2,7 @@
 
 // 이력 — **회귀가 지우지 못한 것을 한 페이지에.**
 //
-// 게임 안에서는 지금 판의 숫자만 보인다. 판이 끝나면 돈도 신뢰도 고객도 1997 로 돌아가고,
+// 게임 안에서는 지금 판의 숫자만 보인다. 판이 끝나면 돈도 에너지도 고객도 1997 로 돌아가고,
 // 몇 번을 돌았는지 · 얼마나 갚았는지 · 어떻게 끝났는지는 어디에도 안 남았다. 여기가
 // 그것을 읽는 자리다.
 //
@@ -34,7 +34,7 @@ const LANE_INK = {
 const END_LABEL: Record<EndReason, { name: string; note: string; ink: string }> = {
     debtCleared: { name: "갚았다", note: "루프를 끊었다", ink: "text-[#5cf08f]" },
     debtRemains: { name: "아직", note: "2000년이 지나고도 빚이 남았다", ink: "text-[#e3b34a]" },
-    trustLost: { name: "폐업", note: "신뢰가 0 이 됐다", ink: "text-[#ff5ec8]" },
+    burnout: { name: "소진", note: "버틸 힘이 다했다", ink: "text-[#ff5ec8]" },
     ruined: { name: "전부", note: "맡은 돈을 다 날렸다", ink: "text-[#ff5ec8]" },
 };
 
@@ -81,7 +81,7 @@ export default function StatusPage() {
                 </p>
                 <h1 className="mt-2 font-mono text-3xl font-bold">이력</h1>
                 <p className="mt-3 max-w-prose text-[14px] leading-relaxed text-[#8d9c93]">
-                    판이 끝나면 돈도 신뢰도 고객도 1997 로 돌아간다.
+                    판이 끝나면 돈도 에너지도 고객도 1997 로 돌아간다.
                     <b className="text-[#d8e0d8]"> 여기 있는 것만 안 돌아간다</b> — 몇 번을 돌았는지,
                     얼마나 갚았는지, 어떻게 끝났는지. 이 숫자들은 판을 유리하게 만들지 않는다.
                     지나온 것을 읽는 자리다.
@@ -150,7 +150,7 @@ function Body({ memory }: { memory: Memory }) {
                 </Panel>
                 <p className="mt-2 text-[13px] leading-relaxed text-[#6d7f78]">
                     빚은 <b className="text-[#8d9c93]">보수로만</b> 줄어든다. 챕터에서 번 만큼 받고,
-                    신뢰가 높을수록 많이 받는다.
+                    에너지가 높을수록 많이 받는다.
                 </p>
             </Section>
 
@@ -217,7 +217,7 @@ function Body({ memory }: { memory: Memory }) {
                 <div className="mt-2">
                     <Panel>
                         <Row k="손절이 걸린 횟수" v={`${c.stopHits}번`} />
-                        <Row k="가장 높았던 신뢰" v={c.bestTrust > 0 ? `${c.bestTrust}` : "—"} />
+                        <Row k="가장 높았던 에너지" v={c.bestEnergy > 0 ? `${c.bestEnergy}` : "—"} />
                         <Row k="가장 컸던 자산" v={c.bestEquity > 0 ? won(c.bestEquity) : "—"} />
                     </Panel>
                 </div>

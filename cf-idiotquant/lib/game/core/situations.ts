@@ -5,7 +5,7 @@
 // **조건을 채우면 그 자리에서** 온다. 획득이 보상이 아니라 **사건**이 된다.
 //
 // ── 이것이 회귀의 「아는 것」이다 ────────────────────────────────
-// 판이 끝나면 1997 로 돌아가고 돈도 신뢰도 고객도 사라지지만, 겪은 장면은 남는다.
+// 판이 끝나면 1997 로 돌아가고 돈도 에너지도 고객도 사라지지만, 겪은 장면은 남는다.
 // 그 장면이 곧 다음 회차의 손패다. **내가 한 것이 곧 내가 된다.**
 //
 // ── 조건은 채워지기 전에도 보인다 ───────────────────────────────
@@ -31,8 +31,8 @@ export interface SituationFacts {
     waitsThisChapter: number;
     /** 한 턴에 맞은 최악의 등락(%). 음수다. */
     worstTurnPct: number;
-    /** 챕터를 끝냈을 때의 신뢰 중 가장 높았던 값. */
-    bestChapterEndTrust: number;
+    /** 챕터를 끝냈을 때의 에너지 중 가장 높았던 값. */
+    bestChapterEndEnergy: number;
     /** 챕터를 끝냈을 때 들고 있던 종목 수 중 가장 많았던 값. */
     mostHoldingsAtChapterEnd: number;
     /** 김 부장에게 근거를 대고 연속으로 벌어 준 횟수. */
@@ -44,7 +44,7 @@ export interface SituationFacts {
 export const EMPTY_FACTS: SituationFacts = {
     thesisPlays: 0, thesisLosses: 0, blindLosses: 0, blindGains: 0,
     stopHits: 0, waitsThisChapter: 0, worstTurnPct: 0,
-    bestChapterEndTrust: 0, mostHoldingsAtChapterEnd: 0, kimStreak: 0,
+    bestChapterEndEnergy: 0, mostHoldingsAtChapterEnd: 0, kimStreak: 0,
     everRuined: false,
 };
 
@@ -120,8 +120,8 @@ export const SITUATIONS: readonly Situation[] = [
         scene: "묻지 않아도 먼저 알려 주는 사람이 있던 때가 있었다.",
         short: "다음 1턴 미리보기", when: "이번 턴이 위험해 보일 때.",
         effect: "다음 1턴의 등락을 차트에 유령 봉으로 미리 그려 줍니다. 이 턴의 매수에 근거가 됩니다.",
-        how: "한 챕터를 신뢰 60 이상으로 끝낸다",
-        progress: f => P(f.bestChapterEndTrust, 60),
+        how: "한 챕터를 에너지 60 이상으로 끝낸다",
+        progress: f => P(f.bestChapterEndEnergy, 60),
         apply: b => ({ ...b, peekTurns: Math.max(b.peekTurns, 1) }),
     },
     {
@@ -137,7 +137,7 @@ export const SITUATIONS: readonly Situation[] = [
         id: "explained", name: "설명할 수 있는 손실", lane: "guard",
         scene: "잃었지만, 왜 그랬는지는 말할 수 있었다. 그 차이가 컸다.",
         short: "근거 손실 절반", when: "근거는 있는데 결과가 불안할 때.",
-        effect: "근거를 대고 권했다가 잃어도, 신뢰가 깎이는 폭이 절반이 됩니다.",
+        effect: "근거를 대고 권했다가 잃어도, 에너지가 깎이는 폭이 절반이 됩니다.",
         how: "근거를 대고 세 번 잃는다",
         progress: f => P(f.thesisLosses, 3),
         apply: b => ({ ...b, softenLoss: true }),
@@ -145,8 +145,8 @@ export const SITUATIONS: readonly Situation[] = [
     {
         id: "kimsmile", name: "김 부장이 웃은 날", lane: "info",
         scene: "그가 웃었다. 1997년 이후로 처음이었다.",
-        short: "이 턴 신뢰 유지", when: "신뢰가 한 칸 남았을 때.",
-        effect: "이번 턴에는 신뢰가 저절로 줄지 않습니다. 이 턴의 매수에 근거가 됩니다.",
+        short: "이 턴 에너지 유지", when: "에너지가 한 칸 남았을 때.",
+        effect: "이번 턴에는 에너지가 저절로 줄지 않습니다. 이 턴의 매수에 근거가 됩니다.",
         how: "김 부장에게 근거를 대고 세 번 연속 벌어 준다",
         progress: f => P(f.kimStreak, 3),
         apply: b => ({ ...b, noDecay: true, regimeDepth: Math.max(b.regimeDepth, 1) }),
@@ -154,8 +154,8 @@ export const SITUATIONS: readonly Situation[] = [
     {
         id: "patience", name: "기다릴 줄 알게 됐다", lane: "guard",
         scene: "아무것도 안 하는 것이 제일 어려운 일이라는 걸 알게 됐다.",
-        short: "신뢰 유지 + 방어", when: "국면이 바뀌기를 기다릴 때.",
-        effect: "이번 턴 신뢰가 저절로 줄지 않고, 내리는 폭도 20% 줄입니다.",
+        short: "에너지 유지 + 방어", when: "국면이 바뀌기를 기다릴 때.",
+        effect: "이번 턴 에너지가 저절로 줄지 않고, 내리는 폭도 20% 줄입니다.",
         how: "한 챕터에서 다섯 번 기다린다",
         progress: f => P(f.waitsThisChapter, 5),
         apply: b => ({ ...b, noDecay: true, downshieldRatio: Math.max(b.downshieldRatio, 0.2) }),
@@ -192,7 +192,7 @@ export const SITUATIONS: readonly Situation[] = [
         scene: "어디서 들었냐고는 아무도 묻지 않았다.",
         short: "다음 2턴 미리보기", when: "알고는 싶은데 설명할 수는 없을 때.",
         // **근거가 되지 않는 유일한 정보 카드다.** 알아본 것이 아니라 얻어들은 것이라서,
-        // 고객은 받아들여도 신뢰는 오르지 않는다.
+        // 고객은 받아들여도 에너지는 오르지 않는다.
         effect: "다음 2턴의 등락을 미리 봅니다. 다만 이것은 **근거가 되지 않습니다** — 알아본 것이 아니라 얻어들은 것입니다.",
         how: "근거 없이 권해 세 번 번다",
         progress: f => P(f.blindGains, 3),

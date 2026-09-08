@@ -25,7 +25,7 @@ const won = (v: number) => `${v}원`;
 function summary(over: Partial<ChapterSummary> = {}): ChapterSummary {
     return {
         returnPct: 0, fee: 0, startEquity: 10_000_000, finalEquity: 10_000_000,
-        trust: 50, debt: 0, idle: false, ruined: false, trustLost: false,
+        energy: 50, debt: 0, idle: false, ruined: false, burnedOut: false,
         earned: [], ...over,
     };
 }
@@ -78,8 +78,8 @@ test("결산이 수익률의 부호를 살린다", () => {
     assert.ok(down.includes("-7.5%"), down);
 });
 
-test("결산이 신뢰와 남은 빚을 그대로 싣는다", () => {
-    const s = joined(cutOnChapterEnd(CH, summary({ trust: 63, debt: 30_000_000 }), won).lines);
+test("결산이 에너지와 남은 빚을 그대로 싣는다", () => {
+    const s = joined(cutOnChapterEnd(CH, summary({ energy: 63, debt: 30_000_000 }), won).lines);
     assert.ok(s.includes("63"), s);
     assert.ok(s.includes(won(30_000_000)), s);
 });
@@ -123,7 +123,7 @@ test("결산은 집으로 돌아오는 화면이다", () => {
 
 /* ── 공원 — 끝난 방식이 그림을 가른다 ───────────────────────── */
 
-const REASONS: EndReason[] = ["debtCleared", "debtRemains", "trustLost", "ruined"];
+const REASONS: EndReason[] = ["debtCleared", "debtRemains", "burnout", "ruined"];
 
 test("엔딩 넷이 저마다 자기 그림 키를 낸다", () => {
     for (const r of REASONS) {
@@ -138,7 +138,7 @@ test("엔딩 넷이 저마다 자기 그림 키를 낸다", () => {
 test("FRAMES 가 ArtKey 를 빠짐없이 덮는다", () => {
     const keys: ArtKey[] = [
         "home", "office",
-        "park-debtCleared", "park-debtRemains", "park-trustLost", "park-ruined",
+        "park-debtCleared", "park-debtRemains", "park-burnout", "park-ruined",
     ];
     assert.deepEqual(Object.keys(FRAMES).sort(), [...keys].sort());
     // 엔딩이 늘면 여기서 걸린다 — 키를 더하고 표를 안 고치면 그림이 안 나온다.

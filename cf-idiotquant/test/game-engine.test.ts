@@ -10,14 +10,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    StockEngine, SEED_CASH, RUIN_LINE, TRUST_START,
+    StockEngine, SEED_CASH, RUIN_LINE, ENERGY_START,
     BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
 } from "@/lib/game/core/StockEngine";
 import {
     CHAPTERS, TOTAL_TURNS, UNIVERSE, newlyListedAt, regimeTimeline,
 } from "@/lib/game/core/chapters";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
-import { advisoryFee, FEE_BASE, FEE_BY_TRUST } from "@/lib/game/core/trust";
+import { advisoryFee, FEE_BASE, FEE_BY_ENERGY } from "@/lib/game/core/energy";
 
 const buff = (over: Partial<TurnBuff> = {}): TurnBuff => ({ ...NO_BUFF, ...over });
 
@@ -37,11 +37,11 @@ function playAll(e: StockEngine, b: TurnBuff = NO_BUFF) {
 
 /* ── 판 만들기 ───────────────────────────────────────────────── */
 
-test("판은 프롤로그 1997 에서 시작하고 신뢰는 50 이다", () => {
+test("판은 프롤로그 1997 에서 시작하고 에너지는 50 이다", () => {
     const e = new StockEngine(1);
     assert.equal(e.chapter.id, "1997");
     assert.equal(e.player.currentTurn, 1);
-    assert.equal(e.player.trust, TRUST_START);
+    assert.equal(e.player.energy, ENERGY_START);
     assert.equal(e.player.debt, 0);
 });
 
@@ -288,10 +288,10 @@ test("자본잠식선 아래로 떨어지면 그 자리에서 끝난다", () => 
     assert.ok(e.isOver);
 });
 
-test("신뢰가 0 이면 턴이 남아도 끝난다", () => {
+test("에너지가 0 이면 턴이 남아도 끝난다", () => {
     const e = new StockEngine(37);
-    e.player.trust = 0;
-    assert.ok(e.trustLost);
+    e.player.energy = 0;
+    assert.ok(e.burnedOut);
     assert.ok(e.isOver);
 });
 
@@ -324,18 +324,18 @@ test("손해를 본 챕터에는 보수가 없다", () => {
     assert.equal(advisoryFee(-1_000_000, 100), 0);
 });
 
-test("보수는 신뢰에 비례한다 — 신뢰가 곧 빚을 갚는 속도다", () => {
+test("보수는 에너지에 비례한다 — 에너지가 곧 빚을 갚는 속도다", () => {
     const profit = 10_000_000;
     assert.equal(advisoryFee(profit, 0), Math.floor(profit * FEE_BASE));
-    assert.equal(advisoryFee(profit, 100), Math.floor(profit * (FEE_BASE + FEE_BY_TRUST)));
+    assert.equal(advisoryFee(profit, 100), Math.floor(profit * (FEE_BASE + FEE_BY_ENERGY)));
     // 사이는 단조 증가한다.
     let prev = -1;
     for (let t = 0; t <= 100; t += 10) {
         const f = advisoryFee(profit, t);
-        assert.ok(f > prev, `신뢰 ${t} 에서 보수가 안 늘었다`);
+        assert.ok(f > prev, `에너지 ${t} 에서 보수가 안 늘었다`);
         prev = f;
     }
-    // 범위를 벗어난 신뢰도 상한·하한으로 잘린다.
+    // 범위를 벗어난 에너지도 상한·하한으로 잘린다.
     assert.equal(advisoryFee(profit, 999), advisoryFee(profit, 100));
     assert.equal(advisoryFee(profit, -5), advisoryFee(profit, 0));
 });
@@ -358,7 +358,7 @@ test("챕터가 끝나면 보수만큼 빚이 줄고, 남은 빚에 이자가 �
 test("보수가 빚보다 크면 빚은 0 에서 멈춘다 — 마이너스 빚은 없다", () => {
     const e = new StockEngine(99, SEED_CASH);
     e.player.debt = 1;
-    e.player.trust = 100;
+    e.player.energy = 100;
     // 프롤로그는 끝에 빚을 새로 지운다. 그 몫만 남고 이전 빚은 사라져야 한다.
     const ch = e.chapter;
     const sum = e.endChapter([]);

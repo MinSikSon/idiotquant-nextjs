@@ -25,8 +25,21 @@ import Phaser from "phaser";
 import type { StrategyCard } from "@/lib/game/core/types";
 import { C, S, FS, LANE, fontOf, mkText, pressable } from "@/lib/game/ui/theme";
 
-/** 지금 아무 일도 못 하는 카드인가. 씬이 계좌를 보고 답한다. */
-export type IdleCheck = (card: StrategyCard) => boolean;
+/**
+ * 이 카드가 지금 어떤 처지인가. **씬이 계좌와 에너지를 보고 답한다.**
+ *
+ * 콜백 하나로 묶어 둔 이유: 셋 다 "지금 이 카드"에 대한 답이라 따로 받으면 부르는 쪽이
+ * 같은 카드를 세 번 훑게 된다. 이 컴포넌트는 여전히 에너지가 무엇인지 모른다 —
+ * 숫자 하나와 불리언 둘만 받는다.
+ */
+export type CardState = (card: StrategyCard) => {
+    /** 낼 수는 있으나 이번 턴에 아무 일도 못 하는 카드(현금이 없는데 수수료 면제 등). */
+    idle: boolean;
+    /** 내는 데 드는 값. 칸 왼쪽 위에 찍는다. */
+    cost: number;
+    /** 그만큼이 남아 있는가. 없으면 흐려지고 눌러도 안 나간다. */
+    afford: boolean;
+};
 
 export interface CardHandOpts {
     x: number;
@@ -46,6 +59,8 @@ interface CardView {
     card: StrategyCard;
     /** 지금은 아무 일도 못 하는 카드. 눌리기는 하되 흐리게 둔다. */
     idle: boolean;
+    /** 에너지가 모자란 카드. **눌러도 안 나간다.** */
+    afford: boolean;
 }
 
 const GAP = 8;
@@ -83,11 +98,10 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
     /**
      * 새 손패를 깐다. 지난 턴 카드는 여기서 사라진다.
      *
-     * @param isIdle 지금 아무 일도 못 하는 카드를 가려낸다. 수수료 면제를 현금만 쥔 채
-     *               쓰면 그 턴이 통째로 버려지는데, 눌러 보고 나서야 아는 것보다
-     *               흐리게라도 미리 보이는 편이 낫다.
+     * @param stateOf 카드마다의 처지. 아무 일도 못 하거나 낼 힘이 모자란 카드는 눌러 보고
+     *                나서야 아는 것보다 흐리게라도 미리 보이는 편이 낫다.
      */
-    setHand(cards: StrategyCard[], isIdle?: IdleCheck): void {
+    setHand(cards: StrategyCard[], stateOf?: CardState): void {
         for (const v of this.views) v.root.destroy(true);
         this.views = [];
         this.empty?.destroy();
@@ -107,7 +121,8 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
 
         cards.forEach((card, i) => {
             const lane = LANE[card.lane];
-            const idle = isIdle?.(card) ?? false;
+            const st = stateOf?.(card) ?? { idle: false, cost: 0, afford: true };
+            const { idle, afford } = st;
             const root = this.scene.add.container(i * (cw + GAP), 0);
             const bg = this.scene.add.graphics();
 
@@ -116,12 +131,22 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
                 fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`, color: lane.ink,
             }).setOrigin(0.5, 0);
 
+            // 값 — **왼쪽 위 한 자리.** 갈래 딱지가 가운데라 왼쪽이 비어 있었다.
+            // 0 원짜리(저주)는 안 찍는다 — 「0」은 값이 아니라 잡음이다.
+            const price: Phaser.GameObjects.GameObject[] = [];
+            if (st.cost > 0) {
+                price.push(mkText(this.scene, 5, 5, `${st.cost}`, {
+                    fontFamily: fontOf(this.scene), fontSize: `${FS.xs}px`,
+                    color: afford ? S.gold : S.danger,
+                }).setOrigin(0, 0));
+            }
+
             // 근거 표시 — **오른쪽 위 금색 점.**
             //
             // 이 카드를 내면 이번 턴 매수에 근거가 붙는다는 뜻이다. 그게 이 게임에서
             // 제일 중요한 한 가지라, 글자를 읽기 전에 색과 자리로 먼저 와야 한다.
             // 「내부자 제보」는 정보 카드인데도 이 점이 없다 — 알아본 것이 아니라
-            // 얻어들은 것이라서 고객은 받아들여도 신뢰가 안 오른다.
+            // 얻어들은 것이라서 고객은 받아들여도 에너지가 안 오른다.
             const badge: Phaser.GameObjects.GameObject[] = [];
             if (card.isThesis) {
                 const g = this.scene.add.graphics();
@@ -147,19 +172,19 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
             // 카드인지는 도감에서 읽고 온다는 전제다.
             if (desc.y + desc.displayHeight > this.boxH - 4) desc.setVisible(false);
 
-            const view: CardView = { root, bg, name, desc, tag, card, idle };
+            const view: CardView = { root, bg, name, desc, tag, card, idle, afford };
 
             // 탭 한 번이 곧 사용이다. locked 는 이번 턴에 이미 한 장을 낸 경우다.
             // **되돌릴 수 없는 한 번**이라 눌린 표시가 특히 중요하다 — 눌린 채 손을
             // 밖으로 빼면 실행하지 않고 되돌린다.
             const { zone, shade } = pressable(
-                this.scene, 0, 0, cw, this.boxH, [bg, tag, ...badge, name, desc],
+                this.scene, 0, 0, cw, this.boxH, [bg, tag, ...price, ...badge, name, desc],
                 () => { this.lockTo(card.uid); this.onPick(card.uid); },
-                () => !this.locked,
+                () => !this.locked && afford,
             );
 
             // bg 가 맨 아래. 딱지는 그 위, 그늘과 입력 zone 은 맨 위여야 한다.
-            root.add([bg, tag, ...badge, name, desc, shade, zone]);
+            root.add([bg, tag, ...price, ...badge, name, desc, shade, zone]);
             this.add(root);
 
             this.views.push(view);
@@ -206,7 +231,7 @@ export class CardHandContainer extends Phaser.GameObjects.Container {
         //
         // 알파는 콘트라스트를 그대로 깎는다: 7:1 짜리 글자도 0.35 를 곱하면 2:1 이 되어
         // 안 읽힌다. 갈래가 보일 만큼만 낮추고, 글자는 읽히게 둔다.
-        v.root.setAlpha(state === "dimmed" ? 0.55 : v.idle ? 0.72 : 1);
+        v.root.setAlpha(state === "dimmed" ? 0.55 : !v.afford ? 0.5 : v.idle ? 0.72 : 1);
         v.name.setColor(state === "picked" ? lane.ink : S.ink);
     }
 }

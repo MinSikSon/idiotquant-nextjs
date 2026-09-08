@@ -25,7 +25,7 @@ import type {
     TurnBuff, ChapterSummary,
 } from "./types";
 import { NO_BUFF } from "./types";
-import { advisoryFee } from "./trust";
+import { advisoryFee } from "./energy";
 import {
     CHAPTERS, CONTEXT_BARS, TOTAL_TURNS, UNIVERSE, chapterAtTurn, regimeTimeline,
     type Chapter, type StockDef,
@@ -87,9 +87,9 @@ const TICK_CAP = 0.45;
  */
 export const RUIN_LINE = Math.round(SEED_CASH * 0.2);
 
-/** 신뢰는 여기서 시작한다. 매 턴 저절로 줄기 때문에 가만히 있으면 못 버틴다. */
-export const TRUST_START = 50;
-export const TRUST_MAX = 100;
+/** 에너지는 여기서 시작한다. 매 턴 저절로 줄기 때문에 가만히 있으면 못 버틴다. */
+export const ENERGY_START = 50;
+export const ENERGY_MAX = 100;
 
 /* ── 난수 ───────────────────────────────────────────────────── */
 
@@ -203,7 +203,7 @@ export class StockEngine {
             positions: {},
             currentTurn: 1,
             maxTurns: this.chapter.turns,
-            trust: TRUST_START,
+            energy: ENERGY_START,
             debt: 0,
         };
         this.applyOpening(this.chapter);
@@ -364,11 +364,11 @@ export class StockEngine {
 
     get ruinLine(): number { return RUIN_LINE; }
     get isRuined(): boolean { return this.equity < RUIN_LINE; }
-    get trustLost(): boolean { return this.player.trust <= 0; }
+    get burnedOut(): boolean { return this.player.energy <= 0; }
 
-    /** 이 챕터가 끝났는가. 턴을 다 썼거나, 자본잠식이거나, 신뢰가 0 이거나. */
+    /** 이 챕터가 끝났는가. 턴을 다 썼거나, 자본잠식이거나, 에너지가 0 이거나. */
     get isOver(): boolean {
-        return this.player.currentTurn > this.player.maxTurns || this.isRuined || this.trustLost;
+        return this.player.currentTurn > this.player.maxTurns || this.isRuined || this.burnedOut;
     }
 
     /** 지난 턴에 손절이 걸린 종목들. */
@@ -567,7 +567,7 @@ export class StockEngine {
         // **보수로 빚을 갚는다. 빚이 줄어드는 자리는 여기 하나뿐이다.**
         // 이 줄이 없던 동안 빚은 늘기만 했고, 그래서 「빚을 다 갚으면 끝난다」는 규칙이
         // 한 번도 성립할 수 없었다. 갚는 것은 맡은 돈이 아니라 내가 받은 보수다.
-        const fee = advisoryFee(finalEquity - this.chapterStartEquity, this.player.trust);
+        const fee = advisoryFee(finalEquity - this.chapterStartEquity, this.player.energy);
         this.player.debt = Math.max(0, this.player.debt - fee);
         // 남은 빚에만 이자가 붙는다. 갚고 나서 붙는 순서라 갚은 보람이 있다.
         this.player.debt = Math.round(this.player.debt * (1 + this.chapter.interest));
@@ -578,16 +578,16 @@ export class StockEngine {
             fee,
             startEquity: this.chapterStartEquity,
             finalEquity,
-            trust: this.player.trust,
+            energy: this.player.energy,
             debt: this.player.debt,
             idle: !this.recommended,
             ruined: this.isRuined,
-            trustLost: this.trustLost,
+            burnedOut: this.burnedOut,
             earned: [...earned],
         };
     }
 
-    /** 다음 챕터를 연다. 보유도 현금도 신뢰도 **그대로 이어진다.** */
+    /** 다음 챕터를 연다. 보유도 현금도 에너지도 **그대로 이어진다.** */
     startNextChapter(): boolean {
         const idx = CHAPTERS.indexOf(this.chapter);
         const next = CHAPTERS[idx + 1];

@@ -1,17 +1,17 @@
 // 회차를 넘어 남는 것. **회귀의 규칙이 이 파일의 타입 하나에 들어 있다.**
 //
-// 판이 끝나면 다시 1997년 겨울이다. 돈도 신뢰도 고객도 빚도 그때로 되돌아가고
+// 판이 끝나면 다시 1997년 겨울이다. 돈도 에너지도 고객도 빚도 그때로 되돌아가고
 // **기억만 남는다.** 그래서 이 파일은 남는 것과 사라지는 것을 **타입에서** 갈라 둔다 —
 // 한 덩어리에 섞어 두면 어느 날 반드시 하나가 잘못된 쪽에 붙는다.
 //
 //   남는다 (기억)          사라진다 (1997 로)
 //   ─────────────────      ──────────────────
-//   모은 상황카드            맡은 돈 · 신뢰 · 빚
+//   모은 상황카드            맡은 돈 · 에너지 · 빚
 //   회차 수 · 최고 기록      고객 (김 부장부터 다시)
 //   들고 나갈 여섯 장        상장 진행 (다시 셋부터)
 //   이력 (`career`)         한 판의 사실 (`facts`)
 //
-// 루프를 끊는 것은 **빚 완납 하나뿐**이다. 나머지 셋(빚 남음·신뢰 0·자본잠식)은
+// 루프를 끊는 것은 **빚 완납 하나뿐**이다. 나머지 셋(빚 남음·에너지 0·자본잠식)은
 // 전부 1997년 집으로 돌아간다 — 공원은 끝이 아니라 회귀 지점이다.
 
 import type { ChapterSummary, EndReason } from "./types";
@@ -110,13 +110,13 @@ export function remember(prev: Memory, run: ChapterSummary, chapterIndex: number
 /**
  * 판이 어떻게 끝났는가. **공원의 그림이 이 값으로 갈린다.**
  *
- * 순서가 중요하다 — 빚을 다 갚았으면 그것이 먼저다. 자본잠식과 신뢰 0 이 겹쳐도
+ * 순서가 중요하다 — 빚을 다 갚았으면 그것이 먼저다. 자본잠식과 에너지 0 이 겹쳐도
  * 화면은 하나만 말해야 한다.
  */
-export function endReasonOf(p: { debt: number; trust: number; ruined: boolean; finalChapterDone: boolean }): EndReason | null {
+export function endReasonOf(p: { debt: number; energy: number; ruined: boolean; finalChapterDone: boolean }): EndReason | null {
     if (p.debt <= 0) return "debtCleared";
     if (p.ruined) return "ruined";
-    if (p.trust <= 0) return "trustLost";
+    if (p.energy <= 0) return "burnout";
     if (p.finalChapterDone) return "debtRemains";
     return null;
 }
