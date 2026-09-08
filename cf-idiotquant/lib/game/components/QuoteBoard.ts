@@ -15,8 +15,9 @@
 // 다만 「거둡니다」는 여러 종목에 된다 — 보유를 정리하는 것은 권유가 아니다.
 
 import Phaser from "phaser";
-import type { Stock } from "@/lib/game/core/types";
-import { C, FS, PAD, S, fontOf, mkText, money, pressable, pxOf } from "@/lib/game/ui/theme";
+import type { MarketRead, Stock } from "@/lib/game/core/types";
+import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
+import { BTN, C, FS, PAD, S, fontOf, mkText, price, pressable, pxOf } from "@/lib/game/ui/theme";
 
 /**
  * 한 줄의 높이. **모든 줄이 언제나 이 높이다.**
@@ -29,10 +30,19 @@ import { C, FS, PAD, S, fontOf, mkText, money, pressable, pxOf } from "@/lib/gam
 const ROW_H = 56;
 const HEAD_H = 28;
 const CLOSE_H = 60;
-/** 아래에서 올라오는 판의 최대 높이 — 차트 + 근거 한 줄 + 체결 버튼. */
-const SHEET_MAX = 300;
+/**
+ * 아래에서 올라오는 판의 최대 높이 — 차트 + 근거 한 줄 + 체결 버튼.
+ *
+ * **차트가 여기로 왔다.** 예전에는 회사 화면에 늘 떠 있었는데, 차트는 *종목을 고를 때*
+ * 보는 것이지 매 턴 쳐다볼 것이 아니었다. 늘 떠 있느라 회사 화면의 3분의 1을 먹었고,
+ * 정작 그 안의 국면 글씨는 씬이 그리는 머리글과 같은 자리에 겹쳐 찍혔다 —
+ * 같은 값을 두 곳에서 그리고 있었던 것이다. 이제 한 곳에서만 그린다.
+ */
+const SHEET_MAX = 360;
 /** 차트를 빼고 머리·근거·버튼만 넣는 데 드는 높이. */
 const SHEET_MIN = 124;
+/** 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다 — 그때는 차트를 안 그린다. */
+const CHART_MIN = 96;
 /** 이만큼 끌면 누른 것이 아니라 넘긴 것으로 친다. */
 const DRAG_SLOP = 8;
 
@@ -62,6 +72,8 @@ export interface BoardDeps {
     alreadyRecommended(): boolean;
     /** 지금 앞에 앉은 사람의 이름. 버튼이 누구에게 하는 말인지 말한다. */
     clientName(): string;
+    /** 지금 읽어 낸 국면. 카드로 읽지 못했으면 null — 차트가 그만큼만 말한다. */
+    read(): MarketRead | null;
     onBuy(id: string): void;
     onSell(id: string): void;
     onClose(): void;
@@ -283,7 +295,7 @@ export class QuoteBoard {
         list.add(mkText(scene, PAD, y + 10, row.stock.name, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: S.ink,
         }));
-        list.add(mkText(scene, width - PAD - 62, y + 10, money(row.price), {
+        list.add(mkText(scene, width - PAD - 62, y + 10, price(row.price), {
             fontFamily: f, fontSize: `${FS.sm}px`, color: col,
         }).setOrigin(1, 0));
         list.add(mkText(scene, width - PAD, y + 10, `${up ? "+" : ""}${row.changePct.toFixed(1)}%`, {
@@ -331,11 +343,11 @@ export class QuoteBoard {
         // 판 위에서는 목록이 안 끌린다. 이 판이 없으면 차트를 문지를 때 뒤가 스크롤된다.
         root.add(scene.add.zone(0, top, width, h).setOrigin(0, 0).setInteractive());
 
-        root.add(mkText(scene, PAD, top + 8, `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
+        root.add(mkText(scene, PAD, top + 7, `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: S.gold,
         }));
-        root.add(mkText(scene, width - PAD, top + 8,
-            `${money(row.price)}  ${up ? "+" : ""}${row.changePct.toFixed(1)}%`, {
+        root.add(mkText(scene, width - PAD, top + 7,
+            `${price(row.price)}  ${up ? "+" : ""}${row.changePct.toFixed(1)}%`, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: up ? S.up : S.down,
         }).setOrigin(1, 0));
 
@@ -343,28 +355,18 @@ export class QuoteBoard {
         const btnH = 44;
         const btnY = top + h - btnH - 8;
         const thY = btnY - 30;
-        const chartY = top + 30;
+        const chartY = top + 28;
         const chartH = thY - 8 - chartY;
 
-        if (chartH >= 40) {
-            const cg = scene.add.graphics();
-            cg.fillStyle(C.screen, 1).fillRect(PAD, chartY, width - PAD * 2, chartH);
-            const bars = row.stock.history.slice(-24);
-            if (bars.length >= 2) {
-                const lo = Math.min(...bars.map(b => b.l));
-                const hi = Math.max(...bars.map(b => b.h));
-                const span = hi - lo || 1;
-                const w = width - PAD * 2 - 8;
-                cg.lineStyle(2, bars[bars.length - 1]!.c >= bars[0]!.o ? C.up : C.down, 1);
-                cg.beginPath();
-                bars.forEach((b, i) => {
-                    const px = PAD + 4 + (w * i) / (bars.length - 1);
-                    const py = chartY + 6 + (chartH - 12) * (1 - (b.c - lo) / span);
-                    if (i === 0) cg.moveTo(px, py); else cg.lineTo(px, py);
-                });
-                cg.strokePath();
-            }
-            root.add(cg);
+        // 회사 화면에 늘 떠 있던 그 차트다. 여기서는 **고른 종목의 것**이라, 무엇을
+        // 보고 있는지가 머리글과 붙어 있다.
+        if (chartH >= CHART_MIN) {
+            const chart = new PixelCandleChart(scene, {
+                x: PAD, y: chartY, width: width - PAD * 2, height: chartH,
+            });
+            scene.add.existing(chart);
+            chart.render(row.stock.history, this.d.read());
+            root.add(chart);
         }
 
         // 근거 — 회사 화면에서 낸 것이 그대로 온다.
@@ -396,16 +398,19 @@ export class QuoteBoard {
         const { scene } = this.d;
         const f = fontOf(scene);
         const on = onTap !== null;
+        // 색은 씬의 버튼과 **같은 표**에서 온다(`ui/theme.ts` 의 `BTN`). 두 화면이
+        // 저마다 색을 정하면 같은 「권합니다」가 화면마다 달라 보인다.
+        const skin = !on ? BTN.off : primary ? BTN.primary : BTN.normal;
         const g = scene.add.graphics();
-        g.fillStyle(on ? (primary ? 0x2f4f56 : 0x1a2a2e) : 0x151d1f, 1).fillRect(x, y, w, h);
+        g.fillStyle(skin.face, 1).fillRect(x, y, w, h);
+        g.lineStyle(1, skin.edge, 1).strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
         parent.add(g);
         const labelT = mkText(scene, x + w / 2, y + 8, label, {
-            fontFamily: f, fontSize: `${FS.sm}px`,
-            color: on ? (primary ? S.ink : "#c6d3cb") : S.inkDim,
+            fontFamily: f, fontSize: `${FS.sm}px`, color: skin.ink,
         }).setOrigin(0.5, 0);
         parent.add(labelT);
         const subT = mkText(scene, x + w / 2, y + 27, sub, {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: on ? "#8fa8ad" : "#4a5a56",
+            fontFamily: f, fontSize: `${FS.xs}px`, color: skin.sub,
         }).setOrigin(0.5, 0);
         parent.add(subT);
 

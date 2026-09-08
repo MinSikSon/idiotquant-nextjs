@@ -4,6 +4,9 @@
 // 174px 이 됐는데, 세로 격자는 `STACK_MIN`(398) 까지 짧아질 수 있다는 것을 안 봤다.
 // 짧은 격자에서 차트 높이가 **음수**가 되어 띠가 서로 겹쳤다.
 //
+// 띠는 다시 넷이 됐다(장소 정사각·칩 줄·차트를 뺐다). 판이 줄어도 이 불변식들은
+// 그대로다 — 합이 정확히 격자 세로이고, 겹치지 않고, 음수가 없어야 한다.
+//
 // 설계 격자는 390×844 고정이 **아니다.** `designSize` 가 짧은 쪽만 390 으로 고정하고
 // 긴 쪽은 기기 비율 그대로 받는다(그래야 FIT 여백이 0 이 된다). 그래서 여기서는
 // **한 벌의 크기가 아니라 범위 전체**를 훑는다.
@@ -27,7 +30,7 @@ for (let h = 300; h <= 560; h += 4) {
 
 /** 세로로 쌓이는 순서. 이 순서대로 맞물려야 한다. */
 function stack(b: Bands) {
-    return [b.strip, b.place, b.chips, b.chart, b.firm, b.action];
+    return [b.strip, b.log, b.hand, b.action];
 }
 
 /* ── 세로 ───────────────────────────────────────────────────── */
@@ -64,61 +67,44 @@ test("세로 — 띠끼리 겹치지 않고 틈도 없다", () => {
     }
 });
 
-test("세로 — 판을 굴리는 셋은 최소치를 지킨다", () => {
-    // 버튼·상황·차트가 없으면 판이 안 굴러간다. 이 셋은 마지막까지 안 줄어든다.
+test("세로 — 버튼과 손패는 최소치를 지킨다", () => {
+    // 이 둘이 없으면 판이 안 굴러간다. 로그는 한 줄까지 양보하지만 이 둘은 안 준다.
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
         assert.ok(b.action.h >= 64, `h=${h}: 버튼 ${b.action.h}`);
-        assert.ok(b.firm.h >= 168, `h=${h}: 상황 ${b.firm.h}`);
-        assert.ok(b.chart.h >= 110, `h=${h}: 차트 ${b.chart.h}`);
+        assert.ok(b.hand.h >= 134, `h=${h}: 손패 ${b.hand.h}`);
     }
 });
 
-test("세로 — 짧은 격자에서는 칩 줄이 먼저 양보한다", () => {
-    // 칩은 바로가기일 뿐이라 제일 먼저 포기한다 — 전체 목록은 시세판에 있다.
-    const short = bandsOf(W, 398);
-    const roomy = bandsOf(W, 844);
-    assert.ok(short.chips.h < roomy.chips.h, "짧으면 칩이 줄어야 한다");
-    assert.ok(short.chart.h >= 110, "그 대신 차트는 살아 있어야 한다");
+test("세로 — 로그는 고객 한 줄을 얹고도 한 줄이 남는다", () => {
+    // 로그 띠의 머리는 「누가 앞에 앉았나」가 든다. 그 줄에 다 먹히면 기록이 안 보인다.
+    for (const h of PORTRAIT_H) {
+        const b = bandsOf(W, h);
+        assert.ok(b.log.h >= 26 + 34, `h=${h}: 로그 ${b.log.h}`);
+    }
 });
 
-test("세로 — 넉넉해지면 차트가 남는 세로를 받는다", () => {
+test("세로 — 넉넉해지면 로그가 남는 세로를 받는다", () => {
+    // 손패는 카드가 읽히는 선에서 멈춘다(HAND_MAX). 그 위로는 전부 로그가 가져가야
+    // 긴 폰에서 빈 자리가 안 생긴다.
     let prev = -1;
     for (const h of [560, 700, 844, 1000, 1200]) {
-        const chart = bandsOf(W, h).chart.h;
-        assert.ok(chart > prev, `h=${h}: 차트가 안 늘었다(${prev} → ${chart})`);
-        prev = chart;
+        const log = bandsOf(W, h).log.h;
+        assert.ok(log > prev, `h=${h}: 로그가 안 늘었다(${prev} → ${log})`);
+        prev = log;
     }
+    // 손패는 어느 지점에서 멈춘다 — 안 그러면 카드만 커지고 화면이 비어 보인다.
+    assert.equal(bandsOf(W, 1000).hand.h, bandsOf(W, 1200).hand.h, "손패가 끝없이 자란다");
 });
 
-test("세로 — 띠는 격자 폭 안에 있다", () => {
+test("세로 — 띠는 격자 폭을 다 쓴다", () => {
+    // 판이 넷으로 줄면서 좌우로 나뉜 띠가 없어졌다 — 전부 전폭이다.
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
-        for (const band of [...stack(b), b.log]) {
-            assert.ok(band.x >= 0 && band.x + band.w <= W, `h=${h}: x=${band.x} w=${band.w}`);
+        for (const band of stack(b)) {
+            assert.equal(band.x, 0, `h=${h}: x=${band.x}`);
+            assert.equal(band.w, W, `h=${h}: w=${band.w}`);
         }
-    }
-});
-
-/* ── 장소 정사각 ────────────────────────────────────────────── */
-
-test("장소 자리는 언제나 정사각이다 — 나중에 들어올 그림의 자리다", () => {
-    for (const h of PORTRAIT_H) {
-        const b = bandsOf(W, h);
-        assert.equal(b.place.w, b.place.h, `세로 h=${h}: ${b.place.w}×${b.place.h}`);
-    }
-    for (const [w, h] of LANDSCAPE) {
-        const b = bandsOf(w, h);
-        assert.equal(b.place.w, b.place.h, `가로 ${w}×${h}: ${b.place.w}×${b.place.h}`);
-    }
-});
-
-test("장소와 로그는 한 줄에 나란히 서고 폭을 나눠 갖는다", () => {
-    for (const h of PORTRAIT_H) {
-        const b = bandsOf(W, h);
-        assert.equal(b.log.y, b.place.y);
-        assert.equal(b.log.h, b.place.h);
-        assert.equal(b.place.w + b.log.w, W, `h=${h}: 장소+로그가 폭을 다 안 채운다`);
     }
 });
 
@@ -128,11 +114,20 @@ test("가로 — 읽는 것은 왼쪽, 만지는 것은 오른쪽", () => {
     for (const [w, h] of LANDSCAPE) {
         const b = bandsOf(w, h);
         if (b.portrait) continue;   // 폭이 모자라면 쌓기로 떨어진다
-        assert.equal(b.chart.x, 0, `${w}×${h}: 차트가 왼쪽이 아니다`);
-        assert.equal(b.firm.x, b.action.x, `${w}×${h}: 상황과 버튼이 다른 칸에 있다`);
-        assert.ok(b.firm.x > 0, `${w}×${h}: 상황이 오른쪽 칸이 아니다`);
-        assert.equal(b.firm.x + b.firm.w, w, `${w}×${h}: 오른쪽 칸이 폭을 다 안 채운다`);
-        assert.equal(b.chart.x + b.chart.w, b.firm.x, `${w}×${h}: 두 칸 사이에 틈이 있다`);
+        assert.equal(b.log.x, 0, `${w}×${h}: 로그가 왼쪽이 아니다`);
+        assert.equal(b.hand.x, b.action.x, `${w}×${h}: 손패와 버튼이 다른 칸에 있다`);
+        assert.ok(b.hand.x > 0, `${w}×${h}: 손패가 오른쪽 칸이 아니다`);
+        assert.equal(b.hand.x + b.hand.w, w, `${w}×${h}: 오른쪽 칸이 폭을 다 안 채운다`);
+        assert.equal(b.log.x + b.log.w, b.hand.x, `${w}×${h}: 두 칸 사이에 틈이 있다`);
+    }
+});
+
+test("가로 — 카드 셋이 서야 하므로 오른쪽 칸이 더 넓다", () => {
+    // 로그는 폭이 줄면 줄을 접어 읽히지만, 카드는 좁아지면 이름부터 잘린다.
+    for (const [w, h] of LANDSCAPE) {
+        const b = bandsOf(w, h);
+        if (b.portrait) continue;
+        assert.ok(b.hand.w > b.log.w, `${w}×${h}: 로그 ${b.log.w} ≥ 손패 ${b.hand.w}`);
     }
 });
 
@@ -149,20 +144,19 @@ test("가로 — 모든 띠가 격자 안에 있고 높이가 음수가 아니�
     }
 });
 
-test("가로 — 왼쪽 칸의 띠가 세로를 정확히 채운다", () => {
+test("가로 — 두 칸이 저마다 세로를 정확히 채운다", () => {
     for (const [w, h] of LANDSCAPE) {
         const b = bandsOf(w, h);
         if (b.portrait) continue;
-        assert.equal(b.strip.h + b.place.h + b.chips.h + b.chart.h, h,
-            `${w}×${h}: 왼쪽 칸이 ${b.strip.h}+${b.place.h}+${b.chips.h}+${b.chart.h}`);
-        assert.equal(b.firm.h + b.action.h + b.strip.h, h, `${w}×${h}: 오른쪽 칸이 안 맞는다`);
+        assert.equal(b.strip.h + b.log.h, h, `${w}×${h}: 왼쪽 칸이 안 맞는다`);
+        assert.equal(b.strip.h + b.hand.h + b.action.h, h, `${w}×${h}: 오른쪽 칸이 안 맞는다`);
     }
 });
 
 /* ── designSize 와 어긋나지 않는다 ──────────────────────────── */
 
 test("designSize 와 bandsOf 의 portrait 판단이 언제나 같다", () => {
-    // 둘이 갈리면 격자는 두 칸인데 그림은 여섯으로 쌓여 화면이 통째로 어긋난다.
+    // 둘이 갈리면 격자는 두 칸인데 그림은 넷으로 쌓여 화면이 통째로 어긋난다.
     for (let hostW = 280; hostW <= 1400; hostW += 7) {
         for (const hostH of [500, 640, 720, 844, 900, 1180, 390, 320]) {
             const d = designSize(hostW, hostH);

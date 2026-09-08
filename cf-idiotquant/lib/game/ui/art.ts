@@ -32,6 +32,14 @@ const SHEET_URL = "/game-art/sheet.png";
  * 당긴다. **진하다/옅다 싶으면 이 숫자 하나만 고치면 된다.**
  */
 export const ART_VEIL = 0.28;
+/**
+ * 배경으로 깔 때의 세기. **글자가 그 위에 올라온다**(회사 화면의 로그).
+ *
+ * 0.28 은 그림을 화면 쪽으로 당기는 정도라 글자를 얹으면 밝은 부분에서 대비가 무너진다.
+ * 여기까지 덮으면 그림은 분위기로만 남고 글자가 이긴다. 더 덮으면(0.8 이상) 그림이
+ * 통째로 안 보여서 배경을 깐 뜻이 없어진다 — 실제로 그랬다.
+ */
+export const ART_VEIL_BACK = 0.78;
 
 /**
  * 시트를 받는다. `preload()` 에서 부른다.
@@ -70,20 +78,30 @@ export function hasArt(scene: Phaser.Scene, key: ArtKey): boolean {
  */
 export function drawArt(
     scene: Phaser.Scene, key: ArtKey, x: number, y: number, w: number, h: number,
+    opts: { veil?: number; cover?: boolean } = {},
 ): Phaser.GameObjects.GameObject[] | null {
     if (!hasArt(scene, key)) return null;
 
     const [, , fw, fh] = FRAMES[key];
     // 칸보다 크면 줄이고, 작으면 키운다. 남는 쪽은 여백으로 둔다.
-    const k = Math.min(w / fw, h / fh);
+    // `cover` 면 반대로 **칸을 꽉 채우고** 넘치는 쪽을 잘라 낸다 — 배경으로 깔 때다.
+    const k = opts.cover ? Math.max(w / fw, h / fh) : Math.min(w / fw, h / fh);
     const img = scene.add.image(x + w / 2, y + h / 2, SHEET, key).setScale(k);
+
+    // 꽉 채운 그림은 칸 밖으로 넘친다 — **원본 좌표로 잘라 낸다.** 안 자르면 배경이
+    // 위아래 띠를 덮어 로그와 손패 위에 사무실이 겹쳐 그려진다.
+    if (opts.cover) {
+        const sw = Math.min(fw, w / k);
+        const sh = Math.min(fh, h / k);
+        img.setCrop((fw - sw) / 2, (fh - sh) / 2, sw, sh);
+    }
 
     // 만화체라 **LINEAR** 로 둔다. NEAREST 를 걸면 줄일 때 계단이 진다.
     // (도트 그림으로 바꾸면 그때 뒤집는다.)
     scene.textures.get(SHEET).setFilter(Phaser.Textures.FilterMode.LINEAR);
 
     const veil = scene.add.graphics();
-    veil.fillStyle(0x0e1618, ART_VEIL).fillRect(x, y, w, h);
+    veil.fillStyle(0x0e1618, opts.veil ?? ART_VEIL).fillRect(x, y, w, h);
 
     return [img, veil];
 }

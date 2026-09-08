@@ -81,8 +81,10 @@ export class GameLog extends Phaser.GameObjects.Container {
         this.rows = Math.max(1, Math.floor((this.boxH - PADY * 2) / ROW));
         this.hint = o.onOpen ? "전체 ▸" : "";
 
+        // **면을 안 칠한다.** 회사 화면은 이 자리 뒤에 사무실 그림을 깔아 두므로,
+        // 여기서 `C.panel` 로 채우면 그림이 통째로 가려진다 — 실제로 그랬다.
+        // 아래 선 하나만 남긴다: 어디까지가 기록인지 그것이면 갈린다.
         this.bg = scene.add.graphics();
-        this.bg.fillStyle(C.panel, 1).fillRect(0, 0, this.boxW, this.boxH);
         this.bg.lineStyle(1, C.line, 1);
         this.bg.beginPath();
         this.bg.moveTo(0, this.boxH - 0.5);
