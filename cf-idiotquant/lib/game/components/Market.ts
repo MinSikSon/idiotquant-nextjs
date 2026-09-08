@@ -1,23 +1,31 @@
-// 시세판 — **여섯 개가 상한이 아니게 만드는 화면.**
+// 종목 목록 — **회사 화면의 본체.**
 //
-// 회사 화면의 칩 줄은 다섯 자리뿐이다. 1999년(코스닥 신규 상장이 쏟아진 해)을 서너
-// 종목으로 표현하는 것은 무리였고, 그래서 전체를 따로 여는 자리를 만든다.
-// 좌상단 장소 그림을 누르면 열린다 — 사무실을 둘러보는 것이고, 그림이 들어오면
-// 그 안에 모니터가 그려진다.
+// ── 왜 화면 안으로 들어왔나 ────────────────────────────────────
+// 예전에는 「시세판」이라는 **별도 화면**이었다. 종목을 고르려면 버튼을 눌러 화면을
+// 옮기고 → 줄을 눌러 판을 열고 → 다시 눌러 체결하는 세 단계였고, 그보다 나쁘게는
+// **애초에 종목을 골라야 하는지가 화면에 안 적혀 있었다.** 회사 화면에는 로그와
+// 버튼 둘뿐이라, 처음 보는 사람에게는 「다음 턴」만 누르는 게임처럼 보였다.
 //
-// ── 두 화면의 역할이 안 겹친다 ──────────────────────────────────
-// **카드는 회사에서, 종목 고르기와 체결은 여기서.** 근거는 회사 화면에서 이미 낸 것이
-// 그대로 적용된다 — 그래서 이 화면에는 손패가 없다. 정보 카드를 내고 열면
-// 「권합니다」이고, 안 냈으면 「믿어보십시오」다.
+// 목록이 늘 떠 있으면 그 질문이 사라진다. **무엇을 고를지가 화면의 일**이고,
+// 고르는 것이 곧 이 게임에서 하는 일이다.
 //
-// ── 한 턴에 권하는 것은 한 번뿐이다 ─────────────────────────────
-// 고객이 한 명이니까. 시세판은 *무엇을 권할지 고르는 곳*이지 쓸어 담는 곳이 아니다.
-// 다만 「거둡니다」는 여러 종목에 된다 — 보유를 정리하는 것은 권유가 아니다.
+// ── 늘 하나가 골라져 있다 ──────────────────────────────────────
+// 고른 것을 **끌 수 없다.** 판이 열리면 처음부터 한 종목이 골라져 있고, 다른 줄을
+// 누르면 그리로 옮겨갈 뿐이다. 「지금 아무것도 안 골랐다」는 상태를 없애면
+// 「골라야 하나?」를 물을 일이 없다.
+//
+// 고른 종목은 **씬이 들고 있다**(`engine.focus`). 여기서 따로 기억하면 화면을 다시
+// 그릴 때 둘이 어긋난다.
+//
+// ── 줄은 누른다고 움직이지 않는다 ──────────────────────────────
+// 줄 높이는 언제나 `ROW_H` 다. 고른 줄이 그 자리에서 펼쳐지면 아래 줄이 전부 밀려서
+// **누를 때마다 종목 자리가 바뀐다.** 고른 종목의 자세한 것은 목록 아래 고정 판이
+// 지고, 목록은 색만 바뀐다.
 
 import Phaser from "phaser";
 import type { MarketRead, Stock } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
-import { BTN, C, FS, PAD, S, fontOf, mkText, price, pressable, pxOf } from "@/lib/game/ui/theme";
+import { BTN, C, FS, PAD, S, type Band, fontOf, mkText, price, pressable, pxOf } from "@/lib/game/ui/theme";
 
 /**
  * 한 줄의 높이. **모든 줄이 언제나 이 높이다.**
@@ -28,17 +36,14 @@ import { BTN, C, FS, PAD, S, fontOf, mkText, price, pressable, pxOf } from "@/li
  * 올라오는 판이 진다.
  */
 const ROW_H = 56;
-const HEAD_H = 28;
-const CLOSE_H = 60;
 /**
- * 아래에서 올라오는 판의 최대 높이 — 차트 + 근거 한 줄 + 체결 버튼.
+ * 고른 종목 판의 최대 높이 — 차트 + 근거 한 줄 + 체결 버튼.
  *
- * **차트가 여기로 왔다.** 예전에는 회사 화면에 늘 떠 있었는데, 차트는 *종목을 고를 때*
- * 보는 것이지 매 턴 쳐다볼 것이 아니었다. 늘 떠 있느라 회사 화면의 3분의 1을 먹었고,
- * 정작 그 안의 국면 글씨는 씬이 그리는 머리글과 같은 자리에 겹쳐 찍혔다 —
- * 같은 값을 두 곳에서 그리고 있었던 것이다. 이제 한 곳에서만 그린다.
+ * **차트가 여기 있다.** 예전에는 회사 화면에 늘 떠 있었는데, 차트는 *고른 종목을 볼 때*
+ * 보는 것이지 매 턴 쳐다볼 것이 아니다. 늘 떠 있느라 화면의 3분의 1을 먹었고, 그 안의
+ * 국면 글씨는 씬이 그리던 머리글과 같은 자리에 겹쳐 찍혔다.
  */
-const SHEET_MAX = 360;
+const SHEET_MAX = 300;
 /** 차트를 빼고 머리·근거·버튼만 넣는 데 드는 높이. */
 const SHEET_MIN = 124;
 /** 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다 — 그때는 차트를 안 그린다. */
@@ -46,7 +51,7 @@ const CHART_MIN = 96;
 /** 이만큼 끌면 누른 것이 아니라 넘긴 것으로 친다. */
 const DRAG_SLOP = 8;
 
-export interface BoardRow {
+export interface MarketRow {
     stock: Stock;
     price: number;
     /** 지난 턴 대비 등락률(%). */
@@ -59,13 +64,14 @@ export interface BoardRow {
     isNew: boolean;
 }
 
-export interface BoardDeps {
+export interface MarketDeps {
     scene: Phaser.Scene;
-    width: number;
-    height: number;
-    /** 챕터 띠가 위에 얹혀 있으므로 그만큼 내려서 그린다. */
-    top: number;
-    rows(): BoardRow[];
+    /** 이 띠 **안에만** 그린다. 전면 화면이 아니라 회사 화면의 한 자리다. */
+    band: Band;
+    rows(): MarketRow[];
+    /** 지금 고른 종목. **늘 하나가 골라져 있다** — null 이 없다. */
+    selectedId(): string;
+    onSelect(id: string): void;
     /** 회사 화면에서 이미 낸 근거. 없으면 null. */
     thesis(): string | null;
     /** 이번 턴에 이미 권했는가. 그러면 「권합니다」가 잠긴다. */
@@ -83,31 +89,26 @@ export interface BoardDeps {
     onResearch(id: string): void;
     onBuy(id: string): void;
     onSell(id: string): void;
-    onClose(): void;
 }
 
-export class QuoteBoard {
-    private readonly d: BoardDeps;
+export class Market {
+    private readonly d: MarketDeps;
     private root: Phaser.GameObjects.Container | null = null;
     private list: Phaser.GameObjects.Container | null = null;
     private mask: Phaser.Display.Masks.GeometryMask | null = null;
     private maskShape: Phaser.GameObjects.Graphics | null = null;
 
-    /** 펼친 줄의 종목 id. 하나만 펼쳐진다 — 둘이면 어느 것에 체결하는지가 흐려진다. */
-    private openId: string | null = null;
     private scrollY = 0;
     private dragging = false;
     private dragged = 0;
     private lastPtrY = 0;
 
-    constructor(deps: BoardDeps) { this.d = deps; }
+    constructor(deps: MarketDeps) { this.d = deps; }
 
     get isOpen(): boolean { return this.root !== null; }
 
     open(): void {
         if (this.root) return;
-        this.openId = null;
-        this.scrollY = 0;
         this.draw();
     }
 
@@ -137,8 +138,8 @@ export class QuoteBoard {
      */
     private designY(p: Phaser.Input.Pointer): number { return p.y / pxOf(this.d.scene); }
 
-    private get viewTop(): number { return this.d.top + HEAD_H; }
-    private get viewH(): number { return this.d.height - this.d.top - HEAD_H - CLOSE_H; }
+    private get viewTop(): number { return this.d.band.y; }
+    private get viewH(): number { return this.d.band.h; }
 
     /**
      * 아래 판의 높이. **한 줄은 반드시 남긴다** — 목록이 통째로 가리면 어디를 골랐는지
@@ -149,40 +150,18 @@ export class QuoteBoard {
     }
 
     private draw(): void {
-        const { scene, width } = this.d;
-        const root = scene.add.container(0, 0).setDepth(500);
+        const { scene, band } = this.d;
+        const root = scene.add.container(0, 0);
         this.root = root;
 
-        // 뒷 화면을 덮는다. 시세판은 오버레이가 아니라 **다른 화면**이다.
+        // 띠 안쪽만 칠한다. 오버레이가 아니라 회사 화면의 한 자리다.
         const bg = scene.add.graphics();
-        bg.fillStyle(C.screen, 1).fillRect(0, this.d.top, width, this.d.height - this.d.top);
+        bg.fillStyle(C.screen, 1).fillRect(band.x, band.y, band.w, band.h);
         root.add(bg);
 
-        this.drawHead();
         this.drawList();
         // 판은 목록 **위에** 뜬다. 목록은 그대로 있고 가려질 뿐이다.
-        if (this.openId) this.drawSheet();
-        this.drawCloseBar();
-    }
-
-    private drawHead(): void {
-        const { scene, width } = this.d;
-        const rows = this.d.rows();
-        const g = scene.add.graphics();
-        g.fillStyle(C.panelHi, 1).fillRect(0, this.d.top, width, HEAD_H);
-        this.root!.add(g);
-
-        const f = fontOf(scene);
-        const y = this.d.top + HEAD_H / 2;
-        this.root!.add(mkText(scene, PAD, y, `상장 ${rows.length}`, {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(0, 0.5));
-        this.root!.add(mkText(scene, width - PAD - 62, y, "현재가", {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(1, 0.5));
-        this.root!.add(mkText(scene, width - PAD, y, "등락", {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: S.inkDim,
-        }).setOrigin(1, 0.5));
+        this.drawSheet();
     }
 
     /**
@@ -193,13 +172,14 @@ export class QuoteBoard {
      * 그러지 않으면 목록을 넘길 때마다 아무 줄이나 펼쳐진다.
      */
     private drawList(): void {
-        const { scene, width } = this.d;
-        const list = scene.add.container(0, this.viewTop);
+        const { scene, band } = this.d;
+        const width = band.w;
+        const list = scene.add.container(band.x, this.viewTop);
         this.list = list;
         this.root!.add(list);
 
         const shape = scene.add.graphics();
-        shape.fillStyle(0xffffff).fillRect(0, this.viewTop, width, this.viewH);
+        shape.fillStyle(0xffffff).fillRect(band.x, this.viewTop, width, this.viewH);
         shape.setVisible(false);
         this.maskShape = shape;
         this.mask = shape.createGeometryMask();
@@ -217,7 +197,7 @@ export class QuoteBoard {
         list.add(shade);
 
         // 목록 전체를 덮는 판을 깔고 거기서 드래그를 받는다.
-        const zone = scene.add.zone(0, this.viewTop, width, this.viewH).setOrigin(0, 0).setInteractive();
+        const zone = scene.add.zone(band.x, this.viewTop, width, this.viewH).setOrigin(0, 0).setInteractive();
         this.root!.add(zone);
         const rowAt = (designY: number): number => {
             const local = designY - this.viewTop - this.scrollY;
@@ -274,18 +254,19 @@ export class QuoteBoard {
         const i = Math.floor(local / ROW_H);
         const row = i >= 0 && i < rows.length ? rows[i] : undefined;
         if (!row) return;
-        // 고른 줄을 다시 누르면 판을 닫는다.
-        this.openId = row.stock.id === this.openId ? null : row.stock.id;
-        this.refresh();
+        // **끄지 않는다.** 같은 줄을 다시 눌러도 그대로 골라져 있다 — 「아무것도 안
+        // 고른 상태」를 없애야 「골라야 하나?」를 물을 일이 없다.
+        if (row.stock.id !== this.d.selectedId()) this.d.onSelect(row.stock.id);
     }
 
-    private drawRow(list: Phaser.GameObjects.Container, row: BoardRow, y: number): number {
-        const { scene, width } = this.d;
+    private drawRow(list: Phaser.GameObjects.Container, row: MarketRow, y: number): number {
+        const { scene } = this.d;
+        const width = this.d.band.w;
         const f = fontOf(scene);
         const up = row.changePct >= 0;
         const col = up ? S.up : S.down;
 
-        const picked = row.stock.id === this.openId;
+        const picked = row.stock.id === this.d.selectedId();
         const g = scene.add.graphics();
         if (picked) {
             // 고른 줄 — 아래 판이 이 종목의 것이라는 표시. 자리는 그대로 두고 색만 바꾼다.
@@ -331,29 +312,32 @@ export class QuoteBoard {
      * 가려지기만 하므로, 판을 닫으면 방금 보던 자리 그대로다.
      */
     private drawSheet(): void {
-        const { scene, width, height } = this.d;
+        const { scene, band } = this.d;
+        const width = band.w;
         const rows = this.d.rows();
-        const row = rows.find(r => r.stock.id === this.openId);
-        if (!row) { this.openId = null; return; }
+        const row = rows.find(r => r.stock.id === this.d.selectedId()) ?? rows[0];
+        if (!row) return;
 
         const f = fontOf(scene);
         const up = row.changePct >= 0;
         const h = this.sheetH;
-        const top = height - CLOSE_H - h;
+        const top = band.y + band.h - h;
+        const x0 = band.x + PAD;
+        const xr = band.x + width - PAD;
         const root = this.root!;
 
         const g = scene.add.graphics();
-        g.fillStyle(0x101b1e, 1).fillRect(0, top, width, h);
-        g.lineStyle(2, C.gold, 1).lineBetween(0, top, width, top);
+        g.fillStyle(0x101b1e, 1).fillRect(band.x, top, width, h);
+        g.lineStyle(2, C.gold, 1).lineBetween(band.x, top, band.x + width, top);
         root.add(g);
 
         // 판 위에서는 목록이 안 끌린다. 이 판이 없으면 차트를 문지를 때 뒤가 스크롤된다.
-        root.add(scene.add.zone(0, top, width, h).setOrigin(0, 0).setInteractive());
+        root.add(scene.add.zone(band.x, top, width, h).setOrigin(0, 0).setInteractive());
 
-        root.add(mkText(scene, PAD, top + 7, `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
+        root.add(mkText(scene, x0, top + 7, `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: S.gold,
         }));
-        root.add(mkText(scene, width - PAD, top + 7,
+        root.add(mkText(scene, xr, top + 7,
             `${price(row.price)}  ${up ? "+" : ""}${row.changePct.toFixed(1)}%`, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: up ? S.up : S.down,
         }).setOrigin(1, 0));
@@ -369,7 +353,7 @@ export class QuoteBoard {
         // 보고 있는지가 머리글과 붙어 있다.
         if (chartH >= CHART_MIN) {
             const chart = new PixelCandleChart(scene, {
-                x: PAD, y: chartY, width: width - PAD * 2, height: chartH,
+                x: x0, y: chartY, width: width - PAD * 2, height: chartH,
             });
             scene.add.existing(chart);
             chart.render(row.stock.history, this.d.read());
@@ -394,16 +378,16 @@ export class QuoteBoard {
         const ink = mine ? "#7fdca6" : can ? S.gold : S.inkDim;
 
         const tg = scene.add.graphics();
-        tg.fillStyle(mine ? 0x17332a : 0x141c1e, 1).fillRect(PAD, thY, width - PAD * 2, 22);
-        if (can && !mine) tg.lineStyle(1, C.gold, 1).strokeRect(PAD + 0.5, thY + 0.5, width - PAD * 2 - 1, 21);
+        tg.fillStyle(mine ? 0x17332a : 0x141c1e, 1).fillRect(x0, thY, width - PAD * 2, 22);
+        if (can && !mine) tg.lineStyle(1, C.gold, 1).strokeRect(x0 + 0.5, thY + 0.5, width - PAD * 2 - 1, 21);
         root.add(tg);
-        const tt = mkText(scene, PAD + 6, thY + 4, label, {
+        const tt = mkText(scene, x0 + 6, thY + 4, label, {
             fontFamily: f, fontSize: `${FS.xs}px`, color: ink,
         });
         root.add(tt);
 
         if (can && !mine) {
-            const { zone, shade } = pressable(scene, PAD, thY, width - PAD * 2, 22, [tg, tt],
+            const { zone, shade } = pressable(scene, x0, thY, width - PAD * 2, 22, [tg, tt],
                 () => this.d.onResearch(row.stock.id), () => this.dragged <= DRAG_SLOP);
             root.add(shade);
             root.add(zone);
@@ -412,11 +396,11 @@ export class QuoteBoard {
         // 체결 — 한 턴에 권하는 것은 한 번뿐이다.
         const half = (width - PAD * 2 - 6) / 2;
         const locked = this.d.alreadyRecommended();
-        this.cell(root, PAD, btnY, half, btnH,
+        this.cell(root, x0, btnY, half, btnH,
             locked ? "이미 권했다" : (mine ? "권합니다" : "믿어보십시오"),
             locked ? "이번 턴은 끝" : `${this.d.clientName()}에게`,
             locked ? null : () => this.d.onBuy(row.stock.id), !locked);
-        this.cell(root, PAD + half + 6, btnY, half, btnH,
+        this.cell(root, x0 + half + 6, btnY, half, btnH,
             "거둡니다", row.shares > 0 ? `${row.shares}주` : "보유 없음",
             row.shares > 0 ? () => this.d.onSell(row.stock.id) : null, false);
     }
@@ -453,21 +437,4 @@ export class QuoteBoard {
         parent.add(zone);
     }
 
-    private drawCloseBar(): void {
-        const { scene, width, height } = this.d;
-        const y = height - CLOSE_H;
-        const g = scene.add.graphics();
-        g.fillStyle(C.panelHi, 1).fillRect(0, y, width, CLOSE_H);
-        g.lineStyle(2, C.line, 1).lineBetween(0, y, width, y);
-        this.root!.add(g);
-        const t = mkText(scene, width / 2, y + CLOSE_H / 2, "사무실로", {
-            fontFamily: fontOf(scene), fontSize: `${FS.md}px`, color: S.ink,
-        }).setOrigin(0.5);
-        this.root!.add(t);
-
-        const { zone, shade } = pressable(scene, 0, y, width, CLOSE_H, [g, t],
-            () => this.d.onClose());
-        this.root!.add(shade);
-        this.root!.add(zone);
-    }
 }

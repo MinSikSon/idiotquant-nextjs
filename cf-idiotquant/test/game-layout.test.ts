@@ -30,7 +30,7 @@ for (let h = 300; h <= 560; h += 4) {
 
 /** 세로로 쌓이는 순서. 이 순서대로 맞물려야 한다. */
 function stack(b: Bands) {
-    return [b.strip, b.log, b.now, b.action];
+    return [b.strip, b.log, b.market, b.action];
 }
 
 /* ── 세로 ───────────────────────────────────────────────────── */
@@ -67,12 +67,13 @@ test("세로 — 띠끼리 겹치지 않고 틈도 없다", () => {
     }
 });
 
-test("세로 — 버튼과 이번 턴 줄은 최소치를 지킨다", () => {
-    // 이 둘이 없으면 판이 안 굴러간다. 로그는 한 줄까지 양보하지만 이 둘은 안 준다.
+test("세로 — 버튼과 종목 목록은 최소치를 지킨다", () => {
+    // 이 둘이 없으면 판이 안 굴러간다. 목록이 좁으면 고른 종목 판에서 버튼이 잘리거나
+    // 목록이 통째로 가려진다.
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
         assert.ok(b.action.h >= 64, `h=${h}: 버튼 ${b.action.h}`);
-        assert.ok(b.now.h >= 30, `h=${h}: 이번 턴 줄 ${b.now.h}`);
+        assert.ok(b.market.h >= 204, `h=${h}: 목록 ${b.market.h}`);
     }
 });
 
@@ -84,17 +85,17 @@ test("세로 — 로그는 고객 한 줄을 얹고도 한 줄이 남는다", ()
     }
 });
 
-test("세로 — 남는 세로는 전부 로그가 받는다", () => {
-    // 고정 크롬이 셋(띠·이번 턴 줄·버튼)뿐이라 겨룰 것이 없다. 안 그러면 긴 폰에서
-    // 어딘가에 빈 자리가 생긴다.
+test("세로 — 남는 세로는 목록이 받는다", () => {
+    // **목록이 화면의 본체다.** 로그가 남는 것을 다 먹으면 긴 폰에서도 목록이 세 줄에
+    // 머문다 — 무엇을 고를지가 화면의 일인데.
     let prev = -1;
     for (const h of [560, 700, 844, 1000, 1200]) {
-        const log = bandsOf(W, h).log.h;
-        assert.ok(log > prev, `h=${h}: 로그가 안 늘었다(${prev} → ${log})`);
-        prev = log;
+        const market = bandsOf(W, h).market.h;
+        assert.ok(market > prev, `h=${h}: 목록이 안 늘었다(${prev} → ${market})`);
+        prev = market;
     }
-    // 이번 턴 줄은 한 줄이라 자라지 않는다.
-    assert.equal(bandsOf(W, 1000).now.h, bandsOf(W, 1200).now.h, "이번 턴 줄이 자란다");
+    // 로그는 어느 지점에서 멈춘다.
+    assert.equal(bandsOf(W, 1000).log.h, bandsOf(W, 1200).log.h, "로그가 끝없이 자란다");
 });
 
 test("세로 — 띠는 격자 폭을 다 쓴다", () => {
@@ -114,11 +115,13 @@ test("가로 — 읽는 것은 왼쪽, 만지는 것은 오른쪽", () => {
     for (const [w, h] of LANDSCAPE) {
         const b = bandsOf(w, h);
         if (b.portrait) continue;   // 폭이 모자라면 쌓기로 떨어진다
-        assert.equal(b.log.x, 0, `${w}×${h}: 로그가 왼쪽이 아니다`);
-        assert.equal(b.now.x, b.action.x, `${w}×${h}: 이번 턴 줄과 버튼이 다른 칸에 있다`);
-        assert.ok(b.now.x > 0, `${w}×${h}: 이번 턴 줄이 오른쪽 칸이 아니다`);
-        assert.equal(b.now.x + b.now.w, w, `${w}×${h}: 오른쪽 칸이 폭을 다 안 채운다`);
-        assert.equal(b.log.x + b.log.w, b.now.x, `${w}×${h}: 두 칸 사이에 틈이 있다`);
+        // **왼쪽이 목록이다** — 화면의 본체가 넓은 쪽을 가져간다.
+        assert.equal(b.market.x, 0, `${w}×${h}: 목록이 왼쪽이 아니다`);
+        assert.equal(b.log.x, b.action.x, `${w}×${h}: 로그와 버튼이 다른 칸에 있다`);
+        assert.ok(b.log.x > 0, `${w}×${h}: 로그가 오른쪽 칸이 아니다`);
+        assert.equal(b.log.x + b.log.w, w, `${w}×${h}: 오른쪽 칸이 폭을 다 안 채운다`);
+        assert.equal(b.market.x + b.market.w, b.log.x, `${w}×${h}: 두 칸 사이에 틈이 있다`);
+        assert.ok(b.market.w > b.log.w, `${w}×${h}: 목록 ${b.market.w} ≤ 로그 ${b.log.w}`);
     }
 });
 
@@ -139,8 +142,8 @@ test("가로 — 두 칸이 저마다 세로를 정확히 채운다", () => {
     for (const [w, h] of LANDSCAPE) {
         const b = bandsOf(w, h);
         if (b.portrait) continue;
-        assert.equal(b.strip.h + b.log.h, h, `${w}×${h}: 왼쪽 칸이 안 맞는다`);
-        assert.equal(b.strip.h + b.now.h + b.action.h, h, `${w}×${h}: 오른쪽 칸이 안 맞는다`);
+        assert.equal(b.strip.h + b.market.h, h, `${w}×${h}: 왼쪽 칸이 안 맞는다`);
+        assert.equal(b.strip.h + b.log.h + b.action.h, h, `${w}×${h}: 오른쪽 칸이 안 맞는다`);
     }
 });
 

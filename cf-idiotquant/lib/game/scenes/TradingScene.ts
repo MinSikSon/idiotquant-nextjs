@@ -36,9 +36,9 @@ import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib
 import type { EndReason, MarketRead, TurnBuff } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
-import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
+import { Market, type MarketRow } from "@/lib/game/components/Market";
 import {
-    BTN, C, CLIENT_ROW, FS, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
+    BTN, C, CLIENT_ROW, FS, MARKET_HEAD, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
@@ -78,7 +78,7 @@ export class TradingScene extends Phaser.Scene {
     private junk: Phaser.GameObjects.GameObject[] = [];
     private chart: PixelCandleChart | null = null;
     private logView: GameLog | null = null;
-    private board: QuoteBoard | null = null;
+    private market: Market | null = null;
 
     /* ── 한 턴의 상태 ─────────────────────────────────── */
     private entries: LogEntry[] = [];
@@ -167,8 +167,7 @@ export class TradingScene extends Phaser.Scene {
      */
     private go(to: Screen, cut: Cut | null): void {
         // 막 아래에 시세판이 남아 있으면 걷었을 때 엉뚱한 화면이 나온다.
-        this.board?.close();
-        this.board = null;
+        this.market = null;
         this.place = to;
         this.cut = cut;
         // 전환이 전환처럼 보이는 한 줄. 막이 이미 떠 있으므로 내용은 안 튄다.
@@ -210,8 +209,7 @@ export class TradingScene extends Phaser.Scene {
         // **시세판을 닫지 않는다.** `redraw()` 는 판을 닫으므로 여기서 부르면 알아본
         // 직후에 사무실로 튕겨 나가고, 곧바로 권하려면 다시 열어야 한다. 판만 다시
         // 그리면 근거 줄과 체결 버튼이 바뀐 채로 그 자리에 남는다.
-        if (this.board?.isOpen) this.board.refresh();
-        else this.redraw();
+        this.redraw();
     }
 
     /** 막을 걷는다. 여기서부터 아래 장소가 눌린다. */
@@ -252,7 +250,7 @@ export class TradingScene extends Phaser.Scene {
         this.junk = [];
         this.chart?.destroy(); this.chart = null;
         this.logView?.destroy(); this.logView = null;
-        this.board?.close(); this.board = null;
+        this.market?.close(); this.market = null;
 
         this.cameras.main.setBackgroundColor(S.bg);
         if (this.place === "title") this.drawTitle();
@@ -581,7 +579,7 @@ export class TradingScene extends Phaser.Scene {
         const half = e.player.currentTurn <= 6 ? "상" : "하";
         this.drawStrip(`${ch.year} ${half}반기 · ${e.player.currentTurn}/${e.player.maxTurns}`);
         this.drawLog();
-        this.drawNow();
+        this.drawMarket();
         this.drawActions();
     }
 
@@ -631,19 +629,18 @@ export class TradingScene extends Phaser.Scene {
     }
 
     /**
-     * 이번 턴이 어떤가 — **근거와 계좌, 한 줄.**
+     * 무엇을 고를까 — **화면의 본체.** 근거·계좌 한 줄 위에 종목 목록이 선다.
      *
-     * 예전 이름은 `drawFirm` 이었고, 고객 상자 · 계좌 두 줄 · 근거 상자 · 손패를 밝은
-     * 회색 판 하나에 다 담았다. 그 뒤 카드까지 걷어 내면서 **한 줄만 남았다.**
-     *
-     * 근거는 시세판에서 「알아본다」를 눌러야 생긴다. 여기서는 그 결과만 읽는다 —
-     * 규칙을 화면이 다시 적으면 둘이 어긋난다.
+     * 예전에는 이 자리에 손패가 있었고, 그 전에는 회사 정보판이 있었다. 종목 목록은
+     * 「시세판」이라는 별도 화면에 있었는데 — 버튼을 눌러 화면을 옮기고 → 줄을 눌러
+     * 판을 열고 → 다시 눌러 체결하는 세 단계였고, **애초에 종목을 골라야 하는지가
+     * 화면에 안 적혀 있었다.** 목록이 늘 떠 있으면 그 질문이 사라진다.
      */
-    private drawNow(): void {
-        const b = this.bands.now;
+    private drawMarket(): void {
+        const b = this.bands.market;
         if (b.h <= 0) return;
-        // **좌표는 전부 띠 상대값이다.** 가로(두 칸)에서 이 띠는 오른쪽 칸에 있어서,
-        // 절대 `PAD` 로 적으면 왼쪽 칸의 로그 위에 겹쳐 그려진다.
+        // **좌표는 전부 띠 상대값이다.** 가로(두 칸)에서 이 띠는 왼쪽 칸이라
+        // 절대 좌표로 적으면 오른쪽 칸의 로그 위에 겹쳐 그려진다.
         const x0 = b.x + PAD;
         const xr = b.x + b.w - PAD;
 
@@ -651,13 +648,33 @@ export class TradingScene extends Phaser.Scene {
         const eq = this.engine.equity;
         const holds = Object.keys(this.engine.player.positions).length;
 
-        // 왼쪽이 이번 턴의 근거, 오른쪽이 내 계좌다. 근거는 색으로 갈린다 — 있으면
-        // 초록, 없으면 흐린 글씨. 상자를 두르면 그것대로 판이 하나 더 선다.
-        const y = b.y + (b.h - FS.xs) / 2;
+        // 머리 한 줄 — 왼쪽이 이번 턴의 근거, 오른쪽이 내 계좌.
+        const y = b.y + 5;
         const acct = this.text(xr, y, `${money(eq)} · 보유 ${holds}`, FS.xs,
             eq >= SEED_CASH ? S.inkDim : S.down, 1);
         this.textFit(x0, y, th ? `근거 · ${th}` : "근거 없음",
             FS.xs, th ? S.up : "#5c6b65", 0, xr - acct.displayWidth - 10 - x0);
+
+        const top = b.y + MARKET_HEAD;
+        this.market = new Market({
+            scene: this,
+            band: { x: b.x, y: top, w: b.w, h: b.h - MARKET_HEAD },
+            rows: () => this.marketRows(),
+            selectedId: () => this.engine.focus,
+            onSelect: id => { this.engine.setFocus(id); this.redraw(); },
+            thesis: () => this.buff().thesis,
+            researchedId: () => this.researched,
+            researchCost: () => RESEARCH_COST,
+            canResearch: () => this.researched === null
+                && this.engine.player.energy >= RESEARCH_COST,
+            onResearch: (id: string) => this.research(id),
+            alreadyRecommended: () => this.recommendedThisTurn,
+            clientName: () => this.client?.name ?? "아무도",
+            read: () => this.read,
+            onBuy: (id: string) => this.recommend(id),
+            onSell: (id: string) => this.sell(id),
+        });
+        this.market.open();
     }
 
     /** 버튼은 동작이 아니라 **내가 하는 말**이다. */
@@ -675,25 +692,18 @@ export class TradingScene extends Phaser.Scene {
      * 「기다릴 줄 알게 됐다」에 셌다. 그 셈은 이제 `endTurn` 이 한다.
      */
     private drawActions(): void {
-        const th = this.buff().thesis;
-        const held = Object.keys(this.engine.player.positions).length;
         const done = this.recommendedThisTurn;
-
-        // 버튼이 둘뿐이므로 이번 턴의 상태는 부제가 진다 — 권할 수 있는지, 뭘 들고 있는지.
-        const sub = done
-            ? (held > 0 ? `권했다 · 보유 ${held}` : "권했다")
-            : (th ? `근거 있음${held > 0 ? ` · 보유 ${held}` : ""}`
-                  : `근거 없음${held > 0 ? ` · 보유 ${held}` : ""}`);
-
+        // **버튼이 하나다.** 「시세판」은 목록이 화면에 올라오면서 없어졌다 — 이미
+        // 보이는 것을 여는 버튼이었다. 이 턴에 하는 일은 전부 목록 안에서 일어나고,
+        // 여기 남은 것은 「이 턴을 끝낸다」 하나뿐이다.
         this.buttons([
-            { label: "시세판", sub, primary: !done, on: () => this.openBoard() },
             {
                 label: "다음 턴",
                 // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
                 sub: done
-                    ? `${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`
-                    : `기다린다 · 에너지 −${ENERGY_DECAY}`,
-                primary: done,
+                    ? `권했다 · ${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`
+                    : `아직 안 권했다 · 에너지 −${ENERGY_DECAY}`,
+                primary: true,
                 on: () => this.endTurn(),
             },
         ]);
@@ -750,30 +760,9 @@ export class TradingScene extends Phaser.Scene {
         });
     }
 
-    /* ── 시세판 ───────────────────────────────────────── */
+    /* ── 종목 목록 ─────────────────────────────────────── */
 
-    private openBoard(): void {
-        if (this.board?.isOpen) return;
-        this.board = new QuoteBoard({
-            scene: this, width: this.W, height: this.H, top: this.bands.strip.h,
-            rows: () => this.boardRows(),
-            thesis: () => this.buff().thesis,
-            researchedId: () => this.researched,
-            researchCost: () => RESEARCH_COST,
-            canResearch: () => this.researched === null
-                && this.engine.player.energy >= RESEARCH_COST,
-            onResearch: id => this.research(id),
-            alreadyRecommended: () => this.recommendedThisTurn,
-            clientName: () => this.client?.name ?? "아무도",
-            read: () => this.read,
-            onBuy: id => this.recommend(id),
-            onSell: id => this.sell(id),
-            onClose: () => { this.board?.close(); this.board = null; this.redraw(); },
-        });
-        this.board.open();
-    }
-
-    private boardRows(): BoardRow[] {
+    private marketRows(): MarketRow[] {
         return this.engine.listed.map(s => {
             const last = s.history[s.history.length - 1];
             const prev = s.history[s.history.length - 2];
@@ -843,8 +832,8 @@ export class TradingScene extends Phaser.Scene {
         this.closeBoardAndRedraw();
     }
 
+    /** 체결한 뒤 화면을 다시 세운다. 목록도 여기서 새 값으로 다시 그려진다. */
     private closeBoardAndRedraw(): void {
-        this.board?.close(); this.board = null;
         this.redraw();
     }
 
