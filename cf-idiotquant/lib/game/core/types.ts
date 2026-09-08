@@ -91,13 +91,13 @@ export interface PlayerState {
     currentTurn: number;
     maxTurns: number;
     /**
-     * **신뢰** — 맡긴 사람들의 인내. 0~100.
+     * **에너지** — 이 사람이 버티는 힘. 0~100. **화면의 게이지는 이것 하나뿐이다.**
      *
-     * 매 턴 저절로 줄어든다(사람들은 가만히 기다려 주지 않는다). 0 이 되면 그 자리에서
-     * 폐업이다. 이 게임에서 관리하는 것은 돈이 아니라 이 값이고, 그래서 **운으로 벌어도
-     * 오르지 않는다** — 근거를 댔는지가 함께 판정된다(`core/trust.ts`).
+     * 매 턴 저절로 줄고, 카드를 낼 때마다 그 갈래의 값만큼 든다. 0 이 되면 그 자리에서
+     * 끝난다(`burnout`). 이 게임에서 관리하는 것은 돈이 아니라 이 값이고, 그래서 **운으로
+     * 벌어도 오르지 않는다** — 근거를 댔는지가 함께 판정된다(`core/energy.ts`).
      */
-    trust: number;
+    energy: number;
     /** 1997 에 생긴 빚(원, 양수). 0 으로 만드는 것이 게임 전체의 목표다. */
     debt: number;
 }
@@ -171,10 +171,10 @@ export interface TurnBuff {
     /** 저주 — 이번 턴은 무엇을 써도 안 보인다. */
     blind: boolean;
     /**
-     * 이번 턴 신뢰가 저절로 줄지 않는다. 좋았던 날의 기억이 하루를 벌어 준다.
+     * 이번 턴 에너지가 저절로 줄지 않는다. 좋았던 날의 기억이 하루를 벌어 준다.
      */
     noDecay: boolean;
-    /** 근거를 댔는데도 잃었을 때, 그 손실의 신뢰 감소를 절반으로 만든다. */
+    /** 근거를 댔는데도 잃었을 때, 그 손실의 에너지 감소를 절반으로 만든다. */
     softenLoss: boolean;
     /** 저주 — 이번 턴은 근거를 댈 수 없다. 무엇을 들고 있든 「믿어보십시오」가 된다. */
     noThesis: boolean;
@@ -184,7 +184,7 @@ export interface TurnBuff {
      * 근거 카드를 따로 만들지 않은 이유가 이 필드 하나다 — **정보를 사는 것과 근거를 대는
      * 것이 같은 행위**이기 때문이다. 실제로도 그렇다. 근거란 알아본 것이다.
      * 「내부자 제보」만은 예외로 여기 안 들어간다: 알아본 것이 아니라 얻어들은 것이라
-     * 고객은 받아들여도 신뢰는 오르지 않는다.
+     * 고객은 받아들여도 에너지는 오르지 않는다.
      */
     thesis: string | null;
 }
@@ -267,7 +267,7 @@ export interface DeckState {
  *
  * 넷 중 `debtCleared` 하나만 회귀를 끊는다 — 나머지 셋은 1997년 겨울의 집으로 돌아간다.
  */
-export type EndReason = "debtCleared" | "debtRemains" | "trustLost" | "ruined";
+export type EndReason = "debtCleared" | "debtRemains" | "burnout" | "ruined";
 
 /** 한 챕터가 끝났을 때의 성적. */
 export interface ChapterSummary {
@@ -276,20 +276,20 @@ export interface ChapterSummary {
     /**
      * 이 챕터에서 받은 보수. **빚은 이 값만큼만 줄어든다.**
      *
-     * 손해를 본 챕터에는 0 이다. 신뢰가 높을수록 커진다 — `core/trust.ts` 의 `advisoryFee`.
+     * 손해를 본 챕터에는 0 이다. 에너지가 높을수록 커진다 — `core/energy.ts` 의 `advisoryFee`.
      */
     fee: number;
     startEquity: number;
     finalEquity: number;
-    /** 끝났을 때의 신뢰와 남은 빚. */
-    trust: number;
+    /** 끝났을 때의 에너지와 남은 빚. */
+    energy: number;
     debt: number;
     /** 한 번도 안 권하고 12턴을 흘려보냈는가. */
     idle: boolean;
     /** 맡은 돈이 자본잠식선 아래로 떨어졌는가. */
     ruined: boolean;
-    /** 신뢰가 0 이 됐는가. */
-    trustLost: boolean;
+    /** 에너지가 0 이 됐는가. */
+    burnedOut: boolean;
     /** 이번 챕터에 **새로 겪은** 상황카드의 id. */
     earned: string[];
 }

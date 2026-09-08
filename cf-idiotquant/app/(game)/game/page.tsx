@@ -52,11 +52,12 @@ export default function RoguelikePage() {
                 <PhaserGame className="grid h-full w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block" />
             </div>
 
-            {/* 도감으로 가는 **유일한 문**이다. 메뉴에는 없다 — 게임을 안 켠 사람에게
+            {/* 도감과 이력으로 가는 **유일한 문**이다. 메뉴에는 없다 — 게임을 안 켠 사람에게
                 카드 목록은 읽을 수 없는 글이다.
                 눕히면 세로 28px 이 아깝다. 링크는 세로로 되돌리면 다시 나온다. */}
-            <div className="shrink-0 py-2 text-center font-mono text-[12px] text-[#9aada6] [@media(max-height:500px)]:hidden">
+            <div className="flex shrink-0 justify-center gap-5 py-2 text-center font-mono text-[12px] text-[#9aada6] [@media(max-height:500px)]:hidden">
                 <Link href="/game/cards" className="underline">카드 도감</Link>
+                <Link href="/game/status" className="underline">이력</Link>
             </div>
         </div>
     );

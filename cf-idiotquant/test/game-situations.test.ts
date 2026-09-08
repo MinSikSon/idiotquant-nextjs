@@ -1,7 +1,7 @@
-// 상황카드·신뢰·회귀.
+// 상황카드·에너지·회귀.
 //
 // 이 셋은 서로 물려 있다. 상황카드는 겪은 장면이고, 겪은 장면은 회귀해도 남고,
-// 그 장면 중 `info` 갈래는 근거가 되어 신뢰를 움직인다. 그래서 한자리에서 본다.
+// 그 장면 중 `info` 갈래는 근거가 되어 에너지를 움직인다. 그래서 한자리에서 본다.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -13,9 +13,10 @@ import {
 import { DeckManager, HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
 import { CLIENTS, clientAt } from "@/lib/game/core/clients";
 import {
-    trustDelta, decay, clampTrust, TRUST_DECAY,
-    TRUST_GAIN_WITH_THESIS, TRUST_LOSS_WITH_THESIS, TRUST_LOSS_BLIND,
-} from "@/lib/game/core/trust";
+    energyDelta, decay, clampEnergy, costOf, canPlay, ENERGY_DECAY,
+    ENERGY_GAIN_WITH_THESIS, ENERGY_LOSS_WITH_THESIS, ENERGY_LOSS_BLIND,
+} from "@/lib/game/core/energy";
+import { ENERGY_START } from "@/lib/game/core/StockEngine";
 import { EMPTY, remember, regress, endReasonOf, breaksLoop } from "@/lib/game/core/progress";
 import type { ChapterSummary } from "@/lib/game/core/types";
 
@@ -24,50 +25,71 @@ const kim = CLIENTS.find(c => c.id === "kim")!;
 
 /* ── 결과 × 근거 — 이 게임의 논지 ──────────────────────────── */
 
-test("근거를 대고 벌면 신뢰가 오른다", () => {
-    const d = trustDelta({ hadThesis: true, gained: true, client: kim });
-    assert.equal(d, Math.round(TRUST_GAIN_WITH_THESIS * kim.gain));
+test("근거를 대고 벌면 에너지가 오른다", () => {
+    const d = energyDelta({ hadThesis: true, gained: true, client: kim });
+    assert.equal(d, Math.round(ENERGY_GAIN_WITH_THESIS * kim.gain));
     assert.ok(d > 0);
 });
 
 test("근거를 대고 잃으면 조금만 깎인다 — 설명할 수 있는 손실", () => {
-    const d = trustDelta({ hadThesis: true, gained: false, client: kim });
-    assert.equal(d, -Math.round(TRUST_LOSS_WITH_THESIS * kim.loss));
+    const d = energyDelta({ hadThesis: true, gained: false, client: kim });
+    assert.equal(d, -Math.round(ENERGY_LOSS_WITH_THESIS * kim.loss));
     assert.ok(d < 0);
 });
 
 test("근거 없이 벌면 **그대로다** — 운으로 번 것은 실력이 아니다", () => {
     for (const c of CLIENTS) {
-        assert.equal(trustDelta({ hadThesis: false, gained: true, client: c }), 0,
-            `${c.name} 앞에서도 근거 없는 수익은 신뢰를 안 올린다`);
+        assert.equal(energyDelta({ hadThesis: false, gained: true, client: c }), 0,
+            `${c.name} 앞에서도 근거 없는 수익은 에너지를 안 올린다`);
     }
 });
 
 test("근거 없이 잃으면 가장 크게 깎인다", () => {
-    const blind = -trustDelta({ hadThesis: false, gained: false, client: kim });
-    const withThesis = -trustDelta({ hadThesis: true, gained: false, client: kim });
-    assert.equal(blind, Math.round(TRUST_LOSS_BLIND * kim.loss));
+    const blind = -energyDelta({ hadThesis: false, gained: false, client: kim });
+    const withThesis = -energyDelta({ hadThesis: true, gained: false, client: kim });
+    assert.equal(blind, Math.round(ENERGY_LOSS_BLIND * kim.loss));
     assert.ok(blind > withThesis * 2, "도박의 값은 설명할 수 있는 손실보다 훨씬 커야 한다");
 });
 
 test("네 칸의 크기 순서가 규칙대로다", () => {
     const c = kim;
-    const gainT = trustDelta({ hadThesis: true, gained: true, client: c });
-    const lossT = trustDelta({ hadThesis: true, gained: false, client: c });
-    const gainB = trustDelta({ hadThesis: false, gained: true, client: c });
-    const lossB = trustDelta({ hadThesis: false, gained: false, client: c });
+    const gainT = energyDelta({ hadThesis: true, gained: true, client: c });
+    const lossT = energyDelta({ hadThesis: true, gained: false, client: c });
+    const gainB = energyDelta({ hadThesis: false, gained: true, client: c });
+    const lossB = energyDelta({ hadThesis: false, gained: false, client: c });
     assert.ok(gainT > 0 && gainB === 0 && lossT < 0 && lossB < lossT);
 });
 
-test("신뢰는 매 턴 저절로 준다 — 가만히 있으면 못 버틴다", () => {
-    assert.equal(decay(50), 50 - TRUST_DECAY);
-    // 12턴 자연 감소가 시작값을 넘어선다.
-    assert.ok(TRUST_DECAY * 12 > 50 - 20, "12턴을 흘려보내면 바닥이 보여야 한다");
+test("에너지는 매 턴 저절로 준다 — 가만히 있어도 준다", () => {
+    assert.equal(decay(50), 50 - ENERGY_DECAY);
+    // 흘려보내는 것만으로도 한 챕터에 시작값의 절반 가까이가 빠진다.
+    assert.ok(ENERGY_DECAY * 12 >= (ENERGY_START - 20) * 0.7,
+        "12턴을 흘려보내면 바닥이 보여야 한다");
 });
 
-test("신뢰는 0~100 안에 갇힌다", () => {
-    assert.equal(clampTrust(-9), 0);
-    assert.equal(clampTrust(140), 100);
+test("카드를 내면 그 갈래만큼 든다 — 그래서 무엇을 낼지가 선택이 된다", () => {
+    // 값이 전부 같으면 아끼는 일이 안 생기고, 값이 없으면 매 턴 그냥 낸다.
+    assert.ok(costOf("info") > costOf("act"), "앞을 보는 일이 제일 많이 들어야 한다");
+    assert.ok(costOf("act") > costOf("guard"), "웅크리는 데는 덜 들어야 한다");
+    assert.equal(costOf("curse"), 0, "저주는 이미 벌이다 — 값까지 매기면 두 번 때린다");
+});
+
+test("맞힌 근거 한 번이 그 카드 값을 넘어선다", () => {
+    // 넘지 않으면 카드를 내는 쪽이 언제나 손해라 아무도 안 낸다.
+    const gained = energyDelta({ hadThesis: true, gained: true, client: kim });
+    assert.ok(gained > costOf("info"), `근거로 얻는 ${gained} 가 정보 카드 값보다 커야 한다`);
+});
+
+test("낼 힘이 없으면 못 낸다", () => {
+    assert.equal(canPlay(costOf("info"), "info"), true);
+    assert.equal(canPlay(costOf("info") - 1, "info"), false);
+    // 저주는 값이 0 이라 바닥에서도 나간다 — 안 그러면 덱에 영영 남는다.
+    assert.equal(canPlay(0, "curse"), true);
+});
+
+test("에너지는 0~100 안에 갇힌다", () => {
+    assert.equal(clampEnergy(-9), 0);
+    assert.equal(clampEnergy(140), 100);
 });
 
 /* ── 고객 ───────────────────────────────────────────────────── */
@@ -107,7 +129,7 @@ test("progress 가 목표에 닿는 순간이 곧 획득이다", () => {
 
 test("조건마다 정확히 그때 채워진다", () => {
     const cases: Array<[string, SituationFacts]> = [
-        ["phone", facts({ bestChapterEndTrust: 60 })],
+        ["phone", facts({ bestChapterEndEnergy: 60 })],
         ["stoploss", facts({ stopHits: 3 })],
         ["explained", facts({ thesisLosses: 3 })],
         ["kimsmile", facts({ kimStreak: 3 })],
@@ -127,7 +149,7 @@ test("조건마다 정확히 그때 채워진다", () => {
 
 test("한 걸음 모자라면 아직 아니다", () => {
     assert.ok(!isMet(SITUATION_BY_ID.stoploss!, facts({ stopHits: 2 })));
-    assert.ok(!isMet(SITUATION_BY_ID.phone!, facts({ bestChapterEndTrust: 59 })));
+    assert.ok(!isMet(SITUATION_BY_ID.phone!, facts({ bestChapterEndEnergy: 59 })));
 });
 
 test("이미 가진 것은 다시 안 나온다 — 겪은 장면은 하나뿐이다", () => {
@@ -217,8 +239,8 @@ test("낸 카드는 버린 더미로 가고 다시 섞여 돌아온다", () => {
 /* ── 회귀 ──────────────────────────────────────────────────── */
 
 const summary = (over: Partial<ChapterSummary> = {}): ChapterSummary => ({
-    returnPct: 0, fee: 0, startEquity: 1, finalEquity: 1, trust: 50, debt: 0,
-    idle: false, ruined: false, trustLost: false, earned: [], ...over,
+    returnPct: 0, fee: 0, startEquity: 1, finalEquity: 1, energy: 50, debt: 0,
+    idle: false, ruined: false, burnedOut: false, earned: [], ...over,
 });
 
 test("겪은 것은 기억에 남고 중복되지 않는다", () => {
@@ -230,7 +252,7 @@ test("겪은 것은 기억에 남고 중복되지 않는다", () => {
 
 test("회귀하면 회차가 오르고 사실은 지워지지만 상황카드는 남는다", () => {
     const before = remember(EMPTY, summary({ earned: ["stoploss", "phone"] }), 2);
-    const after = regress({ ...before, facts: facts({ stopHits: 3, kimStreak: 2 }) }, "trustLost");
+    const after = regress({ ...before, facts: facts({ stopHits: 3, kimStreak: 2 }) }, "burnout");
     assert.equal(after.cycle, before.cycle + 1);
     assert.deepEqual(after.situations, before.situations, "겪은 장면은 되돌릴 수 없다");
     assert.equal(after.facts.stopHits, 0, "회차 안에서 쌓은 사실은 지워진다");
@@ -246,7 +268,7 @@ test("바닥을 본 사실만은 회차를 넘어 남는다", () => {
 
 test("루프를 끊는 것은 빚 완납 하나뿐이다", () => {
     assert.equal(breaksLoop("debtCleared"), true);
-    for (const r of ["debtRemains", "trustLost", "ruined"] as const) {
+    for (const r of ["debtRemains", "burnout", "ruined"] as const) {
         assert.equal(breaksLoop(r), false, `${r} 는 1997 로 돌아가야 한다`);
     }
 });
@@ -258,7 +280,7 @@ test("빚을 갚은 기록은 그 뒤 회차에도 남는다", () => {
     assert.equal(won.escaped, true);
     assert.equal(won.cycle, EMPTY.cycle + 1);
 
-    const later = regress(regress(won, "ruined"), "trustLost");
+    const later = regress(regress(won, "ruined"), "burnout");
     assert.equal(later.escaped, true, "한 번 빠져나온 기록은 지워지지 않는다");
     assert.equal(later.cycle, EMPTY.cycle + 3);
 
@@ -267,11 +289,11 @@ test("빚을 갚은 기록은 그 뒤 회차에도 남는다", () => {
 });
 
 test("끝난 이유는 하나만 말한다 — 빚을 갚았으면 그것이 먼저다", () => {
-    assert.equal(endReasonOf({ debt: 0, trust: 0, ruined: true, finalChapterDone: true }), "debtCleared");
-    assert.equal(endReasonOf({ debt: 100, trust: 50, ruined: true, finalChapterDone: false }), "ruined");
-    assert.equal(endReasonOf({ debt: 100, trust: 0, ruined: false, finalChapterDone: false }), "trustLost");
-    assert.equal(endReasonOf({ debt: 100, trust: 50, ruined: false, finalChapterDone: true }), "debtRemains");
-    assert.equal(endReasonOf({ debt: 100, trust: 50, ruined: false, finalChapterDone: false }), null);
+    assert.equal(endReasonOf({ debt: 0, energy: 0, ruined: true, finalChapterDone: true }), "debtCleared");
+    assert.equal(endReasonOf({ debt: 100, energy: 50, ruined: true, finalChapterDone: false }), "ruined");
+    assert.equal(endReasonOf({ debt: 100, energy: 0, ruined: false, finalChapterDone: false }), "burnout");
+    assert.equal(endReasonOf({ debt: 100, energy: 50, ruined: false, finalChapterDone: true }), "debtRemains");
+    assert.equal(endReasonOf({ debt: 100, energy: 50, ruined: false, finalChapterDone: false }), null);
 });
 
 test("들고 나갈 덱은 가진 것 안에서만 고른다", () => {

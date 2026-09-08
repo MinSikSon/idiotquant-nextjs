@@ -15,10 +15,11 @@ import { SITUATIONS, STARTER_IDS, countsAsThesis } from "@/lib/game/core/situati
 import { CHAPTERS, UNIVERSE, TOTAL_TURNS } from "@/lib/game/core/chapters";
 import { CLIENTS } from "@/lib/game/core/clients";
 import {
-    TRUST_DECAY, TRUST_GAIN_WITH_THESIS, TRUST_LOSS_WITH_THESIS, TRUST_LOSS_BLIND,
-} from "@/lib/game/core/trust";
+    ENERGY_DECAY, ENERGY_GAIN_WITH_THESIS, ENERGY_LOSS_WITH_THESIS, ENERGY_LOSS_BLIND,
+    COST_BY_LANE,
+} from "@/lib/game/core/energy";
 import { HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
-import { TRUST_START } from "@/lib/game/core/StockEngine";
+import { ENERGY_START } from "@/lib/game/core/StockEngine";
 
 export const metadata: Metadata = {
     title: "상황 도감 · 재기",
@@ -44,6 +45,11 @@ function Situation({ s }: { s: (typeof SITUATIONS)[number] }) {
                         <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] ${skin.ink} bg-white/5`}>
                             {skin.label}
                         </span>
+                        {COST_BY_LANE[s.lane] > 0 && (
+                            <span className="shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-[#e3b34a]">
+                                에너지 {COST_BY_LANE[s.lane]}
+                            </span>
+                        )}
                         {starter && (
                             <span className="shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-[#9aada6]">
                                 처음부터
@@ -121,11 +127,58 @@ export default function CardsPage() {
 
             <section className="mb-8">
                 <h2 className="mb-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#41686f]">
-                    결과 × 근거
+                    에너지 — 게이지는 하나뿐이다
+                </h2>
+                <p className="mb-3 text-[14px] leading-relaxed text-[#8d9c93]">
+                    <b className="text-[#d8e0d8]">버티는 힘이자 곧 목숨</b>이다. 매 턴 저절로 줄고,
+                    카드를 낼 때마다 그 갈래의 값만큼 든다. 0 이 되면 그 자리에서 판이 끝난다.
+                    챕터 보수도 이 값에 비례하므로 <b className="text-[#d8e0d8]">에너지가 곧 빚을
+                    갚는 속도</b>이기도 하다.
+                </p>
+                <div className="mb-3 overflow-x-auto rounded-xl border border-white/10">
+                    <table className="w-full text-left text-[13px]">
+                        <thead className="bg-[#141c1e] font-mono text-[11px] uppercase tracking-wider text-[#4e5f58]">
+                            <tr><th className="p-3">무엇을 하면</th><th className="p-3">에너지</th><th className="p-3">왜</th></tr>
+                        </thead>
+                        <tbody className="text-[#8d9c93]">
+                            <tr className="border-t border-white/5">
+                                <td className="p-3 text-[#d8e0d8]">하루가 지난다</td>
+                                <td className="p-3 font-mono">−{ENERGY_DECAY}</td>
+                                <td className="p-3">아무것도 안 해도 든다</td>
+                            </tr>
+                            {(["info", "act", "guard"] as const).map(lane => (
+                                <tr key={lane} className="border-t border-white/5">
+                                    <td className={`p-3 ${LANE_STYLE[lane].ink}`}>
+                                        {LANE_STYLE[lane].label} 카드를 낸다
+                                    </td>
+                                    <td className="p-3 font-mono">−{COST_BY_LANE[lane]}</td>
+                                    <td className="p-3">
+                                        {lane === "info" ? "앞을 보는 일이 제일 많이 든다"
+                                            : lane === "act" ? "손을 쓰는 일"
+                                            : "웅크리는 데는 덜 든다"}
+                                    </td>
+                                </tr>
+                            ))}
+                            <tr className="border-t border-white/5">
+                                <td className="p-3 text-[#ff5ec8]">저주 카드를 낸다</td>
+                                <td className="p-3 font-mono">−{COST_BY_LANE.curse}</td>
+                                <td className="p-3">이미 벌이다</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p className="mb-8 text-[13px] leading-relaxed text-[#6d7f78]">
+                    아끼는 쪽이 공짜는 아니다 — 안 내고 넘긴 턴에도 빚은 이자로 늘고 {TOTAL_TURNS}턴이라는
+                    시계는 계속 간다. <b className="text-[#8d9c93]">아껴 오래 버틸 것인가 써서 벌 것인가</b>가
+                    이 표의 전부다.
+                </p>
+
+                <h2 className="mb-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#41686f]">
+                    결과 × 근거 — 무엇이 에너지를 올리나
                 </h2>
                 <p className="mb-3 text-[14px] leading-relaxed text-[#8d9c93]">
                     정산은 결과가 아니라 <b className="text-[#d8e0d8]">결과 × 근거</b>로 한다.
-                    <b className="text-[#d8e0d8]"> 운으로 벌어도 신뢰는 오르지 않는다</b> — 회귀해서
+                    <b className="text-[#d8e0d8]"> 운으로 벌어도 에너지는 오르지 않는다</b> — 회귀해서
                     미래를 알고 미리 팔아도 마찬가지다. 회귀자만 아는 미래는 설명할 수 없기 때문이다.
                 </p>
                 <div className="overflow-x-auto rounded-xl border border-white/10">
@@ -136,13 +189,13 @@ export default function CardsPage() {
                         <tbody className="text-[#8d9c93]">
                             <tr className="border-t border-white/5">
                                 <td className="p-3 text-[#d8e0d8]">근거 있음</td>
-                                <td className="p-3 text-[#5cf08f]">신뢰 +{TRUST_GAIN_WITH_THESIS} × 고객</td>
-                                <td className="p-3">신뢰 −{TRUST_LOSS_WITH_THESIS} × 고객</td>
+                                <td className="p-3 text-[#5cf08f]">에너지 +{ENERGY_GAIN_WITH_THESIS} × 고객</td>
+                                <td className="p-3">에너지 −{ENERGY_LOSS_WITH_THESIS} × 고객</td>
                             </tr>
                             <tr className="border-t border-white/5">
                                 <td className="p-3 text-[#d8e0d8]">근거 없음</td>
                                 <td className="p-3">그대로</td>
-                                <td className="p-3 text-[#ff5ec8]">신뢰 −{TRUST_LOSS_BLIND} × 고객</td>
+                                <td className="p-3 text-[#ff5ec8]">에너지 −{ENERGY_LOSS_BLIND} × 고객</td>
                             </tr>
                         </tbody>
                     </table>
@@ -221,14 +274,15 @@ export default function CardsPage() {
                     <Row k="전 구간" v={`${TOTAL_TURNS}턴 · 1997~2000`} />
                     <Row k="손패" v={`${HAND_SIZE}장`} />
                     <Row k="들고 나가는 덱" v={`${LOADOUT_SIZE}장 — 집에서 고른다`} />
-                    <Row k="신뢰" v={`${TRUST_START} 에서 시작 · 매 턴 −${TRUST_DECAY}`} />
+                    <Row k="에너지" v={`${ENERGY_START} 에서 시작 · 매 턴 −${ENERGY_DECAY} · 카드 −${COST_BY_LANE.guard}~${COST_BY_LANE.info}`} />
                     <Row k="루프를 끊는 것" v="빚 완납 하나뿐" />
                 </div>
             </section>
 
-            <Link href="/game" className="font-mono text-[13px] text-[#5cf08f] underline underline-offset-4">
-                ← 게임으로
-            </Link>
+            <nav className="flex gap-5 font-mono text-[13px]">
+                <Link href="/game" className="text-[#5cf08f] underline underline-offset-4">← 게임으로</Link>
+                <Link href="/game/status" className="text-[#8d9c93] underline underline-offset-4">이력</Link>
+            </nav>
         </main>
     );
 }

@@ -194,7 +194,7 @@ export function mkText(
 export interface Band { x: number; y: number; w: number; h: number }
 export interface Bands {
     portrait: boolean;
-    /** 챕터 띠 — 연·장, 신뢰 게이지, 빚. 늘 맨 위에 붙어 있다. */
+    /** 챕터 띠 — 연·장, 에너지 게이지, 빚. 늘 맨 위에 붙어 있다. */
     strip: Band;
     /** 장소 그림이 들어갈 정사각. **지금은 비어 있고 나중에 그림이 같은 자리로 온다.** */
     place: Band;
@@ -215,7 +215,7 @@ export interface Bands {
    그래서 **양보하는 순서**를 정해 둔다. 뒤로 갈수록 먼저 줄어든다:
 
      버튼 · 운용 상황 · 차트   안 줄인다 — 없으면 판이 안 굴러간다
-     챕터 띠                  40 → 28. 신뢰와 빚은 늘 보여야 하니 조금만
+     챕터 띠                  40 → 28. 에너지와 빚은 늘 보여야 하니 조금만
      장소 + 로그              88 → 34. 정사각은 행 높이를 따라 같이 준다
      종목 칩                  46 → 0.  **제일 먼저 포기한다**
 
@@ -266,7 +266,7 @@ function stackedBands(w: number, h: number): Bands {
         return got;
     };
 
-    // 1) 판을 굴리는 셋 + 신뢰·빚을 보여 주는 띠.
+    // 1) 판을 굴리는 셋 + 에너지·빚을 보여 주는 띠.
     const action0 = take(ACTION_ONE_ROW);
     const firm0 = take(FIRM_TIGHT);
     const chart0 = take(CHART_MIN);

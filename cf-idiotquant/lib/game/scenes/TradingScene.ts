@@ -16,11 +16,13 @@
 // 있는 수를 넘었다. 12턴짜리 판이라 통째로 그려도 싸고, 어긋날 자리가 없어진다.
 
 import Phaser from "phaser";
-import { StockEngine, SEED_CASH, TRUST_MAX, regimeLabel } from "@/lib/game/core/StockEngine";
+import { StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel } from "@/lib/game/core/StockEngine";
 import { CHAPTERS } from "@/lib/game/core/chapters";
 import { DeckManager, HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
 import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
-import { decay, clampTrust, trustDelta, trustReason } from "@/lib/game/core/trust";
+import {
+    decay, clampEnergy, energyDelta, energyReason, costOf, canPlay, ENERGY_DECAY,
+} from "@/lib/game/core/energy";
 import {
     SITUATION_BY_ID, EMPTY_FACTS, newlyEarned, nextUp,
     type SituationFacts,
@@ -28,6 +30,7 @@ import {
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
 } from "@/lib/game/core/progress";
+import { recordChapter, recordRun } from "@/lib/game/core/career";
 import {
     cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
 } from "@/lib/game/core/interlude";
@@ -102,7 +105,7 @@ export class TradingScene extends Phaser.Scene {
     private read: MarketRead | null = null;
     /** 이번 챕터에 새로 겪은 것. 챕터 결산에서 기억으로 넘어간다. */
     private earnedThisChapter: string[] = [];
-    /** 떠난 고객. 신뢰가 바닥을 칠 때 한 명씩 잃는다. */
+    /** 떠난 고객. 에너지가 바닥을 칠 때 한 명씩 잃는다. */
     private gone: string[] = [];
     /** 공원에 왔다면 왜 왔는가. */
     private ending: EndReason | null = null;
@@ -329,7 +332,7 @@ export class TradingScene extends Phaser.Scene {
     /* ── 챕터 띠 ──────────────────────────────────────── */
 
     /**
-     * 연·장, 신뢰 게이지, 빚. **셋 다 늘 보여야 한다.**
+     * 연·장, 에너지 게이지, 빚. **셋 다 늘 보여야 한다.**
      *
      * @param withBoard 칩 줄이 빠진 격자에서 여기에 시세판 여는 길을 남긴다.
      *   짧은 화면에서 칩이 제일 먼저 양보하는데, 그렇다고 아홉 종목에 닿는 길까지
@@ -341,18 +344,19 @@ export class TradingScene extends Phaser.Scene {
         this.rect(b.x, b.y, b.w, b.h - 1, 0x2f4f56, 1);
         const cy = b.y + b.h / 2 - FS.xs / 2;
 
-        // **「신뢰」에 닿기 전에 끊는다.** 예전에는 폭을 안 재고 그려서, 턴이 두 자리가
-        // 되는 순간(1/12) 「1/12신뢰」로 붙어 둘 다 안 읽혔다.
-        this.textFit(PAD, cy, label, FS.xs, S.ink, 0, b.w - 208);
+        // **「에너지」에 닿기 전에 끊는다.** 예전에는 폭을 안 재고 그려서, 턴이 두 자리가
+        // 되는 순간(1/12) 「1/12에너지」로 붙어 둘 다 안 읽혔다.
+        this.textFit(PAD, cy, label, FS.xs, S.ink, 0, b.w - 216);
 
-        // 신뢰 — 열 칸. 낮아지면 색이 금색을 거쳐 분홍으로 간다.
-        const trust = this.engine.player.trust;
-        const on = Math.round((trust / TRUST_MAX) * 10);
+        // 에너지 — 열 칸. **화면에 게이지는 이것 하나뿐이다.** 낮아지면 색이 금색을
+        // 거쳐 분홍으로 가고, 0 이면 그 자리에서 판이 끝난다.
+        const energy = this.engine.player.energy;
+        const on = Math.round((energy / ENERGY_MAX) * 10);
         const bw = 6, gap = 2;
         const barsW = 10 * bw + 9 * gap;
         const bx = b.w - PAD - barsW - 78;
-        this.text(bx - 26, cy, "신뢰", FS.xs, "#9fc0c4");
-        const col = trust <= 10 ? C.danger : trust <= 30 ? C.gold : C.up;
+        this.text(bx - 34, cy, "에너지", FS.xs, "#9fc0c4");
+        const col = energy <= 10 ? C.danger : energy <= 30 ? C.gold : C.up;
         for (let i = 0; i < 10; i++) {
             this.rect(bx + i * (bw + gap), b.y + 14, bw, 12, i < on ? col : 0x1b3238, 1);
         }
@@ -801,8 +805,11 @@ export class TradingScene extends Phaser.Scene {
             onPick: uid => this.onPickCard(uid),
         });
         this.add.existing(this.hand);
-        this.hand.setHand(this.cards, card => this.deck.isIdle(card, {
-            holdings: holds, cash: this.engine.player.cash,
+        const left = this.engine.player.energy;
+        this.hand.setHand(this.cards, card => ({
+            idle: this.deck.isIdle(card, { holdings: holds, cash: this.engine.player.cash }),
+            cost: costOf(card.lane),
+            afford: canPlay(left, card.lane),
         }));
     }
 
@@ -838,7 +845,7 @@ export class TradingScene extends Phaser.Scene {
                 // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
                 sub: done
                     ? `${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`
-                    : "기다린다 · 신뢰 −3",
+                    : `기다린다 · 에너지 −${ENERGY_DECAY}`,
                 primary: done,
                 on: () => this.endTurn(),
             },
@@ -929,7 +936,7 @@ export class TradingScene extends Phaser.Scene {
      * 권한다. **한 턴에 한 번뿐이다** — 고객이 한 명이니까.
      *
      * 근거가 없으면 고객이 거절할 수 있다. 박 대리는 거의 거절하고 어머니는 무조건 받는다.
-     * 거절당하면 아무 일도 안 일어나고 신뢰만 자연 감소한다.
+     * 거절당하면 아무 일도 안 일어나고 에너지만 자연 감소한다.
      */
     private recommend(id: string): void {
         if (this.recommendedThisTurn || !this.client) return;
@@ -983,10 +990,24 @@ export class TradingScene extends Phaser.Scene {
         this.redraw();
     }
 
+    /**
+     * 카드를 낸다. **값은 여기서, 그 자리에서 빠진다** — 턴 정산까지 미루지 않는다.
+     *
+     * 미루면 화면의 게이지와 손패의 「낼 수 있는가」가 한 턴 동안 어긋난다. 3 짜리를
+     * 내고도 게이지가 그대로면 다음 판단이 틀린 값 위에서 이뤄진다.
+     */
     private onPickCard(uid: string): void {
-        if (!this.deck.playCard(uid)) return;
         const card = this.cards.find(c => c.uid === uid);
-        if (card) this.pushLog(`「${card.name}」 — ${card.scene}`, "card");
+        // 손패가 이미 흐리게 막아 두지만, 규칙은 화면이 아니라 여기서 잠근다.
+        if (card && !canPlay(this.engine.player.energy, card.lane)) return;
+        if (!this.deck.playCard(uid)) return;
+        if (card) {
+            const cost = costOf(card.lane);
+            if (cost > 0) {
+                this.engine.player.energy = clampEnergy(this.engine.player.energy - cost, ENERGY_MAX);
+            }
+            this.pushLog(`「${card.name}」 — ${card.scene}${cost > 0 ? ` (에너지 −${cost})` : ""}`, "card");
+        }
         this.read = this.engine.read(this.deck.buildBuff());
         this.redraw();
     }
@@ -1005,7 +1026,7 @@ export class TradingScene extends Phaser.Scene {
         this.redraw();
     }
 
-    /** 다음 턴으로. **여기서 주가가 움직이고 신뢰가 정산된다.** */
+    /** 다음 턴으로. **여기서 주가가 움직이고 에너지가 정산된다.** */
     private endTurn(): void {
         // 아무것도 안 하고 넘긴 턴은 기다린 것으로 센다. **버튼이 아니라 행동으로 센다** —
         // 예전에는 「기다리시죠」로 넘긴 것만 세어서, 똑같이 흘려보낸 턴인데도 「다음」을
@@ -1030,7 +1051,7 @@ export class TradingScene extends Phaser.Scene {
             this.pushLog(`손절이 걸렸다. ${this.engine.stockOf(id)?.name ?? ""} 전부 팔렸다.`, "warn");
         }
 
-        this.settleTrust(buff);
+        this.settleEnergy(buff);
         this.deck.consumeTurn(buff);
         this.pending = null;
         this.engine.advanceTurn();
@@ -1042,23 +1063,23 @@ export class TradingScene extends Phaser.Scene {
     }
 
     /**
-     * 신뢰 정산 — **결과가 아니라 결과 × 근거.**
+     * 에너지 정산 — **결과가 아니라 결과 × 근거.**
      *
      * 운으로 벌어도 오르지 않는다. 그 한 칸이 이 게임의 논지다.
      */
-    private settleTrust(buff: TurnBuff): void {
-        let trust = this.engine.player.trust;
+    private settleEnergy(buff: TurnBuff): void {
+        let energy = this.engine.player.energy;
 
         if (this.pending) {
             const { thesis, client, id, cost } = this.pending;
             const value = this.engine.positionOf(id).shares * this.engine.priceOf(id);
             const gained = value > cost;
-            let d = trustDelta({ hadThesis: thesis !== null, gained, client });
+            let d = energyDelta({ hadThesis: thesis !== null, gained, client });
             if (d < 0 && thesis !== null && buff.softenLoss) d = Math.round(d / 2);
 
-            trust += d;
-            const why = trustReason({ hadThesis: thesis !== null, gained, client });
-            this.pushLog(`${client.name} — ${why}. 신뢰 ${d >= 0 ? "+" : ""}${d}`,
+            energy += d;
+            const why = energyReason({ hadThesis: thesis !== null, gained, client });
+            this.pushLog(`${client.name} — ${why}. 에너지 ${d >= 0 ? "+" : ""}${d}`,
                 d > 0 ? "up" : d < 0 ? "warn" : "turn");
 
             if (thesis !== null && !gained) this.facts.thesisLosses += 1;
@@ -1070,11 +1091,11 @@ export class TradingScene extends Phaser.Scene {
             }
         }
 
-        if (!buff.noDecay) trust = decay(trust);
-        this.engine.player.trust = clampTrust(trust, TRUST_MAX);
+        if (!buff.noDecay) energy = decay(energy);
+        this.engine.player.energy = clampEnergy(energy, ENERGY_MAX);
 
-        // 신뢰가 바닥에 가까우면 한 사람이 떠난다. **떠난 고객은 안 돌아온다.**
-        if (this.engine.player.trust <= 15 && this.client && this.gone.length < CLIENTS.length - 1) {
+        // 에너지가 바닥에 가까우면 한 사람이 떠난다. **떠난 고객은 안 돌아온다.**
+        if (this.engine.player.energy <= 15 && this.client && this.gone.length < CLIENTS.length - 1) {
             if (!this.gone.includes(this.client.id)) {
                 this.gone.push(this.client.id);
                 this.pushLog(`${this.client.name}이(가) 맡긴 돈을 거둬 갔다.`, "warn");
@@ -1095,7 +1116,7 @@ export class TradingScene extends Phaser.Scene {
 
     private finishChapter(): void {
         // 챕터 끝의 사실 — 조건 몇 개가 이 값을 본다.
-        this.facts.bestChapterEndTrust = Math.max(this.facts.bestChapterEndTrust, this.engine.player.trust);
+        this.facts.bestChapterEndEnergy = Math.max(this.facts.bestChapterEndEnergy, this.engine.player.energy);
         this.facts.mostHoldingsAtChapterEnd = Math.max(
             this.facts.mostHoldingsAtChapterEnd, Object.keys(this.engine.player.positions).length);
         if (this.engine.isRuined) this.facts.everRuined = true;
@@ -1107,6 +1128,8 @@ export class TradingScene extends Phaser.Scene {
         const sum = this.engine.endChapter(this.earnedThisChapter);
 
         this.memory = remember(this.memory, sum, idx);
+        // 이력은 **챕터 단위**로 접는다 — 판을 끝까지 안 가고 창을 닫아도 남는다.
+        this.memory.career = recordChapter(this.memory.career, sum);
         this.memory.facts = { ...this.facts };
         saveMemory(this.memory);
         this.earnedThisChapter = [];
@@ -1114,7 +1137,7 @@ export class TradingScene extends Phaser.Scene {
 
         const end = endReasonOf({
             debt: this.engine.player.debt,
-            trust: this.engine.player.trust,
+            energy: this.engine.player.energy,
             ruined: this.engine.isRuined,
             finalChapterDone: this.engine.isFinalChapter,
         });
@@ -1127,8 +1150,16 @@ export class TradingScene extends Phaser.Scene {
         this.go("home", cutOnChapterEnd(done, sum, money));
     }
 
+    /**
+     * 판이 끝났다. **한 판에 정확히 한 번 지나는 자리라 이력을 여기서 접는다.**
+     *
+     * `goBack()` 에서 접으면 이긴 판(끝 화면으로 가는 길)이 빠지고, 끝 화면의 「처음부터」가
+     * 다시 `goBack()` 을 부르므로 같은 판을 두 번 세게 된다.
+     */
     private toPark(reason: EndReason): void {
         this.ending = reason;
+        this.memory.career = recordRun(this.memory.career, reason, this.facts, this.engine.player.debt);
+        saveMemory(this.memory);
         this.go("park", cutToPark(this.engine.chapter, reason, this.ENDINGS[reason].title));
     }
 
@@ -1137,7 +1168,7 @@ export class TradingScene extends Phaser.Scene {
     private readonly ENDINGS: Record<EndReason, { title: string; lines: string[] }> = {
         debtCleared: { title: "갚았다", lines: ["빚이 0 이 됐다.", "공원을 지나 어디로든 갈 수 있다.", "루프가 끝났다."] },
         debtRemains: { title: "아직", lines: ["2000년이 지났고 빚은 남았다.", "끝나지 않았다.", "벤치에 앉아 눈을 감으면 — 다시 1997년이다."] },
-        trustLost: { title: "폐업", lines: ["이제 아무도 나에게 맡기지 않는다.", "낮의 공원에는 나 같은 사람이 많았다.", "눈을 감으면 다시 1997년이다."] },
+        burnout: { title: "소진", lines: ["더는 그 자리에 앉아 있을 힘이 없었다.", "낮의 공원에는 나 같은 사람이 많았다.", "눈을 감으면 다시 1997년이다."] },
         ruined: { title: "전부", lines: ["맡은 돈을 다 날렸다.", "설명할 것이 남아 있지 않았다.", "눈을 감으면 다시 1997년이다."] },
     };
 
@@ -1178,7 +1209,7 @@ export class TradingScene extends Phaser.Scene {
         const ends: Array<[EndReason, string]> = [
             ["debtCleared", "빚 완납 — 루프를 벗어난다"],
             ["debtRemains", "빚 남음 — 1997 로"],
-            ["trustLost", "신뢰 0 — 1997 로"],
+            ["burnout", "에너지 0 — 1997 로"],
             ["ruined", "자본잠식 — 1997 로"],
         ];
         const cw = (this.W - PAD * 2 - 2) / 2;
