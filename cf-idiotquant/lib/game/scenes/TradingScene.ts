@@ -35,7 +35,7 @@ import {
     cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
-import { preloadArt, sliceArt, drawArt, type ArtKey } from "@/lib/game/ui/art";
+import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib/game/ui/art";
 import type { EndReason, MarketRead, StrategyCard, TurnBuff } from "@/lib/game/core/types";
 import { NO_BUFF } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
@@ -43,7 +43,7 @@ import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
 import {
-    C, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
+    BTN, C, CLIENT_ROW, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
@@ -254,6 +254,13 @@ export class TradingScene extends Phaser.Scene {
 
     private keep<T extends Phaser.GameObjects.GameObject>(o: T): T { this.junk.push(o); return o; }
 
+    /** 그려 보고 안 들어가서 무르는 자리. 폭은 그려 봐야 알 수 있다. */
+    private drop(o: Phaser.GameObjects.GameObject): void {
+        const at = this.junk.indexOf(o);
+        if (at >= 0) this.junk.splice(at, 1);
+        o.destroy();
+    }
+
     private text(x: number, y: number, s: string, size: number, color: string, origin = 0): Phaser.GameObjects.Text {
         const t = mkText(this, x, y, s, { fontFamily: fontOf(this), fontSize: `${size}px`, color });
         t.setOrigin(origin, 0);
@@ -334,44 +341,37 @@ export class TradingScene extends Phaser.Scene {
     /**
      * 연·장, 에너지 게이지, 빚. **셋 다 늘 보여야 한다.**
      *
-     * @param withBoard 칩 줄이 빠진 격자에서 여기에 시세판 여는 길을 남긴다.
-     *   짧은 화면에서 칩이 제일 먼저 양보하는데, 그렇다고 아홉 종목에 닿는 길까지
-     *   같이 사라지면 안 된다.
+     * 왼쪽에 언제인지, 오른쪽에 내가 어떤지. 그 사이는 비운다 — 여기에 시세판 버튼까지
+     * 끼워 넣던 때가 있었는데, 한 줄에 넷이 서니 셋 다 잘렸다. 시세판으로 가는 길은
+     * 아래 버튼 하나로 충분하다.
      */
-    private drawStrip(label: string, withBoard = false): void {
+    private drawStrip(label: string): void {
         const b = this.bands.strip;
-        this.rect(b.x, b.y, b.w, b.h, C.line, 1);
-        this.rect(b.x, b.y, b.w, b.h - 1, 0x2f4f56, 1);
+        // 띠는 면이 아니라 **아래 선 하나**로 가른다. 면을 칠하면 그 자체로 판이 하나
+        // 더 서고, 화면에 판이 많은 것이 이 UI 의 병이었다.
+        this.rect(b.x, b.y + b.h - 1, b.w, 1, C.line, 1);
         const cy = b.y + b.h / 2 - FS.xs / 2;
-
-        // **「에너지」에 닿기 전에 끊는다.** 예전에는 폭을 안 재고 그려서, 턴이 두 자리가
-        // 되는 순간(1/12) 「1/12에너지」로 붙어 둘 다 안 읽혔다.
-        this.textFit(PAD, cy, label, FS.xs, S.ink, 0, b.w - 216);
 
         // 에너지 — 열 칸. **화면에 게이지는 이것 하나뿐이다.** 낮아지면 색이 금색을
         // 거쳐 분홍으로 가고, 0 이면 그 자리에서 판이 끝난다.
         const energy = this.engine.player.energy;
         const on = Math.round((energy / ENERGY_MAX) * 10);
-        const bw = 6, gap = 2;
+        const bw = 5, gap = 2;
         const barsW = 10 * bw + 9 * gap;
-        const bx = b.w - PAD - barsW - 78;
-        this.text(bx - 34, cy, "에너지", FS.xs, "#9fc0c4");
+
+        // 빚부터 자리를 잡는다 — 자릿수가 그때그때 달라서, 먼저 재야 게이지가 안 밀린다.
+        const debt = this.engine.player.debt;
+        const debtT = this.text(b.x + b.w - PAD, cy, debt > 0 ? `−${money(debt)}` : "빚 없음",
+            FS.xs, debt > 0 ? S.down : S.up, 1);
+        const bx = b.x + b.w - PAD - debtT.displayWidth - 12 - barsW;
         const col = energy <= 10 ? C.danger : energy <= 30 ? C.gold : C.up;
         for (let i = 0; i < 10; i++) {
-            this.rect(bx + i * (bw + gap), b.y + 14, bw, 12, i < on ? col : 0x1b3238, 1);
+            this.rect(bx + i * (bw + gap), b.y + b.h / 2 - 5, bw, 10, i < on ? col : 0x1b3238, 1);
         }
-        // 빚 — 게이지가 아니라 숫자 한 줄. 0 이 되는 것이 게임 전체의 목표다.
-        const debt = this.engine.player.debt;
-        const right = withBoard ? b.w - PAD - 54 : b.w - PAD;
-        this.text(right, cy, debt > 0 ? `−${money(debt)}` : "빚 없음",
-            FS.xs, debt > 0 ? S.down : S.up, 1);
 
-        if (withBoard) {
-            const bw = 48, bx = b.w - PAD - bw, by = b.y + 6;
-            this.rect(bx, by, bw, b.h - 12, 0x15242a, 1);
-            this.text(bx + bw / 2, by + (b.h - 12) / 2 - FS.xs / 2, "시세판", FS.xs, "#8fb6bd", 0.5);
-            this.tap(bx, by, bw, b.h - 12, () => this.openBoard());
-        }
+        // **게이지에 닿기 전에 끊는다.** 예전에는 폭을 안 재고 그려서, 턴이 두 자리가
+        // 되는 순간(1/12) 라벨과 게이지가 붙어 둘 다 안 읽혔다.
+        this.textFit(b.x + PAD, cy, label, FS.xs, S.inkDim, 0, bx - b.x - PAD - 8);
     }
 
     /* ── 시작과 끝 ────────────────────────────────────── */
@@ -612,196 +612,102 @@ export class TradingScene extends Phaser.Scene {
 
     /* ── 회사 ─────────────────────────────────────────── */
 
+    /**
+     * 회사 화면 — **판 넷.** 언제인가 / 무슨 일이 있었나 / 무엇을 낼까 / 무엇을 할까.
+     *
+     * 예전에는 여덟이었다. 챕터 띠 · 장소 정사각 · 로그 · 종목 칩 줄 · 차트 · 회사
+     * 정보판 · 손패 · 버튼이 저마다 테두리를 두르고 세로로 쌓여서, 화면을 봐도
+     * **무엇이 중요한지가 없었다.** 셋을 덜어 냈다(`ui/theme.ts` 의 `Bands` 주석).
+     */
     private drawOffice(): void {
         const e = this.engine;
         const ch = e.chapter;
         const half = e.player.currentTurn <= 6 ? "상" : "하";
-        // 칩 줄이 없는 격자에서는 챕터 띠가 시세판 여는 길을 대신 든다.
-        const noChips = this.bands.chips.h <= 0;
-        this.drawStrip(`${ch.year}. ${half}반기 · ${ch.title}   ${e.player.currentTurn}/${e.player.maxTurns}`, noChips);
-
-        this.drawPlace();
+        this.drawStrip(`${ch.year} ${half}반기 · ${e.player.currentTurn}/${e.player.maxTurns}`);
         this.drawLog();
-        this.drawChips();
-        this.drawChart();
-        this.drawFirm();
+        this.drawHand();
         this.drawActions();
     }
 
     /**
-     * 장소 그림 자리 — **누르면 시세판이 열린다.**
+     * 무슨 일이 있었나 — **고객 한 줄과 그 아래 1인칭 기록.**
      *
-     * 초기 구현에는 그림이 없어 테두리와 글자뿐이다. 그래서 `▸ 시세판` 을 함께 적는다 —
-     * 누를 수 있다는 것이 안 보이면 기능에 닿지 못한다. 그림이 들어오면 그 안에
-     * 모니터가 그려지고 이 글자는 빠진다.
+     * 고객이 여기로 온 이유: 「누가 앞에 앉았나」는 지나간 일이 아니라 지금의 상황이고,
+     * 로그의 맨 윗줄로 읽는 것이 자연스럽다. 예전에는 회사 정보판 안에 들어 있어서
+     * 손패와 같은 상자를 썼는데, 고객은 내가 만지는 것이 아니다.
      */
-    private drawPlace(): void {
-        const b = this.bands.place;
-        if (b.h <= 0) return;
-        this.rect(b.x, b.y, b.w, b.h, 0x0e1618, 1);
-
-        // 그림이 들어왔다 — 책상 위 CRT 두 대. 주석이 예고하던 그 모니터다.
-        const art = drawArt(this, "office", b.x, b.y, b.w, b.h);
-        for (const o of art ?? []) this.keep(o);
-
-        const g = this.add.graphics();
-        g.lineStyle(1, 0x23343a, 1).strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
-        this.keep(g);
-
-        // 그림이 있으면 이름은 빼고 **누를 수 있다는 표시만** 남긴다 — 그림 위에 글자를
-        // 두 줄 얹으면 둘 다 안 읽힌다.
-        const twoLines = b.h >= 56;
-        if (art) {
-            if (twoLines) this.text(b.x + b.w / 2, b.y + b.h - 16, "▸ 시세판", FS.xs, S.gold, 0.5);
-        } else {
-            // 정사각이 작아지면 글자도 같이 줄인다. 두 줄이 안 들어가면 이름만 남긴다.
-            this.text(b.x + b.w / 2, b.y + b.h / 2 - (twoLines ? 14 : FS.xs / 2),
-                "회사", twoLines ? FS.md : FS.xs, S.gold, 0.5);
-            if (twoLines) this.text(b.x + b.w / 2, b.y + b.h / 2 + 6, "▸ 시세판", FS.xs, "#3b4c50", 0.5);
-        }
-        this.tap(b.x, b.y, b.w, b.h, () => this.openBoard());
-    }
-
     private drawLog(): void {
         const b = this.bands.log;
         if (b.h <= 0) return;
-        this.logView = new GameLog(this, { x: b.x, y: b.y, width: b.w, height: b.h });
+
+        // **사무실 그림이 이 띠의 배경이다.** 예전에는 100px 짜리 정사각으로 왼쪽 위에
+        // 박혀 있어서 무엇을 그린 것인지 안 보였다. 로그는 아래에서부터 쌓이므로 위쪽이
+        // 늘 비는데, 그 자리를 그림이 받는다 — 판을 하나 더 세우지 않고.
+        const art = drawArt(this, "office", b.x, b.y, b.w, b.h,
+            { veil: ART_VEIL_BACK, cover: true });
+        for (const o of art ?? []) this.keep(o);
+
+        const c = this.client;
+        const rowH = Math.min(CLIENT_ROW, b.h);
+        // 왼쪽 끝의 색 막대 하나가 「사람이 앉아 있다」를 말한다. 상자를 두르지 않는다.
+        this.rect(b.x + PAD, b.y + 5, 2, rowH - 10, c ? C.gold : C.down, 1);
+
+        // **이름과 한마디는 각자 한 줄씩이다.** 한 줄에 붙이면 폭이 몇 픽셀 모자라
+        // 한마디가 통째로 빠지는데, 고객을 사람으로 만드는 것이 그 한마디다.
+        // 한 줄에 넣고 `textFit` 으로 줄이는 길도 있었지만 그러면 로그보다 작아진다.
+        const tx = b.x + PAD + 8;
+        const room = b.x + b.w - PAD - tx;
+        if (!c) {
+            this.text(tx, b.y + rowH / 2 - FS.xs / 2, "오늘은 아무도 앉지 않았다.", FS.xs, S.down);
+        } else if (rowH >= 34) {
+            this.textFit(tx, b.y + 4, c.name, FS.xs, S.ink, 0, room);
+            this.textFit(tx, b.y + 21, c.blurb, FS.xs, S.inkDim, 0, room);
+        } else {
+            this.textFit(tx, b.y + rowH / 2 - FS.xs / 2, c.name, FS.xs, S.ink, 0, room);
+        }
+
+        const logY = b.y + rowH;
+        const logH = b.h - rowH;
+        if (logH <= 0) return;
+        this.logView = new GameLog(this, { x: b.x, y: logY, width: b.w, height: logH });
         this.add.existing(this.logView);
         this.logView.setEntries(this.entries.slice(-LOG_KEEP));
     }
 
-    /** 종목 칩 줄 — 바로가기 다섯 + 시세판을 여는 칩. */
-    private drawChips(): void {
-        const b = this.bands.chips;
-        if (b.h <= 0) return;   // 짧은 격자에서는 양보했다 — 챕터 띠가 시세판을 든다
-        this.rect(b.x, b.y, b.w, b.h, C.screen, 1);
-
-        const listed = this.engine.listed;
-        // 보유 중인 것과 지금 보고 있는 것이 먼저 온다 — 내 자리가 눈에 먼저 들어와야 한다.
-        const sorted = [...listed].sort((x, y) => {
-            const hx = this.engine.positionOf(x.id).shares > 0 ? 1 : 0;
-            const hy = this.engine.positionOf(y.id).shares > 0 ? 1 : 0;
-            if (hx !== hy) return hy - hx;
-            if (x.id === this.engine.focus) return -1;
-            if (y.id === this.engine.focus) return 1;
-            return y.listedAt - x.listedAt;
-        });
-        const shown = sorted.slice(0, CHIP_SLOTS);
-        const more = listed.length - shown.length;
-
-        const gap = 5;
-        const cw = (b.w - PAD * 2 - gap * CHIP_SLOTS) / (CHIP_SLOTS + 1);
-        const ch = b.h - 10;
-        for (let i = 0; i < CHIP_SLOTS + 1; i++) {
-            const x = PAD + i * (cw + gap);
-            const y = b.y + 5;
-            // 줄이 낮으면 한 줄만 쓴다. 두 줄을 밀어 넣으면 글자가 서로 겹쳐
-            // 둘 다 안 읽힌다 — 눕힌 화면에서 실제로 그랬다.
-            const twoLines = ch >= 34;
-            if (i === CHIP_SLOTS) {
-                // **「시세판」이라고 두 번 쓰지 않는다.** 버튼 띠에 같은 이름의 버튼이
-                // 있고, 이 칸은 종목 칩 줄 끝에 있어 「전체」만으로 뜻이 선다.
-                this.rect(x, y, cw, ch, 0x15242a, 1);
-                this.textFit(x + cw / 2, y + ch / 2 - FS.xs / 2,
-                    more > 0 ? `＋${more}` : "전체", FS.xs, "#8fb6bd", 0.5, cw - 4);
-                this.tap(x, y, cw, ch, () => this.openBoard());
-                continue;
-            }
-            const s = shown[i];
-            if (!s) { this.rect(x, y, cw, ch, 0x0d1315, 1); continue; }
-
-            const sel = s.id === this.engine.focus;
-            const held = this.engine.positionOf(s.id).shares > 0;
-            this.rect(x, y, cw, ch, sel ? 0x1a2a2e : 0x111a1c, 1);
-            if (sel) {
-                const g = this.add.graphics();
-                g.lineStyle(1, C.gold, 1).strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
-                this.keep(g);
-            }
-            if (held) this.rect(x + cw - 7, y + 3, 4, 4, C.gold, 1);
-
-            const pct = this.engine.unrealizedPct(s.id);
-            const last = s.history[s.history.length - 1];
-            const prev = s.history[s.history.length - 2];
-            const move = last && prev ? ((last.c - prev.c) / prev.c) * 100 : 0;
-            const v = held ? pct : move;
-            this.textFit(x + cw / 2, y + (twoLines ? 4 : ch / 2 - FS.xs / 2), s.name.slice(0, 2),
-                FS.xs, sel ? S.gold : "#9aada6", 0.5, cw - 4);
-            if (twoLines) {
-                this.textFit(x + cw / 2, y + ch - 16, `${v >= 0 ? "+" : ""}${v.toFixed(0)}`,
-                    FS.xs, v >= 0 ? S.up : S.down, 0.5, cw - 4);
-            }
-            this.tap(x, y, cw, ch, () => { this.engine.setFocus(s.id); this.redraw(); });
-        }
-    }
-
-    private drawChart(): void {
-        const b = this.bands.chart;
-        this.chart = new PixelCandleChart(this, { x: b.x, y: b.y, width: b.w, height: b.h });
-        this.add.existing(this.chart);
-        const s = this.engine.focusStock;
-        this.chart.render(s.history, this.read);
-
-        // **가운데에 쓴다.** 차트가 왼쪽 위·아래와 오른쪽 아래에 가격 눈금을 그리므로,
-        // 모서리에 붙이면 숫자와 겹쳐 둘 다 안 읽힌다.
-        this.textFit(b.x + b.w / 2, b.y + 5, `${s.name} · β ${s.beta.toFixed(1)}`,
-            FS.xs, "#9aada6", 0.5, b.w - PAD * 2);
-        const d = this.read?.regime ? this.read.regimeDrift : null;
-        if (d !== null) {
-            this.textFit(b.x + b.w / 2, b.y + b.h - FS.xs - 5,
-                `${regimeLabel(this.read!.regime!)} · 턴당 ${d >= 0 ? "+" : ""}${d.toFixed(1)}%`,
-                FS.xs, d >= 0 ? S.up : S.down, 0.5, b.w - PAD * 2);
-        }
-    }
-
-    /** 운용 상황 — 고객 한 명, 내 처지 한 줄, 근거 한 줄, 그리고 손패. */
-    private drawFirm(): void {
-        const b = this.bands.firm;
-        // **좌표는 전부 띠 상대값이다.** 가로(두 칸)에서 이 띠는 오른쪽 절반에 있어서,
-        // 절대 `PAD` 로 적으면 내용이 왼쪽 칸의 차트 위에 겹쳐 그려진다.
+    /**
+     * 무엇을 낼까 — **근거·계좌 한 줄과 카드 셋.**
+     *
+     * 예전 이름은 `drawFirm` 이었고, 고객 상자 · 계좌 두 줄 · 근거 상자 · 손패를 밝은
+     * 회색 판 하나에 다 담았다. 그 회색(`0xa7b2a9`)은 팔레트에 없는 색이라 어두운
+     * 화면에 덩어리로 떠 있었다. 지금은 **판이 없다** — 한 줄과 카드뿐이다.
+     */
+    private drawHand(): void {
+        const b = this.bands.hand;
+        if (b.h <= 0) return;
+        // **좌표는 전부 띠 상대값이다.** 가로(두 칸)에서 이 띠는 오른쪽 칸에 있어서,
+        // 절대 `PAD` 로 적으면 왼쪽 칸의 로그 위에 겹쳐 그려진다.
         const x0 = b.x + PAD;
-        const iw = b.w - PAD * 2;
         const xr = b.x + b.w - PAD;
 
-        this.rect(b.x, b.y, b.w, b.h, 0xa7b2a9, 1);
-        this.rect(b.x, b.y, b.w, 2, 0xd8e0d8, 1);
-
-        let y = b.y + 8;
-
-        // 고객 — 매 턴 한 명이 앞에 앉는다.
-        const c = this.client;
-        const clientH = Math.min(46, Math.max(28, Math.round(b.h * 0.17)));
-        this.rect(x0, y, iw, clientH, 0x94a096, 1);
-        this.rect(x0, y, 3, clientH, c ? C.line : C.down, 1);
-        if (c) {
-            this.textFit(x0 + 9, y + 5, c.name, FS.xs, "#101614", 0, iw - 18);
-            if (clientH >= 40) this.textFit(x0 + 9, y + 23, c.blurb, FS.xs, "#26332c", 0, iw - 18);
-        } else {
-            this.text(x0 + 9, y + clientH / 2 - FS.xs / 2, "아무도 앉지 않았다.", FS.xs, "#7a2c1b");
-        }
-        y += clientH + 8;
-
-        // 내 처지 한 줄.
-        const eq = this.engine.equity;
-        this.text(x0, y, "맡은 돈", FS.xs, "#3c4844");
-        this.text(x0 + 52, y, money(eq), FS.xs, eq >= SEED_CASH ? "#1d5c34" : "#8a2f1e");
-        const holds = Object.keys(this.engine.player.positions).length;
-        this.text(xr, y, `보유 ${holds}종목`, FS.xs, "#3c4844", 1);
-        y += 22;
-
-        // 근거 — 이번 턴에 무엇을 근거로 대고 있는가.
         const buff = this.deck.buildBuff();
         const th = buff.thesis;
-        this.rect(x0, y, iw, 24, th ? 0x7f9a86 : 0x8f9b91, 1);
-        this.text(x0 + 8, y + 6, "근거", FS.xs, "#3c4844");
-        this.text(x0 + 40, y + 6, th ?? (buff.noThesis ? "저주에 막혔다" : "없음"),
-            FS.xs, th ? "#123d24" : "#7a2c1b");
-        y += 30;
+        const eq = this.engine.equity;
+        const holds = Object.keys(this.engine.player.positions).length;
 
-        // 손패.
-        const handH = b.y + b.h - y - 8;
+        // 한 줄에 둘. 왼쪽이 이번 턴의 근거, 오른쪽이 내 계좌다. 근거는 색으로 갈린다 —
+        // 있으면 초록, 없으면 흐린 글씨. 상자를 두르면 그것대로 판이 하나 더 선다.
+        const y = b.y + 6;
+        const acct = this.text(xr, y, `${money(eq)} · 보유 ${holds}`, FS.xs,
+            eq >= SEED_CASH ? S.inkDim : S.down, 1);
+        this.textFit(x0, y,
+            th ? `근거 · ${th}` : (buff.noThesis ? "근거 · 저주에 막혔다" : "근거 없음"),
+            FS.xs, th ? S.up : "#5c6b65", 0, xr - acct.displayWidth - 10 - x0);
+
+        const top = y + FS.xs + 8;
+        const handH = b.y + b.h - top;
+        if (handH <= 0) return;
         this.hand = new CardHandContainer(this, {
-            x: b.x, y, width: b.w, height: handH,
+            x: b.x + PAD, y: top, width: b.w - PAD * 2, height: handH,
             onPick: uid => this.onPickCard(uid),
         });
         this.add.existing(this.hand);
@@ -811,6 +717,10 @@ export class TradingScene extends Phaser.Scene {
             cost: costOf(card.lane),
             afford: canPlay(left, card.lane),
         }));
+        // 이번 턴에 이미 낸 장은 **카드 자신이 안다**(`isUsed`). 씬이 따로 기억하면
+        // 회전으로 다시 그릴 때 둘이 어긋난다.
+        const used = this.cards.find(c => c.isUsed);
+        if (used) this.hand.lock(used.uid);
     }
 
     /** 버튼은 동작이 아니라 **내가 하는 말**이다. */
@@ -861,14 +771,13 @@ export class TradingScene extends Phaser.Scene {
         band?: Band,
     ): void {
         const b = band ?? this.bands.action;
-        this.rect(b.x, b.y, b.w, b.h, 0xa7b2a9, 1);
-        this.rect(b.x, b.y, b.w, 2, 0x4e5a53, 1);
+        // **띠에 면을 안 칠한다.** 예전에는 밝은 회색(`0xa7b2a9`)으로 통째로 칠해서,
+        // 어두운 화면 아래에 회색 덩어리가 붙어 있었다. 지금은 위 선 하나로 가른다.
+        this.rect(b.x, b.y, b.w, 1, C.line, 1);
 
-        const gap = 7;
+        const gap = 8;
         // **몇 개를 세우느냐로 칸을 나눈다.** 4칸 격자에 둘만 넣으면 왼쪽 절반에 몰리고
         // 칸이 87px 로 좁아져 「여섯 장 고른다」가 줄어든다.
-        //
-        // 두 줄 배치는 없앴다 — 이제 어느 화면도 버튼이 둘을 넘지 않는다.
         const live = defs.filter(d => d.label).length;
         const cols = Math.max(1, live);
         const cw = (b.w - PAD * 2 - gap * (cols - 1)) / cols;
@@ -879,15 +788,21 @@ export class TradingScene extends Phaser.Scene {
             const x = b.x + PAD + i * (cw + gap);
             const y = b.y + PAD;
             const on = d.on !== null;
-            const face = this.rect(x, y, cw, chh, on ? (d.primary ? 0x2f4f56 : 0x94a096) : 0x9aa69c, 1);
+            const skin = !on ? BTN.off : d.primary ? BTN.primary : BTN.normal;
+
+            // 면은 다 같고 **테두리가 가른다** — 주된 버튼만 초록 선을 두른다.
+            const face = this.add.graphics();
+            face.fillStyle(skin.face, 1).fillRect(x, y, cw, chh);
+            face.lineStyle(1, skin.edge, 1).strokeRect(x + 0.5, y + 0.5, cw - 1, chh - 1);
+            this.keep(face);
+
             const showSub = Boolean(d.sub) && chh >= 40;
             const size = cw < 84 ? FS.sm : FS.md;
-            const room = cw - 8;
-            const label = this.textFit(x + cw / 2, y + chh / 2 - (showSub ? 14 : size / 2), d.label, size,
-                on ? (d.primary ? "#e9f2ea" : "#101614") : "#3c4844", 0.5, room);
+            const room = cw - 10;
+            const label = this.textFit(x + cw / 2, y + chh / 2 - (showSub ? 13 : size / 2),
+                d.label, size, skin.ink, 0.5, room);
             const subT = showSub
-                ? this.textFit(x + cw / 2, y + chh / 2 + 6, d.sub, FS.xs,
-                    d.primary && on ? "#9fc0c4" : "#3c4844", 0.5, room)
+                ? this.textFit(x + cw / 2, y + chh / 2 + 7, d.sub, FS.xs, skin.sub, 0.5, room)
                 : null;
             if (!on) return;
             // 버튼은 **얼굴과 글자가 같이 내려간다** — 실제로 눌러 들어가는 느낌이 난다.
@@ -908,6 +823,7 @@ export class TradingScene extends Phaser.Scene {
             thesis: () => this.deck.buildBuff().thesis,
             alreadyRecommended: () => this.recommendedThisTurn,
             clientName: () => this.client?.name ?? "아무도",
+            read: () => this.read,
             onBuy: id => this.recommend(id),
             onSell: id => this.sell(id),
             onClose: () => { this.board?.close(); this.board = null; this.redraw(); },

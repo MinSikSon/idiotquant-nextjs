@@ -53,22 +53,32 @@ const TWO_COL_MIN_W = 560;
  */
 const STACK_MIN = 398;
 
-/** 차트가 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다. */
-const CHART_MIN = 110;
-/** 로그가 마지막까지 지키는 한 줄. */
+/** 챕터 띠 — 에너지와 빚은 늘 보여야 하니 이 아래로는 안 준다. */
+const STRIP_H = 40;
+const STRIP_MIN = 28;
+/**
+ * 로그가 마지막까지 지키는 한 줄. 여기에 고객 한 줄이 얹히므로 실제 바닥은 이보다 크다.
+ */
 const LOG_MIN = 34;
 /**
- * 로그의 위 한계 — **넉 줄**(`PADY*2 + 4 x GameLog.ROW`).
+ * 고객 자리 — 누가 앞에 앉았나. 로그 띠의 머리로 들어간다.
  *
- * 예전에는 로그가 세로의 15~17% 를 가져갔다. 폰에서 여섯 줄이면 화면의 한 뭉치라,
- * 정작 걸어야 할 차트보다 지나간 일이 더 넓은 자리를 먹었다. 서너 줄이면 방금 무슨
- * 일이 있었는지는 남고, 그 앞은 드래그로 되감는다.
+ * **두 줄이다.** 이름과 한마디를 한 줄에 붙이면 폭 390 에서 몇 픽셀이 모자라 한마디가
+ * 통째로 빠진다 — 그런데 고객을 사람으로 만드는 것이 바로 그 한마디다.
  */
-const LOG_MAX = 88;
-/** 운용 상황 — 자산 넉 줄 + 유물 + 켜짐 줄 + 손패 한 칸. */
-const FIRM_MIN = 190;
-/** 그마저도 안 될 때. 유물·켜짐 줄을 위로 당겨 손패 한 칸을 겨우 남긴다. */
-const FIRM_TIGHT = 168;
+export const CLIENT_ROW = 40;
+/**
+ * 손패 띠의 바닥값 — 근거 한 줄 + 카드 한 칸.
+ *
+ * 카드는 갈래 딱지·값·이름 세 줄이라 92 아래로 내려가면 이름이 두 줄이 되면서 요약이
+ * 접힌다. 근거 줄 26 + 여백 16 + 카드 92 = 134 가 "읽을 수 있는 최소" 다.
+ */
+const HAND_MIN = 134;
+/**
+ * 손패가 이보다 커져도 카드가 더 읽히지는 않는다 — 카드 안의 글은 위쪽 세 줄이 전부라
+ * 칸만 길어지고 아래가 빈다. 남는 세로는 로그(그리고 그 뒤의 사무실 그림)가 가져간다.
+ */
+const HAND_MAX = 176;
 
 /**
  * 이 격자를 **넷으로 쌓을 것인가, 두 칸으로 쪼갤 것인가.**
@@ -192,60 +202,44 @@ export function mkText(
 }
 
 export interface Band { x: number; y: number; w: number; h: number }
+
+/**
+ * 회사 화면의 자리 넷. **여덟이었다가 넷이 됐다.**
+ *
+ * 예전에는 여기에 `place`(장소 정사각) · `chips`(종목 칩 줄) · `chart` 가 더 있었다.
+ * 세로 격자에 판이 여덟 개가 서고 저마다 테두리를 가져서, 화면을 보면 **무엇이
+ * 중요한지가 없었다** — 전부 같은 무게의 상자였다. 셋을 뺀 이유는 각각 이렇다.
+ *
+ *   장소 정사각  100px 짜리 그림은 무엇인지 안 보였다. 시세판 여는 길은 버튼에 있다.
+ *   종목 칩 줄   다섯 칸인데 종목은 아홉이라 늘 빈 칸이 남았고, 전체 목록은 시세판에 있다.
+ *   차트         **시세판 안으로 옮겼다.** 종목을 고를 때 보는 것이지, 늘 떠 있을 것이 아니다.
+ *
+ * 남은 넷은 각각 한 가지만 말한다.
+ *
+ *   strip   언제이고 내가 어떤가   — 연·반기·턴 · 에너지 · 빚
+ *   log     무슨 일이 있었나       — 고객 한 줄 + 1인칭 기록
+ *   hand    내가 무엇을 낼 수 있나 — 근거·계좌 한 줄 + 카드 셋
+ *   action  무엇을 할까            — 버튼 둘
+ */
 export interface Bands {
     portrait: boolean;
-    /** 챕터 띠 — 연·장, 에너지 게이지, 빚. 늘 맨 위에 붙어 있다. */
     strip: Band;
-    /** 장소 그림이 들어갈 정사각. **지금은 비어 있고 나중에 그림이 같은 자리로 온다.** */
-    place: Band;
-    /** 로그 — 1인칭으로 무슨 일이 있었는지가 쌓인다. */
     log: Band;
-    /** 종목 칩 줄 — 바로가기 다섯 + 시세판을 여는 칩. */
-    chips: Band;
-    chart: Band;
-    /** 운용 상황 — 고객·자산·근거, 그리고 손패. */
-    firm: Band;
+    hand: Band;
     action: Band;
 }
 
-/* ── 여섯 띠의 기본과 바닥 ────────────────────────────────────────
-   격자 세로는 기기 비율에서 오므로 `STACK_MIN`(398) 까지 짧아질 수 있다. 여섯 띠를
-   기본값으로만 쌓으면 174px 을 고정으로 먹어 차트가 음수가 된다 — 실제로 그랬다.
+/* ── 넷을 어떻게 나누는가 ──────────────────────────────────────────
+   격자 세로는 기기 비율에서 오므로 `STACK_MIN`(398) 까지 짧아질 수 있다. 그래서
+   **양보하는 순서**를 정해 둔다. 뒤로 갈수록 먼저 줄어든다:
 
-   그래서 **양보하는 순서**를 정해 둔다. 뒤로 갈수록 먼저 줄어든다:
+     버튼 · 손패        안 줄인다 — 없으면 판이 안 굴러간다
+     챕터 띠            40 → 28. 에너지와 빚은 늘 보여야 하니 조금만
+     로그               남는 것을 받는다. 한 줄까지 준다
 
-     버튼 · 운용 상황 · 차트   안 줄인다 — 없으면 판이 안 굴러간다
-     챕터 띠                  40 → 28. 에너지와 빚은 늘 보여야 하니 조금만
-     장소 + 로그              88 → 34. 정사각은 행 높이를 따라 같이 준다
-     종목 칩                  46 → 0.  **제일 먼저 포기한다**
+   판이 넷뿐이라 예전처럼 무엇을 통째로 버릴 일이 없다 — 칩 줄을 0 으로 만들고 씬이
+   그 사실을 다시 확인하던 분기(`chips.h <= 0`)도 같이 사라졌다. */
 
-   칩을 먼저 버리는 이유: 칩은 *바로가기*이고 전체 목록은 시세판에 있다. 장소 정사각을
-   누르면 시세판이 열리므로, 칩이 없어도 아홉 종목에 전부 닿는다. 씬은 `chips.h === 0`
-   을 보고 `＋N` 을 챕터 띠로 옮긴다. */
-const STRIP_H = 40;
-const STRIP_MIN = 28;
-/** 장소 그림 자리. 정사각이라 이 값이 곧 로그 행의 높이다. */
-const PLACE = 88;
-/** 종목 칩 줄. 칩 하나가 58px 이고 여섯 개가 한 줄에 들어간다. */
-const CHIPS_H = 46;
-const CHIPS_MIN = 30;
-
-/**
- * 격자를 여섯 자리로 나눈다.
- *
- * **세로**는 위에서 아래로: 챕터 띠 → (장소 + 로그) → 종목 칩 → 차트 → 운용 상황 → 버튼.
- *
- * "언제이고 내 처지가 어떤가 → 무슨 일이 있었나 → 무엇을 다룰 수 있나 → 시장은 어떤가 →
- * 나는 어떤 상태인가 → 무엇을 말할까" 로 읽힌다. 원핸드 조작이라 아래로 갈수록 손이
- * 닿아야 하는 것이 오는 것과도 맞는다.
- *
- * **넉넉하면** 차트가 남는 세로를 전부 가져간다. **모자라면** 위 표의 순서로 양보한다.
- * 어느 쪽이든 **쌓이는 띠의 합은 정확히 `h`** 다 — 한 픽셀도 남거나 넘지 않는다.
- *
- * **가로**는 왼쪽·오른쪽 두 칸. 왼쪽에 읽는 것(장소·로그·칩·차트), 오른쪽에 만지는
- * 것(상황·버튼)을 둔다 — 눕힌 폰은 세로가 280px 뿐이라 여섯을 쌓으면 어느 하나도 제
- * 크기가 안 나온다.
- */
 export function bandsOf(w: number, h: number): Bands {
     if (isStacked(w, h)) return stackedBands(w, h);
     return splitBands(w, h);
@@ -253,84 +247,51 @@ export function bandsOf(w: number, h: number): Bands {
 
 function stackedBands(w: number, h: number): Bands {
     // **채우는 순서 = 중요한 순서.** 없으면 판이 안 굴러가는 것부터 제 몫을 가져가고,
-    // 남는 만큼만 위쪽 띠가 자란다. 그래서 격자가 아무리 짧아도 음수가 안 나온다.
-    //
-    // 거꾸로 읽으면 그것이 곧 **양보하는 순서**다: 칩 → 장소+로그 → 챕터 띠.
-    // 칩이 먼저인 이유는 그것이 바로가기일 뿐이고 전체 목록은 시세판에 있어서다.
-    // 장소 정사각까지 사라진 격자에서는 씬이 `＋N` 을 챕터 띠로 옮겨 시세판 길을 남긴다.
+    // 남는 만큼만 로그가 자란다. 그래서 격자가 아무리 짧아도 음수가 안 나온다.
     let left = Math.max(0, h);
-
     const take = (want: number): number => {
-        const got = Math.min(want, left);
+        const got = Math.min(Math.max(0, want), left);
         left -= got;
         return got;
     };
 
-    // 1) 판을 굴리는 셋 + 에너지·빚을 보여 주는 띠.
-    const action0 = take(ACTION_ONE_ROW);
-    const firm0 = take(FIRM_TIGHT);
-    const chart0 = take(CHART_MIN);
+    const action = take(clamp(h * 0.11, ACTION_ONE_ROW, 96));
+    let hand = take(HAND_MIN);
     let strip = take(STRIP_MIN);
+    let log = take(LOG_MIN + CLIENT_ROW);
+    strip += take(STRIP_H - STRIP_MIN);
 
-    // 2) 남는 만큼 위쪽 띠가 자란다.
-    let place = take(LOG_MIN);              // 장소 정사각 + 로그 한 줄
-    strip += take(STRIP_H - STRIP_MIN);     // 챕터 띠를 제 크기로
-    let chips = take(CHIPS_MIN);            // 칩 줄 최소치
-    place += take(PLACE - LOG_MIN);         // 장소를 제 크기로
-    chips += take(CHIPS_H - CHIPS_MIN);     // 칩 줄을 제 크기로
-
-    // 3) 그러고도 남는 세로는 상황·버튼이 비율로 받고, **나머지는 전부 차트**다.
-    const body = h - strip - place - chips;
-    let firm = clamp(body * 0.42, firm0, 268);
-    let action = clamp(h * 0.11, action0, 96);
-    if (body - firm - action < chart0) action = action0;
-    if (body - firm - action < chart0) firm = Math.max(firm0, body - action - chart0);
-    let chart = body - firm - action;
-    // 한 픽셀도 남거나 넘지 않게 — 합은 언제나 정확히 h 다.
-    if (chart < 0) { firm = Math.max(0, firm + chart); chart = body - firm - action; }
-    if (chart < 0) { action = Math.max(0, action + chart); chart = body - firm - action; }
-    if (chart < 0) chart = 0;
+    // 남는 세로는 손패와 로그가 나눠 갖는다. **손패가 먼저다** — 카드가 안 읽히면
+    // 고를 수가 없고, 로그는 끌어서 되감을 수 있다.
+    hand += take(Math.min(HAND_MAX - HAND_MIN, Math.round(left * 0.55)));
+    log += take(left);
 
     let y = 0;
     const strip_ = { x: 0, y, w, h: strip }; y += strip;
-    const place_ = { x: 0, y, w: place, h: place };
-    const log_ = { x: place, y, w: w - place, h: place }; y += place;
-    const chips_ = { x: 0, y, w, h: chips }; y += chips;
-    const chart_ = { x: 0, y, w, h: chart }; y += chart;
-    const firm_ = { x: 0, y, w, h: firm }; y += firm;
+    const log_ = { x: 0, y, w, h: log }; y += log;
+    const hand_ = { x: 0, y, w, h: hand }; y += hand;
+    // 한 픽셀도 남거나 넘지 않게 — 합은 언제나 정확히 h 다.
     const action_ = { x: 0, y, w, h: Math.max(0, h - y) };
 
-    return {
-        portrait: true,
-        strip: strip_, place: place_, log: log_,
-        chips: chips_, chart: chart_, firm: firm_, action: action_,
-    };
+    return { portrait: true, strip: strip_, log: log_, hand: hand_, action: action_ };
 }
 
 function splitBands(w: number, h: number): Bands {
-    // 오른쪽 칸에는 카드 셋과 버튼 넷이 나란히 들어간다. 왼쪽에 더 주면 그 여덟 개가
-    // 전부 좁아져 이름과 라벨이 잘린다 — 차트는 폭이 조금 줄어도 읽힌다.
-    const left = Math.round(w * 0.52);
+    // 왼쪽에 읽는 것(로그), 오른쪽에 만지는 것(손패·버튼). 눕힌 폰은 세로가 300px
+    // 남짓이라 넷을 쌓으면 어느 하나도 제 크기가 안 나온다.
+    //
+    // 폭은 오른쪽에 더 준다 — 카드 셋이 나란히 서야 해서다. 로그는 폭이 조금 줄어도
+    // 줄을 접어 읽히지만, 카드는 좁아지면 이름부터 잘린다.
+    const left = Math.round(w * 0.44);
     const right = w - left;
     const strip = clamp(h * 0.09, STRIP_MIN, STRIP_H);
-    const top = strip;
-    const action = clamp(h * 0.20, 64, 92);
-
-    // 눕힌 화면에서는 세로가 귀하다. 장소 정사각을 줄이되 **정사각은 지킨다** —
-    // 나중에 들어올 그림의 자리가 안 깨지게.
-    const roomLeft = h - top;
-    const chips = roomLeft - CHART_MIN > LOG_MIN + CHIPS_MIN ? CHIPS_MIN : 0;
-    const place = clamp((roomLeft - chips - CHART_MIN) * 0.5, LOG_MIN, Math.min(PLACE, left - 40));
-    const chart = roomLeft - place - chips;
+    const action = clamp(h * 0.20, ACTION_ONE_ROW, 92);
 
     return {
         portrait: false,
         strip: { x: 0, y: 0, w, h: strip },
-        place: { x: 0, y: top, w: place, h: place },
-        log: { x: place, y: top, w: left - place, h: place },
-        chips: { x: 0, y: top + place, w: left, h: chips },
-        chart: { x: 0, y: top + place + chips, w: left, h: chart },
-        firm: { x: left, y: top, w: right, h: h - top - action },
+        log: { x: 0, y: strip, w: left, h: h - strip },
+        hand: { x: left, y: strip, w: right, h: h - strip - action },
         action: { x: left, y: h - action, w: right, h: action },
     };
 }
@@ -405,6 +366,23 @@ export type LogKind = keyof typeof LOG;
  * 카드가 열두 장이 되면 이름만으로는 안 갈린다. **무엇을 하는 카드인가**(읽는다·건다·
  * 막는다·저주)를 색과 한 글자 표시로 먼저 말해 두면, 손패 셋을 훑는 데 한 호흡이면 된다.
  */
+/**
+ * 버튼의 색. **팔레트 안에서만 고른다.**
+ *
+ * 예전에는 버튼 띠와 회사 정보판이 `0xa7b2a9` 와 `0xd8e0d8` 로 칠해져 있었다 — 게임
+ * 어디에도 없는 밝은 회색 둘이라, 짙은 청록 화면에 회색 덩어리가 떠 있었고 그 위의
+ * 검은 글자가 다른 화면과 아무 관계가 없었다.
+ *
+ * 지금은 **면이 아니라 테두리로 가른다.** 바탕은 다 같은 `panel` 이고, 주된 버튼만
+ * 초록 테두리와 초록 글자를 가진다. 어두운 화면에서 밝은 면은 그 자체로 소리가 커서,
+ * 두 개를 나란히 두면 어느 쪽을 눌러야 하는지가 오히려 안 보인다.
+ */
+export const BTN = {
+    primary: { face: 0x16302b, edge: C.up, ink: S.up, sub: "#7fb99a" },
+    normal: { face: C.panel, edge: C.line, ink: S.ink, sub: S.inkDim },
+    off: { face: 0x11181a, edge: 0x222e31, ink: "#4e5f58", sub: "#3b4a45" },
+} as const;
+
 export const LANE = {
     info: { color: C.neon, ink: S.neon, tag: "정보" },
     act: { color: C.gold, ink: S.gold, tag: "집행" },
@@ -473,6 +451,15 @@ export function money(v: number): string {
     const head = Math.floor(a / top.at);
     const rest = next ? Math.floor((a % top.at) / next.at) : 0;
     return `${neg}${head.toLocaleString()}${top.name}${rest ? ` ${rest.toLocaleString()}${next!.name}` : ""}`;
+}
+
+/**
+ * **주가는 줄이지 않는다.** `money` 를 그대로 쓰면 12,081 이 「1만」이 되어, 5,438 짜리
+ * 옆에 서면 한쪽만 자리 수가 다르다 — 시세판 한 줄에서 실제로 그랬다(「1만 / 5,438 / 2만」).
+ * 주가는 다섯 자리라 다 적어도 칸에 들어가고, 다 적어야 비교가 된다.
+ */
+export function price(v: number): string {
+    return Math.round(v).toLocaleString();
 }
 
 /** 오르면 초록, 내리면 주황. 이 게임은 네온 팔레트라 한국 시장색(빨강/파랑)을 안 쓴다. */
