@@ -18,15 +18,12 @@
 import Phaser from "phaser";
 import { StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel } from "@/lib/game/core/StockEngine";
 import { CHAPTERS } from "@/lib/game/core/chapters";
-import { DeckManager, HAND_SIZE, LOADOUT_SIZE } from "@/lib/game/core/DeckManager";
 import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
 import {
-    decay, clampEnergy, energyDelta, energyReason, costOf, canPlay, ENERGY_DECAY,
+    decay, clampEnergy, energyDelta, energyReason, ENERGY_DECAY,
 } from "@/lib/game/core/energy";
-import {
-    SITUATION_BY_ID, EMPTY_FACTS, newlyEarned, nextUp,
-    type SituationFacts,
-} from "@/lib/game/core/situations";
+import { researchBuff, RESEARCH_COST } from "@/lib/game/core/research";
+import { EMPTY_FACTS, type SituationFacts } from "@/lib/game/core/situations";
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
 } from "@/lib/game/core/progress";
@@ -36,14 +33,12 @@ import {
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
 import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib/game/ui/art";
-import type { EndReason, MarketRead, StrategyCard, TurnBuff } from "@/lib/game/core/types";
-import { NO_BUFF } from "@/lib/game/core/types";
+import type { EndReason, MarketRead, TurnBuff } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
-import { CardHandContainer } from "@/lib/game/components/CardHandContainer";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { QuoteBoard, type BoardRow } from "@/lib/game/components/QuoteBoard";
 import {
-    BTN, C, CLIENT_ROW, FS, LANE, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
+    BTN, C, CLIENT_ROW, FS, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 
@@ -71,7 +66,6 @@ export class TradingScene extends Phaser.Scene {
     /* ── 규칙 ─────────────────────────────────────────── */
     private memory!: Memory;
     private engine!: StockEngine;
-    private deck!: DeckManager;
     private facts!: SituationFacts;
 
     /* ── 장소와 화면 ──────────────────────────────────── */
@@ -83,13 +77,11 @@ export class TradingScene extends Phaser.Scene {
     /** 이 챕터에서 화면에 살아 있는 것들. 다시 그릴 때 통째로 지운다. */
     private junk: Phaser.GameObjects.GameObject[] = [];
     private chart: PixelCandleChart | null = null;
-    private hand: CardHandContainer | null = null;
     private logView: GameLog | null = null;
     private board: QuoteBoard | null = null;
 
     /* ── 한 턴의 상태 ─────────────────────────────────── */
     private entries: LogEntry[] = [];
-    private cards: StrategyCard[] = [];
     private client: Client | null = null;
     /** 이번 턴에 이미 권했는가. 고객이 한 명이라 한 번뿐이다. */
     private recommendedThisTurn = false;
@@ -103,14 +95,17 @@ export class TradingScene extends Phaser.Scene {
     /** 이번 턴에 권한 종목과 그때의 근거. 다음 턴에 이걸로 정산한다. */
     private pending: { id: string; thesis: string | null; client: Client; cost: number } | null = null;
     private read: MarketRead | null = null;
-    /** 이번 챕터에 새로 겪은 것. 챕터 결산에서 기억으로 넘어간다. */
-    private earnedThisChapter: string[] = [];
+    /**
+     * 이번 턴 알아본 종목의 id. **근거는 여기서만 나온다**(`core/research.ts`).
+     *
+     * 카드가 있던 자리다. 손패 셋 중 정보 갈래를 내면 근거가 붙었는데, 카드를 걷어
+     * 내면서 그 출처를 시세판의 「알아본다」 한 번으로 옮겼다.
+     */
+    private researched: string | null = null;
     /** 떠난 고객. 에너지가 바닥을 칠 때 한 명씩 잃는다. */
     private gone: string[] = [];
     /** 공원에 왔다면 왜 왔는가. */
     private ending: EndReason | null = null;
-    /** 집에서 덱을 고르는 중인가. */
-    private picking = false;
     /** 지금 덮여 있는 전환 막. 누르면 걷힌다. */
     private cut: Cut | null = null;
 
@@ -154,9 +149,7 @@ export class TradingScene extends Phaser.Scene {
         this.facts = { ...this.memory.facts };
         this.gone = [];
         this.ending = null;
-        this.earnedThisChapter = [];
         this.entries = [];
-        this.newDeck();
         this.go("title", cut);
     }
 
@@ -178,21 +171,53 @@ export class TradingScene extends Phaser.Scene {
         this.board = null;
         this.place = to;
         this.cut = cut;
-        this.picking = false;
         // 전환이 전환처럼 보이는 한 줄. 막이 이미 떠 있으므로 내용은 안 튄다.
         this.cameras.main.fadeIn(180);
         this.redraw();
+    }
+
+    /**
+     * 이번 턴의 상태. **근거는 「알아본다」 하나에서만 나온다**(`core/research.ts`).
+     *
+     * 예전에는 `deck.buildBuff()` 였다. 손패에서 낸 카드가 근거·손절·헤지·수수료를
+     * 한꺼번에 채워 줬는데, 카드를 걷어 내면서 채워지는 것은 근거와 국면 둘뿐이다.
+     */
+    private buff(): TurnBuff {
+        const s = this.researched ? this.engine.stockOf(this.researched) : null;
+        return researchBuff(s?.name ?? null);
+    }
+
+    /**
+     * 한 종목을 알아본다. **에너지를 쓰고 그 종목에 근거가 붙는다.**
+     *
+     * 한 턴에 하나뿐이다 — 고객이 한 명이니 권하는 것도 하나이고, 알아보는 것도 하나다.
+     * 값은 낸 그 자리에서 빠진다: 미루면 게이지와 「알아볼 수 있는가」가 한 턴 동안
+     * 어긋나 다음 판단이 틀린 값 위에서 이뤄진다.
+     */
+    private research(id: string): void {
+        if (this.researched !== null) return;
+        if (this.engine.player.energy < RESEARCH_COST) return;
+        const stock = this.engine.stockOf(id);
+        if (!stock) return;
+
+        this.researched = id;
+        this.engine.player.energy = clampEnergy(this.engine.player.energy - RESEARCH_COST, ENERGY_MAX);
+        this.engine.setFocus(id);
+        this.read = this.engine.read(this.buff());
+        this.actedThisTurn = true;
+        this.pushLog(`${stock.name}을(를) 알아봤다. (에너지 −${RESEARCH_COST})`, "card");
+
+        // **시세판을 닫지 않는다.** `redraw()` 는 판을 닫으므로 여기서 부르면 알아본
+        // 직후에 사무실로 튕겨 나가고, 곧바로 권하려면 다시 열어야 한다. 판만 다시
+        // 그리면 근거 줄과 체결 버튼이 바뀐 채로 그 자리에 남는다.
+        if (this.board?.isOpen) this.board.refresh();
+        else this.redraw();
     }
 
     /** 막을 걷는다. 여기서부터 아래 장소가 눌린다. */
     private dismissCut(): void {
         this.cut = null;
         this.redraw();
-    }
-
-    private newDeck(): void {
-        const loadout = this.memory.loadout.length ? this.memory.loadout : this.memory.situations;
-        this.deck = new DeckManager((Math.random() * 0xffffffff) >>> 0, loadout.slice(0, LOADOUT_SIZE));
     }
 
     /**
@@ -226,7 +251,6 @@ export class TradingScene extends Phaser.Scene {
         for (const o of this.junk) o.destroy();
         this.junk = [];
         this.chart?.destroy(); this.chart = null;
-        this.hand?.destroy(); this.hand = null;
         this.logView?.destroy(); this.logView = null;
         this.board?.close(); this.board = null;
 
@@ -392,7 +416,7 @@ export class TradingScene extends Phaser.Scene {
         const rows: Array<[string, string, string]> = [
             ["회차", `${m.cycle}회차`, S.ink],
             ["가장 멀리", CHAPTERS[m.bestChapter]?.year ?? CHAPTERS[0]!.year, S.ink],
-            ["모은 상황카드", `${m.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
+            ["여태 갚은 빚", money(m.career.feePaid), m.career.feePaid > 0 ? S.up : S.ink],
         ];
         if (m.escaped) rows.push(["빚 완납", "해낸 적 있다", S.gold]);
         const rowsTop = bar.y - rows.length * 22 - 8;
@@ -444,7 +468,7 @@ export class TradingScene extends Phaser.Scene {
 
         const rows: Array<[string, string, string]> = [
             ["걸린 회차", `${m.cycle}회차`, S.gold],
-            ["모은 상황카드", `${m.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
+            ["여태 갚은 빚", money(m.career.feePaid), S.up],
             ["남은 빚", "0", S.up],
         ];
         const rowsTop = bar.y - rows.length * 22 - 8;
@@ -500,8 +524,7 @@ export class TradingScene extends Phaser.Scene {
 
         // 요약 줄은 아래에 못 박는다 — 무엇을 갖고 있는지는 늘 보여야 한다.
         const rows: Array<[string, string, string]> = [
-            ["모은 상황카드", `${this.memory.situations.length} / ${Object.keys(SITUATION_BY_ID).length}`, S.up],
-            ["들고 나갈 것", `${this.memory.loadout.length}장`, S.ink],
+            ["회차", `${this.memory.cycle}회차`, S.ink],
             ["맡은 돈", money(this.engine.equity), S.ink],
         ];
         const rowsH = rows.length * 22;
@@ -513,31 +536,12 @@ export class TradingScene extends Phaser.Scene {
         this.placeArt("home", sx, top + 8, side, "집");
 
         let y = top + 8 + side + 14;
-        if (this.picking) { this.drawLoadoutPicker(y, rowsTop); return; }
 
         // 내레이션 — 들어가는 줄만.
         for (const line of ch.narration) {
             if (y + FS.sm > rowsTop) break;
             this.textFit(this.W / 2, y, line, FS.sm, "#9aada6", 0.5, this.W - PAD * 2);
             y += FS.sm + 7;
-        }
-
-        // 겪고 있는 것 — 자리가 남을 때만. 조건은 채워지기 전에도 보여야 끌어당긴다.
-        const up = nextUp(this.facts, this.memory.situations, 3);
-        const needHead = FS.xs + 8;
-        if (up.length > 0 && y + needHead + 26 <= rowsTop) {
-            y += 8;
-            this.text(PAD, y, "겪고 있는 것", FS.xs, "#4e5f58");
-            y += needHead;
-            for (const s2 of up) {
-                if (y + 26 > rowsTop) break;
-                const [now, goal] = s2.progress(this.facts);
-                this.rect(PAD, y, this.W - PAD * 2, 22, 0x111a1c, 1);
-                this.rect(PAD, y, Math.round(((this.W - PAD * 2) * now) / goal), 22, 0x17332a, 1);
-                this.textFit(PAD + 6, y + 4, s2.how, FS.xs, "#8d9c93", 0, this.W - PAD * 2 - 64);
-                this.text(this.W - PAD - 6, y + 4, `${now}/${goal}`, FS.xs, S.gold, 1);
-                y += 26;
-            }
         }
 
         let ry = rowsTop;
@@ -548,59 +552,11 @@ export class TradingScene extends Phaser.Scene {
             ry += 22;
         }
 
-        // 죽은 버튼을 두지 않는다 — 넷을 세우면 칸이 87px 로 좁아져 글자가 잘린다.
+        // **버튼 하나.** 「여섯 장 고른다」는 상황카드를 걷어 내면서 같이 없앴다 —
+        // 고를 것이 없는데 버튼만 남으면 눌러 보고 나서야 안다.
         this.buttons([
-            { label: "여섯 장 고른다", sub: `${this.memory.loadout.length}/${LOADOUT_SIZE}`,
-              on: () => { this.picking = true; this.redraw(); } },
             { label: "나간다", sub: ch.year, primary: true, on: () => this.leaveHome() },
         ], bar);
-    }
-
-    /**
-     * 들고 나갈 여섯 장. 모은 것이 늘어도 덱이 묽어지지 않게 한다.
-     *
-     * @param bottom 이 아래로는 못 그린다(버튼 띠와 요약 줄이 있다). 목록이 넘치면
-     *   거기서 끊고 **몇 장이 더 있는지**를 한 줄로 말한다 — 스크롤을 여기까지
-     *   만들 값어치는 없다. 어차피 고를 수 있는 것은 여섯 장뿐이다.
-     */
-    private drawLoadoutPicker(y0: number, bottom: number): void {
-        let y = y0;
-        this.text(PAD, y, `들고 나갈 여섯 장 — ${this.memory.loadout.length}/${LOADOUT_SIZE}`, FS.sm, S.gold);
-        y += FS.sm + 10;
-
-        const h = 30;
-        let shown = 0;
-        for (const id of this.memory.situations) {
-            const s = SITUATION_BY_ID[id];
-            if (!s) continue;
-            if (y + h > bottom) break;
-            const picked = this.memory.loadout.includes(id);
-            this.rect(PAD, y, this.W - PAD * 2, h, picked ? 0x17332a : 0x111a1c, 1);
-            this.rect(PAD, y, 3, h, LANE[s.lane].color, 1);
-            this.textFit(PAD + 10, y + 4, s.name, FS.xs, picked ? S.ink : "#8d9c93", 0, this.W - PAD * 2 - 40);
-            this.textFit(PAD + 10, y + 17, s.short, FS.xs, "#55645d", 0, this.W - PAD * 2 - 40);
-            this.text(this.W - PAD - 6, y + 9, picked ? "◼" : "◻", FS.xs, picked ? S.gold : "#3c4844", 1);
-            this.tap(PAD, y, this.W - PAD * 2, h, () => this.toggleLoadout(id));
-            y += h + 3;
-            shown += 1;
-        }
-        const left = this.memory.situations.length - shown;
-        if (left > 0 && y + FS.xs <= bottom) {
-            this.text(PAD, y, `그리고 ${left}장 더 — 화면을 돌리면 다 보입니다`, FS.xs, "#4e5f58");
-        }
-
-        this.buttons([
-            { label: "되돌린다", sub: "", on: () => { this.picking = false; this.redraw(); } },
-            { label: "정했다", sub: `${this.memory.loadout.length}장`, primary: true,
-              on: () => { this.picking = false; saveMemory(this.memory); this.newDeck(); this.redraw(); } },
-        ], this.placeBar);
-    }
-
-    private toggleLoadout(id: string): void {
-        const at = this.memory.loadout.indexOf(id);
-        if (at >= 0) this.memory.loadout.splice(at, 1);
-        else if (this.memory.loadout.length < LOADOUT_SIZE) this.memory.loadout.push(id);
-        this.redraw();
     }
 
     private leaveHome(): void {
@@ -625,7 +581,7 @@ export class TradingScene extends Phaser.Scene {
         const half = e.player.currentTurn <= 6 ? "상" : "하";
         this.drawStrip(`${ch.year} ${half}반기 · ${e.player.currentTurn}/${e.player.maxTurns}`);
         this.drawLog();
-        this.drawHand();
+        this.drawNow();
         this.drawActions();
     }
 
@@ -675,52 +631,33 @@ export class TradingScene extends Phaser.Scene {
     }
 
     /**
-     * 무엇을 낼까 — **근거·계좌 한 줄과 카드 셋.**
+     * 이번 턴이 어떤가 — **근거와 계좌, 한 줄.**
      *
      * 예전 이름은 `drawFirm` 이었고, 고객 상자 · 계좌 두 줄 · 근거 상자 · 손패를 밝은
-     * 회색 판 하나에 다 담았다. 그 회색(`0xa7b2a9`)은 팔레트에 없는 색이라 어두운
-     * 화면에 덩어리로 떠 있었다. 지금은 **판이 없다** — 한 줄과 카드뿐이다.
+     * 회색 판 하나에 다 담았다. 그 뒤 카드까지 걷어 내면서 **한 줄만 남았다.**
+     *
+     * 근거는 시세판에서 「알아본다」를 눌러야 생긴다. 여기서는 그 결과만 읽는다 —
+     * 규칙을 화면이 다시 적으면 둘이 어긋난다.
      */
-    private drawHand(): void {
-        const b = this.bands.hand;
+    private drawNow(): void {
+        const b = this.bands.now;
         if (b.h <= 0) return;
         // **좌표는 전부 띠 상대값이다.** 가로(두 칸)에서 이 띠는 오른쪽 칸에 있어서,
         // 절대 `PAD` 로 적으면 왼쪽 칸의 로그 위에 겹쳐 그려진다.
         const x0 = b.x + PAD;
         const xr = b.x + b.w - PAD;
 
-        const buff = this.deck.buildBuff();
-        const th = buff.thesis;
+        const th = this.buff().thesis;
         const eq = this.engine.equity;
         const holds = Object.keys(this.engine.player.positions).length;
 
-        // 한 줄에 둘. 왼쪽이 이번 턴의 근거, 오른쪽이 내 계좌다. 근거는 색으로 갈린다 —
-        // 있으면 초록, 없으면 흐린 글씨. 상자를 두르면 그것대로 판이 하나 더 선다.
-        const y = b.y + 6;
+        // 왼쪽이 이번 턴의 근거, 오른쪽이 내 계좌다. 근거는 색으로 갈린다 — 있으면
+        // 초록, 없으면 흐린 글씨. 상자를 두르면 그것대로 판이 하나 더 선다.
+        const y = b.y + (b.h - FS.xs) / 2;
         const acct = this.text(xr, y, `${money(eq)} · 보유 ${holds}`, FS.xs,
             eq >= SEED_CASH ? S.inkDim : S.down, 1);
-        this.textFit(x0, y,
-            th ? `근거 · ${th}` : (buff.noThesis ? "근거 · 저주에 막혔다" : "근거 없음"),
+        this.textFit(x0, y, th ? `근거 · ${th}` : "근거 없음",
             FS.xs, th ? S.up : "#5c6b65", 0, xr - acct.displayWidth - 10 - x0);
-
-        const top = y + FS.xs + 8;
-        const handH = b.y + b.h - top;
-        if (handH <= 0) return;
-        this.hand = new CardHandContainer(this, {
-            x: b.x + PAD, y: top, width: b.w - PAD * 2, height: handH,
-            onPick: uid => this.onPickCard(uid),
-        });
-        this.add.existing(this.hand);
-        const left = this.engine.player.energy;
-        this.hand.setHand(this.cards, card => ({
-            idle: this.deck.isIdle(card, { holdings: holds, cash: this.engine.player.cash }),
-            cost: costOf(card.lane),
-            afford: canPlay(left, card.lane),
-        }));
-        // 이번 턴에 이미 낸 장은 **카드 자신이 안다**(`isUsed`). 씬이 따로 기억하면
-        // 회전으로 다시 그릴 때 둘이 어긋난다.
-        const used = this.cards.find(c => c.isUsed);
-        if (used) this.hand.lock(used.uid);
     }
 
     /** 버튼은 동작이 아니라 **내가 하는 말**이다. */
@@ -738,7 +675,7 @@ export class TradingScene extends Phaser.Scene {
      * 「기다릴 줄 알게 됐다」에 셌다. 그 셈은 이제 `endTurn` 이 한다.
      */
     private drawActions(): void {
-        const th = this.deck.buildBuff().thesis;
+        const th = this.buff().thesis;
         const held = Object.keys(this.engine.player.positions).length;
         const done = this.recommendedThisTurn;
 
@@ -820,7 +757,12 @@ export class TradingScene extends Phaser.Scene {
         this.board = new QuoteBoard({
             scene: this, width: this.W, height: this.H, top: this.bands.strip.h,
             rows: () => this.boardRows(),
-            thesis: () => this.deck.buildBuff().thesis,
+            thesis: () => this.buff().thesis,
+            researchedId: () => this.researched,
+            researchCost: () => RESEARCH_COST,
+            canResearch: () => this.researched === null
+                && this.engine.player.energy >= RESEARCH_COST,
+            onResearch: id => this.research(id),
             alreadyRecommended: () => this.recommendedThisTurn,
             clientName: () => this.client?.name ?? "아무도",
             read: () => this.read,
@@ -856,7 +798,7 @@ export class TradingScene extends Phaser.Scene {
      */
     private recommend(id: string): void {
         if (this.recommendedThisTurn || !this.client) return;
-        const buff = this.deck.buildBuff();
+        const buff = this.buff();
         const thesis = buff.thesis;
         const c = this.client;
 
@@ -888,7 +830,7 @@ export class TradingScene extends Phaser.Scene {
     }
 
     private sell(id: string): void {
-        const buff = this.deck.buildBuff();
+        const buff = this.buff();
         const s = this.engine.stockOf(id);
         const pnl = this.engine.unrealizedPct(id);
         const r = this.engine.sellAll(id, buff);
@@ -906,36 +848,15 @@ export class TradingScene extends Phaser.Scene {
         this.redraw();
     }
 
-    /**
-     * 카드를 낸다. **값은 여기서, 그 자리에서 빠진다** — 턴 정산까지 미루지 않는다.
-     *
-     * 미루면 화면의 게이지와 손패의 「낼 수 있는가」가 한 턴 동안 어긋난다. 3 짜리를
-     * 내고도 게이지가 그대로면 다음 판단이 틀린 값 위에서 이뤄진다.
-     */
-    private onPickCard(uid: string): void {
-        const card = this.cards.find(c => c.uid === uid);
-        // 손패가 이미 흐리게 막아 두지만, 규칙은 화면이 아니라 여기서 잠근다.
-        if (card && !canPlay(this.engine.player.energy, card.lane)) return;
-        if (!this.deck.playCard(uid)) return;
-        if (card) {
-            const cost = costOf(card.lane);
-            if (cost > 0) {
-                this.engine.player.energy = clampEnergy(this.engine.player.energy - cost, ENERGY_MAX);
-            }
-            this.pushLog(`「${card.name}」 — ${card.scene}${cost > 0 ? ` (에너지 −${cost})` : ""}`, "card");
-        }
-        this.read = this.engine.read(this.deck.buildBuff());
-        this.redraw();
-    }
-
     /* ── 턴 ───────────────────────────────────────────── */
 
     private beginTurn(): void {
-        this.cards = this.deck.dealHand();
         this.client = clientAt(this.memory.cycle, this.engine.chapter.id, this.engine.player.currentTurn, this.gone);
         this.recommendedThisTurn = false;
         this.actedThisTurn = false;
-        this.read = this.engine.read(this.deck.buildBuff());
+        // 알아본 것은 **그 턴에만** 유효하다. 하루가 지나면 다시 알아봐야 한다.
+        this.researched = null;
+        this.read = this.engine.read(this.buff());
 
         const fresh = this.engine.newlyListed;
         if (fresh) this.pushLog(`${fresh.name}이(가) 상장했다. ${fresh.blurb}.`, "system");
@@ -952,7 +873,7 @@ export class TradingScene extends Phaser.Scene {
             this.pushLog("오늘은 아무것도 하지 않았다.", "turn");
         }
 
-        const buff = this.deck.buildBuff();
+        const buff = this.buff();
         const results = this.engine.tick(buff);
 
         const focus = results.find(r => r.id === this.engine.focus);
@@ -968,11 +889,8 @@ export class TradingScene extends Phaser.Scene {
         }
 
         this.settleEnergy(buff);
-        this.deck.consumeTurn(buff);
         this.pending = null;
         this.engine.advanceTurn();
-
-        this.catchSituations();
 
         if (this.engine.isOver) { this.finishChapter(); return; }
         this.beginTurn();
@@ -1019,14 +937,16 @@ export class TradingScene extends Phaser.Scene {
         }
     }
 
-    /** 조건을 채웠으면 **그 자리에서** 온다. 정해진 턴이 아니다. */
-    private catchSituations(): void {
-        const got = newlyEarned(this.facts, [...this.memory.situations, ...this.earnedThisChapter]);
-        for (const s of got) {
-            this.earnedThisChapter.push(s.id);
-            this.pushLog(`상황카드 — 「${s.name}」. ${s.scene}`, "system");
-        }
-    }
+    /**
+     * **상황카드 수집은 지금 판에 없다.**
+     *
+     * 조건 판정(`newlyEarned`)도 획득도 걷어 냈다 — 카드를 낼 자리가 없어졌으니 모아도
+     * 쓸 데가 없고, 모으는 것만 남으면 화면에 목적 없는 진행 막대가 선다. 규칙 자체는
+     * `core/situations.ts` 에 그대로 있으니 되살릴 때 여기부터 다시 부르면 된다.
+     *
+     * 조건이 읽는 사실(`facts`)은 계속 쌓는다 — 이력 페이지가 그것을 읽고, 수집을
+     * 되살릴 때 이미 채워져 있어야 한다.
+     */
 
     /* ── 챕터가 끝났다 ────────────────────────────────── */
 
@@ -1036,19 +956,18 @@ export class TradingScene extends Phaser.Scene {
         this.facts.mostHoldingsAtChapterEnd = Math.max(
             this.facts.mostHoldingsAtChapterEnd, Object.keys(this.engine.player.positions).length);
         if (this.engine.isRuined) this.facts.everRuined = true;
-        this.catchSituations();
 
         const idx = CHAPTERS.indexOf(this.engine.chapter);
         // 결산 머리에 쓸 연도. `startNextChapter()` 뒤에 읽으면 **다음 장의 연도**가 나온다.
         const done = this.engine.chapter;
-        const sum = this.engine.endChapter(this.earnedThisChapter);
+        // 수집이 없으니 새로 겪은 것도 없다. 되살리면 여기에 그 목록이 온다.
+        const sum = this.engine.endChapter([]);
 
         this.memory = remember(this.memory, sum, idx);
         // 이력은 **챕터 단위**로 접는다 — 판을 끝까지 안 가고 창을 닫아도 남는다.
         this.memory.career = recordChapter(this.memory.career, sum);
         this.memory.facts = { ...this.facts };
         saveMemory(this.memory);
-        this.earnedThisChapter = [];
         this.facts.waitsThisChapter = 0;
 
         const end = endReasonOf({
@@ -1060,7 +979,6 @@ export class TradingScene extends Phaser.Scene {
         if (end) return this.toPark(end);
         if (!this.engine.startNextChapter()) return this.toPark("debtRemains");
 
-        this.newDeck();
         // **여기가 결산이 처음 보이는 자리다.** 여태 `sum` 은 기억으로만 흘러들어가고
         // 화면에 한 번도 안 나왔다. 집으로 돌아오는 전환이 그것을 말한다.
         this.go("home", cutOnChapterEnd(done, sum, money));
