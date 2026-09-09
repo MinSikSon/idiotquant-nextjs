@@ -384,9 +384,21 @@ export type LogKind = keyof typeof LOG;
  * 두 개를 나란히 두면 어느 쪽을 눌러야 하는지가 오히려 안 보인다.
  */
 export const BTN = {
-    primary: { face: 0x16302b, edge: C.up, ink: S.up, sub: "#7fb99a" },
-    normal: { face: C.panel, edge: C.line, ink: S.ink, sub: S.inkDim },
-    off: { face: 0x11181a, edge: 0x222e31, ink: "#4e5f58", sub: "#3b4a45" },
+    /** **지금 눌러야 하는 것.** 셋 중 유일하게 면이 밝고 테두리가 초록이다. */
+    primary: { face: 0x1d4c3c, edge: C.up, ink: "#eafff1", sub: "#a7ddbd" },
+    /**
+     * **눌러도 되지만 주된 것이 아니다.** 면은 판보다 한 단 밝고 테두리가 뚜렷하다 —
+     * 예전에는 면이 `panel` 이라 판 배경과 거의 같아서 못 누르는 것처럼 보였다.
+     */
+    normal: { face: 0x1d292d, edge: C.line, ink: S.ink, sub: S.inkDim },
+    /**
+     * **못 누른다.** 바탕과 거의 같은 면에 테두리가 없다시피 하고 글자가 배경에 잠긴다.
+     *
+     * 예전에는 이 셋의 차이가 테두리 색뿐이라 「누를 수 있는 회색」과 「못 누르는 회색」이
+     * 나란히 서면 갈리지 않았다. 지금은 **밝기가 셋을 가른다** — 밝다 / 보통 / 잠겼다.
+     * 못 누르는 버튼은 이름과 부제로 **왜 못 누르는지**를 같이 말한다.
+     */
+    off: { face: 0x0c1112, edge: 0x151d1f, ink: "#3d4a46", sub: "#2f3a37" },
 } as const;
 
 export const LANE = {

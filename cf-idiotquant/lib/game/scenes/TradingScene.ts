@@ -309,6 +309,27 @@ export class TradingScene extends Phaser.Scene {
         return t;
     }
 
+    /**
+     * 칸을 넘치면 **줄이지 말고 자른다.** 끝에 「…」를 붙인다.
+     *
+     * `textFit` 은 글자를 작게 만드는데, 옆 글자와 크기가 같아야 하는 자리(고객 이름과
+     * 그 한마디)에 쓰면 한 줄이 두 덩어리로 보인다 — 눕힌 화면에서 한마디가 이름의
+     * 절반 크기로 줄어 실제로 그랬다.
+     */
+    private textClip(
+        x: number, y: number, str: string, size: number, color: string, origin: number, room: number,
+    ): Phaser.GameObjects.Text {
+        const t = this.text(x, y, str, size, color, origin);
+        if (room <= 0 || t.displayWidth <= room) return t;
+        // 한 글자씩 떼며 재 본다. 한 줄짜리 짧은 글이라 이 정도면 충분히 빠르다.
+        let cut = str;
+        while (cut.length > 1 && t.displayWidth > room) {
+            cut = cut.slice(0, -1);
+            t.setText(`${cut}…`);
+        }
+        return t;
+    }
+
     private rect(x: number, y: number, w: number, h: number, color: number, alpha = 1): Phaser.GameObjects.Graphics {
         const g = this.add.graphics();
         g.fillStyle(color, alpha).fillRect(x, y, w, h);
@@ -404,6 +425,19 @@ export class TradingScene extends Phaser.Scene {
      * 회차와 기록을 보여 주는 자리이기도 하다. 회귀가 헛돌지 않는다는 것을 사람이 아는
      * 방법은 하나뿐이다 — 도는 동안 **무엇이 쌓였는지가 보이는 것.**
      */
+    /**
+     * 이 게임이 무엇인지 세 줄. **시작 화면에만 있다.**
+     *
+     * 규칙을 다 적으면 아무도 안 읽는다. 「무엇을 갚는가 · 무엇이 그것을 줄이는가 ·
+     * 언제 끝나는가」 셋이면 첫 턴을 스스로 굴릴 수 있다. 나머지는 화면이 그때그때
+     * 말한다(버튼 부제).
+     */
+    private static readonly HOW = [
+        "빚 3천만원. 남의 돈을 굴려 그것을 갚는다.",
+        "종목을 알아보고 근거를 대서 맞혀야 에너지가 오른다.",
+        "에너지가 곧 보수이고, 보수만이 빚을 줄인다.",
+    ];
+
     private drawTitle(): void {
         const m = this.memory;
         const first = m.cycle <= 1;
@@ -436,6 +470,16 @@ export class TradingScene extends Phaser.Scene {
                 : "또 1997년이다. 이번에는 다르게 해 본다.";
         if (y + FS.sm <= rowsTop) {
             this.textFit(this.W / 2, y, line, FS.sm, "#8d9c93", 0.5, this.W - PAD * 2);
+            y += FS.sm + 16;
+        }
+
+        // **무엇을 하는 게임인가.** 여기 말고 이것을 적을 자리가 없었다 — 회사 화면은
+        // 판이 굴러가는 중이라 설명을 읽을 자리가 아니고, 처음 켠 사람은 규칙을 모른 채
+        // 「하루를 넘긴다」만 누르게 된다. 시작 화면의 이 빈 자리가 그 몫이다.
+        for (const how of TradingScene.HOW) {
+            if (y + FS.xs > rowsTop) break;
+            this.textFit(this.W / 2, y, how, FS.xs, "#6d7f78", 0.5, this.W - PAD * 2);
+            y += FS.xs + 6;
         }
 
         let ry = rowsTop;
@@ -553,7 +597,7 @@ export class TradingScene extends Phaser.Scene {
         // **버튼 하나.** 「여섯 장 고른다」는 상황카드를 걷어 내면서 같이 없앴다 —
         // 고를 것이 없는데 버튼만 남으면 눌러 보고 나서야 안다.
         this.buttons([
-            { label: "나간다", sub: ch.year, primary: true, on: () => this.leaveHome() },
+            { label: "사무실로 나간다", sub: `${ch.year}년 · ${ch.title}`, primary: true, on: () => this.leaveHome() },
         ], bar);
     }
 
@@ -577,7 +621,7 @@ export class TradingScene extends Phaser.Scene {
         const e = this.engine;
         const ch = e.chapter;
         const half = e.player.currentTurn <= 6 ? "상" : "하";
-        this.drawStrip(`${ch.year} ${half}반기 · ${e.player.currentTurn}/${e.player.maxTurns}`);
+        this.drawStrip(`${ch.year} ${half}반기 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
         this.drawLog();
         this.drawMarket();
         this.drawActions();
@@ -614,10 +658,10 @@ export class TradingScene extends Phaser.Scene {
         if (!c) {
             this.text(tx, b.y + rowH / 2 - FS.xs / 2, "오늘은 아무도 앉지 않았다.", FS.xs, S.down);
         } else if (rowH >= 34) {
-            this.textFit(tx, b.y + 4, c.name, FS.xs, S.ink, 0, room);
-            this.textFit(tx, b.y + 21, c.blurb, FS.xs, S.inkDim, 0, room);
+            this.textClip(tx, b.y + 4, c.name, FS.xs, S.ink, 0, room);
+            this.textClip(tx, b.y + 21, c.blurb, FS.xs, S.inkDim, 0, room);
         } else {
-            this.textFit(tx, b.y + rowH / 2 - FS.xs / 2, c.name, FS.xs, S.ink, 0, room);
+            this.textClip(tx, b.y + rowH / 2 - FS.xs / 2, c.name, FS.xs, S.ink, 0, room);
         }
 
         const logY = b.y + rowH;
@@ -693,17 +737,21 @@ export class TradingScene extends Phaser.Scene {
      */
     private drawActions(): void {
         const done = this.recommendedThisTurn;
+        // **화면에 초록은 하나뿐이다.** 아직 이번 턴에 할 일이 목록 안에 남아 있으면
+        // (알아보거나 권하거나) 초록은 거기 있고, 여기는 회색으로 기다린다.
+        const nothingLeft = done
+            || (this.researched === null && this.engine.player.energy < RESEARCH_COST);
         // **버튼이 하나다.** 「시세판」은 목록이 화면에 올라오면서 없어졌다 — 이미
         // 보이는 것을 여는 버튼이었다. 이 턴에 하는 일은 전부 목록 안에서 일어나고,
         // 여기 남은 것은 「이 턴을 끝낸다」 하나뿐이다.
         this.buttons([
             {
-                label: "다음 턴",
+                label: "하루를 넘긴다",
                 // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
                 sub: done
-                    ? `권했다 · ${this.engine.player.currentTurn}/${this.engine.player.maxTurns}`
-                    : `아직 안 권했다 · 에너지 −${ENERGY_DECAY}`,
-                primary: true,
+                    ? `오늘은 권했다 · 에너지 −${ENERGY_DECAY}`
+                    : `아무것도 안 하고 넘긴다 · 에너지 −${ENERGY_DECAY}`,
+                primary: nothingLeft,
                 on: () => this.endTurn(),
             },
         ]);
@@ -1064,9 +1112,9 @@ export class TradingScene extends Phaser.Scene {
         // 있는데 화면이 그걸 안 봤다.
         this.buttons([
             won
-                ? { label: "끝냈다", sub: `${this.memory.cycle}회차`, primary: true,
+                ? { label: "여기서 끝낸다", sub: `${this.memory.cycle}회차 만에 갚았다`, primary: true,
                     on: () => this.go("ending", cutEnded(this.memory.cycle)) }
-                : { label: "눈을 감는다", sub: "1997 로", primary: true,
+                : { label: "눈을 감는다", sub: "다시 1997년으로", primary: true,
                     on: () => this.goBack(reason) },
         ], bar);
     }

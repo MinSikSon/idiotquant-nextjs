@@ -47,7 +47,11 @@ const SHEET_MAX = 300;
 /** 차트를 빼고 머리·근거·버튼만 넣는 데 드는 높이. */
 const SHEET_MIN = 124;
 /** 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다 — 그때는 차트를 안 그린다. */
-const CHART_MIN = 96;
+const CHART_MIN = 64;
+/** 차트를 뺀 나머지가 쓰는 높이 — 머리 · 근거 줄 · 체결 버튼 · 여백. */
+const SHEET_CHROME = 112;
+/** 차트까지 서려면 판이 최소한 이만큼은 돼야 한다. */
+const SHEET_WITH_CHART = SHEET_MIN + CHART_MIN + 8;
 /** 이만큼 끌면 누른 것이 아니라 넘긴 것으로 친다. */
 const DRAG_SLOP = 8;
 
@@ -142,11 +146,28 @@ export class Market {
     private get viewH(): number { return this.d.band.h; }
 
     /**
-     * 아래 판의 높이. **한 줄은 반드시 남긴다** — 목록이 통째로 가리면 어디를 골랐는지
-     * 알 수 없다. 화면이 아주 낮으면 최소치가 이기고, 그때는 차트가 빠진다.
+     * 고른 종목 판의 높이. **내용에 딱 맞춘다 — 남는 자리는 목록이 쓴다.**
+     *
+     * 두 가지를 한꺼번에 막는 값이다.
+     *
+     * 1. 예전에는 `viewH - ROW_H` 라 **판이 목록을 거의 다 먹고 한 줄만 남았다.**
+     *    한 줄짜리 목록은 목록이 아니라 머리글처럼 보여서 「고르는 곳」으로 안 읽힌다.
+     * 2. 그렇다고 비율로만 자르면 **차트가 못 들어가는 어중간한 높이**가 생긴다. 그때는
+     *    차트 자리가 빈 채로 남아 판 한가운데에 구멍이 뚫린다 — 실제로 그랬다.
+     *
+     * 그래서 차트가 설 만큼이면 비율대로 주고, 아니면 **차트를 포기하고 최소치로**
+     * 줄인다. 어느 쪽이든 판에는 빈 자리가 없다.
      */
     private get sheetH(): number {
-        return Math.min(SHEET_MAX, Math.max(SHEET_MIN, this.viewH - ROW_H));
+        const v = this.viewH;
+        const want = Math.min(SHEET_MAX, Math.max(SHEET_MIN, Math.round(v * 0.58)));
+        const need = want >= SHEET_WITH_CHART ? want : SHEET_MIN;
+        return Math.min(need, Math.max(0, v - ROW_H));
+    }
+
+    /** 목록에 보이는 높이. 마지막 줄이 반쯤 걸리는 것은 「더 있다」는 표시다. */
+    private get listH(): number {
+        return Math.max(0, this.viewH - this.sheetH);
     }
 
     private draw(): void {
@@ -179,7 +200,7 @@ export class Market {
         this.root!.add(list);
 
         const shape = scene.add.graphics();
-        shape.fillStyle(0xffffff).fillRect(band.x, this.viewTop, width, this.viewH);
+        shape.fillStyle(0xffffff).fillRect(band.x, this.viewTop, width, this.listH);
         shape.setVisible(false);
         this.maskShape = shape;
         this.mask = shape.createGeometryMask();
@@ -197,7 +218,7 @@ export class Market {
         list.add(shade);
 
         // 목록 전체를 덮는 판을 깔고 거기서 드래그를 받는다.
-        const zone = scene.add.zone(band.x, this.viewTop, width, this.viewH).setOrigin(0, 0).setInteractive();
+        const zone = scene.add.zone(band.x, this.viewTop, width, this.listH).setOrigin(0, 0).setInteractive();
         this.root!.add(zone);
         const rowAt = (designY: number): number => {
             const local = designY - this.viewTop - this.scrollY;
@@ -237,7 +258,7 @@ export class Market {
 
     private applyScroll(): void {
         if (!this.list) return;
-        const min = Math.min(0, this.viewH - this.contentH);
+        const min = Math.min(0, this.listH - this.contentH);
         this.scrollY = Math.max(min, Math.min(0, this.scrollY));
         this.list.y = this.viewTop + this.scrollY;
     }
@@ -345,9 +366,9 @@ export class Market {
         // 아래에서부터 자리를 잡는다 — 버튼과 근거는 반드시 서고, **차트가 남는 것을 쓴다.**
         const btnH = 44;
         const btnY = top + h - btnH - 8;
-        const thY = btnY - 30;
-        const chartY = top + 28;
-        const chartH = thY - 8 - chartY;
+        const thY = btnY - 32;
+        const chartY = top + 24;
+        const chartH = thY - 6 - chartY;
 
         // 회사 화면에 늘 떠 있던 그 차트다. 여기서는 **고른 종목의 것**이라, 무엇을
         // 보고 있는지가 머리글과 붙어 있다.
@@ -371,37 +392,49 @@ export class Market {
         const can = this.d.canResearch();
         const cost = this.d.researchCost();
 
-        const label = mine ? `근거 · ${row.stock.name}`
-            : th ? `근거는 ${th}에 걸려 있다`
-            : can ? `알아본다 · 에너지 ${cost}`
-            : "알아볼 힘이 없다";
-        const ink = mine ? "#7fdca6" : can ? S.gold : S.inkDim;
+        const label = mine ? `이 종목은 알아봤다 — 근거가 있다`
+            : th ? `이번 턴은 ${th}을(를) 알아봤다`
+            : can ? `이 종목을 알아본다 — 에너지 ${cost}`
+            : `알아볼 에너지가 없다 (${cost} 필요)`;
+        // **아직 안 알아봤으면 이 줄이 이번 턴의 다음 걸음이다** — 그래서 버튼과 같은
+        // 초록을 쓴다. 화면에 초록은 언제나 하나뿐이고, 그것이 턴을 따라 옮겨 다닌다:
+        // 알아본다 → 근거를 대고 권한다 → 하루를 넘긴다.
+        const skin = mine ? BTN.normal : can ? BTN.primary : BTN.off;
+        const ink = mine ? "#7fdca6" : skin.ink;
 
         const tg = scene.add.graphics();
-        tg.fillStyle(mine ? 0x17332a : 0x141c1e, 1).fillRect(x0, thY, width - PAD * 2, 22);
-        if (can && !mine) tg.lineStyle(1, C.gold, 1).strokeRect(x0 + 0.5, thY + 0.5, width - PAD * 2 - 1, 21);
+        tg.fillStyle(mine ? 0x17332a : skin.face, 1).fillRect(x0, thY, width - PAD * 2, 24);
+        tg.lineStyle(1, mine ? 0x2c6349 : skin.edge, 1)
+            .strokeRect(x0 + 0.5, thY + 0.5, width - PAD * 2 - 1, 23);
         root.add(tg);
-        const tt = mkText(scene, x0 + 6, thY + 4, label, {
+        const tt = mkText(scene, x0 + 8, thY + 5, label, {
             fontFamily: f, fontSize: `${FS.xs}px`, color: ink,
         });
         root.add(tt);
 
         if (can && !mine) {
-            const { zone, shade } = pressable(scene, x0, thY, width - PAD * 2, 22, [tg, tt],
+            const { zone, shade } = pressable(scene, x0, thY, width - PAD * 2, 24, [tg, tt],
                 () => this.d.onResearch(row.stock.id), () => this.dragged <= DRAG_SLOP);
             root.add(shade);
             root.add(zone);
         }
 
         // 체결 — 한 턴에 권하는 것은 한 번뿐이다.
+        // **이름이 곧 일어나는 일이고, 부제가 그 대가다.**
+        // 예전 이름은 「권합니다」/「믿어보십시오」였는데, 둘이 같은 행동(매수)인데도
+        // 이름이 달라서 무엇이 다른지가 안 보였다. 다른 것은 **근거를 댔느냐**뿐이다.
         const half = (width - PAD * 2 - 6) / 2;
         const locked = this.d.alreadyRecommended();
+        const who = this.d.clientName();
         this.cell(root, x0, btnY, half, btnH,
-            locked ? "이미 권했다" : (mine ? "권합니다" : "믿어보십시오"),
-            locked ? "이번 턴은 끝" : `${this.d.clientName()}에게`,
-            locked ? null : () => this.d.onBuy(row.stock.id), !locked);
+            locked ? "오늘은 이미 권했다" : mine ? "근거를 대고 권한다" : "근거 없이 권한다",
+            locked ? "다음 턴에" : mine ? `${who}에게 · 현금 절반` : `틀리면 에너지가 크게 준다`,
+            locked ? null : () => this.d.onBuy(row.stock.id), mine && !locked);
         this.cell(root, x0 + half + 6, btnY, half, btnH,
-            "거둡니다", row.shares > 0 ? `${row.shares}주` : "보유 없음",
+            row.shares > 0 ? "지금 판다" : "가진 것이 없다",
+            row.shares > 0
+                ? `${row.shares}주 · ${row.pnlPct >= 0 ? "+" : ""}${row.pnlPct.toFixed(0)}%`
+                : "이 종목은 안 샀다",
             row.shares > 0 ? () => this.d.onSell(row.stock.id) : null, false);
     }
 
