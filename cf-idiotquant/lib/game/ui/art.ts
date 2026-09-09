@@ -18,6 +18,7 @@
 
 import Phaser from "phaser";
 import { FRAMES, type ArtKey } from "@/lib/game/core/interlude";
+import { C } from "@/lib/game/ui/theme";
 
 export type { ArtKey };
 
@@ -27,19 +28,19 @@ const SHEET_URL = "/game-art/sheet.png";
 /**
  * 그림 위에 덮는 겹의 진하기.
  *
- * 이 삽화는 크림색 바탕의 밝은 만화체이고 게임은 짙은 청록 터미널이다. 그대로 얹으면
- * 그림만 화면에서 튀어나와 UI 가 아니라 스티커로 보인다. 배경색을 한 겹 덮어 화면 쪽으로
- * 당긴다. **진하다/옅다 싶으면 이 숫자 하나만 고치면 된다.**
+ * 이 삽화는 크림색 바탕의 밝은 만화체다. 그대로 얹으면 그림만 화면에서 튀어나와 UI 가
+ * 아니라 스티커로 보인다. 바탕색을 한 겹 덮어 화면 쪽으로 당긴다.
+ * **진하다/옅다 싶으면 이 숫자 하나만 고치면 된다.**
  */
 export const ART_VEIL = 0.28;
 /**
- * 배경으로 깔 때의 세기. **글자가 그 위에 올라온다**(회사 화면의 로그).
+ * 창 뒤 **책상**으로 깔 때의 세기. 그 위에 창이 서고 글자는 창 안에 있다.
  *
- * 0.28 은 그림을 화면 쪽으로 당기는 정도라 글자를 얹으면 밝은 부분에서 대비가 무너진다.
- * 여기까지 덮으면 그림은 분위기로만 남고 글자가 이긴다. 더 덮으면(0.8 이상) 그림이
- * 통째로 안 보여서 배경을 깐 뜻이 없어진다 — 실제로 그랬다.
+ * 0.28 은 그림을 화면 쪽으로 당기는 정도다. 여기까지 덮어야 **글자가 이긴다** — 삽화가
+ * 크림색 만화체라 밝은 부분이 형광 초록보다 밝고, 그 위의 로그 한 줄이 안 읽힌다.
+ * 더 덮으면(0.9 이상) 그림이 통째로 안 보여서 깐 뜻이 없어진다.
  */
-export const ART_VEIL_BACK = 0.78;
+export const ART_VEIL_BACK = 0.84;
 
 /**
  * 시트를 받는다. `preload()` 에서 부른다.
@@ -78,7 +79,7 @@ export function hasArt(scene: Phaser.Scene, key: ArtKey): boolean {
  */
 export function drawArt(
     scene: Phaser.Scene, key: ArtKey, x: number, y: number, w: number, h: number,
-    opts: { veil?: number; cover?: boolean } = {},
+    opts: { veil?: number; cover?: boolean; tint?: number } = {},
 ): Phaser.GameObjects.GameObject[] | null {
     if (!hasArt(scene, key)) return null;
 
@@ -100,8 +101,11 @@ export function drawArt(
     // (도트 그림으로 바꾸면 그때 뒤집는다.)
     scene.textures.get(SHEET).setFilter(Phaser.Textures.FilterMode.LINEAR);
 
+    // **덮는 색은 그림이 놓인 바탕의 색이다.** 모니터 안이면 검정(`C.screen`), 창 뒤의
+    // 책상이면 회색(`C.bg`) — 바탕과 다른 색으로 덮으면 그림이 그 자리에 안 앉고
+    // 위에 떠 있는 판처럼 보인다.
     const veil = scene.add.graphics();
-    veil.fillStyle(0x0e1618, opts.veil ?? ART_VEIL).fillRect(x, y, w, h);
+    veil.fillStyle(opts.tint ?? C.screen, opts.veil ?? ART_VEIL).fillRect(x, y, w, h);
 
     return [img, veil];
 }
