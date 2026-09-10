@@ -740,8 +740,9 @@ export class TradingScene extends Phaser.Scene {
     private drawOffice(): void {
         const e = this.engine;
         const ch = e.chapter;
-        const half = e.player.currentTurn <= 6 ? "상" : "하";
-        this.drawBanner(`${ch.year} ${half}반기 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
+        // **반기는 안 적는다.** 상장이 반기마다 일어나지만 그건 로그가 말하고,
+        // 「상반기」라는 말로 이번 턴에 무엇을 할지가 갈리지 않는다.
+        this.drawBanner(`${ch.year}년 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
         this.drawLog();
         this.drawSheet();
         this.drawActions();
@@ -827,12 +828,13 @@ export class TradingScene extends Phaser.Scene {
         if (b.h <= 0) return;
 
         const eq = this.engine.equity;
-        const holds = Object.keys(this.engine.player.positions).length;
-        const stock = this.engine.focusStock;
 
         // **계좌는 제목 표시줄 안이다.** 늘 보여야 하지만 판을 하나 더 세울 값어치는 없다.
-        const win = this.frame(b, `주식 현황 — ${stock.name}`, {
-            text: `${money(eq)} · 보유 ${holds}`,
+        //
+        // 종목 이름은 여기 없다 — 바로 아래 머리줄이 그것을 말한다. 보유 종목 수도 뺐다:
+        // 이번 턴에 무엇을 할지가 그 숫자로 갈리는 자리가 없다.
+        const win = this.frame(b, "주식 현황", {
+            text: money(eq),
             color: eq >= SEED_CASH ? S.barInk : S.down,
         });
 
@@ -876,15 +878,15 @@ export class TradingScene extends Phaser.Scene {
      */
     private drawStockList(): void {
         const e = this.engine;
-        const half = e.player.currentTurn <= 6 ? "상" : "하";
-        this.drawBanner(`${e.chapter.year} ${half}반기 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
+        this.drawBanner(`${e.chapter.year}년 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
 
         const bar = this.placeBar;
         const top = this.bands.strip.h;
         const th = this.buff().thesis;
+        // 근거는 **있을 때만** 적는다. 「근거 없음」은 읽어도 아무것도 안 알려 준다.
         const win = winFrame(this, 2, top, this.W - 4, Math.max(0, bar.y - top),
             "종목 — 하나를 고른다",
-            { text: th ? `근거 ${th}` : "근거 없음", color: th ? S.up : S.barInk });
+            th ? { text: `근거 ${th}`, color: S.up } : undefined);
         for (const o of win.parts) this.keep(o);
 
         this.list = new StockList({
@@ -953,7 +955,7 @@ export class TradingScene extends Phaser.Scene {
         // 종목의 이름은 바로 위 창 제목이 이미 말하고 있어서 여기서 뺐다.
         const acts: ButtonDef[] = [
             {
-                label: "종목 고르기", short: "고르기", sub: "아홉 중에서", primary: false,
+                label: "종목 고르기", short: "고르기", sub: "", primary: false,
                 on: () => { this.place = "market"; this.redraw(); },
             },
         ];
@@ -986,6 +988,7 @@ export class TradingScene extends Phaser.Scene {
         // 칸이 87px 로 좁아져 「여섯 장 고른다」가 줄어든다.
         const live = defs.filter(d => d.label).length;
         const cols = Math.max(1, live);
+        const rowHasSub = defs.some(d => d.sub) && b.h - PAD * 2 >= 40;
         const cw = (b.w - PAD * 2 - gap * (cols - 1)) / cols;
         const chh = b.h - PAD * 2;
 
@@ -1000,7 +1003,9 @@ export class TradingScene extends Phaser.Scene {
             const faces = btnFace(this, x, y, cw, chh, skin);
             for (const g of faces) this.keep(g);
 
-            const showSub = Boolean(d.sub) && chh >= 40;
+            // **부제 자리는 줄 전체가 함께 정한다.** 한 칸만 부제가 없다고 그 이름만
+            // 가운데로 올라가면 나란한 이름들의 높이가 어긋난다.
+            const showSub = rowHasSub;
             // **한 줄의 글자 크기는 칸 폭 하나로 정해진다.** 칸마다 다른 크기가 되면
             // 같은 줄에 크기가 둘셋 섞인다.
             const size = cw < 124 ? FS.sm : FS.md;
@@ -1012,7 +1017,7 @@ export class TradingScene extends Phaser.Scene {
             if (label.displayWidth > room) {
                 label.setFontSize(Math.max(10, Math.floor(size * (room / label.displayWidth))));
             }
-            const subT = showSub
+            const subT = showSub && d.sub
                 ? this.textFit(x + cw / 2, y + chh / 2 + 7, d.sub, FS.xs, skin.sub, 0.5, room)
                 : null;
             if (!on) return;
