@@ -54,14 +54,11 @@ export interface StockSheetDeps {
     researchCost(): number;
     /** 지금 권하는 것을 막는 것. `"none"` 이면 누를 수 있다(`core/orders.ts`). */
     block(): OrderBlock;
-    /** 이번 턴에 **실제로 체결이 일어났는가.** 그러면 왼쪽 버튼이 「무른다」가 된다. */
-    canUndo(): boolean;
     /** 지금 앞에 앉은 사람의 이름. */
     clientName(): string;
     onResearch(id: string): void;
     onBuy(id: string): void;
     onSell(id: string): void;
-    onUndo(): void;
 }
 
 export class StockSheet {
@@ -174,27 +171,20 @@ export class StockSheet {
         }
 
         /* ── 체결 ─────────────────────────────────────────────────
-           왼쪽 칸 하나가 **셋 중 하나**가 된다. 셋은 동시에 설 수 없는 상태다.
+           **이 칸 둘은 언제나 사고파는 자리다.** 「무른다」는 여기 안 온다 — 아래 버튼
+           띠에 있다(`TradingScene.drawActions`).
 
-             체결했다   「무른다」      — 되돌리기 전에는 다시 권할 수 없다
-             막혔다     이유를 적고 잠근다 — 앞에 아무도 없다 / 거절당했다 / 현금이 모자란다
-             그 외      「권한다」
+           한때 왼쪽 칸이 체결 뒤에 「무른다」로 바뀌었는데, 그러면 **팔아서 현금을 만든
+           다음 권하는 길이 막힌다.** 바로 그 위 칸이 「팔아야 권할 현금이 생긴다」고
+           말해 놓고, 팔고 나면 권하는 버튼이 사라지는 셈이었다. 무름은 한 턴을 통째로
+           되돌리는 **턴 단위 행동**이라 종목 판이 아니라 버튼 띠가 질 일이다.
 
-           예전에는 이 자리가 「권한다」 아니면 **죽은** 「오늘은 이미 권했다」였고,
-           막힌 두 경우(고객 없음 · 현금 모자람)는 **버튼이 멀쩡해 보이는데 눌러도
-           아무 일이 없었다.** 이제 못 누르는 자리는 왜 못 누르는지를 이름에 적는다. */
+           왼쪽 칸은 **둘 중 하나**다 — 막혔으면 이유를 적고 잠그거나, 「권한다」거나. */
         const half = (inW - 6) / 2;
         const who = this.d.clientName();
-        const undoable = this.d.canUndo();
         const block = this.d.block();
 
-        if (undoable) {
-            // **무름이 서면 권하기는 안 선다.** 둘 다 세우면 「이미 산 것을 또 사는」
-            // 길이 생기고, 한 턴에 한 번이라는 규칙과 화면이 어긋난다.
-            this.cell(root, x0, btnY, half, BTN_H,
-                "무른다", "방금 한 것을 되돌린다",
-                () => this.d.onUndo(), false);
-        } else if (block !== "none") {
+        if (block !== "none") {
             const say = blockSay(block);
             this.cell(root, x0, btnY, half, BTN_H, say.label, say.sub, null, false);
         } else {

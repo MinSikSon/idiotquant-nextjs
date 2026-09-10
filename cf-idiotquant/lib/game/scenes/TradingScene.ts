@@ -51,6 +51,23 @@ import {
 } from "@/lib/game/ui/theme";
 import { TITLE_H, bevel, btnFace, crt, skinOf, winFrame } from "@/lib/game/ui/win95";
 
+/** 버튼 띠 한 칸. */
+interface ButtonDef {
+    label: string;
+    /**
+     * 칸이 좁을 때 대신 쓸 **짧은 이름.** 뜻은 남기고 길이만 줄인다.
+     *
+     * 글꼴이 고정폭이라 한글이 **전각**이다 — 「하루를 넘긴다」는 14px 에서도 109px 이라,
+     * 버튼이 셋이 되어 칸이 106px 로 줄면 **어떤 크기로도 안 들어간다.** 그때 줄이는 데만
+     * 맡기면 긴 이름만 쪼그라들어 한 줄에 크기가 둘셋 섞인다 — 가로에서 실제로 그랬다.
+     */
+    short?: string;
+    sub: string;
+    primary?: boolean;
+    /** null 이면 못 누른다. 그때 이름과 부제가 **왜 못 누르는지**를 말한다. */
+    on: (() => void) | null;
+}
+
 /**
  * 지금 무엇을 보고 있는가.
  *
@@ -828,12 +845,10 @@ export class TradingScene extends Phaser.Scene {
             otherThesis: () => this.otherThesis(),
             researchCost: () => RESEARCH_COST,
             block: () => this.orderBlock(),
-            canUndo: () => this.traded,
             clientName: () => this.client?.name ?? "아무도",
             onResearch: (id: string) => this.research(id),
             onBuy: (id: string) => this.recommend(id),
             onSell: (id: string) => this.sell(id),
-            onUndo: () => this.undoTrades(),
         });
         this.sheet.draw();
     }
@@ -927,34 +942,39 @@ export class TradingScene extends Phaser.Scene {
         // 안 밝히면, 사고 난 뒤에 다음 걸음이 화면에서 사라진다.
         const nothingLeft = !canStillResearch && !worthBuying;
 
-        // **버튼 둘.** 목록이 화면 하나를 통째로 쓰는 자리로 나가면서
-        // 「종목 고르기」가 여기 섰다 — 그 화면으로 가는 길은 이것 하나다.
-        this.buttons([
+        // **버튼 둘, 무를 것이 있으면 셋.**
+        //
+        // 「무른다」가 여기 있는 이유: 무름은 한 턴을 통째로 되돌리는 **턴 단위 행동**이다.
+        // 한때 종목 판의 체결 칸이 체결 뒤에 「무른다」로 바뀌었는데, 그러면 **팔아서
+        // 현금을 만든 다음 권하는 길이 막혔다** — 바로 위 칸이 「팔아야 권할 현금이
+        // 생긴다」고 말해 놓고 팔고 나면 권하는 버튼이 사라졌다. 매매 칸은 매매만 진다.
+        //
+        // 셋이 서면 칸이 118px 로 줄어 부제가 눌린다. 그래서 부제를 짧게 둔다 — 고른
+        // 종목의 이름은 바로 위 창 제목이 이미 말하고 있어서 여기서 뺐다.
+        const acts: ButtonDef[] = [
             {
-                label: "종목 고르기",
-                sub: `지금 — ${this.engine.focusStock.name}`,
-                primary: false,
+                label: "종목 고르기", short: "고르기", sub: "아홉 중에서", primary: false,
                 on: () => { this.place = "market"; this.redraw(); },
             },
-            {
-                label: "하루를 넘긴다",
-                // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
-                sub: done ? `오늘은 권했다 · −${ENERGY_DECAY}`
-                    : `그냥 넘긴다 · 에너지 −${ENERGY_DECAY}`,
-                primary: nothingLeft,
-                on: () => this.endTurn(),
-            },
-        ]);
+        ];
+        if (this.traded) {
+            acts.push({ label: "무른다", sub: "아침으로", primary: false, on: () => this.undoTrades() });
+        }
+        acts.push({
+            label: "하루를 넘긴다", short: "넘긴다",
+            // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
+            sub: done ? `권했다 · −${ENERGY_DECAY}` : `에너지 −${ENERGY_DECAY}`,
+            primary: nothingLeft,
+            on: () => this.endTurn(),
+        });
+        this.buttons(acts);
     }
 
     /**
      * @param band 어느 띠에 세울까. 안 주면 회사 화면의 버튼 띠.
      *   **집·공원은 두 칸 배치를 안 쓴다** — 장소가 곧 화면이라 가로에서도 전폭이다.
      */
-    private buttons(
-        defs: Array<{ label: string; sub: string; primary?: boolean; on: (() => void) | null }>,
-        band?: Band,
-    ): void {
+    private buttons(defs: ButtonDef[], band?: Band): void {
         const b = band ?? this.bands.action;
         // **버튼이 놓인 판.** 그 시절 대화상자의 아래쪽이 이렇게 생겼다 — 버튼은 회색
         // 판 위에 놓이지, 허공에 떠 있지 않다. (한때 이 띠를 안 칠하고 위 선 하나로만
@@ -981,10 +1001,17 @@ export class TradingScene extends Phaser.Scene {
             for (const g of faces) this.keep(g);
 
             const showSub = Boolean(d.sub) && chh >= 40;
-            const size = cw < 84 ? FS.sm : FS.md;
+            // **한 줄의 글자 크기는 칸 폭 하나로 정해진다.** 칸마다 다른 크기가 되면
+            // 같은 줄에 크기가 둘셋 섞인다.
+            const size = cw < 124 ? FS.sm : FS.md;
             const room = cw - 14;
-            const label = this.textFit(x + cw / 2, y + chh / 2 - (showSub ? 13 : size / 2),
-                d.label, size, skin.ink, 0.5, room);
+            // 긴 이름은 **줄이기 전에 짧은 이름으로 바꾼다.** 줄이는 것은 마지막 수단이다.
+            const label = this.text(x + cw / 2, y + chh / 2 - (showSub ? 13 : size / 2),
+                d.label, size, skin.ink, 0.5);
+            if (d.short && label.displayWidth > room) label.setText(d.short);
+            if (label.displayWidth > room) {
+                label.setFontSize(Math.max(10, Math.floor(size * (room / label.displayWidth))));
+            }
             const subT = showSub
                 ? this.textFit(x + cw / 2, y + chh / 2 + 7, d.sub, FS.xs, skin.sub, 0.5, room)
                 : null;
@@ -1133,9 +1160,11 @@ export class TradingScene extends Phaser.Scene {
     private orderBlock(): OrderBlock {
         return recommendBlock({
             hasClient: this.client !== null,
+            recommended: this.recommendedThisTurn,
             // 거절당한 턴은 체결이 없으므로 `traded` 가 false 다 — 그 상태가 곧 거절이다.
-            refused: this.recommendedThisTurn && !this.traded,
+            traded: this.traded,
             cash: this.engine.player.cash,
+            equity: this.engine.equity,
             price: this.engine.priceOf(this.engine.focus),
         });
     }

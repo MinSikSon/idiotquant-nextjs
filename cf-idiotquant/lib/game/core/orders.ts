@@ -7,6 +7,8 @@
 //                            로그도 안 남아서, 누른 사람은 게임이 멈춘 줄 안다.
 //   현금이 한 주 값에 못 미칠 때  누른 **뒤에** 로그로 「현금이 한 주 값에 못 미칩니다」가
 //                            떴다. 누르기 전에는 멀쩡한 버튼으로 보인다.
+//   맡은 돈이 다 들어가 있을 때  프롤로그가 그렇다. 잔돈으로 **1주**가 사졌고
+//                            「어머니에게 1주를 권했다」가 로그에 남았다.
 //
 // 둘 다 「눌러 보고 나서야 아는」 자리다. 이 게임은 캔버스라 브라우저가 해 주는 것이
 // 하나도 없으므로, **못 누르는 이유를 화면이 직접 말해야 한다.**
@@ -20,15 +22,37 @@
  * **「이미 권했다」는 여기 없다.** 그건 막힌 것이 아니라 *되돌릴 수 있는* 상태이고
  * (`무른다`), 화면이 그 자리에 다른 버튼을 세운다.
  */
-export type OrderBlock = "none" | "noClient" | "refused" | "notEnoughCash";
+export type OrderBlock =
+    | "none" | "noClient" | "done" | "refused" | "fullyInvested" | "notEnoughCash";
+
+/**
+ * 권할 만한 크기의 바닥 — **계좌의 1%.**
+ *
+ * ── 왜 「한 주라도 살 수 있으면」이 아닌가 ─────────────────────
+ * 프롤로그(1997)는 고객 돈이 **전부** 시장에 들어간 채로 열린다(`chapters.ts` 의
+ * `opening`). 그래서 남는 현금은 결정이 아니라 **세 번 사고 남은 잔돈**이다 — 주수를
+ * 정수로 자르느라 생긴 부스러기.
+ *
+ * 그 부스러기로 한 주를 살 수 있다는 이유로 버튼이 열려 있었고, 눌러 보면
+ * 「어머니에게 **1주**를 권했다. 수수료 1.」 이 로그에 남았다. 2,500만짜리 계좌에서
+ * 1주는 권한 것이 아니다.
+ *
+ * 계좌의 1% 를 못 채우면 그건 굴릴 돈이 없는 것이다. 그때 화면은 **팔라고 말한다** —
+ * 1997 의 유일한 행동이 그것이고, 1998 이 그 잔해를 안고 시작하는 이유도 그것이다.
+ */
+export const MIN_ORDER_RATIO = 0.01;
 
 export interface OrderCheck {
     /** 오늘 앞에 앉은 사람이 있는가. 없으면 권할 상대가 없다. */
     hasClient: boolean;
-    /** 이번 턴에 권했는데 **거절당했는가.** 거절은 무를 수 없다. */
-    refused: boolean;
+    /** 이번 턴에 이미 권했는가(거절당한 것도 권한 것이다). */
+    recommended: boolean;
+    /** 이번 턴에 **실제로 체결이 일어났는가.** 권했는데 거절당했으면 false. */
+    traded: boolean;
     /** 지금 현금. */
     cash: number;
+    /** 맡은 돈 전체(현금 + 평가액). 「굴릴 돈이 남았는가」를 이 값에 견준다. */
+    equity: number;
     /** 한 주 값(수수료 뺀 값이면 된다 — 경계에서 한 주 차이는 아래 주석 참고). */
     price: number;
 }
@@ -42,7 +66,11 @@ export interface OrderCheck {
  */
 export function recommendBlock(c: OrderCheck): OrderBlock {
     if (!c.hasClient) return "noClient";
-    if (c.refused) return "refused";
+    // 이미 권한 턴 — 체결됐으면 무르면 되고, 거절당했으면 그걸로 끝이다.
+    if (c.recommended) return c.traded ? "done" : "refused";
+    // **먼저 「굴릴 돈이 있는가」를 본다.** 이쪽이 더 큰 사실이고, 할 일도 다르다 —
+    // 현금이 없으면 팔아야 하고, 한 주 값에 못 미치면 더 싼 종목을 보면 된다.
+    if (c.equity > 0 && c.cash < c.equity * MIN_ORDER_RATIO) return "fullyInvested";
     if (c.price <= 0 || Math.floor(c.cash / 2) < c.price) return "notEnoughCash";
     return "none";
 }
@@ -56,7 +84,13 @@ export function recommendBlock(c: OrderCheck): OrderBlock {
 export function blockSay(b: OrderBlock): { label: string; sub: string } {
     switch (b) {
         case "noClient":      return { label: "앞에 아무도 없다", sub: "오늘은 권할 사람이 없다" };
+        // **무르면 다시 권할 수 있다는 것을 여기서 말한다.** 무름 버튼은 아래 버튼 띠에
+        // 있는데, 이 칸을 보고 있던 사람이 그 사실을 모르면 턴이 끝난 줄 안다.
+        case "done":          return { label: "오늘은 권했다", sub: "무르면 다시 권할 수 있다" };
         case "refused":       return { label: "고개를 저었다", sub: "오늘은 여기까지다" };
+        // **다음에 할 일을 적는다.** 1997 은 이 줄을 넉 턴 내내 보게 되는데,
+        // 그때 할 수 있는 유일한 행동이 파는 것이다.
+        case "fullyInvested": return { label: "넣을 현금이 없다", sub: "팔아야 권할 현금이 생긴다" };
         case "notEnoughCash": return { label: "현금이 모자란다", sub: "한 주 값에 못 미친다" };
         case "none":          return { label: "", sub: "" };
     }

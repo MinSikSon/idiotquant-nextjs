@@ -358,34 +358,61 @@ test("판정마다 다른 말을 하고, 빈 문구가 없다", () => {
 /* ── 체결을 막는 것 · 무름 ──────────────────────────────────── */
 
 test("권하는 것을 막는 것 넷 — 그리고 저마다 다른 말을 한다", () => {
-    const ok = { hasClient: true, refused: false, cash: 10_000_000, price: 10_000 };
+    const ok = {
+        hasClient: true, recommended: false, traded: false,
+        cash: 10_000_000, equity: 10_000_000, price: 10_000,
+    };
     assert.equal(recommendBlock(ok), "none");
 
-    // **눌러도 아무 일이 없던 두 경우가 여기 있다.**
+    // **눌러도 아무 일이 없던 세 경우가 여기 있다.**
     assert.equal(recommendBlock({ ...ok, hasClient: false }), "noClient");
-    assert.equal(recommendBlock({ ...ok, cash: 10_000 }), "notEnoughCash");   // 절반은 5,000
-    assert.equal(recommendBlock({ ...ok, refused: true }), "refused");
+    // 권한 턴 — 체결됐으면 무를 수 있고, 거절당했으면 그걸로 끝이다.
+    assert.equal(recommendBlock({ ...ok, recommended: true, traded: true }), "done");
+    assert.equal(recommendBlock({ ...ok, recommended: true }), "refused");
+    // 현금은 있는데 이 종목 한 주가 그보다 비싸다.
+    assert.equal(recommendBlock({ ...ok, cash: 10_000, equity: 20_000 }), "notEnoughCash");
+    // 맡은 돈이 전부 들어가 있다 — 프롤로그가 그렇다.
+    assert.equal(recommendBlock({ ...ok, cash: 35_000, equity: 25_000_000 }), "fullyInvested");
 
     const labels = new Set<string>();
-    for (const b of ["noClient", "refused", "notEnoughCash"] as const) {
+    for (const b of ["noClient", "done", "refused", "fullyInvested", "notEnoughCash"] as const) {
         const { label, sub } = blockSay(b);
         assert.ok(label.length > 0 && sub.length > 0, `${b} 의 문구가 비었다`);
         labels.add(label);
     }
-    assert.equal(labels.size, 3, "막힌 이유 셋이 같은 말을 한다");
+    assert.equal(labels.size, 5, "막힌 이유 다섯 중 같은 말을 하는 것이 있다");
 });
 
 test("현금 절반이 한 주 값에 닿는 경계", () => {
     // **절반으로 산다.** 그래서 현금이 한 주 값의 두 배는 돼야 한다.
-    const at = (cash: number) => recommendBlock({ hasClient: true, refused: false, cash, price: 1_000 });
+    // 계좌를 현금과 같게 두어 「다 들어가 있다」에 안 걸리게 한다.
+    const at = (cash: number) => recommendBlock({
+        hasClient: true, recommended: false, traded: false, cash, equity: cash, price: 1_000,
+    });
     assert.equal(at(1_999), "notEnoughCash");
     assert.equal(at(2_000), "none");
     assert.equal(at(0), "notEnoughCash");
 });
 
+test("계좌의 1% 가 굴릴 돈이 남았는지의 경계다", () => {
+    const at = (cash: number) => recommendBlock({
+        hasClient: true, recommended: false, traded: false, cash, equity: 25_000_000, price: 1_000,
+    });
+    assert.equal(at(249_999), "fullyInvested");
+    assert.equal(at(250_000), "none", "1% 를 채우면 굴릴 돈이 있는 것이다");
+    // 프롤로그의 잔돈 — 세 번 사고 남은 부스러기로 한 주가 사지던 자리.
+    assert.equal(at(35_000), "fullyInvested");
+});
+
 test("막힌 자리는 순서가 있다 — 사람이 없으면 현금은 볼 것도 없다", () => {
-    assert.equal(recommendBlock({ hasClient: false, refused: true, cash: 0, price: 10_000 }), "noClient");
-    assert.equal(recommendBlock({ hasClient: true, refused: true, cash: 0, price: 10_000 }), "refused");
+    const at = (o: Partial<Parameters<typeof recommendBlock>[0]>) => recommendBlock({
+        hasClient: true, recommended: false, traded: false,
+        cash: 0, equity: 10_000_000, price: 10_000, ...o,
+    });
+    assert.equal(at({ hasClient: false, recommended: true }), "noClient");
+    assert.equal(at({ recommended: true }), "refused");
+    // 굴릴 돈이 없는 것이 더 큰 사실이다 — 할 일도 다르다(팔아야 한다).
+    assert.equal(at({ cash: 0 }), "fullyInvested");
 });
 
 test("무름은 현금과 보유를 아침으로 되돌린다 — 그리고 값이 없다", () => {
@@ -478,4 +505,18 @@ test("알아보기 줄의 문구는 다섯 가지가 다 다르다", () => {
         seen.add(t);
     }
     assert.equal(seen.size, 5, "같은 말을 하는 자리가 있다");
+});
+
+test("팔아서 현금을 만든 다음 권하는 길이 열려 있어야 한다", () => {
+    // 「팔아야 권할 현금이 생긴다」고 말해 놓고 팔고 나면 권할 수 없으면 화면이 거짓말이다.
+    // 판 것은 `recommended` 를 안 세우므로, 현금만 생기면 막힘이 풀린다.
+    const invested = {
+        hasClient: true, recommended: false, traded: false,
+        cash: 35_000, equity: 25_000_000, price: 12_000,
+    };
+    assert.equal(recommendBlock(invested), "fullyInvested");
+
+    // 한 종목을 거둬 현금이 들어왔다. **판 것은 「권한 것」이 아니다.**
+    const afterSell = { ...invested, cash: 9_000_000, traded: true };
+    assert.equal(recommendBlock(afterSell), "none", "팔고 나면 권할 수 있어야 한다");
 });
