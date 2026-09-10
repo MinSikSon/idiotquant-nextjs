@@ -31,6 +31,14 @@ import {
     type Chapter, type StockDef,
 } from "./chapters";
 
+/** 되돌릴 수 있게 떠 둔 체결 상태. `markTrades()` 가 만들고 `restoreTrades()` 가 되돌린다. */
+export interface TradeMark {
+    cash: number;
+    positions: Record<string, Position>;
+    /** 이 챕터에 한 번이라도 권했는가. 챕터 결산의 `idle` 이 이 값을 본다. */
+    recommended: boolean;
+}
+
 /* ── 상수 ───────────────────────────────────────────────────── */
 
 /**
@@ -554,6 +562,35 @@ export class StockEngine {
         this.recommended = true;
 
         return { ok: true, id, side: "buy", qty, price, fee, cash: this.player.cash };
+    }
+
+    /* ── 무름 ────────────────────────────────────────────
+       체결은 **턴 안에서 되돌릴 수 있다.** 주가는 `tick()` 에서만 움직이므로, 턴이
+       넘어가기 전이라면 현금과 보유를 그대로 되돌려 놓는 것으로 충분하다 — 되돌린 뒤에
+       다시 사면 값도 수수료도 똑같다. 그래서 무름에 이득이 없고, 오직 잘못 누른 것을
+       고치는 데만 쓰인다.
+
+       **엔진이 자기 상태를 떠 둔다.** 씬이 `player.cash` 와 `positions` 를 직접 베껴
+       두면 `recommended`(챕터에 한 번이라도 권했는가) 같은 안쪽 값이 빠지고, 그러면
+       무른 판인데도 챕터 결산이 「한 번도 권하지 않았다」를 안 적는다. */
+
+    /** 지금 체결 상태를 떠 둔다. */
+    markTrades(): TradeMark {
+        const positions: Record<string, Position> = {};
+        for (const [id, p] of Object.entries(this.player.positions)) positions[id] = { ...p };
+        return { cash: this.player.cash, positions, recommended: this.recommended };
+    }
+
+    /**
+     * 떠 둔 자리로 되돌린다. **주가는 안 건드린다** — 무름은 턴 안에서만 일어나고,
+     * 그 사이에 주가는 움직이지 않았다.
+     */
+    restoreTrades(m: TradeMark): void {
+        const positions: Record<string, Position> = {};
+        for (const [id, p] of Object.entries(m.positions)) positions[id] = { ...p };
+        this.player.cash = m.cash;
+        this.player.positions = positions;
+        this.recommended = m.recommended;
     }
 
     /** 한 종목의 보유 전량을 판다. */
