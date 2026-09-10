@@ -1,0 +1,215 @@
+// 장부 — **화면이 말하는 값과 실제로 일어나는 일이 같은가.**
+//
+// 이 파일이 지키는 것은 하나다: `ledgerOf` 의 「챕터가 지금 끝나면」과
+// `StockEngine.endChapter` 가 **실제로** 하는 일이 어긋나지 않는 것.
+//
+// 어긋나면 이 화면을 만든 이유가 통째로 무너진다. 장부는 「보수 163만을 받아 빚이
+// 2,837만이 된다」고 적어 놓고 결산은 다른 숫자를 내놓는 꼴이 되는데, 그러면 사람은
+// 둘 중 어느 것도 안 믿게 된다.
+//
+// `ledgerOf` 는 Phaser 를 안 부르는 순수 함수라 브라우저 없이 돈다.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { ledgerOf, type LedgerInput } from "@/lib/game/core/ledger";
+import { FEE_BASE, FEE_BY_ENERGY, advisoryFee, feeRate } from "@/lib/game/core/energy";
+import { StockEngine } from "@/lib/game/core/StockEngine";
+
+const base: LedgerInput = {
+    startEquity: 25_000_000,
+    equity: 28_000_000,
+    cash: 4_000_000,
+    peakEquity: 28_000_000,
+    energy: 50,
+    debt: 30_000_000,
+    interest: 0.15,
+    debtOnEnd: 0,
+    feePaid: 0,
+};
+
+const at = (over: Partial<LedgerInput>): LedgerInput => ({ ...base, ...over });
+
+/* ── 보수율은 한 군데서만 나온다 ─────────────────────────────── */
+
+test("feeRate 는 에너지 0 에서 밑값, 100 에서 밑값+비례분", () => {
+    assert.equal(feeRate(0), FEE_BASE);
+    assert.equal(feeRate(100), FEE_BASE + FEE_BY_ENERGY);
+    assert.equal(feeRate(50), FEE_BASE + FEE_BY_ENERGY * 0.5);
+    // 범위 밖은 가둔다 — 화면이 120% 짜리 보수율을 적는 일이 없게.
+    assert.equal(feeRate(-10), FEE_BASE);
+    assert.equal(feeRate(999), FEE_BASE + FEE_BY_ENERGY);
+});
+
+test("advisoryFee 는 feeRate 를 쓴다 — 같은 식이 두 벌이 아니다", () => {
+    for (const energy of [0, 17, 38, 50, 83, 100]) {
+        assert.equal(advisoryFee(3_000_000, energy),
+            Math.floor(3_000_000 * feeRate(energy)));
+    }
+});
+
+/* ── 맡은 돈 ─────────────────────────────────────────────────── */
+
+test("이번 챕터에 늘린 것과 그 비율", () => {
+    const l = ledgerOf(base);
+    assert.equal(l.entrusted.delta, 3_000_000);
+    assert.equal(Math.round(l.entrusted.pct * 10) / 10, 12);
+});
+
+test("현금과 주식은 합쳐서 맡은 돈이다", () => {
+    const l = ledgerOf(base);
+    assert.equal(l.entrusted.cash + l.entrusted.invested, l.entrusted.now);
+});
+
+test("최고 기록은 지금보다 작을 수 없다 — 이번 턴에 오른 것도 최고다", () => {
+    // 최고 기록은 턴이 넘어갈 때만 갱신되므로(`advanceTurn`), 이번 턴에 오른 것은
+    // 아직 안 들어가 있다. 그대로 적으면 「지금」이 「최고」보다 큰 장부가 된다.
+    const l = ledgerOf(at({ peakEquity: 26_000_000, equity: 31_000_000 }));
+    assert.equal(l.entrusted.peak, 31_000_000);
+});
+
+test("시작 자산이 0 이면 비율은 0 — 나눗셈이 터지지 않는다", () => {
+    assert.equal(ledgerOf(at({ startEquity: 0, equity: 100 })).entrusted.pct, 0);
+});
+
+/* ── 얻은 돈 ─────────────────────────────────────────────────── */
+
+test("못 늘린 챕터에는 보수가 없다", () => {
+    const l = ledgerOf(at({ equity: 24_000_000 }));
+    assert.equal(l.earned.fee, 0);
+    assert.ok(l.entrusted.delta < 0);
+});
+
+test("같은 수익이라도 에너지가 높으면 보수가 크다 — 이 화면의 논지", () => {
+    const low = ledgerOf(at({ energy: 20 })).earned.fee;
+    const high = ledgerOf(at({ energy: 90 })).earned.fee;
+    assert.ok(high > low, `에너지 90 의 보수 ${high} 가 20 의 ${low} 보다 커야 한다`);
+});
+
+/* ── 갚을 돈 — 순서가 `endChapter` 와 같아야 한다 ──────────────── */
+
+test("보수로 먼저 깎고, 남은 것에 이자가 붙는다", () => {
+    const l = ledgerOf(base);
+    const fee = advisoryFee(3_000_000, 50);
+    const afterFee = 30_000_000 - fee;
+    assert.equal(l.owed.byFee, fee);
+    assert.equal(l.owed.end, Math.round(afterFee * 1.15));
+    assert.equal(l.owed.interest, Math.round(afterFee * 1.15) - afterFee);
+});
+
+test("보수가 빚보다 크면 깎이는 것은 빚까지다 — 거스름돈은 없다", () => {
+    const l = ledgerOf(at({ debt: 100_000, equity: 125_000_000 }));
+    assert.equal(l.owed.byFee, 100_000);
+    assert.equal(l.owed.end, 0);
+    assert.equal(l.owed.interest, 0);
+});
+
+test("프롤로그의 새 빚은 이자 뒤에 얹힌다", () => {
+    // `endChapter` 가 그 순서다 — 이자를 곱한 다음 `debtOnEnd` 를 더한다.
+    // 뒤집으면 아직 지지도 않은 빚에 이자가 붙는다.
+    const l = ledgerOf(at({ debt: 0, debtOnEnd: 30_000_000, interest: 0 }));
+    assert.equal(l.owed.added, 30_000_000);
+    assert.equal(l.owed.end, 30_000_000);
+});
+
+test("빚이 없으면 이자도 없다", () => {
+    const l = ledgerOf(at({ debt: 0 }));
+    assert.equal(l.owed.interest, 0);
+    assert.equal(l.owed.byFee, 0);
+    assert.equal(l.owed.end, 0);
+});
+
+/* ── 결산과 장부가 같은 값을 말한다 ───────────────────────────── */
+
+test("장부의 「챕터 끝에」는 endChapter 가 실제로 내는 빚과 같다", () => {
+    // `StockEngine.endChapter` 의 세 줄을 그대로 옮겨 견준다.
+    // 이 셋의 **순서**가 어긋나면 여기서 걸린다.
+    const cases: Array<Partial<LedgerInput>> = [
+        {},
+        { energy: 0 },
+        { energy: 100 },
+        { equity: 20_000_000 },
+        { debt: 0, debtOnEnd: 30_000_000 },
+        { debt: 1_000, equity: 90_000_000 },
+        { interest: 0 },
+        { interest: 0.2, debtOnEnd: 5_000_000 },
+    ];
+    for (const over of cases) {
+        const i = at(over);
+        const l = ledgerOf(i);
+
+        let debt = i.debt;
+        const fee = advisoryFee(i.equity - i.startEquity, i.energy);
+        debt = Math.max(0, debt - fee);
+        debt = Math.round(debt * (1 + i.interest));
+        debt += i.debtOnEnd;
+
+        assert.equal(l.owed.end, debt, `${JSON.stringify(over)} 에서 어긋났다`);
+        assert.equal(l.earned.fee, fee);
+    }
+});
+
+test("실제 엔진에 물려도 같다 — 손으로 옮겨 적은 셈이 아니라는 확인", () => {
+    // 위 테스트는 `endChapter` 의 세 줄을 **옮겨 적어** 견준다. 옮겨 적은 것이 틀리면
+    // 둘 다 같이 틀리므로, 여기서는 진짜 엔진을 돌려 실제로 나온 값과 맞춰 본다.
+    for (const seed of [1, 7, 42, 1234, 98765]) {
+        const e = new StockEngine(seed);
+        // 몇 턴 굴려서 자산이 시작값과 달라지게 한다.
+        for (let i = 0; i < 3; i++) {
+            e.buyHalf(e.focusStock.id);
+            e.advanceTurn();
+        }
+        const before = ledgerOf({
+            startEquity: e.chapterStart,
+            equity: e.equity,
+            cash: e.player.cash,
+            peakEquity: e.peakEquity,
+            energy: e.player.energy,
+            debt: e.player.debt,
+            interest: e.chapter.interest,
+            debtOnEnd: e.chapter.debtOnEnd ?? 0,
+            feePaid: 0,
+        });
+
+        const sum = e.endChapter();
+
+        assert.equal(before.earned.fee, sum.fee, `시드 ${seed}: 보수가 어긋났다`);
+        assert.equal(before.owed.end, sum.debt, `시드 ${seed}: 챕터 끝 빚이 어긋났다`);
+        assert.equal(before.entrusted.now, sum.finalEquity);
+        assert.equal(before.entrusted.start, sum.startEquity);
+
+        // **프롤로그만으로는 부족하다.** 1997 은 빚이 0 으로 시작하므로 「보수로 깎고
+        // 이자」의 순서가 뒤집혀도 값이 같다. 빚 3천만을 안고 1998 로 넘어간 뒤에 다시 본다.
+        e.startNextChapter();
+        assert.ok(e.player.debt > 0, "1998 은 빚을 안고 시작한다");
+        // **보수가 0 이면 순서가 뒤집혀도 값이 같다.** 하락장에서 그냥 사면 거의 늘
+        // 그렇게 되므로, 여기서는 이익이 났다고 못박고 본다.
+        e.player.cash += 10_000_000;
+        for (let i = 0; i < 3; i++) e.advanceTurn();
+        assert.ok(e.equity > e.chapterStart, "이익이 나 있어야 보수가 0 이 아니다");
+        const mid = ledgerOf({
+            startEquity: e.chapterStart,
+            equity: e.equity,
+            cash: e.player.cash,
+            peakEquity: e.peakEquity,
+            energy: e.player.energy,
+            debt: e.player.debt,
+            interest: e.chapter.interest,
+            debtOnEnd: e.chapter.debtOnEnd ?? 0,
+            feePaid: 0,
+        });
+        const sum2 = e.endChapter();
+        assert.equal(mid.earned.fee, sum2.fee, `시드 ${seed}: 1998 보수가 어긋났다`);
+        assert.equal(mid.owed.end, sum2.debt, `시드 ${seed}: 1998 챕터 끝 빚이 어긋났다`);
+    }
+});
+
+test("최고 자산은 챕터를 넘어도 안 지워진다", () => {
+    const e = new StockEngine(11);
+    for (let i = 0; i < 4; i++) e.advanceTurn();
+    const peak = e.peakEquity;
+    assert.ok(peak >= e.chapterStart);
+    e.endChapter();
+    e.startNextChapter();
+    assert.ok(e.peakEquity >= peak, "챕터를 넘겼다고 최고 기록이 줄어들면 안 된다");
+});

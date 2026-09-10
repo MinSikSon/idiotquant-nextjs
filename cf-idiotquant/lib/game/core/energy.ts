@@ -95,8 +95,18 @@ export function decay(energy: number): number {
  */
 export function advisoryFee(profit: number, energy: number): number {
     if (profit <= 0) return 0;
+    return Math.floor(profit * feeRate(energy));
+}
+
+/**
+ * 지금 에너지면 늘린 것의 **몇 할이 내 몫인가.** 0~1.
+ *
+ * `advisoryFee` 안에 있던 식을 꺼낸 것이다. 장부 화면이 「보수율 47%」를 적어야 하는데,
+ * 거기서 같은 식을 한 번 더 쓰면 규칙이 두 군데가 되고 어느 날 한쪽만 바뀐다.
+ */
+export function feeRate(energy: number): number {
     const t = Math.max(0, Math.min(ENERGY_MAX_FOR_FEE, energy)) / ENERGY_MAX_FOR_FEE;
-    return Math.floor(profit * (FEE_BASE + FEE_BY_ENERGY * t));
+    return FEE_BASE + FEE_BY_ENERGY * t;
 }
 
 /** 에너지가 0 이어도 받는 몫. 일은 했으니 아주 없지는 않다. */
