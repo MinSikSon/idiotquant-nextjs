@@ -16,7 +16,10 @@ import {
     energyDelta, decay, clampEnergy, ENERGY_DECAY,
     ENERGY_GAIN_WITH_THESIS, ENERGY_LOSS_WITH_THESIS, ENERGY_LOSS_BLIND,
 } from "@/lib/game/core/energy";
-import { researchBuff, RESEARCH_COST, RESEARCH_DEPTH } from "@/lib/game/core/research";
+import {
+    researchBuff, verdictOf, verdictSay, worthRecommending,
+    RESEARCH_COST, RESEARCH_DEPTH,
+} from "@/lib/game/core/research";
 import { ENERGY_START } from "@/lib/game/core/StockEngine";
 import { EMPTY, remember, regress, endReasonOf, breaksLoop } from "@/lib/game/core/progress";
 import type { ChapterSummary } from "@/lib/game/core/types";
@@ -307,4 +310,44 @@ test("들고 나갈 덱은 가진 것 안에서만 고른다", () => {
     const m = remember(EMPTY, summary({ earned: ["stoploss"] }), 1);
     assert.ok(m.loadout.every(id => m.situations.includes(id)));
     assert.ok(m.loadout.length <= LOADOUT_SIZE);
+});
+
+/* ── 알아본 것이 무슨 말을 하는가 ───────────────────────────── */
+
+test("판정은 국면에서 나온다 — 상승이면 지금, 하락이면 아니다", () => {
+    const read = (regime: "bull" | "bear" | "chop" | null) => ({
+        next: [], regime, regimeDrift: null, turnsLeft: null, nextRegime: null, nextDrift: null,
+    });
+    assert.equal(verdictOf(read("bull")), "buy");
+    assert.equal(verdictOf(read("bear")), "avoid");
+    assert.equal(verdictOf(read("chop")), "unclear");
+});
+
+test("안 알아본 종목은 판정이 「모른다」다", () => {
+    // **화면이 null 을 넘겨야 하는 자리다.** 국면은 시장에 하나뿐이라 아무 종목의 read 나
+    // 넘기면 3 에너지로 아홉 종목이 다 열린다 — 실제로 그렇게 새고 있었다.
+    assert.equal(verdictOf(null), "unknown");
+    assert.equal(verdictOf(undefined), "unknown");
+    assert.equal(verdictOf({
+        next: [], regime: null, regimeDrift: null, turnsLeft: null,
+        nextRegime: null, nextDrift: null,
+    }), "unknown");
+});
+
+test("권할 값어치가 있는 것은 상승 하나뿐이다", () => {
+    // 「이 종목은 아니다」라고 말해 놓고 「권한다」를 제일 밝게 두면 화면이 스스로와 싸운다.
+    assert.equal(worthRecommending("buy"), true);
+    for (const v of ["avoid", "unclear", "unknown"] as const) {
+        assert.equal(worthRecommending(v), false, `${v} 는 권할 자리가 아니다`);
+    }
+});
+
+test("판정마다 다른 말을 하고, 빈 문구가 없다", () => {
+    const heads = new Set<string>();
+    for (const v of ["buy", "avoid", "unclear", "unknown"] as const) {
+        const { head, sub } = verdictSay(v);
+        assert.ok(head.length > 0 && sub.length > 0, `${v} 의 문구가 비었다`);
+        heads.add(head);
+    }
+    assert.equal(heads.size, 4, "판정 넷이 같은 말을 한다");
 });
