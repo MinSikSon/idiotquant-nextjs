@@ -19,7 +19,7 @@
 // 카드 효과였다. 지금 `TurnBuff` 는 근거와 국면 두 가지만 채워져서 나간다 —
 // **판의 뼈대를 세우는 동안에는 이 둘이면 된다.**
 
-import { NO_BUFF, type TurnBuff } from "./types";
+import { NO_BUFF, type MarketRead, type TurnBuff } from "./types";
 
 /** 한 종목을 알아보는 데 드는 에너지. 정보 카드가 들던 값과 같다. */
 export const RESEARCH_COST = 3;
@@ -44,4 +44,52 @@ export const RESEARCH_DEPTH = 2;
 export function researchBuff(researched: string | null): TurnBuff {
     if (researched === null) return { ...NO_BUFF };
     return { ...NO_BUFF, thesis: researched, regimeDepth: RESEARCH_DEPTH };
+}
+
+/* ── 알아본 것이 무엇을 말하는가 ─────────────────────────────── */
+
+/**
+ * 읽어 낸 국면이 내리는 **판정.**
+ *
+ * ── 왜 이것이 생겼나 ──────────────────────────────────────────
+ * 「알아본다」에 효과가 없다는 말을 들었다. 실제로는 돌고 있었다 — 에너지가 3 빠지고,
+ * 제목 표시줄에 근거가 붙고, 차트 구석에 「하락 · 턴당 −6.69% · 1턴」이 떴다. 그런데
+ * **그 한 줄이 3 에너지의 보상 전부**였고, 12px 짜리 금색 글씨로 차트 오른쪽 위에
+ * 있었다. 그리고 더 나쁜 것: 그 줄이 「이건 떨어진다」고 말한 직후 화면에서 제일 밝은
+ * 버튼이 「근거를 대고 권한다」였다. **사지 말라고 알려 주고 사라고 권하고 있었다.**
+ *
+ * 그래서 읽은 것을 **판정 하나로 접는다.** 화면은 이 판정을 큰 글씨로 말하고,
+ * 어느 버튼을 밝힐지도 이걸로 정한다. 판단이 화면이 아니라 여기 있어야 둘이 안 어긋난다.
+ */
+export type Verdict = "buy" | "avoid" | "unclear" | "unknown";
+
+/**
+ * @param read 이 종목에 대해 읽어 낸 것. **안 알아봤으면 null 을 넘길 것** —
+ *   국면은 시장 하나짜리라 아무 종목의 read 나 넘기면 공짜로 다 열린다.
+ */
+export function verdictOf(read: MarketRead | null | undefined): Verdict {
+    if (!read?.regime) return "unknown";
+    if (read.regime === "bull") return "buy";
+    if (read.regime === "bear") return "avoid";
+    return "unclear";
+}
+
+/**
+ * 판정을 사람 말로. **머리는 무엇을 할지, 부제는 왜 그런지.**
+ *
+ * 「상승 국면」이 아니라 「지금이다」라고 적는다 — 국면 이름은 규칙을 아는 사람에게만
+ * 뜻이 있고, 이 줄은 규칙을 모르는 사람이 첫 턴에 읽는 줄이다. 숫자는 부제가 진다.
+ */
+export function verdictSay(v: Verdict): { head: string; sub: string } {
+    switch (v) {
+        case "buy":     return { head: "지금이다", sub: "오르는 국면이다. 근거를 대고 권할 수 있다" };
+        case "avoid":   return { head: "이 종목은 아니다", sub: "떨어지는 국면이다. 권하면 근거가 있어도 잃는다" };
+        case "unclear": return { head: "모르겠다", sub: "방향이 없는 국면이다. 걸 만한 자리가 아니다" };
+        case "unknown": return { head: "아직 안 알아봤다", sub: "알아봐야 국면이 열린다" };
+    }
+}
+
+/** 이 판정에서 권하는 것이 **이번 턴의 다음 걸음**인가. 화면이 어느 버튼을 밝힐지 정한다. */
+export function worthRecommending(v: Verdict): boolean {
+    return v === "buy";
 }

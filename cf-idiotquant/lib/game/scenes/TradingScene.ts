@@ -22,7 +22,9 @@ import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
 import {
     decay, clampEnergy, energyDelta, energyReason, ENERGY_DECAY,
 } from "@/lib/game/core/energy";
-import { researchBuff, RESEARCH_COST } from "@/lib/game/core/research";
+import {
+    researchBuff, verdictOf, worthRecommending, RESEARCH_COST,
+} from "@/lib/game/core/research";
 import { EMPTY_FACTS, type SituationFacts } from "@/lib/game/core/situations";
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
@@ -36,7 +38,8 @@ import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib
 import type { EndReason, MarketRead, TurnBuff } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
-import { Market, type MarketRow } from "@/lib/game/components/Market";
+import { StockList, type StockRow } from "@/lib/game/components/StockList";
+import { StockSheet } from "@/lib/game/components/StockSheet";
 import {
     BTN, C, CLIENT_ROW, FS, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
     type Band, type Bands, type LogKind,
@@ -53,10 +56,14 @@ import { TITLE_H, bevel, btnFace, crt, skinOf, winFrame } from "@/lib/game/ui/wi
  *   시작  한 판을 시작하는 자리. 회차 기록이 여기 쌓인다
  *   집    그 판의 준비 · 챕터 결산
  *   회사  12턴
+ *   목록  **아홉 종목을 견주는 자리.** 회사에서 열고, 고르면 곧장 회사로 돌아온다
  *   공원  이 판이 어떻게 끝났는가
  *   끝    **빚을 다 갚았을 때만.** 여기서는 회귀하지 않는다
+ *
+ * 목록은 장소가 아니라 **회사 화면이 잠깐 여는 창**이다 — 그래서 전환 막을 안 세우고
+ * `go()` 를 안 거친다. 턴도 안 흐르고 고객도 안 바뀐다.
  */
-type Screen = "title" | "home" | "office" | "park" | "ending";
+type Screen = "title" | "home" | "office" | "market" | "park" | "ending";
 
 /** 로그가 들고 있는 줄 수. 넘치면 앞에서부터 버린다. */
 const LOG_KEEP = 200;
@@ -79,7 +86,8 @@ export class TradingScene extends Phaser.Scene {
     private junk: Phaser.GameObjects.GameObject[] = [];
     private chart: PixelCandleChart | null = null;
     private logView: GameLog | null = null;
-    private market: Market | null = null;
+    private list: StockList | null = null;
+    private sheet: StockSheet | null = null;
 
     /* ── 한 턴의 상태 ─────────────────────────────────── */
     private entries: LogEntry[] = [];
@@ -167,8 +175,8 @@ export class TradingScene extends Phaser.Scene {
      * 모으면 "장소가 바뀐다" 는 사건이 한 함수가 된다.
      */
     private go(to: Screen, cut: Cut | null): void {
-        // 막 아래에 시세판이 남아 있으면 걷었을 때 엉뚱한 화면이 나온다.
-        this.market = null;
+        // 막 아래에 목록이 남아 있으면 걷었을 때 엉뚱한 화면이 나온다.
+        this.list = null; this.sheet = null;
         this.place = to;
         this.cut = cut;
         // 전환이 전환처럼 보이는 한 줄. 막이 이미 떠 있으므로 내용은 안 튄다.
@@ -251,13 +259,15 @@ export class TradingScene extends Phaser.Scene {
         this.junk = [];
         this.chart?.destroy(); this.chart = null;
         this.logView?.destroy(); this.logView = null;
-        this.market?.close(); this.market = null;
+        this.list?.close(); this.list = null;
+        this.sheet?.close(); this.sheet = null;
 
         this.cameras.main.setBackgroundColor(S.bg);
         if (this.place === "title") this.drawTitle();
         else if (this.place === "ending") this.drawEnding();
         else if (this.place === "home") this.drawHome();
         else if (this.place === "park") this.drawPark();
+        else if (this.place === "market") this.drawStockList();
         else this.drawOffice();
 
         // 막은 **맨 마지막에.** z 순서로 위에 서야 아래 장소의 입력을 삼킨다.
@@ -525,7 +535,11 @@ export class TradingScene extends Phaser.Scene {
      * 말한다(버튼 부제).
      */
     private static readonly HOW = [
-        "빚 3천만원. 남의 돈을 굴려 그것을 갚는다.",
+        // **「빚 3천만원」이라고 적으면 안 된다.** 빚은 1997년이 끝날 때 생긴다
+        // (`chapters.ts` 의 `debtOnEnd`). 프롤로그 네 턴 동안 배너는 「빚 없음」이라고
+        // 적혀 있는데 시작 화면이 「빚 3천만원」이라고 하면, 처음 켠 사람에게는
+        // 화면 둘이 서로 다른 말을 하는 것으로 보인다.
+        "1997년이 끝나면 빚 3천만원이 남는다.",
         "종목을 알아보고 근거를 대서 맞혀야 에너지가 오른다.",
         "에너지가 곧 보수이고, 보수만이 빚을 줄인다.",
     ];
@@ -688,7 +702,7 @@ export class TradingScene extends Phaser.Scene {
         const half = e.player.currentTurn <= 6 ? "상" : "하";
         this.drawBanner(`${ch.year} ${half}반기 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
         this.drawLog();
-        this.drawMarket();
+        this.drawSheet();
         this.drawActions();
     }
 
@@ -767,41 +781,92 @@ export class TradingScene extends Phaser.Scene {
      * 판을 열고 → 다시 눌러 체결하는 세 단계였고, **애초에 종목을 골라야 하는지가
      * 화면에 안 적혀 있었다.** 목록이 늘 떠 있으면 그 질문이 사라진다.
      */
-    private drawMarket(): void {
+    private drawSheet(): void {
         const b = this.bands.market;
         if (b.h <= 0) return;
 
-        const th = this.buff().thesis;
         const eq = this.engine.equity;
         const holds = Object.keys(this.engine.player.positions).length;
+        const stock = this.engine.focusStock;
 
-        // **근거와 계좌는 제목 표시줄 안이다.** 예전에는 창 위에 머리 한 줄이 따로
-        // 있었는데, 그 시절 프로그램은 이런 것을 제목 표시줄에 적었다 — 늘 보여야
-        // 하지만 판을 하나 더 세울 값어치는 없는 값들이다.
-        const win = this.frame(b, th ? `주식 현황 — 근거 ${th}` : "주식 현황", {
+        // **계좌는 제목 표시줄 안이다.** 늘 보여야 하지만 판을 하나 더 세울 값어치는 없다.
+        const win = this.frame(b, `주식 현황 — ${stock.name}`, {
             text: `${money(eq)} · 보유 ${holds}`,
             color: eq >= SEED_CASH ? S.barInk : S.down,
         });
 
-        this.market = new Market({
+        this.sheet = new StockSheet({
             scene: this,
             band: win.body,
-            rows: () => this.marketRows(),
-            selectedId: () => this.engine.focus,
-            onSelect: id => { this.engine.setFocus(id); this.redraw(); },
-            thesis: () => this.buff().thesis,
-            researchedId: () => this.researched,
+            row: () => this.rowOf(this.engine.focus),
+            read: () => this.readOf(this.engine.focus),
+            researched: () => this.researched === this.engine.focus,
+            otherThesis: () => (this.researched && this.researched !== this.engine.focus
+                ? this.engine.stockOf(this.researched)?.name ?? null : null),
             researchCost: () => RESEARCH_COST,
             canResearch: () => this.researched === null
                 && this.engine.player.energy >= RESEARCH_COST,
-            onResearch: (id: string) => this.research(id),
             alreadyRecommended: () => this.recommendedThisTurn,
             clientName: () => this.client?.name ?? "아무도",
-            read: () => this.read,
+            onResearch: (id: string) => this.research(id),
             onBuy: (id: string) => this.recommend(id),
             onSell: (id: string) => this.sell(id),
         });
-        this.market.open();
+        this.sheet.draw();
+    }
+
+    /**
+     * 이 종목에 대해 **지금 알고 있는 것.**
+     *
+     * 알아본 그 종목만 열린다. 예전에는 `this.read` 를 어느 종목의 판에나 그대로
+     * 넘겼는데, 국면은 시장 하나짜리라 **3 에너지로 아홉 종목이 다 열렸다.**
+     * 종목을 가르는 것은 국면이 아니라 그 국면에 베타를 먹인 기울기이고,
+     * `this.read` 의 기울기는 알아볼 때 포커스였던 종목의 것이다.
+     */
+    private readOf(id: string): MarketRead | null {
+        return this.researched === id ? this.read : null;
+    }
+
+    /* ── 종목 목록 화면 ────────────────────────────────── */
+
+    /**
+     * 아홉 종목을 견주는 자리. **화면 하나를 통째로 쓴다.**
+     *
+     * 목록이 회사 화면 안에 있던 동안에는 고른 종목 판이 세로의 절반을 먹어서 두세
+     * 줄밖에 안 남았다 — 폰에서 견줄 수가 없다는 말을 들은 자리다. 여기서는 아홉이
+     * 다 선다. 줄을 한 번 누르면 골라지고 **곧장 회사로 돌아간다.**
+     */
+    private drawStockList(): void {
+        const e = this.engine;
+        const half = e.player.currentTurn <= 6 ? "상" : "하";
+        this.drawBanner(`${e.chapter.year} ${half}반기 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
+
+        const bar = this.placeBar;
+        const top = this.bands.strip.h;
+        const th = this.buff().thesis;
+        const win = winFrame(this, 2, top, this.W - 4, Math.max(0, bar.y - top),
+            "종목 — 하나를 고른다",
+            { text: th ? `근거 ${th}` : "근거 없음", color: th ? S.up : S.barInk });
+        for (const o of win.parts) this.keep(o);
+
+        this.list = new StockList({
+            scene: this,
+            band: win.body,
+            rows: () => this.stockRows(),
+            selectedId: () => this.engine.focus,
+            researchedId: () => this.researched,
+            onPick: (id: string) => {
+                this.engine.setFocus(id);
+                this.place = "office";
+                this.redraw();
+            },
+        });
+        this.list.open();
+
+        this.buttons([
+            { label: "회사로 돌아간다", sub: `지금 고른 것 — ${e.focusStock.name}`,
+              primary: false, on: () => { this.place = "office"; this.redraw(); } },
+        ], bar);
     }
 
     /** 버튼은 동작이 아니라 **내가 하는 말**이다. */
@@ -820,20 +885,35 @@ export class TradingScene extends Phaser.Scene {
      */
     private drawActions(): void {
         const done = this.recommendedThisTurn;
-        // **화면에 초록은 하나뿐이다.** 아직 이번 턴에 할 일이 목록 안에 남아 있으면
-        // (알아보거나 권하거나) 초록은 거기 있고, 여기는 회색으로 기다린다.
-        const nothingLeft = done
-            || (this.researched === null && this.engine.player.energy < RESEARCH_COST);
-        // **버튼이 하나다.** 「시세판」은 목록이 화면에 올라오면서 없어졌다 — 이미
-        // 보이는 것을 여는 버튼이었다. 이 턴에 하는 일은 전부 목록 안에서 일어나고,
-        // 여기 남은 것은 「이 턴을 끝낸다」 하나뿐이다.
+        const focus = this.engine.focus;
+
+        // **지금 눌러야 하는 것은 화면에 하나뿐이다.** 그 하나가 턴을 따라 옮겨 다니는데,
+        // 어디에 있는지는 판이 정한다 — 아직 안 알아봤으면 판의 「알아본다」에 있고,
+        // 알아봤는데 살 자리가 아니면 여기 「하루를 넘긴다」로 온다.
+        //
+        // 예전에는 이 셈에 판정이 안 들어가 있었다. 그래서 「이 종목은 아니다」가 뜬 턴에는
+        // **화면 어디에도 밝은 버튼이 없었다** — 다음에 뭘 해야 하는지를 화면이 말하지 않았다.
+        const canStillResearch = this.researched === null
+            && this.engine.player.energy >= RESEARCH_COST;
+        const worthBuying = !done
+            && this.researched === focus
+            && worthRecommending(verdictOf(this.readOf(focus)));
+        const nothingLeft = !canStillResearch && !worthBuying;
+
+        // **버튼 둘.** 목록이 화면 하나를 통째로 쓰는 자리로 나가면서
+        // 「종목 고르기」가 여기 섰다 — 그 화면으로 가는 길은 이것 하나다.
         this.buttons([
+            {
+                label: "종목 고르기",
+                sub: `지금 — ${this.engine.focusStock.name}`,
+                primary: false,
+                on: () => { this.place = "market"; this.redraw(); },
+            },
             {
                 label: "하루를 넘긴다",
                 // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
-                sub: done
-                    ? `오늘은 권했다 · 에너지 −${ENERGY_DECAY}`
-                    : `아무것도 안 하고 넘긴다 · 에너지 −${ENERGY_DECAY}`,
+                sub: done ? `오늘은 권했다 · −${ENERGY_DECAY}`
+                    : `그냥 넘긴다 · 에너지 −${ENERGY_DECAY}`,
                 primary: nothingLeft,
                 on: () => this.endTurn(),
             },
@@ -892,7 +972,7 @@ export class TradingScene extends Phaser.Scene {
 
     /* ── 종목 목록 ─────────────────────────────────────── */
 
-    private marketRows(): MarketRow[] {
+    private stockRows(): StockRow[] {
         return this.engine.listed.map(s => {
             const last = s.history[s.history.length - 1];
             const prev = s.history[s.history.length - 2];
@@ -905,6 +985,11 @@ export class TradingScene extends Phaser.Scene {
                 isNew: s.listedAt === this.engine.absTurn,
             };
         });
+    }
+
+    /** 고른 종목 한 줄. 판이 이것 하나만 그린다. */
+    private rowOf(id: string): StockRow | null {
+        return this.stockRows().find(r => r.stock.id === id) ?? null;
     }
 
     /* ── 권한다 · 거둔다 · 기다린다 ───────────────────── */

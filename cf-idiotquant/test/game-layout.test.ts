@@ -18,9 +18,12 @@ import assert from "node:assert/strict";
 
 import { WIN_CHROME, bandsOf, designSize, isStacked, W, type Bands } from "@/lib/game/ui/theme";
 
-/** `Market` 의 치수. 저기는 Phaser 를 부르므로 여기서 다시 적는다. */
-const ROW_H = 56;
-const SHEET_MIN = 124;
+/**
+ * 고른 종목 판이 반드시 세우는 높이. `components/StockSheet.ts` 가 같은 이름으로 내보내는데,
+ * 저 파일은 Phaser 를 부르므로 브라우저 없이 못 읽는다 — 여기서 다시 적는다.
+ * 머리 22 + 4 + 판정 40 + 6 + 알아본다 26 + 6 + 체결 44 + 7.
+ */
+const SHEET_MIN = 155;
 
 /** 세로 격자가 실제로 가질 수 있는 범위. 아래는 `STACK_MIN`, 위는 아주 긴 폰. */
 const PORTRAIT_H: number[] = [];
@@ -71,29 +74,30 @@ test("세로 — 띠끼리 겹치지 않고 틈도 없다", () => {
     }
 });
 
-test("세로 — 버튼과 종목 목록은 최소치를 지킨다", () => {
-    // 이 둘이 없으면 판이 안 굴러간다. 목록이 좁으면 고른 종목 판에서 버튼이 잘리거나
-    // 목록이 통째로 가려진다.
+test("세로 — 버튼과 고른 종목 판은 최소치를 지킨다", () => {
+    // 이 둘이 없으면 판이 안 굴러간다. 판이 좁으면 체결 버튼이 아래로 잘린다.
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
         assert.ok(b.action.h >= 64, `h=${h}: 버튼 ${b.action.h}`);
-        assert.ok(b.market.h >= 210, `h=${h}: 목록 ${b.market.h}`);
+        assert.ok(b.market.h >= 190, `h=${h}: 고른 종목 판 ${b.market.h}`);
     }
 });
 
-test("어느 배치에서도 목록 창 안에 줄 하나와 판이 온전히 선다", () => {
-    // **한 픽셀 차이로 깨질 뻔한 자리다.** 목록 띠가 창이 되면서 껍데기가 29px 을
-    // 먹는데, 그만큼을 띠 예산이 안 세면 고른 종목 판의 체결 버튼이 아래로 잘린다.
-    // 화면에서는 제일 짧은 격자에서만 나타나서 눈으로는 거의 안 걸린다.
-    const need = WIN_CHROME + ROW_H + SHEET_MIN;
+test("어느 배치에서도 고른 종목 판이 창 안에 온전히 선다", () => {
+    // **한 픽셀 차이로 깨질 뻔한 자리다.** 이 띠가 창이 되면서 껍데기가 29px 을 먹는데,
+    // 그만큼을 띠 예산이 안 세면 체결 버튼이 아래로 잘린다. 화면에서는 제일 짧은
+    // 격자에서만 나타나서 눈으로는 거의 안 걸린다.
+    //
+    // **차트는 안 센다** — 남는 것을 쓰고, 자리가 모자라면 아예 안 선다.
+    const need = WIN_CHROME + SHEET_MIN;
     for (const h of PORTRAIT_H) {
         assert.ok(bandsOf(W, h).market.h >= need,
-            `h=${h}: 목록 창 속살이 ${bandsOf(W, h).market.h - WIN_CHROME}, ${ROW_H + SHEET_MIN} 필요`);
+            `h=${h}: 판의 속살이 ${bandsOf(W, h).market.h - WIN_CHROME}, ${SHEET_MIN} 필요`);
     }
     for (const [w, h] of LANDSCAPE) {
         const b = bandsOf(w, h);
         if (b.portrait) continue;
-        assert.ok(b.market.h >= need, `${w}×${h}: 목록 ${b.market.h}, ${need} 필요`);
+        assert.ok(b.market.h >= need, `${w}×${h}: 판 ${b.market.h}, ${need} 필요`);
     }
 });
 
