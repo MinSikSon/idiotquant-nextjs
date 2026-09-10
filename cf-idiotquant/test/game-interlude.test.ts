@@ -7,11 +7,13 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+
+import { FRAMES, SHEET_W, SHEET_H } from "@/lib/game/ui/artFrames";
 import { readFileSync } from "node:fs";
 
 import {
     cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark,
-    FRAMES, SHEET_SIZE, type ArtKey,
+    ART_KEYS, cellOfArt, type ArtKey,
 } from "@/lib/game/core/interlude";
 import { CHAPTERS } from "@/lib/game/core/chapters";
 import type { ChapterSummary, EndReason } from "@/lib/game/core/types";
@@ -64,9 +66,18 @@ test("끝 막은 회귀하지 않는다고 말한다", () => {
 test("집·회사 전환이 그 장의 연도를 말한다", () => {
     assert.ok(cutStartRun(CH, 1).head.includes(CH.year));
     const office = cutToOffice(CH);
-    assert.equal(office.art, "office");
+    // **그림도 해를 따라간다.** 넷 다 사무실 하나를 돌려 쓰던 자리였다.
+    assert.equal(office.art, `year-${CH.year}`);
     assert.ok(office.head.includes(CH.year));
     assert.ok(office.head.includes(CH.title));
+});
+
+test("네 장이 저마다 다른 그림을 부르고, 그 키가 슬롯에 있다", () => {
+    const arts = CHAPTERS.map(c => cutToOffice(c).art);
+    assert.equal(new Set(arts).size, CHAPTERS.length, "같은 그림을 둘 이상이 쓰고 있다");
+    for (const a of arts) {
+        assert.ok((ART_KEYS as readonly string[]).includes(a), `${a} 가 ArtKey 에 없다`);
+    }
 });
 
 /* ── 결산 — ChapterSummary 를 그대로 읽는가 ──────────────────── */
@@ -133,31 +144,49 @@ test("엔딩 넷이 저마다 자기 그림 키를 낸다", () => {
     }
 });
 
-/* ── 시트 — 칸이 그림 밖으로 나가지 않는가 ──────────────────── */
+/* ── 시트 — 표와 그림이 어긋나지 않는가 ────────────────────── */
+//
+// 좌표표(`ui/artFrames.ts`)는 **`scripts/build-game-sheet.mjs` 가 만든다.** 그래서 여기서
+// 볼 것은 「표가 빠짐없는가」가 아니라 **「표가 실제 시트와 맞는가」**다 — 그림이 없는
+// 자리는 표에 없는 것이 정상이고(자리표시로 떨어진다), 있는 자리가 그림 밖을 가리키면
+// 화면에 빈 네모가 뜬다.
 
-test("FRAMES 가 ArtKey 를 빠짐없이 덮는다", () => {
-    const keys: ArtKey[] = [
-        "home", "office",
-        "park-debtCleared", "park-debtRemains", "park-burnout", "park-ruined",
-    ];
-    assert.deepEqual(Object.keys(FRAMES).sort(), [...keys].sort());
-    // 엔딩이 늘면 여기서 걸린다 — 키를 더하고 표를 안 고치면 그림이 안 나온다.
-    for (const r of REASONS) assert.ok(`park-${r}` in FRAMES, `park-${r}`);
-});
-
-test("모든 칸이 시트 안에 있다", () => {
-    for (const [key, [x, y, w, h]] of Object.entries(FRAMES)) {
-        assert.ok(w > 0 && h > 0, `${key} 크기`);
-        assert.ok(x >= 0 && y >= 0, `${key} 시작`);
-        assert.ok(x + w <= SHEET_SIZE, `${key} 오른쪽이 시트를 넘는다`);
-        assert.ok(y + h <= SHEET_SIZE, `${key} 아래가 시트를 넘는다`);
+test("표의 모든 키가 선언된 슬롯이다 — 오타 난 파일 이름이 조용히 지나가지 않게", () => {
+    for (const key of Object.keys(FRAMES)) {
+        assert.ok((ART_KEYS as readonly string[]).includes(key),
+            `${key} 는 ArtKey 에 없다 — game-art-src 의 파일 이름을 볼 것`);
     }
 });
 
-test("실제로 넣은 시트가 SHEET_SIZE 와 같다", () => {
-    // PNG 헤더의 IHDR 은 8바이트 서명 + 4바이트 길이 + 4바이트 타입 뒤에 폭·높이가 온다.
-    // 좌표를 격자로 적어 두었으니 그림을 다시 뽑을 때 크기가 달라지면 여기서 걸린다.
-    const buf = readFileSync(new URL("../public/game-art/sheet.png", import.meta.url));
-    assert.equal(buf.readUInt32BE(16), SHEET_SIZE);
-    assert.equal(buf.readUInt32BE(20), SHEET_SIZE);
+test("칸 크기가 그 자리에 정해진 크기와 같다", () => {
+    for (const [key, [, , w, h]] of entries()) {
+        const side = cellOfArt(key);
+        assert.equal(w, side, `${key} 폭`);
+        assert.equal(h, side, `${key} 높이`);
+    }
 });
+
+test("모든 칸이 시트 안에 있다", () => {
+    for (const [key, [x, y, w, h]] of entries()) {
+        assert.ok(x >= 0 && y >= 0, `${key} 시작`);
+        assert.ok(x + w <= SHEET_W, `${key} 오른쪽이 시트를 넘는다`);
+        assert.ok(y + h <= SHEET_H, `${key} 아래가 시트를 넘는다`);
+    }
+});
+
+test("실제로 넣은 시트가 표가 말하는 크기와 같다", () => {
+    // PNG 헤더의 IHDR 은 8바이트 서명 + 4바이트 길이 + 4바이트 타입 뒤에 폭·높이가 온다.
+    // 시트를 다시 뽑고 표를 안 다시 만들면 여기서 걸린다.
+    const buf = readFileSync(new URL("../public/game-art/sheet.png", import.meta.url));
+    assert.equal(buf.readUInt32BE(16), SHEET_W);
+    assert.equal(buf.readUInt32BE(20), SHEET_H);
+});
+
+test("엔딩 넷은 모두 그릴 그림이 있다 — 판이 끝나는 자리라 자리표시로 두지 않는다", () => {
+    for (const r of REASONS) assert.ok(`park-${r}` in FRAMES, `park-${r}` );
+});
+
+/** 표를 키 타입까지 붙여 훑는다. `Object.entries` 는 키를 string 으로 준다. */
+function entries(): Array<[ArtKey, readonly [number, number, number, number]]> {
+    return Object.entries(FRAMES) as Array<[ArtKey, readonly [number, number, number, number]]>;
+}

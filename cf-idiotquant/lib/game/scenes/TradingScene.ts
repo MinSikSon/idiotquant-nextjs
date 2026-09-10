@@ -36,7 +36,8 @@ import {
 } from "@/lib/game/core/progress";
 import { recordChapter, recordRun } from "@/lib/game/core/career";
 import {
-    cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark, type Cut,
+    cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark,
+    type ClientId, type Cut,
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
 import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib/game/ui/art";
@@ -648,7 +649,7 @@ export class TradingScene extends Phaser.Scene {
 
         const { side, top } = this.artFit(body, rowsTop, 0.62,
             FS.sm + 12 + TradingScene.HOW.length * (FS.xs + 6));
-        this.placeArt("home", body.x + (body.w - side) / 2, top, side, "재기", S.gold);
+        this.placeArt("title", body.x + (body.w - side) / 2, top, side, "재기", S.gold);
 
         let y = top + side + 12;
         const line = first
@@ -813,10 +814,20 @@ export class TradingScene extends Phaser.Scene {
         // 왼쪽 끝의 색 막대 하나가 「사람이 앉아 있다」를 말한다. 상자를 두르지 않는다.
         this.rect(body.x + 4, body.y + 3, 3, rowH - 6, c ? C.bar : C.down, 1);
 
+        // **얼굴.** 이 게임은 사람에게 설명하는 이야기인데, 그 사람이 여태 글자 두 줄이었다.
+        // 그림이 없으면 아무것도 안 그리고 글자가 원래 자리에 선다 — 자리표시를 두지
+        // 않는 이유는, 여기 빈 네모가 서면 「누가 앉았다」보다 「뭔가 빠졌다」로 읽혀서다.
+        const faceH = rowH - 6;
+        const face = c && rowH >= 34
+            ? drawArt(this, `client-${c.id as ClientId}`, body.x + 10, body.y + 3, faceH, faceH,
+                { veil: 0, tint: C.panel })
+            : null;
+        for (const o of face ?? []) this.keep(o);
+
         // **이름과 한마디는 각자 한 줄씩이다.** 한 줄에 붙이면 폭이 몇 픽셀 모자라
         // 한마디가 통째로 빠지는데, 고객을 사람으로 만드는 것이 그 한마디다.
         // 한 줄에 넣고 `textFit` 으로 줄이는 길도 있었지만 그러면 로그보다 작아진다.
-        const tx = body.x + 13;
+        const tx = body.x + 13 + (face ? faceH + 6 : 0);
         const room = body.x + body.w - 4 - tx;
         if (!c) {
             this.text(tx, body.y + rowH / 2 - FS.xs / 2, "오늘은 아무도 앉지 않았다.", FS.xs, "#7a2f2f");

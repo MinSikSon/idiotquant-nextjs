@@ -1,23 +1,28 @@
-// 그림. **한 장을 받아 넉 장으로 잘라 쓴다.**
+// 그림. **한 장을 받아 여러 칸으로 잘라 쓴다.**
 //
-// ── 왜 파일이 하나인가 ──────────────────────────────────────────
-// 원본은 1408×768 짜리 4분할 컨셉 시트였고 1.7MB 였다. 폰에서 게임 하나 켜자고 받기엔
-// 크고, 그중 실제로 쓰는 것은 네 조각뿐이다. 그래서 네 조각을 320×320 씩 잘라 2×2 로
-// 붙인 640×640 한 장(190KB)을 만들어 두었다. 파일은 하나로 남고, 자르기는 코드가 한다.
+// ── 시트는 손으로 안 만든다 ─────────────────────────────────────
+// `game-art-src/<키>.png` 에 그림을 넣고 `node scripts/build-game-sheet.mjs` 를 돌리면
+// 시트(`public/game-art/sheet.png`)와 좌표표(`ui/artFrames.ts`)가 함께 다시 만들어진다.
+// 좌표를 손으로 적던 때는 그림을 다시 뽑을 때마다 표와 시트가 어긋났다.
 //
-// ── 원본에서 어디를 오렸는가 ────────────────────────────────────
-// 시트를 다시 뽑아야 할 때 이 값이 없으면 처음부터 다시 찍어야 한다. `sharp` 로
-// `extract` 한 뒤 `fit: "contain"` 으로 320×320 에 앉히고 남는 쪽은 배경색으로 채웠다.
+// ── 없는 그림은 없는 채로 굴러간다 ──────────────────────────────
+// 소스가 없는 키는 표에 아예 안 들어가고, `drawArt` 가 null 을 낸다. 부르는 쪽은 그때
+// 오늘의 자리표시(테두리 + 글자)를 그린다. **슬롯마다 따로 떨어지므로** 그림이 한 장씩
+// 들어와도 그때마다 그 자리만 켜진다 — 다 모일 때까지 기다릴 것이 없다.
+//
+// ── 처음 넉 장은 어디서 왔나 ────────────────────────────────────
+// 1408×768 짜리 4분할 컨셉 시트에서 오렸다. 원본을 다시 자를 일이 있을 때를 위해 남긴다.
 //
 //   home    (12,  52, 270×290)  벗겨진 벽 · 「ECHO OF IDEAS」 간판 · 바닥에 깐 매트리스
 //   office  (292, 48, 300×252)  책상 위 CRT 두 대 — 떨어지는 차트와 「CRISIS」
-//   park    (735,448, 330×302)  공원 벤치 · 노트북 · 나무
-//   figure  (38, 448, 215×307)  해진 옷을 입고 컵과 빵을 든 사람
+//   park    (735,448, 330×302)  공원 벤치 · 노트북 · 나무 (`park-debtRemains`)
+//   figure  (38, 448, 215×307)  해진 옷을 입고 컵과 빵을 든 사람 (`park-ruined`)
 //
 // 원본의 WORLD MAP 패널은 안 썼다 — 세계지도는 넣지 않기로 했다.
 
 import Phaser from "phaser";
-import { FRAMES, type ArtKey } from "@/lib/game/core/interlude";
+import type { ArtKey } from "@/lib/game/core/interlude";
+import { FRAMES } from "@/lib/game/ui/artFrames";
 import { C } from "@/lib/game/ui/theme";
 
 export type { ArtKey };
@@ -64,9 +69,37 @@ export function sliceArt(scene: Phaser.Scene): void {
     }
 }
 
+/**
+ * 그림이 아직 없는 자리가 **당장 빈 네모가 되지 않게** 대신 쓸 것.
+ *
+ * 새 슬롯을 열면 그 자리는 그림이 들어오기 전까지 자리표시(테두리 + 「그래픽 자리」)가
+ * 된다. 그런데 시작 화면과 전환 막은 **여태 그림이 있던 자리**라, 슬롯을 여는 것만으로
+ * 화면이 오히려 나빠진다. 그래서 가까운 그림으로 떨어뜨려 둔다.
+ *
+ * 그림이 들어오면 그 자리만 저절로 바뀐다 — 여기서 지울 것도 없다(있는 쪽이 먼저다).
+ * 고객 얼굴과 엔딩에는 대신 쓸 것이 없다. 얼굴은 없으면 아예 안 그리고, 엔딩 넷은
+ * 이미 그림이 다 있다.
+ */
+const FALLBACK: Partial<Record<ArtKey, ArtKey>> = {
+    title: "home",
+    "year-1997": "office",
+    "year-1998": "office",
+    "year-1999": "office",
+    "year-2000": "office",
+};
+
+/** 이 자리에 실제로 그릴 칸. 없으면 null — 부르는 쪽이 오늘의 자리표시를 그린다. */
+function resolve(scene: Phaser.Scene, key: ArtKey): ArtKey | null {
+    if (!scene.textures.exists(SHEET)) return null;
+    const t = scene.textures.get(SHEET);
+    if (t.has(key)) return key;
+    const alt = FALLBACK[key];
+    return alt && t.has(alt) ? alt : null;
+}
+
 /** 그림을 그릴 수 있는가. 없으면 부르는 쪽이 오늘의 자리표시를 그린다. */
 export function hasArt(scene: Phaser.Scene, key: ArtKey): boolean {
-    return scene.textures.exists(SHEET) && scene.textures.get(SHEET).has(key);
+    return resolve(scene, key) !== null;
 }
 
 /**
@@ -81,13 +114,14 @@ export function drawArt(
     scene: Phaser.Scene, key: ArtKey, x: number, y: number, w: number, h: number,
     opts: { veil?: number; cover?: boolean; tint?: number } = {},
 ): Phaser.GameObjects.GameObject[] | null {
-    if (!hasArt(scene, key)) return null;
+    const use = resolve(scene, key);
+    if (!use) return null;
 
-    const [, , fw, fh] = FRAMES[key];
+    const [, , fw, fh] = FRAMES[use]!;
     // 칸보다 크면 줄이고, 작으면 키운다. 남는 쪽은 여백으로 둔다.
     // `cover` 면 반대로 **칸을 꽉 채우고** 넘치는 쪽을 잘라 낸다 — 배경으로 깔 때다.
     const k = opts.cover ? Math.max(w / fw, h / fh) : Math.min(w / fw, h / fh);
-    const img = scene.add.image(x + w / 2, y + h / 2, SHEET, key).setScale(k);
+    const img = scene.add.image(x + w / 2, y + h / 2, SHEET, use).setScale(k);
 
     // 꽉 채운 그림은 칸 밖으로 넘친다 — **원본 좌표로 잘라 낸다.** 안 자르면 배경이
     // 위아래 띠를 덮어 로그와 손패 위에 사무실이 겹쳐 그려진다.
