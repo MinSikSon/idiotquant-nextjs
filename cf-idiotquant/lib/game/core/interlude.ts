@@ -21,35 +21,53 @@ import type { ChapterSummary, EndReason } from "./types";
  * ui 가 안다.
  */
 export type ArtKey =
+    /** 시작 화면의 큰 정사각. 이 판이 무엇인지 한 장으로 말하는 자리. */
+    | "title"
+    /** 집 — 시작·회귀·챕터 결산의 막, 그리고 집 화면의 정사각. */
     | "home"
+    /** 회사 — 뉴스 창의 검은 화면 뒤에 어렴풋이 깔린다. */
     | "office"
-    | "park-debtCleared"
-    | "park-debtRemains"
-    | "park-burnout"
-    | "park-ruined";
+    /** **그 해의 문을 여는 장면.** 「사무실 문을 열었다」 막이 쓴다. */
+    | `year-${ChapterYear}`
+    /** 끝 — 넷이 각각 다른 그림을 가질 수 있다. */
+    | `park-${EndReason}`
+    /** **앞에 앉은 사람.** 뉴스 창의 고객 줄에 작게 선다. */
+    | `client-${ClientId}`;
 
-/** 시트 한 변. 프레임이 이 밖으로 나가면 안 된다 — 테스트가 본다. */
-export const SHEET_SIZE = 640;
+/** 연대 스크립트의 네 해. `chapters.ts` 의 `year` 와 같아야 한다. */
+export type ChapterYear = "1997" | "1998" | "1999" | "2000";
+/** 고객 넷. `clients.ts` 의 `id` 와 같아야 한다. */
+export type ClientId = "kim" | "mother" | "park" | "choi";
 
 /**
- * 시트 안의 칸. 잘라 붙일 때 격자로 맞춰 두어서 좌표가 지저분하지 않다.
+ * 그림 한 칸의 한 변. **자리마다 크기가 다르다.**
  *
- * **엔딩 넷에 그림은 둘이다.** 아직 굴러가는 둘은 벤치, 무너진 둘은 그 인물. 엔딩의
- * 제목·색·문구는 이미 넷 다 다르므로 그림까지 넷일 필요는 없고, 이 둘로 갈리는 편이
- * 오히려 뜻이 산다. 넷으로 늘릴 자리는 그대로 남아 있다 — 시트에 칸을 더하고 여기
- * 좌표만 바꾸면 된다.
- *
- * 표가 `ui/art.ts` 가 아니라 여기 있는 이유는 `ArtKey` 와 같다 — 그쪽은 Phaser 를
- * 들여와서, 표가 거기 있으면 **브라우저 없이는 검사할 수 없다.**
+ * 장면은 화면의 큰 정사각에 들어가므로 320 이 필요하고, 고객 얼굴은 34px 자리에 들어가니
+ * DPR 3 을 쳐도 160 이면 남는다. 얼굴까지 320 으로 두면 시트가 두 배가 되는데 그만큼
+ * 선명해지지도 않는다.
  */
-export const FRAMES: Record<ArtKey, readonly [number, number, number, number]> = {
-    home: [0, 0, 320, 320],
-    office: [320, 0, 320, 320],
-    "park-debtCleared": [0, 320, 320, 320],
-    "park-debtRemains": [0, 320, 320, 320],
-    "park-burnout": [320, 320, 320, 320],
-    "park-ruined": [320, 320, 320, 320],
-};
+export function cellOfArt(key: ArtKey): number {
+    return key.startsWith("client-") ? 160 : 320;
+}
+
+/** 슬롯 전부. 시트를 짜는 순서이자, 그림이 있는지 세는 목록이다. */
+export const ART_KEYS: readonly ArtKey[] = [
+    "title", "home", "office",
+    "year-1997", "year-1998", "year-1999", "year-2000",
+    "park-debtCleared", "park-debtRemains", "park-burnout", "park-ruined",
+    "client-kim", "client-mother", "client-park", "client-choi",
+];
+
+/**
+ * ── 좌표는 이제 여기 없다 ──────────────────────────────────────
+ * `FRAMES` 와 시트 크기는 **`scripts/build-game-sheet.mjs` 가 만든다**
+ * (`lib/game/ui/artFrames.ts`). 그림 한 장을 `game-art-src/<키>.png` 로 넣으면 그 칸이
+ * 생기고, 없으면 그 키는 표에 아예 안 들어간다 — 그러면 `drawArt` 가 null 을 내고
+ * 화면은 오늘의 자리표시를 그린다. **슬롯마다 따로 떨어진다.**
+ *
+ * 좌표를 손으로 적던 때는 그림을 다시 뽑을 때마다 표와 시트가 어긋났다. 이제 어긋날
+ * 수가 없다 — 폴더가 곧 표다.
+ */
 
 /** 전환 화면 한 장. */
 export interface Cut {
@@ -98,10 +116,18 @@ export function cutEnded(cycle: number): Cut {
     };
 }
 
-/** 집에서 나가 회사로. */
+/**
+ * 집에서 나가 회사로. **이 막이 그 해의 얼굴이다.**
+ *
+ * 넷 다 사무실 그림 하나를 돌려 쓰던 자리였다. 그런데 이 게임은 같은 사무실에서
+ * 열두 턴을 보내는 이야기가 아니라 **네 해를 지나는 이야기**다 — 1997 의 환란,
+ * 1998 의 빈 골목, 1999 의 열병, 2000 의 청구서. 해가 바뀐 것이 화면에서 바뀌어야 한다.
+ *
+ * 그림이 아직 없으면 자리표시가 뜬다 — 그때도 머리글의 「1998 · 바닥에서」는 그대로다.
+ */
 export function cutToOffice(ch: Chapter): Cut {
     return {
-        art: "office",
+        art: `year-${ch.year as ChapterYear}`,
         head: `${ch.year} · ${ch.title}`,
         lines: ["사무실 문을 열었다."],
     };
