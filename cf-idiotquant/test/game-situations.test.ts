@@ -20,7 +20,10 @@ import {
     researchBuff, verdictOf, verdictSay, worthRecommending,
     RESEARCH_COST, RESEARCH_DEPTH,
 } from "@/lib/game/core/research";
-import { ENERGY_START } from "@/lib/game/core/StockEngine";
+import { ENERGY_START, StockEngine, SEED_CASH } from "@/lib/game/core/StockEngine";
+import {
+    recommendBlock, blockSay, researchBlock, researchSay,
+} from "@/lib/game/core/orders";
 import { EMPTY, remember, regress, endReasonOf, breaksLoop } from "@/lib/game/core/progress";
 import type { ChapterSummary } from "@/lib/game/core/types";
 
@@ -350,4 +353,129 @@ test("판정마다 다른 말을 하고, 빈 문구가 없다", () => {
         heads.add(head);
     }
     assert.equal(heads.size, 4, "판정 넷이 같은 말을 한다");
+});
+
+/* ── 체결을 막는 것 · 무름 ──────────────────────────────────── */
+
+test("권하는 것을 막는 것 넷 — 그리고 저마다 다른 말을 한다", () => {
+    const ok = { hasClient: true, refused: false, cash: 10_000_000, price: 10_000 };
+    assert.equal(recommendBlock(ok), "none");
+
+    // **눌러도 아무 일이 없던 두 경우가 여기 있다.**
+    assert.equal(recommendBlock({ ...ok, hasClient: false }), "noClient");
+    assert.equal(recommendBlock({ ...ok, cash: 10_000 }), "notEnoughCash");   // 절반은 5,000
+    assert.equal(recommendBlock({ ...ok, refused: true }), "refused");
+
+    const labels = new Set<string>();
+    for (const b of ["noClient", "refused", "notEnoughCash"] as const) {
+        const { label, sub } = blockSay(b);
+        assert.ok(label.length > 0 && sub.length > 0, `${b} 의 문구가 비었다`);
+        labels.add(label);
+    }
+    assert.equal(labels.size, 3, "막힌 이유 셋이 같은 말을 한다");
+});
+
+test("현금 절반이 한 주 값에 닿는 경계", () => {
+    // **절반으로 산다.** 그래서 현금이 한 주 값의 두 배는 돼야 한다.
+    const at = (cash: number) => recommendBlock({ hasClient: true, refused: false, cash, price: 1_000 });
+    assert.equal(at(1_999), "notEnoughCash");
+    assert.equal(at(2_000), "none");
+    assert.equal(at(0), "notEnoughCash");
+});
+
+test("막힌 자리는 순서가 있다 — 사람이 없으면 현금은 볼 것도 없다", () => {
+    assert.equal(recommendBlock({ hasClient: false, refused: true, cash: 0, price: 10_000 }), "noClient");
+    assert.equal(recommendBlock({ hasClient: true, refused: true, cash: 0, price: 10_000 }), "refused");
+});
+
+test("무름은 현금과 보유를 아침으로 되돌린다 — 그리고 값이 없다", () => {
+    // 주가는 `tick()` 에서만 움직이므로, 무르고 다시 사면 값도 수수료도 똑같다.
+    // **그래서 무름으로 이득을 볼 수 없다** — 잘못 누른 것을 고치는 자리일 뿐이다.
+    const e = new StockEngine(4242, SEED_CASH);
+    e.liquidateAll();
+    const id = e.listed[0]!.id;
+
+    const mark = e.markTrades();
+    const cashBefore = e.player.cash;
+    const r = e.buyHalf(id);
+    assert.ok(r.ok, "살 수 있어야 시험이 된다");
+    assert.notEqual(e.player.cash, cashBefore);
+    assert.ok(e.positionOf(id).shares > 0);
+
+    e.restoreTrades(mark);
+    assert.equal(e.player.cash, cashBefore, "현금이 안 돌아왔다");
+    assert.equal(e.positionOf(id).shares, 0, "보유가 안 돌아왔다");
+
+    // 되돌린 뒤 다시 사면 **똑같은 값이 나온다.**
+    const again = e.buyHalf(id);
+    assert.ok(again.ok && r.ok);
+    if (again.ok && r.ok) {
+        assert.equal(again.qty, r.qty);
+        assert.equal(again.fee, r.fee);
+        assert.equal(e.player.cash, r.cash);
+    }
+});
+
+test("무름은 「한 번도 권하지 않았다」까지 되돌린다", () => {
+    // 이 값이 안 돌아오면, 사자마자 무른 챕터인데도 결산이 「한 번도 권하지 않았다」를
+    // 안 적는다 — 화면이 실제로 일어난 일과 다른 말을 하게 된다.
+    // `endChapter()` 는 빚과 커서를 건드리므로 한 판에 한 번만 부른다 — 같은 시드로
+    // 판 둘을 세우고, 하나는 그대로 두고 하나만 무른다.
+    const fresh = () => {
+        const e = new StockEngine(77, SEED_CASH);
+        e.liquidateAll();
+        return e;
+    };
+
+    const kept = fresh();
+    kept.buyHalf(kept.listed[0]!.id);
+    assert.equal(kept.endChapter().idle, false, "샀으면 안 흘려보낸 것이다");
+
+    const undone = fresh();
+    const mark = undone.markTrades();
+    undone.buyHalf(undone.listed[0]!.id);
+    undone.restoreTrades(mark);
+    assert.equal(undone.endChapter().idle, true, "무른 뒤에는 안 권한 것이어야 한다");
+});
+
+test("떠 둔 자리는 나중 체결에 안 물든다", () => {
+    // 얕게 베끼면 `positions` 안의 객체를 나눠 쓰게 되어, 되돌린 자리가 이미 바뀌어 있다.
+    const e = new StockEngine(1234, SEED_CASH);
+    e.liquidateAll();
+    const id = e.listed[0]!.id;
+    e.buyHalf(id);
+    const shares = e.positionOf(id).shares;
+
+    const mark = e.markTrades();
+    e.buyHalf(id);                       // 더 산다 — 떠 둔 자리가 물들면 안 된다
+    assert.ok(e.positionOf(id).shares > shares);
+    e.restoreTrades(mark);
+    assert.equal(e.positionOf(id).shares, shares);
+});
+
+test("근거는 권하기 전에 만들어야 한다 — 권한 뒤에는 알아보기가 잠긴다", () => {
+    // 권하는 순간 그 턴의 근거가 박제되므로, 그 뒤에 알아보면 에너지만 나간다.
+    // **눌러도 손해만 나는 버튼**이 열려 있던 자리다.
+    const base = { researchedThis: false, otherThesis: null, recommended: false, energy: 50, cost: 3 };
+    assert.equal(researchBlock(base), "none");
+    assert.equal(researchBlock({ ...base, recommended: true }), "afterRecommend");
+});
+
+test("알아보기를 막는 것에도 순서가 있다", () => {
+    const base = { researchedThis: false, otherThesis: null, recommended: false, energy: 50, cost: 3 };
+    // 이미 알아본 종목은 **막힌 것이 아니라 다 된 것**이라 제일 먼저 온다.
+    assert.equal(researchBlock({ ...base, researchedThis: true, recommended: true, energy: 0 }), "thisStock");
+    assert.equal(researchBlock({ ...base, otherThesis: "동방해운", recommended: true }), "otherStock");
+    assert.equal(researchBlock({ ...base, energy: 2 }), "noEnergy");
+    assert.equal(researchBlock({ ...base, energy: 3 }), "none", "딱 맞으면 알아볼 수 있다");
+});
+
+test("알아보기 줄의 문구는 다섯 가지가 다 다르다", () => {
+    const seen = new Set<string>();
+    for (const b of ["none", "thisStock", "otherStock", "afterRecommend", "noEnergy"] as const) {
+        const t = researchSay(b, { other: "동방해운", cost: 3 });
+        assert.ok(t.length > 0, `${b} 의 문구가 비었다`);
+        seen.add(t);
+    }
+    assert.equal(seen.size, 5, "같은 말을 하는 자리가 있다");
 });

@@ -16,7 +16,9 @@
 // 있는 수를 넘었다. 12턴짜리 판이라 통째로 그려도 싸고, 어긋날 자리가 없어진다.
 
 import Phaser from "phaser";
-import { StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel } from "@/lib/game/core/StockEngine";
+import {
+    StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel, type TradeMark,
+} from "@/lib/game/core/StockEngine";
 import { CHAPTERS } from "@/lib/game/core/chapters";
 import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
 import {
@@ -26,6 +28,9 @@ import {
     researchBuff, verdictOf, worthRecommending, RESEARCH_COST,
 } from "@/lib/game/core/research";
 import { EMPTY_FACTS, type SituationFacts } from "@/lib/game/core/situations";
+import {
+    recommendBlock, researchBlock, blockSay, type OrderBlock, type ResearchBlock,
+} from "@/lib/game/core/orders";
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
 } from "@/lib/game/core/progress";
@@ -103,6 +108,24 @@ export class TradingScene extends Phaser.Scene {
     private actedThisTurn = false;
     /** 이번 턴에 권한 종목과 그때의 근거. 다음 턴에 이걸로 정산한다. */
     private pending: { id: string; thesis: string | null; client: Client; cost: number } | null = null;
+    /**
+     * 이번 턴에 **실제로 체결이 일어났는가.** 「무른다」가 이 값을 본다.
+     *
+     * `recommendedThisTurn` 과 따로 두는 이유: 고객이 고개를 저은 턴은 권한 것이지만
+     * **아무것도 안 사졌다.** 그것까지 무를 수 있게 두면 거절을 무르고 다시 굴려
+     * 받아 줄 때까지 되풀이할 수 있다 — 무름은 잘못 누른 것을 고치는 자리이지
+     * 주사위를 다시 굴리는 자리가 아니다.
+     */
+    private traded = false;
+    /** 턴이 열릴 때의 자리. 「무른다」가 여기로 되돌린다. */
+    private mark: {
+        trades: TradeMark;
+        recommended: boolean;
+        acted: boolean;
+        pending: { id: string; thesis: string | null; client: Client; cost: number } | null;
+        facts: SituationFacts;
+        logLen: number;
+    } | null = null;
     private read: MarketRead | null = null;
     /**
      * 이번 턴 알아본 종목의 id. **근거는 여기서만 나온다**(`core/research.ts`).
@@ -203,8 +226,9 @@ export class TradingScene extends Phaser.Scene {
      * 어긋나 다음 판단이 틀린 값 위에서 이뤄진다.
      */
     private research(id: string): void {
-        if (this.researched !== null) return;
-        if (this.engine.player.energy < RESEARCH_COST) return;
+        // **화면이 이미 잠갔다면 여기까지 오지 않는다.** 두 번째 자물쇠다.
+        if (id !== this.engine.focus) return;
+        if (this.researchBlock() !== "none") return;
         const stock = this.engine.stockOf(id);
         if (!stock) return;
 
@@ -800,17 +824,16 @@ export class TradingScene extends Phaser.Scene {
             band: win.body,
             row: () => this.rowOf(this.engine.focus),
             read: () => this.readOf(this.engine.focus),
-            researched: () => this.researched === this.engine.focus,
-            otherThesis: () => (this.researched && this.researched !== this.engine.focus
-                ? this.engine.stockOf(this.researched)?.name ?? null : null),
+            researchBlock: () => this.researchBlock(),
+            otherThesis: () => this.otherThesis(),
             researchCost: () => RESEARCH_COST,
-            canResearch: () => this.researched === null
-                && this.engine.player.energy >= RESEARCH_COST,
-            alreadyRecommended: () => this.recommendedThisTurn,
+            block: () => this.orderBlock(),
+            canUndo: () => this.traded,
             clientName: () => this.client?.name ?? "아무도",
             onResearch: (id: string) => this.research(id),
             onBuy: (id: string) => this.recommend(id),
             onSell: (id: string) => this.sell(id),
+            onUndo: () => this.undoTrades(),
         });
         this.sheet.draw();
     }
@@ -893,11 +916,15 @@ export class TradingScene extends Phaser.Scene {
         //
         // 예전에는 이 셈에 판정이 안 들어가 있었다. 그래서 「이 종목은 아니다」가 뜬 턴에는
         // **화면 어디에도 밝은 버튼이 없었다** — 다음에 뭘 해야 하는지를 화면이 말하지 않았다.
-        const canStillResearch = this.researched === null
-            && this.engine.player.energy >= RESEARCH_COST;
+        const canStillResearch = this.researchBlock() === "none";
+        // **못 누르는 것은 「할 일」이 아니다.** 앞에 아무도 없거나 현금이 모자라면
+        // 아무리 좋은 판정이 떠도 이번 턴에 권할 수는 없다.
         const worthBuying = !done
+            && this.orderBlock() === "none"
             && this.researched === focus
             && worthRecommending(verdictOf(this.readOf(focus)));
+        // **무름은 「남은 일」이 아니라 고치는 자리다.** 그것 때문에 「하루를 넘긴다」를
+        // 안 밝히면, 사고 난 뒤에 다음 걸음이 화면에서 사라진다.
         const nothingLeft = !canStillResearch && !worthBuying;
 
         // **버튼 둘.** 목록이 화면 하나를 통째로 쓰는 자리로 나가면서
@@ -1001,7 +1028,10 @@ export class TradingScene extends Phaser.Scene {
      * 거절당하면 아무 일도 안 일어나고 에너지만 자연 감소한다.
      */
     private recommend(id: string): void {
-        if (this.recommendedThisTurn || !this.client) return;
+        // **막힌 이유가 있으면 여기까지 오지 않는다.** 화면이 이미 버튼을 잠그고 그
+        // 이유를 적어 두었으므로(`orderBlock`), 이 줄은 두 번째 자물쇠다.
+        if (this.recommendedThisTurn || this.orderBlock() !== "none") return;
+        if (!this.client) return;
         const buff = this.buff();
         const thesis = buff.thesis;
         const c = this.client;
@@ -1022,6 +1052,7 @@ export class TradingScene extends Phaser.Scene {
         this.engine.setFocus(id);
         this.recommendedThisTurn = true;
         this.actedThisTurn = true;
+        this.traded = true;
         this.pending = { id, thesis, client: c, cost: before - this.engine.player.cash };
         if (thesis) {
             this.facts.thesisPlays += 1;
@@ -1042,6 +1073,7 @@ export class TradingScene extends Phaser.Scene {
         this.pushLog(`${s?.name ?? "종목"}을(를) 거뒀다. ${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`,
             pnl >= 0 ? "up" : "down");
         this.actedThisTurn = true;
+        this.traded = true;
         // 권한 종목을 그 턴에 도로 팔면 정산은 그 결과로 한다.
         if (this.pending?.id === id) this.pending = null;
         this.closeBoardAndRedraw();
@@ -1052,15 +1084,81 @@ export class TradingScene extends Phaser.Scene {
         this.redraw();
     }
 
+    /**
+     * **방금 한 체결을 되돌린다.** 턴이 열린 자리로 돌아간다.
+     *
+     * 주가는 `endTurn` 에서만 움직이므로, 턴이 넘어가기 전이라면 되돌리는 데 값이
+     * 없다 — 되돌리고 다시 사면 값도 수수료도 똑같다. 그래서 무름으로 이득을 볼 수
+     * 없고, 오직 잘못 누른 것을 고치는 데만 쓰인다.
+     *
+     * **알아본 것은 안 되돌린다.** 에너지를 써서 안 것을 도로 모르게 만들 수는 없고,
+     * 그걸 허용하면 알아보고 → 마음에 안 들면 무르고 → 다른 걸 알아보는 것이 공짜가 된다.
+     *
+     * 로그도 턴이 열린 자리로 잘라 낸다. 무른 것은 일어나지 않은 일이라 기록에 남을
+     * 이유가 없다 — 대신 **무른 사실 한 줄**은 남는다. 그것은 실제로 일어난 일이다.
+     */
+    private undoTrades(): void {
+        const m = this.mark;
+        if (!m || !this.traded) return;
+
+        this.engine.restoreTrades(m.trades);
+        this.recommendedThisTurn = m.recommended;
+        this.actedThisTurn = m.acted;
+        this.pending = m.pending;
+        this.facts = { ...m.facts };
+        this.traded = false;
+        this.entries.length = Math.min(this.entries.length, m.logLen);
+        this.pushLog("방금 한 것을 무르고 아침으로 돌렸다.", "system");
+        this.redraw();
+    }
+
+    /** 이번 턴에 다른 종목을 알아봤으면 그 이름. */
+    private otherThesis(): string | null {
+        if (!this.researched || this.researched === this.engine.focus) return null;
+        return this.engine.stockOf(this.researched)?.name ?? null;
+    }
+
+    /** 지금 알아보는 것을 막는 것. 없으면 `"none"`. */
+    private researchBlock(): ResearchBlock {
+        return researchBlock({
+            researchedThis: this.researched === this.engine.focus,
+            otherThesis: this.otherThesis(),
+            recommended: this.recommendedThisTurn,
+            energy: this.engine.player.energy,
+            cost: RESEARCH_COST,
+        });
+    }
+
+    /** 지금 권하는 것을 막는 것. 없으면 `"none"`. */
+    private orderBlock(): OrderBlock {
+        return recommendBlock({
+            hasClient: this.client !== null,
+            // 거절당한 턴은 체결이 없으므로 `traded` 가 false 다 — 그 상태가 곧 거절이다.
+            refused: this.recommendedThisTurn && !this.traded,
+            cash: this.engine.player.cash,
+            price: this.engine.priceOf(this.engine.focus),
+        });
+    }
+
     /* ── 턴 ───────────────────────────────────────────── */
 
     private beginTurn(): void {
         this.client = clientAt(this.memory.cycle, this.engine.chapter.id, this.engine.player.currentTurn, this.gone);
         this.recommendedThisTurn = false;
         this.actedThisTurn = false;
+        this.traded = false;
         // 알아본 것은 **그 턴에만** 유효하다. 하루가 지나면 다시 알아봐야 한다.
         this.researched = null;
         this.read = this.engine.read(this.buff());
+        // **여기가 「무른다」의 목적지다.** 턴이 열린 자리를 떠 둔다.
+        this.mark = {
+            trades: this.engine.markTrades(),
+            recommended: false,
+            acted: false,
+            pending: null,
+            facts: { ...this.facts },
+            logLen: this.entries.length,
+        };
 
         const fresh = this.engine.newlyListed;
         if (fresh) this.pushLog(`${fresh.name}이(가) 상장했다. ${fresh.blurb}.`, "system");

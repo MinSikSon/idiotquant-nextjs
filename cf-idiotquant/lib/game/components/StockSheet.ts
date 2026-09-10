@@ -16,6 +16,9 @@
 import Phaser from "phaser";
 import type { MarketRead } from "@/lib/game/core/types";
 import { verdictOf, verdictSay, worthRecommending } from "@/lib/game/core/research";
+import {
+    blockSay, researchSay, type OrderBlock, type ResearchBlock,
+} from "@/lib/game/core/orders";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import type { StockRow } from "@/lib/game/components/StockList";
 import { C, FS, PAD, S, type Band, fontOf, mkText, price, pressable } from "@/lib/game/ui/theme";
@@ -44,20 +47,21 @@ export interface StockSheetDeps {
      * 그러면 3 에너지로 아홉 종목이 다 열린다.
      */
     read(): MarketRead | null;
-    /** 이 종목을 이번 턴에 알아봤는가. */
-    researched(): boolean;
+    /** 지금 알아보는 것을 막는 것. `"thisStock"` 이면 이미 알아본 것이다(`core/orders.ts`). */
+    researchBlock(): ResearchBlock;
     /** 이번 턴에 이미 다른 종목을 알아봤으면 그 이름. */
     otherThesis(): string | null;
     researchCost(): number;
-    /** 지금 알아볼 수 있는가 — 아직 안 알아봤고 에너지가 남았는가. */
-    canResearch(): boolean;
-    /** 이번 턴에 이미 권했는가. */
-    alreadyRecommended(): boolean;
+    /** 지금 권하는 것을 막는 것. `"none"` 이면 누를 수 있다(`core/orders.ts`). */
+    block(): OrderBlock;
+    /** 이번 턴에 **실제로 체결이 일어났는가.** 그러면 왼쪽 버튼이 「무른다」가 된다. */
+    canUndo(): boolean;
     /** 지금 앞에 앉은 사람의 이름. */
     clientName(): string;
     onResearch(id: string): void;
     onBuy(id: string): void;
     onSell(id: string): void;
+    onUndo(): void;
 }
 
 export class StockSheet {
@@ -145,44 +149,63 @@ export class StockSheet {
         }
         root.add(subT);
 
-        /* ── 알아본다 ── */
+        /* ── 알아본다 ──────────────────────────────────────────────
+           **근거는 권하기 전에 만들어야 붙는다.** 권한 뒤에 알아보면 에너지만 나가고
+           이번 턴에는 아무 값도 안 하는데, 이 줄은 그때도 멀쩡히 열려 있었다. */
+        const rb = this.d.researchBlock();
         const other = this.d.otherThesis();
-        const mine = this.d.researched();
-        const can = this.d.canResearch();
         const cost = this.d.researchCost();
-        const label = mine ? "이 종목은 알아봤다 — 근거가 있다"
-            : other ? `이번 턴은 ${other}을(를) 알아봤다`
-            : can ? `이 종목을 알아본다 — 에너지 ${cost}`
-            : `알아볼 에너지가 없다 (${cost} 필요)`;
+        const mine = rb === "thisStock";
+        const can = rb === "none";
+        const label = researchSay(rb, { other, cost });
 
         // **아직 안 알아봤으면 이 줄이 이번 턴의 다음 걸음이다.**
-        const actSkin = skinOf(can && !mine, true);
+        const actSkin = skinOf(can, true);
         const actParts = btnFace(scene, x0, actY, inW, ACT_H, actSkin);
         for (const g of actParts) root.add(g);
         const actT = mkText(scene, x0 + 8, actY + ACT_H / 2, label, {
             fontFamily: f, fontSize: `${FS.xs}px`, color: actSkin.ink,
         }).setOrigin(0, 0.5);
         root.add(actT);
-        if (can && !mine) {
+        if (can) {
             const { zone, shade } = pressable(scene, x0, actY, inW, ACT_H, [...actParts, actT],
                 () => this.d.onResearch(row.stock.id));
             root.add(shade); root.add(zone);
         }
 
-        /* ── 체결 ── */
-        const half = (inW - 6) / 2;
-        const locked = this.d.alreadyRecommended();
-        const who = this.d.clientName();
+        /* ── 체결 ─────────────────────────────────────────────────
+           왼쪽 칸 하나가 **셋 중 하나**가 된다. 셋은 동시에 설 수 없는 상태다.
 
-        // **판정이 어느 버튼을 밝힐지 정한다.** 「이 종목은 아니다」라고 말해 놓고
-        // 「권한다」를 제일 밝게 두면 화면이 스스로와 싸운다 — 실제로 그랬다.
-        const push = mine && !locked && worthRecommending(v);
-        this.cell(root, x0, btnY, half, BTN_H,
-            locked ? "오늘은 이미 권했다"
-                : mine ? "근거를 대고 권한다" : "근거 없이 권한다",
-            locked ? "다음 턴에"
-                : mine ? `${who}에게 · 현금 절반` : "틀리면 에너지가 크게 준다",
-            locked ? null : () => this.d.onBuy(row.stock.id), push);
+             체결했다   「무른다」      — 되돌리기 전에는 다시 권할 수 없다
+             막혔다     이유를 적고 잠근다 — 앞에 아무도 없다 / 거절당했다 / 현금이 모자란다
+             그 외      「권한다」
+
+           예전에는 이 자리가 「권한다」 아니면 **죽은** 「오늘은 이미 권했다」였고,
+           막힌 두 경우(고객 없음 · 현금 모자람)는 **버튼이 멀쩡해 보이는데 눌러도
+           아무 일이 없었다.** 이제 못 누르는 자리는 왜 못 누르는지를 이름에 적는다. */
+        const half = (inW - 6) / 2;
+        const who = this.d.clientName();
+        const undoable = this.d.canUndo();
+        const block = this.d.block();
+
+        if (undoable) {
+            // **무름이 서면 권하기는 안 선다.** 둘 다 세우면 「이미 산 것을 또 사는」
+            // 길이 생기고, 한 턴에 한 번이라는 규칙과 화면이 어긋난다.
+            this.cell(root, x0, btnY, half, BTN_H,
+                "무른다", "방금 한 것을 되돌린다",
+                () => this.d.onUndo(), false);
+        } else if (block !== "none") {
+            const say = blockSay(block);
+            this.cell(root, x0, btnY, half, BTN_H, say.label, say.sub, null, false);
+        } else {
+            // **판정이 어느 버튼을 밝힐지 정한다.** 「이 종목은 아니다」라고 말해 놓고
+            // 「권한다」를 제일 밝게 두면 화면이 스스로와 싸운다 — 실제로 그랬다.
+            this.cell(root, x0, btnY, half, BTN_H,
+                mine ? "근거를 대고 권한다" : "근거 없이 권한다",
+                mine ? `${who}에게 · 현금 절반` : "틀리면 에너지가 크게 준다",
+                () => this.d.onBuy(row.stock.id), mine && worthRecommending(v));
+        }
+
         this.cell(root, x0 + half + 6, btnY, half, BTN_H,
             row.shares > 0 ? "지금 판다" : "가진 것이 없다",
             row.shares > 0
