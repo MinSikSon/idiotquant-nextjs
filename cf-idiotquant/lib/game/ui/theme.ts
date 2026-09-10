@@ -53,13 +53,20 @@ const TWO_COL_MIN_W = 560;
  */
 const STACK_MIN = 398;
 
-/** 챕터 띠 — 에너지와 빚은 늘 보여야 하니 이 아래로는 안 준다. */
-const STRIP_H = 40;
-const STRIP_MIN = 28;
 /**
- * 로그가 마지막까지 지키는 한 줄. 여기에 고객 한 줄이 얹히므로 실제 바닥은 이보다 크다.
+ * 배너 — **두 줄이다.** 위가 제목과 날짜, 아래가 CRT 한 줄(에너지 · 빚).
+ *
+ * 예전에는 한 줄 40px 이었고 에너지 막대가 회색 위에 그냥 얹혀 있었다. 값을 읽는 자리는
+ * 검은 화면 안이라는 규칙이 서면서 막대와 빚이 CRT 한 줄로 들어갔고, 그만큼 커졌다.
  */
-const LOG_MIN = 34;
+const STRIP_H = 52;
+/** 여기까지 줄면 CRT 줄을 접고 제목 한 줄만 남는다. */
+const STRIP_MIN = 40;
+/**
+ * 로그가 마지막까지 지키는 한 줄. 여기에 고객 한 줄과 **창 껍데기**가 얹히므로 실제
+ * 바닥은 이보다 크다.
+ */
+const LOG_MIN = 40;
 /**
  * 고객 자리 — 누가 앞에 앉았나. 로그 띠의 머리로 들어간다.
  *
@@ -73,16 +80,25 @@ export const CLIENT_ROW = 40;
  * 종목 목록이 화면의 **본체**가 되면서 로그는 조연이 됐다. 안 막아 두면 긴 폰에서
  * 로그가 남는 세로를 다 먹고 목록이 세 줄에 머문다 — 무엇을 고를지가 화면의 일인데.
  */
-const LOG_MAX = 120;
+const LOG_MAX = 132;
 /**
- * 종목 목록 띠의 바닥값 — 머리 한 줄 + 목록 한 줄 + 고른 종목 판.
+ * 종목 목록 띠의 바닥값 — **창 껍데기 + 목록 한 줄 + 고른 종목 판.**
  *
- * 24(근거·계좌) + 56(줄 하나) + 124(판의 최소치)。 이보다 좁으면 목록이 통째로
- * 가려지거나 판에서 버튼이 잘린다.
+ * 29(껍데기 — `WIN_CHROME`) + 56(줄 하나) + 124(판의 최소치)。 이보다 좁으면
+ * 목록이 통째로 가려지거나 판에서 버튼이 잘린다. 창이 되면서 6px 늘었다.
  */
-const MARKET_MIN = 204;
-/** 목록 띠의 머리 한 줄 — 근거와 계좌. 씬이 그리고 목록은 그 아래에서 시작한다. */
-export const MARKET_HEAD = 24;
+const MARKET_MIN = 210;
+
+/**
+ * 제목 표시줄의 높이. 글자 한 줄과 여백. 그리는 것은 `ui/win95.ts` 다.
+ *
+ * **치수는 Phaser 를 부르는 파일에 두지 않는다** — 그러면 띠 예산을 재는 테스트가
+ * 브라우저 없이 못 돈다. 창 껍데기가 몇 픽셀을 먹는지는 `bandsOf` 의 바닥값이 세는
+ * 값이라, 예산과 같은 파일에 있어야 둘이 안 어긋난다.
+ */
+export const TITLE_H = 20;
+/** 창 껍데기가 세로로 먹는 값 — 베벨 위아래 + 제목 표시줄 + 속살까지의 여백. */
+export const WIN_CHROME = 2 + 1 + TITLE_H + 2 + 2 + 2;
 
 /**
  * 이 격자를 **넷으로 쌓을 것인가, 두 칸으로 쪼갤 것인가.**
@@ -218,12 +234,17 @@ export interface Band { x: number; y: number; w: number; h: number }
  *   종목 칩 줄   다섯 칸인데 종목은 아홉이라 늘 빈 칸이 남았고, 전체 목록은 시세판에 있다.
  *   차트         **시세판 안으로 옮겼다.** 종목을 고를 때 보는 것이지, 늘 떠 있을 것이 아니다.
  *
- * 남은 넷은 각각 한 가지만 말한다.
+ * 남은 넷은 각각 한 가지만 말한다. 그리고 화면이 90년대 윈도우가 되면서 **가운데 둘은
+ * 창이 됐다** — 제목 표시줄이 그 창이 무엇을 말하는지를 적는다.
  *
- *   strip   언제이고 내가 어떤가 — 연·반기·턴 · 에너지 · 빚
- *   log     무슨 일이 있었나     — 고객 한 줄 + 1인칭 기록
- *   market  **무엇을 고를까**    — 근거·계좌 한 줄 + 종목 목록 + 고른 종목 판
- *   action  무엇을 할까          — 「다음 턴」
+ *   strip   배너            언제이고 내가 어떤가 — 「재기」 · 연·반기·턴 · 에너지 · 빚
+ *   log     창 「뉴스」      무슨 일이 있었나 — 고객 한 줄 + 1인칭 기록
+ *   market  창 「주식 현황」  **무엇을 고를까** — 종목 목록 + 고른 종목 판
+ *   action  버튼            무엇을 할까 — 「하루를 넘긴다」
+ *
+ * 창이 둘뿐인 것은 셈이 아니라 규칙이다. 참고한 그 시절 화면에는 창이 예닐곱씩 떠
+ * 있었지만, 그건 사람이 스스로 연 창이다. 이 게임은 화면이 창을 대신 세우므로 **세우는
+ * 쪽이 개수를 책임진다** — 판 여덟이 화면을 망가뜨린 것이 그리 오래되지 않았다.
  *
  * `market` 이 화면의 **본체**다. 예전에는 종목 목록이 「시세판」이라는 별도 화면에
  * 있었고 회사 화면에는 손패가 있었다. 그래서 종목을 고르려면 버튼을 눌러 화면을
@@ -268,6 +289,7 @@ function stackedBands(w: number, h: number): Bands {
     let market = take(MARKET_MIN);
     let strip = take(STRIP_MIN);
     let log = take(LOG_MIN + CLIENT_ROW);
+    // 배너의 CRT 줄 — 여기까지 채워져야 에너지와 빚이 검은 화면 안으로 들어간다.
     strip += take(STRIP_H - STRIP_MIN);
 
     // 로그는 제 크기까지만 자라고, **남는 세로는 전부 목록이 가져간다.**
@@ -290,7 +312,7 @@ function splitBands(w: number, h: number): Bands {
     // 제 크기가 안 나온다.
     const left = Math.round(w * 0.58);
     const right = w - left;
-    const strip = clamp(h * 0.09, STRIP_MIN, STRIP_H);
+    const strip = clamp(h * 0.14, STRIP_MIN, STRIP_H);
     const action = clamp(h * 0.22, ACTION_ONE_ROW, 92);
 
     return {
@@ -304,35 +326,78 @@ function splitBands(w: number, h: number): Bands {
 
 export const PAD = 10;
 
+/* ── 팔레트 — 1997년의 사무실 컴퓨터 ────────────────────────────────
+   여기까지 오는 데 한 번 갈아엎었다. 예전 팔레트는 짙은 청록 터미널이었다 — 요즘 앱처럼
+   생긴 화면이라 **연도가 화면에 없었다.** 이 게임은 1997년 증권사 객장인데.
+
+   지금은 90년대 한국 PC 통신·주식 프로그램의 화면이다. 은회색 3D 패널, 남색 제목
+   표시줄, 그 안에 박힌 검은 CRT, 그 위를 굴러가는 형광 초록·빨강 숫자.
+
+   **바탕이 둘이라 글자색도 둘이다.** 이 팔레트에서 제일 자주 틀리는 자리다:
+
+     회색 면 위   `faceInk` / `faceDim` — **검은 글자다.** 그 시절 윈도우가 그랬다
+     검은 화면 위 `ink` / `inkDim` — 밝은 글자. 값을 읽는 자리는 전부 여기다
+     남색 위      `barInk` — 흰 글자. 제목 표시줄과 배너
+
+   `ink` 를 회색 면에 얹으면 흰 글자가 은색에 잠기고, `faceInk` 를 CRT 에 얹으면
+   검은 글자가 통째로 사라진다. 어느 바탕 위인지를 먼저 보고 고른다. */
+
 /** 숫자(0xRRGGBB)는 Graphics 용, 문자열은 Text 용이다. 같은 값을 두 벌로 둔다. */
 export const C = {
-    bg: 0x0b0f10,
-    panel: 0x141c1e,
-    panelHi: 0x222e31,
-    line: 0x3d5159,
-    screen: 0x070c0d,
-    up: 0x5cf08f,     // 양봉 — 네온 그린
-    down: 0xff6b4a,   // 음봉 — 레드/오렌지
-    ink: 0xe9f2ea,
-    inkDim: 0x9aada6,
-    gold: 0xe3b34a,
-    neon: 0x5cf08f,
+    /** 책상 — 창 뒤에 남는 바탕. */
+    bg: 0x5a6068,
+    /** 창의 면 — 90년대 윈도우의 그 은회색. */
+    panel: 0xc3c7cb,
+    /** 한 단 밝은 면 — 기본 단추. */
+    panelHi: 0xd6dade,
+    /** 한 단 어두운 면 — 못 누르는 것과 홈. */
+    panelLo: 0x9a9ea3,
+    /** 밝은 모서리(위·왼쪽). 뒤집히면 튀어나온 것이 들어간 것이 된다. */
+    lit: 0xffffff,
+    /** 어두운 모서리(아래·오른쪽). */
+    line: 0x6d7276,
+    /** 제일 어두운 선 — 바깥 테두리와 기본 단추의 테. */
+    edge: 0x3b3f42,
+    /** 제목 표시줄. */
+    bar: 0x0a246a,
+    /** 제목 표시줄의 밝은 쪽 — 그 시절 그러데이션의 흔적. */
+    barLit: 0x2b6fd0,
+    /** 배너 바탕 — 제목 표시줄보다 짙다. */
+    banner: 0x101a44,
+    /** 창 안의 검은 화면. **값을 읽는 자리는 전부 이 안이다.** */
+    screen: 0x06090a,
+    /** CRT 안의 격자선. 회색 면의 모서리(`line`)를 여기 쓰면 검은 화면에서 너무 밝다. */
+    grid: 0x1a2a24,
+    up: 0x3cff8e,     // 양봉 — 형광 초록
+    down: 0xff5a5a,   // 음봉 — 형광 빨강
+    ink: 0xd6e6dd,    // **검은 화면 위** 글자
+    inkDim: 0x7d8f88,
+    gold: 0xffd24a,
+    neon: 0x3cff8e,
     danger: 0xff5ec8,
-    steel: 0x6fb6ff,  // 방어 — 차가운 파랑
+    steel: 0x5fd8ff,
 } as const;
 
 export const S = {
-    bg: "#0b0f10",
-    panel: "#141c1e",
-    line: "#3d5159",
-    up: "#5cf08f",
-    down: "#ff6b4a",
-    ink: "#e9f2ea",
-    inkDim: "#9aada6",
-    gold: "#e3b34a",
-    neon: "#5cf08f",
+    bg: "#5a6068",
+    panel: "#c3c7cb",
+    line: "#6d7276",
+    up: "#3cff8e",
+    down: "#ff5a5a",
+    /** **검은 화면 위** 글자. 밝다. */
+    ink: "#d6e6dd",
+    inkDim: "#7d8f88",
+    /** **회색 면 위** 글자. 검다. */
+    faceInk: "#101418",
+    faceDim: "#4a5056",
+    /** **남색 위** 글자 — 제목 표시줄과 배너. */
+    barInk: "#ffffff",
+    /** 배너의 붉은 제목. 그 시절 게임 화면의 제목이 이 색이었다. */
+    title: "#ff5a3c",
+    gold: "#ffd24a",
+    neon: "#3cff8e",
     danger: "#ff5ec8",
-    steel: "#6fb6ff",
+    steel: "#5fd8ff",
 } as const;
 
 /**
@@ -367,34 +432,31 @@ export const LOG = {
 export type LogKind = keyof typeof LOG;
 
 /**
- * 카드 갈래별 색과 표시.
+ * 버튼의 상태. **색이 아니라 면의 생김새가 셋을 가른다.**
  *
- * 카드가 열두 장이 되면 이름만으로는 안 갈린다. **무엇을 하는 카드인가**(읽는다·건다·
- * 막는다·저주)를 색과 한 글자 표시로 먼저 말해 두면, 손패 셋을 훑는 데 한 호흡이면 된다.
- */
-/**
- * 버튼의 색. **팔레트 안에서만 고른다.**
+ * 여태 두 번 고쳤다. 처음에는 밝은 회색 두 가지를 짙은 화면에 얹었고(팔레트 밖의 색이라
+ * 화면과 아무 관계가 없었다), 다음에는 면을 다 같게 두고 **초록 테두리**로 주된 것을
+ * 가렸다. 그 둘 다 어두운 화면 위에서의 궁리였다.
  *
- * 예전에는 버튼 띠와 회사 정보판이 `0xa7b2a9` 와 `0xd8e0d8` 로 칠해져 있었다 — 게임
- * 어디에도 없는 밝은 회색 둘이라, 짙은 청록 화면에 회색 덩어리가 떠 있었고 그 위의
- * 검은 글자가 다른 화면과 아무 관계가 없었다.
+ * 지금은 화면이 90년대 윈도우고, 그 시절 버튼은 셋을 이렇게 갈랐다.
  *
- * 지금은 **면이 아니라 테두리로 가른다.** 바탕은 다 같은 `panel` 이고, 주된 버튼만
- * 초록 테두리와 초록 글자를 가진다. 어두운 화면에서 밝은 면은 그 자체로 소리가 커서,
- * 두 개를 나란히 두면 어느 쪽을 눌러야 하는지가 오히려 안 보인다.
+ *   primary  면이 한 단 밝고 **검은 테를 한 겹 두른다** — 대화상자의 기본 단추
+ *   normal   그냥 튀어나온 회색 버튼
+ *   off      면이 **가라앉는다**(베벨이 뒤집힌다). 글자가 면에 잠긴다
+ *
+ * 색으로 소리치지 않는데도 셋이 한눈에 갈린다. 그리고 형광 초록은 CRT 안으로 물러나
+ * **값을 읽는 자리에만** 남는다 — 화면에 초록이 하나뿐이라는 규칙이 여기서 지켜진다.
  */
 export const BTN = {
-    primary: { face: 0x16302b, edge: C.up, ink: S.up, sub: "#7fb99a" },
-    normal: { face: C.panel, edge: C.line, ink: S.ink, sub: S.inkDim },
-    off: { face: 0x11181a, edge: 0x222e31, ink: "#4e5f58", sub: "#3b4a45" },
+    /** **지금 눌러야 하는 것.** 면이 밝고 검은 테가 한 겹 더 있다. */
+    primary: { face: C.panelHi, ink: S.faceInk, sub: "#3d4348", ring: true, sunken: false },
+    /** **눌러도 되지만 주된 것이 아니다.** 여느 회색 버튼. */
+    normal: { face: C.panel, ink: S.faceInk, sub: S.faceDim, ring: false, sunken: false },
+    /** **못 누른다.** 면이 가라앉고 글자가 잠긴다. 부제가 왜 못 누르는지를 말한다. */
+    off: { face: C.panelLo, ink: "#7d8288", sub: "#8b9096", ring: false, sunken: true },
 } as const;
 
-export const LANE = {
-    info: { color: C.neon, ink: S.neon, tag: "정보" },
-    act: { color: C.gold, ink: S.gold, tag: "집행" },
-    guard: { color: C.steel, ink: S.steel, tag: "방어" },
-    curse: { color: C.danger, ink: S.danger, tag: "저주" },
-} as const;
+export type BtnSkin = typeof BTN[keyof typeof BTN];
 
 /** 웹폰트가 아직 안 왔거나 못 읽었을 때 떨어지는 자리. 굵기 없는 고정폭이면 된다. */
 export const FONT = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';

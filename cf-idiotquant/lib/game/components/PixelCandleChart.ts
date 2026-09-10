@@ -67,10 +67,12 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         const g = this.frame;
         g.clear();
         g.fillStyle(C.screen, 1).fillRect(0, 0, this.boxW, this.boxH);
-        g.lineStyle(1, C.line, 1).strokeRect(0.5, 0.5, this.boxW - 1, this.boxH - 1);
+        // 테두리와 격자는 **검은 화면 안의 색**이다. 회색 면의 모서리(`C.line`)를 여기
+        // 쓰면 CRT 위에서 은색 테가 되어 봉보다 밝아진다.
+        g.lineStyle(1, C.grid, 1).strokeRect(0.5, 0.5, this.boxW - 1, this.boxH - 1);
 
         // 도트 격자 — 선이 아니라 점이라야 이 시대 화면이 된다.
-        g.fillStyle(C.line, 0.55);
+        g.fillStyle(C.grid, 1);
         for (let gy = 12; gy < this.boxH - 8; gy += 12) {
             for (let gx = 8; gx < this.boxW - 6; gx += 12) {
                 g.fillRect(gx, gy, 1, 1);

@@ -25,7 +25,8 @@
 import Phaser from "phaser";
 import type { MarketRead, Stock } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
-import { BTN, C, FS, PAD, S, type Band, fontOf, mkText, price, pressable, pxOf } from "@/lib/game/ui/theme";
+import { C, FS, PAD, S, type Band, fontOf, mkText, price, pressable, pxOf } from "@/lib/game/ui/theme";
+import { bevel, btnFace, crt, skinOf } from "@/lib/game/ui/win95";
 
 /**
  * 한 줄의 높이. **모든 줄이 언제나 이 높이다.**
@@ -47,9 +48,13 @@ const SHEET_MAX = 300;
 /** 차트를 빼고 머리·근거·버튼만 넣는 데 드는 높이. */
 const SHEET_MIN = 124;
 /** 이보다 얇으면 봉의 몸통과 꼬리가 안 갈린다 — 그때는 차트를 안 그린다. */
-const CHART_MIN = 96;
+const CHART_MIN = 64;
+/** 차트까지 서려면 판이 최소한 이만큼은 돼야 한다. */
+const SHEET_WITH_CHART = SHEET_MIN + CHART_MIN + 8;
 /** 이만큼 끌면 누른 것이 아니라 넘긴 것으로 친다. */
 const DRAG_SLOP = 8;
+/** 오른쪽 스크롤 막대의 폭. 그 시절 값이 16 인데, 폰 화면에서는 목록을 그만큼 좁힌다. */
+const SCROLL_W = 9;
 
 export interface MarketRow {
     stock: Stock;
@@ -116,6 +121,7 @@ export class Market {
         this.root?.destroy(true);
         this.maskShape?.destroy();
         this.root = null; this.list = null; this.mask = null; this.maskShape = null;
+        this.thumb = null;
     }
 
     /** 값이 바뀌었을 때 같은 자리에 다시 그린다. 스크롤 위치는 지킨다. */
@@ -142,11 +148,51 @@ export class Market {
     private get viewH(): number { return this.d.band.h; }
 
     /**
-     * 아래 판의 높이. **한 줄은 반드시 남긴다** — 목록이 통째로 가리면 어디를 골랐는지
-     * 알 수 없다. 화면이 아주 낮으면 최소치가 이기고, 그때는 차트가 빠진다.
+     * 고른 종목 판의 높이. **내용에 딱 맞춘다 — 남는 자리는 목록이 쓴다.**
+     *
+     * 두 가지를 한꺼번에 막는 값이다.
+     *
+     * 1. 예전에는 `viewH - ROW_H` 라 **판이 목록을 거의 다 먹고 한 줄만 남았다.**
+     *    한 줄짜리 목록은 목록이 아니라 머리글처럼 보여서 「고르는 곳」으로 안 읽힌다.
+     * 2. 그렇다고 비율로만 자르면 **차트가 못 들어가는 어중간한 높이**가 생긴다. 그때는
+     *    차트 자리가 빈 채로 남아 판 한가운데에 구멍이 뚫린다 — 실제로 그랬다.
+     *
+     * 그래서 차트가 설 만큼이면 비율대로 주고, 아니면 **차트를 포기하고 최소치로**
+     * 줄인다. 어느 쪽이든 판에는 빈 자리가 없다.
      */
+    private get listRows(): number {
+        const v = this.viewH;
+        const want = Math.min(SHEET_MAX, Math.max(SHEET_MIN, Math.round(v * 0.58)));
+        const need = want >= SHEET_WITH_CHART ? want : SHEET_MIN;
+        const sheet = Math.min(need, Math.max(0, v - ROW_H));
+        return Math.max(1, Math.floor((v - sheet) / ROW_H));
+    }
+
+    /**
+     * 목록에 보이는 높이. **온전한 줄 수만큼만 준다.**
+     *
+     * 예전에는 남는 세로를 그대로 줘서 마지막 줄이 반쯤 걸렸다. 그걸 「아래에 더 있다」는
+     * 표시로 뒀는데, 아래에 판이 튀어나와 있는 화면에서 반 줄은 **판이 목록을 덮은 것**
+     * 으로 읽힌다 — 겹쳐 보인다는 말을 여기서 들었다. 「더 있다」는 오른쪽 스크롤 막대가
+     * 말한다(`drawScrollbar`). 그 시절 화면이 원래 그랬다.
+     */
+    private get listH(): number {
+        return Math.min(this.viewH, this.listRows * ROW_H);
+    }
+
+    /** 남는 것은 전부 판이 가져간다. 그래야 목록과 판 사이에 빈 띠가 안 생긴다. */
     private get sheetH(): number {
-        return Math.min(SHEET_MAX, Math.max(SHEET_MIN, this.viewH - ROW_H));
+        return Math.max(0, this.viewH - this.listH);
+    }
+
+    /** 줄이 넘치는가. 넘치면 오른쪽에 막대가 서고 줄이 그만큼 좁아진다. */
+    private get needsScroll(): boolean {
+        return this.d.rows().length * ROW_H > this.listH;
+    }
+
+    /** 한 줄이 실제로 쓰는 폭. **스크롤 막대 밑으로 글자가 들어가지 않게.** */
+    private get rowW(): number {
+        return this.d.band.w - (this.needsScroll ? SCROLL_W : 0);
     }
 
     private draw(): void {
@@ -154,10 +200,10 @@ export class Market {
         const root = scene.add.container(0, 0);
         this.root = root;
 
-        // 띠 안쪽만 칠한다. 오버레이가 아니라 회사 화면의 한 자리다.
-        const bg = scene.add.graphics();
-        bg.fillStyle(C.screen, 1).fillRect(band.x, band.y, band.w, band.h);
-        root.add(bg);
+        // **목록은 검은 화면 안이다.** 이 띠는 창 「주식 현황」의 속살이고, 창 면은
+        // 은회색이다. 값이 굴러가는 자리는 회색 위가 아니라 모니터 안이라야 한다
+        // (`ui/win95.ts` 의 규칙 2).
+        root.add(crt(scene, band.x, band.y, band.w, band.h));
 
         this.drawList();
         // 판은 목록 **위에** 뜬다. 목록은 그대로 있고 가려질 뿐이다.
@@ -173,13 +219,13 @@ export class Market {
      */
     private drawList(): void {
         const { scene, band } = this.d;
-        const width = band.w;
+        const width = this.rowW;
         const list = scene.add.container(band.x, this.viewTop);
         this.list = list;
         this.root!.add(list);
 
         const shape = scene.add.graphics();
-        shape.fillStyle(0xffffff).fillRect(band.x, this.viewTop, width, this.viewH);
+        shape.fillStyle(0xffffff).fillRect(band.x, this.viewTop, width, this.listH);
         shape.setVisible(false);
         this.maskShape = shape;
         this.mask = shape.createGeometryMask();
@@ -197,7 +243,7 @@ export class Market {
         list.add(shade);
 
         // 목록 전체를 덮는 판을 깔고 거기서 드래그를 받는다.
-        const zone = scene.add.zone(band.x, this.viewTop, width, this.viewH).setOrigin(0, 0).setInteractive();
+        const zone = scene.add.zone(band.x, this.viewTop, width, this.listH).setOrigin(0, 0).setInteractive();
         this.root!.add(zone);
         const rowAt = (designY: number): number => {
             const local = designY - this.viewTop - this.scrollY;
@@ -230,16 +276,46 @@ export class Market {
         zone.on("pointerout", () => { this.dragging = false; shade.setVisible(false); });
 
         this.contentH = rows.length * ROW_H;
+        this.drawScrollbar();
         this.applyScroll();
     }
+
+    /**
+     * 오른쪽 스크롤 막대. **줄이 넘칠 때만 선다.**
+     *
+     * 누르는 물건이 아니라 **읽는 물건**이다 — 끄는 것은 목록 위 아무 데서나 되고,
+     * 이건 「지금 어디쯤이고 얼마나 더 있는가」를 말한다. 죽은 버튼이 아닌 이유가 그것이다.
+     * 손잡이는 스크롤이 움직일 때마다 `applyScroll` 이 다시 놓는다.
+     */
+    private drawScrollbar(): void {
+        if (this.contentH <= this.listH) return;
+        const { scene, band } = this.d;
+        const x = band.x + band.w - SCROLL_W;
+        const h = this.listH;
+        // 홈 — 가라앉은 회색. 그 위에 튀어나온 손잡이가 올라간다.
+        this.root!.add(bevel(scene, x, this.viewTop, SCROLL_W, h,
+            { face: C.panelLo, sunken: true }));
+        const thumbH = Math.max(20, Math.round((h * h) / this.contentH));
+        this.thumb = bevel(scene, x + 1, this.viewTop, SCROLL_W - 2, thumbH);
+        this.thumbH = thumbH;
+        this.root!.add(this.thumb);
+    }
+
+    private thumb: Phaser.GameObjects.Graphics | null = null;
+    private thumbH = 0;
 
     private contentH = 0;
 
     private applyScroll(): void {
         if (!this.list) return;
-        const min = Math.min(0, this.viewH - this.contentH);
+        const min = Math.min(0, this.listH - this.contentH);
         this.scrollY = Math.max(min, Math.min(0, this.scrollY));
         this.list.y = this.viewTop + this.scrollY;
+        if (this.thumb && min < 0) {
+            // 0(맨 위) ~ 1(맨 아래) 사이 어디인가.
+            const t = this.scrollY / min;
+            this.thumb.y = Math.round(t * (this.listH - this.thumbH));
+        }
     }
 
     /**
@@ -261,7 +337,7 @@ export class Market {
 
     private drawRow(list: Phaser.GameObjects.Container, row: MarketRow, y: number): number {
         const { scene } = this.d;
-        const width = this.d.band.w;
+        const width = this.rowW;
         const f = fontOf(scene);
         const up = row.changePct >= 0;
         const col = up ? S.up : S.down;
@@ -269,19 +345,18 @@ export class Market {
         const picked = row.stock.id === this.d.selectedId();
         const g = scene.add.graphics();
         if (picked) {
-            // 고른 줄 — 아래 판이 이 종목의 것이라는 표시. 자리는 그대로 두고 색만 바꾼다.
-            g.fillStyle(0x16292e, 1).fillRect(0, y, width, ROW_H);
-            g.lineStyle(1, C.gold, 1).strokeRect(0.5, y + 0.5, width - 1, ROW_H - 1);
+            // 고른 줄 — **남색 반전.** 그 시절 목록에서 고른 줄이 이렇게 생겼다.
+            // 아래 판이 이 종목의 것이라는 표시이기도 하다. 자리는 그대로 두고 색만 바꾼다.
+            g.fillStyle(C.bar, 1).fillRect(0, y, width, ROW_H);
         } else if (row.shares > 0) {
             // 들고 있는 줄은 왼쪽에 금색 띠. 목록을 훑을 때 내 자리가 먼저 온다.
-            g.fillStyle(0x0f1a1c, 1).fillRect(0, y, width, ROW_H);
             g.fillStyle(C.gold, 1).fillRect(0, y, 3, ROW_H);
         }
-        g.lineStyle(1, 0x131d1f, 1).lineBetween(0, y + ROW_H, width, y + ROW_H);
+        g.lineStyle(1, C.grid, 1).lineBetween(0, y + ROW_H, width, y + ROW_H);
         list.add(g);
 
         list.add(mkText(scene, PAD, y + 10, row.stock.name, {
-            fontFamily: f, fontSize: `${FS.sm}px`, color: S.ink,
+            fontFamily: f, fontSize: `${FS.sm}px`, color: picked ? S.barInk : S.ink,
         }));
         list.add(mkText(scene, width - PAD - 62, y + 10, price(row.price), {
             fontFamily: f, fontSize: `${FS.sm}px`, color: col,
@@ -292,7 +367,8 @@ export class Market {
 
         const sub = row.isNew ? "신규 상장" : row.stock.blurb;
         list.add(mkText(scene, PAD, y + 32, sub, {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: row.isNew ? S.gold : S.inkDim,
+            fontFamily: f, fontSize: `${FS.xs}px`,
+            color: row.isNew ? S.gold : picked ? "#a8bcd8" : S.inkDim,
         }));
         if (row.shares > 0) {
             const p = row.pnlPct;
@@ -323,37 +399,53 @@ export class Market {
         const h = this.sheetH;
         const top = band.y + band.h - h;
         const x0 = band.x + PAD;
-        const xr = band.x + width - PAD;
+        const inW = width - PAD * 2;
         const root = this.root!;
 
-        const g = scene.add.graphics();
-        g.fillStyle(0x101b1e, 1).fillRect(band.x, top, width, h);
-        g.lineStyle(2, C.gold, 1).lineBetween(band.x, top, band.x + width, top);
-        root.add(g);
+        // 판은 **회색 면**이다 — 목록(검은 화면) 위로 튀어나온 패널. 베벨이 그 둘을
+        // 가르므로 테두리 선을 따로 안 긋는다.
+        root.add(bevel(scene, band.x, top, width, h));
 
         // 판 위에서는 목록이 안 끌린다. 이 판이 없으면 차트를 문지를 때 뒤가 스크롤된다.
         root.add(scene.add.zone(band.x, top, width, h).setOrigin(0, 0).setInteractive());
-
-        root.add(mkText(scene, x0, top + 7, `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
-            fontFamily: f, fontSize: `${FS.sm}px`, color: S.gold,
-        }));
-        root.add(mkText(scene, xr, top + 7,
-            `${price(row.price)}  ${up ? "+" : ""}${row.changePct.toFixed(1)}%`, {
-            fontFamily: f, fontSize: `${FS.sm}px`, color: up ? S.up : S.down,
-        }).setOrigin(1, 0));
 
         // 아래에서부터 자리를 잡는다 — 버튼과 근거는 반드시 서고, **차트가 남는 것을 쓴다.**
         const btnH = 44;
         const btnY = top + h - btnH - 8;
         const thY = btnY - 30;
-        const chartY = top + 28;
-        const chartH = thY - 8 - chartY;
+        const headY = top + 6;
+        const chartY = headY + 26;
+        const chartH = thY - 6 - chartY;
+        const hasChart = chartH >= CHART_MIN;
+
+        // 머리 — 이름·베타와 시세. **값이라 검은 화면 안이다.** 차트가 못 서면 그 자리를
+        // 머리가 받아 한 줄을 더 쓴다(한 줄 소개). 그래야 판 한가운데에 구멍이 안 뚫린다.
+        const headH = hasChart ? 22 : Math.max(22, thY - 6 - headY);
+        root.add(crt(scene, x0, headY, inW, headH));
+        // **한 줄짜리 자리는 세로 가운데 정렬 하나로 잡는다.** 자리를 `- FS/2` 로 올리고
+        // origin 까지 0.5 로 두면 반 줄이 두 번 올라가 글자 윗부분이 화면 밖으로 나간다 —
+        // 실제로 그래서 종목 이름의 머리가 잘려 있었다.
+        const headMid = headY + (hasChart ? headH : 22) / 2;
+        root.add(mkText(scene, x0 + 6, headMid,
+            `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
+            fontFamily: f, fontSize: `${FS.sm}px`, color: S.gold,
+        }).setOrigin(0, 0.5));
+        root.add(mkText(scene, x0 + inW - 6, headMid,
+            `${price(row.price)}  ${up ? "+" : ""}${row.changePct.toFixed(1)}%`, {
+            fontFamily: f, fontSize: `${FS.sm}px`, color: up ? S.up : S.down,
+        }).setOrigin(1, 0.5));
+        // 차트가 못 서면 머리가 그 자리를 받는다 — 판 한가운데에 구멍이 안 뚫리게.
+        if (!hasChart && headH >= 40) {
+            root.add(mkText(scene, x0 + 6, headY + 24, row.stock.blurb, {
+                fontFamily: f, fontSize: `${FS.xs}px`, color: S.inkDim,
+            }));
+        }
 
         // 회사 화면에 늘 떠 있던 그 차트다. 여기서는 **고른 종목의 것**이라, 무엇을
         // 보고 있는지가 머리글과 붙어 있다.
-        if (chartH >= CHART_MIN) {
+        if (hasChart) {
             const chart = new PixelCandleChart(scene, {
-                x: x0, y: chartY, width: width - PAD * 2, height: chartH,
+                x: x0, y: chartY, width: inW, height: chartH,
             });
             scene.add.existing(chart);
             chart.render(row.stock.history, this.d.read());
@@ -364,44 +456,54 @@ export class Market {
         //
         // 예전에는 회사 화면에서 낸 카드의 결과를 그대로 읽기만 하는 죽은 줄이었다
         // (늘 「근거 없음」이라고 적혀 있었다). 카드를 걷어 내면서 근거의 출처가
-        // 사라졌으므로, 그 줄을 **누를 수 있는 줄**로 만들었다 — 판을 하나 더 세우지
+        // 사라졌으므로, 그 줄을 **누를 수 있는 버튼**으로 만들었다 — 판을 하나 더 세우지
         // 않고 죽은 줄을 살리는 자리다(`core/research.ts`).
         const th = this.d.thesis();
         const mine = this.d.researchedId() === row.stock.id;
         const can = this.d.canResearch();
         const cost = this.d.researchCost();
 
-        const label = mine ? `근거 · ${row.stock.name}`
-            : th ? `근거는 ${th}에 걸려 있다`
-            : can ? `알아본다 · 에너지 ${cost}`
-            : "알아볼 힘이 없다";
-        const ink = mine ? "#7fdca6" : can ? S.gold : S.inkDim;
-
-        const tg = scene.add.graphics();
-        tg.fillStyle(mine ? 0x17332a : 0x141c1e, 1).fillRect(x0, thY, width - PAD * 2, 22);
-        if (can && !mine) tg.lineStyle(1, C.gold, 1).strokeRect(x0 + 0.5, thY + 0.5, width - PAD * 2 - 1, 21);
-        root.add(tg);
-        const tt = mkText(scene, x0 + 6, thY + 4, label, {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: ink,
-        });
+        const label = mine ? "이 종목은 알아봤다 — 근거가 있다"
+            : th ? `이번 턴은 ${th}을(를) 알아봤다`
+            : can ? `이 종목을 알아본다 — 에너지 ${cost}`
+            : `알아볼 에너지가 없다 (${cost} 필요)`;
+        // **아직 안 알아봤으면 이 줄이 이번 턴의 다음 걸음이다** — 그래서 아래 버튼과 같은
+        // 기본 단추 껍데기를 쓴다. 화면에서 「지금 눌러야 하는 것」은 언제나 하나뿐이고,
+        // 그것이 턴을 따라 옮겨 다닌다: 알아본다 → 근거를 대고 권한다 → 하루를 넘긴다.
+        //
+        // 이미 알아본 줄은 **버튼이 아니라 적힌 것**이다 — 가라앉은 면에 두어 눌러 볼
+        // 생각이 안 들게 한다.
+        const thSkin = skinOf(can && !mine, true);
+        const thParts = btnFace(scene, x0, thY, inW, 24, thSkin);
+        for (const g of thParts) root.add(g);
+        const tt = mkText(scene, x0 + 8, thY + 12 - FS.xs / 2, label, {
+            fontFamily: f, fontSize: `${FS.xs}px`, color: thSkin.ink,
+        }).setOrigin(0, 0.5);
         root.add(tt);
 
         if (can && !mine) {
-            const { zone, shade } = pressable(scene, x0, thY, width - PAD * 2, 22, [tg, tt],
+            const { zone, shade } = pressable(scene, x0, thY, inW, 24, [...thParts, tt],
                 () => this.d.onResearch(row.stock.id), () => this.dragged <= DRAG_SLOP);
             root.add(shade);
             root.add(zone);
         }
 
         // 체결 — 한 턴에 권하는 것은 한 번뿐이다.
-        const half = (width - PAD * 2 - 6) / 2;
+        // **이름이 곧 일어나는 일이고, 부제가 그 대가다.**
+        // 예전 이름은 「권합니다」/「믿어보십시오」였는데, 둘이 같은 행동(매수)인데도
+        // 이름이 달라서 무엇이 다른지가 안 보였다. 다른 것은 **근거를 댔느냐**뿐이다.
+        const half = (inW - 6) / 2;
         const locked = this.d.alreadyRecommended();
+        const who = this.d.clientName();
         this.cell(root, x0, btnY, half, btnH,
-            locked ? "이미 권했다" : (mine ? "권합니다" : "믿어보십시오"),
-            locked ? "이번 턴은 끝" : `${this.d.clientName()}에게`,
-            locked ? null : () => this.d.onBuy(row.stock.id), !locked);
+            locked ? "오늘은 이미 권했다" : mine ? "근거를 대고 권한다" : "근거 없이 권한다",
+            locked ? "다음 턴에" : mine ? `${who}에게 · 현금 절반` : "틀리면 에너지가 크게 준다",
+            locked ? null : () => this.d.onBuy(row.stock.id), mine && !locked);
         this.cell(root, x0 + half + 6, btnY, half, btnH,
-            "거둡니다", row.shares > 0 ? `${row.shares}주` : "보유 없음",
+            row.shares > 0 ? "지금 판다" : "가진 것이 없다",
+            row.shares > 0
+                ? `${row.shares}주 · ${row.pnlPct >= 0 ? "+" : ""}${row.pnlPct.toFixed(0)}%`
+                : "이 종목은 안 샀다",
             row.shares > 0 ? () => this.d.onSell(row.stock.id) : null, false);
     }
 
@@ -413,13 +515,11 @@ export class Market {
         const { scene } = this.d;
         const f = fontOf(scene);
         const on = onTap !== null;
-        // 색은 씬의 버튼과 **같은 표**에서 온다(`ui/theme.ts` 의 `BTN`). 두 화면이
+        // 껍데기는 씬의 버튼과 **같은 표**에서 온다(`ui/theme.ts` 의 `BTN`). 두 화면이
         // 저마다 색을 정하면 같은 「권합니다」가 화면마다 달라 보인다.
-        const skin = !on ? BTN.off : primary ? BTN.primary : BTN.normal;
-        const g = scene.add.graphics();
-        g.fillStyle(skin.face, 1).fillRect(x, y, w, h);
-        g.lineStyle(1, skin.edge, 1).strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-        parent.add(g);
+        const skin = skinOf(on, primary);
+        const faces = btnFace(scene, x, y, w, h, skin);
+        for (const g of faces) parent.add(g);
         const labelT = mkText(scene, x + w / 2, y + 8, label, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: skin.ink,
         }).setOrigin(0.5, 0);
@@ -431,7 +531,7 @@ export class Market {
 
         if (!on) return;
         // 아래 판은 목록 밖이라 스크롤과 안 싸운다. 그래도 끌다 뗀 것은 안 받는다.
-        const { zone, shade } = pressable(scene, x, y, w, h, [g, labelT, subT], onTap,
+        const { zone, shade } = pressable(scene, x, y, w, h, [...faces, labelT, subT], onTap,
             () => this.dragged <= DRAG_SLOP);
         parent.add(shade);
         parent.add(zone);

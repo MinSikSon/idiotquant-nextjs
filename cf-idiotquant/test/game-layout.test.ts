@@ -16,7 +16,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { bandsOf, designSize, isStacked, W, type Bands } from "@/lib/game/ui/theme";
+import { WIN_CHROME, bandsOf, designSize, isStacked, W, type Bands } from "@/lib/game/ui/theme";
+
+/** `Market` 의 치수. 저기는 Phaser 를 부르므로 여기서 다시 적는다. */
+const ROW_H = 56;
+const SHEET_MIN = 124;
 
 /** 세로 격자가 실제로 가질 수 있는 범위. 아래는 `STACK_MIN`, 위는 아주 긴 폰. */
 const PORTRAIT_H: number[] = [];
@@ -73,15 +77,31 @@ test("세로 — 버튼과 종목 목록은 최소치를 지킨다", () => {
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
         assert.ok(b.action.h >= 64, `h=${h}: 버튼 ${b.action.h}`);
-        assert.ok(b.market.h >= 204, `h=${h}: 목록 ${b.market.h}`);
+        assert.ok(b.market.h >= 210, `h=${h}: 목록 ${b.market.h}`);
     }
 });
 
-test("세로 — 로그는 고객 한 줄을 얹고도 한 줄이 남는다", () => {
-    // 로그 띠의 머리는 「누가 앞에 앉았나」가 든다. 그 줄에 다 먹히면 기록이 안 보인다.
+test("어느 배치에서도 목록 창 안에 줄 하나와 판이 온전히 선다", () => {
+    // **한 픽셀 차이로 깨질 뻔한 자리다.** 목록 띠가 창이 되면서 껍데기가 29px 을
+    // 먹는데, 그만큼을 띠 예산이 안 세면 고른 종목 판의 체결 버튼이 아래로 잘린다.
+    // 화면에서는 제일 짧은 격자에서만 나타나서 눈으로는 거의 안 걸린다.
+    const need = WIN_CHROME + ROW_H + SHEET_MIN;
+    for (const h of PORTRAIT_H) {
+        assert.ok(bandsOf(W, h).market.h >= need,
+            `h=${h}: 목록 창 속살이 ${bandsOf(W, h).market.h - WIN_CHROME}, ${ROW_H + SHEET_MIN} 필요`);
+    }
+    for (const [w, h] of LANDSCAPE) {
+        const b = bandsOf(w, h);
+        if (b.portrait) continue;
+        assert.ok(b.market.h >= need, `${w}×${h}: 목록 ${b.market.h}, ${need} 필요`);
+    }
+});
+
+test("세로 — 뉴스 창은 껍데기를 쓰고도 고객 한 줄이 남는다", () => {
+    // 이 띠의 머리는 「누가 앞에 앉았나」가 든다. 창 껍데기에 다 먹히면 그 줄조차 안 보인다.
     for (const h of PORTRAIT_H) {
         const b = bandsOf(W, h);
-        assert.ok(b.log.h >= 26 + 34, `h=${h}: 로그 ${b.log.h}`);
+        assert.ok(b.log.h - WIN_CHROME >= 24, `h=${h}: 뉴스 속살 ${b.log.h - WIN_CHROME}`);
     }
 });
 
@@ -95,7 +115,7 @@ test("세로 — 남는 세로는 목록이 받는다", () => {
         prev = market;
     }
     // 로그는 어느 지점에서 멈춘다.
-    assert.equal(bandsOf(W, 1000).log.h, bandsOf(W, 1200).log.h, "로그가 끝없이 자란다");
+    assert.equal(bandsOf(W, 1000).log.h, bandsOf(W, 1200).log.h, "뉴스 창이 끝없이 자란다");
 });
 
 test("세로 — 띠는 격자 폭을 다 쓴다", () => {
