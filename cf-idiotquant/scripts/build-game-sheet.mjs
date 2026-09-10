@@ -2,7 +2,7 @@
 //
 //   node scripts/build-game-sheet.mjs
 //
-// `game-art-src/<키>.png` 를 읽어 한 장으로 붙이고, 그 좌표표를 코드로 뱉는다.
+// `game-art-src/<키>.webp`(또는 .png/.jpg) 를 읽어 한 장으로 붙이고, 좌표표를 코드로 뱉는다.
 //
 //   public/game-art/sheet.png    붙인 시트 (게임이 받는 것)
 //   lib/game/ui/artFrames.ts     좌표표 (게임이 자르는 데 쓰는 것)
@@ -30,7 +30,7 @@ import sharp from "sharp";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "game-art-src");
-const OUT_PNG = join(ROOT, "public/game-art/sheet.png");
+const OUT_SHEET = join(ROOT, "public/game-art/sheet.webp");
 const OUT_TS = join(ROOT, "lib/game/ui/artFrames.ts");
 
 /** 시트 한 줄에 들어가는 장면 수. 320 × 4 = 1280 이 시트 폭이 된다. */
@@ -53,6 +53,17 @@ const KEYS = [
 ];
 
 const cellOf = (key) => (key.startsWith("client-") ? FACE : SCENE);
+
+/**
+ * 이 키의 소스 파일. **확장자를 안 따진다.**
+ *
+ * 저장소에 넣는 것은 WebP 다 — 같은 그림이 PNG 로는 190KB, WebP q92 로는 40KB 라
+ * 열다섯 장이면 2.5MB 와 600KB 로 갈린다. 새 그림을 PNG 로 떨궈도 그대로 돌아가게
+ * 둘 다 받는다.
+ */
+const srcOf = (key) => [".webp", ".png", ".jpg"]
+    .map(ext => join(SRC, key + ext))
+    .find(existsSync) ?? null;
 
 /** `interlude.ts` 의 목록과 어긋나면 여기서 멈춘다. 조용히 갈라지는 것이 제일 나쁘다. */
 function checkKeys() {
@@ -81,12 +92,12 @@ async function fit(file, side) {
 async function main() {
     checkKeys();
 
-    const have = KEYS.filter(k => existsSync(join(SRC, `${k}.png`)));
+    const have = KEYS.filter(k => srcOf(k) !== null);
     if (have.length === 0) throw new Error(`${SRC} 에 그림이 하나도 없다`);
 
     // 먼저 전부 줄여 둔다. 그래야 같은 그림인지 바이트로 견줄 수 있다.
     const buf = new Map();
-    for (const key of have) buf.set(key, await fit(join(SRC, `${key}.png`), cellOf(key)));
+    for (const key of have) buf.set(key, await fit(srcOf(key), cellOf(key)));
 
     // 자리를 잡는다 — 장면 먼저(320 격자), 얼굴은 그 아래(160 격자).
     // 같은 그림이면 이미 잡아 둔 자리를 그대로 가리킨다.
@@ -117,14 +128,17 @@ async function main() {
     place(have.filter(k => cellOf(k) === FACE), FACE);
     const height = y + rowH;
 
-    mkdirSync(dirname(OUT_PNG), { recursive: true });
+    mkdirSync(dirname(OUT_SHEET), { recursive: true });
     await sharp({
         create: { width: WIDTH, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
     })
         .composite(put)
-        // 팔레트로 줄인다. 만화체라 색 수가 적어서 눈에 띄는 손해 없이 파일이 반 이하가 된다.
-        .png({ palette: true, quality: 90, effort: 10 })
-        .toFile(OUT_PNG);
+        // **WebP 다.** 같은 그림이 PNG 팔레트로는 600KB, 여기서는 280KB 다.
+        // 팔레트를 128색으로 줄여도 300KB 인데 그때는 평평한 면에 디더가 눈에 띄었다 —
+        // 만화체라 넓은 단색 면이 많아서 그 손해가 바로 보인다.
+        // 그림은 화면에서 겹에 덮이고 줄어들어 붙으므로 q88 의 손해는 안 보인다.
+        .webp({ quality: 88, effort: 6 })
+        .toFile(OUT_SHEET);
 
     const rows = KEYS
         .filter(k => frames[k])
@@ -149,7 +163,7 @@ ${rows}
 };
 `);
 
-    const bytes = readFileSync(OUT_PNG).length;
+    const bytes = readFileSync(OUT_SHEET).length;
     console.log(`시트 ${WIDTH}x${height}, ${(bytes / 1024).toFixed(0)}KB, 칸 ${Object.keys(frames).length}/${KEYS.length}`);
     if (missing.length) console.log(`아직 없는 그림: ${missing.join(", ")}`);
 }

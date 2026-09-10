@@ -9,7 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { FRAMES, SHEET_W, SHEET_H } from "@/lib/game/ui/artFrames";
-import { readFileSync } from "node:fs";
+import sharp from "sharp";
 
 import {
     cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark,
@@ -174,12 +174,16 @@ test("모든 칸이 시트 안에 있다", () => {
     }
 });
 
-test("실제로 넣은 시트가 표가 말하는 크기와 같다", () => {
-    // PNG 헤더의 IHDR 은 8바이트 서명 + 4바이트 길이 + 4바이트 타입 뒤에 폭·높이가 온다.
-    // 시트를 다시 뽑고 표를 안 다시 만들면 여기서 걸린다.
-    const buf = readFileSync(new URL("../public/game-art/sheet.png", import.meta.url));
-    assert.equal(buf.readUInt32BE(16), SHEET_W);
-    assert.equal(buf.readUInt32BE(20), SHEET_H);
+test("실제로 넣은 시트가 표가 말하는 크기와 같다", async () => {
+    // **시트를 다시 뽑고 표를 안 다시 만들면 여기서 걸린다.** 좌표가 그림 밖을 가리키면
+    // 화면에 빈 네모가 뜨는데, 그건 눈으로 보기 전에는 모른다.
+    //
+    // 크기는 `sharp` 로 읽는다. 시트가 WebP 라 헤더를 손으로 뜯으면 lossy/lossless 에
+    // 따라 자리가 달라진다 — 어차피 있는 의존성이니 그쪽에 맡긴다.
+    const meta = await sharp(new URL("../public/game-art/sheet.webp", import.meta.url).pathname)
+        .metadata();
+    assert.equal(meta.width, SHEET_W);
+    assert.equal(meta.height, SHEET_H);
 });
 
 test("엔딩 넷은 모두 그릴 그림이 있다 — 판이 끝나는 자리라 자리표시로 두지 않는다", () => {

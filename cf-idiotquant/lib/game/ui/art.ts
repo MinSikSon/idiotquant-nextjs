@@ -28,7 +28,7 @@ import { C } from "@/lib/game/ui/theme";
 export type { ArtKey };
 
 const SHEET = "game-sheet";
-const SHEET_URL = "/game-art/sheet.png";
+const SHEET_URL = "/game-art/sheet.webp";
 
 /**
  * 그림 위에 덮는 겹의 진하기.
