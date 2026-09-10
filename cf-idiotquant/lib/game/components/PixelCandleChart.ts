@@ -4,16 +4,27 @@
 // 할 일이 없고, 캔버스 게임 위에 DOM 차트를 겹치면 구조가 꼬인다.
 //
 // 매 턴 `render()` 를 다시 부른다. 12봉짜리라 통째로 다시 그려도 싸다.
+//
+// ── 이 차트에는 **글자가 없다** ────────────────────────────────────
+// 고가·저가·현재가·국면을 네 귀퉁이에 적던 때가 있었다. 그런데 그 넷이 전부 다른
+// 자리에 이미 있다 — 현재가는 바로 위 머리줄에, 국면은 아래 판정 칸에(`StockSheet`),
+// 고가·저가는 **봉의 모양 자체가** 말한다. 같은 값을 두 번 적으면 화면만 시끄럽고,
+// 어느 쪽을 봐야 하는지가 오히려 흐려진다.
+//
+// 이동평균선도 같이 뺐다. **이 게임의 어떤 규칙도 이동평균을 안 읽는다** — 판단은
+// 국면과 베타에서 나오고(`core/research.ts` 의 `verdictOf`), 추세는 봉이 이미 말한다.
+// 게다가 5일선인데 프롤로그는 봉이 여섯뿐이라 점 두 개짜리 토막으로 떴다.
+// **정보처럼 생겼지만 아무것도 안 알려 주는 선**이 제일 나쁘다.
+//
+// 남은 것은 그림뿐이다: 봉과 지금 값의 가로 점선. 숫자로 읽을 것은 전부 검은 줄이
+// 지고, 여기는 **모양으로 읽는다.**
 
 import Phaser from "phaser";
 import type { Candle, MarketRead } from "@/lib/game/core/types";
-import { regimeLabel } from "@/lib/game/core/StockEngine";
-import { C, S, FS, fontOf, mkText, pct } from "@/lib/game/ui/theme";
+import { C, S, FS, fontOf, mkText } from "@/lib/game/ui/theme";
 
 /** 화면에 남기는 봉의 수. 한 판이 12턴이라 판 전체가 한눈에 들어온다. */
 export const VISIBLE_BARS = 12;
-/** 이동평균 구간. */
-const MA_PERIOD = 5;
 
 export interface ChartOpts {
     x: number;
@@ -30,11 +41,6 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
 
     private frame: Phaser.GameObjects.Graphics;
     private plot: Phaser.GameObjects.Graphics;
-    private hiLabel: Phaser.GameObjects.Text;
-    private loLabel: Phaser.GameObjects.Text;
-    private nowLabel: Phaser.GameObjects.Text;
-    /** 읽어 낸 국면. 카드를 써야 채워진다. */
-    private readLabel: Phaser.GameObjects.Text;
     /** 유령 봉이 몇 턴 뒤인지(+1 · +2). 예보의 지속을 그림으로 말한다. */
     private ghostLabels: Phaser.GameObjects.Text[] = [];
 
@@ -50,13 +56,9 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
             mkText(scene, 0, 0, "", { fontFamily: fontOf(scene), fontSize: `${FS.xs}px`, color: S.inkDim })
                 .setOrigin(align === "right" ? 1 : 0, 0);
 
-        this.hiLabel = mk("left");
-        this.loLabel = mk("left");
-        this.nowLabel = mk("right");
-        this.readLabel = mk("right").setColor(S.gold).setAlign("right").setLineSpacing(3);
         this.ghostLabels = [0, 1].map(() => mk("left").setColor(S.inkDim).setVisible(false));
 
-        this.add([this.frame, this.plot, this.hiLabel, this.loLabel, this.nowLabel, this.readLabel, ...this.ghostLabels]);
+        this.add([this.frame, this.plot, ...this.ghostLabels]);
         scene.add.existing(this);
 
         this.drawFrame();
@@ -82,9 +84,7 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
 
     /**
      * @param history 봉 전체. 뒤에서 VISIBLE_BARS 개만 그린다.
-     * @param read    카드로 **읽어 낸 것**. 예보는 마지막 봉 다음에 유령 봉으로 그리고,
-     *                국면은 모서리에 쓴다. 뉴스 줄에 띄우지 않는 이유는 그 줄이 매매
-     *                한 번에 덮이기 때문이다 — 크기를 정하는 동안 보여야 할 정보다.
+     * @param read    읽어 낸 것. **예보의 유령 봉에만 쓴다** — 국면은 글자로 안 적는다.
      */
     render(history: readonly Candle[], read?: MarketRead | null): void {
         const g = this.plot;
@@ -130,23 +130,6 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         const slots = VISIBLE_BARS + ghosts.length;
         const step = (right - left) / slots;
         const bodyW = Math.max(3, Math.floor(step * 0.58));
-
-        // 이동평균 — 봉보다 먼저 그려 뒤에 깔린다.
-        const closes = bars.map(b => b.c);
-        if (closes.length >= MA_PERIOD) {
-            g.lineStyle(1, C.gold, 0.9);
-            g.beginPath();
-            let started = false;
-            for (let i = MA_PERIOD - 1; i < closes.length; i++) {
-                let sum = 0;
-                for (let k = 0; k < MA_PERIOD; k++) sum += closes[i - k]!;
-                const mx = left + step * i + step / 2;
-                const my = py(sum / MA_PERIOD);
-                if (started) g.lineTo(mx, my);
-                else { g.moveTo(mx, my); started = true; }
-            }
-            g.strokePath();
-        }
 
         // 캔들
         for (let i = 0; i < bars.length; i++) {
@@ -208,47 +191,5 @@ export class PixelCandleChart extends Phaser.GameObjects.Container {
         const ly = Math.round(py(last.c)) + 0.5;
         g.fillStyle(C.inkDim, 0.7);
         for (let dx = left; dx < right; dx += 6) g.fillRect(dx, ly, 3, 1);
-
-        this.hiLabel.setPosition(4, 3).setText(hi.toLocaleString());
-        this.loLabel.setPosition(4, this.boxH - FS.xs - 4).setText(lo.toLocaleString());
-
-        // 읽어 낸 국면은 차트 오른쪽 위에. 읽은 깊이만큼 한 조각씩 붙는다.
-        //
-        // **기울기(턴당 평균 등락)가 첫 조각이다.** 예전에는 "국면 상승" 한 단어뿐이라,
-        // 그 카드를 쓰고도 얼마나 걸어야 할지가 안 정해졌다 — 읽은 것이 값이 되려면
-        // 단어가 숫자로 바뀌어야 한다.
-        //
-        // 다 벗겨진 3강은 조각이 넷이라 한 줄로는 차트를 가로지른다. **두 줄로 접는다** —
-        // 지금 국면이 윗줄, 다음에 올 것이 아랫줄이다.
-        const lines = readLines(read);
-        this.readLabel.setPosition(this.boxW - 4, 3).setText(lines);
-
-        // 지금 값은 국면 줄 **아래로** 밀어 둔다. 주가가 차트 위쪽에 붙은 판에서는 둘이
-        // 같은 자리를 잡아 글자가 겹쳐 찍혔다.
-        const readBottom = lines.length > 0 ? 3 + lines.length * (FS.xs + 3) : 3;
-        this.nowLabel
-            .setPosition(this.boxW - 4,
-                Math.max(readBottom, Math.min(this.boxH - FS.xs - 4, ly - FS.xs - 3)))
-            .setText(last.c.toLocaleString())
-            .setColor(last.c >= last.o ? S.up : S.down);
     }
-}
-
-/**
- * 국면 줄. 못 읽은 조각은 그냥 빠지고, 다음 국면까지 읽었으면 둘째 줄로 내려간다.
- *
- * 말을 짧게 두는 것이 요점이다 — "국면"·"남음" 같은 말은 자리만 먹고, 그 자리가
- * 모자라면 차트의 고가·현재가와 부딪힌다.
- */
-function readLines(read?: MarketRead | null): string[] {
-    if (!read?.regime) return [];
-    const now = [regimeLabel(read.regime)];
-    if (read.regimeDrift !== null) now.push(`턴당 ${pct(read.regimeDrift)}`);
-    if (read.turnsLeft !== null) now.push(`${read.turnsLeft}턴`);
-
-    const out = [now.join(" · ")];
-    if (read.nextRegime) {
-        out.push(`다음 ${regimeLabel(read.nextRegime)}${read.nextDrift !== null ? ` ${pct(read.nextDrift)}` : ""}`);
-    }
-    return out;
 }

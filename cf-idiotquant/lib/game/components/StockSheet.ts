@@ -85,20 +85,31 @@ export class StockSheet {
         const x0 = band.x + 3;
         const inW = band.w - 6;
 
-        // **아래에서부터 자리를 잡는다.** 버튼과 판정은 반드시 서고, 차트가 남는 것을 쓴다.
+        /* ── 자리 잡기 ─────────────────────────────────────────────
+           아래에서부터 잡는다. 버튼과 「알아본다」는 반드시 서고, 차트가 남는 것을 쓴다.
+
+           **판정 칸은 알아봤을 때만 선다.** 안 알아본 턴에는 「아직 안 알아봤다 /
+           알아봐야 국면이 열린다」가 떴는데, 바로 아래 줄이 「이 종목을 알아본다」라
+           **같은 말을 두 번** 하는 셈이었다. 지금은 그 칸이 아예 없고, 차트가 그만큼
+           커진다 — 그리고 판정 칸이 뜨는 것 자체가 3 에너지를 쓴 표시가 된다. */
+        const read = this.d.read();
+        const hasVerdict = read?.regime != null;
+
         const btnY = band.y + band.h - BTN_H - 4;
         const actY = btnY - ACT_H - 6;
         const verdictY = actY - VERDICT_H - 6;
         const headY = band.y + 3;
         const chartY = headY + HEAD_H + 4;
-        const chartH = verdictY - 6 - chartY;
+        const chartH = (hasVerdict ? verdictY : actY) - 6 - chartY;
         const hasChart = chartH >= CHART_MIN;
 
-        /* ── 머리 — 이름·베타와 시세. 값이라 검은 화면 안이다. ── */
-        const headH = hasChart ? HEAD_H : Math.max(HEAD_H, verdictY - 6 - headY);
+        /* ── 머리 — 이름과 시세. 값이라 검은 화면 안이다.
+           **베타는 여기 없다.** 종목을 *고를 때* 쓰는 값이라 목록에 있고(`StockList`),
+           이미 고른 뒤에는 판정의 「턴당 −6.7%」가 그 베타를 먹인 값을 준다. ── */
+        const headH = hasChart ? HEAD_H : Math.max(HEAD_H, (hasVerdict ? verdictY : actY) - 6 - headY);
         root.add(crt(scene, x0, headY, inW, headH));
         const mid = headY + Math.min(headH, HEAD_H) / 2;
-        root.add(mkText(scene, x0 + 6, mid, `${row.stock.name} · β ${row.stock.beta.toFixed(1)}`, {
+        root.add(mkText(scene, x0 + 6, mid, row.stock.name, {
             fontFamily: f, fontSize: `${FS.sm}px`, color: S.gold,
         }).setOrigin(0, 0.5));
         root.add(mkText(scene, x0 + inW - 6, mid,
@@ -115,36 +126,37 @@ export class StockSheet {
             root.add(chart);
         }
 
-        /* ── 판정 — **3 에너지가 사 온 것.** ── */
-        const read = this.d.read();
+        /* ── 판정 — **3 에너지가 사 온 것.** 알아봤을 때만 선다. ── */
         const v = verdictOf(read);
-        const say = verdictSay(v);
-        const tone = v === "buy" ? S.up : v === "avoid" ? S.down : v === "unclear" ? S.gold : S.inkDim;
+        if (hasVerdict) {
+            const say = verdictSay(v);
+            const tone = v === "buy" ? S.up : v === "avoid" ? S.down : S.gold;
 
-        root.add(crt(scene, x0, verdictY, inW, VERDICT_H));
-        root.add(mkText(scene, x0 + 8, verdictY + 5, say.head, {
-            fontFamily: f, fontSize: `${FS.sm}px`, color: tone,
-        }));
-        // 숫자는 오른쪽에. 「턴당 −6.7%」 가 판정의 근거다.
-        if (read?.regimeDrift !== null && read?.regimeDrift !== undefined) {
-            const d = read.regimeDrift;
-            root.add(mkText(scene, x0 + inW - 8, verdictY + 5,
-                `턴당 ${d >= 0 ? "+" : ""}${d.toFixed(1)}%`, {
+            root.add(crt(scene, x0, verdictY, inW, VERDICT_H));
+            root.add(mkText(scene, x0 + 8, verdictY + 5, say.head, {
                 fontFamily: f, fontSize: `${FS.sm}px`, color: tone,
-            }).setOrigin(1, 0));
-        }
-        const subT = mkText(scene, x0 + 8, verdictY + 23, say.sub, {
-            fontFamily: f, fontSize: `${FS.xs}px`, color: S.inkDim,
-        });
-        // 부제가 칸을 넘으면 잘라 낸다 — 줄이면 머리와 크기가 어긋난다.
-        if (subT.displayWidth > inW - 16) {
-            let cut = say.sub;
-            while (cut.length > 1 && subT.displayWidth > inW - 16) {
-                cut = cut.slice(0, -1);
-                subT.setText(`${cut}…`);
+            }));
+            // 숫자는 오른쪽에. 「턴당 −6.7%」 가 판정의 근거다.
+            if (read?.regimeDrift != null) {
+                const d = read.regimeDrift;
+                root.add(mkText(scene, x0 + inW - 8, verdictY + 5,
+                    `턴당 ${d >= 0 ? "+" : ""}${d.toFixed(1)}%`, {
+                    fontFamily: f, fontSize: `${FS.sm}px`, color: tone,
+                }).setOrigin(1, 0));
             }
+            const subT = mkText(scene, x0 + 8, verdictY + 23, say.sub, {
+                fontFamily: f, fontSize: `${FS.xs}px`, color: S.inkDim,
+            });
+            // 부제가 칸을 넘으면 잘라 낸다 — 줄이면 머리와 크기가 어긋난다.
+            if (subT.displayWidth > inW - 16) {
+                let cut = say.sub;
+                while (cut.length > 1 && subT.displayWidth > inW - 16) {
+                    cut = cut.slice(0, -1);
+                    subT.setText(`${cut}…`);
+                }
+            }
+            root.add(subT);
         }
-        root.add(subT);
 
         /* ── 알아본다 ──────────────────────────────────────────────
            **근거는 권하기 전에 만들어야 붙는다.** 권한 뒤에 알아보면 에너지만 나가고
@@ -198,9 +210,10 @@ export class StockSheet {
 
         this.cell(root, x0 + half + 6, btnY, half, BTN_H,
             row.shares > 0 ? "지금 판다" : "가진 것이 없다",
+            // 안 들고 있으면 부제가 없다 — 이름이 이미 그 말을 하고 있다.
             row.shares > 0
                 ? `${row.shares}주 · ${row.pnlPct >= 0 ? "+" : ""}${row.pnlPct.toFixed(0)}%`
-                : "이 종목은 안 샀다",
+                : "",
             row.shares > 0 ? () => this.d.onSell(row.stock.id) : null, false);
     }
 
