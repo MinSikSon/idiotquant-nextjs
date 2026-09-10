@@ -8,16 +8,21 @@
 // 밀려 나간 줄도 사라지지는 않아서 드래그로 되감을 수 있고, 칸을 톡 누르면 화면 가득
 // 펼쳐진다(`onOpen`). 판 위의 이 칸은 석 줄이라 되감기만으로는 스무 줄을 못 읽는다.
 //
-// ── 한 줄은 한 줄이다 ───────────────────────────────────────────
-// 줄바꿈을 허용하면 줄 높이가 제각각이 되어 "몇 줄이 들어가는가" 를 셀 수 없고, 그러면
-// 스크롤 위치를 줄 단위로 못 잡는다. 넘치는 글자는 잘라 낸다 — 로그는 읽는 것이지
-// 보관하는 것이 아니다.
+// ── 긴 기록은 자르지 않고 접는다 ────────────────────────────────
+// 한때는 칸을 넘는 글자를 「…」로 잘랐다. 줄 높이를 고르게 두어야 "몇 줄이 들어가는가"
+// 를 셀 수 있고, 그래야 되감기가 줄 단위로 잡힌다는 이유였다.
+//
+// 그런데 **잘리는 쪽이 대개 값이었다.** 「현대전자에게 240주를 권했다. 근거는 「반도체…」
+// — 무엇을 근거로 권했는지가 통째로 사라진다. 로그는 그것을 보라고 있는 자리다.
+//
+// 접어도 줄 높이는 여전히 고르다. 세는 단위가 **기록 하나에서 줄 하나로** 바뀔 뿐이라,
+// 되감기도 그대로 줄 단위다. 접는 셈은 `theme.wrapCells` 가 한다.
 //
 // 이 파일은 **무엇을 적을지 모른다.** 줄과 갈래를 받아 그릴 뿐이라, 로그를 하나 더
 // 남기고 싶을 때 여기를 안 고친다.
 
 import Phaser from "phaser";
-import { C, S, FS, LOG, fontOf, mkText, pxOf, type LogKind } from "@/lib/game/ui/theme";
+import { C, S, FS, LOG, cells, fontOf, mkText, pxOf, wrapCells, type LogKind } from "@/lib/game/ui/theme";
 
 export interface LogEntry {
     /**
@@ -57,6 +62,16 @@ const PADX = 10;
 const PADY = 8;
 /** 줄 왼쪽의 색 조각 — 글자를 읽기 전에 갈래가 먼저 오게 한다. */
 const CHIP_W = 3;
+/** 접혀 내려온 줄을 이만큼 들여 쓴다. 같은 기록의 뒷줄이라는 것이 이것으로 보인다. */
+const CONT_INDENT = 8;
+
+/** 화면에 실제로 그려지는 줄 하나. 기록 하나가 여러 줄이 될 수 있다. */
+interface Line {
+    text: string;
+    kind: LogKind;
+    /** 앞줄에서 접혀 내려온 줄인가. */
+    cont: boolean;
+}
 
 export class GameLog extends Phaser.GameObjects.Container {
     private readonly boxW: number;
@@ -69,6 +84,8 @@ export class GameLog extends Phaser.GameObjects.Container {
     private moreLabel: Phaser.GameObjects.Text;
 
     private entries: LogEntry[] = [];
+    /** 접어 놓은 결과. **되감기도 그리기도 이것을 센다** — 기록이 아니라 줄이 단위다. */
+    private view: Line[] = [];
     /** 바닥에서 몇 줄 위로 되감아 놨는가. 0 이면 가장 최근 줄이 맨 아래다. */
     private scroll = 0;
     /** 되감지 않은 동안 오른쪽 아래에 뜨는 말. 누를 데가 있다는 것을 이 두 글자가 말한다. */
@@ -144,12 +161,33 @@ export class GameLog extends Phaser.GameObjects.Container {
      */
     setEntries(entries: LogEntry[], keepScroll = false): void {
         this.entries = entries;
+        this.fold();
         if (!keepScroll) this.scroll = 0;   // 새 줄이 붙으면 바닥으로 따라 내려간다
         this.render();
     }
 
+    /**
+     * 기록을 줄로 편다. **여기서 한 번만 접는다** — 되감을 때마다 접으면 스무 줄을
+     * 끌어 올리는 동안 같은 셈을 수백 번 한다.
+     */
+    private fold(): void {
+        // **들여쓴 폭을 모든 줄에서 뺀다.** 뒷줄만 좁게 접으면 접는 자리가 줄마다 달라져
+        // 셈이 두 벌이 된다 — 첫 줄 한 칸을 내주고 한 벌로 둔다.
+        const room = Math.floor(
+            (this.boxW - PADX * 2 - CHIP_W - 6 - CONT_INDENT) / (FS.xs * 0.6));
+        this.view = [];
+        for (const e of this.entries) {
+            // 턴 번호는 첫 줄에만 붙는다 — 뒷줄은 같은 턴의 같은 문장이다.
+            const whole = e.turn > 0 ? `${e.turn}턴 ${e.text}` : e.text;
+            const folded = wrapCells(whole, room);
+            for (let i = 0; i < folded.length; i++) {
+                this.view.push({ text: folded[i], kind: e.kind, cont: i > 0 });
+            }
+        }
+    }
+
     private setScroll(v: number): void {
-        const max = Math.max(0, this.entries.length - this.rows);
+        const max = Math.max(0, this.view.length - this.rows);
         const next = Math.max(0, Math.min(max, v));
         if (next === this.scroll) return;
         this.scroll = next;
@@ -164,19 +202,19 @@ export class GameLog extends Phaser.GameObjects.Container {
         this.moreLabel.setText(this.scroll > 0 ? `↓ ${this.scroll}` : this.hint);
         const gutter = this.moreLabel.text ? this.moreLabel.displayWidth + 8 : 0;
 
-        const end = this.entries.length - this.scroll;
+        const end = this.view.length - this.scroll;
         const start = Math.max(0, end - this.rows);
-        const shown = this.entries.slice(start, end);
+        const shown = this.view.slice(Math.max(0, start), Math.max(0, end));
         // 줄이 아직 몇 개 없으면 **아래에 붙인다.** 위에서부터 채우면 빈 칸이 아래에 남아
         // 채팅창이 아니라 목록처럼 보인다.
         const top = this.rows - shown.length;
 
         this.lines.forEach((t, i) => {
-            const e = shown[i - top];
-            if (!e) { t.setText(""); return; }
-            const skin = LOG[e.kind];
-            t.setText(this.fit(e.turn > 0 ? `${e.turn}턴 ${e.text}` : e.text,
-                i === this.rows - 1 ? gutter : 0))
+            const ln = shown[i - top];
+            if (!ln) { t.setText(""); return; }
+            const skin = LOG[ln.kind];
+            t.setX(PADX + CHIP_W + 6 + (ln.cont ? CONT_INDENT : 0));
+            t.setText(i === this.rows - 1 ? this.clip(ln.text, gutter) : ln.text)
                 .setColor(skin.ink);
             this.chips.fillStyle(skin.chip, 1)
                 .fillRect(PADX, t.y + 2, CHIP_W, FS.xs + 1);
@@ -184,18 +222,21 @@ export class GameLog extends Phaser.GameObjects.Container {
     }
 
     /**
-     * 칸을 넘는 글자를 잘라 낸다.
-     *
-     * 한글은 고정폭 글꼴에서도 라틴 문자의 **두 배** 폭이라 글자 수로 자르면 한글 줄만
-     * 칸을 넘는다. 한글을 두 칸으로 세어 폭으로 자른다.
+     * **맨 아랫줄만** 자른다. 되감는 동안 오른쪽 아래에 뜨는 「↓ n」과 겹치는 자리라
+     * 여기서만 폭이 모자란다 — 되감기를 놓으면 그 표시가 사라지고 줄도 되돌아온다.
      */
-    private fit(s: string, gutter = 0): string {
+    private clip(s: string, gutter: number): string {
+        if (gutter <= 0) return s;
         const room = Math.floor((this.boxW - PADX * 2 - CHIP_W - 6 - gutter) / (FS.xs * 0.6));
+        if (cells(s) <= room) return s;
         let used = 0;
-        for (let i = 0; i < s.length; i++) {
-            used += s.charCodeAt(i) > 0x1100 ? 2 : 1;
-            if (used > room - 1) return `${s.slice(0, i)}…`;
+        let n = 0;
+        for (const ch of s) {
+            const c = ch.charCodeAt(0) > 0x1100 ? 2 : 1;
+            if (used + c > room - 1) break;
+            used += c;
+            n += ch.length;
         }
-        return s;
+        return `${s.slice(0, n)}…`;
     }
 }

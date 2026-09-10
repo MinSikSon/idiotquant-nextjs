@@ -79,8 +79,14 @@ export const CLIENT_ROW = 40;
  *
  * 종목 목록이 화면의 **본체**가 되면서 로그는 조연이 됐다. 안 막아 두면 긴 폰에서
  * 로그가 남는 세로를 다 먹고 목록이 세 줄에 머문다 — 무엇을 고를지가 화면의 일인데.
+ *
+ * **132 였는데 기록이 두 줄밖에 안 섰다.** 껍데기 29 와 고객 두 줄 40 을 빼면 검은 화면이
+ * 63 이고, 줄 하나가 17 이라 두 줄이다. 긴 기록을 자르지 않고 접기 시작한 뒤로는(`wrapCells`)
+ * 한 기록이 그 두 줄을 통째로 먹어서, 상장 한 줄이 뜨면 매매 기록이 밀려 나갔다.
+ * 네 줄까지 서게 24 를 더 준다 — 이 24 는 남는 세로에서 나오므로 **짧은 격자는 그대로다**
+ * (짧으면 `left` 가 이 몫에 닿기 전에 바닥난다).
  */
-const LOG_MAX = 132;
+const LOG_MAX = 156;
 /**
  * 고른 종목 판의 바닥값 — **창 껍데기 + 판이 반드시 세우는 넷.**
  *
@@ -484,6 +490,63 @@ export function fontOf(scene: Phaser.Scene): string {
  * 폰에서 읽으라고 두기엔 작았다. 12 로 올리고 `sm` 도 한 칸 따라 올렸다.
  */
 export const FS = { xs: 12, sm: 14, md: 16, lg: 21, xl: 29, xxl: 42 } as const;
+
+/**
+ * 글자 하나가 차지하는 **칸.** 한글은 고정폭 글꼴에서도 라틴 문자의 두 배다.
+ *
+ * 그래서 글자 수로 폭을 세면 한글 줄만 칸을 넘는다 — `IBM Plex Mono` 에서 「하루를
+ * 넘긴다」는 일곱 글자인데 라틴 열넷 자리를 먹는다.
+ */
+const cellOf = (ch: string) => (ch.charCodeAt(0) > 0x1100 ? 2 : 1);
+
+/** 이 글이 몇 칸인가. */
+export function cells(s: string): number {
+    let n = 0;
+    for (const ch of s) n += cellOf(ch);
+    return n;
+}
+
+/**
+ * `room` 칸에 맞춰 **여러 줄로 접는다.** 자르지 않는다 — 부르는 쪽이 줄을 여럿 그린다.
+ *
+ * ── 왜 자르는 것을 그만뒀나 ──────────────────────────────────
+ * 로그는 한 줄이 칸을 넘으면 끝을 「…」로 잘랐다. 「한 줄은 한 줄이어야 줄 수를 셀 수
+ * 있고, 그래야 되감기가 줄 단위로 잡힌다」는 이유였는데, **잘린 쪽이 대개 값이었다** —
+ * 「현대전자에게 240주를 권했다. 근거는 「반도체…」 처럼, 무엇을 근거로 권했는지가
+ * 통째로 사라진다. 로그는 그것을 보라고 있는 자리다.
+ *
+ * 접어도 줄 수는 여전히 셀 수 있다. 세는 단위가 **기록 하나에서 줄 하나로** 바뀔 뿐이다.
+ *
+ * 낱말 경계에서 끊는다. 낱말 하나가 한 줄보다 길면(긴 종목명·자릿수 많은 금액) 거기서
+ * 끊는다 — 안 그러면 그 줄만 칸을 넘는다.
+ */
+export function wrapCells(s: string, room: number): string[] {
+    if (room < 2) return [s];
+    const out: string[] = [];
+    let line = "";
+    const flush = () => { if (line !== "") { out.push(line.trimEnd()); line = ""; } };
+
+    const words = s.split(" ");
+    for (let i = 0; i < words.length; i++) {
+        // 공백은 앞 낱말에 달려 온다. 줄 끝으로 밀리면 `trimEnd` 가 걷어 간다.
+        let w = i === words.length - 1 ? words[i] : `${words[i]} `;
+        if (cells(line) + cells(w) > room) flush();
+        while (cells(w) > room) {
+            let used = 0;
+            let n = 0;
+            for (const ch of w) {
+                if (used + cellOf(ch) > room) break;
+                used += cellOf(ch);
+                n += ch.length;
+            }
+            out.push(w.slice(0, n));
+            w = w.slice(n);
+        }
+        line += w;
+    }
+    flush();
+    return out.length > 0 ? out : [""];
+}
 
 /** "+3.20%" 처럼 부호를 붙인다. */
 export function pct(v: number): string {

@@ -16,7 +16,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { WIN_CHROME, bandsOf, designSize, isStacked, W, type Bands } from "@/lib/game/ui/theme";
+import { WIN_CHROME, bandsOf, cells, designSize, isStacked, wrapCells, W, type Bands } from "@/lib/game/ui/theme";
 
 /**
  * 고른 종목 판이 반드시 세우는 높이. `components/StockSheet.ts` 가 같은 이름으로 내보내는데,
@@ -199,4 +199,46 @@ test("designSize 가 낸 격자는 전부 그릴 수 있다", () => {
             }
         }
     }
+});
+
+/* ── 로그 한 줄을 접는다 ─────────────────────────────────────── */
+//
+// 로그는 한때 칸을 넘는 글자를 「…」로 잘랐고, 잘리는 쪽이 대개 값이었다 —
+// 「근거는 「반도체…」 처럼 무엇을 근거로 권했는지가 통째로 사라진다.
+// 이제 접는다. `GameLog` 는 Phaser 를 부르므로 접는 셈만 여기서 지킨다.
+
+test("한글은 두 칸, 라틴은 한 칸으로 센다", () => {
+    assert.equal(cells("abc"), 3);
+    assert.equal(cells("가나다"), 6);
+    assert.equal(cells("240주"), 5);
+    assert.equal(cells(""), 0);
+});
+
+test("접은 줄은 어느 것도 칸을 안 넘는다", () => {
+    const say = "현대전자에게 240주를 권했다. 근거는 「반도체 수출이 늘고 있다」.";
+    for (const room of [10, 16, 24, 40, 60]) {
+        for (const line of wrapCells(say, room)) {
+            assert.ok(cells(line) <= room, `칸 ${room}: "${line}" 이 ${cells(line)} 칸`);
+        }
+    }
+});
+
+test("접어도 글자는 하나도 안 사라진다", () => {
+    const say = "3턴 김영수에게 1,240주를 권했다. 근거는 「환율이 잡히고 있다」.";
+    const joined = wrapCells(say, 20).join("").replace(/\s/g, "");
+    assert.equal(joined, say.replace(/\s/g, ""));
+    // 「…」는 이제 어디에도 안 붙는다.
+    assert.ok(!wrapCells(say, 20).some(l => l.includes("…")));
+});
+
+test("한 낱말이 한 줄보다 길면 거기서 끊는다", () => {
+    // 안 끊으면 그 줄만 칸을 넘어 창 밖으로 삐져나간다.
+    const lines = wrapCells("가나다라마바사아자차카타파하", 6);
+    assert.ok(lines.length > 1);
+    for (const l of lines) assert.ok(cells(l) <= 6);
+});
+
+test("칸에 들어가는 글은 접지 않는다", () => {
+    assert.deepEqual(wrapCells("수수료 1,240원.", 40), ["수수료 1,240원."]);
+    assert.deepEqual(wrapCells("", 40), [""]);
 });
