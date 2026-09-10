@@ -40,6 +40,7 @@ import {
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
 import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib/game/ui/art";
+import { ledgerOf } from "@/lib/game/core/ledger";
 import type { EndReason, MarketRead, TurnBuff } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
@@ -79,13 +80,39 @@ interface ButtonDef {
  *   집    그 판의 준비 · 챕터 결산
  *   회사  12턴
  *   목록  **아홉 종목을 견주는 자리.** 회사에서 열고, 고르면 곧장 회사로 돌아온다
+ *   장부  **돈 셋이 어떻게 이어지는가.** 배너의 검은 줄을 누르면 열린다
  *   공원  이 판이 어떻게 끝났는가
  *   끝    **빚을 다 갚았을 때만.** 여기서는 회귀하지 않는다
  *
- * 목록은 장소가 아니라 **회사 화면이 잠깐 여는 창**이다 — 그래서 전환 막을 안 세우고
- * `go()` 를 안 거친다. 턴도 안 흐르고 고객도 안 바뀐다.
+ * 목록과 장부는 장소가 아니라 **회사 화면이 잠깐 여는 창**이다 — 그래서 전환 막을 안
+ * 세우고 `go()` 를 안 거친다. 턴도 안 흐르고 고객도 안 바뀐다.
  */
-type Screen = "title" | "home" | "office" | "market" | "park" | "ending";
+type Screen = "title" | "home" | "office" | "market" | "ledger" | "park" | "ending";
+
+/**
+ * 장부의 한 줄. `[이름, 값, 값의 색, 지킬 것인가]`.
+ *
+ * 마지막 칸이 **좁은 격자에서 살아남는가**를 정한다 — 눕힌 폰에서는 창이 245px 이라
+ * 열세 줄이 다 못 선다(`drawLedgerBlocks`).
+ */
+type LedgerRow = [string, string, string, boolean];
+
+interface LedgerBlock {
+    head: string;
+    /** 머리 오른쪽의 한마디. **셋이 서로 무슨 사이인지**를 이것이 말한다. */
+    note: string;
+    /** 왼쪽 색 조각. 갈래를 글자보다 먼저 보게 한다. */
+    tint: number;
+    rows: LedgerRow[];
+    /**
+     * 이 덩이에서 **다음 덩이로 무엇이 넘어가는가.** 덩이 사이에 화살표 한 줄로 선다.
+     *
+     * 요청이 「흐름이 구분되면 좋겠다」였는데, 세 덩이를 그냥 쌓아 두면 그건 흐름이
+     * 아니라 표 셋이다. 셋이 **한 줄로 이어져 있다**는 것이 이 화살표에 있다.
+     * 사이가 좁으면 안 그린다 — 덩이에 붙어 버리면 어느 쪽 것인지 모른다.
+     */
+    flow?: string;
+}
 
 /** 로그가 들고 있는 줄 수. 넘치면 앞에서부터 버린다. */
 const LOG_KEEP = 200;
@@ -309,6 +336,7 @@ export class TradingScene extends Phaser.Scene {
         else if (this.place === "home") this.drawHome();
         else if (this.place === "park") this.drawPark();
         else if (this.place === "market") this.drawStockList();
+        else if (this.place === "ledger") this.drawLedger();
         else this.drawOffice();
 
         // 막은 **맨 마지막에.** z 순서로 위에 서야 아래 장소의 입력을 삼킨다.
@@ -515,8 +543,11 @@ export class TradingScene extends Phaser.Scene {
      * 색은 예쁜데 그게 「모니터에 뜬 값」인지 「띠에 그린 그림」인지가 안 갈린다.
      *
      * @param stats 에너지와 빚을 같이 적을까. 시작·끝 화면은 판이 없어서 안 적는다.
+     * @param onOpen 검은 줄을 누르면 무엇을 열까. **장부로 가는 유일한 길이다.**
+     *   버튼 띠에 넷째 버튼을 세우지 않으려고 여기로 왔다 — 셋만 서도 칸이 118px 이고,
+     *   무엇보다 이 줄이 이미 **돈을 읽는 자리**라 장부가 그 뒤에 있는 것이 자연스럽다.
      */
-    private drawBanner(sub: string, stats = true): void {
+    private drawBanner(sub: string, stats = true, onOpen?: () => void): void {
         const b = this.bands.strip;
         this.rect(b.x, b.y, b.w, b.h, C.banner, 1);
         this.rect(b.x, b.y + b.h - 1, b.w, 1, C.edge, 1);
@@ -536,9 +567,20 @@ export class TradingScene extends Phaser.Scene {
         const xr = b.x + b.w - PAD - 6;
         const ty = cy + 9 - FS.xs / 2;
 
+        // 이 줄 뒤에 장부가 있다는 표시. **글자 하나로 말한다** — 「장부 보기」라고 적을
+        // 자리가 없고, 적으면 게이지가 그만큼 짧아진다.
+        if (onOpen) {
+            this.text(xr, ty, "▸", FS.xs, S.gold, 1);
+            // **누르는 자리는 띠 전체다.** 검은 줄만 받으면 높이가 18px 이라 손가락으로는
+            // 거의 못 누른다. 띠 안에 다른 누를 것이 없으므로 통째로 받아도 안 겹친다 —
+            // 화살표는 「여기 뭔가 있다」를 말하는 표시지 과녁이 아니다.
+            this.tap(b.x, b.y, b.w, b.h, onOpen);
+        }
+        const rightEdge = onOpen ? xr - 12 : xr;
+
         // 빚부터 자리를 잡는다 — 자릿수가 그때그때 달라서, 먼저 재야 게이지가 안 밀린다.
         const debt = this.engine.player.debt;
-        const debtT = this.text(xr, ty, debt > 0 ? `빚 −${money(debt)}` : "빚 없음",
+        const debtT = this.text(rightEdge, ty, debt > 0 ? `빚 −${money(debt)}` : "빚 없음",
             FS.xs, debt > 0 ? S.down : S.up, 1);
 
         // 에너지 — 열 칸. **화면에 게이지는 이것 하나뿐이다.** 낮아지면 색이 금색을
@@ -555,7 +597,7 @@ export class TradingScene extends Phaser.Scene {
         }
         // 막대만으로는 「몇 칸이 남았지」를 세어야 한다. 숫자를 옆에 둔다 —
         // **게이지가 잘릴 만큼 좁으면 안 적는다.**
-        if (bx + barsW + 34 < xr - debtT.displayWidth - 8) {
+        if (bx + barsW + 34 < rightEdge - debtT.displayWidth - 8) {
             this.text(bx + barsW + 6, ty, `${energy}`, FS.xs, S.ink);
         }
     }
@@ -742,7 +784,8 @@ export class TradingScene extends Phaser.Scene {
         const ch = e.chapter;
         // **반기는 안 적는다.** 상장이 반기마다 일어나지만 그건 로그가 말하고,
         // 「상반기」라는 말로 이번 턴에 무엇을 할지가 갈리지 않는다.
-        this.drawBanner(`${ch.year}년 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
+        this.drawBanner(`${ch.year}년 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`,
+            true, () => { this.place = "ledger"; this.redraw(); });
         this.drawLog();
         this.drawSheet();
         this.drawActions();
@@ -907,6 +950,196 @@ export class TradingScene extends Phaser.Scene {
             { label: "회사로 돌아간다", sub: `지금 고른 것 — ${e.focusStock.name}`,
               primary: false, on: () => { this.place = "office"; this.redraw(); } },
         ], bar);
+    }
+
+    /* ── 장부 화면 ─────────────────────────────────────── */
+
+    /**
+     * 돈 셋이 어떻게 이어지는가. **화면 하나를 통째로 쓴다.**
+     *
+     * 여태 화면에 뜬 돈은 둘이었다 — 「주식 현황」 옆의 자산과 배너의 빚. 그런데 실제로
+     * 도는 돈은 셋이고 주인이 각각 다르다(`core/ledger.ts`). 그리고 **셋을 잇는 화살표가
+     * 화면에 한 번도 없었다**: 늘린 것에서 보수를 떼고, 그 보수가 빚을 깎고, 남은 빚에
+     * 이자가 붙는다.
+     *
+     * 그래서 플레이 중에는 「지금 347만을 벌어 놨는데 빚이 얼마나 깎이지?」 를 알 수
+     * 없었고, 답은 챕터가 끝나야 나왔다 — 에너지를 올릴 턴이 다 지난 뒤에.
+     *
+     * ── 왜 사무실이 아니라 여기인가 ──────────────────────────
+     * 이 열세 줄을 사무실에 얹으면 화면이 무너진다. 사무실은 **이번 턴에 무엇을 할까**만
+     * 말하는 자리고, 장부는 **여태 어떻게 됐나**를 말한다. 종목 목록이 화면 하나로 나간
+     * 것과 같은 이유다.
+     */
+    private drawLedger(): void {
+        const e = this.engine;
+        const ch = e.chapter;
+        this.drawBanner(`${ch.year}년 · ${e.player.maxTurns}턴 중 ${e.player.currentTurn}턴째`);
+
+        const bar = this.placeBar;
+        const top = this.bands.strip.h;
+        const win = winFrame(this, 2, top, this.W - 4, Math.max(0, bar.y - top), "장부");
+        for (const o of win.parts) this.keep(o);
+        const body = win.body;
+        if (body.h <= 0) {
+            this.buttons([{ label: "회사로 돌아간다", sub: "", on: () => this.leaveLedger() }], bar);
+            return;
+        }
+
+        const L = ledgerOf({
+            startEquity: e.chapterStart,
+            equity: e.equity,
+            cash: e.player.cash,
+            peakEquity: e.peakEquity,
+            energy: e.player.energy,
+            debt: e.player.debt,
+            interest: ch.interest,
+            debtOnEnd: ch.debtOnEnd ?? 0,
+            feePaid: this.memory.career.feePaid,
+        });
+
+        const signed = (v: number) => `${v >= 0 ? "+" : "−"}${money(Math.abs(v))}`;
+        const tone = (v: number) => (v >= 0 ? S.up : S.down);
+        const { entrusted: en, earned: ea, owed: ow } = L;
+
+        // **부제가 흐름을 말한다.** 숫자만 늘어놓으면 표가 되고, 표는 셋이 서로
+        // 무슨 사이인지를 안 알려 준다.
+        const blocks: LedgerBlock[] = [
+            // **머리의 한마디는 「누구 돈인가」만 말한다.** 흐름은 덩이 사이의 화살표가
+            // 말하므로, 여기서 또 적으면 같은 말이 한 화면에 두 번 선다.
+            {
+                head: "맡은 돈", note: "고객 것이다", tint: C.steel,
+                rows: [
+                    ["챕터 시작", money(en.start), S.inkDim, false],
+                    ["지금", money(en.now), S.ink, true],
+                    ["이번 챕터", `${signed(en.delta)} · ${en.pct >= 0 ? "+" : ""}${en.pct.toFixed(1)}%`,
+                        tone(en.delta), true],
+                    ["현금 · 주식", `${money(en.cash)} · ${money(en.invested)}`, S.inkDim, false],
+                    ["이번 판 최고", money(en.peak), S.inkDim, false],
+                ],
+                flow: `↓ 늘린 것에서 ${Math.round(ea.rate * 100)}% 를 뗀다`,
+            },
+            {
+                head: "얻은 돈", note: "내 것이다", tint: C.gold,
+                rows: [
+                    ["보수율", `${Math.round(ea.rate * 100)}% · 에너지 ${e.player.energy}`, S.gold, true],
+                    // **이 한 줄이 이 화면의 이유다.** 지금 끝나면 내 몫이 얼마인가.
+                    ["지금 끝나면", ea.fee > 0 ? money(ea.fee) : "없다 — 못 늘렸다",
+                        ea.fee > 0 ? S.up : S.inkDim, true],
+                    ["여태 받은", money(ea.paid), S.inkDim, false],
+                ],
+                flow: "↓ 그 보수만이 빚을 깎는다",
+            },
+            {
+                head: "갚을 돈", note: "내 빚이다", tint: C.down,
+                // **빚이 없으면 깎을 것도 이자도 없다.** 프롤로그가 그 상태인데, 거기서
+                // 「보수로 —」「이자 0% —」를 세워 두면 줄 셋이 아무 말도 안 하고 자리만
+                // 차지한다. 얹히는 빚 3천만만 남기는 편이 훨씬 아프게 읽힌다.
+                rows: [
+                    ["지금", ow.now > 0 ? money(ow.now) : "없다", ow.now > 0 ? S.down : S.up, true],
+                    ...(ow.now > 0
+                        ? [["보수로", ow.byFee > 0 ? `−${money(ow.byFee)}` : "—",
+                            ow.byFee > 0 ? S.up : S.inkDim, true] as LedgerRow]
+                        : []),
+                    ...(ow.now > 0 && ch.interest > 0
+                        ? [[`이자 ${Math.round(ch.interest * 100)}%`, `+${money(ow.interest)}`,
+                            S.down, true] as LedgerRow]
+                        : []),
+                    ...(ow.added > 0
+                        ? [["새로 지는 빚", `+${money(ow.added)}`, S.down, true] as LedgerRow]
+                        : []),
+                    ["챕터 끝에", ow.end > 0 ? money(ow.end) : "다 갚는다",
+                        ow.end > 0 ? S.down : S.gold, true],
+                ],
+            },
+        ];
+
+        this.drawLedgerBlocks(body, blocks);
+        this.buttons([
+            { label: "회사로 돌아간다", sub: `${ch.year}년 ${e.player.currentTurn}턴째`,
+              primary: false, on: () => this.leaveLedger() },
+        ], bar);
+    }
+
+    private leaveLedger(): void {
+        this.place = "office";
+        this.redraw();
+    }
+
+    /**
+     * 세 덩이를 세로로 쌓는다. **안 들어가면 줄을 버린다** — 눌러 담지 않는다.
+     *
+     * 격자 세로는 398 까지 짧아질 수 있고 가로로 눕히면 창이 245px 밖에 안 된다. 열세
+     * 줄을 그 안에 억지로 넣으면 줄 높이가 12px 이 되어 아무것도 안 읽힌다. 그래서
+     * **덜 중요한 줄부터 버린다**(`keep` 이 false 인 것). 그것도 모자라면 뒤에서부터
+     * 버린다 — 어차피 안 그려지는 줄이라면 자리라도 어긋나지 않는 편이 낫다.
+     */
+    private drawLedgerBlocks(body: Band, blocks: LedgerBlock[]): void {
+        const ROW = 20, HEAD = 18, INNER = 6, GAP = 9;
+        const height = () => blocks.reduce(
+            (sum, b) => sum + HEAD + b.rows.length * ROW + INNER * 2, 0) + GAP * (blocks.length - 1);
+
+        // 버릴 순서: **먼저 「없어도 되는」 줄, 그 다음에 가운데부터.**
+        //
+        // 지켜야 할 줄까지 버려야 할 때 **덩이의 마지막 줄은 맨 나중에** 버린다. 각
+        // 덩이의 마지막 줄이 그 덩이의 결론이라서다 — 「챕터 끝에 3,000만」을 버리고
+        // 「새로 지는 빚 +3,000만」만 남기면, 결국 얼마가 되는지가 화면에서 사라진다.
+        // 눕힌 폰에서 실제로 그렇게 나왔다.
+        const dropOne = (pass: "optional" | "middle" | "last"): boolean => {
+            for (let i = blocks.length - 1; i >= 0; i--) {
+                const rows = blocks[i]!.rows;
+                // 「없어도 되는」 줄은 어디 있든 먼저 버린다. 마지막 줄을 아끼는 것은
+                // **지켜야 할 줄끼리** 견줄 때의 이야기다.
+                const from = pass === "middle" ? rows.length - 2 : rows.length - 1;
+                const to = pass === "last" ? rows.length - 1 : 0;
+                for (let j = from; j >= to; j--) {
+                    if (pass === "optional" && rows[j]![3]) continue;
+                    rows.splice(j, 1);
+                    return true;
+                }
+            }
+            return false;
+        };
+        const room = body.h - 4;
+        for (const pass of ["optional", "middle", "last"] as const) {
+            while (height() > room && dropOne(pass)) { /* 다 버릴 때까지 */ }
+        }
+
+        // **남는 세로는 나눠 갖는다.** 위에서부터 쌓기만 하면 긴 폰에서 아래 3분의 1이
+        // 통째로 빈 은색 판이 된다 — 시작 화면이 한 번 그랬고, 여기서도 그랬다.
+        // 사이를 먼저 벌리고(너무 벌어지면 세 덩이가 남남이 되므로 상한을 둔다),
+        // 그러고도 남으면 통째로 가운데로 내린다.
+        const spare = Math.max(0, room - height());
+        const gap = GAP + Math.min(34, Math.floor(spare / Math.max(1, blocks.length - 1)));
+        const used = height() - GAP * (blocks.length - 1) + gap * (blocks.length - 1);
+
+        let y = body.y + 2 + Math.max(0, Math.floor((room - used) / 2));
+        for (const blk of blocks) {
+            if (blk.rows.length === 0) continue;
+            // 머리는 **회색 면 위**라 검은 글자다. 왼쪽 색 조각이 어느 갈래인지를 먼저 말한다.
+            this.rect(body.x + 4, y + 3, 3, HEAD - 6, blk.tint, 1);
+            this.text(body.x + 12, y + 2, blk.head, FS.xs, S.faceInk);
+            this.textFit(body.x + body.w - 6, y + 2, blk.note, FS.xs, S.faceDim, 1, body.w * 0.6);
+            y += HEAD;
+
+            // 값은 **검은 화면 안.** 이 팔레트의 규칙이다.
+            const h = blk.rows.length * ROW + INNER * 2;
+            this.keep(crt(this, body.x + 3, y, body.w - 6, h));
+            let ry = y + INNER + 2;
+            for (const [k, v, ink] of blk.rows) {
+                this.text(body.x + 11, ry, k, FS.xs, S.inkDim);
+                this.textFit(body.x + body.w - 11, ry, v, FS.xs, ink, 1, body.w * 0.62);
+                ry += ROW;
+            }
+            y += h;
+
+            // 사이가 넉넉할 때만. 좁은 데 끼워 넣으면 위아래 덩이에 달라붙어
+            // 어느 쪽 말인지 모르게 된다.
+            if (blk.flow && gap >= 26) {
+                this.textFit(body.x + body.w / 2, y + Math.round(gap / 2) - FS.xs / 2 - 1,
+                    blk.flow, FS.xs, S.faceDim, 0.5, body.w - 20);
+            }
+            y += gap;
+        }
     }
 
     /** 버튼은 동작이 아니라 **내가 하는 말**이다. */

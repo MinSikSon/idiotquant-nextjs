@@ -216,6 +216,14 @@ export class StockEngine {
 
     /** 이 챕터를 시작한 자산. 챕터 성적은 여기에 견준다. */
     private chapterStartEquity: number;
+    /**
+     * 이 **판**에서 맡은 돈이 가장 컸을 때. 챕터를 넘어도 안 지워진다 — 회귀할 때
+     * 엔진이 새로 뜨면서 같이 사라진다.
+     *
+     * **턴이 넘어갈 때만 잰다.** 턴 안에서 재면 무른 매매(`restoreTrades`)가 만든 값이
+     * 최고 기록으로 남는다 — 무른 것은 일어나지 않은 일이다.
+     */
+    private peak: number;
     /** 이 챕터에 한 번이라도 권했는가. 흘려보낸 챕터를 가려내는 데 쓴다. */
     private recommended = false;
     /** 이번 턴에 손절이 걸린 종목들. 화면이 그 사실을 말할 수 있게 남겨 둔다. */
@@ -243,6 +251,7 @@ export class StockEngine {
         };
         this.applyOpening(this.chapter);
         this.chapterStartEquity = this.equity;
+        this.peak = this.equity;
     }
 
     /* ── 판을 짠다 ───────────────────────────────────────── */
@@ -397,6 +406,11 @@ export class StockEngine {
         return ((this.equity - this.chapterStartEquity) / this.chapterStartEquity) * 100;
     }
 
+    /** 이 챕터를 시작한 자산. 장부가 「챕터 시작」 줄에 적는다. */
+    get chapterStart(): number { return this.chapterStartEquity; }
+    /** 이 판에서 맡은 돈이 가장 컸을 때. 턴이 넘어갈 때마다 갱신된다. */
+    get peakEquity(): number { return this.peak; }
+
     get ruinLine(): number { return RUIN_LINE; }
     get isRuined(): boolean { return this.equity < RUIN_LINE; }
     get burnedOut(): boolean { return this.player.energy <= 0; }
@@ -509,6 +523,9 @@ export class StockEngine {
     advanceTurn(): void {
         this.player.currentTurn += 1;
         this.absTurn = Math.min(TOTAL_TURNS, this.absTurn + 1);
+        // 최고 기록은 **넘어간 턴의 것**이다. 턴 안에서 재면 무른 매매가 만든 값이
+        // 남는데, 무른 것은 일어나지 않은 일이다.
+        this.peak = Math.max(this.peak, this.equity);
     }
 
     /* ── 체결 ───────────────────────────────────────────── */
