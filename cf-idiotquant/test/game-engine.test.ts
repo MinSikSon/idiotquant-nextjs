@@ -324,6 +324,33 @@ test("손해를 본 챕터에는 보수가 없다", () => {
     assert.equal(advisoryFee(-1_000_000, 100), 0);
 });
 
+test("빚은 1999년까지 갚을 수 있어야 한다 — 완납이 도달 가능한가", () => {
+    // **이 게임에서 이기는 방법은 빚 완납 하나뿐인데, 한동안 그것이 도달 불가능했다.**
+    // 규칙만 300판씩 굴려 재 보니 아무리 잘 굴려도 완납 0% 였다(`SEED_CASH` 주석에
+    // 표가 있다). 눈으로는 안 보이는 종류의 고장이라 여기 셈으로 박아 둔다.
+    //
+    // ── 왜 2000년을 빼고 세는가 ─────────────────────────────
+    // 마지막 장은 국면이 처음부터 끝까지 하락이라(`chapters.ts`) 수익이 안 나고,
+    // 수익이 없으면 보수도 0 이다. 즉 **마지막 장에 기대면 안 된다** — 빚은 그 전에
+    // 끝나 있어야 하고, 2000년은 갚는 장이 아니라 지키는 장이다.
+    const prologue = CHAPTERS.find(c => c.debtOnEnd);
+    assert.ok(prologue?.debtOnEnd, "프롤로그가 빚을 안 남긴다");
+
+    let debt = prologue.debtOnEnd!;
+    let equity = SEED_CASH;
+    for (const ch of CHAPTERS) {
+        if (ch.debtOnEnd) continue;      // 빚이 생기는 장은 갚는 장이 아니다
+        if (ch === CHAPTERS[CHAPTERS.length - 1]) break;   // 2000 — 하락장
+        // 아주 잘 굴린 장 = 맡은 돈이 배가 되고 에너지가 가득 찼다.
+        debt = Math.max(0, debt - advisoryFee(equity, 100));
+        debt = Math.round(debt * (1 + ch.interest));
+        equity += equity;
+    }
+    assert.equal(debt, 0,
+        `완벽하게 굴려도 1999년 끝에 ${debt.toLocaleString()}원이 남는다 — 빚 완납이 도달 불가능하다. `
+        + "맡은 돈(SEED_CASH)·이자·보수율 셋 중 하나를 고쳐야 한다.");
+});
+
 test("보수는 에너지에 비례한다 — 에너지가 곧 빚을 갚는 속도다", () => {
     const profit = 10_000_000;
     assert.equal(advisoryFee(profit, 0), Math.floor(profit * FEE_BASE));
