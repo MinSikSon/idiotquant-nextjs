@@ -10,6 +10,7 @@
 //   회차 수 · 최고 기록      고객 (김 부장부터 다시)
 //   들고 나갈 여섯 장        상장 진행 (다시 셋부터)
 //   이력 (`career`)         한 판의 사실 (`facts`)
+//   **연대기 (`chronicle`)**
 //
 // 루프를 끊는 것은 **빚 완납 하나뿐**이다. 나머지 셋(빚 남음·에너지 0·자본잠식)은
 // 전부 1997년 집으로 돌아간다 — 공원은 끝이 아니라 회귀 지점이다.
@@ -18,6 +19,7 @@ import type { ChapterSummary, EndReason } from "./types";
 import { EMPTY_FACTS, STARTER_IDS, type SituationFacts } from "./situations";
 import { LOADOUT_SIZE } from "./DeckManager";
 import { EMPTY_CAREER, normalizeCareer, type Career } from "./career";
+import { EMPTY_CHRONICLE, normalizeChronicle, type Chronicle } from "./chronicle";
 
 const KEY = "iq:rise:v1";
 
@@ -42,6 +44,11 @@ export interface Memory {
      * 판이 끝나면 비워진다. `career` 는 그 비워지기 직전에 접어 둔 합이다.
      */
     career: Career;
+    /**
+     * 겪은 턴의 국면. **회귀가 지우지 못하는 단 하나의 쓸모 있는 것**이다
+     * (`core/chronicle.ts`). 회차를 넘어 나아지는 길이 지금은 이것 하나다.
+     */
+    chronicle: Chronicle;
 }
 
 export const EMPTY: Memory = {
@@ -52,6 +59,7 @@ export const EMPTY: Memory = {
     escaped: false,
     bestChapter: 0,
     career: EMPTY_CAREER,
+    chronicle: EMPTY_CHRONICLE,
 };
 
 /** `EMPTY` 를 그대로 넘기면 중첩된 객체를 공유한다 — 매번 새로 뜬다. */
@@ -61,6 +69,7 @@ const freshEmpty = (): Memory => ({
     loadout: [...STARTER_IDS],
     facts: { ...EMPTY_FACTS },
     career: normalizeCareer(null),
+    chronicle: {},
 });
 
 const int = (v: unknown, min = 0) => {
@@ -88,6 +97,7 @@ function normalize(raw: unknown): Memory {
         escaped: o.escaped === true,
         bestChapter: int(o.bestChapter),
         career: normalizeCareer(o.career),
+        chronicle: normalizeChronicle(o.chronicle),
     };
 }
 
@@ -133,6 +143,8 @@ export function breaksLoop(reason: EndReason): boolean {
  * 다 날려 본 사람은 그 사실을 잊지 못한다.
  */
 export function regress(prev: Memory, reason: EndReason): Memory {
+    // **`chronicle` 은 `...prev` 로 그대로 넘어간다.** 여기서 비우면 회귀가
+    // 나아질 길을 통째로 지운다 — 이 파일이 지키는 선이 바로 그것이다.
     return {
         ...prev,
         cycle: prev.cycle + 1,

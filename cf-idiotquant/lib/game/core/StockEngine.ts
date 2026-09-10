@@ -408,6 +408,18 @@ export class StockEngine {
 
     /** 이 챕터를 시작한 자산. 장부가 「챕터 시작」 줄에 적는다. */
     get chapterStart(): number { return this.chapterStartEquity; }
+
+    /**
+     * 지금 턴의 국면. **화면에 그대로 내보내지 말 것** — 국면을 읽는 값은
+     * `read(buff)` 하나뿐이고, 그건 알아본 만큼만 열린다.
+     *
+     * 이 자리는 **연대기에 적기 위한 것**이다(`core/chronicle.ts`). 턴이 끝날 때
+     * 씬이 이 값을 기억에 넣고, 다음 회차에 그 턴에 오면 기억 쪽에서 읽는다.
+     * 여기서 바로 화면에 쓰면 알아보기가 공짜가 되어 규칙이 통째로 무너진다.
+     */
+    get regimeNow(): Regime | null {
+        return this.market[this.absTurn - 1]?.regime ?? null;
+    }
     /** 이 판에서 맡은 돈이 가장 컸을 때. 턴이 넘어갈 때마다 갱신된다. */
     get peakEquity(): number { return this.peak; }
 

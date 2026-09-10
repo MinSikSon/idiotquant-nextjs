@@ -19,7 +19,7 @@ import Phaser from "phaser";
 import {
     StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel, type TradeMark,
 } from "@/lib/game/core/StockEngine";
-import { CHAPTERS } from "@/lib/game/core/chapters";
+import { CHAPTERS, TOTAL_TURNS } from "@/lib/game/core/chapters";
 import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
 import {
     decay, clampEnergy, energyDelta, energyReason, ENERGY_DECAY,
@@ -36,13 +36,16 @@ import {
 } from "@/lib/game/core/progress";
 import { recordChapter, recordRun } from "@/lib/game/core/career";
 import {
+    chapterStrip, noteTurn, notedCount, recallAt, recallSay, worthResearching,
+} from "@/lib/game/core/chronicle";
+import {
     cutStartRun, cutRegress, cutEnded, cutToOffice, cutOnChapterEnd, cutToPark,
     type ClientId, type Cut,
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
 import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib/game/ui/art";
 import { ledgerOf } from "@/lib/game/core/ledger";
-import type { EndReason, MarketRead, TurnBuff } from "@/lib/game/core/types";
+import type { EndReason, MarketRead, Regime, TurnBuff } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { StockList, type StockRow } from "@/lib/game/components/StockList";
@@ -114,6 +117,9 @@ interface LedgerBlock {
      */
     flow?: string;
 }
+
+/** 장부의 연대기 띠가 먹는 세로 — 머리 18 + 칸 16 + 여백 8. */
+const CHRON_H = 42;
 
 /** 로그가 들고 있는 줄 수. 넘치면 앞에서부터 버린다. */
 const LOG_KEEP = 200;
@@ -644,6 +650,10 @@ export class TradingScene extends Phaser.Scene {
             ["가장 멀리", CHAPTERS[m.bestChapter]?.year ?? CHAPTERS[0]!.year, S.ink],
             ["여태 갚은 빚", money(m.career.feePaid), m.career.feePaid > 0 ? S.up : S.ink],
         ];
+        // **쌓인 것이 보여야 다시 한다.** 회귀가 지우지 못하는 것이 이 줄 하나뿐이라,
+        // 회차가 도는 동안 이 숫자가 올라가는 것이 「헛돌지 않았다」의 증거다.
+        const noted = notedCount(m.chronicle);
+        if (noted > 0) rows.push(["연대기", `${noted}턴 / ${TOTAL_TURNS}턴`, S.neon]);
         if (m.escaped) rows.push(["빚 완납", "해낸 적 있다", S.gold]);
         const rowsTop = this.crtRows(body, rows);
 
@@ -897,6 +907,7 @@ export class TradingScene extends Phaser.Scene {
             band: win.body,
             row: () => this.rowOf(this.engine.focus),
             read: () => this.readOf(this.engine.focus),
+            recall: () => this.recallNow(),
             researchBlock: () => this.researchBlock(),
             otherThesis: () => this.otherThesis(),
             researchCost: () => RESEARCH_COST,
@@ -1064,11 +1075,64 @@ export class TradingScene extends Phaser.Scene {
             },
         ];
 
-        this.drawLedgerBlocks(body, blocks);
+        // **연대기가 맨 위다.** 돈 셋보다 먼저 읽어야 하는 것이라서가 아니라, 이 화면에서
+        // 유일하게 **다음 턴에 무엇을 할지**를 바꾸는 줄이라서다.
+        //
+        // 높이를 먼저 재서 블록 쌓기에 넘긴다 — 따로 그리면 가운데 맞춤이 띠를 빼고
+        // 계산해서 띠와 첫 덩이 사이에 구멍이 하나 생긴다. 실제로 그랬다.
+        const stripH = this.chronicleH(body);
+        this.drawLedgerBlocks(body, blocks, stripH, y => this.drawChronicleStrip(body, y));
         this.buttons([
             { label: "회사로 돌아간다", sub: `${ch.year}년 ${e.player.currentTurn}턴째`,
               primary: false, on: () => this.leaveLedger() },
         ], bar);
+    }
+
+    /**
+     * 이번 챕터의 턴 띠 — **겪어서 아는 것.**
+     *
+     * 열두 칸이 한 줄로 선다. 초록은 올랐던 턴, 빨강은 떨어졌던 턴, 금색은 흐렸던 턴,
+     * 검은 칸은 **아직 안 가 본 곳**이다. 지금 턴에는 흰 눈금이 선다.
+     *
+     * 이 한 줄이 이 게임에서 회귀가 헛돌지 않게 하는 자리다(`core/chronicle.ts`).
+     * 떨어질 턴이 보이면 3 에너지를 안 쓰고 넘기고, 그 에너지가 보수율이 되고,
+     * 보수가 빚을 깎는다.
+     *
+     * @returns 이 띠가 먹은 세로. 0 이면 아무것도 안 그렸다.
+     */
+    private chronicleH(body: Band): number {
+        // 자리가 없으면 접는다 — 돈 셋이 먼저다.
+        return body.h < CHRON_H + 40 ? 0 : CHRON_H;
+    }
+
+    private drawChronicleStrip(body: Band, top: number): void {
+        const e = this.engine;
+        const turns = e.player.maxTurns;
+        const strip = chapterStrip(this.memory.chronicle, e.chapter.id, turns);
+        const known = strip.filter(r => r !== null).length;
+
+        const HEAD = 18, CELL = 16;
+        this.rect(body.x + 4, top + 5, 3, HEAD - 6, C.neon, 1);
+        this.text(body.x + 12, top + 4, "연대기", FS.xs, S.faceInk);
+        // **모르면 모른다고 적는다.** 「0/12」 는 「여기는 처음이다」를 세는 말이다.
+        this.textFit(body.x + body.w - 6, top + 4,
+            known > 0 ? `겪어서 아는 턴 ${known}/${turns}` : "이 해는 처음이다",
+            FS.xs, known > 0 ? S.faceDim : "#8b6a3a", 1, body.w * 0.6);
+
+        const y = top + HEAD;
+        this.keep(crt(this, body.x + 3, y, body.w - 6, CELL + 8));
+        const x0 = body.x + 8;
+        const room = body.w - 16;
+        const cw = room / turns;
+        for (let i = 0; i < turns; i++) {
+            const r = strip[i];
+            const col = r === "bull" ? C.up : r === "bear" ? C.down : r === "chop" ? C.gold : C.grid;
+            this.rect(Math.round(x0 + i * cw), y + 4, Math.max(1, Math.round(cw) - 2), CELL, col, 1);
+            // 지금 턴에 눈금 하나. 열두 칸 중 어디에 서 있는지를 이것으로 센다.
+            if (i + 1 === e.player.currentTurn) {
+                this.rect(Math.round(x0 + i * cw), y + 4 + CELL - 3, Math.max(1, Math.round(cw) - 2), 3, C.lit, 1);
+            }
+        }
     }
 
     private leaveLedger(): void {
@@ -1084,10 +1148,13 @@ export class TradingScene extends Phaser.Scene {
      * **덜 중요한 줄부터 버린다**(`keep` 이 false 인 것). 그것도 모자라면 뒤에서부터
      * 버린다 — 어차피 안 그려지는 줄이라면 자리라도 어긋나지 않는 편이 낫다.
      */
-    private drawLedgerBlocks(body: Band, blocks: LedgerBlock[]): void {
+    private drawLedgerBlocks(
+        body: Band, blocks: LedgerBlock[], headH = 0, drawHead?: (y: number) => void,
+    ): void {
         const ROW = 20, HEAD = 18, INNER = 6, GAP = 9;
         const height = () => blocks.reduce(
-            (sum, b) => sum + HEAD + b.rows.length * ROW + INNER * 2, 0) + GAP * (blocks.length - 1);
+            (sum, b) => sum + HEAD + b.rows.length * ROW + INNER * 2, 0)
+            + GAP * (blocks.length - 1) + headH;
 
         // 버릴 순서: **먼저 「없어도 되는」 줄, 그 다음에 가운데부터.**
         //
@@ -1121,9 +1188,12 @@ export class TradingScene extends Phaser.Scene {
         // 그러고도 남으면 통째로 가운데로 내린다.
         const spare = Math.max(0, room - height());
         const gap = GAP + Math.min(34, Math.floor(spare / Math.max(1, blocks.length - 1)));
-        const used = height() - GAP * (blocks.length - 1) + gap * (blocks.length - 1);
+        // 머리까지 세어야 가운데가 맞는다. 머리 뒤에도 사이가 하나 붙는다.
+        const used = height() - GAP * (blocks.length - 1)
+            + gap * (blocks.length - 1) + (headH > 0 ? gap : 0);
 
         let y = body.y + 2 + Math.max(0, Math.floor((room - used) / 2));
+        if (drawHead && headH > 0) { drawHead(y); y += headH + gap; }
         for (const blk of blocks) {
             if (blk.rows.length === 0) continue;
             // 머리는 **회색 면 위**라 검은 글자다. 왼쪽 색 조각이 어느 갈래인지를 먼저 말한다.
@@ -1184,9 +1254,18 @@ export class TradingScene extends Phaser.Scene {
             && this.orderBlock() === "none"
             && this.researched === focus
             && worthRecommending(verdictOf(this.readOf(focus)));
+        // **겪어서 아는 턴은 알아볼 값어치가 없을 수 있다.** 떨어졌던 턴인 걸 아는데
+        // 3 에너지를 쓰는 것은 낭비고, 그 낭비를 줄이는 것이 회귀의 유일한 보상이다
+        // (`core/chronicle.ts`). 그래서 기억이 「아니다」라고 말하면 알아보기는
+        // **할 일에서 빠지고** 「하루를 넘긴다」가 밝아진다.
+        //
+        // 막지는 않는다 — 뉴스는 시드가 굴리므로 기억이 다 맞지는 않고, 무엇보다
+        // 아는 것을 이유로 버튼을 잠그면 「내가 정한다」가 없어진다.
+        const memoSaysSkip = this.researched !== focus && !worthResearching(this.recallNow());
+
         // **무름은 「남은 일」이 아니라 고치는 자리다.** 그것 때문에 「하루를 넘긴다」를
         // 안 밝히면, 사고 난 뒤에 다음 걸음이 화면에서 사라진다.
-        const nothingLeft = !canStillResearch && !worthBuying;
+        const nothingLeft = (!canStillResearch || memoSaysSkip) && !worthBuying;
 
         // **버튼 둘, 무를 것이 있으면 셋.**
         //
@@ -1470,10 +1549,38 @@ export class TradingScene extends Phaser.Scene {
 
         this.settleEnergy(buff);
         this.pending = null;
+
+        // **겪은 턴을 연대기에 적는다.** `advanceTurn()` 앞이라야 지금 막 지나간 턴의
+        // 국면이 적힌다. 다음 회차에 이 턴으로 돌아오면 기억 쪽에서 읽는다
+        // (`core/chronicle.ts`) — 회귀가 헛돌지 않게 하는 자리가 여기 하나다.
+        this.noteChronicle();
         this.engine.advanceTurn();
 
         if (this.engine.isOver) { this.finishChapter(); return; }
         this.beginTurn();
+    }
+
+    /**
+     * 방금 지나간 턴의 국면을 기억에 남긴다. **적힌 것이 없을 때만 저장한다** —
+     * 뼈대가 회차를 넘어 같으므로 두 번째로 겪는 턴은 이미 같은 값이 적혀 있다.
+     */
+    private noteChronicle(): void {
+        const regime = this.engine.regimeNow;
+        if (!regime) return;
+        const next = noteTurn(this.memory.chronicle, this.engine.chapter.id,
+            this.engine.player.currentTurn, regime);
+        if (next === this.memory.chronicle) return;
+        this.memory = { ...this.memory, chronicle: next };
+        saveMemory(this.memory);
+    }
+
+    /**
+     * 이번 턴을 겪은 적이 있는가. **알아본 것과는 다른 값이다** —
+     * 이건 기억이고 저건 근거다(`core/chronicle.ts` 의 「아는 것은 근거가 아니다」).
+     */
+    private recallNow(): Regime | null {
+        return recallAt(this.memory.chronicle, this.engine.chapter.id,
+            this.engine.player.currentTurn);
     }
 
     /**
