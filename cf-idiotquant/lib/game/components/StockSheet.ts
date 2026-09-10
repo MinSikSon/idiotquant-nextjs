@@ -14,8 +14,9 @@
 // 규칙이 두 군데가 되고, 어느 날 한쪽만 바뀐다.
 
 import Phaser from "phaser";
-import type { MarketRead } from "@/lib/game/core/types";
+import type { MarketRead, Regime } from "@/lib/game/core/types";
 import { verdictOf, verdictSay, worthRecommending } from "@/lib/game/core/research";
+import { recallSay } from "@/lib/game/core/chronicle";
 import {
     blockSay, researchSay, type OrderBlock, type ResearchBlock,
 } from "@/lib/game/core/orders";
@@ -47,6 +48,14 @@ export interface StockSheetDeps {
      * 그러면 3 에너지로 아홉 종목이 다 열린다.
      */
     read(): MarketRead | null;
+    /**
+     * 이번 턴을 **겪은 적이 있는가**(`core/chronicle.ts`). 없으면 null.
+     *
+     * `read()` 와 헷갈리지 말 것 — 저건 3 에너지를 주고 산 **근거**고, 이건 지난 회차에
+     * 살아 본 **기억**이다. 기억은 「알아볼 값어치가 있는 턴인가」만 말하고 근거가
+     * 되지는 않는다. 둘이 한 칸을 나눠 쓰되 **말과 색이 다르다.**
+     */
+    recall(): Regime | null;
     /** 지금 알아보는 것을 막는 것. `"thisStock"` 이면 이미 알아본 것이다(`core/orders.ts`). */
     researchBlock(): ResearchBlock;
     /** 이번 턴에 이미 다른 종목을 알아봤으면 그 이름. */
@@ -94,19 +103,22 @@ export class StockSheet {
            커진다 — 그리고 판정 칸이 뜨는 것 자체가 3 에너지를 쓴 표시가 된다. */
         const read = this.d.read();
         const hasVerdict = read?.regime != null;
+        // 겪어서 아는 것. 알아본 것이 있으면 그쪽이 이기므로 그때는 안 본다.
+        const memo = hasVerdict ? null : recallSay(this.d.recall());
 
         const btnY = band.y + band.h - BTN_H - 4;
         const actY = btnY - ACT_H - 6;
         const verdictY = actY - VERDICT_H - 6;
         const headY = band.y + 3;
         const chartY = headY + HEAD_H + 4;
-        const chartH = (hasVerdict ? verdictY : actY) - 6 - chartY;
+        const hasPanel = hasVerdict || memo !== null;
+        const chartH = (hasPanel ? verdictY : actY) - 6 - chartY;
         const hasChart = chartH >= CHART_MIN;
 
         /* ── 머리 — 이름과 시세. 값이라 검은 화면 안이다.
            **베타는 여기 없다.** 종목을 *고를 때* 쓰는 값이라 목록에 있고(`StockList`),
            이미 고른 뒤에는 판정의 「턴당 −6.7%」가 그 베타를 먹인 값을 준다. ── */
-        const headH = hasChart ? HEAD_H : Math.max(HEAD_H, (hasVerdict ? verdictY : actY) - 6 - headY);
+        const headH = hasChart ? HEAD_H : Math.max(HEAD_H, (hasPanel ? verdictY : actY) - 6 - headY);
         root.add(crt(scene, x0, headY, inW, headH));
         const mid = headY + Math.min(headH, HEAD_H) / 2;
         root.add(mkText(scene, x0 + 6, mid, row.stock.name, {
@@ -126,11 +138,17 @@ export class StockSheet {
             root.add(chart);
         }
 
-        /* ── 판정 — **3 에너지가 사 온 것.** 알아봤을 때만 선다. ── */
+        /* ── 판정 — **3 에너지가 사 온 것.** 알아봤거나, 겪어서 알거나. ──
+           알아본 것이 있으면 그것이 먼저다. 근거가 기억을 이긴다 — 근거는 이번 판의
+           것이고 기억은 지난 판의 것이라, 둘이 다르면 지금 눈으로 본 쪽이 맞다. */
         const v = verdictOf(read);
-        if (hasVerdict) {
-            const say = verdictSay(v);
-            const tone = v === "buy" ? S.up : v === "avoid" ? S.down : S.gold;
+        if (hasVerdict || memo) {
+            const say = hasVerdict ? verdictSay(v) : memo!;
+            // **기억은 금색이 아니라 흐린 강철색이다.** 판정과 같은 색을 쓰면
+            // 「알아봤다」와 「겪어서 안다」가 화면에서 구별이 안 된다.
+            const tone = hasVerdict
+                ? (v === "buy" ? S.up : v === "avoid" ? S.down : S.gold)
+                : S.steel;
 
             root.add(crt(scene, x0, verdictY, inW, VERDICT_H));
             root.add(mkText(scene, x0 + 8, verdictY + 5, say.head, {
