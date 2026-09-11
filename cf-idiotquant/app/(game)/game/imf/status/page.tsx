@@ -98,8 +98,8 @@ export default function StatusPage() {
 
             {/* 게임 화면과 같은 단추다(`WinLink`). */}
             <nav className="flex gap-3">
-                <WinLink href="/game" tone="primary">← 게임으로</WinLink>
-                <WinLink href="/game/cards">상황 도감</WinLink>
+                <WinLink href="/game/imf" tone="primary">← 게임으로</WinLink>
+                <WinLink href="/game/imf/cards">상황 도감</WinLink>
             </nav>
         </main>
     );
@@ -267,7 +267,7 @@ function Body({ memory }: { memory: Memory }) {
                 {collected.length < total && (
                     <p className="mt-3 text-[13px] text-[#6d7f78]">
                         아직 {total - collected.length}장이 남았다. 무엇이 있고 어떻게 얻는지는{" "}
-                        <Link href="/game/cards" className="text-[#8d9c93] underline underline-offset-2">
+                        <Link href="/game/imf/cards" className="text-[#8d9c93] underline underline-offset-2">
                             상황 도감
                         </Link>
                         에 있다.

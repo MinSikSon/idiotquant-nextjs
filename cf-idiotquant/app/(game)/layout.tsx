@@ -48,22 +48,8 @@ const plexKr = IBM_Plex_Sans_KR({
     display: "swap",
 });
 
-// /game 은 로그라이크 하나다. 예전에 여기 있던 블라인드 차트(/game/blind)는 지웠다.
-export const metadata: Metadata = {
-    title: "주식 로그라이크 - 12턴 카드 덱빌딩 모의투자",
-    description:
-        "12턴 한 판. 매 턴 덱에서 전략 카드 세 장을 뽑아 한 장을 쓰고 사고팝니다. 3·6·9턴에 카드를 얻어 덱을 키우되, 센 카드에는 저주가 딸려 옵니다. 판이 끝나면 인사이트가 남아 다음 판의 유물이 됩니다.",
-    keywords: [
-        "주식 게임", "로그라이크", "덱빌딩", "투자 시뮬레이션",
-        "모의투자", "주식 연습", "카드 게임",
-    ],
-    alternates: { canonical: "https://idiotquant.com/game" },
-    openGraph: {
-        title: "주식 로그라이크 | IdiotQuant",
-        description: "12턴 한 판. 카드를 뽑아 사고팔고, 덱을 키우며 다음 판을 노립니다.",
-        url: "https://idiotquant.com/game",
-    },
-};
+// **제목은 여기 없다.** 이 레이아웃 밑에 게임이 둘이라(`/game` 과 `/game/imf`) 한 곳에
+// 적으면 둘 중 하나가 남의 이름을 달고 색인된다. 제목은 각 게임의 `layout.tsx` 가 진다.
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
     // id 는 표시용이 아니라 표식이다. global.css 의 html:has(#game-canvas) 규칙이 이걸 보고
