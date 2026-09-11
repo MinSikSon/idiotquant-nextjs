@@ -750,6 +750,58 @@ export function stackPlan(rowCounts: readonly number[], headH: number, room: num
 }
 
 /**
+ * 창이 좁으면 **어느 줄을 버릴지** 정한다. 살아남는 줄의 자리번호를 덩이별로 낸다.
+ *
+ * ── 왜 화면에서 떼어 냈나 ─────────────────────────────────────
+ * 이 셈이 씬 안의 닫힌 함수로 있던 동안 **눕힌 화면에서 장부가 통째로 얼어붙었다.**
+ * 마지막 패스가 이미 다 버린 덩이에 `splice(-1, 1)` 을 걸었는데, 그건 빈 배열에서
+ * 아무것도 안 지우면서 **「하나 버렸다」고 답한다.** 부르는 쪽의 `while` 은 그 말을
+ * 믿고 영영 돌았다. 세로가 넉넉한 세로 화면에서는 덩이가 0 줄까지 안 가서 안 났고,
+ * 캔버스라 프레임이 멈춰도 화면은 마지막 그림 그대로라 **눈으로는 티도 안 났다.**
+ * 값으로 빼 두면 테스트가 붙잡는다 — `stackPlan` 을 뺀 것과 같은 이유다.
+ *
+ * ── 버리는 순서 ──────────────────────────────────────────────
+ * ① 없어도 되는 줄 → ② 덩이의 가운데 줄 → ③ 덩이의 마지막 줄. 덩이마다 **뒤에서부터**
+ * 본다. 마지막 줄이 맨 나중인 것은 **그 줄이 그 덩이의 결론**이라서다 —
+ * 「챕터 끝에 3,000만」을 버리고 「새로 지는 빚 +3,000만」만 남기면 결국 얼마가
+ * 되는지가 사라진다.
+ *
+ * @param keep 덩이별 줄의 「지켜야 하는가」. `false` 면 제일 먼저 버린다.
+ * @returns 덩이별로 **살아남은 줄의 원래 자리번호**(오름차순).
+ */
+export function fitRows(
+    keep: readonly (readonly boolean[])[], headH: number, room: number,
+): number[][] {
+    const live = keep.map(rows => rows.map((_, i) => i));
+    // **다 버린 덩이는 자리를 안 먹는다.** 화면이 그런 덩이를 아예 안 그리므로
+    // (머리도 검은 화면도 없다) 예산에서도 빼야 한다. 안 빼면 **안 보이는 덩이 다섯을
+    // 먹여 살리느라 보이는 줄을 전부 굶긴다** — 눕힌 화면의 장부가 연대기 띠 하나만
+    // 남고 나머지가 텅 빈 은색 판이었던 이유가 이것이다.
+    const height = () => stackH(live.map(r => r.length).filter(n => n > 0), headH);
+
+    const dropOne = (pass: "optional" | "middle" | "last"): boolean => {
+        for (let i = live.length - 1; i >= 0; i--) {
+            const idx = live[i]!;
+            // **다 버린 덩이는 건너뛴다.** 이 한 줄이 그 무한 루프를 막는다.
+            if (idx.length === 0) continue;
+            const from = pass === "middle" ? idx.length - 2 : idx.length - 1;
+            const to = pass === "last" ? idx.length - 1 : 0;
+            for (let j = from; j >= to; j--) {
+                if (pass === "optional" && keep[i]![idx[j]!]!) continue;
+                idx.splice(j, 1);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (const pass of ["optional", "middle", "last"] as const) {
+        while (height() > room && dropOne(pass)) { /* 다 버릴 때까지 */ }
+    }
+    return live;
+}
+
+/**
  * 이미 만들어 둔 글자의 크기를 바꾼다. **`setFontSize` 를 직접 부르지 말 것.**
  *
  * ── 왜 이 함수가 있나 ──────────────────────────────────────

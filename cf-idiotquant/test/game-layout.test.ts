@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 
 import {
     ACTION_FRAMED_MIN, STACK, WIN_CHROME, bandsOf, blockH, cells, designSize, isStacked, stackGaps, stackH,
-    stackPlan, wrapCells, W, type Bands,
+    stackPlan, fitRows, wrapCells, W, type Bands,
 } from "@/lib/game/ui/theme";
 
 /**
@@ -328,4 +328,52 @@ test("사이는 기본 폭보다 좁아지지 않고, 상한을 넘지도 않는
     assert.equal(tight.gap, STACK.GAP, "칸이 모자라도 사이를 음수로 만들지 않는다");
     const roomy = stackPlan([1, 1], 0, 5_000);
     assert.equal(roomy.gap, STACK.GAP + STACK.GAP_MAX, "너무 벌어지면 덩이들이 남남이 된다");
+});
+
+/* ── 줄 버리기 — 눕힌 화면에서 장부가 얼어붙던 자리 ──────────── */
+
+test("자리가 아무리 없어도 fitRows 는 끝난다", () => {
+    // **이 테스트가 잡는 것은 무한 루프다.** 마지막 패스가 이미 다 버린 덩이에
+    // `splice(-1, 1)` 을 걸었는데, 그건 빈 배열에서 아무것도 안 지우면서
+    // 「하나 버렸다」고 답한다 — 부르는 쪽의 while 이 그 말을 믿고 영영 돌았다.
+    // 눕힌 화면(창 245px)에서 장부를 열면 게임이 통째로 멈췄고, 캔버스라 프레임이
+    // 서도 화면은 마지막 그림 그대로라 **눈으로는 티도 안 났다.**
+    //
+    // 덩이가 0 줄까지 가야 나므로 세로가 넉넉한 화면에서는 평생 안 만난다.
+    const keep = [[true, true, true], [true], [true, true], [true, true, true, true]];
+    for (const room of [0, 1, 20, 60, 120]) {
+        const live = fitRows(keep, 40, room);      // 안 끝나면 여기서 테스트가 멈춘다
+        assert.equal(live.length, keep.length, "덩이 수는 그대로다");
+        for (const idx of live) assert.ok(idx.length >= 0);
+    }
+    // 자리가 0 이면 결국 다 버린다 — 그래도 돌아는 온다.
+    assert.deepEqual(fitRows(keep, 40, 0).flat(), []);
+});
+
+test("버리는 순서 — 없어도 되는 줄이 먼저, 덩이의 마지막 줄이 맨 나중", () => {
+    const keep = [[true, false, true]];
+    // 딱 두 줄만 들어가는 자리: 없어도 되는 가운데 줄(1번)이 먼저 나간다.
+    assert.deepEqual(fitRows(keep, 0, blockH(2)), [[0, 2]]);
+    // 한 줄만 들어가면 **마지막 줄(그 덩이의 결론)이 남는다.**
+    assert.deepEqual(fitRows(keep, 0, blockH(1)), [[2]]);
+});
+
+test("뒤쪽 덩이부터 버린다 — 앞이 결론이다", () => {
+    const keep = [[true, true], [true, true]];
+    // 한 줄을 버려야 하면 뒤 덩이에서 간다.
+    assert.deepEqual(fitRows(keep, 0, blockH(2) + blockH(1) + STACK.GAP), [[0, 1], [1]]);
+});
+
+test("다 버린 덩이는 자리를 안 먹는다", () => {
+    // 덩이가 0 줄이 되면 화면이 그 덩이를 아예 안 그린다(머리도 검은 화면도 없다).
+    // 그런데 예산에는 `blockH(0)` = 머리 + 안쪽 여백이 그대로 남아 있었다. 그래서
+    // **안 보이는 덩이 다섯을 먹여 살리느라 보이는 줄을 전부 굶겼다** — 눕힌 화면의
+    // 장부가 연대기 띠 하나만 남고 나머지가 텅 빈 은색 판이었다.
+    const keep = [[true], [true], [true], [true], [true]];
+    // 딱 두 덩이가 들어가는 자리. 안 보이는 셋을 안 세면 둘은 살아야 한다.
+    const room = blockH(1) * 2 + STACK.GAP;
+    const live = fitRows(keep, 0, room);
+    assert.equal(live.filter(idx => idx.length > 0).length, 2, "들어갈 만큼은 남아야 한다");
+    // 뒤에서부터 버리므로 앞 둘이 남는다 — 앞이 결론이다.
+    assert.deepEqual(live, [[0], [0], [], [], []]);
 });

@@ -59,7 +59,7 @@ import { StockList, type StockRow } from "@/lib/game/components/StockList";
 import { StockSheet } from "@/lib/game/components/StockSheet";
 import {
     ACTION_FRAMED_MIN, BTN, C, CLIENT_ROW, FS, MIN_FS, PAD, S, STACK, bandsOf, cells,
-    fontOf, mkText, money, pressable, pxOf, setSize, stackH, stackPlan,
+    fitRows, fontOf, mkText, money, pressable, pxOf, setSize, stackPlan,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 import { DIE, TITLE_H, bevel, btnFace, crt, die, skinOf, winFrame } from "@/lib/game/ui/win95";
@@ -1432,44 +1432,31 @@ export class TradingScene extends Phaser.Scene {
         // 마지막 덩이가 버튼 띠 밑으로 밀린 적이 있고, 스크린샷으로는 그때그때만
         // 잡히는 고장이라 값으로 빼서 테스트가 붙잡게 했다(`stackPlan`).
         const { ROW, HEAD, INNER } = STACK;
-        const height = () => stackH(blocks.map(b => b.rows.length), headH);
 
-        // 버릴 순서: **먼저 「없어도 되는」 줄, 그 다음에 가운데부터.**
-        //
-        // 지켜야 할 줄까지 버려야 할 때 **덩이의 마지막 줄은 맨 나중에** 버린다. 각
-        // 덩이의 마지막 줄이 그 덩이의 결론이라서다 — 「챕터 끝에 3,000만」을 버리고
-        // 「새로 지는 빚 +3,000만」만 남기면, 결국 얼마가 되는지가 화면에서 사라진다.
-        // 눕힌 폰에서 실제로 그렇게 나왔다.
-        const dropOne = (pass: "optional" | "middle" | "last"): boolean => {
-            for (let i = blocks.length - 1; i >= 0; i--) {
-                const rows = blocks[i]!.rows;
-                // 「없어도 되는」 줄은 어디 있든 먼저 버린다. 마지막 줄을 아끼는 것은
-                // **지켜야 할 줄끼리** 견줄 때의 이야기다.
-                const from = pass === "middle" ? rows.length - 2 : rows.length - 1;
-                const to = pass === "last" ? rows.length - 1 : 0;
-                for (let j = from; j >= to; j--) {
-                    if (pass === "optional" && rows[j]![3]) continue;
-                    rows.splice(j, 1);
-                    return true;
-                }
-            }
-            return false;
-        };
+        // 버리는 순서와 그 이유는 `fitRows` 가 안다(`ui/theme.ts`). **여기 다시 적지 말 것** —
+        // 그 셈이 이 파일 안에 닫혀 있던 동안 눕힌 화면에서 장부가 얼어붙었고,
+        // 캔버스라 프레임이 멈춰도 화면은 마지막 그림 그대로라 눈으로는 티도 안 났다.
         const room = body.h - 4;
-        for (const pass of ["optional", "middle", "last"] as const) {
-            while (height() > room && dropOne(pass)) { /* 다 버릴 때까지 */ }
-        }
+        const kept = fitRows(blocks.map(b => b.rows.map(r => r[3])), headH, room);
+        blocks.forEach((b, i) => {
+            const all = b.rows;
+            b.rows = kept[i]!.map(j => all[j]!);
+        });
+
+        // **다 버린 덩이는 여기서 빠진다.** 머리도 검은 화면도 안 그리므로 자리 계산에
+        // 남아 있으면 안 된다 — 남겨 두면 사이(gap)와 가운데 맞춤이 안 보이는 덩이 몫까지
+        // 세어, 보이는 것들이 위로 쏠리고 아래가 텅 빈다.
+        const shown = blocks.filter(b => b.rows.length > 0);
 
         // **남는 세로는 나눠 갖는다.** 위에서부터 쌓기만 하면 긴 폰에서 아래 3분의 1이
         // 통째로 빈 은색 판이 된다 — 시작 화면이 한 번 그랬고, 여기서도 그랬다.
         // 사이를 먼저 벌리고(너무 벌어지면 덩이들이 남남이 되므로 상한을 둔다),
         // 그러고도 남으면 통째로 가운데로 내린다.
-        const { gap, top } = stackPlan(blocks.map(b => b.rows.length), headH, room);
+        const { gap, top } = stackPlan(shown.map(b => b.rows.length), headH, room);
 
         let y = body.y + 2 + top;
         if (drawHead && headH > 0) { drawHead(y); y += headH + gap; }
-        for (const blk of blocks) {
-            if (blk.rows.length === 0) continue;
+        for (const blk of shown) {
             // 머리는 **회색 면 위**라 검은 글자다. 왼쪽 색 조각이 어느 갈래인지를 먼저 말한다.
             this.rect(body.x + 4, y + 3, 3, HEAD - 6, blk.tint, 1);
             this.text(body.x + 12, y + 2, blk.head, FS.xs, S.faceInk);
