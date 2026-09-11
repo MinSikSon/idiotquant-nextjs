@@ -559,8 +559,11 @@ export class TradingScene extends Phaser.Scene {
         this.rect(b.x, b.y, b.w, b.h, C.banner, 1);
         this.rect(b.x, b.y + b.h - 1, b.w, 1, C.edge, 1);
 
-        // 제목 「재기」 — 붉다. 이 두 글자는 어느 화면에서도 안 바뀐다.
-        const title = this.text(b.x + PAD, b.y + 5, "재기", FS.md, S.title);
+        // 제목 「IMF」 — 붉다. 이 세 글자는 어느 화면에서도 안 바뀐다.
+        //
+        // **라틴 문자라 한글보다 좁다.** 고정폭 글꼴에서 라틴은 반각이므로 세 글자가
+        // 한글 한 자 반이다 — 오른쪽 날짜가 그만큼 넓게 쓴다.
+        const title = this.text(b.x + PAD, b.y + 5, "IMF", FS.md, S.title);
         this.textFit(b.x + b.w - PAD, b.y + 7, sub, FS.xs, S.barInk, 1,
             b.w - PAD * 2 - title.displayWidth - 10);
 
@@ -639,7 +642,7 @@ export class TradingScene extends Phaser.Scene {
         const first = m.cycle <= 1;
         const bar = this.placeBar;
 
-        // 배너가 「재기」를 말하므로 화면 한가운데의 큰 제목은 없앴다. 같은 두 글자가
+        // 배너가 「IMF」를 말하므로 화면 한가운데의 큰 제목은 없앴다. 같은 세 글자가
         // 한 화면에 두 번 서는 것은 강조가 아니라 중복이다.
         this.drawBanner("1997년 12월, 서울", false);
         const body = this.paper(first ? "새 회차" : `${m.cycle}회차`);
@@ -659,7 +662,7 @@ export class TradingScene extends Phaser.Scene {
 
         const { side, top } = this.artFit(body, rowsTop, 0.62,
             FS.sm + 12 + TradingScene.HOW.length * (FS.xs + 6));
-        this.placeArt("title", body.x + (body.w - side) / 2, top, side, "재기", S.gold);
+        this.placeArt("title", body.x + (body.w - side) / 2, top, side, "IMF", S.gold);
 
         let y = top + side + 12;
         const line = first
