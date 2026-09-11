@@ -18,12 +18,20 @@ export interface Client {
     /** 잃었을 때 에너지가 깎이는 배수. */
     loss: number;
     /**
-     * 근거 없이 권했을 때 **받아들일** 확률(0~1).
+     * 근거를 대고 권했을 때 넘어야 할 **2d6 문턱.** 이 값 이상이 나오면 받아들인다.
      *
-     * 어머니는 무조건 받는다. 박 대리는 근거가 없으면 거절한다 — 거절당하면 그 턴은
-     * 아무 일도 안 일어나고 에너지만 자연 감소한다.
+     * 「근거 없이 받아들일 확률」을 재던 `acceptsBlind`(0~1)를 대체한 값이다. 판정이
+     * 주사위로 바뀌면서 같은 것을 정하는 값이 둘이 됐는데, 둘이면 어느 날 한쪽만
+     * 바뀐다(`core/check.ts`).
      */
-    acceptsBlind: number;
+    need: number;
+    /**
+     * 근거를 못 댔을 때의 문턱. **`need` 와의 차이가 그 사람의 성격이다.**
+     *
+     * 어머니는 안 움직이고(5+/5+) 박 대리는 통째로 움직인다(6+/12). 근거를 대는
+     * 일이 누구에게 먹히는지가 이 한 칸에 들어 있다.
+     */
+    needBlind: number;
     /**
      * 이 사람이 굴려 달라고 내놓을 수 있는 돈의 크기(배수). **`gain`/`loss` 와 다른 값이다.**
      *
@@ -38,24 +46,29 @@ export const CLIENTS: readonly Client[] = [
     {
         id: "kim", name: "김 부장",
         blurb: "나 때문에 퇴직금을 잃었다. 잘 안 믿는다.",
-        gain: 1.4, loss: 1.4, acceptsBlind: 0.35, purse: 1.4,
+        gain: 1.4, loss: 1.4, need: 6, needBlind: 11, purse: 1.4,
     },
     {
         id: "mother", name: "어머니",
         blurb: "근거 없이 권해도 받아 준다. 그래서 잃으면 제일 아프다.",
-        gain: 0.7, loss: 1.8, acceptsBlind: 1, purse: 0.6,
+        gain: 0.7, loss: 1.8, need: 5, needBlind: 5, purse: 0.6,
     },
     {
         id: "park", name: "박 대리",
         blurb: "후배다. 나보다 잘 안다. 근거가 허술하면 거절한다.",
-        gain: 1.2, loss: 1, acceptsBlind: 0.1, purse: 0.8,
+        gain: 1.2, loss: 1, need: 5, needBlind: 12, purse: 0.8,
     },
     {
         id: "choi", name: "최 사장",
         blurb: "사채. 사람을 보지 않고 이자로 움직인다.",
-        gain: 0.6, loss: 0.6, acceptsBlind: 0.9, purse: 1.8,
+        gain: 0.6, loss: 0.6, need: 7, needBlind: 9, purse: 1.8,
     },
 ] as const;
+
+/** 지금 이 사람을 설득하려면 몇 이상이 나와야 하는가. */
+export function needOf(client: Client, hadThesis: boolean): number {
+    return hadThesis ? client.need : client.needBlind;
+}
 
 /* ── 맡긴다 ─────────────────────────────────────────────────── */
 
@@ -63,10 +76,10 @@ export const CLIENTS: readonly Client[] = [
  * 에너지가 0 이어도 이만큼은 맡긴다. 사람이 앞에 앉아 권하는 것을 들었으니까.
  * 계좌가 0 에서 시작하는 게임이라, **첫 턴에 굴릴 돈이 생기는 크기가 이 값이다.**
  */
-export const ENTRUST_BASE = 5_000_000;
+export const ENTRUST_BASE = 6_000_000;
 
 /** 에너지가 가득 찼을 때 여기까지 더 붙는다. */
-export const ENTRUST_BY_ENERGY = 7_000_000;
+export const ENTRUST_BY_ENERGY = 8_400_000;
 
 /**
  * 근거를 못 댔는데도 받아 준 경우 맡기는 비율.

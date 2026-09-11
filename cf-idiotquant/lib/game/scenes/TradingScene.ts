@@ -20,12 +20,15 @@ import {
     StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel, type TradeMark,
 } from "@/lib/game/core/StockEngine";
 import { CHAPTERS, TOTAL_TURNS } from "@/lib/game/core/chapters";
-import { CLIENTS, clientAt, entrustAmount, type Client } from "@/lib/game/core/clients";
+import {
+    CLIENTS, clientAt, entrustAmount, needOf, type Client,
+} from "@/lib/game/core/clients";
+import { checkSay, oddsPct, roll, type Check } from "@/lib/game/core/check";
 import {
     LIVING_COST, PARTTIME_ENERGY, PARTTIME_PAY, SHORTFALL_DEBT,
 } from "@/lib/game/core/wallet";
 import {
-    decay, clampEnergy, energyDelta, energyReason, ENERGY_DECAY,
+    decay, clampEnergy, energyDelta, energyReason, ENERGY_DECAY, ENERGY_PERSUADED,
 } from "@/lib/game/core/energy";
 import {
     researchBuff, verdictOf, worthRecommending, RESEARCH_COST,
@@ -58,7 +61,7 @@ import {
     mkText, money, pressable, pxOf, setSize, stackH, stackPlan,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
-import { TITLE_H, bevel, btnFace, crt, skinOf, winFrame } from "@/lib/game/ui/win95";
+import { DIE, TITLE_H, bevel, btnFace, crt, die, skinOf, winFrame } from "@/lib/game/ui/win95";
 
 /** 버튼 띠 한 칸. */
 interface ButtonDef {
@@ -153,6 +156,14 @@ export class TradingScene extends Phaser.Scene {
     private entries: LogEntry[] = [];
     private client: Client | null = null;
     /** 이번 턴에 이미 권했는가. 고객이 한 명이라 한 번뿐이다. */
+    /**
+     * 이번 턴에 굴린 판정. **고객 줄이 이 값을 그린다** — 로그는 흘러가지만 주사위는
+     * 그 턴 내내 앞에 앉은 사람 옆에 남아 있어야 한다.
+     *
+     * 턴이 바뀌면 비운다. 무르면 같이 되돌아간다 — 안 되돌리면 무른 뒤에도 결과가
+     * 화면에 남아, 일어나지 않은 일이 일어난 것처럼 보인다.
+     */
+    private lastCheck: Check | null = null;
     private recommendedThisTurn = false;
     /**
      * 이번 턴에 뭐라도 했는가 — 권했거나 거뒀거나.
@@ -865,12 +876,21 @@ export class TradingScene extends Phaser.Scene {
         // 한마디가 통째로 빠지는데, 고객을 사람으로 만드는 것이 그 한마디다.
         // 한 줄에 넣고 `textFit` 으로 줄이는 길도 있었지만 그러면 로그보다 작아진다.
         const tx = body.x + 13 + (face ? faceH + 6 : 0);
-        const room = body.x + body.w - 4 - tx;
+        // **오른쪽 끝은 판정이 쓴다.** 굴리기 전에는 승산, 굴린 뒤에는 주사위 눈.
+        const cueW = c && rowH >= 34 ? this.drawCheckCue(body, rowH) : 0;
+        const room = body.x + body.w - 4 - tx - cueW;
         if (!c) {
             this.text(tx, body.y + rowH / 2 - FS.xs / 2, "오늘은 아무도 앉지 않았다.", FS.xs, "#7a2f2f");
         } else if (rowH >= 34) {
             this.textClip(tx, body.y + 2, c.name, FS.xs, S.faceInk, 0, room);
-            this.textClip(tx, body.y + 19, c.blurb, FS.xs, S.faceDim, 0, room);
+            // **굴린 뒤에는 한마디 대신 결과를 적는다.** 「나 때문에 퇴직금을 잃었다」는
+            // 여러 번 읽은 줄이고, 방금 굴린 주사위는 처음 보는 값이다.
+            const said = this.lastCheck
+                ? `${this.lastCheck.total} ${this.lastCheck.ok ? "≥" : "<"} ${this.lastCheck.need}`
+                    + ` — ${this.lastCheck.ok ? "받아들였다" : "고개를 저었다"}`
+                : c.blurb;
+            const ink = this.lastCheck ? (this.lastCheck.ok ? S.up : S.down) : S.faceDim;
+            this.textClip(tx, body.y + 19, said, FS.xs, ink, 0, room);
         } else {
             this.textClip(tx, body.y + rowH / 2 - FS.xs / 2, c.name, FS.xs, S.faceInk, 0, room);
         }
@@ -946,13 +966,13 @@ export class TradingScene extends Phaser.Scene {
             block: () => this.orderBlock(),
             clientName: () => this.client?.name ?? "아무도",
             incomingSay: () => {
-                const got = this.client
-                    ? entrustAmount(this.client, this.engine.player.energy, this.buff().thesis !== null)
-                    : 0;
-                // 이미 굴리던 돈이 있으면 그것도 함께 들어간다 — 그 사실을 감추지 않는다.
-                return this.engine.player.cash > 0
-                    ? `${money(got)} 맡긴다 + 현금`
-                    : `${money(got)} 맡긴다`;
+                if (!this.client) return "";
+                const thesis = this.buff().thesis !== null;
+                // **승산이 먼저다.** 맡길 액수는 통했을 때의 이야기이고, 누르기 전에
+                // 알아야 하는 것은 통할 확률이다 — 근거를 댄 값어치가 이 숫자다.
+                const need = needOf(this.client, thesis);
+                const got = entrustAmount(this.client, this.engine.player.energy, thesis);
+                return `${need}+ · ${oddsPct(need)}% · ${money(got)}`;
             },
             onResearch: (id: string) => this.research(id),
             onBuy: (id: string) => this.recommend(id),
@@ -1491,6 +1511,48 @@ export class TradingScene extends Phaser.Scene {
         });
     }
 
+    /**
+     * 고객 줄 오른쪽 끝 — **굴리기 전에는 승산, 굴린 뒤에는 주사위.**
+     *
+     * ── 왜 승산을 미리 보여 주나 ───────────────────────────
+     * 주사위를 굴리게 하면서 승산을 숨기면 그건 도박이지 결정이 아니다. 이 게임은
+     * 근거를 대는 쪽이 이기는 게임이고, 그러려면 **근거가 승산을 얼마나 바꾸는지가
+     * 누르기 전에** 보여야 한다. 알아보고 나면 이 숫자가 눈앞에서 올라간다 —
+     * 「알아본다」가 무엇을 해 주는지를 화면이 처음으로 직접 말하는 자리다.
+     *
+     * ── 왜 굴린 뒤에는 눈을 그리나 ─────────────────────────
+     * 숫자만 적어도 규칙은 돌아간다. 그런데 **굴렸다는 사실이 화면에 없으면 실패가
+     * 그냥 「안 됐다」로 읽힌다** — 무엇이 정했는지 모르니 억울하기만 하고, 다음에
+     * 무엇을 바꿔야 할지가 안 남는다.
+     *
+     * @returns 이 칸이 오른쪽에서 먹은 폭. 이름과 한마디가 그만큼 좁게 쓴다.
+     */
+    private drawCheckCue(body: Band, rowH: number): number {
+        const right = body.x + body.w - 8;
+        const cy = body.y + rowH / 2;
+
+        const c = this.lastCheck;
+        if (c) {
+            // 굴린 눈 그대로. 왼쪽부터 순서대로 놓는다.
+            const w = c.dice.length * (DIE + 3) - 3;
+            let dx = right - w;
+            for (const d of c.dice) {
+                this.keep(die(this, dx, cy - DIE / 2, d));
+                dx += DIE + 3;
+            }
+            return w + 8;
+        }
+
+        // 아직 안 굴렸다 — 지금 굴리면 몇 이상이어야 하는가.
+        if (this.recommendedThisTurn) return 0;
+        const client = this.client;
+        if (!client) return 0;
+        const need = needOf(client, this.buff().thesis !== null);
+        const t = this.text(right, cy - FS.xs / 2, `${need}+ · ${oddsPct(need)}%`,
+            FS.xs, S.faceDim, 1);
+        return t.displayWidth + 8;
+    }
+
     /* ── 종목 목록 ─────────────────────────────────────── */
 
     private stockRows(): StockRow[] {
@@ -1518,8 +1580,15 @@ export class TradingScene extends Phaser.Scene {
     /**
      * 권한다. **한 턴에 한 번뿐이다** — 고객이 한 명이니까.
      *
-     * 근거가 없으면 고객이 거절할 수 있다. 박 대리는 거의 거절하고 어머니는 무조건 받는다.
-     * 거절당하면 아무 일도 안 일어나고 에너지만 자연 감소한다.
+     * ── 여기서 주사위를 굴린다 ─────────────────────────────
+     * 굴리는 것은 **설득**이지 시장이 아니다(`core/check.ts`). 통하면 그 자리에서
+     * 돈을 맡기고 체결이 일어나고, 그 돈이 오르는지 내리는지는 다음 턴에 시장이 정한다.
+     *
+     * 문턱은 사람마다 다르고 **근거가 그것을 내린다.** 어머니는 안 움직이고(5+/5+)
+     * 박 대리는 통째로 움직인다(6+/12) — 근거를 대는 일이 누구에게 먹히는지가
+     * 그 한 칸에 들어 있다.
+     *
+     * 실패해도 **권하려 한 턴**이다. 기다린 것으로 세지 않는다.
      */
     private recommend(id: string): void {
         // **막힌 이유가 있으면 여기까지 오지 않는다.** 화면이 이미 버튼을 잠그고 그
@@ -1530,13 +1599,26 @@ export class TradingScene extends Phaser.Scene {
         const thesis = buff.thesis;
         const c = this.client;
 
-        if (!thesis && Math.random() > c.acceptsBlind) {
-            this.pushLog(`${c.name}이(가) 고개를 저었다. "근거가 뭡니까."`, "warn");
-            // 거절당해도 **권하려 한 턴**이다 — 기다린 것으로 세지 않는다.
+        // **엔진의 시드 난수를 쓰지 않는다.** 시장 뼈대는 회차를 넘어 같아야 하는데
+        // (`chronicle`), 판정이 그 난수를 먹으면 굴린 횟수만큼 시장이 어긋난다.
+        const check = roll(needOf(c, thesis !== null), thesis !== null);
+        this.lastCheck = check;
+        this.pushLog(checkSay(check, c.name), check.ok ? "up" : "warn");
+
+        if (!check.ok) {
             this.recommendedThisTurn = true;
             this.actedThisTurn = true;
             this.closeBoardAndRedraw();
             return;
+        }
+
+        // **설득해 낸 것 자체가 값이다.** 결과가 나오기 전에 바로 붙는다 — 4분면은
+        // 그대로 살아 있고 이것은 그 앞에 붙는 별개의 값이다(`core/energy.ts`).
+        // 근거가 없으면 안 붙는다: 운으로 설득한 것은 실력이 아니다.
+        if (thesis) {
+            this.engine.player.energy = clampEnergy(
+                this.engine.player.energy + ENERGY_PERSUADED, ENERGY_MAX);
+            this.pushLog(`설득했다. 에너지 +${ENERGY_PERSUADED}`, "up");
         }
 
         // **받아들였다는 것은 돈을 맡긴다는 뜻이다.** 여기가 맡은 돈이 생기는 유일한
@@ -1609,6 +1691,9 @@ export class TradingScene extends Phaser.Scene {
         this.pending = m.pending;
         this.facts = { ...m.facts };
         this.traded = false;
+        // **주사위도 같이 돌아간다.** 안 그러면 무른 뒤에도 결과가 고객 줄에 남아
+        // 일어나지 않은 일이 일어난 것처럼 보인다.
+        this.lastCheck = null;
         this.entries.length = Math.min(this.entries.length, m.logLen);
         this.pushLog("방금 한 것을 무르고 아침으로 돌렸다.", "system");
         this.redraw();
@@ -1656,6 +1741,7 @@ export class TradingScene extends Phaser.Scene {
         this.recommendedThisTurn = false;
         this.actedThisTurn = false;
         this.traded = false;
+        this.lastCheck = null;
         // 알아본 것은 **그 턴에만** 유효하다. 하루가 지나면 다시 알아봐야 한다.
         this.researched = null;
         this.read = this.engine.read(this.buff());
