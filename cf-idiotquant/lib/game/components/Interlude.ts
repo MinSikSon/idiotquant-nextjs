@@ -22,7 +22,7 @@
 import Phaser from "phaser";
 import type { Cut } from "@/lib/game/core/interlude";
 import { drawArt } from "@/lib/game/ui/art";
-import { C, FS, PAD, S, fontOf, mkText } from "@/lib/game/ui/theme";
+import { C, FS, MIN_FS, PAD, S, fontOf, mkText, setSize } from "@/lib/game/ui/theme";
 import { TITLE_H, crt, winFrame } from "@/lib/game/ui/win95";
 
 /** 그림 칸이 세로에서 차지하는 몫. 나머지가 글자 자리다. */
@@ -100,7 +100,7 @@ export function drawInterlude(
         }).setOrigin(0.5, 0);
         // **`displayWidth` 다** — mkText 는 글자를 k 배로 굽고 1/k 로 줄여 붙인다.
         const room = body.w - 16;
-        if (t.displayWidth > room) t.setFontSize(Math.max(10, Math.floor(FS.sm * (room / t.displayWidth))));
+        if (t.displayWidth > room) setSize(scene, t, Math.max(MIN_FS, Math.floor(FS.sm * (room / t.displayWidth))));
         put(t);
         y += lineH;
     }
