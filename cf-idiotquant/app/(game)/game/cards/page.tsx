@@ -11,6 +11,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WinLink } from "../WinLink";
+
 import { SITUATIONS, STARTER_IDS, countsAsThesis } from "@/lib/game/core/situations";
 import { CHAPTERS, UNIVERSE, TOTAL_TURNS } from "@/lib/game/core/chapters";
 import { CLIENTS } from "@/lib/game/core/clients";
@@ -265,9 +267,11 @@ export default function CardsPage() {
                 </div>
             </section>
 
-            <nav className="flex gap-5 font-mono text-[13px]">
-                <Link href="/game" className="text-[#5cf08f] underline underline-offset-4">← 게임으로</Link>
-                <Link href="/game/status" className="text-[#8d9c93] underline underline-offset-4">이력</Link>
+            {/* 게임 화면과 같은 단추다(`WinLink`) — 돌아가는 길이 밑줄 글자면
+                이 페이지만 다른 세계의 것으로 보인다. */}
+            <nav className="flex gap-3">
+                <WinLink href="/game" tone="primary">← 게임으로</WinLink>
+                <WinLink href="/game/status">이력</WinLink>
             </nav>
         </main>
     );

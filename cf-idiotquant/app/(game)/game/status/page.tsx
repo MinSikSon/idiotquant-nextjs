@@ -16,6 +16,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { WinLink } from "../WinLink";
+
 import { loadMemory, type Memory } from "@/lib/game/core/progress";
 import { hitRate, END_REASONS } from "@/lib/game/core/career";
 import { SITUATIONS, SITUATION_BY_ID } from "@/lib/game/core/situations";
@@ -94,9 +96,10 @@ export default function StatusPage() {
                 <Body memory={memory} />
             )}
 
-            <nav className="flex gap-5 font-mono text-[13px]">
-                <Link href="/game" className="text-[#5cf08f] underline underline-offset-4">← 게임으로</Link>
-                <Link href="/game/cards" className="text-[#8d9c93] underline underline-offset-4">상황 도감</Link>
+            {/* 게임 화면과 같은 단추다(`WinLink`). */}
+            <nav className="flex gap-3">
+                <WinLink href="/game" tone="primary">← 게임으로</WinLink>
+                <WinLink href="/game/cards">상황 도감</WinLink>
             </nav>
         </main>
     );

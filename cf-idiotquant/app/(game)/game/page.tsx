@@ -16,7 +16,8 @@
 //     세로로 40px 구르고, 캔버스 게임에서 그 스크롤은 오조작이 된다.
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
+
+import { WinBar, WinLink } from "./WinLink";
 
 const PhaserGame = dynamic(() => import("./PhaserGame"), {
     ssr: false,
@@ -54,11 +55,23 @@ export default function RoguelikePage() {
 
             {/* 도감과 이력으로 가는 **유일한 문**이다. 메뉴에는 없다 — 게임을 안 켠 사람에게
                 카드 목록은 읽을 수 없는 글이다.
-                눕히면 세로 28px 이 아깝다. 링크는 세로로 되돌리면 다시 나온다. */}
-            <div className="flex shrink-0 justify-center gap-5 py-2 text-center font-mono text-[12px] text-[#9aada6] [@media(max-height:500px)]:hidden">
-                <Link href="/game/cards" className="underline">카드 도감</Link>
-                <Link href="/game/status" className="underline">이력</Link>
-            </div>
+
+                ── 밑줄 글자였다 ────────────────────────────────────────
+                게임 화면은 처음부터 끝까지 90년대 윈도우의 은회색 3D 판인데, 그 아래에
+                12px 짜리 웹 링크가 붙어 있었다. **화면에서 유일하게 안 눌러 보이는 것**이
+                하필 눌러야 하는 것이었다. 그래서 같은 모양의 단추로 바꾼다(`WinLink`).
+
+                ── 눕혀도 숨기지 않는다 ─────────────────────────────────
+                예전에는 `max-height:500px` 에서 통째로 숨겼다. 세로 28px 이 아까워서였는데,
+                그러면 **눕힌 채로는 이력에 갈 길이 아예 없다.** 문을 없애는 대신 작게
+                만든다 — `sm` 이 그 몫이다. */}
+            <WinBar className="[@media(max-height:500px)]:py-1">
+                <span className="hidden font-mono text-[11px] text-[#4a5056] sm:inline">
+                    게임 밖 —
+                </span>
+                <WinLink href="/game/cards">카드 도감</WinLink>
+                <WinLink href="/game/status">이력</WinLink>
+            </WinBar>
         </div>
     );
 }
