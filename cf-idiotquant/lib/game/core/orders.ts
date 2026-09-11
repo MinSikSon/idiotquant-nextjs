@@ -7,8 +7,8 @@
 //                            로그도 안 남아서, 누른 사람은 게임이 멈춘 줄 안다.
 //   현금이 한 주 값에 못 미칠 때  누른 **뒤에** 로그로 「현금이 한 주 값에 못 미칩니다」가
 //                            떴다. 누르기 전에는 멀쩡한 버튼으로 보인다.
-//   맡은 돈이 다 들어가 있을 때  프롤로그가 그렇다. 잔돈으로 **1주**가 사졌고
-//                            「어머니에게 1주를 권했다」가 로그에 남았다.
+//   맡은 돈이 다 들어가 있을 때  잔돈으로 **1주**가 사졌고 「어머니에게 1주를 권했다」가
+//                            로그에 남았다.
 //
 // 둘 다 「눌러 보고 나서야 아는」 자리다. 이 게임은 캔버스라 브라우저가 해 주는 것이
 // 하나도 없으므로, **못 누르는 이유를 화면이 직접 말해야 한다.**
@@ -23,22 +23,25 @@
  * (`무른다`), 화면이 그 자리에 다른 버튼을 세운다.
  */
 export type OrderBlock =
-    | "none" | "noClient" | "done" | "refused" | "fullyInvested" | "notEnoughCash";
+    | "none" | "noClient" | "done" | "refused" | "soldToday"
+    | "fullyInvested" | "notEnoughCash";
 
 /**
  * 권할 만한 크기의 바닥 — **계좌의 1%.**
  *
  * ── 왜 「한 주라도 살 수 있으면」이 아닌가 ─────────────────────
- * 프롤로그(1997)는 고객 돈이 **전부** 시장에 들어간 채로 열린다(`chapters.ts` 의
- * `opening`). 그래서 남는 현금은 결정이 아니라 **세 번 사고 남은 잔돈**이다 — 주수를
- * 정수로 자르느라 생긴 부스러기.
+ * 계좌가 거의 다 시장에 들어가 있으면 남는 현금은 결정이 아니라 **사고 남은 잔돈**이다 —
+ * 주수를 정수로 자르느라 생긴 부스러기.
  *
  * 그 부스러기로 한 주를 살 수 있다는 이유로 버튼이 열려 있었고, 눌러 보면
  * 「어머니에게 **1주**를 권했다. 수수료 1.」 이 로그에 남았다. 2,500만짜리 계좌에서
  * 1주는 권한 것이 아니다.
  *
  * 계좌의 1% 를 못 채우면 그건 굴릴 돈이 없는 것이다. 그때 화면은 **팔라고 말한다** —
- * 1997 의 유일한 행동이 그것이고, 1998 이 그 잔해를 안고 시작하는 이유도 그것이다.
+ * 「막혔다」로 끝내지 않고 다음에 할 일을 적는 자리다.
+ *
+ * (예전에는 프롤로그가 `opening` 으로 고객 돈을 전부 넣은 채 열려서 이 자리가 첫 턴에
+ * 바로 걸렸다. 지금은 아무것도 안 들고 시작하므로 굴리다가 다 넣었을 때 걸린다.)
  */
 export const MIN_ORDER_RATIO = 0.01;
 
@@ -80,6 +83,9 @@ export function recommendBlock(c: OrderCheck): OrderBlock {
     if (!c.hasClient) return "noClient";
     // 이미 권한 턴 — 체결됐으면 무르면 되고, 거절당했으면 그걸로 끝이다.
     if (c.recommended) return c.traded ? "done" : "refused";
+    // **권하지도 않았는데 체결이 있었다면 판 것이다.** 한 턴에 체결은 한 번이므로
+    // 오늘은 여기까지다 — 무르면 판 것이 되돌아가고 다시 권할 수 있다.
+    if (c.traded) return "soldToday";
     // **먼저 「굴릴 돈이 있는가」를 본다.** 이쪽이 더 큰 사실이고, 할 일도 다르다 —
     // 현금이 없으면 팔아야 하고, 한 주 값에 못 미치면 더 싼 종목을 보면 된다.
     // 권하는 순간 들어올 돈까지 세고 본다 — 그 돈이 곧 이 주문의 재원이다.
@@ -102,11 +108,51 @@ export function blockSay(b: OrderBlock): { label: string; sub: string } {
         // 있는데, 이 칸을 보고 있던 사람이 그 사실을 모르면 턴이 끝난 줄 안다.
         case "done":          return { label: "오늘은 권했다", sub: "무르면 다시 권할 수 있다" };
         case "refused":       return { label: "고개를 저었다", sub: "오늘은 여기까지다" };
-        // **다음에 할 일을 적는다.** 1997 은 이 줄을 넉 턴 내내 보게 되는데,
-        // 그때 할 수 있는 유일한 행동이 파는 것이다.
-        case "fullyInvested": return { label: "넣을 현금이 없다", sub: "팔아야 권할 현금이 생긴다" };
+        case "soldToday":     return { label: "오늘은 거뒀다", sub: "무르면 권할 수 있다" };
+        // **다음에 할 일을 적는다.** 「막혔다」로 끝내면 화면이 사람을 세워 두기만 한다.
+        //
+        // 「팔아야 **권할** 현금이 생긴다」라고 적던 자리다. 한 턴에 체결이 한 번이 되면서
+        // 그 말이 **오늘은 못 하는 일**을 가리키게 됐다 — 팔면 그 턴은 끝난다.
+        case "fullyInvested": return { label: "넣을 현금이 없다", sub: "팔면 현금이 생긴다" };
         case "notEnoughCash": return { label: "현금이 모자란다", sub: "한 주 값에 못 미친다" };
         case "none":          return { label: "", sub: "" };
+    }
+}
+
+/* ── 파는 것을 막는 것 ───────────────────────────────────────── */
+
+/**
+ * 지금 파는 것을 막는 것. `"none"` 이면 누를 수 있다.
+ *
+ * ── 한 턴에 체결은 한 번이다 ──────────────────────────────────
+ * 예전에는 권하기와 팔기가 **같은 턴에 둘 다** 됐다. 그래서 이런 상태가 만들어졌다:
+ * 권해서 고객이 214만을 맡기고 95주를 샀는데, 그 자리에서 도로 팔면 — 맡긴 돈은
+ * 현금으로 남고, 「권했다」는 그 턴의 권하기를 이미 써 버렸고, 에너지 정산은
+ * 안 일어난다(`pending` 이 지워지므로). **어느 것도 무른 것이 아닌데 어느 것도
+ * 온전하지 않은** 자리였다.
+ *
+ * 지금은 하나다. 하루에 할 수 있는 체결이 하나이고, 바꾸려면 **무른다**(버튼 띠).
+ * 알바가 「하루는 하나뿐」이라 권하기와 같이 못 서는 것과 같은 규칙이다.
+ *
+ * **값이 붙는다**: 손절이 하루 늦어질 수 있다. 자리를 들고 있는데 오늘 고객이 앉았다면
+ * 둘 중 하나를 골라야 한다 — 그게 이 규칙이 만드는 결정이다.
+ */
+export type SellBlock = "none" | "nothing" | "tradedToday";
+
+export function sellBlock(p: { shares: number; traded: boolean }): SellBlock {
+    // **체결을 먼저 본다.** 팔고 나면 주수가 0 이 되는데, 그때 「가진 것이 없다」라고
+    // 적으면 방금 판 사실이 화면에서 사라진다.
+    if (p.traded) return "tradedToday";
+    if (p.shares <= 0) return "nothing";
+    return "none";
+}
+
+/** 막힌 매도 칸이 뭐라고 적히는가. */
+export function sellSay(b: SellBlock): { label: string; sub: string } {
+    switch (b) {
+        case "nothing":     return { label: "가진 것이 없다", sub: "" };
+        case "tradedToday": return { label: "오늘은 체결했다", sub: "무르면 다시 할 수 있다" };
+        case "none":        return { label: "지금 판다", sub: "" };
     }
 }
 
@@ -120,8 +166,13 @@ export function blockSay(b: OrderBlock): { label: string; sub: string } {
  * 박제되므로(`TradingScene.recommend`), 권한 뒤에 알아보면 에너지 3 만 나가고 이번
  * 턴에는 아무 값도 안 한다. 그런데 화면은 그 줄을 멀쩡히 열어 두고 있었다 —
  * **눌러도 손해만 나는 버튼**이었다.
+ *
+ * `soldToday` 는 같은 병이 **한 턴에 체결 한 번**에서 다시 난 자리다. 거둔 턴에는
+ * 권할 수 없으므로(`recommendBlock` 의 `soldToday`) 근거를 만들어도 쓸 데가 없고,
+ * 알아본 것은 그 턴에만 유효하니 다음 턴로 넘어가지도 않는다.
  */
-export type ResearchBlock = "none" | "thisStock" | "otherStock" | "afterRecommend" | "noEnergy";
+export type ResearchBlock =
+    | "none" | "thisStock" | "otherStock" | "afterRecommend" | "soldToday" | "noEnergy";
 
 export function researchBlock(p: {
     /** 이 종목을 이번 턴에 이미 알아봤는가. */
@@ -130,6 +181,8 @@ export function researchBlock(p: {
     otherThesis: string | null;
     /** 이번 턴에 이미 권했는가. */
     recommended: boolean;
+    /** 이번 턴에 이미 체결이 있었는가. 권한 것이 아니면 거둔 것이다. */
+    traded: boolean;
     energy: number;
     cost: number;
 }): ResearchBlock {
@@ -137,6 +190,8 @@ export function researchBlock(p: {
     if (p.researchedThis) return "thisStock";
     if (p.otherThesis !== null) return "otherStock";
     if (p.recommended) return "afterRecommend";
+    // 권하지도 않았는데 체결이 있었으면 거둔 것이다 — 오늘은 권할 수 없는 턴이다.
+    if (p.traded) return "soldToday";
     if (p.energy < p.cost) return "noEnergy";
     return "none";
 }
@@ -148,6 +203,7 @@ export function researchSay(b: ResearchBlock, p: { other: string | null; cost: n
         case "thisStock":      return "이 종목은 알아봤다 — 근거가 있다";
         case "otherStock":     return `이번 턴은 ${p.other}을(를) 알아봤다`;
         case "afterRecommend": return "이미 권했다 — 근거는 권하기 전에";
+        case "soldToday":      return "오늘은 거뒀다 — 권할 수 없는 턴이다";
         case "noEnergy":       return `알아볼 에너지가 없다 (${p.cost} 필요)`;
     }
 }

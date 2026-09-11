@@ -36,15 +36,32 @@ const joined = (lines: string[]) => lines.join(" / ");
 
 /* ── 판의 시작과 끝 ─────────────────────────────────────────── */
 
+const START = { entrusted: 25_000_000, wallet: 500_000, debtToCome: 30_000_000 };
+
 test("첫 회차와 그 뒤가 같은 말을 하지 않는다", () => {
-    const first = cutStartRun(CH, 1);
-    const again = cutStartRun(CH, 4);
+    const first = cutStartRun(CH, 1, START, won);
+    const again = cutStartRun(CH, 4, START, won);
 
     assert.notDeepEqual(first.lines, again.lines);
     assert.ok(joined(again.lines).includes("4회차"), joined(again.lines));
     assert.ok(!joined(first.lines).includes("회차"), joined(first.lines));
     assert.equal(first.art, "home");
     assert.equal(again.art, "home");
+});
+
+test("시작 막이 지금 형편과 앞으로 올 것을 말한다", () => {
+    // **판이 열리기 전 마지막으로 글을 읽는 자리다.** 다음은 집이고 그다음은 객장이라,
+    // 여기서 안 말하면 처음 켠 사람은 뭘 얼마나 들고 앉는지 모른 채 첫 턴을 맞는다.
+    const say = joined(cutStartRun(CH, 1, START, won).lines);
+    assert.ok(say.includes(won(START.entrusted)), `맡은 돈이 없다: ${say}`);
+    assert.ok(say.includes(won(START.wallet)), `지갑이 없다: ${say}`);
+    assert.ok(say.includes(won(START.debtToCome)), `앞으로 올 빚이 없다: ${say}`);
+});
+
+test("없는 것은 줄을 안 만든다 — 0 은 정보가 아니다", () => {
+    const bare = joined(cutStartRun(CH, 1, { entrusted: 0, wallet: 0, debtToCome: 0 }, won).lines);
+    assert.ok(!bare.includes("지갑"), bare);
+    assert.ok(!bare.includes("빚"), bare);
 });
 
 test("회귀 막은 끝난 회차와 다음 회차를 둘 다 말한다", () => {
@@ -64,7 +81,7 @@ test("끝 막은 회귀하지 않는다고 말한다", () => {
 });
 
 test("집·회사 전환이 그 장의 연도를 말한다", () => {
-    assert.ok(cutStartRun(CH, 1).head.includes(CH.year));
+    assert.ok(cutStartRun(CH, 1, START, won).head.includes(CH.year));
     const office = cutToOffice(CH);
     // **그림도 해를 따라간다.** 넷 다 사무실 하나를 돌려 쓰던 자리였다.
     assert.equal(office.art, `year-${CH.year}`);

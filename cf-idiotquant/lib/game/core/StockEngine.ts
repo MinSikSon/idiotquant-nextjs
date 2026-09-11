@@ -283,7 +283,6 @@ export class StockEngine {
             // 1998 부터이고, 그 자리는 `startNextChapter` 의 `accountLost` 가 만든다.
             wallet: SALARY_LEFT,
         };
-        this.applyOpening(this.chapter);
         this.chapterStartEquity = this.equity;
         this.peak = this.equity;
     }
@@ -364,30 +363,6 @@ export class StockEngine {
             currentPrice: price, volatility: def.vol, history,
             beta: def.beta, listedAt: def.listedAt, blurb: def.blurb,
         };
-    }
-
-    /**
-     * 프롤로그가 열릴 때 이미 물려 있는 자리를 깐다.
-     *
-     * **평단가가 지금 값보다 높다** — 판이 열리기 전에 이미 무너지기 시작했고 나는 그
-     * 자리를 물려받은 채 앉아 있다. 첫 턴에 전부 팔아도 손실은 확정되고 수수료까지 나간다.
-     * 프롤로그가 어떤 정책으로도 이길 수 없는 이유가 이 한 줄이다.
-     */
-    private applyOpening(ch: Chapter): void {
-        if (!ch.opening) return;
-        const budget = this.player.cash;
-        for (const op of ch.opening) {
-            const stock = this.byId[op.stockId];
-            if (!stock) continue;
-            const spend = Math.floor((budget * op.pctOfCash) / 100);
-            const qty = Math.floor(spend / stock.currentPrice);
-            if (qty < 1) continue;
-            this.player.cash -= qty * stock.currentPrice;
-            this.player.positions[stock.id] = {
-                shares: qty,
-                avgPrice: stock.currentPrice * op.avgOverCurrent,
-            };
-        }
     }
 
     /* ── 값 읽기 ─────────────────────────────────────────── */

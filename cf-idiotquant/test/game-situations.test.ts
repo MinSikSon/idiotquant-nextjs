@@ -22,7 +22,7 @@ import {
 } from "@/lib/game/core/research";
 import { ENERGY_START, StockEngine, SEED_CASH } from "@/lib/game/core/StockEngine";
 import {
-    recommendBlock, blockSay, researchBlock, researchSay,
+    recommendBlock, blockSay, researchBlock, researchSay, sellBlock, sellSay,
 } from "@/lib/game/core/orders";
 import { EMPTY, remember, regress, endReasonOf, breaksLoop } from "@/lib/game/core/progress";
 import type { ChapterSummary } from "@/lib/game/core/types";
@@ -358,7 +358,7 @@ test("판정마다 다른 말을 하고, 빈 문구가 없다", () => {
 
 /* ── 체결을 막는 것 · 무름 ──────────────────────────────────── */
 
-test("권하는 것을 막는 것 넷 — 그리고 저마다 다른 말을 한다", () => {
+test("권하는 것을 막는 것 여섯 — 그리고 저마다 다른 말을 한다", () => {
     const ok = {
         hasClient: true, recommended: false, traded: false, incoming: 0,
         cash: 10_000_000, equity: 10_000_000, price: 10_000,
@@ -370,18 +370,21 @@ test("권하는 것을 막는 것 넷 — 그리고 저마다 다른 말을 한�
     // 권한 턴 — 체결됐으면 무를 수 있고, 거절당했으면 그걸로 끝이다.
     assert.equal(recommendBlock({ ...ok, recommended: true, traded: true }), "done");
     assert.equal(recommendBlock({ ...ok, recommended: true }), "refused");
+    // **권하지도 않았는데 체결이 있었다면 판 것이다.** 한 턴에 체결은 한 번이다.
+    assert.equal(recommendBlock({ ...ok, traded: true }), "soldToday");
     // 현금은 있는데 이 종목 한 주가 그보다 비싸다.
     assert.equal(recommendBlock({ ...ok, cash: 10_000, equity: 20_000 }), "notEnoughCash");
     // 맡은 돈이 전부 들어가 있다 — 프롤로그가 그렇다.
     assert.equal(recommendBlock({ ...ok, cash: 35_000, equity: 25_000_000 }), "fullyInvested");
 
     const labels = new Set<string>();
-    for (const b of ["noClient", "done", "refused", "fullyInvested", "notEnoughCash"] as const) {
+    const all = ["noClient", "done", "refused", "soldToday", "fullyInvested", "notEnoughCash"] as const;
+    for (const b of all) {
         const { label, sub } = blockSay(b);
         assert.ok(label.length > 0 && sub.length > 0, `${b} 의 문구가 비었다`);
         labels.add(label);
     }
-    assert.equal(labels.size, 5, "막힌 이유 다섯 중 같은 말을 하는 것이 있다");
+    assert.equal(labels.size, all.length, "막힌 이유 중 같은 말을 하는 것이 있다");
 });
 
 test("현금 절반이 한 주 값에 닿는 경계", () => {
@@ -484,40 +487,82 @@ test("떠 둔 자리는 나중 체결에 안 물든다", () => {
 test("근거는 권하기 전에 만들어야 한다 — 권한 뒤에는 알아보기가 잠긴다", () => {
     // 권하는 순간 그 턴의 근거가 박제되므로, 그 뒤에 알아보면 에너지만 나간다.
     // **눌러도 손해만 나는 버튼**이 열려 있던 자리다.
-    const base = { researchedThis: false, otherThesis: null, recommended: false, energy: 50, cost: 3 };
+    const base = {
+        researchedThis: false, otherThesis: null, recommended: false, traded: false, energy: 50, cost: 3,
+    };
     assert.equal(researchBlock(base), "none");
     assert.equal(researchBlock({ ...base, recommended: true }), "afterRecommend");
+    // **거둔 턴도 같은 병이다.** 한 턴에 체결은 한 번이라 그 턴에는 권할 수 없고,
+    // 알아본 것은 그 턴에만 유효하니 다음 턴으로 넘어가지도 않는다 — 에너지만 나간다.
+    assert.equal(researchBlock({ ...base, traded: true }), "soldToday");
 });
 
 test("알아보기를 막는 것에도 순서가 있다", () => {
-    const base = { researchedThis: false, otherThesis: null, recommended: false, energy: 50, cost: 3 };
+    const base = {
+        researchedThis: false, otherThesis: null, recommended: false, traded: false, energy: 50, cost: 3,
+    };
     // 이미 알아본 종목은 **막힌 것이 아니라 다 된 것**이라 제일 먼저 온다.
     assert.equal(researchBlock({ ...base, researchedThis: true, recommended: true, energy: 0 }), "thisStock");
     assert.equal(researchBlock({ ...base, otherThesis: "동방해운", recommended: true }), "otherStock");
+    // 권한 것이 거둔 것보다 먼저다 — 권해서 산 턴은 `traded` 도 함께 서기 때문이다.
+    assert.equal(researchBlock({ ...base, recommended: true, traded: true }), "afterRecommend");
     assert.equal(researchBlock({ ...base, energy: 2 }), "noEnergy");
     assert.equal(researchBlock({ ...base, energy: 3 }), "none", "딱 맞으면 알아볼 수 있다");
 });
 
-test("알아보기 줄의 문구는 다섯 가지가 다 다르다", () => {
+test("알아보기 줄의 문구는 여섯 가지가 다 다르다", () => {
     const seen = new Set<string>();
-    for (const b of ["none", "thisStock", "otherStock", "afterRecommend", "noEnergy"] as const) {
+    const all = ["none", "thisStock", "otherStock", "afterRecommend", "soldToday", "noEnergy"] as const;
+    for (const b of all) {
         const t = researchSay(b, { other: "동방해운", cost: 3 });
         assert.ok(t.length > 0, `${b} 의 문구가 비었다`);
         seen.add(t);
     }
-    assert.equal(seen.size, 5, "같은 말을 하는 자리가 있다");
+    assert.equal(seen.size, all.length, "같은 말을 하는 자리가 있다");
 });
 
-test("팔아서 현금을 만든 다음 권하는 길이 열려 있어야 한다", () => {
-    // 「팔아야 권할 현금이 생긴다」고 말해 놓고 팔고 나면 권할 수 없으면 화면이 거짓말이다.
-    // 판 것은 `recommended` 를 안 세우므로, 현금만 생기면 막힘이 풀린다.
+test("한 턴에 체결은 한 번 — 팔고 나면 그 턴에는 못 권한다", () => {
+    // **한때 여기가 정반대였다.** 팔아서 현금을 만든 다음 권하는 길이 열려 있었고,
+    // 그러면 권해서 고객이 맡긴 돈으로 산 것을 그 자리에서 도로 파는 일도 됐다 —
+    // 맡긴 돈은 현금으로 남고 그 턴의 권하기는 이미 써 버렸고 에너지 정산은 안 일어나는,
+    // **어느 것도 무른 것이 아닌데 어느 것도 온전하지 않은** 자리였다.
     const invested = {
         hasClient: true, recommended: false, traded: false, incoming: 0,
         cash: 35_000, equity: 25_000_000, price: 12_000,
     };
     assert.equal(recommendBlock(invested), "fullyInvested");
 
-    // 한 종목을 거둬 현금이 들어왔다. **판 것은 「권한 것」이 아니다.**
+    // 한 종목을 거둬 현금이 들어왔다. 돈은 생겼지만 **오늘의 체결은 이미 썼다.**
     const afterSell = { ...invested, cash: 9_000_000, traded: true };
-    assert.equal(recommendBlock(afterSell), "none", "팔고 나면 권할 수 있어야 한다");
+    assert.equal(recommendBlock(afterSell), "soldToday", "팔고 난 턴에는 못 권한다");
+
+    // 바꾸려면 무른다 — 무르면 `traded` 가 도로 false 가 되고, 판 것이 되돌아가므로
+    // 현금도 원래대로다. 그래서 막힘은 「다 들어가 있다」로 돌아간다.
+    assert.equal(recommendBlock(invested), "fullyInvested");
+});
+
+test("파는 것도 한 턴에 한 번이고, 막히는 이유가 둘이다", () => {
+    assert.equal(sellBlock({ shares: 100, traded: false }), "none");
+    assert.equal(sellBlock({ shares: 0, traded: false }), "nothing");
+    // 권해서 산 턴 — 주수는 있지만 오늘의 체결은 끝났다.
+    assert.equal(sellBlock({ shares: 100, traded: true }), "tradedToday");
+    // **체결을 먼저 본다.** 판 직후는 주수가 0 이면서 `traded` 인데, 여기서
+    // 「가진 것이 없다」라고 적으면 방금 판 사실이 화면에서 사라진다.
+    assert.equal(sellBlock({ shares: 0, traded: true }), "tradedToday",
+        "판 직후에는 「오늘은 체결했다」라고 말해야 한다");
+});
+
+test("체결 칸 둘의 문구는 서로 다르고, 잠긴 자리는 다음 걸음을 적는다", () => {
+    const seen = new Set<string>();
+    for (const b of ["nothing", "tradedToday", "none"] as const) {
+        const { label } = sellSay(b);
+        assert.ok(label.length > 0, `${b} 의 문구가 비었다`);
+        seen.add(label);
+    }
+    assert.equal(seen.size, 3, "매도 칸이 같은 말을 하는 자리가 있다");
+
+    // **잠긴 두 칸은 무름을 가리킨다.** 무름 버튼은 아래 띠에 있어서, 이 칸만
+    // 보던 사람은 그 사실을 모르면 턴이 끝난 줄 안다.
+    assert.ok(sellSay("tradedToday").sub.includes("무르면"));
+    assert.ok(blockSay("soldToday").sub.includes("무르면"));
 });

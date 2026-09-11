@@ -18,7 +18,8 @@ import type { MarketRead, Regime } from "@/lib/game/core/types";
 import { verdictOf, verdictSay, worthRecommending } from "@/lib/game/core/research";
 import { recallSay } from "@/lib/game/core/chronicle";
 import {
-    blockSay, researchSay, type OrderBlock, type ResearchBlock,
+    blockSay, researchSay, sellSay,
+    type OrderBlock, type ResearchBlock, type SellBlock,
 } from "@/lib/game/core/orders";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import type { StockRow } from "@/lib/game/components/StockList";
@@ -63,6 +64,13 @@ export interface StockSheetDeps {
     researchCost(): number;
     /** 지금 권하는 것을 막는 것. `"none"` 이면 누를 수 있다(`core/orders.ts`). */
     block(): OrderBlock;
+    /**
+     * 지금 파는 것을 막는 것. `"none"` 이면 누를 수 있다(`core/orders.ts`).
+     *
+     * **주수만 보고 판단하지 말 것** — 한 턴에 체결은 한 번이라 오늘 이미 거뒀거나
+     * 권해서 샀으면 파는 칸도 잠긴다. 그 규칙은 `sellBlock` 이 안다.
+     */
+    sellBlock(): SellBlock;
     /** 지금 앞에 앉은 사람의 이름. */
     clientName(): string;
     /**
@@ -209,15 +217,17 @@ export class StockSheet {
         }
 
         /* ── 체결 ─────────────────────────────────────────────────
-           **이 칸 둘은 언제나 사고파는 자리다.** 「무른다」는 여기 안 온다 — 아래 버튼
-           띠에 있다(`TradingScene.drawActions`).
+           **이 칸 둘은 사고파는 자리다.** 「무른다」는 여기 안 온다 — 아래 버튼 띠에
+           있다(`TradingScene.drawActions`). 무름은 한 턴을 통째로 되돌리는 **턴 단위
+           행동**이라 종목 하나의 물건이 아니다.
 
-           한때 왼쪽 칸이 체결 뒤에 「무른다」로 바뀌었는데, 그러면 **팔아서 현금을 만든
-           다음 권하는 길이 막힌다.** 바로 그 위 칸이 「팔아야 권할 현금이 생긴다」고
-           말해 놓고, 팔고 나면 권하는 버튼이 사라지는 셈이었다. 무름은 한 턴을 통째로
-           되돌리는 **턴 단위 행동**이라 종목 판이 아니라 버튼 띠가 질 일이다.
+           **한 턴에 체결은 한 번이다.** 그래서 둘 중 하나를 하면 나머지 하나가 잠긴다 —
+           권했으면 「오늘은 권했다」, 거뒀으면 「오늘은 거뒀다」. 두 칸의 잠김을 각각
+           `recommendBlock` · `sellBlock` 이 정하고(`core/orders.ts`), 여기는 받은 값을
+           적을 뿐이다. 화면이 「오늘 체결했으면」을 다시 세면 규칙이 두 군데가 된다.
 
-           왼쪽 칸은 **둘 중 하나**다 — 막혔으면 이유를 적고 잠그거나, 「권한다」거나. */
+           바꾸려면 **무른다**. 그 사실을 두 칸의 부제가 각각 말해 준다 — 무름 버튼은
+           아래 띠에 있어서, 이 칸만 보던 사람은 턴이 끝난 줄 안다. */
         const half = (inW - 6) / 2;
         const who = this.d.clientName();
         const block = this.d.block();
@@ -234,13 +244,16 @@ export class StockSheet {
                 () => this.d.onBuy(row.stock.id), mine && worthRecommending(v));
         }
 
-        this.cell(root, x0 + half + 6, btnY, half, BTN_H,
-            row.shares > 0 ? "지금 판다" : "가진 것이 없다",
-            // 안 들고 있으면 부제가 없다 — 이름이 이미 그 말을 하고 있다.
-            row.shares > 0
+        const sb = this.d.sellBlock();
+        const sell = sellSay(sb);
+        this.cell(root, x0 + half + 6, btnY, half, BTN_H, sell.label,
+            // 팔 수 있을 때는 부제가 **무엇을 파는지**를 말한다 — 막혔을 때의 부제는
+            // `sellSay` 가 들고 있다. 「가진 것이 없다」에는 부제가 없다: 이름이 이미
+            // 그 말을 하고 있다.
+            sb === "none"
                 ? `${row.shares}주 · ${row.pnlPct >= 0 ? "+" : ""}${row.pnlPct.toFixed(0)}%`
-                : "",
-            row.shares > 0 ? () => this.d.onSell(row.stock.id) : null, false);
+                : sell.sub,
+            sb === "none" ? () => this.d.onSell(row.stock.id) : null, false);
     }
 
     private cell(

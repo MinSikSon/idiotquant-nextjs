@@ -78,19 +78,43 @@ export interface Cut {
     lines: string[];
 }
 
+/** 판이 열릴 때의 형편. 화면이 이 값을 읽어 브리핑을 만든다. */
+export interface StartState {
+    /** 고객 돈. 프롤로그는 이걸 손에 쥐고 앉아 있다. */
+    entrusted: number;
+    /** 내 돈. 프롤로그에는 월급 남은 것이 조금 있다. */
+    wallet: number;
+    /** 1997 이 끝날 때 생기는 빚. */
+    debtToCome: number;
+}
+
 /**
  * 시작 화면에서 집으로. **한 판이 여기서 시작된다.**
  *
  * 예전에는 이 문구 하나가 「게임을 켰다」와 「회귀했다」를 겸했다. 그래서 판의 경계가
  * 흐렸다 — 어디서 끝나고 어디서 시작하는지 화면에 표시가 없었다. 지금은 시작이 이 막이고
  * 끝은 `cutRegress`·`cutEnded` 가 따로 진다.
+ *
+ * ── 여기가 브리핑 자리다 ─────────────────────────────────────
+ * 예전에는 「여기서부터다.」 한 줄뿐이었다. 그런데 이 막이 **판이 열리기 전 마지막으로
+ * 글을 읽는 자리**다 — 다음 화면은 집이고 그다음은 곧장 객장이다. 한 줄만 적어 두면
+ * 처음 켠 사람은 자기가 무엇을 얼마나 들고 앉는지 모른 채 첫 턴을 맞는다.
+ *
+ * 그래서 **지금 손에 무엇이 있고 앞으로 무엇이 오는지**를 여기서 말한다. 숫자는
+ * `StartState` 로 받는다 — 이 파일은 엔진을 모르고, 서식은 화면이 정한다.
  */
-export function cutStartRun(ch: Chapter, cycle: number): Cut {
-    return {
-        art: "home",
-        head: `${ch.year}년 12월`,
-        lines: cycle <= 1 ? ["여기서부터다."] : [`${cycle}회차`, "다시 여기서부터다."],
-    };
+export function cutStartRun(
+    ch: Chapter, cycle: number, st: StartState, fmtMoney: (v: number) => string,
+): Cut {
+    const lines = cycle <= 1 ? [] : [`${cycle}회차 — 다시 여기서부터다.`];
+    lines.push(`고객 돈 ${fmtMoney(st.entrusted)}을 맡고 있다. 아직 아무 데도 안 넣었다.`);
+    if (st.wallet > 0) lines.push(`내 지갑에는 월급 남은 ${fmtMoney(st.wallet)}.`);
+    // **앞으로 올 것을 미리 말한다.** 넉 턴 뒤에 빚이 생기는데, 그걸 모르고 지나면
+    // 1998 의 3,000만이 어디서 왔는지 알 수 없다.
+    if (st.debtToCome > 0) {
+        lines.push(`이 해가 끝나면 빚 ${fmtMoney(st.debtToCome)}이 남는다.`);
+    }
+    return { art: "home", head: `${ch.year}년 12월`, lines };
 }
 
 /**

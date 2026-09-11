@@ -35,7 +35,8 @@ import {
 } from "@/lib/game/core/research";
 import { EMPTY_FACTS, type SituationFacts } from "@/lib/game/core/situations";
 import {
-    recommendBlock, researchBlock, blockSay, type OrderBlock, type ResearchBlock,
+    recommendBlock, researchBlock, sellBlock, blockSay,
+    type OrderBlock, type ResearchBlock,
 } from "@/lib/game/core/orders";
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
@@ -253,7 +254,11 @@ export class TradingScene extends Phaser.Scene {
 
     /** 시작 화면에서 「시작한다」를 눌렀다. 여기서부터 판이다. */
     private beginRun(): void {
-        this.go("home", cutStartRun(this.engine.chapter, this.memory.cycle));
+        this.go("home", cutStartRun(this.engine.chapter, this.memory.cycle, {
+            entrusted: this.engine.equity,
+            wallet: this.engine.player.wallet,
+            debtToCome: this.engine.chapter.debtOnEnd ?? 0,
+        }, money));
     }
 
     /**
@@ -669,11 +674,16 @@ export class TradingScene extends Phaser.Scene {
      * 방법은 하나뿐이다 — 도는 동안 **무엇이 쌓였는지가 보이는 것.**
      */
     /**
-     * 이 게임이 무엇인지 세 줄. **시작 화면에만 있다.**
+     * 이 게임이 무엇인지 넷. **시작 화면에만 있다.**
      *
      * 규칙을 다 적으면 아무도 안 읽는다. 「무엇을 갚는가 · 무엇이 그것을 줄이는가 ·
-     * 언제 끝나는가」 셋이면 첫 턴을 스스로 굴릴 수 있다. 나머지는 화면이 그때그때
-     * 말한다(버튼 부제).
+     * 언제 끝나는가」면 첫 턴을 스스로 굴릴 수 있다. 나머지는 화면이 그때그때
+     * 말한다(버튼 부제, 고객 줄의 승산).
+     *
+     * **셋에서 넷이 됐다.** 설득이 주사위 판정이 되고(`core/check.ts`) 보수가 지갑을
+     * 거치게 되면서(`core/wallet.ts`), 옛 세 줄의 마지막 「에너지가 곧 보수이고,
+     * 보수만이 빚을 줄인다」가 절반만 맞는 말이 됐다 — 보수는 이제 빚을 저절로
+     * 안 깎는다. 화면이 안 하는 일을 설명하고 있으면 첫 챕터가 통째로 어긋난다.
      */
     private static readonly HOW = [
         // **「빚 3천만원」이라고 적으면 안 된다.** 빚은 1997년이 끝날 때 생긴다
@@ -681,8 +691,9 @@ export class TradingScene extends Phaser.Scene {
         // 적혀 있는데 시작 화면이 「빚 3천만원」이라고 하면, 처음 켠 사람에게는
         // 화면 둘이 서로 다른 말을 하는 것으로 보인다.
         "1997년이 끝나면 빚 3천만원이 남는다.",
-        "종목을 알아보고 근거를 대서 맞혀야 에너지가 오른다.",
-        "에너지가 곧 보수이고, 보수만이 빚을 줄인다.",
+        "알아보고 근거를 대야 설득된다 — 주사위 둘을 굴린다.",
+        "설득하면 고객이 맡긴다. 늘린 만큼이 내 보수다.",
+        "보수는 지갑으로 온다. 빚은 내가 갚을 때만 준다.",
     ];
 
     private drawTitle(): void {
@@ -982,6 +993,10 @@ export class TradingScene extends Phaser.Scene {
             otherThesis: () => this.otherThesis(),
             researchCost: () => RESEARCH_COST,
             block: () => this.orderBlock(),
+            sellBlock: () => sellBlock({
+                shares: this.rowOf(this.engine.focus)?.shares ?? 0,
+                traded: this.traded,
+            }),
             clientName: () => this.client?.name ?? "아무도",
             incomingSay: () => {
                 if (!this.client) return "";
@@ -1393,10 +1408,10 @@ export class TradingScene extends Phaser.Scene {
 
         // **버튼 둘, 무를 것이 있으면 셋.**
         //
-        // 「무른다」가 여기 있는 이유: 무름은 한 턴을 통째로 되돌리는 **턴 단위 행동**이다.
-        // 한때 종목 판의 체결 칸이 체결 뒤에 「무른다」로 바뀌었는데, 그러면 **팔아서
-        // 현금을 만든 다음 권하는 길이 막혔다** — 바로 위 칸이 「팔아야 권할 현금이
-        // 생긴다」고 말해 놓고 팔고 나면 권하는 버튼이 사라졌다. 매매 칸은 매매만 진다.
+        // 「무른다」가 여기 있는 이유: 무름은 한 턴을 통째로 되돌리는 **턴 단위 행동**이라
+        // 종목 하나의 물건이 아니다. 그리고 **한 턴에 체결이 하나뿐이 되면서 이 버튼이
+        // 바꾸는 유일한 길이 됐다** — 권했는데 팔았어야 했다면, 되돌리는 자리가 여기다.
+        // 종목 판의 두 칸은 각각 「무르면 …」이라고 적어 이리로 보낸다.
         //
         // 셋이 서면 칸이 118px 로 줄어 부제가 눌린다. 그래서 부제를 짧게 둔다 — 고른
         // 종목의 이름은 바로 위 창 제목이 이미 말하고 있어서 여기서 뺐다.
@@ -1666,7 +1681,16 @@ export class TradingScene extends Phaser.Scene {
         this.closeBoardAndRedraw();
     }
 
+    /**
+     * **거둔다.** 한 턴에 체결은 한 번이므로 오늘 이미 체결이 있었으면 안 선다.
+     *
+     * `recommend` 와 같은 규약이다 — 화면이 이미 칸을 잠그고 이유를 적어 두었고
+     * (`sellBlock`), 이 줄은 두 번째 자물쇠다. **막는 것은 화면이 아니라 규칙이다.**
+     */
     private sell(id: string): void {
+        if (sellBlock({ shares: this.engine.positionOf(id).shares, traded: this.traded }) !== "none") {
+            return;
+        }
         const buff = this.buff();
         const s = this.engine.stockOf(id);
         const pnl = this.engine.unrealizedPct(id);
@@ -1729,6 +1753,7 @@ export class TradingScene extends Phaser.Scene {
             researchedThis: this.researched === this.engine.focus,
             otherThesis: this.otherThesis(),
             recommended: this.recommendedThisTurn,
+            traded: this.traded,
             energy: this.engine.player.energy,
             cost: RESEARCH_COST,
         });
