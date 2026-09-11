@@ -17,7 +17,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    STACK, WIN_CHROME, bandsOf, blockH, cells, designSize, isStacked, stackGaps, stackH,
+    ACTION_FRAMED_MIN, STACK, WIN_CHROME, bandsOf, blockH, cells, designSize, isStacked, stackGaps, stackH,
     stackPlan, wrapCells, W, type Bands,
 } from "@/lib/game/ui/theme";
 
@@ -83,6 +83,33 @@ test("세로 — 버튼과 고른 종목 판은 최소치를 지킨다", () => {
         const b = bandsOf(W, h);
         assert.ok(b.action.h >= 64, `h=${h}: 버튼 ${b.action.h}`);
         assert.ok(b.market.h >= 190, `h=${h}: 고른 종목 판 ${b.market.h}`);
+    }
+});
+
+test("흔한 폰에서는 버튼 띠에 제목 표시줄이 선다", () => {
+    // **이 띠도 창이다** — 다른 판이 전부 제 이름을 다는데 버튼만 이름 없는 회색 판이면
+    // 그 자리가 무엇을 하는 곳인지 화면이 말하지 않는다. 다만 껍데기가 29px 을 먹으므로
+    // 짧은 격자에서는 접는다. 여기서 보는 것은 **어디서 접히는가**다.
+    for (const h of [700, 844, 900, 1000]) {
+        const b = bandsOf(W, h);
+        assert.ok(b.action.h >= ACTION_FRAMED_MIN,
+            `h=${h}: 버튼 띠 ${b.action.h} 이라 제목이 접힌다`);
+    }
+    // 눕힌 폰도 선다 — 여기가 제일 아슬아슬한 자리다.
+    for (const [w, h] of [[844, 390], [740, 360]] as const) {
+        const g = designSize(w, h);
+        const b = bandsOf(g.width, g.height);
+        assert.ok(b.action.h >= ACTION_FRAMED_MIN,
+            `${w}×${h}: 버튼 띠 ${b.action.h} 이라 제목이 접힌다`);
+    }
+});
+
+test("제목을 접는 자리에서도 버튼은 누를 수 있는 크기다", () => {
+    // 접는 쪽으로 떨어졌으면 옛 모습 그대로여야 한다 — 껍데기 없이 버튼 48.
+    for (const h of PORTRAIT_H) {
+        const b = bandsOf(W, h);
+        if (b.action.h >= ACTION_FRAMED_MIN) continue;
+        assert.ok(b.action.h >= 64, `h=${h}: 접었는데도 ${b.action.h} 뿐이다`);
     }
 });
 

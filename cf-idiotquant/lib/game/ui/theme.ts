@@ -125,8 +125,24 @@ export function isStacked(w: number, h: number): boolean {
  * **두 줄 배치는 없앴다.** 회사 화면의 버튼 넷 중 둘은 다른 둘과 같은 일을 해서
  * (둘 다 시세판을 열고, 둘 다 턴을 넘겼다) 이제 어느 화면도 버튼이 둘을 넘지 않는다.
  * 그래서 이 띠는 한 줄이면 되고, 두 줄에 주던 세로는 차트가 가져간다.
+ *
+ * **이 값은 제목 표시줄이 없을 때의 바닥이다.** 띠가 이만큼뿐이면 버튼만 놓는다 —
+ * 아래 `ACTION_FRAMED_MIN` 참고.
  */
 const ACTION_ONE_ROW = 64;
+
+/**
+ * 버튼 띠에 **제목 표시줄까지 세우려면** 이만큼은 돼야 한다.
+ *
+ * 이 띠도 창이다 — 다른 판이 전부 「뉴스」·「주식 현황」·「장부」라고 제 이름을 달고
+ * 있는데 버튼만 이름 없는 회색 판이면, 그 자리가 무엇을 하는 곳인지 화면이 말하지
+ * 않는다. 그래서 여기에도 「할 일」이라는 이름을 단다.
+ *
+ * 값은 창 껍데기(29) + 위아래 여백(20) + 손가락이 누를 수 있는 버튼(44)이다. 44 는
+ * 48 보다 작지만 아직 엄지로 눌리는 크기다 — 짧은 격자에서 이 몇 픽셀 때문에 제목이
+ * 통째로 사라지는 것보다 낫다. **여기에 못 미치면 제목을 접고 옛 모습 그대로 간다.**
+ */
+export const ACTION_FRAMED_MIN = WIN_CHROME + 20 + 44;
 
 export interface DesignSize {
     width: number;
@@ -294,7 +310,14 @@ function stackedBands(w: number, h: number): Bands {
         return got;
     };
 
-    const action = take(clamp(h * 0.11, ACTION_ONE_ROW, 96));
+    // 0.11 → 0.14. 제목 표시줄이 먹는 29px 만큼 띠를 키운다 — 안 키우면 폰에서
+    // 버튼이 43px 로 눌려 제목을 단 대가를 손가락이 치른다.
+    //
+    // **0.13 이 아니라 0.14 인 이유**: 격자 세로 700(360×646 같은 옛 안드로이드)에서
+    // 0.13 은 91px 을 내는데 제목이 서려면 93 이 필요하다. 두 픽셀 때문에 흔한 폰 한
+    // 무리가 통째로 이름 없는 회색 판으로 떨어졌다. `test/game-layout.test.ts` 가 이
+    // 경계를 붙잡는다.
+    const action = take(clamp(h * 0.14, ACTION_ONE_ROW, 112));
     let market = take(MARKET_MIN);
     let strip = take(STRIP_MIN);
     let log = take(LOG_MIN + CLIENT_ROW);
@@ -322,7 +345,7 @@ function splitBands(w: number, h: number): Bands {
     const left = Math.round(w * 0.58);
     const right = w - left;
     const strip = clamp(h * 0.14, STRIP_MIN, STRIP_H);
-    const action = clamp(h * 0.22, ACTION_ONE_ROW, 92);
+    const action = clamp(h * 0.26, ACTION_ONE_ROW, 108);
 
     return {
         portrait: false,
@@ -722,3 +745,24 @@ export function stackPlan(rowCounts: readonly number[], headH: number, room: num
     const used = base - STACK.GAP * gaps + gap * gaps;
     return { gap, used, top: Math.max(0, Math.floor((room - used) / 2)) };
 }
+
+/**
+ * 이미 만들어 둔 글자의 크기를 바꾼다. **`setFontSize` 를 직접 부르지 말 것.**
+ *
+ * ── 왜 이 함수가 있나 ──────────────────────────────────────
+ * `mkText` 는 선명하게 그리려고 글자를 `k` 배 크기로 굽고 `1/k` 로 줄여 붙인다. 그래서
+ * 나중에 `setFontSize(10)` 을 부르면 구워진 크기가 10 이 되고, 거기에 `1/k` 가 곱해져
+ * **화면에는 10/k 로 나온다** — DPR 3 폰에서 3.3px 이다.
+ *
+ * 칸에 안 들어가는 글자를 줄이는 자리마다 이 일이 벌어지고 있었다. 「10px 아래로는 안
+ * 줄인다」는 바닥값이 실제로는 3.3px 을 막지 못했고, 버튼 부제가 옆 칸의 부제보다
+ * 눈에 띄게 작게 나왔다 — 폰에서만 그랬고 데스크톱(k=1)에서는 멀쩡했다.
+ *
+ * @param px 화면에 **실제로 보일** 크기.
+ */
+export function setSize(scene: Phaser.Scene, t: Phaser.GameObjects.Text, px: number): void {
+    t.setFontSize(px * pxOf(scene));
+}
+
+/** 글자를 칸에 맞춰 줄일 때의 바닥. 이보다 작으면 읽는 것이 아니라 보이기만 한다. */
+export const MIN_FS = 10;

@@ -54,8 +54,8 @@ import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { StockList, type StockRow } from "@/lib/game/components/StockList";
 import { StockSheet } from "@/lib/game/components/StockSheet";
 import {
-    BTN, C, CLIENT_ROW, FS, PAD, S, STACK, bandsOf, fontOf, mkText, money, pressable,
-    pxOf, stackH, stackPlan,
+    ACTION_FRAMED_MIN, BTN, C, CLIENT_ROW, FS, MIN_FS, PAD, S, STACK, bandsOf, fontOf,
+    mkText, money, pressable, pxOf, setSize, stackH, stackPlan,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 import { TITLE_H, bevel, btnFace, crt, skinOf, winFrame } from "@/lib/game/ui/win95";
@@ -395,7 +395,7 @@ export class TradingScene extends Phaser.Scene {
         // k 배로 만들고 `1/k` 로 축소한다 — 그래서 `width` 는 실제로 보이는 폭의 k 배다.
         // 그걸 그대로 재면 DPR 3 폰에서 멀쩡한 글자가 3분의 1로 줄어든다.
         if (room > 0 && t.displayWidth > room) {
-            t.setFontSize(Math.max(10, Math.floor(size * (room / t.displayWidth))));
+            setSize(this, t, Math.max(MIN_FS, Math.floor(size * (room / t.displayWidth))));
         }
         return t;
     }
@@ -1412,15 +1412,38 @@ export class TradingScene extends Phaser.Scene {
     }
 
     /**
+     * 버튼 띠 — **이 띠도 창이다.**
+     *
+     * ── 왜 제목을 다나 ─────────────────────────────────────
+     * 화면의 다른 판은 전부 제 이름을 달고 있다(「뉴스」·「주식 현황」·「장부」·「집」).
+     * 그런데 버튼만 **이름 없는 회색 판**이었다. 그래서 이 자리가 무엇을 하는 곳인지
+     * 화면이 한 번도 말하지 않았다 — 다른 판은 「무엇을 보는 곳」이고 여기만
+     * 「무엇을 하는 곳」인데, 그 차이가 생김새에 안 나타나 있었다.
+     *
+     * 제목 표시줄이 서면 그 차이가 한눈에 보인다. 그 시절 대화상자가 실제로 그랬다 —
+     * 아래쪽 버튼 줄도 창의 일부였지 허공에 뜬 단추가 아니었다.
+     *
+     * **자리가 모자라면 제목을 접는다.** 짧은 격자(398)에서는 껍데기 29px 이 버튼을
+     * 15px 로 눌러 버린다 — 그때는 이름보다 누를 수 있는 것이 먼저다.
+     *
      * @param band 어느 띠에 세울까. 안 주면 회사 화면의 버튼 띠.
      *   **집·공원은 두 칸 배치를 안 쓴다** — 장소가 곧 화면이라 가로에서도 전폭이다.
+     * @param title 이 띠가 무엇을 하는 곳인가. 기본은 「할 일」 — 어느 화면에서든
+     *   이 자리의 뜻은 같으므로, 화면마다 다른 이름을 붙이면 같은 것이 달라 보인다.
      */
-    private buttons(defs: ButtonDef[], band?: Band): void {
-        const b = band ?? this.bands.action;
+    private buttons(defs: ButtonDef[], band?: Band, title = "할 일"): void {
+        const outer = band ?? this.bands.action;
         // **버튼이 놓인 판.** 그 시절 대화상자의 아래쪽이 이렇게 생겼다 — 버튼은 회색
         // 판 위에 놓이지, 허공에 떠 있지 않다. (한때 이 띠를 안 칠하고 위 선 하나로만
         // 갈랐는데, 그건 화면이 어두운 터미널이었을 때의 궁리다.)
-        this.keep(bevel(this, b.x, b.y, b.w, b.h));
+        let b = outer;
+        if (outer.h >= ACTION_FRAMED_MIN) {
+            const win = winFrame(this, outer.x + 2, outer.y, outer.w - 4, outer.h, title);
+            for (const o of win.parts) this.keep(o);
+            b = win.body;
+        } else {
+            this.keep(bevel(this, outer.x, outer.y, outer.w, outer.h));
+        }
 
         const gap = 8;
         // **몇 개를 세우느냐로 칸을 나눈다.** 4칸 격자에 둘만 넣으면 왼쪽 절반에 몰리고
@@ -1454,7 +1477,7 @@ export class TradingScene extends Phaser.Scene {
                 d.label, size, skin.ink, 0.5);
             if (d.short && label.displayWidth > room) label.setText(d.short);
             if (label.displayWidth > room) {
-                label.setFontSize(Math.max(10, Math.floor(size * (room / label.displayWidth))));
+                setSize(this, label, Math.max(MIN_FS, Math.floor(size * (room / label.displayWidth))));
             }
             const subT = showSub && d.sub
                 ? this.textFit(x + cw / 2, y + chh / 2 + 7, d.sub, FS.xs, skin.sub, 0.5, room)
