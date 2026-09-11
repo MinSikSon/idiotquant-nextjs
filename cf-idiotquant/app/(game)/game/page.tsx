@@ -53,8 +53,21 @@ export default function RoguelikePage() {
                 <PhaserGame className="grid h-full w-full place-items-center overflow-hidden bg-[#0b0f10] [&>canvas]:block" />
             </div>
 
-            {/* 도감과 이력으로 가는 **유일한 문**이다. 메뉴에는 없다 — 게임을 안 켠 사람에게
-                카드 목록은 읽을 수 없는 글이다.
+            {/* 이력으로 가는 **유일한 문**이다. 메뉴에는 없다 — 게임을 안 켠 사람에게
+                누적 기록은 읽을 수 없는 글이다.
+
+                ── 카드 도감은 여기서 뺐다 ──────────────────────────────
+                **판에 카드가 없다.** 손패 층을 걷어 내면서 근거는 카드가 아니라
+                행동(「알아본다」)에서 나오게 됐고(폴더 CLAUDE.md 「카드는 지금 없다」),
+                그래서 도감은 **이 게임에 없는 것의 목록**을 보여 주고 있었다. 판에
+                한 번도 안 나오는 열두 장을 설명하는 문이 판으로 들어가는 문 옆에
+                나란히 서 있으면, 처음 켠 사람은 그 카드들을 찾으러 다닌다.
+
+                **페이지는 지우지 않았다** — `/game/cards` 는 그대로 열리고
+                `middleware.ts` 의 공개 목록에도 남아 있다. 수집을 되살릴 때
+                이 줄에 `<WinLink href="/game/cards">카드 도감</WinLink>` 한 줄을
+                도로 넣으면 문이 다시 선다. 코어의 `situations.ts`·`DeckManager.ts`
+                를 남겨 둔 것과 같은 이유다.
 
                 ── 밑줄 글자였다 ────────────────────────────────────────
                 게임 화면은 처음부터 끝까지 90년대 윈도우의 은회색 3D 판인데, 그 아래에
@@ -69,7 +82,6 @@ export default function RoguelikePage() {
                 <span className="hidden font-mono text-[11px] text-[#4a5056] sm:inline">
                     게임 밖 —
                 </span>
-                <WinLink href="/game/cards">카드 도감</WinLink>
                 <WinLink href="/game/status">이력</WinLink>
             </WinBar>
         </div>
