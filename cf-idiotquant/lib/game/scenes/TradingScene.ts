@@ -20,7 +20,10 @@ import {
     StockEngine, SEED_CASH, ENERGY_MAX, regimeLabel, type TradeMark,
 } from "@/lib/game/core/StockEngine";
 import { CHAPTERS, TOTAL_TURNS } from "@/lib/game/core/chapters";
-import { CLIENTS, clientAt, type Client } from "@/lib/game/core/clients";
+import { CLIENTS, clientAt, entrustAmount, type Client } from "@/lib/game/core/clients";
+import {
+    LIVING_COST, PARTTIME_ENERGY, PARTTIME_PAY, SHORTFALL_DEBT,
+} from "@/lib/game/core/wallet";
 import {
     decay, clampEnergy, energyDelta, energyReason, ENERGY_DECAY,
 } from "@/lib/game/core/energy";
@@ -34,7 +37,7 @@ import {
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
 } from "@/lib/game/core/progress";
-import { recordChapter, recordRun } from "@/lib/game/core/career";
+import { recordChapter, recordRepay, recordRun, recordWage } from "@/lib/game/core/career";
 import {
     chapterStrip, noteTurn, notedCount, recallAt, recallSay, worthResearching,
 } from "@/lib/game/core/chronicle";
@@ -51,7 +54,8 @@ import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { StockList, type StockRow } from "@/lib/game/components/StockList";
 import { StockSheet } from "@/lib/game/components/StockSheet";
 import {
-    BTN, C, CLIENT_ROW, FS, PAD, S, bandsOf, fontOf, mkText, money, pressable, pxOf,
+    BTN, C, CLIENT_ROW, FS, PAD, S, STACK, bandsOf, fontOf, mkText, money, pressable,
+    pxOf, stackH, stackPlan,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 import { TITLE_H, bevel, btnFace, crt, skinOf, winFrame } from "@/lib/game/ui/win95";
@@ -593,6 +597,18 @@ export class TradingScene extends Phaser.Scene {
         const debtT = this.text(rightEdge, ty, debt > 0 ? `빚 −${money(debt)}` : "빚 없음",
             FS.xs, debt > 0 ? S.down : S.up, 1);
 
+        // **지갑은 빚 왼쪽에 붙는다.** 둘은 같은 주머니의 양쪽이라 나란히 있어야 읽힌다 —
+        // 빚을 갚을 수 있는지는 이 두 숫자를 나란히 놓고서야 알 수 있다.
+        //
+        // 자리가 모자라면 **안 적는다.** 이 띠는 에너지 게이지가 주인이고, 지갑은
+        // 장부 화면이 언제나 제대로 말해 준다.
+        const wallet = this.engine.player.wallet;
+        const walletX = rightEdge - debtT.displayWidth - 8;
+        // 가운뎃점으로 가른다 — 안 그으면 「지갑 0 빚 없음」이 한 덩이로 읽힌다.
+        const walletT = this.text(walletX, ty, `지갑 ${money(wallet)} ·`,
+            FS.xs, wallet < LIVING_COST ? S.down : S.inkDim, 1);
+        const walletLeft = walletX - walletT.displayWidth;
+
         // 에너지 — 열 칸. **화면에 게이지는 이것 하나뿐이다.** 낮아지면 색이 금색을
         // 거쳐 분홍으로 가고, 0 이면 그 자리에서 판이 끝난다.
         const energy = this.engine.player.energy;
@@ -605,9 +621,12 @@ export class TradingScene extends Phaser.Scene {
         for (let i = 0; i < 10; i++) {
             this.rect(bx + i * (bw + gap), cy + 4, bw, 10, i < on ? col : 0x16211f, 1);
         }
-        // 막대만으로는 「몇 칸이 남았지」를 세어야 한다. 숫자를 옆에 둔다 —
-        // **게이지가 잘릴 만큼 좁으면 안 적는다.**
-        if (bx + barsW + 34 < rightEdge - debtT.displayWidth - 8) {
+        // 게이지가 지갑 글자에 닿으면 지갑을 지운다 — 띠의 주인은 게이지다.
+        if (bx + barsW + 6 > walletLeft) {
+            walletT.destroy();
+        } else if (bx + barsW + 34 < walletLeft) {
+            // 막대만으로는 「몇 칸이 남았지」를 세어야 한다. 숫자를 옆에 둔다 —
+            // **게이지가 잘릴 만큼 좁으면 안 적는다.**
             this.text(bx + barsW + 6, ty, `${energy}`, FS.xs, S.ink);
         }
     }
@@ -651,7 +670,7 @@ export class TradingScene extends Phaser.Scene {
         const rows: Array<[string, string, string]> = [
             ["회차", `${m.cycle}회차`, S.ink],
             ["가장 멀리", CHAPTERS[m.bestChapter]?.year ?? CHAPTERS[0]!.year, S.ink],
-            ["여태 갚은 빚", money(m.career.feePaid), m.career.feePaid > 0 ? S.up : S.ink],
+            ["여태 갚은 빚", money(m.career.repaid), m.career.repaid > 0 ? S.up : S.ink],
         ];
         // **쌓인 것이 보여야 다시 한다.** 회귀가 지우지 못하는 것이 이 줄 하나뿐이라,
         // 회차가 도는 동안 이 숫자가 올라가는 것이 「헛돌지 않았다」의 증거다.
@@ -706,7 +725,7 @@ export class TradingScene extends Phaser.Scene {
 
         const rowsTop = this.crtRows(body, [
             ["걸린 회차", `${m.cycle}회차`, S.gold],
-            ["여태 갚은 빚", money(m.career.feePaid), S.up],
+            ["여태 갚은 빚", money(m.career.repaid), S.up],
             ["남은 빚", "0", S.up],
         ]);
 
@@ -751,9 +770,14 @@ export class TradingScene extends Phaser.Scene {
         if (body.h <= 0) return;
 
         // 요약 줄은 창 바닥에 못 박는다 — 무엇을 갖고 있는지는 늘 보여야 한다.
+        // **지갑이 맡은 돈 옆에 선다.** 집은 챕터 사이에 들르는 자리라, 여기서 「얼마를
+        // 벌어 왔나」를 보고 사무실에 나간다. 맡은 돈은 챕터마다 0 에서 다시 쌓이지만
+        // 지갑은 이어지므로, 둘이 나란히 있어야 어느 쪽이 내 것인지가 보인다.
         const rowsTop = this.crtRows(body, [
             ["회차", `${this.memory.cycle}회차`, S.ink],
             ["맡은 돈", money(this.engine.equity), S.ink],
+            ["지갑", money(this.engine.player.wallet),
+                this.engine.player.wallet < LIVING_COST ? S.down : S.up],
         ]);
 
         // 정사각은 남는 세로의 절반까지만. 그래야 아래 글이 설 자리가 남는다.
@@ -900,9 +924,14 @@ export class TradingScene extends Phaser.Scene {
         //
         // 종목 이름은 여기 없다 — 바로 아래 머리줄이 그것을 말한다. 보유 종목 수도 뺐다:
         // 이번 턴에 무엇을 할지가 그 숫자로 갈리는 자리가 없다.
+        // **견주는 값은 챕터 시작이다.** 예전에는 `SEED_CASH`(2,500만) 고정이었는데,
+        // 이제 계좌는 0 에서 열리고 고객이 맡길 때마다 커진다 — 고정값에 견주면
+        // 1998 내내 빨간 숫자가 떠 있고, 그건 「잃고 있다」는 거짓말이다.
+        // `chapterStart` 는 맡은 돈이 들어올 때 같이 올라가므로(`entrust`), 이 비교는
+        // 정확히 **내가 굴려서 늘렸는가**를 말한다.
         const win = this.frame(b, "주식 현황", {
             text: money(eq),
-            color: eq >= SEED_CASH ? S.barInk : S.down,
+            color: eq >= this.engine.chapterStart ? S.barInk : S.down,
         });
 
         this.sheet = new StockSheet({
@@ -916,6 +945,15 @@ export class TradingScene extends Phaser.Scene {
             researchCost: () => RESEARCH_COST,
             block: () => this.orderBlock(),
             clientName: () => this.client?.name ?? "아무도",
+            incomingSay: () => {
+                const got = this.client
+                    ? entrustAmount(this.client, this.engine.player.energy, this.buff().thesis !== null)
+                    : 0;
+                // 이미 굴리던 돈이 있으면 그것도 함께 들어간다 — 그 사실을 감추지 않는다.
+                return this.engine.player.cash > 0
+                    ? `${money(got)} 맡긴다 + 현금`
+                    : `${money(got)} 맡긴다`;
+            },
             onResearch: (id: string) => this.research(id),
             onBuy: (id: string) => this.recommend(id),
             onSell: (id: string) => this.sell(id),
@@ -1020,11 +1058,14 @@ export class TradingScene extends Phaser.Scene {
             interest: ch.interest,
             debtOnEnd: ch.debtOnEnd ?? 0,
             feePaid: this.memory.career.feePaid,
+            wallet: e.player.wallet,
+            livingCost: LIVING_COST,
+            repaid: this.memory.career.repaid,
         });
 
         const signed = (v: number) => `${v >= 0 ? "+" : "−"}${money(Math.abs(v))}`;
         const tone = (v: number) => (v >= 0 ? S.up : S.down);
-        const { entrusted: en, earned: ea, owed: ow } = L;
+        const { entrusted: en, earned: ea, held: he, owed: ow } = L;
 
         // **부제가 흐름을 말한다.** 숫자만 늘어놓으면 표가 되고, 표는 셋이 서로
         // 무슨 사이인지를 안 알려 준다.
@@ -1052,25 +1093,41 @@ export class TradingScene extends Phaser.Scene {
                         ea.fee > 0 ? S.up : S.inkDim, true],
                     ["여태 받은", money(ea.paid), S.inkDim, false],
                 ],
-                flow: "↓ 그 보수만이 빚을 깎는다",
+                flow: "↓ 보수는 지갑으로 들어온다",
+            },
+            {
+                head: "지갑", note: "내 것이다", tint: C.up,
+                rows: [
+                    ["지금", money(he.now), he.now > 0 ? S.ink : S.down, true],
+                    // **「몇 턴치」가 액수보다 결정에 쓰인다.** 한 자리면 알바를 해야 하고,
+                    // 두 자리면 영업에 쓸 턴이 남았다는 뜻이다.
+                    [`생활비 ${money(he.cost)}`,
+                        he.turns > 0 ? `${he.turns}턴치 남았다` : "이번 턴을 못 낸다",
+                        he.turns > 2 ? S.inkDim : S.down, true],
+                    ...(ea.fee > 0
+                        ? [["챕터 끝에", money(he.afterFee), S.up, false] as LedgerRow]
+                        : []),
+                ],
+                flow: "↓ 갚는 것은 내가 정한다",
             },
             {
                 head: "갚을 돈", note: "내 빚이다", tint: C.down,
-                // **빚이 없으면 깎을 것도 이자도 없다.** 프롤로그가 그 상태인데, 거기서
-                // 「보수로 —」「이자 0% —」를 세워 두면 줄 셋이 아무 말도 안 하고 자리만
-                // 차지한다. 얹히는 빚 3천만만 남기는 편이 훨씬 아프게 읽힌다.
+                // **빚이 없으면 이자도 없다.** 프롤로그가 그 상태인데, 거기서
+                // 「이자 0% —」를 세워 두면 줄이 아무 말도 안 하고 자리만 차지한다.
+                // 얹히는 빚 3천만만 남기는 편이 훨씬 아프게 읽힌다.
                 rows: [
                     ["지금", ow.now > 0 ? money(ow.now) : "없다", ow.now > 0 ? S.down : S.up, true],
-                    ...(ow.now > 0
-                        ? [["보수로", ow.byFee > 0 ? `−${money(ow.byFee)}` : "—",
-                            ow.byFee > 0 ? S.up : S.inkDim, true] as LedgerRow]
-                        : []),
                     ...(ow.now > 0 && ch.interest > 0
+                        // **이 줄이 「지금 갚을 이유」다.** 이자는 챕터 끝에 남은 빚에만
+                        // 붙으므로, 그 전에 넣은 돈은 이 숫자를 그만큼 깎는다.
                         ? [[`이자 ${Math.round(ch.interest * 100)}%`, `+${money(ow.interest)}`,
                             S.down, true] as LedgerRow]
                         : []),
                     ...(ow.added > 0
                         ? [["새로 지는 빚", `+${money(ow.added)}`, S.down, true] as LedgerRow]
+                        : []),
+                    ...(ow.repaid > 0
+                        ? [["여태 갚은", money(ow.repaid), S.up, false] as LedgerRow]
                         : []),
                     ["챕터 끝에", ow.end > 0 ? money(ow.end) : "다 갚는다",
                         ow.end > 0 ? S.down : S.gold, true],
@@ -1085,10 +1142,39 @@ export class TradingScene extends Phaser.Scene {
         // 계산해서 띠와 첫 덩이 사이에 구멍이 하나 생긴다. 실제로 그랬다.
         const stripH = this.chronicleH(body);
         this.drawLedgerBlocks(body, blocks, stripH, y => this.drawChronicleStrip(body, y));
+
+        // **갚는 자리는 장부 안이다.** 「지금 갚으면 이자가 얼마나 줄까」를 보고 있는 바로
+        // 그 화면에서 누르지 않으면, 그 숫자를 다른 화면까지 들고 가야 한다.
         this.buttons([
+            ...(he.canRepay > 0
+                ? [{
+                    label: "빚을 갚는다", short: "갚는다",
+                    sub: `지갑에서 ${money(he.canRepay)}`,
+                    primary: true, on: () => this.repayAll(),
+                }]
+                : []),
             { label: "회사로 돌아간다", sub: `${ch.year}년 ${e.player.currentTurn}턴째`,
-              primary: false, on: () => this.leaveLedger() },
+              primary: he.canRepay <= 0, on: () => this.leaveLedger() },
         ], bar);
+    }
+
+    /**
+     * 지갑에 있는 것을 **전부** 빚에 넣는다.
+     *
+     * ── 왜 액수를 안 고르게 하나 ───────────────────────────
+     * 액수 조절은 슬라이더나 숫자판이 필요하고, 그건 이 게임에서 제일 비싼 화면이다.
+     * 그런데 고를 값어치가 있는 선택은 **얼마를 갚나**가 아니라 **언제 갚나**다 — 이자가
+     * 챕터 끝에 한 번 붙으므로, 끝나기 직전에 넣은 돈이 가장 값어치가 크다. 남겨 둘
+     * 생활비가 필요하면 **안 누르면** 된다. 그 둘이면 결정은 충분히 선다.
+     */
+    private repayAll(): void {
+        const r = this.engine.repayDebt(this.engine.player.wallet);
+        if (r.paid <= 0) return;
+        this.memory.career = recordRepay(this.memory.career, r.paid);
+        saveMemory(this.memory);
+        this.pushLog(`빚을 ${money(r.paid)} 갚았다. 남은 빚 ${money(r.debt)}.`,
+            r.debt > 0 ? "fee" : "up");
+        this.redraw();
     }
 
     /**
@@ -1154,10 +1240,11 @@ export class TradingScene extends Phaser.Scene {
     private drawLedgerBlocks(
         body: Band, blocks: LedgerBlock[], headH = 0, drawHead?: (y: number) => void,
     ): void {
-        const ROW = 20, HEAD = 18, INNER = 6, GAP = 9;
-        const height = () => blocks.reduce(
-            (sum, b) => sum + HEAD + b.rows.length * ROW + INNER * 2, 0)
-            + GAP * (blocks.length - 1) + headH;
+        // 치수와 셈은 `ui/theme.ts` 가 낸다 — 사이(gap)의 개수를 한 번 잘못 세어
+        // 마지막 덩이가 버튼 띠 밑으로 밀린 적이 있고, 스크린샷으로는 그때그때만
+        // 잡히는 고장이라 값으로 빼서 테스트가 붙잡게 했다(`stackPlan`).
+        const { ROW, HEAD, INNER } = STACK;
+        const height = () => stackH(blocks.map(b => b.rows.length), headH);
 
         // 버릴 순서: **먼저 「없어도 되는」 줄, 그 다음에 가운데부터.**
         //
@@ -1187,15 +1274,11 @@ export class TradingScene extends Phaser.Scene {
 
         // **남는 세로는 나눠 갖는다.** 위에서부터 쌓기만 하면 긴 폰에서 아래 3분의 1이
         // 통째로 빈 은색 판이 된다 — 시작 화면이 한 번 그랬고, 여기서도 그랬다.
-        // 사이를 먼저 벌리고(너무 벌어지면 세 덩이가 남남이 되므로 상한을 둔다),
+        // 사이를 먼저 벌리고(너무 벌어지면 덩이들이 남남이 되므로 상한을 둔다),
         // 그러고도 남으면 통째로 가운데로 내린다.
-        const spare = Math.max(0, room - height());
-        const gap = GAP + Math.min(34, Math.floor(spare / Math.max(1, blocks.length - 1)));
-        // 머리까지 세어야 가운데가 맞는다. 머리 뒤에도 사이가 하나 붙는다.
-        const used = height() - GAP * (blocks.length - 1)
-            + gap * (blocks.length - 1) + (headH > 0 ? gap : 0);
+        const { gap, top } = stackPlan(blocks.map(b => b.rows.length), headH, room);
 
-        let y = body.y + 2 + Math.max(0, Math.floor((room - used) / 2));
+        let y = body.y + 2 + top;
         if (drawHead && headH > 0) { drawHead(y); y += headH + gap; }
         for (const blk of blocks) {
             if (blk.rows.length === 0) continue;
@@ -1288,14 +1371,44 @@ export class TradingScene extends Phaser.Scene {
         if (this.traded) {
             acts.push({ label: "무른다", sub: "아침으로", primary: false, on: () => this.undoTrades() });
         }
+        // **알바와 무름은 한 화면에 같이 설 수 없다.** 무를 것이 있다는 건 이미 권했다는
+        // 뜻이고, 하루는 하나뿐이라 권한 날에 하루를 팔 수는 없다. 그래서 버튼은
+        // 어느 쪽이든 셋을 넘지 않는다 — 넷이 서면 칸이 좁아져 부제가 눌린다.
+        else if (!done) {
+            // 지갑이 이번 턴 생활비에 못 미치면 **이 버튼이 그날의 유일한 할 일이다.**
+            const broke = this.engine.player.wallet < LIVING_COST;
+            acts.push({
+                label: "하루를 판다", short: "알바",
+                sub: `+${money(PARTTIME_PAY)} · 에너지 −${PARTTIME_ENERGY}`,
+                primary: broke,
+                on: () => this.workShift(),
+            });
+        }
         acts.push({
             label: "하루를 넘긴다", short: "넘긴다",
             // 안 권하고 넘기면 그것이 곧 기다리는 것이다. 대가를 누르기 전에 말한다.
             sub: done ? `권했다 · −${ENERGY_DECAY}` : `에너지 −${ENERGY_DECAY}`,
-            primary: nothingLeft,
+            primary: nothingLeft && this.engine.player.wallet >= LIVING_COST,
             on: () => this.endTurn(),
         });
         this.buttons(acts);
+    }
+
+    /**
+     * 하루를 판다. **알바도 턴을 끝낸다** — 하루는 하나뿐이다.
+     *
+     * 이것이 이 게임에서 유일하게 **근거 없이도 확실한** 수입이다. 그래서 값이 비싸다:
+     * 에너지 9 는 알아보기 세 번 값이고, 그 에너지가 곧 고객이 맡기는 돈의 크기이자
+     * 보수율이다(`core/clients.ts` · `core/energy.ts`). 굶지 않으려고 판 하루가
+     * 벗어날 힘을 그만큼 깎는다 — 그 저울이 이 버튼의 전부다.
+     */
+    private workShift(): void {
+        const pay = this.engine.workShift(PARTTIME_PAY, PARTTIME_ENERGY);
+        this.memory.career = recordWage(this.memory.career, pay);
+        saveMemory(this.memory);
+        this.actedThisTurn = true;
+        this.pushLog(`하루를 팔았다. ${money(pay)}. 에너지 −${PARTTIME_ENERGY}`, "fee");
+        this.endTurn();
     }
 
     /**
@@ -1403,6 +1516,14 @@ export class TradingScene extends Phaser.Scene {
             return;
         }
 
+        // **받아들였다는 것은 돈을 맡긴다는 뜻이다.** 여기가 맡은 돈이 생기는 유일한
+        // 자리다 — 1998 은 계좌 0 원으로 열리므로, 첫 턴의 이 한 번이 없으면 살 것이 없다.
+        // 액수는 에너지와 그 사람의 형편이 정한다(`core/clients.ts`).
+        const got = this.engine.entrust(entrustAmount(c, this.engine.player.energy, thesis !== null));
+        if (got > 0) {
+            this.pushLog(`${c.name}이(가) ${money(got)}을 맡겼다.`, "up");
+        }
+
         const before = this.engine.player.cash;
         const r = this.engine.buyHalf(id, buff);
         if (!r.ok) { this.pushLog(r.error, "warn"); this.closeBoardAndRedraw(); return; }
@@ -1495,6 +1616,11 @@ export class TradingScene extends Phaser.Scene {
             // 거절당한 턴은 체결이 없으므로 `traded` 가 false 다 — 그 상태가 곧 거절이다.
             traded: this.traded,
             cash: this.engine.player.cash,
+            // 지금 권하면 앞에 앉은 사람이 맡길 돈. **근거를 댔는지까지 본다** —
+            // 근거 없이 권하면 받아 주더라도 훨씬 적게 맡긴다(`BLIND_ENTRUST`).
+            incoming: this.client
+                ? entrustAmount(this.client, this.engine.player.energy, this.buff().thesis !== null)
+                : 0,
             equity: this.engine.equity,
             price: this.engine.priceOf(this.engine.focus),
         });
@@ -1548,6 +1674,15 @@ export class TradingScene extends Phaser.Scene {
         for (const id of this.engine.stoppedOut) {
             this.facts.stopHits += 1;
             this.pushLog(`손절이 걸렸다. ${this.engine.stockOf(id)?.name ?? ""} 전부 팔렸다.`, "warn");
+        }
+
+        // **생활비는 매 턴 빠진다.** 굶는 것이 조용히 넘어가지 않게 하는 자리다 —
+        // 못 내면 최 사장에게 급전을 당기고, 그만큼 빚이 늘어 이자가 붙을 몸통이 커진다.
+        const live = this.engine.payLivingCost(LIVING_COST);
+        if (live.short) {
+            this.pushLog(`생활비를 못 냈다. 급전 ${money(SHORTFALL_DEBT)}을 당겼다.`, "warn");
+        } else {
+            this.pushLog(`생활비 ${money(live.paid)}.`, "fee");
         }
 
         this.settleEnergy(buff);

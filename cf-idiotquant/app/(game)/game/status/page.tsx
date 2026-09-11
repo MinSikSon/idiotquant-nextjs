@@ -143,14 +143,18 @@ function Body({ memory }: { memory: Memory }) {
 
             <Section title="빚">
                 <Panel>
-                    <Row k="여태 갚은 빚" v={won(c.feePaid)} ink={c.feePaid > 0 ? "text-[#5cf08f]" : undefined} />
+                    <Row k="여태 갚은 빚" v={won(c.repaid)} ink={c.repaid > 0 ? "text-[#5cf08f]" : undefined} />
+                    <Row k="여태 받은 보수" v={won(c.feePaid)} />
+                    <Row k="알바로 번 돈" v={won(c.wageEarned)} />
                     <Row k="가장 적게 남긴 빚" v={c.leastDebt === null ? "— 아직 판을 안 끝냈다" : won(c.leastDebt)} />
                     <Row k="끝낸 챕터" v={`${c.chapters}장`} />
                     <Row k="끝까지 간 판" v={`${c.runs}판`} />
                 </Panel>
                 <p className="mt-2 text-[13px] leading-relaxed text-[#6d7f78]">
-                    빚은 <b className="text-[#8d9c93]">보수로만</b> 줄어든다. 챕터에서 번 만큼 받고,
-                    에너지가 높을수록 많이 받는다.
+                    빚을 줄이는 돈은 <b className="text-[#8d9c93]">보수</b>뿐이다. 챕터에서 늘린 만큼
+                    받고, 에너지가 높을수록 많이 받는다. 보수는 지갑으로 들어오고, 갚는 것은 장부에서
+                    내가 누를 때 일어난다 — 위 두 줄이 갈리는 이유다.
+                    알바비는 <b className="text-[#8d9c93]">먹고사는 데</b> 쓴다.
                 </p>
             </Section>
 

@@ -134,6 +134,17 @@ export interface Chapter {
     opening?: readonly OpeningPosition[];
     /** 이 챕터가 끝나면 생기는 빚(원). 프롤로그에만 있다. */
     debtOnEnd?: number;
+    /**
+     * 이 챕터가 끝나면 **계좌가 없어진다.** 프롤로그에만 있다.
+     *
+     * 1998 의 내레이션은 처음부터 이렇게 적혀 있었다 — 「회사는 없어졌다. 내 말을 믿고
+     * 맡긴 사람들은 그 돈을 잃었다.」 그런데 게임은 그 다음 줄에서 **2,500만원짜리 계좌를
+     * 그대로 손에 쥐여 줬다.** 글과 규칙이 정면으로 어긋나 있었다.
+     *
+     * 이 값이 그 어긋남을 없앤다. 1998 은 현금도 보유도 0 으로 열리고, 굴릴 돈은
+     * 고객이 새로 맡겨야 생긴다(`core/clients.ts` 의 `entrustAmount`).
+     */
+    accountLost?: boolean;
 }
 
 export const CHAPTERS: readonly Chapter[] = [
@@ -171,6 +182,7 @@ export const CHAPTERS: readonly Chapter[] = [
             { stockId: "cheongwoo", pctOfCash: 25, avgOverCurrent: 1.3 },
         ],
         debtOnEnd: 30_000_000,
+        accountLost: true,
     },
     {
         id: "1998",

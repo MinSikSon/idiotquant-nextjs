@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    StockEngine, SEED_CASH, RUIN_LINE, ENERGY_START,
+    StockEngine, SEED_CASH, RUIN_RATIO, RUIN_FLOOR, ENERGY_START,
     BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
 } from "@/lib/game/core/StockEngine";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/lib/game/core/chapters";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
 import { advisoryFee, FEE_BASE, FEE_BY_ENERGY } from "@/lib/game/core/energy";
+import { CLIENTS, entrustAmount } from "@/lib/game/core/clients";
 
 const buff = (over: Partial<TurnBuff> = {}): TurnBuff => ({ ...NO_BUFF, ...over });
 
@@ -213,7 +214,8 @@ test("여러 종목을 동시에 들고 있어도 평가액이 맞는다", () =>
 test("보유는 챕터를 넘어 유지되고 그 시점 주가로 평가된다", () => {
     const e = new StockEngine(17);
     playChapter(e); e.endChapter(); e.startNextChapter();   // 1998
-    e.liquidateAll();
+    // **1998 은 계좌 0 원으로 열린다.** 굴릴 돈은 고객이 맡겨야 생긴다.
+    e.entrust(20_000_000);
     const id = e.listed[0]!.id;
     e.buyAll(id);
     const qty = e.positionOf(id).shares;
@@ -253,6 +255,7 @@ test("1999 에 산 고베타를 2000 까지 들고 가면 저베타보다 크게
 test("챕터 끝에 자동 청산하지 않는다 — 들고 넘어가는 것이 요점이다", () => {
     const e = new StockEngine(19);
     playChapter(e); e.endChapter(); e.startNextChapter();
+    e.entrust(20_000_000);
     const id = e.listed[0]!.id;
     e.buyAll(id);
     playChapter(e);
@@ -281,11 +284,37 @@ test("전 구간은 40턴이고 마지막 챕터에서 끝난다", () => {
 
 test("자본잠식선 아래로 떨어지면 그 자리에서 끝난다", () => {
     const e = new StockEngine(31);
+    // 최고치가 기준이므로 먼저 최고치를 세운다 — 프롤로그는 이미 그만큼 굴리고 있다.
+    e.advanceTurn();
+    assert.ok(e.peakEquity >= RUIN_FLOOR, "프롤로그는 자본잠식이 발동할 규모다");
     e.player.cash = 0;
     for (const id of Object.keys(e.player.positions)) delete e.player.positions[id];
-    assert.ok(e.equity < RUIN_LINE);
+    assert.equal(e.ruinLine, Math.round(e.peakEquity * RUIN_RATIO));
+    assert.ok(e.equity < e.ruinLine);
     assert.ok(e.isRuined);
     assert.ok(e.isOver);
+});
+
+test("아직 아무것도 안 맡은 계좌는 잠식될 것도 없다", () => {
+    // **1998 이 열리는 자리다.** 고정 금액을 선으로 쓰던 동안에는 계좌 0 원이 곧
+    // 자본잠식이라, 판이 열리자마자 끝났다.
+    const e = new StockEngine(31);
+    e.endChapter();
+    e.startNextChapter();
+    assert.equal(e.equity, 0);
+    assert.equal(e.ruinLine, 0);
+    assert.ok(!e.isRuined, "0 원으로 여는 챕터가 그 자리에서 끝나면 안 된다");
+});
+
+test("작게 굴려 본 판은 잠식으로 안 끝난다 — 바닥값이 그것을 막는다", () => {
+    const e = new StockEngine(31);
+    e.endChapter();
+    e.startNextChapter();
+    e.entrust(RUIN_FLOOR - 1);
+    e.advanceTurn();
+    assert.equal(e.ruinLine, 0);
+    e.player.cash = 0;
+    assert.ok(!e.isRuined);
 });
 
 test("에너지가 0 이면 턴이 남아도 끝난다", () => {
@@ -324,10 +353,15 @@ test("손해를 본 챕터에는 보수가 없다", () => {
     assert.equal(advisoryFee(-1_000_000, 100), 0);
 });
 
-test("빚은 1999년까지 갚을 수 있어야 한다 — 완납이 도달 가능한가", () => {
+test("빚은 갚을 수 있어야 한다 — 완납이 도달 가능한가", () => {
     // **이 게임에서 이기는 방법은 빚 완납 하나뿐인데, 한동안 그것이 도달 불가능했다.**
-    // 규칙만 300판씩 굴려 재 보니 아무리 잘 굴려도 완납 0% 였다(`SEED_CASH` 주석에
-    // 표가 있다). 눈으로는 안 보이는 종류의 고장이라 여기 셈으로 박아 둔다.
+    // 눈으로는 안 보이는 종류의 고장이라 여기 셈으로 박아 둔다.
+    //
+    // ── 무엇이 바뀌었나 ─────────────────────────────────────
+    // 예전 이 셈은 「2,500만을 들고 시작해서 장마다 배로 불린다」를 가정했다. 이제
+    // 계좌는 0 에서 열리고 **고객이 맡겨야** 커지므로, 운용 규모는 `SEED_CASH` 가
+    // 아니라 `entrustAmount` 와 에너지가 정한다. 그리고 보수는 빚에서 자동으로
+    // 깎이지 않고 지갑을 거친다 — 그 두 가지를 이 셈이 따라가야 한다.
     //
     // ── 왜 2000년을 빼고 세는가 ─────────────────────────────
     // 마지막 장은 국면이 처음부터 끝까지 하락이라(`chapters.ts`) 수익이 안 나고,
@@ -337,18 +371,27 @@ test("빚은 1999년까지 갚을 수 있어야 한다 — 완납이 도달 가�
     assert.ok(prologue?.debtOnEnd, "프롤로그가 빚을 안 남긴다");
 
     let debt = prologue.debtOnEnd!;
-    let equity = SEED_CASH;
+    let wallet = 0;
     for (const ch of CHAPTERS) {
         if (ch.debtOnEnd) continue;      // 빚이 생기는 장은 갚는 장이 아니다
         if (ch === CHAPTERS[CHAPTERS.length - 1]) break;   // 2000 — 하락장
-        // 아주 잘 굴린 장 = 맡은 돈이 배가 되고 에너지가 가득 찼다.
-        debt = Math.max(0, debt - advisoryFee(equity, 100));
+
+        // 아주 잘 굴린 장: 에너지가 가득 찬 채로 열두 턴 중 여섯 턴을 권하고,
+        // 맡은 돈이 절반 늘었다. 맡는 사람은 평균 형편(purse 평균)으로 잡는다.
+        const purse = CLIENTS.reduce((a, c) => a + c.purse, 0) / CLIENTS.length;
+        const taken = entrustAmount({ ...CLIENTS[0]!, purse }, 100, true) * 6;
+        const fee = advisoryFee(taken * 0.5, 100);
+
+        // **이자가 붙기 전에 갚는다** — 장부 화면이 그러라고 말하는 자리다.
+        const paid = Math.min(wallet, debt);
+        debt -= paid; wallet -= paid;
         debt = Math.round(debt * (1 + ch.interest));
-        equity += equity;
+        wallet += fee;
     }
-    assert.equal(debt, 0,
-        `완벽하게 굴려도 1999년 끝에 ${debt.toLocaleString()}원이 남는다 — 빚 완납이 도달 불가능하다. `
-        + "맡은 돈(SEED_CASH)·이자·보수율 셋 중 하나를 고쳐야 한다.");
+    // 마지막 장에 들어가기 전에 지갑으로 남은 빚을 덮을 수 있어야 한다.
+    assert.ok(wallet >= debt,
+        `완벽하게 굴려도 1999년 끝에 ${(debt - wallet).toLocaleString()}원이 모자란다 — `
+        + "빚 완납이 도달 불가능하다. 맡기는 액수(ENTRUST_BASE)·이자·보수율 셋 중 하나를 고쳐야 한다.");
 });
 
 test("보수는 에너지에 비례한다 — 에너지가 곧 빚을 갚는 속도다", () => {
@@ -367,28 +410,40 @@ test("보수는 에너지에 비례한다 — 에너지가 곧 빚을 갚는 속
     assert.equal(advisoryFee(profit, -5), advisoryFee(profit, 0));
 });
 
-test("챕터가 끝나면 보수만큼 빚이 줄고, 남은 빚에 이자가 붙는다", () => {
-    // 이 관계가 깨지면 빚이 다시 「늘기만」 하고 `debtCleared` 는 도달 불가능해진다.
+test("챕터가 끝나면 보수는 지갑으로 가고, 남은 빚에 이자가 붙는다", () => {
+    // **보수가 빚에서 자동으로 깎이던 규칙으로 되돌아가면 여기서 걸린다.**
+    // 갚는 것은 이제 `repayDebt` 를 눌러야 일어난다.
     const e = new StockEngine(4242, SEED_CASH);
     const ch = e.chapter;
     e.player.debt = 50_000_000;
+    // **이익이 나 있어야 보수가 0 이 아니다.** 프롤로그는 하락장이라 그냥 두면 보수가
+    // 0 이고, 그러면 「지갑으로 갔나 빚으로 갔나」를 가리는 이 판정이 통째로 헛돈다.
+    e.player.cash += 10_000_000;
+    assert.ok(e.equity > e.chapterStart);
 
     const before = e.player.debt;
+    const beforeWallet = e.player.wallet;
     const sum = e.endChapter([]);
 
-    const expected = Math.round(Math.max(0, before - sum.fee) * (1 + ch.interest))
-        + (ch.debtOnEnd ?? 0);
-    assert.equal(e.player.debt, expected);
-    assert.ok(sum.fee >= 0);
+    assert.ok(sum.fee > 0, "보수가 0 이면 이 판정은 아무것도 안 지킨다");
+    assert.equal(e.player.debt, Math.round(before * (1 + ch.interest)) + (ch.debtOnEnd ?? 0),
+        "보수가 빚을 깎았다 — 갚는 것은 `repayDebt` 하나뿐이어야 한다");
+    assert.equal(e.player.wallet, beforeWallet + sum.fee, "보수가 지갑에 안 들어왔다");
 });
 
-test("보수가 빚보다 크면 빚은 0 에서 멈춘다 — 마이너스 빚은 없다", () => {
+test("갚는 것은 지갑에 있는 것까지, 남은 빚까지 — 마이너스는 없다", () => {
     const e = new StockEngine(99, SEED_CASH);
-    e.player.debt = 1;
-    e.player.energy = 100;
-    // 프롤로그는 끝에 빚을 새로 지운다. 그 몫만 남고 이전 빚은 사라져야 한다.
-    const ch = e.chapter;
-    const sum = e.endChapter([]);
-    assert.ok(e.player.debt >= 0, "빚이 음수가 됐다");
-    if (sum.fee >= 1) assert.equal(e.player.debt, ch.debtOnEnd ?? 0);
+    e.player.debt = 1_000_000;
+    e.player.wallet = 5_000_000;
+
+    const r = e.repayDebt(99_000_000);
+    assert.equal(r.paid, 1_000_000, "빚보다 더 갚을 수는 없다");
+    assert.equal(e.player.debt, 0, "빚이 음수가 됐다");
+    assert.equal(e.player.wallet, 4_000_000, "거스름돈이 안 돌아왔다");
+
+    // 지갑이 빌 때까지만.
+    e.player.debt = 99_000_000;
+    const r2 = e.repayDebt(99_000_000);
+    assert.equal(r2.paid, 4_000_000);
+    assert.equal(e.player.wallet, 0, "지갑이 음수가 됐다");
 });

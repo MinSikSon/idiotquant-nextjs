@@ -30,8 +30,18 @@ export interface Career {
     chapters: number;
     /** 어떻게 끝났는가 — 넷을 각각 몇 번. */
     endings: Record<EndReason, number>;
-    /** 받은 보수의 합. **여태 갚은 빚의 총액이다.** */
+    /**
+     * 받은 보수의 합. **여태 「번」 돈이지 「갚은」 돈이 아니다.**
+     *
+     * 보수가 빚에서 자동으로 깎이던 동안에는 둘이 같은 값이었다. 이제 보수는 지갑으로
+     * 들어오고 갚는 것은 내가 누를 때만 일어나므로(`core/wallet.ts`), 번 것과 갚은 것이
+     * 갈린다 — 갚은 쪽은 `repaid` 다.
+     */
     feePaid: number;
+    /** 지갑에서 빚으로 실제로 넣은 돈의 합. **이쪽이 「여태 갚은 빚」이다.** */
+    repaid: number;
+    /** 알바로 번 돈의 합. 버티는 데 쓴 하루가 몇 번이었는지가 여기 남는다. */
+    wageEarned: number;
     /** 판이 끝났을 때 남아 있던 빚 중 가장 적었던 값. 아직 한 판도 안 끝냈으면 null. */
     leastDebt: number | null;
     /** 챕터를 끝냈을 때의 에너지 중 가장 높았던 값. */
@@ -53,6 +63,8 @@ export const EMPTY_CAREER: Career = {
     chapters: 0,
     endings: { debtCleared: 0, debtRemains: 0, burnout: 0, ruined: 0 },
     feePaid: 0,
+    repaid: 0,
+    wageEarned: 0,
     leastDebt: null,
     bestEnergy: 0,
     bestEquity: 0,
@@ -86,6 +98,8 @@ export function normalizeCareer(raw: unknown): Career {
             burnout: int(e.burnout ?? e.trustLost), ruined: int(e.ruined),
         },
         feePaid: int(o.feePaid),
+        repaid: int(o.repaid),
+        wageEarned: int(o.wageEarned),
         leastDebt: Number.isFinite(least) ? Math.max(0, Math.floor(least)) : null,
         bestEnergy: int(o.bestEnergy),
         bestEquity: int(o.bestEquity),
@@ -95,6 +109,16 @@ export function normalizeCareer(raw: unknown): Career {
         blindLosses: int(o.blindLosses),
         stopHits: int(o.stopHits),
     };
+}
+
+/** 빚을 갚았다. 챕터 끝이 아니라 **누를 때마다** 쌓인다. */
+export function recordRepay(c: Career, amount: number): Career {
+    return { ...c, repaid: c.repaid + Math.max(0, Math.floor(amount)) };
+}
+
+/** 알바를 했다. 이것도 누를 때마다 쌓인다. */
+export function recordWage(c: Career, amount: number): Career {
+    return { ...c, wageEarned: c.wageEarned + Math.max(0, Math.floor(amount)) };
 }
 
 /** 한 챕터가 끝났다. **판이 이어지는 중에도 쌓인다** — 도중에 그만둬도 남는다. */

@@ -27,7 +27,7 @@ const won = (v: number) => `${v}원`;
 function summary(over: Partial<ChapterSummary> = {}): ChapterSummary {
     return {
         returnPct: 0, fee: 0, startEquity: 10_000_000, finalEquity: 10_000_000,
-        energy: 50, debt: 0, idle: false, ruined: false, burnedOut: false,
+        energy: 50, debt: 0, wallet: 0, idle: false, ruined: false, burnedOut: false,
         earned: [], ...over,
     };
 }

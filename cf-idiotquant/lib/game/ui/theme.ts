@@ -669,3 +669,56 @@ export function pressable(
 
     return { zone, shade };
 }
+
+/* ── 세로로 쌓는 덩이의 셈 ──────────────────────────────────────
+   장부 화면이 덩이(맡은 돈 · 얻은 돈 · 지갑 · 갚을 돈)를 세로로 쌓을 때 쓰는 산수만
+   떼어 둔 것이다. Phaser 를 안 부르므로 브라우저 없이 테스트가 된다.
+
+   **왜 떼어 냈나.** 여기서 사이(gap)의 개수를 한 번 잘못 셌다 — 연대기 띠 뒤에도
+   사이가 하나 붙는데 그것을 안 세서, 남는 세로를 나눌 때 예산 밖에서 사이가 생기고
+   마지막 덩이가 버튼 띠 밑으로 밀려 잘렸다. 덩이가 셋일 때는 여유에 묻혀 있다가
+   지갑이 들어와 넷이 되면서 드러났다. **스크린샷으로는 그때그때만 잡히는 고장**이라
+   셈을 값으로 만들어 테스트가 붙잡게 한다. */
+
+export const STACK = { ROW: 20, HEAD: 18, INNER: 6, GAP: 9, GAP_MAX: 34 } as const;
+
+/** 덩이 하나가 먹는 세로. 머리줄 + 줄들 + 검은 화면의 안쪽 여백. */
+export function blockH(rows: number): number {
+    return STACK.HEAD + rows * STACK.ROW + STACK.INNER * 2;
+}
+
+/**
+ * 덩이 사이가 몇 군데인가. **덩이 사이만이 아니다** — 머리(연대기 띠)가 있으면
+ * 그 뒤에도 하나 붙는다.
+ */
+export function stackGaps(blocks: number, headH: number): number {
+    return Math.max(0, blocks - 1) + (headH > 0 ? 1 : 0);
+}
+
+/** 이 줄 수로 쌓으면 세로를 얼마나 먹는가(사이는 기본 폭으로 센다). */
+export function stackH(rowCounts: readonly number[], headH: number): number {
+    const sum = rowCounts.reduce((a, n) => a + blockH(n), 0);
+    return sum + STACK.GAP * stackGaps(rowCounts.length, headH) + headH;
+}
+
+export interface StackPlan {
+    /** 실제로 쓸 사이 폭. 남는 세로를 나눠 가진 값이다. */
+    gap: number;
+    /** 그 사이 폭으로 쌓았을 때 통째로 먹는 세로. */
+    used: number;
+    /** 맨 위 덩이가 시작하는 y(칸 위쪽 기준 상대값). */
+    top: number;
+}
+
+/**
+ * 남는 세로를 나눠 가진 뒤의 배치. **`used` 는 절대 `room` 을 넘지 않는다** —
+ * 넘으면 마지막 덩이가 화면 밖으로 밀린다.
+ */
+export function stackPlan(rowCounts: readonly number[], headH: number, room: number): StackPlan {
+    const gaps = stackGaps(rowCounts.length, headH);
+    const base = stackH(rowCounts, headH);
+    const spare = Math.max(0, room - base);
+    const gap = STACK.GAP + Math.min(STACK.GAP_MAX, Math.floor(spare / Math.max(1, gaps)));
+    const used = base - STACK.GAP * gaps + gap * gaps;
+    return { gap, used, top: Math.max(0, Math.floor((room - used) / 2)) };
+}
