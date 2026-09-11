@@ -16,7 +16,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { WIN_CHROME, bandsOf, cells, designSize, isStacked, wrapCells, W, type Bands } from "@/lib/game/ui/theme";
+import {
+    STACK, WIN_CHROME, bandsOf, blockH, cells, designSize, isStacked, stackGaps, stackH,
+    stackPlan, wrapCells, W, type Bands,
+} from "@/lib/game/ui/theme";
 
 /**
  * 고른 종목 판이 반드시 세우는 높이. `components/StockSheet.ts` 가 같은 이름으로 내보내는데,
@@ -241,4 +244,57 @@ test("한 낱말이 한 줄보다 길면 거기서 끊는다", () => {
 test("칸에 들어가는 글은 접지 않는다", () => {
     assert.deepEqual(wrapCells("수수료 1,240원.", 40), ["수수료 1,240원."]);
     assert.deepEqual(wrapCells("", 40), [""]);
+});
+
+/* ── 세로로 쌓는 덩이 — 장부가 넘치지 않는가 ────────────────────── */
+
+test("사이의 개수는 덩이 사이 + 머리 뒤 하나다", () => {
+    // **이 한 줄을 잘못 세어 마지막 덩이가 버튼 띠 밑으로 밀렸다.**
+    assert.equal(stackGaps(4, 0), 3, "머리가 없으면 덩이 사이만");
+    assert.equal(stackGaps(4, 40), 4, "머리 뒤에도 하나 붙는다");
+    assert.equal(stackGaps(1, 40), 1);
+    assert.equal(stackGaps(1, 0), 0);
+    assert.equal(stackGaps(0, 0), 0);
+});
+
+test("쌓은 높이는 덩이 + 사이 + 머리의 합이다", () => {
+    assert.equal(stackH([5], 0), blockH(5));
+    assert.equal(stackH([5, 3], 0), blockH(5) + blockH(3) + STACK.GAP);
+    assert.equal(stackH([5, 3], 40), blockH(5) + blockH(3) + STACK.GAP * 2 + 40);
+});
+
+test("남는 세로를 나눠 가져도 칸을 절대 안 넘는다", () => {
+    // 장부의 실제 모양(맡은 돈 5 · 얻은 돈 3 · 지갑 2~3 · 갚을 돈 3~5)을 폭넓게 훑는다.
+    // 하나라도 `used > room` 이면 그 배치에서 마지막 덩이가 화면 밖으로 밀린다.
+    const chron = [0, 40];
+    let checked = 0;
+    for (const headH of chron) {
+        for (const a of [5, 4, 3]) {
+            for (const b of [3, 2]) {
+                for (const c of [3, 2, 1]) {
+                    for (const d of [5, 4, 3, 2]) {
+                        const rows = [a, b, c, d];
+                        // 눕힌 폰(창 245)부터 큰 화면까지.
+                        for (let room = 120; room <= 900; room += 7) {
+                            const plan = stackPlan(rows, headH, room);
+                            checked++;
+                            if (stackH(rows, headH) > room) continue;  // 줄을 버려야 하는 자리
+                            assert.ok(plan.used <= room,
+                                `줄 ${rows} 머리 ${headH} 칸 ${room}: ${plan.used} 가 넘는다`);
+                            assert.ok(plan.top + plan.used <= room,
+                                `줄 ${rows} 머리 ${headH} 칸 ${room}: 가운데로 내리다 넘쳤다`);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert.ok(checked > 1000, "훑은 자리가 너무 적다");
+});
+
+test("사이는 기본 폭보다 좁아지지 않고, 상한을 넘지도 않는다", () => {
+    const tight = stackPlan([5, 3, 3, 5], 40, 100);
+    assert.equal(tight.gap, STACK.GAP, "칸이 모자라도 사이를 음수로 만들지 않는다");
+    const roomy = stackPlan([1, 1], 0, 5_000);
+    assert.equal(roomy.gap, STACK.GAP + STACK.GAP_MAX, "너무 벌어지면 덩이들이 남남이 된다");
 });

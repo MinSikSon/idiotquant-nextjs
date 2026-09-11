@@ -51,6 +51,18 @@ export interface OrderCheck {
     traded: boolean;
     /** 지금 현금. */
     cash: number;
+    /**
+     * 지금 권하면 고객이 **그 자리에서 맡길 돈.** 0 이면 아무도 안 앉았거나 안 맡긴다.
+     *
+     * ── 이 값이 없으면 1998 이 열리지 않는다 ──────────────────
+     * 계좌가 0 원으로 시작하면서 생긴 자리다. 아래 두 판정이 `cash` 만 봤을 때는
+     * **첫 턴에 「현금이 모자란다」로 버튼이 잠겼다** — 그런데 현금을 만드는 유일한 길이
+     * 바로 그 버튼이다. 팔 주식도 없으니 영영 안 열린다.
+     *
+     * 맡길 돈은 권하는 **순간** 들어오므로(`StockEngine.entrust`), 판정도 들어온 뒤를
+     * 봐야 맞다.
+     */
+    incoming: number;
     /** 맡은 돈 전체(현금 + 평가액). 「굴릴 돈이 남았는가」를 이 값에 견준다. */
     equity: number;
     /** 한 주 값(수수료 뺀 값이면 된다 — 경계에서 한 주 차이는 아래 주석 참고). */
@@ -70,8 +82,10 @@ export function recommendBlock(c: OrderCheck): OrderBlock {
     if (c.recommended) return c.traded ? "done" : "refused";
     // **먼저 「굴릴 돈이 있는가」를 본다.** 이쪽이 더 큰 사실이고, 할 일도 다르다 —
     // 현금이 없으면 팔아야 하고, 한 주 값에 못 미치면 더 싼 종목을 보면 된다.
-    if (c.equity > 0 && c.cash < c.equity * MIN_ORDER_RATIO) return "fullyInvested";
-    if (c.price <= 0 || Math.floor(c.cash / 2) < c.price) return "notEnoughCash";
+    // 권하는 순간 들어올 돈까지 세고 본다 — 그 돈이 곧 이 주문의 재원이다.
+    const funds = Math.max(0, c.cash) + Math.max(0, c.incoming);
+    if (c.equity > 0 && funds < c.equity * MIN_ORDER_RATIO) return "fullyInvested";
+    if (c.price <= 0 || Math.floor(funds / 2) < c.price) return "notEnoughCash";
     return "none";
 }
 

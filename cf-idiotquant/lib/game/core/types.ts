@@ -100,6 +100,13 @@ export interface PlayerState {
     energy: number;
     /** 1997 에 생긴 빚(원, 양수). 0 으로 만드는 것이 게임 전체의 목표다. */
     debt: number;
+    /**
+     * **지갑** — 내 돈(원). `cash` 와 헷갈리지 말 것: 저것은 고객 것이고 이것만 내 것이다.
+     *
+     * 1998 을 0 으로 연다. 들어오는 것은 알바비와 보수, 나가는 것은 생활비와 상환이다
+     * (`core/wallet.ts`). 절대 음수가 되지 않는다 — 모자라면 빚이 는다.
+     */
+    wallet: number;
 }
 
 /**
@@ -274,9 +281,11 @@ export interface ChapterSummary {
     /** 시작 자산 대비 최종 자산(%) */
     returnPct: number;
     /**
-     * 이 챕터에서 받은 보수. **빚은 이 값만큼만 줄어든다.**
+     * 이 챕터에서 받은 보수. **지갑으로 들어온다** — 빚은 이 값으로 자동으로 줄지 않는다.
      *
-     * 손해를 본 챕터에는 0 이다. 에너지가 높을수록 커진다 — `core/energy.ts` 의 `advisoryFee`.
+     * 예전에는 이 값이 곧장 빚에서 깎였다. 이제는 받은 뒤에 갚을지 쥐고 있을지를
+     * 내가 고른다(`core/wallet.ts` 의 `repay`). 손해를 본 챕터에는 0 이고, 에너지가
+     * 높을수록 커진다 — `core/energy.ts` 의 `advisoryFee`.
      */
     fee: number;
     startEquity: number;
@@ -284,6 +293,8 @@ export interface ChapterSummary {
     /** 끝났을 때의 에너지와 남은 빚. */
     energy: number;
     debt: number;
+    /** 끝났을 때의 지갑. **보수가 이미 들어와 있는 값이다.** */
+    wallet: number;
     /** 한 번도 안 권하고 12턴을 흘려보냈는가. */
     idle: boolean;
     /** 맡은 돈이 자본잠식선 아래로 떨어졌는가. */

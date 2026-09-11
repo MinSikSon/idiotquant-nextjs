@@ -30,6 +30,10 @@ import {
     CHAPTERS, CONTEXT_BARS, TOTAL_TURNS, UNIVERSE, chapterAtTurn, regimeTimeline,
     type Chapter, type StockDef,
 } from "./chapters";
+import {
+    LIVING_COST, PARTTIME_ENERGY, PARTTIME_PAY, SALARY_LEFT, WALLET_START,
+    payLiving, repay, type LivingResult, type RepayResult,
+} from "./wallet";
 
 /** 되돌릴 수 있게 떠 둔 체결 상태. `markTrades()` 가 만들고 `restoreTrades()` 가 되돌린다. */
 export interface TradeMark {
@@ -37,12 +41,25 @@ export interface TradeMark {
     positions: Record<string, Position>;
     /** 이 챕터에 한 번이라도 권했는가. 챕터 결산의 `idle` 이 이 값을 본다. */
     recommended: boolean;
+    /**
+     * 이 챕터를 시작한 자산. **무를 때 이것까지 되돌려야 한다** — 권하는 순간 고객이
+     * 맡긴 돈만큼 같이 올라가 있기 때문이다(`entrust`). 안 되돌리면 무른 뒤에도 기준이
+     * 올라간 채로 남아, 실제로는 안 받은 돈이 「내가 못 불린 것」으로 세어진다.
+     */
+    chapterStart: number;
 }
 
 /* ── 상수 ───────────────────────────────────────────────────── */
 
 /**
- * 1998 년 1월에 손에 쥔 돈 — **맡은 돈이지 내 돈이 아니다.**
+ * **프롤로그(1997)에 굴리고 있던 고객 돈.** 증권사 자리에서 이미 맡고 있던 것이다.
+ *
+ * ── 이 값은 이제 1998 로 넘어오지 않는다 ────────────────────
+ * 예전에는 이 돈이 판 전체의 시작 자금이었다. 지금은 프롤로그가 끝날 때 회사와 함께
+ * 없어진다(`chapters.ts` 의 `accountLost`) — 1998 은 **계좌 0원**으로 열리고, 굴릴 돈은
+ * 고객이 새로 맡겨야 생긴다(`core/clients.ts` 의 `entrustAmount`). 그러니 아래의
+ * 밸런스 셈은 **프롤로그의 규모**를 정하는 값으로만 남는다. 판 전체의 운용 규모를
+ * 정하는 것은 이제 `ENTRUST_BASE` 와 에너지다.
  *
  * ── 왜 1천만이 아니라 2천5백만인가 ──────────────────────────
  * 이 값이 1천만이던 동안 **빚 완납은 도달할 수 없었다.** 규칙만 300판씩 굴려 재 본 값이다:
@@ -115,12 +132,26 @@ const NEWS_MAX = 0.10;
 const TICK_CAP = 0.45;
 
 /**
- * 자본잠식선 — 맡은 돈이 이 아래로 떨어지면 그 자리에서 끝난다.
+ * 자본잠식 — 맡은 돈이 **이 판의 최고치 대비** 이 비율 아래로 떨어지면 그 자리에서 끝난다.
  *
- * 처음 자금의 20%. 이 아래로 가면 되돌리는 것이 사실상 불가능해지므로, 질질 끄는 대신
- * 그 자리에서 끊는다.
+ * ── 왜 고정값이 아니라 최고치 기준인가 ─────────────────────
+ * 예전에는 `SEED_CASH × 0.2` 라는 **고정 금액**이었다. 판이 언제나 2,500만원으로
+ * 열렸으니 그래도 됐다. 이제 1998 은 **0원으로 열린다**(`accountLost`) — 고정선을 두면
+ * 첫 턴에 이미 그 아래라 판이 열리자마자 끝난다.
+ *
+ * 그래서 「처음의 20%」를 「가장 컸을 때의 20%」로 옮긴다. 뜻은 오히려 더 맞는다 —
+ * 자본잠식은 *얼마를 들고 시작했나* 가 아니라 **불린 것을 얼마나 날렸나** 의 이야기다.
+ * 아직 아무것도 안 맡은 계좌(최고치 0)는 잠식될 것도 없으므로 발동하지 않는다.
  */
-export const RUIN_LINE = Math.round(SEED_CASH * 0.2);
+export const RUIN_RATIO = 0.2;
+
+/**
+ * 자본잠식이 발동하기 시작하는 최고치. 이보다 작게 굴려 본 판은 잠식으로 안 끝난다.
+ *
+ * 없으면 첫 턴에 160만을 맡아 32만까지 흔들린 것만으로 판이 끝난다 — 그건 잠식이
+ * 아니라 그냥 작은 판이다.
+ */
+export const RUIN_FLOOR = 5_000_000;
 
 /** 에너지는 여기서 시작한다. 매 턴 저절로 줄기 때문에 가만히 있으면 못 버틴다. */
 export const ENERGY_START = 50;
@@ -248,6 +279,9 @@ export class StockEngine {
             maxTurns: this.chapter.turns,
             energy: ENERGY_START,
             debt: 0,
+            // 프롤로그의 나는 아직 월급쟁이다. 지갑이 비는 것은 회사가 없어지는
+            // 1998 부터이고, 그 자리는 `startNextChapter` 의 `accountLost` 가 만든다.
+            wallet: SALARY_LEFT,
         };
         this.applyOpening(this.chapter);
         this.chapterStartEquity = this.equity;
@@ -423,8 +457,14 @@ export class StockEngine {
     /** 이 판에서 맡은 돈이 가장 컸을 때. 턴이 넘어갈 때마다 갱신된다. */
     get peakEquity(): number { return this.peak; }
 
-    get ruinLine(): number { return RUIN_LINE; }
-    get isRuined(): boolean { return this.equity < RUIN_LINE; }
+    /** 지금 자본잠식선. 최고치를 못 넘긴 판은 0 이라 발동하지 않는다. */
+    get ruinLine(): number {
+        return this.peak < RUIN_FLOOR ? 0 : Math.round(this.peak * RUIN_RATIO);
+    }
+    get isRuined(): boolean {
+        const line = this.ruinLine;
+        return line > 0 && this.equity < line;
+    }
     get burnedOut(): boolean { return this.player.energy <= 0; }
 
     /** 이 챕터가 끝났는가. 턴을 다 썼거나, 자본잠식이거나, 에너지가 0 이거나. */
@@ -607,7 +647,10 @@ export class StockEngine {
     markTrades(): TradeMark {
         const positions: Record<string, Position> = {};
         for (const [id, p] of Object.entries(this.player.positions)) positions[id] = { ...p };
-        return { cash: this.player.cash, positions, recommended: this.recommended };
+        return {
+            cash: this.player.cash, positions, recommended: this.recommended,
+            chapterStart: this.chapterStartEquity,
+        };
     }
 
     /**
@@ -620,6 +663,7 @@ export class StockEngine {
         this.player.cash = m.cash;
         this.player.positions = positions;
         this.recommended = m.recommended;
+        this.chapterStartEquity = m.chapterStart;
     }
 
     /** 한 종목의 보유 전량을 판다. */
@@ -646,6 +690,53 @@ export class StockEngine {
         for (const id of Object.keys(this.player.positions)) this.sellAll(id);
     }
 
+    /* ── 내 돈 ───────────────────────────────────────────── */
+
+    /**
+     * 고객이 돈을 맡긴다. **맡은 돈이 늘어나는 자리는 여기 하나뿐이다.**
+     *
+     * 액수는 `core/clients.ts` 의 `entrustAmount` 가 낸다 — 에너지와 그 사람의 형편이
+     * 정한다. 여기서는 받아 넣기만 한다.
+     *
+     * `chapterStartEquity` 를 **같이 올린다.** 안 그러면 새로 맡은 돈이 「내가 불린 것」으로
+     * 세어져, 아무것도 안 하고 맡기만 해도 보수가 나온다. 보수는 **굴려서 늘린 만큼**이다.
+     */
+    entrust(amount: number): number {
+        const got = Math.max(0, Math.floor(amount));
+        if (got <= 0) return 0;
+        this.player.cash += got;
+        this.chapterStartEquity += got;
+        return got;
+    }
+
+    /** 한 턴의 생활비를 낸다. 못 내면 급전을 당겨 빚이 는다. */
+    payLivingCost(cost: number = LIVING_COST): LivingResult {
+        const r = payLiving(this.player.wallet, this.player.debt, cost);
+        this.player.wallet = r.wallet;
+        this.player.debt = r.debt;
+        return r;
+    }
+
+    /**
+     * 하루를 판다. 에너지를 내주고 일당을 받는다.
+     *
+     * **에너지가 모자라도 한다.** 굶는 것보다는 나으므로 막지 않는다 — 대신 에너지가
+     * 0 으로 바닥나 그 자리에서 판이 끝날 수 있다(`burnout`). 그 선택까지가 플레이어 것이다.
+     */
+    workShift(pay: number = PARTTIME_PAY, energy: number = PARTTIME_ENERGY): number {
+        this.player.wallet += pay;
+        this.player.energy = Math.max(0, this.player.energy - energy);
+        return pay;
+    }
+
+    /** 지갑에서 빚으로. 액수는 부르는 쪽이 정한다. */
+    repayDebt(amount: number): RepayResult {
+        const r = repay(this.player.wallet, this.player.debt, amount);
+        this.player.wallet = r.wallet;
+        this.player.debt = r.debt;
+        return r;
+    }
+
     /* ── 챕터를 넘긴다 ───────────────────────────────────── */
 
     /**
@@ -657,12 +748,13 @@ export class StockEngine {
         const finalEquity = this.equity;
         const returnPct = this.chapterReturnPct;
 
-        // **보수로 빚을 갚는다. 빚이 줄어드는 자리는 여기 하나뿐이다.**
-        // 이 줄이 없던 동안 빚은 늘기만 했고, 그래서 「빚을 다 갚으면 끝난다」는 규칙이
-        // 한 번도 성립할 수 없었다. 갚는 것은 맡은 돈이 아니라 내가 받은 보수다.
+        // **보수는 지갑으로 들어온다.** 예전에는 이 값이 곧장 빚에서 깎였다 — 편했지만
+        // 결정이 없었다. 이제 받은 돈을 갚을지 쥐고 있을지는 집에서 내가 고른다
+        // (`core/wallet.ts` 의 `repay`). 갚는 것은 여전히 맡은 돈이 아니라 내가 받은 보수다.
         const fee = advisoryFee(finalEquity - this.chapterStartEquity, this.player.energy);
-        this.player.debt = Math.max(0, this.player.debt - fee);
-        // 남은 빚에만 이자가 붙는다. 갚고 나서 붙는 순서라 갚은 보람이 있다.
+        this.player.wallet += fee;
+        // **이자는 지금 남아 있는 빚에 붙는다.** 그래서 이 챕터가 끝나기 **전에** 갚아 둔
+        // 돈이 가장 값어치가 크다 — 상환을 손에 쥐여 준 대가로 생긴 선택이 이것이다.
         this.player.debt = Math.round(this.player.debt * (1 + this.chapter.interest));
         if (this.chapter.debtOnEnd) this.player.debt += this.chapter.debtOnEnd;
 
@@ -673,6 +765,7 @@ export class StockEngine {
             finalEquity,
             energy: this.player.energy,
             debt: this.player.debt,
+            wallet: this.player.wallet,
             idle: !this.recommended,
             ruined: this.isRuined,
             burnedOut: this.burnedOut,
@@ -680,11 +773,22 @@ export class StockEngine {
         };
     }
 
-    /** 다음 챕터를 연다. 보유도 현금도 에너지도 **그대로 이어진다.** */
+    /**
+     * 다음 챕터를 연다. 보유도 현금도 에너지도 **그대로 이어진다** — 단 하나,
+     * `accountLost` 가 붙은 챕터를 지나올 때만 계좌가 통째로 없어진다.
+     */
     startNextChapter(): boolean {
         const idx = CHAPTERS.indexOf(this.chapter);
         const next = CHAPTERS[idx + 1];
         if (!next) return false;
+        // **회사가 없어진다.** 1998 의 내레이션이 처음부터 말하던 것을 규칙이 이제야
+        // 따라간다 — 맡긴 사람들은 그 돈을 잃었고, 나는 빈손으로 명동 3층에 앉는다.
+        if (this.chapter.accountLost) {
+            this.player.positions = {};
+            this.player.cash = 0;
+            this.player.wallet = WALLET_START;
+            this.peak = 0;
+        }
         this.chapter = next;
         this.absTurn = next.startTurn;
         this.player.currentTurn = 1;

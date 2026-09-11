@@ -21,7 +21,7 @@ import { RESEARCH_COST } from "@/lib/game/core/research";
 import { ENERGY_START } from "@/lib/game/core/StockEngine";
 
 export const metadata: Metadata = {
-    title: "상황 도감 · 재기",
+    title: "상황 도감 · IMF",
     description: "겪어야 얻는 상황카드와 그 조건, 그리고 1997~2000 의 연대.",
 };
 
@@ -91,7 +91,7 @@ export default function CardsPage() {
         <main className="mx-auto min-h-screen max-w-2xl bg-[#0b0f10] px-4 py-8 text-[#d8e0d8]">
             <header className="mb-8">
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#41686f]">
-                    재기 · 1997—2000
+                    IMF · 1997—2000
                 </p>
                 <h1 className="mt-2 font-mono text-3xl font-bold">상황 도감</h1>
                 <p className="mt-3 max-w-prose text-[14px] leading-relaxed text-[#8d9c93]">

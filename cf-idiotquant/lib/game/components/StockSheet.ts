@@ -65,6 +65,14 @@ export interface StockSheetDeps {
     block(): OrderBlock;
     /** 지금 앞에 앉은 사람의 이름. */
     clientName(): string;
+    /**
+     * 지금 권하면 그 사람이 **맡길 돈.** 이미 서식이 갖춰진 문자열로 온다.
+     *
+     * 예전에는 이 자리에 「현금 절반」이라고 적혀 있었다. 계좌가 언제나 돈을 들고
+     * 열리던 때의 말이다 — 1998 은 **0 원으로 열리므로** 그 줄이 「없는 돈의 절반」을
+     * 가리키게 됐다. 실제로 쓰이는 돈은 이 사람이 지금 내놓는 것이다.
+     */
+    incomingSay(): string;
     onResearch(id: string): void;
     onBuy(id: string): void;
     onSell(id: string): void;
@@ -222,7 +230,7 @@ export class StockSheet {
             // 「권한다」를 제일 밝게 두면 화면이 스스로와 싸운다 — 실제로 그랬다.
             this.cell(root, x0, btnY, half, BTN_H,
                 mine ? "근거를 대고 권한다" : "근거 없이 권한다",
-                mine ? `${who}에게 · 현금 절반` : "틀리면 에너지가 크게 준다",
+                mine ? `${who}에게 · ${this.d.incomingSay()}` : "틀리면 에너지가 크게 준다",
                 () => this.d.onBuy(row.stock.id), mine && worthRecommending(v));
         }
 

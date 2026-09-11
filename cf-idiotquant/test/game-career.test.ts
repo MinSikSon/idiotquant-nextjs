@@ -19,7 +19,7 @@ const facts = (over: Partial<SituationFacts> = {}): SituationFacts => ({ ...EMPT
 function summary(over: Partial<ChapterSummary> = {}): ChapterSummary {
     return {
         returnPct: 0, fee: 0, startEquity: 10_000_000, finalEquity: 10_000_000,
-        energy: 50, debt: 30_000_000, idle: false, ruined: false, burnedOut: false,
+        energy: 50, debt: 30_000_000, wallet: 0, idle: false, ruined: false, burnedOut: false,
         earned: [], ...over,
     };
 }

@@ -147,9 +147,11 @@ export function cutOnChapterEnd(
         `맡은 돈 ${sum.returnPct >= 0 ? "+" : ""}${sum.returnPct.toFixed(1)}%`,
         `에너지 ${sum.energy}`,
     ];
-    // **빚이 줄어드는 것을 눈으로 봐야 한다.** 보수 없이 남은 빚만 보이면 숫자가 왜
-    // 그렇게 됐는지 알 수 없고, 갚아 가는 중이라는 감각이 안 생긴다.
-    if (sum.fee > 0) lines.push(`보수 ${fmtMoney(sum.fee)} — 빚을 갚았다`);
+    // **보수가 어디로 갔는지를 말한다.** 예전에는 「빚을 갚았다」라고 적었는데, 이제
+    // 보수는 지갑으로 들어오고 갚는 것은 집에서 내가 누른다(`core/wallet.ts`). 그
+    // 한 줄을 안 고치면 화면이 일어나지 않은 일을 말한다.
+    if (sum.fee > 0) lines.push(`보수 ${fmtMoney(sum.fee)} — 지갑에 들어왔다`);
+    lines.push(`지갑 ${fmtMoney(sum.wallet)}`);
     lines.push(sum.debt > 0 ? `남은 빚 ${fmtMoney(sum.debt)}` : "빚을 다 갚았다");
     // 0 장은 정보가 아니다 — 줄을 아예 안 만든다.
     if (sum.earned.length > 0) lines.push(`새로 겪은 것 ${sum.earned.length}장`);

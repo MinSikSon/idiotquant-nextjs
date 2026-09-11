@@ -252,7 +252,7 @@ test("낸 카드는 버린 더미로 가고 다시 섞여 돌아온다", () => {
 /* ── 회귀 ──────────────────────────────────────────────────── */
 
 const summary = (over: Partial<ChapterSummary> = {}): ChapterSummary => ({
-    returnPct: 0, fee: 0, startEquity: 1, finalEquity: 1, energy: 50, debt: 0,
+    returnPct: 0, fee: 0, startEquity: 1, finalEquity: 1, energy: 50, debt: 0, wallet: 0,
     idle: false, ruined: false, burnedOut: false, earned: [], ...over,
 });
 
@@ -359,7 +359,7 @@ test("판정마다 다른 말을 하고, 빈 문구가 없다", () => {
 
 test("권하는 것을 막는 것 넷 — 그리고 저마다 다른 말을 한다", () => {
     const ok = {
-        hasClient: true, recommended: false, traded: false,
+        hasClient: true, recommended: false, traded: false, incoming: 0,
         cash: 10_000_000, equity: 10_000_000, price: 10_000,
     };
     assert.equal(recommendBlock(ok), "none");
@@ -387,7 +387,7 @@ test("현금 절반이 한 주 값에 닿는 경계", () => {
     // **절반으로 산다.** 그래서 현금이 한 주 값의 두 배는 돼야 한다.
     // 계좌를 현금과 같게 두어 「다 들어가 있다」에 안 걸리게 한다.
     const at = (cash: number) => recommendBlock({
-        hasClient: true, recommended: false, traded: false, cash, equity: cash, price: 1_000,
+        hasClient: true, recommended: false, traded: false, incoming: 0, cash, equity: cash, price: 1_000,
     });
     assert.equal(at(1_999), "notEnoughCash");
     assert.equal(at(2_000), "none");
@@ -396,7 +396,7 @@ test("현금 절반이 한 주 값에 닿는 경계", () => {
 
 test("계좌의 1% 가 굴릴 돈이 남았는지의 경계다", () => {
     const at = (cash: number) => recommendBlock({
-        hasClient: true, recommended: false, traded: false, cash, equity: 25_000_000, price: 1_000,
+        hasClient: true, recommended: false, traded: false, incoming: 0, cash, equity: 25_000_000, price: 1_000,
     });
     assert.equal(at(249_999), "fullyInvested");
     assert.equal(at(250_000), "none", "1% 를 채우면 굴릴 돈이 있는 것이다");
@@ -406,7 +406,7 @@ test("계좌의 1% 가 굴릴 돈이 남았는지의 경계다", () => {
 
 test("막힌 자리는 순서가 있다 — 사람이 없으면 현금은 볼 것도 없다", () => {
     const at = (o: Partial<Parameters<typeof recommendBlock>[0]>) => recommendBlock({
-        hasClient: true, recommended: false, traded: false,
+        hasClient: true, recommended: false, traded: false, incoming: 0,
         cash: 0, equity: 10_000_000, price: 10_000, ...o,
     });
     assert.equal(at({ hasClient: false, recommended: true }), "noClient");
@@ -511,7 +511,7 @@ test("팔아서 현금을 만든 다음 권하는 길이 열려 있어야 한다
     // 「팔아야 권할 현금이 생긴다」고 말해 놓고 팔고 나면 권할 수 없으면 화면이 거짓말이다.
     // 판 것은 `recommended` 를 안 세우므로, 현금만 생기면 막힘이 풀린다.
     const invested = {
-        hasClient: true, recommended: false, traded: false,
+        hasClient: true, recommended: false, traded: false, incoming: 0,
         cash: 35_000, equity: 25_000_000, price: 12_000,
     };
     assert.equal(recommendBlock(invested), "fullyInvested");

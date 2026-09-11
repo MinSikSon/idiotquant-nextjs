@@ -26,6 +26,9 @@ const base: LedgerInput = {
     interest: 0.15,
     debtOnEnd: 0,
     feePaid: 0,
+    wallet: 1_200_000,
+    livingCost: 300_000,
+    repaid: 0,
 };
 
 const at = (over: Partial<LedgerInput>): LedgerInput => ({ ...base, ...over });
@@ -86,22 +89,40 @@ test("같은 수익이라도 에너지가 높으면 보수가 크다 — 이 화
     assert.ok(high > low, `에너지 90 의 보수 ${high} 가 20 의 ${low} 보다 커야 한다`);
 });
 
-/* ── 갚을 돈 — 순서가 `endChapter` 와 같아야 한다 ──────────────── */
+/* ── 지갑 ───────────────────────────────────────────────────── */
 
-test("보수로 먼저 깎고, 남은 것에 이자가 붙는다", () => {
+test("보수는 지갑으로 들어온다 — 빚은 저절로 안 줄어든다", () => {
+    // **이 판정이 「갚는 것은 내가 정한다」의 전부다.** 보수가 빚에서 자동으로 깎이던
+    // 규칙으로 되돌아가면 여기서 걸린다.
     const l = ledgerOf(base);
     const fee = advisoryFee(3_000_000, 50);
-    const afterFee = 30_000_000 - fee;
-    assert.equal(l.owed.byFee, fee);
-    assert.equal(l.owed.end, Math.round(afterFee * 1.15));
-    assert.equal(l.owed.interest, Math.round(afterFee * 1.15) - afterFee);
+    assert.equal(l.earned.fee, fee);
+    assert.equal(l.held.afterFee, base.wallet + fee);
+    assert.equal(l.owed.end, Math.round(30_000_000 * 1.15),
+        "보수가 빚을 건드리면 안 된다");
 });
 
-test("보수가 빚보다 크면 깎이는 것은 빚까지다 — 거스름돈은 없다", () => {
-    const l = ledgerOf(at({ debt: 100_000, equity: 125_000_000 }));
-    assert.equal(l.owed.byFee, 100_000);
-    assert.equal(l.owed.end, 0);
-    assert.equal(l.owed.interest, 0);
+test("지갑이 몇 턴치인지 — 생활비로 나눈 몫이다", () => {
+    assert.equal(ledgerOf(at({ wallet: 1_200_000 })).held.turns, 4);
+    assert.equal(ledgerOf(at({ wallet: 299_999 })).held.turns, 0);
+    assert.equal(ledgerOf(at({ wallet: 0 })).held.turns, 0);
+});
+
+test("갚을 수 있는 최대는 지갑과 빚 중 작은 쪽이다", () => {
+    assert.equal(ledgerOf(at({ wallet: 5_000_000, debt: 1_000_000 })).held.canRepay, 1_000_000);
+    assert.equal(ledgerOf(at({ wallet: 1_000_000, debt: 5_000_000 })).held.canRepay, 1_000_000);
+    assert.equal(ledgerOf(at({ wallet: 0, debt: 5_000_000 })).held.canRepay, 0);
+    assert.equal(ledgerOf(at({ wallet: 5_000_000, debt: 0 })).held.canRepay, 0);
+});
+
+/* ── 갚을 돈 — 순서가 `endChapter` 와 같아야 한다 ──────────────── */
+
+test("이자는 지금 남아 있는 빚에 붙는다 — 미리 갚은 만큼 덜 붙는다", () => {
+    const full = ledgerOf(at({ debt: 30_000_000 }));
+    const half = ledgerOf(at({ debt: 15_000_000 }));
+    assert.equal(full.owed.interest, Math.round(30_000_000 * 1.15) - 30_000_000);
+    assert.ok(half.owed.interest < full.owed.interest,
+        "먼저 갚아 두면 붙는 이자가 줄어야 한다 — 상환을 손에 쥐여 준 이유다");
 });
 
 test("프롤로그의 새 빚은 이자 뒤에 얹힌다", () => {
@@ -115,7 +136,6 @@ test("프롤로그의 새 빚은 이자 뒤에 얹힌다", () => {
 test("빚이 없으면 이자도 없다", () => {
     const l = ledgerOf(at({ debt: 0 }));
     assert.equal(l.owed.interest, 0);
-    assert.equal(l.owed.byFee, 0);
     assert.equal(l.owed.end, 0);
 });
 
@@ -138,10 +158,9 @@ test("장부의 「챕터 끝에」는 endChapter 가 실제로 내는 빚과 �
         const i = at(over);
         const l = ledgerOf(i);
 
-        let debt = i.debt;
         const fee = advisoryFee(i.equity - i.startEquity, i.energy);
-        debt = Math.max(0, debt - fee);
-        debt = Math.round(debt * (1 + i.interest));
+        // **보수는 여기 안 들어간다.** 지갑으로 가고, 갚는 것은 따로 눌러야 한다.
+        let debt = Math.round(i.debt * (1 + i.interest));
         debt += i.debtOnEnd;
 
         assert.equal(l.owed.end, debt, `${JSON.stringify(over)} 에서 어긋났다`);
@@ -169,6 +188,9 @@ test("실제 엔진에 물려도 같다 — 손으로 옮겨 적은 셈이 아�
             interest: e.chapter.interest,
             debtOnEnd: e.chapter.debtOnEnd ?? 0,
             feePaid: 0,
+            wallet: e.player.wallet,
+            livingCost: 300_000,
+            repaid: 0,
         });
 
         const sum = e.endChapter();
@@ -197,6 +219,9 @@ test("실제 엔진에 물려도 같다 — 손으로 옮겨 적은 셈이 아�
             interest: e.chapter.interest,
             debtOnEnd: e.chapter.debtOnEnd ?? 0,
             feePaid: 0,
+            wallet: e.player.wallet,
+            livingCost: 300_000,
+            repaid: 0,
         });
         const sum2 = e.endChapter();
         assert.equal(mid.earned.fee, sum2.fee, `시드 ${seed}: 1998 보수가 어긋났다`);
@@ -204,12 +229,31 @@ test("실제 엔진에 물려도 같다 — 손으로 옮겨 적은 셈이 아�
     }
 });
 
-test("최고 자산은 챕터를 넘어도 안 지워진다", () => {
+test("프롤로그를 지나면 계좌가 통째로 없어진다 — 1998 은 0 원으로 연다", () => {
+    // 1998 의 내레이션이 처음부터 말하던 것이다(「맡긴 사람들은 그 돈을 잃었다」).
+    // 이 판정이 깨지면 화면의 글과 규칙이 다시 어긋난다.
     const e = new StockEngine(11);
     for (let i = 0; i < 4; i++) e.advanceTurn();
-    const peak = e.peakEquity;
-    assert.ok(peak >= e.chapterStart);
+    assert.ok(e.equity > 0, "프롤로그는 고객 돈을 굴리고 있다");
     e.endChapter();
     e.startNextChapter();
+    assert.equal(e.player.cash, 0);
+    assert.equal(Object.keys(e.player.positions).length, 0);
+    assert.equal(e.equity, 0);
+    assert.equal(e.player.wallet, 0, "지갑도 0 에서 시작한다");
+    assert.ok(e.player.debt > 0, "없어진 것은 계좌지 빚이 아니다");
+});
+
+test("최고 자산은 그 뒤의 챕터를 넘어도 안 지워진다", () => {
+    // 지워지는 것은 프롤로그 하나뿐이다 — 1998→1999 는 이어진다.
+    const e = new StockEngine(11);
+    e.endChapter();
+    e.startNextChapter();          // 1998, 계좌 0
+    e.entrust(20_000_000);
+    for (let i = 0; i < 4; i++) e.advanceTurn();
+    const peak = e.peakEquity;
+    assert.ok(peak > 0);
+    e.endChapter();
+    e.startNextChapter();          // 1999
     assert.ok(e.peakEquity >= peak, "챕터를 넘겼다고 최고 기록이 줄어들면 안 된다");
 });
