@@ -96,11 +96,15 @@ test("흔한 폰에서는 버튼 띠에 제목 표시줄이 선다", () => {
             `h=${h}: 버튼 띠 ${b.action.h} 이라 제목이 접힌다`);
     }
     // 눕힌 폰도 선다 — 여기가 제일 아슬아슬한 자리다.
-    for (const [w, h] of [[844, 390], [740, 360]] as const) {
+    //
+    // **뷰포트가 아니라 캔버스가 실제로 받는 칸으로 잰다.** 844×390 짜리 폰에서
+    // 페이지 크롬을 빼면 캔버스에 오는 것은 623×353 이다. 뷰포트로만 재다가
+    // 한 픽셀 차이로 제목이 접히는 것을 놓쳤다.
+    for (const [w, h] of [[844, 390], [623, 353], [740, 360], [667, 340]] as const) {
         const g = designSize(w, h);
         const b = bandsOf(g.width, g.height);
         assert.ok(b.action.h >= ACTION_FRAMED_MIN,
-            `${w}×${h}: 버튼 띠 ${b.action.h} 이라 제목이 접힌다`);
+            `${w}×${h} → 격자 ${g.width}×${g.height}: 버튼 띠 ${b.action.h} 이라 제목이 접힌다`);
     }
 });
 

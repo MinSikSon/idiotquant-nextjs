@@ -57,8 +57,8 @@ import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
 import { StockList, type StockRow } from "@/lib/game/components/StockList";
 import { StockSheet } from "@/lib/game/components/StockSheet";
 import {
-    ACTION_FRAMED_MIN, BTN, C, CLIENT_ROW, FS, MIN_FS, PAD, S, STACK, bandsOf, fontOf,
-    mkText, money, pressable, pxOf, setSize, stackH, stackPlan,
+    ACTION_FRAMED_MIN, BTN, C, CLIENT_ROW, FS, MIN_FS, PAD, S, STACK, bandsOf, cells,
+    fontOf, mkText, money, pressable, pxOf, setSize, stackH, stackPlan,
     type Band, type Bands, type LogKind,
 } from "@/lib/game/ui/theme";
 import { DIE, TITLE_H, bevel, btnFace, crt, die, skinOf, winFrame } from "@/lib/game/ui/win95";
@@ -587,21 +587,39 @@ export class TradingScene extends Phaser.Scene {
         if (!stats || b.h < 48) return;
 
         const cy = b.y + b.h - 22;
-        this.keep(crt(this, b.x + PAD, cy, b.w - PAD * 2, 18));
-        const x0 = b.x + PAD + 6;
-        const xr = b.x + b.w - PAD - 6;
-        const ty = cy + 9 - FS.xs / 2;
+        const ROW_H = 18;
+        let crtW = b.w - PAD * 2;
 
-        // 이 줄 뒤에 장부가 있다는 표시. **글자 하나로 말한다** — 「장부 보기」라고 적을
-        // 자리가 없고, 적으면 게이지가 그만큼 짧아진다.
+        // ── 장부로 가는 문 ────────────────────────────────────────
+        // **여기가 안 눌러 보였다.** 예전에는 검은 줄 오른쪽 끝에 금색 `▸` 글자
+        // 하나였는데, 화면의 다른 모든 것이 은회색 3D 단추인 마당에 검은 화면 속
+        // 작은 화살표는 「값」으로 읽히지 「눌러라」로 안 읽힌다.
+        //
+        // 그래서 **진짜 단추를 세운다.** 남색 띠 위의 은회색 면은 저 혼자 튀어나와
+        // 보이고, 무엇이 열리는지도 「장부」 두 글자가 직접 말한다.
+        //
+        // 누르는 자리는 여전히 **띠 전체**다 — 단추만 받으면 높이가 18px 이라
+        // 손가락으로 겨우 닿는다. 대신 단추가 `parts` 로 들어가 있어서, 띠 어디를
+        // 눌러도 단추가 같이 눌린다.
         if (onOpen) {
-            this.text(xr, ty, "▸", FS.xs, S.gold, 1);
-            // **누르는 자리는 띠 전체다.** 검은 줄만 받으면 높이가 18px 이라 손가락으로는
-            // 거의 못 누른다. 띠 안에 다른 누를 것이 없으므로 통째로 받아도 안 겹친다 —
-            // 화살표는 「여기 뭔가 있다」를 말하는 표시지 과녁이 아니다.
-            this.tap(b.x, b.y, b.w, b.h, onOpen);
+            const label = "장부 ▸";
+            const bw = Math.round(cells(label) * FS.xs * 0.62) + 14;
+            const bx = b.x + b.w - PAD - bw;
+            const face = bevel(this, bx, cy, bw, ROW_H, { face: C.panel });
+            const text = this.text(bx + bw / 2, cy + ROW_H / 2 - FS.xs / 2,
+                label, FS.xs, S.faceInk, 0.5);
+            this.keep(face);
+            const { zone, shade } = pressable(this, b.x, b.y, b.w, b.h, [face, text], onOpen);
+            this.keep(shade);
+            this.keep(zone);
+            crtW -= bw + 5;
         }
-        const rightEdge = onOpen ? xr - 12 : xr;
+
+        this.keep(crt(this, b.x + PAD, cy, crtW, ROW_H));
+        const x0 = b.x + PAD + 6;
+        const xr = b.x + PAD + crtW - 6;
+        const ty = cy + 9 - FS.xs / 2;
+        const rightEdge = xr;
 
         // 빚부터 자리를 잡는다 — 자릿수가 그때그때 달라서, 먼저 재야 게이지가 안 밀린다.
         const debt = this.engine.player.debt;
