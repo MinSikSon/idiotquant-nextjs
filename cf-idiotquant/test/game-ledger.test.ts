@@ -299,3 +299,24 @@ test("현금과 주식을 이어 붙이면 「지금」이 된다", () => {
     const sum = barFrac(en.cash, scale) + barFrac(en.invested, scale);
     assert.ok(Math.abs(sum - barFrac(en.now, scale)) < 1e-9);
 });
+
+test("한 자로 재면 지갑은 실오라기지만 0 은 아니다", () => {
+    // 「한눈에」 덩이는 잔액 셋을 **한 자**에 올린다. 거기서 지갑은 빚의 1~2% 라
+    // 아주 짧은데, **짧은 것과 없는 것은 다른 형편이다** — 길이가 0 으로 떨어지면
+    // 「한 푼도 없다」와 구별이 안 된다. (화면은 여기에 최소 1px 을 더 얹는다.)
+    const l = ledgerOf(at({ equity: 28_000_000, wallet: 440_000, debt: 30_000_000 }));
+    const scale = barScale([l.entrusted.now, l.held.now, l.owed.now]);
+    assert.equal(scale, 30_000_000, "제일 큰 것이 자가 된다");
+
+    const wallet = barFrac(l.held.now, scale);
+    assert.ok(wallet > 0, "돈이 있으면 길이도 있어야 한다");
+    assert.ok(wallet < 0.02, "빚에 견주면 실오라기다 — 그게 이 판의 형편이다");
+
+    // **셋이 같은 자를 쓴다**: 길이의 비가 곧 금액의 비여야 덩이끼리 견줄 수 있다.
+    const entrusted = barFrac(l.entrusted.now, scale);
+    assert.ok(Math.abs(entrusted / wallet - 28_000_000 / 440_000) < 1e-9);
+
+    // 빈 지갑은 길이도 없다 — 위의 「실오라기」와 갈려야 한다.
+    const broke = ledgerOf(at({ equity: 28_000_000, wallet: 0, debt: 30_000_000 }));
+    assert.equal(barFrac(broke.held.now, scale), 0);
+});

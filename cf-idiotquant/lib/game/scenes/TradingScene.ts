@@ -1132,9 +1132,13 @@ export class TradingScene extends Phaser.Scene {
 
         // **자는 덩이마다 하나**이고 그 덩이에서 제일 큰 금액이다(`core/ledger.ts`).
         // 덩이를 건너서 견주지 않으므로 지갑 44만이 빚 3,000만에 눌려 사라지지 않는다.
+        //
+        // 그런데 그러면 **덩이끼리는 견줄 수가 없다** — 자가 넷이라 길이가 넷 다 다른
+        // 것을 뜻한다. 그래서 「한눈에」 덩이 하나가 **세 잔액을 한 자에 올린다.**
+        // 거기서는 지갑이 정말로 실오라기로 보이는데, 그게 이 게임의 형편이다.
+        const allScale = barScale([en.now, he.now, ow.now]);
         const enScale = barScale([en.start, en.now, en.peak]);
         const eaScale = barScale([ea.fee, ea.paid]);
-        const heScale = barScale([he.now, he.afterFee]);
         const owScale = barScale([ow.end, ow.repaid]);
         /**
          * 한 칸짜리 막대. **자가 0 이면 안 그린다** — 덩이의 값이 다 0 이라 견줄 것이
@@ -1149,15 +1153,34 @@ export class TradingScene extends Phaser.Scene {
         const blocks: LedgerBlock[] = [
             // **머리의 한마디는 「누구 돈인가」만 말한다.** 흐름은 덩이 사이의 화살표가
             // 말하므로, 여기서 또 적으면 같은 말이 한 화면에 두 번 선다.
+            // ── 한눈에 — **이 덩이만 자가 다르다** ────────────────────
+            // 나머지 넷은 저마다의 자로 제 안을 자세히 말한다. 그래서 「맡은 돈 2,833만」
+            // 막대와 「빚 3,000만」 막대가 **둘 다 꽉 찬 채로** 서 있었다 — 나란히 놓고도
+            // 어느 쪽이 큰지를 여전히 숫자를 읽어서 알아야 했다.
+            //
+            // 여기 세 줄은 **잔액 셋을 한 자에 올린다.** 보수(「얻은 돈」)는 안 넣는다 —
+            // 그건 잔액이 아니라 흐름이고, 흐름을 잔액과 한 자로 재는 것이 바로 이
+            // 파일이 경계하는 「자가 둘」이다.
+            //
+            // 값이 아래 덩이와 겹치는 것은 알고 그런 것이다. 대신 겹치는 만큼
+            // **「맡은 돈」과 「지갑」의 「지금」 줄을 뺐다** — 늘어난 줄은 하나뿐이다.
+            {
+                head: "한눈에", note: "셋을 한 자로 잰다", tint: C.lit,
+                rows: [
+                    ["맡은 돈", money(en.now), S.ink, true, oneBar(en.now, allScale, C.steel)],
+                    ["지갑", money(he.now), he.now > 0 ? S.up : S.down, true,
+                        oneBar(he.now, allScale, C.up)],
+                    ["갚을 돈", ow.now > 0 ? money(ow.now) : "없다",
+                        ow.now > 0 ? S.down : S.up, true, oneBar(ow.now, allScale, C.down)],
+                ],
+            },
             {
                 head: "맡은 돈", note: "고객 것이다", tint: C.steel,
                 rows: [
+                    // **「지금」은 위의 「한눈에」가 말한다.** 여기 남는 것은 그 값을
+                    // *둘러싼* 것들이다 — 어디서 시작했고, 얼마가 현금이고, 최고가 얼마였나.
                     ["챕터 시작", money(en.start), S.inkDim, false, oneBar(en.start, enScale, C.inkDim)],
-                    // 시작 막대 바로 아래에 선다. **줄었으면 짧아진 것이 그대로 보인다** —
-                    // 「−19.2%」를 읽기 전에 눈이 먼저 안다.
-                    ["지금", money(en.now), S.ink, true,
-                        oneBar(en.now, enScale, en.delta >= 0 ? C.up : C.down)],
-                    // **이 줄에는 막대가 없다.** 증감은 위 두 막대의 *차이*가 이미 말하고,
+                    // **이 줄에는 막대가 없다.** 증감은 나머지 막대들의 *차이*가 이미 말하고,
                     // 음수를 같은 자에 올릴 방법도 없다.
                     ["이번 챕터", `${signed(en.delta)} · ${en.pct >= 0 ? "+" : ""}${en.pct.toFixed(1)}%`,
                         tone(en.delta), true],
@@ -1189,16 +1212,19 @@ export class TradingScene extends Phaser.Scene {
             {
                 head: "지갑", note: "내 것이다", tint: C.up,
                 rows: [
-                    ["지금", money(he.now), he.now > 0 ? S.ink : S.down, true,
-                        oneBar(he.now, heScale, he.now > 0 ? C.up : C.down)],
+                    // **「지금」은 위의 「한눈에」가 말한다.** 액수를 여기 또 적으면 한 화면에
+                    // 같은 숫자가 두 번 서고, 그러면 요약이 자리를 번 것이 아니라 쓴 것이 된다.
+                    //
                     // **「몇 턴치」가 액수보다 결정에 쓰인다.** 한 자리면 알바를 해야 하고,
                     // 두 자리면 영업에 쓸 턴이 남았다는 뜻이다. 턴은 돈이 아니라 막대가 없다.
                     [`생활비 ${money(he.cost)}`,
                         he.turns > 0 ? `${he.turns}턴치 남았다` : "이번 턴을 못 낸다",
                         he.turns > 2 ? S.inkDim : S.down, true],
+                    // 막대가 없다. 「지금」이 이 덩이를 떠나면서 견줄 짝이 없어졌고,
+                    // 짝 없는 막대는 언제나 꽉 찬 채로 서서 아무 말도 안 한다.
+                    // 얼마나 불어나는지는 위 「한눈에」의 지갑과 이 숫자가 말한다.
                     ...(ea.fee > 0
-                        ? [["챕터 끝에", money(he.afterFee), S.up, false,
-                            oneBar(he.afterFee, heScale, C.gold)] as LedgerRow]
+                        ? [["챕터 끝에", money(he.afterFee), S.up, false] as LedgerRow]
                         : []),
                 ],
                 flow: "↓ 갚는 것은 내가 정한다",
@@ -1380,7 +1406,11 @@ export class TradingScene extends Phaser.Scene {
             this.rect(x0, y, lane, H, C.grid, 1);
             let x = x0;
             for (const [frac, col] of b.segs) {
-                const w = Math.round(lane * Math.max(0, Math.min(1, frac)));
+                const f = Math.max(0, Math.min(1, frac));
+                // **0 이 아니면 최소 1px 은 그린다.** 「한눈에」에서 지갑은 빚의 1~2% 라
+                // 반올림하면 0 이 되는 자리가 있는데, 그러면 「한 푼도 없다」와
+                // 「빚에 견주면 실오라기다」가 화면에서 같아진다. 둘은 다른 형편이다.
+                const w = f > 0 ? Math.max(1, Math.round(lane * f)) : 0;
                 if (w > 0) this.rect(x, y, w, H, col, 1);
                 x += w;
             }
