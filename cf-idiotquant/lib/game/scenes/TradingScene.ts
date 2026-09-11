@@ -51,7 +51,7 @@ import {
 } from "@/lib/game/core/interlude";
 import { drawInterlude } from "@/lib/game/components/Interlude";
 import { preloadArt, sliceArt, drawArt, ART_VEIL_BACK, type ArtKey } from "@/lib/game/ui/art";
-import { ledgerOf } from "@/lib/game/core/ledger";
+import { barFrac, barScale, ledgerOf } from "@/lib/game/core/ledger";
 import type { EndReason, MarketRead, Regime, TurnBuff } from "@/lib/game/core/types";
 import { PixelCandleChart } from "@/lib/game/components/PixelCandleChart";
 import { GameLog, type LogEntry } from "@/lib/game/components/GameLog";
@@ -102,12 +102,22 @@ interface ButtonDef {
 type Screen = "title" | "home" | "office" | "market" | "ledger" | "park" | "ending";
 
 /**
- * 장부의 한 줄. `[이름, 값, 값의 색, 지킬 것인가]`.
+ * 막대 한 칸 — `[길이(0~1), 색]`. 여러 칸이면 **이어 붙는다**(현금 · 주식).
  *
- * 마지막 칸이 **좁은 격자에서 살아남는가**를 정한다 — 눕힌 폰에서는 창이 245px 이라
- * 열세 줄이 다 못 선다(`drawLedgerBlocks`).
+ * 길이는 `core/ledger.ts` 의 `barFrac` 가 낸다 — 자(scale)를 정하는 규칙이 거기 있다.
  */
-type LedgerRow = [string, string, string, boolean];
+type BarSeg = [number, number];
+
+/**
+ * 장부의 한 줄. `[이름, 값, 값의 색, 지킬 것인가, 막대?]`.
+ *
+ * 넷째 칸이 **좁은 격자에서 살아남는가**를 정한다 — 눕힌 폰에서는 창이 245px 이라
+ * 열세 줄이 다 못 선다(`drawLedgerBlocks`).
+ *
+ * 다섯째 칸이 **줄 가운데의 빈자리에 서는 막대**다. 줄을 늘리지 않으므로 이 화면의
+ * 세로 예산은 그대로다 — 길이는 지금까지 버려지던 자리에서 온다.
+ */
+type LedgerRow = [string, string, string, boolean, BarSeg[]?];
 
 interface LedgerBlock {
     head: string;
@@ -1120,43 +1130,99 @@ export class TradingScene extends Phaser.Scene {
         const tone = (v: number) => (v >= 0 ? S.up : S.down);
         const { entrusted: en, earned: ea, held: he, owed: ow } = L;
 
+        // **자는 덩이마다 하나**이고 그 덩이에서 제일 큰 금액이다(`core/ledger.ts`).
+        // 덩이를 건너서 견주지 않으므로 지갑 44만이 빚 3,000만에 눌려 사라지지 않는다.
+        //
+        // 그런데 그러면 **덩이끼리는 견줄 수가 없다** — 자가 넷이라 길이가 넷 다 다른
+        // 것을 뜻한다. 그래서 「한눈에」 덩이 하나가 **세 잔액을 한 자에 올린다.**
+        // 거기서는 지갑이 정말로 실오라기로 보이는데, 그게 이 게임의 형편이다.
+        const allScale = barScale([en.now, he.now, ow.now]);
+        const enScale = barScale([en.start, en.now, en.peak]);
+        const eaScale = barScale([ea.fee, ea.paid]);
+        const owScale = barScale([ow.end, ow.repaid]);
+        /**
+         * 한 칸짜리 막대. **자가 0 이면 안 그린다** — 덩이의 값이 다 0 이라 견줄 것이
+         * 없는데, 빈 트랙만 둘셋 서면 자리만 먹고 아무 말도 안 한다. 아직 한 푼도
+         * 못 받은 「얻은 돈」이 그 자리다.
+         */
+        const oneBar = (v: number, scale: number, col: number): BarSeg[] | undefined =>
+            scale > 0 ? [[barFrac(v, scale), col]] : undefined;
+
         // **부제가 흐름을 말한다.** 숫자만 늘어놓으면 표가 되고, 표는 셋이 서로
         // 무슨 사이인지를 안 알려 준다.
         const blocks: LedgerBlock[] = [
             // **머리의 한마디는 「누구 돈인가」만 말한다.** 흐름은 덩이 사이의 화살표가
             // 말하므로, 여기서 또 적으면 같은 말이 한 화면에 두 번 선다.
+            // ── 한눈에 — **이 덩이만 자가 다르다** ────────────────────
+            // 나머지 넷은 저마다의 자로 제 안을 자세히 말한다. 그래서 「맡은 돈 2,833만」
+            // 막대와 「빚 3,000만」 막대가 **둘 다 꽉 찬 채로** 서 있었다 — 나란히 놓고도
+            // 어느 쪽이 큰지를 여전히 숫자를 읽어서 알아야 했다.
+            //
+            // 여기 세 줄은 **잔액 셋을 한 자에 올린다.** 보수(「얻은 돈」)는 안 넣는다 —
+            // 그건 잔액이 아니라 흐름이고, 흐름을 잔액과 한 자로 재는 것이 바로 이
+            // 파일이 경계하는 「자가 둘」이다.
+            //
+            // 값이 아래 덩이와 겹치는 것은 알고 그런 것이다. 대신 겹치는 만큼
+            // **「맡은 돈」과 「지갑」의 「지금」 줄을 뺐다** — 늘어난 줄은 하나뿐이다.
+            {
+                head: "한눈에", note: "셋을 한 자로 잰다", tint: C.lit,
+                rows: [
+                    ["맡은 돈", money(en.now), S.ink, true, oneBar(en.now, allScale, C.steel)],
+                    ["지갑", money(he.now), he.now > 0 ? S.up : S.down, true,
+                        oneBar(he.now, allScale, C.up)],
+                    ["갚을 돈", ow.now > 0 ? money(ow.now) : "없다",
+                        ow.now > 0 ? S.down : S.up, true, oneBar(ow.now, allScale, C.down)],
+                ],
+            },
             {
                 head: "맡은 돈", note: "고객 것이다", tint: C.steel,
                 rows: [
-                    ["챕터 시작", money(en.start), S.inkDim, false],
-                    ["지금", money(en.now), S.ink, true],
+                    // **「지금」은 위의 「한눈에」가 말한다.** 여기 남는 것은 그 값을
+                    // *둘러싼* 것들이다 — 어디서 시작했고, 얼마가 현금이고, 최고가 얼마였나.
+                    ["챕터 시작", money(en.start), S.inkDim, false, oneBar(en.start, enScale, C.inkDim)],
+                    // **이 줄에는 막대가 없다.** 증감은 나머지 막대들의 *차이*가 이미 말하고,
+                    // 음수를 같은 자에 올릴 방법도 없다.
                     ["이번 챕터", `${signed(en.delta)} · ${en.pct >= 0 ? "+" : ""}${en.pct.toFixed(1)}%`,
                         tone(en.delta), true],
-                    ["현금 · 주식", `${money(en.cash)} · ${money(en.invested)}`, S.inkDim, false],
-                    ["이번 판 최고", money(en.peak), S.inkDim, false],
+                    // 한 줄에 두 칸 — **이어 붙은 길이가 곧 「지금」이다.** 얼마가 현금으로
+                    // 남아 있고 얼마가 시장에 들어가 있는지가 비율로 보인다.
+                    ["현금 · 주식", `${money(en.cash)} · ${money(en.invested)}`, S.inkDim, false,
+                        enScale > 0
+                            ? [[barFrac(en.cash, enScale), C.steel],
+                               [barFrac(en.invested, enScale), C.gold]]
+                            : undefined],
+                    ["이번 판 최고", money(en.peak), S.inkDim, false, oneBar(en.peak, enScale, C.inkDim)],
                 ],
                 flow: `↓ 늘린 것에서 ${Math.round(ea.rate * 100)}% 를 뗀다`,
             },
             {
                 head: "얻은 돈", note: "내 것이다", tint: C.gold,
                 rows: [
+                    // 보수율은 **돈이 아니라 비율이라 막대가 없다.** 이 덩이의 자는
+                    // 금액이고, 58% 를 그 자에 올리면 옆 줄의 길이가 거짓말이 된다.
                     ["보수율", `${Math.round(ea.rate * 100)}% · 에너지 ${e.player.energy}`, S.gold, true],
                     // **이 한 줄이 이 화면의 이유다.** 지금 끝나면 내 몫이 얼마인가.
+                    // 막대가 「여태 받은」 옆에 서면서 이번 한 챕터의 무게가 보인다.
                     ["지금 끝나면", ea.fee > 0 ? money(ea.fee) : "없다 — 못 늘렸다",
-                        ea.fee > 0 ? S.up : S.inkDim, true],
-                    ["여태 받은", money(ea.paid), S.inkDim, false],
+                        ea.fee > 0 ? S.up : S.inkDim, true, oneBar(ea.fee, eaScale, C.up)],
+                    ["여태 받은", money(ea.paid), S.inkDim, false, oneBar(ea.paid, eaScale, C.gold)],
                 ],
                 flow: "↓ 보수는 지갑으로 들어온다",
             },
             {
                 head: "지갑", note: "내 것이다", tint: C.up,
                 rows: [
-                    ["지금", money(he.now), he.now > 0 ? S.ink : S.down, true],
+                    // **「지금」은 위의 「한눈에」가 말한다.** 액수를 여기 또 적으면 한 화면에
+                    // 같은 숫자가 두 번 서고, 그러면 요약이 자리를 번 것이 아니라 쓴 것이 된다.
+                    //
                     // **「몇 턴치」가 액수보다 결정에 쓰인다.** 한 자리면 알바를 해야 하고,
-                    // 두 자리면 영업에 쓸 턴이 남았다는 뜻이다.
+                    // 두 자리면 영업에 쓸 턴이 남았다는 뜻이다. 턴은 돈이 아니라 막대가 없다.
                     [`생활비 ${money(he.cost)}`,
                         he.turns > 0 ? `${he.turns}턴치 남았다` : "이번 턴을 못 낸다",
                         he.turns > 2 ? S.inkDim : S.down, true],
+                    // 막대가 없다. 「지금」이 이 덩이를 떠나면서 견줄 짝이 없어졌고,
+                    // 짝 없는 막대는 언제나 꽉 찬 채로 서서 아무 말도 안 한다.
+                    // 얼마나 불어나는지는 위 「한눈에」의 지갑과 이 숫자가 말한다.
                     ...(ea.fee > 0
                         ? [["챕터 끝에", money(he.afterFee), S.up, false] as LedgerRow]
                         : []),
@@ -1168,22 +1234,34 @@ export class TradingScene extends Phaser.Scene {
                 // **빚이 없으면 이자도 없다.** 프롤로그가 그 상태인데, 거기서
                 // 「이자 0% —」를 세워 두면 줄이 아무 말도 안 하고 자리만 차지한다.
                 // 얹히는 빚 3천만만 남기는 편이 훨씬 아프게 읽힌다.
+                //
+                // ── 이 덩이의 막대는 **합쳐진다** ─────────────────────
+                // 「지금」 + 「이자」 + 「새로 지는 빚」의 길이를 이으면 정확히
+                // 「챕터 끝에」의 길이다 — 셋을 더해 봐야 알던 것이 눈에 보인다.
+                // 그래서 이 덩이의 자는 `ow.end` 다(`owScale`).
                 rows: [
-                    ["지금", ow.now > 0 ? money(ow.now) : "없다", ow.now > 0 ? S.down : S.up, true],
+                    ["지금", ow.now > 0 ? money(ow.now) : "없다", ow.now > 0 ? S.down : S.up, true,
+                        oneBar(ow.now, owScale, C.down)],
                     ...(ow.now > 0 && ch.interest > 0
                         // **이 줄이 「지금 갚을 이유」다.** 이자는 챕터 끝에 남은 빚에만
-                        // 붙으므로, 그 전에 넣은 돈은 이 숫자를 그만큼 깎는다.
+                        // 붙으므로, 그 전에 넣은 돈은 이 숫자를 그만큼 깎는다. 금색인
+                        // 것은 이 조각만이 **안 생기게 할 수 있는 것**이기 때문이다.
                         ? [[`이자 ${Math.round(ch.interest * 100)}%`, `+${money(ow.interest)}`,
-                            S.down, true] as LedgerRow]
+                            S.down, true, oneBar(ow.interest, owScale, C.gold)] as LedgerRow]
                         : []),
                     ...(ow.added > 0
-                        ? [["새로 지는 빚", `+${money(ow.added)}`, S.down, true] as LedgerRow]
+                        // 정해진 것이라 흐리게 — 누른다고 안 생기지 않는다.
+                        // **`C.grid` 를 쓰지 말 것**: 그건 트랙 색이라 막대가 통째로
+                        // 안 보인다. 프롤로그에서 3,000만짜리 막대가 빈 줄로 나왔다.
+                        ? [["새로 지는 빚", `+${money(ow.added)}`, S.down, true,
+                            oneBar(ow.added, owScale, C.inkDim)] as LedgerRow]
                         : []),
                     ...(ow.repaid > 0
-                        ? [["여태 갚은", money(ow.repaid), S.up, false] as LedgerRow]
+                        ? [["여태 갚은", money(ow.repaid), S.up, false,
+                            oneBar(ow.repaid, owScale, C.up)] as LedgerRow]
                         : []),
                     ["챕터 끝에", ow.end > 0 ? money(ow.end) : "다 갚는다",
-                        ow.end > 0 ? S.down : S.gold, true],
+                        ow.end > 0 ? S.down : S.gold, true, oneBar(ow.end, owScale, C.down)],
                 ],
             },
         ];
@@ -1283,6 +1361,63 @@ export class TradingScene extends Phaser.Scene {
     }
 
     /**
+     * 한 덩이의 막대들을 **이름과 값 사이의 빈자리에** 놓는다.
+     *
+     * ── 왜 줄을 새로 안 만드나 ─────────────────────────────────
+     * 이 화면은 이미 세로가 모자라 줄을 버리고 있다(`drawLedgerBlocks`). 막대에 줄
+     * 하나씩을 주면 열세 줄이 스물여섯이 되어 눕힌 폰에서는 **막대를 넣은 대가로 숫자가
+     * 사라진다.** 그런데 이름과 값 사이는 여태 통째로 비어 있던 자리다 — 길이는 거기서
+     * 온다. 세로 예산은 한 픽셀도 안 바뀐다.
+     *
+     * ── 트랙은 덩이가 나눠 쓴다. **이게 이 함수의 전부다.** ────
+     * 처음에는 줄마다 제 이름과 제 값 사이를 재서 그렸다. 그랬더니 **둘 다 2,500만인
+     * 「챕터 시작」과 「지금」의 막대 길이가 눈에 띄게 달랐다** — 이름이 네 글자와 두
+     * 글자라 시작점이 다르고, 값의 폭도 달라 끝점이 달랐다. 길이가 값이 아니라 **글자
+     * 수**를 그리고 있었던 것이다. 견주라고 넣은 것이 견줄 수 없게 만든다.
+     *
+     * 그래서 덩이 안에서 제일 긴 이름과 제일 넓은 값을 찾아 **트랙 하나**를 내고 모든
+     * 막대가 거기서 시작해 거기서 끝난다. 그러면 길이는 오직 값이다.
+     *
+     * 자리를 좁히는 것은 **막대가 있는 줄뿐이다.** 「이번 챕터 +0 · +0.0%」처럼 막대가
+     * 없는 줄의 긴 값까지 세면, 아무 막대도 안 쓰는 자리 때문에 모든 막대가 짧아진다.
+     *
+     * ── 안 그리는 두 경우 ─────────────────────────────────────
+     * · 막대가 **하나뿐**이면 안 그린다. 견줄 짝이 없으면 그 막대는 언제나 꽉 찬 채로
+     *   서서 아무것도 안 말한다 — 보수가 없는 챕터의 지갑이 그렇다.
+     * · 남는 폭이 `MIN_LANE` 보다 좁으면 안 그린다. 8px 짜리 막대는 길이가 아니라
+     *   점이고, 점은 견줄 수가 없다. **정보처럼 생겼지만 아무것도 안 알려 주는 것이
+     *   이 화면에서 제일 나쁘다.**
+     */
+    private drawRowBars(
+        bars: { ry: number; segs: BarSeg[]; label: number; value: number }[],
+    ): void {
+        const MIN_LANE = 28, H = 6, PAD = 10;
+        if (bars.length < 2) return;
+
+        const x0 = Math.max(...bars.map(b => b.label)) + PAD;
+        const x1 = Math.min(...bars.map(b => b.value)) - PAD;
+        const lane = x1 - x0;
+        if (lane < MIN_LANE) return;
+
+        for (const b of bars) {
+            // 트랙을 먼저 깐다. **빈 막대도 자리는 보여야** 그 줄이 잴 수 있는 값이라는
+            // 것을 안다 — 빚이 0 인 프롤로그의 「지금」이 그 자리다.
+            const y = b.ry + Math.round((FS.xs - H) / 2) + 1;
+            this.rect(x0, y, lane, H, C.grid, 1);
+            let x = x0;
+            for (const [frac, col] of b.segs) {
+                const f = Math.max(0, Math.min(1, frac));
+                // **0 이 아니면 최소 1px 은 그린다.** 「한눈에」에서 지갑은 빚의 1~2% 라
+                // 반올림하면 0 이 되는 자리가 있는데, 그러면 「한 푼도 없다」와
+                // 「빚에 견주면 실오라기다」가 화면에서 같아진다. 둘은 다른 형편이다.
+                const w = f > 0 ? Math.max(1, Math.round(lane * f)) : 0;
+                if (w > 0) this.rect(x, y, w, H, col, 1);
+                x += w;
+            }
+        }
+    }
+
+    /**
      * 세 덩이를 세로로 쌓는다. **안 들어가면 줄을 버린다** — 눌러 담지 않는다.
      *
      * 격자 세로는 398 까지 짧아질 수 있고 가로로 눕히면 창이 245px 밖에 안 된다. 열세
@@ -1344,12 +1479,24 @@ export class TradingScene extends Phaser.Scene {
             // 값은 **검은 화면 안.** 이 팔레트의 규칙이다.
             const h = blk.rows.length * ROW + INNER * 2;
             this.keep(crt(this, body.x + 3, y, body.w - 6, h));
+            // **글자를 먼저 다 그리고 재 본다.** 막대가 설 자리는 덩이 전체가 나눠 쓰므로
+            // (`drawRowBars`) 한 줄만 보고는 정할 수 없다.
+            const bars: { ry: number; segs: BarSeg[]; label: number; value: number }[] = [];
             let ry = y + INNER + 2;
-            for (const [k, v, ink] of blk.rows) {
-                this.text(body.x + 11, ry, k, FS.xs, S.inkDim);
-                this.textFit(body.x + body.w - 11, ry, v, FS.xs, ink, 1, body.w * 0.62);
+            for (const [k, v, ink, , segs] of blk.rows) {
+                const kt = this.text(body.x + 11, ry, k, FS.xs, S.inkDim);
+                const vt = this.textFit(body.x + body.w - 11, ry, v, FS.xs, ink, 1, body.w * 0.62);
+                if (segs) {
+                    bars.push({
+                        ry, segs,
+                        label: kt.x + kt.displayWidth,
+                        // 값은 오른쪽 정렬이라 `x` 가 오른쪽 끝이다.
+                        value: vt.x - vt.displayWidth,
+                    });
+                }
                 ry += ROW;
             }
+            this.drawRowBars(bars);
             y += h;
 
             // 사이가 넉넉할 때만. 좁은 데 끼워 넣으면 위아래 덩이에 달라붙어

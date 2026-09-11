@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { ledgerOf, type LedgerInput } from "@/lib/game/core/ledger";
+import { barFrac, barScale, ledgerOf, type LedgerInput } from "@/lib/game/core/ledger";
 import { FEE_BASE, FEE_BY_ENERGY, advisoryFee, feeRate } from "@/lib/game/core/energy";
 import { StockEngine } from "@/lib/game/core/StockEngine";
 
@@ -256,4 +256,67 @@ test("최고 자산은 그 뒤의 챕터를 넘어도 안 지워진다", () => {
     e.endChapter();
     e.startNextChapter();          // 1999
     assert.ok(e.peakEquity >= peak, "챕터를 넘겼다고 최고 기록이 줄어들면 안 된다");
+});
+
+/* ── 막대 — 자를 하나로 두는 일 ──────────────────────────────── */
+
+test("자는 덩이에서 제일 큰 금액이고, 값이 다 0 이면 0 이다", () => {
+    assert.equal(barScale([25_000_000, 28_000_000, 28_000_000]), 28_000_000);
+    // 프롤로그의 「갚을 돈」이 이 상태다 — 빚도 이자도 0.
+    assert.equal(barScale([0, 0]), 0);
+    assert.equal(barScale([]), 0);
+});
+
+test("자가 0 이면 길이도 0 이다 — 나누지 않는다", () => {
+    // 0 으로 나누면 NaN 이나 Infinity 가 나오고, 그게 `fillRect` 로 가면 막대가
+    // 화면을 가로질러 그어지거나 아예 안 그려진다. 둘 다 조용히 틀린다.
+    const f = barFrac(0, 0);
+    assert.ok(Number.isFinite(f));
+    assert.equal(f, 0);
+});
+
+test("길이는 0~1 에 가둔다", () => {
+    assert.equal(barFrac(-5_000_000, 10_000_000), 0, "음수는 길이가 없다");
+    assert.equal(barFrac(20_000_000, 10_000_000), 1, "자를 넘겨도 트랙 밖으로 안 나간다");
+    assert.equal(barFrac(2_500_000, 10_000_000), 0.25);
+});
+
+test("갚을 돈의 막대 셋은 「챕터 끝에」로 합쳐진다", () => {
+    // **이 덩이의 값어치가 여기 있다.** 「지금 · 이자 · 새로 지는 빚」을 이어 붙인
+    // 길이가 「챕터 끝에」와 다르면, 세 줄을 더해 봐야 아는 것이 그대로 남는다 —
+    // 막대를 넣은 이유가 통째로 없어진다.
+    const { owed: ow } = ledgerOf(at({ debt: 20_000_000, interest: 0.15, debtOnEnd: 30_000_000 }));
+    const scale = barScale([ow.end, ow.repaid]);
+    const sum = barFrac(ow.now, scale) + barFrac(ow.interest, scale) + barFrac(ow.added, scale);
+    assert.ok(Math.abs(sum - barFrac(ow.end, scale)) < 1e-9,
+        `이어 붙인 길이 ${sum} 가 「챕터 끝에」 ${barFrac(ow.end, scale)} 와 다르다`);
+    assert.equal(barFrac(ow.end, scale), 1, "제일 큰 값이 트랙을 꽉 채운다");
+});
+
+test("현금과 주식을 이어 붙이면 「지금」이 된다", () => {
+    const { entrusted: en } = ledgerOf(at({ equity: 28_000_000, cash: 4_000_000 }));
+    const scale = barScale([en.start, en.now, en.peak]);
+    const sum = barFrac(en.cash, scale) + barFrac(en.invested, scale);
+    assert.ok(Math.abs(sum - barFrac(en.now, scale)) < 1e-9);
+});
+
+test("한 자로 재면 지갑은 실오라기지만 0 은 아니다", () => {
+    // 「한눈에」 덩이는 잔액 셋을 **한 자**에 올린다. 거기서 지갑은 빚의 1~2% 라
+    // 아주 짧은데, **짧은 것과 없는 것은 다른 형편이다** — 길이가 0 으로 떨어지면
+    // 「한 푼도 없다」와 구별이 안 된다. (화면은 여기에 최소 1px 을 더 얹는다.)
+    const l = ledgerOf(at({ equity: 28_000_000, wallet: 440_000, debt: 30_000_000 }));
+    const scale = barScale([l.entrusted.now, l.held.now, l.owed.now]);
+    assert.equal(scale, 30_000_000, "제일 큰 것이 자가 된다");
+
+    const wallet = barFrac(l.held.now, scale);
+    assert.ok(wallet > 0, "돈이 있으면 길이도 있어야 한다");
+    assert.ok(wallet < 0.02, "빚에 견주면 실오라기다 — 그게 이 판의 형편이다");
+
+    // **셋이 같은 자를 쓴다**: 길이의 비가 곧 금액의 비여야 덩이끼리 견줄 수 있다.
+    const entrusted = barFrac(l.entrusted.now, scale);
+    assert.ok(Math.abs(entrusted / wallet - 28_000_000 / 440_000) < 1e-9);
+
+    // 빈 지갑은 길이도 없다 — 위의 「실오라기」와 갈려야 한다.
+    const broke = ledgerOf(at({ equity: 28_000_000, wallet: 0, debt: 30_000_000 }));
+    assert.equal(barFrac(broke.held.now, scale), 0);
 });
