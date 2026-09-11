@@ -110,8 +110,9 @@ test("에너지는 0~100 안에 갇힌다", () => {
 test("어머니는 근거 없이 권해도 받고, 박 대리는 거의 거절한다", () => {
     const mother = CLIENTS.find(c => c.id === "mother")!;
     const park = CLIENTS.find(c => c.id === "park")!;
-    assert.equal(mother.acceptsBlind, 1);
-    assert.ok(park.acceptsBlind < 0.2);
+    // 근거 없이도 어머니는 받아 주고(5+), 박 대리는 사실상 거절한다(12).
+    assert.equal(mother.needBlind, mother.need, "어머니는 근거로 안 움직인다");
+    assert.ok(park.needBlind >= 12);
     // 무조건 받아 주는 사람이 잃을 때 제일 아프다.
     assert.ok(mother.loss > kim.loss);
 });

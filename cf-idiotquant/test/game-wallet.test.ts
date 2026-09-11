@@ -96,7 +96,7 @@ test("형편(purse)과 반응(gain/loss)은 다른 값이다 — 김 부장과 �
     const kim = CLIENTS.find(c => c.id === "kim")!;
     const mother = CLIENTS.find(c => c.id === "mother")!;
     // 잘 안 믿지만 퇴직금을 쥐고 있다 / 무조건 받아 주지만 내놓을 돈이 적다.
-    assert.ok(kim.acceptsBlind < mother.acceptsBlind);
+    assert.ok(kim.needBlind > mother.needBlind, "김 부장이 더 안 믿는다");
     assert.ok(entrustAmount(kim, 60, true) > entrustAmount(mother, 60, true));
 });
 

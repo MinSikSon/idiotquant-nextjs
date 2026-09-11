@@ -162,3 +162,59 @@ export function btnFace(
 export function skinOf(on: boolean, primary: boolean): BtnSkin {
     return !on ? BTN.off : primary ? BTN.primary : BTN.normal;
 }
+
+/* ── 주사위 ────────────────────────────────────────────────────
+   판정을 눈으로 보여 주는 자리(`core/check.ts`). 숫자만 적어도 규칙은 돌아가지만,
+   **굴렸다는 사실이 화면에 없으면 실패가 그냥 「안 됐다」로 읽힌다** — 무엇이 정했는지
+   모르니 억울하기만 하고 다음에 무엇을 바꿔야 할지가 안 남는다.
+
+   그래서 눈을 그린다. 한 칸은 작지만 1~6 이 한눈에 갈린다. */
+
+/**
+ * 주사위 한 알의 한 변.
+ *
+ * **19 다.** 처음에 15 로 뒀더니 눈이 뭉개져 5 와 6 이 안 갈렸다 — 지름 4px 짜리 점을
+ * 5px 간격에 놓으면 서로 붙어 사선 하나로 보인다. 눈 셋이 한 줄에 서려면
+ * `3(여백) + 3 + 2 + 3 + 2 + 3 + 3(여백) = 19` 가 필요하다.
+ */
+export const DIE = 19;
+
+/** 눈 하나의 한 변. **동그라미가 아니라 네모다** — 이 크기에서는 네모가 훨씬 또렷하다. */
+const PIP = 3;
+/** 면의 가장자리 여백. */
+const PIP_EDGE = 3;
+
+/** 눈의 자리 — 3×3 격자의 어느 칸에 점이 찍히는가. */
+const PIPS: Record<number, ReadonlyArray<readonly [number, number]>> = {
+    1: [[1, 1]],
+    2: [[0, 0], [2, 2]],
+    3: [[0, 0], [1, 1], [2, 2]],
+    4: [[0, 0], [2, 0], [0, 2], [2, 2]],
+    5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
+    6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
+};
+
+/**
+ * 주사위 한 알. **흰 면에 검은 눈** — 그 시절 화면에서도 주사위는 주사위였다.
+ *
+ * @param value 1~6. 범위를 벗어나면 빈 면을 그린다(고장을 숨기지 않는다).
+ */
+export function die(
+    scene: Phaser.Scene, x: number, y: number, value: number, size = DIE,
+): Phaser.GameObjects.Graphics {
+    const g = scene.add.graphics();
+    // 튀어나온 단추와 같은 3D 테 — 이 화면의 모든 면이 그렇게 생겼다.
+    g.fillStyle(0xf2f4f6, 1).fillRect(x, y, size, size);
+    g.fillStyle(C.lit, 1).fillRect(x, y, size, B).fillRect(x, y, B, size);
+    g.fillStyle(C.line, 1).fillRect(x, y + size - B, size, B).fillRect(x + size - B, y, B, size);
+
+    // 자리는 면 크기를 따라간다 — 다른 크기로 그려도 눈이 안 뭉친다.
+    const edge = Math.max(2, Math.round((size * PIP_EDGE) / DIE));
+    const pip = Math.max(2, Math.round((size * PIP) / DIE));
+    const step = (size - edge * 2 - pip) / 2;
+    g.fillStyle(0x1b1f22, 1);
+    for (const [cx, cy] of PIPS[value] ?? []) {
+        g.fillRect(Math.round(x + edge + cx * step), Math.round(y + edge + cy * step), pip, pip);
+    }
+    return g;
+}

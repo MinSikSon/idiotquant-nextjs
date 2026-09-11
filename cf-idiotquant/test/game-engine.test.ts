@@ -18,7 +18,8 @@ import {
 } from "@/lib/game/core/chapters";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
 import { advisoryFee, FEE_BASE, FEE_BY_ENERGY } from "@/lib/game/core/energy";
-import { CLIENTS, entrustAmount } from "@/lib/game/core/clients";
+import { CLIENTS, entrustAmount, needOf } from "@/lib/game/core/clients";
+import { odds } from "@/lib/game/core/check";
 
 const buff = (over: Partial<TurnBuff> = {}): TurnBuff => ({ ...NO_BUFF, ...over });
 
@@ -378,8 +379,13 @@ test("빚은 갚을 수 있어야 한다 — 완납이 도달 가능한가", () 
 
         // 아주 잘 굴린 장: 에너지가 가득 찬 채로 열두 턴 중 여섯 턴을 권하고,
         // 맡은 돈이 절반 늘었다. 맡는 사람은 평균 형편(purse 평균)으로 잡는다.
+        //
+        // **권한 여섯 번이 다 통하지는 않는다.** 설득은 주사위 판정이라
+        // (`core/check.ts`), 근거를 대도 네 사람 평균 83% 만 통한다. 그 몫을 안 세면
+        // 이 셈이 실제보다 후해져서, 밸런스가 무너져도 테스트가 안 걸린다.
         const purse = CLIENTS.reduce((a, c) => a + c.purse, 0) / CLIENTS.length;
-        const taken = entrustAmount({ ...CLIENTS[0]!, purse }, 100, true) * 6;
+        const pass = CLIENTS.reduce((a, c) => a + odds(needOf(c, true)), 0) / CLIENTS.length;
+        const taken = entrustAmount({ ...CLIENTS[0]!, purse }, 100, true) * 6 * pass;
         const fee = advisoryFee(taken * 0.5, 100);
 
         // **이자가 붙기 전에 갚는다** — 장부 화면이 그러라고 말하는 자리다.
