@@ -47,15 +47,18 @@ test("판은 프롤로그 1997 에서 시작하고 에너지는 50 이다", () =
     assert.equal(e.player.debt, 0);
 });
 
-test("프롤로그는 이미 물려 있는 자리를 물려받는다", () => {
+test("프롤로그는 아무것도 안 들고 시작한다", () => {
+    // **예전에는 이미 물려 있는 자리를 깔아 줬다**(`opening`). 평단가가 시세보다
+    // 높아서 첫 턴에 전부 팔아도 손실이 확정되는 구조였다.
+    //
+    // 걷어 낸 이유는 둘이다. 하나, 처음 켠 사람이 **왜 −41% 인지 모르는 채**로
+    // 화면을 마주한다 — 자기가 산 적이 없으니까. 둘, 1998 이 계좌 0 으로 열리도록
+    // 바뀌면서(`accountLost`) 프롤로그의 손익이 판에 아무 영향도 안 남게 됐다.
+    // 「무엇을 해도 진다」는 이제 물려받은 손실이 아니라 **회사가 없어지는 것**이 낸다.
     const e = new StockEngine(1);
-    const held = Object.keys(e.player.positions);
-    assert.ok(held.length > 0, "판이 열릴 때 이미 들고 있어야 한다");
-    // 평단가가 지금 값보다 높다 — 판이 열리기 전에 이미 무너지기 시작했다.
-    for (const id of held) {
-        assert.ok(e.positionOf(id).avgPrice > e.priceOf(id),
-            `${id} 는 이미 손실 상태여야 한다`);
-    }
+    assert.equal(Object.keys(e.player.positions).length, 0, "들고 시작하지 않는다");
+    assert.equal(e.player.cash, SEED_CASH, "고객 돈은 전부 현금으로 손에 있다");
+    assert.equal(e.equity, SEED_CASH);
 });
 
 test("맡은 돈은 현금과 평가액의 합이다", () => {
@@ -123,12 +126,15 @@ test("국면 스크립트는 시드와 무관하게 같다 — 회귀가 기억�
 
 /* ── 프롤로그는 이길 수 없다 ────────────────────────────────── */
 
-test("프롤로그 1997 은 어떤 정책으로도 이길 수 없다", () => {
+test("프롤로그에서 시장에 들어가면 잃는다 — 국면이 처음부터 끝까지 하락이다", () => {
+    // 이제 **가만히 있으면 안 잃는다**(현금 그대로). 잃는 것은 들어갔을 때다 —
+    // 그게 이 장의 교훈이고, 첫 네 턴이 그것을 가르친다.
     const policies: Array<{ name: string; run: (e: StockEngine) => void }> = [
-        { name: "즉시 전량 매도", run: e => { e.liquidateAll(); playChapter(e); } },
-        { name: "그냥 들고 있기", run: e => playChapter(e) },
-        { name: "더 사기", run: e => { for (const s of e.listed) e.buyAll(s.id); playChapter(e); } },
-        { name: "방어를 들고 버티기", run: e => playChapter(e, buff({ downshieldRatio: 0.4 })) },
+        { name: "전부 사서 들고 있기", run: e => { for (const s of e.listed) e.buyAll(s.id); playChapter(e); } },
+        { name: "방어를 들고 버티기", run: e => {
+            for (const s of e.listed) e.buyAll(s.id);
+            playChapter(e, buff({ downshieldRatio: 0.4 }));
+        } },
         { name: "매 턴 팔고 다시 사기", run: e => {
             while (!e.isOver) {
                 e.liquidateAll();
@@ -144,7 +150,29 @@ test("프롤로그 1997 은 어떤 정책으로도 이길 수 없다", () => {
             const start = e.equity;
             p.run(e);
             assert.ok(e.equity < start,
-                `${p.name} · 시드 ${seed}: 프롤로그는 이길 수 없어야 하는데 ${start} → ${e.equity}`);
+                `${p.name} · 시드 ${seed}: 하락장에 들어갔는데 ${start} → ${e.equity}`);
+        }
+    }
+});
+
+test("1997 을 어떻게 보내든 1998 은 계좌 0 · 빚 3,000만으로 열린다", () => {
+    // **「무엇을 해도 진다」가 이제 여기서 나온다.** 예전에는 물려받은 손실이 그
+    // 일을 했는데, 그건 처음 켠 사람에게 설명 없는 빨간 숫자였다. 지금은 회사가
+    // 없어지는 것이 낸다 — 1998 의 내레이션이 처음부터 말하던 그대로다.
+    const policies: Array<(e: StockEngine) => void> = [
+        e => playChapter(e),                                                  // 아무것도 안 한다
+        e => { for (const s of e.listed) e.buyAll(s.id); playChapter(e); },   // 전부 산다
+        e => { e.liquidateAll(); playChapter(e); },                           // 판다
+    ];
+    for (const run of policies) {
+        for (let seed = 1; seed <= 10; seed++) {
+            const e = new StockEngine(seed);
+            run(e);
+            e.endChapter();
+            e.startNextChapter();
+            assert.equal(e.equity, 0, `시드 ${seed}: 계좌가 안 비워졌다`);
+            assert.equal(e.player.wallet, 0);
+            assert.equal(e.player.debt, CHAPTERS[0]!.debtOnEnd);
         }
     }
 });

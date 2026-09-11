@@ -100,21 +100,6 @@ export interface RegimeSpan {
     volMult?: number;
 }
 
-/** 프롤로그가 시작될 때 이미 들고 있는 자리. */
-export interface OpeningPosition {
-    stockId: string;
-    /** 시작 자금의 몇 %를 이 종목에 넣어 뒀는가. */
-    pctOfCash: number;
-    /**
-     * 평단가가 지금 값의 몇 배인가. 1.6 이면 이미 −37% 다.
-     *
-     * **프롤로그가 이길 수 없는 이유가 이것이다.** 판이 열리기 전에 이미 무너지기
-     * 시작했고, 나는 그 자리를 물려받은 채 앉아 있다. 첫 턴에 전부 팔아도 손실은
-     * 확정되고 수수료까지 나간다 — 무엇을 해도 진다.
-     */
-    avgOverCurrent: number;
-}
-
 export interface Chapter {
     id: string;
     /** 챕터 띠에 나가는 것 — "1998" */
@@ -130,8 +115,6 @@ export interface Chapter {
     news: { good: readonly string[]; bad: readonly string[] };
     /** 챕터가 끝날 때 남은 빚에 붙는 이자(비율). */
     interest: number;
-    /** 프롤로그에만 있다. */
-    opening?: readonly OpeningPosition[];
     /** 이 챕터가 끝나면 생기는 빚(원). 프롤로그에만 있다. */
     debtOnEnd?: number;
     /**
@@ -153,9 +136,9 @@ export const CHAPTERS: readonly Chapter[] = [
         year: "1997",
         title: "프롤로그",
         narration: [
-            "1997년 11월.",
-            "회사가 흔들린다는 말은 여름부터 있었다.",
+            "1997년 11월. 회사가 흔들린다는 말은 여름부터 있었다.",
             "나는 괜찮다고 말했다. 그렇게 말하는 것이 내 일이었다.",
+            "고객 2,500만원이 아직 내 손에 있다. 어디에도 안 넣었다.",
         ],
         turns: 4,
         startTurn: 1,
@@ -175,12 +158,6 @@ export const CHAPTERS: readonly Chapter[] = [
             ],
         },
         interest: 0,
-        // 판이 열리기 전에 이미 물려 있다. 고객 돈 전부가 시장에 있다.
-        opening: [
-            { stockId: "daesung", pctOfCash: 40, avgOverCurrent: 1.7 },
-            { stockId: "dongbang", pctOfCash: 35, avgOverCurrent: 1.9 },
-            { stockId: "cheongwoo", pctOfCash: 25, avgOverCurrent: 1.3 },
-        ],
         debtOnEnd: 30_000_000,
         accountLost: true,
     },

@@ -253,7 +253,11 @@ export class TradingScene extends Phaser.Scene {
 
     /** 시작 화면에서 「시작한다」를 눌렀다. 여기서부터 판이다. */
     private beginRun(): void {
-        this.go("home", cutStartRun(this.engine.chapter, this.memory.cycle));
+        this.go("home", cutStartRun(this.engine.chapter, this.memory.cycle, {
+            entrusted: this.engine.equity,
+            wallet: this.engine.player.wallet,
+            debtToCome: this.engine.chapter.debtOnEnd ?? 0,
+        }, money));
     }
 
     /**
@@ -669,11 +673,16 @@ export class TradingScene extends Phaser.Scene {
      * 방법은 하나뿐이다 — 도는 동안 **무엇이 쌓였는지가 보이는 것.**
      */
     /**
-     * 이 게임이 무엇인지 세 줄. **시작 화면에만 있다.**
+     * 이 게임이 무엇인지 넷. **시작 화면에만 있다.**
      *
      * 규칙을 다 적으면 아무도 안 읽는다. 「무엇을 갚는가 · 무엇이 그것을 줄이는가 ·
-     * 언제 끝나는가」 셋이면 첫 턴을 스스로 굴릴 수 있다. 나머지는 화면이 그때그때
-     * 말한다(버튼 부제).
+     * 언제 끝나는가」면 첫 턴을 스스로 굴릴 수 있다. 나머지는 화면이 그때그때
+     * 말한다(버튼 부제, 고객 줄의 승산).
+     *
+     * **셋에서 넷이 됐다.** 설득이 주사위 판정이 되고(`core/check.ts`) 보수가 지갑을
+     * 거치게 되면서(`core/wallet.ts`), 옛 세 줄의 마지막 「에너지가 곧 보수이고,
+     * 보수만이 빚을 줄인다」가 절반만 맞는 말이 됐다 — 보수는 이제 빚을 저절로
+     * 안 깎는다. 화면이 안 하는 일을 설명하고 있으면 첫 챕터가 통째로 어긋난다.
      */
     private static readonly HOW = [
         // **「빚 3천만원」이라고 적으면 안 된다.** 빚은 1997년이 끝날 때 생긴다
@@ -681,8 +690,9 @@ export class TradingScene extends Phaser.Scene {
         // 적혀 있는데 시작 화면이 「빚 3천만원」이라고 하면, 처음 켠 사람에게는
         // 화면 둘이 서로 다른 말을 하는 것으로 보인다.
         "1997년이 끝나면 빚 3천만원이 남는다.",
-        "종목을 알아보고 근거를 대서 맞혀야 에너지가 오른다.",
-        "에너지가 곧 보수이고, 보수만이 빚을 줄인다.",
+        "알아보고 근거를 대야 설득된다 — 주사위 둘을 굴린다.",
+        "설득하면 고객이 맡긴다. 늘린 만큼이 내 보수다.",
+        "보수는 지갑으로 온다. 빚은 내가 갚을 때만 준다.",
     ];
 
     private drawTitle(): void {
