@@ -345,7 +345,10 @@ function splitBands(w: number, h: number): Bands {
     const left = Math.round(w * 0.58);
     const right = w - left;
     const strip = clamp(h * 0.14, STRIP_MIN, STRIP_H);
-    const action = clamp(h * 0.26, ACTION_ONE_ROW, 108);
+    // **0.28 이다.** 0.26 은 격자 세로 353(눕힌 폰에서 페이지 크롬을 뺀 실제 칸)에서
+    // 92px 을 내는데 제목이 서려면 93 이 필요하다 — 한 픽셀 차이로 접혔다.
+    // 뷰포트가 아니라 **캔버스가 실제로 받는 칸**으로 재야 이 경계가 보인다.
+    const action = clamp(h * 0.28, ACTION_ONE_ROW, 108);
 
     return {
         portrait: false,
