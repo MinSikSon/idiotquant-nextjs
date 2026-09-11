@@ -35,7 +35,8 @@ import {
 } from "@/lib/game/core/research";
 import { EMPTY_FACTS, type SituationFacts } from "@/lib/game/core/situations";
 import {
-    recommendBlock, researchBlock, blockSay, type OrderBlock, type ResearchBlock,
+    recommendBlock, researchBlock, sellBlock, blockSay,
+    type OrderBlock, type ResearchBlock,
 } from "@/lib/game/core/orders";
 import {
     loadMemory, saveMemory, remember, regress, endReasonOf, breaksLoop, type Memory,
@@ -992,6 +993,10 @@ export class TradingScene extends Phaser.Scene {
             otherThesis: () => this.otherThesis(),
             researchCost: () => RESEARCH_COST,
             block: () => this.orderBlock(),
+            sellBlock: () => sellBlock({
+                shares: this.rowOf(this.engine.focus)?.shares ?? 0,
+                traded: this.traded,
+            }),
             clientName: () => this.client?.name ?? "아무도",
             incomingSay: () => {
                 if (!this.client) return "";
@@ -1403,10 +1408,10 @@ export class TradingScene extends Phaser.Scene {
 
         // **버튼 둘, 무를 것이 있으면 셋.**
         //
-        // 「무른다」가 여기 있는 이유: 무름은 한 턴을 통째로 되돌리는 **턴 단위 행동**이다.
-        // 한때 종목 판의 체결 칸이 체결 뒤에 「무른다」로 바뀌었는데, 그러면 **팔아서
-        // 현금을 만든 다음 권하는 길이 막혔다** — 바로 위 칸이 「팔아야 권할 현금이
-        // 생긴다」고 말해 놓고 팔고 나면 권하는 버튼이 사라졌다. 매매 칸은 매매만 진다.
+        // 「무른다」가 여기 있는 이유: 무름은 한 턴을 통째로 되돌리는 **턴 단위 행동**이라
+        // 종목 하나의 물건이 아니다. 그리고 **한 턴에 체결이 하나뿐이 되면서 이 버튼이
+        // 바꾸는 유일한 길이 됐다** — 권했는데 팔았어야 했다면, 되돌리는 자리가 여기다.
+        // 종목 판의 두 칸은 각각 「무르면 …」이라고 적어 이리로 보낸다.
         //
         // 셋이 서면 칸이 118px 로 줄어 부제가 눌린다. 그래서 부제를 짧게 둔다 — 고른
         // 종목의 이름은 바로 위 창 제목이 이미 말하고 있어서 여기서 뺐다.
@@ -1676,7 +1681,16 @@ export class TradingScene extends Phaser.Scene {
         this.closeBoardAndRedraw();
     }
 
+    /**
+     * **거둔다.** 한 턴에 체결은 한 번이므로 오늘 이미 체결이 있었으면 안 선다.
+     *
+     * `recommend` 와 같은 규약이다 — 화면이 이미 칸을 잠그고 이유를 적어 두었고
+     * (`sellBlock`), 이 줄은 두 번째 자물쇠다. **막는 것은 화면이 아니라 규칙이다.**
+     */
     private sell(id: string): void {
+        if (sellBlock({ shares: this.engine.positionOf(id).shares, traded: this.traded }) !== "none") {
+            return;
+        }
         const buff = this.buff();
         const s = this.engine.stockOf(id);
         const pnl = this.engine.unrealizedPct(id);
@@ -1739,6 +1753,7 @@ export class TradingScene extends Phaser.Scene {
             researchedThis: this.researched === this.engine.focus,
             otherThesis: this.otherThesis(),
             recommended: this.recommendedThisTurn,
+            traded: this.traded,
             energy: this.engine.player.energy,
             cost: RESEARCH_COST,
         });
