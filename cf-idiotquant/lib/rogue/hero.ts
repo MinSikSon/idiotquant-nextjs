@@ -13,6 +13,7 @@ import {
     type Item,
 } from "./types";
 import {
+    RINGS,
     armorClassOf,
     makeItem,
     weaponDamageOf,
@@ -62,12 +63,16 @@ export function makeHero(rng: Rng, nextId: () => number): Hero {
         pack: [],
         weaponId: mace.id,
         armorId: ring.id,
+        leftRingId: null,
+        rightRingId: null,
         // 원작의 허기 시계. 한 걸음에 1 씩 준다.
         food: 1300,
         hasAmulet: false,
         blind: 0,
         confused: 0,
         asleep: 0,
+        stuck: 0,
+        detect: 0,
     };
     // 처음 쥐는 것은 손질된 철퇴와 사슬 고리 갑옷 — 그리고 그 둘은 정체를 안다.
     mace.plusHit = 1;
@@ -138,13 +143,72 @@ export function equippedArmor(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.armorId);
 }
 
-/** 지금의 방어 등급 — 갑옷이 없으면 맨몸 10 이다. */
+/** 지금 낀 반지 — 왼손·오른손 순서. 없는 손은 건너뛴다. */
+export function wornRings(hero: Hero): Item[] {
+    return [hero.leftRingId, hero.rightRingId]
+        .map((id) => (id === null ? undefined : hero.pack.find((i) => i.id === id)))
+        .filter((i): i is Item => !!i);
+}
+
+function ringSum(hero: Hero, type: string): number {
+    return wornRings(hero)
+        .filter((r) => r.type === type)
+        .reduce((s, r) => s + (r.plusRing ?? 0), 0);
+}
+
+export function hasRing(hero: Hero, type: string): boolean {
+    return wornRings(hero).some((r) => r.type === type);
+}
+
+/**
+ * 지금의 방어 등급 — 갑옷이 없으면 맨몸 10 이고, **보호 반지가 더 내린다.**
+ *
+ * 화면도 몬스터도 이 함수 하나만 본다. 반지를 세는 자리가 둘이 되면 어느 날 화면에
+ * 적힌 방어와 실제로 맞는 방어가 달라진다.
+ */
 export function heroArmor(hero: Hero): number {
-    return armorClassOf(equippedArmor(hero));
+    return armorClassOf(equippedArmor(hero)) - ringSum(hero, "protection");
+}
+
+/** 지금의 힘 — 힘 반지가 얹힌다. 명중·피해 보정은 이 값으로 잰다. */
+export function heroStr(hero: Hero): number {
+    return hero.str + ringSum(hero, "add strength");
+}
+
+/**
+ * 한 걸음에 배가 얼마나 고픈가.
+ *
+ * **반지는 식량을 태운다.** 이 대가가 없으면 두 손에 둘을 끼지 않을 이유가 없고,
+ * 반지는 공짜 능력치가 된다. 「소화 억제」만 반대로 간다.
+ */
+export function hungerRate(hero: Hero): number {
+    const extra = wornRings(hero).reduce((s, r) => s + (RINGS[r.type]?.hunger ?? 0), 0);
+    return Math.max(0, 1 + extra);
+}
+
+/** 몇 턴마다 체력이 1 오르는가. 재생 반지가 절반으로 줄인다. */
+export function regenEvery(hero: Hero): number {
+    const base = Math.max(3, 21 - hero.level * 2);
+    return hasRing(hero, "regeneration") ? Math.max(2, Math.floor(base / 2)) : base;
+}
+
+/** 한 번 뒤졌을 때 숨은 것을 찾을 확률. 탐색 반지가 크게 올린다. */
+export function searchChance(hero: Hero): number {
+    return hasRing(hero, "searching") ? 0.65 : 0.25;
 }
 
 export function heroDamageDice(hero: Hero): string {
     return weaponDamageOf(equippedWeapon(hero));
+}
+
+/** 지금 몸에 붙어 있는가 — 저주받아 못 벗는 것. */
+export function isWorn(hero: Hero, it: Item): boolean {
+    return (
+        it.id === hero.weaponId ||
+        it.id === hero.armorId ||
+        it.id === hero.leftRingId ||
+        it.id === hero.rightRingId
+    );
 }
 
 /**

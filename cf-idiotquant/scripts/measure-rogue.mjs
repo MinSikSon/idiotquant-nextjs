@@ -14,7 +14,11 @@
 
 import { newGame, perform } from "../lib/rogue/game.ts";
 import { hungerOf } from "../lib/rogue/hero.ts";
+import { armorClassOf } from "../lib/rogue/items.ts";
 import { MAP_H, MAP_W, T, idx, inBounds, walkable } from "../lib/rogue/types.ts";
+
+/** 길이 막혔을 때 절반은 뒤지고 절반은 아무 데나 간다. */
+const rngSearch = () => Math.random() < 0.5;
 
 const RUNS = Number(process.argv[2] ?? 300);
 const MAX_TURNS = 4000;
@@ -84,20 +88,28 @@ function botTurn(s) {
         return { t: "quaff", letter: hero.pack.find((p) => p.kind === "potion").letter };
     }
 
-    // ④ 발밑의 것을 줍는다.
+    // ④ 더 좋은 갑옷이 배낭에 있으면 입는다. 저주받았으면 규칙이 막는다.
+    const wearing = hero.pack.find((p) => p.id === hero.armorId);
+    const better = hero.pack.find(
+        (p) => p.kind === "armor" && p.id !== hero.armorId && armorClassOf(p) < armorClassOf(wearing),
+    );
+    if (better) return { t: "wear", letter: better.letter };
+
+    // ⑤ 발밑의 것을 줍는다.
     if (level.items.some((i) => i.x === hero.x && i.y === hero.y)) return { t: "pickup" };
 
-    // ⑤ 계단 위면 내려간다.
+    // ⑥ 계단 위면 내려간다.
     if (level.tiles[idx(hero.x, hero.y)] === T.STAIRS) return { t: "descend" };
 
-    // ⑥ 가까운 물건으로, 없으면 계단으로.
+    // ⑦ 가까운 물건으로, 없으면 계단으로.
     const toItem = level.items.length
         ? firstStep(level, hero, (x, y) => level.items.some((i) => i.x === x && i.y === y))
         : null;
     const step = toItem ?? firstStep(level, hero, (x, y) => level.tiles[idx(x, y)] === T.STAIRS);
     if (step) return { t: "move", dx: step.dx, dy: step.dy };
 
-    // ⑦ 길이 없으면 아무 데나 — 여기 오면 층이 이상한 것이다.
+    // ⑧ 길이 없으면 뒤진다 — 비밀문 뒤에 갇혔을 수 있다. 그래도 안 되면 아무 데나.
+    if (rngSearch()) return { t: "search" };
     const [dx, dy] = STEPS[Math.floor(Math.random() * STEPS.length)];
     return { t: "move", dx, dy };
 }

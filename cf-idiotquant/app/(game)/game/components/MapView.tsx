@@ -25,13 +25,20 @@ import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
 const INK: Record<string, string> = {
     hero: "#ffffff",
     monster: "#f2884b",
+    // 감지 물약으로 벽 너머를 느끼는 것 — **본 것과 색이 달라야 한다.**
+    // 같은 색으로 그리면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
+    "monster-sensed": "#8a5a3a",
     "item-gold": "#ffd24a",
     "item-potion": "#d987c4",
     "item-scroll": "#cfe3f5",
     "item-weapon": "#c3ced6",
     "item-armor": "#8fb6cf",
     "item-food": "#cfa878",
+    "item-ring": "#7fe0c8",
+    "item-wand": "#b6a2e8",
     "item-amulet": "#ffe27a",
+    trap: "#ff6b5a",
+    "trap-dim": "#7a382f",
     stairs: "#f0f0f0",
     door: "#c08a45",
     "door-dim": "#6a5029",
