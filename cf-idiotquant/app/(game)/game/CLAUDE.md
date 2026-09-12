@@ -26,7 +26,8 @@
 | 경험치 · 힘 · 배낭 · **반지의 효과** | `lib/rogue/hero.ts` |
 | `swing` 명중식 · 특수 공격 | `lib/rogue/combat.ts` |
 | **판이 도는 자리** — `perform(state, cmd)` | `lib/rogue/game.ts` |
-| localStorage 저장 · 지난 판들 | `lib/rogue/storage.ts` |
+| localStorage 저장 · 빈 칸 채우기 · 도감 · 지난 판들 | `lib/rogue/storage.ts` |
+| 터졌을 때 빠져나갈 문 | `app/(game)/game/GameBoundary.tsx` |
 | 화면 | `app/(game)/game/{page,Rogue}.tsx` · `components/` |
 | 방향 고르기(지팡이·던지기) | `app/(game)/game/components/Aim.tsx` |
 | 밸런스 자 | `scripts/measure-rogue.mjs` |
@@ -170,6 +171,28 @@
 숫자 배열로 풀어 적고 되읽을 때 다시 담는다. 몬스터의 `def` 도 참조라 적지 않고
 글자만 적는다.
 
+### 값을 더하면 **이미 저장된 판에는 그 칸이 없다**
+
+이 게임에서 제일 비싸게 치른 사고다. 함정을 넣으면서 `level.traps` 가 생겼는데, 그
+전에 저장된 판에는 그 칸이 없었다. 화면은 멀쩡히 떴고 **한 걸음 걷는 순간**
+`traps.find` 가 undefined 를 읽어 터졌다. 그리고 새로고침하면 같은 저장을 다시 읽어
+또 터지므로, 그 사람에게 `/game` 은 **영영 안 열리는 주소**가 됐다.
+
+막는 것이 둘이다. 하나로는 모자란다.
+
+1. **`storage.normalize()` 가 빈 칸을 채운다.** 한 곳에서만 채운다 — 게임 코드
+   여기저기에 `?? []` 를 흩뿌리면 규칙이 두 벌이 되고, 새로 더한 값은 또 빠뜨린다.
+   **값을 더하면 이 함수와 `test/rogue-storage.test.ts` 를 같이 고칠 것.**
+   그 테스트가 지키는 것은 값 하나가 아니라 **성질**이다 — 저장에서 칸을 아무거나
+   하나 빼도, 결과는 `null`(새 판)이거나 **끝까지 굴러가는 판**이어야 한다.
+   「불러와지긴 하는데 한 걸음 걸으면 터진다」는 셋째 경우가 있으면 안 된다.
+2. **`GameBoundary` 가 빠져나갈 문을 둔다.** 1번은 *예상한* 빈 칸만 채운다. 예상 못 한
+   것이 터졌을 때 화면이 하얘진 채로 끝나면 새로고침해도 같은 자리에 다시 선다.
+   그래서 「저장을 지우고 새 판」 단추 하나를 세운다 — 도감과 지난 판들은 안 지운다.
+
+저장의 판(`VERSION`)은 값이 늘 때마다 올린다. **앞으로 나올 판은 안 읽는다** —
+모르는 규칙 위에서 굴리는 것보다 새 판이 낫다.
+
 ### 배낭이 조작의 중심이다
 
 원작은 `w`(쥔다)·`W`(입는다)·`P`(낀다)처럼 **행동마다 키가 따로**다. 키보드에서는 그게
@@ -218,7 +241,7 @@ node --experimental-strip-types --import ./test/register.mjs scripts/measure-rog
 
 ```bash
 npx tsc --noEmit    # 에러 0
-npm test            # rogue-{dungeon,combat,game}.test.ts 포함
+npm test            # rogue-{dungeon,combat,game,items,bestiary,storage}.test.ts
 npm run build       # /game · /game/imf 라우트
 ```
 
