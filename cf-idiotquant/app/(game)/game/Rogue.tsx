@@ -50,6 +50,7 @@ import Aim from "./components/Aim";
 import MapView from "./components/MapView";
 import Panel from "./components/Panel";
 import TouchPad, { type PadAction } from "./components/TouchPad";
+import { monsterArt } from "./monsterArt";
 
 /** 무엇을 고르는 중인가 — 원작의 「어느 것을?」 자리. */
 interface Picker {
@@ -91,6 +92,8 @@ export default function Rogue() {
     /** 배낭에서 짚은 물건 — 그 아래에 할 수 있는 일이 뜬다. */
     const [chosen, setChosen] = useState<number | null>(null);
     const [tombs, setTombs] = useState<Tomb[]>([]);
+    /** 도감에서 펼쳐 둔 종 — 그 줄 아래에 얼굴이 뜬다. */
+    const [openMon, setOpenMon] = useState<string | null>(null);
     const buried = useRef(false);
 
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
@@ -678,32 +681,53 @@ export default function Rogue() {
                 <Panel
                     title={`도감 ${progress.found}/${progress.total}`}
                     onClose={() => setSheet("none")}
-                    footer="한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 도감은 죽어도 남습니다."
+                    footer="줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다."
                 >
                     {progress.found === 0 ? (
                         <p className="text-[#7d8d88]">아직 아무것도 못 잡았다.</p>
                     ) : (
                         <ul className="space-y-1">
-                            {bestiaryRows(state.bestiary).map((r: BestiaryRow) => (
-                                <li key={r.ch}>
-                                    <span className="text-[#f2884b]">{r.ch}</span>{" "}
-                                    <span className="text-[#e6eeea]">{r.name}</span>
-                                    <span className="text-[#ffd24a]"> ×{r.kills}</span>
-                                    <div className="text-[#9fb0aa]">
-                                        레벨 {r.level} · 방어도 {r.defense} · 피해 {r.damage.join(" + ") || "없음"} ·
-                                        경험 {r.exp} · 체력 {r.hp}
-                                        {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
-                                        {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
-                                            층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을 수
-                                            있는 「층에 따른 것」은 이 띠 하나다. */}
-                                        {r.depths && (
-                                            <div className="text-[#7d8d88]">
-                                                지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
+                            {bestiaryRows(state.bestiary).map((r: BestiaryRow) => {
+                                const open = openMon === r.ch;
+                                const art = monsterArt(r.ch);
+                                return (
+                                    <li key={r.ch}>
+                                        {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
+                                            모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenMon(open ? null : r.ch)}
+                                            aria-expanded={open}
+                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[#1b2321]" : "hover:bg-[#161c1a]"}`}
+                                        >
+                                            <span className="text-[#f2884b]">{r.ch}</span>{" "}
+                                            <span className="text-[#e6eeea]">{r.name}</span>
+                                            <span className="text-[#ffd24a]"> ×{r.kills}</span>
+                                            {art && <span className="text-[#5f706b]"> {open ? "▾" : "▸"}</span>}
+                                            <div className="text-[#9fb0aa]">
+                                                레벨 {r.level} · 방어도 {r.defense} · 피해{" "}
+                                                {r.damage.join(" + ") || "없음"} · 경험 {r.exp} · 체력 {r.hp}
+                                                {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
+                                                {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
+                                                    층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
+                                                    수 있는 「층에 따른 것」은 이 띠 하나다. */}
+                                                {r.depths && (
+                                                    <div className="text-[#7d8d88]">
+                                                        지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
+                                                    </div>
+                                                )}
                                             </div>
+                                        </button>
+                                        {open && art && (
+                                            /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
+                                               좁은 폰에서도 안 접히게 스무 칸을 안 넘긴다(`monsterArt`). */
+                                            <pre className="mt-1 mb-2 overflow-x-auto whitespace-pre px-1 text-[12px] leading-[1.15] text-[#7fe0c8]">
+                                                {art}
+                                            </pre>
                                         )}
-                                    </div>
-                                </li>
-                            ))}
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                 </Panel>
