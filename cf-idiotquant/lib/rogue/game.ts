@@ -841,6 +841,18 @@ function descend(state: GameState, rng: Rng): boolean {
     return true;
 }
 
+/**
+ * 위로 간다.
+ *
+ * **막히는 자리는 밖으로 나가는 문 하나뿐이다.** 1층의 계단은 곧 끝이라 증표가
+ * 있어야 오르지만, 그 아래에서는 언제든 물러설 수 있다. 물러설 길이 없으면 「도망」이
+ * 선택지에서 빠지고, 그러면 깊이를 고르는 일이 결정이 아니라 그냥 내려가기가 된다.
+ *
+ * 물러서는 값은 따로 안 매겨도 이미 치른다 — **층은 다시 짜인다.** 올라간 층은 내가
+ * 알던 그 층이 아니고, 되내려가면 또 새 층이다. 밟아 둔 지도와 남겨 둔 물건이
+ * 그때 사라진다. 점수는 `deepest` 로 재므로 물러선다고 깎이지도, 얕게 맴돈다고
+ * 벌리지도 않는다.
+ */
 function ascend(state: GameState, rng: Rng): boolean {
     const { hero, level } = state;
     const up = level.upStairs;
@@ -848,11 +860,11 @@ function ascend(state: GameState, rng: Rng): boolean {
         say(state, "여기에는 올라가는 계단이 없다.");
         return false;
     }
-    if (!hero.hasAmulet) {
-        say(state, "보이지 않는 힘이 앞을 막는다. 증표 없이는 돌아갈 수 없다.");
-        return false;
-    }
     if (level.depth === 1) {
+        if (!hero.hasAmulet) {
+            say(state, "보이지 않는 힘이 앞을 막는다. 증표 없이는 나갈 수 없다.");
+            return false;
+        }
         state.phase = "won";
         state.epitaph = `옌더의 증표를 들고 지상으로 나왔다. 금화 ${hero.gold}.`;
         revealAll(level);
@@ -860,7 +872,7 @@ function ascend(state: GameState, rng: Rng): boolean {
         return true;
     }
     enterLevel(state, level.depth - 1, rng, false);
-    say(state, `지하 ${state.level.depth}층.`);
+    say(state, `지하 ${state.level.depth}층. 층은 다시 짜였다.`);
     return true;
 }
 

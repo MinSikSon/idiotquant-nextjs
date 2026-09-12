@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 
 import { type Command, newGame, perform, score } from "@/lib/rogue/game";
 import { hungerOf, packItem } from "@/lib/rogue/hero";
-import { ALL_DIRS, T, type Tile, idx, walkable } from "@/lib/rogue/types";
+import { ALL_DIRS, T, type GameState, type Tile, idx, walkable } from "@/lib/rogue/types";
 import { makeItem } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 
@@ -66,13 +66,14 @@ test("배고픔의 단계는 문턱에서만 바뀐다", () => {
     assert.equal(hungerOf(s.hero), "탈진");
 });
 
-test("증표 없이는 올라갈 수 없다 — 이기는 길은 그 한 칸이다", () => {
+test("증표 없이는 **나갈** 수 없다 — 이기는 길은 1층의 그 한 칸이다", () => {
     const s0 = newGame(5);
     const up = s0.level.upStairs!;
     s0.hero.x = up.x;
     s0.hero.y = up.y;
     const s1 = perform(s0, { t: "ascend" });
     assert.equal(s1.phase, "playing");
+    assert.equal(s1.level.depth, 1, "증표 없이 1층에서 나갔다");
     assert.ok(s1.messages.some((m) => m.includes("증표 없이")), s1.messages.slice(-3).join(" / "));
 
     // 증표를 쥐면 1층의 올라가는 계단이 곧 승리다.
@@ -80,6 +81,35 @@ test("증표 없이는 올라갈 수 없다 — 이기는 길은 그 한 칸이�
     const s2 = perform(s1, { t: "ascend" });
     assert.equal(s2.phase, "won");
     assert.ok(score(s2) >= 10000, "증표는 점수에 크게 얹힌다");
+});
+
+/** 내려가는 계단 위로 옮겨 서서 한 층 내려간다 — 걸어가는 것은 이 테스트의 관심이 아니다. */
+function godown(s: GameState): GameState {
+    s.hero.x = s.level.stairs.x;
+    s.hero.y = s.level.stairs.y;
+    return perform(s, { t: "descend" });
+}
+
+test("아래층에서는 증표 없이도 물러설 수 있다 — 도망이 선택지에 있어야 한다", () => {
+    let s = godown(godown(newGame(55)));
+    assert.equal(s.level.depth, 3);
+    assert.equal(s.deepest, 3);
+
+    // 내려오면 올라가는 계단 위에 선다. 증표는 없다.
+    assert.equal(s.hero.hasAmulet, false);
+    s = perform(s, { t: "ascend" });
+    assert.equal(s.level.depth, 2, "증표가 없다고 아래층에서까지 막혔다");
+    // 물러서도 점수는 안 깎인다 — 깊이는 **가 본 가장 깊은 곳**으로 잰다.
+    assert.equal(s.deepest, 3);
+});
+
+test("물러선 층은 새로 짜인다 — 밟아 둔 지도가 값이다", () => {
+    let s = godown(newGame(56)); // 2층
+    const before = Array.from(s.level.tiles);
+    s = godown(s); // 3층
+    s = perform(s, { t: "ascend" }); // 다시 2층 — 같은 층이 아니다
+    assert.equal(s.level.depth, 2);
+    assert.notDeepEqual(Array.from(s.level.tiles), before, "같은 층이 그대로 돌아왔다");
 });
 
 test("계단 위에서만 내려간다", () => {
