@@ -380,3 +380,52 @@ test("한 자리에 던진 것은 겹쳐 쌓인다 — 사라지지 않는다", 
         .reduce((n, i) => n + i.count, 0);
     assert.equal(onFloor, 6, `던진 여섯 개 중 ${onFloor} 개만 바닥에 있다`);
 });
+
+test("착용하면 **그 물건의** 능력치를 말한다 — 내 능력치가 아니라", () => {
+    // 한때 갑옷을 입으면 내 방어 **등급**(낮을수록 단단)을 적었다. 그건 (ㄱ) 물건이
+    // 아니라 나의 값이고 (ㄴ) 화면의 「방어도」와 방향이 반대라, 좋은 갑옷을 입으면
+    // 숫자가 내려가 보였다.
+    const s = newGame(930);
+    const sword = makeItem("weapon", "long sword", 950, -1, -1);
+    sword.plusDam = 2;
+    sword.letter = "p";
+    const plate = makeItem("armor", "plate mail", 951, -1, -1);
+    plate.plusArmor = 1;
+    plate.letter = "q";
+    const ring = makeItem("ring", "protection", 952, -1, -1);
+    ring.plusRing = 2;
+    ring.letter = "r";
+    s.hero.pack.push(sword, plate, ring);
+
+    const said = (cur: GameState, needle: string) =>
+        cur.messages.filter((m) => m.includes(needle)).pop() ?? "";
+
+    let cur = perform(s, { t: "wield", letter: "p" });
+    assert.ok(said(cur, "쥐었다").includes("(피해 3d4+2)"), said(cur, "쥐었다"));
+
+    cur = perform(cur, { t: "wear", letter: "q" });
+    const worn = said(cur, "입었다");
+    // **배낭 줄과 같은 숫자여야 한다.** 갈리면 한쪽만 고치는 날이 온다.
+    assert.ok(worn.includes(`(${itemPower(plate, cur.known)})`), worn);
+    assert.ok(worn.includes("방어도 18"), `판금+1 은 방어도 18 이어야 한다: ${worn}`);
+    // 내 방어도가 아니라 **갑옷 몫**이다 — 보호 반지를 껴도 이 숫자는 안 바뀐다.
+    assert.ok(!worn.includes("방어 2"), `옛 방어 등급을 적고 있다: ${worn}`);
+
+    cur = perform(cur, { t: "putOn", letter: "r" });
+    assert.ok(said(cur, "꼈다").includes("(방어도 +2)"), said(cur, "꼈다"));
+});
+
+test("정체 모르는 물건은 착용 메시지에도 속을 안 흘린다", () => {
+    // 다만 쥐거나 입거나 끼면 **그 순간 정체를 알게 되므로**, 그 뒤의 숫자는 참값이다.
+    const s = newGame(931);
+    const w = makeItem("weapon", "two-handed sword", 953, -1, -1);
+    w.plusDam = 3;
+    w.letter = "p";
+    s.hero.pack.push(w);
+    assert.equal(itemPower(w, {}), "피해 4d4", "쥐기 전에는 손질을 모른다");
+
+    const cur = perform(s, { t: "wield", letter: "p" });
+    assert.ok(cur.known["weapon:two-handed sword"], "쥐었는데도 정체를 모른다");
+    const line = cur.messages.filter((m) => m.includes("쥐었다")).pop()!;
+    assert.ok(line.includes("(피해 4d4+3)"), line);
+});

@@ -75,6 +75,48 @@ export function randomMonsterChar(depth: number, rng: Rng): string {
     return LVL_MONS[Math.min(25, Math.max(0, d - 1))];
 }
 
+/**
+ * 그 깊이에서 **나올 수 있는 순위**들. `randomMonsterChar` 와 **같은 식**을 쓴다.
+ *
+ * 둘이 갈리면 도감이 「7층에 나온다」고 적어 놓고 실제로는 안 나오는 일이 생긴다.
+ * 그래서 여기 한 곳에서 내고, 테스트가 실제 뽑기와 맞춰 본다.
+ */
+function ranksAt(depth: number): Set<number> {
+    const out = new Set<number>();
+    for (let roll = 0; roll < 10; roll++) {
+        let d = depth + (roll - 6);
+        if (d < 1) {
+            for (let r = 1; r <= 5; r++) out.add(Math.min(25, Math.max(0, r - 1)));
+            continue;
+        }
+        if (d > 26) {
+            for (let r = 22; r <= 26; r++) out.add(Math.min(25, Math.max(0, r - 1)));
+            continue;
+        }
+        out.add(Math.min(25, Math.max(0, d - 1)));
+    }
+    return out;
+}
+
+/**
+ * 이 종이 **몇 층에서 나오는가.**
+ *
+ * 종의 능력치는 층을 안 탄다 — 트롤은 어디서나 같은 트롤이다. 층이 정하는 것은
+ * **어느 종이 나오는가**뿐이고, 도감이 적을 수 있는 「층에 따른 것」은 이 띠 하나다.
+ */
+export function depthRange(ch: string): { min: number; max: number } | null {
+    const rank = LVL_MONS.indexOf(ch);
+    if (rank < 0) return null;
+    let min = Infinity;
+    let max = -Infinity;
+    for (let depth = 1; depth <= 26; depth++) {
+        if (!ranksAt(depth).has(rank)) continue;
+        min = Math.min(min, depth);
+        max = Math.max(max, depth);
+    }
+    return Number.isFinite(min) ? { min, max } : null;
+}
+
 let nextId = 1;
 
 /** 같은 종은 같은 체력으로 선다 — 굴리지 않는다(`MONSTERS` 머리말 참고). */

@@ -377,6 +377,14 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         const base = ARMORS[it.type]?.armor ?? 10;
         return `방어도 ${armorClass(seen ? armorClassOf(it) : base)}`;
     }
+    if (it.kind === "ring") {
+        // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
+        if (!seen) return "";
+        const n = it.plusRing ?? 0;
+        if (it.type === "protection") return n === 0 ? "" : `방어도 ${n > 0 ? "+" : ""}${n}`;
+        if (it.type === "add strength") return n === 0 ? "" : `힘 ${n > 0 ? "+" : ""}${n}`;
+        return "";
+    }
     return "";
 }
 

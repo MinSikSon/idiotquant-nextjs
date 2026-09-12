@@ -60,6 +60,7 @@ import {
     describe,
     isThrowable,
     itemChar,
+    itemPower,
     makeItem,
     armorClass,
     randomItem,
@@ -68,6 +69,7 @@ import {
 } from "./items";
 import {
     MONSTERS,
+    depthRange,
     randomMonsterChar,
     spawnMonster,
 } from "./monsters";
@@ -109,6 +111,21 @@ export type Command =
     | { t: "throw"; letter: string; dx: number; dy: number }
     | { t: "search" }
     | { t: "drop"; letter: string };
+
+/**
+ * ` (피해 3d4+2)` — 착용한 **그 물건의 성능.**
+ *
+ * 내 명중·피해·방어도가 아니라 **물건 몫**이다. 한때 갑옷을 입으면 내 방어 등급을
+ * 적었는데, 그건 (ㄱ) 물건이 아니라 나의 값이고 (ㄴ) 화면의 「방어도」와 방향이
+ * 반대인 옛 등급이라 「입었더니 숫자가 내려갔다」로 읽혔다.
+ *
+ * 배낭 줄과 **같은 자리**(`itemPower`)에서 낸다. 둘이 갈리면 배낭에는 18 이라 적히고
+ * 입을 때는 다른 숫자가 뜬다.
+ */
+function withPower(it: Item, state: GameState): string {
+    const p = itemPower(it, state.known);
+    return p ? ` (${p})` : "";
+}
 
 /** 메시지는 여기로만 들어온다 — 화면이 직접 밀어 넣지 않는다. */
 function say(state: GameState, ...lines: string[]) {
@@ -498,7 +515,9 @@ function wield(state: GameState, letter: string): boolean {
     }
     hero.weaponId = it.id;
     state.known[`weapon:${it.type}`] = true;
-    say(state, `${describe(it, state.known, state.appearance)}을(를) 쥐었다.`);
+    // **그 물건의 성능**을 적는다 — 내 명중·피해가 아니라. 무엇을 쥐었는지가 바로 보여야
+    // 「이게 지금 것보다 나은가」를 그 자리에서 판단할 수 있다.
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 쥐었다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
     return true;
 }
@@ -518,7 +537,7 @@ function wear(state: GameState, letter: string): boolean {
     }
     hero.armorId = it.id;
     state.known[`armor:${it.type}`] = true;
-    say(state, `${describe(it, state.known, state.appearance)}을(를) 입었다. (방어 ${heroArmor(hero)})`);
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 입었다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "몸에 달라붙는다. 저주받았다!");
     return true;
 }
@@ -543,7 +562,7 @@ function putOn(state: GameState, letter: string): boolean {
     if (hand === "left") hero.leftRingId = it.id;
     else hero.rightRingId = it.id;
     state.known[`ring:${it.type}`] = true;
-    say(state, `${describe(it, state.known, state.appearance)}을(를) 꼈다.`);
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 꼈다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "손가락에서 빠지지 않는다. 저주받았다!");
     else say(state, `배가 더 빨리 고파진다. (한 걸음에 ${hungerRate(hero)})`);
     return true;
@@ -1246,6 +1265,8 @@ export interface BestiaryRow {
     exp: number;
     hp: number;
     mean: boolean;
+    /** 몇 층에서 나오는가. 능력치는 층을 안 타고, 층이 정하는 것은 **어느 종이 나오는가**다. */
+    depths: { min: number; max: number } | null;
 }
 
 export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
@@ -1262,6 +1283,7 @@ export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
                 damage: d.damage.filter((x: string) => x !== "0d0"),
                 exp: d.exp,
                 hp: d.hp,
+                depths: depthRange(ch),
                 mean: d.mean,
             };
         })
