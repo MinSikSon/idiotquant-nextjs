@@ -6,6 +6,7 @@ import { Share2, Check, Dice5, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import GrowthChart from "./GrowthChart";
 import CalculatorHistory from "./CalculatorHistory";
+import { NumberField } from "./NumberField";
 import {
     DEFAULTS, TAX_RATE, SIMPLE_ASSUMPTIONS, PERIOD_LABEL,
     sanitize, maskDetail, simulate, serialize, parse, won, pct, basisOf,
@@ -172,9 +173,9 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg"
                     )}
                 />
-                <input
-                    id={id} type="number" inputMode="decimal" step={0.1} value={value}
-                    onChange={(e) => onChange(Number(e.target.value))}
+                {/* 수익률은 음수가 될 수 있다 — 잃는 해를 넣어 보는 것이 이 칸의 쓸모다. */}
+                <NumberField
+                    id={id} value={value} onCommit={onChange} allowNegative
                     className={cn(INPUT_CLS, "w-[92px] sm:w-[92px] shrink-0")}
                 />
                 <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400 shrink-0">%</span>
@@ -476,8 +477,8 @@ function Calculator() {
                                 초기 투자금<span className={HINT_CLS}>지금 넣어둘 목돈</span>
                             </label>
                             <div className="flex items-center gap-2">
-                                <input id="initial" type="number" inputMode="numeric" step={100} value={inputs.initial}
-                                    onChange={(e) => set("initial", Number(e.target.value))} className={INPUT_CLS} />
+                                <NumberField id="initial" value={inputs.initial}
+                                    onCommit={(v) => set("initial", v)} className={INPUT_CLS} />
                                 <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">만원</span>
                             </div>
                         </div>
@@ -487,8 +488,8 @@ function Calculator() {
                                 매월 적립금<span className={HINT_CLS}>매달 추가로 넣을 돈</span>
                             </label>
                             <div className="flex items-center gap-2">
-                                <input id="monthly" type="number" inputMode="numeric" step={10} value={inputs.monthly}
-                                    onChange={(e) => set("monthly", Number(e.target.value))} className={INPUT_CLS} />
+                                <NumberField id="monthly" value={inputs.monthly}
+                                    onCommit={(v) => set("monthly", v)} className={INPUT_CLS} />
                                 <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">만원</span>
                             </div>
                         </div>
@@ -516,8 +517,8 @@ function Calculator() {
                         <div className={ROW_CLS}>
                             <label htmlFor="years" className={LABEL_CLS}>투자 기간</label>
                             <div className="flex items-center gap-2">
-                                <input id="years" type="number" inputMode="numeric" step={1} value={inputs.years}
-                                    onChange={(e) => set("years", Number(e.target.value))} className={INPUT_CLS} />
+                                <NumberField id="years" value={inputs.years}
+                                    onCommit={(v) => set("years", v)} className={INPUT_CLS} />
                                 <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">년</span>
                             </div>
                         </div>
@@ -566,8 +567,8 @@ function Calculator() {
                                 물가상승률<span className={HINT_CLS}>0이면 명목 금액 그대로</span>
                             </label>
                             <div className="flex items-center gap-2">
-                                <input id="inflation" type="number" inputMode="decimal" step={0.1} value={inputs.inflation}
-                                    onChange={(e) => set("inflation", Number(e.target.value))} className={INPUT_CLS} />
+                                <NumberField id="inflation" value={inputs.inflation}
+                                    onCommit={(v) => set("inflation", v)} className={INPUT_CLS} />
                                 <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
                             </div>
                         </div>

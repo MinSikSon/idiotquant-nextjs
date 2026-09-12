@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { simulate, sanitize, maskDetail, yearlyRates, serialize, parse, DEFAULTS, TAX_RATE, type CalcInputs } from "@/app/(calculator)/calculator/calc";
+import { simulate, sanitize, maskDetail, yearlyRates, serialize, parse, acceptsDraft, draftValue, trimLeadingZero, DEFAULTS, TAX_RATE, type CalcInputs } from "@/app/(calculator)/calculator/calc";
 
 const base = (over: Partial<CalcInputs> = {}): CalcInputs => ({
     ...DEFAULTS, initial: 0, monthly: 0, tax: false, inflation: 0, ...over,
@@ -199,4 +199,63 @@ test("링크에 방식·범위·씨앗이 실려 그대로 돌아온다", () => 
     assert.equal(back.inputs.rateMax, 11);
     assert.equal(back.inputs.seed, 777);
     assert.equal(simulate(back.inputs).final, simulate(inputs).final);
+});
+
+/* ── 치는 중인 글자 — 「0 이 안 지워진다」가 났던 자리 ───────── */
+
+test("빈 글자는 받아 주되 값으로 확정하지 않는다", () => {
+    // **이 둘이 갈리는 것이 고침의 전부다.** 마지막 자리를 지우면 칸은 빈 글자가 되는데,
+    // 예전에는 그것이 `Number("")` = 0 으로 확정돼 도로 칸에 그려졌다 — 칸을 비울 수가
+    // 없으니 500 을 치려면 0 뒤에 이어 쳐야 했고 그래서 「01」이 됐다.
+    assert.equal(acceptsDraft(""), true, "지우는 중이므로 받아야 한다");
+    assert.equal(draftValue(""), null, "빈 칸은 0 이 아니다 — 값을 안 건드린다");
+});
+
+test("아직 숫자가 아닌 중간 글자도 받는다", () => {
+    // 이걸 막으면 소수점도 음수도 칠 방법이 없다 — 「7.」을 못 받으면 7.5 를 못 친다.
+    for (const raw of ["7.", ".", "0."]) {
+        assert.equal(acceptsDraft(raw), true, `${raw} 를 받아야 한다`);
+    }
+    assert.equal(acceptsDraft("-", true), true, "수익률은 음수를 친다");
+    assert.equal(acceptsDraft("-", false), false, "음수를 안 받는 칸에서는 막는다");
+    assert.equal(acceptsDraft("-5", true), true);
+
+    // 받기는 해도 **확정은 아니다.** 여기서 0 을 돌려주면 「-」를 치는 순간 0 이 된다.
+    assert.equal(draftValue("-"), null);
+    assert.equal(draftValue("."), null);
+    assert.equal(draftValue("7."), 7, "소수점만 찍힌 것은 7 로 읽어도 된다");
+});
+
+test("숫자가 아닌 글자는 아예 안 받는다", () => {
+    for (const raw of ["a", "1a", "1e5", "1-2", "1.2.3", " 1", "１"]) {
+        assert.equal(acceptsDraft(raw, true), false, `${raw} 는 막아야 한다`);
+    }
+});
+
+test("확정되는 값", () => {
+    assert.equal(draftValue("0"), 0);
+    assert.equal(draftValue("500"), 500);
+    assert.equal(draftValue("7.5"), 7.5);
+    assert.equal(draftValue("-3.2"), -3.2);
+    // 「01」은 1 이다. 칸에는 친 글자가 남지만 값은 숫자로 읽힌다.
+    assert.equal(draftValue("01"), 1);
+});
+
+test("확정된 값은 그대로 sanitize 를 탄다", () => {
+    // 칸이 바뀌어도 한계는 그대로다 — 다듬는 자리는 여전히 하나뿐이다.
+    assert.equal(sanitize({ ...DEFAULTS, years: draftValue("99")! }).years, 60);
+    assert.equal(sanitize({ ...DEFAULTS, initial: draftValue("0")! }).initial, 0);
+});
+
+test("앞자리 0 은 떼어 낸다 — 「01」은 1 이다", () => {
+    assert.equal(trimLeadingZero("01"), "1");
+    assert.equal(trimLeadingZero("007"), "7");
+    assert.equal(trimLeadingZero("00"), "0");
+    assert.equal(trimLeadingZero("-01"), "-1");
+    // **0 뒤에 숫자가 바로 붙을 때만 뗀다.**
+    assert.equal(trimLeadingZero("0"), "0", "0 은 0 이다");
+    assert.equal(trimLeadingZero("0.5"), "0.5", "소수는 앞의 0 이 뜻을 가진다");
+    assert.equal(trimLeadingZero("0."), "0.", "치는 중이다 — 건드리면 소수점을 못 친다");
+    assert.equal(trimLeadingZero(""), "");
+    assert.equal(trimLeadingZero("-"), "-");
 });
