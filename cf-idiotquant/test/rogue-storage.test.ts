@@ -17,6 +17,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { type Command, newGame, perform, survey } from "@/lib/rogue/game";
+import { packItem } from "@/lib/rogue/hero";
 import { deserialize, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
 import { ALL_DIRS, MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
@@ -275,4 +276,56 @@ test("스물여섯 층을 다 들고도 저장이 브라우저에 들어간다",
     assert.equal(Object.keys(s.levels).length + 1, 26, `${Object.keys(s.levels).length + 1}층만 들었다`);
     const bytes = serialize(s).length;
     assert.ok(bytes < 3_000_000, `26층짜리 저장이 ${bytes} 바이트다 — 브라우저가 거부할 수 있다`);
+});
+
+test("자리 없는 물건이 든 저장은 **되읽을 때 고친다** — 안 고치면 영영 「undefined) 식량」", () => {
+    // 규칙을 고쳐 새로 생기는 것을 막아도, **이미 그렇게 저장된 판은 안 낫는다.**
+    // 화면은 배낭을 `${letter}) 이름` 으로 찍으므로 열 때마다 그 줄이 다시 뜬다.
+    const s = newGame(1);
+    const o = JSON.parse(serialize(s));
+    for (const p of o.hero.pack) delete p.letter;
+
+    const back = deserialize(JSON.stringify(o))!;
+    assert.ok(back, "되읽지 못했다");
+    for (const p of back.hero.pack) {
+        assert.ok(p.letter, `${p.kind}:${p.type} 의 자리를 안 메웠다`);
+    }
+    // 자리가 겹치면 안 된다 — 겹치면 하나는 고를 수도 버릴 수도 없는 물건이 된다.
+    const letters = back.hero.pack.map((p) => p.letter);
+    assert.equal(new Set(letters).size, letters.length, `자리가 겹친다: ${letters.join(", ")}`);
+    play(back);
+});
+
+test("자리가 겹친 저장도 고친다", () => {
+    const s = newGame(2);
+    const o = JSON.parse(serialize(s));
+    for (const p of o.hero.pack) p.letter = "a"; // 셋 다 a
+    const back = deserialize(JSON.stringify(o))!;
+    const letters = back.hero.pack.map((p) => p.letter);
+    assert.equal(new Set(letters).size, letters.length, `겹침이 안 고쳐졌다: ${letters.join(", ")}`);
+    // 이름으로 집을 수 있어야 한다.
+    for (const p of back.hero.pack) {
+        assert.equal(packItem(back.hero, p.letter!)!.id, p.id, `${p.letter} 로 집으니 딴 물건이 온다`);
+    }
+    play(back);
+});
+
+test("멀쩡한 자리는 건드리지 않는다", () => {
+    const s = newGame(3);
+    const before = s.hero.pack.map((p) => `${p.id}:${p.letter}`);
+    const back = deserialize(serialize(s))!;
+    assert.deepEqual(back.hero.pack.map((p) => `${p.id}:${p.letter}`), before);
+});
+
+test("이상한 자리(숫자·빈 글자·두 글자)도 고친다", () => {
+    const s = newGame(4);
+    const o = JSON.parse(serialize(s));
+    o.hero.pack[0].letter = "";
+    o.hero.pack[1].letter = "zz";
+    if (o.hero.pack[2]) o.hero.pack[2].letter = 7;
+    const back = deserialize(JSON.stringify(o))!;
+    for (const p of back.hero.pack) {
+        assert.ok(p.letter && /^[a-z]$/.test(p.letter), `이상한 자리가 남았다: ${JSON.stringify(p.letter)}`);
+    }
+    play(back);
 });
