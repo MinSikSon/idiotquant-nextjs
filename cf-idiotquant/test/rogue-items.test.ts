@@ -14,7 +14,7 @@ import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from
 import { itemPower, makeItem } from "@/lib/rogue/items";
 import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
-import { T, idx, type GameState, type Item } from "@/lib/rogue/types";
+import { T, type Tile, idx, walkable, type GameState, type Item } from "@/lib/rogue/types";
 
 /** 배낭에 물건 하나를 밀어 넣고 그 글자를 준다. */
 function give(s: GameState, it: Item, letter: string): string {
@@ -187,11 +187,28 @@ test("비밀문은 찾기 전에는 벽이고, 뒤지면 문이 된다", () => {
     const at = s!.level.tiles.indexOf(T.SECRET);
     const sx = at % 80;
     const sy = Math.floor(at / 80);
+    // **옆에 설 수 있는 칸을 찾아서** 선다. 비밀문은 가로 벽에도 세로 벽에도 나므로
+    // 「왼쪽 칸」이 언제나 바닥일 거라고 보면 안 된다 — 실제로 층 만들기를 고치자
+    // 그 가정이 깨졌다.
+    const side = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+    ].find(([dx, dy]) => walkable(s!.level.tiles[idx(sx + dx, sy + dy)] as Tile));
+    assert.ok(side, "비밀문 옆에 설 자리가 없다");
+    s!.hero.x = sx + side![0];
+    s!.hero.y = sy + side![1];
     // 비밀문은 걸어 들어갈 수 있는 칸이 아니다.
-    s!.hero.x = sx - 1;
-    s!.hero.y = sy;
-    const blocked = perform(s!, { t: "move", dx: 1, dy: 0 });
-    assert.notEqual(blocked.hero.x, sx, "찾지도 않은 비밀문을 지나갔다");
+    const blocked = perform(s!, { t: "move", dx: -side![0], dy: -side![1] });
+    assert.ok(
+        blocked.hero.x !== sx || blocked.hero.y !== sy,
+        "찾지도 않은 비밀문을 지나갔다",
+    );
+
+    // 뒤지는 동안 맞아 죽으면 뒤지기를 못 재게 된다 — 이 테스트가 보는 것은 비밀문이다.
+    s!.level.monsters.length = 0;
+    s!.hero.hp = s!.hero.maxHp;
 
     // 옆에 서서 뒤지면 언젠가 찾는다.
     let found = false;

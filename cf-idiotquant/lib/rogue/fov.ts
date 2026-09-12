@@ -26,9 +26,25 @@ import {
 export const SEEN = 1;
 export const VISIBLE = 2;
 
-/** 그 칸이 어느 방의 안쪽인가. 방이 아니면 -1. */
+/** 그 칸이 어느 방의 **안쪽**인가. 벽·문·복도면 -1. */
 export function roomOf(level: Level, x: number, y: number): number {
     return inBounds(x, y) ? level.roomAt[idx(x, y)] : -1;
+}
+
+/**
+ * 그 칸을 **사각형 안에 품는** 방. 벽과 문까지 친다.
+ *
+ * `roomAt` 은 안쪽에만 박혀 있어서 **문 위에 서면 -1** 이다. 그것 때문에 문턱에 선 채로는
+ * 방이 안 밝혀졌다 — 「방에 들어갔는데 깜깜하다」가 그 자리였다. 방은 아홉 개뿐이라
+ * 훑어도 싸다.
+ */
+function roomAround(level: Level, x: number, y: number): number {
+    for (let i = 0; i < level.rooms.length; i++) {
+        const r = level.rooms[i];
+        if (r.gone) continue;
+        if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return i;
+    }
+    return -1;
 }
 
 /**
@@ -51,10 +67,18 @@ export function computeFov(level: Level, from: Pos): void {
         for (let dx = -1; dx <= 1; dx++) light(from.x + dx, from.y + dy);
     }
 
-    const ri = roomOf(level, from.x, from.y);
+    // 안쪽에 섰으면 그 방, **문턱에 섰으면 그 문이 난 방.** 문에서 방이 안 켜지면
+    // 들어서는 그 한 걸음 동안 방이 깜깜해 보인다 — 원작은 문턱에서도 방을 보여 준다.
+    const ri =
+        roomOf(level, from.x, from.y) >= 0
+            ? roomOf(level, from.x, from.y)
+            : tiles[idx(from.x, from.y)] === T.DOOR
+              ? roomAround(level, from.x, from.y)
+              : -1;
     if (ri < 0) return;
     const room = level.rooms[ri];
-    if (!room || room.dark || room.gone) return;
+    // 미로 방은 「방」이 아니다 — 안쪽이 얽힌 통로라 통째로 보이면 미로가 아니게 된다.
+    if (!room || room.dark || room.gone || room.maze) return;
 
     // 밝은 방 — 벽까지 통째로.
     for (let y = room.y; y < room.y + room.h; y++) {

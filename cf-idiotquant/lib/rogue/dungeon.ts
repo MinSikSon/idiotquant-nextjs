@@ -201,22 +201,108 @@ function digLine(tiles: Uint8Array, from: Pos, to: Pos) {
     }
 }
 
-/** 꺾인 복도 하나. 가로면 가운데에서 위아래로 꺾고, 세로면 그 반대다. */
+/**
+ * 꺾인 복도 하나. 가로면 가운데에서 위아래로 꺾고, 세로면 그 반대다.
+ *
+ * 꺾는 자리는 **양 끝을 뺀 안쪽**에서 고른다. 끝에서 꺾으면 그 끝을 나서는 첫 걸음이
+ * 없어져서 복도가 **옆으로만** 붙는데, 그 끝이 「없는 방」이면 이미 다른 복도가 물고
+ * 있던 바로 그 방향이라 길이 하나로 겹친다 — 갈림길이어야 할 자리가 막다른 골목이
+ * 된다. 길이가 2 미만이면 안쪽이 없으니 그대로 둔다.
+ */
 function connect(tiles: Uint8Array, a: Pos, b: Pos, horizontal: boolean, rng: Rng) {
+    const pick = (lo: number, hi: number) =>
+        hi - lo >= 2 ? rng.between(lo + 1, hi - 1) : lo === hi ? lo : rng.between(lo, hi);
     if (horizontal) {
         const lo = Math.min(a.x, b.x);
         const hi = Math.max(a.x, b.x);
-        const mid = lo === hi ? lo : rng.between(lo, hi);
+        const mid = pick(lo, hi);
         digLine(tiles, a, { x: mid, y: a.y });
         digLine(tiles, { x: mid, y: a.y }, { x: mid, y: b.y });
         digLine(tiles, { x: mid, y: b.y }, b);
     } else {
         const lo = Math.min(a.y, b.y);
         const hi = Math.max(a.y, b.y);
-        const mid = lo === hi ? lo : rng.between(lo, hi);
+        const mid = pick(lo, hi);
         digLine(tiles, a, { x: a.x, y: mid });
         digLine(tiles, { x: a.x, y: mid }, { x: b.x, y: mid });
         digLine(tiles, { x: b.x, y: mid }, b);
+    }
+}
+
+const N4: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+/** 「없는 방」의 그 한 점인가 — 방은 방이라, 길 하나만 물고 있어도 지우면 안 된다. */
+function isGoneAnchor(rooms: Room[], x: number, y: number): boolean {
+    return rooms.some((r) => r.gone && r.x === x && r.y === y);
+}
+
+/** 미로 방의 사각형 안인가 — 다듬기가 절대 건드리면 안 되는 자리. */
+function inMazeRoom(rooms: Room[], x: number, y: number): boolean {
+    return rooms.some(
+        (r) => r.maze && !r.gone && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h,
+    );
+}
+
+function openNbrs(tiles: Uint8Array, x: number, y: number): number {
+    return N4.filter(([dx, dy]) => inBounds(x + dx, y + dy) && walkable(get(tiles, x + dx, y + dy) as Tile)).length;
+}
+
+/**
+ * 대각으로만 이어진 복도를 **직각으로 잇는다.**
+ *
+ * 꺾이는 자리에서 두 조각이 대각선으로만 맞닿는 일이 드물게 난다. 걸어서 지나갈 수는
+ * 있지만(대각선 이동이 되므로) **화면에서는 길이 끊겨 보인다.** 사이의 바위 한 칸을
+ * 뚫어 준다.
+ */
+function joinDiagonals(tiles: Uint8Array, rooms: Room[]) {
+    for (let y = 1; y < MAP_H - 1; y++) {
+        for (let x = 1; x < MAP_W - 1; x++) {
+            if (get(tiles, x, y) !== T.CORRIDOR) continue;
+            if (inMazeRoom(rooms, x, y)) continue;
+            for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as [number, number][]) {
+                if (get(tiles, x + dx, y + dy) !== T.CORRIDOR) continue;
+                if (walkable(get(tiles, x + dx, y) as Tile) || walkable(get(tiles, x, y + dy) as Tile)) continue;
+                // 둘 다 바위일 때만 뚫는다 — 방 벽을 뚫으면 문 없는 구멍이 난다.
+                if (get(tiles, x + dx, y) === T.ROCK) put(tiles, x + dx, y, T.CORRIDOR);
+                else if (get(tiles, x, y + dy) === T.ROCK) put(tiles, x, y + dy, T.CORRIDOR);
+            }
+        }
+    }
+}
+
+/**
+ * **막다른 복도를 되메운다.**
+ *
+ * 복도는 곧은 선 셋으로 파는데, 그 선이 남의 방을 가로지르면 방 안쪽은 안 파이고
+ * (`digCorridor` 가 바위만 판다) **양쪽 끄트머리만 남는다.** 그러면 화면에서는 길이
+ * 방 벽에 부딪혀 끊긴 것처럼 보인다 — 팔백 층에 열다섯 자리였다.
+ *
+ * 잎사귀(이웃이 하나뿐인 칸)만 떼므로 **이어진 것을 끊을 수 없다.** 더 뗄 것이
+ * 없을 때까지 되풀이한다.
+ *
+ * **비밀문에 닿은 끝은 안 뗀다** — 그건 못 찾은 지름길이지 잘못 파인 길이 아니다.
+ */
+function pruneDeadEnds(tiles: Uint8Array, rooms: Room[]): void {
+    // 파는 선이 지도 폭을 넘을 수 없으므로 이 횟수 안에 반드시 멎는다.
+    for (let pass = 0; pass < MAP_W; pass++) {
+        let removed = 0;
+        for (let y = 1; y < MAP_H - 1; y++) {
+            for (let x = 1; x < MAP_W - 1; x++) {
+                const t = get(tiles, x, y);
+                if (t !== T.CORRIDOR && t !== T.PASSAGE) continue;
+                // **미로 안은 건드리지 않는다.** 미로는 막다른 길로 이루어진 것이라,
+                // 여기서 잎사귀를 떼기 시작하면 미로가 통째로 풀려 사라진다.
+                if (inMazeRoom(rooms, x, y)) continue;
+                // 「없는 방」은 방이다. 길을 하나만 물고 있어도 지우면 그 방이 지도에서
+                // 사라지고, 「모든 방이 이어진다」가 깨진다.
+                if (isGoneAnchor(rooms, x, y)) continue;
+                if (openNbrs(tiles, x, y) > 1) continue;
+                if (N4.some(([dx, dy]) => get(tiles, x + dx, y + dy) === T.SECRET)) continue;
+                put(tiles, x, y, T.ROCK);
+                removed++;
+            }
+        }
+        if (removed === 0) break;
     }
 }
 
@@ -272,8 +358,17 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
         if (level.items.some((it) => it.x === p.x && it.y === p.y)) continue;
         return p;
     }
-    const room = rng.pick(real) ?? level.rooms[0];
-    return randomSpotIn(room, rng);
+    // 이백 번을 굴려도 못 찾았다 — 미로 방뿐인 층에서는 드물지 않다. 그때 아무 칸이나
+    // 내주면 **바위 속에 물건이나 계단이 박힌다.** 걸어갈 수 있는 칸을 훑어서 준다.
+    for (let y = 0; y < MAP_H; y++) {
+        for (let x = 0; x < MAP_W; x++) {
+            if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
+            if (avoid.some((q) => q.x === x && q.y === y)) continue;
+            return { x, y };
+        }
+    }
+    // 걸어갈 칸이 하나도 없는 층은 만들어질 수 없다 — 여기 오면 층 만들기가 깨진 것이다.
+    return { x: level.rooms[0].x + 1, y: level.rooms[0].y + 1 };
 }
 
 /**
@@ -337,6 +432,20 @@ export function buildLevel(depth: number, rng: Rng): Level {
     const extra = edges.filter((e) => !spanning.includes(e) && rng.chance(0.28));
     const chosen = [...spanning, ...extra];
 
+    // **「없는 방」은 갈림길이다.** 신장 트리에서 잎이 되면 길이 하나뿐인데, 그건 방이
+    // 아니라 막다른 골목이다 — 화면에서는 복도가 한참 뻗다가 **아무것도 없는 데서
+    // 끊겨 보인다.** 「길이 중간에 끊긴다」의 가장 긴 자리가 이것이었다(깊이 17·시드 5
+    // 에서 열다섯 칸짜리 꼬리).
+    //
+    // 다듬기로는 못 지운다 — 지우면 그 방이 지도에서 사라진다. 그래서 **여기서 미리**
+    // 길을 하나 더 물린다. 이 길은 여분 통로가 아니므로 그 문은 비밀문이 되지 않는다.
+    for (let i = 0; i < rooms.length; i++) {
+        if (!rooms[i].gone) continue;
+        if (chosen.filter((e) => e.a === i || e.b === i).length >= 2) continue;
+        const more = edges.find((e) => (e.a === i || e.b === i) && !chosen.includes(e));
+        if (more) chosen.push(more);
+    }
+
     // 방마다 제 문을 들고 있어야 한다 — 미로를 팔 때도, 비밀문을 고를 때도 필요하다.
     const doorsOf: Pos[][] = rooms.map(() => []);
     /** 여분 통로에 난 문들 — 비밀문이 될 수 있는 것은 이것뿐이다. */
@@ -384,6 +493,11 @@ export function buildLevel(depth: number, rng: Rng): Level {
         if (rng.chance(secretChance)) put(tiles, d.x, d.y, T.SECRET);
     }
 
+    // 판 자국을 다듬는다. **비밀문을 정한 뒤**에 해야 한다 — 비밀문에 닿은 막다른 끝은
+    // 못 찾은 지름길이라 남겨야 하기 때문이다.
+    joinDiagonals(tiles, rooms);
+    pruneDeadEnds(tiles, rooms);
+
     const level: Level = {
         depth,
         tiles,
@@ -398,8 +512,11 @@ export function buildLevel(depth: number, rng: Rng): Level {
         maze: anyMaze,
     };
 
-    const real = rooms.filter((r) => !r.gone);
-    const down = randomSpotIn(rng.pick(real) ?? rooms[0], rng);
+    // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는
+    // 칸인지 안 봤다. 보통 방이면 안쪽이 전부 바닥이라 티가 안 났는데, **미로 방은
+    // 안쪽 대부분이 바위**라 계단이 바위 속에 박혔다 — 사방이 막힌 계단이 되고
+    // 그 층은 내려갈 수 없는 층이 된다. 실제로 그랬다(깊이 12, 시드 186).
+    const down = freeSpot(level, rng);
     put(tiles, down.x, down.y, T.STAIRS);
     level.stairs = down;
 
