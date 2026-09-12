@@ -663,14 +663,22 @@ export default function Rogue() {
                 </Panel>
             )}
 
+            {/*
+              * 기록은 **최신이 맨 위**다. 판을 열면 방금 일어난 일이 손 닿는 자리에
+              * 있어야 한다 — 아래로 굴려 내려가서 찾을 일이 아니다.
+              * 위쪽 두 줄 띠는 그대로 시간순이다(그쪽은 「방금」만 보여 주므로).
+              */}
             {sheet === "log" && (
                 <Panel title="지나온 기록" onClose={() => setSheet("none")}>
                     <ul className="space-y-0.5">
-                        {state.messages.slice(-80).map((m, i) => (
-                            <li key={i} className="text-[#9fb0aa]">
-                                {m}
-                            </li>
-                        ))}
+                        {state.messages
+                            .slice(-80)
+                            .reverse()
+                            .map((m, i) => (
+                                <li key={i} className="text-[#9fb0aa]">
+                                    {m}
+                                </li>
+                            ))}
                     </ul>
                 </Panel>
             )}
