@@ -31,8 +31,9 @@ import {
     score,
     survey,
 } from "@/lib/rogue/game";
-import { describe, isThrowable } from "@/lib/rogue/items";
-import { equippedArmor, equippedWeapon, heroArmor, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { armorClassOf, describe, isThrowable, weaponDamageOf } from "@/lib/rogue/items";
+import { isDetail } from "@/lib/rogue/combat";
+import { equippedArmor, equippedWeapon, heroArmor, heroAttackText, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -374,7 +375,9 @@ export default function Rogue() {
         { label: "도움말", hint: "?", on: () => setSheet("help") },
     ];
 
-    const recent = state.messages.slice(-2);
+    // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
+    // 차서 정작 무슨 일이 났는지가 밀려난다. 계산은 기록 판이 전부 갖고 있다.
+    const recent = state.messages.filter((m) => !isDetail(m)).slice(-2);
     const pickable = picker
         ? hero.pack.filter((p) => picker.kinds.includes(p.kind) && (!picker.allow || picker.allow(p)))
         : [];
@@ -472,6 +475,8 @@ export default function Rogue() {
                     체력 {hero.hp}/{hero.maxHp}
                 </span>
                 <span>힘 {heroStr(hero)}</span>
+                {/* 방어는 있는데 공격이 없으면 무기를 바꿀 때 무엇이 나아지는지가 안 보인다. */}
+                <span>공격 {heroAttackText(hero, state.known)}</span>
                 <span>방어 {heroArmor(hero)}</span>
                 <span>경험 {hero.exp}</span>
                 <span className="text-[#ffd24a]">금화 {hero.gold}</span>
@@ -572,6 +577,14 @@ export default function Rogue() {
                                         >
                                             <span className="text-[#8a9a95]">{it.letter})</span> {name(it)}
                                             {it.count > 1 && <span className="text-[#7d8d88]"> ×{it.count}</span>}
+                                            {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. 손질(+1)은
+                                                이름 쪽이 알아낸 만큼만 붙이므로 여기서는 **기본 주사위**만. */}
+                                            {it.kind === "weapon" && (
+                                                <span className="text-[#7d8d88]"> {weaponDamageOf(it)}</span>
+                                            )}
+                                            {it.kind === "armor" && (
+                                                <span className="text-[#7d8d88]"> 방어 {armorClassOf(it)}</span>
+                                            )}
                                             {worn && <span className="text-[#9fb0aa]"> ({worn})</span>}
                                         </button>
                                         {open && (
@@ -729,8 +742,8 @@ export default function Rogue() {
                             남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>
                         <p className="text-[#7d8d88]">
-                            <b className="text-[#9fb0aa]">위 계단으로 언제든 물러설 수 있습니다.</b> 다만
-                            층은 그때마다 새로 짜이므로, 밟아 둔 지도와 두고 온 물건은 사라집니다.
+                            <b className="text-[#9fb0aa]">위 계단으로 언제든 물러설 수 있습니다.</b> 지나온
+                            층은 떠난 그대로 남아 있으니, 두고 온 물건을 가지러 돌아가도 됩니다.
                         </p>
                         <p className="text-[#7d8d88]">
                             지하 26층에 옌더의 증표가 있습니다. <b className="text-[#9fb0aa]">1층의 계단은

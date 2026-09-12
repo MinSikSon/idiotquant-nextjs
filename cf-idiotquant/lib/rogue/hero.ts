@@ -97,9 +97,13 @@ function freeLetter(hero: Hero): string | null {
  * 배낭에 넣는다. 같은 것이 이미 있으면 **겹쳐 쌓는다** — 식량 스무 개가 자리를
  * 스무 칸 먹으면 배낭이 금방 찬다.
  *
- * 넣지 못하면 false 를 준다. 부르는 쪽이 "배낭이 꽉 찼다" 를 말해야 한다.
+ * **넣은 물건이 아니라 배낭에 있는 물건을 돌려준다.** 겹쳐 쌓았을 때 이 둘은 다른
+ * 물건이다 — 바닥에서 집은 쪽은 배낭 자리(`letter`)가 없다. 예전에는 `true` 만
+ * 돌려줘서, 부르는 쪽이 집은 물건의 자리를 읽다가 「`undefined`) 식량」을 적었다.
+ *
+ * 넣지 못하면 null 을 준다. 부르는 쪽이 "배낭이 꽉 찼다" 를 말해야 한다.
  */
-export function addToPack(hero: Hero, it: Item): boolean {
+export function addToPack(hero: Hero, it: Item): Item | null {
     it.x = -1;
     it.y = -1;
     const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll";
@@ -109,15 +113,15 @@ export function addToPack(hero: Hero, it: Item): boolean {
         );
         if (same) {
             same.count += it.count;
-            return true;
+            return same;
         }
     }
     const letter = freeLetter(hero);
-    if (!letter) return false;
+    if (!letter) return null;
     it.letter = letter;
     hero.pack.push(it);
     hero.pack.sort((a, b) => (a.letter ?? "").localeCompare(b.letter ?? ""));
-    return true;
+    return it;
 }
 
 /** 하나 덜어낸다. 겹쳐 쌓인 것은 개수만 준다. */
@@ -199,6 +203,23 @@ export function searchChance(hero: Hero): number {
 
 export function heroDamageDice(hero: Hero): string {
     return weaponDamageOf(equippedWeapon(hero));
+}
+
+/**
+ * 지금 휘두르면 굴리는 것 — **화면에 적는 「공격」이 이 값이다.**
+ *
+ * 방어가 `heroArmor()` 하나로 나오듯 공격도 여기 하나로 나온다. 화면이 무기 주사위와
+ * 손질과 힘을 따로 주워 모아 더하면 그 셈이 두 벌이 되고, 어느 날 화면에 적힌 공격과
+ * 실제로 들어가는 피해가 달라진다.
+ *
+ * 손질(`+1`)은 **써 보기 전에는 모른다.** 그래서 `known` 을 받아, 모르는 무기면 그
+ * 몫을 빼고 적는다 — 화면이 정체 모를 무기의 속을 흘리면 안 된다.
+ */
+export function heroAttackText(hero: Hero, known: Record<string, boolean>): string {
+    const w = equippedWeapon(hero);
+    const shown = w && known[`weapon:${w.type}`] ? (w.plusDam ?? 0) : 0;
+    const bonus = shown + strDamBonus(heroStr(hero));
+    return `${heroDamageDice(hero)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
 }
 
 /** 지금 몸에 붙어 있는가 — 저주받아 못 벗는 것. */

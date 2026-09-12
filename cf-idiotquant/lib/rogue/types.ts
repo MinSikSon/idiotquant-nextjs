@@ -216,6 +216,16 @@ export interface GameState {
     seed: number;
     rngState: number;
     level: Level;
+    /**
+     * 지나온 층들 — **떠난 그대로 남는다.**
+     *
+     * 깊이를 열쇠로 쓴다. 되돌아가면 여기 있는 것을 그대로 다시 펼친다: 밝혀 둔 지도도,
+     * 두고 온 물건도, 잡다 만 놈도 그 자리에 있다. 없으면 그때 새로 판다.
+     *
+     * **지금 딛고 선 층(`level`)은 여기 안 둔다.** 같은 층이 두 벌이 되면 어느 날 한쪽만
+     * 바뀐다 — 떠날 때 넣고 들어갈 때 뺀다(`enterLevel`).
+     */
+    levels: Record<number, Level>;
     hero: Hero;
     /** 화면 맨 위에 쌓이는 것. 최신이 끝. */
     messages: string[];

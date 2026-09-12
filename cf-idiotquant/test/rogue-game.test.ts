@@ -103,13 +103,68 @@ test("아래층에서는 증표 없이도 물러설 수 있다 — 도망이 선
     assert.equal(s.deepest, 3);
 });
 
-test("물러선 층은 새로 짜인다 — 밟아 둔 지도가 값이다", () => {
+test("되돌아간 층은 **떠난 그대로**다 — 지도도, 밝혀 둔 기억도", () => {
     let s = godown(newGame(56)); // 2층
-    const before = Array.from(s.level.tiles);
+    const tiles = Array.from(s.level.tiles);
+    // 조금 걸어 다니며 지도를 밝힌다.
+    for (let i = 0; i < 30; i++) s = perform(s, { t: "move", dx: i % 2 ? 1 : 0, dy: i % 2 ? 0 : 1 });
+    const lit = Array.from(s.level.flags).filter((f) => f > 0).length;
+    assert.ok(lit > 0, "걸었는데 아무것도 안 밝혀졌다");
+
     s = godown(s); // 3층
-    s = perform(s, { t: "ascend" }); // 다시 2층 — 같은 층이 아니다
+    s = perform(s, { t: "ascend" }); // 다시 2층
     assert.equal(s.level.depth, 2);
-    assert.notDeepEqual(Array.from(s.level.tiles), before, "같은 층이 그대로 돌아왔다");
+    assert.deepEqual(Array.from(s.level.tiles), tiles, "같은 층이 안 돌아왔다");
+    assert.ok(
+        Array.from(s.level.flags).filter((f) => f > 0).length >= lit,
+        "밝혀 둔 기억이 사라졌다",
+    );
+});
+
+test("되돌아가도 몬스터와 물건이 불어나지 않는다", () => {
+    let s = godown(newGame(57)); // 2층
+    const items = s.level.items.length;
+    const monsters = s.level.monsters.length;
+
+    for (let i = 0; i < 3; i++) {
+        s = godown(s); // 3층
+        s = perform(s, { t: "ascend" }); // 2층
+        assert.equal(s.level.depth, 2);
+    }
+    // 되돌아갈 때마다 또 뿌리면 여기서 늘어난다. (몬스터는 죽거나 따라와서 줄 수는 있다.)
+    assert.ok(s.level.items.length <= items, `물건이 ${items} → ${s.level.items.length} 로 늘었다`);
+    assert.ok(
+        s.level.monsters.length <= monsters,
+        `몬스터가 ${monsters} → ${s.level.monsters.length} 로 늘었다`,
+    );
+});
+
+test("두고 온 물건은 그 자리에 있다", () => {
+    let s = godown(newGame(58)); // 2층
+    const dagger = makeItem("weapon", "dagger", 970, -1, -1);
+    dagger.letter = "z";
+    s.hero.pack.push(dagger);
+    s = perform(s, { t: "drop", letter: "z" });
+    const where = { x: s.hero.x, y: s.hero.y };
+    assert.ok(s.level.items.some((i) => i.id === 970), "안 내려놓아졌다");
+
+    s = godown(s);
+    s = perform(s, { t: "ascend" });
+    const back = s.level.items.find((i) => i.id === 970);
+    assert.ok(back, "두고 온 단검이 사라졌다");
+    assert.deepEqual({ x: back!.x, y: back!.y }, where, "단검이 딴 자리로 갔다");
+});
+
+test("지금 딛고 선 층은 창고에 없다 — 두 벌이 되면 한쪽만 바뀐다", () => {
+    let s = newGame(59);
+    assert.deepEqual(s.levels, {});
+    s = godown(s);
+    assert.equal(s.level.depth, 2);
+    assert.ok(s.levels[1], "떠난 1층이 창고에 없다");
+    assert.equal(s.levels[2], undefined, "딛고 선 층이 창고에도 있다");
+    s = perform(s, { t: "ascend" });
+    assert.equal(s.levels[1], undefined, "돌아온 층이 창고에 남았다");
+    assert.ok(s.levels[2], "떠난 2층이 창고에 없다");
 });
 
 test("계단 위에서만 내려간다", () => {
