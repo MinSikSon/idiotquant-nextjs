@@ -19,6 +19,7 @@ import {
 } from "./dungeon";
 import {
     computeFov,
+    isVisible,
     monsterSees,
     revealAll,
 } from "./fov";
@@ -56,6 +57,7 @@ import {
     weaponDamageOf,
 } from "./items";
 import {
+    MONSTERS,
     randomMonsterChar,
     spawnMonster,
 } from "./monsters";
@@ -157,7 +159,16 @@ function enterLevel(state: GameState, depth: number, rng: Rng, arriveAtUpStairs:
     state.deepest = Math.max(state.deepest, depth);
 }
 
-export function newGame(seed = Math.floor(Math.random() * 0x7fffffff)): GameState {
+/**
+ * 새 판.
+ *
+ * `bestiary` 는 **지난 판에서 이어받는 유일한 것**이다. 부르는 쪽(화면)이 저장소에서
+ * 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면 테스트가 브라우저를 필요로 하게 된다.
+ */
+export function newGame(
+    seed = Math.floor(Math.random() * 0x7fffffff),
+    bestiary: Record<string, number> = {},
+): GameState {
     const rng = new Rng(seed);
     const state: GameState = {
         seed,
@@ -172,6 +183,7 @@ export function newGame(seed = Math.floor(Math.random() * 0x7fffffff)): GameStat
         deepest: 1,
         appearance: {},
         known: {},
+        bestiary: { ...bestiary },
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);
@@ -218,11 +230,7 @@ function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
     if (target) {
         const r = heroAttack(state, target, rng);
         say(state, ...r.messages);
-        if (r.killed) {
-            level.monsters = level.monsters.filter((m) => m.id !== target.id);
-            const levels = gainExp(hero, target.def.exp, rng);
-            for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
-        }
+        if (r.killed) killMonster(state, target, rng);
         return true;
     }
 
@@ -577,10 +585,20 @@ function ray(
     return { x, y };
 }
 
+/**
+ * 쓰러뜨린 자리 — **손으로 때리든 지팡이로 쏘든 던져서 맞히든 전부 여기를 지난다.**
+ *
+ * 예전에는 손으로 때린 것만 따로 세고 있었다. 그 상태로 도감을 붙이면 「지팡이로만
+ * 잡아 본 종은 영영 모른다」가 되는데, 그건 규칙이 아니라 빠뜨린 자리다.
+ */
 function killMonster(state: GameState, m: Monster, rng: Rng) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
+    state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
     const levels = gainExp(state.hero, m.def.exp, rng);
     for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
+    if (state.bestiary[m.def.ch] === 1) {
+        say(state, `${m.def.name}을(를) 처음 잡았다 — 이제 조사하면 속을 안다.`);
+    }
 }
 
 /** 지팡이를 쏜다. 남은 횟수가 없으면 아무 일도 안 난다 — 그것도 정보다. */
@@ -1062,6 +1080,132 @@ function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
 
     state.rngState = rng.state;
     return { ...state };
+}
+
+/**
+ * 조사 — **한 번이라도 잡아 본 종이면 속을 안다.**
+ *
+ * ── 왜 턴을 안 쓰나 ──────────────────────────────────────────────────
+ * 조사는 세상을 바꾸지 않는다. **내 수첩을 읽는 것**이고, 거기 적힌 것은 이미 내가
+ * 값을 치르고 얻은 것이다(한 마리를 잡았다). 그래서 이 함수는 `perform` 을 안 지나고
+ * 아무것도 안 바꾼다 — 문서의 규칙 3 「아무 일도 안 일어난 행동은 턴을 안 쓴다」가
+ * 그대로 적용되는 자리다.
+ *
+ * 값은 **먼저 한 마리를 잡아야 한다**는 것 하나다. 처음 보는 글자 앞에서는 여전히
+ * 아무것도 모른 채 결정해야 하고, 그 한 번이 이 게임에서 제일 무서운 순간이다.
+ *
+ * ── 지금 체력은 숫자로 안 준다 ───────────────────────────────────────
+ * 표에 적힌 것(레벨·방어·피해·경험)은 **세상의 사실**이라 그대로 준다. 하지만 눈앞의
+ * 이 한 마리가 몇 대 남았는지는 수첩에 없는 것이다. 그건 **보이는 만큼**만 — 성한지
+ * 다쳤는지 정도로 준다. 숫자로 주면 「몇 대 더 때리면 죽는다」가 되어 싸움이 산수가 된다.
+ */
+export type Condition = "성하다" | "다쳤다" | "반쯤 죽었다" | "빈사";
+
+export interface Sighting {
+    id: number;
+    ch: string;
+    name: string;
+    /** 여태 잡아 본 적이 있는가. 없으면 아래 값들이 비어 있다. */
+    known: boolean;
+    kills: number;
+    level?: number;
+    armor?: number;
+    damage?: string[];
+    exp?: number;
+    hpDice?: string;
+    /** 사납게 구는 놈인가 — 잡아 봐야 안다. */
+    mean?: boolean;
+    /** 눈으로 보이는 것. 잡아 본 적이 없어도 이건 안다. */
+    condition: Condition;
+    /** 몇 칸 떨어져 있나 (대각선도 한 칸). */
+    distance: number;
+    /** 지금 나를 쫓고 있는가 — 이것도 보면 안다. */
+    awake: boolean;
+}
+
+function conditionOf(m: Monster): Condition {
+    const r = m.hp / Math.max(1, m.maxHp);
+    if (r > 0.99) return "성하다";
+    if (r > 0.6) return "다쳤다";
+    if (r > 0.25) return "반쯤 죽었다";
+    return "빈사";
+}
+
+/**
+ * 지금 보이는 몬스터들. 화면이 이것을 그대로 늘어놓는다.
+ *
+ * **보이는 범위는 지도와 같은 규칙**이다(`isVisible` · 감지 물약). 조사만 벽을 뚫으면
+ * 지도와 조사가 서로 다른 말을 하게 된다.
+ */
+export function survey(state: GameState): Sighting[] {
+    const { level, hero } = state;
+    return level.monsters
+        .filter((m) => m.hp > 0 && (isVisible(level, m.x, m.y) || hero.detect > 0))
+        .map((m) => {
+            const kills = state.bestiary[m.def.ch] ?? 0;
+            const base: Sighting = {
+                id: m.id,
+                ch: m.def.ch,
+                name: m.def.name,
+                known: kills > 0,
+                kills,
+                condition: conditionOf(m),
+                distance: Math.max(Math.abs(m.x - hero.x), Math.abs(m.y - hero.y)),
+                awake: m.awake,
+            };
+            if (kills === 0) return base;
+            return {
+                ...base,
+                level: m.def.level,
+                armor: m.def.armor,
+                damage: m.def.damage.filter((d) => d !== "0d0"),
+                exp: m.def.exp,
+                hpDice: m.def.hp,
+                mean: m.def.mean,
+            };
+        })
+        .sort((a, b) => a.distance - b.distance);
+}
+
+/** 도감 — 여태 잡아 본 것 전부. 스물여섯 중 몇을 채웠는지가 곧 진행이다. */
+export interface BestiaryRow {
+    ch: string;
+    name: string;
+    kills: number;
+    level: number;
+    armor: number;
+    damage: string[];
+    exp: number;
+    hpDice: string;
+    mean: boolean;
+}
+
+export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
+    return Object.keys(MONSTERS)
+        .filter((ch) => (bestiary[ch] ?? 0) > 0)
+        .map((ch) => {
+            const d = MONSTERS[ch];
+            return {
+                ch,
+                name: d.name,
+                kills: bestiary[ch],
+                level: d.level,
+                armor: d.armor,
+                damage: d.damage.filter((x: string) => x !== "0d0"),
+                exp: d.exp,
+                hpDice: d.hp,
+                mean: d.mean,
+            };
+        })
+        .sort((a, b) => a.level - b.level || a.ch.localeCompare(b.ch));
+}
+
+/** 도감을 몇 칸 채웠나 — 스물여섯이 전부다. */
+export function bestiaryProgress(bestiary: Record<string, number>): { found: number; total: number } {
+    return {
+        found: Object.keys(MONSTERS).filter((ch) => (bestiary[ch] ?? 0) > 0).length,
+        total: Object.keys(MONSTERS).length,
+    };
 }
 
 /** 점수 — 금화에 증표를 얹는다. */

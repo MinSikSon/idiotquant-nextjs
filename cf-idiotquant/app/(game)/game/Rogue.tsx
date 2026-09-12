@@ -20,10 +20,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
-import { type Command, newGame, perform, score } from "@/lib/rogue/game";
+import {
+    type BestiaryRow,
+    type Command,
+    type Sighting,
+    bestiaryProgress,
+    bestiaryRows,
+    newGame,
+    perform,
+    score,
+    survey,
+} from "@/lib/rogue/game";
 import { describe, isThrowable } from "@/lib/rogue/items";
 import { equippedArmor, equippedWeapon, heroArmor, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
-import { bury, clear, graves, load, save, type Tomb } from "@/lib/rogue/storage";
+import {
+    bury,
+    clear,
+    graves,
+    load,
+    loadBestiary,
+    save,
+    saveBestiary,
+    type Tomb,
+} from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./components/Aim";
@@ -60,7 +79,9 @@ export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
     const [picker, setPicker] = useState<Picker | null>(null);
     const [aiming, setAiming] = useState<Aiming | null>(null);
-    const [sheet, setSheet] = useState<"none" | "pack" | "log" | "help" | "graves">("none");
+    const [sheet, setSheet] = useState<
+        "none" | "pack" | "log" | "help" | "graves" | "survey" | "bestiary"
+    >("none");
     /** 배낭에서 짚은 물건 — 그 아래에 할 수 있는 일이 뜬다. */
     const [chosen, setChosen] = useState<number | null>(null);
     const [tombs, setTombs] = useState<Tomb[]>([]);
@@ -68,12 +89,26 @@ export default function Rogue() {
 
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
     useEffect(() => {
+        const kept = loadBestiary();
         const saved = load();
-        setState(saved && saved.phase === "playing" ? saved : newGame());
+        if (saved && saved.phase === "playing") {
+            // 저장된 판과 저장소의 도감 중 **큰 쪽**을 남긴다. 판을 띄워 둔 채 다른
+            // 탭에서 한 판을 더 돌았을 수 있고, 그때 잡은 것을 잃으면 안 된다.
+            const merged = { ...saved.bestiary };
+            for (const [ch, n] of Object.entries(kept)) {
+                merged[ch] = Math.max(merged[ch] ?? 0, n);
+            }
+            saved.bestiary = merged;
+            setState(saved);
+            return;
+        }
+        setState(newGame(undefined, kept));
     }, []);
 
     useEffect(() => {
         if (!state) return;
+        // 도감은 **판과 따로** 적는다 — 죽어서 판이 지워져도 남아야 한다.
+        saveBestiary(state.bestiary);
         if (state.phase === "playing") {
             save(state);
             buried.current = false;
@@ -95,7 +130,8 @@ export default function Rogue() {
         buried.current = false;
         setSheet("none");
         setChosen(null);
-        setState(newGame());
+        // 새 판도 도감은 이어받는다 — 그것이 죽어도 남는 유일한 것이다.
+        setState(newGame(undefined, loadBestiary()));
     }, []);
 
     const openPicker = useCallback((p: Picker) => {
@@ -236,6 +272,10 @@ export default function Rogue() {
                     e.preventDefault();
                     aimAfterPick("throw");
                     break;
+                case "x":
+                    e.preventDefault();
+                    setSheet("survey");
+                    break;
                 case "i":
                     e.preventDefault();
                     setSheet("pack");
@@ -279,6 +319,9 @@ export default function Rogue() {
     const name = (it: Item) => describe(it, state.known, state.appearance);
     const rings = wornRings(hero);
     const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k);
+    // 조사와 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
+    const sightings = survey(state);
+    const progress = bestiaryProgress(state.bestiary);
 
     const actions: PadAction[] = [
         { label: "줍기", hint: ", 또는 g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
@@ -301,6 +344,13 @@ export default function Rogue() {
             on: () => aimAfterPick("throw"),
             off: hero.pack.some(isThrowable) ? undefined : "던질 만한 것이 없다",
         },
+        {
+            label: "조사",
+            hint: "x — 잡아 본 적 있는 놈이면 속을 안다",
+            on: () => setSheet("survey"),
+            off: sightings.length ? undefined : "보이는 몬스터가 없다",
+        },
+        { label: "도감", hint: `${progress.found}/${progress.total}`, on: () => setSheet("bestiary") },
         { label: "기록", hint: "m", on: () => setSheet("log") },
         {
             label: "지난 판들",
@@ -545,6 +595,74 @@ export default function Rogue() {
                 </Panel>
             )}
 
+            {sheet === "survey" && !aiming && (
+                <Panel
+                    title="조사"
+                    onClose={() => setSheet("none")}
+                    footer="한 마리를 잡아 보면 그 종의 속을 알게 됩니다. 조사는 턴을 쓰지 않습니다."
+                >
+                    {sightings.length === 0 ? (
+                        <p className="text-[#7d8d88]">보이는 것이 없다.</p>
+                    ) : (
+                        <ul className="space-y-2">
+                            {sightings.map((m: Sighting) => (
+                                <li key={m.id} className="border-b border-[#1b2321] pb-2 last:border-0">
+                                    <div>
+                                        <span className="text-[#f2884b]">{m.ch}</span>{" "}
+                                        <span className="text-[#e6eeea]">{m.name}</span>
+                                        <span className="text-[#7d8d88]">
+                                            {" "}· {m.distance}칸 · {m.awake ? "쫓고 있다" : "아직 못 봤다"} ·{" "}
+                                        </span>
+                                        <span className={m.condition === "성하다" ? "text-[#9fb0aa]" : "text-[#ff6b5a]"}>
+                                            {m.condition}
+                                        </span>
+                                    </div>
+                                    {m.known ? (
+                                        <div className="text-[#9fb0aa]">
+                                            레벨 {m.level} · 방어 {m.armor} · 피해 {m.damage?.join(" + ") || "없음"} ·
+                                            경험 {m.exp} · 체력 {m.hpDice}
+                                            {m.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
+                                            <span className="text-[#7d8d88]"> (여태 {m.kills}마리)</span>
+                                        </div>
+                                    ) : (
+                                        <div className="text-[#7d8d88]">
+                                            처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Panel>
+            )}
+
+            {sheet === "bestiary" && !aiming && (
+                <Panel
+                    title={`도감 ${progress.found}/${progress.total}`}
+                    onClose={() => setSheet("none")}
+                    footer="도감은 죽어도 남습니다. 물약의 색은 그 판의 것이지만, 오크가 얼마나 단단한지는 세상의 사실입니다."
+                >
+                    {progress.found === 0 ? (
+                        <p className="text-[#7d8d88]">아직 아무것도 못 잡았다.</p>
+                    ) : (
+                        <ul className="space-y-1">
+                            {bestiaryRows(state.bestiary).map((r: BestiaryRow) => (
+                                <li key={r.ch}>
+                                    <span className="text-[#f2884b]">{r.ch}</span>{" "}
+                                    <span className="text-[#e6eeea]">{r.name}</span>
+                                    <span className="text-[#ffd24a]"> ×{r.kills}</span>
+                                    <div className="text-[#9fb0aa]">
+                                        레벨 {r.level} · 방어 {r.armor} · 피해 {r.damage.join(" + ") || "없음"} ·
+                                        경험 {r.exp} · 체력 {r.hpDice}
+                                        {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Panel>
+            )}
+
             {sheet === "log" && (
                 <Panel title="지나온 기록" onClose={() => setSheet("none")}>
                     <ul className="space-y-0.5">
@@ -571,6 +689,7 @@ export default function Rogue() {
                         <dt className="text-[#8a9a95]">P R</dt><dd>반지를 낀다 · 뺀다</dd>
                         <dt className="text-[#8a9a95]">z t</dt><dd>지팡이를 쏜다 · 던진다 (고른 뒤 방향)</dd>
                         <dt className="text-[#8a9a95]">d</dt><dd>내려놓는다</dd>
+                        <dt className="text-[#8a9a95]">x</dt><dd><b>조사</b> — 보이는 몬스터의 속을 본다 (턴을 안 씁니다)</dd>
                         <dt className="text-[#8a9a95]">i m ?</dt><dd>배낭 · 기록 · 이 화면</dd>
                     </dl>
                     <div className="mt-3 space-y-1 border-t border-[#2a3532] pt-2 text-[#9fb0aa]">
@@ -584,6 +703,11 @@ export default function Rogue() {
                         <p className="pt-1 text-[#7d8d88]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.
                             반지는 끼고 있으면 배가 더 고픕니다.
+                        </p>
+                        <p className="text-[#7d8d88]">
+                            <b className="text-[#9fb0aa]">한 종을 한 마리라도 잡으면</b> 그 뒤로는 조사해서
+                            레벨·방어·피해를 볼 수 있습니다. 이 도감은 <b className="text-[#9fb0aa]">죽어도
+                            남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>
                         <p className="text-[#7d8d88]">
                             지하 26층에 옌더의 증표가 있습니다. 그것을 쥐어야 위로 올라갈 수 있고,

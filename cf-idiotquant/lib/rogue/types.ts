@@ -233,6 +233,14 @@ export interface GameState {
     appearance: Record<string, string>;
     /** 정체를 알아낸 것들. 판을 넘지 않는다. */
     known: Record<string, boolean>;
+    /**
+     * 여태 잡아 본 몬스터와 그 수 — **판을 넘어 남는다.**
+     *
+     * 물약의 색과는 다른 것이다. 색은 **그 판의 물건**이라 판마다 섞이지만, 오크가
+     * 얼마나 단단한지는 **세상의 사실**이라 죽는다고 잊히지 않는다. 그래서 죽어도
+     * 남는 유일한 것이 되고, 그것이 다시 하는 이유다.
+     */
+    bestiary: Record<string, number>;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
 }

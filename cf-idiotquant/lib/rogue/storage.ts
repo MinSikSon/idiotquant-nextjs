@@ -85,6 +85,10 @@ export function load(): GameState | null {
     }
 }
 
+/**
+ * 굴러가던 판을 지운다. **도감과 지난 판들은 안 지운다** — 그 둘은 판의 것이 아니라
+ * 이 사람의 것이다.
+ */
 export function clear(): void {
     try {
         localStorage.removeItem(KEY);
@@ -93,7 +97,40 @@ export function clear(): void {
     }
 }
 
-/** 죽고 이긴 기록 — **판을 넘어 남는 유일한 것**이다. */
+/**
+ * 도감 — 여태 잡아 본 몬스터와 그 수.
+ *
+ * 물약의 색과 달리 **판을 넘어 남는다.** 색은 그 판의 물건이라 섞이지만, 오크가 얼마나
+ * 단단한지는 세상의 사실이라 죽는다고 잊히지 않는다. 죽어도 남는 것이 있어야 다시 할
+ * 이유가 생긴다.
+ */
+const BESTIARY_KEY = "rogue:bestiary:v1";
+
+export function loadBestiary(): Record<string, number> {
+    try {
+        const t = localStorage.getItem(BESTIARY_KEY);
+        const o = t ? JSON.parse(t) : {};
+        // 남이 고쳐 넣은 값이 들어와도 판이 안 깨지게 숫자만 남긴다.
+        if (!o || typeof o !== "object" || Array.isArray(o)) return {};
+        const out: Record<string, number> = {};
+        for (const [k, v] of Object.entries(o)) {
+            if (typeof v === "number" && Number.isFinite(v) && v > 0) out[k] = Math.floor(v);
+        }
+        return out;
+    } catch {
+        return {};
+    }
+}
+
+export function saveBestiary(b: Record<string, number>): void {
+    try {
+        localStorage.setItem(BESTIARY_KEY, JSON.stringify(b));
+    } catch {
+        /* 못 적어도 이번 판은 굴러간다 */
+    }
+}
+
+/** 죽고 이긴 기록 — 판을 넘어 남는다. */
 export interface Tomb {
     at: number;
     depth: number;
