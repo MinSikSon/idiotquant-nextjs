@@ -270,8 +270,8 @@ export default function CardsPage() {
             {/* 게임 화면과 같은 단추다(`WinLink`) — 돌아가는 길이 밑줄 글자면
                 이 페이지만 다른 세계의 것으로 보인다. */}
             <nav className="flex gap-3">
-                <WinLink href="/game" tone="primary">← 게임으로</WinLink>
-                <WinLink href="/game/status">이력</WinLink>
+                <WinLink href="/game/imf" tone="primary">← 게임으로</WinLink>
+                <WinLink href="/game/imf/status">이력</WinLink>
             </nav>
         </main>
     );

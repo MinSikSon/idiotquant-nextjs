@@ -21,7 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { path: '/search',       changeFrequency: 'weekly',  priority: 0.7 },
         { path: '/calculator',   changeFrequency: 'monthly', priority: 0.6 },
         { path: '/game',         changeFrequency: 'monthly', priority: 0.5 },
-        { path: '/game/cards',   changeFrequency: 'monthly', priority: 0.4 },
+        { path: '/game/imf',     changeFrequency: 'monthly', priority: 0.4 },
         { path: '/terms',        changeFrequency: 'yearly',  priority: 0.2 },
         { path: '/privacy',      changeFrequency: 'yearly',  priority: 0.2 },
     ];
