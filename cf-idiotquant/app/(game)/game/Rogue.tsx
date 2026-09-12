@@ -323,17 +323,24 @@ export default function Rogue() {
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
 
+    // **세 개씩 한 묶음**으로 늘어놓는다. 단추 판이 세 칸 격자라(`TouchPad`) 한 줄이
+    // 곧 한 묶음이 된다 — 계단 둘이 나란히, 배낭에서 꺼내 쓰는 것들이 한 줄에.
     const actions: PadAction[] = [
-        { label: "줍기", hint: ", 또는 g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
-        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", on: () => setSheet("pack") },
+        // 발밑
         { label: "내려간다", hint: ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다" },
         {
             label: "올라간다",
-            hint: "<",
+            hint: "< — 1층 계단은 증표가 있어야 열린다",
             on: () => run({ t: "ascend" }),
-            off: !onUpStairs ? "계단 위가 아니다" : !hero.hasAmulet ? "증표가 없다" : undefined,
+            off: !onUpStairs
+                ? "계단 위가 아니다"
+                : level.depth === 1 && !hero.hasAmulet
+                  ? "증표 없이는 못 나간다"
+                  : undefined,
         },
-        { label: "뒤진다", hint: "s — 숨은 문과 함정", on: () => run({ t: "search" }) },
+        { label: "줍기", hint: ", 또는 g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
+        // 배낭에서 꺼내 쓰는 것들
+        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", on: () => setSheet("pack") },
         { label: "마신다", hint: "q", on: () => openPicker(PICKERS.q), off: has("potion") ? undefined : "마실 것이 없다" },
         { label: "읽는다", hint: "r", on: () => openPicker(PICKERS.r), off: has("scroll") ? undefined : "읽을 것이 없다" },
         { label: "먹는다", hint: "e", on: () => openPicker(PICKERS.e), off: has("food") ? undefined : "먹을 것이 없다" },
@@ -344,6 +351,8 @@ export default function Rogue() {
             on: () => aimAfterPick("throw"),
             off: hero.pack.some(isThrowable) ? undefined : "던질 만한 것이 없다",
         },
+        // 살피는 것들
+        { label: "뒤진다", hint: "s — 숨은 문과 함정", on: () => run({ t: "search" }) },
         {
             label: "조사",
             hint: "x — 잡아 본 적 있는 놈이면 속을 안다",
@@ -351,9 +360,11 @@ export default function Rogue() {
             off: sightings.length ? undefined : "보이는 몬스터가 없다",
         },
         { label: "도감", hint: `${progress.found}/${progress.total}`, on: () => setSheet("bestiary") },
+        // 판 바깥
         { label: "기록", hint: "m", on: () => setSheet("log") },
         {
-            label: "지난 판들",
+            // 제일 좁은 폰(360px)의 칸에 들어가야 한다 — 「지난 판들」은 넘친다.
+            label: "지난 판",
             hint: "여태 죽은 자리와 점수",
             on: () => {
                 setTombs(graves());
@@ -663,14 +674,22 @@ export default function Rogue() {
                 </Panel>
             )}
 
+            {/*
+              * 기록은 **최신이 맨 위**다. 판을 열면 방금 일어난 일이 손 닿는 자리에
+              * 있어야 한다 — 아래로 굴려 내려가서 찾을 일이 아니다.
+              * 위쪽 두 줄 띠는 그대로 시간순이다(그쪽은 「방금」만 보여 주므로).
+              */}
             {sheet === "log" && (
                 <Panel title="지나온 기록" onClose={() => setSheet("none")}>
                     <ul className="space-y-0.5">
-                        {state.messages.slice(-80).map((m, i) => (
-                            <li key={i} className="text-[#9fb0aa]">
-                                {m}
-                            </li>
-                        ))}
+                        {state.messages
+                            .slice(-80)
+                            .reverse()
+                            .map((m, i) => (
+                                <li key={i} className="text-[#9fb0aa]">
+                                    {m}
+                                </li>
+                            ))}
                     </ul>
                 </Panel>
             )}
@@ -710,8 +729,12 @@ export default function Rogue() {
                             남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>
                         <p className="text-[#7d8d88]">
-                            지하 26층에 옌더의 증표가 있습니다. 그것을 쥐어야 위로 올라갈 수 있고,
-                            1층의 계단으로 나오면 이깁니다.
+                            <b className="text-[#9fb0aa]">위 계단으로 언제든 물러설 수 있습니다.</b> 다만
+                            층은 그때마다 새로 짜이므로, 밟아 둔 지도와 두고 온 물건은 사라집니다.
+                        </p>
+                        <p className="text-[#7d8d88]">
+                            지하 26층에 옌더의 증표가 있습니다. <b className="text-[#9fb0aa]">1층의 계단은
+                            증표가 있어야 열립니다</b> — 그것을 쥐고 밖으로 나오면 이깁니다.
                         </p>
                     </div>
                 </Panel>
