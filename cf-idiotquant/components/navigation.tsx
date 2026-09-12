@@ -18,11 +18,11 @@ import {
   Eye,
   ShieldCheck,
   History,
-  Wallet,
   MoreHorizontal,
   ChevronDown,
   NotebookText,
   EyeOff,
+  Swords,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -49,12 +49,18 @@ const MAIN_NAV: NavItem[] = [
 const MORE_NAV: NavItem[] = [
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
   { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
-  // 모의투자는 주 메뉴가 아니라 여기 있다 — 매일 쓰는 도구가 아니라 가끔 켜는 게임이다.
+  // 게임은 주 메뉴가 아니라 여기 있다 — 매일 쓰는 도구가 아니라 가끔 켜는 것이다.
   // 로그인 없이도 굴러가므로 authOnly 를 안 붙인다.
   //
-  // 카드 도감(/game/cards)은 **여기 없다.** 게임을 안 켠 사람에게 카드 목록은 읽을 수
-  // 없는 글이고, 게임을 켠 사람에게는 화면 안에 문이 있다.
-  { label: "모의투자",  href: "/game",        icon: Wallet },
+  // ── 이름이 「모의투자」였다 ────────────────────────────────────────
+  // 그때는 주식 로그라이크였으니 맞는 이름이었는데, /game 이 Rogue(1980) 클론으로
+  // 바뀌면서 **메뉴가 없는 것을 가리키게 됐다.** 눌러 보면 던전이 나온다.
+  //
+  // 「로그」로 안 쓴다 — 이 앱에는 가계부와 기록이 있어서 그 두 글자가 log 로 읽힌다.
+  // 게임의 이름 그대로 두는 편이 덜 헷갈린다.
+  //
+  // 옛 게임(/game/imf)과 그 도감·이력은 **여기 없다.** 아는 사람만 주소로 들어간다.
+  { label: "Rogue",     href: "/game",        icon: Swords },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
@@ -404,7 +410,7 @@ export function NavbarWithSimpleLinks() {
         retro ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
         style={retro ? retroBar : undefined}>
         <TabItem retro={retro} href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
-        {/* 모의투자는 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
+        {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
         <TabItem retro={retro} href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         {isAdmin && (
           <TabItem retro={retro} href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
