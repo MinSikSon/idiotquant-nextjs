@@ -678,7 +678,7 @@ export default function Rogue() {
                 <Panel
                     title={`도감 ${progress.found}/${progress.total}`}
                     onClose={() => setSheet("none")}
-                    footer="도감은 죽어도 남습니다. 물약의 색은 그 판의 것이지만, 오크가 얼마나 단단한지는 세상의 사실입니다."
+                    footer="한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 도감은 죽어도 남습니다."
                 >
                     {progress.found === 0 ? (
                         <p className="text-[#7d8d88]">아직 아무것도 못 잡았다.</p>
@@ -693,6 +693,14 @@ export default function Rogue() {
                                         레벨 {r.level} · 방어도 {r.defense} · 피해 {r.damage.join(" + ") || "없음"} ·
                                         경험 {r.exp} · 체력 {r.hp}
                                         {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
+                                        {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
+                                            층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을 수
+                                            있는 「층에 따른 것」은 이 띠 하나다. */}
+                                        {r.depths && (
+                                            <div className="text-[#7d8d88]">
+                                                지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
+                                            </div>
+                                        )}
                                     </div>
                                 </li>
                             ))}
