@@ -58,6 +58,61 @@ const LIMITS: Record<"initial" | "monthly" | "rate" | "years" | "inflation", [nu
 const clamp = (v: number, [min, max]: [number, number], fallback: number) =>
     Math.min(max, Math.max(min, Number.isFinite(v) ? v : fallback));
 
+/* ── 치는 중인 글자 ──────────────────────────────────────────────
+ *
+ * ── 왜 이 둘이 필요한가 ────────────────────────────────────────
+ * 입력칸이 `value={숫자}` 에 `onChange={e => set(Number(e.target.value))}` 였다.
+ * 한 글자 칠 때마다 숫자로 바꿔 `sanitize` 를 태우고 그 결과를 도로 칸에 그리는
+ * 구조인데, **치는 중인 글자는 아직 숫자가 아니다.** 그래서 두 가지가 났다.
+ *
+ *   0 이 안 지워진다   마지막 숫자를 지우면 칸이 빈 글자가 되고 `Number("")` 는 0 이다.
+ *                      그 0 이 다시 칸에 그려지니 **칸을 비울 수가 없다.** 500 을 치려면
+ *                      먼저 0 을 지워야 하는데 그게 안 된다.
+ *   01 이 된다         지울 수가 없으니 0 뒤에 이어 치게 된다. 게다가 친 글자의 숫자값이
+ *                      지금 값과 같으면(`"00"` → 0) 리액트가 다시 그릴 것이 없다고 보고
+ *                      **친 글자를 그대로 둔다.**
+ *
+ * 그래서 **치는 동안에는 글자를 그대로 들고 있고**(`NumberField` 의 draft), 숫자로
+ * 읽히는 순간에만 값을 확정한다. 칸을 떠나면 확정된 숫자로 돌아온다.
+ *
+ * 판단을 화면에 두지 않는 이유는 늘 같다 — 여기 있으면 브라우저 없이 테스트가 된다.
+ */
+
+/**
+ * 이 글자를 칸에 받아 줄 것인가. **빈 글자도 받는다** — 지우는 중이기 때문이다.
+ *
+ * `"-"` 와 `"7."` 처럼 **아직 숫자가 아닌 중간 상태도 받는다.** 이걸 막으면 음수나
+ * 소수점을 칠 방법이 없다. 숫자로 확정하는 것은 `draftValue` 가 따로 본다.
+ */
+export function acceptsDraft(raw: string, allowNegative = false): boolean {
+    return allowNegative ? /^-?\d*\.?\d*$/.test(raw) : /^\d*\.?\d*$/.test(raw);
+}
+
+/**
+ * 지금 이 글자로 값을 확정할 수 있는가. 못 하면 `null` — **그때는 값을 안 건드린다.**
+ *
+ * `""`(지우는 중) · `"-"` · `"."` 가 그런 자리다. 여기서 0 을 돌려주면 처음의 그 고장이
+ * 그대로 돌아온다 — 지우는 순간 0 이 확정되고, 그 0 이 칸에 그려진다.
+ */
+export function draftValue(raw: string): number | null {
+    if (raw.trim() === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * 앞자리 0 을 떼어 낸다. **「01」은 1 이다.**
+ *
+ * 칸을 비울 수 있게 되면서 「01」은 대개 안 나지만, 0 이 든 칸의 **끝을 짚고 이어
+ * 치면** 여전히 그렇게 된다. 값으로는 1 이라 계산은 맞지만 칸에 적힌 것이 1 이 아니라
+ * 「01」인데, **적힌 것과 계산되는 것이 다르면 그 칸은 못 믿는 칸**이다.
+ *
+ * 0 **뒤에 숫자가 바로 붙을 때만** 뗀다 — `"0"` 은 0 이고 `"0.5"` 는 0.5 다.
+ */
+export function trimLeadingZero(raw: string): string {
+    return raw.replace(/^(-?)0+(\d)/, "$1$2");
+}
+
 export function sanitize(raw: Partial<CalcInputs>): CalcInputs {
     const base = { ...DEFAULTS, ...raw };
 
