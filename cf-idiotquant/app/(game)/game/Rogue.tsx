@@ -707,7 +707,13 @@ export default function Rogue() {
               * 위쪽 두 줄 띠는 그대로 시간순이다(그쪽은 「방금」만 보여 주므로).
               */}
             {sheet === "log" && (
-                <Panel title="지나온 기록" onClose={() => setSheet("none")}>
+                <Panel
+                    title="지나온 기록"
+                    onClose={() => setSheet("none")}
+                    /* 「이 d20 은 뭘 정하는 건가」를 여기서 답한다 — 줄에 이름은 붙였지만
+                       스무면체가 명중에만 쓰인다는 것은 한 줄로 말해 주는 편이 빠르다. */
+                    footer="d20 은 명중에만 굴립니다 — 상대의 방어도 이상이면 맞습니다. 피해는 무기 주사위(2d4 같은 것)로 따로 굴립니다."
+                >
                     <ul className="space-y-0.5">
                         {state.messages
                             .slice(-80)
