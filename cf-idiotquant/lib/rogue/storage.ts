@@ -11,7 +11,7 @@
  */
 
 import { MONSTERS } from "./monsters";
-import { MAP_H, MAP_W, type GameState, type Level, type Monster } from "./types";
+import { MAP_H, MAP_W, type GameState, type Item, type Level, type Monster } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -114,6 +114,37 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
     };
 }
 
+const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+
+/**
+ * 배낭의 **빈 자리를 메운다.**
+ *
+ * ── 왜 이 함수가 있나 ────────────────────────────────────────────────
+ * 화면은 배낭 한 줄을 `${letter}) 이름` 으로 찍는다. 자리가 없는 물건이 하나라도
+ * 섞여 있으면 거기 **「undefined) 식량」**이 뜨고, 더 나쁜 것은 **저장에 그대로 남아
+ * 열 때마다 다시 뜬다**는 것이다. 규칙을 고쳐 새로 생기는 것은 막아도, **이미 그렇게
+ * 저장된 판은 영영 안 낫는다.** 함정(`traps`) 때 배운 것과 같은 자리다 — 빈 칸 채우기는
+ * 되읽는 여기 한 곳에서 해야 한다.
+ *
+ * 자리가 겹치는 것도 고친다. 겹치면 `packItem(letter)` 이 먼저 걸린 것만 집으므로
+ * 나머지 하나는 **고를 수도 버릴 수도 없는 물건**이 된다.
+ */
+function fixLetters(pack: Item[]): Item[] {
+    const used = new Set<string>();
+    for (const it of pack) {
+        if (it.letter && PACK_LETTERS.includes(it.letter) && !used.has(it.letter)) {
+            used.add(it.letter);
+            continue;
+        }
+        const free = PACK_LETTERS.find((l) => !used.has(l));
+        // 스물여섯을 넘겨 담긴 저장이면 더 줄 자리가 없다. 그래도 판은 굴러가야 하므로
+        // 그 물건만 자리 없이 둔다 — 화면이 `?)` 로 찍고, 버리면 자리가 난다.
+        it.letter = free;
+        if (free) used.add(free);
+    }
+    return pack;
+}
+
 function normalize(s: Saved): GameState | null {
     if (!s || typeof s !== "object") return null;
     if (!s.level || !s.hero) return null;
@@ -137,7 +168,7 @@ function normalize(s: Saved): GameState | null {
     const hero: GameState["hero"] = {
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
-        pack: Array.isArray(h.pack) ? h.pack : [],
+        pack: fixLetters(Array.isArray(h.pack) ? h.pack : []),
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
         blind: num(h.blind, 0),

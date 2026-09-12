@@ -536,7 +536,10 @@ export default function Rogue() {
                                         className="w-full rounded-[2px] px-1 text-left hover:bg-[#1b2321]"
                                         onClick={() => choosePicked(it.letter!)}
                                     >
-                                        <span className="text-[#8a9a95]">{it.letter})</span> {name(it)}
+                                        {/* 자리가 없으면 `?` — 「undefined) 식량」이 화면에 뜨면 안 된다. 되읽을 때
+                                            `storage.fixLetters` 가 메우지만 끝내 못 메우는 경우가 남는다. */}
+                                        {/* 위와 같다 — 화면에 `undefined` 를 내보내지 않는다. */}
+                                            <span className="text-[#8a9a95]">{it.letter ?? "?"})</span> {name(it)}
                                     </button>
                                 </li>
                             ))}
@@ -575,7 +578,7 @@ export default function Rogue() {
                                             onClick={() => setChosen(open ? null : it.id)}
                                             className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[#1b2321]" : "hover:bg-[#161c1a]"}`}
                                         >
-                                            <span className="text-[#8a9a95]">{it.letter})</span> {name(it)}
+                                            <span className="text-[#8a9a95]">{it.letter ?? "?"})</span> {name(it)}
                                             {it.count > 1 && <span className="text-[#7d8d88]"> ×{it.count}</span>}
                                             {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
