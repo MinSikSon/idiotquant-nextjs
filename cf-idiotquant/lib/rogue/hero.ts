@@ -97,9 +97,13 @@ function freeLetter(hero: Hero): string | null {
  * 배낭에 넣는다. 같은 것이 이미 있으면 **겹쳐 쌓는다** — 식량 스무 개가 자리를
  * 스무 칸 먹으면 배낭이 금방 찬다.
  *
- * 넣지 못하면 false 를 준다. 부르는 쪽이 "배낭이 꽉 찼다" 를 말해야 한다.
+ * **넣은 물건이 아니라 배낭에 있는 물건을 돌려준다.** 겹쳐 쌓았을 때 이 둘은 다른
+ * 물건이다 — 바닥에서 집은 쪽은 배낭 자리(`letter`)가 없다. 예전에는 `true` 만
+ * 돌려줘서, 부르는 쪽이 집은 물건의 자리를 읽다가 「`undefined`) 식량」을 적었다.
+ *
+ * 넣지 못하면 null 을 준다. 부르는 쪽이 "배낭이 꽉 찼다" 를 말해야 한다.
  */
-export function addToPack(hero: Hero, it: Item): boolean {
+export function addToPack(hero: Hero, it: Item): Item | null {
     it.x = -1;
     it.y = -1;
     const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll";
@@ -109,15 +113,15 @@ export function addToPack(hero: Hero, it: Item): boolean {
         );
         if (same) {
             same.count += it.count;
-            return true;
+            return same;
         }
     }
     const letter = freeLetter(hero);
-    if (!letter) return false;
+    if (!letter) return null;
     it.letter = letter;
     hero.pack.push(it);
     hero.pack.sort((a, b) => (a.letter ?? "").localeCompare(b.letter ?? ""));
-    return true;
+    return it;
 }
 
 /** 하나 덜어낸다. 겹쳐 쌓인 것은 개수만 준다. */

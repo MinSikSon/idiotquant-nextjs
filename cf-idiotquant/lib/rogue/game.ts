@@ -150,15 +150,32 @@ function populate(state: GameState, level: Level, rng: Rng) {
     }
 }
 
-/** 층 하나를 새로 만들고 나를 그 위에 세운다. */
-function enterLevel(state: GameState, depth: number, rng: Rng, arriveAtUpStairs: boolean) {
-    const level = buildLevel(depth, rng);
-    // 내려왔으면 올라가는 계단 위에 선다 — 온 길이 발밑에 있어야 지도가 읽힌다.
-    const start = arriveAtUpStairs && level.upStairs ? level.upStairs : freeSpot(level, rng, [level.stairs]);
+/**
+ * 그 깊이의 층으로 옮겨 선다.
+ *
+ * **가 본 층이면 떠난 그대로 다시 펼친다** — 밝혀 둔 지도도, 두고 온 물건도, 잡다 만
+ * 놈도 그 자리에 있다. 처음 가는 층이면 그때 판다.
+ *
+ * 층이 두 벌이 되지 않게 **떠나는 층을 먼저 넣고 들어갈 층을 뺀다.** 넣기만 하고 안
+ * 빼면 `state.level` 과 `state.levels[depth]` 가 같은 층을 가리키고, 어느 날 한쪽만
+ * 바뀐다.
+ *
+ * 서는 자리는 **온 방향**이 정한다. 내려왔으면 올라가는 계단 위, 올라왔으면 내려가는
+ * 계단 위 — 온 길이 발밑에 있어야 지도가 읽힌다.
+ */
+function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "below" | "start") {
+    if (state.level) state.levels[state.level.depth] = state.level;
+    const seen = state.levels[depth];
+    const level = seen ?? buildLevel(depth, rng);
+    delete state.levels[depth];
+
+    const back = from === "above" ? level.upStairs : from === "below" ? level.stairs : null;
+    const start = back ?? freeSpot(level, rng, [level.stairs]);
     state.hero.x = start.x;
     state.hero.y = start.y;
     state.level = level;
-    populate(state, level, rng);
+    // 이미 살던 층에 몬스터와 물건을 또 뿌리면 갈 때마다 불어난다.
+    if (!seen) populate(state, level, rng);
     computeFov(level, state.hero);
     state.deepest = Math.max(state.deepest, depth);
 }
@@ -179,6 +196,7 @@ export function newGame(
         rngState: rng.state,
         // 아래에서 곧바로 덮는다. 타입을 채우기 위한 빈 층.
         level: null as unknown as Level,
+        levels: {},
         hero: null as unknown as GameState["hero"],
         messages: [],
         turn: 0,
@@ -196,7 +214,7 @@ export function newGame(
     state.known["weapon:mace"] = true;
     state.known["armor:ring mail"] = true;
     state.known["food:food ration"] = true;
-    enterLevel(state, 1, rng, false);
+    enterLevel(state, 1, rng, "start");
     state.rngState = rng.state;
     say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
     return state;
@@ -277,7 +295,10 @@ function pickUp(state: GameState): boolean {
         say(state, `금화 ${it.count}을(를) 주웠다.`);
         return true;
     }
-    if (!addToPack(hero, it)) {
+    // **배낭에 있는 쪽**을 받는다. 겹쳐 쌓였으면 집은 물건과 다른 물건이고, 자리를
+    // 가진 것은 배낭 쪽뿐이다.
+    const inPack = addToPack(hero, it);
+    if (!inPack) {
         say(state, "배낭이 꽉 찼다.");
         return false;
     }
@@ -286,7 +307,7 @@ function pickUp(state: GameState): boolean {
         hero.hasAmulet = true;
         say(state, "옌더의 증표를 손에 넣었다! 이제 올라갈 수 있다.");
     } else {
-        say(state, `${it.letter}) ${describe(it, state.known, state.appearance)}`);
+        say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}`);
     }
     return true;
 }
@@ -798,7 +819,8 @@ function springTrap(state: GameState, trap: Trap, rng: Rng) {
     switch (trap.kind) {
         case "trapdoor":
             say(state, "바닥이 꺼졌다!");
-            enterLevel(state, level.depth + 1, rng, false);
+            // 떨어진 것이라 계단 위가 아니다 — 아무 데나 처박힌다.
+            enterLevel(state, level.depth + 1, rng, "start");
             say(state, `지하 ${state.level.depth}층.`);
             break;
         case "arrow": {
@@ -840,7 +862,7 @@ function descend(state: GameState, rng: Rng): boolean {
         say(state, "여기에는 내려가는 계단이 없다.");
         return false;
     }
-    enterLevel(state, level.depth + 1, rng, true);
+    enterLevel(state, level.depth + 1, rng, "above");
     say(state, `지하 ${state.level.depth}층.`);
     return true;
 }
@@ -852,10 +874,11 @@ function descend(state: GameState, rng: Rng): boolean {
  * 있어야 오르지만, 그 아래에서는 언제든 물러설 수 있다. 물러설 길이 없으면 「도망」이
  * 선택지에서 빠지고, 그러면 깊이를 고르는 일이 결정이 아니라 그냥 내려가기가 된다.
  *
- * 물러서는 값은 따로 안 매겨도 이미 치른다 — **층은 다시 짜인다.** 올라간 층은 내가
- * 알던 그 층이 아니고, 되내려가면 또 새 층이다. 밟아 둔 지도와 남겨 둔 물건이
- * 그때 사라진다. 점수는 `deepest` 로 재므로 물러선다고 깎이지도, 얕게 맴돈다고
- * 벌리지도 않는다.
+ * **올라간 층은 떠난 그대로다.** 밝혀 둔 지도도, 두고 온 물건도, 잡다 만 놈도 그 자리에
+ * 있다(`state.levels`). 그래서 물러서기가 「없던 일로 하기」가 아니라 **두고 온 것을
+ * 가지러 가기**가 된다. 점수는 `deepest` 로 재므로 물러선다고 깎이지 않는다.
+ *
+ * 대신 층을 다시 굴려 뽑는 짓도 못 한다 — 맘에 안 드는 층은 그대로 거기 있다.
  */
 function ascend(state: GameState, rng: Rng): boolean {
     const { hero, level } = state;
@@ -875,8 +898,8 @@ function ascend(state: GameState, rng: Rng): boolean {
         say(state, "햇빛이다. 살아 돌아왔다.");
         return true;
     }
-    enterLevel(state, level.depth - 1, rng, false);
-    say(state, `지하 ${state.level.depth}층. 층은 다시 짜였다.`);
+    enterLevel(state, level.depth - 1, rng, "below");
+    say(state, `지하 ${state.level.depth}층.`);
     return true;
 }
 

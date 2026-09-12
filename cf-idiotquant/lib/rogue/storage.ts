@@ -21,7 +21,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 2;
+const VERSION = 3;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -34,23 +34,33 @@ interface SavedLevel extends Omit<Level, "tiles" | "flags" | "roomAt" | "monster
     monsters: SavedMonster[];
 }
 
-interface Saved extends Omit<GameState, "level"> {
+interface Saved extends Omit<GameState, "level" | "levels"> {
     level: SavedLevel;
+    /** 지나온 층들. v2 이하의 저장에는 없다. */
+    levels?: Record<string, SavedLevel>;
     v: number;
 }
 
+function packLevel(level: Level): SavedLevel {
+    return {
+        ...level,
+        tiles: Array.from(level.tiles),
+        flags: Array.from(level.flags),
+        roomAt: Array.from(level.roomAt),
+        monsters: level.monsters.map(({ def, ...rest }) => ({ ...rest, ch: def.ch })),
+    };
+}
+
 export function serialize(state: GameState): string {
-    const { level } = state;
+    const levels: Record<string, SavedLevel> = {};
+    for (const [depth, l] of Object.entries(state.levels ?? {})) {
+        if (l) levels[depth] = packLevel(l);
+    }
     const saved: Saved = {
         ...state,
         v: VERSION,
-        level: {
-            ...level,
-            tiles: Array.from(level.tiles),
-            flags: Array.from(level.flags),
-            roomAt: Array.from(level.roomAt),
-            monsters: level.monsters.map(({ def, ...rest }) => ({ ...rest, ch: def.ch })),
-        },
+        level: packLevel(state.level),
+        levels,
     };
     return JSON.stringify(saved);
 }
@@ -72,17 +82,15 @@ const num = (v: unknown, fallback: number): number =>
  *
  * **값을 새로 더하면 이 함수와 `test/rogue-storage.test.ts` 를 같이 고칠 것.**
  */
-function normalize(s: Saved): GameState | null {
-    if (!s || typeof s !== "object") return null;
-    if (!s.level || !s.hero) return null;
-
-    // 지도가 없으면 채울 방법이 없다 — 그건 저장이 아니다.
-    const { tiles, flags, roomAt } = s.level;
+function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level | null {
+    if (!raw || typeof raw !== "object") return null;
+    // 지도가 없으면 채울 방법이 없다 — 그건 층이 아니다.
+    const { tiles, flags, roomAt } = raw;
     if (!Array.isArray(tiles) || !Array.isArray(flags) || !Array.isArray(roomAt)) return null;
     if (tiles.length !== MAP_W * MAP_H) return null;
 
-    const level: Level = {
-        depth: num(s.level.depth, 1),
+    return {
+        depth: num(raw.depth, fallbackDepth),
         tiles: new Uint8Array(tiles),
         // 길이가 어긋난 것은 통째로 새로 만든다 — 반쯤 맞는 기억은 없는 것만 못하다.
         flags: new Uint8Array(
@@ -91,21 +99,39 @@ function normalize(s: Saved): GameState | null {
         roomAt: new Int8Array(
             roomAt.length === tiles.length ? roomAt : (new Array<number>(tiles.length).fill(-1)),
         ),
-        rooms: Array.isArray(s.level.rooms) ? s.level.rooms : [],
-        monsters: (Array.isArray(s.level.monsters) ? s.level.monsters : []).map(
-            ({ ch, ...rest }) => ({
-                ...rest,
-                def: MONSTERS[ch] ?? MONSTERS.B,
-                speed: num((rest as Partial<Monster>).speed, 0),
-                cancelled: (rest as Partial<Monster>).cancelled === true,
-            }),
-        ),
-        items: Array.isArray(s.level.items) ? s.level.items : [],
-        traps: Array.isArray(s.level.traps) ? s.level.traps : [],
-        stairs: s.level.stairs ?? { x: 0, y: 0 },
-        upStairs: s.level.upStairs ?? null,
-        maze: s.level.maze === true,
+        rooms: Array.isArray(raw.rooms) ? raw.rooms : [],
+        monsters: (Array.isArray(raw.monsters) ? raw.monsters : []).map(({ ch, ...rest }) => ({
+            ...rest,
+            def: MONSTERS[ch] ?? MONSTERS.B,
+            speed: num((rest as Partial<Monster>).speed, 0),
+            cancelled: (rest as Partial<Monster>).cancelled === true,
+        })),
+        items: Array.isArray(raw.items) ? raw.items : [],
+        traps: Array.isArray(raw.traps) ? raw.traps : [],
+        stairs: raw.stairs ?? { x: 0, y: 0 },
+        upStairs: raw.upStairs ?? null,
+        maze: raw.maze === true,
     };
+}
+
+function normalize(s: Saved): GameState | null {
+    if (!s || typeof s !== "object") return null;
+    if (!s.level || !s.hero) return null;
+
+    const level = unpackLevel(s.level, 1);
+    if (!level) return null;
+
+    // 지나온 층들. **여기서 하나가 깨져도 판은 버리지 않는다** — 그 층의 기억만 잃고
+    // 다음에 가면 새로 파인다. 굴리던 판을 통째로 버리는 것보다 낫다.
+    const levels: Record<number, Level> = {};
+    for (const [key, raw] of Object.entries(s.levels ?? {})) {
+        const depth = Number(key);
+        if (!Number.isInteger(depth) || depth < 1) continue;
+        // 지금 딛고 선 층이 저기에도 있으면 두 벌이 된다. 딛고 선 쪽만 남긴다.
+        if (depth === level.depth) continue;
+        const l = unpackLevel(raw, depth);
+        if (l) levels[depth] = l;
+    }
 
     const h = s.hero;
     const hero: GameState["hero"] = {
@@ -124,6 +150,7 @@ function normalize(s: Saved): GameState | null {
     return {
         ...(s as unknown as GameState),
         level,
+        levels,
         hero,
         messages: Array.isArray(s.messages) ? s.messages : [],
         appearance: s.appearance && typeof s.appearance === "object" ? s.appearance : {},

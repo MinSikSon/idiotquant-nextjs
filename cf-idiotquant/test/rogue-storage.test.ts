@@ -194,3 +194,85 @@ test("지도 크기는 저장과 코드가 같아야 한다", () => {
     assert.equal(MAP_H, 22);
     assert.equal(MAP_W, 80);
 });
+
+test("지나온 층들도 저장했다 되읽으면 그대로다", () => {
+    // 1 → 2 → 3 층까지 내려갔다가 되돌아온 판.
+    let s = newGame(4321);
+    for (let i = 0; i < 2; i++) {
+        s.hero.x = s.level.stairs.x;
+        s.hero.y = s.level.stairs.y;
+        s = perform(s, { t: "descend" });
+    }
+    s = perform(s, { t: "ascend" });
+    assert.equal(s.level.depth, 2);
+    assert.deepEqual(Object.keys(s.levels).sort(), ["1", "3"]);
+
+    const back = deserialize(serialize(s))!;
+    assert.ok(back, "되읽지 못했다");
+    assert.deepEqual(Object.keys(back.levels).sort(), ["1", "3"]);
+    for (const d of [1, 3]) {
+        const a = s.levels[d];
+        const b = back.levels[d];
+        // JSON 은 Uint8Array 를 객체로 바꿔 놓는다 — 층 하나하나가 다 그 함정을 지난다.
+        assert.ok(b.tiles instanceof Uint8Array, `${d}층의 지도가 배열이 아니다`);
+        assert.ok(b.flags instanceof Uint8Array);
+        assert.ok(b.roomAt instanceof Int8Array);
+        assert.deepEqual(Array.from(b.tiles), Array.from(a.tiles), `${d}층이 달라졌다`);
+        assert.deepEqual(Array.from(b.flags), Array.from(a.flags), `${d}층의 기억이 달라졌다`);
+        assert.equal(b.monsters.length, a.monsters.length);
+        assert.equal(b.monsters[0]?.def.ch, a.monsters[0]?.def.ch, "몬스터 표를 못 찾았다");
+    }
+    play(back);
+});
+
+test("지나온 층 하나가 깨져도 판은 안 버린다 — 그 층의 기억만 잃는다", () => {
+    let s = newGame(4322);
+    s.hero.x = s.level.stairs.x;
+    s.hero.y = s.level.stairs.y;
+    s = perform(s, { t: "descend" });
+
+    const o = JSON.parse(serialize(s));
+    o.levels["1"].tiles = [1, 2, 3]; // 길이가 안 맞는다
+    const back = deserialize(JSON.stringify(o));
+    assert.ok(back, "층 하나가 깨졌다고 굴리던 판을 통째로 버렸다");
+    assert.equal(back!.level.depth, 2, "딛고 선 층까지 잃었다");
+    assert.equal(back!.levels[1], undefined, "반쯤 맞는 층을 받아들였다");
+    play(back!);
+});
+
+test("딛고 선 층이 창고에도 있으면 창고 쪽을 버린다", () => {
+    // 두 벌이 되면 어느 날 한쪽만 바뀐다.
+    const s = newGame(4323);
+    const o = JSON.parse(serialize(s));
+    o.levels = { 1: JSON.parse(JSON.stringify(o.level)) };
+    const back = deserialize(JSON.stringify(o))!;
+    assert.equal(back.levels[1], undefined);
+    play(back);
+});
+
+test("옛 저장(층이 하나뿐이던 때)도 굴러간다", () => {
+    const s = newGame(4324);
+    const o = JSON.parse(serialize(s));
+    o.v = 2;
+    delete o.levels; // v2 에는 이 칸이 없었다
+    const back = deserialize(JSON.stringify(o));
+    assert.ok(back, "옛 저장을 버렸다");
+    assert.deepEqual(back!.levels, {});
+    play(back!);
+});
+
+test("스물여섯 층을 다 들고도 저장이 브라우저에 들어간다", () => {
+    // localStorage 는 대개 5MB 다. 층마다 지도가 1,760칸이라 넉넉한지 한 번 재 둔다.
+    let s = newGame(4325);
+    for (let i = 0; i < 25; i++) {
+        // 재는 것은 크기다 — 도중에 죽거나 함정에 빠지면 못 잰다.
+        s.hero.hp = s.hero.maxHp = 9999;
+        s.hero.food = 9999;
+        s.hero.x = s.level.stairs.x;
+        s.hero.y = s.level.stairs.y;
+        s = perform(s, { t: "descend" });
+    }
+    assert.equal(Object.keys(s.levels).length + 1, 26, `${Object.keys(s.levels).length + 1}층만 들었다`);
+    const bytes = serialize(s).length;
+    assert.ok(bytes < 3_000_000, `26층짜리 저장이 ${bytes} 바이트다 — 브라우저가 거부할 수 있다`);
+});

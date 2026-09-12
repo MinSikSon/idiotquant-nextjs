@@ -263,3 +263,37 @@ test("괴물 감지 물약은 벽 너머를 잠깐 보여 준다", () => {
     assert.ok(s1.hero.detect > 0);
     assert.ok(s1.known["potion:detect monsters"]);
 });
+
+test("겹쳐 쌓인 것을 주워도 배낭 자리를 제대로 말한다", () => {
+    // 예전에는 「undefined) 식량」이 떴다. 바닥에서 집은 쪽에는 자리(letter)가 없는데,
+    // `addToPack` 이 true 만 돌려줘서 부르는 쪽이 **집은 물건**의 자리를 읽었다.
+    const s = newGame(910);
+    const mine = s.hero.pack.find((p) => p.kind === "food")!;
+    assert.ok(mine.letter, "처음 든 식량에 자리가 없다");
+    const before = mine.count;
+
+    const dropped = makeItem("food", "food ration", 995, s.hero.x, s.hero.y, 2);
+    s.level.items = s.level.items.filter((i) => !(i.x === s.hero.x && i.y === s.hero.y));
+    s.level.items.push(dropped);
+
+    const after = perform(s, { t: "pickup" });
+    const line = after.messages[after.messages.length - 1];
+    assert.ok(!line.includes("undefined"), `자리를 못 읽었다: ${line}`);
+    assert.ok(line.startsWith(`${mine.letter})`), `${line} 가 ${mine.letter}) 로 시작하지 않는다`);
+    // 겹쳐 쌓였으니 배낭 칸은 안 늘고 개수만 는다.
+    assert.equal(after.hero.pack.filter((p) => p.kind === "food").length, 1);
+    assert.equal(after.hero.pack.find((p) => p.kind === "food")!.count, before + 2);
+});
+
+test("배낭의 모든 물건에는 자리가 있다 — 자리 없는 것은 못 쓴다", () => {
+    // 자리가 없으면 「마신다」로 고를 수도, 내려놓을 수도 없다. 조용히 못 쓰는 물건이 된다.
+    let s = newGame(911);
+    const rng = new Rng(3);
+    for (let i = 0; i < 400 && s.phase === "playing"; i++) {
+        const d = rng.pick([{ dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 0, dy: -1 }])!;
+        s = perform(s, i % 5 === 0 ? { t: "pickup" } : { t: "move", dx: d.dx, dy: d.dy });
+        for (const p of s.hero.pack) {
+            assert.ok(p.letter, `${p.kind}:${p.type} 에 자리가 없다`);
+        }
+    }
+});

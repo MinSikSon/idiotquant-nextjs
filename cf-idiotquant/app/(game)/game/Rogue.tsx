@@ -742,8 +742,8 @@ export default function Rogue() {
                             남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>
                         <p className="text-[#7d8d88]">
-                            <b className="text-[#9fb0aa]">위 계단으로 언제든 물러설 수 있습니다.</b> 다만
-                            층은 그때마다 새로 짜이므로, 밟아 둔 지도와 두고 온 물건은 사라집니다.
+                            <b className="text-[#9fb0aa]">위 계단으로 언제든 물러설 수 있습니다.</b> 지나온
+                            층은 떠난 그대로 남아 있으니, 두고 온 물건을 가지러 돌아가도 됩니다.
                         </p>
                         <p className="text-[#7d8d88]">
                             지하 26층에 옌더의 증표가 있습니다. <b className="text-[#9fb0aa]">1층의 계단은
