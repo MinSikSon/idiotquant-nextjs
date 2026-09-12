@@ -49,9 +49,32 @@ export function swing(
     return { hit: roll + bonus >= need, roll, need };
 }
 
-/** `+3` / `-1` / 0이면 빈 글자. */
-function signed(n: number): string {
-    return n === 0 ? "" : n > 0 ? `+${n}` : `${n}`;
+/**
+ * **계산을 보여 주는 줄**은 이 표시로 시작한다.
+ *
+ * 화면 위 두 줄 띠는 마지막 두 줄만 보여 준다. 계산 줄이 거기 섞이면 띠가 산수로
+ * 가득 차고 **무슨 일이 났는지가 밀려난다.** 그래서 띠는 이 표시가 붙은 줄을 걸러
+ * 내고, 기록 판만 전부 보여 준다. 엔진이 붙이고 화면이 읽는다 — 화면이 「이건
+ * 계산 줄이군」 하고 다시 판단하지 않게.
+ */
+export const DETAIL = "· ";
+
+export function isDetail(line: string): boolean {
+    return line.startsWith(DETAIL);
+}
+
+/** 굴림에 얹히는 것 하나 — 얼마가, 무엇 때문에. */
+export interface Term {
+    n: number;
+    why: string;
+}
+
+/** ` +1무기 +2힘` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다. */
+function terms(list: Term[]): string {
+    return list
+        .filter((t) => t.n !== 0)
+        .map((t) => ` ${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}${t.why}`)
+        .join("");
 }
 
 /** 도감에 오른 종인가 — **잡아 본 적이 있어야 숫자를 준다.** */
@@ -60,33 +83,51 @@ export function seenBefore(state: GameState, m: Monster): boolean {
 }
 
 /**
- * 굴린 눈을 적는 한 줄.
+ * 명중 계산 줄. 「굴린 눈 + 보정이 문턱을 넘었나」를 그대로 적는다.
  *
- * **명중 문턱(`need`)은 아는 종에게만 준다.** `need = 20 - 레벨 - 방어` 라서, 문턱을
- * 보여 주면 나머지를 역산할 수 있다 — 내가 때릴 때는 상대의 **방어**가, 상대가 때릴
- * 때는 상대의 **레벨**이 그대로 나온다. 그러면 「잡아 봐야 안다」는 도감 규칙이
- * 무너진다. 모르는 종에게는 `need` 자리에 `null` 을 넣는다.
- *
- * 피해 **숫자**는 늘 적는다 — 체력이 줄어드는 것은 어차피 보인다. 다만 상대의 피해
- * **주사위 표기**는 숫자가 아니라 정보라서, 부르는 쪽이 넣지 않는다.
+ * **문턱(`need`)은 아는 종에게만 준다.** `need = 20 - 레벨 - 방어` 라서, 문턱을 보여
+ * 주면 나머지를 역산할 수 있다 — 내가 때릴 때는 상대의 **방어**가, 상대가 때릴 때는
+ * 상대의 **레벨**이 그대로 나온다. 그러면 「잡아 봐야 안다」는 도감 규칙이 무너진다.
+ * 모르는 종에게는 `null` 을 넣는다. 굴린 눈과 내 보정은 **내 것이라 늘 적는다.**
  */
-export function diceLine(
+export function hitLine(
     who: string,
-    rolls: { roll: number; bonus: number }[],
+    rolls: number[],
+    bonuses: Term[],
     need: number | null,
-    damage: { dice?: string; bonus?: number; total: number } | null,
+    outcome: string,
 ): string {
-    const eyes = rolls
-        .map((r) => (r.bonus === 0 ? `${r.roll}` : `${r.roll}${signed(r.bonus)}=${r.roll + r.bonus}`))
-        .join(", ");
-    let line = `${who}: d20 ${eyes}`;
-    if (need !== null) line += ` (명중 ${need}↑)`;
-    if (damage) {
-        line += damage.dice
-            ? ` · 피해 ${damage.dice}${signed(damage.bonus ?? 0)} → ${damage.total}`
-            : ` · 피해 ${damage.total}`;
-    }
-    return line;
+    const add = terms(bonuses);
+    const sum = bonuses.reduce((a, t) => a + t.n, 0);
+    // 여러 번 때리는 놈은 눈이 여러 개다. 그때는 합을 적지 않는다 — 어느 눈의 합인지
+    // 알 수 없어서다.
+    const eyes =
+        rolls.length === 1 && sum !== 0
+            ? `${rolls[0]}${add} = ${rolls[0] + sum}`
+            : `${rolls.join(", ")}${add}`;
+    return `${DETAIL}명중 ${who}: d20 ${eyes}${need === null ? "" : ` vs ${need}`} → ${outcome}`;
+}
+
+/**
+ * 피해 계산 줄.
+ *
+ * `dice` 가 없으면 **총합만** 적는다. 체력이 줄어드는 것은 어차피 보이지만 상대의
+ * 피해 주사위 표기(`2d6`)는 표의 값이라, 부르는 쪽이 안 넘긴다.
+ */
+export function damageLine(
+    dice: string | null,
+    rolled: number,
+    bonuses: Term[],
+    total: number,
+): string {
+    if (!dice) return `${DETAIL}피해: ${total}`;
+    const add = terms(bonuses);
+    const sum = bonuses.reduce((a, t) => a + t.n, 0);
+    const raw = rolled + sum;
+    // 깎여서 0 이하가 되면 1 로 올린다(`Math.max`). 그 자리를 안 적으면 식과 결과가
+    // 안 맞아 보인다.
+    const floored = total !== raw ? ` → 최소 ${total}` : "";
+    return `${DETAIL}피해: ${dice} → ${rolled}${add}${sum !== 0 ? ` = ${raw}` : ""}${floored}`;
 }
 
 export interface AttackResult {
@@ -101,28 +142,36 @@ export interface AttackResult {
 export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
     const hero = state.hero;
     const weapon = equippedWeapon(hero);
-    const bonus = (weapon?.plusHit ?? 0) + strHitBonus(heroStr(hero));
+    const hitTerms: Term[] = [
+        { n: weapon?.plusHit ?? 0, why: "무기" },
+        { n: strHitBonus(heroStr(hero)), why: "힘" },
+    ];
+    const bonus = hitTerms.reduce((a, t) => a + t.n, 0);
     const s = swing(hero.level, m.def.armor, bonus, rng);
     const need = seenBefore(state, m) ? s.need : null;
-    const eyes = [{ roll: s.roll, bonus }];
     const messages: string[] = [];
 
+    // 계산이 먼저, 결과가 나중 — 기록 판은 뒤집어 보여 주므로 거기서는 결과가 위로
+    // 오고 그 아래에 「왜 그랬나」가 붙는다.
+    messages.push(hitLine("나", [s.roll], hitTerms, need, s.hit ? "맞았다" : "빗나갔다"));
+
     if (!s.hit) {
-        // 굴림이 먼저, 결과가 나중 — 위쪽 두 줄 띠가 **결과로 끝나야** 하고,
-        // 뒤집어 보여 주는 기록에서는 결과가 위로 온다.
-        messages.push(diceLine("나", eyes, need, null));
         messages.push(`${m.def.name}을(를) 헛쳤다.`);
         return { hit: false, roll: s.roll, damage: 0, killed: false, messages };
     }
 
     const dice = heroDamageDice(hero);
-    const dmgBonus = (weapon?.plusDam ?? 0) + strDamBonus(heroStr(hero));
-    const dmg = Math.max(1, rng.rollDice(dice) + dmgBonus);
+    const damTerms: Term[] = [
+        { n: weapon?.plusDam ?? 0, why: "무기" },
+        { n: strDamBonus(heroStr(hero)), why: "힘" },
+    ];
+    const rolled = rng.rollDice(dice);
+    const dmg = Math.max(1, rolled + damTerms.reduce((a, t) => a + t.n, 0));
     m.hp -= dmg;
     // 맞은 순간 깨어난다 — 자던 놈도 이제 쫓아온다.
     m.awake = true;
     const killed = m.hp <= 0;
-    messages.push(diceLine("나", eyes, need, { dice, bonus: dmgBonus, total: dmg }));
+    messages.push(damageLine(dice, rolled, damTerms, dmg));
     messages.push(killed ? `${m.def.name}을(를) 쓰러뜨렸다.` : `${m.def.name}을(를) 맞혔다.`);
     return { hit: true, roll: s.roll, damage: dmg, killed, messages };
 }
@@ -134,21 +183,21 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
 export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
     const hero = state.hero;
     const messages: string[] = [];
-    const eyes: { roll: number; bonus: number }[] = [];
+    const rolls: number[] = [];
     let total = 0;
-    let anyHit = false;
+    let hits = 0;
     let lastRoll = 0;
     let need: number | null = null;
 
     for (const dice of m.def.damage) {
         const s = swing(m.def.level, heroArmor(hero), 0, rng);
-        eyes.push({ roll: s.roll, bonus: 0 });
+        rolls.push(s.roll);
         // 문턱은 첫 굴림의 것으로 적는다. 아쿠에이터가 중간에 갑옷을 녹이면 뒤 굴림의
-        // 문턱은 달라지지만, 여러 숫자를 늘어놓는 것보다 첫 줄이 읽기 낫다.
+        // 문턱은 달라지지만, 여러 숫자를 늘어놓는 것보다 한 줄이 읽기 낫다.
         if (need === null) need = s.need;
         lastRoll = s.roll;
         if (!s.hit) continue;
-        anyHit = true;
+        hits++;
         if (dice === "0d0") {
             messages.push(...special(state, m, rng));
             continue;
@@ -158,23 +207,25 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
         hero.hp -= dmg;
     }
 
-    // 굴림 줄을 맨 앞에 끼운다 — 특수 공격이 이미 남긴 말보다 먼저 와야 한다.
-    // 상대의 피해 주사위 표기는 안 적는다(도감이 할 일). 숫자만 적는다.
-    if (eyes.length > 0) {
+    // 계산 줄을 맨 앞에 끼운다 — 특수 공격이 이미 남긴 말보다 먼저 와야 한다.
+    if (rolls.length > 0) {
+        const outcome =
+            rolls.length === 1
+                ? hits > 0
+                    ? "맞았다"
+                    : "빗나갔다"
+                : `${rolls.length}대 중 ${hits}대`;
         messages.unshift(
-            diceLine(
-                m.def.name,
-                eyes,
-                seenBefore(state, m) ? need : null,
-                total > 0 ? { total } : null,
-            ),
+            hitLine(m.def.name, rolls, [], seenBefore(state, m) ? need : null, outcome),
         );
+        // 상대의 피해 주사위 표기는 안 준다(도감이 할 일). 줄어든 숫자만 적는다.
+        if (total > 0) messages.splice(1, 0, damageLine(null, 0, [], total));
     }
 
-    if (!anyHit) messages.push(`${m.def.name}의 공격이 빗나갔다.`);
+    if (hits === 0) messages.push(`${m.def.name}의 공격이 빗나갔다.`);
     else if (total > 0) messages.push(`${m.def.name}에게 맞았다.`);
 
-    return { hit: anyHit, roll: lastRoll, damage: total, killed: hero.hp <= 0, messages };
+    return { hit: hits > 0, roll: lastRoll, damage: total, killed: hero.hp <= 0, messages };
 }
 
 /**

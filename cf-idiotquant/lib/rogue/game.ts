@@ -41,8 +41,10 @@ import {
     wornRings,
 } from "./hero";
 import {
-    diceLine,
+    type Term,
+    damageLine,
     heroAttack,
+    hitLine,
     monsterAttack,
     seenBefore,
     swing,
@@ -722,20 +724,22 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
         return true;
     }
 
-    // 던진 것도 명중 판정을 거친다. 손에 쥔 것보다 보정이 없다.
+    // 던진 것도 명중 판정을 거친다. 손에 쥔 것보다 보정이 없다 — **힘이 안 붙는다.**
+    const hitTerms: Term[] = [{ n: it.plusHit ?? 0, why: "손질" }];
     const s = swing(hero.level, m.def.armor, it.plusHit ?? 0, rng);
-    const eyes = [{ roll: s.roll, bonus: it.plusHit ?? 0 }];
     const need = seenBefore(state, m) ? s.need : null;
+    say(state, hitLine("나(던짐)", [s.roll], hitTerms, need, s.hit ? "맞았다" : "빗나갔다"));
     if (!s.hit) {
-        say(state, diceLine("나", eyes, need, null));
         say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.`);
         land();
         return true;
     }
     const dice = weaponDamageOf(it);
-    const dmg = Math.max(1, rng.rollDice(dice) + (it.plusDam ?? 0));
+    const damTerms: Term[] = [{ n: it.plusDam ?? 0, why: "손질" }];
+    const rolled = rng.rollDice(dice);
+    const dmg = Math.max(1, rolled + (it.plusDam ?? 0));
     m.hp -= dmg;
-    say(state, diceLine("나", eyes, need, { dice, bonus: it.plusDam ?? 0, total: dmg }));
+    say(state, damageLine(dice, rolled, damTerms, dmg));
     say(state, `${name}이(가) ${m.def.name}에게 맞았다.`);
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);

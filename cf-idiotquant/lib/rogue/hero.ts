@@ -201,6 +201,23 @@ export function heroDamageDice(hero: Hero): string {
     return weaponDamageOf(equippedWeapon(hero));
 }
 
+/**
+ * 지금 휘두르면 굴리는 것 — **화면에 적는 「공격」이 이 값이다.**
+ *
+ * 방어가 `heroArmor()` 하나로 나오듯 공격도 여기 하나로 나온다. 화면이 무기 주사위와
+ * 손질과 힘을 따로 주워 모아 더하면 그 셈이 두 벌이 되고, 어느 날 화면에 적힌 공격과
+ * 실제로 들어가는 피해가 달라진다.
+ *
+ * 손질(`+1`)은 **써 보기 전에는 모른다.** 그래서 `known` 을 받아, 모르는 무기면 그
+ * 몫을 빼고 적는다 — 화면이 정체 모를 무기의 속을 흘리면 안 된다.
+ */
+export function heroAttackText(hero: Hero, known: Record<string, boolean>): string {
+    const w = equippedWeapon(hero);
+    const shown = w && known[`weapon:${w.type}`] ? (w.plusDam ?? 0) : 0;
+    const bonus = shown + strDamBonus(heroStr(hero));
+    return `${heroDamageDice(hero)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
+}
+
 /** 지금 몸에 붙어 있는가 — 저주받아 못 벗는 것. */
 export function isWorn(hero: Hero, it: Item): boolean {
     return (
