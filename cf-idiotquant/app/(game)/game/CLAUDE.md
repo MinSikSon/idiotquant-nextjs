@@ -495,6 +495,23 @@
 키는 원작 그대로 살아 있다. `actionsFor()` 가 내는 것은 **규칙이 아니라 목록**이고,
 눌러도 `perform` 이 한 번 더 본다(자물쇠는 둘이다).
 
+### 색은 **화면 파일에 안 적는다** — 밝은 테마가 서 있는 자리
+
+`#rrggbb` 는 `app/global.css` 의 `--rg-*` 하나에만 있다. 화면은 `text-[var(--rg-muted)]`
+처럼 **이름으로만** 부른다. 한때 140군데에 흩어져 있었고, 그래서 밝은 테마를 붙일 자리가
+아예 없었다.
+
+- **어두운 값은 예전 그대로다.** 한 자도 안 바꿨다 — 예전 화면 파일에 있던 서른여덟 색이
+  팔레트에 그대로 있는지 세어서 확인했다.
+- **`-dim` 은 「기억」이다.** 어두운 테마에서는 더 어둡게 흐려지고, **밝은 테마에서는 더
+  밝게** 흐려진다. 방향을 그대로 두면 기억한 칸이 지금 보이는 칸보다 진해져 지도가 거꾸로
+  읽힌다. `test/rogue-theme.test.ts` 가 그 방향을 건다.
+- **옛 게임(`/game/imf`)은 테마를 안 따른다.** 저쪽은 Phaser 캔버스라 언제나 어둡다.
+  고무줄 스크롤로 드러나는 문서 뿌리를 칠하는 규칙도 그래서 둘이다 — `#game-canvas`
+  (언제나 어둠)와 `#rogue-root`(테마를 따라감). **뒤에 오는 쪽이 이긴다.**
+- 테마를 바꾸는 단추는 게임 안에 없다. 위·왼쪽 바의 `ThemeChanger` 가 이미 그 일을 한다 —
+  게임이 제 토글을 따로 들면 **테마를 정하는 자리가 둘**이 된다.
+
 ### 판은 **바깥의 빈 곳을 눌러도 닫힌다** — 조건이 둘인 까닭
 
 `Panel` 한 곳이 정한다(Esc 와 같은 자리). 조건 둘이 다 필요하다. 하나만 걸면 둘 다
@@ -547,12 +564,16 @@ node --experimental-strip-types --import ./test/register.mjs scripts/measure-rog
 
 ```bash
 npx tsc --noEmit    # 에러 0
-npm test            # rogue-{dungeon,mapshape,combat,game,items,bestiary,storage,…}.test.ts
+npm test            # rogue-{dungeon,mapshape,theme,combat,game,items,bestiary,storage,…}.test.ts
 npm run build       # /game · /game/imf 라우트
 ```
 
 `test/rogue-bestiary.test.ts` 가 「잡기 전에는 한 조각도 안 샌다」와 「어떻게 잡았든
 센다」를 건다. 앞의 것은 이 규칙의 전부이고, 뒤의 것은 실제로 빠져 있던 자리다.
+
+`test/rogue-theme.test.ts` 가 색이 한 자리에 있는지 본다 — 화면 파일에 `#rrggbb` 가 없는가 ·
+쓰는 이름이 전부 `global.css` 에 있는가(오타면 `var()` 가 비어 글자가 부모 색으로 흘러내린다) ·
+밝은 쪽과 어두운 쪽의 **이름 목록이 같은가** · `-dim` 이 테마마다 옳은 방향으로 흐려지는가.
 
 `test/rogue-mapshape.test.ts` 가 **팔백 층**의 모양을 본다 — 계단이 사방 막히지 않았는가 ·
 비밀문을 다 열면 걸어갈 수 있는 칸이 하나도 안 남고 이어지는가 · 어디로도 안 가는 복도

@@ -23,31 +23,31 @@ import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
 
 /** 글자 색 — **한 곳에서만 정한다.** 화면마다 정하면 같은 `@` 가 달라 보인다. */
 const INK: Record<string, string> = {
-    hero: "#ffffff",
-    monster: "#f2884b",
+    hero: "var(--rg-hero)",
+    monster: "var(--rg-monster)",
     // 감지 물약으로 벽 너머를 느끼는 것 — **본 것과 색이 달라야 한다.**
     // 같은 색으로 그리면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
-    "monster-sensed": "#8a5a3a",
-    "item-gold": "#ffd24a",
-    "item-potion": "#d987c4",
-    "item-scroll": "#cfe3f5",
-    "item-weapon": "#c3ced6",
-    "item-armor": "#8fb6cf",
-    "item-food": "#cfa878",
-    "item-ring": "#7fe0c8",
-    "item-wand": "#b6a2e8",
-    "item-amulet": "#ffe27a",
-    trap: "#ff6b5a",
-    "trap-dim": "#7a382f",
-    stairs: "#f0f0f0",
-    door: "#c08a45",
-    "door-dim": "#6a5029",
-    wall: "#8a9a95",
-    "wall-dim": "#4a5653",
-    floor: "#5f706b",
-    "floor-dim": "#39423f",
-    corridor: "#6b7c77",
-    "corridor-dim": "#3d4845",
+    "monster-sensed": "var(--rg-monster-sensed)",
+    "item-gold": "var(--rg-gold)",
+    "item-potion": "var(--rg-potion)",
+    "item-scroll": "var(--rg-scroll)",
+    "item-weapon": "var(--rg-weapon)",
+    "item-armor": "var(--rg-armor)",
+    "item-food": "var(--rg-food)",
+    "item-ring": "var(--rg-ring)",
+    "item-wand": "var(--rg-wand)",
+    "item-amulet": "var(--rg-amulet)",
+    trap: "var(--rg-trap)",
+    "trap-dim": "var(--rg-trap-dim)",
+    stairs: "var(--rg-stairs)",
+    door: "var(--rg-door)",
+    "door-dim": "var(--rg-door-dim)",
+    wall: "var(--rg-wall)",
+    "wall-dim": "var(--rg-wall-dim)",
+    floor: "var(--rg-floor)",
+    "floor-dim": "var(--rg-floor-dim)",
+    corridor: "var(--rg-corridor)",
+    "corridor-dim": "var(--rg-corridor-dim)",
 };
 
 function clamp(v: number, lo: number, hi: number) {
@@ -103,7 +103,7 @@ export default function MapView({ state }: { state: GameState }) {
         for (let x = ox; x < ox + view.cols; x++) {
             const g = glyphAt(state, x, y);
             const ch = g?.ch ?? " ";
-            const ink = g ? (INK[g.kind] ?? "#8a9a95") : "transparent";
+            const ink = g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent";
             const last = runs[runs.length - 1];
             if (last && last.ink === ink) last.text += ch;
             else runs.push({ text: ch, ink });

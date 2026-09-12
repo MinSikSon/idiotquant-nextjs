@@ -312,8 +312,8 @@ export default function Rogue() {
 
     if (!state) {
         return (
-            <div className="grid h-full w-full place-items-center bg-[#0b0c0c]">
-                <span className="font-[family-name:var(--font-plex-mono)] text-[12px] tracking-[0.14em] text-[#5f706b]">
+            <div className="grid h-full w-full place-items-center bg-[var(--rg-bg)]">
+                <span className="font-[family-name:var(--font-plex-mono)] text-[12px] tracking-[0.14em] text-[var(--rg-ghost)]">
                     던전을 파는 중…
                 </span>
             </div>
@@ -457,10 +457,10 @@ export default function Rogue() {
     };
 
     return (
-        <div className="relative flex h-full w-full flex-col bg-[#0b0c0c] text-[#c3ced6]">
+        <div className="relative flex h-full w-full flex-col bg-[var(--rg-bg)] text-[var(--rg-text)]">
             {/* 맨 위 두 줄 — 원작의 메시지 줄이다. 높이를 고정해 둔다: 줄 수가 들쭉날쭉하면
                 지도가 매 턴 위아래로 흔들린다. */}
-            <div className="h-[2.9em] shrink-0 overflow-hidden px-2 pt-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.45] text-[#dfe8e4] sm:text-[13px]">
+            <div className="h-[2.9em] shrink-0 overflow-hidden px-2 pt-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.45] text-[var(--rg-msg)] sm:text-[13px]">
                 {recent.map((m, i) => (
                     <div key={`${state.turn}-${i}`} className="truncate">
                         {m}
@@ -476,10 +476,10 @@ export default function Rogue() {
                 **한 줄로 묶어 둔다.** 접히게 두면 좁은 폰에서 「금화」가 둘째 줄로 내려가
                 그만큼 지도가 줄고, 값이 하나 늘 때마다 지도의 높이가 달라진다. 넘치면
                 옆으로 민다 — 세로는 지도의 것이다. */}
-            <div className="flex shrink-0 gap-x-3 overflow-x-auto whitespace-nowrap border-t border-[#202927] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[#9fb0aa] [scrollbar-width:none] sm:text-[13px]">
+            <div className="flex shrink-0 gap-x-3 overflow-x-auto whitespace-nowrap border-t border-[var(--rg-line-faint)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-muted)] [scrollbar-width:none] sm:text-[13px]">
                 <span>지하 {level.depth}층</span>
                 <span>Lv {hero.level}</span>
-                <span className={hpLow ? "text-[#ff6b5a]" : undefined}>
+                <span className={hpLow ? "text-[var(--rg-trap)]" : undefined}>
                     체력 {hero.hp}/{hero.maxHp}
                 </span>
                 <span>힘 {heroStr(hero)}</span>
@@ -490,16 +490,16 @@ export default function Rogue() {
                 <span>피해 {heroAttackText(hero, state.known)}</span>
                 <span>방어도 {heroDefense(hero)}</span>
                 <span>경험 {hero.exp}</span>
-                <span className="text-[#ffd24a]">금화 {hero.gold}</span>
-                {rings.length > 0 && <span className="text-[#7fe0c8]">반지 {rings.length}</span>}
-                {hero.confused > 0 && <span className="text-[#d987c4]">혼란</span>}
-                {hero.blind > 0 && <span className="text-[#d987c4]">실명</span>}
-                {hero.stuck > 0 && <span className="text-[#f2884b]">덫</span>}
-                {hunger && <span className="text-[#f2884b]">{hunger}</span>}
-                {hero.hasAmulet && <span className="text-[#ffe27a]">증표</span>}
+                <span className="text-[var(--rg-gold)]">금화 {hero.gold}</span>
+                {rings.length > 0 && <span className="text-[var(--rg-ring)]">반지 {rings.length}</span>}
+                {hero.confused > 0 && <span className="text-[var(--rg-potion)]">혼란</span>}
+                {hero.blind > 0 && <span className="text-[var(--rg-potion)]">실명</span>}
+                {hero.stuck > 0 && <span className="text-[var(--rg-monster)]">덫</span>}
+                {hunger && <span className="text-[var(--rg-monster)]">{hunger}</span>}
+                {hero.hasAmulet && <span className="text-[var(--rg-amulet)]">증표</span>}
             </div>
 
-            <div className="shrink-0 border-t border-[#202927]">
+            <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
                 <TouchPad
                     onMove={(dx, dy) => {
                         if (aiming) {
@@ -537,20 +537,20 @@ export default function Rogue() {
                     footer="글자를 누르거나 줄을 눌러 고릅니다."
                 >
                     {pickable.length === 0 ? (
-                        <p className="text-[#7d8d88]">{picker.empty}</p>
+                        <p className="text-[var(--rg-faint)]">{picker.empty}</p>
                     ) : (
                         <ul className="space-y-1">
                             {pickable.map((it) => (
                                 <li key={it.id}>
                                     <button
                                         type="button"
-                                        className="w-full rounded-[2px] px-1 text-left hover:bg-[#1b2321]"
+                                        className="w-full rounded-[2px] px-1 text-left hover:bg-[var(--rg-raised)]"
                                         onClick={() => choosePicked(it.letter!)}
                                     >
                                         {/* 자리가 없으면 `?` — 「undefined) 식량」이 화면에 뜨면 안 된다. 되읽을 때
                                             `storage.fixLetters` 가 메우지만 끝내 못 메우는 경우가 남는다. */}
                                         {/* 위와 같다 — 화면에 `undefined` 를 내보내지 않는다. */}
-                                            <span className="text-[#8a9a95]">{it.letter ?? "?"})</span> {name(it)}
+                                            <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
                                     </button>
                                 </li>
                             ))}
@@ -569,7 +569,7 @@ export default function Rogue() {
                     footer="물건을 누르면 할 수 있는 일이 뜹니다."
                 >
                     {hero.pack.length === 0 ? (
-                        <p className="text-[#7d8d88]">아무것도 없다.</p>
+                        <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
                     ) : (
                         <ul className="space-y-1">
                             {hero.pack.map((it) => {
@@ -587,17 +587,17 @@ export default function Rogue() {
                                         <button
                                             type="button"
                                             onClick={() => setChosen(open ? null : it.id)}
-                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[#1b2321]" : "hover:bg-[#161c1a]"}`}
+                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
                                         >
-                                            <span className="text-[#8a9a95]">{it.letter ?? "?"})</span> {name(it)}
-                                            {it.count > 1 && <span className="text-[#7d8d88]"> ×{it.count}</span>}
+                                            <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
+                                            {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
                                             {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
                                                 모르는 물건은 기본값만 — 화면이 속을 흘리면 안 된다. */}
                                             {(it.kind === "weapon" || it.kind === "armor") && (
-                                                <span className="text-[#7d8d88]"> {itemPower(it, state.known)}</span>
+                                                <span className="text-[var(--rg-faint)]"> {itemPower(it, state.known)}</span>
                                             )}
-                                            {worn && <span className="text-[#9fb0aa]"> ({worn})</span>}
+                                            {worn && <span className="text-[var(--rg-muted)]"> ({worn})</span>}
                                         </button>
                                         {open && (
                                             <div className="my-1 flex flex-wrap gap-1 pl-5">
@@ -606,7 +606,7 @@ export default function Rogue() {
                                                         key={a.label}
                                                         type="button"
                                                         onClick={a.on}
-                                                        className="rounded-[3px] border border-[#3a4a45] bg-[#161c1a] px-2 py-1 text-[#e6eeea] active:translate-y-px"
+                                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-[var(--rg-strong)] active:translate-y-px"
                                                     >
                                                         {a.label}
                                                     </button>
@@ -618,7 +618,7 @@ export default function Rogue() {
                             })}
                         </ul>
                     )}
-                    <div className="mt-3 space-y-0.5 border-t border-[#2a3532] pt-2 text-[#7d8d88]">
+                    <div className="mt-3 space-y-0.5 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-faint)]">
                         <div>
                             무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"} · 갑옷{" "}
                             {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"}
@@ -628,7 +628,7 @@ export default function Rogue() {
                             {hungerRate(hero)}
                         </div>
                         {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
-                        <div className="text-[#9fb0aa]">
+                        <div className="text-[var(--rg-muted)]">
                             지금 명중 {signed(heroHitBonus(hero, state.known))} · 피해{" "}
                             {heroAttackText(hero, state.known)} · 방어도 {heroDefense(hero)}
                         </div>
@@ -643,30 +643,30 @@ export default function Rogue() {
                     footer="한 마리를 잡아 보면 그 종의 속을 알게 됩니다. 조사는 턴을 쓰지 않습니다."
                 >
                     {sightings.length === 0 ? (
-                        <p className="text-[#7d8d88]">보이는 것이 없다.</p>
+                        <p className="text-[var(--rg-faint)]">보이는 것이 없다.</p>
                     ) : (
                         <ul className="space-y-2">
                             {sightings.map((m: Sighting) => (
-                                <li key={m.id} className="border-b border-[#1b2321] pb-2 last:border-0">
+                                <li key={m.id} className="border-b border-[var(--rg-raised)] pb-2 last:border-0">
                                     <div>
-                                        <span className="text-[#f2884b]">{m.ch}</span>{" "}
-                                        <span className="text-[#e6eeea]">{m.name}</span>
-                                        <span className="text-[#7d8d88]">
+                                        <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
+                                        <span className="text-[var(--rg-strong)]">{m.name}</span>
+                                        <span className="text-[var(--rg-faint)]">
                                             {" "}· {m.distance}칸 · {m.awake ? "쫓고 있다" : "아직 못 봤다"} ·{" "}
                                         </span>
-                                        <span className={m.condition === "성하다" ? "text-[#9fb0aa]" : "text-[#ff6b5a]"}>
+                                        <span className={m.condition === "성하다" ? "text-[var(--rg-muted)]" : "text-[var(--rg-trap)]"}>
                                             {m.condition}
                                         </span>
                                     </div>
                                     {m.known ? (
-                                        <div className="text-[#9fb0aa]">
+                                        <div className="text-[var(--rg-muted)]">
                                             레벨 {m.level} · 방어도 {m.defense} · 피해 {m.damage?.join(" + ") || "없음"} ·
                                             경험 {m.exp} · 체력 {m.hp}
-                                            {m.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
-                                            <span className="text-[#7d8d88]"> (여태 {m.kills}마리)</span>
+                                            {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
+                                            <span className="text-[var(--rg-faint)]"> (여태 {m.kills}마리)</span>
                                         </div>
                                     ) : (
-                                        <div className="text-[#7d8d88]">
+                                        <div className="text-[var(--rg-faint)]">
                                             처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
                                         </div>
                                     )}
@@ -684,7 +684,7 @@ export default function Rogue() {
                     footer="줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다."
                 >
                     {progress.found === 0 ? (
-                        <p className="text-[#7d8d88]">아직 아무것도 못 잡았다.</p>
+                        <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
                     ) : (
                         <ul className="space-y-1">
                             {bestiaryRows(state.bestiary).map((r: BestiaryRow) => {
@@ -698,21 +698,21 @@ export default function Rogue() {
                                             type="button"
                                             onClick={() => setOpenMon(open ? null : r.ch)}
                                             aria-expanded={open}
-                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[#1b2321]" : "hover:bg-[#161c1a]"}`}
+                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
                                         >
-                                            <span className="text-[#f2884b]">{r.ch}</span>{" "}
-                                            <span className="text-[#e6eeea]">{r.name}</span>
-                                            <span className="text-[#ffd24a]"> ×{r.kills}</span>
-                                            {art && <span className="text-[#5f706b]"> {open ? "▾" : "▸"}</span>}
-                                            <div className="text-[#9fb0aa]">
+                                            <span className="text-[var(--rg-monster)]">{r.ch}</span>{" "}
+                                            <span className="text-[var(--rg-strong)]">{r.name}</span>
+                                            <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
+                                            {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
+                                            <div className="text-[var(--rg-muted)]">
                                                 레벨 {r.level} · 방어도 {r.defense} · 피해{" "}
                                                 {r.damage.join(" + ") || "없음"} · 경험 {r.exp} · 체력 {r.hp}
-                                                {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
+                                                {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                 {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                     층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
                                                     수 있는 「층에 따른 것」은 이 띠 하나다. */}
                                                 {r.depths && (
-                                                    <div className="text-[#7d8d88]">
+                                                    <div className="text-[var(--rg-faint)]">
                                                         지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
                                                     </div>
                                                 )}
@@ -721,7 +721,7 @@ export default function Rogue() {
                                         {open && art && (
                                             /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
                                                좁은 폰에서도 안 접히게 스무 칸을 안 넘긴다(`monsterArt`). */
-                                            <pre className="mt-1 mb-2 overflow-x-auto whitespace-pre px-1 text-[12px] leading-[1.15] text-[#7fe0c8]">
+                                            <pre className="mt-1 mb-2 overflow-x-auto whitespace-pre px-1 text-[12px] leading-[1.15] text-[var(--rg-ring)]">
                                                 {art}
                                             </pre>
                                         )}
@@ -751,7 +751,7 @@ export default function Rogue() {
                             .slice(-80)
                             .reverse()
                             .map((m, i) => (
-                                <li key={i} className="text-[#9fb0aa]">
+                                <li key={i} className="text-[var(--rg-muted)]">
                                     {m}
                                 </li>
                             ))}
@@ -762,51 +762,51 @@ export default function Rogue() {
             {sheet === "help" && (
                 <Panel title="조작" onClose={() => setSheet("none")} footer="죽으면 그것으로 끝입니다. 저장은 자동이고, 되돌리기는 없습니다.">
                     <dl className="grid grid-cols-[7.5em_1fr] gap-y-1">
-                        <dt className="text-[#8a9a95]">h j k l</dt><dd>왼 아래 위 오른쪽 (방향키도 됩니다)</dd>
-                        <dt className="text-[#8a9a95]">y u b n</dt><dd>대각선 넷</dd>
-                        <dt className="text-[#8a9a95]">.</dt><dd>제자리에서 쉰다</dd>
-                        <dt className="text-[#8a9a95]">, 또는 g</dt><dd>발밑의 것을 줍는다</dd>
-                        <dt className="text-[#8a9a95]">s</dt><dd>벽을 뒤진다 — 숨은 문과 함정이 드러난다</dd>
-                        <dt className="text-[#8a9a95]">&gt; &lt;</dt><dd>계단을 내려간다 · 올라간다</dd>
-                        <dt className="text-[#8a9a95]">q r e</dt><dd>마신다 · 읽는다 · 먹는다</dd>
-                        <dt className="text-[#8a9a95]">w W</dt><dd><b>쥔다 · 입는다</b></dd>
-                        <dt className="text-[#8a9a95]">P R</dt><dd>반지를 낀다 · 뺀다</dd>
-                        <dt className="text-[#8a9a95]">z t</dt><dd>지팡이를 쏜다 · 던진다 (고른 뒤 방향)</dd>
-                        <dt className="text-[#8a9a95]">d</dt><dd>내려놓는다</dd>
-                        <dt className="text-[#8a9a95]">x</dt><dd><b>조사</b> — 보이는 몬스터의 속을 본다 (턴을 안 씁니다)</dd>
-                        <dt className="text-[#8a9a95]">i m ?</dt><dd>배낭 · 기록 · 이 화면</dd>
+                        <dt className="text-[var(--rg-label)]">h j k l</dt><dd>왼 아래 위 오른쪽 (방향키도 됩니다)</dd>
+                        <dt className="text-[var(--rg-label)]">y u b n</dt><dd>대각선 넷</dd>
+                        <dt className="text-[var(--rg-label)]">.</dt><dd>제자리에서 쉰다</dd>
+                        <dt className="text-[var(--rg-label)]">, 또는 g</dt><dd>발밑의 것을 줍는다</dd>
+                        <dt className="text-[var(--rg-label)]">s</dt><dd>벽을 뒤진다 — 숨은 문과 함정이 드러난다</dd>
+                        <dt className="text-[var(--rg-label)]">&gt; &lt;</dt><dd>계단을 내려간다 · 올라간다</dd>
+                        <dt className="text-[var(--rg-label)]">q r e</dt><dd>마신다 · 읽는다 · 먹는다</dd>
+                        <dt className="text-[var(--rg-label)]">w W</dt><dd><b>쥔다 · 입는다</b></dd>
+                        <dt className="text-[var(--rg-label)]">P R</dt><dd>반지를 낀다 · 뺀다</dd>
+                        <dt className="text-[var(--rg-label)]">z t</dt><dd>지팡이를 쏜다 · 던진다 (고른 뒤 방향)</dd>
+                        <dt className="text-[var(--rg-label)]">d</dt><dd>내려놓는다</dd>
+                        <dt className="text-[var(--rg-label)]">x</dt><dd><b>조사</b> — 보이는 몬스터의 속을 본다 (턴을 안 씁니다)</dd>
+                        <dt className="text-[var(--rg-label)]">i m ?</dt><dd>배낭 · 기록 · 이 화면</dd>
                     </dl>
-                    <div className="mt-3 space-y-1 border-t border-[#2a3532] pt-2 text-[#9fb0aa]">
-                        <p className="text-[#e6eeea]">
+                    <div className="mt-3 space-y-1 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-muted)]">
+                        <p className="text-[var(--rg-strong)]">
                             갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
                             키보드로는 <b>W</b>.
                         </p>
-                        <p><span className="text-white">@</span> 나 · <span className="text-[#f2884b]">A–Z</span> 몬스터 · <span className="text-[#ffd24a]">*</span> 금화 · <span className="text-[#d987c4]">!</span> 물약 · <span className="text-[#cfe3f5]">?</span> 주문서</p>
-                        <p><span className="text-[#c3ced6]">)</span> 무기 · <span className="text-[#8fb6cf]">]</span> 갑옷 · <span className="text-[#7fe0c8]">=</span> 반지 · <span className="text-[#b6a2e8]">/</span> 지팡이 · <span className="text-[#cfa878]">%</span> 식량</p>
-                        <p><span className="text-[#ff6b5a]">^</span> 함정 · <span className="text-[#f0f0f0]">&gt;</span> 아래 계단 · <span className="text-[#f0f0f0]">&lt;</span> 위 계단 · <span className="text-[#c08a45]">+</span> 문</p>
-                        <p className="pt-1 text-[#7d8d88]">
-                            <b className="text-[#9fb0aa]">싸움은 D&amp;D 의 주사위 규칙을 씁니다.</b>{" "}
-                            <span className="text-[#9fb0aa]">d20 + 숙련 + 힘 + 무기</span>가 상대의{" "}
-                            <span className="text-[#9fb0aa]">방어도</span> 이상이면 맞습니다 — <b>막는 쪽은
+                        <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">*</span> 금화 · <span className="text-[var(--rg-potion)]">!</span> 물약 · <span className="text-[var(--rg-scroll)]">?</span> 주문서</p>
+                        <p><span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
+                        <p><span className="text-[var(--rg-trap)]">^</span> 함정 · <span className="text-[var(--rg-stairs)]">&gt;</span> 아래 계단 · <span className="text-[var(--rg-stairs)]">&lt;</span> 위 계단 · <span className="text-[var(--rg-door)]">+</span> 문</p>
+                        <p className="pt-1 text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-muted)]">싸움은 D&amp;D 의 주사위 규칙을 씁니다.</b>{" "}
+                            <span className="text-[var(--rg-muted)]">d20 + 숙련 + 힘 + 무기</span>가 상대의{" "}
+                            <span className="text-[var(--rg-muted)]">방어도</span> 이상이면 맞습니다 — <b>막는 쪽은
                             굴리지 않습니다.</b> <b>20</b> 은 무조건 맞고 <b>피해 주사위를 두 번</b> 굴리며,
                             <b>1</b> 은 무조건 빗나갑니다. 자는 놈을 치면 <b>유리</b>(두 번 굴려 높은 쪽),
                             눈이 멀거나 헷갈리면 <b>불리</b>입니다. 굴린 값은 모두 <b>기록</b>에 남습니다.
                         </p>
-                        <p className="text-[#7d8d88]">
+                        <p className="text-[var(--rg-faint)]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.
                             반지는 끼고 있으면 배가 더 고픕니다.
                         </p>
-                        <p className="text-[#7d8d88]">
-                            <b className="text-[#9fb0aa]">한 종을 한 마리라도 잡으면</b> 그 뒤로는 조사해서
-                            레벨·방어·피해를 볼 수 있습니다. 이 도감은 <b className="text-[#9fb0aa]">죽어도
+                        <p className="text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-muted)]">한 종을 한 마리라도 잡으면</b> 그 뒤로는 조사해서
+                            레벨·방어·피해를 볼 수 있습니다. 이 도감은 <b className="text-[var(--rg-muted)]">죽어도
                             남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>
-                        <p className="text-[#7d8d88]">
-                            <b className="text-[#9fb0aa]">위 계단으로 언제든 물러설 수 있습니다.</b> 지나온
+                        <p className="text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-muted)]">위 계단으로 언제든 물러설 수 있습니다.</b> 지나온
                             층은 떠난 그대로 남아 있으니, 두고 온 물건을 가지러 돌아가도 됩니다.
                         </p>
-                        <p className="text-[#7d8d88]">
-                            지하 26층에 옌더의 증표가 있습니다. <b className="text-[#9fb0aa]">1층의 계단은
+                        <p className="text-[var(--rg-faint)]">
+                            지하 26층에 옌더의 증표가 있습니다. <b className="text-[var(--rg-muted)]">1층의 계단은
                             증표가 있어야 열립니다</b> — 그것을 쥐고 밖으로 나오면 이깁니다.
                         </p>
                     </div>
@@ -816,11 +816,11 @@ export default function Rogue() {
             {sheet === "graves" && (
                 <Panel title="지난 판들" onClose={() => setSheet("none")}>
                     {tombs.length === 0 ? (
-                        <p className="text-[#7d8d88]">아직 없다.</p>
+                        <p className="text-[var(--rg-faint)]">아직 없다.</p>
                     ) : (
                         <ul className="space-y-1">
                             {tombs.map((t, i) => (
-                                <li key={i} className={t.won ? "text-[#ffe27a]" : "text-[#9fb0aa]"}>
+                                <li key={i} className={t.won ? "text-[var(--rg-amulet)]" : "text-[var(--rg-muted)]"}>
                                     {t.won ? "★" : "†"} 지하 {t.depth}층 · 금화 {t.gold} · {t.turns}턴 — {t.epitaph}
                                 </li>
                             ))}
@@ -837,7 +837,7 @@ export default function Rogue() {
                             <button
                                 type="button"
                                 onClick={restart}
-                                className="rounded-[2px] border border-[#3a4a45] px-3 py-1 text-[#e6eeea] hover:bg-[#1b2321]"
+                                className="rounded-[2px] border border-[var(--rg-line)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-raised)]"
                             >
                                 새 판
                             </button>
@@ -847,22 +847,22 @@ export default function Rogue() {
                                     setTombs(graves());
                                     setSheet("graves");
                                 }}
-                                className="rounded-[2px] border border-[#2a3532] px-3 py-1 hover:bg-[#1b2321]"
+                                className="rounded-[2px] border border-[var(--rg-line-soft)] px-3 py-1 hover:bg-[var(--rg-raised)]"
                             >
                                 지난 판들
                             </button>
-                            <Link href="/game/imf" className="text-[#7d8d88] underline underline-offset-2">
+                            <Link href="/game/imf" className="text-[var(--rg-faint)] underline underline-offset-2">
                                 옛 게임(IMF)
                             </Link>
                         </div>
                     }
                 >
-                    <p className="mb-2 text-[#e6eeea]">{state.epitaph}</p>
-                    <dl className="grid grid-cols-[7em_1fr] gap-y-1 text-[#9fb0aa]">
+                    <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
+                    <dl className="grid grid-cols-[7em_1fr] gap-y-1 text-[var(--rg-muted)]">
                         <dt>가장 깊이</dt><dd>지하 {state.deepest}층</dd>
                         <dt>레벨</dt><dd>{hero.level}</dd>
                         <dt>버틴 턴</dt><dd>{state.turn}</dd>
-                        <dt>점수</dt><dd className="text-[#ffd24a]">{score(state)}</dd>
+                        <dt>점수</dt><dd className="text-[var(--rg-gold)]">{score(state)}</dd>
                     </dl>
                 </Panel>
             )}
