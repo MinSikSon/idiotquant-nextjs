@@ -42,16 +42,15 @@ test("벽을 들이받으면 턴이 안 간다 — 배고픔 시계가 거짓말
 });
 
 test("한 걸음에 배고픔이 1 준다", () => {
+    // **지나간 턴 수와 줄어든 식량이 같아야 한다.** 「쉰 횟수」로 세면 안 된다 — 얼어
+    // 붙거나 덫에 걸리면 명령을 넣어도 턴이 안 가고, 그때 이 테스트가 시드를 탄다.
     let s = newGame(11);
     const start = s.hero.food;
-    let moved = 0;
-    for (let i = 0; i < 60 && moved < 20; i++) {
-        const before = s.turn;
-        s = perform(s, { t: "rest" });
-        if (s.turn > before) moved++;
-    }
-    assert.equal(moved, 20);
-    assert.equal(s.hero.food, start - 20);
+    const startTurn = s.turn;
+    for (let i = 0; i < 60; i++) s = perform(s, { t: "rest" });
+    const turns = s.turn - startTurn;
+    assert.ok(turns > 0, "한 턴도 안 갔다");
+    assert.equal(s.hero.food, start - turns, `턴 ${turns} 인데 식량은 ${start - s.hero.food} 줄었다`);
 });
 
 test("배고픔의 단계는 문턱에서만 바뀐다", () => {

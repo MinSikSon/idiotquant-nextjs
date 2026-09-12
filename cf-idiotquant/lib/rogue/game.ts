@@ -42,12 +42,12 @@ import {
 } from "./hero";
 import {
     type Term,
+    contest,
+    contestLine,
     damageLine,
     heroAttack,
-    hitLine,
     monsterAttack,
     seenBefore,
-    swing,
 } from "./combat";
 import {
     RINGS,
@@ -56,6 +56,7 @@ import {
     isThrowable,
     itemChar,
     makeItem,
+    defenseOf,
     randomItem,
     rollAppearances,
     weaponDamageOf,
@@ -712,23 +713,33 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
         return false;
     }
 
+    // **하나만 던진다.** 남은 개수를 따로 적어 준다 — 안 적으면 줄었는지 알 수 없다.
     const name = describe(it, state.known, state.appearance);
     takeFromPack(hero, it, 1);
+    const left = hero.pack.find((p) => p.id === it.id)?.count ?? 0;
+    const rest = left > 0 ? ` (${left}개 남음)` : "";
     const hit = ray(level, hero, dx, dy, 8);
 
     // 물약은 깨진다. 무기는 떨어진 자리에 남는다 — 주우러 갈 수 있어야 한다.
     const land = (): void => {
         if (it.kind === "potion") return;
-        const one = makeItem(it.kind, it.type, state.nextItemId++, hit.x, hit.y, 1);
-        one.plusHit = it.plusHit;
-        one.plusDam = it.plusDam;
-        one.cursed = it.cursed;
-        one.curseKnown = it.curseKnown;
-        if (!itemAt(level, hit.x, hit.y)) level.items.push(one);
+        const here = itemAt(level, hit.x, hit.y);
+        // 같은 것이 이미 떨어져 있으면 겹쳐 쌓는다. 예전에는 그냥 사라졌다 —
+        // 다트를 한 자리에 열 번 던지면 아홉 개가 없어졌다.
+        if (here) {
+            if (here.kind === it.kind && here.type === it.type) here.count += 1;
+            return;
+        }
+        const dropped = makeItem(it.kind, it.type, state.nextItemId++, hit.x, hit.y, 1);
+        dropped.plusHit = it.plusHit;
+        dropped.plusDam = it.plusDam;
+        dropped.cursed = it.cursed;
+        dropped.curseKnown = it.curseKnown;
+        level.items.push(dropped);
     };
 
     if (!hit.monster) {
-        say(state, `${name}을(를) 던졌다.`);
+        say(state, `${name}을(를) 던졌다.${rest}`);
         land();
         return true;
     }
@@ -737,7 +748,7 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
     m.awake = true;
     if (it.kind === "potion") {
         state.known[`potion:${it.type}`] = true;
-        say(state, `물약이 ${m.def.name}에게 깨졌다.`);
+        say(state, `물약이 ${m.def.name}에게 깨졌다.${rest}`);
         if (it.type === "confusion") {
             m.speed = -1;
             say(state, `${m.def.name}이(가) 비틀거린다.`);
@@ -745,13 +756,23 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
         return true;
     }
 
-    // 던진 것도 명중 판정을 거친다. 손에 쥔 것보다 보정이 없다 — **힘이 안 붙는다.**
-    const hitTerms: Term[] = [{ n: it.plusHit ?? 0, why: "손질" }];
-    const s = swing(hero.level, m.def.armor, it.plusHit ?? 0, rng);
-    const need = seenBefore(state, m) ? s.need : null;
-    say(state, hitLine("나(던짐)", [s.roll], hitTerms, need, s.hit ? "맞았다" : "빗나갔다"));
-    if (!s.hit) {
-        say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.`);
+    // 던진 것도 겨룸을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
+    const hitTerms: Term[] = [
+        { n: hero.level, why: "레벨" },
+        { n: it.plusHit ?? 0, why: "손질" },
+    ];
+    const defTerms: Term[] = [{ n: defenseOf(m.def.armor), why: "방어" }];
+    const c = contest(hitTerms.reduce((a, t) => a + t.n, 0), defenseOf(m.def.armor), rng);
+    say(
+        state,
+        contestLine(
+            "나(던짐)", [c.atkRoll], hitTerms, c.atkTotal,
+            m.def.name, c.defRoll, seenBefore(state, m) ? defTerms : null, c.defTotal,
+            c.hit ? "맞았다" : "막혔다",
+        ),
+    );
+    if (!c.hit) {
+        say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.${rest}`);
         land();
         return true;
     }
@@ -761,7 +782,7 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
     const dmg = Math.max(1, rolled + (it.plusDam ?? 0));
     m.hp -= dmg;
     say(state, damageLine(dice, rolled, damTerms, dmg));
-    say(state, `${name}이(가) ${m.def.name}에게 맞았다.`);
+    say(state, `${name}이(가) ${m.def.name}에게 맞았다.${rest}`);
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
         killMonster(state, m, rng);
@@ -1155,10 +1176,11 @@ export interface Sighting {
     known: boolean;
     kills: number;
     level?: number;
-    armor?: number;
+    /** 방어 — **클수록 단단하다**(`defenseOf`). */
+    defense?: number;
     damage?: string[];
     exp?: number;
-    hpDice?: string;
+    hp?: number;
     /** 사납게 구는 놈인가 — 잡아 봐야 안다. */
     mean?: boolean;
     /** 눈으로 보이는 것. 잡아 본 적이 없어도 이건 안다. */
@@ -1203,10 +1225,10 @@ export function survey(state: GameState): Sighting[] {
             return {
                 ...base,
                 level: m.def.level,
-                armor: m.def.armor,
+                defense: defenseOf(m.def.armor),
                 damage: m.def.damage.filter((d) => d !== "0d0"),
                 exp: m.def.exp,
-                hpDice: m.def.hp,
+                hp: m.def.hp,
                 mean: m.def.mean,
             };
         })
@@ -1219,10 +1241,10 @@ export interface BestiaryRow {
     name: string;
     kills: number;
     level: number;
-    armor: number;
+    defense: number;
     damage: string[];
     exp: number;
-    hpDice: string;
+    hp: number;
     mean: boolean;
 }
 
@@ -1236,10 +1258,10 @@ export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
                 name: d.name,
                 kills: bestiary[ch],
                 level: d.level,
-                armor: d.armor,
+                defense: defenseOf(d.armor),
                 damage: d.damage.filter((x: string) => x !== "0d0"),
                 exp: d.exp,
-                hpDice: d.hp,
+                hp: d.hp,
                 mean: d.mean,
             };
         })

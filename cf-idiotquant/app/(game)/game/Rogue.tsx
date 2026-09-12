@@ -31,9 +31,9 @@ import {
     score,
     survey,
 } from "@/lib/rogue/game";
-import { armorClassOf, describe, isThrowable, weaponDamageOf } from "@/lib/rogue/items";
+import { describe, isThrowable, itemPower } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
-import { equippedArmor, equippedWeapon, heroArmor, heroAttackText, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -477,7 +477,7 @@ export default function Rogue() {
                 <span>힘 {heroStr(hero)}</span>
                 {/* 방어는 있는데 공격이 없으면 무기를 바꿀 때 무엇이 나아지는지가 안 보인다. */}
                 <span>공격 {heroAttackText(hero, state.known)}</span>
-                <span>방어 {heroArmor(hero)}</span>
+                <span>방어 {heroDefense(hero)}</span>
                 <span>경험 {hero.exp}</span>
                 <span className="text-[#ffd24a]">금화 {hero.gold}</span>
                 {rings.length > 0 && <span className="text-[#7fe0c8]">반지 {rings.length}</span>}
@@ -577,13 +577,11 @@ export default function Rogue() {
                                         >
                                             <span className="text-[#8a9a95]">{it.letter})</span> {name(it)}
                                             {it.count > 1 && <span className="text-[#7d8d88]"> ×{it.count}</span>}
-                                            {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. 손질(+1)은
-                                                이름 쪽이 알아낸 만큼만 붙이므로 여기서는 **기본 주사위**만. */}
-                                            {it.kind === "weapon" && (
-                                                <span className="text-[#7d8d88]"> {weaponDamageOf(it)}</span>
-                                            )}
-                                            {it.kind === "armor" && (
-                                                <span className="text-[#7d8d88]"> 방어 {armorClassOf(it)}</span>
+                                            {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
+                                                값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
+                                                모르는 물건은 기본값만 — 화면이 속을 흘리면 안 된다. */}
+                                            {(it.kind === "weapon" || it.kind === "armor") && (
+                                                <span className="text-[#7d8d88]"> {itemPower(it, state.known)}</span>
                                             )}
                                             {worn && <span className="text-[#9fb0aa]"> ({worn})</span>}
                                         </button>
@@ -609,11 +607,15 @@ export default function Rogue() {
                     <div className="mt-3 space-y-0.5 border-t border-[#2a3532] pt-2 text-[#7d8d88]">
                         <div>
                             무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"} · 갑옷{" "}
-                            {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"} (방어 {heroArmor(hero)})
+                            {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"}
                         </div>
                         <div>
                             반지 {rings.length ? rings.map(name).join(" · ") : "없음"} · 한 걸음에 배고픔{" "}
                             {hungerRate(hero)}
+                        </div>
+                        {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
+                        <div className="text-[#9fb0aa]">
+                            지금 공격 {heroAttackText(hero, state.known)} · 방어 {heroDefense(hero)}
                         </div>
                     </div>
                 </Panel>
@@ -643,8 +645,8 @@ export default function Rogue() {
                                     </div>
                                     {m.known ? (
                                         <div className="text-[#9fb0aa]">
-                                            레벨 {m.level} · 방어 {m.armor} · 피해 {m.damage?.join(" + ") || "없음"} ·
-                                            경험 {m.exp} · 체력 {m.hpDice}
+                                            레벨 {m.level} · 방어 {m.defense} · 피해 {m.damage?.join(" + ") || "없음"} ·
+                                            경험 {m.exp} · 체력 {m.hp}
                                             {m.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
                                             <span className="text-[#7d8d88]"> (여태 {m.kills}마리)</span>
                                         </div>
@@ -676,8 +678,8 @@ export default function Rogue() {
                                     <span className="text-[#e6eeea]">{r.name}</span>
                                     <span className="text-[#ffd24a]"> ×{r.kills}</span>
                                     <div className="text-[#9fb0aa]">
-                                        레벨 {r.level} · 방어 {r.armor} · 피해 {r.damage.join(" + ") || "없음"} ·
-                                        경험 {r.exp} · 체력 {r.hpDice}
+                                        레벨 {r.level} · 방어 {r.defense} · 피해 {r.damage.join(" + ") || "없음"} ·
+                                        경험 {r.exp} · 체력 {r.hp}
                                         {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
                                     </div>
                                 </li>
@@ -733,6 +735,13 @@ export default function Rogue() {
                         <p><span className="text-[#c3ced6]">)</span> 무기 · <span className="text-[#8fb6cf]">]</span> 갑옷 · <span className="text-[#7fe0c8]">=</span> 반지 · <span className="text-[#b6a2e8]">/</span> 지팡이 · <span className="text-[#cfa878]">%</span> 식량</p>
                         <p><span className="text-[#ff6b5a]">^</span> 함정 · <span className="text-[#f0f0f0]">&gt;</span> 아래 계단 · <span className="text-[#f0f0f0]">&lt;</span> 위 계단 · <span className="text-[#c08a45]">+</span> 문</p>
                         <p className="pt-1 text-[#7d8d88]">
+                            <b className="text-[#9fb0aa]">때릴 때는 양쪽이 d20 을 굴립니다.</b>{" "}
+                            <span className="text-[#9fb0aa]">공격(d20 + 레벨 + 무기·힘)</span>이{" "}
+                            <span className="text-[#9fb0aa]">방어(d20 + 갑옷)</span>를 넘어야 맞습니다 —
+                            비기면 막은 것입니다. 숫자는 <b>클수록</b> 좋고, 손질(<b>+1</b>)은 그만큼 올려
+                            줍니다. 굴린 값은 모두 <b>기록</b>에 남습니다.
+                        </p>
+                        <p className="text-[#7d8d88]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.
                             반지는 끼고 있으면 배가 더 고픕니다.
                         </p>

@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
+import { defenseOf } from "@/lib/rogue/combat";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
 
@@ -41,10 +42,10 @@ test("잡기 전에는 조사해도 속이 안 나온다", () => {
     assert.equal(seen!.kills, 0);
     // **한 조각도 새면 안 된다.**
     assert.equal(seen!.level, undefined);
-    assert.equal(seen!.armor, undefined);
+    assert.equal(seen!.defense, undefined);
     assert.equal(seen!.damage, undefined);
     assert.equal(seen!.exp, undefined);
-    assert.equal(seen!.hpDice, undefined);
+    assert.equal(seen!.hp, undefined);
     assert.equal(seen!.mean, undefined);
     // 눈으로 보이는 것은 잡아 본 적이 없어도 안다.
     assert.ok(seen!.condition);
@@ -71,9 +72,9 @@ test("한 마리를 잡으면 그 뒤로는 속을 안다", () => {
     const seen = survey(s).find((x) => x.ch === "S")!;
     assert.equal(seen.known, true);
     assert.equal(seen.level, MONSTERS.S.level);
-    assert.equal(seen.armor, MONSTERS.S.armor);
+    assert.equal(seen.defense, defenseOf(MONSTERS.S.armor));
     assert.equal(seen.exp, MONSTERS.S.exp);
-    assert.equal(seen.hpDice, MONSTERS.S.hp);
+    assert.equal(seen.hp, MONSTERS.S.hp);
     assert.deepEqual(seen.damage, MONSTERS.S.damage);
 });
 

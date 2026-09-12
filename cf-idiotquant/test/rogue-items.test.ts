@@ -10,8 +10,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
-import { heroArmor, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
-import { makeItem } from "@/lib/rogue/items";
+import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
+import { itemPower, makeItem } from "@/lib/rogue/items";
 import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
 import { T, idx, type GameState, type Item } from "@/lib/rogue/types";
@@ -296,4 +296,87 @@ test("배낭의 모든 물건에는 자리가 있다 — 자리 없는 것은 �
             assert.ok(p.letter, `${p.kind}:${p.type} 에 자리가 없다`);
         }
     }
+});
+
+test("+ 가 붙으면 배낭에 적히는 숫자가 **커진다**", () => {
+    // 예전에는 무기는 기본 주사위만 적어 `+2 장검` 과 맹탕 장검이 똑같이 보였고,
+    // 갑옷은 방어 등급을 그대로 적어 `+1` 이 8 을 7 로 **내려서 나빠 보였다.**
+    const known = { "weapon:long sword": true, "armor:leather": true };
+
+    const plain = makeItem("weapon", "long sword", 1, -1, -1);
+    const fine = makeItem("weapon", "long sword", 2, -1, -1);
+    fine.plusDam = 2;
+    assert.equal(itemPower(plain, known), "공격 3d4");
+    assert.equal(itemPower(fine, known), "공격 3d4+2");
+
+    const rags = makeItem("armor", "leather", 3, -1, -1);
+    const good = makeItem("armor", "leather", 4, -1, -1);
+    good.plusArmor = 1;
+    assert.equal(itemPower(rags, known), "방어 2");
+    assert.equal(itemPower(good, known), "방어 3", "손질한 갑옷의 숫자가 안 올랐다");
+
+    // 상한 것은 내려간다 — 방향이 양쪽으로 맞아야 한다.
+    const rusted = makeItem("armor", "leather", 5, -1, -1);
+    rusted.plusArmor = -2;
+    assert.equal(itemPower(rusted, known), "방어 0");
+});
+
+test("정체를 모르는 물건은 손질을 안 흘린다", () => {
+    const w = makeItem("weapon", "long sword", 6, -1, -1);
+    w.plusDam = 3;
+    assert.equal(itemPower(w, {}), "공격 3d4", "모르는 무기의 손질이 샜다");
+    const a = makeItem("armor", "plate mail", 7, -1, -1);
+    a.plusArmor = 3;
+    assert.equal(itemPower(a, {}), "방어 7", "모르는 갑옷의 손질이 샜다");
+    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어 10");
+});
+
+test("배낭에 적는 숫자와 실제로 맞는 방어가 같다", () => {
+    // 갈리면 화면은 방어 3 이라 적고 몸은 2 로 맞는다.
+    const s = newGame(920);
+    const armor = makeItem("armor", "plate mail", 930, -1, -1);
+    armor.plusArmor = 2;
+    armor.letter = "z";
+    s.hero.pack.push(armor);
+    s.hero.armorId = armor.id;
+    s.known["armor:plate mail"] = true;
+    assert.equal(itemPower(armor, s.known), `방어 ${heroDefense(s.hero)}`);
+});
+
+test("던지면 하나씩 줄고, 남은 개수를 말한다", () => {
+    const s = newGame(921);
+    const darts = makeItem("weapon", "dart", 940, -1, -1, 10);
+    darts.letter = "z";
+    s.hero.pack.push(darts);
+
+    const after = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
+    assert.equal(packItem(after.hero, "z")!.count, 9, "던졌는데 개수가 그대로다");
+    const line = after.messages.filter((m) => m.includes("다트")).pop()!;
+    // 예전에는 「다트 10개을(를) 던졌다」가 떠서 열 개를 다 던진 것처럼 읽혔다.
+    assert.ok(!line.includes("다트 10개"), `한 개를 던졌는데 열 개라고 적었다: ${line}`);
+    assert.ok(line.includes("9개 남음"), `남은 개수를 안 적었다: ${line}`);
+});
+
+test("마지막 하나를 던지면 배낭에서 사라진다", () => {
+    let s = newGame(922);
+    const darts = makeItem("weapon", "dart", 941, -1, -1, 2);
+    darts.letter = "z";
+    s.hero.pack.push(darts);
+    s = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
+    assert.equal(packItem(s.hero, "z")!.count, 1);
+    s = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
+    assert.equal(packItem(s.hero, "z"), undefined, "다 던졌는데 배낭에 남았다");
+});
+
+test("한 자리에 던진 것은 겹쳐 쌓인다 — 사라지지 않는다", () => {
+    let s = newGame(923);
+    const darts = makeItem("weapon", "dart", 942, -1, -1, 6);
+    darts.letter = "z";
+    s.hero.pack.push(darts);
+    for (let i = 0; i < 6; i++) s = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
+    assert.equal(packItem(s.hero, "z"), undefined, "여섯 개를 다 안 던졌다");
+    const onFloor = s.level.items
+        .filter((i) => i.kind === "weapon" && i.type === "dart")
+        .reduce((n, i) => n + i.count, 0);
+    assert.equal(onFloor, 6, `던진 여섯 개 중 ${onFloor} 개만 바닥에 있다`);
 });

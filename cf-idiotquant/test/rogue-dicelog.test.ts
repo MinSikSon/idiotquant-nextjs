@@ -20,7 +20,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { DETAIL, damageLine, heroAttack, hitLine, isDetail, monsterAttack } from "@/lib/rogue/combat";
+import { DETAIL, contestLine, damageLine, heroAttack, isDetail, monsterAttack } from "@/lib/rogue/combat";
 import { newGame, perform } from "@/lib/rogue/game";
 import { heroAttackText } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
@@ -28,8 +28,19 @@ import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
 
-/** 문턱이 적힌 자리. 이 모양이 한 글자라도 새면 도감이 뚫린 것이다. */
-const NEED = /vs -?\d+/;
+/**
+ * 겨룸 줄에서 **상대 쪽 반쪽**만 떼어 낸다.
+ *
+ * 내가 때리면 상대는 `vs` 뒤에, 상대가 때리면 앞에 선다. 그 반쪽에 보정 내역
+ * (`+5방어` · `+6레벨`)이 뜨면 도감이 뚫린 것이다 — 표의 값이 그대로 나간다.
+ */
+function theirHalf(line: string, iAttacked: boolean): string {
+    const halves = line.split("  vs  ");
+    return halves[iAttacked ? 1 : 0] ?? "";
+}
+
+/** 보정 내역이 붙었는가 — `+5방어` 같은 것. */
+const BREAKDOWN = /[+−]\d+[가-힣]/;
 
 function placeNextTo(s: GameState, ch: string, hp = 1) {
     const x = s.hero.x + 1;
@@ -43,21 +54,20 @@ function placeNextTo(s: GameState, ch: string, hp = 1) {
     return m;
 }
 
-test("명중 줄은 굴린 눈과 보정과 문턱을 그대로 적는다", () => {
-    assert.equal(hitLine("나", [15], [], null, "맞았다"), "· 명중 나: d20 15 → 맞았다");
+test("겨룸 줄은 양쪽 굴림을 나란히 적는다", () => {
     assert.equal(
-        hitLine("나", [15], [{ n: 1, why: "무기" }, { n: 2, why: "힘" }], 13, "맞았다"),
-        "· 명중 나: d20 15 +1무기 +2힘 = 18 vs 13 → 맞았다",
+        contestLine("나", [13], [{ n: 1, why: "레벨" }, { n: 1, why: "무기" }], 15, "트롤", 7, [{ n: 6, why: "방어" }], 13, "맞았다"),
+        "· 나 d20 13 +1레벨 +1무기 = 15  vs  트롤 d20 7 +6방어 = 13  → 맞았다",
     );
     // 0인 보정은 안 적는다 — 없는 것을 적으면 줄만 길어진다.
     assert.equal(
-        hitLine("나", [4], [{ n: 0, why: "무기" }, { n: -1, why: "힘" }], null, "빗나갔다"),
-        "· 명중 나: d20 4 −1힘 = 3 → 빗나갔다",
+        contestLine("나", [4], [{ n: 0, why: "무기" }, { n: -1, why: "힘" }], 3, "뱀", 9, null, 14, "막혔다"),
+        "· 나 d20 4 −1힘 = 3  vs  뱀 d20+방어 = 14  → 막혔다",
     );
     // 여러 번 때리는 놈은 눈이 여러 개다. 그때는 합을 안 적는다.
     assert.equal(
-        hitLine("트롤", [4, 19, 11], [], 9, "3대 중 2대"),
-        "· 명중 트롤: d20 4, 19, 11 vs 9 → 3대 중 2대",
+        contestLine("트롤", [4, 19, 11], [], null, "나", 8, [{ n: 4, why: "방어" }], 12, "3대 중 2대"),
+        "· 트롤 d20 4, 19, 11  vs  나 d20 8 +4방어 = 12  → 3대 중 2대",
     );
 });
 
@@ -77,7 +87,7 @@ test("피해 줄은 굴린 눈에서 결과까지 이어 적는다", () => {
 });
 
 test("계산 줄에는 표시가 붙는다 — 띠가 그것을 걸러 낸다", () => {
-    assert.ok(isDetail(hitLine("나", [5], [], null, "맞았다")));
+    assert.ok(isDetail(contestLine("나", [5], [], null, "뱀", 3, null, 5, "맞았다")));
     assert.ok(isDetail(damageLine("1d8", 5, [], 5)));
     assert.ok(!isDetail("황조롱이을(를) 맞혔다."));
     assert.ok(DETAIL.length > 0);
@@ -88,7 +98,7 @@ test("내가 때리면 굴린 눈이 기록에 남는다", () => {
     placeNextTo(s, "S", 200);
     s = perform(s, { t: "move", dx: 1, dy: 0 });
     assert.ok(
-        s.messages.some((l) => /^· 명중 나: d20 \d+/.test(l)),
+        s.messages.some((l) => /^· 나 d20 \d+/.test(l)),
         `내 굴림이 기록에 없다: ${JSON.stringify(s.messages.slice(-4))}`,
     );
 });
@@ -98,7 +108,7 @@ test("상대가 때려도 굴린 눈이 남는다", () => {
     s.hero.hp = s.hero.maxHp = 9999;
     const m = placeNextTo(s, "S", 200);
     const r = monsterAttack(s, m, new Rng(5));
-    assert.match(r.messages[0], new RegExp(`^· 명중 ${MONSTERS.S.name}: d20 \\d+`));
+    assert.match(r.messages[0], new RegExp(`^· ${MONSTERS.S.name} d20 \\d+`));
 });
 
 test("던진 것도 굴린 눈을 남긴다", () => {
@@ -112,12 +122,12 @@ test("던진 것도 굴린 눈을 남긴다", () => {
 
     const after = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
     assert.ok(
-        after.messages.some((l) => /^· 명중 나\(던짐\): d20 \d+/.test(l)),
+        after.messages.some((l) => /^· 나\(던짐\) d20 \d+/.test(l)),
         `던진 굴림이 기록에 없다: ${JSON.stringify(after.messages.slice(-4))}`,
     );
 });
 
-test("잡아 본 적 없는 종에게는 문턱을 한 번도 안 준다 — 방어·레벨이 역산된다", () => {
+test("잡아 본 적 없는 종은 겨룸 줄에서도 속을 안 보인다 — 방어·레벨", () => {
     for (const ch of Object.keys(MONSTERS)) {
         const s = newGame(500);
         s.hero.hp = s.hero.maxHp = 99999;
@@ -125,22 +135,32 @@ test("잡아 본 적 없는 종에게는 문턱을 한 번도 안 준다 — 방
         const rng = new Rng(3);
         for (let i = 0; i < 40; i++) {
             m.hp = 99999; // 죽이면 도감에 올라 조건이 달라진다
-            for (const line of [...heroAttack(s, m, rng).messages, ...monsterAttack(s, m, rng).messages]) {
-                assert.doesNotMatch(line, NEED, `${ch}(${MONSTERS[ch].name}) 의 문턱이 샜다: ${line}`);
+            for (const [msgs, mine] of [
+                [heroAttack(s, m, rng).messages, true],
+                [monsterAttack(s, m, rng).messages, false],
+            ] as [string[], boolean][]) {
+                for (const line of msgs.filter(isDetail)) {
+                    if (!line.includes("  vs  ")) continue;
+                    assert.doesNotMatch(
+                        theirHalf(line, mine),
+                        BREAKDOWN,
+                        `${ch}(${MONSTERS[ch].name}) 의 속이 샜다: ${line}`,
+                    );
+                }
             }
         }
         assert.equal(s.bestiary[ch] ?? 0, 0);
     }
 });
 
-test("잡아 본 종에게는 문턱을 준다 — 도감에 올랐으면 숨길 것이 없다", () => {
+test("잡아 본 종에게는 내역까지 적는다 — 도감에 올랐으면 숨길 것이 없다", () => {
     const s = newGame(501);
     s.bestiary.S = 1;
     s.hero.hp = s.hero.maxHp = 9999;
     const m = placeNextTo(s, "S", 9999);
     const rng = new Rng(3);
-    assert.match(heroAttack(s, m, rng).messages[0], NEED);
-    assert.match(monsterAttack(s, m, rng).messages[0], NEED);
+    assert.match(theirHalf(heroAttack(s, m, rng).messages[0], true), BREAKDOWN);
+    assert.match(theirHalf(monsterAttack(s, m, rng).messages[0], false), BREAKDOWN);
 });
 
 test("상대의 피해 주사위 표기는 안 적는다 — 숫자만 적는다", () => {
@@ -167,12 +187,12 @@ test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 �
         m.hp = 99999;
         const mine = heroAttack(s, m, rng).messages;
         assert.ok(mine.length >= 2, `결과 줄이 없다: ${JSON.stringify(mine)}`);
-        assert.match(mine[0], /^· 명중 나: d20 /);
+        assert.match(mine[0], /^· 나 d20 /);
         assert.doesNotMatch(mine[mine.length - 1], /^· /);
 
         const theirs = monsterAttack(s, m, rng).messages;
         assert.ok(theirs.length >= 2, `결과 줄이 없다: ${JSON.stringify(theirs)}`);
-        assert.match(theirs[0], /^· 명중 .*: d20 /);
+        assert.match(theirs[0], /^· .* d20 /);
         assert.doesNotMatch(theirs[theirs.length - 1], /^· /);
     }
 });

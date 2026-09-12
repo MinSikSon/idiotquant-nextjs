@@ -317,11 +317,12 @@ export function describe(
             return known[key] ? `${base} (${it.charges ?? 0}회)` : base;
         }
         case "weapon": {
+            // **개수는 여기서 안 붙인다.** 화면이 이미 `×10` 을 붙이므로 「다트 10개 ×10」
+            // 이 되고, 하나를 던졌을 때 「다트 10개를 던졌다」로도 읽힌다.
             const base = WEAPONS[it.type]?.name ?? it.type;
-            const many = it.count > 1 ? ` ${it.count}개` : "";
             return known[key]
-                ? `${base}${plusText(it.plusHit)}${many}${curseText(it)}`
-                : `${base}${many}${curseText(it)}`;
+                ? `${base}${plusText(it.plusHit)}${curseText(it)}`
+                : `${base}${curseText(it)}`;
         }
         case "armor": {
             const base = ARMORS[it.type]?.name ?? it.type;
@@ -337,6 +338,42 @@ export function armorClassOf(it: Item | undefined): number {
     if (!it || it.kind !== "armor") return 10;
     const base = ARMORS[it.type]?.armor ?? 10;
     return base - (it.plusArmor ?? 0);
+}
+
+/**
+ * 원작의 방어 등급(낮을수록 단단하다)을 **클수록 좋은 「방어」**로 뒤집는다.
+ *
+ * 왜 뒤집나 — 화면에서 안 읽히기 때문이다. 「방어 8」과 「방어 5」 중 어느 쪽이 나은지
+ * 사람은 큰 쪽이라고 읽는다. 더 나쁜 것은 **손질한 갑옷이 숫자를 내린다**는 점이다:
+ * `+1` 이 붙었는데 8 이 7 로 내려가면 좋아진 물건이 나빠 보인다. 실제로 그렇게 보였다.
+ *
+ * 표는 원작 값을 그대로 들고, **뒤집는 자리는 여기 하나뿐이다.**
+ */
+export function defenseOf(armorClass: number): number {
+    return 10 - armorClass;
+}
+
+/**
+ * 배낭에서 고를 때 보이는 한 줄짜리 성능 — **`+` 가 붙으면 숫자가 커져야 한다.**
+ *
+ * 예전에는 무기는 기본 주사위만, 갑옷은 방어 등급을 그대로 적었다. 그래서 `+2 장검`
+ * 과 맹탕 장검이 똑같이 `3d4` 로 보였고, `+1` 을 손질한 가죽 갑옷은 `방어 8` 이
+ * `방어 7` 로 **내려가서 나빠 보였다.** 둘 다 고쳤다.
+ *
+ * 손질은 **정체를 알아낸 물건에만** 얹는다 — 모르는 물건의 속을 화면이 흘리면 안 된다.
+ */
+export function itemPower(it: Item, known: Record<string, boolean>): string {
+    const seen = known[`${it.kind}:${it.type}`] === true;
+    if (it.kind === "weapon") {
+        const plus = seen ? (it.plusDam ?? 0) : 0;
+        return `공격 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}`;
+    }
+    if (it.kind === "armor") {
+        // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
+        const base = ARMORS[it.type]?.armor ?? 10;
+        return `방어 ${defenseOf(seen ? armorClassOf(it) : base)}`;
+    }
+    return "";
 }
 
 export function weaponDamageOf(it: Item | undefined): string {
