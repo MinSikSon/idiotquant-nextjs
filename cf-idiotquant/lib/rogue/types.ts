@@ -73,10 +73,13 @@ export interface MonsterDef {
     /** 경험치. */
     exp: number;
     level: number;
-    /** 방어 등급 — **낮을수록 단단하다**(원작과 같다). */
+    /**
+     * 원작의 방어 등급 — **낮을수록 단단하다.** 굴리고 보여 주는 「방어」는 이 값이
+     * 아니라 `defenseOf()` 가 뒤집은 `10 - armor` 다(`combat.ts` 참고).
+     */
     armor: number;
-    /** 체력 주사위. */
-    hp: string;
+    /** 체력. **고정값이다** — 굴리지 않는다. */
+    hp: number;
     /** 때릴 때 굴리는 것. 여러 번 때리는 놈은 여러 개. */
     damage: string[];
     /** 보자마자 쫓아오는가. 아니면 건드릴 때까지 가만히 있는가. */

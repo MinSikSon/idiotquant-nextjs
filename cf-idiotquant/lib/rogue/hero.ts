@@ -15,6 +15,7 @@ import {
 import {
     RINGS,
     armorClassOf,
+    defenseOf,
     makeItem,
     weaponDamageOf,
 } from "./items";
@@ -24,6 +25,9 @@ export const EXP_LEVELS = [
     10, 20, 40, 80, 160, 320, 640, 1300, 2600, 5200, 10000, 20000, 40000, 80000,
     160000, 320000, 1000000, 3333333, 6666666, 10000000,
 ];
+
+/** 레벨이 오를 때마다 느는 체력. 고정값이다. */
+export const HP_PER_LEVEL = 5;
 
 const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
@@ -174,6 +178,16 @@ export function heroArmor(hero: Hero): number {
     return armorClassOf(equippedArmor(hero)) - ringSum(hero, "protection");
 }
 
+/**
+ * 화면에 적고 **주사위에 얹는 「방어」** — 클수록 단단하다.
+ *
+ * 안쪽은 원작의 방어 등급(낮을수록 단단)을 그대로 들고 있고(`heroArmor`), 뒤집는 자리는
+ * `combat.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
+ */
+export function heroDefense(hero: Hero): number {
+    return defenseOf(heroArmor(hero));
+}
+
 /** 지금의 힘 — 힘 반지가 얹힌다. 명중·피해 보정은 이 값으로 잰다. */
 export function heroStr(hero: Hero): number {
     return hero.str + ringSum(hero, "add strength");
@@ -240,9 +254,10 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
     const gained: number[] = [];
     while (hero.level - 1 < EXP_LEVELS.length && hero.exp >= EXP_LEVELS[hero.level - 1]) {
         hero.level += 1;
-        const bump = rng.rnd(10) + 1;
-        hero.maxHp += bump;
-        hero.hp += bump;
+        // **굴리지 않는다.** 몬스터 체력과 같은 이유다 — 같은 레벨의 두 판이 체력만
+        // 다른 것은 판단거리가 아니라 그냥 운이다(`monsters.ts` 머리말 참고).
+        hero.maxHp += HP_PER_LEVEL;
+        hero.hp += HP_PER_LEVEL;
         gained.push(hero.level);
     }
     return gained;
