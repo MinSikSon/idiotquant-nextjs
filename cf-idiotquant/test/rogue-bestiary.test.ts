@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
-import { defenseOf } from "@/lib/rogue/combat";
+import { armorClass } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
 
@@ -72,7 +72,7 @@ test("한 마리를 잡으면 그 뒤로는 속을 안다", () => {
     const seen = survey(s).find((x) => x.ch === "S")!;
     assert.equal(seen.known, true);
     assert.equal(seen.level, MONSTERS.S.level);
-    assert.equal(seen.defense, defenseOf(MONSTERS.S.armor));
+    assert.equal(seen.defense, armorClass(MONSTERS.S.armor));
     assert.equal(seen.exp, MONSTERS.S.exp);
     assert.equal(seen.hp, MONSTERS.S.hp);
     assert.deepEqual(seen.damage, MONSTERS.S.damage);

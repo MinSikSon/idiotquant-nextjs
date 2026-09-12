@@ -14,11 +14,15 @@ import {
 } from "./types";
 import {
     RINGS,
+    armorClass,
     armorClassOf,
-    defenseOf,
     makeItem,
     weaponDamageOf,
 } from "./items";
+import {
+    abilityMod,
+    proficiency,
+} from "./dnd";
 
 /** 이 경험치를 넘으면 다음 레벨. 원작의 `e_levels` 와 같은 모양이다. */
 export const EXP_LEVELS = [
@@ -31,23 +35,18 @@ export const HP_PER_LEVEL = 5;
 
 const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
-/** 힘이 주는 명중 보정. */
+/**
+ * 힘이 주는 보정 — **D&D 의 능력 보정 하나로 명중과 피해에 같이 쓴다.**
+ *
+ * 원작 Rogue 는 명중과 피해에 서로 다른 표를 썼지만 D&D 는 능력 보정 하나가 둘 다
+ * 맡는다. `(능력치 − 10) ÷ 2` 내림이라 힘 16 이면 +3, 10~11 이면 0, 8 이면 −1 이다.
+ */
 export function strHitBonus(str: number): number {
-    if (str <= 7) return -1;
-    if (str <= 16) return 0;
-    if (str <= 18) return 1;
-    if (str <= 20) return 2;
-    return 3;
+    return abilityMod(str);
 }
 
-/** 힘이 주는 피해 보정. */
 export function strDamBonus(str: number): number {
-    if (str <= 6) return -1;
-    if (str <= 15) return 0;
-    if (str <= 17) return 1;
-    if (str <= 18) return 2;
-    if (str <= 20) return 3;
-    return 4;
+    return abilityMod(str);
 }
 
 export function makeHero(rng: Rng, nextId: () => number): Hero {
@@ -179,13 +178,62 @@ export function heroArmor(hero: Hero): number {
 }
 
 /**
- * 화면에 적고 **주사위에 얹는 「방어」** — 클수록 단단하다.
+ * 내 **방어도(AC)** — 몬스터의 공격 굴림이 넘어야 할 문턱이다.
  *
- * 안쪽은 원작의 방어 등급(낮을수록 단단)을 그대로 들고 있고(`heroArmor`), 뒤집는 자리는
- * `combat.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
+ * 안쪽은 원작의 방어 등급(낮을수록 단단)을 그대로 들고 있고(`heroArmor`), 옮기는 자리는
+ * `items.armorClass` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
  */
 export function heroDefense(hero: Hero): number {
-    return defenseOf(heroArmor(hero));
+    return armorClass(heroArmor(hero));
+}
+
+/** 내 숙련 보너스 — 레벨이 오르면 네 레벨마다 하나씩 는다. */
+export function heroProficiency(hero: Hero): number {
+    return proficiency(hero.level);
+}
+
+/** 굴림에 얹히는 것 하나 — 얼마가, 무엇 때문에. 기록이 이 이름을 그대로 적는다. */
+export interface Term {
+    n: number;
+    why: string;
+}
+
+/**
+ * 공격 굴림에 얹히는 것들 — **D&D 의 숙련 + 능력 보정 + 손질.**
+ *
+ * 굴림도 화면도 이 목록 하나를 본다. 화면이 숙련과 힘과 손질을 따로 주워 모아 더하면
+ * 그 셈이 두 벌이 되고, 어느 날 **화면에 적힌 명중과 실제로 굴리는 명중이 갈린다.**
+ */
+export function heroHitTerms(hero: Hero): Term[] {
+    const weapon = equippedWeapon(hero);
+    return [
+        { n: proficiency(hero.level), why: "숙련" },
+        { n: strHitBonus(heroStr(hero)), why: "힘" },
+        { n: weapon?.plusHit ?? 0, why: "무기" },
+    ];
+}
+
+/** 피해에 얹히는 것들 — 같은 능력 보정이 여기에도 온다(D&D 가 그렇다). */
+export function heroDamTerms(hero: Hero): Term[] {
+    const weapon = equippedWeapon(hero);
+    return [
+        { n: strHitBonus(heroStr(hero)), why: "힘" },
+        { n: weapon?.plusDam ?? 0, why: "무기" },
+    ];
+}
+
+/**
+ * 화면에 적는 **명중** — `heroHitTerms` 를 더한 값이다.
+ *
+ * 손질(`+1`)은 **써 보기 전에는 모른다.** 그래서 `known` 을 받아, 모르는 무기면 무기
+ * 몫을 빼고 적는다 — 굴림은 실제 값으로 하되 화면이 속을 흘리지는 않는다.
+ */
+export function heroHitBonus(hero: Hero, known: Record<string, boolean> = {}): number {
+    const w = equippedWeapon(hero);
+    const identified = !!w && known[`weapon:${w.type}`] === true;
+    return heroHitTerms(hero)
+        .filter((t) => identified || t.why !== "무기")
+        .reduce((sum, t) => sum + t.n, 0);
 }
 
 /** 지금의 힘 — 힘 반지가 얹힌다. 명중·피해 보정은 이 값으로 잰다. */
@@ -220,7 +268,7 @@ export function heroDamageDice(hero: Hero): string {
 }
 
 /**
- * 지금 휘두르면 굴리는 것 — **화면에 적는 「공격」이 이 값이다.**
+ * 지금 휘두르면 굴리는 것 — **화면에 적는 「피해」가 이 값이다.**
  *
  * 방어가 `heroArmor()` 하나로 나오듯 공격도 여기 하나로 나온다. 화면이 무기 주사위와
  * 손질과 힘을 따로 주워 모아 더하면 그 셈이 두 벌이 되고, 어느 날 화면에 적힌 공격과
@@ -231,8 +279,10 @@ export function heroDamageDice(hero: Hero): string {
  */
 export function heroAttackText(hero: Hero, known: Record<string, boolean>): string {
     const w = equippedWeapon(hero);
-    const shown = w && known[`weapon:${w.type}`] ? (w.plusDam ?? 0) : 0;
-    const bonus = shown + strDamBonus(heroStr(hero));
+    const identified = !!w && known[`weapon:${w.type}`] === true;
+    const bonus = heroDamTerms(hero)
+        .filter((t) => identified || t.why !== "무기")
+        .reduce((sum, t) => sum + t.n, 0);
     return `${heroDamageDice(hero)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
 }
 

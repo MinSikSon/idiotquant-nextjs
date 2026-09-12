@@ -42,13 +42,18 @@ import {
 } from "./hero";
 import {
     type Term,
-    contest,
-    contestLine,
+    attackLine,
     damageLine,
     heroAttack,
     monsterAttack,
+    outcomeOf,
     seenBefore,
 } from "./combat";
+import {
+    attackRoll,
+    damageRoll,
+    proficiency,
+} from "./dnd";
 import {
     RINGS,
     WANDS,
@@ -56,7 +61,7 @@ import {
     isThrowable,
     itemChar,
     makeItem,
-    defenseOf,
+    armorClass,
     randomItem,
     rollAppearances,
     weaponDamageOf,
@@ -756,32 +761,27 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
         return true;
     }
 
-    // 던진 것도 겨룸을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
+    // 던진 것도 D&D 의 공격 굴림을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
     const hitTerms: Term[] = [
-        { n: hero.level, why: "레벨" },
+        { n: proficiency(hero.level), why: "숙련" },
         { n: it.plusHit ?? 0, why: "손질" },
     ];
-    const defTerms: Term[] = [{ n: defenseOf(m.def.armor), why: "방어" }];
-    const c = contest(hitTerms.reduce((a, t) => a + t.n, 0), defenseOf(m.def.armor), rng);
-    say(
-        state,
-        contestLine(
-            "나(던짐)", [c.atkRoll], hitTerms, c.atkTotal,
-            m.def.name, c.defRoll, seenBefore(state, m) ? defTerms : null, c.defTotal,
-            c.hit ? "맞았다" : "막혔다",
-        ),
+    const a = attackRoll(
+        hitTerms.reduce((t, b) => t + b.n, 0),
+        armorClass(m.def.armor),
+        rng,
     );
-    if (!c.hit) {
+    say(state, attackLine("나(던짐)", a, hitTerms, seenBefore(state, m), outcomeOf(a)));
+    if (!a.hit) {
         say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.${rest}`);
         land();
         return true;
     }
     const dice = weaponDamageOf(it);
     const damTerms: Term[] = [{ n: it.plusDam ?? 0, why: "손질" }];
-    const rolled = rng.rollDice(dice);
-    const dmg = Math.max(1, rolled + (it.plusDam ?? 0));
-    m.hp -= dmg;
-    say(state, damageLine(dice, rolled, damTerms, dmg));
+    const d = damageRoll(dice, it.plusDam ?? 0, a.crit, rng);
+    m.hp -= d.total;
+    say(state, damageLine(dice, d.rolled, damTerms, d.total));
     say(state, `${name}이(가) ${m.def.name}에게 맞았다.${rest}`);
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
@@ -1176,7 +1176,7 @@ export interface Sighting {
     known: boolean;
     kills: number;
     level?: number;
-    /** 방어 — **클수록 단단하다**(`defenseOf`). */
+    /** 방어도(AC) — 공격 굴림이 넘어야 할 문턱이다. */
     defense?: number;
     damage?: string[];
     exp?: number;
@@ -1225,7 +1225,7 @@ export function survey(state: GameState): Sighting[] {
             return {
                 ...base,
                 level: m.def.level,
-                defense: defenseOf(m.def.armor),
+                defense: armorClass(m.def.armor),
                 damage: m.def.damage.filter((d) => d !== "0d0"),
                 exp: m.def.exp,
                 hp: m.def.hp,
@@ -1258,7 +1258,7 @@ export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
                 name: d.name,
                 kills: bestiary[ch],
                 level: d.level,
-                defense: defenseOf(d.armor),
+                defense: armorClass(d.armor),
                 damage: d.damage.filter((x: string) => x !== "0d0"),
                 exp: d.exp,
                 hp: d.hp,

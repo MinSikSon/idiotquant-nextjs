@@ -341,20 +341,24 @@ export function armorClassOf(it: Item | undefined): number {
 }
 
 /**
- * 원작의 방어 등급(낮을수록 단단하다)을 **클수록 좋은 「방어」**로 뒤집는다.
+ * 원작의 방어 등급을 **D&D 의 방어도(AC)** 로 옮긴다.
  *
- * 왜 뒤집나 — 화면에서 안 읽히기 때문이다. 「방어 8」과 「방어 5」 중 어느 쪽이 나은지
- * 사람은 큰 쪽이라고 읽는다. 더 나쁜 것은 **손질한 갑옷이 숫자를 내린다**는 점이다:
- * `+1` 이 붙었는데 8 이 7 로 내려가면 좋아진 물건이 나빠 보인다. 실제로 그렇게 보였다.
+ * Rogue 의 등급은 낮을수록 단단하고(맨몸 10, 판금 3, 용 −1), D&D 의 AC 는 **높을수록
+ * 단단하며 공격 굴림이 넘어야 할 문턱**이다(맨몸 10, 판금 17, 용 21). `20 − 등급` 이
+ * 그 둘을 잇는다 — 맨몸이 양쪽에서 10 으로 맞아떨어지는 것이 이 식의 근거다.
  *
- * 표는 원작 값을 그대로 들고, **뒤집는 자리는 여기 하나뿐이다.**
+ * 표는 원작 값을 그대로 들고, **옮기는 자리는 여기 하나뿐이다.** 굴림도 화면도 전부
+ * 이쪽 값을 쓴다. 뒤집는 곳이 둘이 되면 어느 날 한쪽만 바뀐다.
  */
-export function defenseOf(armorClass: number): number {
-    return 10 - armorClass;
+export function armorClass(rogueArmor: number): number {
+    return 20 - rogueArmor;
 }
 
 /**
  * 배낭에서 고를 때 보이는 한 줄짜리 성능 — **`+` 가 붙으면 숫자가 커져야 한다.**
+ *
+ * 무기는 **피해**를 적는다. 명중은 무기 혼자 정하는 값이 아니라 숙련과 힘이 같이
+ * 만드는 것이라 배낭 줄에 적을 수 없다 — 그것은 「지금의 나」 줄이 맡는다.
  *
  * 예전에는 무기는 기본 주사위만, 갑옷은 방어 등급을 그대로 적었다. 그래서 `+2 장검`
  * 과 맹탕 장검이 똑같이 `3d4` 로 보였고, `+1` 을 손질한 가죽 갑옷은 `방어 8` 이
@@ -366,12 +370,12 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
     const seen = known[`${it.kind}:${it.type}`] === true;
     if (it.kind === "weapon") {
         const plus = seen ? (it.plusDam ?? 0) : 0;
-        return `공격 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}`;
+        return `피해 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}`;
     }
     if (it.kind === "armor") {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
         const base = ARMORS[it.type]?.armor ?? 10;
-        return `방어 ${defenseOf(seen ? armorClassOf(it) : base)}`;
+        return `방어도 ${armorClass(seen ? armorClassOf(it) : base)}`;
     }
     return "";
 }
