@@ -13,12 +13,16 @@
  *     `md:hidden` 으로 건다). `md` 부터는 왼쪽 사이드바뿐이라 세로를 통째로 쓴다.
  */
 
+import GameBoundary from "./GameBoundary";
 import Rogue from "./Rogue";
 
 export default function RoguePage() {
     return (
         <div className="h-[calc(100svh-112px)] w-full bg-[#0b0c0c] md:h-svh">
-            <Rogue />
+            {/* 판이 터져도 이 주소가 영영 안 열리는 일은 없게 한다 — `GameBoundary` 머리말 참고. */}
+            <GameBoundary>
+                <Rogue />
+            </GameBoundary>
         </div>
     );
 }
