@@ -26,6 +26,7 @@ import {
     equippedWeapon,
     heroArmor,
     heroDamageDice,
+    heroStr,
     strDamBonus,
     strHitBonus,
     takeFromPack,
@@ -60,7 +61,7 @@ export interface AttackResult {
 export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
     const hero = state.hero;
     const weapon = equippedWeapon(hero);
-    const bonus = (weapon?.plusHit ?? 0) + strHitBonus(hero.str);
+    const bonus = (weapon?.plusHit ?? 0) + strHitBonus(heroStr(hero));
     const s = swing(hero.level, m.def.armor, bonus, rng);
     const messages: string[] = [];
 
@@ -71,7 +72,7 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
 
     const dmg = Math.max(
         1,
-        rng.rollDice(heroDamageDice(hero)) + (weapon?.plusDam ?? 0) + strDamBonus(hero.str),
+        rng.rollDice(heroDamageDice(hero)) + (weapon?.plusDam ?? 0) + strDamBonus(heroStr(hero)),
     );
     m.hp -= dmg;
     // 맞은 순간 깨어난다 — 자던 놈도 이제 쫓아온다.
@@ -119,6 +120,8 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
  */
 function special(state: GameState, m: Monster, rng: Rng): string[] {
     const hero: Hero = state.hero;
+    // 무력화 지팡이를 맞은 놈은 때리기만 한다.
+    if (m.cancelled) return [`${m.def.name}이(가) 헛되이 달려든다.`];
     switch (m.def.ch) {
         case "A": {
             // 아쿠에이터 — 갑옷을 녹인다.
@@ -126,6 +129,12 @@ function special(state: GameState, m: Monster, rng: Rng): string[] {
             if (!armor) return ["아쿠에이터가 헛되이 녹이려 든다."];
             armor.plusArmor = (armor.plusArmor ?? 0) - 1;
             return ["갑옷이 녹아내렸다!"];
+        }
+        case "W": {
+            // 망령 — 경험을 빨아먹는다. 레벨은 안 내린다(내리면 최대 체력 계산이 꼬인다).
+            const drained = Math.min(hero.exp, rng.between(5, 20));
+            hero.exp -= drained;
+            return drained > 0 ? ["기운이 빠져나간다."] : ["망령이 스쳐 갔다."];
         }
         case "L": {
             // 레프러콘 — 금화를 채고 사라진다.

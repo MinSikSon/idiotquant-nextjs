@@ -42,7 +42,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     T: { ch: "T", name: "트롤", exp: 120, level: 6, armor: 4, hp: "6d8", damage: ["1d8", "1d8", "2d6"], mean: true },
     U: { ch: "U", name: "우르바일", exp: 190, level: 7, armor: -2, hp: "7d8", damage: ["1d9", "1d9", "2d9"], mean: true },
     V: { ch: "V", name: "뱀파이어", exp: 350, level: 8, armor: 1, hp: "8d8", damage: ["1d10"], mean: true },
-    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: "5d8", damage: ["1d6"], mean: false },
+    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: "5d8", damage: ["1d6", "0d0"], mean: false },
     X: { ch: "X", name: "제록", exp: 100, level: 7, armor: 7, hp: "7d8", damage: ["4d4"], mean: false },
     Y: { ch: "Y", name: "예티", exp: 50, level: 4, armor: 6, hp: "4d8", damage: ["1d6", "1d6"], mean: false },
     Z: { ch: "Z", name: "좀비", exp: 6, level: 2, armor: 8, hp: "2d8", damage: ["1d8"], mean: true },
@@ -74,7 +74,7 @@ let nextId = 1;
 export function spawnMonster(ch: string, x: number, y: number, rng: Rng): Monster {
     const def = MONSTERS[ch] ?? MONSTERS.B;
     const hp = Math.max(1, rng.rollDice(def.hp));
-    return { def, x, y, hp, maxHp: hp, awake: def.mean, id: nextId++ };
+    return { def, x, y, hp, maxHp: hp, awake: def.mean, id: nextId++, speed: 0, cancelled: false };
 }
 
 /** 테스트가 식별자를 예측할 수 있게 한다. */

@@ -21,7 +21,8 @@ export type Tile =
     | 4 // 문
     | 5 // 복도
     | 6 // 아래로 가는 계단
-    | 7; // 통로 (없는 방의 교차점)
+    | 7 // 통로 (없는 방의 교차점)
+    | 8; // 비밀문 — 찾기 전에는 벽이다
 
 export const T = {
     ROCK: 0 as Tile,
@@ -32,9 +33,16 @@ export const T = {
     CORRIDOR: 5 as Tile,
     STAIRS: 6 as Tile,
     PASSAGE: 7 as Tile,
+    SECRET: 8 as Tile,
 } as const;
 
-/** 걸어 들어갈 수 있는 칸인가. */
+/**
+ * 걸어 들어갈 수 있는 칸인가.
+ *
+ * **비밀문은 여기 없다.** 찾기 전에는 벽이고, 찾으면 `T.DOOR` 로 **바뀐다** —
+ * 「찾았다」를 따로 기억하지 않는 것이 이 게임에서 제일 단순한 길이다. 만약 비밀문을
+ * walkable 에 넣으면 찾지도 않은 문을 걸어서 지나가게 된다.
+ */
 export function walkable(t: Tile): boolean {
     return t === T.FLOOR || t === T.DOOR || t === T.CORRIDOR || t === T.STAIRS || t === T.PASSAGE;
 }
@@ -54,6 +62,8 @@ export interface Room {
     dark: boolean;
     /** 「없는 방」 — 방이 아니라 복도의 교차점 한 칸이다. */
     gone: boolean;
+    /** 미로 방 — 안쪽이 바닥이 아니라 얽힌 통로다. 깊은 층에만 선다. */
+    maze: boolean;
 }
 
 export interface MonsterDef {
@@ -85,9 +95,22 @@ export interface Monster {
     awake: boolean;
     /** 이번 층에서만 쓰는 식별자 — 화면이 같은 놈을 계속 짚는 데 쓴다. */
     id: number;
+    /** −1 느리다(두 턴에 한 번) · 0 보통 · +1 빠르다(한 턴에 두 번). 지팡이가 바꾼다. */
+    speed: number;
+    /** 무력화됐는가 — 특수 공격을 잃는다. */
+    cancelled: boolean;
 }
 
-export type ItemKind = "gold" | "food" | "potion" | "scroll" | "weapon" | "armor" | "amulet";
+export type ItemKind =
+    | "gold"
+    | "food"
+    | "potion"
+    | "scroll"
+    | "weapon"
+    | "armor"
+    | "ring"
+    | "wand"
+    | "amulet";
 
 export interface Item {
     id: number;
@@ -106,6 +129,36 @@ export interface Item {
     plusDam?: number;
     /** 갑옷의 손질 정도 — 방어 등급을 그만큼 **내린다**(낮을수록 단단하다). */
     plusArmor?: number;
+    /** 반지의 세기. 보호 반지 +2 는 방어 등급을 2 내린다. */
+    plusRing?: number;
+    /** 지팡이에 남은 횟수. 0 이면 아무 일도 안 난다. */
+    charges?: number;
+    /**
+     * 저주받았는가.
+     *
+     * 쥐거나 입은 **순간에** 드러난다 — 그전에는 알 수 없다. 저주받은 것은 벗을 수도
+     * 놓을 수도 없다. 그것이 이 게임에서 「좋아 보이는 것을 집는 일」에 값을 매긴다.
+     */
+    cursed?: boolean;
+    /** 저주가 드러났는가 — 화면이 「(저주)」를 붙일지 정한다. */
+    curseKnown?: boolean;
+}
+
+/** 함정 — 밟기 전에는 바닥과 구별되지 않는다. */
+export type TrapKind =
+    | "trapdoor"
+    | "arrow"
+    | "sleep"
+    | "beartrap"
+    | "teleport"
+    | "dart";
+
+export interface Trap {
+    x: number;
+    y: number;
+    kind: TrapKind;
+    /** 밟았거나 뒤져서 찾았는가. 찾은 함정만 화면에 뜬다. */
+    found: boolean;
 }
 
 export interface Level {
@@ -118,9 +171,12 @@ export interface Level {
     roomAt: Int8Array;
     monsters: Monster[];
     items: Item[];
+    traps: Trap[];
     stairs: Pos;
-    /** 올라가는 계단 — 1층에는 없다(여기가 바깥이다). */
+    /** 올라가는 계단 — 1층의 그것이 바깥으로 나가는 문이다. */
     upStairs: Pos | null;
+    /** 미로층인가 — 방 대신 통로가 얽힌 층. 깊을수록 잦다. */
+    maze: boolean;
 }
 
 export interface Hero {
@@ -136,16 +192,22 @@ export interface Hero {
     gold: number;
     /** 배낭. 자리는 `letter` 가 진다. */
     pack: Item[];
-    /** 지금 쥔 것 · 입은 것. 없으면 null. */
+    /** 지금 쥔 것 · 입은 것 · 낀 것. 없으면 null. */
     weaponId: number | null;
     armorId: number | null;
+    /** 반지는 양손에 하나씩. 두 개를 끼면 배가 두 배로 고프다. */
+    leftRingId: number | null;
+    rightRingId: number | null;
     /** 남은 식량 시계. 0 밑으로 내려가면 굶어 죽는다. */
     food: number;
     hasAmulet: boolean;
-    /** 몇 턴 동안 앞이 안 보이는가 · 헷갈리는가 · 자는가. */
+    /** 몇 턴 동안 앞이 안 보이는가 · 헷갈리는가 · 자는가 · 덫에 걸려 있는가. */
     blind: number;
     confused: number;
     asleep: number;
+    stuck: number;
+    /** 괴물이 벽 너머로도 보이는 남은 턴. */
+    detect: number;
 }
 
 export type Phase = "playing" | "dead" | "won";
@@ -171,6 +233,14 @@ export interface GameState {
     appearance: Record<string, string>;
     /** 정체를 알아낸 것들. 판을 넘지 않는다. */
     known: Record<string, boolean>;
+    /**
+     * 여태 잡아 본 몬스터와 그 수 — **판을 넘어 남는다.**
+     *
+     * 물약의 색과는 다른 것이다. 색은 **그 판의 물건**이라 판마다 섞이지만, 오크가
+     * 얼마나 단단한지는 **세상의 사실**이라 죽는다고 잊히지 않는다. 그래서 죽어도
+     * 남는 유일한 것이 되고, 그것이 다시 하는 이유다.
+     */
+    bestiary: Record<string, number>;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
 }

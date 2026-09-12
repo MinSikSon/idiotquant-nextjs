@@ -17,6 +17,8 @@ import {
 } from "./rng";
 import {
     type Level,
+    type Trap,
+    type TrapKind,
     MAP_H,
     MAP_W,
     type Pos,
@@ -72,6 +74,84 @@ function carveRoom(tiles: Uint8Array, roomAt: Int8Array, r: Room, ri: number) {
                 roomAt[idx(x, y)] = ri;
             }
         }
+    }
+}
+
+/**
+ * 방 안쪽을 미로로 바꾼다.
+ *
+ * 되추적(recursive backtracker) 하나면 **반드시 하나로 이어진 미로**가 나온다 — 그래서
+ * 안쪽에 갇히는 칸이 안 생긴다. 문에서 미로로 들어가는 길은 `linkDoorToMaze` 가 판다.
+ *
+ * 칸은 **홀수 자리**에만 선다(벽을 한 칸씩 남겨야 미로가 미로다). 그래서 안쪽이
+ * 최소 3×3 은 되어야 하고, 그보다 좁으면 그냥 방으로 둔다.
+ */
+function carveMaze(tiles: Uint8Array, roomAt: Int8Array, r: Room, rng: Rng) {
+    const x0 = r.x + 1;
+    const y0 = r.y + 1;
+    const w = r.w - 2;
+    const h = r.h - 2;
+    if (w < 3 || h < 3) return false;
+
+    // 안쪽을 통째로 되돌린 뒤 미로를 판다. 방이었던 표시(roomAt)도 지운다 —
+    // 미로는 방이 아니므로 「밝은 방은 통째로 보인다」가 걸리면 안 된다.
+    for (let y = y0; y < y0 + h; y++) {
+        for (let x = x0; x < x0 + w; x++) {
+            put(tiles, x, y, T.ROCK);
+            roomAt[idx(x, y)] = -1;
+        }
+    }
+
+    const cols = Math.floor((w + 1) / 2);
+    const rows = Math.floor((h + 1) / 2);
+    const cellX = (c: number) => x0 + c * 2;
+    const cellY = (c: number) => y0 + c * 2;
+    const seen = new Uint8Array(cols * rows);
+
+    const stack: { c: number; r: number }[] = [{ c: rng.rnd(cols), r: rng.rnd(rows) }];
+    seen[stack[0].r * cols + stack[0].c] = 1;
+    put(tiles, cellX(stack[0].c), cellY(stack[0].r), T.CORRIDOR);
+
+    while (stack.length) {
+        const cur = stack[stack.length - 1];
+        const nbrs = rng.shuffle([
+            { c: cur.c + 1, r: cur.r },
+            { c: cur.c - 1, r: cur.r },
+            { c: cur.c, r: cur.r + 1 },
+            { c: cur.c, r: cur.r - 1 },
+        ]).filter((n) => n.c >= 0 && n.r >= 0 && n.c < cols && n.r < rows && !seen[n.r * cols + n.c]);
+
+        if (nbrs.length === 0) {
+            stack.pop();
+            continue;
+        }
+        const n = nbrs[0];
+        seen[n.r * cols + n.c] = 1;
+        // 두 칸 사이의 벽을 튼다.
+        put(tiles, (cellX(cur.c) + cellX(n.c)) / 2, (cellY(cur.r) + cellY(n.r)) / 2, T.CORRIDOR);
+        put(tiles, cellX(n.c), cellY(n.r), T.CORRIDOR);
+        stack.push(n);
+    }
+    return true;
+}
+
+/**
+ * 문에서 미로 안으로 파고든다.
+ *
+ * 미로의 칸은 홀수 자리에만 있으므로 문이 짝수 자리에 나면 **문 바로 안쪽이 벽**이다.
+ * 안 뚫으면 그 문은 벽을 마주 본 채 서 있고, 그 방으로 들어갈 길이 사라진다.
+ */
+function linkDoorToMaze(tiles: Uint8Array, r: Room, door: Pos) {
+    const dx = door.x === r.x ? 1 : door.x === r.x + r.w - 1 ? -1 : 0;
+    const dy = door.y === r.y ? 1 : door.y === r.y + r.h - 1 ? -1 : 0;
+    let x = door.x + dx;
+    let y = door.y + dy;
+    for (let step = 0; step < Math.max(r.w, r.h); step++) {
+        if (!inBounds(x, y)) return;
+        if (get(tiles, x, y) === T.CORRIDOR) return; // 미로에 닿았다
+        put(tiles, x, y, T.CORRIDOR);
+        x += dx;
+        y += dy;
     }
 }
 
@@ -226,6 +306,7 @@ export function buildLevel(depth: number, rng: Rng): Level {
                 h: 1,
                 dark: true,
                 gone: true,
+                maze: false,
             });
             continue;
         }
@@ -240,6 +321,8 @@ export function buildLevel(depth: number, rng: Rng): Level {
             // 깊을수록 어두운 방이 잦다. 1층은 전부 밝다 — 처음 켠 사람이 지도를 본다.
             dark: depth > 1 && rng.chance(Math.min(0.6, (depth - 1) * 0.07)),
             gone: false,
+            // 미로 방은 깊은 층에만. 안쪽이 통로라 어차피 인접한 칸만 보인다.
+            maze: depth >= 8 && w >= 7 && h >= 5 && rng.chance(Math.min(0.3, (depth - 7) * 0.03)),
         });
     }
 
@@ -248,21 +331,57 @@ export function buildLevel(depth: number, rng: Rng): Level {
     // 먼저 전부 이어질 만큼만 잇고, 그 위에 갈림길을 몇 개 더한다.
     const edges = rng.shuffle(cellEdges());
     const uf = new Uf(COLS * ROWS);
-    const chosen: typeof edges = [];
-    for (const e of edges) if (uf.union(e.a, e.b)) chosen.push(e);
-    for (const e of edges) {
-        if (chosen.includes(e)) continue;
-        if (rng.chance(0.28)) chosen.push(e);
-    }
+    const spanning: typeof edges = [];
+    for (const e of edges) if (uf.union(e.a, e.b)) spanning.push(e);
+    // 여분 통로 — 이것이 없어도 층은 이어진다. 그래서 **여기 난 문만 숨길 수 있다.**
+    const extra = edges.filter((e) => !spanning.includes(e) && rng.chance(0.28));
+    const chosen = [...spanning, ...extra];
+
+    // 방마다 제 문을 들고 있어야 한다 — 미로를 팔 때도, 비밀문을 고를 때도 필요하다.
+    const doorsOf: Pos[][] = rooms.map(() => []);
+    /** 여분 통로에 난 문들 — 비밀문이 될 수 있는 것은 이것뿐이다. */
+    const extraDoors: Pos[] = [];
 
     for (const e of chosen) {
         const ra = rooms[e.a];
         const rb = rooms[e.b];
         const ea = exitPoint(ra, e.horizontal ? "right" : "bottom", rng);
         const eb = exitPoint(rb, e.horizontal ? "left" : "top", rng);
-        if (ea.door) put(tiles, ea.door.x, ea.door.y, T.DOOR);
-        if (eb.door) put(tiles, eb.door.x, eb.door.y, T.DOOR);
+        if (ea.door) {
+            put(tiles, ea.door.x, ea.door.y, T.DOOR);
+            doorsOf[e.a].push(ea.door);
+        }
+        if (eb.door) {
+            put(tiles, eb.door.x, eb.door.y, T.DOOR);
+            doorsOf[e.b].push(eb.door);
+        }
         connect(tiles, ea.start, eb.start, e.horizontal, rng);
+        if (extra.includes(e)) extraDoors.push(...[ea.door, eb.door].filter((d): d is Pos => !!d));
+    }
+
+    // 미로는 **문을 낸 뒤에** 판다. 먼저 파면 문 자리를 모르니 안쪽으로 뚫을 수가 없다.
+    let anyMaze = false;
+    rooms.forEach((r, i) => {
+        if (!r.maze || r.gone) return;
+        if (!carveMaze(tiles, roomAt, r, rng)) {
+            r.maze = false;
+            return;
+        }
+        anyMaze = true;
+        for (const d of doorsOf[i]) linkDoorToMaze(tiles, r, d);
+    });
+
+    // **비밀문은 「여분 통로」에만 난다.**
+    //
+    // 방의 문 개수로 고르면 안 된다 — 문이 둘인 방 A 와 문이 하나인 방 B 가 한 통로로
+    // 이어져 있을 때, A 쪽 문을 숨기면 B 로 가는 길이 통째로 사라진다. A 는 멀쩡한데
+    // B 가 갇히므로 방만 보고는 못 잡는다.
+    //
+    // 신장 트리 밖의 통로는 **없어도 층이 이어진다**는 것이 정의라, 거기 난 문은
+    // 숨겨도 안전하다. 그래서 비밀문은 언제나 **지름길**이고, 못 찾아도 판은 돈다.
+    const secretChance = depth <= 2 ? 0 : Math.min(0.55, (depth - 2) * 0.06);
+    for (const d of extraDoors) {
+        if (rng.chance(secretChance)) put(tiles, d.x, d.y, T.SECRET);
     }
 
     const level: Level = {
@@ -273,8 +392,10 @@ export function buildLevel(depth: number, rng: Rng): Level {
         roomAt,
         monsters: [],
         items: [],
+        traps: [],
         stairs: { x: 0, y: 0 },
         upStairs: null,
+        maze: anyMaze,
     };
 
     const real = rooms.filter((r) => !r.gone);
@@ -285,6 +406,18 @@ export function buildLevel(depth: number, rng: Rng): Level {
     // 올라가는 계단은 어느 층에나 있다. 1층의 그것이 **바깥으로 나가는 문**이고,
     // 증표를 쥐기 전에는 열리지 않는다 — 이기는 길이 그 한 칸이다.
     level.upStairs = freeSpot(level, rng, [down]);
+
+    // 함정. 1층에는 없다 — 처음 켠 사람이 영문도 모르고 떨어지면 배울 것이 안 남는다.
+    if (depth > 1) {
+        const kinds: TrapKind[] = ["trapdoor", "arrow", "sleep", "beartrap", "teleport", "dart"];
+        const count = rng.rnd(Math.min(5, 1 + Math.floor(depth / 2))) + 1;
+        for (let i = 0; i < count; i++) {
+            const p = freeSpot(level, rng, [down, level.upStairs]);
+            if (level.traps.some((t) => t.x === p.x && t.y === p.y)) continue;
+            const trap: Trap = { x: p.x, y: p.y, kind: rng.pick(kinds)!, found: false };
+            level.traps.push(trap);
+        }
+    }
 
     return level;
 }

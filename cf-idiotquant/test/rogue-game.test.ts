@@ -154,20 +154,34 @@ test("막 굴려도 안 터진다 — 스무 판 × 이천 턴", () => {
             if (r < 78) {
                 const d = rng.pick(ALL_DIRS)!;
                 cmd = { t: "move", dx: d.dx, dy: d.dy };
-            } else if (r < 84) cmd = { t: "pickup" };
-            else if (r < 88) cmd = { t: "descend" };
-            else if (r < 90) cmd = { t: "ascend" };
+            } else if (r < 80) cmd = { t: "pickup" };
+            else if (r < 83) cmd = { t: "descend" };
+            else if (r < 84) cmd = { t: "ascend" };
+            else if (r < 87) cmd = { t: "search" };
             else {
                 const it = rng.pick(s.hero.pack);
                 const letter = it?.letter ?? "a";
+                const d = rng.pick(ALL_DIRS)!;
                 cmd =
-                    r < 93
+                    r < 89
                         ? { t: "quaff", letter }
-                        : r < 96
+                        : r < 91
                           ? { t: "read", letter }
-                          : r < 98
+                          : r < 92
                             ? { t: "eat", letter }
-                            : { t: "wield", letter };
+                            : r < 93
+                              ? { t: "wield", letter }
+                              : r < 94
+                                ? { t: "wear", letter }
+                                : r < 95
+                                  ? { t: "putOn", letter }
+                                  : r < 96
+                                    ? { t: "removeRing", letter }
+                                    : r < 97
+                                      ? { t: "drop", letter }
+                                      : r < 98
+                                        ? { t: "zap", letter, dx: d.dx, dy: d.dy }
+                                        : { t: "throw", letter, dx: d.dx, dy: d.dy };
             }
             s = perform(s, cmd);
 
@@ -185,6 +199,19 @@ test("막 굴려도 안 터진다 — 스무 판 × 이천 턴", () => {
             assert.ok(
                 new Set(s.hero.pack.map((p) => p.letter)).size === s.hero.pack.length,
                 "배낭에 같은 자리가 둘이다",
+            );
+            // 몸에 걸친 것은 반드시 배낭 안에 있다 — 밖에 있으면 화면이 유령을 그린다.
+            for (const id of [s.hero.weaponId, s.hero.armorId, s.hero.leftRingId, s.hero.rightRingId]) {
+                if (id === null) continue;
+                assert.ok(s.hero.pack.some((p) => p.id === id), `걸친 물건 ${id} 가 배낭에 없다`);
+            }
+            assert.ok(
+                s.hero.leftRingId === null || s.hero.leftRingId !== s.hero.rightRingId,
+                "같은 반지를 양손에 꼈다",
+            );
+            assert.ok(
+                s.level.items.every((it) => it.x >= 0 && it.y >= 0),
+                "바닥의 물건이 좌표를 잃었다",
             );
         }
     }
