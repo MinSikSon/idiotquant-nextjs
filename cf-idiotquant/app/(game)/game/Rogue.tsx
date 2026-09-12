@@ -87,7 +87,7 @@ export default function Rogue() {
     const [picker, setPicker] = useState<Picker | null>(null);
     const [aiming, setAiming] = useState<Aiming | null>(null);
     const [sheet, setSheet] = useState<
-        "none" | "pack" | "log" | "help" | "graves" | "survey" | "bestiary"
+        "none" | "pack" | "log" | "help" | "graves" | "options" | "bestiary"
     >("none");
     /** 배낭에서 짚은 물건 — 그 아래에 할 수 있는 일이 뜬다. */
     const [chosen, setChosen] = useState<number | null>(null);
@@ -281,9 +281,11 @@ export default function Rogue() {
                     e.preventDefault();
                     aimAfterPick("throw");
                     break;
+                // `x` 는 「지금 보이는 놈을 본다」였다. 그 판이 도감 안으로 들어갔으므로
+                // 키도 그리로 간다 — 누르던 사람의 손가락이 가던 자리가 그대로 산다.
                 case "x":
                     e.preventDefault();
-                    setSheet("survey");
+                    setSheet("bestiary");
                     break;
                 case "i":
                     e.preventDefault();
@@ -328,12 +330,23 @@ export default function Rogue() {
     const name = (it: Item) => describe(it, state.known, state.appearance);
     const rings = wornRings(hero);
     const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k);
-    // 조사와 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
+    // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
 
     // **세 개씩 한 묶음**으로 늘어놓는다. 단추 판이 세 칸 격자라(`TouchPad`) 한 줄이
     // 곧 한 묶음이 된다 — 계단 둘이 나란히, 배낭에서 꺼내 쓰는 것들이 한 줄에.
+    //
+    // **여기 서는 것은 던전을 걷는 동안 쓰는 것들뿐이다.** 열다섯 개가 다섯 줄로 서던
+    // 때에는 「도움말」과 「지난 판」이 「마신다」와 같은 크기로 붙어 있었다 — 급할 때
+    // 손가락이 찾아야 하는 것과 한 판에 한 번 볼까 말까 한 것이 같은 무게였다.
+    // 그래서 셋을 덜어 냈다.
+    //
+    //   · **기록** → 맨 위 메시지 줄을 누르면 열린다. 요약을 보다가 더 보고 싶어지는
+    //     자리가 거기라, 단추를 따로 세울 까닭이 없다.
+    //   · **도움말 · 지난 판** → 「⚙ 옵션」 안으로. 걸으면서 쓰는 것이 아니다.
+    //   · **조사** → 도감 맨 위로. 「지금 보이는 놈」과 「여태 잡은 놈」은 같은 질문
+    //     (이놈이 센가)의 앞뒤라, 판이 둘일 까닭이 없었다.
     const actions: PadAction[] = [
         // 발밑
         { label: "내려간다", hint: ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다" },
@@ -360,27 +373,14 @@ export default function Rogue() {
             on: () => aimAfterPick("throw"),
             off: hero.pack.some(isThrowable) ? undefined : "던질 만한 것이 없다",
         },
-        // 살피는 것들
+        // 살피는 것 · 그 밖
         { label: "뒤진다", hint: "s — 숨은 문과 함정", on: () => run({ t: "search" }) },
         {
-            label: "조사",
-            hint: "x — 잡아 본 적 있는 놈이면 속을 안다",
-            on: () => setSheet("survey"),
-            off: sightings.length ? undefined : "보이는 몬스터가 없다",
+            label: "도감",
+            hint: `x — 지금 보이는 놈과 여태 잡은 ${progress.found}/${progress.total}`,
+            on: () => setSheet("bestiary"),
         },
-        { label: "도감", hint: `${progress.found}/${progress.total}`, on: () => setSheet("bestiary") },
-        // 판 바깥
-        { label: "기록", hint: "m", on: () => setSheet("log") },
-        {
-            // 제일 좁은 폰(360px)의 칸에 들어가야 한다 — 「지난 판들」은 넘친다.
-            label: "지난 판",
-            hint: "여태 죽은 자리와 점수",
-            on: () => {
-                setTombs(graves());
-                setSheet("graves");
-            },
-        },
-        { label: "도움말", hint: "?", on: () => setSheet("help") },
+        { label: "⚙ 옵션", hint: "도움말 · 지난 판", on: () => setSheet("options") },
     ];
 
     // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
@@ -459,14 +459,32 @@ export default function Rogue() {
     return (
         <div className="relative flex h-full w-full flex-col bg-[var(--rg-bg)] text-[var(--rg-text)]">
             {/* 맨 위 두 줄 — 원작의 메시지 줄이다. 높이를 고정해 둔다: 줄 수가 들쭉날쭉하면
-                지도가 매 턴 위아래로 흔들린다. */}
-            <div className="h-[2.9em] shrink-0 overflow-hidden px-2 pt-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.45] text-[var(--rg-msg)] sm:text-[13px]">
-                {recent.map((m, i) => (
-                    <div key={`${state.turn}-${i}`} className="truncate">
-                        {m}
-                    </div>
-                ))}
-            </div>
+                지도가 매 턴 위아래로 흔들린다.
+
+                **이 줄이 곧 「기록」의 문이다.** 요약을 읽다가 더 보고 싶어지는 자리가
+                여기라, 단추를 따로 세울 까닭이 없었다. 높이와 글자는 그대로 두고 누를 수
+                있게만 했다 — `<button>` 이라 키보드로도 닿고 스크린리더도 읽는다. */}
+            <button
+                type="button"
+                onClick={() => setSheet("log")}
+                className="flex h-[2.9em] w-full shrink-0 items-start gap-1 overflow-hidden px-2 pt-1 text-left font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.45] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] sm:text-[13px]"
+            >
+                <span className="min-w-0 flex-1">
+                    {recent.map((m, i) => (
+                        <span key={`${state.turn}-${i}`} className="block truncate">
+                            {m}
+                        </span>
+                    ))}
+                </span>
+                {/* 누를 수 있다는 표시. 글자가 아니라 자리라서 줄 수가 바뀌어도 안 흔들린다. */}
+                <span aria-hidden className="shrink-0 text-[var(--rg-ghost)]">
+                    기록 ▾
+                </span>
+                {/* **`aria-label` 을 안 단다.** 달면 그것이 이름을 통째로 덮어서 **방금 일어난
+                    일이 안 읽힌다** — 이 줄에서 제일 중요한 것이 그것이다. 대신 뒤에 한 마디를
+                    붙여 「눌러도 되는 것」임을 알린다. */}
+                <span className="sr-only">— 누르면 지나온 기록이 펼쳐집니다</span>
+            </button>
 
             <div className="min-h-0 flex-1">
                 <MapView state={state} />
@@ -636,53 +654,49 @@ export default function Rogue() {
                 </Panel>
             )}
 
-            {sheet === "survey" && !aiming && (
-                <Panel
-                    title="조사"
-                    onClose={() => setSheet("none")}
-                    footer="한 마리를 잡아 보면 그 종의 속을 알게 됩니다. 조사는 턴을 쓰지 않습니다."
-                >
-                    {sightings.length === 0 ? (
-                        <p className="text-[var(--rg-faint)]">보이는 것이 없다.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {sightings.map((m: Sighting) => (
-                                <li key={m.id} className="border-b border-[var(--rg-raised)] pb-2 last:border-0">
-                                    <div>
-                                        <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
-                                        <span className="text-[var(--rg-strong)]">{m.name}</span>
-                                        <span className="text-[var(--rg-faint)]">
-                                            {" "}· {m.distance}칸 · {m.awake ? "쫓고 있다" : "아직 못 봤다"} ·{" "}
-                                        </span>
-                                        <span className={m.condition === "성하다" ? "text-[var(--rg-muted)]" : "text-[var(--rg-trap)]"}>
-                                            {m.condition}
-                                        </span>
-                                    </div>
-                                    {m.known ? (
-                                        <div className="text-[var(--rg-muted)]">
-                                            레벨 {m.level} · 방어도 {m.defense} · 피해 {m.damage?.join(" + ") || "없음"} ·
-                                            경험 {m.exp} · 체력 {m.hp}
-                                            {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
-                                            <span className="text-[var(--rg-faint)]"> (여태 {m.kills}마리)</span>
-                                        </div>
-                                    ) : (
-                                        <div className="text-[var(--rg-faint)]">
-                                            처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
-                                        </div>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Panel>
-            )}
-
             {sheet === "bestiary" && !aiming && (
                 <Panel
                     title={`도감 ${progress.found}/${progress.total}`}
                     onClose={() => setSheet("none")}
-                    footer="줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다."
+                    footer="줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
                 >
+                    {/* **「지금 보이는 놈」이 맨 위다.** 예전에는 「조사」라는 판이 따로 있었는데,
+                        묻는 말이 같았다 — *이놈이 센가.* 앞쪽 절반(지금 눈앞의 것)과 뒤쪽 절반
+                        (여태 잡아 본 것)을 갈라 두면, 급할 때 어느 단추였는지를 먼저 골라야
+                        한다. 그래서 한 판에 앞뒤로 세웠다. */}
+                    {sightings.length > 0 && (
+                        <div className="mb-3 border-b border-[var(--rg-line-soft)] pb-2">
+                            <p className="mb-1 text-[var(--rg-faint)]">지금 보이는 놈</p>
+                            <ul className="space-y-2">
+                                {sightings.map((m: Sighting) => (
+                                    <li key={m.id}>
+                                        <div>
+                                            <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
+                                            <span className="text-[var(--rg-strong)]">{m.name}</span>
+                                            <span className="text-[var(--rg-faint)]">
+                                                {" "}· {m.distance}칸 · {m.awake ? "쫓고 있다" : "아직 못 봤다"} ·{" "}
+                                            </span>
+                                            <span className={m.condition === "성하다" ? "text-[var(--rg-muted)]" : "text-[var(--rg-trap)]"}>
+                                                {m.condition}
+                                            </span>
+                                        </div>
+                                        {m.known ? (
+                                            <div className="text-[var(--rg-muted)]">
+                                                레벨 {m.level} · 방어도 {m.defense} · 피해{" "}
+                                                {m.damage?.join(" + ") || "없음"} · 경험 {m.exp} · 체력 {m.hp}
+                                                {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
+                                            </div>
+                                        ) : (
+                                            <div className="text-[var(--rg-faint)]">
+                                                처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
+                                            </div>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {progress.found === 0 ? (
                         <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
                     ) : (
@@ -759,6 +773,37 @@ export default function Rogue() {
                 </Panel>
             )}
 
+            {/* 걸으면서 쓰지 않는 것들이 여기 모인다. 단추 판에 나란히 세워 두면
+                「도움말」이 「마신다」와 같은 무게로 보이고, 급할 때 손가락이 헤맨다. */}
+            {sheet === "options" && !aiming && (
+                <Panel title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
+                    <ul className="space-y-1">
+                        {[
+                            { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
+                            {
+                                label: "지난 판",
+                                hint: "여태 죽은 자리와 점수",
+                                go: () => {
+                                    setTombs(graves());
+                                    setSheet("graves");
+                                },
+                            },
+                        ].map((o) => (
+                            <li key={o.label}>
+                                <button
+                                    type="button"
+                                    onClick={o.go}
+                                    className="w-full rounded-[2px] px-1 text-left hover:bg-[var(--rg-hover)]"
+                                >
+                                    <span className="text-[var(--rg-strong)]">{o.label}</span>
+                                    <span className="text-[var(--rg-faint)]"> — {o.hint}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </Panel>
+            )}
+
             {sheet === "help" && (
                 <Panel title="조작" onClose={() => setSheet("none")} footer="죽으면 그것으로 끝입니다. 저장은 자동이고, 되돌리기는 없습니다.">
                     <dl className="grid grid-cols-[7.5em_1fr] gap-y-1">
@@ -773,8 +818,8 @@ export default function Rogue() {
                         <dt className="text-[var(--rg-label)]">P R</dt><dd>반지를 낀다 · 뺀다</dd>
                         <dt className="text-[var(--rg-label)]">z t</dt><dd>지팡이를 쏜다 · 던진다 (고른 뒤 방향)</dd>
                         <dt className="text-[var(--rg-label)]">d</dt><dd>내려놓는다</dd>
-                        <dt className="text-[var(--rg-label)]">x</dt><dd><b>조사</b> — 보이는 몬스터의 속을 본다 (턴을 안 씁니다)</dd>
-                        <dt className="text-[var(--rg-label)]">i m ?</dt><dd>배낭 · 기록 · 이 화면</dd>
+                        <dt className="text-[var(--rg-label)]">x</dt><dd><b>도감</b> — 지금 보이는 놈과 여태 잡은 놈 (턴을 안 씁니다)</dd>
+                        <dt className="text-[var(--rg-label)]">i m ?</dt><dd>배낭 · 기록 · 이 화면 (기록은 <b>맨 위 메시지 줄</b>을 눌러도 열립니다)</dd>
                     </dl>
                     <div className="mt-3 space-y-1 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-muted)]">
                         <p className="text-[var(--rg-strong)]">
@@ -797,7 +842,7 @@ export default function Rogue() {
                             반지는 끼고 있으면 배가 더 고픕니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
-                            <b className="text-[var(--rg-muted)]">한 종을 한 마리라도 잡으면</b> 그 뒤로는 조사해서
+                            <b className="text-[var(--rg-muted)]">한 종을 한 마리라도 잡으면</b> 그 뒤로는 도감에서
                             레벨·방어·피해를 볼 수 있습니다. 이 도감은 <b className="text-[var(--rg-muted)]">죽어도
                             남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>

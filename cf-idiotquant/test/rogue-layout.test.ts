@@ -79,3 +79,30 @@ test("그 여백은 실제 바의 높이와 같다 — 숫자가 세 곳에 있�
         `아래 탭 바의 높이가 ${pb}px 가 아니다 — 레이아웃의 pb 와 어긋난다`,
     );
 });
+
+// ── 명령 단추는 **세 개씩 딱 떨어져야** 한다 ────────────────────────────────
+//
+// 단추 판은 세 칸 격자다(`TouchPad` 의 `grid-cols-3`). 개수가 3의 배수가 아니면
+// **마지막 줄만 이가 빠지고**, 그 순간 「한 줄이 한 묶음」이 깨진다 — 계단 둘이 나란히,
+// 배낭에서 꺼내 쓰는 것들이 한 줄에, 라는 자리 약속이 거기서 무너진다.
+//
+// 사람이 세다가 틀리는 자리라 여기서 센다. 단추 하나를 더하거나 뺄 때는 **셋 단위로**.
+
+const ROGUE = "app/(game)/game/Rogue.tsx";
+
+test("명령 단추의 개수가 세 칸 격자에 딱 떨어진다", () => {
+    const src = read(ROGUE);
+    const at = src.indexOf("const actions: PadAction[] = [");
+    assert.notEqual(at, -1, `${ROGUE} 에서 단추 목록을 못 찾았다`);
+    const end = src.indexOf("\n    ];", at);
+    assert.notEqual(end, -1, `${ROGUE} 의 단추 목록이 어디서 끝나는지 못 찾았다`);
+
+    const body = src.slice(at, end);
+    const labels = body.match(/^\s+(?:\{\s*)?label: /gm) ?? [];
+    assert.ok(labels.length >= 6, `단추가 ${labels.length}개뿐 — 세는 자리가 틀렸다`);
+    assert.equal(
+        labels.length % 3,
+        0,
+        `단추가 ${labels.length}개다 — 세 칸 격자라 마지막 줄에 이가 빠진다`,
+    );
+});
