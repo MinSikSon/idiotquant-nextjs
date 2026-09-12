@@ -312,13 +312,13 @@ test("+ 가 붙으면 배낭에 적히는 숫자가 **커진다**", () => {
     const rags = makeItem("armor", "leather", 3, -1, -1);
     const good = makeItem("armor", "leather", 4, -1, -1);
     good.plusArmor = 1;
-    assert.equal(itemPower(rags, known), "방어 2");
-    assert.equal(itemPower(good, known), "방어 3", "손질한 갑옷의 숫자가 안 올랐다");
+    assert.equal(itemPower(rags, known), "방어 12");
+    assert.equal(itemPower(good, known), "방어 13", "손질한 갑옷의 숫자가 안 올랐다");
 
     // 상한 것은 내려간다 — 방향이 양쪽으로 맞아야 한다.
     const rusted = makeItem("armor", "leather", 5, -1, -1);
     rusted.plusArmor = -2;
-    assert.equal(itemPower(rusted, known), "방어 0");
+    assert.equal(itemPower(rusted, known), "방어 10");
 });
 
 test("정체를 모르는 물건은 손질을 안 흘린다", () => {
@@ -327,8 +327,8 @@ test("정체를 모르는 물건은 손질을 안 흘린다", () => {
     assert.equal(itemPower(w, {}), "공격 3d4", "모르는 무기의 손질이 샜다");
     const a = makeItem("armor", "plate mail", 7, -1, -1);
     a.plusArmor = 3;
-    assert.equal(itemPower(a, {}), "방어 7", "모르는 갑옷의 손질이 샜다");
-    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어 10");
+    assert.equal(itemPower(a, {}), "방어 17", "모르는 갑옷의 손질이 샜다");
+    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어 20");
 });
 
 test("배낭에 적는 숫자와 실제로 맞는 방어가 같다", () => {

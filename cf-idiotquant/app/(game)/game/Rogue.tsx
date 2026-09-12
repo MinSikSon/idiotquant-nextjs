@@ -33,7 +33,7 @@ import {
 } from "@/lib/rogue/game";
 import { describe, isThrowable, itemPower } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
-import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -477,7 +477,7 @@ export default function Rogue() {
                 <span>힘 {heroStr(hero)}</span>
                 {/* 방어는 있는데 공격이 없으면 무기를 바꿀 때 무엇이 나아지는지가 안 보인다. */}
                 <span>공격 {heroAttackText(hero, state.known)}</span>
-                <span>방어 {heroDefense(hero)}</span>
+                <span>방어도 {heroDefense(hero)}</span>
                 <span>경험 {hero.exp}</span>
                 <span className="text-[#ffd24a]">금화 {hero.gold}</span>
                 {rings.length > 0 && <span className="text-[#7fe0c8]">반지 {rings.length}</span>}
@@ -618,7 +618,8 @@ export default function Rogue() {
                         </div>
                         {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
                         <div className="text-[#9fb0aa]">
-                            지금 공격 {heroAttackText(hero, state.known)} · 방어 {heroDefense(hero)}
+                            지금 공격 {heroAttackText(hero, state.known)} · 명중 +{heroHitBonus(hero)} · 방어도{" "}
+                            {heroDefense(hero)}
                         </div>
                     </div>
                 </Panel>
@@ -648,7 +649,7 @@ export default function Rogue() {
                                     </div>
                                     {m.known ? (
                                         <div className="text-[#9fb0aa]">
-                                            레벨 {m.level} · 방어 {m.defense} · 피해 {m.damage?.join(" + ") || "없음"} ·
+                                            레벨 {m.level} · 방어도 {m.defense} · 피해 {m.damage?.join(" + ") || "없음"} ·
                                             경험 {m.exp} · 체력 {m.hp}
                                             {m.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
                                             <span className="text-[#7d8d88]"> (여태 {m.kills}마리)</span>
@@ -681,7 +682,7 @@ export default function Rogue() {
                                     <span className="text-[#e6eeea]">{r.name}</span>
                                     <span className="text-[#ffd24a]"> ×{r.kills}</span>
                                     <div className="text-[#9fb0aa]">
-                                        레벨 {r.level} · 방어 {r.defense} · 피해 {r.damage.join(" + ") || "없음"} ·
+                                        레벨 {r.level} · 방어도 {r.defense} · 피해 {r.damage.join(" + ") || "없음"} ·
                                         경험 {r.exp} · 체력 {r.hp}
                                         {r.mean && <span className="text-[#f2884b]"> · 보자마자 달려든다</span>}
                                     </div>
@@ -738,11 +739,12 @@ export default function Rogue() {
                         <p><span className="text-[#c3ced6]">)</span> 무기 · <span className="text-[#8fb6cf]">]</span> 갑옷 · <span className="text-[#7fe0c8]">=</span> 반지 · <span className="text-[#b6a2e8]">/</span> 지팡이 · <span className="text-[#cfa878]">%</span> 식량</p>
                         <p><span className="text-[#ff6b5a]">^</span> 함정 · <span className="text-[#f0f0f0]">&gt;</span> 아래 계단 · <span className="text-[#f0f0f0]">&lt;</span> 위 계단 · <span className="text-[#c08a45]">+</span> 문</p>
                         <p className="pt-1 text-[#7d8d88]">
-                            <b className="text-[#9fb0aa]">때릴 때는 양쪽이 d20 을 굴립니다.</b>{" "}
-                            <span className="text-[#9fb0aa]">공격(d20 + 레벨 + 무기·힘)</span>이{" "}
-                            <span className="text-[#9fb0aa]">방어(d20 + 갑옷)</span>를 넘어야 맞습니다 —
-                            비기면 막은 것입니다. 숫자는 <b>클수록</b> 좋고, 손질(<b>+1</b>)은 그만큼 올려
-                            줍니다. 굴린 값은 모두 <b>기록</b>에 남습니다.
+                            <b className="text-[#9fb0aa]">싸움은 D&amp;D 의 주사위 규칙을 씁니다.</b>{" "}
+                            <span className="text-[#9fb0aa]">d20 + 숙련 + 힘 + 무기</span>가 상대의{" "}
+                            <span className="text-[#9fb0aa]">방어도</span> 이상이면 맞습니다 — <b>막는 쪽은
+                            굴리지 않습니다.</b> <b>20</b> 은 무조건 맞고 <b>피해 주사위를 두 번</b> 굴리며,
+                            <b>1</b> 은 무조건 빗나갑니다. 자는 놈을 치면 <b>유리</b>(두 번 굴려 높은 쪽),
+                            눈이 멀거나 헷갈리면 <b>불리</b>입니다. 굴린 값은 모두 <b>기록</b>에 남습니다.
                         </p>
                         <p className="text-[#7d8d88]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.
