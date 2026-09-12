@@ -306,29 +306,29 @@ test("+ 가 붙으면 배낭에 적히는 숫자가 **커진다**", () => {
     const plain = makeItem("weapon", "long sword", 1, -1, -1);
     const fine = makeItem("weapon", "long sword", 2, -1, -1);
     fine.plusDam = 2;
-    assert.equal(itemPower(plain, known), "공격 3d4");
-    assert.equal(itemPower(fine, known), "공격 3d4+2");
+    assert.equal(itemPower(plain, known), "피해 3d4");
+    assert.equal(itemPower(fine, known), "피해 3d4+2");
 
     const rags = makeItem("armor", "leather", 3, -1, -1);
     const good = makeItem("armor", "leather", 4, -1, -1);
     good.plusArmor = 1;
-    assert.equal(itemPower(rags, known), "방어 12");
-    assert.equal(itemPower(good, known), "방어 13", "손질한 갑옷의 숫자가 안 올랐다");
+    assert.equal(itemPower(rags, known), "방어도 12");
+    assert.equal(itemPower(good, known), "방어도 13", "손질한 갑옷의 숫자가 안 올랐다");
 
     // 상한 것은 내려간다 — 방향이 양쪽으로 맞아야 한다.
     const rusted = makeItem("armor", "leather", 5, -1, -1);
     rusted.plusArmor = -2;
-    assert.equal(itemPower(rusted, known), "방어 10");
+    assert.equal(itemPower(rusted, known), "방어도 10");
 });
 
 test("정체를 모르는 물건은 손질을 안 흘린다", () => {
     const w = makeItem("weapon", "long sword", 6, -1, -1);
     w.plusDam = 3;
-    assert.equal(itemPower(w, {}), "공격 3d4", "모르는 무기의 손질이 샜다");
+    assert.equal(itemPower(w, {}), "피해 3d4", "모르는 무기의 손질이 샜다");
     const a = makeItem("armor", "plate mail", 7, -1, -1);
     a.plusArmor = 3;
-    assert.equal(itemPower(a, {}), "방어 17", "모르는 갑옷의 손질이 샜다");
-    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어 20");
+    assert.equal(itemPower(a, {}), "방어도 17", "모르는 갑옷의 손질이 샜다");
+    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어도 20");
 });
 
 test("배낭에 적는 숫자와 실제로 맞는 방어가 같다", () => {
@@ -340,7 +340,7 @@ test("배낭에 적는 숫자와 실제로 맞는 방어가 같다", () => {
     s.hero.pack.push(armor);
     s.hero.armorId = armor.id;
     s.known["armor:plate mail"] = true;
-    assert.equal(itemPower(armor, s.known), `방어 ${heroDefense(s.hero)}`);
+    assert.equal(itemPower(armor, s.known), `방어도 ${heroDefense(s.hero)}`);
 });
 
 test("던지면 하나씩 줄고, 남은 개수를 말한다", () => {

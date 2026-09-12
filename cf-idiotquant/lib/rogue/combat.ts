@@ -46,14 +46,17 @@ import {
     equippedArmor,
     equippedWeapon,
     heroArmor,
+    heroDamTerms,
     heroDamageDice,
     heroDefense,
+    heroHitTerms,
     heroStr,
     strDamBonus,
     strHitBonus,
     takeFromPack,
 } from "./hero";
 export type { Attack, Luck };
+export { heroHitTerms, heroDamTerms };
 import {
     type GameState,
     type Hero,
@@ -178,25 +181,6 @@ export interface AttackResult {
     damage: number;
     killed: boolean;
     messages: string[];
-}
-
-/** 내가 때릴 때 공격 굴림에 얹히는 것들 — D&D 의 숙련 + 능력 보정 + 손질. */
-export function heroHitTerms(hero: GameState["hero"]): Term[] {
-    const weapon = equippedWeapon(hero);
-    return [
-        { n: proficiency(hero.level), why: "숙련" },
-        { n: strHitBonus(heroStr(hero)), why: "힘" },
-        { n: weapon?.plusHit ?? 0, why: "무기" },
-    ];
-}
-
-/** 내가 때릴 때 피해에 얹히는 것들 — 같은 능력 보정이 여기에도 온다. */
-export function heroDamTerms(hero: GameState["hero"]): Term[] {
-    const weapon = equippedWeapon(hero);
-    return [
-        { n: strHitBonus(heroStr(hero)), why: "힘" },
-        { n: weapon?.plusDam ?? 0, why: "무기" },
-    ];
 }
 
 /**

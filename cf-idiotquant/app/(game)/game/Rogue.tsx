@@ -68,6 +68,11 @@ interface Aiming {
     make: (dx: number, dy: number) => Command;
 }
 
+/** `+8` / `-1` / `+0` — 명중은 부호를 붙여야 보정으로 읽힌다. */
+function signed(n: number): string {
+    return n >= 0 ? `+${n}` : `${n}`;
+}
+
 const KEY_DIRS: Record<string, [number, number]> = {
     h: [-1, 0], ArrowLeft: [-1, 0],
     l: [1, 0], ArrowRight: [1, 0],
@@ -475,8 +480,11 @@ export default function Rogue() {
                     체력 {hero.hp}/{hero.maxHp}
                 </span>
                 <span>힘 {heroStr(hero)}</span>
-                {/* 방어는 있는데 공격이 없으면 무기를 바꿀 때 무엇이 나아지는지가 안 보인다. */}
-                <span>공격 {heroAttackText(hero, state.known)}</span>
+                {/* D&D 의 세 숫자를 나란히 둔다 — **맞히는가 · 얼마나 아픈가 · 맞는가.**
+                    「명중」이 빠져 있으면 상대를 맞힐 수 있는지를 화면에서 알 길이 없다.
+                    「공격」이라 적던 것은 피해라서, 명중과 나란히 서면 헷갈린다. */}
+                <span>명중 {signed(heroHitBonus(hero, state.known))}</span>
+                <span>피해 {heroAttackText(hero, state.known)}</span>
                 <span>방어도 {heroDefense(hero)}</span>
                 <span>경험 {hero.exp}</span>
                 <span className="text-[#ffd24a]">금화 {hero.gold}</span>
@@ -618,8 +626,8 @@ export default function Rogue() {
                         </div>
                         {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
                         <div className="text-[#9fb0aa]">
-                            지금 공격 {heroAttackText(hero, state.known)} · 명중 +{heroHitBonus(hero)} · 방어도{" "}
-                            {heroDefense(hero)}
+                            지금 명중 {signed(heroHitBonus(hero, state.known))} · 피해{" "}
+                            {heroAttackText(hero, state.known)} · 방어도 {heroDefense(hero)}
                         </div>
                     </div>
                 </Panel>

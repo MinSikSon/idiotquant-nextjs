@@ -24,7 +24,7 @@ import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, mu
 import { attackRoll } from "@/lib/rogue/dnd";
 import { Rng as R } from "@/lib/rogue/rng";
 import { newGame, perform } from "@/lib/rogue/game";
-import { heroAttackText } from "@/lib/rogue/hero";
+import { heroAttackText, heroHitBonus, heroHitTerms } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -294,4 +294,51 @@ test("실제로 들어가는 피해와 화면의 「공격」이 같은 식이�
     }
     assert.ok(seen > 20, `맞은 횟수가 ${seen} 뿐이라 못 잰다`);
     assert.ok(crits > 0, "이백 번을 때렸는데 치명타가 한 번도 안 났다");
+});
+
+test("화면의 「명중」과 실제 굴림에 얹히는 보정이 같다", () => {
+    // 여기서 갈리면 화면은 +8 이라 적고 몸은 +6 으로 굴린다. 세는 자리가 둘이면 난다.
+    const s = newGame(650);
+    const w = makeItem("weapon", "long sword", 982, -1, -1);
+    w.letter = "z";
+    w.plusHit = 2;
+    s.hero.pack.push(w);
+    s.hero.weaponId = w.id;
+    s.hero.str = 18; // 능력 보정 +4
+    s.known["weapon:long sword"] = true;
+    s.bestiary.S = 1;
+
+    const m = placeNextTo(s, "S", 999999);
+    const rng = new Rng(6);
+    const shown = heroHitBonus(s.hero, s.known);
+    // 숙련 2(레벨 1) + 힘 4 + 무기 2
+    assert.equal(shown, 8, `화면의 명중이 ${shown} 이다`);
+
+    for (let i = 0; i < 60; i++) {
+        const line = heroAttack(s, m, rng).messages[0];
+        // `· 나 d20 9 +2숙련 +4힘 +2무기 = 17  vs …` 에서 눈과 합을 떼어 낸다.
+        const eye = Number(line.match(/d20 (\d+)/)![1]);
+        const total = Number(line.match(/= (-?\d+)/)?.[1] ?? eye);
+        assert.equal(total - eye, shown, `${line} 의 보정이 화면의 +${shown} 와 다르다`);
+    }
+});
+
+test("정체 모르는 무기의 손질은 「명중」에도 안 샌다", () => {
+    const s = newGame(651);
+    const w = makeItem("weapon", "long sword", 983, -1, -1);
+    w.letter = "z";
+    w.plusHit = 3;
+    s.hero.pack.push(w);
+    s.hero.weaponId = w.id;
+    s.hero.str = 10; // 능력 보정 0
+
+    // 숙련 2 만 보여야 한다 — 손질 +3 은 써 봐야 안다.
+    assert.equal(heroHitBonus(s.hero, {}), 2);
+    assert.equal(heroHitBonus(s.hero, { "weapon:long sword": true }), 5);
+    // 다만 **굴림은 실제 값으로** 한다 — 화면만 가리는 것이지 약해지는 것이 아니다.
+    assert.equal(
+        heroHitTerms(s.hero).reduce((a, t) => a + t.n, 0),
+        5,
+        "굴림에 얹히는 값까지 깎였다",
+    );
 });
