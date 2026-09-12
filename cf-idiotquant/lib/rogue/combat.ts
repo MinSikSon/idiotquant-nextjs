@@ -118,10 +118,14 @@ export function outcomeOf(a: Attack): string {
  * 공격 굴림 한 줄.
  *
  * ```
- * · 나 d20 13 +2숙련 +3힘 +2무기 = 20  vs  방어도 17  → 맞았다
- * · 나 d20 20  vs  방어도 17  → 치명타!
- * · 나 d20 6, 14 (유리 → 14) +2숙련 = 16  vs  방어도 ?  → 맞았다
+ * · 명중 나 d20 13 +2숙련 +3힘 +2무기 = 20  vs  방어도 17  → 맞았다
+ * · 명중 나 d20 20  vs  방어도 17  → 치명타!
+ * · 명중 나 d20 6, 14 (유리 → 14) +2숙련 = 16  vs  방어도 ?  → 맞았다
  * ```
+ *
+ * **줄 앞에 무슨 굴림인지를 적는다.** 안 적으면 `d20` 만 덩그러니 남아 「이 스무면체가
+ * 무엇을 정하는 건가」를 읽는 사람이 알 수 없다 — 실제로 그 물음을 들었다. 이 게임에서
+ * d20 이 도는 자리는 **명중 하나뿐**이고, 피해는 무기 주사위(`2d4` 따위)가 돈다.
  *
  * **방어도는 아는 종에게만 적는다.** 표의 값이라, 잡아 본 적 없는 종의 것을 보여 주면
  * 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다. 모르는 종은 `?` 로 가린다.
@@ -134,7 +138,7 @@ export function attackLine(
     showAc: boolean,
     outcome: string,
 ): string {
-    return `${DETAIL}${who} ${rollText(a, bonuses)}  vs  방어도 ${showAc ? a.ac : "?"}  → ${outcome}`;
+    return `${DETAIL}명중 ${who} ${rollText(a, bonuses)}  vs  방어도 ${showAc ? a.ac : "?"}  → ${outcome}`;
 }
 
 /** 여러 번 때리는 놈의 굴림을 한 줄로 — 눈만 늘어놓고 합은 안 적는다(어느 눈의 합인지 모른다). */
@@ -146,7 +150,7 @@ export function multiAttackLine(
     outcome: string,
 ): string {
     const eyes = attacks.map((a) => (a.crit ? `${a.roll}!` : `${a.roll}`)).join(", ");
-    return `${DETAIL}${who} d20 ${eyes}${terms(bonuses)}  vs  방어도 ${showAc ? (attacks[0]?.ac ?? 0) : "?"}  → ${outcome}`;
+    return `${DETAIL}명중 ${who} d20 ${eyes}${terms(bonuses)}  vs  방어도 ${showAc ? (attacks[0]?.ac ?? 0) : "?"}  → ${outcome}`;
 }
 
 /**
@@ -163,7 +167,7 @@ export function damageLine(
     bonuses: Term[],
     total: number,
 ): string {
-    if (!dice) return `${DETAIL}피해: ${total}`;
+    if (!dice) return `${DETAIL}피해 ${total}`;
     const sum = rolled.reduce((a, n) => a + n, 0);
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
@@ -172,7 +176,7 @@ export function damageLine(
     const raw = sum + bonus;
     // 깎여서 0 밑으로 내려가면 0 이다(D&D 도 그렇다). 식과 결과가 안 맞아 보이지 않게 적는다.
     const floored = total !== raw ? ` → 최소 ${total}` : "";
-    return `${DETAIL}피해: ${eyes}${add}${bonus !== 0 ? ` = ${raw}` : ""}${floored}`;
+    return `${DETAIL}피해 ${eyes}${add}${bonus !== 0 ? ` = ${raw}` : ""}${floored}`;
 }
 
 export interface AttackResult {

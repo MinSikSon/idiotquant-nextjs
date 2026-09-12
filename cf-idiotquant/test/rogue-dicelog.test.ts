@@ -72,22 +72,22 @@ function fake(roll: number, bonus: number, ac: number, luck: "normal" | "advanta
 test("공격 줄은 굴린 눈과 보정과 방어도를 그대로 적는다", () => {
     assert.equal(
         attackLine("나", fake(13, 7, 17), [{ n: 2, why: "숙련" }, { n: 3, why: "힘" }, { n: 2, why: "무기" }], true, "맞았다"),
-        "· 나 d20 13 +2숙련 +3힘 +2무기 = 20  vs  방어도 17  → 맞았다",
+        "· 명중 나 d20 13 +2숙련 +3힘 +2무기 = 20  vs  방어도 17  → 맞았다",
     );
     // **모르는 종의 방어도는 가린다** — 표의 값이라 그대로 주면 도감이 뚫린다.
     assert.equal(
         attackLine("나", fake(13, 7, 17), [{ n: 7, why: "숙련" }], false, "맞았다"),
-        "· 나 d20 13 +7숙련 = 20  vs  방어도 ?  → 맞았다",
+        "· 명중 나 d20 13 +7숙련 = 20  vs  방어도 ?  → 맞았다",
     );
     // 0인 보정은 안 적고, 보정이 하나도 없으면 합도 안 적는다.
     assert.equal(
         attackLine("나", fake(4, 0, 15), [{ n: 0, why: "무기" }], true, "빗나갔다"),
-        "· 나 d20 4  vs  방어도 15  → 빗나갔다",
+        "· 명중 나 d20 4  vs  방어도 15  → 빗나갔다",
     );
     // 유리·불리는 두 눈과 고른 쪽을 같이 적는다.
     assert.equal(
         attackLine("나", fake(14, 2, 12, "advantage", 6), [{ n: 2, why: "숙련" }], true, "맞았다"),
-        "· 나 d20 14, 6 (유리 → 14) +2숙련 = 16  vs  방어도 12  → 맞았다",
+        "· 명중 나 d20 14, 6 (유리 → 14) +2숙련 = 16  vs  방어도 12  → 맞았다",
     );
 });
 
@@ -101,28 +101,28 @@ test("치명타와 자동 실패는 따로 말한다", () => {
 test("여러 번 때리는 놈은 눈만 늘어놓는다 — 치명타에는 표가 붙는다", () => {
     assert.equal(
         multiAttackLine("트롤", [fake(4, 5, 14), fake(20, 5, 14), fake(11, 5, 14)], [{ n: 5, why: "공격" }], true, "3대 중 2대 (치명타 1)"),
-        "· 트롤 d20 4, 20!, 11 +5공격  vs  방어도 14  → 3대 중 2대 (치명타 1)",
+        "· 명중 트롤 d20 4, 20!, 11 +5공격  vs  방어도 14  → 3대 중 2대 (치명타 1)",
     );
 });
 
 test("피해 줄은 굴린 눈에서 결과까지 이어 적는다", () => {
-    assert.equal(damageLine("1d8", [5], [], 5), "· 피해: 1d8 → 5");
+    assert.equal(damageLine("1d8", [5], [], 5), "· 피해 1d8 → 5");
     assert.equal(
         damageLine("2d4", [5], [{ n: 3, why: "힘" }, { n: 2, why: "무기" }], 10),
-        "· 피해: 2d4 → 5 +3힘 +2무기 = 10",
+        "· 피해 2d4 → 5 +3힘 +2무기 = 10",
     );
     // **치명타면 주사위를 두 번 굴린다** — 둘 다 적는다.
     assert.equal(
         damageLine("2d4", [5, 7], [{ n: 3, why: "힘" }], 15),
-        "· 피해: 2d4 두 번 → 5+7 = 12 +3힘 = 15",
+        "· 피해 2d4 두 번 → 5+7 = 12 +3힘 = 15",
     );
     // 깎여서 0 밑으로 내려가면 0 이다(D&D 도 그렇다).
     assert.equal(
         damageLine("1d2", [1], [{ n: -3, why: "힘" }], 0),
-        "· 피해: 1d2 → 1 −3힘 = -2 → 최소 0",
+        "· 피해 1d2 → 1 −3힘 = -2 → 최소 0",
     );
     // 주사위를 안 주면 총합만 — 상대의 표기는 도감이 할 일이다.
-    assert.equal(damageLine(null, [], [], 7), "· 피해: 7");
+    assert.equal(damageLine(null, [], [], 7), "· 피해 7");
 });
 
 test("계산 줄에는 표시가 붙는다 — 띠가 그것을 걸러 낸다", () => {
@@ -139,7 +139,7 @@ test("내가 때리면 굴린 눈이 기록에 남는다", () => {
     placeNextTo(s, "S", 200);
     s = perform(s, { t: "move", dx: 1, dy: 0 });
     assert.ok(
-        s.messages.some((l) => /^· 나 d20 \d+/.test(l)),
+        s.messages.some((l) => /^· 명중 나 d20 \d+/.test(l)),
         `내 굴림이 기록에 없다: ${JSON.stringify(s.messages.slice(-4))}`,
     );
 });
@@ -149,7 +149,7 @@ test("상대가 때려도 굴린 눈이 남는다", () => {
     s.hero.hp = s.hero.maxHp = 9999;
     const m = placeNextTo(s, "S", 200);
     const r = monsterAttack(s, m, new Rng(5));
-    assert.match(r.messages[0], new RegExp(`^· ${MONSTERS.S.name} d20 \\d+`));
+    assert.match(r.messages[0], new RegExp(`^· 명중 ${MONSTERS.S.name} d20 \\d+`));
 });
 
 test("던진 것도 굴린 눈을 남긴다", () => {
@@ -163,7 +163,7 @@ test("던진 것도 굴린 눈을 남긴다", () => {
 
     const after = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
     assert.ok(
-        after.messages.some((l) => /^· 나\(던짐\) d20 \d+/.test(l)),
+        after.messages.some((l) => /^· 명중 나\(던짐\) d20 \d+/.test(l)),
         `던진 굴림이 기록에 없다: ${JSON.stringify(after.messages.slice(-4))}`,
     );
 });
@@ -228,12 +228,12 @@ test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 �
         m.hp = 99999;
         const mine = heroAttack(s, m, rng).messages;
         assert.ok(mine.length >= 2, `결과 줄이 없다: ${JSON.stringify(mine)}`);
-        assert.match(mine[0], /^· 나 d20 /);
+        assert.match(mine[0], /^· 명중 나 d20 /);
         assert.doesNotMatch(mine[mine.length - 1], /^· /);
 
         const theirs = monsterAttack(s, m, rng).messages;
         assert.ok(theirs.length >= 2, `결과 줄이 없다: ${JSON.stringify(theirs)}`);
-        assert.match(theirs[0], /^· .* d20 /);
+        assert.match(theirs[0], /^· 명중 .* d20 /);
         assert.doesNotMatch(theirs[theirs.length - 1], /^· /);
     }
 });
@@ -278,10 +278,10 @@ test("실제로 들어가는 피해와 화면의 「공격」이 같은 식이�
     let seen = 0;
     let crits = 0;
     for (let i = 0; i < 200; i++) {
-        const line = heroAttack(s, m, rng).messages.find((l) => l.startsWith("· 피해:"));
+        const line = heroAttack(s, m, rng).messages.find((l) => l.startsWith("· 피해 "));
         if (!line) continue; // 빗나갔다
         seen++;
-        assert.ok(line.includes(`피해: ${dice} `), `${line} 가 ${dice} 로 안 굴렀다`);
+        assert.ok(line.includes(`피해 ${dice} `), `${line} 가 ${dice} 로 안 굴렀다`);
 
         // 치명타면 `2d4 두 번 → 5+7 = 12 +4힘 = 16`, 아니면 `2d4 → 5 +4힘 = 9`.
         const crit = line.includes("두 번");
@@ -341,4 +341,50 @@ test("정체 모르는 무기의 손질은 「명중」에도 안 샌다", () =>
         5,
         "굴림에 얹히는 값까지 깎였다",
     );
+});
+
+test("기록의 **모든 d20 줄에는 무슨 굴림인지가 적혀 있다**", () => {
+    // D&D 로 갈아타면서 이 표가 한 번 사라졌고, 그러자 `d20 9` 만 덩그러니 남아
+    // 「이 스무면체가 뭘 정하는 건가」를 읽는 사람이 알 수 없게 됐다.
+    let s = newGame(660);
+    s.hero.hp = s.hero.maxHp = 99999;
+    s.hero.food = 99999;
+    const dagger = makeItem("weapon", "dagger", 984, -1, -1);
+    dagger.count = 60;
+    dagger.letter = "z";
+    s.hero.pack.push(dagger);
+
+    const rng = new Rng(12);
+    let seen = 0;
+    for (let i = 0; i < 500 && s.phase === "playing"; i++) {
+        if (i % 9 === 0) placeNextTo(s, "S", 30);
+        const d = rng.pick([{ dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }])!;
+        s = perform(s, i % 5 === 2
+            ? { t: "throw", letter: "z", dx: 1, dy: 0 }
+            : { t: "move", dx: d.dx, dy: d.dy });
+        for (const line of s.messages.filter(isDetail)) {
+            if (!line.includes("d20")) continue;
+            seen++;
+            assert.ok(
+                line.startsWith("· 명중 "),
+                `d20 이 도는데 무슨 굴림인지가 없다: ${line}`,
+            );
+        }
+        s.messages.length = 0;
+    }
+    assert.ok(seen > 30, `d20 줄이 ${seen} 개뿐이라 못 잰다`);
+});
+
+test("d20 은 **명중에만** 굴린다 — 피해는 무기 주사위다", () => {
+    const s = newGame(661);
+    s.hero.hp = s.hero.maxHp = 99999;
+    const m = placeNextTo(s, "T", 999999);
+    const rng = new Rng(13);
+    for (let i = 0; i < 100; i++) {
+        for (const line of heroAttack(s, m, rng).messages.filter(isDetail)) {
+            if (line.startsWith("· 피해")) {
+                assert.ok(!line.includes("d20"), `피해 줄에 d20 이 돈다: ${line}`);
+            }
+        }
+    }
 });

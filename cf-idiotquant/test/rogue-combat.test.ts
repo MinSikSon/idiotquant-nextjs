@@ -285,7 +285,7 @@ test("치명타가 실제 싸움에서 피해를 두 배 주사위로 굴린다"
     let crits = 0;
     for (let i = 0; i < 400; i++) {
         const r = heroAttack(s, m, rng);
-        const line = r.messages.find((l) => l.startsWith("· 피해:"));
+        const line = r.messages.find((l) => l.startsWith("· 피해 "));
         const critLine = r.messages[0].includes("치명타");
         if (!critLine) continue;
         crits++;
