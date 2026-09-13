@@ -20,11 +20,38 @@ import {
     type ItemKind,
 } from "./types";
 
+/**
+ * ── 물건의 **등급은 층이다** ────────────────────────────────────────────────
+ *
+ * 모든 표에 `depth` 가 있다. **그 층보다 얕은 데서는 안 나온다.** 예전에는 빈도표
+ * 하나로만 뽑아서 지하 1층에서 판금 갑옷이 나오고 25층에서 단검이 나왔다 — 그러면
+ * 내려갈 이유가 금화뿐이고, **줍는 일이 판단거리가 아니라 그냥 운**이 된다.
+ *
+ * 장비(무기·갑옷)에는 **위쪽 경계도** 있다(`GEAR_BAND`). 아래로 여덟 층을 지나면
+ * 그 장비는 더 이상 안 떨어진다. 하한만 두면 깊은 층의 바닥이 단검과 가죽 갑옷으로
+ * 덮여서, 고쳐도 고친 것 같지가 않다.
+ *
+ * **소모품(물약·주문서)과 반지·지팡이는 안 낡는다** — 하한만 본다. 26층에서도 체력
+ * 회복 물약은 나와야 하고, 무력화 지팡이는 어느 층에서나 쓸모가 있다.
+ *
+ * ── 이름은 **리니지1** 을 참고했다 ──────────────────────────────────────────
+ *
+ * 사다리의 이름값이 곧 「지금 몇 층짜리 물건을 들고 있는가」다. 진은검·목마른 자의 검·
+ * 기사의 검·바포메트의 검은 그 게임에서 순서가 몸에 밴 이름들이라, 처음 보는 사람도
+ * 어느 쪽이 위인지 안다. **`type` 키(영문)는 안 바꿨다** — 저장과 테스트가 그 키를
+ * 들고 있어서, 이름만 바꾸면 예전 저장도 그대로 열린다.
+ */
+
+/** 장비가 낡아 사라지기까지 — 제 층에서 이만큼 내려가면 더 안 떨어진다. */
+const GEAR_BAND = 8;
+
 export interface WeaponDef {
     name: string;
     damage: string;
     /** 나올 만한 정도 — 클수록 흔하다. */
     freq: number;
+    /** **이 층부터** 나온다. 그보다 얕은 층에는 없다. */
+    depth: number;
     /** 던질 수 있는가. 던지면 그 자리에 떨어진다. */
     throwable?: boolean;
     /** 뭉쳐 다니는가 (화살·다트). */
@@ -36,47 +63,68 @@ export interface ArmorDef {
     /** 방어 등급 — **낮을수록 단단하다.** */
     armor: number;
     freq: number;
+    /** **이 층부터** 나온다. */
+    depth: number;
 }
 
+/**
+ * 무기 사다리 — 피해의 기댓값이 층을 따라 오른다.
+ *
+ * `3d4`(7.5) → `4d4`(10) → `4d5`(12) → `4d6`(14) → `5d5`(15) → `5d6`(17.5) → `6d5`(18).
+ * 한 칸이 두 배씩 뛰지 않는다 — 한 자루 주웠다고 판이 끝나면 그 뒤로 주울 이유가 없다.
+ */
 export const WEAPONS: Record<string, WeaponDef> = {
-    dagger: { name: "단검", damage: "1d6", freq: 10, throwable: true },
-    mace: { name: "철퇴", damage: "2d4", freq: 10 },
-    "long sword": { name: "장검", damage: "3d4", freq: 8 },
-    "two-handed sword": { name: "양손검", damage: "4d4", freq: 4 },
-    spear: { name: "창", damage: "2d3", freq: 6, throwable: true },
-    dart: { name: "다트", damage: "1d3", freq: 8, throwable: true, stack: true },
-    arrow: { name: "화살", damage: "1d2", freq: 8, throwable: true, stack: true },
+    // 1층부터 — 처음 쥐는 것들
+    dagger: { name: "단검", damage: "1d6", freq: 10, depth: 1, throwable: true },
+    mace: { name: "철퇴", damage: "2d4", freq: 10, depth: 1 },
+    spear: { name: "창", damage: "2d3", freq: 6, depth: 1, throwable: true },
+    dart: { name: "다트", damage: "1d3", freq: 8, depth: 1, throwable: true, stack: true },
+    arrow: { name: "화살", damage: "1d2", freq: 8, depth: 1, throwable: true, stack: true },
+    // 사다리
+    "long sword": { name: "롱 소드", damage: "3d4", freq: 9, depth: 4 },
+    "two-handed sword": { name: "클레이모어", damage: "4d4", freq: 7, depth: 8 },
+    "silver arrow": { name: "은화살", damage: "1d4", freq: 6, depth: 9, throwable: true, stack: true },
+    "silver sword": { name: "진은검", damage: "4d5", freq: 6, depth: 12 },
+    "thirsty sword": { name: "목마른 자의 검", damage: "4d6", freq: 5, depth: 16 },
+    "magic sword": { name: "마법의 검", damage: "5d5", freq: 4, depth: 19 },
+    "knight sword": { name: "기사의 검", damage: "5d6", freq: 3, depth: 22 },
+    "baphomet sword": { name: "바포메트의 검", damage: "6d5", freq: 2, depth: 25 },
 };
 
+/** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */
 export const ARMORS: Record<string, ArmorDef> = {
-    leather: { name: "가죽 갑옷", armor: 8, freq: 10 },
-    "ring mail": { name: "사슬 고리 갑옷", armor: 7, freq: 9 },
-    "scale mail": { name: "비늘 갑옷", armor: 6, freq: 8 },
-    "chain mail": { name: "사슬 갑옷", armor: 5, freq: 7 },
-    "banded mail": { name: "띠 갑옷", armor: 4, freq: 5 },
-    "plate mail": { name: "판금 갑옷", armor: 3, freq: 3 },
+    leather: { name: "가죽 갑옷", armor: 8, freq: 10, depth: 1 },
+    "ring mail": { name: "사슬 고리 갑옷", armor: 7, freq: 9, depth: 1 },
+    "scale mail": { name: "비늘 갑옷", armor: 6, freq: 8, depth: 4 },
+    "chain mail": { name: "사슬 갑옷", armor: 5, freq: 8, depth: 7 },
+    "plate mail": { name: "판금 갑옷", armor: 3, freq: 6, depth: 11 },
+    "mithril mail": { name: "미스릴 갑옷", armor: 2, freq: 5, depth: 15 },
+    "dragon mail": { name: "드래곤 갑옷", armor: 1, freq: 3, depth: 19 },
+    "baphomet mail": { name: "바포메트의 갑옷", armor: 0, freq: 2, depth: 23 },
 };
 
-export const POTIONS: Record<string, { name: string; freq: number }> = {
-    healing: { name: "회복", freq: 14 },
-    "extra healing": { name: "큰 회복", freq: 6 },
-    strength: { name: "힘", freq: 8 },
-    "restore strength": { name: "힘 되돌리기", freq: 10 },
-    poison: { name: "독", freq: 8 },
-    blindness: { name: "실명", freq: 5 },
-    confusion: { name: "혼란", freq: 6 },
-    "detect monsters": { name: "괴물 감지", freq: 6 },
+export const POTIONS: Record<string, { name: string; freq: number; depth: number }> = {
+    healing: { name: "체력 회복", freq: 14, depth: 1 },
+    "extra healing": { name: "고급 체력 회복", freq: 6, depth: 6 },
+    // 리니지의 「용기의 물약」이 근력을 올린다. 여기서도 그 일을 한다.
+    strength: { name: "용기", freq: 8, depth: 3 },
+    // 이 게임에서 힘을 깎는 것은 독이고, 이것이 그것을 되돌린다 — 곧 해독제다.
+    "restore strength": { name: "해독", freq: 10, depth: 3 },
+    poison: { name: "독", freq: 8, depth: 1 },
+    blindness: { name: "암흑", freq: 5, depth: 2 },
+    confusion: { name: "혼란", freq: 6, depth: 2 },
+    "detect monsters": { name: "생명 탐지", freq: 6, depth: 4 },
 };
 
-export const SCROLLS: Record<string, { name: string; freq: number }> = {
-    "magic mapping": { name: "지도", freq: 8 },
-    teleport: { name: "순간이동", freq: 8 },
-    "enchant weapon": { name: "무기 손질", freq: 10 },
-    "enchant armor": { name: "갑옷 손질", freq: 10 },
-    identify: { name: "감정", freq: 14 },
-    "remove curse": { name: "저주 풀기", freq: 8 },
-    "aggravate monsters": { name: "도발", freq: 5 },
-    sleep: { name: "잠", freq: 5 },
+export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {
+    "magic mapping": { name: "지도", freq: 8, depth: 3 },
+    teleport: { name: "순간이동", freq: 8, depth: 1 },
+    "enchant weapon": { name: "무기 강화", freq: 10, depth: 1 },
+    "enchant armor": { name: "갑옷 강화", freq: 10, depth: 1 },
+    identify: { name: "감정", freq: 14, depth: 1 },
+    "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
+    "aggravate monsters": { name: "도발", freq: 5, depth: 2 },
+    sleep: { name: "수면", freq: 5, depth: 2 },
 };
 
 /**
@@ -84,28 +132,31 @@ export const SCROLLS: Record<string, { name: string; freq: number }> = {
  *
  * 그 대가가 없으면 반지는 그냥 공짜 능력치이고, 두 손에 둘을 끼지 않을 이유가 없어진다.
  * 원작의 설계가 여기 있다: 좋은 반지일수록 식량을 태우므로 **언제 빼는가**가 결정이 된다.
+ *
+ * **이름은 안 바꿨다.** 반지의 이름은 곧 효과이고(「재생」·「소화 억제」), 그 자리에
+ * 물건 이름을 넣으면 알아낸 뒤에도 무슨 반지인지 알 수 없게 된다.
  */
-export const RINGS: Record<string, { name: string; freq: number; hunger: number }> = {
-    protection: { name: "보호", freq: 9, hunger: 1 },
-    "add strength": { name: "힘", freq: 9, hunger: 1 },
-    regeneration: { name: "재생", freq: 4, hunger: 3 },
-    searching: { name: "탐색", freq: 7, hunger: 1 },
-    "sustain strength": { name: "힘 유지", freq: 5, hunger: 0 },
-    "slow digestion": { name: "소화 억제", freq: 5, hunger: -2 },
-    teleportation: { name: "순간이동", freq: 4, hunger: 1 },
-    adornment: { name: "장식", freq: 2, hunger: 0 },
+export const RINGS: Record<string, { name: string; freq: number; hunger: number; depth: number }> = {
+    protection: { name: "보호", freq: 9, hunger: 1, depth: 1 },
+    "add strength": { name: "힘", freq: 9, hunger: 1, depth: 1 },
+    regeneration: { name: "재생", freq: 4, hunger: 3, depth: 5 },
+    searching: { name: "탐색", freq: 7, hunger: 1, depth: 3 },
+    "sustain strength": { name: "힘 유지", freq: 5, hunger: 0, depth: 3 },
+    "slow digestion": { name: "소화 억제", freq: 5, hunger: -2, depth: 5 },
+    teleportation: { name: "순간이동", freq: 4, hunger: 1, depth: 7 },
+    adornment: { name: "장식", freq: 2, hunger: 0, depth: 1 },
 };
 
 /** 지팡이 — 방향을 겨눠 쏜다. 횟수가 정해져 있다. */
-export const WANDS: Record<string, { name: string; freq: number; damage?: string }> = {
-    "magic missile": { name: "마법 화살", freq: 10, damage: "2d4" },
-    lightning: { name: "번개", freq: 5, damage: "6d6" },
-    fire: { name: "화염", freq: 5, damage: "6d6" },
-    cold: { name: "냉기", freq: 5, damage: "6d6" },
-    "slow monster": { name: "둔화", freq: 8 },
-    "haste monster": { name: "가속", freq: 5 },
-    "teleport away": { name: "밀어내기", freq: 6 },
-    "cancel": { name: "무력화", freq: 5 },
+export const WANDS: Record<string, { name: string; freq: number; damage?: string; depth: number }> = {
+    "magic missile": { name: "마법 화살", freq: 10, damage: "2d4", depth: 1 },
+    lightning: { name: "번개", freq: 5, damage: "6d6", depth: 10 },
+    fire: { name: "화염", freq: 5, damage: "6d6", depth: 10 },
+    cold: { name: "냉기", freq: 5, damage: "6d6", depth: 10 },
+    "slow monster": { name: "둔화", freq: 8, depth: 3 },
+    "haste monster": { name: "가속", freq: 5, depth: 5 },
+    "teleport away": { name: "밀어내기", freq: 6, depth: 5 },
+    "cancel": { name: "무력화", freq: 5, depth: 7 },
 };
 
 /** 물약이 이 판에서 무슨 색으로 보이는가. */
@@ -171,16 +222,41 @@ export function rollAppearances(rng: Rng): Record<string, string> {
     return out;
 }
 
-/** 빈도표에서 하나 뽑기. */
-function weighted<T extends { freq: number }>(table: Record<string, T>, rng: Rng): string {
-    const keys = Object.keys(table);
-    const total = keys.reduce((s, k) => s + table[k].freq, 0);
+/**
+ * 이 층에서 뽑을 **물건의 등급.**
+ *
+ * `randomMonsterChar` 와 **같은 식**이다 — 지금 층에서 여섯 위, 셋 아래까지 샌다.
+ * 그래서 가끔 한 수 위의 물건이 일찍 나오고(그 한 번이 판을 바꾼다), 가끔 한 수
+ * 아래의 것이 늦게 나온다. 층과 딱 맞아떨어지면 주울 때마다 놀랄 일이 없다.
+ */
+export function itemTier(depth: number, rng: Rng): number {
+    return Math.min(26, Math.max(1, depth + rng.rnd(10) - 6));
+}
+
+/**
+ * 빈도표에서 **그 등급에 맞는 것** 하나 뽑기.
+ *
+ * `band` 를 주면 위쪽도 자른다 — 장비는 낡으면 안 떨어진다. 안 주면 하한만 본다.
+ * 띠가 비면(사다리에 구멍이 있으면) 하한까지만 물러선다. 그마저 비는 일은 1층짜리
+ * 물건이 있는 한 없고, 테스트가 스물여섯 층을 다 훑어 확인한다.
+ */
+function weightedAt<T extends { freq: number; depth: number }>(
+    table: Record<string, T>,
+    tier: number,
+    rng: Rng,
+    band = Infinity,
+): string {
+    const all = Object.keys(table);
+    const fits = all.filter((k) => table[k].depth <= tier);
+    const keys = fits.filter((k) => table[k].depth > tier - band);
+    const pool = keys.length ? keys : fits.length ? fits : all;
+    const total = pool.reduce((s, k) => s + table[k].freq, 0);
     let r = rng.rnd(total);
-    for (const k of keys) {
+    for (const k of pool) {
         r -= table[k].freq;
         if (r < 0) return k;
     }
-    return keys[keys.length - 1];
+    return pool[pool.length - 1];
 }
 
 export function makeItem(kind: ItemKind, type: string, id: number, x: number, y: number, count = 1): Item {
@@ -195,30 +271,43 @@ export function makeItem(kind: ItemKind, type: string, id: number, x: number, y:
     return it;
 }
 
-/** 손질 정도를 굴린다. 열에 하나는 상했고, 상한 것은 **저주받았다.** */
-function rollEnchant(rng: Rng): { plus: number; cursed: boolean } {
-    if (rng.rnd(10) === 0) return { plus: -(rng.rnd(2) + 1), cursed: true };
-    if (rng.rnd(5) === 0) return { plus: rng.rnd(2) + 1, cursed: false };
+/**
+ * 손질 정도를 굴린다. 열에 하나는 상했고, 상한 것은 **저주받았다.**
+ *
+ * **깊을수록 크게 손질된 것이 나온다.** 리니지의 얼굴이 그 숫자다 — 같은 진은검이라도
+ * `+0` 과 `+3` 은 다른 물건이다. 다만 한 칸은 작게 둔다(26층에서도 최대 `+3`): 이
+ * 숫자는 「무기 강화 주문서」로도 오르는 값이라, 떨어지는 것부터 크면 주문서가 쓸모를
+ * 잃는다.
+ */
+function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean } {
+    const best = 1 + Math.floor(Math.min(26, Math.max(1, depth)) / 9); // 1 … 3
+    if (rng.rnd(10) === 0) return { plus: -(rng.rnd(best) + 1), cursed: true };
+    if (rng.rnd(5) === 0) return { plus: rng.rnd(best) + 1, cursed: false };
     return { plus: 0, cursed: false };
 }
 
 /**
- * 이 층에 떨어져 있을 물건 하나. 깊을수록 금화가 두둑하다.
+ * 이 층에 떨어져 있을 물건 하나. 깊을수록 금화가 두둑하고 **물건의 등급이 높다.**
+ *
+ * 종류(금화냐 물약이냐 무기냐)를 고르는 확률은 층을 안 탄다 — 그것까지 층에 맡기면
+ * 「깊은 층에서는 식량이 안 나온다」 같은 일이 생겨서 굶어 죽는 까닭이 운이 된다.
+ * 층이 정하는 것은 **어느 등급의 물건인가**뿐이다.
  */
 export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng): Item {
     const r = rng.rnd(100);
     if (r < 24) return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
-    if (r < 40) return makeItem("potion", weighted(POTIONS, rng), id, x, y);
-    if (r < 56) return makeItem("scroll", weighted(SCROLLS, rng), id, x, y);
+    const tier = itemTier(depth, rng);
+    if (r < 40) return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
+    if (r < 56) return makeItem("scroll", weightedAt(SCROLLS, tier, rng), id, x, y);
     if (r < 66) return makeItem("food", "food ration", id, x, y);
 
     if (r < 78) {
-        const type = weighted(WEAPONS, rng);
+        const type = weightedAt(WEAPONS, tier, rng, GEAR_BAND);
         const def = WEAPONS[type];
         // 화살과 다트는 한 줌씩 나온다 — 하나씩 던져 봐야 아무 일도 안 난다.
         const count = def.stack ? rng.between(5, 14) : 1;
         const it = makeItem("weapon", type, id, x, y, count);
-        const e = rollEnchant(rng);
+        const e = rollEnchant(depth, rng);
         it.plusHit = e.plus;
         it.plusDam = e.plus;
         it.cursed = e.cursed;
@@ -226,17 +315,17 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     }
 
     if (r < 88) {
-        const it = makeItem("armor", weighted(ARMORS, rng), id, x, y);
-        const e = rollEnchant(rng);
+        const it = makeItem("armor", weightedAt(ARMORS, tier, rng, GEAR_BAND), id, x, y);
+        const e = rollEnchant(depth, rng);
         it.plusArmor = e.plus;
         it.cursed = e.cursed;
         return it;
     }
 
     if (r < 95) {
-        const type = weighted(RINGS, rng);
+        const type = weightedAt(RINGS, tier, rng);
         const it = makeItem("ring", type, id, x, y);
-        const e = rollEnchant(rng);
+        const e = rollEnchant(depth, rng);
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
         it.plusRing = type === "protection" || type === "add strength" ? Math.max(1, e.plus) : 0;
         if (e.cursed) {
@@ -246,9 +335,41 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         return it;
     }
 
-    const it = makeItem("wand", weighted(WANDS, rng), id, x, y);
+    const it = makeItem("wand", weightedAt(WANDS, tier, rng), id, x, y);
     it.charges = rng.between(3, 7);
     return it;
+}
+
+/**
+ * 그 물건이 **몇 층에서 떨어지는가.** 도감의 「지하 1–8층에 나온다」와 같은 자리다.
+ *
+ * `randomItem` 과 **같은 식**을 쓴다. 둘이 갈리면 화면이 적어 놓은 띠와 실제로 떨어지는
+ * 층이 달라지는데, 그건 고장이 고장처럼 안 보이는 자리다 — 테스트가 실제 뽑기와 맞춰 본다.
+ */
+export function itemDepthRange(kind: ItemKind, type: string): { min: number; max: number } | null {
+    const table =
+        kind === "weapon" ? WEAPONS
+        : kind === "armor" ? ARMORS
+        : kind === "potion" ? POTIONS
+        : kind === "scroll" ? SCROLLS
+        : kind === "ring" ? RINGS
+        : kind === "wand" ? WANDS
+        : null;
+    const def = table?.[type as keyof typeof table] as { depth: number } | undefined;
+    if (!def) return null;
+    const band = kind === "weapon" || kind === "armor" ? GEAR_BAND : Infinity;
+    let min = Infinity;
+    let max = -Infinity;
+    for (let depth = 1; depth <= 26; depth++) {
+        // `itemTier` 가 낼 수 있는 값 전부 — 지금 층에서 여섯 위, 셋 아래.
+        for (let roll = 0; roll < 10; roll++) {
+            const tier = Math.min(26, Math.max(1, depth + roll - 6));
+            if (def.depth > tier || def.depth <= tier - band) continue;
+            min = Math.min(min, depth);
+            max = Math.max(max, depth);
+        }
+    }
+    return Number.isFinite(min) ? { min, max } : null;
 }
 
 /** 화면의 글자. */
@@ -360,8 +481,8 @@ export function armorClass(rogueArmor: number): number {
  * 무기는 **피해**를 적는다. 명중은 무기 혼자 정하는 값이 아니라 숙련과 힘이 같이
  * 만드는 것이라 배낭 줄에 적을 수 없다 — 그것은 「지금의 나」 줄이 맡는다.
  *
- * 예전에는 무기는 기본 주사위만, 갑옷은 방어 등급을 그대로 적었다. 그래서 `+2 장검`
- * 과 맹탕 장검이 똑같이 `3d4` 로 보였고, `+1` 을 손질한 가죽 갑옷은 `방어 8` 이
+ * 예전에는 무기는 기본 주사위만, 갑옷은 방어 등급을 그대로 적었다. 그래서 `+2 롱 소드`
+ * 와 맹탕 롱 소드가 똑같이 `3d4` 로 보였고, `+1` 을 손질한 가죽 갑옷은 `방어 8` 이
  * `방어 7` 로 **내려가서 나빠 보였다.** 둘 다 고쳤다.
  *
  * 손질은 **정체를 알아낸 물건에만** 얹는다 — 모르는 물건의 속을 화면이 흘리면 안 된다.
