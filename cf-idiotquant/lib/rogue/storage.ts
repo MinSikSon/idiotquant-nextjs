@@ -10,6 +10,7 @@
  * 표를 고치는 날 저장된 판만 옛 값으로 남는다. 글자 하나만 적고 되읽을 때 표에서 찾는다.
  */
 
+import { ENCHANT_MAX } from "./items";
 import { MONSTERS } from "./monsters";
 import { MAP_H, MAP_W, type GameState, type Item, type Level, type Monster } from "./types";
 
@@ -124,12 +125,17 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
  *
  * 저주는 **안 푼다.** 없앤 것은 깎인 숫자이지 저주가 아니다 — 저주받은 것은 여전히 못
  * 벗는다. 바닥에 떨어져 있는 물건도 같이 본다(주우면 배낭으로 들어온다).
+ *
+ * **상한(`ENCHANT_MAX`)도 같이 건다.** 강화에 상한이 없던 때의 저장에는 `+12` 짜리가
+ * 있을 수 있는데, 그것 하나가 층 사다리를 통째로 무의미하게 만든다. 위아래 양쪽을 한
+ * 자리에서 맞춘다.
  */
 function liftEnchants(items: Item[]): Item[] {
+    const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
-        if ((it.plusHit ?? 0) < 0) it.plusHit = 0;
-        if ((it.plusDam ?? 0) < 0) it.plusDam = 0;
-        if ((it.plusArmor ?? 0) < 0) it.plusArmor = 0;
+        if ((it.plusHit ?? 0) < 0 || (it.plusHit ?? 0) > ENCHANT_MAX) it.plusHit = fit(it.plusHit);
+        if ((it.plusDam ?? 0) < 0 || (it.plusDam ?? 0) > ENCHANT_MAX) it.plusDam = fit(it.plusDam);
+        if ((it.plusArmor ?? 0) < 0 || (it.plusArmor ?? 0) > ENCHANT_MAX) it.plusArmor = fit(it.plusArmor);
         if ((it.plusRing ?? 0) < 0) it.plusRing = 0;
     }
     return items;

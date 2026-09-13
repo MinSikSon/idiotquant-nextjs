@@ -26,12 +26,13 @@ import {
     type Sighting,
     bestiaryProgress,
     bestiaryRows,
+    enchantTarget,
     newGame,
     perform,
     score,
     survey,
 } from "@/lib/rogue/game";
-import { describe, isThrowable, itemPower } from "@/lib/rogue/items";
+import { ENCHANT_MAX, describe, enchantOdds, isThrowable, itemPower } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
 import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
@@ -67,6 +68,11 @@ interface Aiming {
     title: string;
     what: string;
     make: (dx: number, dy: number) => Command;
+}
+
+/** 그 물건의 강화 수치 — 무기는 명중, 갑옷은 방어. 한 자리에서 읽는다. */
+function plusOf(it: Item): number {
+    return (it.kind === "armor" ? it.plusArmor : it.plusHit) ?? 0;
 }
 
 /** `+8` / `-1` / `+0` — 명중은 부호를 붙여야 보정으로 읽힌다. */
@@ -189,6 +195,39 @@ export default function Rogue() {
     /** 물건을 고르면 방향 판으로 넘어가야 하는가. */
     const pendingAim = useRef<"zap" | "throw" | null>(null);
 
+    /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다. */
+    const pendingEnchant = useRef<{ scroll: string; kind: ItemKind } | null>(null);
+
+    /**
+     * 주문서 하나를 읽는다 — **강화면 고를 것을 한 번 더 묻는다.**
+     *
+     * 「무엇을 읽을까」 고르기에서도, 배낭 줄의 「읽는다」에서도 여기로 온다. 두 길이
+     * 갈리면 한쪽만 고치는 날이 오고, 실제로 배낭 쪽은 대상 없이 `read` 를 던져서
+     * **아무 일도 안 나는** 자리가 됐었다.
+     *
+     * 강화인지 아닌지는 **엔진에 묻는다**(`enchantTarget`) — 판단이 아니라 값 읽기다.
+     */
+    const readScroll = useCallback(
+        (letter: string) => {
+            const want = state ? enchantTarget(state, letter) : null;
+            if (!want) {
+                run({ t: "read", letter });
+                return;
+            }
+            pendingEnchant.current = { scroll: letter, kind: want };
+            setPicker({
+                title: want === "weapon" ? "무엇을 강화할까" : "무슨 갑옷을 강화할까",
+                kinds: [want],
+                // **상한에 닿은 것은 안 보여 준다** — 눌러도 아무 일이 안 나는 줄을
+                // 목록에 세우면 그게 고장처럼 읽힌다.
+                allow: (p) => plusOf(p) < ENCHANT_MAX,
+                empty: want === "weapon" ? "강화할 무기가 없다." : "강화할 갑옷이 없다.",
+                make: () => ({ t: "rest" }), // 쓰이지 않는다 — `choosePicked` 가 가로챈다
+            });
+        },
+        [run, state],
+    );
+
     const choosePicked = useCallback(
         (letter: string) => {
             const mode = pendingAim.current;
@@ -202,12 +241,26 @@ export default function Rogue() {
                 });
                 return;
             }
+            // 두 번째 고르기 — 강화할 물건을 짚었다.
+            const en = pendingEnchant.current;
+            if (en) {
+                pendingEnchant.current = null;
+                setPicker(null);
+                run({ t: "read", letter: en.scroll, target: letter });
+                return;
+            }
+            // 주문서를 짚었으면 **강화인지 아닌지**를 `readScroll` 이 엔진에 묻는다.
+            if (picker?.kinds.length === 1 && picker.kinds[0] === "scroll") {
+                setPicker(null);
+                readScroll(letter);
+                return;
+            }
             setPicker((p) => {
                 if (p) run(p.make(letter));
                 return null;
             });
         },
-        [run],
+        [picker, readScroll, run],
     );
 
     // ── 키보드 ─────────────────────────────────────────────────────────
@@ -390,6 +443,8 @@ export default function Rogue() {
         ? hero.pack.filter((p) => picker.kinds.includes(p.kind) && (!picker.allow || picker.allow(p)))
         : [];
     const hpLow = hero.hp <= hero.maxHp / 4;
+    /** 지금 고르는 것이 **강화할 대상**인가 — 그러면 줄마다 성공률을 적는다. */
+    const enchanting = !!picker && !!pendingEnchant.current;
 
     /** 이 물건으로 지금 할 수 있는 일 — **규칙이 아니라 목록**이다. 눌러도 규칙이 다시 본다. */
     const actionsFor = (it: Item): { label: string; on: () => void }[] => {
@@ -418,7 +473,17 @@ export default function Rogue() {
                 out.push({ label: "마신다", on: go({ t: "quaff", letter: it.letter! }) });
                 break;
             case "scroll":
-                out.push({ label: "읽는다", on: go({ t: "read", letter: it.letter! }) });
+                // **배낭에서 읽어도 같은 길로 보낸다.** 강화 주문서는 고를 것을 한 번 더
+                // 묻는데, 여기서 `read` 를 곧장 던지면 대상이 없어 **아무 일도 안 난다** —
+                // 화면은 멀쩡하고 주문서만 그대로 남아서 고장처럼 읽힌다.
+                out.push({
+                    label: "읽는다",
+                    on: () => {
+                        setChosen(null);
+                        setSheet("none");
+                        readScroll(it.letter!);
+                    },
+                });
                 break;
             case "food":
                 out.push({ label: "먹는다", on: go({ t: "eat", letter: it.letter! }) });
@@ -550,9 +615,14 @@ export default function Rogue() {
                     title={picker.title}
                     onClose={() => {
                         pendingAim.current = null;
+                        pendingEnchant.current = null;
                         setPicker(null);
                     }}
-                    footer="글자를 누르거나 줄을 눌러 고릅니다."
+                    footer={
+                        enchanting
+                            ? "실패하면 그 물건은 부서집니다. +5 까지는 안전합니다."
+                            : "글자를 누르거나 줄을 눌러 고릅니다."
+                    }
                 >
                     {pickable.length === 0 ? (
                         <p className="text-[var(--rg-faint)]">{picker.empty}</p>
@@ -569,6 +639,26 @@ export default function Rogue() {
                                             `storage.fixLetters` 가 메우지만 끝내 못 메우는 경우가 남는다. */}
                                         {/* 위와 같다 — 화면에 `undefined` 를 내보내지 않는다. */}
                                             <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
+                                        {/* **거는 값을 숫자로 보여 준다.** 확률을 감추면 이건 판단이 아니라
+                                            그냥 동전 던지기다. 내 물건의 값이라 가릴 까닭도 없다.
+                                            `enchantOdds` 한 자리에서 오므로 실제 굴림과 어긋날 수 없다. */}
+                                        {enchanting && (
+                                            <span className="text-[var(--rg-muted)]">
+                                                {" "}→ +{plusOf(it) + 1}{" "}
+                                                <span
+                                                    className={
+                                                        enchantOdds(plusOf(it)) >= 1
+                                                            ? "text-[var(--rg-ring)]"
+                                                            : enchantOdds(plusOf(it)) < 0.4
+                                                              ? "text-[var(--rg-trap)]"
+                                                              : "text-[var(--rg-gold)]"
+                                                    }
+                                                >
+                                                    ({Math.round(enchantOdds(plusOf(it)) * 100)}%
+                                                    {enchantOdds(plusOf(it)) >= 1 ? " 안전" : ""})
+                                                </span>
+                                            </span>
+                                        )}
                                     </button>
                                 </li>
                             ))}
@@ -836,6 +926,13 @@ export default function Rogue() {
                             굴리지 않습니다.</b> <b>20</b> 은 무조건 맞고 <b>피해 주사위를 두 번</b> 굴리며,
                             <b>1</b> 은 무조건 빗나갑니다. 자는 놈을 치면 <b>유리</b>(두 번 굴려 높은 쪽),
                             눈이 멀거나 헷갈리면 <b>불리</b>입니다. 굴린 값은 모두 <b>기록</b>에 남습니다.
+                        </p>
+                        <p className="text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-muted)]">강화 주문서로 캐릭터를 키웁니다.</b>{" "}
+                            읽으면 <b>배낭의 어느 것에 걸지</b>를 묻습니다. 떨어지는 물건은 <b>+3</b>{" "}
+                            까지지만 <b>+5</b> 까지는 안전하게 올릴 수 있고, 그 위는 도박입니다 —{" "}
+                            <b className="text-[var(--rg-trap)]">실패하면 그 물건이 부서집니다.</b>{" "}
+                            성공률은 고르는 화면에 적혀 있습니다. 끝은 <b>+9</b> 입니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.

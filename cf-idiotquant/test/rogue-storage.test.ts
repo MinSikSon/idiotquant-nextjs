@@ -17,6 +17,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { type Command, newGame, perform, survey } from "@/lib/rogue/game";
+import { ENCHANT_MAX } from "@/lib/rogue/items";
 import { packItem } from "@/lib/rogue/hero";
 import { deserialize, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
@@ -362,4 +363,23 @@ test("저주는 안 푼다 — 없앤 것은 깎인 숫자이지 저주가 아�
     const back = deserialize(JSON.stringify(o))!;
     assert.equal(back.hero.pack[0].plusHit, 0, "손질이 안 올라갔다");
     assert.equal(back.hero.pack[0].cursed, true, "저주까지 풀렸다 — 못 벗는 것이 저주의 값이다");
+});
+
+test("상한을 넘긴 옛 저장은 되읽으면서 +9 로 내린다", () => {
+    // 강화에 상한이 없던 때의 저장에는 `+12` 짜리가 있을 수 있다. 그것 하나가 층
+    // 사다리를 통째로 무의미하게 만든다 — 4층짜리 장검이 25층짜리 바포메트의 검을 이긴다.
+    const s = newGame(23);
+    const o = JSON.parse(serialize(s));
+    o.hero.pack[0].plusHit = 12;
+    o.hero.pack[0].plusDam = 12;
+    o.hero.pack[1].plusArmor = 40;
+    o.level.items.push({ id: 9002, kind: "weapon", type: "long sword", count: 1, x: 1, y: 1, plusHit: 99, plusDam: 99 });
+    const back = deserialize(JSON.stringify(o))!;
+    for (const it of [...back.hero.pack, ...back.level.items]) {
+        for (const n of [it.plusHit, it.plusDam, it.plusArmor]) {
+            assert.ok((n ?? 0) <= ENCHANT_MAX, `상한을 넘긴 것이 남았다: ${it.type} +${n}`);
+        }
+    }
+    assert.equal(back.hero.pack[0].plusHit, ENCHANT_MAX);
+    play(back);
 });
