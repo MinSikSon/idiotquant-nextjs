@@ -14,6 +14,7 @@ import {
 } from "./types";
 import {
     RINGS,
+    WEAPONS,
     armorClass,
     armorClassOf,
     makeItem,
@@ -209,7 +210,7 @@ export function heroHitTerms(hero: Hero): Term[] {
     return [
         { n: proficiency(hero.level), why: "숙련" },
         { n: strHitBonus(heroStr(hero)), why: "힘" },
-        { n: weapon?.plusHit ?? 0, why: "무기" },
+        { n: weapon?.plusHit ?? 0, why: weaponLabel(weapon) },
     ];
 }
 
@@ -218,8 +219,21 @@ export function heroDamTerms(hero: Hero): Term[] {
     const weapon = equippedWeapon(hero);
     return [
         { n: strHitBonus(heroStr(hero)), why: "힘" },
-        { n: weapon?.plusDam ?? 0, why: "무기" },
+        { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
     ];
+}
+
+/**
+ * 굴림 줄에 적는 무기의 이름 — `+2무기` 가 아니라 **`+2진은검`.**
+ *
+ * 사다리가 층을 타는 지금은 「무엇으로 쳤나」가 판단거리다. 그냥 「무기」라고 적으면
+ * 강화 수치는 보이는데 **그게 어느 칼의 것인지가 안 보인다.** 기록을 되짚을 때
+ * 「그때 뭘 들고 있었지」를 못 읽는다.
+ *
+ * 쥔 것이 없으면 「무기」로 둔다 — 어차피 `0` 이라 줄에 안 찍힌다(`terms()` 가 0 을 뺀다).
+ */
+function weaponLabel(weapon: Item | undefined): string {
+    return weapon ? (WEAPONS[weapon.type]?.name ?? "무기") : "무기";
 }
 
 /**
@@ -231,9 +245,11 @@ export function heroDamTerms(hero: Hero): Term[] {
 export function heroHitBonus(hero: Hero, known: Record<string, boolean> = {}): number {
     const w = equippedWeapon(hero);
     const identified = !!w && known[`weapon:${w.type}`] === true;
-    return heroHitTerms(hero)
-        .filter((t) => identified || t.why !== "무기")
-        .reduce((sum, t) => sum + t.n, 0);
+    const sum = heroHitTerms(hero).reduce((s, t) => s + t.n, 0);
+    // **이름표로 고르지 않는다.** 예전에는 `why !== "무기"` 로 걸렀는데, 굴림 줄에 무기
+    // 이름을 적기 시작하자(`+2진은검`) 그 문자열이 안 맞아 **조용히 안 가려졌다.**
+    // 빼야 할 것은 「무기라고 적힌 항목」이 아니라 **그 무기의 손질값**이다.
+    return identified ? sum : sum - (w?.plusHit ?? 0);
 }
 
 /** 지금의 힘 — 힘 반지가 얹힌다. 명중·피해 보정은 이 값으로 잰다. */
@@ -280,9 +296,9 @@ export function heroDamageDice(hero: Hero): string {
 export function heroAttackText(hero: Hero, known: Record<string, boolean>): string {
     const w = equippedWeapon(hero);
     const identified = !!w && known[`weapon:${w.type}`] === true;
-    const bonus = heroDamTerms(hero)
-        .filter((t) => identified || t.why !== "무기")
-        .reduce((sum, t) => sum + t.n, 0);
+    // `heroHitBonus` 와 같은 이유로 **이름표가 아니라 값으로** 뺀다(거기 주석 참고).
+    const all = heroDamTerms(hero).reduce((sum, t) => sum + t.n, 0);
+    const bonus = identified ? all : all - (w?.plusDam ?? 0);
     return `${heroDamageDice(hero)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
 }
 

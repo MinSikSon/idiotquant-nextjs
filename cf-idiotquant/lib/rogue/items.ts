@@ -8,6 +8,11 @@
  * 이름을 부르는 자리는 `describe()` **하나뿐이다.** 화면이 따로 이름을 지어내면
  * 알아낸 것과 안 알아낸 것이 화면마다 달라 보인다.
  *
+ * **화면에 로마자를 안 내보낸다.** 표에 없는 `type` 이 오면 예전에는 그 키(`banded mail`
+ * 같은 영문)를 그대로 찍었다. 표에서 한 줄을 지우는 순간 **그걸 들고 있던 옛 저장이
+ * 영어로 뜬다** — 실제로 그렇게 됐었다. 지금은 「이름 없는 갑옷」으로 물러선다.
+ * (표에서 줄을 지우는 것 자체를 되도록 하지 말 것. 옛 저장은 그 키를 계속 들고 있다.)
+ *
  * **저주는 겉모습으로 못 가른다.** 쥐거나 입은 순간에만 드러나고, 드러나면 벗을 수
  * 없다. 그것이 「좋아 보이는 것을 집는 일」에 값을 매기는 유일한 장치다.
  */
@@ -78,11 +83,11 @@ export const WEAPONS: Record<string, WeaponDef> = {
     dagger: { name: "단검", damage: "1d6", freq: 10, depth: 1, throwable: true },
     mace: { name: "철퇴", damage: "2d4", freq: 10, depth: 1 },
     spear: { name: "창", damage: "2d3", freq: 6, depth: 1, throwable: true },
-    dart: { name: "다트", damage: "1d3", freq: 8, depth: 1, throwable: true, stack: true },
+    dart: { name: "표창", damage: "1d3", freq: 8, depth: 1, throwable: true, stack: true },
     arrow: { name: "화살", damage: "1d2", freq: 8, depth: 1, throwable: true, stack: true },
     // 사다리
-    "long sword": { name: "롱 소드", damage: "3d4", freq: 9, depth: 4 },
-    "two-handed sword": { name: "클레이모어", damage: "4d4", freq: 7, depth: 8 },
+    "long sword": { name: "장검", damage: "3d4", freq: 9, depth: 4 },
+    "two-handed sword": { name: "양손검", damage: "4d4", freq: 7, depth: 8 },
     "silver arrow": { name: "은화살", damage: "1d4", freq: 6, depth: 9, throwable: true, stack: true },
     "silver sword": { name: "진은검", damage: "4d5", freq: 6, depth: 12 },
     "thirsty sword": { name: "목마른 자의 검", damage: "4d6", freq: 5, depth: 16 },
@@ -97,9 +102,10 @@ export const ARMORS: Record<string, ArmorDef> = {
     "ring mail": { name: "사슬 고리 갑옷", armor: 7, freq: 9, depth: 1 },
     "scale mail": { name: "비늘 갑옷", armor: 6, freq: 8, depth: 4 },
     "chain mail": { name: "사슬 갑옷", armor: 5, freq: 8, depth: 7 },
+    "banded mail": { name: "띠 갑옷", armor: 4, freq: 7, depth: 9 },
     "plate mail": { name: "판금 갑옷", armor: 3, freq: 6, depth: 11 },
     "mithril mail": { name: "미스릴 갑옷", armor: 2, freq: 5, depth: 15 },
-    "dragon mail": { name: "드래곤 갑옷", armor: 1, freq: 3, depth: 19 },
+    "dragon mail": { name: "용비늘 갑옷", armor: 1, freq: 3, depth: 19 },
     "baphomet mail": { name: "바포메트의 갑옷", armor: 0, freq: 2, depth: 23 },
 };
 
@@ -272,16 +278,25 @@ export function makeItem(kind: ItemKind, type: string, id: number, x: number, y:
 }
 
 /**
- * 손질 정도를 굴린다. 열에 하나는 상했고, 상한 것은 **저주받았다.**
+ * 손질 정도를 굴린다. 열에 하나는 **저주받았다.**
  *
  * **깊을수록 크게 손질된 것이 나온다.** 리니지의 얼굴이 그 숫자다 — 같은 진은검이라도
  * `+0` 과 `+3` 은 다른 물건이다. 다만 한 칸은 작게 둔다(26층에서도 최대 `+3`): 이
  * 숫자는 「무기 강화 주문서」로도 오르는 값이라, 떨어지는 것부터 크면 주문서가 쓸모를
  * 잃는다.
+ *
+ * ── **마이너스 손질은 없다** ───────────────────────────────────────────────
+ * 예전에는 저주받은 물건이 `−2` 로 나왔다. 그러면 저주의 대가가 **두 벌**이 된다 —
+ * 못 벗는다는 것과 숫자가 깎인다는 것. 지금은 하나다: **못 벗는다.** 깊은 층에서 더
+ * 좋은 것을 주워도 못 바꾸는 것이 그 값이고, 사다리가 층을 타는 지금은 그 값이 예전보다
+ * 오히려 크다 — 20층에서 4층짜리 장검에 손이 묶이는 것이 `−2` 보다 아프다.
+ *
+ * 그래서 화면에 `−` 가 붙은 물건은 이제 안 나온다. 힘이 깎여서(독) 보정이 음수가 되는
+ * 일은 그대로다 — 그건 물건이 아니라 내 몸이다.
  */
 function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean } {
     const best = 1 + Math.floor(Math.min(26, Math.max(1, depth)) / 9); // 1 … 3
-    if (rng.rnd(10) === 0) return { plus: -(rng.rnd(best) + 1), cursed: true };
+    if (rng.rnd(10) === 0) return { plus: 0, cursed: true };
     if (rng.rnd(5) === 0) return { plus: rng.rnd(best) + 1, cursed: false };
     return { plus: 0, cursed: false };
 }
@@ -328,10 +343,9 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const e = rollEnchant(depth, rng);
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
         it.plusRing = type === "protection" || type === "add strength" ? Math.max(1, e.plus) : 0;
-        if (e.cursed) {
-            it.cursed = true;
-            it.plusRing = -Math.abs(e.plus || 1);
-        }
+        // **저주받은 반지도 숫자를 안 깎는다**(위 `rollEnchant` 참고). 대가는 「손가락
+        // 하나를 잃는다」다 — 두 개뿐인 자리를 쓸모없는 반지가 차지하고, 뺄 수 없다.
+        if (e.cursed) it.cursed = true;
         return it;
     }
 
@@ -426,27 +440,27 @@ export function describe(
         case "amulet":
             return "옌더의 증표";
         case "potion":
-            return known[key] ? `${POTIONS[it.type]?.name ?? it.type} 물약` : (appearance[key] ?? "물약");
+            return known[key] ? `${POTIONS[it.type]?.name ?? "이름 없는"} 물약` : (appearance[key] ?? "물약");
         case "scroll":
-            return known[key] ? `${SCROLLS[it.type]?.name ?? it.type} 주문서` : (appearance[key] ?? "주문서");
+            return known[key] ? `${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
         case "ring": {
-            const base = known[key] ? `${RINGS[it.type]?.name ?? it.type} 반지` : (appearance[key] ?? "반지");
+            const base = known[key] ? `${RINGS[it.type]?.name ?? "이름 없는"} 반지` : (appearance[key] ?? "반지");
             return known[key] ? `${base}${plusText(it.plusRing)}${curseText(it)}` : `${base}${curseText(it)}`;
         }
         case "wand": {
-            const base = known[key] ? `${WANDS[it.type]?.name ?? it.type} 지팡이` : (appearance[key] ?? "지팡이");
+            const base = known[key] ? `${WANDS[it.type]?.name ?? "이름 없는"} 지팡이` : (appearance[key] ?? "지팡이");
             return known[key] ? `${base} (${it.charges ?? 0}회)` : base;
         }
         case "weapon": {
             // **개수는 여기서 안 붙인다.** 화면이 이미 `×10` 을 붙이므로 「다트 10개 ×10」
             // 이 되고, 하나를 던졌을 때 「다트 10개를 던졌다」로도 읽힌다.
-            const base = WEAPONS[it.type]?.name ?? it.type;
+            const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
             return known[key]
                 ? `${base}${plusText(it.plusHit)}${curseText(it)}`
                 : `${base}${curseText(it)}`;
         }
         case "armor": {
-            const base = ARMORS[it.type]?.name ?? it.type;
+            const base = ARMORS[it.type]?.name ?? "이름 없는 갑옷";
             return known[key]
                 ? `${base}${plusText(it.plusArmor)}${curseText(it)}`
                 : `${base}${curseText(it)}`;
@@ -481,8 +495,8 @@ export function armorClass(rogueArmor: number): number {
  * 무기는 **피해**를 적는다. 명중은 무기 혼자 정하는 값이 아니라 숙련과 힘이 같이
  * 만드는 것이라 배낭 줄에 적을 수 없다 — 그것은 「지금의 나」 줄이 맡는다.
  *
- * 예전에는 무기는 기본 주사위만, 갑옷은 방어 등급을 그대로 적었다. 그래서 `+2 롱 소드`
- * 와 맹탕 롱 소드가 똑같이 `3d4` 로 보였고, `+1` 을 손질한 가죽 갑옷은 `방어 8` 이
+ * 예전에는 무기는 기본 주사위만, 갑옷은 방어 등급을 그대로 적었다. 그래서 `+2 장검`
+ * 과 맹탕 장검이 똑같이 `3d4` 로 보였고, `+1` 을 손질한 가죽 갑옷은 `방어 8` 이
  * `방어 7` 로 **내려가서 나빠 보였다.** 둘 다 고쳤다.
  *
  * 손질은 **정체를 알아낸 물건에만** 얹는다 — 모르는 물건의 속을 화면이 흘리면 안 된다.

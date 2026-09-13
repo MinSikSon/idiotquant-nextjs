@@ -329,3 +329,37 @@ test("이상한 자리(숫자·빈 글자·두 글자)도 고친다", () => {
     }
     play(back);
 });
+
+// ── 마이너스 손질이 박힌 옛 저장 ────────────────────────────────────────────
+//
+// 규칙에서 `−N` 을 없앴다(`items.rollEnchant`). 하지만 **새로 생기는 것을 막는 것과 이미
+// 저장된 것을 고치는 것은 다른 일**이다 — 「undefined) 식량」 때 배운 그 자리다. 규칙만
+// 고치면 `−2` 짜리 칼을 들고 있던 판은 열 때마다 계속 `−2` 다.
+
+test("옛 저장의 마이너스 손질은 되읽으면서 0 으로 올린다", () => {
+    const s = newGame(21);
+    const o = JSON.parse(serialize(s));
+    o.hero.pack[0].plusHit = -2;
+    o.hero.pack[0].plusDam = -2;
+    o.hero.pack[1].plusArmor = -1;
+    // 바닥에 떨어져 있는 것도 본다 — 주우면 배낭으로 들어온다.
+    o.level.items.push({ id: 9001, kind: "ring", type: "protection", count: 1, x: 1, y: 1, plusRing: -3 });
+    const back = deserialize(JSON.stringify(o))!;
+    for (const it of [...back.hero.pack, ...back.level.items]) {
+        for (const n of [it.plusHit, it.plusDam, it.plusArmor, it.plusRing]) {
+            assert.ok((n ?? 0) >= 0, `마이너스가 남았다: ${it.type} ${n}`);
+        }
+    }
+    play(back);
+});
+
+test("저주는 안 푼다 — 없앤 것은 깎인 숫자이지 저주가 아니다", () => {
+    const s = newGame(22);
+    const o = JSON.parse(serialize(s));
+    o.hero.pack[0].plusHit = -2;
+    o.hero.pack[0].cursed = true;
+    o.hero.pack[0].curseKnown = true;
+    const back = deserialize(JSON.stringify(o))!;
+    assert.equal(back.hero.pack[0].plusHit, 0, "손질이 안 올라갔다");
+    assert.equal(back.hero.pack[0].cursed, true, "저주까지 풀렸다 — 못 벗는 것이 저주의 값이다");
+});

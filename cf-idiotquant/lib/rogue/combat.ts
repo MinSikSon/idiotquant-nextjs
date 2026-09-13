@@ -179,6 +179,29 @@ export function damageLine(
     return `${DETAIL}피해 ${eyes}${add}${bonus !== 0 ? ` = ${raw}` : ""}${floored}`;
 }
 
+/**
+ * 여러 대를 때린 놈의 피해 — **대마다 따로 굴리므로 따로 적는다.**
+ *
+ * `· 피해 1d6 → 4 · 1d6 → 5 = 9`
+ *
+ * `parts` 가 비면 총합만 적는다. 잡아 본 적 없는 종의 주사위 표기는 **표의 값**이라
+ * 보여 주면 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다.
+ */
+export function monsterDamageLine(parts: { dice: string; rolled: number[] }[], total: number): string {
+    if (parts.length === 0) return `${DETAIL}피해 ${total}`;
+    // **대마다 `= 합` 을 붙이지 않는다.** 붙이면 치명타가 섞인 여러 대에서
+    // `1d8 두 번 → 5+6 = 11 = 18` 처럼 등호가 둘 연달아 서서 어느 쪽이 총합인지 읽기가
+    // 어려워진다. 등호는 **줄 끝에 하나**다.
+    const each = parts
+        .map(({ dice, rolled }) =>
+            rolled.length > 1 ? `${dice} 두 번 → ${rolled.join("+")}` : `${dice} → ${rolled[0] ?? 0}`,
+        )
+        .join(" · ");
+    // 한 대를 맨눈으로 굴린 것이면 합을 또 적을 까닭이 없다.
+    const plain = parts.length === 1 && parts[0].rolled.length === 1;
+    return `${DETAIL}피해 ${each}${plain ? "" : ` = ${total}`}`;
+}
+
 export interface AttackResult {
     hit: boolean;
     roll: number;
@@ -257,6 +280,8 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
     let hits = 0;
     let crits = 0;
     let lastRoll = 0;
+    /** 맞은 대마다 무슨 주사위로 얼마가 나왔나 — 기록 줄이 그대로 적는다. */
+    const dealt: { dice: string; rolled: number[] }[] = [];
 
     for (const dice of m.def.damage) {
         const a = attackRoll(bonus, myAc, rng, luck);
@@ -270,6 +295,7 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
             continue;
         }
         const d = damageRoll(dice, 0, a.crit, rng);
+        dealt.push({ dice, rolled: d.rolled });
         total += d.total;
         hero.hp -= d.total;
     }
@@ -286,8 +312,11 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
                 ? attackLine(m.def.name, attacks[0], seen ? bonusTerms : [], true, outcome)
                 : multiAttackLine(m.def.name, attacks, seen ? bonusTerms : [], true, outcome),
         );
-        // 상대의 피해 주사위 표기는 안 준다(도감이 할 일). 줄어든 숫자만 적는다.
-        if (total > 0) messages.splice(1, 0, damageLine(null, [], [], total));
+        // **잡아 본 종이면 상대의 주사위까지 적는다.** 예전에는 언제나 `· 피해 4` 한
+        // 마디였다 — 싸움의 절반이 상대의 차례인데 그쪽만 속을 안 보여 주면, 내가 왜
+        // 죽었는지를 기록에서 되짚을 수가 없다. 모르는 종은 그대로 숫자만 — 주사위
+        // 표기는 표의 값이라 도감 규칙이 뒷문으로 뚫린다.
+        if (total > 0) messages.splice(1, 0, monsterDamageLine(seen ? dealt : [], total));
     }
 
     if (hits === 0) messages.push(`${m.def.name}의 공격이 빗나갔다.`);
