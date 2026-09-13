@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
 import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
-import { itemPower, makeItem } from "@/lib/rogue/items";
+import { WEAPONS, itemPower, makeItem } from "@/lib/rogue/items";
 import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
 import { T, type Tile, idx, walkable, type GameState, type Item } from "@/lib/rogue/types";
@@ -316,7 +316,7 @@ test("배낭의 모든 물건에는 자리가 있다 — 자리 없는 것은 �
 });
 
 test("+ 가 붙으면 배낭에 적히는 숫자가 **커진다**", () => {
-    // 예전에는 무기는 기본 주사위만 적어 `+2 롱 소드` 와 맹탕 롱 소드가 똑같이 보였고,
+    // 예전에는 무기는 기본 주사위만 적어 `+2 장검` 과 맹탕 장검이 똑같이 보였고,
     // 갑옷은 방어 등급을 그대로 적어 `+1` 이 8 을 7 로 **내려서 나빠 보였다.**
     const known = { "weapon:long sword": true, "armor:leather": true };
 
@@ -368,9 +368,12 @@ test("던지면 하나씩 줄고, 남은 개수를 말한다", () => {
 
     const after = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
     assert.equal(packItem(after.hero, "z")!.count, 9, "던졌는데 개수가 그대로다");
-    const line = after.messages.filter((m) => m.includes("다트")).pop()!;
-    // 예전에는 「다트 10개을(를) 던졌다」가 떠서 열 개를 다 던진 것처럼 읽혔다.
-    assert.ok(!line.includes("다트 10개"), `한 개를 던졌는데 열 개라고 적었다: ${line}`);
+    // **이름을 여기 적지 않는다.** 표에서 가져온다 — 한글화로 「다트」가 「표창」이 되자
+    // 이 줄만 조용히 못 찾고 터졌다. 이 테스트가 보는 것은 이름이 아니라 개수다.
+    const dartName = WEAPONS.dart.name;
+    const line = after.messages.filter((m) => m.includes(dartName)).pop()!;
+    // 예전에는 「표창 10개을(를) 던졌다」가 떠서 열 개를 다 던진 것처럼 읽혔다.
+    assert.ok(!line.includes(`${dartName} 10개`), `한 개를 던졌는데 열 개라고 적었다: ${line}`);
     assert.ok(line.includes("9개 남음"), `남은 개수를 안 적었다: ${line}`);
 });
 

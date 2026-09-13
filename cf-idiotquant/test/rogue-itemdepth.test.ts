@@ -219,3 +219,63 @@ test("적어 놓은 띠와 실제로 떨어지는 층이 같다", () => {
         }
     }
 });
+
+// ── 화면에 **로마자를 안 내보낸다** ──────────────────────────────────────────
+//
+// `describe()` 는 표에 없는 `type` 이 오면 예전에 그 키를 그대로 찍었다. 키는 영문이다
+// (`banded mail` · `plate mail` …). 평소에는 안 보이지만, **표에서 한 줄을 지우는 순간
+// 그것을 들고 있던 옛 저장이 영어로 뜬다** — 물건 등급을 층에 맞추면서 `banded mail`
+// 을 지웠을 때 실제로 그랬다.
+//
+// 저장은 판을 넘어 남고 표는 계속 바뀐다. 그래서 「지우지 말자」는 약속이 아니라
+// **못 새게 하는 자물쇠**가 필요하다.
+
+import { describe as nameOf, rollAppearances } from "@/lib/rogue/items";
+
+/** 로마자가 한 글자라도 섞였는가. */
+const hasLatin = (s: string) => /[A-Za-z]/.test(s);
+
+test("모든 물건 이름이 한글이다 — 알아낸 것도, 모르는 것도", () => {
+    const app = rollAppearances(new Rng(4242));
+    const tables: [Item["kind"], Record<string, unknown>][] = [
+        ["weapon", WEAPONS],
+        ["armor", ARMORS],
+        ["potion", POTIONS],
+        ["scroll", SCROLLS],
+        ["ring", RINGS],
+        ["wand", WANDS],
+    ];
+    for (const [kind, table] of tables) {
+        for (const type of Object.keys(table)) {
+            const it = { id: 1, kind, type, count: 1, x: 0, y: 0, charges: 3 } as Item;
+            const known = nameOf(it, { [`${kind}:${type}`]: true }, app);
+            const unknown = nameOf(it, {}, app);
+            assert.ok(!hasLatin(known), `${kind}:${type} 를 알아내면 「${known}」로 뜬다`);
+            assert.ok(!hasLatin(unknown), `${kind}:${type} 를 모르면 「${unknown}」로 뜬다`);
+        }
+    }
+});
+
+test("표에 없는 물건도 한글로 물러선다 — 옛 저장이 영어로 뜨지 않는다", () => {
+    // **어느 표에도 없는 키**여야 한다. 예전에 지웠다 되살린 `banded mail` 을 쓰면 갑옷
+    // 표가 이름을 찾아 주므로 물러설 일이 없고, 테스트가 아무것도 안 보게 된다.
+    const app = rollAppearances(new Rng(7));
+    for (const kind of ["weapon", "armor", "potion", "scroll", "ring", "wand"] as const) {
+        const it = { id: 1, kind, type: "rusty gizmo", count: 1, x: 0, y: 0, charges: 1 } as Item;
+        for (const known of [{}, { [`${kind}:rusty gizmo`]: true }]) {
+            const shown = nameOf(it, known, app);
+            assert.ok(!hasLatin(shown), `${kind} 의 모르는 종류가 「${shown}」로 뜬다`);
+        }
+    }
+});
+
+test("예전 표에 있던 종류는 지금도 이름이 있다 — 저장은 판을 넘어 남는다", () => {
+    // 표에서 줄을 지우면 그것을 들고 있던 저장이 갈 곳을 잃는다. 지웠던 `banded mail`
+    // 을 되살린 뒤로, 첫 판(`/game` 이 Rogue 가 된 판) 이래의 키는 전부 여기 있다.
+    for (const type of ["dagger", "mace", "long sword", "two-handed sword", "spear", "dart", "arrow"]) {
+        assert.ok(WEAPONS[type], `무기 ${type} 가 표에서 사라졌다 — 옛 저장이 이름을 잃는다`);
+    }
+    for (const type of ["leather", "ring mail", "scale mail", "chain mail", "banded mail", "plate mail"]) {
+        assert.ok(ARMORS[type], `갑옷 ${type} 가 표에서 사라졌다 — 옛 저장이 이름을 잃는다`);
+    }
+});
