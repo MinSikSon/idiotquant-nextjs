@@ -46,7 +46,7 @@ test("저주받은 갑옷은 입으면 드러나고, 그 뒤로는 벗을 수 �
     const s3 = perform(s2, { t: "drop", letter: "y" });
     assert.ok(packItem(s3.hero, "y"), "저주받은 갑옷을 내려놓았다");
 
-    // 저주 풀기 주문서를 읽으면 풀린다.
+    // 저주 해제 주문서를 읽으면 풀린다.
     give(s3, makeItem("scroll", "remove curse", 902, -1, -1), "x");
     const s4 = perform(s3, { t: "read", letter: "x" });
     assert.ok(!bad.cursed, "저주가 안 풀렸다");
@@ -273,7 +273,7 @@ test("미로 방도 걸어서 다 닿는다", () => {
     assert.ok(mazes > 0, "80판을 만들어도 14층에 미로가 하나도 없다");
 });
 
-test("괴물 감지 물약은 벽 너머를 잠깐 보여 준다", () => {
+test("생명 탐지 물약은 벽 너머를 잠깐 보여 준다", () => {
     const s0 = newGame(111);
     give(s0, makeItem("potion", "detect monsters", 980, -1, -1), "y");
     const s1 = perform(s0, { t: "quaff", letter: "y" });
@@ -316,7 +316,7 @@ test("배낭의 모든 물건에는 자리가 있다 — 자리 없는 것은 �
 });
 
 test("+ 가 붙으면 배낭에 적히는 숫자가 **커진다**", () => {
-    // 예전에는 무기는 기본 주사위만 적어 `+2 장검` 과 맹탕 장검이 똑같이 보였고,
+    // 예전에는 무기는 기본 주사위만 적어 `+2 롱 소드` 와 맹탕 롱 소드가 똑같이 보였고,
     // 갑옷은 방어 등급을 그대로 적어 `+1` 이 8 을 7 로 **내려서 나빠 보였다.**
     const known = { "weapon:long sword": true, "armor:leather": true };
 

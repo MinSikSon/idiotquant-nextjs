@@ -121,7 +121,13 @@ function TabItem({
   href, label, icon: Icon, emoji, isActive, retro,
 }: {
   href: string; label: string; icon?: any; emoji?: string; isActive: boolean;
-  /** /game 에서는 이 바도 기기의 일부다 — 색만 바꿔 끼운다. */
+  /**
+   * 옛 게임(`/game/imf`)의 브라운관 안인가 — 각진 모서리와 네온.
+   *
+   * **`/game`(Rogue)에는 안 붙인다.** 그쪽은 앱 테마를 따라가므로 네온 초록(`#5cf08f`)이
+   * 밝은 테마의 종이 위에 얹히면 안 읽힌다. 바탕만 게임 팔레트로 칠하고 글자는 앱의
+   * 색을 그대로 쓴다 — 그 색들은 두 테마에서 다 읽히게 만들어 둔 것이다.
+   */
   retro?: boolean;
 }) {
   return (
@@ -242,17 +248,29 @@ export function NavbarWithSimpleLinks() {
   const moreNav = MORE_NAV.filter(i => !i.authOnly || status === "authenticated");
   const moreActive = moreNav.some(i => active(pathname, i.href));
 
-  /* /game 은 90년대 기기 한 대다. 위아래 바가 흰 앱 껍데기로 남아 있으면 기기가 그
-     안에 얹힌 다른 물건으로 보인다 — 같은 어둠에 같은 모서리로 맞춘다.
-     구조는 그대로 두고 색과 모서리만 바꿔 끼운다: 이 바는 모든 화면이 쓰는 것이라
-     게임 때문에 배치가 달라지면 다른 화면이 그 값을 치른다. */
-  const retro = pathname.startsWith("/game");
-  /* 바 안의 글자·아이콘 색을 하나하나 바꾸지 않는다. 이 바들은 이미 어두운 바탕용
-     dark: 변형을 다 갖고 있으므로, 바에 `dark` 를 씌워 그 색을 쓰게 한다(tailwind 는
-     class 기반이라 앱 테마와 무관하게 이 안에서만 켜진다). 바탕만 기기와 같은 어둠으로
-     덮으면 끝이고, 나중에 메뉴가 늘어도 색을 또 손볼 일이 없다. */
-  const retroBar = { background: R.bg, borderColor: R.lo } as const;
-  const retroScope = retro ? "dark" : "";
+  /* 게임 화면에서는 이 바도 **기기의 일부**다. 흰 앱 껍데기로 남아 있으면 기기가 그
+     안에 얹힌 다른 물건으로 보인다. 구조는 그대로 두고 색만 바꿔 끼운다 — 이 바는 모든
+     화면이 쓰는 것이라, 게임 때문에 배치가 달라지면 다른 화면이 그 값을 치른다.
+
+     **`/game` 아래 두 게임은 다른 물건이다.**
+
+       · `/game/imf` 는 Phaser 캔버스라 **언제나 어둡다.** 바도 그 어둠에 맞추고, 바 안에
+         `dark` 를 씌워 어두운 바탕용 색을 쓰게 한다(tailwind 가 class 기반이라 앱 테마와
+         무관하게 이 안에서만 켜진다). 90년대 기기 한 대 — 각진 모서리와 네온까지.
+       · `/game`(Rogue)은 DOM 이라 **앱 테마를 따른다.** 바도 따라가야 한다 — 안 그러면
+         밝은 테마에서 종이 위에 검은 바가 얹힌다. 그래서 `dark` 를 안 씌우고, 바탕만
+         게임의 팔레트(`--rg-*`, `app/global.css`)에서 가져와 **같은 한 장**으로 만든다.
+
+     둘을 한 깃발로 묶으면 한쪽을 고칠 때 다른 쪽이 따라 움직인다. */
+  const inGame = pathname.startsWith("/game");
+  const imf = pathname.startsWith("/game/imf");
+  const retro = imf;
+  const retroScope = imf ? "dark" : "";
+  const barStyle = imf
+    ? ({ background: R.bg, borderColor: R.lo } as const)
+    : inGame
+      ? ({ background: "var(--rg-bg)", borderColor: "var(--rg-line-faint)" } as const)
+      : undefined;
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const showMore = moreOpen || moreActive;
@@ -279,8 +297,8 @@ export function NavbarWithSimpleLinks() {
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
       <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r", retroScope,
-        retro ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
-        style={retro ? retroBar : undefined}>
+        barStyle ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
+        style={barStyle}>
 
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#2c2b27] shrink-0">
@@ -384,8 +402,8 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
       <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-4", retroScope,
-        retro ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
-        style={retro ? retroBar : undefined}>
+        barStyle ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
+        style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <div className="w-6 h-6 bg-brand rounded-md flex items-center justify-center shadow-sm shadow-brand/25 shrink-0">
@@ -407,8 +425,8 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className={cn("md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3", retroScope,
-        retro ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
-        style={retro ? retroBar : undefined}>
+        barStyle ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
+        style={barStyle}>
         <TabItem retro={retro} href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
         <TabItem retro={retro} href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
@@ -465,7 +483,7 @@ export function NavbarWithSimpleLinks() {
           이 알약 자체가 끄는 버튼이다 — 내 계정까지 돌아가지 않아도 된다.
           /game 에는 안 띄운다: 관리자 전용 메뉴가 없어 볼 것이 없고, 그 화면은
           기기 한 대라 위에 뜬 버튼이 판을 가린다. */}
-      {realAdmin && viewAsUser && !retro && (
+      {realAdmin && viewAsUser && !inGame && (
         <button
           type="button"
           onClick={() => setViewAsUser(false)}

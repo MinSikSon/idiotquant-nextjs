@@ -149,8 +149,11 @@ function itemAt(level: Level, x: number, y: number): Item | undefined {
 /**
  * 이 층에 몬스터와 물건을 흩뿌린다.
  *
- * 깊을수록 몬스터가 많다. 물건은 깊이와 상관없이 고르게 나오되 **금화는 깊이를 탄다** —
- * 깊이 내려갈 이유가 점수라서다.
+ * 깊을수록 몬스터가 많다. **물건도 깊이를 탄다** — 개수가 아니라 **등급**이 (`items.ts`
+ * 의 `depth` 와 `itemTier`). 금화는 액수가 는다.
+ *
+ * 종류를 고르는 확률(금화냐 물약이냐 무기냐)은 층을 안 탄다 — 그것까지 층에 맡기면
+ * 깊은 층에서 식량이 안 나와 굶어 죽는 까닭이 운이 된다.
  */
 function populate(state: GameState, level: Level, rng: Rng) {
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
@@ -1314,7 +1317,7 @@ export function glyphAt(state: GameState, x: number, y: number): { ch: string; k
 
     if (hero.x === x && hero.y === y) return { ch: "@", kind: "hero" };
 
-    // 괴물 감지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
+    // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0) {
         const m = monsterAt(level, x, y);
         if (m) return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
