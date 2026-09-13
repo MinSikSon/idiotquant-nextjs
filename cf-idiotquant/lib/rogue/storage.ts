@@ -106,12 +106,33 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
             speed: num((rest as Partial<Monster>).speed, 0),
             cancelled: (rest as Partial<Monster>).cancelled === true,
         })),
-        items: Array.isArray(raw.items) ? raw.items : [],
+        // 바닥에 떨어져 있는 것도 손질을 올린다 — 주우면 배낭으로 들어온다.
+        items: liftEnchants(Array.isArray(raw.items) ? raw.items : []),
         traps: Array.isArray(raw.traps) ? raw.traps : [],
         stairs: raw.stairs ?? { x: 0, y: 0 },
         upStairs: raw.upStairs ?? null,
         maze: raw.maze === true,
     };
+}
+
+/**
+ * **마이너스 손질을 0 으로 올린다.**
+ *
+ * 규칙에서 `−N` 을 없앴지만(`items.rollEnchant`), **이미 그렇게 저장된 판은 안 낫는다.**
+ * 「undefined) 식량」 때와 같은 자리다 — 새로 생기는 것을 막는 것과 이미 있는 것을 고치는
+ * 것은 다른 일이고, 되읽는 여기가 뒤쪽을 맡는다.
+ *
+ * 저주는 **안 푼다.** 없앤 것은 깎인 숫자이지 저주가 아니다 — 저주받은 것은 여전히 못
+ * 벗는다. 바닥에 떨어져 있는 물건도 같이 본다(주우면 배낭으로 들어온다).
+ */
+function liftEnchants(items: Item[]): Item[] {
+    for (const it of items) {
+        if ((it.plusHit ?? 0) < 0) it.plusHit = 0;
+        if ((it.plusDam ?? 0) < 0) it.plusDam = 0;
+        if ((it.plusArmor ?? 0) < 0) it.plusArmor = 0;
+        if ((it.plusRing ?? 0) < 0) it.plusRing = 0;
+    }
+    return items;
 }
 
 const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
@@ -168,7 +189,7 @@ function normalize(s: Saved): GameState | null {
     const hero: GameState["hero"] = {
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
-        pack: fixLetters(Array.isArray(h.pack) ? h.pack : []),
+        pack: liftEnchants(fixLetters(Array.isArray(h.pack) ? h.pack : [])),
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
         blind: num(h.blind, 0),

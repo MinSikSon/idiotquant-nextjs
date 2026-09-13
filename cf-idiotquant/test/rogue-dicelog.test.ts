@@ -20,7 +20,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, multiAttackLine, outcomeOf } from "@/lib/rogue/combat";
+import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, monsterDamageLine, multiAttackLine, outcomeOf } from "@/lib/rogue/combat";
 import { attackRoll } from "@/lib/rogue/dnd";
 import { Rng as R } from "@/lib/rogue/rng";
 import { newGame, perform } from "@/lib/rogue/game";
@@ -204,19 +204,36 @@ test("잡아 본 종에게는 내역까지 적는다 — 도감에 올랐으면 
     assert.match(theirHalf(monsterAttack(s, m, rng).messages[0], false), BREAKDOWN.theirs);
 });
 
-test("상대의 피해 주사위 표기는 안 적는다 — 숫자만 적는다", () => {
-    // 트롤은 1d8·1d8·2d6 을 굴린다. 그 표기가 줄에 뜨면 도감을 안 열고도 알게 된다.
+test("처음 보는 종의 피해 주사위는 안 적는다 — 숫자만 적는다", () => {
+    // 트롤은 1d8·1d8·2d6 을 굴린다. 잡아 본 적이 없는데 그 표기가 줄에 뜨면 **도감을
+    // 안 열고도 알게 된다** — 「한 마리 잡아야 준다」가 뒷문으로 뚫린다.
     const s = newGame(502);
-    s.bestiary.T = 1; // 문턱까지 열어 둔 상태에서도
+    delete s.bestiary.T;
     s.hero.hp = s.hero.maxHp = 99999;
     const m = placeNextTo(s, "T", 99999);
     const rng = new Rng(9);
     for (let i = 0; i < 30; i++) {
         const line = monsterAttack(s, m, rng).messages.filter(isDetail).join(" ");
         for (const d of MONSTERS.T.damage) {
-            assert.ok(!line.includes(d), `상대의 피해 주사위(${d})가 줄에 적혔다: ${line}`);
+            assert.ok(!line.includes(d), `처음 보는 종의 피해 주사위(${d})가 줄에 적혔다: ${line}`);
         }
     }
+});
+
+test("잡아 본 종의 피해 주사위는 적는다 — 내가 왜 죽었는지 되짚을 수 있어야 한다", () => {
+    // 싸움의 절반이 상대의 차례다. 그쪽이 언제나 `· 피해 4` 한 마디뿐이면, 기록을
+    // 아무리 뒤져도 **무엇에 얼마나 맞았는지**를 알 수 없다.
+    const s = newGame(503);
+    s.bestiary.T = 1; // 잡아 봤다 — 도감이 이미 이 값을 들고 있다
+    s.hero.hp = s.hero.maxHp = 99999;
+    const m = placeNextTo(s, "T", 99999);
+    const rng = new Rng(9);
+    let sawDice = false;
+    for (let i = 0; i < 40 && !sawDice; i++) {
+        const line = monsterAttack(s, m, rng).messages.filter(isDetail).join(" ");
+        if (MONSTERS.T.damage.some((d) => line.includes(d))) sawDice = true;
+    }
+    assert.ok(sawDice, "잡아 본 종인데도 피해 주사위를 안 적는다");
 });
 
 test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 결과여야 한다", () => {
@@ -387,4 +404,76 @@ test("d20 은 **명중에만** 굴린다 — 피해는 무기 주사위다", () 
             }
         }
     }
+});
+
+// ── 굴림 줄이 **무엇으로 쳤는지**를 적는다 ──────────────────────────────────
+//
+// 예전에는 `+2무기` 였다. 강화 수치는 보이는데 **어느 칼의 것인지가 안 보인다** — 물건이
+// 층을 타는 지금(진은검·목마른 자의 검·기사의 검 …) 그게 곧 판단거리라, 기록을 되짚을 때
+// 「그때 뭘 들고 있었지」를 못 읽는다.
+
+test("굴림 줄에 쥔 무기의 이름이 적힌다 — `+2무기` 가 아니라 `+2진은검`", () => {
+    const s = newGame(701);
+    const w = makeItem("weapon", "silver sword", 990, -1, -1);
+    w.letter = "z";
+    w.plusHit = 2;
+    w.plusDam = 2;
+    s.hero.pack.push(w);
+    s.hero.weaponId = w.id;
+    s.known["weapon:silver sword"] = true;
+    s.hero.hp = s.hero.maxHp = 99999;
+
+    const m = placeNextTo(s, "S", 99999);
+    const rng = new Rng(3);
+    let sawHit = false;
+    let sawDam = false;
+    for (let i = 0; i < 40 && !(sawHit && sawDam); i++) {
+        m.hp = 99999;
+        for (const line of heroAttack(s, m, rng).messages) {
+            if (line.startsWith(`${DETAIL}명중`) && line.includes("+2진은검")) sawHit = true;
+            if (line.startsWith(`${DETAIL}피해`) && line.includes("+2진은검")) sawDam = true;
+            assert.ok(!line.includes("무기"), `아직 「무기」라고 적는다: ${line}`);
+        }
+    }
+    assert.ok(sawHit, "명중 줄에 무기 이름이 안 적혔다");
+    assert.ok(sawDam, "피해 줄에 무기 이름이 안 적혔다");
+});
+
+test("모르는 무기의 손질은 상태 줄에서 가린다 — 이름표를 바꿔도", () => {
+    // 한때 `why !== "무기"` 로 걸렀다. 굴림 줄에 무기 이름을 적기 시작하자 그 문자열이
+    // 안 맞아 **조용히 안 가려졌다.** 빼는 것은 이름표가 아니라 **그 무기의 손질값**이다.
+    const s = newGame(702);
+    const w = makeItem("weapon", "knight sword", 991, -1, -1);
+    w.letter = "z";
+    w.plusHit = 3;
+    w.plusDam = 3;
+    s.hero.pack.push(w);
+    s.hero.weaponId = w.id;
+    s.hero.str = 16; // 능력 보정 +3, 숙련 +2
+
+    assert.equal(heroHitBonus(s.hero, {}), 5, "모르는 무기의 손질이 상태 줄에 샜다");
+    assert.equal(heroHitBonus(s.hero, { "weapon:knight sword": true }), 8);
+    assert.equal(heroAttackText(s.hero, {}), "5d6+3");
+    assert.equal(heroAttackText(s.hero, { "weapon:knight sword": true }), "5d6+6");
+});
+
+test("상대의 피해 줄은 등호를 하나만 쓴다 — 어느 쪽이 총합인지 읽혀야 한다", () => {
+    // 한 대만, 치명타도 아니면 합을 또 적을 까닭이 없다.
+    assert.equal(monsterDamageLine([{ dice: "1d8", rolled: [5] }], 5), "· 피해 1d8 → 5");
+    // 치명타는 주사위가 둘이라 합이 필요하다.
+    assert.equal(
+        monsterDamageLine([{ dice: "1d8", rolled: [5, 6] }], 11),
+        "· 피해 1d8 두 번 → 5+6 = 11",
+    );
+    // 여러 대는 대마다 따로 적고 **등호는 줄 끝에 하나**다. 예전에는 치명타가 섞이면
+    // `… = 11 = 18` 처럼 등호가 둘 연달아 섰다.
+    assert.equal(
+        monsterDamageLine(
+            [{ dice: "1d8", rolled: [7] }, { dice: "1d8", rolled: [5, 6] }, { dice: "2d6", rolled: [8] }],
+            26,
+        ),
+        "· 피해 1d8 → 7 · 1d8 두 번 → 5+6 · 2d6 → 8 = 26",
+    );
+    // 모르는 종은 숫자만.
+    assert.equal(monsterDamageLine([], 7), "· 피해 7");
 });

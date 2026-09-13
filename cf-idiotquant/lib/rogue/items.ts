@@ -278,16 +278,25 @@ export function makeItem(kind: ItemKind, type: string, id: number, x: number, y:
 }
 
 /**
- * 손질 정도를 굴린다. 열에 하나는 상했고, 상한 것은 **저주받았다.**
+ * 손질 정도를 굴린다. 열에 하나는 **저주받았다.**
  *
  * **깊을수록 크게 손질된 것이 나온다.** 리니지의 얼굴이 그 숫자다 — 같은 진은검이라도
  * `+0` 과 `+3` 은 다른 물건이다. 다만 한 칸은 작게 둔다(26층에서도 최대 `+3`): 이
  * 숫자는 「무기 강화 주문서」로도 오르는 값이라, 떨어지는 것부터 크면 주문서가 쓸모를
  * 잃는다.
+ *
+ * ── **마이너스 손질은 없다** ───────────────────────────────────────────────
+ * 예전에는 저주받은 물건이 `−2` 로 나왔다. 그러면 저주의 대가가 **두 벌**이 된다 —
+ * 못 벗는다는 것과 숫자가 깎인다는 것. 지금은 하나다: **못 벗는다.** 깊은 층에서 더
+ * 좋은 것을 주워도 못 바꾸는 것이 그 값이고, 사다리가 층을 타는 지금은 그 값이 예전보다
+ * 오히려 크다 — 20층에서 4층짜리 장검에 손이 묶이는 것이 `−2` 보다 아프다.
+ *
+ * 그래서 화면에 `−` 가 붙은 물건은 이제 안 나온다. 힘이 깎여서(독) 보정이 음수가 되는
+ * 일은 그대로다 — 그건 물건이 아니라 내 몸이다.
  */
 function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean } {
     const best = 1 + Math.floor(Math.min(26, Math.max(1, depth)) / 9); // 1 … 3
-    if (rng.rnd(10) === 0) return { plus: -(rng.rnd(best) + 1), cursed: true };
+    if (rng.rnd(10) === 0) return { plus: 0, cursed: true };
     if (rng.rnd(5) === 0) return { plus: rng.rnd(best) + 1, cursed: false };
     return { plus: 0, cursed: false };
 }
@@ -334,10 +343,9 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const e = rollEnchant(depth, rng);
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
         it.plusRing = type === "protection" || type === "add strength" ? Math.max(1, e.plus) : 0;
-        if (e.cursed) {
-            it.cursed = true;
-            it.plusRing = -Math.abs(e.plus || 1);
-        }
+        // **저주받은 반지도 숫자를 안 깎는다**(위 `rollEnchant` 참고). 대가는 「손가락
+        // 하나를 잃는다」다 — 두 개뿐인 자리를 쓸모없는 반지가 차지하고, 뺄 수 없다.
+        if (e.cursed) it.cursed = true;
         return it;
     }
 
