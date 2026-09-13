@@ -52,21 +52,21 @@ export default class GameBoundary extends Component<Props, State> {
         if (!this.state.error) return this.props.children;
 
         return (
-            <div className="grid h-full w-full place-items-center bg-[#0b0c0c] p-4">
-                <div className="max-w-[420px] border border-[#3a4a45] bg-[#0f1413] p-4 font-[family-name:var(--font-plex-mono)] text-[13px] text-[#c3ced6]">
-                    <p className="mb-2 text-[#e6eeea]">판을 이어서 굴리지 못했다.</p>
-                    <p className="mb-3 text-[#9fb0aa]">
+            <div className="grid h-full w-full place-items-center bg-[var(--rg-bg)] p-4">
+                <div className="max-w-[420px] border border-[var(--rg-line)] bg-[var(--rg-panel)] p-4 font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)]">
+                    <p className="mb-2 text-[var(--rg-strong)]">판을 이어서 굴리지 못했다.</p>
+                    <p className="mb-3 text-[var(--rg-muted)]">
                         저장된 판이 지금 규칙과 안 맞습니다. 저장을 지우고 새로 시작하면 됩니다 —
                         도감과 지난 판들은 지워지지 않습니다.
                     </p>
                     <button
                         type="button"
                         onClick={this.restart}
-                        className="rounded-[2px] border border-[#3a4a45] px-3 py-1 text-[#e6eeea] hover:bg-[#1b2321]"
+                        className="rounded-[2px] border border-[var(--rg-line)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-raised)]"
                     >
                         저장을 지우고 새 판
                     </button>
-                    <pre className="mt-3 max-h-24 overflow-auto whitespace-pre-wrap text-[11px] text-[#5f706b]">
+                    <pre className="mt-3 max-h-24 overflow-auto whitespace-pre-wrap text-[11px] text-[var(--rg-ghost)]">
                         {this.state.error.message}
                     </pre>
                 </div>

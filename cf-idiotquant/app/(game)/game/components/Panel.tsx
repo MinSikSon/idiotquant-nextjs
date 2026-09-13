@@ -42,7 +42,7 @@ export default function Panel({
 
     return (
         <div
-            className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-3"
+            className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--rg-scrim)] p-3"
             /* 바깥의 빈 곳을 눌러도 닫는다. 조건이 둘인 데에는 까닭이 있다.
              *
              *   · **누르기 시작한 자리도 빈 곳이어야 한다.** 판 안에서 글자를 끌다가
@@ -59,14 +59,14 @@ export default function Panel({
                 if (onClose && fromBackdrop.current && e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="max-h-full w-full max-w-[520px] overflow-auto border border-[#3a4a45] bg-[#0f1413] font-[family-name:var(--font-plex-mono)] text-[13px] text-[#c3ced6] shadow-[0_0_0_1px_#000]">
-                <div className="flex items-center justify-between border-b border-[#2a3532] px-3 py-2 text-[#e6eeea]">
+            <div className="max-h-full w-full max-w-[520px] overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                <div className="flex items-center justify-between border-b border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-strong)]">
                     <span>{title}</span>
                     {onClose && (
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-[2px] px-2 text-[#8a9a95] hover:text-white"
+                            className="rounded-[2px] px-2 text-[var(--rg-label)] hover:text-[var(--rg-strong)]"
                             aria-label="닫기"
                         >
                             닫기 (Esc)
@@ -74,7 +74,7 @@ export default function Panel({
                     )}
                 </div>
                 <div className="px-3 py-3">{children}</div>
-                {footer && <div className="border-t border-[#2a3532] px-3 py-2 text-[#7d8d88]">{footer}</div>}
+                {footer && <div className="border-t border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-faint)]">{footer}</div>}
             </div>
         </div>
     );

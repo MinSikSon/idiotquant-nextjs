@@ -56,10 +56,10 @@ function Key({
             onClick={onPress}
             className={[
                 // 칸 크기는 격자가 정한다 — 단추는 그 칸을 꽉 채우고 글자는 가운데.
-                "grid select-none place-items-center rounded-[3px] border border-[#2e3a36] bg-[#161c1a]",
-                "font-[family-name:var(--font-plex-mono)] leading-none text-[#c3ced6]",
-                "active:translate-y-px active:bg-[#202927]",
-                "disabled:border-[#1d2422] disabled:bg-[#101413] disabled:text-[#3a4442]",
+                "grid select-none place-items-center rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)]",
+                "font-[family-name:var(--font-plex-mono)] leading-none text-[var(--rg-text)]",
+                "active:translate-y-px active:bg-[var(--rg-press)]",
+                "disabled:border-[var(--rg-off-line)] disabled:bg-[var(--rg-off-bg)] disabled:text-[var(--rg-off-ink)]",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
                 wide ? "h-9 w-full overflow-hidden whitespace-nowrap px-1 text-[12px]" : "h-11 w-11 text-[13px]",

@@ -37,7 +37,7 @@ export default function Aim({
 }) {
     return (
         <Panel title={title} onClose={onCancel} footer="방향키·hjkl·yubn 로도 겨눌 수 있습니다.">
-            <p className="mb-3 text-[#9fb0aa]">{what}</p>
+            <p className="mb-3 text-[var(--rg-muted)]">{what}</p>
             <div className="mx-auto grid w-[168px] grid-cols-3 gap-1">
                 {CELLS.map((c, i) =>
                     c ? (
@@ -45,7 +45,7 @@ export default function Aim({
                             key={i}
                             type="button"
                             onClick={() => onPick(c.dx, c.dy)}
-                            className="h-12 rounded-[3px] border border-[#3a4a45] bg-[#161c1a] text-[#e6eeea] active:translate-y-px active:bg-[#202927]"
+                            className="h-12 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] text-[var(--rg-strong)] active:translate-y-px active:bg-[var(--rg-press)]"
                         >
                             {c.label}
                         </button>
