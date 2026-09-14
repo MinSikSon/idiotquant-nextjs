@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
-import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
+import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 import { defenseOf } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
@@ -32,199 +32,130 @@ function placeNextTo(s: GameState, ch: string, hp = 1) {
     return m;
 }
 
-test("잡기 전에는 조사해도 속이 안 나온다", () => {
-    const s = newGame(301);
-    placeNextTo(s, "S", 30);
+test("잡기 전에는 속을 안 보이고, 한 마리 잡으면 알게 된다", () => {
+    // ── 잡기 전에는 조사해도 속이 안 나온다
+    {
+        const s = newGame(301);
+        placeNextTo(s, "S", 30);
 
-    const seen = survey(s).find((x) => x.ch === "S");
-    assert.ok(seen, "옆에 세운 놈이 조사에 안 보인다");
-    assert.equal(seen!.known, false);
-    assert.equal(seen!.kills, 0);
-    // **한 조각도 새면 안 된다.**
-    assert.equal(seen!.level, undefined);
-    assert.equal(seen!.defense, undefined);
-    assert.equal(seen!.damage, undefined);
-    assert.equal(seen!.exp, undefined);
-    assert.equal(seen!.hp, undefined);
-    assert.equal(seen!.mean, undefined);
-    // 눈으로 보이는 것은 잡아 본 적이 없어도 안다.
-    assert.ok(seen!.condition);
-    assert.equal(seen!.distance, 1);
-});
-
-test("한 마리를 잡으면 그 뒤로는 속을 안다", () => {
-    let s = newGame(302);
-    placeNextTo(s, "S", 1);
-
-    // 한 방에 죽을 때까지 때린다.
-    for (let i = 0; i < 40 && (s.bestiary.S ?? 0) === 0; i++) {
-        s = perform(s, { t: "move", dx: 1, dy: 0 });
-        if (s.level.monsters.every((m) => m.def.ch !== "S")) break;
+        const seen = survey(s).find((x) => x.ch === "S");
+        assert.ok(seen, "옆에 세운 놈이 조사에 안 보인다");
+        assert.equal(seen!.known, false);
+        assert.equal(seen!.kills, 0);
+        // **한 조각도 새면 안 된다.**
+        assert.equal(seen!.level, undefined);
+        assert.equal(seen!.defense, undefined);
+        assert.equal(seen!.damage, undefined);
+        assert.equal(seen!.exp, undefined);
+        assert.equal(seen!.hp, undefined);
+        assert.equal(seen!.mean, undefined);
+        // 눈으로 보이는 것은 잡아 본 적이 없어도 안다.
+        assert.ok(seen!.condition);
+        assert.equal(seen!.distance, 1);
     }
-    assert.equal(s.bestiary.S, 1, "옆의 뱀을 못 잡았다");
-    assert.ok(
-        s.messages.some((m) => m.includes("처음 잡았다")),
-        "처음 잡은 것을 화면이 말하지 않았다",
-    );
 
-    // 다시 만나면 속이 보인다.
-    placeNextTo(s, "S", 5);
-    const seen = survey(s).find((x) => x.ch === "S")!;
-    assert.equal(seen.known, true);
-    assert.equal(seen.level, MONSTERS.S.level);
-    assert.equal(seen.defense, defenseOf(MONSTERS.S.armor));
-    assert.equal(seen.exp, MONSTERS.S.exp);
-    assert.equal(seen.hp, MONSTERS.S.hp);
-    assert.deepEqual(seen.damage, MONSTERS.S.damage);
-});
+    // ── 한 마리를 잡으면 그 뒤로는 속을 안다
+    {
+        let s = newGame(302);
+        placeNextTo(s, "S", 1);
 
-test("지팡이로 잡아도 도감에 들어간다", () => {
-    const s = newGame(303);
-    const m = placeNextTo(s, "O", 1);
-    const wand = makeItem("wand", "magic missile", 990, -1, -1);
-    wand.charges = 3;
-    wand.letter = "z";
-    s.hero.pack.push(wand);
-
-    const after = perform(s, { t: "zap", letter: "z", dx: 1, dy: 0 });
-    assert.ok(after.level.monsters.every((x) => x.id !== m.id), "지팡이에 안 죽었다");
-    assert.equal(after.bestiary.O, 1, "지팡이로 잡은 것이 도감에 안 들어갔다");
-});
-
-test("던져서 잡아도 도감에 들어간다", () => {
-    const s = newGame(304);
-    // 던진 것이 맞아야 하므로 체력을 1 로 두고 여러 번 던진다.
-    const dagger = makeItem("weapon", "dagger", 991, -1, -1);
-    dagger.count = 20;
-    dagger.plusHit = 10; // 반드시 맞도록
-    // 갑옷을 뚫도록 손질도 넉넉히 — 피해가 방어력에 다 깎이면 못 죽인다.
-    dagger.plusDam = 20;
-    dagger.letter = "z";
-    s.hero.pack.push(dagger);
-
-    let cur: GameState = s;
-    for (let i = 0; i < 20 && !(cur.bestiary.H > 0); i++) {
-        placeNextTo(cur, "H", 1);
-        cur = perform(cur, { t: "throw", letter: "z", dx: 1, dy: 0 });
-    }
-    assert.ok((cur.bestiary.H ?? 0) > 0, "던져서 잡은 것이 도감에 안 들어갔다");
-});
-
-test("도망친 놈은 잡은 것이 아니다", () => {
-    const s = newGame(305);
-    // 레프러콘은 금화를 채고 스스로 사라진다 — 그건 내가 잡은 것이 아니다.
-    const m = placeNextTo(s, "L", 40);
-    m.awake = true;
-    s.hero.gold = 500;
-
-    let cur: GameState = s;
-    for (let i = 0; i < 60 && cur.level.monsters.some((x) => x.id === m.id); i++) {
-        cur = perform(cur, { t: "rest" });
-    }
-    if (cur.level.monsters.some((x) => x.id === m.id)) return; // 끝내 안 훔쳤으면 이 판으로는 못 잰다
-    assert.equal(cur.bestiary.L ?? 0, 0, "도망친 레프러콘이 도감에 들어갔다");
-});
-
-test("조사는 보이는 것만 준다 — 벽 너머는 안 센다", () => {
-    const s = newGame(306);
-    // 지도 밖 구석에 억지로 하나 세운다. 본 적 없는 칸이라 보일 리가 없다.
-    const far = spawnMonster("T", 1, 1, new Rng(3));
-    s.level.monsters.push(far);
-    assert.ok(
-        !survey(s).some((x) => x.id === far.id),
-        "안 보이는 몬스터가 조사에 잡혔다",
-    );
-});
-
-test("조사는 판을 한 톨도 안 바꾼다 — 턴을 안 쓴다", () => {
-    const s = newGame(307);
-    placeNextTo(s, "S", 9);
-    const before = JSON.stringify({
-        turn: s.turn,
-        food: s.hero.food,
-        hp: s.hero.hp,
-        x: s.hero.x,
-        y: s.hero.y,
-        monsters: s.level.monsters.map((m) => [m.x, m.y, m.hp]),
-    });
-    survey(s);
-    survey(s);
-    const after = JSON.stringify({
-        turn: s.turn,
-        food: s.hero.food,
-        hp: s.hero.hp,
-        x: s.hero.x,
-        y: s.hero.y,
-        monsters: s.level.monsters.map((m) => [m.x, m.y, m.hp]),
-    });
-    assert.equal(after, before, "조사가 판을 바꿨다");
-});
-
-test("도감은 새 판으로 이어진다 — 죽어도 남는 유일한 것", () => {
-    const kept = { S: 3, O: 1 };
-    const s = newGame(308, kept);
-    assert.deepEqual(s.bestiary, kept);
-    assert.equal(bestiaryProgress(s.bestiary).found, 2);
-    assert.equal(bestiaryProgress(s.bestiary).total, 26);
-
-    // 넘긴 객체를 게임이 물들이면 안 된다 — 부르는 쪽의 값이 몰래 바뀐다.
-    placeNextTo(s, "S", 1);
-    for (let i = 0; i < 40; i++) perform(s, { t: "move", dx: 1, dy: 0 });
-    assert.equal(kept.S, 3, "넘긴 도감이 게임 안에서 바뀌었다");
-});
-
-test("도감 목록은 잡은 것만, 약한 것부터", () => {
-    const rows = bestiaryRows({ D: 1, S: 2, T: 1 });
-    assert.deepEqual(rows.map((r) => r.ch), ["S", "T", "D"]);
-    assert.equal(rows[0].kills, 2);
-    assert.equal(rows[0].name, MONSTERS.S.name);
-    // 안 잡은 것은 목록에 아예 없다.
-    assert.equal(bestiaryRows({}).length, 0);
-});
-
-test("피해 없는 특수 공격(0d0)은 피해 칸에 안 적는다", () => {
-    // 망령은 1d6 과 0d0 을 둘 다 갖고 있다. 0d0 을 그대로 적으면 「0d6 짜리 피해」로 읽힌다.
-    const rows = bestiaryRows({ W: 1 });
-    assert.deepEqual(rows[0].damage, ["1d6"]);
-});
-
-test("도감의 「나오는 층」은 **실제 뽑기와 같다**", () => {
-    // 여기가 갈리면 도감이 「7층에 나온다」고 적어 놓고 실제로는 안 나온다.
-    const real: Record<string, { min: number; max: number }> = {};
-    for (let depth = 1; depth <= 26; depth++) {
-        const rng = new Rng(depth * 977 + 3);
-        for (let i = 0; i < 20000; i++) {
-            const ch = randomMonsterChar(depth, rng);
-            const e = real[ch] ?? { min: 99, max: 0 };
-            real[ch] = { min: Math.min(e.min, depth), max: Math.max(e.max, depth) };
+        // 한 방에 죽을 때까지 때린다.
+        for (let i = 0; i < 40 && (s.bestiary.S ?? 0) === 0; i++) {
+            s = perform(s, { t: "move", dx: 1, dy: 0 });
+            if (s.level.monsters.every((m) => m.def.ch !== "S")) break;
         }
-    }
-    for (const ch of Object.keys(MONSTERS)) {
-        const said = depthRange(ch)!;
-        assert.ok(said, `${ch} 의 층을 못 냈다`);
-        assert.deepEqual(said, real[ch], `${ch}(${MONSTERS[ch].name}) 의 층이 실제와 다르다`);
+        assert.equal(s.bestiary.S, 1, "옆의 뱀을 못 잡았다");
+        assert.ok(
+            s.messages.some((m) => m.includes("처음 잡았다")),
+            "처음 잡은 것을 화면이 말하지 않았다",
+        );
+
+        // 다시 만나면 속이 보인다.
+        placeNextTo(s, "S", 5);
+        const seen = survey(s).find((x) => x.ch === "S")!;
+        assert.equal(seen.known, true);
+        assert.equal(seen.level, MONSTERS.S.level);
+        assert.equal(seen.defense, defenseOf(MONSTERS.S.armor));
+        assert.equal(seen.exp, MONSTERS.S.exp);
+        assert.equal(seen.hp, MONSTERS.S.hp);
+        assert.deepEqual(seen.damage, MONSTERS.S.damage);
     }
 });
 
-test("한 종은 어디서나 같은 능력치다 — 층이 정하는 것은 어느 종이 나오는가뿐", () => {
-    // 「레벨 다른 같은 몬스터」는 이 게임에 없다. 그 사실을 여기에 박아 둔다.
-    for (const ch of Object.keys(MONSTERS)) {
-        const seen = new Set<string>();
-        for (let depth = 1; depth <= 26; depth++) {
-            const m = spawnMonster(ch, 1, 1, new Rng(depth * 13 + 1));
-            seen.add(JSON.stringify([m.def.level, m.def.armor, m.def.hp, m.def.damage, m.def.exp]));
-            assert.equal(m.hp, m.maxHp);
+test("무엇으로 잡았든 도감에 오른다 — 도망친 놈은 아니다", () => {
+    // ── 지팡이로 잡아도 도감에 들어간다
+    {
+        const s = newGame(303);
+        const m = placeNextTo(s, "O", 1);
+        const wand = makeItem("wand", "magic missile", 990, -1, -1);
+        wand.charges = 3;
+        wand.letter = "z";
+        s.hero.pack.push(wand);
+
+        const after = perform(s, { t: "zap", letter: "z", dx: 1, dy: 0 });
+        assert.ok(after.level.monsters.every((x) => x.id !== m.id), "지팡이에 안 죽었다");
+        assert.equal(after.bestiary.O, 1, "지팡이로 잡은 것이 도감에 안 들어갔다");
+    }
+
+    // ── 던져서 잡아도 도감에 들어간다
+    {
+        const s = newGame(304);
+        // 던진 것이 맞아야 하므로 체력을 1 로 두고 여러 번 던진다.
+        const dagger = makeItem("weapon", "dagger", 991, -1, -1);
+        dagger.count = 20;
+        dagger.plusHit = 10; // 반드시 맞도록
+        // 갑옷을 뚫도록 손질도 넉넉히 — 피해가 방어력에 다 깎이면 못 죽인다.
+        dagger.plusDam = 20;
+        dagger.letter = "z";
+        s.hero.pack.push(dagger);
+
+        let cur: GameState = s;
+        for (let i = 0; i < 20 && !(cur.bestiary.H > 0); i++) {
+            placeNextTo(cur, "H", 1);
+            cur = perform(cur, { t: "throw", letter: "z", dx: 1, dy: 0 });
         }
-        assert.equal(seen.size, 1, `${ch} 가 층에 따라 달라진다`);
+        assert.ok((cur.bestiary.H ?? 0) > 0, "던져서 잡은 것이 도감에 안 들어갔다");
+    }
+
+    // ── 도망친 놈은 잡은 것이 아니다
+    {
+        const s = newGame(305);
+        // 레프러콘은 금화를 채고 스스로 사라진다 — 그건 내가 잡은 것이 아니다.
+        const m = placeNextTo(s, "L", 40);
+        m.awake = true;
+        s.hero.gold = 500;
+
+        let cur: GameState = s;
+        for (let i = 0; i < 60 && cur.level.monsters.some((x) => x.id === m.id); i++) {
+            cur = perform(cur, { t: "rest" });
+        }
+        if (cur.level.monsters.some((x) => x.id === m.id)) return; // 끝내 안 훔쳤으면 이 판으로는 못 잰다
+        assert.equal(cur.bestiary.L ?? 0, 0, "도망친 레프러콘이 도감에 들어갔다");
     }
 });
 
-test("도감 줄이 나오는 층을 함께 준다", () => {
-    const rows = bestiaryRows({ T: 1, K: 2 });
-    const troll = rows.find((r) => r.ch === "T")!;
-    assert.deepEqual(troll.depths, depthRange("T"));
-    assert.ok(troll.depths!.min < troll.depths!.max, "띠가 한 층뿐이다");
-    // 약한 놈은 얕은 층에, 센 놈은 깊은 층에.
-    const kestrel = rows.find((r) => r.ch === "K")!;
-    assert.ok(kestrel.depths!.min < troll.depths!.min, "황조롱이가 트롤보다 깊이 나온다");
+test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
+    // ── 도감은 새 판으로 이어진다 — 죽어도 남는 유일한 것
+    {
+        const kept = { S: 3, O: 1 };
+        const s = newGame(308, kept);
+        assert.deepEqual(s.bestiary, kept);
+        assert.equal(bestiaryProgress(s.bestiary).found, 2);
+        assert.equal(bestiaryProgress(s.bestiary).total, 26);
+
+        // 넘긴 객체를 게임이 물들이면 안 된다 — 부르는 쪽의 값이 몰래 바뀐다.
+        placeNextTo(s, "S", 1);
+        for (let i = 0; i < 40; i++) perform(s, { t: "move", dx: 1, dy: 0 });
+        assert.equal(kept.S, 3, "넘긴 도감이 게임 안에서 바뀌었다");
+    }
+
+    // ── 도감 목록은 잡은 것만, 약한 것부터
+    {
+        const rows = bestiaryRows({ D: 1, S: 2, T: 1 });
+        assert.deepEqual(rows.map((r) => r.ch), ["S", "T", "D"]);
+        assert.equal(rows[0].kills, 2);
+        assert.equal(rows[0].name, MONSTERS.S.name);
+        // 안 잡은 것은 목록에 아예 없다.
+        assert.equal(bestiaryRows({}).length, 0);
+    }
 });

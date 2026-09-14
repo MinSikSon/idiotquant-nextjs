@@ -200,15 +200,21 @@ export function multiAttackLine(
  *
  * ```
  * · 공격력 3d4 → 9 +3힘 +2장검 = 14  −4방어력  → 피해 10
- * · 공격력 3d4 두 번 → 5+7 = 12 +3힘 = 15  −11방어력  → 피해 4
+ * · 공격력 3d4 두 번 → 5, 7 = 12 +3힘 = 15  −11방어력  → 피해 4
  * · 공격력 1d6 → 3  −7방어력  → 피해 0 (튕겨 나갔다)
  * ```
+ *
+ * **치명타의 두 굴림은 쉼표로 가른다.** 한때 `+` 로 이었는데(`2d4 두 번 → 5+4`), 그러면
+ * **주사위 눈 두 개를 더한 것처럼 읽힌다** — 그런데 `5` 는 네 면짜리에 없는 눈이라 화면이
+ * 고장 난 것처럼 보인다. 실제로 그 물음을 들었다. 여기 적히는 숫자 하나하나는 **`2d4`
+ * 한 벌을 통째로 굴린 값**(2~8)이지 낱개 눈이 아니다. 쉼표는 이 기록에서 이미 「따로
+ * 굴린 것들」을 뜻한다(`d20 4, 20!, 11`).
  *
  * `dice` 가 없으면 **결과만** 적는다. 잡아 본 적 없는 종의 주사위 표기도 방어력도
  * 표의 값이라, 보여 주면 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다 —
  * 그래서 부르는 쪽이 안 넘기면 여기서도 산수를 안 펼친다.
  *
- * 치명타면 굴린 눈이 둘이다 — `2d4 두 번 → 5+7 = 12` 처럼 둘 다 적는다.
+ * 치명타면 굴린 값이 둘이다 — `2d4 두 번 → 5, 7 = 12` 처럼 둘 다 적는다.
  */
 export function damageLine(
     dice: string | null,
@@ -223,7 +229,7 @@ export function damageLine(
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
     const eyes =
-        rolled.length > 1 ? `${dice} 두 번 → ${rolled.join("+")} = ${sum}` : `${dice} → ${sum}`;
+        rolled.length > 1 ? `${dice} 두 번 → ${rolled.join(", ")} = ${sum}` : `${dice} → ${sum}`;
     const cut = defense > 0 ? `  −${defense}방어력` : "";
     // **0 은 따로 말해 준다.** 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
     const tail = dealt === 0 ? "피해 0 (튕겨 나갔다)" : `피해 ${dealt}`;
@@ -236,6 +242,9 @@ export function damageLine(
  * ```
  * · 공격력 1d8 → 6 −3방어력 → 3 · 2d6 → 9 −3방어력 → 6  = 피해 9
  * ```
+ *
+ * 치명타의 두 굴림은 **쉼표로 가른다**(`damageLine` 머리말 참고) — `+` 로 이으면 주사위
+ * 눈을 더한 것처럼 읽힌다.
  *
  * 갑옷이 **대마다** 듣는다는 것이 이 체계에서 제일 중요한 한 줄이라, 세 대를 뭉쳐
  * 한 번만 빼는 것처럼 적으면 안 된다.
@@ -256,7 +265,7 @@ export function monsterDamageLine(
     const each = parts
         .map(({ dice, rolled, dealt }) => {
             const eyes =
-                rolled.length > 1 ? `${dice} 두 번 → ${rolled.join("+")}` : `${dice} → ${rolled[0] ?? 0}`;
+                rolled.length > 1 ? `${dice} 두 번 → ${rolled.join(", ")}` : `${dice} → ${rolled[0] ?? 0}`;
             return `${eyes}${add}${cut} → ${dealt}`;
         })
         .join(" · ");
