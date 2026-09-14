@@ -21,7 +21,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, monsterDamageLine, multiAttackLine, outcomeOf, withDamage } from "@/lib/rogue/combat";
-import { opposedRoll } from "@/lib/rogue/dnd";
+import { damageRoll, opposedRoll } from "@/lib/rogue/dnd";
 import { Rng as R } from "@/lib/rogue/rng";
 import { newGame, perform } from "@/lib/rogue/game";
 import { heroAttackText, heroHitBonus, heroHitTerms } from "@/lib/rogue/hero";
@@ -124,7 +124,7 @@ test("공격력 줄은 굴린 눈에서 **방어력을 빼는 것까지** 이어
     // **치명타면 주사위를 두 번 굴린다** — 둘 다 적는다.
     assert.equal(
         damageLine("2d4", [5, 7], [{ n: 3, why: "힘" }], 15, 2, 13),
-        "· 공격력 2d4 두 번 → 5+7 = 12 +3힘 = 15  −2방어력  → 피해 13",
+        "· 공격력 2d4 두 번 → 5, 7 = 12 +3힘 = 15  −2방어력  → 피해 13",
     );
     // **0 은 따로 말해 준다** — 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
     assert.equal(
@@ -151,6 +151,33 @@ test("여러 대의 공격력은 **대마다** 방어력을 만난다", () => {
         "· 공격력 1d8 → 6 −3방어력 → 3 · 2d6 → 9 −3방어력 → 6  = 피해 9",
     );
     assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 7");
+});
+
+// 「2d4 인데 왜 5 가 나오나」 — 실제로 들은 물음이다. 치명타의 두 굴림을 `+` 로 이어
+// `2d4 두 번 → 5+4` 라고 적었더니 **네 면짜리 눈 두 개를 더한 것**처럼 읽혔고, `5` 는
+// 거기 없는 눈이라 화면이 고장 난 것처럼 보였다. 여기 적히는 숫자 하나하나는 **주사위
+// 한 벌을 통째로 굴린 값**(`2d4` 면 2~8)이다.
+test("치명타의 두 굴림은 **더하는 것처럼** 안 적는다", () => {
+    for (const [dice, lo, hi] of [["2d4", 2, 8], ["3d4", 3, 12], ["1d8", 1, 8]] as const) {
+        const rng = new Rng(2024);
+        for (let i = 0; i < 200; i++) {
+            const d = damageRoll(dice, 0, true, rng);
+            const line = damageLine(dice, d.rolled, [], d.total, 0, d.total);
+
+            const shown = line.match(/두 번 → ([\d, ]+) =/);
+            assert.ok(shown, `치명타 줄 모양이 아니다: ${line}`);
+            // **`+` 로 잇지 않는다** — 이으면 눈을 더한 것으로 읽힌다.
+            assert.doesNotMatch(shown[1], /\+/, `굴림을 + 로 이었다: ${line}`);
+
+            const parts = shown[1].split(",").map((x) => Number(x.trim()));
+            assert.equal(parts.length, 2, `치명타인데 굴림이 둘이 아니다: ${line}`);
+            for (const n of parts) {
+                // 한 벌을 통째로 굴린 값이라 **낱개 눈의 범위가 아니다.**
+                assert.ok(n >= lo && n <= hi, `${dice} 에 ${n} 이 나올 수 없다: ${line}`);
+            }
+            assert.equal(parts[0] + parts[1], d.total, `적힌 합이 실제와 다르다: ${line}`);
+        }
+    }
 });
 
 test("계산 줄에는 표시가 붙는다 — 띠가 그것을 걸러 낸다", () => {
@@ -396,7 +423,7 @@ test("실제로 들어가는 피해와 화면의 「공격」이 같은 식이�
         const crit = line.includes("두 번");
         if (crit) crits++;
         const rolledSum = crit
-            ? Number(line.match(/→ [\d+]+ = (\d+)/)![1])
+            ? Number(line.match(/→ [\d, ]+ = (\d+)/)![1])
             : Number(line.match(/→ (\d+)/)![1]);
         const power = Number(line.match(/= (-?\d+)(  −|  →)/)?.[1] ?? rolledSum);
         assert.equal(power - rolledSum, Number(plus), `${line} 의 보정이 화면의 ${plus} 와 다르다`);
@@ -555,7 +582,7 @@ test("상대의 공격력 줄은 등호를 하나만 쓴다 — 어느 쪽이 �
     // 치명타는 주사위가 둘이라 둘 다 적는다.
     assert.equal(
         monsterDamageLine([{ dice: "1d8", rolled: [5, 6], dealt: 8 }], 0, 3, 8),
-        "· 공격력 1d8 두 번 → 5+6 −3방어력 → 8  = 피해 8",
+        "· 공격력 1d8 두 번 → 5, 6 −3방어력 → 8  = 피해 8",
     );
     // 여러 대는 대마다 따로 적고 **등호는 줄 끝에 하나**다. 예전에는 치명타가 섞이면
     // `… = 11 = 18` 처럼 등호가 둘 연달아 섰다.
@@ -570,7 +597,7 @@ test("상대의 공격력 줄은 등호를 하나만 쓴다 — 어느 쪽이 �
             3,
             17,
         ),
-        "· 공격력 1d8 → 7 −3방어력 → 4 · 1d8 두 번 → 5+6 −3방어력 → 8 · 2d6 → 8 −3방어력 → 5  = 피해 17",
+        "· 공격력 1d8 → 7 −3방어력 → 4 · 1d8 두 번 → 5, 6 −3방어력 → 8 · 2d6 → 8 −3방어력 → 5  = 피해 17",
     );
     // 맨몸이면 뺄 것이 없으니 빼는 자리도 안 적는다.
     assert.equal(

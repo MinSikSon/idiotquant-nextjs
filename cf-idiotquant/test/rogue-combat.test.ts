@@ -406,11 +406,11 @@ test("여러 대를 때리는 놈은 **대마다** 깎인다", () => {
         const line = r.messages.find((l) => l.startsWith("· 공격력 "));
         if (!line) continue;
 
-        // 줄에 적힌 대마다: `1d8 → 6 +6공격력 −3방어력 → 3`
-        const blows = [...line.matchAll(/→ ([\d+]+)(?: \+(\d+)공격력)? −(\d+)방어력 → (\d+)/g)];
+        // 줄에 적힌 대마다: `1d8 → 6 +6공격력 −3방어력 → 3` (치명타면 `→ 5, 6`)
+        const blows = [...line.matchAll(/→ ([\d, ]+?)(?: \+(\d+)공격력)? −(\d+)방어력 → (\d+)/g)];
         assert.ok(blows.length > 0, `깎는 자리가 없다: ${line}`);
         for (const [, rolled, add, cut, got] of blows) {
-            const raw = rolled.split("+").reduce((n, x) => n + Number(x), 0);
+            const raw = rolled.split(",").reduce((n, x) => n + Number(x.trim()), 0);
             assert.equal(Number(cut), guard, `방어력이 다르게 적혔다: ${line}`);
             assert.equal(Number(add ?? 0), monsterDamBonus(m), `공격력 보정이 다르게 적혔다: ${line}`);
             // **줄 위에서 셈이 맞아야 한다.** 보정을 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼
