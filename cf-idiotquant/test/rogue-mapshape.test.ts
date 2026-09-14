@@ -310,7 +310,31 @@ test("총량은 층이 정하고 방이 나눠 갖는다 — 쿼터와 배분", 
             }
         }
         assert.ok(pairs > 1000, "짝이 모자라 못 잰다");
-        // 아주 좁은 방에서는 못 띄우므로 0 을 걸지는 않는다 — 흔하면 안 된다는 것이다.
-        assert.ok(touching / pairs < 0.02, `${((touching / pairs) * 100).toFixed(1)}% 가 붙어 놓였다`);
+        // 아주 좁은 방에서는 못 띄우므로 0 을 걸지는 않는다. 다만 **띄우기를 빼면 0.74%**
+        // 이므로 0.2% 를 건다 — 이보다 느슨하면 규칙을 없애도 테스트가 안 운다.
+        assert.ok(
+            touching / pairs < 0.002,
+            `${((touching / pairs) * 100).toFixed(2)}% 가 붙어 놓였다 — 흩어 놓기가 안 듣는다`,
+        );
+    }
+
+    // ── 미로 방은 **직사각형이 아니라 걸을 수 있는 칸**으로 센다
+    {
+        // 미로 방은 안쪽이 통로로 파여 절반쯤만 남는다. 직사각형으로 세면 실제 바닥보다
+        // 1.6배 무거워져서 **미로 방에만 물건이 몰린다.** 미로는 한 칸씩 더듬는 곳이라
+        // 거기 몰리는 것이 제일 안 좋다.
+        const rng = new Rng(20260919);
+        const seen: number[] = [];
+        for (let i = 0; i < 400 && seen.length < 60; i++) {
+            const level = buildLevel(8 + (i % 19), rng); // 미로 방은 8층부터
+            for (const r of level.rooms) {
+                if (!r.maze || r.gone) continue;
+                seen.push(effectiveArea(level, r) / roomArea(r));
+            }
+        }
+        assert.ok(seen.length >= 20, `미로 방이 ${seen.length}개뿐이라 못 잰다`);
+        const ratio = seen.reduce((a, b) => a + b, 0) / seen.length;
+        // 재 보니 0.61 이다. 직사각형으로 세면 0.95 로 뛴다(감쇠만 남는다).
+        assert.ok(ratio < 0.8, `미로 방을 직사각형으로 세고 있다 — 실효/직사각형 = ${ratio.toFixed(3)}`);
     }
 });

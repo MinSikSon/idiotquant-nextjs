@@ -52,8 +52,6 @@ const QUOTA_MIN = 2;
 const QUOTA_MAX = 7;
 /** 한 방에 놓이는 물건의 최대. */
 const ROOM_ITEM_CAP = 3;
-/** 이 실효 면적부터는 **빈 채로 두지 않는다.** */
-const BIG_ROOM_GUARD = 24;
 
 /** 칸의 경계 — 마지막 칸이 나머지를 먹는다. */
 function cellBounds(ci: number) {
@@ -536,22 +534,21 @@ export function itemSpots(level: Level, n: number, rng: Rng, avoid: Pos[] = []):
         }
     }
 
-    // ── **넓은 방을 빈 채로 두지 않는다.** 걸어 들어간 값이 넓이에 반비례하면 안 된다.
-    for (let i = 0; i < quota.length; i++) {
-        if (quota[i] > 0 || areas[i] < BIG_ROOM_GUARD) continue;
-        const from = quota.indexOf(Math.max(...quota));
-        if (quota[from] < 2) break; // 뺏을 데가 없다 — 층이 너무 헐겁다
-        quota[from]--;
-        quota[i]++;
-    }
+    // 넓은 방을 따로 지켜 줄 필요는 **없다.** 기획에는 「A* 가 큰 방이 0개면 뺏어 온다」는
+    // 보정이 있었는데, 500층 3천여 방으로 재 보니 넣으나 빼나 8.0% 로 같았다 —
+    // 최대잔여가 소수부 큰 방부터 남은 몫을 주므로 **제일 넓은 방은 구조적으로 먼저
+    // 받는다.** 안 듣는 보정은 안 넣는다.
 
-    // ── 몫만큼 실제 칸을 고른다. 같은 방 안에서는 붙여 놓지 않는다.
+    // ── 몫만큼 실제 칸을 고른다. 같은 방 안에서는 흩어 놓는다.
     const out: Pos[] = [];
     let spilled = 0;
     real.forEach((r, i) => {
         let want = quota[i];
         const open = rng.shuffle(openTiles(level, r, avoid));
         const taken: Pos[] = [];
+        // **한 방 안에서도 흩어 놓는다.** 겹쳐서 안 보이는 것은 아니다(칸이 다르면 둘 다
+        // 보인다) — 구석에 쌓여 있으면 「이 방에 뭐가 좀 있다」가 아니라 「저기 한 무더기」로
+        // 읽혀서, 넓은 방을 걸어 볼 까닭이 다시 사라진다.
         // 한 바퀴는 떨어뜨려 놓고, 그래도 모자라면 붙는 것을 받아들인다 —
         // 작은 방에서는 두 칸을 못 띄운다.
         for (const pass of [true, false]) {
