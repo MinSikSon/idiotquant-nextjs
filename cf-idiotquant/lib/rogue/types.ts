@@ -86,6 +86,14 @@ export interface MonsterDef {
     mean: boolean;
     /** 자기 자리에서 안 움직인다 (파리지옥처럼). */
     still?: boolean;
+    /**
+     * 피해 대신 **다른 것을 가져가는** 수법 — 도감에 적히는 한 줄.
+     *
+     * **`damage` 에 `"0d0"` 이 있는 종만 갖는다.** 그 값이 곧 특수 공격의 방아쇠라
+     * (`combat.ts`), 둘 중 하나만 있으면 적히지 않는 능력이거나 이름 없는 능력이
+     * 된다. 테스트가 그 짝을 확인한다.
+     */
+    special?: string;
 }
 
 export interface Monster {
@@ -262,6 +270,15 @@ export interface GameState {
      * 남는 유일한 것이 되고, 그것이 다시 하는 이유다.
      */
     bestiary: Record<string, number>;
+    /**
+     * 수법을 당해 본 몬스터와 그 횟수 — **판을 넘어 남는다.**
+     *
+     * `bestiary` 와 **열쇠가 따로다.** 잡으면 속(능력치)이 열리고, 당해 봐야 수법이
+     * 열린다 — 님프는 물건을 채고 달아나므로 잡지 않고도 수법을 알 수 있고, 반대로
+     * 수법 한 번 못 보고 잡아 온 아쿠에이터도 있다. 한 칸에 둘을 담으면 그 둘을
+     * 구별할 수 없다.
+     */
+    specials: Record<string, number>;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
 }

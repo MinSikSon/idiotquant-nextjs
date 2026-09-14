@@ -159,3 +159,129 @@ test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
         assert.equal(bestiaryRows({}).length, 0);
     }
 });
+
+// ── 수법 ────────────────────────────────────────────────────────────────
+//
+// 도감에는 **열쇠가 둘** 있다. 잡으면 속(능력치)이 열리고, **당해 봐야 수법이 열린다.**
+// 둘을 한 칸에 담으면 님프를 열 마리 잡아 본 사람과 물건을 털려 본 사람이 같은
+// 도감을 보게 되는데, 그 둘이 아는 것은 전혀 다르다.
+
+/** 옆의 놈에게 수법을 당할 때까지 쉰다. 못 당하면 `null`. */
+function suffer(s: GameState, ch: string, tries = 400): GameState | null {
+    for (let i = 0; i < tries; i++) {
+        s = perform(s, { t: "rest" });
+        if ((s.specials[ch] ?? 0) > 0) return s;
+        // 아쿠에이터는 피해를 안 주지만 다른 놈이 끼어들어 죽일 수는 있다.
+        if (s.phase !== "playing") return null;
+        if (!s.level.monsters.some((m) => m.def.ch === ch)) return null;
+    }
+    return null;
+}
+
+test("수법은 표와 방아쇠가 한 짝이다", () => {
+    // `damage` 의 `"0d0"` 이 특수 공격의 **유일한 방아쇠**다(`combat.ts`). 이름만
+    // 있고 방아쇠가 없으면 **영영 안 열리는 도감 칸**이 되고, 방아쇠만 있고 이름이
+    // 없으면 당하고도 도감이 빈다. 둘은 반드시 같이 움직여야 한다.
+    for (const [ch, d] of Object.entries(MONSTERS)) {
+        assert.equal(
+            d.damage.includes("0d0"),
+            d.special !== undefined,
+            `${ch} ${d.name}: 방아쇠(0d0)와 수법 이름이 짝이 안 맞는다`,
+        );
+    }
+    // 지금 수법을 가진 것은 셋이다 — 이 수가 말없이 늘거나 줄면 알아야 한다.
+    const withSpecial = Object.keys(MONSTERS).filter((ch) => MONSTERS[ch].special);
+    assert.deepEqual(withSpecial, ["A", "N", "W"]);
+});
+
+test("잡아서 아는 것과 당해서 아는 것은 따로다", () => {
+    // ── 잡기만 해서는 수법 칸이 안 열린다
+    {
+        const rows = bestiaryRows({ A: 5 }, {});
+        assert.equal(rows.length, 1);
+        assert.equal(rows[0].hasSpecial, true, "아쿠에이터는 수법이 있는 종이다");
+        assert.equal(rows[0].special, null, "안 당해 봤는데 수법이 적혔다");
+        assert.equal(rows[0].suffered, 0);
+    }
+
+    // ── 당해 보면 열린다
+    {
+        const rows = bestiaryRows({ A: 5 }, { A: 2 });
+        assert.equal(rows[0].special, MONSTERS.A.special);
+        assert.equal(rows[0].suffered, 2);
+    }
+
+    // ── 수법이 아예 없는 종은 둘 다 비어 있다 — 「모른다」와 「없다」는 다르다
+    {
+        const rows = bestiaryRows({ S: 1 }, { S: 9 });
+        assert.equal(rows[0].hasSpecial, false);
+        assert.equal(rows[0].special, null);
+    }
+
+    // ── 안 잡은 종은 당해 봤어도 목록에 없다 — 목록에 서는 열쇠는 여전히 잡은 것이다
+    assert.equal(bestiaryRows({}, { N: 3 }).length, 0);
+});
+
+test("수법은 당한 순간 적히고, 처음 한 번만 말한다", () => {
+    const s0 = newGame(321);
+    const m = placeNextTo(s0, "A", 200);
+    m.awake = true;
+    // 갑옷이 있어야 아쿠에이터가 녹일 것이 있다.
+    assert.ok(s0.hero.armorId, "처음 판에 갑옷이 없다");
+
+    const s = suffer(s0, "A");
+    assert.ok(s, "아쿠에이터가 400턴 동안 한 번도 안 녹였다");
+    assert.equal(s!.specials.A, 1);
+    const learned = s!.messages.filter((t) => t.includes("수법을 알았다"));
+    assert.equal(learned.length, 1, "처음 당한 것을 한 번만 말해야 한다");
+    assert.ok(learned[0].includes(MONSTERS.A.name));
+
+    // 잡지 않았으므로 도감 **목록**에는 아직 없다. 그래도 기록은 남아서,
+    // 나중에 한 마리를 잡는 순간 수법이 이미 적혀 있다.
+    assert.equal(s!.bestiary.A ?? 0, 0);
+    assert.equal(bestiaryRows(s!.bestiary, s!.specials).length, 0);
+    assert.equal(bestiaryRows({ A: 1 }, s!.specials)[0].special, MONSTERS.A.special);
+
+    // ── 두 번째부터는 조용하다
+    const before = s!.messages.length;
+    const again = suffer(s!, "A");
+    assert.ok(again, "두 번째를 못 당했다");
+    assert.ok(again!.specials.A >= 2);
+    assert.equal(
+        again!.messages.slice(before).filter((t) => t.includes("수법을 알았다")).length,
+        0,
+        "이미 아는 수법을 또 알았다고 말한다",
+    );
+});
+
+test("무력화된 놈에게서는 배울 것이 없다", () => {
+    // 무력화 지팡이를 맞은 놈은 **아무 일도 못 한다.** 헛손질을 본 것으로 수법을
+    // 알게 되면 지팡이가 도감 여는 도구가 된다.
+    const s = newGame(322);
+    const m = placeNextTo(s, "A", 200);
+    m.awake = true;
+    m.cancelled = true;
+
+    let cur: GameState = s;
+    for (let i = 0; i < 200; i++) cur = perform(cur, { t: "rest" });
+    assert.ok(
+        cur.messages.some((t) => t.includes("헛되이 달려든다")),
+        "무력화된 놈이 달려들지도 않았다 — 이 판으로는 못 잰다",
+    );
+    assert.equal(cur.specials.A ?? 0, 0, "무력화된 놈에게서 수법을 배웠다");
+});
+
+test("수법도 판을 넘어 남는다", () => {
+    const kept = { A: 2, N: 1 };
+    const s = newGame(323, {}, kept);
+    assert.deepEqual(s.specials, kept);
+
+    // 넘긴 객체를 게임이 물들이면 안 된다 — 부르는 쪽의 값이 몰래 바뀐다.
+    const m = placeNextTo(s, "A", 200);
+    m.awake = true;
+    suffer(s, "A");
+    assert.equal(kept.A, 2, "넘긴 수법 기록이 게임 안에서 바뀌었다");
+
+    // 안 넘기면 빈칸에서 시작한다 — 옛 저장에는 이 칸이 아예 없다.
+    assert.deepEqual(newGame(324).specials, {});
+});
