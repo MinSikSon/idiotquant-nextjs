@@ -189,9 +189,9 @@ test("수법은 표와 방아쇠가 한 짝이다", () => {
             `${ch} ${d.name}: 방아쇠(0d0)와 수법 이름이 짝이 안 맞는다`,
         );
     }
-    // 지금 수법을 가진 것은 셋이다 — 이 수가 말없이 늘거나 줄면 알아야 한다.
+    // 지금 수법을 가진 것은 여섯이다 — 이 수가 말없이 늘거나 줄면 알아야 한다.
     const withSpecial = Object.keys(MONSTERS).filter((ch) => MONSTERS[ch].special);
-    assert.deepEqual(withSpecial, ["A", "N", "W"]);
+    assert.deepEqual(withSpecial, ["A", "F", "I", "L", "N", "W"]);
 });
 
 test("잡아서 아는 것과 당해서 아는 것은 따로다", () => {
@@ -284,4 +284,38 @@ test("수법도 판을 넘어 남는다", () => {
 
     // 안 넘기면 빈칸에서 시작한다 — 옛 저장에는 이 칸이 아예 없다.
     assert.deepEqual(newGame(324).specials, {});
+});
+
+test("묶는 수법은 빠져나올 수 있어야 한다", () => {
+    // **잠은 턴당 1씩만 풀리는데 상대는 매 턴 때린다.** 그냥 더하면 쌓이는 속도가
+    // 풀리는 속도를 앞질러 영영 못 움직인다 — 얼음괴물 옆에서 299턴을 내리 묶였다.
+    // 얼음괴물은 1층부터 나오는 놈이라 그건 수법이 아니라 사형 선고다.
+    //
+    // 값에 상한만 씌우는 것으로는 안 된다: 남은 턴이 4 를 안 넘어도 **매 턴 다시 채워지면**
+    // 갇힌 것은 똑같다. 그래서 묶는 것은 **한 번에 한 번**이다.
+    for (const ch of ["I", "F"]) {
+        let worst = 0;
+        for (let seed = 1; seed <= 40; seed++) {
+            const s0 = newGame(seed * 13);
+            const m = placeNextTo(s0, ch, 9999);
+            m.awake = true;
+            let s: GameState = s0;
+            let streak = 0;
+            for (let t = 0; t < 200; t++) {
+                s.hero.hp = s.hero.maxHp; // 죽는 것 말고 **묶이는 것**만 잰다
+                const before = s.hero.asleep;
+                s = perform(s, { t: "move", dx: -1, dy: 0 });
+                if (before > 0) streak++;
+                else {
+                    worst = Math.max(worst, streak);
+                    streak = 0;
+                }
+            }
+            worst = Math.max(worst, streak);
+        }
+        assert.ok(
+            worst <= 20,
+            `${MONSTERS[ch].name} 옆에서 ${worst} 턴을 내리 묶였다 — 빠져나올 수 없으면 수법이 아니라 사형 선고다`,
+        );
+    }
 });
