@@ -18,7 +18,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildLevel, freeSpot, roomArea } from "@/lib/rogue/dungeon";
+import {
+    buildLevel,
+    effectiveArea,
+    floorQuota,
+    freeSpot,
+    itemSpots,
+    roomArea,
+    roomWeight,
+    shapeFactor,
+} from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
 import { MAP_H, MAP_W, T, idx, inBounds, walkable, type Level, type Tile } from "@/lib/rogue/types";
 
@@ -161,5 +170,171 @@ test("놓을 자리는 방의 넓이를 태워 고른다", () => {
         assert.equal(roomArea({ x: 0, y: 0, w: 3, h: 3, dark: false, gone: false, maze: false }), 1);
         // 「없는 방」은 복도의 교차점 한 칸이다 — 0 을 주면 영영 안 뽑힌다.
         assert.equal(roomArea({ x: 9, y: 9, w: 1, h: 1, dark: false, gone: true, maze: false }), 1);
+    }
+});
+
+test("회랑은 깎고 초대형은 꺾는다 — 감쇠와 상한", () => {
+    // ── 감쇠는 ρ₀ 아래에서 정확히 1 이고, 그 위에서만 줄어든다
+    {
+        // **기준점이 1 이 아니다.** 이 생성기의 방은 장단비 중앙값이 이미 3.0 이라,
+        // ρ>1 부터 깎으면 감쇠가 아니라 그냥 전체를 줄이는 것이 된다.
+        assert.equal(shapeFactor(6, 6), 1, "정사각을 깎는다");
+        assert.equal(shapeFactor(10, 4), 1, "ρ=2.5 까지는 안 깎아야 한다");
+        assert.ok(shapeFactor(12, 4) < 1, "ρ=3 을 안 깎는다");
+
+        let last = 1;
+        for (const a of [3, 4, 5, 6, 8, 10, 12, 14]) {
+            const s = shapeFactor(a, 1);
+            assert.ok(s <= last, `${a}×1 이 그 앞보다 안 줄었다`);
+            assert.ok(s > 0, "감쇠가 0 이나 음수가 됐다 — 방이 영영 안 뽑힌다");
+            last = s;
+        }
+        // 제일 긴 통로가 **눈에 띄게** 깎여야 한다. 조금만 깎으면 회랑이 여전히 홀이다.
+        assert.ok(shapeFactor(14, 1) < 0.5, `14×1 통로가 ${shapeFactor(14, 1).toFixed(2)} 로 덜 깎였다`);
+    }
+
+    // ── 가중치는 넓이를 따라 오르되 상한을 안 넘는다
+    {
+        const rng = new Rng(31415);
+        const level = buildLevel(3, rng);
+        // 실제 층의 방들로 — 넓을수록 무거운가.
+        const rows = level.rooms
+            .filter((r) => !r.gone)
+            .map((r) => ({ a: effectiveArea(level, r), w: roomWeight(level, r) }))
+            .sort((p, q) => p.a - q.a);
+        for (let i = 1; i < rows.length; i++) {
+            assert.ok(rows[i].w >= rows[i - 1].w, "넓은 방이 좁은 방보다 안 무겁다");
+        }
+        for (const row of rows) assert.ok(row.w <= 32, `가중치 ${row.w} 가 상한을 넘었다`);
+
+        // **상한이 실제로 문다.** 20×20 홀이 들어와도 층을 통째로 먹지 않는다.
+        const hall = { x: 0, y: 0, w: 22, h: 22, dark: false, gone: false, maze: false };
+        const wide = buildLevel(3, new Rng(1));
+        wide.rooms = [hall];
+        assert.equal(roomWeight(wide, hall), 32, "초대형 방에서 상한이 안 물었다");
+    }
+});
+
+test("총량은 층이 정하고 방이 나눠 갖는다 — 쿼터와 배분", () => {
+    // ── 층 쿼터는 깊이를 타되 상하한 안에 머문다
+    {
+        const rng = new Rng(777);
+        const seen: Record<number, number[]> = {};
+        for (const d of [1, 5, 10, 20, 26]) {
+            seen[d] = [];
+            for (let i = 0; i < 400; i++) {
+                const n = floorQuota(d, rng);
+                assert.ok(n >= 2 && n <= 7, `${d}층 쿼터가 ${n} 이다`);
+                seen[d].push(n);
+            }
+        }
+        const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+        // 깊을수록 조금 는다 — 위험은 커지는데 보상이 그대로면 내려갈 까닭이 준다.
+        assert.ok(mean(seen[26]) > mean(seen[1]), "26층이 1층보다 안 후하다");
+        // 다만 **조금만** — 두 배가 되면 바닥층이 창고가 된다.
+        assert.ok(mean(seen[26]) < mean(seen[1]) * 1.7, "깊은 층이 너무 후하다");
+    }
+
+    // ── 나눠 준 몫의 합이 **정확히 쿼터**다 — 자원 보존의 전부
+    {
+        const rng = new Rng(20260916);
+        for (let i = 0; i < 300; i++) {
+            const level = buildLevel(1 + (i % 26), rng);
+            const n = floorQuota(level.depth, rng);
+            const spots = itemSpots(level, n, rng, []);
+            assert.equal(spots.length, n, `${level.depth}층에서 ${n} 을 시켰는데 ${spots.length} 이 나왔다`);
+            // 놓인 자리는 전부 걸어갈 수 있어야 하고, 겹치면 안 된다.
+            for (const p of spots) {
+                assert.ok(walkable(level.tiles[idx(p.x, p.y)] as Tile), "바위 속에 물건을 놓았다");
+            }
+            const keys = new Set(spots.map((p) => `${p.x},${p.y}`));
+            assert.equal(keys.size, spots.length, "한 칸에 둘을 놓았다");
+        }
+        // 0 을 시키면 0 이 나온다 — 쿼터가 바닥일 때 터지면 안 된다.
+        assert.deepEqual(itemSpots(buildLevel(1, rng), 0, rng, []), []);
+    }
+
+    // ── 한 방이 층을 통째로 먹지 않고, 넓은 방은 빈 채로 안 둔다
+    {
+        const rng = new Rng(20260917);
+        let big = 0;
+        let bigEmpty = 0;
+        let over = 0;
+        let clumped = 0;
+        let floors = 0;
+
+        for (let i = 0; i < 500; i++) {
+            const level = buildLevel(1 + (i % 26), rng);
+            const spots = itemSpots(level, floorQuota(level.depth, rng), rng, []);
+            floors++;
+            for (const r of level.rooms) {
+                if (r.gone) continue;
+                const got = spots.filter(
+                    (p) => p.x > r.x && p.x < r.x + r.w - 1 && p.y > r.y && p.y < r.y + r.h - 1,
+                ).length;
+                if (got > 3) over++;
+                if (got >= 2) clumped++;
+                if (effectiveArea(level, r) >= 24) {
+                    big++;
+                    if (got === 0) bigEmpty++;
+                }
+            }
+        }
+
+        assert.ok(big > 300, `넓은 방 표본이 ${big} 개뿐이라 못 잰다`);
+        assert.equal(over, 0, `한 방에 넷 이상 놓인 층이 ${over} 번 있다`);
+        // **이것이 이 배분의 전부다.** 물건마다 따로 뽑으면 여기가 36% 였다.
+        assert.ok(
+            bigEmpty / big < 0.15,
+            `넓은 방이 ${((bigEmpty / big) * 100).toFixed(1)}% 나 비어 있다 — 배분이 안 듣는다`,
+        );
+        // 몰림도 같이 본다 — 흩어 놓는 것이 목적이지 한 방에 쌓는 것이 아니다.
+        assert.ok(clumped / floors < 0.5, `한 방에 둘 이상이 층마다 ${(clumped / floors).toFixed(2)} 번이다`);
+    }
+
+    // ── 같은 방 안에서는 붙여 놓지 않는다 — 겹쳐 보이면 하나를 못 본다
+    {
+        const rng = new Rng(20260918);
+        let pairs = 0;
+        let touching = 0;
+        for (let i = 0; i < 400; i++) {
+            const level = buildLevel(1 + (i % 26), rng);
+            const spots = itemSpots(level, 5, rng, []);
+            for (let a = 0; a < spots.length; a++) {
+                for (let b = a + 1; b < spots.length; b++) {
+                    pairs++;
+                    if (Math.abs(spots[a].x - spots[b].x) <= 1 && Math.abs(spots[a].y - spots[b].y) <= 1) {
+                        touching++;
+                    }
+                }
+            }
+        }
+        assert.ok(pairs > 1000, "짝이 모자라 못 잰다");
+        // 아주 좁은 방에서는 못 띄우므로 0 을 걸지는 않는다. 다만 **띄우기를 빼면 0.74%**
+        // 이므로 0.2% 를 건다 — 이보다 느슨하면 규칙을 없애도 테스트가 안 운다.
+        assert.ok(
+            touching / pairs < 0.002,
+            `${((touching / pairs) * 100).toFixed(2)}% 가 붙어 놓였다 — 흩어 놓기가 안 듣는다`,
+        );
+    }
+
+    // ── 미로 방은 **직사각형이 아니라 걸을 수 있는 칸**으로 센다
+    {
+        // 미로 방은 안쪽이 통로로 파여 절반쯤만 남는다. 직사각형으로 세면 실제 바닥보다
+        // 1.6배 무거워져서 **미로 방에만 물건이 몰린다.** 미로는 한 칸씩 더듬는 곳이라
+        // 거기 몰리는 것이 제일 안 좋다.
+        const rng = new Rng(20260919);
+        const seen: number[] = [];
+        for (let i = 0; i < 400 && seen.length < 60; i++) {
+            const level = buildLevel(8 + (i % 19), rng); // 미로 방은 8층부터
+            for (const r of level.rooms) {
+                if (!r.maze || r.gone) continue;
+                seen.push(effectiveArea(level, r) / roomArea(r));
+            }
+        }
+        assert.ok(seen.length >= 20, `미로 방이 ${seen.length}개뿐이라 못 잰다`);
+        const ratio = seen.reduce((a, b) => a + b, 0) / seen.length;
+        // 재 보니 0.61 이다. 직사각형으로 세면 0.95 로 뛴다(감쇠만 남는다).
+        assert.ok(ratio < 0.8, `미로 방을 직사각형으로 세고 있다 — 실효/직사각형 = ${ratio.toFixed(3)}`);
     }
 });
