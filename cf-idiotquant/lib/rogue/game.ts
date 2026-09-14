@@ -80,6 +80,8 @@ import {
 import {
     Rng,
 } from "./rng";
+// **타입만** 가져온다 — 지난 판의 모양일 뿐이라 실행할 때는 사라진다(저장소를 안 끌어온다).
+import type { Tomb } from "./storage";
 import {
     AMULET_LEVEL,
     ALL_DIRS,
@@ -1377,9 +1379,61 @@ export function bestiaryProgress(bestiary: Record<string, number>): { found: num
     };
 }
 
-/** 점수 — 금화에 증표를 얹는다. */
+/**
+ * 점수 — 금화에 증표와 깊이를 얹는다.
+ *
+ * **식은 여기 하나뿐이다.** 지난 판 목록도 이걸 다시 쓴다(`tombScore`) — 둘로 나뉘면
+ * 죽음 화면의 점수와 목록의 점수가 어느 날 달라지고, 그러면 등수가 거짓말을 한다.
+ */
+function scoreOf(gold: number, deepest: number, amulet: boolean): number {
+    return gold + (amulet ? 10000 : 0) + deepest * 50;
+}
+
 export function score(state: GameState): number {
-    return state.hero.gold + (state.hero.hasAmulet ? 10000 : 0) + state.deepest * 50;
+    return scoreOf(state.hero.gold, state.deepest, state.hero.hasAmulet);
+}
+
+/** 지난 판 하나의 점수. 옛 기록에는 증표 칸이 없어 「살아 돌아왔나」로 메운다. */
+export function tombScore(t: Tomb): number {
+    return scoreOf(t.gold, t.depth, t.amulet ?? t.won);
+}
+
+/** 이번 판이 지난 판들 사이에서 선 자리. */
+export interface Standing {
+    /** 몇 등인가. **같은 점수는 같은 등수다** — 나란한 두 판의 순서를 시계가 정하면 안 된다. */
+    place: number;
+    /** 몇 판 중에서인가. **이번 판을 포함한다.** */
+    total: number;
+    /** 여태까지의 최고 점수(이번 판 포함). */
+    best: number;
+    /**
+     * 나와 **똑같은 점수**의 판이 또 있는가 — 공동 등수라는 뜻이다.
+     *
+     * 이 칸이 없으면 화면이 1등마다 「최고 기록!」이라 적는데, 1층에서 금화 없이 죽으면
+     * 점수가 늘 50 이라 **처음 켠 사람이 죽을 때마다 최고 기록을 세운다.** 그러면 그
+     * 말이 아무 뜻도 없어진다.
+     */
+    shared: boolean;
+}
+
+/**
+ * 이번 판이 몇 등인가 — **내 지난 판들 사이에서만** 센다. 남과 겨루지 않는다.
+ *
+ * `tombs` 는 `bury` 가 돌려준, **이번 판이 이미 들어 있는** 목록이다. 그래서 여기서는
+ * 이번 판을 따로 끼워 넣지 않는다 — 넣으면 두 번 세인다.
+ *
+ * 등수는 **나보다 높은 점수의 수 + 1** 이다. 같은 점수끼리는 같은 등수를 나눠 갖고, 그
+ * 다음 등수는 그만큼 건너뛴다(공동 2등이 둘이면 다음은 4등) — 스포츠의 셈이다.
+ */
+export function standing(mine: number, tombs: Tomb[]): Standing {
+    const scores = tombs.map(tombScore);
+    return {
+        place: scores.filter((s) => s > mine).length + 1,
+        total: Math.max(1, scores.length),
+        best: scores.length > 0 ? Math.max(...scores) : mine,
+        // 이번 판의 무덤도 세이므로 **하나는 늘 나 자신**이다. 둘부터가 공동이다.
+        shared: scores.filter((s) => s === mine).length > 1,
+    };
 }
 
 /** 화면이 쓰는 글자표 — 한 곳에서만 정한다. */

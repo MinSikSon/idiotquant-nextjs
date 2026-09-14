@@ -303,6 +303,17 @@ export interface Tomb {
     turns: number;
     epitaph: string;
     won: boolean;
+    /**
+     * 증표를 들고 있었나.
+     *
+     * **살아 돌아온 것과 다르다** — 증표를 쥐고 1층까지 못 올라와 죽는 판이 있고, 그
+     * 판도 점수에는 증표가 얹힌다(`score`). `won` 으로만 세면 그런 판이 무덤이 되는
+     * 순간 만 점이 날아가서, 죽음 화면에 적힌 점수와 지난 판 목록의 점수가 달라진다.
+     *
+     * 옛 기록에는 이 칸이 없다. 없으면 `won` 으로 메운다 — 살아 돌아왔으면 반드시
+     * 들고 있었고, 죽은 판은 알 길이 없으니 안 들었던 것으로 본다.
+     */
+    amulet?: boolean;
 }
 
 const TOMB_KEY = "rogue:graves:v1";
@@ -317,19 +328,31 @@ export function graves(): Tomb[] {
     }
 }
 
-export function bury(state: GameState): void {
-    try {
-        const list = graves();
-        list.unshift({
+/**
+ * 끝난 판을 지난 판 목록에 적고 **적힌 목록을 돌려준다.**
+ *
+ * 돌려주는 까닭은 하나다 — 죽음 화면이 「몇 등인가」를 세려면 **이번 판이 들어 있는**
+ * 목록이 있어야 하는데, 적고 나서 다시 `graves()` 를 부르면 「이번 판이 벌써 들어갔
+ * 는가」를 화면이 짐작해야 한다. 적은 쪽이 결과를 그대로 넘기면 그 짐작이 사라진다.
+ * 적기에 실패해도(사파리 비공개 창 등) 목록은 돌려준다 — 이번 판의 등수는 나와야 한다.
+ */
+export function bury(state: GameState): Tomb[] {
+    const list = [
+        {
             at: Date.now(),
             depth: state.deepest,
             gold: state.hero.gold,
             turns: state.turn,
             epitaph: state.epitaph,
             won: state.phase === "won",
-        });
-        localStorage.setItem(TOMB_KEY, JSON.stringify(list.slice(0, 30)));
+            amulet: state.hero.hasAmulet,
+        },
+        ...graves(),
+    ].slice(0, 30);
+    try {
+        localStorage.setItem(TOMB_KEY, JSON.stringify(list));
     } catch {
         /* 못 적어도 판은 끝난다 */
     }
+    return list;
 }
