@@ -16,6 +16,26 @@ import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
 import { T, type Tile, idx, walkable, type GameState, type Item } from "@/lib/rogue/types";
 
+/**
+ * 서 있는 자리에서 **뚫린 쪽** 하나 — 쏘거나 던질 방향.
+ *
+ * 예전에는 `dx: 1, dy: 0` 을 박아 뒀다. 새 판이 방 한가운데서 시작하던 동안에는
+ * 오른쪽이 늘 바닥이라 티가 안 났는데, **시작 자리가 올라가는 계단 위로 바뀌자**
+ * 오른쪽이 벽인 판이 나왔다. 재려던 것은 「지팡이가 횟수를 쓰는가」지 오른쪽이
+ * 뚫렸는가가 아니다.
+ */
+function openWay(s: GameState): [number, number] {
+    const dirs: [number, number][] = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+    ];
+    const d = dirs.find(([dx, dy]) => walkable(s.level.tiles[idx(s.hero.x + dx, s.hero.y + dy)] as Tile));
+    if (!d) throw new Error("사방이 막힌 자리에서 시작했다");
+    return d;
+}
+
 /** 배낭에 물건 하나를 밀어 넣고 그 글자를 준다. */
 function give(s: GameState, it: Item, letter: string): string {
     it.letter = letter;
@@ -114,23 +134,24 @@ test("지팡이는 횟수를 쓰고, 다 쓰면 아무 일도 안 난다", () =>
     wand.charges = 2;
     give(s0, wand, "y");
 
-    // 옆에 몬스터를 세운다.
+    // 옆에 몬스터를 세운다 — **뚫린 쪽**에.
+    const [dx, dy] = openWay(s0);
     const m = s0.level.monsters[0];
     assert.ok(m, "이 층에 몬스터가 없다");
-    m.x = s0.hero.x + 1;
-    m.y = s0.hero.y;
+    m.x = s0.hero.x + dx;
+    m.y = s0.hero.y + dy;
     m.hp = 60;
     m.maxHp = 60;
 
-    const s1 = perform(s0, { t: "zap", letter: "y", dx: 1, dy: 0 });
+    const s1 = perform(s0, { t: "zap", letter: "y", dx, dy });
     assert.equal(wand.charges, 1);
     assert.ok(m.hp < 60, "맞았는데 체력이 그대로다");
     assert.ok(s1.known["wand:magic missile"], "맞혔는데 정체를 모른다");
 
-    perform(s1, { t: "zap", letter: "y", dx: 1, dy: 0 });
+    perform(s1, { t: "zap", letter: "y", dx, dy });
     assert.equal(wand.charges, 0);
     const hpBefore = m.hp;
-    perform(s1, { t: "zap", letter: "y", dx: 1, dy: 0 });
+    perform(s1, { t: "zap", letter: "y", dx, dy });
     assert.equal(m.hp, hpBefore, "빈 지팡이가 피해를 줬다");
 });
 
@@ -393,12 +414,35 @@ test("한 자리에 던진 것은 겹쳐 쌓인다 — 사라지지 않는다", 
     const darts = makeItem("weapon", "dart", 942, -1, -1, 6);
     darts.letter = "z";
     s.hero.pack.push(darts);
-    for (let i = 0; i < 6; i++) s = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
+    const [dx, dy] = openWay(s);
+    for (let i = 0; i < 6; i++) s = perform(s, { t: "throw", letter: "z", dx, dy });
     assert.equal(packItem(s.hero, "z"), undefined, "여섯 개를 다 안 던졌다");
     const onFloor = s.level.items
         .filter((i) => i.kind === "weapon" && i.type === "dart")
         .reduce((n, i) => n + i.count, 0);
     assert.equal(onFloor, 6, `던진 여섯 개 중 ${onFloor} 개만 바닥에 있다`);
+});
+
+// 겹쳐 쌓는 규칙의 **뒷면**. 같은 것끼리는 쌓았는데 **다른 것이 놓인 자리**에
+// 떨어지면 조용히 없어졌다 — 창을 던졌더니 거기 놓여 있던 갑옷만 남는 식이다.
+// 시드가 하필 그런 자리를 안 골라서 오래 안 드러났다.
+test("다른 물건이 놓인 자리에 던져도 사라지지 않는다", () => {
+    const s = newGame(924);
+    const [dx, dy] = openWay(s);
+    // 날아가는 길 위에 **다른 것**을 하나 놓는다.
+    const mace = makeItem("weapon", "mace", 970, s.hero.x + dx, s.hero.y + dy, 1);
+    s.level.items.push(mace);
+    s.level.monsters = [];
+
+    const spear = makeItem("weapon", "spear", 971, -1, -1, 1);
+    give(s, spear, "z");
+    const after = perform(s, { t: "throw", letter: "z", dx, dy });
+
+    assert.ok(
+        after.level.items.some((i) => i.type === "spear"),
+        "던진 창이 없어졌다 — 그 자리에 다른 물건이 있었을 뿐이다",
+    );
+    assert.ok(after.level.items.some((i) => i.id === mace.id), "원래 있던 철퇴가 없어졌다");
 });
 
 test("착용하면 **그 물건의** 능력치를 말한다 — 내 능력치가 아니라", () => {

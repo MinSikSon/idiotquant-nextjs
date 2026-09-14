@@ -192,9 +192,14 @@ function populate(state: GameState, level: Level, rng: Rng) {
  * 바뀐다.
  *
  * 서는 자리는 **온 방향**이 정한다. 내려왔으면 올라가는 계단 위, 올라왔으면 내려가는
- * 계단 위 — 온 길이 발밑에 있어야 지도가 읽힌다.
+ * 계단 위 — 온 길이 발밑에 있어야 지도가 읽힌다. `fall` 만 예외다: 바닥이 꺼져
+ * 떨어진 것이라 계단을 안 거쳤고, 그래서 아무 데나 처박힌다.
+ *
+ * **새 판도 `above` 다.** 지하 1층은 지상에서 계단을 밟고 내려온 자리이고, 발밑의 그
+ * 계단이 곧 나가는 문이다(`ascend`). 예전에는 새 판과 함정 추락이 `start` 한 값을
+ * 같이 썼는데, 둘은 「계단을 거쳤나」가 정반대라 한 값으로 묶일 수 없다.
  */
-function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "below" | "start") {
+function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "below" | "fall") {
     if (state.level) state.levels[state.level.depth] = state.level;
     const seen = state.levels[depth];
     const level = seen ?? buildLevel(depth, rng);
@@ -245,7 +250,7 @@ export function newGame(
     state.known["weapon:mace"] = true;
     state.known["armor:ring mail"] = true;
     state.known["food:food ration"] = true;
-    enterLevel(state, 1, rng, "start");
+    enterLevel(state, 1, rng, "above");
     state.rngState = rng.state;
     say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
     return state;
@@ -816,8 +821,12 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
         const here = itemAt(level, hit.x, hit.y);
         // 같은 것이 이미 떨어져 있으면 겹쳐 쌓는다. 예전에는 그냥 사라졌다 —
         // 다트를 한 자리에 열 번 던지면 아홉 개가 없어졌다.
-        if (here) {
-            if (here.kind === it.kind && here.type === it.type) here.count += 1;
+        //
+        // **다른 것이 떨어져 있어도 사라지면 안 된다.** 그 자리에 나란히 둔다 —
+        // `itemAt` 은 하나만 보여 주지만 `pickUp` 이 집은 것을 지우므로 다음 것이
+        // 그때 드러난다. 한 칸에 물건이 둘이면 두 번 주우면 된다.
+        if (here && here.kind === it.kind && here.type === it.type) {
+            here.count += 1;
             return;
         }
         const dropped = makeItem(it.kind, it.type, state.nextItemId++, hit.x, hit.y, 1);
@@ -926,7 +935,7 @@ function springTrap(state: GameState, trap: Trap, rng: Rng) {
         case "trapdoor":
             say(state, "바닥이 꺼졌다!");
             // 떨어진 것이라 계단 위가 아니다 — 아무 데나 처박힌다.
-            enterLevel(state, level.depth + 1, rng, "start");
+            enterLevel(state, level.depth + 1, rng, "fall");
             say(state, `지하 ${state.level.depth}층.`);
             break;
         case "arrow": {

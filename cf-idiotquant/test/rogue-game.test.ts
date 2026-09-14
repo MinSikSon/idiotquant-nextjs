@@ -27,6 +27,51 @@ test("새 판은 걸어 들어갈 수 있는 칸에서 시작한다", () => {
     }
 });
 
+// **지하 1층은 내려온 자리다.** 지상에서 계단을 밟고 내려왔으니 발밑에 그 계단이
+// 있어야 하고, 그 한 칸이 곧 나가는 문이다(증표를 쥐면 거기서 이긴다). 아무 데나
+// 세워 두면 「나는 어디로 들어왔나」에 답이 없고, 내려갈 때마다 계단 위에 서는
+// 다른 층들과도 어긋난다.
+test("새 판은 **올라가는 계단 위**에서 시작한다 — 지상에서 내려온 자리다", () => {
+    for (let seed = 1; seed <= 60; seed++) {
+        const s = newGame(seed);
+        assert.deepEqual(
+            { x: s.hero.x, y: s.hero.y },
+            s.level.upStairs,
+            `시드 ${seed}: 내려온 계단이 아닌 데서 시작했다`,
+        );
+        // 그 한 칸에서 바로 나가려 들 수 있다 — 증표가 없으면 막힐 뿐이다.
+        const tried = perform(s, { t: "ascend" });
+        assert.ok(tried.messages.some((m) => m.includes("증표 없이")), `시드 ${seed}: 발밑이 나가는 문이 아니다`);
+    }
+});
+
+// 그 규칙의 **예외 하나**. 바닥이 꺼져 떨어진 것은 계단을 안 거쳤다.
+test("함정으로 떨어지면 계단 위가 아니다", () => {
+    let seen = false;
+    for (let seed = 1; seed <= 60 && !seen; seed++) {
+        let s = newGame(seed);
+        s.hero.x = s.level.stairs.x;
+        s.hero.y = s.level.stairs.y;
+        s = perform(s, { t: "descend" }); // 2층 — 여기부터 함정이 있다
+        // 옆 칸에 함정 문을 하나 놓고 걸어 들어간다.
+        const dir = ALL_DIRS.find((d) =>
+            walkable(s.level.tiles[idx(s.hero.x + d.dx, s.hero.y + d.dy)] as Tile),
+        );
+        if (!dir) continue;
+        s.level.traps = [{ x: s.hero.x + dir.dx, y: s.hero.y + dir.dy, kind: "trapdoor", found: true }];
+        s.level.monsters = [];
+        const after = perform(s, { t: "move", dx: dir.dx, dy: dir.dy });
+        if (after.level.depth !== 3) continue; // 떨어지기 전에 뭔가 딴 일이 났다
+        seen = true;
+        assert.notDeepEqual(
+            { x: after.hero.x, y: after.hero.y },
+            after.level.upStairs,
+            "떨어졌는데 계단 위에 섰다",
+        );
+    }
+    assert.ok(seen, "예순 판을 돌려도 함정 문에 한 번도 못 떨어졌다");
+});
+
 test("벽을 들이받으면 턴이 안 간다 — 배고픔 시계가 거짓말하면 안 된다", () => {
     const s0 = newGame(3);
     // 벽으로 둘러싸인 방향을 찾는다.
