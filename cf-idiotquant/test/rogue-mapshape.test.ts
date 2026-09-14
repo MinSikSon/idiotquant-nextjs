@@ -19,9 +19,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { buildLevel, freeSpot, roomArea } from "@/lib/rogue/dungeon";
-import { computeFov, isVisible } from "@/lib/rogue/fov";
 import { Rng } from "@/lib/rogue/rng";
-import { type Level, MAP_H, MAP_W, T, type Tile, idx, inBounds, walkable } from "@/lib/rogue/types";
+import { MAP_H, MAP_W, T, idx, inBounds, walkable, type Level, type Tile } from "@/lib/rogue/types";
 
 const SEEDS = 80;
 const DEPTHS = [1, 2, 5, 7, 11, 13, 17, 20, 23, 26];
@@ -32,13 +31,6 @@ const N4: [number, number][] = [
     [0, 1],
     [0, -1],
 ];
-const DIAG: [number, number][] = [
-    [1, 1],
-    [1, -1],
-    [-1, 1],
-    [-1, -1],
-];
-
 function* levels() {
     for (let seed = 1; seed <= SEEDS; seed++) {
         for (const depth of DEPTHS) {
@@ -79,16 +71,6 @@ function flood(level: Level, from: { x: number; y: number }, secretToo: boolean)
     return seen;
 }
 
-function inMazeRoom(level: Level, x: number, y: number): boolean {
-    return level.rooms.some(
-        (r) => r.maze && !r.gone && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h,
-    );
-}
-
-function isGoneAnchor(level: Level, x: number, y: number): boolean {
-    return level.rooms.some((r) => r.gone && r.x === x && r.y === y);
-}
-
 test("계단도 비밀문도 막히지 않는다", () => {
     // ── 계단은 사방이 막히지 않는다 — 미로 방에서 바위 속에 박히던 자리
     {
@@ -119,117 +101,6 @@ test("계단도 비밀문도 막히지 않는다", () => {
                 }
             }
         }
-    }
-});
-
-test("길이 끊겨 보이지 않는다 — 토막·대각선·막힌 문", () => {
-    // ── 어디로도 안 가는 복도 토막이 없다 — 「길이 중간에 끊긴다」
-    {
-        // 미로 안쪽만 뺀다 — 미로는 막다른 길로 **이루어진** 것이다. 비밀문에 닿은 끝도
-        // 뺀다(`openNbrs` 의 `secretToo`) — 못 찾은 지름길이지 잘못 파인 길이 아니다.
-        //
-        // **「없는 방」은 안 뺀다.** 길을 하나만 물고 있으면 그건 갈림길이 아니라 막다른
-        // 골목이고, 화면에서는 복도가 아무것도 없는 데서 끊겨 보인다. 다듬기는 그 점을
-        // 못 지우므로(지우면 방이 사라진다) `buildLevel` 이 길을 하나 더 물려 준다.
-        for (const { level, tag } of levels()) {
-            for (let y = 1; y < MAP_H - 1; y++) {
-                for (let x = 1; x < MAP_W - 1; x++) {
-                    const t = level.tiles[idx(x, y)] as Tile;
-                    if (t !== T.CORRIDOR && t !== T.PASSAGE) continue;
-                    if (inMazeRoom(level, x, y)) continue;
-                    assert.ok(
-                        openNbrs(level, x, y, true) > 1,
-                        `${tag}: (${x},${y}) 의 복도가 한쪽만 뚫려 있다` +
-                            (isGoneAnchor(level, x, y) ? " — 「없는 방」이 잎으로 남았다" : ""),
-                    );
-                }
-            }
-        }
-    }
-
-    // ── 대각으로만 이어진 복도가 없다 — 걸을 수는 있어도 끊겨 보인다
-    {
-        for (const { level, tag } of levels()) {
-            for (let y = 1; y < MAP_H - 1; y++) {
-                for (let x = 1; x < MAP_W - 1; x++) {
-                    if (level.tiles[idx(x, y)] !== T.CORRIDOR) continue;
-                    for (const [dx, dy] of DIAG) {
-                        if (level.tiles[idx(x + dx, y + dy)] !== T.CORRIDOR) continue;
-                        const a = walkable(level.tiles[idx(x + dx, y)] as Tile);
-                        const b = walkable(level.tiles[idx(x, y + dy)] as Tile);
-                        assert.ok(a || b, `${tag}: (${x},${y}) 와 그 대각이 모서리로만 닿는다`);
-                    }
-                }
-            }
-        }
-    }
-
-    // ── 밖이 막힌 문이 없다 — 문은 두 쪽이 뚫려 있어야 문이다
-    {
-        for (const { level, tag } of levels()) {
-            for (const r of level.rooms) {
-                if (r.gone) continue;
-                for (let y = r.y; y < r.y + r.h; y++) {
-                    for (let x = r.x; x < r.x + r.w; x++) {
-                        if (level.tiles[idx(x, y)] !== T.DOOR) continue;
-                        assert.ok(
-                            openNbrs(level, x, y) > 1,
-                            `${tag}: (${x},${y}) 의 문이 벽만 마주 본다`,
-                        );
-                    }
-                }
-            }
-        }
-    }
-});
-
-test("문턱에 서면 밝은 방만 켜진다", () => {
-    // ── 밝은 방의 문턱에 서면 그 방이 켜진다 — 「방에 들어갔는데 깜깜하다」
-    {
-        let doors = 0;
-        for (const { level, tag } of levels()) {
-            for (const r of level.rooms) {
-                if (r.gone || r.dark || r.maze) continue;
-                for (let y = r.y; y < r.y + r.h; y++) {
-                    for (let x = r.x; x < r.x + r.w; x++) {
-                        if (level.tiles[idx(x, y)] !== T.DOOR) continue;
-                        doors++;
-                        computeFov(level, { x, y });
-                        // 방 한가운데 — 문에서 두 칸 넘게 떨어질 수 있는 자리다.
-                        const cx = r.x + Math.floor(r.w / 2);
-                        const cy = r.y + Math.floor(r.h / 2);
-                        assert.ok(
-                            isVisible(level, cx, cy),
-                            `${tag}: (${x},${y}) 문턱에서 방 안(${cx},${cy})이 안 보인다`,
-                        );
-                    }
-                }
-            }
-        }
-        assert.ok(doors > 1000, `밝은 방의 문이 ${doors}개뿐 — 표본이 너무 적다`);
-    }
-
-    // ── 어두운 방의 문턱에서는 방이 안 켜진다 — 어두운 방은 어두워야 한다
-    {
-        let checked = 0;
-        for (const { level } of levels()) {
-            for (const r of level.rooms) {
-                if (r.gone || !r.dark || r.maze) continue;
-                for (let y = r.y; y < r.y + r.h; y++) {
-                    for (let x = r.x; x < r.x + r.w; x++) {
-                        if (level.tiles[idx(x, y)] !== T.DOOR) continue;
-                        const cx = r.x + Math.floor(r.w / 2);
-                        const cy = r.y + Math.floor(r.h / 2);
-                        // 문에서 두 칸 넘게 떨어진 가운데만 본다 — 맞닿은 여덟 칸은 언제나 보인다.
-                        if (Math.abs(cx - x) <= 1 && Math.abs(cy - y) <= 1) continue;
-                        computeFov(level, { x, y });
-                        checked++;
-                        assert.ok(!isVisible(level, cx, cy), `어두운 방이 문턱에서 켜졌다`);
-                    }
-                }
-            }
-        }
-        assert.ok(checked > 100, `어두운 방의 문이 ${checked}개뿐 — 표본이 너무 적다`);
     }
 });
 

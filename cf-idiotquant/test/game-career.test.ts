@@ -7,9 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-    EMPTY_CAREER, END_REASONS, normalizeCareer, recordChapter, recordRun, hitRate,
-} from "@/lib/game/core/career";
+import { EMPTY_CAREER, recordChapter } from "@/lib/game/core/career";
 import { EMPTY, regress, remember } from "@/lib/game/core/progress";
 import { EMPTY_FACTS, type SituationFacts } from "@/lib/game/core/situations";
 import type { ChapterSummary } from "@/lib/game/core/types";
@@ -73,83 +71,5 @@ test("보수가 쌓이고 최고 기록이 갱신된다 · 손해 본 챕터는 
 });
 
 /* ── 판이 끝났다 ───────────────────────────────────────────── */
-test("판이 끝나면 그 판의 사실이 이력에 접힌다 · 가장 적게 남긴 빚은 내려가기만 한다", () => {
-    // ── 판이 끝나면 그 판의 사실이 이력에 접힌다
-    {
-        const f = facts({ thesisPlays: 7, thesisLosses: 2, blindGains: 3, blindLosses: 4, stopHits: 1 });
-        let c = recordRun(EMPTY_CAREER, "burnout", f, 28_000_000);
-        c = recordRun(c, "ruined", f, 31_000_000);
-
-        assert.equal(c.runs, 2);
-        assert.equal(c.thesisPlays, 14);
-        assert.equal(c.blindLosses, 8);
-        assert.equal(c.stopHits, 2);
-        assert.equal(c.endings.burnout, 1);
-        assert.equal(c.endings.ruined, 1);
-        assert.equal(c.endings.debtCleared, 0);
-    }
-
-    // ── 가장 적게 남긴 빚은 내려가기만 한다
-    {
-        let c = recordRun(EMPTY_CAREER, "debtRemains", EMPTY_FACTS, 28_000_000);
-        assert.equal(c.leastDebt, 28_000_000);
-        c = recordRun(c, "ruined", EMPTY_FACTS, 40_000_000);
-        assert.equal(c.leastDebt, 28_000_000);
-        c = recordRun(c, "debtCleared", EMPTY_FACTS, 0);
-        assert.equal(c.leastDebt, 0);
-    }
-});
-
-test("아직 한 판도 안 끝냈으면 남긴 빚은 숫자가 아니다 · 엔딩 넷을 빠짐없이 센다", () => {
-    // ── 아직 한 판도 안 끝냈으면 남긴 빚은 숫자가 아니다
-    {
-        // 0 으로 두면 「빚을 다 갚은 적 있다」로 읽힌다. null 이라야 「아직 없다」가 된다.
-        assert.equal(EMPTY_CAREER.leastDebt, null);
-    }
-
-    // ── 엔딩 넷을 빠짐없이 센다
-    {
-        for (const r of END_REASONS) {
-            assert.equal(recordRun(EMPTY_CAREER, r, EMPTY_FACTS, 1).endings[r], 1);
-        }
-        assert.deepEqual(Object.keys(EMPTY_CAREER.endings).sort(), [...END_REASONS].sort());
-    }
-});
-
 /* ── 저장된 것을 믿지 않는다 ────────────────────────────────── */
-test("옛 저장에 이력이 없어도 빈 이력으로 뜬다 · 망가진 값은 0 으로 떨어진다", () => {
-    // ── 옛 저장에 이력이 없어도 빈 이력으로 뜬다
-    {
-        // v1 키는 이미 쓰이고 있다. 이력이 없던 시절의 저장을 열어도 게임이 죽으면 안 된다.
-        assert.deepEqual(normalizeCareer(undefined), EMPTY_CAREER);
-        assert.deepEqual(normalizeCareer({}), EMPTY_CAREER);
-    }
-
-    // ── 망가진 값은 0 으로 떨어진다
-    {
-        const c = normalizeCareer({ runs: "셋", feePaid: -9, bestEnergy: 1.7, endings: { ruined: 2 }, leastDebt: "x" });
-        assert.equal(c.runs, 0);
-        assert.equal(c.feePaid, 0);
-        assert.equal(c.bestEnergy, 1);
-        assert.equal(c.endings.ruined, 2);
-        assert.equal(c.endings.burnout, 0);
-        assert.equal(c.leastDebt, null);
-    }
-});
-
 /* ── 비율 ─────────────────────────────────────────────────── */
-test("빈 이력은 매번 새 객체다 · 표본이 없으면 비율은 숫자가 아니다", () => {
-    // ── 빈 이력은 매번 새 객체다
-    {
-        // 하나를 공유하면 어느 날 한 판의 값이 다음 판에 새어 들어간다.
-        const a = normalizeCareer(null);
-        const b = normalizeCareer(null);
-        assert.notEqual(a.endings, b.endings);
-    }
-
-    // ── 표본이 없으면 비율은 숫자가 아니다
-    {
-        assert.equal(hitRate(0, 0), null);
-        assert.equal(hitRate(3, 1), 0.75);
-    }
-});

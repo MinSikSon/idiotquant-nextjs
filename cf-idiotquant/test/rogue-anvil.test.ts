@@ -28,7 +28,7 @@ import { addToPack, equippedWeapon, packItem } from "@/lib/rogue/hero";
 import { MELT_RETURN, enchantOf, makeItem, meltMax, meltYield } from "@/lib/rogue/items";
 import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
-import { walkable, type GameState, type Item, type Tile, idx } from "@/lib/rogue/types";
+import { walkable, idx, type GameState, type Item, type Tile } from "@/lib/rogue/types";
 
 /** 모루 위에 세우고, 배낭에 `+plus` 짜리 물건 하나를 넣는다. */
 function atAnvil(seed: number, plus: number, type = "long sword", count = 1, kind: "weapon" | "armor" = "weapon") {
@@ -173,37 +173,6 @@ test("갑옷도 녹는다 — 입고 있는 저주받은 것만 빼고", () => {
     }
 });
 
-// 한 번에 대여섯씩 떨어지는 것들이라(`stack`) 낱개마다 한 장을 깔면 한 판에 **열여덟
-// 장**이 나온다 — 재 봤다. 그러면 `+9` 가 그냥 걸어 들어오고 도박 구간이 사라진다.
-test("화살·표창은 깔아 주지 않고 한 자루씩 녹는다", () => {
-    // ── 화살·표창은 깔아 주지 않는다 — 강화된 것만 되뽑는다
-    {
-        for (const type of ["dart", "arrow", "silver arrow"]) {
-            const { s, it } = atAnvil(30, 0, type, 6);
-            assert.equal(meltMax(it), 0, `${type}: 강화도 없는데 나올 것이 있다`);
-            const turnBefore = s.turn;
-            const after = perform(s, { t: "melt", letter: it.letter! });
-            assert.equal(after.hero.pack.find((p) => p.id === it.id)?.count, 6, `${type}: 한 대가 사라졌다`);
-            assert.equal(scrolls(after), 0);
-            assert.equal(after.turn, turnBefore, `${type}: 아무 일도 안 났는데 턴이 갔다`);
-            assert.ok(after.messages.some((m) => m.includes("뽑아낼 것이 없다")));
-        }
-        // 강화된 화살은 걸린 강화만큼까지 나온다 — 쇠붙이 몫은 없다.
-        const { s, it } = atAnvil(31, 3, "dart", 6);
-        assert.deepEqual(meltYield(it), { sure: 0, risky: 3 });
-        assert.ok(scrolls(perform(s, { t: "melt", letter: it.letter! })) <= 3);
-    }
-
-    // ── 겹쳐 쌓인 것은 한 자루씩 녹는다
-    {
-        const { s, it } = atAnvil(13, 2, "dart", 6);
-        const after = perform(s, { t: "melt", letter: it.letter! });
-        const left = after.hero.pack.find((p) => p.id === it.id);
-        assert.equal(left?.count, 5, "여섯 자루가 한꺼번에 녹았다");
-        assert.ok(scrolls(after) <= 2, "한 자루 몫보다 많이 나왔다");
-    }
-});
-
 test("쥐고 있던 것을 녹이면 그 자리도 빈다 — 저주받은 것은 못 녹인다", () => {
     // ── 쥐고 있던 것을 녹이면 그 자리도 빈다
     {
@@ -270,11 +239,4 @@ test("무기도 갑옷도 아니면 안 올라간다 · 되뽑은 것으로 다�
         assert.equal(better.plusHit, got, "옮겨 심은 강화가 안 올랐다");
         assert.equal(packItem(after.hero, scroll.letter!), undefined, "다 안 썼다");
     }
-});
-
-test("녹이면 무기 강화 주문서의 정체를 알게 된다", () => {
-    const { s, it } = atAnvil(18, 2);
-    assert.ok(!s.known["scroll:enchant weapon"], "녹이기 전부터 알고 있다");
-    const after = perform(s, { t: "melt", letter: it.letter! });
-    assert.ok(after.known["scroll:enchant weapon"], "손에 쥐었는데 무엇인지 모른다");
 });

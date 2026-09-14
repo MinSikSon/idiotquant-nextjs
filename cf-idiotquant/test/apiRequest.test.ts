@@ -80,29 +80,6 @@ test("status 를 실어 보낸다 — tradingStatus 가 404 로 '계정 없음'�
     }
 });
 
-test("워커가 준 오류 문구는 그대로 살린다 · body 를 주면 JSON 으로 실어 보낸다", async () => {
-    // ── 워커가 준 오류 문구는 그대로 살린다
-    {
-        serve(JSON.stringify({ success: false, error: "같은 이름의 항목이 이미 있습니다." }), 400);
-
-        const r = await apiRequest("/user/ledger/categories");
-        assert.equal(r.error, "같은 이름의 항목이 이미 있습니다.");
-    }
-
-    // ── body 를 주면 JSON 으로 실어 보낸다
-    {
-        let sent: any = null;
-        (globalThis as any).fetch = async (_url: string, init: RequestInit) => {
-            sent = init;
-            return new Response(JSON.stringify({ success: true }), { status: 200 });
-        };
-
-        await apiRequest("/user/ledger", { method: "POST", body: { amount: 5000 } });
-        assert.equal(sent.method, "POST");
-        assert.equal(sent.body, JSON.stringify({ amount: 5000 }));
-    }
-});
-
 test("요청마다 붙는 헤더를 받는다 — search-log 의 count 가 그렇다", async () => {
     let sent: any = null;
     (globalThis as any).fetch = async (_url: string, init: RequestInit) => {

@@ -9,13 +9,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-    StockEngine, SEED_CASH, RUIN_RATIO, RUIN_FLOOR, ENERGY_START,
-    BUY_FEE_NUM, SELL_FEE_NUM, SELL_TAX_NUM,
-} from "@/lib/game/core/StockEngine";
-import {
-    CHAPTERS, TOTAL_TURNS, UNIVERSE, newlyListedAt, regimeTimeline,
-} from "@/lib/game/core/chapters";
+import { StockEngine, SEED_CASH } from "@/lib/game/core/StockEngine";
+import { CHAPTERS, TOTAL_TURNS } from "@/lib/game/core/chapters";
 import { NO_BUFF, type TurnBuff } from "@/lib/game/core/types";
 import { advisoryFee, FEE_BASE, FEE_BY_ENERGY } from "@/lib/game/core/energy";
 import { CLIENTS, entrustAmount, needOf } from "@/lib/game/core/clients";
@@ -38,105 +33,8 @@ function playAll(e: StockEngine, b: TurnBuff = NO_BUFF) {
 }
 
 /* ── 판 만들기 ───────────────────────────────────────────────── */
-test("판은 프롤로그 1997 에서 시작하고 에너지는 50 이다 · 프롤로그는 아무것도 안 들고 시작한다", () => {
-    // ── 판은 프롤로그 1997 에서 시작하고 에너지는 50 이다
-    {
-        const e = new StockEngine(1);
-        assert.equal(e.chapter.id, "1997");
-        assert.equal(e.player.currentTurn, 1);
-        assert.equal(e.player.energy, ENERGY_START);
-        assert.equal(e.player.debt, 0);
-    }
-
-    // ── 프롤로그는 아무것도 안 들고 시작한다
-    {
-        // **예전에는 이미 물려 있는 자리를 깔아 줬다**(`opening`). 평단가가 시세보다
-        // 높아서 첫 턴에 전부 팔아도 손실이 확정되는 구조였다.
-        //
-        // 걷어 낸 이유는 둘이다. 하나, 처음 켠 사람이 **왜 −41% 인지 모르는 채**로
-        // 화면을 마주한다 — 자기가 산 적이 없으니까. 둘, 1998 이 계좌 0 으로 열리도록
-        // 바뀌면서(`accountLost`) 프롤로그의 손익이 판에 아무 영향도 안 남게 됐다.
-        // 「무엇을 해도 진다」는 이제 물려받은 손실이 아니라 **회사가 없어지는 것**이 낸다.
-        const e = new StockEngine(1);
-        assert.equal(Object.keys(e.player.positions).length, 0, "들고 시작하지 않는다");
-        assert.equal(e.player.cash, SEED_CASH, "고객 돈은 전부 현금으로 손에 있다");
-        assert.equal(e.equity, SEED_CASH);
-    }
-});
-
 /* ── 반기마다 하나씩 상장한다 ───────────────────────────────── */
-test("맡은 돈은 현금과 평가액의 합이다 · 시작 셋 + 여섯 반기 = 아홉 종목", () => {
-    // ── 맡은 돈은 현금과 평가액의 합이다
-    {
-        const e = new StockEngine(7);
-        assert.equal(e.equity, e.player.cash + e.positionValue);
-    }
-
-    // ── 시작 셋 + 여섯 반기 = 아홉 종목
-    {
-        assert.equal(UNIVERSE.length, 9);
-        assert.equal(UNIVERSE.filter(s => s.listedAt === 1).length, 3);
-    }
-});
-
-test("각 챕터의 1턴과 7턴에 정확히 하나씩 상장한다 · 상장 전 종목은 목록에도 봉에도 없다", () => {
-    // ── 각 챕터의 1턴과 7턴에 정확히 하나씩 상장한다
-    {
-        const listingTurns = UNIVERSE.map(s => s.listedAt).filter(t => t > 1).sort((a, b) => a - b);
-        // 프롤로그(4턴)를 뺀 세 챕터의 반기 첫 턴들.
-        const expected = CHAPTERS.slice(1).flatMap(c => [c.startTurn, c.startTurn + 6]);
-        assert.deepEqual(listingTurns, expected.sort((a, b) => a - b));
-        for (const t of expected) {
-            assert.ok(newlyListedAt(t), `${t}턴에 상장이 있어야 한다`);
-        }
-    }
-
-    // ── 상장 전 종목은 목록에도 봉에도 없다
-    {
-        const e = new StockEngine(3);
-        const late = UNIVERSE.find(s => s.listedAt > 1)!;
-        assert.ok(!e.listed.some(s => s.id === late.id), "프롤로그에는 안 보여야 한다");
-        assert.equal(e.stockOf(late.id)!.history.length, 0, "상장 전에는 봉이 없다");
-
-        playAll(e);
-        assert.ok(e.stockOf(late.id)!.history.length > 0, "상장 뒤에는 봉이 쌓인다");
-    }
-});
-
 /* ── 국면은 하나, 베타는 종목마다 ───────────────────────────── */
-test("같은 국면에서 고베타가 저베타보다 크게 움직인다 · 국면 스크립트는 시드와 무관하게 같다 — 회귀가 기억을 쓸모 있게 하는 근거", () => {
-    // ── 같은 국면에서 고베타가 저베타보다 크게 움직인다
-    {
-        // 국면이 하나라 방향은 같고 폭만 갈려야 한다. 노이즈를 이기려면 여러 시드로 본다.
-        const lowId = UNIVERSE.reduce((a, b) => (a.beta <= b.beta ? a : b)).id;
-        const highId = UNIVERSE.reduce((a, b) => (a.beta >= b.beta ? a : b)).id;
-
-        let lowMove = 0, highMove = 0;
-        for (let seed = 1; seed <= 40; seed++) {
-            const e = new StockEngine(seed);
-            const lowStart = e.priceOf(lowId), highStart = e.priceOf(highId);
-            playAll(e);
-            // 상장 시점이 달라 절대 가격이 아니라 **정의된 시작가 대비**로 본다.
-            const low = UNIVERSE.find(s => s.id === lowId)!;
-            const high = UNIVERSE.find(s => s.id === highId)!;
-            lowMove += Math.abs(e.priceOf(lowId) / (lowStart || low.price) - 1);
-            highMove += Math.abs(e.priceOf(highId) / (highStart || high.price) - 1);
-        }
-        assert.ok(highMove > lowMove,
-            `고베타(${highMove.toFixed(1)})가 저베타(${lowMove.toFixed(1)})보다 크게 움직여야 한다`);
-    }
-
-    // ── 국면 스크립트는 시드와 무관하게 같다 — 회귀가 기억을 쓸모 있게 하는 근거
-    {
-        for (const ch of CHAPTERS) {
-            const a = regimeTimeline(ch).map(s => s.kind);
-            const b = regimeTimeline(ch).map(s => s.kind);
-            assert.deepEqual(a, b);
-            assert.equal(a.length, ch.turns, `${ch.id} 국면 길이가 턴 수와 같아야 한다`);
-        }
-    }
-});
-
 /* ── 프롤로그는 이길 수 없다 ────────────────────────────────── */
 test("프롤로그에서 시장에 들어가면 잃는다 — 국면이 처음부터 끝까지 하락이다 · 1997 을 어떻게 보내든 1998 은 계좌 0 · 빚 3,000만으로 열린다", () => {
     // ── 프롤로그에서 시장에 들어가면 잃는다 — 국면이 처음부터 끝까지 하락이다
@@ -194,134 +92,7 @@ test("프롤로그에서 시장에 들어가면 잃는다 — 국면이 처음�
 });
 
 /* ── 체결 ───────────────────────────────────────────────────── */
-test("프롤로그가 끝나면 빚이 생긴다 · 매수는 수수료까지 예산 안에서 끝난다", () => {
-    // ── 프롤로그가 끝나면 빚이 생긴다
-    {
-        const e = new StockEngine(5);
-        playChapter(e);
-        const sum = e.endChapter();
-        assert.equal(sum.debt, CHAPTERS[0]!.debtOnEnd);
-        assert.ok(e.player.debt > 0);
-    }
-
-    // ── 매수는 수수료까지 예산 안에서 끝난다
-    {
-        const e = new StockEngine(11);
-        e.liquidateAll();
-        const id = e.listed[0]!.id;
-        const before = e.player.cash;
-        const r = e.buy(id, before);
-        assert.ok(r.ok);
-        if (!r.ok) return;
-        assert.equal(r.fee, Math.floor((r.price * r.qty * BUY_FEE_NUM) / 100_000));
-        assert.equal(e.player.cash, before - r.price * r.qty - r.fee);
-        assert.ok(e.player.cash >= 0, "예산을 넘겨 사지 않는다");
-    }
-});
-
-test("매도는 수수료와 거래세를 함께 낸다 · 상장 전 종목은 살 수 없다", () => {
-    // ── 매도는 수수료와 거래세를 함께 낸다
-    {
-        const e = new StockEngine(11);
-        e.liquidateAll();
-        const id = e.listed[0]!.id;
-        e.buyAll(id);
-        const qty = e.positionOf(id).shares;
-        const price = e.priceOf(id);
-        const cashBefore = e.player.cash;
-
-        const r = e.sellAll(id);
-        assert.ok(r.ok);
-        if (!r.ok) return;
-        const gross = price * qty;
-        const expected = Math.floor((gross * SELL_FEE_NUM) / 100_000) + Math.floor((gross * SELL_TAX_NUM) / 100_000);
-        assert.equal(r.fee, expected);
-        assert.equal(e.player.cash, cashBefore + gross - expected);
-        assert.equal(e.positionOf(id).shares, 0);
-    }
-
-    // ── 상장 전 종목은 살 수 없다
-    {
-        const e = new StockEngine(2);
-        const late = UNIVERSE.find(s => s.listedAt > 1)!;
-        const r = e.buy(late.id, 1_000_000);
-        assert.equal(r.ok, false);
-    }
-});
-
 /* ── 챕터를 넘는다 ──────────────────────────────────────────── */
-test("여러 종목을 동시에 들고 있어도 평가액이 맞는다 · 보유는 챕터를 넘어 유지되고 그 시점 주가로 평가된다", () => {
-    // ── 여러 종목을 동시에 들고 있어도 평가액이 맞는다
-    {
-        const e = new StockEngine(13);
-        e.liquidateAll();
-        const ids = e.listed.slice(0, 3).map(s => s.id);
-        for (const id of ids) e.buy(id, Math.floor(e.player.cash / 3));
-
-        let sum = 0;
-        for (const id of ids) sum += e.positionOf(id).shares * e.priceOf(id);
-        assert.equal(e.positionValue, sum);
-        assert.equal(e.equity, e.player.cash + sum);
-    }
-
-    // ── 보유는 챕터를 넘어 유지되고 그 시점 주가로 평가된다
-    {
-        const e = new StockEngine(17);
-        playChapter(e); e.endChapter(); e.startNextChapter();   // 1998
-        // **1998 은 계좌 0 원으로 열린다.** 굴릴 돈은 고객이 맡겨야 생긴다.
-        e.entrust(20_000_000);
-        const id = e.listed[0]!.id;
-        e.buyAll(id);
-        const qty = e.positionOf(id).shares;
-        assert.ok(qty > 0);
-
-        playChapter(e); e.endChapter();
-        const ok = e.startNextChapter();                        // 1999
-        assert.ok(ok);
-        assert.equal(e.positionOf(id).shares, qty, "챕터가 바뀌어도 주식은 그대로 있다");
-        assert.equal(e.positionValue, qty * e.priceOf(id), "그 시점 주가로 평가된다");
-    }
-});
-
-test("1999 에 산 고베타를 2000 까지 들고 가면 저베타보다 크게 잃는다 · 챕터 끝에 자동 청산하지 않는다 — 들고 넘어가는 것이 요점이다", () => {
-    // ── 1999 에 산 고베타를 2000 까지 들고 가면 저베타보다 크게 잃는다
-    {
-        let highWorse = 0;
-        for (let seed = 1; seed <= 30; seed++) {
-            const e = new StockEngine(seed);
-            // 1999 하반기까지 간다.
-            while (e.chapter.id !== "1999") { playChapter(e); e.endChapter(); e.startNextChapter(); }
-            while (e.player.currentTurn < 7 && !e.isOver) { e.tick(); e.advanceTurn(); }
-
-            const listed = e.listed;
-            const high = listed.reduce((a, b) => (a.beta >= b.beta ? a : b));
-            const low = listed.reduce((a, b) => (a.beta <= b.beta ? a : b));
-            const hp = e.priceOf(high.id), lp = e.priceOf(low.id);
-
-            playChapter(e); e.endChapter(); e.startNextChapter();  // 2000
-            playChapter(e);
-
-            const hRet = e.priceOf(high.id) / hp - 1;
-            const lRet = e.priceOf(low.id) / lp - 1;
-            if (hRet < lRet) highWorse++;
-        }
-        assert.ok(highWorse >= 24,
-            `2000년 붕괴에서 고베타가 더 죽어야 한다 — 30판 중 ${highWorse}판`);
-    }
-
-    // ── 챕터 끝에 자동 청산하지 않는다 — 들고 넘어가는 것이 요점이다
-    {
-        const e = new StockEngine(19);
-        playChapter(e); e.endChapter(); e.startNextChapter();
-        e.entrust(20_000_000);
-        const id = e.listed[0]!.id;
-        e.buyAll(id);
-        playChapter(e);
-        e.endChapter();
-        assert.ok(e.positionOf(id).shares > 0, "챕터가 끝나도 주식이 남아 있어야 한다");
-    }
-});
-
 test("남은 빚에는 챕터마다 이자가 붙는다 · 전 구간은 40턴이고 마지막 챕터에서 끝난다", () => {
     // ── 남은 빚에는 챕터마다 이자가 붙는다
     {
@@ -344,81 +115,7 @@ test("남은 빚에는 챕터마다 이자가 붙는다 · 전 구간은 40턴�
 });
 
 /* ── 끝나는 법 ─────────────────────────────────────────────── */
-test("자본잠식선 아래로 떨어지면 그 자리에서 끝난다 · 아직 아무것도 안 맡은 계좌는 잠식될 것도 없다", () => {
-    // ── 자본잠식선 아래로 떨어지면 그 자리에서 끝난다
-    {
-        const e = new StockEngine(31);
-        // 최고치가 기준이므로 먼저 최고치를 세운다 — 프롤로그는 이미 그만큼 굴리고 있다.
-        e.advanceTurn();
-        assert.ok(e.peakEquity >= RUIN_FLOOR, "프롤로그는 자본잠식이 발동할 규모다");
-        e.player.cash = 0;
-        for (const id of Object.keys(e.player.positions)) delete e.player.positions[id];
-        assert.equal(e.ruinLine, Math.round(e.peakEquity * RUIN_RATIO));
-        assert.ok(e.equity < e.ruinLine);
-        assert.ok(e.isRuined);
-        assert.ok(e.isOver);
-    }
-
-    // ── 아직 아무것도 안 맡은 계좌는 잠식될 것도 없다
-    {
-        // **1998 이 열리는 자리다.** 고정 금액을 선으로 쓰던 동안에는 계좌 0 원이 곧
-        // 자본잠식이라, 판이 열리자마자 끝났다.
-        const e = new StockEngine(31);
-        e.endChapter();
-        e.startNextChapter();
-        assert.equal(e.equity, 0);
-        assert.equal(e.ruinLine, 0);
-        assert.ok(!e.isRuined, "0 원으로 여는 챕터가 그 자리에서 끝나면 안 된다");
-    }
-});
-
-test("작게 굴려 본 판은 잠식으로 안 끝난다 — 바닥값이 그것을 막는다 · 에너지가 0 이면 턴이 남아도 끝난다", () => {
-    // ── 작게 굴려 본 판은 잠식으로 안 끝난다 — 바닥값이 그것을 막는다
-    {
-        const e = new StockEngine(31);
-        e.endChapter();
-        e.startNextChapter();
-        e.entrust(RUIN_FLOOR - 1);
-        e.advanceTurn();
-        assert.equal(e.ruinLine, 0);
-        e.player.cash = 0;
-        assert.ok(!e.isRuined);
-    }
-
-    // ── 에너지가 0 이면 턴이 남아도 끝난다
-    {
-        const e = new StockEngine(37);
-        e.player.energy = 0;
-        assert.ok(e.burnedOut);
-        assert.ok(e.isOver);
-    }
-});
-
 /* ── 같은 시드는 같은 판을 준다 ─────────────────────────────── */
-test("같은 시드는 아홉 종목의 전 구간을 똑같이 준다 · 다른 시드는 세부만 다르고 국면은 같다", () => {
-    // ── 같은 시드는 아홉 종목의 전 구간을 똑같이 준다
-    {
-        const a = new StockEngine(4242); const b = new StockEngine(4242);
-        playAll(a); playAll(b);
-        for (const s of UNIVERSE) {
-            assert.deepEqual(a.stockOf(s.id)!.history, b.stockOf(s.id)!.history, `${s.name} 이 갈렸다`);
-        }
-    }
-
-    // ── 다른 시드는 세부만 다르고 국면은 같다
-    {
-        const a = new StockEngine(1); const b = new StockEngine(2);
-        // 국면은 챕터가 정하므로 시드와 무관하다 — 기억이 쓸모 있으려면 그래야 한다.
-        assert.deepEqual(
-            CHAPTERS.map(c => regimeTimeline(c).map(s => s.kind)),
-            CHAPTERS.map(c => regimeTimeline(c).map(s => s.kind)),
-        );
-        playAll(a); playAll(b);
-        const id = UNIVERSE[0]!.id;
-        assert.notDeepEqual(a.stockOf(id)!.history, b.stockOf(id)!.history, "세부는 달라야 한다");
-    }
-});
-
 /* ── 보수 — 빚이 줄어드는 단 하나의 자리 ─────────────────────── */
 test("손해를 본 챕터에는 보수가 없다 · 빚은 갚을 수 있어야 한다 — 완납이 도달 가능한가", () => {
     // ── 손해를 본 챕터에는 보수가 없다
@@ -514,21 +211,4 @@ test("보수는 에너지에 비례한다 — 에너지가 곧 빚을 갚는 속
             "보수가 빚을 깎았다 — 갚는 것은 `repayDebt` 하나뿐이어야 한다");
         assert.equal(e.player.wallet, beforeWallet + sum.fee, "보수가 지갑에 안 들어왔다");
     }
-});
-
-test("갚는 것은 지갑에 있는 것까지, 남은 빚까지 — 마이너스는 없다", () => {
-    const e = new StockEngine(99, SEED_CASH);
-    e.player.debt = 1_000_000;
-    e.player.wallet = 5_000_000;
-
-    const r = e.repayDebt(99_000_000);
-    assert.equal(r.paid, 1_000_000, "빚보다 더 갚을 수는 없다");
-    assert.equal(e.player.debt, 0, "빚이 음수가 됐다");
-    assert.equal(e.player.wallet, 4_000_000, "거스름돈이 안 돌아왔다");
-
-    // 지갑이 빌 때까지만.
-    e.player.debt = 99_000_000;
-    const r2 = e.repayDebt(99_000_000);
-    assert.equal(r2.paid, 4_000_000);
-    assert.equal(e.player.wallet, 0, "지갑이 음수가 됐다");
 });

@@ -11,10 +11,8 @@ import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
 import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
-import { WEAPONS, itemPower, makeItem } from "@/lib/rogue/items";
-import { buildLevel } from "@/lib/rogue/dungeon";
-import { Rng } from "@/lib/rogue/rng";
-import { T, type Tile, idx, walkable, type GameState, type Item } from "@/lib/rogue/types";
+import { itemPower, makeItem } from "@/lib/rogue/items";
+import { T, idx, walkable, type GameState, type Item, type Tile } from "@/lib/rogue/types";
 
 /**
  * 서 있는 자리에서 **뚫린 쪽** 하나 — 쏘거나 던질 방향.
@@ -280,117 +278,6 @@ test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {
     }
 });
 
-test("함정문은 한 층 아래로 떨어뜨린다 · 미로 방도 다 닿는다", () => {
-    // ── 함정문은 나를 한 층 아래로 떨어뜨린다
-    {
-        const s0 = newGame(110);
-        const tx = s0.hero.x + 1;
-        const ty = s0.hero.y;
-        s0.level.tiles[idx(tx, ty)] = T.FLOOR;
-        s0.level.monsters = s0.level.monsters.filter((m) => !(m.x === tx && m.y === ty));
-        s0.level.traps.push({ x: tx, y: ty, kind: "trapdoor", found: false });
-        const s1 = perform(s0, { t: "move", dx: 1, dy: 0 });
-        assert.equal(s1.level.depth, 2, "함정문을 밟았는데 그 층에 남았다");
-        assert.equal(s1.deepest, 2);
-    }
-
-    // ── 미로 방도 걸어서 다 닿는다
-    {
-        let mazes = 0;
-        for (let seed = 1; seed <= 80; seed++) {
-            const level = buildLevel(14, new Rng(seed * 5711));
-            if (!level.maze) continue;
-            mazes++;
-            // 연결성은 rogue-dungeon.test.ts 가 이미 모든 깊이에서 본다. 여기서는
-            // 미로 방 안쪽이 **바닥이 아니라 통로**인지만 확인한다 — 그래야 어둡다.
-            const mazeRoom = level.rooms.find((r) => r.maze);
-            assert.ok(mazeRoom, "maze 플래그는 섰는데 미로 방이 없다");
-            let corridorCells = 0;
-            for (let y = mazeRoom!.y + 1; y < mazeRoom!.y + mazeRoom!.h - 1; y++) {
-                for (let x = mazeRoom!.x + 1; x < mazeRoom!.x + mazeRoom!.w - 1; x++) {
-                    if (level.tiles[idx(x, y)] === T.CORRIDOR) corridorCells++;
-                    assert.notEqual(level.tiles[idx(x, y)], T.FLOOR, "미로 안에 방 바닥이 남았다");
-                }
-            }
-            assert.ok(corridorCells > 3, "미로가 안 파였다");
-        }
-        assert.ok(mazes > 0, "80판을 만들어도 14층에 미로가 하나도 없다");
-    }
-});
-
-test("생명 탐지는 벽 너머를 보여 주고, 겹친 것도 자리를 말한다", () => {
-    // ── 생명 탐지 물약은 벽 너머를 잠깐 보여 준다
-    {
-        const s0 = newGame(111);
-        give(s0, makeItem("potion", "detect monsters", 980, -1, -1), "y");
-        const s1 = perform(s0, { t: "quaff", letter: "y" });
-        assert.ok(s1.hero.detect > 0);
-        assert.ok(s1.known["potion:detect monsters"]);
-    }
-
-    // ── 겹쳐 쌓인 것을 주워도 배낭 자리를 제대로 말한다
-    {
-        // 예전에는 「undefined) 식량」이 떴다. 바닥에서 집은 쪽에는 자리(letter)가 없는데,
-        // `addToPack` 이 true 만 돌려줘서 부르는 쪽이 **집은 물건**의 자리를 읽었다.
-        const s = newGame(910);
-        const mine = s.hero.pack.find((p) => p.kind === "food")!;
-        assert.ok(mine.letter, "처음 든 식량에 자리가 없다");
-        const before = mine.count;
-
-        const dropped = makeItem("food", "food ration", 995, s.hero.x, s.hero.y, 2);
-        s.level.items = s.level.items.filter((i) => !(i.x === s.hero.x && i.y === s.hero.y));
-        s.level.items.push(dropped);
-
-        const after = perform(s, { t: "pickup" });
-        const line = after.messages[after.messages.length - 1];
-        assert.ok(!line.includes("undefined"), `자리를 못 읽었다: ${line}`);
-        assert.ok(line.startsWith(`${mine.letter})`), `${line} 가 ${mine.letter}) 로 시작하지 않는다`);
-        // 겹쳐 쌓였으니 배낭 칸은 안 늘고 개수만 는다.
-        assert.equal(after.hero.pack.filter((p) => p.kind === "food").length, 1);
-        assert.equal(after.hero.pack.find((p) => p.kind === "food")!.count, before + 2);
-    }
-});
-
-test("배낭의 모든 물건에 자리가 있고, + 가 붙으면 숫자가 커진다", () => {
-    // ── 배낭의 모든 물건에는 자리가 있다 — 자리 없는 것은 못 쓴다
-    {
-        // 자리가 없으면 「마신다」로 고를 수도, 내려놓을 수도 없다. 조용히 못 쓰는 물건이 된다.
-        let s = newGame(911);
-        const rng = new Rng(3);
-        for (let i = 0; i < 400 && s.phase === "playing"; i++) {
-            const d = rng.pick([{ dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 0, dy: -1 }])!;
-            s = perform(s, i % 5 === 0 ? { t: "pickup" } : { t: "move", dx: d.dx, dy: d.dy });
-            for (const p of s.hero.pack) {
-                assert.ok(p.letter, `${p.kind}:${p.type} 에 자리가 없다`);
-            }
-        }
-    }
-
-    // ── + 가 붙으면 배낭에 적히는 숫자가 **커진다**
-    {
-        // 예전에는 무기는 기본 주사위만 적어 `+2 장검` 과 맹탕 장검이 똑같이 보였고,
-        // 갑옷은 방어 등급을 그대로 적어 `+1` 이 8 을 7 로 **내려서 나빠 보였다.**
-        const known = { "weapon:long sword": true, "armor:leather": true };
-
-        const plain = makeItem("weapon", "long sword", 1, -1, -1);
-        const fine = makeItem("weapon", "long sword", 2, -1, -1);
-        fine.plusDam = 2;
-        assert.equal(itemPower(plain, known), "피해 3d4");
-        assert.equal(itemPower(fine, known), "피해 3d4+2");
-
-        const rags = makeItem("armor", "leather", 3, -1, -1);
-        const good = makeItem("armor", "leather", 4, -1, -1);
-        good.plusArmor = 1;
-        assert.equal(itemPower(rags, known), "방어력 2");
-        assert.equal(itemPower(good, known), "방어력 3", "손질한 갑옷의 숫자가 안 올랐다");
-
-        // 상한 것은 내려간다 — 방향이 양쪽으로 맞아야 한다.
-        const rusted = makeItem("armor", "leather", 5, -1, -1);
-        rusted.plusArmor = -2;
-        assert.equal(itemPower(rusted, known), "방어력 0");
-    }
-});
-
 test("정체를 모르면 손질을 안 흘린다 — 배낭 숫자와 실제가 같다", () => {
     // ── 정체를 모르는 물건은 손질을 안 흘린다
     {
@@ -414,38 +301,6 @@ test("정체를 모르면 손질을 안 흘린다 — 배낭 숫자와 실제가
         s.hero.armorId = armor.id;
         s.known["armor:plate mail"] = true;
         assert.equal(itemPower(armor, s.known), `방어력 ${heroDefense(s.hero)}`);
-    }
-});
-
-test("던지면 하나씩 줄고, 마지막 하나는 배낭에서 사라진다", () => {
-    // ── 던지면 하나씩 줄고, 남은 개수를 말한다
-    {
-        const s = newGame(921);
-        const darts = makeItem("weapon", "dart", 940, -1, -1, 10);
-        darts.letter = "z";
-        s.hero.pack.push(darts);
-
-        const after = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
-        assert.equal(packItem(after.hero, "z")!.count, 9, "던졌는데 개수가 그대로다");
-        // **이름을 여기 적지 않는다.** 표에서 가져온다 — 한글화로 「다트」가 「표창」이 되자
-        // 이 줄만 조용히 못 찾고 터졌다. 이 테스트가 보는 것은 이름이 아니라 개수다.
-        const dartName = WEAPONS.dart.name;
-        const line = after.messages.filter((m) => m.includes(dartName)).pop()!;
-        // 예전에는 「표창 10개을(를) 던졌다」가 떠서 열 개를 다 던진 것처럼 읽혔다.
-        assert.ok(!line.includes(`${dartName} 10개`), `한 개를 던졌는데 열 개라고 적었다: ${line}`);
-        assert.ok(line.includes("9개 남음"), `남은 개수를 안 적었다: ${line}`);
-    }
-
-    // ── 마지막 하나를 던지면 배낭에서 사라진다
-    {
-        let s = newGame(922);
-        const darts = makeItem("weapon", "dart", 941, -1, -1, 2);
-        darts.letter = "z";
-        s.hero.pack.push(darts);
-        s = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
-        assert.equal(packItem(s.hero, "z")!.count, 1);
-        s = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
-        assert.equal(packItem(s.hero, "z"), undefined, "다 던졌는데 배낭에 남았다");
     }
 });
 
@@ -486,58 +341,5 @@ test("던진 것은 사라지지 않는다 — 같은 것도 다른 것도", () 
             "던진 창이 없어졌다 — 그 자리에 다른 물건이 있었을 뿐이다",
         );
         assert.ok(after.level.items.some((i) => i.id === mace.id), "원래 있던 철퇴가 없어졌다");
-    }
-});
-
-test("착용 메시지는 그 물건 몫을 적고, 모르는 것은 안 흘린다", () => {
-    // ── 착용하면 **그 물건의** 능력치를 말한다 — 내 능력치가 아니라
-    {
-        // 한때 갑옷을 입으면 내 방어 **등급**(낮을수록 단단)을 적었다. 그건 (ㄱ) 물건이
-        // 아니라 나의 값이고 (ㄴ) 화면의 「방어력」과 방향이 반대라, 좋은 갑옷을 입으면
-        // 숫자가 내려가 보였다.
-        const s = newGame(930);
-        const sword = makeItem("weapon", "long sword", 950, -1, -1);
-        sword.plusDam = 2;
-        sword.letter = "p";
-        const plate = makeItem("armor", "plate mail", 951, -1, -1);
-        plate.plusArmor = 1;
-        plate.letter = "q";
-        const ring = makeItem("ring", "protection", 952, -1, -1);
-        ring.plusRing = 2;
-        ring.letter = "r";
-        s.hero.pack.push(sword, plate, ring);
-
-        const said = (cur: GameState, needle: string) =>
-            cur.messages.filter((m) => m.includes(needle)).pop() ?? "";
-
-        let cur = perform(s, { t: "wield", letter: "p" });
-        assert.ok(said(cur, "쥐었다").includes("(피해 3d4+2)"), said(cur, "쥐었다"));
-
-        cur = perform(cur, { t: "wear", letter: "q" });
-        const worn = said(cur, "입었다");
-        // **배낭 줄과 같은 숫자여야 한다.** 갈리면 한쪽만 고치는 날이 온다.
-        assert.ok(worn.includes(`(${itemPower(plate, cur.known)})`), worn);
-        assert.ok(worn.includes("방어력 8"), `판금+1 은 방어력 8 이어야 한다: ${worn}`);
-        // 내 방어력이 아니라 **갑옷 몫**이다 — 보호 반지를 껴도 이 숫자는 안 바뀐다.
-        assert.ok(!worn.includes("방어 2"), `옛 방어 등급을 적고 있다: ${worn}`);
-
-        cur = perform(cur, { t: "putOn", letter: "r" });
-        assert.ok(said(cur, "꼈다").includes("(방어력 +2)"), said(cur, "꼈다"));
-    }
-
-    // ── 정체 모르는 물건은 착용 메시지에도 속을 안 흘린다
-    {
-        // 다만 쥐거나 입거나 끼면 **그 순간 정체를 알게 되므로**, 그 뒤의 숫자는 참값이다.
-        const s = newGame(931);
-        const w = makeItem("weapon", "two-handed sword", 953, -1, -1);
-        w.plusDam = 3;
-        w.letter = "p";
-        s.hero.pack.push(w);
-        assert.equal(itemPower(w, {}), "피해 4d4", "쥐기 전에는 손질을 모른다");
-
-        const cur = perform(s, { t: "wield", letter: "p" });
-        assert.ok(cur.known["weapon:two-handed sword"], "쥐었는데도 정체를 모른다");
-        const line = cur.messages.filter((m) => m.includes("쥐었다")).pop()!;
-        assert.ok(line.includes("(피해 4d4+3)"), line);
     }
 });

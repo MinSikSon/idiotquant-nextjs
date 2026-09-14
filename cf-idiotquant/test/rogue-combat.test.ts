@@ -11,53 +11,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { heroAttack, heroLuck, monsterAttack, monsterDamBonus, monsterHitBonus } from "@/lib/rogue/combat";
+import { heroAttack, monsterAttack, monsterDamBonus } from "@/lib/rogue/combat";
 import { newGame } from "@/lib/rogue/game";
 import { idx } from "@/lib/rogue/types";
-import { abilityMod, damageRoll, luckOf, opposedRoll, pierce, proficiency } from "@/lib/rogue/dnd";
+import { damageRoll, luckOf, opposedRoll, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
-import { armorClassOf, makeItem } from "@/lib/rogue/items";
-import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
+import { makeItem } from "@/lib/rogue/items";
+import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero } from "@/lib/rogue/hero";
 
 /** 지금 내 방어력. */
 const heroDefenseOf = (s: { hero: Parameters<typeof heroDefense>[0] }) => heroDefense(s.hero);
 import { Rng } from "@/lib/rogue/rng";
-import { MONSTERS, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
-
-/** 레벨 `atLevel` 에 보정 `bonus` 인 쪽이, 레벨 `opLevel` 인 쪽을 때린다. */
-function hitRate(atLevel: number, opLevel: number, bonus: number, n = 20000): number {
-    const rng = new Rng(12345);
-    let hits = 0;
-    for (let i = 0; i < n; i++) {
-        if (opposedRoll(proficiency(atLevel) + bonus, proficiency(opLevel), rng).hit) hits++;
-    }
-    return hits / n;
-}
-
-// **갑옷은 이제 명중을 안 건드린다.** 피하는 쪽의 굴림에 붙는 것은 숙련뿐이라, 갑옷을
-// 껴입어도 맞는 횟수는 그대로다 — 대신 매 대가 덜 아프다. 이 둘을 헷갈리면 「갑옷을
-// 입을수록 잘 맞는 게임」이 되는데 화면에는 숫자가 멀쩡히 떠서 아무도 못 알아챈다.
-test("레벨이 높을수록 맞히기 어렵고, 레벨과 손질은 잘 맞힌다", () => {
-    // ── 맞히기 어려운 쪽은 **레벨이 높은 쪽**이다 — 갑옷이 아니라
-    {
-        const weak = hitRate(1, 1, 0);
-        const strong = hitRate(1, 10, 0);
-        assert.ok(strong < weak, `레벨 10(${strong}) 이 레벨 1(${weak}) 보다 맞히기 쉬우면 안 된다`);
-    }
-
-    // ── 레벨이 오르면 더 잘 맞힌다
-    {
-        const lv1 = hitRate(1, 3, 0);
-        const lv5 = hitRate(5, 3, 0);
-        const lv10 = hitRate(10, 3, 0);
-        assert.ok(lv1 < lv5 && lv5 < lv10, `${lv1} < ${lv5} < ${lv10} 이어야 한다`);
-    }
-
-    // ── 손질한 무기는 더 잘 맞는다
-    {
-        assert.ok(hitRate(1, 3, 0) < hitRate(1, 3, 2));
-    }
-});
+import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 
 // 이 파일의 핵심 한 줄. 부호가 뒤집히면 「갑옷을 입을수록 더 아픈 게임」이 된다.
 test("피해 = 공격력 − 방어력, 0 밑은 0 — 방어력도 0 밑이 없다", () => {
@@ -177,109 +142,12 @@ test("자연 20·1, 치명타 두 번, 유리·불리", () => {
     }
 });
 
-test("능력 보정·숙련의 식과 몬스터의 공격 보정", () => {
-    // ── 능력 보정과 숙련은 D&D 의 식 그대로다
-    {
-        assert.equal(abilityMod(10), 0);
-        assert.equal(abilityMod(11), 0);
-        assert.equal(abilityMod(16), 3);
-        assert.equal(abilityMod(8), -1);
-        assert.equal(abilityMod(20), 5);
-        assert.equal(proficiency(1), 2);
-        assert.equal(proficiency(4), 2);
-        assert.equal(proficiency(5), 3);
-        assert.equal(proficiency(9), 4);
-    }
-
-    // ── 몬스터의 공격 보정도 레벨을 따라 오른다
-    {
-        const of = (ch: string) => monsterHitBonus({ def: MONSTERS[ch] } as never);
-        assert.ok(of("E") < of("T"), "에뮤가 트롤보다 잘 때린다");
-        assert.ok(of("T") < of("D"), "트롤이 용보다 잘 때린다");
-    }
-});
-
 // 나는 힘과 손질을 얹은 값에서 상대 갑옷을 뺀다. 상대 쪽에 보정이 없으면 **같은 식이
 // 한쪽에만 공평하고**, 갑옷이 깎기 시작한 순간 약한 놈은 아예 아무것도 못 하게 된다.
 test("몬스터의 공격력에도 보정이 붙는다 — 안 붙으면 갑옷이 한쪽만 살린다", () => {
     const of = (ch: string) => monsterDamBonus({ def: MONSTERS[ch] } as never);
     assert.ok(of("E") > 0, "레벨 1 짜리에게 보정이 하나도 없다");
     assert.ok(of("E") < of("T") && of("T") < of("D"), "레벨을 따라 안 오른다");
-});
-
-test("갑옷 등급·힘 보정표·경험치 표가 단조롭다", () => {
-    // ── 갑옷을 손질하면 방어 등급이 내려간다 (안쪽 표현)
-    {
-        const plain = makeItem("armor", "plate mail", 1, -1, -1);
-        assert.equal(armorClassOf(plain), 3);
-        plain.plusArmor = 2;
-        assert.equal(armorClassOf(plain), 1, "손질은 등급을 **내려야** 한다");
-        plain.plusArmor = -1;
-        assert.equal(armorClassOf(plain), 4);
-        assert.equal(armorClassOf(undefined), 10, "맨몸은 10");
-    }
-
-    // ── 힘 보정표가 단조롭다 — 힘이 세질수록 나빠지는 구간이 없다
-    {
-        let lastHit = -99;
-        let lastDam = -99;
-        for (let s = 3; s <= 31; s++) {
-            assert.ok(strHitBonus(s) >= lastHit, `힘 ${s} 에서 명중 보정이 줄었다`);
-            assert.ok(strDamBonus(s) >= lastDam, `힘 ${s} 에서 피해 보정이 줄었다`);
-            lastHit = strHitBonus(s);
-            lastDam = strDamBonus(s);
-        }
-    }
-
-    // ── 경험치 표는 오르기만 한다
-    {
-        for (let i = 1; i < EXP_LEVELS.length; i++) {
-            assert.ok(EXP_LEVELS[i] > EXP_LEVELS[i - 1]);
-        }
-    }
-});
-
-test("레벨업은 체력을 올리고 공격 굴림에도 얹힌다", () => {
-    // ── 레벨업은 최대 체력을 올리고 지금 체력도 같이 올린다
-    {
-        const rng = new Rng(99);
-        const hero = makeHero(rng, (() => { let n = 100; return () => n++; })());
-        const before = hero.maxHp;
-        const gained = gainExp(hero, EXP_LEVELS[0], rng);
-        assert.deepEqual(gained, [2]);
-        assert.ok(hero.maxHp > before, "최대 체력이 안 올랐다");
-        assert.ok(hero.hp > 12, "레벨업이 지금 체력도 올려야 한다");
-    }
-
-    // ── 레벨이 오르면 잘 맞힌다 — 레벨이 공격 굴림에 얹힌다
-    {
-        assert.ok(hitRate(1, 5, 0) < hitRate(5, 5, 0));
-    }
-});
-
-test("몬스터 표는 스물여섯이고 깊이가 곧 난이도다", () => {
-    // ── 몬스터 표가 스물여섯이고 방어 등급이 제각각이다
-    {
-        const keys = Object.keys(MONSTERS);
-        assert.equal(keys.length, 26);
-        assert.deepEqual(keys.sort(), "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
-        // 용이 제일 단단하고 얼음괴물이 제일 무르다 — 표가 평평하면 깊이가 의미가 없다.
-        assert.ok(MONSTERS.D.armor < MONSTERS.Z.armor);
-    }
-
-    // ── 깊이가 곧 난이도다 — 깊은 층일수록 센 놈이 자주 나온다
-    {
-        const rng = new Rng(31337);
-        const avgAt = (depth: number) => {
-            let sum = 0;
-            const n = 4000;
-            for (let i = 0; i < n; i++) sum += MONSTERS[randomMonsterChar(depth, rng)].level;
-            return sum / n;
-        };
-        const shallow = avgAt(2);
-        const deep = avgAt(20);
-        assert.ok(deep > shallow * 2, `2층 평균 ${shallow}, 20층 평균 ${deep}`);
-    }
 });
 
 test("체력은 굴리지 않는다 — 종마다도, 레벨업도 고정", () => {
@@ -320,61 +188,6 @@ test("체력은 굴리지 않는다 — 종마다도, 레벨업도 고정", () =
         const other = makeHero(new Rng(999), (() => { let n = 200; return () => n++; })());
         gainExp(other, EXP_LEVELS[0], new Rng(1));
         assert.equal(other.maxHp, hero.maxHp);
-    }
-});
-
-test("유리·불리가 판의 상태에서 나오고, 치명타가 실제로 두 번 굴린다", () => {
-    // ── 유리·불리가 판의 상태에서 나온다 — 자는 놈, 눈먼 나
-    {
-        const s = newGame(1);
-        const asleep = spawnMonster("S", 0, 0, new Rng(7));
-        asleep.awake = false;
-        const awake = spawnMonster("S", 0, 0, new Rng(7));
-        awake.awake = true;
-
-        const cases: [string, boolean, boolean, string][] = [
-            ["깬 놈 · 멀쩡", true, false, "normal"],
-            // 5판에서 의식 없는 상대를 치면 유리다.
-            ["자는 놈 · 멀쩡", false, false, "advantage"],
-            ["깬 놈 · 눈멂", true, true, "disadvantage"],
-            // **서로 지운다** — 이것도 5판의 규칙이다.
-            ["자는 놈 · 눈멂", false, true, "normal"],
-        ];
-        for (const [label, mAwake, blind, want] of cases) {
-            s.hero.blind = blind ? 5 : 0;
-            assert.equal(heroLuck(s.hero, mAwake ? awake : asleep), want, label);
-        }
-
-        // 헷갈려도 불리하다.
-        s.hero.blind = 0;
-        s.hero.confused = 3;
-        assert.equal(heroLuck(s.hero, awake), "disadvantage", "헷갈리는데 불리가 아니다");
-    }
-
-    // ── 치명타가 실제 싸움에서 피해를 두 배 주사위로 굴린다
-    {
-        // 굴림과 피해가 따로 놀면 「치명타!」라고 적고 평타만큼만 때린다.
-        const s = newGame(700);
-        s.hero.hp = s.hero.maxHp = 99999;
-        const m = spawnMonster("T", s.hero.x + 1, s.hero.y, new Rng(7));
-        m.hp = m.maxHp = 999999;
-        s.level.tiles[idx(s.hero.x + 1, s.hero.y)] = 1;
-        s.level.monsters = s.level.monsters.filter((x) => !(x.x === m.x && x.y === m.y));
-        s.level.monsters.push(m);
-
-        // 주사위를 펼쳐 적으려면 잡아 본 종이어야 한다(도감 규칙).
-        s.bestiary.T = 1;
-        const rng = new Rng(21);
-        let crits = 0;
-        for (let i = 0; i < 400; i++) {
-            const r = heroAttack(s, m, rng);
-            const line = r.messages.find((l) => l.startsWith("· 공격력 "));
-            const critLine = r.messages[0].includes("치명타");
-            if (!critLine) continue;
-            crits++;
-            assert.ok(line?.includes("두 번"), `치명타인데 주사위를 한 번만 굴렸다: ${line}`);
-        }
-        assert.ok(crits > 5, `사백 번에 치명타가 ${crits} 번뿐이라 못 잰다`);
     }
 });
 

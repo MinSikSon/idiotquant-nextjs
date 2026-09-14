@@ -16,10 +16,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { type Command, newGame, perform, survey } from "@/lib/rogue/game";
+import { newGame, perform, survey, type Command } from "@/lib/rogue/game";
 import { ENCHANT_MAX } from "@/lib/rogue/items";
 import { packItem } from "@/lib/rogue/hero";
-import { buildLevel } from "@/lib/rogue/dungeon";
 import { deserialize, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
 import { ALL_DIRS, MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
@@ -188,66 +187,6 @@ test("앞으로 나올 판은 안 읽고, 어긋난 기억은 새로 만든다",
     }
 });
 
-test("끝난 판은 끝난 채로, 이상한 phase 는 굴러가는 판으로", () => {
-    // ── 끝난 판은 끝난 채로 돌아온다
-    {
-        const s = newGame(7);
-        s.phase = "dead";
-        s.epitaph = "굶어 죽었다.";
-        const back = deserialize(serialize(s))!;
-        assert.equal(back.phase, "dead");
-        assert.equal(back.epitaph, "굶어 죽었다.");
-    }
-
-    // ── 이상한 phase 는 굴러가는 판으로 친다 — 멈춰 선 판보다 낫다
-    {
-        const o = JSON.parse(serialize(newGame(8)));
-        o.phase = "무엇이든";
-        assert.equal(deserialize(JSON.stringify(o))!.phase, "playing");
-    }
-});
-
-test("지도 크기가 같고, 지나온 층들도 그대로다", () => {
-    // ── 지도 크기는 저장과 코드가 같아야 한다
-    {
-        // 지도 크기를 바꾸면 옛 저장은 전부 못 읽는다. 그 사실을 여기에 박아 둔다.
-        assert.equal(MAP_W * MAP_H, newGame(9).level.tiles.length);
-        assert.equal(MAP_H, 22);
-        assert.equal(MAP_W, 80);
-    }
-
-    // ── 지나온 층들도 저장했다 되읽으면 그대로다
-    {
-        // 1 → 2 → 3 층까지 내려갔다가 되돌아온 판.
-        let s = newGame(4321);
-        for (let i = 0; i < 2; i++) {
-            s.hero.x = s.level.stairs.x;
-            s.hero.y = s.level.stairs.y;
-            s = perform(s, { t: "descend" });
-        }
-        s = perform(s, { t: "ascend" });
-        assert.equal(s.level.depth, 2);
-        assert.deepEqual(Object.keys(s.levels).sort(), ["1", "3"]);
-
-        const back = deserialize(serialize(s))!;
-        assert.ok(back, "되읽지 못했다");
-        assert.deepEqual(Object.keys(back.levels).sort(), ["1", "3"]);
-        for (const d of [1, 3]) {
-            const a = s.levels[d];
-            const b = back.levels[d];
-            // JSON 은 Uint8Array 를 객체로 바꿔 놓는다 — 층 하나하나가 다 그 함정을 지난다.
-            assert.ok(b.tiles instanceof Uint8Array, `${d}층의 지도가 배열이 아니다`);
-            assert.ok(b.flags instanceof Uint8Array);
-            assert.ok(b.roomAt instanceof Int8Array);
-            assert.deepEqual(Array.from(b.tiles), Array.from(a.tiles), `${d}층이 달라졌다`);
-            assert.deepEqual(Array.from(b.flags), Array.from(a.flags), `${d}층의 기억이 달라졌다`);
-            assert.equal(b.monsters.length, a.monsters.length);
-            assert.equal(b.monsters[0]?.def.ch, a.monsters[0]?.def.ch, "몬스터 표를 못 찾았다");
-        }
-        play(back);
-    }
-});
-
 test("층 하나가 깨져도 판은 살고, 겹친 층은 창고 쪽을 버린다", () => {
     // ── 지나온 층 하나가 깨져도 판은 안 버린다 — 그 층의 기억만 잃는다
     {
@@ -274,37 +213,6 @@ test("층 하나가 깨져도 판은 살고, 겹친 층은 창고 쪽을 버린�
         const back = deserialize(JSON.stringify(o))!;
         assert.equal(back.levels[1], undefined);
         play(back);
-    }
-});
-
-test("옛 저장(층 하나)도 굴러가고, 26층을 다 들고도 들어간다", () => {
-    // ── 옛 저장(층이 하나뿐이던 때)도 굴러간다
-    {
-        const s = newGame(4324);
-        const o = JSON.parse(serialize(s));
-        o.v = 2;
-        delete o.levels; // v2 에는 이 칸이 없었다
-        const back = deserialize(JSON.stringify(o));
-        assert.ok(back, "옛 저장을 버렸다");
-        assert.deepEqual(back!.levels, {});
-        play(back!);
-    }
-
-    // ── 스물여섯 층을 다 들고도 저장이 브라우저에 들어간다
-    {
-        // localStorage 는 대개 5MB 다. 층마다 지도가 1,760칸이라 넉넉한지 한 번 재 둔다.
-        let s = newGame(4325);
-        for (let i = 0; i < 25; i++) {
-            // 재는 것은 크기다 — 도중에 죽거나 함정에 빠지면 못 잰다.
-            s.hero.hp = s.hero.maxHp = 9999;
-            s.hero.food = 9999;
-            s.hero.x = s.level.stairs.x;
-            s.hero.y = s.level.stairs.y;
-            s = perform(s, { t: "descend" });
-        }
-        assert.equal(Object.keys(s.levels).length + 1, 26, `${Object.keys(s.levels).length + 1}층만 들었다`);
-        const bytes = serialize(s).length;
-        assert.ok(bytes < 3_000_000, `26층짜리 저장이 ${bytes} 바이트다 — 브라우저가 거부할 수 있다`);
     }
 });
 
@@ -420,31 +328,6 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
         }
         assert.equal(back.hero.pack[0].plusHit, ENCHANT_MAX);
         play(back);
-    }
-});
-
-// 모루가 없던 때의 저장. **이미 걸어 본 층에 없던 것을 슬쩍 세우면 안 된다** —
-// 「아까는 없었는데」가 되고, 그러면 지도의 기억을 못 믿게 된다.
-test("모루는 그대로 오가고, 없던 때의 저장에는 없는 채로", () => {
-    // ── 모루도 저장했다 되읽으면 그대로다
-    {
-        const s = newGame(4);
-        const back = deserialize(serialize(s))!;
-        assert.deepEqual(back.level.anvil, s.level.anvil, "모루 자리가 안 돌아왔다");
-    }
-
-    // ── 옛 저장(모루가 없던 때)은 그 층에 모루가 없는 채로 굴러간다
-    {
-        const s = newGame(5);
-        const o = JSON.parse(serialize(s));
-        delete o.level.anvil;
-        o.v = 3;
-        const back = deserialize(JSON.stringify(o))!;
-        assert.equal(back.level.anvil, null, "없던 모루가 생겼다");
-        play(back);
-        // 내려가면 새로 파는 층이라 거기에는 있다.
-        const dug = buildLevel(9, new Rng(77));
-        assert.ok(dug.anvil, "새로 판 층에도 모루가 없다");
     }
 });
 

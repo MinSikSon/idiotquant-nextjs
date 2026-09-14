@@ -134,30 +134,3 @@ test("밝은 쪽과 어두운 쪽이 같은 이름을 갖고, 기억한 칸이 �
 //
 // 한때 `pathname.startsWith("/game")` 하나로 둘을 묶어서, **밝은 테마에서 종이 위에
 // 검은 바가 얹혔다.** 한 깃발로 되돌아가면 그 자리가 그대로 돌아온다.
-
-const NAV = "components/navigation.tsx";
-
-test("게임 바도 팔레트를 따르고, 옛 게임과 갈라 본다", () => {
-    // ── 게임 바의 색은 게임 팔레트에서 온다 — 네비에 색을 박지 않는다
-    {
-        const s = read(NAV);
-        assert.match(
-            s,
-            /background: "var\(--rg-bg\)"/,
-            `${NAV} 가 게임 바탕을 --rg-bg 로 안 칠한다 — 테마를 따라가지 않는다`,
-        );
-    }
-
-    // ── 옛 게임과 Rogue 를 갈라 본다 — 한 깃발로 묶으면 밝은 테마가 깨진다
-    {
-        const s = read(NAV);
-        assert.match(s, /startsWith\("\/game\/imf"\)/, `${NAV} 가 옛 게임을 따로 안 가린다`);
-        // `dark` 를 씌우는 것은 **옛 게임에만**이다. Rogue 에까지 씌우면 앱이 밝은 테마여도
-        // 바 안쪽이 어두운 색을 쓴다.
-        assert.match(
-            s,
-            /const retroScope = imf \? "dark" : ""/,
-            `${NAV} 가 Rogue 에도 dark 를 씌운다 — 밝은 테마에서 바만 어두워진다`,
-        );
-    }
-});

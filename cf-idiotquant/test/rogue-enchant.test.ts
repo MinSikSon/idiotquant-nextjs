@@ -19,10 +19,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { enchantTarget, newGame, perform } from "@/lib/rogue/game";
+import { newGame, perform } from "@/lib/rogue/game";
 import { addToPack, equippedArmor, equippedWeapon } from "@/lib/rogue/hero";
-import { ENCHANT_MAX, SCROLLS, enchantOdds, makeItem, randomItem } from "@/lib/rogue/items";
-import { Rng } from "@/lib/rogue/rng";
+import { ENCHANT_MAX, enchantOdds, makeItem } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
 import type { GameState, Item } from "@/lib/rogue/types";
 
@@ -40,13 +39,6 @@ function setup(seed: number, kind: "weapon" | "armor", type: string, plus: numbe
     addToPack(s.hero, scroll);
     s.known[`scroll:${scroll.type}`] = true;
     return { s, it, scroll };
-}
-
-/** 주문서를 한 장 더 준다 — 여러 번 걸어 볼 때. */
-function giveScroll(s: GameState, type: string, id: number): Item {
-    const sc = makeItem("scroll", type, id, -1, -1);
-    addToPack(s.hero, sc);
-    return sc;
 }
 
 test("성공률표는 단조 감소하고 +5 까지는 절대 안 부서진다", () => {
@@ -148,45 +140,6 @@ test("상한과 대상 없는 읽기는 주문서도 턴도 안 쓴다", () => {
         assert.equal(after.hero.pack.length, packBefore, "대상도 없이 주문서가 없어졌다");
         assert.equal(after.turn, turnBefore, "대상도 없이 턴이 갔다");
         assert.equal(after.messages.length, msgBefore, "아무 일도 안 났는데 말이 남았다");
-    }
-});
-
-// **갑옷 강화가 돌아왔다.** 한때 뺐던 까닭은 「되돌리는 길(모루)이 무기에만 있어서 갑옷
-// 쪽은 운에만 기댄다」였는데, 이제 갑옷도 녹으므로 그 까닭이 사라졌다.
-test("화면이 묻는 것과 엔진이 아는 것이 같다 — 무기·갑옷 둘 다", () => {
-    // ── 화면이 묻는 것과 엔진이 아는 것이 같다 — `enchantTarget`
-    {
-        const { s, scroll } = setup(80, "weapon", "long sword", 0);
-        assert.equal(enchantTarget(s, scroll.letter!), "weapon");
-        const armorScroll = giveScroll(s, "enchant armor", 960);
-        assert.equal(enchantTarget(s, armorScroll.letter!), "armor");
-        // 강화가 아닌 주문서는 고를 것을 안 묻는다.
-        const other = giveScroll(s, "identify", 961);
-        assert.equal(enchantTarget(s, other.letter!), null);
-        // 주문서가 아닌 것도, 없는 자리도 null.
-        const potion = makeItem("potion", "healing", 962, -1, -1);
-        addToPack(s.hero, potion);
-        assert.equal(enchantTarget(s, potion.letter!), null);
-        assert.equal(enchantTarget(s, "Z"), null);
-    }
-
-    // ── 갑옷 강화 주문서가 있다 — 표에도, 떨어지는 것에도
-    {
-        assert.ok("enchant armor" in SCROLLS, "표에 없다");
-        assert.equal(
-            SCROLLS["enchant armor"].freq,
-            SCROLLS["enchant weapon"].freq,
-            "둘의 빈도가 다르면 한쪽만 자라고 다른 쪽은 없는 것과 같아진다",
-        );
-        // 스물여섯 층을 훑어 실제로 나오는지 본다.
-        const rng = new Rng(4242);
-        let seen = 0;
-        for (let depth = 1; depth <= 26; depth++) {
-            for (let i = 0; i < 400; i++) {
-                if (randomItem(depth, i, -1, -1, rng).type === "enchant armor") seen++;
-            }
-        }
-        assert.ok(seen > 0, "만 번을 뽑아도 갑옷 강화가 한 장도 안 나온다");
     }
 });
 

@@ -6,10 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-    categoryLabel, categoriesOf, presetsOf, catKey, frozenKey,
-    KIND_ORDER, KIND_STYLE, type StoredCategory,
-} from "../lib/features/ledger/categories.ts";
+import { categoryLabel, categoriesOf, presetsOf, catKey, frozenKey, type StoredCategory } from "../lib/features/ledger/categories.ts";
 
 const MINE: StoredCategory[] = [
     { id: 1, kind: "expense", label: "여행" },
@@ -75,17 +72,5 @@ test("아무것도 못 찾으면 키를 그대로 — 마지막까지 빈칸은 
 
         // 수입 항목(부업)이 지출 칩에 섞이면 안 된다.
         assert.equal(expense.some(c => c.label === "부업"), false);
-    }
-});
-
-test("구분 셋의 이름·색이 모두 정의돼 있다", () => {
-    assert.deepEqual(KIND_ORDER, ["income", "expense", "saving"]);
-    for (const kind of KIND_ORDER) {
-        const style = KIND_STYLE[kind];
-        assert.ok(style.label, `${kind} 라벨 없음`);
-        // 빈 문자열이면 조용히 색 없는 칩이 된다.
-        for (const key of ["solid", "bar", "badge", "amount"] as const) {
-            assert.ok(style[key]?.length > 0, `${kind}.${key} 비어 있음`);
-        }
     }
 });

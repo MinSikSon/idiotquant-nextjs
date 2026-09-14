@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
-import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
+import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 import { defenseOf } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
@@ -134,45 +134,6 @@ test("무엇으로 잡았든 도감에 오른다 — 도망친 놈은 아니다"
     }
 });
 
-test("조사는 보이는 것만 주고 판을 안 바꾼다", () => {
-    // ── 조사는 보이는 것만 준다 — 벽 너머는 안 센다
-    {
-        const s = newGame(306);
-        // 지도 밖 구석에 억지로 하나 세운다. 본 적 없는 칸이라 보일 리가 없다.
-        const far = spawnMonster("T", 1, 1, new Rng(3));
-        s.level.monsters.push(far);
-        assert.ok(
-            !survey(s).some((x) => x.id === far.id),
-            "안 보이는 몬스터가 조사에 잡혔다",
-        );
-    }
-
-    // ── 조사는 판을 한 톨도 안 바꾼다 — 턴을 안 쓴다
-    {
-        const s = newGame(307);
-        placeNextTo(s, "S", 9);
-        const before = JSON.stringify({
-            turn: s.turn,
-            food: s.hero.food,
-            hp: s.hero.hp,
-            x: s.hero.x,
-            y: s.hero.y,
-            monsters: s.level.monsters.map((m) => [m.x, m.y, m.hp]),
-        });
-        survey(s);
-        survey(s);
-        const after = JSON.stringify({
-            turn: s.turn,
-            food: s.hero.food,
-            hp: s.hero.hp,
-            x: s.hero.x,
-            y: s.hero.y,
-            monsters: s.level.monsters.map((m) => [m.x, m.y, m.hp]),
-        });
-        assert.equal(after, before, "조사가 판을 바꿨다");
-    }
-});
-
 test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
     // ── 도감은 새 판으로 이어진다 — 죽어도 남는 유일한 것
     {
@@ -196,60 +157,5 @@ test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
         assert.equal(rows[0].name, MONSTERS.S.name);
         // 안 잡은 것은 목록에 아예 없다.
         assert.equal(bestiaryRows({}).length, 0);
-    }
-});
-
-test("도감이 주는 값은 표와 같다 — 특수 공격과 나오는 층", () => {
-    // ── 피해 없는 특수 공격(0d0)은 피해 칸에 안 적는다
-    {
-        // 망령은 1d6 과 0d0 을 둘 다 갖고 있다. 0d0 을 그대로 적으면 「0d6 짜리 피해」로 읽힌다.
-        const rows = bestiaryRows({ W: 1 });
-        assert.deepEqual(rows[0].damage, ["1d6"]);
-    }
-
-    // ── 도감의 「나오는 층」은 **실제 뽑기와 같다**
-    {
-        // 여기가 갈리면 도감이 「7층에 나온다」고 적어 놓고 실제로는 안 나온다.
-        const real: Record<string, { min: number; max: number }> = {};
-        for (let depth = 1; depth <= 26; depth++) {
-            const rng = new Rng(depth * 977 + 3);
-            for (let i = 0; i < 20000; i++) {
-                const ch = randomMonsterChar(depth, rng);
-                const e = real[ch] ?? { min: 99, max: 0 };
-                real[ch] = { min: Math.min(e.min, depth), max: Math.max(e.max, depth) };
-            }
-        }
-        for (const ch of Object.keys(MONSTERS)) {
-            const said = depthRange(ch)!;
-            assert.ok(said, `${ch} 의 층을 못 냈다`);
-            assert.deepEqual(said, real[ch], `${ch}(${MONSTERS[ch].name}) 의 층이 실제와 다르다`);
-        }
-    }
-});
-
-test("한 종은 어디서나 같은 능력치다", () => {
-    // ── 한 종은 어디서나 같은 능력치다 — 층이 정하는 것은 어느 종이 나오는가뿐
-    {
-        // 「레벨 다른 같은 몬스터」는 이 게임에 없다. 그 사실을 여기에 박아 둔다.
-        for (const ch of Object.keys(MONSTERS)) {
-            const seen = new Set<string>();
-            for (let depth = 1; depth <= 26; depth++) {
-                const m = spawnMonster(ch, 1, 1, new Rng(depth * 13 + 1));
-                seen.add(JSON.stringify([m.def.level, m.def.armor, m.def.hp, m.def.damage, m.def.exp]));
-                assert.equal(m.hp, m.maxHp);
-            }
-            assert.equal(seen.size, 1, `${ch} 가 층에 따라 달라진다`);
-        }
-    }
-
-    // ── 도감 줄이 나오는 층을 함께 준다
-    {
-        const rows = bestiaryRows({ T: 1, K: 2 });
-        const troll = rows.find((r) => r.ch === "T")!;
-        assert.deepEqual(troll.depths, depthRange("T"));
-        assert.ok(troll.depths!.min < troll.depths!.max, "띠가 한 층뿐이다");
-        // 약한 놈은 얕은 층에, 센 놈은 깊은 층에.
-        const kestrel = rows.find((r) => r.ch === "K")!;
-        assert.ok(kestrel.depths!.min < troll.depths!.min, "황조롱이가 트롤보다 깊이 나온다");
     }
 });

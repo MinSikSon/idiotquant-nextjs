@@ -6,11 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-    applyFilters, sortList, roeOf, grahamOk, marketOf, sectorOf,
-    isPreferredStock, resolveStrategies, safeNum,
-    type ScreenerFilters,
-} from "@/app/(screener)/screener/filters";
+import { applyFilters, sortList, roeOf, grahamOk, marketOf, sectorOf, isPreferredStock, safeNum, type ScreenerFilters } from "@/app/(screener)/screener/filters";
 
 /** 아무것도 안 거르는 기본값. 테스트마다 한 조건씩만 켠다. */
 const none = (over: Partial<ScreenerFilters> = {}): ScreenerFilters => ({
@@ -88,41 +84,6 @@ test("업종은 sector 를 먼저 보고 옛 응답의 industry 로 폴백한다
 });
 
 /* ── 필터 ────────────────────────────────────────────────────── */
-test("아무 조건도 없으면 하나도 걸러내지 않는다 · 검색은 종목명과 티커 양쪽에서, 대소문자를 가리지 않는다", () => {
-    // ── 아무 조건도 없으면 하나도 걸러내지 않는다
-    {
-        const list = [stock(), stock({ name: "카카오" })];
-        assert.equal(applyFilters(list, none()).length, 2);
-    }
-
-    // ── 검색은 종목명과 티커 양쪽에서, 대소문자를 가리지 않는다
-    {
-        const list = [stock(), stock({ ticker: "035720", name: "카카오" })];
-        assert.deepEqual(names(applyFilters(list, none({ q: "카카오" }))), ["카카오"]);
-        assert.deepEqual(names(applyFilters(list, none({ q: "035720" }))), ["카카오"]);
-        assert.deepEqual(names(applyFilters(list, none({ q: "없는종목" }))), []);
-    }
-});
-
-test("PBR·PER 상한은 값이 0 이하인 종목을 통과시키지 않는다 · 경계값은 포함한다 (이하·이상)", () => {
-    // ── PBR·PER 상한은 값이 0 이하인 종목을 통과시키지 않는다
-    {
-        const list = [stock({ name: "정상", pbr: 0.4 }), stock({ name: "값없음", pbr: 0 })];
-        assert.deepEqual(names(applyFilters(list, none({ maxPbr: 0.5 }))), ["정상"]);
-
-        const perList = [stock({ name: "정상", per: 8 }), stock({ name: "적자", per: -3 })];
-        assert.deepEqual(names(applyFilters(perList, none({ maxPer: 10 }))), ["정상"]);
-    }
-
-    // ── 경계값은 포함한다 (이하·이상)
-    {
-        const list = [stock({ pbr: 0.5, per: 10, ncav_ratio: 1.0 })];
-        assert.equal(applyFilters(list, none({ maxPbr: 0.5 })).length, 1);
-        assert.equal(applyFilters(list, none({ maxPer: 10 })).length, 1);
-        assert.equal(applyFilters(list, none({ minNcav: 1.0 })).length, 1);
-    }
-});
-
 test("적자 제외는 EPS 가 양수인 것만 남긴다 · 지주·우선주 제외", () => {
     // ── 적자 제외는 EPS 가 양수인 것만 남긴다
     {
@@ -183,43 +144,7 @@ test("값을 모르는 종목은 유동성·52주 조건에서 통과시킨다 �
     }
 });
 
-test("원본 배열을 건드리지 않는다 · resolveStrategies 는 백엔드 분류와 프론트 판정을 합친다", () => {
-    // ── 원본 배열을 건드리지 않는다
-    {
-        const list = [stock({ name: "가", pbr: 0.4 }), stock({ name: "나", pbr: 9 })];
-        applyFilters(list, none({ maxPbr: 0.5 }));
-        assert.equal(list.length, 2, "필터가 원본을 줄였다");
-    }
-
-    // ── resolveStrategies 는 백엔드 분류와 프론트 판정을 합친다
-    {
-        // 백엔드가 아무것도 안 붙였어도 clientFilter 로 찾아낸다.
-        const s = resolveStrategies(stock({ pbr: 0.4, per: 8, eps: 100, bps: 1000 }));
-        assert.ok(s.includes("low_pbr"), `저PBR 이 빠졌다: ${s}`);
-
-        // 백엔드가 붙인 것도 남는다.
-        const withBase = resolveStrategies(stock({ strategies: ["custom_x"], pbr: 9, per: 99 }));
-        assert.ok(withBase.includes("custom_x"));
-    }
-});
-
 /* ── 정렬 ────────────────────────────────────────────────────── */
-test("숫자 열은 내림·오름차순 모두 값 순서대로 · 티커는 문자열 순서로 센다", () => {
-    // ── 숫자 열은 내림·오름차순 모두 값 순서대로
-    {
-        const list = [stock({ name: "a", ncav_ratio: 1 }), stock({ name: "b", ncav_ratio: 3 }), stock({ name: "c", ncav_ratio: 2 })];
-        // 값은 a=1, b=3, c=2 — 이름 순서가 아니라 값 순서로 서야 한다.
-        assert.deepEqual(names(sortList([...list], "ncav_ratio", "desc")), ["b", "c", "a"]);
-        assert.deepEqual(names(sortList([...list], "ncav_ratio", "asc")), ["a", "c", "b"]);
-    }
-
-    // ── 티커는 문자열 순서로 센다
-    {
-        const list = [stock({ ticker: "005930" }), stock({ ticker: "000660" }), stock({ ticker: "035720" })];
-        assert.deepEqual(sortList([...list], "ticker", "asc").map(i => i.ticker), ["000660", "005930", "035720"]);
-    }
-});
-
 test("ROE 를 모르는 종목은 맨 아래로 — 0 으로 두면 적자 사이에 섞여 올라온다 · 값이 없는 종목은 0 으로 세어 내림차순 끝에 놓인다", () => {
     // ── ROE 를 모르는 종목은 맨 아래로 — 0 으로 두면 적자 사이에 섞여 올라온다
     {

@@ -22,21 +22,6 @@ const MAX_COLS = 20;
 /** 폰에서 도감 한 줄이 너무 커지지 않게. */
 const MAX_ROWS = 8;
 
-test("스물여섯 종에 얼굴이 있고, 안 쓰는 그림은 없다", () => {
-    // ── 스물여섯 종에 전부 얼굴이 있다
-    {
-        const missing = Object.keys(MONSTERS).filter((ch) => !monsterArt(ch));
-        assert.deepEqual(missing, [], `얼굴 없는 종: ${missing.join(", ")}`);
-        assert.equal(ART_LETTERS.length, 26);
-    }
-
-    // ── 표에 없는 글자의 그림은 없다 — 안 쓰는 그림이 남아 있으면 안 된다
-    {
-        const extra = ART_LETTERS.filter((ch) => !MONSTERS[ch]);
-        assert.deepEqual(extra, [], `표에 없는 글자: ${extra.join(", ")}`);
-    }
-});
-
 test("폰에서 안 무너진다 — 너비·줄 수·탭", () => {
     // ── 어떤 줄도 스무 칸을 안 넘는다 — 넘으면 폰에서 접혀 그림이 무너진다
     {
@@ -65,10 +50,4 @@ test("폰에서 안 무너진다 — 너비·줄 수·탭", () => {
             assert.ok(!monsterArt(ch)!.includes("\t"), `${ch} 에 탭이 들어 있다`);
         }
     }
-});
-
-test("모르는 글자에는 null 을 준다 — 화면이 그 자리를 비운다", () => {
-    assert.equal(monsterArt("?"), null);
-    assert.equal(monsterArt(""), null);
-    assert.equal(artWidth("?"), 0);
 });

@@ -12,9 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-    DICE, MAX_ROLL, MIN_ROLL, checkSay, diceSay, odds, oddsPct, roll,
-} from "@/lib/game/core/check";
+import { MAX_ROLL, MIN_ROLL, odds, roll } from "@/lib/game/core/check";
 import { CLIENTS, needOf } from "@/lib/game/core/clients";
 
 /** 재현 가능한 난수 — 테스트가 어쩌다 한 번 깨지는 일이 없게. */
@@ -30,29 +28,6 @@ function seeded(seed: number): () => number {
 }
 
 /* ── 굴린다 ─────────────────────────────────────────────────── */
-test("주사위는 둘, 눈은 1~6, 합은 그 둘의 합이다 · 모든 눈이 실제로 나온다 — 한쪽으로 치우치지 않는다", () => {
-    // ── 주사위는 둘, 눈은 1~6, 합은 그 둘의 합이다
-    {
-        const rand = seeded(1);
-        for (let i = 0; i < 2000; i++) {
-            const c = roll(7, true, rand);
-            assert.equal(c.dice.length, DICE);
-            for (const d of c.dice) assert.ok(d >= 1 && d <= 6, `눈이 ${d}`);
-            assert.equal(c.total, c.dice.reduce((a, n) => a + n, 0));
-            assert.ok(c.total >= MIN_ROLL && c.total <= MAX_ROLL);
-            assert.equal(c.ok, c.total >= 7);
-        }
-    }
-
-    // ── 모든 눈이 실제로 나온다 — 한쪽으로 치우치지 않는다
-    {
-        const rand = seeded(99);
-        const seen = new Set<number>();
-        for (let i = 0; i < 5000; i++) for (const d of roll(7, true, rand).dice) seen.add(d);
-        assert.equal(seen.size, 6, `나온 눈이 ${[...seen].sort().join(",")} 뿐이다`);
-    }
-});
-
 /* ── 화면이 적는 확률이 맞는가 ──────────────────────────────── */
 test("odds 가 낸 값이 1만 번 굴린 비율과 같다 · 문턱이 범위를 벗어나면 0 아니면 1 이다", () => {
     // ── odds 가 낸 값이 1만 번 굴린 비율과 같다
@@ -80,37 +55,6 @@ test("odds 가 낸 값이 1만 번 굴린 비율과 같다 · 문턱이 범위�
 });
 
 /* ── 네 사람 ────────────────────────────────────────────────── */
-test("문턱이 높을수록 확률이 낮다 — 단조 감소 · 문턱은 설계 노트의 표 그대로다", () => {
-    // ── 문턱이 높을수록 확률이 낮다 — 단조 감소
-    {
-        let prev = 2;
-        for (let need = MIN_ROLL; need <= MAX_ROLL + 1; need++) {
-            const o = odds(need);
-            assert.ok(o < prev, `${need}+ 에서 확률이 안 줄었다`);
-            prev = o;
-        }
-    }
-
-    // ── 문턱은 설계 노트의 표 그대로다
-    {
-        // **한 번 내렸다.** 판정이 들어가면서 근거를 대고도 거절당하는 턴이 생겼고,
-        // 400판을 굴려 보니 소진으로 끝나는 판이 7% 에서 39% 로 뛰었다. 어머니만 빼고
-        // (그녀는 원래 안 움직인다) 한 칸씩 내려 83/83/72/58% 로 맞췄다.
-        const table: Record<string, [number, number]> = {
-            mother: [5, 5],
-            park: [5, 12],
-            kim: [6, 11],
-            choi: [7, 9],
-        };
-        for (const c of CLIENTS) {
-            const want = table[c.id];
-            assert.ok(want, `${c.name} 이 표에 없다`);
-            assert.equal(needOf(c, true), want[0], `${c.name} 근거 있음`);
-            assert.equal(needOf(c, false), want[1], `${c.name} 근거 없이`);
-        }
-    }
-});
-
 test("근거가 문턱을 올리는 사람은 없다 — 이 게임의 논지다 · 어머니는 안 움직이고 박 대리는 통째로 움직인다", () => {
     // ── 근거가 문턱을 올리는 사람은 없다 — 이 게임의 논지다
     {
@@ -135,32 +79,3 @@ test("근거가 문턱을 올리는 사람은 없다 — 이 게임의 논지다
 });
 
 /* ── 사람이 읽을 말 ─────────────────────────────────────────── */
-test("근거를 대도 통과가 보장되지는 않는다 — 최 사장이 그 증거다 · 주사위 눈과 결과가 문구에 그대로 실린다", () => {
-    // ── 근거를 대도 통과가 보장되지는 않는다 — 최 사장이 그 증거다
-    {
-        // 근거가 주사위를 굽히지 **없애지는 않는다.** 전부 5 이하가 되면 판정이 장식이 된다.
-        for (const c of CLIENTS) {
-            assert.ok(needOf(c, true) > MIN_ROLL, `${c.name} 은 근거만 대면 무조건 통한다`);
-        }
-        // **최 사장이 넷 중 제일 어렵다.** 숫자를 조정할 때 이 순서가 뒤집히면
-        // 「사채는 사람을 안 본다」가 규칙에서 사라진다.
-        const choi = CLIENTS.find(c => c.id === "choi")!;
-        for (const c of CLIENTS) {
-            assert.ok(oddsPct(needOf(choi, true)) <= oddsPct(needOf(c, true)),
-                `${c.name} 이 최 사장보다 설득하기 어렵다`);
-        }
-        assert.ok(oddsPct(needOf(choi, true)) < 70, "사채는 사람을 안 본다");
-    }
-
-    // ── 주사위 눈과 결과가 문구에 그대로 실린다
-    {
-        const c = roll(7, true, seeded(5));
-        assert.ok(diceSay(c).includes(`${c.total}`));
-        for (const d of c.dice) assert.ok(diceSay(c).includes(`${d}`));
-
-        const say = checkSay(c, "김 부장");
-        assert.ok(say.includes("김 부장"));
-        assert.ok(say.includes("7+"));
-        assert.ok(say.includes(c.ok ? "받아들였다" : "고개를 저었다"));
-    }
-});

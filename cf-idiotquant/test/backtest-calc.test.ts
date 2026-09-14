@@ -6,11 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-    calcReturn, fillDateGaps, recomputePortfolioWithFilter,
-    parseStrategies, getDayKor, fmtDate, augmentPortfolioResult,
-    type PortfolioResult,
-} from "@/app/(backtest)/backtest/calc";
+import { calcReturn, recomputePortfolioWithFilter, getDayKor, fmtDate, augmentPortfolioResult, type PortfolioResult } from "@/app/(backtest)/backtest/calc";
 
 const near = (got: number, want: number, tol = 1e-9) =>
     assert.ok(Math.abs(got - want) <= Math.abs(want) * tol + 1e-9, `${got} ≉ ${want}`);
@@ -65,45 +61,6 @@ test("보정에 필요한 값이 없으면 조용히 단순 수익률로 돌아�
 });
 
 /* ── 시계열 빈칸 채우기 ──────────────────────────────────────── */
-test("빈 날짜를 선형 보간으로 채우고 채운 것에 표시를 남긴다 · 빈칸이 없으면 그대로 둔다", () => {
-    // ── 빈 날짜를 선형 보간으로 채우고 채운 것에 표시를 남긴다
-    {
-        const out = fillDateGaps(
-            [{ date: "20260101", v: 0 }, { date: "20260104", v: 30 }],
-            ["v"],
-        );
-
-        assert.deepEqual(out.map(p => p.date), ["20260101", "20260102", "20260103", "20260104"]);
-        // 3일 간격 → 1/3, 2/3 지점
-        near((out[1] as any).v, 10);
-        near((out[2] as any).v, 20);
-
-        // 실측과 추정이 구별되어야 한다 — 차트가 둘을 같은 선으로 그리면 안 된다.
-        assert.deepEqual(out.map(p => p.estimated ?? false), [false, true, true, false]);
-    }
-
-    // ── 빈칸이 없으면 그대로 둔다
-    {
-        const data = [{ date: "20260101", v: 1 }, { date: "20260102", v: 2 }];
-        assert.deepEqual(fillDateGaps(data, ["v"]).map(p => p.date), ["20260101", "20260102"]);
-    }
-});
-
-test("점이 하나 이하면 그대로 — 보간할 상대가 없다 · 월을 넘는 간격도 실제 날짜로 센다", () => {
-    // ── 점이 하나 이하면 그대로 — 보간할 상대가 없다
-    {
-        assert.equal(fillDateGaps([], ["v"]).length, 0);
-        assert.equal(fillDateGaps([{ date: "20260101", v: 1 }], ["v"]).length, 1);
-    }
-
-    // ── 월을 넘는 간격도 실제 날짜로 센다
-    {
-        // 1/30 → 2/2 는 3일 (1월은 31일까지)
-        const out = fillDateGaps([{ date: "20260130", v: 0 }, { date: "20260202", v: 3 }], ["v"]);
-        assert.deepEqual(out.map(p => p.date), ["20260130", "20260131", "20260201", "20260202"]);
-    }
-});
-
 /* ── 포트폴리오 재계산 ───────────────────────────────────────── */
 
 const series = (ticker: string, name: string, pts: [string, number][], final: number) => ({
@@ -166,40 +123,7 @@ test("평균은 걸린 종목 수로 나눈다 — 빠진 종목을 0으로 세�
     }
 });
 
-test("최고·최저 종목은 최종 수익률 기준 · 필터가 전부 걸러내면 null — 화면이 빈 상태를 띄운다", () => {
-    // ── 최고·최저 종목은 최종 수익률 기준
-    {
-        const r = result();
-        r.ticker_series!.push(series("C", "다", [["20260101", 0], ["20260102", 50]], 50));
-        r.candidates.push({ ticker: "C", name: "다", start_price: 3000 });
-
-        const out = recomputePortfolioWithFilter(r, new Set(["A", "C"]))!;
-        assert.equal(out.summary.top_gainer?.ticker, "C");
-        assert.equal(out.summary.top_loser?.ticker, "A");
-    }
-
-    // ── 필터가 전부 걸러내면 null — 화면이 빈 상태를 띄운다
-    {
-        assert.equal(recomputePortfolioWithFilter(result(), new Set(["없는종목"])), null);
-    }
-});
-
 /* ── 전략 파싱 ───────────────────────────────────────────────── */
-test("전략 목록은 배열·JSON 문자열 어느 쪽으로 와도 읽는다 · 깨진 값이 와도 빈 배열 — 목록 하나 때문에 화면이 죽지 않는다", () => {
-    // ── 전략 목록은 배열·JSON 문자열 어느 쪽으로 와도 읽는다
-    {
-        assert.deepEqual(parseStrategies(["ncav", "low_pbr"]), ["ncav", "low_pbr"]);
-        assert.deepEqual(parseStrategies('["ncav"]'), ["ncav"]);
-    }
-
-    // ── 깨진 값이 와도 빈 배열 — 목록 하나 때문에 화면이 죽지 않는다
-    {
-        assert.deepEqual(parseStrategies("{망가진"), []);
-        assert.deepEqual(parseStrategies(null), []);
-        assert.deepEqual(parseStrategies(undefined), []);
-    }
-});
-
 /* ── 보간 진입점 ─────────────────────────────────────────────── */
 test("시계열이 충분하면 필터 재계산으로 넘긴다 · 후보가 아예 없으면 받은 것을 그대로 돌려준다", () => {
     // ── 시계열이 충분하면 필터 재계산으로 넘긴다

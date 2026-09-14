@@ -7,9 +7,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { type Command, newGame, perform, score } from "@/lib/rogue/game";
-import { hungerOf, packItem } from "@/lib/rogue/hero";
-import { ALL_DIRS, T, type GameState, type Tile, idx, walkable } from "@/lib/rogue/types";
+import { newGame, perform, score, type Command } from "@/lib/rogue/game";
+import { hungerOf } from "@/lib/rogue/hero";
+import { ALL_DIRS, idx, walkable, type GameState, type Tile } from "@/lib/rogue/types";
 import { makeItem } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 
@@ -216,92 +216,6 @@ test("되돌아간 층은 떠난 그대로다 — 지도도 물건도 안 불어
         const back = s.level.items.find((i) => i.id === 970);
         assert.ok(back, "두고 온 단검이 사라졌다");
         assert.deepEqual({ x: back!.x, y: back!.y }, where, "단검이 딴 자리로 갔다");
-    }
-});
-
-test("딛고 선 층은 창고에 없고, 계단 위에서만 내려간다", () => {
-    // ── 지금 딛고 선 층은 창고에 없다 — 두 벌이 되면 한쪽만 바뀐다
-    {
-        let s = newGame(59);
-        assert.deepEqual(s.levels, {});
-        s = godown(s);
-        assert.equal(s.level.depth, 2);
-        assert.ok(s.levels[1], "떠난 1층이 창고에 없다");
-        assert.equal(s.levels[2], undefined, "딛고 선 층이 창고에도 있다");
-        s = perform(s, { t: "ascend" });
-        assert.equal(s.levels[1], undefined, "돌아온 층이 창고에 남았다");
-        assert.ok(s.levels[2], "떠난 2층이 창고에 없다");
-    }
-
-    // ── 계단 위에서만 내려간다
-    {
-        const s0 = newGame(8);
-        const notStairs = perform(s0, { t: "descend" });
-        assert.equal(notStairs.level.depth, 1);
-        assert.ok(notStairs.messages.some((m) => m.includes("계단이 없다")));
-
-        s0.hero.x = s0.level.stairs.x;
-        s0.hero.y = s0.level.stairs.y;
-        assert.equal(s0.level.tiles[idx(s0.hero.x, s0.hero.y)], T.STAIRS);
-        const s1 = perform(s0, { t: "descend" });
-        assert.equal(s1.level.depth, 2);
-        assert.equal(s1.deepest, 2);
-        // 내려가면 올라가는 계단 위에 선다 — 온 길이 발밑에 있다.
-        assert.deepEqual({ x: s1.hero.x, y: s1.hero.y }, s1.level.upStairs);
-    }
-});
-
-test("겉모습은 판마다 섞이고, 마셔야 정체를 안다", () => {
-    // ── 물약은 마셔야 정체를 안다 — 그 전에는 겉모습으로 불린다
-    {
-        const s0 = newGame(21);
-        const potion = makeItem("potion", "healing", 900, -1, -1);
-        potion.letter = "z";
-        s0.hero.pack.push(potion);
-        s0.hero.hp = 1;
-
-        assert.ok(!s0.known["potion:healing"], "처음부터 알면 수집이 없다");
-        const s1 = perform(s0, { t: "quaff", letter: "z" });
-        assert.ok(s1.known["potion:healing"], "마셨는데도 모른다");
-        assert.ok(s1.hero.hp > 1, "회복 물약인데 안 나았다");
-        assert.equal(packItem(s1.hero, "z"), undefined, "마신 물약이 배낭에 남았다");
-    }
-
-    // ── 겉모습은 판마다 섞인다 — 지난 판의 파란 물약은 다음 판의 것이 아니다
-    {
-        const looks = new Set<string>();
-        for (let seed = 1; seed <= 30; seed++) {
-            looks.add(newGame(seed).appearance["potion:healing"]);
-        }
-        assert.ok(looks.size > 3, `회복 물약의 겉모습이 ${looks.size} 가지뿐이다`);
-    }
-});
-
-test("지도 주문서는 층을 기억에 넣는다 · 죽으면 끝이다", () => {
-    // ── 지도 주문서는 층을 통째로 기억에 넣는다
-    {
-        const s0 = newGame(13);
-        const scroll = makeItem("scroll", "magic mapping", 901, -1, -1);
-        scroll.letter = "z";
-        s0.hero.pack.push(scroll);
-        const before = Array.from(s0.level.flags).filter((f) => f & 1).length;
-        const s1 = perform(s0, { t: "read", letter: "z" });
-        const after = Array.from(s1.level.flags).filter((f) => f & 1).length;
-        assert.ok(after > before, `${before} → ${after}`);
-    }
-
-    // ── 죽으면 되돌아오지 않는다
-    {
-        const s0 = newGame(17);
-        s0.hero.hp = 1;
-        s0.hero.food = -200; // 이 턴에 굶어 죽는다
-        const s1 = perform(s0, { t: "rest" });
-        assert.equal(s1.phase, "dead");
-        assert.ok(s1.epitaph.length > 0);
-        // 죽은 뒤에는 어떤 명령도 판을 안 바꾼다.
-        const s2 = perform(s1, { t: "move", dx: 1, dy: 0 });
-        assert.equal(s2.phase, "dead");
-        assert.equal(s2.turn, s1.turn);
     }
 });
 

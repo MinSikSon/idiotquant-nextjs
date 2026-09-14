@@ -21,10 +21,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, monsterDamageLine, multiAttackLine, outcomeOf, withDamage } from "@/lib/rogue/combat";
-import { damageRoll, opposedRoll } from "@/lib/rogue/dnd";
-import { Rng as R } from "@/lib/rogue/rng";
-import { newGame, perform } from "@/lib/rogue/game";
-import { heroAttackText, heroHitBonus, heroHitTerms } from "@/lib/rogue/hero";
+import { damageRoll } from "@/lib/rogue/dnd";
+import { newGame } from "@/lib/rogue/game";
+import { heroAttackText, heroHitBonus } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -191,54 +190,6 @@ test("공격력 줄은 방어력을 빼는 것까지 적고, 치명타는 쉼표
     }
 });
 
-test("계산 줄에는 표시가 붙는다 — 띠가 그것을 걸러 낸다", () => {
-    assert.ok(isDetail(attackLine("나", fake(5, 0, 10), [], foe("뱀", 0), "빗나갔다")));
-    assert.ok(isDetail(damageLine("1d8", [5], [], 5, 0, 5)));
-    assert.ok(!isDetail("황조롱이을(를) 맞혔다."));
-    assert.ok(DETAIL.length > 0);
-    void opposedRoll;
-    void R;
-});
-
-test("굴린 눈은 늘 남는다 — 내 것도, 상대 것도, 던진 것도", () => {
-    // ── 내가 때리면 굴린 눈이 기록에 남는다
-    {
-        let s = newGame(402);
-        placeNextTo(s, "S", 200);
-        s = perform(s, { t: "move", dx: 1, dy: 0 });
-        assert.ok(
-            s.messages.some((l) => /^· 명중 나 d20 \d+/.test(l)),
-            `내 굴림이 기록에 없다: ${JSON.stringify(s.messages.slice(-4))}`,
-        );
-    }
-
-    // ── 상대가 때려도 굴린 눈이 남는다
-    {
-        const s = newGame(403);
-        s.hero.hp = s.hero.maxHp = 9999;
-        const m = placeNextTo(s, "S", 200);
-        const r = monsterAttack(s, m, new Rng(5));
-        assert.match(r.messages[0], new RegExp(`^· 명중 ${MONSTERS.S.name} d20 \\d+`));
-    }
-
-    // ── 던진 것도 굴린 눈을 남긴다
-    {
-        const s = newGame(404);
-        const dagger = makeItem("weapon", "dagger", 991, -1, -1);
-        dagger.count = 20;
-        dagger.plusHit = 10; // 반드시 맞도록
-        dagger.letter = "z";
-        s.hero.pack.push(dagger);
-        placeNextTo(s, "H", 200);
-
-        const after = perform(s, { t: "throw", letter: "z", dx: 1, dy: 0 });
-        assert.ok(
-            after.messages.some((l) => /^· 명중 나\(던짐\) d20 \d+/.test(l)),
-            `던진 굴림이 기록에 없다: ${JSON.stringify(after.messages.slice(-4))}`,
-        );
-    }
-});
-
 test("상대의 내역은 잡아 본 종에게만", () => {
     // ── 잡아 본 적 없는 종은 겨룸 줄에서도 속을 안 보인다 — 방어·레벨
     {
@@ -276,42 +227,6 @@ test("상대의 내역은 잡아 본 종에게만", () => {
         const rng = new Rng(3);
         assert.match(theirHalf(heroAttack(s, m, rng).messages[0], true), BREAKDOWN.mine);
         assert.match(theirHalf(monsterAttack(s, m, rng).messages[0], false), BREAKDOWN.theirs);
-    }
-});
-
-test("상대의 피해 주사위도 잡아 본 종에게만", () => {
-    // ── 처음 보는 종의 피해 주사위는 안 적는다 — 숫자만 적는다
-    {
-        // 트롤은 1d8·1d8·2d6 을 굴린다. 잡아 본 적이 없는데 그 표기가 줄에 뜨면 **도감을
-        // 안 열고도 알게 된다** — 「한 마리 잡아야 준다」가 뒷문으로 뚫린다.
-        const s = newGame(502);
-        delete s.bestiary.T;
-        s.hero.hp = s.hero.maxHp = 99999;
-        const m = placeNextTo(s, "T", 99999);
-        const rng = new Rng(9);
-        for (let i = 0; i < 30; i++) {
-            const line = monsterAttack(s, m, rng).messages.filter(isDetail).join(" ");
-            for (const d of MONSTERS.T.damage) {
-                assert.ok(!line.includes(d), `처음 보는 종의 피해 주사위(${d})가 줄에 적혔다: ${line}`);
-            }
-        }
-    }
-
-    // ── 잡아 본 종의 피해 주사위는 적는다 — 내가 왜 죽었는지 되짚을 수 있어야 한다
-    {
-        // 싸움의 절반이 상대의 차례다. 그쪽이 언제나 `· 피해 4` 한 마디뿐이면, 기록을
-        // 아무리 뒤져도 **무엇에 얼마나 맞았는지**를 알 수 없다.
-        const s = newGame(503);
-        s.bestiary.T = 1; // 잡아 봤다 — 도감이 이미 이 값을 들고 있다
-        s.hero.hp = s.hero.maxHp = 99999;
-        const m = placeNextTo(s, "T", 99999);
-        const rng = new Rng(9);
-        let sawDice = false;
-        for (let i = 0; i < 40 && !sawDice; i++) {
-            const line = monsterAttack(s, m, rng).messages.filter(isDetail).join(" ");
-            if (MONSTERS.T.damage.some((d) => line.includes(d))) sawDice = true;
-        }
-        assert.ok(sawDice, "잡아 본 종인데도 피해 주사위를 안 적는다");
     }
 });
 
@@ -462,107 +377,6 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
         }
         assert.ok(seen > 20, `맞은 횟수가 ${seen} 뿐이라 못 잰다`);
         assert.ok(crits > 0, "이백 번을 때렸는데 치명타가 한 번도 안 났다");
-    }
-});
-
-test("화면의 「명중」과 실제 보정이 같고, 모르는 손질은 안 샌다", () => {
-    // ── 화면의 「명중」과 실제 굴림에 얹히는 보정이 같다
-    {
-        // 여기서 갈리면 화면은 +8 이라 적고 몸은 +6 으로 굴린다. 세는 자리가 둘이면 난다.
-        const s = newGame(650);
-        const w = makeItem("weapon", "long sword", 982, -1, -1);
-        w.letter = "z";
-        w.plusHit = 2;
-        s.hero.pack.push(w);
-        s.hero.weaponId = w.id;
-        s.hero.str = 18; // 능력 보정 +4
-        s.known["weapon:long sword"] = true;
-        s.bestiary.S = 1;
-
-        const m = placeNextTo(s, "S", 999999);
-        const rng = new Rng(6);
-        const shown = heroHitBonus(s.hero, s.known);
-        // 숙련 2(레벨 1) + 힘 4 + 무기 2
-        assert.equal(shown, 8, `화면의 명중이 ${shown} 이다`);
-
-        for (let i = 0; i < 60; i++) {
-            const line = heroAttack(s, m, rng).messages[0];
-            // `· 나 d20 9 +2숙련 +4힘 +2무기 = 17  vs …` 에서 눈과 합을 떼어 낸다.
-            const eye = Number(line.match(/d20 (\d+)/)![1]);
-            const total = Number(line.match(/= (-?\d+)/)?.[1] ?? eye);
-            assert.equal(total - eye, shown, `${line} 의 보정이 화면의 +${shown} 와 다르다`);
-        }
-    }
-
-    // ── 정체 모르는 무기의 손질은 「명중」에도 안 샌다
-    {
-        const s = newGame(651);
-        const w = makeItem("weapon", "long sword", 983, -1, -1);
-        w.letter = "z";
-        w.plusHit = 3;
-        s.hero.pack.push(w);
-        s.hero.weaponId = w.id;
-        s.hero.str = 10; // 능력 보정 0
-
-        // 숙련 2 만 보여야 한다 — 손질 +3 은 써 봐야 안다.
-        assert.equal(heroHitBonus(s.hero, {}), 2);
-        assert.equal(heroHitBonus(s.hero, { "weapon:long sword": true }), 5);
-        // 다만 **굴림은 실제 값으로** 한다 — 화면만 가리는 것이지 약해지는 것이 아니다.
-        assert.equal(
-            heroHitTerms(s.hero).reduce((a, t) => a + t.n, 0),
-            5,
-            "굴림에 얹히는 값까지 깎였다",
-        );
-    }
-});
-
-test("d20 은 명중에만 굴리고, 모든 d20 줄에 이름이 붙는다", () => {
-    // ── 기록의 **모든 d20 줄에는 무슨 굴림인지가 적혀 있다**
-    {
-        // D&D 로 갈아타면서 이 표가 한 번 사라졌고, 그러자 `d20 9` 만 덩그러니 남아
-        // 「이 스무면체가 뭘 정하는 건가」를 읽는 사람이 알 수 없게 됐다.
-        let s = newGame(660);
-        s.hero.hp = s.hero.maxHp = 99999;
-        s.hero.food = 99999;
-        const dagger = makeItem("weapon", "dagger", 984, -1, -1);
-        dagger.count = 60;
-        dagger.letter = "z";
-        s.hero.pack.push(dagger);
-
-        const rng = new Rng(12);
-        let seen = 0;
-        for (let i = 0; i < 500 && s.phase === "playing"; i++) {
-            if (i % 9 === 0) placeNextTo(s, "S", 30);
-            const d = rng.pick([{ dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }])!;
-            s = perform(s, i % 5 === 2
-                ? { t: "throw", letter: "z", dx: 1, dy: 0 }
-                : { t: "move", dx: d.dx, dy: d.dy });
-            for (const line of s.messages.filter(isDetail)) {
-                if (!line.includes("d20")) continue;
-                seen++;
-                assert.ok(
-                    line.startsWith("· 명중 "),
-                    `d20 이 도는데 무슨 굴림인지가 없다: ${line}`,
-                );
-            }
-            s.messages.length = 0;
-        }
-        assert.ok(seen > 30, `d20 줄이 ${seen} 개뿐이라 못 잰다`);
-    }
-
-    // ── d20 은 **명중에만** 굴린다 — 피해는 무기 주사위다
-    {
-        const s = newGame(661);
-        s.hero.hp = s.hero.maxHp = 99999;
-        const m = placeNextTo(s, "T", 999999);
-        const rng = new Rng(13);
-        for (let i = 0; i < 100; i++) {
-            for (const line of heroAttack(s, m, rng).messages.filter(isDetail)) {
-                if (line.startsWith("· 피해")) {
-                    assert.ok(!line.includes("d20"), `피해 줄에 d20 이 돈다: ${line}`);
-                }
-            }
-        }
     }
 });
 

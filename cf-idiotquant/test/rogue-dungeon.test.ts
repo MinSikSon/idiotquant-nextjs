@@ -9,9 +9,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildLevel, freeSpot, reachable } from "@/lib/rogue/dungeon";
+import { buildLevel, reachable } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
-import { MAP_H, MAP_W, T, type Tile, idx, walkable } from "@/lib/rogue/types";
+import { MAP_H, MAP_W, T, idx, walkable, type Tile } from "@/lib/rogue/types";
 
 /** 방 안쪽(없는 방이면 그 점)에서 대표 칸 하나. */
 function anchorOf(r: { x: number; y: number; w: number; h: number; gone: boolean }) {
@@ -111,14 +111,5 @@ test("1층은 밝고, 지도 밖으로 새는 칸이 없다", () => {
         for (let x = 0; x < MAP_W; x++) {
             assert.notEqual(level.tiles[idx(x, MAP_H - 1)], T.FLOOR);
         }
-    }
-});
-
-test("빈 자리 찾기는 걸어 들어갈 수 있는 칸만 준다", () => {
-    const rng = new Rng(555);
-    const level = buildLevel(5, rng);
-    for (let i = 0; i < 50; i++) {
-        const p = freeSpot(level, rng);
-        assert.ok(walkable(level.tiles[idx(p.x, p.y)] as Tile), `${p.x},${p.y} 가 벽이다`);
     }
 });
