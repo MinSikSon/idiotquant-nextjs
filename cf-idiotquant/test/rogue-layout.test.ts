@@ -26,58 +26,66 @@ const LAYOUT = "app/layout.tsx";
 const GAME = "app/(game)/game/page.tsx";
 const NAV = "components/navigation.tsx";
 
-test("루트 레이아웃은 dvh 로 잰다", () => {
-    const s = read(LAYOUT);
-    assert.match(s, /min-h-\[100dvh\]/, `${LAYOUT} 이 100dvh 를 안 쓴다`);
+test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
+    // ── 루트 레이아웃은 dvh 로 잰다
+    {
+        const s = read(LAYOUT);
+        assert.match(s, /min-h-\[100dvh\]/, `${LAYOUT} 이 100dvh 를 안 쓴다`);
+    }
+
+    // ── 게임 칸도 **같은 자**로 잰다 — svh 를 쓰면 주소창이 접힐 때 빈 칸이 남는다
+    {
+        const s = read(GAME);
+        const box = /h-\[calc\(100(\w+)-(\d+)px\)\]/.exec(s);
+        assert.ok(box, `${GAME} 에서 높이 식을 못 찾았다`);
+        assert.equal(
+            box![1],
+            "dvh",
+            "게임 칸이 루트(dvh)와 다른 자를 쓴다 — 주소창이 접히면 그 차이가 빈 칸이 된다",
+        );
+        // 데스크톱 쪽도 같은 자여야 한다.
+        assert.match(s, /md:h-dvh/, `${GAME} 의 md 높이가 dvh 가 아니다`);
+        assert.doesNotMatch(s.replace(/\/\*[\s\S]*?\*\//g, ""), /svh/, "주석 밖에 svh 가 남아 있다");
+    }
 });
 
-test("게임 칸도 **같은 자**로 잰다 — svh 를 쓰면 주소창이 접힐 때 빈 칸이 남는다", () => {
-    const s = read(GAME);
-    const box = /h-\[calc\(100(\w+)-(\d+)px\)\]/.exec(s);
-    assert.ok(box, `${GAME} 에서 높이 식을 못 찾았다`);
-    assert.equal(
-        box![1],
-        "dvh",
-        "게임 칸이 루트(dvh)와 다른 자를 쓴다 — 주소창이 접히면 그 차이가 빈 칸이 된다",
-    );
-    // 데스크톱 쪽도 같은 자여야 한다.
-    assert.match(s, /md:h-dvh/, `${GAME} 의 md 높이가 dvh 가 아니다`);
-    assert.doesNotMatch(s.replace(/\/\*[\s\S]*?\*\//g, ""), /svh/, "주석 밖에 svh 가 남아 있다");
-});
+test("빼는 숫자가 실제 바 높이의 합이다", () => {
+    // ── 빼는 숫자는 실제 바 높이의 합이다 — 한쪽만 바뀌면 그 차이가 빈 칸이 된다
+    {
+        const layout = read(LAYOUT);
+        const pt = /pt-\[(\d+)px\]/.exec(layout);
+        const pb = /pb-\[(\d+)px\]/.exec(layout);
+        assert.ok(pt && pb, `${LAYOUT} 에서 위아래 여백을 못 찾았다`);
 
-test("빼는 숫자는 실제 바 높이의 합이다 — 한쪽만 바뀌면 그 차이가 빈 칸이 된다", () => {
-    const layout = read(LAYOUT);
-    const pt = /pt-\[(\d+)px\]/.exec(layout);
-    const pb = /pb-\[(\d+)px\]/.exec(layout);
-    assert.ok(pt && pb, `${LAYOUT} 에서 위아래 여백을 못 찾았다`);
+        const game = read(GAME);
+        const off = /h-\[calc\(100dvh-(\d+)px\)\]/.exec(game);
+        assert.ok(off, `${GAME} 에서 빼는 숫자를 못 찾았다`);
 
-    const game = read(GAME);
-    const off = /h-\[calc\(100dvh-(\d+)px\)\]/.exec(game);
-    assert.ok(off, `${GAME} 에서 빼는 숫자를 못 찾았다`);
+        assert.equal(
+            Number(off![1]),
+            Number(pt![1]) + Number(pb![1]),
+            `게임 칸이 빼는 ${off![1]}px 가 레이아웃의 여백 합(${pt![1]}+${pb![1]})과 다르다`,
+        );
+    }
 
-    assert.equal(
-        Number(off![1]),
-        Number(pt![1]) + Number(pb![1]),
-        `게임 칸이 빼는 ${off![1]}px 가 레이아웃의 여백 합(${pt![1]}+${pb![1]})과 다르다`,
-    );
-});
+    // ── 그 여백은 실제 바의 높이와 같다 — 숫자가 세 곳에 있다
+    {
+        const layout = read(LAYOUT);
+        const nav = read(NAV);
+        const pt = Number(/pt-\[(\d+)px\]/.exec(layout)![1]);
+        const pb = Number(/pb-\[(\d+)px\]/.exec(layout)![1]);
 
-test("그 여백은 실제 바의 높이와 같다 — 숫자가 세 곳에 있다", () => {
-    const layout = read(LAYOUT);
-    const nav = read(NAV);
-    const pt = Number(/pt-\[(\d+)px\]/.exec(layout)![1]);
-    const pb = Number(/pb-\[(\d+)px\]/.exec(layout)![1]);
-
-    // 위 머리줄과 아래 탭 바는 `md:hidden fixed` 라 흐름에서 빠져 있다. 그래서 그 높이를
-    // 레이아웃이 여백으로 대신 만들어 주는데, 둘이 어긋나면 가려지거나 빈 칸이 남는다.
-    assert.ok(
-        nav.includes(`h-[${pt}px]`),
-        `위 머리줄의 높이가 ${pt}px 가 아니다 — 레이아웃의 pt 와 어긋난다`,
-    );
-    assert.ok(
-        nav.includes(`h-[${pb}px]`),
-        `아래 탭 바의 높이가 ${pb}px 가 아니다 — 레이아웃의 pb 와 어긋난다`,
-    );
+        // 위 머리줄과 아래 탭 바는 `md:hidden fixed` 라 흐름에서 빠져 있다. 그래서 그 높이를
+        // 레이아웃이 여백으로 대신 만들어 주는데, 둘이 어긋나면 가려지거나 빈 칸이 남는다.
+        assert.ok(
+            nav.includes(`h-[${pt}px]`),
+            `위 머리줄의 높이가 ${pt}px 가 아니다 — 레이아웃의 pt 와 어긋난다`,
+        );
+        assert.ok(
+            nav.includes(`h-[${pb}px]`),
+            `아래 탭 바의 높이가 ${pb}px 가 아니다 — 레이아웃의 pb 와 어긋난다`,
+        );
+    }
 });
 
 // ── 명령 단추는 **세 개씩 딱 떨어져야** 한다 ────────────────────────────────

@@ -21,183 +21,223 @@ const ok = <T>(q: T | { ok: false; error: string }): T => {
     return q as T;
 };
 
-test("상수는 워커와 같은 값이어야 한다", () => {
-    assert.equal(SEED, 10_000_000);
-    assert.equal(BUY_FEE_NUM, 15);    // 0.015%
-    assert.equal(SELL_FEE_NUM, 15);   // 0.015%
-    assert.equal(SELL_TAX_NUM, 180);  // 0.18% 증권거래세
-});
+test("상수는 워커와 같은 값이어야 한다 · 수수료는 정수 연산이라 1원이 새지 않는다", () => {
+    // ── 상수는 워커와 같은 값이어야 한다
+    {
+        assert.equal(SEED, 10_000_000);
+        assert.equal(BUY_FEE_NUM, 15);    // 0.015%
+        assert.equal(SELL_FEE_NUM, 15);   // 0.015%
+        assert.equal(SELL_TAX_NUM, 180);  // 0.18% 증권거래세
+    }
 
-test("수수료는 정수 연산이라 1원이 새지 않는다", () => {
-    // 파일 주석이 지목한 바로 그 값: 700000 * 0.00015 === 104.99999999999999 라
-    // 부동소수로 floor 하면 104 가 된다. 정수 연산은 105 다.
-    const q = ok<BuyQuote>(quoteBuy({ price: 70_000, qty: 10, cash: SEED }));
-    assert.equal(q.gross, 700_000);
-    assert.equal(q.fee, 105);
-    assert.equal(q.total, 700_105);
+    // ── 수수료는 정수 연산이라 1원이 새지 않는다
+    {
+        // 파일 주석이 지목한 바로 그 값: 700000 * 0.00015 === 104.99999999999999 라
+        // 부동소수로 floor 하면 104 가 된다. 정수 연산은 105 다.
+        const q = ok<BuyQuote>(quoteBuy({ price: 70_000, qty: 10, cash: SEED }));
+        assert.equal(q.gross, 700_000);
+        assert.equal(q.fee, 105);
+        assert.equal(q.total, 700_105);
 
-    assert.equal(Math.floor(700_000 * 0.00015), 104, "부동소수는 104 를 준다 — 그래서 정수로 센다");
-});
-
-test("매수 견적 — gross·fee·total 이 정확한 정수", () => {
-    for (const [price, qty, gross, fee] of [
-        [1, 1, 1, 0],
-        [66_667, 3, 200_001, 30],
-        [12_345, 7, 86_415, 12],
-        [999_999, 1, 999_999, 149],
-    ] as const) {
-        const q = ok<BuyQuote>(quoteBuy({ price, qty, cash: SEED }));
-        assert.equal(q.gross, gross, `${price}×${qty} gross`);
-        assert.equal(q.fee, fee, `${price}×${qty} fee`);
-        assert.equal(q.total, gross + fee);
+        assert.equal(Math.floor(700_000 * 0.00015), 104, "부동소수는 104 를 준다 — 그래서 정수로 센다");
     }
 });
 
-test("현금이 모자라면 거절한다 — 수수료까지 셈에 넣고 판단한다", () => {
-    // gross 700,000 은 되지만 수수료 105 를 더하면 넘는다.
-    const q = quoteBuy({ price: 70_000, qty: 10, cash: 700_050 });
-    assert.equal(q.ok, false);
-
-    assert.equal(quoteBuy({ price: 70_000, qty: 10, cash: 700_105 }).ok, true, "딱 맞으면 통과");
-});
-
-test("수량·가격이 0 이하면 거절한다", () => {
-    assert.equal(quoteBuy({ price: 0, qty: 1, cash: SEED }).ok, false);
-    assert.equal(quoteBuy({ price: 100, qty: 0, cash: SEED }).ok, false);
-    assert.equal(quoteBuy({ price: 100, qty: -1, cash: SEED }).ok, false);
-});
-
-test("매도 수수료는 위탁수수료 + 증권거래세", () => {
-    const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: { ticker: "A", name: null, qty: 10, cost_basis: 700_105 } }));
-    // 700,000 × 0.015% = 105,  700,000 × 0.18% = 1,260
-    assert.equal(q.fee, 105 + 1_260);
-    assert.equal(q.net, 700_000 - 1_365);
-});
-
-test("전량 매도하면 원가가 정확히 0 이 된다", () => {
-    const pos = { ticker: "A", name: null, qty: 10, cost_basis: 700_105 };
-    const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: pos }));
-
-    assert.equal(q.costOut, 700_105, "전량이면 cost_basis 와 같아야 한다");
-    assert.deepEqual(applySell(pos, q), { qty: 0, cost_basis: 0 });
-});
-
-test("부분 매도를 반복해도 원가가 새지 않는다", () => {
-    // 평단가를 저장하지 않는 이유가 이것이다 — 반올림한 평단가를 쓰면 조금씩 어긋난다.
-    let pos = { ticker: "A", name: null, qty: 0, cost_basis: 0 };
-    const buy = ok<BuyQuote>(quoteBuy({ price: 33_333, qty: 9, cash: SEED }));
-    pos = { ...pos, ...applyBuy(pos, buy) };
-
-    // 3주씩 세 번 판다
-    for (let i = 0; i < 3; i++) {
-        const s = ok<SellQuote>(quoteSell({ price: 40_000, qty: 3, position: pos }));
-        pos = { ...pos, ...applySell(pos, s) };
+test("매수 견적 — gross·fee·total 이 정확한 정수 · 현금이 모자라면 거절한다 — 수수료까지 셈에 넣고 판단한다", () => {
+    // ── 매수 견적 — gross·fee·total 이 정확한 정수
+    {
+        for (const [price, qty, gross, fee] of [
+            [1, 1, 1, 0],
+            [66_667, 3, 200_001, 30],
+            [12_345, 7, 86_415, 12],
+            [999_999, 1, 999_999, 149],
+        ] as const) {
+            const q = ok<BuyQuote>(quoteBuy({ price, qty, cash: SEED }));
+            assert.equal(q.gross, gross, `${price}×${qty} gross`);
+            assert.equal(q.fee, fee, `${price}×${qty} fee`);
+            assert.equal(q.total, gross + fee);
+        }
     }
 
-    assert.equal(pos.qty, 0);
-    assert.equal(pos.cost_basis, 0, "다 팔았는데 원가가 남았다");
+    // ── 현금이 모자라면 거절한다 — 수수료까지 셈에 넣고 판단한다
+    {
+        // gross 700,000 은 되지만 수수료 105 를 더하면 넘는다.
+        const q = quoteBuy({ price: 70_000, qty: 10, cash: 700_050 });
+        assert.equal(q.ok, false);
+
+        assert.equal(quoteBuy({ price: 70_000, qty: 10, cash: 700_105 }).ok, true, "딱 맞으면 통과");
+    }
 });
 
-test("보유보다 많이 팔 수 없다", () => {
-    const pos = { ticker: "A", name: null, qty: 5, cost_basis: 100_000 };
-    assert.equal(quoteSell({ price: 1_000, qty: 6, position: pos }).ok, false);
-    assert.equal(quoteSell({ price: 1_000, qty: 5, position: pos }).ok, true);
-    assert.equal(quoteSell({ price: 1_000, qty: 1, position: null }).ok, false);
+test("수량·가격이 0 이하면 거절한다 · 매도 수수료는 위탁수수료 + 증권거래세", () => {
+    // ── 수량·가격이 0 이하면 거절한다
+    {
+        assert.equal(quoteBuy({ price: 0, qty: 1, cash: SEED }).ok, false);
+        assert.equal(quoteBuy({ price: 100, qty: 0, cash: SEED }).ok, false);
+        assert.equal(quoteBuy({ price: 100, qty: -1, cash: SEED }).ok, false);
+    }
+
+    // ── 매도 수수료는 위탁수수료 + 증권거래세
+    {
+        const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: { ticker: "A", name: null, qty: 10, cost_basis: 700_105 } }));
+        // 700,000 × 0.015% = 105,  700,000 × 0.18% = 1,260
+        assert.equal(q.fee, 105 + 1_260);
+        assert.equal(q.net, 700_000 - 1_365);
+    }
 });
 
-test("이어서 사면 수량과 원가가 함께 쌓인다", () => {
-    let pos = { ticker: "A", name: null, qty: 0, cost_basis: 0 };
-    const a = ok<BuyQuote>(quoteBuy({ price: 10_000, qty: 5, cash: SEED }));
-    pos = { ...pos, ...applyBuy(pos, a) };
-    const b = ok<BuyQuote>(quoteBuy({ price: 20_000, qty: 5, cash: SEED }));
-    pos = { ...pos, ...applyBuy(pos, b) };
+test("전량 매도하면 원가가 정확히 0 이 된다 · 부분 매도를 반복해도 원가가 새지 않는다", () => {
+    // ── 전량 매도하면 원가가 정확히 0 이 된다
+    {
+        const pos = { ticker: "A", name: null, qty: 10, cost_basis: 700_105 };
+        const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: pos }));
 
-    assert.equal(pos.qty, 10);
-    assert.equal(pos.cost_basis, a.total + b.total);
-    // 평단가는 저장하지 않고 파생시킨다
-    assert.equal(avgPrice(pos), pos.cost_basis / 10);
+        assert.equal(q.costOut, 700_105, "전량이면 cost_basis 와 같아야 한다");
+        assert.deepEqual(applySell(pos, q), { qty: 0, cost_basis: 0 });
+    }
+
+    // ── 부분 매도를 반복해도 원가가 새지 않는다
+    {
+        // 평단가를 저장하지 않는 이유가 이것이다 — 반올림한 평단가를 쓰면 조금씩 어긋난다.
+        let pos = { ticker: "A", name: null, qty: 0, cost_basis: 0 };
+        const buy = ok<BuyQuote>(quoteBuy({ price: 33_333, qty: 9, cash: SEED }));
+        pos = { ...pos, ...applyBuy(pos, buy) };
+
+        // 3주씩 세 번 판다
+        for (let i = 0; i < 3; i++) {
+            const s = ok<SellQuote>(quoteSell({ price: 40_000, qty: 3, position: pos }));
+            pos = { ...pos, ...applySell(pos, s) };
+        }
+
+        assert.equal(pos.qty, 0);
+        assert.equal(pos.cost_basis, 0, "다 팔았는데 원가가 남았다");
+    }
 });
 
-test("보유가 없으면 평단가는 0 — 0 으로 나누지 않는다", () => {
-    assert.equal(avgPrice({ qty: 0, cost_basis: 0 }), 0);
-    assert.equal(avgPrice({ qty: 0, cost_basis: 12_345 }), 0);
+test("보유보다 많이 팔 수 없다 · 이어서 사면 수량과 원가가 함께 쌓인다", () => {
+    // ── 보유보다 많이 팔 수 없다
+    {
+        const pos = { ticker: "A", name: null, qty: 5, cost_basis: 100_000 };
+        assert.equal(quoteSell({ price: 1_000, qty: 6, position: pos }).ok, false);
+        assert.equal(quoteSell({ price: 1_000, qty: 5, position: pos }).ok, true);
+        assert.equal(quoteSell({ price: 1_000, qty: 1, position: null }).ok, false);
+    }
+
+    // ── 이어서 사면 수량과 원가가 함께 쌓인다
+    {
+        let pos = { ticker: "A", name: null, qty: 0, cost_basis: 0 };
+        const a = ok<BuyQuote>(quoteBuy({ price: 10_000, qty: 5, cash: SEED }));
+        pos = { ...pos, ...applyBuy(pos, a) };
+        const b = ok<BuyQuote>(quoteBuy({ price: 20_000, qty: 5, cash: SEED }));
+        pos = { ...pos, ...applyBuy(pos, b) };
+
+        assert.equal(pos.qty, 10);
+        assert.equal(pos.cost_basis, a.total + b.total);
+        // 평단가는 저장하지 않고 파생시킨다
+        assert.equal(avgPrice(pos), pos.cost_basis / 10);
+    }
 });
 
-test("실현손익 = 받은 돈 − 판 만큼의 원가", () => {
-    const pos = { ticker: "A", name: null, qty: 10, cost_basis: 500_000 };
-    const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: pos }));
-    assert.equal(q.realized, q.net - q.costOut);
-    assert.ok(q.realized > 0, "50만원에 사서 70만원에 팔았으면 이익이어야 한다");
+test("보유가 없으면 평단가는 0 — 0 으로 나누지 않는다 · 실현손익 = 받은 돈 − 판 만큼의 원가", () => {
+    // ── 보유가 없으면 평단가는 0 — 0 으로 나누지 않는다
+    {
+        assert.equal(avgPrice({ qty: 0, cost_basis: 0 }), 0);
+        assert.equal(avgPrice({ qty: 0, cost_basis: 12_345 }), 0);
+    }
+
+    // ── 실현손익 = 받은 돈 − 판 만큼의 원가
+    {
+        const pos = { ticker: "A", name: null, qty: 10, cost_basis: 500_000 };
+        const q = ok<SellQuote>(quoteSell({ price: 70_000, qty: 10, position: pos }));
+        assert.equal(q.realized, q.net - q.costOut);
+        assert.ok(q.realized > 0, "50만원에 사서 70만원에 팔았으면 이익이어야 한다");
+    }
 });
 
 /* ── 공매도 ────────────────────────────────────────────────────
    빌린 주식을 먼저 팔고 나중에 사서 갚는다. 판 대금은 손에 쥐지 않고 그대로 담보가 된다. */
 
-test("공매도는 판 값만큼 현금을 담보로 묶는다 — 현금 자체는 안 움직인다", () => {
-    const q = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
-    assert.equal(q.ok, true);
-    if (!q.ok) return;
-    assert.equal(q.gross, 1_000_000);
-    // 빌려서 파는 것도 파는 것이다 — 매도 수수료와 거래세를 그대로 낸다
-    assert.equal(q.fee, 150 + 1800);
-    // 담보는 실수령으로 잡는다 → 개시 직후 평가손익이 정확히 -수수료가 된다
-    assert.equal(q.net, 1_000_000 - 1950);
-    assert.equal(shortPnl({ short_qty: 100, short_basis: q.net }, 10_000), -1950);
+test("공매도는 판 값만큼 현금을 담보로 묶는다 — 현금 자체는 안 움직인다 · 담보가 모자라면 공매도할 수 없다 — 빌린 돈으로 더 크게 굴리는 길은 없다", () => {
+    // ── 공매도는 판 값만큼 현금을 담보로 묶는다 — 현금 자체는 안 움직인다
+    {
+        const q = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
+        assert.equal(q.ok, true);
+        if (!q.ok) return;
+        assert.equal(q.gross, 1_000_000);
+        // 빌려서 파는 것도 파는 것이다 — 매도 수수료와 거래세를 그대로 낸다
+        assert.equal(q.fee, 150 + 1800);
+        // 담보는 실수령으로 잡는다 → 개시 직후 평가손익이 정확히 -수수료가 된다
+        assert.equal(q.net, 1_000_000 - 1950);
+        assert.equal(shortPnl({ short_qty: 100, short_basis: q.net }, 10_000), -1950);
+    }
+
+    // ── 담보가 모자라면 공매도할 수 없다 — 빌린 돈으로 더 크게 굴리는 길은 없다
+    {
+        assert.equal(quoteShort({ price: 10_000, qty: 100, cash: 500_000 }).ok, false);
+    }
 });
 
-test("담보가 모자라면 공매도할 수 없다 — 빌린 돈으로 더 크게 굴리는 길은 없다", () => {
-    assert.equal(quoteShort({ price: 10_000, qty: 100, cash: 500_000 }).ok, false);
+test("값이 내려가면 번다 — 왕복 손익이 값 차이에서 비용을 뺀 것과 같다 · 값이 오르면 잃는다", () => {
+    // ── 값이 내려가면 번다 — 왕복 손익이 값 차이에서 비용을 뺀 것과 같다
+    {
+        const open = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
+        assert.equal(open.ok, true);
+        if (!open.ok) return;
+
+        const close = quoteCover({ price: 9_000, qty: 100, position: { short_qty: 100, short_basis: open.net } });
+        assert.equal(close.ok, true);
+        if (!close.ok) return;
+
+        // 개시에는 현금이 안 움직이고, 갚을 때 손익만 들어온다
+        assert.equal(close.realized, (10_000 - 9_000) * 100 - open.fee - close.fee, "판 값 − 산 값 − 비용");
+        assert.ok(close.realized > 0);
+    }
+
+    // ── 값이 오르면 잃는다
+    {
+        const open = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
+        if (!open.ok) return;
+        const close = quoteCover({ price: 11_000, qty: 100, position: { short_qty: 100, short_basis: open.net } });
+        assert.equal(close.ok, true);
+        if (!close.ok) return;
+        assert.ok(close.realized < 0);
+    }
 });
 
-test("값이 내려가면 번다 — 왕복 손익이 값 차이에서 비용을 뺀 것과 같다", () => {
-    const open = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
-    assert.equal(open.ok, true);
-    if (!open.ok) return;
+test("전부 갚으면 담보가 정확히 0 이 된다 — 남으면 가짜 손익이 생긴다 · 나눠 갚으면 담보도 그만큼만 풀린다", () => {
+    // ── 전부 갚으면 담보가 정확히 0 이 된다 — 남으면 가짜 손익이 생긴다
+    {
+        const pos = { short_qty: 100, short_basis: 998_050 };
+        const q = quoteCover({ price: 9_000, qty: 100, position: pos });
+        if (!q.ok) return;
+        assert.equal(q.basisOut, pos.short_basis);
+        assert.deepEqual(applyCover(pos, q), { short_qty: 0, short_basis: 0 });
+    }
 
-    const close = quoteCover({ price: 9_000, qty: 100, position: { short_qty: 100, short_basis: open.net } });
-    assert.equal(close.ok, true);
-    if (!close.ok) return;
-
-    // 개시에는 현금이 안 움직이고, 갚을 때 손익만 들어온다
-    assert.equal(close.realized, (10_000 - 9_000) * 100 - open.fee - close.fee, "판 값 − 산 값 − 비용");
-    assert.ok(close.realized > 0);
+    // ── 나눠 갚으면 담보도 그만큼만 풀린다
+    {
+        const pos = { short_qty: 100, short_basis: 1_000_000 };
+        const q = quoteCover({ price: 9_000, qty: 40, position: pos });
+        if (!q.ok) return;
+        assert.equal(q.basisOut, 400_000);
+        assert.deepEqual(applyCover(pos, q), { short_qty: 60, short_basis: 600_000 });
+    }
 });
 
-test("값이 오르면 잃는다", () => {
-    const open = quoteShort({ price: 10_000, qty: 100, cash: 10_000_000 });
-    if (!open.ok) return;
-    const close = quoteCover({ price: 11_000, qty: 100, position: { short_qty: 100, short_basis: open.net } });
-    assert.equal(close.ok, true);
-    if (!close.ok) return;
-    assert.ok(close.realized < 0);
-});
+test("빌린 것보다 많이 갚을 수는 없다 · 평가손익은 값이 내려간 만큼", () => {
+    // ── 빌린 것보다 많이 갚을 수는 없다
+    {
+        assert.equal(quoteCover({ price: 9_000, qty: 101, position: { short_qty: 100, short_basis: 1_000_000 } }).ok, false);
+        assert.equal(quoteCover({ price: 9_000, qty: 1, position: null }).ok, false);
+    }
 
-test("전부 갚으면 담보가 정확히 0 이 된다 — 남으면 가짜 손익이 생긴다", () => {
-    const pos = { short_qty: 100, short_basis: 998_050 };
-    const q = quoteCover({ price: 9_000, qty: 100, position: pos });
-    if (!q.ok) return;
-    assert.equal(q.basisOut, pos.short_basis);
-    assert.deepEqual(applyCover(pos, q), { short_qty: 0, short_basis: 0 });
-});
-
-test("나눠 갚으면 담보도 그만큼만 풀린다", () => {
-    const pos = { short_qty: 100, short_basis: 1_000_000 };
-    const q = quoteCover({ price: 9_000, qty: 40, position: pos });
-    if (!q.ok) return;
-    assert.equal(q.basisOut, 400_000);
-    assert.deepEqual(applyCover(pos, q), { short_qty: 60, short_basis: 600_000 });
-});
-
-test("빌린 것보다 많이 갚을 수는 없다", () => {
-    assert.equal(quoteCover({ price: 9_000, qty: 101, position: { short_qty: 100, short_basis: 1_000_000 } }).ok, false);
-    assert.equal(quoteCover({ price: 9_000, qty: 1, position: null }).ok, false);
-});
-
-test("평가손익은 값이 내려간 만큼", () => {
-    const pos = { short_qty: 100, short_basis: 1_000_000 };
-    assert.equal(shortPnl(pos, 9_000), 100_000);
-    assert.equal(shortPnl(pos, 11_000), -100_000);
-    assert.equal(shortPnl(null, 9_000), 0);
+    // ── 평가손익은 값이 내려간 만큼
+    {
+        const pos = { short_qty: 100, short_basis: 1_000_000 };
+        assert.equal(shortPnl(pos, 9_000), 100_000);
+        assert.equal(shortPnl(pos, 11_000), -100_000);
+        assert.equal(shortPnl(null, 9_000), 0);
+    }
 });
 
 test(`평가손실이 담보의 ${SHORT_CALL_PCT}% 를 넘으면 담보가 못 버틴다`, () => {

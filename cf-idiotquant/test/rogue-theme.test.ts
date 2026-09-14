@@ -60,58 +60,66 @@ function declared(selector: string): Set<string> {
     return new Set(block(selector).match(/--rg-[a-z-]+(?=\s*:)/g) ?? []);
 }
 
-test("게임 화면 파일에는 색을 직접 적지 않는다", () => {
-    for (const f of viewFiles()) {
-        const hex = read(f).match(/#[0-9a-fA-F]{6}\b/g);
-        assert.equal(
-            hex,
-            null,
-            `${f} 에 색이 박혀 있다: ${hex?.join(", ")} — global.css 의 --rg-* 로 옮길 것`,
-        );
+test("색은 팔레트에서만 온다 — 화면에도 네비에도 안 박는다", () => {
+    // ── 게임 화면 파일에는 색을 직접 적지 않는다
+    {
+        for (const f of viewFiles()) {
+            const hex = read(f).match(/#[0-9a-fA-F]{6}\b/g);
+            assert.equal(
+                hex,
+                null,
+                `${f} 에 색이 박혀 있다: ${hex?.join(", ")} — global.css 의 --rg-* 로 옮길 것`,
+            );
+        }
+    }
+
+    // ── 화면이 쓰는 --rg-* 가 전부 global.css 에 있다
+    {
+        const light = declared(":root");
+        const used = new Set<string>();
+        for (const f of viewFiles()) {
+            for (const name of read(f).match(/--rg-[a-z-]+/g) ?? []) used.add(name);
+        }
+        assert.ok(used.size > 20, `쓰이는 색이 ${used.size}개뿐 — 훑는 자리가 틀렸다`);
+        const missing = [...used].filter((n) => !light.has(n));
+        assert.deepEqual(missing, [], `${CSS} 에 없는 이름: ${missing.join(", ")}`);
     }
 });
 
-test("화면이 쓰는 --rg-* 가 전부 global.css 에 있다", () => {
-    const light = declared(":root");
-    const used = new Set<string>();
-    for (const f of viewFiles()) {
-        for (const name of read(f).match(/--rg-[a-z-]+/g) ?? []) used.add(name);
+test("밝은 쪽과 어두운 쪽이 같은 이름을 갖고, 기억한 칸이 더 흐리다", () => {
+    // ── 밝은 쪽과 어두운 쪽이 같은 이름을 갖는다
+    {
+        const light = declared(":root");
+        const dark = declared("html.dark");
+        const onlyLight = [...light].filter((n) => !dark.has(n));
+        const onlyDark = [...dark].filter((n) => !light.has(n));
+        assert.deepEqual(onlyLight, [], `어두운 쪽에 없다: ${onlyLight.join(", ")}`);
+        assert.deepEqual(onlyDark, [], `밝은 쪽에 없다: ${onlyDark.join(", ")}`);
     }
-    assert.ok(used.size > 20, `쓰이는 색이 ${used.size}개뿐 — 훑는 자리가 틀렸다`);
-    const missing = [...used].filter((n) => !light.has(n));
-    assert.deepEqual(missing, [], `${CSS} 에 없는 이름: ${missing.join(", ")}`);
-});
 
-test("밝은 쪽과 어두운 쪽이 같은 이름을 갖는다", () => {
-    const light = declared(":root");
-    const dark = declared("html.dark");
-    const onlyLight = [...light].filter((n) => !dark.has(n));
-    const onlyDark = [...dark].filter((n) => !light.has(n));
-    assert.deepEqual(onlyLight, [], `어두운 쪽에 없다: ${onlyLight.join(", ")}`);
-    assert.deepEqual(onlyDark, [], `밝은 쪽에 없다: ${onlyDark.join(", ")}`);
-});
+    // ── 기억한 칸(-dim)은 지금 보이는 칸보다 **흐리다** — 테마마다 방향이 뒤집힌다
+    {
+        // 어두운 테마에서 흐리다 = 더 어둡다. 밝은 테마에서 흐리다 = 더 밝다.
+        // 방향을 그대로 두면 기억이 현재보다 진해져서 지도가 거꾸로 읽힌다.
+        const value = (selector: string, name: string) => {
+            const m = new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`).exec(block(selector));
+            assert.ok(m, `${selector} 에 ${name} 이 없다`);
+            return m![1];
+        };
+        /** 대충의 밝기 — 순서만 보면 되므로 합으로 충분하다. */
+        const lum = (hex: string) =>
+            parseInt(hex.slice(1, 3), 16) + parseInt(hex.slice(3, 5), 16) + parseInt(hex.slice(5, 7), 16);
 
-test("기억한 칸(-dim)은 지금 보이는 칸보다 **흐리다** — 테마마다 방향이 뒤집힌다", () => {
-    // 어두운 테마에서 흐리다 = 더 어둡다. 밝은 테마에서 흐리다 = 더 밝다.
-    // 방향을 그대로 두면 기억이 현재보다 진해져서 지도가 거꾸로 읽힌다.
-    const value = (selector: string, name: string) => {
-        const m = new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`).exec(block(selector));
-        assert.ok(m, `${selector} 에 ${name} 이 없다`);
-        return m![1];
-    };
-    /** 대충의 밝기 — 순서만 보면 되므로 합으로 충분하다. */
-    const lum = (hex: string) =>
-        parseInt(hex.slice(1, 3), 16) + parseInt(hex.slice(3, 5), 16) + parseInt(hex.slice(5, 7), 16);
-
-    for (const base of ["--rg-wall", "--rg-floor", "--rg-corridor", "--rg-door", "--rg-trap"]) {
-        assert.ok(
-            lum(value("html.dark", `${base}-dim`)) < lum(value("html.dark", base)),
-            `어두운 테마에서 ${base}-dim 이 ${base} 보다 안 어둡다`,
-        );
-        assert.ok(
-            lum(value(":root", `${base}-dim`)) > lum(value(":root", base)),
-            `밝은 테마에서 ${base}-dim 이 ${base} 보다 안 밝다`,
-        );
+        for (const base of ["--rg-wall", "--rg-floor", "--rg-corridor", "--rg-door", "--rg-trap"]) {
+            assert.ok(
+                lum(value("html.dark", `${base}-dim`)) < lum(value("html.dark", base)),
+                `어두운 테마에서 ${base}-dim 이 ${base} 보다 안 어둡다`,
+            );
+            assert.ok(
+                lum(value(":root", `${base}-dim`)) > lum(value(":root", base)),
+                `밝은 테마에서 ${base}-dim 이 ${base} 보다 안 밝다`,
+            );
+        }
     }
 });
 
@@ -129,23 +137,27 @@ test("기억한 칸(-dim)은 지금 보이는 칸보다 **흐리다** — 테마
 
 const NAV = "components/navigation.tsx";
 
-test("게임 바의 색은 게임 팔레트에서 온다 — 네비에 색을 박지 않는다", () => {
-    const s = read(NAV);
-    assert.match(
-        s,
-        /background: "var\(--rg-bg\)"/,
-        `${NAV} 가 게임 바탕을 --rg-bg 로 안 칠한다 — 테마를 따라가지 않는다`,
-    );
-});
+test("게임 바도 팔레트를 따르고, 옛 게임과 갈라 본다", () => {
+    // ── 게임 바의 색은 게임 팔레트에서 온다 — 네비에 색을 박지 않는다
+    {
+        const s = read(NAV);
+        assert.match(
+            s,
+            /background: "var\(--rg-bg\)"/,
+            `${NAV} 가 게임 바탕을 --rg-bg 로 안 칠한다 — 테마를 따라가지 않는다`,
+        );
+    }
 
-test("옛 게임과 Rogue 를 갈라 본다 — 한 깃발로 묶으면 밝은 테마가 깨진다", () => {
-    const s = read(NAV);
-    assert.match(s, /startsWith\("\/game\/imf"\)/, `${NAV} 가 옛 게임을 따로 안 가린다`);
-    // `dark` 를 씌우는 것은 **옛 게임에만**이다. Rogue 에까지 씌우면 앱이 밝은 테마여도
-    // 바 안쪽이 어두운 색을 쓴다.
-    assert.match(
-        s,
-        /const retroScope = imf \? "dark" : ""/,
-        `${NAV} 가 Rogue 에도 dark 를 씌운다 — 밝은 테마에서 바만 어두워진다`,
-    );
+    // ── 옛 게임과 Rogue 를 갈라 본다 — 한 깃발로 묶으면 밝은 테마가 깨진다
+    {
+        const s = read(NAV);
+        assert.match(s, /startsWith\("\/game\/imf"\)/, `${NAV} 가 옛 게임을 따로 안 가린다`);
+        // `dark` 를 씌우는 것은 **옛 게임에만**이다. Rogue 에까지 씌우면 앱이 밝은 테마여도
+        // 바 안쪽이 어두운 색을 쓴다.
+        assert.match(
+            s,
+            /const retroScope = imf \? "dark" : ""/,
+            `${NAV} 가 Rogue 에도 dark 를 씌운다 — 밝은 테마에서 바만 어두워진다`,
+        );
+    }
 });

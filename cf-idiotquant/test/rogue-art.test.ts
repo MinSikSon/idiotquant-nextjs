@@ -22,39 +22,48 @@ const MAX_COLS = 20;
 /** 폰에서 도감 한 줄이 너무 커지지 않게. */
 const MAX_ROWS = 8;
 
-test("스물여섯 종에 전부 얼굴이 있다", () => {
-    const missing = Object.keys(MONSTERS).filter((ch) => !monsterArt(ch));
-    assert.deepEqual(missing, [], `얼굴 없는 종: ${missing.join(", ")}`);
-    assert.equal(ART_LETTERS.length, 26);
-});
+test("스물여섯 종에 얼굴이 있고, 안 쓰는 그림은 없다", () => {
+    // ── 스물여섯 종에 전부 얼굴이 있다
+    {
+        const missing = Object.keys(MONSTERS).filter((ch) => !monsterArt(ch));
+        assert.deepEqual(missing, [], `얼굴 없는 종: ${missing.join(", ")}`);
+        assert.equal(ART_LETTERS.length, 26);
+    }
 
-test("표에 없는 글자의 그림은 없다 — 안 쓰는 그림이 남아 있으면 안 된다", () => {
-    const extra = ART_LETTERS.filter((ch) => !MONSTERS[ch]);
-    assert.deepEqual(extra, [], `표에 없는 글자: ${extra.join(", ")}`);
-});
-
-test("어떤 줄도 스무 칸을 안 넘는다 — 넘으면 폰에서 접혀 그림이 무너진다", () => {
-    for (const ch of ART_LETTERS) {
-        const w = artWidth(ch);
-        assert.ok(w > 0, `${ch} 의 그림이 비었다`);
-        assert.ok(w <= MAX_COLS, `${ch}(${MONSTERS[ch].name}) 가 ${w}칸이다 — ${MAX_COLS}칸까지`);
+    // ── 표에 없는 글자의 그림은 없다 — 안 쓰는 그림이 남아 있으면 안 된다
+    {
+        const extra = ART_LETTERS.filter((ch) => !MONSTERS[ch]);
+        assert.deepEqual(extra, [], `표에 없는 글자: ${extra.join(", ")}`);
     }
 });
 
-test("줄 수가 알맞다 — 앞뒤의 빈 줄이 남아 있으면 안 된다", () => {
-    for (const ch of ART_LETTERS) {
-        const lines = monsterArt(ch)!.split("\n");
-        assert.ok(lines.length <= MAX_ROWS, `${ch} 가 ${lines.length}줄이다 — ${MAX_ROWS}줄까지`);
-        assert.ok(lines.length >= 3, `${ch} 가 ${lines.length}줄뿐이다`);
-        // 앞뒤가 빈 줄이면 `monsterArt` 의 다듬기가 빠진 것이다.
-        assert.notEqual(lines[0].trim(), "", `${ch} 의 첫 줄이 비었다`);
-        assert.notEqual(lines[lines.length - 1].trim(), "", `${ch} 의 마지막 줄이 비었다`);
+test("폰에서 안 무너진다 — 너비·줄 수·탭", () => {
+    // ── 어떤 줄도 스무 칸을 안 넘는다 — 넘으면 폰에서 접혀 그림이 무너진다
+    {
+        for (const ch of ART_LETTERS) {
+            const w = artWidth(ch);
+            assert.ok(w > 0, `${ch} 의 그림이 비었다`);
+            assert.ok(w <= MAX_COLS, `${ch}(${MONSTERS[ch].name}) 가 ${w}칸이다 — ${MAX_COLS}칸까지`);
+        }
     }
-});
 
-test("그림에 탭이 없다 — 고정폭 글꼴에서 칸이 어긋난다", () => {
-    for (const ch of ART_LETTERS) {
-        assert.ok(!monsterArt(ch)!.includes("\t"), `${ch} 에 탭이 들어 있다`);
+    // ── 줄 수가 알맞다 — 앞뒤의 빈 줄이 남아 있으면 안 된다
+    {
+        for (const ch of ART_LETTERS) {
+            const lines = monsterArt(ch)!.split("\n");
+            assert.ok(lines.length <= MAX_ROWS, `${ch} 가 ${lines.length}줄이다 — ${MAX_ROWS}줄까지`);
+            assert.ok(lines.length >= 3, `${ch} 가 ${lines.length}줄뿐이다`);
+            // 앞뒤가 빈 줄이면 `monsterArt` 의 다듬기가 빠진 것이다.
+            assert.notEqual(lines[0].trim(), "", `${ch} 의 첫 줄이 비었다`);
+            assert.notEqual(lines[lines.length - 1].trim(), "", `${ch} 의 마지막 줄이 비었다`);
+        }
+    }
+
+    // ── 그림에 탭이 없다 — 고정폭 글꼴에서 칸이 어긋난다
+    {
+        for (const ch of ART_LETTERS) {
+            assert.ok(!monsterArt(ch)!.includes("\t"), `${ch} 에 탭이 들어 있다`);
+        }
     }
 });
 

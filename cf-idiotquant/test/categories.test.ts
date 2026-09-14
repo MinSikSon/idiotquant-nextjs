@@ -16,50 +16,66 @@ const MINE: StoredCategory[] = [
     { id: 2, kind: "income", label: "부업" },
 ];
 
-test("프리셋 키는 프리셋 라벨로", () => {
-    assert.equal(categoryLabel("income", "salary"), "급여");
-    assert.equal(categoryLabel("expense", "fixed"), "고정비");
-    assert.equal(categoryLabel("saving", "deposit"), "예·적금");
+test("프리셋 키는 프리셋 라벨로 · '투자'는 저축 프리셋으로 옮겼지만, 예전 지출 기록도 이름을 지킨다", () => {
+    // ── 프리셋 키는 프리셋 라벨로
+    {
+        assert.equal(categoryLabel("income", "salary"), "급여");
+        assert.equal(categoryLabel("expense", "fixed"), "고정비");
+        assert.equal(categoryLabel("saving", "deposit"), "예·적금");
+    }
+
+    // ── '투자'는 저축 프리셋으로 옮겼지만, 예전 지출 기록도 이름을 지킨다
+    {
+        // 새 자리
+        assert.equal(categoryLabel("saving", "invest"), "투자");
+        // 옛 자리 — 데이터를 고치지 않았으므로 여기서 되살려야 한다
+        assert.equal(categoryLabel("expense", "invest"), "투자");
+    }
 });
 
-test("'투자'는 저축 프리셋으로 옮겼지만, 예전 지출 기록도 이름을 지킨다", () => {
-    // 새 자리
-    assert.equal(categoryLabel("saving", "invest"), "투자");
-    // 옛 자리 — 데이터를 고치지 않았으므로 여기서 되살려야 한다
-    assert.equal(categoryLabel("expense", "invest"), "투자");
+test("지출 프리셋에서 '투자'는 더 이상 고를 수 없다 · 사용자 항목은 id 로 찾는다 — 이름을 바꿔도 내역이 따라온다", () => {
+    // ── 지출 프리셋에서 '투자'는 더 이상 고를 수 없다
+    {
+        assert.equal(presetsOf("expense").some(c => c.key === "invest"), false);
+        assert.equal(presetsOf("saving").some(c => c.key === "invest"), true);
+    }
+
+    // ── 사용자 항목은 id 로 찾는다 — 이름을 바꿔도 내역이 따라온다
+    {
+        assert.equal(categoryLabel("expense", catKey(1), MINE), "여행");
+
+        // 같은 키 그대로, 라벨만 바뀐 목록을 주면 새 이름이 나온다.
+        const renamed: StoredCategory[] = [{ id: 1, kind: "expense", label: "휴가" }];
+        assert.equal(categoryLabel("expense", catKey(1), renamed), "휴가");
+    }
 });
 
-test("지출 프리셋에서 '투자'는 더 이상 고를 수 없다", () => {
-    assert.equal(presetsOf("expense").some(c => c.key === "invest"), false);
-    assert.equal(presetsOf("saving").some(c => c.key === "invest"), true);
+test("가리킬 항목이 없으면 '지운 항목' — 빈칸으로 두지 않는다 · 지울 때 굳혀둔 라벨은 그대로 읽는다", () => {
+    // ── 가리킬 항목이 없으면 '지운 항목' — 빈칸으로 두지 않는다
+    {
+        assert.equal(categoryLabel("expense", catKey(99), MINE), "지운 항목");
+    }
+
+    // ── 지울 때 굳혀둔 라벨은 그대로 읽는다
+    {
+        assert.equal(categoryLabel("saving", frozenKey("비상금"), []), "비상금");
+    }
 });
 
-test("사용자 항목은 id 로 찾는다 — 이름을 바꿔도 내역이 따라온다", () => {
-    assert.equal(categoryLabel("expense", catKey(1), MINE), "여행");
+test("아무것도 못 찾으면 키를 그대로 — 마지막까지 빈칸은 없다 · 칩 목록은 프리셋 뒤에 그 구분의 사용자 항목만 붙인다", () => {
+    // ── 아무것도 못 찾으면 키를 그대로 — 마지막까지 빈칸은 없다
+    {
+        assert.equal(categoryLabel("income", "무엇인가", []), "무엇인가");
+    }
 
-    // 같은 키 그대로, 라벨만 바뀐 목록을 주면 새 이름이 나온다.
-    const renamed: StoredCategory[] = [{ id: 1, kind: "expense", label: "휴가" }];
-    assert.equal(categoryLabel("expense", catKey(1), renamed), "휴가");
-});
+    // ── 칩 목록은 프리셋 뒤에 그 구분의 사용자 항목만 붙인다
+    {
+        const expense = categoriesOf("expense", MINE);
+        assert.deepEqual(expense.map(c => c.label), ["고정비", "생활비", "기타", "여행"]);
 
-test("가리킬 항목이 없으면 '지운 항목' — 빈칸으로 두지 않는다", () => {
-    assert.equal(categoryLabel("expense", catKey(99), MINE), "지운 항목");
-});
-
-test("지울 때 굳혀둔 라벨은 그대로 읽는다", () => {
-    assert.equal(categoryLabel("saving", frozenKey("비상금"), []), "비상금");
-});
-
-test("아무것도 못 찾으면 키를 그대로 — 마지막까지 빈칸은 없다", () => {
-    assert.equal(categoryLabel("income", "무엇인가", []), "무엇인가");
-});
-
-test("칩 목록은 프리셋 뒤에 그 구분의 사용자 항목만 붙인다", () => {
-    const expense = categoriesOf("expense", MINE);
-    assert.deepEqual(expense.map(c => c.label), ["고정비", "생활비", "기타", "여행"]);
-
-    // 수입 항목(부업)이 지출 칩에 섞이면 안 된다.
-    assert.equal(expense.some(c => c.label === "부업"), false);
+        // 수입 항목(부업)이 지출 칩에 섞이면 안 된다.
+        assert.equal(expense.some(c => c.label === "부업"), false);
+    }
 });
 
 test("구분 셋의 이름·색이 모두 정의돼 있다", () => {

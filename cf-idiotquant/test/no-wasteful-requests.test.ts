@@ -75,22 +75,27 @@ for (const [thunk, { why, callers }] of Object.entries(EXPENSIVE)) {
 
 // 한 쌍으로만 움직인다는 규칙을 따로 건다. 위 두 목록을 각각 고치다 보면
 // "탐색만 남는" 조합이 만들어질 수 있는데, 그게 정확히 읽기가 폭증하는 모양이다.
-test("대체 탐색은 날짜 목록을 부르는 화면에서만 돈다", () => {
-    const orphans = callersOf("reqDiscoverNcavDates")
-        .filter(f => !callersOf("reqGetNcavDailyDates").includes(f));
-
-    assert.deepEqual(orphans, [],
-        "날짜 목록을 안 받으면서 대체 탐색만 켠 화면이다. " +
-        "그 화면은 켤 때마다 하루치를 훑는 요청을 일곱 번 보낸다.");
-});
 
 // 목록 자체가 낡는 것도 막는다. 존재하지 않는 파일을 적어 두면 위 비교가
 // "실제 호출처 없음"과 어긋나 실패하지만, 오타 난 경로는 왜 실패하는지 읽기 어렵다.
-test("EXPENSIVE 에 적힌 화면은 실제로 있는 파일이다", () => {
-    const known = new Set(FILES.map(f => f.path));
-    for (const [thunk, { callers }] of Object.entries(EXPENSIVE)) {
-        for (const c of callers) {
-            assert.ok(known.has(c), `${thunk} 의 호출처로 적힌 ${c} 가 없다 — 경로가 바뀌었거나 오타다.`);
+test("대체 탐색은 날짜 목록을 부르는 화면에서만 돈다 · EXPENSIVE 에 적힌 화면은 실제로 있는 파일이다", () => {
+    // ── 대체 탐색은 날짜 목록을 부르는 화면에서만 돈다
+    {
+        const orphans = callersOf("reqDiscoverNcavDates")
+            .filter(f => !callersOf("reqGetNcavDailyDates").includes(f));
+
+        assert.deepEqual(orphans, [],
+            "날짜 목록을 안 받으면서 대체 탐색만 켠 화면이다. " +
+            "그 화면은 켤 때마다 하루치를 훑는 요청을 일곱 번 보낸다.");
+    }
+
+    // ── EXPENSIVE 에 적힌 화면은 실제로 있는 파일이다
+    {
+        const known = new Set(FILES.map(f => f.path));
+        for (const [thunk, { callers }] of Object.entries(EXPENSIVE)) {
+            for (const c of callers) {
+                assert.ok(known.has(c), `${thunk} 의 호출처로 적힌 ${c} 가 없다 — 경로가 바뀌었거나 오타다.`);
+            }
         }
     }
 });

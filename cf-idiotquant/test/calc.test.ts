@@ -18,101 +18,136 @@ const near = (got: number, want: number, tol = 1e-9) =>
     assert.ok(Math.abs(got - want) <= Math.abs(want) * tol + 1e-9,
         `${got} ≉ ${want}`);
 
-test("거치식 월복리는 A = P(1 + r/12)^n 과 같다", () => {
-    const r = simulate(base({ initial: 1000, rate: 6, years: 10, periods: 12 }));
-    near(r.final, 1000 * Math.pow(1 + 0.06 / 12, 120));
+test("거치식 월복리는 A = P(1 + r/12)^n 과 같다 · 편입 주기를 연 1회로 두면 A = P(1 + r)^y", () => {
+    // ── 거치식 월복리는 A = P(1 + r/12)^n 과 같다
+    {
+        const r = simulate(base({ initial: 1000, rate: 6, years: 10, periods: 12 }));
+        near(r.final, 1000 * Math.pow(1 + 0.06 / 12, 120));
+    }
+
+    // ── 편입 주기를 연 1회로 두면 A = P(1 + r)^y
+    {
+        // 매월 이자가 쌓였다가 연말에 한 번 편입되므로 연 단위 단리 누적과 같다.
+        const r = simulate(base({ initial: 1000, rate: 6, years: 10, periods: 1 }));
+        near(r.final, 1000 * Math.pow(1 + 0.06, 10));
+    }
 });
 
-test("편입 주기를 연 1회로 두면 A = P(1 + r)^y", () => {
-    // 매월 이자가 쌓였다가 연말에 한 번 편입되므로 연 단위 단리 누적과 같다.
-    const r = simulate(base({ initial: 1000, rate: 6, years: 10, periods: 1 }));
-    near(r.final, 1000 * Math.pow(1 + 0.06, 10));
+test("단리는 이자가 원금에 섞이지 않는다 — A = P(1 + r·y) · 적립식은 기시급 연금(annuity-due) 미래가치 식과 같다", () => {
+    // ── 단리는 이자가 원금에 섞이지 않는다 — A = P(1 + r·y)
+    {
+        const r = simulate(base({ initial: 1000, rate: 6, years: 10, method: "simple" }));
+        near(r.final, 1000 * (1 + 0.06 * 10));
+    }
+
+    // ── 적립식은 기시급 연금(annuity-due) 미래가치 식과 같다
+    {
+        // 적립금이 그달 이자를 만드느냐가 갈림길이다. simulate 는 월초에 넣고 그달부터
+        // 이자를 붙이므로(기시급) 기말급 식보다 (1+i) 배 크다 — 실제 적립식 상품 쪽이다.
+        //   기말급 FV = PMT · ((1+i)^n − 1) / i
+        //   기시급 FV = 기말급 × (1 + i)
+        const i = 0.06 / 12;
+        const n = 120;
+        const r = simulate(base({ monthly: 50, rate: 6, years: 10, periods: 12 }));
+        near(r.final, 50 * ((Math.pow(1 + i, n) - 1) / i) * (1 + i));
+    }
 });
 
-test("단리는 이자가 원금에 섞이지 않는다 — A = P(1 + r·y)", () => {
-    const r = simulate(base({ initial: 1000, rate: 6, years: 10, method: "simple" }));
-    near(r.final, 1000 * (1 + 0.06 * 10));
+test("수익률 0% 면 원금 그대로 · 세금은 이자에만 붙는다", () => {
+    // ── 수익률 0% 면 원금 그대로
+    {
+        const r = simulate(base({ initial: 1000, monthly: 50, rate: 0, years: 10 }));
+        near(r.final, 1000 + 50 * 120);
+        near(r.profit, 0);
+    }
+
+    // ── 세금은 이자에만 붙는다
+    {
+        const noTax = simulate(base({ initial: 1000, rate: 6, years: 1, periods: 1 }));
+        const taxed = simulate(base({ initial: 1000, rate: 6, years: 1, periods: 1, tax: true }));
+
+        const interest = noTax.final - 1000;
+        near(taxed.taxPaid, interest * (TAX_RATE / 100));
+        near(taxed.final, 1000 + interest * (1 - TAX_RATE / 100));
+    }
 });
 
-test("적립식은 기시급 연금(annuity-due) 미래가치 식과 같다", () => {
-    // 적립금이 그달 이자를 만드느냐가 갈림길이다. simulate 는 월초에 넣고 그달부터
-    // 이자를 붙이므로(기시급) 기말급 식보다 (1+i) 배 크다 — 실제 적립식 상품 쪽이다.
-    //   기말급 FV = PMT · ((1+i)^n − 1) / i
-    //   기시급 FV = 기말급 × (1 + i)
-    const i = 0.06 / 12;
-    const n = 120;
-    const r = simulate(base({ monthly: 50, rate: 6, years: 10, periods: 12 }));
-    near(r.final, 50 * ((Math.pow(1 + i, n) - 1) / i) * (1 + i));
+test("손실이 나면 세금을 걷지 않는다 · 물가 반영 값은 명목을 (1+i)^y 로 나눈 것", () => {
+    // ── 손실이 나면 세금을 걷지 않는다
+    {
+        const r = simulate(base({ initial: 1000, rate: -10, years: 5, tax: true }));
+        assert.equal(r.taxPaid, 0);
+        assert.ok(r.final < 1000);
+    }
+
+    // ── 물가 반영 값은 명목을 (1+i)^y 로 나눈 것
+    {
+        const r = simulate(base({ initial: 1000, rate: 6, years: 10, inflation: 2.5 }));
+        near(r.real, r.final / Math.pow(1.025, 10));
+    }
 });
 
-test("수익률 0% 면 원금 그대로", () => {
-    const r = simulate(base({ initial: 1000, monthly: 50, rate: 0, years: 10 }));
-    near(r.final, 1000 + 50 * 120);
-    near(r.profit, 0);
+test("행은 0년부터 마지막 해까지 하나씩 · 누적 수익률과 연평균이 서로 맞는다", () => {
+    // ── 행은 0년부터 마지막 해까지 하나씩
+    {
+        const r = simulate(base({ initial: 1000, rate: 6, years: 10 }));
+        assert.equal(r.rows.length, 11);
+        assert.equal(r.rows[0].year, 0);
+        assert.equal(r.rows[0].value, 1000);
+        assert.equal(r.rows[10].year, 10);
+        near(r.rows[10].value, r.final);
+    }
+
+    // ── 누적 수익률과 연평균이 서로 맞는다
+    {
+        const r = simulate(base({ initial: 1000, rate: 7, years: 20 }));
+        near(r.cumret, (r.final / r.principal - 1) * 100);
+        near(r.cagr, (Math.pow(r.final / r.principal, 1 / 20) - 1) * 100);
+    }
 });
 
-test("세금은 이자에만 붙는다", () => {
-    const noTax = simulate(base({ initial: 1000, rate: 6, years: 1, periods: 1 }));
-    const taxed = simulate(base({ initial: 1000, rate: 6, years: 1, periods: 1, tax: true }));
+test("원금이 0이면 나눗셈으로 NaN 을 내지 않는다 · sanitize 는 범위 밖 값을 잘라내고 쓰레기는 기본값으로", () => {
+    // ── 원금이 0이면 나눗셈으로 NaN 을 내지 않는다
+    {
+        const r = simulate(base({ initial: 0, monthly: 0, rate: 7, years: 10 }));
+        assert.equal(r.cumret, 0);
+        assert.equal(r.cagr, 0);
+        assert.ok(Number.isFinite(r.final));
+    }
 
-    const interest = noTax.final - 1000;
-    near(taxed.taxPaid, interest * (TAX_RATE / 100));
-    near(taxed.final, 1000 + interest * (1 - TAX_RATE / 100));
+    // ── sanitize 는 범위 밖 값을 잘라내고 쓰레기는 기본값으로
+    {
+        const s = sanitize({ years: 999, rate: 500, initial: NaN, periods: 7 as any, method: "??" as any });
+        assert.equal(s.years, 60);
+        assert.equal(s.rate, 100);
+        assert.equal(s.initial, DEFAULTS.initial);
+        assert.equal(s.periods, 12);     // 1·2·4·12 가 아니면 월
+        assert.equal(s.method, "compound");
+    }
 });
 
-test("손실이 나면 세금을 걷지 않는다", () => {
-    const r = simulate(base({ initial: 1000, rate: -10, years: 5, tax: true }));
-    assert.equal(r.taxPaid, 0);
-    assert.ok(r.final < 1000);
-});
+test("간단 단계는 화면에 없는 조건을 계산에서도 뺀다 · 같은 씨앗이면 언제나 같은 결과 — 새로 그릴 때마다 숫자가 바뀌면 안 된다", () => {
+    // ── 간단 단계는 화면에 없는 조건을 계산에서도 뺀다
+    {
+        const custom = base({ method: "simple", periods: 1, tax: false, inflation: 5 });
 
-test("물가 반영 값은 명목을 (1+i)^y 로 나눈 것", () => {
-    const r = simulate(base({ initial: 1000, rate: 6, years: 10, inflation: 2.5 }));
-    near(r.real, r.final / Math.pow(1.025, 10));
-});
+        const simple = maskDetail(custom, "simple");
+        assert.deepEqual(
+            [simple.method, simple.periods, simple.tax, simple.inflation],
+            ["compound", 12, true, 0],
+        );
 
-test("행은 0년부터 마지막 해까지 하나씩", () => {
-    const r = simulate(base({ initial: 1000, rate: 6, years: 10 }));
-    assert.equal(r.rows.length, 11);
-    assert.equal(r.rows[0].year, 0);
-    assert.equal(r.rows[0].value, 1000);
-    assert.equal(r.rows[10].year, 10);
-    near(r.rows[10].value, r.final);
-});
+        // 상세로 돌아오면 고쳐둔 조건이 그대로 살아 있어야 한다.
+        assert.deepEqual(maskDetail(custom, "detailed"), custom);
+    }
 
-test("누적 수익률과 연평균이 서로 맞는다", () => {
-    const r = simulate(base({ initial: 1000, rate: 7, years: 20 }));
-    near(r.cumret, (r.final / r.principal - 1) * 100);
-    near(r.cagr, (Math.pow(r.final / r.principal, 1 / 20) - 1) * 100);
-});
-
-test("원금이 0이면 나눗셈으로 NaN 을 내지 않는다", () => {
-    const r = simulate(base({ initial: 0, monthly: 0, rate: 7, years: 10 }));
-    assert.equal(r.cumret, 0);
-    assert.equal(r.cagr, 0);
-    assert.ok(Number.isFinite(r.final));
-});
-
-test("sanitize 는 범위 밖 값을 잘라내고 쓰레기는 기본값으로", () => {
-    const s = sanitize({ years: 999, rate: 500, initial: NaN, periods: 7 as any, method: "??" as any });
-    assert.equal(s.years, 60);
-    assert.equal(s.rate, 100);
-    assert.equal(s.initial, DEFAULTS.initial);
-    assert.equal(s.periods, 12);     // 1·2·4·12 가 아니면 월
-    assert.equal(s.method, "compound");
-});
-
-test("간단 단계는 화면에 없는 조건을 계산에서도 뺀다", () => {
-    const custom = base({ method: "simple", periods: 1, tax: false, inflation: 5 });
-
-    const simple = maskDetail(custom, "simple");
-    assert.deepEqual(
-        [simple.method, simple.periods, simple.tax, simple.inflation],
-        ["compound", 12, true, 0],
-    );
-
-    // 상세로 돌아오면 고쳐둔 조건이 그대로 살아 있어야 한다.
-    assert.deepEqual(maskDetail(custom, "detailed"), custom);
+    // ── 같은 씨앗이면 언제나 같은 결과 — 새로 그릴 때마다 숫자가 바뀌면 안 된다
+    {
+        const a = simulate(ranged());
+        const b = simulate(ranged());
+        assert.equal(a.final, b.final);
+        assert.deepEqual(a.rows.map(r => r.rate), b.rows.map(r => r.rate));
+    }
 });
 
 /* ── 범위 수익률 (해마다 무작위) ─────────────────────────────── */
@@ -122,140 +157,164 @@ test("간단 단계는 화면에 없는 조건을 계산에서도 뺀다", () =>
 const ranged = (over: Partial<CalcInputs> = {}): CalcInputs =>
     base({ initial: 1000, rateMode: "range", rateMin: 0, rateMax: 14, seed: 42, years: 10, ...over });
 
-test("같은 씨앗이면 언제나 같은 결과 — 새로 그릴 때마다 숫자가 바뀌면 안 된다", () => {
-    const a = simulate(ranged());
-    const b = simulate(ranged());
-    assert.equal(a.final, b.final);
-    assert.deepEqual(a.rows.map(r => r.rate), b.rows.map(r => r.rate));
-});
+test("씨앗이 다르면 다른 갈래가 나온다 · 뽑힌 수익률은 전부 범위 안에 있다", () => {
+    // ── 씨앗이 다르면 다른 갈래가 나온다
+    {
+        const a = simulate(ranged({ seed: 1 }));
+        const b = simulate(ranged({ seed: 2 }));
+        assert.notEqual(a.final, b.final);
+    }
 
-test("씨앗이 다르면 다른 갈래가 나온다", () => {
-    const a = simulate(ranged({ seed: 1 }));
-    const b = simulate(ranged({ seed: 2 }));
-    assert.notEqual(a.final, b.final);
-});
-
-test("뽑힌 수익률은 전부 범위 안에 있다", () => {
-    for (const seed of [1, 7, 99, 12345]) {
-        for (const r of yearlyRates(ranged({ seed, rateMin: -5, rateMax: 20, years: 40 }))) {
-            assert.ok(r >= -5 && r <= 20, `범위를 벗어났다: ${r} (seed ${seed})`);
+    // ── 뽑힌 수익률은 전부 범위 안에 있다
+    {
+        for (const seed of [1, 7, 99, 12345]) {
+            for (const r of yearlyRates(ranged({ seed, rateMin: -5, rateMax: 20, years: 40 }))) {
+                assert.ok(r >= -5 && r <= 20, `범위를 벗어났다: ${r} (seed ${seed})`);
+            }
         }
     }
 });
 
-test("해마다 값이 달라진다 — 한 번 뽑아 전부에 쓰는 게 아니다", () => {
-    const rates = yearlyRates(ranged({ years: 20 }));
-    assert.ok(new Set(rates).size > 5, `너무 적게 갈린다: ${new Set(rates).size}가지`);
-});
+test("해마다 값이 달라진다 — 한 번 뽑아 전부에 쓰는 게 아니다 · 하한과 상한이 같으면 고정 모드와 정확히 같은 결과", () => {
+    // ── 해마다 값이 달라진다 — 한 번 뽑아 전부에 쓰는 게 아니다
+    {
+        const rates = yearlyRates(ranged({ years: 20 }));
+        assert.ok(new Set(rates).size > 5, `너무 적게 갈린다: ${new Set(rates).size}가지`);
+    }
 
-test("하한과 상한이 같으면 고정 모드와 정확히 같은 결과", () => {
-    // 범위 폭이 0 이면 무작위가 개입할 여지가 없다 — 여기서 어긋나면 배선이 잘못된 것이다.
-    const fixed = simulate(base({ initial: 1000, rate: 7, years: 15 }));
-    const band = simulate(ranged({ rateMin: 7, rateMax: 7, years: 15 }));
-    near(band.final, fixed.final);
-    near(band.principal, fixed.principal);
-});
-
-test("고정 모드는 rateMin·rateMax 를 무시한다", () => {
-    const a = simulate(base({ initial: 1000, rate: 7, years: 10 }));
-    const b = simulate(base({ initial: 1000, rate: 7, years: 10, rateMin: -50, rateMax: 100 }));
-    near(a.final, b.final);
-});
-
-test("해마다 다른 값이 실제로 계산에 쓰인다", () => {
-    // 연 1회 편입이면 각 해의 평가금액 증가율이 그 해 수익률과 같아야 한다.
-    const r = simulate(ranged({ periods: 1, monthly: 0, initial: 1000, years: 5, tax: false }));
-    for (let i = 1; i < r.rows.length; i++) {
-        const grew = r.rows[i].value / r.rows[i - 1].value - 1;
-        near(grew * 100, r.rows[i].rate!, 1e-6);
+    // ── 하한과 상한이 같으면 고정 모드와 정확히 같은 결과
+    {
+        // 범위 폭이 0 이면 무작위가 개입할 여지가 없다 — 여기서 어긋나면 배선이 잘못된 것이다.
+        const fixed = simulate(base({ initial: 1000, rate: 7, years: 15 }));
+        const band = simulate(ranged({ rateMin: 7, rateMax: 7, years: 15 }));
+        near(band.final, fixed.final);
+        near(band.principal, fixed.principal);
     }
 });
 
-test("행마다 그 해 수익률이 실려 나온다 (0년차 제외)", () => {
-    const r = simulate(ranged({ years: 5 }));
-    assert.equal(r.rows[0].rate, undefined, "0년차에는 수익률이 없다");
-    assert.equal(r.rows.filter(x => x.year > 0).every(x => typeof x.rate === "number"), true);
+test("고정 모드는 rateMin·rateMax 를 무시한다 · 해마다 다른 값이 실제로 계산에 쓰인다", () => {
+    // ── 고정 모드는 rateMin·rateMax 를 무시한다
+    {
+        const a = simulate(base({ initial: 1000, rate: 7, years: 10 }));
+        const b = simulate(base({ initial: 1000, rate: 7, years: 10, rateMin: -50, rateMax: 100 }));
+        near(a.final, b.final);
+    }
+
+    // ── 해마다 다른 값이 실제로 계산에 쓰인다
+    {
+        // 연 1회 편입이면 각 해의 평가금액 증가율이 그 해 수익률과 같아야 한다.
+        const r = simulate(ranged({ periods: 1, monthly: 0, initial: 1000, years: 5, tax: false }));
+        for (let i = 1; i < r.rows.length; i++) {
+            const grew = r.rows[i].value / r.rows[i - 1].value - 1;
+            near(grew * 100, r.rows[i].rate!, 1e-6);
+        }
+    }
 });
 
-test("sanitize 는 뒤집힌 범위를 바로잡는다", () => {
-    const s = sanitize({ rateMode: "range", rateMin: 20, rateMax: 3 });
-    assert.equal(s.rateMin, 3);
-    assert.equal(s.rateMax, 20);
+test("행마다 그 해 수익률이 실려 나온다 (0년차 제외) · sanitize 는 뒤집힌 범위를 바로잡는다", () => {
+    // ── 행마다 그 해 수익률이 실려 나온다 (0년차 제외)
+    {
+        const r = simulate(ranged({ years: 5 }));
+        assert.equal(r.rows[0].rate, undefined, "0년차에는 수익률이 없다");
+        assert.equal(r.rows.filter(x => x.year > 0).every(x => typeof x.rate === "number"), true);
+    }
+
+    // ── sanitize 는 뒤집힌 범위를 바로잡는다
+    {
+        const s = sanitize({ rateMode: "range", rateMin: 20, rateMax: 3 });
+        assert.equal(s.rateMin, 3);
+        assert.equal(s.rateMax, 20);
+    }
 });
 
-test("sanitize 는 깨진 씨앗을 1 로 되돌린다", () => {
-    assert.equal(sanitize({ seed: NaN }).seed, 1);
-    assert.equal(sanitize({ seed: 0 }).seed, 1);
-    assert.equal(sanitize({ seed: -5 }).seed, 5);
-});
+test("sanitize 는 깨진 씨앗을 1 로 되돌린다 · 링크에 방식·범위·씨앗이 실려 그대로 돌아온다", () => {
+    // ── sanitize 는 깨진 씨앗을 1 로 되돌린다
+    {
+        assert.equal(sanitize({ seed: NaN }).seed, 1);
+        assert.equal(sanitize({ seed: 0 }).seed, 1);
+        assert.equal(sanitize({ seed: -5 }).seed, 5);
+    }
 
-test("링크에 방식·범위·씨앗이 실려 그대로 돌아온다", () => {
-    // 씨앗이 안 실리면 링크를 받은 사람이 다른 숫자를 본다.
-    const inputs = ranged({ seed: 777, rateMin: 2.5, rateMax: 11 });
-    const back = parse(new URLSearchParams(serialize(inputs, "detailed")))!;
+    // ── 링크에 방식·범위·씨앗이 실려 그대로 돌아온다
+    {
+        // 씨앗이 안 실리면 링크를 받은 사람이 다른 숫자를 본다.
+        const inputs = ranged({ seed: 777, rateMin: 2.5, rateMax: 11 });
+        const back = parse(new URLSearchParams(serialize(inputs, "detailed")))!;
 
-    assert.equal(back.inputs.rateMode, "range");
-    assert.equal(back.inputs.rateMin, 2.5);
-    assert.equal(back.inputs.rateMax, 11);
-    assert.equal(back.inputs.seed, 777);
-    assert.equal(simulate(back.inputs).final, simulate(inputs).final);
+        assert.equal(back.inputs.rateMode, "range");
+        assert.equal(back.inputs.rateMin, 2.5);
+        assert.equal(back.inputs.rateMax, 11);
+        assert.equal(back.inputs.seed, 777);
+        assert.equal(simulate(back.inputs).final, simulate(inputs).final);
+    }
 });
 
 /* ── 치는 중인 글자 — 「0 이 안 지워진다」가 났던 자리 ───────── */
-
-test("빈 글자는 받아 주되 값으로 확정하지 않는다", () => {
-    // **이 둘이 갈리는 것이 고침의 전부다.** 마지막 자리를 지우면 칸은 빈 글자가 되는데,
-    // 예전에는 그것이 `Number("")` = 0 으로 확정돼 도로 칸에 그려졌다 — 칸을 비울 수가
-    // 없으니 500 을 치려면 0 뒤에 이어 쳐야 했고 그래서 「01」이 됐다.
-    assert.equal(acceptsDraft(""), true, "지우는 중이므로 받아야 한다");
-    assert.equal(draftValue(""), null, "빈 칸은 0 이 아니다 — 값을 안 건드린다");
-});
-
-test("아직 숫자가 아닌 중간 글자도 받는다", () => {
-    // 이걸 막으면 소수점도 음수도 칠 방법이 없다 — 「7.」을 못 받으면 7.5 를 못 친다.
-    for (const raw of ["7.", ".", "0."]) {
-        assert.equal(acceptsDraft(raw), true, `${raw} 를 받아야 한다`);
+test("빈 글자는 받아 주되 값으로 확정하지 않는다 · 아직 숫자가 아닌 중간 글자도 받는다", () => {
+    // ── 빈 글자는 받아 주되 값으로 확정하지 않는다
+    {
+        // **이 둘이 갈리는 것이 고침의 전부다.** 마지막 자리를 지우면 칸은 빈 글자가 되는데,
+        // 예전에는 그것이 `Number("")` = 0 으로 확정돼 도로 칸에 그려졌다 — 칸을 비울 수가
+        // 없으니 500 을 치려면 0 뒤에 이어 쳐야 했고 그래서 「01」이 됐다.
+        assert.equal(acceptsDraft(""), true, "지우는 중이므로 받아야 한다");
+        assert.equal(draftValue(""), null, "빈 칸은 0 이 아니다 — 값을 안 건드린다");
     }
-    assert.equal(acceptsDraft("-", true), true, "수익률은 음수를 친다");
-    assert.equal(acceptsDraft("-", false), false, "음수를 안 받는 칸에서는 막는다");
-    assert.equal(acceptsDraft("-5", true), true);
 
-    // 받기는 해도 **확정은 아니다.** 여기서 0 을 돌려주면 「-」를 치는 순간 0 이 된다.
-    assert.equal(draftValue("-"), null);
-    assert.equal(draftValue("."), null);
-    assert.equal(draftValue("7."), 7, "소수점만 찍힌 것은 7 로 읽어도 된다");
-});
+    // ── 아직 숫자가 아닌 중간 글자도 받는다
+    {
+        // 이걸 막으면 소수점도 음수도 칠 방법이 없다 — 「7.」을 못 받으면 7.5 를 못 친다.
+        for (const raw of ["7.", ".", "0."]) {
+            assert.equal(acceptsDraft(raw), true, `${raw} 를 받아야 한다`);
+        }
+        assert.equal(acceptsDraft("-", true), true, "수익률은 음수를 친다");
+        assert.equal(acceptsDraft("-", false), false, "음수를 안 받는 칸에서는 막는다");
+        assert.equal(acceptsDraft("-5", true), true);
 
-test("숫자가 아닌 글자는 아예 안 받는다", () => {
-    for (const raw of ["a", "1a", "1e5", "1-2", "1.2.3", " 1", "１"]) {
-        assert.equal(acceptsDraft(raw, true), false, `${raw} 는 막아야 한다`);
+        // 받기는 해도 **확정은 아니다.** 여기서 0 을 돌려주면 「-」를 치는 순간 0 이 된다.
+        assert.equal(draftValue("-"), null);
+        assert.equal(draftValue("."), null);
+        assert.equal(draftValue("7."), 7, "소수점만 찍힌 것은 7 로 읽어도 된다");
     }
 });
 
-test("확정되는 값", () => {
-    assert.equal(draftValue("0"), 0);
-    assert.equal(draftValue("500"), 500);
-    assert.equal(draftValue("7.5"), 7.5);
-    assert.equal(draftValue("-3.2"), -3.2);
-    // 「01」은 1 이다. 칸에는 친 글자가 남지만 값은 숫자로 읽힌다.
-    assert.equal(draftValue("01"), 1);
+test("숫자가 아닌 글자는 아예 안 받는다 · 확정되는 값", () => {
+    // ── 숫자가 아닌 글자는 아예 안 받는다
+    {
+        for (const raw of ["a", "1a", "1e5", "1-2", "1.2.3", " 1", "１"]) {
+            assert.equal(acceptsDraft(raw, true), false, `${raw} 는 막아야 한다`);
+        }
+    }
+
+    // ── 확정되는 값
+    {
+        assert.equal(draftValue("0"), 0);
+        assert.equal(draftValue("500"), 500);
+        assert.equal(draftValue("7.5"), 7.5);
+        assert.equal(draftValue("-3.2"), -3.2);
+        // 「01」은 1 이다. 칸에는 친 글자가 남지만 값은 숫자로 읽힌다.
+        assert.equal(draftValue("01"), 1);
+    }
 });
 
-test("확정된 값은 그대로 sanitize 를 탄다", () => {
-    // 칸이 바뀌어도 한계는 그대로다 — 다듬는 자리는 여전히 하나뿐이다.
-    assert.equal(sanitize({ ...DEFAULTS, years: draftValue("99")! }).years, 60);
-    assert.equal(sanitize({ ...DEFAULTS, initial: draftValue("0")! }).initial, 0);
-});
+test("확정된 값은 그대로 sanitize 를 탄다 · 앞자리 0 은 떼어 낸다 — 「01」은 1 이다", () => {
+    // ── 확정된 값은 그대로 sanitize 를 탄다
+    {
+        // 칸이 바뀌어도 한계는 그대로다 — 다듬는 자리는 여전히 하나뿐이다.
+        assert.equal(sanitize({ ...DEFAULTS, years: draftValue("99")! }).years, 60);
+        assert.equal(sanitize({ ...DEFAULTS, initial: draftValue("0")! }).initial, 0);
+    }
 
-test("앞자리 0 은 떼어 낸다 — 「01」은 1 이다", () => {
-    assert.equal(trimLeadingZero("01"), "1");
-    assert.equal(trimLeadingZero("007"), "7");
-    assert.equal(trimLeadingZero("00"), "0");
-    assert.equal(trimLeadingZero("-01"), "-1");
-    // **0 뒤에 숫자가 바로 붙을 때만 뗀다.**
-    assert.equal(trimLeadingZero("0"), "0", "0 은 0 이다");
-    assert.equal(trimLeadingZero("0.5"), "0.5", "소수는 앞의 0 이 뜻을 가진다");
-    assert.equal(trimLeadingZero("0."), "0.", "치는 중이다 — 건드리면 소수점을 못 친다");
-    assert.equal(trimLeadingZero(""), "");
-    assert.equal(trimLeadingZero("-"), "-");
+    // ── 앞자리 0 은 떼어 낸다 — 「01」은 1 이다
+    {
+        assert.equal(trimLeadingZero("01"), "1");
+        assert.equal(trimLeadingZero("007"), "7");
+        assert.equal(trimLeadingZero("00"), "0");
+        assert.equal(trimLeadingZero("-01"), "-1");
+        // **0 뒤에 숫자가 바로 붙을 때만 뗀다.**
+        assert.equal(trimLeadingZero("0"), "0", "0 은 0 이다");
+        assert.equal(trimLeadingZero("0.5"), "0.5", "소수는 앞의 0 이 뜻을 가진다");
+        assert.equal(trimLeadingZero("0."), "0.", "치는 중이다 — 건드리면 소수점을 못 친다");
+        assert.equal(trimLeadingZero(""), "");
+        assert.equal(trimLeadingZero("-"), "-");
+    }
 });
