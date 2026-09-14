@@ -65,6 +65,7 @@ import {
     ENCHANT_MAX,
     enchantOdds,
     itemPower,
+    meltYield,
     makeItem,
     armorClass,
     randomItem,
@@ -691,9 +692,9 @@ function drop(state: GameState, letter: string): boolean {
  * 무기를 줍는 것이 반갑지 않은** 기묘한 자리가 생긴다. 모루가 그 자리를 연다 — 값은
  * 무기 자체이고, 되뽑은 주문서로 새 칼을 올린다.
  *
- * 나오는 수는 **강화 수치 그대로**다(`+5` → 다섯 장). 덜 주면 옮겨 심기가 너무 비싸
- * 아무도 안 쓰고, 더 주면 잡템을 주문서 공장으로 쓰게 된다. `+0` 짜리는 **뽑을 것이
- * 없다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3).
+ * 나오는 수는 `meltYield` 한 자리에서 낸다 — **쇠붙이 하나에 한 장이 깔리고**, 강화된
+ * 것은 그 수치가 그대로 나온다(`+5` → 다섯 장). 화살·표창만 예외다(그쪽 머리말 참고).
+ * 나올 것이 없으면 **주문서도 턴도 안 쓴다**(못 박은 규칙 3).
  *
  * **저주받은 것을 쥐고 있으면 못 녹인다** — 내려놓지도 못하는 물건을 모루에 올릴 수는
  * 없다. 배낭에 든 저주받은 무기는 녹일 수 있다(손에 붙은 것이 아니므로).
@@ -717,9 +718,9 @@ function melt(state: GameState, letter: string): boolean {
         say(state, "몸에서 떨어지지 않는다!");
         return false;
     }
-    const plus = it.plusHit ?? 0;
-    if (plus <= 0) {
-        say(state, "뽑아낼 것이 없다 — 강화되지 않은 무기다.");
+    const got = meltYield(it);
+    if (got <= 0) {
+        say(state, "뽑아낼 것이 없다 — 벼린 쇠가 아니다.");
         return false;
     }
 
@@ -727,20 +728,20 @@ function melt(state: GameState, letter: string): boolean {
     // 같은 값이므로 뭉텅이째 태우면 같은 주문서가 갑절로 쏟아진다.
     const name = describe(it, state.known, state.appearance);
     takeFromPack(hero, it, 1);
-    const got = makeItem("scroll", "enchant weapon", state.nextItemId++, -1, -1, plus);
-    const inPack = addToPack(hero, got);
+    const made = makeItem("scroll", "enchant weapon", state.nextItemId++, -1, -1, got);
+    const inPack = addToPack(hero, made);
     state.known["scroll:enchant weapon"] = true;
     say(state, `${name}을(를) 모루에 올렸다. 쇳물이 되어 흘러내린다.`);
     say(
         state,
         inPack
-            ? `무기 강화 주문서 ${plus}장을 되뽑았다.`
-            : `배낭이 꽉 차서 ${plus}장이 발밑에 떨어졌다.`,
+            ? `무기 강화 주문서 ${got}장을 되뽑았다.`
+            : `배낭이 꽉 차서 ${got}장이 발밑에 떨어졌다.`,
     );
     if (!inPack) {
-        got.x = hero.x;
-        got.y = hero.y;
-        level.items.push(got);
+        made.x = hero.x;
+        made.y = hero.y;
+        level.items.push(made);
     }
     return true;
 }

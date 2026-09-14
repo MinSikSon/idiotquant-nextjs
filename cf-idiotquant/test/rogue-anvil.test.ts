@@ -9,10 +9,12 @@
 //   ① **층마다 하나 있고, 계단과 겹치지 않는다.** 겹치면 내려가려다 녹이게 되거나
 //      그 반대가 된다.
 //   ② **모루 위에서만 녹는다.** 아무 데서나 되면 그건 장소가 아니라 그냥 명령이다.
-//   ③ **나오는 수는 강화 수치 그대로** — `+5` 면 다섯 장. 덜 주면 옮겨 심기가 너무 비싸
-//      아무도 안 쓰고, 더 주면 잡템이 주문서 공장이 된다.
-//   ④ **`+0` 은 못 녹인다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3). 뽑을 것이 없는데
-//      무기만 사라지면 그건 고장이다.
+//   ③ **쇠붙이 하나에 한 장이 깔린다.** 강화 안 된 칼도 한 장이 나온다 — 안 그러면
+//      층마다 떨어지는 칼이 그냥 쓰레기이고, 모루는 이미 키운 무기를 갈아 끼울 때만
+//      쓰는 좁은 칸이 된다. 강화된 것은 그 수치가 그대로 나온다(`+5` → 다섯 장).
+//   ④ **화살·표창은 깔아 주지 않는다.** 한 번에 대여섯씩 떨어지는 것들이라 낱개마다
+//      한 장을 깔면 한 판에 열여덟 장이 나오고(재 봤다) `+9` 가 그냥 걸어 들어온다.
+//      나올 것이 없으면 **주문서도 턴도 안 쓴다**(못 박은 규칙 3).
 //   ⑤ **한 자루씩** — 표창처럼 겹쳐 쌓인 것도 한 번에 하나다.
 //   ⑥ **되뽑은 것을 그대로 다시 걸 수 있다** — 이 길이 막히면 모루가 아무것도 아니다.
 
@@ -21,7 +23,7 @@ import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
 import { addToPack, equippedWeapon, packItem } from "@/lib/rogue/hero";
-import { makeItem } from "@/lib/rogue/items";
+import { makeItem, meltYield } from "@/lib/rogue/items";
 import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
 import { walkable, type GameState, type Item, type Tile, idx } from "@/lib/rogue/types";
@@ -79,23 +81,42 @@ test("모루 위가 아니면 안 녹는다 — 턴도 안 쓴다", () => {
     assert.ok(after.messages.some((m) => m.includes("모루가 없다")));
 });
 
-test("나오는 장수는 강화 수치 그대로다", () => {
-    for (let plus = 1; plus <= 9; plus++) {
+test("나오는 장수는 강화 수치 그대로다 — 다만 아래가 한 장으로 깔린다", () => {
+    for (let plus = 0; plus <= 9; plus++) {
         const { s, it } = atAnvil(100 + plus, plus);
         const after = perform(s, { t: "melt", letter: it.letter! });
         assert.ok(!after.hero.pack.some((p) => p.id === it.id), `+${plus}: 녹였는데 무기가 남았다`);
-        assert.equal(scrolls(after), plus, `+${plus} 에서 나온 장수가 다르다`);
+        assert.equal(scrolls(after), Math.max(1, plus), `+${plus} 에서 나온 장수가 다르다`);
     }
 });
 
-test("+0 은 못 녹인다 — 무기도 턴도 그대로", () => {
+// 강화 안 된 칼도 한 장은 나와야 한다. 안 그러면 층마다 떨어지는 칼이 그냥 쓰레기이고,
+// 모루는 **이미 키운 무기를 갈아 끼울 때만** 쓰는 좁은 칸이 된다.
+test("강화 없는 무기도 한 장은 나온다", () => {
     const { s, it } = atAnvil(12, 0);
-    const turnBefore = s.turn;
+    assert.equal(meltYield(it), 1, "화면이 적을 장수부터 0 이다");
     const after = perform(s, { t: "melt", letter: it.letter! });
-    assert.ok(after.hero.pack.some((p) => p.id === it.id), "뽑을 것도 없는데 무기가 사라졌다");
-    assert.equal(scrolls(after), 0);
-    assert.equal(after.turn, turnBefore, "아무 일도 안 났는데 턴이 갔다");
-    assert.ok(after.messages.some((m) => m.includes("뽑아낼 것이 없다")));
+    assert.ok(!after.hero.pack.some((p) => p.id === it.id), "녹였는데 무기가 남았다");
+    assert.equal(scrolls(after), 1);
+});
+
+// 한 번에 대여섯씩 떨어지는 것들이라(`stack`) 낱개마다 한 장을 깔면 한 판에 **열여덟
+// 장**이 나온다 — 재 봤다. 그러면 `+9` 가 그냥 걸어 들어오고 도박 구간이 사라진다.
+test("화살·표창은 깔아 주지 않는다 — 강화된 것만 되뽑는다", () => {
+    for (const type of ["dart", "arrow", "silver arrow"]) {
+        const { s, it } = atAnvil(30, 0, type, 6);
+        assert.equal(meltYield(it), 0, `${type}: 강화도 없는데 나올 것이 있다`);
+        const turnBefore = s.turn;
+        const after = perform(s, { t: "melt", letter: it.letter! });
+        assert.equal(after.hero.pack.find((p) => p.id === it.id)?.count, 6, `${type}: 한 대가 사라졌다`);
+        assert.equal(scrolls(after), 0);
+        assert.equal(after.turn, turnBefore, `${type}: 아무 일도 안 났는데 턴이 갔다`);
+        assert.ok(after.messages.some((m) => m.includes("뽑아낼 것이 없다")));
+    }
+    // 강화된 화살은 그 수치만큼 나온다.
+    const { s, it } = atAnvil(31, 3, "dart", 6);
+    assert.equal(meltYield(it), 3);
+    assert.equal(scrolls(perform(s, { t: "melt", letter: it.letter! })), 3);
 });
 
 test("겹쳐 쌓인 것은 한 자루씩 녹는다", () => {

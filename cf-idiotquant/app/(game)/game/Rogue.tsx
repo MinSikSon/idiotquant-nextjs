@@ -33,7 +33,7 @@ import {
     survey,
     tombScore,
 } from "@/lib/rogue/game";
-import { ENCHANT_MAX, describe, enchantOdds, isThrowable, itemPower } from "@/lib/rogue/items";
+import { ENCHANT_MAX, describe, enchantOdds, isThrowable, itemPower, meltYield } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
 import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
@@ -468,10 +468,14 @@ export default function Rogue() {
         switch (it.kind) {
             case "weapon":
                 if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
-                // **모루 위에서만** 뜬다. 강화 수치가 0 이면 뽑을 것이 없어 눌러도 아무
-                // 일이 안 나므로, 아예 안 세운다 — 눌러도 안 되는 줄은 고장처럼 읽힌다.
-                if (onAnvil && plusOf(it) > 0) {
-                    out.push({ label: `녹인다 (주문서 ${plusOf(it)}장)`, on: go({ t: "melt", letter: it.letter! }) });
+                // **모루 위에서만** 뜬다. 나올 것이 없으면(화살 한 대 같은 것) 눌러도
+                // 아무 일이 안 나므로 아예 안 세운다 — 눌러도 안 되는 줄은 고장처럼 읽힌다.
+                // 장수는 **엔진이 낸 값**(`meltYield`)을 그대로 적는다.
+                if (onAnvil && meltYield(it) > 0) {
+                    out.push({
+                        label: `녹인다 (주문서 ${meltYield(it)}장)`,
+                        on: go({ t: "melt", letter: it.letter! }),
+                    });
                 }
                 break;
             case "armor":
@@ -950,9 +954,11 @@ export default function Rogue() {
                         <p className="text-[var(--rg-faint)]">
                             <b className="text-[var(--rg-anvil)]">&amp;</b> 는{" "}
                             <b className="text-[var(--rg-muted)]">모루</b>입니다. 층마다 하나 있고, 그
-                            칸에 서서 <b>배낭</b>을 열면 강화된 무기에 <b>녹인다</b>가 뜹니다. 무기는
-                            사라지고 <b>강화 수치만큼</b> 주문서가 나옵니다 — <b>+5</b> 짜리 장검이
-                            다섯 장이 됩니다. 더 좋은 칼을 주웠을 때 <b>강화를 옮겨 심는</b> 길입니다.
+                            칸에 서서 <b>배낭</b>을 열면 무기에 <b>녹인다</b>가 뜹니다. 무기는
+                            사라지고 주문서가 나옵니다 — <b>쇠붙이 하나에 한 장</b>이 깔리고, 강화된
+                            것은 그 수치만큼입니다(<b>+5</b> 짜리 장검이면 다섯 장). 더 좋은 칼을
+                            주웠을 때 <b>강화를 옮겨 심는</b> 길입니다. 화살·표창은 소모품이라 걸린
+                            강화만 되뽑습니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.
