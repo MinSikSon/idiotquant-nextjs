@@ -125,14 +125,13 @@ export const POTIONS: Record<string, { name: string; freq: number; depth: number
 export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {
     "magic mapping": { name: "지도", freq: 8, depth: 3 },
     teleport: { name: "순간이동", freq: 8, depth: 1 },
-    // **갑옷 강화는 없다.** 강화는 무기 하나로 모았다 — 둘이면 주문서가 반씩 나뉘어
-    // 어느 쪽도 안 오르고, 「모루에 녹여 되뽑는다」는 길도 무기에만 있어서 갑옷 쪽은
-    // 되돌릴 방법 없이 운에만 기대게 된다.
+    // **갑옷 강화가 돌아왔다.** 한때 뺐던 까닭은 「되돌리는 길(모루)이 무기에만 있어서
+    // 갑옷 쪽은 운에만 기댄다」였는데, 이제 **갑옷도 녹는다.** 그 까닭이 사라졌다.
     //
-    // **무기 쪽 빈도는 그대로 10 이다.** 갑옷 몫을 여기 얹으면 강화 속도가 갑절이 되는데,
-    // 이번에 모루라는 **두 번째 공급처**가 같이 생겼다. 둘을 한꺼번에 올리면 무엇이
-    // 움직였는지 잴 수가 없다.
+    // 둘의 빈도를 같게 둔다. 한쪽이 잦으면 그쪽만 자라고, 안 자라는 쪽은 그냥 없는 것과
+    // 같아진다 — 갑옷을 없앴던 때가 실제로 그 모양이었다.
     "enchant weapon": { name: "무기 강화", freq: 10, depth: 1 },
+    "enchant armor": { name: "갑옷 강화", freq: 10, depth: 1 },
     identify: { name: "감정", freq: 14, depth: 1 },
     "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
     "aggravate monsters": { name: "도발", freq: 5, depth: 2 },
@@ -338,29 +337,56 @@ export function enchantOdds(plus: number): number {
 }
 
 /**
- * 모루에 **한 자루** 올렸을 때 나오는 주문서 장수.
+ * 그 물건에 걸린 **강화 수치** — 무기는 명중, 갑옷은 방어.
  *
- * **쇠붙이 하나에 한 장이 깔린다.** 강화 안 된 무기도 녹이면 한 장이 나온다 — 안 그러면
- * 층마다 떨어지는 칼이 그냥 쓰레기이고, 모루는 이미 키운 무기를 갈아 끼울 때만 쓰는
- * 좁은 칸이 된다. 강화된 것은 그 수치가 그대로 나온다(`+5` → 다섯 장).
+ * **한 자리에서 읽는다.** 강화도 모루도 화면도 이 값을 보는데, `it.kind === "armor" ?
+ * it.plusArmor : it.plusHit` 를 부르는 쪽마다 적으면 어느 날 한 군데가 빠진다 —
+ * 실제로 갑옷 강화를 없앴다 되살리는 사이에 그 갈래가 세 군데로 흩어져 있었다.
+ */
+export function enchantOf(it: Item): number {
+    return (it.kind === "armor" ? it.plusArmor : it.plusHit) ?? 0;
+}
+
+/** 녹일 때 **강화 한 칸이 주문서로 돌아올 확률.** 화면이 적는 값도 이것 하나다. */
+export const MELT_RETURN = 0.7;
+
+/**
+ * 모루에 **하나** 올렸을 때 나올 수 있는 주문서 — 「반드시」와 「어쩌면」으로 나뉜다.
+ *
+ * **쇠붙이 하나에 한 장이 깔린다**(`sure`). 강화 안 된 것도 녹이면 한 장이 나온다 —
+ * 안 그러면 층마다 떨어지는 칼이 그냥 쓰레기이고, 모루는 이미 키운 것을 갈아 끼울 때만
+ * 쓰는 좁은 칸이 된다.
+ *
+ * **걸린 강화는 한 칸씩 따로 굴린다**(`risky`, 칸마다 `MELT_RETURN`). 예전에는 그대로
+ * 다 돌려줬는데, 그러면 **옮겨 심기가 공짜**다 — 아무 때나 녹였다 다시 걸어도 잃는 것이
+ * 없으니 「지금 이 칼에 넣을까」가 결정이 아니게 된다. 확률이 그 값을 매긴다.
  *
  * **화살·표창은 깔아 주지 않는다.** 겹쳐 쌓이는 것들이라 한 번에 대여섯 개씩 떨어지고
  * (`stack`), 낱개마다 한 장을 깔면 **한 판에 열여덟 장**이 나온다 — 재 봤다. 그러면
  * `+9` 가 그냥 걸어 들어오고 도박 구간이 사라진다. 화살 한 대는 벼려 만든 무기가
  * 아니라 **소모품**이라는 것이 이 구분의 근거다: 걸린 강화만 되뽑는다.
- *
- * ```
- * 한 판(13층까지) 평균 · 시뮬레이션 2,000판
- *   떨어지는 주문서                1.3장
- *   +0 은 0장(옛 규칙)             3.8장
- *   +0 도 1장 · 화살도 낱개마다   18.6장   ← 너무 많다
- *   +0 도 1장 · 화살은 제외        6.4장   ← 이것
- * ```
  */
-export function meltYield(it: Item): number {
-    if (it.kind !== "weapon") return 0;
-    const plus = it.plusHit ?? 0;
-    return WEAPONS[it.type]?.stack ? plus : Math.max(1, plus);
+export function meltYield(it: Item): { sure: number; risky: number } {
+    if (it.kind === "armor") return { sure: 1, risky: enchantOf(it) };
+    if (it.kind !== "weapon") return { sure: 0, risky: 0 };
+    const plus = enchantOf(it);
+    return WEAPONS[it.type]?.stack ? { sure: 0, risky: plus } : { sure: 1, risky: plus };
+}
+
+/** 그 물건에서 나올 수 있는 **가장 많은** 장수 — 화면이 단추에 적는 값. */
+export function meltMax(it: Item): number {
+    const { sure, risky } = meltYield(it);
+    return sure + risky;
+}
+
+/** 실제로 나온 장수 — 강화 칸마다 한 번씩 굴린다. */
+export function meltRoll(it: Item, rng: Rng): number {
+    const { sure, risky } = meltYield(it);
+    let got = sure;
+    for (let i = 0; i < risky; i++) {
+        if (rng.rnd(100) < Math.round(MELT_RETURN * 100)) got++;
+    }
+    return got;
 }
 
 /**

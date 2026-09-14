@@ -66,8 +66,11 @@ import {
     isThrowable,
     itemChar,
     ENCHANT_MAX,
+    MELT_RETURN,
     enchantOdds,
+    enchantOf,
     itemPower,
+    meltRoll,
     meltYield,
     makeItem,
     defenseOf,
@@ -122,7 +125,7 @@ export type Command =
     | { t: "zap"; letter: string; dx: number; dy: number }
     | { t: "throw"; letter: string; dx: number; dy: number }
     | { t: "search" }
-    /** 모루 위에서 무기를 녹인다 — 무기는 사라지고 강화 주문서가 나온다. */
+    /** 모루 위에서 무기나 갑옷을 녹인다 — 그 물건은 사라지고 강화 주문서가 나온다. */
     | { t: "melt"; letter: string }
     | { t: "drop"; letter: string };
 
@@ -324,7 +327,7 @@ function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
     // **모루는 밟았을 때 말해 준다.** 「배낭 → 무기 → 녹인다」는 눌러 봐야 나오는 길이라,
     // 여기서 한 마디 안 하면 `&` 가 그냥 못 보던 글자로 남는다.
     if (level.anvil && level.anvil.x === nx && level.anvil.y === ny) {
-        say(state, "모루다. 배낭의 무기를 녹여 강화 주문서를 되뽑을 수 있다.");
+        say(state, "모루다. 배낭의 무기나 갑옷을 녹여 강화 주문서를 되뽑을 수 있다.");
     }
 
     const trap = level.traps.find((t) => t.x === nx && t.y === ny);
@@ -428,19 +431,18 @@ function quaff(state: GameState, letter: string, rng: Rng): boolean {
 }
 
 /**
- * 이 주문서가 **고를 것을 묻는가** — 강화 주문서인가.
+ * 이 주문서가 **고를 것을 묻는가** — 무엇 중에서 고르는가.
  *
  * 화면이 「고르기를 한 번 더 띄울까」를 정하는 데 쓴다. **판단이 아니라 값 읽기**라
  * 규칙이 두 벌이 되지 않는다(`onStairs` 와 같은 자리 — 못 박은 규칙 1). 눌러도
  * `read` 가 한 번 더 본다: 대상 없이 들어오면 아무 일도 안 난다.
- *
- * 한때 `"weapon" | "armor" | null` 을 돌려줬다. **갑옷 강화를 없애면서 참·거짓이 됐다** —
- * 고를 것이 한 가지뿐인데 종류를 돌려주면, 화면 쪽에 「무기면 이 제목, 갑옷이면 저 제목」
- * 하는 갈래가 남아서 있지도 않은 경우를 계속 돌본다.
  */
-export function isEnchantScroll(state: GameState, letter: string): boolean {
+export function enchantTarget(state: GameState, letter: string): ItemKind | null {
     const it = packItem(state.hero, letter);
-    return !!it && it.kind === "scroll" && it.type === "enchant weapon";
+    if (!it || it.kind !== "scroll") return null;
+    if (it.type === "enchant weapon") return "weapon";
+    if (it.type === "enchant armor") return "armor";
+    return null;
 }
 
 /**
@@ -454,7 +456,7 @@ export function isEnchantScroll(state: GameState, letter: string): boolean {
  */
 function enchant(state: GameState, it: Item, rng: Rng): void {
     const hero = state.hero;
-    const plus = it.plusHit ?? 0;
+    const plus = enchantOf(it);
     const odds = enchantOdds(plus);
     // 굴린 눈을 남긴다 — 싸움의 굴림 줄과 같은 모양이다(`combat.DETAIL`).
     const roll = rng.rnd(100) + 1;
@@ -472,9 +474,16 @@ function enchant(state: GameState, it: Item, rng: Rng): void {
         say(state, `${describe(it, state.known, state.appearance)}이(가) 산산이 부서졌다!`);
         return;
     }
-    it.plusHit = plus + 1;
-    it.plusDam = (it.plusDam ?? 0) + 1;
-    say(state, `${describe(it, state.known, state.appearance)}이(가) 파랗게 빛난다.${withPower(it, state)}`);
+    if (it.kind === "armor") it.plusArmor = plus + 1;
+    else {
+        it.plusHit = plus + 1;
+        it.plusDam = (it.plusDam ?? 0) + 1;
+    }
+    say(
+        state,
+        `${describe(it, state.known, state.appearance)}이(가) ` +
+            `${it.kind === "armor" ? "단단해졌다" : "파랗게 빛난다"}.${withPower(it, state)}`,
+    );
 }
 
 function read(state: GameState, letter: string, rng: Rng, target?: string): boolean {
@@ -492,14 +501,15 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
     // ── 강화 주문서는 **고를 것을 먼저 묻는다** ─────────────────────────────
     // 대상 없이 들어오면 **아무 일도 안 난다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3).
     // 화면이 고르기를 띄우는 사이에 판이 한 턴 흐르면 안 된다.
-    if (isEnchantScroll(state, letter)) {
+    const want = enchantTarget(state, letter);
+    if (want) {
         if (!target) return false;
         const on = packItem(hero, target);
-        if (!on || on.kind !== "weapon") {
-            say(state, "강화할 무기가 아니다.");
+        if (!on || on.kind !== want) {
+            say(state, want === "weapon" ? "강화할 무기가 아니다." : "강화할 갑옷이 아니다.");
             return false;
         }
-        const plus = on.plusHit ?? 0;
+        const plus = enchantOf(on);
         if (plus >= ENCHANT_MAX) {
             say(state, "더 손댈 곳이 없다.");
             return false;
@@ -526,8 +536,8 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             say(state, "몸이 홱 당겨졌다.");
             break;
         }
-        // 강화 주문서(`enchant weapon`)는 위에서 이미 끝났다 — 고를 것을 묻고
-        // 굴려야 해서 갈래가 다르다.
+        // 강화 주문서(`enchant weapon`·`enchant armor`)는 위에서 이미 끝났다 —
+        // 고를 것을 묻고 굴려야 해서 갈래가 다르다.
         case "identify":
             for (const p of hero.pack) state.known[`${p.kind}:${p.type}`] = true;
             say(state, "배낭 속의 것들이 무엇인지 알겠다.");
@@ -687,33 +697,35 @@ function drop(state: GameState, letter: string): boolean {
 }
 
 /**
- * 무기를 모루에 녹여 **강화 주문서를 되뽑는다.** 무기는 사라진다.
+ * 무기나 갑옷을 모루에 녹여 **강화 주문서를 되뽑는다.** 그 물건은 사라진다.
  *
  * ── 왜 이것이 있나 ──────────────────────────────────────────────────
  * 강화는 **못 되돌린다.** 4층에서 주운 장검에 주문서 다섯 장을 부어 `+5` 를 만들고 나면,
  * 16층에서 목마른 자의 검이 떨어져도 그 다섯 장이 낡은 칼에 갇혀 있다. 그러면 **좋은
- * 무기를 줍는 것이 반갑지 않은** 기묘한 자리가 생긴다. 모루가 그 자리를 연다 — 값은
- * 무기 자체이고, 되뽑은 주문서로 새 칼을 올린다.
+ * 물건을 줍는 것이 반갑지 않은** 기묘한 자리가 생긴다. 모루가 그 자리를 연다 — 값은
+ * 그 물건 자체이고, 되뽑은 주문서로 새것을 올린다.
  *
- * 나오는 수는 `meltYield` 한 자리에서 낸다 — **쇠붙이 하나에 한 장이 깔리고**, 강화된
- * 것은 그 수치가 그대로 나온다(`+5` → 다섯 장). 화살·표창만 예외다(그쪽 머리말 참고).
- * 나올 것이 없으면 **주문서도 턴도 안 쓴다**(못 박은 규칙 3).
+ * **다 돌아오지는 않는다**(`meltRoll`). 강화 한 칸마다 따로 굴려 `MELT_RETURN` 만큼만
+ * 돌아온다 — 다 돌려주면 **옮겨 심기가 공짜**가 되어 「지금 이 칼에 넣을까, 더 좋은 것을
+ * 주울 때까지 아낄까」가 결정이 아니게 된다. 쇠붙이 몫 한 장은 반드시 나온다.
  *
- * **저주받은 것을 쥐고 있으면 못 녹인다** — 내려놓지도 못하는 물건을 모루에 올릴 수는
- * 없다. 배낭에 든 저주받은 무기는 녹일 수 있다(손에 붙은 것이 아니므로).
+ * 나올 것이 없으면(화살 한 대 같은 것) **주문서도 턴도 안 쓴다**(못 박은 규칙 3).
  *
- * **무기를 먼저 빼고 주문서를 넣는다.** 순서가 반대면 배낭이 꽉 찼을 때 자리가 없어
- * 실패하는데, 정작 자리를 비우는 것은 그 무기다.
+ * **저주받은 것을 쥐거나 입고 있으면 못 녹인다** — 벗지도 못하는 물건을 모루에 올릴 수는
+ * 없다. 배낭에 든 것은 녹일 수 있다(몸에 붙은 것이 아니므로).
+ *
+ * **그 물건을 먼저 빼고 주문서를 넣는다.** 순서가 반대면 배낭이 꽉 찼을 때 자리가 없어
+ * 실패하는데, 정작 자리를 비우는 것은 그 물건이다.
  */
-function melt(state: GameState, letter: string): boolean {
+function melt(state: GameState, letter: string, rng: Rng): boolean {
     const { hero, level } = state;
     if (!level.anvil || level.anvil.x !== hero.x || level.anvil.y !== hero.y) {
         say(state, "여기에는 모루가 없다.");
         return false;
     }
     const it = packItem(hero, letter);
-    if (!it || it.kind !== "weapon") {
-        say(state, "모루에 올릴 무기가 아니다.");
+    if (!it || (it.kind !== "weapon" && it.kind !== "armor")) {
+        say(state, "모루에 올릴 것이 아니다.");
         return false;
     }
     if (it.cursed && isWorn(hero, it)) {
@@ -721,26 +733,33 @@ function melt(state: GameState, letter: string): boolean {
         say(state, "몸에서 떨어지지 않는다!");
         return false;
     }
-    const got = meltYield(it);
-    if (got <= 0) {
+    const { sure, risky } = meltYield(it);
+    if (sure + risky <= 0) {
         say(state, "뽑아낼 것이 없다 — 벼린 쇠가 아니다.");
         return false;
     }
 
-    // **한 자루만 녹인다.** 표창처럼 겹쳐 쌓인 것도 한 번에 한 자루다 — 손질은 자루마다
-    // 같은 값이므로 뭉텅이째 태우면 같은 주문서가 갑절로 쏟아진다.
+    // **하나만 녹인다.** 표창처럼 겹쳐 쌓인 것도 한 번에 하나다 — 손질은 자루마다 같은
+    // 값이므로 뭉텅이째 태우면 같은 주문서가 갑절로 쏟아진다.
     const name = describe(it, state.known, state.appearance);
+    const kind = it.kind;
+    const got = meltRoll(it, rng);
     takeFromPack(hero, it, 1);
-    const made = makeItem("scroll", "enchant weapon", state.nextItemId++, -1, -1, got);
-    const inPack = addToPack(hero, made);
-    state.known["scroll:enchant weapon"] = true;
+    const type = kind === "armor" ? "enchant armor" : "enchant weapon";
+    const label = kind === "armor" ? "갑옷 강화 주문서" : "무기 강화 주문서";
     say(state, `${name}을(를) 모루에 올렸다. 쇳물이 되어 흘러내린다.`);
-    say(
-        state,
-        inPack
-            ? `무기 강화 주문서 ${got}장을 되뽑았다.`
-            : `배낭이 꽉 차서 ${got}장이 발밑에 떨어졌다.`,
-    );
+    // **굴린 것을 적는다.** 확률이 걸린 자리는 기록에 남아야 「왜 두 장뿐인가」에 답이 된다.
+    if (risky > 0) {
+        say(state, `${DETAIL}되뽑기 강화 ${risky}칸 × ${Math.round(MELT_RETURN * 100)}%  → ${got - sure}칸 회수`);
+    }
+    if (got <= 0) {
+        say(state, `${label}가 한 장도 안 남았다.`);
+        return true;
+    }
+    const made = makeItem("scroll", type, state.nextItemId++, -1, -1, got);
+    const inPack = addToPack(hero, made);
+    state.known[`scroll:${type}`] = true;
+    say(state, inPack ? `${label} ${got}장을 되뽑았다.` : `배낭이 꽉 차서 ${got}장이 발밑에 떨어졌다.`);
     if (!inPack) {
         made.x = hero.x;
         made.y = hero.y;
@@ -1273,7 +1292,7 @@ export function perform(state: GameState, cmd: Command): GameState {
             acted = drop(state, cmd.letter);
             break;
         case "melt":
-            acted = melt(state, cmd.letter);
+            acted = melt(state, cmd.letter, rng);
             break;
         case "putOn":
             acted = putOn(state, cmd.letter);

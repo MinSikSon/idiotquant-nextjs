@@ -406,9 +406,10 @@ test("옛 저장(모루가 없던 때)은 그 층에 모루가 없는 채로 굴
     assert.ok(dug.anvil, "새로 판 층에도 모루가 없다");
 });
 
-// 갑옷 강화 주문서는 규칙에서 없앴다. 그대로 두면 **읽어도 걸릴 갈래가 없어 말없이
-// 사라지기만 하고**, 이름표도 표에 없어 「이름 없는 주문서」로 뜬다.
-test("갑옷 강화 주문서는 되읽으며 무기 강화로 바뀐다", () => {
+// 갑옷 강화를 잠깐 없앴던 판이 있었고, 그때는 되읽으며 무기 강화로 바꿨다. **지금은
+// 갑옷 강화가 돌아왔으니 그 바꿔치기가 남아 있으면 안 된다** — 남아 있으면 사람이
+// 모아 둔 갑옷 강화가 열 때마다 무기 강화로 둔갑한다.
+test("갑옷 강화 주문서는 되읽어도 갑옷 강화 그대로다", () => {
     const s = newGame(6);
     const o = JSON.parse(serialize(s));
     o.hero.pack.push({ id: 900, kind: "scroll", type: "enchant armor", count: 2, x: -1, y: -1, letter: "z" });
@@ -416,12 +417,12 @@ test("갑옷 강화 주문서는 되읽으며 무기 강화로 바뀐다", () =>
 
     const back = deserialize(JSON.stringify(o))!;
     const inPack = packItem(back.hero, "z")!;
-    assert.equal(inPack.type, "enchant weapon", "배낭의 것이 안 바뀌었다");
+    assert.equal(inPack.type, "enchant armor", "배낭의 것이 바뀌었다");
     assert.equal(inPack.count, 2, "장수가 달라졌다");
     assert.equal(
         back.level.items.find((i) => i.id === 901)!.type,
-        "enchant weapon",
-        "바닥에 떨어진 것이 안 바뀌었다",
+        "enchant armor",
+        "바닥에 떨어진 것이 바뀌었다",
     );
 });
 
