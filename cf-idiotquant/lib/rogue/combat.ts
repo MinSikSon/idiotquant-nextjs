@@ -471,6 +471,22 @@ export function monsterDamBonus(m: Monster): number {
  *
  * **적혀 있는 것만 한다.** 하나가 두 가지를 하면 무엇 때문에 무서운지를 알 수 없다.
  */
+/**
+ * 묶는 수법 — **이미 묶인 사람은 다시 묶이지 않는다.**
+ *
+ * 그냥 더하면 안 된다. 잠은 **턴당 1씩만** 풀리는데 상대는 매 턴 때리므로, 한 번에
+ * 2~4 를 얹으면 쌓이는 속도가 풀리는 속도를 앞질러 **영영 못 움직인다** — 얼음괴물
+ * 옆에서 299턴을 내리 묶이는 것을 실제로 쟀다. 얼음괴물은 1층부터 나오는 놈이라
+ * 그건 수법이 아니라 사형 선고다.
+ *
+ * 값에 상한만 씌우는 것으로는 안 된다. 남은 턴이 4 를 안 넘어도 **매 턴 다시 4 로
+ * 채워지면** 갇힌 것은 똑같다 — 그것도 재 보고 알았다. 묶는 것은 **한 번에 한 번**이고,
+ * 풀리는 그 턴은 반드시 내 차례다.
+ */
+function freeze(hero: Hero, turns: number): number | null {
+    return hero.asleep > 0 ? null : turns;
+}
+
 function special(state: GameState, m: Monster, rng: Rng): string[] {
     // 무력화 지팡이를 맞은 놈은 때리기만 한다. **아무 일도 안 났으니 배울 것도 없다.**
     if (m.cancelled) return [`${m.def.name}이(가) 헛되이 달려든다.`];
@@ -517,12 +533,16 @@ function specialEffect(state: GameState, m: Monster, rng: Rng): string[] {
         }
         case "I": {
             // 얼음괴물 — 얼린다.
-            hero.asleep += rng.between(2, 4);
+            const t = freeze(hero, rng.between(2, 4));
+            if (t === null) return ["얼음괴물이 이미 얼어붙은 몸을 할퀸다."];
+            hero.asleep = t;
             return ["몸이 얼어붙어 움직일 수 없다!"];
         }
         case "F": {
             // 파리지옥 — 붙잡는다.
-            hero.asleep += 1;
+            const t = freeze(hero, 1);
+            if (t === null) return ["덩굴이 이미 감긴 발목을 조인다."];
+            hero.asleep = t;
             return ["덩굴이 발목을 감았다!"];
         }
         default:

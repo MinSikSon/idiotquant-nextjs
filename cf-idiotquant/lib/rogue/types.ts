@@ -196,7 +196,17 @@ export interface Level {
     anvil: Pos | null;
     /** 미로층인가 — 방 대신 통로가 얽힌 층. 깊을수록 잦다. */
     maze: boolean;
+    /**
+     * 특수 방 — **새로 만들지 않고 이미 생긴 방 중에서 고른다.**
+     *
+     * 고르는 조건의 핵심은 **문이 하나**라는 것이다. 들어가면 나오는 길이 하나라
+     * 위험과 보상이 같은 자리에 선다. 층에 하나까지고, 옛 저장에는 없다(`null`).
+     */
+    special: { room: number; kind: SpecialKind } | null;
 }
+
+/** 특수 방의 갈래. 무엇이 더 나오고 무엇이 덜 나오는지는 `dungeon.SPECIAL_ROOMS` 가 안다. */
+export type SpecialKind = "treasure" | "armory" | "store" | "altar";
 
 export interface Hero {
     x: number;
@@ -279,6 +289,19 @@ export interface GameState {
      * 구별할 수 없다.
      */
     specials: Record<string, number>;
+    /**
+     * 강화 주문서 없이 지나온 층 수 — **판 안에서만 산다.**
+     *
+     * 도감과 달리 판을 안 넘긴다. 이건 세상의 사실이 아니라 **이 판의 운**이라,
+     * 새 판이 지난 판의 가뭄을 물려받으면 첫 층부터 까닭 없이 후해진다.
+     */
+    enchantDrought: number;
+    /**
+     * 식량 없이 지나온 층 수 — **판 안에서만 산다**(`enchantDrought` 와 같은 까닭).
+     *
+     * 이건 밸런스가 아니라 **죽는 까닭의 문제**다. 굶어 죽는 것이 운이면 배울 것이 안 남는다.
+     */
+    foodDrought: number;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
 }

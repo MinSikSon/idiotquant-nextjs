@@ -250,7 +250,14 @@ export function itemTier(depth: number, rng: Rng): number {
  * `band` 를 주면 위쪽도 자른다 — 장비는 낡으면 안 떨어진다. 안 주면 하한만 본다.
  * 띠가 비면(사다리에 구멍이 있으면) 하한까지만 물러선다. 그마저 비는 일은 1층짜리
  * 물건이 있는 한 없고, 테스트가 스물여섯 층을 다 훑어 확인한다.
+ *
+ * **띠를 줄 때는 그 안에서 위쪽에 무게를 싣는다**(`GEAR_TILT`). 20층 장비 띠는
+ * `[6, 23]` 이라 단검이 그대로 들어 있는데, 띠를 좁혀서 빼면 「낡은 것이 아예 안 나와
+ * 등급이 튄다」가 된다. 띠는 그대로 두고 **기울기만** 준다 — 띠의 맨 위가 맨 아래보다
+ * 1.8배 자주 나온다.
  */
+const GEAR_TILT = 0.8;
+
 function weightedAt<T extends { freq: number; depth: number }>(
     table: Record<string, T>,
     tier: number,
@@ -261,11 +268,22 @@ function weightedAt<T extends { freq: number; depth: number }>(
     const fits = all.filter((k) => table[k].depth <= tier);
     const keys = fits.filter((k) => table[k].depth > tier - band);
     const pool = keys.length ? keys : fits.length ? fits : all;
-    const total = pool.reduce((s, k) => s + table[k].freq, 0);
+
+    // 기울기는 **띠를 줄 때만**(장비). 물약·주문서까지 기울이면 깊은 층에서 감정과
+    // 체력 회복이 밀려나는데, 그건 「등급이 오른다」가 아니라 그냥 소모품이 마르는 것이다.
+    const lo = Math.min(...pool.map((k) => table[k].depth));
+    const hi = Math.max(...pool.map((k) => table[k].depth));
+    const span = Math.max(1, hi - lo);
+    const tilt = (k: string) =>
+        band === Infinity ? 1 : 1 + GEAR_TILT * ((table[k].depth - lo) / span);
+    // 정수 굴림이라 백 배로 키운다 — 안 키우면 기울기가 반올림에 다 먹힌다.
+    const w = pool.map((k) => Math.max(1, Math.round(table[k].freq * tilt(k) * 100)));
+
+    const total = w.reduce((s, n) => s + n, 0);
     let r = rng.rnd(total);
-    for (const k of pool) {
-        r -= table[k].freq;
-        if (r < 0) return k;
+    for (let i = 0; i < pool.length; i++) {
+        r -= w[i];
+        if (r < 0) return pool[i];
     }
     return pool[pool.length - 1];
 }
@@ -390,21 +408,94 @@ export function meltRoll(it: Item, rng: Rng): number {
 }
 
 /**
+ * 물건의 **분류** — 뽑기의 첫 갈래.
+ *
+ * **강화 주문서가 「주문서」에서 떨어져 나와 여기 선다.** 강화는 이 게임의 캐릭터
+ * 키우기 자리인데(`CLAUDE.md`), 주문서 안에 섞여 있으면 **층별로 조절할 손잡이가
+ * 없다** — 여덟 종 중 둘이라 빈도표를 건드리면 감정·지도까지 같이 움직인다.
+ */
+export type Category = "gold" | "potion" | "scroll" | "food" | "enchant" | "weapon" | "armor" | "ring" | "wand";
+
+/**
+ * 층 구간별 분류 가중치.
+ *
+ * **여기서 층을 타는 것은 강화 주문서뿐이라고 봐도 된다**(6 → 11). 나머지는 그 몫을
+ * 내주느라 조금씩 줄 뿐이다. 식량과 물약을 거의 안 건드리는 까닭이 그것이다 —
+ * 깊은 층에서 그 둘이 마르면 **굶어 죽는 까닭이 운**이 된다.
+ */
+const CATEGORIES: { upTo: number; w: Record<Category, number> }[] = [
+    { upTo: 5, w: { gold: 24, potion: 15, scroll: 13, food: 10, enchant: 6, weapon: 12, armor: 10, ring: 5, wand: 5 } },
+    { upTo: 12, w: { gold: 22, potion: 15, scroll: 12, food: 9, enchant: 8, weapon: 12, armor: 10, ring: 6, wand: 6 } },
+    { upTo: 19, w: { gold: 20, potion: 14, scroll: 11, food: 9, enchant: 10, weapon: 12, armor: 11, ring: 6, wand: 7 } },
+    { upTo: 26, w: { gold: 18, potion: 14, scroll: 10, food: 9, enchant: 11, weapon: 13, armor: 12, ring: 5, wand: 8 } },
+];
+
+export function categoryWeights(depth: number): Record<Category, number> {
+    return (CATEGORIES.find((b) => depth <= b.upTo) ?? CATEGORIES[CATEGORIES.length - 1]).w;
+}
+
+/** 강화 주문서 둘. 최상위 분류로 섰으므로 **보통 주문서 통에서는 뺀다.** */
+export const ENCHANT_SCROLLS = ["enchant weapon", "enchant armor"];
+
+/**
+ * 강화를 뺀 주문서 통.
+ *
+ * 안 빼면 강화가 **두 통에 다 들어** 있어서, 최상위 가중치를 6 으로 낮춰도 주문서
+ * 쪽으로 새어 나온다 — 손잡이를 달아 놓고 안 듣는 꼴이다.
+ */
+const PLAIN_SCROLLS = Object.fromEntries(
+    Object.entries(SCROLLS).filter(([k]) => !ENCHANT_SCROLLS.includes(k)),
+) as typeof SCROLLS;
+
+/**
+ * 분류 하나 뽑기.
+ *
+ * `enchantScale` 은 **그 층의 사정**이다(가뭄 보정·모루·1층). 부르는 쪽이 층을 알고
+ * 여기는 비율만 안다 — 층 규칙을 여기 넣으면 이 함수가 던전을 알게 된다.
+ */
+export function pickCategory(
+    depth: number,
+    rng: Rng,
+    enchantScale = 1,
+    /** 특수 방의 편향 — 분류마다 곱한다. 0 이면 그 방에서는 안 나온다. */
+    bias: Partial<Record<Category, number>> = {},
+): Category {
+    const base = categoryWeights(depth);
+    // `rng.rnd` 는 정수만 준다. 열 배로 키워 굴리면 0.7·2.5 같은 배율이 살아난다.
+    const w = Object.entries(base).map(
+        ([k, n]) =>
+            [
+                k as Category,
+                Math.round(n * 10 * (k === "enchant" ? enchantScale : 1) * (bias[k as Category] ?? 1)),
+            ] as const,
+    );
+    const total = w.reduce((s, [, n]) => s + n, 0);
+    let r = rng.rnd(total);
+    for (const [k, n] of w) {
+        r -= n;
+        if (r < 0) return k;
+    }
+    return "gold";
+}
+
+/**
  * 이 층에 떨어져 있을 물건 하나. 깊을수록 금화가 두둑하고 **물건의 등급이 높다.**
  *
- * 종류(금화냐 물약이냐 무기냐)를 고르는 확률은 층을 안 탄다 — 그것까지 층에 맡기면
- * 「깊은 층에서는 식량이 안 나온다」 같은 일이 생겨서 굶어 죽는 까닭이 운이 된다.
- * 층이 정하는 것은 **어느 등급의 물건인가**뿐이다.
+ * 분류는 부르는 쪽이 골라서 넘긴다(`pickCategory`) — 한 층에 강화 주문서를 두 장까지만
+ * 놓는 것 같은 **층 단위 규칙**은 물건 하나가 알 수 있는 것이 아니기 때문이다.
  */
-export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng): Item {
-    const r = rng.rnd(100);
-    if (r < 24) return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
+export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: Category): Item {
+    const c = cat ?? pickCategory(depth, rng);
+    if (c === "gold") return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
     const tier = itemTier(depth, rng);
-    if (r < 40) return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
-    if (r < 56) return makeItem("scroll", weightedAt(SCROLLS, tier, rng), id, x, y);
-    if (r < 66) return makeItem("food", "food ration", id, x, y);
+    if (c === "potion") return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
+    if (c === "scroll") return makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
+    if (c === "food") return makeItem("food", "food ration", id, x, y);
+    // **무기 쪽을 살짝 높인다**(55:45). 갑옷 강화는 피해를 깎는 쪽이라 한 장의 체감이
+    // 더 크고, 무기는 더 많이 부어야 티가 난다.
+    if (c === "enchant") return makeItem("scroll", rng.rnd(100) < 55 ? "enchant weapon" : "enchant armor", id, x, y);
 
-    if (r < 78) {
+    if (c === "weapon") {
         const type = weightedAt(WEAPONS, tier, rng, GEAR_BAND);
         const def = WEAPONS[type];
         // 화살과 다트는 한 줌씩 나온다 — 하나씩 던져 봐야 아무 일도 안 난다.
@@ -417,7 +508,7 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         return it;
     }
 
-    if (r < 88) {
+    if (c === "armor") {
         const it = makeItem("armor", weightedAt(ARMORS, tier, rng, GEAR_BAND), id, x, y);
         const e = rollEnchant(depth, rng);
         it.plusArmor = e.plus;
@@ -425,7 +516,7 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         return it;
     }
 
-    if (r < 95) {
+    if (c === "ring") {
         const type = weightedAt(RINGS, tier, rng);
         const it = makeItem("ring", type, id, x, y);
         const e = rollEnchant(depth, rng);

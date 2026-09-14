@@ -12,6 +12,7 @@
  * 방 고르기와 잇기는 전부 `Rng` 를 지난다 — 같은 시드는 같은 층이어야 다시 볼 수 있다.
  */
 
+import { type Category } from "./items";
 import {
     Rng,
 } from "./rng";
@@ -23,6 +24,7 @@ import {
     MAP_W,
     type Pos,
     type Room,
+    type SpecialKind,
     T,
     type Tile,
     idx,
@@ -52,6 +54,19 @@ const QUOTA_MIN = 2;
 const QUOTA_MAX = 7;
 /** 한 방에 놓이는 물건의 최대. */
 const ROOM_ITEM_CAP = 3;
+
+/**
+ * 특수 방 — 3층부터, 깊을수록 잦다. 넓고 **문이 하나뿐인** 방만 후보다.
+ *
+ * **이 확률은 「후보가 있는 층」에만 건다.** 기획서는 이 값을 층 전체의 확률로 적었는데,
+ * 재 보니 조건에 맞는 방이 있는 층이 **24.2%뿐**이라 그대로 넣으면 0.25 가 실제로는
+ * 0.06 이 된다 — 26층을 다 돌아도 특수 방을 한 번 볼까 말까다. 그래서 굴림을 후보가
+ * 있을 때로 옮기고 값을 그만큼 올렸다. 층 전체로 보면 기획서가 노린 20% 언저리가 된다.
+ */
+const SPECIAL_MIN_DEPTH = 3;
+const SPECIAL_SLOPE = 0.1;
+const SPECIAL_MAX_CHANCE = 0.85;
+const SPECIAL_MIN_AREA = 20;
 
 /** 칸의 경계 — 마지막 칸이 나머지를 먹는다. */
 function cellBounds(ci: number) {
@@ -495,6 +510,92 @@ function touching(a: Pos, b: Pos): boolean {
 }
 
 /** 그 방 안에서 실제로 놓을 수 있는 칸들 — 이미 찬 자리와 피할 자리를 뺀다. */
+/**
+ * 특수 방 — **새로 만들지 않고 이미 생긴 방 중에서 고른다.**
+ *
+ * 생성기를 안 건드리는 것이 이 설계의 값이다. 방의 모양은 그대로 두고 **무엇이 놓이는지**만
+ * 바꾼다 — 그래서 「층은 반드시 다 이어져야 한다」도, 막다른 길 규칙도 하나도 안 흔들린다.
+ *
+ * `bias` 는 분류 가중치에 곱한다. `monsters` 는 그 방에 설 놈의 배수다.
+ */
+export const SPECIAL_ROOMS: Record<
+    SpecialKind,
+    { name: string; kappa: number; bias: Partial<Record<Category, number>>; monsters: number; awake: boolean }
+> = {
+    // 금화와 반지가 쌓여 있고 **지키는 놈들이 깨어 있다.** 식량은 없다 — 보물방이
+    // 「먹을 것도 주는 방」이면 위험을 무릅쓸 까닭이 두 겹이 되어 저울이 흐려진다.
+    treasure: { name: "보물방", kappa: 2.0, bias: { gold: 3, ring: 2, food: 0 }, monsters: 2, awake: true },
+    // 장비만 나온다. 등급도 두 칸 위 — 무기고에서 단검이 나오면 무기고가 아니다.
+    armory: {
+        name: "무기고",
+        kappa: 1.8,
+        bias: { weapon: 4, armor: 4, gold: 0.3, potion: 0.3, scroll: 0.3, food: 0.3, enchant: 0.3, ring: 0.3, wand: 0.3 },
+        monsters: 1,
+        awake: false,
+    },
+    // 소모품 창고. 지키는 놈이 적은 대신 주는 것도 조용하다.
+    store: { name: "창고", kappa: 1.5, bias: { potion: 3, scroll: 3 }, monsters: 0.5, awake: false },
+    // 제단은 **몫이 작다**(κ 0.5). 대신 나오는 것이 강화라 값이 다르다 — 그리고 모루가
+    // 여기 선다. 물건 수로 보면 손해인 방인데 그래서 「찾아 들어갈 값이 있나」가 갈린다.
+    altar: { name: "제단", kappa: 0.5, bias: { enchant: 3 }, monsters: 1, awake: false },
+};
+
+/** 그 방의 문이 몇 개인가 — **비밀문도 문이다**(찾으면 열린다). */
+function doorCount(level: Level, r: Room): number {
+    if (r.gone) return 0;
+    let n = 0;
+    for (let x = r.x; x < r.x + r.w; x++) {
+        for (const y of [r.y, r.y + r.h - 1]) {
+            const t = level.tiles[idx(x, y)];
+            if (t === T.DOOR || t === T.SECRET) n++;
+        }
+    }
+    for (let y = r.y + 1; y < r.y + r.h - 1; y++) {
+        for (const x of [r.x, r.x + r.w - 1]) {
+            const t = level.tiles[idx(x, y)];
+            if (t === T.DOOR || t === T.SECRET) n++;
+        }
+    }
+    return n;
+}
+
+/**
+ * 이 층에 특수 방이 서는가, 선다면 어디에 무엇이.
+ *
+ * **문이 정확히 하나**인 것이 핵심 조건이다 — 들어가면 나오는 길이 하나라, 위험과
+ * 보상이 같은 자리에 선다. 계단이 있는 방은 뺀다(지나는 길에 공짜로 얻게 된다).
+ */
+export function pickSpecialRoom(
+    level: Level,
+    depth: number,
+    rng: Rng,
+): { room: number; kind: SpecialKind } | null {
+    if (depth < SPECIAL_MIN_DEPTH) return null;
+
+    const has = (r: Room, p: Pos | null) =>
+        !!p && p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+    const fits = level.rooms
+        .map((r, i) => ({ r, i }))
+        .filter(
+            ({ r }) =>
+                !r.gone &&
+                !r.maze &&
+                effectiveArea(level, r) >= SPECIAL_MIN_AREA &&
+                doorCount(level, r) === 1 &&
+                !has(r, level.stairs) &&
+                !has(r, level.upStairs),
+        );
+    // **후보를 먼저 찾고 굴린다.** 굴린 뒤에 후보가 없어 무르면 그 확률이 무슨 뜻인지
+    // 아무도 모르게 된다 — 이 값은 「맞는 방이 있을 때 그것이 특수 방이 될 확률」이다.
+    if (!fits.length) return null;
+    const chance = Math.min(SPECIAL_MAX_CHANCE, SPECIAL_SLOPE * (depth - 2));
+    if (rng.rnd(1000) >= Math.round(chance * 1000)) return null;
+
+    const pick = rng.pick(fits)!;
+    const kinds = Object.keys(SPECIAL_ROOMS) as SpecialKind[];
+    return { room: pick.i, kind: rng.pick(kinds)! };
+}
+
 function openTiles(level: Level, r: Room, avoid: Pos[]): Pos[] {
     const out: Pos[] = [];
     const x0 = r.gone ? r.x : r.x + 1;
@@ -524,8 +625,36 @@ function openTiles(level: Level, r: Room, avoid: Pos[]): Pos[] {
  * 그래서 **최대잔여 배분**을 쓴다. 정확 몫을 내림해 나눠 주고, 남은 것을 소수부가 큰
  * 방부터 하나씩 얹는다. 같은 개수로 넓은 방이 비어 있을 확률이 36.5% → 8.9% 로 떨어진다.
  */
-export function itemSpots(level: Level, n: number, rng: Rng, avoid: Pos[] = []): Pos[] {
-    const real = level.rooms.filter((r) => !r.gone);
+/**
+ * 방 **하나** 안에 n 자리. 특수 방이 제 몫을 받는 자리다.
+ *
+ * 흩어 놓는 방식은 `itemSpots` 의 그것과 같다 — 한 바퀴는 안 붙게, 그래도 모자라면
+ * 붙는 것을 받아들인다. 이 방이 꽉 차면 거기서 멈춘다(밖으로 새지 않는다).
+ */
+export function roomSpots(level: Level, r: Room, n: number, rng: Rng, avoid: Pos[] = []): Pos[] {
+    if (n <= 0) return [];
+    const open = rng.shuffle(openTiles(level, r, avoid));
+    const taken: Pos[] = [];
+    for (const pass of [true, false]) {
+        for (const p of open) {
+            if (taken.length >= n) break;
+            if (taken.some((q) => q.x === p.x && q.y === p.y)) continue;
+            if (pass && taken.some((q) => touching(q, p))) continue;
+            taken.push(p);
+        }
+    }
+    return taken;
+}
+
+export function itemSpots(
+    level: Level,
+    n: number,
+    rng: Rng,
+    avoid: Pos[] = [],
+    /** 이 방은 빼고 나눈다 — 특수 방은 제 몫을 따로 받는다. */
+    except: number | null = null,
+): Pos[] {
+    const real = level.rooms.filter((r, i) => !r.gone && i !== except);
     if (n <= 0 || real.length === 0) return [];
 
     const areas = real.map((r) => effectiveArea(level, r));
@@ -727,6 +856,7 @@ export function buildLevel(depth: number, rng: Rng): Level {
         upStairs: null,
         anvil: null,
         maze: anyMaze,
+        special: null,
     };
 
     // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는
@@ -744,6 +874,16 @@ export function buildLevel(depth: number, rng: Rng): Level {
     // 모루는 **층마다 하나.** 계단 둘을 피해 아무 데나 선다 — 어디 있는지는 걸어 보고
     // 알아야 하고, 가는 길이 위험한 것이 이 자리의 값이다.
     level.anvil = freeSpot(level, rng, [down, level.upStairs]);
+
+    // 특수 방은 **모루 다음, 함정 앞**이다. 제단이면 모루를 그 방으로 옮기는데, 함정이
+    // 피해야 할 자리가 그 옮긴 뒤의 자리이기 때문이다.
+    level.special = pickSpecialRoom(level, depth, rng);
+    if (level.special?.kind === "altar") {
+        // **제단에는 모루가 선다.** 그 방을 찾는 것이 곧 모루를 찾는 것이 되어, 「문이
+        // 하나뿐인 방에 들어간다」는 위험에 값이 붙는다.
+        const spot = rng.pick(openTiles(level, level.rooms[level.special.room], [down, level.upStairs]));
+        if (spot) level.anvil = spot;
+    }
 
     // 함정. 1층에는 없다 — 처음 켠 사람이 영문도 모르고 떨어지면 배울 것이 안 남는다.
     if (depth > 1) {
