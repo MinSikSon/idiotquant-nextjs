@@ -26,7 +26,7 @@ import {
 } from "./types";
 
 export const MONSTERS: Record<string, MonsterDef> = {
-    A: { ch: "A", name: "아쿠에이터", exp: 20, level: 5, armor: 2, hp: 22, damage: ["0d0", "0d0"], mean: true },
+    A: { ch: "A", name: "아쿠에이터", exp: 20, level: 5, armor: 2, hp: 22, damage: ["0d0", "0d0"], mean: true, special: "갑옷을 녹인다" },
     B: { ch: "B", name: "박쥐", exp: 1, level: 1, armor: 3, hp: 4, damage: ["1d2"], mean: false },
     C: { ch: "C", name: "켄타우로스", exp: 17, level: 4, armor: 4, hp: 18, damage: ["1d2", "1d5", "1d5"], mean: false },
     D: { ch: "D", name: "용", exp: 5000, level: 10, armor: -1, hp: 45, damage: ["1d8", "1d8", "3d10"], mean: true },
@@ -39,7 +39,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     K: { ch: "K", name: "황조롱이", exp: 1, level: 1, armor: 7, hp: 4, damage: ["1d4"], mean: true },
     L: { ch: "L", name: "레프러콘", exp: 10, level: 3, armor: 8, hp: 14, damage: ["1d1"], mean: false },
     M: { ch: "M", name: "메두사", exp: 200, level: 8, armor: 2, hp: 36, damage: ["3d4", "3d4", "2d5"], mean: true },
-    N: { ch: "N", name: "님프", exp: 37, level: 3, armor: 9, hp: 14, damage: ["0d0"], mean: false },
+    N: { ch: "N", name: "님프", exp: 37, level: 3, armor: 9, hp: 14, damage: ["0d0"], mean: false, special: "물건을 채고 달아난다" },
     O: { ch: "O", name: "오크", exp: 5, level: 1, armor: 6, hp: 4, damage: ["1d8"], mean: false },
     P: { ch: "P", name: "팬텀", exp: 120, level: 8, armor: 3, hp: 36, damage: ["4d4"], mean: false },
     Q: { ch: "Q", name: "콰가", exp: 15, level: 3, armor: 3, hp: 14, damage: ["1d5", "1d5"], mean: true },
@@ -48,7 +48,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     T: { ch: "T", name: "트롤", exp: 120, level: 6, armor: 4, hp: 27, damage: ["1d8", "1d8", "2d6"], mean: true },
     U: { ch: "U", name: "우르바일", exp: 190, level: 7, armor: -2, hp: 32, damage: ["1d9", "1d9", "2d9"], mean: true },
     V: { ch: "V", name: "뱀파이어", exp: 350, level: 8, armor: 1, hp: 36, damage: ["1d10"], mean: true },
-    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: 22, damage: ["1d6", "0d0"], mean: false },
+    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: 22, damage: ["1d6", "0d0"], mean: false, special: "경험을 빨아먹는다" },
     X: { ch: "X", name: "제록", exp: 100, level: 7, armor: 7, hp: 32, damage: ["4d4"], mean: false },
     Y: { ch: "Y", name: "예티", exp: 50, level: 4, armor: 6, hp: 18, damage: ["1d6", "1d6"], mean: false },
     Z: { ch: "Z", name: "좀비", exp: 6, level: 2, armor: 8, hp: 9, damage: ["1d8"], mean: true },

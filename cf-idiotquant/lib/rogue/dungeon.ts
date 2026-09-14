@@ -256,10 +256,23 @@ function isGoneAnchor(rooms: Room[], x: number, y: number): boolean {
     return rooms.some((r) => r.gone && r.x === x && r.y === y);
 }
 
-/** 미로 방의 사각형 안인가 — 다듬기가 절대 건드리면 안 되는 자리. */
+/** 미로 방의 사각형 안인가 — 벽까지 친다. 구멍을 뚫으면 안 되는 자리다. */
 function inMazeRoom(rooms: Room[], x: number, y: number): boolean {
     return rooms.some(
         (r) => r.maze && !r.gone && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h,
+    );
+}
+
+/**
+ * 미로 **안쪽**인가 — 벽은 뺀다.
+ *
+ * 막다른 길을 되메울 때 쓴다. 미로의 안쪽은 막다른 길로 이루어진 것이라 건드리면
+ * 통째로 풀리지만, **벽 위에 얹힌 복도 토막은 미로가 아니다.** 사각형째로 지켜 주면
+ * 그 토막이 영영 안 떼어진다 — 실제로 막다른 길 96 개 중 60 개가 이 자리였다.
+ */
+function inMazeInterior(rooms: Room[], x: number, y: number): boolean {
+    return rooms.some(
+        (r) => r.maze && !r.gone && x > r.x && x < r.x + r.w - 1 && y > r.y && y < r.y + r.h - 1,
     );
 }
 
@@ -306,13 +319,17 @@ function pruneDeadEnds(tiles: Uint8Array, rooms: Room[]): void {
     // 파는 선이 지도 폭을 넘을 수 없으므로 이 횟수 안에 반드시 멎는다.
     for (let pass = 0; pass < MAP_W; pass++) {
         let removed = 0;
-        for (let y = 1; y < MAP_H - 1; y++) {
-            for (let x = 1; x < MAP_W - 1; x++) {
+        // **지도 가장자리까지 훑는다.** 예전에는 `1 … MAP_W−2` 만 봐서 맨 끝 줄·칸에
+        // 남은 토막이 영영 안 떼어졌다. 방은 가장자리에 안 서므로(칸 경계가 그렇게
+        // 잡힌다) 여기서 뗄 수 있는 것은 복도뿐이고, 잎사귀만 떼니 안전하다.
+        for (let y = 0; y < MAP_H; y++) {
+            for (let x = 0; x < MAP_W; x++) {
                 const t = get(tiles, x, y);
                 if (t !== T.CORRIDOR && t !== T.PASSAGE) continue;
                 // **미로 안은 건드리지 않는다.** 미로는 막다른 길로 이루어진 것이라,
                 // 여기서 잎사귀를 떼기 시작하면 미로가 통째로 풀려 사라진다.
-                if (inMazeRoom(rooms, x, y)) continue;
+                // 다만 **벽 위에 얹힌 토막은 미로가 아니다** — 안쪽만 지킨다.
+                if (inMazeInterior(rooms, x, y)) continue;
                 // 「없는 방」은 방이다. 길을 하나만 물고 있어도 지우면 그 방이 지도에서
                 // 사라지고, 「모든 방이 이어진다」가 깨진다.
                 if (isGoneAnchor(rooms, x, y)) continue;

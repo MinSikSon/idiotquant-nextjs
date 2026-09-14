@@ -472,9 +472,17 @@ export function monsterDamBonus(m: Monster): number {
  * **적혀 있는 것만 한다.** 하나가 두 가지를 하면 무엇 때문에 무서운지를 알 수 없다.
  */
 function special(state: GameState, m: Monster, rng: Rng): string[] {
-    const hero: Hero = state.hero;
-    // 무력화 지팡이를 맞은 놈은 때리기만 한다.
+    // 무력화 지팡이를 맞은 놈은 때리기만 한다. **아무 일도 안 났으니 배울 것도 없다.**
     if (m.cancelled) return [`${m.def.name}이(가) 헛되이 달려든다.`];
+    // **당해 봐야 안다** — 잡는 것과 다른 열쇠다(`GameState.specials`). 빈손으로
+    // 달아난 님프에게서도 배운다. 수법을 본 것이지 잃은 것을 센 것이 아니다.
+    const first = (state.specials[m.def.ch] = (state.specials[m.def.ch] ?? 0) + 1) === 1;
+    const said = specialEffect(state, m, rng);
+    return first ? [...said, `${m.def.name}의 수법을 알았다.`] : said;
+}
+
+function specialEffect(state: GameState, m: Monster, rng: Rng): string[] {
+    const hero: Hero = state.hero;
     switch (m.def.ch) {
         case "A": {
             // 아쿠에이터 — 갑옷을 녹인다.

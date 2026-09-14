@@ -42,8 +42,10 @@ import {
     graves,
     load,
     loadBestiary,
+    loadSpecials,
     save,
     saveBestiary,
+    saveSpecials,
     type Tomb,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
@@ -84,6 +86,13 @@ const KEY_DIRS: Record<string, [number, number]> = {
     y: [-1, -1], u: [1, -1], b: [-1, 1], n: [1, 1],
 };
 
+/** 판을 넘어 남는 기록 둘을 합칠 때 쓴다 — **칸마다 큰 쪽**을 남긴다. */
+function higher(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
+    const out = { ...a };
+    for (const [ch, n] of Object.entries(b)) out[ch] = Math.max(out[ch] ?? 0, n);
+    return out;
+}
+
 export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
     const [picker, setPicker] = useState<Picker | null>(null);
@@ -101,25 +110,24 @@ export default function Rogue() {
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
     useEffect(() => {
         const kept = loadBestiary();
+        const knownSpecials = loadSpecials();
         const saved = load();
         if (saved && saved.phase === "playing") {
             // 저장된 판과 저장소의 도감 중 **큰 쪽**을 남긴다. 판을 띄워 둔 채 다른
             // 탭에서 한 판을 더 돌았을 수 있고, 그때 잡은 것을 잃으면 안 된다.
-            const merged = { ...saved.bestiary };
-            for (const [ch, n] of Object.entries(kept)) {
-                merged[ch] = Math.max(merged[ch] ?? 0, n);
-            }
-            saved.bestiary = merged;
+            saved.bestiary = higher(saved.bestiary, kept);
+            saved.specials = higher(saved.specials, knownSpecials);
             setState(saved);
             return;
         }
-        setState(newGame(undefined, kept));
+        setState(newGame(undefined, kept, knownSpecials));
     }, []);
 
     useEffect(() => {
         if (!state) return;
         // 도감은 **판과 따로** 적는다 — 죽어서 판이 지워져도 남아야 한다.
         saveBestiary(state.bestiary);
+        saveSpecials(state.specials);
         if (state.phase === "playing") {
             save(state);
             buried.current = false;
@@ -820,7 +828,7 @@ export default function Rogue() {
                         <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
                     ) : (
                         <ul className="space-y-1">
-                            {bestiaryRows(state.bestiary).map((r: BestiaryRow) => {
+                            {bestiaryRows(state.bestiary, state.specials).map((r: BestiaryRow) => {
                                 const open = openMon === r.ch;
                                 const art = monsterArt(r.ch);
                                 return (
@@ -848,6 +856,20 @@ export default function Rogue() {
                                                     <div className="text-[var(--rg-faint)]">
                                                         지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
                                                     </div>
+                                                )}
+                                                {/* **수법은 잡아서 아는 것이 아니라 당해서 아는 것이다.**
+                                                    그래서 잡은 수와 따로 적는다 — 열 마리를 잡고도 한 번도
+                                                    안 당했으면 여기는 아직 비어 있어야 맞다. */}
+                                                {r.hasSpecial && (
+                                                    r.special ? (
+                                                        <div className="text-[var(--rg-trap)]">
+                                                            수법: {r.special} · {r.suffered}번 당했다
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-[var(--rg-faint)]">
+                                                            수법: 아직 모른다 — 당해 봐야 안다
+                                                        </div>
+                                                    )
                                                 )}
                                             </div>
                                         </button>

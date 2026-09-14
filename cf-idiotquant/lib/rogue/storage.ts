@@ -224,6 +224,7 @@ function normalize(s: Saved): GameState | null {
         appearance: s.appearance && typeof s.appearance === "object" ? s.appearance : {},
         known: s.known && typeof s.known === "object" ? s.known : {},
         bestiary: s.bestiary && typeof s.bestiary === "object" ? s.bestiary : {},
+        specials: s.specials && typeof s.specials === "object" ? s.specials : {},
         nextItemId: num(s.nextItemId, 1),
         turn: num(s.turn, 0),
         deepest: num(s.deepest, num(s.level.depth, 1)),
@@ -280,10 +281,11 @@ export function clear(): void {
  * 이유가 생긴다.
  */
 const BESTIARY_KEY = "rogue:bestiary:v1";
+const SPECIALS_KEY = "rogue:specials:v1";
 
-export function loadBestiary(): Record<string, number> {
+function loadCounts(key: string): Record<string, number> {
     try {
-        const t = localStorage.getItem(BESTIARY_KEY);
+        const t = localStorage.getItem(key);
         const o = t ? JSON.parse(t) : {};
         // 남이 고쳐 넣은 값이 들어와도 판이 안 깨지게 숫자만 남긴다.
         if (!o || typeof o !== "object" || Array.isArray(o)) return {};
@@ -297,12 +299,34 @@ export function loadBestiary(): Record<string, number> {
     }
 }
 
-export function saveBestiary(b: Record<string, number>): void {
+function saveCounts(key: string, b: Record<string, number>): void {
     try {
-        localStorage.setItem(BESTIARY_KEY, JSON.stringify(b));
+        localStorage.setItem(key, JSON.stringify(b));
     } catch {
         /* 못 적어도 이번 판은 굴러간다 */
     }
+}
+
+export function loadBestiary(): Record<string, number> {
+    return loadCounts(BESTIARY_KEY);
+}
+
+export function saveBestiary(b: Record<string, number>): void {
+    saveCounts(BESTIARY_KEY, b);
+}
+
+/**
+ * 당해 본 수법들 — **도감과 따로 적는다.**
+ *
+ * 한 칸에 담으면 「잡아 봤다」와 「당해 봤다」가 섞여서, 님프를 잡아만 본 사람과
+ * 물건을 털려 본 사람이 같은 도감을 보게 된다.
+ */
+export function loadSpecials(): Record<string, number> {
+    return loadCounts(SPECIALS_KEY);
+}
+
+export function saveSpecials(s: Record<string, number>): void {
+    saveCounts(SPECIALS_KEY, s);
 }
 
 /** 죽고 이긴 기록 — 판을 넘어 남는다. */

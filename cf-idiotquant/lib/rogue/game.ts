@@ -233,12 +233,14 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
 /**
  * 새 판.
  *
- * `bestiary` 는 **지난 판에서 이어받는 유일한 것**이다. 부르는 쪽(화면)이 저장소에서
- * 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면 테스트가 브라우저를 필요로 하게 된다.
+ * `bestiary` 와 `specials` 는 **지난 판에서 이어받는 것 전부**다. 부르는 쪽(화면)이
+ * 저장소에서 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면 테스트가 브라우저를
+ * 필요로 하게 된다.
  */
 export function newGame(
     seed = Math.floor(Math.random() * 0x7fffffff),
     bestiary: Record<string, number> = {},
+    specials: Record<string, number> = {},
 ): GameState {
     const rng = new Rng(seed);
     const state: GameState = {
@@ -256,6 +258,7 @@ export function newGame(
         appearance: {},
         known: {},
         bestiary: { ...bestiary },
+        specials: { ...specials },
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);
@@ -1452,17 +1455,33 @@ export interface BestiaryRow {
     mean: boolean;
     /** 몇 층에서 나오는가. 능력치는 층을 안 타고, 층이 정하는 것은 **어느 종이 나오는가**다. */
     depths: { min: number; max: number } | null;
+    /**
+     * 수법 — **당해 본 것만 적힌다.** 안 당해 봤으면 `null` 이고, 그러면 화면은
+     * 「아직 모르는 수가 있다」를 대신 적는다. 수법이 아예 없는 종은 둘 다 `null` 이다.
+     */
+    special: string | null;
+    /** 수법이 있는 종인가 — 모르는 것과 없는 것을 가르는 칸이다. */
+    hasSpecial: boolean;
+    /** 그 수법에 몇 번 당했나. */
+    suffered: number;
 }
 
-export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
+export function bestiaryRows(
+    bestiary: Record<string, number>,
+    specials: Record<string, number> = {},
+): BestiaryRow[] {
     return Object.keys(MONSTERS)
         .filter((ch) => (bestiary[ch] ?? 0) > 0)
         .map((ch) => {
             const d = MONSTERS[ch];
+            const suffered = specials[ch] ?? 0;
             return {
                 ch,
                 name: d.name,
                 kills: bestiary[ch],
+                special: suffered > 0 ? (d.special ?? null) : null,
+                hasSpecial: d.special !== undefined,
+                suffered,
                 level: d.level,
                 defense: defenseOf(d.armor),
                 damage: d.damage.filter((x: string) => x !== "0d0"),
