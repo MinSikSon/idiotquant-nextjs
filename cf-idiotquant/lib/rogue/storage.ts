@@ -225,6 +225,7 @@ function normalize(s: Saved): GameState | null {
         known: s.known && typeof s.known === "object" ? s.known : {},
         bestiary: s.bestiary && typeof s.bestiary === "object" ? s.bestiary : {},
         specials: s.specials && typeof s.specials === "object" ? s.specials : {},
+        enchantDrought: num(s.enchantDrought, 0),
         nextItemId: num(s.nextItemId, 1),
         turn: num(s.turn, 0),
         deepest: num(s.deepest, num(s.level.depth, 1)),

@@ -76,6 +76,7 @@ import {
     meltYield,
     makeItem,
     defenseOf,
+    pickCategory,
     randomItem,
     rollAppearances,
     weaponDamageOf,
@@ -174,6 +175,18 @@ function itemAt(level: Level, x: number, y: number): Item | undefined {
  * 종류를 고르는 확률(금화냐 물약이냐 무기냐)은 층을 안 탄다 — 그것까지 층에 맡기면
  * 깊은 층에서 식량이 안 나와 굶어 죽는 까닭이 운이 된다.
  */
+/**
+ * 한 층에 놓는 강화 주문서의 상한과, 가뭄 보정.
+ *
+ * **보정은 늦게 켠다**(`DROUGHT_GRACE`). 한 층에 물건이 서너 개뿐이라 「이번 층에 강화가
+ * 없다」는 세 층에 두 번꼴로 일어나는 **보통 일**이다. 그걸 굶었다고 치고 곧바로 보정하면
+ * 보정이 늘 켜져 있는 셈이 되어, 층별 가중치(6~11)를 12~14 로 밀어 올린다 — 실제로
+ * 그랬다. 이 규칙이 없애려는 것은 평균이 아니라 **다섯 층 연속 없는 판**이다.
+ */
+const ENCHANT_PER_FLOOR = 2;
+const DROUGHT_GRACE = 2;
+const DROUGHT_STEP = 0.8;
+
 function populate(state: GameState, level: Level, rng: Rng) {
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
@@ -183,9 +196,23 @@ function populate(state: GameState, level: Level, rng: Rng) {
 
     // **총량은 층이 정하고, 자리는 방들이 넓이 몫만큼 나눠 갖는다.** 물건마다 따로
     // 자리를 뽑으면 뽑기가 서로를 몰라 한 방에 몰린다 — `itemSpots` 참고.
+    //
+    // **강화 주문서만은 층이 사정을 본다.** 확률만으로 두면 다섯 층 연속 안 나오는 판이
+    // 나오고, 그러면 캐릭터를 키우는 축이 그 판에서 통째로 사라진다.
+    //   · 1층에는 안 놓는다 — 쥔 것도 입은 것도 없이 읽으면 버리는 셈이다.
+    //   · 굶은 층이 쌓이면 그만큼 자주 나온다. 하나 나오면 0 으로 돌아간다.
+    //   · 한 층에 두 장까지. 셋째는 **보통 주문서로 바꾼다** — 자리를 비우면 그 층의
+    //     물건 수가 줄어서 「총량은 층이 정한다」가 깨진다.
+    const dry = Math.max(0, state.enchantDrought - DROUGHT_GRACE);
+    const scale = level.depth === 1 ? 0 : 1 + DROUGHT_STEP * dry;
+    let enchants = 0;
     for (const p of itemSpots(level, floorQuota(level.depth, rng), rng, [state.hero, level.stairs])) {
-        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng));
+        let cat = pickCategory(level.depth, rng, scale);
+        if (cat === "enchant" && enchants >= ENCHANT_PER_FLOOR) cat = "scroll";
+        if (cat === "enchant") enchants++;
+        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat));
     }
+    state.enchantDrought = enchants > 0 ? 0 : state.enchantDrought + 1;
 
     // 증표는 딱 한 층에 있다. 여기가 이 판의 바닥이다.
     if (level.depth === AMULET_LEVEL) {
@@ -259,6 +286,7 @@ export function newGame(
         known: {},
         bestiary: { ...bestiary },
         specials: { ...specials },
+        enchantDrought: 0,
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);

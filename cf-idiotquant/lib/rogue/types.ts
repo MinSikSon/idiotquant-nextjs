@@ -279,6 +279,13 @@ export interface GameState {
      * 구별할 수 없다.
      */
     specials: Record<string, number>;
+    /**
+     * 강화 주문서 없이 지나온 층 수 — **판 안에서만 산다.**
+     *
+     * 도감과 달리 판을 안 넘긴다. 이건 세상의 사실이 아니라 **이 판의 운**이라,
+     * 새 판이 지난 판의 가뭄을 물려받으면 첫 층부터 까닭 없이 후해진다.
+     */
+    enchantDrought: number;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
 }
