@@ -77,6 +77,21 @@ export function isDetail(line: string): boolean {
     return line.startsWith(DETAIL);
 }
 
+/**
+ * 요약 줄에 피해를 얹는다 — `트롤에게 맞았다. 피해 5`
+ *
+ * 띠는 계산 줄을 걸러 내므로, **펼치지 않으면 얼마가 오갔는지가 안 보였다.** 내가 맞은
+ * 쪽은 상태 줄의 체력이 줄어 대강 알 수 있었지만 내가 때린 값은 어디에도 안 남아서,
+ * 「이 놈을 한 대 더 쳐야 하나」를 기록 판을 열어야 알 수 있었다. 숫자 하나면 된다 —
+ * **주사위는 여전히 기록 판에만** 있다.
+ *
+ * **한 자리에서 만든다.** 피해를 주는 자리가 여섯 군데인데 제각각 `(7)`·`-7`·`7 피해`
+ * 로 적으면 같은 것이 여섯 모양으로 보인다.
+ */
+export function withDamage(line: string, n: number): string {
+    return n > 0 ? `${line} 피해 ${n}` : line;
+}
+
 /** 굴림에 얹히는 것 하나 — 얼마가, 무엇 때문에. */
 export interface Term {
     n: number;
@@ -253,11 +268,14 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
     const killed = m.hp <= 0;
     messages.push(damageLine(dice, d.rolled, damTerms, d.total));
     messages.push(
-        killed
-            ? `${m.def.name}을(를) 쓰러뜨렸다.`
-            : a.crit
-              ? `${m.def.name}의 급소를 찔렀다!`
-              : `${m.def.name}을(를) 맞혔다.`,
+        withDamage(
+            killed
+                ? `${m.def.name}을(를) 쓰러뜨렸다.`
+                : a.crit
+                  ? `${m.def.name}의 급소를 찔렀다!`
+                  : `${m.def.name}을(를) 맞혔다.`,
+            d.total,
+        ),
     );
     return { hit: true, roll: a.roll, damage: d.total, killed, messages };
 }
@@ -321,7 +339,12 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
 
     if (hits === 0) messages.push(`${m.def.name}의 공격이 빗나갔다.`);
     else if (total > 0) {
-        messages.push(crits > 0 ? `${m.def.name}에게 급소를 찔렸다!` : `${m.def.name}에게 맞았다.`);
+        messages.push(
+            withDamage(
+                crits > 0 ? `${m.def.name}에게 급소를 찔렸다!` : `${m.def.name}에게 맞았다.`,
+                total,
+            ),
+        );
     }
 
     return { hit: hits > 0, roll: lastRoll, damage: total, killed: hero.hp <= 0, messages };

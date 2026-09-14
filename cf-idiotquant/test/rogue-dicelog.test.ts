@@ -20,7 +20,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, monsterDamageLine, multiAttackLine, outcomeOf } from "@/lib/rogue/combat";
+import { DETAIL, attackLine, damageLine, heroAttack, isDetail, monsterAttack, monsterDamageLine, multiAttackLine, outcomeOf, withDamage } from "@/lib/rogue/combat";
 import { attackRoll } from "@/lib/rogue/dnd";
 import { Rng as R } from "@/lib/rogue/rng";
 import { newGame, perform } from "@/lib/rogue/game";
@@ -253,6 +253,69 @@ test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 �
         assert.match(theirs[0], /^· 명중 .* d20 /);
         assert.doesNotMatch(theirs[theirs.length - 1], /^· /);
     }
+});
+
+// 띠는 계산 줄을 걸러 내므로, **피해가 계산 줄에만 있으면 펼치지 않은 사람에게는
+// 숫자가 하나도 없다.** 굴린 눈은 기록 판 몫이지만 **얼마가 오갔나**는 띠에 있어야
+// 「한 대 더 치면 죽나」·「지금 도망가야 하나」를 판을 열지 않고 판단한다.
+test("띠에 남는 줄에도 피해 숫자가 있다 — 굴림은 빼고 결과만", () => {
+    const s = newGame(404);
+    s.hero.hp = s.hero.maxHp = 99999;
+    const m = placeNextTo(s, "T", 99999);
+    const rng = new Rng(12);
+    let mineSeen = 0;
+    let theirsSeen = 0;
+
+    for (let i = 0; i < 60; i++) {
+        m.hp = 99999;
+        for (const [msgs, got] of [
+            [heroAttack(s, m, rng), "mine"] as const,
+            [monsterAttack(s, m, rng), "theirs"] as const,
+        ]) {
+            if (msgs.damage <= 0) continue;
+            const strip = msgs.messages.filter((l) => !isDetail(l));
+            assert.ok(strip.length > 0, "띠에 남는 줄이 없다");
+            const last = strip[strip.length - 1];
+            assert.ok(
+                last.includes(`피해 ${msgs.damage}`),
+                `띠 줄에 피해가 없다(${got}): ${last}`,
+            );
+            if (got === "mine") mineSeen++;
+            else theirsSeen++;
+        }
+    }
+    assert.ok(mineSeen > 0, "내가 때려서 피해를 준 판이 한 번도 없다");
+    assert.ok(theirsSeen > 0, "상대가 때려서 피해를 준 판이 한 번도 없다");
+});
+
+// **0 은 안 적는다.** 피해는 `Math.max(0, …)` 라 힘이 바닥이면 **맞고도 0** 이 나온다
+// (`dnd.damageRoll`). 그 줄에 「피해 0」이 붙으면 맞은 건지 만 건지가 헷갈리고, 빗나간
+// 줄과 나란히 놓이면 더 그렇다.
+test("피해가 0 이면 숫자를 안 적는다 — 맞고도 0 이 나올 수 있다", () => {
+    assert.equal(withDamage("트롤에게 맞았다.", 0), "트롤에게 맞았다.");
+    assert.equal(withDamage("트롤에게 맞았다.", 3), "트롤에게 맞았다. 피해 3");
+
+    // 엔진에서도 실제로 그렇게 나오는지 — 힘을 바닥에 두고 제일 작은 무기를 쥔다.
+    const s = newGame(405);
+    s.hero.hp = s.hero.maxHp = 99999;
+    s.hero.str = 3; // 힘 보정 −4
+    const dart = makeItem("weapon", "dart", 980, -1, -1, 1);
+    dart.letter = "z";
+    s.hero.pack.push(dart);
+    s.hero.weaponId = dart.id;
+    const m = placeNextTo(s, "B", 99999);
+    const rng = new Rng(13);
+    let zero = 0;
+    for (let i = 0; i < 200; i++) {
+        m.hp = 99999;
+        const r = heroAttack(s, m, rng);
+        if (!r.hit || r.damage !== 0) continue;
+        zero++;
+        for (const line of r.messages.filter((l) => !isDetail(l))) {
+            assert.doesNotMatch(line, /피해 0\b/, line);
+        }
+    }
+    assert.ok(zero > 0, "이백 번을 쳐도 0 짜리 한 방이 안 나왔다 — 이 규칙이 안 걸린다");
 });
 
 test("화면에 적는 「공격」은 엔진이 낸다 — 주사위 + 손질 + 힘", () => {

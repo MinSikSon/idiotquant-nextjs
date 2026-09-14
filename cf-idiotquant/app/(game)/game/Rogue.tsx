@@ -29,7 +29,9 @@ import {
     newGame,
     perform,
     score,
+    standing,
     survey,
+    tombScore,
 } from "@/lib/rogue/game";
 import { ENCHANT_MAX, describe, enchantOdds, isThrowable, itemPower } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
@@ -130,7 +132,10 @@ export default function Rogue() {
         }
         if (!buried.current) {
             buried.current = true;
-            bury(state);
+            // **적은 쪽이 돌려준 목록을 그대로 받는다** — 죽음 화면의 등수는 이번 판이
+            // 들어 있는 목록에서 센다. 다시 `graves()` 를 부르면 「벌써 들어갔는가」를
+            // 여기서 짐작해야 한다.
+            setTombs(bury(state));
             clear();
         }
     }, [state]);
@@ -442,6 +447,8 @@ export default function Rogue() {
         ? hero.pack.filter((p) => picker.kinds.includes(p.kind) && (!picker.allow || picker.allow(p)))
         : [];
     const hpLow = hero.hp <= hero.maxHp / 4;
+    /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
+    const place = standing(score(state), tombs);
     /** 지금 고르는 것이 **강화할 대상**인가 — 그러면 줄마다 성공률을 적는다. */
     const enchanting = !!picker && !!pendingEnchant.current;
 
@@ -961,8 +968,11 @@ export default function Rogue() {
                     ) : (
                         <ul className="space-y-1">
                             {tombs.map((t, i) => (
+                                // 점수를 같이 적는다 — 죽음 화면의 등수가 **어디서 나온
+                                // 값인지** 여기서 맞춰 볼 수 있어야 한다.
                                 <li key={i} className={t.won ? "text-[var(--rg-amulet)]" : "text-[var(--rg-muted)]"}>
-                                    {t.won ? "★" : "†"} 지하 {t.depth}층 · 금화 {t.gold} · {t.turns}턴 — {t.epitaph}
+                                    {t.won ? "★" : "†"} 지하 {t.depth}층 · 금화 {t.gold} · {t.turns}턴 ·{" "}
+                                    <span className="text-[var(--rg-gold)]">{tombScore(t)}점</span> — {t.epitaph}
                                 </li>
                             ))}
                         </ul>
@@ -1012,6 +1022,25 @@ export default function Rogue() {
                         <dt>레벨</dt><dd>{hero.level}</dd>
                         <dt>버틴 턴</dt><dd>{state.turn}</dd>
                         <dt>점수</dt><dd className="text-[var(--rg-gold)]">{score(state)}</dd>
+                        {/* 등수는 **내 지난 판들 사이에서만** 센다 — 셈은 엔진이 하고
+                            (`standing`) 여기서는 말로 옮기기만 한다. */}
+                        <dt>등수</dt>
+                        <dd>
+                            {place.total <= 1 ? (
+                                "첫 판"
+                            ) : place.place === 1 && !place.shared ? (
+                                <span className="text-[var(--rg-amulet)]">
+                                    {place.total}판 중 1등 — 최고 기록!
+                                </span>
+                            ) : place.place === 1 ? (
+                                <>{place.total}판 중 공동 1등</>
+                            ) : (
+                                <>
+                                    {place.total}판 중 {place.place}등{" "}
+                                    <span className="text-[var(--rg-faint)]">(최고 {place.best})</span>
+                                </>
+                            )}
+                        </dd>
                     </dl>
                 </Panel>
             )}
