@@ -15,7 +15,7 @@ import assert from "node:assert/strict";
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
 import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
-import { armorClass } from "@/lib/rogue/items";
+import { defenseOf } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
 
@@ -72,7 +72,7 @@ test("한 마리를 잡으면 그 뒤로는 속을 안다", () => {
     const seen = survey(s).find((x) => x.ch === "S")!;
     assert.equal(seen.known, true);
     assert.equal(seen.level, MONSTERS.S.level);
-    assert.equal(seen.defense, armorClass(MONSTERS.S.armor));
+    assert.equal(seen.defense, defenseOf(MONSTERS.S.armor));
     assert.equal(seen.exp, MONSTERS.S.exp);
     assert.equal(seen.hp, MONSTERS.S.hp);
     assert.deepEqual(seen.damage, MONSTERS.S.damage);
@@ -97,6 +97,8 @@ test("던져서 잡아도 도감에 들어간다", () => {
     const dagger = makeItem("weapon", "dagger", 991, -1, -1);
     dagger.count = 20;
     dagger.plusHit = 10; // 반드시 맞도록
+    // 갑옷을 뚫도록 손질도 넉넉히 — 피해가 방어력에 다 깎이면 못 죽인다.
+    dagger.plusDam = 20;
     dagger.letter = "z";
     s.hero.pack.push(dagger);
 

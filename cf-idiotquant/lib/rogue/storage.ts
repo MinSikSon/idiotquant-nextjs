@@ -139,16 +139,10 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
  * **상한(`ENCHANT_MAX`)도 같이 건다.** 강화에 상한이 없던 때의 저장에는 `+12` 짜리가
  * 있을 수 있는데, 그것 하나가 층 사다리를 통째로 무의미하게 만든다. 위아래 양쪽을 한
  * 자리에서 맞춘다.
- *
- * **갑옷 강화 주문서도 여기서 무기 강화로 바꾼다.** 규칙에서 없앤 뒤로 그 주문서는
- * 읽어도 걸릴 갈래가 없어서 **말없이 사라지기만 한다**(읽는 자리가 먼저 배낭에서 빼고
- * 나서 갈래를 찾는다). 이름표도 표에 없어 「이름 없는 주문서」로 뜬다. 같은 값을 하던
- * 물건이니 무기 쪽으로 옮겨 준다 — 버리면 사람이 이유도 모르고 한 장을 잃는다.
  */
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
-        if (it.kind === "scroll" && it.type === "enchant armor") it.type = "enchant weapon";
         if ((it.plusHit ?? 0) < 0 || (it.plusHit ?? 0) > ENCHANT_MAX) it.plusHit = fit(it.plusHit);
         if ((it.plusDam ?? 0) < 0 || (it.plusDam ?? 0) > ENCHANT_MAX) it.plusDam = fit(it.plusDam);
         if ((it.plusArmor ?? 0) < 0 || (it.plusArmor ?? 0) > ENCHANT_MAX) it.plusArmor = fit(it.plusArmor);

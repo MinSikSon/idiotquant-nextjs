@@ -15,8 +15,8 @@ import {
 import {
     RINGS,
     WEAPONS,
-    armorClass,
     armorClassOf,
+    defenseOf,
     makeItem,
     weaponDamageOf,
 } from "./items";
@@ -179,13 +179,23 @@ export function heroArmor(hero: Hero): number {
 }
 
 /**
- * 내 **방어도(AC)** — 몬스터의 공격 굴림이 넘어야 할 문턱이다.
+ * 내 **방어력** — 맞았을 때 상대의 공격력에서 빼는 값이다(맨몸 0, 판금 7 언저리).
  *
  * 안쪽은 원작의 방어 등급(낮을수록 단단)을 그대로 들고 있고(`heroArmor`), 옮기는 자리는
- * `items.armorClass` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
+ * `items.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
  */
 export function heroDefense(hero: Hero): number {
-    return armorClass(heroArmor(hero));
+    return defenseOf(heroArmor(hero));
+}
+
+/**
+ * **수비 굴림에 얹히는 것** — 숙련 하나뿐이다.
+ *
+ * 갑옷은 여기 안 붙는다. 붙이면 갑옷이 **피하는 데에도 피해를 깎는 데에도** 두 번
+ * 세이고, 그러면 판금 갑옷 한 벌에 싸움이 끝난다. 갑옷은 「덜 아프게」만 한다.
+ */
+export function heroDodgeBonus(hero: Hero): number {
+    return proficiency(hero.level);
 }
 
 /** 내 숙련 보너스 — 레벨이 오르면 네 레벨마다 하나씩 는다. */

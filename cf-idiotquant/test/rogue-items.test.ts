@@ -350,13 +350,13 @@ test("+ 가 붙으면 배낭에 적히는 숫자가 **커진다**", () => {
     const rags = makeItem("armor", "leather", 3, -1, -1);
     const good = makeItem("armor", "leather", 4, -1, -1);
     good.plusArmor = 1;
-    assert.equal(itemPower(rags, known), "방어도 12");
-    assert.equal(itemPower(good, known), "방어도 13", "손질한 갑옷의 숫자가 안 올랐다");
+    assert.equal(itemPower(rags, known), "방어력 2");
+    assert.equal(itemPower(good, known), "방어력 3", "손질한 갑옷의 숫자가 안 올랐다");
 
     // 상한 것은 내려간다 — 방향이 양쪽으로 맞아야 한다.
     const rusted = makeItem("armor", "leather", 5, -1, -1);
     rusted.plusArmor = -2;
-    assert.equal(itemPower(rusted, known), "방어도 10");
+    assert.equal(itemPower(rusted, known), "방어력 0");
 });
 
 test("정체를 모르는 물건은 손질을 안 흘린다", () => {
@@ -365,8 +365,8 @@ test("정체를 모르는 물건은 손질을 안 흘린다", () => {
     assert.equal(itemPower(w, {}), "피해 3d4", "모르는 무기의 손질이 샜다");
     const a = makeItem("armor", "plate mail", 7, -1, -1);
     a.plusArmor = 3;
-    assert.equal(itemPower(a, {}), "방어도 17", "모르는 갑옷의 손질이 샜다");
-    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어도 20");
+    assert.equal(itemPower(a, {}), "방어력 7", "모르는 갑옷의 손질이 샜다");
+    assert.equal(itemPower(a, { "armor:plate mail": true }), "방어력 10");
 });
 
 test("배낭에 적는 숫자와 실제로 맞는 방어가 같다", () => {
@@ -378,7 +378,7 @@ test("배낭에 적는 숫자와 실제로 맞는 방어가 같다", () => {
     s.hero.pack.push(armor);
     s.hero.armorId = armor.id;
     s.known["armor:plate mail"] = true;
-    assert.equal(itemPower(armor, s.known), `방어도 ${heroDefense(s.hero)}`);
+    assert.equal(itemPower(armor, s.known), `방어력 ${heroDefense(s.hero)}`);
 });
 
 test("던지면 하나씩 줄고, 남은 개수를 말한다", () => {
@@ -447,7 +447,7 @@ test("다른 물건이 놓인 자리에 던져도 사라지지 않는다", () =>
 
 test("착용하면 **그 물건의** 능력치를 말한다 — 내 능력치가 아니라", () => {
     // 한때 갑옷을 입으면 내 방어 **등급**(낮을수록 단단)을 적었다. 그건 (ㄱ) 물건이
-    // 아니라 나의 값이고 (ㄴ) 화면의 「방어도」와 방향이 반대라, 좋은 갑옷을 입으면
+    // 아니라 나의 값이고 (ㄴ) 화면의 「방어력」과 방향이 반대라, 좋은 갑옷을 입으면
     // 숫자가 내려가 보였다.
     const s = newGame(930);
     const sword = makeItem("weapon", "long sword", 950, -1, -1);
@@ -471,12 +471,12 @@ test("착용하면 **그 물건의** 능력치를 말한다 — 내 능력치가
     const worn = said(cur, "입었다");
     // **배낭 줄과 같은 숫자여야 한다.** 갈리면 한쪽만 고치는 날이 온다.
     assert.ok(worn.includes(`(${itemPower(plate, cur.known)})`), worn);
-    assert.ok(worn.includes("방어도 18"), `판금+1 은 방어도 18 이어야 한다: ${worn}`);
-    // 내 방어도가 아니라 **갑옷 몫**이다 — 보호 반지를 껴도 이 숫자는 안 바뀐다.
+    assert.ok(worn.includes("방어력 8"), `판금+1 은 방어력 8 이어야 한다: ${worn}`);
+    // 내 방어력이 아니라 **갑옷 몫**이다 — 보호 반지를 껴도 이 숫자는 안 바뀐다.
     assert.ok(!worn.includes("방어 2"), `옛 방어 등급을 적고 있다: ${worn}`);
 
     cur = perform(cur, { t: "putOn", letter: "r" });
-    assert.ok(said(cur, "꼈다").includes("(방어도 +2)"), said(cur, "꼈다"));
+    assert.ok(said(cur, "꼈다").includes("(방어력 +2)"), said(cur, "꼈다"));
 });
 
 test("정체 모르는 물건은 착용 메시지에도 속을 안 흘린다", () => {

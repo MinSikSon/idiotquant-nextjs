@@ -1,15 +1,21 @@
 /**
- * D&D 의 주사위 체계 — **규칙만, 이 게임을 모른 채.**
+ * 주사위 체계 — **규칙만, 이 게임을 모른 채.**
  *
  * ```
- *   공격 굴림 = d20 + 숙련 + 능력 보정 + 손질
- *   맞았다    = 공격 굴림 >= 방어도(AC)          ← 막는 쪽은 굴리지 않는다
- *   피해      = 무기 주사위 + 능력 보정 + 손질
+ *   때리는 쪽 = d20 + 숙련 + 능력 보정 + 손질
+ *   피하는 쪽 = d20 + 숙련
+ *   맞았다    = 때리는 쪽 > 피하는 쪽            ← 둘 다 굴린다(대결 굴림)
+ *   공격력    = 무기 주사위 + 능력 보정 + 손질
+ *   피해      = 공격력 − 상대의 방어력           ← 0 밑은 0, 완전히 막힌다
  * ```
  *
- * **막는 쪽이 안 굴린다**는 것이 D&D 의 핵심이다. 방어도는 넘어야 할 고정된 문턱이고
- * 주사위는 때리는 쪽만 굴린다. 한때 양쪽이 굴리게 해 봤는데(대결 굴림) 그건 D&D 가
- * 아니라 다른 체계라, 지금은 원판을 따른다.
+ * **한때 D&D 5판이었다.** 거기서는 막는 쪽이 안 굴리고 방어도가 넘어야 할 고정된
+ * 문턱이었으며, 피해는 주사위가 통째로 들어갔다. 지금은 **양쪽이 굴리고 갑옷이 피해를
+ * 깎는** 체계다 — 갑옷이 「안 맞게 해 주는 것」에서 「덜 아프게 해 주는 것」으로 바뀌었고,
+ * 그래서 좋은 갑옷의 값이 눈에 보이는 숫자로 남는다.
+ *
+ * **동점은 빗나간다.** 피하는 쪽이 비기면 이긴다 — 어느 한쪽으로 정해 두지 않으면
+ * 「같은 눈인데 어떨 땐 맞고 어떨 땐 안 맞는」 자리가 생긴다.
  *
  * 이 파일이 따로 있는 이유는 **`hero` 와 `combat` 이 둘 다 쓰기 때문**이다. 한쪽에
  * 두면 둘이 서로를 불러 고리가 생긴다. 여기에는 이 게임의 값이 하나도 없다 —
@@ -33,14 +39,15 @@ export type Luck = "normal" | "advantage" | "disadvantage";
 
 export interface Attack {
     hit: boolean;
-    /** 굴린 눈. 유리·불리면 두 개다. */
+    /** 때리는 쪽이 굴린 눈. 유리·불리면 두 개다. */
     rolls: number[];
-    /** 실제로 쓴 눈. */
+    /** 때리는 쪽이 실제로 쓴 눈. */
     roll: number;
     total: number;
-    /** 넘어야 했던 방어도. */
-    ac: number;
-    /** 자연 20 — 무조건 맞고 피해 주사위를 두 번 굴린다. */
+    /** **피하는 쪽이 굴린 눈**과 그 합. 대결 굴림이라 이쪽도 남는다. */
+    dodgeRoll: number;
+    dodge: number;
+    /** 자연 20 — 무조건 맞고 공격력 주사위를 두 번 굴린다. */
     crit: boolean;
     /** 자연 1 — 보정이 아무리 커도 빗나간다. */
     fumble: boolean;
@@ -48,13 +55,18 @@ export interface Attack {
 }
 
 /**
- * 공격 굴림 하나 — `d20 + 보정 >= 방어도`.
+ * 대결 굴림 하나 — **양쪽이 d20 을 굴려 때리는 쪽이 높으면 맞는다.**
  *
- * **자연 20 과 자연 1 은 보정을 보지 않는다.** 20 은 무조건 맞고 1 은 무조건 빗나간다.
+ * **자연 20 과 자연 1 은 상대를 보지 않는다.** 20 은 무조건 맞고 1 은 무조건 빗나간다.
  * 그래서 아무리 센 놈에게도 스무 번에 한 번은 닿고, 아무리 약한 놈에게도 스무 번에
- * 한 번은 빗나간다 — 그 두 칸이 D&D 를 D&D 답게 만든다.
+ * 한 번은 빗나간다 — 그 두 칸이 없으면 숫자 차이가 큰 싸움이 통째로 결정돼 버린다.
+ *
+ * **동점은 빗나간다**(`>` 이지 `>=` 가 아니다) — 피하는 쪽이 비기면 이긴다.
+ *
+ * 유리·불리는 **때리는 쪽에만** 붙는다. 자는 놈을 치는 것은 내 몫이 좋아지는 일이지
+ * 그놈이 더 굴리는 일이 아니다.
  */
-export function attackRoll(bonus: number, ac: number, rng: Rng, luck: Luck = "normal"): Attack {
+export function opposedRoll(bonus: number, dodgeBonus: number, rng: Rng, luck: Luck = "normal"): Attack {
     const rolls = [rng.rnd(20) + 1];
     if (luck !== "normal") rolls.push(rng.rnd(20) + 1);
     const roll =
@@ -63,19 +75,32 @@ export function attackRoll(bonus: number, ac: number, rng: Rng, luck: Luck = "no
             : luck === "disadvantage"
               ? Math.min(...rolls)
               : rolls[0];
+    const dodgeRoll = rng.rnd(20) + 1;
     const crit = roll === 20;
     const fumble = roll === 1;
     const total = roll + bonus;
-    return { hit: crit || (!fumble && total >= ac), rolls, roll, total, ac, crit, fumble, luck };
+    const dodge = dodgeRoll + dodgeBonus;
+    return { hit: crit || (!fumble && total > dodge), rolls, roll, total, dodgeRoll, dodge, crit, fumble, luck };
 }
 
 /**
- * 피해를 굴린다.
+ * 들어가는 피해 — **공격력에서 방어력을 뺀다. 0 밑은 0 이다.**
  *
- * **치명타면 주사위를 두 번 굴리고 보정은 한 번만 얹는다** — 5판의 규칙이다. 보정까지
- * 두 배로 하면 힘센 캐릭터의 치명타가 걷잡을 수 없이 커진다.
+ * 맞아도 갑옷이 두꺼우면 아무 일이 없다. 그것이 이 체계에서 갑옷이 갖는 값이고, 동시에
+ * **깊은 층에서 내 칼이 안 통하면 상대를 영영 못 죽인다**는 뜻이기도 하다 — 사다리를
+ * 올라갈 이유가 거기서 나온다.
+ */
+export function pierce(power: number, defense: number): number {
+    return Math.max(0, power - defense);
+}
+
+/**
+ * **공격력**을 굴린다 — 무기 주사위 + 보정. 여기서 상대의 방어력을 빼면 피해다(`pierce`).
  *
- * 깎여서 0 밑으로 내려가면 0 이다(D&D 도 그렇다). 「맞았는데 0」은 드물지만 있는 일이다.
+ * **치명타면 주사위를 두 번 굴리고 보정은 한 번만 얹는다.** 보정까지 두 배로 하면
+ * 힘센 캐릭터의 치명타가 걷잡을 수 없이 커진다.
+ *
+ * 깎여서 0 밑으로 내려가면 0 이다. 「맞았는데 0」은 드물지만 있는 일이다.
  */
 export function damageRoll(
     dice: string,
