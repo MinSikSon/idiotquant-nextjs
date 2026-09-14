@@ -41,6 +41,7 @@ import {
     wornRings,
 } from "./hero";
 import {
+    DETAIL,
     type Term,
     attackLine,
     damageLine,
@@ -60,6 +61,8 @@ import {
     describe,
     isThrowable,
     itemChar,
+    ENCHANT_MAX,
+    enchantOdds,
     itemPower,
     makeItem,
     armorClass,
@@ -81,6 +84,7 @@ import {
     ALL_DIRS,
     type GameState,
     type Item,
+    type ItemKind,
     type Level,
     MAP_H,
     MAP_W,
@@ -101,7 +105,8 @@ export type Command =
     | { t: "ascend" }
     | { t: "pickup" }
     | { t: "quaff"; letter: string }
-    | { t: "read"; letter: string }
+    /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
+    | { t: "read"; letter: string; target?: string }
     | { t: "eat"; letter: string }
     | { t: "wield"; letter: string }
     | { t: "wear"; letter: string }
@@ -403,7 +408,63 @@ function quaff(state: GameState, letter: string, rng: Rng): boolean {
     return true;
 }
 
-function read(state: GameState, letter: string, rng: Rng): boolean {
+/**
+ * 이 주문서가 **고를 것을 묻는가** — 무엇 중에서 고르는가.
+ *
+ * 화면이 「고르기를 한 번 더 띄울까」를 정하는 데 쓴다. **판단이 아니라 값 읽기**라
+ * 규칙이 두 벌이 되지 않는다(`onStairs` 와 같은 자리 — 못 박은 규칙 1). 눌러도
+ * `read` 가 한 번 더 본다: 대상 없이 들어오면 아무 일도 안 난다.
+ */
+export function enchantTarget(state: GameState, letter: string): ItemKind | null {
+    const it = packItem(state.hero, letter);
+    if (!it || it.kind !== "scroll") return null;
+    if (it.type === "enchant weapon") return "weapon";
+    if (it.type === "enchant armor") return "armor";
+    return null;
+}
+
+/**
+ * 강화 한 번. 성공하면 `+1`, **실패하면 부서진다.**
+ *
+ * 확률은 `items.enchantOdds` **한 자리**에서 온다 — 화면이 고르기 줄에 적는 것과 같은
+ * 값이다. 갈리면 사람은 자기가 본 숫자를 믿고 걸었다가 영문을 모른 채 물건을 잃는다.
+ *
+ * **저주받은 것도 걸 수 있다.** 부서지면 저주에서 풀려나는데, 그것이 벗을 수 없는
+ * 물건을 떼는 유일한 길이고 대가도 분명하다(물건이 사라진다).
+ */
+function enchant(state: GameState, it: Item, rng: Rng): void {
+    const hero = state.hero;
+    const plus = (it.kind === "armor" ? it.plusArmor : it.plusHit) ?? 0;
+    const odds = enchantOdds(plus);
+    // 굴린 눈을 남긴다 — 싸움의 굴림 줄과 같은 모양이다(`combat.DETAIL`).
+    const roll = rng.rnd(100) + 1;
+    const ok = roll <= Math.round(odds * 100);
+    // **정체를 알게 된다.** 걸어 본 물건의 속을 모른 채로 둘 수는 없다.
+    state.known[`${it.kind}:${it.type}`] = true;
+    say(
+        state,
+        `${DETAIL}강화 ${describe(it, state.known, state.appearance)} → +${plus + 1}` +
+            `   d100 ${roll}  vs  ${Math.round(odds * 100)}%  → ${ok ? "성공" : "실패"}`,
+    );
+    if (!ok) {
+        // 쥐고/입고 있던 것이면 그 자리도 같이 빈다(`takeFromPack` 이 한다).
+        takeFromPack(hero, it, it.count);
+        say(state, `${describe(it, state.known, state.appearance)}이(가) 산산이 부서졌다!`);
+        return;
+    }
+    if (it.kind === "armor") it.plusArmor = plus + 1;
+    else {
+        it.plusHit = plus + 1;
+        it.plusDam = (it.plusDam ?? 0) + 1;
+    }
+    say(
+        state,
+        `${describe(it, state.known, state.appearance)}이(가) ` +
+            `${it.kind === "armor" ? "단단해졌다" : "파랗게 빛난다"}.${withPower(it, state)}`,
+    );
+}
+
+function read(state: GameState, letter: string, rng: Rng, target?: string): boolean {
     const { hero, level } = state;
     if (hero.blind > 0) {
         say(state, "앞이 안 보여 읽을 수 없다.");
@@ -414,6 +475,29 @@ function read(state: GameState, letter: string, rng: Rng): boolean {
         say(state, "읽을 수 있는 것이 아니다.");
         return false;
     }
+
+    // ── 강화 주문서는 **고를 것을 먼저 묻는다** ─────────────────────────────
+    // 대상 없이 들어오면 **아무 일도 안 난다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3).
+    // 화면이 고르기를 띄우는 사이에 판이 한 턴 흐르면 안 된다.
+    const want = enchantTarget(state, letter);
+    if (want) {
+        if (!target) return false;
+        const on = packItem(hero, target);
+        if (!on || on.kind !== want) {
+            say(state, want === "weapon" ? "강화할 무기가 아니다." : "강화할 갑옷이 아니다.");
+            return false;
+        }
+        const plus = (want === "armor" ? on.plusArmor : on.plusHit) ?? 0;
+        if (plus >= ENCHANT_MAX) {
+            say(state, "더 손댈 곳이 없다.");
+            return false;
+        }
+        takeFromPack(hero, it);
+        state.known[`scroll:${it.type}`] = true;
+        enchant(state, on, rng);
+        return true;
+    }
+
     const key = `scroll:${it.type}`;
     takeFromPack(hero, it);
     state.known[key] = true;
@@ -430,29 +514,8 @@ function read(state: GameState, letter: string, rng: Rng): boolean {
             say(state, "몸이 홱 당겨졌다.");
             break;
         }
-        case "enchant weapon": {
-            const w = equippedWeapon(hero);
-            if (!w) {
-                say(state, "손이 잠깐 저릿했다.");
-                break;
-            }
-            w.plusHit = (w.plusHit ?? 0) + 1;
-            w.plusDam = (w.plusDam ?? 0) + 1;
-            state.known[`weapon:${w.type}`] = true;
-            say(state, `${describe(w, state.known, state.appearance)}이(가) 파랗게 빛난다.`);
-            break;
-        }
-        case "enchant armor": {
-            const a = equippedArmor(hero);
-            if (!a) {
-                say(state, "등이 잠깐 서늘했다.");
-                break;
-            }
-            a.plusArmor = (a.plusArmor ?? 0) + 1;
-            state.known[`armor:${a.type}`] = true;
-            say(state, `${describe(a, state.known, state.appearance)}이(가) 단단해졌다.`);
-            break;
-        }
+        // 강화 주문서(`enchant weapon`·`enchant armor`)는 위에서 이미 끝났다 —
+        // 고를 것을 묻고 굴려야 해서 갈래가 다르다.
         case "identify":
             for (const p of hero.pack) state.known[`${p.kind}:${p.type}`] = true;
             say(state, "배낭 속의 것들이 무엇인지 알겠다.");
@@ -1100,7 +1163,7 @@ export function perform(state: GameState, cmd: Command): GameState {
             acted = quaff(state, cmd.letter, rng);
             break;
         case "read":
-            acted = read(state, cmd.letter, rng);
+            acted = read(state, cmd.letter, rng, cmd.target);
             break;
         case "eat":
             acted = eat(state, cmd.letter, rng);
