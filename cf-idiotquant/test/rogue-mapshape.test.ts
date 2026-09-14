@@ -18,7 +18,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { buildLevel } from "@/lib/rogue/dungeon";
+import { buildLevel, freeSpot, roomArea } from "@/lib/rogue/dungeon";
 import { computeFov, isVisible } from "@/lib/rogue/fov";
 import { Rng } from "@/lib/rogue/rng";
 import { type Level, MAP_H, MAP_W, T, type Tile, idx, inBounds, walkable } from "@/lib/rogue/types";
@@ -218,4 +218,60 @@ test("어두운 방의 문턱에서는 방이 안 켜진다 — 어두운 방은
         }
     }
     assert.ok(checked > 100, `어두운 방의 문이 ${checked}개뿐 — 표본이 너무 적다`);
+});
+
+// 「넓은 방이 자주 비어 있다」 — 방을 **고르게** 뽑아 물건을 놓던 때의 모양이다. 방 하나가
+// 크든 작든 한 몫씩 가지니, 안쪽이 2칸부터 70칸까지(서른다섯 배) 벌어지는 이 층에서는
+// **3×3 벽장과 넓은 홀이 똑같은 확률**을 가졌다. 걸어 들어간 값이 넓이에 반비례한 셈이다.
+//
+// 넓이를 태워 뽑으면 **바닥 한 칸당 확률이 같아진다.**
+test("넓은 방일수록 뭔가 놓여 있다 — 방 하나에 한 몫씩이 아니다", () => {
+    const rng = new Rng(20260915);
+    /** 넓이 띠마다 「방 수」와 「뭔가 놓인 방 수」. */
+    const bands = [
+        { lo: 0, hi: 9, rooms: 0, filled: 0 },
+        { lo: 10, hi: 19, rooms: 0, filled: 0 },
+        { lo: 20, hi: 34, rooms: 0, filled: 0 },
+        { lo: 35, hi: 9999, rooms: 0, filled: 0 },
+    ];
+
+    for (let i = 0; i < 600; i++) {
+        const level = buildLevel(1 + (i % 26), rng);
+        // 물건 셋을 실제 규칙(`freeSpot`)대로 놓는다.
+        const spots = [0, 1, 2].map(() => freeSpot(level, rng, []));
+        for (const r of level.rooms) {
+            if (r.gone || r.maze) continue;
+            const band = bands.find((b) => roomArea(r) >= b.lo && roomArea(r) <= b.hi);
+            if (!band) continue;
+            band.rooms++;
+            const inside = (p: { x: number; y: number }) =>
+                p.x > r.x && p.x < r.x + r.w - 1 && p.y > r.y && p.y < r.y + r.h - 1;
+            if (spots.some(inside)) band.filled++;
+        }
+    }
+
+    const rate = bands.map((b) => (b.rooms > 0 ? b.filled / b.rooms : 0));
+    for (const b of bands) assert.ok(b.rooms > 100, `${b.lo}~${b.hi} 칸짜리 방이 ${b.rooms}개뿐이라 못 잰다`);
+
+    // **띠를 따라 올라가야 한다.** 고르게 뽑으면 넷이 나란해진다(재 보니 30·33·34·34%).
+    for (let i = 1; i < rate.length; i++) {
+        assert.ok(
+            rate[i] > rate[i - 1],
+            `${bands[i].lo}칸 띠(${(rate[i] * 100).toFixed(0)}%)가 그 아래 띠` +
+                `(${(rate[i - 1] * 100).toFixed(0)}%)보다 안 높다`,
+        );
+    }
+    // 제일 넓은 띠와 제일 좁은 띠가 **또렷이** 갈려야 한다 — 조금만 기울면 걸어 들어가는
+    // 사람 눈에는 그대로다.
+    assert.ok(
+        rate[3] > rate[0] * 2,
+        `넓은 방 ${(rate[3] * 100).toFixed(0)}% 가 좁은 방 ${(rate[0] * 100).toFixed(0)}% 의 두 배가 안 된다`,
+    );
+});
+
+test("넓이 재는 자리는 하나다 — 「없는 방」도 한 칸을 갖는다", () => {
+    assert.equal(roomArea({ x: 0, y: 0, w: 5, h: 4, dark: false, gone: false, maze: false }), 6);
+    assert.equal(roomArea({ x: 0, y: 0, w: 3, h: 3, dark: false, gone: false, maze: false }), 1);
+    // 「없는 방」은 복도의 교차점 한 칸이다 — 0 을 주면 영영 안 뽑힌다.
+    assert.equal(roomArea({ x: 9, y: 9, w: 1, h: 1, dark: false, gone: true, maze: false }), 1);
 });

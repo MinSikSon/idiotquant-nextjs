@@ -346,11 +346,37 @@ export function randomSpotIn(r: Room, rng: Rng): Pos {
     };
 }
 
+/** 방 안쪽의 칸 수 — 물건이 놓일 수 있는 넓이. 「없는 방」은 한 칸이다. */
+export function roomArea(r: Room): number {
+    return r.gone ? 1 : Math.max(1, (r.w - 2) * (r.h - 2));
+}
+
+/**
+ * 방 하나를 고른다 — **넓이를 태워서.**
+ *
+ * 예전에는 `rng.pick` 으로 고르게 뽑았다. 그러면 방 하나가 크든 작든 **한 몫씩** 갖는데,
+ * 이 층의 방은 안쪽이 2칸부터 70칸까지(서른다섯 배) 벌어진다. 그래서 3×3 벽장에는 물건이
+ * 흔하고 **넓은 홀은 자주 텅 비었다** — 걸어 들어간 값이 넓이에 반비례하는 셈이다.
+ *
+ * 넓이에 비례해 뽑으면 **바닥 한 칸당 확률이 같아진다.** 넓은 방일수록 뭔가 있을
+ * 법하고, 좁은 방은 그만큼 자주 빈다.
+ */
+function pickRoom(rooms: Room[], rng: Rng): Room | undefined {
+    if (rooms.length === 0) return undefined;
+    const total = rooms.reduce((n, r) => n + roomArea(r), 0);
+    let n = rng.rnd(total);
+    for (const r of rooms) {
+        n -= roomArea(r);
+        if (n < 0) return r;
+    }
+    return rooms[rooms.length - 1];
+}
+
 /** 무엇도 놓이지 않은 빈 바닥을 찾는다. 못 찾으면 아무 자리나 준다. */
 export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
     const real = level.rooms.filter((r) => !r.gone);
     for (let tries = 0; tries < 200; tries++) {
-        const room = rng.pick(real) ?? level.rooms[0];
+        const room = pickRoom(real, rng) ?? level.rooms[0];
         const p = randomSpotIn(room, rng);
         if (!walkable(level.tiles[idx(p.x, p.y)] as Tile)) continue;
         if (avoid.some((q) => q.x === p.x && q.y === p.y)) continue;
