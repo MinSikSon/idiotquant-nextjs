@@ -23,9 +23,22 @@
  *
  * 판 전체에 최대 너비를 두는 것도 같은 이유다. 안 두면 넓은 화면에서 단추가 양쪽
  * 끝까지 벌어져 방향판에서 한참 떨어진다.
+ *
+ * ── 꾹 누르면 연타 ───────────────────────────────────────────────────
+ * **키보드는 진작부터 연타였다.** 브라우저가 방향키를 눌러 두면 `keydown` 을 알아서
+ * 반복해 주므로, 데스크톱에서는 복도 열 칸을 한 번 눌러 지나갔다. 폰에서는 같은 복도를
+ * **열 번 두드려야** 했다 — 같은 게임인데 조작이 달랐던 것이고, 이건 새 기능이라기보다
+ * 빠져 있던 자리다.
+ *
+ * **방향판에만 건다.** 명령 단추가 연타되면 「내려간다」를 꾹 눌러 세 층이 지나가고,
+ * 「읽는다」가 주문서를 연달아 태운다 — 그쪽은 한 번이 한 번이어야 한다.
  */
 
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
+
+/** 첫 걸음 뒤 이만큼 기다렸다가, 그 뒤로 이 간격으로 걷는다. */
+const HOLD_DELAY = 400;
+const HOLD_STEP = 120;
 
 export interface PadAction {
     label: string;
@@ -41,22 +54,73 @@ function Key({
     disabled,
     title,
     wide,
+    hold,
 }: {
     children: ReactNode;
     onPress?: () => void;
     disabled?: boolean;
     title?: string;
     wide?: boolean;
+    /** 꾹 누르면 연타되는가. 방향판만 켠다. */
+    hold?: boolean;
 }) {
+    // 타이머 안에서 **지금의** `onPress` 를 불러야 한다. 그대로 가두면 첫 렌더의
+    // 함수가 갇혀서, 겨누기로 넘어간 뒤에도 옛 동작이 계속 돈다.
+    const fire = useRef(onPress);
+    fire.current = onPress;
+
+    const delay = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const stop = useCallback(() => {
+        if (delay.current) clearTimeout(delay.current);
+        if (tick.current) clearInterval(tick.current);
+        delay.current = null;
+        tick.current = null;
+    }, []);
+
+    // 손을 못 떼는 자리가 둘 있다 — 판이 덮여 단추가 사라질 때와, 겨누기로 넘어가
+    // 연타가 꺼질 때. 둘 다 안 멈추면 **손가락을 뗀 적도 없는데 계속 걷는다.**
+    useEffect(() => {
+        if (!hold) stop();
+        return stop;
+    }, [hold, stop]);
+
     return (
         <button
             type="button"
             title={title}
             disabled={disabled}
-            onClick={onPress}
+            onPointerDown={
+                hold
+                    ? (e) => {
+                          // **포인터를 잡아 둔다.** 안 잡으면 손가락이 단추 밖으로
+                          // 밀렸을 때 `pointerup` 이 다른 데서 터져서, 뗐는데도 계속
+                          // 걷는다 — 연타에서 제일 나쁜 고장이다.
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                          fire.current?.();
+                          delay.current = setTimeout(() => {
+                              tick.current = setInterval(() => fire.current?.(), HOLD_STEP);
+                          }, HOLD_DELAY);
+                      }
+                    : undefined
+            }
+            onPointerUp={hold ? stop : undefined}
+            onPointerCancel={hold ? stop : undefined}
+            // 길게 누르면 뜨는 「복사·공유」 메뉴가 연타를 끊는다.
+            onContextMenu={hold ? (e) => e.preventDefault() : undefined}
+            onClick={(e) => {
+                // 손가락·마우스로 누른 것은 `pointerdown` 에서 이미 걸었다. 여기까지
+                // 오는 것은 **키보드(Enter·Space)와 보조기술**이 만든 클릭뿐이고,
+                // 그것만 `detail` 이 0 이다. 안 가르면 한 번 누를 때 두 걸음 걷는다.
+                if (hold && e.detail !== 0) return;
+                onPress?.();
+            }}
             className={[
                 // 칸 크기는 격자가 정한다 — 단추는 그 칸을 꽉 채우고 글자는 가운데.
-                "grid select-none place-items-center rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)]",
+                // `touch-none` 이 없으면 꾹 누르는 동안 브라우저가 스크롤·확대로
+                // 가로채 가고, 그 순간 `pointercancel` 이 떠서 연타가 끊긴다.
+                "grid touch-none select-none place-items-center rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)]",
                 "font-[family-name:var(--font-plex-mono)] leading-none text-[var(--rg-text)]",
                 "active:translate-y-px active:bg-[var(--rg-press)]",
                 "disabled:border-[var(--rg-off-line)] disabled:bg-[var(--rg-off-bg)] disabled:text-[var(--rg-off-ink)]",
@@ -73,23 +137,31 @@ function Key({
 export default function TouchPad({
     onMove,
     actions,
+    hold = true,
 }: {
     onMove: (dx: number, dy: number) => void;
     actions: PadAction[];
+    /**
+     * 방향판을 꾹 누르면 연타되는가.
+     *
+     * **겨누는 중에는 꺼야 한다.** 겨누기는 한 번 고르면 끝나는 것이라, 연타되면
+     * 첫 번째가 지팡이를 쏘고 **그 뒤로는 그 방향으로 걸어 들어간다.**
+     */
+    hold?: boolean;
 }) {
     const step = (dx: number, dy: number) => () => onMove(dx, dy);
     return (
         <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
             <div className="grid shrink-0 grid-cols-3 gap-1">
-                <Key onPress={step(-1, -1)} title="왼쪽 위 (y)">↖</Key>
-                <Key onPress={step(0, -1)} title="위 (k)">↑</Key>
-                <Key onPress={step(1, -1)} title="오른쪽 위 (u)">↗</Key>
-                <Key onPress={step(-1, 0)} title="왼쪽 (h)">←</Key>
-                <Key onPress={step(0, 0)} title="제자리에서 쉰다 (.)">·</Key>
-                <Key onPress={step(1, 0)} title="오른쪽 (l)">→</Key>
-                <Key onPress={step(-1, 1)} title="왼쪽 아래 (b)">↙</Key>
-                <Key onPress={step(0, 1)} title="아래 (j)">↓</Key>
-                <Key onPress={step(1, 1)} title="오른쪽 아래 (n)">↘</Key>
+                <Key hold={hold} onPress={step(-1, -1)} title="왼쪽 위 (y)">↖</Key>
+                <Key hold={hold} onPress={step(0, -1)} title="위 (k)">↑</Key>
+                <Key hold={hold} onPress={step(1, -1)} title="오른쪽 위 (u)">↗</Key>
+                <Key hold={hold} onPress={step(-1, 0)} title="왼쪽 (h)">←</Key>
+                <Key hold={hold} onPress={step(0, 0)} title="제자리에서 쉰다 (.)">·</Key>
+                <Key hold={hold} onPress={step(1, 0)} title="오른쪽 (l)">→</Key>
+                <Key hold={hold} onPress={step(-1, 1)} title="왼쪽 아래 (b)">↙</Key>
+                <Key hold={hold} onPress={step(0, 1)} title="아래 (j)">↓</Key>
+                <Key hold={hold} onPress={step(1, 1)} title="오른쪽 아래 (n)">↘</Key>
             </div>
 
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
