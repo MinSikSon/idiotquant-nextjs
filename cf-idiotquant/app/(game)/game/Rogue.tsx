@@ -18,7 +18,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 
 import {
     type BestiaryRow,
@@ -983,6 +982,17 @@ export default function Rogue() {
                             >
                                 새 판
                             </button>
+                            {/* **죽고 나서야 제일 보고 싶은 것이 기록이다** — 무엇에 맞아
+                                죽었는지는 위쪽 두 줄 띠에 잠깐 스쳤을 뿐이고, 그 띠는 이 판이
+                                덮고 있어 손이 안 닿는다. 닫으면 `sheet` 가 `none` 으로
+                                돌아오니 이 판이 그대로 다시 뜬다. */}
+                            <button
+                                type="button"
+                                onClick={() => setSheet("log")}
+                                className="rounded-[2px] border border-[var(--rg-line-soft)] px-3 py-1 hover:bg-[var(--rg-raised)]"
+                            >
+                                기록
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -993,9 +1003,6 @@ export default function Rogue() {
                             >
                                 지난 판들
                             </button>
-                            <Link href="/game/imf" className="text-[var(--rg-faint)] underline underline-offset-2">
-                                옛 게임(IMF)
-                            </Link>
                         </div>
                     }
                 >
