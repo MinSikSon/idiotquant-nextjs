@@ -538,17 +538,20 @@ export function armorClassOf(it: Item | undefined): number {
 }
 
 /**
- * 원작의 방어 등급을 **D&D 의 방어도(AC)** 로 옮긴다.
+ * 원작의 방어 등급을 **방어력**으로 옮긴다 — 맞았을 때 공격력에서 빼는 값이다.
  *
- * Rogue 의 등급은 낮을수록 단단하고(맨몸 10, 판금 3, 용 −1), D&D 의 AC 는 **높을수록
- * 단단하며 공격 굴림이 넘어야 할 문턱**이다(맨몸 10, 판금 17, 용 21). `20 − 등급` 이
- * 그 둘을 잇는다 — 맨몸이 양쪽에서 10 으로 맞아떨어지는 것이 이 식의 근거다.
+ * Rogue 의 등급은 낮을수록 단단하다(맨몸 10, 판금 3, 용 −1). `10 − 등급` 이 그것을
+ * 뒤집는다 — **맨몸이 0** 이고, 판금이 7, 용이 11 이다. 맨몸에서 0 이 되는 것이 이
+ * 식의 근거다: 아무것도 안 입었으면 깎을 것도 없어야 한다.
  *
  * 표는 원작 값을 그대로 들고, **옮기는 자리는 여기 하나뿐이다.** 굴림도 화면도 전부
  * 이쪽 값을 쓴다. 뒤집는 곳이 둘이 되면 어느 날 한쪽만 바뀐다.
+ *
+ * 0 밑으로는 안 내려간다. 손질을 잔뜩 한 갑옷의 등급은 음수가 될 수 있지만 **방어력이
+ * 음수면 맞을 때마다 더 아프다** — 그건 갑옷이 아니다.
  */
-export function armorClass(rogueArmor: number): number {
-    return 20 - rogueArmor;
+export function defenseOf(rogueArmor: number): number {
+    return Math.max(0, 10 - rogueArmor);
 }
 
 /**
@@ -572,13 +575,13 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
     if (it.kind === "armor") {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
         const base = ARMORS[it.type]?.armor ?? 10;
-        return `방어도 ${armorClass(seen ? armorClassOf(it) : base)}`;
+        return `방어력 ${defenseOf(seen ? armorClassOf(it) : base)}`;
     }
     if (it.kind === "ring") {
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
         if (!seen) return "";
         const n = it.plusRing ?? 0;
-        if (it.type === "protection") return n === 0 ? "" : `방어도 ${n > 0 ? "+" : ""}${n}`;
+        if (it.type === "protection") return n === 0 ? "" : `방어력 ${n > 0 ? "+" : ""}${n}`;
         if (it.type === "add strength") return n === 0 ? "" : `힘 ${n > 0 ? "+" : ""}${n}`;
         return "";
     }

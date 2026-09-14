@@ -587,7 +587,7 @@ export default function Rogue() {
                     「공격」이라 적던 것은 피해라서, 명중과 나란히 서면 헷갈린다. */}
                 <span>명중 {signed(heroHitBonus(hero, state.known))}</span>
                 <span>피해 {heroAttackText(hero, state.known)}</span>
-                <span>방어도 {heroDefense(hero)}</span>
+                <span>방어력 {heroDefense(hero)}</span>
                 <span>경험 {hero.exp}</span>
                 <span className="text-[var(--rg-gold)]">금화 {hero.gold}</span>
                 {rings.length > 0 && <span className="text-[var(--rg-ring)]">반지 {rings.length}</span>}
@@ -754,7 +754,7 @@ export default function Rogue() {
                         {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
                         <div className="text-[var(--rg-muted)]">
                             지금 명중 {signed(heroHitBonus(hero, state.known))} · 피해{" "}
-                            {heroAttackText(hero, state.known)} · 방어도 {heroDefense(hero)}
+                            {heroAttackText(hero, state.known)} · 방어력 {heroDefense(hero)}
                         </div>
                     </div>
                 </Panel>
@@ -788,7 +788,7 @@ export default function Rogue() {
                                         </div>
                                         {m.known ? (
                                             <div className="text-[var(--rg-muted)]">
-                                                레벨 {m.level} · 방어도 {m.defense} · 피해{" "}
+                                                레벨 {m.level} · 방어력 {m.defense} · 공격력{" "}
                                                 {m.damage?.join(" + ") || "없음"} · 경험 {m.exp} · 체력 {m.hp}
                                                 {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                             </div>
@@ -825,7 +825,7 @@ export default function Rogue() {
                                             <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
                                             {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                             <div className="text-[var(--rg-muted)]">
-                                                레벨 {r.level} · 방어도 {r.defense} · 피해{" "}
+                                                레벨 {r.level} · 방어력 {r.defense} · 공격력{" "}
                                                 {r.damage.join(" + ") || "없음"} · 경험 {r.exp} · 체력 {r.hp}
                                                 {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                 {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
@@ -864,7 +864,7 @@ export default function Rogue() {
                     onClose={() => setSheet("none")}
                     /* 「이 d20 은 뭘 정하는 건가」를 여기서 답한다 — 줄에 이름은 붙였지만
                        스무면체가 명중에만 쓰인다는 것은 한 줄로 말해 주는 편이 빠르다. */
-                    footer="d20 은 명중에만 굴립니다 — 상대의 방어도 이상이면 맞습니다. 피해는 무기 주사위(2d4 같은 것)로 따로 굴립니다."
+                    footer="d20 은 명중에만 굴립니다 — 나와 상대가 각각 굴려 내 쪽이 높으면 맞습니다. 피해는 공격력(2d4 같은 것)에서 상대의 방어력을 뺀 값입니다."
                 >
                     <ul className="space-y-0.5">
                         {state.messages
@@ -936,12 +936,18 @@ export default function Rogue() {
                         <p><span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
                         <p><span className="text-[var(--rg-trap)]">^</span> 함정 · <span className="text-[var(--rg-stairs)]">&gt;</span> 아래 계단 · <span className="text-[var(--rg-stairs)]">&lt;</span> 위 계단 · <span className="text-[var(--rg-door)]">+</span> 문</p>
                         <p className="pt-1 text-[var(--rg-faint)]">
-                            <b className="text-[var(--rg-muted)]">싸움은 D&amp;D 의 주사위 규칙을 씁니다.</b>{" "}
-                            <span className="text-[var(--rg-muted)]">d20 + 숙련 + 힘 + 무기</span>가 상대의{" "}
-                            <span className="text-[var(--rg-muted)]">방어도</span> 이상이면 맞습니다 — <b>막는 쪽은
-                            굴리지 않습니다.</b> <b>20</b> 은 무조건 맞고 <b>피해 주사위를 두 번</b> 굴리며,
+                            <b className="text-[var(--rg-muted)]">명중은 서로 굴려서 겨룹니다.</b>{" "}
+                            내 <span className="text-[var(--rg-muted)]">d20 + 숙련 + 힘 + 무기</span>가 상대의{" "}
+                            <span className="text-[var(--rg-muted)]">d20 + 숙련</span>보다 <b>높으면</b> 맞습니다
+                            (같으면 빗나갑니다). <b>20</b> 은 무조건 맞고 <b>공격력 주사위를 두 번</b> 굴리며,
                             <b>1</b> 은 무조건 빗나갑니다. 자는 놈을 치면 <b>유리</b>(두 번 굴려 높은 쪽),
                             눈이 멀거나 헷갈리면 <b>불리</b>입니다. 굴린 값은 모두 <b>기록</b>에 남습니다.
+                        </p>
+                        <p className="pt-1 text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-muted)]">피해 = 공격력 − 상대의 방어력.</b>{" "}
+                            갑옷은 <b>안 맞게 해 주는 것이 아니라 덜 아프게</b> 해 줍니다. 방어력이 더 크면{" "}
+                            <b>0</b> — 갑옷에 튕깁니다. <b>여러 대를 때리는 놈은 대마다 따로 깎이므로</b>{" "}
+                            좋은 갑옷이 특히 세게 듣습니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             <b className="text-[var(--rg-muted)]">강화 주문서로 캐릭터를 키웁니다.</b>{" "}

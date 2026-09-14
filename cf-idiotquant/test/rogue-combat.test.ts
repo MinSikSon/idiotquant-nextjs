@@ -11,71 +11,108 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { heroAttack, heroLuck, monsterHitBonus } from "@/lib/rogue/combat";
+import { heroAttack, heroLuck, monsterAttack, monsterDamBonus, monsterHitBonus } from "@/lib/rogue/combat";
 import { newGame } from "@/lib/rogue/game";
 import { idx } from "@/lib/rogue/types";
-import { abilityMod, attackRoll, damageRoll, luckOf, proficiency } from "@/lib/rogue/dnd";
-import { armorClass } from "@/lib/rogue/items";
+import { abilityMod, damageRoll, luckOf, opposedRoll, pierce, proficiency } from "@/lib/rogue/dnd";
+import { defenseOf } from "@/lib/rogue/items";
 import { armorClassOf, makeItem } from "@/lib/rogue/items";
-import { EXP_LEVELS, HP_PER_LEVEL, gainExp, makeHero, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
+import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
+
+/** 지금 내 방어력. */
+const heroDefenseOf = (s: { hero: Parameters<typeof heroDefense>[0] }) => heroDefense(s.hero);
 import { Rng } from "@/lib/rogue/rng";
 import { MONSTERS, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
 
-/** 레벨 `atLevel` 에 보정 `bonus` 인 쪽이, 방어 등급 `opArmor` 인 쪽을 때린다. */
-function hitRate(atLevel: number, opArmor: number, bonus: number, n = 20000): number {
+/** 레벨 `atLevel` 에 보정 `bonus` 인 쪽이, 레벨 `opLevel` 인 쪽을 때린다. */
+function hitRate(atLevel: number, opLevel: number, bonus: number, n = 20000): number {
     const rng = new Rng(12345);
     let hits = 0;
     for (let i = 0; i < n; i++) {
-        if (attackRoll(proficiency(atLevel) + bonus, armorClass(opArmor), rng).hit) hits++;
+        if (opposedRoll(proficiency(atLevel) + bonus, proficiency(opLevel), rng).hit) hits++;
     }
     return hits / n;
 }
 
-test("방어 등급이 낮을수록 맞히기 어렵다 — 부호가 뒤집히면 여기서 걸린다", () => {
-    const naked = hitRate(1, 10, 0); // 맨몸
-    const plate = hitRate(1, 3, 0); // 판금 갑옷
-    assert.ok(plate < naked, `판금(${plate}) 이 맨몸(${naked}) 보다 맞기 쉬우면 안 된다`);
-    // 용(−1)은 판금보다도 단단하다.
-    assert.ok(hitRate(1, -1, 0) < plate);
+// **갑옷은 이제 명중을 안 건드린다.** 피하는 쪽의 굴림에 붙는 것은 숙련뿐이라, 갑옷을
+// 껴입어도 맞는 횟수는 그대로다 — 대신 매 대가 덜 아프다. 이 둘을 헷갈리면 「갑옷을
+// 입을수록 잘 맞는 게임」이 되는데 화면에는 숫자가 멀쩡히 떠서 아무도 못 알아챈다.
+test("맞히기 어려운 쪽은 **레벨이 높은 쪽**이다 — 갑옷이 아니라", () => {
+    const weak = hitRate(1, 1, 0);
+    const strong = hitRate(1, 10, 0);
+    assert.ok(strong < weak, `레벨 10(${strong}) 이 레벨 1(${weak}) 보다 맞히기 쉬우면 안 된다`);
 });
 
 test("레벨이 오르면 더 잘 맞힌다", () => {
-    const lv1 = hitRate(1, 5, 0);
-    const lv5 = hitRate(5, 5, 0);
-    const lv10 = hitRate(10, 5, 0);
+    const lv1 = hitRate(1, 3, 0);
+    const lv5 = hitRate(5, 3, 0);
+    const lv10 = hitRate(10, 3, 0);
     assert.ok(lv1 < lv5 && lv5 < lv10, `${lv1} < ${lv5} < ${lv10} 이어야 한다`);
 });
 
 test("손질한 무기는 더 잘 맞는다", () => {
-    assert.ok(hitRate(1, 5, 0) < hitRate(1, 5, 2));
+    assert.ok(hitRate(1, 3, 0) < hitRate(1, 3, 2));
+});
+
+// 이 파일의 핵심 한 줄. 부호가 뒤집히면 「갑옷을 입을수록 더 아픈 게임」이 된다.
+test("피해 = 공격력 − 방어력. 0 밑은 0 이다", () => {
+    assert.equal(pierce(14, 4), 10);
+    assert.equal(pierce(3, 7), 0, "방어력이 크면 0 이어야 한다");
+    assert.equal(pierce(7, 7), 0, "같으면 0");
+    assert.equal(pierce(5, 0), 5, "맨몸은 깎을 것이 없다");
+    // 단조롭다 — 방어력이 오르는데 더 아파지는 구간이 없다.
+    let last = 99;
+    for (let d = 0; d <= 12; d++) {
+        const got = pierce(10, d);
+        assert.ok(got <= last, `방어력 ${d} 에서 피해가 늘었다`);
+        last = got;
+    }
+});
+
+test("방어력은 0 밑으로 안 내려간다 — 음수 방어력은 갑옷이 아니다", () => {
+    assert.equal(defenseOf(10), 0, "맨몸은 0");
+    assert.equal(defenseOf(3), 7, "판금");
+    assert.equal(defenseOf(-1), 11, "용");
+    assert.equal(defenseOf(12), 0, "등급이 10 을 넘어도 0 에서 멈춘다");
+    // **손질하면 숫자가 커진다**(등급이 내려가므로).
+    assert.ok(defenseOf(8 - 1) > defenseOf(8), "+1 갑옷의 방어력이 안 올랐다");
 });
 
 test("굴림은 1 에서 20 사이다 — 다면체가 스무 면이다", () => {
     const rng = new Rng(7);
     const seen = new Set<number>();
-    for (let i = 0; i < 5000; i++) seen.add(attackRoll(0, 10, rng).roll);
+    for (let i = 0; i < 5000; i++) seen.add(opposedRoll(0, 0, rng).roll);
     assert.equal(Math.min(...seen), 1);
     assert.equal(Math.max(...seen), 20);
     assert.equal(seen.size, 20);
 });
 
-test("막는 쪽은 **굴리지 않는다** — D&D 는 방어도가 고정된 문턱이다", () => {
+test("**양쪽이 굴린다** — 피하는 쪽도 스무면체를 돌린다", () => {
     const rng = new Rng(77);
-    const a = attackRoll(3, 15, rng);
+    const a = opposedRoll(3, 4, rng);
     assert.equal(a.total, a.roll + 3);
-    assert.equal(a.ac, 15);
-    assert.equal(a.rolls.length, 1, "주사위를 한 번만 굴려야 한다");
-    if (!a.crit && !a.fumble) assert.equal(a.hit, a.total >= a.ac);
+    assert.equal(a.dodge, a.dodgeRoll + 4);
+    assert.equal(a.rolls.length, 1, "때리는 쪽은 한 번만 굴린다");
+    if (!a.crit && !a.fumble) assert.equal(a.hit, a.total > a.dodge);
+
+    // **굴린다는 것은 값이 달라진다는 뜻이다.** 고정된 문턱을 `dodgeRoll` 에 담아 두면
+    // 위의 assert 는 전부 통과하는데 체계는 옛날 것 그대로다 — 실제로 그렇게 되돌려
+    // 봤더니 이 파일이 아무 말도 안 했다.
+    const seen = new Set<number>();
+    for (let i = 0; i < 5000; i++) seen.add(opposedRoll(0, 0, rng).dodgeRoll);
+    assert.equal(seen.size, 20, `피하는 쪽의 눈이 ${seen.size} 가지뿐이다 — 안 굴리고 있다`);
+    assert.equal(Math.min(...seen), 1);
+    assert.equal(Math.max(...seen), 20);
 });
 
-test("방어도와 같으면 **맞는다** — D&D 는 「이상」이다", () => {
+test("동점은 **빗나간다** — 피하는 쪽이 비기면 이긴다", () => {
     const rng = new Rng(4242);
     let ties = 0;
-    for (let i = 0; i < 20000 && ties < 200; i++) {
-        const a = attackRoll(0, 12, rng);
-        if (a.total !== a.ac || a.crit || a.fumble) continue;
+    for (let i = 0; i < 40000 && ties < 200; i++) {
+        const a = opposedRoll(0, 0, rng);
+        if (a.total !== a.dodge || a.crit || a.fumble) continue;
         ties++;
-        assert.equal(a.hit, true, "방어도와 같은데 빗나갔다");
+        assert.equal(a.hit, false, "동점인데 맞았다");
     }
     assert.ok(ties > 50, `같은 경우가 ${ties} 번뿐이라 못 잰다`);
 });
@@ -85,11 +122,11 @@ test("자연 20 은 무조건 맞고, 자연 1 은 무조건 빗나간다", () =
     let crits = 0;
     let fumbles = 0;
     for (let i = 0; i < 20000; i++) {
-        // 방어도 99 — 보정으로는 절대 못 넘는다. 그래도 20 은 맞아야 한다.
-        const hi = attackRoll(0, 99, rng);
+        // 상대 보정 +99 — 굴림으로는 절대 못 넘는다. 그래도 20 은 맞아야 한다.
+        const hi = opposedRoll(0, 99, rng);
         if (hi.roll === 20) { crits++; assert.ok(hi.hit && hi.crit, "자연 20 이 안 맞았다"); }
-        // 방어도 −99 — 절대 빗나갈 수 없다. 그래도 1 은 빗나가야 한다.
-        const lo = attackRoll(50, -99, rng);
+        // 내 보정 +99 — 절대 빗나갈 수 없다. 그래도 1 은 빗나가야 한다.
+        const lo = opposedRoll(99, 0, rng);
         if (lo.roll === 1) { fumbles++; assert.ok(!lo.hit && lo.fumble, "자연 1 이 맞았다"); }
     }
     assert.ok(crits > 500 && fumbles > 500, `20 이 ${crits} 번, 1 이 ${fumbles} 번`);
@@ -109,10 +146,10 @@ test("치명타는 피해 주사위를 **두 번** 굴리고 보정은 한 번�
 test("유리는 높은 쪽, 불리는 낮은 쪽 — 둘 다면 서로 지운다", () => {
     const rng = new Rng(31);
     for (let i = 0; i < 500; i++) {
-        const up = attackRoll(0, 10, rng, "advantage");
+        const up = opposedRoll(0, 0, rng, "advantage");
         assert.equal(up.rolls.length, 2);
         assert.equal(up.roll, Math.max(...up.rolls));
-        const down = attackRoll(0, 10, rng, "disadvantage");
+        const down = opposedRoll(0, 0, rng, "disadvantage");
         assert.equal(down.roll, Math.min(...down.rolls));
     }
     assert.equal(luckOf([true], [true]), "normal", "유리와 불리가 안 지워졌다");
@@ -133,18 +170,18 @@ test("능력 보정과 숙련은 D&D 의 식 그대로다", () => {
     assert.equal(proficiency(9), 4);
 });
 
-test("방어도는 클수록 단단하다 — 맨몸 10 이 양쪽에서 맞아떨어진다", () => {
-    assert.equal(armorClass(10), 10, "맨몸은 D&D 도 10");
-    assert.equal(armorClass(3), 17, "판금");
-    assert.equal(armorClass(-1), 21, "용");
-    // **손질하면 숫자가 커진다.**
-    assert.ok(armorClass(8 - 1) > armorClass(8), "+1 갑옷의 방어도가 안 올랐다");
-});
-
 test("몬스터의 공격 보정도 레벨을 따라 오른다", () => {
     const of = (ch: string) => monsterHitBonus({ def: MONSTERS[ch] } as never);
     assert.ok(of("E") < of("T"), "에뮤가 트롤보다 잘 때린다");
     assert.ok(of("T") < of("D"), "트롤이 용보다 잘 때린다");
+});
+
+// 나는 힘과 손질을 얹은 값에서 상대 갑옷을 뺀다. 상대 쪽에 보정이 없으면 **같은 식이
+// 한쪽에만 공평하고**, 갑옷이 깎기 시작한 순간 약한 놈은 아예 아무것도 못 하게 된다.
+test("몬스터의 공격력에도 보정이 붙는다 — 안 붙으면 갑옷이 한쪽만 살린다", () => {
+    const of = (ch: string) => monsterDamBonus({ def: MONSTERS[ch] } as never);
+    assert.ok(of("E") > 0, "레벨 1 짜리에게 보정이 하나도 없다");
+    assert.ok(of("E") < of("T") && of("T") < of("D"), "레벨을 따라 안 오른다");
 });
 
 test("갑옷을 손질하면 방어 등급이 내려간다 (안쪽 표현)", () => {
@@ -281,15 +318,132 @@ test("치명타가 실제 싸움에서 피해를 두 배 주사위로 굴린다"
     s.level.monsters = s.level.monsters.filter((x) => !(x.x === m.x && x.y === m.y));
     s.level.monsters.push(m);
 
+    // 주사위를 펼쳐 적으려면 잡아 본 종이어야 한다(도감 규칙).
+    s.bestiary.T = 1;
     const rng = new Rng(21);
     let crits = 0;
     for (let i = 0; i < 400; i++) {
         const r = heroAttack(s, m, rng);
-        const line = r.messages.find((l) => l.startsWith("· 피해 "));
+        const line = r.messages.find((l) => l.startsWith("· 공격력 "));
         const critLine = r.messages[0].includes("치명타");
         if (!critLine) continue;
         crits++;
         assert.ok(line?.includes("두 번"), `치명타인데 주사위를 한 번만 굴렸다: ${line}`);
     }
     assert.ok(crits > 5, `사백 번에 치명타가 ${crits} 번뿐이라 못 잰다`);
+});
+
+// ── 실제 싸움에서 ────────────────────────────────────────────────────────
+
+/** 옆에 몬스터 하나를 세우고 그 판을 준다. */
+function duel(seed: number, ch: string, hp = 99999) {
+    const s = newGame(seed);
+    s.hero.hp = s.hero.maxHp = 99999;
+    const x = s.hero.x + 1;
+    const y = s.hero.y;
+    s.level.tiles[idx(x, y)] = 1;
+    s.level.monsters = [];
+    const m = spawnMonster(ch, x, y, new Rng(7));
+    m.hp = m.maxHp = hp;
+    m.awake = true;
+    s.level.monsters.push(m);
+    return { s, m };
+}
+
+// 이 체계에서 갑옷이 하는 일의 전부. 뚫리면 갑옷은 그냥 무게이고, 안 뚫리면 「덜 아프게」가
+// 아니라 「안 아프게」다 — 둘 다 실제로 일어나야 한다.
+test("갑옷이 두꺼우면 피해가 0 이 된다 — 그리고 그 줄이 남는다", () => {
+    // 얼음괴물(1d2, 레벨 1)과 판금 갑옷(방어력 7).
+    const { s, m } = duel(800, "I");
+    const plate = makeItem("armor", "plate mail", 900, -1, -1);
+    plate.plusArmor = 2; // 방어력 9
+    s.hero.pack.push(plate);
+    s.hero.armorId = plate.id;
+
+    const rng = new Rng(5);
+    let blocked = 0;
+    let hurt = 0;
+    for (let i = 0; i < 300; i++) {
+        const before = s.hero.hp;
+        const r = monsterAttack(s, m, rng);
+        if (!r.hit) continue;
+        if (s.hero.hp === before) blocked++;
+        else hurt++;
+    }
+    assert.ok(blocked > 0, "판금을 입고 얼음괴물에게 삼백 번 맞았는데 한 번도 안 튕겼다");
+    assert.equal(hurt, 0, `1d2 짜리가 방어력 9 를 뚫었다(${hurt}번)`);
+});
+
+test("맨몸이면 공격력이 그대로 들어온다", () => {
+    const { s, m } = duel(801, "H"); // 홉고블린 1d8
+    s.hero.armorId = null;
+    assert.equal(heroDefenseOf(s), 0, "맨몸인데 방어력이 있다");
+    const rng = new Rng(6);
+    let hurt = 0;
+    for (let i = 0; i < 200; i++) {
+        const before = s.hero.hp;
+        monsterAttack(s, m, rng);
+        if (s.hero.hp < before) hurt++;
+    }
+    assert.ok(hurt > 20, `맨몸으로 이백 번 맞았는데 ${hurt} 번만 아팠다`);
+});
+
+// 세 대를 뭉쳐 한 번만 빼면 트롤이 지금보다 훨씬 세진다. 갑옷을 입을 까닭이 여기서 난다.
+test("여러 대를 때리는 놈은 **대마다** 깎인다", () => {
+    const { s, m } = duel(802, "T"); // 트롤 1d8 · 1d8 · 2d6
+    s.bestiary.T = 1;
+    const chain = makeItem("armor", "chain mail", 901, -1, -1);
+    s.hero.pack.push(chain);
+    s.hero.armorId = chain.id;
+    const guard = heroDefenseOf(s);
+    assert.ok(guard > 0);
+
+    const rng = new Rng(7);
+    let checked = 0;
+    for (let i = 0; i < 300; i++) {
+        const before = s.hero.hp;
+        const r = monsterAttack(s, m, rng);
+        const line = r.messages.find((l) => l.startsWith("· 공격력 "));
+        if (!line) continue;
+
+        // 줄에 적힌 대마다: `1d8 → 6 +6공격력 −3방어력 → 3`
+        const blows = [...line.matchAll(/→ ([\d+]+)(?: \+(\d+)공격력)? −(\d+)방어력 → (\d+)/g)];
+        assert.ok(blows.length > 0, `깎는 자리가 없다: ${line}`);
+        for (const [, rolled, add, cut, got] of blows) {
+            const raw = rolled.split("+").reduce((n, x) => n + Number(x), 0);
+            assert.equal(Number(cut), guard, `방어력이 다르게 적혔다: ${line}`);
+            assert.equal(Number(add ?? 0), monsterDamBonus(m), `공격력 보정이 다르게 적혔다: ${line}`);
+            // **줄 위에서 셈이 맞아야 한다.** 보정을 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼
+            // 눈으로 봐서 틀린 줄이 남고, 그러면 기록을 통째로 못 믿게 된다.
+            assert.equal(
+                Number(got),
+                Math.max(0, raw + Number(add ?? 0) - Number(cut)),
+                `줄에 적힌 숫자끼리 안 맞는다: ${line}`,
+            );
+            // **대마다** 뺀 값이어야 한다. 뭉쳐서 한 번만 빼면 이 등식이 깨진다.
+            assert.equal(
+                Number(got),
+                Math.max(0, raw + monsterDamBonus(m) - guard),
+                `한 대의 셈이 안 맞는다: ${line}`,
+            );
+        }
+        // 줄에 적힌 합이 실제로 깎인 체력과 같다.
+        const lost = before - s.hero.hp;
+        assert.equal(blows.reduce((n, b) => n + Number(b[4]), 0), lost, `줄의 합과 깎인 체력이 다르다: ${line}`);
+        checked++;
+    }
+    assert.ok(checked > 20, `잰 판이 ${checked} 번뿐이라 못 잰다`);
+});
+
+test("내 공격도 상대 방어력에 깎인다 — 못 뚫으면 영영 못 죽인다", () => {
+    // 용(방어력 11)을 단검(1d6)으로 친다. 힘 보정을 빼면 절대 못 뚫는다.
+    const { s, m } = duel(803, "D", 9999);
+    const knife = makeItem("weapon", "dagger", 902, -1, -1);
+    s.hero.pack.push(knife);
+    s.hero.weaponId = knife.id;
+    s.hero.str = 3; // 힘 보정 −4
+    const rng = new Rng(8);
+    const before = m.hp;
+    for (let i = 0; i < 300; i++) heroAttack(s, m, rng);
+    assert.equal(m.hp, before, "1d6−4 짜리가 방어력 11 을 뚫었다");
 });

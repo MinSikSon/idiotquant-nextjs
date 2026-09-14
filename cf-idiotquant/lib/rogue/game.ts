@@ -47,13 +47,16 @@ import {
     damageLine,
     heroAttack,
     monsterAttack,
+    monsterDefense,
+    monsterDodgeBonus,
     outcomeOf,
     seenBefore,
     withDamage,
 } from "./combat";
 import {
-    attackRoll,
     damageRoll,
+    opposedRoll,
+    pierce,
     proficiency,
 } from "./dnd";
 import {
@@ -67,7 +70,7 @@ import {
     itemPower,
     meltYield,
     makeItem,
-    armorClass,
+    defenseOf,
     randomItem,
     rollAppearances,
     weaponDamageOf,
@@ -927,12 +930,13 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
         { n: proficiency(hero.level), why: "숙련" },
         { n: it.plusHit ?? 0, why: "손질" },
     ];
-    const a = attackRoll(
-        hitTerms.reduce((t, b) => t + b.n, 0),
-        armorClass(m.def.armor),
-        rng,
+    const seen = seenBefore(state, m);
+    const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: "숙련" }];
+    const a = opposedRoll(hitTerms.reduce((t, b) => t + b.n, 0), dodge[0].n, rng);
+    say(
+        state,
+        attackLine("나(던짐)", a, hitTerms, { who: m.def.name, bonus: dodge, show: seen }, outcomeOf(a)),
     );
-    say(state, attackLine("나(던짐)", a, hitTerms, seenBefore(state, m), outcomeOf(a)));
     if (!a.hit) {
         say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.${rest}`);
         land();
@@ -941,10 +945,22 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
     const dice = weaponDamageOf(it);
     const damTerms: Term[] = [{ n: it.plusDam ?? 0, why: "손질" }];
     const d = damageRoll(dice, it.plusDam ?? 0, a.crit, rng);
-    m.hp -= d.total;
-    say(state, damageLine(dice, d.rolled, damTerms, d.total));
+    // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
+    const guard = monsterDefense(m);
+    const got = pierce(d.total, guard);
+    m.hp -= got;
+    say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
-    say(state, `${withDamage(`${name}이(가) ${m.def.name}에게 맞았다.`, d.total)}${rest}`);
+    say(
+        state,
+        `${withDamage(
+            got === 0
+                ? `${name}이(가) ${m.def.name}의 갑옷에 튕겼다.`
+                : `${name}이(가) ${m.def.name}에게 맞았다.`,
+            got,
+        )}${rest}`,
+    );
+    m.awake = true;
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
         killMonster(state, m, rng);
@@ -1392,7 +1408,7 @@ export function survey(state: GameState): Sighting[] {
             return {
                 ...base,
                 level: m.def.level,
-                defense: armorClass(m.def.armor),
+                defense: defenseOf(m.def.armor),
                 damage: m.def.damage.filter((d) => d !== "0d0"),
                 exp: m.def.exp,
                 hp: m.def.hp,
@@ -1427,7 +1443,7 @@ export function bestiaryRows(bestiary: Record<string, number>): BestiaryRow[] {
                 name: d.name,
                 kills: bestiary[ch],
                 level: d.level,
-                defense: armorClass(d.armor),
+                defense: defenseOf(d.armor),
                 damage: d.damage.filter((x: string) => x !== "0d0"),
                 exp: d.exp,
                 hp: d.hp,

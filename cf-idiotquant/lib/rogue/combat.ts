@@ -1,22 +1,28 @@
 /**
- * 싸움 — **D&D 의 주사위 체계 그대로.**
+ * 싸움 — **대결 굴림과 깎는 갑옷.**
  *
  * ```
- *   공격 굴림 = d20 + 숙련 + 능력 보정 + 손질
- *   맞았다    = 공격 굴림 >= 방어도(AC)          ← 막는 쪽은 굴리지 않는다
- *   피해      = 무기 주사위 + 능력 보정 + 손질
+ *   때리는 쪽 = d20 + 숙련 + 능력 보정 + 손질
+ *   피하는 쪽 = d20 + 숙련
+ *   맞았다    = 때리는 쪽 > 피하는 쪽            ← 둘 다 굴린다
+ *   공격력    = 무기 주사위 + 능력 보정 + 손질
+ *   피해      = 공격력 − 상대의 방어력           ← 0 밑은 0, 완전히 막힌다
  * ```
  *
- * D&D 의 핵심은 **막는 쪽이 안 굴린다**는 것이다. 방어도는 넘어야 할 고정된 문턱이고,
- * 주사위는 때리는 쪽만 굴린다. 한때 양쪽이 굴리게 해 봤는데(대결 굴림), 그건 D&D 가
- * 아니라 다른 체계다. 지금은 원판을 따른다.
+ * **한때 D&D 5판이었다.** 거기서는 막는 쪽이 안 굴리고 방어도가 고정된 문턱이었으며,
+ * 피해는 주사위가 통째로 들어갔다. 지금은 갑옷이 **안 맞게 해 주는 것이 아니라 덜 아프게
+ * 해 주는 것**이고, 그래서 좋은 갑옷의 값이 매 대마다 눈에 보이는 숫자로 남는다.
+ *
+ * **여러 대를 때리는 놈은 대마다 따로 깎인다.** 트롤의 세 대는 방어력을 세 번 만난다 —
+ * 갑옷이 다중 공격에 특히 세게 듣는 자리이고, 그것이 판금을 입을 까닭이 된다.
  *
  * 같이 오는 것 넷:
  *
- *   · **자연 20 은 치명타** — 무조건 맞고 **피해 주사위를 두 번** 굴린다(보정은 한 번).
+ *   · **자연 20 은 치명타** — 상대가 무엇을 굴렸든 맞고 **공격력 주사위를 두 번** 굴린다
+ *     (보정은 한 번). 갑옷은 그래도 깎는다.
  *   · **자연 1 은 자동 실패** — 보정이 아무리 커도 빗나간다.
- *   · **유리/불리** — d20 을 두 번 굴려 높은/낮은 쪽을 쓴다. 자는 놈을 치면 유리,
- *     눈이 멀거나 헷갈리면 불리.
+ *   · **유리/불리** — 때리는 쪽이 d20 을 두 번 굴려 높은/낮은 쪽을 쓴다. 자는 놈을 치면
+ *     유리, 눈이 멀거나 헷갈리면 불리.
  *   · **능력 보정 = (능력치 − 10) ÷ 2 내림**, **숙련 = 2 + (레벨−1) ÷ 4 내림.**
  *
  * 특수 공격(0d0)은 피해 대신 **다른 것을 가져간다** — 금화·물건·갑옷·정신. 그 목록이
@@ -27,21 +33,22 @@ import {
     Rng,
 } from "./rng";
 import {
-    armorClass,
+    defenseOf,
     describe,
 } from "./items";
 import {
     type Attack,
     type Luck,
-    attackRoll,
     damageRoll,
     luckOf,
+    opposedRoll,
+    pierce,
     proficiency,
 } from "./dnd";
 
-// 방어도로 옮기는 자리는 `items.ts` 에 있다(갑옷의 값이라서). 싸움 쪽에서 찾는 것이
+// 방어력으로 옮기는 자리는 `items.ts` 에 있다(갑옷의 값이라서). 싸움 쪽에서 찾는 것이
 // 자연스러운 이름이라 여기서 그대로 다시 내보낸다.
-export { armorClass };
+export { defenseOf };
 import {
     equippedArmor,
     equippedWeapon,
@@ -49,6 +56,7 @@ import {
     heroDamTerms,
     heroDamageDice,
     heroDefense,
+    heroDodgeBonus,
     heroHitTerms,
     heroStr,
     strDamBonus,
@@ -129,50 +137,76 @@ export function outcomeOf(a: Attack): string {
     return a.hit ? "맞았다" : "빗나갔다";
 }
 
+/** `d20 7 +3숙련 = 10` — 피하는 쪽이 굴린 것. 모르는 종은 보정도 합도 가린다. */
+function dodgeText(a: Attack, who: string, bonus: Term[], show: boolean): string {
+    if (!show) return `${who} d20 ${a.dodgeRoll} +?`;
+    const add = terms(bonus);
+    const sum = bonus.reduce((t, b) => t + b.n, 0);
+    return `${who} d20 ${a.dodgeRoll}${add}${sum === 0 ? "" : ` = ${a.dodge}`}`;
+}
+
 /**
- * 공격 굴림 한 줄.
+ * 대결 굴림 한 줄 — **양쪽이 굴린 것을 나란히 적는다.**
  *
  * ```
- * · 명중 나 d20 13 +2숙련 +3힘 +2무기 = 20  vs  방어도 17  → 맞았다
- * · 명중 나 d20 20  vs  방어도 17  → 치명타!
- * · 명중 나 d20 6, 14 (유리 → 14) +2숙련 = 16  vs  방어도 ?  → 맞았다
+ * · 명중 나 d20 13 +2숙련 +3힘 +2장검 = 20  vs  트롤 d20 7 +3숙련 = 10  → 맞았다
+ * · 명중 나 d20 20  vs  트롤 d20 18 +3숙련 = 21  → 치명타!
+ * · 명중 나 d20 6, 14 (유리 → 14) +2숙련 = 16  vs  에뮤 d20 9 +?  → 맞았다
  * ```
  *
  * **줄 앞에 무슨 굴림인지를 적는다.** 안 적으면 `d20` 만 덩그러니 남아 「이 스무면체가
  * 무엇을 정하는 건가」를 읽는 사람이 알 수 없다 — 실제로 그 물음을 들었다. 이 게임에서
- * d20 이 도는 자리는 **명중 하나뿐**이고, 피해는 무기 주사위(`2d4` 따위)가 돈다.
+ * d20 이 도는 자리는 **명중 하나뿐**이고, 공격력은 무기 주사위(`2d4` 따위)가 돈다.
  *
- * **방어도는 아는 종에게만 적는다.** 표의 값이라, 잡아 본 적 없는 종의 것을 보여 주면
- * 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다. 모르는 종은 `?` 로 가린다.
- * 굴린 눈과 내 보정은 **내 것이라 늘 적는다.**
+ * **상대의 보정은 아는 종에게만 적는다.** 그것은 곧 레벨이고 표의 값이라, 잡아 본 적
+ * 없는 종의 것을 보여 주면 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다. 굴린
+ * 눈은 그대로 적는다 — 눈만으로는 아무것도 역산되지 않는다.
  */
 export function attackLine(
     who: string,
     a: Attack,
     bonuses: Term[],
-    showAc: boolean,
+    against: { who: string; bonus: Term[]; show: boolean },
     outcome: string,
 ): string {
-    return `${DETAIL}명중 ${who} ${rollText(a, bonuses)}  vs  방어도 ${showAc ? a.ac : "?"}  → ${outcome}`;
+    return (
+        `${DETAIL}명중 ${who} ${rollText(a, bonuses)}` +
+        `  vs  ${dodgeText(a, against.who, against.bonus, against.show)}  → ${outcome}`
+    );
 }
 
-/** 여러 번 때리는 놈의 굴림을 한 줄로 — 눈만 늘어놓고 합은 안 적는다(어느 눈의 합인지 모른다). */
+/** 여러 번 때리는 놈의 굴림을 한 줄로 — 눈만 늘어놓는다(어느 눈의 합인지 모른다). */
 export function multiAttackLine(
     who: string,
     attacks: Attack[],
     bonuses: Term[],
-    showAc: boolean,
+    against: { who: string; bonus: Term[]; show: boolean },
     outcome: string,
 ): string {
     const eyes = attacks.map((a) => (a.crit ? `${a.roll}!` : `${a.roll}`)).join(", ");
-    return `${DETAIL}명중 ${who} d20 ${eyes}${terms(bonuses)}  vs  방어도 ${showAc ? (attacks[0]?.ac ?? 0) : "?"}  → ${outcome}`;
+    const mine = attacks.map((a) => `${a.dodgeRoll}`).join(", ");
+    const add = terms(against.bonus);
+    const sum = against.bonus.reduce((t, b) => t + b.n, 0);
+    const theirs = against.show ? `${add}` : " +?";
+    void sum;
+    return (
+        `${DETAIL}명중 ${who} d20 ${eyes}${terms(bonuses)}` +
+        `  vs  ${against.who} d20 ${mine}${theirs}  → ${outcome}`
+    );
 }
 
 /**
- * 피해 계산 줄.
+ * 공격력 줄 — **굴린 값에서 방어력을 빼는 과정을 그대로 적는다.**
  *
- * `dice` 가 없으면 **총합만** 적는다. 체력이 줄어드는 것은 어차피 보이지만 상대의
- * 피해 주사위 표기(`2d6`)는 표의 값이라, 부르는 쪽이 안 넘긴다.
+ * ```
+ * · 공격력 3d4 → 9 +3힘 +2장검 = 14  −4방어력  → 피해 10
+ * · 공격력 3d4 두 번 → 5+7 = 12 +3힘 = 15  −11방어력  → 피해 4
+ * · 공격력 1d6 → 3  −7방어력  → 피해 0 (튕겨 나갔다)
+ * ```
+ *
+ * `dice` 가 없으면 **결과만** 적는다. 잡아 본 적 없는 종의 주사위 표기도 방어력도
+ * 표의 값이라, 보여 주면 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다 —
+ * 그래서 부르는 쪽이 안 넘기면 여기서도 산수를 안 펼친다.
  *
  * 치명타면 굴린 눈이 둘이다 — `2d4 두 번 → 5+7 = 12` 처럼 둘 다 적는다.
  */
@@ -180,41 +214,53 @@ export function damageLine(
     dice: string | null,
     rolled: number[],
     bonuses: Term[],
-    total: number,
+    power: number,
+    defense: number,
+    dealt: number,
 ): string {
-    if (!dice) return `${DETAIL}피해 ${total}`;
+    if (!dice) return `${DETAIL}피해 ${dealt}`;
     const sum = rolled.reduce((a, n) => a + n, 0);
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
     const eyes =
         rolled.length > 1 ? `${dice} 두 번 → ${rolled.join("+")} = ${sum}` : `${dice} → ${sum}`;
-    const raw = sum + bonus;
-    // 깎여서 0 밑으로 내려가면 0 이다(D&D 도 그렇다). 식과 결과가 안 맞아 보이지 않게 적는다.
-    const floored = total !== raw ? ` → 최소 ${total}` : "";
-    return `${DETAIL}피해 ${eyes}${add}${bonus !== 0 ? ` = ${raw}` : ""}${floored}`;
+    const cut = defense > 0 ? `  −${defense}방어력` : "";
+    // **0 은 따로 말해 준다.** 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
+    const tail = dealt === 0 ? "피해 0 (튕겨 나갔다)" : `피해 ${dealt}`;
+    return `${DETAIL}공격력 ${eyes}${add}${bonus !== 0 ? ` = ${power}` : ""}${cut}  → ${tail}`;
 }
 
 /**
- * 여러 대를 때린 놈의 피해 — **대마다 따로 굴리므로 따로 적는다.**
+ * 여러 대를 때린 놈의 공격력 — **대마다 따로 굴리고 대마다 따로 깎인다.**
  *
- * `· 피해 1d6 → 4 · 1d6 → 5 = 9`
+ * ```
+ * · 공격력 1d8 → 6 −3방어력 → 3 · 2d6 → 9 −3방어력 → 6  = 피해 9
+ * ```
  *
- * `parts` 가 비면 총합만 적는다. 잡아 본 적 없는 종의 주사위 표기는 **표의 값**이라
- * 보여 주면 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다.
+ * 갑옷이 **대마다** 듣는다는 것이 이 체계에서 제일 중요한 한 줄이라, 세 대를 뭉쳐
+ * 한 번만 빼는 것처럼 적으면 안 된다.
+ *
+ * `parts` 가 비면 총합만 적는다(모르는 종).
  */
-export function monsterDamageLine(parts: { dice: string; rolled: number[] }[], total: number): string {
+export function monsterDamageLine(
+    parts: { dice: string; rolled: number[]; dealt: number }[],
+    bonus: number,
+    defense: number,
+    total: number,
+): string {
     if (parts.length === 0) return `${DETAIL}피해 ${total}`;
-    // **대마다 `= 합` 을 붙이지 않는다.** 붙이면 치명타가 섞인 여러 대에서
-    // `1d8 두 번 → 5+6 = 11 = 18` 처럼 등호가 둘 연달아 서서 어느 쪽이 총합인지 읽기가
-    // 어려워진다. 등호는 **줄 끝에 하나**다.
+    // **상대의 보정도 적는다.** 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼 **줄 위에서 셈이
+    // 안 맞는다** — 실제로 그랬다. 숫자가 안 맞는 줄은 기록을 통째로 못 믿게 만든다.
+    const add = bonus !== 0 ? ` ${bonus > 0 ? "+" : "−"}${Math.abs(bonus)}공격력` : "";
+    const cut = defense > 0 ? ` −${defense}방어력` : "";
     const each = parts
-        .map(({ dice, rolled }) =>
-            rolled.length > 1 ? `${dice} 두 번 → ${rolled.join("+")}` : `${dice} → ${rolled[0] ?? 0}`,
-        )
+        .map(({ dice, rolled, dealt }) => {
+            const eyes =
+                rolled.length > 1 ? `${dice} 두 번 → ${rolled.join("+")}` : `${dice} → ${rolled[0] ?? 0}`;
+            return `${eyes}${add}${cut} → ${dealt}`;
+        })
         .join(" · ");
-    // 한 대를 맨눈으로 굴린 것이면 합을 또 적을 까닭이 없다.
-    const plain = parts.length === 1 && parts[0].rolled.length === 1;
-    return `${DETAIL}피해 ${each}${plain ? "" : ` = ${total}`}`;
+    return `${DETAIL}공격력 ${each}  = 피해 ${total}`;
 }
 
 export interface AttackResult {
@@ -237,14 +283,25 @@ export function heroLuck(hero: GameState["hero"], m: Monster): Luck {
     return luckOf([!m.awake], [hero.blind > 0, hero.confused > 0]);
 }
 
+/** 몬스터의 **수비 굴림 보정** — 숙련 하나뿐이다(내 쪽과 같은 모양). */
+export function monsterDodgeBonus(m: Monster): number {
+    return proficiency(m.def.level);
+}
+
+/** 몬스터의 **방어력** — 맞았을 때 내 공격력에서 빠지는 값. */
+export function monsterDefense(m: Monster): number {
+    return defenseOf(m.def.armor);
+}
+
 /** 내가 몬스터를 때린다. */
 export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
     const hero = state.hero;
     const hitTerms = heroHitTerms(hero);
     const seen = seenBefore(state, m);
-    const a = attackRoll(
+    const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: "숙련" }];
+    const a = opposedRoll(
         hitTerms.reduce((t, b) => t + b.n, 0),
-        armorClass(m.def.armor),
+        dodge[0].n,
         rng,
         heroLuck(hero, m),
     );
@@ -252,7 +309,9 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
 
     // 계산이 먼저, 결과가 나중 — 기록 판은 뒤집어 보여 주므로 거기서는 결과가 위로
     // 오고 그 아래에 「왜 그랬나」가 붙는다.
-    messages.push(attackLine("나", a, hitTerms, seen, outcomeOf(a)));
+    messages.push(
+        attackLine("나", a, hitTerms, { who: m.def.name, bonus: dodge, show: seen }, outcomeOf(a)),
+    );
 
     if (!a.hit) {
         messages.push(`${m.def.name}을(를) 헛쳤다.`);
@@ -262,22 +321,28 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
     const dice = heroDamageDice(hero);
     const damTerms = heroDamTerms(hero);
     const d = damageRoll(dice, damTerms.reduce((t, b) => t + b.n, 0), a.crit, rng);
-    m.hp -= d.total;
-    // 맞은 순간 깨어난다 — 자던 놈도 이제 쫓아온다.
+    const guard = monsterDefense(m);
+    const dealt = pierce(d.total, guard);
+    m.hp -= dealt;
+    // 맞은 순간 깨어난다 — 자던 놈도 이제 쫓아온다. **0 이어도 깨운다**: 갑옷에 튕긴
+    // 것도 맞은 것이고, 안 깨우면 못 뚫는 놈 옆에서 영영 안전해진다.
     m.awake = true;
     const killed = m.hp <= 0;
-    messages.push(damageLine(dice, d.rolled, damTerms, d.total));
+    // **모르는 종에게는 산수를 안 펼친다** — 방어력도 표의 값이라 도감 규칙에 걸린다.
+    messages.push(seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, dealt) : damageLine(null, [], [], 0, 0, dealt));
     messages.push(
         withDamage(
             killed
                 ? `${m.def.name}을(를) 쓰러뜨렸다.`
-                : a.crit
-                  ? `${m.def.name}의 급소를 찔렀다!`
-                  : `${m.def.name}을(를) 맞혔다.`,
-            d.total,
+                : dealt === 0
+                  ? `${m.def.name}의 갑옷에 튕겼다.`
+                  : a.crit
+                    ? `${m.def.name}의 급소를 찔렀다!`
+                    : `${m.def.name}을(를) 맞혔다.`,
+            dealt,
         ),
     );
-    return { hit: true, roll: a.roll, damage: d.total, killed, messages };
+    return { hit: true, roll: a.roll, damage: dealt, killed, messages };
 }
 
 /**
@@ -288,34 +353,41 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
     const hero = state.hero;
     const messages: string[] = [];
     const attacks: Attack[] = [];
-    const myAc = heroDefense(hero);
-    // 몬스터의 공격 보정도 D&D 의 모양을 따른다 — 숙련 + 힘. 레벨이 곧 그 둘의 크기다.
+    // **내 방어력** — 대마다 이만큼씩 깎인다. 여러 대를 때리는 놈에게 갑옷이 특히 세게
+    // 듣는 자리가 여기다.
+    const guard = heroDefense(hero);
+    const myDodge = heroDodgeBonus(hero);
+    const dodgeTerms: Term[] = [{ n: myDodge, why: "숙련" }];
     const bonus = monsterHitBonus(m);
     const bonusTerms: Term[] = [{ n: bonus, why: "공격" }];
-    // **내가 자거나 덫에 걸려 있으면 상대가 유리하다** — 5판에서 못 움직이는 상대는 그렇다.
+    // **내가 자거나 덫에 걸려 있으면 상대가 유리하다** — 못 움직이는 상대를 치는 것이다.
     const luck = luckOf([hero.asleep > 0 || hero.stuck > 0], []);
     let total = 0;
     let hits = 0;
     let crits = 0;
+    let blocked = 0;
     let lastRoll = 0;
-    /** 맞은 대마다 무슨 주사위로 얼마가 나왔나 — 기록 줄이 그대로 적는다. */
-    const dealt: { dice: string; rolled: number[] }[] = [];
+    /** 맞은 대마다 무슨 주사위로 얼마가 나왔고 갑옷을 지나 얼마가 들어왔나. */
+    const dealt: { dice: string; rolled: number[]; dealt: number }[] = [];
 
     for (const dice of m.def.damage) {
-        const a = attackRoll(bonus, myAc, rng, luck);
+        const a = opposedRoll(bonus, myDodge, rng, luck);
         attacks.push(a);
         lastRoll = a.roll;
         if (!a.hit) continue;
         hits++;
         if (a.crit) crits++;
         if (dice === "0d0") {
+            // 특수 공격은 피해가 아니라 **다른 것을 가져간다** — 갑옷이 못 막는다.
             messages.push(...special(state, m, rng));
             continue;
         }
-        const d = damageRoll(dice, 0, a.crit, rng);
-        dealt.push({ dice, rolled: d.rolled });
-        total += d.total;
-        hero.hp -= d.total;
+        const d = damageRoll(dice, monsterDamBonus(m), a.crit, rng);
+        const got = pierce(d.total, guard);
+        dealt.push({ dice, rolled: d.rolled, dealt: got });
+        if (got === 0) blocked++;
+        total += got;
+        hero.hp -= got;
     }
 
     // 계산 줄을 맨 앞에 끼운다 — 특수 공격이 이미 남긴 말보다 먼저 와야 한다.
@@ -325,16 +397,21 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
             attacks.length === 1
                 ? outcomeOf(attacks[0])
                 : `${attacks.length}대 중 ${hits}대${crits > 0 ? ` (치명타 ${crits})` : ""}`;
+        const against = { who: "나", bonus: dodgeTerms, show: true };
         messages.unshift(
             attacks.length === 1
-                ? attackLine(m.def.name, attacks[0], seen ? bonusTerms : [], true, outcome)
-                : multiAttackLine(m.def.name, attacks, seen ? bonusTerms : [], true, outcome),
+                ? attackLine(m.def.name, attacks[0], seen ? bonusTerms : [], against, outcome)
+                : multiAttackLine(m.def.name, attacks, seen ? bonusTerms : [], against, outcome),
         );
-        // **잡아 본 종이면 상대의 주사위까지 적는다.** 예전에는 언제나 `· 피해 4` 한
-        // 마디였다 — 싸움의 절반이 상대의 차례인데 그쪽만 속을 안 보여 주면, 내가 왜
-        // 죽었는지를 기록에서 되짚을 수가 없다. 모르는 종은 그대로 숫자만 — 주사위
-        // 표기는 표의 값이라 도감 규칙이 뒷문으로 뚫린다.
-        if (total > 0) messages.splice(1, 0, monsterDamageLine(seen ? dealt : [], total));
+        // **잡아 본 종이면 상대의 주사위까지 적는다.** 싸움의 절반이 상대의 차례인데
+        // 그쪽만 속을 안 보여 주면 내가 왜 죽었는지를 기록에서 되짚을 수가 없다. 모르는
+        // 종은 숫자만 — 주사위 표기는 표의 값이라 도감 규칙이 뒷문으로 뚫린다.
+        //
+        // **한 대라도 갑옷에 튕겼으면 0 이어도 적는다.** 갑옷이 일하고 있다는 것이
+        // 이 체계에서 제일 보고 싶은 줄이다.
+        if (total > 0 || blocked > 0) {
+            messages.splice(1, 0, monsterDamageLine(seen ? dealt : [], monsterDamBonus(m), guard, total));
+        }
     }
 
     if (hits === 0) messages.push(`${m.def.name}의 공격이 빗나갔다.`);
@@ -345,6 +422,8 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
                 total,
             ),
         );
+    } else if (blocked > 0) {
+        messages.push(`${m.def.name}의 공격이 갑옷에 튕겼다.`);
     }
 
     return { hit: hits > 0, roll: lastRoll, damage: total, killed: hero.hp <= 0, messages };
@@ -361,6 +440,21 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
  */
 export function monsterHitBonus(m: Monster): number {
     return proficiency(m.def.level) + Math.floor(m.def.level / 2);
+}
+
+/**
+ * 몬스터의 **공격력 보정** — 내 쪽의 「힘」에 해당한다.
+ *
+ * 예전에는 0 이었다. 문턱식일 때는 그래도 됐다 — 갑옷은 맞는가 마는가만 정했고 피해
+ * 주사위는 통째로 들어갔으니까. **깎는 갑옷으로 바뀌자 그 0 이 한쪽만 손해 보는 식이
+ * 됐다**: 나는 힘과 손질을 얹은 값에서 상대 갑옷을 빼는데, 상대는 맨 주사위에서 내 갑옷을
+ * 뺀다. 같은 식이 아니면 「공격력 − 방어력」이 한쪽에만 공평하다.
+ *
+ * 표에는 공격력 칸이 따로 없고 레벨만 있다. 레벨을 그대로 쓴다 — 레벨 1 짜리가 +1,
+ * 트롤(6)이 +6, 용(10)이 +10. 숫자를 바꾸면 `scripts/measure-rogue.mjs` 로 다시 잴 것.
+ */
+export function monsterDamBonus(m: Monster): number {
+    return m.def.level;
 }
 
 /**
