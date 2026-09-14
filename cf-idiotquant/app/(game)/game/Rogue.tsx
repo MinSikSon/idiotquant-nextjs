@@ -25,7 +25,7 @@ import {
     type Sighting,
     bestiaryProgress,
     bestiaryRows,
-    enchantTarget,
+    isEnchantScroll,
     newGame,
     perform,
     score,
@@ -33,7 +33,7 @@ import {
     survey,
     tombScore,
 } from "@/lib/rogue/game";
-import { ENCHANT_MAX, describe, enchantOdds, isThrowable, itemPower } from "@/lib/rogue/items";
+import { ENCHANT_MAX, describe, enchantOdds, isThrowable, itemPower, meltYield } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
 import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
@@ -71,9 +71,9 @@ interface Aiming {
     make: (dx: number, dy: number) => Command;
 }
 
-/** 그 물건의 강화 수치 — 무기는 명중, 갑옷은 방어. 한 자리에서 읽는다. */
+/** 그 무기의 강화 수치. 강화도 모루도 이 값 하나를 본다. */
 function plusOf(it: Item): number {
-    return (it.kind === "armor" ? it.plusArmor : it.plusHit) ?? 0;
+    return it.plusHit ?? 0;
 }
 
 /** `+8` / `-1` / `+0` — 명중은 부호를 붙여야 보정으로 읽힌다. */
@@ -199,8 +199,8 @@ export default function Rogue() {
     /** 물건을 고르면 방향 판으로 넘어가야 하는가. */
     const pendingAim = useRef<"zap" | "throw" | null>(null);
 
-    /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다. */
-    const pendingEnchant = useRef<{ scroll: string; kind: ItemKind } | null>(null);
+    /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다 — 그 주문서의 자리. */
+    const pendingEnchant = useRef<string | null>(null);
 
     /**
      * 주문서 하나를 읽는다 — **강화면 고를 것을 한 번 더 묻는다.**
@@ -209,23 +209,22 @@ export default function Rogue() {
      * 갈리면 한쪽만 고치는 날이 오고, 실제로 배낭 쪽은 대상 없이 `read` 를 던져서
      * **아무 일도 안 나는** 자리가 됐었다.
      *
-     * 강화인지 아닌지는 **엔진에 묻는다**(`enchantTarget`) — 판단이 아니라 값 읽기다.
+     * 강화인지 아닌지는 **엔진에 묻는다**(`isEnchantScroll`) — 판단이 아니라 값 읽기다.
      */
     const readScroll = useCallback(
         (letter: string) => {
-            const want = state ? enchantTarget(state, letter) : null;
-            if (!want) {
+            if (!state || !isEnchantScroll(state, letter)) {
                 run({ t: "read", letter });
                 return;
             }
-            pendingEnchant.current = { scroll: letter, kind: want };
+            pendingEnchant.current = letter;
             setPicker({
-                title: want === "weapon" ? "무엇을 강화할까" : "무슨 갑옷을 강화할까",
-                kinds: [want],
+                title: "무엇을 강화할까",
+                kinds: ["weapon"],
                 // **상한에 닿은 것은 안 보여 준다** — 눌러도 아무 일이 안 나는 줄을
                 // 목록에 세우면 그게 고장처럼 읽힌다.
                 allow: (p) => plusOf(p) < ENCHANT_MAX,
-                empty: want === "weapon" ? "강화할 무기가 없다." : "강화할 갑옷이 없다.",
+                empty: "강화할 무기가 없다.",
                 make: () => ({ t: "rest" }), // 쓰이지 않는다 — `choosePicked` 가 가로챈다
             });
         },
@@ -246,11 +245,11 @@ export default function Rogue() {
                 return;
             }
             // 두 번째 고르기 — 강화할 물건을 짚었다.
-            const en = pendingEnchant.current;
-            if (en) {
+            const scroll = pendingEnchant.current;
+            if (scroll) {
                 pendingEnchant.current = null;
                 setPicker(null);
-                run({ t: "read", letter: en.scroll, target: letter });
+                run({ t: "read", letter: scroll, target: letter });
                 return;
             }
             // 주문서를 짚었으면 **강화인지 아닌지**를 `readScroll` 이 엔진에 묻는다.
@@ -382,6 +381,8 @@ export default function Rogue() {
     const { hero, level } = state;
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
+    /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */
+    const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
     const hunger = hungerOf(hero);
     const name = (it: Item) => describe(it, state.known, state.appearance);
@@ -467,6 +468,15 @@ export default function Rogue() {
         switch (it.kind) {
             case "weapon":
                 if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                // **모루 위에서만** 뜬다. 나올 것이 없으면(화살 한 대 같은 것) 눌러도
+                // 아무 일이 안 나므로 아예 안 세운다 — 눌러도 안 되는 줄은 고장처럼 읽힌다.
+                // 장수는 **엔진이 낸 값**(`meltYield`)을 그대로 적는다.
+                if (onAnvil && meltYield(it) > 0) {
+                    out.push({
+                        label: `녹인다 (주문서 ${meltYield(it)}장)`,
+                        on: go({ t: "melt", letter: it.letter! }),
+                    });
+                }
                 break;
             case "armor":
                 if (!worn) out.push({ label: "입는다", on: go({ t: "wear", letter: it.letter! }) });
@@ -935,10 +945,20 @@ export default function Rogue() {
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             <b className="text-[var(--rg-muted)]">강화 주문서로 캐릭터를 키웁니다.</b>{" "}
-                            읽으면 <b>배낭의 어느 것에 걸지</b>를 묻습니다. 떨어지는 물건은 <b>+3</b>{" "}
-                            까지지만 <b>+5</b> 까지는 안전하게 올릴 수 있고, 그 위는 도박입니다 —{" "}
-                            <b className="text-[var(--rg-trap)]">실패하면 그 물건이 부서집니다.</b>{" "}
+                            강화는 <b>무기에만</b> 겁니다. 읽으면 <b>배낭의 어느 무기에 걸지</b>를
+                            묻습니다. 떨어지는 물건은 <b>+3</b> 까지지만 <b>+5</b> 까지는 안전하게
+                            올릴 수 있고, 그 위는 도박입니다 —{" "}
+                            <b className="text-[var(--rg-trap)]">실패하면 그 무기가 부서집니다.</b>{" "}
                             성공률은 고르는 화면에 적혀 있습니다. 끝은 <b>+9</b> 입니다.
+                        </p>
+                        <p className="text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-anvil)]">&amp;</b> 는{" "}
+                            <b className="text-[var(--rg-muted)]">모루</b>입니다. 층마다 하나 있고, 그
+                            칸에 서서 <b>배낭</b>을 열면 무기에 <b>녹인다</b>가 뜹니다. 무기는
+                            사라지고 주문서가 나옵니다 — <b>쇠붙이 하나에 한 장</b>이 깔리고, 강화된
+                            것은 그 수치만큼입니다(<b>+5</b> 짜리 장검이면 다섯 장). 더 좋은 칼을
+                            주웠을 때 <b>강화를 옮겨 심는</b> 길입니다. 화살·표창은 소모품이라 걸린
+                            강화만 되뽑습니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.

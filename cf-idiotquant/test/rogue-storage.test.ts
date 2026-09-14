@@ -19,6 +19,7 @@ import assert from "node:assert/strict";
 import { type Command, newGame, perform, survey } from "@/lib/rogue/game";
 import { ENCHANT_MAX } from "@/lib/rogue/items";
 import { packItem } from "@/lib/rogue/hero";
+import { buildLevel } from "@/lib/rogue/dungeon";
 import { deserialize, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
 import { ALL_DIRS, MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
@@ -382,4 +383,58 @@ test("상한을 넘긴 옛 저장은 되읽으면서 +9 로 내린다", () => {
     }
     assert.equal(back.hero.pack[0].plusHit, ENCHANT_MAX);
     play(back);
+});
+
+test("모루도 저장했다 되읽으면 그대로다", () => {
+    const s = newGame(4);
+    const back = deserialize(serialize(s))!;
+    assert.deepEqual(back.level.anvil, s.level.anvil, "모루 자리가 안 돌아왔다");
+});
+
+// 모루가 없던 때의 저장. **이미 걸어 본 층에 없던 것을 슬쩍 세우면 안 된다** —
+// 「아까는 없었는데」가 되고, 그러면 지도의 기억을 못 믿게 된다.
+test("옛 저장(모루가 없던 때)은 그 층에 모루가 없는 채로 굴러간다", () => {
+    const s = newGame(5);
+    const o = JSON.parse(serialize(s));
+    delete o.level.anvil;
+    o.v = 3;
+    const back = deserialize(JSON.stringify(o))!;
+    assert.equal(back.level.anvil, null, "없던 모루가 생겼다");
+    play(back);
+    // 내려가면 새로 파는 층이라 거기에는 있다.
+    const dug = buildLevel(9, new Rng(77));
+    assert.ok(dug.anvil, "새로 판 층에도 모루가 없다");
+});
+
+// 갑옷 강화 주문서는 규칙에서 없앴다. 그대로 두면 **읽어도 걸릴 갈래가 없어 말없이
+// 사라지기만 하고**, 이름표도 표에 없어 「이름 없는 주문서」로 뜬다.
+test("갑옷 강화 주문서는 되읽으며 무기 강화로 바뀐다", () => {
+    const s = newGame(6);
+    const o = JSON.parse(serialize(s));
+    o.hero.pack.push({ id: 900, kind: "scroll", type: "enchant armor", count: 2, x: -1, y: -1, letter: "z" });
+    o.level.items.push({ id: 901, kind: "scroll", type: "enchant armor", count: 1, x: 1, y: 1 });
+
+    const back = deserialize(JSON.stringify(o))!;
+    const inPack = packItem(back.hero, "z")!;
+    assert.equal(inPack.type, "enchant weapon", "배낭의 것이 안 바뀌었다");
+    assert.equal(inPack.count, 2, "장수가 달라졌다");
+    assert.equal(
+        back.level.items.find((i) => i.id === 901)!.type,
+        "enchant weapon",
+        "바닥에 떨어진 것이 안 바뀌었다",
+    );
+});
+
+// `roomAt` 은 방 번호를 담는다. `rooms` 쪽만 비면 길이는 멀쩡한데 가리키는 곳이 없어서,
+// 그것을 읽는 자리(`fov.monsterSees` 의 `room.dark`)에서 **한 걸음 걷다 터진다.**
+test("없는 방을 가리키는 칸은 −1 로 돌린다", () => {
+    const s = newGame(7);
+    const o = JSON.parse(serialize(s));
+    o.level.rooms = [];
+    const back = deserialize(JSON.stringify(o))!;
+    assert.ok(back, "되읽지 못했다");
+    for (const n of back.level.roomAt) {
+        assert.equal(n, -1, "없는 방을 아직 가리킨다");
+    }
+    play(back, 300);
 });

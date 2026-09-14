@@ -125,8 +125,14 @@ export const POTIONS: Record<string, { name: string; freq: number; depth: number
 export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {
     "magic mapping": { name: "지도", freq: 8, depth: 3 },
     teleport: { name: "순간이동", freq: 8, depth: 1 },
+    // **갑옷 강화는 없다.** 강화는 무기 하나로 모았다 — 둘이면 주문서가 반씩 나뉘어
+    // 어느 쪽도 안 오르고, 「모루에 녹여 되뽑는다」는 길도 무기에만 있어서 갑옷 쪽은
+    // 되돌릴 방법 없이 운에만 기대게 된다.
+    //
+    // **무기 쪽 빈도는 그대로 10 이다.** 갑옷 몫을 여기 얹으면 강화 속도가 갑절이 되는데,
+    // 이번에 모루라는 **두 번째 공급처**가 같이 생겼다. 둘을 한꺼번에 올리면 무엇이
+    // 움직였는지 잴 수가 없다.
     "enchant weapon": { name: "무기 강화", freq: 10, depth: 1 },
-    "enchant armor": { name: "갑옷 강화", freq: 10, depth: 1 },
     identify: { name: "감정", freq: 14, depth: 1 },
     "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
     "aggravate monsters": { name: "도발", freq: 5, depth: 2 },
@@ -329,6 +335,32 @@ export function enchantOdds(plus: number): number {
     const ODDS = [1, 1, 1, 1, 1, 0.7, 0.55, 0.4, 0.25];
     if (plus < 0) return 1;
     return ODDS[plus] ?? 0;
+}
+
+/**
+ * 모루에 **한 자루** 올렸을 때 나오는 주문서 장수.
+ *
+ * **쇠붙이 하나에 한 장이 깔린다.** 강화 안 된 무기도 녹이면 한 장이 나온다 — 안 그러면
+ * 층마다 떨어지는 칼이 그냥 쓰레기이고, 모루는 이미 키운 무기를 갈아 끼울 때만 쓰는
+ * 좁은 칸이 된다. 강화된 것은 그 수치가 그대로 나온다(`+5` → 다섯 장).
+ *
+ * **화살·표창은 깔아 주지 않는다.** 겹쳐 쌓이는 것들이라 한 번에 대여섯 개씩 떨어지고
+ * (`stack`), 낱개마다 한 장을 깔면 **한 판에 열여덟 장**이 나온다 — 재 봤다. 그러면
+ * `+9` 가 그냥 걸어 들어오고 도박 구간이 사라진다. 화살 한 대는 벼려 만든 무기가
+ * 아니라 **소모품**이라는 것이 이 구분의 근거다: 걸린 강화만 되뽑는다.
+ *
+ * ```
+ * 한 판(13층까지) 평균 · 시뮬레이션 2,000판
+ *   떨어지는 주문서                1.3장
+ *   +0 은 0장(옛 규칙)             3.8장
+ *   +0 도 1장 · 화살도 낱개마다   18.6장   ← 너무 많다
+ *   +0 도 1장 · 화살은 제외        6.4장   ← 이것
+ * ```
+ */
+export function meltYield(it: Item): number {
+    if (it.kind !== "weapon") return 0;
+    const plus = it.plusHit ?? 0;
+    return WEAPONS[it.type]?.stack ? plus : Math.max(1, plus);
 }
 
 /**
