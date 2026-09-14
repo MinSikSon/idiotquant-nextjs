@@ -49,6 +49,7 @@ import {
     monsterAttack,
     outcomeOf,
     seenBefore,
+    withDamage,
 } from "./combat";
 import {
     attackRoll,
@@ -756,7 +757,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
         const dmg = rng.rollDice(def.damage);
         m.hp -= dmg;
         m.awake = true;
-        say(state, `${m.def.name}이(가) ${def.name}에 맞았다.`);
+        say(state, withDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg));
         if (m.hp <= 0) {
             say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
             killMonster(state, m, rng);
@@ -876,7 +877,8 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
     const d = damageRoll(dice, it.plusDam ?? 0, a.crit, rng);
     m.hp -= d.total;
     say(state, damageLine(dice, d.rolled, damTerms, d.total));
-    say(state, `${name}이(가) ${m.def.name}에게 맞았다.${rest}`);
+    // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
+    say(state, `${withDamage(`${name}이(가) ${m.def.name}에게 맞았다.`, d.total)}${rest}`);
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
         killMonster(state, m, rng);
@@ -941,7 +943,7 @@ function springTrap(state: GameState, trap: Trap, rng: Rng) {
         case "arrow": {
             const dmg = rng.roll(1, 6);
             hero.hp -= dmg;
-            say(state, "어디선가 화살이 날아왔다!");
+            say(state, withDamage("어디선가 화살이 날아왔다!", dmg));
             break;
         }
         case "sleep":
@@ -959,15 +961,17 @@ function springTrap(state: GameState, trap: Trap, rng: Rng) {
             say(state, "몸이 홱 당겨졌다.");
             break;
         }
-        case "dart":
-            hero.hp -= rng.roll(1, 4);
+        case "dart": {
+            const dmg = rng.roll(1, 4);
+            hero.hp -= dmg;
             if (hasRing(hero, "sustain strength")) {
-                say(state, "다트에 찔렸다. 힘은 그대로다.");
+                say(state, withDamage("다트에 찔렸다. 힘은 그대로다.", dmg));
             } else {
                 hero.str = Math.max(3, hero.str - 1);
-                say(state, "독 다트에 찔렸다. 힘이 빠졌다.");
+                say(state, withDamage("독 다트에 찔렸다. 힘이 빠졌다.", dmg));
             }
             break;
+        }
     }
 }
 
