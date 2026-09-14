@@ -62,6 +62,9 @@
   --rg-amulet: #7d5e00;
   --rg-trap: #b32b18;
   --rg-trap-dim: #dda99f;
+  /* 모루 — 불에 달군 쇠. 함정(붉은색)과 헷갈리지 않게 주황 쪽으로 민다. */
+  --rg-anvil: #a55a06;
+  --rg-anvil-dim: #d8b183;
   --rg-stairs: #171b1c;
   --rg-door: #7f5310;
   --rg-door-dim: #c5a778;
@@ -109,6 +112,8 @@ html.dark {
   --rg-amulet: #ffe27a;
   --rg-trap: #ff6b5a;
   --rg-trap-dim: #7a382f;
+  --rg-anvil: #ffa94d;
+  --rg-anvil-dim: #7a5326;
   --rg-stairs: #f0f0f0;
   --rg-door: #c08a45;
   --rg-door-dim: #6a5029;

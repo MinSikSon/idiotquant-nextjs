@@ -19,23 +19,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { enchantTarget, newGame, perform } from "@/lib/rogue/game";
-import { addToPack, equippedArmor, equippedWeapon } from "@/lib/rogue/hero";
-import { ENCHANT_MAX, enchantOdds, makeItem } from "@/lib/rogue/items";
+import { isEnchantScroll, newGame, perform } from "@/lib/rogue/game";
+import { addToPack, equippedWeapon } from "@/lib/rogue/hero";
+import { ENCHANT_MAX, SCROLLS, enchantOdds, makeItem, randomItem } from "@/lib/rogue/items";
+import { Rng } from "@/lib/rogue/rng";
 import { isDetail } from "@/lib/rogue/combat";
 import type { GameState, Item } from "@/lib/rogue/types";
 
-/** 배낭에 강화 주문서 한 장과 물건 하나를 넣고 그 둘을 돌려준다. */
-function setup(seed: number, kind: "weapon" | "armor", type: string, plus: number) {
+/** 배낭에 강화 주문서 한 장과 무기 하나를 넣고 그 둘을 돌려준다. */
+function setup(seed: number, _kind: "weapon", type: string, plus: number) {
     const s = newGame(seed);
-    const it = makeItem(kind, type, 900, -1, -1);
-    if (kind === "armor") it.plusArmor = plus;
-    else {
-        it.plusHit = plus;
-        it.plusDam = plus;
-    }
+    const it = makeItem("weapon", type, 900, -1, -1);
+    it.plusHit = plus;
+    it.plusDam = plus;
     addToPack(s.hero, it);
-    const scroll = makeItem("scroll", kind === "armor" ? "enchant armor" : "enchant weapon", 901, -1, -1);
+    const scroll = makeItem("scroll", "enchant weapon", 901, -1, -1);
     addToPack(s.hero, scroll);
     s.known[`scroll:${scroll.type}`] = true;
     return { s, it, scroll };
@@ -116,19 +114,6 @@ test("쥐고 있던 것이 부서지면 그 자리도 빈다", () => {
     assert.ok(seen, "이백 번을 걸어도 한 번도 안 부서졌다");
 });
 
-test("입고 있던 갑옷이 부서지면 맨몸이 된다", () => {
-    let seen = false;
-    for (let seed = 1; seed <= 200 && !seen; seed++) {
-        const { s, it, scroll } = setup(seed * 911, "armor", "plate mail", 8);
-        s.hero.armorId = it.id;
-        const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-        if (after.hero.pack.some((p) => p.id === it.id)) continue;
-        seen = true;
-        assert.equal(equippedArmor(after.hero), undefined, "부서졌는데 아직 입고 있다");
-    }
-    assert.ok(seen, "이백 번을 걸어도 한 번도 안 부서졌다");
-});
-
 test("+9 는 더 안 오른다 — 주문서도 턴도 안 쓴다", () => {
     const { s, it, scroll } = setup(77, "weapon", "knight sword", ENCHANT_MAX);
     const packBefore = s.hero.pack.length;
@@ -151,35 +136,52 @@ test("대상 없이 읽으면 아무 일도 안 난다 — 주문서도 턴도 �
     assert.equal(after.messages.length, msgBefore, "아무 일도 안 났는데 말이 남았다");
 });
 
-test("엉뚱한 것에는 안 걸린다 — 무기 강화로 갑옷을 못 건드린다", () => {
-    const { s, scroll } = setup(79, "weapon", "long sword", 0);
-    const armor = makeItem("armor", "plate mail", 950, -1, -1);
-    addToPack(s.hero, armor);
-    const packBefore = s.hero.pack.length;
-    const after = perform(s, { t: "read", letter: scroll.letter!, target: armor.letter! });
-    assert.equal(armor.plusArmor, 0, "무기 강화 주문서가 갑옷을 올렸다");
-    assert.equal(after.hero.pack.length, packBefore, "거절했는데 주문서가 없어졌다");
-});
-
-test("화면이 묻는 것과 엔진이 아는 것이 같다 — `enchantTarget`", () => {
+test("화면이 묻는 것과 엔진이 아는 것이 같다 — `isEnchantScroll`", () => {
     const { s, scroll } = setup(80, "weapon", "long sword", 0);
-    assert.equal(enchantTarget(s, scroll.letter!), "weapon");
-    const armorScroll = giveScroll(s, "enchant armor", 960);
-    assert.equal(enchantTarget(s, armorScroll.letter!), "armor");
+    assert.ok(isEnchantScroll(s, scroll.letter!));
     // 강화가 아닌 주문서는 고를 것을 안 묻는다.
     const other = giveScroll(s, "identify", 961);
-    assert.equal(enchantTarget(s, other.letter!), null);
-    // 주문서가 아닌 것도, 없는 자리도 null.
+    assert.ok(!isEnchantScroll(s, other.letter!));
+    // 주문서가 아닌 것도, 없는 자리도 거짓.
     const potion = makeItem("potion", "healing", 962, -1, -1);
     addToPack(s.hero, potion);
-    assert.equal(enchantTarget(s, potion.letter!), null);
-    assert.equal(enchantTarget(s, "Z"), null);
+    assert.ok(!isEnchantScroll(s, potion.letter!));
+    assert.ok(!isEnchantScroll(s, "Z"));
+});
+
+// **갑옷 강화는 없앴다.** 남아 있으면 주문서가 둘로 갈려 어느 쪽도 안 오르고, 「모루에
+// 녹여 되뽑는다」는 길이 무기에만 있어서 갑옷 쪽은 되돌릴 방법 없이 운에만 기댄다.
+test("갑옷 강화 주문서는 없다 — 표에도, 떨어지는 것에도", () => {
+    assert.ok(!("enchant armor" in SCROLLS), "표에 아직 남아 있다");
+    // 스물여섯 층을 훑어 실제로 한 장도 안 나오는지 본다.
+    const rng = new Rng(4242);
+    for (let depth = 1; depth <= 26; depth++) {
+        for (let i = 0; i < 400; i++) {
+            const it = randomItem(depth, i, -1, -1, rng);
+            assert.notEqual(it.type, "enchant armor", `${depth}층에서 갑옷 강화가 나왔다`);
+        }
+    }
+});
+
+test("무기 강화 주문서로 갑옷을 못 건드린다 — 주문서도 턴도 안 쓴다", () => {
+    const { s, scroll } = setup(83, "weapon", "long sword", 0);
+    const armor = makeItem("armor", "plate mail", 951, -1, -1);
+    addToPack(s.hero, armor);
+    const packBefore = s.hero.pack.length;
+    const turnBefore = s.turn;
+    const after = perform(s, { t: "read", letter: scroll.letter!, target: armor.letter! });
+    assert.equal(armor.plusArmor, 0);
+    assert.equal(after.hero.pack.length, packBefore, "거절했는데 주문서가 없어졌다");
+    assert.equal(after.turn, turnBefore, "거절했는데 턴이 갔다");
 });
 
 test("굴림 줄이 남는다 — 확률과 굴린 눈과 결과", () => {
     const { s, it, scroll } = setup(81, "weapon", "silver sword", 5); // 70%
     const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-    const line = after.messages.filter(isDetail).pop()!;
+    // **마지막 계산 줄이 아니라 강화 줄을 집는다.** 같은 턴에 몬스터가 때리면 그
+    // 뒤에 `· 피해 …` 가 붙어서, 마지막 줄로 잡으면 엉뚱한 것을 본다.
+    const line = after.messages.filter(isDetail).find((l) => l.startsWith("· 강화 "))!;
+    assert.ok(line, `강화 줄이 없다: ${JSON.stringify(after.messages.filter(isDetail))}`);
     assert.match(line, /^· 강화 /, `강화 줄이 없다: ${line}`);
     assert.match(line, /→ \+6/, "어디로 가는지가 없다");
     assert.match(line, /d100 \d+/, "굴린 눈이 없다");
@@ -194,15 +196,15 @@ test("굴림 줄이 남는다 — 확률과 굴린 눈과 결과", () => {
 test("저주받은 것도 걸 수 있다 — 부서지면 저주에서 풀려난다", () => {
     let seen = false;
     for (let seed = 1; seed <= 200 && !seen; seed++) {
-        const { s, it, scroll } = setup(seed * 313, "armor", "plate mail", 8);
+        const { s, it, scroll } = setup(seed * 313, "weapon", "silver sword", 8);
         it.cursed = true;
         it.curseKnown = true;
-        s.hero.armorId = it.id;
+        s.hero.weaponId = it.id;
         const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
         if (after.hero.pack.some((p) => p.id === it.id)) continue;
         seen = true;
-        // 벗을 수 없던 것이 사라졌다 — 그것이 이 도박의 다른 쪽 값이다.
-        assert.equal(equippedArmor(after.hero), undefined);
+        // 쥐고 놓을 수 없던 것이 사라졌다 — 그것이 이 도박의 다른 쪽 값이다.
+        assert.equal(equippedWeapon(after.hero), undefined);
     }
     assert.ok(seen, "저주받은 것을 이백 번 걸어도 한 번도 안 부서졌다");
 });

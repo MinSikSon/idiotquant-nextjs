@@ -22,7 +22,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 3;
+const VERSION = 4;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -89,6 +89,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
     const { tiles, flags, roomAt } = raw;
     if (!Array.isArray(tiles) || !Array.isArray(flags) || !Array.isArray(roomAt)) return null;
     if (tiles.length !== MAP_W * MAP_H) return null;
+    const rooms = Array.isArray(raw.rooms) ? raw.rooms : [];
 
     return {
         depth: num(raw.depth, fallbackDepth),
@@ -97,10 +98,16 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         flags: new Uint8Array(
             flags.length === tiles.length ? flags : (new Array<number>(tiles.length).fill(0)),
         ),
+        // **없는 방을 가리키는 칸은 −1 로 돌린다.** 길이는 맞는데 `rooms` 쪽이 비었거나
+        // 짧으면 `level.rooms[roomAt[i]]` 가 undefined 가 되고, 그것을 읽는 자리
+        // (`fov.monsterSees` 의 `room.dark`)에서 **한 걸음 걷다 터진다.** 길이가 어긋난
+        // 것을 통째로 새로 만드는 것과 같은 까닭이다 — 반쯤 맞는 기억은 없는 것만 못하다.
         roomAt: new Int8Array(
-            roomAt.length === tiles.length ? roomAt : (new Array<number>(tiles.length).fill(-1)),
+            roomAt.length === tiles.length
+                ? roomAt.map((n) => (n >= 0 && n < rooms.length ? n : -1))
+                : new Array<number>(tiles.length).fill(-1),
         ),
-        rooms: Array.isArray(raw.rooms) ? raw.rooms : [],
+        rooms,
         monsters: (Array.isArray(raw.monsters) ? raw.monsters : []).map(({ ch, ...rest }) => ({
             ...rest,
             def: MONSTERS[ch] ?? MONSTERS.B,
@@ -112,6 +119,9 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         traps: Array.isArray(raw.traps) ? raw.traps : [],
         stairs: raw.stairs ?? { x: 0, y: 0 },
         upStairs: raw.upStairs ?? null,
+        // 옛 저장에는 모루가 없다 — **그 층에는 없는 것이 맞다.** 이미 걸어 본 층에
+        // 없던 것을 되읽으며 슬쩍 세우면 「아까는 없었는데」가 된다.
+        anvil: raw.anvil ?? null,
         maze: raw.maze === true,
     };
 }
@@ -129,10 +139,16 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
  * **상한(`ENCHANT_MAX`)도 같이 건다.** 강화에 상한이 없던 때의 저장에는 `+12` 짜리가
  * 있을 수 있는데, 그것 하나가 층 사다리를 통째로 무의미하게 만든다. 위아래 양쪽을 한
  * 자리에서 맞춘다.
+ *
+ * **갑옷 강화 주문서도 여기서 무기 강화로 바꾼다.** 규칙에서 없앤 뒤로 그 주문서는
+ * 읽어도 걸릴 갈래가 없어서 **말없이 사라지기만 한다**(읽는 자리가 먼저 배낭에서 빼고
+ * 나서 갈래를 찾는다). 이름표도 표에 없어 「이름 없는 주문서」로 뜬다. 같은 값을 하던
+ * 물건이니 무기 쪽으로 옮겨 준다 — 버리면 사람이 이유도 모르고 한 장을 잃는다.
  */
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
+        if (it.kind === "scroll" && it.type === "enchant armor") it.type = "enchant weapon";
         if ((it.plusHit ?? 0) < 0 || (it.plusHit ?? 0) > ENCHANT_MAX) it.plusHit = fit(it.plusHit);
         if ((it.plusDam ?? 0) < 0 || (it.plusDam ?? 0) > ENCHANT_MAX) it.plusDam = fit(it.plusDam);
         if ((it.plusArmor ?? 0) < 0 || (it.plusArmor ?? 0) > ENCHANT_MAX) it.plusArmor = fit(it.plusArmor);

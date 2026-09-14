@@ -125,8 +125,14 @@ export const POTIONS: Record<string, { name: string; freq: number; depth: number
 export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {
     "magic mapping": { name: "지도", freq: 8, depth: 3 },
     teleport: { name: "순간이동", freq: 8, depth: 1 },
+    // **갑옷 강화는 없다.** 강화는 무기 하나로 모았다 — 둘이면 주문서가 반씩 나뉘어
+    // 어느 쪽도 안 오르고, 「모루에 녹여 되뽑는다」는 길도 무기에만 있어서 갑옷 쪽은
+    // 되돌릴 방법 없이 운에만 기대게 된다.
+    //
+    // **무기 쪽 빈도는 그대로 10 이다.** 갑옷 몫을 여기 얹으면 강화 속도가 갑절이 되는데,
+    // 이번에 모루라는 **두 번째 공급처**가 같이 생겼다. 둘을 한꺼번에 올리면 무엇이
+    // 움직였는지 잴 수가 없다.
     "enchant weapon": { name: "무기 강화", freq: 10, depth: 1 },
-    "enchant armor": { name: "갑옷 강화", freq: 10, depth: 1 },
     identify: { name: "감정", freq: 14, depth: 1 },
     "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
     "aggravate monsters": { name: "도발", freq: 5, depth: 2 },

@@ -509,6 +509,7 @@ export function buildLevel(depth: number, rng: Rng): Level {
         traps: [],
         stairs: { x: 0, y: 0 },
         upStairs: null,
+        anvil: null,
         maze: anyMaze,
     };
 
@@ -524,12 +525,16 @@ export function buildLevel(depth: number, rng: Rng): Level {
     // 증표를 쥐기 전에는 열리지 않는다 — 이기는 길이 그 한 칸이다.
     level.upStairs = freeSpot(level, rng, [down]);
 
+    // 모루는 **층마다 하나.** 계단 둘을 피해 아무 데나 선다 — 어디 있는지는 걸어 보고
+    // 알아야 하고, 가는 길이 위험한 것이 이 자리의 값이다.
+    level.anvil = freeSpot(level, rng, [down, level.upStairs]);
+
     // 함정. 1층에는 없다 — 처음 켠 사람이 영문도 모르고 떨어지면 배울 것이 안 남는다.
     if (depth > 1) {
         const kinds: TrapKind[] = ["trapdoor", "arrow", "sleep", "beartrap", "teleport", "dart"];
         const count = rng.rnd(Math.min(5, 1 + Math.floor(depth / 2))) + 1;
         for (let i = 0; i < count; i++) {
-            const p = freeSpot(level, rng, [down, level.upStairs]);
+            const p = freeSpot(level, rng, [down, level.upStairs, level.anvil]);
             if (level.traps.some((t) => t.x === p.x && t.y === p.y)) continue;
             const trap: Trap = { x: p.x, y: p.y, kind: rng.pick(kinds)!, found: false };
             level.traps.push(trap);
