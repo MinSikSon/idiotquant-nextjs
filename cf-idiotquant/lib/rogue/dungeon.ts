@@ -33,6 +33,28 @@ import {
 const COLS = 3;
 const ROWS = 3;
 
+/*
+ * 물건이 **어디에 몇 개** 놓이나 — 손잡이는 전부 여기 있다.
+ * 기획과 값이 같아야 한다: `app/(game)/game/DROP-CODEX.md` §5.
+ */
+/** 이 장단비까지는 안 깎는다 — 이 생성기의 방은 중앙값이 이미 3.0 이다. */
+const ASPECT_FREE = 2.5;
+/** 회랑 감쇠의 세기. */
+const ASPECT_K = 0.15;
+/** 실효 면적 → 가중치의 지수. 제곱근(0.5)과 선형(1.0) 사이. */
+const AREA_GAMMA = 0.85;
+/** 방 하나가 가질 수 있는 가중치의 천장. */
+const AREA_CAP = 32;
+/** 층 쿼터 = BASE + SLOPE·√깊이, 흔들림 ±1, 상하한 사이. */
+const QUOTA_BASE = 2.2;
+const QUOTA_SLOPE = 0.45;
+const QUOTA_MIN = 2;
+const QUOTA_MAX = 7;
+/** 한 방에 놓이는 물건의 최대. */
+const ROOM_ITEM_CAP = 3;
+/** 이 실효 면적부터는 **빈 채로 두지 않는다.** */
+const BIG_ROOM_GUARD = 24;
+
 /** 칸의 경계 — 마지막 칸이 나머지를 먹는다. */
 function cellBounds(ci: number) {
     const col = ci % COLS;
@@ -346,28 +368,70 @@ export function randomSpotIn(r: Room, rng: Rng): Pos {
     };
 }
 
-/** 방 안쪽의 칸 수 — 물건이 놓일 수 있는 넓이. 「없는 방」은 한 칸이다. */
+/** 방 안쪽의 칸 수 — 벽을 뺀 직사각형의 넓이. 「없는 방」은 한 칸이다. */
 export function roomArea(r: Room): number {
     return r.gone ? 1 : Math.max(1, (r.w - 2) * (r.h - 2));
 }
 
 /**
- * 방 하나를 고른다 — **넓이를 태워서.**
+ * **장단비 감쇠** — 긴 회랑은 넓이만큼 값을 안 쳐 준다.
  *
- * 예전에는 `rng.pick` 으로 고르게 뽑았다. 그러면 방 하나가 크든 작든 **한 몫씩** 갖는데,
- * 이 층의 방은 안쪽이 2칸부터 70칸까지(서른다섯 배) 벌어진다. 그래서 3×3 벽장에는 물건이
- * 흔하고 **넓은 홀은 자주 텅 비었다** — 걸어 들어간 값이 넓이에 반비례하는 셈이다.
+ * 14×1 짜리 통로는 안쪽이 14칸이라 4×4 방(16칸)과 맞먹는데, 걸어 들어가 둘러보는
+ * 맛은 전혀 다르다. 그래서 길쭉할수록 깎는다.
  *
- * 넓이에 비례해 뽑으면 **바닥 한 칸당 확률이 같아진다.** 넓은 방일수록 뭔가 있을
- * 법하고, 좁은 방은 그만큼 자주 빈다.
+ * **다만 기준점이 1 이 아니다.** 이 생성기가 만드는 방은 장단비 **중앙값이 이미 3.0**
+ * 이라(가로 4~16, 세로 3~7), ρ>1 부터 깎으면 거의 모든 방이 깎인다. 그건 감쇠가 아니라
+ * 그냥 전체를 줄이는 것이다. 「정상」의 끝을 2.5 로 두고 그 위부터 뺀다.
  */
-function pickRoom(rooms: Room[], rng: Rng): Room | undefined {
+export function shapeFactor(a: number, b: number): number {
+    const lo = Math.max(1, Math.min(a, b));
+    const rho = Math.max(1, Math.max(a, b)) / lo;
+    return 1 / (1 + ASPECT_K * Math.max(0, rho - ASPECT_FREE));
+}
+
+/**
+ * **실효 면적** — 실제로 걸을 수 있는 칸 수에 회랑 감쇠를 먹인 값.
+ *
+ * 직사각형 넓이가 아니라 **칸을 센다.** 미로 방은 안쪽이 통로로 파여 절반쯤만 남는데,
+ * 그걸 직사각형으로 세면 미로 방에 물건이 두 배로 몰린다.
+ */
+export function effectiveArea(level: Level, r: Room): number {
+    if (r.gone) return 1;
+    let n = 0;
+    for (let y = r.y + 1; y <= r.y + r.h - 2; y++) {
+        for (let x = r.x + 1; x <= r.x + r.w - 2; x++) {
+            if (walkable(level.tiles[idx(x, y)] as Tile)) n++;
+        }
+    }
+    if (n === 0) return 1;
+    return n * shapeFactor(r.w - 2, r.h - 2);
+}
+
+/**
+ * 방의 **가중치** — 물건을 나눠 줄 때의 몫.
+ *
+ * 예전에는 `rng.pick` 으로 고르게 뽑았고(방 하나가 크든 작든 한 몫), 그다음에는 넓이에
+ * **곧이곧대로 비례**시켰다. 비례는 넓은 방이 자주 비던 것을 고쳤지만, 20×20 같은 홀이
+ * 들어오면 그 방이 층을 통째로 먹는다.
+ *
+ * 그래서 지수 `0.85` 로 **누르고**(제곱근 0.5 와 선형 1.0 사이다) 상한에서 **꺾는다.**
+ * 지금 생성기의 최대 방(실효 65칸 → 34.8)이 겨우 상한에 닿으므로, 상한은 현행 범위의
+ * 맨 끝에서만 문다 — 더 큰 방이 생기는 날을 위한 자물쇠다.
+ */
+export function roomWeight(level: Level, r: Room): number {
+    return Math.min(Math.pow(effectiveArea(level, r), AREA_GAMMA), AREA_CAP);
+}
+
+/** 가중치 표를 태워 하나 고른다. */
+function pickWeighted(rooms: Room[], weights: number[], rng: Rng): Room | undefined {
     if (rooms.length === 0) return undefined;
-    const total = rooms.reduce((n, r) => n + roomArea(r), 0);
-    let n = rng.rnd(total);
-    for (const r of rooms) {
-        n -= roomArea(r);
-        if (n < 0) return r;
+    const total = weights.reduce((a, b) => a + b, 0);
+    if (total <= 0) return rooms[rng.rnd(rooms.length)];
+    // `rnd` 는 정수라 소수 가중치를 못 태운다 — 천 배로 늘려 센다.
+    let n = rng.rnd(Math.max(1, Math.round(total * 1000)));
+    for (let i = 0; i < rooms.length; i++) {
+        n -= Math.round(weights[i] * 1000);
+        if (n < 0) return rooms[i];
     }
     return rooms[rooms.length - 1];
 }
@@ -375,8 +439,9 @@ function pickRoom(rooms: Room[], rng: Rng): Room | undefined {
 /** 무엇도 놓이지 않은 빈 바닥을 찾는다. 못 찾으면 아무 자리나 준다. */
 export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
     const real = level.rooms.filter((r) => !r.gone);
+    const weights = real.map((r) => roomWeight(level, r));
     for (let tries = 0; tries < 200; tries++) {
-        const room = pickRoom(real, rng) ?? level.rooms[0];
+        const room = pickWeighted(real, weights, rng) ?? level.rooms[0];
         const p = randomSpotIn(room, rng);
         if (!walkable(level.tiles[idx(p.x, p.y)] as Tile)) continue;
         if (avoid.some((q) => q.x === p.x && q.y === p.y)) continue;
@@ -395,6 +460,117 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
     }
     // 걸어갈 칸이 하나도 없는 층은 만들어질 수 없다 — 여기 오면 층 만들기가 깨진 것이다.
     return { x: level.rooms[0].x + 1, y: level.rooms[0].y + 1 };
+}
+
+/**
+ * 이 층에 물건을 **몇 개** 놓나.
+ *
+ * 깊이를 제곱근으로 탄다 — 깊을수록 위험이 커지는데 보상이 그대로면 내려갈 까닭이 준다.
+ * 다만 선형으로 늘리면 바닥층이 창고가 되므로 완만하게만 올린다(1층 3개 → 26층 4~5개).
+ */
+export function floorQuota(depth: number, rng: Rng): number {
+    const base = Math.round(QUOTA_BASE + QUOTA_SLOPE * Math.sqrt(Math.max(1, depth)));
+    const jitter = [-1, 0, 0, 1][rng.rnd(4)];
+    return Math.max(QUOTA_MIN, Math.min(QUOTA_MAX, base + jitter));
+}
+
+/** 두 칸이 서로 붙어 있나 — 대각도 붙은 것으로 센다. */
+function touching(a: Pos, b: Pos): boolean {
+    return Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1;
+}
+
+/** 그 방 안에서 실제로 놓을 수 있는 칸들 — 이미 찬 자리와 피할 자리를 뺀다. */
+function openTiles(level: Level, r: Room, avoid: Pos[]): Pos[] {
+    const out: Pos[] = [];
+    const x0 = r.gone ? r.x : r.x + 1;
+    const y0 = r.gone ? r.y : r.y + 1;
+    const x1 = r.gone ? r.x : r.x + r.w - 2;
+    const y1 = r.gone ? r.y : r.y + r.h - 2;
+    for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+            if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
+            if (avoid.some((q) => q.x === x && q.y === y)) continue;
+            if (level.monsters.some((m) => m.x === x && m.y === y)) continue;
+            if (level.items.some((it) => it.x === x && it.y === y)) continue;
+            out.push({ x, y });
+        }
+    }
+    return out;
+}
+
+/**
+ * 물건 `n` 개를 놓을 자리 — **층이 총량을 정하고, 방은 그것을 나눠 갖는다.**
+ *
+ * 예전에는 물건마다 따로 `freeSpot` 을 불렀다. 뽑기가 서로를 모르니 **한 방에 세 개가
+ * 몰리고 나머지가 텅 비는** 일이 잦았다(같은 던전에서 77%). 그건 가중치를 어떻게 고쳐도
+ * 안 고쳐진다 — 실제로 세 모델을 재 봤는데 전체 빈 방 비율이 63~66% 로 똑같았다.
+ * 가중치는 **어느** 방이 비는지만 정하지, 몇 방이 비는지는 배분이 정한다.
+ *
+ * 그래서 **최대잔여 배분**을 쓴다. 정확 몫을 내림해 나눠 주고, 남은 것을 소수부가 큰
+ * 방부터 하나씩 얹는다. 같은 개수로 넓은 방이 비어 있을 확률이 36.5% → 8.9% 로 떨어진다.
+ */
+export function itemSpots(level: Level, n: number, rng: Rng, avoid: Pos[] = []): Pos[] {
+    const real = level.rooms.filter((r) => !r.gone);
+    if (n <= 0 || real.length === 0) return [];
+
+    const areas = real.map((r) => effectiveArea(level, r));
+    const weights = areas.map((a) => Math.min(Math.pow(a, AREA_GAMMA), AREA_CAP));
+    const sum = weights.reduce((a, b) => a + b, 0);
+
+    // ── 최대잔여: 내림한 몫 + 소수부가 큰 방부터 남은 것
+    const exact = weights.map((w) => (sum > 0 ? (w / sum) * n : n / real.length));
+    const quota = exact.map((e) => Math.floor(e));
+    const byFrac = exact
+        .map((e, i) => ({ frac: e - Math.floor(e), i }))
+        .sort((a, b) => b.frac - a.frac || a.i - b.i);
+    let left = n - quota.reduce((a, b) => a + b, 0);
+    for (let k = 0; left > 0; k++, left--) quota[byFrac[k % byFrac.length].i]++;
+
+    // ── 한 방이 층을 통째로 먹지 않게. 넘친 몫은 제일 적게 받은 방으로.
+    for (let i = 0; i < quota.length; i++) {
+        while (quota[i] > ROOM_ITEM_CAP) {
+            const to = quota.indexOf(Math.min(...quota));
+            if (to === i || quota[to] >= ROOM_ITEM_CAP) break;
+            quota[i]--;
+            quota[to]++;
+        }
+    }
+
+    // ── **넓은 방을 빈 채로 두지 않는다.** 걸어 들어간 값이 넓이에 반비례하면 안 된다.
+    for (let i = 0; i < quota.length; i++) {
+        if (quota[i] > 0 || areas[i] < BIG_ROOM_GUARD) continue;
+        const from = quota.indexOf(Math.max(...quota));
+        if (quota[from] < 2) break; // 뺏을 데가 없다 — 층이 너무 헐겁다
+        quota[from]--;
+        quota[i]++;
+    }
+
+    // ── 몫만큼 실제 칸을 고른다. 같은 방 안에서는 붙여 놓지 않는다.
+    const out: Pos[] = [];
+    let spilled = 0;
+    real.forEach((r, i) => {
+        let want = quota[i];
+        const open = rng.shuffle(openTiles(level, r, avoid));
+        const taken: Pos[] = [];
+        // 한 바퀴는 떨어뜨려 놓고, 그래도 모자라면 붙는 것을 받아들인다 —
+        // 작은 방에서는 두 칸을 못 띄운다.
+        for (const pass of [true, false]) {
+            for (const p of open) {
+                if (want === 0) break;
+                if (taken.some((q) => q.x === p.x && q.y === p.y)) continue;
+                if (pass && taken.some((q) => touching(q, p))) continue;
+                taken.push(p);
+                want--;
+            }
+            if (want === 0) break;
+        }
+        out.push(...taken);
+        spilled += want;
+    });
+
+    // ── 자리가 모자라 못 놓은 몫은 아무 빈 바닥에나. (미로뿐인 층에서 드물게 난다)
+    for (let k = 0; k < spilled; k++) out.push(freeSpot(level, rng, [...avoid, ...out]));
+    return out;
 }
 
 /**

@@ -14,7 +14,9 @@
 
 import {
     buildLevel,
+    floorQuota,
     freeSpot,
+    itemSpots,
     randomSpotIn,
 } from "./dungeon";
 import {
@@ -179,9 +181,9 @@ function populate(state: GameState, level: Level, rng: Rng) {
         level.monsters.push(spawnMonster(randomMonsterChar(level.depth, rng), p.x, p.y, rng));
     }
 
-    const itemCount = rng.rnd(3) + 2;
-    for (let i = 0; i < itemCount; i++) {
-        const p = freeSpot(level, rng, [state.hero, level.stairs]);
+    // **총량은 층이 정하고, 자리는 방들이 넓이 몫만큼 나눠 갖는다.** 물건마다 따로
+    // 자리를 뽑으면 뽑기가 서로를 몰라 한 방에 몰린다 — `itemSpots` 참고.
+    for (const p of itemSpots(level, floorQuota(level.depth, rng), rng, [state.hero, level.stairs])) {
         level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng));
     }
 
