@@ -123,6 +123,8 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         // 없던 것을 되읽으며 슬쩍 세우면 「아까는 없었는데」가 된다.
         anvil: raw.anvil ?? null,
         maze: raw.maze === true,
+        // 옛 저장에는 특수 방이 없다 — **그 층에는 없는 것이 맞다**(모루와 같은 까닭).
+        special: raw.special ?? null,
     };
 }
 
@@ -226,6 +228,7 @@ function normalize(s: Saved): GameState | null {
         bestiary: s.bestiary && typeof s.bestiary === "object" ? s.bestiary : {},
         specials: s.specials && typeof s.specials === "object" ? s.specials : {},
         enchantDrought: num(s.enchantDrought, 0),
+        foodDrought: num(s.foodDrought, 0),
         nextItemId: num(s.nextItemId, 1),
         turn: num(s.turn, 0),
         deepest: num(s.deepest, num(s.level.depth, 1)),

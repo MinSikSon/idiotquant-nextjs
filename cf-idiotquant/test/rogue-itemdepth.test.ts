@@ -19,8 +19,9 @@ import {
     categoryWeights, itemDepthRange, pickCategory, randomItem,
 } from "@/lib/rogue/items";
 import { newGame, perform } from "@/lib/rogue/game";
+import { effectiveArea } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
-import type { Item } from "@/lib/rogue/types";
+import { T, idx, type Item } from "@/lib/rogue/types";
 
 /** 그 층에서 물건을 잔뜩 떨어뜨려 본다. */
 function drops(depth: number, n: number, seed = 1): Item[] {
@@ -267,4 +268,154 @@ test("장비는 띠 안에서 **위쪽이 더 잦다**", () => {
     const deep = meanTier(20);
     assert.ok(deep > 14.6, `20층 장비 평균 등급이 ${deep.toFixed(2)} — 위쪽에 안 실렸다`);
     assert.ok(meanTier(20) > meanTier(10), "깊을수록 등급이 올라야 한다");
+});
+
+// ── 특수 방 — **층에서 꾸어 간다** ──────────────────────────────────────
+//
+// 특수 방은 **새로 만들지 않고 이미 생긴 방 중에서 고른다.** 생성기를 안 건드리는
+// 것이 이 설계의 값이라, 「층은 반드시 다 이어져야 한다」도 막다른 길 규칙도 하나도
+// 안 흔들린다. 그리고 제 몫을 **더 받는 것이 아니라 층에서 꾼다** — 통째로 더 받으면
+// 특수 방이 뜬 층만 부자가 되고, 그러면 「찾았다」가 아니라 그냥 운 좋은 층이다.
+
+/** 여러 층을 파서 특수 방이 선 것만 모은다. */
+function specialFloors(n = 60, maxDepth = 20) {
+    const out: { level: ReturnType<typeof newGame>["level"]; kind: string; room: number }[] = [];
+    for (let seed = 1; seed <= n; seed++) {
+        let s = newGame(seed);
+        for (let d = 2; d <= maxDepth; d++) {
+            s.hero.x = s.level.stairs.x;
+            s.hero.y = s.level.stairs.y;
+            s = perform(s, { t: "descend" });
+            if (s.level.depth !== d) break;
+            if (s.level.special) out.push({ level: s.level, ...s.level.special });
+        }
+    }
+    return out;
+}
+
+test("특수 방은 문이 하나뿐인 넓은 방이고, 3층 밑에는 안 선다", () => {
+    const found = specialFloors();
+    assert.ok(found.length > 30, `특수 방이 ${found.length} 개뿐 — 너무 드물면 없는 기능이다`);
+
+    for (const { level, room } of found) {
+        const r = level.rooms[room];
+        assert.ok(level.depth >= 3, `${level.depth}층에 특수 방이 섰다`);
+        assert.ok(!r.gone && !r.maze, "없는 방·미로 방이 특수 방이 됐다");
+        assert.ok(effectiveArea(level, r) >= 20, "좁은 방이 특수 방이 됐다");
+
+        // **문이 하나**라는 것이 이 방의 전부다 — 들어가면 나오는 길이 하나라
+        // 위험과 보상이 같은 자리에 선다. 비밀문도 문으로 센다(찾으면 열린다).
+        let doors = 0;
+        for (let x = r.x; x < r.x + r.w; x++) {
+            for (const y of [r.y, r.y + r.h - 1]) {
+                const t = level.tiles[idx(x, y)];
+                if (t === T.DOOR || t === T.SECRET) doors++;
+            }
+        }
+        for (let y = r.y + 1; y < r.y + r.h - 1; y++) {
+            for (const x of [r.x, r.x + r.w - 1]) {
+                const t = level.tiles[idx(x, y)];
+                if (t === T.DOOR || t === T.SECRET) doors++;
+            }
+        }
+        assert.equal(doors, 1, `특수 방의 문이 ${doors} 개다`);
+
+        // 계단이 있는 방은 뺀다 — 지나는 길에 공짜로 얻게 된다.
+        const inside = (p: { x: number; y: number } | null) =>
+            !!p && p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+        assert.ok(!inside(level.stairs), "계단이 있는 방이 특수 방이 됐다");
+        assert.ok(!inside(level.upStairs), "올라가는 계단이 있는 방이 특수 방이 됐다");
+    }
+});
+
+test("특수 방은 갈래대로 받고, 제단에는 모루가 선다", () => {
+    const found = specialFloors();
+    const inRoom = (level: (typeof found)[number]["level"], room: number) => {
+        const r = level.rooms[room];
+        return (p: { x: number; y: number }) =>
+            p.x > r.x && p.x < r.x + r.w - 1 && p.y > r.y && p.y < r.y + r.h - 1;
+    };
+
+    const got: Record<string, { n: number; cat: Record<string, number> }> = {};
+    for (const { level, kind, room } of found) {
+        const mine = level.items.filter(inRoom(level, room)).filter((i) => i.kind !== "amulet");
+        (got[kind] ??= { n: 0, cat: {} });
+        got[kind].n = Math.max(got[kind].n, mine.length);
+        for (const i of mine) {
+            const c = i.kind === "scroll" && ENCHANT_SCROLLS.includes(i.type) ? "enchant" : i.kind;
+            got[kind].cat[c] = (got[kind].cat[c] ?? 0) + 1;
+        }
+        // **제단에는 모루가 선다** — 그 방을 찾는 것이 곧 모루를 찾는 것이 된다.
+        if (kind === "altar") {
+            assert.ok(level.anvil && inRoom(level, room)(level.anvil), "제단에 모루가 없다");
+        }
+    }
+
+    // 몫은 κ 가 정한다: 보물방·무기고 4 · 창고 3 · 제단 1.
+    for (const [kind, want] of [["treasure", 4], ["armory", 4], ["store", 3], ["altar", 1]] as const) {
+        if (got[kind]) assert.equal(got[kind].n, want, `${kind} 이 ${got[kind].n} 개를 받았다 (κ 대로면 ${want})`);
+    }
+    // 편향이 듣는가 — 무기고는 장비가, 보물방은 금화가 앞선다.
+    if (got.armory) {
+        const gear = (got.armory.cat.weapon ?? 0) + (got.armory.cat.armor ?? 0);
+        const all = Object.values(got.armory.cat).reduce((a, b) => a + b, 0);
+        assert.ok(gear / all > 0.5, `무기고인데 장비가 ${((gear / all) * 100).toFixed(0)}% 뿐이다`);
+    }
+    if (got.treasure) {
+        const all = Object.values(got.treasure.cat).reduce((a, b) => a + b, 0);
+        assert.ok((got.treasure.cat.gold ?? 0) / all > 0.3, "보물방인데 금화가 드물다");
+        assert.equal(got.treasure.cat.food ?? 0, 0, "보물방에서 식량이 나왔다 — 저울이 흐려진다");
+    }
+});
+
+test("특수 방은 층에서 꾸어 가고, 층 상한은 안 넘는다", () => {
+    let spGeneral = 0, spFloors = 0, noGeneral = 0, noFloors = 0;
+    let worstTotal = 0, worstGear = 0, worstRing = 0, worstFoodGap = 0;
+
+    for (let seed = 1; seed <= 60; seed++) {
+        let s = newGame(seed);
+        let gap = 0;
+        for (let d = 1; d <= 20; d++) {
+            if (d > 1) {
+                s.hero.x = s.level.stairs.x;
+                s.hero.y = s.level.stairs.y;
+                s = perform(s, { t: "descend" });
+                if (s.level.depth !== d) break;
+            }
+            const items = s.level.items.filter((i) => i.kind !== "amulet");
+            worstTotal = Math.max(worstTotal, items.length);
+            worstGear = Math.max(worstGear, items.filter((i) => i.kind === "weapon" || i.kind === "armor").length);
+            worstRing = Math.max(worstRing, items.filter((i) => i.kind === "ring").length);
+            gap = items.some((i) => i.kind === "food") ? 0 : gap + 1;
+            worstFoodGap = Math.max(worstFoodGap, gap);
+
+            const sp = s.level.special;
+            if (sp) {
+                const r = s.level.rooms[sp.room];
+                const mine = items.filter(
+                    (p) => p.x > r.x && p.x < r.x + r.w - 1 && p.y > r.y && p.y < r.y + r.h - 1,
+                ).length;
+                spGeneral += items.length - mine;
+                spFloors++;
+            } else {
+                noGeneral += items.length;
+                noFloors++;
+            }
+        }
+    }
+
+    // **일반 방은 오히려 줄어든다.** 이것이 「찾는 행위에 값이 붙는다」의 전부다 —
+    // 안 들어가면 그 층은 평소보다 헐겁다.
+    const withSp = spGeneral / spFloors;
+    const without = noGeneral / noFloors;
+    assert.ok(
+        withSp < without,
+        `특수 방이 뜬 층의 일반 방 몫이 더 많다 (${withSp.toFixed(2)} vs ${without.toFixed(2)}) — 꾸는 게 아니라 얹어 주고 있다`,
+    );
+
+    assert.ok(worstTotal <= 8, `한 층에 물건이 ${worstTotal} 개 — 상한은 8 이다`);
+    assert.ok(worstGear <= 3, `한 층에 장비가 ${worstGear} 개 — 상한은 3 이다`);
+    assert.ok(worstRing <= 1, `한 층에 반지가 ${worstRing} 개 — 상한은 1 이다`);
+    // 식량 보정은 밸런스가 아니라 **죽는 까닭의 문제**다. 굶는 것이 운이면 배울 것이 없다.
+    assert.ok(worstFoodGap <= 5, `식량 없이 ${worstFoodGap} 층을 지났다 — 가뭄 보장이 안 듣는다`);
 });

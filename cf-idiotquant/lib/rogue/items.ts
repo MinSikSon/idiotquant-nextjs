@@ -453,11 +453,21 @@ const PLAIN_SCROLLS = Object.fromEntries(
  * `enchantScale` 은 **그 층의 사정**이다(가뭄 보정·모루·1층). 부르는 쪽이 층을 알고
  * 여기는 비율만 안다 — 층 규칙을 여기 넣으면 이 함수가 던전을 알게 된다.
  */
-export function pickCategory(depth: number, rng: Rng, enchantScale = 1): Category {
+export function pickCategory(
+    depth: number,
+    rng: Rng,
+    enchantScale = 1,
+    /** 특수 방의 편향 — 분류마다 곱한다. 0 이면 그 방에서는 안 나온다. */
+    bias: Partial<Record<Category, number>> = {},
+): Category {
     const base = categoryWeights(depth);
     // `rng.rnd` 는 정수만 준다. 열 배로 키워 굴리면 0.7·2.5 같은 배율이 살아난다.
     const w = Object.entries(base).map(
-        ([k, n]) => [k as Category, Math.round(n * 10 * (k === "enchant" ? enchantScale : 1))] as const,
+        ([k, n]) =>
+            [
+                k as Category,
+                Math.round(n * 10 * (k === "enchant" ? enchantScale : 1) * (bias[k as Category] ?? 1)),
+            ] as const,
     );
     const total = w.reduce((s, [, n]) => s + n, 0);
     let r = rng.rnd(total);

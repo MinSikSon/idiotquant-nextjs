@@ -14,9 +14,11 @@
 
 import {
     buildLevel,
+    SPECIAL_ROOMS,
     floorQuota,
     freeSpot,
     itemSpots,
+    roomSpots,
     randomSpotIn,
 } from "./dungeon";
 import {
@@ -76,6 +78,7 @@ import {
     meltYield,
     makeItem,
     defenseOf,
+    type Category,
     pickCategory,
     randomItem,
     rollAppearances,
@@ -184,6 +187,15 @@ function itemAt(level: Level, x: number, y: number): Item | undefined {
  * 그랬다. 이 규칙이 없애려는 것은 평균이 아니라 **다섯 층 연속 없는 판**이다.
  */
 const ENCHANT_PER_FLOOR = 2;
+/** 층 단위 상한 — 특수 방을 포함한 총수, 장비, 반지. 넘으면 소모품으로 바꾼다. */
+const FLOOR_ITEM_CAP = 8;
+const FLOOR_GEAR_CAP = 3;
+const FLOOR_RING_CAP = 1;
+/** 식량 없이 이만큼 지나면 다음 층에 하나를 보장한다. */
+const FOOD_GRACE = 4;
+/** 특수 방의 기본 몫과, 무기고의 등급 보너스. */
+const SPECIAL_BASE = 2;
+const ARMORY_TIER_UP = 2;
 const DROUGHT_GRACE = 2;
 const DROUGHT_STEP = 0.8;
 
@@ -205,14 +217,57 @@ function populate(state: GameState, level: Level, rng: Rng) {
     //     물건 수가 줄어서 「총량은 층이 정한다」가 깨진다.
     const dry = Math.max(0, state.enchantDrought - DROUGHT_GRACE);
     const scale = level.depth === 1 ? 0 : 1 + DROUGHT_STEP * dry;
+
+    // **특수 방은 층에서 꾸어 간다.** 자기 몫을 통째로 더 받으면 특수 방이 뜬 층만
+    // 부자가 되는데, 그러면 「찾았다」가 아니라 그냥 운 좋은 층이다. 절반을 꾸면
+    // **층 전체는 늘어도 일반 방은 오히려 줄어서**, 찾아 들어가는 행위에 값이 붙는다.
+    const sp = level.special;
+    const def = sp ? SPECIAL_ROOMS[sp.kind] : null;
+    const quota = floorQuota(level.depth, rng);
+    const ns = def ? Math.round(SPECIAL_BASE * def.kappa) : 0;
+    // **꾸는 몫은 0 밑으로 안 간다.** 기획서의 식은 특수 방이 기본 몫보다 많이 받는다고
+    // 보고 세운 것인데, 제단은 κ 가 0.5 라 `floor((1−2)/2) = −1` 이 되어 **일반 방에
+    // 한 개를 얹어 준다** — 적게 주는 방이 층을 부자로 만드는 셈이다. 실제로 그랬다.
+    const borrow = def ? Math.max(0, Math.floor((ns - SPECIAL_BASE) / 2)) : 0;
+    const ng = def ? Math.max(2, quota - borrow) : quota;
+
     let enchants = 0;
-    for (const p of itemSpots(level, floorQuota(level.depth, rng), rng, [state.hero, level.stairs])) {
-        let cat = pickCategory(level.depth, rng, scale);
+    let gear = 0;
+    let rings = 0;
+    let foods = 0;
+    let placed = 0;
+    /** 한 층의 상한들 — 넘으면 **버리지 않고 다른 것으로 바꾼다**(총량은 층이 정한다). */
+    const put = (p: Pos, bias?: Partial<Record<Category, number>>, tierUp = 0) => {
+        if (placed >= FLOOR_ITEM_CAP) return;
+        let cat = pickCategory(level.depth, rng, scale, bias);
         if (cat === "enchant" && enchants >= ENCHANT_PER_FLOOR) cat = "scroll";
+        if ((cat === "weapon" || cat === "armor") && gear >= FLOOR_GEAR_CAP) cat = "potion";
+        if (cat === "ring" && rings >= FLOOR_RING_CAP) cat = "potion";
+        // **식량 가뭄은 밸런스가 아니라 죽는 까닭의 문제다.** 굶어 죽는 것이 운이면
+        // 배울 것이 안 남는다. 네 층을 굶었으면 이 층의 첫 자리를 식량으로 쓴다.
+        //
+        // **다만 특수 방에는 안 넣는다.** 그 방은 문이 하나뿐인 데다 못 찾을 수도
+        // 있는데, 굶지 말라고 둔 식량이 못 찾을 자리에 있으면 그건 보장이 아니다.
+        // 보물방이 식량을 아예 안 내는 것(`bias.food = 0`)과도 부딪힌다.
+        if (!bias && foods === 0 && state.foodDrought >= FOOD_GRACE) cat = "food";
         if (cat === "enchant") enchants++;
-        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat));
+        if (cat === "weapon" || cat === "armor") gear++;
+        if (cat === "ring") rings++;
+        if (cat === "food") foods++;
+        placed++;
+        // 무기고는 **등급이 두 칸 위**다 — 무기고에서 단검이 나오면 무기고가 아니다.
+        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat));
+    };
+
+    const avoid = [state.hero, level.stairs];
+    if (sp && def) {
+        const tierUp = sp.kind === "armory" ? ARMORY_TIER_UP : 0;
+        for (const p of roomSpots(level, level.rooms[sp.room], ns, rng, avoid)) put(p, def.bias, tierUp);
     }
+    for (const p of itemSpots(level, ng, rng, avoid, sp ? sp.room : null)) put(p);
+
     state.enchantDrought = enchants > 0 ? 0 : state.enchantDrought + 1;
+    state.foodDrought = foods > 0 ? 0 : state.foodDrought + 1;
 
     // 증표는 딱 한 층에 있다. 여기가 이 판의 바닥이다.
     if (level.depth === AMULET_LEVEL) {
@@ -287,6 +342,7 @@ export function newGame(
         bestiary: { ...bestiary },
         specials: { ...specials },
         enchantDrought: 0,
+        foodDrought: 0,
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);
