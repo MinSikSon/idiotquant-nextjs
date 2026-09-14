@@ -153,7 +153,9 @@ export default function Rogue() {
         setSheet("none");
         setChosen(null);
         // 새 판도 도감은 이어받는다 — 그것이 죽어도 남는 유일한 것이다.
-        setState(newGame(undefined, loadBestiary()));
+        // **수법도 같이 넘긴다.** 안 넘기면 빈 칸으로 시작하고, 곧바로 저장 효과가
+        // 그 빈 칸을 덮어써서 여태 당해 본 것이 통째로 지워진다.
+        setState(newGame(undefined, loadBestiary(), loadSpecials()));
     }, []);
 
     const openPicker = useCallback((p: Picker) => {
@@ -631,6 +633,8 @@ export default function Rogue() {
                         run(dx === 0 && dy === 0 ? { t: "rest" } : { t: "move", dx, dy });
                     }}
                     actions={actions}
+                    // 겨누는 중에는 연타를 끈다 — 한 번 고르면 끝나는 판이다.
+                    hold={!aiming}
                 />
             </div>
 
