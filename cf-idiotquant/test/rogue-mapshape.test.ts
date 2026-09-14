@@ -51,6 +51,13 @@ function* levels() {
     }
 }
 
+/** 미로 방의 **안쪽**인가 — 벽은 뺀다. 벽에 얹힌 복도 토막은 미로가 아니다. */
+function inMazeInterior(level: Level, x: number, y: number): boolean {
+    return level.rooms.some(
+        (r) => r.maze && !r.gone && x > r.x && x < r.x + r.w - 1 && y > r.y && y < r.y + r.h - 1,
+    );
+}
+
 /** 맞닿은 네 칸 중 걸어 들어갈 수 있는 칸의 수. `secretToo` 면 비밀문도 친다. */
 function openNbrs(level: Level, x: number, y: number, secretToo = false): number {
     return N4.filter(([dx, dy]) => {
@@ -170,6 +177,50 @@ test("놓을 자리는 방의 넓이를 태워 고른다", () => {
         assert.equal(roomArea({ x: 0, y: 0, w: 3, h: 3, dark: false, gone: false, maze: false }), 1);
         // 「없는 방」은 복도의 교차점 한 칸이다 — 0 을 주면 영영 안 뽑힌다.
         assert.equal(roomArea({ x: 9, y: 9, w: 1, h: 1, dark: false, gone: true, maze: false }), 1);
+    }
+});
+
+// 이 규칙은 한 번 테스트가 있었는데 **구현과 같은 눈가리개를 쓰고 있었다.** 훑는 자리를
+// `1 … MAP_H−1` 로 잡고(구현의 되메우기와 같다) 미로 방을 **사각형째** 뺐다(역시 구현과
+// 같다). 그래서 지도 가장자리에 남은 토막 36 개와 미로 벽에 얹힌 토막 60 개를 둘 다
+// 못 봤다. 규칙을 적는 대신 코드를 베껴 적으면 이렇게 된다 — 이번에는 **지도를 통째로**
+// 훑고, 미로는 **안쪽만** 뺀다.
+test("길 끝은 반드시 어딘가로 이어진다", () => {
+    // ── 어디로도 안 가는 복도 토막이 없다
+    {
+        for (const { level, tag } of levels()) {
+            for (let y = 0; y < MAP_H; y++) {
+                for (let x = 0; x < MAP_W; x++) {
+                    const t = level.tiles[idx(x, y)] as Tile;
+                    if (t !== T.CORRIDOR && t !== T.PASSAGE) continue;
+                    // 미로의 **안쪽**은 막다른 길로 이루어진 것이다. 벽은 미로가 아니다.
+                    if (inMazeInterior(level, x, y)) continue;
+                    // 비밀문에 닿은 끝은 못 찾은 지름길이지 잘못 파인 길이 아니다.
+                    assert.ok(
+                        openNbrs(level, x, y, true) > 1,
+                        `${tag}: (${x},${y}) 의 길이 한쪽만 뚫려 있다 — 어디로도 안 간다`,
+                    );
+                }
+            }
+        }
+    }
+
+    // ── 복도는 전부 어느 방엔가 닿는다 — 「끝은 다른 방과 이어진다」
+    {
+        // 앞의 것은 **모양**만 본다(잎이 없다). 이것은 **닿는 곳**을 본다 — 고리처럼
+        // 저희끼리만 이어진 복도 뭉치가 있으면 잎은 없어도 아무 방에도 안 닿는다.
+        for (const { level, tag } of levels()) {
+            const rooms = level.rooms.filter((r) => !r.gone);
+            const start = { x: rooms[0].x + 1, y: rooms[0].y + 1 };
+            const seen = flood(level, start, true);
+            for (let y = 0; y < MAP_H; y++) {
+                for (let x = 0; x < MAP_W; x++) {
+                    const t = level.tiles[idx(x, y)] as Tile;
+                    if (t !== T.CORRIDOR && t !== T.PASSAGE) continue;
+                    assert.ok(seen[idx(x, y)], `${tag}: (${x},${y}) 의 복도가 어느 방과도 안 이어진다`);
+                }
+            }
+        }
     }
 });
 
