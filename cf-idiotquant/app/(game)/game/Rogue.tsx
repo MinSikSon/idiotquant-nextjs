@@ -63,7 +63,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { isDetail } from "@/lib/rogue/combat";
-import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { equippedArmor, equippedWeapon, heroArmor, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -83,6 +83,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
+import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
 import Aim from "./components/Aim";
 import MapView from "./components/MapView";
@@ -132,7 +133,7 @@ export default function Rogue() {
     const [picker, setPicker] = useState<Picker | null>(null);
     const [aiming, setAiming] = useState<Aiming | null>(null);
     const [sheet, setSheet] = useState<
-        "none" | "pack" | "log" | "help" | "graves" | "options" | "bestiary"
+        "none" | "pack" | "log" | "help" | "graves" | "options" | "bestiary" | "origins"
     >("none");
     /** 배낭에서 짚은 물건 — 그 아래에 할 수 있는 일이 뜬다. */
     const [chosen, setChosen] = useState<number | null>(null);
@@ -193,14 +194,16 @@ export default function Rogue() {
         setState((s) => (s ? perform(s, cmd) : s));
     }, []);
 
-    const restart = useCallback(() => {
+    const startWithOrigin = useCallback((origin: HeroOrigin) => {
         clear();
         buried.current = false;
         setSheet("none");
         setChosen(null);
-        // 새 판도 도감은 이어받는다 — 그것이 죽어도 남는 유일한 것이다.
-        // **수법과 아이템 도감도 같이 넘긴다.**
-        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage()));
+        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin));
+    }, []);
+
+    const restart = useCallback(() => {
+        setSheet("origins");
     }, []);
 
     const openPicker = useCallback((p: Picker) => {
@@ -645,26 +648,24 @@ export default function Rogue() {
                 그만큼 지도가 줄고, 값이 하나 늘 때마다 지도의 높이가 달라진다. 넘치면
                 옆으로 민다 — 세로는 지도의 것이다. */}
             <div className="flex shrink-0 gap-x-3 overflow-x-auto whitespace-nowrap border-t border-[var(--rg-line-faint)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-muted)] [scrollbar-width:none] sm:text-[13px]">
-                <span>지하 {level.depth}층</span>
-                <span>Lv {hero.level}</span>
-                <span className={hpLow ? "text-[var(--rg-trap)]" : undefined}>
-                    체력 {hero.hp}/{hero.maxHp}
+                <span className="text-[var(--rg-strong)] font-semibold">
+                    {ORIGINS[hero.origin ?? "knight"]?.icon} {ORIGINS[hero.origin ?? "knight"]?.name}
                 </span>
-                <span>힘 {heroStr(hero)}</span>
-                {/* D&D 의 세 숫자를 나란히 둔다 — **맞히는가 · 얼마나 아픈가 · 맞는가.**
-                    「명중」이 빠져 있으면 상대를 맞힐 수 있는지를 화면에서 알 길이 없다.
-                    「공격」이라 적던 것은 피해라서, 명중과 나란히 서면 헷갈린다. */}
-                <span>명중 {signed(heroHitBonus(hero, state.known))}</span>
-                <span>피해 {heroAttackText(hero, state.known)}</span>
-                <span>방어력 {heroDefense(hero)}</span>
-                <span>경험 {hero.exp}</span>
-                <span className="text-[var(--rg-gold)]">금화 {hero.gold}</span>
-                {rings.length > 0 && <span className="text-[var(--rg-ring)]">반지 {rings.length}</span>}
-                {hero.confused > 0 && <span className="text-[var(--rg-potion)]">혼란</span>}
-                {hero.blind > 0 && <span className="text-[var(--rg-potion)]">실명</span>}
-                {hero.stuck > 0 && <span className="text-[var(--rg-monster)]">덫</span>}
-                {hunger && <span className="text-[var(--rg-monster)]">{hunger}</span>}
-                {hero.hasAmulet && <span className="text-[var(--rg-amulet)]">증표</span>}
+                <span>Level: {level.depth}</span>
+                <span className="text-[var(--rg-gold)]">Gold: {hero.gold}</span>
+                <span className={hpLow ? "text-[var(--rg-trap)] font-bold" : undefined}>
+                    Hp: {hero.hp}({hero.maxHp})
+                </span>
+                <span>Str: {heroStr(hero)}({hero.maxStr})</span>
+                <span>Arm: {heroArmor(hero)}</span>
+                <span>Exp: {hero.level}/{hero.exp}</span>
+                {rings.length > 0 && <span className="text-[var(--rg-ring)]">Ring: {rings.length}</span>}
+                {hero.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded</span>}
+                {hero.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
+                {hero.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
+                {hero.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
+                {hunger && <span className="text-[var(--rg-monster)] font-bold">{hunger}</span>}
+                {hero.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
             </div>
 
             <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
@@ -904,8 +905,8 @@ export default function Rogue() {
                                                 </div>
                                                 {m.known ? (
                                                     <div className="text-[var(--rg-muted)]">
-                                                        레벨 {m.level} · 방어력 {m.defense} · 공격력{" "}
-                                                        {m.damage?.join(" + ") || "없음"} · 경험 {m.exp} · 체력 {m.hp}
+                                                        Level {m.level} · Arm {10 - (m.defense ?? 0)} · Dmg{" "}
+                                                        {m.damage?.join(" + ") || "없음"} · Exp {m.exp} · Hp {m.hp}
                                                         {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                     </div>
                                                 ) : (
@@ -941,8 +942,8 @@ export default function Rogue() {
                                                     <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
                                                     {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                                     <div className="text-[var(--rg-muted)]">
-                                                        레벨 {r.level} · 방어력 {r.defense} · 공격력{" "}
-                                                        {r.damage.join(" + ") || "없음"} · 경험 {r.exp} · 체력 {r.hp}
+                                                        Level {r.level} · Arm {10 - r.defense} · Dmg{" "}
+                                                        {r.damage.join(" + ") || "없음"} · Exp {r.exp} · Hp {r.hp}
                                                         {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
@@ -1305,6 +1306,7 @@ export default function Rogue() {
                 <Panel title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
                     <ul className="space-y-1">
                         {[
+                            { label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => setSheet("origins") },
                             { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
                             {
                                 label: "지난 판",
@@ -1328,6 +1330,50 @@ export default function Rogue() {
                             </li>
                         ))}
                     </ul>
+                </Panel>
+            )}
+
+            {sheet === "origins" && (
+                <Panel
+                    title="출신(직업) 선택"
+                    onClose={() => {
+                        if (state && state.phase === "playing") setSheet("none");
+                        else startWithOrigin("knight");
+                    }}
+                >
+                    <div className="space-y-2 text-xs">
+                        <p className="text-[var(--rg-faint)]">
+                            새로운 모험을 떠날 캐릭터의 출신과 고유 특성을 선택하십시오.
+                        </p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {ORIGIN_LIST.map((orig) => (
+                                <button
+                                    key={orig.id}
+                                    type="button"
+                                    onClick={() => startWithOrigin(orig.id)}
+                                    className="flex flex-col text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus:outline-none"
+                                >
+                                    <div className="flex items-center justify-between gap-1 mb-1">
+                                        <div className="flex items-center gap-1.5 font-bold text-sm text-[var(--rg-strong)]">
+                                            <span>{orig.icon}</span>
+                                            <span>{orig.name}</span>
+                                            <span className="text-[11px] font-mono text-[var(--rg-muted)] font-normal">({orig.title})</span>
+                                        </div>
+                                        <span className="font-mono text-[11px] text-[var(--rg-gold)]">
+                                            Hp {orig.baseHp} · Str {orig.baseStr}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11.5px] text-[var(--rg-muted)] mb-2">
+                                        {orig.description}
+                                    </p>
+                                    <div className="mt-auto border-t border-[var(--rg-line-soft)] pt-1.5 text-[11px]">
+                                        <span className="font-bold text-[var(--rg-strong)]">⚡ {orig.traitName}: </span>
+                                        <span className="text-[var(--rg-faint)]">{orig.traitDescription}</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </Panel>
             )}
 
@@ -1450,28 +1496,32 @@ export default function Rogue() {
                             {/* 2. 영웅 능력치 (Hero Stats) */}
                             {selectedTomb.hero && (
                                 <div>
-                                    <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">캐릭터 스탯</h4>
+                                    <div className="mb-1 flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-[var(--rg-label)]">Stats</h4>
+                                        {selectedTomb.hero.origin && (
+                                            <span className="text-xs font-bold text-[var(--rg-strong)]">
+                                                {ORIGINS[selectedTomb.hero.origin]?.icon} {ORIGINS[selectedTomb.hero.origin]?.name} ({ORIGINS[selectedTomb.hero.origin]?.title})
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-[var(--rg-muted)]">
                                         <div>
-                                            <span className="text-[var(--rg-faint)] text-[11px] block">레벨 / 경험치</span>
-                                            <span className="text-[var(--rg-strong)] font-bold">Lv. {selectedTomb.hero.level}</span>
-                                            <span className="text-[var(--rg-faint)] text-[11px] ml-1">({selectedTomb.hero.exp} exp)</span>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">Exp</span>
+                                            <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.level}/{selectedTomb.hero.exp}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[var(--rg-faint)] text-[11px] block">체력 (HP)</span>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">Hp</span>
                                             <span className={selectedTomb.hero.hp <= 0 ? "text-[var(--rg-trap)] font-bold" : "text-[var(--rg-hero)] font-bold"}>
-                                                {selectedTomb.hero.hp}
+                                                {selectedTomb.hero.hp}({selectedTomb.hero.maxHp})
                                             </span>
-                                            <span className="text-[var(--rg-faint)] font-normal"> / {selectedTomb.hero.maxHp}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[var(--rg-faint)] text-[11px] block">근력 (Str)</span>
-                                            <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.str}</span>
-                                            <span className="text-[var(--rg-faint)] font-normal"> / {selectedTomb.hero.maxStr}</span>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">Str</span>
+                                            <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.str}({selectedTomb.hero.maxStr})</span>
                                         </div>
                                         <div>
-                                            <span className="text-[var(--rg-faint)] text-[11px] block">방어력 (AC)</span>
-                                            <span className="text-[var(--rg-armor)] font-bold">{selectedTomb.hero.defense}</span>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">Arm</span>
+                                            <span className="text-[var(--rg-armor)] font-bold">{10 - selectedTomb.hero.defense}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1623,19 +1673,27 @@ export default function Rogue() {
                                             </div>
 
                                             <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--rg-muted)]">
-                                                <span>지하 {t.depth}층</span>
+                                                {t.hero?.origin && (
+                                                    <>
+                                                        <span className="font-semibold text-[var(--rg-strong)]">{ORIGINS[t.hero.origin]?.icon} {ORIGINS[t.hero.origin]?.name}</span>
+                                                        <span>·</span>
+                                                    </>
+                                                )}
+                                                <span>Level: {t.depth}</span>
                                                 <span>·</span>
-                                                <span>금화 {t.gold} G</span>
+                                                <span className="text-[var(--rg-gold)]">Gold: {t.gold}</span>
                                                 <span>·</span>
-                                                <span>{t.turns}턴</span>
+                                                <span>{t.turns} turns</span>
                                                 {t.hero && (
                                                     <>
                                                         <span>·</span>
-                                                        <span className="text-[var(--rg-strong)]">Lv.{t.hero.level}</span>
+                                                        <span className="text-[var(--rg-strong)]">Hp: {t.hero.hp}({t.hero.maxHp})</span>
                                                         <span>·</span>
-                                                        <span>HP {t.hero.hp}/{t.hero.maxHp}</span>
+                                                        <span>Str: {t.hero.str}({t.hero.maxStr})</span>
                                                         <span>·</span>
-                                                        <span>방어 {t.hero.defense}</span>
+                                                        <span>Arm: {10 - t.hero.defense}</span>
+                                                        <span>·</span>
+                                                        <span>Exp: {t.hero.level}/{t.hero.exp}</span>
                                                     </>
                                                 )}
                                             </div>
@@ -1718,14 +1776,17 @@ export default function Rogue() {
                     }
                 >
                     <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
-                    <dl className="grid grid-cols-[7em_1fr] gap-y-1 text-[var(--rg-muted)]">
-                        <dt>가장 깊이</dt><dd>지하 {state.deepest}층</dd>
-                        <dt>레벨</dt><dd>{hero.level}</dd>
-                        <dt>버틴 턴</dt><dd>{state.turn}</dd>
-                        <dt>점수</dt><dd className="text-[var(--rg-gold)]">{score(state)}</dd>
-                        {/* 등수는 **내 지난 판들 사이에서만** 센다 — 셈은 엔진이 하고
-                            (`standing`) 여기서는 말로 옮기기만 한다. */}
-                        <dt>등수</dt>
+                    <dl className="grid grid-cols-[6em_1fr] gap-y-1 text-[var(--rg-muted)]">
+                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold">{ORIGINS[hero.origin ?? "knight"]?.icon} {ORIGINS[hero.origin ?? "knight"]?.name} ({ORIGINS[hero.origin ?? "knight"]?.title})</dd>
+                        <dt>Level</dt><dd>지하 {state.deepest}층</dd>
+                        <dt>Exp</dt><dd>{hero.level}/{hero.exp}</dd>
+                        <dt>Hp</dt><dd>{hero.hp}({hero.maxHp})</dd>
+                        <dt>Str</dt><dd>{heroStr(hero)}({hero.maxStr})</dd>
+                        <dt>Arm</dt><dd>{heroArmor(hero)}</dd>
+                        <dt>Gold</dt><dd className="text-[var(--rg-gold)]">{hero.gold}</dd>
+                        <dt>Turns</dt><dd>{state.turn}</dd>
+                        <dt>Score</dt><dd className="text-[var(--rg-gold)] font-bold">{score(state)}</dd>
+                        <dt>Rank</dt>
                         <dd>
                             {place.total <= 1 ? (
                                 "첫 판"

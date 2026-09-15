@@ -10,6 +10,7 @@ import {
 } from "./rng";
 import {
     type Hero,
+    type HeroOrigin,
     type Item,
 } from "./types";
 import {
@@ -24,6 +25,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
+import { ORIGINS } from "./origins";
 
 /** 이 경험치를 넘으면 다음 레벨. 원작의 `e_levels` 와 같은 모양이다. */
 export const EXP_LEVELS = [
@@ -50,23 +52,23 @@ export function strDamBonus(str: number): number {
     return abilityMod(str);
 }
 
-export function makeHero(rng: Rng, nextId: () => number): Hero {
-    const mace = makeItem("weapon", "mace", nextId(), -1, -1);
-    const ring = makeItem("armor", "ring mail", nextId(), -1, -1);
-    const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
+export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "knight"): Hero {
+    const originDef = ORIGINS[origin] ?? ORIGINS.knight;
     const hero: Hero = {
+        origin,
+        guarded: false,
         x: 0,
         y: 0,
-        hp: 12,
-        maxHp: 12,
+        hp: originDef.baseHp,
+        maxHp: originDef.baseHp,
         exp: 0,
         level: 1,
-        str: 16,
-        maxStr: 16,
+        str: originDef.baseStr,
+        maxStr: originDef.baseStr,
         gold: 0,
         pack: [],
-        weaponId: mace.id,
-        armorId: ring.id,
+        weaponId: null,
+        armorId: null,
         leftRingId: null,
         rightRingId: null,
         // 원작의 허기 시계. 한 걸음에 1 씩 준다.
@@ -78,14 +80,15 @@ export function makeHero(rng: Rng, nextId: () => number): Hero {
         stuck: 0,
         detect: 0,
     };
-    // 처음 쥐는 것은 손질된 철퇴와 사슬 고리 갑옷 — 그리고 그 둘은 정체를 안다.
-    mace.plusHit = 1;
-    mace.plusDam = 1;
-    ring.plusArmor = 1;
-    addToPack(hero, mace);
-    addToPack(hero, ring);
-    addToPack(hero, food);
-    // rng 는 나중에 시작 소지품을 굴리게 될 자리다 — 지금은 고정이다.
+    const startingItems = originDef.createStartingItems(nextId);
+    for (const item of startingItems) {
+        addToPack(hero, item);
+        if (item.kind === "weapon" && hero.weaponId === null) {
+            hero.weaponId = item.id;
+        } else if (item.kind === "armor" && hero.armorId === null) {
+            hero.armorId = item.id;
+        }
+    }
     void rng;
     return hero;
 }
@@ -185,13 +188,14 @@ export function heroArmor(hero: Hero): number {
  * `items.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
  */
 export function heroDefense(hero: Hero): number {
-    return defenseOf(heroArmor(hero));
+    const base = defenseOf(heroArmor(hero));
+    return hero.guarded && hero.origin === "knight" ? base + 2 : base;
 }
 
 /**
  * **수비 굴림에 얹히는 것** — 숙련 하나뿐이다.
  *
- * 갑옷은 여기 안 붙는다. 붙이면 갑옷이 **피하는 데에도 피해를 깎는 데에도** 두 번
+ * 갑옷은 여기 안 붙는다. 붙이면 갑옷이 **피하는 데에는 피해를 깎는 데에는** 두 번
  * 세이고, 그러면 판금 갑옷 한 벌에 싸움이 끝난다. 갑옷은 「덜 아프게」만 한다.
  */
 export function heroDodgeBonus(hero: Hero): number {
@@ -339,12 +343,12 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
     return gained;
 }
 
-/** 배고픔의 단계 — 화면의 상태 줄이 이걸 그대로 적는다. */
-export type HungerState = "" | "시장함" | "허기짐" | "탈진";
+/** 배고픔의 단계 — 화면의 상태 줄이 원작 Rogue 명칭을 그대로 적는다. */
+export type HungerState = "" | "Hungry" | "Weak" | "Faint";
 
 export function hungerOf(hero: Hero): HungerState {
-    if (hero.food <= 20) return "탈진";
-    if (hero.food <= 150) return "허기짐";
-    if (hero.food <= 300) return "시장함";
+    if (hero.food <= 20) return "Faint";
+    if (hero.food <= 150) return "Weak";
+    if (hero.food <= 300) return "Hungry";
     return "";
 }

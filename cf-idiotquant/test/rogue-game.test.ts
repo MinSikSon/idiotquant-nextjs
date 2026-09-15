@@ -117,11 +117,11 @@ test("한 걸음이 배고픔 하나 — 문턱에서만 단계가 바뀐다", (
         s.hero.food = 1000;
         assert.equal(hungerOf(s.hero), "");
         s.hero.food = 300;
-        assert.equal(hungerOf(s.hero), "시장함");
+        assert.equal(hungerOf(s.hero), "Hungry");
         s.hero.food = 150;
-        assert.equal(hungerOf(s.hero), "허기짐");
+        assert.equal(hungerOf(s.hero), "Weak");
         s.hero.food = 20;
-        assert.equal(hungerOf(s.hero), "탈진");
+        assert.equal(hungerOf(s.hero), "Faint");
     }
 });
 

@@ -64,7 +64,9 @@ import {
     proficiency,
 } from "./dnd";
 import {
+    POTIONS,
     RINGS,
+    SCROLLS,
     WANDS,
     describe,
     isThrowable,
@@ -99,6 +101,7 @@ import {
     AMULET_LEVEL,
     ALL_DIRS,
     type GameState,
+    type HeroOrigin,
     type Item,
     type ItemKind,
     type Level,
@@ -336,6 +339,7 @@ export function newGame(
     specials: Record<string, number> = {},
     itemCodex: Record<string, boolean> = {},
     itemUsage: Record<string, number> = {},
+    origin: HeroOrigin = "knight",
 ): GameState {
     const rng = new Rng(seed);
     const state: GameState = {
@@ -362,14 +366,33 @@ export function newGame(
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);
-    state.hero = makeHero(rng, () => state.nextItemId++);
+    state.hero = makeHero(rng, () => state.nextItemId++, origin);
     // 처음 쥔 것은 무엇인지 안다.
-    state.known["weapon:mace"] = true;
-    state.known["armor:ring mail"] = true;
-    state.known["food:food ration"] = true;
-    state.itemCodex["weapon:mace"] = true;
-    state.itemCodex["armor:ring mail"] = true;
-    state.itemCodex["food:food ration"] = true;
+    for (const it of state.hero.pack) {
+        const k = `${it.kind}:${it.type}`;
+        state.known[k] = true;
+        state.itemCodex[k] = true;
+    }
+    // 연금술사는 시작부터 모든 물약의 정체를 안다.
+    if (origin === "alchemist") {
+        for (const pot of Object.keys(POTIONS)) {
+            const k = `potion:${pot}`;
+            state.known[k] = true;
+            state.itemCodex[k] = true;
+        }
+    } else if (origin === "scholar") {
+        // 고서 연구자는 시작부터 모든 주문서와 지팡이의 정체를 안다.
+        for (const scr of Object.keys(SCROLLS)) {
+            const k = `scroll:${scr}`;
+            state.known[k] = true;
+            state.itemCodex[k] = true;
+        }
+        for (const w of Object.keys(WANDS)) {
+            const k = `wand:${w}`;
+            state.known[k] = true;
+            state.itemCodex[k] = true;
+        }
+    }
     enterLevel(state, 1, rng, "above");
     updateSeenItems(state);
     state.rngState = rng.state;
@@ -515,14 +538,16 @@ function quaff(state: GameState, letter: string, rng: Rng): boolean {
 
     switch (it.type) {
         case "healing": {
-            const heal = rng.roll(hero.level, 4);
+            let heal = rng.roll(hero.level, 4);
+            if (hero.origin === "alchemist") heal = Math.floor(heal * 1.5);
             if (hero.hp + heal >= hero.maxHp) hero.maxHp += 1;
             hero.hp = Math.min(hero.maxHp, hero.hp + heal);
             say(state, "기운이 돈다.");
             break;
         }
         case "extra healing": {
-            const heal = rng.roll(hero.level, 8);
+            let heal = rng.roll(hero.level, 8);
+            if (hero.origin === "alchemist") heal = Math.floor(heal * 1.5);
             if (hero.hp + heal >= hero.maxHp) hero.maxHp += 2;
             hero.hp = Math.min(hero.maxHp, hero.hp + heal);
             hero.blind = 0;
@@ -653,7 +678,12 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             say(state, "더 손댈 곳이 없다.");
             return false;
         }
-        takeFromPack(hero, it);
+        const preserved = hero.origin === "scholar" && rng.chance(0.25);
+        if (preserved) {
+            say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
+        } else {
+            takeFromPack(hero, it);
+        }
         const scrKey = `scroll:${it.type}`;
         state.known[scrKey] = true;
         state.itemCodex[scrKey] = true;
@@ -663,7 +693,12 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
     }
 
     const key = `scroll:${it.type}`;
-    takeFromPack(hero, it);
+    const preserved = hero.origin === "scholar" && rng.chance(0.25);
+    if (preserved) {
+        say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
+    } else {
+        takeFromPack(hero, it);
+    }
     state.known[key] = true;
     state.itemCodex[key] = true;
     state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
@@ -1209,6 +1244,10 @@ const TRAP_NAME: Record<Trap["kind"], string> = {
 function springTrap(state: GameState, trap: Trap, rng: Rng) {
     const { hero, level } = state;
     trap.found = true;
+    if (hero.origin === "rogue" && rng.chance(0.5)) {
+        say(state, "🗡️ 기습 본능: 재빠른 몸놀림으로 함정을 회피했다!");
+        return;
+    }
     switch (trap.kind) {
         case "trapdoor":
             say(state, "바닥이 꺼졌다!");
@@ -1304,7 +1343,15 @@ function tickHunger(state: GameState, rng: Rng) {
     const before = hungerOf(hero);
     hero.food -= hungerRate(hero);
     const after = hungerOf(hero);
-    if (after !== before && after) say(state, `${after}.`);
+    if (after !== before && after) {
+        const msg =
+            after === "Hungry"
+                ? "시장해지기 시작했다 (Hungry)."
+                : after === "Weak"
+                  ? "허기져서 힘이 빠진다 (Weak)."
+                  : "배가 너무 고파 쓰러질 것 같다 (Faint).";
+        say(state, msg);
+    }
     if (hero.food <= 0 && rng.chance(0.2)) {
         hero.asleep += 1;
         say(state, "배가 고파 정신이 아득하다.");
@@ -1432,16 +1479,21 @@ export function perform(state: GameState, cmd: Command): GameState {
     }
 
     let acted = false;
-    switch (cmd.t) {
-        case "move":
-            acted = heroMove(state, cmd.dx, cmd.dy, rng);
-            break;
-        case "rest":
-            acted = true;
-            break;
-        case "pickup":
-            acted = pickUp(state);
-            break;
+    if (cmd.t === "rest") {
+        if (state.hero.origin === "knight") {
+            state.hero.guarded = true;
+            say(state, "🛡️ 철벽의 자세를 취했다 (다음 턴 Arm +2 / 받는 피해 2 경감).");
+        }
+        acted = true;
+    } else {
+        state.hero.guarded = false;
+        switch (cmd.t) {
+            case "move":
+                acted = heroMove(state, cmd.dx, cmd.dy, rng);
+                break;
+            case "pickup":
+                acted = pickUp(state);
+                break;
         case "descend":
             acted = descend(state, rng);
             break;
@@ -1485,6 +1537,7 @@ export function perform(state: GameState, cmd: Command): GameState {
             acted = search(state, rng);
             break;
     }
+}
 
     return finishTurn(state, rng, acted);
 }

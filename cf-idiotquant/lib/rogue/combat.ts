@@ -327,9 +327,14 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
         return { hit: false, roll: a.roll, damage: 0, killed: false, messages };
     }
 
+    const isBackstab = hero.origin === "rogue" && (!m.awake || m.speed < 0);
+    const isCrit = a.crit || isBackstab;
     const dice = heroDamageDice(hero);
-    const damTerms = heroDamTerms(hero);
-    const d = damageRoll(dice, damTerms.reduce((t, b) => t + b.n, 0), a.crit, rng);
+    const damTerms = [...heroDamTerms(hero)];
+    if (isBackstab) {
+        damTerms.push({ n: 3, why: "기습" });
+    }
+    const d = damageRoll(dice, damTerms.reduce((t, b) => t + b.n, 0), isCrit, rng);
     const guard = monsterDefense(m);
     const dealt = pierce(d.total, guard);
     m.hp -= dealt;
@@ -345,9 +350,11 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
                 ? `${m.def.name}을(를) 쓰러뜨렸다.`
                 : dealt === 0
                   ? `${m.def.name}의 갑옷에 튕겼다.`
-                  : a.crit
-                    ? `${m.def.name}의 급소를 찔렀다!`
-                    : `${m.def.name}을(를) 맞혔다.`,
+                  : isBackstab
+                    ? `${m.def.name}의 빈틈을 기습하여 급소를 찔렀다!`
+                    : a.crit
+                      ? `${m.def.name}의 급소를 찔렀다!`
+                      : `${m.def.name}을(를) 맞혔다.`,
             dealt,
         ),
     );

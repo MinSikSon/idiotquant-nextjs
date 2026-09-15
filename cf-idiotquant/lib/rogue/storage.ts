@@ -24,7 +24,7 @@ import {
 } from "./items";
 import { heroDefense } from "./hero";
 import { MONSTERS } from "./monsters";
-import { MAP_H, MAP_W, type GameState, type Hero, type Item, type ItemKind, type Level, type Monster } from "./types";
+import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -409,6 +409,7 @@ export interface TombItem {
 
 /** 지난 판의 영웅 상세 스탯 및 장비/인벤토리 기록 */
 export interface TombHero {
+    origin?: HeroOrigin;
     level: number;
     exp: number;
     hp: number;
@@ -554,6 +555,7 @@ export function createTombHero(hero: Hero): TombHero {
     const rightRing = packItems.find((p) => p.equipped === "rightRing");
 
     return {
+        origin: hero.origin ?? "knight",
         level: hero.level,
         exp: hero.exp,
         hp: hero.hp,
