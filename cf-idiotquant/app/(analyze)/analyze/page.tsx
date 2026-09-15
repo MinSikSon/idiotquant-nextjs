@@ -24,7 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { PAGE_WIDTH, PAGE_HEADER_CHROME } from '@/components/pageHeader';
 import { useToast, ToastContainer } from '@/components/ui/toast';
-import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBars';
+import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 
 // =========================================================================
 // Dynamic imports

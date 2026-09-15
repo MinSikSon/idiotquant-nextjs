@@ -302,6 +302,19 @@ export interface GameState {
      * 이건 밸런스가 아니라 **죽는 까닭의 문제**다. 굶어 죽는 것이 운이면 배울 것이 안 남는다.
      */
     foodDrought: number;
+    /**
+     * 이번 판에서 시야(FOV) 안에 들어왔던 물건들 — **판 안에서만 산다.**
+     * 겉모습 이름만 알고 참 정체는 모른다.
+     */
+    seenItems: Record<string, boolean>;
+    /**
+     * 식별 완료된 아이템 도감 — **판을 넘어 남는다.**
+     */
+    itemCodex: Record<string, boolean>;
+    /**
+     * 아이템별 숙련도/사용량(킬, 걸음, 음용/낭독/발사 횟수) — **판을 넘어 남는다.**
+     */
+    itemUsage: Record<string, number>;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
 }

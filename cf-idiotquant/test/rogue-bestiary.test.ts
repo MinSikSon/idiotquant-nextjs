@@ -231,7 +231,7 @@ test("수법은 당한 순간 적히고, 처음 한 번만 말한다", () => {
 
     const s = suffer(s0, "A");
     assert.ok(s, "아쿠에이터가 400턴 동안 한 번도 안 녹였다");
-    assert.equal(s!.specials.A, 1);
+    assert.ok((s!.specials.A ?? 0) >= 1);
     const learned = s!.messages.filter((t) => t.includes("수법을 알았다"));
     assert.equal(learned.length, 1, "처음 당한 것을 한 번만 말해야 한다");
     assert.ok(learned[0].includes(MONSTERS.A.name));

@@ -312,17 +312,30 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
     state.deepest = Math.max(state.deepest, depth);
 }
 
+/** 시야 내에 들어온 바닥의 물건들을 이번 판 목격 목록에 기록한다. */
+export function updateSeenItems(state: GameState): void {
+    const { level, hero } = state;
+    if (!level || !level.items) return;
+    for (const it of level.items) {
+        if (isVisible(level, it.x, it.y) || hero.detect > 0) {
+            state.seenItems[`${it.kind}:${it.type}`] = true;
+        }
+    }
+}
+
 /**
  * 새 판.
  *
- * `bestiary` 와 `specials` 는 **지난 판에서 이어받는 것 전부**다. 부르는 쪽(화면)이
- * 저장소에서 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면 테스트가 브라우저를
- * 필요로 하게 된다.
+ * `bestiary`, `specials`, `itemCodex`, `itemUsage` 는 **지난 판에서 이어받는 것 전부**다.
+ * 부르는 쪽(화면)이 저장소에서 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면 테스트가
+ * 브라우저를 필요로 하게 된다.
  */
 export function newGame(
     seed = Math.floor(Math.random() * 0x7fffffff),
     bestiary: Record<string, number> = {},
     specials: Record<string, number> = {},
+    itemCodex: Record<string, boolean> = {},
+    itemUsage: Record<string, number> = {},
 ): GameState {
     const rng = new Rng(seed);
     const state: GameState = {
@@ -341,6 +354,9 @@ export function newGame(
         known: {},
         bestiary: { ...bestiary },
         specials: { ...specials },
+        seenItems: {},
+        itemCodex: { ...itemCodex },
+        itemUsage: { ...itemUsage },
         enchantDrought: 0,
         foodDrought: 0,
         nextItemId: 1,
@@ -351,7 +367,11 @@ export function newGame(
     state.known["weapon:mace"] = true;
     state.known["armor:ring mail"] = true;
     state.known["food:food ration"] = true;
+    state.itemCodex["weapon:mace"] = true;
+    state.itemCodex["armor:ring mail"] = true;
+    state.itemCodex["food:food ration"] = true;
     enterLevel(state, 1, rng, "above");
+    updateSeenItems(state);
     state.rngState = rng.state;
     say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
     return state;
@@ -398,6 +418,29 @@ function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
 
     hero.x = nx;
     hero.y = ny;
+
+    // 갑옷과 반지 착용 걸음 수 누적 (도감 통달)
+    if (hero.armorId) {
+        const arm = hero.pack.find((p) => p.id === hero.armorId);
+        if (arm) {
+            const k = `armor:${arm.type}`;
+            state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+        }
+    }
+    if (hero.leftRingId) {
+        const lr = hero.pack.find((p) => p.id === hero.leftRingId);
+        if (lr) {
+            const k = `ring:${lr.type}`;
+            state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+        }
+    }
+    if (hero.rightRingId) {
+        const rr = hero.pack.find((p) => p.id === hero.rightRingId);
+        if (rr) {
+            const k = `ring:${rr.type}`;
+            state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+        }
+    }
 
     const it = itemAt(level, nx, ny);
     if (it) {
@@ -447,6 +490,9 @@ function pickUp(state: GameState): boolean {
     level.items = level.items.filter((i) => i.id !== it.id);
     if (it.kind === "amulet") {
         hero.hasAmulet = true;
+        state.known["amulet:amulet"] = true;
+        state.itemCodex["amulet:amulet"] = true;
+        state.itemUsage["amulet:amulet"] = Math.max(state.itemUsage["amulet:amulet"] ?? 0, 1);
         say(state, "옌더의 증표를 손에 넣었다! 이제 올라갈 수 있다.");
     } else {
         say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}`);
@@ -464,6 +510,8 @@ function quaff(state: GameState, letter: string, rng: Rng): boolean {
     const key = `potion:${it.type}`;
     takeFromPack(hero, it);
     state.known[key] = true;
+    state.itemCodex[key] = true;
+    state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
 
     switch (it.type) {
         case "healing": {
@@ -551,7 +599,9 @@ function enchant(state: GameState, it: Item, rng: Rng): void {
     const roll = rng.rnd(100) + 1;
     const ok = roll <= Math.round(odds * 100);
     // **정체를 알게 된다.** 걸어 본 물건의 속을 모른 채로 둘 수는 없다.
-    state.known[`${it.kind}:${it.type}`] = true;
+    const key = `${it.kind}:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
     say(
         state,
         `${DETAIL}강화 ${describe(it, state.known, state.appearance)} → +${plus + 1}` +
@@ -604,7 +654,10 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             return false;
         }
         takeFromPack(hero, it);
-        state.known[`scroll:${it.type}`] = true;
+        const scrKey = `scroll:${it.type}`;
+        state.known[scrKey] = true;
+        state.itemCodex[scrKey] = true;
+        state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
         enchant(state, on, rng);
         return true;
     }
@@ -612,6 +665,8 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
     const key = `scroll:${it.type}`;
     takeFromPack(hero, it);
     state.known[key] = true;
+    state.itemCodex[key] = true;
+    state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
 
     switch (it.type) {
         case "magic mapping":
@@ -628,7 +683,11 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
         // 강화 주문서(`enchant weapon`·`enchant armor`)는 위에서 이미 끝났다 —
         // 고를 것을 묻고 굴려야 해서 갈래가 다르다.
         case "identify":
-            for (const p of hero.pack) state.known[`${p.kind}:${p.type}`] = true;
+            for (const p of hero.pack) {
+                const k = `${p.kind}:${p.type}`;
+                state.known[k] = true;
+                state.itemCodex[k] = true;
+            }
             say(state, "배낭 속의 것들이 무엇인지 알겠다.");
             break;
         case "remove curse": {
@@ -660,6 +719,10 @@ function eat(state: GameState, letter: string, rng: Rng): boolean {
         return false;
     }
     takeFromPack(hero, it);
+    const key = `food:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
+    state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
     hero.food = Math.min(2000, Math.max(hero.food, 0) + rng.between(900, 1300));
     say(state, "배가 든든하다.");
     return true;
@@ -691,7 +754,9 @@ function wield(state: GameState, letter: string): boolean {
         return false;
     }
     hero.weaponId = it.id;
-    state.known[`weapon:${it.type}`] = true;
+    const key = `weapon:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
     // **그 물건의 성능**을 적는다 — 내 명중·피해가 아니라. 무엇을 쥐었는지가 바로 보여야
     // 「이게 지금 것보다 나은가」를 그 자리에서 판단할 수 있다.
     say(state, `${describe(it, state.known, state.appearance)}을(를) 쥐었다.${withPower(it, state)}`);
@@ -713,7 +778,9 @@ function wear(state: GameState, letter: string): boolean {
         return false;
     }
     hero.armorId = it.id;
-    state.known[`armor:${it.type}`] = true;
+    const key = `armor:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
     say(state, `${describe(it, state.known, state.appearance)}을(를) 입었다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "몸에 달라붙는다. 저주받았다!");
     return true;
@@ -738,7 +805,9 @@ function putOn(state: GameState, letter: string): boolean {
     }
     if (hand === "left") hero.leftRingId = it.id;
     else hero.rightRingId = it.id;
-    state.known[`ring:${it.type}`] = true;
+    const key = `ring:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
     say(state, `${describe(it, state.known, state.appearance)}을(를) 꼈다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "손가락에서 빠지지 않는다. 저주받았다!");
     else say(state, `배가 더 빨리 고파진다. (한 걸음에 ${hungerRate(hero)})`);
@@ -847,7 +916,9 @@ function melt(state: GameState, letter: string, rng: Rng): boolean {
     }
     const made = makeItem("scroll", type, state.nextItemId++, -1, -1, got);
     const inPack = addToPack(hero, made);
-    state.known[`scroll:${type}`] = true;
+    const scrKey = `scroll:${type}`;
+    state.known[scrKey] = true;
+    state.itemCodex[scrKey] = true;
     say(state, inPack ? `${label} ${got}장을 되뽑았다.` : `배낭이 꽉 차서 ${got}장이 발밑에 떨어졌다.`);
     if (!inPack) {
         made.x = hero.x;
@@ -893,6 +964,14 @@ function ray(
 function killMonster(state: GameState, m: Monster, rng: Rng) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
     state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
+    // 무기 처치 수 누적 (도감 통달)
+    if (state.hero.weaponId) {
+        const wep = state.hero.pack.find((p) => p.id === state.hero.weaponId);
+        if (wep) {
+            const k = `weapon:${wep.type}`;
+            state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+        }
+    }
     const levels = gainExp(state.hero, m.def.exp, rng);
     for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
     if (state.bestiary[m.def.ch] === 1) {
@@ -912,9 +991,12 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
         say(state, "어디를 겨눌지 정해야 한다.");
         return false;
     }
+    const wandKey = `wand:${it.type}`;
+    state.itemUsage[wandKey] = (state.itemUsage[wandKey] ?? 0) + 1;
     if ((it.charges ?? 0) <= 0) {
         say(state, "지팡이가 아무 반응도 없다.");
-        state.known[`wand:${it.type}`] = true;
+        state.known[wandKey] = true;
+        state.itemCodex[wandKey] = true;
         return true;
     }
     it.charges = (it.charges ?? 0) - 1;
@@ -927,7 +1009,8 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
         say(state, `${name()}에서 무언가 뻗어 나가 사라졌다.`);
         return true;
     }
-    state.known[`wand:${it.type}`] = true;
+    state.known[wandKey] = true;
+    state.itemCodex[wandKey] = true;
     const m = hit.monster;
 
     if (def?.damage) {
@@ -1024,7 +1107,10 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
     const m = hit.monster;
     m.awake = true;
     if (it.kind === "potion") {
-        state.known[`potion:${it.type}`] = true;
+        const potKey = `potion:${it.type}`;
+        state.known[potKey] = true;
+        state.itemCodex[potKey] = true;
+        state.itemUsage[potKey] = (state.itemUsage[potKey] ?? 0) + 1;
         say(state, `물약이 ${m.def.name}에게 깨졌다.${rest}`);
         if (it.type === "confusion") {
             m.speed = -1;
@@ -1427,6 +1513,7 @@ function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
     if (state.phase === "playing" && state.hero.hp > 0) monsterTurns(state, rng);
 
     computeFov(state.level, state.hero);
+    updateSeenItems(state);
     applyBlind(state);
 
     if (state.hero.hp <= 0 && state.phase === "playing") {

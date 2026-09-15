@@ -17,11 +17,13 @@ export default function Panel({
     onClose,
     children,
     footer,
+    align = "top",
 }: {
     title: string;
     onClose?: () => void;
     children: ReactNode;
     footer?: ReactNode;
+    align?: "top" | "center";
 }) {
     /** 이번 누름이 바탕에서 시작했는가 — 아래 `onClick` 의 까닭 참고. */
     const fromBackdrop = useRef(false);
@@ -42,7 +44,9 @@ export default function Panel({
 
     return (
         <div
-            className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--rg-scrim)] p-3"
+            className={`absolute inset-0 z-20 flex justify-center overflow-y-auto bg-[var(--rg-scrim)] p-3 ${
+                align === "center" ? "items-center" : "items-start pt-6 sm:pt-10"
+            }`}
             /* 바깥의 빈 곳을 눌러도 닫는다. 조건이 둘인 데에는 까닭이 있다.
              *
              *   · **누르기 시작한 자리도 빈 곳이어야 한다.** 판 안에서 글자를 끌다가
@@ -59,7 +63,7 @@ export default function Panel({
                 if (onClose && fromBackdrop.current && e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="max-h-full w-full max-w-[520px] overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+            <div className="max-h-[calc(100%-2rem)] sm:max-h-[calc(100%-3rem)] w-full max-w-[520px] overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]">
                 <div className="flex items-center justify-between border-b border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-strong)]">
                     <span>{title}</span>
                     {onClose && (

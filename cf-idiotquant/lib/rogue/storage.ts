@@ -10,9 +10,21 @@
  * 표를 고치는 날 저장된 판만 옛 값으로 남는다. 글자 하나만 적고 되읽을 때 표에서 찾는다.
  */
 
-import { ENCHANT_MAX } from "./items";
+import {
+    ARMORS,
+    ENCHANT_MAX,
+    POTIONS,
+    RINGS,
+    SCROLLS,
+    WANDS,
+    WEAPONS,
+    armorClassOf,
+    defenseOf,
+    weaponDamageOf,
+} from "./items";
+import { heroDefense } from "./hero";
 import { MONSTERS } from "./monsters";
-import { MAP_H, MAP_W, type GameState, type Item, type Level, type Monster } from "./types";
+import { MAP_H, MAP_W, type GameState, type Hero, type Item, type ItemKind, type Level, type Monster } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -22,7 +34,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 4;
+const VERSION = 5;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -227,6 +239,9 @@ function normalize(s: Saved): GameState | null {
         known: s.known && typeof s.known === "object" ? s.known : {},
         bestiary: s.bestiary && typeof s.bestiary === "object" ? s.bestiary : {},
         specials: s.specials && typeof s.specials === "object" ? s.specials : {},
+        seenItems: s.seenItems && typeof s.seenItems === "object" ? s.seenItems : {},
+        itemCodex: s.itemCodex && typeof s.itemCodex === "object" ? s.itemCodex : {},
+        itemUsage: s.itemUsage && typeof s.itemUsage === "object" ? s.itemUsage : {},
         enchantDrought: num(s.enchantDrought, 0),
         foodDrought: num(s.foodDrought, 0),
         nextItemId: num(s.nextItemId, 1),
@@ -286,6 +301,8 @@ export function clear(): void {
  */
 const BESTIARY_KEY = "rogue:bestiary:v1";
 const SPECIALS_KEY = "rogue:specials:v1";
+const ITEM_CODEX_KEY = "rogue:item_codex:v1";
+const ITEM_USAGE_KEY = "rogue:item_usage:v1";
 
 function loadCounts(key: string): Record<string, number> {
     try {
@@ -311,6 +328,29 @@ function saveCounts(key: string, b: Record<string, number>): void {
     }
 }
 
+function loadBooleans(key: string): Record<string, boolean> {
+    try {
+        const t = localStorage.getItem(key);
+        const o = t ? JSON.parse(t) : {};
+        if (!o || typeof o !== "object" || Array.isArray(o)) return {};
+        const out: Record<string, boolean> = {};
+        for (const [k, v] of Object.entries(o)) {
+            if (v === true) out[k] = true;
+        }
+        return out;
+    } catch {
+        return {};
+    }
+}
+
+function saveBooleans(key: string, b: Record<string, boolean>): void {
+    try {
+        localStorage.setItem(key, JSON.stringify(b));
+    } catch {
+        /* 못 적어도 판은 굴러간다 */
+    }
+}
+
 export function loadBestiary(): Record<string, number> {
     return loadCounts(BESTIARY_KEY);
 }
@@ -333,6 +373,58 @@ export function saveSpecials(s: Record<string, number>): void {
     saveCounts(SPECIALS_KEY, s);
 }
 
+export function loadItemCodex(): Record<string, boolean> {
+    return loadBooleans(ITEM_CODEX_KEY);
+}
+
+export function saveItemCodex(c: Record<string, boolean>): void {
+    saveBooleans(ITEM_CODEX_KEY, c);
+}
+
+export function loadItemUsage(): Record<string, number> {
+    return loadCounts(ITEM_USAGE_KEY);
+}
+
+export function saveItemUsage(u: Record<string, number>): void {
+    saveCounts(ITEM_USAGE_KEY, u);
+}
+
+/** 지난 판의 소지 아이템 기록 */
+export interface TombItem {
+    id: number;
+    kind: ItemKind;
+    type: string;
+    name: string;
+    count: number;
+    letter?: string;
+    power?: string;
+    equipped?: "weapon" | "armor" | "leftRing" | "rightRing";
+    cursed?: boolean;
+    charges?: number;
+    plusHit?: number;
+    plusDam?: number;
+    plusArmor?: number;
+    plusRing?: number;
+}
+
+/** 지난 판의 영웅 상세 스탯 및 장비/인벤토리 기록 */
+export interface TombHero {
+    level: number;
+    exp: number;
+    hp: number;
+    maxHp: number;
+    str: number;
+    maxStr: number;
+    gold: number;
+    defense: number;
+    hasAmulet: boolean;
+    weaponName?: string | null;
+    armorName?: string | null;
+    leftRingName?: string | null;
+    rightRingName?: string | null;
+    pack: TombItem[];
+}
+
 /** 죽고 이긴 기록 — 판을 넘어 남는다. */
 export interface Tomb {
     at: number;
@@ -352,9 +444,132 @@ export interface Tomb {
      * 들고 있었고, 죽은 판은 알 길이 없으니 안 들었던 것으로 본다.
      */
     amulet?: boolean;
+    score?: number;
+    seed?: number;
+    hero?: TombHero;
+    recentLog?: string[];
 }
 
 const TOMB_KEY = "rogue:graves:v1";
+
+export function tombItemOf(it: Item, hero: Hero): TombItem {
+    let name = "";
+    let power: string | undefined;
+
+    const plusText = (n: number | undefined) => (n ? (n > 0 ? ` +${n}` : ` ${n}`) : "");
+    const curseText = it.cursed ? " (저주)" : "";
+
+    switch (it.kind) {
+        case "gold":
+            name = `금화 ${it.count}`;
+            break;
+        case "food":
+            name = it.count > 1 ? `식량 ${it.count}개` : "식량";
+            break;
+        case "amulet":
+            name = "옌더의 증표";
+            power = "승리의 열쇠";
+            break;
+        case "potion":
+            name = `${POTIONS[it.type]?.name ?? "이름 없는"} 물약`;
+            break;
+        case "scroll":
+            name = `${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서`;
+            break;
+        case "ring": {
+            const base = `${RINGS[it.type]?.name ?? "이름 없는"} 반지`;
+            name = `${base}${plusText(it.plusRing)}${curseText}`;
+            if (it.type === "protection") {
+                const n = it.plusRing ?? 0;
+                power = `방어력 ${n > 0 ? "+" : ""}${n}`;
+            } else if (it.type === "add strength") {
+                const n = it.plusRing ?? 0;
+                power = `힘 ${n > 0 ? "+" : ""}${n}`;
+            } else if (it.type === "regeneration") {
+                power = "체력 자연 회복";
+            } else if (it.type === "slow digestion") {
+                power = "소화 속도 둔화";
+            } else if (it.type === "searching") {
+                power = "비밀문/함정 탐색";
+            } else if (it.type === "sustain strength") {
+                power = "힘 보존";
+            } else if (it.type === "teleportation") {
+                power = "순간이동";
+            } else if (it.type === "adornment") {
+                power = "장식용";
+            }
+            break;
+        }
+        case "wand": {
+            const base = `${WANDS[it.type]?.name ?? "이름 없는"} 지팡이`;
+            name = base;
+            power = `${it.charges ?? 0}회 남음`;
+            break;
+        }
+        case "weapon": {
+            const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
+            name = `${base}${plusText(it.plusHit)}${curseText}`;
+            const dam = weaponDamageOf(it);
+            const plusDam = it.plusDam ? (it.plusDam > 0 ? `+${it.plusDam}` : `${it.plusDam}`) : "";
+            power = `피해 ${dam}${plusDam}`;
+            break;
+        }
+        case "armor": {
+            const base = ARMORS[it.type]?.name ?? "이름 없는 갑옷";
+            name = `${base}${plusText(it.plusArmor)}${curseText}`;
+            power = `방어력 ${defenseOf(armorClassOf(it))}`;
+            break;
+        }
+    }
+
+    let equipped: TombItem["equipped"];
+    if (it.id === hero.weaponId) equipped = "weapon";
+    else if (it.id === hero.armorId) equipped = "armor";
+    else if (it.id === hero.leftRingId) equipped = "leftRing";
+    else if (it.id === hero.rightRingId) equipped = "rightRing";
+
+    return {
+        id: it.id,
+        kind: it.kind,
+        type: it.type,
+        name,
+        count: it.count,
+        letter: it.letter,
+        power,
+        equipped,
+        cursed: it.cursed,
+        charges: it.charges,
+        plusHit: it.plusHit,
+        plusDam: it.plusDam,
+        plusArmor: it.plusArmor,
+        plusRing: it.plusRing,
+    };
+}
+
+export function createTombHero(hero: Hero): TombHero {
+    const packItems = (hero.pack ?? []).map((it) => tombItemOf(it, hero));
+    const weapon = packItems.find((p) => p.equipped === "weapon");
+    const armor = packItems.find((p) => p.equipped === "armor");
+    const leftRing = packItems.find((p) => p.equipped === "leftRing");
+    const rightRing = packItems.find((p) => p.equipped === "rightRing");
+
+    return {
+        level: hero.level,
+        exp: hero.exp,
+        hp: hero.hp,
+        maxHp: hero.maxHp,
+        str: hero.str,
+        maxStr: hero.maxStr,
+        gold: hero.gold,
+        defense: heroDefense(hero),
+        hasAmulet: hero.hasAmulet,
+        weaponName: weapon ? weapon.name : null,
+        armorName: armor ? armor.name : null,
+        leftRingName: leftRing ? leftRing.name : null,
+        rightRingName: rightRing ? rightRing.name : null,
+        pack: packItems,
+    };
+}
 
 export function graves(): Tomb[] {
     try {
@@ -375,16 +590,23 @@ export function graves(): Tomb[] {
  * 적기에 실패해도(사파리 비공개 창 등) 목록은 돌려준다 — 이번 판의 등수는 나와야 한다.
  */
 export function bury(state: GameState): Tomb[] {
+    const tombHero = createTombHero(state.hero);
+    const scoreVal = state.hero.gold + (state.hero.hasAmulet ? 10000 : 0) + state.deepest * 50;
+    const item: Tomb = {
+        at: Date.now(),
+        depth: state.deepest,
+        gold: state.hero.gold,
+        turns: state.turn,
+        epitaph: state.epitaph || (state.phase === "won" ? "던전을 탈출했다" : "던전에서 쓰러졌다"),
+        won: state.phase === "won",
+        amulet: state.hero.hasAmulet,
+        score: scoreVal,
+        seed: state.seed,
+        hero: tombHero,
+        recentLog: (state.messages ?? []).slice(-10),
+    };
     const list = [
-        {
-            at: Date.now(),
-            depth: state.deepest,
-            gold: state.hero.gold,
-            turns: state.turn,
-            epitaph: state.epitaph,
-            won: state.phase === "won",
-            amulet: state.hero.hasAmulet,
-        },
+        item,
         ...graves(),
     ].slice(0, 30);
     try {

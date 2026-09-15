@@ -81,12 +81,16 @@ test("새 판은 내려온 계단 위에서 — 다만 함정으로 떨어지면
 test("한 걸음이 배고픔 하나 — 문턱에서만 단계가 바뀐다", () => {
     // ── 벽을 들이받으면 턴이 안 간다 — 배고픔 시계가 거짓말하면 안 된다
     {
-        const s0 = newGame(3);
-        // 벽으로 둘러싸인 방향을 찾는다.
-        const { hero, level } = s0;
-        const blocked = ALL_DIRS.find(
-            (d) => !walkable(level.tiles[idx(hero.x + d.dx, hero.y + d.dy)] as Tile),
+        let s0 = newGame(1);
+        let blocked = ALL_DIRS.find(
+            (d) => !walkable(s0.level.tiles[idx(s0.hero.x + d.dx, s0.hero.y + d.dy)] as Tile),
         );
+        for (let seed = 2; !blocked && seed <= 100; seed++) {
+            s0 = newGame(seed);
+            blocked = ALL_DIRS.find(
+                (d) => !walkable(s0.level.tiles[idx(s0.hero.x + d.dx, s0.hero.y + d.dy)] as Tile),
+            );
+        }
         assert.ok(blocked, "사방이 뚫린 자리에서 시작해 이 테스트를 못 한다");
         const before = { turn: s0.turn, food: s0.hero.food };
         const s1 = perform(s0, { t: "move", dx: blocked!.dx, dy: blocked!.dy });

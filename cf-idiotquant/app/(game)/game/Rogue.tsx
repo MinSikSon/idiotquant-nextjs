@@ -33,7 +33,35 @@ import {
     survey,
     tombScore,
 } from "@/lib/rogue/game";
-import { ENCHANT_MAX, MELT_RETURN, describe, enchantOdds, enchantOf, isThrowable, itemPower, meltMax, meltYield } from "@/lib/rogue/items";
+import {
+    ARMORS,
+    ENCHANT_MAX,
+    MELT_RETURN,
+    POTIONS,
+    RINGS,
+    SCROLLS,
+    WANDS,
+    WEAPONS,
+    defenseOf,
+    describe,
+    enchantOdds,
+    enchantOf,
+    isThrowable,
+    itemChar,
+    itemDepthRange,
+    itemPower,
+    makeItem,
+    meltMax,
+    meltYield,
+} from "@/lib/rogue/items";
+import {
+    type CodexCategory,
+    type CodexEntry,
+    CODEX_ENTRIES,
+    itemCodexProgress,
+    itemCodexStage,
+    itemCodexStats,
+} from "@/lib/rogue/codexData";
 import { isDetail } from "@/lib/rogue/combat";
 import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
 import {
@@ -42,11 +70,17 @@ import {
     graves,
     load,
     loadBestiary,
+    loadItemCodex,
+    loadItemUsage,
     loadSpecials,
     save,
     saveBestiary,
+    saveItemCodex,
+    saveItemUsage,
     saveSpecials,
     type Tomb,
+    type TombHero,
+    type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
 
@@ -103,24 +137,34 @@ export default function Rogue() {
     /** 배낭에서 짚은 물건 — 그 아래에 할 수 있는 일이 뜬다. */
     const [chosen, setChosen] = useState<number | null>(null);
     const [tombs, setTombs] = useState<Tomb[]>([]);
+    /** 지난 판들 중 상세 조회로 선택한 판 */
+    const [selectedTomb, setSelectedTomb] = useState<Tomb | null>(null);
     /** 도감에서 펼쳐 둔 종 — 그 줄 아래에 얼굴이 뜬다. */
     const [openMon, setOpenMon] = useState<string | null>(null);
+    /** 도감에서 선택된 탭 */
+    const [codexTab, setCodexTab] = useState<"monster" | CodexCategory>("monster");
+    /** 아이템 도감에서 펼쳐 둔 아이템 키 */
+    const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const buried = useRef(false);
 
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
     useEffect(() => {
         const kept = loadBestiary();
         const knownSpecials = loadSpecials();
+        const keptCodex = loadItemCodex();
+        const keptUsage = loadItemUsage();
         const saved = load();
         if (saved && saved.phase === "playing") {
             // 저장된 판과 저장소의 도감 중 **큰 쪽**을 남긴다. 판을 띄워 둔 채 다른
             // 탭에서 한 판을 더 돌았을 수 있고, 그때 잡은 것을 잃으면 안 된다.
             saved.bestiary = higher(saved.bestiary, kept);
             saved.specials = higher(saved.specials, knownSpecials);
+            saved.itemCodex = { ...keptCodex, ...(saved.itemCodex ?? {}) };
+            saved.itemUsage = higher(saved.itemUsage ?? {}, keptUsage);
             setState(saved);
             return;
         }
-        setState(newGame(undefined, kept, knownSpecials));
+        setState(newGame(undefined, kept, knownSpecials, keptCodex, keptUsage));
     }, []);
 
     useEffect(() => {
@@ -128,6 +172,8 @@ export default function Rogue() {
         // 도감은 **판과 따로** 적는다 — 죽어서 판이 지워져도 남아야 한다.
         saveBestiary(state.bestiary);
         saveSpecials(state.specials);
+        saveItemCodex(state.itemCodex);
+        saveItemUsage(state.itemUsage);
         if (state.phase === "playing") {
             save(state);
             buried.current = false;
@@ -153,9 +199,8 @@ export default function Rogue() {
         setSheet("none");
         setChosen(null);
         // 새 판도 도감은 이어받는다 — 그것이 죽어도 남는 유일한 것이다.
-        // **수법도 같이 넘긴다.** 안 넘기면 빈 칸으로 시작하고, 곧바로 저장 효과가
-        // 그 빈 칸을 덮어써서 여태 당해 본 것이 통째로 지워진다.
-        setState(newGame(undefined, loadBestiary(), loadSpecials()));
+        // **수법과 아이템 도감도 같이 넘긴다.**
+        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage()));
     }, []);
 
     const openPicker = useCallback((p: Picker) => {
@@ -397,6 +442,7 @@ export default function Rogue() {
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
+    const itemProg = itemCodexProgress(state.itemCodex, state.itemUsage);
 
     // **세 개씩 한 묶음**으로 늘어놓는다. 단추 판이 세 칸 격자라(`TouchPad`) 한 줄이
     // 곧 한 묶음이 된다 — 계단 둘이 나란히, 배낭에서 꺼내 쓰는 것들이 한 줄에.
@@ -441,7 +487,7 @@ export default function Rogue() {
         { label: "뒤진다", hint: "s — 숨은 문과 함정", on: () => run({ t: "search" }) },
         {
             label: "도감",
-            hint: `x — 지금 보이는 놈과 여태 잡은 ${progress.found}/${progress.total}`,
+            hint: `x — 몬스터 ${progress.found}/${progress.total} · 아이템 ${itemProg.identifiedCount}/${itemProg.totalCount}`,
             on: () => setSheet("bestiary"),
         },
         { label: "⚙ 옵션", hint: "도움말 · 지난 판", on: () => setSheet("options") },
@@ -787,102 +833,437 @@ export default function Rogue() {
 
             {sheet === "bestiary" && !aiming && (
                 <Panel
-                    title={`도감 ${progress.found}/${progress.total}`}
-                    onClose={() => setSheet("none")}
-                    footer="줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
+                    title={
+                        codexTab === "monster"
+                            ? `몬스터 도감 ${progress.found}/${progress.total}`
+                            : `아이템 도감 · 식별 ${itemProg.identifiedCount}/${itemProg.totalCount} · 통달 ${itemProg.masteredCount}/${itemProg.totalCount}`
+                    }
+                    onClose={() => {
+                        setOpenMon(null);
+                        setOpenItemKey(null);
+                        setSheet("none");
+                    }}
+                    footer={
+                        codexTab === "monster"
+                            ? "줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
+                            : "줄을 누르면 상세 제원과 플레이버 텍스트가 펼쳐집니다. 식별(●)과 통달(★)은 판을 넘어 영구 보존됩니다."
+                    }
                 >
-                    {/* **「지금 보이는 놈」이 맨 위다.** 예전에는 「조사」라는 판이 따로 있었는데,
-                        묻는 말이 같았다 — *이놈이 센가.* 앞쪽 절반(지금 눈앞의 것)과 뒤쪽 절반
-                        (여태 잡아 본 것)을 갈라 두면, 급할 때 어느 단추였는지를 먼저 골라야
-                        한다. 그래서 한 판에 앞뒤로 세웠다. */}
-                    {sightings.length > 0 && (
-                        <div className="mb-3 border-b border-[var(--rg-line-soft)] pb-2">
-                            <p className="mb-1 text-[var(--rg-faint)]">지금 보이는 놈</p>
-                            <ul className="space-y-2">
-                                {sightings.map((m: Sighting) => (
-                                    <li key={m.id}>
-                                        <div>
-                                            <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
-                                            <span className="text-[var(--rg-strong)]">{m.name}</span>
-                                            <span className="text-[var(--rg-faint)]">
-                                                {" "}· {m.distance}칸 · {m.awake ? "쫓고 있다" : "아직 못 봤다"} ·{" "}
-                                            </span>
-                                            <span className={m.condition === "성하다" ? "text-[var(--rg-muted)]" : "text-[var(--rg-trap)]"}>
-                                                {m.condition}
-                                            </span>
-                                        </div>
-                                        {m.known ? (
-                                            <div className="text-[var(--rg-muted)]">
-                                                레벨 {m.level} · 방어력 {m.defense} · 공격력{" "}
-                                                {m.damage?.join(" + ") || "없음"} · 경험 {m.exp} · 체력 {m.hp}
-                                                {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
-                                            </div>
-                                        ) : (
-                                            <div className="text-[var(--rg-faint)]">
-                                                처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
-                                            </div>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                    {/* 카테고리 탭 목록 */}
+                    <div className="mb-2.5 flex flex-wrap gap-1 border-b border-[var(--rg-line-soft)] pb-2 text-[12px]">
+                        {[
+                            { id: "monster" as const, label: "몬스터", countStr: `${progress.found}/${progress.total}` },
+                            { id: "weapon" as const, label: "무기", countStr: `${itemProg.byCategory.weapon.identified}/${itemProg.byCategory.weapon.total}` },
+                            { id: "armor" as const, label: "방어구", countStr: `${itemProg.byCategory.armor.identified}/${itemProg.byCategory.armor.total}` },
+                            { id: "scroll" as const, label: "주문서", countStr: `${itemProg.byCategory.scroll.identified}/${itemProg.byCategory.scroll.total}` },
+                            { id: "potion" as const, label: "물약", countStr: `${itemProg.byCategory.potion.identified}/${itemProg.byCategory.potion.total}` },
+                            { id: "ring" as const, label: "반지", countStr: `${itemProg.byCategory.ring.identified}/${itemProg.byCategory.ring.total}` },
+                            { id: "wand" as const, label: "지팡이", countStr: `${itemProg.byCategory.wand.identified}/${itemProg.byCategory.wand.total}` },
+                            { id: "other" as const, label: "그 밖", countStr: `${itemProg.byCategory.other.identified}/${itemProg.byCategory.other.total}` },
+                        ].map((tab) => {
+                            const active = codexTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => {
+                                        setCodexTab(tab.id);
+                                        setOpenMon(null);
+                                        setOpenItemKey(null);
+                                    }}
+                                    className={`rounded px-1.5 py-0.5 transition-colors ${
+                                        active
+                                            ? "bg-[var(--rg-line)] font-bold text-[var(--rg-strong)]"
+                                            : "text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"
+                                    }`}
+                                >
+                                    {tab.label} <span className="font-normal text-[var(--rg-faint)]">({tab.countStr})</span>
+                                </button>
+                            );
+                        })}
+                    </div>
 
-                    {progress.found === 0 ? (
-                        <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
-                    ) : (
-                        <ul className="space-y-1">
-                            {bestiaryRows(state.bestiary, state.specials).map((r: BestiaryRow) => {
-                                const open = openMon === r.ch;
-                                const art = monsterArt(r.ch);
-                                return (
-                                    <li key={r.ch}>
-                                        {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
-                                            모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
-                                        <button
-                                            type="button"
-                                            onClick={() => setOpenMon(open ? null : r.ch)}
-                                            aria-expanded={open}
-                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
-                                        >
-                                            <span className="text-[var(--rg-monster)]">{r.ch}</span>{" "}
-                                            <span className="text-[var(--rg-strong)]">{r.name}</span>
-                                            <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
-                                            {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
-                                            <div className="text-[var(--rg-muted)]">
-                                                레벨 {r.level} · 방어력 {r.defense} · 공격력{" "}
-                                                {r.damage.join(" + ") || "없음"} · 경험 {r.exp} · 체력 {r.hp}
-                                                {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
-                                                {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
-                                                    층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
-                                                    수 있는 「층에 따른 것」은 이 띠 하나다. */}
-                                                {r.depths && (
+                    {codexTab === "monster" ? (
+                        <>
+                            {/* 기존 몬스터 도감 내용 */}
+                            {sightings.length > 0 && (
+                                <div className="mb-3 border-b border-[var(--rg-line-soft)] pb-2">
+                                    <p className="mb-1 text-[var(--rg-faint)]">지금 보이는 놈</p>
+                                    <ul className="space-y-2">
+                                        {sightings.map((m: Sighting) => (
+                                            <li key={m.id}>
+                                                <div>
+                                                    <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
+                                                    <span className="text-[var(--rg-strong)]">{m.name}</span>
+                                                    <span className="text-[var(--rg-faint)]">
+                                                        {" "}· {m.distance}칸 · {m.awake ? "쫓고 있다" : "아직 못 봤다"} ·{" "}
+                                                    </span>
+                                                    <span className={m.condition === "성하다" ? "text-[var(--rg-muted)]" : "text-[var(--rg-trap)]"}>
+                                                        {m.condition}
+                                                    </span>
+                                                </div>
+                                                {m.known ? (
+                                                    <div className="text-[var(--rg-muted)]">
+                                                        레벨 {m.level} · 방어력 {m.defense} · 공격력{" "}
+                                                        {m.damage?.join(" + ") || "없음"} · 경험 {m.exp} · 체력 {m.hp}
+                                                        {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
+                                                    </div>
+                                                ) : (
                                                     <div className="text-[var(--rg-faint)]">
-                                                        지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
+                                                        처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
                                                     </div>
                                                 )}
-                                                {/* **수법은 잡아서 아는 것이 아니라 당해서 아는 것이다.**
-                                                    그래서 잡은 수와 따로 적는다 — 열 마리를 잡고도 한 번도
-                                                    안 당했으면 여기는 아직 비어 있어야 맞다. */}
-                                                {r.hasSpecial && (
-                                                    r.special ? (
-                                                        <div className="text-[var(--rg-trap)]">
-                                                            수법: {r.special} · {r.suffered}번 당했다
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {progress.found === 0 ? (
+                                <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
+                            ) : (
+                                <ul className="space-y-1">
+                                    {bestiaryRows(state.bestiary, state.specials).map((r: BestiaryRow) => {
+                                        const open = openMon === r.ch;
+                                        const art = monsterArt(r.ch);
+                                        return (
+                                            <li key={r.ch}>
+                                                {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
+                                                    모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenMon(open ? null : r.ch)}
+                                                    aria-expanded={open}
+                                                    className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
+                                                >
+                                                    <span className="text-[var(--rg-monster)]">{r.ch}</span>{" "}
+                                                    <span className="text-[var(--rg-strong)]">{r.name}</span>
+                                                    <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
+                                                    {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
+                                                    <div className="text-[var(--rg-muted)]">
+                                                        레벨 {r.level} · 방어력 {r.defense} · 공격력{" "}
+                                                        {r.damage.join(" + ") || "없음"} · 경험 {r.exp} · 체력 {r.hp}
+                                                        {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
+                                                        {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
+                                                            층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
+                                                            수 있는 「층에 따른 것」은 이 띠 하나다. */}
+                                                        {r.depths && (
+                                                            <div className="text-[var(--rg-faint)]">
+                                                                지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
+                                                            </div>
+                                                        )}
+                                                        {/* **수법은 잡아서 아는 것이 아니라 당해서 아는 것이다.**
+                                                            그래서 잡은 수와 따로 적는다 — 열 마리를 잡고도 한 번도
+                                                            안 당했으면 여기는 아직 비어 있어야 맞다. */}
+                                                        {r.hasSpecial && (
+                                                            r.special ? (
+                                                                <div className="text-[var(--rg-trap)]">
+                                                                    수법: {r.special} · {r.suffered}번 당했다
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-[var(--rg-faint)]">
+                                                                    수법: 아직 모른다 — 당해 봐야 안다
+                                                                </div>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                </button>
+                                                {open && art && (
+                                                    /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
+                                                       좁은 폰에서도 안 접히게 스무 칸을 안 넘긴다(`monsterArt`). */
+                                                    <pre className="mt-1 mb-2 overflow-x-auto whitespace-pre px-1 text-[12px] leading-[1.15] text-[var(--rg-ring)]">
+                                                        {art}
+                                                    </pre>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </>
+                    ) : (
+                        /* 아이템 도감 목록 */
+                        <ul className="space-y-1.5">
+                            {CODEX_ENTRIES.filter((e) => e.category === codexTab).map((entry) => {
+                                const stage = itemCodexStage(entry, state);
+                                const open = openItemKey === entry.key;
+                                const usage = state.itemUsage?.[entry.key] ?? 0;
+                                const char = itemChar(entry.kind);
+
+                                // 단계 기호와 색상
+                                const stageBadge =
+                                    stage === 4 ? (
+                                        <span className="text-[var(--rg-gold)] font-bold">★</span>
+                                    ) : stage === 3 ? (
+                                        <span className="text-[var(--rg-strong)]">●</span>
+                                    ) : stage === 2 ? (
+                                        <span className="text-[var(--rg-muted)]">○</span>
+                                    ) : stage === 1 ? (
+                                        <span className="text-[var(--rg-faint)]">◌</span>
+                                    ) : (
+                                        <span className="text-[var(--rg-ghost)]">·</span>
+                                    );
+
+                                // 이름 및 상태 문자열
+                                const appearanceName = state.appearance[entry.key] ?? entry.categoryLabel;
+                                const displayName =
+                                    stage >= 3
+                                        ? entry.name
+                                        : stage >= 1
+                                          ? `??? (${appearanceName})`
+                                          : "──────";
+
+                                const statsSummary =
+                                    stage >= 3
+                                        ? itemCodexStats(entry)
+                                        : stage === 2
+                                          ? "배낭에 있다"
+                                          : stage === 1
+                                            ? "본 적 있다"
+                                            : "";
+
+                                const usageSuffix =
+                                    entry.masteryType === "kills"
+                                        ? "킬"
+                                        : entry.masteryType === "steps"
+                                          ? "걸음"
+                                          : entry.masteryType === "uses"
+                                            ? "회"
+                                            : "";
+
+                                const usageStr =
+                                    stage === 4
+                                        ? `★통달 · ${usage}${usageSuffix}`
+                                        : stage === 3 && usageSuffix
+                                          ? `${usage}${usageSuffix}`
+                                          : "";
+
+                                return (
+                                    <li key={entry.key} className="border-b border-[var(--rg-line-soft)] pb-1 last:border-b-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (stage === 0) return;
+                                                setOpenItemKey(open ? null : entry.key);
+                                            }}
+                                            disabled={stage === 0}
+                                            aria-expanded={open}
+                                            className={`w-full rounded-[2px] px-1 text-left transition-colors ${
+                                                stage === 0
+                                                    ? "cursor-default opacity-60"
+                                                    : open
+                                                      ? "bg-[var(--rg-raised)]"
+                                                      : "hover:bg-[var(--rg-hover)]"
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-1.5 truncate">
+                                                    <span className="w-4 text-center font-mono">{stageBadge}</span>
+                                                    <span className="text-[var(--rg-label)] font-mono">{char}</span>
+                                                    <span
+                                                        className={`truncate ${
+                                                            stage >= 3
+                                                                ? "font-medium text-[var(--rg-strong)]"
+                                                                : stage >= 1
+                                                                  ? "text-[var(--rg-muted)]"
+                                                                  : "text-[var(--rg-ghost)]"
+                                                        }`}
+                                                    >
+                                                        {displayName}
+                                                    </span>
+                                                </div>
+                                                <div className="flex shrink-0 items-center gap-2 text-[12px]">
+                                                    {usageStr && (
+                                                        <span className={stage === 4 ? "text-[var(--rg-gold)] font-medium" : "text-[var(--rg-muted)]"}>
+                                                            {usageStr}
+                                                        </span>
+                                                    )}
+                                                    {stage > 0 && (
+                                                        <span className="text-[var(--rg-ghost)] text-[10px]">
+                                                            {open ? "▾" : "▸"}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {statsSummary && (
+                                                <div className="pl-5 text-[12px] text-[var(--rg-faint)]">
+                                                    {statsSummary}
+                                                </div>
+                                            )}
+                                        </button>
+
+                                        {/* 상세 제원 및 플레이버 텍스트 (펼침) */}
+                                        {open && stage > 0 && (
+                                            <div className="my-1.5 ml-4 rounded border border-[var(--rg-line)] bg-[var(--rg-bg)] p-2.5 text-[12px] space-y-2">
+                                                {stage < 3 ? (
+                                                    /* 미식별 상세 (정보 누출 차단) */
+                                                    <div className="space-y-1 text-[var(--rg-muted)]">
+                                                        <div className="flex gap-4">
+                                                            <span className="text-[var(--rg-faint)]">분류:</span>
+                                                            <span>{entry.categoryLabel}</span>
+                                                            <span className="text-[var(--rg-faint)]">나오는 층:</span>
+                                                            <span>?</span>
                                                         </div>
-                                                    ) : (
-                                                        <div className="text-[var(--rg-faint)]">
-                                                            수법: 아직 모른다 — 당해 봐야 안다
+                                                        <div className="text-[var(--rg-faint)] italic pt-1">
+                                                            {stage === 2
+                                                                ? "배낭에 보관 중입니다. 마셔 보거나 읽거나 써 봐야 정체를 알 수 있습니다."
+                                                                : "시야에서 목격한 아이템입니다. 직접 획득해 감정하거나 사용해야 속을 알 수 있습니다."}
                                                         </div>
-                                                    )
+                                                    </div>
+                                                ) : (
+                                                    /* 식별 / 통달 상세 */
+                                                    <>
+                                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[var(--rg-muted)] border-b border-[var(--rg-line-soft)] pb-2">
+                                                            {entry.kind === "weapon" && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">피해: </span>
+                                                                        <span className="text-[var(--rg-strong)]">{WEAPONS[entry.type]?.damage ?? "1d2"}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">나오는 층: </span>
+                                                                        <span>{itemDepthRange("weapon", entry.type) ? `${itemDepthRange("weapon", entry.type)!.min}–${itemDepthRange("weapon", entry.type)!.max}층` : "1–26층"}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">던지기: </span>
+                                                                        <span>{WEAPONS[entry.type]?.throwable ? "가능" : "안 됨"}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">잡은 수: </span>
+                                                                        <span>{usage}킬</span>
+                                                                    </div>
+                                                                    <div className="col-span-2 text-[11px] text-[var(--rg-faint)]">
+                                                                        강화: +{ENCHANT_MAX}까지 · 모루: 분해 시 주문서 추출({Math.round(MELT_RETURN * 100)}%)
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {entry.kind === "armor" && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">방어력: </span>
+                                                                        <span className="text-[var(--rg-strong)]">{defenseOf(ARMORS[entry.type]?.armor ?? 10)}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">나오는 층: </span>
+                                                                        <span>{itemDepthRange("armor", entry.type) ? `${itemDepthRange("armor", entry.type)!.min}–${itemDepthRange("armor", entry.type)!.max}층` : "1–26층"}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">착용 걸음: </span>
+                                                                        <span>{usage}걸음</span>
+                                                                    </div>
+                                                                    <div className="col-span-2 text-[11px] text-[var(--rg-faint)]">
+                                                                        강화: +{ENCHANT_MAX}까지 · 모루: 1장 확정 + 분해 추출({Math.round(MELT_RETURN * 100)}%)
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {(entry.kind === "potion" || entry.kind === "scroll") && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">분류: </span>
+                                                                        <span>{entry.categoryLabel}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">나오는 층: </span>
+                                                                        <span>{itemDepthRange(entry.kind, entry.type) ? `${itemDepthRange(entry.kind, entry.type)!.min}–${itemDepthRange(entry.kind, entry.type)!.max}층` : "1–26층"}</span>
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <span className="text-[var(--rg-faint)]">사용 횟수: </span>
+                                                                        <span>{usage}회</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {entry.kind === "wand" && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">분류: </span>
+                                                                        <span>지팡이</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">나오는 층: </span>
+                                                                        <span>{itemDepthRange("wand", entry.type) ? `${itemDepthRange("wand", entry.type)!.min}–${itemDepthRange("wand", entry.type)!.max}층` : "1–26층"}</span>
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <span className="text-[var(--rg-faint)]">발사 횟수: </span>
+                                                                        <span>{usage}회</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {entry.kind === "ring" && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">분류: </span>
+                                                                        <span>반지</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">나오는 층: </span>
+                                                                        <span>{itemDepthRange("ring", entry.type) ? `${itemDepthRange("ring", entry.type)!.min}–${itemDepthRange("ring", entry.type)!.max}층` : "1–26층"}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">배고픔 추가: </span>
+                                                                        <span>+{RINGS[entry.type]?.hunger ?? 1}/턴</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">착용 걸음: </span>
+                                                                        <span>{usage}걸음</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {entry.kind === "food" && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">효과: </span>
+                                                                        <span className="text-[var(--rg-strong)]">허기 1300 회복</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">나오는 층: </span>
+                                                                        <span>1–26층</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {entry.kind === "amulet" && (
+                                                                <>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">목표: </span>
+                                                                        <span className="text-[var(--rg-gold)] font-bold">승리의 증표</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[var(--rg-faint)]">위치: </span>
+                                                                        <span>지하 26층</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+
+                                                        {/* 1문단 플레이버 텍스트 */}
+                                                        <p className="text-[var(--rg-muted)] leading-relaxed">{entry.flavor}</p>
+
+                                                        {/* 2문단 플레이버 텍스트 (통달 시) */}
+                                                        {stage === 4 ? (
+                                                            <div className="mt-2 border-t border-[var(--rg-line-soft)] pt-2">
+                                                                <div className="mb-1 text-[11px] font-bold text-[var(--rg-gold)] tracking-wider">
+                                                                    ── ★ 통달 ──
+                                                                </div>
+                                                                <p className="text-[var(--rg-strong)] leading-relaxed italic">
+                                                                    {entry.masteryFlavor}
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="mt-1 border-t border-[var(--rg-line-soft)] pt-1 text-[11px] text-[var(--rg-faint)]">
+                                                                ── 통달 목표: {
+                                                                    entry.masteryType === "kills"
+                                                                        ? `20킬 달성 (${usage}/${entry.masteryGoal})`
+                                                                        : entry.masteryType === "steps"
+                                                                          ? `1,000걸음 착용 (${usage}/${entry.masteryGoal})`
+                                                                          : entry.masteryType === "uses"
+                                                                            ? `${entry.masteryGoal}회 사용 (${usage}/${entry.masteryGoal})`
+                                                                            : "식별 즉시 통달"
+                                                                } ──
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
-                                        </button>
-                                        {open && art && (
-                                            /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
-                                               좁은 폰에서도 안 접히게 스무 칸을 안 넘긴다(`monsterArt`). */
-                                            <pre className="mt-1 mb-2 overflow-x-auto whitespace-pre px-1 text-[12px] leading-[1.15] text-[var(--rg-ring)]">
-                                                {art}
-                                            </pre>
                                         )}
                                     </li>
                                 );
@@ -930,6 +1311,7 @@ export default function Rogue() {
                                 hint: "여태 죽은 자리와 점수",
                                 go: () => {
                                     setTombs(graves());
+                                    setSelectedTomb(null);
                                     setSheet("graves");
                                 },
                             },
@@ -1027,40 +1409,293 @@ export default function Rogue() {
             )}
 
             {sheet === "graves" && (
-                <Panel title="지난 판들" onClose={() => setSheet("none")}>
-                    {tombs.length === 0 ? (
-                        <p className="text-[var(--rg-faint)]">아직 없다.</p>
-                    ) : (
-                        <ul className="space-y-1">
-                            {tombs.map((t, i) => (
-                                // 점수를 같이 적는다 — 죽음 화면의 등수가 **어디서 나온
-                                // 값인지** 여기서 맞춰 볼 수 있어야 한다.
-                                <li key={i} className={t.won ? "text-[var(--rg-amulet)]" : "text-[var(--rg-muted)]"}>
-                                    {t.won ? "★" : "†"} 지하 {t.depth}층 · 금화 {t.gold} · {t.turns}턴 ·{" "}
-                                    <span className="text-[var(--rg-gold)]">{tombScore(t)}점</span> — {t.epitaph}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Panel>
+                selectedTomb ? (
+                    <Panel
+                        title={selectedTomb.won ? "★ 탈출 기록 상세" : "† 지난 판 상세"}
+                        onClose={() => setSheet("none")}
+                        footer={
+                            <div className="flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedTomb(null)}
+                                    className="rounded-[2px] border border-[var(--rg-line-soft)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-raised)]"
+                                >
+                                    ← 목록으로
+                                </button>
+                                <span className="text-[11px] text-[var(--rg-faint)]">
+                                    {new Date(selectedTomb.at).toLocaleString()}
+                                </span>
+                            </div>
+                        }
+                    >
+                        <div className="space-y-3.5 text-[13px] leading-relaxed">
+                            {/* 1. 기본 판 요약 */}
+                            <div className="rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--rg-line-soft)] pb-2">
+                                    <span className={selectedTomb.won ? "font-bold text-[var(--rg-amulet)]" : "font-bold text-[var(--rg-strong)]"}>
+                                        {selectedTomb.won ? "★ 옌더의 증표를 쥐고 던전을 탈출했다!" : `† ${selectedTomb.epitaph}`}
+                                    </span>
+                                    <span className="font-mono text-base font-bold text-[var(--rg-gold)]">
+                                        {tombScore(selectedTomb)}점
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-2 sm:grid-cols-4 text-xs text-[var(--rg-muted)]">
+                                    <div>가장 깊이: <b className="text-[var(--rg-strong)]">지하 {selectedTomb.depth}층</b></div>
+                                    <div>버틴 턴: <b className="text-[var(--rg-strong)]">{selectedTomb.turns}턴</b></div>
+                                    <div>소지 금화: <b className="text-[var(--rg-gold)]">{selectedTomb.gold} G</b></div>
+                                    <div>결과: <b className={selectedTomb.won ? "text-[var(--rg-amulet)]" : "text-[var(--rg-strong)]"}>{selectedTomb.won ? "승리" : "사망"}</b></div>
+                                </div>
+                            </div>
+
+                            {/* 2. 영웅 능력치 (Hero Stats) */}
+                            {selectedTomb.hero && (
+                                <div>
+                                    <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">캐릭터 스탯</h4>
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-[var(--rg-muted)]">
+                                        <div>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">레벨 / 경험치</span>
+                                            <span className="text-[var(--rg-strong)] font-bold">Lv. {selectedTomb.hero.level}</span>
+                                            <span className="text-[var(--rg-faint)] text-[11px] ml-1">({selectedTomb.hero.exp} exp)</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">체력 (HP)</span>
+                                            <span className={selectedTomb.hero.hp <= 0 ? "text-[var(--rg-trap)] font-bold" : "text-[var(--rg-hero)] font-bold"}>
+                                                {selectedTomb.hero.hp}
+                                            </span>
+                                            <span className="text-[var(--rg-faint)] font-normal"> / {selectedTomb.hero.maxHp}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">근력 (Str)</span>
+                                            <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.str}</span>
+                                            <span className="text-[var(--rg-faint)] font-normal"> / {selectedTomb.hero.maxStr}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[var(--rg-faint)] text-[11px] block">방어력 (AC)</span>
+                                            <span className="text-[var(--rg-armor)] font-bold">{selectedTomb.hero.defense}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 3. 장착 장비 */}
+                            {selectedTomb.hero && (
+                                <div>
+                                    <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">장착 장비</h4>
+                                    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-[var(--rg-muted)] text-xs">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[var(--rg-weapon)] font-mono font-bold">)</span>
+                                            <span className="text-[var(--rg-faint)]">무기:</span>
+                                            <span className="text-[var(--rg-strong)] font-medium">{selectedTomb.hero.weaponName || "맨손"}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[var(--rg-armor)] font-mono font-bold">]</span>
+                                            <span className="text-[var(--rg-faint)]">갑옷:</span>
+                                            <span className="text-[var(--rg-strong)] font-medium">{selectedTomb.hero.armorName || "맨몸"}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[var(--rg-ring)] font-mono font-bold">=</span>
+                                            <span className="text-[var(--rg-faint)]">왼손 반지:</span>
+                                            <span className="text-[var(--rg-strong)]">{selectedTomb.hero.leftRingName || "없음"}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[var(--rg-ring)] font-mono font-bold">=</span>
+                                            <span className="text-[var(--rg-faint)]">오른손 반지:</span>
+                                            <span className="text-[var(--rg-strong)]">{selectedTomb.hero.rightRingName || "없음"}</span>
+                                        </div>
+                                        {selectedTomb.hero.hasAmulet && (
+                                            <div className="col-span-full flex items-center gap-1.5 pt-1 border-t border-[var(--rg-line-soft)] text-[var(--rg-amulet)]">
+                                                <span className="font-mono font-bold">,</span>
+                                                <span className="font-bold">옌더의 증표 소지</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 4. 소지품 배낭 (Inventory) */}
+                            {selectedTomb.hero && (
+                                <div>
+                                    <div className="mb-1 flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-[var(--rg-label)]">
+                                            소지품 배낭 ({selectedTomb.hero.pack.length}개)
+                                        </h4>
+                                    </div>
+                                    {selectedTomb.hero.pack.length === 0 ? (
+                                        <p className="text-xs text-[var(--rg-faint)]">배낭이 비어 있었습니다.</p>
+                                    ) : (
+                                        <div className="max-h-48 overflow-y-auto space-y-1 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2">
+                                            {selectedTomb.hero.pack.map((it, idx) => {
+                                                const char = itemChar(it.kind);
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center justify-between gap-2 py-0.5 border-b border-[var(--rg-line-soft)] last:border-b-0 text-xs"
+                                                    >
+                                                        <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                                            <span className="font-mono text-[var(--rg-faint)]">{it.letter ? `${it.letter})` : "·"}</span>
+                                                            <span className="font-mono font-bold" style={{ color: `var(--rg-${it.kind})` }}>
+                                                                {char}
+                                                            </span>
+                                                            <span className="text-[var(--rg-strong)] truncate">{it.name}</span>
+                                                            {it.count > 1 && !it.name.includes(`${it.count}개`) && (
+                                                                <span className="text-[var(--rg-faint)] font-mono">×{it.count}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            {it.power && (
+                                                                <span className="text-[11px] text-[var(--rg-muted)] bg-[var(--rg-raised)] px-1.5 py-0.5 rounded-[2px]">
+                                                                    {it.power}
+                                                                </span>
+                                                            )}
+                                                            {it.equipped === "weapon" && (
+                                                                <span className="text-[10px] text-[var(--rg-weapon)] bg-[var(--rg-raised)] px-1.5 py-0.5 rounded-[2px] font-bold">
+                                                                    장착 중
+                                                                </span>
+                                                            )}
+                                                            {it.equipped === "armor" && (
+                                                                <span className="text-[10px] text-[var(--rg-armor)] bg-[var(--rg-raised)] px-1.5 py-0.5 rounded-[2px] font-bold">
+                                                                    착용 중
+                                                                </span>
+                                                            )}
+                                                            {it.equipped === "leftRing" && (
+                                                                <span className="text-[10px] text-[var(--rg-ring)] bg-[var(--rg-raised)] px-1.5 py-0.5 rounded-[2px]">
+                                                                    왼손
+                                                                </span>
+                                                            )}
+                                                            {it.equipped === "rightRing" && (
+                                                                <span className="text-[10px] text-[var(--rg-ring)] bg-[var(--rg-raised)] px-1.5 py-0.5 rounded-[2px]">
+                                                                    오른손
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 5. 마지막 로그 (Recent Log) */}
+                            {selectedTomb.recentLog && selectedTomb.recentLog.length > 0 && (
+                                <div>
+                                    <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">마지막 기록</h4>
+                                    <div className="max-h-24 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2 font-mono text-[11px] leading-relaxed text-[var(--rg-faint)]">
+                                        {selectedTomb.recentLog.map((logMsg, lIdx) => (
+                                            <div key={lIdx} className="truncate">
+                                                {logMsg}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </Panel>
+                ) : (
+                    <Panel title="지난 판들" onClose={() => setSheet("none")}>
+                        {tombs.length === 0 ? (
+                            <p className="text-[var(--rg-faint)]">아직 기록이 없습니다.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                <p className="text-xs text-[var(--rg-faint)]">
+                                    총 {tombs.length}판의 기록 — 원하는 판을 누르면 스탯·장비·배낭 상세를 조회할 수 있습니다.
+                                </p>
+                                <div className="max-h-[60vh] overflow-y-auto space-y-1.5 pr-1">
+                                    {tombs.map((t, i) => (
+                                        <button
+                                            key={i}
+                                            type="button"
+                                            onClick={() => setSelectedTomb(t)}
+                                            className="w-full text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-2.5 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus:outline-none"
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                                    <span className={t.won ? "text-[var(--rg-amulet)] font-bold text-base" : "text-[var(--rg-muted)] font-bold text-base"}>
+                                                        {t.won ? "★" : "†"}
+                                                    </span>
+                                                    <span className="font-bold text-xs text-[var(--rg-strong)] truncate">
+                                                        {t.epitaph}
+                                                    </span>
+                                                </div>
+                                                <span className="shrink-0 font-mono text-sm font-bold text-[var(--rg-gold)]">
+                                                    {tombScore(t)}점
+                                                </span>
+                                            </div>
+
+                                            <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--rg-muted)]">
+                                                <span>지하 {t.depth}층</span>
+                                                <span>·</span>
+                                                <span>금화 {t.gold} G</span>
+                                                <span>·</span>
+                                                <span>{t.turns}턴</span>
+                                                {t.hero && (
+                                                    <>
+                                                        <span>·</span>
+                                                        <span className="text-[var(--rg-strong)]">Lv.{t.hero.level}</span>
+                                                        <span>·</span>
+                                                        <span>HP {t.hero.hp}/{t.hero.maxHp}</span>
+                                                        <span>·</span>
+                                                        <span>방어 {t.hero.defense}</span>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {t.hero && (t.hero.weaponName || t.hero.armorName) && (
+                                                <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-[var(--rg-faint)]">
+                                                    {t.hero.weaponName && (
+                                                        <span className="rounded-[2px] bg-[var(--rg-bg)] px-1 py-0.2">
+                                                            ⚔️ {t.hero.weaponName}
+                                                        </span>
+                                                    )}
+                                                    {t.hero.armorName && (
+                                                        <span className="rounded-[2px] bg-[var(--rg-bg)] px-1 py-0.2">
+                                                            🛡️ {t.hero.armorName}
+                                                        </span>
+                                                    )}
+                                                    {t.hero.hasAmulet && (
+                                                        <span className="rounded-[2px] bg-[var(--rg-bg)] px-1 py-0.2 text-[var(--rg-amulet)] font-semibold">
+                                                            ✨ 옌더의 증표
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className="mt-1 text-right text-[10.5px] text-[var(--rg-faint)]">
+                                                {new Date(t.at).toLocaleDateString()} {new Date(t.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 상세 보기 →
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </Panel>
+                )
             )}
 
             {state.phase !== "playing" && sheet === "none" && !picker && !aiming && (
                 <Panel
                     title={state.phase === "won" ? "살아 돌아왔다" : "여기 잠들다"}
                     footer={
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
                             <button
                                 type="button"
                                 onClick={restart}
-                                className="rounded-[2px] border border-[var(--rg-line)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-raised)]"
+                                className="rounded-[2px] border border-[var(--rg-line)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-raised)] font-bold"
                             >
                                 새 판
                             </button>
-                            {/* **죽고 나서야 제일 보고 싶은 것이 기록이다** — 무엇에 맞아
-                                죽었는지는 위쪽 두 줄 띠에 잠깐 스쳤을 뿐이고, 그 띠는 이 판이
-                                덮고 있어 손이 안 닿는다. 닫으면 `sheet` 가 `none` 으로
-                                돌아오니 이 판이 그대로 다시 뜬다. */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const list = graves();
+                                    setTombs(list);
+                                    setSelectedTomb(list[0] || null);
+                                    setSheet("graves");
+                                }}
+                                className="rounded-[2px] border border-[var(--rg-line)] bg-[var(--rg-raised)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-hover)]"
+                            >
+                                이번 판 상세 기록
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => setSheet("log")}
@@ -1072,6 +1707,7 @@ export default function Rogue() {
                                 type="button"
                                 onClick={() => {
                                     setTombs(graves());
+                                    setSelectedTomb(null);
                                     setSheet("graves");
                                 }}
                                 className="rounded-[2px] border border-[var(--rg-line-soft)] px-3 py-1 hover:bg-[var(--rg-raised)]"

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import {
     barGeometry, periodDelta, fmtEok, usdBlockFormatter,
     type BarModel, type BarItem, type StackRow, type Tone,
-} from "./financialBars";
+} from "./financialBarsData";
 
 // 토큰 하나에서 막대·점·스택 색이 전부 나온다 — 항목마다 색 클래스를 따로 붙이면
 // 다크 모드 대응이 두 배가 되고 색이 어긋나기 시작한다.

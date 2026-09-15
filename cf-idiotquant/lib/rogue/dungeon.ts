@@ -190,36 +190,6 @@ function linkDoorToMaze(tiles: Uint8Array, r: Room, door: Pos) {
     }
 }
 
-type Side = "left" | "right" | "top" | "bottom";
-
-/**
- * 복도가 방에서 나가는 자리.
- *
- * 진짜 방이면 벽에 문을 내고 그 **바깥 한 칸**에서 복도를 시작한다. 없는 방이면
- * 문이라는 것이 없으므로 그 점 자체가 시작이다.
- */
-function exitPoint(r: Room, side: Side, rng: Rng): { door: Pos | null; start: Pos } {
-    if (r.gone) return { door: null, start: { x: r.x, y: r.y } };
-    switch (side) {
-        case "right": {
-            const y = rng.between(r.y + 1, r.y + r.h - 2);
-            return { door: { x: r.x + r.w - 1, y }, start: { x: r.x + r.w, y } };
-        }
-        case "left": {
-            const y = rng.between(r.y + 1, r.y + r.h - 2);
-            return { door: { x: r.x, y }, start: { x: r.x - 1, y } };
-        }
-        case "bottom": {
-            const x = rng.between(r.x + 1, r.x + r.w - 2);
-            return { door: { x, y: r.y + r.h - 1 }, start: { x, y: r.y + r.h } };
-        }
-        case "top": {
-            const x = rng.between(r.x + 1, r.x + r.w - 2);
-            return { door: { x, y: r.y }, start: { x, y: r.y - 1 } };
-        }
-    }
-}
-
 /** 바위에만 복도를 판다 — 이미 바닥이나 문인 자리는 건드리지 않는다. */
 function digCorridor(tiles: Uint8Array, x: number, y: number) {
     if (!inBounds(x, y)) return;
@@ -238,11 +208,6 @@ function digLine(tiles: Uint8Array, from: Pos, to: Pos) {
 
 /**
  * 꺾인 복도 하나. 가로면 가운데에서 위아래로 꺾고, 세로면 그 반대다.
- *
- * 꺾는 자리는 **양 끝을 뺀 안쪽**에서 고른다. 끝에서 꺾으면 그 끝을 나서는 첫 걸음이
- * 없어져서 복도가 **옆으로만** 붙는데, 그 끝이 「없는 방」이면 이미 다른 복도가 물고
- * 있던 바로 그 방향이라 길이 하나로 겹친다 — 갈림길이어야 할 자리가 막다른 골목이
- * 된다. 길이가 2 미만이면 안쪽이 없으니 그대로 둔다.
  */
 function connect(tiles: Uint8Array, a: Pos, b: Pos, horizontal: boolean, rng: Rng) {
     const pick = (lo: number, hi: number) =>
@@ -263,6 +228,95 @@ function connect(tiles: Uint8Array, a: Pos, b: Pos, horizontal: boolean, rng: Rn
         digLine(tiles, { x: b.x, y: mid }, b);
     }
 }
+
+/**
+ * 방과 방을 **최단 거리**로 잇는다.
+ *
+ * 가로로 이웃한 방이면 Y 좌표 겹침 구간에서 일직선 직통(최단 직선)으로 잇고,
+ * 겹침이 없으면 가장 가까운 Y 좌표를 골라 Manhattan 최단 경로로 연결한다.
+ * 세로로 이웃한 방도 마찬가지로 X 좌표 겹침 시 일직선 직통으로 연결한다.
+ * 통로는 항상 양쪽 방의 문(또는 없는 방 중심)을 확실히 잇는다.
+ */
+function connectRoomsShortest(
+    tiles: Uint8Array,
+    ra: Room,
+    rb: Room,
+    horizontal: boolean,
+    rng: Rng,
+): { doorA: Pos | null; doorB: Pos | null; startA: Pos; startB: Pos } {
+    if (horizontal) {
+        const yMinA = ra.gone ? ra.y : ra.y + 1;
+        const yMaxA = ra.gone ? ra.y : ra.y + ra.h - 2;
+        const yMinB = rb.gone ? rb.y : rb.y + 1;
+        const yMaxB = rb.gone ? rb.y : rb.y + rb.h - 2;
+
+        const overlapMin = Math.max(yMinA, yMinB);
+        const overlapMax = Math.min(yMaxA, yMaxB);
+
+        let yA: number;
+        let yB: number;
+        if (overlapMin <= overlapMax) {
+            const y = rng.between(overlapMin, overlapMax);
+            yA = y;
+            yB = y;
+        } else if (yMaxA < yMinB) {
+            yA = yMaxA;
+            yB = yMinB;
+        } else {
+            yA = yMinA;
+            yB = yMaxB;
+        }
+
+        const doorA = ra.gone ? null : { x: ra.x + ra.w - 1, y: yA };
+        const startA = ra.gone ? { x: ra.x, y: ra.y } : { x: ra.x + ra.w, y: yA };
+        const doorB = rb.gone ? null : { x: rb.x, y: yB };
+        const startB = rb.gone ? { x: rb.x, y: rb.y } : { x: rb.x - 1, y: yB };
+
+        if (yA === yB) {
+            digLine(tiles, startA, startB);
+        } else {
+            connect(tiles, startA, startB, true, rng);
+        }
+
+        return { doorA, doorB, startA, startB };
+    } else {
+        const xMinA = ra.gone ? ra.x : ra.x + 1;
+        const xMaxA = ra.gone ? ra.x : ra.x + ra.w - 2;
+        const xMinB = rb.gone ? rb.x : rb.x + 1;
+        const xMaxB = rb.gone ? rb.x : rb.x + rb.w - 2;
+
+        const overlapMin = Math.max(xMinA, xMinB);
+        const overlapMax = Math.min(xMaxA, xMaxB);
+
+        let xA: number;
+        let xB: number;
+        if (overlapMin <= overlapMax) {
+            const x = rng.between(overlapMin, overlapMax);
+            xA = x;
+            xB = x;
+        } else if (xMaxA < xMinB) {
+            xA = xMaxA;
+            xB = xMinB;
+        } else {
+            xA = xMinA;
+            xB = xMaxB;
+        }
+
+        const doorA = ra.gone ? null : { x: xA, y: ra.y + ra.h - 1 };
+        const startA = ra.gone ? { x: ra.x, y: ra.y } : { x: xA, y: ra.y + ra.h };
+        const doorB = rb.gone ? null : { x: xB, y: rb.y };
+        const startB = rb.gone ? { x: rb.x, y: rb.y } : { x: xB, y: rb.y - 1 };
+
+        if (xA === xB) {
+            digLine(tiles, startA, startB);
+        } else {
+            connect(tiles, startA, startB, false, rng);
+        }
+
+        return { doorA, doorB, startA, startB };
+    }
+}
+
 
 const N4: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -799,18 +853,18 @@ export function buildLevel(depth: number, rng: Rng): Level {
     for (const e of chosen) {
         const ra = rooms[e.a];
         const rb = rooms[e.b];
-        const ea = exitPoint(ra, e.horizontal ? "right" : "bottom", rng);
-        const eb = exitPoint(rb, e.horizontal ? "left" : "top", rng);
-        if (ea.door) {
-            put(tiles, ea.door.x, ea.door.y, T.DOOR);
-            doorsOf[e.a].push(ea.door);
+        const res = connectRoomsShortest(tiles, ra, rb, e.horizontal, rng);
+        if (res.doorA) {
+            put(tiles, res.doorA.x, res.doorA.y, T.DOOR);
+            doorsOf[e.a].push(res.doorA);
         }
-        if (eb.door) {
-            put(tiles, eb.door.x, eb.door.y, T.DOOR);
-            doorsOf[e.b].push(eb.door);
+        if (res.doorB) {
+            put(tiles, res.doorB.x, res.doorB.y, T.DOOR);
+            doorsOf[e.b].push(res.doorB);
         }
-        connect(tiles, ea.start, eb.start, e.horizontal, rng);
-        if (extra.includes(e)) extraDoors.push(...[ea.door, eb.door].filter((d): d is Pos => !!d));
+        if (extra.includes(e)) {
+            extraDoors.push(...[res.doorA, res.doorB].filter((d): d is Pos => !!d));
+        }
     }
 
     // 미로는 **문을 낸 뒤에** 판다. 먼저 파면 문 자리를 모르니 안쪽으로 뚫을 수가 없다.
