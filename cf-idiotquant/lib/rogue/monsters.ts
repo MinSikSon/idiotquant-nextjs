@@ -119,12 +119,42 @@ export function depthRange(ch: string): { min: number; max: number } | null {
 
 let nextId = 1;
 
+/** 몬스터의 표시 이름 (챔피언 접두사 포함) */
+export function monsterName(m: Monster): string {
+    if (m.champion) {
+        const prefixMap: Record<string, string> = {
+            blazing: "타오르는",
+            shadow: "그림자의",
+            gilded: "황금의",
+            swift: "신속의",
+            vampiric: "흡혈의",
+        };
+        const p = prefixMap[m.champion] ?? "";
+        return p ? `${p} ${m.def.name}` : m.def.name;
+    }
+    return m.def.name;
+}
+
 /** 같은 종은 같은 체력으로 선다 — 굴리지 않는다(`MONSTERS` 머리말 참고). */
-export function spawnMonster(ch: string, x: number, y: number, rng: Rng): Monster {
+export function spawnMonster(ch: string, x: number, y: number, rng: Rng, champion?: Monster["champion"]): Monster {
     const def = MONSTERS[ch] ?? MONSTERS.B;
-    const hp = Math.max(1, def.hp);
+    let hp = Math.max(1, def.hp);
+    if (champion) {
+        hp = Math.round(hp * 1.5);
+    }
     void rng;
-    return { def, x, y, hp, maxHp: hp, awake: def.mean, id: nextId++, speed: 0, cancelled: false };
+    return {
+        def,
+        x,
+        y,
+        hp,
+        maxHp: hp,
+        awake: champion ? true : def.mean,
+        id: nextId++,
+        speed: champion === "swift" ? 1 : 0,
+        cancelled: false,
+        champion,
+    };
 }
 
 /** 테스트가 식별자를 예측할 수 있게 한다. */

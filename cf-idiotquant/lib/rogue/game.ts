@@ -87,8 +87,26 @@ import {
     weaponDamageOf,
 } from "./items";
 import {
+    CHAMPION_DEFS,
+    FLOOR_MUTATOR_DEFS,
+    dropChampionLoot,
+    rollChampionPrefix,
+    rollFloorMutator,
+} from "./champions";
+import {
+    RELIC_DEFS,
+    GEM_DEFS,
+    RELICS,
+    GEMS,
+    type RelicType,
+    type GemType,
+    socketGemIntoItem,
+    hasRelic,
+} from "./relics";
+import {
     MONSTERS,
     depthRange,
+    monsterName,
     randomMonsterChar,
     spawnMonster,
 } from "./monsters";
@@ -136,7 +154,9 @@ export type Command =
     | { t: "search" }
     /** 모루 위에서 무기나 갑옷을 녹인다 — 그 물건은 사라지고 강화 주문서가 나온다. */
     | { t: "melt"; letter: string }
-    | { t: "drop"; letter: string };
+    | { t: "drop"; letter: string }
+    | { t: "use_relic"; letter: string }
+    | { t: "socket"; gearLetter: string; gemLetter: string };
 
 /**
  * ` (피해 3d4+2)` — 착용한 **그 물건의 성능.**
@@ -206,31 +226,22 @@ function populate(state: GameState, level: Level, rng: Rng) {
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
         const p = freeSpot(level, rng, [state.hero, level.stairs]);
-        level.monsters.push(spawnMonster(randomMonsterChar(level.depth, rng), p.x, p.y, rng));
+        const prefix = rollChampionPrefix(level.depth, rng);
+        const m = spawnMonster(randomMonsterChar(level.depth, rng), p.x, p.y, rng, prefix ?? undefined);
+        if (level.mutator === "frenzy") {
+            m.speed = 1;
+        }
+        level.monsters.push(m);
     }
 
-    // **총량은 층이 정하고, 자리는 방들이 넓이 몫만큼 나눠 갖는다.** 물건마다 따로
-    // 자리를 뽑으면 뽑기가 서로를 몰라 한 방에 몰린다 — `itemSpots` 참고.
-    //
-    // **강화 주문서만은 층이 사정을 본다.** 확률만으로 두면 다섯 층 연속 안 나오는 판이
-    // 나오고, 그러면 캐릭터를 키우는 축이 그 판에서 통째로 사라진다.
-    //   · 1층에는 안 놓는다 — 쥔 것도 입은 것도 없이 읽으면 버리는 셈이다.
-    //   · 굶은 층이 쌓이면 그만큼 자주 나온다. 하나 나오면 0 으로 돌아간다.
-    //   · 한 층에 두 장까지. 셋째는 **보통 주문서로 바꾼다** — 자리를 비우면 그 층의
-    //     물건 수가 줄어서 「총량은 층이 정한다」가 깨진다.
+    // **총량은 층이 정하고, 자리는 방들이 넓이 몫만큼 나눠 갖는다.**
     const dry = Math.max(0, state.enchantDrought - DROUGHT_GRACE);
     const scale = level.depth === 1 ? 0 : 1 + DROUGHT_STEP * dry;
 
-    // **특수 방은 층에서 꾸어 간다.** 자기 몫을 통째로 더 받으면 특수 방이 뜬 층만
-    // 부자가 되는데, 그러면 「찾았다」가 아니라 그냥 운 좋은 층이다. 절반을 꾸면
-    // **층 전체는 늘어도 일반 방은 오히려 줄어서**, 찾아 들어가는 행위에 값이 붙는다.
     const sp = level.special;
     const def = sp ? SPECIAL_ROOMS[sp.kind] : null;
     const quota = floorQuota(level.depth, rng);
     const ns = def ? Math.round(SPECIAL_BASE * def.kappa) : 0;
-    // **꾸는 몫은 0 밑으로 안 간다.** 기획서의 식은 특수 방이 기본 몫보다 많이 받는다고
-    // 보고 세운 것인데, 제단은 κ 가 0.5 라 `floor((1−2)/2) = −1` 이 되어 **일반 방에
-    // 한 개를 얹어 준다** — 적게 주는 방이 층을 부자로 만드는 셈이다. 실제로 그랬다.
     const borrow = def ? Math.max(0, Math.floor((ns - SPECIAL_BASE) / 2)) : 0;
     const ng = def ? Math.max(2, quota - borrow) : quota;
 
@@ -239,6 +250,8 @@ function populate(state: GameState, level: Level, rng: Rng) {
     let rings = 0;
     let foods = 0;
     let placed = 0;
+    let relicPlaced = false;
+
     /** 한 층의 상한들 — 넘으면 **버리지 않고 다른 것으로 바꾼다**(총량은 층이 정한다). */
     const put = (p: Pos, bias?: Partial<Record<Category, number>>, tierUp = 0) => {
         if (placed >= FLOOR_ITEM_CAP) return;
@@ -246,18 +259,33 @@ function populate(state: GameState, level: Level, rng: Rng) {
         if (cat === "enchant" && enchants >= ENCHANT_PER_FLOOR) cat = "scroll";
         if ((cat === "weapon" || cat === "armor") && gear >= FLOOR_GEAR_CAP) cat = "potion";
         if (cat === "ring" && rings >= FLOOR_RING_CAP) cat = "potion";
-        // **식량 가뭄은 밸런스가 아니라 죽는 까닭의 문제다.** 굶어 죽는 것이 운이면
-        // 배울 것이 안 남는다. 네 층을 굶었으면 이 층의 첫 자리를 식량으로 쓴다.
-        //
-        // **다만 특수 방에는 안 넣는다.** 그 방은 문이 하나뿐인 데다 못 찾을 수도
-        // 있는데, 굶지 말라고 둔 식량이 못 찾을 자리에 있으면 그건 보장이 아니다.
-        // 보물방이 식량을 아예 안 내는 것(`bias.food = 0`)과도 부딪힌다.
         if (!bias && foods === 0 && state.foodDrought >= FOOD_GRACE) cat = "food";
         if (cat === "enchant") enchants++;
         if (cat === "weapon" || cat === "armor") gear++;
         if (cat === "ring") rings++;
         if (cat === "food") foods++;
         placed++;
+
+        // 희귀 전설 유물 스폰 (food나 enchant가 아닐 때만)
+        if (cat !== "food" && cat !== "enchant" && !relicPlaced && ((level.depth >= 10 && rng.rnd(100) < 8) || (bias && bias.gold && level.depth >= 8 && rng.rnd(100) < 25))) {
+            const unowned = RELICS.filter((r) => !hasRelic(state.hero, r) && !level.items.some((it) => it.kind === "relic" && it.type === r));
+            if (unowned.length > 0) {
+                const relicType = rng.pick(unowned);
+                if (relicType) {
+                    relicPlaced = true;
+                    level.items.push(makeItem("relic", relicType, state.nextItemId++, p.x, p.y));
+                    return;
+                }
+            }
+        }
+
+        // 2층 이상에서 8% 확률로 소모품 대신 원소 보석 스폰
+        if ((cat === "potion" || cat === "scroll") && level.depth >= 2 && rng.rnd(100) < 8) {
+            const gemType = rng.pick(GEMS) ?? "ruby";
+            level.items.push(makeItem("gem", gemType, state.nextItemId++, p.x, p.y));
+            return;
+        }
+
         // 무기고는 **등급이 두 칸 위**다 — 무기고에서 단검이 나오면 무기고가 아니다.
         level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat));
     };
@@ -310,7 +338,13 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
     state.hero.y = start.y;
     state.level = level;
     // 이미 살던 층에 몬스터와 물건을 또 뿌리면 갈 때마다 불어난다.
-    if (!seen) populate(state, level, rng);
+    if (!seen) {
+        level.mutator = rollFloorMutator(depth, rng);
+        populate(state, level, rng);
+        if (level.mutator) {
+            say(state, FLOOR_MUTATOR_DEFS[level.mutator].banner);
+        }
+    }
     computeFov(level, state.hero);
     state.deepest = Math.max(state.deepest, depth);
 }
@@ -1007,8 +1041,25 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
             state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
         }
     }
-    const levels = gainExp(state.hero, m.def.exp, rng);
+    const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
+    const expGained = m.def.exp * expMultiplier;
+    const levels = gainExp(state.hero, expGained, rng);
     for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
+
+    // 챔피언 처치 시 100% 확정 전리품 드랍
+    if (m.champion) {
+        const dropped = dropChampionLoot(state, m, rng);
+        state.level.items.push(...dropped);
+        say(state, `${monsterName(m)}을(를) 쓰러뜨려 희귀 전리품이 바닥에 떨어졌습니다!`);
+    }
+
+    // 미다스의 건틀릿 소지 시 추가 금화 생성
+    if (hasRelic(state.hero, "midas_gauntlet")) {
+        const midasGold = m.def.level * 15 + rng.between(10, 30);
+        state.level.items.push(makeItem("gold", "gold", state.nextItemId++, m.x, m.y, midasGold));
+        say(state, `미다스의 건틀릿이 몬스터의 유골을 황금(${midasGold}G)으로 바꾸었습니다!`);
+    }
+
     if (state.bestiary[m.def.ch] === 1) {
         say(state, `${m.def.name}을(를) 처음 잡았다 — 이제 조사하면 속을 안다.`);
     }
@@ -1397,8 +1448,18 @@ function stepToward(level: Level, m: Monster, target: Pos): Pos | null {
  */
 function monsterTurns(state: GameState, rng: Rng) {
     const { hero, level } = state;
+    if (hero.timeStop && hero.timeStop > 0) {
+        hero.timeStop -= 1;
+        say(state, `⏳ 시간 정지 지속 중... (남은 턴: ${hero.timeStop})`);
+        return;
+    }
     for (const m of [...level.monsters]) {
         if (m.hp <= 0) continue;
+        if (m.frozenTurns && m.frozenTurns > 0) {
+            m.frozenTurns -= 1;
+            say(state, `${monsterName(m)}이(가) 얼어붙어 움직이지 못한다.`);
+            continue;
+        }
         if (m.speed < 0 && state.turn % 2 === 0) continue;
         const acts = m.speed > 0 ? 2 : 1;
         for (let n = 0; n < acts; n++) {
@@ -1453,6 +1514,49 @@ function applyBlind(state: GameState) {
     level.flags[idx(hero.x, hero.y)] |= 2 | 1;
 }
 
+function useRelicCommand(state: GameState, letter: string): boolean {
+    const { hero } = state;
+    const it = packItem(hero, letter);
+    if (!it || it.kind !== "relic") {
+        say(state, "사용할 수 있는 유물이 아니다.");
+        return false;
+    }
+    if (it.type === "time_hourglass") {
+        if (it.relicCooldown && it.relicCooldown > 0) {
+            say(state, `시간의 모래시계가 충전 중입니다. (남은 턴: ${it.relicCooldown})`);
+            return false;
+        }
+        hero.timeStop = 3;
+        it.relicCooldown = 50;
+        say(state, "⏳ 시간의 모래시계를 발동했습니다! 3턴 동안 모든 몬스터의 시간이 정지합니다.");
+        return true;
+    }
+    const def = RELIC_DEFS[it.type as RelicType];
+    say(state, `${def?.name ?? "유물"}은(는) 소지 시 상시 발동하는 패시브 유물입니다.`);
+    return false;
+}
+
+function socketGemCommand(state: GameState, gearLetter: string, gemLetter: string): boolean {
+    const { hero, level } = state;
+    if (!level.anvil || hero.x !== level.anvil.x || hero.y !== level.anvil.y) {
+        say(state, "보석을 장착하려면 모루 칸(&) 위에 서 있어야 합니다.");
+        return false;
+    }
+    const gear = packItem(hero, gearLetter);
+    const gem = packItem(hero, gemLetter);
+    if (!gear || (gear.kind !== "weapon" && gear.kind !== "armor")) {
+        say(state, "보석을 장착할 무기나 갑옷을 선택해야 합니다.");
+        return false;
+    }
+    if (!gem || gem.kind !== "gem") {
+        say(state, "장착할 원소 보석을 선택해야 합니다.");
+        return false;
+    }
+    const res = socketGemIntoItem(hero, gear, gem);
+    say(state, res.message);
+    return res.ok;
+}
+
 /**
  * 명령 하나. **돌아온 것이 새 판**이다 — 화면은 이것만 보고 다시 그린다.
  */
@@ -1468,7 +1572,6 @@ export function perform(state: GameState, cmd: Command): GameState {
     }
 
     // **곰덫은 다르다** — 자리를 못 뜰 뿐, 싸우고 마시고 읽는 것은 할 수 있다.
-    // 잠처럼 통째로 막으면 덫이 「몇 턴간 아무것도 못 한다」가 되어 잠과 같아진다.
     if (state.hero.stuck > 0 && cmd.t === "move") {
         state.hero.stuck -= 1;
         const target = monsterAt(state.level, state.hero.x + cmd.dx, state.hero.y + cmd.dy);
@@ -1494,50 +1597,56 @@ export function perform(state: GameState, cmd: Command): GameState {
             case "pickup":
                 acted = pickUp(state);
                 break;
-        case "descend":
-            acted = descend(state, rng);
-            break;
-        case "ascend":
-            acted = ascend(state, rng);
-            break;
-        case "quaff":
-            acted = quaff(state, cmd.letter, rng);
-            break;
-        case "read":
-            acted = read(state, cmd.letter, rng, cmd.target);
-            break;
-        case "eat":
-            acted = eat(state, cmd.letter, rng);
-            break;
-        case "wield":
-            acted = wield(state, cmd.letter);
-            break;
-        case "wear":
-            acted = wear(state, cmd.letter);
-            break;
-        case "drop":
-            acted = drop(state, cmd.letter);
-            break;
-        case "melt":
-            acted = melt(state, cmd.letter, rng);
-            break;
-        case "putOn":
-            acted = putOn(state, cmd.letter);
-            break;
-        case "removeRing":
-            acted = removeRing(state, cmd.letter);
-            break;
-        case "zap":
-            acted = zap(state, cmd.letter, cmd.dx, cmd.dy, rng);
-            break;
-        case "throw":
-            acted = throwItem(state, cmd.letter, cmd.dx, cmd.dy, rng);
-            break;
-        case "search":
-            acted = search(state, rng);
-            break;
+            case "descend":
+                acted = descend(state, rng);
+                break;
+            case "ascend":
+                acted = ascend(state, rng);
+                break;
+            case "quaff":
+                acted = quaff(state, cmd.letter, rng);
+                break;
+            case "read":
+                acted = read(state, cmd.letter, rng, cmd.target);
+                break;
+            case "eat":
+                acted = eat(state, cmd.letter, rng);
+                break;
+            case "wield":
+                acted = wield(state, cmd.letter);
+                break;
+            case "wear":
+                acted = wear(state, cmd.letter);
+                break;
+            case "drop":
+                acted = drop(state, cmd.letter);
+                break;
+            case "melt":
+                acted = melt(state, cmd.letter, rng);
+                break;
+            case "putOn":
+                acted = putOn(state, cmd.letter);
+                break;
+            case "removeRing":
+                acted = removeRing(state, cmd.letter);
+                break;
+            case "zap":
+                acted = zap(state, cmd.letter, cmd.dx, cmd.dy, rng);
+                break;
+            case "throw":
+                acted = throwItem(state, cmd.letter, cmd.dx, cmd.dy, rng);
+                break;
+            case "search":
+                acted = search(state, rng);
+                break;
+            case "use_relic":
+                acted = useRelicCommand(state, cmd.letter);
+                break;
+            case "socket":
+                acted = socketGemCommand(state, cmd.gearLetter, cmd.gemLetter);
+                break;
+        }
     }
-}
 
     return finishTurn(state, rng, acted);
 }
@@ -1555,6 +1664,33 @@ function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
     if (state.hero.blind > 0) state.hero.blind -= 1;
     if (state.hero.confused > 0) state.hero.confused -= 1;
     if (state.hero.detect > 0) state.hero.detect -= 1;
+
+    // 화상 틱 (영웅)
+    if (state.hero.burnTurns && state.hero.burnTurns > 0) {
+        state.hero.hp -= 2;
+        state.hero.burnTurns -= 1;
+        say(state, "몸에 붙은 불로 2의 화염 피해를 입었다! (화상)");
+    }
+
+    // 유물 쿨다운 감소
+    for (const it of state.hero.pack) {
+        if (it.relicCooldown && it.relicCooldown > 0) {
+            it.relicCooldown -= 1;
+        }
+    }
+
+    // 화상 틱 (몬스터)
+    for (const m of [...state.level.monsters]) {
+        if (m.burnTurns && m.burnTurns > 0 && m.hp > 0) {
+            m.hp -= 2;
+            m.burnTurns -= 1;
+            say(state, `${monsterName(m)}이(가) 불길로 2의 지속 피해를 입었다.`);
+            if (m.hp <= 0) {
+                killMonster(state, m, rng);
+            }
+        }
+    }
+
     // 순간이동 반지는 가끔 나를 아무 데나 던진다 — 좋은 반지가 아니다.
     if (hasRing(state.hero, "teleportation") && rng.rnd(80) === 0) {
         const p = freeSpot(state.level, rng, [state.level.stairs]);
@@ -1570,10 +1706,28 @@ function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
     applyBlind(state);
 
     if (state.hero.hp <= 0 && state.phase === "playing") {
-        state.hero.hp = 0;
-        state.phase = "dead";
-        if (!state.epitaph) state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${state.hero.gold}.`;
-        revealAll(state.level);
+        const featherIdx = state.hero.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");
+        if (featherIdx >= 0) {
+            state.hero.pack.splice(featherIdx, 1);
+            state.hero.hp = state.hero.maxHp;
+            state.hero.burnTurns = 0;
+            state.hero.asleep = 0;
+            state.hero.confused = 0;
+            state.hero.blind = 0;
+            say(state, "🔥 불사조의 깃털이 타오르며 영웅을 최대 생명력으로 부활시켰습니다! 🔥");
+            for (const m of state.level.monsters) {
+                if (Math.abs(m.x - state.hero.x) <= 1 && Math.abs(m.y - state.hero.y) <= 1) {
+                    const pushSpot = freeSpot(state.level, rng, [state.hero, { x: m.x, y: m.y }]);
+                    m.x = pushSpot.x;
+                    m.y = pushSpot.y;
+                }
+            }
+        } else {
+            state.hero.hp = 0;
+            state.phase = "dead";
+            if (!state.epitaph) state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${state.hero.gold}.`;
+            revealAll(state.level);
+        }
     }
 
     state.rngState = rng.state;

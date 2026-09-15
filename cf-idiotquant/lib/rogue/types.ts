@@ -96,6 +96,8 @@ export interface MonsterDef {
     special?: string;
 }
 
+export type ChampionPrefix = "blazing" | "shadow" | "gilded" | "swift" | "vampiric";
+
 export interface Monster {
     def: MonsterDef;
     x: number;
@@ -110,6 +112,12 @@ export interface Monster {
     speed: number;
     /** 무력화됐는가 — 특수 공격을 잃는다. */
     cancelled: boolean;
+    /** 5대 접두사 챔피언 */
+    champion?: ChampionPrefix;
+    /** 화상 지속 턴수 */
+    burnTurns?: number;
+    /** 동결 지속 턴수 */
+    frozenTurns?: number;
 }
 
 export type ItemKind =
@@ -121,7 +129,9 @@ export type ItemKind =
     | "armor"
     | "ring"
     | "wand"
-    | "amulet";
+    | "amulet"
+    | "relic"
+    | "gem";
 
 export interface Item {
     id: number;
@@ -153,6 +163,10 @@ export interface Item {
     cursed?: boolean;
     /** 저주가 드러났는가 — 화면이 「(저주)」를 붙일지 정한다. */
     curseKnown?: boolean;
+    /** 모루에서 장착된 보석 소켓 (ruby, sapphire, emerald, topaz) */
+    socketGem?: "ruby" | "sapphire" | "emerald" | "topaz";
+    /** 액티브 유물 남은 쿨다운 (턴) */
+    relicCooldown?: number;
 }
 
 /** 함정 — 밟기 전에는 바닥과 구별되지 않는다. */
@@ -171,6 +185,8 @@ export interface Trap {
     /** 밟았거나 뒤져서 찾았는가. 찾은 함정만 화면에 뜬다. */
     found: boolean;
 }
+
+export type FloorMutator = "fog" | "frenzy" | "vault" | "armory_floor";
 
 export interface Level {
     depth: number;
@@ -203,6 +219,8 @@ export interface Level {
      * 위험과 보상이 같은 자리에 선다. 층에 하나까지고, 옛 저장에는 없다(`null`).
      */
     special: { room: number; kind: SpecialKind } | null;
+    /** 층 돌발 이벤트 */
+    mutator?: FloorMutator | null;
 }
 
 /** 특수 방의 갈래. 무엇이 더 나오고 무엇이 덜 나오는지는 `dungeon.SPECIAL_ROOMS` 가 안다. */
@@ -241,6 +259,10 @@ export interface Hero {
     stuck: number;
     /** 괴물이 벽 너머로도 보이는 남은 턴. */
     detect: number;
+    /** 화상 지속 턴 */
+    burnTurns?: number;
+    /** 시간 정지 남은 턴 (시간의 모래시계) */
+    timeStop?: number;
 }
 
 export type Phase = "playing" | "dead" | "won";

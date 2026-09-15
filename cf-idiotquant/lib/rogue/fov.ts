@@ -53,7 +53,7 @@ function roomAround(level: Level, x: number, y: number): number {
  * 기억(`SEEN`)은 지우지 않는다 — 지운 적이 있는데 그러면 뒤돌아서는 순간 지도가
  * 통째로 사라졌다.
  */
-export function computeFov(level: Level, from: Pos): void {
+export function computeFov(level: Level, from: Pos, hero?: Pos & { pack?: { kind: string; type: string }[] }): void {
     const { flags, tiles } = level;
     for (let i = 0; i < flags.length; i++) flags[i] &= ~VISIBLE;
 
@@ -67,27 +67,46 @@ export function computeFov(level: Level, from: Pos): void {
         for (let dx = -1; dx <= 1; dx++) light(from.x + dx, from.y + dy);
     }
 
-    // 안쪽에 섰으면 그 방, **문턱에 섰으면 그 문이 난 방.** 문에서 방이 안 켜지면
-    // 들어서는 그 한 걸음 동안 방이 깜깜해 보인다 — 원작은 문턱에서도 방을 보여 준다.
-    const ri =
-        roomOf(level, from.x, from.y) >= 0
-            ? roomOf(level, from.x, from.y)
-            : tiles[idx(from.x, from.y)] === T.DOOR
-              ? roomAround(level, from.x, from.y)
-              : -1;
-    if (ri < 0) return;
-    const room = level.rooms[ri];
-    // 미로 방은 「방」이 아니다 — 안쪽이 얽힌 통로라 통째로 보이면 미로가 아니게 된다.
-    if (!room || room.dark || room.gone || room.maze) return;
-
-    // 밝은 방 — 벽까지 통째로.
-    for (let y = room.y; y < room.y + room.h; y++) {
-        for (let x = room.x; x < room.x + room.w; x++) light(x, y);
+    // 짙은 안개(fog) 돌발 이벤트 시 반경 2칸으로 시야 제한
+    if (level.mutator === "fog") {
+        for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) light(from.x + dx, from.y + dy);
+        }
+    } else {
+        // 안쪽에 섰으면 그 방, **문턱에 섰으면 그 문이 난 방.** 문에서 방이 안 켜지면
+        // 들어서는 그 한 걸음 동안 방이 깜깜해 보인다 — 원작은 문턱에서도 방을 보여 준다.
+        const ri =
+            roomOf(level, from.x, from.y) >= 0
+                ? roomOf(level, from.x, from.y)
+                : tiles[idx(from.x, from.y)] === T.DOOR
+                  ? roomAround(level, from.x, from.y)
+                  : -1;
+        if (ri >= 0) {
+            const room = level.rooms[ri];
+            // 미로 방은 「방」이 아니다 — 안쪽이 얽힌 통로라 통째로 보이면 미로가 아니게 된다.
+            if (room && !room.dark && !room.gone && !room.maze) {
+                // 밝은 방 — 벽까지 통째로.
+                for (let y = room.y; y < room.y + room.h; y++) {
+                    for (let x = room.x; x < room.x + room.w; x++) light(x, y);
+                }
+                // 벽에 난 문도 그 방의 것이다.
+                for (let y = room.y; y < room.y + room.h; y++) {
+                    for (let x = room.x; x < room.x + room.w; x++) {
+                        if (tiles[idx(x, y)] === T.DOOR) light(x, y);
+                    }
+                }
+            }
+        }
     }
-    // 벽에 난 문도 그 방의 것이다.
-    for (let y = room.y; y < room.y + room.h; y++) {
-        for (let x = room.x; x < room.x + room.w; x++) {
-            if (tiles[idx(x, y)] === T.DOOR) light(x, y);
+
+    // 다이달로스의 나침반: 모든 비밀문의 위치를 감지하여 기억에 표시
+    if (hero?.pack?.some((it) => it.kind === "relic" && it.type === "daedalus_compass")) {
+        for (let y = 0; y < MAP_H; y++) {
+            for (let x = 0; x < MAP_W; x++) {
+                if (tiles[idx(x, y)] === T.SECRET) {
+                    flags[idx(x, y)] |= SEEN;
+                }
+            }
         }
     }
 }

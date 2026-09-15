@@ -35,6 +35,7 @@ import {
 import {
     defenseOf,
     describe,
+    makeItem,
 } from "./items";
 import {
     type Attack,
@@ -272,11 +273,15 @@ export function monsterDamageLine(
     return `${DETAIL}공격력 ${each}  = 피해 ${total}`;
 }
 
+import { monsterName } from "./monsters";
+
 export interface AttackResult {
     hit: boolean;
     roll: number;
     damage: number;
     killed: boolean;
+    crit?: boolean;
+    blocked?: boolean;
     messages: string[];
 }
 
@@ -294,7 +299,9 @@ export function heroLuck(hero: GameState["hero"], m: Monster): Luck {
 
 /** 몬스터의 **수비 굴림 보정** — 숙련 하나뿐이다(내 쪽과 같은 모양). */
 export function monsterDodgeBonus(m: Monster): number {
-    return proficiency(m.def.level);
+    const base = proficiency(m.def.level);
+    const shadowBonus = m.champion === "shadow" ? 2 : 0;
+    return base + shadowBonus;
 }
 
 /** 몬스터의 **방어력** — 맞았을 때 내 공격력에서 빠지는 값. */
@@ -307,7 +314,8 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
     const hero = state.hero;
     const hitTerms = heroHitTerms(hero);
     const seen = seenBefore(state, m);
-    const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: "숙련" }];
+    const mName = monsterName(m);
+    const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: m.champion === "shadow" ? "숙련+그림자" : "숙련" }];
     const a = opposedRoll(
         hitTerms.reduce((t, b) => t + b.n, 0),
         dodge[0].n,
@@ -319,11 +327,11 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
     // 계산이 먼저, 결과가 나중 — 기록 판은 뒤집어 보여 주므로 거기서는 결과가 위로
     // 오고 그 아래에 「왜 그랬나」가 붙는다.
     messages.push(
-        attackLine("나", a, hitTerms, { who: m.def.name, bonus: dodge, show: seen }, outcomeOf(a)),
+        attackLine("나", a, hitTerms, { who: mName, bonus: dodge, show: seen }, outcomeOf(a)),
     );
 
     if (!a.hit) {
-        messages.push(`${m.def.name}을(를) 헛쳤다.`);
+        messages.push(`${mName}을(를) 헛쳤다.`);
         return { hit: false, roll: a.roll, damage: 0, killed: false, messages };
     }
 
@@ -347,18 +355,52 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
     messages.push(
         withDamage(
             killed
-                ? `${m.def.name}을(를) 쓰러뜨렸다.`
+                ? `${mName}을(를) 쓰러뜨렸다.`
                 : dealt === 0
-                  ? `${m.def.name}의 갑옷에 튕겼다.`
+                  ? `${mName}의 갑옷에 튕겼다.`
                   : isBackstab
-                    ? `${m.def.name}의 빈틈을 기습하여 급소를 찔렀다!`
+                    ? `${mName}의 빈틈을 기습하여 급소를 찔렀다!`
                     : a.crit
-                      ? `${m.def.name}의 급소를 찔렀다!`
-                      : `${m.def.name}을(를) 맞혔다.`,
+                      ? `${mName}의 급소를 찔렀다!`
+                      : `${mName}을(를) 맞혔다.`,
             dealt,
         ),
     );
-    return { hit: true, roll: a.roll, damage: dealt, killed, messages };
+
+    // ── 챔피언 피격 특수 반응 ──
+    if (m.champion === "blazing") {
+        hero.burnTurns = 3;
+        messages.push("타오르는 화염이 반사되어 몸에 불이 붙었다! (화상 3턴)");
+    } else if (m.champion === "gilded" && dealt > 0) {
+        const goldDropped = rng.between(10, 30);
+        messages.push(`황금 몬스터가 피격되며 금화 ${goldDropped}G를 흘렸다!`);
+        state.level.items.push(makeItem("gold", "gold", state.nextItemId++, m.x, m.y, goldDropped));
+    }
+
+    // ── 무기 보석 소켓 효과 ──
+    const weapon = equippedWeapon(hero);
+    if (weapon?.socketGem === "ruby") {
+        m.burnTurns = 3;
+        messages.push(`루비의 화염이 ${mName}에게 옮겨붙었다! (화상 3턴)`);
+    } else if (weapon?.socketGem === "sapphire") {
+        if (rng.rnd(100) < 25) {
+            m.frozenTurns = 1;
+            messages.push(`사파이어의 냉기가 ${mName}을(를) 1턴간 얼어붙게 만들었다!`);
+        }
+    } else if (weapon?.socketGem === "emerald" && killed) {
+        hero.hp = Math.min(hero.maxHp, hero.hp + 2);
+        messages.push("에메랄드가 생명력을 흡수했다! (+2 HP)");
+    }
+
+    return {
+        hit: true,
+        roll: a.roll,
+        damage: dealt,
+        killed,
+        crit: isCrit,
+        blocked: dealt === 0,
+        messages,
+    };
 }
 
 /**
@@ -369,13 +411,14 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
     const hero = state.hero;
     const messages: string[] = [];
     const attacks: Attack[] = [];
+    const mName = monsterName(m);
     // **내 방어력** — 대마다 이만큼씩 깎인다. 여러 대를 때리는 놈에게 갑옷이 특히 세게
     // 듣는 자리가 여기다.
     const guard = heroDefense(hero);
     const myDodge = heroDodgeBonus(hero);
     const dodgeTerms: Term[] = [{ n: myDodge, why: "숙련" }];
     const bonus = monsterHitBonus(m);
-    const bonusTerms: Term[] = [{ n: bonus, why: "공격" }];
+    const bonusTerms: Term[] = [{ n: bonus, why: m.champion === "swift" ? "공격+신속" : "공격" }];
     // **내가 자거나 덫에 걸려 있으면 상대가 유리하다** — 못 움직이는 상대를 치는 것이다.
     const luck = luckOf([hero.asleep > 0 || hero.stuck > 0], []);
     let total = 0;
@@ -406,6 +449,17 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
         hero.hp -= got;
     }
 
+    // ── 챔피언 공격 특수 효과 ──
+    if (m.champion === "vampiric" && total > 0) {
+        const leech = Math.ceil(total * 0.5);
+        m.hp = Math.min(m.maxHp, m.hp + leech);
+        messages.push(`${mName}이(가) 입힌 피해에서 생명력 ${leech}을(를) 흡혈했다!`);
+    }
+    if (m.champion === "blazing" && hits > 0) {
+        hero.burnTurns = 3;
+        messages.push("타오르는 일격에 몸에 불이 붙었다! (화상 3턴)");
+    }
+
     // 계산 줄을 맨 앞에 끼운다 — 특수 공격이 이미 남긴 말보다 먼저 와야 한다.
     if (attacks.length > 0) {
         const seen = seenBefore(state, m);
@@ -416,8 +470,8 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
         const against = { who: "나", bonus: dodgeTerms, show: true };
         messages.unshift(
             attacks.length === 1
-                ? attackLine(m.def.name, attacks[0], seen ? bonusTerms : [], against, outcome)
-                : multiAttackLine(m.def.name, attacks, seen ? bonusTerms : [], against, outcome),
+                ? attackLine(mName, attacks[0], seen ? bonusTerms : [], against, outcome)
+                : multiAttackLine(mName, attacks, seen ? bonusTerms : [], against, outcome),
         );
         // **잡아 본 종이면 상대의 주사위까지 적는다.** 싸움의 절반이 상대의 차례인데
         // 그쪽만 속을 안 보여 주면 내가 왜 죽었는지를 기록에서 되짚을 수가 없다. 모르는
@@ -430,19 +484,27 @@ export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackRes
         }
     }
 
-    if (hits === 0) messages.push(`${m.def.name}의 공격이 빗나갔다.`);
+    if (hits === 0) messages.push(`${mName}의 공격이 빗나갔다.`);
     else if (total > 0) {
         messages.push(
             withDamage(
-                crits > 0 ? `${m.def.name}에게 급소를 찔렸다!` : `${m.def.name}에게 맞았다.`,
+                crits > 0 ? `${mName}에게 급소를 찔렸다!` : `${mName}에게 맞았다.`,
                 total,
             ),
         );
     } else if (blocked > 0) {
-        messages.push(`${m.def.name}의 공격이 갑옷에 튕겼다.`);
+        messages.push(`${mName}의 공격이 갑옷에 튕겼다.`);
     }
 
-    return { hit: hits > 0, roll: lastRoll, damage: total, killed: hero.hp <= 0, messages };
+    return {
+        hit: hits > 0,
+        roll: lastRoll,
+        damage: total,
+        killed: hero.hp <= 0,
+        crit: crits > 0,
+        blocked: blocked > 0 && hits > 0 && total === 0,
+        messages,
+    };
 }
 
 /**

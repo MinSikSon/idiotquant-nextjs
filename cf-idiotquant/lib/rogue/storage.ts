@@ -125,6 +125,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
             def: MONSTERS[ch] ?? MONSTERS.B,
             speed: num((rest as Partial<Monster>).speed, 0),
             cancelled: (rest as Partial<Monster>).cancelled === true,
+            champion: (rest as Partial<Monster>).champion ?? undefined,
         })),
         // 바닥에 떨어져 있는 것도 손질을 올린다 — 주우면 배낭으로 들어온다.
         items: liftEnchants(Array.isArray(raw.items) ? raw.items : []),
@@ -137,6 +138,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         maze: raw.maze === true,
         // 옛 저장에는 특수 방이 없다 — **그 층에는 없는 것이 맞다**(모루와 같은 까닭).
         special: raw.special ?? null,
+        mutator: raw.mutator ?? null,
     };
 }
 
@@ -471,6 +473,28 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             name = "옌더의 증표";
             power = "승리의 열쇠";
             break;
+        case "gem": {
+            const gemNames: Record<string, string> = {
+                ruby: "불꽃의 루비",
+                sapphire: "서리의 사파이어",
+                emerald: "생명의 에메랄드",
+                topaz: "수호의 토파즈",
+            };
+            name = gemNames[it.type] ?? "원소 보석";
+            power = "소켓 세공용 보석";
+            break;
+        }
+        case "relic": {
+            const relicNames: Record<string, string> = {
+                daedalus_compass: "다이달로스의 나침반",
+                midas_gauntlet: "미다스의 건틀릿",
+                time_hourglass: "시간의 모래시계",
+                phoenix_feather: "불사조의 깃털",
+            };
+            name = relicNames[it.type] ?? "전설 유물";
+            power = "고대 전설 유물";
+            break;
+        }
         case "potion":
             name = `${POTIONS[it.type]?.name ?? "이름 없는"} 물약`;
             break;
@@ -509,7 +533,8 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
         }
         case "weapon": {
             const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
-            name = `${base}${plusText(it.plusHit)}${curseText}`;
+            const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "루비" : it.socketGem === "sapphire" ? "사파이어" : "에메랄드"}]` : "";
+            name = `${base}${plusText(it.plusHit)}${sock}${curseText}`;
             const dam = weaponDamageOf(it);
             const plusDam = it.plusDam ? (it.plusDam > 0 ? `+${it.plusDam}` : `${it.plusDam}`) : "";
             power = `피해 ${dam}${plusDam}`;
@@ -517,7 +542,8 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
         }
         case "armor": {
             const base = ARMORS[it.type]?.name ?? "이름 없는 갑옷";
-            name = `${base}${plusText(it.plusArmor)}${curseText}`;
+            const sock = it.socketGem === "topaz" ? " [토파즈]" : "";
+            name = `${base}${plusText(it.plusArmor)}${sock}${curseText}`;
             power = `방어력 ${defenseOf(armorClassOf(it))}`;
             break;
         }

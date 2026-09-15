@@ -37,6 +37,13 @@ const INK: Record<string, string> = {
     "item-ring": "var(--rg-ring)",
     "item-wand": "var(--rg-wand)",
     "item-amulet": "var(--rg-amulet)",
+    "item-relic": "var(--rg-gold)",
+    "item-gem": "var(--rg-potion)",
+    "champion-blazing": "var(--rg-trap)",
+    "champion-shadow": "var(--rg-wand)",
+    "champion-gilded": "var(--rg-gold)",
+    "champion-swift": "var(--rg-ring)",
+    "champion-vampiric": "var(--rg-potion)",
     trap: "var(--rg-trap)",
     "trap-dim": "var(--rg-trap-dim)",
     anvil: "var(--rg-anvil)",
@@ -61,7 +68,24 @@ interface Run {
     ink: string;
 }
 
-export default function MapView({ state }: { state: GameState }) {
+export interface FloatingEffect {
+    id: number;
+    text: string;
+    x: number;
+    y: number;
+    color: string;
+    isCrit?: boolean;
+}
+
+export default function MapView({
+    state,
+    floatingEffects = [],
+    shake = false,
+}: {
+    state: GameState;
+    floatingEffects?: FloatingEffect[];
+    shake?: boolean;
+}) {
     const boxRef = useRef<HTMLDivElement>(null);
     const probeRef = useRef<HTMLSpanElement>(null);
     const [cell, setCell] = useState({ w: 8.4, h: 17 });
@@ -113,6 +137,11 @@ export default function MapView({ state }: { state: GameState }) {
         rows.push(runs);
     }
 
+    // 현재 화면 시야에 들어오는 플로팅 이펙트 필터링
+    const visibleEffects = floatingEffects.filter(
+        (eff) => eff.x >= ox && eff.x < ox + view.cols && eff.y >= oy && eff.y < oy + view.rows,
+    );
+
     return (
         // 지도는 가운데에 선다. 왼쪽에 붙여 두면 넓은 화면에서 던전이 한쪽 구석에 몰리고
         // 오른쪽 절반이 통째로 검은 여백이 된다 — 예전 게임이 겪은 그 자리다.
@@ -126,20 +155,43 @@ export default function MapView({ state }: { state: GameState }) {
                 00000000000000000000
             </span>
 
-            <pre
-                aria-label={`지하 ${state.level.depth}층 지도`}
-                className="m-0 select-none whitespace-pre font-[family-name:var(--font-plex-mono)] text-[13px] leading-[1.32] sm:text-[15px]"
-            >
-                {rows.map((runs, i) => (
-                    <div key={i}>
-                        {runs.map((r, j) => (
-                            <span key={j} style={{ color: r.ink }}>
-                                {r.text}
-                            </span>
-                        ))}
-                    </div>
-                ))}
-            </pre>
+            <div className={`relative inline-block ${shake ? "shake-crit" : ""}`}>
+                <pre
+                    aria-label={`지하 ${state.level.depth}층 지도`}
+                    className="m-0 select-none whitespace-pre font-[family-name:var(--font-plex-mono)] text-[13px] leading-[1.32] sm:text-[15px]"
+                >
+                    {rows.map((runs, i) => (
+                        <div key={i}>
+                            {runs.map((r, j) => (
+                                <span key={j} style={{ color: r.ink }}>
+                                    {r.text}
+                                </span>
+                            ))}
+                        </div>
+                    ))}
+                </pre>
+
+                {/* 플로팅 전투 텍스트 & 특수 연출 레이어 */}
+                {visibleEffects.map((eff) => {
+                    const left = (eff.x - ox) * cell.w;
+                    const top = (eff.y - oy) * cell.h;
+                    return (
+                        <div
+                            key={eff.id}
+                            className="float-combat-text absolute z-10 whitespace-nowrap font-[family-name:var(--font-plex-mono)] font-bold tracking-wider"
+                            style={{
+                                left: `${left}px`,
+                                top: `${top}px`,
+                                color: eff.color,
+                                textShadow: "0 1px 3px var(--rg-bg), 0 0 6px var(--rg-bg)",
+                                fontSize: eff.isCrit ? "14px" : "12px",
+                            }}
+                        >
+                            {eff.text}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }

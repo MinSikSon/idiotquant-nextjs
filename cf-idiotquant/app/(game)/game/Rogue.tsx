@@ -86,10 +86,33 @@ import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/ty
 import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
 import Aim from "./components/Aim";
-import MapView from "./components/MapView";
+import MapView, { type FloatingEffect } from "./components/MapView";
 import Panel from "./components/Panel";
 import TouchPad, { type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
+
+const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: string }> = {
+    fog: {
+        title: "짙은 안개",
+        desc: "한 치 앞도 보이지 않아 시야가 2칸으로 극도로 좁아집니다.",
+        icon: "🌫️",
+    },
+    frenzy: {
+        title: "광기의 둥지",
+        desc: "몬스터들이 흥분 상태에 빠져 신속하게 움직입니다!",
+        icon: "⚡",
+    },
+    vault: {
+        title: "고대 보물창고",
+        desc: "어딘가에 막대한 금화와 진귀한 보석들이 숨겨져 있습니다.",
+        icon: "💰",
+    },
+    armory_floor: {
+        title: "버려진 무기고",
+        desc: "오래된 모루와 다양한 장비들이 널브러져 있습니다.",
+        icon: "⚔️",
+    },
+};
 
 /** 무엇을 고르는 중인가 — 원작의 「어느 것을?」 자리. */
 interface Picker {
@@ -148,6 +171,18 @@ export default function Rogue() {
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const buried = useRef(false);
 
+    /** 전투 피드백 & 특수 효과 연출 상태 (P6) */
+    const [floatingEffects, setFloatingEffects] = useState<FloatingEffect[]>([]);
+    const [shake, setShake] = useState(false);
+    const [showBanner, setShowBanner] = useState(false);
+    const lastStateRef = useRef<{
+        hp: number;
+        gold: number;
+        exp: number;
+        depth: number;
+        turn: number;
+    } | null>(null);
+
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
     useEffect(() => {
         const kept = loadBestiary();
@@ -187,6 +222,137 @@ export default function Rogue() {
             // 여기서 짐작해야 한다.
             setTombs(bury(state));
             clear();
+        }
+    }, [state]);
+
+    // ── 전투 피드백 & 특수 효과 추적 (P6) ──────────────────────────────────
+    useEffect(() => {
+        if (!state) return;
+        const prev = lastStateRef.current;
+        const curr = {
+            hp: state.hero.hp,
+            gold: state.hero.gold,
+            exp: state.hero.exp,
+            depth: state.level.depth,
+            turn: state.turn,
+        };
+        lastStateRef.current = curr;
+
+        if (!prev) {
+            if (state.level.mutator) {
+                setShowBanner(true);
+                const timer = setTimeout(() => setShowBanner(false), 3200);
+                return () => clearTimeout(timer);
+            }
+            return;
+        }
+        if (prev.turn === curr.turn && prev.depth === curr.depth) return;
+
+        const newEffects: FloatingEffect[] = [];
+        let triggerShake = false;
+
+        // 1. 층 변경 시 이벤트 배너
+        if (prev.depth !== curr.depth && state.level.mutator) {
+            setShowBanner(true);
+            setTimeout(() => setShowBanner(false), 3200);
+        }
+
+        // 2. 체력 변동 (영웅 피격 / 치유)
+        const hpDiff = curr.hp - prev.hp;
+        if (hpDiff < 0) {
+            newEffects.push({
+                id: Date.now() + Math.random(),
+                text: `${hpDiff}`,
+                x: state.hero.x,
+                y: state.hero.y,
+                color: "var(--rg-potion)",
+            });
+            if (Math.abs(hpDiff) >= Math.max(5, Math.floor(state.hero.maxHp * 0.25))) {
+                triggerShake = true;
+            }
+        } else if (hpDiff > 0 && prev.depth === curr.depth) {
+            newEffects.push({
+                id: Date.now() + Math.random(),
+                text: `+${hpDiff} HP`,
+                x: state.hero.x,
+                y: state.hero.y,
+                color: "var(--rg-ring)",
+            });
+        }
+
+        // 3. 골드 획득
+        const goldDiff = curr.gold - prev.gold;
+        if (goldDiff > 0) {
+            newEffects.push({
+                id: Date.now() + Math.random(),
+                text: `+${goldDiff} G`,
+                x: state.hero.x,
+                y: state.hero.y - 1,
+                color: "var(--rg-gold)",
+            });
+        }
+
+        // 4. 경험치 획득
+        const expDiff = curr.exp - prev.exp;
+        if (expDiff > 0) {
+            newEffects.push({
+                id: Date.now() + Math.random(),
+                text: `+${expDiff} EXP`,
+                x: state.hero.x + 1,
+                y: state.hero.y,
+                color: "var(--rg-scroll)",
+            });
+        }
+
+        // 5. 최근 메시지 분석 (치명타, 시간정지, 불사조 부활, 동결/화상 등)
+        const recentMsgs = state.messages.slice(-3);
+        for (const m of recentMsgs) {
+            if (m.includes("치명타") || m.includes("CRIT")) {
+                triggerShake = true;
+                newEffects.push({
+                    id: Date.now() + Math.random(),
+                    text: "💥 CRIT!",
+                    x: state.hero.x,
+                    y: state.hero.y - 1,
+                    color: "var(--rg-trap)",
+                    isCrit: true,
+                });
+            }
+            if (m.includes("시간이 멈췄습니다")) {
+                newEffects.push({
+                    id: Date.now() + Math.random(),
+                    text: "⏳ TIME STOP!",
+                    x: state.hero.x,
+                    y: state.hero.y,
+                    color: "var(--rg-wand)",
+                    isCrit: true,
+                });
+            }
+            if (m.includes("불사조의 깃털이 타오르며")) {
+                triggerShake = true;
+                newEffects.push({
+                    id: Date.now() + Math.random(),
+                    text: "🔥 PHOENIX!",
+                    x: state.hero.x,
+                    y: state.hero.y,
+                    color: "var(--rg-trap)",
+                    isCrit: true,
+                });
+            }
+        }
+
+        if (newEffects.length > 0) {
+            setFloatingEffects((prevList) => [...prevList.slice(-6), ...newEffects]);
+            setTimeout(() => {
+                setFloatingEffects((prevList) =>
+                    prevList.filter((e) => !newEffects.some((ne) => ne.id === e.id)),
+                );
+            }, 850);
+        }
+
+        if (triggerShake) {
+            setShake(true);
+            setTimeout(() => setShake(false), 240);
         }
     }, [state]);
 
@@ -547,15 +713,81 @@ export default function Rogue() {
         switch (it.kind) {
             case "weapon":
                 if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
+                    out.push({
+                        label: "보석 세공 (모루)",
+                        on: () => {
+                            const gearLetter = it.letter!;
+                            setChosen(null);
+                            setSheet("none");
+                            setPicker({
+                                title: "어느 보석을 세공할까",
+                                kinds: ["gem"],
+                                empty: "세공할 보석이 없다.",
+                                make: (gemLetter) => ({ t: "socket", gearLetter, gemLetter }),
+                            });
+                        },
+                    });
+                }
                 meltRow();
                 break;
             case "armor":
                 if (!worn) out.push({ label: "입는다", on: go({ t: "wear", letter: it.letter! }) });
+                if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
+                    out.push({
+                        label: "보석 세공 (모루)",
+                        on: () => {
+                            const gearLetter = it.letter!;
+                            setChosen(null);
+                            setSheet("none");
+                            setPicker({
+                                title: "어느 보석을 세공할까",
+                                kinds: ["gem"],
+                                empty: "세공할 보석이 없다.",
+                                make: (gemLetter) => ({ t: "socket", gearLetter, gemLetter }),
+                            });
+                        },
+                    });
+                }
                 meltRow();
                 break;
             case "ring":
                 if (worn) out.push({ label: "뺀다", on: go({ t: "removeRing", letter: it.letter! }) });
                 else out.push({ label: "낀다", on: go({ t: "putOn", letter: it.letter! }) });
+                break;
+            case "relic":
+                if (it.type === "time_hourglass") {
+                    if (it.relicCooldown && it.relicCooldown > 0) {
+                        out.push({
+                            label: `모래시계 쿨다운 (${it.relicCooldown}턴)`,
+                            on: () => {},
+                        });
+                    } else {
+                        out.push({
+                            label: "시간 정지 (3턴)",
+                            on: go({ t: "use_relic", letter: it.letter! }),
+                        });
+                    }
+                }
+                break;
+            case "gem":
+                if (onAnvil) {
+                    out.push({
+                        label: "보석 세공 (장비 장착)",
+                        on: () => {
+                            const gemLetter = it.letter!;
+                            setChosen(null);
+                            setSheet("none");
+                            setPicker({
+                                title: "어느 장비에 세공할까",
+                                kinds: ["weapon", "armor"],
+                                allow: (p) => !p.socketGem,
+                                empty: "소켓이 비어있는 장비가 없다.",
+                                make: (gearLetter) => ({ t: "socket", gearLetter, gemLetter }),
+                            });
+                        },
+                    });
+                }
                 break;
             case "potion":
                 out.push({ label: "마신다", on: go({ t: "quaff", letter: it.letter! }) });
@@ -639,8 +871,23 @@ export default function Rogue() {
                 <span className="sr-only">— 누르면 지나온 기록이 펼쳐집니다</span>
             </button>
 
-            <div className="min-h-0 flex-1">
-                <MapView state={state} />
+            <div className="relative min-h-0 flex-1">
+                <MapView state={state} floatingEffects={floatingEffects} shake={shake} />
+
+                {/* 층 돌발 이벤트 진입 알림 배너 */}
+                {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
+                    <div className="banner-pop pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1.5 shadow-md">
+                        <span className="text-base">{FLOOR_EVENT_BANNER[level.mutator].icon}</span>
+                        <div className="text-left">
+                            <div className="font-bold text-[13px] text-[var(--rg-strong)]">
+                                {FLOOR_EVENT_BANNER[level.mutator].title}
+                            </div>
+                            <div className="text-[11px] text-[var(--rg-muted)]">
+                                {FLOOR_EVENT_BANNER[level.mutator].desc}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 상태 줄 — 원작의 맨 아랫줄.
@@ -659,6 +906,14 @@ export default function Rogue() {
                 <span>Str: {heroStr(hero)}({hero.maxStr})</span>
                 <span>Arm: {heroArmor(hero)}</span>
                 <span>Exp: {hero.level}/{hero.exp}</span>
+                {level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
+                    <span className="text-[var(--rg-gold)] font-medium">
+                        {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
+                    </span>
+                )}
+                {(hero.timeStop ?? 0) > 0 && (
+                    <span className="text-[var(--rg-wand)] font-bold">TimeStop({hero.timeStop})</span>
+                )}
                 {rings.length > 0 && <span className="text-[var(--rg-ring)]">Ring: {rings.length}</span>}
                 {hero.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded</span>}
                 {hero.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}

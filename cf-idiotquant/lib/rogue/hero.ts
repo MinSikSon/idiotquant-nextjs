@@ -199,7 +199,10 @@ export function heroDefense(hero: Hero): number {
  * 세이고, 그러면 판금 갑옷 한 벌에 싸움이 끝난다. 갑옷은 「덜 아프게」만 한다.
  */
 export function heroDodgeBonus(hero: Hero): number {
-    return proficiency(hero.level);
+    const base = proficiency(hero.level);
+    const armor = equippedArmor(hero);
+    const topazBonus = armor?.socketGem === "topaz" ? 2 : 0;
+    return base + topazBonus;
 }
 
 /** 내 숙련 보너스 — 레벨이 오르면 네 레벨마다 하나씩 는다. */
@@ -231,10 +234,17 @@ export function heroHitTerms(hero: Hero): Term[] {
 /** 피해에 얹히는 것들 — 같은 능력 보정이 여기에도 온다(D&D 가 그렇다). */
 export function heroDamTerms(hero: Hero): Term[] {
     const weapon = equippedWeapon(hero);
-    return [
+    const terms: Term[] = [
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
     ];
+    const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")
+        ? Math.min(10, Math.floor(hero.gold / 100))
+        : 0;
+    if (midas > 0) {
+        terms.push({ n: midas, why: "미다스" });
+    }
+    return terms;
 }
 
 /**

@@ -586,6 +586,10 @@ export function itemChar(kind: ItemKind): string {
             return "/";
         case "amulet":
             return ",";
+        case "relic":
+            return "$";
+        case "gem":
+            return "^";
     }
 }
 
@@ -597,6 +601,17 @@ function plusText(n: number | undefined): string {
 /** 저주가 드러났으면 그렇게 적는다. 드러나기 전에는 아무 표시도 없다. */
 function curseText(it: Item): string {
     return it.curseKnown && it.cursed ? " (저주)" : "";
+}
+
+function socketText(it: Item): string {
+    if (!it.socketGem) return "";
+    const nameMap: Record<string, string> = {
+        ruby: "루비",
+        sapphire: "사파이어",
+        emerald: "에메랄드",
+        topaz: "토파즈",
+    };
+    return ` [${nameMap[it.socketGem] ?? it.socketGem}]`;
 }
 
 /**
@@ -618,6 +633,25 @@ export function describe(
             return it.count > 1 ? `식량 ${it.count}개` : "식량";
         case "amulet":
             return "옌더의 증표";
+        case "gem": {
+            const gemNames: Record<string, string> = {
+                ruby: "불꽃의 루비",
+                sapphire: "서리의 사파이어",
+                emerald: "생명의 에메랄드",
+                topaz: "수호의 토파즈",
+            };
+            return gemNames[it.type] ?? "원소 보석";
+        }
+        case "relic": {
+            const relicNames: Record<string, string> = {
+                daedalus_compass: "다이달로스의 나침반",
+                midas_gauntlet: "미다스의 건틀릿",
+                time_hourglass: "시간의 모래시계",
+                phoenix_feather: "불사조의 깃털",
+            };
+            const cool = it.relicCooldown && it.relicCooldown > 0 ? ` (대기 ${it.relicCooldown}턴)` : "";
+            return (relicNames[it.type] ?? "전설 유물") + cool;
+        }
         case "potion":
             return known[key] ? `${POTIONS[it.type]?.name ?? "이름 없는"} 물약` : (appearance[key] ?? "물약");
         case "scroll":
@@ -634,15 +668,17 @@ export function describe(
             // **개수는 여기서 안 붙인다.** 화면이 이미 `×10` 을 붙이므로 「다트 10개 ×10」
             // 이 되고, 하나를 던졌을 때 「다트 10개를 던졌다」로도 읽힌다.
             const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
+            const sock = socketText(it);
             return known[key]
-                ? `${base}${plusText(it.plusHit)}${curseText(it)}`
-                : `${base}${curseText(it)}`;
+                ? `${base}${plusText(it.plusHit)}${sock}${curseText(it)}`
+                : `${base}${sock}${curseText(it)}`;
         }
         case "armor": {
             const base = ARMORS[it.type]?.name ?? "이름 없는 갑옷";
+            const sock = socketText(it);
             return known[key]
-                ? `${base}${plusText(it.plusArmor)}${curseText(it)}`
-                : `${base}${curseText(it)}`;
+                ? `${base}${plusText(it.plusArmor)}${sock}${curseText(it)}`
+                : `${base}${sock}${curseText(it)}`;
         }
     }
 }
@@ -651,7 +687,8 @@ export function describe(
 export function armorClassOf(it: Item | undefined): number {
     if (!it || it.kind !== "armor") return 10;
     const base = ARMORS[it.type]?.armor ?? 10;
-    return base - (it.plusArmor ?? 0);
+    const topazBonus = it.socketGem === "topaz" ? 1 : 0;
+    return base - (it.plusArmor ?? 0) - topazBonus;
 }
 
 /**
@@ -685,14 +722,34 @@ export function defenseOf(rogueArmor: number): number {
  */
 export function itemPower(it: Item, known: Record<string, boolean>): string {
     const seen = known[`${it.kind}:${it.type}`] === true;
+    if (it.kind === "gem") {
+        const descMap: Record<string, string> = {
+            ruby: "화상 (턴당 2 지속 피해)",
+            sapphire: "동결 (25% 확률 1턴 정지)",
+            emerald: "흡혈 (처치 시 HP +2 회복)",
+            topaz: "수호 (방어력 +1, 회피 +2)",
+        };
+        return descMap[it.type] ?? "소켓 세공용 보석";
+    }
+    if (it.kind === "relic") {
+        const descMap: Record<string, string> = {
+            daedalus_compass: "비밀문 & 미로 탐지",
+            midas_gauntlet: "100G당 공격력 +1",
+            time_hourglass: "시간 정지 3턴 (쿨 50턴)",
+            phoenix_feather: "치명상 시 1회 완전 부활",
+        };
+        return descMap[it.type] ?? "고대 전설 유물";
+    }
     if (it.kind === "weapon") {
         const plus = seen ? (it.plusDam ?? 0) : 0;
-        return `피해 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}`;
+        const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "화염" : it.socketGem === "sapphire" ? "동결" : "흡혈"}]` : "";
+        return `피해 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}${sock}`;
     }
     if (it.kind === "armor") {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
         const base = ARMORS[it.type]?.armor ?? 10;
-        return `방어력 ${defenseOf(seen ? armorClassOf(it) : base)}`;
+        const sock = it.socketGem === "topaz" ? " [수호]" : "";
+        return `방어력 ${defenseOf(seen ? armorClassOf(it) : base)}${sock}`;
     }
     if (it.kind === "ring") {
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
