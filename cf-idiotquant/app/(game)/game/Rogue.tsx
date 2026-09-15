@@ -181,6 +181,7 @@ export default function Rogue() {
         exp: number;
         depth: number;
         turn: number;
+        messagesLen: number;
     } | null>(null);
 
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
@@ -235,13 +236,14 @@ export default function Rogue() {
             exp: state.hero.exp,
             depth: state.level.depth,
             turn: state.turn,
+            messagesLen: state.messages.length,
         };
         lastStateRef.current = curr;
 
         if (!prev) {
             if (state.level.mutator) {
                 setShowBanner(true);
-                const timer = setTimeout(() => setShowBanner(false), 3200);
+                const timer = setTimeout(() => setShowBanner(false), 2600);
                 return () => clearTimeout(timer);
             }
             return;
@@ -251,24 +253,42 @@ export default function Rogue() {
         const newEffects: FloatingEffect[] = [];
         let triggerShake = false;
 
-        // 1. 층 변경 시 이벤트 배너
+        // 1. 층 변경 시 이벤트 배너 (2.6초간 단정하게 표시)
         if (prev.depth !== curr.depth && state.level.mutator) {
             setShowBanner(true);
-            setTimeout(() => setShowBanner(false), 3200);
+            setTimeout(() => setShowBanner(false), 2600);
         }
 
-        // 2. 체력 변동 (영웅 피격 / 치유)
+        // 2. 이번 턴에 새롭게 추가된 메시지만 분석 (이전 턴 메시지 잔류로 인한 중복 트리거 방지)
+        const newMsgs = state.messages.slice(prev.messagesLen);
+        const hasCritMsg = newMsgs.some((m) => m.includes("치명타") || m.includes("CRIT"));
+        const hasTimeStopMsg = newMsgs.some((m) => m.includes("시간이 멈췄습니다"));
+        const hasPhoenixMsg = newMsgs.some((m) => m.includes("불사조의 깃털이 타오르며"));
+
+        // 3. 체력 변동 (영웅 피격 / 치유)
         const hpDiff = curr.hp - prev.hp;
         if (hpDiff < 0) {
-            newEffects.push({
-                id: Date.now() + Math.random(),
-                text: `${hpDiff}`,
-                x: state.hero.x,
-                y: state.hero.y,
-                color: "var(--rg-potion)",
-            });
-            if (Math.abs(hpDiff) >= Math.max(5, Math.floor(state.hero.maxHp * 0.25))) {
+            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.hero.maxHp * 0.3));
+            if (hasCritMsg) {
+                // 크리티컬 피격 시 텍스트 병합 (CRIT -15)
+                newEffects.push({
+                    id: Date.now() + Math.random(),
+                    text: `CRIT ${hpDiff}`,
+                    x: state.hero.x,
+                    y: state.hero.y,
+                    color: "var(--rg-trap)",
+                    isCrit: true,
+                });
                 triggerShake = true;
+            } else {
+                newEffects.push({
+                    id: Date.now() + Math.random(),
+                    text: `${hpDiff}`,
+                    x: state.hero.x,
+                    y: state.hero.y,
+                    color: "var(--rg-potion)",
+                });
+                if (isHeavyHit) triggerShake = true;
             }
         } else if (hpDiff > 0 && prev.depth === curr.depth) {
             newEffects.push({
@@ -278,81 +298,66 @@ export default function Rogue() {
                 y: state.hero.y,
                 color: "var(--rg-ring)",
             });
+        } else if (hasCritMsg) {
+            // 영웅이 적에게 가한 크리티컬 타격 (피격 데미지 없음)
+            newEffects.push({
+                id: Date.now() + Math.random(),
+                text: "CRIT!",
+                x: state.hero.x,
+                y: state.hero.y,
+                color: "var(--rg-trap)",
+                isCrit: true,
+            });
+            triggerShake = true;
         }
 
-        // 3. 골드 획득
+        // 4. 골드 획득 (단정하게)
         const goldDiff = curr.gold - prev.gold;
         if (goldDiff > 0) {
             newEffects.push({
                 id: Date.now() + Math.random(),
                 text: `+${goldDiff} G`,
                 x: state.hero.x,
-                y: state.hero.y - 1,
+                y: state.hero.y,
                 color: "var(--rg-gold)",
             });
         }
 
-        // 4. 경험치 획득
-        const expDiff = curr.exp - prev.exp;
-        if (expDiff > 0) {
+        // 5. 특수 상태 연출
+        if (hasTimeStopMsg) {
             newEffects.push({
                 id: Date.now() + Math.random(),
-                text: `+${expDiff} EXP`,
-                x: state.hero.x + 1,
+                text: "TIME STOP",
+                x: state.hero.x,
                 y: state.hero.y,
-                color: "var(--rg-scroll)",
+                color: "var(--rg-wand)",
+                isCrit: true,
+            });
+        }
+        if (hasPhoenixMsg) {
+            triggerShake = true;
+            newEffects.push({
+                id: Date.now() + Math.random(),
+                text: "PHOENIX",
+                x: state.hero.x,
+                y: state.hero.y,
+                color: "var(--rg-trap)",
+                isCrit: true,
             });
         }
 
-        // 5. 최근 메시지 분석 (치명타, 시간정지, 불사조 부활, 동결/화상 등)
-        const recentMsgs = state.messages.slice(-3);
-        for (const m of recentMsgs) {
-            if (m.includes("치명타") || m.includes("CRIT")) {
-                triggerShake = true;
-                newEffects.push({
-                    id: Date.now() + Math.random(),
-                    text: "💥 CRIT!",
-                    x: state.hero.x,
-                    y: state.hero.y - 1,
-                    color: "var(--rg-trap)",
-                    isCrit: true,
-                });
-            }
-            if (m.includes("시간이 멈췄습니다")) {
-                newEffects.push({
-                    id: Date.now() + Math.random(),
-                    text: "⏳ TIME STOP!",
-                    x: state.hero.x,
-                    y: state.hero.y,
-                    color: "var(--rg-wand)",
-                    isCrit: true,
-                });
-            }
-            if (m.includes("불사조의 깃털이 타오르며")) {
-                triggerShake = true;
-                newEffects.push({
-                    id: Date.now() + Math.random(),
-                    text: "🔥 PHOENIX!",
-                    x: state.hero.x,
-                    y: state.hero.y,
-                    color: "var(--rg-trap)",
-                    isCrit: true,
-                });
-            }
-        }
-
         if (newEffects.length > 0) {
-            setFloatingEffects((prevList) => [...prevList.slice(-6), ...newEffects]);
+            setFloatingEffects((prevList) => [...prevList.slice(-4), ...newEffects]);
             setTimeout(() => {
                 setFloatingEffects((prevList) =>
                     prevList.filter((e) => !newEffects.some((ne) => ne.id === e.id)),
                 );
-            }, 850);
+            }, 650);
         }
 
         if (triggerShake) {
             setShake(true);
-            setTimeout(() => setShake(false), 240);
+            setTimeout(() => setShake(false), 160);
         }
     }, [state]);
 

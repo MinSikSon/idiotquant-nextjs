@@ -137,10 +137,18 @@ export default function MapView({
         rows.push(runs);
     }
 
-    // 현재 화면 시야에 들어오는 플로팅 이펙트 필터링
+    // 현재 화면 시야에 들어오는 플로팅 이펙트 필터링 및 겹침 방지 스택 계산
     const visibleEffects = floatingEffects.filter(
         (eff) => eff.x >= ox && eff.x < ox + view.cols && eff.y >= oy && eff.y < oy + view.rows,
     );
+
+    const coordCounts: Record<string, number> = {};
+    const stackedEffects = visibleEffects.map((eff) => {
+        const key = `${eff.x},${eff.y}`;
+        const stack = coordCounts[key] || 0;
+        coordCounts[key] = stack + 1;
+        return { ...eff, stack };
+    });
 
     return (
         // 지도는 가운데에 선다. 왼쪽에 붙여 두면 넓은 화면에서 던전이 한쪽 구석에 몰리고
@@ -171,20 +179,21 @@ export default function MapView({
                     ))}
                 </pre>
 
-                {/* 플로팅 전투 텍스트 & 특수 연출 레이어 */}
-                {visibleEffects.map((eff) => {
+                {/* 플로팅 전투 텍스트 & 특수 연출 레이어 (절제된 레트로 감성 & 겹침 방지) */}
+                {stackedEffects.map((eff) => {
                     const left = (eff.x - ox) * cell.w;
-                    const top = (eff.y - oy) * cell.h;
+                    // 같은 자리에 여러 개가 뜨면 위로 차곡차곡 쌓아 겹치지 않게 분리
+                    const top = (eff.y - oy) * cell.h - eff.stack * 14;
                     return (
                         <div
                             key={eff.id}
-                            className="float-combat-text absolute z-10 whitespace-nowrap font-[family-name:var(--font-plex-mono)] font-bold tracking-wider"
+                            className="float-combat-text absolute z-10 whitespace-nowrap font-[family-name:var(--font-plex-mono)] font-bold tracking-tight"
                             style={{
                                 left: `${left}px`,
                                 top: `${top}px`,
                                 color: eff.color,
-                                textShadow: "0 1px 3px var(--rg-bg), 0 0 6px var(--rg-bg)",
-                                fontSize: eff.isCrit ? "14px" : "12px",
+                                textShadow: "0 1px 2px var(--rg-bg)",
+                                fontSize: "12px",
                             }}
                         >
                             {eff.text}
