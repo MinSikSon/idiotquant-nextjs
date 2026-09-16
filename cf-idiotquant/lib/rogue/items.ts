@@ -125,16 +125,12 @@ export const POTIONS: Record<string, { name: string; freq: number; depth: number
 export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {
     "magic mapping": { name: "지도", freq: 8, depth: 3 },
     teleport: { name: "순간이동", freq: 8, depth: 1 },
-    // **갑옷 강화가 돌아왔다.** 한때 뺐던 까닭은 「되돌리는 길(모루)이 무기에만 있어서
-    // 갑옷 쪽은 운에만 기댄다」였는데, 이제 **갑옷도 녹는다.** 그 까닭이 사라졌다.
-    //
-    // 둘의 빈도를 같게 둔다. 한쪽이 잦으면 그쪽만 자라고, 안 자라는 쪽은 그냥 없는 것과
-    // 같아진다 — 갑옷을 없앴던 때가 실제로 그 모양이었다.
-    "enchant weapon": { name: "무기 강화", freq: 10, depth: 1 },
-    "enchant armor": { name: "갑옷 강화", freq: 10, depth: 1 },
+    "enchant weapon": { name: "무기 강화", freq: 12, depth: 1 },
+    "enchant armor": { name: "갑옷 강화", freq: 12, depth: 1 },
+    transmutation: { name: "재련", freq: 7, depth: 3 },
     identify: { name: "감정", freq: 14, depth: 1 },
     "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
-    "aggravate monsters": { name: "도발", freq: 5, depth: 2 },
+    "aggravate monsters": { name: "도발", freq: 3, depth: 2 },
     sleep: { name: "수면", freq: 5, depth: 2 },
 };
 
@@ -164,9 +160,12 @@ export const WANDS: Record<string, { name: string; freq: number; damage?: string
     lightning: { name: "번개", freq: 5, damage: "6d6", depth: 10 },
     fire: { name: "화염", freq: 5, damage: "6d6", depth: 10 },
     cold: { name: "냉기", freq: 5, damage: "6d6", depth: 10 },
-    "slow monster": { name: "둔화", freq: 8, depth: 3 },
-    "haste monster": { name: "가속", freq: 5, depth: 5 },
-    "teleport away": { name: "밀어내기", freq: 6, depth: 5 },
+    digging: { name: "굴착", freq: 6, depth: 3 },
+    swapping: { name: "위치 교환", freq: 6, depth: 2 },
+    gust: { name: "돌풍", freq: 6, depth: 2 },
+    "slow monster": { name: "둔화", freq: 7, depth: 3 },
+    "haste monster": { name: "가속", freq: 4, depth: 5 },
+    "teleport away": { name: "밀어내기", freq: 5, depth: 5 },
     "cancel": { name: "무력화", freq: 5, depth: 7 },
 };
 

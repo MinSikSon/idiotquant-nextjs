@@ -26,6 +26,7 @@ import {
     bestiaryProgress,
     bestiaryRows,
     enchantTarget,
+    scrollTargetKinds,
     newGame,
     perform,
     score,
@@ -427,29 +428,38 @@ export default function Rogue() {
     const pendingEnchant = useRef<string | null>(null);
 
     /**
-     * 주문서 하나를 읽는다 — **강화면 고를 것을 한 번 더 묻는다.**
+     * 주문서 하나를 읽는다 — **강화나 재련이면 고를 것을 한 번 더 묻는다.**
      *
      * 「무엇을 읽을까」 고르기에서도, 배낭 줄의 「읽는다」에서도 여기로 온다. 두 길이
      * 갈리면 한쪽만 고치는 날이 오고, 실제로 배낭 쪽은 대상 없이 `read` 를 던져서
      * **아무 일도 안 나는** 자리가 됐었다.
      *
-     * 강화인지 아닌지는 **엔진에 묻는다**(`enchantTarget`) — 판단이 아니라 값 읽기다.
+     * 대상이 필요한지는 **엔진에 묻는다**(`scrollTargetKinds`) — 판단이 아니라 값 읽기다.
      */
     const readScroll = useCallback(
         (letter: string) => {
-            const want = state ? enchantTarget(state, letter) : null;
-            if (!want) {
+            const targetKinds = state ? scrollTargetKinds(state, letter) : null;
+            if (!targetKinds) {
                 run({ t: "read", letter });
                 return;
             }
             pendingEnchant.current = letter;
+            const isTransmutation = targetKinds.length > 1;
+            const wantSingle = targetKinds[0];
             setPicker({
-                title: want === "weapon" ? "무엇을 강화할까" : "무슨 갑옷을 강화할까",
-                kinds: [want],
-                // **상한에 닿은 것은 안 보여 준다** — 눌러도 아무 일이 안 나는 줄을
-                // 목록에 세우면 그게 고장처럼 읽힌다.
-                allow: (p) => enchantOf(p) < ENCHANT_MAX,
-                empty: want === "weapon" ? "강화할 무기가 없다." : "강화할 갑옷이 없다.",
+                title: isTransmutation
+                    ? "무엇을 재련할까"
+                    : wantSingle === "weapon"
+                    ? "무엇을 강화할까"
+                    : "무슨 갑옷을 강화할까",
+                kinds: targetKinds,
+                // **상한에 닿은 것은 안 보여 준다** (재련은 제한 없음)
+                allow: (p) => isTransmutation || enchantOf(p) < ENCHANT_MAX,
+                empty: isTransmutation
+                    ? "재련할 장비(무기·갑옷·반지)가 없다."
+                    : wantSingle === "weapon"
+                    ? "강화할 무기가 없다."
+                    : "강화할 갑옷이 없다.",
                 make: () => ({ t: "rest" }), // 쓰이지 않는다 — `choosePicked` 가 가로챈다
             });
         },

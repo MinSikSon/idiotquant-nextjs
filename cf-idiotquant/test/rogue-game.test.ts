@@ -170,6 +170,7 @@ test("되돌아간 층은 떠난 그대로다 — 지도도 물건도 안 불어
     // ── 되돌아간 층은 **떠난 그대로**다 — 지도도, 밝혀 둔 기억도
     {
         let s = godown(newGame(56)); // 2층
+        s.level.traps = [];
         const tiles = Array.from(s.level.tiles);
         // 조금 걸어 다니며 지도를 밝힌다.
         for (let i = 0; i < 30; i++) s = perform(s, { t: "move", dx: i % 2 ? 1 : 0, dy: i % 2 ? 0 : 1 });

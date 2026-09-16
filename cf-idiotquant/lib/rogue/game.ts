@@ -64,10 +64,12 @@ import {
     proficiency,
 } from "./dnd";
 import {
+    ARMORS,
     POTIONS,
     RINGS,
     SCROLLS,
     WANDS,
+    WEAPONS,
     describe,
     isThrowable,
     itemChar,
@@ -633,12 +635,70 @@ function quaff(state: GameState, letter: string, rng: Rng): boolean {
  * 규칙이 두 벌이 되지 않는다(`onStairs` 와 같은 자리 — 못 박은 규칙 1). 눌러도
  * `read` 가 한 번 더 본다: 대상 없이 들어오면 아무 일도 안 난다.
  */
-export function enchantTarget(state: GameState, letter: string): ItemKind | null {
+export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] | null {
     const it = packItem(state.hero, letter);
     if (!it || it.kind !== "scroll") return null;
-    if (it.type === "enchant weapon") return "weapon";
-    if (it.type === "enchant armor") return "armor";
+    if (it.type === "enchant weapon") return ["weapon"];
+    if (it.type === "enchant armor") return ["armor"];
+    if (it.type === "transmutation") return ["weapon", "armor", "ring"];
     return null;
+}
+
+export function enchantTarget(state: GameState, letter: string): ItemKind | null {
+    const kinds = scrollTargetKinds(state, letter);
+    return kinds && kinds.length === 1 ? kinds[0] : null;
+}
+
+/**
+ * 재련 한 번. 대상 장비(무기·갑옷·반지)를 같은 분류의 다른 무작위 장비로 바꾼다.
+ * 25% 확률로 +1 강화 보너스를 획득한다.
+ */
+function transmute(state: GameState, it: Item, rng: Rng): void {
+    const oldDesc = describe(it, state.known, state.appearance);
+
+    if (it.kind === "weapon") {
+        const pool = Object.keys(WEAPONS).filter((k) => k !== it.type);
+        const nextType = rng.pick(pool) ?? pool[0];
+        it.type = nextType;
+        const def = WEAPONS[nextType];
+        if (def?.stack) {
+            if (it.count <= 1) it.count = rng.between(5, 12);
+        } else {
+            it.count = 1;
+        }
+        if (rng.chance(0.25)) {
+            it.plusHit = (it.plusHit ?? 0) + 1;
+            it.plusDam = (it.plusDam ?? 0) + 1;
+            say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
+        }
+    } else if (it.kind === "armor") {
+        const pool = Object.keys(ARMORS).filter((k) => k !== it.type);
+        const nextType = rng.pick(pool) ?? pool[0];
+        it.type = nextType;
+        if (rng.chance(0.25)) {
+            it.plusArmor = (it.plusArmor ?? 0) + 1;
+            say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
+        }
+    } else if (it.kind === "ring") {
+        const pool = Object.keys(RINGS).filter((k) => k !== it.type);
+        const nextType = rng.pick(pool) ?? pool[0];
+        it.type = nextType;
+        if (nextType === "protection" || nextType === "add strength") {
+            if ((it.plusRing ?? 0) === 0) it.plusRing = 1;
+        }
+        if (rng.chance(0.25)) {
+            it.plusRing = (it.plusRing ?? 0) + 1;
+            say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
+        }
+    }
+
+    const key = `${it.kind}:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
+    say(
+        state,
+        `연금술의 불꽃이 일며 ${oldDesc}이(가) ${describe(it, state.known, state.appearance)}(으)로 재련되었다!`,
+    );
 }
 
 /**
@@ -696,34 +756,49 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
         return false;
     }
 
-    // ── 강화 주문서는 **고를 것을 먼저 묻는다** ─────────────────────────────
+    // ── 대상이 필요한 주문서(강화/재련)는 **고를 것을 먼저 묻는다** ──────────────
     // 대상 없이 들어오면 **아무 일도 안 난다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3).
     // 화면이 고르기를 띄우는 사이에 판이 한 턴 흐르면 안 된다.
-    const want = enchantTarget(state, letter);
-    if (want) {
+    const targetKinds = scrollTargetKinds(state, letter);
+    if (targetKinds) {
         if (!target) return false;
         const on = packItem(hero, target);
-        if (!on || on.kind !== want) {
-            say(state, want === "weapon" ? "강화할 무기가 아니다." : "강화할 갑옷이 아니다.");
+        if (!on || !targetKinds.includes(on.kind)) {
+            say(state, "선택한 대상에 적용할 수 없다.");
             return false;
         }
-        const plus = enchantOf(on);
-        if (plus >= ENCHANT_MAX) {
-            say(state, "더 손댈 곳이 없다.");
-            return false;
+        if (it.type === "enchant weapon" || it.type === "enchant armor") {
+            const plus = enchantOf(on);
+            if (plus >= ENCHANT_MAX) {
+                say(state, "더 손댈 곳이 없다.");
+                return false;
+            }
+            const preserved = hero.origin === "scholar" && rng.chance(0.25);
+            if (preserved) {
+                say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
+            } else {
+                takeFromPack(hero, it);
+            }
+            const scrKey = `scroll:${it.type}`;
+            state.known[scrKey] = true;
+            state.itemCodex[scrKey] = true;
+            state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
+            enchant(state, on, rng);
+            return true;
+        } else if (it.type === "transmutation") {
+            const preserved = hero.origin === "scholar" && rng.chance(0.25);
+            if (preserved) {
+                say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
+            } else {
+                takeFromPack(hero, it);
+            }
+            const scrKey = `scroll:${it.type}`;
+            state.known[scrKey] = true;
+            state.itemCodex[scrKey] = true;
+            state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
+            transmute(state, on, rng);
+            return true;
         }
-        const preserved = hero.origin === "scholar" && rng.chance(0.25);
-        if (preserved) {
-            say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
-        } else {
-            takeFromPack(hero, it);
-        }
-        const scrKey = `scroll:${it.type}`;
-        state.known[scrKey] = true;
-        state.itemCodex[scrKey] = true;
-        state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
-        enchant(state, on, rng);
-        return true;
     }
 
     const key = `scroll:${it.type}`;
@@ -749,8 +824,8 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             say(state, "몸이 홱 당겨졌다.");
             break;
         }
-        // 강화 주문서(`enchant weapon`·`enchant armor`)는 위에서 이미 끝났다 —
-        // 고를 것을 묻고 굴려야 해서 갈래가 다르다.
+        // 강화 주문서(`enchant weapon`·`enchant armor`) 및 재련(`transmutation`)은
+        // 위에서 이미 끝났다 — 고를 것을 묻고 굴려야 해서 갈래가 다르다.
         case "identify":
             for (const p of hero.pack) {
                 const k = `${p.kind}:${p.type}`;
@@ -1087,9 +1162,105 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
     }
     it.charges = (it.charges ?? 0) - 1;
 
-    const hit = ray(level, hero, dx, dy, 12);
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
+
+    // ── 굴착의 지팡이 (digging) : 최대 4칸 벽을 부수고 관통 파편 피해(2d6)를 줌 ──
+    if (it.type === "digging") {
+        let dug = 0;
+        for (let step = 1; step <= 4; step++) {
+            const nx = hero.x + dx * step;
+            const ny = hero.y + dy * step;
+            if (nx <= 0 || nx >= MAP_W - 1 || ny <= 0 || ny >= MAP_H - 1) break;
+            const i = idx(nx, ny);
+            const tile = level.tiles[i] as Tile;
+            if (!walkable(tile)) {
+                level.tiles[i] = T.CORRIDOR;
+                dug++;
+            }
+            const m = monsterAt(level, nx, ny);
+            if (m) {
+                const dmg = rng.rollDice("2d6");
+                m.hp -= dmg;
+                m.awake = true;
+                say(state, withDamage(`${m.def.name}이(가) 무너지는 파편에 맞았다.`, dmg));
+                if (m.hp <= 0) {
+                    say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
+                    killMonster(state, m, rng);
+                }
+            }
+        }
+        computeFov(level, hero);
+        state.known[wandKey] = true;
+        state.itemCodex[wandKey] = true;
+        if (dug > 0) {
+            say(state, `지팡이 끝에서 굉음이 일며 벽이 부서지고 새로운 길이 뚫렸다! (${dug}칸)`);
+        } else {
+            say(state, "지팡이 끝에서 강력한 파쇄 광선이 뻗어 나갔다.");
+        }
+        return true;
+    }
+
+    const hit = ray(level, hero, dx, dy, 12);
+
+    // ── 위치 교환의 지팡이 (swapping) ───────────────────────────────────────────
+    if (it.type === "swapping") {
+        if (!hit.monster) {
+            say(state, `${name()}에서 은빛 광선이 허공을 갈랐으나 아무도 맞지 않았다.`);
+            return true;
+        }
+        const m = hit.monster;
+        const hx = hero.x;
+        const hy = hero.y;
+        hero.x = m.x;
+        hero.y = m.y;
+        m.x = hx;
+        m.y = hy;
+        m.awake = true;
+        computeFov(level, hero);
+        state.known[wandKey] = true;
+        state.itemCodex[wandKey] = true;
+        say(state, `공간이 뒤틀리며 ${m.def.name}와(과) 위치가 바뀌었다!`);
+        return true;
+    }
+
+    // ── 돌풍의 지팡이 (gust) : 3칸 넉백 및 벽 충돌 시 3d4 피해 + 둔화 ────────────
+    if (it.type === "gust") {
+        if (!hit.monster) {
+            say(state, `${name()}에서 거센 돌풍이 뿜어져 나왔으나 허공을 갈랐다.`);
+            return true;
+        }
+        const m = hit.monster;
+        let pushed = 0;
+        let collided = false;
+        for (let step = 1; step <= 3; step++) {
+            const nx = m.x + dx;
+            const ny = m.y + dy;
+            if (!inBounds(nx, ny) || !walkable(tileAt(level, nx, ny)) || monsterAt(level, nx, ny)) {
+                collided = true;
+                break;
+            }
+            m.x = nx;
+            m.y = ny;
+            pushed++;
+        }
+        m.awake = true;
+        state.known[wandKey] = true;
+        state.itemCodex[wandKey] = true;
+        if (collided) {
+            const dmg = rng.rollDice("3d4");
+            m.hp -= dmg;
+            m.speed = -1;
+            say(state, withDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg));
+            if (m.hp <= 0) {
+                say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
+                killMonster(state, m, rng);
+            }
+        } else {
+            say(state, `돌풍이 ${m.def.name}을(를) 뒤로 세차게 밀쳐냈다! (${pushed}칸)`);
+        }
+        return true;
+    }
 
     if (!hit.monster) {
         say(state, `${name()}에서 무언가 뻗어 나가 사라졌다.`);
