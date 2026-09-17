@@ -127,6 +127,7 @@ export const SCROLLS: Record<string, { name: string; freq: number; depth: number
     teleport: { name: "순간이동", freq: 8, depth: 1 },
     "enchant weapon": { name: "무기 강화", freq: 12, depth: 1 },
     "enchant armor": { name: "갑옷 강화", freq: 12, depth: 1 },
+    "blessed enchant": { name: "축복받은 강화", freq: 4, depth: 1 },
     transmutation: { name: "재련", freq: 7, depth: 3 },
     identify: { name: "감정", freq: 14, depth: 1 },
     "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
@@ -233,6 +234,21 @@ export function rollAppearances(rng: Rng): Record<string, string> {
 }
 
 /**
+ * 옛 저장의 겉모습을 **메운다** — 있는 것은 그대로 두고 **빠진 것만** 채운다.
+ *
+ * 표에 물건을 더하면 이미 저장된 판에는 그 한 종의 겉모습이 없다. 그러면 `describe` 가
+ * 「주문서」로 물러서는데 나머지는 다 제 이름이 있어서, **그 하나만 맨숭맨숭해 보인다**
+ * — 못 알아보기는커녕 오히려 그것만 알아보게 된다. 축복받은 강화를 더하며 실제로 그랬다.
+ *
+ * 두 가지를 지킨다. **있는 이름은 안 건드린다**(알아낸 것이 소용없어지면 안 된다), 그리고
+ * 같은 저장을 다시 열면 **같은 이름이 나와야** 한다 — 그래서 살아 있는 난수가 아니라
+ * **시드**에서 굴린다. 부르는 쪽이 `rng` 를 넘기게 두면 열 때마다 이름이 달라진다.
+ */
+export function fillAppearances(saved: Record<string, string>, seed: number): Record<string, string> {
+    return { ...rollAppearances(new Rng(seed)), ...saved };
+}
+
+/**
  * 이 층에서 뽑을 **물건의 등급.**
  *
  * `randomMonsterChar` 와 **같은 식**이다 — 지금 층에서 여섯 위, 셋 아래까지 샌다.
@@ -329,28 +345,59 @@ function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean }
  * 레벨업은 체력 +5 와 네 레벨마다 숙련 +1 뿐이다. 키우는 맛은 **손에 쥔 것의 숫자**가
  * 낸다 — 리니지가 그랬듯이 `+0 진은검` 과 `+7 진은검` 은 다른 물건이다.
  *
- * 규칙 셋:
+ * 규칙 넷:
  *
- *   1. **`+5` 까지는 안전하다.** 안전 구간이 없으면 첫 주문서부터 도박이 되고, 그건
- *      키우기가 아니라 그냥 운이다. 그런데 **떨어지는 물건이 이미 `+0~+3`**
- *      (`rollEnchant`)이라, 안전 구간을 `+3` 에 두면 **강화가 운 좋은 드랍과 똑같아진다**
- *      — 재 보고 알았다. 두 칸을 더 줘야 「주문서를 모아서 키웠다」가 드랍을 넘어선다.
+ *   1. **안전 구간은 종류마다 다르다** — 무기는 `+6`, 갑옷은 `+4` 까지 안 굴린다.
+ *      안전 구간이 없으면 첫 주문서부터 도박이 되고, 그건 키우기가 아니라 그냥 운이다.
+ *      그런데 **떨어지는 물건이 이미 `+0~+3`**(`rollEnchant`)이라, 안전 구간을 `+3` 에
+ *      두면 **강화가 운 좋은 드랍과 똑같아진다** — 재 보고 알았다.
+ *      갑옷이 두 칸 낮은 것은 **한 칸의 무게가 다르기 때문**이다: 갑옷 `+1` 은 맞는 것
+ *      자체를 줄여 모든 싸움에 듣고, 무기 `+1` 은 이미 이기는 싸움을 조금 빨리 끝낸다.
  *   2. **실패하면 부서진다.** 수치가 내려가는 대신 물건이 사라진다 — 마이너스를 없앤
  *      방향과 결이 같고(`rollEnchant` 머리말), 대가가 한눈에 읽힌다.
  *   3. **`+9` 가 끝이다.** 상한이 없으면 운 좋은 `+12 장검`(4층짜리)이
  *      `바포메트의 검`(25층짜리)을 이겨서 **내려갈 이유가 사라진다.** 사다리(층)가
  *      주이고 강화는 보조다.
+ *   4. **축복받은 주문서는 안전 구간 안에서만 다르다** — 한 번에 `1~3` 칸을 올리되 그
+ *      종류의 천장에서 잘린다. 천장 위에서는 굴림도 대가도 일반과 똑같다. 그래서 축복은
+ *      **「안 부서지는 주문서」가 아니라 「주문서를 아끼는 주문서」**다.
  *
  * 성공률은 **여기 한 자리**에서만 낸다. 화면이 적는 확률과 실제로 굴리는 확률이 갈리면
  * 사람은 자기가 본 숫자를 믿고 걸었다가 영문을 모른 채 물건을 잃는다.
  */
 export const ENCHANT_MAX = 9;
 
+/**
+ * 성공률표 — **안전 구간만 갈리고 그 위는 안 갈린다.**
+ *
+ * `+6` 부터는 두 종류가 같은 값을 쓴다. 갑옷이 **먼저** 도박을 시작할 뿐, 같은 자리에서
+ * 더 가혹하지는 않다 — 종류마다 꼬리를 따로 밀면 `+9` 도달률이 한쪽만 수십 배로
+ * 벌어진다(꼬리를 천장에 붙여 밀면 무기 15.4% 대 갑옷 0.6%가 된다. 지금은 5.5% 대 3.3%).
+ */
+const ODDS: Record<"weapon" | "armor", readonly number[]> = {
+    //       +0 +1 +2 +3    +4   +5    +6   +7    +8
+    weapon: [1, 1, 1, 1,    1,   1, 0.55, 0.4, 0.25],
+    armor:  [1, 1, 1, 1, 0.85, 0.7, 0.55, 0.4, 0.25],
+};
+
 /** `+plus` 에서 한 칸 더 올릴 때의 성공률(0~1). 상한에서는 0. */
-export function enchantOdds(plus: number): number {
-    const ODDS = [1, 1, 1, 1, 1, 0.7, 0.55, 0.4, 0.25];
+export function enchantOdds(plus: number, kind: ItemKind): number {
+    const table = kind === "armor" ? ODDS.armor : ODDS.weapon;
     if (plus < 0) return 1;
-    return ODDS[plus] ?? 0;
+    return table[plus] ?? 0;
+}
+
+/**
+ * **안전 구간의 천장** — 여기까지는 굴리지 않고 오른다(무기 `+6`, 갑옷 `+4`).
+ *
+ * 표에서 **세어서** 낸다. 숫자를 따로 적어 두면 표를 고친 날 한쪽만 바뀌어, 화면은
+ * 「안전」이라 적는데 실제로는 굴리는 자리가 난다.
+ */
+export function enchantSafeMax(kind: ItemKind): number {
+    const table = kind === "armor" ? ODDS.armor : ODDS.weapon;
+    let n = 0;
+    while (n < table.length && table[n] === 1) n++;
+    return n;
 }
 
 /**
@@ -362,6 +409,21 @@ export function enchantOdds(plus: number): number {
  */
 export function enchantOf(it: Item): number {
     return (it.kind === "armor" ? it.plusArmor : it.plusHit) ?? 0;
+}
+
+/**
+ * 그 물건의 강화 수치를 **`n` 으로 놓는다** — `enchantOf` 의 반대쪽.
+ *
+ * 무기는 `plusHit` 과 `plusDam` **둘 다** 움직인다. 한쪽만 적으면 「명중은 `+3` 인데
+ * 피해는 `+5`」 가 조용히 생기고, 상태 줄의 두 숫자가 갈린다. 한 칸씩 올릴 때는
+ * 안 갈렸지만 축복이 **여러 칸을 한 번에** 올리면서 그 갈래가 드러났다.
+ */
+export function setEnchant(it: Item, n: number): void {
+    if (it.kind === "armor") it.plusArmor = n;
+    else {
+        it.plusHit = n;
+        it.plusDam = n;
+    }
 }
 
 /** 녹일 때 **강화 한 칸이 주문서로 돌아올 확률.** 화면이 적는 값도 이것 하나다. */
@@ -433,8 +495,17 @@ export function categoryWeights(depth: number): Record<Category, number> {
     return (CATEGORIES.find((b) => depth <= b.upTo) ?? CATEGORIES[CATEGORIES.length - 1]).w;
 }
 
-/** 강화 주문서 둘. 최상위 분류로 섰으므로 **보통 주문서 통에서는 뺀다.** */
-export const ENCHANT_SCROLLS = ["enchant weapon", "enchant armor"];
+/** 강화 주문서 셋. 최상위 분류로 섰으므로 **보통 주문서 통에서는 뺀다.** */
+export const ENCHANT_SCROLLS = ["enchant weapon", "enchant armor", "blessed enchant"];
+
+/**
+ * 강화 분류에서 **축복이 차지하는 몫**(백분율).
+ *
+ * 축복은 천장을 안 올린다 — 안전 구간 안을 빨리 지날 뿐이라 **끝점이 같다.** 그래서
+ * 흔해져도 `+9` 가 걸어 들어오지는 않는다. 그럼에도 낮게 두는 까닭은 **안전 구간을
+ * 걸어 올라가는 일 자체가 강화의 절반**이기 때문이다. 축복이 흔하면 그 절반이 사라진다.
+ */
+const BLESSED_SHARE = 15;
 
 /**
  * 강화를 뺀 주문서 통.
@@ -490,9 +561,15 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     if (c === "potion") return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
     if (c === "scroll") return makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
     if (c === "food") return makeItem("food", "food ration", id, x, y);
-    // **무기 쪽을 살짝 높인다**(55:45). 갑옷 강화는 피해를 깎는 쪽이라 한 장의 체감이
-    // 더 크고, 무기는 더 많이 부어야 티가 난다.
-    if (c === "enchant") return makeItem("scroll", rng.rnd(100) < 55 ? "enchant weapon" : "enchant armor", id, x, y);
+    if (c === "enchant") {
+        // **축복은 얕은 층부터 나온다.** 한 번에 `1~3` 칸을 올리는 것이라 **수치가 낮을수록
+        // 값어치가 크다** — 깊은 층에만 두면 주웠을 때는 이미 안전 구간을 채운 뒤라 쓸 데가
+        // 없다. 값은 층이 아니라 **드문 것**으로만 매긴다.
+        if (rng.rnd(100) < BLESSED_SHARE) return makeItem("scroll", "blessed enchant", id, x, y);
+        // **무기 쪽을 살짝 높인다**(55:45). 갑옷 강화는 피해를 깎는 쪽이라 한 장의 체감이
+        // 더 크고, 무기는 더 많이 부어야 티가 난다.
+        return makeItem("scroll", rng.rnd(100) < 55 ? "enchant weapon" : "enchant armor", id, x, y);
+    }
 
     if (c === "weapon") {
         const type = weightedAt(WEAPONS, tier, rng, GEAR_BAND);

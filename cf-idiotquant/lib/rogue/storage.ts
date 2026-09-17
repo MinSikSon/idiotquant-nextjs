@@ -20,6 +20,7 @@ import {
     WEAPONS,
     armorClassOf,
     defenseOf,
+    fillAppearances,
     weaponDamageOf,
 } from "./items";
 import { heroDefense } from "./hero";
@@ -237,7 +238,12 @@ function normalize(s: Saved): GameState | null {
         levels,
         hero,
         messages: Array.isArray(s.messages) ? s.messages : [],
-        appearance: s.appearance && typeof s.appearance === "object" ? s.appearance : {},
+        // **빠진 겉모습을 메운다** — 표에 물건을 더하면 옛 저장에는 그 한 종이 없고,
+        // 그러면 그것만 이름 없는 「주문서」로 떠서 오히려 눈에 띈다(`fillAppearances`).
+        appearance: fillAppearances(
+            s.appearance && typeof s.appearance === "object" ? s.appearance : {},
+            num(s.seed, 1),
+        ),
         known: s.known && typeof s.known === "object" ? s.known : {},
         bestiary: s.bestiary && typeof s.bestiary === "object" ? s.bestiary : {},
         specials: s.specials && typeof s.specials === "object" ? s.specials : {},

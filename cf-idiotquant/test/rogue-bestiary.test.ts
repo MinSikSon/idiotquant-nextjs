@@ -168,9 +168,13 @@ test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
 
 /** 옆의 놈에게 수법을 당할 때까지 쉰다. 못 당하면 `null`. */
 function suffer(s: GameState, ch: string, tries = 400): GameState | null {
+    // **들어올 때보다 한 번 더** 당할 때까지 쉰다. `> 0` 으로 보면 두 번째로 부를 때
+    // 이미 참이라 첫 턴에 그냥 돌아오고, 그 한 턴에 또 당하느냐는 **운**이 된다 —
+    // 여태 통과한 것도 그 운이었고, 난수 줄기가 한 칸 밀리자 깨졌다.
+    const before = s.specials[ch] ?? 0;
     for (let i = 0; i < tries; i++) {
         s = perform(s, { t: "rest" });
-        if ((s.specials[ch] ?? 0) > 0) return s;
+        if ((s.specials[ch] ?? 0) > before) return s;
         // 아쿠에이터는 피해를 안 주지만 다른 놈이 끼어들어 죽일 수는 있다.
         if (s.phase !== "playing") return null;
         if (!s.level.monsters.some((m) => m.def.ch === ch)) return null;

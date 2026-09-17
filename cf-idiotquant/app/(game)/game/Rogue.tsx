@@ -25,6 +25,7 @@ import {
     type Sighting,
     bestiaryProgress,
     bestiaryRows,
+    enchantScrollKind,
     enchantTarget,
     scrollTargetKinds,
     newGame,
@@ -47,6 +48,7 @@ import {
     describe,
     enchantOdds,
     enchantOf,
+    enchantSafeMax,
     isThrowable,
     itemChar,
     itemDepthRange,
@@ -426,6 +428,8 @@ export default function Rogue() {
 
     /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다 — 그 주문서의 자리. */
     const pendingEnchant = useRef<string | null>(null);
+    /** 그 주문서가 강화냐 축복이냐 — `null` 이면 재련이다. 줄마다 적을 것이 갈린다. */
+    const pendingEnchantStyle = useRef<"plain" | "blessed" | null>(null);
 
     /**
      * 주문서 하나를 읽는다 — **강화나 재련이면 고를 것을 한 번 더 묻는다.**
@@ -443,20 +447,28 @@ export default function Rogue() {
                 run({ t: "read", letter });
                 return;
             }
+            // **강화냐 재련이냐는 엔진이 답한다**(`enchantScrollKind`). 대상 종류의 개수로
+            // 가르면 축복(무기·갑옷)이 재련(무기·갑옷·반지)과 같은 칸에 떨어져서, 상한에
+            // 닿은 물건이 고르는 목록에 그대로 뜬다.
+            const style = state ? enchantScrollKind(state, letter) : null;
             pendingEnchant.current = letter;
-            const isTransmutation = targetKinds.length > 1;
-            const wantSingle = targetKinds[0];
+            pendingEnchantStyle.current = style;
+            const wantSingle = targetKinds.length === 1 ? targetKinds[0] : null;
             setPicker({
-                title: isTransmutation
+                title: !style
                     ? "무엇을 재련할까"
+                    : style === "blessed"
+                    ? "무엇에 축복을 걸까"
                     : wantSingle === "weapon"
                     ? "무엇을 강화할까"
                     : "무슨 갑옷을 강화할까",
                 kinds: targetKinds,
                 // **상한에 닿은 것은 안 보여 준다** (재련은 제한 없음)
-                allow: (p) => isTransmutation || enchantOf(p) < ENCHANT_MAX,
-                empty: isTransmutation
+                allow: (p) => !style || enchantOf(p) < ENCHANT_MAX,
+                empty: !style
                     ? "재련할 장비(무기·갑옷·반지)가 없다."
+                    : style === "blessed"
+                    ? "축복을 걸 무기나 갑옷이 없다."
                     : wantSingle === "weapon"
                     ? "강화할 무기가 없다."
                     : "강화할 갑옷이 없다.",
@@ -483,6 +495,7 @@ export default function Rogue() {
             const scroll = pendingEnchant.current;
             if (scroll) {
                 pendingEnchant.current = null;
+                pendingEnchantStyle.current = null;
                 setPicker(null);
                 run({ t: "read", letter: scroll, target: letter });
                 return;
@@ -688,8 +701,50 @@ export default function Rogue() {
     const hpLow = hero.hp <= hero.maxHp / 4;
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
-    /** 지금 고르는 것이 **강화할 대상**인가 — 그러면 줄마다 성공률을 적는다. */
-    const enchanting = !!picker && !!pendingEnchant.current;
+    /**
+     * 지금 고르는 것이 **강화할 대상**인가 — 그러면 줄마다 거는 값을 적는다.
+     * 재련이면 `null` 이다(재련은 수치를 올리는 것이 아니라 종류를 바꾸는 것이라 적을 값이 없다).
+     */
+    const enchantStyle = picker && pendingEnchant.current ? pendingEnchantStyle.current : null;
+
+    /**
+     * 고르는 줄의 「→ +N (…)」 — **값은 전부 엔진의 표에서 온다**(`enchantOdds`·`enchantSafeMax`).
+     *
+     * 확률을 감추면 이건 판단이 아니라 그냥 동전 던지기다. 내 물건의 값이라 가릴 까닭도 없다.
+     * 축복은 안전 구간 안에서 **범위**를 적는다 — 한 번에 `1~3` 칸이 오르기 때문이고,
+     * 천장 위에서는 굴림이 일반과 같아서 같은 줄을 적는다.
+     */
+    const enchantHint = (it: Item, style: "plain" | "blessed") => {
+        const plus = enchantOf(it);
+        const safeMax = enchantSafeMax(it.kind);
+        if (style === "blessed" && plus < safeMax) {
+            const lo = Math.min(plus + 1, safeMax);
+            const hi = Math.min(plus + 3, safeMax);
+            return (
+                <span className="text-[var(--rg-muted)]">
+                    {" "}→ +{lo}
+                    {hi > lo ? `~+${hi}` : ""} <span className="text-[var(--rg-ring)]">(안전)</span>
+                </span>
+            );
+        }
+        const odds = enchantOdds(plus, it.kind);
+        return (
+            <span className="text-[var(--rg-muted)]">
+                {" "}→ +{plus + 1}{" "}
+                <span
+                    className={
+                        odds >= 1
+                            ? "text-[var(--rg-ring)]"
+                            : odds < 0.4
+                              ? "text-[var(--rg-trap)]"
+                              : "text-[var(--rg-gold)]"
+                    }
+                >
+                    ({Math.round(odds * 100)}%{odds >= 1 ? " 안전" : ""})
+                </span>
+            </span>
+        );
+    };
 
     /** 이 물건으로 지금 할 수 있는 일 — **규칙이 아니라 목록**이다. 눌러도 규칙이 다시 본다. */
     const actionsFor = (it: Item): { label: string; on: () => void }[] => {
@@ -976,12 +1031,17 @@ export default function Rogue() {
                     onClose={() => {
                         pendingAim.current = null;
                         pendingEnchant.current = null;
+                        pendingEnchantStyle.current = null;
                         setPicker(null);
                     }}
                     footer={
-                        enchanting
-                            ? "실패하면 그 물건은 부서집니다. +5 까지는 안전합니다."
-                            : "글자를 누르거나 줄을 눌러 고릅니다."
+                        // 안전 구간 숫자도 **엔진의 표에서** 읽는다 — 여기 적어 두면 표를 고친 날
+                        // 화면만 옛말을 하게 된다.
+                        enchantStyle === "blessed"
+                            ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
+                            : enchantStyle
+                              ? `실패하면 그 물건은 부서집니다. 무기는 +${enchantSafeMax("weapon")}, 갑옷은 +${enchantSafeMax("armor")} 까지 안전합니다.`
+                              : "글자를 누르거나 줄을 눌러 고릅니다."
                     }
                 >
                     {pickable.length === 0 ? (
@@ -999,26 +1059,8 @@ export default function Rogue() {
                                             `storage.fixLetters` 가 메우지만 끝내 못 메우는 경우가 남는다. */}
                                         {/* 위와 같다 — 화면에 `undefined` 를 내보내지 않는다. */}
                                             <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
-                                        {/* **거는 값을 숫자로 보여 준다.** 확률을 감추면 이건 판단이 아니라
-                                            그냥 동전 던지기다. 내 물건의 값이라 가릴 까닭도 없다.
-                                            `enchantOdds` 한 자리에서 오므로 실제 굴림과 어긋날 수 없다. */}
-                                        {enchanting && (
-                                            <span className="text-[var(--rg-muted)]">
-                                                {" "}→ +{enchantOf(it) + 1}{" "}
-                                                <span
-                                                    className={
-                                                        enchantOdds(enchantOf(it)) >= 1
-                                                            ? "text-[var(--rg-ring)]"
-                                                            : enchantOdds(enchantOf(it)) < 0.4
-                                                              ? "text-[var(--rg-trap)]"
-                                                              : "text-[var(--rg-gold)]"
-                                                    }
-                                                >
-                                                    ({Math.round(enchantOdds(enchantOf(it)) * 100)}%
-                                                    {enchantOdds(enchantOf(it)) >= 1 ? " 안전" : ""})
-                                                </span>
-                                            </span>
-                                        )}
+                                        {/* **거는 값을 숫자로 보여 준다** — `enchantHint` 한 자리에서. */}
+                                        {enchantStyle && enchantHint(it, enchantStyle)}
                                     </button>
                                 </li>
                             ))}

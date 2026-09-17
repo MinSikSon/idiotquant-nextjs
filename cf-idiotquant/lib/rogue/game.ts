@@ -74,9 +74,12 @@ import {
     isThrowable,
     itemChar,
     ENCHANT_MAX,
+    ENCHANT_SCROLLS,
     MELT_RETURN,
     enchantOdds,
     enchantOf,
+    enchantSafeMax,
+    setEnchant,
     itemPower,
     meltRoll,
     meltYield,
@@ -640,6 +643,7 @@ export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] 
     if (!it || it.kind !== "scroll") return null;
     if (it.type === "enchant weapon") return ["weapon"];
     if (it.type === "enchant armor") return ["armor"];
+    if (it.type === "blessed enchant") return ["weapon", "armor"];
     if (it.type === "transmutation") return ["weapon", "armor", "ring"];
     return null;
 }
@@ -647,6 +651,21 @@ export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] 
 export function enchantTarget(state: GameState, letter: string): ItemKind | null {
     const kinds = scrollTargetKinds(state, letter);
     return kinds && kinds.length === 1 ? kinds[0] : null;
+}
+
+/**
+ * 그 주문서가 **강화 갈래인가** — 축복까지 포함해서. 재련이면 `null`.
+ *
+ * 화면이 고르기 제목·상한 거르기·축복 범위 표기를 이것으로 가른다. **대상 종류의
+ * 개수로 가르면 안 된다** — 축복도 재련도 여럿을 받아서 **축복이 재련으로 오인된다**.
+ * 그러면 상한(`+9`)에 닿은 물건이 고르는 목록에 그대로 뜬다.
+ *
+ * `scrollTargetKinds` 와 같은 자리의 **값 읽기**다(못 박은 규칙 1).
+ */
+export function enchantScrollKind(state: GameState, letter: string): "plain" | "blessed" | null {
+    const it = packItem(state.hero, letter);
+    if (!it || it.kind !== "scroll" || !ENCHANT_SCROLLS.includes(it.type)) return null;
+    return it.type === "blessed enchant" ? "blessed" : "plain";
 }
 
 /**
@@ -710,17 +729,41 @@ function transmute(state: GameState, it: Item, rng: Rng): void {
  * **저주받은 것도 걸 수 있다.** 부서지면 저주에서 풀려나는데, 그것이 벗을 수 없는
  * 물건을 떼는 유일한 길이고 대가도 분명하다(물건이 사라진다).
  */
-function enchant(state: GameState, it: Item, rng: Rng): void {
+function enchant(state: GameState, it: Item, rng: Rng, blessed: boolean): void {
     const hero = state.hero;
     const plus = enchantOf(it);
-    const odds = enchantOdds(plus);
-    // 굴린 눈을 남긴다 — 싸움의 굴림 줄과 같은 모양이다(`combat.DETAIL`).
-    const roll = rng.rnd(100) + 1;
-    const ok = roll <= Math.round(odds * 100);
     // **정체를 알게 된다.** 걸어 본 물건의 속을 모른 채로 둘 수는 없다.
     const key = `${it.kind}:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
+
+    // ── 축복 — **안전 구간 안에서만 여러 칸을 한 번에 올린다** ────────────────────
+    //
+    // 천장을 넘는 눈이 나오면 **천장에서 자른다.** 천장 위에서는 이 갈래를 안 타고 아래
+    // 굴림으로 그대로 떨어진다 — 굴림도 대가도 일반과 똑같다. 그래서 축복은 「안 부서지는
+    // 주문서」가 아니라 **「안전 구간을 빨리 지나는 주문서」**다. 끝점(`+9`)은 안 움직인다.
+    const safeMax = enchantSafeMax(it.kind);
+    if (blessed && plus < safeMax) {
+        const step = rng.between(1, 3);
+        const next = Math.min(plus + step, safeMax);
+        say(
+            state,
+            `${DETAIL}축복 강화 ${describe(it, state.known, state.appearance)} → +${next}` +
+                `   d3 ${step}${plus + step > safeMax ? `  → 천장 +${safeMax} 에서 잘림` : ""}`,
+        );
+        setEnchant(it, next);
+        say(
+            state,
+            `${describe(it, state.known, state.appearance)}이(가) 축복의 빛을 머금고 단숨에 벼려졌다.` +
+                `${withPower(it, state)}`,
+        );
+        return;
+    }
+
+    const odds = enchantOdds(plus, it.kind);
+    // 굴린 눈을 남긴다 — 싸움의 굴림 줄과 같은 모양이다(`combat.DETAIL`).
+    const roll = rng.rnd(100) + 1;
+    const ok = roll <= Math.round(odds * 100);
     say(
         state,
         `${DETAIL}강화 ${describe(it, state.known, state.appearance)} → +${plus + 1}` +
@@ -732,11 +775,7 @@ function enchant(state: GameState, it: Item, rng: Rng): void {
         say(state, `${describe(it, state.known, state.appearance)}이(가) 산산이 부서졌다!`);
         return;
     }
-    if (it.kind === "armor") it.plusArmor = plus + 1;
-    else {
-        it.plusHit = plus + 1;
-        it.plusDam = (it.plusDam ?? 0) + 1;
-    }
+    setEnchant(it, plus + 1);
     say(
         state,
         `${describe(it, state.known, state.appearance)}이(가) ` +
@@ -767,7 +806,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             say(state, "선택한 대상에 적용할 수 없다.");
             return false;
         }
-        if (it.type === "enchant weapon" || it.type === "enchant armor") {
+        if (ENCHANT_SCROLLS.includes(it.type)) {
             const plus = enchantOf(on);
             if (plus >= ENCHANT_MAX) {
                 say(state, "더 손댈 곳이 없다.");
@@ -783,7 +822,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             state.known[scrKey] = true;
             state.itemCodex[scrKey] = true;
             state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
-            enchant(state, on, rng);
+            enchant(state, on, rng, it.type === "blessed enchant");
             return true;
         } else if (it.type === "transmutation") {
             const preserved = hero.origin === "scholar" && rng.chance(0.25);
@@ -824,7 +863,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             say(state, "몸이 홱 당겨졌다.");
             break;
         }
-        // 강화 주문서(`enchant weapon`·`enchant armor`) 및 재련(`transmutation`)은
+        // 강화 주문서(`ENCHANT_SCROLLS` — 축복 포함) 및 재련(`transmutation`)은
         // 위에서 이미 끝났다 — 고를 것을 묻고 굴려야 해서 갈래가 다르다.
         case "identify":
             for (const p of hero.pack) {
