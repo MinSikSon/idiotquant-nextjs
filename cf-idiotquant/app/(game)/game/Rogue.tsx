@@ -173,7 +173,34 @@ type NetMsg =
     | { t: "init"; state: string }
     | { t: "cmd"; cmd: Command }
     // 손님이 이으면 먼저 제 출신을 알린다 — 방장이 그 직업으로 동료를 세운다.
-    | { t: "hello"; origin: HeroOrigin };
+    | { t: "hello"; origin: HeroOrigin }
+    // **나간다는 인사.** 이것 없이 끊기면 사고(망 끊김)로 보고 자리를 지켜 기다린다.
+    | { t: "bye" }
+    // 살아 있다는 신호. WebRTC 는 상대가 창을 닫아도 한참 「열림」으로 남는다.
+    | { t: "ping" };
+
+/**
+ * 연결이 살아 있는지 본다 — **말이 끊긴 지 `DEAD_MS` 가 지나면 닫는다.** 닫히면 양쪽의
+ * `close` 처리(방장은 기다리기, 손님은 다시 잇기)가 그대로 돈다. 이게 없으면 방장이 창을
+ * 닫았다 열었을 때 손님은 죽은 연결을 쥔 채 영영 다시 잇지 않는다.
+ */
+const PING_MS = 2000;
+const DEAD_MS = 6000;
+function watchConn(conn: DataConnection) {
+    let last = Date.now();
+    conn.on("data", () => {
+        last = Date.now();
+    });
+    const t = setInterval(() => {
+        if (Date.now() - last > DEAD_MS) {
+            clearInterval(t);
+            conn.close();
+            return;
+        }
+        if (conn.open) conn.send({ t: "ping" } satisfies NetMsg);
+    }, PING_MS);
+    conn.on("close", () => clearInterval(t));
+}
 
 /** 판을 넘어 남는 기록 둘을 합칠 때 쓴다 — **칸마다 큰 쪽**을 남긴다. */
 function higher(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
@@ -419,18 +446,43 @@ export default function Rogue() {
         setState((s) => (s ? { ...s, messages: [...s.messages, m] } : s));
     }, []);
 
+    /**
+     * 방을 **스스로** 나간다(또는 상대가 나간다고 알려 왔다).
+     *
+     * 상대에게 `bye` 를 보내고 판을 혼자로 되돌린다:
+     *   · 방장 — 동료를 보낸다(`leaveGame`). 직업·배낭은 그 판에 남아 다시 들어오면 돌아온다.
+     *   · 손님 — 남의 판을 들고 있으면 안 된다. **제 저장 판**으로 돌아간다(손님일 동안은 안 썼다).
+     */
     const closeRoom = useCallback((why: string) => {
-        net.current?.peer.destroy();
+        const n = net.current;
         net.current = null;
+        if (n?.conn?.open) n.conn.send({ t: "bye" } satisfies NetMsg);
+        // 곧바로 부수면 방금 보낸 인사가 안 나간다.
+        setTimeout(() => n?.peer.destroy(), 500);
         try {
             localStorage.removeItem(ROOM_KEY);
         } catch {}
+        if (onlineRef.current === "guest") {
+            const own = load();
+            setState(
+                own && own.phase === "playing"
+                    ? own
+                    : newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage()),
+            );
+        } else {
+            setState((g) => (g ? leaveGame(g) : g));
+        }
         setOnline(null);
         setRoom(null);
         setLinked(false);
         setWho(0);
-        note(why);
+        if (why) note(why);
     }, [note]);
+    // 네트워크 콜백은 방을 열 때 한 번 걸린다 — 그때의 `online` 이 아니라 **지금** 것을 읽는다.
+    const onlineRef = useRef(online);
+    onlineRef.current = online;
+    const closeRoomRef = useRef(closeRoom);
+    closeRoomRef.current = closeRoom;
 
     /**
      * 브로커와의 연결이 깨지면 피어를 새로 만든다. 같은 코드가 브로커에 잠깐 남아 있으면
@@ -461,20 +513,31 @@ export default function Rogue() {
                 return;
             }
             net.current = { peer, conn };
+            watchConn(conn);
             conn.on("data", (raw) => {
                 const m = raw as NetMsg;
                 if (m?.t === "hello") {
                     const s = stateRef.current;
                     if (!s) return;
                     // 남이 보낸 값이다 — 없는 직업이면 기사로 받는다.
-                    guestOrigin.current = m.origin in ORIGINS ? m.origin : "knight";
+                    const origin = m.origin in ORIGINS ? m.origin : "knight";
                     // 다시 들어온 손님에게는 **지금 판**을 통째로 준다 — 끊긴 사이의 명령을 셀 필요가
                     // 없다. 이미 동료가 있으면 그 사람이다(직업은 처음 고른 그대로).
-                    const g = s.heroes.length > 1 ? s : joinGame(s, guestOrigin.current);
+                    const g = s.heroes.length > 1 ? s : joinGame(s, origin);
                     setState(g);
                     setWho(0);
                     setLinked(true);
                     conn.send({ t: "init", state: serialize(g) } satisfies NetMsg);
+                    return;
+                }
+                if (m?.t === "bye") {
+                    // 내가 먼저 닫는 중에 받은 답 인사면 무시한다 — 닫은 방을 되살리면 안 된다.
+                    if (net.current?.conn !== conn) return;
+                    // 손님이 나갔다 — 방은 열어 두고 동료만 보낸다. 다시 오면 그 사람이 돌아온다.
+                    net.current = { peer };
+                    setLinked(false);
+                    setState((g) => (g ? leaveGame(g) : g));
+                    note("동료가 방을 나갔다.");
                     return;
                 }
                 if (m?.t !== "cmd" || !m.cmd) return;
@@ -509,6 +572,7 @@ export default function Rogue() {
         peer.on("open", () => {
             const conn = peer.connect(PEER_PREFIX + code, { reliable: true });
             net.current = { peer, conn };
+            watchConn(conn);
             conn.on("open", () => {
                 setLinked(true);
                 conn.send({ t: "hello", origin } satisfies NetMsg);
@@ -520,6 +584,8 @@ export default function Rogue() {
                     if (s) setState(s);
                 } else if (m?.t === "cmd" && m.cmd) {
                     setState((s) => (s ? perform(s, m.cmd) : s));
+                } else if (m?.t === "bye") {
+                    closeRoomRef.current("방장의 판이 끝나 방이 닫혔다. 내 판으로 돌아왔다.");
                 }
             });
             conn.on("close", () => {
@@ -551,8 +617,6 @@ export default function Rogue() {
      * 판은 하나고 고른 뒤 갈 곳만 다르다.
      */
     const [originFor, setOriginFor] = useState<{ t: "new" } | { t: "mate" } | { t: "guest"; code: string }>({ t: "new" });
-    /** 방장이 기억하는 온라인 손님의 직업 — 새 판을 열 때 그 직업으로 다시 세운다. */
-    const guestOrigin = useRef<HeroOrigin>("knight");
 
     const pickOrigin = (origin: HeroOrigin) => {
         const f = originFor;
@@ -574,13 +638,10 @@ export default function Rogue() {
         if (online === "guest") return;
         clear();
         buried.current = false;
-        let g = newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin);
-        if (online === "host" && net.current?.conn) {
-            g = joinGame(g, guestOrigin.current);
-            net.current.conn.send({ t: "init", state: serialize(g) } satisfies NetMsg);
-        }
-        setState(g);
-    }, [online]);
+        // **방은 한 판의 것이다** — 방장이 새 판을 열면 그 판의 방은 닫힌다. 손님은 제 판으로 돌아간다.
+        if (online === "host") closeRoom("");
+        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin));
+    }, [online, closeRoom]);
 
     const restart = useCallback(() => {
         setOriginFor({ t: "new" });
@@ -1517,10 +1578,14 @@ export default function Rogue() {
                             ...(room
                                 ? [
                                       {
-                                          label: `온라인 방 나가기 (${room})`,
-                                          hint: linked ? "연결됨" : "상대를 기다리는 중",
+                                          // 방장은 방을 못 닫는다 — **판이 끝날 때까지** 열려 있어, 창을 닫았다
+                                          // 열어도 손님이 기다렸다 다시 붙는다. 닫히는 것은 새 판을 열 때다.
+                                          label: online === "guest" ? `온라인 방 나가기 (${room})` : `온라인 방 ${room} 열림`,
+                                          hint:
+                                              (linked ? "연결됨" : "상대를 기다리는 중") +
+                                              (online === "guest" ? "" : " — 이 판이 끝나 새 판을 열 때까지 열어 둔다"),
                                           go: () => {
-                                              closeRoom("방을 닫았다.");
+                                              if (online === "guest") closeRoom("방을 나왔다. 내 판으로 돌아왔다.");
                                               setSheet("none");
                                           },
                                       },
