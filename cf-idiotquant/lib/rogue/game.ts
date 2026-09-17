@@ -361,7 +361,7 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
             say(state, FLOOR_MUTATOR_DEFS[level.mutator].banner);
         }
     }
-    computeFov(level, state.heroes[0]);
+    computeFov(level, state.heroes);
     state.deepest = Math.max(state.deepest, depth);
 }
 
@@ -1300,7 +1300,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
                 }
             }
         }
-        computeFov(level, hero);
+        computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
         if (dug > 0) {
@@ -1327,7 +1327,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         m.x = hx;
         m.y = hy;
         m.awake = true;
-        computeFov(level, hero);
+        computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
         say(state, `공간이 뒤틀리며 ${m.def.name}와(과) 위치가 바뀌었다!`);
@@ -1786,15 +1786,6 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
     }
 }
 
-/** 눈이 먼 동안에는 발밑 말고는 아무것도 안 보인다. */
-function applyBlind(state: GameState, hero: Hero) {
-    if (state.heroes[0].blind <= 0) return;
-    state.heroes[0].detect = 0;
-    const { level } = state;
-    for (let i = 0; i < level.flags.length; i++) level.flags[i] &= ~2;
-    level.flags[idx(hero.x, hero.y)] |= 2 | 1;
-}
-
 function useRelicCommand(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "relic") {
@@ -1958,6 +1949,8 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
         if (h.blind > 0) h.blind -= 1;
         if (h.confused > 0) h.confused -= 1;
         if (h.detect > 0) h.detect -= 1;
+        // 눈이 멀면 탐지가 꺼진다 — 안 보이는데 생명만 짚어 낼 수는 없다.
+        if (h.blind > 0) h.detect = 0;
 
         // 화상 틱 (영웅)
         if (h.burnTurns && h.burnTurns > 0) {
@@ -1996,9 +1989,8 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
 
     if (state.phase === "playing" && hero.hp > 0) monsterTurns(state, rng);
 
-    computeFov(state.level, hero);
+    computeFov(state.level, state.heroes);
     updateSeenItems(state);
-    applyBlind(state, hero);
 
     if (hero.hp <= 0 && state.phase === "playing") {
         const featherIdx = hero.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");

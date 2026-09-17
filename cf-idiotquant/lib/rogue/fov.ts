@@ -47,15 +47,42 @@ function roomAround(level: Level, x: number, y: number): number {
     return -1;
 }
 
+/** 시야를 보태는 사람 — 영웅 하나. 눈이 멀었으면 발밑만 보탠다. */
+export type Viewer = Pos & { blind?: number; pack?: { kind: string; type: string }[] };
+
 /**
- * 지금 보이는 것을 다시 센다. 한 걸음마다 부른다.
+ * 지금 **파티가** 보는 것을 다시 센다. 한 걸음마다 부른다.
  *
  * 기억(`SEEN`)은 지우지 않는다 — 지운 적이 있는데 그러면 뒤돌아서는 순간 지도가
  * 통째로 사라졌다.
+ *
+ * ── 왜 합쳐서 보나 ───────────────────────────────────────────────────
+ * `level.flags` 는 「지금 보인다」를 **한 벌만** 담는다. 둘이 되면 사람마다 따로 들려고
+ * 플래그를 사람 수만큼 늘리거나, 합쳐서 보거나 둘 중 하나다. 합치는 쪽이 훨씬 싸고
+ * **협동에도 자연스럽다** — 등을 맡긴 사람이 본 것은 나도 아는 것이 맞다.
+ *
+ * ── 눈먼 사람은 **파티를 눈멀게 하지 않는다** ────────────────────────
+ * 예전에는 눈이 멀면 판 전체의 「보인다」를 지우고 제 발밑만 켰다(`applyBlind`). 둘이
+ * 되면 그게 **한 사람이 눈멀어 둘 다 앞이 안 보이는** 자리가 된다. 지금은 눈먼 사람이
+ * **아무것도 안 보태고** 제 발밑만 보탠다 — 곁의 성한 사람이 보는 것은 그대로 보인다.
  */
-export function computeFov(level: Level, from: Pos, hero?: Pos & { pack?: { kind: string; type: string }[] }): void {
-    const { flags, tiles } = level;
+export function computeFov(level: Level, viewers: Viewer[]): void {
+    const { flags } = level;
     for (let i = 0; i < flags.length; i++) flags[i] &= ~VISIBLE;
+    for (const v of viewers) {
+        if ((v.blind ?? 0) > 0) {
+            // 눈이 멀면 발밑 말고는 아무것도 안 보인다.
+            if (inBounds(v.x, v.y)) flags[idx(v.x, v.y)] |= VISIBLE | SEEN;
+            continue;
+        }
+        lightFrom(level, v);
+    }
+}
+
+/** 한 사람이 선 자리에서 보이는 것을 **보탠다** — 지우지 않는다. */
+function lightFrom(level: Level, from: Viewer): void {
+    const { flags, tiles } = level;
+    const hero = from;
 
     const light = (x: number, y: number) => {
         if (!inBounds(x, y)) return;

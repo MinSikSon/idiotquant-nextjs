@@ -17,6 +17,7 @@ import { newGame, perform } from "@/lib/rogue/game";
 import { makeHero } from "@/lib/rogue/hero";
 import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
+import { isVisible } from "@/lib/rogue/fov";
 import { T, idx, walkable, type GameState, type Tile } from "@/lib/rogue/types";
 
 /** 방장 옆에 손님 하나를 세운다 — 걸어 들어갈 수 있는 칸으로. */
@@ -94,6 +95,62 @@ test("명령은 누가 하는지를 데리고 다닌다 — 행동은 그 사람
         perform(s, { t: "move", dx: dir![0], dy: dir![1], who: 1 });
         assert.equal(host.x, hostAt.x, "손님이 걸었는데 방장이 움직였다");
         assert.equal(host.y, hostAt.y, "손님이 걸었는데 방장이 움직였다");
+    }
+});
+
+test("시야는 합쳐서 본다 — 눈먼 사람이 파티를 눈멀게 하지 않는다", () => {
+    // ── 손님이 선 자리도 보인다 — 방장이 움직여도
+    {
+        const s = withGuest(4101);
+        const [host, guest] = s.heroes;
+        // 손님을 방장에게서 멀리, 걸어 들어갈 수 있는 칸으로 옮긴다.
+        const far = s.level.rooms
+            .filter((r) => !r.gone)
+            .map((r) => ({ x: r.x + 1, y: r.y + 1 }))
+            .find((p) => Math.abs(p.x - host.x) + Math.abs(p.y - host.y) > 12);
+        assert.ok(far, "멀찍이 세울 방이 없다");
+        guest.x = far!.x;
+        guest.y = far!.y;
+
+        s.level.monsters = [];
+        perform(s, { t: "rest" }); // **방장**이 움직인다
+        assert.ok(
+            isVisible(s.level, guest.x, guest.y),
+            "방장이 움직였더니 손님이 선 자리가 안 보인다 — 시야가 합쳐지지 않았다",
+        );
+        assert.ok(isVisible(s.level, host.x, host.y), "방장이 선 자리가 안 보인다");
+    }
+
+    // ── 한 사람이 눈멀어도 **성한 사람이 보는 것은 그대로 보인다**
+    {
+        const s = withGuest(4102);
+        const [host, guest] = s.heroes;
+        s.level.monsters = [];
+
+        perform(s, { t: "rest" });
+        const litBefore = [...s.level.flags].filter((f) => f & 2).length;
+
+        host.blind = 5; // 방장만 눈이 먼다
+        perform(s, { t: "rest" });
+        const litAfter = [...s.level.flags].filter((f) => f & 2).length;
+
+        assert.ok(
+            isVisible(s.level, guest.x, guest.y),
+            "한 사람이 눈멀었다고 성한 사람 자리까지 안 보인다",
+        );
+        assert.ok(litAfter > 1, `눈먼 사람 하나가 판 전체를 껐다 (${litBefore} → ${litAfter})`);
+    }
+
+    // ── 눈이 멀면 **제 발밑은** 보인다 (그리고 탐지가 꺼진다)
+    {
+        const s = withGuest(4103);
+        const host = s.heroes[0];
+        s.level.monsters = [];
+        host.blind = 5;
+        host.detect = 5;
+        perform(s, { t: "rest" });
+        assert.ok(isVisible(s.level, host.x, host.y), "눈이 멀었는데 발밑도 안 보인다");
+        assert.equal(host.detect, 0, "눈이 멀었는데 탐지가 살아 있다");
     }
 });
 
