@@ -163,6 +163,8 @@ export interface Item {
     cursed?: boolean;
     /** 저주가 드러났는가 — 화면이 「(저주)」를 붙일지 정한다. */
     curseKnown?: boolean;
+    /** 축복받았는가 — 리니지/넷핵식 축복 상태. 강화 다단 점프 및 특권을 부여한다. */
+    blessed?: boolean;
     /** 모루에서 장착된 보석 소켓 (ruby, sapphire, emerald, topaz) */
     socketGem?: "ruby" | "sapphire" | "emerald" | "topaz";
     /** 액티브 유물 남은 쿨다운 (턴) */

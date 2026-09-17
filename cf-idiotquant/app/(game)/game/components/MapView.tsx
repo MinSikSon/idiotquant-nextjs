@@ -66,24 +66,21 @@ function clamp(v: number, lo: number, hi: number) {
 interface Run {
     text: string;
     ink: string;
+    bg?: string;
 }
 
-export interface FloatingEffect {
-    id: number;
-    text: string;
-    x: number;
-    y: number;
-    color: string;
-    isCrit?: boolean;
+export interface CellFlash {
+    ink?: string;
+    bg?: string;
 }
 
 export default function MapView({
     state,
-    floatingEffects = [],
+    cellFlashes = {},
     shake = false,
 }: {
     state: GameState;
-    floatingEffects?: FloatingEffect[];
+    cellFlashes?: Record<string, CellFlash>;
     shake?: boolean;
 }) {
     const boxRef = useRef<HTMLDivElement>(null);
@@ -129,26 +126,18 @@ export default function MapView({
         for (let x = ox; x < ox + view.cols; x++) {
             const g = glyphAt(state, x, y);
             const ch = g?.ch ?? " ";
-            const ink = g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent";
+            const flash = cellFlashes[`${x},${y}`];
+            const ink = flash?.ink ?? (g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent");
+            const bg = flash?.bg;
             const last = runs[runs.length - 1];
-            if (last && last.ink === ink) last.text += ch;
-            else runs.push({ text: ch, ink });
+            if (last && last.ink === ink && last.bg === bg) {
+                last.text += ch;
+            } else {
+                runs.push({ text: ch, ink, bg });
+            }
         }
         rows.push(runs);
     }
-
-    // 현재 화면 시야에 들어오는 플로팅 이펙트 필터링 및 겹침 방지 스택 계산
-    const visibleEffects = floatingEffects.filter(
-        (eff) => eff.x >= ox && eff.x < ox + view.cols && eff.y >= oy && eff.y < oy + view.rows,
-    );
-
-    const coordCounts: Record<string, number> = {};
-    const stackedEffects = visibleEffects.map((eff) => {
-        const key = `${eff.x},${eff.y}`;
-        const stack = coordCounts[key] || 0;
-        coordCounts[key] = stack + 1;
-        return { ...eff, stack };
-    });
 
     return (
         // 지도는 가운데에 선다. 왼쪽에 붙여 두면 넓은 화면에서 던전이 한쪽 구석에 몰리고
@@ -171,35 +160,13 @@ export default function MapView({
                     {rows.map((runs, i) => (
                         <div key={i}>
                             {runs.map((r, j) => (
-                                <span key={j} style={{ color: r.ink }}>
+                                <span key={j} style={{ color: r.ink, backgroundColor: r.bg }}>
                                     {r.text}
                                 </span>
                             ))}
                         </div>
                     ))}
                 </pre>
-
-                {/* 플로팅 전투 텍스트 & 특수 연출 레이어 (절제된 레트로 감성 & 겹침 방지) */}
-                {stackedEffects.map((eff) => {
-                    const left = (eff.x - ox) * cell.w;
-                    // 같은 자리에 여러 개가 뜨면 위로 차곡차곡 쌓아 겹치지 않게 분리
-                    const top = (eff.y - oy) * cell.h - eff.stack * 14;
-                    return (
-                        <div
-                            key={eff.id}
-                            className="float-combat-text absolute z-10 whitespace-nowrap font-[family-name:var(--font-plex-mono)] font-bold tracking-tight"
-                            style={{
-                                left: `${left}px`,
-                                top: `${top}px`,
-                                color: eff.color,
-                                textShadow: "0 1px 2px var(--rg-bg)",
-                                fontSize: "12px",
-                            }}
-                        >
-                            {eff.text}
-                        </div>
-                    );
-                })}
             </div>
         </div>
     );

@@ -225,7 +225,7 @@ const FOOD_GRACE = 4;
 const SPECIAL_BASE = 2;
 const ARMORY_TIER_UP = 2;
 const DROUGHT_GRACE = 2;
-const DROUGHT_STEP = 0.8;
+const DROUGHT_STEP = 1.0;
 
 function populate(state: GameState, level: Level, rng: Rng) {
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
@@ -670,14 +670,21 @@ export function enchantScrollKind(state: GameState, letter: string): "plain" | "
 
 /**
  * 재련 한 번. 대상 장비(무기·갑옷·반지)를 같은 분류의 다른 무작위 장비로 바꾼다.
- * 25% 확률로 +1 강화 보너스를 획득한다.
+ * 25% 확률로 +1 강화 보너스를 획득한다 (축복 재련은 100% 확정 +1 및 상위 티어 변환).
  */
-function transmute(state: GameState, it: Item, rng: Rng): void {
+function transmute(state: GameState, it: Item, rng: Rng, isBlessed = false): void {
     const oldDesc = describe(it, state.known, state.appearance);
 
     if (it.kind === "weapon") {
         const pool = Object.keys(WEAPONS).filter((k) => k !== it.type);
-        const nextType = rng.pick(pool) ?? pool[0];
+        let nextType: string;
+        if (isBlessed) {
+            const curDepth = WEAPONS[it.type]?.depth ?? 1;
+            const higher = pool.filter((k) => (WEAPONS[k]?.depth ?? 1) >= curDepth);
+            nextType = rng.pick(higher.length ? higher : pool) ?? pool[0];
+        } else {
+            nextType = rng.pick(pool) ?? pool[0];
+        }
         it.type = nextType;
         const def = WEAPONS[nextType];
         if (def?.stack) {
@@ -685,16 +692,23 @@ function transmute(state: GameState, it: Item, rng: Rng): void {
         } else {
             it.count = 1;
         }
-        if (rng.chance(0.25)) {
+        if (isBlessed || rng.chance(0.25)) {
             it.plusHit = (it.plusHit ?? 0) + 1;
             it.plusDam = (it.plusDam ?? 0) + 1;
             say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
         }
     } else if (it.kind === "armor") {
         const pool = Object.keys(ARMORS).filter((k) => k !== it.type);
-        const nextType = rng.pick(pool) ?? pool[0];
+        let nextType: string;
+        if (isBlessed) {
+            const curDepth = ARMORS[it.type]?.depth ?? 1;
+            const higher = pool.filter((k) => (ARMORS[k]?.depth ?? 1) >= curDepth);
+            nextType = rng.pick(higher.length ? higher : pool) ?? pool[0];
+        } else {
+            nextType = rng.pick(pool) ?? pool[0];
+        }
         it.type = nextType;
-        if (rng.chance(0.25)) {
+        if (isBlessed || rng.chance(0.25)) {
             it.plusArmor = (it.plusArmor ?? 0) + 1;
             say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
         }
@@ -705,12 +719,13 @@ function transmute(state: GameState, it: Item, rng: Rng): void {
         if (nextType === "protection" || nextType === "add strength") {
             if ((it.plusRing ?? 0) === 0) it.plusRing = 1;
         }
-        if (rng.chance(0.25)) {
+        if (isBlessed || rng.chance(0.25)) {
             it.plusRing = (it.plusRing ?? 0) + 1;
             say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
         }
     }
 
+    if (isBlessed) it.blessed = true;
     const key = `${it.kind}:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
@@ -721,7 +736,7 @@ function transmute(state: GameState, it: Item, rng: Rng): void {
 }
 
 /**
- * 강화 한 번. 성공하면 `+1`, **실패하면 부서진다.**
+ * 강화 한 번. 성공하면 `+1`(축복 시 +2~+3), **실패하면 부서진다(축복 시 보호).**
  *
  * 확률은 `items.enchantOdds` **한 자리**에서 온다 — 화면이 고르기 줄에 적는 것과 같은
  * 값이다. 갈리면 사람은 자기가 본 숫자를 믿고 걸었다가 영문을 모른 채 물건을 잃는다.
@@ -822,7 +837,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             state.known[scrKey] = true;
             state.itemCodex[scrKey] = true;
             state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
-            enchant(state, on, rng, it.type === "blessed enchant");
+            enchant(state, on, rng, it.type === "blessed enchant" || !!it.blessed);
             return true;
         } else if (it.type === "transmutation") {
             const preserved = hero.origin === "scholar" && rng.chance(0.25);
@@ -835,7 +850,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             state.known[scrKey] = true;
             state.itemCodex[scrKey] = true;
             state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
-            transmute(state, on, rng);
+            transmute(state, on, rng, it.blessed);
             return true;
         }
     }
@@ -854,13 +869,38 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
     switch (it.type) {
         case "magic mapping":
             revealAll(level);
-            say(state, "이 층의 지도가 머릿속에 그려졌다.");
+            if (it.blessed) {
+                for (const t of level.traps) t.found = true;
+                hero.detect = Math.max(hero.detect, 30);
+                say(state, "✨ 축복의 빛이 미궁의 모든 지도와 숨겨진 함정, 괴물의 기척을 환히 비추었습니다!");
+            } else {
+                say(state, "이 층의 지도가 머릿속에 그려졌다.");
+            }
             break;
         case "teleport": {
-            const p = freeSpot(level, rng, [level.stairs]);
-            hero.x = p.x;
-            hero.y = p.y;
-            say(state, "몸이 홱 당겨졌다.");
+            if (it.blessed) {
+                const candidates: Pos[] = [];
+                for (let dy = -2; dy <= 2; dy++) {
+                    for (let dx = -2; dx <= 2; dx++) {
+                        const x = level.stairs.x + dx;
+                        const y = level.stairs.y + dy;
+                        if (inBounds(x, y) && walkable(level.tiles[idx(x, y)] as Tile)) {
+                            if (!level.monsters.some((m) => m.x === x && m.y === y)) {
+                                candidates.push({ x, y });
+                            }
+                        }
+                    }
+                }
+                const p = rng.pick(candidates) ?? level.stairs;
+                hero.x = p.x;
+                hero.y = p.y;
+                say(state, "✨ 축복받은 공간 이동의 힘으로 계단 근처의 안전한 장소로 이동했습니다.");
+            } else {
+                const p = freeSpot(level, rng, [level.stairs]);
+                hero.x = p.x;
+                hero.y = p.y;
+                say(state, "몸이 홱 당겨졌다.");
+            }
             break;
         }
         // 강화 주문서(`ENCHANT_SCROLLS` — 축복 포함) 및 재련(`transmutation`)은
@@ -871,7 +911,19 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
                 state.known[k] = true;
                 state.itemCodex[k] = true;
             }
-            say(state, "배낭 속의 것들이 무엇인지 알겠다.");
+            if (it.blessed) {
+                let doorsOpened = 0;
+                for (let i = 0; i < level.tiles.length; i++) {
+                    if (level.tiles[i] === T.SECRET) {
+                        level.tiles[i] = T.DOOR;
+                        doorsOpened++;
+                    }
+                }
+                computeFov(level, hero);
+                say(state, `✨ 축복의 혜안으로 배낭의 모든 물건을 감정하고 미궁의 비밀문(${doorsOpened}개)이 모두 드러났습니다!`);
+            } else {
+                say(state, "배낭 속의 것들이 무엇인지 알겠다.");
+            }
             break;
         case "remove curse": {
             const freed = hero.pack.filter((p) => p.cursed);
@@ -879,7 +931,15 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
                 p.cursed = false;
                 p.curseKnown = false;
             }
-            say(state, freed.length ? "몸에 붙었던 것이 헐거워졌다." : "누군가 지켜보는 듯하다.");
+            if (it.blessed) {
+                const wep = equippedWeapon(hero);
+                const arm = equippedArmor(hero);
+                if (wep) wep.blessed = true;
+                if (arm) arm.blessed = true;
+                say(state, "✨ 성스러운 축복의 기운이 온몸을 감싸며 착용한 무기와 갑옷이 축복받았습니다!");
+            } else {
+                say(state, freed.length ? "몸에 붙었던 것이 헐거워졌다." : "누군가 지켜보는 듯하다.");
+            }
             break;
         }
         case "aggravate monsters":
@@ -887,8 +947,15 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             say(state, "어디선가 일제히 깨어나는 소리가 났다.");
             break;
         case "sleep":
-            hero.asleep += rng.between(4, 9);
-            say(state, "눈꺼풀이 감긴다…");
+            if (it.blessed) {
+                for (const m of level.monsters) {
+                    m.awake = false;
+                }
+                say(state, "✨ 축복의 자장가가 울려 퍼지며 이 층의 모든 괴물이 깊은 잠에 빠졌습니다!");
+            } else {
+                hero.asleep += rng.between(4, 9);
+                say(state, "눈꺼풀이 감긴다…");
+            }
             break;
     }
     return true;

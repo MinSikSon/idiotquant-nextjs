@@ -167,10 +167,14 @@ export function dropChampionLoot(state: GameState, m: Monster, rng: Rng): Item[]
     const roll = rng.rnd(100);
     if (roll < 50) {
         const type = rng.rnd(100) < 55 ? "enchant weapon" : "enchant armor";
-        dropped.push(makeItem("scroll", type, state.nextItemId++, m.x, m.y));
+        const it = makeItem("scroll", type, state.nextItemId++, m.x, m.y);
+        it.blessed = rng.rnd(100) < 35;
+        dropped.push(it);
     } else if (roll < 80) {
         const gearCat = rng.rnd(2) === 0 ? "weapon" : "armor";
-        dropped.push(randomItem(depth + 2, state.nextItemId++, m.x, m.y, rng, gearCat));
+        const it = randomItem(depth + 2, state.nextItemId++, m.x, m.y, rng, gearCat);
+        it.blessed = rng.rnd(100) < 35;
+        dropped.push(it);
     } else {
         const gemTypes = ["ruby", "sapphire", "emerald", "topaz"];
         const gemType = rng.pick(gemTypes) ?? "ruby";

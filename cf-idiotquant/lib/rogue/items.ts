@@ -304,7 +304,7 @@ function weightedAt<T extends { freq: number; depth: number }>(
 }
 
 export function makeItem(kind: ItemKind, type: string, id: number, x: number, y: number, count = 1): Item {
-    const it: Item = { id, kind, type, count, x, y };
+    const it: Item = { id, kind, type, count, x, y, blessed: false };
     if (kind === "weapon") {
         it.plusHit = 0;
         it.plusDam = 0;
@@ -558,8 +558,18 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     const c = cat ?? pickCategory(depth, rng);
     if (c === "gold") return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
     const tier = itemTier(depth, rng);
-    if (c === "potion") return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
-    if (c === "scroll") return makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
+    const rollBlessed = (cursed = false) => !cursed && rng.rnd(10) === 0;
+
+    if (c === "potion") {
+        const it = makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
+        it.blessed = rollBlessed();
+        return it;
+    }
+    if (c === "scroll") {
+        const it = makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
+        it.blessed = rollBlessed();
+        return it;
+    }
     if (c === "food") return makeItem("food", "food ration", id, x, y);
     if (c === "enchant") {
         // **축복은 얕은 층부터 나온다.** 한 번에 `1~3` 칸을 올리는 것이라 **수치가 낮을수록
@@ -568,7 +578,9 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         if (rng.rnd(100) < BLESSED_SHARE) return makeItem("scroll", "blessed enchant", id, x, y);
         // **무기 쪽을 살짝 높인다**(55:45). 갑옷 강화는 피해를 깎는 쪽이라 한 장의 체감이
         // 더 크고, 무기는 더 많이 부어야 티가 난다.
-        return makeItem("scroll", rng.rnd(100) < 55 ? "enchant weapon" : "enchant armor", id, x, y);
+        const it = makeItem("scroll", rng.rnd(100) < 55 ? "enchant weapon" : "enchant armor", id, x, y);
+        it.blessed = rollBlessed();
+        return it;
     }
 
     if (c === "weapon") {
@@ -581,6 +593,7 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         it.plusHit = e.plus;
         it.plusDam = e.plus;
         it.cursed = e.cursed;
+        it.blessed = rollBlessed(e.cursed);
         return it;
     }
 
@@ -589,6 +602,7 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const e = rollEnchant(depth, rng);
         it.plusArmor = e.plus;
         it.cursed = e.cursed;
+        it.blessed = rollBlessed(e.cursed);
         return it;
     }
 
@@ -601,11 +615,13 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         // **저주받은 반지도 숫자를 안 깎는다**(위 `rollEnchant` 참고). 대가는 「손가락
         // 하나를 잃는다」다 — 두 개뿐인 자리를 쓸모없는 반지가 차지하고, 뺄 수 없다.
         if (e.cursed) it.cursed = true;
+        it.blessed = rollBlessed(e.cursed);
         return it;
     }
 
     const it = makeItem("wand", weightedAt(WANDS, tier, rng), id, x, y);
     it.charges = rng.between(3, 7);
+    it.blessed = rollBlessed();
     return it;
 }
 
@@ -690,6 +706,10 @@ function socketText(it: Item): string {
     return ` [${nameMap[it.socketGem] ?? it.socketGem}]`;
 }
 
+function blessPrefix(it: Item, isKnown: boolean): string {
+    return isKnown && it.blessed ? "축복받은 " : "";
+}
+
 /**
  * 이름을 부른다 — **알아낸 만큼만.**
  *
@@ -729,28 +749,28 @@ export function describe(
             return (relicNames[it.type] ?? "전설 유물") + cool;
         }
         case "potion":
-            return known[key] ? `${POTIONS[it.type]?.name ?? "이름 없는"} 물약` : (appearance[key] ?? "물약");
+            return known[key] ? `${blessPrefix(it, true)}${POTIONS[it.type]?.name ?? "이름 없는"} 물약` : (appearance[key] ?? "물약");
         case "scroll":
-            return known[key] ? `${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
+            return known[key] ? `${blessPrefix(it, true)}${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
         case "ring": {
-            const base = known[key] ? `${RINGS[it.type]?.name ?? "이름 없는"} 반지` : (appearance[key] ?? "반지");
+            const base = known[key] ? `${blessPrefix(it, true)}${RINGS[it.type]?.name ?? "이름 없는"} 반지` : (appearance[key] ?? "반지");
             return known[key] ? `${base}${plusText(it.plusRing)}${curseText(it)}` : `${base}${curseText(it)}`;
         }
         case "wand": {
-            const base = known[key] ? `${WANDS[it.type]?.name ?? "이름 없는"} 지팡이` : (appearance[key] ?? "지팡이");
+            const base = known[key] ? `${blessPrefix(it, true)}${WANDS[it.type]?.name ?? "이름 없는"} 지팡이` : (appearance[key] ?? "지팡이");
             return known[key] ? `${base} (${it.charges ?? 0}회)` : base;
         }
         case "weapon": {
             // **개수는 여기서 안 붙인다.** 화면이 이미 `×10` 을 붙이므로 「다트 10개 ×10」
             // 이 되고, 하나를 던졌을 때 「다트 10개를 던졌다」로도 읽힌다.
-            const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
+            const base = `${blessPrefix(it, !!known[key])}${WEAPONS[it.type]?.name ?? "이름 없는 무기"}`;
             const sock = socketText(it);
             return known[key]
                 ? `${base}${plusText(it.plusHit)}${sock}${curseText(it)}`
                 : `${base}${sock}${curseText(it)}`;
         }
         case "armor": {
-            const base = ARMORS[it.type]?.name ?? "이름 없는 갑옷";
+            const base = `${blessPrefix(it, !!known[key])}${ARMORS[it.type]?.name ?? "이름 없는 갑옷"}`;
             const sock = socketText(it);
             return known[key]
                 ? `${base}${plusText(it.plusArmor)}${sock}${curseText(it)}`

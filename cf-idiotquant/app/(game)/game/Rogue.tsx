@@ -89,7 +89,7 @@ import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/ty
 import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
 import Aim from "./components/Aim";
-import MapView, { type FloatingEffect } from "./components/MapView";
+import MapView, { type CellFlash } from "./components/MapView";
 import Panel from "./components/Panel";
 import TouchPad, { type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
@@ -174,8 +174,8 @@ export default function Rogue() {
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const buried = useRef(false);
 
-    /** 전투 피드백 & 특수 효과 연출 상태 (P6) */
-    const [floatingEffects, setFloatingEffects] = useState<FloatingEffect[]>([]);
+    /** 전투 피드백 & 특수 효과 연출 상태 (P6 - 칸 내 색상 점멸) */
+    const [cellFlashes, setCellFlashes] = useState<Record<string, CellFlash>>({});
     const [shake, setShake] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
     const lastStateRef = useRef<{
@@ -185,6 +185,7 @@ export default function Rogue() {
         depth: number;
         turn: number;
         messagesLen: number;
+        monsters: { id: number; x: number; y: number; hp: number }[];
     } | null>(null);
 
     // 첫 그림은 서버에서 못 그린다 — 새 판이 난수로 만들어지므로 서버와 값이 어긋난다.
@@ -229,7 +230,7 @@ export default function Rogue() {
         }
     }, [state]);
 
-    // ── 전투 피드백 & 특수 효과 추적 (P6) ──────────────────────────────────
+    // ── 전투 피드백 & 특수 효과 추적 (P6 - 절제된 칸 내 색상 점멸) ──────────────────────────
     useEffect(() => {
         if (!state) return;
         const prev = lastStateRef.current;
@@ -240,6 +241,7 @@ export default function Rogue() {
             depth: state.level.depth,
             turn: state.turn,
             messagesLen: state.messages.length,
+            monsters: state.level.monsters.map((m) => ({ id: m.id, x: m.x, y: m.y, hp: m.hp })),
         };
         lastStateRef.current = curr;
 
@@ -253,7 +255,7 @@ export default function Rogue() {
         }
         if (prev.turn === curr.turn && prev.depth === curr.depth) return;
 
-        const newEffects: FloatingEffect[] = [];
+        const flashes: Record<string, CellFlash> = {};
         let triggerShake = false;
 
         // 1. 층 변경 시 이벤트 배너 (2.6초간 단정하게 표시)
@@ -262,100 +264,60 @@ export default function Rogue() {
             setTimeout(() => setShowBanner(false), 2600);
         }
 
-        // 2. 이번 턴에 새롭게 추가된 메시지만 분석 (이전 턴 메시지 잔류로 인한 중복 트리거 방지)
+        // 2. 이번 턴에 새롭게 추가된 메시지만 분석
         const newMsgs = state.messages.slice(prev.messagesLen);
-        const hasCritMsg = newMsgs.some((m) => m.includes("치명타") || m.includes("CRIT"));
-        const hasTimeStopMsg = newMsgs.some((m) => m.includes("시간이 멈췄습니다"));
+        const hasCritMsg = newMsgs.some((m) => m.includes("치명타") || m.includes("CRIT") || m.includes("급소를 찔렀다"));
         const hasPhoenixMsg = newMsgs.some((m) => m.includes("불사조의 깃털이 타오르며"));
 
-        // 3. 체력 변동 (영웅 피격 / 치유)
+        // 3. 몬스터 피격 / 처치 감지 (영웅의 공격 대상 칸 플래시)
+        const damagedMonster = prev.monsters?.find((pm) => {
+            const cm = state.level.monsters.find((m) => m.id === pm.id);
+            return cm && cm.hp < pm.hp;
+        });
+        const killedMonster = prev.monsters?.find((pm) => !state.level.monsters.some((m) => m.id === pm.id));
+        const targetMonster = damagedMonster ?? killedMonster;
+
+        if (targetMonster) {
+            const key = `${targetMonster.x},${targetMonster.y}`;
+            if (hasCritMsg) {
+                // 치명타 적중: 황금빛 텍스트 & 반투명 하이라이트
+                flashes[key] = { ink: "var(--rg-gold)", bg: "rgba(234, 179, 8, 0.25)" };
+                triggerShake = true;
+            } else {
+                // 일반 적중: 적색 피격 플래시
+                flashes[key] = { ink: "var(--rg-trap)" };
+            }
+        }
+
+        // 4. 영웅 체력 변동 (피격 / 치유 - 내 캐릭터 칸 플래시)
         const hpDiff = curr.hp - prev.hp;
+        const heroKey = `${state.hero.x},${state.hero.y}`;
         if (hpDiff < 0) {
             const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.hero.maxHp * 0.3));
             if (hasCritMsg) {
-                // 크리티컬 피격 시 텍스트 병합 (CRIT -15)
-                newEffects.push({
-                    id: Date.now() + Math.random(),
-                    text: `CRIT ${hpDiff}`,
-                    x: state.hero.x,
-                    y: state.hero.y,
-                    color: "var(--rg-trap)",
-                    isCrit: true,
-                });
+                // 영웅 치명타 피격: 황금+적색 경고
+                flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
                 triggerShake = true;
             } else {
-                newEffects.push({
-                    id: Date.now() + Math.random(),
-                    text: `${hpDiff}`,
-                    x: state.hero.x,
-                    y: state.hero.y,
-                    color: "var(--rg-potion)",
-                });
+                // 영웅 일반 피격: 붉은색 플래시
+                flashes[heroKey] = { ink: "var(--rg-trap)" };
                 if (isHeavyHit) triggerShake = true;
             }
         } else if (hpDiff > 0 && prev.depth === curr.depth) {
-            newEffects.push({
-                id: Date.now() + Math.random(),
-                text: `+${hpDiff} HP`,
-                x: state.hero.x,
-                y: state.hero.y,
-                color: "var(--rg-ring)",
-            });
-        } else if (hasCritMsg) {
-            // 영웅이 적에게 가한 크리티컬 타격 (피격 데미지 없음)
-            newEffects.push({
-                id: Date.now() + Math.random(),
-                text: "CRIT!",
-                x: state.hero.x,
-                y: state.hero.y,
-                color: "var(--rg-trap)",
-                isCrit: true,
-            });
-            triggerShake = true;
+            // 영웅 치유: 녹색 플래시
+            flashes[heroKey] = { ink: "var(--rg-ring)", bg: "rgba(34, 197, 94, 0.2)" };
         }
 
-        // 4. 골드 획득 (단정하게)
-        const goldDiff = curr.gold - prev.gold;
-        if (goldDiff > 0) {
-            newEffects.push({
-                id: Date.now() + Math.random(),
-                text: `+${goldDiff} G`,
-                x: state.hero.x,
-                y: state.hero.y,
-                color: "var(--rg-gold)",
-            });
-        }
-
-        // 5. 특수 상태 연출
-        if (hasTimeStopMsg) {
-            newEffects.push({
-                id: Date.now() + Math.random(),
-                text: "TIME STOP",
-                x: state.hero.x,
-                y: state.hero.y,
-                color: "var(--rg-wand)",
-                isCrit: true,
-            });
-        }
         if (hasPhoenixMsg) {
             triggerShake = true;
-            newEffects.push({
-                id: Date.now() + Math.random(),
-                text: "PHOENIX",
-                x: state.hero.x,
-                y: state.hero.y,
-                color: "var(--rg-trap)",
-                isCrit: true,
-            });
+            flashes[heroKey] = { ink: "var(--rg-trap)", bg: "rgba(239, 68, 68, 0.35)" };
         }
 
-        if (newEffects.length > 0) {
-            setFloatingEffects((prevList) => [...prevList.slice(-4), ...newEffects]);
+        if (Object.keys(flashes).length > 0) {
+            setCellFlashes(flashes);
             setTimeout(() => {
-                setFloatingEffects((prevList) =>
-                    prevList.filter((e) => !newEffects.some((ne) => ne.id === e.id)),
-                );
-            }, 650);
+                setCellFlashes({});
+            }, 350);
         }
 
         if (triggerShake) {
@@ -944,7 +906,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} floatingEffects={floatingEffects} shake={shake} />
+                <MapView state={state} cellFlashes={cellFlashes} shake={shake} />
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (

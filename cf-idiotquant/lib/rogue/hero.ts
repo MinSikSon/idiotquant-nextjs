@@ -140,6 +140,8 @@ export function takeFromPack(hero: Hero, it: Item, n = 1): void {
     hero.pack = hero.pack.filter((p) => p.id !== it.id);
     if (hero.weaponId === it.id) hero.weaponId = null;
     if (hero.armorId === it.id) hero.armorId = null;
+    if (hero.leftRingId === it.id) hero.leftRingId = null;
+    if (hero.rightRingId === it.id) hero.rightRingId = null;
 }
 
 export function packItem(hero: Hero, letter: string): Item | undefined {
