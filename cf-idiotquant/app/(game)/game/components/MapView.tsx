@@ -117,8 +117,8 @@ export default function MapView({
         return () => ro.disconnect();
     }, [cell]);
 
-    const ox = clamp(state.hero.x - Math.floor(view.cols / 2), 0, MAP_W - view.cols);
-    const oy = clamp(state.hero.y - Math.floor(view.rows / 2), 0, MAP_H - view.rows);
+    const ox = clamp(state.heroes[0].x - Math.floor(view.cols / 2), 0, MAP_W - view.cols);
+    const oy = clamp(state.heroes[0].y - Math.floor(view.rows / 2), 0, MAP_H - view.rows);
 
     const rows: Run[][] = [];
     for (let y = oy; y < oy + view.rows; y++) {

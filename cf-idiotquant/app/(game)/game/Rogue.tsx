@@ -235,9 +235,9 @@ export default function Rogue() {
         if (!state) return;
         const prev = lastStateRef.current;
         const curr = {
-            hp: state.hero.hp,
-            gold: state.hero.gold,
-            exp: state.hero.exp,
+            hp: state.heroes[0].hp,
+            gold: state.heroes[0].gold,
+            exp: state.heroes[0].exp,
             depth: state.level.depth,
             turn: state.turn,
             messagesLen: state.messages.length,
@@ -291,9 +291,9 @@ export default function Rogue() {
 
         // 4. 영웅 체력 변동 (피격 / 치유 - 내 캐릭터 칸 플래시)
         const hpDiff = curr.hp - prev.hp;
-        const heroKey = `${state.hero.x},${state.hero.y}`;
+        const heroKey = `${state.heroes[0].x},${state.heroes[0].y}`;
         if (hpDiff < 0) {
-            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.hero.maxHp * 0.3));
+            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.heroes[0].maxHp * 0.3));
             if (hasCritMsg) {
                 // 영웅 치명타 피격: 황금+적색 경고
                 flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
@@ -496,7 +496,7 @@ export default function Rogue() {
             }
 
             if (picker) {
-                const it = state.hero.pack.find(
+                const it = state.heroes[0].pack.find(
                     (p) =>
                         p.letter === e.key &&
                         picker.kinds.includes(p.kind) &&
@@ -588,7 +588,8 @@ export default function Rogue() {
         );
     }
 
-    const { hero, level } = state;
+    const { level } = state;
+    const hero = state.heroes[0];
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
     /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */

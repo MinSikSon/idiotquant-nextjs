@@ -45,8 +45,8 @@ function theirHalf(line: string, iAttacked: boolean): string {
 const BREAKDOWN = { mine: /[+−]\d+숙련/, theirs: /[+−]\d+공격/ };
 
 function placeNextTo(s: GameState, ch: string, hp = 1) {
-    const x = s.hero.x + 1;
-    const y = s.hero.y;
+    const x = s.heroes[0].x + 1;
+    const y = s.heroes[0].y;
     s.level.tiles[idx(x, y)] = 1;
     s.level.monsters = s.level.monsters.filter((m) => !(m.x === x && m.y === y));
     const m = spawnMonster(ch, x, y, new Rng(7));
@@ -195,7 +195,7 @@ test("상대의 내역은 잡아 본 종에게만", () => {
     {
         for (const ch of Object.keys(MONSTERS)) {
             const s = newGame(500);
-            s.hero.hp = s.hero.maxHp = 99999;
+            s.heroes[0].hp = s.heroes[0].maxHp = 99999;
             const m = placeNextTo(s, ch, 99999);
             const rng = new Rng(3);
             for (let i = 0; i < 40; i++) {
@@ -222,7 +222,7 @@ test("상대의 내역은 잡아 본 종에게만", () => {
     {
         const s = newGame(501);
         s.bestiary.S = 1;
-        s.hero.hp = s.hero.maxHp = 9999;
+        s.heroes[0].hp = s.heroes[0].maxHp = 9999;
         const m = placeNextTo(s, "S", 9999);
         const rng = new Rng(3);
         assert.match(theirHalf(heroAttack(s, m, rng).messages[0], true), BREAKDOWN.mine);
@@ -232,7 +232,7 @@ test("상대의 내역은 잡아 본 종에게만", () => {
 
 test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 결과여야 한다", () => {
     const s = newGame(403);
-    s.hero.hp = s.hero.maxHp = 99999;
+    s.heroes[0].hp = s.heroes[0].maxHp = 99999;
     const m = placeNextTo(s, "S", 99999);
     const rng = new Rng(11);
     for (let i = 0; i < 30; i++) {
@@ -260,7 +260,7 @@ test("띠에 남는 줄에도 피해 숫자가 있다 — 0 이면 안 적는다
     // ── 띠에 남는 줄에도 피해 숫자가 있다 — 굴림은 빼고 결과만
     {
         const s = newGame(404);
-        s.hero.hp = s.hero.maxHp = 99999;
+        s.heroes[0].hp = s.heroes[0].maxHp = 99999;
         const m = placeNextTo(s, "T", 99999);
         const rng = new Rng(12);
         let mineSeen = 0;
@@ -295,12 +295,12 @@ test("띠에 남는 줄에도 피해 숫자가 있다 — 0 이면 안 적는다
 
         // 엔진에서도 실제로 그렇게 나오는지 — 힘을 바닥에 두고 제일 작은 무기를 쥔다.
         const s = newGame(405);
-        s.hero.hp = s.hero.maxHp = 99999;
-        s.hero.str = 3; // 힘 보정 −4
+        s.heroes[0].hp = s.heroes[0].maxHp = 99999;
+        s.heroes[0].str = 3; // 힘 보정 −4
         const dart = makeItem("weapon", "dart", 980, -1, -1, 1);
         dart.letter = "z";
-        s.hero.pack.push(dart);
-        s.hero.weaponId = dart.id;
+        s.heroes[0].pack.push(dart);
+        s.heroes[0].weaponId = dart.id;
         const m = placeNextTo(s, "B", 99999);
         const rng = new Rng(13);
         let zero = 0;
@@ -324,20 +324,20 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
         const w = makeItem("weapon", "two-handed sword", 980, -1, -1);
         w.letter = "z";
         w.plusDam = 2;
-        s.hero.pack.push(w);
-        s.hero.weaponId = w.id;
-        s.hero.str = 16; // 능력 보정 +3
+        s.heroes[0].pack.push(w);
+        s.heroes[0].weaponId = w.id;
+        s.heroes[0].str = 16; // 능력 보정 +3
 
         // **써 보기 전에는 손질을 모른다.** 모르는 무기의 속을 화면이 흘리면 안 된다.
         // 힘 16 → 능력 보정 +3 (D&D 식). 손질 +2 는 정체를 알아야 붙는다.
-        assert.equal(heroAttackText(s.hero, {}), "4d4+3");
-        assert.equal(heroAttackText(s.hero, { "weapon:two-handed sword": true }), "4d4+5");
+        assert.equal(heroAttackText(s.heroes[0], {}), "4d4+3");
+        assert.equal(heroAttackText(s.heroes[0], { "weapon:two-handed sword": true }), "4d4+5");
 
         // 맨손은 1d2, 보정 없는 힘이면 주사위만.
         const bare = newGame(601);
-        bare.hero.weaponId = null;
-        bare.hero.str = 10;
-        assert.equal(heroAttackText(bare.hero, {}), "1d2");
+        bare.heroes[0].weaponId = null;
+        bare.heroes[0].str = 10;
+        assert.equal(heroAttackText(bare.heroes[0], {}), "1d2");
     }
 
     // ── 실제로 들어가는 피해와 화면의 「공격」이 같은 식이다
@@ -347,15 +347,15 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
         const w = makeItem("weapon", "long sword", 981, -1, -1);
         w.letter = "z";
         w.plusDam = 2;
-        s.hero.pack.push(w);
-        s.hero.weaponId = w.id;
-        s.hero.str = 18; // 능력 보정 +4
+        s.heroes[0].pack.push(w);
+        s.heroes[0].weaponId = w.id;
+        s.heroes[0].str = 18; // 능력 보정 +4
         s.known["weapon:long sword"] = true;
         s.bestiary.S = 1;
 
         const m = placeNextTo(s, "S", 999999);
         const rng = new Rng(4);
-        const shown = heroAttackText(s.hero, s.known); // `3d4+6` 꼴
+        const shown = heroAttackText(s.heroes[0], s.known); // `3d4+6` 꼴
         const [dice, plus] = shown.split(/(?=[+-])/);
         let seen = 0;
         let crits = 0;
@@ -393,10 +393,10 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         w.letter = "z";
         w.plusHit = 2;
         w.plusDam = 2;
-        s.hero.pack.push(w);
-        s.hero.weaponId = w.id;
+        s.heroes[0].pack.push(w);
+        s.heroes[0].weaponId = w.id;
         s.known["weapon:silver sword"] = true;
-        s.hero.hp = s.hero.maxHp = 99999;
+        s.heroes[0].hp = s.heroes[0].maxHp = 99999;
         // 공격력 줄은 **잡아 본 종**에게만 산수를 펼친다 — 방어력도 표의 값이라서다.
         s.bestiary.S = 1;
 
@@ -425,14 +425,14 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         w.letter = "z";
         w.plusHit = 3;
         w.plusDam = 3;
-        s.hero.pack.push(w);
-        s.hero.weaponId = w.id;
-        s.hero.str = 16; // 능력 보정 +3, 숙련 +2
+        s.heroes[0].pack.push(w);
+        s.heroes[0].weaponId = w.id;
+        s.heroes[0].str = 16; // 능력 보정 +3, 숙련 +2
 
-        assert.equal(heroHitBonus(s.hero, {}), 5, "모르는 무기의 손질이 상태 줄에 샜다");
-        assert.equal(heroHitBonus(s.hero, { "weapon:knight sword": true }), 8);
-        assert.equal(heroAttackText(s.hero, {}), "5d6+3");
-        assert.equal(heroAttackText(s.hero, { "weapon:knight sword": true }), "5d6+6");
+        assert.equal(heroHitBonus(s.heroes[0], {}), 5, "모르는 무기의 손질이 상태 줄에 샜다");
+        assert.equal(heroHitBonus(s.heroes[0], { "weapon:knight sword": true }), 8);
+        assert.equal(heroAttackText(s.heroes[0], {}), "5d6+3");
+        assert.equal(heroAttackText(s.heroes[0], { "weapon:knight sword": true }), "5d6+6");
     }
 
     // ── 상대의 공격력 줄은 등호를 하나만 쓴다 — 어느 쪽이 총합인지 읽혀야 한다

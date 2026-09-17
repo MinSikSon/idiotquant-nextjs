@@ -35,7 +35,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 5;
+const VERSION = 6;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -48,10 +48,14 @@ interface SavedLevel extends Omit<Level, "tiles" | "flags" | "roomAt" | "monster
     monsters: SavedMonster[];
 }
 
-interface Saved extends Omit<GameState, "level" | "levels"> {
+interface Saved extends Omit<GameState, "level" | "levels" | "heroes"> {
     level: SavedLevel;
     /** 지나온 층들. v2 이하의 저장에는 없다. */
     levels?: Record<string, SavedLevel>;
+    /** v6 부터. 그 아래 저장에는 `hero` 하나만 있다. */
+    heroes?: Hero[];
+    /** v5 이하의 저장 — 영웅이 하나뿐이던 때. `normalize` 가 `heroes` 로 옮긴다. */
+    hero?: Hero;
     v: number;
 }
 
@@ -201,7 +205,10 @@ function fixLetters(pack: Item[]): Item[] {
 
 function normalize(s: Saved): GameState | null {
     if (!s || typeof s !== "object") return null;
-    if (!s.level || !s.hero) return null;
+    // **옛 저장은 영웅이 하나였다**(`hero`). 그 한 명을 길이 1 짜리 `heroes` 로 옮긴다 —
+    // 규칙을 한 벌로 두려고 배열로 바꿨으니, 되읽는 쪽도 여기 한 자리에서 메운다.
+    const saved = Array.isArray(s.heroes) && s.heroes.length > 0 ? s.heroes : s.hero ? [s.hero] : null;
+    if (!s.level || !saved) return null;
 
     const level = unpackLevel(s.level, 1);
     if (!level) return null;
@@ -218,8 +225,7 @@ function normalize(s: Saved): GameState | null {
         if (l) levels[depth] = l;
     }
 
-    const h = s.hero;
-    const hero: GameState["hero"] = {
+    const heroes: Hero[] = saved.map((h) => ({
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
         pack: liftEnchants(fixLetters(Array.isArray(h.pack) ? h.pack : [])),
@@ -230,13 +236,13 @@ function normalize(s: Saved): GameState | null {
         asleep: num(h.asleep, 0),
         stuck: num(h.stuck, 0),
         detect: num(h.detect, 0),
-    };
+    }));
 
     return {
         ...(s as unknown as GameState),
         level,
         levels,
-        hero,
+        heroes,
         messages: Array.isArray(s.messages) ? s.messages : [],
         // **빠진 겉모습을 메운다** — 표에 물건을 더하면 옛 저장에는 그 한 종이 없고,
         // 그러면 그것만 이름 없는 「주문서」로 떠서 오히려 눈에 띈다(`fillAppearances`).
@@ -624,16 +630,16 @@ export function graves(): Tomb[] {
  * 적기에 실패해도(사파리 비공개 창 등) 목록은 돌려준다 — 이번 판의 등수는 나와야 한다.
  */
 export function bury(state: GameState): Tomb[] {
-    const tombHero = createTombHero(state.hero);
-    const scoreVal = state.hero.gold + (state.hero.hasAmulet ? 10000 : 0) + state.deepest * 50;
+    const tombHero = createTombHero(state.heroes[0]);
+    const scoreVal = state.heroes[0].gold + (state.heroes[0].hasAmulet ? 10000 : 0) + state.deepest * 50;
     const item: Tomb = {
         at: Date.now(),
         depth: state.deepest,
-        gold: state.hero.gold,
+        gold: state.heroes[0].gold,
         turns: state.turn,
         epitaph: state.epitaph || (state.phase === "won" ? "던전을 탈출했다" : "던전에서 쓰러졌다"),
         won: state.phase === "won",
-        amulet: state.hero.hasAmulet,
+        amulet: state.heroes[0].hasAmulet,
         score: scoreVal,
         seed: state.seed,
         hero: tombHero,

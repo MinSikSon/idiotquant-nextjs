@@ -104,12 +104,12 @@ test("죽음 화면의 점수와 무덤의 점수가 같다 — 증표를 쥐고
     {
         for (const amulet of [false, true]) {
             const s = newGame(7);
-            s.hero.gold = 380;
+            s.heroes[0].gold = 380;
             s.deepest = 14;
-            s.hero.hasAmulet = amulet;
+            s.heroes[0].hasAmulet = amulet;
             s.phase = "dead"; // **죽었다** — 살아 돌아온 것이 아니다
             const mine = score(s);
-            const grave = tomb(s.hero.gold, s.deepest, { won: false, amulet });
+            const grave = tomb(s.heroes[0].gold, s.deepest, { won: false, amulet });
             assert.equal(
                 tombScore(grave),
                 mine,
@@ -139,9 +139,9 @@ test("무덤을 적은 쪽이 목록을 돌려준다 — 서른 판까지", () =
     {
         withStorage(() => {
             const s = newGame(9);
-            s.hero.gold = 380;
+            s.heroes[0].gold = 380;
             s.deepest = 14;
-            s.hero.hasAmulet = true;
+            s.heroes[0].hasAmulet = true;
             s.phase = "dead";
             const first = bury(s);
             assert.equal(first.length, 1, "이번 판이 목록에 없거나 두 번 들어갔다");

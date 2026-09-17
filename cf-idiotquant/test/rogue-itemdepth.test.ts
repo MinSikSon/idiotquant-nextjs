@@ -230,8 +230,8 @@ test("층이 실제로 강화를 두 장까지만, 1층에는 하나도 안 놓�
         first += ench(s.level);
         let drought = ench(s.level) > 0 ? 0 : 1;
         for (let d = 2; d <= 20; d++) {
-            s.hero.x = s.level.stairs.x;
-            s.hero.y = s.level.stairs.y;
+            s.heroes[0].x = s.level.stairs.x;
+            s.heroes[0].y = s.level.stairs.y;
             s = perform(s, { t: "descend" });
             if (s.level.depth !== d) break;
             const n = ench(s.level);
@@ -283,8 +283,8 @@ function specialFloors(n = 60, maxDepth = 20) {
     for (let seed = 1; seed <= n; seed++) {
         let s = newGame(seed);
         for (let d = 2; d <= maxDepth; d++) {
-            s.hero.x = s.level.stairs.x;
-            s.hero.y = s.level.stairs.y;
+            s.heroes[0].x = s.level.stairs.x;
+            s.heroes[0].y = s.level.stairs.y;
             s = perform(s, { t: "descend" });
             if (s.level.depth !== d) break;
             if (s.level.special) out.push({ level: s.level, ...s.level.special });
@@ -377,8 +377,8 @@ test("특수 방은 층에서 꾸어 가고, 층 상한은 안 넘는다", () =>
         let gap = 0;
         for (let d = 1; d <= 20; d++) {
             if (d > 1) {
-                s.hero.x = s.level.stairs.x;
-                s.hero.y = s.level.stairs.y;
+                s.heroes[0].x = s.level.stairs.x;
+                s.heroes[0].y = s.level.stairs.y;
                 s = perform(s, { t: "descend" });
                 if (s.level.depth !== d) break;
             }

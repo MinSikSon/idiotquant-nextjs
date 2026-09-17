@@ -835,7 +835,7 @@ export function itemCodexStage(
         return 3;
     }
 
-    const inPack = state.hero.pack.some(
+    const inPack = state.heroes[0].pack.some(
         (it) => it.kind === entry.kind && it.type === entry.type,
     );
     if (inPack) return 2;

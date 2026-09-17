@@ -65,7 +65,7 @@ test("5단계 해금 판정이 정확하다 (0 미발견 -> 1 목격 -> 2 획득
     delete s.seenItems["weapon:dagger"];
     delete s.itemCodex["weapon:dagger"];
     delete s.known["weapon:dagger"];
-    s.hero.pack = s.hero.pack.filter((it) => it.type !== "dagger");
+    s.heroes[0].pack = s.heroes[0].pack.filter((it) => it.type !== "dagger");
     assert.equal(itemCodexStage(daggerEntry, s), 0);
 
     // 2. 목격 (1)
@@ -73,7 +73,7 @@ test("5단계 해금 판정이 정확하다 (0 미발견 -> 1 목격 -> 2 획득
     assert.equal(itemCodexStage(daggerEntry, s), 1);
 
     // 3. 획득 (2)
-    s.hero.pack.push(makeItem("weapon", "dagger", 888, -1, -1));
+    s.heroes[0].pack.push(makeItem("weapon", "dagger", 888, -1, -1));
     assert.equal(itemCodexStage(daggerEntry, s), 2);
 
     // 4. 식별 (3)
@@ -116,8 +116,8 @@ test("게임 플레이 중 액션에 따라 숙련도와 식별이 정확히 기
         const s = newGame(202);
         const pot = makeItem("potion", "healing", 901, -1, -1);
         pot.letter = "z";
-        s.hero.pack.push(pot);
-        s.hero.hp = 5;
+        s.heroes[0].pack.push(pot);
+        s.heroes[0].hp = 5;
 
         const beforeUses = s.itemUsage["potion:healing"] ?? 0;
         const after = perform(s, { t: "quaff", letter: "z" });
@@ -130,7 +130,7 @@ test("게임 플레이 중 액션에 따라 숙련도와 식별이 정확히 기
         const s = newGame(203);
         const scr = makeItem("scroll", "teleport", 902, -1, -1);
         scr.letter = "y";
-        s.hero.pack.push(scr);
+        s.heroes[0].pack.push(scr);
 
         const beforeUses = s.itemUsage["scroll:teleport"] ?? 0;
         const after = perform(s, { t: "read", letter: "y" });
@@ -144,11 +144,11 @@ test("게임 플레이 중 액션에 따라 숙련도와 식별이 정확히 기
         const wand = makeItem("wand", "slow monster", 903, -1, -1);
         wand.charges = 5;
         wand.letter = "x";
-        s.hero.pack.push(wand);
+        s.heroes[0].pack.push(wand);
 
         // 몬스터 배치
-        const mx = s.hero.x + 1;
-        const my = s.hero.y;
+        const mx = s.heroes[0].x + 1;
+        const my = s.heroes[0].y;
         s.level.tiles[idx(mx, my)] = T.FLOOR;
         const m = spawnMonster("B", mx, my, new Rng(1));
         m.hp = 10;
@@ -167,12 +167,12 @@ test("게임 플레이 중 액션에 따라 숙련도와 식별이 정확히 기
         dagger.plusHit = 20;
         dagger.plusDam = 30;
         dagger.letter = "w";
-        s.hero.pack.push(dagger);
+        s.heroes[0].pack.push(dagger);
         const sWield = perform(s, { t: "wield", letter: "w" });
 
         // 적 배치
-        const mx = sWield.hero.x + 1;
-        const my = sWield.hero.y;
+        const mx = sWield.heroes[0].x + 1;
+        const my = sWield.heroes[0].y;
         sWield.level.tiles[idx(mx, my)] = T.FLOOR;
         const m = spawnMonster("B", mx, my, new Rng(1));
         m.hp = 1;
@@ -187,20 +187,20 @@ test("게임 플레이 중 액션에 따라 숙련도와 식별이 정확히 기
     {
         const s = newGame(206);
         // 사슬 고리 갑옷 착용 상태에서 이동
-        const armor = s.hero.pack.find((it) => it.id === s.hero.armorId);
+        const armor = s.heroes[0].pack.find((it) => it.id === s.heroes[0].armorId);
         assert.ok(armor);
 
         const ring = makeItem("ring", "regeneration", 905, -1, -1);
         ring.letter = "v";
-        s.hero.pack.push(ring);
+        s.heroes[0].pack.push(ring);
         const sRing = perform(s, { t: "putOn", letter: "v" });
 
         const beforeArmorSteps = sRing.itemUsage[`armor:${armor!.type}`] ?? 0;
         const beforeRingSteps = sRing.itemUsage["ring:regeneration"] ?? 0;
 
         // 1보 이동
-        const targetX = sRing.hero.x + 1;
-        const targetY = sRing.hero.y;
+        const targetX = sRing.heroes[0].x + 1;
+        const targetY = sRing.heroes[0].y;
         sRing.level.tiles[idx(targetX, targetY)] = T.FLOOR;
         sRing.level.monsters = [];
         const sMoved = perform(sRing, { t: "move", dx: 1, dy: 0 });

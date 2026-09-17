@@ -21,8 +21,8 @@ import { idx, type GameState } from "@/lib/rogue/types";
 
 /** 내 옆에 원하는 놈을 한 마리 세운다. 그 칸은 반드시 비운다. */
 function placeNextTo(s: GameState, ch: string, hp = 1) {
-    const x = s.hero.x + 1;
-    const y = s.hero.y;
+    const x = s.heroes[0].x + 1;
+    const y = s.heroes[0].y;
     s.level.tiles[idx(x, y)] = 1; // 방 바닥
     s.level.monsters = s.level.monsters.filter((m) => !(m.x === x && m.y === y));
     const m = spawnMonster(ch, x, y, new Rng(7));
@@ -90,7 +90,7 @@ test("무엇으로 잡았든 도감에 오른다 — 도망친 놈은 아니다"
         const wand = makeItem("wand", "magic missile", 990, -1, -1);
         wand.charges = 3;
         wand.letter = "z";
-        s.hero.pack.push(wand);
+        s.heroes[0].pack.push(wand);
 
         const after = perform(s, { t: "zap", letter: "z", dx: 1, dy: 0 });
         assert.ok(after.level.monsters.every((x) => x.id !== m.id), "지팡이에 안 죽었다");
@@ -107,7 +107,7 @@ test("무엇으로 잡았든 도감에 오른다 — 도망친 놈은 아니다"
         // 갑옷을 뚫도록 손질도 넉넉히 — 피해가 방어력에 다 깎이면 못 죽인다.
         dagger.plusDam = 20;
         dagger.letter = "z";
-        s.hero.pack.push(dagger);
+        s.heroes[0].pack.push(dagger);
 
         let cur: GameState = s;
         for (let i = 0; i < 20 && !(cur.bestiary.H > 0); i++) {
@@ -123,7 +123,7 @@ test("무엇으로 잡았든 도감에 오른다 — 도망친 놈은 아니다"
         // 레프러콘은 금화를 채고 스스로 사라진다 — 그건 내가 잡은 것이 아니다.
         const m = placeNextTo(s, "L", 40);
         m.awake = true;
-        s.hero.gold = 500;
+        s.heroes[0].gold = 500;
 
         let cur: GameState = s;
         for (let i = 0; i < 60 && cur.level.monsters.some((x) => x.id === m.id); i++) {
@@ -231,7 +231,7 @@ test("수법은 당한 순간 적히고, 처음 한 번만 말한다", () => {
     const m = placeNextTo(s0, "A", 200);
     m.awake = true;
     // 갑옷이 있어야 아쿠에이터가 녹일 것이 있다.
-    assert.ok(s0.hero.armorId, "처음 판에 갑옷이 없다");
+    assert.ok(s0.heroes[0].armorId, "처음 판에 갑옷이 없다");
 
     const s = suffer(s0, "A");
     assert.ok(s, "아쿠에이터가 400턴 동안 한 번도 안 녹였다");
@@ -306,8 +306,8 @@ test("묶는 수법은 빠져나올 수 있어야 한다", () => {
             let s: GameState = s0;
             let streak = 0;
             for (let t = 0; t < 200; t++) {
-                s.hero.hp = s.hero.maxHp; // 죽는 것 말고 **묶이는 것**만 잰다
-                const before = s.hero.asleep;
+                s.heroes[0].hp = s.heroes[0].maxHp; // 죽는 것 말고 **묶이는 것**만 잰다
+                const before = s.heroes[0].asleep;
                 s = perform(s, { t: "move", dx: -1, dy: 0 });
                 if (before > 0) streak++;
                 else {

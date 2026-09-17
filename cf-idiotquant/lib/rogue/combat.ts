@@ -293,7 +293,7 @@ export interface AttackResult {
  *
  * 둘 다면 서로 지운다(`luckOf`) — 이것도 5판의 규칙이다.
  */
-export function heroLuck(hero: GameState["hero"], m: Monster): Luck {
+export function heroLuck(hero: GameState["heroes"][number], m: Monster): Luck {
     return luckOf([!m.awake], [hero.blind > 0, hero.confused > 0]);
 }
 
@@ -311,7 +311,7 @@ export function monsterDefense(m: Monster): number {
 
 /** 내가 몬스터를 때린다. */
 export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
-    const hero = state.hero;
+    const hero = state.heroes[0];
     const hitTerms = heroHitTerms(hero);
     const seen = seenBefore(state, m);
     const mName = monsterName(m);
@@ -408,7 +408,7 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
  * **하나하나 따로 굴린다**(D&D 의 다중 공격이 그렇다). 트롤이 무서운 이유가 그것이다.
  */
 export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
-    const hero = state.hero;
+    const hero = state.heroes[0];
     const messages: string[] = [];
     const attacks: Attack[] = [];
     const mName = monsterName(m);
@@ -567,7 +567,7 @@ function special(state: GameState, m: Monster, rng: Rng): string[] {
 }
 
 function specialEffect(state: GameState, m: Monster, rng: Rng): string[] {
-    const hero: Hero = state.hero;
+    const hero: Hero = state.heroes[0];
     switch (m.def.ch) {
         case "A": {
             // 아쿠에이터 — 갑옷을 녹인다.

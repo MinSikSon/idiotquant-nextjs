@@ -16,7 +16,8 @@ import { idx, MAP_H, MAP_W, T } from "@/lib/rogue/types";
 
 test("굴착의 지팡이 (digging): 최대 4칸 벽을 부수고 파편 피해를 준다", () => {
     const s = newGame(301);
-    const { hero, level } = s;
+    const { level } = s;
+    const hero = s.heroes[0];
 
     // 영웅 앞 1~3칸을 벽으로, 2칸 위치에 몬스터 배치
     const x1 = hero.x + 1;
@@ -52,7 +53,8 @@ test("굴착의 지팡이 (digging): 최대 4칸 벽을 부수고 파편 피해�
 
 test("굴착의 지팡이 (digging): 던전 외곽 둘레 벽(경계벽)은 파괴하지 않는다", () => {
     const s = newGame(302);
-    const { hero, level } = s;
+    const { level } = s;
+    const hero = s.heroes[0];
 
     // 영웅을 서쪽 끝(x=1)에 배치하고 서쪽(dx=-1)으로 굴착
     hero.x = 1;
@@ -71,7 +73,8 @@ test("굴착의 지팡이 (digging): 던전 외곽 둘레 벽(경계벽)은 파�
 
 test("위치 교환의 지팡이 (swapping): 영웅과 몬스터의 위치를 맞바꾼다", () => {
     const s = newGame(303);
-    const { hero, level } = s;
+    const { level } = s;
+    const hero = s.heroes[0];
 
     const origHx = hero.x;
     const origHy = hero.y;
@@ -94,8 +97,8 @@ test("위치 교환의 지팡이 (swapping): 영웅과 몬스터의 위치를 �
     const after = perform(s, { t: "zap", letter: "z", dx: 1, dy: 0 });
 
     // 영웅과 몬스터의 좌표가 서로 바뀌었는지 검증
-    assert.equal(after.hero.x, mx);
-    assert.equal(after.hero.y, my);
+    assert.equal(after.heroes[0].x, mx);
+    assert.equal(after.heroes[0].y, my);
     assert.equal(m.x, origHx);
     assert.equal(m.y, origHy);
     assert.equal(m.awake, true);
@@ -107,7 +110,8 @@ test("돌풍의 지팡이 (gust): 3칸 넉백 및 벽 충돌 시 3d4 피해와 �
     // 1. 탁 트인 공간에서 3칸 넉백
     {
         const s = newGame(304);
-        const { hero, level } = s;
+        const { level } = s;
+        const hero = s.heroes[0];
 
         const mx = hero.x + 1;
         const my = hero.y;
@@ -134,7 +138,8 @@ test("돌풍의 지팡이 (gust): 3칸 넉백 및 벽 충돌 시 3d4 피해와 �
     // 2. 몬스터 바로 뒤가 벽인 경우 벽 충돌 피해 (3d4) 및 기절(speed = -1)
     {
         const s = newGame(305);
-        const { hero, level } = s;
+        const { level } = s;
+        const hero = s.heroes[0];
 
         const mx = hero.x + 1;
         const my = hero.y;
@@ -166,7 +171,7 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         const s = newGame(306);
         const scr = makeItem("scroll", "transmutation", 996, -1, -1);
         scr.letter = "s";
-        s.hero.pack.push(scr);
+        s.heroes[0].pack.push(scr);
 
         const kinds = scrollTargetKinds(s, "s");
         assert.deepEqual(kinds, ["weapon", "armor", "ring"]);
@@ -181,10 +186,10 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         wep.letter = "w";
         wep.plusHit = 2;
         wep.plusDam = 2;
-        s.hero.pack.push(scr, wep);
+        s.heroes[0].pack.push(scr, wep);
 
         const after = perform(s, { t: "read", letter: "s", target: "w" });
-        const transmuted = after.hero.pack.find((p) => p.id === wep.id)!;
+        const transmuted = after.heroes[0].pack.find((p) => p.id === wep.id)!;
         assert.ok(transmuted);
         assert.equal(transmuted.kind, "weapon");
         assert.notEqual(transmuted.type, "dagger");
@@ -201,10 +206,10 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         scr.letter = "s";
         const arm = makeItem("armor", "leather", 1000, -1, -1);
         arm.letter = "u";
-        s.hero.pack.push(scr, arm);
+        s.heroes[0].pack.push(scr, arm);
 
         const after = perform(s, { t: "read", letter: "s", target: "u" });
-        const transmuted = after.hero.pack.find((p) => p.id === arm.id)!;
+        const transmuted = after.heroes[0].pack.find((p) => p.id === arm.id)!;
         assert.ok(transmuted);
         assert.equal(transmuted.kind, "armor");
         assert.notEqual(transmuted.type, "leather");
@@ -219,10 +224,10 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         scr.letter = "s";
         const ring = makeItem("ring", "protection", 1002, -1, -1);
         ring.letter = "r";
-        s.hero.pack.push(scr, ring);
+        s.heroes[0].pack.push(scr, ring);
 
         const after = perform(s, { t: "read", letter: "s", target: "r" });
-        const transmuted = after.hero.pack.find((p) => p.id === ring.id)!;
+        const transmuted = after.heroes[0].pack.find((p) => p.id === ring.id)!;
         assert.ok(transmuted);
         assert.equal(transmuted.kind, "ring");
         assert.notEqual(transmuted.type, "protection");
