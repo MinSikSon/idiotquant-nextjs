@@ -350,9 +350,29 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
 
     const back = from === "above" ? level.upStairs : from === "below" ? level.stairs : null;
     const start = back ?? freeSpot(level, rng, [level.stairs]);
-    state.heroes[0].x = start.x;
-    state.heroes[0].y = start.y;
+    // **파티가 같이 옮겨 간다.** 층은 하나뿐이라(`state.level`) 둘이 다른 층에 있을 수 없고,
+    // 쓰러진 사람도 업고 간다 — 두고 가면 살릴 길이 없다.
+    for (const h of state.heroes) {
+        h.x = start.x;
+        h.y = start.y;
+    }
     state.level = level;
+    // **살아서 층을 넘으면 쓰러진 동료가 일어난다** — 최대 체력의 절반으로.
+    //
+    // 협동일 때만이다. 혼자면 쓰러지는 순간 판이 끝나므로 여기까지 오지 않는다.
+    // 이 규칙이 살아남은 사람에게 「계단까지 간다」는 구체적인 목표를 준다 — 판이 그냥
+    // 끝나지 않고, 도망이 곧 동료를 살리는 길이 된다.
+    if (state.heroes.length > 1) {
+        for (const h of state.heroes) {
+            if (h.hp > 0) continue;
+            h.hp = Math.max(1, Math.floor(h.maxHp / 2));
+            h.burnTurns = 0;
+            h.asleep = 0;
+            h.confused = 0;
+            h.blind = 0;
+            say(state, "쓰러졌던 동료가 층을 넘으며 숨을 되찾았다.");
+        }
+    }
     // 이미 살던 층에 몬스터와 물건을 또 뿌리면 갈 때마다 불어난다.
     if (!seen) {
         level.mutator = rollFloorMutator(depth, rng);
@@ -1937,6 +1957,8 @@ export function perform(state: GameState, cmd: Command): GameState {
     // 「누구 차례인가」를 다시 판단하지 않는다 — 그러면 규칙이 두 벌이 된다.
     const hero = state.heroes[cmd.who ?? 0];
     if (!hero) return state;
+    // **쓰러진 사람은 못 움직인다.** 화면이 조종을 안 넘기지만 엔진도 한 번 더 본다.
+    if (hero.hp <= 0) return state;
 
     // 얼어붙었거나 자는 동안에는 내 차례가 없다. 그래도 시간은 간다.
     if (hero.asleep > 0) {
@@ -2041,6 +2063,8 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
     // 상대가 층을 다 뒤지는 동안 굶지도, 불타지도, 눈이 풀리지도 않는다. 그건 협동이
     // 아니라 얌체다.
     for (const h of state.heroes) {
+        // **쓰러진 사람의 시계는 선다.** 누워 있는 사람이 굶어 죽으면 살릴 길이 없다.
+        if (h.hp <= 0) continue;
         tickHunger(state, h, rng);
         regenerate(state, h);
         if (h.blind > 0) h.blind -= 1;
@@ -2089,28 +2113,41 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
     computeFov(state.level, state.heroes);
     updateSeenItems(state);
 
-    if (hero.hp <= 0 && state.phase === "playing") {
-        const featherIdx = hero.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");
-        if (featherIdx >= 0) {
-            hero.pack.splice(featherIdx, 1);
-            hero.hp = hero.maxHp;
-            hero.burnTurns = 0;
-            hero.asleep = 0;
-            hero.confused = 0;
-            hero.blind = 0;
+    // **쓰러진 사람을 훑는다** — 행동한 사람만이 아니다. 불길에도 몬스터에게도 누구나
+    // 쓰러질 수 있고, 그 턴에 움직인 사람이 아닐 수 있다.
+    if (state.phase === "playing") {
+        for (const h of state.heroes) {
+            if (h.hp > 0) continue;
+            const featherIdx = h.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");
+            if (featherIdx < 0) continue;
+            // 깃털은 **그 자리에서 즉시** 일으킨다 — 층을 넘어야 하는 부활보다 먼저다.
+            h.pack.splice(featherIdx, 1);
+            h.hp = h.maxHp;
+            h.burnTurns = 0;
+            h.asleep = 0;
+            h.confused = 0;
+            h.blind = 0;
             say(state, "🔥 불사조의 깃털이 타오르며 영웅을 최대 생명력으로 부활시켰습니다! 🔥");
             for (const m of state.level.monsters) {
-                if (Math.abs(m.x - hero.x) <= 1 && Math.abs(m.y - hero.y) <= 1) {
-                    const pushSpot = freeSpot(state.level, rng, [hero, { x: m.x, y: m.y }]);
+                if (Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1) {
+                    const pushSpot = freeSpot(state.level, rng, [h, { x: m.x, y: m.y }]);
                     m.x = pushSpot.x;
                     m.y = pushSpot.y;
                 }
             }
-        } else {
-            hero.hp = 0;
+        }
+        // **둘 다 쓰러져야 판이 끝난다.** 혼자면 한 명이 곧 전부라 규칙이 한 벌로 남는다 —
+        // 「혼자일 때」를 따로 적으면 어느 날 한쪽만 고쳐진다.
+        const down = state.heroes.filter((h) => h.hp <= 0);
+        for (const h of down) h.hp = 0;
+        if (down.length === state.heroes.length) {
             state.phase = "dead";
-            if (!state.epitaph) state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${hero.gold}.`;
+            if (!state.epitaph) {
+                state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${state.heroes[0].gold}.`;
+            }
             revealAll(state.level);
+        } else if (down.length > 0) {
+            say(state, "동료가 쓰러졌다. 살아서 층을 넘으면 일으킬 수 있다.");
         }
     }
 

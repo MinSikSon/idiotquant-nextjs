@@ -287,3 +287,77 @@ test("몬스터는 누가 움직이든 따라 움직인다", () => {
         assert.equal(s.turn, t0 + 2, "방장이 움직였는데 턴이 안 갔다");
     }
 });
+
+test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난다", () => {
+    // ── 혼자면 그대로 끝이다 (단독 플레이의 규칙은 안 바뀐다)
+    {
+        const s = newGame(4401);
+        s.heroes[0].hp = 1;
+        s.heroes[0].burnTurns = 3; // 화상은 턴마다 정확히 2 — 굴림에 안 기댄다
+        const after = perform(s, { t: "rest" });
+        assert.equal(after.phase, "dead", "혼자 쓰러졌는데 판이 안 끝났다");
+    }
+
+    // ── 둘이면 **쓰러질 뿐**이고 판은 돈다
+    {
+        const s = withGuest(4402);
+        const [, guest] = s.heroes;
+        guest.hp = 1;
+        guest.burnTurns = 3;
+        perform(s, { t: "rest" }); // 방장이 움직인다
+        assert.equal(s.phase, "playing", "한 명 쓰러졌다고 판이 끝났다");
+        assert.equal(guest.hp, 0, "쓰러진 사람의 체력이 0 이 아니다");
+        assert.ok(
+            s.messages.some((m) => m.includes("동료가 쓰러졌다")),
+            "쓰러진 것을 안 알려 준다",
+        );
+    }
+
+    // ── 쓰러진 사람은 **못 움직이고 배도 안 고프다**
+    {
+        const s = withGuest(4403);
+        const [host, guest] = s.heroes;
+        guest.hp = 0;
+        const at = { x: guest.x, y: guest.y };
+        const food = guest.food;
+
+        const blocked = perform(s, { t: "rest", who: 1 });
+        assert.equal(blocked.turn, s.turn, "쓰러진 사람이 턴을 썼다");
+
+        perform(s, { t: "rest" }); // 방장이 움직인다
+        assert.equal(guest.x, at.x, "쓰러진 사람이 움직였다");
+        assert.equal(guest.food, food, "누워 있는 사람이 굶는다 — 살릴 길이 없어진다");
+        assert.ok(host.food < food, "방장은 굶어야 한다");
+    }
+
+    // ── 살아남은 사람이 **층을 넘으면** 최대 체력 절반으로 일어난다
+    {
+        const s = withGuest(4404);
+        const [host, guest] = s.heroes;
+        guest.hp = 0;
+        // 방장을 계단에 세우고 내려간다.
+        host.x = s.level.stairs.x;
+        host.y = s.level.stairs.y;
+        const after = perform(s, { t: "descend" });
+        assert.equal(after.level.depth, 2, "안 내려갔다");
+        assert.equal(
+            after.heroes[1].hp,
+            Math.floor(after.heroes[1].maxHp / 2),
+            "층을 넘었는데 동료가 안 일어났다",
+        );
+        // **업고 간다** — 두고 가면 살릴 길이 없다.
+        assert.equal(after.heroes[1].x, after.heroes[0].x, "쓰러진 동료를 두고 갔다");
+        assert.equal(after.heroes[1].y, after.heroes[0].y, "쓰러진 동료를 두고 갔다");
+    }
+
+    // ── 둘 다 쓰러지면 끝이다
+    {
+        const s = withGuest(4405);
+        const [host, guest] = s.heroes;
+        guest.hp = 0;
+        host.hp = 1;
+        host.burnTurns = 3;
+        const after = perform(s, { t: "rest" });
+        assert.equal(after.phase, "dead", "둘 다 쓰러졌는데 판이 안 끝났다");
+    }
+});

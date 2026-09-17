@@ -952,7 +952,10 @@ export default function Rogue() {
                         <button
                             key={i}
                             type="button"
-                            onClick={() => setWho(i)}
+                            // **쓰러진 사람에게는 조종을 안 넘긴다** — 넘겨 봐야 아무
+                            // 명령도 안 먹는다(엔진이 막는다). 자물쇠는 둘이다.
+                            onClick={() => h.hp > 0 && setWho(i)}
+                            disabled={h.hp <= 0}
                             className={`rounded-[2px] px-1.5 py-0.5 ${
                                 i === who
                                     ? "bg-[var(--rg-raised)] text-[var(--rg-hero)] font-bold"

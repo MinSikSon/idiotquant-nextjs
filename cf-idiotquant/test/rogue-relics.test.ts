@@ -55,9 +55,12 @@ test("불사조의 깃털 (Phoenix Feather) 치명상 시 1회 완전 부활", (
     addToPack(state.heroes[0], feather);
     assert.ok(hasRelic(state.heroes[0], "phoenix_feather"));
 
+    // **턴 도중에** 쓰러뜨린다. 예전에는 `hp = 0` 을 손으로 박아 두고 명령을 넣었는데,
+    // 그건 실제로 안 나는 상태다 — 쓰러진 사람은 명령을 못 내므로(협동에서 누워 있는
+    // 동료가 움직이면 안 된다) 그 자리에서 막히고 깃털이 돌 기회조차 없다.
+    // 화상은 턴마다 정확히 2 를 깎으므로 굴림에 안 기댄다.
     state.heroes[0].hp = 1;
-    // 치명타 피해로 사망 시도
-    state.heroes[0].hp = 0;
+    state.heroes[0].burnTurns = 3;
     state = perform(state, { t: "rest" });
 
     // 부활 동작 검증
