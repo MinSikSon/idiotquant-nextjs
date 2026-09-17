@@ -310,8 +310,7 @@ export function monsterDefense(m: Monster): number {
 }
 
 /** 내가 몬스터를 때린다. */
-export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
-    const hero = state.heroes[0];
+export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): AttackResult {
     const hitTerms = heroHitTerms(hero);
     const seen = seenBefore(state, m);
     const mName = monsterName(m);
@@ -407,8 +406,8 @@ export function heroAttack(state: GameState, m: Monster, rng: Rng): AttackResult
  * 몬스터가 나를 때린다. 여러 번 때리는 놈은 damage 가 여러 개다 —
  * **하나하나 따로 굴린다**(D&D 의 다중 공격이 그렇다). 트롤이 무서운 이유가 그것이다.
  */
-export function monsterAttack(state: GameState, m: Monster, rng: Rng): AttackResult {
-    const hero = state.heroes[0];
+/** `hero` 는 **맞는 사람**이다 — 몬스터가 쫓기로 한 쪽(`monsterTarget`). */
+export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng): AttackResult {
     const messages: string[] = [];
     const attacks: Attack[] = [];
     const mName = monsterName(m);

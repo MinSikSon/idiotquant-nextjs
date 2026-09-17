@@ -17,6 +17,8 @@ import { joinGame, newGame, perform } from "@/lib/rogue/game";
 import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { isVisible } from "@/lib/rogue/fov";
+import { addToPack } from "@/lib/rogue/hero";
+import { makeItem } from "@/lib/rogue/items";
 import { T, idx, walkable, type GameState, type Tile } from "@/lib/rogue/types";
 
 /** 손님 하나를 들인 판. */
@@ -172,6 +174,83 @@ test("시야는 합쳐서 본다 — 눈먼 사람이 파티를 눈멀게 하지
         perform(s, { t: "rest" });
         assert.ok(isVisible(s.level, host.x, host.y), "눈이 멀었는데 발밑도 안 보인다");
         assert.equal(host.detect, 0, "눈이 멀었는데 탐지가 살아 있다");
+    }
+});
+
+/** 방장·손님 사이에 깨어 있는 놈 하나를 세운다 — 둘 다에게서 두 칸 밖. */
+function withMonster(seed: number) {
+    const s = withGuest(seed);
+    const [host, guest] = s.heroes;
+    // 둘을 한 줄에 나란히 놓고, 그 줄을 따라 몬스터가 걸어올 길을 낸다.
+    guest.x = host.x;
+    guest.y = host.y + 1;
+    for (let n = 0; n <= 6; n++) {
+        s.level.tiles[idx(host.x + n, host.y)] = T.FLOOR;
+        s.level.tiles[idx(host.x + n, host.y + 1)] = T.FLOOR;
+    }
+    const m = spawnMonster("Z", host.x + 5, host.y, new Rng(seed));
+    m.awake = true;
+    m.hp = 60;
+    m.maxHp = 60;
+    s.level.monsters = [m];
+    return { s, host, guest, m };
+}
+
+test("몬스터는 마지막에 때린 쪽을 쫓는다", () => {
+    // ── 손님이 때리면 어그로가 손님에게 옮는다
+    {
+        const { s, guest, m } = withMonster(4301);
+        assert.equal(m.target, undefined, "때리기 전부터 목표가 있다");
+
+        // 손님이 닿을 수 있게 붙여 놓고 때린다.
+        guest.x = m.x - 1;
+        guest.y = m.y;
+        perform(s, { t: "move", dx: 1, dy: 0, who: 1 });
+        assert.equal(m.target, 1, "손님이 때렸는데 어그로가 안 옮았다");
+    }
+
+    // ── 지팡이로 때려도 옮는다 — 뒤에서 쏘는 사람이 무적이면 안 된다
+    {
+        const { s, guest, m } = withMonster(4302);
+        const wand = makeItem("wand", "magic missile", 950, -1, -1);
+        wand.charges = 5;
+        // **글자는 `addToPack` 이 매긴다** — 손으로 박아 두면 덮인다.
+        addToPack(guest, wand);
+        guest.x = m.x - 3;
+        guest.y = m.y;
+        perform(s, { t: "zap", letter: wand.letter!, dx: 1, dy: 0, who: 1 });
+        assert.equal(m.target, 1, "지팡이로 때렸는데 어그로가 안 옮았다");
+    }
+
+    // ── 쫓아가는 것도 목표 쪽으로 간다
+    {
+        const { s, host, guest, m } = withMonster(4303);
+        m.target = 1; // 손님을 쫓는 중
+        const before = Math.abs(m.y - guest.y) + Math.abs(m.x - guest.x);
+        perform(s, { t: "rest" }); // **방장**이 움직여도
+        const after = Math.abs(m.y - guest.y) + Math.abs(m.x - guest.x);
+        assert.ok(after < before, `손님을 쫓기로 했는데 안 다가왔다 (${before} → ${after})`);
+        assert.equal(m.target, 1, "쫓는 사이에 목표가 바뀌었다");
+        assert.ok(host.hp === host.maxHp, "손님을 쫓는 놈이 방장을 때렸다");
+    }
+
+    // ── 목표가 쓰러지면 어그로를 풀고 성한 사람에게 간다
+    {
+        const { s, guest, m } = withMonster(4304);
+        const host = s.heroes[0];
+        // **몬스터 너머**에 눕힌다. 곁에 눕히면 어느 쪽을 쫓든 방장과의 거리가 줄어서
+        // 테스트가 아무것도 안 가른다 — 되돌려 보고 알았다.
+        guest.x = m.x + 1;
+        guest.y = m.y;
+        m.target = 1;
+        guest.hp = 0; // 손님이 쓰러졌다
+        const before = Math.abs(m.x - host.x) + Math.abs(m.y - host.y);
+        perform(s, { t: "rest" });
+        const after = Math.abs(m.x - host.x) + Math.abs(m.y - host.y);
+        assert.ok(
+            after < before,
+            `쓰러진 사람을 계속 쫓는다 — 살아남은 쪽이 아무것도 못 한다 (${before} → ${after})`,
+        );
     }
 });
 

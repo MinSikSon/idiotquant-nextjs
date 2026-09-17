@@ -527,7 +527,8 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
 
     const target = monsterAt(level, nx, ny);
     if (target) {
-        const r = heroAttack(state, target, rng);
+        pullAggro(state, target, hero);
+        const r = heroAttack(state, hero, target, rng);
         say(state, ...r.messages);
         if (r.killed) killMonster(state, target, rng);
         return true;
@@ -1338,6 +1339,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             const m = monsterAt(level, nx, ny);
             if (m) {
                 const dmg = rng.rollDice("2d6");
+                pullAggro(state, m, hero);
                 m.hp -= dmg;
                 m.awake = true;
                 say(state, withDamage(`${m.def.name}이(가) 무너지는 파편에 맞았다.`, dmg));
@@ -1406,6 +1408,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         state.itemCodex[wandKey] = true;
         if (collided) {
             const dmg = rng.rollDice("3d4");
+            pullAggro(state, m, hero);
             m.hp -= dmg;
             m.speed = -1;
             say(state, withDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg));
@@ -1429,6 +1432,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     if (def?.damage) {
         const dmg = rng.rollDice(def.damage);
+        pullAggro(state, m, hero);
         m.hp -= dmg;
         m.awake = true;
         say(state, withDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg));
@@ -1556,6 +1560,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     const guard = monsterDefense(m);
     const got = pierce(d.total, guard);
+    pullAggro(state, m, hero);
     m.hp -= got;
     say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
@@ -1772,12 +1777,52 @@ function stepToward(level: Level, m: Monster, target: Pos): Pos | null {
  * **빠른 놈은 두 번, 느린 놈은 두 턴에 한 번** 움직인다(지팡이가 그 값을 바꾼다).
  * 그래서 둔화 지팡이가 도망갈 시간을 실제로 벌어 준다.
  */
+/**
+ * **때린 사람에게 어그로가 옮는다.**
+ *
+ * 근접이든 지팡이든 던지기든 **같다.** 뒤에서 지팡이만 쏘는 사람이 안전하면 딜러가
+ * 무적이 되고, 그러면 「한 명이 버티고 한 명이 때린다」가 아니라 그냥 한 명이 미끼다.
+ *
+ * 때리는 자리마다 흩어 적으면 새 공격 수단이 생기는 날 하나를 빠뜨린다 — 여기 한 자리다.
+ */
+function pullAggro(state: GameState, m: Monster, by: Hero): void {
+    const i = state.heroes.indexOf(by);
+    if (i >= 0) m.target = i;
+}
+
+/**
+ * 그 몬스터가 **쫓는 사람.**
+ *
+ * **마지막에 자기를 때린 쪽**(`m.target`)을 쫓는다. 그래야 한 명이 버티고 한 명이 딜을
+ * 넣는 역할이 생긴다. 어그로가 없거나 목표가 쓰러졌으면 **가까운 쪽**을 본다.
+ *
+ * **쓰러진 사람은 안 쫓는다.** 눕힌 사람을 계속 때리면 살아남은 쪽은 아무것도 못 하고,
+ * 협동이 「한 명이 먼저 죽으면 끝」이 된다.
+ */
+function monsterTarget(state: GameState, m: Monster): Hero {
+    const standing = state.heroes.filter((h) => h.hp > 0);
+    const pool = standing.length > 0 ? standing : state.heroes;
+    const marked = m.target === undefined ? undefined : state.heroes[m.target];
+    if (marked && marked.hp > 0) return marked;
+    let best = pool[0];
+    let bestD = Infinity;
+    for (const h of pool) {
+        const d = Math.abs(h.x - m.x) + Math.abs(h.y - m.y);
+        if (d < bestD) {
+            bestD = d;
+            best = h;
+        }
+    }
+    return best;
+}
+
 function monsterTurns(state: GameState, rng: Rng) {
     const { level } = state;
-    const hero = state.heroes[0];
-    if (hero.timeStop && hero.timeStop > 0) {
-        hero.timeStop -= 1;
-        say(state, `⏳ 시간 정지 지속 중... (남은 턴: ${hero.timeStop})`);
+    // **누구 하나라도 시간을 세웠으면 세상이 선다.** 파티의 것이지 한 사람의 것이 아니다.
+    const stopper = state.heroes.find((h) => (h.timeStop ?? 0) > 0);
+    if (stopper) {
+        for (const h of state.heroes) if ((h.timeStop ?? 0) > 0) h.timeStop! -= 1;
+        say(state, `⏳ 시간 정지 지속 중... (남은 턴: ${stopper.timeStop})`);
         return;
     }
     for (const m of [...level.monsters]) {
@@ -1790,7 +1835,7 @@ function monsterTurns(state: GameState, rng: Rng) {
         if (m.speed < 0 && state.turn % 2 === 0) continue;
         const acts = m.speed > 0 ? 2 : 1;
         for (let n = 0; n < acts; n++) {
-            if (m.hp <= 0 || state.heroes[0].hp <= 0) break;
+            if (m.hp <= 0 || state.heroes.every((h) => h.hp <= 0)) break;
             monsterAct(state, m, rng);
         }
     }
@@ -1800,20 +1845,25 @@ function monsterTurns(state: GameState, rng: Rng) {
 
 function monsterAct(state: GameState, m: Monster, rng: Rng) {
     const { level } = state;
-    const hero = state.heroes[0];
     {
         if (!m.awake) {
-            if (monsterSees(level, m.x, m.y, hero) && m.def.mean) m.awake = true;
-            else return;
+            // **누구든 하나를 보면 깨어난다** — 곁의 성한 사람이 안 보인다고 자는 것은
+            // 아니다. 깨울 때 본 사람이 첫 목표가 된다.
+            const spotted = state.heroes.find((h) => h.hp > 0 && monsterSees(level, m.x, m.y, h));
+            if (spotted && m.def.mean) {
+                m.awake = true;
+                m.target = state.heroes.indexOf(spotted);
+            } else return;
         }
+        const victim = monsterTarget(state, m);
         if (m.def.still) {
-            if (Math.abs(m.x - hero.x) <= 1 && Math.abs(m.y - hero.y) <= 1) {
-                say(state, ...monsterAttack(state, m, rng).messages);
+            if (Math.abs(m.x - victim.x) <= 1 && Math.abs(m.y - victim.y) <= 1) {
+                say(state, ...monsterAttack(state, m, victim, rng).messages);
             }
             return;
         }
-        if (Math.abs(m.x - hero.x) <= 1 && Math.abs(m.y - hero.y) <= 1) {
-            say(state, ...monsterAttack(state, m, rng).messages);
+        if (Math.abs(m.x - victim.x) <= 1 && Math.abs(m.y - victim.y) <= 1) {
+            say(state, ...monsterAttack(state, m, victim, rng).messages);
             return;
         }
         // 박쥐와 황조롱이는 제멋대로 난다 — 원작의 그 성가심이다.
@@ -1825,7 +1875,7 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
                   const ny = m.y + d.dy;
                   return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) ? { x: nx, y: ny } : null;
               })()
-            : stepToward(level, m, hero);
+            : stepToward(level, m, victim);
         if (next) {
             m.x = next.x;
             m.y = next.y;

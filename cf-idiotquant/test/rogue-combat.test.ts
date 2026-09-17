@@ -225,7 +225,7 @@ test("갑옷이 두꺼우면 0, 맨몸이면 그대로 들어온다", () => {
         let hurt = 0;
         for (let i = 0; i < 300; i++) {
             const before = s.heroes[0].hp;
-            const r = monsterAttack(s, m, rng);
+            const r = monsterAttack(s, m, s.heroes[0], rng);
             if (!r.hit) continue;
             if (s.heroes[0].hp === before) blocked++;
             else hurt++;
@@ -243,7 +243,7 @@ test("갑옷이 두꺼우면 0, 맨몸이면 그대로 들어온다", () => {
         let hurt = 0;
         for (let i = 0; i < 200; i++) {
             const before = s.heroes[0].hp;
-            monsterAttack(s, m, rng);
+            monsterAttack(s, m, s.heroes[0], rng);
             if (s.heroes[0].hp < before) hurt++;
         }
         assert.ok(hurt > 20, `맨몸으로 이백 번 맞았는데 ${hurt} 번만 아팠다`);
@@ -266,7 +266,7 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
         let checked = 0;
         for (let i = 0; i < 300; i++) {
             const before = s.heroes[0].hp;
-            const r = monsterAttack(s, m, rng);
+            const r = monsterAttack(s, m, s.heroes[0], rng);
             const line = r.messages.find((l) => l.startsWith("· 공격력 "));
             if (!line) continue;
 
@@ -309,7 +309,7 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
         s.heroes[0].str = 3; // 힘 보정 −4
         const rng = new Rng(8);
         const before = m.hp;
-        for (let i = 0; i < 300; i++) heroAttack(s, m, rng);
+        for (let i = 0; i < 300; i++) heroAttack(s, s.heroes[0], m, rng);
         assert.equal(m.hp, before, "1d6−4 짜리가 방어력 11 을 뚫었다");
     }
 });

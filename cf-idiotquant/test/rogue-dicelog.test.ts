@@ -201,8 +201,8 @@ test("상대의 내역은 잡아 본 종에게만", () => {
             for (let i = 0; i < 40; i++) {
                 m.hp = 99999; // 죽이면 도감에 올라 조건이 달라진다
                 for (const [msgs, mine] of [
-                    [heroAttack(s, m, rng).messages, true],
-                    [monsterAttack(s, m, rng).messages, false],
+                    [heroAttack(s, s.heroes[0], m, rng).messages, true],
+                    [monsterAttack(s, m, s.heroes[0], rng).messages, false],
                 ] as [string[], boolean][]) {
                     for (const line of msgs.filter(isDetail)) {
                         if (!line.includes("  vs  ")) continue;
@@ -225,8 +225,8 @@ test("상대의 내역은 잡아 본 종에게만", () => {
         s.heroes[0].hp = s.heroes[0].maxHp = 9999;
         const m = placeNextTo(s, "S", 9999);
         const rng = new Rng(3);
-        assert.match(theirHalf(heroAttack(s, m, rng).messages[0], true), BREAKDOWN.mine);
-        assert.match(theirHalf(monsterAttack(s, m, rng).messages[0], false), BREAKDOWN.theirs);
+        assert.match(theirHalf(heroAttack(s, s.heroes[0], m, rng).messages[0], true), BREAKDOWN.mine);
+        assert.match(theirHalf(monsterAttack(s, m, s.heroes[0], rng).messages[0], false), BREAKDOWN.theirs);
     }
 });
 
@@ -237,12 +237,12 @@ test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 �
     const rng = new Rng(11);
     for (let i = 0; i < 30; i++) {
         m.hp = 99999;
-        const mine = heroAttack(s, m, rng).messages;
+        const mine = heroAttack(s, s.heroes[0], m, rng).messages;
         assert.ok(mine.length >= 2, `결과 줄이 없다: ${JSON.stringify(mine)}`);
         assert.match(mine[0], /^· 명중 나 d20 /);
         assert.doesNotMatch(mine[mine.length - 1], /^· /);
 
-        const theirs = monsterAttack(s, m, rng).messages;
+        const theirs = monsterAttack(s, m, s.heroes[0], rng).messages;
         assert.ok(theirs.length >= 2, `결과 줄이 없다: ${JSON.stringify(theirs)}`);
         assert.match(theirs[0], /^· 명중 .* d20 /);
         assert.doesNotMatch(theirs[theirs.length - 1], /^· /);
@@ -269,8 +269,8 @@ test("띠에 남는 줄에도 피해 숫자가 있다 — 0 이면 안 적는다
         for (let i = 0; i < 60; i++) {
             m.hp = 99999;
             for (const [msgs, got] of [
-                [heroAttack(s, m, rng), "mine"] as const,
-                [monsterAttack(s, m, rng), "theirs"] as const,
+                [heroAttack(s, s.heroes[0], m, rng), "mine"] as const,
+                [monsterAttack(s, m, s.heroes[0], rng), "theirs"] as const,
             ]) {
                 if (msgs.damage <= 0) continue;
                 const strip = msgs.messages.filter((l) => !isDetail(l));
@@ -306,7 +306,7 @@ test("띠에 남는 줄에도 피해 숫자가 있다 — 0 이면 안 적는다
         let zero = 0;
         for (let i = 0; i < 200; i++) {
             m.hp = 99999;
-            const r = heroAttack(s, m, rng);
+            const r = heroAttack(s, s.heroes[0], m, rng);
             if (!r.hit || r.damage !== 0) continue;
             zero++;
             for (const line of r.messages.filter((l) => !isDetail(l))) {
@@ -360,7 +360,7 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
         let seen = 0;
         let crits = 0;
         for (let i = 0; i < 200; i++) {
-            const line = heroAttack(s, m, rng).messages.find((l) => l.startsWith("· 공격력 "));
+            const line = heroAttack(s, s.heroes[0], m, rng).messages.find((l) => l.startsWith("· 공격력 "));
             if (!line) continue; // 빗나갔다
             seen++;
             assert.ok(line.includes(`공격력 ${dice} `), `${line} 가 ${dice} 로 안 굴렀다`);
@@ -406,7 +406,7 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         let sawDam = false;
         for (let i = 0; i < 40 && !(sawHit && sawDam); i++) {
             m.hp = 99999;
-            for (const line of heroAttack(s, m, rng).messages) {
+            for (const line of heroAttack(s, s.heroes[0], m, rng).messages) {
                 if (line.startsWith(`${DETAIL}명중`) && line.includes("+2진은검")) sawHit = true;
                 if (line.startsWith(`${DETAIL}공격력`) && line.includes("+2진은검")) sawDam = true;
                 assert.ok(!line.includes("무기"), `아직 「무기」라고 적는다: ${line}`);

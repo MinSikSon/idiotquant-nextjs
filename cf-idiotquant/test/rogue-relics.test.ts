@@ -110,6 +110,6 @@ test("모루 보석 세공 (Socketing): 루비(화상), 토파즈(방어/회피)
     // 루비 장착 무기로 공격 시 화상 검증
     const rng = new Rng(456);
     const monster = spawnMonster("O", 1, 1, rng);
-    heroAttack(state, monster, rng);
+    heroAttack(state, state.heroes[0], monster, rng);
     assert.equal(monster.burnTurns, 3, "루비가 장착된 무기로 공격 시 몬스터에게 3턴 화상이 걸려야 합니다.");
 });
