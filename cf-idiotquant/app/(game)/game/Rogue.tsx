@@ -27,6 +27,7 @@ import {
     bestiaryRows,
     enchantScrollKind,
     enchantTarget,
+    joinGame,
     scrollTargetKinds,
     newGame,
     perform,
@@ -326,9 +327,21 @@ export default function Rogue() {
         }
     }, [state]);
 
-    const run = useCallback((cmd: Command) => {
-        setState((s) => (s ? perform(s, cmd) : s));
-    }, []);
+    /**
+     * 이 화면이 **조종하는** 영웅(`heroes` 의 칸 번호).
+     *
+     * 화면의 값이지 판의 값이 아니다 — 온라인이 되면 방장 화면은 0, 손님 화면은 1 을
+     * 들고 **같은 판**을 본다. 그래서 `GameState` 에 안 넣는다.
+     */
+    const [who, setWho] = useState(0);
+
+    const run = useCallback(
+        (cmd: Command) => {
+            // **누가 하는 명령인지를 여기서 싣는다** — 엔진이 다시 판단하지 않는다.
+            setState((s) => (s ? perform(s, { ...cmd, who }) : s));
+        },
+        [who],
+    );
 
     const startWithOrigin = useCallback((origin: HeroOrigin) => {
         clear();
@@ -589,7 +602,7 @@ export default function Rogue() {
     }
 
     const { level } = state;
-    const hero = state.heroes[0];
+    const hero = state.heroes[who] ?? state.heroes[0];
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
     /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */
@@ -907,7 +920,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} cellFlashes={cellFlashes} shake={shake} />
+                <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} />
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -924,6 +937,38 @@ export default function Rogue() {
                     </div>
                 )}
             </div>
+
+            {/* 파티 줄 — **둘일 때만 뜬다.**
+
+                협동에서는 동료의 체력을 늘 봐야 하고, 조종을 넘기는 일도 잦다. 그 둘을
+                **한자리**에 둔다 — 봐야 할 것을 누르면 바뀐다. 명령 단추 판에 「바꾼다」를
+                넣지 않은 까닭이다(그 판은 세 칸 격자라 개수가 3의 배수여야 한다).
+
+                조종 중인 쪽은 지도의 `@` 와 **같은 색**으로 선다. 화면 두 곳이 같은
+                사람을 가리키는데 색이 다르면 어느 쪽이 나인지 한 번 더 생각해야 한다. */}
+            {state.heroes.length > 1 && (
+                <div className="flex shrink-0 gap-x-2 overflow-x-auto whitespace-nowrap border-t border-[var(--rg-line-faint)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] [scrollbar-width:none] sm:text-[13px]">
+                    {state.heroes.map((h, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => setWho(i)}
+                            className={`rounded-[2px] px-1.5 py-0.5 ${
+                                i === who
+                                    ? "bg-[var(--rg-raised)] text-[var(--rg-hero)] font-bold"
+                                    : "text-[var(--rg-ally)] hover:bg-[var(--rg-hover)]"
+                            }`}
+                        >
+                            @{i === 0 ? "방장" : "동료"}{" "}
+                            <span className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)]" : undefined}>
+                                {h.hp}({h.maxHp})
+                            </span>
+                            {h.hp <= 0 && <span className="text-[var(--rg-trap)]"> 쓰러짐</span>}
+                        </button>
+                    ))}
+                    <span className="self-center text-[var(--rg-faint)]">눌러서 조종을 넘긴다</span>
+                </div>
+            )}
 
             {/* 상태 줄 — 원작의 맨 아랫줄.
                 **한 줄로 묶어 둔다.** 접히게 두면 좁은 폰에서 「금화」가 둘째 줄로 내려가
@@ -1584,6 +1629,20 @@ export default function Rogue() {
                     <ul className="space-y-1">
                         {[
                             { label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => setSheet("origins") },
+                            // **한 번 누르는 것이라 여기 있다.** 던전을 걷는 동안 누르는
+                            // 것만 단추 판에 선다(`CLAUDE.md`).
+                            ...(state.heroes.length > 1
+                                ? []
+                                : [
+                                      {
+                                          label: "동료 부르기 (한 화면에서 둘)",
+                                          hint: "내 곁에 선다 — 파티 줄을 눌러 조종을 넘긴다",
+                                          go: () => {
+                                              setState((g) => (g ? joinGame(g) : g));
+                                              setSheet("none");
+                                          },
+                                      },
+                                  ]),
                             { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
                             {
                                 label: "지난 판",

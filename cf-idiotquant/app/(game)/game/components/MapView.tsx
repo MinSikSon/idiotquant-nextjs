@@ -24,6 +24,8 @@ import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
 /** 글자 색 — **한 곳에서만 정한다.** 화면마다 정하면 같은 `@` 가 달라 보인다. */
 const INK: Record<string, string> = {
     hero: "var(--rg-hero)",
+    // 동료 — 나와 같은 `@` 이되 **색이 달라야** 「지금 내가 조종하는 쪽」이 보인다.
+    ally: "var(--rg-ally)",
     monster: "var(--rg-monster)",
     // 감지 물약으로 벽 너머를 느끼는 것 — **본 것과 색이 달라야 한다.**
     // 같은 색으로 그리면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
@@ -76,10 +78,13 @@ export interface CellFlash {
 
 export default function MapView({
     state,
+    who = 0,
     cellFlashes = {},
     shake = false,
 }: {
     state: GameState;
+    /** 이 화면이 **조종하는** 영웅. 지도는 그 사람을 가운데 두고, 그 사람만 밝게 그린다. */
+    who?: number;
     cellFlashes?: Record<string, CellFlash>;
     shake?: boolean;
 }) {
@@ -117,14 +122,16 @@ export default function MapView({
         return () => ro.disconnect();
     }, [cell]);
 
-    const ox = clamp(state.heroes[0].x - Math.floor(view.cols / 2), 0, MAP_W - view.cols);
-    const oy = clamp(state.heroes[0].y - Math.floor(view.rows / 2), 0, MAP_H - view.rows);
+    // **조종하는 사람을 가운데 둔다** — 온라인이면 화면마다 가운데가 다르다.
+    const me = state.heroes[who] ?? state.heroes[0];
+    const ox = clamp(me.x - Math.floor(view.cols / 2), 0, MAP_W - view.cols);
+    const oy = clamp(me.y - Math.floor(view.rows / 2), 0, MAP_H - view.rows);
 
     const rows: Run[][] = [];
     for (let y = oy; y < oy + view.rows; y++) {
         const runs: Run[] = [];
         for (let x = ox; x < ox + view.cols; x++) {
-            const g = glyphAt(state, x, y);
+            const g = glyphAt(state, x, y, who);
             const ch = g?.ch ?? " ";
             const flash = cellFlashes[`${x},${y}`];
             const ink = flash?.ink ?? (g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent");

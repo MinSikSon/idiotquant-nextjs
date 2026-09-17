@@ -49,6 +49,7 @@
   --rg-ghost: #8b948f;       /* 거의 안 보이는 것 */
   /* 지도의 잉크 */
   --rg-hero: #0d1012;
+  --rg-ally: #1d6b5f;        /* 동료 — 나와 같은 `@` 이되 색이 달라야 한다 */
   --rg-monster: #a8410b;
   --rg-monster-sensed: #cf9b78;  /* 감지 물약 — 본 것과 달라야 한다 */
   --rg-gold: #8a6800;
@@ -99,6 +100,7 @@ html.dark {
   --rg-faint: #7d8d88;
   --rg-ghost: #5f706b;
   --rg-hero: #ffffff;
+  --rg-ally: #63d9c0;        /* 동료 — 나와 같은 `@` 이되 색이 달라야 한다 */
   --rg-monster: #f2884b;
   --rg-monster-sensed: #8a5a3a;
   --rg-gold: #ffd24a;

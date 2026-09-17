@@ -2273,16 +2273,27 @@ export function standing(mine: number, tombs: Tomb[]): Standing {
 }
 
 /** 화면이 쓰는 글자표 — 한 곳에서만 정한다. */
-export function glyphAt(state: GameState, x: number, y: number): { ch: string; kind: string } | null {
+export function glyphAt(
+    state: GameState,
+    x: number,
+    y: number,
+    /** 이 화면이 **조종하는** 영웅. 그 사람만 밝게 선다 — 나머지는 동료다. */
+    who = 0,
+): { ch: string; kind: string } | null {
     const { level } = state;
-    const hero = state.heroes[0];
+    const hero = state.heroes[who] ?? state.heroes[0];
     if (!inBounds(x, y)) return null;
     const flags = level.flags[idx(x, y)];
     const visible = (flags & 2) !== 0;
     const seen = (flags & 1) !== 0;
     if (!seen) return null;
 
+    // **조종하는 쪽을 먼저 본다.** 둘이 한 칸에 겹칠 일은 없지만, 겹치더라도 화면은
+    // 「내가 어디 있나」를 먼저 답해야 한다.
     if (hero.x === x && hero.y === y) return { ch: "@", kind: "hero" };
+    if (state.heroes.some((h) => h !== hero && h.x === x && h.y === y)) {
+        return { ch: "@", kind: "ally" };
+    }
 
     // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0) {
