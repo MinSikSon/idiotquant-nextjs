@@ -65,7 +65,7 @@ test("5단계 해금 판정이 정확하다 (0 미발견 -> 1 목격 -> 2 획득
     delete s.seenItems["weapon:dagger"];
     delete s.itemCodex["weapon:dagger"];
     delete s.known["weapon:dagger"];
-    s.hero.pack = s.hero.pack.filter((it) => it.key !== "weapon:dagger" && it.type !== "dagger");
+    s.hero.pack = s.hero.pack.filter((it) => it.type !== "dagger");
     assert.equal(itemCodexStage(daggerEntry, s), 0);
 
     // 2. 목격 (1)

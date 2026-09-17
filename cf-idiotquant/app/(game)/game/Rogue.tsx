@@ -642,7 +642,10 @@ export default function Rogue() {
     //   · **조사** → 도감 맨 위로. 「지금 보이는 놈」과 「여태 잡은 놈」은 같은 질문
     //     (이놈이 센가)의 앞뒤라, 판이 둘일 까닭이 없었다.
     const actions: PadAction[] = [
-        // 발밑
+        // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
+        // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
+        // 제일 짧은 길을 간다.
+        { label: "줍기", hint: ", 또는 g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
         { label: "내려간다", hint: ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다" },
         {
             label: "올라간다",
@@ -654,7 +657,6 @@ export default function Rogue() {
                   ? "증표 없이는 못 나간다"
                   : undefined,
         },
-        { label: "줍기", hint: ", 또는 g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
         // 배낭에서 꺼내 쓰는 것들
         { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", on: () => setSheet("pack") },
         { label: "마신다", hint: "q", on: () => openPicker(PICKERS.q), off: has("potion") ? undefined : "마실 것이 없다" },
