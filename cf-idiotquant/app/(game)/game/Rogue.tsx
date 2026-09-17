@@ -1707,7 +1707,7 @@ export default function Rogue() {
                                 <dt className="text-[var(--rg-label)]">&lt;</dt><dd>올라간다 — 실수로 오르지 않게 행동 키에서 뺐습니다 (마지막에 움직인 사람)</dd>
                                 <dt className="text-[var(--rg-label)]">?</dt><dd>이 화면 (도감은 단추로 — <b>X</b> 는 방장의 아래쪽이다)</dd>
                                 <dt className="text-[var(--rg-label)]">단추 판</dt><dd>마지막에 움직인 사람이 합니다 — 파티 줄을 눌러 바꿀 수도 있습니다</dd>
-                                <dt className="text-[var(--rg-label)]">쓰러지면</dt><dd>살아 있는 사람이 층을 넘으면 절반의 체력으로 일어납니다</dd>
+                                <dt className="text-[var(--rg-label)]">쓰러지면</dt><dd>살아 있는 사람이 <b>더 깊은 층</b>에 닿으면 체력 1/4 로 일어납니다 (올라갈 때는 안 일어납니다). 계단은 한 명만 눌러도 둘이 함께 옮깁니다</dd>
                             </dl>
                         </div>
                     ) : (

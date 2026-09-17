@@ -353,10 +353,7 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
     // **파티가 같이 옮겨 간다.** 층은 하나뿐이라(`state.level`) 둘이 다른 층에 있을 수 없고,
     // 쓰러진 사람도 업고 간다 — 두고 가면 살릴 길이 없다.
     // 먼저 전원을 판 밖으로 치워 두고 한 명씩 세운다 — 옛 층의 좌표가 곁 찾기를 막지 않게.
-    for (const h of state.heroes) {
-        h.x = h.y = -1;
-        delete h.stairsVote; // 함정으로 떨어져도 옛 층의 기다림을 들고 가지 않는다
-    }
+    for (const h of state.heroes) h.x = h.y = -1;
     state.level = level;
     // 첫 사람은 계단 위, 나머지는 **그 곁에** 선다 — 한 칸에 둘이 서지 않는다.
     state.heroes.forEach((h, i) => {
@@ -364,15 +361,18 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
         h.x = p.x;
         h.y = p.y;
     });
-    // **살아서 층을 넘으면 쓰러진 동료가 일어난다** — 최대 체력의 절반으로.
+    // **살아서 더 깊은 층에 닿으면 쓰러진 동료가 일어난다** — 최대 체력의 1/4 로.
+    //
+    // **내려갈 때만이다**(계단·함정으로 떨어지기). 올라가서 살리면 두 층 사이를 오르내리는
+    // 것만으로 공짜 부활이 되고, 「깊이 들어가야 산다」는 무게가 사라진다.
     //
     // 협동일 때만이다. 혼자면 쓰러지는 순간 판이 끝나므로 여기까지 오지 않는다.
     // 이 규칙이 살아남은 사람에게 「계단까지 간다」는 구체적인 목표를 준다 — 판이 그냥
     // 끝나지 않고, 도망이 곧 동료를 살리는 길이 된다.
-    if (state.heroes.length > 1) {
+    if (state.heroes.length > 1 && from !== "below") {
         for (const h of state.heroes) {
             if (h.hp > 0) continue;
-            h.hp = Math.max(1, Math.floor(h.maxHp / 2));
+            h.hp = Math.max(1, Math.floor(h.maxHp / 4));
             h.burnTurns = 0;
             h.asleep = 0;
             h.confused = 0;
@@ -516,9 +516,7 @@ export function leaveGame(state: GameState): GameState {
         return { ...state };
     }
     state.benched = state.heroes[1];
-    delete state.benched.stairsVote;
     state.heroes.length = 1;
-    delete state.heroes[0].stairsVote;
     for (const l of [state.level, ...Object.values(state.levels)]) {
         for (const m of l?.monsters ?? []) if ((m.target ?? 0) > 0) delete m.target;
     }
@@ -608,11 +606,6 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     }
     hero.x = nx;
     hero.y = ny;
-    // 계단을 눌러 두고 멀리 가면 **기다림을 거둔 것**이다 — 돌아와서 다시 눌러야 한다.
-    for (const h of [hero, mate]) {
-        const at = h?.stairsVote === "down" ? level.stairs : h?.stairsVote === "up" ? level.upStairs : null;
-        if (h && at && Math.max(Math.abs(h.x - at.x), Math.abs(h.y - at.y)) > 1) delete h.stairsVote;
-    }
 
     // 갑옷과 반지 착용 걸음 수 누적 (도감 통달)
     if (hero.armorId) {
@@ -1757,30 +1750,9 @@ function descend(state: GameState, hero: Hero, rng: Rng): boolean {
         say(state, "여기에는 내려가는 계단이 없다.");
         return false;
     }
-    if (!partyReady(state, hero, "down", level.stairs)) return false;
     enterLevel(state, level.depth + 1, rng, "above");
     say(state, `지하 ${state.level.depth}층.`);
     return true;
-}
-
-/**
- * 협동이면 **살아 있는 사람이 모두** 계단을 눌러야 층을 옮긴다. 한 사람이 혼자 눌러
- * 동료를 싸움 한가운데서 끌고 가면 안 된다.
- *
- * 누른 사람은 **계단 곁(한 칸)에 있는 동안** 기다리는 것으로 친다 — 한 칸에 둘이 못
- * 서므로 뒤에 온 사람이 계단을 밟으면 먼저 온 사람이 곁으로 밀려난다(`heroMove`).
- * 기다리기만 한 것은 턴을 안 쓴다. 쓰러진 사람은 안 기다린다 — 업고 간다.
- */
-function partyReady(state: GameState, hero: Hero, way: "down" | "up", at: Pos): boolean {
-    if (state.heroes.length < 2) return true;
-    hero.stairsVote = way;
-    const near = (h: Hero) => Math.max(Math.abs(h.x - at.x), Math.abs(h.y - at.y)) <= 1;
-    if (state.heroes.every((h) => h.hp <= 0 || (h.stairsVote === way && near(h)))) {
-        for (const h of state.heroes) delete h.stairsVote;
-        return true;
-    }
-    say(state, "계단 앞에서 동료를 기다린다 — 모두 계단을 눌러야 옮긴다.");
-    return false;
 }
 
 /**
@@ -1808,14 +1780,12 @@ function ascend(state: GameState, hero: Hero, rng: Rng): boolean {
             say(state, "보이지 않는 힘이 앞을 막는다. 증표 없이는 나갈 수 없다.");
             return false;
         }
-        if (!partyReady(state, hero, "up", up)) return false;
         state.phase = "won";
         state.epitaph = `옌더의 증표를 들고 지상으로 나왔다. 금화 ${hero.gold}.`;
         revealAll(level);
         say(state, "햇빛이다. 살아 돌아왔다.");
         return true;
     }
-    if (!partyReady(state, hero, "up", up)) return false;
     enterLevel(state, level.depth - 1, rng, "below");
     say(state, `지하 ${state.level.depth}층.`);
     return true;

@@ -239,8 +239,6 @@ export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
 export interface Hero {
     origin?: HeroOrigin;
-    /** 협동에서 계단을 눌러 동료를 기다리는 중 — 모두 누르면 층을 옮긴다(`partyReady`). */
-    stairsVote?: "down" | "up";
     guarded?: boolean;
     x: number;
     y: number;

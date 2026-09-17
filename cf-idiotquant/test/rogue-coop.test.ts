@@ -330,7 +330,7 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
         assert.ok(host.food < food, "방장은 굶어야 한다");
     }
 
-    // ── 살아남은 사람이 **층을 넘으면** 최대 체력 절반으로 일어난다
+    // ── 살아남은 사람이 **더 깊은 층에 닿으면** 최대 체력 1/4 로 일어난다
     {
         const s = withGuest(4404);
         const [host, guest] = s.heroes;
@@ -342,12 +342,28 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
         assert.equal(after.level.depth, 2, "안 내려갔다");
         assert.equal(
             after.heroes[1].hp,
-            Math.floor(after.heroes[1].maxHp / 2),
+            Math.max(1, Math.floor(after.heroes[1].maxHp / 4)),
             "층을 넘었는데 동료가 안 일어났다",
         );
         // **업고 간다** — 두고 가면 살릴 길이 없다. 다만 한 칸에 겹치지 않고 **곁에** 선다.
         const [a, b] = after.heroes;
         assert.equal(Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), 1, "쓰러진 동료를 두고 갔거나 한 칸에 겹쳤다");
+    }
+
+    // ── **올라갈 때는 안 일어난다** — 오르내리기만으로 살리면 부활이 공짜가 된다
+    {
+        const s = withGuest(4415);
+        const host = s.heroes[0];
+        host.x = s.level.stairs.x;
+        host.y = s.level.stairs.y;
+        const down = perform(s, { t: "descend" }); // 둘 다 살아서 2층
+        down.heroes[1].hp = 0;
+        const up = down.level.upStairs!;
+        down.heroes[0].x = up.x;
+        down.heroes[0].y = up.y;
+        const back = perform(down, { t: "ascend" });
+        assert.equal(back.level.depth, 1, "안 올라갔다");
+        assert.equal(back.heroes[1].hp, 0, "올라갔는데 일어났다");
     }
 
     // ── 둘 다 쓰러지면 끝이다
@@ -400,25 +416,15 @@ test("동료가 읽는 강화 주문서는 동료의 배낭에서 찾는다", as
     assert.equal(enchantScrollKind(s, scroll.letter!, 1), "plain");
 });
 
-test("층은 살아 있는 사람이 모두 계단을 눌러야 옮긴다", () => {
-    // ── 혼자 누르면 기다린다 — 턴도 안 쓴다
+test("한 명만 계단을 눌러도 파티가 함께 옮긴다", () => {
     const s = withGuest(4408);
     const host = s.heroes[0];
-    const st = s.level.stairs;
-    host.x = st.x;
-    host.y = st.y;
-    const turn = s.turn;
-    const waited = perform(s, { t: "descend", who: 0 });
-    assert.equal(waited.level.depth, 1, "동료가 안 눌렀는데 내려갔다");
-    assert.equal(waited.turn, turn, "기다리기만 했는데 턴을 썼다");
-
-    // ── 동료가 계단 곁에서 누르면 내려간다 — 동료는 계단을 밟아야 누를 수 있으니 자리를 바꾼다
-    // 방장은 계단 곁으로 비켜 서고(뒤에 온 사람이 밟으면 이렇게 된다) 동료가 계단을 밟는다.
-    waited.heroes[0].x = st.x + 1;
-    waited.heroes[1].x = st.x;
-    waited.heroes[1].y = st.y;
-    const both = perform(waited, { t: "descend", who: 1 });
-    assert.equal(both.level.depth, 2, "둘 다 눌렀는데 안 내려갔다");
+    host.x = s.level.stairs.x;
+    host.y = s.level.stairs.y;
+    const after = perform(s, { t: "descend", who: 0 });
+    assert.equal(after.level.depth, 2, "동료를 기다렸다");
+    const [a, b] = after.heroes;
+    assert.equal(Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), 1, "동료가 같이 안 왔다");
 });
 
 test("동료는 제 출신(직업)으로 합류한다", () => {
