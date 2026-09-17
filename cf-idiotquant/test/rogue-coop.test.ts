@@ -4,9 +4,10 @@
 //
 //   ① **명령은 누가 하는지를 데리고 다닌다**(`Command.who`). 없으면 방장(`heroes[0]`)이라,
 //      단독 플레이의 옛 명령이 한 글자도 안 바뀌고 그대로 돈다.
-//   ② **영웅에게 붙은 것은 그 영웅이 움직일 때만 돈다** — 배고픔·재생·실명·혼란·탐지.
-//      상대가 걷는 동안 내 배가 고파지면 「각 캐릭터 중심」이 아니다.
-//   ③ **세상에 붙은 것은 누가 움직이든 돈다** — 몬스터는 **누가 움직이든 한 칸** 따라
+//   ② **값은 사람마다 따로, 시계는 하나다.** 배고픔·재생·상태이상을 **각자** 들지만
+//      (반지도 제 것이 제 배를 곯린다) **누가 움직이든** 한 칸씩 돈다. 움직인 사람만
+//      치르게 하면 **가만히 있는 사람이 공짜**가 된다 — 굶지도 불타지도 않는다.
+//   ③ **세상에 붙은 것도 누가 움직이든 돈다** — 몬스터는 **누가 움직이든 한 칸** 따라
 //      움직이고, `turn` 도 같이 간다.
 
 import { test } from "node:test";
@@ -37,36 +38,45 @@ function withGuest(seed: number): GameState {
     return s;
 }
 
-test("명령은 누가 하는지를 데리고 다닌다 — 제 몫만 치른다", () => {
-    // ── `who` 가 없으면 방장이다 (단독 플레이의 옛 명령이 그대로 돈다)
+test("명령은 누가 하는지를 데리고 다닌다 — 행동은 그 사람만, 시계는 같이 돈다", () => {
+    // ── `who` 가 없으면 방장이 행동한다 (단독 플레이의 옛 명령이 그대로 돈다)
     {
         const s = withGuest(4001);
         const [host, guest] = s.heroes;
-        const hostFood = host.food;
-        const guestFood = guest.food;
+        // 「쉰다」는 기사에게 철벽 자세를 준다 — **행동한 사람에게만** 선다.
         perform(s, { t: "rest" });
-        assert.ok(host.food < hostFood, "who 를 안 줬는데 방장이 안 움직였다");
-        assert.equal(guest.food, guestFood, "who 를 안 줬는데 손님의 배가 고파졌다");
+        assert.equal(host.guarded, true, "who 를 안 줬는데 방장이 행동을 안 했다");
+        assert.equal(guest.guarded, false, "who 를 안 줬는데 손님이 행동했다");
     }
 
-    // ── 배고픔은 **움직인 사람만** 치른다
+    // ── `who: 1` 이면 손님이 행동한다
     {
         const s = withGuest(4002);
+        const [host, guest] = s.heroes;
+        perform(s, { t: "rest", who: 1 });
+        assert.equal(guest.guarded, true, "who: 1 인데 손님이 행동을 안 했다");
+        assert.equal(host.guarded, false, "who: 1 인데 방장이 행동했다");
+    }
+
+    // ── 배고픔은 **각자 들되 누가 움직이든** 돈다
+    {
+        const s = withGuest(4003);
         const [host, guest] = s.heroes;
         const hostFood = host.food;
         const guestFood = guest.food;
         perform(s, { t: "rest", who: 1 });
         assert.ok(guest.food < guestFood, "손님이 쉬었는데 배가 안 고파졌다");
-        assert.equal(
-            host.food,
-            hostFood,
-            "손님이 움직였는데 방장의 배가 고파졌다 — 배고픔은 각 캐릭터 중심이다",
+        assert.ok(
+            host.food < hostFood,
+            "손님이 움직이는 동안 방장이 안 굶었다 — 가만히 있으면 공짜가 된다",
         );
+        // 값은 **따로** 든다 — 한 사람 것이 둘의 배를 같이 곯리면 안 된다.
+        assert.notEqual(host.food, guestFood, "두 사람의 배고픔이 한 값을 쓰고 있다");
     }
 
     // ── 움직이는 것도 **그 사람만** 움직인다
     {
-        const s = withGuest(4003);
+        const s = withGuest(4006);
         const [host, guest] = s.heroes;
         const hostAt = { x: host.x, y: host.y };
         const dir = [

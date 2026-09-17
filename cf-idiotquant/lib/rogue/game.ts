@@ -1945,23 +1945,40 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
     }
 
     state.turn += 1;
-    tickHunger(state, hero, rng);
-    regenerate(state, hero);
-    if (hero.blind > 0) hero.blind -= 1;
-    if (hero.confused > 0) hero.confused -= 1;
-    if (hero.detect > 0) hero.detect -= 1;
 
-    // 화상 틱 (영웅)
-    if (hero.burnTurns && hero.burnTurns > 0) {
-        hero.hp -= 2;
-        hero.burnTurns -= 1;
-        say(state, "몸에 붙은 불로 2의 화염 피해를 입었다! (화상)");
-    }
+    // ── 영웅에게 붙은 것은 **누가 움직이든** 한 칸씩 돈다 ────────────────────────
+    //
+    // 값은 사람마다 따로 들되(배고픔은 제 주머니 사정이고, 반지도 제 것이 제 배를 곯린다),
+    // **시계는 하나다.** 움직인 사람만 치르게 하면 **가만히 있는 사람이 공짜**가 된다 —
+    // 상대가 층을 다 뒤지는 동안 굶지도, 불타지도, 눈이 풀리지도 않는다. 그건 협동이
+    // 아니라 얌체다.
+    for (const h of state.heroes) {
+        tickHunger(state, h, rng);
+        regenerate(state, h);
+        if (h.blind > 0) h.blind -= 1;
+        if (h.confused > 0) h.confused -= 1;
+        if (h.detect > 0) h.detect -= 1;
 
-    // 유물 쿨다운 감소
-    for (const it of hero.pack) {
-        if (it.relicCooldown && it.relicCooldown > 0) {
-            it.relicCooldown -= 1;
+        // 화상 틱 (영웅)
+        if (h.burnTurns && h.burnTurns > 0) {
+            h.hp -= 2;
+            h.burnTurns -= 1;
+            say(state, "몸에 붙은 불로 2의 화염 피해를 입었다! (화상)");
+        }
+
+        // 유물 쿨다운 감소
+        for (const it of h.pack) {
+            if (it.relicCooldown && it.relicCooldown > 0) {
+                it.relicCooldown -= 1;
+            }
+        }
+
+        // 순간이동 반지는 가끔 주인을 아무 데나 던진다 — 좋은 반지가 아니다.
+        if (hasRing(h, "teleportation") && rng.rnd(80) === 0) {
+            const p = freeSpot(state.level, rng, [state.level.stairs]);
+            h.x = p.x;
+            h.y = p.y;
+            say(state, "반지가 나를 어딘가로 던졌다.");
         }
     }
 
@@ -1975,14 +1992,6 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
                 killMonster(state, m, rng);
             }
         }
-    }
-
-    // 순간이동 반지는 가끔 나를 아무 데나 던진다 — 좋은 반지가 아니다.
-    if (hasRing(hero, "teleportation") && rng.rnd(80) === 0) {
-        const p = freeSpot(state.level, rng, [state.level.stairs]);
-        hero.x = p.x;
-        hero.y = p.y;
-        say(state, "반지가 나를 어딘가로 던졌다.");
     }
 
     if (state.phase === "playing" && hero.hp > 0) monsterTurns(state, rng);
