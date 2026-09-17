@@ -225,7 +225,7 @@ function normalize(s: Saved): GameState | null {
         if (l) levels[depth] = l;
     }
 
-    const heroes: Hero[] = saved.map((h) => ({
+    const fixHero = (h: Hero): Hero => ({
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
         pack: liftEnchants(fixLetters(Array.isArray(h.pack) ? h.pack : [])),
@@ -236,13 +236,16 @@ function normalize(s: Saved): GameState | null {
         asleep: num(h.asleep, 0),
         stuck: num(h.stuck, 0),
         detect: num(h.detect, 0),
-    }));
+    });
+    const heroes: Hero[] = saved.map(fixHero);
 
     return {
         ...(s as unknown as GameState),
         level,
         levels,
         heroes,
+        // 없으면 칸째 안 둔다 — `undefined` 칸이 남으면 되읽은 판이 저장 전과 달라진다.
+        ...(s.benched && typeof s.benched === "object" ? { benched: fixHero(s.benched) } : {}),
         messages: Array.isArray(s.messages) ? s.messages : [],
         // **빠진 겉모습을 메운다** — 표에 물건을 더하면 옛 저장에는 그 한 종이 없고,
         // 그러면 그것만 이름 없는 「주문서」로 떠서 오히려 눈에 띈다(`fillAppearances`).

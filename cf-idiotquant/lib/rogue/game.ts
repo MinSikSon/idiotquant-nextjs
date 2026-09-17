@@ -241,7 +241,7 @@ const DROUGHT_STEP = 1.0;
 function populate(state: GameState, level: Level, rng: Rng) {
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
-        const p = freeSpot(level, rng, [state.heroes[0], level.stairs]);
+        const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
         const prefix = rollChampionPrefix(level.depth, rng);
         const m = spawnMonster(randomMonsterChar(level.depth, rng), p.x, p.y, rng, prefix ?? undefined);
         if (level.mutator === "frenzy") {
@@ -352,11 +352,18 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
     const start = back ?? freeSpot(level, rng, [level.stairs]);
     // **파티가 같이 옮겨 간다.** 층은 하나뿐이라(`state.level`) 둘이 다른 층에 있을 수 없고,
     // 쓰러진 사람도 업고 간다 — 두고 가면 살릴 길이 없다.
+    // 먼저 전원을 판 밖으로 치워 두고 한 명씩 세운다 — 옛 층의 좌표가 곁 찾기를 막지 않게.
     for (const h of state.heroes) {
-        h.x = start.x;
-        h.y = start.y;
+        h.x = h.y = -1;
+        delete h.stairsVote; // 함정으로 떨어져도 옛 층의 기다림을 들고 가지 않는다
     }
     state.level = level;
+    // 첫 사람은 계단 위, 나머지는 **그 곁에** 선다 — 한 칸에 둘이 서지 않는다.
+    state.heroes.forEach((h, i) => {
+        const p = i === 0 ? start : besideFree(state, start, rng);
+        h.x = p.x;
+        h.y = p.y;
+    });
     // **살아서 층을 넘으면 쓰러진 동료가 일어난다** — 최대 체력의 절반으로.
     //
     // 협동일 때만이다. 혼자면 쓰러지는 순간 판이 끝나므로 여기까지 오지 않는다.
@@ -495,18 +502,54 @@ function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
  * **턴을 안 쓴다** — 합류는 세상을 바꾸는 행동이 아니라 사람이 하나 느는 일이다
  * (`survey` 와 같은 자리, 못 박은 규칙 3).
  */
-export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameState {
-    const rng = rngOf(state);
-    const host = state.heroes[0];
-    const guest = makePartyHero(state, rng, origin);
+/**
+ * 동료를 보낸다 — 둘에서 **다시 혼자로.** 방장(`heroes[0]`)만 남고 턴은 안 쓴다.
+ *
+ * 방장이 쓰러져 있으면 못 보낸다: 혼자 남은 사람이 쓰러진 판은 이미 끝난 판이다.
+ * 몬스터가 쥐고 있던 어그로(`target`)는 사람의 **칸 번호**라, 떠난 자리를 가리키면 지운다.
+ * 동료는 **배낭·직업·레벨을 든 채** `benched` 에서 기다린다 — 다시 부르면 그대로 돌아온다.
+ */
+export function leaveGame(state: GameState): GameState {
+    if (state.heroes.length < 2) return state;
+    if (state.heroes[0].hp <= 0) {
+        say(state, "쓰러진 채로는 동료를 보낼 수 없다.");
+        return { ...state };
+    }
+    state.benched = state.heroes[1];
+    delete state.benched.stairsVote;
+    state.heroes.length = 1;
+    delete state.heroes[0].stairsVote;
+    for (const l of [state.level, ...Object.values(state.levels)]) {
+        for (const m of l?.monsters ?? []) if ((m.target ?? 0) > 0) delete m.target;
+    }
+    computeFov(state.level, state.heroes);
+    say(state, "동료가 떠났다. 다시 혼자다.");
+    return { ...state };
+}
 
+/**
+ * `at` 곁의 빈 칸 — 다른 영웅도 몬스터도 없는 곳. 곁이 다 찼으면 층 아무 데나.
+ * **영웅은 한 칸에 둘이 안 선다** — 합류·층 이동이 다 이 자리를 쓴다.
+ */
+function besideFree(state: GameState, at: Pos, rng: Rng): Pos {
     const taken = (x: number, y: number) =>
         state.heroes.some((h) => h.x === x && h.y === y) ||
         state.level.monsters.some((m) => m.x === x && m.y === y);
-    const beside = ALL_DIRS.map((d) => ({ x: host.x + d.dx, y: host.y + d.dy })).find(
+    const beside = ALL_DIRS.map((d) => ({ x: at.x + d.dx, y: at.y + d.dy })).find(
         (p) => inBounds(p.x, p.y) && walkable(tileAt(state.level, p.x, p.y)) && !taken(p.x, p.y),
     );
-    const at = beside ?? freeSpot(state.level, rng, state.heroes);
+    return beside ?? freeSpot(state.level, rng, state.heroes);
+}
+
+export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameState {
+    const rng = rngOf(state);
+    const host = state.heroes[0];
+    // **이 판에서 보냈던 동료가 있으면 그 사람이 돌아온다** — 고른 직업은 안 쓴다.
+    const back = state.benched;
+    delete state.benched;
+    const guest = back ?? makePartyHero(state, rng, origin);
+
+    const at = besideFree(state, host, rng);
     guest.x = at.x;
     guest.y = at.y;
     state.heroes.push(guest);
@@ -514,7 +557,7 @@ export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameS
     computeFov(state.level, state.heroes);
     updateSeenItems(state);
     state.rngState = rng.state;
-    say(state, "동료가 합류했다.");
+    say(state, back ? "동료가 돌아왔다." : "동료가 합류했다.");
     return { ...state };
 }
 
@@ -557,8 +600,19 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     if (!walkable(tileAt(level, nx, ny))) return false;
     if (blockedDiagonal(level, hero, { x: nx, y: ny })) return false;
 
+    // **동료와는 자리를 바꾼다** — 막히게 두면 폭 한 칸 복도에서 둘이 영영 못 지나간다.
+    const mate = state.heroes.find((h) => h !== hero && h.x === nx && h.y === ny);
+    if (mate) {
+        mate.x = hero.x;
+        mate.y = hero.y;
+    }
     hero.x = nx;
     hero.y = ny;
+    // 계단을 눌러 두고 멀리 가면 **기다림을 거둔 것**이다 — 돌아와서 다시 눌러야 한다.
+    for (const h of [hero, mate]) {
+        const at = h?.stairsVote === "down" ? level.stairs : h?.stairsVote === "up" ? level.upStairs : null;
+        if (h && at && Math.max(Math.abs(h.x - at.x), Math.abs(h.y - at.y)) > 1) delete h.stairsVote;
+    }
 
     // 갑옷과 반지 착용 걸음 수 누적 (도감 통달)
     if (hero.armorId) {
@@ -716,8 +770,8 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
  * 규칙이 두 벌이 되지 않는다(`onStairs` 와 같은 자리 — 못 박은 규칙 1). 눌러도
  * `read` 가 한 번 더 본다: 대상 없이 들어오면 아무 일도 안 난다.
  */
-export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] | null {
-    const it = packItem(state.heroes[0], letter);
+export function scrollTargetKinds(state: GameState, letter: string, who = 0): ItemKind[] | null {
+    const it = packItem(state.heroes[who] ?? state.heroes[0], letter);
     if (!it || it.kind !== "scroll") return null;
     if (it.type === "enchant weapon") return ["weapon"];
     if (it.type === "enchant armor") return ["armor"];
@@ -726,8 +780,8 @@ export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] 
     return null;
 }
 
-export function enchantTarget(state: GameState, letter: string): ItemKind | null {
-    const kinds = scrollTargetKinds(state, letter);
+export function enchantTarget(state: GameState, letter: string, who = 0): ItemKind | null {
+    const kinds = scrollTargetKinds(state, letter, who);
     return kinds && kinds.length === 1 ? kinds[0] : null;
 }
 
@@ -740,8 +794,8 @@ export function enchantTarget(state: GameState, letter: string): ItemKind | null
  *
  * `scrollTargetKinds` 와 같은 자리의 **값 읽기**다(못 박은 규칙 1).
  */
-export function enchantScrollKind(state: GameState, letter: string): "plain" | "blessed" | null {
-    const it = packItem(state.heroes[0], letter);
+export function enchantScrollKind(state: GameState, letter: string, who = 0): "plain" | "blessed" | null {
+    const it = packItem(state.heroes[who] ?? state.heroes[0], letter);
     if (!it || it.kind !== "scroll" || !ENCHANT_SCROLLS.includes(it.type)) return null;
     return it.type === "blessed enchant" ? "blessed" : "plain";
 }
@@ -962,7 +1016,10 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
                         const x = level.stairs.x + dx;
                         const y = level.stairs.y + dy;
                         if (inBounds(x, y) && walkable(level.tiles[idx(x, y)] as Tile)) {
-                            if (!level.monsters.some((m) => m.x === x && m.y === y)) {
+                            if (
+                                !level.monsters.some((m) => m.x === x && m.y === y) &&
+                                !state.heroes.some((h) => h !== hero && h.x === x && h.y === y)
+                            ) {
                                 candidates.push({ x, y });
                             }
                         }
@@ -973,7 +1030,7 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
                 hero.y = p.y;
                 say(state, "✨ 축복받은 공간 이동의 힘으로 계단 근처의 안전한 장소로 이동했습니다.");
             } else {
-                const p = freeSpot(level, rng, [level.stairs]);
+                const p = freeSpot(level, rng, [level.stairs, ...state.heroes.filter((h) => h !== hero)]);
                 hero.x = p.x;
                 hero.y = p.y;
                 say(state, "몸이 홱 당겨졌다.");
@@ -1474,7 +1531,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             say(state, `${m.def.name}이(가) 빨라졌다!`);
             break;
         case "teleport away": {
-            const p = freeSpot(level, rng, [hero]);
+            const p = freeSpot(level, rng, state.heroes);
             m.x = p.x;
             m.y = p.y;
             say(state, `${m.def.name}이(가) 사라졌다.`);
@@ -1674,7 +1731,7 @@ function springTrap(state: GameState, hero: Hero, trap: Trap, rng: Rng) {
             say(state, "곰덫이 발목을 물었다!");
             break;
         case "teleport": {
-            const p = freeSpot(level, rng, [level.stairs]);
+            const p = freeSpot(level, rng, [level.stairs, ...state.heroes.filter((h) => h !== hero)]);
             hero.x = p.x;
             hero.y = p.y;
             say(state, "몸이 홱 당겨졌다.");
@@ -1700,9 +1757,30 @@ function descend(state: GameState, hero: Hero, rng: Rng): boolean {
         say(state, "여기에는 내려가는 계단이 없다.");
         return false;
     }
+    if (!partyReady(state, hero, "down", level.stairs)) return false;
     enterLevel(state, level.depth + 1, rng, "above");
     say(state, `지하 ${state.level.depth}층.`);
     return true;
+}
+
+/**
+ * 협동이면 **살아 있는 사람이 모두** 계단을 눌러야 층을 옮긴다. 한 사람이 혼자 눌러
+ * 동료를 싸움 한가운데서 끌고 가면 안 된다.
+ *
+ * 누른 사람은 **계단 곁(한 칸)에 있는 동안** 기다리는 것으로 친다 — 한 칸에 둘이 못
+ * 서므로 뒤에 온 사람이 계단을 밟으면 먼저 온 사람이 곁으로 밀려난다(`heroMove`).
+ * 기다리기만 한 것은 턴을 안 쓴다. 쓰러진 사람은 안 기다린다 — 업고 간다.
+ */
+function partyReady(state: GameState, hero: Hero, way: "down" | "up", at: Pos): boolean {
+    if (state.heroes.length < 2) return true;
+    hero.stairsVote = way;
+    const near = (h: Hero) => Math.max(Math.abs(h.x - at.x), Math.abs(h.y - at.y)) <= 1;
+    if (state.heroes.every((h) => h.hp <= 0 || (h.stairsVote === way && near(h)))) {
+        for (const h of state.heroes) delete h.stairsVote;
+        return true;
+    }
+    say(state, "계단 앞에서 동료를 기다린다 — 모두 계단을 눌러야 옮긴다.");
+    return false;
 }
 
 /**
@@ -1730,12 +1808,14 @@ function ascend(state: GameState, hero: Hero, rng: Rng): boolean {
             say(state, "보이지 않는 힘이 앞을 막는다. 증표 없이는 나갈 수 없다.");
             return false;
         }
+        if (!partyReady(state, hero, "up", up)) return false;
         state.phase = "won";
         state.epitaph = `옌더의 증표를 들고 지상으로 나왔다. 금화 ${hero.gold}.`;
         revealAll(level);
         say(state, "햇빛이다. 살아 돌아왔다.");
         return true;
     }
+    if (!partyReady(state, hero, "up", up)) return false;
     enterLevel(state, level.depth - 1, rng, "below");
     say(state, `지하 ${state.level.depth}층.`);
     return true;
@@ -2089,7 +2169,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
 
         // 순간이동 반지는 가끔 주인을 아무 데나 던진다 — 좋은 반지가 아니다.
         if (hasRing(h, "teleportation") && rng.rnd(80) === 0) {
-            const p = freeSpot(state.level, rng, [state.level.stairs]);
+            const p = freeSpot(state.level, rng, [state.level.stairs, ...state.heroes.filter((o) => o !== h)]);
             h.x = p.x;
             h.y = p.y;
             say(state, "반지가 나를 어딘가로 던졌다.");
@@ -2130,7 +2210,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
             say(state, "🔥 불사조의 깃털이 타오르며 영웅을 최대 생명력으로 부활시켰습니다! 🔥");
             for (const m of state.level.monsters) {
                 if (Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1) {
-                    const pushSpot = freeSpot(state.level, rng, [h, { x: m.x, y: m.y }]);
+                    const pushSpot = freeSpot(state.level, rng, [...state.heroes, { x: m.x, y: m.y }]);
                     m.x = pushSpot.x;
                     m.y = pushSpot.y;
                 }
@@ -2377,10 +2457,11 @@ export function glyphAt(
 
     // **조종하는 쪽을 먼저 본다.** 둘이 한 칸에 겹칠 일은 없지만, 겹치더라도 화면은
     // 「내가 어디 있나」를 먼저 답해야 한다.
-    if (hero.x === x && hero.y === y) return { ch: "@", kind: "hero" };
-    if (state.heroes.some((h) => h !== hero && h.x === x && h.y === y)) {
-        return { ch: "@", kind: "ally" };
-    }
+    // **쓰러진 사람은 `†`** — 같은 `@` 로 두면 살아 있는지 파티 줄을 봐야 안다.
+    const face = (h: Hero) => (h.hp > 0 ? "@" : "†");
+    if (hero.x === x && hero.y === y) return { ch: face(hero), kind: "hero" };
+    const other = state.heroes.find((h) => h !== hero && h.x === x && h.y === y);
+    if (other) return { ch: face(other), kind: "ally" };
 
     // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0) {

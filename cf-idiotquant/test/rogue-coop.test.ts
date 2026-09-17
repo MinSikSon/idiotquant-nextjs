@@ -345,9 +345,9 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
             Math.floor(after.heroes[1].maxHp / 2),
             "층을 넘었는데 동료가 안 일어났다",
         );
-        // **업고 간다** — 두고 가면 살릴 길이 없다.
-        assert.equal(after.heroes[1].x, after.heroes[0].x, "쓰러진 동료를 두고 갔다");
-        assert.equal(after.heroes[1].y, after.heroes[0].y, "쓰러진 동료를 두고 갔다");
+        // **업고 간다** — 두고 가면 살릴 길이 없다. 다만 한 칸에 겹치지 않고 **곁에** 선다.
+        const [a, b] = after.heroes;
+        assert.equal(Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), 1, "쓰러진 동료를 두고 갔거나 한 칸에 겹쳤다");
     }
 
     // ── 둘 다 쓰러지면 끝이다
@@ -360,4 +360,126 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
         const after = perform(s, { t: "rest" });
         assert.equal(after.phase, "dead", "둘 다 쓰러졌는데 판이 안 끝났다");
     }
+});
+
+test("온라인 — 직렬화해 넘긴 판에 같은 명령을 같은 순서로 주면 같은 판이 된다", async () => {
+    const { serialize, deserialize } = await import("@/lib/rogue/storage");
+    let host = withGuest(4242);
+    let guest = deserialize(serialize(host))!;
+    const dirs = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]];
+    for (let i = 0; i < 300; i++) {
+        const [dx, dy] = dirs[(i * 7) % dirs.length];
+        const cmd = i % 5 === 4 ? { t: "search" as const, who: i % 2 } : { t: "move" as const, dx, dy, who: i % 2 };
+        host = perform(host, cmd);
+        guest = perform(guest, cmd);
+    }
+    // 키 순서는 다를 수 있다(되읽은 판에 `v` 가 붙는다) — 내용을 본다.
+    assert.deepEqual(JSON.parse(serialize(guest)), JSON.parse(serialize(host)));
+});
+
+test("영웅은 한 칸에 둘이 안 선다 — 걸어서 부딪히면 자리를 바꾼다", () => {
+    const s = withGuest(4406);
+    const [host, guest] = s.heroes;
+    assert.ok(host.x !== guest.x || host.y !== guest.y, "합류하자마자 겹쳤다");
+    const hx = host.x, hy = host.y, gx = guest.x, gy = guest.y;
+    const after = perform(s, { t: "move", dx: gx - hx, dy: gy - hy, who: 0 });
+    const [h, g] = after.heroes;
+    // 대각선이 문턱에 막히는 자리면 안 움직인다 — 그때도 겹치지는 않는다.
+    assert.ok(h.x !== g.x || h.y !== g.y, "걸어서 겹쳤다");
+    if (h.x === gx && h.y === gy) assert.deepEqual([g.x, g.y], [hx, hy], "자리를 안 바꿨다");
+});
+
+test("동료가 읽는 강화 주문서는 동료의 배낭에서 찾는다", async () => {
+    const { scrollTargetKinds, enchantScrollKind } = await import("@/lib/rogue/game");
+    const s = withGuest(4407);
+    const guest = s.heroes[1];
+    const scroll = makeItem("scroll", "enchant weapon", s.nextItemId++, 0, 0);
+    addToPack(guest, scroll);
+    assert.ok(!s.heroes[0].pack.some((p) => p.letter === scroll.letter && p.kind === "scroll"), "방장 배낭에 같은 글자의 주문서가 있으면 이 테스트가 아무것도 못 가린다");
+    assert.deepEqual(scrollTargetKinds(s, scroll.letter!, 1), ["weapon"]);
+    assert.equal(enchantScrollKind(s, scroll.letter!, 1), "plain");
+});
+
+test("층은 살아 있는 사람이 모두 계단을 눌러야 옮긴다", () => {
+    // ── 혼자 누르면 기다린다 — 턴도 안 쓴다
+    const s = withGuest(4408);
+    const host = s.heroes[0];
+    const st = s.level.stairs;
+    host.x = st.x;
+    host.y = st.y;
+    const turn = s.turn;
+    const waited = perform(s, { t: "descend", who: 0 });
+    assert.equal(waited.level.depth, 1, "동료가 안 눌렀는데 내려갔다");
+    assert.equal(waited.turn, turn, "기다리기만 했는데 턴을 썼다");
+
+    // ── 동료가 계단 곁에서 누르면 내려간다 — 동료는 계단을 밟아야 누를 수 있으니 자리를 바꾼다
+    // 방장은 계단 곁으로 비켜 서고(뒤에 온 사람이 밟으면 이렇게 된다) 동료가 계단을 밟는다.
+    waited.heroes[0].x = st.x + 1;
+    waited.heroes[1].x = st.x;
+    waited.heroes[1].y = st.y;
+    const both = perform(waited, { t: "descend", who: 1 });
+    assert.equal(both.level.depth, 2, "둘 다 눌렀는데 안 내려갔다");
+});
+
+test("동료는 제 출신(직업)으로 합류한다", () => {
+    const s = joinGame(newGame(4409), "rogue");
+    assert.equal(s.heroes[1].origin, "rogue");
+    assert.equal(s.heroes[0].origin, "knight", "방장의 직업이 바뀌었다");
+});
+
+test("동료를 보내면 다시 혼자다 — 몬스터의 어그로도 떠난 자리를 안 가리킨다", async () => {
+    const { leaveGame } = await import("@/lib/rogue/game");
+    const s = withGuest(4410);
+    const m = spawnMonster("K", 1, 1, new Rng(1));
+    m.target = 1;
+    s.level.monsters.push(m);
+    const solo = leaveGame(s);
+    assert.equal(solo.heroes.length, 1);
+    assert.equal(m.target, undefined, "떠난 동료를 계속 쫓는다");
+    // 혼자 돌아온 판은 걸어도 안 터진다
+    const walked = perform(solo, { t: "rest" });
+    assert.equal(walked.phase, "playing");
+
+    // ── 방장이 쓰러져 있으면 못 보낸다
+    const t = withGuest(4411);
+    t.heroes[0].hp = 0;
+    assert.equal(leaveGame(t).heroes.length, 2);
+});
+
+test("보낸 동료는 그 판 안에서 직업·배낭 그대로 돌아온다 — 새 판에는 없다", async () => {
+    const { leaveGame } = await import("@/lib/rogue/game");
+    const { serialize, deserialize } = await import("@/lib/rogue/storage");
+    const s = joinGame(newGame(4412), "alchemist");
+    const mate = s.heroes[1];
+    mate.level = 5;
+    const packIds = mate.pack.map((p) => p.id);
+
+    // 보낸 채로 저장했다 되읽어도 남는다
+    const away = deserialize(serialize(leaveGame(s)))!;
+    assert.equal(away.heroes.length, 1);
+    assert.ok(away.benched, "보낸 동료를 저장이 잃었다");
+
+    // 다시 부르면 고른 직업은 무시하고 그 사람이 온다
+    const back = joinGame(away, "knight");
+    const b = back.heroes[1];
+    assert.equal(b.origin, "alchemist", "직업이 바뀌었다");
+    assert.equal(b.level, 5, "레벨을 잃었다");
+    assert.deepEqual(b.pack.map((p) => p.id), packIds, "배낭을 잃었다");
+    assert.equal(back.benched, undefined, "돌아왔는데 대기석에도 남았다");
+    const [h] = back.heroes;
+    assert.ok(h.x !== b.x || h.y !== b.y, "돌아와서 방장과 겹쳤다");
+
+    // 새 판에는 없다
+    assert.equal(newGame(4413).benched, undefined);
+});
+
+test("쓰러진 사람은 지도에 † 로 그린다", async () => {
+    const { glyphAt } = await import("@/lib/rogue/game");
+    const s = withGuest(4414);
+    const [host, guest] = s.heroes;
+    assert.equal(glyphAt(s, guest.x, guest.y, 0)?.ch, "@");
+    guest.hp = 0;
+    assert.equal(glyphAt(s, guest.x, guest.y, 0)?.ch, "†", "동료 쪽에서 본 쓰러진 동료");
+    assert.equal(glyphAt(s, guest.x, guest.y, 1)?.ch, "†", "제 자리에서 본 쓰러진 나");
+    assert.equal(glyphAt(s, host.x, host.y, 1)?.ch, "@");
 });

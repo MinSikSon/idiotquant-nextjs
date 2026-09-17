@@ -50,6 +50,12 @@
   /* 지도의 잉크 */
   --rg-hero: #0d1012;
   --rg-ally: #1d6b5f;        /* 동료 — 나와 같은 `@` 이되 색이 달라야 한다 */
+  /* 협동 — 사람마다의 색. 조종을 넘겨도 안 바뀐다. **색상환의 반대편**(파랑 ↔ 장미)에 두고
+     `@` 밑에 바닥색까지 깔아서, 몬스터·물건 글자와도 섞이지 않게 한다. */
+  --rg-leader: #1f5fd6;
+  --rg-mate: #c0266d;
+  --rg-leader-bg: #d6e3ff;
+  --rg-mate-bg: #ffd9e8;
   --rg-monster: #a8410b;
   --rg-monster-sensed: #cf9b78;  /* 감지 물약 — 본 것과 달라야 한다 */
   --rg-gold: #8a6800;
@@ -101,6 +107,10 @@ html.dark {
   --rg-ghost: #5f706b;
   --rg-hero: #ffffff;
   --rg-ally: #63d9c0;        /* 동료 — 나와 같은 `@` 이되 색이 달라야 한다 */
+  --rg-leader: #6aaeff;
+  --rg-mate: #ff6fa8;
+  --rg-leader-bg: #1c3563;
+  --rg-mate-bg: #5a1c39;
   --rg-monster: #f2884b;
   --rg-monster-sensed: #8a5a3a;
   --rg-gold: #ffd24a;

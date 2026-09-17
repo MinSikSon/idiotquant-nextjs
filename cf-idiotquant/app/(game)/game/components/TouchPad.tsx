@@ -37,12 +37,14 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
 /** 첫 걸음 뒤 이만큼 기다렸다가, 그 뒤로 이 간격으로 걷는다. */
-const HOLD_DELAY = 400;
-const HOLD_STEP = 120;
+export const HOLD_DELAY = 400;
+export const HOLD_STEP = 120;
 
 export interface PadAction {
     label: string;
     hint?: string;
+    /** 단축키 — **넓은 화면에서만** 이름 옆에 적는다. 폰에서는 칸이 모자라고 키보드도 없다. */
+    keys?: string;
     on: () => void;
     /** 못 누르는 이유. 있으면 잠긴다. */
     off?: string;
@@ -134,13 +136,28 @@ function Key({
     );
 }
 
+/** 방향판 아홉 칸(↖ ↑ ↗ ← · → ↙ ↓ ↘ 순)에 적을 키 — 사람 하나에 한 줄. */
+export interface PadKeys {
+    ink?: string;
+    keys: string[];
+}
+
+const DIRS: [number, number, string, string][] = [
+    [-1, -1, "↖", "왼쪽 위"], [0, -1, "↑", "위"], [1, -1, "↗", "오른쪽 위"],
+    [-1, 0, "←", "왼쪽"], [0, 0, "·", "제자리에서 쉰다"], [1, 0, "→", "오른쪽"],
+    [-1, 1, "↙", "왼쪽 아래"], [0, 1, "↓", "아래"], [1, 1, "↘", "오른쪽 아래"],
+];
+
 export default function TouchPad({
     onMove,
     actions,
+    dirKeys = [],
     hold = true,
 }: {
     onMove: (dx: number, dy: number) => void;
     actions: PadAction[];
+    /** 넓은 화면에서만 칸 아래에 적는다. 둘이면 둘 다, 사람마다 제 색으로. */
+    dirKeys?: PadKeys[];
     /**
      * 방향판을 꾹 누르면 연타되는가.
      *
@@ -153,22 +170,36 @@ export default function TouchPad({
     return (
         <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
             <div className="grid shrink-0 grid-cols-3 gap-1">
-                <Key hold={hold} onPress={step(-1, -1)} title="왼쪽 위 (y)">↖</Key>
-                <Key hold={hold} onPress={step(0, -1)} title="위 (k)">↑</Key>
-                <Key hold={hold} onPress={step(1, -1)} title="오른쪽 위 (u)">↗</Key>
-                <Key hold={hold} onPress={step(-1, 0)} title="왼쪽 (h)">←</Key>
-                <Key hold={hold} onPress={step(0, 0)} title="제자리에서 쉰다 (.)">·</Key>
-                <Key hold={hold} onPress={step(1, 0)} title="오른쪽 (l)">→</Key>
-                <Key hold={hold} onPress={step(-1, 1)} title="왼쪽 아래 (b)">↙</Key>
-                <Key hold={hold} onPress={step(0, 1)} title="아래 (j)">↓</Key>
-                <Key hold={hold} onPress={step(1, 1)} title="오른쪽 아래 (n)">↘</Key>
+                {DIRS.map(([dx, dy, arrow, title], i) => (
+                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={title}>
+                        <span className="flex flex-col items-center gap-0.5">
+                            {arrow}
+                            {dirKeys.some((p) => p.keys[i]) && (
+                                <span className="hidden gap-1 text-[9px] leading-none md:flex">
+                                    {dirKeys.map((p, j) =>
+                                        p.keys[i] ? (
+                                            <span key={j} style={{ color: p.ink ?? "var(--rg-faint)" }}>
+                                                {p.keys[i]}
+                                            </span>
+                                        ) : null,
+                                    )}
+                                </span>
+                            )}
+                        </span>
+                    </Key>
+                ))}
             </div>
 
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
             <div className="grid min-w-0 flex-1 grid-cols-3 content-start gap-1">
                 {actions.map((a) => (
                     <Key key={a.label} wide onPress={a.on} disabled={!!a.off} title={a.off ?? a.hint}>
-                        {a.label}
+                        <span>
+                            {a.label}
+                            {a.keys && (
+                                <span className="ml-1.5 hidden text-[10px] text-[var(--rg-faint)] md:inline">{a.keys}</span>
+                            )}
+                        </span>
                     </Key>
                 ))}
             </div>

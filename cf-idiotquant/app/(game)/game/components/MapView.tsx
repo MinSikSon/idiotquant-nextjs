@@ -21,6 +21,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { glyphAt } from "@/lib/rogue/game";
 import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
 
+/** 협동에서 `heroes` 칸 번호마다의 색. 파티 줄도 이것을 쓴다. */
+export const PARTY_INK = ["var(--rg-leader)", "var(--rg-mate)"];
+/** 그 사람의 `@` 밑에 까는 바닥 — 글자색만으로는 작은 글씨에서 둘이 헷갈린다. */
+export const PARTY_BG = ["var(--rg-leader-bg)", "var(--rg-mate-bg)"];
+
 /** 글자 색 — **한 곳에서만 정한다.** 화면마다 정하면 같은 `@` 가 달라 보인다. */
 const INK: Record<string, string> = {
     hero: "var(--rg-hero)",
@@ -134,8 +139,12 @@ export default function MapView({
             const g = glyphAt(state, x, y, who);
             const ch = g?.ch ?? " ";
             const flash = cellFlashes[`${x},${y}`];
-            const ink = flash?.ink ?? (g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent");
-            const bg = flash?.bg;
+            // 협동이면 `@` 는 **사람마다 정한 색** — 조종을 넘겨도 누가 누구인지 안 바뀐다.
+            const p = (g?.kind === "hero" || g?.kind === "ally") && state.heroes.length > 1
+                ? state.heroes.findIndex((h) => h.x === x && h.y === y)
+                : -1;
+            const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent");
+            const bg = flash?.bg ?? PARTY_BG[p];
             const last = runs[runs.length - 1];
             if (last && last.ink === ink && last.bg === bg) {
                 last.text += ch;

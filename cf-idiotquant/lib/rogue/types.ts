@@ -239,6 +239,8 @@ export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
 export interface Hero {
     origin?: HeroOrigin;
+    /** 협동에서 계단을 눌러 동료를 기다리는 중 — 모두 누르면 층을 옮긴다(`partyReady`). */
+    stairsVote?: "down" | "up";
     guarded?: boolean;
     x: number;
     y: number;
@@ -301,6 +303,11 @@ export interface GameState {
      * 벌이 되면 어느 날 한쪽만 바뀐다」와 같은 자리다.
      */
     heroes: Hero[];
+    /**
+     * 보낸 동료 — **그 판 안에서는** 직업·배낭·레벨을 그대로 들고 기다린다. 다시 부르면
+     * 이 사람이 돌아온다(`joinGame`). 새 판(`newGame`)에는 없다 — 판이 끝나면 비워진다.
+     */
+    benched?: Hero;
     /** 화면 맨 위에 쌓이는 것. 최신이 끝. */
     messages: string[];
     /** 지나간 턴 수 — 점수와 배고픔의 시계. */
