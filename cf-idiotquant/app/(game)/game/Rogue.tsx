@@ -17,7 +17,8 @@
  * 뜬다. 키는 원작 그대로 살아 있다.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { DataConnection, Peer } from "peerjs";
 
 import {
     type BestiaryRow,
@@ -25,9 +26,9 @@ import {
     type Sighting,
     bestiaryProgress,
     bestiaryRows,
-    enchantScrollKind,
     enchantTarget,
-    scrollTargetKinds,
+    joinGame,
+    leaveGame,
     newGame,
     perform,
     score,
@@ -45,17 +46,10 @@ import {
     WANDS,
     WEAPONS,
     defenseOf,
-    describe,
-    enchantOdds,
-    enchantOf,
-    enchantSafeMax,
     isThrowable,
     itemChar,
     itemDepthRange,
-    itemPower,
     makeItem,
-    meltMax,
-    meltYield,
 } from "@/lib/rogue/items";
 import {
     type CodexCategory,
@@ -66,7 +60,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { isDetail } from "@/lib/rogue/combat";
-import { equippedArmor, equippedWeapon, heroArmor, heroAttackText, heroDefense, heroHitBonus, heroStr, hungerOf, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { heroArmor, heroStr, hungerOf, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -76,22 +70,24 @@ import {
     loadItemCodex,
     loadItemUsage,
     loadSpecials,
+    deserialize,
     save,
     saveBestiary,
     saveItemCodex,
     saveItemUsage,
     saveSpecials,
+    serialize,
     type Tomb,
     type TombHero,
     type TombItem,
 } from "@/lib/rogue/storage";
-import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
+import { T, idx, type GameState, type ItemKind } from "@/lib/rogue/types";
 import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
-import Aim from "./components/Aim";
-import MapView, { type CellFlash } from "./components/MapView";
+import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
+import MapView, { PARTY_BG, PARTY_INK, type CellFlash } from "./components/MapView";
 import Panel from "./components/Panel";
-import TouchPad, { type PadAction } from "./components/TouchPad";
+import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
 
 const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: string }> = {
@@ -117,28 +113,6 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
     },
 };
 
-/** 무엇을 고르는 중인가 — 원작의 「어느 것을?」 자리. */
-interface Picker {
-    title: string;
-    kinds: ItemKind[];
-    make: (letter: string) => Command;
-    empty: string;
-    /** 이 물건이 고를 만한가 — 종류만으로 안 갈리는 경우(던지기). */
-    allow?: (it: Item) => boolean;
-}
-
-/** 방향을 기다리는 중 — 지팡이·던지기. */
-interface Aiming {
-    title: string;
-    what: string;
-    make: (dx: number, dy: number) => Command;
-}
-
-/** `+8` / `-1` / `+0` — 명중은 부호를 붙여야 보정으로 읽힌다. */
-function signed(n: number): string {
-    return n >= 0 ? `+${n}` : `${n}`;
-}
-
 const KEY_DIRS: Record<string, [number, number]> = {
     h: [-1, 0], ArrowLeft: [-1, 0],
     l: [1, 0], ArrowRight: [1, 0],
@@ -146,6 +120,60 @@ const KEY_DIRS: Record<string, [number, number]> = {
     j: [0, 1], ArrowDown: [0, 1],
     y: [-1, -1], u: [1, -1], b: [-1, 1], n: [1, 1],
 };
+
+/**
+ * 한 화면 협동의 키 — **사람마다 3×3 한 덩이 · 배낭 하나**뿐이다.
+ *
+ * 덩이의 테두리 여덟이 방향이고 **가운데가 확인**이다(`QWE/ASD/ZXC` 의 `S`,
+ * `UIO/JKL/M,.` 의 `K`). 걸을 때는 행동, 배낭·고르기에서는 고르기다.
+ *
+ * 행동 키는 발밑을 읽어 할 일을 고른다: 물건이 있으면 줍고, 계단이면 내려가고, 아니면
+ * 뒤진다(한 턴 쉬는 셈). 마시기·읽기 같은 나머지는 **자기 배낭**을 열어서 한다.
+ * 키는 `e.code`(자판 자리)로 읽는다 — 한글 입력 상태에서도 같다.
+ */
+const COOP_KEYS: { dirs: Record<string, [number, number]>; act: string[]; pack: string[]; cancel: string[] }[] = [
+    // 방장 — 왼손
+    {
+        dirs: {
+            KeyW: [0, -1], KeyA: [-1, 0], KeyX: [0, 1], KeyD: [1, 0],
+            KeyQ: [-1, -1], KeyE: [1, -1], KeyZ: [-1, 1], KeyC: [1, 1],
+        },
+        // Space 는 안 쓴다 — 맥북에서는 두 사람 엄지가 다 닿는 한가운데다.
+        act: ["KeyS"],
+        pack: ["Tab", "KeyR"],
+        // **닫기는 사람마다 따로다** — Esc 는 하나라 둘의 판을 한꺼번에 닫는다.
+        cancel: ["KeyF"],
+    },
+    // 동료 — 오른손. 방장의 거울이다: UIO/JKL/M,. = QWE/ASD/ZXC, P = R.
+    // (오른쪽 Shift 는 안 쓴다 — `?` 를 누르려다 배낭이 열린다.)
+    {
+        dirs: {
+            KeyI: [0, -1], KeyJ: [-1, 0], Comma: [0, 1], KeyL: [1, 0],
+            KeyU: [-1, -1], KeyO: [1, -1], KeyM: [-1, 1], Period: [1, 1],
+            ArrowUp: [0, -1], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowRight: [1, 0],
+        },
+        act: ["KeyK", "Enter"],
+        pack: ["KeyP"],
+        cancel: ["Semicolon"],
+    },
+];
+
+/** 온라인 방 코드 앞에 붙는 이름 — 공개 PeerJS 브로커에서 남의 방과 안 겹치게. */
+const PEER_PREFIX = "idiotquant-rogue-";
+/** 들어 있던 방 — 새로고침해도 다시 잇는다. */
+const ROOM_KEY = "rogue-room";
+const RETRY_MS = 3000;
+
+/**
+ * 온라인에서 오가는 말. **방장이 순서를 정한다** — 손님의 명령도 방장에게 갔다가
+ * 방장이 적용한 순서대로 되돌아온다. 엔진이 결정적이라 같은 판에 같은 순서면 같은 판이다
+ * (`test/rogue-coop.test.ts`).
+ */
+type NetMsg =
+    | { t: "init"; state: string }
+    | { t: "cmd"; cmd: Command }
+    // 손님이 이으면 먼저 제 출신을 알린다 — 방장이 그 직업으로 동료를 세운다.
+    | { t: "hello"; origin: HeroOrigin };
 
 /** 판을 넘어 남는 기록 둘을 합칠 때 쓴다 — **칸마다 큰 쪽**을 남긴다. */
 function higher(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
@@ -156,13 +184,18 @@ function higher(a: Record<string, number>, b: Record<string, number>): Record<st
 
 export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
-    const [picker, setPicker] = useState<Picker | null>(null);
-    const [aiming, setAiming] = useState<Aiming | null>(null);
     const [sheet, setSheet] = useState<
-        "none" | "pack" | "log" | "help" | "graves" | "options" | "bestiary" | "origins"
+        "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins"
     >("none");
-    /** 배낭에서 짚은 물건 — 그 아래에 할 수 있는 일이 뜬다. */
-    const [chosen, setChosen] = useState<number | null>(null);
+    /**
+     * 사람마다의 배낭·고르기·겨누기(`Desk`). 둘이서면 둘이 따로 연다.
+     * `modes` 는 그 책상이 지금 무엇을 띄웠는지 — 걷기를 막을지, 끝난 판을 덮을지 읽는다.
+     */
+    const desks = useRef<(DeskHandle | null)[]>([]);
+    const [modes, setModes] = useState<DeskMode[]>(["none", "none"]);
+    const onDeskMode = useCallback((w: number, m: DeskMode) => {
+        setModes((ms) => (ms[w] === m ? ms : Object.assign([...ms], { [w]: m })));
+    }, []);
     const [tombs, setTombs] = useState<Tomb[]>([]);
     /** 지난 판들 중 상세 조회로 선택한 판 */
     const [selectedTomb, setSelectedTomb] = useState<Tomb | null>(null);
@@ -215,6 +248,8 @@ export default function Rogue() {
         saveSpecials(state.specials);
         saveItemCodex(state.itemCodex);
         saveItemUsage(state.itemUsage);
+        // **손님은 남의 판을 제 저장 칸에 안 쓴다** — 혼자 하던 판이 덮인다.
+        if (online === "guest") return;
         if (state.phase === "playing") {
             save(state);
             buried.current = false;
@@ -235,9 +270,9 @@ export default function Rogue() {
         if (!state) return;
         const prev = lastStateRef.current;
         const curr = {
-            hp: state.hero.hp,
-            gold: state.hero.gold,
-            exp: state.hero.exp,
+            hp: state.heroes[0].hp,
+            gold: state.heroes[0].gold,
+            exp: state.heroes[0].exp,
             depth: state.level.depth,
             turn: state.turn,
             messagesLen: state.messages.length,
@@ -291,9 +326,9 @@ export default function Rogue() {
 
         // 4. 영웅 체력 변동 (피격 / 치유 - 내 캐릭터 칸 플래시)
         const hpDiff = curr.hp - prev.hp;
-        const heroKey = `${state.hero.x},${state.hero.y}`;
+        const heroKey = `${state.heroes[0].x},${state.heroes[0].y}`;
         if (hpDiff < 0) {
-            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.hero.maxHp * 0.3));
+            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.heroes[0].maxHp * 0.3));
             if (hasCritMsg) {
                 // 영웅 치명타 피격: 황금+적색 경고
                 flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
@@ -326,157 +361,271 @@ export default function Rogue() {
         }
     }, [state]);
 
-    const run = useCallback((cmd: Command) => {
-        setState((s) => (s ? perform(s, cmd) : s));
+    /**
+     * 이 화면이 **조종하는** 영웅(`heroes` 의 칸 번호).
+     *
+     * 화면의 값이지 판의 값이 아니다 — 온라인이 되면 방장 화면은 0, 손님 화면은 1 을
+     * 들고 **같은 판**을 본다. 그래서 `GameState` 에 안 넣는다.
+     */
+    const [who, setWho] = useState(0);
+
+    /** 온라인이면 내 자리와 방 코드. 연결은 `net` 에 든다 — 화면이 다시 그려질 까닭이 아니다. */
+    const [online, setOnline] = useState<"host" | "guest" | null>(null);
+    const [room, setRoom] = useState<string | null>(null);
+    /** 지금 상대와 이어져 있는가 — 끊겨도 방(`online`·`room`)은 남는다. */
+    const [linked, setLinked] = useState(false);
+    const net = useRef<{ peer: Peer; conn?: DataConnection } | null>(null);
+    const stateRef = useRef(state);
+    stateRef.current = state;
+    useEffect(() => () => net.current?.peer.destroy(), []);
+
+    /**
+     * 명령이 판에 닿는 **유일한 길**. 키보드·단추·네트워크 모두 여기로 온다.
+     * 손님은 적용하지 않고 방장에게 보낸다 — 방장이 되돌려 준 것만 적용한다.
+     */
+    const dispatchCmd = useCallback(
+        (cmd: Command) => {
+            const conn = net.current?.conn;
+            if (online === "guest") {
+                // 끊긴 동안 누른 것은 버린다 — 다시 이어지면 방장의 판을 통째로 받는다.
+                if (conn?.open) conn.send({ t: "cmd", cmd } satisfies NetMsg);
+                return;
+            }
+            setState((s) => (s ? perform(s, cmd) : s));
+            if (online === "host" && conn?.open) conn.send({ t: "cmd", cmd } satisfies NetMsg);
+        },
+        [online],
+    );
+
+    const run = useCallback(
+        (cmd: Command) => {
+            // **누가 하는 명령인지를 여기서 싣는다** — 엔진이 다시 판단하지 않는다.
+            dispatchCmd({ ...cmd, who });
+        },
+        [who, dispatchCmd],
+    );
+
+    /** 한 화면 협동 — 누른 키가 누구 것인지로 조종이 따라 넘어간다. */
+    const runAs = useCallback(
+        (w: number, cmd: Command) => {
+            setWho(w);
+            dispatchCmd({ ...cmd, who: w });
+        },
+        [dispatchCmd],
+    );
+
+    /** 끊겨도 **방을 안 닫는다** — 나가기를 누르기 전까지 같은 코드로 다시 잇는다. */
+    const note = useCallback((m: string) => {
+        setState((s) => (s ? { ...s, messages: [...s.messages, m] } : s));
     }, []);
+
+    const closeRoom = useCallback((why: string) => {
+        net.current?.peer.destroy();
+        net.current = null;
+        try {
+            localStorage.removeItem(ROOM_KEY);
+        } catch {}
+        setOnline(null);
+        setRoom(null);
+        setLinked(false);
+        setWho(0);
+        note(why);
+    }, [note]);
+
+    /**
+     * 브로커와의 연결이 깨지면 피어를 새로 만든다. 같은 코드가 브로커에 잠깐 남아 있으면
+     * (`unavailable-id`) 그것도 몇 초 뒤 다시 된다. 나간 뒤에는 안 돈다(`net.current` 로 본다).
+     */
+    const retry = useCallback((peer: Peer, again: () => void) => {
+        if (net.current?.peer !== peer) return;
+        peer.destroy();
+        setTimeout(() => net.current?.peer === peer && again(), RETRY_MS);
+    }, []);
+
+    const hostRoom = useCallback(async (code = String(1000 + Math.floor(Math.random() * 9000))) => {
+        const { Peer } = await import("peerjs");
+        const peer = new Peer(PEER_PREFIX + code);
+        net.current = { peer };
+        try {
+            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "host", code }));
+        } catch {}
+        setOnline("host");
+        setRoom(code);
+        setLinked(false);
+        peer.on("error", () => retry(peer, () => hostRoom(code)));
+        peer.on("disconnected", () => !peer.destroyed && peer.reconnect());
+        peer.on("connection", (conn) => {
+            // 방은 둘이다 — 살아 있는 손님이 있으면 돌려보낸다. 죽은 연결이면 새 쪽으로 갈아 낀다.
+            if (net.current?.conn?.open) {
+                conn.close();
+                return;
+            }
+            net.current = { peer, conn };
+            conn.on("data", (raw) => {
+                const m = raw as NetMsg;
+                if (m?.t === "hello") {
+                    const s = stateRef.current;
+                    if (!s) return;
+                    // 남이 보낸 값이다 — 없는 직업이면 기사로 받는다.
+                    guestOrigin.current = m.origin in ORIGINS ? m.origin : "knight";
+                    // 다시 들어온 손님에게는 **지금 판**을 통째로 준다 — 끊긴 사이의 명령을 셀 필요가
+                    // 없다. 이미 동료가 있으면 그 사람이다(직업은 처음 고른 그대로).
+                    const g = s.heroes.length > 1 ? s : joinGame(s, guestOrigin.current);
+                    setState(g);
+                    setWho(0);
+                    setLinked(true);
+                    conn.send({ t: "init", state: serialize(g) } satisfies NetMsg);
+                    return;
+                }
+                if (m?.t !== "cmd" || !m.cmd) return;
+                // **손님은 동료만 움직인다** — 보낸 `who` 를 믿지 않는다.
+                const cmd = { ...m.cmd, who: 1 };
+                setState((s) => (s ? perform(s, cmd) : s));
+                conn.send({ t: "cmd", cmd } satisfies NetMsg);
+            });
+            conn.on("close", () => {
+                if (net.current?.conn !== conn) return;
+                net.current.conn = undefined;
+                setLinked(false);
+                note("동료가 끊겼다 — 같은 방에서 기다린다.");
+            });
+        });
+    }, [note, retry]);
+
+    const joinRoom = useCallback(async (code: string, origin: HeroOrigin) => {
+        const { Peer } = await import("peerjs");
+        const peer = new Peer();
+        net.current = { peer };
+        try {
+            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, origin }));
+        } catch {}
+        // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 동료 자리를 쥔 채 기다린다.
+        setOnline("guest");
+        setWho(1);
+        setRoom(code);
+        setLinked(false);
+        const again = () => retry(peer, () => joinRoom(code, origin));
+        peer.on("error", again);
+        peer.on("open", () => {
+            const conn = peer.connect(PEER_PREFIX + code, { reliable: true });
+            net.current = { peer, conn };
+            conn.on("open", () => {
+                setLinked(true);
+                conn.send({ t: "hello", origin } satisfies NetMsg);
+            });
+            conn.on("data", (raw) => {
+                const m = raw as NetMsg;
+                if (m?.t === "init") {
+                    const s = deserialize(m.state);
+                    if (s) setState(s);
+                } else if (m?.t === "cmd" && m.cmd) {
+                    setState((s) => (s ? perform(s, m.cmd) : s));
+                }
+            });
+            conn.on("close", () => {
+                if (net.current?.peer !== peer) return;
+                setLinked(false);
+                note("방장과 끊겼다 — 다시 잇는 중…");
+                again();
+            });
+        });
+    }, [note, retry]);
+
+    // 새로고침·탭을 닫았다 연 뒤에도 **들어 있던 방으로** 돌아간다.
+    const resumed = useRef(false);
+    useEffect(() => {
+        // 개발 모드는 효과를 두 번 돌린다 — 같은 코드로 피어가 둘 서면 서로 자리를 뺏는다.
+        if (resumed.current) return;
+        resumed.current = true;
+        try {
+            const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
+            if (r?.role === "host") hostRoom(r.code);
+            else if (r?.role === "guest") joinRoom(r.code, r.origin ?? "knight");
+        } catch {}
+        // 첫 그림에서 한 번만.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    /**
+     * 출신 고르기 판을 **누구를 위해** 열었나 — 새 판(방장) · 한 화면 동료 · 온라인 손님(방 코드).
+     * 판은 하나고 고른 뒤 갈 곳만 다르다.
+     */
+    const [originFor, setOriginFor] = useState<{ t: "new" } | { t: "mate" } | { t: "guest"; code: string }>({ t: "new" });
+    /** 방장이 기억하는 온라인 손님의 직업 — 새 판을 열 때 그 직업으로 다시 세운다. */
+    const guestOrigin = useRef<HeroOrigin>("knight");
+
+    const pickOrigin = (origin: HeroOrigin) => {
+        const f = originFor;
+        setOriginFor({ t: "new" });
+        if (f.t === "mate") {
+            setState((g) => (g && g.heroes.length < 2 ? joinGame(g, origin) : g));
+            setSheet("none");
+        } else if (f.t === "guest") {
+            setSheet("none");
+            void joinRoom(f.code, origin);
+        } else {
+            startWithOrigin(origin);
+        }
+    };
 
     const startWithOrigin = useCallback((origin: HeroOrigin) => {
+        setSheet("none");
+        // 손님의 새 판은 방장만 연다 — 제멋대로 열면 두 화면이 갈라진다.
+        if (online === "guest") return;
         clear();
         buried.current = false;
-        setSheet("none");
-        setChosen(null);
-        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin));
-    }, []);
+        let g = newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin);
+        if (online === "host" && net.current?.conn) {
+            g = joinGame(g, guestOrigin.current);
+            net.current.conn.send({ t: "init", state: serialize(g) } satisfies NetMsg);
+        }
+        setState(g);
+    }, [online]);
 
     const restart = useCallback(() => {
+        setOriginFor({ t: "new" });
         setSheet("origins");
     }, []);
 
-    const openPicker = useCallback((p: Picker) => {
-        setSheet("none");
-        setPicker(p);
+    // ── 키보드 ─────────────────────────────────────────────────────────
+    /** 한 화면 협동에서 사람마다 꾹 누르고 있는 방향 키. */
+    const holds = useRef<({ code: string; timer: ReturnType<typeof setTimeout> } | null)[]>([]);
+    const stopHold = useCallback((w: number) => {
+        const h = holds.current[w];
+        if (h) clearTimeout(h.timer);
+        holds.current[w] = null;
     }, []);
-
-    const PICKERS: Record<string, Picker> = useMemo(
-        () => ({
-            q: { title: "무엇을 마실까", kinds: ["potion"], make: (letter) => ({ t: "quaff", letter }), empty: "마실 것이 없다." },
-            r: { title: "무엇을 읽을까", kinds: ["scroll"], make: (letter) => ({ t: "read", letter }), empty: "읽을 것이 없다." },
-            e: { title: "무엇을 먹을까", kinds: ["food"], make: (letter) => ({ t: "eat", letter }), empty: "먹을 것이 없다." },
-            w: { title: "무엇을 쥘까", kinds: ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다." },
-            W: { title: "무엇을 입을까", kinds: ["armor"], make: (letter) => ({ t: "wear", letter }), empty: "입을 것이 없다." },
-            P: { title: "무엇을 낄까", kinds: ["ring"], make: (letter) => ({ t: "putOn", letter }), empty: "반지가 없다." },
-            R: { title: "무엇을 뺄까", kinds: ["ring"], make: (letter) => ({ t: "removeRing", letter }), empty: "낀 반지가 없다." },
-            d: {
-                title: "무엇을 내려놓을까",
-                kinds: ["potion", "scroll", "food", "weapon", "armor", "ring", "wand", "amulet"],
-                make: (letter) => ({ t: "drop", letter }),
-                empty: "배낭이 비었다.",
-            },
-        }),
-        [],
-    );
-
-    /** 지팡이·던지기는 물건을 고른 **뒤에** 방향을 묻는다. */
-    const aimAfterPick = useCallback(
-        (kind: "zap" | "throw") => {
-            setSheet("none");
-            setPicker({
-                title: kind === "zap" ? "무슨 지팡이로" : "무엇을 던질까",
-                kinds:
-                    kind === "zap"
-                        ? ["wand"]
-                        : ["weapon", "potion"],
-                allow: kind === "throw" ? isThrowable : undefined,
-                empty: kind === "zap" ? "지팡이가 없다." : "던질 만한 것이 없다.",
-                make: () => ({ t: "rest" }), // 쓰이지 않는다 — 아래에서 가로챈다
-            });
-            setAiming(null);
-            pendingAim.current = kind;
-        },
-        [],
-    );
-    /** 물건을 고르면 방향 판으로 넘어가야 하는가. */
-    const pendingAim = useRef<"zap" | "throw" | null>(null);
-
-    /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다 — 그 주문서의 자리. */
-    const pendingEnchant = useRef<string | null>(null);
-    /** 그 주문서가 강화냐 축복이냐 — `null` 이면 재련이다. 줄마다 적을 것이 갈린다. */
-    const pendingEnchantStyle = useRef<"plain" | "blessed" | null>(null);
+    useEffect(() => () => holds.current.forEach((_, w) => stopHold(w)), [stopHold]);
+    const runAsRef = useRef(runAs);
+    runAsRef.current = runAs;
+    /**
+     * 그 사람의 걷기를 막는가 — **자기 책상**이 떴거나, 둘 다 덮는 판(도감·도움말)이 떴거나.
+     * 동료가 배낭을 여는 동안에도 나는 계속 걷는다.
+     */
+    const blocked = useRef<(w: number) => boolean>(() => false);
+    blocked.current = (w) => modes[w] !== "none" || sheet !== "none" || state?.phase !== "playing";
 
     /**
-     * 주문서 하나를 읽는다 — **강화나 재련이면 고를 것을 한 번 더 묻는다.**
-     *
-     * 「무엇을 읽을까」 고르기에서도, 배낭 줄의 「읽는다」에서도 여기로 온다. 두 길이
-     * 갈리면 한쪽만 고치는 날이 오고, 실제로 배낭 쪽은 대상 없이 `read` 를 던져서
-     * **아무 일도 안 나는** 자리가 됐었다.
-     *
-     * 대상이 필요한지는 **엔진에 묻는다**(`scrollTargetKinds`) — 판단이 아니라 값 읽기다.
+     * 둘이서의 **확인** — 3×3 덩이의 가운데 키와 화면 방향판의 가운데 단추가 같이 쓴다.
+     * 책상이 떠 있으면 거기서 고르고, 아니면 발밑을 읽어 할 일을 고른다.
      */
-    const readScroll = useCallback(
-        (letter: string) => {
-            const targetKinds = state ? scrollTargetKinds(state, letter) : null;
-            if (!targetKinds) {
-                run({ t: "read", letter });
+    const confirm = useCallback(
+        (w: number) => {
+            const h = state?.heroes[w];
+            if (!state || !h || h.hp <= 0) return;
+            if (modes[w] !== "none") {
+                setWho(w);
+                desks.current[w]?.padKey({ act: true });
                 return;
             }
-            // **강화냐 재련이냐는 엔진이 답한다**(`enchantScrollKind`). 대상 종류의 개수로
-            // 가르면 축복(무기·갑옷)이 재련(무기·갑옷·반지)과 같은 칸에 떨어져서, 상한에
-            // 닿은 물건이 고르는 목록에 그대로 뜬다.
-            const style = state ? enchantScrollKind(state, letter) : null;
-            pendingEnchant.current = letter;
-            pendingEnchantStyle.current = style;
-            const wantSingle = targetKinds.length === 1 ? targetKinds[0] : null;
-            setPicker({
-                title: !style
-                    ? "무엇을 재련할까"
-                    : style === "blessed"
-                    ? "무엇에 축복을 걸까"
-                    : wantSingle === "weapon"
-                    ? "무엇을 강화할까"
-                    : "무슨 갑옷을 강화할까",
-                kinds: targetKinds,
-                // **상한에 닿은 것은 안 보여 준다** (재련은 제한 없음)
-                allow: (p) => !style || enchantOf(p) < ENCHANT_MAX,
-                empty: !style
-                    ? "재련할 장비(무기·갑옷·반지)가 없다."
-                    : style === "blessed"
-                    ? "축복을 걸 무기나 갑옷이 없다."
-                    : wantSingle === "weapon"
-                    ? "강화할 무기가 없다."
-                    : "강화할 갑옷이 없다.",
-                make: () => ({ t: "rest" }), // 쓰이지 않는다 — `choosePicked` 가 가로챈다
-            });
+            // 발밑을 **읽기만** 한다 — 할 수 있는지는 엔진이 다시 본다.
+            const onItem = state.level.items.some((it) => it.x === h.x && it.y === h.y);
+            const onDown = state.level.tiles[idx(h.x, h.y)] === T.STAIRS;
+            runAs(w, onItem ? { t: "pickup" } : onDown ? { t: "descend" } : { t: "search" });
         },
-        [run, state],
+        [state, modes, runAs],
     );
 
-    const choosePicked = useCallback(
-        (letter: string) => {
-            const mode = pendingAim.current;
-            if (mode) {
-                pendingAim.current = null;
-                setPicker(null);
-                setAiming({
-                    title: mode === "zap" ? "어디로 쏠까" : "어디로 던질까",
-                    what: mode === "zap" ? "지팡이를 겨눕니다." : "겨눈 방향으로 날아갑니다.",
-                    make: (dx, dy) => ({ t: mode, letter, dx, dy }),
-                });
-                return;
-            }
-            // 두 번째 고르기 — 강화할 물건을 짚었다.
-            const scroll = pendingEnchant.current;
-            if (scroll) {
-                pendingEnchant.current = null;
-                pendingEnchantStyle.current = null;
-                setPicker(null);
-                run({ t: "read", letter: scroll, target: letter });
-                return;
-            }
-            // 주문서를 짚었으면 **강화인지 아닌지**를 `readScroll` 이 엔진에 묻는다.
-            if (picker?.kinds.length === 1 && picker.kinds[0] === "scroll") {
-                setPicker(null);
-                readScroll(letter);
-                return;
-            }
-            setPicker((p) => {
-                if (p) run(p.make(letter));
-                return null;
-            });
-        },
-        [picker, readScroll, run],
-    );
-
-    // ── 키보드 ─────────────────────────────────────────────────────────
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (!state) return;
@@ -484,39 +633,70 @@ export default function Rogue() {
             const target = e.target as HTMLElement | null;
             if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
 
-            // 겨누는 중이면 방향키가 걷지 않고 겨눈다.
-            if (aiming) {
-                const d = KEY_DIRS[e.key];
-                if (d) {
-                    e.preventDefault();
-                    run(aiming.make(d[0], d[1]));
-                    setAiming(null);
-                }
-                return;
-            }
-
-            if (picker) {
-                const it = state.hero.pack.find(
-                    (p) =>
-                        p.letter === e.key &&
-                        picker.kinds.includes(p.kind) &&
-                        (!picker.allow || picker.allow(p)),
-                );
-                if (it) {
-                    e.preventDefault();
-                    choosePicked(e.key);
-                }
-                return;
-            }
+            // **글자는 자판 자리로 읽는다** — 한글 입력 상태면 `e.key` 가 `ㅈ`·`ㅁ` 으로 와서
+            // 어떤 키도 안 먹는다. 대문자(`W`·`P`·`R`)는 그대로 둔다.
+            const key = /^Key[A-Z]$/.test(e.code) ? (e.shiftKey ? e.code[3] : e.code[3].toLowerCase()) : e.key;
+            const localCoop = !online && state.heroes.length > 1;
+            // 도감·도움말 같은 판은 둘 다 덮는다 — 그동안은 아무도 안 움직인다.
             if (sheet !== "none") return;
 
-            const dir = KEY_DIRS[e.key];
+            // Shift 를 누른 것은 두 사람 키가 아니다 — `<` 가 `,`(동료 대각선) 자리에 있다.
+            if (localCoop && !e.shiftKey) {
+                // **키 반복은 OS 에 맡기지 않는다** — macOS 는 마지막에 누른 키 하나만 반복해서,
+                // 한 사람이 꾹 누르고 걷는 중에 다른 사람이 누르면 앞사람이 멈춘다.
+                // 사람마다 따로 돌린다(`holds`). 책상의 줄 옮기기는 반복을 받는다.
+                if (e.repeat && COOP_KEYS.some((k, w) => k.dirs[e.code] && modes[w] === "none")) {
+                    e.preventDefault();
+                    return;
+                }
+                for (let w = 0; w < COOP_KEYS.length; w++) {
+                    const keys = COOP_KEYS[w];
+                    const h = state.heroes[w];
+                    const d = keys.dirs[e.code];
+                    const isAct = keys.act.includes(e.code);
+                    const isPack = keys.pack.includes(e.code);
+                    const isCancel = keys.cancel.includes(e.code);
+                    if (!h || (!d && !isAct && !isPack && !isCancel)) continue;
+                    e.preventDefault();
+                    if (h.hp <= 0) return; // 쓰러진 사람은 조종을 안 받는다
+                    // **자기 책상이 떠 있으면 키가 그 판으로 간다** — 줄을 옮기고, 고르고, 닫는다.
+                    if (isPack || isCancel || modes[w] !== "none") {
+                        setWho(w);
+                        desks.current[w]?.padKey({ dir: d, act: isAct, pack: isPack, cancel: isCancel });
+                    } else if (isAct) {
+                        confirm(w);
+                    } else if (d) {
+                        const cmd: Command = { t: "move", dx: d[0], dy: d[1] };
+                        runAs(w, cmd);
+                        stopHold(w);
+                        const hold = { code: e.code, timer: 0 as unknown as ReturnType<typeof setTimeout> };
+                        holds.current[w] = hold;
+                        hold.timer = setTimeout(function step() {
+                            if (holds.current[w] !== hold || blocked.current(w)) return stopHold(w);
+                            runAsRef.current(w, cmd);
+                            hold.timer = setTimeout(step, HOLD_STEP);
+                        }, HOLD_DELAY);
+                    }
+                    return;
+                }
+            }
+
+            const desk = desks.current[who];
+            // 혼자일 때 떠 있는 책상(겨누기·고르기·배낭)이 키를 먼저 먹는다.
+            if (!localCoop && desk?.soloKey(key, KEY_DIRS[key])) {
+                e.preventDefault();
+                return;
+            }
+            // 둘이서 누구 책상이든 떠 있으면 **글자 명령은 안 받는다** — 판이 겹친다.
+            if (localCoop && modes.some((m) => m !== "none")) return;
+
+            const dir = KEY_DIRS[key];
             if (dir) {
                 e.preventDefault();
                 run({ t: "move", dx: dir[0], dy: dir[1] });
                 return;
             }
-            switch (e.key) {
+            switch (key) {
                 case ".":
                 case "5":
                     e.preventDefault();
@@ -541,11 +721,11 @@ export default function Rogue() {
                     break;
                 case "z":
                     e.preventDefault();
-                    aimAfterPick("zap");
+                    desk?.aim("zap");
                     break;
                 case "t":
                     e.preventDefault();
-                    aimAfterPick("throw");
+                    desk?.aim("throw");
                     break;
                 // `x` 는 「지금 보이는 놈을 본다」였다. 그 판이 도감 안으로 들어갔으므로
                 // 키도 그리로 간다 — 누르던 사람의 손가락이 가던 자리가 그대로 산다.
@@ -555,7 +735,7 @@ export default function Rogue() {
                     break;
                 case "i":
                     e.preventDefault();
-                    setSheet("pack");
+                    desk?.togglePack();
                     break;
                 case "m":
                     e.preventDefault();
@@ -565,18 +745,24 @@ export default function Rogue() {
                     e.preventDefault();
                     setSheet("help");
                     break;
-                default: {
-                    const p = PICKERS[e.key];
-                    if (p) {
-                        e.preventDefault();
-                        openPicker(p);
-                    }
-                }
+                default:
+                    if (desk?.openPicker(key)) e.preventDefault();
             }
         };
+        const onUp = (e: KeyboardEvent) => {
+            holds.current.forEach((h, w) => h?.code === e.code && stopHold(w));
+        };
+        // 창을 벗어나면 뗀 키를 못 듣는다 — 그대로 두면 혼자 계속 걷는다.
+        const onBlur = () => holds.current.forEach((_, w) => stopHold(w));
         window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [state, picker, aiming, sheet, run, openPicker, aimAfterPick, choosePicked, PICKERS]);
+        window.addEventListener("keyup", onUp);
+        window.addEventListener("blur", onBlur);
+        return () => {
+            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("keyup", onUp);
+            window.removeEventListener("blur", onBlur);
+        };
+    }, [state, modes, sheet, run, runAs, online, who, stopHold, confirm]);
 
     if (!state) {
         return (
@@ -588,15 +774,11 @@ export default function Rogue() {
         );
     }
 
-    const { hero, level } = state;
+    const { level } = state;
+    const hero = state.heroes[who] ?? state.heroes[0];
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
-    /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */
-    const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
-    const hunger = hungerOf(hero);
-    const name = (it: Item) => describe(it, state.known, state.appearance);
-    const rings = wornRings(hero);
     const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k);
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
@@ -616,15 +798,18 @@ export default function Rogue() {
     //   · **도움말 · 지난 판** → 「⚙ 옵션」 안으로. 걸으면서 쓰는 것이 아니다.
     //   · **조사** → 도감 맨 위로. 「지금 보이는 놈」과 「여태 잡은 놈」은 같은 질문
     //     (이놈이 센가)의 앞뒤라, 판이 둘일 까닭이 없었다.
+    /** 한 화면 둘이면 글자 키가 이동이 되므로 단추에 적는 키도 달라진다(`COOP_KEYS`). */
+    const coopKeys = !online && state.heroes.length > 1;
     const actions: PadAction[] = [
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
-        { label: "줍기", hint: ", 또는 g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
-        { label: "내려간다", hint: ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다" },
+        { label: "줍기", hint: ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
+        { label: "내려간다", hint: ">", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다" },
         {
             label: "올라간다",
             hint: "< — 1층 계단은 증표가 있어야 열린다",
+            keys: "<",
             on: () => run({ t: "ascend" }),
             off: !onUpStairs
                 ? "계단 위가 아니다"
@@ -633,21 +818,23 @@ export default function Rogue() {
                   : undefined,
         },
         // 배낭에서 꺼내 쓰는 것들
-        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", on: () => setSheet("pack") },
-        { label: "마신다", hint: "q", on: () => openPicker(PICKERS.q), off: has("potion") ? undefined : "마실 것이 없다" },
-        { label: "읽는다", hint: "r", on: () => openPicker(PICKERS.r), off: has("scroll") ? undefined : "읽을 것이 없다" },
-        { label: "먹는다", hint: "e", on: () => openPicker(PICKERS.e), off: has("food") ? undefined : "먹을 것이 없다" },
-        { label: "쏜다", hint: "z", on: () => aimAfterPick("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
+        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", keys: coopKeys ? "R · P" : "i", on: () => desks.current[who]?.togglePack() },
+        { label: "마신다", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
+        { label: "읽는다", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
+        { label: "먹는다", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
+        { label: "쏜다", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
         {
             label: "던진다",
             hint: "t",
-            on: () => aimAfterPick("throw"),
+            keys: coopKeys ? undefined : "t",
+            on: () => desks.current[who]?.aim("throw"),
             off: hero.pack.some(isThrowable) ? undefined : "던질 만한 것이 없다",
         },
         // 살피는 것 · 그 밖
-        { label: "뒤진다", hint: "s — 숨은 문과 함정", on: () => run({ t: "search" }) },
+        { label: "뒤진다", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
         {
             label: "도감",
+            keys: coopKeys ? undefined : "x",
             hint: `x — 몬스터 ${progress.found}/${progress.total} · 아이템 ${itemProg.identifiedCount}/${itemProg.totalCount}`,
             on: () => setSheet("bestiary"),
         },
@@ -657,224 +844,8 @@ export default function Rogue() {
     // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
     // 차서 정작 무슨 일이 났는지가 밀려난다. 계산은 기록 판이 전부 갖고 있다.
     const recent = state.messages.filter((m) => !isDetail(m)).slice(-2);
-    const pickable = picker
-        ? hero.pack.filter((p) => picker.kinds.includes(p.kind) && (!picker.allow || picker.allow(p)))
-        : [];
-    const hpLow = hero.hp <= hero.maxHp / 4;
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
-    /**
-     * 지금 고르는 것이 **강화할 대상**인가 — 그러면 줄마다 거는 값을 적는다.
-     * 재련이면 `null` 이다(재련은 수치를 올리는 것이 아니라 종류를 바꾸는 것이라 적을 값이 없다).
-     */
-    const enchantStyle = picker && pendingEnchant.current ? pendingEnchantStyle.current : null;
-
-    /**
-     * 고르는 줄의 「→ +N (…)」 — **값은 전부 엔진의 표에서 온다**(`enchantOdds`·`enchantSafeMax`).
-     *
-     * 확률을 감추면 이건 판단이 아니라 그냥 동전 던지기다. 내 물건의 값이라 가릴 까닭도 없다.
-     * 축복은 안전 구간 안에서 **범위**를 적는다 — 한 번에 `1~3` 칸이 오르기 때문이고,
-     * 천장 위에서는 굴림이 일반과 같아서 같은 줄을 적는다.
-     */
-    const enchantHint = (it: Item, style: "plain" | "blessed") => {
-        const plus = enchantOf(it);
-        const safeMax = enchantSafeMax(it.kind);
-        if (style === "blessed" && plus < safeMax) {
-            const lo = Math.min(plus + 1, safeMax);
-            const hi = Math.min(plus + 3, safeMax);
-            return (
-                <span className="text-[var(--rg-muted)]">
-                    {" "}→ +{lo}
-                    {hi > lo ? `~+${hi}` : ""} <span className="text-[var(--rg-ring)]">(안전)</span>
-                </span>
-            );
-        }
-        const odds = enchantOdds(plus, it.kind);
-        return (
-            <span className="text-[var(--rg-muted)]">
-                {" "}→ +{plus + 1}{" "}
-                <span
-                    className={
-                        odds >= 1
-                            ? "text-[var(--rg-ring)]"
-                            : odds < 0.4
-                              ? "text-[var(--rg-trap)]"
-                              : "text-[var(--rg-gold)]"
-                    }
-                >
-                    ({Math.round(odds * 100)}%{odds >= 1 ? " 안전" : ""})
-                </span>
-            </span>
-        );
-    };
-
-    /** 이 물건으로 지금 할 수 있는 일 — **규칙이 아니라 목록**이다. 눌러도 규칙이 다시 본다. */
-    const actionsFor = (it: Item): { label: string; on: () => void }[] => {
-        const out: { label: string; on: () => void }[] = [];
-        const worn =
-            it.id === hero.weaponId ||
-            it.id === hero.armorId ||
-            it.id === hero.leftRingId ||
-            it.id === hero.rightRingId;
-        const go = (cmd: Command) => () => {
-            run(cmd);
-            setChosen(null);
-        };
-        /**
-         * 모루 줄 — **무기에도 갑옷에도 붙는다.**
-         *
-         * 나올 것이 없으면(화살 한 대 같은 것) 눌러도 아무 일이 안 나므로 아예 안 세운다:
-         * 눌러도 안 되는 줄은 고장처럼 읽힌다.
-         *
-         * **「최대」라고 적는다.** 강화 칸은 확률로 돌아오므로(`MELT_RETURN`) 장수를
-         * 단언하면 화면이 거짓말을 한다 — 이 게임에서 화면이 적는 확률과 엔진이 굴리는
-         * 확률은 같은 자리(`items`)에서 온다.
-         */
-        const meltRow = () => {
-            if (!onAnvil) return;
-            const { sure, risky } = meltYield(it);
-            if (sure + risky <= 0) return;
-            const odds = Math.round(MELT_RETURN * 100);
-            out.push({
-                label:
-                    risky > 0
-                        ? `녹인다 (최대 ${meltMax(it)}장 · 강화분 ${odds}%)`
-                        : `녹인다 (주문서 ${meltMax(it)}장)`,
-                on: go({ t: "melt", letter: it.letter! }),
-            });
-        };
-
-        switch (it.kind) {
-            case "weapon":
-                if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
-                if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
-                    out.push({
-                        label: "보석 세공 (모루)",
-                        on: () => {
-                            const gearLetter = it.letter!;
-                            setChosen(null);
-                            setSheet("none");
-                            setPicker({
-                                title: "어느 보석을 세공할까",
-                                kinds: ["gem"],
-                                empty: "세공할 보석이 없다.",
-                                make: (gemLetter) => ({ t: "socket", gearLetter, gemLetter }),
-                            });
-                        },
-                    });
-                }
-                meltRow();
-                break;
-            case "armor":
-                if (!worn) out.push({ label: "입는다", on: go({ t: "wear", letter: it.letter! }) });
-                if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
-                    out.push({
-                        label: "보석 세공 (모루)",
-                        on: () => {
-                            const gearLetter = it.letter!;
-                            setChosen(null);
-                            setSheet("none");
-                            setPicker({
-                                title: "어느 보석을 세공할까",
-                                kinds: ["gem"],
-                                empty: "세공할 보석이 없다.",
-                                make: (gemLetter) => ({ t: "socket", gearLetter, gemLetter }),
-                            });
-                        },
-                    });
-                }
-                meltRow();
-                break;
-            case "ring":
-                if (worn) out.push({ label: "뺀다", on: go({ t: "removeRing", letter: it.letter! }) });
-                else out.push({ label: "낀다", on: go({ t: "putOn", letter: it.letter! }) });
-                break;
-            case "relic":
-                if (it.type === "time_hourglass") {
-                    if (it.relicCooldown && it.relicCooldown > 0) {
-                        out.push({
-                            label: `모래시계 쿨다운 (${it.relicCooldown}턴)`,
-                            on: () => {},
-                        });
-                    } else {
-                        out.push({
-                            label: "시간 정지 (3턴)",
-                            on: go({ t: "use_relic", letter: it.letter! }),
-                        });
-                    }
-                }
-                break;
-            case "gem":
-                if (onAnvil) {
-                    out.push({
-                        label: "보석 세공 (장비 장착)",
-                        on: () => {
-                            const gemLetter = it.letter!;
-                            setChosen(null);
-                            setSheet("none");
-                            setPicker({
-                                title: "어느 장비에 세공할까",
-                                kinds: ["weapon", "armor"],
-                                allow: (p) => !p.socketGem,
-                                empty: "소켓이 비어있는 장비가 없다.",
-                                make: (gearLetter) => ({ t: "socket", gearLetter, gemLetter }),
-                            });
-                        },
-                    });
-                }
-                break;
-            case "potion":
-                out.push({ label: "마신다", on: go({ t: "quaff", letter: it.letter! }) });
-                break;
-            case "scroll":
-                // **배낭에서 읽어도 같은 길로 보낸다.** 강화 주문서는 고를 것을 한 번 더
-                // 묻는데, 여기서 `read` 를 곧장 던지면 대상이 없어 **아무 일도 안 난다** —
-                // 화면은 멀쩡하고 주문서만 그대로 남아서 고장처럼 읽힌다.
-                out.push({
-                    label: "읽는다",
-                    on: () => {
-                        setChosen(null);
-                        setSheet("none");
-                        readScroll(it.letter!);
-                    },
-                });
-                break;
-            case "food":
-                out.push({ label: "먹는다", on: go({ t: "eat", letter: it.letter! }) });
-                break;
-            case "wand":
-                out.push({
-                    label: "쏜다",
-                    on: () => {
-                        setChosen(null);
-                        setSheet("none");
-                        setAiming({
-                            title: "어디로 쏠까",
-                            what: `${name(it)} 를 겨눕니다.`,
-                            make: (dx, dy) => ({ t: "zap", letter: it.letter!, dx, dy }),
-                        });
-                    },
-                });
-                break;
-        }
-        if (isThrowable(it)) {
-            out.push({
-                label: "던진다",
-                on: () => {
-                    setChosen(null);
-                    setSheet("none");
-                    setAiming({
-                        title: "어디로 던질까",
-                        what: `${name(it)} 를 던집니다.`,
-                        make: (dx, dy) => ({ t: "throw", letter: it.letter!, dx, dy }),
-                    });
-                },
-            });
-        }
-        if (it.kind !== "amulet") out.push({ label: "내려놓는다", on: go({ t: "drop", letter: it.letter! }) });
-        return out;
-    };
-
     return (
         <div className="relative flex h-full w-full flex-col bg-[var(--rg-bg)] text-[var(--rg-text)]">
             {/* 맨 위 두 줄 — 원작의 메시지 줄이다. 높이를 고정해 둔다: 줄 수가 들쭉날쭉하면
@@ -906,7 +877,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} cellFlashes={cellFlashes} shake={shake} />
+                <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} />
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -927,188 +898,111 @@ export default function Rogue() {
             {/* 상태 줄 — 원작의 맨 아랫줄.
                 **한 줄로 묶어 둔다.** 접히게 두면 좁은 폰에서 「금화」가 둘째 줄로 내려가
                 그만큼 지도가 줄고, 값이 하나 늘 때마다 지도의 높이가 달라진다. 넘치면
-                옆으로 민다 — 세로는 지도의 것이다. */}
-            <div className="flex shrink-0 gap-x-3 overflow-x-auto whitespace-nowrap border-t border-[var(--rg-line-faint)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-muted)] [scrollbar-width:none] sm:text-[13px]">
-                <span className="text-[var(--rg-strong)] font-semibold">
-                    {ORIGINS[hero.origin ?? "knight"]?.icon} {ORIGINS[hero.origin ?? "knight"]?.name}
-                </span>
-                <span>Level: {level.depth}</span>
-                <span className="text-[var(--rg-gold)]">Gold: {hero.gold}</span>
-                <span className={hpLow ? "text-[var(--rg-trap)] font-bold" : undefined}>
-                    Hp: {hero.hp}({hero.maxHp})
-                </span>
-                <span>Str: {heroStr(hero)}({hero.maxStr})</span>
-                <span>Arm: {heroArmor(hero)}</span>
-                <span>Exp: {hero.level}/{hero.exp}</span>
-                {level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
-                    <span className="text-[var(--rg-gold)] font-medium">
-                        {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
-                    </span>
-                )}
-                {(hero.timeStop ?? 0) > 0 && (
-                    <span className="text-[var(--rg-wand)] font-bold">TimeStop({hero.timeStop})</span>
-                )}
-                {rings.length > 0 && <span className="text-[var(--rg-ring)]">Ring: {rings.length}</span>}
-                {hero.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded</span>}
-                {hero.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
-                {hero.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
-                {hero.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                {hunger && <span className="text-[var(--rg-monster)] font-bold">{hunger}</span>}
-                {hero.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
-            </div>
+                옆으로 민다 — 세로는 지도의 것이다.
+
+                **둘이면 사람마다 한 줄**이다. 동료의 체력·배고픔을 늘 봐야 하는데 조종을
+                넘겨야 보이면 늦는다. 줄머리의 이름표는 지도의 `@` 와 같은 글자색·바닥색이고,
+                누르면 조종이 넘어간다(조종 중인 쪽은 테두리). 층은 하나라 첫 줄에만 적는다. */}
+            {(state.heroes.length > 1 ? state.heroes : [hero]).map((h, i) => {
+                const coop = state.heroes.length > 1;
+                const hHunger = hungerOf(h);
+                const hRings = wornRings(h).length;
+                return (
+                    <div
+                        key={i}
+                        className={`flex shrink-0 items-center gap-x-3 overflow-x-auto whitespace-nowrap px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-muted)] [scrollbar-width:none] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                    >
+                        {coop && (
+                            <button
+                                type="button"
+                                // **쓰러진 사람에게는 조종을 안 넘긴다** — 넘겨 봐야 아무
+                                // 명령도 안 먹는다(엔진이 막는다). 자물쇠는 둘이다.
+                                onClick={() => h.hp > 0 && !online && setWho(i)}
+                                disabled={h.hp <= 0 || !!online}
+                                className={`shrink-0 rounded-[2px] border-2 px-1.5 font-bold ${i === who ? "" : "border-transparent"}`}
+                                style={{ color: PARTY_INK[i], backgroundColor: PARTY_BG[i], borderColor: i === who ? PARTY_INK[i] : undefined }}
+                            >
+                                {h.hp > 0 ? "@" : "†"}{i === 0 ? "1P" : "2P"}
+                            </button>
+                        )}
+                        <span className="text-[var(--rg-strong)] font-semibold">
+                            {ORIGINS[h.origin ?? "knight"]?.icon} {ORIGINS[h.origin ?? "knight"]?.name}
+                        </span>
+                        {i === 0 && <span>Level: {level.depth}</span>}
+                        <span className="text-[var(--rg-gold)]">Gold: {h.gold}</span>
+                        <span className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)] font-bold" : undefined}>
+                            Hp: {h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
+                        </span>
+                        <span>Str: {heroStr(h)}({h.maxStr})</span>
+                        <span>Arm: {heroArmor(h)}</span>
+                        <span>Exp: {h.level}/{h.exp}</span>
+                        {i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
+                            <span className="text-[var(--rg-gold)] font-medium">
+                                {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
+                            </span>
+                        )}
+                        {(h.timeStop ?? 0) > 0 && (
+                            <span className="text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
+                        )}
+                        {hRings > 0 && <span className="text-[var(--rg-ring)]">Ring: {hRings}</span>}
+                        {h.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded</span>}
+                        {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
+                        {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
+                        {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
+                        {hHunger && <span className="text-[var(--rg-monster)] font-bold">{hHunger}</span>}
+                        {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
+                        {coop && i === state.heroes.length - 1 && (
+                            <span className="text-[var(--rg-faint)]">
+                                {online
+                                    ? `온라인 방 ${room} · ${online === "host" ? "내가 방장" : "내가 동료"}${linked ? "" : " · 잇는 중…"}`
+                                    : "? 조작"}
+                            </span>
+                        )}
+                    </div>
+                );
+            })}
 
             <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
                 <TouchPad
+                    dirKeys={
+                        coopKeys
+                            ? [
+                                  { ink: PARTY_INK[0], keys: ["Q", "W", "E", "A", "S", "D", "Z", "X", "C"] },
+                                  { ink: PARTY_INK[1], keys: ["U", "I", "O", "J", "K", "L", "M", ",", "."] },
+                              ]
+                            : [{ keys: ["y", "k", "u", "h", ".", "l", "b", "j", "n"] }]
+                    }
                     onMove={(dx, dy) => {
-                        if (aiming) {
-                            if (dx === 0 && dy === 0) return;
-                            run(aiming.make(dx, dy));
-                            setAiming(null);
-                            return;
-                        }
+                        if (coopKeys && dx === 0 && dy === 0) return confirm(who);
+                        if (desks.current[who]?.aimAt(dx, dy)) return;
                         run(dx === 0 && dy === 0 ? { t: "rest" } : { t: "move", dx, dy });
                     }}
                     actions={actions}
                     // 겨누는 중에는 연타를 끈다 — 한 번 고르면 끝나는 판이다.
-                    hold={!aiming}
+                    hold={modes[who] !== "aim"}
                 />
             </div>
 
             {/* ── 덮는 판들 ───────────────────────────────────────────── */}
-            {aiming && (
-                <Aim
-                    title={aiming.title}
-                    what={aiming.what}
-                    onPick={(dx, dy) => {
-                        run(aiming.make(dx, dy));
-                        setAiming(null);
+            {/* 사람마다의 책상 — 둘이서면 제 반쪽에, 혼자면 한가운데. */}
+            {(coopKeys ? [0, 1] : [who]).map((w) => (
+                <Desk
+                    key={w}
+                    ref={(d) => {
+                        desks.current[w] = d;
                     }}
-                    onCancel={() => setAiming(null)}
+                    state={state}
+                    w={w}
+                    run={(cmd) => runAs(w, cmd)}
+                    side={coopKeys ? (w === 0 ? "left" : "right") : undefined}
+                    label={coopKeys ? (w === 0 ? "1P 방장" : "2P 동료") : undefined}
+                    accent={coopKeys ? PARTY_INK[w] : undefined}
+                    closeKey={coopKeys ? (w === 0 ? "F" : ";") : undefined}
+                    onMode={onDeskMode}
                 />
-            )}
+            ))}
 
-            {picker && !aiming && (
-                <Panel
-                    title={picker.title}
-                    onClose={() => {
-                        pendingAim.current = null;
-                        pendingEnchant.current = null;
-                        pendingEnchantStyle.current = null;
-                        setPicker(null);
-                    }}
-                    footer={
-                        // 안전 구간 숫자도 **엔진의 표에서** 읽는다 — 여기 적어 두면 표를 고친 날
-                        // 화면만 옛말을 하게 된다.
-                        enchantStyle === "blessed"
-                            ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
-                            : enchantStyle
-                              ? `실패하면 그 물건은 부서집니다. 무기는 +${enchantSafeMax("weapon")}, 갑옷은 +${enchantSafeMax("armor")} 까지 안전합니다.`
-                              : "글자를 누르거나 줄을 눌러 고릅니다."
-                    }
-                >
-                    {pickable.length === 0 ? (
-                        <p className="text-[var(--rg-faint)]">{picker.empty}</p>
-                    ) : (
-                        <ul className="space-y-1">
-                            {pickable.map((it) => (
-                                <li key={it.id}>
-                                    <button
-                                        type="button"
-                                        className="w-full rounded-[2px] px-1 text-left hover:bg-[var(--rg-raised)]"
-                                        onClick={() => choosePicked(it.letter!)}
-                                    >
-                                        {/* 자리가 없으면 `?` — 「undefined) 식량」이 화면에 뜨면 안 된다. 되읽을 때
-                                            `storage.fixLetters` 가 메우지만 끝내 못 메우는 경우가 남는다. */}
-                                        {/* 위와 같다 — 화면에 `undefined` 를 내보내지 않는다. */}
-                                            <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
-                                        {/* **거는 값을 숫자로 보여 준다** — `enchantHint` 한 자리에서. */}
-                                        {enchantStyle && enchantHint(it, enchantStyle)}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Panel>
-            )}
-
-            {sheet === "pack" && !aiming && (
-                <Panel
-                    title={`배낭 (${hero.pack.length}/26)`}
-                    onClose={() => {
-                        setChosen(null);
-                        setSheet("none");
-                    }}
-                    footer="물건을 누르면 할 수 있는 일이 뜹니다."
-                >
-                    {hero.pack.length === 0 ? (
-                        <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
-                    ) : (
-                        <ul className="space-y-1">
-                            {hero.pack.map((it) => {
-                                const open = chosen === it.id;
-                                const worn =
-                                    it.id === hero.weaponId
-                                        ? "쥐고 있다"
-                                        : it.id === hero.armorId
-                                          ? "입고 있다"
-                                          : it.id === hero.leftRingId || it.id === hero.rightRingId
-                                            ? "끼고 있다"
-                                            : null;
-                                return (
-                                    <li key={it.id}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setChosen(open ? null : it.id)}
-                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
-                                        >
-                                            <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
-                                            {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
-                                            {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
-                                                값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
-                                                모르는 물건은 기본값만 — 화면이 속을 흘리면 안 된다. */}
-                                            {(it.kind === "weapon" || it.kind === "armor") && (
-                                                <span className="text-[var(--rg-faint)]"> {itemPower(it, state.known)}</span>
-                                            )}
-                                            {worn && <span className="text-[var(--rg-muted)]"> ({worn})</span>}
-                                        </button>
-                                        {open && (
-                                            <div className="my-1 flex flex-wrap gap-1 pl-5">
-                                                {actionsFor(it).map((a) => (
-                                                    <button
-                                                        key={a.label}
-                                                        type="button"
-                                                        onClick={a.on}
-                                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-[var(--rg-strong)] active:translate-y-px"
-                                                    >
-                                                        {a.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-                    <div className="mt-3 space-y-0.5 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-faint)]">
-                        <div>
-                            무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"} · 갑옷{" "}
-                            {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"}
-                        </div>
-                        <div>
-                            반지 {rings.length ? rings.map(name).join(" · ") : "없음"} · 한 걸음에 배고픔{" "}
-                            {hungerRate(hero)}
-                        </div>
-                        {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
-                        <div className="text-[var(--rg-muted)]">
-                            지금 명중 {signed(heroHitBonus(hero, state.known))} · 피해{" "}
-                            {heroAttackText(hero, state.known)} · 방어력 {heroDefense(hero)}
-                        </div>
-                    </div>
-                </Panel>
-            )}
-
-            {sheet === "bestiary" && !aiming && (
+            {sheet === "bestiary" && (
                 <Panel
                     title={
                         codexTab === "monster"
@@ -1578,11 +1472,79 @@ export default function Rogue() {
 
             {/* 걸으면서 쓰지 않는 것들이 여기 모인다. 단추 판에 나란히 세워 두면
                 「도움말」이 「마신다」와 같은 무게로 보이고, 급할 때 손가락이 헤맨다. */}
-            {sheet === "options" && !aiming && (
+            {sheet === "options" && (
                 <Panel title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
                     <ul className="space-y-1">
                         {[
-                            { label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => setSheet("origins") },
+                            { label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => {
+                                    setOriginFor({ t: "new" });
+                                    setSheet("origins");
+                                } },
+                            // **한 번 누르는 것이라 여기 있다.** 던전을 걷는 동안 누르는
+                            // 것만 단추 판에 선다(`CLAUDE.md`).
+                            ...(state.heroes.length > 1
+                                ? online
+                                    ? []
+                                    : [
+                                          {
+                                              label: "동료 보내기 (다시 혼자로)",
+                                              hint: state.heroes[0].hp > 0 ? "이 판 안에서는 다시 부르면 직업·배낭 그대로 돌아온다" : "방장이 쓰러져 있으면 못 보낸다",
+                                              go: () => {
+                                                  setState((g) => (g ? leaveGame(g) : g));
+                                                  setWho(0);
+                                                  setSheet("none");
+                                              },
+                                          },
+                                      ]
+                                : [
+                                      {
+                                          label: state.benched ? "동료 다시 부르기 (한 화면에서 둘)" : "동료 부르기 (한 화면에서 둘)",
+                                          hint: state.benched
+                                              ? `보냈던 ${ORIGINS[state.benched.origin ?? "knight"]?.name} Lv ${state.benched.level} — 배낭 그대로`
+                                              : "직업을 고르면 내 곁에 선다",
+                                          go: () => {
+                                              // 보냈던 동료는 **직업을 다시 안 묻는다** — 그 사람이 돌아온다.
+                                              if (state.benched) {
+                                                  setState((g) => (g ? joinGame(g) : g));
+                                                  setSheet("none");
+                                                  return;
+                                              }
+                                              setOriginFor({ t: "mate" });
+                                              setSheet("origins");
+                                          },
+                                      },
+                                  ]),
+                            ...(room
+                                ? [
+                                      {
+                                          label: `온라인 방 나가기 (${room})`,
+                                          hint: linked ? "연결됨" : "상대를 기다리는 중",
+                                          go: () => {
+                                              closeRoom("방을 닫았다.");
+                                              setSheet("none");
+                                          },
+                                      },
+                                  ]
+                                : [
+                                      {
+                                          label: "온라인 방 만들기",
+                                          hint: "코드 네 자리를 동료에게 알려 준다 — 지금 판에 들어온다",
+                                          go: () => {
+                                              void hostRoom();
+                                              setSheet("none");
+                                          },
+                                      },
+                                      {
+                                          label: "온라인 방 들어가기",
+                                          hint: "동료가 알려 준 코드로 — 내 저장 판은 그대로 남는다",
+                                          go: () => {
+                                              const code = window.prompt("방 코드 네 자리")?.trim();
+                                              if (!code) return;
+                                              setOriginFor({ t: "guest", code });
+                                              setSheet("origins");
+                                          },
+                                      },
+                                  ]),
                             { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
                             {
                                 label: "지난 판",
@@ -1611,10 +1573,13 @@ export default function Rogue() {
 
             {sheet === "origins" && (
                 <Panel
-                    title="출신(직업) 선택"
+                    title={originFor.t === "new" ? "출신(직업) 선택" : "2P 동료의 출신(직업) 선택"}
+                    accent={originFor.t === "new" ? undefined : PARTY_INK[1]}
                     onClose={() => {
-                        if (state && state.phase === "playing") setSheet("none");
-                        else startWithOrigin("knight");
+                        if (originFor.t !== "new" || (state && state.phase === "playing")) {
+                            setOriginFor({ t: "new" });
+                            setSheet("none");
+                        } else startWithOrigin("knight");
                     }}
                 >
                     <div className="space-y-2 text-xs">
@@ -1626,7 +1591,7 @@ export default function Rogue() {
                                 <button
                                     key={orig.id}
                                     type="button"
-                                    onClick={() => startWithOrigin(orig.id)}
+                                    onClick={() => pickOrigin(orig.id)}
                                     className="flex flex-col text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus:outline-none"
                                 >
                                     <div className="flex items-center justify-between gap-1 mb-1">
@@ -1655,6 +1620,32 @@ export default function Rogue() {
 
             {sheet === "help" && (
                 <Panel title="조작" onClose={() => setSheet("none")} footer="죽으면 그것으로 끝입니다. 저장은 자동이고, 되돌리기는 없습니다.">
+                    {/* **한 화면 둘이면 그 키를 보여 준다** — 혼자 키를 늘어놓으면 반은 안 먹는 키다. */}
+                    {!online && state.heroes.length > 1 ? (
+                        <div className="space-y-3">
+                            {[
+                                { name: "방장 — 왼손", move: "W A X D", diag: "Q E Z C", act: "S (가운데)", pack: "R · Tab", cancel: "F" },
+                                { name: "동료 — 오른손", move: "I J , L (방향키도)", diag: "U O M .", act: "K (가운데) · Enter", pack: "P", cancel: ";" },
+                            ].map((k, i) => (
+                                <div key={k.name}>
+                                    <p className="mb-1 font-bold" style={{ color: PARTY_INK[i] }}>@ {k.name}</p>
+                                    <dl className="grid grid-cols-[7.5em_1fr] gap-y-1">
+                                        <dt className="text-[var(--rg-label)]">{k.move}</dt><dd>위 왼 아래 오른쪽</dd>
+                                        <dt className="text-[var(--rg-label)]">{k.diag}</dt><dd>대각선 — 왼위 · 오른위 · 왼아래 · 오른아래</dd>
+                                        <dt className="text-[var(--rg-label)]">{k.act}</dt><dd><b>확인</b> — 걸을 때는 발밑에 물건이 있으면 줍고, 계단이면 내려가고, 아니면 뒤진다. 배낭·고르기에서는 고른다. 화면 방향판의 가운데 단추도 같다</dd>
+                                        <dt className="text-[var(--rg-label)]">{k.pack}</dt><dd><b>내 배낭</b> — 화면의 내 반쪽에 열린다. 위아래로 줄을 옮기고 확인으로 짚은 뒤, 좌우로 할 일을 골라 확인으로 한다. 다시 누르면 닫힌다</dd>
+                                        <dt className="text-[var(--rg-label)]">{k.cancel}</dt><dd><b>취소</b> — 내 판만 한 단계 물린다(짚은 줄 풀기 → 닫기). Esc 는 둘이서는 안 쓴다</dd>
+                                    </dl>
+                                </div>
+                            ))}
+                            <dl className="grid grid-cols-[7.5em_1fr] gap-y-1 border-t border-[var(--rg-line-soft)] pt-2">
+                                <dt className="text-[var(--rg-label)]">&lt;</dt><dd>올라간다 — 실수로 오르지 않게 행동 키에서 뺐습니다 (마지막에 움직인 사람)</dd>
+                                <dt className="text-[var(--rg-label)]">?</dt><dd>이 화면 (도감은 단추로 — <b>X</b> 는 방장의 아래쪽이다)</dd>
+                                <dt className="text-[var(--rg-label)]">단추 판</dt><dd>마지막에 움직인 사람이 합니다 — 파티 줄을 눌러 바꿀 수도 있습니다</dd>
+                                <dt className="text-[var(--rg-label)]">쓰러지면</dt><dd>살아 있는 사람이 층을 넘으면 절반의 체력으로 일어납니다</dd>
+                            </dl>
+                        </div>
+                    ) : (
                     <dl className="grid grid-cols-[7.5em_1fr] gap-y-1">
                         <dt className="text-[var(--rg-label)]">h j k l</dt><dd>왼 아래 위 오른쪽 (방향키도 됩니다)</dd>
                         <dt className="text-[var(--rg-label)]">y u b n</dt><dd>대각선 넷</dd>
@@ -1668,14 +1659,16 @@ export default function Rogue() {
                         <dt className="text-[var(--rg-label)]">z t</dt><dd>지팡이를 쏜다 · 던진다 (고른 뒤 방향)</dd>
                         <dt className="text-[var(--rg-label)]">d</dt><dd>내려놓는다</dd>
                         <dt className="text-[var(--rg-label)]">x</dt><dd><b>도감</b> — 지금 보이는 놈과 여태 잡은 놈 (턴을 안 씁니다)</dd>
+                        <dt className="text-[var(--rg-label)]">온라인</dt><dd>옵션의 「온라인 방」 — 각자 이 키를 그대로 씁니다</dd>
                         <dt className="text-[var(--rg-label)]">i m ?</dt><dd>배낭 · 기록 · 이 화면 (기록은 <b>맨 위 메시지 줄</b>을 눌러도 열립니다)</dd>
                     </dl>
+                    )}
                     <div className="mt-3 space-y-1 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-muted)]">
                         <p className="text-[var(--rg-strong)]">
                             갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
                             키보드로는 <b>W</b>.
                         </p>
-                        <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">*</span> 금화 · <span className="text-[var(--rg-potion)]">!</span> 물약 · <span className="text-[var(--rg-scroll)]">?</span> 주문서</p>
+                        <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">*</span> 금화 · <span className="text-[var(--rg-potion)]">!</span> 물약 · <span className="text-[var(--rg-scroll)]">?</span> 주문서</p>
                         <p><span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
                         <p><span className="text-[var(--rg-trap)]">^</span> 함정 · <span className="text-[var(--rg-stairs)]">&gt;</span> 아래 계단 · <span className="text-[var(--rg-stairs)]">&lt;</span> 위 계단 · <span className="text-[var(--rg-door)]">+</span> 문</p>
                         <p className="pt-1 text-[var(--rg-faint)]">
@@ -2006,7 +1999,7 @@ export default function Rogue() {
                 )
             )}
 
-            {state.phase !== "playing" && sheet === "none" && !picker && !aiming && (
+            {state.phase !== "playing" && sheet === "none" && modes.every((m) => m === "none") && (
                 <Panel
                     title={state.phase === "won" ? "살아 돌아왔다" : "여기 잠들다"}
                     footer={

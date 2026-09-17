@@ -20,7 +20,7 @@ import { makeItem } from "@/lib/rogue/items";
 import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero } from "@/lib/rogue/hero";
 
 /** 지금 내 방어력. */
-const heroDefenseOf = (s: { hero: Parameters<typeof heroDefense>[0] }) => heroDefense(s.hero);
+const heroDefenseOf = (s: { heroes: Parameters<typeof heroDefense>[0][] }) => heroDefense(s.heroes[0]);
 import { Rng } from "@/lib/rogue/rng";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 
@@ -196,9 +196,9 @@ test("체력은 굴리지 않는다 — 종마다도, 레벨업도 고정", () =
 /** 옆에 몬스터 하나를 세우고 그 판을 준다. */
 function duel(seed: number, ch: string, hp = 99999) {
     const s = newGame(seed);
-    s.hero.hp = s.hero.maxHp = 99999;
-    const x = s.hero.x + 1;
-    const y = s.hero.y;
+    s.heroes[0].hp = s.heroes[0].maxHp = 99999;
+    const x = s.heroes[0].x + 1;
+    const y = s.heroes[0].y;
     s.level.tiles[idx(x, y)] = 1;
     s.level.monsters = [];
     const m = spawnMonster(ch, x, y, new Rng(7));
@@ -217,17 +217,17 @@ test("갑옷이 두꺼우면 0, 맨몸이면 그대로 들어온다", () => {
         const { s, m } = duel(800, "I");
         const plate = makeItem("armor", "plate mail", 900, -1, -1);
         plate.plusArmor = 2; // 방어력 9
-        s.hero.pack.push(plate);
-        s.hero.armorId = plate.id;
+        s.heroes[0].pack.push(plate);
+        s.heroes[0].armorId = plate.id;
 
         const rng = new Rng(5);
         let blocked = 0;
         let hurt = 0;
         for (let i = 0; i < 300; i++) {
-            const before = s.hero.hp;
-            const r = monsterAttack(s, m, rng);
+            const before = s.heroes[0].hp;
+            const r = monsterAttack(s, m, s.heroes[0], rng);
             if (!r.hit) continue;
-            if (s.hero.hp === before) blocked++;
+            if (s.heroes[0].hp === before) blocked++;
             else hurt++;
         }
         assert.ok(blocked > 0, "판금을 입고 얼음괴물에게 삼백 번 맞았는데 한 번도 안 튕겼다");
@@ -237,14 +237,14 @@ test("갑옷이 두꺼우면 0, 맨몸이면 그대로 들어온다", () => {
     // ── 맨몸이면 공격력이 그대로 들어온다
     {
         const { s, m } = duel(801, "H"); // 홉고블린 1d8
-        s.hero.armorId = null;
+        s.heroes[0].armorId = null;
         assert.equal(heroDefenseOf(s), 0, "맨몸인데 방어력이 있다");
         const rng = new Rng(6);
         let hurt = 0;
         for (let i = 0; i < 200; i++) {
-            const before = s.hero.hp;
-            monsterAttack(s, m, rng);
-            if (s.hero.hp < before) hurt++;
+            const before = s.heroes[0].hp;
+            monsterAttack(s, m, s.heroes[0], rng);
+            if (s.heroes[0].hp < before) hurt++;
         }
         assert.ok(hurt > 20, `맨몸으로 이백 번 맞았는데 ${hurt} 번만 아팠다`);
     }
@@ -257,16 +257,16 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
         const { s, m } = duel(802, "T"); // 트롤 1d8 · 1d8 · 2d6
         s.bestiary.T = 1;
         const chain = makeItem("armor", "chain mail", 901, -1, -1);
-        s.hero.pack.push(chain);
-        s.hero.armorId = chain.id;
+        s.heroes[0].pack.push(chain);
+        s.heroes[0].armorId = chain.id;
         const guard = heroDefenseOf(s);
         assert.ok(guard > 0);
 
         const rng = new Rng(7);
         let checked = 0;
         for (let i = 0; i < 300; i++) {
-            const before = s.hero.hp;
-            const r = monsterAttack(s, m, rng);
+            const before = s.heroes[0].hp;
+            const r = monsterAttack(s, m, s.heroes[0], rng);
             const line = r.messages.find((l) => l.startsWith("· 공격력 "));
             if (!line) continue;
 
@@ -292,7 +292,7 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
                 );
             }
             // 줄에 적힌 합이 실제로 깎인 체력과 같다.
-            const lost = before - s.hero.hp;
+            const lost = before - s.heroes[0].hp;
             assert.equal(blows.reduce((n, b) => n + Number(b[4]), 0), lost, `줄의 합과 깎인 체력이 다르다: ${line}`);
             checked++;
         }
@@ -304,12 +304,12 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
         // 용(방어력 11)을 단검(1d6)으로 친다. 힘 보정을 빼면 절대 못 뚫는다.
         const { s, m } = duel(803, "D", 9999);
         const knife = makeItem("weapon", "dagger", 902, -1, -1);
-        s.hero.pack.push(knife);
-        s.hero.weaponId = knife.id;
-        s.hero.str = 3; // 힘 보정 −4
+        s.heroes[0].pack.push(knife);
+        s.heroes[0].weaponId = knife.id;
+        s.heroes[0].str = 3; // 힘 보정 −4
         const rng = new Rng(8);
         const before = m.hp;
-        for (let i = 0; i < 300; i++) heroAttack(s, m, rng);
+        for (let i = 0; i < 300; i++) heroAttack(s, s.heroes[0], m, rng);
         assert.equal(m.hp, before, "1d6−4 짜리가 방어력 11 을 뚫었다");
     }
 });

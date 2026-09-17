@@ -24,7 +24,8 @@ test("새 판은 내려온 계단 위에서 — 다만 함정으로 떨어지면
     {
         for (let seed = 1; seed <= 40; seed++) {
             const s = newGame(seed);
-            const { hero, level } = s;
+            const { level } = s;
+            const hero = s.heroes[0];
             assert.ok(walkable(level.tiles[idx(hero.x, hero.y)] as Tile), `시드 ${seed}: 벽에서 시작했다`);
             assert.equal(level.depth, 1);
             assert.equal(s.phase, "playing");
@@ -40,7 +41,7 @@ test("새 판은 내려온 계단 위에서 — 다만 함정으로 떨어지면
         for (let seed = 1; seed <= 60; seed++) {
             const s = newGame(seed);
             assert.deepEqual(
-                { x: s.hero.x, y: s.hero.y },
+                { x: s.heroes[0].x, y: s.heroes[0].y },
                 s.level.upStairs,
                 `시드 ${seed}: 내려온 계단이 아닌 데서 시작했다`,
             );
@@ -55,21 +56,21 @@ test("새 판은 내려온 계단 위에서 — 다만 함정으로 떨어지면
         let seen = false;
         for (let seed = 1; seed <= 60 && !seen; seed++) {
             let s = newGame(seed);
-            s.hero.x = s.level.stairs.x;
-            s.hero.y = s.level.stairs.y;
+            s.heroes[0].x = s.level.stairs.x;
+            s.heroes[0].y = s.level.stairs.y;
             s = perform(s, { t: "descend" }); // 2층 — 여기부터 함정이 있다
             // 옆 칸에 함정 문을 하나 놓고 걸어 들어간다.
             const dir = ALL_DIRS.find((d) =>
-                walkable(s.level.tiles[idx(s.hero.x + d.dx, s.hero.y + d.dy)] as Tile),
+                walkable(s.level.tiles[idx(s.heroes[0].x + d.dx, s.heroes[0].y + d.dy)] as Tile),
             );
             if (!dir) continue;
-            s.level.traps = [{ x: s.hero.x + dir.dx, y: s.hero.y + dir.dy, kind: "trapdoor", found: true }];
+            s.level.traps = [{ x: s.heroes[0].x + dir.dx, y: s.heroes[0].y + dir.dy, kind: "trapdoor", found: true }];
             s.level.monsters = [];
             const after = perform(s, { t: "move", dx: dir.dx, dy: dir.dy });
             if (after.level.depth !== 3) continue; // 떨어지기 전에 뭔가 딴 일이 났다
             seen = true;
             assert.notDeepEqual(
-                { x: after.hero.x, y: after.hero.y },
+                { x: after.heroes[0].x, y: after.heroes[0].y },
                 after.level.upStairs,
                 "떨어졌는데 계단 위에 섰다",
             );
@@ -83,19 +84,19 @@ test("한 걸음이 배고픔 하나 — 문턱에서만 단계가 바뀐다", (
     {
         let s0 = newGame(1);
         let blocked = ALL_DIRS.find(
-            (d) => !walkable(s0.level.tiles[idx(s0.hero.x + d.dx, s0.hero.y + d.dy)] as Tile),
+            (d) => !walkable(s0.level.tiles[idx(s0.heroes[0].x + d.dx, s0.heroes[0].y + d.dy)] as Tile),
         );
         for (let seed = 2; !blocked && seed <= 100; seed++) {
             s0 = newGame(seed);
             blocked = ALL_DIRS.find(
-                (d) => !walkable(s0.level.tiles[idx(s0.hero.x + d.dx, s0.hero.y + d.dy)] as Tile),
+                (d) => !walkable(s0.level.tiles[idx(s0.heroes[0].x + d.dx, s0.heroes[0].y + d.dy)] as Tile),
             );
         }
         assert.ok(blocked, "사방이 뚫린 자리에서 시작해 이 테스트를 못 한다");
-        const before = { turn: s0.turn, food: s0.hero.food };
+        const before = { turn: s0.turn, food: s0.heroes[0].food };
         const s1 = perform(s0, { t: "move", dx: blocked!.dx, dy: blocked!.dy });
         assert.equal(s1.turn, before.turn, "벽에 부딪혔는데 턴이 갔다");
-        assert.equal(s1.hero.food, before.food, "벽에 부딪혔는데 배가 고파졌다");
+        assert.equal(s1.heroes[0].food, before.food, "벽에 부딪혔는데 배가 고파졌다");
     }
 
     // ── 한 걸음에 배고픔이 1 준다
@@ -103,25 +104,25 @@ test("한 걸음이 배고픔 하나 — 문턱에서만 단계가 바뀐다", (
         // **지나간 턴 수와 줄어든 식량이 같아야 한다.** 「쉰 횟수」로 세면 안 된다 — 얼어
         // 붙거나 덫에 걸리면 명령을 넣어도 턴이 안 가고, 그때 이 테스트가 시드를 탄다.
         let s = newGame(11);
-        const start = s.hero.food;
+        const start = s.heroes[0].food;
         const startTurn = s.turn;
         for (let i = 0; i < 60; i++) s = perform(s, { t: "rest" });
         const turns = s.turn - startTurn;
         assert.ok(turns > 0, "한 턴도 안 갔다");
-        assert.equal(s.hero.food, start - turns, `턴 ${turns} 인데 식량은 ${start - s.hero.food} 줄었다`);
+        assert.equal(s.heroes[0].food, start - turns, `턴 ${turns} 인데 식량은 ${start - s.heroes[0].food} 줄었다`);
     }
 
     // ── 배고픔의 단계는 문턱에서만 바뀐다
     {
         const s = newGame(1);
-        s.hero.food = 1000;
-        assert.equal(hungerOf(s.hero), "");
-        s.hero.food = 300;
-        assert.equal(hungerOf(s.hero), "Hungry");
-        s.hero.food = 150;
-        assert.equal(hungerOf(s.hero), "Weak");
-        s.hero.food = 20;
-        assert.equal(hungerOf(s.hero), "Faint");
+        s.heroes[0].food = 1000;
+        assert.equal(hungerOf(s.heroes[0]), "");
+        s.heroes[0].food = 300;
+        assert.equal(hungerOf(s.heroes[0]), "Hungry");
+        s.heroes[0].food = 150;
+        assert.equal(hungerOf(s.heroes[0]), "Weak");
+        s.heroes[0].food = 20;
+        assert.equal(hungerOf(s.heroes[0]), "Faint");
     }
 });
 
@@ -130,15 +131,15 @@ test("1층은 증표로만 나가고, 아래층에서는 물러설 수 있다", 
     {
         const s0 = newGame(5);
         const up = s0.level.upStairs!;
-        s0.hero.x = up.x;
-        s0.hero.y = up.y;
+        s0.heroes[0].x = up.x;
+        s0.heroes[0].y = up.y;
         const s1 = perform(s0, { t: "ascend" });
         assert.equal(s1.phase, "playing");
         assert.equal(s1.level.depth, 1, "증표 없이 1층에서 나갔다");
         assert.ok(s1.messages.some((m) => m.includes("증표 없이")), s1.messages.slice(-3).join(" / "));
 
         // 증표를 쥐면 1층의 올라가는 계단이 곧 승리다.
-        s1.hero.hasAmulet = true;
+        s1.heroes[0].hasAmulet = true;
         const s2 = perform(s1, { t: "ascend" });
         assert.equal(s2.phase, "won");
         assert.ok(score(s2) >= 10000, "증표는 점수에 크게 얹힌다");
@@ -151,7 +152,7 @@ test("1층은 증표로만 나가고, 아래층에서는 물러설 수 있다", 
         assert.equal(s.deepest, 3);
 
         // 내려오면 올라가는 계단 위에 선다. 증표는 없다.
-        assert.equal(s.hero.hasAmulet, false);
+        assert.equal(s.heroes[0].hasAmulet, false);
         s = perform(s, { t: "ascend" });
         assert.equal(s.level.depth, 2, "증표가 없다고 아래층에서까지 막혔다");
         // 물러서도 점수는 안 깎인다 — 깊이는 **가 본 가장 깊은 곳**으로 잰다.
@@ -161,8 +162,8 @@ test("1층은 증표로만 나가고, 아래층에서는 물러설 수 있다", 
 
 /** 내려가는 계단 위로 옮겨 서서 한 층 내려간다 — 걸어가는 것은 이 테스트의 관심이 아니다. */
 function godown(s: GameState): GameState {
-    s.hero.x = s.level.stairs.x;
-    s.hero.y = s.level.stairs.y;
+    s.heroes[0].x = s.level.stairs.x;
+    s.heroes[0].y = s.level.stairs.y;
     return perform(s, { t: "descend" });
 }
 
@@ -211,9 +212,9 @@ test("되돌아간 층은 떠난 그대로다 — 지도도 물건도 안 불어
         let s = godown(newGame(58)); // 2층
         const dagger = makeItem("weapon", "dagger", 970, -1, -1);
         dagger.letter = "z";
-        s.hero.pack.push(dagger);
+        s.heroes[0].pack.push(dagger);
         s = perform(s, { t: "drop", letter: "z" });
-        const where = { x: s.hero.x, y: s.hero.y };
+        const where = { x: s.heroes[0].x, y: s.heroes[0].y };
         assert.ok(s.level.items.some((i) => i.id === 970), "안 내려놓아졌다");
 
         s = godown(s);
@@ -239,7 +240,7 @@ test("막 굴려도 안 터진다 — 스무 판 × 이천 턴", () => {
             else if (r < 84) cmd = { t: "ascend" };
             else if (r < 87) cmd = { t: "search" };
             else {
-                const it = rng.pick(s.hero.pack);
+                const it = rng.pick(s.heroes[0].pack);
                 const letter = it?.letter ?? "a";
                 const d = rng.pick(ALL_DIRS)!;
                 cmd =
@@ -267,26 +268,26 @@ test("막 굴려도 안 터진다 — 스무 판 × 이천 턴", () => {
 
             // 어떤 턴에도 깨지면 안 되는 것들.
             assert.ok(
-                walkable(s.level.tiles[idx(s.hero.x, s.hero.y)] as Tile),
+                walkable(s.level.tiles[idx(s.heroes[0].x, s.heroes[0].y)] as Tile),
                 `시드 ${seed} 턴 ${i}: 벽 속에 서 있다`,
             );
-            assert.ok(s.hero.hp <= s.hero.maxHp, "체력이 최대를 넘었다");
+            assert.ok(s.heroes[0].hp <= s.heroes[0].maxHp, "체력이 최대를 넘었다");
             assert.ok(s.level.depth >= 1, "0층으로 내려갔다");
             assert.ok(
                 s.level.monsters.every((m) => m.hp > 0),
                 "죽은 몬스터가 판에 남았다",
             );
             assert.ok(
-                new Set(s.hero.pack.map((p) => p.letter)).size === s.hero.pack.length,
+                new Set(s.heroes[0].pack.map((p) => p.letter)).size === s.heroes[0].pack.length,
                 "배낭에 같은 자리가 둘이다",
             );
             // 몸에 걸친 것은 반드시 배낭 안에 있다 — 밖에 있으면 화면이 유령을 그린다.
-            for (const id of [s.hero.weaponId, s.hero.armorId, s.hero.leftRingId, s.hero.rightRingId]) {
+            for (const id of [s.heroes[0].weaponId, s.heroes[0].armorId, s.heroes[0].leftRingId, s.heroes[0].rightRingId]) {
                 if (id === null) continue;
-                assert.ok(s.hero.pack.some((p) => p.id === id), `걸친 물건 ${id} 가 배낭에 없다`);
+                assert.ok(s.heroes[0].pack.some((p) => p.id === id), `걸친 물건 ${id} 가 배낭에 없다`);
             }
             assert.ok(
-                s.hero.leftRingId === null || s.hero.leftRingId !== s.hero.rightRingId,
+                s.heroes[0].leftRingId === null || s.heroes[0].leftRingId !== s.heroes[0].rightRingId,
                 "같은 반지를 양손에 꼈다",
             );
             assert.ok(

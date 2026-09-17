@@ -36,80 +36,83 @@ test("4대 전설 유물 및 4대 원소 보석 정의 확인", () => {
 
 test("미다스의 건틀릿 (Midas Gauntlet) 금화 비례 공격력 보너스", () => {
     let state = newGame(123);
-    assert.equal(midasBonus(state.hero), 0);
+    assert.equal(midasBonus(state.heroes[0]), 0);
 
     const gauntlet = makeItem("relic", "midas_gauntlet", state.nextItemId++, 0, 0);
-    addToPack(state.hero, gauntlet);
-    assert.ok(hasRelic(state.hero, "midas_gauntlet"));
+    addToPack(state.heroes[0], gauntlet);
+    assert.ok(hasRelic(state.heroes[0], "midas_gauntlet"));
 
-    state.hero.gold = 350;
-    assert.equal(midasBonus(state.hero), 3); // 350 / 100 = 3
+    state.heroes[0].gold = 350;
+    assert.equal(midasBonus(state.heroes[0]), 3); // 350 / 100 = 3
 
-    state.hero.gold = 1500;
-    assert.equal(midasBonus(state.hero), 10); // 최대 상한 10
+    state.heroes[0].gold = 1500;
+    assert.equal(midasBonus(state.heroes[0]), 10); // 최대 상한 10
 });
 
 test("불사조의 깃털 (Phoenix Feather) 치명상 시 1회 완전 부활", () => {
     let state = newGame(123);
     const feather = makeItem("relic", "phoenix_feather", state.nextItemId++, 0, 0);
-    addToPack(state.hero, feather);
-    assert.ok(hasRelic(state.hero, "phoenix_feather"));
+    addToPack(state.heroes[0], feather);
+    assert.ok(hasRelic(state.heroes[0], "phoenix_feather"));
 
-    state.hero.hp = 1;
-    // 치명타 피해로 사망 시도
-    state.hero.hp = 0;
+    // **턴 도중에** 쓰러뜨린다. 예전에는 `hp = 0` 을 손으로 박아 두고 명령을 넣었는데,
+    // 그건 실제로 안 나는 상태다 — 쓰러진 사람은 명령을 못 내므로(협동에서 누워 있는
+    // 동료가 움직이면 안 된다) 그 자리에서 막히고 깃털이 돌 기회조차 없다.
+    // 화상은 턴마다 정확히 2 를 깎으므로 굴림에 안 기댄다.
+    state.heroes[0].hp = 1;
+    state.heroes[0].burnTurns = 3;
     state = perform(state, { t: "rest" });
 
     // 부활 동작 검증
     assert.equal(state.phase, "playing", "불사조의 깃털로 인해 게임 오버가 되지 않아야 합니다.");
-    assert.equal(state.hero.hp, state.hero.maxHp, "체력이 최대치로 회복되어야 합니다.");
-    assert.ok(!hasRelic(state.hero, "phoenix_feather"), "사용한 불사조의 깃털은 소멸해야 합니다.");
+    assert.equal(state.heroes[0].hp, state.heroes[0].maxHp, "체력이 최대치로 회복되어야 합니다.");
+    assert.ok(!hasRelic(state.heroes[0], "phoenix_feather"), "사용한 불사조의 깃털은 소멸해야 합니다.");
 });
 
 test("시간의 모래시계 (Time Hourglass) 3턴 시간 정지 액티브", () => {
     let state = newGame(123);
     const hourglass = makeItem("relic", "time_hourglass", state.nextItemId++, 0, 0);
-    const itemInPack = addToPack(state.hero, hourglass);
+    const itemInPack = addToPack(state.heroes[0], hourglass);
     assert.ok(itemInPack?.letter);
 
     state = perform(state, { t: "use_relic", letter: itemInPack.letter });
     // 사용 턴에 1턴 정지가 소비되어 남은 정지 턴수는 2턴
-    assert.equal(state.hero.timeStop, 2, "모래시계 사용 직후 남은 시간 정지 턴수는 2턴이어야 합니다.");
+    assert.equal(state.heroes[0].timeStop, 2, "모래시계 사용 직후 남은 시간 정지 턴수는 2턴이어야 합니다.");
     assert.equal(itemInPack.relicCooldown, 49, "모래시계 쿨다운이 50턴에서 1턴 소비되어 49턴이어야 합니다.");
 });
 
 test("모루 보석 세공 (Socketing): 루비(화상), 토파즈(방어/회피)", () => {
     let state = newGame(123);
-    const weapon = equippedWeapon(state.hero)!;
-    const armor = equippedArmor(state.hero)!;
+    const weapon = equippedWeapon(state.heroes[0])!;
+    const armor = equippedArmor(state.heroes[0])!;
     const baseArmorClass = armorClassOf(armor);
 
     const ruby = makeItem("gem", "ruby", state.nextItemId++, 0, 0);
-    const rubyInPack = addToPack(state.hero, ruby)!;
+    const rubyInPack = addToPack(state.heroes[0], ruby)!;
 
     const topaz = makeItem("gem", "topaz", state.nextItemId++, 0, 0);
-    const topazInPack = addToPack(state.hero, topaz)!;
+    const topazInPack = addToPack(state.heroes[0], topaz)!;
 
     // 모루 칸으로 이동
-    state.hero.x = state.level.anvil!.x;
-    state.hero.y = state.level.anvil!.y;
+    state.heroes[0].x = state.level.anvil!.x;
+    state.heroes[0].y = state.level.anvil!.y;
 
     // 무기에 루비 장착
     state = perform(state, { t: "socket", gearLetter: weapon.letter!, gemLetter: rubyInPack.letter! });
     assert.equal(weapon.socketGem, "ruby", "무기에 루비가 장착되어야 합니다.");
 
     // 갑옷에 토파즈 장착
-    const baseDodge = heroDodgeBonus(state.hero);
+    const baseDodge = heroDodgeBonus(state.heroes[0]);
     state = perform(state, { t: "socket", gearLetter: armor.letter!, gemLetter: topazInPack.letter! });
     assert.equal(armor.socketGem, "topaz", "갑옷에 토파즈가 장착되어야 합니다.");
 
     // 토파즈 방어력/회피 보정 검증
     assert.equal(armorClassOf(armor), baseArmorClass - 1, "토파즈 장착 시 방어 등급이 1 내려가야(방어력+1) 합니다.");
-    assert.equal(heroDodgeBonus(state.hero), baseDodge + 2, "토파즈 장착 시 회피 보정이 +2 증가해야 합니다.");
+    assert.equal(heroDodgeBonus(state.heroes[0]), baseDodge + 2, "토파즈 장착 시 회피 보정이 +2 증가해야 합니다.");
 
     // 루비 장착 무기로 공격 시 화상 검증
     const rng = new Rng(456);
     const monster = spawnMonster("O", 1, 1, rng);
-    heroAttack(state, monster, rng);
+    heroAttack(state, state.heroes[0], monster, rng);
     assert.equal(monster.burnTurns, 3, "루비가 장착된 무기로 공격 시 몬스터에게 3턴 화상이 걸려야 합니다.");
 });

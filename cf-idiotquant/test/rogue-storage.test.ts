@@ -31,7 +31,7 @@ function play(s: GameState, turns = 120) {
         survey(cur); // 화면이 매 그림마다 부르는 것
         const r = rng.rnd(100);
         const d = rng.pick(ALL_DIRS)!;
-        const letter = rng.pick(cur.hero.pack)?.letter ?? "a";
+        const letter = rng.pick(cur.heroes[0].pack)?.letter ?? "a";
         const cmd: Command =
             r < 70
                 ? { t: "move", dx: d.dx, dy: d.dy }
@@ -65,7 +65,7 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         assert.ok(back.level.roomAt instanceof Int8Array);
         assert.equal(back.level.tiles.length, MAP_W * MAP_H);
         assert.deepEqual(Array.from(back.level.tiles), Array.from(s.level.tiles));
-        assert.deepEqual(back.hero, s.hero);
+        assert.deepEqual(back.heroes[0], s.heroes[0]);
         assert.equal(back.level.monsters.length, s.level.monsters.length);
         // 몬스터의 표는 저장하지 않고 글자로 다시 찾는다.
         assert.equal(back.level.monsters[0]?.def.ch, s.level.monsters[0]?.def.ch);
@@ -80,11 +80,11 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         delete old.bestiary;
         delete old.level.traps;
         delete old.level.maze;
-        delete old.hero.stuck;
-        delete old.hero.detect;
-        delete old.hero.leftRingId;
-        delete old.hero.rightRingId;
-        delete old.hero.maxStr;
+        delete old.heroes[0].stuck;
+        delete old.heroes[0].detect;
+        delete old.heroes[0].leftRingId;
+        delete old.heroes[0].rightRingId;
+        delete old.heroes[0].maxStr;
         for (const m of old.level.monsters) {
             delete m.speed;
             delete m.cancelled;
@@ -94,8 +94,8 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         assert.ok(back, "옛 저장을 버렸다 — 굴리던 판이 날아간다");
         assert.deepEqual(back!.level.traps, []);
         assert.deepEqual(back!.bestiary, {});
-        assert.equal(back!.hero.stuck, 0);
-        assert.equal(back!.hero.leftRingId, null);
+        assert.equal(back!.heroes[0].stuck, 0);
+        assert.equal(back!.heroes[0].leftRingId, null);
         // 그리고 실제로 굴러가야 한다. 예전에는 여기서 터졌다.
         play(back!);
     }
@@ -126,6 +126,31 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         assert.equal(again.appearance[key], back.appearance[key], "열 때마다 이름이 달라진다");
         play(back);
     }
+
+    // ── 영웅이 하나뿐이던 때의 저장(v5 이하) — `hero` 를 `heroes` 로 옮긴다
+    {
+        // 협동을 붙이며 `hero` 한 칸이 `heroes` 배열이 됐다. **규칙만 고치면 이미 저장된
+        // 판은 안 낫는다** — 옛 저장을 그대로 넘기면 영웅이 없는 판이 되어 한 걸음 걷다
+        // 터지고, 새로고침해도 같은 저장을 다시 읽어 또 터진다.
+        const s = newGame(25);
+        const o = JSON.parse(serialize(s)) as Record<string, unknown>;
+        const one = (o.heroes as unknown[])[0];
+        delete o.heroes;
+        o.hero = one; // v5 의 모양
+        o.v = 5;
+
+        const back = deserialize(JSON.stringify(o));
+        assert.ok(back, "옛 저장을 버렸다 — 굴리던 판이 날아간다");
+        assert.equal(back!.heroes.length, 1, "영웅이 한 명으로 안 옮겨졌다");
+        assert.ok(back!.heroes[0].hp > 0, "옮겨진 영웅이 비어 있다");
+        assert.deepEqual(
+            back!.heroes[0].pack.map((it) => it.type),
+            s.heroes[0].pack.map((it) => it.type),
+            "옮기면서 배낭이 바뀌었다",
+        );
+        // 그리고 실제로 굴러가야 한다.
+        play(back!);
+    }
 });
 
 test("칸을 빼도 끝까지 굴러가고, 깨진 저장은 버린다", () => {
@@ -134,7 +159,7 @@ test("칸을 빼도 끝까지 굴러가고, 깨진 저장은 버린다", () => {
         const base = newGame(777);
         const topLevel = Object.keys(JSON.parse(serialize(base)));
         const levelKeys = Object.keys(JSON.parse(serialize(base)).level);
-        const heroKeys = Object.keys(JSON.parse(serialize(base)).hero);
+        const heroKeys = Object.keys(JSON.parse(serialize(base)).heroes[0]);
 
         const attempts: { where: string; drop: (o: Record<string, unknown>) => void }[] = [
             ...topLevel.map((k) => ({
@@ -147,7 +172,7 @@ test("칸을 빼도 끝까지 굴러가고, 깨진 저장은 버린다", () => {
             })),
             ...heroKeys.map((k) => ({
                 where: `hero.${k}`,
-                drop: (o: Record<string, unknown>) => delete (o.hero as Record<string, unknown>)[k],
+                drop: (o: Record<string, unknown>) => delete ((o.heroes as Record<string, unknown>[])[0])[k],
             })),
         ];
 
@@ -218,8 +243,8 @@ test("층 하나가 깨져도 판은 살고, 겹친 층은 창고 쪽을 버린�
     // ── 지나온 층 하나가 깨져도 판은 안 버린다 — 그 층의 기억만 잃는다
     {
         let s = newGame(4322);
-        s.hero.x = s.level.stairs.x;
-        s.hero.y = s.level.stairs.y;
+        s.heroes[0].x = s.level.stairs.x;
+        s.heroes[0].y = s.level.stairs.y;
         s = perform(s, { t: "descend" });
 
         const o = JSON.parse(serialize(s));
@@ -250,15 +275,15 @@ test("배낭 자리는 되읽을 때 고친다 — 없는 것도 겹친 것도 �
         // 화면은 배낭을 `${letter}) 이름` 으로 찍으므로 열 때마다 그 줄이 다시 뜬다.
         const s = newGame(1);
         const o = JSON.parse(serialize(s));
-        for (const p of o.hero.pack) delete p.letter;
+        for (const p of o.heroes[0].pack) delete p.letter;
 
         const back = deserialize(JSON.stringify(o))!;
         assert.ok(back, "되읽지 못했다");
-        for (const p of back.hero.pack) {
+        for (const p of back.heroes[0].pack) {
             assert.ok(p.letter, `${p.kind}:${p.type} 의 자리를 안 메웠다`);
         }
         // 자리가 겹치면 안 된다 — 겹치면 하나는 고를 수도 버릴 수도 없는 물건이 된다.
-        const letters = back.hero.pack.map((p) => p.letter);
+        const letters = back.heroes[0].pack.map((p) => p.letter);
         assert.equal(new Set(letters).size, letters.length, `자리가 겹친다: ${letters.join(", ")}`);
         play(back);
     }
@@ -267,13 +292,13 @@ test("배낭 자리는 되읽을 때 고친다 — 없는 것도 겹친 것도 �
     {
         const s = newGame(2);
         const o = JSON.parse(serialize(s));
-        for (const p of o.hero.pack) p.letter = "a"; // 셋 다 a
+        for (const p of o.heroes[0].pack) p.letter = "a"; // 셋 다 a
         const back = deserialize(JSON.stringify(o))!;
-        const letters = back.hero.pack.map((p) => p.letter);
+        const letters = back.heroes[0].pack.map((p) => p.letter);
         assert.equal(new Set(letters).size, letters.length, `겹침이 안 고쳐졌다: ${letters.join(", ")}`);
         // 이름으로 집을 수 있어야 한다.
-        for (const p of back.hero.pack) {
-            assert.equal(packItem(back.hero, p.letter!)!.id, p.id, `${p.letter} 로 집으니 딴 물건이 온다`);
+        for (const p of back.heroes[0].pack) {
+            assert.equal(packItem(back.heroes[0], p.letter!)!.id, p.id, `${p.letter} 로 집으니 딴 물건이 온다`);
         }
         play(back);
     }
@@ -281,20 +306,20 @@ test("배낭 자리는 되읽을 때 고친다 — 없는 것도 겹친 것도 �
     // ── 멀쩡한 자리는 건드리지 않는다
     {
         const s = newGame(3);
-        const before = s.hero.pack.map((p) => `${p.id}:${p.letter}`);
+        const before = s.heroes[0].pack.map((p) => `${p.id}:${p.letter}`);
         const back = deserialize(serialize(s))!;
-        assert.deepEqual(back.hero.pack.map((p) => `${p.id}:${p.letter}`), before);
+        assert.deepEqual(back.heroes[0].pack.map((p) => `${p.id}:${p.letter}`), before);
     }
 
     // ── 이상한 자리(숫자·빈 글자·두 글자)도 고친다
     {
         const s = newGame(4);
         const o = JSON.parse(serialize(s));
-        o.hero.pack[0].letter = "";
-        o.hero.pack[1].letter = "zz";
-        if (o.hero.pack[2]) o.hero.pack[2].letter = 7;
+        o.heroes[0].pack[0].letter = "";
+        o.heroes[0].pack[1].letter = "zz";
+        if (o.heroes[0].pack[2]) o.heroes[0].pack[2].letter = 7;
         const back = deserialize(JSON.stringify(o))!;
-        for (const p of back.hero.pack) {
+        for (const p of back.heroes[0].pack) {
             assert.ok(p.letter && /^[a-z]$/.test(p.letter), `이상한 자리가 남았다: ${JSON.stringify(p.letter)}`);
         }
         play(back);
@@ -311,13 +336,13 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
     {
         const s = newGame(21);
         const o = JSON.parse(serialize(s));
-        o.hero.pack[0].plusHit = -2;
-        o.hero.pack[0].plusDam = -2;
-        o.hero.pack[1].plusArmor = -1;
+        o.heroes[0].pack[0].plusHit = -2;
+        o.heroes[0].pack[0].plusDam = -2;
+        o.heroes[0].pack[1].plusArmor = -1;
         // 바닥에 떨어져 있는 것도 본다 — 주우면 배낭으로 들어온다.
         o.level.items.push({ id: 9001, kind: "ring", type: "protection", count: 1, x: 1, y: 1, plusRing: -3 });
         const back = deserialize(JSON.stringify(o))!;
-        for (const it of [...back.hero.pack, ...back.level.items]) {
+        for (const it of [...back.heroes[0].pack, ...back.level.items]) {
             for (const n of [it.plusHit, it.plusDam, it.plusArmor, it.plusRing]) {
                 assert.ok((n ?? 0) >= 0, `마이너스가 남았다: ${it.type} ${n}`);
             }
@@ -329,12 +354,12 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
     {
         const s = newGame(22);
         const o = JSON.parse(serialize(s));
-        o.hero.pack[0].plusHit = -2;
-        o.hero.pack[0].cursed = true;
-        o.hero.pack[0].curseKnown = true;
+        o.heroes[0].pack[0].plusHit = -2;
+        o.heroes[0].pack[0].cursed = true;
+        o.heroes[0].pack[0].curseKnown = true;
         const back = deserialize(JSON.stringify(o))!;
-        assert.equal(back.hero.pack[0].plusHit, 0, "손질이 안 올라갔다");
-        assert.equal(back.hero.pack[0].cursed, true, "저주까지 풀렸다 — 못 벗는 것이 저주의 값이다");
+        assert.equal(back.heroes[0].pack[0].plusHit, 0, "손질이 안 올라갔다");
+        assert.equal(back.heroes[0].pack[0].cursed, true, "저주까지 풀렸다 — 못 벗는 것이 저주의 값이다");
     }
 
     // ── 상한을 넘긴 옛 저장은 되읽으면서 +9 로 내린다
@@ -343,17 +368,17 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
         // 사다리를 통째로 무의미하게 만든다 — 4층짜리 장검이 25층짜리 바포메트의 검을 이긴다.
         const s = newGame(23);
         const o = JSON.parse(serialize(s));
-        o.hero.pack[0].plusHit = 12;
-        o.hero.pack[0].plusDam = 12;
-        o.hero.pack[1].plusArmor = 40;
+        o.heroes[0].pack[0].plusHit = 12;
+        o.heroes[0].pack[0].plusDam = 12;
+        o.heroes[0].pack[1].plusArmor = 40;
         o.level.items.push({ id: 9002, kind: "weapon", type: "long sword", count: 1, x: 1, y: 1, plusHit: 99, plusDam: 99 });
         const back = deserialize(JSON.stringify(o))!;
-        for (const it of [...back.hero.pack, ...back.level.items]) {
+        for (const it of [...back.heroes[0].pack, ...back.level.items]) {
             for (const n of [it.plusHit, it.plusDam, it.plusArmor]) {
                 assert.ok((n ?? 0) <= ENCHANT_MAX, `상한을 넘긴 것이 남았다: ${it.type} +${n}`);
             }
         }
-        assert.equal(back.hero.pack[0].plusHit, ENCHANT_MAX);
+        assert.equal(back.heroes[0].pack[0].plusHit, ENCHANT_MAX);
         play(back);
     }
 });
@@ -369,11 +394,11 @@ test("갑옷 강화는 안 바뀌고, 없는 방을 가리키는 칸은 −1 이
     {
         const s = newGame(6);
         const o = JSON.parse(serialize(s));
-        o.hero.pack.push({ id: 900, kind: "scroll", type: "enchant armor", count: 2, x: -1, y: -1, letter: "z" });
+        o.heroes[0].pack.push({ id: 900, kind: "scroll", type: "enchant armor", count: 2, x: -1, y: -1, letter: "z" });
         o.level.items.push({ id: 901, kind: "scroll", type: "enchant armor", count: 1, x: 1, y: 1 });
 
         const back = deserialize(JSON.stringify(o))!;
-        const inPack = packItem(back.hero, "z")!;
+        const inPack = packItem(back.heroes[0], "z")!;
         assert.equal(inPack.type, "enchant armor", "배낭의 것이 바뀌었다");
         assert.equal(inPack.count, 2, "장수가 달라졌다");
         assert.equal(

@@ -118,6 +118,13 @@ export interface Monster {
     burnTurns?: number;
     /** 동결 지속 턴수 */
     frozenTurns?: number;
+    /**
+     * 쫓는 영웅의 자리(`heroes` 의 칸 번호) — **마지막에 나를 때린 쪽.**
+     *
+     * 없으면 아직 정해진 목표가 없다는 뜻이고, 그때는 가까운 쪽을 본다. 쓰러진 사람에게는
+     * 안 붙는다 — 목표가 쓰러지면 풀고 다시 고른다.
+     */
+    target?: number;
 }
 
 export type ItemKind =
@@ -232,6 +239,8 @@ export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
 export interface Hero {
     origin?: HeroOrigin;
+    /** 협동에서 계단을 눌러 동료를 기다리는 중 — 모두 누르면 층을 옮긴다(`partyReady`). */
+    stairsVote?: "down" | "up";
     guarded?: boolean;
     x: number;
     y: number;
@@ -283,7 +292,22 @@ export interface GameState {
      * 바뀐다 — 떠날 때 넣고 들어갈 때 뺀다(`enterLevel`).
      */
     levels: Record<number, Level>;
-    hero: Hero;
+    /**
+     * 이 판의 영웅들 — **혼자면 하나, 함께면 둘.**
+     *
+     * `heroes[0]` 이 방장이다. 단독 플레이는 길이 1 짜리 배열이라 규칙이 한 벌로 남는다
+     * — 「혼자일 때」와 「함께일 때」를 따로 적으면 어느 날 한쪽만 고쳐진다.
+     *
+     * **`hero` 라는 칸을 따로 두지 않는다.** 편하자고 `heroes[0]` 을 가리키는 칸을 하나
+     * 더 두면 저장할 때 **두 벌로 직렬화되어 되읽으면 딴 객체가 된다** — 「같은 층이 두
+     * 벌이 되면 어느 날 한쪽만 바뀐다」와 같은 자리다.
+     */
+    heroes: Hero[];
+    /**
+     * 보낸 동료 — **그 판 안에서는** 직업·배낭·레벨을 그대로 들고 기다린다. 다시 부르면
+     * 이 사람이 돌아온다(`joinGame`). 새 판(`newGame`)에는 없다 — 판이 끝나면 비워진다.
+     */
+    benched?: Hero;
     /** 화면 맨 위에 쌓이는 것. 최신이 끝. */
     messages: string[];
     /** 지나간 턴 수 — 점수와 배고픔의 시계. */

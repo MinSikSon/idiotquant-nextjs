@@ -32,13 +32,13 @@ function withStorage(fn: () => void): void {
 test("게임 종료 시 영웅 스탯, 장비, 배낭 소지품이 모두 상세하게 기록된다", () => {
     withStorage(() => {
         const s = newGame(555);
-        s.hero.level = 4;
-        s.hero.exp = 120;
-        s.hero.hp = 28;
-        s.hero.maxHp = 35;
-        s.hero.str = 17;
-        s.hero.maxStr = 18;
-        s.hero.gold = 650;
+        s.heroes[0].level = 4;
+        s.heroes[0].exp = 120;
+        s.heroes[0].hp = 28;
+        s.heroes[0].maxHp = 35;
+        s.heroes[0].str = 17;
+        s.heroes[0].maxStr = 18;
+        s.heroes[0].gold = 650;
         s.deepest = 8;
         s.turn = 240;
         s.epitaph = "오크에게 맞아 전사했다";
@@ -72,11 +72,11 @@ test("게임 종료 시 영웅 스탯, 장비, 배낭 소지품이 모두 상세
         potion.count = 2;
         potion.letter = "e";
 
-        s.hero.pack = [sword, plate, ring, wand, potion];
-        s.hero.weaponId = sword.id;
-        s.hero.armorId = plate.id;
-        s.hero.leftRingId = ring.id;
-        s.hero.rightRingId = null;
+        s.heroes[0].pack = [sword, plate, ring, wand, potion];
+        s.heroes[0].weaponId = sword.id;
+        s.heroes[0].armorId = plate.id;
+        s.heroes[0].leftRingId = ring.id;
+        s.heroes[0].rightRingId = null;
 
         const list = bury(s);
         assert.equal(list.length, 1);
@@ -145,15 +145,15 @@ test("게임 종료 시 영웅 스탯, 장비, 배낭 소지품이 모두 상세
 test("증표를 쥐고 탈출 성공 시 승리 상태와 증표 소지가 정확히 남는다", () => {
     withStorage(() => {
         const s = newGame(777);
-        s.hero.gold = 2500;
+        s.heroes[0].gold = 2500;
         s.deepest = 26;
-        s.hero.hasAmulet = true;
+        s.heroes[0].hasAmulet = true;
         s.phase = "won";
         s.epitaph = "옌더의 증표를 쥐고 던전을 탈출했다!";
 
         const amulet = makeItem("amulet", "amulet", 999, -1, -1);
         amulet.letter = "z";
-        s.hero.pack.push(amulet);
+        s.heroes[0].pack.push(amulet);
 
         const list = bury(s);
         const record = list[0];

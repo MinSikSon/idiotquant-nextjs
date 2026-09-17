@@ -74,14 +74,14 @@ test("챔피언 특수 전투 효과: 흡혈(vampiric) 및 화염 반사(blazing
 
     // 타오르는 챔피언 공격 시 영웅에게 화상 반사
     const blazing = spawnMonster("O", 1, 1, rng, "blazing");
-    heroAttack(state, blazing, rng);
-    assert.equal(state.hero.burnTurns, 3, "타오르는 챔피언 피격 시 영웅에게 3턴 화상이 걸려야 합니다.");
+    heroAttack(state, state.heroes[0], blazing, rng);
+    assert.equal(state.heroes[0].burnTurns, 3, "타오르는 챔피언 피격 시 영웅에게 3턴 화상이 걸려야 합니다.");
 
     // 흡혈 챔피언 공격 성공 시 몬스터 체력 회복
     const vampiric = spawnMonster("T", 1, 1, rng, "vampiric");
     vampiric.hp = 10;
     vampiric.maxHp = 40;
-    const res = monsterAttack(state, vampiric, rng);
+    const res = monsterAttack(state, vampiric, state.heroes[0], rng);
     if (res.hit && res.damage > 0) {
         assert.ok(vampiric.hp > 10, "흡혈 챔피언은 공격 성공 시 체력을 회복해야 합니다.");
     }

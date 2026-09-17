@@ -44,10 +44,10 @@ function setup(seed: number, kind: "weapon" | "armor", type: string, plus: numbe
         it.plusHit = plus;
         it.plusDam = plus;
     }
-    addToPack(s.hero, it);
+    addToPack(s.heroes[0], it);
     const scrollType = blessed ? "blessed enchant" : kind === "armor" ? "enchant armor" : "enchant weapon";
     const scroll = makeItem("scroll", scrollType, 901, -1, -1);
-    addToPack(s.hero, scroll);
+    addToPack(s.heroes[0], scroll);
     s.known[`scroll:${scroll.type}`] = true;
     return { s, it, scroll };
 }
@@ -110,7 +110,7 @@ test("안전 구간은 종류마다 다르다 — 무기 +6 · 갑옷 +4", () =>
                     const { s, it, scroll } = setup(seed * 31 + plus, kind, type, plus);
                     const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
                     assert.ok(
-                        after.hero.pack.some((p) => p.id === it.id),
+                        after.heroes[0].pack.some((p) => p.id === it.id),
                         `${kind} +${plus} 짜리가 부서졌다 — 여기까지는 안전해야 한다`,
                     );
                     assert.equal(enchantOf(it), plus + 1, `${kind} +${plus} 에서 안 올랐다`);
@@ -129,7 +129,7 @@ test("실패하면 사라진다 — 쥐고 있던 자리도 빈다", () => {
             // +8 은 25% — 대부분 부서진다.
             const { s, it, scroll } = setup(seed * 7919, "weapon", "silver sword", 8);
             const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-            const still = after.hero.pack.find((p) => p.id === it.id);
+            const still = after.heroes[0].pack.find((p) => p.id === it.id);
             if (still) {
                 grew++;
                 assert.equal(still.plusHit, 9, "살아남았는데 안 올랐다");
@@ -148,12 +148,12 @@ test("실패하면 사라진다 — 쥐고 있던 자리도 빈다", () => {
         let seen = false;
         for (let seed = 1; seed <= 200 && !seen; seed++) {
             const { s, it, scroll } = setup(seed * 104729, "weapon", "silver sword", 8);
-            s.hero.weaponId = it.id;
+            s.heroes[0].weaponId = it.id;
             const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-            if (after.hero.pack.some((p) => p.id === it.id)) continue;
+            if (after.heroes[0].pack.some((p) => p.id === it.id)) continue;
             seen = true;
-            assert.equal(equippedWeapon(after.hero), undefined, "부서졌는데 아직 쥐고 있다");
-            assert.equal(after.hero.weaponId, null);
+            assert.equal(equippedWeapon(after.heroes[0]), undefined, "부서졌는데 아직 쥐고 있다");
+            assert.equal(after.heroes[0].weaponId, null);
         }
         assert.ok(seen, "이백 번을 걸어도 한 번도 안 부서졌다");
     }
@@ -163,10 +163,10 @@ test("상한과 대상 없는 읽기는 주문서도 턴도 안 쓴다", () => {
     // ── +9 는 더 안 오른다 — 주문서도 턴도 안 쓴다
     {
         const { s, it, scroll } = setup(77, "weapon", "knight sword", ENCHANT_MAX);
-        const packBefore = s.hero.pack.length;
+        const packBefore = s.heroes[0].pack.length;
         const turnBefore = s.turn;
         const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-        assert.equal(after.hero.pack.length, packBefore, "상한인데 주문서가 없어졌다");
+        assert.equal(after.heroes[0].pack.length, packBefore, "상한인데 주문서가 없어졌다");
         assert.equal(after.turn, turnBefore, "상한인데 턴이 갔다");
         assert.equal(it.plusHit, ENCHANT_MAX, "상한을 넘었다");
         assert.ok(after.messages.some((m) => m.includes("더 손댈 곳이 없다")));
@@ -175,11 +175,11 @@ test("상한과 대상 없는 읽기는 주문서도 턴도 안 쓴다", () => {
     // ── 대상 없이 읽으면 아무 일도 안 난다 — 주문서도 턴도 그대로
     {
         const { s, scroll } = setup(78, "weapon", "long sword", 0);
-        const packBefore = s.hero.pack.length;
+        const packBefore = s.heroes[0].pack.length;
         const turnBefore = s.turn;
         const msgBefore = s.messages.length;
         const after = perform(s, { t: "read", letter: scroll.letter! });
-        assert.equal(after.hero.pack.length, packBefore, "대상도 없이 주문서가 없어졌다");
+        assert.equal(after.heroes[0].pack.length, packBefore, "대상도 없이 주문서가 없어졌다");
         assert.equal(after.turn, turnBefore, "대상도 없이 턴이 갔다");
         assert.equal(after.messages.length, msgBefore, "아무 일도 안 났는데 말이 남았다");
     }
@@ -197,11 +197,11 @@ test("갑옷도 강화되고, 엉뚱한 것에는 안 걸린다", () => {
         let seen = false;
         for (let seed = 1; seed <= 200 && !seen; seed++) {
             const g = setup(seed * 911, "armor", "plate mail", 8);
-            g.s.hero.armorId = g.it.id;
+            g.s.heroes[0].armorId = g.it.id;
             const after = perform(g.s, { t: "read", letter: g.scroll.letter!, target: g.it.letter! });
-            if (after.hero.pack.some((p) => p.id === g.it.id)) continue;
+            if (after.heroes[0].pack.some((p) => p.id === g.it.id)) continue;
             seen = true;
-            assert.equal(equippedArmor(after.hero), undefined, "부서졌는데 아직 입고 있다");
+            assert.equal(equippedArmor(after.heroes[0]), undefined, "부서졌는데 아직 입고 있다");
         }
         assert.ok(seen, "이백 번을 걸어도 한 번도 안 부서졌다");
     }
@@ -210,12 +210,12 @@ test("갑옷도 강화되고, 엉뚱한 것에는 안 걸린다", () => {
     {
         const { s, scroll } = setup(83, "weapon", "long sword", 0);
         const armor = makeItem("armor", "plate mail", 951, -1, -1);
-        addToPack(s.hero, armor);
-        const packBefore = s.hero.pack.length;
+        addToPack(s.heroes[0], armor);
+        const packBefore = s.heroes[0].pack.length;
         const turnBefore = s.turn;
         const after = perform(s, { t: "read", letter: scroll.letter!, target: armor.letter! });
         assert.equal(armor.plusArmor, 0);
-        assert.equal(after.hero.pack.length, packBefore, "거절했는데 주문서가 없어졌다");
+        assert.equal(after.heroes[0].pack.length, packBefore, "거절했는데 주문서가 없어졌다");
         assert.equal(after.turn, turnBefore, "거절했는데 턴이 갔다");
     }
 });
@@ -247,12 +247,12 @@ test("굴림 줄이 남고, 저주받은 것도 걸리고, 정체를 알게 된�
             const { s, it, scroll } = setup(seed * 313, "weapon", "silver sword", 8);
             it.cursed = true;
             it.curseKnown = true;
-            s.hero.weaponId = it.id;
+            s.heroes[0].weaponId = it.id;
             const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-            if (after.hero.pack.some((p) => p.id === it.id)) continue;
+            if (after.heroes[0].pack.some((p) => p.id === it.id)) continue;
             seen = true;
             // 쥐고 놓을 수 없던 것이 사라졌다 — 그것이 이 도박의 다른 쪽 값이다.
-            assert.equal(equippedWeapon(after.hero), undefined);
+            assert.equal(equippedWeapon(after.heroes[0]), undefined);
         }
         assert.ok(seen, "저주받은 것을 이백 번 걸어도 한 번도 안 부서졌다");
     }
@@ -275,7 +275,7 @@ test("축복은 안전 구간 안에서만 다르다 — 한 번에 1~3 칸, 천
                 const { s, it, scroll } = setup(seed * 7717, kind, type, 0, true);
                 const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
                 assert.ok(
-                    after.hero.pack.some((p) => p.id === it.id),
+                    after.heroes[0].pack.some((p) => p.id === it.id),
                     `${kind} 축복이 안전 구간 안에서 부서졌다`,
                 );
                 const got = enchantOf(it);
@@ -317,7 +317,7 @@ test("축복은 안전 구간 안에서만 다르다 — 한 번에 1~3 칸, 천
         for (let seed = 1; seed <= 200; seed++) {
             const { s, it, scroll } = setup(seed * 8663, "weapon", "silver sword", 8, true);
             const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-            const still = after.hero.pack.find((p) => p.id === it.id);
+            const still = after.heroes[0].pack.find((p) => p.id === it.id);
             if (still) {
                 grew++;
                 assert.equal(enchantOf(still), 9, "천장 위인데 한 칸보다 많이 올랐다");
@@ -332,10 +332,10 @@ test("축복은 안전 구간 안에서만 다르다 — 한 번에 1~3 칸, 천
     // ── 상한에 닿은 것에는 축복도 안 걸린다 — 주문서도 턴도 안 쓴다
     {
         const { s, it, scroll } = setup(4244, "weapon", "knight sword", ENCHANT_MAX, true);
-        const packBefore = s.hero.pack.length;
+        const packBefore = s.heroes[0].pack.length;
         const turnBefore = s.turn;
         const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-        assert.equal(after.hero.pack.length, packBefore, "상한인데 축복 주문서가 없어졌다");
+        assert.equal(after.heroes[0].pack.length, packBefore, "상한인데 축복 주문서가 없어졌다");
         assert.equal(after.turn, turnBefore, "상한인데 턴이 갔다");
         assert.equal(enchantOf(it), ENCHANT_MAX, "축복이 상한을 넘었다");
     }

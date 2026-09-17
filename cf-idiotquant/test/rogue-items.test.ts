@@ -29,7 +29,7 @@ function openWay(s: GameState): [number, number] {
         [0, 1],
         [0, -1],
     ];
-    const d = dirs.find(([dx, dy]) => walkable(s.level.tiles[idx(s.hero.x + dx, s.hero.y + dy)] as Tile));
+    const d = dirs.find(([dx, dy]) => walkable(s.level.tiles[idx(s.heroes[0].x + dx, s.heroes[0].y + dy)] as Tile));
     if (!d) throw new Error("사방이 막힌 자리에서 시작했다");
     return d;
 }
@@ -39,7 +39,7 @@ function give(s: GameState, it: Item, letter: string): string {
     it.letter = letter;
     it.x = -1;
     it.y = -1;
-    s.hero.pack.push(it);
+    s.heroes[0].pack.push(it);
     return letter;
 }
 
@@ -56,47 +56,47 @@ test("저주받은 갑옷은 못 벗고, 반지는 능력을 바꾼다", () => {
 
         assert.ok(!bad.curseKnown, "입기 전에는 저주를 알 수 없어야 한다");
         const s1 = perform(s0, { t: "wear", letter: "y" });
-        assert.equal(s1.hero.armorId, bad.id);
+        assert.equal(s1.heroes[0].armorId, bad.id);
         assert.ok(bad.curseKnown, "입었는데 저주가 안 드러났다");
 
         // 다른 갑옷으로 못 바꾼다.
         const s2 = perform(s1, { t: "wear", letter: "z" });
-        assert.equal(s2.hero.armorId, bad.id, "저주받은 갑옷이 벗겨졌다");
+        assert.equal(s2.heroes[0].armorId, bad.id, "저주받은 갑옷이 벗겨졌다");
         // 내려놓지도 못한다.
         const s3 = perform(s2, { t: "drop", letter: "y" });
-        assert.ok(packItem(s3.hero, "y"), "저주받은 갑옷을 내려놓았다");
+        assert.ok(packItem(s3.heroes[0], "y"), "저주받은 갑옷을 내려놓았다");
 
         // 저주 해제 주문서를 읽으면 풀린다.
         give(s3, makeItem("scroll", "remove curse", 902, -1, -1), "x");
         const s4 = perform(s3, { t: "read", letter: "x" });
         assert.ok(!bad.cursed, "저주가 안 풀렸다");
         const s5 = perform(s4, { t: "wear", letter: "z" });
-        assert.equal(s5.hero.armorId, good.id, "풀린 뒤에도 못 바꾼다");
+        assert.equal(s5.heroes[0].armorId, good.id, "풀린 뒤에도 못 바꾼다");
     }
 
     // ── 보호 반지는 방어를 내리고, 힘 반지는 힘을 올린다
     {
         const s0 = newGame(102);
-        const base = heroArmor(s0.hero);
+        const base = heroArmor(s0.heroes[0]);
         const prot = makeItem("ring", "protection", 910, -1, -1);
         prot.plusRing = 2;
         give(s0, prot, "y");
 
         const s1 = perform(s0, { t: "putOn", letter: "y" });
-        assert.equal(heroArmor(s1.hero), base - 2, "보호 반지가 방어 등급을 **내려야** 한다");
+        assert.equal(heroArmor(s1.heroes[0]), base - 2, "보호 반지가 방어 등급을 **내려야** 한다");
 
-        const str0 = heroStr(s1.hero);
+        const str0 = heroStr(s1.heroes[0]);
         const might = makeItem("ring", "add strength", 911, -1, -1);
         might.plusRing = 3;
         give(s1, might, "z");
         const s2 = perform(s1, { t: "putOn", letter: "z" });
-        assert.equal(heroStr(s2.hero), str0 + 3);
-        assert.equal(wornRings(s2.hero).length, 2);
+        assert.equal(heroStr(s2.heroes[0]), str0 + 3);
+        assert.equal(wornRings(s2.heroes[0]).length, 2);
 
         // 세 번째는 낄 손이 없다.
         give(s2, makeItem("ring", "searching", 912, -1, -1), "w");
         const s3 = perform(s2, { t: "putOn", letter: "w" });
-        assert.equal(wornRings(s3.hero).length, 2, "손이 셋이 되었다");
+        assert.equal(wornRings(s3.heroes[0]).length, 2, "손이 셋이 되었다");
     }
 });
 
@@ -104,22 +104,22 @@ test("반지는 배를 더 고프게 하고, 저주받은 것은 못 뺀다", ()
     // ── 반지를 끼면 배가 더 고프다 — 이 대가가 없으면 반지는 공짜다
     {
         const s0 = newGame(103);
-        assert.equal(hungerRate(s0.hero), 1);
+        assert.equal(hungerRate(s0.heroes[0]), 1);
 
         give(s0, makeItem("ring", "regeneration", 920, -1, -1), "y");
         const s1 = perform(s0, { t: "putOn", letter: "y" });
-        assert.ok(hungerRate(s1.hero) > 1, "재생 반지가 공짜다");
+        assert.ok(hungerRate(s1.heroes[0]) > 1, "재생 반지가 공짜다");
 
         // 실제로 시계가 더 빨리 돈다.
-        const before = s1.hero.food;
+        const before = s1.heroes[0].food;
         const s2 = perform(s1, { t: "rest" });
-        assert.equal(before - s2.hero.food, hungerRate(s2.hero));
+        assert.equal(before - s2.heroes[0].food, hungerRate(s2.heroes[0]));
 
         // 소화 억제는 반대로 간다.
         const s3 = perform(s2, { t: "removeRing", letter: "y" });
         give(s3, makeItem("ring", "slow digestion", 921, -1, -1), "z");
         const s4 = perform(s3, { t: "putOn", letter: "z" });
-        assert.ok(hungerRate(s4.hero) < 1, "소화 억제가 안 듣는다");
+        assert.ok(hungerRate(s4.heroes[0]) < 1, "소화 억제가 안 듣는다");
     }
 
     // ── 저주받은 반지는 뺄 수 없다
@@ -130,7 +130,7 @@ test("반지는 배를 더 고프게 하고, 저주받은 것은 못 뺀다", ()
         give(s0, bad, "y");
         const s1 = perform(s0, { t: "putOn", letter: "y" });
         const s2 = perform(s1, { t: "removeRing", letter: "y" });
-        assert.equal(wornRings(s2.hero).length, 1, "저주받은 반지가 빠졌다");
+        assert.equal(wornRings(s2.heroes[0]).length, 1, "저주받은 반지가 빠졌다");
     }
 });
 
@@ -146,8 +146,8 @@ test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {
         const [dx, dy] = openWay(s0);
         const m = s0.level.monsters[0];
         assert.ok(m, "이 층에 몬스터가 없다");
-        m.x = s0.hero.x + dx;
-        m.y = s0.hero.y + dy;
+        m.x = s0.heroes[0].x + dx;
+        m.y = s0.heroes[0].y + dy;
         m.hp = 60;
         m.maxHp = 60;
 
@@ -170,8 +170,8 @@ test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {
         wand.charges = 3;
         give(s0, wand, "y");
         const m = s0.level.monsters[0];
-        m.x = s0.hero.x + 1;
-        m.y = s0.hero.y;
+        m.x = s0.heroes[0].x + 1;
+        m.y = s0.heroes[0].y;
         assert.equal(m.speed, 0);
         perform(s0, { t: "zap", letter: "y", dx: 1, dy: 0 });
         assert.equal(m.speed, -1, "둔화가 안 걸렸다");
@@ -186,7 +186,7 @@ test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진
         give(s0, dagger, "y");
         const before = s0.level.items.length;
         const s1 = perform(s0, { t: "throw", letter: "y", dx: 1, dy: 0 });
-        assert.equal(packItem(s1.hero, "y"), undefined, "던진 단검이 배낭에 남았다");
+        assert.equal(packItem(s1.heroes[0], "y"), undefined, "던진 단검이 배낭에 남았다");
         assert.equal(s1.level.items.length, before + 1, "던진 단검이 사라졌다");
 
         const potion = makeItem("potion", "healing", 961, -1, -1);
@@ -201,7 +201,7 @@ test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진
         const s0 = newGame(108);
         give(s0, makeItem("weapon", "dagger", 970, -1, -1), "y");
         const s1 = perform(s0, { t: "throw", letter: "y", dx: 0, dy: 0 });
-        assert.ok(packItem(s1.hero, "y"), "제자리로 던져서 물건이 사라졌다");
+        assert.ok(packItem(s1.heroes[0], "y"), "제자리로 던져서 물건이 사라졌다");
     }
 });
 
@@ -213,8 +213,8 @@ test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {
         for (let seed = 1; seed <= 300 && !s; seed++) {
             const g = newGame(seed);
             for (let d = 0; d < 12 && g.level.depth < 12; d++) {
-                g.hero.x = g.level.stairs.x;
-                g.hero.y = g.level.stairs.y;
+                g.heroes[0].x = g.level.stairs.x;
+                g.heroes[0].y = g.level.stairs.y;
                 perform(g, { t: "descend" });
             }
             if (g.level.tiles.includes(T.SECRET)) s = g;
@@ -234,18 +234,18 @@ test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {
             [0, 1],
         ].find(([dx, dy]) => walkable(s!.level.tiles[idx(sx + dx, sy + dy)] as Tile));
         assert.ok(side, "비밀문 옆에 설 자리가 없다");
-        s!.hero.x = sx + side![0];
-        s!.hero.y = sy + side![1];
+        s!.heroes[0].x = sx + side![0];
+        s!.heroes[0].y = sy + side![1];
         // 비밀문은 걸어 들어갈 수 있는 칸이 아니다.
         const blocked = perform(s!, { t: "move", dx: -side![0], dy: -side![1] });
         assert.ok(
-            blocked.hero.x !== sx || blocked.hero.y !== sy,
+            blocked.heroes[0].x !== sx || blocked.heroes[0].y !== sy,
             "찾지도 않은 비밀문을 지나갔다",
         );
 
         // 뒤지는 동안 맞아 죽으면 뒤지기를 못 재게 된다 — 이 테스트가 보는 것은 비밀문이다.
         s!.level.monsters.length = 0;
-        s!.hero.hp = s!.hero.maxHp;
+        s!.heroes[0].hp = s!.heroes[0].maxHp;
 
         // 옆에 서서 뒤지면 언젠가 찾는다.
         let found = false;
@@ -259,22 +259,22 @@ test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {
     // ── 함정은 밟으면 터진다 — 곰덫은 발을 묶는다
     {
         const s0 = newGame(109);
-        const tx = s0.hero.x + 1;
-        const ty = s0.hero.y;
+        const tx = s0.heroes[0].x + 1;
+        const ty = s0.heroes[0].y;
         // 오른쪽이 막혀 있으면 이 판으로는 못 잰다.
         s0.level.tiles[idx(tx, ty)] = T.FLOOR;
         s0.level.monsters = s0.level.monsters.filter((m) => !(m.x === tx && m.y === ty));
         s0.level.traps.push({ x: tx, y: ty, kind: "beartrap", found: false });
 
         const s1 = perform(s0, { t: "move", dx: 1, dy: 0 });
-        assert.equal(s1.hero.x, tx);
-        assert.ok(s1.hero.stuck > 0, "곰덫을 밟았는데 안 묶였다");
+        assert.equal(s1.heroes[0].x, tx);
+        assert.ok(s1.heroes[0].stuck > 0, "곰덫을 밟았는데 안 묶였다");
         assert.ok(s1.level.traps[s1.level.traps.length - 1].found, "밟은 함정이 안 드러났다");
 
         // 묶인 동안에는 못 걷는다.
-        const x = s1.hero.x;
+        const x = s1.heroes[0].x;
         const s2 = perform(s1, { t: "move", dx: 1, dy: 0 });
-        assert.equal(s2.hero.x, x, "덫에 걸렸는데 걸어 나갔다");
+        assert.equal(s2.heroes[0].x, x, "덫에 걸렸는데 걸어 나갔다");
     }
 });
 
@@ -297,10 +297,10 @@ test("정체를 모르면 손질을 안 흘린다 — 배낭 숫자와 실제가
         const armor = makeItem("armor", "plate mail", 930, -1, -1);
         armor.plusArmor = 2;
         armor.letter = "z";
-        s.hero.pack.push(armor);
-        s.hero.armorId = armor.id;
+        s.heroes[0].pack.push(armor);
+        s.heroes[0].armorId = armor.id;
         s.known["armor:plate mail"] = true;
-        assert.equal(itemPower(armor, s.known), `방어력 ${heroDefense(s.hero)}`);
+        assert.equal(itemPower(armor, s.known), `방어력 ${heroDefense(s.heroes[0])}`);
     }
 });
 
@@ -313,10 +313,10 @@ test("던진 것은 사라지지 않는다 — 같은 것도 다른 것도", () 
         let s = newGame(923);
         const darts = makeItem("weapon", "dart", 942, -1, -1, 6);
         darts.letter = "z";
-        s.hero.pack.push(darts);
+        s.heroes[0].pack.push(darts);
         const [dx, dy] = openWay(s);
         for (let i = 0; i < 6; i++) s = perform(s, { t: "throw", letter: "z", dx, dy });
-        assert.equal(packItem(s.hero, "z"), undefined, "여섯 개를 다 안 던졌다");
+        assert.equal(packItem(s.heroes[0], "z"), undefined, "여섯 개를 다 안 던졌다");
         const onFloor = s.level.items
             .filter((i) => i.kind === "weapon" && i.type === "dart")
             .reduce((n, i) => n + i.count, 0);
@@ -328,7 +328,7 @@ test("던진 것은 사라지지 않는다 — 같은 것도 다른 것도", () 
         const s = newGame(924);
         const [dx, dy] = openWay(s);
         // 날아가는 길 위에 **다른 것**을 하나 놓는다.
-        const mace = makeItem("weapon", "mace", 970, s.hero.x + dx, s.hero.y + dy, 1);
+        const mace = makeItem("weapon", "mace", 970, s.heroes[0].x + dx, s.heroes[0].y + dy, 1);
         s.level.items.push(mace);
         s.level.monsters = [];
 

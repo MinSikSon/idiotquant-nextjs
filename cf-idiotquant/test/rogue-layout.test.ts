@@ -95,3 +95,19 @@ test("빼는 숫자가 실제 바 높이의 합이다", () => {
 // 배낭에서 꺼내 쓰는 것들이 한 줄에, 라는 자리 약속이 거기서 무너진다.
 //
 // 사람이 세다가 틀리는 자리라 여기서 센다. 단추 하나를 더하거나 뺄 때는 **셋 단위로**.
+
+test("명령 단추는 세 개씩 딱 떨어진다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+    const from = s.indexOf("const actions: PadAction[] = [");
+    assert.ok(from >= 0, "Rogue.tsx 에서 명령 단추 목록을 못 찾았다");
+    const to = s.indexOf("\n    ];", from);
+    assert.ok(to > from, "명령 단추 목록의 끝을 못 찾았다");
+
+    const n = (s.slice(from, to).match(/label:/g) ?? []).length;
+    assert.ok(n > 0, "명령 단추가 하나도 없다");
+    assert.equal(
+        n % 3,
+        0,
+        `명령 단추가 ${n} 개다 — 세 칸 격자라 마지막 줄만 이가 빠진다. 셋 단위로 더하거나 뺄 것`,
+    );
+});

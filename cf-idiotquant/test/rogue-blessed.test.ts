@@ -35,12 +35,12 @@ test("축복받은 순간이동 주문서 (축순): 계단 주변으로 안전 �
     const scroll = makeItem("scroll", "teleport", 101, -1, -1);
     scroll.letter = "a";
     scroll.blessed = true;
-    s.hero.pack = [scroll];
+    s.heroes[0].pack = [scroll];
 
     const stairs = s.level.stairs;
     perform(s, { t: "read", letter: "a" });
 
-    const dist = Math.abs(s.hero.x - stairs.x) + Math.abs(s.hero.y - stairs.y);
+    const dist = Math.abs(s.heroes[0].x - stairs.x) + Math.abs(s.heroes[0].y - stairs.y);
     assert.ok(dist <= 4, `축복받은 순간이동은 계단 주변으로 이동해야 합니다 (현재 거리: ${dist})`);
 });
 
@@ -49,12 +49,12 @@ test("축복받은 지도 제작 주문서 (축지도): 전체 맵 공개 + 함�
     const scroll = makeItem("scroll", "magic mapping", 101, -1, -1);
     scroll.letter = "a";
     scroll.blessed = true;
-    s.hero.pack = [scroll];
+    s.heroes[0].pack = [scroll];
 
     perform(s, { t: "read", letter: "a" });
 
     // 1. 30턴 몬스터 감지 버프 (턴 종료 시 1 감소하여 29)
-    assert.ok(s.hero.detect >= 29, `몬스터 감지 버프는 29 이상이어야 합니다 (현재: ${s.hero.detect})`);
+    assert.ok(s.heroes[0].detect >= 29, `몬스터 감지 버프는 29 이상이어야 합니다 (현재: ${s.heroes[0].detect})`);
     // 2. 층의 모든 함정이 발견(t.found = true) 상태가 됨
     for (const trap of s.level.traps) {
         assert.equal(trap.found, true);
@@ -74,7 +74,7 @@ test("축복받은 감정 주문서 (축감정): 배낭 전체 식별 + 비밀�
     const scroll = makeItem("scroll", "identify", 101, -1, -1);
     scroll.letter = "a";
     scroll.blessed = true;
-    s.hero.pack = [scroll, unidenPot];
+    s.heroes[0].pack = [scroll, unidenPot];
 
     perform(s, { t: "read", letter: "a" });
 
@@ -96,14 +96,14 @@ test("축복받은 저주 해제 주문서 (축축저): 배낭 전체 저주 해
     cursedRing.letter = "c";
     cursedRing.cursed = true;
 
-    s.hero.pack = [cursedWep, cursedArmor, cursedRing];
-    s.hero.weaponId = cursedWep.id;
-    s.hero.armorId = cursedArmor.id;
+    s.heroes[0].pack = [cursedWep, cursedArmor, cursedRing];
+    s.heroes[0].weaponId = cursedWep.id;
+    s.heroes[0].armorId = cursedArmor.id;
 
     const scroll = makeItem("scroll", "remove curse", 103, -1, -1);
     scroll.letter = "d";
     scroll.blessed = true;
-    s.hero.pack = [cursedWep, cursedArmor, cursedRing, scroll];
+    s.heroes[0].pack = [cursedWep, cursedArmor, cursedRing, scroll];
 
     perform(s, { t: "read", letter: "d" });
 
@@ -123,17 +123,17 @@ test("축복받은 재련 주문서 (축재련): 상위 티어 변환 + 확정 +
     mace.letter = "a";
     mace.plusHit = 0;
     mace.plusDam = 0;
-    s.hero.pack = [mace];
-    s.hero.weaponId = mace.id;
+    s.heroes[0].pack = [mace];
+    s.heroes[0].weaponId = mace.id;
 
     const scroll = makeItem("scroll", "transmutation", 101, -1, -1);
     scroll.letter = "b";
     scroll.blessed = true;
-    s.hero.pack = [mace, scroll];
+    s.heroes[0].pack = [mace, scroll];
 
     perform(s, { t: "read", letter: "b", target: "a" });
 
-    const wep = s.hero.pack.find((it) => it.id === s.hero.weaponId);
+    const wep = s.heroes[0].pack.find((it) => it.id === s.heroes[0].weaponId);
     assert.ok(wep);
     // 철퇴의 depth(1) 이상의 장비로 변환되었는지 확인
     assert.ok((WEAPONS[wep.type]?.depth ?? 1) >= (WEAPONS["mace"].depth ?? 1));

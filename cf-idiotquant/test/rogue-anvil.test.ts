@@ -34,21 +34,21 @@ import { walkable, idx, type GameState, type Item, type Tile } from "@/lib/rogue
 function atAnvil(seed: number, plus: number, type = "long sword", count = 1, kind: "weapon" | "armor" = "weapon") {
     const s = newGame(seed);
     const a = s.level.anvil!;
-    s.hero.x = a.x;
-    s.hero.y = a.y;
+    s.heroes[0].x = a.x;
+    s.heroes[0].y = a.y;
     const it = makeItem(kind, type, 900, -1, -1, count);
     if (kind === "armor") it.plusArmor = plus;
     else {
         it.plusHit = plus;
         it.plusDam = plus;
     }
-    addToPack(s.hero, it);
+    addToPack(s.heroes[0], it);
     return { s, it };
 }
 
 /** 배낭에 든 강화 주문서의 장수. */
 function scrolls(s: GameState, type = "enchant weapon"): number {
-    return s.hero.pack
+    return s.heroes[0].pack
         .filter((p: Item) => p.kind === "scroll" && p.type === type)
         .reduce((n: number, p: Item) => n + p.count, 0);
 }
@@ -77,13 +77,13 @@ test("모루는 층마다 하나, 그 칸에서만 녹는다", () => {
             [-1, 0],
             [0, 1],
             [0, -1],
-        ].find(([dx, dy]) => walkable(s.level.tiles[idx(s.hero.x + dx, s.hero.y + dy)] as Tile))!;
-        s.hero.x += away[0];
-        s.hero.y += away[1];
+        ].find(([dx, dy]) => walkable(s.level.tiles[idx(s.heroes[0].x + dx, s.heroes[0].y + dy)] as Tile))!;
+        s.heroes[0].x += away[0];
+        s.heroes[0].y += away[1];
 
         const turnBefore = s.turn;
         const after = perform(s, { t: "melt", letter: it.letter! });
-        assert.ok(after.hero.pack.some((p) => p.id === it.id), "모루도 없는데 무기가 사라졌다");
+        assert.ok(after.heroes[0].pack.some((p) => p.id === it.id), "모루도 없는데 무기가 사라졌다");
         assert.equal(scrolls(after), 0, "모루도 없는데 주문서가 나왔다");
         assert.equal(after.turn, turnBefore, "아무 일도 안 났는데 턴이 갔다");
         assert.ok(after.messages.some((m) => m.includes("모루가 없다")));
@@ -103,7 +103,7 @@ test("나오는 장수 — 쇠붙이 몫 한 장은 확정, 강화분은 확률"
                 const { s, it } = atAnvil(100 + plus * 97 + seed, plus);
                 assert.equal(meltMax(it), 1 + plus, `+${plus}: 화면이 적을 최대가 다르다`);
                 const after = perform(s, { t: "melt", letter: it.letter! });
-                assert.ok(!after.hero.pack.some((p) => p.id === it.id), `+${plus}: 녹였는데 물건이 남았다`);
+                assert.ok(!after.heroes[0].pack.some((p) => p.id === it.id), `+${plus}: 녹였는데 물건이 남았다`);
                 const got = scrolls(after);
                 assert.ok(got >= 1, `+${plus}: 쇠붙이 몫 한 장이 안 나왔다(${got})`);
                 assert.ok(got <= 1 + plus, `+${plus}: 있지도 않은 강화가 나왔다(${got})`);
@@ -140,7 +140,7 @@ test("나오는 장수 — 쇠붙이 몫 한 장은 확정, 강화분은 확률"
             const { s, it } = atAnvil(12 + seed * 17, 0);
             assert.deepEqual(meltYield(it), { sure: 1, risky: 0 }, "화면이 적을 장수부터 0 이다");
             const after = perform(s, { t: "melt", letter: it.letter! });
-            assert.ok(!after.hero.pack.some((p) => p.id === it.id), "녹였는데 무기가 남았다");
+            assert.ok(!after.heroes[0].pack.some((p) => p.id === it.id), "녹였는데 무기가 남았다");
             assert.equal(scrolls(after), 1);
         }
     }
@@ -155,7 +155,7 @@ test("갑옷도 녹는다 — 입고 있는 저주받은 것만 빼고", () => {
         assert.equal(enchantOf(it), 4);
         assert.equal(meltMax(it), 5);
         const after = perform(s, { t: "melt", letter: it.letter! });
-        assert.ok(!after.hero.pack.some((p) => p.id === it.id), "녹였는데 갑옷이 남았다");
+        assert.ok(!after.heroes[0].pack.some((p) => p.id === it.id), "녹였는데 갑옷이 남았다");
         assert.equal(scrolls(after, "enchant weapon"), 0, "갑옷에서 무기 주문서가 나왔다");
         const got = scrolls(after, "enchant armor");
         assert.ok(got >= 1 && got <= 5, `나온 장수가 ${got}`);
@@ -166,9 +166,9 @@ test("갑옷도 녹는다 — 입고 있는 저주받은 것만 빼고", () => {
     {
         const { s, it } = atAnvil(61, 3, "plate mail", 1, "armor");
         it.cursed = true;
-        s.hero.armorId = it.id;
+        s.heroes[0].armorId = it.id;
         const after = perform(s, { t: "melt", letter: it.letter! });
-        assert.ok(after.hero.pack.some((p) => p.id === it.id), "몸에 붙은 것이 녹았다");
+        assert.ok(after.heroes[0].pack.some((p) => p.id === it.id), "몸에 붙은 것이 녹았다");
         assert.ok(after.messages.some((m) => m.includes("몸에서 떨어지지 않는다")));
     }
 });
@@ -177,29 +177,29 @@ test("쥐고 있던 것을 녹이면 그 자리도 빈다 — 저주받은 것�
     // ── 쥐고 있던 것을 녹이면 그 자리도 빈다
     {
         const { s, it } = atAnvil(14, 3);
-        s.hero.weaponId = it.id;
+        s.heroes[0].weaponId = it.id;
         const after = perform(s, { t: "melt", letter: it.letter! });
-        assert.equal(equippedWeapon(after.hero), undefined, "녹았는데 아직 쥐고 있다");
-        assert.equal(after.hero.weaponId, null);
+        assert.equal(equippedWeapon(after.heroes[0]), undefined, "녹았는데 아직 쥐고 있다");
+        assert.equal(after.heroes[0].weaponId, null);
     }
 
     // ── 쥐고 있는 저주받은 무기는 못 녹인다 — 내려놓지도 못하는 것이다
     {
         const { s, it } = atAnvil(15, 4);
         it.cursed = true;
-        s.hero.weaponId = it.id;
+        s.heroes[0].weaponId = it.id;
         const turnBefore = s.turn;
         const after = perform(s, { t: "melt", letter: it.letter! });
-        assert.ok(after.hero.pack.some((p) => p.id === it.id), "손에 붙은 것이 녹았다");
+        assert.ok(after.heroes[0].pack.some((p) => p.id === it.id), "손에 붙은 것이 녹았다");
         assert.equal(after.turn, turnBefore);
         assert.ok(after.messages.some((m) => m.includes("몸에서 떨어지지 않는다")));
 
         // 배낭에 든 저주받은 무기는 녹일 수 있다 — 손에 붙은 것이 아니다.
         // **장수는 굴림에 달렸으니 폭으로 본다** — 한 숫자를 박으면 굴림을 바꾸는 날
         // 이 테스트가 「저주」와 상관없는 이유로 깨진다.
-        s.hero.weaponId = null;
+        s.heroes[0].weaponId = null;
         const ok = perform(s, { t: "melt", letter: it.letter! });
-        assert.ok(!ok.hero.pack.some((p) => p.id === it.id), "배낭에 든 것이 안 녹았다");
+        assert.ok(!ok.heroes[0].pack.some((p) => p.id === it.id), "배낭에 든 것이 안 녹았다");
         const got = scrolls(ok);
         assert.ok(got >= 1 && got <= 5, `나온 장수가 ${got}`);
     }
@@ -213,9 +213,9 @@ test("무기도 갑옷도 아니면 안 올라간다 · 되뽑은 것으로 다�
         const { s } = atAnvil(16, 0);
         const ring = makeItem("ring", "protection", 950, -1, -1);
         ring.plusRing = 5;
-        addToPack(s.hero, ring);
+        addToPack(s.heroes[0], ring);
         const after = perform(s, { t: "melt", letter: ring.letter! });
-        assert.ok(after.hero.pack.some((p) => p.id === ring.id), "반지가 녹았다");
+        assert.ok(after.heroes[0].pack.some((p) => p.id === ring.id), "반지가 녹았다");
         assert.equal(scrolls(after), 0);
         assert.ok(after.messages.some((m) => m.includes("모루에 올릴 것이 아니다")));
     }
@@ -226,17 +226,17 @@ test("무기도 갑옷도 아니면 안 올라간다 · 되뽑은 것으로 다�
         // 「물건을 없애는 칸」이 된다.
         const { s, it } = atAnvil(17, 4, "long sword");
         const better = makeItem("weapon", "baphomet sword", 951, -1, -1);
-        addToPack(s.hero, better);
+        addToPack(s.heroes[0], better);
 
         let after = perform(s, { t: "melt", letter: it.letter! });
         const got = scrolls(after);
         assert.ok(got >= 1);
-        const scroll = after.hero.pack.find((p) => p.kind === "scroll" && p.type === "enchant weapon")!;
+        const scroll = after.heroes[0].pack.find((p) => p.kind === "scroll" && p.type === "enchant weapon")!;
 
         for (let i = 0; i < got; i++) {
             after = perform(after, { t: "read", letter: scroll.letter!, target: better.letter! });
         }
         assert.equal(better.plusHit, got, "옮겨 심은 강화가 안 올랐다");
-        assert.equal(packItem(after.hero, scroll.letter!), undefined, "다 안 썼다");
+        assert.equal(packItem(after.heroes[0], scroll.letter!), undefined, "다 안 썼다");
     }
 });

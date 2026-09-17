@@ -123,6 +123,7 @@ import type { Tomb } from "./storage";
 import {
     AMULET_LEVEL,
     ALL_DIRS,
+    type Hero,
     type GameState,
     type HeroOrigin,
     type Item,
@@ -140,7 +141,7 @@ import {
     walkable,
 } from "./types";
 
-export type Command =
+type Action =
     | { t: "move"; dx: number; dy: number }
     | { t: "rest" }
     | { t: "descend" }
@@ -162,6 +163,16 @@ export type Command =
     | { t: "drop"; letter: string }
     | { t: "use_relic"; letter: string }
     | { t: "socket"; gearLetter: string; gemLetter: string };
+
+/**
+ * 명령 하나 — **누가 하는지**까지.
+ *
+ * `who` 는 `state.heroes` 의 칸 번호이고, 없으면 `0`(방장)이다. 그래서 **단독 플레이의
+ * 명령은 한 글자도 안 바뀐다** — 옛 명령이 그대로 돌고, 테스트도 그대로 산다.
+ *
+ * 한 자리에 붙인다. 열아홉 갈래마다 적으면 새 명령을 더하는 날 하나를 빠뜨린다.
+ */
+export type Command = Action & { who?: number };
 
 /**
  * ` (피해 3d4+2)` — 착용한 **그 물건의 성능.**
@@ -230,7 +241,7 @@ const DROUGHT_STEP = 1.0;
 function populate(state: GameState, level: Level, rng: Rng) {
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
-        const p = freeSpot(level, rng, [state.hero, level.stairs]);
+        const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
         const prefix = rollChampionPrefix(level.depth, rng);
         const m = spawnMonster(randomMonsterChar(level.depth, rng), p.x, p.y, rng, prefix ?? undefined);
         if (level.mutator === "frenzy") {
@@ -273,7 +284,7 @@ function populate(state: GameState, level: Level, rng: Rng) {
 
         // 희귀 전설 유물 스폰 (food나 enchant가 아닐 때만)
         if (cat !== "food" && cat !== "enchant" && !relicPlaced && ((level.depth >= 10 && rng.rnd(100) < 8) || (bias && bias.gold && level.depth >= 8 && rng.rnd(100) < 25))) {
-            const unowned = RELICS.filter((r) => !hasRelic(state.hero, r) && !level.items.some((it) => it.kind === "relic" && it.type === r));
+            const unowned = RELICS.filter((r) => !hasRelic(state.heroes[0], r) && !level.items.some((it) => it.kind === "relic" && it.type === r));
             if (unowned.length > 0) {
                 const relicType = rng.pick(unowned);
                 if (relicType) {
@@ -295,7 +306,7 @@ function populate(state: GameState, level: Level, rng: Rng) {
         level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat));
     };
 
-    const avoid = [state.hero, level.stairs];
+    const avoid = [state.heroes[0], level.stairs];
     if (sp && def) {
         const tierUp = sp.kind === "armory" ? ARMORY_TIER_UP : 0;
         for (const p of roomSpots(level, level.rooms[sp.room], ns, rng, avoid)) put(p, def.bias, tierUp);
@@ -339,9 +350,36 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
 
     const back = from === "above" ? level.upStairs : from === "below" ? level.stairs : null;
     const start = back ?? freeSpot(level, rng, [level.stairs]);
-    state.hero.x = start.x;
-    state.hero.y = start.y;
+    // **파티가 같이 옮겨 간다.** 층은 하나뿐이라(`state.level`) 둘이 다른 층에 있을 수 없고,
+    // 쓰러진 사람도 업고 간다 — 두고 가면 살릴 길이 없다.
+    // 먼저 전원을 판 밖으로 치워 두고 한 명씩 세운다 — 옛 층의 좌표가 곁 찾기를 막지 않게.
+    for (const h of state.heroes) {
+        h.x = h.y = -1;
+        delete h.stairsVote; // 함정으로 떨어져도 옛 층의 기다림을 들고 가지 않는다
+    }
     state.level = level;
+    // 첫 사람은 계단 위, 나머지는 **그 곁에** 선다 — 한 칸에 둘이 서지 않는다.
+    state.heroes.forEach((h, i) => {
+        const p = i === 0 ? start : besideFree(state, start, rng);
+        h.x = p.x;
+        h.y = p.y;
+    });
+    // **살아서 층을 넘으면 쓰러진 동료가 일어난다** — 최대 체력의 절반으로.
+    //
+    // 협동일 때만이다. 혼자면 쓰러지는 순간 판이 끝나므로 여기까지 오지 않는다.
+    // 이 규칙이 살아남은 사람에게 「계단까지 간다」는 구체적인 목표를 준다 — 판이 그냥
+    // 끝나지 않고, 도망이 곧 동료를 살리는 길이 된다.
+    if (state.heroes.length > 1) {
+        for (const h of state.heroes) {
+            if (h.hp > 0) continue;
+            h.hp = Math.max(1, Math.floor(h.maxHp / 2));
+            h.burnTurns = 0;
+            h.asleep = 0;
+            h.confused = 0;
+            h.blind = 0;
+            say(state, "쓰러졌던 동료가 층을 넘으며 숨을 되찾았다.");
+        }
+    }
     // 이미 살던 층에 몬스터와 물건을 또 뿌리면 갈 때마다 불어난다.
     if (!seen) {
         level.mutator = rollFloorMutator(depth, rng);
@@ -350,13 +388,14 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
             say(state, FLOOR_MUTATOR_DEFS[level.mutator].banner);
         }
     }
-    computeFov(level, state.hero);
+    computeFov(level, state.heroes);
     state.deepest = Math.max(state.deepest, depth);
 }
 
 /** 시야 내에 들어온 바닥의 물건들을 이번 판 목격 목록에 기록한다. */
 export function updateSeenItems(state: GameState): void {
-    const { level, hero } = state;
+    const { level } = state;
+    const hero = state.heroes[0];
     if (!level || !level.items) return;
     for (const it of level.items) {
         if (isVisible(level, it.x, it.y) || hero.detect > 0) {
@@ -387,7 +426,7 @@ export function newGame(
         // 아래에서 곧바로 덮는다. 타입을 채우기 위한 빈 층.
         level: null as unknown as Level,
         levels: {},
-        hero: null as unknown as GameState["hero"],
+        heroes: [],
         messages: [],
         turn: 0,
         phase: "playing",
@@ -405,9 +444,27 @@ export function newGame(
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);
-    state.hero = makeHero(rng, () => state.nextItemId++, origin);
+    state.heroes[0] = makePartyHero(state, rng, origin);
+    enterLevel(state, 1, rng, "above");
+    updateSeenItems(state);
+    state.rngState = rng.state;
+    say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
+    return state;
+}
+
+/**
+ * 영웅 하나를 빚고 **그가 아는 것을 판에 올린다.**
+ *
+ * `newGame` 과 `joinGame` 이 **같이 쓴다** — 갈라 두면 손님만 제 직업의 지식을 못 받는
+ * 날이 온다.
+ *
+ * **아는 것(`known`)은 파티가 같이 든다.** 고서 연구자가 합류하면 방장도 주문서를 읽을
+ * 줄 알게 된다 — 시야를 합치는 것과 같은 결이다(등을 맡긴 사람이 아는 것은 나도 안다).
+ */
+function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
+    const hero = makeHero(rng, () => state.nextItemId++, origin);
     // 처음 쥔 것은 무엇인지 안다.
-    for (const it of state.hero.pack) {
+    for (const it of hero.pack) {
         const k = `${it.kind}:${it.type}`;
         state.known[k] = true;
         state.itemCodex[k] = true;
@@ -432,11 +489,76 @@ export function newGame(
             state.itemCodex[k] = true;
         }
     }
-    enterLevel(state, 1, rng, "above");
+    return hero;
+}
+
+/**
+ * 손님 하나를 판에 들인다 — **방장 곁에** 세운다.
+ *
+ * 핫시트도 온라인도 이 자리를 쓴다. 자리를 층 아무 데나(`freeSpot`) 주면 둘이 서로를
+ * 못 찾은 채 시작한다 — **같이 들어왔으면 같이 서 있어야** 한다. 곁에 설 칸이 하나도
+ * 없으면(벽장 같은 방) 그때는 층에서 찾는다. 그래도 판은 굴러가야 한다.
+ *
+ * **턴을 안 쓴다** — 합류는 세상을 바꾸는 행동이 아니라 사람이 하나 느는 일이다
+ * (`survey` 와 같은 자리, 못 박은 규칙 3).
+ */
+/**
+ * 동료를 보낸다 — 둘에서 **다시 혼자로.** 방장(`heroes[0]`)만 남고 턴은 안 쓴다.
+ *
+ * 방장이 쓰러져 있으면 못 보낸다: 혼자 남은 사람이 쓰러진 판은 이미 끝난 판이다.
+ * 몬스터가 쥐고 있던 어그로(`target`)는 사람의 **칸 번호**라, 떠난 자리를 가리키면 지운다.
+ * 동료는 **배낭·직업·레벨을 든 채** `benched` 에서 기다린다 — 다시 부르면 그대로 돌아온다.
+ */
+export function leaveGame(state: GameState): GameState {
+    if (state.heroes.length < 2) return state;
+    if (state.heroes[0].hp <= 0) {
+        say(state, "쓰러진 채로는 동료를 보낼 수 없다.");
+        return { ...state };
+    }
+    state.benched = state.heroes[1];
+    delete state.benched.stairsVote;
+    state.heroes.length = 1;
+    delete state.heroes[0].stairsVote;
+    for (const l of [state.level, ...Object.values(state.levels)]) {
+        for (const m of l?.monsters ?? []) if ((m.target ?? 0) > 0) delete m.target;
+    }
+    computeFov(state.level, state.heroes);
+    say(state, "동료가 떠났다. 다시 혼자다.");
+    return { ...state };
+}
+
+/**
+ * `at` 곁의 빈 칸 — 다른 영웅도 몬스터도 없는 곳. 곁이 다 찼으면 층 아무 데나.
+ * **영웅은 한 칸에 둘이 안 선다** — 합류·층 이동이 다 이 자리를 쓴다.
+ */
+function besideFree(state: GameState, at: Pos, rng: Rng): Pos {
+    const taken = (x: number, y: number) =>
+        state.heroes.some((h) => h.x === x && h.y === y) ||
+        state.level.monsters.some((m) => m.x === x && m.y === y);
+    const beside = ALL_DIRS.map((d) => ({ x: at.x + d.dx, y: at.y + d.dy })).find(
+        (p) => inBounds(p.x, p.y) && walkable(tileAt(state.level, p.x, p.y)) && !taken(p.x, p.y),
+    );
+    return beside ?? freeSpot(state.level, rng, state.heroes);
+}
+
+export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameState {
+    const rng = rngOf(state);
+    const host = state.heroes[0];
+    // **이 판에서 보냈던 동료가 있으면 그 사람이 돌아온다** — 고른 직업은 안 쓴다.
+    const back = state.benched;
+    delete state.benched;
+    const guest = back ?? makePartyHero(state, rng, origin);
+
+    const at = besideFree(state, host, rng);
+    guest.x = at.x;
+    guest.y = at.y;
+    state.heroes.push(guest);
+
+    computeFov(state.level, state.heroes);
     updateSeenItems(state);
     state.rngState = rng.state;
-    say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
-    return state;
+    say(state, back ? "동료가 돌아왔다." : "동료가 합류했다.");
+    return { ...state };
 }
 
 /** 저장해 둔 난수 상태로 이어 굴린다 — 그래야 판이 재현된다. */
@@ -452,8 +574,7 @@ function blockedDiagonal(level: Level, from: Pos, to: Pos): boolean {
     return tileAt(level, from.x, from.y) === T.DOOR || tileAt(level, to.x, to.y) === T.DOOR;
 }
 
-function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
-    const hero = state.hero;
+function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng): boolean {
     const level = state.level;
 
     // 헷갈리는 동안에는 가려던 곳으로 못 간다.
@@ -469,7 +590,8 @@ function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
 
     const target = monsterAt(level, nx, ny);
     if (target) {
-        const r = heroAttack(state, target, rng);
+        pullAggro(state, target, hero);
+        const r = heroAttack(state, hero, target, rng);
         say(state, ...r.messages);
         if (r.killed) killMonster(state, target, rng);
         return true;
@@ -478,8 +600,19 @@ function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
     if (!walkable(tileAt(level, nx, ny))) return false;
     if (blockedDiagonal(level, hero, { x: nx, y: ny })) return false;
 
+    // **동료와는 자리를 바꾼다** — 막히게 두면 폭 한 칸 복도에서 둘이 영영 못 지나간다.
+    const mate = state.heroes.find((h) => h !== hero && h.x === nx && h.y === ny);
+    if (mate) {
+        mate.x = hero.x;
+        mate.y = hero.y;
+    }
     hero.x = nx;
     hero.y = ny;
+    // 계단을 눌러 두고 멀리 가면 **기다림을 거둔 것**이다 — 돌아와서 다시 눌러야 한다.
+    for (const h of [hero, mate]) {
+        const at = h?.stairsVote === "down" ? level.stairs : h?.stairsVote === "up" ? level.upStairs : null;
+        if (h && at && Math.max(Math.abs(h.x - at.x), Math.abs(h.y - at.y)) > 1) delete h.stairsVote;
+    }
 
     // 갑옷과 반지 착용 걸음 수 누적 (도감 통달)
     if (hero.armorId) {
@@ -525,12 +658,12 @@ function heroMove(state: GameState, dx: number, dy: number, rng: Rng): boolean {
     }
 
     const trap = level.traps.find((t) => t.x === nx && t.y === ny);
-    if (trap) springTrap(state, trap, rng);
+    if (trap) springTrap(state, hero, trap, rng);
     return true;
 }
 
-function pickUp(state: GameState): boolean {
-    const { hero, level } = state;
+function pickUp(state: GameState, hero: Hero): boolean {
+    const { level } = state;
     const it = itemAt(level, hero.x, hero.y);
     if (!it) {
         say(state, "여기에는 아무것도 없다.");
@@ -562,8 +695,7 @@ function pickUp(state: GameState): boolean {
     return true;
 }
 
-function quaff(state: GameState, letter: string, rng: Rng): boolean {
-    const { hero } = state;
+function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "potion") {
         say(state, "마실 수 있는 것이 아니다.");
@@ -638,8 +770,8 @@ function quaff(state: GameState, letter: string, rng: Rng): boolean {
  * 규칙이 두 벌이 되지 않는다(`onStairs` 와 같은 자리 — 못 박은 규칙 1). 눌러도
  * `read` 가 한 번 더 본다: 대상 없이 들어오면 아무 일도 안 난다.
  */
-export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] | null {
-    const it = packItem(state.hero, letter);
+export function scrollTargetKinds(state: GameState, letter: string, who = 0): ItemKind[] | null {
+    const it = packItem(state.heroes[who] ?? state.heroes[0], letter);
     if (!it || it.kind !== "scroll") return null;
     if (it.type === "enchant weapon") return ["weapon"];
     if (it.type === "enchant armor") return ["armor"];
@@ -648,8 +780,8 @@ export function scrollTargetKinds(state: GameState, letter: string): ItemKind[] 
     return null;
 }
 
-export function enchantTarget(state: GameState, letter: string): ItemKind | null {
-    const kinds = scrollTargetKinds(state, letter);
+export function enchantTarget(state: GameState, letter: string, who = 0): ItemKind | null {
+    const kinds = scrollTargetKinds(state, letter, who);
     return kinds && kinds.length === 1 ? kinds[0] : null;
 }
 
@@ -662,8 +794,8 @@ export function enchantTarget(state: GameState, letter: string): ItemKind | null
  *
  * `scrollTargetKinds` 와 같은 자리의 **값 읽기**다(못 박은 규칙 1).
  */
-export function enchantScrollKind(state: GameState, letter: string): "plain" | "blessed" | null {
-    const it = packItem(state.hero, letter);
+export function enchantScrollKind(state: GameState, letter: string, who = 0): "plain" | "blessed" | null {
+    const it = packItem(state.heroes[who] ?? state.heroes[0], letter);
     if (!it || it.kind !== "scroll" || !ENCHANT_SCROLLS.includes(it.type)) return null;
     return it.type === "blessed enchant" ? "blessed" : "plain";
 }
@@ -744,8 +876,7 @@ function transmute(state: GameState, it: Item, rng: Rng, isBlessed = false): voi
  * **저주받은 것도 걸 수 있다.** 부서지면 저주에서 풀려나는데, 그것이 벗을 수 없는
  * 물건을 떼는 유일한 길이고 대가도 분명하다(물건이 사라진다).
  */
-function enchant(state: GameState, it: Item, rng: Rng, blessed: boolean): void {
-    const hero = state.hero;
+function enchant(state: GameState, hero: Hero, it: Item, rng: Rng, blessed: boolean): void {
     const plus = enchantOf(it);
     // **정체를 알게 된다.** 걸어 본 물건의 속을 모른 채로 둘 수는 없다.
     const key = `${it.kind}:${it.type}`;
@@ -798,8 +929,8 @@ function enchant(state: GameState, it: Item, rng: Rng, blessed: boolean): void {
     );
 }
 
-function read(state: GameState, letter: string, rng: Rng, target?: string): boolean {
-    const { hero, level } = state;
+function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: string): boolean {
+    const { level } = state;
     if (hero.blind > 0) {
         say(state, "앞이 안 보여 읽을 수 없다.");
         return false;
@@ -837,7 +968,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
             state.known[scrKey] = true;
             state.itemCodex[scrKey] = true;
             state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
-            enchant(state, on, rng, it.type === "blessed enchant" || !!it.blessed);
+            enchant(state, hero, on, rng, it.type === "blessed enchant" || !!it.blessed);
             return true;
         } else if (it.type === "transmutation") {
             const preserved = hero.origin === "scholar" && rng.chance(0.25);
@@ -885,7 +1016,10 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
                         const x = level.stairs.x + dx;
                         const y = level.stairs.y + dy;
                         if (inBounds(x, y) && walkable(level.tiles[idx(x, y)] as Tile)) {
-                            if (!level.monsters.some((m) => m.x === x && m.y === y)) {
+                            if (
+                                !level.monsters.some((m) => m.x === x && m.y === y) &&
+                                !state.heroes.some((h) => h !== hero && h.x === x && h.y === y)
+                            ) {
                                 candidates.push({ x, y });
                             }
                         }
@@ -896,7 +1030,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
                 hero.y = p.y;
                 say(state, "✨ 축복받은 공간 이동의 힘으로 계단 근처의 안전한 장소로 이동했습니다.");
             } else {
-                const p = freeSpot(level, rng, [level.stairs]);
+                const p = freeSpot(level, rng, [level.stairs, ...state.heroes.filter((h) => h !== hero)]);
                 hero.x = p.x;
                 hero.y = p.y;
                 say(state, "몸이 홱 당겨졌다.");
@@ -919,7 +1053,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
                         doorsOpened++;
                     }
                 }
-                computeFov(level, hero);
+                computeFov(level, state.heroes);
                 say(state, `✨ 축복의 혜안으로 배낭의 모든 물건을 감정하고 미궁의 비밀문(${doorsOpened}개)이 모두 드러났습니다!`);
             } else {
                 say(state, "배낭 속의 것들이 무엇인지 알겠다.");
@@ -961,8 +1095,7 @@ function read(state: GameState, letter: string, rng: Rng, target?: string): bool
     return true;
 }
 
-function eat(state: GameState, letter: string, rng: Rng): boolean {
-    const { hero } = state;
+function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "food") {
         say(state, "먹을 수 있는 것이 아니다.");
@@ -990,8 +1123,7 @@ function revealCurse(state: GameState, it: Item): boolean {
     return true;
 }
 
-function wield(state: GameState, letter: string): boolean {
-    const hero = state.hero;
+function wield(state: GameState, hero: Hero, letter: string): boolean {
     const cur = equippedWeapon(hero);
     if (cur && cur.cursed) {
         cur.curseKnown = true;
@@ -1014,8 +1146,7 @@ function wield(state: GameState, letter: string): boolean {
     return true;
 }
 
-function wear(state: GameState, letter: string): boolean {
-    const hero = state.hero;
+function wear(state: GameState, hero: Hero, letter: string): boolean {
     const cur = equippedArmor(hero);
     if (cur && cur.cursed) {
         cur.curseKnown = true;
@@ -1037,8 +1168,7 @@ function wear(state: GameState, letter: string): boolean {
 }
 
 /** 반지를 낀다 — 양손에 하나씩. **끼면 배가 더 고프다.** */
-function putOn(state: GameState, letter: string): boolean {
-    const hero = state.hero;
+function putOn(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "ring") {
         say(state, "낄 수 있는 것이 아니다.");
@@ -1064,8 +1194,7 @@ function putOn(state: GameState, letter: string): boolean {
     return true;
 }
 
-function removeRing(state: GameState, letter: string): boolean {
-    const hero = state.hero;
+function removeRing(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "ring") return false;
     if (it.id !== hero.leftRingId && it.id !== hero.rightRingId) {
@@ -1083,8 +1212,8 @@ function removeRing(state: GameState, letter: string): boolean {
     return true;
 }
 
-function drop(state: GameState, letter: string): boolean {
-    const { hero, level } = state;
+function drop(state: GameState, hero: Hero, letter: string): boolean {
+    const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
     if (it.cursed && isWorn(hero, it)) {
@@ -1125,8 +1254,8 @@ function drop(state: GameState, letter: string): boolean {
  * **그 물건을 먼저 빼고 주문서를 넣는다.** 순서가 반대면 배낭이 꽉 찼을 때 자리가 없어
  * 실패하는데, 정작 자리를 비우는 것은 그 물건이다.
  */
-function melt(state: GameState, letter: string, rng: Rng): boolean {
-    const { hero, level } = state;
+function melt(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
+    const { level } = state;
     if (!level.anvil || level.anvil.x !== hero.x || level.anvil.y !== hero.y) {
         say(state, "여기에는 모루가 없다.");
         return false;
@@ -1215,8 +1344,8 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
     state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
     // 무기 처치 수 누적 (도감 통달)
-    if (state.hero.weaponId) {
-        const wep = state.hero.pack.find((p) => p.id === state.hero.weaponId);
+    if (state.heroes[0].weaponId) {
+        const wep = state.heroes[0].pack.find((p) => p.id === state.heroes[0].weaponId);
         if (wep) {
             const k = `weapon:${wep.type}`;
             state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
@@ -1224,7 +1353,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
     }
     const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
     const expGained = m.def.exp * expMultiplier;
-    const levels = gainExp(state.hero, expGained, rng);
+    const levels = gainExp(state.heroes[0], expGained, rng);
     for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
 
     // 챔피언 처치 시 100% 확정 전리품 드랍
@@ -1235,7 +1364,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
     }
 
     // 미다스의 건틀릿 소지 시 추가 금화 생성
-    if (hasRelic(state.hero, "midas_gauntlet")) {
+    if (hasRelic(state.heroes[0], "midas_gauntlet")) {
         const midasGold = m.def.level * 15 + rng.between(10, 30);
         state.level.items.push(makeItem("gold", "gold", state.nextItemId++, m.x, m.y, midasGold));
         say(state, `미다스의 건틀릿이 몬스터의 유골을 황금(${midasGold}G)으로 바꾸었습니다!`);
@@ -1247,8 +1376,8 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
 }
 
 /** 지팡이를 쏜다. 남은 횟수가 없으면 아무 일도 안 난다 — 그것도 정보다. */
-function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng): boolean {
-    const { hero, level } = state;
+function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: number, rng: Rng): boolean {
+    const { level } = state;
     const it = packItem(hero, letter);
     if (!it || it.kind !== "wand") {
         say(state, "쏠 수 있는 것이 아니다.");
@@ -1287,6 +1416,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
             const m = monsterAt(level, nx, ny);
             if (m) {
                 const dmg = rng.rollDice("2d6");
+                pullAggro(state, m, hero);
                 m.hp -= dmg;
                 m.awake = true;
                 say(state, withDamage(`${m.def.name}이(가) 무너지는 파편에 맞았다.`, dmg));
@@ -1296,7 +1426,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
                 }
             }
         }
-        computeFov(level, hero);
+        computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
         if (dug > 0) {
@@ -1323,7 +1453,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
         m.x = hx;
         m.y = hy;
         m.awake = true;
-        computeFov(level, hero);
+        computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
         say(state, `공간이 뒤틀리며 ${m.def.name}와(과) 위치가 바뀌었다!`);
@@ -1355,6 +1485,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
         state.itemCodex[wandKey] = true;
         if (collided) {
             const dmg = rng.rollDice("3d4");
+            pullAggro(state, m, hero);
             m.hp -= dmg;
             m.speed = -1;
             say(state, withDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg));
@@ -1378,6 +1509,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
 
     if (def?.damage) {
         const dmg = rng.rollDice(def.damage);
+        pullAggro(state, m, hero);
         m.hp -= dmg;
         m.awake = true;
         say(state, withDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg));
@@ -1399,7 +1531,7 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
             say(state, `${m.def.name}이(가) 빨라졌다!`);
             break;
         case "teleport away": {
-            const p = freeSpot(level, rng, [hero]);
+            const p = freeSpot(level, rng, state.heroes);
             m.x = p.x;
             m.y = p.y;
             say(state, `${m.def.name}이(가) 사라졌다.`);
@@ -1414,8 +1546,8 @@ function zap(state: GameState, letter: string, dx: number, dy: number, rng: Rng)
 }
 
 /** 던지기 — 멀리서 때리는 유일한 길이다. */
-function throwItem(state: GameState, letter: string, dx: number, dy: number, rng: Rng): boolean {
-    const { hero, level } = state;
+function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy: number, rng: Rng): boolean {
+    const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
     if (!isThrowable(it)) {
@@ -1505,6 +1637,7 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     const guard = monsterDefense(m);
     const got = pierce(d.total, guard);
+    pullAggro(state, m, hero);
     m.hp -= got;
     say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
@@ -1532,8 +1665,8 @@ function throwItem(state: GameState, letter: string, dx: number, dy: number, rng
  * 한 번에 찾을 확률은 낮다(탐색 반지가 크게 올린다). 여러 번 뒤져야 하므로
  * **시간과 식량을 쓴다** — 그것이 비밀문의 값이다.
  */
-function search(state: GameState, rng: Rng): boolean {
-    const { hero, level } = state;
+function search(state: GameState, hero: Hero, rng: Rng): boolean {
+    const { level } = state;
     const chance = searchChance(hero);
     let found = 0;
     for (let dy = -1; dy <= 1; dy++) {
@@ -1569,8 +1702,8 @@ const TRAP_NAME: Record<Trap["kind"], string> = {
 };
 
 /** 함정을 밟았다. **찾아 둔 함정도 밟으면 터진다** — 아는 것과 피하는 것은 다르다. */
-function springTrap(state: GameState, trap: Trap, rng: Rng) {
-    const { hero, level } = state;
+function springTrap(state: GameState, hero: Hero, trap: Trap, rng: Rng) {
+    const { level } = state;
     trap.found = true;
     if (hero.origin === "rogue" && rng.chance(0.5)) {
         say(state, "🗡️ 기습 본능: 재빠른 몸놀림으로 함정을 회피했다!");
@@ -1598,7 +1731,7 @@ function springTrap(state: GameState, trap: Trap, rng: Rng) {
             say(state, "곰덫이 발목을 물었다!");
             break;
         case "teleport": {
-            const p = freeSpot(level, rng, [level.stairs]);
+            const p = freeSpot(level, rng, [level.stairs, ...state.heroes.filter((h) => h !== hero)]);
             hero.x = p.x;
             hero.y = p.y;
             say(state, "몸이 홱 당겨졌다.");
@@ -1618,15 +1751,36 @@ function springTrap(state: GameState, trap: Trap, rng: Rng) {
     }
 }
 
-function descend(state: GameState, rng: Rng): boolean {
-    const { hero, level } = state;
+function descend(state: GameState, hero: Hero, rng: Rng): boolean {
+    const { level } = state;
     if (tileAt(level, hero.x, hero.y) !== T.STAIRS) {
         say(state, "여기에는 내려가는 계단이 없다.");
         return false;
     }
+    if (!partyReady(state, hero, "down", level.stairs)) return false;
     enterLevel(state, level.depth + 1, rng, "above");
     say(state, `지하 ${state.level.depth}층.`);
     return true;
+}
+
+/**
+ * 협동이면 **살아 있는 사람이 모두** 계단을 눌러야 층을 옮긴다. 한 사람이 혼자 눌러
+ * 동료를 싸움 한가운데서 끌고 가면 안 된다.
+ *
+ * 누른 사람은 **계단 곁(한 칸)에 있는 동안** 기다리는 것으로 친다 — 한 칸에 둘이 못
+ * 서므로 뒤에 온 사람이 계단을 밟으면 먼저 온 사람이 곁으로 밀려난다(`heroMove`).
+ * 기다리기만 한 것은 턴을 안 쓴다. 쓰러진 사람은 안 기다린다 — 업고 간다.
+ */
+function partyReady(state: GameState, hero: Hero, way: "down" | "up", at: Pos): boolean {
+    if (state.heroes.length < 2) return true;
+    hero.stairsVote = way;
+    const near = (h: Hero) => Math.max(Math.abs(h.x - at.x), Math.abs(h.y - at.y)) <= 1;
+    if (state.heroes.every((h) => h.hp <= 0 || (h.stairsVote === way && near(h)))) {
+        for (const h of state.heroes) delete h.stairsVote;
+        return true;
+    }
+    say(state, "계단 앞에서 동료를 기다린다 — 모두 계단을 눌러야 옮긴다.");
+    return false;
 }
 
 /**
@@ -1642,8 +1796,8 @@ function descend(state: GameState, rng: Rng): boolean {
  *
  * 대신 층을 다시 굴려 뽑는 짓도 못 한다 — 맘에 안 드는 층은 그대로 거기 있다.
  */
-function ascend(state: GameState, rng: Rng): boolean {
-    const { hero, level } = state;
+function ascend(state: GameState, hero: Hero, rng: Rng): boolean {
+    const { level } = state;
     const up = level.upStairs;
     if (!up || up.x !== hero.x || up.y !== hero.y) {
         say(state, "여기에는 올라가는 계단이 없다.");
@@ -1654,20 +1808,21 @@ function ascend(state: GameState, rng: Rng): boolean {
             say(state, "보이지 않는 힘이 앞을 막는다. 증표 없이는 나갈 수 없다.");
             return false;
         }
+        if (!partyReady(state, hero, "up", up)) return false;
         state.phase = "won";
         state.epitaph = `옌더의 증표를 들고 지상으로 나왔다. 금화 ${hero.gold}.`;
         revealAll(level);
         say(state, "햇빛이다. 살아 돌아왔다.");
         return true;
     }
+    if (!partyReady(state, hero, "up", up)) return false;
     enterLevel(state, level.depth - 1, rng, "below");
     say(state, `지하 ${state.level.depth}층.`);
     return true;
 }
 
 /** 배고픔 시계. 넘어서는 순간에만 말한다 — 매 턴 말하면 그 말이 안 읽힌다. */
-function tickHunger(state: GameState, rng: Rng) {
-    const hero = state.hero;
+function tickHunger(state: GameState, hero: Hero, rng: Rng) {
     const before = hungerOf(hero);
     hero.food -= hungerRate(hero);
     const after = hungerOf(hero);
@@ -1691,8 +1846,7 @@ function tickHunger(state: GameState, rng: Rng) {
 }
 
 /** 회복 — 레벨이 높을수록 빠르다. */
-function regenerate(state: GameState) {
-    const hero = state.hero;
+function regenerate(state: GameState, hero: Hero) {
     if (hero.hp >= hero.maxHp) return;
     const every = regenEvery(hero);
     if (state.turn % every === 0) hero.hp += 1;
@@ -1723,11 +1877,52 @@ function stepToward(level: Level, m: Monster, target: Pos): Pos | null {
  * **빠른 놈은 두 번, 느린 놈은 두 턴에 한 번** 움직인다(지팡이가 그 값을 바꾼다).
  * 그래서 둔화 지팡이가 도망갈 시간을 실제로 벌어 준다.
  */
+/**
+ * **때린 사람에게 어그로가 옮는다.**
+ *
+ * 근접이든 지팡이든 던지기든 **같다.** 뒤에서 지팡이만 쏘는 사람이 안전하면 딜러가
+ * 무적이 되고, 그러면 「한 명이 버티고 한 명이 때린다」가 아니라 그냥 한 명이 미끼다.
+ *
+ * 때리는 자리마다 흩어 적으면 새 공격 수단이 생기는 날 하나를 빠뜨린다 — 여기 한 자리다.
+ */
+function pullAggro(state: GameState, m: Monster, by: Hero): void {
+    const i = state.heroes.indexOf(by);
+    if (i >= 0) m.target = i;
+}
+
+/**
+ * 그 몬스터가 **쫓는 사람.**
+ *
+ * **마지막에 자기를 때린 쪽**(`m.target`)을 쫓는다. 그래야 한 명이 버티고 한 명이 딜을
+ * 넣는 역할이 생긴다. 어그로가 없거나 목표가 쓰러졌으면 **가까운 쪽**을 본다.
+ *
+ * **쓰러진 사람은 안 쫓는다.** 눕힌 사람을 계속 때리면 살아남은 쪽은 아무것도 못 하고,
+ * 협동이 「한 명이 먼저 죽으면 끝」이 된다.
+ */
+function monsterTarget(state: GameState, m: Monster): Hero {
+    const standing = state.heroes.filter((h) => h.hp > 0);
+    const pool = standing.length > 0 ? standing : state.heroes;
+    const marked = m.target === undefined ? undefined : state.heroes[m.target];
+    if (marked && marked.hp > 0) return marked;
+    let best = pool[0];
+    let bestD = Infinity;
+    for (const h of pool) {
+        const d = Math.abs(h.x - m.x) + Math.abs(h.y - m.y);
+        if (d < bestD) {
+            bestD = d;
+            best = h;
+        }
+    }
+    return best;
+}
+
 function monsterTurns(state: GameState, rng: Rng) {
-    const { hero, level } = state;
-    if (hero.timeStop && hero.timeStop > 0) {
-        hero.timeStop -= 1;
-        say(state, `⏳ 시간 정지 지속 중... (남은 턴: ${hero.timeStop})`);
+    const { level } = state;
+    // **누구 하나라도 시간을 세웠으면 세상이 선다.** 파티의 것이지 한 사람의 것이 아니다.
+    const stopper = state.heroes.find((h) => (h.timeStop ?? 0) > 0);
+    if (stopper) {
+        for (const h of state.heroes) if ((h.timeStop ?? 0) > 0) h.timeStop! -= 1;
+        say(state, `⏳ 시간 정지 지속 중... (남은 턴: ${stopper.timeStop})`);
         return;
     }
     for (const m of [...level.monsters]) {
@@ -1740,7 +1935,7 @@ function monsterTurns(state: GameState, rng: Rng) {
         if (m.speed < 0 && state.turn % 2 === 0) continue;
         const acts = m.speed > 0 ? 2 : 1;
         for (let n = 0; n < acts; n++) {
-            if (m.hp <= 0 || state.hero.hp <= 0) break;
+            if (m.hp <= 0 || state.heroes.every((h) => h.hp <= 0)) break;
             monsterAct(state, m, rng);
         }
     }
@@ -1749,20 +1944,26 @@ function monsterTurns(state: GameState, rng: Rng) {
 }
 
 function monsterAct(state: GameState, m: Monster, rng: Rng) {
-    const { hero, level } = state;
+    const { level } = state;
     {
         if (!m.awake) {
-            if (monsterSees(level, m.x, m.y, hero) && m.def.mean) m.awake = true;
-            else return;
+            // **누구든 하나를 보면 깨어난다** — 곁의 성한 사람이 안 보인다고 자는 것은
+            // 아니다. 깨울 때 본 사람이 첫 목표가 된다.
+            const spotted = state.heroes.find((h) => h.hp > 0 && monsterSees(level, m.x, m.y, h));
+            if (spotted && m.def.mean) {
+                m.awake = true;
+                m.target = state.heroes.indexOf(spotted);
+            } else return;
         }
+        const victim = monsterTarget(state, m);
         if (m.def.still) {
-            if (Math.abs(m.x - hero.x) <= 1 && Math.abs(m.y - hero.y) <= 1) {
-                say(state, ...monsterAttack(state, m, rng).messages);
+            if (Math.abs(m.x - victim.x) <= 1 && Math.abs(m.y - victim.y) <= 1) {
+                say(state, ...monsterAttack(state, m, victim, rng).messages);
             }
             return;
         }
-        if (Math.abs(m.x - hero.x) <= 1 && Math.abs(m.y - hero.y) <= 1) {
-            say(state, ...monsterAttack(state, m, rng).messages);
+        if (Math.abs(m.x - victim.x) <= 1 && Math.abs(m.y - victim.y) <= 1) {
+            say(state, ...monsterAttack(state, m, victim, rng).messages);
             return;
         }
         // 박쥐와 황조롱이는 제멋대로 난다 — 원작의 그 성가심이다.
@@ -1774,7 +1975,7 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
                   const ny = m.y + d.dy;
                   return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) ? { x: nx, y: ny } : null;
               })()
-            : stepToward(level, m, hero);
+            : stepToward(level, m, victim);
         if (next) {
             m.x = next.x;
             m.y = next.y;
@@ -1782,17 +1983,7 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
     }
 }
 
-/** 눈이 먼 동안에는 발밑 말고는 아무것도 안 보인다. */
-function applyBlind(state: GameState) {
-    if (state.hero.blind <= 0) return;
-    state.hero.detect = 0;
-    const { level, hero } = state;
-    for (let i = 0; i < level.flags.length; i++) level.flags[i] &= ~2;
-    level.flags[idx(hero.x, hero.y)] |= 2 | 1;
-}
-
-function useRelicCommand(state: GameState, letter: string): boolean {
-    const { hero } = state;
+function useRelicCommand(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "relic") {
         say(state, "사용할 수 있는 유물이 아니다.");
@@ -1813,8 +2004,8 @@ function useRelicCommand(state: GameState, letter: string): boolean {
     return false;
 }
 
-function socketGemCommand(state: GameState, gearLetter: string, gemLetter: string): boolean {
-    const { hero, level } = state;
+function socketGemCommand(state: GameState, hero: Hero, gearLetter: string, gemLetter: string): boolean {
+    const { level } = state;
     if (!level.anvil || hero.x !== level.anvil.x || hero.y !== level.anvil.y) {
         say(state, "보석을 장착하려면 모루 칸(&) 위에 서 있어야 합니다.");
         return false;
@@ -1841,94 +2032,102 @@ export function perform(state: GameState, cmd: Command): GameState {
     if (state.phase !== "playing") return state;
     const rng = rngOf(state);
 
+    // **누가 하는 명령인지를 여기서 한 번 정하고 아래로 넘긴다.** `who` 가 없으면 방장이라,
+    // 단독 플레이의 옛 명령이 한 글자도 안 바뀌고 그대로 돈다. 아래의 어느 처리기도
+    // 「누구 차례인가」를 다시 판단하지 않는다 — 그러면 규칙이 두 벌이 된다.
+    const hero = state.heroes[cmd.who ?? 0];
+    if (!hero) return state;
+    // **쓰러진 사람은 못 움직인다.** 화면이 조종을 안 넘기지만 엔진도 한 번 더 본다.
+    if (hero.hp <= 0) return state;
+
     // 얼어붙었거나 자는 동안에는 내 차례가 없다. 그래도 시간은 간다.
-    if (state.hero.asleep > 0) {
-        state.hero.asleep -= 1;
+    if (hero.asleep > 0) {
+        hero.asleep -= 1;
         say(state, "움직일 수 없다.");
-        return finishTurn(state, rng, true);
+        return finishTurn(state, hero, rng, true);
     }
 
     // **곰덫은 다르다** — 자리를 못 뜰 뿐, 싸우고 마시고 읽는 것은 할 수 있다.
-    if (state.hero.stuck > 0 && cmd.t === "move") {
-        state.hero.stuck -= 1;
-        const target = monsterAt(state.level, state.hero.x + cmd.dx, state.hero.y + cmd.dy);
+    if (hero.stuck > 0 && cmd.t === "move") {
+        hero.stuck -= 1;
+        const target = monsterAt(state.level, hero.x + cmd.dx, hero.y + cmd.dy);
         if (!target) {
             say(state, "덫에 걸려 발이 안 떨어진다.");
-            return finishTurn(state, rng, true);
+            return finishTurn(state, hero, rng, true);
         }
     }
 
     let acted = false;
     if (cmd.t === "rest") {
-        if (state.hero.origin === "knight") {
-            state.hero.guarded = true;
+        if (hero.origin === "knight") {
+            hero.guarded = true;
             say(state, "🛡️ 철벽의 자세를 취했다 (다음 턴 Arm +2 / 받는 피해 2 경감).");
         }
         acted = true;
     } else {
-        state.hero.guarded = false;
+        hero.guarded = false;
         switch (cmd.t) {
             case "move":
-                acted = heroMove(state, cmd.dx, cmd.dy, rng);
+                acted = heroMove(state, hero, cmd.dx, cmd.dy, rng);
                 break;
             case "pickup":
-                acted = pickUp(state);
+                acted = pickUp(state, hero);
                 break;
             case "descend":
-                acted = descend(state, rng);
+                acted = descend(state, hero, rng);
                 break;
             case "ascend":
-                acted = ascend(state, rng);
+                acted = ascend(state, hero, rng);
                 break;
             case "quaff":
-                acted = quaff(state, cmd.letter, rng);
+                acted = quaff(state, hero, cmd.letter, rng);
                 break;
             case "read":
-                acted = read(state, cmd.letter, rng, cmd.target);
+                acted = read(state, hero, cmd.letter, rng, cmd.target);
                 break;
             case "eat":
-                acted = eat(state, cmd.letter, rng);
+                acted = eat(state, hero, cmd.letter, rng);
                 break;
             case "wield":
-                acted = wield(state, cmd.letter);
+                acted = wield(state, hero, cmd.letter);
                 break;
             case "wear":
-                acted = wear(state, cmd.letter);
+                acted = wear(state, hero, cmd.letter);
                 break;
             case "drop":
-                acted = drop(state, cmd.letter);
+                acted = drop(state, hero, cmd.letter);
                 break;
             case "melt":
-                acted = melt(state, cmd.letter, rng);
+                acted = melt(state, hero, cmd.letter, rng);
                 break;
             case "putOn":
-                acted = putOn(state, cmd.letter);
+                acted = putOn(state, hero, cmd.letter);
                 break;
             case "removeRing":
-                acted = removeRing(state, cmd.letter);
+                acted = removeRing(state, hero, cmd.letter);
                 break;
             case "zap":
-                acted = zap(state, cmd.letter, cmd.dx, cmd.dy, rng);
+                acted = zap(state, hero, cmd.letter, cmd.dx, cmd.dy, rng);
                 break;
             case "throw":
-                acted = throwItem(state, cmd.letter, cmd.dx, cmd.dy, rng);
+                acted = throwItem(state, hero, cmd.letter, cmd.dx, cmd.dy, rng);
                 break;
             case "search":
-                acted = search(state, rng);
+                acted = search(state, hero, rng);
                 break;
             case "use_relic":
-                acted = useRelicCommand(state, cmd.letter);
+                acted = useRelicCommand(state, hero, cmd.letter);
                 break;
             case "socket":
-                acted = socketGemCommand(state, cmd.gearLetter, cmd.gemLetter);
+                acted = socketGemCommand(state, hero, cmd.gearLetter, cmd.gemLetter);
                 break;
         }
     }
 
-    return finishTurn(state, rng, acted);
+    return finishTurn(state, hero, rng, acted);
 }
 
-function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
+function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): GameState {
     if (!acted) {
         // 아무 일도 안 일어났으면 턴을 안 쓴다. 난수 상태만 저장한다.
         state.rngState = rng.state;
@@ -1936,23 +2135,44 @@ function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
     }
 
     state.turn += 1;
-    tickHunger(state, rng);
-    regenerate(state);
-    if (state.hero.blind > 0) state.hero.blind -= 1;
-    if (state.hero.confused > 0) state.hero.confused -= 1;
-    if (state.hero.detect > 0) state.hero.detect -= 1;
 
-    // 화상 틱 (영웅)
-    if (state.hero.burnTurns && state.hero.burnTurns > 0) {
-        state.hero.hp -= 2;
-        state.hero.burnTurns -= 1;
-        say(state, "몸에 붙은 불로 2의 화염 피해를 입었다! (화상)");
-    }
+    // ── 영웅에게 붙은 것은 **누가 움직이든** 한 칸씩 돈다 ────────────────────────
+    //
+    // 값은 사람마다 따로 들되(배고픔은 제 주머니 사정이고, 반지도 제 것이 제 배를 곯린다),
+    // **시계는 하나다.** 움직인 사람만 치르게 하면 **가만히 있는 사람이 공짜**가 된다 —
+    // 상대가 층을 다 뒤지는 동안 굶지도, 불타지도, 눈이 풀리지도 않는다. 그건 협동이
+    // 아니라 얌체다.
+    for (const h of state.heroes) {
+        // **쓰러진 사람의 시계는 선다.** 누워 있는 사람이 굶어 죽으면 살릴 길이 없다.
+        if (h.hp <= 0) continue;
+        tickHunger(state, h, rng);
+        regenerate(state, h);
+        if (h.blind > 0) h.blind -= 1;
+        if (h.confused > 0) h.confused -= 1;
+        if (h.detect > 0) h.detect -= 1;
+        // 눈이 멀면 탐지가 꺼진다 — 안 보이는데 생명만 짚어 낼 수는 없다.
+        if (h.blind > 0) h.detect = 0;
 
-    // 유물 쿨다운 감소
-    for (const it of state.hero.pack) {
-        if (it.relicCooldown && it.relicCooldown > 0) {
-            it.relicCooldown -= 1;
+        // 화상 틱 (영웅)
+        if (h.burnTurns && h.burnTurns > 0) {
+            h.hp -= 2;
+            h.burnTurns -= 1;
+            say(state, "몸에 붙은 불로 2의 화염 피해를 입었다! (화상)");
+        }
+
+        // 유물 쿨다운 감소
+        for (const it of h.pack) {
+            if (it.relicCooldown && it.relicCooldown > 0) {
+                it.relicCooldown -= 1;
+            }
+        }
+
+        // 순간이동 반지는 가끔 주인을 아무 데나 던진다 — 좋은 반지가 아니다.
+        if (hasRing(h, "teleportation") && rng.rnd(80) === 0) {
+            const p = freeSpot(state.level, rng, [state.level.stairs, ...state.heroes.filter((o) => o !== h)]);
+            h.x = p.x;
+            h.y = p.y;
+            say(state, "반지가 나를 어딘가로 던졌다.");
         }
     }
 
@@ -1968,42 +2188,46 @@ function finishTurn(state: GameState, rng: Rng, acted: boolean): GameState {
         }
     }
 
-    // 순간이동 반지는 가끔 나를 아무 데나 던진다 — 좋은 반지가 아니다.
-    if (hasRing(state.hero, "teleportation") && rng.rnd(80) === 0) {
-        const p = freeSpot(state.level, rng, [state.level.stairs]);
-        state.hero.x = p.x;
-        state.hero.y = p.y;
-        say(state, "반지가 나를 어딘가로 던졌다.");
-    }
+    if (state.phase === "playing" && hero.hp > 0) monsterTurns(state, rng);
 
-    if (state.phase === "playing" && state.hero.hp > 0) monsterTurns(state, rng);
-
-    computeFov(state.level, state.hero);
+    computeFov(state.level, state.heroes);
     updateSeenItems(state);
-    applyBlind(state);
 
-    if (state.hero.hp <= 0 && state.phase === "playing") {
-        const featherIdx = state.hero.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");
-        if (featherIdx >= 0) {
-            state.hero.pack.splice(featherIdx, 1);
-            state.hero.hp = state.hero.maxHp;
-            state.hero.burnTurns = 0;
-            state.hero.asleep = 0;
-            state.hero.confused = 0;
-            state.hero.blind = 0;
+    // **쓰러진 사람을 훑는다** — 행동한 사람만이 아니다. 불길에도 몬스터에게도 누구나
+    // 쓰러질 수 있고, 그 턴에 움직인 사람이 아닐 수 있다.
+    if (state.phase === "playing") {
+        for (const h of state.heroes) {
+            if (h.hp > 0) continue;
+            const featherIdx = h.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");
+            if (featherIdx < 0) continue;
+            // 깃털은 **그 자리에서 즉시** 일으킨다 — 층을 넘어야 하는 부활보다 먼저다.
+            h.pack.splice(featherIdx, 1);
+            h.hp = h.maxHp;
+            h.burnTurns = 0;
+            h.asleep = 0;
+            h.confused = 0;
+            h.blind = 0;
             say(state, "🔥 불사조의 깃털이 타오르며 영웅을 최대 생명력으로 부활시켰습니다! 🔥");
             for (const m of state.level.monsters) {
-                if (Math.abs(m.x - state.hero.x) <= 1 && Math.abs(m.y - state.hero.y) <= 1) {
-                    const pushSpot = freeSpot(state.level, rng, [state.hero, { x: m.x, y: m.y }]);
+                if (Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1) {
+                    const pushSpot = freeSpot(state.level, rng, [...state.heroes, { x: m.x, y: m.y }]);
                     m.x = pushSpot.x;
                     m.y = pushSpot.y;
                 }
             }
-        } else {
-            state.hero.hp = 0;
+        }
+        // **둘 다 쓰러져야 판이 끝난다.** 혼자면 한 명이 곧 전부라 규칙이 한 벌로 남는다 —
+        // 「혼자일 때」를 따로 적으면 어느 날 한쪽만 고쳐진다.
+        const down = state.heroes.filter((h) => h.hp <= 0);
+        for (const h of down) h.hp = 0;
+        if (down.length === state.heroes.length) {
             state.phase = "dead";
-            if (!state.epitaph) state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${state.hero.gold}.`;
+            if (!state.epitaph) {
+                state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${state.heroes[0].gold}.`;
+            }
             revealAll(state.level);
+        } else if (down.length > 0) {
+            say(state, "동료가 쓰러졌다. 살아서 층을 넘으면 일으킬 수 있다.");
         }
     }
 
@@ -2068,7 +2292,8 @@ function conditionOf(m: Monster): Condition {
  * 지도와 조사가 서로 다른 말을 하게 된다.
  */
 export function survey(state: GameState): Sighting[] {
-    const { level, hero } = state;
+    const { level } = state;
+    const hero = state.heroes[0];
     return level.monsters
         .filter((m) => m.hp > 0 && (isVisible(level, m.x, m.y) || hero.detect > 0))
         .map((m) => {
@@ -2168,7 +2393,7 @@ function scoreOf(gold: number, deepest: number, amulet: boolean): number {
 }
 
 export function score(state: GameState): number {
-    return scoreOf(state.hero.gold, state.deepest, state.hero.hasAmulet);
+    return scoreOf(state.heroes[0].gold, state.deepest, state.heroes[0].hasAmulet);
 }
 
 /** 지난 판 하나의 점수. 옛 기록에는 증표 칸이 없어 「살아 돌아왔나」로 메운다. */
@@ -2215,15 +2440,28 @@ export function standing(mine: number, tombs: Tomb[]): Standing {
 }
 
 /** 화면이 쓰는 글자표 — 한 곳에서만 정한다. */
-export function glyphAt(state: GameState, x: number, y: number): { ch: string; kind: string } | null {
-    const { level, hero } = state;
+export function glyphAt(
+    state: GameState,
+    x: number,
+    y: number,
+    /** 이 화면이 **조종하는** 영웅. 그 사람만 밝게 선다 — 나머지는 동료다. */
+    who = 0,
+): { ch: string; kind: string } | null {
+    const { level } = state;
+    const hero = state.heroes[who] ?? state.heroes[0];
     if (!inBounds(x, y)) return null;
     const flags = level.flags[idx(x, y)];
     const visible = (flags & 2) !== 0;
     const seen = (flags & 1) !== 0;
     if (!seen) return null;
 
-    if (hero.x === x && hero.y === y) return { ch: "@", kind: "hero" };
+    // **조종하는 쪽을 먼저 본다.** 둘이 한 칸에 겹칠 일은 없지만, 겹치더라도 화면은
+    // 「내가 어디 있나」를 먼저 답해야 한다.
+    // **쓰러진 사람은 `†`** — 같은 `@` 로 두면 살아 있는지 파티 줄을 봐야 안다.
+    const face = (h: Hero) => (h.hp > 0 ? "@" : "†");
+    if (hero.x === x && hero.y === y) return { ch: face(hero), kind: "hero" };
+    const other = state.heroes.find((h) => h !== hero && h.x === x && h.y === y);
+    if (other) return { ch: face(other), kind: "ally" };
 
     // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0) {

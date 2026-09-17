@@ -69,7 +69,8 @@ function firstStep(level, from, isGoal) {
 }
 
 function botTurn(s) {
-    const { hero, level } = s;
+    const { level } = s;
+    const hero = s.heroes[0];
 
     // ① 붙은 놈이 있으면 때린다. 도망치는 봇이 아니다 — 그래야 전투 밸런스가 보인다.
     for (const [dx, dy] of STEPS) {
@@ -124,8 +125,8 @@ for (let seed = 1; seed <= RUNS; seed++) {
     }
     results.push({
         depth: s.deepest,
-        level: s.hero.level,
-        gold: s.hero.gold,
+        level: s.heroes[0].level,
+        gold: s.heroes[0].gold,
         turn: s.turn,
         phase: s.phase === "playing" ? "timeout" : s.phase,
         epitaph: s.epitaph,

@@ -29,14 +29,20 @@ export default function Aim({
     what,
     onPick,
     onCancel,
+    side,
+    accent,
+    closeKey,
 }: {
     title: string;
     what: string;
     onPick: (dx: number, dy: number) => void;
     onCancel: () => void;
+    side?: "left" | "right";
+    accent?: string;
+    closeKey?: string;
 }) {
     return (
-        <Panel title={title} onClose={onCancel} footer="방향키·hjkl·yubn 로도 겨눌 수 있습니다.">
+        <Panel side={side} accent={accent} closeKey={closeKey} title={title} onClose={onCancel} footer="방향키·hjkl·yubn 로도 겨눌 수 있습니다.">
             <p className="mb-3 text-[var(--rg-muted)]">{what}</p>
             <div className="mx-auto grid w-[168px] grid-cols-3 gap-1">
                 {CELLS.map((c, i) =>
