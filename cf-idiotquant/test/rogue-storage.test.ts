@@ -99,6 +99,33 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         // 그리고 실제로 굴러가야 한다. 예전에는 여기서 터졌다.
         play(back!);
     }
+
+    // ── 표에 물건을 더한 뒤의 옛 저장 — **빠진 겉모습을 메운다**
+    {
+        // 겉모습이 없으면 `describe` 가 「주문서」로 물러서는데, 나머지는 다 제 이름이
+        // 있어서 **그 하나만 맨숭맨숭해 보인다** — 못 알아보기는커녕 그것만 알아보게 된다.
+        const s = newGame(24);
+        const o = JSON.parse(serialize(s));
+        const key = "scroll:blessed enchant";
+        const keptKey = "scroll:identify";
+        const kept = o.appearance[keptKey];
+        delete o.appearance[key]; // 축복이 표에 없던 때의 저장
+
+        const back = deserialize(JSON.stringify(o))!;
+        assert.ok(back.appearance[key], "빠진 겉모습이 안 메워졌다");
+        assert.ok(
+            back.appearance[key].includes("주문서"),
+            `주문서가 아닌 이름이 붙었다: ${back.appearance[key]}`,
+        );
+        // **있는 것은 안 건드린다** — 알아낸 것이 소용없어지면 안 된다.
+        assert.equal(back.appearance[keptKey], kept, "이미 있던 이름이 바뀌었다");
+
+        // **같은 저장을 다시 열면 같은 이름이 나와야 한다** — 열 때마다 달라지면
+        // 「이 주문서가 아까 그것인가」를 사람이 영영 못 맞춘다.
+        const again = deserialize(JSON.stringify(o))!;
+        assert.equal(again.appearance[key], back.appearance[key], "열 때마다 이름이 달라진다");
+        play(back);
+    }
 });
 
 test("칸을 빼도 끝까지 굴러가고, 깨진 저장은 버린다", () => {

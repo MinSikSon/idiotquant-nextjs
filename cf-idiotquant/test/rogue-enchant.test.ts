@@ -5,9 +5,11 @@
 //
 // 거는 것:
 //
-//   ① **+5 까지는 절대 안 부서진다.** 안전 구간이 없으면 첫 주문서부터 도박이고, 그건
-//      키우기가 아니라 그냥 운이다. 그런데 **떨어지는 물건이 이미 `+0~+3`** 이라 안전
-//      구간을 `+3` 에 두면 강화가 운 좋은 드랍과 똑같아진다 — 재 보고 두 칸을 더 줬다.
+//   ① **안전 구간은 종류마다 다르다** — 무기는 `+6`, 갑옷은 `+4` 까지 안 굴린다. 안전
+//      구간이 없으면 첫 주문서부터 도박이고, 그건 키우기가 아니라 그냥 운이다. 그런데
+//      **떨어지는 물건이 이미 `+0~+3`** 이라 안전 구간을 `+3` 에 두면 강화가 운 좋은
+//      드랍과 똑같아진다 — 재 보고 알았다. 갑옷이 두 칸 낮은 것은 **한 칸의 무게가 다르기
+//      때문**이다: 갑옷 `+1` 은 맞는 것 자체를 줄여 모든 싸움에 듣는다.
 //   ② **실패하면 부서진다** — 수치가 내려가는 게 아니라 물건이 사라진다.
 //   ③ **+9 가 끝이다.** 상한이 없으면 운 좋은 `+12 장검`(4층짜리)이 바포메트의 검
 //      (25층짜리)을 이겨서 **내려갈 이유가 사라진다.**
@@ -15,18 +17,26 @@
 //      묻는 사이에 판이 한 턴 흐르면 안 된다.
 //   ⑤ **화면이 적는 확률과 실제로 굴리는 확률이 같다.** 갈리면 사람은 자기가 본 숫자를
 //      믿고 걸었다가 영문을 모른 채 물건을 잃는다.
+//   ⑥ **축복은 안전 구간 안에서만 다르다** — 한 번에 `1~3` 칸을 올리되 그 종류의 천장에서
+//      잘린다. 천장 위에서는 굴림도 대가도 일반과 똑같다. 축복이 천장까지 올리면 `+9` 가
+//      걸어 들어와서 사다리(층)가 무너진다.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
 import { addToPack, equippedArmor, equippedWeapon } from "@/lib/rogue/hero";
-import { ENCHANT_MAX, enchantOdds, makeItem } from "@/lib/rogue/items";
+import { ENCHANT_MAX, enchantOdds, enchantOf, enchantSafeMax, makeItem } from "@/lib/rogue/items";
 import { isDetail } from "@/lib/rogue/combat";
 import type { GameState, Item } from "@/lib/rogue/types";
 
-/** 배낭에 강화 주문서 한 장과 물건 하나를 넣고 그 둘을 돌려준다. */
-function setup(seed: number, kind: "weapon" | "armor", type: string, plus: number) {
+/**
+ * 배낭에 강화 주문서 한 장과 물건 하나를 넣고 그 둘을 돌려준다.
+ *
+ * 수치는 **손으로** 놓는다(`setEnchant` 를 안 쓴다) — 그 함수가 고장 나도 테스트가
+ * 같이 눈이 멀면 안 된다.
+ */
+function setup(seed: number, kind: "weapon" | "armor", type: string, plus: number, blessed = false) {
     const s = newGame(seed);
     const it = makeItem(kind, type, 900, -1, -1);
     if (kind === "armor") it.plusArmor = plus;
@@ -35,44 +45,76 @@ function setup(seed: number, kind: "weapon" | "armor", type: string, plus: numbe
         it.plusDam = plus;
     }
     addToPack(s.hero, it);
-    const scroll = makeItem("scroll", kind === "armor" ? "enchant armor" : "enchant weapon", 901, -1, -1);
+    const scrollType = blessed ? "blessed enchant" : kind === "armor" ? "enchant armor" : "enchant weapon";
+    const scroll = makeItem("scroll", scrollType, 901, -1, -1);
     addToPack(s.hero, scroll);
     s.known[`scroll:${scroll.type}`] = true;
     return { s, it, scroll };
 }
 
-test("성공률표는 단조 감소하고 +5 까지는 절대 안 부서진다", () => {
-    // ── 성공률표는 단조 감소하고, +5 까지는 100% 이며, 상한에서는 0 이다
+/** 종류마다 「어디까지 안전한가」 — 표와 테스트가 같은 것을 본다. */
+const SAFE = [
+    ["weapon", "long sword", 6],
+    ["armor", "plate mail", 4],
+] as const;
+
+test("안전 구간은 종류마다 다르다 — 무기 +6 · 갑옷 +4", () => {
+    // ── 표: 천장까지 100%, 그 위는 단조 감소, 상한에서 0
     {
-        // 떨어지는 물건이 이미 +0~+3 이다. 안전 구간이 거기서 끝나면 강화가 운 좋은
-        // 드랍과 똑같아져서 **키운 보람이 없다** — 그래서 두 칸을 더 준다(+5 까지).
-        for (let n = 0; n <= 4; n++) {
-            assert.equal(enchantOdds(n), 1, `+${n} 이 안전하지 않다`);
-        }
-        assert.ok(enchantOdds(5) < 1, "+5 위가 안전하다 — 도박이 없다");
-        for (let n = 1; n <= ENCHANT_MAX; n++) {
-            assert.ok(
-                enchantOdds(n) <= enchantOdds(n - 1),
-                `+${n} 의 성공률이 +${n - 1} 보다 높다 — 올라갈수록 어려워야 한다`,
-            );
-        }
-        assert.equal(enchantOdds(ENCHANT_MAX), 0, "상한에서 더 오를 수 있다");
-        for (let n = 5; n < ENCHANT_MAX; n++) {
-            assert.ok(enchantOdds(n) > 0 && enchantOdds(n) < 1, `+${n} 에 도박이 없다`);
+        for (const [kind, , safe] of SAFE) {
+            assert.equal(enchantSafeMax(kind), safe, `${kind} 의 천장이 표와 다르다`);
+            for (let n = 0; n < safe; n++) {
+                assert.equal(enchantOdds(n, kind), 1, `${kind} +${n} 이 안전하지 않다`);
+            }
+            assert.ok(enchantOdds(safe, kind) < 1, `${kind} 는 +${safe} 위도 안전하다 — 도박이 없다`);
+            for (let n = 1; n <= ENCHANT_MAX; n++) {
+                assert.ok(
+                    enchantOdds(n, kind) <= enchantOdds(n - 1, kind),
+                    `${kind} +${n} 의 성공률이 +${n - 1} 보다 높다 — 올라갈수록 어려워야 한다`,
+                );
+            }
+            assert.equal(enchantOdds(ENCHANT_MAX, kind), 0, `${kind} 가 상한에서 더 오른다`);
+            for (let n = safe; n < ENCHANT_MAX; n++) {
+                assert.ok(
+                    enchantOdds(n, kind) > 0 && enchantOdds(n, kind) < 1,
+                    `${kind} +${n} 에 도박이 없다`,
+                );
+            }
         }
     }
 
-    // ── +5 까지는 절대 안 부서진다
+    // ── 갑옷은 **먼저** 도박을 시작할 뿐, 같은 자리에서 더 가혹하지는 않다
     {
-        for (let plus = 0; plus <= 4; plus++) {
-            for (let seed = 1; seed <= 120; seed++) {
-                const { s, it, scroll } = setup(seed * 31 + plus, "weapon", "long sword", plus);
-                const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
-                assert.ok(
-                    after.hero.pack.some((p) => p.id === it.id),
-                    `+${plus} 짜리가 부서졌다 — 여기까지는 안전해야 한다`,
-                );
-                assert.equal(it.plusHit, plus + 1, `+${plus} 에서 안 올랐다`);
+        for (let n = 0; n <= ENCHANT_MAX; n++) {
+            assert.ok(
+                enchantOdds(n, "armor") <= enchantOdds(n, "weapon"),
+                `+${n} 에서 갑옷이 무기보다 잘 붙는다 — 안전 구간이 좁은 쪽이 유리해졌다`,
+            );
+        }
+        // 두 천장을 다 지난 뒤로는 **같은 값**을 쓴다. 종류마다 꼬리를 따로 밀면 `+9`
+        // 도달률이 한쪽만 수십 배로 벌어진다(밀면 무기 15.4% 대 갑옷 0.6%).
+        for (let n = 6; n <= ENCHANT_MAX; n++) {
+            assert.equal(
+                enchantOdds(n, "armor"),
+                enchantOdds(n, "weapon"),
+                `+${n} 에서 두 종류의 꼬리가 갈렸다`,
+            );
+        }
+    }
+
+    // ── 천장까지는 절대 안 부서진다
+    {
+        for (const [kind, type, safe] of SAFE) {
+            for (let plus = 0; plus < safe; plus++) {
+                for (let seed = 1; seed <= 60; seed++) {
+                    const { s, it, scroll } = setup(seed * 31 + plus, kind, type, plus);
+                    const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+                    assert.ok(
+                        after.hero.pack.some((p) => p.id === it.id),
+                        `${kind} +${plus} 짜리가 부서졌다 — 여기까지는 안전해야 한다`,
+                    );
+                    assert.equal(enchantOf(it), plus + 1, `${kind} +${plus} 에서 안 올랐다`);
+                }
             }
         }
     }
@@ -84,7 +126,7 @@ test("실패하면 사라진다 — 쥐고 있던 자리도 빈다", () => {
         let broke = 0;
         let grew = 0;
         for (let seed = 1; seed <= 200; seed++) {
-            // +8 은 15% — 대부분 부서진다.
+            // +8 은 25% — 대부분 부서진다.
             const { s, it, scroll } = setup(seed * 7919, "weapon", "silver sword", 8);
             const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
             const still = after.hero.pack.find((p) => p.id === it.id);
@@ -181,18 +223,18 @@ test("갑옷도 강화되고, 엉뚱한 것에는 안 걸린다", () => {
 test("굴림 줄이 남고, 저주받은 것도 걸리고, 정체를 알게 된다", () => {
     // ── 굴림 줄이 남는다 — 확률과 굴린 눈과 결과
     {
-        const { s, it, scroll } = setup(81, "weapon", "silver sword", 5); // 70%
+        const { s, it, scroll } = setup(81, "weapon", "silver sword", 6); // 무기 천장 바로 위 — 55%
         const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
         // **마지막 계산 줄이 아니라 강화 줄을 집는다.** 같은 턴에 몬스터가 때리면 그
         // 뒤에 `· 피해 …` 가 붙어서, 마지막 줄로 잡으면 엉뚱한 것을 본다.
         const line = after.messages.filter(isDetail).find((l) => l.startsWith("· 강화 "))!;
         assert.ok(line, `강화 줄이 없다: ${JSON.stringify(after.messages.filter(isDetail))}`);
         assert.match(line, /^· 강화 /, `강화 줄이 없다: ${line}`);
-        assert.match(line, /→ \+6/, "어디로 가는지가 없다");
+        assert.match(line, /→ \+7/, "어디로 가는지가 없다");
         assert.match(line, /d100 \d+/, "굴린 눈이 없다");
         // **화면이 적는 확률과 같은 자리에서 온다**(`enchantOdds`).
         assert.ok(
-            line.includes(`${Math.round(enchantOdds(5) * 100)}%`),
+            line.includes(`${Math.round(enchantOdds(6, "weapon") * 100)}%`),
             `적힌 확률이 표와 다르다: ${line}`,
         );
         assert.match(line, /→ (성공|실패)$/, "결과가 없다");
@@ -221,5 +263,90 @@ test("굴림 줄이 남고, 저주받은 것도 걸리고, 정체를 알게 된�
         assert.ok(!s.known["weapon:thirsty sword"], "걸기 전부터 알고 있다");
         const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
         assert.ok(after.known["weapon:thirsty sword"], "걸어 봤는데 아직 모른다");
+    }
+});
+
+test("축복은 안전 구간 안에서만 다르다 — 한 번에 1~3 칸, 천장에서 잘린다", () => {
+    // ── +0 에 읽으면 1~3 칸이 오르고, 셋이 다 나온다
+    {
+        for (const [kind, type] of SAFE) {
+            const steps = new Set<number>();
+            for (let seed = 1; seed <= 200; seed++) {
+                const { s, it, scroll } = setup(seed * 7717, kind, type, 0, true);
+                const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+                assert.ok(
+                    after.hero.pack.some((p) => p.id === it.id),
+                    `${kind} 축복이 안전 구간 안에서 부서졌다`,
+                );
+                const got = enchantOf(it);
+                assert.ok(got >= 1 && got <= 3, `${kind} 축복이 ${got} 칸 올랐다 — 1~3 이어야 한다`);
+                steps.add(got);
+            }
+            assert.deepEqual([...steps].sort(), [1, 2, 3], `${kind} 축복의 눈이 1~3 을 다 안 돈다`);
+        }
+    }
+
+    // ── 천장을 넘는 눈이 나와도 **천장에서 멈춘다**
+    {
+        for (const [kind, type, safe] of SAFE) {
+            for (let seed = 1; seed <= 120; seed++) {
+                const { s, it, scroll } = setup(seed * 5281, kind, type, safe - 1, true);
+                perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+                assert.equal(
+                    enchantOf(it),
+                    safe,
+                    `${kind} 축복이 천장 +${safe} 에서 안 멈췄다 — 넘으면 +9 가 걸어 들어온다`,
+                );
+            }
+        }
+    }
+
+    // ── 무기는 명중과 피해가 **같이** 움직인다 (여러 칸을 한 번에 올려도)
+    {
+        for (let seed = 1; seed <= 40; seed++) {
+            const { s, it, scroll } = setup(seed * 4242, "weapon", "long sword", 0, true);
+            perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+            assert.equal(it.plusDam, it.plusHit, "명중만 오르고 피해가 안 따라왔다");
+        }
+    }
+
+    // ── 천장 **위**에서는 일반과 똑같다 — 한 칸씩 오르고, 실패하면 부서진다
+    {
+        let broke = 0;
+        let grew = 0;
+        for (let seed = 1; seed <= 200; seed++) {
+            const { s, it, scroll } = setup(seed * 8663, "weapon", "silver sword", 8, true);
+            const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+            const still = after.hero.pack.find((p) => p.id === it.id);
+            if (still) {
+                grew++;
+                assert.equal(enchantOf(still), 9, "천장 위인데 한 칸보다 많이 올랐다");
+            } else {
+                broke++;
+            }
+        }
+        assert.ok(broke > 0, "축복이 천장 위에서도 안 부서진다 — 그러면 도박이 통째로 사라진다");
+        assert.ok(grew > 0, "천장 위에서 한 번도 안 올랐다");
+    }
+
+    // ── 상한에 닿은 것에는 축복도 안 걸린다 — 주문서도 턴도 안 쓴다
+    {
+        const { s, it, scroll } = setup(4244, "weapon", "knight sword", ENCHANT_MAX, true);
+        const packBefore = s.hero.pack.length;
+        const turnBefore = s.turn;
+        const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+        assert.equal(after.hero.pack.length, packBefore, "상한인데 축복 주문서가 없어졌다");
+        assert.equal(after.turn, turnBefore, "상한인데 턴이 갔다");
+        assert.equal(enchantOf(it), ENCHANT_MAX, "축복이 상한을 넘었다");
+    }
+
+    // ── 굴림 줄이 남는다 — 어디로 갔는지와 굴린 눈
+    {
+        const { s, it, scroll } = setup(4243, "weapon", "long sword", 0, true);
+        const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+        const line = after.messages.filter(isDetail).find((l) => l.startsWith("· 축복 강화 "));
+        assert.ok(line, `축복 줄이 없다: ${JSON.stringify(after.messages.filter(isDetail))}`);
+        assert.match(line!, /→ \+[1-3]/, "어디로 갔는지가 없다");
+        assert.match(line!, /d3 [1-3]/, "굴린 눈이 없다");
     }
 });

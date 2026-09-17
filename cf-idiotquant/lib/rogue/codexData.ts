@@ -362,7 +362,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         categoryLabel: "주문서",
         masteryType: "uses",
         masteryGoal: 5,
-        flavor: "손에 쥔 무기에 마법을 깃들여 명중과 피해를 높인다. +5 위로는 실패 시 부서질 수 있다.",
+        flavor: "손에 쥔 무기에 마법을 깃들여 명중과 피해를 높인다. +6 위로는 실패 시 부서질 수 있다.",
         masteryFlavor: "숫자가 올라갈 때마다 뿜어내는 날카로운 빛이 모험의 든든한 힘이 되었다.",
     },
     {
@@ -374,8 +374,22 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         categoryLabel: "주문서",
         masteryType: "uses",
         masteryGoal: 5,
-        flavor: "착용한 갑옷의 방어력을 1단계 높인다. 실패하면 산산조각이 난다.",
+        flavor: "착용한 갑옷의 방어력을 1단계 높인다. +4 위로는 실패 시 산산조각이 난다.",
         masteryFlavor: "방어력 한 끗의 차이가 생사를 가르는 순간마다 단단하게 몸을 감싸 주었다.",
+    },
+    {
+        kind: "scroll",
+        type: "blessed enchant",
+        key: "scroll:blessed enchant",
+        name: "축복받은 강화",
+        category: "scroll",
+        categoryLabel: "주문서",
+        masteryType: "uses",
+        masteryGoal: 5,
+        flavor:
+            "무기든 갑옷이든 안전 구간 안에서 한 번에 1~3 단계를 끌어올린다. 천장을 넘는 만큼은 흩어지고, " +
+            "천장 위에서는 보통 강화 주문서와 다를 바 없다.",
+        masteryFlavor: "벼려 올리는 길을 몇 번이고 단숨에 건너뛰어, 아껴 둔 주문서가 그만큼 쌓였다.",
     },
     {
         kind: "scroll",
