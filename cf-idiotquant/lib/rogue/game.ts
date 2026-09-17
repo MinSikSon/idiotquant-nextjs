@@ -996,7 +996,7 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
                         doorsOpened++;
                     }
                 }
-                computeFov(level, hero);
+                computeFov(level, state.heroes);
                 say(state, `✨ 축복의 혜안으로 배낭의 모든 물건을 감정하고 미궁의 비밀문(${doorsOpened}개)이 모두 드러났습니다!`);
             } else {
                 say(state, "배낭 속의 것들이 무엇인지 알겠다.");
