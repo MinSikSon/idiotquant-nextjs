@@ -489,3 +489,18 @@ test("쓰러진 사람은 지도에 † 로 그린다", async () => {
     assert.equal(glyphAt(s, guest.x, guest.y, 1)?.ch, "†", "제 자리에서 본 쓰러진 나");
     assert.equal(glyphAt(s, host.x, host.y, 1)?.ch, "@");
 });
+
+test("협동의 기록은 누가 한 일인지 앞머리를 단다 — 혼자면 안 단다", () => {
+    const s = withGuest(4416);
+    const before = s.messages.length;
+    s.heroes[1].origin = "knight";
+    const after = perform(s, { t: "rest", who: 1 });
+    const mine = after.messages.slice(before);
+    assert.ok(mine.some((m) => m.startsWith("2P▸ ")), `동료의 말에 앞머리가 없다: ${JSON.stringify(mine)}`);
+    assert.ok(!mine.some((m) => m.startsWith("1P▸ ")), "동료가 한 일에 1P 가 붙었다");
+
+    const solo = newGame(4417);
+    solo.heroes[0].origin = "knight";
+    const n = solo.messages.length;
+    assert.ok(!perform(solo, { t: "rest" }).messages.slice(n).some((m) => /^[12]P▸ /.test(m)), "혼자인데 앞머리가 붙었다");
+});

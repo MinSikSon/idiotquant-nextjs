@@ -183,6 +183,35 @@ export default function MapView({
                         </div>
                     ))}
                 </pre>
+                {/* **화면 밖의 동료** — 좁은 화면에서 지도가 나를 따라가면 동료가 잘려 나간다.
+                    그 사람 쪽 가장자리에 제 색 화살표와 거리(칸)를 세운다. */}
+                {state.heroes.map((h, i) => {
+                    if (i === who || h.x < 0) return null;
+                    const dx = h.x < ox ? -1 : h.x >= ox + view.cols ? 1 : 0;
+                    const dy = h.y < oy ? -1 : h.y >= oy + view.rows ? 1 : 0;
+                    if (!dx && !dy) return null;
+                    const arrow = ["↖", "↑", "↗", "←", "", "→", "↙", "↓", "↘"][(dy + 1) * 3 + dx + 1];
+                    const dist = Math.max(Math.abs(h.x - me.x), Math.abs(h.y - me.y));
+                    return (
+                        <span
+                            key={i}
+                            aria-label={`${i + 1}P 는 화면 밖 ${dist}칸`}
+                            className="pointer-events-none absolute whitespace-nowrap rounded-[2px] px-1 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold leading-[1.4]"
+                            style={{
+                                color: PARTY_INK[i],
+                                backgroundColor: PARTY_BG[i],
+                                outline: `1px solid ${PARTY_INK[i]}`,
+                                ...(dx < 0 ? { left: 0 } : dx > 0 ? { right: 0 } : { left: (h.x - ox) * cell.w, transform: "translateX(-50%)" }),
+                                ...(dy < 0 ? { top: 0 } : dy > 0 ? { bottom: 0 } : { top: (h.y - oy) * cell.h, transform: dx ? undefined : "translateX(-50%)" }),
+                            }}
+                        >
+                            {dx < 0 || (!dx && dy) ? arrow : ""}
+                            {h.hp > 0 ? "@" : "†"}
+                            {i + 1}P {dist}
+                            {dx > 0 ? arrow : ""}
+                        </span>
+                    );
+                })}
             </div>
         </div>
     );

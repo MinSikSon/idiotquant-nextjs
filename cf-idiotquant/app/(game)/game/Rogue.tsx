@@ -113,6 +113,23 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
     },
 };
 
+/** 기록 한 줄 — 협동의 앞머리(`1P▸ `, 엔진이 단다)를 그 사람 색으로 칠한다. */
+function Msg({ text }: { text: string }) {
+    const m = /^([12])P▸ /.exec(text);
+    if (!m) return <>{text}</>;
+    return (
+        <>
+            <span className="font-bold" style={{ color: PARTY_INK[Number(m[1]) - 1] }}>
+                {m[1]}P▸
+            </span>{" "}
+            {text.slice(m[0].length)}
+        </>
+    );
+}
+
+/** 상대 책상의 이름 — 온라인에서 상대 줄에 붙는다. */
+const DESK_DOING: Record<DeskMode, string> = { none: "", pack: "배낭 보는 중", picker: "고르는 중", aim: "겨누는 중" };
+
 const KEY_DIRS: Record<string, [number, number]> = {
     h: [-1, 0], ArrowLeft: [-1, 0],
     l: [1, 0], ArrowRight: [1, 0],
@@ -177,7 +194,9 @@ type NetMsg =
     // **나간다는 인사.** 이것 없이 끊기면 사고(망 끊김)로 보고 자리를 지켜 기다린다.
     | { t: "bye" }
     // 살아 있다는 신호. WebRTC 는 상대가 창을 닫아도 한참 「열림」으로 남는다.
-    | { t: "ping" };
+    | { t: "ping" }
+    // 내 책상에 무엇이 떠 있나 — 상대 화면이 「2P 배낭 보는 중」을 적는다.
+    | { t: "ui"; mode: DeskMode };
 
 /**
  * 연결이 살아 있는지 본다 — **말이 끊긴 지 `DEAD_MS` 가 지나면 닫는다.** 닫히면 양쪽의
@@ -516,6 +535,10 @@ export default function Rogue() {
             watchConn(conn);
             conn.on("data", (raw) => {
                 const m = raw as NetMsg;
+                if (m?.t === "ui") {
+                    if (m.mode in DESK_DOING) setPeerMode(m.mode);
+                    return;
+                }
                 if (m?.t === "hello") {
                     const s = stateRef.current;
                     if (!s) return;
@@ -584,6 +607,8 @@ export default function Rogue() {
                     if (s) setState(s);
                 } else if (m?.t === "cmd" && m.cmd) {
                     setState((s) => (s ? perform(s, m.cmd) : s));
+                } else if (m?.t === "ui") {
+                    if (m.mode in DESK_DOING) setPeerMode(m.mode);
                 } else if (m?.t === "bye") {
                     closeRoomRef.current("방장의 판이 끝나 방이 닫혔다. 내 판으로 돌아왔다.");
                 }
@@ -598,16 +623,43 @@ export default function Rogue() {
     }, [note, retry]);
 
     // 새로고침·탭을 닫았다 연 뒤에도 **들어 있던 방으로** 돌아간다.
+    /** 상대 책상에 떠 있는 것 — 이어져 있을 때만 적는다. */
+    const [peerMode, setPeerMode] = useState<DeskMode>("none");
+    useEffect(() => {
+        const c = net.current?.conn;
+        if (online && linked && c?.open) c.send({ t: "ui", mode: modes[who] ?? "none" } satisfies NetMsg);
+    }, [online, linked, modes, who]);
+
+    /** 초대 링크 — 받은 사람이 열면 직업만 고르고 바로 들어온다(아래 `?room=`). */
+    const copyInvite = useCallback(() => {
+        if (!room) return;
+        const url = `${location.origin}${location.pathname}?room=${room}`;
+        const said = () => note(`초대 링크를 복사했다 — ${url}`);
+        navigator.clipboard?.writeText(url).then(said, () => note(`초대 링크: ${url}`)) ?? note(`초대 링크: ${url}`);
+    }, [room, note]);
+
     const resumed = useRef(false);
     useEffect(() => {
         // 개발 모드는 효과를 두 번 돌린다 — 같은 코드로 피어가 둘 서면 서로 자리를 뺏는다.
         if (resumed.current) return;
         resumed.current = true;
+        let inRoom = false;
         try {
             const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
             if (r?.role === "host") hostRoom(r.code);
             else if (r?.role === "guest") joinRoom(r.code, r.origin ?? "knight");
+            inRoom = !!r;
         } catch {}
+        // 초대 링크로 왔다 — 주소에서 코드를 걷어 내고(새로고침에 또 묻지 않게) 직업부터 묻는다.
+        // 이미 어느 방에 들어 있으면 그 방이 먼저다.
+        const invited = new URLSearchParams(location.search).get("room");
+        if (invited && /^\d{4}$/.test(invited)) {
+            history.replaceState(null, "", location.pathname);
+            if (!inRoom) {
+                setOriginFor({ t: "guest", code: invited });
+                setSheet("origins");
+            }
+        }
         // 첫 그림에서 한 번만.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -923,7 +975,7 @@ export default function Rogue() {
                 <span className="min-w-0 flex-1">
                     {recent.map((m, i) => (
                         <span key={`${state.turn}-${i}`} className="block truncate">
-                            {m}
+                            <Msg text={m} />
                         </span>
                     ))}
                 </span>
@@ -939,6 +991,28 @@ export default function Rogue() {
 
             <div className="relative min-h-0 flex-1">
                 <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} />
+
+                {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 지도 위에 적는다. */}
+                {online && !linked && (
+                    <div className="absolute inset-x-0 top-2 z-10 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap items-center justify-center gap-2 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1.5 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                        <span>
+                            {online === "guest"
+                                ? "방장과 잇는 중… 그동안 누른 키는 전달되지 않는다"
+                                : state.heroes.length > 1
+                                  ? `동료와 끊겼다 — 방 ${room} 에서 기다리는 중`
+                                  : `동료를 기다리는 중 · 방 코드 ${room}`}
+                        </span>
+                        {online === "host" && (
+                            <button
+                                type="button"
+                                onClick={copyInvite}
+                                className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 hover:bg-[var(--rg-raised)]"
+                            >
+                                초대 링크 복사
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -1012,6 +1086,11 @@ export default function Rogue() {
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
                         {hHunger && <span className="text-[var(--rg-monster)] font-bold">{hHunger}</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
+                        {online && linked && i !== who && DESK_DOING[peerMode] && (
+                            <span className="font-bold" style={{ color: PARTY_INK[i] }}>
+                                {DESK_DOING[peerMode]}
+                            </span>
+                        )}
                         {coop && i === state.heroes.length - 1 && (
                             <span className="text-[var(--rg-faint)]">
                                 {online
@@ -1524,7 +1603,7 @@ export default function Rogue() {
                             .reverse()
                             .map((m, i) => (
                                 <li key={i} className="text-[var(--rg-muted)]">
-                                    {m}
+                                    <Msg text={m} />
                                 </li>
                             ))}
                     </ul>
@@ -1580,12 +1659,13 @@ export default function Rogue() {
                                       {
                                           // 방장은 방을 못 닫는다 — **판이 끝날 때까지** 열려 있어, 창을 닫았다
                                           // 열어도 손님이 기다렸다 다시 붙는다. 닫히는 것은 새 판을 열 때다.
-                                          label: online === "guest" ? `온라인 방 나가기 (${room})` : `온라인 방 ${room} 열림`,
+                                          label: online === "guest" ? `온라인 방 나가기 (${room})` : `온라인 방 ${room} — 초대 링크 복사`,
                                           hint:
                                               (linked ? "연결됨" : "상대를 기다리는 중") +
-                                              (online === "guest" ? "" : " — 이 판이 끝나 새 판을 열 때까지 열어 둔다"),
+                                              (online === "guest" ? "" : " · 이 판이 끝나 새 판을 열 때까지 열어 둔다"),
                                           go: () => {
                                               if (online === "guest") closeRoom("방을 나왔다. 내 판으로 돌아왔다.");
+                                              else copyInvite();
                                               setSheet("none");
                                           },
                                       },
@@ -1593,7 +1673,7 @@ export default function Rogue() {
                                 : [
                                       {
                                           label: "온라인 방 만들기",
-                                          hint: "코드 네 자리를 동료에게 알려 준다 — 지금 판에 들어온다",
+                                          hint: "초대 링크나 코드 네 자리를 동료에게 보낸다 — 지금 판에 들어온다",
                                           go: () => {
                                               void hostRoom();
                                               setSheet("none");

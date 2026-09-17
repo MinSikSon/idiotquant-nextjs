@@ -190,8 +190,15 @@ function withPower(it: Item, state: GameState): string {
 }
 
 /** 메시지는 여기로만 들어온다 — 화면이 직접 밀어 넣지 않는다. */
+/**
+ * 협동에서 **지금 말하는 사람** — `perform` 이 명령 동안만 켜 둔다(`1P▸ `). 몬스터의 차례
+ * (`finishTurn`)에 나는 말에는 안 붙는다: 그 말은 누구의 행동도 아니다.
+ * 계산 줄(`DETAIL`)에는 안 붙인다 — 화면이 그 앞머리로 계산 줄을 가린다.
+ */
+let sayTag = "";
+
 function say(state: GameState, ...lines: string[]) {
-    for (const l of lines) if (l) state.messages.push(l);
+    for (const l of lines) if (l) state.messages.push(sayTag && !l.startsWith(DETAIL) ? sayTag + l : l);
     // 오래된 것은 버린다. 화면은 마지막 몇 줄만 보여 준다.
     if (state.messages.length > 200) state.messages.splice(0, state.messages.length - 200);
 }
@@ -1999,6 +2006,15 @@ function socketGemCommand(state: GameState, hero: Hero, gearLetter: string, gemL
  * 명령 하나. **돌아온 것이 새 판**이다 — 화면은 이것만 보고 다시 그린다.
  */
 export function perform(state: GameState, cmd: Command): GameState {
+    sayTag = state.heroes.length > 1 ? `${(cmd.who ?? 0) + 1}P▸ ` : "";
+    try {
+        return act(state, cmd);
+    } finally {
+        sayTag = "";
+    }
+}
+
+function act(state: GameState, cmd: Command): GameState {
     if (state.phase !== "playing") return state;
     const rng = rngOf(state);
 
@@ -2098,6 +2114,7 @@ export function perform(state: GameState, cmd: Command): GameState {
 }
 
 function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): GameState {
+    sayTag = "";
     if (!acted) {
         // 아무 일도 안 일어났으면 턴을 안 쓴다. 난수 상태만 저장한다.
         state.rngState = rng.state;
@@ -2197,7 +2214,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
             }
             revealAll(state.level);
         } else if (down.length > 0) {
-            say(state, "동료가 쓰러졌다. 살아서 층을 넘으면 일으킬 수 있다.");
+            say(state, "동료가 쓰러졌다. 살아서 더 깊은 층에 닿으면 일으킬 수 있다.");
         }
     }
 
