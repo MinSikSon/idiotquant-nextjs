@@ -417,9 +417,27 @@ export function newGame(
         nextItemId: 1,
     };
     state.appearance = rollAppearances(rng);
-    state.heroes[0] = makeHero(rng, () => state.nextItemId++, origin);
+    state.heroes[0] = makePartyHero(state, rng, origin);
+    enterLevel(state, 1, rng, "above");
+    updateSeenItems(state);
+    state.rngState = rng.state;
+    say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
+    return state;
+}
+
+/**
+ * 영웅 하나를 빚고 **그가 아는 것을 판에 올린다.**
+ *
+ * `newGame` 과 `joinGame` 이 **같이 쓴다** — 갈라 두면 손님만 제 직업의 지식을 못 받는
+ * 날이 온다.
+ *
+ * **아는 것(`known`)은 파티가 같이 든다.** 고서 연구자가 합류하면 방장도 주문서를 읽을
+ * 줄 알게 된다 — 시야를 합치는 것과 같은 결이다(등을 맡긴 사람이 아는 것은 나도 안다).
+ */
+function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
+    const hero = makeHero(rng, () => state.nextItemId++, origin);
     // 처음 쥔 것은 무엇인지 안다.
-    for (const it of state.heroes[0].pack) {
+    for (const it of hero.pack) {
         const k = `${it.kind}:${it.type}`;
         state.known[k] = true;
         state.itemCodex[k] = true;
@@ -444,11 +462,40 @@ export function newGame(
             state.itemCodex[k] = true;
         }
     }
-    enterLevel(state, 1, rng, "above");
+    return hero;
+}
+
+/**
+ * 손님 하나를 판에 들인다 — **방장 곁에** 세운다.
+ *
+ * 핫시트도 온라인도 이 자리를 쓴다. 자리를 층 아무 데나(`freeSpot`) 주면 둘이 서로를
+ * 못 찾은 채 시작한다 — **같이 들어왔으면 같이 서 있어야** 한다. 곁에 설 칸이 하나도
+ * 없으면(벽장 같은 방) 그때는 층에서 찾는다. 그래도 판은 굴러가야 한다.
+ *
+ * **턴을 안 쓴다** — 합류는 세상을 바꾸는 행동이 아니라 사람이 하나 느는 일이다
+ * (`survey` 와 같은 자리, 못 박은 규칙 3).
+ */
+export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameState {
+    const rng = rngOf(state);
+    const host = state.heroes[0];
+    const guest = makePartyHero(state, rng, origin);
+
+    const taken = (x: number, y: number) =>
+        state.heroes.some((h) => h.x === x && h.y === y) ||
+        state.level.monsters.some((m) => m.x === x && m.y === y);
+    const beside = ALL_DIRS.map((d) => ({ x: host.x + d.dx, y: host.y + d.dy })).find(
+        (p) => inBounds(p.x, p.y) && walkable(tileAt(state.level, p.x, p.y)) && !taken(p.x, p.y),
+    );
+    const at = beside ?? freeSpot(state.level, rng, state.heroes);
+    guest.x = at.x;
+    guest.y = at.y;
+    state.heroes.push(guest);
+
+    computeFov(state.level, state.heroes);
     updateSeenItems(state);
     state.rngState = rng.state;
-    say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
-    return state;
+    say(state, "동료가 합류했다.");
+    return { ...state };
 }
 
 /** 저장해 둔 난수 상태로 이어 굴린다 — 그래야 판이 재현된다. */

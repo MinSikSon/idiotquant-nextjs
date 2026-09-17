@@ -13,31 +13,52 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { newGame, perform } from "@/lib/rogue/game";
-import { makeHero } from "@/lib/rogue/hero";
+import { joinGame, newGame, perform } from "@/lib/rogue/game";
 import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { isVisible } from "@/lib/rogue/fov";
 import { T, idx, walkable, type GameState, type Tile } from "@/lib/rogue/types";
 
-/** 방장 옆에 손님 하나를 세운다 — 걸어 들어갈 수 있는 칸으로. */
+/** 손님 하나를 들인 판. */
 function withGuest(seed: number): GameState {
-    const s = newGame(seed);
-    const guest = makeHero(new Rng(seed + 1), () => s.nextItemId++, "knight");
-    const host = s.heroes[0];
-    // 방장 둘레에서 빈 칸 하나를 고른다.
-    const spot = [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-    ].find(([dx, dy]) => walkable(s.level.tiles[idx(host.x + dx, host.y + dy)] as Tile));
-    assert.ok(spot, "손님을 세울 자리가 없다");
-    guest.x = host.x + spot![0];
-    guest.y = host.y + spot![1];
-    s.heroes.push(guest);
-    return s;
+    return joinGame(newGame(seed));
 }
+
+test("손님은 방장 곁에 선다 — 턴을 안 쓰고, 아는 것은 같이 든다", () => {
+    // ── 곁에 선다 (층 아무 데나가 아니다)
+    {
+        const s = withGuest(4201);
+        const [host, guest] = s.heroes;
+        assert.equal(s.heroes.length, 2, "손님이 안 들어왔다");
+        assert.ok(
+            Math.abs(guest.x - host.x) <= 1 && Math.abs(guest.y - host.y) <= 1,
+            `손님이 방장에게서 멀리 섰다 (${host.x},${host.y}) vs (${guest.x},${guest.y})`,
+        );
+        assert.ok(
+            walkable(s.level.tiles[idx(guest.x, guest.y)] as Tile),
+            "손님이 바위 속에 박혔다",
+        );
+        assert.ok(!(guest.x === host.x && guest.y === host.y), "둘이 한 칸에 겹쳤다");
+    }
+
+    // ── 합류는 **턴을 안 쓴다** — 세상을 바꾸는 행동이 아니다
+    {
+        const solo = newGame(4202);
+        const t0 = solo.turn;
+        const foodBefore = solo.heroes[0].food;
+        const s = joinGame(solo);
+        assert.equal(s.turn, t0, "합류했다고 턴이 갔다");
+        assert.equal(s.heroes[0].food, foodBefore, "합류했다고 방장이 굶었다");
+    }
+
+    // ── 아는 것은 **파티가 같이 든다** — 고서 연구자가 들어오면 둘 다 주문서를 안다
+    {
+        const s = newGame(4203, {}, {}, {}, {}, "knight");
+        assert.ok(!s.known["scroll:teleport"], "기사가 시작부터 주문서를 안다");
+        const both = joinGame(s, "scholar");
+        assert.ok(both.known["scroll:teleport"], "고서 연구자가 왔는데 주문서를 여전히 모른다");
+    }
+});
 
 test("명령은 누가 하는지를 데리고 다닌다 — 행동은 그 사람만, 시계는 같이 돈다", () => {
     // ── `who` 가 없으면 방장이 행동한다 (단독 플레이의 옛 명령이 그대로 돈다)
