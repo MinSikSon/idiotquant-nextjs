@@ -463,10 +463,22 @@ export default function Rogue() {
      * 명령이 판에 닿는 **유일한 길**. 키보드·단추·네트워크 모두 여기로 온다.
      * 손님은 적용하지 않고 방장에게 보낸다 — 방장이 되돌려 준 것만 적용한다.
      */
+    /**
+     * **판이 멈추는가 — 멈추는 것은 손님뿐이다.**
+     *
+     * 손님은 제 화면에서 판을 굴릴 수 없다(굴리면 방장의 판과 갈린다). 방장은 **판의
+     * 주인**이라 손님이 끊긴 동안에도 계속 논다 — 방장이 멈추면 방을 열어 둔 채 기다리는
+     * 동안 아무것도 못 하고, 그건 방을 연 값이 아니다. 손님이 돌아오면 **그때의 판을
+     * 통째로 받아 간다**(`hello` → `init`), 그래서 그 사이의 걸음은 따로 세지 않아도 된다.
+     */
+    const frozen = online === "guest" && !linked;
+    const frozenRef = useRef(frozen);
+    frozenRef.current = frozen;
+
     const dispatchCmd = useCallback(
         (cmd: Command) => {
-            // **끊긴 동안에는 판이 안 돈다** — 단추 판도 마찬가지다(키는 위에서 막는다).
-            if (online && !linked) return;
+            // 단추 판도 키와 같이 막는다.
+            if (frozenRef.current) return;
             const conn = net.current?.conn;
             if (online === "guest") {
                 // 끊긴 동안 누른 것은 버린다 — 다시 이어지면 방장의 판을 통째로 받는다.
@@ -799,8 +811,7 @@ export default function Rogue() {
     blocked.current = (w) =>
         modes[w] !== "none" ||
         (sheet !== "none" && (w === sheetOwner || !!online)) ||
-        // **끊긴 동안에는 판이 멈춘다** — 한쪽만 굴러가면 다시 이었을 때 딴 판이 된다.
-        (!!online && !linked) ||
+        frozen ||
         state?.phase !== "playing";
 
     /**
@@ -835,8 +846,8 @@ export default function Rogue() {
             // 어떤 키도 안 먹는다. 대문자(`W`·`P`·`R`)는 그대로 둔다.
             const key = /^Key[A-Z]$/.test(e.code) ? (e.shiftKey ? e.code[3] : e.code[3].toLowerCase()) : e.key;
             const localCoop = !online && state.heroes.length > 1;
-            // 온라인인데 아직 안 이어졌으면 **아무 키도 안 받는다**(판 위의 알림이 까닭을 적는다).
-            if (online && !linked) return;
+            // 멈춘 동안에는 **아무 키도 안 받는다**(모서리 알림이 까닭을 적는다).
+            if (frozen) return;
             // 같이 보는 판이 떠 있어도 **연 사람만** 멈춘다(아래 협동 갈래에서 가린다).
             // 혼자·온라인은 화면이 하나뿐이라 그대로 다 멈춘다.
             if (sheet !== "none" && !localCoop) return;
@@ -968,7 +979,7 @@ export default function Rogue() {
             window.removeEventListener("keyup", onUp);
             window.removeEventListener("blur", onBlur);
         };
-    }, [state, modes, sheet, sheetOwner, run, runAs, online, who, stopHold, confirm]);
+    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm]);
 
     if (!state) {
         return (
@@ -1806,11 +1817,29 @@ export default function Rogue() {
                                       },
                                   ]
                                 : []),
+                            ...(room && online === "host"
+                                ? [
+                                      {
+                                          // 방을 닫고 **다시 혼자로.** 판이 끝날 때까지 열어 두는 것이 기본이지만
+                                          // (창을 닫았다 열어도 손님이 다시 붙는다), 그만두고 싶을 때가 있다.
+                                          // 동료 자리는 `closeRoom` 이 `leaveGame` 으로 비운다 — 직업·배낭은 그
+                                          // 판 안에 남아, 다시 열어 부르면 그대로 돌아온다.
+                                          label: "온라인 방 닫기 (다시 혼자 하기)",
+                                          hint: linked
+                                              ? "동료는 제 판으로 돌아간다 — 내 판은 이어서 한다"
+                                              : "기다리기를 그만두고 혼자 이어서 한다",
+                                          go: () => {
+                                              closeRoom("방을 닫았다. 다시 혼자다.");
+                                              setSheet("none");
+                                          },
+                                      },
+                                  ]
+                                : []),
                             ...(room
                                 ? [
                                       {
-                                          // 방장은 방을 못 닫는다 — **판이 끝날 때까지** 열려 있어, 창을 닫았다
-                                          // 열어도 손님이 기다렸다 다시 붙는다. 닫히는 것은 새 판을 열 때다.
+                                          // 방은 **판이 끝날 때까지** 열려 있다 — 창을 닫았다 열어도 손님이
+                                          // 기다렸다 다시 붙는다. 저절로 닫히는 것은 새 판을 열 때다.
                                           label: online === "guest" ? `온라인 방 나가기 (${room})` : `온라인 방 ${room} — 초대 링크 복사`,
                                           hint:
                                               (linked ? "연결됨" : "상대를 기다리는 중") +
