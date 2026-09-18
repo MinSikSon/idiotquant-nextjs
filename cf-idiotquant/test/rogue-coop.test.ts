@@ -7,8 +7,10 @@
 //   ② **값은 사람마다 따로, 시계는 하나다.** 배고픔·재생·상태이상을 **각자** 들지만
 //      (반지도 제 것이 제 배를 곯린다) **누가 움직이든** 한 칸씩 돈다. 움직인 사람만
 //      치르게 하면 **가만히 있는 사람이 공짜**가 된다 — 굶지도 불타지도 않는다.
-//   ③ **세상에 붙은 것도 누가 움직이든 돈다** — 몬스터는 **누가 움직이든 한 칸** 따라
-//      움직이고, `turn` 도 같이 간다.
+//   ③ **세상에 붙은 것도 누가 움직이든 돈다** — `turn` 은 누가 움직이든 간다. 다만
+//      **적은 파티의 걸음에 맞춘다**: 서 있는 사람 수만큼 걸음이 모여야 한 번 움직인다.
+//      걸음마다 따라오게 두면 둘일 때 적이 두 배로 빨라져, 동료를 부르는 것이 곧
+//      세상을 두 배로 빠르게 만드는 일이 된다.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -24,6 +26,16 @@ import { T, idx, walkable, type GameState, type Tile } from "@/lib/rogue/types";
 /** 손님 하나를 들인 판. */
 function withGuest(seed: number): GameState {
     return joinGame(newGame(seed));
+}
+
+/**
+ * 파티가 **한 바퀴** 돈다 — 둘이 한 걸음씩.
+ *
+ * 적은 서 있는 사람 수만큼 걸음이 모여야 한 번 움직이므로, 「적이 한 번 움직였다」를
+ * 보려면 한 사람만 굴려서는 안 된다.
+ */
+function partyRound(s: GameState) {
+    for (let i = 0; i < s.heroes.length; i++) perform(s, { t: "rest", who: i });
 }
 
 test("손님은 방장 곁에 선다 — 턴을 안 쓰고, 아는 것은 같이 든다", () => {
@@ -227,7 +239,7 @@ test("몬스터는 마지막에 때린 쪽을 쫓는다", () => {
         const { s, host, guest, m } = withMonster(4303);
         m.target = 1; // 손님을 쫓는 중
         const before = Math.abs(m.y - guest.y) + Math.abs(m.x - guest.x);
-        perform(s, { t: "rest" }); // **방장**이 움직여도
+        partyRound(s); // **방장**이 움직여도 손님 쪽으로 간다
         const after = Math.abs(m.y - guest.y) + Math.abs(m.x - guest.x);
         assert.ok(after < before, `손님을 쫓기로 했는데 안 다가왔다 (${before} → ${after})`);
         assert.equal(m.target, 1, "쫓는 사이에 목표가 바뀌었다");
@@ -255,7 +267,7 @@ test("몬스터는 마지막에 때린 쪽을 쫓는다", () => {
 });
 
 test("몬스터는 누가 움직이든 따라 움직인다", () => {
-    // ── 손님이 움직여도 몬스터는 한 칸 다가온다 — 세상 시계는 하나다
+    // ── 한 바퀴가 돌면 몬스터가 한 칸 다가온다 — 손님이 움직인 걸음도 센다
     {
         const s = withGuest(4004);
         const guest = s.heroes[1];
@@ -270,10 +282,76 @@ test("몬스터는 누가 움직이든 따라 움직인다", () => {
         s.level.monsters = [m];
 
         const before = Math.abs(m.x - guest.x);
+        // **손님이 먼저 움직인다** — 그 한 걸음만으로는 아직 적의 차례가 아니다.
         perform(s, { t: "rest", who: 1 });
+        assert.equal(
+            Math.abs(m.x - guest.x),
+            before,
+            "한 사람만 움직였는데 적이 벌써 움직였다 — 둘이면 적이 두 배로 빨라진다",
+        );
+        perform(s, { t: "rest", who: 0 });
         assert.ok(
             Math.abs(m.x - guest.x) < before,
-            `손님이 움직였는데 몬스터가 안 따라왔다 (${before} → ${Math.abs(m.x - guest.x)})`,
+            `한 바퀴가 돌았는데 몬스터가 안 따라왔다 (${before} → ${Math.abs(m.x - guest.x)})`,
+        );
+    }
+
+    // ── 혼자면 걸음마다 그대로 따라온다 — 단독 플레이의 박자는 안 바뀐다
+    {
+        const s = newGame(4006);
+        const hero = s.heroes[0];
+        for (let n = 1; n <= 3; n++) s.level.tiles[idx(hero.x + n, hero.y)] = T.FLOOR;
+        const m = spawnMonster("Z", hero.x + 3, hero.y, new Rng(7));
+        m.awake = true;
+        m.hp = 20;
+        s.level.monsters = [m];
+
+        const before = Math.abs(m.x - hero.x);
+        perform(s, { t: "rest" });
+        assert.ok(
+            Math.abs(m.x - hero.x) < before,
+            `혼자인데 한 걸음에 몬스터가 안 따라왔다 (${before} → ${Math.abs(m.x - hero.x)})`,
+        );
+    }
+
+    // ── 느린 놈도 결국 다가온다 — 격턴 판단이 **적이 움직인 횟수**를 본다
+    //
+    // `turn` 을 보면 둘일 때 「적이 도는 턴」이 늘 짝수라 격턴 놈은 **영영 한 칸도**
+    // 못 움직인다. 둔화 지팡이를 맞은 놈이 그대로 굳어 버리는 자리다.
+    {
+        const s = withGuest(4008);
+        const host = s.heroes[0];
+        for (let n = 1; n <= 6; n++) s.level.tiles[idx(host.x + n, host.y)] = T.FLOOR;
+        const m = spawnMonster("Z", host.x + 6, host.y, new Rng(7));
+        m.awake = true;
+        m.hp = 40;
+        m.speed = -1; // 둔화
+        s.level.monsters = [m];
+
+        const before = Math.abs(m.x - host.x);
+        for (let n = 0; n < 6; n++) partyRound(s);
+        assert.ok(
+            Math.abs(m.x - host.x) < before,
+            `느린 놈이 여섯 바퀴 동안 한 칸도 못 움직였다 (${before} → ${Math.abs(m.x - host.x)})`,
+        );
+    }
+
+    // ── 동료가 쓰러지면 남은 한 사람의 걸음마다 돈다 — 쓰러뜨려서 세상을 늦출 수는 없다
+    {
+        const s = withGuest(4007);
+        const [host, guest] = s.heroes;
+        guest.hp = 0;
+        for (let n = 1; n <= 3; n++) s.level.tiles[idx(host.x + n, host.y)] = T.FLOOR;
+        const m = spawnMonster("Z", host.x + 3, host.y, new Rng(7));
+        m.awake = true;
+        m.hp = 20;
+        s.level.monsters = [m];
+
+        const before = Math.abs(m.x - host.x);
+        perform(s, { t: "rest" });
+        assert.ok(
+            Math.abs(m.x - host.x) < before,
+            `혼자 남았는데 적이 반 박자로 움직인다 (${before} → ${Math.abs(m.x - host.x)})`,
         );
     }
 
@@ -366,6 +444,40 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
         assert.equal(back.heroes[1].hp, 0, "올라갔는데 일어났다");
     }
 
+    // ── **굶어 쓰러진 사람도 층을 넘으면 일어난다** — 그리고 다음 걸음에 도로 안 쓰러진다
+    //
+    // 체력만 채워 주면 `food` 가 죽음선(`-200`) 아래 그대로라 `tickHunger` 가 그 자리에서
+    // 도로 눕힌다. 화면에는 「숨을 되찾았다」가 뜨고 한 걸음 뒤에 다시 쓰러지므로,
+    // 살린 것이 아니라 **한 턴을 빌려준 것**이 된다.
+    {
+        const s = withGuest(4406);
+        const [host, guest] = s.heroes;
+        // **굶겨서 눕힌다** — 손으로 `hp = 0` 을 박으면 비문(`epitaph`)이 안 서서,
+        // 아래의 「비문이 남아 있다」가 아무것도 안 가린다(되돌려 보고 알았다).
+        guest.food = -199;
+        const fell = perform(s, { t: "rest" }); // 방장이 움직인다 — 배는 둘 다 돈다
+        assert.equal(guest.hp, 0, "죽음선을 넘겼는데 안 쓰러졌다");
+        assert.equal(fell.epitaph, "굶어 죽었다.", "굶어 쓰러졌는데 까닭이 안 적혔다");
+
+        host.x = fell.level.stairs.x;
+        host.y = fell.level.stairs.y;
+        const after = perform(fell, { t: "descend" });
+        const up = after.heroes[1];
+        assert.ok(up.hp > 0, "굶어 쓰러진 동료가 층을 넘고도 안 일어났다");
+        assert.ok(up.food > -200, `일으켰는데 배가 죽음선 아래 그대로다 (${up.food})`);
+
+        // **다음 걸음**에도 서 있어야 한다 — 여기가 「빌려준 한 턴」이 드러나는 자리다.
+        const next = perform(after, { t: "rest" });
+        assert.ok(next.heroes[1].hp > 0, "일어난 동료가 한 걸음 만에 도로 굶어 쓰러졌다");
+        assert.equal(next.phase, "playing", "일어나자마자 판이 끝났다");
+
+        // 「굶어 죽었다」는 일어난 사람의 비문이 아니다.
+        assert.equal(after.epitaph, "", "일어났는데 굶어 죽었다는 비문이 남아 있다");
+
+        // 그래도 **먹은 것은 아니다** — 여전히 굶주린 채로 선다.
+        assert.ok(up.food < 150, `일으키면서 배까지 채워 줬다 (${up.food})`);
+    }
+
     // ── 둘 다 쓰러지면 끝이다
     {
         const s = withGuest(4405);
@@ -376,6 +488,44 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
         const after = perform(s, { t: "rest" });
         assert.equal(after.phase, "dead", "둘 다 쓰러졌는데 판이 안 끝났다");
     }
+});
+
+// 입이 둘이면 배도 두 배로 곯는다(`finishTurn` 이 사람마다 `tickHunger` 를 돌린다).
+// 그런데 떨어지는 식량이 그대로면 **굶어 죽는 까닭이 판단이 아니라 인원수**가 된다.
+// 손잡이는 둘이다 — 식량 분류의 가중치(×인원수)와 가뭄 보장선(÷인원수).
+//
+// 잰 값(씨앗 120 × 8층): **혼자 351 · 둘 631 — 1.80 배.** 가중치만 올렸을 때는 1.52 였다.
+test("입이 늘면 식량도 는다", () => {
+    /** 그 판으로 `floors` 층을 내려가며 바닥에 놓인 식량을 센다. */
+    const foods = (seed: number, duo: boolean, floors: number): number => {
+        let s: GameState = duo ? joinGame(newGame(seed)) : newGame(seed);
+        let n = 0;
+        for (let d = 0; d < floors; d++) {
+            n += s.level.items.filter((it) => it.kind === "food").length;
+            // 재려는 것은 **뿌려지는 양**이다 — 도중에 맞아 죽거나 굶으면 그게 안 잡힌다.
+            s.level.monsters = [];
+            for (const h of s.heroes) {
+                h.x = s.level.stairs.x;
+                h.y = s.level.stairs.y;
+                h.hp = h.maxHp;
+                h.food = 2000;
+            }
+            s = perform(s, { t: "descend" });
+        }
+        return n;
+    };
+
+    let solo = 0;
+    let duo = 0;
+    for (let seed = 1; seed <= 120; seed++) {
+        solo += foods(seed, false, 8);
+        duo += foods(seed, true, 8);
+    }
+    assert.ok(solo > 0 && duo > 0, "아무 층에도 식량이 안 떨어졌다 — 자가 고장 났다");
+    assert.ok(
+        duo >= solo * 1.4,
+        `둘인데 식량이 혼자일 때만큼밖에 안 떨어진다 (혼자 ${solo} · 둘 ${duo} = ${(duo / solo).toFixed(2)}배)`,
+    );
 });
 
 test("온라인 — 직렬화해 넘긴 판에 같은 명령을 같은 순서로 주면 같은 판이 된다", async () => {
@@ -586,7 +736,7 @@ test("갑옷을 녹이는 것도 금화를 채는 것도 맞은 사람 몫이다
             guestArm.plusArmor = 0;
             guest.hp = 999;
             guest.maxHp = 999;
-            perform(s, { t: "rest", who: 1 });
+            partyRound(s);
             if ((guestArm.plusArmor ?? 0) < 0) {
                 found = true;
                 assert.equal(hostArm.plusArmor ?? 0, 0, "손님이 맞았는데 방장의 갑옷이 녹았다");
@@ -606,7 +756,7 @@ test("갑옷을 녹이는 것도 금화를 채는 것도 맞은 사람 몫이다
             guest.gold = 500;
             guest.hp = 999;
             guest.maxHp = 999;
-            perform(s, { t: "rest", who: 1 });
+            partyRound(s);
             if (guest.gold < 500) {
                 found = true;
                 assert.equal(host.gold, 500, "손님이 맞았는데 방장의 금화가 없어졌다");

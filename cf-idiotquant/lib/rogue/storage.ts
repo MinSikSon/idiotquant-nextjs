@@ -282,6 +282,9 @@ function normalize(s: Saved): GameState | null {
         foodDrought: num(s.foodDrought, 0),
         nextItemId: num(s.nextItemId, 1),
         turn: num(s.turn, 0),
+        // 적의 박자 — 옛 저장에는 없다. 0 에서 시작해도 반 걸음이 어긋날 뿐이다.
+        pendingSteps: num(s.pendingSteps, 0),
+        monsterRound: num(s.monsterRound, num(s.turn, 0)),
         deepest: num(s.deepest, num(s.level.depth, 1)),
         phase: s.phase === "dead" || s.phase === "won" ? s.phase : "playing",
     };

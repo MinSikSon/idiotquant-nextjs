@@ -292,13 +292,22 @@ function populate(state: GameState, level: Level, rng: Rng) {
     let relicPlaced = false;
 
     /** 한 층의 상한들 — 넘으면 **버리지 않고 다른 것으로 바꾼다**(총량은 층이 정한다). */
+    // **입이 늘면 식량도 는다.** 배고픔 시계는 사람마다 따로 도니(`finishTurn`) 둘이면
+    // 한 층에서 먹는 양도 두 배다. 그런데 떨어지는 양이 그대로면 굶어 죽는 까닭이
+    // **판단이 아니라 인원수**가 된다. 그래서 식량 분류만 인원수만큼 곱한다 — 혼자면
+    // `×1` 이라 단독 플레이의 뽑기는 한 글자도 안 바뀐다.
+    const mouths = state.heroes.length;
     const put = (p: Pos, bias?: Partial<Record<Category, number>>, tierUp = 0) => {
         if (placed >= FLOOR_ITEM_CAP) return;
-        let cat = pickCategory(level.depth, rng, scale, bias);
+        // 특수 방의 편향이 있으면 **거기에 곱한다** — 보물방의 `food: 0`(식량이 안 나온다)
+        // 같은 규칙을 인원수가 뒤집으면 안 된다.
+        let cat = pickCategory(level.depth, rng, scale, { ...bias, food: (bias?.food ?? 1) * mouths });
         if (cat === "enchant" && enchants >= ENCHANT_PER_FLOOR) cat = "scroll";
         if ((cat === "weapon" || cat === "armor") && gear >= FLOOR_GEAR_CAP) cat = "potion";
         if (cat === "ring" && rings >= FLOOR_RING_CAP) cat = "potion";
-        if (!bias && foods === 0 && state.foodDrought >= FOOD_GRACE) cat = "food";
+        // 보장선도 **입 수만큼 빨리** 온다 — 가중치만 올리면 뽑기가 계속 어긋났을 때
+        // 둘이서 굶는 구간이 혼자일 때와 똑같이 길다.
+        if (!bias && foods === 0 && state.foodDrought >= Math.max(1, Math.ceil(FOOD_GRACE / mouths))) cat = "food";
         if (cat === "enchant") enchants++;
         if (cat === "weapon" || cat === "armor") gear++;
         if (cat === "ring") rings++;
@@ -433,10 +442,18 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
         for (const h of state.heroes) {
             if (h.hp > 0) continue;
             h.hp = Math.max(1, Math.floor(h.maxHp / 4));
+            // **배도 같이 일으킨다.** 굶어 쓰러진 사람은 `food` 가 죽음선(`-200`) 아래 그대로라
+            // 체력만 채우면 **다음 한 걸음에 도로 쓰러진다** — 일으킨 것이 아니라 한 턴을
+            // 빌려준 것이 된다. 올리는 것은 죽음선 위 딱 한 칸(`Faint`)까지다: 살아났을
+            // 뿐이지 먹은 것은 아니다.
+            h.food = Math.max(h.food, REVIVE_FOOD);
             h.burnTurns = 0;
             h.asleep = 0;
             h.confused = 0;
             h.blind = 0;
+            // 「굶어 죽었다」는 **일어난 사람의 비문이 아니다.** 안 지우면 나중에 판이 끝날 때
+            // `if (!state.epitaph)` 가 그 옛 문구를 그대로 쓴다.
+            state.epitaph = "";
             say(state, "쓰러졌던 동료가 층을 넘으며 숨을 되찾았다.");
         }
     }
@@ -1978,6 +1995,16 @@ function ascend(state: GameState, hero: Hero, rng: Rng): boolean {
     return true;
 }
 
+/** 굶어 죽는 선. */
+const STARVE_AT = -200;
+/**
+ * 층을 넘어 일어난 사람의 배.
+ *
+ * **죽음선 위 딱 한 칸**이다(`hungerOf` 로는 여전히 `Faint`). 0 으로 두면 `food <= 0` 의
+ * 정신 잃기가 곧바로 돌고, 넉넉히 채우면 굶어 쓰러지는 것이 **공짜 식사**가 된다.
+ */
+const REVIVE_FOOD = 1;
+
 /** 배고픔 시계. 넘어서는 순간에만 말한다 — 매 턴 말하면 그 말이 안 읽힌다. */
 function tickHunger(state: GameState, hero: Hero, rng: Rng) {
     const before = hungerOf(hero);
@@ -1996,9 +2023,47 @@ function tickHunger(state: GameState, hero: Hero, rng: Rng) {
         hero.asleep += 1;
         say(state, "배가 고파 정신이 아득하다.");
     }
-    if (hero.food <= -200) {
+    if (hero.food <= STARVE_AT) {
         hero.hp = 0;
         state.epitaph = "굶어 죽었다.";
+    }
+}
+
+/** 저주를 견뎌 내는 데 드는 걸음 수. 식량 한 덩이가 1300 걸음쯤이니 **한 끼 몫**이다. */
+const CURSE_BOND = 400;
+
+/**
+ * **오래 견디면 저주가 풀린다.**
+ *
+ * 저주받은 것을 떼는 길이 여태 둘뿐이었다 — 저주 해제 주문서, 그리고 강화하다 부서뜨리기.
+ * 둘 다 **손에 다른 물건이 있어야** 하는 길이라, 초반에 저주받은 것을 쥐면 그 판이
+ * 통째로 끌려다니는 판이 된다. 그래서 **시간을 세 번째 길**로 둔다: 벗을 수 없다는 대가를
+ * 이미 치르고 있으니, 치른 만큼이 값이 되는 것이 맞다.
+ *
+ * **무기는 풀리면서 한 칸 벼려진다**(축복까지). 갑옷·반지는 풀리기만 한다 — 무기는
+ * 저주받은 채 계속 휘두르는 것이 곧 견디는 일이라, 견딤이 제일 비싼 자리다.
+ *
+ * 세는 것은 **몸에 붙어 있는 동안**뿐이다(`isWorn`). 배낭에 넣어 둔 저주받은 것은
+ * 아무 값도 안 치르므로 저절로 풀리면 안 된다.
+ */
+function bearCurse(state: GameState, hero: Hero) {
+    for (const it of hero.pack) {
+        if (!it.cursed || !isWorn(hero, it)) continue;
+        it.bond = (it.bond ?? 0) + 1;
+        if (it.bond < CURSE_BOND) continue;
+        it.cursed = false;
+        it.curseKnown = false;
+        it.bond = 0;
+        if (it.kind !== "weapon") {
+            say(state, `${describe(it, state.known, state.appearance)}에 걸린 저주가 삭아 떨어졌다.`);
+            continue;
+        }
+        // 수치를 놓는 자리는 `setEnchant` 하나다 — 무기는 명중과 피해 **둘 다**여서
+        // 여기서 직접 더하면 한쪽만 오른다.
+        setEnchant(it, Math.min(ENCHANT_MAX, enchantOf(it) + 1));
+        it.blessed = true;
+        it.plusKnown = true;
+        say(state, `${describe(it, state.known, state.appearance)}이(가) 저주를 삼키고 검게 벼려졌다.`);
     }
 }
 
@@ -2089,7 +2154,9 @@ function monsterTurns(state: GameState, rng: Rng) {
             say(state, `${monsterName(m)}이(가) 얼어붙어 움직이지 못한다.`);
             continue;
         }
-        if (m.speed < 0 && state.turn % 2 === 0) continue;
+        // 격턴으로 움직이는 놈은 **적이 움직인 횟수**를 센다 — `turn` 을 보면 둘일 때
+        // 「적이 도는 턴」과 짝이 어긋나 한 걸음도 못 움직인다.
+        if (m.speed < 0 && (state.monsterRound ?? state.turn) % 2 === 0) continue;
         const acts = m.speed > 0 ? 2 : 1;
         for (let n = 0; n < acts; n++) {
             if (m.hp <= 0 || state.heroes.every((h) => h.hp <= 0)) break;
@@ -2320,6 +2387,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
         if (h.hp <= 0) continue;
         tickHunger(state, h, rng);
         regenerate(state, h);
+        bearCurse(state, h);
         if (h.blind > 0) h.blind -= 1;
         if (h.confused > 0) h.confused -= 1;
         if (h.detect > 0) h.detect -= 1;
@@ -2361,7 +2429,23 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
         }
     }
 
-    if (state.phase === "playing" && hero.hp > 0) monsterTurns(state, rng);
+    // ── 적은 **파티의 걸음**에 맞춰 움직인다 ──────────────────────────────────────
+    //
+    // 배고픔·회복은 위에서 **사람마다** 돈다 — 제 몸의 것이라 그렇다. 적은 다르다:
+    // 적은 파티 **하나**를 상대하는 판의 것이다. 걸음마다 한 칸씩 따라오게 두면 둘일 때
+    // 사람은 각자 한 걸음인데 적은 두 걸음이라, 동료를 부르는 것이 **세상을 두 배로
+    // 빠르게 만드는 일**이 된다. 그래서 **서 있는 사람 수만큼 걸음이 모여야** 한 번 움직인다.
+    //
+    // 혼자면 `pace` 가 1 이라 걸음마다 그대로 돈다 — 단독 플레이는 한 글자도 안 바뀐다.
+    if (state.phase === "playing" && hero.hp > 0) {
+        const pace = Math.max(1, state.heroes.filter((h) => h.hp > 0).length);
+        state.pendingSteps = (state.pendingSteps ?? 0) + 1;
+        if (state.pendingSteps >= pace) {
+            state.pendingSteps = 0;
+            state.monsterRound = (state.monsterRound ?? 0) + 1;
+            monsterTurns(state, rng);
+        }
+    }
 
     computeFov(state.level, state.heroes);
     updateSeenItems(state);

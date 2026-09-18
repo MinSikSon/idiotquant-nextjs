@@ -74,6 +74,51 @@ test("저주받은 갑옷은 못 벗고, 반지는 능력을 바꾼다", () => {
         assert.equal(s5.heroes[0].armorId, good.id, "풀린 뒤에도 못 바꾼다");
     }
 
+    // ── **오래 견디면 저주가 풀린다** — 무기는 풀리면서 한 칸 벼려진다
+    //
+    // 저주를 떼는 길이 여태 둘뿐이었다(해제 주문서 · 강화하다 부서뜨리기). 둘 다 **손에
+    // 다른 물건이 있어야** 하는 길이라, 초반에 하나 쥐면 그 판이 통째로 끌려다닌다.
+    // 그래서 시간이 세 번째 길이다 — 벗을 수 없다는 대가를 이미 치르고 있으니.
+    {
+        const s0 = newGame(103);
+        const sword = makeItem("weapon", "long sword", 920, -1, -1);
+        sword.cursed = true;
+        sword.plusHit = 0;
+        sword.plusDam = 0;
+        give(s0, sword, "y");
+
+        let s = perform(s0, { t: "wield", letter: "y" });
+        assert.ok(sword.curseKnown, "쥐었는데 저주가 안 드러났다");
+        // 재려는 것은 **견딘 걸음 수**다 — 도중에 맞아 죽으면 그게 안 잡힌다.
+        s.level.monsters = [];
+
+        // **배낭에만 있는 것은 값을 안 치른다** — 같이 넣어 두고 안 풀리는지 본다.
+        const spare = makeItem("armor", "leather", 921, -1, -1);
+        spare.cursed = true;
+        give(s, spare, "z");
+
+        const step = (n: number) => {
+            for (let i = 0; i < n; i++) {
+                for (const h of s.heroes) h.hp = h.maxHp;
+                s = perform(s, { t: "rest" });
+            }
+        };
+
+        // 백 걸음으로는 안 풀린다 — 한두 걸음에 풀리면 그건 저주가 아니다.
+        step(100);
+        assert.ok(sword.cursed, "백 걸음 만에 저주가 풀렸다");
+
+        step(400);
+        assert.ok(!sword.cursed, "오백 걸음을 견뎠는데 저주가 안 풀렸다");
+        assert.ok(!sword.curseKnown, "풀렸는데 화면에는 아직 (저주) 가 붙는다");
+        assert.equal(sword.plusHit, 1, "풀린 무기가 안 벼려졌다");
+        assert.equal(sword.plusDam, 1, "명중만 오르고 피해는 그대로다 — setEnchant 를 안 지났다");
+        assert.ok(sword.blessed, "벼려진 무기에 축복이 안 붙었다");
+        assert.ok(sword.plusKnown, "벼려졌는데 그 수치를 모른다");
+
+        assert.ok(spare.cursed, "배낭에 넣어만 둔 저주가 저절로 풀렸다 — 아무 값도 안 치렀다");
+    }
+
     // ── 보호 반지는 방어를 내리고, 힘 반지는 힘을 올린다
     {
         const s0 = newGame(102);
