@@ -249,18 +249,6 @@ function higher(a: Record<string, number>, b: Record<string, number>): Record<st
     return out;
 }
 
-/**
- * 도감의 공격 줄 — **`0d0` 은 피해가 아니라 수법이다.**
- *
- * 그대로 적으면 아쿠에이터가 「Dmg 0d0 + 0d0」이 되어, 피해가 없다는 뜻으로만 읽히고
- * **두 대를 친다**는 것이 안 보인다. 갑옷이 한 턴에 두 칸 녹는 까닭이 거기 있는데
- * 화면이 그걸 안 적고 있었다. 대의 개수는 `damage` 의 길이 그대로다 — 화면이 세지 않는다.
- */
-function damageText(damage: string[] | undefined): string {
-    if (!damage || damage.length === 0) return "없음";
-    return damage.map((d) => (d === "0d0" ? "수법" : d)).join(" + ");
-}
-
 export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
     const [sheet, setSheet] = useState<
@@ -1350,7 +1338,7 @@ export default function Rogue() {
                                                 {m.known ? (
                                                     <div className="text-[var(--rg-muted)]">
                                                         Level {m.level} · Arm {10 - (m.defense ?? 0)} · Dmg{" "}
-                                                        {damageText(m.damage)} · Exp {m.exp} · Hp {m.hp}
+                                                        {m.damage?.join(" + ") || "없음"} · Exp {m.exp} · Hp {m.hp}
                                                         {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                     </div>
                                                 ) : (
@@ -1387,7 +1375,7 @@ export default function Rogue() {
                                                     {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                                     <div className="text-[var(--rg-muted)]">
                                                         Level {r.level} · Arm {10 - r.defense} · Dmg{" "}
-                                                        {damageText(r.damage)} · Exp {r.exp} · Hp {r.hp}
+                                                        {r.damage.join(" + ") || "없음"} · Exp {r.exp} · Hp {r.hp}
                                                         {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
