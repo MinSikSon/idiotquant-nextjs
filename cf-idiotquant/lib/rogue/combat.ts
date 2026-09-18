@@ -109,11 +109,17 @@ export interface Term {
     why: string;
 }
 
-/** ` +1무기 +2힘` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다. */
+/**
+ * ` +1 무기 +2 힘` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다.
+ *
+ * **숫자와 이름을 띄운다.** 붙여 쓰면(`+2숙련 +3힘 +2진은검`) 한글이 숫자에 달라붙어
+ * 어디서 한 항이 끝나는지가 안 보인다 — 특히 이름이 길 때(`+2진은검`) 통째로 한 덩어리로
+ * 읽힌다. 한 칸이 그 경계를 만든다.
+ */
 function terms(list: Term[]): string {
     return list
         .filter((t) => t.n !== 0)
-        .map((t) => ` ${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}${t.why}`)
+        .map((t) => ` ${t.n > 0 ? "+" : "−"}${Math.abs(t.n)} ${t.why}`)
         .join("");
 }
 
@@ -233,7 +239,7 @@ export function damageLine(
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
     const eyes =
         rolled.length > 1 ? `${dice} 두 번 → ${rolled.join(", ")} = ${sum}` : `${dice} → ${sum}`;
-    const cut = defense > 0 ? `  −${defense}방어력` : "";
+    const cut = defense > 0 ? `  −${defense} 방어력` : "";
     // **0 은 따로 말해 준다.** 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
     const tail = dealt === 0 ? "피해 0 (튕겨 나갔다)" : `피해 ${dealt}`;
     return `${DETAIL}공격력 ${eyes}${add}${bonus !== 0 ? ` = ${power}` : ""}${cut}  → ${tail}`;
@@ -263,8 +269,8 @@ export function monsterDamageLine(
     if (parts.length === 0) return `${DETAIL}피해 ${total}`;
     // **상대의 보정도 적는다.** 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼 **줄 위에서 셈이
     // 안 맞는다** — 실제로 그랬다. 숫자가 안 맞는 줄은 기록을 통째로 못 믿게 만든다.
-    const add = bonus !== 0 ? ` ${bonus > 0 ? "+" : "−"}${Math.abs(bonus)}공격력` : "";
-    const cut = defense > 0 ? ` −${defense}방어력` : "";
+    const add = bonus !== 0 ? ` ${bonus > 0 ? "+" : "−"}${Math.abs(bonus)} 공격력` : "";
+    const cut = defense > 0 ? ` −${defense} 방어력` : "";
     const each = parts
         .map(({ dice, rolled, dealt }) => {
             const eyes =

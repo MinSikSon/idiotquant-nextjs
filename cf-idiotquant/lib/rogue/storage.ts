@@ -36,7 +36,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 7;
+const VERSION = 8;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -162,6 +162,22 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
  * 있을 수 있는데, 그것 하나가 층 사다리를 통째로 무의미하게 만든다. 위아래 양쪽을 한
  * 자리에서 맞춘다.
  */
+/**
+ * **v7 까지는 손질 정도를 종류로 알았다** — `known["weapon:long sword"]`. 이제는 물건마다
+ * 든다(`Item.plusKnown`). 규칙만 바꾸면 **이미 저장된 판은 안 낫는다**: 어제까지 `+3` 이
+ * 보이던 장검이 오늘 갑자기 `장검` 으로 돌아가 「내 강화가 날아갔나」로 읽힌다.
+ *
+ * 그래서 되읽을 때 **옛 지식을 물건으로 옮긴다** — 그 종류를 알던 사람은 들고 있던 그
+ * 물건들도 알던 것으로 둔다. 새로 줍는 것부터 새 규칙을 탄다.
+ */
+function learnPlus(items: Item[], known: Record<string, boolean>): Item[] {
+    for (const it of items) {
+        if (it.kind !== "weapon" && it.kind !== "armor") continue;
+        if (it.plusKnown === undefined && known[`${it.kind}:${it.type}`]) it.plusKnown = true;
+    }
+    return items;
+}
+
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
@@ -229,7 +245,7 @@ function normalize(s: Saved): GameState | null {
     const fixHero = (h: Hero): Hero => ({
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
-        pack: liftEnchants(fixLetters(Array.isArray(h.pack) ? h.pack : [])),
+        pack: liftEnchants(fixLetters(learnPlus(Array.isArray(h.pack) ? h.pack : [], s.known ?? {}))),
         // v6 이하에는 보조손이 없다 — 이도류가 없던 때다.
         offWeaponId: h.offWeaponId ?? null,
         leftRingId: h.leftRingId ?? null,
