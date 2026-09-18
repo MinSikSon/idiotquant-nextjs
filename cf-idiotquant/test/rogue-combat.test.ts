@@ -270,14 +270,14 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
             const line = r.messages.find((l) => l.startsWith("· 공격력 "));
             if (!line) continue;
 
-            // 줄에 적힌 대마다: `1d8 → 6 +6공격력 −3방어력 → 3` (치명타면 `→ 5, 6`)
-            const blows = [...line.matchAll(/→ ([\d, ]+?)(?: \+(\d+)공격력)? −(\d+)방어력 → (\d+)/g)];
+            // 줄에 적힌 대마다: `1d8 → 6 +6 공격력 −3 방어력 → 3` (치명타면 `→ 5, 6`)
+            const blows = [...line.matchAll(/→ ([\d, ]+?)(?: \+(\d+) 공격력)? −(\d+) 방어력 → (\d+)/g)];
             assert.ok(blows.length > 0, `깎는 자리가 없다: ${line}`);
             for (const [, rolled, add, cut, got] of blows) {
                 const raw = rolled.split(",").reduce((n, x) => n + Number(x.trim()), 0);
                 assert.equal(Number(cut), guard, `방어력이 다르게 적혔다: ${line}`);
                 assert.equal(Number(add ?? 0), monsterDamBonus(m), `공격력 보정이 다르게 적혔다: ${line}`);
-                // **줄 위에서 셈이 맞아야 한다.** 보정을 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼
+                // **줄 위에서 셈이 맞아야 한다.** 보정을 안 적으면 `1d8 → 1 −4 방어력 → 3` 처럼
                 // 눈으로 봐서 틀린 줄이 남고, 그러면 기록을 통째로 못 믿게 된다.
                 assert.equal(
                     Number(got),

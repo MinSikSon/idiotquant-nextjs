@@ -17,7 +17,7 @@
  * 뜬다. 키는 원작 그대로 살아 있다.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { DataConnection, Peer } from "peerjs";
 
 import {
@@ -59,7 +59,7 @@ import {
     itemCodexStage,
     itemCodexStats,
 } from "@/lib/rogue/codexData";
-import { isDetail } from "@/lib/rogue/combat";
+import { DETAIL, isDetail } from "@/lib/rogue/combat";
 import { heroArmor, heroStr, hungerOf, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
@@ -115,7 +115,58 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
 };
 
 /** 기록 한 줄 — 협동의 앞머리(`1P▸ `, 엔진이 단다)를 그 사람 색으로 칠한다. */
+/**
+ * 계산 줄 한 줄 — **엔진이 적은 것을 표지에서 접어 보여 준다.**
+ *
+ * 기록에 이렇게 한 줄로 들어온다:
+ *
+ * ```
+ * · 명중 나 d20 13 +2 숙련 +3 힘 +2 진은검 = 20  vs  트롤 d20 7 +3 숙련 = 10  → 맞았다
+ * ```
+ *
+ * 390px 에서는 이것이 석 줄로 접히는데, **어디가 내 굴림이고 어디가 상대 것인지**가
+ * 글자 사이에 묻힌다. 그래서 엔진이 이미 쓰고 있는 표지(`  vs  ` · `  → ` · `  = ` ·
+ * ` · `)에서 갈라 **표지를 왼쪽 칸에 세우고** 값을 오른쪽에 붙인다.
+ * 표지는 **앞에 두 칸**이 붙는다 — 뒤는 한 칸일 때도 있다(`  → 맞았다`):
+ *
+ * ```
+ * 명중  나 d20 13 +2 숙련 +3 힘 +2 진은검 = 20
+ *  vs   트롤 d20 7 +3 숙련 = 10
+ *  →    맞았다
+ * ```
+ *
+ * **화면이 셈을 다시 하지 않는다**(못 박은 규칙 1). 숫자는 한 자도 안 만들고 안 고친다 —
+ * 엔진이 적은 글을 그 문법대로 자를 뿐이다. 표지의 **양옆 두 칸**이 곧 그 문법이라,
+ * 한 칸짜리(` = 20` 처럼 한 항 안에서 쓰는 등호)는 안 걸린다.
+ */
+function Roll({ text }: { text: string }) {
+    const body = text.slice(DETAIL.length);
+    const head = body.slice(0, body.indexOf(" "));
+    const rest = body.slice(head.length + 1);
+    // 표지를 남기며 자른다 — `[값, 표지, 값, 표지, 값 …]`
+    const parts = rest.split(/ {2}(vs|→|=) +| (·) /).filter((x) => x !== undefined && x !== "");
+    const rows: { mark: string; text: string }[] = [{ mark: head, text: parts[0] ?? "" }];
+    for (let i = 1; i < parts.length; i += 2) rows.push({ mark: parts[i], text: parts[i + 1] ?? "" });
+    return (
+        <span className="grid grid-cols-[2.6em_1fr] gap-x-1">
+            {rows.map((r, i) => (
+                <Fragment key={i}>
+                    <span className={i === 0 ? "text-right font-bold text-[var(--rg-label)]" : "text-right text-[var(--rg-faint)]"}>
+                        {r.mark}
+                    </span>
+                    {/* 마지막 줄이 **결과**다 — 한 톤 밝게 둬서 눈이 거기서 멈춘다. */}
+                    <span className={i === rows.length - 1 && rows.length > 1 ? "text-[var(--rg-text)]" : ""}>
+                        {r.text}
+                    </span>
+                </Fragment>
+            ))}
+        </span>
+    );
+}
+
 function Msg({ text }: { text: string }) {
+    // 계산 줄에는 협동 앞머리가 안 붙는다(`game.say`) — 그래서 먼저 걸러도 안전하다.
+    if (isDetail(text)) return <Roll text={text} />;
     const m = /^([12])P▸ /.exec(text);
     if (!m) return <>{text}</>;
     return (
