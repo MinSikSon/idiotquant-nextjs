@@ -85,7 +85,8 @@ import { T, idx, type GameState, type ItemKind } from "@/lib/rogue/types";
 import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
-import MapView, { PARTY_BG, PARTY_INK, type CellFlash } from "./components/MapView";
+import { roomAround } from "@/lib/rogue/fov";
+import MapView, { PARTY_BG, PARTY_INK, type CellFlash, type Reveal } from "./components/MapView";
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
@@ -194,6 +195,9 @@ const COOP_KEYS: { dirs: Record<string, [number, number]>; act: string[]; pack: 
 ];
 
 /** 온라인 방 코드 앞에 붙는 이름 — 공개 PeerJS 브로커에서 남의 방과 안 겹치게. */
+/** 불 켜진 방이 밝아지는 속도 — 한 겹에 이만큼. 열두 칸짜리 방이 반 초쯤 걸린다. */
+const REVEAL_STEP = 40;
+
 const PEER_PREFIX = "idiotquant-rogue-";
 /** 들어 있던 방 — 새로고침해도 다시 잇는다. */
 const ROOM_KEY = "rogue-room";
@@ -275,6 +279,20 @@ export default function Rogue() {
     const buried = useRef(false);
 
     /** 전투 피드백 & 특수 효과 연출 상태 (P6 - 칸 내 색상 점멸) */
+    /**
+     * 불 켜진 방에 **처음 들어설 때** 빛이 퍼지는 중.
+     *
+     * 「이 방은 왜 통째로 보이고 저 방은 한 칸씩인가」를 글로 적는 대신 **눈에 보이게** 한다 —
+     * 선 자리에서 한 겹씩 밝아지면 「횃불이 켜져 있다」가 저절로 읽힌다. 화면의 연출이라
+     * 판에는 없고, 방마다 **한 번만** 돈다(`litRooms`).
+     */
+    const [reveal, setReveal] = useState<Reveal | null>(null);
+    const litRooms = useRef(new Set<string>());
+    const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => {
+        if (revealTimer.current) clearTimeout(revealTimer.current);
+    }, []);
+
     const [cellFlashes, setCellFlashes] = useState<Record<string, CellFlash>>({});
     const [shake, setShake] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
@@ -715,6 +733,43 @@ export default function Rogue() {
         if (sheet !== "none") setSheetOwner(whoRef.current);
     }, [sheet]);
 
+    // **불 켜진 방에 처음 들어서면 빛이 한 겹씩 퍼진다.**
+    //
+    // 어두운 방·미로·안개 층에서는 안 돈다 — 거기서는 원래 한두 칸만 보이므로 퍼질 것이 없고,
+    // 「이 방은 왜 좁은가」는 퍼지지 **않는 것**으로 읽힌다.
+    useEffect(() => {
+        if (!state) return;
+        const h = state.heroes[whoRef.current] ?? state.heroes[0];
+        if (h.hp <= 0 || (h.blind ?? 0) > 0) return;
+        const { level } = state;
+        // **문턱에서 이미 방이 켜진다**(`fov.lightFrom`) — 그래서 연출도 문턱에서 시작해야
+        // 한다. 한 걸음 늦게 돌면 이미 본 방을 도로 껐다가 다시 켜는 꼴이 된다.
+        const ri =
+            level.roomAt[idx(h.x, h.y)] >= 0
+                ? level.roomAt[idx(h.x, h.y)]
+                : level.tiles[idx(h.x, h.y)] === T.DOOR
+                  ? roomAround(level, h.x, h.y)
+                  : -1;
+        const room = ri >= 0 ? level.rooms[ri] : undefined;
+        if (!room || room.dark || room.gone || room.maze || level.mutator === "fog") return;
+        const key = `${level.depth}:${ri}`;
+        if (litRooms.current.has(key)) return;
+        litRooms.current.add(key);
+
+        if (revealTimer.current) clearTimeout(revealTimer.current);
+        const far = Math.max(room.w, room.h);
+        setReveal({ cx: h.x, cy: h.y, r: 1, room });
+        const step = (r: number) => {
+            if (r > far) {
+                setReveal(null);
+                return;
+            }
+            setReveal((v) => (v ? { ...v, r } : v));
+            revealTimer.current = setTimeout(() => step(r + 1), REVEAL_STEP);
+        };
+        revealTimer.current = setTimeout(() => step(2), REVEAL_STEP);
+    }, [state]);
+
     /** 상대 책상에 떠 있는 것 — 이어져 있을 때만 적는다. */
     const [peerMode, setPeerMode] = useState<DeskMode>("none");
     useEffect(() => {
@@ -1111,7 +1166,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} />
+                <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} reveal={reveal} />
 
                 {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 알린다.
                     **늘 떠 있는 것은 우상단의 작은 단추 하나**다. 본문은 눌러야 펼쳐진다.

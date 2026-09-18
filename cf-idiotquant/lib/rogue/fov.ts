@@ -38,7 +38,7 @@ export function roomOf(level: Level, x: number, y: number): number {
  * 방이 안 밝혀졌다 — 「방에 들어갔는데 깜깜하다」가 그 자리였다. 방은 아홉 개뿐이라
  * 훑어도 싸다.
  */
-function roomAround(level: Level, x: number, y: number): number {
+export function roomAround(level: Level, x: number, y: number): number {
     for (let i = 0; i < level.rooms.length; i++) {
         const r = level.rooms[i];
         if (r.gone) continue;
@@ -89,7 +89,8 @@ function lightFrom(level: Level, from: Viewer): void {
         flags[idx(x, y)] |= VISIBLE | SEEN;
     };
 
-    // 제자리와 맞닿은 여덟 칸은 언제나 보인다 — 어디에 서 있든.
+    // 제자리와 맞닿은 여덟 칸은 언제나 보인다 — 어디에 서 있든. **두 칸으로 넓혀 봤더니
+    // 복도가 너무 훤해서** 되돌렸다(원작 Rogue 도 복도는 한 칸이다).
     for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) light(from.x + dx, from.y + dy);
     }
@@ -107,14 +108,10 @@ function lightFrom(level: Level, from: Viewer): void {
             const room = level.rooms[ri];
             // 미로 방은 「방」이 아니다 — 안쪽이 얽힌 통로라 통째로 보이면 미로가 아니게 된다.
             if (room && !room.dark && !room.gone && !room.maze) {
-                // **짙은 안개는 「방이 통째로 보이는 것」만 지운다.** 예전에는 층 전체를
-                // 반경 2 로 덮어써서, 원래 한 칸만 보이던 **복도에서 오히려 시야가 넓어졌다**
-                // — 좁히는 사건이 넓히고 있었다. 이제 밝은 방에서도 두 칸까지만 보인다.
-                if (level.mutator === "fog") {
-                    for (let dy = -2; dy <= 2; dy++) {
-                        for (let dx = -2; dx <= 2; dx++) light(from.x + dx, from.y + dy);
-                    }
-                } else {
+                // **짙은 안개는 「방이 통째로 보이는 것」을 지운다.** 그러면 밝은 방도
+                // 맞닿은 한 칸뿐이라, 좁히는 사건이 제 할 일을 한다. 예전에는 층 전체를
+                // 반경 2 로 덮어써서 **복도에서 오히려 시야가 넓어졌다.**
+                if (level.mutator !== "fog") {
                     // 밝은 방 — 벽까지 통째로.
                     for (let y = room.y; y < room.y + room.h; y++) {
                         for (let x = room.x; x < room.x + room.w; x++) light(x, y);

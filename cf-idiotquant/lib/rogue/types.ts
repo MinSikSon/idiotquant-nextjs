@@ -64,8 +64,6 @@ export interface Room {
     gone: boolean;
     /** 미로 방 — 안쪽이 바닥이 아니라 얽힌 통로다. 깊은 층에만 선다. */
     maze: boolean;
-    /** 「왜 이만큼만 보이나」를 이미 적었는가 — 방마다 처음 들어설 때 한 번만 적는다. */
-    told?: boolean;
 }
 
 export interface MonsterDef {

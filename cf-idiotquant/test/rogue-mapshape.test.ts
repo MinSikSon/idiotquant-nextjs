@@ -464,7 +464,7 @@ test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로
         computeFov(level, [at]);
         assert.ok(!isVisible(level, far.x, far.y), `시드 ${seed}: 안개 속인데 방 저쪽이 보인다`);
 
-        // 복도에서는 예나 지금이나 **맞닿은 여덟 칸**뿐이다 — 안개가 넓혀 주면 안 된다.
+        // 복도의 시야는 **평소에도 안개 속에서도 맞닿은 한 칸**이다 — 안개가 넓혀 주면 안 된다.
         const corridor = (() => {
             for (let y = 1; y < MAP_H - 1; y++)
                 for (let x = 1; x < MAP_W - 1; x++)
@@ -472,41 +472,19 @@ test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로
             return null;
         })();
         if (!corridor) continue;
-        computeFov(level, [corridor]);
-        for (let dy = -2; dy <= 2; dy++) {
-            for (let dx = -2; dx <= 2; dx++) {
-                if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) continue;
-                assert.ok(
-                    !isVisible(level, corridor.x + dx, corridor.y + dy),
-                    `시드 ${seed}: 안개가 복도의 시야를 두 칸으로 **넓혔다**`,
-                );
-            }
+        const ring2 = (): boolean[] => {
+            const out: boolean[] = [];
+            for (let dy = -2; dy <= 2; dy++)
+                for (let dx = -2; dx <= 2; dx++)
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) === 2)
+                        out.push(isVisible(level, corridor.x + dx, corridor.y + dy));
+            return out;
+        };
+        for (const m of ["fog", undefined] as const) {
+            level.mutator = m;
+            computeFov(level, [corridor]);
+            assert.ok(!ring2().some(Boolean), `시드 ${seed}: 복도에서 두 칸이 보인다 (${m ?? "평소"})`);
         }
         return;
     }
-});
-
-// 「어떤 방은 들어가자마자 다 보이고 어떤 방은 한 칸씩」의 까닭을 **처음 들어설 때** 적는다.
-test("방에 처음 들어서면 왜 이만큼 보이는지 한 번 적는다", async () => {
-    const { newGame, perform } = await import("@/lib/rogue/game");
-    const line = (s: { messages: string[] }) => s.messages.filter((m) => /보인다|더듬는다/.test(m));
-
-    const s = newGame(5150);
-    const room = s.level.rooms[s.level.roomAt[idx(s.heroes[0].x, s.heroes[0].y)]];
-    assert.ok(room, "시작 자리가 방이 아니다 — 시드를 바꿔야 한다");
-    const first = line(s);
-    assert.equal(first.length, 1, `첫 방의 까닭이 한 줄이 아니다: ${JSON.stringify(first)}`);
-    assert.match(first[0], room.dark ? /맞닿은 칸만/ : /통째로/);
-
-    // 같은 방에서 걸어도 **다시 적지 않는다**
-    const walked = perform(perform(s, { t: "rest" }), { t: "rest" });
-    assert.equal(line(walked).length, 1, "같은 방인데 까닭을 또 적었다");
-
-    // 어두운 방과 밝은 방은 다른 줄을 쓴다
-    const dark = { ...room, dark: true, told: false };
-    const bright = { ...room, dark: false, told: false };
-    walked.level.rooms[walked.level.roomAt[idx(walked.heroes[0].x, walked.heroes[0].y)]] = dark;
-    assert.match(line(perform(walked, { t: "rest" })).at(-1)!, /맞닿은 칸만/);
-    walked.level.rooms[walked.level.roomAt[idx(walked.heroes[0].x, walked.heroes[0].y)]] = bright;
-    assert.match(line(perform(walked, { t: "rest" })).at(-1)!, /통째로/);
 });

@@ -76,6 +76,17 @@ interface Run {
     bg?: string;
 }
 
+/**
+ * 불 켜진 방에 **처음 들어설 때** 한 겹씩 밝아지는 중 — 선 자리에서 `r` 칸까지만 보이고
+ * 나머지 방 안은 아직 어둡다. 화면의 연출이라 판(`GameState`)에는 없다.
+ */
+export interface Reveal {
+    cx: number;
+    cy: number;
+    r: number;
+    room: { x: number; y: number; w: number; h: number };
+}
+
 export interface CellFlash {
     ink?: string;
     bg?: string;
@@ -86,12 +97,14 @@ export default function MapView({
     who = 0,
     cellFlashes = {},
     shake = false,
+    reveal,
 }: {
     state: GameState;
     /** 이 화면이 **조종하는** 영웅. 지도는 그 사람을 가운데 두고, 그 사람만 밝게 그린다. */
     who?: number;
     cellFlashes?: Record<string, CellFlash>;
     shake?: boolean;
+    reveal?: Reveal | null;
 }) {
     const boxRef = useRef<HTMLDivElement>(null);
     const probeRef = useRef<HTMLSpanElement>(null);
@@ -136,6 +149,21 @@ export default function MapView({
     for (let y = oy; y < oy + view.rows; y++) {
         const runs: Run[] = [];
         for (let x = ox; x < ox + view.cols; x++) {
+            // 밝아지는 중인 방 — 아직 빛이 안 닿은 칸은 **비워 둔다.** 처음 들어선 방이라
+            // 기억도 없어서, 비워 두는 것이 곧 「아직 못 봤다」와 같다.
+            if (
+                reveal &&
+                x >= reveal.room.x &&
+                x < reveal.room.x + reveal.room.w &&
+                y >= reveal.room.y &&
+                y < reveal.room.y + reveal.room.h &&
+                Math.max(Math.abs(x - reveal.cx), Math.abs(y - reveal.cy)) > reveal.r
+            ) {
+                const last0 = runs[runs.length - 1];
+                if (last0 && last0.ink === "transparent" && !last0.bg) last0.text += " ";
+                else runs.push({ text: " ", ink: "transparent" });
+                continue;
+            }
             const g = glyphAt(state, x, y, who);
             const ch = g?.ch ?? " ";
             const flash = cellFlashes[`${x},${y}`];
