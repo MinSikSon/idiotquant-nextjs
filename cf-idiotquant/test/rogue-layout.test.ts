@@ -111,3 +111,37 @@ test("명령 단추는 세 개씩 딱 떨어진다", () => {
         `명령 단추가 ${n} 개다 — 세 칸 격자라 마지막 줄만 이가 빠진다. 셋 단위로 더하거나 뺄 것`,
     );
 });
+
+// 끊김 안내는 **지도를 안 가린다.**
+//
+// 예전에는 지도 위에 절대 배치로 떠 있었다(`absolute inset-x-0 top-2`). 390px 에서는
+// 초대 단추까지 두 줄로 접히면서 **내가 선 자리와 바로 앞의 몬스터를 덮었다** — 끊긴
+// 동안에도 방장은 계속 논다(손님만 못 움직인다). 알림이 판을 가리면 그건 안내가 아니라
+// 방해다.
+//
+// 브라우저로 잡기 까다로운 자리다(끊긴 상태를 만들어야 한다). 그래서 **글자로** 건다:
+// 그 안내는 지도 칸(`relative min-h-0 flex-1`) 밖에 있고, 절대 배치가 아니다.
+test("동료 끊김 안내는 지도 밖 한 줄이다 — 지도 위에 안 뜬다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+
+    // ── 안내 자체는 있어야 한다 — 없애서 통과시키면 안 된다
+    const idx = s.indexOf("{online && !linked && (");
+    assert.ok(idx > 0, "끊김 안내가 통째로 사라졌다 — 누른 키가 안 먹는 까닭을 어디서도 안 적는다");
+
+    // ── 지도 칸이 열리고 닫히는 자리 안에 있으면 안 된다
+    const mapOpen = s.indexOf('<div className="relative min-h-0 flex-1">');
+    assert.ok(mapOpen > 0, "지도 칸을 못 찾았다 — 이 테스트가 무엇을 재는지 잃었다");
+    assert.ok(idx > mapOpen, "안내가 지도 칸보다 앞에 있다");
+    // 지도 칸 다음에 오는 상태 줄보다 **앞**, 그리고 지도 칸 **밖**이어야 한다.
+    const statusRow = s.indexOf("{(state.heroes.length > 1 ? state.heroes : [hero]).map(");
+    assert.ok(statusRow > 0, "상태 줄을 못 찾았다");
+    assert.ok(idx < statusRow, "안내가 상태 줄 뒤로 밀렸다 — 지도와 상태 줄 사이 한 줄이어야 한다");
+
+    // ── 그 블록이 **절대 배치가 아니어야** 한다
+    const block = s.slice(idx, statusRow);
+    assert.ok(
+        !/\babsolute\b/.test(block),
+        "끊김 안내가 다시 절대 배치로 떠 있다 — 지도를 덮는다",
+    );
+    assert.match(block, /\bshrink-0\b/, "흐름 안의 줄이 아니다 — 지도를 밀어내지 않고 겹칠 수 있다");
+});

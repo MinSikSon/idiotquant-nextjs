@@ -1044,27 +1044,6 @@ export default function Rogue() {
             <div className="relative min-h-0 flex-1">
                 <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} />
 
-                {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 지도 위에 적는다. */}
-                {online && !linked && (
-                    <div className="absolute inset-x-0 top-2 z-10 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap items-center justify-center gap-2 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1.5 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                        <span>
-                            {online === "guest"
-                                ? "방장과 잇는 중… 그동안 누른 키는 전달되지 않는다"
-                                : state.heroes.length > 1
-                                  ? `동료와 끊겼다 — 방 ${room} 에서 기다리는 중`
-                                  : `동료를 기다리는 중 · 방 코드 ${room}`}
-                        </span>
-                        {online === "host" && (
-                            <button
-                                type="button"
-                                onClick={copyInvite}
-                                className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 hover:bg-[var(--rg-raised)]"
-                            >
-                                초대 링크 복사
-                            </button>
-                        )}
-                    </div>
-                )}
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -1081,6 +1060,36 @@ export default function Rogue() {
                     </div>
                 )}
             </div>
+
+            {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 적는다.
+                **지도 위에 안 띄운다.** 예전에는 지도 한가운데 위에 떠 있었는데, 390px 에서는
+                초대 단추까지 두 줄로 접히면서 **내가 선 자리와 바로 앞의 몬스터를 덮었다** —
+                끊긴 동안에도 방장은 계속 논다(손님만 못 움직인다). 알림이 판을 가리면 그건
+                안내가 아니라 방해다.
+
+                그래서 **지도 밖 한 줄**로 내렸다. 지도 높이를 그만큼 가져가지만, 이 줄은
+                끊긴 동안에만 서고 이어지면 사라진다 — 가리는 것보다 미는 것이 낫다.
+                넘치면 옆으로 민다(상태 줄과 같은 규칙 — 세로는 지도의 것이다). */}
+            {online && !linked && (
+                <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-t border-[var(--rg-line-faint)] bg-[var(--rg-panel)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] whitespace-nowrap text-[var(--rg-strong)]">
+                    <span className="min-w-0 flex-1 truncate">
+                        {online === "guest"
+                            ? "방장과 잇는 중… 그동안 누른 키는 전달되지 않는다"
+                            : state.heroes.length > 1
+                              ? `동료와 끊겼다 — 방 ${room} 에서 기다리는 중`
+                              : `동료를 기다리는 중 · 방 코드 ${room}`}
+                    </span>
+                    {online === "host" && (
+                        <button
+                            type="button"
+                            onClick={copyInvite}
+                            className="shrink-0 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 hover:bg-[var(--rg-raised)]"
+                        >
+                            초대 링크 복사
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* 상태 줄 — 원작의 맨 아랫줄.
                 **한 줄로 묶어 둔다.** 접히게 두면 좁은 폰에서 「금화」가 둘째 줄로 내려가
