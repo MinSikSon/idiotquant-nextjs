@@ -249,18 +249,6 @@ function higher(a: Record<string, number>, b: Record<string, number>): Record<st
     return out;
 }
 
-/**
- * 도감의 공격 줄 — **`0d0` 은 피해가 아니라 수법이다.**
- *
- * 그대로 적으면 아쿠에이터가 「Dmg 0d0 + 0d0」이 되어, 피해가 없다는 뜻으로만 읽히고
- * **두 대를 친다**는 것이 안 보인다. 갑옷이 한 턴에 두 칸 녹는 까닭이 거기 있는데
- * 화면이 그걸 안 적고 있었다. 대의 개수는 `damage` 의 길이 그대로다 — 화면이 세지 않는다.
- */
-function damageText(damage: string[] | undefined): string {
-    if (!damage || damage.length === 0) return "없음";
-    return damage.map((d) => (d === "0d0" ? "수법" : d)).join(" + ");
-}
-
 export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
     const [sheet, setSheet] = useState<
@@ -477,6 +465,8 @@ export default function Rogue() {
      */
     const dispatchCmd = useCallback(
         (cmd: Command) => {
+            // **끊긴 동안에는 판이 안 돈다** — 단추 판도 마찬가지다(키는 위에서 막는다).
+            if (online && !linked) return;
             const conn = net.current?.conn;
             if (online === "guest") {
                 // 끊긴 동안 누른 것은 버린다 — 다시 이어지면 방장의 판을 통째로 받는다.
@@ -486,7 +476,7 @@ export default function Rogue() {
             setState((s) => (s ? perform(s, cmd) : s));
             if (online === "host" && conn?.open) conn.send({ t: "cmd", cmd } satisfies NetMsg);
         },
-        [online],
+        [online, linked],
     );
 
     const run = useCallback(
@@ -807,7 +797,11 @@ export default function Rogue() {
      */
     const blocked = useRef<(w: number) => boolean>(() => false);
     blocked.current = (w) =>
-        modes[w] !== "none" || (sheet !== "none" && (w === sheetOwner || !!online)) || state?.phase !== "playing";
+        modes[w] !== "none" ||
+        (sheet !== "none" && (w === sheetOwner || !!online)) ||
+        // **끊긴 동안에는 판이 멈춘다** — 한쪽만 굴러가면 다시 이었을 때 딴 판이 된다.
+        (!!online && !linked) ||
+        state?.phase !== "playing";
 
     /**
      * 둘이서의 **확인** — 3×3 덩이의 가운데 키와 화면 방향판의 가운데 단추가 같이 쓴다.
@@ -841,6 +835,8 @@ export default function Rogue() {
             // 어떤 키도 안 먹는다. 대문자(`W`·`P`·`R`)는 그대로 둔다.
             const key = /^Key[A-Z]$/.test(e.code) ? (e.shiftKey ? e.code[3] : e.code[3].toLowerCase()) : e.key;
             const localCoop = !online && state.heroes.length > 1;
+            // 온라인인데 아직 안 이어졌으면 **아무 키도 안 받는다**(판 위의 알림이 까닭을 적는다).
+            if (online && !linked) return;
             // 같이 보는 판이 떠 있어도 **연 사람만** 멈춘다(아래 협동 갈래에서 가린다).
             // 혼자·온라인은 화면이 하나뿐이라 그대로 다 멈춘다.
             if (sheet !== "none" && !localCoop) return;
@@ -1069,7 +1065,7 @@ export default function Rogue() {
     const netText = !online
         ? ""
         : online === "guest"
-          ? "방장과 잇는 중… 그동안 누른 키는 전달되지 않는다"
+          ? "방장과 잇는 중… 판은 멈춰 있고, 이어지면 그대로 이어서 한다"
           : netLost
             ? `동료와 끊겼다 — 방 ${room} 에서 기다리는 중`
             : `동료를 기다리는 중 · 방 코드 ${room}`;
@@ -1132,6 +1128,15 @@ export default function Rogue() {
                         {netOpen && (
                             <div className="absolute top-9 right-1 z-20 flex max-w-[calc(100%-0.5rem)] flex-col items-end gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
                                 <span className="text-right">{netText}</span>
+                                {online === "guest" && (
+                                    <button
+                                        type="button"
+                                        onClick={() => closeRoom("방을 나왔다. 내 판으로 돌아왔다.")}
+                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 hover:bg-[var(--rg-raised)]"
+                                    >
+                                        기다리지 않고 나가기
+                                    </button>
+                                )}
                                 {online === "host" && (
                                     <button
                                         type="button"
@@ -1350,7 +1355,7 @@ export default function Rogue() {
                                                 {m.known ? (
                                                     <div className="text-[var(--rg-muted)]">
                                                         Level {m.level} · Arm {10 - (m.defense ?? 0)} · Dmg{" "}
-                                                        {damageText(m.damage)} · Exp {m.exp} · Hp {m.hp}
+                                                        {m.damage?.join(" + ") || "없음"} · Exp {m.exp} · Hp {m.hp}
                                                         {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                     </div>
                                                 ) : (
@@ -1387,7 +1392,7 @@ export default function Rogue() {
                                                     {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                                     <div className="text-[var(--rg-muted)]">
                                                         Level {r.level} · Arm {10 - r.defense} · Dmg{" "}
-                                                        {damageText(r.damage)} · Exp {r.exp} · Hp {r.hp}
+                                                        {r.damage.join(" + ") || "없음"} · Exp {r.exp} · Hp {r.hp}
                                                         {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
