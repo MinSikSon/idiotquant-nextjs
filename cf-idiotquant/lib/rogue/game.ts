@@ -777,11 +777,36 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
 export function scrollTargetKinds(state: GameState, letter: string, who = 0): ItemKind[] | null {
     const it = packItem(state.heroes[who] ?? state.heroes[0], letter);
     if (!it || it.kind !== "scroll") return null;
+    // **정체를 모르면 안 묻는다.** 고르기 창이 뜨는 것만으로, 그리고 목록이 무기로
+    // 좁혀지는 것만으로 그 주문서가 무엇인지 드러난다 — 취소하면 주문서도 턴도 안 쓰니
+    // 「읽고 제목만 보고 닫기」로 **공짜 감정**이 된다. 모르는 것은 원작 그대로 쥔 것·입은
+    // 것에 걸리고, 무엇이었는지는 **걸린 뒤에** 안다.
+    if (!state.known[`scroll:${it.type}`]) return null;
+    return targetKindsOf(it);
+}
+
+/** 이 주문서가 무엇에 걸리는가 — **정체를 아는지와 상관없는 규칙**이다. */
+function targetKindsOf(it: Item): ItemKind[] | null {
     if (it.type === "enchant weapon") return ["weapon"];
     if (it.type === "enchant armor") return ["armor"];
     if (it.type === "blessed enchant") return ["weapon", "armor"];
     if (it.type === "transmutation") return ["weapon", "armor", "ring"];
     return null;
+}
+
+/**
+ * 정체를 모르는 주문서가 **저절로 걸리는 자리** — 쥔 것 · 입은 것 · 낀 것 순서로 본다.
+ *
+ * 원작 Rogue 가 그랬다. 고를 수 없는 대신 **몸에 걸친 것**에 걸리므로, 모르는 주문서를
+ * 읽는 것이 곧 「지금 쓰는 장비를 건다」는 뜻이 된다.
+ */
+function defaultTarget(hero: Hero, kinds: ItemKind[]): Item | undefined {
+    for (const k of kinds) {
+        const it =
+            k === "weapon" ? equippedWeapon(hero) : k === "armor" ? equippedArmor(hero) : wornRings(hero)[0];
+        if (it) return it;
+    }
+    return undefined;
 }
 
 export function enchantTarget(state: GameState, letter: string, who = 0): ItemKind | null {
@@ -948,13 +973,26 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
     // ── 대상이 필요한 주문서(강화/재련)는 **고를 것을 먼저 묻는다** ──────────────
     // 대상 없이 들어오면 **아무 일도 안 난다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3).
     // 화면이 고르기를 띄우는 사이에 판이 한 턴 흐르면 안 된다.
-    const targetKinds = scrollTargetKinds(state, letter);
+    const targetKinds = targetKindsOf(it);
     if (targetKinds) {
-        if (!target) return false;
-        const on = packItem(hero, target);
+        // **정체를 아는 주문서만 고르게 한다**(`scrollTargetKinds` 와 같은 갈래).
+        // 모르는 것은 고르기 창이 안 떴으므로 여기서도 묻지 않고 몸에 걸친 것에 건다.
+        const known = !!state.known[`scroll:${it.type}`];
+        if (known && !target) return false;
+        const on = known ? packItem(hero, target!) : defaultTarget(hero, targetKinds);
         if (!on || !targetKinds.includes(on.kind)) {
-            say(state, "선택한 대상에 적용할 수 없다.");
-            return false;
+            if (known) {
+                say(state, "선택한 대상에 적용할 수 없다.");
+                return false;
+            }
+            // 모르는 주문서인데 걸 것이 없다 — **주문서는 탄다.** 그래야 무엇이었는지 안다.
+            takeFromPack(hero, it);
+            const k = `scroll:${it.type}`;
+            state.known[k] = true;
+            state.itemCodex[k] = true;
+            state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+            say(state, `${describe(it, state.known, state.appearance)}를 읽었지만 걸 것이 없었다.`);
+            return true;
         }
         if (ENCHANT_SCROLLS.includes(it.type)) {
             const plus = enchantOf(on);

@@ -411,6 +411,9 @@ test("동료가 읽는 강화 주문서는 동료의 배낭에서 찾는다", as
     const guest = s.heroes[1];
     const scroll = makeItem("scroll", "enchant weapon", s.nextItemId++, 0, 0);
     addToPack(guest, scroll);
+    // **정체를 아는 주문서라야 고르기가 뜬다** — 여기서 가리려는 것은 「누구의 배낭에서
+    // 찾느냐」지 감정이 아니다.
+    s.known["scroll:enchant weapon"] = true;
     assert.ok(!s.heroes[0].pack.some((p) => p.letter === scroll.letter && p.kind === "scroll"), "방장 배낭에 같은 글자의 주문서가 있으면 이 테스트가 아무것도 못 가린다");
     assert.deepEqual(scrollTargetKinds(s, scroll.letter!, 1), ["weapon"]);
     assert.equal(enchantScrollKind(s, scroll.letter!, 1), "plain");

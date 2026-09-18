@@ -172,6 +172,7 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         const scr = makeItem("scroll", "transmutation", 996, -1, -1);
         scr.letter = "s";
         s.heroes[0].pack.push(scr);
+        s.known["scroll:transmutation"] = true;
 
         const kinds = scrollTargetKinds(s, "s");
         assert.deepEqual(kinds, ["weapon", "armor", "ring"]);
@@ -187,6 +188,7 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         wep.plusHit = 2;
         wep.plusDam = 2;
         s.heroes[0].pack.push(scr, wep);
+        s.known["scroll:transmutation"] = true;
 
         const after = perform(s, { t: "read", letter: "s", target: "w" });
         const transmuted = after.heroes[0].pack.find((p) => p.id === wep.id)!;
@@ -207,6 +209,7 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         const arm = makeItem("armor", "leather", 1000, -1, -1);
         arm.letter = "u";
         s.heroes[0].pack.push(scr, arm);
+        s.known["scroll:transmutation"] = true;
 
         const after = perform(s, { t: "read", letter: "s", target: "u" });
         const transmuted = after.heroes[0].pack.find((p) => p.id === arm.id)!;
@@ -225,6 +228,7 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         const ring = makeItem("ring", "protection", 1002, -1, -1);
         ring.letter = "r";
         s.heroes[0].pack.push(scr, ring);
+        s.known["scroll:transmutation"] = true;
 
         const after = perform(s, { t: "read", letter: "s", target: "r" });
         const transmuted = after.heroes[0].pack.find((p) => p.id === ring.id)!;
@@ -233,5 +237,79 @@ test("재련의 주문서 (transmutation): 무기, 갑옷, 반지를 같은 분�
         assert.notEqual(transmuted.type, "protection");
         assert.ok(RINGS[transmuted.type], "유효한 반지 타입이어야 함");
         assert.ok(after.known[`ring:${transmuted.type}`]);
+    }
+});
+
+// ── 정체를 모르는 주문서는 **고를 것을 안 묻는다** ────────────────────────────────
+//
+// 왜 이 규칙이 필요한가. 「무기가 플레이 도중 종류가 바뀐다」는 보고에서 나온 자리다.
+// 예전에는 **정체를 모르는 주문서를 읽어도** 고르기 창이 떴고, 그 창의 제목이
+// 「무엇을 재련할까」/「무엇을 강화할까」라 **읽기도 전에 정체를 알려 줬다.** 게다가
+// 대상 없이 들어온 `read` 는 주문서도 턴도 안 쓰므로(못 박은 규칙 3), 읽고 제목만 보고
+// 닫으면 **공짜로 감정**이 됐다. 그리고 그 창은 강화 창과 생김새가 같아서, 강화인 줄 알고
+// 무기를 고른 사람의 무기가 딴 것이 됐다.
+//
+// 그래서 원작 Rogue 로 돌아간다: **모르는 주문서는 몸에 걸친 것에 걸린다.** 무엇이었는지는
+// 걸린 뒤에 안다. 고르는 것은 **이미 아는 주문서**의 몫이다.
+test("정체를 모르는 주문서는 대상을 안 묻고 몸에 걸친 것에 걸린다", () => {
+    /** 재련 주문서 한 장을 배낭에 넣는다. `known` 은 건드리지 않는다 — 모르는 채로 둔다. */
+    const armed = (seed: number) => {
+        const s = newGame(seed);
+        const hero = s.heroes[0];
+        const scr = makeItem("scroll", "transmutation", 9100, -1, -1);
+        scr.letter = "s";
+        hero.pack.push(scr);
+        return { s, hero };
+    };
+
+    // ── ① 모르면 **고를 것을 안 묻는다** — 창이 뜨는 것만으로 정체가 샌다
+    {
+        const { s } = armed(9001);
+        assert.equal(scrollTargetKinds(s, "s"), null, "모르는 주문서인데 대상 목록을 내줬다 — 창 제목으로 정체가 샌다");
+    }
+
+    // ── ② 모르는 주문서는 **쥔 무기**에 걸린다. 배낭의 딴 무기는 안 건드린다
+    {
+        const { s, hero } = armed(9002);
+        const spare = makeItem("weapon", "dagger", 9101, -1, -1);
+        spare.letter = "x";
+        hero.pack.push(spare);
+        const wielded = hero.pack.find((p) => p.id === hero.weaponId)!;
+        const wasType = wielded.type;
+
+        // **대상을 실어 보내도 무시한다** — 모르는 주문서에는 고를 권리가 없다.
+        const after = perform(s, { t: "read", letter: "s", target: "x" });
+        const now = after.heroes[0];
+        assert.notEqual(now.pack.find((p) => p.id === wielded.id)!.type, wasType, "쥔 무기가 안 바뀌었다");
+        assert.equal(now.pack.find((p) => p.id === spare.id)!.type, "dagger", "고른 척한 배낭 속 무기가 바뀌었다 — 모르는 주문서는 고를 수 없어야 한다");
+        assert.ok(!now.pack.some((p) => p.id === 9100), "주문서가 안 탔다");
+        assert.ok(after.known["scroll:transmutation"], "읽었는데도 정체를 모른다");
+    }
+
+    // ── ③ 걸 것이 없으면 **주문서는 탄다** — 안 그러면 읽기를 되풀이해 공짜로 감정한다
+    {
+        const { s, hero } = armed(9003);
+        hero.weaponId = null;
+        hero.armorId = null;
+        hero.leftRingId = null;
+        hero.rightRingId = null;
+        const turn = s.turn;
+
+        const after = perform(s, { t: "read", letter: "s" });
+        assert.ok(!after.heroes[0].pack.some((p) => p.id === 9100), "걸 것이 없다고 주문서가 남았다 — 되풀이하면 공짜 감정이 된다");
+        assert.ok(after.turn > turn, "턴이 안 갔다");
+        assert.ok(after.known["scroll:transmutation"], "읽었는데도 정체를 모른다");
+    }
+
+    // ── ④ **알고 나면 그때부터 고른다** — 아는 주문서는 지금까지처럼 창이 뜬다
+    {
+        const { s } = armed(9004);
+        s.known["scroll:transmutation"] = true;
+        assert.deepEqual(scrollTargetKinds(s, "s"), ["weapon", "armor", "ring"], "아는 재련인데 대상을 안 묻는다");
+        // 아는 주문서는 **대상 없이 들어오면 아무 일도 안 난다**(못 박은 규칙 3).
+        const before = s.turn;
+        const after = perform(s, { t: "read", letter: "s" });
+        assert.equal(after.turn, before, "대상 없이 읽었는데 턴이 갔다");
+        assert.ok(after.heroes[0].pack.some((p) => p.id === 9100), "대상 없이 읽었는데 주문서가 탔다");
     }
 });

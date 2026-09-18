@@ -165,8 +165,14 @@ export default function Desk({
 
     /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다 — 그 주문서의 자리. */
     const pendingEnchant = useRef<string | null>(null);
-    /** 그 주문서가 강화냐 축복이냐 — `null` 이면 재련이다. 줄마다 적을 것이 갈린다. */
-    const pendingEnchantStyle = useRef<"plain" | "blessed" | null>(null);
+    /**
+     * 그 주문서가 강화냐 축복이냐 재련이냐 — 줄마다 적을 것이 갈린다.
+     *
+     * **재련을 `null` 로 두지 않는다.** 그러면 「고르기가 안 열린 상태」와 같은 값이 되어
+     * 화면이 두 가지를 못 가리고, 재련 줄이 강화 줄과 **똑같이 생긴 채** 뜬다 — 강화인 줄
+     * 알고 눌러서 무기 종류가 바뀌는 사고가 거기서 난다.
+     */
+    const pendingEnchantStyle = useRef<"plain" | "blessed" | "transmute" | null>(null);
 
     /**
      * 주문서 하나를 읽는다 — **강화나 재련이면 고를 것을 한 번 더 묻는다.**
@@ -187,13 +193,13 @@ export default function Desk({
             // **강화냐 재련이냐는 엔진이 답한다**(`enchantScrollKind`). 대상 종류의 개수로
             // 가르면 축복(무기·갑옷)이 재련(무기·갑옷·반지)과 같은 칸에 떨어져서, 상한에
             // 닿은 물건이 고르는 목록에 그대로 뜬다.
-            const style = enchantScrollKind(state, letter, w);
+            const style = enchantScrollKind(state, letter, w) ?? "transmute";
             pendingEnchant.current = letter;
             pendingEnchantStyle.current = style;
             const wantSingle = targetKinds.length === 1 ? targetKinds[0] : null;
             setPicker({
-                title: !style
-                    ? "무엇을 재련할까"
+                title: style === "transmute"
+                    ? "무엇을 재련할까 — 다른 종류로 바뀐다"
                     : style === "blessed"
                     ? "무엇에 축복을 걸까"
                     : wantSingle === "weapon"
@@ -201,8 +207,8 @@ export default function Desk({
                     : "무슨 갑옷을 강화할까",
                 kinds: targetKinds,
                 // **상한에 닿은 것은 안 보여 준다** (재련은 제한 없음)
-                allow: (p) => !style || enchantOf(p) < ENCHANT_MAX,
-                empty: !style
+                allow: (p) => style === "transmute" || enchantOf(p) < ENCHANT_MAX,
+                empty: style === "transmute"
                     ? "재련할 장비(무기·갑옷·반지)가 없다."
                     : style === "blessed"
                     ? "축복을 걸 무기나 갑옷이 없다."
@@ -272,7 +278,14 @@ export default function Desk({
      * 축복은 안전 구간 안에서 **범위**를 적는다 — 한 번에 `1~3` 칸이 오르기 때문이고,
      * 천장 위에서는 굴림이 일반과 같아서 같은 줄을 적는다.
      */
-    const enchantHint = (it: Item, style: "plain" | "blessed") => {
+    const enchantHint = (it: Item, style: "plain" | "blessed" | "transmute") => {
+        // **재련은 숫자가 아니라 종류를 바꾼다.** 줄에 아무것도 안 적으면 강화 창과 똑같이
+        // 생겨서, 강화인 줄 알고 눌렀다가 무기가 딴 것이 된다.
+        if (style === "transmute") {
+            // 조사까지 같이 적는다 — 「갑옷로」가 화면에 뜨면 안 된다.
+            const what = it.kind === "weapon" ? "무기로" : it.kind === "armor" ? "갑옷으로" : "반지로";
+            return <span className="text-[var(--rg-trap)]"> → 다른 {what} 바뀐다</span>;
+        }
         const plus = enchantOf(it);
         const safeMax = enchantSafeMax(it.kind);
         if (style === "blessed" && plus < safeMax) {
@@ -594,11 +607,13 @@ export default function Desk({
                     footer={
                         // 안전 구간 숫자도 **엔진의 표에서** 읽는다 — 여기 적어 두면 표를 고친 날
                         // 화면만 옛말을 하게 된다.
-                        enchantStyle === "blessed"
-                            ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
-                            : enchantStyle
-                              ? `실패하면 그 물건은 부서집니다. 무기는 +${enchantSafeMax("weapon")}, 갑옷은 +${enchantSafeMax("armor")} 까지 안전합니다.`
-                              : "글자를 누르거나 줄을 눌러 고릅니다."
+                        enchantStyle === "transmute"
+                            ? "고른 장비가 같은 분류의 다른 종류로 바뀝니다 — 강화 수치는 따라갑니다."
+                            : enchantStyle === "blessed"
+                              ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
+                              : enchantStyle
+                                ? `실패하면 그 물건은 부서집니다. 무기는 +${enchantSafeMax("weapon")}, 갑옷은 +${enchantSafeMax("armor")} 까지 안전합니다.`
+                                : "글자를 누르거나 줄을 눌러 고릅니다."
                     }
                 >
                     {pickable.length === 0 ? (
