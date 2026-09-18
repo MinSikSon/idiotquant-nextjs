@@ -211,6 +211,9 @@ type NetMsg =
     | { t: "hello"; origin: HeroOrigin }
     // **나간다는 인사.** 이것 없이 끊기면 사고(망 끊김)로 보고 자리를 지켜 기다린다.
     | { t: "bye" }
+    // **방장이 내보냈다.** `bye` 와 갈라 둔다 — 손님 화면에 적는 까닭이 다르고,
+    // 이쪽은 **그 손님을 다시 안 받는다**(`banned`).
+    | { t: "kick" }
     // 살아 있다는 신호. WebRTC 는 상대가 창을 닫아도 한참 「열림」으로 남는다.
     | { t: "ping" }
     // 내 책상에 무엇이 떠 있나 — 상대 화면이 「2P 배낭 보는 중」을 적는다.
@@ -244,6 +247,18 @@ function higher(a: Record<string, number>, b: Record<string, number>): Record<st
     const out = { ...a };
     for (const [ch, n] of Object.entries(b)) out[ch] = Math.max(out[ch] ?? 0, n);
     return out;
+}
+
+/**
+ * 도감의 공격 줄 — **`0d0` 은 피해가 아니라 수법이다.**
+ *
+ * 그대로 적으면 아쿠에이터가 「Dmg 0d0 + 0d0」이 되어, 피해가 없다는 뜻으로만 읽히고
+ * **두 대를 친다**는 것이 안 보인다. 갑옷이 한 턴에 두 칸 녹는 까닭이 거기 있는데
+ * 화면이 그걸 안 적고 있었다. 대의 개수는 `damage` 의 길이 그대로다 — 화면이 세지 않는다.
+ */
+function damageText(damage: string[] | undefined): string {
+    if (!damage || damage.length === 0) return "없음";
+    return damage.map((d) => (d === "0d0" ? "수법" : d)).join(" + ");
 }
 
 export default function Rogue() {
@@ -438,6 +453,19 @@ export default function Rogue() {
     const [room, setRoom] = useState<string | null>(null);
     /** 지금 상대와 이어져 있는가 — 끊겨도 방(`online`·`room`)은 남는다. */
     const [linked, setLinked] = useState(false);
+    /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
+    const [netOpen, setNetOpen] = useState(false);
+    /**
+     * 내보낸 손님들 — **이 방이 열려 있는 동안 다시 안 받는다.**
+     *
+     * 이게 없으면 내보내도 그 사람이 곧바로 다시 붙어서, 내보낸 것이 아니라 잠깐 끊은
+     * 것이 된다. 방을 닫으면(`closeRoom`) 피어가 통째로 사라지므로 명부도 같이 간다.
+     */
+    const banned = useRef<Set<string>>(new Set());
+    // 다시 이어지면 접어 둔다. 안 그러면 다음에 끊겼을 때 **묻지도 않고 펼쳐진 채로** 뜬다.
+    useEffect(() => {
+        if (linked) setNetOpen(false);
+    }, [linked]);
     const net = useRef<{ peer: Peer; conn?: DataConnection } | null>(null);
     const stateRef = useRef(state);
     stateRef.current = state;
@@ -515,6 +543,31 @@ export default function Rogue() {
         setWho(0);
         if (why) note(why);
     }, [note]);
+    /**
+     * 들어온 동료를 **내보낸다** — 방은 그대로 열어 둔다.
+     *
+     * 방 나가기(`closeRoom`)와 다르다. 방 코드도 피어도 살아 있고 나가는 것은 손님뿐이라,
+     * 곧바로 다른 사람을 부를 수 있다. 내보낸 사람은 **이 방이 열려 있는 동안 다시 못
+     * 들어온다**(`banned`) — 다시 붙을 수 있으면 그건 내보낸 것이 아니라 잠깐 끊은 것이다.
+     *
+     * 동료 자리는 `leaveGame` 이 **그 판 안에** 앉혀 둔다(직업·배낭 그대로). 나가기와 같은
+     * 자리를 쓰는 까닭은, 규칙을 두 벌로 두면 한쪽만 고치는 날이 오기 때문이다.
+     */
+    const kickGuest = useCallback(() => {
+        const n = net.current;
+        const conn = n?.conn;
+        if (!n || !conn) return;
+        banned.current.add(conn.peer);
+        if (conn.open) conn.send({ t: "kick" } satisfies NetMsg);
+        // 곧바로 닫으면 방금 보낸 인사가 안 나간다.
+        setTimeout(() => conn.close(), 500);
+        // **먼저 자리를 비운다** — 그래야 뒤따라 오는 `close` 가 「끊겼다」로 안 읽힌다.
+        net.current = { peer: n.peer };
+        setLinked(false);
+        setState((g) => (g ? leaveGame(g) : g));
+        note("동료를 내보냈다. 방은 그대로 열려 있다.");
+    }, [note]);
+
     // 네트워크 콜백은 방을 열 때 한 번 걸린다 — 그때의 `online` 이 아니라 **지금** 것을 읽는다.
     const onlineRef = useRef(online);
     onlineRef.current = online;
@@ -544,6 +597,12 @@ export default function Rogue() {
         peer.on("error", () => retry(peer, () => hostRoom(code)));
         peer.on("disconnected", () => !peer.destroyed && peer.reconnect());
         peer.on("connection", (conn) => {
+            // **내보낸 사람은 안 받는다.** 자리가 비어 있는지 보기 **전에** 본다 — 자리가
+            // 비었다고 받아 주면 내보내기가 잠깐 끊은 것과 같아진다.
+            if (banned.current.has(conn.peer)) {
+                conn.close();
+                return;
+            }
             // 방은 둘이다 — 살아 있는 손님이 있으면 돌려보낸다. 죽은 연결이면 새 쪽으로 갈아 낀다.
             if (net.current?.conn?.open) {
                 conn.close();
@@ -627,6 +686,8 @@ export default function Rogue() {
                     setState((s) => (s ? perform(s, m.cmd) : s));
                 } else if (m?.t === "ui") {
                     if (m.mode in DESK_DOING) setPeerMode(m.mode);
+                } else if (m?.t === "kick") {
+                    closeRoomRef.current("방장이 나를 내보냈다. 내 판으로 돌아왔다.");
                 } else if (m?.t === "bye") {
                     closeRoomRef.current("방장의 판이 끝나 방이 닫혔다. 내 판으로 돌아왔다.");
                 }
@@ -999,6 +1060,19 @@ export default function Rogue() {
     const recent = state.messages.filter((m) => !isDetail(m)).slice(-2);
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
+
+    /**
+     * 끊긴 동안 우상단에 적는 것 — **한 자리에서 낸다.** 단추의 이름표(`aria-label`)와
+     * 펼친 본문이 같은 글을 써야, 읽어 주는 것과 보이는 것이 안 갈린다.
+     */
+    const netLost = online === "guest" || state.heroes.length > 1;
+    const netText = !online
+        ? ""
+        : online === "guest"
+          ? "방장과 잇는 중… 그동안 누른 키는 전달되지 않는다"
+          : netLost
+            ? `동료와 끊겼다 — 방 ${room} 에서 기다리는 중`
+            : `동료를 기다리는 중 · 방 코드 ${room}`;
     return (
         <div className="relative flex h-full w-full flex-col bg-[var(--rg-bg)] text-[var(--rg-text)]">
             {/* 맨 위 두 줄 — 원작의 메시지 줄이다. 높이를 고정해 둔다: 줄 수가 들쭉날쭉하면
@@ -1032,27 +1106,46 @@ export default function Rogue() {
             <div className="relative min-h-0 flex-1">
                 <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} />
 
-                {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 지도 위에 적는다. */}
+                {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 알린다.
+                    **늘 떠 있는 것은 우상단의 작은 단추 하나**다. 본문은 눌러야 펼쳐진다.
+
+                    거쳐 온 길이 둘이다. 처음에는 지도 한가운데 위에 띠로 떠 있었는데,
+                    390px 에서 초대 단추까지 두 줄로 접히며 **내가 선 자리와 앞의 몬스터를
+                    덮었다**(재 보니 13285px²). 그래서 지도 밖 한 줄로 내렸더니 이번에는
+                    **지도가 그만큼 줄었다.** 둘 다 싫은 것이 맞다 — 끊긴 동안에도 방장은
+                    계속 논다. 그래서 지금은 **모서리 한 칸만 쓰고**, 가리는 것은 내가 보자고
+                    누른 순간뿐이다. */}
                 {online && !linked && (
-                    <div className="absolute inset-x-0 top-2 z-10 mx-auto flex w-fit max-w-[calc(100%-1rem)] flex-wrap items-center justify-center gap-2 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1.5 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                        <span>
-                            {online === "guest"
-                                ? "방장과 잇는 중… 그동안 누른 키는 전달되지 않는다"
-                                : state.heroes.length > 1
-                                  ? `동료와 끊겼다 — 방 ${room} 에서 기다리는 중`
-                                  : `동료를 기다리는 중 · 방 코드 ${room}`}
-                        </span>
-                        {online === "host" && (
-                            <button
-                                type="button"
-                                onClick={copyInvite}
-                                className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 hover:bg-[var(--rg-raised)]"
-                            >
-                                초대 링크 복사
-                            </button>
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setNetOpen((v) => !v)}
+                            aria-label={netText}
+                            aria-expanded={netOpen}
+                            title={netText}
+                            className={`absolute top-1 right-1 z-20 grid h-7 w-7 place-items-center rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 font-[family-name:var(--font-plex-mono)] text-[13px] leading-none ${
+                                netLost ? "text-[var(--rg-trap)]" : "text-[var(--rg-gold)]"
+                            }`}
+                        >
+                            {netLost ? "⚠" : "⋯"}
+                        </button>
+                        {netOpen && (
+                            <div className="absolute top-9 right-1 z-20 flex max-w-[calc(100%-0.5rem)] flex-col items-end gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                <span className="text-right">{netText}</span>
+                                {online === "host" && (
+                                    <button
+                                        type="button"
+                                        onClick={copyInvite}
+                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 hover:bg-[var(--rg-raised)]"
+                                    >
+                                        초대 링크 복사
+                                    </button>
+                                )}
+                            </div>
                         )}
-                    </div>
+                    </>
                 )}
+
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -1257,7 +1350,7 @@ export default function Rogue() {
                                                 {m.known ? (
                                                     <div className="text-[var(--rg-muted)]">
                                                         Level {m.level} · Arm {10 - (m.defense ?? 0)} · Dmg{" "}
-                                                        {m.damage?.join(" + ") || "없음"} · Exp {m.exp} · Hp {m.hp}
+                                                        {damageText(m.damage)} · Exp {m.exp} · Hp {m.hp}
                                                         {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                     </div>
                                                 ) : (
@@ -1294,7 +1387,7 @@ export default function Rogue() {
                                                     {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                                     <div className="text-[var(--rg-muted)]">
                                                         Level {r.level} · Arm {10 - r.defense} · Dmg{" "}
-                                                        {r.damage.join(" + ") || "없음"} · Exp {r.exp} · Hp {r.hp}
+                                                        {damageText(r.damage)} · Exp {r.exp} · Hp {r.hp}
                                                         {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
@@ -1696,6 +1789,18 @@ export default function Rogue() {
                                           },
                                       },
                                   ]),
+                            ...(room && online === "host" && linked
+                                ? [
+                                      {
+                                          label: "동료 내보내기",
+                                          hint: "방은 그대로 열어 둔다 — 내보낸 동료는 이 방에 다시 못 들어온다",
+                                          go: () => {
+                                              kickGuest();
+                                              setSheet("none");
+                                          },
+                                      },
+                                  ]
+                                : []),
                             ...(room
                                 ? [
                                       {
