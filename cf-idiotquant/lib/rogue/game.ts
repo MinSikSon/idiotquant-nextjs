@@ -24,6 +24,7 @@ import {
 import {
     computeFov,
     isVisible,
+    roomOf,
     monsterSees,
     revealAll,
 } from "./fov";
@@ -402,7 +403,36 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
         }
     }
     computeFov(level, state.heroes);
+    // 층에 내려선 그 자리도 방이다 — 한 걸음 걷고 나서야 까닭이 뜨면 늦다.
+    tellRoom(state);
     state.deepest = Math.max(state.deepest, depth);
+}
+
+/**
+ * 방에 **처음 들어설 때** 왜 이만큼만 보이는지 한 줄 적는다.
+ *
+ * 어떤 방은 들어서자마자 통째로 보이고 어떤 방은 한 칸씩 더듬는데, 화면 어디에도 까닭이
+ * 없었다 — 「고장인가」로 읽힌다. 규칙은 넷이고(`fov.lightFrom`) 여기서 그 넷을 **읽기만**
+ * 한다. 방마다 한 번뿐이라(`room.told`) 기록이 같은 말로 차지 않는다.
+ */
+function tellRoom(state: GameState): void {
+    const { level } = state;
+    for (const h of state.heroes) {
+        if (h.hp <= 0) continue;
+        const room = level.rooms[roomOf(level, h.x, h.y)];
+        if (!room || room.gone || room.told) continue;
+        room.told = true;
+        say(
+            state,
+            room.maze
+                ? "얽힌 통로다 — 벽이 촘촘해 한 칸씩 더듬는다."
+                : room.dark
+                  ? "불빛이 없는 방이다 — 맞닿은 칸만 보인다."
+                  : level.mutator === "fog"
+                    ? "횃불은 켜져 있지만 안개가 자욱하다 — 두 칸 밖은 안 보인다."
+                    : "횃불이 켜진 방이다 — 통째로 보인다.",
+        );
+    }
 }
 
 /** 시야 내에 들어온 바닥의 물건들을 이번 판 목격 목록에 기록한다. */
@@ -2309,6 +2339,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
 
     computeFov(state.level, state.heroes);
     updateSeenItems(state);
+    tellRoom(state);
 
     // **쓰러진 사람을 훑는다** — 행동한 사람만이 아니다. 불길에도 몬스터에게도 누구나
     // 쓰러질 수 있고, 그 턴에 움직인 사람이 아닐 수 있다.
