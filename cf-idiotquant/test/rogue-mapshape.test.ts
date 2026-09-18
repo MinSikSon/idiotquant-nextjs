@@ -19,6 +19,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+    inVault,
     buildLevel,
     effectiveArea,
     floorQuota,
@@ -113,6 +114,9 @@ test("계단도 비밀문도 막히지 않는다", () => {
             for (let y = 0; y < MAP_H; y++) {
                 for (let x = 0; x < MAP_W; x++) {
                     if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
+                    // **금고만 뺀다.** 파야 들어가는 방이라 안 이어진 것이 맞다 — 자물쇠를
+                    // 무르게 하는 대신 예외를 `Room.vault` 한 표에 모아 둔다.
+                    if (inVault(level, x, y)) continue;
                     assert.ok(seen[idx(x, y)], `${tag}: (${x},${y}) 에 아무 데서도 못 간다`);
                 }
             }
@@ -487,4 +491,173 @@ test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로
         }
         return;
     }
+});
+
+// ── 「길이 막힌 판」은 **절대 없다** ─────────────────────────────────────────────
+//
+// 이 저장소에서 제일 비싼 고장은 **내려갈 수 없는 층**이다(`NOTES.md` 「안 잡히는 고장이
+// 다섯」). 죽는 것도 아니고 터지는 것도 아니라 화면은 멀쩡한데, 그 판은 거기서 끝난다.
+//
+// 위의 「계단도 비밀문도 막히지 않는다」는 **비밀문을 다 연 상태**로 잇는지를 본다. 여기서
+// 거는 것은 그보다 **한 단계 센 것**이다:
+//
+//   · 비밀문을 **못 찾았다고 치고도** 계단·모루·바닥의 물건에 닿는가.
+//   · 그것도 `buildLevel` 이 아니라 **실제로 노는 길**(`newGame` → `descend`)에서.
+//     물건·모루·특수 방·층 돌발은 `populate` 가 얹는 것이라, 지도만 봐서는 안 잡힌다.
+//
+// 비밀문 **뒤에만 있는 칸**은 있어도 된다 — 그건 찾아서 여는 지름길이다(잰 것: 층 1587개
+// 중 39개, 2.5%). 하지만 **계단이 거기 있으면** 못 찾은 사람의 판은 막힌다. 그래서
+// 계단·모루·물건은 비밀문 없이도 닿아야 한다.
+test("비밀문을 못 찾아도 계단·모루·물건에 닿는다 — 막힌 판은 없다", async () => {
+    const { newGame, perform } = await import("@/lib/rogue/game");
+
+    // **표본을 아끼지 않는다.** 이 자물쇠가 지키는 것은 「그 판은 거기서 끝난다」라,
+    // 천에 하나로 새는 것도 누군가에게는 그 판 전부다. 파일 전체가 1~2초라 값이 싸다.
+    const SEEDS = 120;
+    const FLOORS = 8;
+    let floors = 0;
+    let vaults = 0;
+
+    for (let seed = 1; seed <= SEEDS; seed++) {
+        let s = newGame(seed);
+        for (let d = 1; d <= FLOORS; d++) {
+            const { level } = s;
+            const tag = `시드 ${seed} ${level.depth}층`;
+            // **비밀문을 벽으로 친다** — 못 찾은 사람의 눈으로 본다.
+            const seen = flood(level, { x: s.heroes[0].x, y: s.heroes[0].y }, false);
+            const at = (p: { x: number; y: number }) => seen[idx(p.x, p.y)] === 1;
+
+            assert.ok(at(level.stairs), `${tag}: **내려가는 계단에 못 간다** — 그 판은 거기서 끝난다`);
+            if (level.upStairs) assert.ok(at(level.upStairs), `${tag}: 올라가는 계단에 못 간다`);
+            if (level.anvil) assert.ok(at(level.anvil), `${tag}: 모루에 못 간다 — 있는데 못 쓰는 것이 된다`);
+            for (const it of level.items) {
+                if (inVault(level, it.x, it.y)) continue; // 금고 안의 상은 파야 얻는다
+                assert.ok(at(it), `${tag}: (${it.x},${it.y}) 의 ${it.kind} 을(를) 못 줍는다`);
+            }
+
+            // ── 금고가 있으면 **그 방만** 안 이어지고, 여는 길이 그 층에 있어야 한다
+            const vault = level.rooms.find((r) => r.vault);
+            if (vault) {
+                vaults++;
+                assert.ok(!inVault(level, level.stairs.x, level.stairs.y), `${tag}: **계단이 금고 안에 있다** — 못 파는 사람의 판이 막힌다`);
+                if (level.upStairs) assert.ok(!inVault(level, level.upStairs.x, level.upStairs.y), `${tag}: 올라가는 계단이 금고 안에 있다`);
+                if (level.anvil) assert.ok(!inVault(level, level.anvil.x, level.anvil.y), `${tag}: 모루가 금고 안에 있다`);
+                assert.ok(!inVault(level, s.heroes[0].x, s.heroes[0].y), `${tag}: 영웅이 금고 안에서 시작한다`);
+                // 금고 안은 **걸어서는 못 간다** — 그게 금고다.
+                const inside = { x: vault.x + 1, y: vault.y + 1 };
+                assert.ok(!at(inside), `${tag}: 금고에 걸어서 들어가진다 — 그건 그냥 방이다`);
+                // **여는 길이 금고 밖에 있다** — 금고 안의 상이 우연히 굴착 지팡이일 수도
+                // 있으므로(그건 열쇠가 아니다) **밖에 있는 것**으로 찾는다. 없으면 그 방은
+                // 그 판에서 영영 못 여는 죽은 칸이다.
+                const wand = level.items.find(
+                    (it) => it.kind === "wand" && it.type === "digging" && !inVault(level, it.x, it.y),
+                );
+                assert.ok(wand, `${tag}: 금고는 있는데 굴착 지팡이가 밖에 없다 — 열쇠를 금고에 넣은 셈이다`);
+                assert.ok(at(wand!), `${tag}: 굴착 지팡이에 못 간다`);
+            }
+            floors++;
+
+            // 계단으로 옮겨 내려간다 — 실제로 노는 길 그대로.
+            s.heroes[0].x = level.stairs.x;
+            s.heroes[0].y = level.stairs.y;
+            s = perform(s, { t: "descend" });
+            if (s.level.depth !== d + 1) break;
+        }
+    }
+    // 표본이 실제로 돌았는지 — 0 층을 훑고 통과하면 아무것도 안 건 것이다.
+    assert.ok(floors >= SEEDS * FLOORS * 0.9, `층을 ${floors}개밖에 안 훑었다 — 표본이 안 돌았다`);
+    // 금고를 한 번도 안 만났으면 위의 금고 주장들은 아무것도 안 건 것이다.
+    assert.ok(vaults > 0, `층 ${floors}개를 훑었는데 금고가 하나도 안 났다 — 금고 규칙이 안 걸렸다`);
+});
+
+// 굴착 지팡이는 **막을 수 없다.**
+//
+// 「파야만 갈 수 있는 숨은 공간이 생기나」라는 물음의 뒷면이다. 지금 굴착은 바위를 복도로
+// **바꾸기만** 한다 — 되돌리는 갈래가 없으므로 갈 수 있던 곳이 막힐 수 없다. 그 성질을
+// 글자가 아니라 **재서** 건다: 파기 전에 닿던 칸은 판 뒤에도 전부 닿는다.
+test("굴착은 길을 열기만 한다 — 파서 막히는 일은 없다", async () => {
+    const { newGame, perform } = await import("@/lib/rogue/game");
+    const { makeItem } = await import("@/lib/rogue/items");
+    const { addToPack } = await import("@/lib/rogue/hero");
+
+    const DIRS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    let dugSomething = 0;
+
+    for (let seed = 1; seed <= 60; seed++) {
+        const s = newGame(seed);
+        const hero = s.heroes[0];
+        const wand = makeItem("wand", "digging", 9500, -1, -1);
+        wand.charges = 99;
+        addToPack(hero, wand);
+
+        const before = flood(s.level, { x: hero.x, y: hero.y }, true);
+        const [dx, dy] = DIRS[seed % DIRS.length];
+        const rock = s.level.tiles.filter((t) => !walkable(t as Tile)).length;
+        perform(s, { t: "zap", letter: wand.letter!, dx, dy });
+        if (s.level.tiles.filter((t) => !walkable(t as Tile)).length < rock) dugSomething++;
+
+        const after = flood(s.level, { x: hero.x, y: hero.y }, true);
+        for (let i = 0; i < before.length; i++) {
+            assert.ok(!(before[i] && !after[i]), `시드 ${seed}: 파고 나니 (${i % MAP_W},${Math.floor(i / MAP_W)}) 에 못 간다`);
+        }
+    }
+    assert.ok(dugSomething > 0, "예순 번을 쐈는데 한 칸도 안 파였다 — 이 테스트가 아무것도 안 걸었다");
+});
+
+// 금고는 **파야 열린다** — 끝에서 끝까지.
+//
+// 앞의 자물쇠는 「금고가 안 이어져 있다」와 「여는 길이 그 층에 있다」를 본다. 여기서는
+// 실제로 **굴착 지팡이를 쏴서 들어가지는지**를 본다. 규칙이 서 있어도 벽 두께가 지팡이의
+// 사거리(4칸)보다 두꺼우면 못 여는 방이고, 그건 표로는 안 잡힌다.
+test("굴착 지팡이로 금고를 연다 — 쏘기 전에는 못 들어간다", async () => {
+    const { newGame, perform } = await import("@/lib/rogue/game");
+    const { makeItem } = await import("@/lib/rogue/items");
+    const { addToPack } = await import("@/lib/rogue/hero");
+
+    let opened = 0;
+    let tried = 0;
+    for (let seed = 1; seed <= 200 && opened < 5; seed++) {
+        let s = newGame(seed);
+        for (let d = 1; d <= 8; d++) {
+            const { level } = s;
+            const v = level.rooms.find((r) => r.vault);
+            if (v) {
+                tried++;
+                const hero = s.heroes[0];
+                const inside = { x: v.x + 1, y: v.y + 1 };
+
+                // ── 쏘기 전에는 못 들어간다
+                assert.ok(
+                    !flood(level, { x: hero.x, y: hero.y }, true)[idx(inside.x, inside.y)],
+                    `시드 ${seed} ${level.depth}층: 쏘기 전인데 금고에 걸어 들어가진다`,
+                );
+
+                // ── 금고 왼쪽 벽 바로 밖에 서서 오른쪽으로 쏜다
+                hero.x = v.x - 1;
+                hero.y = v.y + 1;
+                const wand = addToPack(hero, makeItem("wand", "digging", 9600, -1, -1))!;
+                wand.charges = 9;
+                s = perform(s, { t: "zap", letter: wand.letter!, dx: 1, dy: 0 });
+
+                // ── 이제 걸어 들어간다
+                const now = s.heroes[0];
+                assert.ok(
+                    flood(s.level, { x: now.x, y: now.y }, true)[idx(inside.x, inside.y)],
+                    `시드 ${seed} ${s.level.depth}층: 지팡이를 쐈는데도 금고에 못 들어간다 — 벽이 사거리보다 두껍다`,
+                );
+                // ── 안에 상이 있다
+                assert.ok(
+                    s.level.items.some((it) => inVault(s.level, it.x, it.y)),
+                    `시드 ${seed} ${s.level.depth}층: 금고가 비었다 — 뚫은 값이 없다`,
+                );
+                opened++;
+                break;
+            }
+            s.heroes[0].x = level.stairs.x;
+            s.heroes[0].y = level.stairs.y;
+            s = perform(s, { t: "descend" });
+            if (s.level.depth !== d + 1) break;
+        }
+    }
+    assert.ok(opened >= 3, `금고를 ${opened}개밖에 못 열어 봤다(만난 것 ${tried}개) — 이 테스트가 아무것도 안 걸었다`);
 });

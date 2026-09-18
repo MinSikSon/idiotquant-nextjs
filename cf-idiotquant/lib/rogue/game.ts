@@ -248,6 +248,10 @@ const FOOD_GRACE = 4;
 /** 특수 방의 기본 몫과, 무기고의 등급 보너스. */
 const SPECIAL_BASE = 2;
 const ARMORY_TIER_UP = 2;
+/** 금고 안에 놓는 물건 수 — 적게. 많으면 파는 것이 아니라 터는 것이 된다. */
+const VAULT_ITEMS = 3;
+/** 금고의 등급 보정 — 층보다 두 칸 위. 벽을 뚫은 값이다. */
+const VAULT_TIER_UP = 2;
 const DROUGHT_GRACE = 2;
 const DROUGHT_STEP = 1.0;
 
@@ -272,7 +276,13 @@ function populate(state: GameState, level: Level, rng: Rng) {
     const quota = floorQuota(level.depth, rng);
     const ns = def ? Math.round(SPECIAL_BASE * def.kappa) : 0;
     const borrow = def ? Math.max(0, Math.floor((ns - SPECIAL_BASE) / 2)) : 0;
-    const ng = def ? Math.max(2, quota - borrow) : quota;
+    // **금고도 층에서 꾸어 간다.** 처음에는 쿼터 밖에 얹었는데, 그러면 「총량은 층이
+    // 정한다」가 깨져서 금고가 난 층만 물건이 불어난다(테스트가 바로 잡았다: 한 층에 12개).
+    // 꾸어 가면 **양이 아니라 질**이 상이 된다 — 판 사람은 같은 개수를 두 칸 위 등급으로 받는다.
+    // `+1` 은 굴착 지팡이 몫이다. 그것도 이 층에 놓는 물건이라 같이 센다.
+    const vaultRoom = level.rooms.findIndex((r) => r.vault);
+    const vaultBorrow = vaultRoom >= 0 ? VAULT_ITEMS + 1 : 0;
+    const ng = Math.max(2, (def ? Math.max(2, quota - borrow) : quota) - vaultBorrow);
 
     let enchants = 0;
     let gear = 0;
@@ -324,11 +334,48 @@ function populate(state: GameState, level: Level, rng: Rng) {
         const tierUp = sp.kind === "armory" ? ARMORY_TIER_UP : 0;
         for (const p of roomSpots(level, level.rooms[sp.room], ns, rng, avoid)) put(p, def.bias, tierUp);
     }
+    // ── 금고 — **파야만 들어가는 방** ───────────────────────────────────────────
+    //
+    //   ① **안에는 상을** — 층보다 두 칸 위 등급으로. 벽 한 겹을 뚫는 값이 있어야 한다.
+    //   ② **밖에는 굴착 지팡이를** — 금고가 있는 층에는 **반드시** 놓는다. 없으면 그 방은
+    //      그 판에서 영영 못 여는 죽은 칸이고, 그건 재미가 아니라 놀림이다.
+    //
+    // **일반 배치보다 먼저 놓는다.** 뒤에 놓으면 층이 이미 상한(`FLOOR_ITEM_CAP`)에 차
+    // 있을 때 금고 몫만 밀려나거나, 지팡이가 상한을 넘겨 얹힌다 — 테스트가 잡았다(9 > 8).
+    // 먼저 놓으면 꾸어 온 몫을 확실히 쓰고, 남은 것을 일반 배치가 채운다.
+    //
+    // 금고는 **마법 지도**와 **다이달로스의 나침반**에 잡힌다(바위가 아니라 바닥이라서다).
+    // 그래서 「어디를 파야 하나」가 운이 아니라 정보가 된다 — 따로 표시를 만들지 않았다.
+    if (vaultRoom >= 0) {
+        // **`put` 을 지난다** — 층의 상한(강화 장수·장비 수·총량)을 금고라고 비켜 가지 않는다.
+        for (const p of roomSpots(level, level.rooms[vaultRoom], VAULT_ITEMS, rng, [])) {
+            put(p, undefined, VAULT_TIER_UP);
+        }
+        // **열쇠도 일반 물건과 같은 분배를 타고, 같은 상한을 센다.** `freeSpot` 으로 아무
+        // 데나 놓았더니 특수 방 안에까지 떨어져 그 방의 몫(κ)을 넘겼다 — 그것도 테스트가 잡았다.
+        const [way] = itemSpots(level, 1, rng, avoid, sp ? sp.room : null);
+        if (way && placed < FLOOR_ITEM_CAP) {
+            level.items.push(makeItem("wand", "digging", state.nextItemId++, way.x, way.y));
+            placed++;
+        }
+    }
+
     for (const p of itemSpots(level, ng, rng, avoid, sp ? sp.room : null)) put(p);
 
     state.enchantDrought = enchants > 0 ? 0 : state.enchantDrought + 1;
     state.foodDrought = foods > 0 ? 0 : state.foodDrought + 1;
 
+    // ── 금고 — **파야만 들어가는 방** ───────────────────────────────────────────
+    //
+    // 두 가지를 같이 놓아야 이 방이 뜻을 갖는다:
+    //
+    //   ① **안에는 상을** — 층보다 두 칸 위 등급으로. 벽 한 겹을 뚫는 값이 있어야 한다.
+    //   ② **밖에는 굴착 지팡이를** — 금고가 있는 층에는 **반드시** 판다. 없으면 그 방은
+    //      그 판에서 영영 못 여는 죽은 칸이고, 그건 재미가 아니라 놀림이다.
+    //      `freeSpot` 은 금고를 피하므로(`dungeon.freeSpot`) 지팡이가 금고 안에 갇힐 일은 없다.
+    //
+    // 금고는 **마법 지도**와 **다이달로스의 나침반**에 잡힌다(바위가 아니라 바닥이라서다).
+    // 그래서 「어디를 파야 하나」가 운이 아니라 정보가 된다 — 따로 표시를 만들지 않았다.
     // 증표는 딱 한 층에 있다. 여기가 이 판의 바닥이다.
     if (level.depth === AMULET_LEVEL) {
         const room = rng.pick(level.rooms.filter((r) => !r.gone)) ?? level.rooms[0];

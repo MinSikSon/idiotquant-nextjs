@@ -64,6 +64,14 @@ export interface Room {
     gone: boolean;
     /** 미로 방 — 안쪽이 바닥이 아니라 얽힌 통로다. 깊은 층에만 선다. */
     maze: boolean;
+    /**
+     * **금고** — 문도 복도도 없이 바위에 둘러싸인 방. 굴착 지팡이로 뚫어야만 들어간다.
+     *
+     * 이 표가 있어야 「층은 반드시 다 이어져야 한다」를 **느슨하게 만들지 않고** 예외를
+     * 둘 수 있다. 연결성 자물쇠는 금고만 콕 집어 빼고 나머지에는 그대로 걸린다
+     * (`test/rogue-mapshape.test.ts`). 계단·모루·증표는 여기 **절대** 안 놓는다.
+     */
+    vault?: boolean;
 }
 
 export interface MonsterDef {

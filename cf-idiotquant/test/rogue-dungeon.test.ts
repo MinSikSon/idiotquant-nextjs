@@ -28,6 +28,10 @@ test("층은 끊기지 않는다 — 방도 계단도 걸어서 닿는다", () =
                 const rooms = level.rooms;
                 const base = anchorOf(rooms[0]);
                 for (let i = 1; i < rooms.length; i++) {
+                    // **금고만 뺀다** — 문도 복도도 없이 바위에 둘러싸인 방이라 안 이어진
+                    // 것이 맞다(굴착 지팡이로 연다). 예외를 `Room.vault` 한 표에 모아 두고
+                    // 나머지에는 규칙을 그대로 건다 — 자물쇠를 무르게 하지 않는다.
+                    if (rooms[i].vault) continue;
                     const target = anchorOf(rooms[i]);
                     assert.ok(
                         reachable(level, base, target),

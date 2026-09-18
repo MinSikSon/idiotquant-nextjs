@@ -525,8 +525,14 @@ function pickWeighted(rooms: Room[], weights: number[], rng: Rng): Room | undefi
 }
 
 /** 무엇도 놓이지 않은 빈 바닥을 찾는다. 못 찾으면 아무 자리나 준다. */
+/** 그 칸이 **금고 안**인가 — 놓는 자리도 테스트도 이 한 자리에 묻는다. */
+export function inVault(level: Level, x: number, y: number): boolean {
+    return level.rooms.some((r) => r.vault && x > r.x && x < r.x + r.w - 1 && y > r.y && y < r.y + r.h - 1);
+}
+
 export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
-    const real = level.rooms.filter((r) => !r.gone);
+    // **금고는 뺀다.** 여기 계단이나 물건이 놓이면 못 파는 사람의 판이 막힌다.
+    const real = level.rooms.filter((r) => !r.gone && !r.vault);
     const weights = real.map((r) => roomWeight(level, r));
     for (let tries = 0; tries < 200; tries++) {
         const room = pickWeighted(real, weights, rng) ?? level.rooms[0];
@@ -543,6 +549,8 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
         for (let x = 0; x < MAP_W; x++) {
             if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
             if (avoid.some((q) => q.x === x && q.y === y)) continue;
+            // 훑어서 주는 이 마지막 길에서도 금고는 뺀다 — 여기가 뚫리면 위의 거름이 헛것이다.
+            if (inVault(level, x, y)) continue;
             return { x, y };
         }
     }
@@ -712,7 +720,9 @@ export function itemSpots(
     /** 이 방은 빼고 나눈다 — 특수 방은 제 몫을 따로 받는다. */
     except: number | null = null,
 ): Pos[] {
-    const real = level.rooms.filter((r, i) => !r.gone && i !== except);
+    // **금고는 몫을 안 받는다.** 파야 들어가는 방에 일반 물건이 떨어지면, 안 판 사람은
+    // 그 층의 제 몫을 통째로 잃는다 — 금고 안의 것은 금고가 따로 놓는다(`game.populate`).
+    const real = level.rooms.filter((r, i) => !r.gone && !r.vault && i !== except);
     if (n <= 0 || real.length === 0) return [];
 
     const areas = real.map((r) => effectiveArea(level, r));
@@ -777,6 +787,52 @@ export function itemSpots(
 /**
  * 층의 뼈대를 만든다 — 방·복도·문·계단까지. 몬스터와 물건은 `populate` 가 얹는다.
  */
+/** 금고가 처음 나는 층. 굴착 지팡이가 나오기 시작하는 깊이와 맞춘다. */
+const VAULT_MIN_DEPTH = 5;
+/** 그 층에 금고가 날 확률. 드물어야 「찾았다」가 된다. */
+const VAULT_CHANCE = 0.18;
+
+/**
+ * 바위 속에 **문 없는 방**을 판다. 팠으면 `true`.
+ *
+ * 고르는 자리는 **테두리 한 칸까지 전부 바위**인 사각형뿐이다. 그래서 이미 선 길·방·문을
+ * 한 칸도 안 건드리고, 판 뒤에도 층의 이어짐이 그대로다 — 금고는 **더해지기만** 한다.
+ *
+ * 안쪽만 바닥으로 판다(벽은 바위로 남는다). 굴착 지팡이는 한 번에 네 칸을 뚫으므로,
+ * 벽 한 겹은 옆에 붙어서 쏘면 열린다.
+ */
+function carveVault(tiles: Uint8Array, roomAt: Int8Array, rooms: Room[], depth: number, rng: Rng): boolean {
+    if (depth < VAULT_MIN_DEPTH || !rng.chance(VAULT_CHANCE)) return false;
+    const w = rng.between(5, 7);
+    const h = rng.between(4, 5);
+    /** 테두리 한 칸까지 전부 바위인가 — 한 칸이라도 뚫려 있으면 남의 길에 닿는다. */
+    const clear = (x: number, y: number) => {
+        for (let yy = y - 1; yy < y + h + 1; yy++) {
+            for (let xx = x - 1; xx < x + w + 1; xx++) {
+                if (!inBounds(xx, yy)) return false;
+                if (get(tiles, xx, yy) !== T.ROCK) return false;
+            }
+        }
+        return true;
+    };
+    for (let tries = 0; tries < 300; tries++) {
+        const x = rng.between(2, MAP_W - w - 3);
+        const y = rng.between(2, MAP_H - h - 3);
+        if (!clear(x, y)) continue;
+        const r: Room = { x, y, w, h, dark: false, gone: false, maze: false, vault: true };
+        const ri = rooms.length;
+        rooms.push(r);
+        for (let yy = y + 1; yy < y + h - 1; yy++) {
+            for (let xx = x + 1; xx < x + w - 1; xx++) {
+                put(tiles, xx, yy, T.FLOOR);
+                roomAt[idx(xx, yy)] = ri;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 export function buildLevel(depth: number, rng: Rng): Level {
     const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.ROCK);
     const roomAt = new Int8Array(MAP_W * MAP_H).fill(-1);
@@ -900,6 +956,17 @@ export function buildLevel(depth: number, rng: Rng): Level {
     // 못 찾은 지름길이라 남겨야 하기 때문이다.
     joinDiagonals(tiles, rooms);
     pruneDeadEnds(tiles, rooms);
+
+    // **금고** — 문도 복도도 없이 바위에 둘러싸인 방. 굴착 지팡이로만 들어간다.
+    //
+    // **다듬기(`pruneDeadEnds`) 뒤에 판다.** 앞에서 파면 문 없는 방이 「잎」으로 보여
+    // 통째로 메워진다. 그리고 **사방 한 칸까지 전부 바위인 자리**에만 파므로, 이미 선
+    // 길·방·문을 한 칸도 안 건드린다 — 층의 이어짐은 금고를 파기 전과 똑같다.
+    //
+    // 「길이 막힌 판」 규칙과 부딪히지 않는 까닭: 금고는 `Room.vault` 로 **표가 나 있고**,
+    // 연결성 자물쇠가 그 표만 콕 집어 뺀다. 자물쇠를 무르게 하는 것이 아니라 예외를
+    // **한 군데에 모아** 두는 것이다. 계단·모루·물건은 여전히 전부 닿아야 한다.
+    carveVault(tiles, roomAt, rooms, depth, rng);
 
     const level: Level = {
         depth,
