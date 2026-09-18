@@ -17,7 +17,7 @@
  * 뜬다. 키는 원작 그대로 살아 있다.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { DataConnection, Peer } from "peerjs";
 
 import {
@@ -737,7 +737,15 @@ export default function Rogue() {
     //
     // 어두운 방·미로·안개 층에서는 안 돈다 — 거기서는 원래 한두 칸만 보이므로 퍼질 것이 없고,
     // 「이 방은 왜 좁은가」는 퍼지지 **않는 것**으로 읽힌다.
-    useEffect(() => {
+    //
+    // **`useLayoutEffect` 여야 한다.** `useEffect` 는 브라우저가 **그린 뒤**에 돈다. 그러면
+    // 방이 통째로 환한 프레임이 먼저 나가고, 그 다음에야 `reveal` 이 걸려 도로 어두워졌다가
+    // 번진다 — 「이미 밝혀지고 **다시** 밝혀지는」 것이 이 한 글자에서 났다. 재 봤다(390px,
+    // 지도에 보이는 글자 수를 프레임마다):
+    //
+    //     useEffect       30 30 30 30 30 · 9 9 20 20 25 25 25 · 30 …   ← 다섯 프레임 환하다
+    //     useLayoutEffect  9 9 20 20 25 25 25 · 30 …                   ← 어두운 데서 시작한다
+    useLayoutEffect(() => {
         if (!state) return;
         const h = state.heroes[whoRef.current] ?? state.heroes[0];
         if (h.hp <= 0 || (h.blind ?? 0) > 0) return;
