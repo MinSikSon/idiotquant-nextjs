@@ -127,6 +127,24 @@ function Msg({ text }: { text: string }) {
     );
 }
 
+/**
+ * 직업 표 — **지도의 물건 글자를 그 물건 색으로** 세운다(`]` 갑옷 · `)` 무기 · `!` 물약 ·
+ * `?` 주문서). 이름과 표를 여러 화면이 함께 쓰므로 한 자리에서 그린다.
+ */
+function OriginTag({ origin, title = false }: { origin?: HeroOrigin; title?: boolean }) {
+    const o = ORIGINS[origin ?? "knight"];
+    if (!o) return null;
+    return (
+        <>
+            <span className="font-[family-name:var(--font-plex-mono)] font-bold" style={{ color: o.iconInk }}>
+                {o.icon}
+            </span>{" "}
+            {o.name}
+            {title && <span className="text-[var(--rg-faint)]"> ({o.title})</span>}
+        </>
+    );
+}
+
 /** 상대 책상의 이름 — 온라인에서 상대 줄에 붙는다. */
 const DESK_DOING: Record<DeskMode, string> = { none: "", pack: "배낭 보는 중", picker: "고르는 중", aim: "겨누는 중" };
 
@@ -623,6 +641,17 @@ export default function Rogue() {
     }, [note, retry]);
 
     // 새로고침·탭을 닫았다 연 뒤에도 **들어 있던 방으로** 돌아간다.
+    /**
+     * 같이 보는 판(도감·기록·도움말·옵션·지난 판)을 **연 사람.** 한 화면 둘이서는 그 사람
+     * 쪽 반쪽에만 열리고, **그 사람만 멈춘다** — 동료가 도감을 보는 동안 나는 계속 걷는다.
+     */
+    const [sheetOwner, setSheetOwner] = useState(0);
+    const whoRef = useRef(who);
+    whoRef.current = who;
+    useEffect(() => {
+        if (sheet !== "none") setSheetOwner(whoRef.current);
+    }, [sheet]);
+
     /** 상대 책상에 떠 있는 것 — 이어져 있을 때만 적는다. */
     const [peerMode, setPeerMode] = useState<DeskMode>("none");
     useEffect(() => {
@@ -716,7 +745,8 @@ export default function Rogue() {
      * 동료가 배낭을 여는 동안에도 나는 계속 걷는다.
      */
     const blocked = useRef<(w: number) => boolean>(() => false);
-    blocked.current = (w) => modes[w] !== "none" || sheet !== "none" || state?.phase !== "playing";
+    blocked.current = (w) =>
+        modes[w] !== "none" || (sheet !== "none" && (w === sheetOwner || !!online)) || state?.phase !== "playing";
 
     /**
      * 둘이서의 **확인** — 3×3 덩이의 가운데 키와 화면 방향판의 가운데 단추가 같이 쓴다.
@@ -750,8 +780,9 @@ export default function Rogue() {
             // 어떤 키도 안 먹는다. 대문자(`W`·`P`·`R`)는 그대로 둔다.
             const key = /^Key[A-Z]$/.test(e.code) ? (e.shiftKey ? e.code[3] : e.code[3].toLowerCase()) : e.key;
             const localCoop = !online && state.heroes.length > 1;
-            // 도감·도움말 같은 판은 둘 다 덮는다 — 그동안은 아무도 안 움직인다.
-            if (sheet !== "none") return;
+            // 같이 보는 판이 떠 있어도 **연 사람만** 멈춘다(아래 협동 갈래에서 가린다).
+            // 혼자·온라인은 화면이 하나뿐이라 그대로 다 멈춘다.
+            if (sheet !== "none" && !localCoop) return;
 
             // Shift 를 누른 것은 두 사람 키가 아니다 — `<` 가 `,`(동료 대각선) 자리에 있다.
             if (localCoop && !e.shiftKey) {
@@ -772,6 +803,11 @@ export default function Rogue() {
                     if (!h || (!d && !isAct && !isPack && !isCancel)) continue;
                     e.preventDefault();
                     if (h.hp <= 0) return; // 쓰러진 사람은 조종을 안 받는다
+                    // 같이 보는 판을 **내가** 열어 뒀으면 내 키는 그 판의 것이다 — 취소로 닫는다.
+                    if (sheet !== "none" && w === sheetOwner) {
+                        if (isCancel) setSheet("none");
+                        return;
+                    }
                     // **자기 책상이 떠 있으면 키가 그 판으로 간다** — 줄을 옮기고, 고르고, 닫는다.
                     if (isPack || isCancel || modes[w] !== "none") {
                         setWho(w);
@@ -801,7 +837,7 @@ export default function Rogue() {
                 return;
             }
             // 둘이서 누구 책상이든 떠 있으면 **글자 명령은 안 받는다** — 판이 겹친다.
-            if (localCoop && modes.some((m) => m !== "none")) return;
+            if (localCoop && (sheet !== "none" || modes.some((m) => m !== "none"))) return;
 
             const dir = KEY_DIRS[key];
             if (dir) {
@@ -875,7 +911,7 @@ export default function Rogue() {
             window.removeEventListener("keyup", onUp);
             window.removeEventListener("blur", onBlur);
         };
-    }, [state, modes, sheet, run, runAs, online, who, stopHold, confirm]);
+    }, [state, modes, sheet, sheetOwner, run, runAs, online, who, stopHold, confirm]);
 
     if (!state) {
         return (
@@ -913,6 +949,10 @@ export default function Rogue() {
     //     (이놈이 센가)의 앞뒤라, 판이 둘일 까닭이 없었다.
     /** 한 화면 둘이면 글자 키가 이동이 되므로 단추에 적는 키도 달라진다(`COOP_KEYS`). */
     const coopKeys = !online && state.heroes.length > 1;
+    // 같이 보는 판도 둘이서면 **연 사람 쪽 반쪽**에 선다 — 그동안 동료는 계속 걷는다.
+    const shared = coopKeys
+        ? { side: (sheetOwner === 0 ? "left" : "right") as "left" | "right", accent: PARTY_INK[sheetOwner], closeKey: sheetOwner === 0 ? "F" : ";" }
+        : {};
     const actions: PadAction[] = [
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
@@ -1061,7 +1101,7 @@ export default function Rogue() {
                             </button>
                         )}
                         <span className="text-[var(--rg-strong)] font-semibold">
-                            {ORIGINS[h.origin ?? "knight"]?.icon} {ORIGINS[h.origin ?? "knight"]?.name}
+                            <OriginTag origin={h.origin} />
                         </span>
                         {i === 0 && <span>Level: {level.depth}</span>}
                         <span className="text-[var(--rg-gold)]">Gold: {h.gold}</span>
@@ -1144,6 +1184,7 @@ export default function Rogue() {
 
             {sheet === "bestiary" && (
                 <Panel
+                    {...shared}
                     title={
                         codexTab === "monster"
                             ? `몬스터 도감 ${progress.found}/${progress.total}`
@@ -1591,6 +1632,7 @@ export default function Rogue() {
               */}
             {sheet === "log" && (
                 <Panel
+                    {...shared}
                     title="지나온 기록"
                     onClose={() => setSheet("none")}
                     /* 「이 d20 은 뭘 정하는 건가」를 여기서 답한다 — 줄에 이름은 붙였지만
@@ -1613,7 +1655,7 @@ export default function Rogue() {
             {/* 걸으면서 쓰지 않는 것들이 여기 모인다. 단추 판에 나란히 세워 두면
                 「도움말」이 「마신다」와 같은 무게로 보이고, 급할 때 손가락이 헤맨다. */}
             {sheet === "options" && (
-                <Panel title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
+                <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
                     <ul className="space-y-1">
                         {[
                             { label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => {
@@ -1729,7 +1771,9 @@ export default function Rogue() {
                 >
                     <div className="space-y-2 text-xs">
                         <p className="text-[var(--rg-faint)]">
-                            새로운 모험을 떠날 캐릭터의 출신과 고유 특성을 선택하십시오.
+                            {originFor.t === "new"
+                                ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
+                                : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                         </p>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             {ORIGIN_LIST.map((orig) => (
@@ -1739,13 +1783,18 @@ export default function Rogue() {
                                     onClick={() => pickOrigin(orig.id)}
                                     className="flex flex-col text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus:outline-none"
                                 >
-                                    <div className="flex items-center justify-between gap-1 mb-1">
-                                        <div className="flex items-center gap-1.5 font-bold text-sm text-[var(--rg-strong)]">
-                                            <span>{orig.icon}</span>
-                                            <span>{orig.name}</span>
-                                            <span className="text-[11px] font-mono text-[var(--rg-muted)] font-normal">({orig.title})</span>
-                                        </div>
-                                        <span className="font-mono text-[11px] text-[var(--rg-gold)]">
+                                    {/* 이름 · 영문 이름 · 값을 **줄마다 하나씩** 세운다. 한 줄에 다 넣으면
+                                        좁은 칸에서 이름이 두 줄로 접히면서 카드 높이가 제각각이 된다. */}
+                                    <div className="mb-0.5 flex items-baseline gap-1.5">
+                                        {/* 표는 지도에서 그 물건을 칠하는 색으로 — 뜻이 색으로도 읽힌다. */}
+                                        <span className="font-mono text-base leading-none" style={{ color: orig.iconInk }}>
+                                            {orig.icon}
+                                        </span>
+                                        <span className="truncate font-bold text-sm text-[var(--rg-strong)]">{orig.name}</span>
+                                    </div>
+                                    <div className="mb-1.5 flex items-baseline justify-between gap-2 font-mono text-[11px]">
+                                        <span className="text-[var(--rg-faint)]">{orig.title}</span>
+                                        <span className="shrink-0 text-[var(--rg-gold)]">
                                             Hp {orig.baseHp} · Str {orig.baseStr}
                                         </span>
                                     </div>
@@ -1753,7 +1802,9 @@ export default function Rogue() {
                                         {orig.description}
                                     </p>
                                     <div className="mt-auto border-t border-[var(--rg-line-soft)] pt-1.5 text-[11px]">
-                                        <span className="font-bold text-[var(--rg-strong)]">⚡ {orig.traitName}: </span>
+                                        <span className="font-bold text-[var(--rg-strong)]">
+                                            <span className="font-mono text-[var(--rg-gold)]">*</span> {orig.traitName}:{" "}
+                                        </span>
                                         <span className="text-[var(--rg-faint)]">{orig.traitDescription}</span>
                                     </div>
                                 </button>
@@ -1764,7 +1815,7 @@ export default function Rogue() {
             )}
 
             {sheet === "help" && (
-                <Panel title="조작" onClose={() => setSheet("none")} footer="죽으면 그것으로 끝입니다. 저장은 자동이고, 되돌리기는 없습니다.">
+                <Panel {...shared} title="조작" onClose={() => setSheet("none")} footer="죽으면 그것으로 끝입니다. 저장은 자동이고, 되돌리기는 없습니다.">
                     {/* **한 화면 둘이면 그 키를 보여 준다** — 혼자 키를 늘어놓으면 반은 안 먹는 키다. */}
                     {!online && state.heroes.length > 1 ? (
                         <div className="space-y-3">
@@ -1871,6 +1922,7 @@ export default function Rogue() {
             {sheet === "graves" && (
                 selectedTomb ? (
                     <Panel
+                        {...shared}
                         title={selectedTomb.won ? "★ 탈출 기록 상세" : "† 지난 판 상세"}
                         onClose={() => setSheet("none")}
                         footer={
@@ -1914,7 +1966,7 @@ export default function Rogue() {
                                         <h4 className="text-xs font-bold text-[var(--rg-label)]">Stats</h4>
                                         {selectedTomb.hero.origin && (
                                             <span className="text-xs font-bold text-[var(--rg-strong)]">
-                                                {ORIGINS[selectedTomb.hero.origin]?.icon} {ORIGINS[selectedTomb.hero.origin]?.name} ({ORIGINS[selectedTomb.hero.origin]?.title})
+                                                <OriginTag origin={selectedTomb.hero.origin} title />
                                             </span>
                                         )}
                                     </div>
@@ -2056,7 +2108,7 @@ export default function Rogue() {
                         </div>
                     </Panel>
                 ) : (
-                    <Panel title="지난 판들" onClose={() => setSheet("none")}>
+                    <Panel {...shared} title="지난 판들" onClose={() => setSheet("none")}>
                         {tombs.length === 0 ? (
                             <p className="text-[var(--rg-faint)]">아직 기록이 없습니다.</p>
                         ) : (
@@ -2089,7 +2141,7 @@ export default function Rogue() {
                                             <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--rg-muted)]">
                                                 {t.hero?.origin && (
                                                     <>
-                                                        <span className="font-semibold text-[var(--rg-strong)]">{ORIGINS[t.hero.origin]?.icon} {ORIGINS[t.hero.origin]?.name}</span>
+                                                        <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={t.hero.origin} /></span>
                                                         <span>·</span>
                                                     </>
                                                 )}
@@ -2191,7 +2243,7 @@ export default function Rogue() {
                 >
                     <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
                     <dl className="grid grid-cols-[6em_1fr] gap-y-1 text-[var(--rg-muted)]">
-                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold">{ORIGINS[hero.origin ?? "knight"]?.icon} {ORIGINS[hero.origin ?? "knight"]?.name} ({ORIGINS[hero.origin ?? "knight"]?.title})</dd>
+                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} title /></dd>
                         <dt>Level</dt><dd>지하 {state.deepest}층</dd>
                         <dt>Exp</dt><dd>{hero.level}/{hero.exp}</dd>
                         <dt>Hp</dt><dd>{hero.hp}({hero.maxHp})</dd>

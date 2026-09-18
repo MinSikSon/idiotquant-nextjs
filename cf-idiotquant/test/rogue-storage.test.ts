@@ -127,6 +127,21 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         play(back);
     }
 
+    // ── 보조손이 없던 때의 저장(v6 이하) — `offWeaponId` 를 채운다
+    {
+        // 이도류를 붙이며 칸이 하나 늘었다. 안 채우면 `offHandWeapon` 이 `undefined` 를
+        // 놓고 `null` 과 헷갈리는 자리가 난다.
+        const s = newGame(26);
+        const o = JSON.parse(serialize(s)) as Record<string, unknown>;
+        for (const h of o.heroes as Record<string, unknown>[]) delete h.offWeaponId;
+        o.v = 6;
+
+        const back = deserialize(JSON.stringify(o));
+        assert.ok(back, "옛 저장을 버렸다 — 굴리던 판이 날아간다");
+        assert.equal(back!.heroes[0].offWeaponId, null, "보조손 칸이 안 채워졌다");
+        play(back!);
+    }
+
     // ── 영웅이 하나뿐이던 때의 저장(v5 이하) — `hero` 를 `heroes` 로 옮긴다
     {
         // 협동을 붙이며 `hero` 한 칸이 `heroes` 배열이 됐다. **규칙만 고치면 이미 저장된

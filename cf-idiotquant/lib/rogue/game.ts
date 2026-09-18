@@ -30,7 +30,9 @@ import {
 import {
     addToPack,
     equippedArmor,
+    canOffHand,
     equippedWeapon,
+    offHandWeapon,
     gainExp,
     hasRing,
     heroArmor,
@@ -152,6 +154,8 @@ type Action =
     | { t: "read"; letter: string; target?: string }
     | { t: "eat"; letter: string }
     | { t: "wield"; letter: string }
+    /** 보조손에 쥔다(이도류). 같은 글자를 다시 주면 내려놓는다. */
+    | { t: "offHand"; letter: string }
     | { t: "wear"; letter: string }
     | { t: "putOn"; letter: string }
     | { t: "removeRing"; letter: string }
@@ -161,6 +165,8 @@ type Action =
     /** 모루 위에서 무기나 갑옷을 녹인다 — 그 물건은 사라지고 강화 주문서가 나온다. */
     | { t: "melt"; letter: string }
     | { t: "drop"; letter: string }
+    /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
+    | { t: "give"; letter: string }
     | { t: "use_relic"; letter: string }
     | { t: "socket"; gearLetter: string; gemLetter: string };
 
@@ -773,11 +779,36 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
 export function scrollTargetKinds(state: GameState, letter: string, who = 0): ItemKind[] | null {
     const it = packItem(state.heroes[who] ?? state.heroes[0], letter);
     if (!it || it.kind !== "scroll") return null;
+    // **정체를 모르면 안 묻는다.** 고르기 창이 뜨는 것만으로, 그리고 목록이 무기로
+    // 좁혀지는 것만으로 그 주문서가 무엇인지 드러난다 — 취소하면 주문서도 턴도 안 쓰니
+    // 「읽고 제목만 보고 닫기」로 **공짜 감정**이 된다. 모르는 것은 원작 그대로 쥔 것·입은
+    // 것에 걸리고, 무엇이었는지는 **걸린 뒤에** 안다.
+    if (!state.known[`scroll:${it.type}`]) return null;
+    return targetKindsOf(it);
+}
+
+/** 이 주문서가 무엇에 걸리는가 — **정체를 아는지와 상관없는 규칙**이다. */
+function targetKindsOf(it: Item): ItemKind[] | null {
     if (it.type === "enchant weapon") return ["weapon"];
     if (it.type === "enchant armor") return ["armor"];
     if (it.type === "blessed enchant") return ["weapon", "armor"];
     if (it.type === "transmutation") return ["weapon", "armor", "ring"];
     return null;
+}
+
+/**
+ * 정체를 모르는 주문서가 **저절로 걸리는 자리** — 쥔 것 · 입은 것 · 낀 것 순서로 본다.
+ *
+ * 원작 Rogue 가 그랬다. 고를 수 없는 대신 **몸에 걸친 것**에 걸리므로, 모르는 주문서를
+ * 읽는 것이 곧 「지금 쓰는 장비를 건다」는 뜻이 된다.
+ */
+function defaultTarget(hero: Hero, kinds: ItemKind[]): Item | undefined {
+    for (const k of kinds) {
+        const it =
+            k === "weapon" ? equippedWeapon(hero) : k === "armor" ? equippedArmor(hero) : wornRings(hero)[0];
+        if (it) return it;
+    }
+    return undefined;
 }
 
 export function enchantTarget(state: GameState, letter: string, who = 0): ItemKind | null {
@@ -944,13 +975,26 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
     // ── 대상이 필요한 주문서(강화/재련)는 **고를 것을 먼저 묻는다** ──────────────
     // 대상 없이 들어오면 **아무 일도 안 난다** — 주문서도 턴도 안 쓴다(못 박은 규칙 3).
     // 화면이 고르기를 띄우는 사이에 판이 한 턴 흐르면 안 된다.
-    const targetKinds = scrollTargetKinds(state, letter);
+    const targetKinds = targetKindsOf(it);
     if (targetKinds) {
-        if (!target) return false;
-        const on = packItem(hero, target);
+        // **정체를 아는 주문서만 고르게 한다**(`scrollTargetKinds` 와 같은 갈래).
+        // 모르는 것은 고르기 창이 안 떴으므로 여기서도 묻지 않고 몸에 걸친 것에 건다.
+        const known = !!state.known[`scroll:${it.type}`];
+        if (known && !target) return false;
+        const on = known ? packItem(hero, target!) : defaultTarget(hero, targetKinds);
         if (!on || !targetKinds.includes(on.kind)) {
-            say(state, "선택한 대상에 적용할 수 없다.");
-            return false;
+            if (known) {
+                say(state, "선택한 대상에 적용할 수 없다.");
+                return false;
+            }
+            // 모르는 주문서인데 걸 것이 없다 — **주문서는 탄다.** 그래야 무엇이었는지 안다.
+            takeFromPack(hero, it);
+            const k = `scroll:${it.type}`;
+            state.known[k] = true;
+            state.itemCodex[k] = true;
+            state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+            say(state, `${describe(it, state.known, state.appearance)}를 읽었지만 걸 것이 없었다.`);
+            return true;
         }
         if (ENCHANT_SCROLLS.includes(it.type)) {
             const plus = enchantOf(on);
@@ -1136,12 +1180,55 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         return false;
     }
     hero.weaponId = it.id;
+    // **주손을 바꾸면 보조손이 어긋날 수 있다.** 장검을 쥐고 단검을 보조손에 들 수는
+    // 없는데, 정리를 안 하면 「짝이 안 맞는 이도류」가 조용히 남는다.
+    const off = offHandWeapon(hero);
+    if (off && !canOffHand(hero, off)) {
+        hero.offWeaponId = null;
+        say(state, `${describe(off, state.known, state.appearance)}을(를) 보조손에서 내렸다.`);
+    }
     const key = `weapon:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
     // **그 물건의 성능**을 적는다 — 내 명중·피해가 아니라. 무엇을 쥐었는지가 바로 보여야
     // 「이게 지금 것보다 나은가」를 그 자리에서 판단할 수 있다.
     say(state, `${describe(it, state.known, state.appearance)}을(를) 쥐었다.${withPower(it, state)}`);
+    if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
+    return true;
+}
+
+/**
+ * 보조손에 쥔다 — **이도류.**
+ *
+ * 쥘 수 있는지는 `canOffHand` **한 자리**가 답한다(화면도 그것만 본다). 같은 글자를
+ * 다시 주면 내려놓는다 — 따로 명령을 만들 까닭이 없다.
+ */
+function offHand(state: GameState, hero: Hero, letter: string): boolean {
+    const it = packItem(hero, letter);
+    if (!it) {
+        say(state, "그런 것이 없다.");
+        return false;
+    }
+    // 이미 보조손에 든 것을 다시 고르면 내려놓는다.
+    if (hero.offWeaponId === it.id) {
+        if (it.cursed) {
+            it.curseKnown = true;
+            say(state, `${describe(it, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
+            return false;
+        }
+        hero.offWeaponId = null;
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 보조손에서 내렸다.`);
+        return true;
+    }
+    if (!canOffHand(hero, it)) {
+        say(state, "보조손에 쥘 수 있는 것이 아니다.");
+        return false;
+    }
+    hero.offWeaponId = it.id;
+    const key = `weapon:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 보조손에 쥐었다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
     return true;
 }
@@ -1230,6 +1317,43 @@ function drop(state: GameState, hero: Hero, letter: string): boolean {
     it.y = hero.y;
     level.items.push(it);
     say(state, `${describe(it, state.known, state.appearance)}을(를) 내려놓았다.`);
+    return true;
+}
+
+/**
+ * **곁에 선 동료에게 건넨다.**
+ *
+ * 바닥에 놓고 상대가 줍는 길은 두 턴이 들고, 한 칸에 둘이 못 서므로(`heroMove`) 좁은
+ * 복도에서는 그마저 어렵다. 물약 한 병을 나누는 것이 협동의 기본이라 길을 하나 낸다.
+ *
+ * 규칙은 바닥에 놓는 것(`drop`)과 같은 자리를 지킨다: **저주받아 몸에 붙은 것은 못 준다.**
+ * 상대의 배낭이 꽉 찼으면 아무 일도 안 난다 — 그러면 턴도 안 쓴다.
+ */
+function give(state: GameState, hero: Hero, letter: string): boolean {
+    const mate = state.heroes.find((h) => h !== hero && h.hp > 0);
+    if (!mate) {
+        say(state, "건넬 동료가 없다.");
+        return false;
+    }
+    if (Math.max(Math.abs(mate.x - hero.x), Math.abs(mate.y - hero.y)) > 1) {
+        say(state, "동료가 곁에 없다 — 옆 칸에 서야 건넨다.");
+        return false;
+    }
+    const it = packItem(hero, letter);
+    if (!it) return false;
+    if (it.cursed && isWorn(hero, it)) {
+        it.curseKnown = true;
+        say(state, "몸에서 떨어지지 않는다!");
+        return false;
+    }
+    takeFromPack(hero, it, it.count);
+    if (!addToPack(mate, it)) {
+        // 못 받으면 **없던 일로 한다** — 돌려놓지 않으면 물건이 사라진다.
+        addToPack(hero, it);
+        say(state, "동료의 배낭이 꽉 찼다.");
+        return false;
+    }
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 동료에게 건넸다.`);
     return true;
 }
 
@@ -2077,11 +2201,17 @@ function act(state: GameState, cmd: Command): GameState {
             case "wield":
                 acted = wield(state, hero, cmd.letter);
                 break;
+            case "offHand":
+                acted = offHand(state, hero, cmd.letter);
+                break;
             case "wear":
                 acted = wear(state, hero, cmd.letter);
                 break;
             case "drop":
                 acted = drop(state, hero, cmd.letter);
+                break;
+            case "give":
+                acted = give(state, hero, cmd.letter);
                 break;
             case "melt":
                 acted = melt(state, hero, cmd.letter, rng);
@@ -2379,8 +2509,22 @@ function scoreOf(gold: number, deepest: number, amulet: boolean): number {
     return gold + (amulet ? 10000 : 0) + deepest * 50;
 }
 
+/**
+ * 이번 판의 점수 — **파티 전체의 금화**를 센다. 둘이서 모은 절반을 동료가 들고 있다고
+ * 안 세면, 협동에서는 누가 줍느냐에 따라 점수가 갈린다. 증표는 **누가 들었든** 판의 것이다.
+ */
 export function score(state: GameState): number {
-    return scoreOf(state.heroes[0].gold, state.deepest, state.heroes[0].hasAmulet);
+    return scoreOf(partyGold(state), state.deepest, partyAmulet(state));
+}
+
+/** 파티가 가진 금화 — 보낸 동료(`benched`)가 들고 간 몫도 이 판에서 번 것이다. */
+export function partyGold(state: GameState): number {
+    return state.heroes.reduce((n, h) => n + h.gold, 0) + (state.benched?.gold ?? 0);
+}
+
+/** 증표를 **누군가** 들었는가. */
+export function partyAmulet(state: GameState): boolean {
+    return state.heroes.some((h) => h.hasAmulet) || !!state.benched?.hasAmulet;
 }
 
 /** 지난 판 하나의 점수. 옛 기록에는 증표 칸이 없어 「살아 돌아왔나」로 메운다. */

@@ -24,6 +24,7 @@ import {
     weaponDamageOf,
 } from "./items";
 import { heroDefense } from "./hero";
+import { partyAmulet, partyGold, score } from "./game";
 import { MONSTERS } from "./monsters";
 import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster } from "./types";
 
@@ -35,7 +36,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 6;
+const VERSION = 7;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -229,6 +230,8 @@ function normalize(s: Saved): GameState | null {
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
         pack: liftEnchants(fixLetters(Array.isArray(h.pack) ? h.pack : [])),
+        // v6 이하에는 보조손이 없다 — 이도류가 없던 때다.
+        offWeaponId: h.offWeaponId ?? null,
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
         blind: num(h.blind, 0),
@@ -633,17 +636,18 @@ export function graves(): Tomb[] {
  * 적기에 실패해도(사파리 비공개 창 등) 목록은 돌려준다 — 이번 판의 등수는 나와야 한다.
  */
 export function bury(state: GameState): Tomb[] {
+    // 남기는 얼굴은 방장이되 **금화·증표·점수는 파티의 것**이다(`score` 한 자리에서 센다).
+    // 여기서 다시 더하면 화면이 적는 점수와 무덤에 적힌 점수가 어느 날 갈린다.
     const tombHero = createTombHero(state.heroes[0]);
-    const scoreVal = state.heroes[0].gold + (state.heroes[0].hasAmulet ? 10000 : 0) + state.deepest * 50;
     const item: Tomb = {
         at: Date.now(),
         depth: state.deepest,
-        gold: state.heroes[0].gold,
+        gold: partyGold(state),
         turns: state.turn,
         epitaph: state.epitaph || (state.phase === "won" ? "던전을 탈출했다" : "던전에서 쓰러졌다"),
         won: state.phase === "won",
-        amulet: state.heroes[0].hasAmulet,
-        score: scoreVal,
+        amulet: partyAmulet(state),
+        score: score(state),
         seed: state.seed,
         hero: tombHero,
         recentLog: (state.messages ?? []).slice(-10),

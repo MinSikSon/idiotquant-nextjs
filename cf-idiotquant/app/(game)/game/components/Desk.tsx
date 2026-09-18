@@ -26,7 +26,7 @@ import {
     meltMax,
     meltYield,
 } from "@/lib/rogue/items";
-import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { canOffHand, equippedArmor, equippedWeapon, offHandWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -165,8 +165,14 @@ export default function Desk({
 
     /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다 — 그 주문서의 자리. */
     const pendingEnchant = useRef<string | null>(null);
-    /** 그 주문서가 강화냐 축복이냐 — `null` 이면 재련이다. 줄마다 적을 것이 갈린다. */
-    const pendingEnchantStyle = useRef<"plain" | "blessed" | null>(null);
+    /**
+     * 그 주문서가 강화냐 축복이냐 재련이냐 — 줄마다 적을 것이 갈린다.
+     *
+     * **재련을 `null` 로 두지 않는다.** 그러면 「고르기가 안 열린 상태」와 같은 값이 되어
+     * 화면이 두 가지를 못 가리고, 재련 줄이 강화 줄과 **똑같이 생긴 채** 뜬다 — 강화인 줄
+     * 알고 눌러서 무기 종류가 바뀌는 사고가 거기서 난다.
+     */
+    const pendingEnchantStyle = useRef<"plain" | "blessed" | "transmute" | null>(null);
 
     /**
      * 주문서 하나를 읽는다 — **강화나 재련이면 고를 것을 한 번 더 묻는다.**
@@ -187,13 +193,13 @@ export default function Desk({
             // **강화냐 재련이냐는 엔진이 답한다**(`enchantScrollKind`). 대상 종류의 개수로
             // 가르면 축복(무기·갑옷)이 재련(무기·갑옷·반지)과 같은 칸에 떨어져서, 상한에
             // 닿은 물건이 고르는 목록에 그대로 뜬다.
-            const style = enchantScrollKind(state, letter, w);
+            const style = enchantScrollKind(state, letter, w) ?? "transmute";
             pendingEnchant.current = letter;
             pendingEnchantStyle.current = style;
             const wantSingle = targetKinds.length === 1 ? targetKinds[0] : null;
             setPicker({
-                title: !style
-                    ? "무엇을 재련할까"
+                title: style === "transmute"
+                    ? "무엇을 재련할까 — 다른 종류로 바뀐다"
                     : style === "blessed"
                     ? "무엇에 축복을 걸까"
                     : wantSingle === "weapon"
@@ -201,8 +207,8 @@ export default function Desk({
                     : "무슨 갑옷을 강화할까",
                 kinds: targetKinds,
                 // **상한에 닿은 것은 안 보여 준다** (재련은 제한 없음)
-                allow: (p) => !style || enchantOf(p) < ENCHANT_MAX,
-                empty: !style
+                allow: (p) => style === "transmute" || enchantOf(p) < ENCHANT_MAX,
+                empty: style === "transmute"
                     ? "재련할 장비(무기·갑옷·반지)가 없다."
                     : style === "blessed"
                     ? "축복을 걸 무기나 갑옷이 없다."
@@ -272,7 +278,14 @@ export default function Desk({
      * 축복은 안전 구간 안에서 **범위**를 적는다 — 한 번에 `1~3` 칸이 오르기 때문이고,
      * 천장 위에서는 굴림이 일반과 같아서 같은 줄을 적는다.
      */
-    const enchantHint = (it: Item, style: "plain" | "blessed") => {
+    const enchantHint = (it: Item, style: "plain" | "blessed" | "transmute") => {
+        // **재련은 숫자가 아니라 종류를 바꾼다.** 줄에 아무것도 안 적으면 강화 창과 똑같이
+        // 생겨서, 강화인 줄 알고 눌렀다가 무기가 딴 것이 된다.
+        if (style === "transmute") {
+            // 조사까지 같이 적는다 — 「갑옷로」가 화면에 뜨면 안 된다.
+            const what = it.kind === "weapon" ? "무기로" : it.kind === "armor" ? "갑옷으로" : "반지로";
+            return <span className="text-[var(--rg-trap)]"> → 다른 {what} 바뀐다</span>;
+        }
         const plus = enchantOf(it);
         const safeMax = enchantSafeMax(it.kind);
         if (style === "blessed" && plus < safeMax) {
@@ -343,6 +356,12 @@ export default function Desk({
         switch (it.kind) {
             case "weapon":
                 if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                // 이도류 — **값 읽기지 규칙이 아니다**(`canOffHand`). 눌러도 엔진이 한 번 더 본다.
+                if (hero.offWeaponId === it.id) {
+                    out.push({ label: "보조손에서 내린다", on: go({ t: "offHand", letter: it.letter! }) });
+                } else if (canOffHand(hero, it)) {
+                    out.push({ label: "보조손에 쥔다", on: go({ t: "offHand", letter: it.letter! }) });
+                }
                 if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
                     out.push({
                         label: "보석 세공 (모루)",
@@ -467,6 +486,12 @@ export default function Desk({
                 },
             });
         }
+        // **곁에 선 동료에게 건넨다** — 바닥에 놓고 줍는 두 턴을 없앤다. 곁에 없으면 안 세운다:
+        // 눌러도 안 되는 줄은 고장처럼 읽힌다(엔진이 한 번 더 막는다 — 자물쇠는 둘이다).
+        const mate = state.heroes.find((h) => h !== hero && h.hp > 0);
+        if (mate && Math.max(Math.abs(mate.x - hero.x), Math.abs(mate.y - hero.y)) <= 1) {
+            out.push({ label: "건넨다", on: go({ t: "give", letter: it.letter! }) });
+        }
         if (it.kind !== "amulet") out.push({ label: "내려놓는다", on: go({ t: "drop", letter: it.letter! }) });
         return out;
     };
@@ -516,7 +541,34 @@ export default function Desk({
                 if (pickable.some((p) => p.letter === key)) choosePicked(key);
                 return true;
             }
-            return packOpen;
+            if (packOpen) {
+                // **배낭에서도 원작처럼 글자로 고른다** — 줄을 눌러야만 열리면 키보드 쪽이 반 토막이다.
+                const picked = hero.pack.find((p) => p.letter === key);
+                if (picked) {
+                    setChosen(picked.id);
+                    setActCursor(0);
+                    return true;
+                }
+                const row = hero.pack.find((p) => p.id === chosen);
+                if (row) {
+                    const acts = actionsFor(row);
+                    // 짚은 줄의 할 일은 **숫자**로 — 그 자리에 번호가 적혀 있다.
+                    const n = Number(key);
+                    if (n >= 1 && n <= acts.length) acts[n - 1].on();
+                    else if (key === "Enter") acts[actCursor]?.on();
+                    else if (dir?.[0]) setActCursor((c) => clampTo(c + dir[0], acts.length));
+                    else if (dir?.[1]) {
+                        // 위아래는 줄을 옮긴다 — 짚은 줄이 따라간다.
+                        const at = clampTo(hero.pack.indexOf(row) + dir[1], hero.pack.length);
+                        setChosen(hero.pack[at]?.id ?? null);
+                        setActCursor(0);
+                    }
+                } else if (dir?.[1]) {
+                    setChosen(hero.pack[dir[1] > 0 ? 0 : hero.pack.length - 1]?.id ?? null);
+                }
+                return true;
+            }
+            return false;
         },
         padKey({ dir, act, pack, cancel }) {
             if (pack) return handle.togglePack();
@@ -588,11 +640,13 @@ export default function Desk({
                     footer={
                         // 안전 구간 숫자도 **엔진의 표에서** 읽는다 — 여기 적어 두면 표를 고친 날
                         // 화면만 옛말을 하게 된다.
-                        enchantStyle === "blessed"
-                            ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
-                            : enchantStyle
-                              ? `실패하면 그 물건은 부서집니다. 무기는 +${enchantSafeMax("weapon")}, 갑옷은 +${enchantSafeMax("armor")} 까지 안전합니다.`
-                              : "글자를 누르거나 줄을 눌러 고릅니다."
+                        enchantStyle === "transmute"
+                            ? "고른 장비가 같은 분류의 다른 종류로 바뀝니다 — 강화 수치는 따라갑니다."
+                            : enchantStyle === "blessed"
+                              ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
+                              : enchantStyle
+                                ? `실패하면 그 물건은 부서집니다. 무기는 +${enchantSafeMax("weapon")}, 갑옷은 +${enchantSafeMax("armor")} 까지 안전합니다.`
+                                : "글자를 누르거나 줄을 눌러 고릅니다."
                     }
                 >
                     {pickable.length === 0 ? (
@@ -630,7 +684,11 @@ export default function Desk({
                         setChosen(null);
                         setPackOpen(false);
                     }}
-                    footer="물건을 누르면 할 수 있는 일이 뜹니다."
+                    footer={
+                        side
+                            ? "방향 키로 줄을 옮기고 확인으로 고릅니다."
+                            : "물건을 누르거나 그 앞의 글자를 누르면 할 수 있는 일이 뜹니다. 그 일은 앞에 적힌 숫자로 합니다."
+                    }
                 >
                     {hero.pack.length === 0 ? (
                         <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
@@ -641,6 +699,9 @@ export default function Desk({
                                 const worn =
                                     it.id === hero.weaponId
                                         ? "쥐고 있다"
+                                        // **보조손도 적는다** — 안 적으면 배낭에서 그냥 놀고 있는 한 자루로 읽힌다.
+                                        : it.id === hero.offWeaponId
+                                        ? "보조손에 쥐고 있다"
                                         : it.id === hero.armorId
                                           ? "입고 있다"
                                           : it.id === hero.leftRingId || it.id === hero.rightRingId
@@ -672,6 +733,8 @@ export default function Desk({
                                                         onClick={a.on}
                                                         className={`rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-[var(--rg-strong)] active:translate-y-px ${side && cursor === i && actCursor === j ? CURSOR : ""}`}
                                                     >
+                                                        {/* 숫자는 **혼자 할 때의 단축키**다. 둘이서는 방향 키로 고른다. */}
+                                                        {!side && <span className="text-[var(--rg-label)]">{j + 1} </span>}
                                                         {a.label}
                                                     </button>
                                                 ))}
@@ -684,7 +747,8 @@ export default function Desk({
                     )}
                     <div className="mt-3 space-y-0.5 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-faint)]">
                         <div>
-                            무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"} · 갑옷{" "}
+                            무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"}
+                            {offHandWeapon(hero) && ` · 보조손 ${name(offHandWeapon(hero)!)}`} · 갑옷{" "}
                             {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"}
                         </div>
                         <div>

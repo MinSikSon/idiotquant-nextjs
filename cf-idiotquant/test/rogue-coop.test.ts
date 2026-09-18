@@ -411,6 +411,9 @@ test("동료가 읽는 강화 주문서는 동료의 배낭에서 찾는다", as
     const guest = s.heroes[1];
     const scroll = makeItem("scroll", "enchant weapon", s.nextItemId++, 0, 0);
     addToPack(guest, scroll);
+    // **정체를 아는 주문서라야 고르기가 뜬다** — 여기서 가리려는 것은 「누구의 배낭에서
+    // 찾느냐」지 감정이 아니다.
+    s.known["scroll:enchant weapon"] = true;
     assert.ok(!s.heroes[0].pack.some((p) => p.letter === scroll.letter && p.kind === "scroll"), "방장 배낭에 같은 글자의 주문서가 있으면 이 테스트가 아무것도 못 가린다");
     assert.deepEqual(scrollTargetKinds(s, scroll.letter!, 1), ["weapon"]);
     assert.equal(enchantScrollKind(s, scroll.letter!, 1), "plain");
@@ -503,4 +506,37 @@ test("협동의 기록은 누가 한 일인지 앞머리를 단다 — 혼자면
     solo.heroes[0].origin = "knight";
     const n = solo.messages.length;
     assert.ok(!perform(solo, { t: "rest" }).messages.slice(n).some((m) => /^[12]P▸ /.test(m)), "혼자인데 앞머리가 붙었다");
+});
+
+test("곁에 선 동료에게 물건을 건넨다 — 멀면 못 주고 턴도 안 쓴다", () => {
+    const s = withGuest(4418);
+    const [host, guest] = s.heroes;
+    // 겹쳐 쌓이는 물건은 **이미 있던 칸에 합쳐진다** — 받은 칸의 글자를 써야 한다.
+    const food = addToPack(host, makeItem("food", "food ration", s.nextItemId++, 0, 0))!;
+    const letter = food.letter!;
+
+    // ── 멀리 있으면 못 준다 (턴도 안 쓴다)
+    guest.x = host.x + 5;
+    guest.y = host.y + 5;
+    const turn = s.turn;
+    const far = perform(s, { t: "give", letter, who: 0 });
+    assert.ok(far.heroes[0].pack.some((p) => p.letter === letter), "멀리 있는데 건네졌다");
+    assert.equal(far.turn, turn, "못 건넸는데 턴을 썼다");
+
+    // ── 곁에 서면 건넨다
+    far.heroes[1].x = far.heroes[0].x + 1;
+    far.heroes[1].y = far.heroes[0].y;
+    const near = perform(far, { t: "give", letter, who: 0 });
+    assert.ok(!near.heroes[0].pack.some((p) => p.letter === letter), "내 배낭에 남았다");
+    assert.ok(near.heroes[1].pack.some((p) => p.kind === "food"), "동료가 못 받았다");
+});
+
+test("점수는 파티가 모은 금화를 센다", async () => {
+    const { score } = await import("@/lib/rogue/game");
+    const s = withGuest(4419);
+    s.heroes[0].gold = 100;
+    s.heroes[1].gold = 50;
+    const both = score(s);
+    s.heroes[1].gold = 0;
+    assert.equal(both - score(s), 50, "동료의 금화가 점수에서 빠졌다");
 });
