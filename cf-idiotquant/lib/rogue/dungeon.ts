@@ -179,10 +179,14 @@ function carveMaze(tiles: Uint8Array, roomAt: Int8Array, r: Room, rng: Rng) {
 function linkDoorToMaze(tiles: Uint8Array, r: Room, door: Pos) {
     const dx = door.x === r.x ? 1 : door.x === r.x + r.w - 1 ? -1 : 0;
     const dy = door.y === r.y ? 1 : door.y === r.y + r.h - 1 ? -1 : 0;
+    if (!dx && !dy) return; // 이 방의 벽에 난 문이 아니다
     let x = door.x + dx;
     let y = door.y + dy;
-    for (let step = 0; step < Math.max(r.w, r.h); step++) {
-        if (!inBounds(x, y)) return;
+    // **이 방 안쪽에서만 판다.** 안 막으면 미로에 닿지 못한 파기가 방을 뚫고 나가
+    // 옆 방 한가운데에 통로를 그린다 — 방 안에 `#` 이 지나가는 그 자리다.
+    const inside = (px: number, py: number) =>
+        px > r.x && px < r.x + r.w - 1 && py > r.y && py < r.y + r.h - 1;
+    while (inBounds(x, y) && inside(x, y)) {
         if (get(tiles, x, y) === T.CORRIDOR) return; // 미로에 닿았다
         put(tiles, x, y, T.CORRIDOR);
         x += dx;

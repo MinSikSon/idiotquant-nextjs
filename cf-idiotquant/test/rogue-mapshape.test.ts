@@ -389,3 +389,54 @@ test("총량은 층이 정하고 방이 나눠 갖는다 — 쿼터와 배분", 
         assert.ok(ratio < 0.8, `미로 방을 직사각형으로 세고 있다 — 실효/직사각형 = ${ratio.toFixed(3)}`);
     }
 });
+
+test("방 안으로 길이 지나가지 않는다 — 미로 방의 문 파기가 방을 뚫고 나가면 안 된다", () => {
+    // 미로 방의 문에서 안쪽으로 파던 것이 **미로에 못 닿으면 방 밖으로 뚫고 나가** 옆 방
+    // 한가운데에 `#` 을 그렸다(시드 15·20층에서 방 여섯의 한복판을 세로로 갈랐다).
+    for (let seed = 1; seed <= 120; seed++) {
+        const rng = new Rng(seed);
+        for (const depth of [1, 5, 12, 20, 26]) {
+            const level = buildLevel(depth, rng);
+            level.rooms.forEach((r, ri) => {
+                if (r.gone || r.maze) return;
+                for (let y = r.y + 1; y < r.y + r.h - 1; y++) {
+                    for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
+                        assert.notEqual(
+                            level.tiles[idx(x, y)],
+                            T.CORRIDOR,
+                            `시드 ${seed}·${depth}층: 방 ${ri} 안(${x},${y})으로 길이 지나간다`,
+                        );
+                    }
+                }
+            });
+        }
+    }
+});
+
+test("눈에 보이는 막다른 길은 비밀문 앞뿐이다", () => {
+    // 길이 아무것도 없는 데서 끊기면 「방과 길이 안 이어졌다」로 읽힌다. 남아도 되는
+    // 막다른 끝은 **비밀문 앞**(못 찾은 지름길) · 미로 안쪽 · 「없는 방」 곁뿐이다.
+    const N4: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (let seed = 1; seed <= 60; seed++) {
+        const rng = new Rng(seed);
+        for (const depth of [1, 8, 16, 26]) {
+            const level = buildLevel(depth, rng);
+            for (let y = 1; y < MAP_H - 1; y++) {
+                for (let x = 1; x < MAP_W - 1; x++) {
+                    if (level.tiles[idx(x, y)] !== T.CORRIDOR) continue;
+                    const open = N4.filter(([dx, dy]) => walkable(level.tiles[idx(x + dx, y + dy)] as Tile));
+                    if (open.length > 1) continue;
+                    const inMaze = level.rooms.some(
+                        (r) => r.maze && x > r.x && x < r.x + r.w - 1 && y > r.y && y < r.y + r.h - 1,
+                    );
+                    const byGone = level.rooms.some((r) => r.gone && Math.abs(r.x - x) <= 1 && Math.abs(r.y - y) <= 1);
+                    const bySecret = N4.some(([dx, dy]) => level.tiles[idx(x + dx, y + dy)] === T.SECRET);
+                    assert.ok(
+                        inMaze || byGone || bySecret,
+                        `시드 ${seed}·${depth}층: (${x},${y})에서 길이 아무 데도 안 닿고 끊긴다`,
+                    );
+                }
+            }
+        }
+    }
+});
