@@ -2388,7 +2388,11 @@ export function survey(state: GameState): Sighting[] {
                 ...base,
                 level: m.def.level,
                 defense: defenseOf(m.def.armor),
-                damage: m.def.damage.filter((d) => d !== "0d0"),
+                // **`0d0` 을 버리지 않는다.** 그게 곧 「대를 몇 번 치나」다 — 아쿠에이터는
+                // `0d0` 이 둘이라 **한 턴에 갑옷을 두 칸** 녹인다. 걸러 내면 도감이 「Dmg 없음」
+                // 이라고 적어, 왜 두 칸이 녹는지 어디에도 안 적힌 판이 된다. 무엇을 하는
+                // 수법인지는 여전히 **당해 봐야**(`special`) 열린다 — 여기 적는 것은 대의 수다.
+                damage: m.def.damage,
                 exp: m.def.exp,
                 hp: m.def.hp,
                 mean: m.def.mean,
@@ -2439,7 +2443,11 @@ export function bestiaryRows(
                 suffered,
                 level: d.level,
                 defense: defenseOf(d.armor),
-                damage: d.damage.filter((x: string) => x !== "0d0"),
+                // **`0d0` 을 버리지 않는다.** 그게 곧 「대를 몇 번 치나」다 — 아쿠에이터는
+                // `0d0` 이 둘이라 **한 턴에 갑옷을 두 칸** 녹인다. 걸러 내면 도감이 「Dmg 없음」
+                // 이라고 적어, 왜 두 칸이 녹는지 어디에도 안 적힌 판이 된다. 무엇을 하는
+                // 수법인지는 여전히 **당해 봐야**(`special`) 열린다 — 여기 적는 것은 대의 수다.
+                damage: d.damage,
                 exp: d.exp,
                 hp: d.hp,
                 depths: depthRange(ch),
