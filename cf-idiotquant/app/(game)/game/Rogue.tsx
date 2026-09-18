@@ -264,6 +264,11 @@ type NetMsg =
     | { t: "cmd"; cmd: Command }
     // 손님이 이으면 먼저 제 출신을 알린다 — 방장이 그 직업으로 동료를 세운다.
     | { t: "hello"; origin: HeroOrigin }
+    // **아직 안 골랐다** — 방장이 누구인지부터 묻는다. 이게 있어야 손님이 방장의 직업을
+    // **보고** 고를 수 있다. 이 말로는 판에 들어가지 않는다(자리도 안 차지한다).
+    | { t: "peek" }
+    // 그 답 — 방장의 출신. 판을 통째로 보내지 않는 까닭은, 아직 손님이 아니기 때문이다.
+    | { t: "room"; origin: HeroOrigin }
     // **나간다는 인사.** 이것 없이 끊기면 사고(망 끊김)로 보고 자리를 지켜 기다린다.
     | { t: "bye" }
     // **방장이 내보냈다.** `bye` 와 갈라 둔다 — 손님 화면에 적는 까닭이 다르고,
@@ -505,9 +510,27 @@ export default function Rogue() {
      */
     const [who, setWho] = useState(0);
 
+    /**
+     * **남의 눈을 빌린다** — 지도가 따라가는 영웅. `null` 이면 내가 조종하는 사람(`who`)이다.
+     *
+     * `who` 와 **갈라 두는 까닭은 하나**다: 쓰러졌을 때 옮기는 것은 **시점뿐이고 조종은
+     * 절대 안 옮긴다.** 한 값으로 묶으면 온라인에서 방장이 손님의 영웅을 움직이게 되고,
+     * 그건 협동이 아니라 대리 조종이다. 한 화면 둘이서는 이름표가 조종째 넘기므로
+     * (`setWho`) 이 칸을 안 쓴다 — 거기서는 넘기는 것이 곧 옳다.
+     */
+    const [view, setView] = useState<number | null>(null);
+
     /** 온라인이면 내 자리와 방 코드. 연결은 `net` 에 든다 — 화면이 다시 그려질 까닭이 아니다. */
     const [online, setOnline] = useState<"host" | "guest" | null>(null);
     const [room, setRoom] = useState<string | null>(null);
+    /**
+     * **방장이 고른 직업** — 손님이 제 것을 고르기 전에 본다.
+     *
+     * 고르는 줄에 「방장과 다른 쪽을 고르면 서로 메웁니다」라고 적어 놓고 정작 **방장이
+     * 무엇인지는 안 보여 주고 있었다.** 알 길이 붙기 전까지는 그 한 줄이 조언이 아니라
+     * 수수께끼다.
+     */
+    const [hostOrigin, setHostOrigin] = useState<HeroOrigin | null>(null);
     /** 지금 상대와 이어져 있는가 — 끊겨도 방(`online`·`room`)은 남는다. */
     const [linked, setLinked] = useState(false);
     /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
@@ -612,6 +635,7 @@ export default function Rogue() {
         setRoom(null);
         setLinked(false);
         setWho(0);
+        setView(null);
         if (why) note(why);
     }, [note]);
     /**
@@ -687,6 +711,14 @@ export default function Rogue() {
                     if (m.mode in DESK_DOING) setPeerMode(m.mode);
                     return;
                 }
+                // **아직 손님이 아니다** — 방장이 누구인지만 알려 주고 자리는 안 준다.
+                // `linked` 도 안 세운다: 이어진 것은 사람이 아니라 물음 하나다.
+                if (m?.t === "peek") {
+                    const s = stateRef.current;
+                    if (!s) return;
+                    conn.send({ t: "room", origin: s.heroes[0].origin ?? "knight" } satisfies NetMsg);
+                    return;
+                }
                 if (m?.t === "hello") {
                     const s = stateRef.current;
                     if (!s) return;
@@ -726,18 +758,32 @@ export default function Rogue() {
         });
     }, [note, retry]);
 
-    const joinRoom = useCallback(async (code: string, origin: HeroOrigin) => {
+    /**
+     * 방에 들어간다. **`origin` 이 없으면 아직 안 고른 것**이다 — 먼저 붙어서 방장의
+     * 직업을 물어보고(`peek`), 그 답(`room`)을 받아 고르기 판을 연다. 고른 뒤에
+     * `hello` 를 보내야 비로소 판에 앉는다.
+     *
+     * 다시 잇는 길(`ROOM_KEY`)에는 이미 고른 직업이 있어 곧바로 `hello` 로 간다.
+     */
+    const joinRoom = useCallback(async (code: string, origin?: HeroOrigin) => {
         const { Peer } = await import("peerjs");
         const peer = new Peer();
         net.current = { peer };
         try {
-            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, origin }));
+            // 아직 안 골랐으면 **직업은 안 적는다** — 적어 두면 새로고침 때 안 물어보고 들어간다.
+            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, ...(origin ? { origin } : {}) }));
         } catch {}
         // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 동료 자리를 쥔 채 기다린다.
         setOnline("guest");
         setWho(1);
         setRoom(code);
         setLinked(false);
+        /**
+         * **판을 받았는가.** 물어보기만 하는 동안(`peek`)에도 줄은 열려 있어서, 방장이
+         * 제 걸음을 실어 보내는 `cmd` 가 그대로 날아온다. 그걸 적용하면 **아직 손님도
+         * 아닌 사람의 제 저장 판**이 남의 걸음으로 굴러간다.
+         */
+        let joined = false;
         const again = () => retry(peer, () => joinRoom(code, origin));
         peer.on("error", again);
         peer.on("open", () => {
@@ -745,15 +791,23 @@ export default function Rogue() {
             net.current = { peer, conn };
             watchConn(conn);
             conn.on("open", () => {
-                setLinked(true);
-                conn.send({ t: "hello", origin } satisfies NetMsg);
+                // **이어졌다고 `linked` 가 서지는 않는다** — 판을 받아야(`init`) 같이 보는 것이다.
+                // 안 그러면 아직 자리도 없는데 키가 먹어, 방장 쪽에서 없는 영웅을 움직이게 된다.
+                conn.send(origin ? ({ t: "hello", origin } satisfies NetMsg) : ({ t: "peek" } satisfies NetMsg));
             });
             conn.on("data", (raw) => {
                 const m = raw as NetMsg;
-                if (m?.t === "init") {
+                if (m?.t === "room") {
+                    // 방장의 직업을 받았다 — 이제 **그것을 보고** 고른다.
+                    setHostOrigin(m.origin in ORIGINS ? m.origin : "knight");
+                    setOriginFor({ t: "guest", code });
+                    setSheet("origins");
+                } else if (m?.t === "init") {
                     const s = deserialize(m.state);
                     if (s) setState(s);
-                } else if (m?.t === "cmd" && m.cmd) {
+                    joined = true;
+                    setLinked(true);
+                } else if (m?.t === "cmd" && m.cmd && joined) {
                     setState((s) => (s ? perform(s, m.cmd) : s));
                 } else if (m?.t === "ui") {
                     if (m.mode in DESK_DOING) setPeerMode(m.mode);
@@ -780,6 +834,15 @@ export default function Rogue() {
     const [sheetOwner, setSheetOwner] = useState(0);
     const whoRef = useRef(who);
     whoRef.current = who;
+    /** 지도가 따라가는 사람 — 빌린 눈이 있으면 그쪽이다. */
+    const eye = view ?? who;
+    const eyeRef = useRef(eye);
+    eyeRef.current = eye;
+    /** 내가 조종하는 영웅이 쓰러져 있는가 — 눈은 **그동안만** 빌린다. */
+    const iAmDown = !!state && (state.heroes[who]?.hp ?? 1) <= 0;
+    useEffect(() => {
+        if (!iAmDown) setView(null);
+    }, [iAmDown]);
     useEffect(() => {
         if (sheet !== "none") setSheetOwner(whoRef.current);
     }, [sheet]);
@@ -798,7 +861,7 @@ export default function Rogue() {
     //     useLayoutEffect  9 9 20 20 25 25 25 · 30 …                   ← 어두운 데서 시작한다
     useLayoutEffect(() => {
         if (!state) return;
-        const h = state.heroes[whoRef.current] ?? state.heroes[0];
+        const h = state.heroes[eyeRef.current] ?? state.heroes[0];
         if (h.hp <= 0 || (h.blind ?? 0) > 0) return;
         const { level } = state;
         // **문턱에서 이미 방이 켜진다**(`fov.lightFrom`) — 그래서 연출도 문턱에서 시작해야
@@ -853,7 +916,8 @@ export default function Rogue() {
         try {
             const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
             if (r?.role === "host") hostRoom(r.code);
-            else if (r?.role === "guest") joinRoom(r.code, r.origin ?? "knight");
+            // 직업이 안 적혀 있으면 **아직 안 고르고 나간 것**이다 — 다시 붙어서 다시 묻는다.
+            else if (r?.role === "guest") joinRoom(r.code, r.origin);
             inRoom = !!r;
         } catch {}
         // 초대 링크로 왔다 — 주소에서 코드를 걷어 내고(새로고침에 또 묻지 않게) 직업부터 묻는다.
@@ -861,10 +925,8 @@ export default function Rogue() {
         const invited = new URLSearchParams(location.search).get("room");
         if (invited && /^\d{4}$/.test(invited)) {
             history.replaceState(null, "", location.pathname);
-            if (!inRoom) {
-                setOriginFor({ t: "guest", code: invited });
-                setSheet("origins");
-            }
+            // **먼저 붙는다** — 방장의 직업을 받아 와야 고르는 판이 열린다(`joinRoom` 의 `room`).
+            if (!inRoom) void joinRoom(invited);
         }
         // 첫 그림에서 한 번만.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -884,7 +946,17 @@ export default function Rogue() {
             setSheet("none");
         } else if (f.t === "guest") {
             setSheet("none");
-            void joinRoom(f.code, origin);
+            const conn = net.current?.conn;
+            // 물어보려고 이미 붙어 있으면 **그 줄로 인사만** 보낸다 — 다시 붙으면 방장 쪽에
+            // 죽은 연결이 하나 남고, 그 사이에 자리가 찼다고 튕길 수도 있다.
+            if (conn?.open) {
+                try {
+                    localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: f.code, origin }));
+                } catch {}
+                conn.send({ t: "hello", origin } satisfies NetMsg);
+            } else {
+                void joinRoom(f.code, origin);
+            }
         } else {
             startWithOrigin(origin);
         }
@@ -1225,7 +1297,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} who={who} cellFlashes={cellFlashes} shake={shake} reveal={reveal} />
+                <MapView state={state} who={eye} cellFlashes={cellFlashes} shake={shake} reveal={reveal} />
 
                 {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 알린다.
                     **늘 떠 있는 것은 우상단의 작은 단추 하나**다. 본문은 눌러야 펼쳐진다.
@@ -1315,13 +1387,30 @@ export default function Rogue() {
                                 type="button"
                                 // **쓰러진 사람에게는 조종을 안 넘긴다** — 넘겨 봐야 아무
                                 // 명령도 안 먹는다(엔진이 막는다). 자물쇠는 둘이다.
-                                onClick={() => h.hp > 0 && !online && setWho(i)}
-                                disabled={h.hp <= 0 || !!online}
-                                className={`shrink-0 rounded-[2px] border-2 px-1.5 font-bold ${i === who ? "" : "border-transparent"}`}
-                                style={{ color: PARTY_INK[i], backgroundColor: PARTY_BG[i], borderColor: i === who ? PARTY_INK[i] : undefined }}
+                                //
+                                // 온라인에서는 **내가 쓰러져 있을 때만** 눌린다. 그때 넘어가는
+                                // 것은 **눈뿐**이다(`setView`) — 조종까지 넘기면 방장이 손님의
+                                // 영웅을 움직이는 대리 조종이 된다.
+                                onClick={() => {
+                                    if (h.hp <= 0) return;
+                                    if (!online) setWho(i);
+                                    else if (iAmDown) setView(i);
+                                }}
+                                disabled={h.hp <= 0 || (!!online && !iAmDown)}
+                                className={`shrink-0 rounded-[2px] border-2 px-1.5 font-bold ${i === eye ? "" : "border-transparent"}`}
+                                style={{ color: PARTY_INK[i], backgroundColor: PARTY_BG[i], borderColor: i === eye ? PARTY_INK[i] : undefined }}
                             >
                                 {h.hp > 0 ? "@" : "†"}{i === 0 ? "1P" : "2P"}
                             </button>
+                        )}
+                        {/* **쓰러진 사람에게 제일 먼저 알려 줄 것은 이것**이다 — 누워 있는 동안
+                            화면에 할 일이 하나도 없으면 판이 끝난 줄 안다. 줄은 가로로 넘치므로
+                            (`overflow-x-auto whitespace-nowrap`) **이름표 바로 뒤**에 세운다 —
+                            줄 끝에 뒀더니 390px 에서 통째로 밀려 나가 안 보였다(재 봤다). */}
+                        {coop && i === who && iAmDown && state.heroes.some((o) => o.hp > 0) && (
+                            <span className="font-bold text-[var(--rg-gold)]">
+                                쓰러졌다 — 동료 이름표를 누르면 그쪽 눈으로 본다
+                            </span>
                         )}
                         <span className="text-[var(--rg-strong)] font-semibold">
                             <OriginTag origin={h.origin} />
@@ -1980,8 +2069,9 @@ export default function Rogue() {
                                           go: () => {
                                               const code = window.prompt("방 코드 네 자리")?.trim();
                                               if (!code) return;
-                                              setOriginFor({ t: "guest", code });
-                                              setSheet("origins");
+                                              setSheet("none");
+                                              // **먼저 붙는다** — 방장의 직업을 받아야 고르는 판이 열린다.
+                                              void joinRoom(code);
                                           },
                                       },
                                   ]),
@@ -2016,7 +2106,13 @@ export default function Rogue() {
                     title={originFor.t === "new" ? "출신(직업) 선택" : "2P 동료의 출신(직업) 선택"}
                     accent={originFor.t === "new" ? undefined : PARTY_INK[1]}
                     onClose={() => {
-                        if (originFor.t !== "new" || (state && state.phase === "playing")) {
+                        // **안 고르고 닫으면 방에서 나온다.** 물어보려고 붙어만 있는 상태라,
+                        // 그냥 닫으면 들어가지도 나가지도 않은 채 「잇는 중…」으로 남는다.
+                        if (originFor.t === "guest") {
+                            setOriginFor({ t: "new" });
+                            setSheet("none");
+                            closeRoom("직업을 안 고르고 방에서 나왔다.");
+                        } else if (originFor.t !== "new" || (state && state.phase === "playing")) {
                             setOriginFor({ t: "new" });
                             setSheet("none");
                         } else startWithOrigin("knight");
@@ -2028,6 +2124,13 @@ export default function Rogue() {
                                 ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
                                 : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                         </p>
+                        {/* **방장이 무엇을 골랐나.** 위의 「방장과 다른 쪽을 고르면 서로 메웁니다」가
+                            조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. */}
+                        {originFor.t === "guest" && hostOrigin && (
+                            <p className="rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-2 py-1" style={{ color: PARTY_INK[0] }}>
+                                방장은 <span className="font-bold"><OriginTag origin={hostOrigin} title /></span> 입니다.
+                            </p>
+                        )}
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             {ORIGIN_LIST.map((orig) => (
                                 <button

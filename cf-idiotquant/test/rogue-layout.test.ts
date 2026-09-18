@@ -174,3 +174,39 @@ test("방이 밝아지는 연출은 그리기 전에 걸린다 — useLayoutEffe
         "`useEffect` 로 걸려 있다 — 방이 통째로 환한 프레임이 한 번 나간 뒤에 다시 어두워진다",
     );
 });
+
+// 쓰러진 사람은 **동료의 눈을 빌린다** — 옮기는 것은 시점(`view`)뿐이고 조종(`who`)은
+// 절대 안 옮긴다. 둘을 한 값으로 묶으면 온라인에서 방장이 손님의 영웅을 움직이게 되고,
+// 그건 협동이 아니라 대리 조종이다. 브라우저로는 피어 둘을 붙여야 재지는 자리라
+// **배선의 모양**을 글자로 건다.
+test("쓰러지면 동료의 눈을 빌린다 — 조종은 안 옮긴다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+
+    // ── ① 시점과 조종은 **다른 값**이다
+    {
+        assert.match(s, /const \[view, setView\] = useState<number \| null>\(null\)/, "시점 칸이 없다");
+        assert.match(s, /const eye = view \?\? who;/, "시점이 조종에서 갈라지지 않는다");
+    }
+
+    // ── ② 명령에 실리는 것은 **언제나 `who`** 다 — 지도가 보는 사람이 아니다
+    {
+        const at = s.indexOf("const run = useCallback");
+        assert.ok(at > 0, "명령을 싣는 자리를 못 찾았다");
+        const body = s.slice(at, s.indexOf("}, [", at));
+        assert.match(body, /who\b/, "명령에 누가 하는지가 안 실린다");
+        assert.ok(!/\beye\b|\bview\b/.test(body), "빌린 눈이 명령에 실린다 — 남의 영웅을 조종하게 된다");
+    }
+
+    // ── ③ 지도는 **빌린 눈**을 따라간다
+    {
+        assert.match(s, /<MapView state=\{state\} who=\{eye\}/, "지도가 시점을 안 따라간다");
+    }
+
+    // ── ④ 이름표는 온라인에서 **내가 쓰러져 있을 때만** 눌리고, 눈만 옮긴다
+    {
+        const at = s.indexOf("if (!online) setWho(i);");
+        assert.ok(at > 0, "이름표가 시점과 조종을 안 가른다");
+        assert.match(s.slice(at, at + 120), /else if \(iAmDown\) setView\(i\)/, "온라인에서 조종이 넘어간다");
+        assert.match(s, /disabled=\{h\.hp <= 0 \|\| \(!!online && !iAmDown\)\}/, "쓰러지지도 않았는데 시점을 옮길 수 있다");
+    }
+});
