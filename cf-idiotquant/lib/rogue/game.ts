@@ -165,6 +165,8 @@ type Action =
     /** 모루 위에서 무기나 갑옷을 녹인다 — 그 물건은 사라지고 강화 주문서가 나온다. */
     | { t: "melt"; letter: string }
     | { t: "drop"; letter: string }
+    /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
+    | { t: "give"; letter: string }
     | { t: "use_relic"; letter: string }
     | { t: "socket"; gearLetter: string; gemLetter: string };
 
@@ -1319,6 +1321,43 @@ function drop(state: GameState, hero: Hero, letter: string): boolean {
 }
 
 /**
+ * **곁에 선 동료에게 건넨다.**
+ *
+ * 바닥에 놓고 상대가 줍는 길은 두 턴이 들고, 한 칸에 둘이 못 서므로(`heroMove`) 좁은
+ * 복도에서는 그마저 어렵다. 물약 한 병을 나누는 것이 협동의 기본이라 길을 하나 낸다.
+ *
+ * 규칙은 바닥에 놓는 것(`drop`)과 같은 자리를 지킨다: **저주받아 몸에 붙은 것은 못 준다.**
+ * 상대의 배낭이 꽉 찼으면 아무 일도 안 난다 — 그러면 턴도 안 쓴다.
+ */
+function give(state: GameState, hero: Hero, letter: string): boolean {
+    const mate = state.heroes.find((h) => h !== hero && h.hp > 0);
+    if (!mate) {
+        say(state, "건넬 동료가 없다.");
+        return false;
+    }
+    if (Math.max(Math.abs(mate.x - hero.x), Math.abs(mate.y - hero.y)) > 1) {
+        say(state, "동료가 곁에 없다 — 옆 칸에 서야 건넨다.");
+        return false;
+    }
+    const it = packItem(hero, letter);
+    if (!it) return false;
+    if (it.cursed && isWorn(hero, it)) {
+        it.curseKnown = true;
+        say(state, "몸에서 떨어지지 않는다!");
+        return false;
+    }
+    takeFromPack(hero, it, it.count);
+    if (!addToPack(mate, it)) {
+        // 못 받으면 **없던 일로 한다** — 돌려놓지 않으면 물건이 사라진다.
+        addToPack(hero, it);
+        say(state, "동료의 배낭이 꽉 찼다.");
+        return false;
+    }
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 동료에게 건넸다.`);
+    return true;
+}
+
+/**
  * 무기나 갑옷을 모루에 녹여 **강화 주문서를 되뽑는다.** 그 물건은 사라진다.
  *
  * ── 왜 이것이 있나 ──────────────────────────────────────────────────
@@ -2171,6 +2210,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "drop":
                 acted = drop(state, hero, cmd.letter);
                 break;
+            case "give":
+                acted = give(state, hero, cmd.letter);
+                break;
             case "melt":
                 acted = melt(state, hero, cmd.letter, rng);
                 break;
@@ -2388,11 +2430,7 @@ export function survey(state: GameState): Sighting[] {
                 ...base,
                 level: m.def.level,
                 defense: defenseOf(m.def.armor),
-                // **`0d0` 을 버리지 않는다.** 그게 곧 「대를 몇 번 치나」다 — 아쿠에이터는
-                // `0d0` 이 둘이라 **한 턴에 갑옷을 두 칸** 녹인다. 걸러 내면 도감이 「Dmg 없음」
-                // 이라고 적어, 왜 두 칸이 녹는지 어디에도 안 적힌 판이 된다. 무엇을 하는
-                // 수법인지는 여전히 **당해 봐야**(`special`) 열린다 — 여기 적는 것은 대의 수다.
-                damage: m.def.damage,
+                damage: m.def.damage.filter((d) => d !== "0d0"),
                 exp: m.def.exp,
                 hp: m.def.hp,
                 mean: m.def.mean,
@@ -2443,11 +2481,7 @@ export function bestiaryRows(
                 suffered,
                 level: d.level,
                 defense: defenseOf(d.armor),
-                // **`0d0` 을 버리지 않는다.** 그게 곧 「대를 몇 번 치나」다 — 아쿠에이터는
-                // `0d0` 이 둘이라 **한 턴에 갑옷을 두 칸** 녹인다. 걸러 내면 도감이 「Dmg 없음」
-                // 이라고 적어, 왜 두 칸이 녹는지 어디에도 안 적힌 판이 된다. 무엇을 하는
-                // 수법인지는 여전히 **당해 봐야**(`special`) 열린다 — 여기 적는 것은 대의 수다.
-                damage: d.damage,
+                damage: d.damage.filter((x: string) => x !== "0d0"),
                 exp: d.exp,
                 hp: d.hp,
                 depths: depthRange(ch),
@@ -2475,8 +2509,22 @@ function scoreOf(gold: number, deepest: number, amulet: boolean): number {
     return gold + (amulet ? 10000 : 0) + deepest * 50;
 }
 
+/**
+ * 이번 판의 점수 — **파티 전체의 금화**를 센다. 둘이서 모은 절반을 동료가 들고 있다고
+ * 안 세면, 협동에서는 누가 줍느냐에 따라 점수가 갈린다. 증표는 **누가 들었든** 판의 것이다.
+ */
 export function score(state: GameState): number {
-    return scoreOf(state.heroes[0].gold, state.deepest, state.heroes[0].hasAmulet);
+    return scoreOf(partyGold(state), state.deepest, partyAmulet(state));
+}
+
+/** 파티가 가진 금화 — 보낸 동료(`benched`)가 들고 간 몫도 이 판에서 번 것이다. */
+export function partyGold(state: GameState): number {
+    return state.heroes.reduce((n, h) => n + h.gold, 0) + (state.benched?.gold ?? 0);
+}
+
+/** 증표를 **누군가** 들었는가. */
+export function partyAmulet(state: GameState): boolean {
+    return state.heroes.some((h) => h.hasAmulet) || !!state.benched?.hasAmulet;
 }
 
 /** 지난 판 하나의 점수. 옛 기록에는 증표 칸이 없어 「살아 돌아왔나」로 메운다. */

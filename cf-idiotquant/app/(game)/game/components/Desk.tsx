@@ -26,7 +26,7 @@ import {
     meltMax,
     meltYield,
 } from "@/lib/rogue/items";
-import { canOffHand, equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { canOffHand, equippedArmor, equippedWeapon, offHandWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -486,6 +486,12 @@ export default function Desk({
                 },
             });
         }
+        // **곁에 선 동료에게 건넨다** — 바닥에 놓고 줍는 두 턴을 없앤다. 곁에 없으면 안 세운다:
+        // 눌러도 안 되는 줄은 고장처럼 읽힌다(엔진이 한 번 더 막는다 — 자물쇠는 둘이다).
+        const mate = state.heroes.find((h) => h !== hero && h.hp > 0);
+        if (mate && Math.max(Math.abs(mate.x - hero.x), Math.abs(mate.y - hero.y)) <= 1) {
+            out.push({ label: "건넨다", on: go({ t: "give", letter: it.letter! }) });
+        }
         if (it.kind !== "amulet") out.push({ label: "내려놓는다", on: go({ t: "drop", letter: it.letter! }) });
         return out;
     };
@@ -535,7 +541,34 @@ export default function Desk({
                 if (pickable.some((p) => p.letter === key)) choosePicked(key);
                 return true;
             }
-            return packOpen;
+            if (packOpen) {
+                // **배낭에서도 원작처럼 글자로 고른다** — 줄을 눌러야만 열리면 키보드 쪽이 반 토막이다.
+                const picked = hero.pack.find((p) => p.letter === key);
+                if (picked) {
+                    setChosen(picked.id);
+                    setActCursor(0);
+                    return true;
+                }
+                const row = hero.pack.find((p) => p.id === chosen);
+                if (row) {
+                    const acts = actionsFor(row);
+                    // 짚은 줄의 할 일은 **숫자**로 — 그 자리에 번호가 적혀 있다.
+                    const n = Number(key);
+                    if (n >= 1 && n <= acts.length) acts[n - 1].on();
+                    else if (key === "Enter") acts[actCursor]?.on();
+                    else if (dir?.[0]) setActCursor((c) => clampTo(c + dir[0], acts.length));
+                    else if (dir?.[1]) {
+                        // 위아래는 줄을 옮긴다 — 짚은 줄이 따라간다.
+                        const at = clampTo(hero.pack.indexOf(row) + dir[1], hero.pack.length);
+                        setChosen(hero.pack[at]?.id ?? null);
+                        setActCursor(0);
+                    }
+                } else if (dir?.[1]) {
+                    setChosen(hero.pack[dir[1] > 0 ? 0 : hero.pack.length - 1]?.id ?? null);
+                }
+                return true;
+            }
+            return false;
         },
         padKey({ dir, act, pack, cancel }) {
             if (pack) return handle.togglePack();
@@ -651,7 +684,11 @@ export default function Desk({
                         setChosen(null);
                         setPackOpen(false);
                     }}
-                    footer="물건을 누르면 할 수 있는 일이 뜹니다."
+                    footer={
+                        side
+                            ? "방향 키로 줄을 옮기고 확인으로 고릅니다."
+                            : "물건을 누르거나 그 앞의 글자를 누르면 할 수 있는 일이 뜹니다. 그 일은 앞에 적힌 숫자로 합니다."
+                    }
                 >
                     {hero.pack.length === 0 ? (
                         <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
@@ -662,6 +699,9 @@ export default function Desk({
                                 const worn =
                                     it.id === hero.weaponId
                                         ? "쥐고 있다"
+                                        // **보조손도 적는다** — 안 적으면 배낭에서 그냥 놀고 있는 한 자루로 읽힌다.
+                                        : it.id === hero.offWeaponId
+                                        ? "보조손에 쥐고 있다"
                                         : it.id === hero.armorId
                                           ? "입고 있다"
                                           : it.id === hero.leftRingId || it.id === hero.rightRingId
@@ -693,6 +733,8 @@ export default function Desk({
                                                         onClick={a.on}
                                                         className={`rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-[var(--rg-strong)] active:translate-y-px ${side && cursor === i && actCursor === j ? CURSOR : ""}`}
                                                     >
+                                                        {/* 숫자는 **혼자 할 때의 단축키**다. 둘이서는 방향 키로 고른다. */}
+                                                        {!side && <span className="text-[var(--rg-label)]">{j + 1} </span>}
                                                         {a.label}
                                                     </button>
                                                 ))}
@@ -705,7 +747,8 @@ export default function Desk({
                     )}
                     <div className="mt-3 space-y-0.5 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-faint)]">
                         <div>
-                            무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"} · 갑옷{" "}
+                            무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"}
+                            {offHandWeapon(hero) && ` · 보조손 ${name(offHandWeapon(hero)!)}`} · 갑옷{" "}
                             {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"}
                         </div>
                         <div>

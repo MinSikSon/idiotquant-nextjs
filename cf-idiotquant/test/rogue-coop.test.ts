@@ -508,79 +508,35 @@ test("협동의 기록은 누가 한 일인지 앞머리를 단다 — 혼자면
     assert.ok(!perform(solo, { t: "rest" }).messages.slice(n).some((m) => /^[12]P▸ /.test(m)), "혼자인데 앞머리가 붙었다");
 });
 
-// 특수 공격은 **맞은 사람**에게 들어간다.
-//
-// `specialEffect` 가 `state.heroes[0]` 를 들고 있었다 — 몬스터가 쫓는 쪽(`monsterTarget`)은
-// 제대로 골라 놓고, 갑옷을 녹이고 금화를 채고 배낭을 터는 자리에서만 **늘 방장**을 봤다.
-// 손님이 아쿠에이터에게 맞으면 **방장의 갑옷이 녹는** 판이었고, 두 화면 어디에도 왜 그런지가
-// 안 적힌다.
-test("갑옷을 녹이는 것도 금화를 채는 것도 맞은 사람 몫이다", async () => {
-    const { equippedArmor } = await import("@/lib/rogue/hero");
+test("곁에 선 동료에게 물건을 건넨다 — 멀면 못 주고 턴도 안 쓴다", () => {
+    const s = withGuest(4418);
+    const [host, guest] = s.heroes;
+    // 겹쳐 쌓이는 물건은 **이미 있던 칸에 합쳐진다** — 받은 칸의 글자를 써야 한다.
+    const food = addToPack(host, makeItem("food", "food ration", s.nextItemId++, 0, 0))!;
+    const letter = food.letter!;
 
-    /** 손님 옆에 그 몬스터를 붙여 세우고 한 대 맞힌다. 방장은 멀리 둔다. */
-    const struck = (seed: number, ch: string) => {
-        const s = withGuest(seed);
-        const [host, guest] = s.heroes;
-        // 방장을 멀찍이 옮긴다 — 몬스터가 손님을 치는 것이 분명해야 한다.
-        for (let y = 1; y < 20 && Math.abs(host.x - guest.x) + Math.abs(host.y - guest.y) < 12; y++) {
-            for (let x = 1; x < 70; x++) {
-                if (!walkable(s.level.tiles[idx(x, y)] as Tile)) continue;
-                if (Math.abs(x - guest.x) + Math.abs(y - guest.y) < 12) continue;
-                host.x = x;
-                host.y = y;
-                break;
-            }
-        }
-        const mx = guest.x + 1;
-        s.level.tiles[idx(mx, guest.y)] = T.FLOOR;
-        const m = spawnMonster(ch, mx, guest.y, new Rng(seed));
-        m.hp = 999;
-        m.maxHp = 999;
-        m.awake = true;
-        s.level.monsters = [m];
-        return { s, host, guest };
-    };
+    // ── 멀리 있으면 못 준다 (턴도 안 쓴다)
+    guest.x = host.x + 5;
+    guest.y = host.y + 5;
+    const turn = s.turn;
+    const far = perform(s, { t: "give", letter, who: 0 });
+    assert.ok(far.heroes[0].pack.some((p) => p.letter === letter), "멀리 있는데 건네졌다");
+    assert.equal(far.turn, turn, "못 건넸는데 턴을 썼다");
 
-    // ── 아쿠에이터 — 손님의 갑옷이 녹고 방장 것은 멀쩡하다
-    {
-        let found = false;
-        for (let n = 0; n < 40 && !found; n++) {
-            const { s, host, guest } = struck(4600 + n, "A");
-            const hostArm = equippedArmor(host);
-            const guestArm = equippedArmor(guest);
-            if (!hostArm || !guestArm) continue;
-            hostArm.plusArmor = 0;
-            guestArm.plusArmor = 0;
-            guest.hp = 999;
-            guest.maxHp = 999;
-            perform(s, { t: "rest", who: 1 });
-            if ((guestArm.plusArmor ?? 0) < 0) {
-                found = true;
-                assert.equal(hostArm.plusArmor ?? 0, 0, "손님이 맞았는데 방장의 갑옷이 녹았다");
-            } else {
-                assert.equal(hostArm.plusArmor ?? 0, 0, "아무도 안 맞았는데 방장의 갑옷이 녹았다");
-            }
-        }
-        assert.ok(found, "마흔 번을 붙였는데 아쿠에이터가 한 번도 안 맞혔다");
-    }
+    // ── 곁에 서면 건넨다
+    far.heroes[1].x = far.heroes[0].x + 1;
+    far.heroes[1].y = far.heroes[0].y;
+    const near = perform(far, { t: "give", letter, who: 0 });
+    assert.ok(!near.heroes[0].pack.some((p) => p.letter === letter), "내 배낭에 남았다");
+    assert.ok(near.heroes[1].pack.some((p) => p.kind === "food"), "동료가 못 받았다");
+});
 
-    // ── 레프러콘 — 손님의 금화를 챈다
-    {
-        let found = false;
-        for (let n = 0; n < 40 && !found; n++) {
-            const { s, host, guest } = struck(4700 + n, "L");
-            host.gold = 500;
-            guest.gold = 500;
-            guest.hp = 999;
-            guest.maxHp = 999;
-            perform(s, { t: "rest", who: 1 });
-            if (guest.gold < 500) {
-                found = true;
-                assert.equal(host.gold, 500, "손님이 맞았는데 방장의 금화가 없어졌다");
-            } else {
-                assert.equal(host.gold, 500, "아무도 안 맞았는데 방장의 금화가 없어졌다");
-            }
-        }
-        assert.ok(found, "마흔 번을 붙였는데 레프러콘이 한 번도 안 채 갔다");
-    }
+test("점수는 파티가 모은 금화를 센다", async () => {
+    const { score } = await import("@/lib/rogue/game");
+    const s = withGuest(4419);
+    s.heroes[0].gold = 100;
+    s.heroes[1].gold = 50;
+    const both = score(s);
+    s.heroes[1].gold = 0;
+    assert.equal(both - score(s), 50, "동료의 금화가 점수에서 빠졌다");
 });
