@@ -440,3 +440,48 @@ test("눈에 보이는 막다른 길은 비밀문 앞뿐이다", () => {
         }
     }
 });
+
+// 짙은 안개는 **좁히는 사건**이다.
+//
+// 예전에는 층 전체를 반경 2 로 덮어써서, 원래 한 칸만 보이던 **복도에서 오히려 시야가
+// 넓어졌다** — 「시야가 2칸으로 제한됩니다」라고 적어 놓고 넓혀 주고 있었다.
+test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로다", async () => {
+    const { computeFov, isVisible } = await import("@/lib/rogue/fov");
+    for (let seed = 1; seed <= 40; seed++) {
+        const rng = new Rng(seed);
+        const level = buildLevel(3, rng);
+        const room = level.rooms.find((r) => !r.dark && !r.gone && !r.maze && r.w >= 8);
+        if (!room) continue;
+        const at = { x: room.x + 1, y: room.y + 1, blind: 0 };
+        const far = { x: room.x + room.w - 2, y: room.y + 1 };
+        if (Math.abs(far.x - at.x) < 3) continue;
+
+        level.mutator = undefined;
+        computeFov(level, [at]);
+        assert.ok(isVisible(level, far.x, far.y), `시드 ${seed}: 밝은 방인데 안쪽이 안 보인다`);
+
+        level.mutator = "fog";
+        computeFov(level, [at]);
+        assert.ok(!isVisible(level, far.x, far.y), `시드 ${seed}: 안개 속인데 방 저쪽이 보인다`);
+
+        // 복도에서는 예나 지금이나 **맞닿은 여덟 칸**뿐이다 — 안개가 넓혀 주면 안 된다.
+        const corridor = (() => {
+            for (let y = 1; y < MAP_H - 1; y++)
+                for (let x = 1; x < MAP_W - 1; x++)
+                    if (level.tiles[idx(x, y)] === T.CORRIDOR) return { x, y, blind: 0 };
+            return null;
+        })();
+        if (!corridor) continue;
+        computeFov(level, [corridor]);
+        for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) continue;
+                assert.ok(
+                    !isVisible(level, corridor.x + dx, corridor.y + dy),
+                    `시드 ${seed}: 안개가 복도의 시야를 두 칸으로 **넓혔다**`,
+                );
+            }
+        }
+        return;
+    }
+});

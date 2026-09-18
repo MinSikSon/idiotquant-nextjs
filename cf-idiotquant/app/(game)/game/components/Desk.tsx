@@ -249,10 +249,10 @@ export default function Desk({
                 readScroll(letter);
                 return;
             }
-            setPicker((p) => {
-                if (p) run(p.make(letter));
-                return null;
-            });
+            // **명령은 갱신 함수 밖에서 보낸다.** 갱신 함수는 그리는 도중에 돌아서, 그 안에서
+            // 부모의 상태를 건드리면 React 가 「그리는 중에 다른 컴포넌트를 고친다」고 막는다.
+            if (picker) run(picker.make(letter));
+            setPicker(null);
         },
         [picker, readScroll, run],
     );

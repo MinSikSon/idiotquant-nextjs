@@ -94,12 +94,7 @@ function lightFrom(level: Level, from: Viewer): void {
         for (let dx = -1; dx <= 1; dx++) light(from.x + dx, from.y + dy);
     }
 
-    // 짙은 안개(fog) 돌발 이벤트 시 반경 2칸으로 시야 제한
-    if (level.mutator === "fog") {
-        for (let dy = -2; dy <= 2; dy++) {
-            for (let dx = -2; dx <= 2; dx++) light(from.x + dx, from.y + dy);
-        }
-    } else {
+    {
         // 안쪽에 섰으면 그 방, **문턱에 섰으면 그 문이 난 방.** 문에서 방이 안 켜지면
         // 들어서는 그 한 걸음 동안 방이 깜깜해 보인다 — 원작은 문턱에서도 방을 보여 준다.
         const ri =
@@ -112,14 +107,24 @@ function lightFrom(level: Level, from: Viewer): void {
             const room = level.rooms[ri];
             // 미로 방은 「방」이 아니다 — 안쪽이 얽힌 통로라 통째로 보이면 미로가 아니게 된다.
             if (room && !room.dark && !room.gone && !room.maze) {
-                // 밝은 방 — 벽까지 통째로.
-                for (let y = room.y; y < room.y + room.h; y++) {
-                    for (let x = room.x; x < room.x + room.w; x++) light(x, y);
-                }
-                // 벽에 난 문도 그 방의 것이다.
-                for (let y = room.y; y < room.y + room.h; y++) {
-                    for (let x = room.x; x < room.x + room.w; x++) {
-                        if (tiles[idx(x, y)] === T.DOOR) light(x, y);
+                // **짙은 안개는 「방이 통째로 보이는 것」만 지운다.** 예전에는 층 전체를
+                // 반경 2 로 덮어써서, 원래 한 칸만 보이던 **복도에서 오히려 시야가 넓어졌다**
+                // — 좁히는 사건이 넓히고 있었다. 이제 밝은 방에서도 두 칸까지만 보인다.
+                if (level.mutator === "fog") {
+                    for (let dy = -2; dy <= 2; dy++) {
+                        for (let dx = -2; dx <= 2; dx++) light(from.x + dx, from.y + dy);
+                    }
+                } else {
+                    // 밝은 방 — 벽까지 통째로.
+                    for (let y = room.y; y < room.y + room.h; y++) {
+                        for (let x = room.x; x < room.x + room.w; x++) light(x, y);
+                    }
+                    // 벽에 난 문도 그 방의 것이다. **안개 속에서는 이것도 안 보인다** —
+                    // 문만 떠 있으면 방의 크기가 그대로 읽혀서 안개가 하는 일이 없어진다.
+                    for (let y = room.y; y < room.y + room.h; y++) {
+                        for (let x = room.x; x < room.x + room.w; x++) {
+                            if (tiles[idx(x, y)] === T.DOOR) light(x, y);
+                        }
                     }
                 }
             }
