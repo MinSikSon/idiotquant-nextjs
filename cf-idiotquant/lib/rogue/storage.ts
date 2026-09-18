@@ -35,7 +35,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 6;
+const VERSION = 7;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -229,6 +229,8 @@ function normalize(s: Saved): GameState | null {
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
         pack: liftEnchants(fixLetters(Array.isArray(h.pack) ? h.pack : [])),
+        // v6 이하에는 보조손이 없다 — 이도류가 없던 때다.
+        offWeaponId: h.offWeaponId ?? null,
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
         blind: num(h.blind, 0),

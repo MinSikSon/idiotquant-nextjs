@@ -22,6 +22,22 @@ export interface OriginDef {
     createStartingItems: (nextId: () => number) => Item[];
 }
 
+/**
+ * **직업마다 이도류로 쓸 수 있는 무기는 한 종류뿐이다.** 없으면 이도류가 없는 직업이다.
+ *
+ * 「가벼운 무기」라는 특성을 따로 두지 않았다. 지금 사다리에 가벼운 날붙이가 단검
+ * 하나뿐이라, 특성으로 열면 이도류가 **4층에서 끝나는** 기능이 된다. 직업마다 한
+ * 종류를 못 박으면 새 무기 없이도 끝까지 살고, 무엇보다 **값이 저절로 붙는다** —
+ * 근위대가 장검 둘을 들면 12층의 진은검을 포기하는 셈이다. 「사다리 위 하나 vs
+ * 아래 둘」이 거기서 진짜 선택이 된다.
+ *
+ * 연금술사와 고서 연구자는 안 준다. 둘은 물약·주문서로 푸는 직업이라 손이 비어야 한다.
+ */
+export const DUAL_WIELD: Partial<Record<HeroOrigin, string>> = {
+    rogue: "dagger",
+    knight: "long sword",
+};
+
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
     knight: {
         id: "knight",

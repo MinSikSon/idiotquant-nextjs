@@ -254,6 +254,13 @@ export interface Hero {
     pack: Item[];
     /** 지금 쥔 것 · 입은 것 · 낀 것. 없으면 null. */
     weaponId: number | null;
+    /**
+     * 보조손에 쥔 것 — **이도류.** 없으면 `null`.
+     *
+     * 직업마다 쥘 수 있는 종류가 한 가지뿐이고(`origins.DUAL_WIELD`), 주손에 같은 종류를
+     * 쥐고 있어야 한다. 규칙은 `hero.canOffHand` 한 자리에서 본다.
+     */
+    offWeaponId: number | null;
     armorId: number | null;
     /** 반지는 양손에 하나씩. 두 개를 끼면 배가 두 배로 고프다. */
     leftRingId: number | null;

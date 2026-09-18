@@ -26,7 +26,7 @@ import {
     meltMax,
     meltYield,
 } from "@/lib/rogue/items";
-import { equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { canOffHand, equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -343,6 +343,12 @@ export default function Desk({
         switch (it.kind) {
             case "weapon":
                 if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                // 이도류 — **값 읽기지 규칙이 아니다**(`canOffHand`). 눌러도 엔진이 한 번 더 본다.
+                if (hero.offWeaponId === it.id) {
+                    out.push({ label: "보조손에서 내린다", on: go({ t: "offHand", letter: it.letter! }) });
+                } else if (canOffHand(hero, it)) {
+                    out.push({ label: "보조손에 쥔다", on: go({ t: "offHand", letter: it.letter! }) });
+                }
                 if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
                     out.push({
                         label: "보석 세공 (모루)",

@@ -30,7 +30,9 @@ import {
 import {
     addToPack,
     equippedArmor,
+    canOffHand,
     equippedWeapon,
+    offHandWeapon,
     gainExp,
     hasRing,
     heroArmor,
@@ -152,6 +154,8 @@ type Action =
     | { t: "read"; letter: string; target?: string }
     | { t: "eat"; letter: string }
     | { t: "wield"; letter: string }
+    /** 보조손에 쥔다(이도류). 같은 글자를 다시 주면 내려놓는다. */
+    | { t: "offHand"; letter: string }
     | { t: "wear"; letter: string }
     | { t: "putOn"; letter: string }
     | { t: "removeRing"; letter: string }
@@ -1136,12 +1140,55 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         return false;
     }
     hero.weaponId = it.id;
+    // **주손을 바꾸면 보조손이 어긋날 수 있다.** 장검을 쥐고 단검을 보조손에 들 수는
+    // 없는데, 정리를 안 하면 「짝이 안 맞는 이도류」가 조용히 남는다.
+    const off = offHandWeapon(hero);
+    if (off && !canOffHand(hero, off)) {
+        hero.offWeaponId = null;
+        say(state, `${describe(off, state.known, state.appearance)}을(를) 보조손에서 내렸다.`);
+    }
     const key = `weapon:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
     // **그 물건의 성능**을 적는다 — 내 명중·피해가 아니라. 무엇을 쥐었는지가 바로 보여야
     // 「이게 지금 것보다 나은가」를 그 자리에서 판단할 수 있다.
     say(state, `${describe(it, state.known, state.appearance)}을(를) 쥐었다.${withPower(it, state)}`);
+    if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
+    return true;
+}
+
+/**
+ * 보조손에 쥔다 — **이도류.**
+ *
+ * 쥘 수 있는지는 `canOffHand` **한 자리**가 답한다(화면도 그것만 본다). 같은 글자를
+ * 다시 주면 내려놓는다 — 따로 명령을 만들 까닭이 없다.
+ */
+function offHand(state: GameState, hero: Hero, letter: string): boolean {
+    const it = packItem(hero, letter);
+    if (!it) {
+        say(state, "그런 것이 없다.");
+        return false;
+    }
+    // 이미 보조손에 든 것을 다시 고르면 내려놓는다.
+    if (hero.offWeaponId === it.id) {
+        if (it.cursed) {
+            it.curseKnown = true;
+            say(state, `${describe(it, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
+            return false;
+        }
+        hero.offWeaponId = null;
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 보조손에서 내렸다.`);
+        return true;
+    }
+    if (!canOffHand(hero, it)) {
+        say(state, "보조손에 쥘 수 있는 것이 아니다.");
+        return false;
+    }
+    hero.offWeaponId = it.id;
+    const key = `weapon:${it.type}`;
+    state.known[key] = true;
+    state.itemCodex[key] = true;
+    say(state, `${describe(it, state.known, state.appearance)}을(를) 보조손에 쥐었다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
     return true;
 }
@@ -2076,6 +2123,9 @@ function act(state: GameState, cmd: Command): GameState {
                 break;
             case "wield":
                 acted = wield(state, hero, cmd.letter);
+                break;
+            case "offHand":
+                acted = offHand(state, hero, cmd.letter);
                 break;
             case "wear":
                 acted = wear(state, hero, cmd.letter);

@@ -53,6 +53,7 @@ export { defenseOf };
 import {
     equippedArmor,
     equippedWeapon,
+    offHandWeapon,
     heroArmor,
     heroDamTerms,
     heroDamageDice,
@@ -69,6 +70,7 @@ export { heroHitTerms, heroDamTerms };
 import {
     type GameState,
     type Hero,
+    type Item,
     type Monster,
 } from "./types";
 
@@ -310,8 +312,28 @@ export function monsterDefense(m: Monster): number {
 }
 
 /** 내가 몬스터를 때린다. */
-export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): AttackResult {
-    const hitTerms = heroHitTerms(hero);
+/** 이도류의 **보조손이 치르는 값** — 명중에 이만큼 불리하다. */
+export const OFF_HAND_HIT = -2;
+
+/**
+ * 한 번 휘두른다. `weapon` 이 무엇인지는 부르는 쪽이 정한다.
+ *
+ * **보조손은 두 가지를 잃는다**: 명중이 `OFF_HAND_HIT` 만큼 불리하고, 피해에 **힘 보정이
+ * 안 얹힌다**(D&D 가 그렇다). 그게 없으면 이도류가 그냥 피해 두 배라 한 자루를 쥘
+ * 까닭이 사라진다.
+ */
+function swing(
+    state: GameState,
+    hero: Hero,
+    m: Monster,
+    rng: Rng,
+    weapon: Item | undefined,
+    off: boolean,
+): AttackResult {
+    const hitTerms = [
+        ...heroHitTerms(hero, weapon),
+        ...(off ? [{ n: OFF_HAND_HIT, why: "보조손" }] : []),
+    ];
     const seen = seenBefore(state, m);
     const mName = monsterName(m);
     const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: m.champion === "shadow" ? "숙련+그림자" : "숙련" }];
@@ -326,7 +348,7 @@ export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): 
     // 계산이 먼저, 결과가 나중 — 기록 판은 뒤집어 보여 주므로 거기서는 결과가 위로
     // 오고 그 아래에 「왜 그랬나」가 붙는다.
     messages.push(
-        attackLine("나", a, hitTerms, { who: mName, bonus: dodge, show: seen }, outcomeOf(a)),
+        attackLine(off ? "보조손" : "나", a, hitTerms, { who: mName, bonus: dodge, show: seen }, outcomeOf(a)),
     );
 
     if (!a.hit) {
@@ -336,8 +358,8 @@ export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): 
 
     const isBackstab = hero.origin === "rogue" && (!m.awake || m.speed < 0);
     const isCrit = a.crit || isBackstab;
-    const dice = heroDamageDice(hero);
-    const damTerms = [...heroDamTerms(hero)];
+    const dice = heroDamageDice(hero, weapon);
+    const damTerms = [...heroDamTerms(hero, weapon, !off)];
     if (isBackstab) {
         damTerms.push({ n: 3, why: "기습" });
     }
@@ -376,8 +398,7 @@ export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): 
         state.level.items.push(makeItem("gold", "gold", state.nextItemId++, m.x, m.y, goldDropped));
     }
 
-    // ── 무기 보석 소켓 효과 ──
-    const weapon = equippedWeapon(hero);
+    // ── 무기 보석 소켓 효과 — **휘두른 그 칼의 보석**이다 ──
     if (weapon?.socketGem === "ruby") {
         m.burnTurns = 3;
         messages.push(`루비의 화염이 ${mName}에게 옮겨붙었다! (화상 3턴)`);
@@ -399,6 +420,32 @@ export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): 
         crit: isCrit,
         blocked: dealt === 0,
         messages,
+    };
+}
+
+/**
+ * 한 턴의 공격 — **이도류면 두 번 휘두른다.**
+ *
+ * 주손으로 한 번, 보조손이 있으면 한 번 더. 두 번째는 **상대가 아직 서 있을 때만** 간다
+ * — 쓰러진 것을 한 번 더 치는 줄이 기록에 남으면 「죽였는데 또 때렸다」로 읽힌다.
+ *
+ * 돌려주는 것은 **두 번을 합친 것**이다. `damage` 는 합이고, `killed` 는 둘 중 한 번이라도
+ * 죽였으면 참이다 — 부르는 쪽(`heroMove`)이 「죽었나」 하나만 보고 판단하기 때문이다.
+ */
+export function heroAttack(state: GameState, hero: Hero, m: Monster, rng: Rng): AttackResult {
+    const main = swing(state, hero, m, rng, equippedWeapon(hero), false);
+    const off = offHandWeapon(hero);
+    if (!off || main.killed) return main;
+
+    const second = swing(state, hero, m, rng, off, true);
+    return {
+        hit: main.hit || second.hit,
+        roll: main.roll,
+        damage: main.damage + second.damage,
+        killed: second.killed,
+        crit: main.crit || second.crit,
+        blocked: main.blocked && second.blocked,
+        messages: [...main.messages, ...second.messages],
     };
 }
 

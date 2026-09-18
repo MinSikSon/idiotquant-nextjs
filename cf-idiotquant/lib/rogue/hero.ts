@@ -25,7 +25,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ORIGINS } from "./origins";
+import { DUAL_WIELD, ORIGINS } from "./origins";
 
 /** 이 경험치를 넘으면 다음 레벨. 원작의 `e_levels` 와 같은 모양이다. */
 export const EXP_LEVELS = [
@@ -68,6 +68,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         gold: 0,
         pack: [],
         weaponId: null,
+        offWeaponId: null,
         armorId: null,
         leftRingId: null,
         rightRingId: null,
@@ -152,6 +153,29 @@ export function equippedWeapon(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.weaponId);
 }
 
+/** 보조손에 쥔 것 — 이도류가 아니면 `undefined`. */
+export function offHandWeapon(hero: Hero): Item | undefined {
+    return hero.offWeaponId === null ? undefined : hero.pack.find((i) => i.id === hero.offWeaponId);
+}
+
+/**
+ * 이 사람이 이 물건을 **보조손에 쥘 수 있는가.**
+ *
+ * 규칙이 넷이고 **여기 한 자리**에서 본다 — 화면도 엔진도 이것만 부른다(자물쇠는 둘이다).
+ *
+ *   ① 무기여야 한다.
+ *   ② **제 직업이 이도류로 쓰는 종류**여야 한다(`DUAL_WIELD`). 도적은 단검, 근위대는 장검.
+ *   ③ **주손에 같은 종류를 쥐고** 있어야 한다 — 한 손에만 들면 그냥 한 자루다.
+ *   ④ 주손에 쥔 **그 물건 자체**는 안 된다. 한 자루를 두 손에 들 수는 없다.
+ */
+export function canOffHand(hero: Hero, it: Item): boolean {
+    if (it.kind !== "weapon") return false;
+    const pair = DUAL_WIELD[hero.origin ?? "knight"];
+    if (!pair || it.type !== pair) return false;
+    const main = equippedWeapon(hero);
+    return !!main && main.type === pair && main.id !== it.id;
+}
+
 export function equippedArmor(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.armorId);
 }
@@ -224,8 +248,7 @@ export interface Term {
  * 굴림도 화면도 이 목록 하나를 본다. 화면이 숙련과 힘과 손질을 따로 주워 모아 더하면
  * 그 셈이 두 벌이 되고, 어느 날 **화면에 적힌 명중과 실제로 굴리는 명중이 갈린다.**
  */
-export function heroHitTerms(hero: Hero): Term[] {
-    const weapon = equippedWeapon(hero);
+export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] {
     return [
         { n: proficiency(hero.level), why: "숙련" },
         { n: strHitBonus(heroStr(hero)), why: "힘" },
@@ -234,10 +257,10 @@ export function heroHitTerms(hero: Hero): Term[] {
 }
 
 /** 피해에 얹히는 것들 — 같은 능력 보정이 여기에도 온다(D&D 가 그렇다). */
-export function heroDamTerms(hero: Hero): Term[] {
-    const weapon = equippedWeapon(hero);
+/** `withStr` 가 거짓이면 **힘 보정을 안 얹는다** — 이도류의 보조손이 그렇다. */
+export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr = true): Term[] {
     const terms: Term[] = [
-        { n: strHitBonus(heroStr(hero)), why: "힘" },
+        ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
         { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
     ];
     const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")
@@ -305,8 +328,8 @@ export function searchChance(hero: Hero): number {
     return hasRing(hero, "searching") ? 0.65 : 0.25;
 }
 
-export function heroDamageDice(hero: Hero): string {
-    return weaponDamageOf(equippedWeapon(hero));
+export function heroDamageDice(hero: Hero, weapon = equippedWeapon(hero)): string {
+    return weaponDamageOf(weapon);
 }
 
 /**
@@ -320,12 +343,19 @@ export function heroDamageDice(hero: Hero): string {
  * 몫을 빼고 적는다 — 화면이 정체 모를 무기의 속을 흘리면 안 된다.
  */
 export function heroAttackText(hero: Hero, known: Record<string, boolean>): string {
-    const w = equippedWeapon(hero);
-    const identified = !!w && known[`weapon:${w.type}`] === true;
-    // `heroHitBonus` 와 같은 이유로 **이름표가 아니라 값으로** 뺀다(거기 주석 참고).
-    const all = heroDamTerms(hero).reduce((sum, t) => sum + t.n, 0);
-    const bonus = identified ? all : all - (w?.plusDam ?? 0);
-    return `${heroDamageDice(hero)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
+    /** 한 손 몫 — 보조손은 힘 보정이 안 얹힌다(`combat.swing` 과 같은 규칙이다). */
+    const one = (w: Item | undefined, withStr: boolean) => {
+        const identified = !!w && known[`weapon:${w.type}`] === true;
+        // `heroHitBonus` 와 같은 이유로 **이름표가 아니라 값으로** 뺀다(거기 주석 참고).
+        const all = heroDamTerms(hero, w, withStr).reduce((sum, t) => sum + t.n, 0);
+        const bonus = identified ? all : all - (w?.plusDam ?? 0);
+        return `${heroDamageDice(hero, w)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
+    };
+    const main = one(equippedWeapon(hero), true);
+    const off = offHandWeapon(hero);
+    // **두 자루면 둘 다 적는다.** 한쪽만 적으면 화면의 「피해」가 실제로 굴리는 것의
+    // 절반이 되고, 그건 화면이 거짓말을 하는 자리다.
+    return off ? `${main} + ${one(off, false)}` : main;
 }
 
 /** 지금 몸에 붙어 있는가 — 저주받아 못 벗는 것. */
