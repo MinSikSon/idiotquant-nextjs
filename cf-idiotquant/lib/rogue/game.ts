@@ -476,11 +476,12 @@ export function newGame(
  */
 function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
     const hero = makeHero(rng, () => state.nextItemId++, origin);
-    // 처음 쥔 것은 무엇인지 안다.
+    // 처음 쥔 것은 무엇인지 안다 — 손질 정도까지. 제 손에 들려 온 장비다.
     for (const it of hero.pack) {
         const k = `${it.kind}:${it.type}`;
         state.known[k] = true;
         state.itemCodex[k] = true;
+        it.plusKnown = true;
     }
     // 연금술사는 시작부터 모든 물약의 정체를 안다.
     if (origin === "alchemist") {
@@ -892,6 +893,7 @@ function transmute(state: GameState, it: Item, rng: Rng, isBlessed = false): voi
     const key = `${it.kind}:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
+    it.plusKnown = true;
     say(
         state,
         `연금술의 불꽃이 일며 ${oldDesc}이(가) ${describe(it, state.known, state.appearance)}(으)로 재련되었다!`,
@@ -913,6 +915,7 @@ function enchant(state: GameState, hero: Hero, it: Item, rng: Rng, blessed: bool
     const key = `${it.kind}:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
+    it.plusKnown = true;
 
     // ── 축복 — **안전 구간 안에서만 여러 칸을 한 번에 올린다** ────────────────────
     //
@@ -1088,6 +1091,9 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
                 const k = `${p.kind}:${p.type}`;
                 state.known[k] = true;
                 state.itemCodex[k] = true;
+                // 무기·갑옷의 손질 정도는 **물건마다** 드는 값이라 여기서 같이 연다 —
+                // 종류만 열면 감정 주문서가 무기·갑옷에는 아무 일도 안 하는 것이 된다.
+                p.plusKnown = true;
             }
             if (it.blessed) {
                 let doorsOpened = 0;
@@ -1180,6 +1186,8 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         return false;
     }
     hero.weaponId = it.id;
+    // **써 봤으니 안다** — 종류가 아니라 이 물건의 손질 정도를 안다(`Item.plusKnown`).
+    it.plusKnown = true;
     // **주손을 바꾸면 보조손이 어긋날 수 있다.** 장검을 쥐고 단검을 보조손에 들 수는
     // 없는데, 정리를 안 하면 「짝이 안 맞는 이도류」가 조용히 남는다.
     const off = offHandWeapon(hero);
@@ -1246,6 +1254,7 @@ function wear(state: GameState, hero: Hero, letter: string): boolean {
         return false;
     }
     hero.armorId = it.id;
+    it.plusKnown = true;
     const key = `armor:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;

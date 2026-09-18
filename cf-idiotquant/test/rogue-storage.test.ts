@@ -436,3 +436,53 @@ test("갑옷 강화는 안 바뀌고, 없는 방을 가리키는 칸은 −1 이
         play(back, 300);
     }
 });
+
+// 손질 지식을 **종류에서 물건으로** 옮긴 판 — 옛 저장이 손해를 보면 안 된다.
+//
+// v7 까지는 `known["weapon:long sword"]` 한 칸이 그 판의 모든 장검을 열었다. v8 부터는
+// 물건마다 든다(`Item.plusKnown`). **규칙만 고치면 이미 저장된 판은 안 낫는다** — 어제까지
+// `+3` 이 보이던 장검이 오늘 `장검` 으로 돌아가면 「내 강화가 날아갔나」로 읽힌다.
+// 그래서 되읽을 때 옛 지식을 물건으로 옮긴다. 새로 줍는 것부터 새 규칙을 탄다.
+test("옛 저장의 종류 감정은 물건 감정으로 옮겨진다", async () => {
+    const { makeItem } = await import("@/lib/rogue/items");
+    const { describe } = await import("@/lib/rogue/items");
+    const { addToPack } = await import("@/lib/rogue/hero");
+
+    const s = newGame(9300);
+    const hero = s.heroes[0];
+    const mk = (id: number, plus: number) => {
+        const it = makeItem("weapon", "long sword", id, -1, -1);
+        it.plusHit = plus;
+        it.plusDam = plus;
+        return addToPack(hero, it)!;
+    };
+    const sword = mk(9301, 3);
+    const mace = (() => {
+        const it = makeItem("weapon", "two-handed sword", 9302, -1, -1);
+        it.plusHit = 2;
+        it.plusDam = 2;
+        return addToPack(hero, it)!;
+    })();
+
+    // **옛 저장의 모양을 만든다** — 종류는 알되 물건 칸(`plusKnown`)은 없다.
+    s.known["weapon:long sword"] = true;
+    for (const p of hero.pack) delete p.plusKnown;
+    const old = JSON.parse(serialize(s));
+    old.v = 7;
+
+    const back = deserialize(JSON.stringify(old));
+    assert.ok(back, "v7 저장이 안 읽혔다");
+    const pack = back!.heroes[0].pack;
+    const gotSword = pack.find((p) => p.id === sword.id)!;
+    const gotOther = pack.find((p) => p.id === mace.id)!;
+
+    assert.equal(
+        describe(gotSword, back!.known, back!.appearance),
+        "장검 +3",
+        "알던 종류인데 되읽으니 손질이 사라졌다 — 강화가 날아간 것처럼 보인다",
+    );
+    assert.ok(
+        !gotOther.plusKnown,
+        "모르던 종류까지 열렸다 — 되읽기가 없던 지식을 만들어 냈다",
+    );
+});

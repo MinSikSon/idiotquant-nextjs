@@ -760,19 +760,21 @@ export function describe(
             const base = known[key] ? `${blessPrefix(it, true)}${WANDS[it.type]?.name ?? "이름 없는"} 지팡이` : (appearance[key] ?? "지팡이");
             return known[key] ? `${base} (${it.charges ?? 0}회)` : base;
         }
+        // 무기·갑옷의 손질 정도는 **물건마다** 안다(`plusKnown`). `known` 은 종류의
+        // 지식이라 도감이 쓰고, 이름은 그것으로 늘 보인다 — 숨기는 것은 `+N` 과 축복뿐이다.
         case "weapon": {
             // **개수는 여기서 안 붙인다.** 화면이 이미 `×10` 을 붙이므로 「다트 10개 ×10」
             // 이 되고, 하나를 던졌을 때 「다트 10개를 던졌다」로도 읽힌다.
-            const base = `${blessPrefix(it, !!known[key])}${WEAPONS[it.type]?.name ?? "이름 없는 무기"}`;
+            const base = `${blessPrefix(it, !!it.plusKnown)}${WEAPONS[it.type]?.name ?? "이름 없는 무기"}`;
             const sock = socketText(it);
-            return known[key]
+            return it.plusKnown
                 ? `${base}${plusText(it.plusHit)}${sock}${curseText(it)}`
                 : `${base}${sock}${curseText(it)}`;
         }
         case "armor": {
-            const base = `${blessPrefix(it, !!known[key])}${ARMORS[it.type]?.name ?? "이름 없는 갑옷"}`;
+            const base = `${blessPrefix(it, !!it.plusKnown)}${ARMORS[it.type]?.name ?? "이름 없는 갑옷"}`;
             const sock = socketText(it);
-            return known[key]
+            return it.plusKnown
                 ? `${base}${plusText(it.plusArmor)}${sock}${curseText(it)}`
                 : `${base}${sock}${curseText(it)}`;
         }
@@ -837,7 +839,8 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         return descMap[it.type] ?? "고대 전설 유물";
     }
     if (it.kind === "weapon") {
-        const plus = seen ? (it.plusDam ?? 0) : 0;
+        // 손질 정도는 **이 물건을 써 봤는지**로 가른다 — 같은 종류의 딴 자루는 모른다.
+        const plus = it.plusKnown ? (it.plusDam ?? 0) : 0;
         const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "화염" : it.socketGem === "sapphire" ? "동결" : "흡혈"}]` : "";
         return `피해 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}${sock}`;
     }
@@ -845,7 +848,7 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
         const base = ARMORS[it.type]?.armor ?? 10;
         const sock = it.socketGem === "topaz" ? " [수호]" : "";
-        return `방어력 ${defenseOf(seen ? armorClassOf(it) : base)}${sock}`;
+        return `방어력 ${defenseOf(it.plusKnown ? armorClassOf(it) : base)}${sock}`;
     }
     if (it.kind === "ring") {
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.

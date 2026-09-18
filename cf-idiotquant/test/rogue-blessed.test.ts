@@ -24,8 +24,11 @@ test("축복받은 아이템 생성 및 설명 표시 (식별 시 '축복받은 
     const known: Record<string, boolean> = {};
     assert.equal(describe(item, known, {}), "단검");
 
-    // 식별 상태일 때
+    // 식별 상태일 때 — **무기·갑옷의 손질은 종류가 아니라 물건마다 안다**(`plusKnown`).
+    // 종류로 알던 시절에는 `known["weapon:dagger"]` 를 세웠는데, 그러면 배낭 속 딴 단검의
+    // 손질까지 공짜로 드러난다.
     known["weapon:dagger"] = true;
+    item.plusKnown = true;
     const desc = describe(item, known, {});
     assert.ok(desc.startsWith("축복받은 단검 +1"), `예상: 축복받은 단검 +1..., 실제: ${desc}`);
 });

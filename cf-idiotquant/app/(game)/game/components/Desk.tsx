@@ -344,13 +344,15 @@ export default function Desk({
             const { sure, risky } = meltYield(it);
             if (sure + risky <= 0) return;
             const odds = Math.round(MELT_RETURN * 100);
-            out.push({
-                label:
-                    risky > 0
-                        ? `녹인다 (최대 ${meltMax(it)}장 · 강화분 ${odds}%)`
-                        : `녹인다 (주문서 ${meltMax(it)}장)`,
-                on: go({ t: "melt", letter: it.letter! }),
-            });
+            // **손질 정도를 모르는 물건은 장수도 모른다.** 나올 장수가 곧 `+N` 이라
+            // (`meltYield`), 여기 숫자를 적으면 **쥐어 보지도 않고 강화 수치를 읽는** 뒷문이
+            // 된다 — 「써 봐야 안다」가 모루 앞에서만 무너진다.
+            const label = !it.plusKnown
+                ? "녹인다 (나올 장수는 녹여 봐야)"
+                : risky > 0
+                  ? `녹인다 (최대 ${meltMax(it)}장 · 강화분 ${odds}%)`
+                  : `녹인다 (주문서 ${meltMax(it)}장)`;
+            out.push({ label, on: go({ t: "melt", letter: it.letter! }) });
         };
 
         switch (it.kind) {

@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
 import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
-import { itemPower, makeItem } from "@/lib/rogue/items";
+import { describe, itemPower, makeItem } from "@/lib/rogue/items";
 import { T, idx, walkable, type GameState, type Item, type Tile } from "@/lib/rogue/types";
 
 /**
@@ -287,7 +287,14 @@ test("정체를 모르면 손질을 안 흘린다 — 배낭 숫자와 실제가
         const a = makeItem("armor", "plate mail", 7, -1, -1);
         a.plusArmor = 3;
         assert.equal(itemPower(a, {}), "방어력 7", "모르는 갑옷의 손질이 샜다");
-        assert.equal(itemPower(a, { "armor:plate mail": true }), "방어력 10");
+        // **같은 종류를 안다고 이 물건까지 알게 되지는 않는다** — 손질은 물건마다다.
+        assert.equal(
+            itemPower(a, { "armor:plate mail": true }),
+            "방어력 7",
+            "같은 종류를 알 뿐인데 이 갑옷의 손질이 드러났다 — 두 벌째를 공짜로 감정한다",
+        );
+        a.plusKnown = true;
+        assert.equal(itemPower(a, {}), "방어력 10", "입어 본 갑옷인데 손질이 안 보인다");
     }
 
     // ── 배낭에 적는 숫자와 실제로 맞는 방어가 같다
@@ -300,6 +307,7 @@ test("정체를 모르면 손질을 안 흘린다 — 배낭 숫자와 실제가
         s.heroes[0].pack.push(armor);
         s.heroes[0].armorId = armor.id;
         s.known["armor:plate mail"] = true;
+        armor.plusKnown = true; // 입은 것이라 안다(`wear` 가 세우는 값)
         assert.equal(itemPower(armor, s.known), `방어력 ${heroDefense(s.heroes[0])}`);
     }
 });
@@ -341,5 +349,86 @@ test("던진 것은 사라지지 않는다 — 같은 것도 다른 것도", () 
             "던진 창이 없어졌다 — 그 자리에 다른 물건이 있었을 뿐이다",
         );
         assert.ok(after.level.items.some((i) => i.id === mace.id), "원래 있던 철퇴가 없어졌다");
+    }
+});
+
+// 무기·갑옷의 손질은 **물건마다** 안다 — 종류가 아니다.
+//
+// 예전에는 `known["weapon:long sword"]` 한 칸이 그 판의 **모든** 장검을 열었다. 그래서
+// 장검 한 자루를 쥐어 본 사람은 배낭 속 **두 자루째**의 `+3` 을 쥐어 보지도 않고 알았다 —
+// 「써 봐야 안다」가 반만 서 있었다. 이제 `Item.plusKnown` 이 그 물건 하나만 연다.
+//
+// 종류의 지식(`known`)은 그대로 남는다 — 도감이 그것을 쓰고, 이름은 늘 보인다.
+// 숨기는 것은 `+N` 과 「축복받은」뿐이다.
+test("손질 정도는 그 물건을 써 봐야 안다", async () => {
+    const { addToPack } = await import("@/lib/rogue/hero");
+
+    /** 같은 종류의 장검 둘을 배낭에 넣는다. 하나는 축복, 하나는 그냥. */
+    const armed = (seed: number) => {
+        const s = newGame(seed);
+        const hero = s.heroes[0];
+        const mk = (id: number, plus: number, blessed: boolean) => {
+            const it = makeItem("weapon", "long sword", id, -1, -1);
+            it.plusHit = plus;
+            it.plusDam = plus;
+            it.blessed = blessed;
+            return addToPack(hero, it)!;
+        };
+        return { s, hero, a: mk(8801, 2, true), b: mk(8802, 3, false) };
+    };
+    const show = (s: ReturnType<typeof armed>["s"], it: Item) => describe(it, s.known, s.appearance);
+
+    // ── 주웠을 뿐이면 **이름만** 보인다
+    {
+        const { s, a, b } = armed(8001);
+        assert.equal(show(s, a), "장검", `주운 무기의 손질·축복이 샜다: ${show(s, a)}`);
+        assert.equal(show(s, b), "장검");
+    }
+
+    // ── 쥐면 **그 자루만** 열린다
+    {
+        const { s, a, b } = armed(8002);
+        perform(s, { t: "wield", letter: a.letter! });
+        assert.equal(show(s, a), "축복받은 장검 +2", "쥔 무기의 손질이 안 보인다");
+        assert.equal(
+            show(s, b),
+            "장검",
+            `같은 종류라고 두 자루째까지 열렸다 — 쥐어 보지도 않고 +3 을 안다: ${show(s, b)}`,
+        );
+    }
+
+    // ── 갑옷도 같다
+    {
+        const s = newGame(8003);
+        const hero = s.heroes[0];
+        const mk = (id: number, plus: number) => {
+            const it = makeItem("armor", "plate mail", id, -1, -1);
+            it.plusArmor = plus;
+            return addToPack(hero, it)!;
+        };
+        const worn = mk(8811, 2);
+        const spare = mk(8812, 4);
+        assert.equal(describe(worn, s.known, s.appearance), "판금 갑옷", "주운 갑옷의 손질이 샜다");
+        perform(s, { t: "wear", letter: worn.letter! });
+        assert.equal(describe(worn, s.known, s.appearance), "판금 갑옷 +2", "입은 갑옷의 손질이 안 보인다");
+        assert.equal(describe(spare, s.known, s.appearance), "판금 갑옷", "안 입은 두 벌째까지 열렸다");
+    }
+
+    // ── **감정 주문서가 배낭을 통째로 연다** — 그게 그 주문서의 본업이다
+    {
+        const { s, hero, a, b } = armed(8004);
+        const scroll = addToPack(hero, makeItem("scroll", "identify", 8820, -1, -1))!;
+        perform(s, { t: "read", letter: scroll.letter! });
+        assert.equal(show(s, a), "축복받은 장검 +2", "감정했는데 손질이 안 보인다");
+        assert.equal(show(s, b), "장검 +3", "감정했는데 두 자루째가 안 열렸다");
+    }
+
+    // ── **강화를 걸면 그 물건을 알게 된다** — 걸어 본 것의 속을 모른 채로 둘 수는 없다
+    {
+        const { s, hero, b } = armed(8005);
+        const scroll = addToPack(hero, makeItem("scroll", "enchant weapon", 8830, -1, -1))!;
+        s.known["scroll:enchant weapon"] = true; // 아는 주문서라야 대상을 고른다
+        perform(s, { t: "read", letter: scroll.letter!, target: b.letter! });
+        assert.ok(b.plusKnown, "강화를 걸었는데 그 물건을 여전히 모른다");
     }
 });
