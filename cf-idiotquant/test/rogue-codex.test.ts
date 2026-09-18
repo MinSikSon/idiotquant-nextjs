@@ -276,3 +276,26 @@ test("모든 방 사이의 통로는 최단 거리로 연결되며 고립된 방
         }
     }
 });
+
+// 도감은 **대의 수**를 적는다 — `0d0` 을 걸러 내면 안 된다.
+//
+// 아쿠에이터는 `damage` 가 `["0d0","0d0"]` 이다. 대가 둘이고 대마다 갑옷을 한 칸 녹이므로
+// **한 턴에 두 칸**이 녹는다. 그런데 도감이 `0d0` 을 걸러 버려서 「Dmg 없음」이라고 적었고,
+// 왜 두 칸이 녹는지가 **판 어디에도 안 적힌** 상태였다. 무엇을 하는 수법인지는 여전히
+// 당해 봐야 열린다(`special`) — 여기 거는 것은 **대가 몇 번인가**뿐이다.
+test("도감은 특수 공격도 대의 수로 적는다", async () => {
+    const { bestiaryRows } = await import("@/lib/rogue/game");
+    const { MONSTERS } = await import("@/lib/rogue/monsters");
+
+    // ── 표가 먼저다 — 아쿠에이터는 대가 둘이다
+    assert.deepEqual(MONSTERS.A.damage, ["0d0", "0d0"], "아쿠에이터의 대가 둘이 아니다 — 아래 주장이 뜻을 잃는다");
+
+    const rows = bestiaryRows({ A: 3, T: 2 }, { A: 1 });
+    const aquator = rows.find((r) => r.ch === "A")!;
+    const troll = rows.find((r) => r.ch === "T")!;
+
+    assert.equal(aquator.damage.length, 2, `아쿠에이터의 대가 ${aquator.damage.length} 개로 적힌다 — 두 칸이 녹는 까닭이 화면에 안 남는다`);
+    assert.deepEqual(aquator.damage, ["0d0", "0d0"], "특수 공격이 걸러졌다");
+    // 피해를 주는 놈은 지금까지처럼 주사위가 그대로 적힌다.
+    assert.deepEqual(troll.damage, MONSTERS.T.damage, "피해 주사위가 달라졌다");
+});
