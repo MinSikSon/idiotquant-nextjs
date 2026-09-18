@@ -29,6 +29,7 @@
 | localStorage 저장 · 빈 칸 채우기 · 도감 · 지난 판들 | `lib/rogue/storage.ts` |
 | 터졌을 때 빠져나갈 문 | `app/(game)/game/GameBoundary.tsx` |
 | 화면 | `app/(game)/game/{page,Rogue}.tsx` · `components/` |
+| 온라인 방 · 내보내기 (PeerJS) | `app/(game)/game/Rogue.tsx` (`hostRoom`·`joinRoom`·`kickGuest`) |
 | 방향판·명령 단추 (꾹 누르면 연타) | `app/(game)/game/components/TouchPad.tsx` |
 | 도감의 몬스터 얼굴 (그림 — 규칙 아님) | `app/(game)/game/monsterArt.ts` |
 | 밸런스 자 | `scripts/measure-rogue.mjs` |
@@ -187,6 +188,9 @@
   `heroDefense`). 화면이 따로 더하면 적힌 값과 굴리는 값이 갈린다.
 - 판을 바깥 눌러 닫는 조건은 **둘 다** 필요하다 — 누르기 **시작한** 자리도 바탕이어야
   하고(끌다 뗀 것), 누르는 순간이 아니라 **뗄 때** 닫는다(아래 단추로 새어 든다).
+- **동료 내보내기는 방을 안 닫는다.** 명부(`banned`)를 **자리 확인보다 먼저** 보고,
+  `bye` 와 `kick` 을 갈라 둔다 — 순서가 뒤집히거나 인사를 합치면 내보낸 사람이 곧바로
+  다시 들어온다(`test/rogue-online.test.ts`). 자세히는 「동료를 내보낸다」.
 - 기억된 지도에 **몬스터를 그리지 않는다.** 상태 줄은 **한 줄**로 묶는다(세로는 지도의 것).
 - **계속 서 있는 알림은 모서리 한 칸만 쓴다.** 끊김 안내는 우상단 `h-7 w-7` 단추
   하나이고 **본문은 눌러야** 펼쳐진다(`test/rogue-layout.test.ts` 가 둘 다 센다).
