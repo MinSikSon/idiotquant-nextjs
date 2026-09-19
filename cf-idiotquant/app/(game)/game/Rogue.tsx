@@ -387,9 +387,8 @@ export default function Rogue() {
     const [shake, setShake] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
     const lastStateRef = useRef<{
-        hp: number;
-        gold: number;
-        exp: number;
+        /** **사람마다** 든다 — 한 사람 것만 보면 동료가 맞아도 낫아도 화면이 가만히 있다. */
+        heroes: { hp: number; gold: number; exp: number }[];
         depth: number;
         turn: number;
         messagesLen: number;
@@ -445,9 +444,7 @@ export default function Rogue() {
         if (!state) return;
         const prev = lastStateRef.current;
         const curr = {
-            hp: state.heroes[0].hp,
-            gold: state.heroes[0].gold,
-            exp: state.heroes[0].exp,
+            heroes: state.heroes.map((h) => ({ hp: h.hp, gold: h.gold, exp: h.exp })),
             depth: state.level.depth,
             turn: state.turn,
             messagesLen: state.messages.length,
@@ -499,28 +496,39 @@ export default function Rogue() {
             }
         }
 
-        // 4. 영웅 체력 변동 (피격 / 치유 - 내 캐릭터 칸 플래시)
-        const hpDiff = curr.hp - prev.hp;
-        const heroKey = `${state.heroes[0].x},${state.heroes[0].y}`;
-        if (hpDiff < 0) {
-            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.heroes[0].maxHp * 0.3));
-            if (hasCritMsg) {
-                // 영웅 치명타 피격: 황금+적색 경고
-                flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
-                triggerShake = true;
-            } else {
-                // 영웅 일반 피격: 붉은색 플래시
-                flashes[heroKey] = { ink: "var(--rg-trap)" };
-                if (isHeavyHit) triggerShake = true;
+        // 4. 영웅 체력 변동 (피격 / 치유 — 그 사람 칸 플래시)
+        //
+        // **사람마다 본다.** 예전에는 `heroes[0]` 하나만 봤고, 그래서 협동에서 **동료가
+        // 맞아도 나아도 화면이 가만히 있었다** — 2P 쪽에서는 무슨 일이 난 건지 기록 줄을
+        // 읽어야만 알 수 있었다. 흔드는 것(`shake`)은 화면 전체의 것이라 누구의 일이든 한 번이다.
+        for (let i = 0; i < state.heroes.length; i++) {
+            const h = state.heroes[i];
+            const was = prev.heroes[i];
+            if (!was || h.x < 0) continue;
+            const hpDiff = h.hp - was.hp;
+            const heroKey = `${h.x},${h.y}`;
+            if (hpDiff < 0) {
+                const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(h.maxHp * 0.3));
+                if (hasCritMsg) {
+                    // 영웅 치명타 피격: 황금+적색 경고
+                    flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
+                    triggerShake = true;
+                } else {
+                    // 영웅 일반 피격: 붉은색 플래시
+                    flashes[heroKey] = { ink: "var(--rg-trap)" };
+                    if (isHeavyHit) triggerShake = true;
+                }
+            } else if (hpDiff > 0 && prev.depth === curr.depth) {
+                // 영웅 치유: 녹색 플래시
+                flashes[heroKey] = { ink: "var(--rg-ring)", bg: "rgba(34, 197, 94, 0.2)" };
             }
-        } else if (hpDiff > 0 && prev.depth === curr.depth) {
-            // 영웅 치유: 녹색 플래시
-            flashes[heroKey] = { ink: "var(--rg-ring)", bg: "rgba(34, 197, 94, 0.2)" };
         }
 
         if (hasPhoenixMsg) {
             triggerShake = true;
-            flashes[heroKey] = { ink: "var(--rg-trap)", bg: "rgba(239, 68, 68, 0.35)" };
+            // 깃털은 **살아난 사람** 칸에서 탄다 — 그 턴에 체력이 최대로 찬 사람이다.
+            const rose = state.heroes.find((h, i) => (prev.heroes[i]?.hp ?? 1) <= 0 && h.hp > 0) ?? state.heroes[0];
+            flashes[`${rose.x},${rose.y}`] = { ink: "var(--rg-trap)", bg: "rgba(239, 68, 68, 0.35)" };
         }
 
         if (Object.keys(flashes).length > 0) {

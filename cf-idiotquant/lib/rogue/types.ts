@@ -124,6 +124,13 @@ export interface Monster {
     champion?: ChampionPrefix;
     /** 화상 지속 턴수 */
     burnTurns?: number;
+    /**
+     * **불을 붙인 사람**의 자리(`heroes` 의 칸 번호).
+     *
+     * 화상으로 죽는 자리(`finishTurn`)에는 때린 사람이 없다 — 그 턴에 움직인 사람이
+     * 불을 붙인 사람이라는 보장도 없다. 이 칸이 없으면 **경험치가 늘 방장에게** 간다.
+     */
+    burnBy?: number;
     /** 동결 지속 턴수 */
     frozenTurns?: number;
     /**

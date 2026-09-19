@@ -407,6 +407,8 @@ function swing(
     // ── 무기 보석 소켓 효과 — **휘두른 그 칼의 보석**이다 ──
     if (weapon?.socketGem === "ruby") {
         m.burnTurns = 3;
+        // **불을 붙인 사람을 적어 둔다** — 화상으로 죽을 때 경험치가 갈 자리다.
+        m.burnBy = state.heroes.indexOf(hero);
         messages.push(`루비의 화염이 ${mName}에게 옮겨붙었다! (화상 3턴)`);
     } else if (weapon?.socketGem === "sapphire") {
         if (rng.rnd(100) < 25) {

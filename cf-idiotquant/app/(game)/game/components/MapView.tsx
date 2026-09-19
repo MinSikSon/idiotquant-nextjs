@@ -100,6 +100,7 @@ const LEADING = 1.32;
 function NickTag({ nick, ink, bg, cell, left, top }: {
     nick: string;
     ink: string;
+    /** `background` 로 그대로 쓴다 — 번쩍임은 **반투명이라 겹쳐 깔아야** 밑의 `@` 가 안 비친다. */
     bg?: string;
     cell: { w: number; h: number };
     left: number;
@@ -113,7 +114,7 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
         <span
             aria-hidden
             className="pointer-events-none absolute overflow-hidden"
-            style={{ left, top, width: cell.w, height: cell.h, backgroundColor: bg }}
+            style={{ left, top, width: cell.w, height: cell.h, background: bg }}
         >
             <span
                 className="absolute top-1/2 left-0 text-center font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
@@ -282,12 +283,20 @@ export default function MapView({
                     const cx = h.x - ox;
                     const cy = h.y - oy;
                     if (cx < 0 || cy < 0 || cx >= view.cols || cy >= view.rows) return null;
+                    // **번쩍임이 이름표를 이긴다.** 이름표가 그 칸을 통째로 덮으므로, 아래
+                    // `<pre>` 에 칠한 피격·치유 색이 이름표 뒤로 숨는다 — 이름을 지은 사람만
+                    // 맞아도 나아도 화면이 가만히 있게 된다.
+                    //
+                    // 번쩍임의 바닥색은 **반투명**이라 그대로 깔면 밑의 `@` 가 이름표 글자와
+                    // 겹쳐 비친다. 제 바닥색 **위에 겹쳐** 깐다.
+                    const flash = cellFlashes[`${h.x},${h.y}`];
+                    const base = PARTY_BG[i] ?? "var(--rg-bg)";
                     return (
                         <NickTag
                             key={i}
                             nick={h.nick}
-                            ink={PARTY_INK[i] ?? INK[i === who ? "hero" : "ally"]}
-                            bg={PARTY_BG[i]}
+                            ink={flash?.ink ?? PARTY_INK[i] ?? INK[i === who ? "hero" : "ally"]}
+                            bg={flash?.bg ? `linear-gradient(${flash.bg}, ${flash.bg}), ${base}` : base}
                             cell={cell}
                             left={cx * cell.w}
                             top={cy * cell.h}
