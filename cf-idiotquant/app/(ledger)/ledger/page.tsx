@@ -14,9 +14,10 @@ import {
     reqReorderLedgerEntries,
     reqGetLedgerCategories, reqAddLedgerCategory, reqRenameLedgerCategory, reqDeleteLedgerCategory,
     setActiveOwner, clearLedgerInvite, reqGetLedgerAccess, reqCreateLedgerInvite,
+    reqGetLedgerBalances, reqPutLedgerBalance, reqDeleteLedgerBalance,
     selectLedgerMonth, selectLedgerEntries, selectLedgerState, selectLedgerCategories,
     selectActiveOwner, selectLedgerAccess, selectLedgerMembers, selectLedgerInviteToken,
-    selectLedgerMutating, selectLedgerError,
+    selectLedgerMutating, selectLedgerError, selectLedgerBalances,
     currentMonthKst,
 } from "@/lib/features/ledger/ledgerSlice";
 import {
@@ -24,6 +25,7 @@ import {
     type LedgerKind, type StoredCategory,
 } from "@/lib/features/ledger/categories";
 import { useEntryDrag } from "./useEntryDrag";
+import { BalancePanel } from "./BalancePanel";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
 const CTL_CLS =
@@ -125,6 +127,7 @@ export default function LedgerPage() {
     const inviteToken = useAppSelector(selectLedgerInviteToken);
     const mutating = useAppSelector(selectLedgerMutating);
     const error = useAppSelector(selectLedgerError);
+    const balances = useAppSelector(selectLedgerBalances);
 
     const [barKind, setBarKind] = useState<LedgerKind>("income");
     const [calendarOpen, setCalendarOpen] = useState(false);
@@ -169,6 +172,9 @@ export default function LedgerPage() {
     useEffect(() => {
         if (status !== "authenticated") return;
         dispatch(reqGetLedger(month));
+        // 잔액은 **여러 달을 한 번에** 읽는다 — 달별 증감을 그리려면 이웃한 달이
+        // 같이 있어야 한다. 그래서 달을 옮기면 구간만 밀린다.
+        dispatch(reqGetLedgerBalances(month));
     }, [dispatch, status, month, activeOwner]);
 
     // 항목은 월과 무관하지만 가계부마다 다르다 — 가계부가 바뀌면 다시 가져온다.
@@ -761,7 +767,19 @@ export default function LedgerPage() {
                     </div>
                 </section>
 
-                {/* ④ 기입 — 데스크톱은 흐름 안의 버튼, 모바일은 아래 고정 FAB */}
+                {/* ④ 자산·부채 — 위까지가 **흐름**(이 달 들어오고 나간 돈)이고
+                    여기서부터가 **잔고**(달이 끝난 시점에 가진 것과 갚을 것)다.
+                    흐름을 아무리 더해도 잔고가 안 나오므로 따로 적는다. */}
+                <BalancePanel
+                    month={month}
+                    balances={balances}
+                    mutating={mutating}
+                    onSave={(assets, liabilities) =>
+                        dispatch(reqPutLedgerBalance({ month, assets, liabilities }))}
+                    onClear={() => dispatch(reqDeleteLedgerBalance(month))}
+                />
+
+                {/* ⑤ 기입 — 데스크톱은 흐름 안의 버튼, 모바일은 아래 고정 FAB */}
                 <button
                     type="button"
                     onClick={() => openAdd()}
@@ -771,7 +789,7 @@ export default function LedgerPage() {
                     기입하기
                 </button>
 
-                {/* ⑤ 내역 */}
+                {/* ⑥ 내역 */}
                 <section className={cn(CARD_CLS, "overflow-hidden")}>
                     <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
                         <h2 className={FIELD_LABEL_CLS}>내역</h2>
