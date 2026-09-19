@@ -186,11 +186,15 @@ function Msg({ text }: { text: string }) {
  * 직업 표 — **지도의 물건 글자를 그 물건 색으로** 세운다(`]` 갑옷 · `)` 무기 · `!` 물약 ·
  * `?` 주문서). 이름과 표를 여러 화면이 함께 쓰므로 한 자리에서 그린다.
  */
-function OriginTag({ origin, title = false }: { origin?: HeroOrigin; title?: boolean }) {
+function OriginTag({ origin, nick, title = false }: { origin?: HeroOrigin; nick?: string; title?: boolean }) {
     const o = ORIGINS[origin ?? "knight"];
     if (!o) return null;
     return (
         <>
+            {/* **이름이 있으면 직업 앞에 선다.** 직업만 적힌 화면에서는 「누구의 근위대인가」가
+                안 보인다 — 지도·상태 줄에서 이름으로 찾아 놓고 여기서 못 찾으면 헛걸음이다.
+                혼자 한 판에는 이름이 없어 이 자리가 통째로 빈다(예전 그대로). */}
+            {nick && <span className="font-bold">{nick} · </span>}
             <span className="font-[family-name:var(--font-plex-mono)] font-bold" style={{ color: o.iconInk }}>
                 {o.icon}
             </span>{" "}
@@ -2238,8 +2242,7 @@ export default function Rogue() {
                             조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. */}
                         {originFor.t === "guest" && hostOrigin && (
                             <p className="rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-2 py-1" style={{ color: PARTY_INK[0] }}>
-                                방장은 {hostNick && <span className="font-bold">{hostNick} · </span>}
-                                <span className="font-bold"><OriginTag origin={hostOrigin} title /></span> 입니다.
+                                방장은 <span className="font-bold"><OriginTag origin={hostOrigin} nick={hostNick} title /></span> 입니다.
                             </p>
                         )}
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -2433,7 +2436,7 @@ export default function Rogue() {
                                         <h4 className="text-xs font-bold text-[var(--rg-label)]">Stats</h4>
                                         {selectedTomb.hero.origin && (
                                             <span className="text-xs font-bold text-[var(--rg-strong)]">
-                                                <OriginTag origin={selectedTomb.hero.origin} title />
+                                                <OriginTag origin={selectedTomb.hero.origin} nick={selectedTomb.hero.nick} title />
                                             </span>
                                         )}
                                     </div>
@@ -2608,7 +2611,7 @@ export default function Rogue() {
                                             <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--rg-muted)]">
                                                 {t.hero?.origin && (
                                                     <>
-                                                        <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={t.hero.origin} /></span>
+                                                        <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={t.hero.origin} nick={t.hero.nick} /></span>
                                                         <span>·</span>
                                                     </>
                                                 )}
@@ -2710,7 +2713,7 @@ export default function Rogue() {
                 >
                     <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
                     <dl className="grid grid-cols-[6em_1fr] gap-y-1 text-[var(--rg-muted)]">
-                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} title /></dd>
+                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} nick={hero.nick} title /></dd>
                         <dt>Level</dt><dd>지하 {state.deepest}층</dd>
                         <dt>Exp</dt><dd>{hero.level}/{hero.exp}</dd>
                         <dt>Hp</dt><dd>{hero.hp}({hero.maxHp})</dd>
