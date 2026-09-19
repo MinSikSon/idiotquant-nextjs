@@ -617,13 +617,48 @@ function besideFree(state: GameState, at: Pos, rng: Rng): Pos {
     return beside ?? freeSpot(state.level, rng, state.heroes);
 }
 
-export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameState {
+/** 지도 한 칸에 2×2 로 앉힐 수 있는 글자 수. */
+export const NICK_MAX = 4;
+
+/**
+ * 지도에 적을 **이름 넉 자**로 다듬는다 — 길이·글자·대소문자를 **여기 한 자리**에서 정한다.
+ *
+ * 남이 보낸 값이 그대로 화면에 그려지는 자리다(온라인의 `hello`). 흘려보내면 한 칸에
+ * 열 글자짜리가 들어와 지도를 덮거나, 줄바꿈 하나로 칸이 두 줄이 된다.
+ *
+ *   · **영문·숫자만** — 한글은 고정폭 한 칸에 두 배 폭이라 격자가 밀린다.
+ *   · **넉 자까지** — 2×2 로 그리는 자리라 그 이상은 그릴 데가 없다.
+ *   · **대문자로** — 소문자는 8.58px 에서 `a`·`o`·`e` 가 서로 안 갈린다(재 봤다).
+ *
+ * 남는 것이 없으면 `undefined` — 이름표를 안 달고 `@` 그대로 간다.
+ */
+export function cleanNick(raw: unknown): string | undefined {
+    if (typeof raw !== "string") return undefined;
+    const s = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, NICK_MAX);
+    return s || undefined;
+}
+
+/** 그 사람의 이름을 놓는다 — **판을 안 굴린다**(턴도 난수도 안 쓴다). */
+export function setNick(state: GameState, who: number, nick: string | undefined): GameState {
+    const hero = state.heroes[who];
+    if (!hero) return state;
+    const clean = cleanNick(nick);
+    if (clean) hero.nick = clean;
+    else delete hero.nick;
+    return { ...state };
+}
+
+export function joinGame(state: GameState, origin: HeroOrigin = "knight", nick?: string): GameState {
     const rng = rngOf(state);
     const host = state.heroes[0];
     // **이 판에서 보냈던 동료가 있으면 그 사람이 돌아온다** — 고른 직업은 안 쓴다.
     const back = state.benched;
     delete state.benched;
     const guest = back ?? makePartyHero(state, rng, origin);
+    // **이름은 돌아온 동료도 새로 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이다.
+    const clean = cleanNick(nick);
+    if (clean) guest.nick = clean;
+    else delete guest.nick;
 
     const at = besideFree(state, host, rng);
     guest.x = at.x;

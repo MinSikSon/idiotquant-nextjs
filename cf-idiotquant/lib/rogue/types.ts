@@ -264,6 +264,13 @@ export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
 export interface Hero {
     origin?: HeroOrigin;
+    /**
+     * 온라인에서 지도에 적는 **이름 넉 자.** 없으면 `@` 그대로다.
+     *
+     * 규칙이 아니라 **보이는 값**이다 — 판에 두는 까닭은 하나, 상대에게 건너가야 하기
+     * 때문이다(판을 통째로 보낸다). 길이와 글자는 `cleanNick` 한 자리에서 다듬는다.
+     */
+    nick?: string;
     guarded?: boolean;
     x: number;
     y: number;

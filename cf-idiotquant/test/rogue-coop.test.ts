@@ -580,6 +580,59 @@ test("한 명만 계단을 눌러도 파티가 함께 옮긴다", () => {
     assert.equal(Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), 1, "동료가 같이 안 왔다");
 });
 
+// 이름은 **온라인에서 남이 보내 오는 값**이고, 받는 쪽은 그것을 지도 한 칸에 그대로 그린다.
+// 그래서 다듬는 자리(`cleanNick`)가 **하나여야** 하고, 보내는 쪽이 아니라 **받는 쪽**에 있어야
+// 한다 — 보내는 쪽에만 두면 고친 화면이 안 고친 화면에게 아무 문자열이나 먹일 수 있다.
+test("지도에 적는 이름은 넉 자 영문·숫자로 다듬는다", async () => {
+    const { cleanNick, setNick, NICK_MAX } = await import("@/lib/rogue/game");
+
+    // ── 길이·글자·대소문자
+    {
+        assert.equal(NICK_MAX, 4, "2×2 로 그리는 자리라 넉 자다");
+        assert.equal(cleanNick("mson"), "MSON", "소문자를 안 올린다 — 8.58px 에서 a·o·e 가 안 갈린다");
+        assert.equal(cleanNick("MinSikSon"), "MINS", "넉 자를 넘겨 받는다 — 한 칸에 그릴 데가 없다");
+        assert.equal(cleanNick("m s"), "MS", "빈칸이 남았다");
+        assert.equal(cleanNick("김민식"), undefined, "한글을 받는다 — 두 배 폭이라 격자가 밀린다");
+        assert.equal(cleanNick("a\nb"), "AB", "줄바꿈이 남았다 — 한 칸이 두 줄이 된다");
+        assert.equal(cleanNick("!!!"), undefined, "쓸 글자가 없으면 이름이 없는 것이다");
+        assert.equal(cleanNick(""), undefined, "빈 문자열이 이름이 되었다");
+        assert.equal(cleanNick(undefined), undefined, "없는 값이 이름이 되었다");
+        assert.equal(cleanNick(42), undefined, "문자열이 아닌 것이 이름이 되었다");
+        for (const s of ["MSON", "A1", "9999"]) assert.equal(cleanNick(s), s, `${s} 가 바뀌었다`);
+    }
+
+    // ── 놓는 자리도 같은 자를 쓴다 — 그리고 **판을 안 굴린다**
+    {
+        const s = withGuest(4501);
+        const t0 = s.turn;
+        const rng0 = s.rngState;
+        const after = setNick(s, 1, "minsikson");
+        assert.equal(after.heroes[1].nick, "MINS", "놓을 때는 안 다듬는다 — 자가 두 벌이 됐다");
+        assert.equal(after.turn, t0, "이름을 놓았다고 턴이 갔다");
+        assert.equal(after.rngState, rng0, "이름을 놓았다고 난수가 굴렀다");
+
+        // 쓸 수 없는 이름은 **칸째 지운다** — 빈 칸도 칸이라 저장이 달라진다.
+        const gone = setNick(after, 1, "!!!");
+        assert.ok(!("nick" in gone.heroes[1]), "쓸 수 없는 이름이 빈 칸으로 남았다");
+    }
+
+    // ── 합류할 때 받는 이름도 같은 자를 지난다
+    {
+        const s = joinGame(newGame(4502), "rogue", "kim c");
+        assert.equal(s.heroes[1].nick, "KIMC", "합류하면서 받은 이름이 안 다듬어졌다");
+    }
+
+    // ── **되읽을 때도 다시 다듬는다** — 온라인은 남의 판이 이 길로 들어온다
+    {
+        const { serialize, deserialize } = await import("@/lib/rogue/storage");
+        const s = joinGame(newGame(4503), "rogue");
+        // 남이 보낸 판인 셈 치고 규칙 밖의 값을 박아 둔다.
+        s.heroes[1].nick = "한글이름아주긴것";
+        const back = deserialize(serialize(s))!;
+        assert.ok(!back.heroes[1].nick, "남이 보낸 아무 문자열이 그대로 지도에 그려진다");
+    }
+});
+
 test("동료는 제 출신(직업)으로 합류한다", () => {
     const s = joinGame(newGame(4409), "rogue");
     assert.equal(s.heroes[1].origin, "rogue");
