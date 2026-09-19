@@ -633,43 +633,109 @@ test("지도에 적는 이름은 넉 자 영문·숫자로 다듬는다", async 
     }
 });
 
-// **잡은 사람이 경험치를 받는다.**
+// **경험치는 잡은 사람의 것이되, 곁에 선 동료와 나눈다.**
 //
 // `killMonster` 가 `state.heroes[0]` 를 들고 있었다 — 어그로도 수법도 사람마다 갈라 놓고,
 // 정작 **경험치·무기 통달·미다스 건틀릿**은 늘 방장을 봤다. 손님이 혼자 스무 마리를 잡아도
 // 레벨이 안 올랐고, 그 까닭이 판 어디에도 안 적힌다.
-test("잡은 사람이 경험치를 받는다 — 방장이 아니다", async () => {
+//
+// 나누는 자리는 `monsterSees` 하나를 본다 — 「같은 방인가」를 따로 세지 않는다.
+// **총량은 안 늘어난다**: 같이 있다고 판이 두 배로 후해지면 동료를 부르는 것이 곧
+// 경험치 두 배가 된다.
+test("경험치는 잡은 사람의 것이되 곁에 선 동료와 나눈다", async () => {
     const { equippedWeapon } = await import("@/lib/rogue/hero");
 
-    /** 손님 옆에 한 대면 죽을 놈을 붙여 세운다. 방장은 그 자리에 없다. */
-    const beside = (seed: number) => {
+    /**
+     * 손님 옆에 한 대면 죽을 놈을 붙여 세운다.
+     *
+     * `far` 면 방장을 **멀찍이** 보낸다 — 「잡은 사람만 받는가」를 재려면 방장이 그 자리를
+     * 알아보면 안 된다(`monsterSees`). 아니면 바로 곁에 세운다(나눠 갖는 쪽).
+     */
+    const beside = (seed: number, far: boolean, ch = "E") => {
         const s = withGuest(seed);
         const [host, guest] = s.heroes;
-        // 방장을 옆으로 비켜 세운다 — 손님이 때리는 것이 분명해야 한다.
-        host.x = guest.x;
-        host.y = guest.y + 1;
-        s.level.tiles[idx(guest.x, guest.y + 1)] = T.FLOOR;
+        // 배수는 안 걸리게 — 재려는 것은 나누기지 곱하기가 아니다.
+        s.level.mutator = null;
+        if (far) {
+            for (let y = 1; y < 20 && Math.abs(host.x - guest.x) + Math.abs(host.y - guest.y) < 14; y++) {
+                for (let x = 1; x < 70; x++) {
+                    if (!walkable(s.level.tiles[idx(x, y)] as Tile)) continue;
+                    if (Math.abs(x - guest.x) + Math.abs(y - guest.y) < 14) continue;
+                    host.x = x;
+                    host.y = y;
+                    break;
+                }
+            }
+        } else {
+            host.x = guest.x;
+            host.y = guest.y + 1;
+            s.level.tiles[idx(guest.x, guest.y + 1)] = T.FLOOR;
+        }
         const mx = guest.x + 1;
         s.level.tiles[idx(mx, guest.y)] = T.FLOOR;
-        const m = spawnMonster("E", mx, guest.y, new Rng(seed));
+        const m = spawnMonster(ch, mx, guest.y, new Rng(seed));
         m.hp = 1;
         m.awake = true;
+        m.champion = undefined;
         s.level.monsters = [m];
         return { s, host, guest, m };
     };
 
-    // ── 손님이 때려 잡으면 **손님의** 경험치가 오른다
+    // ── **멀리 있는 방장은 못 받는다** — 잡은 사람이 통째로 갖는다
     {
         let killed = false;
         for (let n = 0; n < 60 && !killed; n++) {
-            const { s, host, guest } = beside(4801 + n);
+            const { s, host, guest, m } = beside(4801 + n, true);
+            const exp = m.def.exp;
             const hostExp = host.exp;
             const guestExp = guest.exp;
             perform(s, { t: "move", dx: 1, dy: 0, who: 1 });
             if (s.level.monsters.length > 0) continue; // 빗나갔다 — 다음 씨앗
             killed = true;
-            assert.ok(guest.exp > guestExp, `손님이 잡았는데 손님의 경험치가 그대로다 (${guestExp} → ${guest.exp})`);
-            assert.equal(host.exp, hostExp, "손님이 잡았는데 방장의 경험치가 올랐다");
+            assert.equal(guest.exp - guestExp, exp, "멀리 떨어진 동료가 있는데 몫이 깎였다");
+            assert.equal(host.exp, hostExp, "그 자리를 보지도 못한 방장이 경험치를 받았다");
+        }
+        assert.ok(killed, "예순 번을 붙였는데 손님이 한 마리도 못 잡았다");
+    }
+
+    // ── **곁에 서 있으면 나눠 갖는다** — 총량은 그대로, 나머지는 잡은 사람 몫
+    {
+        let killed = false;
+        for (let n = 0; n < 60 && !killed; n++) {
+            // 홉고블린은 경험치가 **3** 이라 홀수다 — 짝수면 「나머지는 잡은 사람에게」가
+            // 아무것도 안 가린다(되돌려 보고 알았다).
+            const { s, host, guest, m } = beside(4701 + n, false, "H");
+            const exp = m.def.exp;
+            assert.equal(exp % 2, 1, "나머지를 재려면 홀수여야 한다 — 표가 바뀌었다");
+            const hostExp = host.exp;
+            const guestExp = guest.exp;
+            perform(s, { t: "move", dx: 1, dy: 0, who: 1 });
+            if (s.level.monsters.length > 0) continue;
+            killed = true;
+            const toGuest = guest.exp - guestExp;
+            const toHost = host.exp - hostExp;
+            assert.ok(toHost > 0, `곁에 선 방장이 한 톨도 못 받았다 (${exp} 중 손님 ${toGuest} · 방장 ${toHost})`);
+            assert.ok(toGuest > 0, "잡은 손님이 한 톨도 못 받았다");
+            assert.equal(toGuest + toHost, exp, "나눠 준 합이 그 놈의 경험치와 다르다 — 총량이 늘거나 샜다");
+            assert.equal(toGuest, Math.ceil(exp / 2), "나머지가 잡은 사람에게 안 갔다");
+        }
+        assert.ok(killed, "예순 번을 붙였는데 손님이 한 마리도 못 잡았다");
+    }
+
+    // ── **쓰러진 동료는 못 받는다** — 누워서 크면 「층을 넘어야 일어난다」가 무게를 잃는다
+    {
+        let killed = false;
+        for (let n = 0; n < 60 && !killed; n++) {
+            const { s, host, guest, m } = beside(4751 + n, false);
+            const exp = m.def.exp;
+            host.hp = 0;
+            const hostExp = host.exp;
+            const guestExp = guest.exp;
+            perform(s, { t: "move", dx: 1, dy: 0, who: 1 });
+            if (s.level.monsters.length > 0) continue;
+            killed = true;
+            assert.equal(host.exp, hostExp, "쓰러진 동료가 누운 채로 경험치를 받았다");
+            assert.equal(guest.exp - guestExp, exp, "동료가 쓰러졌는데 그 몫이 사라졌다");
         }
         assert.ok(killed, "예순 번을 붙였는데 손님이 한 마리도 못 잡았다");
     }
@@ -701,7 +767,7 @@ test("잡은 사람이 경험치를 받는다 — 방장이 아니다", async ()
     {
         let killed = false;
         for (let n = 0; n < 60 && !killed; n++) {
-            const { s, host, guest } = beside(4851 + n);
+            const { s, host, guest } = beside(4851 + n, true);
             const mine = makeItem("weapon", "knight sword", 990, -1, -1);
             addToPack(guest, mine);
             guest.weaponId = mine.id;
@@ -722,9 +788,21 @@ test("잡은 사람이 경험치를 받는다 — 방장이 아니다", async ()
     }
 
     // ── **화상으로 죽으면 불을 붙인 사람**의 몫이다 — 그 턴에 움직인 사람이 아니다
+    //
+    // 방장을 멀찍이 보낸다 — 곁에 두면 나눠 갖는 규칙에 걸려 「누구의 몫인가」가 안 갈린다.
     {
         const s = withGuest(4950);
         const [host, guest] = s.heroes;
+        s.level.mutator = null;
+        for (let y = 1; y < 20 && Math.abs(host.x - guest.x) + Math.abs(host.y - guest.y) < 14; y++) {
+            for (let x = 1; x < 70; x++) {
+                if (!walkable(s.level.tiles[idx(x, y)] as Tile)) continue;
+                if (Math.abs(x - guest.x) + Math.abs(y - guest.y) < 14) continue;
+                host.x = x;
+                host.y = y;
+                break;
+            }
+        }
         const mx = guest.x + 2;
         s.level.tiles[idx(mx, guest.y)] = T.FLOOR;
         const m = spawnMonster("E", mx, guest.y, new Rng(7));
