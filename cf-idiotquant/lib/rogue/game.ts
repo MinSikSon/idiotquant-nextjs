@@ -831,6 +831,41 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
             say(state, "몸이 놀랄 만큼 가볍다.");
             break;
         }
+        /**
+         * 소생 — **곁에 쓰러진 동료를 일으킨다.**
+         *
+         * 쓰러진 사람을 되살리는 길이 여태 둘뿐이었다: **층을 넘거나**(살아남은 사람이
+         * 계단까지 가야 한다), 불사조의 깃털(제 몸에만 듣는다). 둘 다 **곁에 가서 살리는**
+         * 길은 아니라, 동료가 눈앞에 누워 있는데 할 수 있는 것이 없었다.
+         *
+         * **곁(옆 칸)이어야 한다** — 건네기와 같은 거리다. 멀리서 살리면 위험을 무릅쓰고
+         * 다가가는 일이 사라진다. 일으키는 것은 **최대 체력의 절반** — 층을 넘어 일어나는
+         * 1/4 보다 후하다(물약 한 병을 썼으니).
+         *
+         * 곁에 쓰러진 사람이 없으면 **제 몸을 가득** 채운다. 혼자 하는 판에서 빈 칸이
+         * 되지 않게 하는 자리다 — 협동에서만 듣는 물건은 혼자인 사람에게 함정이다.
+         */
+        case "revival": {
+            const fallen = state.heroes.find(
+                (h) => h !== hero && h.hp <= 0 && Math.max(Math.abs(h.x - hero.x), Math.abs(h.y - hero.y)) <= 1,
+            );
+            if (fallen) {
+                fallen.hp = Math.max(1, Math.floor(fallen.maxHp / 2));
+                fallen.food = Math.max(fallen.food, REVIVE_FOOD);
+                fallen.burnTurns = 0;
+                fallen.asleep = 0;
+                fallen.confused = 0;
+                fallen.blind = 0;
+                // 굶어 쓰러졌다면 그 비문은 일어난 사람의 것이 아니다(`enterLevel` 과 같은 자리).
+                state.epitaph = "";
+                say(state, `${heroLabel(state, fallen)}이(가) 숨을 되찾고 일어났다!`);
+                break;
+            }
+            hero.hp = hero.maxHp;
+            hero.blind = 0;
+            say(state, "곁에 일으킬 사람이 없다 — 대신 내 몸이 가득 찬다.");
+            break;
+        }
         case "strength":
             hero.str = Math.min(31, hero.str + 1);
             hero.maxStr = Math.max(hero.maxStr, hero.str);

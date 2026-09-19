@@ -337,3 +337,42 @@ test("쓰러지면 동료의 눈을 빌린다 — 조종은 안 옮긴다", () =
         assert.match(s, /disabled=\{h\.hp <= 0 \|\| \(!!online && !iAmDown\)\}/, "쓰러지지도 않았는데 시점을 옮길 수 있다");
     }
 });
+
+// 몬스터 칸에는 **바닥색**이 깔린다.
+//
+// 글자판은 `E`(에뮤)와 `!`(물약)와 `-`(벽)이 모두 같은 바탕 위에 앉아 있어, 방에 들어선
+// 순간 "무엇이 나를 노리는가" 를 글자 모양 하나로 골라내야 했다. 바닥을 칠하면 그 셋이
+// 한눈에 갈린다.
+//
+// 다만 바닥은 **이미 셋이 다툰다** — 번쩍임(맞음·나음), 파티 색(영웅), 몬스터. 순서가
+// 뒤집히면 맞는 순간의 붉은 번쩍임이 몬스터 바닥에 먹혀 **화면이 아무 일도 없었던 것처럼
+// 보인다.** 눈으로는 한 프레임이라 못 잡으니 순서를 글자로 건다.
+test("몬스터 칸은 바닥색으로 갈리고, 번쩍임이 그 위에 온다", () => {
+    const s = read("app/(game)/game/components/MapView.tsx");
+
+    // ── ① 바닥을 고르는 순서: 번쩍임 > 파티 > 몬스터
+    {
+        assert.match(
+            s,
+            /const bg = flash\?\.bg \?\? PARTY_BG\[p\] \?\? monsterBg\(/,
+            "바닥색 우선순위가 어긋났다 — 번쩍임이나 파티 색이 몬스터 바닥에 먹힌다",
+        );
+    }
+
+    // ── ② 본 놈과 **느낀 놈**의 바닥이 다르다 — 잉크를 가른 것과 같은 까닭이다
+    {
+        const at = s.indexOf("function monsterBg");
+        assert.ok(at > 0, "몬스터 바닥을 고르는 자리가 없다");
+        const body = s.slice(at, s.indexOf("\n}", at));
+        assert.match(body, /monster-sensed[^]*--rg-monster-sensed-bg/, "벽 너머로 느낀 놈이 눈앞의 놈과 같은 바닥을 쓴다");
+        assert.match(body, /--rg-monster-bg/, "본 놈의 바닥이 없다");
+    }
+
+    // ── ③ 챔피언도 몬스터다 — `champion-` 으로 갈라 두었으므로 빠지기 쉽다
+    {
+        const at = s.indexOf("function isMonsterKind");
+        assert.ok(at > 0, "몬스터를 가리는 자리가 없다");
+        const body = s.slice(at, s.indexOf("\n}", at));
+        assert.match(body, /startsWith\("champion-"\)/, "챔피언 칸만 바닥이 안 깔린다");
+    }
+});

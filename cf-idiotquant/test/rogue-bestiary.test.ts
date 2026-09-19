@@ -182,6 +182,56 @@ function suffer(s: GameState, ch: string, tries = 400): GameState | null {
     return null;
 }
 
+// 아쿠에이터는 **갑옷의 손질을 0 아래로는 못 녹인다.**
+//
+// 바닥이 없던 때에는 한 마리에게 오래 붙들리면 `+0` 판금이 `−7` 짜리가 되어 **안 입느니만
+// 못한 갑옷**이 되었다. 그러면 「벗을까」가 아니라 「이 판은 끝났다」가 되고, 되돌릴 길은
+// 강화 주문서뿐이다. 깎을 것이 남았을 때만 녹는다.
+test("아쿠에이터는 갑옷을 0 아래로 못 녹인다", async () => {
+    const { equippedArmor } = await import("@/lib/rogue/hero");
+
+    // ── 녹을 것이 있으면 녹는다 (수법 자체는 살아 있어야 한다)
+    {
+        let melted = false;
+        for (let n = 0; n < 20 && !melted; n++) {
+            const s = newGame(3300 + n);
+            const armor = equippedArmor(s.heroes[0]);
+            if (!armor) continue;
+            armor.plusArmor = 2;
+            const m = placeNextTo(s, "A", 500);
+            m.awake = true;
+            const after = suffer(s, "A");
+            if (!after) continue;
+            melted = (equippedArmor(after.heroes[0])?.plusArmor ?? 2) < 2;
+        }
+        assert.ok(melted, "스무 판을 붙였는데 아쿠에이터가 한 번도 안 녹였다 — 수법이 죽었다");
+    }
+
+    // ── **0 에서는 더 안 녹는다** — 오래 붙들려도 마이너스로 안 내려간다
+    {
+        const s = newGame(3401);
+        const armor = equippedArmor(s.heroes[0]);
+        assert.ok(armor, "처음 판에 갑옷이 없다");
+        armor!.plusArmor = 0;
+        const m = placeNextTo(s, "A", 9999);
+        m.awake = true;
+        // 아쿠에이터는 피해를 안 주므로(`0d0`) 오래 붙어 있어도 안 죽는다.
+        let now = s;
+        for (let i = 0; i < 300; i++) {
+            now = perform(now, { t: "rest" });
+            if (now.phase !== "playing") break;
+            assert.ok(
+                (equippedArmor(now.heroes[0])?.plusArmor ?? 0) >= 0,
+                `${i}턴째에 갑옷이 0 아래로 녹았다 (${equippedArmor(now.heroes[0])?.plusArmor})`,
+            );
+        }
+        assert.ok(
+            now.messages.some((t) => t.includes("더 녹을 것이 없다")),
+            "삼백 턴을 붙어 있었는데 「더 녹을 것이 없다」가 한 번도 안 떴다 — 이 주장이 아무것도 안 가린다",
+        );
+    }
+});
+
 test("수법은 표와 방아쇠가 한 짝이다", () => {
     // `damage` 의 `"0d0"` 이 특수 공격의 **유일한 방아쇠**다(`combat.ts`). 이름만
     // 있고 방아쇠가 없으면 **영영 안 열리는 도감 칸**이 되고, 방아쇠만 있고 이름이

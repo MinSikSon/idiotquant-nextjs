@@ -120,6 +120,11 @@ export const POTIONS: Record<string, { name: string; freq: number; depth: number
     blindness: { name: "암흑", freq: 5, depth: 2 },
     confusion: { name: "혼란", freq: 6, depth: 2 },
     "detect monsters": { name: "생명 탐지", freq: 6, depth: 4 },
+    /**
+     * **곁에 쓰러진 동료를 일으킨다.** 혼자일 때는 제 몸을 가득 채운다 — 그래야 단독
+     * 플레이에서도 쓸모가 있다(협동에서만 듣는 물건은 혼자 하는 사람에게 빈 칸이다).
+     */
+    revival: { name: "소생", freq: 5, depth: 2 },
 };
 
 export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {

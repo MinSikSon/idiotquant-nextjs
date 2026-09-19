@@ -625,8 +625,14 @@ function specialEffect(state: GameState, m: Monster, hero: Hero, rng: Rng): stri
     switch (m.def.ch) {
         case "A": {
             // 아쿠에이터 — 갑옷을 녹인다.
+            //
+            // **손질을 0 아래로는 못 녹인다.** 예전에는 바닥이 없어서, 한 마리에게 오래
+            // 붙들리면 `+0` 판금이 `−7` 짜리가 되어 **안 입느니만 못한 갑옷**이 되었다.
+            // 그러면 「벗을까」가 아니라 「이 판은 끝났다」가 되고, 되돌릴 길도 강화
+            // 주문서뿐이다. 깎을 것이 남았을 때만 녹는다 — 맨 갑옷은 더 나빠지지 않는다.
             const armor = equippedArmor(hero);
             if (!armor) return ["아쿠에이터가 헛되이 녹이려 든다."];
+            if ((armor.plusArmor ?? 0) <= 0) return ["갑옷을 녹이려 들지만 더 녹을 것이 없다."];
             armor.plusArmor = (armor.plusArmor ?? 0) - 1;
             return ["갑옷이 녹아내렸다!"];
         }

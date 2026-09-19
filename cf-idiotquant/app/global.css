@@ -57,7 +57,11 @@
   --rg-leader-bg: #d6e3ff;
   --rg-mate-bg: #ffd9e8;
   --rg-monster: #a8410b;
+  /* **몬스터 칸의 바닥.** 글자만으로는 `E`(에뮤)와 물건·벽이 한눈에 안 갈린다 —
+     영웅의 파티 바닥색과 같은 수법이되, 늘 깔리는 것이라 **훨씬 옅게** 둔다. */
+  --rg-monster-bg: #f6e2d6;
   --rg-monster-sensed: #cf9b78;  /* 감지 물약 — 본 것과 달라야 한다 */
+  --rg-monster-sensed-bg: #f3ece8;  /* 벽 너머로 느낀 것 — 본 것보다 더 옅다 */
   --rg-gold: #8a6800;
   --rg-potion: #8e3379;
   --rg-scroll: #2a5f88;
@@ -112,7 +116,9 @@ html.dark {
   --rg-leader-bg: #1c3563;
   --rg-mate-bg: #5a1c39;
   --rg-monster: #f2884b;
+  --rg-monster-bg: #3a1f12;
   --rg-monster-sensed: #8a5a3a;
+  --rg-monster-sensed-bg: #241a15;
   --rg-gold: #ffd24a;
   --rg-potion: #d987c4;
   --rg-scroll: #cfe3f5;
