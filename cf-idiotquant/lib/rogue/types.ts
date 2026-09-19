@@ -124,6 +124,13 @@ export interface Monster {
     champion?: ChampionPrefix;
     /** 화상 지속 턴수 */
     burnTurns?: number;
+    /**
+     * **불을 붙인 사람**의 자리(`heroes` 의 칸 번호).
+     *
+     * 화상으로 죽는 자리(`finishTurn`)에는 때린 사람이 없다 — 그 턴에 움직인 사람이
+     * 불을 붙인 사람이라는 보장도 없다. 이 칸이 없으면 **경험치가 늘 방장에게** 간다.
+     */
+    burnBy?: number;
     /** 동결 지속 턴수 */
     frozenTurns?: number;
     /**
@@ -264,6 +271,13 @@ export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
 export interface Hero {
     origin?: HeroOrigin;
+    /**
+     * 온라인에서 지도에 적는 **이름 넉 자.** 없으면 `@` 그대로다.
+     *
+     * 규칙이 아니라 **보이는 값**이다 — 판에 두는 까닭은 하나, 상대에게 건너가야 하기
+     * 때문이다(판을 통째로 보낸다). 길이와 글자는 `cleanNick` 한 자리에서 다듬는다.
+     */
+    nick?: string;
     guarded?: boolean;
     x: number;
     y: number;

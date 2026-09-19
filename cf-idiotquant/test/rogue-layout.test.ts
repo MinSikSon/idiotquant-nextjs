@@ -175,6 +175,100 @@ test("방이 밝아지는 연출은 그리기 전에 걸린다 — useLayoutEffe
     );
 });
 
+// 칸이 번쩍이는 연출은 **사람마다** 돈다.
+//
+// `heroes[0]` 하나만 보고 있었다 — 그래서 협동에서 **동료가 맞아도 나아도 화면이 가만히
+// 있었다.** 2P 쪽에서는 무슨 일이 난 건지 기록 줄을 읽어야만 알 수 있다. 프레임 단위의
+// 연출이라 테스트로 눈으로는 못 잡으니 **무엇을 보고 있는지**를 글자로 건다.
+test("피격·치유 번쩍임은 사람마다 돈다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+
+    // ── ① 지난 판의 기억을 **사람마다** 든다
+    {
+        assert.match(
+            s,
+            /heroes:\s*state\.heroes\.map\(\(h\) => \(\{ hp: h\.hp/,
+            "지난 값을 한 사람 것만 기억한다 — 동료의 체력 변화가 안 잡힌다",
+        );
+        assert.ok(
+            !/\bhp:\s*state\.heroes\[0\]\.hp\b/.test(s),
+            "아직 `heroes[0]` 의 체력 하나만 본다",
+        );
+    }
+
+    // ── ② 번쩍이는 칸을 **사람마다** 고른다
+    {
+        const at = s.indexOf("// 4. 영웅 체력 변동");
+        assert.ok(at > 0, "체력 변동 연출이 통째로 사라졌다");
+        // 깃털(`hasPhoenixMsg`) 갈래는 빼고 본다 — 거기 `heroes[0]` 은 **못 찾았을 때의
+        // 대비**지, 누구 칸을 번쩍일지 고르는 자리가 아니다.
+        const body = s.slice(at, s.indexOf("if (hasPhoenixMsg)", at));
+        assert.match(body, /for \(let i = 0; i < state\.heroes\.length; i\+\+\)/, "사람마다 안 돈다");
+        assert.ok(
+            !/state\.heroes\[0\]/.test(body),
+            "그 안에서 아직 방장을 가리킨다 — 동료가 맞아도 방장 칸이 번쩍인다",
+        );
+    }
+});
+
+// 지도의 이름표는 **한 칸 안에** 산다.
+//
+// 넉 자를 한 줄로 늘어놓으면 그 줄의 오른쪽이 통째로 밀려 벽 `|` 이 어긋나므로, 폭이
+// 정확히 한 칸인 상자를 그 칸 위에 덮고 속을 2×2 로 접는다. 크기는 잰 칸에서 되짚어
+// 내는데(`글꼴 = 칸높이 ÷ LEADING`), 그 비율이 `<pre>` 의 `leading-[…]` 과 어긋나면
+// 이름표만 칸 밖으로 삐져나간다 — 화면으로는 잘 안 보이는 자리라 글자로 건다.
+test("지도의 이름표는 한 칸을 넘지 않는다", () => {
+    const s = read("app/(game)/game/components/MapView.tsx");
+
+    // ── ① 줄 높이 비율이 `<pre>` 의 것과 **같은 수**다
+    {
+        const declared = /const LEADING = ([\d.]+);/.exec(s);
+        assert.ok(declared, "이름표가 쓰는 줄 높이 비율을 못 찾았다");
+        // `[^>]` 는 줄바꿈도 먹으므로 `s` 플래그가 필요 없다(있으면 es2017 빌드가 막는다).
+        const used = /<pre[^>]*?leading-\[([\d.]+)\]/.exec(s);
+        assert.ok(used, "지도 `<pre>` 의 leading 클래스를 못 찾았다");
+        assert.equal(
+            declared![1],
+            used![1],
+            "이름표의 줄 높이 비율이 지도의 것과 다르다 — 글꼴 크기를 잘못 되짚어 칸 밖으로 나간다",
+        );
+    }
+
+    // ── ② 상자는 **한 칸 크기**이고 넘치는 것은 잘라 낸다
+    {
+        const at = s.indexOf("function NickTag");
+        assert.ok(at > 0, "이름표가 통째로 사라졌다");
+        const end = s.indexOf("export default", at);
+        const body = s.slice(at, end > at ? end : s.length);
+        assert.match(body, /width:\s*cell\.w,\s*height:\s*cell\.h/, "상자가 한 칸 크기가 아니다");
+        assert.match(body, /overflow-hidden/, "칸을 넘긴 것을 안 잘라 낸다");
+        assert.match(body, /scaleX\(/, "가로만 누르지 않는다 — 균등 축소면 글자가 절반으로 준다");
+        assert.match(body, /fontSize:\s*font/, "글꼴 크기를 칸에서 안 되짚는다");
+    }
+
+    // ── ③ **쓰러진 사람에게는 안 붙인다** — `†` 를 덮으면 생사가 지도에서 안 보인다
+    {
+        assert.match(
+            s,
+            /if \(!h\.nick \|\| h\.hp <= 0/,
+            "이름이 없거나 쓰러진 사람에게도 이름표를 붙인다",
+        );
+    }
+
+    // ── ④ **번쩍임이 이름표를 이긴다**
+    //
+    // 이름표가 칸을 통째로 덮으므로 아래 `<pre>` 에 칠한 피격·치유 색이 뒤로 숨는다 —
+    // 이름을 지은 사람만 맞아도 나아도 화면이 가만히 있게 된다.
+    {
+        const at = s.indexOf("{state.heroes.map((h, i) => {");
+        assert.ok(at > 0, "이름표를 세우는 자리를 못 찾았다");
+        const body = s.slice(at, s.indexOf("화면 밖의 동료", at));
+        assert.match(body, /cellFlashes\[`\$\{h\.x\},\$\{h\.y\}`\]/, "그 칸의 번쩍임을 안 본다");
+        assert.match(body, /ink=\{flash\?\.ink \?\?/, "번쩍임 색이 이름표 글자색을 못 이긴다");
+        assert.match(body, /bg=\{flash\?\.bg \? `linear-gradient/, "번쩍임 바닥색을 제 바닥색 위에 안 겹친다 — 반투명이라 밑의 @ 가 비친다");
+    }
+});
+
 // 쓰러진 사람은 **동료의 눈을 빌린다** — 옮기는 것은 시점(`view`)뿐이고 조종(`who`)은
 // 절대 안 옮긴다. 둘을 한 값으로 묶으면 온라인에서 방장이 손님의 영웅을 움직이게 되고,
 // 그건 협동이 아니라 대리 조종이다. 브라우저로는 피어 둘을 붙여야 재지는 자리라

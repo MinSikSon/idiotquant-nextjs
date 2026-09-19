@@ -68,7 +68,7 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
     // ── ① 규약에 물음과 답이 둘 다 있다
     {
         assert.match(SRC, /\|\s*\{\s*t:\s*"peek"\s*\}/, "규약에 `peek` 이 없다 — 물어볼 길이 없으면 고르는 화면이 방장을 모른다");
-        assert.match(SRC, /\|\s*\{\s*t:\s*"room";\s*origin:\s*HeroOrigin\s*\}/, "규약에 답(`room`)이 없다");
+        assert.match(SRC, /\|\s*\{\s*t:\s*"room";\s*origin:\s*HeroOrigin[^}]*\}/, "규약에 답(`room`)이 없다");
     }
 
     // ── ② 방장은 `peek` 에 제 직업으로 답하되, **자리는 안 준다**
@@ -82,11 +82,12 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
 
     // ── ③ 손님은 **직업이 없으면** 인사 대신 물음을 보낸다
     {
-        const at = SRC.indexOf('conn.send(origin ?');
-        assert.ok(at > 0, "손님이 고른 직업 유무로 갈라 보내지 않는다");
-        const line = SRC.slice(at, at + 200);
-        assert.match(line, /t:\s*"hello",\s*origin/, "고른 뒤에 보내는 인사가 없다");
-        assert.match(line, /t:\s*"peek"/, "안 골랐을 때 보내는 물음이 없다");
+        const open = SRC.indexOf('conn.on("open", () => {', SRC.indexOf("const joinRoom"));
+        assert.ok(open > 0, "손님이 잇는 자리를 못 찾았다");
+        const body = SRC.slice(open, SRC.indexOf('conn.on("data"', open));
+        assert.match(body, /conn\.send\(\s*origin\b/, "손님이 고른 직업 유무로 갈라 보내지 않는다");
+        assert.match(body, /t:\s*"hello",\s*origin/, "고른 뒤에 보내는 인사가 없다");
+        assert.match(body, /t:\s*"peek"/, "안 골랐을 때 보내는 물음이 없다");
     }
 
     // ── ④ **판을 받아야 이어진 것**이다 — `open` 만으로 `linked` 를 세우지 않는다
@@ -117,6 +118,8 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
     // ── ⑥ 받은 직업을 **고르는 화면에 적는다**
     {
         assert.match(SRC, /setHostOrigin\(/, "받은 직업을 어디에도 안 담는다");
-        assert.match(SRC, /방장은 <span/, "고르는 화면에 방장의 직업을 안 적는다");
+        assert.match(SRC, /방장은 /, "고르는 화면에 방장이 누구인지를 안 적는다");
+        assert.match(SRC, /OriginTag origin=\{hostOrigin\}/, "고르는 화면에 방장의 직업을 안 적는다");
+        assert.match(SRC, /\{hostNick &&/, "고르는 화면에 방장의 이름을 안 적는다");
     }
 });

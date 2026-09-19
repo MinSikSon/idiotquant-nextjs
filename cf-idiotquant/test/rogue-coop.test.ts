@@ -580,6 +580,169 @@ test("한 명만 계단을 눌러도 파티가 함께 옮긴다", () => {
     assert.equal(Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), 1, "동료가 같이 안 왔다");
 });
 
+// 이름은 **온라인에서 남이 보내 오는 값**이고, 받는 쪽은 그것을 지도 한 칸에 그대로 그린다.
+// 그래서 다듬는 자리(`cleanNick`)가 **하나여야** 하고, 보내는 쪽이 아니라 **받는 쪽**에 있어야
+// 한다 — 보내는 쪽에만 두면 고친 화면이 안 고친 화면에게 아무 문자열이나 먹일 수 있다.
+test("지도에 적는 이름은 넉 자 영문·숫자로 다듬는다", async () => {
+    const { cleanNick, setNick, NICK_MAX } = await import("@/lib/rogue/game");
+
+    // ── 길이·글자·대소문자
+    {
+        assert.equal(NICK_MAX, 4, "2×2 로 그리는 자리라 넉 자다");
+        assert.equal(cleanNick("mson"), "MSON", "소문자를 안 올린다 — 8.58px 에서 a·o·e 가 안 갈린다");
+        assert.equal(cleanNick("MinSikSon"), "MINS", "넉 자를 넘겨 받는다 — 한 칸에 그릴 데가 없다");
+        assert.equal(cleanNick("m s"), "MS", "빈칸이 남았다");
+        assert.equal(cleanNick("김민식"), undefined, "한글을 받는다 — 두 배 폭이라 격자가 밀린다");
+        assert.equal(cleanNick("a\nb"), "AB", "줄바꿈이 남았다 — 한 칸이 두 줄이 된다");
+        assert.equal(cleanNick("!!!"), undefined, "쓸 글자가 없으면 이름이 없는 것이다");
+        assert.equal(cleanNick(""), undefined, "빈 문자열이 이름이 되었다");
+        assert.equal(cleanNick(undefined), undefined, "없는 값이 이름이 되었다");
+        assert.equal(cleanNick(42), undefined, "문자열이 아닌 것이 이름이 되었다");
+        for (const s of ["MSON", "A1", "9999"]) assert.equal(cleanNick(s), s, `${s} 가 바뀌었다`);
+    }
+
+    // ── 놓는 자리도 같은 자를 쓴다 — 그리고 **판을 안 굴린다**
+    {
+        const s = withGuest(4501);
+        const t0 = s.turn;
+        const rng0 = s.rngState;
+        const after = setNick(s, 1, "minsikson");
+        assert.equal(after.heroes[1].nick, "MINS", "놓을 때는 안 다듬는다 — 자가 두 벌이 됐다");
+        assert.equal(after.turn, t0, "이름을 놓았다고 턴이 갔다");
+        assert.equal(after.rngState, rng0, "이름을 놓았다고 난수가 굴렀다");
+
+        // 쓸 수 없는 이름은 **칸째 지운다** — 빈 칸도 칸이라 저장이 달라진다.
+        const gone = setNick(after, 1, "!!!");
+        assert.ok(!("nick" in gone.heroes[1]), "쓸 수 없는 이름이 빈 칸으로 남았다");
+    }
+
+    // ── 합류할 때 받는 이름도 같은 자를 지난다
+    {
+        const s = joinGame(newGame(4502), "rogue", "kim c");
+        assert.equal(s.heroes[1].nick, "KIMC", "합류하면서 받은 이름이 안 다듬어졌다");
+    }
+
+    // ── **되읽을 때도 다시 다듬는다** — 온라인은 남의 판이 이 길로 들어온다
+    {
+        const { serialize, deserialize } = await import("@/lib/rogue/storage");
+        const s = joinGame(newGame(4503), "rogue");
+        // 남이 보낸 판인 셈 치고 규칙 밖의 값을 박아 둔다.
+        s.heroes[1].nick = "한글이름아주긴것";
+        const back = deserialize(serialize(s))!;
+        assert.ok(!back.heroes[1].nick, "남이 보낸 아무 문자열이 그대로 지도에 그려진다");
+    }
+});
+
+// **잡은 사람이 경험치를 받는다.**
+//
+// `killMonster` 가 `state.heroes[0]` 를 들고 있었다 — 어그로도 수법도 사람마다 갈라 놓고,
+// 정작 **경험치·무기 통달·미다스 건틀릿**은 늘 방장을 봤다. 손님이 혼자 스무 마리를 잡아도
+// 레벨이 안 올랐고, 그 까닭이 판 어디에도 안 적힌다.
+test("잡은 사람이 경험치를 받는다 — 방장이 아니다", async () => {
+    const { equippedWeapon } = await import("@/lib/rogue/hero");
+
+    /** 손님 옆에 한 대면 죽을 놈을 붙여 세운다. 방장은 그 자리에 없다. */
+    const beside = (seed: number) => {
+        const s = withGuest(seed);
+        const [host, guest] = s.heroes;
+        // 방장을 옆으로 비켜 세운다 — 손님이 때리는 것이 분명해야 한다.
+        host.x = guest.x;
+        host.y = guest.y + 1;
+        s.level.tiles[idx(guest.x, guest.y + 1)] = T.FLOOR;
+        const mx = guest.x + 1;
+        s.level.tiles[idx(mx, guest.y)] = T.FLOOR;
+        const m = spawnMonster("E", mx, guest.y, new Rng(seed));
+        m.hp = 1;
+        m.awake = true;
+        s.level.monsters = [m];
+        return { s, host, guest, m };
+    };
+
+    // ── 손님이 때려 잡으면 **손님의** 경험치가 오른다
+    {
+        let killed = false;
+        for (let n = 0; n < 60 && !killed; n++) {
+            const { s, host, guest } = beside(4801 + n);
+            const hostExp = host.exp;
+            const guestExp = guest.exp;
+            perform(s, { t: "move", dx: 1, dy: 0, who: 1 });
+            if (s.level.monsters.length > 0) continue; // 빗나갔다 — 다음 씨앗
+            killed = true;
+            assert.ok(guest.exp > guestExp, `손님이 잡았는데 손님의 경험치가 그대로다 (${guestExp} → ${guest.exp})`);
+            assert.equal(host.exp, hostExp, "손님이 잡았는데 방장의 경험치가 올랐다");
+        }
+        assert.ok(killed, "예순 번을 붙였는데 손님이 한 마리도 못 잡았다");
+    }
+
+    // ── 방장이 잡으면 **방장의** 것이다 (단독 플레이의 규칙은 안 바뀐다)
+    {
+        const s = newGame(4901);
+        const hero = s.heroes[0];
+        const before = hero.exp;
+        const mx = hero.x + 1;
+        s.level.tiles[idx(mx, hero.y)] = T.FLOOR;
+        const m = spawnMonster("E", mx, hero.y, new Rng(7));
+        m.hp = 1;
+        m.awake = true;
+        s.level.monsters = [m];
+        let hit = false;
+        for (let n = 0; n < 40 && !hit; n++) {
+            perform(s, { t: "move", dx: 1, dy: 0 });
+            hit = s.level.monsters.length === 0;
+        }
+        assert.ok(hit, "마흔 번을 때렸는데 한 마리도 못 잡았다");
+        assert.ok(hero.exp > before, "혼자 잡았는데 경험치가 안 올랐다");
+    }
+
+    // ── **무기 통달도 잡은 사람이 쥔 칼**을 센다
+    //
+    // 손님에게 **방장이 안 쥔 종류**를 들려야 한다 — 둘이 같은 칼이면 누구 것을 세든
+    // 숫자가 같아서 이 주장이 아무것도 안 가린다(되돌려 보고 알았다).
+    {
+        let killed = false;
+        for (let n = 0; n < 60 && !killed; n++) {
+            const { s, host, guest } = beside(4851 + n);
+            const mine = makeItem("weapon", "knight sword", 990, -1, -1);
+            addToPack(guest, mine);
+            guest.weaponId = mine.id;
+            const hostWep = equippedWeapon(host);
+            if (!hostWep || hostWep.type === mine.type) continue;
+            const k = `weapon:${mine.type}`;
+            const hostKey = `weapon:${hostWep.type}`;
+            const before = s.itemUsage[k] ?? 0;
+            const hostBefore = s.itemUsage[hostKey] ?? 0;
+
+            perform(s, { t: "move", dx: 1, dy: 0, who: 1 });
+            if (s.level.monsters.length > 0) continue;
+            killed = true;
+            assert.equal(s.itemUsage[k] ?? 0, before + 1, "손님이 잡았는데 손님이 쥔 칼의 처치 수가 안 늘었다");
+            assert.equal(s.itemUsage[hostKey] ?? 0, hostBefore, "손님이 잡았는데 방장이 쥔 칼의 처치 수가 늘었다");
+        }
+        assert.ok(killed, "예순 번을 붙였는데 손님이 한 마리도 못 잡았다");
+    }
+
+    // ── **화상으로 죽으면 불을 붙인 사람**의 몫이다 — 그 턴에 움직인 사람이 아니다
+    {
+        const s = withGuest(4950);
+        const [host, guest] = s.heroes;
+        const mx = guest.x + 2;
+        s.level.tiles[idx(mx, guest.y)] = T.FLOOR;
+        const m = spawnMonster("E", mx, guest.y, new Rng(7));
+        m.hp = 1;
+        m.awake = true;
+        m.burnTurns = 3;
+        m.burnBy = 1; // 손님이 붙인 불
+        s.level.monsters = [m];
+
+        const hostExp = host.exp;
+        const guestExp = guest.exp;
+        perform(s, { t: "rest" }); // **방장**이 움직인다
+        assert.equal(s.level.monsters.length, 0, "화상으로 안 죽었다");
+        assert.ok(guest.exp > guestExp, "불을 붙인 손님이 경험치를 못 받았다");
+        assert.equal(host.exp, hostExp, "동료가 붙인 불로 방장이 경험치를 받았다");
+    }
+});
+
 test("동료는 제 출신(직업)으로 합류한다", () => {
     const s = joinGame(newGame(4409), "rogue");
     assert.equal(s.heroes[1].origin, "rogue");

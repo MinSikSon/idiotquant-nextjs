@@ -24,14 +24,17 @@ import {
     type BestiaryRow,
     type Command,
     type Sighting,
+    NICK_MAX,
     bestiaryProgress,
     bestiaryRows,
+    cleanNick,
     enchantTarget,
     joinGame,
     leaveGame,
     newGame,
     perform,
     score,
+    setNick,
     standing,
     survey,
     tombScore,
@@ -252,7 +255,37 @@ const REVEAL_STEP = 40;
 const PEER_PREFIX = "idiotquant-rogue-";
 /** 들어 있던 방 — 새로고침해도 다시 잇는다. */
 const ROOM_KEY = "rogue-room";
+/** 지도에 적을 이름 — **판이 아니라 그 사람의 것**이라 저장 판과 따로 둔다. */
+const NICK_KEY = "rogue-nick";
 const RETRY_MS = 3000;
+
+/** 기억해 둔 이름. 없거나 못 읽으면 빈 값. */
+function savedNick(): string | undefined {
+    try {
+        return cleanNick(localStorage.getItem(NICK_KEY));
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * 이름을 묻는다 — **온라인에 들어설 때만.** 혼자 하는 판은 이름이 필요 없다(`@` 그대로).
+ *
+ * `ask` 가 거짓이면 기억해 둔 것을 그대로 쓴다 — 초대 링크로 들어온 사람에게 창이 먼저
+ * 뜨는 것을 막는다. 취소하면 `undefined`, 그러면 이름표 없이 `@` 로 논다.
+ */
+function askNick(ask = true): string | undefined {
+    const had = savedNick();
+    if (!ask && had) return had;
+    const typed = window.prompt(`지도에 적을 이름 (영문·숫자 ${NICK_MAX}자)`, had ?? "");
+    if (typed === null) return had;
+    const nick = cleanNick(typed);
+    try {
+        if (nick) localStorage.setItem(NICK_KEY, nick);
+        else localStorage.removeItem(NICK_KEY);
+    } catch {}
+    return nick;
+}
 
 /**
  * 온라인에서 오가는 말. **방장이 순서를 정한다** — 손님의 명령도 방장에게 갔다가
@@ -262,13 +295,14 @@ const RETRY_MS = 3000;
 type NetMsg =
     | { t: "init"; state: string }
     | { t: "cmd"; cmd: Command }
-    // 손님이 이으면 먼저 제 출신을 알린다 — 방장이 그 직업으로 동료를 세운다.
-    | { t: "hello"; origin: HeroOrigin }
+    // 손님이 이으면 먼저 제 출신과 이름을 알린다 — 방장이 그 직업으로 동료를 세운다.
+    // **이름은 믿고 그리는 값이 아니다** — 받는 쪽이 `cleanNick` 으로 다시 다듬는다.
+    | { t: "hello"; origin: HeroOrigin; nick?: string }
     // **아직 안 골랐다** — 방장이 누구인지부터 묻는다. 이게 있어야 손님이 방장의 직업을
     // **보고** 고를 수 있다. 이 말로는 판에 들어가지 않는다(자리도 안 차지한다).
     | { t: "peek" }
-    // 그 답 — 방장의 출신. 판을 통째로 보내지 않는 까닭은, 아직 손님이 아니기 때문이다.
-    | { t: "room"; origin: HeroOrigin }
+    // 그 답 — 방장의 출신과 이름. 판을 통째로 보내지 않는 까닭은, 아직 손님이 아니기 때문이다.
+    | { t: "room"; origin: HeroOrigin; nick?: string }
     // **나간다는 인사.** 이것 없이 끊기면 사고(망 끊김)로 보고 자리를 지켜 기다린다.
     | { t: "bye" }
     // **방장이 내보냈다.** `bye` 와 갈라 둔다 — 손님 화면에 적는 까닭이 다르고,
@@ -353,9 +387,8 @@ export default function Rogue() {
     const [shake, setShake] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
     const lastStateRef = useRef<{
-        hp: number;
-        gold: number;
-        exp: number;
+        /** **사람마다** 든다 — 한 사람 것만 보면 동료가 맞아도 낫아도 화면이 가만히 있다. */
+        heroes: { hp: number; gold: number; exp: number }[];
         depth: number;
         turn: number;
         messagesLen: number;
@@ -411,9 +444,7 @@ export default function Rogue() {
         if (!state) return;
         const prev = lastStateRef.current;
         const curr = {
-            hp: state.heroes[0].hp,
-            gold: state.heroes[0].gold,
-            exp: state.heroes[0].exp,
+            heroes: state.heroes.map((h) => ({ hp: h.hp, gold: h.gold, exp: h.exp })),
             depth: state.level.depth,
             turn: state.turn,
             messagesLen: state.messages.length,
@@ -465,28 +496,39 @@ export default function Rogue() {
             }
         }
 
-        // 4. 영웅 체력 변동 (피격 / 치유 - 내 캐릭터 칸 플래시)
-        const hpDiff = curr.hp - prev.hp;
-        const heroKey = `${state.heroes[0].x},${state.heroes[0].y}`;
-        if (hpDiff < 0) {
-            const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(state.heroes[0].maxHp * 0.3));
-            if (hasCritMsg) {
-                // 영웅 치명타 피격: 황금+적색 경고
-                flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
-                triggerShake = true;
-            } else {
-                // 영웅 일반 피격: 붉은색 플래시
-                flashes[heroKey] = { ink: "var(--rg-trap)" };
-                if (isHeavyHit) triggerShake = true;
+        // 4. 영웅 체력 변동 (피격 / 치유 — 그 사람 칸 플래시)
+        //
+        // **사람마다 본다.** 예전에는 `heroes[0]` 하나만 봤고, 그래서 협동에서 **동료가
+        // 맞아도 나아도 화면이 가만히 있었다** — 2P 쪽에서는 무슨 일이 난 건지 기록 줄을
+        // 읽어야만 알 수 있었다. 흔드는 것(`shake`)은 화면 전체의 것이라 누구의 일이든 한 번이다.
+        for (let i = 0; i < state.heroes.length; i++) {
+            const h = state.heroes[i];
+            const was = prev.heroes[i];
+            if (!was || h.x < 0) continue;
+            const hpDiff = h.hp - was.hp;
+            const heroKey = `${h.x},${h.y}`;
+            if (hpDiff < 0) {
+                const isHeavyHit = Math.abs(hpDiff) >= Math.max(6, Math.floor(h.maxHp * 0.3));
+                if (hasCritMsg) {
+                    // 영웅 치명타 피격: 황금+적색 경고
+                    flashes[heroKey] = { ink: "var(--rg-gold)", bg: "rgba(239, 68, 68, 0.3)" };
+                    triggerShake = true;
+                } else {
+                    // 영웅 일반 피격: 붉은색 플래시
+                    flashes[heroKey] = { ink: "var(--rg-trap)" };
+                    if (isHeavyHit) triggerShake = true;
+                }
+            } else if (hpDiff > 0 && prev.depth === curr.depth) {
+                // 영웅 치유: 녹색 플래시
+                flashes[heroKey] = { ink: "var(--rg-ring)", bg: "rgba(34, 197, 94, 0.2)" };
             }
-        } else if (hpDiff > 0 && prev.depth === curr.depth) {
-            // 영웅 치유: 녹색 플래시
-            flashes[heroKey] = { ink: "var(--rg-ring)", bg: "rgba(34, 197, 94, 0.2)" };
         }
 
         if (hasPhoenixMsg) {
             triggerShake = true;
-            flashes[heroKey] = { ink: "var(--rg-trap)", bg: "rgba(239, 68, 68, 0.35)" };
+            // 깃털은 **살아난 사람** 칸에서 탄다 — 그 턴에 체력이 최대로 찬 사람이다.
+            const rose = state.heroes.find((h, i) => (prev.heroes[i]?.hp ?? 1) <= 0 && h.hp > 0) ?? state.heroes[0];
+            flashes[`${rose.x},${rose.y}`] = { ink: "var(--rg-trap)", bg: "rgba(239, 68, 68, 0.35)" };
         }
 
         if (Object.keys(flashes).length > 0) {
@@ -531,6 +573,8 @@ export default function Rogue() {
      * 수수께끼다.
      */
     const [hostOrigin, setHostOrigin] = useState<HeroOrigin | null>(null);
+    /** 방장이 쓰는 이름 — 고르는 화면에 같이 적는다. 안 정했으면 `null`. */
+    const [hostNick, setHostNick] = useState<string | undefined>(undefined);
     /** 지금 상대와 이어져 있는가 — 끊겨도 방(`online`·`room`)은 남는다. */
     const [linked, setLinked] = useState(false);
     /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
@@ -666,6 +710,33 @@ export default function Rogue() {
     // 네트워크 콜백은 방을 열 때 한 번 걸린다 — 그때의 `online` 이 아니라 **지금** 것을 읽는다.
     const onlineRef = useRef(online);
     onlineRef.current = online;
+
+    /**
+     * 이름을 바꾼다 — **판의 주인이 고쳐야** 양쪽 화면이 같은 것을 본다.
+     *
+     *   · 방장 — 제 판을 고치고 **판을 통째로 다시 보낸다**(`init`). 걸음(`cmd`)만 오가는
+     *     사이라 이름 같은 값은 그 길로는 안 건너간다.
+     *   · 손님 — 남의 판을 제 손으로 못 고친다. **다시 인사한다**(`hello`) — 방장이
+     *     `setNick` 으로 고쳐 `init` 로 되돌려 준다. 들어올 때와 같은 길이다.
+     */
+    const changeNick = useCallback(() => {
+        const nick = askNick();
+        const conn = net.current?.conn;
+        if (onlineRef.current === "guest") {
+            let origin: HeroOrigin = "knight";
+            try {
+                const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
+                if (r?.origin in ORIGINS) origin = r.origin;
+            } catch {}
+            if (conn?.open) conn.send({ t: "hello", origin, nick } satisfies NetMsg);
+            return;
+        }
+        const s = stateRef.current;
+        if (!s) return;
+        const next = setNick(s, 0, nick);
+        setState(next);
+        if (conn?.open) conn.send({ t: "init", state: serialize(next) } satisfies NetMsg);
+    }, []);
     const closeRoomRef = useRef(closeRoom);
     closeRoomRef.current = closeRoom;
 
@@ -686,6 +757,8 @@ export default function Rogue() {
         try {
             localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "host", code }));
         } catch {}
+        // **내 이름을 판에 올린다** — 판을 통째로 보내므로(`init`) 이 한 줄로 손님 화면까지 간다.
+        setState((g) => (g ? setNick(g, 0, savedNick()) : g));
         setOnline("host");
         setRoom(code);
         setLinked(false);
@@ -716,7 +789,11 @@ export default function Rogue() {
                 if (m?.t === "peek") {
                     const s = stateRef.current;
                     if (!s) return;
-                    conn.send({ t: "room", origin: s.heroes[0].origin ?? "knight" } satisfies NetMsg);
+                    conn.send({
+                        t: "room",
+                        origin: s.heroes[0].origin ?? "knight",
+                        nick: s.heroes[0].nick,
+                    } satisfies NetMsg);
                     return;
                 }
                 if (m?.t === "hello") {
@@ -725,8 +802,10 @@ export default function Rogue() {
                     // 남이 보낸 값이다 — 없는 직업이면 기사로 받는다.
                     const origin = m.origin in ORIGINS ? m.origin : "knight";
                     // 다시 들어온 손님에게는 **지금 판**을 통째로 준다 — 끊긴 사이의 명령을 셀 필요가
-                    // 없다. 이미 동료가 있으면 그 사람이다(직업은 처음 고른 그대로).
-                    const g = s.heroes.length > 1 ? s : joinGame(s, origin);
+                    // 없다. 이미 동료가 있으면 그 사람이다(직업은 처음 고른 그대로). 다만 **이름은
+                    // 늘 다시 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이라, 이름을
+                    // 바꾸고 다시 들어오면 바뀐 것이 보여야 한다. `setNick` 이 값을 다시 다듬는다.
+                    const g = s.heroes.length > 1 ? setNick(s, 1, m.nick) : joinGame(s, origin, m.nick);
                     setState(g);
                     setWho(0);
                     setLinked(true);
@@ -793,13 +872,18 @@ export default function Rogue() {
             conn.on("open", () => {
                 // **이어졌다고 `linked` 가 서지는 않는다** — 판을 받아야(`init`) 같이 보는 것이다.
                 // 안 그러면 아직 자리도 없는데 키가 먹어, 방장 쪽에서 없는 영웅을 움직이게 된다.
-                conn.send(origin ? ({ t: "hello", origin } satisfies NetMsg) : ({ t: "peek" } satisfies NetMsg));
+                conn.send(
+                    origin
+                        ? ({ t: "hello", origin, nick: savedNick() } satisfies NetMsg)
+                        : ({ t: "peek" } satisfies NetMsg),
+                );
             });
             conn.on("data", (raw) => {
                 const m = raw as NetMsg;
                 if (m?.t === "room") {
-                    // 방장의 직업을 받았다 — 이제 **그것을 보고** 고른다.
+                    // 방장의 직업과 이름을 받았다 — 이제 **그것을 보고** 고른다.
                     setHostOrigin(m.origin in ORIGINS ? m.origin : "knight");
+                    setHostNick(cleanNick(m.nick));
                     setOriginFor({ t: "guest", code });
                     setSheet("origins");
                 } else if (m?.t === "init") {
@@ -926,7 +1010,12 @@ export default function Rogue() {
         if (invited && /^\d{4}$/.test(invited)) {
             history.replaceState(null, "", location.pathname);
             // **먼저 붙는다** — 방장의 직업을 받아 와야 고르는 판이 열린다(`joinRoom` 의 `room`).
-            if (!inRoom) void joinRoom(invited);
+            // 이름은 **묻지 않는다**(`ask = false`) — 링크를 열자마자 창이 뜨면 놀란다.
+            // 기억해 둔 것이 없으면 이름 없이 들어가고, 옵션에서 나중에 정할 수 있다.
+            if (!inRoom) {
+                askNick(false);
+                void joinRoom(invited);
+            }
         }
         // 첫 그림에서 한 번만.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -953,7 +1042,7 @@ export default function Rogue() {
                 try {
                     localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: f.code, origin }));
                 } catch {}
-                conn.send({ t: "hello", origin } satisfies NetMsg);
+                conn.send({ t: "hello", origin, nick: savedNick() } satisfies NetMsg);
             } else {
                 void joinRoom(f.code, origin);
             }
@@ -1400,7 +1489,9 @@ export default function Rogue() {
                                 className={`shrink-0 rounded-[2px] border-2 px-1.5 font-bold ${i === eye ? "" : "border-transparent"}`}
                                 style={{ color: PARTY_INK[i], backgroundColor: PARTY_BG[i], borderColor: i === eye ? PARTY_INK[i] : undefined }}
                             >
-                                {h.hp > 0 ? "@" : "†"}{i === 0 ? "1P" : "2P"}
+                                {/* 이름이 있으면 그것을 적는다 — 넉 자라 `1P` 보다 두 글자 길 뿐이고,
+                                    지도에서 찾는 이름과 상태 줄의 이름이 같아야 눈이 안 헤맨다. */}
+                                {h.hp > 0 ? "@" : "†"}{h.nick ?? (i === 0 ? "1P" : "2P")}
                             </button>
                         )}
                         {/* **쓰러진 사람에게 제일 먼저 알려 줄 것은 이것**이다 — 누워 있는 동안
@@ -2008,6 +2099,21 @@ export default function Rogue() {
                                           },
                                       },
                                   ]),
+                            // **온라인일 때만** 선다 — 혼자 하는 판의 지도는 `@` 그대로라 적을 데가 없다.
+                            ...(online
+                                ? [
+                                      {
+                                          label: "내 이름 바꾸기",
+                                          hint: state.heroes[online === "guest" ? 1 : 0]?.nick
+                                              ? `지금 ${state.heroes[online === "guest" ? 1 : 0]?.nick} — 지도의 내 칸에 적힌다`
+                                              : `영문·숫자 ${NICK_MAX}자 — 지도의 내 칸에 적힌다`,
+                                          go: () => {
+                                              changeNick();
+                                              setSheet("none");
+                                          },
+                                      },
+                                  ]
+                                : []),
                             ...(room && online === "host" && linked
                                 ? [
                                       {
@@ -2059,6 +2165,9 @@ export default function Rogue() {
                                           label: "온라인 방 만들기",
                                           hint: "초대 링크나 코드 네 자리를 동료에게 보낸다 — 지금 판에 들어온다",
                                           go: () => {
+                                              // **이름부터 묻는다** — 방을 연 뒤에 물으면 그 사이에 들어온
+                                              // 손님이 이름 없는 방장을 본다(`peek` 이 곧바로 답한다).
+                                              askNick();
                                               void hostRoom();
                                               setSheet("none");
                                           },
@@ -2069,6 +2178,7 @@ export default function Rogue() {
                                           go: () => {
                                               const code = window.prompt("방 코드 네 자리")?.trim();
                                               if (!code) return;
+                                              askNick();
                                               setSheet("none");
                                               // **먼저 붙는다** — 방장의 직업을 받아야 고르는 판이 열린다.
                                               void joinRoom(code);
@@ -2128,7 +2238,8 @@ export default function Rogue() {
                             조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. */}
                         {originFor.t === "guest" && hostOrigin && (
                             <p className="rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-2 py-1" style={{ color: PARTY_INK[0] }}>
-                                방장은 <span className="font-bold"><OriginTag origin={hostOrigin} title /></span> 입니다.
+                                방장은 {hostNick && <span className="font-bold">{hostNick} · </span>}
+                                <span className="font-bold"><OriginTag origin={hostOrigin} title /></span> 입니다.
                             </p>
                         )}
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

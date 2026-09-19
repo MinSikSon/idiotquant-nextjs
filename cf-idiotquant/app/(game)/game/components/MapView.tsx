@@ -70,6 +70,71 @@ function clamp(v: number, lo: number, hi: number) {
     return Math.max(lo, Math.min(hi, v));
 }
 
+/**
+ * 글자 한 줄의 높이 ÷ 글꼴 크기 — 아래 `<pre>` 의 `leading-[1.32]` 와 **같은 수여야 한다.**
+ *
+ * 이름표가 칸 크기를 재는 데 쓴다. 잰 것은 칸의 폭·높이뿐이라, 거기서 글꼴 크기를
+ * 되짚으려면 이 비율이 필요하다(`글꼴 = 칸높이 ÷ 이 값`). 클래스만 고치고 여기를
+ * 안 고치면 이름표만 칸 밖으로 삐져나간다 — `test/rogue-layout.test.ts` 가 둘을 맞춰 본다.
+ */
+const LEADING = 1.32;
+
+/**
+ * 지도 위의 **이름표** — 넉 자를 2×2 로, 그 사람이 선 **한 칸에** 앉힌다.
+ *
+ * ── 왜 칸 안에 그리나 ────────────────────────────────────────────────
+ * 지도는 고정폭 글자판 한 장이라(`못 박은 규칙 4`) 한 칸에 두 칸짜리를 넣으면 **그 줄의
+ * 오른쪽이 통째로 밀린다** — 벽 `|` 이 위아래 줄과 어긋난다. 그래서 폭이 정확히 한 칸인
+ * 상자를 그 칸 **위에 덮는다.** 덮는 것은 제 `@` 하나뿐이라 가리는 것도 없다.
+ *
+ * ── 크기 ────────────────────────────────────────────────────────────
+ * 390px 에서 한 칸은 **7.8 × 17.16px**. 넉 자를 한 줄에 놓으면 글자 하나가 1.95px 라
+ * 브라우저가 그리지도 못한다(재 봤다 — 얼룩으로 나온다). **두 줄로 나누면** 줄당
+ * 8.58px 을 쓰고, 가로만 눌러(`scaleX`) 두 글자를 한 칸 폭에 앉힌다.
+ * 세로를 안 줄이는 것이 핵심이다 — 균등 축소면 6.5px 로 떨어진다.
+ *
+ * ── 안 그리는 때 ────────────────────────────────────────────────────
+ * **쓰러진 사람에게는 안 붙인다.** `†` 를 덮어 버리면 생사가 지도에서 안 보인다.
+ * 이름이 없으면(혼자 하는 판) 당연히 안 붙는다 — `@` 그대로다.
+ */
+function NickTag({ nick, ink, bg, cell, left, top }: {
+    nick: string;
+    ink: string;
+    /** `background` 로 그대로 쓴다 — 번쩍임은 **반투명이라 겹쳐 깔아야** 밑의 `@` 가 안 비친다. */
+    bg?: string;
+    cell: { w: number; h: number };
+    left: number;
+    top: number;
+}) {
+    const font = cell.h / 2;
+    // 안 누른 두 글자의 폭 — 한 글자의 폭(`cell.w`)은 지도 글꼴 크기(`cell.h / LEADING`)의 것이라
+    // 이 글꼴 크기로 환산해서 잡는다.
+    const natural = 2 * cell.w * (font / (cell.h / LEADING));
+    return (
+        <span
+            aria-hidden
+            className="pointer-events-none absolute overflow-hidden"
+            style={{ left, top, width: cell.w, height: cell.h, background: bg }}
+        >
+            <span
+                className="absolute top-1/2 left-0 text-center font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
+                style={{
+                    width: natural,
+                    color: ink,
+                    fontSize: font,
+                    lineHeight: 1,
+                    transform: `translateY(-50%) scaleX(${cell.w / natural})`,
+                    transformOrigin: "left center",
+                }}
+            >
+                {nick.slice(0, 2)}
+                {nick.length > 2 ? "\n" : ""}
+                {nick.slice(2, 4)}
+            </span>
+        </span>
+    );
+}
+
 interface Run {
     text: string;
     ink: string;
@@ -211,6 +276,34 @@ export default function MapView({
                         </div>
                     ))}
                 </pre>
+                {/* **이름표** — 화면 **안**에 서 있고 이름이 있는 사람에게만.
+                    화면 밖은 아래의 화살표가 맡는다. */}
+                {state.heroes.map((h, i) => {
+                    if (!h.nick || h.hp <= 0 || h.x < 0) return null;
+                    const cx = h.x - ox;
+                    const cy = h.y - oy;
+                    if (cx < 0 || cy < 0 || cx >= view.cols || cy >= view.rows) return null;
+                    // **번쩍임이 이름표를 이긴다.** 이름표가 그 칸을 통째로 덮으므로, 아래
+                    // `<pre>` 에 칠한 피격·치유 색이 이름표 뒤로 숨는다 — 이름을 지은 사람만
+                    // 맞아도 나아도 화면이 가만히 있게 된다.
+                    //
+                    // 번쩍임의 바닥색은 **반투명**이라 그대로 깔면 밑의 `@` 가 이름표 글자와
+                    // 겹쳐 비친다. 제 바닥색 **위에 겹쳐** 깐다.
+                    const flash = cellFlashes[`${h.x},${h.y}`];
+                    const base = PARTY_BG[i] ?? "var(--rg-bg)";
+                    return (
+                        <NickTag
+                            key={i}
+                            nick={h.nick}
+                            ink={flash?.ink ?? PARTY_INK[i] ?? INK[i === who ? "hero" : "ally"]}
+                            bg={flash?.bg ? `linear-gradient(${flash.bg}, ${flash.bg}), ${base}` : base}
+                            cell={cell}
+                            left={cx * cell.w}
+                            top={cy * cell.h}
+                        />
+                    );
+                })}
+
                 {/* **화면 밖의 동료** — 좁은 화면에서 지도가 나를 따라가면 동료가 잘려 나간다.
                     그 사람 쪽 가장자리에 제 색 화살표와 거리(칸)를 세운다. */}
                 {state.heroes.map((h, i) => {
@@ -220,10 +313,13 @@ export default function MapView({
                     if (!dx && !dy) return null;
                     const arrow = ["↖", "↑", "↗", "←", "", "→", "↙", "↓", "↘"][(dy + 1) * 3 + dx + 1];
                     const dist = Math.max(Math.abs(h.x - me.x), Math.abs(h.y - me.y));
+                    // 이름이 있으면 `2P` 대신 그것을 적는다 — 여기는 한 칸이 아니라 띄운
+                    // 표라서 넉 자가 그대로 들어간다.
+                    const tag = h.nick ?? `${i + 1}P`;
                     return (
                         <span
                             key={i}
-                            aria-label={`${i + 1}P 는 화면 밖 ${dist}칸`}
+                            aria-label={`${tag} 는 화면 밖 ${dist}칸`}
                             className="pointer-events-none absolute whitespace-nowrap rounded-[2px] px-1 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold leading-[1.4]"
                             style={{
                                 color: PARTY_INK[i],
@@ -235,7 +331,7 @@ export default function MapView({
                         >
                             {dx < 0 || (!dx && dy) ? arrow : ""}
                             {h.hp > 0 ? "@" : "†"}
-                            {i + 1}P {dist}
+                            {tag} {dist}
                             {dx > 0 ? arrow : ""}
                         </span>
                     );

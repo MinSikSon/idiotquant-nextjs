@@ -617,13 +617,48 @@ function besideFree(state: GameState, at: Pos, rng: Rng): Pos {
     return beside ?? freeSpot(state.level, rng, state.heroes);
 }
 
-export function joinGame(state: GameState, origin: HeroOrigin = "knight"): GameState {
+/** 지도 한 칸에 2×2 로 앉힐 수 있는 글자 수. */
+export const NICK_MAX = 4;
+
+/**
+ * 지도에 적을 **이름 넉 자**로 다듬는다 — 길이·글자·대소문자를 **여기 한 자리**에서 정한다.
+ *
+ * 남이 보낸 값이 그대로 화면에 그려지는 자리다(온라인의 `hello`). 흘려보내면 한 칸에
+ * 열 글자짜리가 들어와 지도를 덮거나, 줄바꿈 하나로 칸이 두 줄이 된다.
+ *
+ *   · **영문·숫자만** — 한글은 고정폭 한 칸에 두 배 폭이라 격자가 밀린다.
+ *   · **넉 자까지** — 2×2 로 그리는 자리라 그 이상은 그릴 데가 없다.
+ *   · **대문자로** — 소문자는 8.58px 에서 `a`·`o`·`e` 가 서로 안 갈린다(재 봤다).
+ *
+ * 남는 것이 없으면 `undefined` — 이름표를 안 달고 `@` 그대로 간다.
+ */
+export function cleanNick(raw: unknown): string | undefined {
+    if (typeof raw !== "string") return undefined;
+    const s = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, NICK_MAX);
+    return s || undefined;
+}
+
+/** 그 사람의 이름을 놓는다 — **판을 안 굴린다**(턴도 난수도 안 쓴다). */
+export function setNick(state: GameState, who: number, nick: string | undefined): GameState {
+    const hero = state.heroes[who];
+    if (!hero) return state;
+    const clean = cleanNick(nick);
+    if (clean) hero.nick = clean;
+    else delete hero.nick;
+    return { ...state };
+}
+
+export function joinGame(state: GameState, origin: HeroOrigin = "knight", nick?: string): GameState {
     const rng = rngOf(state);
     const host = state.heroes[0];
     // **이 판에서 보냈던 동료가 있으면 그 사람이 돌아온다** — 고른 직업은 안 쓴다.
     const back = state.benched;
     delete state.benched;
     const guest = back ?? makePartyHero(state, rng, origin);
+    // **이름은 돌아온 동료도 새로 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이다.
+    const clean = cleanNick(nick);
+    if (clean) guest.nick = clean;
+    else delete guest.nick;
 
     const at = besideFree(state, host, rng);
     guest.x = at.x;
@@ -669,7 +704,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         pullAggro(state, target, hero);
         const r = heroAttack(state, hero, target, rng);
         say(state, ...r.messages);
-        if (r.killed) killMonster(state, target, rng);
+        if (r.killed) killMonster(state, target, rng, hero);
         return true;
     }
 
@@ -1537,12 +1572,12 @@ function ray(
  * 예전에는 손으로 때린 것만 따로 세고 있었다. 그 상태로 도감을 붙이면 「지팡이로만
  * 잡아 본 종은 영영 모른다」가 되는데, 그건 규칙이 아니라 빠뜨린 자리다.
  */
-function killMonster(state: GameState, m: Monster, rng: Rng) {
+function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
     state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
-    // 무기 처치 수 누적 (도감 통달)
-    if (state.heroes[0].weaponId) {
-        const wep = state.heroes[0].pack.find((p) => p.id === state.heroes[0].weaponId);
+    // 무기 처치 수 누적 (도감 통달) — **잡은 사람이 쥔 칼**이다.
+    if (by.weaponId) {
+        const wep = by.pack.find((p) => p.id === by.weaponId);
         if (wep) {
             const k = `weapon:${wep.type}`;
             state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
@@ -1550,7 +1585,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
     }
     const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
     const expGained = m.def.exp * expMultiplier;
-    const levels = gainExp(state.heroes[0], expGained, rng);
+    const levels = gainExp(by, expGained, rng);
     for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
 
     // 챔피언 처치 시 100% 확정 전리품 드랍
@@ -1560,8 +1595,8 @@ function killMonster(state: GameState, m: Monster, rng: Rng) {
         say(state, `${monsterName(m)}을(를) 쓰러뜨려 희귀 전리품이 바닥에 떨어졌습니다!`);
     }
 
-    // 미다스의 건틀릿 소지 시 추가 금화 생성
-    if (hasRelic(state.heroes[0], "midas_gauntlet")) {
+    // 미다스의 건틀릿 소지 시 추가 금화 생성 — **잡은 사람이 낀 것**이다.
+    if (hasRelic(by, "midas_gauntlet")) {
         const midasGold = m.def.level * 15 + rng.between(10, 30);
         state.level.items.push(makeItem("gold", "gold", state.nextItemId++, m.x, m.y, midasGold));
         say(state, `미다스의 건틀릿이 몬스터의 유골을 황금(${midasGold}G)으로 바꾸었습니다!`);
@@ -1619,7 +1654,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
                 say(state, withDamage(`${m.def.name}이(가) 무너지는 파편에 맞았다.`, dmg));
                 if (m.hp <= 0) {
                     say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
-                    killMonster(state, m, rng);
+                    killMonster(state, m, rng, hero);
                 }
             }
         }
@@ -1688,7 +1723,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             say(state, withDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg));
             if (m.hp <= 0) {
                 say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
-                killMonster(state, m, rng);
+                killMonster(state, m, rng, hero);
             }
         } else {
             say(state, `돌풍이 ${m.def.name}을(를) 뒤로 세차게 밀쳐냈다! (${pushed}칸)`);
@@ -1712,7 +1747,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         say(state, withDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg));
         if (m.hp <= 0) {
             say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
-            killMonster(state, m, rng);
+            killMonster(state, m, rng, hero);
         }
         return true;
     }
@@ -1850,7 +1885,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     m.awake = true;
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
-        killMonster(state, m, rng);
+        killMonster(state, m, rng, hero);
     }
     land();
     return true;
@@ -2424,7 +2459,9 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
             m.burnTurns -= 1;
             say(state, `${monsterName(m)}이(가) 불길로 2의 지속 피해를 입었다.`);
             if (m.hp <= 0) {
-                killMonster(state, m, rng);
+                // **불을 붙인 사람의 몫**이다 — 이 턴에 움직인 사람이 아니다. 여기서
+                // `hero` 를 쓰면 동료가 붙인 불로 내가 경험치를 받는다.
+                killMonster(state, m, rng, state.heroes[m.burnBy ?? 0] ?? state.heroes[0]);
             }
         }
     }

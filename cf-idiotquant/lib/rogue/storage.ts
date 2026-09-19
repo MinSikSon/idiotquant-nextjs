@@ -24,7 +24,7 @@ import {
     weaponDamageOf,
 } from "./items";
 import { heroDefense } from "./hero";
-import { partyAmulet, partyGold, score } from "./game";
+import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS } from "./monsters";
 import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster } from "./types";
 
@@ -242,7 +242,19 @@ function normalize(s: Saved): GameState | null {
         if (l) levels[depth] = l;
     }
 
-    const fixHero = (h: Hero): Hero => ({
+    const fixHero = (h: Hero): Hero => {
+        const fixed = rawHero(h);
+        // **이름도 되읽을 때 다시 다듬는다.** 온라인에서는 남이 보낸 판이 이 길로 들어오므로
+        // (`deserialize`), 여기서 안 거르면 규칙이 보내는 쪽에만 있는 셈이 된다.
+        //
+        // 쓸 수 없는 이름이면 **칸째 지운다** — `undefined` 를 넣어 두면 저장했다 되읽은 판이
+        // 저장 전과 달라진다(빈 칸도 칸이다, `test/rogue-storage.test.ts`).
+        const nick = cleanNick(h.nick);
+        if (nick) fixed.nick = nick;
+        else delete fixed.nick;
+        return fixed;
+    };
+    const rawHero = (h: Hero): Hero => ({
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
         pack: liftEnchants(fixLetters(learnPlus(Array.isArray(h.pack) ? h.pack : [], s.known ?? {}))),
