@@ -64,6 +64,45 @@ test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", 
     }
 });
 
+// 방장이 끊겼다 돌아오면 **이어서** 한다.
+//
+// 방장의 판에는 손님의 영웅도 들어 있고(`heroes[1]`), 그것까지 저장에 남는다. 그래서
+// 창을 닫았다 열어도 **같은 코드로 방을 다시 열기만** 하면 기다리던 손님이 붙어 판을
+// 통째로 돌려받는다. 새 코드로 열면 손님은 영영 못 찾는다.
+test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 판에 남아 있다", () => {
+    // ── ① 들어 있던 방을 **그 코드 그대로** 다시 연다
+    {
+        // `changeNick` 도 같은 칸을 읽으므로 **되살리는 자리**를 따로 짚는다.
+        const at = SRC.indexOf("resumed.current = true;");
+        assert.ok(at > 0, "들어 있던 방을 되살리는 자리를 못 찾았다");
+        const body = SRC.slice(at, at + 500);
+        assert.match(body, /r\?\.role === "host"\) hostRoom\(r\.code\)/, "방장이 돌아와도 같은 코드로 안 연다");
+        assert.match(body, /r\?\.role === "guest"\) joinRoom\(r\.code/, "손님이 돌아와도 그 방으로 안 간다");
+    }
+
+    // ── ② 돌아온 방장은 **손님을 다시 안 앉힌다** — 판에 이미 있다
+    {
+        const at = SRC.indexOf('m?.t === "hello"');
+        assert.ok(at > 0, "방장이 인사를 받는 자리를 못 찾았다");
+        const body = SRC.slice(at, SRC.indexOf('m?.t === "bye"', at));
+        assert.match(
+            body,
+            /s\.heroes\.length > 1 \? setNick\(s, 1, m\.nick\) : joinGame\(/,
+            "이미 앉아 있는 손님에게 `joinGame` 을 다시 부른다 — 배낭과 레벨이 통째로 날아간다",
+        );
+        assert.match(body, /t: "init", state: serialize\(g\)/, "돌아온 손님에게 판을 안 돌려준다");
+    }
+
+    // ── ③ 방장의 판은 **저장에 남는다** — 손님이 든 채로
+    {
+        assert.match(
+            SRC,
+            /if \(online === "guest"\) return;\n\s*if \(state\.phase === "playing"\) \{\n\s*save\(state\);/,
+            "방장이 제 판을 저장하는 자리가 없다 — 창을 닫으면 손님 자리까지 사라진다",
+        );
+    }
+});
+
 test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", () => {
     // ── ① 규약에 물음과 답이 둘 다 있다
     {
@@ -85,8 +124,11 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         const open = SRC.indexOf('conn.on("open", () => {', SRC.indexOf("const joinRoom"));
         assert.ok(open > 0, "손님이 잇는 자리를 못 찾았다");
         const body = SRC.slice(open, SRC.indexOf('conn.on("data"', open));
-        assert.match(body, /conn\.send\(\s*origin\b/, "손님이 고른 직업 유무로 갈라 보내지 않는다");
-        assert.match(body, /t:\s*"hello",\s*origin/, "고른 뒤에 보내는 인사가 없다");
+        // **클로저의 `origin` 만 보면 안 된다** — 붙은 뒤에 고르고서 끊기면 그 값은 여전히
+        // 비어 있어서, 다시 이을 때마다 고르기 창이 뜬다. 적어 둔 것을 같이 본다.
+        assert.match(body, /const mine = origin \?\? savedOrigin\(code\)/, "보낼 때 적어 둔 직업을 안 읽는다");
+        assert.match(body, /conn\.send\(\s*mine\b/, "손님이 고른 직업 유무로 갈라 보내지 않는다");
+        assert.match(body, /t:\s*"hello",\s*origin: mine/, "고른 뒤에 보내는 인사가 없다");
         assert.match(body, /t:\s*"peek"/, "안 골랐을 때 보내는 물음이 없다");
     }
 
@@ -115,7 +157,27 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         assert.match(SRC.slice(init, init + 220), /joined = true/, "판을 받고도 문이 안 열린다 — 손님이 영영 멈춘다");
     }
 
-    // ── ⑥ 받은 직업을 **고르는 화면에 적는다**
+    // ── ⑥ **이미 고른 사람에게는 다시 안 묻는다**
+    //
+    // 고른 뒤에 끊기면 다시 잇는 길도 `joinRoom` 을 지나는데, 그때 넘어오는 `origin` 은
+    // **처음 붙을 때의 값**이라 비어 있다. 적어 둔 것을 안 보면 끊길 때마다 고르기 창이
+    // 뜨고, 이미 판에 앉아 있는 사람에게 그 창은 아무 뜻이 없다.
+    {
+        assert.match(SRC, /function savedOrigin\(code: string\)/, "적어 둔 직업을 읽는 자리가 없다");
+        // 다시 이을 때 **적어 둔 것을 덮어쓰지 않는다**.
+        assert.match(
+            SRC,
+            /const chosen = origin \?\? savedOrigin\(code\);/,
+            "다시 이으면서 적어 둔 직업을 빈 값으로 덮는다 — 고른 것이 날아간다",
+        );
+        const at = SRC.indexOf('m?.t === "room"', SRC.indexOf("const joinRoom"));
+        assert.ok(at > 0, "손님이 방장의 답을 듣는 자리를 못 찾았다");
+        const body = SRC.slice(at, SRC.indexOf('m?.t === "init"', at));
+        assert.match(body, /const already = savedOrigin\(code\);/, "답을 받고도 이미 고른 것을 안 본다");
+        assert.match(body, /if \(already\) \{[\s\S]*?t: "hello"/, "이미 골랐는데 인사 대신 고르기 창을 띄운다");
+    }
+
+    // ── ⑦ 받은 직업을 **고르는 화면에 적는다**
     {
         assert.match(SRC, /setHostOrigin\(/, "받은 직업을 어디에도 안 담는다");
         assert.match(SRC, /방장은 /, "고르는 화면에 방장이 누구인지를 안 적는다");

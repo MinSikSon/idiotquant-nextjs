@@ -263,6 +263,26 @@ const ROOM_KEY = "rogue-room";
 const NICK_KEY = "rogue-nick";
 const RETRY_MS = 3000;
 
+/**
+ * 그 방에서 **이미 고른 직업** — 없으면 아직 안 골랐다.
+ *
+ * 고르기는 한 번이면 된다. 그런데 끊겨서 다시 잇는 길도 `joinRoom` 을 지나고, 그때
+ * 넘어오는 `origin` 은 **처음 붙을 때의 값**이라 비어 있다(그 사이에 골랐으므로).
+ * 그래서 「고를 것인가」는 클로저가 아니라 **적어 둔 것**을 봐야 한다 — 안 그러면
+ * 끊길 때마다 고르기 창이 다시 뜬다.
+ *
+ * 방 코드가 다르면 안 쓴다 — 나갔다 다른 방에 들어간 사람에게 옛 직업을 먹이면 안 된다.
+ */
+function savedOrigin(code: string): HeroOrigin | undefined {
+    try {
+        const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
+        if (!r || r.code !== code || typeof r.origin !== "string") return undefined;
+        return r.origin in ORIGINS ? (r.origin as HeroOrigin) : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
 /** 기억해 둔 이름. 없거나 못 읽으면 빈 값. */
 function savedNick(): string | undefined {
     try {
@@ -852,9 +872,12 @@ export default function Rogue() {
         const { Peer } = await import("peerjs");
         const peer = new Peer();
         net.current = { peer };
+        // **적어 둔 직업을 지우지 않는다.** 다시 잇는 길도 이 함수를 지나는데, 그때 넘어오는
+        // `origin` 은 처음 붙을 때의 값이라 비어 있다 — 그것으로 덮어쓰면 고른 것이 날아가
+        // 고르기 창이 다시 뜬다.
+        const chosen = origin ?? savedOrigin(code);
         try {
-            // 아직 안 골랐으면 **직업은 안 적는다** — 적어 두면 새로고침 때 안 물어보고 들어간다.
-            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, ...(origin ? { origin } : {}) }));
+            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, ...(chosen ? { origin: chosen } : {}) }));
         } catch {}
         // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 동료 자리를 쥔 채 기다린다.
         setOnline("guest");
@@ -876,15 +899,26 @@ export default function Rogue() {
             conn.on("open", () => {
                 // **이어졌다고 `linked` 가 서지는 않는다** — 판을 받아야(`init`) 같이 보는 것이다.
                 // 안 그러면 아직 자리도 없는데 키가 먹어, 방장 쪽에서 없는 영웅을 움직이게 된다.
+                // **보낼 때 다시 읽는다** — 붙은 뒤에 고르고서 끊겼으면 이 클로저의
+                // `origin` 은 여전히 비어 있다. 그대로 믿으면 다시 물어보게 된다.
+                const mine = origin ?? savedOrigin(code);
                 conn.send(
-                    origin
-                        ? ({ t: "hello", origin, nick: savedNick() } satisfies NetMsg)
+                    mine
+                        ? ({ t: "hello", origin: mine, nick: savedNick() } satisfies NetMsg)
                         : ({ t: "peek" } satisfies NetMsg),
                 );
             });
             conn.on("data", (raw) => {
                 const m = raw as NetMsg;
                 if (m?.t === "room") {
+                    // **이미 고른 사람에게는 다시 안 묻는다.** 방장이 답을 늦게 보냈거나
+                    // 그 사이에 골랐을 수 있다 — 고르기 창을 또 띄우면 이미 정해진 것을
+                    // 다시 고르게 된다(고쳐도 판에는 안 앉는다, 방장이 그 사람을 이미 안다).
+                    const already = savedOrigin(code);
+                    if (already) {
+                        conn.send({ t: "hello", origin: already, nick: savedNick() } satisfies NetMsg);
+                        return;
+                    }
                     // 방장의 직업과 이름을 받았다 — 이제 **그것을 보고** 고른다.
                     setHostOrigin(m.origin in ORIGINS ? m.origin : "knight");
                     setHostNick(cleanNick(m.nick));

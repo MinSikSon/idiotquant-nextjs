@@ -19,9 +19,9 @@ import { joinGame, newGame, perform } from "@/lib/rogue/game";
 import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { isVisible } from "@/lib/rogue/fov";
-import { addToPack } from "@/lib/rogue/hero";
+import { addToPack, packItem } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
-import { T, idx, walkable, type GameState, type Tile } from "@/lib/rogue/types";
+import { T, idx, walkable, type GameState, type Hero, type Tile } from "@/lib/rogue/types";
 
 /** 손님 하나를 들인 판. */
 function withGuest(seed: number): GameState {
@@ -821,6 +821,137 @@ test("경험치는 잡은 사람의 것이되 곁에 선 동료와 나눈다", a
     }
 });
 
+// 쓰러진 사람을 되살리는 길이 여태 둘뿐이었다 — **층을 넘거나**(살아남은 사람이 계단까지
+// 가야 한다), 불사조의 깃털(제 몸에만 듣는다). 둘 다 **곁에 가서 살리는** 길이 아니라,
+// 동료가 눈앞에 누워 있는데 할 수 있는 것이 없었다. 소생 물약이 그 자리다.
+test("소생 물약은 곁의 쓰러진 동료를 일으킨다 — 혼자면 제 몸을 채운다", () => {
+    /** 손님을 눕히고, 방장에게 소생 물약을 쥐여 준다. */
+    const ready = (seed: number, apart: boolean) => {
+        const s = withGuest(seed);
+        const [host, guest] = s.heroes;
+        s.level.monsters = [];
+        guest.hp = 0;
+        if (apart) {
+            // 멀찍이 — 곁이 아니면 안 듣는다.
+            guest.x = host.x + 5;
+            guest.y = host.y + 5;
+        }
+        const pot = makeItem("potion", "revival", 970, -1, -1);
+        addToPack(host, pot);
+        return { s, host, guest, letter: pot.letter! };
+    };
+
+    // ── 곁에 있으면 **최대 체력의 절반**으로 일어난다
+    {
+        const { s, host, guest, letter } = ready(4601, false);
+        assert.ok(Math.max(Math.abs(guest.x - host.x), Math.abs(guest.y - host.y)) <= 1, "손님이 곁에 안 섰다");
+        const after = perform(s, { t: "quaff", letter });
+        assert.equal(after.heroes[1].hp, Math.max(1, Math.floor(guest.maxHp / 2)), "곁의 동료가 안 일어났다");
+        assert.equal(after.phase, "playing", "일으켰는데 판이 끝났다");
+        assert.ok(!packItem(after.heroes[0], letter), "물약이 배낭에 남았다");
+    }
+
+    // ── 멀면 **안 듣는다** — 대신 제 몸이 가득 찬다(빈 칸이 되지 않게)
+    {
+        const { s, host, letter } = ready(4602, true);
+        host.hp = 3;
+        const after = perform(s, { t: "quaff", letter });
+        assert.equal(after.heroes[1].hp, 0, "멀리 누운 동료가 일어났다 — 다가갈 까닭이 사라진다");
+        assert.equal(after.heroes[0].hp, after.heroes[0].maxHp, "곁에 아무도 없는데 제 몸도 안 찼다");
+    }
+
+    // ── **혼자 하는 판**에서도 쓸모가 있다
+    {
+        const s = newGame(4603);
+        s.heroes[0].hp = 2;
+        const pot = makeItem("potion", "revival", 971, -1, -1);
+        addToPack(s.heroes[0], pot);
+        const after = perform(s, { t: "quaff", letter: pot.letter! });
+        assert.equal(after.heroes[0].hp, after.heroes[0].maxHp, "혼자인데 아무 일도 안 났다 — 빈 칸짜리 물약이다");
+    }
+
+    // ── 굶어 쓰러진 사람도 일으킨다 — 배와 비문까지 같이(`enterLevel` 과 같은 자리)
+    {
+        const { s, guest, letter } = ready(4604, false);
+        guest.food = -400;
+        s.epitaph = "굶어 죽었다.";
+        const after = perform(s, { t: "quaff", letter });
+        assert.ok(after.heroes[1].hp > 0, "굶어 쓰러진 동료가 안 일어났다");
+        assert.ok(after.heroes[1].food > -200, "일으켰는데 배가 죽음선 아래 그대로다");
+        assert.equal(after.epitaph, "", "일어났는데 굶어 죽었다는 비문이 남아 있다");
+        const next = perform(after, { t: "rest" });
+        assert.ok(next.heroes[1].hp > 0, "일어난 동료가 한 걸음 만에 도로 쓰러졌다");
+    }
+});
+
+// 다시 들어온 손님은 **그 사람 그대로**여야 한다.
+//
+// 온라인에서 손님의 영웅은 **방장의 판 안에** 산다. 끊겼다 다시 붙으면 방장이 판을 통째로
+// 돌려주는데(`init`), 그때 `joinGame` 을 또 부르면 **새 영웅이 서서** 모은 물건·레벨·
+// 손질이 통째로 날아간다. 방장 쪽 갈림은 `heroes.length > 1` 하나다.
+test("다시 들어온 손님의 배낭과 수치가 그대로다", async () => {
+    const { serialize, deserialize } = await import("@/lib/rogue/storage");
+    const { setNick } = await import("@/lib/rogue/game");
+
+    /** 손님에게 물건과 수치를 얹어 둔다 — 잃어버리면 표가 나게. */
+    const loaded = (seed: number) => {
+        const s = joinGame(newGame(seed), "rogue", "kimc");
+        const guest = s.heroes[1];
+        guest.level = 5;
+        guest.exp = 210;
+        guest.maxHp = 40;
+        guest.hp = 31;
+        guest.gold = 777;
+        const sword = makeItem("weapon", "silver sword", 980, -1, -1);
+        sword.plusHit = 3;
+        sword.plusDam = 3;
+        sword.plusKnown = true;
+        addToPack(guest, sword);
+        guest.weaponId = sword.id;
+        return s;
+    };
+
+    /** 그 사람이 그대로인가 — 한 자리에서 본다. */
+    const same = (g: Hero, why: string) => {
+        assert.equal(g.level, 5, `${why}: 레벨이 날아갔다`);
+        assert.equal(g.exp, 210, `${why}: 경험치가 날아갔다`);
+        assert.equal(g.gold, 777, `${why}: 금화가 날아갔다`);
+        assert.equal(g.maxHp, 40, `${why}: 최대 체력이 날아갔다`);
+        assert.equal(g.origin, "rogue", `${why}: 직업이 바뀌었다`);
+        assert.equal(g.nick, "KIMC", `${why}: 이름이 날아갔다`);
+        const wep = g.pack.find((p) => p.id === g.weaponId);
+        assert.ok(wep, `${why}: 쥐고 있던 칼이 사라졌다`);
+        assert.equal(wep!.type, "silver sword", `${why}: 다른 칼을 쥐고 있다`);
+        assert.equal(wep!.plusHit, 3, `${why}: 손질이 날아갔다`);
+    };
+
+    // ── **끊겼다 다시 붙는 길** — 방장은 `joinGame` 을 다시 안 부르고 이름만 고친다
+    {
+        const s = loaded(4701);
+        // 방장이 하는 일과 같다(`Rogue.tsx` 의 `hello` 갈래): 이미 앉아 있으면 이름만.
+        const back = s.heroes.length > 1 ? setNick(s, 1, "kimc") : joinGame(s, "rogue", "kimc");
+        same(back.heroes[1], "다시 붙었을 때");
+        assert.equal(back.heroes.length, 2, "다시 붙었는데 영웅이 늘었다");
+    }
+
+    // ── 그 판을 **직렬화해 건너보내도** 그대로다(`init` 이 지나는 길)
+    {
+        const s = loaded(4702);
+        const sent = deserialize(serialize(s))!;
+        same(sent.heroes[1], "판을 통째로 받았을 때");
+    }
+
+    // ── **나갔다 다시 들어오는 길** — 보낸 동료가 그 판 안에서 돌아온다
+    {
+        const { leaveGame } = await import("@/lib/rogue/game");
+        const s = loaded(4703);
+        const alone = leaveGame(s);
+        assert.equal(alone.heroes.length, 1, "동료가 안 나갔다");
+        const rejoined = joinGame(alone, "knight", "kimc"); // 딴 직업을 줘도 그 사람이 돌아온다
+        same(rejoined.heroes[1], "나갔다 다시 들어왔을 때");
+    }
+});
+
 test("동료는 제 출신(직업)으로 합류한다", () => {
     const s = joinGame(newGame(4409), "rogue");
     assert.equal(s.heroes[1].origin, "rogue");
@@ -973,16 +1104,18 @@ test("갑옷을 녹이는 것도 금화를 채는 것도 맞은 사람 몫이다
             const hostArm = equippedArmor(host);
             const guestArm = equippedArmor(guest);
             if (!hostArm || !guestArm) continue;
-            hostArm.plusArmor = 0;
-            guestArm.plusArmor = 0;
+            // **녹을 것을 남겨 둔다** — 손질이 `0` 이면 아쿠에이터가 더 못 녹이므로
+            // (`combat` 의 바닥), 맞았는지 안 맞았는지가 갑옷으로는 안 갈린다.
+            hostArm.plusArmor = 3;
+            guestArm.plusArmor = 3;
             guest.hp = 999;
             guest.maxHp = 999;
             partyRound(s);
-            if ((guestArm.plusArmor ?? 0) < 0) {
+            if ((guestArm.plusArmor ?? 0) < 3) {
                 found = true;
-                assert.equal(hostArm.plusArmor ?? 0, 0, "손님이 맞았는데 방장의 갑옷이 녹았다");
+                assert.equal(hostArm.plusArmor ?? 0, 3, "손님이 맞았는데 방장의 갑옷이 녹았다");
             } else {
-                assert.equal(hostArm.plusArmor ?? 0, 0, "아무도 안 맞았는데 방장의 갑옷이 녹았다");
+                assert.equal(hostArm.plusArmor ?? 0, 3, "아무도 안 맞았는데 방장의 갑옷이 녹았다");
             }
         }
         assert.ok(found, "마흔 번을 붙였는데 아쿠에이터가 한 번도 안 맞혔다");

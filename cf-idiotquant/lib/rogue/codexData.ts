@@ -549,6 +549,19 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         flavor: "벽 너머에 숨어 있는 모든 괴물의 위치와 기척이 훤히 드러난다.",
         masteryFlavor: "어둠 속에 웅크린 매복을 미리 감지하여 언제나 먼저 칼을 뽑았다.",
     },
+    {
+        kind: "potion",
+        type: "revival",
+        key: "potion:revival",
+        name: "소생",
+        category: "potion",
+        categoryLabel: "물약",
+        masteryType: "uses",
+        // 주문서·물약은 다 `5` 다 — 한 종만 다르면 「통달」의 뜻이 종마다 갈린다.
+        masteryGoal: 5,
+        flavor: "쓰러진 동료의 입에 흘려 넣으면 꺼져 가던 숨이 돌아온다 — 곁에 서야 닿는다.",
+        masteryFlavor: "위험을 무릅쓰고 걸어 들어가 동료를 끌어냈다. 혼자였다면 셋 다 남지 않았다.",
+    },
 
     // ── 반지 (8종) ───────────────────────────────────────────────────────────
     {
