@@ -175,6 +175,39 @@ test("방이 밝아지는 연출은 그리기 전에 걸린다 — useLayoutEffe
     );
 });
 
+// 이름은 **직업이 뜨는 자리마다 같이** 뜬다.
+//
+// 지도와 상태 줄에서 이름으로 찾아 놓고, 정작 「출신」이라고 적힌 자리(죽음 화면·지난 판)
+// 에서는 직업만 떠서 **누구의 근위대인지**를 못 찾았다. 이름과 직업을 잇는 자리를
+// `OriginTag` **하나**로 두고, 그리는 쪽은 이름을 넘기기만 한다 — 화면마다 따로 이어
+// 붙이면 어느 날 한 곳만 이름이 빠진다.
+test("직업이 뜨는 자리에는 이름도 같이 뜬다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+
+    // ── ① 잇는 자리는 `OriginTag` 하나다
+    {
+        assert.match(
+            s,
+            /function OriginTag\(\{ origin, nick, title = false \}/,
+            "`OriginTag` 가 이름을 안 받는다 — 화면마다 따로 이어 붙이게 된다",
+        );
+        assert.match(s, /\{nick && <span className="font-bold">\{nick\} · <\/span>\}/, "받은 이름을 안 그린다");
+    }
+
+    // ── ② **그 사람의** 직업을 그리는 자리는 전부 이름을 넘긴다
+    //
+    // 상태 줄만 예외다 — 바로 앞의 이름표 단추(`@MSON`)가 이미 같은 것을 적고 있어서,
+    // 넘기면 `@MSON  MSON · 왕실 근위대` 로 두 번 뜬다.
+    {
+        const tags = [...s.matchAll(/<OriginTag origin=\{([^}]+)\}([^/]*)\/>/g)];
+        assert.ok(tags.length >= 5, `직업을 그리는 자리가 ${tags.length} 곳뿐이다 — 이 테스트가 무엇을 재는지 잃었다`);
+        const missing = tags
+            .filter(([, who, rest]) => !rest.includes("nick=") && who !== "h.origin")
+            .map(([, who]) => who);
+        assert.deepEqual(missing, [], `이름을 안 넘기는 자리가 있다: ${missing.join(", ")}`);
+    }
+});
+
 // 칸이 번쩍이는 연출은 **사람마다** 돈다.
 //
 // `heroes[0]` 하나만 보고 있었다 — 그래서 협동에서 **동료가 맞아도 나아도 화면이 가만히

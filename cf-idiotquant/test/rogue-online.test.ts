@@ -119,7 +119,12 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
     {
         assert.match(SRC, /setHostOrigin\(/, "받은 직업을 어디에도 안 담는다");
         assert.match(SRC, /방장은 /, "고르는 화면에 방장이 누구인지를 안 적는다");
-        assert.match(SRC, /OriginTag origin=\{hostOrigin\}/, "고르는 화면에 방장의 직업을 안 적는다");
-        assert.match(SRC, /\{hostNick &&/, "고르는 화면에 방장의 이름을 안 적는다");
+        // 이름과 직업은 **한 자리에서** 그린다(`OriginTag`) — 화면마다 따로 이어 붙이면
+        // 어느 날 한 곳만 이름이 빠진다.
+        assert.match(
+            SRC,
+            /OriginTag origin=\{hostOrigin\} nick=\{hostNick\}/,
+            "고르는 화면에 방장의 직업과 이름을 같이 안 적는다",
+        );
     }
 });

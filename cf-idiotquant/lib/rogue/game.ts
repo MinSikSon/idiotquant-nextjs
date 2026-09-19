@@ -1566,6 +1566,38 @@ function ray(
     return { x, y };
 }
 
+/** 기록 줄에 적을 그 사람의 이름 — 지은 이름이 있으면 그것, 없으면 `1P`·`2P`. */
+function heroLabel(state: GameState, hero: Hero): string {
+    return hero.nick ?? `${state.heroes.indexOf(hero) + 1}P`;
+}
+
+/**
+ * 경험치를 **나눠 갖는 사람들**과 각자의 몫.
+ *
+ * ── 누가 받나 ────────────────────────────────────────────────────────
+ * **잡은 사람**과, 그 자리를 **알아보고 서 있는 동료**다. 「같은 방인가」를 따로 세지
+ * 않고 `monsterSees` 를 그대로 쓴다 — 그 함수가 이미 같은 질문에 답한다(같은 방이면
+ * 참, 어두운 방이면 두 칸 안, 방 밖이면 바로 곁). 자를 두 벌 두면 어느 날 한쪽만 고쳐진다.
+ *
+ * 쓰러진 사람은 못 받는다. 누워 있는 동안 공짜로 크면 「살아서 층을 넘어야 일어난다」가
+ * 무게를 잃는다.
+ *
+ * ── 얼마씩 ──────────────────────────────────────────────────────────
+ * **총량은 안 늘어난다.** 같은 방에 둘이 서 있다고 판이 두 배로 후해지면, 동료를 부르는
+ * 것이 곧 경험치 두 배가 된다. 나누어떨어지지 않는 나머지는 **잡은 사람**이 갖는다 —
+ * 마지막 일격의 몫이고, 이렇게 해야 합이 정확히 맞는다.
+ *
+ * 혼자면 나눌 사람이 저뿐이라 몫이 통째로 간다 — 단독 플레이는 한 글자도 안 바뀐다.
+ */
+function expShares(state: GameState, m: Monster, by: Hero, total: number): [Hero, number][] {
+    const shared = state.heroes.filter(
+        (h) => h === by || (h.hp > 0 && monsterSees(state.level, m.x, m.y, h)),
+    );
+    const each = Math.floor(total / shared.length);
+    const rest = total - each * shared.length;
+    return shared.map((h) => [h, each + (h === by ? rest : 0)]);
+}
+
 /**
  * 쓰러뜨린 자리 — **손으로 때리든 지팡이로 쏘든 던져서 맞히든 전부 여기를 지난다.**
  *
@@ -1585,8 +1617,12 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     }
     const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
     const expGained = m.def.exp * expMultiplier;
-    const levels = gainExp(by, expGained, rng);
-    for (const l of levels) say(state, `레벨 ${l} 이 되었다.`);
+    for (const [h, got] of expShares(state, m, by, expGained)) {
+        const levels = gainExp(h, got, rng);
+        // 둘이면 **누가 올랐는지**를 적는다 — 한 줄만 뜨면 제 레벨이 오른 줄 안다.
+        const tag = state.heroes.length > 1 ? `${heroLabel(state, h)} ` : "";
+        for (const l of levels) say(state, `${tag}레벨 ${l} 이 되었다.`);
+    }
 
     // 챔피언 처치 시 100% 확정 전리품 드랍
     if (m.champion) {

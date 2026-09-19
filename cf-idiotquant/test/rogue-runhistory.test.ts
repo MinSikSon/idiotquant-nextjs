@@ -100,6 +100,8 @@ test("게임 종료 시 영웅 스탯, 장비, 배낭 소지품이 모두 상세
         assert.equal(record.hero.maxStr, 18);
         assert.equal(record.hero.gold, 650);
         assert.ok(record.hero.defense > 0);
+        // 혼자 한 판에는 이름이 없다 — 칸째 비어야 옛 기록과 같은 모양이다.
+        assert.ok(!("nick" in record.hero), "이름을 안 지었는데 빈 칸이 남았다");
 
         // 3. 장착 장비
         assert.ok(record.hero.weaponName?.includes("장검"));
@@ -161,6 +163,29 @@ test("증표를 쥐고 탈출 성공 시 승리 상태와 증표 소지가 정�
         assert.equal(record.amulet, true);
         assert.equal(record.hero?.hasAmulet, true);
         assert.ok(tombScore(record) >= 12500); // 2500 + 10000 + 26*50
+    });
+});
+
+// 지난 판 목록은 **저장 판과 다른 칸**에 산다 — 되읽을 때 `normalize` 를 안 지난다.
+// 그래서 이름을 적어 둘 때 여기서도 한 번 더 다듬는다. 안 그러면 온라인에서 남이 보낸
+// 아무 문자열이 지난 판 목록에 그대로 남는다.
+test("지난 판에도 그때 쓰던 이름이 남는다 — 적을 때 한 번 더 다듬는다", async () => {
+    const { setNick } = await import("@/lib/rogue/game");
+    withStorage(() => {
+        const s = setNick(newGame(778), 0, "mson");
+        s.phase = "dead";
+        s.epitaph = "오크에게 맞았다";
+        const record = bury(s)[0];
+        assert.equal(record.hero?.nick, "MSON", "지난 판에 그때 쓰던 이름이 안 남았다");
+    });
+
+    withStorage(() => {
+        const s = newGame(779);
+        // 남이 보낸 판인 셈 치고 규칙 밖의 값을 박아 둔다.
+        s.heroes[0].nick = "한글이름아주긴것";
+        s.phase = "dead";
+        const record = bury(s)[0];
+        assert.ok(!record.hero?.nick, "쓸 수 없는 이름이 지난 판에 그대로 남았다");
     });
 });
 

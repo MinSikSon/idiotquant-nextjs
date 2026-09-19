@@ -461,6 +461,8 @@ export interface TombItem {
 /** 지난 판의 영웅 상세 스탯 및 장비/인벤토리 기록 */
 export interface TombHero {
     origin?: HeroOrigin;
+    /** 그 판에서 쓰던 이름 — 없으면(혼자 한 판) 직업만 적는다. 옛 기록에도 없다. */
+    nick?: string;
     level: number;
     exp: number;
     hp: number;
@@ -631,6 +633,9 @@ export function createTombHero(hero: Hero): TombHero {
 
     return {
         origin: hero.origin ?? "knight",
+        // **적어 둘 때도 한 번 더 다듬는다** — 지난 판 목록은 저장 판과 다른 칸에 살아서
+        // `normalize` 를 안 지난다.
+        ...(cleanNick(hero.nick) ? { nick: cleanNick(hero.nick) } : {}),
         level: hero.level,
         exp: hero.exp,
         hp: hero.hp,
