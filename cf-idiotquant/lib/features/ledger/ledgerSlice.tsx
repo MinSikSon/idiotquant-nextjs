@@ -7,7 +7,7 @@ import {
     getLedgerBalances, putLedgerBalance, deleteLedgerBalance,
     type LedgerEntry, type NewLedgerEntry, type LedgerAccess, type LedgerMember,
 } from "./ledgerAPI";
-import { monthsBefore, type LedgerBalance } from "./balances";
+import { rangeStart, type LedgerBalance } from "./balances";
 import { catKey, frozenKey, type LedgerKind, type StoredCategory } from "./categories";
 
 /** 사용자가 보는 달은 KST 기준이다 — UTC 로 세면 매달 1일 오전 9시 전에 지난달이 열린다. */
@@ -44,13 +44,7 @@ interface LedgerState {
     error: string | null;
 }
 
-/**
- * 차트가 한 번에 보는 달 수. **보고 있는 달을 포함해 뒤로 이만큼.**
- *
- * 열두 달이면 「작년 이맘때와 견준다」가 되고, 폰에서도 막대가 손가락만 하다.
- * 워커의 상한은 120개월이라 여기서 늘려도 막히지 않는다.
- */
-export const BALANCE_MONTHS = 12;
+
 
 const initialState: LedgerState = {
     state: "init",
@@ -364,22 +358,23 @@ export const ledgerSlice = createAppSlice({
          * 달이 같이 있어야 하기 때문이다. 그래서 달을 옮겨도 구간만 밀릴 뿐
          * 다시 읽는 모양은 같다. */
         reqGetLedgerBalances: create.asyncThunk(
-            async (month: string, { getState }) => {
-                const from = monthsBefore(month, BALANCE_MONTHS - 1);
-                const result = await getLedgerBalances(ownerOf(getState), from, month);
+            async (arg: { month: string; months: number }, { getState }) => {
+                const from = rangeStart(arg.month, arg.months);
+                const result = await getLedgerBalances(ownerOf(getState), from, arg.month);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
             {
                 pending: (state) => { state.error = null; },
                 // 달을 연달아 넘기면 먼저 보낸 응답이 나중에 올 수 있다. 내역과 같은
-                // 규약으로, **지금 보고 있는 달의 응답만** 받는다.
+                // 규약으로, **지금 보고 있는 달의 응답만** 받는다. 구간만 바꾼 요청도
+                // 같은 달이므로 그대로 받는다.
                 fulfilled: (state, action) => {
-                    if (action.meta.arg !== state.month) return;
+                    if (action.meta.arg.month !== state.month) return;
                     state.balances = (action.payload?.data?.balances ?? []) as LedgerBalance[];
                 },
                 rejected: (state, action) => {
-                    if (action.meta.arg !== state.month) return;
+                    if (action.meta.arg.month !== state.month) return;
                     state.error = action.error?.message ?? null;
                 },
             }

@@ -23,7 +23,10 @@ import {
 } from "recharts";
 
 import { cn } from "@/lib/utils";
-import { balancePoints, netWorth, type BalancePoint, type LedgerBalance } from "@/lib/features/ledger/balances";
+import {
+    balancePoints, netWorth, BALANCE_RANGES,
+    type BalancePoint, type LedgerBalance,
+} from "@/lib/features/ledger/balances";
 
 const FIELD_LABEL_CLS =
     "text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest";
@@ -117,13 +120,26 @@ function DeltaTooltip({ active, payload }: { active?: boolean; payload?: { paylo
 }
 
 export function BalancePanel({
-    month, balances, mutating, onSave, onClear,
+    month, thisMonthKst, balances, mutating, range, onRange, onMonth, onSave, onClear,
 }: {
     /** 지금 보고 있는 달. 적고 고치는 것은 언제나 이 달이다. */
     month: string;
+    /** 오늘이 속한 달. 앞날은 적을 수 없다. */
+    thisMonthKst: string;
     balances: LedgerBalance[];
     mutating: boolean;
-    onSave: (assets: number, liabilities: number) => void;
+    /** 차트가 보는 달 수. */
+    range: number;
+    onRange: (months: number) => void;
+    /** 달을 옮긴다 — 폼 안의 달 고르개가 부른다. */
+    onMonth: (month: string) => void;
+    /**
+     * 저장한다. **끝난 뒤의 결과를 돌려준다** — `null` 이면 됐고, 글자면 그 까닭이다.
+     *
+     * 예전에는 돌려주는 것이 없어서 화면이 **무조건 폼을 닫았다.** 워커가 404 를 내도
+     * 폼이 닫히고 값은 그대로라, 사용자에게는 「저장했는데 반영이 안 된다」로만 보였다.
+     */
+    onSave: (assets: number, liabilities: number) => Promise<string | null>;
     onClear: () => void;
 }) {
     const points = useMemo(() => balancePoints(balances), [balances]);
@@ -131,33 +147,47 @@ export function BalancePanel({
     const here = points.find(p => p.month === month) ?? null;
 
     const [open, setOpen] = useState(false);
+    /** 저장이 실패한 까닭. 있으면 폼을 안 닫는다. */
+    const [saveError, setSaveError] = useState<string | null>(null);
     // 금액은 글자로 들고 있다 — 숫자로 들면 지우는 순간 0 이 되어 칸을 비울 수 없다
     // (계산기에서 고친 것과 같은 자리다). 위 내역 입력칸과도 같은 규약이다.
     const [fAssets, setFAssets] = useState("");
     const [fLiab, setFLiab] = useState("");
 
-    // 달을 옮기면 치던 것을 접는다 — 3월 값이 4월 칸에 남아 있으면 안 된다.
-    useEffect(() => { setOpen(false); }, [month]);
+
 
     const digits = (s: string) => s.replace(/[^\d]/g, "").slice(0, 15);
     const fmt = (s: string) => (s ? Number(s).toLocaleString("ko-KR") : "");
     const numOf = (s: string) => Number(s.replace(/[^\d]/g, "") || "0");
 
     const startEdit = () => {
-        setFAssets(thisMonth ? fmt(String(thisMonth.assets)) : "");
-        setFLiab(thisMonth ? fmt(String(thisMonth.liabilities)) : "");
+        setSaveError(null);
         setOpen(true);
     };
 
-    const save = () => {
-        onSave(numOf(fAssets), numOf(fLiab));
-        setOpen(false);
+    // 폼이 열려 있는 동안 달이 바뀌면(폼 안의 달 고르개) **그 달 값으로 다시 채운다.**
+    // 닫아 버리면 「2025년 3월을 적으려고 달을 옮겼는데 폼이 사라지는」 꼴이 된다.
+    useEffect(() => {
+        setFAssets(thisMonth ? fmt(String(thisMonth.assets)) : "");
+        setFLiab(thisMonth ? fmt(String(thisMonth.liabilities)) : "");
+        setSaveError(null);
+        // `thisMonth` 는 달이 바뀌거나 저장이 반영될 때만 달라진다.
+    }, [month, thisMonth?.assets, thisMonth?.liabilities]);
+
+    const save = async () => {
+        setSaveError(null);
+        const failed = await onSave(numOf(fAssets), numOf(fLiab));
+        // **됐을 때만 닫는다.** 실패했는데 닫으면 값이 그대로인 채 폼만 사라져서,
+        // 사용자에게는 「저장했는데 반영이 안 된다」로만 보인다.
+        if (failed === null) setOpen(false);
+        else setSaveError(failed);
     };
 
     // 막대가 하나뿐이면 차트가 아니라 숫자 하나다 — 견줄 것이 없는 막대는 안 세운다.
     const drawable = points.filter(p => p.delta !== null);
     const biggest = drawable.reduce<BalancePoint | null>(
         (best, p) => (best === null || Math.abs(p.delta!) > Math.abs(best.delta!) ? p : best), null);
+
 
     return (
         <section className={CARD_CLS}>
@@ -177,8 +207,21 @@ export function BalancePanel({
             {/* ── 이 달의 값 ── */}
             {open ? (
                 <div className="px-4 py-3.5 flex flex-col gap-3">
+                    {/* **어느 달을 적는지 여기서 고른다.** 달마다 ◀ 를 눌러 옮겨 다니면
+                        지난해 열두 달을 채우는 데 스무 번을 눌러야 한다. 고르면 보고 있는
+                        달 자체가 옮겨가고(`onMonth`), 폼은 그 달 값으로 다시 채워진다. */}
+                    <div className="flex items-center justify-between gap-2">
+                        <label htmlFor="bal-month" className={FIELD_LABEL_CLS}>어느 달</label>
+                        <input
+                            id="bal-month" type="month"
+                            value={month}
+                            max={thisMonthKst}
+                            onChange={(e) => { if (e.target.value) onMonth(e.target.value); }}
+                            className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas text-[13px] font-bold tabular-nums text-neutral-800 dark:text-neutral-100"
+                        />
+                    </div>
                     <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                        {month} 말 기준입니다. <b className="font-black">순자산은 자산에서 부채를 뺀 값</b>이라 따로 적지 않습니다.
+                        그 달 <b className="font-black">말 기준</b>입니다. 순자산은 자산에서 부채를 뺀 값이라 따로 적지 않습니다.
                     </p>
                     {([
                         ["자산", fAssets, setFAssets, "예금 · 주식 · 집 …"],
@@ -212,9 +255,16 @@ export function BalancePanel({
                             {won(numOf(fAssets) - numOf(fLiab))}
                         </span>
                     </div>
+                    {/* **실패는 이 자리에서 말한다.** 가계부의 오류 띠는 내역을 못 불러왔을
+                        때만 뜨고 공유 시트 안에만 있어서, 저장 실패가 화면 어디에도 안 남았다. */}
+                    {saveError && (
+                        <p role="alert" className="text-xs font-bold text-red-600 dark:text-red-400">
+                            저장하지 못했습니다. {saveError}
+                        </p>
+                    )}
                     <div className="flex gap-2">
                         <button
-                            type="button" onClick={() => setOpen(false)}
+                            type="button" onClick={() => { setOpen(false); setSaveError(null); }}
                             className="min-h-[44px] px-4 rounded-xl border border-neutral-200 dark:border-border-subtle-dark text-[13px] font-black text-neutral-500"
                         >
                             그만두기
@@ -233,7 +283,7 @@ export function BalancePanel({
                             type="button" onClick={save} disabled={mutating}
                             className="flex-1 min-h-[44px] rounded-xl bg-brand text-white text-[13px] font-black disabled:opacity-40"
                         >
-                            저장
+                            {mutating ? "저장 중…" : "저장"}
                         </button>
                     </div>
                 </div>
@@ -269,22 +319,49 @@ export function BalancePanel({
             {/* ── 달별 증감 ── */}
             {drawable.length >= 2 && (
                 <div className="px-2 pt-3 pb-2">
-                    <div className="px-2 pb-1 flex items-baseline justify-between">
+                    <div className="px-2 pb-1 flex items-center justify-between gap-2">
                         <h3 className={FIELD_LABEL_CLS}>달별 순자산 증감</h3>
-                        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">전월 대비</span>
+                        {/* **쌓일수록 더 멀리 본다.** 한 해치만 붙박이로 두면 재작년과
+                            견줄 방법이 화면에 없다. */}
+                        <div className="flex rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                            {BALANCE_RANGES.map(r => (
+                                <button
+                                    key={r.months}
+                                    type="button"
+                                    onClick={() => onRange(r.months)}
+                                    aria-pressed={range === r.months}
+                                    className={cn(
+                                        "px-2.5 min-h-[30px] text-[11px] font-black transition-colors",
+                                        range === r.months
+                                            ? "bg-brand text-white"
+                                            : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted",
+                                    )}
+                                >
+                                    {r.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
+                    {/* **차트는 언제나 폭에 맞춘다.** 옆으로 스크롤하게 두면 세로
+                        눈금까지 같이 밀려 나가고, 값 축이 없는 막대 차트는 읽을 수가
+                        없다. 그래서 고르는 구간의 상한을 **3년(막대 36개)**으로 둔다 —
+                        그보다 촘촘해지면 막대가 실오라기가 되어 견주는 뜻이 사라진다.
+                        더 옛날을 보려면 보고 있는 달을 옮긴다. */}
                     <ResponsiveContainer width="100%" height={168}>
                         <BarChart data={drawable} margin={{ top: 14, right: 8, bottom: 0, left: 8 }}
-                            barCategoryGap="28%" maxBarSize={26}>
+                            barCategoryGap="22%" maxBarSize={26}>
                             {/* 실선 헤어라인. 점선은 「임계선」처럼 읽혀 그냥 눈금인데 뜻이 생긴다. */}
                             <CartesianGrid vertical={false} stroke="currentColor"
                                 className="text-neutral-200 dark:text-neutral-700" />
                             <XAxis
                                 dataKey="month" tickFormatter={monthTick}
-                                tickLine={false} axisLine={false}
+                                tickLine={false} axisLine={false} interval="preserveStartEnd"
                                 tick={{ fontSize: 10, fontWeight: 700 }}
                                 className="text-neutral-400 dark:text-neutral-500"
                             />
+                            {/* **범위를 손으로 정하지 않는다.** 여백을 붙여 넘기면 눈금이
+                                1404만·−134만 처럼 어중간해지고 **0 이 눈금에서 빠진다** —
+                                0 이 기준선인 차트에서 그건 자를 잃는 것이다. */}
                             <YAxis
                                 tickFormatter={compact} width={44}
                                 tickLine={false} axisLine={false}

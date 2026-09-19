@@ -10,7 +10,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    netWorth, balancePoints, prevMonth, monthsBefore, type LedgerBalance,
+    netWorth, balancePoints, prevMonth, monthsBefore, rangeStart,
+    BALANCE_RANGES, DEFAULT_BALANCE_RANGE, type LedgerBalance,
 } from "@/lib/features/ledger/balances";
 
 const row = (month: string, assets: number, liabilities: number): LedgerBalance =>
@@ -85,4 +86,34 @@ test("받은 배열을 건드리지 않는다", () => {
     const rows = [row("2026-03", 3, 0), row("2026-01", 1, 0)];
     balancePoints(rows);
     assert.deepEqual(rows.map(r => r.month), ["2026-03", "2026-01"]);
+});
+
+/* ── 구간 ────────────────────────────────────────────────────── */
+
+test("구간은 보고 있는 달을 포함해 뒤로 센다", () => {
+    // 12개월이면 이번 달까지 열둘이다 — 열셋이 되면 워커의 상한(120)을 아슬아슬하게
+    // 넘기는 조합이 생기고, 무엇보다 「1년」이라고 적어 놓고 열세 달을 보여 준다.
+    assert.equal(rangeStart("2026-09", 12), "2025-10");
+    assert.equal(rangeStart("2026-01", 12), "2025-02");
+    assert.equal(rangeStart("2026-09", 1), "2026-09");
+    assert.equal(rangeStart("2026-09", 24), "2024-10");
+});
+
+test("제일 긴 구간도 차트가 그릴 수 있는 만큼만이다", () => {
+    // 차트는 폭에 맞춰 그려지므로 막대 수가 곧 상한이다 — 서른여섯이면 폰에서도
+    // 막대 하나가 아직 손가락에 잡힌다. 워커의 상한(120)보다 한참 아래다.
+    const longest = BALANCE_RANGES[BALANCE_RANGES.length - 1]!;
+    assert.equal(longest.months, 36);
+    assert.ok(longest.months <= 120, "워커가 한 번에 주는 것보다 길 수 없다");
+    assert.equal(rangeStart("2026-09", 36), "2023-10");
+});
+
+test("구간이 0 이나 음수여도 달 하나는 본다", () => {
+    // 화면에서 올 수 없는 값이지만, 오면 빈 구간(from > to)이 되어 워커가 400 을 낸다.
+    assert.equal(rangeStart("2026-09", 0), "2026-09");
+    assert.equal(rangeStart("2026-09", -5), "2026-09");
+});
+
+test("기본 구간은 고르는 목록 안에 있다", () => {
+    assert.ok(BALANCE_RANGES.some(r => r.months === DEFAULT_BALANCE_RANGE));
 });

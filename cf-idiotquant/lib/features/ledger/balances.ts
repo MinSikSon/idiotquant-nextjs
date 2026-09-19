@@ -59,6 +59,26 @@ export function monthsBefore(month: string, n: number): string {
 }
 
 /**
+ * 차트가 한 번에 보는 구간. **보고 있는 달을 포함해 뒤로 이만큼.**
+ *
+ * 상한이 3년인 것은 **차트가 폭에 맞춰 그려지기 때문**이다. 더 멀리 잡으면 막대가
+ * 실오라기가 되어 견주는 뜻이 사라진다(옆으로 스크롤하게 두면 세로 눈금까지 같이
+ * 밀려 나가고, 값 축이 없는 막대 차트는 읽을 수가 없다). 그보다 옛날은 보고 있는
+ * 달을 옮겨서 본다.
+ */
+export const BALANCE_RANGES = [
+    { months: 12, label: "1년" },
+    { months: 24, label: "2년" },
+    { months: 36, label: "3년" },
+] as const;
+
+export const DEFAULT_BALANCE_RANGE = 12;
+
+/** 구간의 시작 달. 끝은 언제나 보고 있는 달이다. */
+export const rangeStart = (month: string, months: number) =>
+    monthsBefore(month, Math.max(1, months) - 1);
+
+/**
  * 적힌 달들을 차트가 읽는 점으로 바꾼다. 들어온 순서와 무관하게 **달 순으로** 낸다.
  *
  * ── 증감은 「바로 앞 달」하고만 견준다 ────────────────────────

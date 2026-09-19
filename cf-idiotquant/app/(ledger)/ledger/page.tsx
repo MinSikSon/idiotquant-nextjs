@@ -26,6 +26,7 @@ import {
 } from "@/lib/features/ledger/categories";
 import { useEntryDrag } from "./useEntryDrag";
 import { BalancePanel } from "./BalancePanel";
+import { DEFAULT_BALANCE_RANGE } from "@/lib/features/ledger/balances";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
 const CTL_CLS =
@@ -130,6 +131,8 @@ export default function LedgerPage() {
     const balances = useAppSelector(selectLedgerBalances);
 
     const [barKind, setBarKind] = useState<LedgerKind>("income");
+    /** 잔액 차트가 보는 달 수. 「1년 / 2년 / 전체」를 고르면 바뀐다. */
+    const [balanceRange, setBalanceRange] = useState<number>(DEFAULT_BALANCE_RANGE);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -174,8 +177,8 @@ export default function LedgerPage() {
         dispatch(reqGetLedger(month));
         // 잔액은 **여러 달을 한 번에** 읽는다 — 달별 증감을 그리려면 이웃한 달이
         // 같이 있어야 한다. 그래서 달을 옮기면 구간만 밀린다.
-        dispatch(reqGetLedgerBalances(month));
-    }, [dispatch, status, month, activeOwner]);
+        dispatch(reqGetLedgerBalances({ month, months: balanceRange }));
+    }, [dispatch, status, month, activeOwner, balanceRange]);
 
     // 항목은 월과 무관하지만 가계부마다 다르다 — 가계부가 바뀌면 다시 가져온다.
     useEffect(() => {
@@ -772,10 +775,19 @@ export default function LedgerPage() {
                     흐름을 아무리 더해도 잔고가 안 나오므로 따로 적는다. */}
                 <BalancePanel
                     month={month}
+                    thisMonthKst={thisMonth}
                     balances={balances}
                     mutating={mutating}
-                    onSave={(assets, liabilities) =>
-                        dispatch(reqPutLedgerBalance({ month, assets, liabilities }))}
+                    range={balanceRange}
+                    onRange={setBalanceRange}
+                    onMonth={(m) => dispatch(setLedgerMonth(m))}
+                    onSave={async (assets, liabilities) => {
+                        // **결과를 돌려준다.** 예전에는 던지고 잊어서, 워커가 404 를 내도
+                        // 폼이 닫히고 값은 그대로였다 — 「저장했는데 반영이 안 된다」의 정체다.
+                        const r = await dispatch(reqPutLedgerBalance({ month, assets, liabilities }));
+                        const failed = (r as unknown as { error?: { message?: string } }).error;
+                        return failed ? (failed.message ?? "알 수 없는 오류") : null;
+                    }}
                     onClear={() => dispatch(reqDeleteLedgerBalance(month))}
                 />
 
