@@ -17,7 +17,7 @@
 // 한 차트, 한 세로축 위에 그린다 — 부채가 줄고 자산이 느는 게 같은 화면에서
 // 보여야 「좋아지고 있다」가 눈에 들어온다.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
     CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer,
     Tooltip, XAxis, YAxis,
@@ -77,18 +77,90 @@ const SERIES = {
     net: { key: "net", label: "순자산", cls: "text-[#1baf7a] dark:text-[#199e70]" },
 } as const;
 
-/** 선 끝(가장 최근 달)에만 값을 적는다 — 열두 점에 다 적으면 아무것도 안 읽힌다.
- *  순자산 색은 밝은 화면 대비가 낮아, 색만으로는 값을 못 읽는 사람을 위한 자리이기도 하다. */
-function seriesEndLabel(cls: string, lastIndex: number) {
+/**
+ * 선 끝(가장 최근 달)에만 값을 적는다 — 열두 점에 다 적으면 아무것도 안 읽힌다.
+ * 순자산 색은 밝은 화면 대비가 낮아, 색만으로는 값을 못 읽는 사람을 위한 자리이기도 하다.
+ *
+ * `fill="currentColor"` 이 핵심이다 — SVG `<text>` 는 `color`(Tailwind `text-*`)
+ * 가 아니라 `fill` 로 칠해진다. 이게 빠지면 셋 다 검정으로 겹쳐 나와 어두운
+ * 화면에서는 안 보이고, 이게 바로 「차트가 안 구분된다」의 실제 원인이었다.
+ *
+ * 자산과 순자산처럼 부채가 작아 값이 붙는 달에는 **글자가 서로 겹친다.**
+ * 그래서 진짜 값 자리에는 점을 찍고(안 겹침), 글자는 `offsetY` 만큼 떼어
+ * 놓은 뒤 가는 선으로 점과 이어준다 — 겹치는 라벨을 그냥 쌓으면 선에서
+ * 떨어져 나가 잡음이 된다는 게 이 방식을 쓰는 이유다.
+ */
+function seriesEndLabel(s: (typeof SERIES)[keyof typeof SERIES], lastIndex: number, offsetY: number | undefined) {
     return (props: { x?: string | number; y?: string | number; index?: number; value?: string | number }) => {
         const { x, y, index, value } = props;
         if (index !== lastIndex || x == null || y == null || value == null) return null;
+        const nx = Number(x);
+        const ny = Number(y);
+        const ly = offsetY ?? ny;
+        const nudged = Math.abs(ly - ny) > 2;
         return (
-            <text x={Number(x) + 6} y={Number(y)} dy={4} className={cn(cls, "text-[10px] font-black tabular-nums")}>
-                {compact(Number(value))}
-            </text>
+            <g className={s.cls}>
+                {/* 진짜 값 자리 — 라벨은 떨어져도 이 점만은 실제 값을 가리킨다. */}
+                <circle cx={nx} cy={ny} r={2.5} fill="currentColor" />
+                {nudged && <line x1={nx + 3} y1={ny} x2={nx + 7} y2={ly} stroke="currentColor" strokeWidth={1} />}
+                <text
+                    data-end-label={s.key} data-natural-y={ny}
+                    x={nx + (nudged ? 9 : 6)} y={ly} dy={4}
+                    fill="currentColor" className="text-[10px] font-black tabular-nums"
+                >
+                    {compact(Number(value))}
+                </text>
+            </g>
         );
     };
+}
+
+/**
+ * 선 끝 라벨 셋의 **겹침을 잰다.** recharts 가 이미 그려 준 실제 화면 y 를
+ * `data-natural-y` 로 읽어, 최소 간격보다 가까운 라벨만 아래로 밀어낸다.
+ *
+ * 자산·부채·순자산 값 자체가 아니라 **화면에 실제로 그려진 픽셀**을 재는 것이
+ * 중요하다 — recharts 의 세로축은 자동으로 「보기 좋은」 범위를 고르기 때문에,
+ * 값의 차이만 보고 겹칠지 미리 계산할 수 없다.
+ *
+ * **크기가 아니라 DOM 이 바뀌는 것 자체를 지켜본다.** `ResponsiveContainer` 는
+ * 처음엔 너비를 몰라 아무것도 안 그리다가, 잰 뒤에야 실제 SVG 를 그려 넣는다.
+ * 그런데 이 때 감싼 div 의 박스 크기 자체는 이미 정해져 있어(높이 고정, 너비
+ * 100%) `ResizeObserver` 가 한 번도 안 울릴 수 있다 — 그래서 라벨의 `y` 속성이
+ * 실제로 바뀌는 순간을 `MutationObserver` 로 잡는다.
+ */
+function useEndLabelOffsets(ref: { current: HTMLDivElement | null }, points: BalancePoint[]) {
+    const [offsets, setOffsets] = useState<Record<string, number>>({});
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const MIN_GAP = 13;
+        let raf = 0;
+        const measure = () => {
+            const items = Array.from(el.querySelectorAll<SVGTextElement>("text[data-end-label]"))
+                .map(t => ({ key: t.dataset.endLabel!, y: Number(t.dataset.naturalY) }))
+                .sort((a, b) => a.y - b.y);
+            if (!items.length) return;
+            for (let i = 1; i < items.length; i++) {
+                if (items[i]!.y - items[i - 1]!.y < MIN_GAP) items[i]!.y = items[i - 1]!.y + MIN_GAP;
+            }
+            setOffsets((prev) => {
+                if (items.every(it => prev[it.key] === it.y)) return prev;
+                return Object.fromEntries(items.map(it => [it.key, it.y]));
+            });
+        };
+        const scheduleMeasure = () => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(measure);
+        };
+        scheduleMeasure();
+        // `y` 를 밀어낸 우리 자신의 리렌더도 한 번 더 이 관찰자를 울린다 — 그
+        // 다음 결과가 같으면 `setOffsets` 가 그대로 반환해 여기서 멈춘다.
+        const mo = new MutationObserver(scheduleMeasure);
+        mo.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ["y"] });
+        return () => { cancelAnimationFrame(raf); mo.disconnect(); };
+    }, [ref, points]);
+    return offsets;
 }
 
 function CompareTooltip({ active, payload }: { active?: boolean; payload?: { payload: BalancePoint }[] }) {
@@ -138,6 +210,8 @@ export function BalancePanel({
     const points = useMemo(() => balancePoints(balances), [balances]);
     const thisMonth = balances.find(b => b.month === month) ?? null;
     const here = points.find(p => p.month === month) ?? null;
+    const chartWrapRef = useRef<HTMLDivElement>(null);
+    const labelOffsets = useEndLabelOffsets(chartWrapRef, points);
 
     const [open, setOpen] = useState(false);
     /** 저장이 실패한 까닭. 있으면 폼을 안 닫는다. */
@@ -335,47 +409,49 @@ export function BalancePanel({
                         눈금까지 같이 밀려 나가고, 값 축이 없는 차트는 읽을 수가
                         없다. 그래서 고르는 구간의 상한을 **3년**으로 둔다 — 더 옛날은
                         보고 있는 달을 옮겨서 본다. 오른쪽은 선 끝 값을 적을 자리다. */}
-                    <ResponsiveContainer width="100%" height={192}>
-                        <LineChart data={points} margin={{ top: 6, right: 44, bottom: 0, left: 8 }}>
-                            {/* 실선 헤어라인. 점선은 「임계선」처럼 읽혀 그냥 눈금인데 뜻이 생긴다. */}
-                            <CartesianGrid vertical={false} stroke="currentColor"
-                                className="text-neutral-200 dark:text-neutral-700" />
-                            <XAxis
-                                dataKey="month" tickFormatter={monthTick}
-                                tickLine={false} axisLine={false} interval="preserveStartEnd"
-                                tick={{ fontSize: 10, fontWeight: 700 }}
-                                className="text-neutral-400 dark:text-neutral-500"
-                            />
-                            {/* **범위를 손으로 정하지 않는다.** 여백을 붙여 넘기면 0 이
-                                눈금에서 빠질 수 있다 — 부채·순자산이 0 을 가로지르는
-                                차트에서 그건 자를 잃는 것이다. */}
-                            <YAxis
-                                tickFormatter={compact} width={44}
-                                tickLine={false} axisLine={false}
-                                tick={{ fontSize: 10, fontWeight: 700 }}
-                                className="text-neutral-400 dark:text-neutral-500"
-                            />
-                            {/* 0 선 — 부채·순자산이 이 선을 넘나든다. */}
-                            <ReferenceLine y={0} stroke="currentColor"
-                                className="text-neutral-300 dark:text-neutral-600" />
-                            <Tooltip content={<CompareTooltip />} />
-                            {/* 두 줄 이상이라 범례는 항상 켠다 — 색만으로 정체를 지지 않는다. */}
-                            <Legend
-                                verticalAlign="top" align="right" height={24}
-                                formatter={(key: string) => SERIES[key as keyof typeof SERIES].label}
-                                wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
-                            />
-                            {(Object.values(SERIES)).map(s => (
-                                <Line
-                                    key={s.key}
-                                    dataKey={s.key}
-                                    stroke="currentColor" className={s.cls}
-                                    strokeWidth={2} dot={false} isAnimationActive={false}
-                                    label={seriesEndLabel(s.cls, points.length - 1)}
+                    <div ref={chartWrapRef}>
+                        <ResponsiveContainer width="100%" height={192}>
+                            <LineChart data={points} margin={{ top: 6, right: 44, bottom: 0, left: 8 }}>
+                                {/* 실선 헤어라인. 점선은 「임계선」처럼 읽혀 그냥 눈금인데 뜻이 생긴다. */}
+                                <CartesianGrid vertical={false} stroke="currentColor"
+                                    className="text-neutral-200 dark:text-neutral-700" />
+                                <XAxis
+                                    dataKey="month" tickFormatter={monthTick}
+                                    tickLine={false} axisLine={false} interval="preserveStartEnd"
+                                    tick={{ fontSize: 10, fontWeight: 700 }}
+                                    className="text-neutral-400 dark:text-neutral-500"
                                 />
-                            ))}
-                        </LineChart>
-                    </ResponsiveContainer>
+                                {/* **범위를 손으로 정하지 않는다.** 여백을 붙여 넘기면 0 이
+                                    눈금에서 빠질 수 있다 — 부채·순자산이 0 을 가로지르는
+                                    차트에서 그건 자를 잃는 것이다. */}
+                                <YAxis
+                                    tickFormatter={compact} width={44}
+                                    tickLine={false} axisLine={false}
+                                    tick={{ fontSize: 10, fontWeight: 700 }}
+                                    className="text-neutral-400 dark:text-neutral-500"
+                                />
+                                {/* 0 선 — 부채·순자산이 이 선을 넘나든다. */}
+                                <ReferenceLine y={0} stroke="currentColor"
+                                    className="text-neutral-300 dark:text-neutral-600" />
+                                <Tooltip content={<CompareTooltip />} />
+                                {/* 두 줄 이상이라 범례는 항상 켠다 — 색만으로 정체를 지지 않는다. */}
+                                <Legend
+                                    verticalAlign="top" align="right" height={24}
+                                    formatter={(key: string) => SERIES[key as keyof typeof SERIES].label}
+                                    wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
+                                />
+                                {(Object.values(SERIES)).map(s => (
+                                    <Line
+                                        key={s.key}
+                                        dataKey={s.key}
+                                        stroke="currentColor" className={s.cls}
+                                        strokeWidth={2} dot={false} isAnimationActive={false}
+                                        label={seriesEndLabel(s, points.length - 1, labelOffsets[s.key])}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             )}
         </section>
