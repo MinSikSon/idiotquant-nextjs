@@ -38,7 +38,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 9;
+const VERSION = 10;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -285,6 +285,13 @@ function normalize(s: Saved): GameState | null {
         asleep: num(h.asleep, 0),
         stuck: num(h.stuck, 0),
         detect: num(h.detect, 0),
+        // **v9 이하에는 레벨업 성장이 없다.** 안 채우면 `pickSkill` 을 여는 순간
+        // `pendingSkillPicks` 가 undefined 를 읽어 터진다. 음수는 0 으로, 지어낼 수
+        // 없는 「이미 쓴 성장」은 못 채우므로 **가진 것이 없던 것으로** 돌아간다 —
+        // 옛 저장에는 애초에 없던 값이니 맞는 처지다.
+        pendingSkillPicks: Math.max(0, num(h.pendingSkillPicks, 0)),
+        bonusDefense: Math.max(0, num(h.bonusDefense, 0)),
+        itemLuck: Math.min(1, Math.max(0, num(h.itemLuck, 0))),
     });
     const heroes: Hero[] = saved.map(fixHero);
 

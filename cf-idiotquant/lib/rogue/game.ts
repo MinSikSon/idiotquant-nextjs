@@ -47,6 +47,13 @@ import {
     wornRings,
 } from "./hero";
 import {
+    ADVANCED_HEAL_MULT,
+    ADVANCED_PRESERVE_CHANCE,
+    ADVANCED_TRAP_EVADE,
+    ADVANCE_LEVEL,
+    ORIGINS,
+} from "./origins";
+import {
     DETAIL,
     type Term,
     attackLine,
@@ -172,6 +179,11 @@ type Action =
     | { t: "stash"; letter: string }
     /** 모루(캠프) 위에서 상자의 칸 하나를 배낭으로 꺼낸다. */
     | { t: "unstash"; slot: number }
+    /**
+     * 3레벨마다 쌓이는 성장 하나를 고른다 — **캠프도, 턴도 필요 없다**(레벨업 자체가
+     * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
+     */
+    | { t: "pickSkill"; option: "str" | "def" | "luck" }
     | { t: "drop"; letter: string }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
@@ -263,7 +275,23 @@ const VAULT_TIER_UP = 2;
 const DROUGHT_GRACE = 2;
 const DROUGHT_STEP = 1.0;
 
+/**
+ * 파티의 「좋은 물건」운 — **가장 높은 값 하나를 쓴다.**
+ *
+ * 바닥에 뭐가 떨어지는지는 층 하나의 일이라 사람마다 나누지 않는다(경험치처럼 곁에 선
+ * 사람과 값이 갈리는 자리가 아니다). **쓰러진 사람은 안 센다** — 서 있지도 않은 사람의
+ * 안목이 바닥에 영향을 주면 안 된다.
+ */
+export function partyItemLuck(state: GameState): number {
+    let best = 0;
+    for (const h of state.heroes) {
+        if (h.hp > 0 && h.itemLuck > best) best = h.itemLuck;
+    }
+    return best;
+}
+
 function populate(state: GameState, level: Level, rng: Rng) {
+    const luck = partyItemLuck(state);
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
         const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
@@ -343,7 +371,7 @@ function populate(state: GameState, level: Level, rng: Rng) {
         }
 
         // 무기고는 **등급이 두 칸 위**다 — 무기고에서 단검이 나오면 무기고가 아니다.
-        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat));
+        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat, luck));
     };
 
     const avoid = [state.heroes[0], level.stairs];
@@ -860,6 +888,18 @@ function pickUp(state: GameState, hero: Hero): boolean {
     return true;
 }
 
+/** 연금술사의 회복 배율 — 전직(`ADVANCE_LEVEL`)하면 `origins.ADVANCED_HEAL_MULT` 로 깊어진다. */
+export function alchemistHealMult(hero: Hero): number {
+    if (hero.origin !== "alchemist") return 1;
+    return hero.level >= ADVANCE_LEVEL ? ADVANCED_HEAL_MULT : 1.5;
+}
+
+/** 연구자의 주문서 보존 확률 — 전직하면 `origins.ADVANCED_PRESERVE_CHANCE` 로 깊어진다. */
+export function scholarPreserveChance(hero: Hero): number {
+    if (hero.origin !== "scholar") return 0;
+    return hero.level >= ADVANCE_LEVEL ? ADVANCED_PRESERVE_CHANCE : 0.25;
+}
+
 function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "potion") {
@@ -875,7 +915,7 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
     switch (it.type) {
         case "healing": {
             let heal = rng.roll(hero.level, 4);
-            if (hero.origin === "alchemist") heal = Math.floor(heal * 1.5);
+            heal = Math.floor(heal * alchemistHealMult(hero));
             if (hero.hp + heal >= hero.maxHp) hero.maxHp += 1;
             hero.hp = Math.min(hero.maxHp, hero.hp + heal);
             say(state, "기운이 돈다.");
@@ -883,7 +923,7 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
         }
         case "extra healing": {
             let heal = rng.roll(hero.level, 8);
-            if (hero.origin === "alchemist") heal = Math.floor(heal * 1.5);
+            heal = Math.floor(heal * alchemistHealMult(hero));
             if (hero.hp + heal >= hero.maxHp) hero.maxHp += 2;
             hero.hp = Math.min(hero.maxHp, hero.hp + heal);
             hero.blind = 0;
@@ -1220,7 +1260,11 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
                 say(state, "더 손댈 곳이 없다.");
                 return false;
             }
-            const preserved = hero.origin === "scholar" && rng.chance(0.25);
+            // `rng.chance` 는 **확률이 0보다 클 때만** 부른다 — 안 그러면 연구자가
+            // 아닌 사람도 이 자리에서 난수를 하나씩 태워, 「시드가 같으면 판도 같다」가
+            // 직업에 따라 갈린다.
+            const scholarChance = scholarPreserveChance(hero);
+            const preserved = scholarChance > 0 && rng.chance(scholarChance);
             if (preserved) {
                 say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
             } else {
@@ -1233,7 +1277,11 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
             enchant(state, hero, on, rng, it.type === "blessed enchant" || !!it.blessed);
             return true;
         } else if (it.type === "transmutation") {
-            const preserved = hero.origin === "scholar" && rng.chance(0.25);
+            // `rng.chance` 는 **확률이 0보다 클 때만** 부른다 — 안 그러면 연구자가
+            // 아닌 사람도 이 자리에서 난수를 하나씩 태워, 「시드가 같으면 판도 같다」가
+            // 직업에 따라 갈린다.
+            const scholarChance = scholarPreserveChance(hero);
+            const preserved = scholarChance > 0 && rng.chance(scholarChance);
             if (preserved) {
                 say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
             } else {
@@ -1249,7 +1297,8 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
     }
 
     const key = `scroll:${it.type}`;
-    const preserved = hero.origin === "scholar" && rng.chance(0.25);
+    const scholarChance = scholarPreserveChance(hero);
+    const preserved = scholarChance > 0 && rng.chance(scholarChance);
     if (preserved) {
         say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
     } else {
@@ -1743,6 +1792,40 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
 }
 
 /**
+ * 3레벨마다 쌓이는 성장 하나를 고른다 — 힘 · 방어력 · 아이템운 중 하나.
+ *
+ * **턴을 안 쓴다**(`acted=false` 로 돌아간다) — 레벨업 자체가 이미 턴을 안 쓰는
+ * 자리다(경험치는 몬스터를 잡을 때 는다, 판을 걷는 것과는 다른 시계). 캠프도 필요
+ * 없다 — 어디서든, 언제든 쌓인 것을 쓸 수 있다.
+ *
+ * **힘은 물약(`quaff` 의 `"strength"`)과 같은 식**이다(상한 31 · `maxStr` 을 따라 올림) —
+ * 두 길이 갈리면 「힘 31 을 넘겼다」가 한쪽에서만 막힌다.
+ */
+function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck"): boolean {
+    if (hero.pendingSkillPicks <= 0) {
+        say(state, "지금은 고를 수 있는 성장이 없다.");
+        return false;
+    }
+    hero.pendingSkillPicks -= 1;
+    switch (option) {
+        case "str":
+            hero.str = Math.min(31, hero.str + 1);
+            hero.maxStr = Math.max(hero.maxStr, hero.str);
+            say(state, "🔺 성장 — 힘이 늘었다.");
+            break;
+        case "def":
+            hero.bonusDefense += 1;
+            say(state, "🛡️ 성장 — 몸놀림이 단단해졌다.");
+            break;
+        case "luck":
+            hero.itemLuck = Math.min(1, hero.itemLuck + 0.05);
+            say(state, "🍀 성장 — 좋은 물건을 알아보는 눈이 트였다.");
+            break;
+    }
+    return false;
+}
+
+/**
  * 겨눈 방향으로 한 칸씩 나아가며 처음 걸리는 것을 찾는다.
  *
  * 지팡이도 던진 물건도 같은 길을 쓴다 — 길이 둘이면 「벽을 뚫고 맞았다」 같은 일이
@@ -1821,10 +1904,24 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
     const expGained = m.def.exp * expMultiplier;
     for (const [h, got] of expShares(state, m, by, expGained)) {
+        const before = h.pendingSkillPicks;
         const levels = gainExp(h, got, rng);
         // 둘이면 **누가 올랐는지**를 적는다 — 한 줄만 뜨면 제 레벨이 오른 줄 안다.
         const tag = state.heroes.length > 1 ? `${heroLabel(state, h)} ` : "";
-        for (const l of levels) say(state, `${tag}레벨 ${l} 이 되었다.`);
+        for (const l of levels) {
+            say(state, `${tag}레벨 ${l} 이 되었다.`);
+            // **전직은 그 레벨에서 한 번만** 말한다 — 여러 레벨을 한꺼번에 건너뛰어도
+            // `l === ADVANCE_LEVEL` 은 그 판에 정확히 한 번만 참이다.
+            if (l === ADVANCE_LEVEL) {
+                const def = ORIGINS[h.origin ?? "knight"];
+                say(state, `🎖️ ${tag}${def.advancedName}(${def.advancedTitle})로 전직했다!`);
+            }
+        }
+        // **쌓인 만큼만** 알린다 — 고르는 화면을 찾는 줄은 화면(★ 단추) 몫이라 여기서는
+        // 「생겼다」만 짚는다.
+        if (h.pendingSkillPicks > before) {
+            say(state, `${tag}★ 성장을 고를 수 있다.`);
+        }
     }
 
     // 챔피언 처치 시 100% 확정 전리품 드랍
@@ -2182,11 +2279,18 @@ const TRAP_NAME: Record<Trap["kind"], string> = {
     dart: "다트 덫",
 };
 
+/** 도적의 함정 회피 확률 — 전직(`ADVANCE_LEVEL`)하면 `origins.ADVANCED_TRAP_EVADE` 로 깊어진다. */
+export function rogueTrapEvade(hero: Hero): number {
+    if (hero.origin !== "rogue") return 0;
+    return hero.level >= ADVANCE_LEVEL ? ADVANCED_TRAP_EVADE : 0.5;
+}
+
 /** 함정을 밟았다. **찾아 둔 함정도 밟으면 터진다** — 아는 것과 피하는 것은 다르다. */
 function springTrap(state: GameState, hero: Hero, trap: Trap, rng: Rng) {
     const { level } = state;
     trap.found = true;
-    if (hero.origin === "rogue" && rng.chance(0.5)) {
+    const evade = rogueTrapEvade(hero);
+    if (evade > 0 && rng.chance(evade)) {
         say(state, "🗡️ 기습 본능: 재빠른 몸놀림으로 함정을 회피했다!");
         return;
     }
@@ -2628,6 +2732,9 @@ function act(state: GameState, cmd: Command): GameState {
                 break;
             case "unstash":
                 acted = unstash(state, hero, cmd.slot);
+                break;
+            case "pickSkill":
+                acted = pickSkill(state, hero, cmd.option);
                 break;
             case "putOn":
                 acted = putOn(state, hero, cmd.letter);
