@@ -25,6 +25,7 @@ const read = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 const LAYOUT = "app/layout.tsx";
 const GAME = "app/(game)/game/page.tsx";
 const NAV = "components/navigation.tsx";
+const TOUCHPAD = "app/(game)/game/components/TouchPad.tsx";
 
 test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
     // ── 루트 레이아웃은 dvh 로 잰다
@@ -110,6 +111,37 @@ test("명령 단추는 세 개씩 딱 떨어진다", () => {
         0,
         `명령 단추가 ${n} 개다 — 세 칸 격자라 마지막 줄만 이가 빠진다. 셋 단위로 더하거나 뺄 것`,
     );
+});
+
+// 누른 단추는 **눌린 뒤 초점을 놓는다.**
+//
+// 안 놓으면 그 단추가 브라우저 포커스를 쥔 채 남고, 한참 뒤에 상관없는 키(특히 Space —
+// 아무 단추나 눌러 버린다)를 누르면 **그 단추가 조용히 다시 눌린다.** 「안 누른 키가
+// 눌린다」는 보고가 대개 이 자리다. 실제 포커스는 헤드리스 크로뮴에서도 잴 수는 있지만,
+// 이 게임의 단추는 전부 `TouchPad.Key` 하나를 지나므로 **그 자리 하나만** 보면 된다 —
+// 글자로 거는 것이 브라우저를 띄우는 것보다 빠르고 확실하다.
+test("눌린 단추는 초점을 놓는다 — 안 놓으면 나중에 딴 키가 그 단추를 깨운다", () => {
+    const s = read(TOUCHPAD);
+
+    // ── 방향판(hold): pointerdown 에서 쏜 직후, pointerup·pointercancel 에서도
+    {
+        const from = s.indexOf("onPointerDown=");
+        const to = s.indexOf("onContextMenu=", from);
+        assert.ok(from >= 0 && to > from, "onPointerDown 블록을 못 찾았다");
+        const block = s.slice(from, to);
+        assert.match(block, /fire\.current\?\.\(\);[\s\S]*?blur\(\)/, "누른 직후 초점을 안 놓는다");
+        assert.match(block, /onPointerUp=[\s\S]*?blur\(\)/, "손을 뗄 때 초점을 안 놓는다");
+        assert.match(block, /onPointerCancel=[\s\S]*?blur\(\)/, "포인터가 끊길 때 초점을 안 놓는다");
+    }
+
+    // ── 그 밖의 단추(방향판이 아닌 명령 단추 포함): onClick 에서 쏜 뒤
+    {
+        const from = s.indexOf("onClick=");
+        assert.ok(from >= 0, "onClick 블록을 못 찾았다");
+        const to = s.indexOf("className=", from);
+        const block = s.slice(from, to);
+        assert.match(block, /onPress\?\.\(\);[\s\S]*?blur\(\)/, "누른 뒤 초점을 안 놓는다");
+    }
 });
 
 // 끊김 안내는 **모서리 한 칸만 쓴다.**

@@ -173,7 +173,6 @@ export function dropChampionLoot(state: GameState, m: Monster, rng: Rng): Item[]
     } else if (roll < 80) {
         const gearCat = rng.rnd(2) === 0 ? "weapon" : "armor";
         const it = randomItem(depth + 2, state.nextItemId++, m.x, m.y, rng, gearCat);
-        it.blessed = rng.rnd(100) < 35;
         dropped.push(it);
     } else {
         const gemTypes = ["ruby", "sapphire", "emerald", "topaz"];

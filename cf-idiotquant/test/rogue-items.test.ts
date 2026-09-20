@@ -11,7 +11,8 @@ import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
 import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
-import { describe, itemPower, makeItem } from "@/lib/rogue/items";
+import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
+import { Rng } from "@/lib/rogue/rng";
 import { T, idx, walkable, type GameState, type Item, type Tile } from "@/lib/rogue/types";
 
 /**
@@ -542,5 +543,52 @@ test("손질 정도는 그 물건을 써 봐야 안다", async () => {
         s.known["scroll:enchant weapon"] = true; // 아는 주문서라야 대상을 고른다
         perform(s, { t: "read", letter: scroll.letter!, target: b.letter! });
         assert.ok(b.plusKnown, "강화를 걸었는데 그 물건을 여전히 모른다");
+    }
+});
+
+// 「축복받은」은 **강화·재련 주문서에만** 붙는다.
+//
+// 예전에는 물약·무기·방어구·반지·지팡이도 10% 로 축복이 붙었는데, 거기서는 이름 앞에
+// 「축복받은」이 붙는 것 말고는 아무 일도 안 일어났다 — 효과 없는 이름표였다. 강화·재련
+// 주문서 쪽은 실제로 다르게 동작하니 그대로 두고, 장비류의 헛이름만 뗀다.
+test("축복은 강화·재련 주문서에만 붙는다 — 장비류는 안 붙는다", () => {
+    // ── 물약·무기·방어구·반지·지팡이는 천 번을 굴려도 축복이 없다
+    {
+        const cats: Array<"potion" | "weapon" | "armor" | "ring" | "wand"> = [
+            "potion",
+            "weapon",
+            "armor",
+            "ring",
+            "wand",
+        ];
+        for (const cat of cats) {
+            const rng = new Rng(4000 + cats.indexOf(cat));
+            for (let i = 0; i < 1000; i++) {
+                const it = randomItem(10, i, -1, -1, rng, cat);
+                assert.ok(!it.blessed, `${cat} 이 축복을 달고 나왔다 — 장비류에는 안 붙어야 한다`);
+            }
+        }
+    }
+
+    // ── 강화 주문서(무기·갑옷)는 여전히 확률적으로 축복이 붙는다
+    {
+        const rng = new Rng(4100);
+        let sawBlessed = false;
+        for (let i = 0; i < 500; i++) {
+            const it = randomItem(10, i, -1, -1, rng, "enchant");
+            if (it.type !== "blessed enchant" && it.blessed) sawBlessed = true;
+        }
+        assert.ok(sawBlessed, "강화 주문서에서 축복이 한 번도 안 나왔다");
+    }
+
+    // ── 일반 주문서 통(재련 포함)도 여전히 확률적으로 축복이 붙는다
+    {
+        const rng = new Rng(4200);
+        let sawBlessed = false;
+        for (let i = 0; i < 500; i++) {
+            const it = randomItem(10, i, -1, -1, rng, "scroll");
+            if (it.blessed) sawBlessed = true;
+        }
+        assert.ok(sawBlessed, "주문서 통에서 축복이 한 번도 안 나왔다 — 재련 축복이 죽었다");
     }
 });

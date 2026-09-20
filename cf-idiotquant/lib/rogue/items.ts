@@ -637,12 +637,10 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     const c = cat ?? pickCategory(depth, rng);
     if (c === "gold") return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
     const tier = itemTier(depth, rng, luck);
-    const rollBlessed = (cursed = false) => !cursed && rng.rnd(10) === 0;
+    const rollBlessed = () => rng.rnd(10) === 0;
 
     if (c === "potion") {
-        const it = makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
-        it.blessed = rollBlessed();
-        return it;
+        return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
     }
     if (c === "scroll") {
         const it = makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
@@ -675,7 +673,6 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         it.plusHit = plus;
         it.plusDam = plus;
         it.cursed = e.cursed;
-        it.blessed = rollBlessed(e.cursed);
         return it;
     }
 
@@ -684,7 +681,6 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const e = rollEnchant(depth, rng);
         it.plusArmor = e.plus;
         it.cursed = e.cursed;
-        it.blessed = rollBlessed(e.cursed);
         return it;
     }
 
@@ -697,13 +693,11 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         // **저주받은 반지도 숫자를 안 깎는다**(위 `rollEnchant` 참고). 대가는 「손가락
         // 하나를 잃는다」다 — 두 개뿐인 자리를 쓸모없는 반지가 차지하고, 뺄 수 없다.
         if (e.cursed) it.cursed = true;
-        it.blessed = rollBlessed(e.cursed);
         return it;
     }
 
     const it = makeItem("wand", weightedAt(WANDS, tier, rng), id, x, y);
     it.charges = rollCharges(rng);
-    it.blessed = rollBlessed();
     return it;
 }
 
