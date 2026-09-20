@@ -104,11 +104,31 @@ function Key({
                           delay.current = setTimeout(() => {
                               tick.current = setInterval(() => fire.current?.(), HOLD_STEP);
                           }, HOLD_DELAY);
+                          // **누른 뒤 초점을 놓는다.** 안 놓으면 이 단추가 브라우저의
+                          // 포커스를 쥔 채로 남고, 한참 뒤에 상관없는 키(특히 Space —
+                          // 아무 단추나 눌러 버린다)를 누르면 **이 단추가 조용히 다시
+                          // 눌린다.** 손가락을 뗀 적도, 그 키를 원한 적도 없는데 걸음이
+                          // 나간다 — 「안 누른 키가 눌린다」는 보고가 대개 이 자리다.
+                          e.currentTarget.blur();
                       }
                     : undefined
             }
-            onPointerUp={hold ? stop : undefined}
-            onPointerCancel={hold ? stop : undefined}
+            onPointerUp={
+                hold
+                    ? (e) => {
+                          stop();
+                          e.currentTarget.blur();
+                      }
+                    : undefined
+            }
+            onPointerCancel={
+                hold
+                    ? (e) => {
+                          stop();
+                          e.currentTarget.blur();
+                      }
+                    : undefined
+            }
             // 길게 누르면 뜨는 「복사·공유」 메뉴가 연타를 끊는다.
             onContextMenu={hold ? (e) => e.preventDefault() : undefined}
             onClick={(e) => {
@@ -117,6 +137,11 @@ function Key({
                 // 그것만 `detail` 이 0 이다. 안 가르면 한 번 누를 때 두 걸음 걷는다.
                 if (hold && e.detail !== 0) return;
                 onPress?.();
+                // 여기도 같은 까닭으로 초점을 놓는다 — 방향판이 아닌 명령 단추(「줍는다」
+                // 같은 한 번짜리)는 원래 연타를 안 받는데, 초점이 남아 있으면 Enter·Space를
+                // **OS 가 눌러 두는 동안 계속 눌러** 같은 값을 하는 것과 똑같이 된다
+                // (못 박은 규칙: 명령 단추는 한 번이 한 번이어야 한다).
+                e.currentTarget.blur();
             }}
             className={[
                 // 칸 크기는 격자가 정한다 — 단추는 그 칸을 꽉 채우고 글자는 가운데.
