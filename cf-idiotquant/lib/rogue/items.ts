@@ -372,6 +372,22 @@ function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean }
  */
 export const ENCHANT_MAX = 9;
 
+/** 캠프 상자의 칸 수. 화면도 엔진도 이 수 하나를 본다. */
+export const CHEST_SLOTS = 3;
+
+/**
+ * 이 물건을 캠프 상자에 맡길 수 있나 — **종류만 본다**(몸에 걸쳤는지는 엔진이 따로 본다).
+ *
+ * 막는 둘에는 까닭이 있다:
+ *
+ * - **증표**(`amulet`)는 절대 안 된다. 맡겨 두고 다음 판에 꺼내면 26층을 안 내려가고
+ *   이긴다 — 이 게임의 이기는 조건이 통째로 사라진다.
+ * - **금화**(`gold`)는 배낭의 물건이 아니라 점수다. 맡길 자리가 아니다.
+ */
+export function isStashable(it: Item): boolean {
+    return it.kind !== "amulet" && it.kind !== "gold";
+}
+
 /**
  * 성공률표 — **안전 구간만 갈리고 그 위는 안 갈린다.**
  *

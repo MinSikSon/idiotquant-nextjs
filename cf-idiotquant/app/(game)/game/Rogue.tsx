@@ -37,11 +37,13 @@ import {
     setNick,
     standing,
     survey,
+    setChest,
     tombScore,
 } from "@/lib/rogue/game";
 import {
     ARMORS,
     ENCHANT_MAX,
+    CHEST_SLOTS,
     MELT_RETURN,
     POTIONS,
     RINGS,
@@ -71,12 +73,14 @@ import {
     load,
     loadBestiary,
     loadItemCodex,
+    loadChest,
     loadItemUsage,
     loadSpecials,
     deserialize,
     save,
     saveBestiary,
     saveItemCodex,
+    saveChest,
     saveItemUsage,
     saveSpecials,
     serialize,
@@ -84,7 +88,7 @@ import {
     type TombHero,
     type TombItem,
 } from "@/lib/rogue/storage";
-import { T, idx, type GameState, type ItemKind } from "@/lib/rogue/types";
+import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
 import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
@@ -321,7 +325,8 @@ type NetMsg =
     | { t: "cmd"; cmd: Command }
     // 손님이 이으면 먼저 제 출신과 이름을 알린다 — 방장이 그 직업으로 동료를 세운다.
     // **이름은 믿고 그리는 값이 아니다** — 받는 쪽이 `cleanNick` 으로 다시 다듬는다.
-    | { t: "hello"; origin: HeroOrigin; nick?: string }
+    // 상자도 같이 보낸다 — **손님의 상자는 손님 브라우저의 것**이라 방장이 알 길이 없다.
+    | { t: "hello"; origin: HeroOrigin; nick?: string; chest?: Item[] }
     // **아직 안 골랐다** — 방장이 누구인지부터 묻는다. 이게 있어야 손님이 방장의 직업을
     // **보고** 고를 수 있다. 이 말로는 판에 들어가지 않는다(자리도 안 차지한다).
     | { t: "peek" }
@@ -433,10 +438,13 @@ export default function Rogue() {
             saved.specials = higher(saved.specials, knownSpecials);
             saved.itemCodex = { ...keptCodex, ...(saved.itemCodex ?? {}) };
             saved.itemUsage = higher(saved.itemUsage ?? {}, keptUsage);
-            setState(saved);
+            // **상자는 판이 아니라 그 사람의 것이다.** 저장된 판에도 한 벌이 들어 있지만,
+            // 그 사이에 같은 브라우저로 남의 방에 손님으로 들어가 맡겼을 수 있다 — 그쪽이
+            // 더 나중이다. 두 벌을 화해시키는 규칙은 하나다: **저장소가 참이다.**
+            setState(setChest(saved, 0, loadChest(0)));
             return;
         }
-        setState(newGame(undefined, kept, knownSpecials, keptCodex, keptUsage));
+        setState(newGame(undefined, kept, knownSpecials, keptCodex, keptUsage, undefined, loadChest(0)));
     }, []);
 
     useEffect(() => {
@@ -446,6 +454,24 @@ export default function Rogue() {
         saveSpecials(state.specials);
         saveItemCodex(state.itemCodex);
         saveItemUsage(state.itemUsage);
+        // ── 캠프 상자 — **제 몫만 적는다.**
+        //
+        // 상자는 판의 것이 아니라 **그 사람의 것**이라, 판을 저장하느냐와 따로 간다.
+        // 그래서 아래의 「손님은 판을 안 적는다」보다 **먼저** 선다 — 손님도 제 상자는
+        // 적어야 한다. 누가 무엇을 적는지는 셋뿐이다:
+        //
+        //   · 손님  → 제 브라우저의 **0번**에. 판에서는 `heroes[1]` 이지만 제 브라우저에서는
+        //             「나」다. 방장일 때와 손님일 때 딴 상자가 열리면 상자가 둘인 것이다.
+        //   · 방장  → 제 **0번**. 온라인 손님의 `heroes[1]` 은 **안 적는다** — 그 상자는
+        //             손님 브라우저의 것이고, 여기 적으면 방장의 것을 손님 것으로 덮는다.
+        //   · 한 화면 둘 → 방장의 0번과 곁의 사람의 **1번**. 한 브라우저에 두 사람이므로
+        //             한 칸에 담으면 둘의 상자가 한 벌이 된다.
+        if (online === "guest") {
+            if (state.heroes[1]) saveChest(0, state.heroes[1].chest);
+        } else {
+            saveChest(0, state.heroes[0].chest);
+            if (!online && state.heroes[1]) saveChest(1, state.heroes[1].chest);
+        }
         // **손님은 남의 판을 제 저장 칸에 안 쓴다** — 혼자 하던 판이 덮인다.
         if (online === "guest") return;
         if (state.phase === "playing") {
@@ -693,8 +719,10 @@ export default function Rogue() {
             const own = load();
             setState(
                 own && own.phase === "playing"
-                    ? own
-                    : newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage()),
+                    // 손님으로 노는 동안 맡긴 것이 있으면 **그쪽이 더 나중**이다 — 세워 둔
+                    // 제 판의 상자를 그대로 쓰면 그 사이에 맡긴 물건이 사라진다.
+                    ? setChest(own, 0, loadChest(0))
+                    : newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), undefined, loadChest(0)),
             );
         } else {
             setState((g) => (g ? leaveGame(g) : g));
@@ -752,7 +780,7 @@ export default function Rogue() {
                 const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
                 if (r?.origin in ORIGINS) origin = r.origin;
             } catch {}
-            if (conn?.open) conn.send({ t: "hello", origin, nick } satisfies NetMsg);
+            if (conn?.open) conn.send({ t: "hello", origin, nick, chest: loadChest(0) } satisfies NetMsg);
             return;
         }
         const s = stateRef.current;
@@ -829,7 +857,13 @@ export default function Rogue() {
                     // 없다. 이미 동료가 있으면 그 사람이다(직업은 처음 고른 그대로). 다만 **이름은
                     // 늘 다시 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이라, 이름을
                     // 바꾸고 다시 들어오면 바뀐 것이 보여야 한다. `setNick` 이 값을 다시 다듬는다.
-                    const g = s.heroes.length > 1 ? setNick(s, 1, m.nick) : joinGame(s, origin, m.nick);
+                    // **상자도 남이 보낸 값이다** — 칸 수와 물건의 모양은 `joinGame` 쪽에서
+                    // 다시 자른다(`seatChest`). 이미 동료가 있으면 그 사람의 상자는 이 판에서
+                    // 굴러간 것이라 안 덮는다.
+                    const g =
+                        s.heroes.length > 1
+                            ? setNick(s, 1, m.nick)
+                            : joinGame(s, origin, m.nick, Array.isArray(m.chest) ? m.chest : []);
                     setState(g);
                     setWho(0);
                     setLinked(true);
@@ -904,7 +938,7 @@ export default function Rogue() {
                 const mine = origin ?? savedOrigin(code);
                 conn.send(
                     mine
-                        ? ({ t: "hello", origin: mine, nick: savedNick() } satisfies NetMsg)
+                        ? ({ t: "hello", origin: mine, nick: savedNick(), chest: loadChest(0) } satisfies NetMsg)
                         : ({ t: "peek" } satisfies NetMsg),
                 );
             });
@@ -916,7 +950,7 @@ export default function Rogue() {
                     // 다시 고르게 된다(고쳐도 판에는 안 앉는다, 방장이 그 사람을 이미 안다).
                     const already = savedOrigin(code);
                     if (already) {
-                        conn.send({ t: "hello", origin: already, nick: savedNick() } satisfies NetMsg);
+                        conn.send({ t: "hello", origin: already, nick: savedNick(), chest: loadChest(0) } satisfies NetMsg);
                         return;
                     }
                     // 방장의 직업과 이름을 받았다 — 이제 **그것을 보고** 고른다.
@@ -1069,7 +1103,8 @@ export default function Rogue() {
         const f = originFor;
         setOriginFor({ t: "new" });
         if (f.t === "mate") {
-            setState((g) => (g && g.heroes.length < 2 ? joinGame(g, origin) : g));
+            // 한 화면 둘이서 — 곁의 사람은 **이 브라우저의 1번 상자**를 들고 온다.
+            setState((g) => (g && g.heroes.length < 2 ? joinGame(g, origin, undefined, loadChest(1)) : g));
             setSheet("none");
         } else if (f.t === "guest") {
             setSheet("none");
@@ -1080,7 +1115,7 @@ export default function Rogue() {
                 try {
                     localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: f.code, origin }));
                 } catch {}
-                conn.send({ t: "hello", origin, nick: savedNick() } satisfies NetMsg);
+                conn.send({ t: "hello", origin, nick: savedNick(), chest: loadChest(0) } satisfies NetMsg);
             } else {
                 void joinRoom(f.code, origin);
             }
@@ -1097,7 +1132,7 @@ export default function Rogue() {
         buried.current = false;
         // **방은 한 판의 것이다** — 방장이 새 판을 열면 그 판의 방은 닫힌다. 손님은 제 판으로 돌아간다.
         if (online === "host") closeRoom("");
-        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin));
+        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin, loadChest(0)));
     }, [online, closeRoom]);
 
     const restart = useCallback(() => {
@@ -2401,6 +2436,16 @@ export default function Rogue() {
                             <b>걸린 강화는 칸마다 {Math.round(MELT_RETURN * 100)}%</b> 로 돌아옵니다.
                             더 좋은 것을 주웠을 때 <b>강화를 옮겨 심는</b> 길입니다 — 다만 옮길
                             때마다 조금씩 샙니다. 화살·표창은 소모품이라 걸린 강화만 되뽑습니다.
+                        </p>
+                        <p className="text-[var(--rg-faint)]">
+                            <b className="text-[var(--rg-muted)]">모루 칸은 캠프이기도 합니다.</b> 그 칸에서{" "}
+                            <b>배낭</b>을 열면 <b>캠프 상자</b>가 뜹니다 — <b>{CHEST_SLOTS}칸</b>까지 맡길 수
+                            있고, 맡긴 것은{" "}
+                            <b className="text-[var(--rg-muted)]">죽어도 사라지지 않아 다음 판에서 그대로
+                            꺼냅니다.</b>{" "}
+                            다만 <b>꺼내는 것도 캠프에서만</b> 합니다 — 새 판은 맨손으로 시작하고, 모루를 찾아
+                            걸어가야 상자가 열립니다. <b className="text-[var(--rg-trap)]">증표는 못 맡깁니다.</b>{" "}
+                            둘이서 할 때는 <b>사람마다 상자가 따로</b>입니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.

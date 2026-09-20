@@ -73,10 +73,12 @@ import {
     WANDS,
     WEAPONS,
     describe,
+    isStashable,
     isThrowable,
     itemChar,
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
+    CHEST_SLOTS,
     MELT_RETURN,
     enchantOdds,
     enchantOf,
@@ -165,6 +167,10 @@ type Action =
     | { t: "search" }
     /** 모루 위에서 무기나 갑옷을 녹인다 — 그 물건은 사라지고 강화 주문서가 나온다. */
     | { t: "melt"; letter: string }
+    /** 모루(캠프) 위에서 배낭의 물건을 상자에 맡긴다 — **다음 판까지 남는다.** */
+    | { t: "stash"; letter: string }
+    /** 모루(캠프) 위에서 상자의 칸 하나를 배낭으로 꺼낸다. */
+    | { t: "unstash"; slot: number }
     | { t: "drop"; letter: string }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
@@ -488,11 +494,44 @@ export function updateSeenItems(state: GameState): void {
 }
 
 /**
+ * 지난 판에서 들고 온 상자를 **이 판의 물건으로 앉힌다.**
+ *
+ * 저장소에서 꺼낸 물건은 **지난 판의 `id`** 를 달고 있다. 그대로 두면 이 판이 새로 빚는
+ * 물건과 번호가 겹치고, `takeFromPack`·`itemAt` 이 전부 `id` 로 찾으므로 **엉뚱한 것이
+ * 사라진다.** 그래서 앉히는 자리에서 번호를 다시 매긴다.
+ *
+ * 칸 수 상한도 여기서 한 번 더 자른다 — 저장소의 값은 남이 고칠 수 있는 파일이다.
+ */
+function seatChest(state: GameState, hero: Hero, chest: Item[]): void {
+    hero.chest = chest.slice(0, CHEST_SLOTS).map((it) => {
+        const seated = { ...it, id: state.nextItemId++, x: -1, y: -1 };
+        delete seated.letter;
+        return seated;
+    });
+}
+
+/**
+ * 이 사람의 상자를 저장소의 것으로 **맞춘다.**
+ *
+ * 상자의 진짜 자리는 판이 아니라 **그 사람**이다. 한 사람이 판을 둘 들고 있을 수 있어서다 —
+ * 혼자 하던 판을 세워 두고 남의 방에 손님으로 들어가면, 그 사람의 상자를 아는 판이 둘이 된다.
+ * 둘을 화해시키는 규칙은 하나다: **저장소가 참이고, 판을 되읽을 때 그쪽에 맞춘다.**
+ *
+ * 판에도 상자를 적는 까닭은 온라인이다 — 손님은 방장이 보낸 판(`init`)으로만 제 상자를 본다.
+ */
+export function setChest(state: GameState, who: number, chest: Item[]): GameState {
+    const hero = state.heroes[who];
+    if (!hero) return state;
+    seatChest(state, hero, chest);
+    return { ...state };
+}
+
+/**
  * 새 판.
  *
- * `bestiary`, `specials`, `itemCodex`, `itemUsage` 는 **지난 판에서 이어받는 것 전부**다.
- * 부르는 쪽(화면)이 저장소에서 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면 테스트가
- * 브라우저를 필요로 하게 된다.
+ * `bestiary`, `specials`, `itemCodex`, `itemUsage`, `chest` 는 **지난 판에서 이어받는 것
+ * 전부**다. 부르는 쪽(화면)이 저장소에서 꺼내 넘긴다 — 엔진이 `localStorage` 를 알면
+ * 테스트가 브라우저를 필요로 하게 된다.
  */
 export function newGame(
     seed = Math.floor(Math.random() * 0x7fffffff),
@@ -501,6 +540,7 @@ export function newGame(
     itemCodex: Record<string, boolean> = {},
     itemUsage: Record<string, number> = {},
     origin: HeroOrigin = "knight",
+    chest: Item[] = [],
 ): GameState {
     const rng = new Rng(seed);
     const state: GameState = {
@@ -528,6 +568,7 @@ export function newGame(
     };
     state.appearance = rollAppearances(rng);
     state.heroes[0] = makePartyHero(state, rng, origin);
+    seatChest(state, state.heroes[0], chest);
     enterLevel(state, 1, rng, "above");
     updateSeenItems(state);
     state.rngState = rng.state;
@@ -654,13 +695,21 @@ export function setNick(state: GameState, who: number, nick: string | undefined)
     return { ...state };
 }
 
-export function joinGame(state: GameState, origin: HeroOrigin = "knight", nick?: string): GameState {
+export function joinGame(
+    state: GameState,
+    origin: HeroOrigin = "knight",
+    nick?: string,
+    chest?: Item[],
+): GameState {
     const rng = rngOf(state);
     const host = state.heroes[0];
     // **이 판에서 보냈던 동료가 있으면 그 사람이 돌아온다** — 고른 직업은 안 쓴다.
     const back = state.benched;
     delete state.benched;
     const guest = back ?? makePartyHero(state, rng, origin);
+    // **상자는 새로 앉는 사람만 들고 온다.** 돌아온 동료의 상자는 이 판에서 이미 굴러간
+    // 것이라(맡겼다 꺼냈을 수 있다) 지난 판의 값으로 덮으면 그 사이의 일이 지워진다.
+    if (!back && chest) seatChest(state, guest, chest);
     // **이름은 돌아온 동료도 새로 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이다.
     const clean = cleanNick(nick);
     if (clean) guest.nick = clean;
@@ -766,7 +815,10 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     // **모루는 밟았을 때 말해 준다.** 「배낭 → 무기 → 녹인다」는 눌러 봐야 나오는 길이라,
     // 여기서 한 마디 안 하면 `&` 가 그냥 못 보던 글자로 남는다.
     if (level.anvil && level.anvil.x === nx && level.anvil.y === ny) {
-        say(state, "모루다. 배낭의 무기나 갑옷을 녹여 강화 주문서를 되뽑을 수 있다.");
+        say(
+            state,
+            `모루다 — 캠프. 무기·갑옷을 녹여 강화 주문서를 되뽑고, 상자에 ${CHEST_SLOTS}칸까지 맡긴다 (${hero.chest.length}/${CHEST_SLOTS} · 다음 판까지 남는다).`,
+        );
     }
 
     const trap = level.traps.find((t) => t.x === nx && t.y === ny);
@@ -1581,6 +1633,93 @@ function melt(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
 }
 
 /**
+ * 모루 칸 위에 서 있나 — **캠프에서만 되는 일은 전부 여기를 지난다.**
+ *
+ * 화면도 같은 값을 읽어 단추를 접지만(`Desk.onAnvil`), 자물쇠는 둘이다 — 눌러도 엔진이
+ * 한 번 더 막는다.
+ */
+function atCamp(state: GameState, hero: Hero): boolean {
+    const { anvil } = state.level;
+    return !!anvil && anvil.x === hero.x && anvil.y === hero.y;
+}
+
+/**
+ * 배낭의 물건 하나를 **캠프 상자에 맡긴다.**
+ *
+ * 이 게임에서 **판을 넘어 남는 넷째 것**이다(앞의 셋은 도감·수법·지난 판). 죽어도 안 비고,
+ * 다음 판의 모루에 걸어가면 그대로 있다.
+ *
+ * ── 지키는 것 ────────────────────────────────────────────────────────────────
+ *
+ * 1. **캠프에서만.** 아무 데서나 되면 상자가 아니라 배낭 한 칸이 더 생기는 것이다.
+ * 2. **증표는 못 맡긴다**(`isStashable`). 맡겨 두고 다음 판에 꺼내면 26층을 안 내려가고
+ *    이긴다 — 이기는 조건이 통째로 사라진다.
+ * 3. **저주받아 몸에 붙은 것은 못 맡긴다.** 모루에 올리는 것과 같은 규칙이다 — 상자가
+ *    저주를 떼는 뒷문이 되면 「못 벗는다」가 저주의 유일한 대가라는 말이 거짓이 된다.
+ * 4. **하나만 맡긴다.** 겹쳐 쌓인 것도 한 칸에 하나다 — 뭉텅이째 넣으면 세 칸이라는
+ *    상한이 「다트 30개」로 뚫린다.
+ * 5. **몸에서 먼저 내린다.** 쥐거나 입거나 낀 것은 `takeFromPack` 이 자리를 비우는데,
+ *    보조손(`offWeaponId`)만 그쪽이 안 지운다 — 여기서 같이 지운다.
+ */
+function stash(state: GameState, hero: Hero, letter: string): boolean {
+    if (!atCamp(state, hero)) {
+        say(state, "여기에는 캠프가 없다.");
+        return false;
+    }
+    const it = packItem(hero, letter);
+    if (!it) return false;
+    if (!isStashable(it)) {
+        say(state, it.kind === "amulet" ? "증표는 손에서 떨어지지 않는다." : "맡길 것이 아니다.");
+        return false;
+    }
+    if (hero.chest.length >= CHEST_SLOTS) {
+        say(state, `상자가 꽉 찼다 — ${CHEST_SLOTS}칸뿐이다.`);
+        return false;
+    }
+    if (it.cursed && isWorn(hero, it)) {
+        it.curseKnown = true;
+        say(state, "몸에서 떨어지지 않는다!");
+        return false;
+    }
+
+    const name = describe(it, state.known, state.appearance);
+    // **하나만 떼어 낸다.** 겹쳐 쌓인 것에서 하나를 뽑을 때는 상자에 넣을 몫을 따로 빚는다 —
+    // 같은 객체를 넣으면 배낭의 남은 개수와 상자의 것이 한 몸이 된다.
+    const one =
+        it.count > 1
+            ? { ...it, id: state.nextItemId++, count: 1 }
+            : it;
+    takeFromPack(hero, it, 1);
+    if (hero.offWeaponId === one.id) hero.offWeaponId = null;
+    delete one.letter;
+    one.x = -1;
+    one.y = -1;
+    hero.chest.push(one);
+    say(state, `${name}을(를) 상자에 맡겼다. (${hero.chest.length}/${CHEST_SLOTS})`);
+    return true;
+}
+
+/** 캠프 상자의 칸 하나를 배낭으로 꺼낸다. 배낭이 꽉 찼으면 **상자에 그대로 둔다.** */
+function unstash(state: GameState, hero: Hero, slot: number): boolean {
+    if (!atCamp(state, hero)) {
+        say(state, "여기에는 캠프가 없다.");
+        return false;
+    }
+    const it = hero.chest[slot];
+    if (!it) return false;
+    const name = describe(it, state.known, state.appearance);
+    // **넣을 자리부터 본다.** 먼저 상자에서 빼고 나서 배낭이 꽉 찬 것을 알면 그 물건은
+    // 어디에도 없는 것이 된다 — 바닥에 떨구는 갈래를 만드느니 아예 안 꺼낸다.
+    if (!addToPack(hero, it)) {
+        say(state, "배낭이 꽉 찼다.");
+        return false;
+    }
+    hero.chest.splice(slot, 1);
+    say(state, `${name}을(를) 상자에서 꺼냈다.`);
+    return true;
+}
+
+/**
  * 겨눈 방향으로 한 칸씩 나아가며 처음 걸리는 것을 찾는다.
  *
  * 지팡이도 던진 물건도 같은 길을 쓴다 — 길이 둘이면 「벽을 뚫고 맞았다」 같은 일이
@@ -1697,13 +1836,23 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         return false;
     }
     const wandKey = `wand:${it.type}`;
-    state.itemUsage[wandKey] = (state.itemUsage[wandKey] ?? 0) + 1;
+    // ── 빈 지팡이 — **처음 한 번만** 턴을 쓴다
+    //
+    // 정체를 모르는 지팡이는 빈 것도 겨눠 봐야 안다. 그 한 번은 「아무 반응이 없다」는
+    // **것을 알아낸** 것이므로 값이 있고, 턴을 쓴다.
+    //
+    // 이미 아는 지팡이를 또 쏘는 것은 **정말로 아무 일도 안 일어난다** — 그런데도 턴을
+    // 쓰면 배가 고파진다. 벽을 들이받는 것과 같은 자리다(못 박은 규칙 셋째). 사용 횟수도
+    // 같이 멈춘다 — 안 그러면 다 쓴 지팡이를 허공에 난사해서 도감의 숫자를 올릴 수 있다.
     if ((it.charges ?? 0) <= 0) {
         say(state, "지팡이가 아무 반응도 없다.");
+        if (state.known[wandKey]) return false;
+        state.itemUsage[wandKey] = (state.itemUsage[wandKey] ?? 0) + 1;
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
         return true;
     }
+    state.itemUsage[wandKey] = (state.itemUsage[wandKey] ?? 0) + 1;
     it.charges = (it.charges ?? 0) - 1;
 
     const def = WANDS[it.type];
@@ -2450,6 +2599,12 @@ function act(state: GameState, cmd: Command): GameState {
                 break;
             case "melt":
                 acted = melt(state, hero, cmd.letter, rng);
+                break;
+            case "stash":
+                acted = stash(state, hero, cmd.letter);
+                break;
+            case "unstash":
+                acted = unstash(state, hero, cmd.slot);
                 break;
             case "putOn":
                 acted = putOn(state, hero, cmd.letter);
