@@ -30,14 +30,19 @@ test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", 
         assert.match(SRC, /send\(\{\s*t:\s*"kick"\s*\}/, "내보낼 때 `kick` 을 안 보낸다");
     }
 
-    // ── ② 명부를 **자리 확인보다 먼저** 본다
+    // ── ② `hello` 안에서 명부를 **자리 확인보다 먼저** 본다
+    //
+    // 손님이 하나뿐이던 시절에는 「자리가 찼는가」를 붙는 순간(`peer.on("connection")`)
+    // 바로 봤다. 이제 정원이 늘며 **`hello` 를 받아야** 누구인지·자리가 있는지 안다 —
+    // 자리 확인도 그 안으로 옮겨 갔다.
     {
-        const door = SRC.indexOf('peer.on("connection"');
-        assert.ok(door > 0, "방장의 손님 받는 자리를 못 찾았다 — 이 테스트가 무엇을 재는지 잃었다");
-        const banAt = SRC.indexOf("banned.current.has", door);
-        const fullAt = SRC.indexOf("net.current?.conn?.open", door);
-        assert.ok(banAt > door, "내보낸 사람을 걸러 내지 않는다 — 내보내도 곧바로 다시 붙는다");
-        assert.ok(fullAt > door, "자리가 찼는지 보는 자리를 못 찾았다");
+        const at = SRC.indexOf('m?.t === "hello"');
+        assert.ok(at > 0, "방장이 인사를 받는 자리를 못 찾았다");
+        const body = SRC.slice(at, SRC.indexOf('m?.t === "bye"', at));
+        const banAt = body.indexOf("banned.current.has");
+        const fullAt = body.indexOf("s.heroes.length >= MAX_PARTY");
+        assert.ok(banAt >= 0, "내보낸 사람을 걸러 내지 않는다 — 내보내도 곧바로 다시 붙는다");
+        assert.ok(fullAt >= 0, "자리가 찼는지 보는 자리를 못 찾았다");
         assert.ok(
             banAt < fullAt,
             "명부를 자리 확인보다 나중에 본다 — 자리가 비면 내보낸 사람이 그대로 다시 들어온다",
@@ -48,10 +53,13 @@ test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", 
     {
         const kick = SRC.indexOf("const kickGuest");
         assert.ok(kick > 0, "내보내기가 없다");
-        const body = SRC.slice(kick, SRC.indexOf("}, [note]);", kick));
+        const body = SRC.slice(kick, SRC.indexOf("[note, syncGuests, broadcast]", kick));
         assert.match(body, /banned\.current\.add/, "내보내면서 명부에 안 올린다");
         assert.match(body, /leaveGame/, "동료 자리를 안 비운다 — 방장 화면에 동료가 남는다");
-        assert.match(body, /setLinked\(false\)/, "이어져 있다는 표시가 안 내려간다");
+        // **이어져 있다는 표시는 명부에서 다시 셈한다**(`syncGuests`) — 남은 손님이 있으면
+        // 내보낸 뒤에도 `linked` 는 참이어야 한다. 무조건 `setLinked(false)` 로 내리면
+        // 정원이 늘었을 때 딴 손님까지 「끊겼다」고 잘못 뜬다.
+        assert.match(body, /syncGuests\(next\)/, "손님을 내보내고도 명부를 다시 안 셈한다");
     }
 
     // ── ④ 손님은 `kick` 을 받으면 제 판으로 돌아간다
@@ -80,17 +88,21 @@ test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 �
         assert.match(body, /r\?\.role === "guest"\) joinRoom\(r\.code/, "손님이 돌아와도 그 방으로 안 간다");
     }
 
-    // ── ② 돌아온 방장은 **손님을 다시 안 앉힌다** — 판에 이미 있다
+    // ── ② 돌아온 방장은 **이미 앉은 손님을 다시 안 앉힌다** — 판에 이미 있다
+    //
+    // 손님이 하나뿐이던 시절에는 「동료가 있는가」(`heroes.length > 1`)만 보면 됐다.
+    // 정원이 늘며 **그 손님인지**(자리표)를 가려야 한다 — 안 그러면 셋째 손님이 인사할
+    // 때 둘째 손님 자리에 `setNick` 을 걸게 된다.
     {
         const at = SRC.indexOf('m?.t === "hello"');
         assert.ok(at > 0, "방장이 인사를 받는 자리를 못 찾았다");
         const body = SRC.slice(at, SRC.indexOf('m?.t === "bye"', at));
         assert.match(
             body,
-            // 줄바꿈에 안 걸리게 — 거는 것은 **갈래의 모양**이지 한 줄로 적었는지가 아니다.
-            /s\.heroes\.length > 1\s*\?\s*setNick\(s,\s*1,\s*m\.nick\)\s*:\s*joinGame\(/,
-            "이미 앉아 있는 손님에게 `joinGame` 을 다시 부른다 — 배낭과 레벨이 통째로 날아간다",
+            /already > 0\s*\)\s*\{[\s\S]*?setNick\(s,\s*already,\s*m\.nick\)/,
+            "이미 앉아 있는 손님을 자리표로 못 찾는다 — 엉뚱한 자리에 `setNick` 을 건다",
         );
+        assert.match(body, /joinGame\(s, origin, m\.nick,/, "새로 오는 손님에게 `joinGame` 을 안 부른다");
         assert.match(body, /t: "init", state: serialize\(g\)/, "돌아온 손님에게 판을 안 돌려준다");
     }
 
@@ -106,17 +118,20 @@ test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 �
 
 test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", () => {
     // ── ① 규약에 물음과 답이 둘 다 있다
+    //
+    // 정원이 늘며 답(`room`)이 **방장 하나**가 아니라 **지금 있는 모두**를 실어야 한다 —
+    // 셋째로 들어오는 사람은 방장뿐 아니라 먼저 온 둘도 보고 고른다.
     {
         assert.match(SRC, /\|\s*\{\s*t:\s*"peek"\s*\}/, "규약에 `peek` 이 없다 — 물어볼 길이 없으면 고르는 화면이 방장을 모른다");
-        assert.match(SRC, /\|\s*\{\s*t:\s*"room";\s*origin:\s*HeroOrigin[^}]*\}/, "규약에 답(`room`)이 없다");
+        assert.match(SRC, /\|\s*\{\s*t:\s*"room";\s*party:\s*\{\s*origin:\s*HeroOrigin[^}]*\}\[\]\s*\}/, "규약에 답(`room`)이 없다");
     }
 
-    // ── ② 방장은 `peek` 에 제 직업으로 답하되, **자리는 안 준다**
+    // ── ② 방장은 `peek` 에 **지금 있는 모두**로 답하되, **자리는 안 준다**
     {
         const at = SRC.indexOf('m?.t === "peek"');
         assert.ok(at > 0, "방장이 `peek` 을 안 듣는다");
         const body = SRC.slice(at, SRC.indexOf('m?.t === "hello"', at));
-        assert.match(body, /send\(\{\s*t:\s*"room",\s*origin:/, "물어봤는데 방장의 직업을 안 준다");
+        assert.match(body, /send\(\{\s*t:\s*"room",\s*party:/, "물어봤는데 지금 있는 사람들을 안 준다");
         assert.ok(!/joinGame|setLinked\(true\)/.test(body), "물어보기만 했는데 자리에 앉혔다 — 고르기 전에 동료가 선다");
     }
 
@@ -144,7 +159,11 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         );
         const init = SRC.indexOf('m?.t === "init"', open);
         assert.ok(init > 0, "손님이 판을 받는 자리를 못 찾았다");
-        assert.match(SRC.slice(init, init + 220), /setLinked\(true\)/, "판을 받고도 이어졌다고 안 친다");
+        assert.match(
+            SRC.slice(init, SRC.indexOf('m?.t === "cmd"', init)),
+            /setLinked\(true\)/,
+            "판을 받고도 이어졌다고 안 친다",
+        );
     }
 
     // ── ⑤ **판을 받기 전에는 남의 걸음을 안 듣는다**
@@ -155,7 +174,11 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
     {
         assert.match(SRC, /m\?\.t === "cmd" && m\.cmd && joined/, "판을 받기 전에 온 명령을 그대로 적용한다");
         const init = SRC.indexOf('m?.t === "init"', SRC.indexOf("const joinRoom"));
-        assert.match(SRC.slice(init, init + 220), /joined = true/, "판을 받고도 문이 안 열린다 — 손님이 영영 멈춘다");
+        assert.match(
+            SRC.slice(init, SRC.indexOf('m?.t === "cmd"', init)),
+            /joined = true/,
+            "판을 받고도 문이 안 열린다 — 손님이 영영 멈춘다",
+        );
     }
 
     // ── ⑥ **이미 고른 사람에게는 다시 안 묻는다**
@@ -178,16 +201,17 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         assert.match(body, /if \(already\) \{[\s\S]*?t: "hello"/, "이미 골랐는데 인사 대신 고르기 창을 띄운다");
     }
 
-    // ── ⑦ 받은 직업을 **고르는 화면에 적는다**
+    // ── ⑦ 받은 파티를 **고르는 화면에 적는다**
     {
-        assert.match(SRC, /setHostOrigin\(/, "받은 직업을 어디에도 안 담는다");
+        assert.match(SRC, /setRoomParty\(/, "받은 파티를 어디에도 안 담는다");
         assert.match(SRC, /방장은 /, "고르는 화면에 방장이 누구인지를 안 적는다");
         // 이름과 직업은 **한 자리에서** 그린다(`OriginTag`) — 화면마다 따로 이어 붙이면
-        // 어느 날 한 곳만 이름이 빠진다.
+        // 어느 날 한 곳만 이름이 빠진다. `roomParty` 를 **돌며** 적어야 방장뿐 아니라
+        // 먼저 들어온 손님들도 보인다.
         assert.match(
             SRC,
-            /OriginTag origin=\{hostOrigin\} nick=\{hostNick\}/,
-            "고르는 화면에 방장의 직업과 이름을 같이 안 적는다",
+            /roomParty\.map\(\(p, i\) => \([\s\S]{0,400}OriginTag origin=\{p\.origin\} nick=\{p\.nick\}/,
+            "고르는 화면에 지금 파티의 직업과 이름을 같이 안 적는다",
         );
     }
 });

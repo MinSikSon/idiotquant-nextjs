@@ -56,6 +56,11 @@
   --rg-mate: #c0266d;
   --rg-leader-bg: #d6e3ff;
   --rg-mate-bg: #ffd9e8;
+  /* 온라인 정원이 넷으로 늘며 든 셋째·넷째 색 — 초록·호박색으로 방장(파랑)·2P(장미)와 갈랐다. */
+  --rg-third: #1a7a3c;
+  --rg-third-bg: #d3f5de;
+  --rg-fourth: #b45c09;
+  --rg-fourth-bg: #ffe6c2;
   --rg-monster: #a8410b;
   /* **몬스터 칸의 바닥.** 글자만으로는 `E`(에뮤)와 물건·벽이 한눈에 안 갈린다 —
      영웅의 파티 바닥색과 같은 수법이되, 늘 깔리는 것이라 **훨씬 옅게** 둔다. */
@@ -115,6 +120,10 @@ html.dark {
   --rg-mate: #ff6fa8;
   --rg-leader-bg: #1c3563;
   --rg-mate-bg: #5a1c39;
+  --rg-third: #4ade80;
+  --rg-third-bg: #173821;
+  --rg-fourth: #ffb454;
+  --rg-fourth-bg: #4a2e0d;
   --rg-monster: #f2884b;
   --rg-monster-bg: #3a1f12;
   --rg-monster-sensed: #8a5a3a;

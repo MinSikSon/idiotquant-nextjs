@@ -21,10 +21,15 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { glyphAt } from "@/lib/rogue/game";
 import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
 
-/** 협동에서 `heroes` 칸 번호마다의 색. 파티 줄도 이것을 쓴다. */
-export const PARTY_INK = ["var(--rg-leader)", "var(--rg-mate)"];
-/** 그 사람의 `@` 밑에 까는 바닥 — 글자색만으로는 작은 글씨에서 둘이 헷갈린다. */
-export const PARTY_BG = ["var(--rg-leader-bg)", "var(--rg-mate-bg)"];
+/**
+ * 협동에서 `heroes` 칸 번호마다의 색. 파티 줄도 이것을 쓴다.
+ *
+ * **온라인 정원(`MAX_PARTY`, `Rogue.tsx`)만큼 있어야 한다** — 모자라면 `PARTY_INK[p]` 가
+ * `undefined` 가 되어 그 사람만 몬스터·벽 색으로 떨어진다(`?? INK[...]` 로 숨죽어 있다).
+ */
+export const PARTY_INK = ["var(--rg-leader)", "var(--rg-mate)", "var(--rg-third)", "var(--rg-fourth)"];
+/** 그 사람의 `@` 밑에 까는 바닥 — 글자색만으로는 작은 글씨에서 여럿이 헷갈린다. */
+export const PARTY_BG = ["var(--rg-leader-bg)", "var(--rg-mate-bg)", "var(--rg-third-bg)", "var(--rg-fourth-bg)"];
 
 /** 글자 색 — **한 곳에서만 정한다.** 화면마다 정하면 같은 `@` 가 달라 보인다. */
 const INK: Record<string, string> = {
@@ -79,8 +84,8 @@ function isMonsterKind(kind?: string): boolean {
 /**
  * 몬스터 칸의 **바닥색** — 글자만으로는 `E`(에뮤)와 물건·벽이 한눈에 안 갈린다.
  *
- * 영웅의 파티 바닥색과 같은 수법이되(`PARTY_BG`) **훨씬 옅다.** 영웅은 화면에 둘뿐이라
- * 진해도 되지만, 몬스터는 한 방에 여럿이라 진하면 지도가 얼룩덜룩해진다.
+ * 영웅의 파티 바닥색과 같은 수법이되(`PARTY_BG`) **훨씬 옅다.** 영웅은 화면에 많아야
+ * 네뿐이라 진해도 되지만, 몬스터는 한 방에 여럿이라 진하면 지도가 얼룩덜룩해진다.
  *
  * 벽 너머로 느낀 것은 **더 옅다** — 잉크를 갈라 둔 것과 같은 까닭이다(`INK`).
  * 같은 바닥을 깔면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
