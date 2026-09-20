@@ -70,11 +70,25 @@ const monthTick = (m: string) => (m.endsWith("-01") ? `${m.slice(2, 4)}년` : `$
  * 선 끝에 값을 직접 적어(`SeriesEndLabel`) 색에만 기대지 않게 한다.
  *
  * **어두운 화면은 같은 색을 안 쓴다.** 밝은 바탕에서 고른 단계를 그대로 얹으면
- * 짙은 판 위에서 가라앉는다 — 어두운 쪽은 한 단 밝은 단계로 따로 고른다. */
+ * 짙은 판 위에서 가라앉는다 — 어두운 쪽은 한 단 밝은 단계로 따로 고른다.
+ *
+ * `dot` 을 `cls` 에서 문자열로 만들어내지 않고 따로 적는다 — Tailwind 는 소스에
+ * 그대로 적힌 클래스 이름만 CSS 로 만든다. `"text-".replaceAll("bg-")` 처럼
+ * 실행 중에 만든 이름은 소스에 그 글자 그대로 없어서 CSS 가 아예 안 만들어지고,
+ * 툴팁의 색 점이 투명하게 빠졌었다(계산된 배경색이 `rgba(0,0,0,0)`). */
 const SERIES = {
-    assets: { key: "assets", label: "자산", cls: "text-[#2a78d6] dark:text-[#3987e5]" },
-    liabilities: { key: "liabilities", label: "부채", cls: "text-[#eb6834] dark:text-[#d95926]" },
-    net: { key: "net", label: "순자산", cls: "text-[#1baf7a] dark:text-[#199e70]" },
+    assets: {
+        key: "assets", label: "자산",
+        cls: "text-[#2a78d6] dark:text-[#3987e5]", dot: "bg-[#2a78d6] dark:bg-[#3987e5]",
+    },
+    liabilities: {
+        key: "liabilities", label: "부채",
+        cls: "text-[#eb6834] dark:text-[#d95926]", dot: "bg-[#eb6834] dark:bg-[#d95926]",
+    },
+    net: {
+        key: "net", label: "순자산",
+        cls: "text-[#1baf7a] dark:text-[#199e70]", dot: "bg-[#1baf7a] dark:bg-[#199e70]",
+    },
 } as const;
 
 /**
@@ -175,7 +189,7 @@ function CompareTooltip({ active, payload }: { active?: boolean; payload?: { pay
                 [SERIES.liabilities, p.liabilities],
             ] as const).map(([s, v]) => (
                 <div key={s.key} className="mt-0.5 flex items-center gap-1.5 text-[12px] font-bold tabular-nums">
-                    <span className={cn("inline-block h-2 w-2 rounded-full", s.cls.replaceAll("text-", "bg-"))} />
+                    <span className={cn("inline-block h-2 w-2 rounded-full", s.dot)} />
                     <span className="text-neutral-500 dark:text-neutral-400">{s.label}</span>
                     <span className="ml-auto text-neutral-800 dark:text-neutral-100">{won(v)}</span>
                 </div>
