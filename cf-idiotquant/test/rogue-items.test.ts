@@ -221,6 +221,43 @@ test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {
         perform(s0, { t: "zap", letter: "y", dx: 1, dy: 0 });
         assert.equal(m.speed, -1, "둔화가 안 걸렸다");
     }
+
+    // ── 바닥에 놓인 지팡이는 **한 자루도 0회일 수 없다**
+    //
+    // `makeItem` 은 지팡이에 `charges = 0` 을 박아 두므로, `rollCharges` 를 안 지나고
+    // 놓는 자리가 생기면 **주워도 아무 반응이 없는 지팡이**가 바닥에 깔린다. 금고 열쇠가
+    // 실제로 그랬다(바닥의 지팡이 열에 넷). 금고는 그 지팡이로만 여는 방이라 **여는 길이
+    // 없는 방**이 됐는데, 지도 검사는 「지팡이가 놓여 있다」까지만 보므로 안 잡혔다.
+    {
+        let seen = 0;
+        let keys = 0;
+        for (let seed = 1; seed <= 40; seed++) {
+            let s = newGame(seed);
+            for (let d = 1; d <= 10; d++) {
+                const vault = s.level.rooms.some((r) => r.vault);
+                let dig = 0;
+                for (const it of s.level.items) {
+                    if (it.kind !== "wand") continue;
+                    seen++;
+                    if (it.type === "digging") dig++;
+                    assert.ok(
+                        (it.charges ?? 0) > 0,
+                        `시드 ${seed} ${s.level.depth}층: 바닥의 ${it.type} 지팡이가 ${it.charges}회다`,
+                    );
+                }
+                if (vault) {
+                    keys += dig;
+                    assert.ok(dig > 0, `시드 ${seed} ${s.level.depth}층: 금고가 있는데 굴착 지팡이가 없다`);
+                }
+                s.heroes[0].x = s.level.stairs.x;
+                s.heroes[0].y = s.level.stairs.y;
+                s = perform(s, { t: "descend" });
+                if (s.level.depth !== d + 1) break;
+            }
+        }
+        assert.ok(seen > 100, `지팡이를 ${seen}개밖에 못 봤다 — 자가 너무 성기다`);
+        assert.ok(keys > 0, "금고가 한 번도 안 났다 — 열쇠를 못 센 자다");
+    }
 });
 
 test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진다", () => {

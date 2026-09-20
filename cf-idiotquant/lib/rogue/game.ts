@@ -90,6 +90,7 @@ import {
     type Category,
     pickCategory,
     randomItem,
+    rollCharges,
     rollAppearances,
     weaponDamageOf,
 } from "./items";
@@ -364,7 +365,12 @@ function populate(state: GameState, level: Level, rng: Rng) {
         // 데나 놓았더니 특수 방 안에까지 떨어져 그 방의 몫(κ)을 넘겼다 — 그것도 테스트가 잡았다.
         const [way] = itemSpots(level, 1, rng, avoid, sp ? sp.room : null);
         if (way && placed < FLOOR_ITEM_CAP) {
-            level.items.push(makeItem("wand", "digging", state.nextItemId++, way.x, way.y));
+            // **충전을 굴려서 놓는다** — `makeItem` 만 부르면 `0회` 짜리가 나가고, 그러면
+            // 금고를 여는 유일한 열쇠가 죽은 물건이라 그 방은 열 수 없다. 지도 검사는
+            // 「지팡이가 놓여 있다」까지만 보므로 이 자리는 그쪽으로 안 잡힌다.
+            const key = makeItem("wand", "digging", state.nextItemId++, way.x, way.y);
+            key.charges = rollCharges(rng);
+            level.items.push(key);
             placed++;
         }
     }
