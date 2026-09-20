@@ -681,22 +681,32 @@ function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
  * (`survey` 와 같은 자리, 못 박은 규칙 3).
  */
 /**
- * 동료를 보낸다 — 둘에서 **다시 혼자로.** 방장(`heroes[0]`)만 남고 턴은 안 쓴다.
+ * 동료 하나를 보낸다 — **그 자리만** 비운다. 방장(`heroes[0]`)은 못 보낸다.
  *
- * 방장이 쓰러져 있으면 못 보낸다: 혼자 남은 사람이 쓰러진 판은 이미 끝난 판이다.
- * 몬스터가 쥐고 있던 어그로(`target`)는 사람의 **칸 번호**라, 떠난 자리를 가리키면 지운다.
- * 동료는 **배낭·직업·레벨을 든 채** `benched` 에서 기다린다 — 다시 부르면 그대로 돌아온다.
+ * `who` 를 안 주면 옛 뜻 그대로 `heroes[1]`(핫시트 동료 · 온라인 손님이 하나뿐이던 시절의
+ * 자리)이다. 방장이 쓰러져 있으면 못 보낸다: 혼자 남은 사람이 쓰러진 판은 이미 끝난 판이다
+ * — 다만 이 규칙은 **방장이 떠날 때만** 묻는다(방장 자신을 못 보내므로 사실상 안 걸린다,
+ * 남아 있던 옛 검사를 그대로 옮겼다).
+ *
+ * **가운데 자리가 빠지면 뒤엣사람들의 칸 번호가 하나씩 당겨진다.** 몬스터가 쥐고 있던
+ * 어그로(`target`)는 사람의 **칸 번호**라 그대로 두면 엉뚱한 사람을 쫓는다 — 떠난 자리를
+ * 쫓던 것은 지우고, 그 뒤를 쫓던 것은 하나씩 당긴다. 화면 쪽의 `who`(누가 조종하는가)는
+ * 판의 값이 아니라 **화면이 따로 챙긴다**(온라인은 `guestKey` 로 제 칸을 다시 찾는다).
  */
-export function leaveGame(state: GameState): GameState {
-    if (state.heroes.length < 2) return state;
+export function leaveGame(state: GameState, who = 1): GameState {
+    const hero = state.heroes[who];
+    if (!hero || who === 0) return state;
     if (state.heroes[0].hp <= 0) {
         say(state, "쓰러진 채로는 동료를 보낼 수 없다.");
         return { ...state };
     }
-    state.benched = state.heroes[1];
-    state.heroes.length = 1;
+    state.heroes.splice(who, 1);
+    (state.benched ??= []).push(hero);
     for (const l of [state.level, ...Object.values(state.levels)]) {
-        for (const m of l?.monsters ?? []) if ((m.target ?? 0) > 0) delete m.target;
+        for (const m of l?.monsters ?? []) {
+            if (m.target === who) delete m.target;
+            else if ((m.target ?? -1) > who) m.target! -= 1;
+        }
     }
     computeFov(state.level, state.heroes);
     say(state, "동료가 떠났다. 다시 혼자다.");
@@ -753,13 +763,23 @@ export function joinGame(
     origin: HeroOrigin = "knight",
     nick?: string,
     chest?: Item[],
+    /**
+     * 온라인 손님의 붙박이 자리표 — **이 값으로 「돌아온 그 사람」을 고른다.**
+     * 핫시트 동료는 안 준다(`undefined`) — 대기석에도 그 값이 없는 자리를 고른다.
+     */
+    guestKey?: string,
 ): GameState {
     const rng = rngOf(state);
     const host = state.heroes[0];
-    // **이 판에서 보냈던 동료가 있으면 그 사람이 돌아온다** — 고른 직업은 안 쓴다.
-    const back = state.benched;
-    delete state.benched;
+    // **이 판에서 보냈던 동료 중 이 사람을 고른다** — 자리표가 같은 사람이 돌아온 것이고,
+    // 없으면 새로 온 사람이다. 손님이 하나뿐이던 시절엔 「대기석에 있으면 그 사람」이었는데,
+    // 손님이 여럿이면 **A 가 나간 자리에 B 가 들어와 A 의 캐릭터를 가로채는 일**이 생긴다.
+    const benchIdx = state.benched?.findIndex((h) => h.guestKey === guestKey) ?? -1;
+    const back = benchIdx >= 0 ? state.benched![benchIdx] : undefined;
+    if (back) state.benched!.splice(benchIdx, 1);
+    if (state.benched?.length === 0) delete state.benched;
     const guest = back ?? makePartyHero(state, rng, origin);
+    guest.guestKey = guestKey;
     // **상자는 새로 앉는 사람만 들고 온다.** 돌아온 동료의 상자는 이 판에서 이미 굴러간
     // 것이라(맡겼다 꺼냈을 수 있다) 지난 판의 값으로 덮으면 그 사이의 일이 지워진다.
     if (!back && chest) seatChest(state, guest, chest);
@@ -3088,14 +3108,17 @@ export function score(state: GameState): number {
     return scoreOf(partyGold(state), state.deepest, partyAmulet(state));
 }
 
-/** 파티가 가진 금화 — 보낸 동료(`benched`)가 들고 간 몫도 이 판에서 번 것이다. */
+/** 파티가 가진 금화 — 보낸 동료들(`benched`)이 들고 간 몫도 이 판에서 번 것이다. */
 export function partyGold(state: GameState): number {
-    return state.heroes.reduce((n, h) => n + h.gold, 0) + (state.benched?.gold ?? 0);
+    return (
+        state.heroes.reduce((n, h) => n + h.gold, 0) +
+        (state.benched?.reduce((n, h) => n + h.gold, 0) ?? 0)
+    );
 }
 
 /** 증표를 **누군가** 들었는가. */
 export function partyAmulet(state: GameState): boolean {
-    return state.heroes.some((h) => h.hasAmulet) || !!state.benched?.hasAmulet;
+    return state.heroes.some((h) => h.hasAmulet) || !!state.benched?.some((h) => h.hasAmulet);
 }
 
 /** 지난 판 하나의 점수. 옛 기록에는 증표 칸이 없어 「살아 돌아왔나」로 메운다. */

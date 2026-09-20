@@ -38,7 +38,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 10;
+const VERSION = 11;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -301,7 +301,12 @@ function normalize(s: Saved): GameState | null {
         levels,
         heroes,
         // 없으면 칸째 안 둔다 — `undefined` 칸이 남으면 되읽은 판이 저장 전과 달라진다.
-        ...(s.benched && typeof s.benched === "object" ? { benched: fixHero(s.benched) } : {}),
+        // **v10 이하는 `benched` 가 영웅 하나였다**(손님이 하나뿐이던 시절) — 배열로 감싼다.
+        ...(Array.isArray(s.benched)
+            ? { benched: s.benched.filter((h): h is Hero => !!h && typeof h === "object").map(fixHero) }
+            : s.benched && typeof s.benched === "object"
+              ? { benched: [fixHero(s.benched as unknown as Hero)] }
+              : {}),
         messages: Array.isArray(s.messages) ? s.messages : [],
         // **빠진 겉모습을 메운다** — 표에 물건을 더하면 옛 저장에는 그 한 종이 없고,
         // 그러면 그것만 이름 없는 「주문서」로 떠서 오히려 눈에 띈다(`fillAppearances`).

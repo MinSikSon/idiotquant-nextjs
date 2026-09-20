@@ -174,7 +174,7 @@ function Roll({ text }: { text: string }) {
 function Msg({ text }: { text: string }) {
     // 계산 줄에는 협동 앞머리가 안 붙는다(`game.say`) — 그래서 먼저 걸러도 안전하다.
     if (isDetail(text)) return <Roll text={text} />;
-    const m = /^([12])P▸ /.exec(text);
+    const m = /^([1-4])P▸ /.exec(text);
     if (!m) return <>{text}</>;
     return (
         <>
@@ -332,6 +332,10 @@ function askNick(ask = true): string | undefined {
  * 온라인에서 오가는 말. **방장이 순서를 정한다** — 손님의 명령도 방장에게 갔다가
  * 방장이 적용한 순서대로 되돌아온다. 엔진이 결정적이라 같은 판에 같은 순서면 같은 판이다
  * (`test/rogue-coop.test.ts`).
+ *
+ * **방장은 이제 손님을 여럿(`MAX_PARTY - 1`) 받는다.** 그래서 방장이 보내는 것은 전부
+ * **모든 이어진 손님에게 뿌린다**(`broadcast`) — 예전에는 손님이 하나라 「보낸다」와
+ * 「그 사람에게 보낸다」가 같은 말이었다.
  */
 type NetMsg =
     | { t: "init"; state: string }
@@ -339,21 +343,52 @@ type NetMsg =
     // 손님이 이으면 먼저 제 출신과 이름을 알린다 — 방장이 그 직업으로 동료를 세운다.
     // **이름은 믿고 그리는 값이 아니다** — 받는 쪽이 `cleanNick` 으로 다시 다듬는다.
     // 상자도 같이 보낸다 — **손님의 상자는 손님 브라우저의 것**이라 방장이 알 길이 없다.
-    | { t: "hello"; origin: HeroOrigin; nick?: string; chest?: Item[] }
-    // **아직 안 골랐다** — 방장이 누구인지부터 묻는다. 이게 있어야 손님이 방장의 직업을
+    // **자리표(`guestKey`)도 같이 보낸다** — 방장이 이 값으로 「돌아온 그 사람」을 고른다.
+    | { t: "hello"; origin: HeroOrigin; nick?: string; chest?: Item[]; guestKey: string }
+    // **아직 안 골랐다** — 방장이 지금 누구누구인지부터 묻는다. 이게 있어야 손님이
     // **보고** 고를 수 있다. 이 말로는 판에 들어가지 않는다(자리도 안 차지한다).
     | { t: "peek" }
-    // 그 답 — 방장의 출신과 이름. 판을 통째로 보내지 않는 까닭은, 아직 손님이 아니기 때문이다.
-    | { t: "room"; origin: HeroOrigin; nick?: string }
+    // 그 답 — **지금 판에 있는 모두**(방장 + 이미 들어온 손님들)의 출신·이름.
+    // 판을 통째로 보내지 않는 까닭은, 아직 손님이 아니기 때문이다.
+    | { t: "room"; party: { origin: HeroOrigin; nick?: string }[] }
     // **나간다는 인사.** 이것 없이 끊기면 사고(망 끊김)로 보고 자리를 지켜 기다린다.
     | { t: "bye" }
     // **방장이 내보냈다.** `bye` 와 갈라 둔다 — 손님 화면에 적는 까닭이 다르고,
     // 이쪽은 **그 손님을 다시 안 받는다**(`banned`).
     | { t: "kick" }
+    // **방이 이미 찼다** — 정원(`MAX_PARTY`)을 넘겨 붙은 손님에게 보낸다. 자리도 안 주고
+    // 곧바로 끊는다.
+    | { t: "full" }
     // 살아 있다는 신호. WebRTC 는 상대가 창을 닫아도 한참 「열림」으로 남는다.
     | { t: "ping" }
-    // 내 책상에 무엇이 떠 있나 — 상대 화면이 「2P 배낭 보는 중」을 적는다.
-    | { t: "ui"; mode: DeskMode };
+    // 내 책상에 무엇이 떠 있나 — 상대 화면이 「2P 배낭 보는 중」을 적는다. `who` 없이
+    // 오면 방장이 보낸 것이다(방장은 자신의 `heroes` 칸 번호를 모르는 사람이 없다).
+    | { t: "ui"; mode: DeskMode; who?: number };
+
+/** 온라인 방의 정원 — 방장 + 손님 셋. */
+const MAX_PARTY = 4;
+
+/**
+ * 이 브라우저의 **붙박이 손님 자리표.** 한 번 만들면 계속 쓴다(`localStorage`).
+ *
+ * 손님이 하나뿐이던 시절에는 「대기석에 있으면 그 사람」으로 충분했다. 손님이 여럿이면
+ * **누가 돌아왔는지**를 가려야 하고, 이 값이 그 열쇠다 — 방장은 이 값으로 `state.benched`
+ * 를 뒤진다(`joinGame`). 방마다 다를 필요는 없다: 어느 방이든 「이 브라우저」는 하나다.
+ */
+const GUEST_KEY = "rogue-guest-key";
+function guestKey(): string {
+    try {
+        const had = localStorage.getItem(GUEST_KEY);
+        if (had) return had;
+        const fresh = crypto.randomUUID();
+        localStorage.setItem(GUEST_KEY, fresh);
+        return fresh;
+    } catch {
+        // 저장을 못 쓰면(시크릿 창 등) 이 세션 동안만 쓰는 값 — 재접속 재세우기는 못 하지만
+        // 판 자체는 돈다.
+        return crypto.randomUUID();
+    }
+}
 
 /**
  * 연결이 살아 있는지 본다 — **말이 끊긴 지 `DEAD_MS` 가 지나면 닫는다.** 닫히면 양쪽의
@@ -473,14 +508,15 @@ export default function Rogue() {
         // 그래서 아래의 「손님은 판을 안 적는다」보다 **먼저** 선다 — 손님도 제 상자는
         // 적어야 한다. 누가 무엇을 적는지는 셋뿐이다:
         //
-        //   · 손님  → 제 브라우저의 **0번**에. 판에서는 `heroes[1]` 이지만 제 브라우저에서는
+        //   · 손님  → 제 브라우저의 **0번**에. 판에서는 `heroes[who]`(정원이 늘며 1번이라고
+        //             못 박을 수 없어졌다 — `who` 로 제 칸을 찾는다)지만 제 브라우저에서는
         //             「나」다. 방장일 때와 손님일 때 딴 상자가 열리면 상자가 둘인 것이다.
-        //   · 방장  → 제 **0번**. 온라인 손님의 `heroes[1]` 은 **안 적는다** — 그 상자는
+        //   · 방장  → 제 **0번**. 온라인 손님들의 자리는 **안 적는다** — 그 상자는 그
         //             손님 브라우저의 것이고, 여기 적으면 방장의 것을 손님 것으로 덮는다.
         //   · 한 화면 둘 → 방장의 0번과 곁의 사람의 **1번**. 한 브라우저에 두 사람이므로
         //             한 칸에 담으면 둘의 상자가 한 벌이 된다.
         if (online === "guest") {
-            if (state.heroes[1]) saveChest(0, state.heroes[1].chest);
+            if (state.heroes[who]) saveChest(0, state.heroes[who].chest);
         } else {
             saveChest(0, state.heroes[0].chest);
             if (!online && state.heroes[1]) saveChest(1, state.heroes[1].chest);
@@ -629,36 +665,88 @@ export default function Rogue() {
     const [online, setOnline] = useState<"host" | "guest" | null>(null);
     const [room, setRoom] = useState<string | null>(null);
     /**
-     * **방장이 고른 직업** — 손님이 제 것을 고르기 전에 본다.
+     * **지금 방에 있는 사람들의 출신·이름** — 손님이 제 것을 고르기 전에 본다.
+     * 방장이 맨 앞이다.
      *
-     * 고르는 줄에 「방장과 다른 쪽을 고르면 서로 메웁니다」라고 적어 놓고 정작 **방장이
-     * 무엇인지는 안 보여 주고 있었다.** 알 길이 붙기 전까지는 그 한 줄이 조언이 아니라
-     * 수수께끼다.
+     * 고르는 줄에 「다른 쪽을 고르면 서로 메웁니다」라고 적어 놓고 정작 **누가 무엇인지는
+     * 안 보여 주고 있었다.** 알 길이 붙기 전까지는 그 한 줄이 조언이 아니라 수수께끼다.
+     * 손님이 하나뿐이던 시절에는 방장 혼자였지만, 정원이 늘며 **이미 들어온 손님들**도
+     * 같이 보여야 한다 — 셋째로 들어오는 사람은 방장뿐 아니라 먼저 온 둘도 보고 고른다.
      */
-    const [hostOrigin, setHostOrigin] = useState<HeroOrigin | null>(null);
-    /** 방장이 쓰는 이름 — 고르는 화면에 같이 적는다. 안 정했으면 `null`. */
-    const [hostNick, setHostNick] = useState<string | undefined>(undefined);
-    /** 지금 상대와 이어져 있는가 — 끊겨도 방(`online`·`room`)은 남는다. */
+    const [roomParty, setRoomParty] = useState<{ origin: HeroOrigin; nick?: string }[]>([]);
+    /** 지금 상대와 이어져 있는가 — 끊겨도 방(`online`·`room`)은 남는다. 방장은 **손님이 하나라도** 있으면 참이다. */
     const [linked, setLinked] = useState(false);
+    /**
+     * 방장이 보는 **손님 명부** — 몇째 자리인지 · 자리표 · 이름 · 출신 · 지금 이어져
+     * 있는지. 내보내기 단추(사람마다 하나)와 「몇 명 접속」 안내가 이것을 읽는다.
+     *
+     * `state.heroes` 에서 뽑아낼 수 있는 값(`nick`·`origin`)과 `net` 의 연결 여부를
+     * 합친 것이라, 화면이 다시 그려질 자리(state)가 아니면 굳이 하나 더 둘 필요가
+     * 없었을 것이다 — 그런데 `net` 은 `ref` 라 그것만으로는 다시 안 그려진다. 그래서
+     * 손님이 붙고 떠날 때마다 `syncGuests` 가 이 칸을 **직접** 채운다.
+     */
+    const [guests, setGuests] = useState<{ who: number; nick?: string; origin?: HeroOrigin; linked: boolean }[]>([]);
     /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
     const [netOpen, setNetOpen] = useState(false);
     /** 좌상단 「성장」 단추를 눌러 펼쳤는가 — 끊김 안내와 같은 자리다(모서리 한 칸). */
     const [skillOpen, setSkillOpen] = useState(false);
     /**
-     * 내보낸 손님들 — **이 방이 열려 있는 동안 다시 안 받는다.**
+     * 내보낸 손님들의 **자리표**(`guestKey`) — 이 방이 열려 있는 동안 다시 안 받는다.
      *
      * 이게 없으면 내보내도 그 사람이 곧바로 다시 붙어서, 내보낸 것이 아니라 잠깐 끊은
      * 것이 된다. 방을 닫으면(`closeRoom`) 피어가 통째로 사라지므로 명부도 같이 간다.
+     *
+     * **피어 id 가 아니라 자리표로 막는다.** 피어 id 는 접속마다 새로 뽑는 값이라
+     * (`joinRoom` 이 `new Peer()` 를 매번 새로 만든다), 그것으로 막으면 창을 닫았다 다시
+     * 열기만 해도 도로 들어온다. 자리표는 그 브라우저가 계속 쓰는 값이라 안 새어 나간다.
      */
     const banned = useRef<Set<string>>(new Set());
     // 다시 이어지면 접어 둔다. 안 그러면 다음에 끊겼을 때 **묻지도 않고 펼쳐진 채로** 뜬다.
     useEffect(() => {
         if (linked) setNetOpen(false);
     }, [linked]);
-    const net = useRef<{ peer: Peer; conn?: DataConnection } | null>(null);
+    /**
+     * 이어진 곳 — **방장은 여럿(정원까지), 손님은 하나(방장)뿐이다.**
+     *
+     * 손님 쪽은 예전 그대로(`conn` 한 칸)다. 방장 쪽만 `guests` 로 늘었다 — 이어진 손님의
+     * `DataConnection` 마다 그 사람의 **자리표**(`guestKey`)를 적어 둔다. `who`(그 사람이
+     * `heroes` 의 몇 번인가)는 안 적는다 — 가운데 자리가 빠지면 뒤엣사람들이 밀리므로
+     * (`leaveGame`), 굳이 캐시해 두면 매번 다시 맞춰야 한다. 필요할 때
+     * `state.heroes.findIndex(h => h.guestKey === key)` 로 그때그때 찾는다.
+     */
+    const net = useRef<
+        | { role: "host"; peer: Peer; guests: Map<DataConnection, string> }
+        | { role: "guest"; peer: Peer; conn?: DataConnection }
+        | null
+    >(null);
     const stateRef = useRef(state);
     stateRef.current = state;
     useEffect(() => () => net.current?.peer.destroy(), []);
+
+    /** 방장이 지금 판의 누가 몇 번인지를 손님 명부에 다시 맞춘다 — 붙고 떠날 때마다 부른다. */
+    const syncGuests = useCallback((s: GameState) => {
+        const n = net.current;
+        const liveKeys = new Set(n?.role === "host" ? [...n.guests.values()] : []);
+        const rows = s.heroes.slice(1).map((h, i) => ({
+            who: i + 1,
+            nick: h.nick,
+            origin: h.origin,
+            linked: !!h.guestKey && liveKeys.has(h.guestKey),
+        }));
+        setGuests(rows);
+        setLinked(rows.some((g) => g.linked));
+    }, []);
+
+    /** 이어진 곳 모두에게 뿌린다 — 방장은 손님 전부에게, 손님은 방장 하나에게. */
+    const broadcast = useCallback((msg: NetMsg) => {
+        const n = net.current;
+        if (!n) return;
+        if (n.role === "guest") {
+            if (n.conn?.open) n.conn.send(msg);
+            return;
+        }
+        for (const conn of n.guests.keys()) if (conn.open) conn.send(msg);
+    }, []);
 
     /**
      * 명령이 판에 닿는 **유일한 길**. 키보드·단추·네트워크 모두 여기로 온다.
@@ -680,16 +768,16 @@ export default function Rogue() {
         (cmd: Command) => {
             // 단추 판도 키와 같이 막는다.
             if (frozenRef.current) return;
-            const conn = net.current?.conn;
             if (online === "guest") {
                 // 끊긴 동안 누른 것은 버린다 — 다시 이어지면 방장의 판을 통째로 받는다.
-                if (conn?.open) conn.send({ t: "cmd", cmd } satisfies NetMsg);
+                broadcast({ t: "cmd", cmd });
                 return;
             }
             setState((s) => (s ? perform(s, cmd) : s));
-            if (online === "host" && conn?.open) conn.send({ t: "cmd", cmd } satisfies NetMsg);
+            // **손님 전부에게** 뿌린다 — 방장의 걸음도 다른 손님들의 지도를 움직인다.
+            if (online === "host") broadcast({ t: "cmd", cmd });
         },
-        [online, linked],
+        [online, linked, broadcast],
     );
 
     const run = useCallback(
@@ -724,7 +812,13 @@ export default function Rogue() {
     const closeRoom = useCallback((why: string) => {
         const n = net.current;
         net.current = null;
-        if (n?.conn?.open) n.conn.send({ t: "bye" } satisfies NetMsg);
+        // **방장은 이어진 손님 전부에게** 인사를 보낸다 — 예전에는 손님이 하나라
+        // `n.conn` 한 줄이면 됐다.
+        if (n?.role === "guest") {
+            if (n.conn?.open) n.conn.send({ t: "bye" } satisfies NetMsg);
+        } else if (n?.role === "host") {
+            for (const conn of n.guests.keys()) if (conn.open) conn.send({ t: "bye" } satisfies NetMsg);
+        }
         // 곧바로 부수면 방금 보낸 인사가 안 나간다.
         setTimeout(() => n?.peer.destroy(), 500);
         try {
@@ -740,39 +834,65 @@ export default function Rogue() {
                     : newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), undefined, loadChest(0)),
             );
         } else {
-            setState((g) => (g ? leaveGame(g) : g));
+            // 방장 — 손님을 **자리마다 하나씩** 보낸다. 한꺼번에 `heroes.length = 1` 로
+            // 자르지 않는 까닭은, 몬스터의 어그로(`m.target`)가 칸 번호라 자리 하나가
+            // 빠질 때마다 뒤엣사람들 몫을 다시 매겨야 하기 때문이다(`leaveGame`).
+            setState((g) => {
+                let s = g;
+                while (s && s.heroes.length > 1) s = leaveGame(s, 1);
+                return s;
+            });
         }
         setOnline(null);
         setRoom(null);
         setLinked(false);
+        setGuests([]);
         setWho(0);
         setView(null);
         if (why) note(why);
     }, [note]);
     /**
-     * 들어온 동료를 **내보낸다** — 방은 그대로 열어 둔다.
+     * 들어온 손님 하나를 **내보낸다**(`who` = `heroes` 의 그 사람 칸) — 방은 그대로 열어 둔다.
      *
-     * 방 나가기(`closeRoom`)와 다르다. 방 코드도 피어도 살아 있고 나가는 것은 손님뿐이라,
+     * 방 나가기(`closeRoom`)와 다르다. 방 코드도 피어도 살아 있고 나가는 것은 그 손님뿐이라,
      * 곧바로 다른 사람을 부를 수 있다. 내보낸 사람은 **이 방이 열려 있는 동안 다시 못
      * 들어온다**(`banned`) — 다시 붙을 수 있으면 그건 내보낸 것이 아니라 잠깐 끊은 것이다.
+     * **자리표(`guestKey`)로 막는다** — 접속마다 바뀌는 피어 id로 막으면, 창을 닫았다
+     * 새로 열어 딴 id로 오는 순간 도로 들어온다.
      *
      * 동료 자리는 `leaveGame` 이 **그 판 안에** 앉혀 둔다(직업·배낭 그대로). 나가기와 같은
      * 자리를 쓰는 까닭은, 규칙을 두 벌로 두면 한쪽만 고치는 날이 오기 때문이다.
      */
-    const kickGuest = useCallback(() => {
-        const n = net.current;
-        const conn = n?.conn;
-        if (!n || !conn) return;
-        banned.current.add(conn.peer);
-        if (conn.open) conn.send({ t: "kick" } satisfies NetMsg);
-        // 곧바로 닫으면 방금 보낸 인사가 안 나간다.
-        setTimeout(() => conn.close(), 500);
-        // **먼저 자리를 비운다** — 그래야 뒤따라 오는 `close` 가 「끊겼다」로 안 읽힌다.
-        net.current = { peer: n.peer };
-        setLinked(false);
-        setState((g) => (g ? leaveGame(g) : g));
-        note("동료를 내보냈다. 방은 그대로 열려 있다.");
-    }, [note]);
+    const kickGuest = useCallback(
+        (who: number) => {
+            const n = net.current;
+            const s = stateRef.current;
+            if (!n || n.role !== "host" || !s) return;
+            const hero = s.heroes[who];
+            if (!hero) return;
+            if (hero.guestKey) banned.current.add(hero.guestKey);
+            let target: DataConnection | undefined;
+            for (const [conn, key] of n.guests) if (key === hero.guestKey) target = conn;
+            if (target) {
+                if (target.open) target.send({ t: "kick" } satisfies NetMsg);
+                // **먼저 명부에서 지운다** — 그래야 뒤따라 오는 `close` 가 「끊겼다」로 안 읽힌다.
+                n.guests.delete(target);
+                // 곧바로 닫으면 방금 보낸 인사가 안 나간다.
+                setTimeout(() => target!.close(), 500);
+            }
+            setState((g) => {
+                if (!g) return g;
+                const next = leaveGame(g, who);
+                syncGuests(next);
+                // **남은 손님 전부에게** 새 판을 보낸다 — 그 자리 뒤의 사람들은 칸 번호가
+                // 당겨졌으므로(`leaveGame`), 걸음(`cmd`)만으로는 못 따라잡는다.
+                broadcast({ t: "init", state: serialize(next) });
+                return next;
+            });
+            note("동료를 내보냈다. 방은 그대로 열려 있다.");
+        },
+        [note, syncGuests, broadcast],
+    );
 
     // 네트워크 콜백은 방을 열 때 한 번 걸린다 — 그때의 `online` 이 아니라 **지금** 것을 읽는다.
     const onlineRef = useRef(online);
@@ -788,22 +908,21 @@ export default function Rogue() {
      */
     const changeNick = useCallback(() => {
         const nick = askNick();
-        const conn = net.current?.conn;
         if (onlineRef.current === "guest") {
             let origin: HeroOrigin = "knight";
             try {
                 const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
                 if (r?.origin in ORIGINS) origin = r.origin;
             } catch {}
-            if (conn?.open) conn.send({ t: "hello", origin, nick, chest: loadChest(0) } satisfies NetMsg);
+            broadcast({ t: "hello", origin, nick, chest: loadChest(0), guestKey: guestKey() });
             return;
         }
         const s = stateRef.current;
         if (!s) return;
         const next = setNick(s, 0, nick);
         setState(next);
-        if (conn?.open) conn.send({ t: "init", state: serialize(next) } satisfies NetMsg);
-    }, []);
+        broadcast({ t: "init", state: serialize(next) });
+    }, [broadcast]);
     const closeRoomRef = useRef(closeRoom);
     closeRoomRef.current = closeRoom;
 
@@ -820,7 +939,7 @@ export default function Rogue() {
     const hostRoom = useCallback(async (code = String(1000 + Math.floor(Math.random() * 9000))) => {
         const { Peer } = await import("peerjs");
         const peer = new Peer(PEER_PREFIX + code);
-        net.current = { peer };
+        net.current = { role: "host", peer, guests: new Map() };
         try {
             localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "host", code }));
         } catch {}
@@ -829,86 +948,121 @@ export default function Rogue() {
         setOnline("host");
         setRoom(code);
         setLinked(false);
+        setGuests([]);
         peer.on("error", () => retry(peer, () => hostRoom(code)));
         peer.on("disconnected", () => !peer.destroyed && peer.reconnect());
         peer.on("connection", (conn) => {
-            // **내보낸 사람은 안 받는다.** 자리가 비어 있는지 보기 **전에** 본다 — 자리가
-            // 비었다고 받아 주면 내보내기가 잠깐 끊은 것과 같아진다.
-            if (banned.current.has(conn.peer)) {
-                conn.close();
-                return;
-            }
-            // 방은 둘이다 — 살아 있는 손님이 있으면 돌려보낸다. 죽은 연결이면 새 쪽으로 갈아 낀다.
-            if (net.current?.conn?.open) {
-                conn.close();
-                return;
-            }
-            net.current = { peer, conn };
+            // **자리는 아직 안 준다.** 예전에는(손님이 하나뿐이던 시절) 붙는 순간 그 사람이
+            // 곧 그 자리였는데, 이제는 **`hello` 를 받아야 누구인지, 자리가 있는지 안다**
+            // (`peek` 만 하고 갈 수도 있다). 살아 있는지만 여기서부터 지켜본다.
             watchConn(conn);
             conn.on("data", (raw) => {
                 const m = raw as NetMsg;
+                const n = net.current;
+                if (n?.role !== "host") return;
                 if (m?.t === "ui") {
-                    if (m.mode in DESK_DOING) setPeerMode(m.mode);
+                    const key = n.guests.get(conn);
+                    const s = stateRef.current;
+                    const w = key ? (s?.heroes.findIndex((h) => h.guestKey === key) ?? -1) : -1;
+                    if (w < 1) return;
+                    setPeerModes((pm) => ({ ...pm, [w]: m.mode in DESK_DOING ? m.mode : "none" }));
+                    // 다른 손님들에게도 넘긴다 — 보낸 사람에게도 그대로 가지만 제 것이라 무해하다.
+                    broadcast({ t: "ui", mode: m.mode, who: w });
                     return;
                 }
-                // **아직 손님이 아니다** — 방장이 누구인지만 알려 주고 자리는 안 준다.
+                // **아직 손님이 아니다** — 지금 누구누구인지만 알려 주고 자리는 안 준다.
                 // `linked` 도 안 세운다: 이어진 것은 사람이 아니라 물음 하나다.
                 if (m?.t === "peek") {
                     const s = stateRef.current;
                     if (!s) return;
+                    if (s.heroes.length >= MAX_PARTY) {
+                        conn.send({ t: "full" } satisfies NetMsg);
+                        return;
+                    }
                     conn.send({
                         t: "room",
-                        origin: s.heroes[0].origin ?? "knight",
-                        nick: s.heroes[0].nick,
+                        party: s.heroes.map((h) => ({ origin: h.origin ?? "knight", nick: h.nick })),
                     } satisfies NetMsg);
                     return;
                 }
                 if (m?.t === "hello") {
                     const s = stateRef.current;
                     if (!s) return;
+                    // **내보낸 사람은 안 받는다.** 자리가 있는지 보기 **전에** 본다 — 자리가
+                    // 비었다고 받아 주면 내보내기가 잠깐 끊은 것과 같아진다.
+                    if (banned.current.has(m.guestKey)) {
+                        conn.send({ t: "kick" } satisfies NetMsg);
+                        setTimeout(() => conn.close(), 500);
+                        return;
+                    }
                     // 남이 보낸 값이다 — 없는 직업이면 기사로 받는다.
                     const origin = m.origin in ORIGINS ? m.origin : "knight";
-                    // 다시 들어온 손님에게는 **지금 판**을 통째로 준다 — 끊긴 사이의 명령을 셀 필요가
-                    // 없다. 이미 동료가 있으면 그 사람이다(직업은 처음 고른 그대로). 다만 **이름은
-                    // 늘 다시 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이라, 이름을
-                    // 바꾸고 다시 들어오면 바뀐 것이 보여야 한다. `setNick` 이 값을 다시 다듬는다.
-                    // **상자도 남이 보낸 값이다** — 칸 수와 물건의 모양은 `joinGame` 쪽에서
-                    // 다시 자른다(`seatChest`). 이미 동료가 있으면 그 사람의 상자는 이 판에서
-                    // 굴러간 것이라 안 덮는다.
-                    const g =
-                        s.heroes.length > 1
-                            ? setNick(s, 1, m.nick)
-                            : joinGame(s, origin, m.nick, Array.isArray(m.chest) ? m.chest : []);
+                    // **이미 앉아 있는 손님인가** — 자리표로 고른다(칸 번호가 아니다, 셋 이상이면
+                    // 누가 몇 번인지 이어질 때마다 바뀐다). 방장(0번)은 자리표가 없으니 안 걸린다.
+                    const already = s.heroes.findIndex((h) => h.guestKey === m.guestKey);
+                    let g: GameState;
+                    if (already > 0) {
+                        // 다시 들어온 손님에게는 **지금 판**을 통째로 준다 — 끊긴 사이의 명령을
+                        // 셀 필요가 없다. 자리는 처음 고른 그대로다. 다만 **이름은 늘 다시
+                        // 받는다** — 직업과 달리 그 판의 것이 아니라 그 사람의 것이다.
+                        g = setNick(s, already, m.nick);
+                    } else if (s.heroes.length >= MAX_PARTY) {
+                        // 붙어서 고르는 사이에 자리가 다 찼다 — 늦게 온 사람이 밀린다.
+                        conn.send({ t: "full" } satisfies NetMsg);
+                        setTimeout(() => conn.close(), 500);
+                        return;
+                    } else {
+                        // **상자도 남이 보낸 값이다** — 칸 수와 물건의 모양은 `joinGame` 쪽에서
+                        // 다시 자른다(`seatChest`). 대기석에 이 자리표로 보낸 동료가 있으면
+                        // `joinGame` 이 그 사람을 돌려준다(직업·배낭 그대로, 상자는 안 덮는다).
+                        g = joinGame(s, origin, m.nick, Array.isArray(m.chest) ? m.chest : [], m.guestKey);
+                    }
+                    n.guests.set(conn, m.guestKey);
                     setState(g);
-                    setWho(0);
-                    setLinked(true);
-                    conn.send({ t: "init", state: serialize(g) } satisfies NetMsg);
+                    syncGuests(g);
+                    // **모두에게** 판을 다시 보낸다 — 새로 온 사람은 물론, 이미 있던 손님들도
+                    // 늘어난(또는 이름이 바뀐) 파티를 봐야 한다.
+                    broadcast({ t: "init", state: serialize(g) });
                     return;
                 }
                 if (m?.t === "bye") {
-                    // 내가 먼저 닫는 중에 받은 답 인사면 무시한다 — 닫은 방을 되살리면 안 된다.
-                    if (net.current?.conn !== conn) return;
-                    // 손님이 나갔다 — 방은 열어 두고 동료만 보낸다. 다시 오면 그 사람이 돌아온다.
-                    net.current = { peer };
-                    setLinked(false);
-                    setState((g) => (g ? leaveGame(g) : g));
+                    const key = n.guests.get(conn);
+                    if (key === undefined) return; // 아직 자리가 없던 연결이 나간 것 — 할 일이 없다.
+                    n.guests.delete(conn);
+                    setState((g) => {
+                        if (!g) return g;
+                        const w = g.heroes.findIndex((h) => h.guestKey === key);
+                        const next = w > 0 ? leaveGame(g, w) : g;
+                        syncGuests(next);
+                        broadcast({ t: "init", state: serialize(next) });
+                        return next;
+                    });
                     note("동료가 방을 나갔다.");
                     return;
                 }
                 if (m?.t !== "cmd" || !m.cmd) return;
-                // **손님은 동료만 움직인다** — 보낸 `who` 를 믿지 않는다.
-                const cmd = { ...m.cmd, who: 1 };
-                setState((s) => (s ? perform(s, cmd) : s));
-                conn.send({ t: "cmd", cmd } satisfies NetMsg);
+                // **보낸 `who` 를 믿지 않는다** — 이 연결의 자리표로 다시 찾는다.
+                const key = n.guests.get(conn);
+                const s = stateRef.current;
+                const w = key ? (s?.heroes.findIndex((h) => h.guestKey === key) ?? -1) : -1;
+                if (w < 1) return;
+                const cmd = { ...m.cmd, who: w };
+                setState((s2) => (s2 ? perform(s2, cmd) : s2));
+                // **손님 전부에게** 뿌린다(보낸 사람에게도 — 제가 한 일의 결과를 그 길로만 받는다).
+                broadcast({ t: "cmd", cmd });
             });
             conn.on("close", () => {
-                if (net.current?.conn !== conn) return;
-                net.current.conn = undefined;
-                setLinked(false);
+                const n = net.current;
+                if (n?.role !== "host" || !n.guests.has(conn)) return;
+                // **자리는 그대로 둔다** — 사고(망 끊김)로 보고 기다린다. `bye` 를 받아야
+                // 자리를 비운다(그건 나가겠다는 인사다).
+                n.guests.delete(conn);
+                const s = stateRef.current;
+                if (s) syncGuests(s);
                 note("동료가 끊겼다 — 같은 방에서 기다린다.");
             });
         });
-    }, [note, retry]);
+    }, [note, retry, broadcast, syncGuests]);
 
     /**
      * 방에 들어간다. **`origin` 이 없으면 아직 안 고른 것**이다 — 먼저 붙어서 방장의
@@ -920,7 +1074,7 @@ export default function Rogue() {
     const joinRoom = useCallback(async (code: string, origin?: HeroOrigin) => {
         const { Peer } = await import("peerjs");
         const peer = new Peer();
-        net.current = { peer };
+        net.current = { role: "guest", peer };
         // **적어 둔 직업을 지우지 않는다.** 다시 잇는 길도 이 함수를 지나는데, 그때 넘어오는
         // `origin` 은 처음 붙을 때의 값이라 비어 있다 — 그것으로 덮어쓰면 고른 것이 날아가
         // 고르기 창이 다시 뜬다.
@@ -928,9 +1082,8 @@ export default function Rogue() {
         try {
             localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, ...(chosen ? { origin: chosen } : {}) }));
         } catch {}
-        // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 동료 자리를 쥔 채 기다린다.
+        // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 자리를 쥔 채 기다린다.
         setOnline("guest");
-        setWho(1);
         setRoom(code);
         setLinked(false);
         /**
@@ -943,7 +1096,7 @@ export default function Rogue() {
         peer.on("error", again);
         peer.on("open", () => {
             const conn = peer.connect(PEER_PREFIX + code, { reliable: true });
-            net.current = { peer, conn };
+            net.current = { role: "guest", peer, conn };
             watchConn(conn);
             conn.on("open", () => {
                 // **이어졌다고 `linked` 가 서지는 않는다** — 판을 받아야(`init`) 같이 보는 것이다.
@@ -953,7 +1106,7 @@ export default function Rogue() {
                 const mine = origin ?? savedOrigin(code);
                 conn.send(
                     mine
-                        ? ({ t: "hello", origin: mine, nick: savedNick(), chest: loadChest(0) } satisfies NetMsg)
+                        ? ({ t: "hello", origin: mine, nick: savedNick(), chest: loadChest(0), guestKey: guestKey() } satisfies NetMsg)
                         : ({ t: "peek" } satisfies NetMsg),
                 );
             });
@@ -965,27 +1118,37 @@ export default function Rogue() {
                     // 다시 고르게 된다(고쳐도 판에는 안 앉는다, 방장이 그 사람을 이미 안다).
                     const already = savedOrigin(code);
                     if (already) {
-                        conn.send({ t: "hello", origin: already, nick: savedNick(), chest: loadChest(0) } satisfies NetMsg);
+                        conn.send({ t: "hello", origin: already, nick: savedNick(), chest: loadChest(0), guestKey: guestKey() } satisfies NetMsg);
                         return;
                     }
-                    // 방장의 직업과 이름을 받았다 — 이제 **그것을 보고** 고른다.
-                    setHostOrigin(m.origin in ORIGINS ? m.origin : "knight");
-                    setHostNick(cleanNick(m.nick));
+                    // 지금 있는 사람들(방장 + 이미 들어온 손님들)을 받았다 — 이제 **그것을 보고** 고른다.
+                    setRoomParty(m.party.map((p) => ({ origin: p.origin in ORIGINS ? p.origin : "knight", nick: cleanNick(p.nick) })));
                     setOriginFor({ t: "guest", code });
                     setSheet("origins");
                 } else if (m?.t === "init") {
                     const s = deserialize(m.state);
-                    if (s) setState(s);
+                    if (s) {
+                        setState(s);
+                        // **내 자리는 자리표로 다시 찾는다** — 앞선 누군가 나가면 내 칸 번호가
+                        // 당겨질 수 있다(`leaveGame`). `who` 는 판의 값이 아니라 화면의 값이므로
+                        // (`GameState.heroes` 의 `guestKey` 로) 여기서 매번 다시 맞춘다.
+                        const mine = s.heroes.findIndex((h) => h.guestKey === guestKey());
+                        if (mine > 0) setWho(mine);
+                    }
                     joined = true;
                     setLinked(true);
                 } else if (m?.t === "cmd" && m.cmd && joined) {
                     setState((s) => (s ? perform(s, m.cmd) : s));
                 } else if (m?.t === "ui") {
-                    if (m.mode in DESK_DOING) setPeerMode(m.mode);
+                    if (m.mode in DESK_DOING && typeof m.who === "number") {
+                        setPeerModes((pm) => ({ ...pm, [m.who!]: m.mode }));
+                    }
                 } else if (m?.t === "kick") {
                     closeRoomRef.current("방장이 나를 내보냈다. 내 판으로 돌아왔다.");
                 } else if (m?.t === "bye") {
                     closeRoomRef.current("방장의 판이 끝나 방이 닫혔다. 내 판으로 돌아왔다.");
+                } else if (m?.t === "full") {
+                    closeRoomRef.current("방이 다 찼다(최대 " + (MAX_PARTY - 1) + "명). 내 판으로 돌아왔다.");
                 }
             });
             conn.on("close", () => {
@@ -1063,12 +1226,11 @@ export default function Rogue() {
         revealTimer.current = setTimeout(() => step(2), REVEAL_STEP);
     }, [state]);
 
-    /** 상대 책상에 떠 있는 것 — 이어져 있을 때만 적는다. */
-    const [peerMode, setPeerMode] = useState<DeskMode>("none");
+    /** 남들의 책상에 떠 있는 것 — `heroes` 칸 번호마다. 이어져 있을 때만 적는다. */
+    const [peerModes, setPeerModes] = useState<Record<number, DeskMode>>({});
     useEffect(() => {
-        const c = net.current?.conn;
-        if (online && linked && c?.open) c.send({ t: "ui", mode: modes[who] ?? "none" } satisfies NetMsg);
-    }, [online, linked, modes, who]);
+        if (online && linked) broadcast({ t: "ui", mode: modes[who] ?? "none", who });
+    }, [online, linked, modes, who, broadcast]);
 
     /** 초대 링크 — 받은 사람이 열면 직업만 고르고 바로 들어온다(아래 `?room=`). */
     const copyInvite = useCallback(() => {
@@ -1118,19 +1280,22 @@ export default function Rogue() {
         const f = originFor;
         setOriginFor({ t: "new" });
         if (f.t === "mate") {
-            // 한 화면 둘이서 — 곁의 사람은 **이 브라우저의 1번 상자**를 들고 온다.
+            // 한 화면 둘이서 — **여기는 정원이 둘로 못 박혀 있다.** 곁의 사람은 이
+            // 브라우저의 1번 상자를 들고 온다. `guestKey` 는 안 준다 — 핫시트 동료는
+            // 온라인 자리표가 없는 사람이다.
             setState((g) => (g && g.heroes.length < 2 ? joinGame(g, origin, undefined, loadChest(1)) : g));
             setSheet("none");
         } else if (f.t === "guest") {
             setSheet("none");
-            const conn = net.current?.conn;
+            const n = net.current;
+            const conn = n?.role === "guest" ? n.conn : undefined;
             // 물어보려고 이미 붙어 있으면 **그 줄로 인사만** 보낸다 — 다시 붙으면 방장 쪽에
             // 죽은 연결이 하나 남고, 그 사이에 자리가 찼다고 튕길 수도 있다.
             if (conn?.open) {
                 try {
                     localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: f.code, origin }));
                 } catch {}
-                conn.send({ t: "hello", origin, nick: savedNick(), chest: loadChest(0) } satisfies NetMsg);
+                conn.send({ t: "hello", origin, nick: savedNick(), chest: loadChest(0), guestKey: guestKey() } satisfies NetMsg);
             } else {
                 void joinRoom(f.code, origin);
             }
@@ -1622,7 +1787,7 @@ export default function Rogue() {
                             >
                                 {/* 이름이 있으면 그것을 적는다 — 넉 자라 `1P` 보다 두 글자 길 뿐이고,
                                     지도에서 찾는 이름과 상태 줄의 이름이 같아야 눈이 안 헤맨다. */}
-                                {h.hp > 0 ? "@" : "†"}{h.nick ?? (i === 0 ? "1P" : "2P")}
+                                {h.hp > 0 ? "@" : "†"}{h.nick ?? `${i + 1}P`}
                             </button>
                         )}
                         {/* **쓰러진 사람에게 제일 먼저 알려 줄 것은 이것**이다 — 누워 있는 동안
@@ -1660,9 +1825,9 @@ export default function Rogue() {
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
                         {hHunger && <span className="text-[var(--rg-monster)] font-bold">{hHunger}</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
-                        {online && linked && i !== who && DESK_DOING[peerMode] && (
+                        {online && linked && i !== who && DESK_DOING[peerModes[i] ?? "none"] && (
                             <span className="font-bold" style={{ color: PARTY_INK[i] }}>
-                                {DESK_DOING[peerMode]}
+                                {DESK_DOING[peerModes[i] ?? "none"]}
                             </span>
                         )}
                         {coop && i === state.heroes.length - 1 && (
@@ -2213,30 +2378,35 @@ export default function Rogue() {
                                           },
                                       ]
                                 : [
-                                      {
-                                          label: state.benched ? "동료 다시 부르기 (한 화면에서 둘)" : "동료 부르기 (한 화면에서 둘)",
-                                          hint: state.benched
-                                              ? `보냈던 ${ORIGINS[state.benched.origin ?? "knight"]?.name} Lv ${state.benched.level} — 배낭 그대로`
-                                              : "직업을 고르면 내 곁에 선다",
-                                          go: () => {
-                                              // 보냈던 동료는 **직업을 다시 안 묻는다** — 그 사람이 돌아온다.
-                                              if (state.benched) {
-                                                  setState((g) => (g ? joinGame(g) : g));
-                                                  setSheet("none");
-                                                  return;
-                                              }
-                                              setOriginFor({ t: "mate" });
-                                              setSheet("origins");
-                                          },
-                                      },
+                                      // 핫시트 동료는 자리표(`guestKey`)가 없는 사람이다 — 온라인 손님이
+                                      // 나갔다 대기석에 남긴 것과 섞이면 안 된다.
+                                      (() => {
+                                          const hotseatBenched = state.benched?.find((h) => h.guestKey === undefined);
+                                          return {
+                                              label: hotseatBenched ? "동료 다시 부르기 (한 화면에서 둘)" : "동료 부르기 (한 화면에서 둘)",
+                                              hint: hotseatBenched
+                                                  ? `보냈던 ${ORIGINS[hotseatBenched.origin ?? "knight"]?.name} Lv ${hotseatBenched.level} — 배낭 그대로`
+                                                  : "직업을 고르면 내 곁에 선다",
+                                              go: () => {
+                                                  // 보냈던 동료는 **직업을 다시 안 묻는다** — 그 사람이 돌아온다.
+                                                  if (hotseatBenched) {
+                                                      setState((g) => (g ? joinGame(g) : g));
+                                                      setSheet("none");
+                                                      return;
+                                                  }
+                                                  setOriginFor({ t: "mate" });
+                                                  setSheet("origins");
+                                              },
+                                          };
+                                      })(),
                                   ]),
                             // **온라인일 때만** 선다 — 혼자 하는 판의 지도는 `@` 그대로라 적을 데가 없다.
                             ...(online
                                 ? [
                                       {
                                           label: "내 이름 바꾸기",
-                                          hint: state.heroes[online === "guest" ? 1 : 0]?.nick
-                                              ? `지금 ${state.heroes[online === "guest" ? 1 : 0]?.nick} — 지도의 내 칸에 적힌다`
+                                          hint: state.heroes[online === "guest" ? who : 0]?.nick
+                                              ? `지금 ${state.heroes[online === "guest" ? who : 0]?.nick} — 지도의 내 칸에 적힌다`
                                               : `영문·숫자 ${NICK_MAX}자 — 지도의 내 칸에 적힌다`,
                                           go: () => {
                                               changeNick();
@@ -2245,17 +2415,20 @@ export default function Rogue() {
                                       },
                                   ]
                                 : []),
-                            ...(room && online === "host" && linked
-                                ? [
-                                      {
-                                          label: "동료 내보내기",
-                                          hint: "방은 그대로 열어 둔다 — 내보낸 동료는 이 방에 다시 못 들어온다",
-                                          go: () => {
-                                              kickGuest();
-                                              setSheet("none");
-                                          },
+                            // **방장이 보는 손님 명부** — 사람마다 내보내기 단추 하나. 정원이
+                            // 늘며 「동료 내보내기」한 줄로는 **누구를** 내보내는지 못 적게 됐다.
+                            ...(room && online === "host"
+                                ? guests.map((g2) => ({
+                                      label: `${g2.nick ?? `${g2.who + 1}P`} 내보내기`,
+                                      hint:
+                                          (g2.linked ? "연결됨" : "끊긴 채 자리만 지키는 중") +
+                                          (g2.origin ? ` · ${ORIGINS[g2.origin]?.name}` : "") +
+                                          " — 이 방에 다시 못 들어온다",
+                                      go: () => {
+                                          kickGuest(g2.who);
+                                          setSheet("none");
                                       },
-                                  ]
+                                  }))
                                 : []),
                             ...(room && online === "host"
                                 ? [
@@ -2282,7 +2455,9 @@ export default function Rogue() {
                                           // 기다렸다 다시 붙는다. 저절로 닫히는 것은 새 판을 열 때다.
                                           label: online === "guest" ? `온라인 방 나가기 (${room})` : `온라인 방 ${room} — 초대 링크 복사`,
                                           hint:
-                                              (linked ? "연결됨" : "상대를 기다리는 중") +
+                                              (online === "guest"
+                                                  ? linked ? "연결됨" : "상대를 기다리는 중"
+                                                  : `${guests.length}/${MAX_PARTY - 1}명 접속`) +
                                               (online === "guest" ? "" : " · 이 판이 끝나 새 판을 열 때까지 열어 둔다"),
                                           go: () => {
                                               if (online === "guest") closeRoom("방을 나왔다. 내 판으로 돌아왔다.");
@@ -2294,7 +2469,7 @@ export default function Rogue() {
                                 : [
                                       {
                                           label: "온라인 방 만들기",
-                                          hint: "초대 링크나 코드 네 자리를 동료에게 보낸다 — 지금 판에 들어온다",
+                                          hint: `초대 링크나 코드 네 자리를 동료에게 보낸다 — 지금 판에 들어온다 (최대 ${MAX_PARTY - 1}명까지)`,
                                           go: () => {
                                               // **이름부터 묻는다** — 방을 연 뒤에 물으면 그 사이에 들어온
                                               // 손님이 이름 없는 방장을 본다(`peek` 이 곧바로 답한다).
@@ -2344,7 +2519,7 @@ export default function Rogue() {
 
             {sheet === "origins" && (
                 <Panel
-                    title={originFor.t === "new" ? "출신(직업) 선택" : "2P 동료의 출신(직업) 선택"}
+                    title={originFor.t === "new" ? "출신(직업) 선택" : "동료의 출신(직업) 선택"}
                     accent={originFor.t === "new" ? undefined : PARTY_INK[1]}
                     onClose={() => {
                         // **안 고르고 닫으면 방에서 나온다.** 물어보려고 붙어만 있는 상태라,
@@ -2365,11 +2540,18 @@ export default function Rogue() {
                                 ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
                                 : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                         </p>
-                        {/* **방장이 무엇을 골랐나.** 위의 「방장과 다른 쪽을 고르면 서로 메웁니다」가
-                            조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. */}
-                        {originFor.t === "guest" && hostOrigin && (
-                            <p className="rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-2 py-1" style={{ color: PARTY_INK[0] }}>
-                                방장은 <span className="font-bold"><OriginTag origin={hostOrigin} nick={hostNick} title /></span> 입니다.
+                        {/* **지금 누가 무엇인가.** 위의 「다른 쪽을 고르면 서로 메웁니다」가
+                            조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. 정원이
+                            늘며 **방장뿐 아니라 먼저 들어온 손님들**도 같이 보여야 한다 —
+                            셋째로 들어오는 사람은 둘을 보고 고른다. */}
+                        {originFor.t === "guest" && roomParty.length > 0 && (
+                            <p className="flex flex-col gap-0.5 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-2 py-1">
+                                {roomParty.map((p, i) => (
+                                    <span key={i} className="font-bold" style={{ color: PARTY_INK[i] }}>
+                                        {i === 0 ? "방장은 " : `${i + 1}P는 `}
+                                        <OriginTag origin={p.origin} nick={p.nick} title />
+                                    </span>
+                                ))}
                             </p>
                         )}
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
