@@ -12,13 +12,14 @@
 // 달이 생기고(자산 1억 / 부채 3천 / 순자산 8천) 그때 어느 쪽이 맞는지 알 방법이 없다.
 // 뺄셈은 `core` 의 `netWorth` 하나가 한다.
 //
-// ── 차트는 「증감」을 그린다 ──────────────────────────────────
-// 잔액 자체를 그리면 억 단위 막대 열두 개가 다 비슷한 높이로 서서 **달마다 얼마나
-// 나아졌는지가 안 보인다.** 그게 이 화면에서 알고 싶은 것이라 증감을 그린다.
+// ── 차트는 「셋을 한 자에 놓고 견준다」 ──────────────────────────
+// 자산·부채·순자산을 각각 다른 자로 그리면 서로 못 견준다. 그래서 세 선을
+// 한 차트, 한 세로축 위에 그린다 — 부채가 줄고 자산이 느는 게 같은 화면에서
+// 보여야 「좋아지고 있다」가 눈에 들어온다.
 
 import { useEffect, useMemo, useState } from "react";
 import {
-    Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer,
+    CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer,
     Tooltip, XAxis, YAxis,
 } from "recharts";
 
@@ -60,61 +61,53 @@ function compact(n: number) {
 const monthTick = (m: string) => (m.endsWith("-01") ? `${m.slice(2, 4)}년` : `${Number(m.slice(5))}월`);
 
 /* ── 색 ───────────────────────────────────────────────────────────
- * 증감은 **극성**이다(늘었나 줄었나). 그래서 한 색이 아니라 반대되는 둘이고,
- * 그 둘은 이 화면이 이미 쓰고 있는 짝을 그대로 쓴다 — 위 요약의 「남은 돈」이
- * 양수면 brand, 음수면 red 다. 여기서 새 색을 지어내면 같은 페이지 안에서
- * 「초록이 좋은 것」을 두 번 배워야 한다.
+ * 자산·부채·순자산은 극성(늘었나 줄었나)이 아니라 **서로 다른 세 정체성**이다.
+ * 그래서 카테고리 팔레트의 정해진 순서(파랑→주황→아쿠아)를 그대로 쓴다 —
+ * 이 팔레트는 인접한 두 색씩 색각 이상 검증을 통과한 순서라, 뒤섞으면 그
+ * 보장이 깨진다.
  *
- * 초록/빨강은 색각 이상에서 갈리기 어려운 짝이라 **색만으로 뜻을 지지 않는다** —
- * 0 선 위냐 아래냐가 같은 말을 한 번 더 하고, 값에는 부호가 붙는다.
+ * 순자산(아쿠아)은 밝은 화면에서 대비가 낮게 나온다(3:1 미만) — 그래서
+ * 선 끝에 값을 직접 적어(`SeriesEndLabel`) 색에만 기대지 않게 한다.
  *
  * **어두운 화면은 같은 색을 안 쓴다.** 밝은 바탕에서 고른 단계를 그대로 얹으면
- * 짙은 판 위에서 가라앉는다 — 어두운 쪽은 한 단 밝은 단계로 따로 고른다
- * (`GrowthChart` 가 같은 규약이다). */
-const UP_CLS = "fill-brand dark:fill-[#2fa85a]";
-const DOWN_CLS = "fill-red-600 dark:fill-red-400";
+ * 짙은 판 위에서 가라앉는다 — 어두운 쪽은 한 단 밝은 단계로 따로 고른다. */
+const SERIES = {
+    assets: { key: "assets", label: "자산", cls: "text-[#2a78d6] dark:text-[#3987e5]" },
+    liabilities: { key: "liabilities", label: "부채", cls: "text-[#eb6834] dark:text-[#d95926]" },
+    net: { key: "net", label: "순자산", cls: "text-[#1baf7a] dark:text-[#199e70]" },
+} as const;
 
-/**
- * 막대 하나. **끝만 둥글고 0 선 쪽은 각지다** — 둥근 쪽이 어디인지가 곧 부호다.
- * recharts 의 `radius` 는 막대 전체에 같은 값을 주므로 모양을 직접 그린다.
- *
- * **반지름은 높이의 절반을 못 넘는다.** 안 막으면 짧은 막대에서 위아래 곡선이 만나
- * 렌즈 모양이 되고, 그러면 길이가 아니라 **부풀기**가 눈에 들어온다 — 작은 달일수록
- * 더 커 보이는 막대였다.
- */
-function DeltaBar(props: {
-    x?: number; y?: number; width?: number; height?: number; payload?: BalancePoint;
-}) {
-    const { x = 0, y = 0, width = 0, height = 0, payload } = props;
-    if (!width || !height) return null;
-    const r = Math.max(0, Math.min(4, width / 2, height / 2));
-    // recharts 는 음수 막대도 y 를 위, height 를 양수로 준다 — 부호는 값에서 본다.
-    const up = (payload?.delta ?? 0) >= 0;
-    const d = up
-        ? `M${x},${y + height} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + width - r},${y} Q${x + width},${y} ${x + width},${y + r} L${x + width},${y + height} Z`
-        : `M${x},${y} L${x},${y + height - r} Q${x},${y + height} ${x + r},${y + height} L${x + width - r},${y + height} Q${x + width},${y + height} ${x + width},${y + height - r} L${x + width},${y} Z`;
-    // **색은 클래스로 준다.** `fill` 속성으로 주면 어두운 화면에서 못 바꾼다.
-    return <path d={d} className={up ? UP_CLS : DOWN_CLS} />;
+/** 선 끝(가장 최근 달)에만 값을 적는다 — 열두 점에 다 적으면 아무것도 안 읽힌다.
+ *  순자산 색은 밝은 화면 대비가 낮아, 색만으로는 값을 못 읽는 사람을 위한 자리이기도 하다. */
+function seriesEndLabel(cls: string, lastIndex: number) {
+    return (props: { x?: string | number; y?: string | number; index?: number; value?: string | number }) => {
+        const { x, y, index, value } = props;
+        if (index !== lastIndex || x == null || y == null || value == null) return null;
+        return (
+            <text x={Number(x) + 6} y={Number(y)} dy={4} className={cn(cls, "text-[10px] font-black tabular-nums")}>
+                {compact(Number(value))}
+            </text>
+        );
+    };
 }
 
-function DeltaTooltip({ active, payload }: { active?: boolean; payload?: { payload: BalancePoint }[] }) {
+function CompareTooltip({ active, payload }: { active?: boolean; payload?: { payload: BalancePoint }[] }) {
     if (!active || !payload?.length) return null;
     const p = payload[0]!.payload;
     return (
         <div className="rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3 py-2 shadow-lg">
             <div className="text-[11px] font-black text-neutral-500 dark:text-neutral-400">{p.month}</div>
-            <div className={cn(
-                "mt-0.5 text-[15px] font-black tabular-nums",
-                (p.delta ?? 0) < 0 ? "text-red-600 dark:text-red-400" : "text-brand",
-            )}>
-                {p.delta === null ? "견줄 앞 달이 없다" : `${p.delta > 0 ? "+" : p.delta < 0 ? "−" : ""}${won(Math.abs(p.delta))}`}
-            </div>
-            <div className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400 tabular-nums">
-                순자산 {won(p.net)}
-            </div>
-            <div className="text-[11px] text-neutral-400 dark:text-neutral-500 tabular-nums">
-                자산 {compact(p.assets)} · 부채 {compact(p.liabilities)}
-            </div>
+            {([
+                [SERIES.net, p.net],
+                [SERIES.assets, p.assets],
+                [SERIES.liabilities, p.liabilities],
+            ] as const).map(([s, v]) => (
+                <div key={s.key} className="mt-0.5 flex items-center gap-1.5 text-[12px] font-bold tabular-nums">
+                    <span className={cn("inline-block h-2 w-2 rounded-full", s.cls.replaceAll("text-", "bg-"))} />
+                    <span className="text-neutral-500 dark:text-neutral-400">{s.label}</span>
+                    <span className="ml-auto text-neutral-800 dark:text-neutral-100">{won(v)}</span>
+                </div>
+            ))}
         </div>
     );
 }
@@ -183,10 +176,6 @@ export function BalancePanel({
         else setSaveError(failed);
     };
 
-    // 막대가 하나뿐이면 차트가 아니라 숫자 하나다 — 견줄 것이 없는 막대는 안 세운다.
-    const drawable = points.filter(p => p.delta !== null);
-    const biggest = drawable.reduce<BalancePoint | null>(
-        (best, p) => (best === null || Math.abs(p.delta!) > Math.abs(best.delta!) ? p : best), null);
 
 
     return (
@@ -316,11 +305,11 @@ export function BalancePanel({
                 </div>
             )}
 
-            {/* ── 달별 증감 ── */}
-            {drawable.length >= 2 && (
+            {/* ── 자산·부채·순자산 비교 ── */}
+            {points.length >= 2 && (
                 <div className="px-2 pt-3 pb-2">
                     <div className="px-2 pb-1 flex items-center justify-between gap-2">
-                        <h3 className={FIELD_LABEL_CLS}>달별 순자산 증감</h3>
+                        <h3 className={FIELD_LABEL_CLS}>자산 · 부채 · 순자산</h3>
                         {/* **쌓일수록 더 멀리 본다.** 한 해치만 붙박이로 두면 재작년과
                             견줄 방법이 화면에 없다. */}
                         <div className="flex rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
@@ -343,13 +332,11 @@ export function BalancePanel({
                         </div>
                     </div>
                     {/* **차트는 언제나 폭에 맞춘다.** 옆으로 스크롤하게 두면 세로
-                        눈금까지 같이 밀려 나가고, 값 축이 없는 막대 차트는 읽을 수가
-                        없다. 그래서 고르는 구간의 상한을 **3년(막대 36개)**으로 둔다 —
-                        그보다 촘촘해지면 막대가 실오라기가 되어 견주는 뜻이 사라진다.
-                        더 옛날을 보려면 보고 있는 달을 옮긴다. */}
-                    <ResponsiveContainer width="100%" height={168}>
-                        <BarChart data={drawable} margin={{ top: 14, right: 8, bottom: 0, left: 8 }}
-                            barCategoryGap="22%" maxBarSize={26}>
+                        눈금까지 같이 밀려 나가고, 값 축이 없는 차트는 읽을 수가
+                        없다. 그래서 고르는 구간의 상한을 **3년**으로 둔다 — 더 옛날은
+                        보고 있는 달을 옮겨서 본다. 오른쪽은 선 끝 값을 적을 자리다. */}
+                    <ResponsiveContainer width="100%" height={192}>
+                        <LineChart data={points} margin={{ top: 6, right: 44, bottom: 0, left: 8 }}>
                             {/* 실선 헤어라인. 점선은 「임계선」처럼 읽혀 그냥 눈금인데 뜻이 생긴다. */}
                             <CartesianGrid vertical={false} stroke="currentColor"
                                 className="text-neutral-200 dark:text-neutral-700" />
@@ -359,35 +346,36 @@ export function BalancePanel({
                                 tick={{ fontSize: 10, fontWeight: 700 }}
                                 className="text-neutral-400 dark:text-neutral-500"
                             />
-                            {/* **범위를 손으로 정하지 않는다.** 여백을 붙여 넘기면 눈금이
-                                1404만·−134만 처럼 어중간해지고 **0 이 눈금에서 빠진다** —
-                                0 이 기준선인 차트에서 그건 자를 잃는 것이다. */}
+                            {/* **범위를 손으로 정하지 않는다.** 여백을 붙여 넘기면 0 이
+                                눈금에서 빠질 수 있다 — 부채·순자산이 0 을 가로지르는
+                                차트에서 그건 자를 잃는 것이다. */}
                             <YAxis
                                 tickFormatter={compact} width={44}
                                 tickLine={false} axisLine={false}
                                 tick={{ fontSize: 10, fontWeight: 700 }}
                                 className="text-neutral-400 dark:text-neutral-500"
                             />
-                            {/* 0 선이 이 차트의 기준이다 — 위가 는 달, 아래가 준 달. */}
+                            {/* 0 선 — 부채·순자산이 이 선을 넘나든다. */}
                             <ReferenceLine y={0} stroke="currentColor"
                                 className="text-neutral-300 dark:text-neutral-600" />
-                            <Tooltip cursor={{ fill: "currentColor", className: "text-neutral-100 dark:text-neutral-800" }}
-                                content={<DeltaTooltip />} />
-                            {/* 색은 막대가 스스로 정한다(`DeltaBar`) — `Cell` 로 나눠 주면
-                                어두운 화면의 단계를 못 얹는다. */}
-                            <Bar dataKey="delta" shape={<DeltaBar />} isAnimationActive={false} />
-                        </BarChart>
+                            <Tooltip content={<CompareTooltip />} />
+                            {/* 두 줄 이상이라 범례는 항상 켠다 — 색만으로 정체를 지지 않는다. */}
+                            <Legend
+                                verticalAlign="top" align="right" height={24}
+                                formatter={(key: string) => SERIES[key as keyof typeof SERIES].label}
+                                wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
+                            />
+                            {(Object.values(SERIES)).map(s => (
+                                <Line
+                                    key={s.key}
+                                    dataKey={s.key}
+                                    stroke="currentColor" className={s.cls}
+                                    strokeWidth={2} dot={false} isAnimationActive={false}
+                                    label={seriesEndLabel(s.cls, points.length - 1)}
+                                />
+                            ))}
+                        </LineChart>
                     </ResponsiveContainer>
-                    {/* **막대마다 숫자를 적지 않는다.** 제일 큰 달 하나만 글로 짚고 나머지는
-                        축과 툴팁이 진다 — 열두 개에 값을 다 적으면 아무것도 안 읽힌다. */}
-                    {biggest && (
-                        <p className="px-2 pt-1 text-[11px] text-neutral-500 dark:text-neutral-400 tabular-nums">
-                            가장 크게 움직인 달 <b className="font-black">{biggest.month}</b>{" "}
-                            <b className={cn("font-black", biggest.delta! < 0 ? "text-red-600 dark:text-red-400" : "text-brand")}>
-                                {biggest.delta! > 0 ? "+" : "−"}{compact(Math.abs(biggest.delta!))}
-                            </b>
-                        </p>
-                    )}
                 </div>
             )}
         </section>
