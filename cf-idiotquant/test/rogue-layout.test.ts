@@ -188,7 +188,7 @@ test("직업이 뜨는 자리에는 이름도 같이 뜬다", () => {
     {
         assert.match(
             s,
-            /function OriginTag\(\{ origin, nick, title = false \}/,
+            /function OriginTag\(\{[\s\S]*?origin,[\s\S]*?nick,[\s\S]*?title = false,[\s\S]*?level,[\s\S]*?\}/,
             "`OriginTag` 가 이름을 안 받는다 — 화면마다 따로 이어 붙이게 된다",
         );
         assert.match(s, /\{nick && <span className="font-bold">\{nick\} · <\/span>\}/, "받은 이름을 안 그린다");

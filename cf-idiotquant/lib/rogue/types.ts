@@ -333,6 +333,23 @@ export interface Hero {
     burnTurns?: number;
     /** 시간 정지 남은 턴 (시간의 모래시계) */
     timeStop?: number;
+    /**
+     * **레벨업 성장 — 3레벨마다 하나씩 쌓이고, 캠프 없이 아무 데서나 고른다.**
+     *
+     * 한 번에 여러 레벨을 건너뛰면(경험치 배율 몬스터 등) 그만큼 쌓인다 —
+     * `hero.gainExp` 가 지난 레벨과 새 레벨 **사이**의 3의 배수를 센다. 고르는 것은
+     * 턴을 안 쓴다(`pickSkill` 이 `acted=false`) — 레벨업 자체가 턴을 안 쓰는 것과
+     * 같은 자리다.
+     */
+    pendingSkillPicks: number;
+    /** 레벨업 성장으로 쌓은 방어력. `heroDefense` **하나**가 더한다. */
+    bonusDefense: number;
+    /**
+     * 레벨업 성장으로 쌓은 「좋은 물건」 확률(0~1) — 그 몫만큼 `itemTier` 를 한 번 더
+     * 굴려 높은 쪽을 쓴다(`dnd.ts` 의 유리 굴림과 같은 모양). 0 이면 **굴림 자체를
+     * 안 건드린다** — 아무도 안 고른 판은 난수 흐름이 예전과 한 글자도 안 바뀐다.
+     */
+    itemLuck: number;
 }
 
 export type Phase = "playing" | "dead" | "won";

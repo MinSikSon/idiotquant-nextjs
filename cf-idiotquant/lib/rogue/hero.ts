@@ -25,7 +25,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { DUAL_WIELD, ORIGINS } from "./origins";
+import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS } from "./origins";
 
 /** 이 경험치를 넘으면 다음 레벨. 원작의 `e_levels` 와 같은 모양이다. */
 export const EXP_LEVELS = [
@@ -35,6 +35,18 @@ export const EXP_LEVELS = [
 
 /** 레벨이 오를 때마다 느는 체력. 고정값이다. */
 export const HP_PER_LEVEL = 5;
+
+/**
+ * 이 레벨마다 성장 하나를 고른다(힘·방어·아이템운) — `hero.pendingSkillPicks` 하나가
+ * 쌓고, `game.pickSkill` 하나가 던다. 캠프가 아니어도, 턴을 안 써도 고를 수 있다 —
+ * 레벨업 자체가 턴을 안 쓰는 것과 같은 자리다.
+ */
+export const SKILL_PICK_INTERVAL = 3;
+
+/** (하한, 상한] 사이에 있는 `SKILL_PICK_INTERVAL` 의 배수 개수 — 한 번에 여러 레벨을 건너뛰어도 안 놓친다. */
+function triplesInRange(lo: number, hi: number): number {
+    return Math.floor(hi / SKILL_PICK_INTERVAL) - Math.floor(lo / SKILL_PICK_INTERVAL);
+}
 
 const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
@@ -83,6 +95,9 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         asleep: 0,
         stuck: 0,
         detect: 0,
+        pendingSkillPicks: 0,
+        bonusDefense: 0,
+        itemLuck: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
     for (const item of startingItems) {
@@ -217,8 +232,11 @@ export function heroArmor(hero: Hero): number {
  * `items.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
  */
 export function heroDefense(hero: Hero): number {
-    const base = defenseOf(heroArmor(hero));
-    return hero.guarded && hero.origin === "knight" ? base + 2 : base;
+    const base = defenseOf(heroArmor(hero)) + (hero.bonusDefense ?? 0);
+    if (!hero.guarded || hero.origin !== "knight") return base;
+    // 전직(`ADVANCE_LEVEL`)한 근위대는 대기 보너스가 깊어진다 — 「철벽의 자세」가
+    // 켜는 값은 이 자리 하나다. `origins.ADVANCED_GUARD_BONUS` 가 그 수치를 쥔다.
+    return base + (hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2);
 }
 
 /**
@@ -377,6 +395,7 @@ export function isWorn(hero: Hero, it: Item): boolean {
 export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
     hero.exp += amount;
     const gained: number[] = [];
+    const startLevel = hero.level;
     while (hero.level - 1 < EXP_LEVELS.length && hero.exp >= EXP_LEVELS[hero.level - 1]) {
         hero.level += 1;
         // **굴리지 않는다.** 몬스터 체력과 같은 이유다 — 같은 레벨의 두 판이 체력만
@@ -385,6 +404,9 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         hero.hp += HP_PER_LEVEL;
         gained.push(hero.level);
     }
+    // **건너뛴 레벨도 센다.** 큰 몬스터 하나로 두 레벨을 한 번에 오르면 3레벨짜리 문턱을
+    // 하나 넘었을 수 있다 — `triplesInRange` 가 시작과 끝 **사이**의 배수를 센다.
+    hero.pendingSkillPicks += triplesInRange(startLevel, hero.level);
     return gained;
 }
 

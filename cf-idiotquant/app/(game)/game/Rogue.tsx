@@ -65,7 +65,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { heroArmor, heroStr, hungerOf, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroDefense, heroStr, hungerOf, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -89,7 +89,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
-import { ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
 import { roomAround } from "@/lib/rogue/fov";
@@ -190,9 +190,22 @@ function Msg({ text }: { text: string }) {
  * 직업 표 — **지도의 물건 글자를 그 물건 색으로** 세운다(`]` 갑옷 · `)` 무기 · `!` 물약 ·
  * `?` 주문서). 이름과 표를 여러 화면이 함께 쓰므로 한 자리에서 그린다.
  */
-function OriginTag({ origin, nick, title = false }: { origin?: HeroOrigin; nick?: string; title?: boolean }) {
+function OriginTag({
+    origin,
+    nick,
+    title = false,
+    level,
+}: {
+    origin?: HeroOrigin;
+    nick?: string;
+    title?: boolean;
+    /** 전직(`ADVANCE_LEVEL`) 여부를 가른다. 없으면 늘 기본 이름 — 방 만들기·손님 화면처럼
+        레벨이 아직 뜻이 없는 자리에서 쓴다. */
+    level?: number;
+}) {
     const o = ORIGINS[origin ?? "knight"];
     if (!o) return null;
+    const advanced = (level ?? 0) >= ADVANCE_LEVEL;
     return (
         <>
             {/* **이름이 있으면 직업 앞에 선다.** 직업만 적힌 화면에서는 「누구의 근위대인가」가
@@ -202,8 +215,8 @@ function OriginTag({ origin, nick, title = false }: { origin?: HeroOrigin; nick?
             <span className="font-[family-name:var(--font-plex-mono)] font-bold" style={{ color: o.iconInk }}>
                 {o.icon}
             </span>{" "}
-            {o.name}
-            {title && <span className="text-[var(--rg-faint)]"> ({o.title})</span>}
+            {advanced ? o.advancedName : o.name}
+            {title && <span className="text-[var(--rg-faint)]"> ({advanced ? o.advancedTitle : o.title})</span>}
         </>
     );
 }
@@ -629,6 +642,8 @@ export default function Rogue() {
     const [linked, setLinked] = useState(false);
     /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
     const [netOpen, setNetOpen] = useState(false);
+    /** 좌상단 「성장」 단추를 눌러 펼쳤는가 — 끊김 안내와 같은 자리다(모서리 한 칸). */
+    const [skillOpen, setSkillOpen] = useState(false);
     /**
      * 내보낸 손님들 — **이 방이 열려 있는 동안 다시 안 받는다.**
      *
@@ -1510,6 +1525,49 @@ export default function Rogue() {
                     </>
                 )}
 
+                {/* ── 레벨업 성장 — **좌상단 모서리 한 칸.**
+                    끊김 안내와 같은 자리 값이다: 계속 서 있는 알림은 모서리 한 칸만 쓰고,
+                    본문은 눌러야 펼쳐진다. 쌓인 것이 없으면 안 그린다 — 못 누르는 단추가
+                    늘 떠 있으면 그것도 고장처럼 읽힌다. 캠프가 아니어도, 턴을 안 써도
+                    고를 수 있어서 지도를 막을 까닭이 없다. */}
+                {hero.pendingSkillPicks > 0 && (
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setSkillOpen((v) => !v)}
+                            aria-label={`성장 ${hero.pendingSkillPicks}개를 고를 수 있다`}
+                            aria-expanded={skillOpen}
+                            title="성장을 고른다"
+                            className="absolute top-1 left-1 z-20 grid h-7 w-7 place-items-center rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 font-[family-name:var(--font-plex-mono)] text-[13px] leading-none text-[var(--rg-gold)]"
+                        >
+                            ★{hero.pendingSkillPicks}
+                        </button>
+                        {skillOpen && (
+                            <div className="absolute top-9 left-1 z-20 flex w-[min(15rem,calc(100%-0.5rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                <span>레벨 {SKILL_PICK_INTERVAL}마다 하나 — 무엇을 늘릴까</span>
+                                {(
+                                    [
+                                        ["str", `힘 +1 (지금 ${heroStr(hero)})`],
+                                        ["def", `방어력 +1 (지금 ${heroDefense(hero)})`],
+                                        ["luck", `좋은 물건 확률 +5% (지금 ${Math.round(hero.itemLuck * 100)}%)`],
+                                    ] as const
+                                ).map(([option, label]) => (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => {
+                                            run({ t: "pickSkill", option });
+                                            setSkillOpen(hero.pendingSkillPicks > 1);
+                                        }}
+                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]"
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -1577,7 +1635,7 @@ export default function Rogue() {
                             </span>
                         )}
                         <span className="text-[var(--rg-strong)] font-semibold">
-                            <OriginTag origin={h.origin} />
+                            <OriginTag origin={h.origin} level={h.level} />
                         </span>
                         {i === 0 && <span>Level: {level.depth}</span>}
                         <span className="text-[var(--rg-gold)]">Gold: {h.gold}</span>
@@ -2515,7 +2573,7 @@ export default function Rogue() {
                                         <h4 className="text-xs font-bold text-[var(--rg-label)]">Stats</h4>
                                         {selectedTomb.hero.origin && (
                                             <span className="text-xs font-bold text-[var(--rg-strong)]">
-                                                <OriginTag origin={selectedTomb.hero.origin} nick={selectedTomb.hero.nick} title />
+                                                <OriginTag origin={selectedTomb.hero.origin} nick={selectedTomb.hero.nick} level={selectedTomb.hero.level} title />
                                             </span>
                                         )}
                                     </div>
@@ -2690,7 +2748,7 @@ export default function Rogue() {
                                             <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--rg-muted)]">
                                                 {t.hero?.origin && (
                                                     <>
-                                                        <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={t.hero.origin} nick={t.hero.nick} /></span>
+                                                        <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={t.hero.origin} nick={t.hero.nick} level={t.hero.level} /></span>
                                                         <span>·</span>
                                                     </>
                                                 )}
@@ -2792,7 +2850,7 @@ export default function Rogue() {
                 >
                     <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
                     <dl className="grid grid-cols-[6em_1fr] gap-y-1 text-[var(--rg-muted)]">
-                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} nick={hero.nick} title /></dd>
+                        <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} nick={hero.nick} level={hero.level} title /></dd>
                         <dt>Level</dt><dd>지하 {state.deepest}층</dd>
                         <dt>Exp</dt><dd>{hero.level}/{hero.exp}</dd>
                         <dt>Hp</dt><dd>{hero.hp}({hero.maxHp})</dd>

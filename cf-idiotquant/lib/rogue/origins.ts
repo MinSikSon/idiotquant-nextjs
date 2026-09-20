@@ -9,10 +9,33 @@ import { type Item } from "./types";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
+/**
+ * 전직 레벨 — **숙련이 3→4로 두 번째 오르는 자리**(`proficiency`, `dnd.ts`).
+ *
+ * 봇 300판 기준 캐릭터 도달 레벨은 평균 5.6 · 최대 8이라, 여기는 **대부분 판에서 못 보는
+ * 것이 정상**이다. 흔한 것을 매 판 주면 특별할 것이 없다 — 「닿으면 확 달라지는」 먼
+ * 목표로 둔다. 얼마나 먼지는 `scripts/measure-rogue.mjs` 가 다시 잰다(이 값이 바뀌면
+ * 다시 잴 것).
+ */
+export const ADVANCE_LEVEL = 9;
+
+/**
+ * 전직 뒤의 수치 — **직업 특성을 실제로 굴리는 자리**(`hero.ts`·`game.ts`)가 이 넷을 본다.
+ * 레벨 1의 기본값은 그 자리에 그대로 있다(철벽 +2 · 함정 회피 50% · 회복 1.5배 · 보존
+ * 25%) — 새 규칙 하나를 더하는 것뿐이라 거기까지 옮기지 않는다.
+ */
+export const ADVANCED_GUARD_BONUS = 4; // 근위대: 대기 시 방어력 +2 → +4
+export const ADVANCED_TRAP_EVADE = 0.8; // 도적: 함정 회피 50% → 80%
+export const ADVANCED_HEAL_MULT = 2; // 연금술사: 회복 물약 배율 1.5배 → 2배
+export const ADVANCED_PRESERVE_CHANCE = 0.4; // 연구자: 주문서 보존 25% → 40%
+
 export interface OriginDef {
     id: HeroOrigin;
     name: string;
     title: string;
+    /** 전직(`ADVANCE_LEVEL`) 뒤의 이름·칭호. `OriginTag` **하나**가 레벨을 보고 고른다. */
+    advancedName: string;
+    advancedTitle: string;
     /**
      * 화면에 세우는 표. **이모지가 아니라 글자다** — 지도도 상태 줄도 고정폭 한 벌인데
      * 이모지는 칸 폭이 제각각이라 그 줄만 어긋나고, 기기마다 그림도 다르다.
@@ -52,6 +75,8 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         id: "knight",
         name: "왕실 근위대",
         title: "Knight",
+        advancedName: "왕실 근위 기사단장",
+        advancedTitle: "Knight Captain",
         icon: "]",
         iconInk: "var(--rg-armor)",
         description: "높은 체력과 단단한 방어구를 갖춘 굳건한 전사.",
@@ -73,6 +98,8 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         id: "rogue",
         name: "지하 도적",
         title: "Rogue",
+        advancedName: "그림자 암살자",
+        advancedTitle: "Shadow Assassin",
         icon: ")",
         iconInk: "var(--rg-weapon)",
         description: "치명적인 기습과 함정 회피에 능한 재빠른 잠입자.",
@@ -94,6 +121,8 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         id: "alchemist",
         name: "방랑 연금술사",
         title: "Alchemist",
+        advancedName: "현자의 연금술사",
+        advancedTitle: "Master Alchemist",
         icon: "!",
         iconInk: "var(--rg-potion)",
         description: "모든 물약의 비밀을 꿰뚫고 있는 비약의 대가.",
@@ -114,6 +143,8 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         id: "scholar",
         name: "고서 연구자",
         title: "Scholar",
+        advancedName: "대마도사",
+        advancedTitle: "Archmage",
         icon: "?",
         iconInk: "var(--rg-scroll)",
         description: "고대 주문서와 마법 지팡이를 다루는 비전 탐구자.",
