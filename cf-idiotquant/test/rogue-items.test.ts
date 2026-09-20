@@ -204,8 +204,38 @@ test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {
         perform(s1, { t: "zap", letter: "y", dx, dy });
         assert.equal(wand.charges, 0);
         const hpBefore = m.hp;
-        perform(s1, { t: "zap", letter: "y", dx, dy });
+        const s2 = perform(s1, { t: "zap", letter: "y", dx, dy });
         assert.equal(m.hp, hpBefore, "빈 지팡이가 피해를 줬다");
+
+        // ── **이미 아는 빈 지팡이는 턴을 안 쓴다**
+        //
+        // 정체를 모르는 지팡이는 빈 것도 겨눠 봐야 아는 것이라 그 한 번은 턴을 쓴다.
+        // 그 뒤로는 정말로 아무 일도 안 일어나는데, 그때도 턴을 쓰면 **허공에 난사하다
+        // 굶어 죽는다** — 벽을 들이받는 것과 같은 자리다(못 박은 규칙 셋째).
+        const used = s2.itemUsage["wand:magic missile"] ?? 0;
+        const before = s2.turn;
+        const s3 = perform(s2, { t: "zap", letter: "y", dx, dy });
+        assert.equal(s3.turn, before, "아는 빈 지팡이를 쏘는 데 턴을 썼다");
+        assert.equal(
+            s3.itemUsage["wand:magic missile"] ?? 0,
+            used,
+            "아무 일도 안 일어났는데 사용 횟수가 늘었다 — 허공에 난사해서 도감을 올릴 수 있다",
+        );
+    }
+
+    // ── **빈 지팡이의 첫 한 번은** 정체를 알려 주므로 턴을 쓴다
+    {
+        const s0 = newGame(107);
+        const wand = makeItem("wand", "cold", 945, -1, -1);
+        wand.charges = 0;
+        give(s0, wand, "y");
+        const [dx, dy] = openWay(s0);
+
+        assert.ok(!s0.known["wand:cold"], "쏘기 전에 정체를 알고 있다");
+        const before = s0.turn;
+        const s1 = perform(s0, { t: "zap", letter: "y", dx, dy });
+        assert.ok(s1.known["wand:cold"], "빈 지팡이를 쏴 봤는데 정체를 모른다");
+        assert.ok(s1.turn > before, "알아낸 것이 있는데 턴을 안 썼다");
     }
 
     // ── 둔화 지팡이는 몬스터를 두 턴에 한 번만 움직이게 한다

@@ -15,12 +15,14 @@ import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
 
 import { type Command, enchantScrollKind, scrollTargetKinds } from "@/lib/rogue/game";
 import {
+    CHEST_SLOTS,
     ENCHANT_MAX,
     MELT_RETURN,
     describe,
     enchantOdds,
     enchantOf,
     enchantSafeMax,
+    isStashable,
     isThrowable,
     itemPower,
     meltMax,
@@ -355,6 +357,20 @@ export default function Desk({
             out.push({ label, on: go({ t: "melt", letter: it.letter! }) });
         };
 
+        /**
+         * 「맡긴다」 — **캠프에서만, 자리가 남았을 때만.**
+         *
+         * 눌러도 안 되는 줄은 고장처럼 읽히므로 상자가 꽉 찼으면 아예 안 세운다.
+         * 증표를 거르는 것은 `isStashable` 한 자리다 — 엔진이 한 번 더 막는다.
+         */
+        const stashRow = () => {
+            if (!onAnvil || !isStashable(it) || hero.chest.length >= CHEST_SLOTS) return;
+            out.push({
+                label: `맡긴다 (${hero.chest.length}/${CHEST_SLOTS})`,
+                on: go({ t: "stash", letter: it.letter! }),
+            });
+        };
+
         switch (it.kind) {
             case "weapon":
                 if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
@@ -494,6 +510,8 @@ export default function Desk({
         if (mate && Math.max(Math.abs(mate.x - hero.x), Math.abs(mate.y - hero.y)) <= 1) {
             out.push({ label: "건넨다", on: go({ t: "give", letter: it.letter! }) });
         }
+        // **맡기는 것은 종류를 안 가린다** — 그래서 갈래 문 뒤가 아니라 여기 선다.
+        stashRow();
         if (it.kind !== "amulet") out.push({ label: "내려놓는다", on: go({ t: "drop", letter: it.letter! }) });
         return out;
     };
@@ -747,6 +765,42 @@ export default function Desk({
                             })}
                         </ul>
                     )}
+                    {/* ── 캠프 상자 — **모루 칸에 섰을 때만 열린다.**
+                        배낭과 한 판에 둔다: 맡기는 것도 꺼내는 것도 배낭을 보면서 하는 일이라,
+                        판을 따로 세우면 두 판을 오가며 칸을 세게 된다. 캠프 밖에서는 통째로
+                        접는다 — 열 수 없는 줄이 늘 떠 있으면 그것도 고장처럼 읽힌다. */}
+                    {onAnvil && (
+                        <div className="mt-3 border-t border-[var(--rg-line-soft)] pt-2">
+                            <div className="text-[var(--rg-label)]">
+                                캠프 상자 ({hero.chest.length}/{CHEST_SLOTS})
+                            </div>
+                            {hero.chest.length === 0 ? (
+                                <p className="text-[var(--rg-faint)]">비어 있다 — 맡긴 것은 다음 판까지 남는다.</p>
+                            ) : (
+                                <ul className="mt-1 space-y-1">
+                                    {hero.chest.map((it, i) => (
+                                        <li key={it.id} className="flex flex-wrap items-center gap-1">
+                                            {/* 자리는 칸 번호가 진다 — 배낭의 글자는 꺼낼 때 새로 받는다. */}
+                                            <span className="text-[var(--rg-label)]">{i + 1}.</span> {name(it)}
+                                            {it.count > 1 && <span className="text-[var(--rg-faint)]">×{it.count}</span>}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    // 꺼내면 배낭 줄이 하나 늘어난다 — 짚고 있던 줄은 푼다.
+                                                    setChosen(null);
+                                                    run({ t: "unstash", slot: i });
+                                                }}
+                                                className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-0.5 text-[var(--rg-strong)] active:translate-y-px"
+                                            >
+                                                꺼낸다
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
                     <div className="mt-3 space-y-0.5 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-faint)]">
                         <div>
                             무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"}

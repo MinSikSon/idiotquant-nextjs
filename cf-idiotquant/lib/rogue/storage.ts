@@ -12,6 +12,7 @@
 
 import {
     ARMORS,
+    CHEST_SLOTS,
     ENCHANT_MAX,
     POTIONS,
     RINGS,
@@ -36,7 +37,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 8;
+const VERSION = 9;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -258,6 +259,10 @@ function normalize(s: Saved): GameState | null {
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
         pack: liftEnchants(fixLetters(learnPlus(Array.isArray(h.pack) ? h.pack : [], s.known ?? {}))),
+        // **v8 이하에는 캠프 상자가 없다.** 안 채우면 모루에 올라선 순간 `chest.length` 가
+        // undefined 를 읽어 터지고, 새로고침해도 같은 저장을 또 읽어 영영 안 열린다.
+        // 자리는 배낭이 아니므로 `letter` 는 안 매긴다 — 꺼낼 때 `addToPack` 이 준다.
+        chest: Array.isArray(h.chest) ? liftEnchants(h.chest).slice(0, CHEST_SLOTS) : [],
         // v6 이하에는 보조손이 없다 — 이도류가 없던 때다.
         offWeaponId: h.offWeaponId ?? null,
         leftRingId: h.leftRingId ?? null,
@@ -438,6 +443,40 @@ export function loadItemUsage(): Record<string, number> {
 
 export function saveItemUsage(u: Record<string, number>): void {
     saveCounts(ITEM_USAGE_KEY, u);
+}
+
+/**
+ * 캠프 상자 — **자리마다 따로 적는다.**
+ *
+ * 자리(`slot`)는 그 브라우저에 앉은 사람이다. 한 화면 둘이서 할 때 두 사람이 같은
+ * 브라우저를 쓰므로, 한 칸에 담으면 **둘의 상자가 한 벌**이 된다.
+ *
+ * 온라인에서는 **각자 제 브라우저의 0번**을 쓴다 — 손님에게도 제 상자는 「내 상자」
+ * 하나여야 한다. 방장으로 놀 때와 손님으로 놀 때 딴 상자가 열리면 그건 상자가 둘인 것이다.
+ * 손님의 상자가 방장의 브라우저로 넘어가지 않게 하는 것도 같은 규칙이다(`Rogue.tsx`).
+ */
+const CHEST_KEY = "rogue:chest:v1";
+
+export function loadChest(slot: number): Item[] {
+    try {
+        const t = localStorage.getItem(`${CHEST_KEY}:${slot}`);
+        const a = t ? JSON.parse(t) : [];
+        // 남이 고쳐 넣을 수 있는 파일이다 — 물건의 모양을 갖춘 것만, 칸 수만큼만 받는다.
+        if (!Array.isArray(a)) return [];
+        return a
+            .filter((it): it is Item => !!it && typeof it === "object" && typeof it.kind === "string" && typeof it.type === "string")
+            .slice(0, CHEST_SLOTS);
+    } catch {
+        return [];
+    }
+}
+
+export function saveChest(slot: number, chest: Item[]): void {
+    try {
+        localStorage.setItem(`${CHEST_KEY}:${slot}`, JSON.stringify(chest.slice(0, CHEST_SLOTS)));
+    } catch {
+        /* 못 적어도 이번 판은 굴러간다 */
+    }
 }
 
 /** 지난 판의 소지 아이템 기록 */

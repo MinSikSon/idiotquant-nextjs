@@ -67,6 +67,9 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         maxStr: originDef.baseStr,
         gold: 0,
         pack: [],
+        // 상자는 **판이 주는 것이 아니라 그 사람이 들고 오는 것**이다 — 화면이 저장소에서
+        // 꺼내 `newGame`·`joinGame` 에 넘기고, 그쪽이 여기에 채운다.
+        chest: [],
         weaponId: null,
         offWeaponId: null,
         armorId: null,

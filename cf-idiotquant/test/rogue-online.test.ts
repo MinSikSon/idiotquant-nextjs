@@ -87,7 +87,8 @@ test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 �
         const body = SRC.slice(at, SRC.indexOf('m?.t === "bye"', at));
         assert.match(
             body,
-            /s\.heroes\.length > 1 \? setNick\(s, 1, m\.nick\) : joinGame\(/,
+            // 줄바꿈에 안 걸리게 — 거는 것은 **갈래의 모양**이지 한 줄로 적었는지가 아니다.
+            /s\.heroes\.length > 1\s*\?\s*setNick\(s,\s*1,\s*m\.nick\)\s*:\s*joinGame\(/,
             "이미 앉아 있는 손님에게 `joinGame` 을 다시 부른다 — 배낭과 레벨이 통째로 날아간다",
         );
         assert.match(body, /t: "init", state: serialize\(g\)/, "돌아온 손님에게 판을 안 돌려준다");
