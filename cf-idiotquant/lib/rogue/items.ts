@@ -372,6 +372,36 @@ function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean }
  */
 export const ENCHANT_MAX = 9;
 
+/**
+ * 이 물건이 **강화를 가질 수 있나** — 겹쳐 쌓이는 무기(표창·화살·은화살)는 못 가진다.
+ *
+ * ── 왜 막나: **주문서가 복사됐다** ───────────────────────────────────────────
+ *
+ * 겹쳐 쌓이는 것은 **한 덩이가 한 물건**이다(`Item.count`). 그래서 강화 주문서 한 장이
+ * 열 자루를 한꺼번에 올리는데, 모루는 **한 자루씩** 녹인다(그쪽이 옳다 — 뭉텅이째 태우면
+ * 같은 주문서가 갑절로 쏟아지므로). 두 규칙이 맞물려 고리가 생겼다:
+ *
+ *   ① 1장으로 표창 10자루를 `+1` 로 → 한 자루씩 녹인다 → 평균 **6.8장** (200판)
+ *   ② 바닥에서 주운 `+2` 표창 10자루를 그냥 녹인다 → 평균 **13.7장** (주문서 0장)
+ *
+ * ②가 더 크다 — 겹치는 것도 드랍부터 `+0~+3` 을 달고 나왔으므로(`rollEnchant`), 주우면
+ * 곧 주문서였다. 나온 주문서로 또 표창을 올리면 끝이 없다.
+ *
+ * `meltYield` 가 겹치는 것에 **쇳물 몫을 안 주는 것**(`sure: 0`)으로 이미 한 번 막으려
+ * 했는데, **걸린 강화(`risky`)가 자루마다 따로 굴려서** 그 자리로 샜다. 그 한 자리를
+ * 또 손보는 대신 **「겹치는 것은 강화를 안 가진다」** 한 줄로 올렸다 — 뽑기·주문서·재련·
+ * 녹이기 넷이 이 함수 하나를 보므로, 다음에 강화를 건드리는 사람이 한 곳만 지키면 된다.
+ *
+ * **단검·창은 그대로 강화된다.** 둘도 던질 수 있지만(`throwable`) 한 자루씩이라
+ * (`stack` 이 없다) 1장으로 1자루만 올라간다 — 복사 고리가 안 돈다. 가르는 값은
+ * 「던질 수 있나」가 아니라 **「한 덩이에 여럿인가」**이고, 도적의 이도류 단검이 그
+ * 구분에 걸려 있다.
+ */
+export function canHoldEnchant(it: Item): boolean {
+    if (it.kind !== "weapon") return true;
+    return !WEAPONS[it.type]?.stack;
+}
+
 /** 캠프 상자의 칸 수. 화면도 엔진도 이 수 하나를 본다. */
 export const CHEST_SLOTS = 3;
 
@@ -461,16 +491,21 @@ export const MELT_RETURN = 0.7;
  * 다 돌려줬는데, 그러면 **옮겨 심기가 공짜**다 — 아무 때나 녹였다 다시 걸어도 잃는 것이
  * 없으니 「지금 이 칼에 넣을까」가 결정이 아니게 된다. 확률이 그 값을 매긴다.
  *
- * **화살·표창은 깔아 주지 않는다.** 겹쳐 쌓이는 것들이라 한 번에 대여섯 개씩 떨어지고
+ * **화살·표창은 한 장도 안 나온다.** 겹쳐 쌓이는 것들이라 한 번에 대여섯 개씩 떨어지고
  * (`stack`), 낱개마다 한 장을 깔면 **한 판에 열여덟 장**이 나온다 — 재 봤다. 그러면
  * `+9` 가 그냥 걸어 들어오고 도박 구간이 사라진다. 화살 한 대는 벼려 만든 무기가
- * 아니라 **소모품**이라는 것이 이 구분의 근거다: 걸린 강화만 되뽑는다.
+ * 아니라 **소모품**이라는 것이 이 구분의 근거다.
+ *
+ * 한때는 **걸린 강화만은 되뽑아 줬는데**(`sure: 0, risky: plus`), 거기가 주문서 복사
+ * 구멍이었다 — 한 장으로 열 자루를 올리고 한 자루씩 녹이면 장수가 불어난다. 지금은
+ * 겹치는 것이 **강화를 아예 안 가지므로**(`canHoldEnchant`) `risky` 도 늘 `0` 이다.
+ * 그래도 여기서 한 번 더 `0` 을 박는다 — **자물쇠는 둘이다.**
  */
 export function meltYield(it: Item): { sure: number; risky: number } {
     if (it.kind === "armor") return { sure: 1, risky: enchantOf(it) };
     if (it.kind !== "weapon") return { sure: 0, risky: 0 };
-    const plus = enchantOf(it);
-    return WEAPONS[it.type]?.stack ? { sure: 0, risky: plus } : { sure: 1, risky: plus };
+    if (!canHoldEnchant(it)) return { sure: 0, risky: 0 };
+    return { sure: 1, risky: enchantOf(it) };
 }
 
 /** 그 물건에서 나올 수 있는 **가장 많은** 장수 — 화면이 단추에 적는 값. */
@@ -623,8 +658,11 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const count = def.stack ? rng.between(5, 14) : 1;
         const it = makeItem("weapon", type, id, x, y, count);
         const e = rollEnchant(depth, rng);
-        it.plusHit = e.plus;
-        it.plusDam = e.plus;
+        // **겹치는 것에는 안 건다**(`canHoldEnchant`). 굴림은 그대로 지난다 — 여기서 건너뛰면
+        // 난수 흐름이 무기 종류에 따라 갈려서 같은 시드가 다른 판이 된다.
+        const plus = canHoldEnchant(it) ? e.plus : 0;
+        it.plusHit = plus;
+        it.plusDam = plus;
         it.cursed = e.cursed;
         it.blessed = rollBlessed(e.cursed);
         return it;

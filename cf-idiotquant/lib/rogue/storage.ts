@@ -20,6 +20,7 @@ import {
     WANDS,
     WEAPONS,
     armorClassOf,
+    canHoldEnchant,
     defenseOf,
     fillAppearances,
     weaponDamageOf,
@@ -179,9 +180,21 @@ function learnPlus(items: Item[], known: Record<string, boolean>): Item[] {
     return items;
 }
 
+/**
+ * 강화 수치를 **규칙 안으로 되돌린다.**
+ *
+ * 마이너스와 상한 넘김을 자르고, **겹쳐 쌓이는 무기의 강화는 통째로 내린다**
+ * (`canHoldEnchant`). 뒤엣것이 새로 붙은 까닭은 **규칙만 고치면 이미 저장된 판은 안 낫기**
+ * 때문이다 — `+2` 표창 열 자루를 든 채 저장한 사람은 새 규칙이 와도 그 열 자루를 녹여
+ * 주문서를 불릴 수 있다. 새로 생기는 길을 막았으면 되읽을 때도 고쳐야 끝이다.
+ */
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
+        if (!canHoldEnchant(it)) {
+            it.plusHit = 0;
+            it.plusDam = 0;
+        }
         if ((it.plusHit ?? 0) < 0 || (it.plusHit ?? 0) > ENCHANT_MAX) it.plusHit = fit(it.plusHit);
         if ((it.plusDam ?? 0) < 0 || (it.plusDam ?? 0) > ENCHANT_MAX) it.plusDam = fit(it.plusDam);
         if ((it.plusArmor ?? 0) < 0 || (it.plusArmor ?? 0) > ENCHANT_MAX) it.plusArmor = fit(it.plusArmor);

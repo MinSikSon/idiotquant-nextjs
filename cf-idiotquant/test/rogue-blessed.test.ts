@@ -140,7 +140,11 @@ test("축복받은 재련 주문서 (축재련): 상위 티어 변환 + 확정 +
     assert.ok(wep);
     // 철퇴의 depth(1) 이상의 장비로 변환되었는지 확인
     assert.ok((WEAPONS[wep.type]?.depth ?? 1) >= (WEAPONS["mace"].depth ?? 1));
-    assert.equal(wep.plusHit, 1);
-    assert.equal(wep.plusDam, 1);
+    // **겹쳐 쌓이는 것으로 바뀌면 +1 이 안 붙는다** — 표창·화살은 강화를 못 가진다
+    // (`canHoldEnchant`). 한 장이 열 자루를 올리고 모루는 한 자루씩 녹이므로, 거기로
+    // 주문서가 복사됐다. 확정 +1 은 **강화를 가질 수 있는 것으로 바뀌었을 때**의 약속이다.
+    const bonus = WEAPONS[wep.type]?.stack ? 0 : 1;
+    assert.equal(wep.plusHit, bonus, `${wep.type} 로 재련됐는데 명중 보정이 맞지 않는다`);
+    assert.equal(wep.plusDam, bonus, `${wep.type} 로 재련됐는데 피해 보정이 맞지 않는다`);
     assert.equal(wep.blessed, true);
 });
