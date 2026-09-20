@@ -554,6 +554,18 @@ export function pickCategory(
 }
 
 /**
+ * 지팡이의 사용 횟수를 굴린다 — **지팡이를 놓는 자리는 전부 여기를 지난다.**
+ *
+ * `makeItem` 은 `charges = 0` 을 박아 두고 채우지 않으므로, 이 함수를 안 지나고 놓인
+ * 지팡이는 **주워도 아무 반응이 없는 죽은 물건**이 된다. 금고 열쇠(굴착 지팡이)가 실제로
+ * 그랬다 — 벽을 뚫을 유일한 열쇠가 언제나 0회라 금고가 영영 안 열렸다. 「길이 막힌 판은
+ * 절대 없다」를 지도만 보고 세면 안 잡히는 자리다(지도에는 지팡이가 분명히 놓여 있다).
+ */
+export function rollCharges(rng: Rng): number {
+    return rng.between(3, 7);
+}
+
+/**
  * 이 층에 떨어져 있을 물건 하나. 깊을수록 금화가 두둑하고 **물건의 등급이 높다.**
  *
  * 분류는 부르는 쪽이 골라서 넘긴다(`pickCategory`) — 한 층에 강화 주문서를 두 장까지만
@@ -625,7 +637,7 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     }
 
     const it = makeItem("wand", weightedAt(WANDS, tier, rng), id, x, y);
-    it.charges = rng.between(3, 7);
+    it.charges = rollCharges(rng);
     it.blessed = rollBlessed();
     return it;
 }
