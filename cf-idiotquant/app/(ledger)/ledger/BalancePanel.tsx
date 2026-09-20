@@ -177,6 +177,26 @@ function useEndLabelOffsets(ref: { current: HTMLDivElement | null }, points: Bal
     return offsets;
 }
 
+/**
+ * 범례를 recharts 가 자동으로 그리게 두지 않는다. recharts 는 자기 범례 아이콘에
+ * `stroke="currentColor"` 를 그대로 박아 넣는데, 이 아이콘은 `Line` 이 그려진
+ * 자리가 아니라 **범례 자신의 자리**에서 색을 물려받는다 — 그래서 셋 다 범례
+ * 둘레의 같은 글자색(흰색)을 물려받아 구분이 안 됐다. 툴팁의 색 점과 같은 자리를
+ * 툴팁에서 이미 한 번 고쳤으니, 범례도 같은 방식(고정 `dot` 클래스)으로 직접 그린다.
+ */
+function CompareLegend() {
+    return (
+        <div className="flex items-center gap-3">
+            {Object.values(SERIES).map(s => (
+                <span key={s.key} className="inline-flex items-center gap-1 text-[11px] font-black">
+                    <span className={cn("inline-block h-2 w-2 rounded-full", s.dot)} />
+                    <span className="text-neutral-500 dark:text-neutral-400">{s.label}</span>
+                </span>
+            ))}
+        </div>
+    );
+}
+
 function CompareTooltip({ active, payload }: { active?: boolean; payload?: { payload: BalancePoint }[] }) {
     if (!active || !payload?.length) return null;
     const p = payload[0]!.payload;
@@ -449,11 +469,7 @@ export function BalancePanel({
                                     className="text-neutral-300 dark:text-neutral-600" />
                                 <Tooltip content={<CompareTooltip />} />
                                 {/* 두 줄 이상이라 범례는 항상 켠다 — 색만으로 정체를 지지 않는다. */}
-                                <Legend
-                                    verticalAlign="top" align="right" height={24}
-                                    formatter={(key: string) => SERIES[key as keyof typeof SERIES].label}
-                                    wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
-                                />
+                                <Legend verticalAlign="top" align="right" height={24} content={<CompareLegend />} />
                                 {(Object.values(SERIES)).map(s => (
                                     <Line
                                         key={s.key}
