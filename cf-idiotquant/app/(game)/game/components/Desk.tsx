@@ -25,6 +25,7 @@ import {
     enchantSafeMax,
     isStashable,
     isThrowable,
+    itemChar,
     itemPower,
     meltMax,
     meltYield,
@@ -740,7 +741,14 @@ export default function Desk({
                                             onClick={() => setChosen(open ? null : it.id)}
                                             className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"} ${side && cursor === i ? CURSOR : ""}`}
                                         >
-                                            <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span> {name(it)}
+                                            <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span>{" "}
+                                            {/* **종류 표식** — 지도에서 그 물건을 그리는 글자와 색을 그대로 쓴다
+                                                (`itemChar`·`--rg-${kind}`). 줄이 길어지면 이름만으로는 무기인지
+                                                갑옷인지 한눈에 안 갈린다. */}
+                                            <span className="font-bold" style={{ color: `var(--rg-${it.kind})` }}>
+                                                {itemChar(it.kind)}
+                                            </span>{" "}
+                                            {name(it)}
                                             {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
                                             {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
