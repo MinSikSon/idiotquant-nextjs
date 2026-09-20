@@ -16,6 +16,7 @@ import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
 import { type Command, enchantScrollKind, scrollTargetKinds } from "@/lib/rogue/game";
 import {
     CHEST_SLOTS,
+    canHoldEnchant,
     ENCHANT_MAX,
     MELT_RETURN,
     describe,
@@ -209,7 +210,12 @@ export default function Desk({
                     : "무슨 갑옷을 강화할까",
                 kinds: targetKinds,
                 // **상한에 닿은 것은 안 보여 준다** (재련은 제한 없음)
-                allow: (p) => style === "transmute" || enchantOf(p) < ENCHANT_MAX,
+                // **겹쳐 쌓이는 것도 안 보여 준다** — 한 장이 열 자루를 올리고, 모루는
+                // 한 자루씩 녹이므로 거기서 주문서가 불어났다(`canHoldEnchant`).
+                // 재련은 그대로 둔다: 표창 열 자루가 **한 자루**의 딴 무기가 되므로
+                // 불어나지 않는다. 눌러도 엔진이 한 번 더 막는다 — 자물쇠는 둘이다.
+                allow: (p) =>
+                    style === "transmute" || (canHoldEnchant(p) && enchantOf(p) < ENCHANT_MAX),
                 empty: style === "transmute"
                     ? "재련할 장비(무기·갑옷·반지)가 없다."
                     : style === "blessed"

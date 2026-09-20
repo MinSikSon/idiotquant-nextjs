@@ -79,6 +79,7 @@ import {
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
     CHEST_SLOTS,
+    canHoldEnchant,
     MELT_RETURN,
     enchantOdds,
     enchantOf,
@@ -995,11 +996,14 @@ function targetKindsOf(it: Item): ItemKind[] | null {
  * 원작 Rogue 가 그랬다. 고를 수 없는 대신 **몸에 걸친 것**에 걸리므로, 모르는 주문서를
  * 읽는 것이 곧 「지금 쓰는 장비를 건다」는 뜻이 된다.
  */
-function defaultTarget(hero: Hero, kinds: ItemKind[]): Item | undefined {
+function defaultTarget(hero: Hero, kinds: ItemKind[], allow?: (it: Item) => boolean): Item | undefined {
     for (const k of kinds) {
         const it =
             k === "weapon" ? equippedWeapon(hero) : k === "armor" ? equippedArmor(hero) : wornRings(hero)[0];
-        if (it) return it;
+        // **걸 수 없는 것은 「걸친 것이 없다」와 같이 친다.** 표창을 쥔 채 정체 모르는 강화
+        // 주문서를 읽으면 부르는 쪽이 「걸 것이 없었다」로 보내 주문서가 타고 정체가 밝혀진다 —
+        // 아무 일도 안 일어나고 턴도 안 쓰는 막다른 길보다 낫다.
+        if (it && (!allow || allow(it))) return it;
     }
     return undefined;
 }
@@ -1048,7 +1052,13 @@ function transmute(state: GameState, it: Item, rng: Rng, isBlessed = false): voi
         } else {
             it.count = 1;
         }
-        if (isBlessed || rng.chance(0.25)) {
+        // **겹치는 것이 되었으면 강화는 안 얹는다.** 여기로 얹으면 「겹치는 것은 강화를 안
+        // 가진다」가 재련 한 자리에서만 뚫려, 표창으로 재련해 놓고 녹이는 길이 도로 열린다.
+        // 바뀐 종류가 강화를 못 가지면 **들고 있던 것도 내린다** — 장검 `+3` 이 표창이 되면
+        // 그 `+3` 은 갈 데가 없다.
+        if (!canHoldEnchant(it)) {
+            setEnchant(it, 0);
+        } else if (isBlessed || rng.chance(0.25)) {
             it.plusHit = (it.plusHit ?? 0) + 1;
             it.plusDam = (it.plusDam ?? 0) + 1;
             say(state, "✨ 재련 과정에서 마법의 기운이 깃들어 성능이 더욱 강화되었다!");
@@ -1176,7 +1186,11 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
         // 모르는 것은 고르기 창이 안 떴으므로 여기서도 묻지 않고 몸에 걸친 것에 건다.
         const known = !!state.known[`scroll:${it.type}`];
         if (known && !target) return false;
-        const on = known ? packItem(hero, target!) : defaultTarget(hero, targetKinds);
+        // 재련은 겹치는 것에도 걸린다 — 표창 열 자루가 **한 자루**의 딴 무기가 되므로
+        // (`transmute` 가 `count` 를 1 로 내린다) 불어나지 않는다. 거르는 것은 강화뿐이다.
+        const on = known
+            ? packItem(hero, target!)
+            : defaultTarget(hero, targetKinds, ENCHANT_SCROLLS.includes(it.type) ? canHoldEnchant : undefined);
         if (!on || !targetKinds.includes(on.kind)) {
             if (known) {
                 say(state, "선택한 대상에 적용할 수 없다.");
@@ -1192,6 +1206,15 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
             return true;
         }
         if (ENCHANT_SCROLLS.includes(it.type)) {
+            // **겹쳐 쌓이는 것에는 못 건다**(`canHoldEnchant`). 한 장이 열 자루를 한꺼번에
+            // 올리는데 모루는 한 자루씩 녹이므로, 거기서 주문서가 불어났다.
+            // 화면도 목록에서 빼지만 **자물쇠는 둘이다** — 정체를 모르는 주문서는 고르기
+            // 창을 안 지나고 몸에 걸친 것에 곧장 걸리므로, 표창을 쥔 채 읽으면 이쪽으로만
+            // 걸러진다(`defaultTarget` 이 그 경우를 「걸 것이 없다」로 보낸다).
+            if (!canHoldEnchant(on)) {
+                say(state, "벼려 만든 것이 아니라 주문이 걸리지 않는다.");
+                return false;
+            }
             const plus = enchantOf(on);
             if (plus >= ENCHANT_MAX) {
                 say(state, "더 손댈 곳이 없다.");
