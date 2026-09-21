@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Explain results in Korean.** While thinking in English, write explanations and responses to the user in Korean.
 
-**Keep diff output minimal.** Report changes as a file + line-count summary (`git diff --stat`), not full diffs. Quote only the few lines that matter; reference the rest as `path:line`. Show a full diff only when asked.
+**Do not print diffs.** To save tokens, never output `git diff` contents in progress updates or final responses. Report only a file + line-count summary (`git diff --stat`) and reference relevant code as `path:line`. Show a full diff only when the user explicitly asks for it.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 

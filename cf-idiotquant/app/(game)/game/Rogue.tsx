@@ -1529,6 +1529,12 @@ export default function Rogue() {
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
     const itemProg = itemCodexProgress(state.itemCodex, state.itemUsage);
+    const classSkill = {
+        knight: ["전장의 외침", "보이는 괴물의 시선을 모두 끈다"],
+        rogue: ["연막", "보이는 일반 괴물이 나를 놓친다"],
+        alchemist: ["만능 비약", "체력 1/3 회복 · 화상·실명·혼란 해제"],
+        scholar: ["비전 통찰", "층의 지형과 괴물의 기척을 밝힌다"],
+    }[hero.origin ?? "knight"];
 
     // **세 개씩 한 묶음**으로 늘어놓는다. 단추 판이 세 칸 격자라(`TouchPad`) 한 줄이
     // 곧 한 묶음이 된다 — 계단 둘이 나란히, 배낭에서 꺼내 쓰는 것들이 한 줄에.
@@ -1732,6 +1738,20 @@ export default function Rogue() {
                             </div>
                         )}
                     </>
+                )}
+
+                {/* 전직 기술은 전직 뒤에만 생기고, 층마다 한 번이라 모서리 한 칸에 선다. */}
+                {hero.level >= ADVANCE_LEVEL && (
+                    <button
+                        type="button"
+                        onClick={() => run({ t: "classSkill" })}
+                        disabled={hero.classSkillDepth === level.depth}
+                        aria-label={`${classSkill[0]} — ${classSkill[1]}`}
+                        title={`${classSkill[0]} · ${classSkill[1]} · 층마다 한 번`}
+                        className="absolute top-1 left-9 z-20 h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
+                    >
+                        ★ {classSkill[0]}
+                    </button>
                 )}
 
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
@@ -3031,6 +3051,21 @@ export default function Rogue() {
                     }
                 >
                     <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
+                    {state.phase === "dead" && (
+                        <div className="mb-3 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-3 py-2">
+                            <p className="mb-1 font-bold text-[var(--rg-strong)]">마지막 순간</p>
+                            <ul className="space-y-0.5 text-[var(--rg-muted)]">
+                                {state.messages.filter((m) => !isDetail(m)).slice(-5).map((m, i) => (
+                                    <li key={i}>· <Msg text={m} /></li>
+                                ))}
+                            </ul>
+                            <p className="mt-2 text-[11px] text-[var(--rg-faint)]">
+                                남긴 물약 {hero.pack.filter((it) => it.kind === "potion").reduce((n, it) => n + it.count, 0)}개
+                                {" · "}미식별 물건 {hero.pack.filter((it) => ["potion", "scroll", "ring", "wand"].includes(it.kind) && !state.known[`${it.kind}:${it.type}`]).length}종
+                                {" · "}남은 식량 {hero.pack.filter((it) => it.kind === "food").reduce((n, it) => n + it.count, 0)}개
+                            </p>
+                        </div>
+                    )}
                     <dl className="grid grid-cols-[6em_1fr] gap-y-1 text-[var(--rg-muted)]">
                         <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} nick={hero.nick} level={hero.level} title /></dd>
                         <dt>Level</dt><dd>지하 {state.deepest}층</dd>
