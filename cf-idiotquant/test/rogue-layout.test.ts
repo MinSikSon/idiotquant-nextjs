@@ -135,6 +135,13 @@ test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판�
     assert.match(s, /seedLinkNote[\s\S]*?setTimeout\(\(\) => setSeedLinkNote\(null\), 2600\)/, "시드 링크 복사 안내가 저절로 사라지지 않는다");
 });
 
+test("새 판을 열면 눌러 둔 방향 키 반복도 멈춘다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+    assert.match(s, /const stopAllHolds[\s\S]*?startWithOrigin[\s\S]*?stopAllHolds\(\)/, "새 판에서 이전 방향 키 반복을 멈추지 않는다");
+    assert.match(s, /heldDirections[\s\S]*?ignoredDirections[\s\S]*?ignoreHeldDirections\(\)/, "새 판에서 OS 방향 키 반복을 막지 않는다");
+    assert.match(s, /ignoredDirections\.current\.delete\(e\.code\)/, "방향 키를 뗀 뒤에도 새 입력을 막는다");
+});
+
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {
     const s = read("app/(game)/game/components/MapView.tsx");
     assert.match(s, /const single = chars\.length === 1/, "한 글자 이름을 따로 가르지 않는다");

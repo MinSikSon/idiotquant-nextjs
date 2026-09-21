@@ -156,8 +156,20 @@ export const RINGS: Record<string, { name: string; freq: number; hunger: number;
     searching: { name: "탐색", freq: 7, hunger: 1, depth: 3 },
     "sustain strength": { name: "힘 유지", freq: 5, hunger: 0, depth: 3 },
     "slow digestion": { name: "소화 억제", freq: 5, hunger: -2, depth: 5 },
-    teleportation: { name: "순간이동", freq: 4, hunger: 1, depth: 7 },
-    adornment: { name: "장식", freq: 2, hunger: 0, depth: 1 },
+    teleportation: { name: "탈출", freq: 4, hunger: 1, depth: 7 },
+    adornment: { name: "금화", freq: 2, hunger: 0, depth: 1 },
+};
+
+/** 반지는 감정한 뒤 배낭과 도감에서 효과를 바로 읽을 수 있어야 한다. */
+export const RING_EFFECTS: Record<string, string> = {
+    protection: "방어력 +N",
+    "add strength": "힘 +N",
+    regeneration: "체력 회복 2배",
+    searching: "탐색 성공률 65%",
+    "sustain strength": "독으로 힘이 줄지 않음",
+    "slow digestion": "허기 소모 -2",
+    teleportation: "두 몬스터에게 포위되면 탈출",
+    adornment: "금화 획득 +50%",
 };
 
 /** 지팡이 — 방향을 겨눠 쏜다. 횟수가 정해져 있다. */
@@ -927,12 +939,11 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         return `방어력 ${defenseOf(it.plusKnown ? armorClassOf(it) : base)}${sock}`;
     }
     if (it.kind === "ring") {
-        // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
         if (!seen) return "";
         const n = it.plusRing ?? 0;
         if (it.type === "protection") return n === 0 ? "" : `방어력 ${n > 0 ? "+" : ""}${n}`;
         if (it.type === "add strength") return n === 0 ? "" : `힘 ${n > 0 ? "+" : ""}${n}`;
-        return "";
+        return RING_EFFECTS[it.type] ?? "";
     }
     return "";
 }

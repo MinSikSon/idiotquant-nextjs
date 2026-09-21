@@ -230,6 +230,11 @@ export function hasRing(hero: Hero, type: string): boolean {
     return wornRings(hero).some((r) => r.type === type);
 }
 
+/** 금화 반지의 금화 보너스 — 금화를 줍는 두 경로가 같은 값을 쓴다. */
+export function goldGain(hero: Hero, gold: number): number {
+    return hasRing(hero, "adornment") ? Math.ceil(gold * 1.5) : gold;
+}
+
 /**
  * 지금의 방어 등급 — 갑옷이 없으면 맨몸 10 이고, **보호 반지가 더 내린다.**
  *

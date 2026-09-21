@@ -46,6 +46,7 @@ import {
     CHEST_SLOTS,
     MELT_RETURN,
     POTIONS,
+    RING_EFFECTS,
     RINGS,
     SCROLLS,
     WANDS,
@@ -452,6 +453,22 @@ export default function Rogue() {
         return () => clearTimeout(timer);
     }, [seedLinkNote]);
     const buried = useRef(false);
+
+    /** 키를 누르고 있는 동안의 이동 반복 — 판이 바뀌면 반드시 같이 멈춘다. */
+    const holds = useRef<({ code: string; timer: ReturnType<typeof setTimeout> } | null)[]>([]);
+    const stopHold = useCallback((w: number) => {
+        const h = holds.current[w];
+        if (h) clearTimeout(h.timer);
+        holds.current[w] = null;
+    }, []);
+    const stopAllHolds = useCallback(() => holds.current.forEach((_, w) => stopHold(w)), [stopHold]);
+    useEffect(() => stopAllHolds, [stopAllHolds]);
+    // 새 판을 고르는 동안에도 물리 키는 눌린 채일 수 있다. 그 키는 한 번 뗄 때까지 새 판에 안 보낸다.
+    const heldDirections = useRef(new Set<string>());
+    const ignoredDirections = useRef(new Set<string>());
+    const ignoreHeldDirections = useCallback(() => {
+        ignoredDirections.current = new Set(heldDirections.current);
+    }, []);
 
     /** 전투 피드백 & 특수 효과 연출 상태 (P6 - 칸 내 색상 점멸) */
     /**
@@ -1338,12 +1355,15 @@ export default function Rogue() {
         setSheet("none");
         // 손님의 새 판은 방장만 연다 — 제멋대로 열면 두 화면이 갈라진다.
         if (online === "guest") return;
+        // 이전 판의 키 반복이 새 판을 걷게 두면, 손을 뗄 때까지 새 던전이 멋대로 움직인다.
+        stopAllHolds();
+        ignoreHeldDirections();
         clear();
         buried.current = false;
         // **방은 한 판의 것이다** — 방장이 새 판을 열면 그 판의 방은 닫힌다. 손님은 제 판으로 돌아간다.
         if (online === "host") closeRoom("");
         setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin, loadChest(0)));
-    }, [online, closeRoom]);
+    }, [online, closeRoom, stopAllHolds, ignoreHeldDirections]);
 
     const restart = useCallback(() => {
         setOriginFor({ t: "new" });
@@ -1366,13 +1386,6 @@ export default function Rogue() {
 
     // ── 키보드 ─────────────────────────────────────────────────────────
     /** 한 화면 협동에서 사람마다 꾹 누르고 있는 방향 키. */
-    const holds = useRef<({ code: string; timer: ReturnType<typeof setTimeout> } | null)[]>([]);
-    const stopHold = useCallback((w: number) => {
-        const h = holds.current[w];
-        if (h) clearTimeout(h.timer);
-        holds.current[w] = null;
-    }, []);
-    useEffect(() => () => holds.current.forEach((_, w) => stopHold(w)), [stopHold]);
     const runAsRef = useRef(runAs);
     runAsRef.current = runAs;
     /**
@@ -1417,6 +1430,13 @@ export default function Rogue() {
             // **글자는 자판 자리로 읽는다** — 한글 입력 상태면 `e.key` 가 `ㅈ`·`ㅁ` 으로 와서
             // 어떤 키도 안 먹는다. 대문자(`W`·`P`·`R`)는 그대로 둔다.
             const key = /^Key[A-Z]$/.test(e.code) ? (e.shiftKey ? e.code[3] : e.code[3].toLowerCase()) : e.key;
+            if (KEY_DIRS[key]) {
+                heldDirections.current.add(e.code);
+                if (ignoredDirections.current.has(e.code)) {
+                    e.preventDefault();
+                    return;
+                }
+            }
             const localCoop = !online && state.heroes.length > 1;
             // 멈춘 동안에는 **아무 키도 안 받는다**(모서리 알림이 까닭을 적는다).
             if (frozen) return;
@@ -1539,6 +1559,8 @@ export default function Rogue() {
             }
         };
         const onUp = (e: KeyboardEvent) => {
+            heldDirections.current.delete(e.code);
+            ignoredDirections.current.delete(e.code);
             holds.current.forEach((h, w) => h?.code === e.code && stopHold(w));
         };
         // 창을 벗어나면 뗀 키를 못 듣는다 — 그대로 두면 혼자 계속 걷는다.
@@ -2344,6 +2366,10 @@ export default function Rogue() {
                                                             )}
                                                             {entry.kind === "ring" && (
                                                                 <>
+                                                                    <div className="col-span-2">
+                                                                        <span className="text-[var(--rg-faint)]">효과: </span>
+                                                                        <span className="text-[var(--rg-strong)]">{RING_EFFECTS[entry.type] ?? "알 수 없음"}</span>
+                                                                    </div>
                                                                     <div>
                                                                         <span className="text-[var(--rg-faint)]">분류: </span>
                                                                         <span>반지</span>
@@ -2354,7 +2380,10 @@ export default function Rogue() {
                                                                     </div>
                                                                     <div>
                                                                         <span className="text-[var(--rg-faint)]">배고픔 추가: </span>
-                                                                        <span>+{RINGS[entry.type]?.hunger ?? 1}/턴</span>
+                                                                        {(() => {
+                                                                            const hunger = RINGS[entry.type]?.hunger ?? 1;
+                                                                            return <span>{`${hunger > 0 ? "+" : ""}${hunger}/턴`}</span>;
+                                                                        })()}
                                                                     </div>
                                                                     <div>
                                                                         <span className="text-[var(--rg-faint)]">착용 걸음: </span>

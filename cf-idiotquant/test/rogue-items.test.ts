@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { newGame, perform } from "@/lib/rogue/game";
-import { heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
+import { goldGain, heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 import { T, idx, walkable, type GameState, type Item, type Tile } from "@/lib/rogue/types";
@@ -178,6 +178,18 @@ test("반지는 배를 더 고프게 하고, 저주받은 것은 못 뺀다", ()
         const s2 = perform(s1, { t: "removeRing", letter: "y" });
         assert.equal(wornRings(s2.heroes[0]).length, 1, "저주받은 반지가 빠졌다");
     }
+});
+
+test("금화 반지는 금화를 절반 더 주고, 반지 효과는 감정 뒤에 바로 읽힌다", () => {
+    const s = newGame(105);
+    const luck = makeItem("ring", "adornment", 931, -1, -1);
+    give(s, luck, "y");
+    const worn = perform(s, { t: "putOn", letter: "y" });
+
+    assert.equal(goldGain(worn.heroes[0], 11), 17, "금화 반지가 금화를 늘리지 않는다");
+    assert.equal(itemPower(luck, worn.known), "금화 획득 +50%", "금화 반지의 효과가 배낭에 안 보인다");
+    const escape = makeItem("ring", "teleportation", 932, -1, -1);
+    assert.equal(itemPower(escape, { "ring:teleportation": true }), "두 몬스터에게 포위되면 탈출");
 });
 
 test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {

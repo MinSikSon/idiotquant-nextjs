@@ -34,6 +34,7 @@ import {
     equippedWeapon,
     offHandWeapon,
     gainExp,
+    goldGain,
     hasRing,
     heroArmor,
     hungerOf,
@@ -886,9 +887,10 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     const it = itemAt(level, nx, ny);
     if (it) {
         if (it.kind === "gold") {
-            hero.gold += it.count;
+            const gold = goldGain(hero, it.count);
+            hero.gold += gold;
             level.items = level.items.filter((i) => i.id !== it.id);
-            say(state, `금화 ${it.count}을(를) 주웠다.`);
+            say(state, `금화 ${gold}을(를) 주웠다.`);
         } else {
             say(state, `발밑에 ${describe(it, state.known, state.appearance)}이(가) 있다.`);
         }
@@ -919,9 +921,10 @@ function pickUp(state: GameState, hero: Hero): boolean {
         return false;
     }
     if (it.kind === "gold") {
-        hero.gold += it.count;
+        const gold = goldGain(hero, it.count);
+        hero.gold += gold;
         level.items = level.items.filter((i) => i.id !== it.id);
-        say(state, `금화 ${it.count}을(를) 주웠다.`);
+        say(state, `금화 ${gold}을(를) 주웠다.`);
         return true;
     }
     // **배낭에 있는 쪽**을 받는다. 겹쳐 쌓였으면 집은 물건과 다른 물건이고, 자리를
@@ -2924,13 +2927,6 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
             }
         }
 
-        // 순간이동 반지는 가끔 주인을 아무 데나 던진다 — 좋은 반지가 아니다.
-        if (hasRing(h, "teleportation") && rng.rnd(80) === 0) {
-            const p = freeSpot(state.level, rng, [state.level.stairs, ...state.heroes.filter((o) => o !== h)]);
-            h.x = p.x;
-            h.y = p.y;
-            say(state, "반지가 나를 어딘가로 던졌다.");
-        }
     }
 
     // 화상 틱 (몬스터)
@@ -2963,6 +2959,16 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
             state.monsterRound = (state.monsterRound ?? 0) + 1;
             monsterTurns(state, rng);
         }
+    }
+
+    // 탈출 반지는 둘 이상에게 포위된 뒤에만 듣는다. 평소 이동을 방해하지 않는 직관적인 비상 탈출이다.
+    for (const h of state.heroes) {
+        const surrounded = state.level.monsters.filter((m) => m.hp > 0 && Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1).length >= 2;
+        if (h.hp <= 0 || !hasRing(h, "teleportation") || !surrounded) continue;
+        const p = freeSpot(state.level, rng, [state.level.stairs, ...state.heroes.filter((o) => o !== h)]);
+        h.x = p.x;
+        h.y = p.y;
+        say(state, "탈출 반지가 포위망 밖으로 옮겼다.");
     }
 
     computeFov(state.level, state.heroes);
