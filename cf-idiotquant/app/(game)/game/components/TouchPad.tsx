@@ -48,6 +48,8 @@ export interface PadAction {
     on: () => void;
     /** 못 누르는 이유. 있으면 잠긴다. */
     off?: string;
+    /** 지금 서 있는 자리에서 바로 쓸 수 있는 행동. */
+    hot?: boolean;
 }
 
 function Key({
@@ -56,6 +58,7 @@ function Key({
     disabled,
     title,
     wide,
+    hot,
     hold,
 }: {
     children: ReactNode;
@@ -63,6 +66,7 @@ function Key({
     disabled?: boolean;
     title?: string;
     wide?: boolean;
+    hot?: boolean;
     /** 꾹 누르면 연타되는가. 방향판만 켠다. */
     hold?: boolean;
 }) {
@@ -150,6 +154,7 @@ function Key({
                 "grid touch-none select-none place-items-center rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)]",
                 "font-[family-name:var(--font-plex-mono)] leading-none text-[var(--rg-text)]",
                 "active:translate-y-px active:bg-[var(--rg-press)]",
+                hot ? "border-[var(--rg-gold)] bg-[var(--rg-raised)] font-bold text-[var(--rg-strong)]" : "",
                 "disabled:border-[var(--rg-off-line)] disabled:bg-[var(--rg-off-bg)] disabled:text-[var(--rg-off-ink)]",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
@@ -218,7 +223,7 @@ export default function TouchPad({
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
             <div className="grid min-w-0 flex-1 grid-cols-3 content-start gap-1">
                 {actions.map((a) => (
-                    <Key key={a.label} wide onPress={a.on} disabled={!!a.off} title={a.off ?? a.hint}>
+                    <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} title={a.off ?? a.hint}>
                         <span>
                             {a.label}
                             {a.keys && (

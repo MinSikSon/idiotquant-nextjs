@@ -267,6 +267,12 @@ export default function Desk({
     );
 
     const name = (it: Item) => describe(it, state.known, state.appearance);
+    /** 새 장비의 물건 몫만 지금 장비와 나란히 읽는다 — 힘·직업 같은 영웅 값은 여기서 다시 계산하지 않는다. */
+    const comparedPower = (it: Item): string | null => {
+        const current = it.kind === "weapon" ? equippedWeapon(hero) : it.kind === "armor" ? equippedArmor(hero) : undefined;
+        if (!current || current.id === it.id) return null;
+        return `현재 ${itemPower(current, state.known)} → ${itemPower(it, state.known)}`;
+    };
     const rings = wornRings(hero);
     const { level } = state;
     /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */
@@ -757,6 +763,7 @@ export default function Desk({
                                             {(it.kind === "weapon" || it.kind === "armor") && (
                                                 <span className="text-[var(--rg-faint)]"> {itemPower(it, state.known)}</span>
                                             )}
+                                            {comparedPower(it) && <span className="text-[var(--rg-gold)]"> · {comparedPower(it)}</span>}
                                             {worn && <span className="text-[var(--rg-muted)]"> ({worn})</span>}
                                             {dualWield && <span className="font-bold text-[var(--rg-weapon)]"> · 이도류 장착</span>}
                                         </button>

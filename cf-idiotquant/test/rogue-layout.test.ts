@@ -142,6 +142,16 @@ test("새 판을 열면 눌러 둔 방향 키 반복도 멈춘다", () => {
     assert.match(s, /ignoredDirections\.current\.delete\(e\.code\)/, "방향 키를 뗀 뒤에도 새 입력을 막는다");
 });
 
+test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", () => {
+    const rogue = read("app/(game)/game/Rogue.tsx");
+    const pad = read(TOUCHPAD);
+    const desk = read("app/(game)/game/components/Desk.tsx");
+    assert.match(rogue, /⚠ HP 낮음[\s\S]*?⚠ 배고픔[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
+    assert.match(rogue, /latest = visibleMessages[\s\S]*?important = [\s\S]*?recent = important/, "중요 메시지를 유지하지 않는다");
+    assert.match(pad, /hot\?: boolean[\s\S]*?a\.hot && !a\.off/, "지금 가능한 행동을 강조하지 않는다");
+    assert.match(desk, /const comparedPower[\s\S]*?현재 .*→/, "새 장비를 현재 장비와 비교하지 않는다");
+});
+
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {
     const s = read("app/(game)/game/components/MapView.tsx");
     assert.match(s, /const single = chars\.length === 1/, "한 글자 이름을 따로 가르지 않는다");

@@ -1590,6 +1590,7 @@ export default function Rogue() {
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
+    const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
     const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k);
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
@@ -1620,8 +1621,8 @@ export default function Rogue() {
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
-        { label: "줍기", hint: ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다" },
-        { label: "내려간다", hint: ">", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다" },
+        { label: "줍기", hint: ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
+        { label: "내려간다", hint: ">", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다", hot: onStairs },
         {
             label: "올라간다",
             hint: "< — 1층 계단은 증표가 있어야 열린다",
@@ -1632,9 +1633,10 @@ export default function Rogue() {
                 : level.depth === 1 && !hero.hasAmulet
                   ? "증표 없이는 못 나간다"
                   : undefined,
+            hot: onUpStairs && !(level.depth === 1 && !hero.hasAmulet),
         },
         // 배낭에서 꺼내 쓰는 것들
-        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", keys: coopKeys ? "R · P" : "i", on: () => desks.current[who]?.togglePack() },
+        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", keys: coopKeys ? "R · P" : "i", on: () => desks.current[who]?.togglePack(), hot: onAnvil },
         { label: "마신다", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
         { label: "읽는다", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
         { label: "먹는다", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
@@ -1659,7 +1661,12 @@ export default function Rogue() {
 
     // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
     // 차서 정작 무슨 일이 났는지가 밀려난다. 계산은 기록 판이 전부 갖고 있다.
-    const recent = state.messages.filter((m) => !isDetail(m)).slice(-2);
+    const visibleMessages = state.messages.filter((m) => !isDetail(m));
+    const isImportantMessage = (m: string) => /함정|저주|쓰러|피해|반지가.*옮겼|증표/.test(m);
+    const latest = visibleMessages.at(-1);
+    const important = [...visibleMessages.slice(-8)].reverse().find(isImportantMessage);
+    // 중요한 일은 다음 몇 번의 일반 메시지에 밀려나지 않게, 최신 줄과 함께 남긴다.
+    const recent = important && latest && important !== latest ? [important, latest] : visibleMessages.slice(-2);
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
 
@@ -1695,7 +1702,7 @@ export default function Rogue() {
             >
                 <span className="min-w-0 flex-1">
                     {recent.map((m, i) => (
-                        <span key={`${state.turn}-${i}`} className="block truncate">
+                        <span key={`${state.turn}-${i}`} className={`block truncate ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
                             <Msg text={m} />
                         </span>
                     ))}
@@ -1862,6 +1869,8 @@ export default function Rogue() {
                 const hHunger = hungerOf(h);
                 const hRings = wornRings(h).length;
                 const hAffinity = weaponAffinityOf(h);
+                const cursedGear = h.pack.some((it) => it.cursed && (it.id === h.weaponId || it.id === h.armorId || it.id === h.leftRingId || it.id === h.rightRingId));
+                const emptyWand = h.pack.some((it) => it.kind === "wand" && (it.charges ?? 0) === 0);
                 return (
                     <div
                         key={i}
@@ -1907,6 +1916,7 @@ export default function Rogue() {
                         <span className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)] font-bold" : undefined}>
                             Hp: {h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
+                        {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
                         <span>Str: {heroStr(h)}({h.maxStr})</span>
                         <span>Arm: {heroArmor(h)}</span>
                         <span>Exp: {h.level}/{h.exp}</span>
@@ -1947,7 +1957,9 @@ export default function Rogue() {
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                        {hHunger && <span className="text-[var(--rg-monster)] font-bold">{hHunger}</span>}
+                        {hHunger && <span className="text-[var(--rg-monster)] font-bold">⚠ 배고픔 {hHunger}</span>}
+                        {cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
+                        {emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
                         {online && linked && i !== who && DESK_DOING[peerModes[i] ?? "none"] && (
                             <span className="font-bold" style={{ color: PARTY_INK[i] }}>
