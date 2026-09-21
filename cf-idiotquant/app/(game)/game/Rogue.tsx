@@ -319,7 +319,7 @@ function savedNick(): string | undefined {
 function askNick(ask = true): string | undefined {
     const had = savedNick();
     if (!ask && had) return had;
-    const typed = window.prompt(`지도에 적을 이름 (영문·숫자 ${NICK_MAX}자)`, had ?? "");
+    const typed = window.prompt(`지도에 적을 이름 (한글·영문·숫자·기호, ${NICK_MAX}칸)`, had ?? "");
     if (typed === null) return had;
     const nick = cleanNick(typed);
     try {

@@ -590,18 +590,19 @@ test("한 명만 계단을 눌러도 파티가 함께 옮긴다", () => {
 // 이름은 **온라인에서 남이 보내 오는 값**이고, 받는 쪽은 그것을 지도 한 칸에 그대로 그린다.
 // 그래서 다듬는 자리(`cleanNick`)가 **하나여야** 하고, 보내는 쪽이 아니라 **받는 쪽**에 있어야
 // 한다 — 보내는 쪽에만 두면 고친 화면이 안 고친 화면에게 아무 문자열이나 먹일 수 있다.
-test("지도에 적는 이름은 넉 자 영문·숫자로 다듬는다", async () => {
+test("지도에 적는 이름은 넉 칸 한글·영문·기호로 다듬는다", async () => {
     const { cleanNick, setNick, NICK_MAX } = await import("@/lib/rogue/game");
 
-    // ── 길이·글자·대소문자
+    // ── 길이·글자
     {
         assert.equal(NICK_MAX, 4, "2×2 로 그리는 자리라 넉 자다");
-        assert.equal(cleanNick("mson"), "MSON", "소문자를 안 올린다 — 8.58px 에서 a·o·e 가 안 갈린다");
-        assert.equal(cleanNick("MinSikSon"), "MINS", "넉 자를 넘겨 받는다 — 한 칸에 그릴 데가 없다");
+        assert.equal(cleanNick("mson"), "MSON", "소문자를 대문자로 안 올린다 — 지도에서 글자가 안 갈린다");
+        assert.equal(cleanNick("MinSikSon"), "MINS", "넉 칸을 넘겨 받는다 — 한 칸에 그릴 데가 없다");
         assert.equal(cleanNick("m s"), "MS", "빈칸이 남았다");
-        assert.equal(cleanNick("김민식"), undefined, "한글을 받는다 — 두 배 폭이라 격자가 밀린다");
+        assert.equal(cleanNick("김민식"), "김민", "한글은 두 칸씩만 받아야 지도에서 읽힌다");
+        assert.equal(cleanNick("★!"), "★!", "특수문자를 버린다");
         assert.equal(cleanNick("a\nb"), "AB", "줄바꿈이 남았다 — 한 칸이 두 줄이 된다");
-        assert.equal(cleanNick("!!!"), undefined, "쓸 글자가 없으면 이름이 없는 것이다");
+        assert.equal(cleanNick("!!!"), "!!!", "기호를 받지 않는다");
         assert.equal(cleanNick(""), undefined, "빈 문자열이 이름이 되었다");
         assert.equal(cleanNick(undefined), undefined, "없는 값이 이름이 되었다");
         assert.equal(cleanNick(42), undefined, "문자열이 아닌 것이 이름이 되었다");
@@ -619,7 +620,7 @@ test("지도에 적는 이름은 넉 자 영문·숫자로 다듬는다", async 
         assert.equal(after.rngState, rng0, "이름을 놓았다고 난수가 굴렀다");
 
         // 쓸 수 없는 이름은 **칸째 지운다** — 빈 칸도 칸이라 저장이 달라진다.
-        const gone = setNick(after, 1, "!!!");
+        const gone = setNick(after, 1, "\n\t");
         assert.ok(!("nick" in gone.heroes[1]), "쓸 수 없는 이름이 빈 칸으로 남았다");
     }
 
@@ -634,7 +635,7 @@ test("지도에 적는 이름은 넉 자 영문·숫자로 다듬는다", async 
         const { serialize, deserialize } = await import("@/lib/rogue/storage");
         const s = joinGame(newGame(4503), "rogue");
         // 남이 보낸 판인 셈 치고 규칙 밖의 값을 박아 둔다.
-        s.heroes[1].nick = "한글이름아주긴것";
+        s.heroes[1].nick = "\n\t";
         const back = deserialize(serialize(s))!;
         assert.ok(!back.heroes[1].nick, "남이 보낸 아무 문자열이 그대로 지도에 그려진다");
     }

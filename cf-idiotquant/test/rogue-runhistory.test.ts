@@ -182,7 +182,7 @@ test("지난 판에도 그때 쓰던 이름이 남는다 — 적을 때 한 번 
     withStorage(() => {
         const s = newGame(779);
         // 남이 보낸 판인 셈 치고 규칙 밖의 값을 박아 둔다.
-        s.heroes[0].nick = "한글이름아주긴것";
+        s.heroes[0].nick = "\n\t";
         s.phase = "dead";
         const record = bury(s)[0];
         assert.ok(!record.hero?.nick, "쓸 수 없는 이름이 지난 판에 그대로 남았다");

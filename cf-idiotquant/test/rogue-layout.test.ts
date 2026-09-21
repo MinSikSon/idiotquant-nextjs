@@ -132,6 +132,12 @@ test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판�
     assert.match(s, /navigator\.clipboard\.writeText\(url\)/, "시드 링크를 클립보드에 복사하지 않는다");
 });
 
+test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {
+    const s = read("app/(game)/game/components/MapView.tsx");
+    assert.match(s, /const single = chars\.length === 1/, "한 글자 이름을 따로 가르지 않는다");
+    assert.match(s, /const font = single \? cell\.h : cell\.h \/ 2/, "한 글자 이름이 칸 전체 높이를 안 쓴다");
+});
+
 // 누른 단추는 **눌린 뒤 초점을 놓는다.**
 //
 // 안 놓으면 그 단추가 브라우저 포커스를 쥔 채 남고, 한참 뒤에 상관없는 키(특히 Space —

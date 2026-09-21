@@ -120,6 +120,7 @@ const LEADING = 1.32;
  * 390px 에서 한 칸은 **7.8 × 17.16px**. 넉 자를 한 줄에 놓으면 글자 하나가 1.95px 라
  * 브라우저가 그리지도 못한다(재 봤다 — 얼룩으로 나온다). **두 줄로 나누면** 줄당
  * 8.58px 을 쓰고, 가로만 눌러(`scaleX`) 두 글자를 한 칸 폭에 앉힌다.
+ * 한 글자 이름은 작게 줄일 까닭이 없다 — 한글 한 글자와 기호 하나는 칸 전체를 쓴다.
  * 세로를 안 줄이는 것이 핵심이다 — 균등 축소면 6.5px 로 떨어진다.
  *
  * ── 안 그리는 때 ────────────────────────────────────────────────────
@@ -135,10 +136,12 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
     left: number;
     top: number;
 }) {
-    const font = cell.h / 2;
+    const chars = Array.from(nick);
+    const single = chars.length === 1;
+    const font = single ? cell.h : cell.h / 2;
     // 안 누른 두 글자의 폭 — 한 글자의 폭(`cell.w`)은 지도 글꼴 크기(`cell.h / LEADING`)의 것이라
     // 이 글꼴 크기로 환산해서 잡는다.
-    const natural = 2 * cell.w * (font / (cell.h / LEADING));
+    const natural = (single ? 1 : 2) * cell.w * (font / (cell.h / LEADING));
     return (
         <span
             aria-hidden
@@ -156,9 +159,9 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
                     transformOrigin: "left center",
                 }}
             >
-                {nick.slice(0, 2)}
-                {nick.length > 2 ? "\n" : ""}
-                {nick.slice(2, 4)}
+                {chars.slice(0, 2).join("")}
+                {chars.length > 2 ? "\n" : ""}
+                {chars.slice(2, 4).join("")}
             </span>
         </span>
     );

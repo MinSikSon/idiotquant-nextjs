@@ -738,16 +738,26 @@ export const NICK_MAX = 4;
  * 남이 보낸 값이 그대로 화면에 그려지는 자리다(온라인의 `hello`). 흘려보내면 한 칸에
  * 열 글자짜리가 들어와 지도를 덮거나, 줄바꿈 하나로 칸이 두 줄이 된다.
  *
- *   · **영문·숫자만** — 한글은 고정폭 한 칸에 두 배 폭이라 격자가 밀린다.
- *   · **넉 자까지** — 2×2 로 그리는 자리라 그 이상은 그릴 데가 없다.
- *   · **대문자로** — 소문자는 8.58px 에서 `a`·`o`·`e` 가 서로 안 갈린다(재 봤다).
+ *   · **문자·숫자·기호**만 — 빈칸·줄바꿈·제어문자는 지도 한 칸을 깨므로 버린다.
+ *   · **넉 칸까지** — 2×2 로 그리는 자리라 그 이상은 그릴 데가 없다. 한글·그림문자는
+ *     두 칸으로 세어 둘까지 받는다.
  *
  * 남는 것이 없으면 `undefined` — 이름표를 안 달고 `@` 그대로 간다.
  */
 export function cleanNick(raw: unknown): string | undefined {
     if (typeof raw !== "string") return undefined;
-    const s = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, NICK_MAX);
-    return s || undefined;
+    let used = 0;
+    let out = "";
+    for (const ch of Array.from(raw.normalize("NFC").toUpperCase())) {
+        if (!/[\p{L}\p{N}\p{P}\p{S}]/u.test(ch)) continue;
+        // 한글·한자·가나·그림문자는 한 칸의 두 글자 폭을 쓴다. 넉 칸짜리 표 안에서
+        // 한글 넉 자를 억지로 눌러 넣으면 읽을 수 없으므로, 들어갈 자리를 먼저 센다.
+        const width = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch) ? 2 : 1;
+        if (used + width > NICK_MAX) break;
+        out += ch;
+        used += width;
+    }
+    return out || undefined;
 }
 
 /** 그 사람의 이름을 놓는다 — **판을 안 굴린다**(턴도 난수도 안 쓴다). */
