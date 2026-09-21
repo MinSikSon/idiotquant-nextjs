@@ -233,7 +233,9 @@ export function heroArmor(hero: Hero): number {
  * `items.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
  */
 export function heroDefense(hero: Hero): number {
-    const base = defenseOf(heroArmor(hero)) + (hero.bonusDefense ?? 0);
+    let base = defenseOf(heroArmor(hero)) + (hero.bonusDefense ?? 0);
+    // 기사단장의 전직 보상은 단추가 아니라 위기에서 저절로 서는 방벽이다.
+    if (hero.origin === "knight" && hero.level >= ADVANCE_LEVEL && hero.hp <= hero.maxHp / 2) base += 2;
     if (!hero.guarded || hero.origin !== "knight") return base;
     // 전직(`ADVANCE_LEVEL`)한 근위대는 대기 보너스가 깊어진다 — 「철벽의 자세」가
     // 켜는 값은 이 자리 하나다. `origins.ADVANCED_GUARD_BONUS` 가 그 수치를 쥔다.

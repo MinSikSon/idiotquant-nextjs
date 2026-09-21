@@ -463,9 +463,10 @@ export default function Rogue() {
     const [cellFlashes, setCellFlashes] = useState<Record<string, CellFlash>>({});
     const [shake, setShake] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
+    const [advanceBanner, setAdvanceBanner] = useState<HeroOrigin | null>(null);
     const lastStateRef = useRef<{
         /** **사람마다** 든다 — 한 사람 것만 보면 동료가 맞아도 낫아도 화면이 가만히 있다. */
-        heroes: { hp: number; gold: number; exp: number }[];
+        heroes: { hp: number; gold: number; exp: number; level: number }[];
         depth: number;
         turn: number;
         messagesLen: number;
@@ -543,7 +544,7 @@ export default function Rogue() {
         if (!state) return;
         const prev = lastStateRef.current;
         const curr = {
-            heroes: state.heroes.map((h) => ({ hp: h.hp, gold: h.gold, exp: h.exp })),
+            heroes: state.heroes.map((h) => ({ hp: h.hp, gold: h.gold, exp: h.exp, level: h.level })),
             depth: state.level.depth,
             turn: state.turn,
             messagesLen: state.messages.length,
@@ -574,6 +575,11 @@ export default function Rogue() {
         const newMsgs = state.messages.slice(prev.messagesLen);
         const hasCritMsg = newMsgs.some((m) => m.includes("치명타") || m.includes("CRIT") || m.includes("급소를 찔렀다"));
         const hasPhoenixMsg = newMsgs.some((m) => m.includes("불사조의 깃털이 타오르며"));
+        const advanced = state.heroes.find((h, i) => (prev.heroes[i]?.level ?? h.level) < ADVANCE_LEVEL && h.level >= ADVANCE_LEVEL);
+        if (advanced) {
+            setAdvanceBanner(advanced.origin ?? "knight");
+            setTimeout(() => setAdvanceBanner(null), 3000);
+        }
 
         // 3. 몬스터 피격 / 처치 감지 (영웅의 공격 대상 칸 플래시)
         const damagedMonster = prev.monsters?.find((pm) => {
@@ -620,6 +626,14 @@ export default function Rogue() {
             } else if (hpDiff > 0 && prev.depth === curr.depth) {
                 // 영웅 치유: 녹색 플래시
                 flashes[heroKey] = { ink: "var(--rg-ring)", bg: "rgba(34, 197, 94, 0.2)" };
+            }
+            if (h.origin === "knight" && h.level >= ADVANCE_LEVEL && was.hp > h.maxHp / 2 && h.hp <= h.maxHp / 2) {
+                flashes[heroKey] = { ink: "var(--rg-armor)", bg: "rgba(234, 179, 8, 0.25)" };
+            }
+            if (newMsgs.some((m) => m.includes("연막")) && h.origin === "rogue") {
+                flashes[heroKey] = { ink: "var(--rg-faint)", bg: "rgba(100, 116, 139, 0.3)" };
+            } else if (newMsgs.some((m) => m.includes("비전 통찰")) && h.origin === "scholar") {
+                flashes[heroKey] = { ink: "var(--rg-scroll)", bg: "rgba(168, 85, 247, 0.25)" };
             }
         }
 
@@ -1529,12 +1543,7 @@ export default function Rogue() {
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
     const itemProg = itemCodexProgress(state.itemCodex, state.itemUsage);
-    const classSkill = {
-        knight: ["전장의 외침", "보이는 괴물의 시선을 모두 끈다"],
-        rogue: ["연막", "보이는 일반 괴물이 나를 놓친다"],
-        alchemist: ["만능 비약", "체력 1/3 회복 · 화상·실명·혼란 해제"],
-        scholar: ["비전 통찰", "층의 지형과 괴물의 기척을 밝힌다"],
-    }[hero.origin ?? "knight"];
+    const classSkill = ORIGINS[hero.origin ?? "knight"];
 
     // **세 개씩 한 묶음**으로 늘어놓는다. 단추 판이 세 칸 격자라(`TouchPad`) 한 줄이
     // 곧 한 묶음이 된다 — 계단 둘이 나란히, 배낭에서 꺼내 쓰는 것들이 한 줄에.
@@ -1740,20 +1749,28 @@ export default function Rogue() {
                     </>
                 )}
 
-                {/* 전직 기술은 전직 뒤에만 생기고, 층마다 한 번이라 모서리 한 칸에 선다. */}
-                {hero.level >= ADVANCE_LEVEL && (
+                {/* 액티브 전직 기술만 층마다 한 번 모서리에 선다. 기사의 방벽은 패시브다. */}
+                {hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active" && (
                     <button
                         type="button"
                         onClick={() => run({ t: "classSkill" })}
                         disabled={hero.classSkillDepth === level.depth}
-                        aria-label={`${classSkill[0]} — ${classSkill[1]}`}
-                        title={`${classSkill[0]} · ${classSkill[1]} · 층마다 한 번`}
+                        aria-label={`${classSkill.advancedSkillName} — ${classSkill.advancedSkillDescription}`}
+                        title={`${classSkill.advancedSkillName} · ${classSkill.advancedSkillDescription}`}
                         className="absolute top-1 left-9 z-20 h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
                     >
-                        ★ {classSkill[0]}
+                        ★ {classSkill.advancedSkillName}
                     </button>
                 )}
 
+                {advanceBanner && (
+                    <div className="banner-pop pointer-events-none absolute top-3 left-1/2 z-30 -translate-x-1/2 rounded border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-4 py-2 text-center shadow-md">
+                        <div className="text-[11px] font-bold text-[var(--rg-gold)]">★ 전직 완료</div>
+                        <div className="text-[13px] font-bold text-[var(--rg-strong)]">{ORIGINS[advanceBanner].advancedName}</div>
+                        <div className="text-[11px] text-[var(--rg-muted)]">
+                            {ORIGINS[advanceBanner].advancedSkillName} 해금 · {ORIGINS[advanceBanner].advancedSkillKind === "active" ? "층마다 한 번" : "지속 효과"}
+                        </div>
+                    </div>
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
                     <div className="banner-pop pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1.5 shadow-md">
@@ -1830,6 +1847,15 @@ export default function Rogue() {
                         <span>Str: {heroStr(h)}({h.maxStr})</span>
                         <span>Arm: {heroArmor(h)}</span>
                         <span>Exp: {h.level}/{h.exp}</span>
+                        {h.level < ADVANCE_LEVEL ? (
+                            <span className="text-[var(--rg-faint)]">전직까지 {ADVANCE_LEVEL - h.level}레벨</span>
+                        ) : (
+                            <span className="font-bold text-[var(--rg-gold)]">
+                                ★ {ORIGINS[h.origin ?? "knight"].advancedSkillName}{ORIGINS[h.origin ?? "knight"].advancedSkillKind === "passive"
+                                    ? h.hp <= h.maxHp / 2 ? " 발동 중" : " · Hp 절반 이하에서 발동"
+                                    : h.classSkillDepth === level.depth ? " · 다음 층에서 충전" : " 준비"}
+                            </span>
+                        )}
                         {i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
                             <span className="text-[var(--rg-gold)] font-medium">
                                 {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
@@ -2606,6 +2632,12 @@ export default function Rogue() {
                                         </span>
                                         <span className="text-[var(--rg-faint)]">{orig.traitDescription}</span>
                                     </div>
+                                    <div className="mt-1.5 border-t border-[var(--rg-line-soft)] pt-1.5 text-[11px]">
+                                        <span className="font-bold text-[var(--rg-gold)]">Lv {ADVANCE_LEVEL} 전직 · {orig.advancedName}</span>
+                                        <p className="mt-0.5 text-[var(--rg-faint)]">
+                                            ★ {orig.advancedSkillName} — {orig.advancedSkillDescription}
+                                        </p>
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -2659,6 +2691,10 @@ export default function Rogue() {
                     </dl>
                     )}
                     <div className="mt-3 space-y-1 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-muted)]">
+                        <div className="mb-2 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-2">
+                            <p className="font-bold text-[var(--rg-strong)]">전직과 기술</p>
+                            <p className="text-[var(--rg-faint)]">레벨 {ADVANCE_LEVEL}에 전직합니다. 기사단장의 불굴의 방벽은 체력이 절반 이하일 때 항상 발동하고, 다른 전직 기술은 지도 왼쪽 위의 ★ 단추로 층마다 한 번 씁니다.</p>
+                        </div>
                         <p className="text-[var(--rg-strong)]">
                             갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
                             키보드로는 <b>W</b>.

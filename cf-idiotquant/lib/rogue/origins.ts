@@ -49,6 +49,9 @@ export interface OriginDef {
     description: string;
     traitName: string;
     traitDescription: string;
+    advancedSkillName: string;
+    advancedSkillDescription: string;
+    advancedSkillKind: "passive" | "active";
     baseHp: number;
     baseStr: number;
     createStartingItems: (nextId: () => number) => Item[];
@@ -82,6 +85,9 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "높은 체력과 단단한 방어구를 갖춘 굳건한 전사.",
         traitName: "철벽의 자세",
         traitDescription: "제자리 대기(.) 시 다음 턴 방어력 +2 (받는 피해 2 추가 경감)",
+        advancedSkillName: "불굴의 방벽",
+        advancedSkillDescription: "체력이 절반 이하일 때 방어력 +2 (철벽의 자세와 중첩)",
+        advancedSkillKind: "passive",
         baseHp: 14,
         baseStr: 16,
         createStartingItems: (nextId) => {
@@ -105,6 +111,9 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "치명적인 기습과 함정 회피에 능한 재빠른 잠입자.",
         traitName: "기습 암습",
         traitDescription: "자거나 둔화된 적 공격 시 치명타 2배 + 3 추가 피해, 함정 50% 회피",
+        advancedSkillName: "연막",
+        advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
+        advancedSkillKind: "active",
         baseHp: 11,
         baseStr: 15,
         createStartingItems: (nextId) => {
@@ -128,6 +137,9 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "모든 물약의 비밀을 꿰뚫고 있는 비약의 대가.",
         traitName: "연금술의 통찰",
         traitDescription: "모든 물약 시작부터 100% 식별, 회복 물약 음용 시 1.5배 회복",
+        advancedSkillName: "만능 비약",
+        advancedSkillDescription: "체력 1/3 회복 · 화상·실명·혼란 해제 · 층마다 한 번",
+        advancedSkillKind: "active",
         baseHp: 12,
         baseStr: 14,
         createStartingItems: (nextId) => {
@@ -150,6 +162,9 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "고대 주문서와 마법 지팡이를 다루는 비전 탐구자.",
         traitName: "비전 전도",
         traitDescription: "지팡이 충전량 +30%, 주문서 시전 시 25% 확률로 미소모 보존",
+        advancedSkillName: "비전 통찰",
+        advancedSkillDescription: "층의 지형과 괴물의 기척을 밝힌다 · 층마다 한 번",
+        advancedSkillKind: "active",
         baseHp: 10,
         baseStr: 13,
         createStartingItems: (nextId) => {

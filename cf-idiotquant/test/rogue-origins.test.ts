@@ -7,6 +7,11 @@ import { bury, graves } from "@/lib/rogue/storage";
 
 test("4대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
     assert.equal(ORIGIN_LIST.length, 4);
+    for (const origin of ORIGIN_LIST) {
+        assert.ok(origin.advancedSkillName);
+        assert.ok(origin.advancedSkillDescription);
+    }
+    assert.equal(ORIGINS.knight.advancedSkillKind, "passive");
     
     // Knight
     assert.equal(ORIGINS.knight.name, "왕실 근위대");
@@ -56,6 +61,17 @@ test("왕실 근위대(Knight) 시작 장비 및 철벽의 자세 패시브 동�
     // 이동 시 guarded 상태 해제
     const s2 = perform(s1, { t: "rest" }); // again
     assert.equal(s2.heroes[0].guarded, true);
+});
+
+test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 자세와 중첩된다", () => {
+    const s = newGame(6, {}, {}, {}, {}, "knight");
+    const hero = s.heroes[0];
+    hero.level = 9;
+    const healthy = heroDefense(hero);
+    hero.hp = Math.floor(hero.maxHp / 2);
+    assert.equal(heroDefense(hero), healthy + 2);
+    hero.guarded = true;
+    assert.equal(heroDefense(hero), healthy + 2 + 4);
 });
 
 test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {

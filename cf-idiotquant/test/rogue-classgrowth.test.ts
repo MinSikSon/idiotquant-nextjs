@@ -51,7 +51,7 @@ import { VISIBLE } from "@/lib/rogue/fov";
 
 const run = (s: GameState, cmd: Command) => perform(s, cmd);
 
-test("전직 액티브 기술 — 직업마다 다르고 층마다 한 번만 쓴다", () => {
+test("전직 기술 — 근위대는 패시브, 나머지는 층마다 한 번 쓰는 액티브다", () => {
     const ready = (origin: "knight" | "rogue" | "alchemist" | "scholar", seed: number) => {
         const s = newGame(seed, {}, {}, {}, {}, origin);
         s.heroes[0].level = ADVANCE_LEVEL;
@@ -74,9 +74,12 @@ test("전직 액티브 기술 — 직업마다 다르고 층마다 한 번만 �
     assert.equal(novice.heroes[0].classSkillDepth, 0);
 
     const knight = ready("knight", 731);
-    const foe = visibleMonster(knight);
+    knight.heroes[0].hp = Math.floor(knight.heroes[0].maxHp / 2);
+    const defenseBefore = heroDefense({ ...knight.heroes[0], level: ADVANCE_LEVEL - 1 });
+    assert.equal(heroDefense(knight.heroes[0]), defenseBefore + 2, "기사단장의 불굴의 방벽이 발동하지 않았다");
+    const knightTurn = knight.turn;
     run(knight, { t: "classSkill" });
-    assert.equal(foe.target, 0, "기사가 보이는 괴물의 시선을 못 끌었다");
+    assert.equal(knight.turn, knightTurn, "패시브 기술이 턴을 썼다");
 
     const rogue = ready("rogue", 732);
     const watcher = visibleMonster(rogue);

@@ -1885,20 +1885,10 @@ function useClassSkill(state: GameState, hero: Hero): boolean {
         return false;
     }
 
-    const who = state.heroes.indexOf(hero);
     switch (hero.origin ?? "knight") {
         case "knight": {
-            const seen = state.level.monsters.filter((m) => isVisible(state.level, m.x, m.y));
-            if (seen.length === 0) {
-                say(state, "외침을 들을 괴물이 보이지 않는다.");
-                return false;
-            }
-            for (const m of seen) {
-                m.awake = true;
-                m.target = who;
-            }
-            say(state, `📯 전장의 외침 — 보이는 괴물 ${seen.length}마리의 시선을 끌었다.`);
-            break;
+            say(state, "불굴의 방벽은 체력이 절반 이하일 때 저절로 발동한다.");
+            return false;
         }
         case "rogue": {
             const seen = state.level.monsters.filter(
