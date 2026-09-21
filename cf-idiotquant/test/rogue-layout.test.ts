@@ -124,6 +124,14 @@ test("전직 기술과 사망 회고가 화면에서 사라지지 않는다", ()
     assert.match(s, /미식별 물건/, "죽을 때 남긴 미식별 물건을 안 센다");
 });
 
+test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판보다 먼저 새 판을 연다", () => {
+    const s = read("app/(game)/game/Rogue.tsx");
+    assert.match(s, /sharedRun\(location\.search\)[\s\S]*?newGame\(shared\.seed[\s\S]*?shared\.origin/, "공유 시드가 새 판으로 이어지지 않는다");
+    assert.match(s, /label: "시드 링크 복사"[\s\S]*?copySeedLink\(\)/, "시드 링크 복사 단추가 없다");
+    assert.match(s, /sharedRunUrl\(location\.href/, "현재 주소에서 시드 공유 링크를 만들지 않는다");
+    assert.match(s, /navigator\.clipboard\.writeText\(url\)/, "시드 링크를 클립보드에 복사하지 않는다");
+});
+
 // 누른 단추는 **눌린 뒤 초점을 놓는다.**
 //
 // 안 놓으면 그 단추가 브라우저 포커스를 쥔 채 남고, 한참 뒤에 상관없는 키(특히 Space —

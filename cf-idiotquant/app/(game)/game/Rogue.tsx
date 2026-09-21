@@ -90,6 +90,7 @@ import {
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
 import { ADVANCE_LEVEL, ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
+import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
 import { roomAround } from "@/lib/rogue/fov";
@@ -443,6 +444,7 @@ export default function Rogue() {
     const [codexTab, setCodexTab] = useState<"monster" | CodexCategory>("monster");
     /** 아이템 도감에서 펼쳐 둔 아이템 키 */
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
+    const [seedLinkNote, setSeedLinkNote] = useState<string | null>(null);
     const buried = useRef(false);
 
     /** 전투 피드백 & 특수 효과 연출 상태 (P6 - 칸 내 색상 점멸) */
@@ -479,6 +481,14 @@ export default function Rogue() {
         const knownSpecials = loadSpecials();
         const keptCodex = loadItemCodex();
         const keptUsage = loadItemUsage();
+        // 공유 링크는 저장된 판보다 먼저다. 링크를 열었는데 내 지난 판이 뜨면 같은 던전을
+        // 같이 보자는 약속이 깨진다. 주소는 한 번 읽고 지워 새로고침마다 새 판을 만들지 않는다.
+        const shared = sharedRun(location.search);
+        if (shared) {
+            history.replaceState(null, "", location.pathname);
+            setState(newGame(shared.seed, kept, knownSpecials, keptCodex, keptUsage, shared.origin, loadChest(0)));
+            return;
+        }
         const saved = load();
         if (saved && saved.phase === "playing") {
             // 저장된 판과 저장소의 도감 중 **큰 쪽**을 남긴다. 판을 띄워 둔 채 다른
@@ -1334,6 +1344,20 @@ export default function Rogue() {
         setSheet("origins");
     }, []);
 
+    const copySeedLink = useCallback(async () => {
+        if (!state) return;
+        const hero = state.heroes[who] ?? state.heroes[0];
+        const url = sharedRunUrl(location.href, { seed: state.seed, origin: hero.origin ?? "knight" });
+        try {
+            await navigator.clipboard.writeText(url);
+            setSeedLinkNote(`시드 ${state.seed} 링크를 복사했다 — 같은 직업으로 새 던전이 열린다.`);
+        } catch {
+            // 권한 없는 브라우저에서도 링크를 잃지 않는다. 직접 복사할 수 있게 한 번 보여 준다.
+            window.prompt("시드 공유 링크", url);
+            setSeedLinkNote("시드 링크를 열었다 — 복사해서 동료에게 보내면 된다.");
+        }
+    }, [state, who]);
+
     // ── 키보드 ─────────────────────────────────────────────────────────
     /** 한 화면 협동에서 사람마다 꾹 누르고 있는 방향 키. */
     const holds = useRef<({ code: string; timer: ReturnType<typeof setTimeout> } | null)[]>([]);
@@ -1625,6 +1649,11 @@ export default function Rogue() {
             : `동료를 기다리는 중 · 방 코드 ${room}`;
     return (
         <div className="relative flex h-full w-full flex-col bg-[var(--rg-bg)] text-[var(--rg-text)]">
+            {seedLinkNote && (
+                <div role="status" className="pointer-events-none absolute top-2 left-1/2 z-30 -translate-x-1/2 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1 text-center text-[11px] text-[var(--rg-strong)] shadow-md">
+                    {seedLinkNote}
+                </div>
+            )}
             {/* 맨 위 두 줄 — 원작의 메시지 줄이다. 높이를 고정해 둔다: 줄 수가 들쭉날쭉하면
                 지도가 매 턴 위아래로 흔들린다.
 
@@ -1771,6 +1800,7 @@ export default function Rogue() {
                             {ORIGINS[advanceBanner].advancedSkillName} 해금 · {ORIGINS[advanceBanner].advancedSkillKind === "active" ? "층마다 한 번" : "지속 효과"}
                         </div>
                     </div>
+                )}
                 {/* 층 돌발 이벤트 진입 알림 배너 */}
                 {showBanner && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
                     <div className="banner-pop pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-1.5 shadow-md">
@@ -2407,6 +2437,14 @@ export default function Rogue() {
                                     setOriginFor({ t: "new" });
                                     setSheet("origins");
                                 } },
+                            {
+                                label: "시드 링크 복사",
+                                hint: `시드 ${state.seed} · ${ORIGINS[(state.heroes[who] ?? state.heroes[0]).origin ?? "knight"].name}로 새 던전을 연다`,
+                                go: () => {
+                                    void copySeedLink();
+                                    setSheet("none");
+                                },
+                            },
                             // **한 번 누르는 것이라 여기 있다.** 던전을 걷는 동안 누르는
                             // 것만 단추 판에 선다(`CLAUDE.md`).
                             ...(state.heroes.length > 1
