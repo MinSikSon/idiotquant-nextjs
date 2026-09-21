@@ -117,8 +117,10 @@ test("전직 기술과 사망 회고가 화면에서 사라지지 않는다", ()
     const s = read("app/(game)/game/Rogue.tsx");
     assert.match(s, /advancedSkillKind === "active"[\s\S]*?run\(\{ t: "classSkill" \}\)/, "액티브 전직 기술 단추가 없다");
     assert.match(s, /★ 전직 완료/, "전직 완료 배너가 없다");
-    assert.match(s, /전직까지 \{ADVANCE_LEVEL - h\.level\}레벨/, "전직 진행도가 없다");
+    assert.match(s, /Lv \{ADVANCE_LEVEL\} 전직[\s\S]*?\{ADVANCE_LEVEL - h\.level\}레벨/, "전직 진행도가 없다");
     assert.match(s, /orig\.advancedSkillName/, "직업 선택 카드에 전직 기술 미리보기가 없다");
+    assert.match(s, /성장 \{h\.pendingSkillPicks\}개 선택 가능/, "고를 수 있는 성장을 상태 줄에서 알리지 않는다");
+    assert.match(s, /다음 성장 Lv \{Math\.floor\(h\.level \/ SKILL_PICK_INTERVAL \+ 1\) \* SKILL_PICK_INTERVAL\}/, "다음 성장 레벨을 알리지 않는다");
     assert.match(s, /state\.phase === "dead"[\s\S]*?마지막 순간/, "사망 화면에 마지막 순간 회고가 없다");
     assert.match(s, /state\.messages\.filter\(\(m\) => !isDetail\(m\)\)\.slice\(-5\)/, "사망 직전 기록 다섯 줄을 안 보여 준다");
     assert.match(s, /미식별 물건/, "죽을 때 남긴 미식별 물건을 안 센다");
@@ -130,12 +132,19 @@ test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판�
     assert.match(s, /label: "시드 링크 복사"[\s\S]*?copySeedLink\(\)/, "시드 링크 복사 단추가 없다");
     assert.match(s, /sharedRunUrl\(location\.href/, "현재 주소에서 시드 공유 링크를 만들지 않는다");
     assert.match(s, /navigator\.clipboard\.writeText\(url\)/, "시드 링크를 클립보드에 복사하지 않는다");
+    assert.match(s, /seedLinkNote[\s\S]*?setTimeout\(\(\) => setSeedLinkNote\(null\), 2600\)/, "시드 링크 복사 안내가 저절로 사라지지 않는다");
 });
 
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {
     const s = read("app/(game)/game/components/MapView.tsx");
     assert.match(s, /const single = chars\.length === 1/, "한 글자 이름을 따로 가르지 않는다");
     assert.match(s, /const font = single \? cell\.h : cell\.h \/ 2/, "한 글자 이름이 칸 전체 높이를 안 쓴다");
+});
+
+test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다", () => {
+    const s = read("app/(game)/game/components/Desk.tsx");
+    assert.match(s, /isDualWielding\(hero\)[\s\S]*?hero\.offWeaponId/, "이도류의 두 손을 가르지 않는다");
+    assert.match(s, /이도류 장착/, "이도류 장착 표식이 없다");
 });
 
 // 누른 단추는 **눌린 뒤 초점을 놓는다.**

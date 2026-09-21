@@ -9,6 +9,13 @@ import { type Item } from "./types";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
+/** 직업 무기를 쥐면 전투에 얹는 보너스. 무기 이름과 효과는 직업 표 한 곳에서 정한다. */
+export interface WeaponAffinity {
+    name: string;
+    types: string[];
+    description: string;
+}
+
 /**
  * 전직 레벨 — **숙련이 3→4로 두 번째 오르는 자리**(`proficiency`, `dnd.ts`).
  *
@@ -49,6 +56,7 @@ export interface OriginDef {
     description: string;
     traitName: string;
     traitDescription: string;
+    weaponAffinity: WeaponAffinity;
     advancedSkillName: string;
     advancedSkillDescription: string;
     advancedSkillKind: "passive" | "active";
@@ -85,6 +93,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "높은 체력과 단단한 방어구를 갖춘 굳건한 전사.",
         traitName: "철벽의 자세",
         traitDescription: "제자리 대기(.) 시 다음 턴 방어력 +2 (받는 피해 2 추가 경감)",
+        weaponAffinity: { name: "근위 무기", types: ["mace", "long sword", "two-handed sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword"], description: "명중 +1 · 피해 +1" },
         advancedSkillName: "불굴의 방벽",
         advancedSkillDescription: "체력이 절반 이하일 때 방어력 +2 (철벽의 자세와 중첩)",
         advancedSkillKind: "passive",
@@ -111,6 +120,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "치명적인 기습과 함정 회피에 능한 재빠른 잠입자.",
         traitName: "기습 암습",
         traitDescription: "자거나 둔화된 적 공격 시 치명타 2배 + 3 추가 피해, 함정 50% 회피",
+        weaponAffinity: { name: "암살 단검", types: ["dagger"], description: "명중 +1 · 피해 +1" },
         advancedSkillName: "연막",
         advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -137,6 +147,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "모든 물약의 비밀을 꿰뚫고 있는 비약의 대가.",
         traitName: "연금술의 통찰",
         traitDescription: "모든 물약 시작부터 100% 식별, 회복 물약 음용 시 1.5배 회복",
+        weaponAffinity: { name: "연금 도구", types: ["dagger", "spear"], description: "명중 +1 · 피해 +1" },
         advancedSkillName: "만능 비약",
         advancedSkillDescription: "체력 1/3 회복 · 화상·실명·혼란 해제 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -162,6 +173,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "고대 주문서와 마법 지팡이를 다루는 비전 탐구자.",
         traitName: "비전 전도",
         traitDescription: "지팡이 충전량 +30%, 주문서 시전 시 25% 확률로 미소모 보존",
+        weaponAffinity: { name: "비전 검", types: ["dagger", "magic sword"], description: "명중 +1 · 피해 +1" },
         advancedSkillName: "비전 통찰",
         advancedSkillDescription: "층의 지형과 괴물의 기척을 밝힌다 · 층마다 한 번",
         advancedSkillKind: "active",

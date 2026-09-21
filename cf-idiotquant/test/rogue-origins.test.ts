@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { newGame, perform } from "@/lib/rogue/game";
-import { heroDefense, heroStr, hungerOf } from "@/lib/rogue/hero";
+import { canOffHand, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
+import { makeItem } from "@/lib/rogue/items";
 import { ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
 import { bury, graves } from "@/lib/rogue/storage";
 
@@ -32,6 +33,45 @@ test("4대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     assert.equal(ORIGINS.scholar.name, "고서 연구자");
     assert.equal(ORIGINS.scholar.baseHp, 10);
     assert.equal(ORIGINS.scholar.baseStr, 13);
+});
+
+test("직업 무기를 쥐면 명중과 피해에 같은 숙련 보너스가 붙는다", () => {
+    const cases = [
+        ["knight", "mace"],
+        ["rogue", "dagger"],
+        ["alchemist", "spear"],
+        ["scholar", "dagger"],
+    ] as const;
+    for (const [origin, type] of cases) {
+        const state = newGame(100, {}, {}, {}, {}, origin);
+        const hero = state.heroes[0];
+        const weapon = hero.pack.find((it) => it.kind === "weapon" && it.type === type);
+        if (!weapon) {
+            const first = hero.pack.find((it) => it.kind === "weapon")!;
+            first.type = type;
+        }
+        const equipped = hero.pack.find((it) => it.kind === "weapon" && it.type === type)!;
+        hero.weaponId = equipped.id;
+        assert.ok(weaponAffinityOf(hero), `${origin}의 ${type}은 직업 무기여야 한다`);
+        assert.ok(heroHitTerms(hero).some((term) => term.why === ORIGINS[origin].weaponAffinity.name && term.n === 1));
+        assert.ok(heroDamTerms(hero).some((term) => term.why === ORIGINS[origin].weaponAffinity.name && term.n === 1));
+    }
+});
+
+test("근위대는 장검, 도적은 단검 두 자루를 이도류로 쥔다", () => {
+    for (const [origin, type] of [["knight", "long sword"], ["rogue", "dagger"]] as const) {
+        const state = newGame(102, {}, {}, {}, {}, origin);
+        const hero = state.heroes[0];
+        const main = hero.pack.find((it) => it.kind === "weapon")!;
+        main.type = type;
+        const off = makeItem("weapon", type, 9002, -1, -1);
+        off.letter = "z";
+        hero.pack.push(off);
+        hero.weaponId = main.id;
+        assert.ok(canOffHand(hero, off), `${origin}은 두 번째 ${type}을(를) 보조손에 쥘 수 있어야 한다`);
+        hero.offWeaponId = off.id;
+        assert.ok(isDualWielding(hero), `${origin}의 이도류 상태를 읽지 못한다`);
+    }
 });
 
 test("왕실 근위대(Knight) 시작 장비 및 철벽의 자세 패시브 동작", () => {

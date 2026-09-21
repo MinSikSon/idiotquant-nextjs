@@ -25,7 +25,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS } from "./origins";
+import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, type WeaponAffinity } from "./origins";
 
 /** 이 경험치를 넘으면 다음 레벨. 원작의 `e_levels` 와 같은 모양이다. */
 export const EXP_LEVELS = [
@@ -172,9 +172,23 @@ export function equippedWeapon(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.weaponId);
 }
 
+/** 지금 쥔 무기가 제 직업의 무기인가. 전투·화면이 같은 답을 읽는다. */
+export function weaponAffinityOf(hero: Hero, weapon = equippedWeapon(hero)): WeaponAffinity | undefined {
+    const affinity = ORIGINS[hero.origin ?? "knight"].weaponAffinity;
+    return weapon?.kind === "weapon" && affinity.types.includes(weapon.type) ? affinity : undefined;
+}
+
 /** 보조손에 쥔 것 — 이도류가 아니면 `undefined`. */
 export function offHandWeapon(hero: Hero): Item | undefined {
     return hero.offWeaponId === null ? undefined : hero.pack.find((i) => i.id === hero.offWeaponId);
+}
+
+/** 제 직업의 짝 무기를 양손에 모두 쥐고 있는가. 도적의 양손 단검도 이 값으로 읽는다. */
+export function isDualWielding(hero: Hero): boolean {
+    const pair = DUAL_WIELD[hero.origin ?? "knight"];
+    const main = equippedWeapon(hero);
+    const off = offHandWeapon(hero);
+    return !!pair && main?.type === pair && off?.type === pair;
 }
 
 /**
@@ -273,19 +287,23 @@ export interface Term {
  * 그 셈이 두 벌이 되고, 어느 날 **화면에 적힌 명중과 실제로 굴리는 명중이 갈린다.**
  */
 export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] {
+    const affinity = weaponAffinityOf(hero, weapon);
     return [
         { n: proficiency(hero.level), why: "숙련" },
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: weapon?.plusHit ?? 0, why: weaponLabel(weapon) },
+        ...(affinity ? [{ n: 1, why: affinity.name }] : []),
     ];
 }
 
 /** 피해에 얹히는 것들 — 같은 능력 보정이 여기에도 온다(D&D 가 그렇다). */
 /** `withStr` 가 거짓이면 **힘 보정을 안 얹는다** — 이도류의 보조손이 그렇다. */
 export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr = true): Term[] {
+    const affinity = weaponAffinityOf(hero, weapon);
     const terms: Term[] = [
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
         { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
+        ...(affinity ? [{ n: 1, why: affinity.name }] : []),
     ];
     const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")
         ? Math.min(10, Math.floor(hero.gold / 100))

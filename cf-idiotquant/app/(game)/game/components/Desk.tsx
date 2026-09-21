@@ -30,7 +30,7 @@ import {
     meltMax,
     meltYield,
 } from "@/lib/rogue/items";
-import { canOffHand, equippedArmor, equippedWeapon, offHandWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, wornRings } from "@/lib/rogue/hero";
+import { canOffHand, equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, isDualWielding, offHandWeapon, wornRings } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -734,12 +734,13 @@ export default function Desk({
                                           : it.id === hero.leftRingId || it.id === hero.rightRingId
                                             ? "끼고 있다"
                                             : null;
+                                const dualWield = isDualWielding(hero) && (it.id === hero.weaponId || it.id === hero.offWeaponId);
                                 return (
                                     <li key={it.id}>
                                         <button
                                             type="button"
                                             onClick={() => setChosen(open ? null : it.id)}
-                                            className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"} ${side && cursor === i ? CURSOR : ""}`}
+                                            className={`w-full rounded-[2px] px-1 text-left ${dualWield ? "border border-[var(--rg-weapon)] bg-[var(--rg-hover)]" : open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"} ${side && cursor === i ? CURSOR : ""}`}
                                         >
                                             <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span>{" "}
                                             {/* **종류 표식** — 지도에서 그 물건을 그리는 글자와 색을 그대로 쓴다
@@ -757,6 +758,7 @@ export default function Desk({
                                                 <span className="text-[var(--rg-faint)]"> {itemPower(it, state.known)}</span>
                                             )}
                                             {worn && <span className="text-[var(--rg-muted)]"> ({worn})</span>}
+                                            {dualWield && <span className="font-bold text-[var(--rg-weapon)]"> · 이도류 장착</span>}
                                         </button>
                                         {open && (
                                             <div className="my-1 flex flex-wrap gap-1 pl-5">

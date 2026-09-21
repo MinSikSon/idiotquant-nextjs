@@ -329,9 +329,9 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
         s.heroes[0].str = 16; // 능력 보정 +3
 
         // **써 보기 전에는 손질을 모른다.** 모르는 무기의 속을 화면이 흘리면 안 된다.
-        // 힘 16 → 능력 보정 +3 (D&D 식). 손질 +2 는 정체를 알아야 붙는다.
-        assert.equal(heroAttackText(s.heroes[0], {}), "4d4+3");
-        assert.equal(heroAttackText(s.heroes[0], { "weapon:two-handed sword": true }), "4d4+5");
+        // 힘 16 → 능력 보정 +3, 근위 무기 +1. 손질 +2 는 정체를 알아야 붙는다.
+        assert.equal(heroAttackText(s.heroes[0], {}), "4d4+4");
+        assert.equal(heroAttackText(s.heroes[0], { "weapon:two-handed sword": true }), "4d4+6");
 
         // 맨손은 1d2, 보정 없는 힘이면 주사위만.
         const bare = newGame(601);
@@ -409,7 +409,7 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
             for (const line of heroAttack(s, s.heroes[0], m, rng).messages) {
                 if (line.startsWith(`${DETAIL}명중`) && line.includes("+2 진은검")) sawHit = true;
                 if (line.startsWith(`${DETAIL}공격력`) && line.includes("+2 진은검")) sawDam = true;
-                assert.ok(!line.includes("무기"), `아직 「무기」라고 적는다: ${line}`);
+                assert.ok(!line.includes("+2 무기"), `아직 「무기」라고 적는다: ${line}`);
             }
         }
         assert.ok(sawHit, "명중 줄에 무기 이름이 안 적혔다");
@@ -429,10 +429,10 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         s.heroes[0].weaponId = w.id;
         s.heroes[0].str = 16; // 능력 보정 +3, 숙련 +2
 
-        assert.equal(heroHitBonus(s.heroes[0], {}), 5, "모르는 무기의 손질이 상태 줄에 샜다");
-        assert.equal(heroHitBonus(s.heroes[0], { "weapon:knight sword": true }), 8);
-        assert.equal(heroAttackText(s.heroes[0], {}), "5d6+3");
-        assert.equal(heroAttackText(s.heroes[0], { "weapon:knight sword": true }), "5d6+6");
+        assert.equal(heroHitBonus(s.heroes[0], {}), 6, "모르는 무기의 손질이 상태 줄에 샜다");
+        assert.equal(heroHitBonus(s.heroes[0], { "weapon:knight sword": true }), 9);
+        assert.equal(heroAttackText(s.heroes[0], {}), "5d6+4");
+        assert.equal(heroAttackText(s.heroes[0], { "weapon:knight sword": true }), "5d6+7");
     }
 
     // ── 상대의 공격력 줄은 등호를 하나만 쓴다 — 어느 쪽이 총합인지 읽혀야 한다

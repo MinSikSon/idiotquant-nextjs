@@ -65,7 +65,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroDefense, heroStr, hungerOf, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroDefense, heroStr, hungerOf, weaponAffinityOf, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -445,6 +445,12 @@ export default function Rogue() {
     /** 아이템 도감에서 펼쳐 둔 아이템 키 */
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const [seedLinkNote, setSeedLinkNote] = useState<string | null>(null);
+    // 복사는 끝난 일이다 — 확인할 시간만 남기고 지도 위 안내는 저절로 걷는다.
+    useEffect(() => {
+        if (!seedLinkNote) return;
+        const timer = setTimeout(() => setSeedLinkNote(null), 2600);
+        return () => clearTimeout(timer);
+    }, [seedLinkNote]);
     const buried = useRef(false);
 
     /** 전투 피드백 & 특수 효과 연출 상태 (P6 - 칸 내 색상 점멸) */
@@ -1753,12 +1759,16 @@ export default function Rogue() {
                         </button>
                         {skillOpen && (
                             <div className="absolute top-9 left-1 z-20 flex w-[min(15rem,calc(100%-0.5rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                                <span>레벨 {SKILL_PICK_INTERVAL}마다 하나 — 무엇을 늘릴까</span>
+                                <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
+                                <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
+                                <span className="text-[11px] text-[var(--rg-faint)]">
+                                    현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 아이템운 {Math.round(hero.itemLuck * 100)}%
+                                </span>
                                 {(
                                     [
-                                        ["str", `힘 +1 (지금 ${heroStr(hero)})`],
-                                        ["def", `방어력 +1 (지금 ${heroDefense(hero)})`],
-                                        ["luck", `좋은 물건 확률 +5% (지금 ${Math.round(hero.itemLuck * 100)}%)`],
+                                        ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
+                                        ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
+                                        ["luck", `아이템운 +5% · 현재 ${Math.round(hero.itemLuck * 100)}%`],
                                     ] as const
                                 ).map(([option, label]) => (
                                     <button
@@ -1829,6 +1839,7 @@ export default function Rogue() {
                 const coop = state.heroes.length > 1;
                 const hHunger = hungerOf(h);
                 const hRings = wornRings(h).length;
+                const hAffinity = weaponAffinityOf(h);
                 return (
                     <div
                         key={i}
@@ -1877,8 +1888,23 @@ export default function Rogue() {
                         <span>Str: {heroStr(h)}({h.maxStr})</span>
                         <span>Arm: {heroArmor(h)}</span>
                         <span>Exp: {h.level}/{h.exp}</span>
+                        {hAffinity && (
+                            <span className="font-bold text-[var(--rg-weapon)]">
+                                ⚔ {hAffinity.name} · {hAffinity.description}
+                            </span>
+                        )}
+                        {h.pendingSkillPicks > 0 ? (
+                            <span className="font-bold text-[var(--rg-gold)]">★ 성장 {h.pendingSkillPicks}개 선택 가능</span>
+                        ) : (
+                            <span className="text-[var(--rg-faint)]">다음 성장 Lv {Math.floor(h.level / SKILL_PICK_INTERVAL + 1) * SKILL_PICK_INTERVAL}</span>
+                        )}
+                        <span className="text-[var(--rg-faint)]">
+                            성장: 힘 {heroStr(h)} · 방어 +{h.bonusDefense} · 운 {Math.round(h.itemLuck * 100)}%
+                        </span>
                         {h.level < ADVANCE_LEVEL ? (
-                            <span className="text-[var(--rg-faint)]">전직까지 {ADVANCE_LEVEL - h.level}레벨</span>
+                            <span className="text-[var(--rg-faint)]">
+                                Lv {ADVANCE_LEVEL} 전직 · {ORIGINS[h.origin ?? "knight"].advancedSkillName} 해금까지 {ADVANCE_LEVEL - h.level}레벨
+                            </span>
                         ) : (
                             <span className="font-bold text-[var(--rg-gold)]">
                                 ★ {ORIGINS[h.origin ?? "knight"].advancedSkillName}{ORIGINS[h.origin ?? "knight"].advancedSkillKind === "passive"
