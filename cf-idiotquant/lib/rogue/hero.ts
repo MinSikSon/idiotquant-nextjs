@@ -98,6 +98,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         pendingSkillPicks: 0,
         bonusDefense: 0,
         itemLuck: 0,
+        classSkillDepth: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
     for (const item of startingItems) {

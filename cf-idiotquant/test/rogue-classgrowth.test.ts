@@ -44,10 +44,63 @@ import {
     ADVANCE_LEVEL,
 } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
+import { spawnMonster } from "@/lib/rogue/monsters";
 import { deserialize, serialize } from "@/lib/rogue/storage";
-import type { GameState } from "@/lib/rogue/types";
+import { idx, type GameState } from "@/lib/rogue/types";
+import { VISIBLE } from "@/lib/rogue/fov";
 
 const run = (s: GameState, cmd: Command) => perform(s, cmd);
+
+test("전직 액티브 기술 — 직업마다 다르고 층마다 한 번만 쓴다", () => {
+    const ready = (origin: "knight" | "rogue" | "alchemist" | "scholar", seed: number) => {
+        const s = newGame(seed, {}, {}, {}, {}, origin);
+        s.heroes[0].level = ADVANCE_LEVEL;
+        s.level.monsters = [];
+        return s;
+    };
+    const visibleMonster = (s: GameState) => {
+        const h = s.heroes[0];
+        const m = spawnMonster("K", h.x, h.y, new Rng(1));
+        s.level.monsters.push(m);
+        s.level.flags[idx(m.x, m.y)] |= VISIBLE;
+        return m;
+    };
+
+    // 전직 전에는 턴도 사용 기회도 쓰지 않는다.
+    const novice = newGame(730, {}, {}, {}, {}, "knight");
+    const noviceTurn = novice.turn;
+    run(novice, { t: "classSkill" });
+    assert.equal(novice.turn, noviceTurn);
+    assert.equal(novice.heroes[0].classSkillDepth, 0);
+
+    const knight = ready("knight", 731);
+    const foe = visibleMonster(knight);
+    run(knight, { t: "classSkill" });
+    assert.equal(foe.target, 0, "기사가 보이는 괴물의 시선을 못 끌었다");
+
+    const rogue = ready("rogue", 732);
+    const watcher = visibleMonster(rogue);
+    watcher.awake = true;
+    watcher.target = 0;
+    run(rogue, { t: "classSkill" });
+    assert.equal(watcher.awake, false, "도적의 연막을 쓴 턴에 괴물이 다시 깨어났다");
+    assert.equal(watcher.target, undefined);
+
+    const alchemist = ready("alchemist", 733);
+    alchemist.heroes[0].hp = 1;
+    alchemist.heroes[0].blind = 3;
+    run(alchemist, { t: "classSkill" });
+    assert.ok(alchemist.heroes[0].hp > 1);
+    assert.equal(alchemist.heroes[0].blind, 0);
+
+    const scholar = ready("scholar", 734);
+    run(scholar, { t: "classSkill" });
+    assert.ok(scholar.heroes[0].detect > 0, "연구자가 괴물의 기척을 읽지 못했다");
+    const usedTurn = scholar.turn;
+    run(scholar, { t: "classSkill" });
+    assert.equal(scholar.turn, usedTurn, "같은 층에서 전직 기술을 두 번 썼다");
+    assert.equal(scholar.heroes[0].classSkillDepth, scholar.level.depth);
+});
 
 test("레벨업 성장 — 3레벨마다 쌓이고, 여러 레벨을 건너뛰어도 안 놓친다", () => {
     // ── 3의 배수를 안 지나면 안 쌓인다 (레벨 1 → 2)

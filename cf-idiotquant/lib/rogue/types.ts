@@ -360,6 +360,8 @@ export interface Hero {
      * 안 건드린다** — 아무도 안 고른 판은 난수 흐름이 예전과 한 글자도 안 바뀐다.
      */
     itemLuck: number;
+    /** 전직 기술을 마지막으로 쓴 층. 같은 층에서는 한 번만 쓸 수 있다. */
+    classSkillDepth?: number;
 }
 
 export type Phase = "playing" | "dead" | "won";

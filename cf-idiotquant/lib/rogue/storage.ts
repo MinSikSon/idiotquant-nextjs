@@ -38,7 +38,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 11;
+const VERSION = 12;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -292,6 +292,9 @@ function normalize(s: Saved): GameState | null {
         pendingSkillPicks: Math.max(0, num(h.pendingSkillPicks, 0)),
         bonusDefense: Math.max(0, num(h.bonusDefense, 0)),
         itemLuck: Math.min(1, Math.max(0, num(h.itemLuck, 0))),
+        // v11 이하에는 전직 액티브 기술이 없다. 0은 어느 실제 층과도 같지 않아
+        // 되읽은 뒤 현재 층에서 한 번 쓸 수 있다.
+        classSkillDepth: Math.max(0, num(h.classSkillDepth, 0)),
     });
     const heroes: Hero[] = saved.map(fixHero);
 

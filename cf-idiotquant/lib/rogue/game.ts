@@ -184,6 +184,8 @@ type Action =
      * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
      */
     | { t: "pickSkill"; option: "str" | "def" | "luck" }
+    /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
+    | { t: "classSkill" }
     | { t: "drop"; letter: string }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
@@ -1870,6 +1872,76 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
 }
 
 /**
+ * 전직 기술 — 새 자원이나 쿨다운 시계를 만들지 않고 **층마다 한 번**만 쓴다.
+ * 실제로 효과가 생긴 뒤에만 사용한 층을 적고 턴을 쓴다.
+ */
+function useClassSkill(state: GameState, hero: Hero): boolean {
+    if (hero.level < ADVANCE_LEVEL) {
+        say(state, `레벨 ${ADVANCE_LEVEL}에 전직해야 쓸 수 있다.`);
+        return false;
+    }
+    if (hero.classSkillDepth === state.level.depth) {
+        say(state, "이 층에서는 이미 전직 기술을 썼다.");
+        return false;
+    }
+
+    const who = state.heroes.indexOf(hero);
+    switch (hero.origin ?? "knight") {
+        case "knight": {
+            const seen = state.level.monsters.filter((m) => isVisible(state.level, m.x, m.y));
+            if (seen.length === 0) {
+                say(state, "외침을 들을 괴물이 보이지 않는다.");
+                return false;
+            }
+            for (const m of seen) {
+                m.awake = true;
+                m.target = who;
+            }
+            say(state, `📯 전장의 외침 — 보이는 괴물 ${seen.length}마리의 시선을 끌었다.`);
+            break;
+        }
+        case "rogue": {
+            const seen = state.level.monsters.filter(
+                (m) => isVisible(state.level, m.x, m.y) && !m.champion,
+            );
+            if (seen.length === 0) {
+                say(state, "연막에 숨길 평범한 괴물이 보이지 않는다.");
+                return false;
+            }
+            for (const m of seen) {
+                m.awake = false;
+                // 이 기술을 쓰는 턴에 곧바로 다시 보고 깨어나면 아무 효과도 없다.
+                m.frozenTurns = Math.max(m.frozenTurns ?? 0, 1);
+                delete m.target;
+            }
+            say(state, `🌑 연막 — 보이는 괴물 ${seen.length}마리가 나를 놓쳤다.`);
+            break;
+        }
+        case "alchemist": {
+            const before = hero.hp;
+            hero.hp = Math.min(hero.maxHp, hero.hp + Math.max(1, Math.floor(hero.maxHp / 3)));
+            const cured = !!hero.burnTurns || hero.blind > 0 || hero.confused > 0;
+            hero.burnTurns = 0;
+            hero.blind = 0;
+            hero.confused = 0;
+            if (hero.hp === before && !cured) {
+                say(state, "회복하거나 씻어 낼 상처가 없다.");
+                return false;
+            }
+            say(state, `⚗️ 만능 비약 — 체력 ${hero.hp - before} 회복, 화상·실명·혼란을 씻었다.`);
+            break;
+        }
+        case "scholar":
+            revealAll(state.level);
+            hero.detect = Math.max(hero.detect, 12);
+            say(state, "✦ 비전 통찰 — 층의 지형을 밝히고 괴물의 기척을 읽었다.");
+            break;
+    }
+    hero.classSkillDepth = state.level.depth;
+    return true;
+}
+
+/**
  * 겨눈 방향으로 한 칸씩 나아가며 처음 걸리는 것을 찾는다.
  *
  * 지팡이도 던진 물건도 같은 길을 쓴다 — 길이 둘이면 「벽을 뚫고 맞았다」 같은 일이
@@ -2779,6 +2851,9 @@ function act(state: GameState, cmd: Command): GameState {
                 break;
             case "pickSkill":
                 acted = pickSkill(state, hero, cmd.option);
+                break;
+            case "classSkill":
+                acted = useClassSkill(state, hero);
                 break;
             case "putOn":
                 acted = putOn(state, hero, cmd.letter);
