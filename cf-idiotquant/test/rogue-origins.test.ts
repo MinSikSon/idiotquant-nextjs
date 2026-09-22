@@ -254,6 +254,80 @@ test("방랑 연금술사(Alchemist) 시작 물약 100% 식별 및 회복 효과
     assert.ok(healPot, "체력 회복 물약이 있어야 함");
 });
 
+test("연금술사는 해로운 물약을 무작위 이득으로 바꾼다", () => {
+    const outcomes = new Set<string>();
+    for (let seed = 1; seed <= 60; seed++) {
+        const s = newGame(seed, {}, {}, {}, {}, "alchemist");
+        const hero = s.heroes[0];
+        const poison = makeItem("potion", "poison", 10000 + seed, -1, -1);
+        poison.letter = "z";
+        hero.pack.push(poison);
+        hero.food = 100;
+        const before = { str: hero.str, food: hero.food, detect: hero.detect };
+        const after = perform(s, { t: "quaff", letter: "z" });
+        const h = after.heroes[0];
+        assert.equal(h.blind, 0, "해로운 물약의 원래 상태 이상이 적용됐다");
+        if (h.str > before.str) outcomes.add("str");
+        if (h.food > before.food) outcomes.add("food");
+        if (h.detect > before.detect) outcomes.add("detect");
+    }
+    assert.deepEqual(outcomes, new Set(["str", "food", "detect"]));
+});
+
+test("현자의 연금술은 포션 두 개로 축복의 기름을 만들고 장비에 입힌다", () => {
+    const s = newGame(63, {}, {}, {}, {}, "alchemist");
+    const hero = s.heroes[0];
+    hero.level = 9;
+    const first = hero.pack.find((it) => it.kind === "potion")!;
+    const second = makeItem("potion", "poison", 1063, -1, -1);
+    second.letter = "z";
+    hero.pack.push(second);
+
+    const made = perform(s, { t: "classSkill", ingredients: [first.letter!, "z"] });
+    const blessing = made.heroes[0].pack.find((it) => it.kind === "potion" && it.type === "blessing");
+    assert.ok(blessing, "포션 두 개로 축복의 기름을 만들지 못했다");
+
+    const weapon = made.heroes[0].pack.find((it) => it.kind === "weapon")!;
+    const after = perform(made, { t: "quaff", letter: blessing.letter!, target: weapon.letter! });
+    assert.equal(weapon.blessed, true, "축복의 기름이 선택한 장비에 축복을 입히지 못했다");
+    assert.ok(!after.heroes[0].pack.some((it) => it.id === blessing.id), "쓴 축복의 기름이 남았다");
+});
+
+test("축복받은 장비는 위험 강화 실패를 한 번 막고 축복만 잃는다", () => {
+    let protectedOnce = false;
+    for (let seed = 1; seed <= 200; seed++) {
+        const s = newGame(seed);
+        const hero = s.heroes[0];
+        const weapon = hero.pack.find((it) => it.kind === "weapon")!;
+        weapon.plusHit = 6;
+        weapon.plusDam = 6;
+        weapon.blessed = true;
+        const scroll = makeItem("scroll", "enchant weapon", 20000 + seed, -1, -1);
+        scroll.letter = "z";
+        hero.pack.push(scroll);
+        const after = perform(s, { t: "read", letter: "z", target: weapon.letter! });
+        const kept = after.heroes[0].pack.find((it) => it.id === weapon.id);
+        if (kept && !kept.blessed && kept.plusHit === 6) {
+            protectedOnce = true;
+            break;
+        }
+    }
+    assert.ok(protectedOnce, "위험 강화 실패에서 축복이 장비 파괴를 막지 못했다");
+});
+
+test("축복받은 장비는 강화에 성공하면 축복을 유지한다", () => {
+    const s = newGame(64);
+    const hero = s.heroes[0];
+    const weapon = hero.pack.find((it) => it.kind === "weapon")!;
+    weapon.blessed = true;
+    const scroll = makeItem("scroll", "enchant weapon", 1064, -1, -1);
+    scroll.letter = "z";
+    hero.pack.push(scroll);
+
+    perform(s, { t: "read", letter: "z", target: weapon.letter! });
+    assert.equal(weapon.blessed, true, "강화 성공 후에도 축복이 사라졌다");
+});
+
 test("고서 연구자(Scholar) 시작 주문서/지팡이 식별 및 지팡이 8회 충전", () => {
     const s = newGame(4, {}, {}, {}, {}, "scholar");
     assert.equal(s.heroes[0].origin, "scholar");

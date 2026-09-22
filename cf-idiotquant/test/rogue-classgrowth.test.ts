@@ -35,10 +35,9 @@ import {
     type Command,
 } from "@/lib/rogue/game";
 import { EXP_LEVELS, gainExp, heroArmor, heroDefense } from "@/lib/rogue/hero";
-import { defenseOf, itemTier, randomItem } from "@/lib/rogue/items";
+import { defenseOf, itemTier, makeItem, randomItem } from "@/lib/rogue/items";
 import {
     ADVANCED_GUARD_BONUS,
-    ADVANCED_HEAL_MULT,
     ADVANCED_PRESERVE_CHANCE,
     ADVANCED_TRAP_EVADE,
     ADVANCE_LEVEL,
@@ -90,11 +89,12 @@ test("전직 기술 — 근위대는 패시브, 나머지는 층마다 한 번 �
     assert.equal(watcher.target, undefined);
 
     const alchemist = ready("alchemist", 733);
-    alchemist.heroes[0].hp = 1;
-    alchemist.heroes[0].blind = 3;
-    run(alchemist, { t: "classSkill" });
-    assert.ok(alchemist.heroes[0].hp > 1);
-    assert.equal(alchemist.heroes[0].blind, 0);
+    const first = alchemist.heroes[0].pack.find((it) => it.kind === "potion")!;
+    const second = makeItem("potion", "poison", 7330, -1, -1);
+    second.letter = "z";
+    alchemist.heroes[0].pack.push(second);
+    run(alchemist, { t: "classSkill", ingredients: [first.letter!, "z"] });
+    assert.ok(alchemist.heroes[0].pack.some((it) => it.kind === "potion" && it.type === "blessing"), "연금술사가 축복의 기름을 만들지 못했다");
 
     const scholar = ready("scholar", 734);
     run(scholar, { t: "classSkill" });
@@ -304,7 +304,7 @@ test("전직(레벨 9) — 칭호가 바뀌고, 이미 있던 특성이 숫자�
         assert.equal(rogueTrapEvade(hero), 0);
     }
 
-    // ── 연금술사: 회복 배율이 1.5 → ADVANCED_HEAL_MULT
+    // ── 연금술사: 회복 배율은 기본 특성 1.5배로 유지한다.
     {
         const s = newGame(732);
         const hero = s.heroes[0];
@@ -312,7 +312,7 @@ test("전직(레벨 9) — 칭호가 바뀌고, 이미 있던 특성이 숫자�
         hero.level = ADVANCE_LEVEL - 1;
         assert.equal(alchemistHealMult(hero), 1.5);
         hero.level = ADVANCE_LEVEL;
-        assert.equal(alchemistHealMult(hero), ADVANCED_HEAL_MULT);
+        assert.equal(alchemistHealMult(hero), 1.5);
         hero.origin = "scholar";
         assert.equal(alchemistHealMult(hero), 1, "연금술사가 아닌데 배율이 붙는다");
     }

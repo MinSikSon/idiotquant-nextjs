@@ -33,7 +33,6 @@ export const ADVANCE_LEVEL = 9;
  */
 export const ADVANCED_GUARD_BONUS = 4; // 근위대: 대기 시 방어력 +2 → +4
 export const ADVANCED_TRAP_EVADE = 0.8; // 도적: 함정 회피 50% → 80%
-export const ADVANCED_HEAL_MULT = 2; // 연금술사: 회복 물약 배율 1.5배 → 2배
 export const ADVANCED_PRESERVE_CHANCE = 0.4; // 연구자: 주문서 보존 25% → 40%
 
 export interface OriginDef {
@@ -47,7 +46,7 @@ export interface OriginDef {
      * 화면에 세우는 표. **이모지가 아니라 글자다** — 지도도 상태 줄도 고정폭 한 벌인데
      * 이모지는 칸 폭이 제각각이라 그 줄만 어긋나고, 기기마다 그림도 다르다.
      * **지도의 물건 글자를 그대로 빌린다** — `]` 갑옷(근위대) · `)` 무기(도적) ·
-     * `!` 물약(연금술사) · `?` 주문서(연구자). 도움말의 기호 설명에 이미 있는 글자라
+     * `!` 포션(연금술사) · `?` 주문서(연구자). 도움말의 기호 설명에 이미 있는 글자라
      * 따로 외울 것이 없고, 한 칸짜리 글자라 고정폭 줄이 안 흔들린다.
      */
     icon: string;
@@ -74,7 +73,7 @@ export interface OriginDef {
  * 근위대가 장검 둘을 들면 12층의 진은검을 포기하는 셈이다. 「사다리 위 하나 vs
  * 아래 둘」이 거기서 진짜 선택이 된다.
  *
- * 연금술사와 고서 연구자는 안 준다. 둘은 물약·주문서로 푸는 직업이라 손이 비어야 한다.
+ * 연금술사와 고서 연구자는 안 준다. 둘은 포션·주문서로 푸는 직업이라 손이 비어야 한다.
  */
 export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
     rogue: ["dagger"],
@@ -144,12 +143,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedTitle: "Master Alchemist",
         icon: "!",
         iconInk: "var(--rg-potion)",
-        description: "모든 물약의 비밀을 꿰뚫고 있는 비약의 대가.",
+        description: "모든 포션의 비밀을 꿰뚫고 있는 비약의 대가.",
         traitName: "연금술의 통찰",
-        traitDescription: "모든 물약 시작부터 100% 식별, 회복 물약 음용 시 1.5배 회복",
+        traitDescription: "모든 포션 시작부터 100% 식별, 회복 포션 1.5배 · 해로운 포션은 무작위 이득",
         weaponAffinity: { name: "연금 도구", types: ["dagger", "spear"], description: "명중 +1 · 피해 +1" },
-        advancedSkillName: "만능 비약",
-        advancedSkillDescription: "체력 1/3 회복 · 화상·실명·혼란 해제 · 층마다 한 번",
+        advancedSkillName: "축복의 기름 제조",
+        advancedSkillDescription: "포션 2개로 축복의 기름 제작 · 층마다 한 번",
         advancedSkillKind: "active",
         baseHp: 12,
         baseStr: 14,

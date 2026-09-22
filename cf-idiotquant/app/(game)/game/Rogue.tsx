@@ -189,7 +189,7 @@ function Msg({ text }: { text: string }) {
 }
 
 /**
- * 직업 표 — **지도의 물건 글자를 그 물건 색으로** 세운다(`]` 갑옷 · `)` 무기 · `!` 물약 ·
+ * 직업 표 — **지도의 물건 글자를 그 물건 색으로** 세운다(`]` 갑옷 · `)` 무기 · `!` 포션 ·
  * `?` 주문서). 이름과 표를 여러 화면이 함께 쓰므로 한 자리에서 그린다.
  */
 function OriginTag({
@@ -1856,7 +1856,7 @@ export default function Rogue() {
                 {hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active" && (
                     <button
                         type="button"
-                        onClick={() => run({ t: "classSkill" })}
+                        onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
                         disabled={hero.classSkillDepth === level.depth}
                         aria-label={`${classSkill.advancedSkillName} — ${classSkill.advancedSkillDescription}`}
                         title={`${classSkill.advancedSkillName} · ${classSkill.advancedSkillDescription}`}
@@ -2108,7 +2108,7 @@ export default function Rogue() {
                             { id: "weapon" as const, label: "무기", countStr: `${itemProg.byCategory.weapon.identified}/${itemProg.byCategory.weapon.total}` },
                             { id: "armor" as const, label: "방어구", countStr: `${itemProg.byCategory.armor.identified}/${itemProg.byCategory.armor.total}` },
                             { id: "scroll" as const, label: "주문서", countStr: `${itemProg.byCategory.scroll.identified}/${itemProg.byCategory.scroll.total}` },
-                            { id: "potion" as const, label: "물약", countStr: `${itemProg.byCategory.potion.identified}/${itemProg.byCategory.potion.total}` },
+                            { id: "potion" as const, label: "포션", countStr: `${itemProg.byCategory.potion.identified}/${itemProg.byCategory.potion.total}` },
                             { id: "ring" as const, label: "반지", countStr: `${itemProg.byCategory.ring.identified}/${itemProg.byCategory.ring.total}` },
                             { id: "wand" as const, label: "지팡이", countStr: `${itemProg.byCategory.wand.identified}/${itemProg.byCategory.wand.total}` },
                             { id: "other" as const, label: "그 밖", countStr: `${itemProg.byCategory.other.identified}/${itemProg.byCategory.other.total}` },
@@ -2869,7 +2869,7 @@ export default function Rogue() {
                             갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
                             키보드로는 <b>W</b>.
                         </p>
-                        <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">*</span> 금화 · <span className="text-[var(--rg-potion)]">!</span> 물약 · <span className="text-[var(--rg-scroll)]">?</span> 주문서</p>
+                        <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">*</span> 금화 · <span className="text-[var(--rg-potion)]">!</span> 포션 · <span className="text-[var(--rg-scroll)]">?</span> 주문서</p>
                         <p><span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
                         <p><span className="text-[var(--rg-trap)]">^</span> 함정 · <span className="text-[var(--rg-stairs)]">&gt;</span> 아래 계단 · <span className="text-[var(--rg-stairs)]">&lt;</span> 위 계단 · <span className="text-[var(--rg-door)]">+</span> 문</p>
                         <p className="pt-1 text-[var(--rg-faint)]">
@@ -2920,7 +2920,7 @@ export default function Rogue() {
                         <p className="text-[var(--rg-faint)]">
                             <b className="text-[var(--rg-muted)]">한 종을 한 마리라도 잡으면</b> 그 뒤로는 도감에서
                             레벨·방어·피해를 볼 수 있습니다. 이 도감은 <b className="text-[var(--rg-muted)]">죽어도
-                            남습니다</b> — 물약의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
+                            남습니다</b> — 포션의 색은 판마다 섞이지만 오크가 얼마나 단단한지는 세상의 사실입니다.
                         </p>
                         <p className="text-[var(--rg-faint)]">
                             <b className="text-[var(--rg-muted)]">위 계단으로 언제든 물러설 수 있습니다.</b> 지나온
@@ -3266,7 +3266,7 @@ export default function Rogue() {
                                 ))}
                             </ul>
                             <p className="mt-2 text-[11px] text-[var(--rg-faint)]">
-                                남긴 물약 {hero.pack.filter((it) => it.kind === "potion").reduce((n, it) => n + it.count, 0)}개
+                            남긴 포션 {hero.pack.filter((it) => it.kind === "potion").reduce((n, it) => n + it.count, 0)}개
                                 {" · "}미식별 물건 {hero.pack.filter((it) => ["potion", "scroll", "ring", "wand"].includes(it.kind) && !state.known[`${it.kind}:${it.type}`]).length}종
                                 {" · "}남은 식량 {hero.pack.filter((it) => it.kind === "food").reduce((n, it) => n + it.count, 0)}개
                             </p>

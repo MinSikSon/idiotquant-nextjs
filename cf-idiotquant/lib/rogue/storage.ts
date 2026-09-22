@@ -617,7 +617,7 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             break;
         }
         case "potion":
-            name = `${POTIONS[it.type]?.name ?? "이름 없는"} 물약`;
+            name = `${POTIONS[it.type]?.name ?? "이름 없는"} 포션`;
             break;
         case "scroll":
             name = `${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서`;

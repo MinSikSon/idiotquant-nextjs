@@ -112,7 +112,7 @@ export const ARMORS: Record<string, ArmorDef> = {
 export const POTIONS: Record<string, { name: string; freq: number; depth: number }> = {
     healing: { name: "체력 회복", freq: 14, depth: 1 },
     "extra healing": { name: "고급 체력 회복", freq: 6, depth: 6 },
-    // 리니지의 「용기의 물약」이 근력을 올린다. 여기서도 그 일을 한다.
+    // 리니지의 「용기의 포션」이 근력을 올린다. 여기서도 그 일을 한다.
     strength: { name: "용기", freq: 8, depth: 3 },
     // 이 게임에서 힘을 깎는 것은 독이고, 이것이 그것을 되돌린다 — 곧 해독제다.
     "restore strength": { name: "해독", freq: 10, depth: 3 },
@@ -187,7 +187,7 @@ export const WANDS: Record<string, { name: string; freq: number; damage?: string
     "cancel": { name: "무력화", freq: 5, depth: 7 },
 };
 
-/** 물약이 이 판에서 무슨 색으로 보이는가. */
+/** 포션이 이 판에서 무슨 색으로 보이는가. */
 const POTION_LOOKS = [
     "빨간", "파란", "초록", "노란", "검은", "갈색", "은빛", "보라", "주황", "하얀",
     "탁한", "반짝이는", "거품 이는", "짙은", "투명한",
@@ -227,7 +227,7 @@ export function rollAppearances(rng: Rng): Record<string, string> {
 
     const looks = rng.shuffle([...POTION_LOOKS]);
     Object.keys(POTIONS).forEach((k, i) => {
-        out[`potion:${k}`] = `${looks[i % looks.length]} 물약`;
+        out[`potion:${k}`] = `${looks[i % looks.length]} 포션`;
     });
 
     const gems = rng.shuffle([...RING_LOOKS]);
@@ -837,7 +837,8 @@ export function describe(
             return (relicNames[it.type] ?? "전설 유물") + cool;
         }
         case "potion":
-            return known[key] ? `${blessPrefix(it, true)}${POTIONS[it.type]?.name ?? "이름 없는"} 물약` : (appearance[key] ?? "물약");
+            if (it.type === "blessing") return "축복의 기름";
+            return known[key] ? `${blessPrefix(it, true)}${POTIONS[it.type]?.name ?? "이름 없는"} 포션` : (appearance[key] ?? "포션");
         case "scroll":
             return known[key] ? `${blessPrefix(it, true)}${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
         case "ring": {

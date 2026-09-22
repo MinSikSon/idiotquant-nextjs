@@ -66,6 +66,7 @@ export type DeskMode = "none" | "pack" | "picker" | "aim";
 /** 부모(`Rogue`)가 키보드와 단추 판에서 부르는 문. */
 export interface DeskHandle {
     togglePack(): void;
+    craftBlessing(): void;
     /** 원작의 한 글자 명령(`q r e w W P R d`) — 없는 키면 `false`. */
     openPicker(key: string): boolean;
     aim(kind: "zap" | "throw"): void;
@@ -170,6 +171,9 @@ export default function Desk({
 
     /** 강화 주문서를 읽었으면 **무엇에 걸지**를 한 번 더 묻는다 — 그 주문서의 자리. */
     const pendingEnchant = useRef<string | null>(null);
+    /** 축복의 기름은 마시는 대신 장비 하나에 바른다. */
+    const pendingBlessing = useRef<string | null>(null);
+    const pendingCraft = useRef<string | null>(null);
     /**
      * 그 주문서가 강화냐 축복이냐 재련이냐 — 줄마다 적을 것이 갈린다.
      *
@@ -231,6 +235,25 @@ export default function Desk({
         [run, state, w],
     );
 
+    const quaffPotion = useCallback(
+        (letter: string) => {
+            const potion = state.heroes[w]?.pack.find((it) => it.letter === letter);
+            if (potion?.type !== "blessing") {
+                run({ t: "quaff", letter });
+                return;
+            }
+            pendingBlessing.current = letter;
+            setPicker({
+                title: "무엇에 축복을 입힐까",
+                kinds: ["weapon", "armor"],
+                allow: (it) => canHoldEnchant(it) && enchantOf(it) < ENCHANT_MAX && !it.blessed,
+                empty: "축복을 입힐 무기나 갑옷이 없다.",
+                make: () => ({ t: "rest" }),
+            });
+        },
+        [run, state.heroes, w],
+    );
+
     const choosePicked = useCallback(
         (letter: string) => {
             const mode = pendingAim.current;
@@ -253,10 +276,40 @@ export default function Desk({
                 run({ t: "read", letter: scroll, target: letter });
                 return;
             }
+            const blessing = pendingBlessing.current;
+            if (blessing) {
+                pendingBlessing.current = null;
+                setPicker(null);
+                run({ t: "quaff", letter: blessing, target: letter });
+                return;
+            }
+            const ingredient = pendingCraft.current;
+            if (ingredient !== null) {
+                if (!ingredient) {
+                    pendingCraft.current = letter;
+                    setPicker({
+                        title: "두 번째 재료 포션을 고르세요",
+                        kinds: ["potion"],
+                        allow: (it) => it.type !== "blessing" && (it.letter !== letter || it.count >= 2),
+                        empty: "두 번째 재료로 쓸 포션이 없다.",
+                        make: () => ({ t: "rest" }),
+                    });
+                    return;
+                }
+                pendingCraft.current = null;
+                setPicker(null);
+                run({ t: "classSkill", ingredients: [ingredient, letter] });
+                return;
+            }
             // 주문서를 짚었으면 **강화인지 아닌지**를 `readScroll` 이 엔진에 묻는다.
             if (picker?.kinds.length === 1 && picker.kinds[0] === "scroll") {
                 setPicker(null);
                 readScroll(letter);
+                return;
+            }
+            if (picker?.kinds.length === 1 && picker.kinds[0] === "potion") {
+                setPicker(null);
+                quaffPotion(letter);
                 return;
             }
             // **명령은 갱신 함수 밖에서 보낸다.** 갱신 함수는 그리는 도중에 돌아서, 그 안에서
@@ -264,10 +317,21 @@ export default function Desk({
             if (picker) run(picker.make(letter));
             setPicker(null);
         },
-        [picker, readScroll, run],
+        [picker, quaffPotion, readScroll, run],
     );
 
     const name = (it: Item) => describe(it, state.known, state.appearance);
+    const craftBlessing = useCallback(() => {
+        setPackOpen(false);
+        pendingCraft.current = "";
+        setPicker({
+            title: "첫 번째 재료 포션을 고르세요",
+            kinds: ["potion"],
+            allow: (it) => it.type !== "blessing",
+            empty: "재료로 쓸 포션이 없다.",
+            make: () => ({ t: "rest" }),
+        });
+    }, []);
     /** 새 장비의 물건 몫만 지금 장비와 비교한다 — 힘·직업 같은 영웅 값은 여기서 다시 계산하지 않는다. */
     const comparedPower = (it: Item): "better" | "worse" | null => {
         const current = it.kind === "weapon" ? equippedWeapon(hero) : it.kind === "armor" ? equippedArmor(hero) : undefined;
@@ -472,7 +536,7 @@ export default function Desk({
                 }
                 break;
             case "potion":
-                out.push({ label: "마신다", on: go({ t: "quaff", letter: it.letter! }) });
+                out.push({ label: "마신다", on: () => quaffPotion(it.letter!) });
                 break;
             case "scroll":
                 // **배낭에서 읽어도 같은 길로 보낸다.** 강화 주문서는 고를 것을 한 번 더
@@ -550,6 +614,7 @@ export default function Desk({
             }
             setPackOpen((o) => !o);
         },
+        craftBlessing,
         openPicker(key) {
             const p = PICKERS[key];
             if (p) openPicker(p);

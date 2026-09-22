@@ -49,7 +49,6 @@ import {
 } from "./hero";
 import {
     ADVANCED_GUARD_BONUS,
-    ADVANCED_HEAL_MULT,
     ADVANCED_PRESERVE_CHANCE,
     ADVANCED_TRAP_EVADE,
     ADVANCE_LEVEL,
@@ -162,7 +161,8 @@ type Action =
     | { t: "descend" }
     | { t: "ascend" }
     | { t: "pickup" }
-    | { t: "quaff"; letter: string }
+    /** 축복의 기름은 대상 장비에 바른다. 다른 포션은 대상 없이 마신다. */
+    | { t: "quaff"; letter: string; target?: string }
     /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
     | { t: "read"; letter: string; target?: string }
     | { t: "eat"; letter: string }
@@ -187,7 +187,7 @@ type Action =
      */
     | { t: "pickSkill"; option: "str" | "def" | "luck" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
-    | { t: "classSkill" }
+    | { t: "classSkill"; ingredients?: [string, string] }
     | { t: "drop"; letter: string }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
@@ -949,10 +949,10 @@ function pickUp(state: GameState, hero: Hero): boolean {
     return true;
 }
 
-/** 연금술사의 회복 배율 — 전직(`ADVANCE_LEVEL`)하면 `origins.ADVANCED_HEAL_MULT` 로 깊어진다. */
+/** 연금술사의 회복 배율 — 전직과 무관하게 기본 특성으로만 남는다. */
 export function alchemistHealMult(hero: Hero): number {
     if (hero.origin !== "alchemist") return 1;
-    return hero.level >= ADVANCE_LEVEL ? ADVANCED_HEAL_MULT : 1.5;
+    return 1.5;
 }
 
 /** 연구자의 주문서 보존 확률 — 전직하면 `origins.ADVANCED_PRESERVE_CHANCE` 로 깊어진다. */
@@ -961,17 +961,54 @@ export function scholarPreserveChance(hero: Hero): number {
     return hero.level >= ADVANCE_LEVEL ? ADVANCED_PRESERVE_CHANCE : 0.25;
 }
 
-function quaff(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
+function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: string): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "potion") {
         say(state, "마실 수 있는 것이 아니다.");
         return false;
     }
+    if (it.type === "blessing") {
+        const gear = target ? packItem(hero, target) : undefined;
+        if (!gear || (gear.kind !== "weapon" && gear.kind !== "armor")) {
+            say(state, "축복을 입힐 무기나 갑옷을 골라야 한다.");
+            return false;
+        }
+        if (gear.blessed) {
+            say(state, "이미 축복받은 장비다.");
+            return false;
+        }
+        takeFromPack(hero, it);
+        gear.blessed = true;
+        say(state, `${describe(gear, state.known, state.appearance)}에 축복이 깃들었다.`);
+        return true;
+    }
+
     const key = `potion:${it.type}`;
     takeFromPack(hero, it);
     state.known[key] = true;
     state.itemCodex[key] = true;
     state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
+
+    // 연금술사는 독성 물약을 비약으로 바꾼다. 세 결과 모두 이미 쓰는 수치라 별도 상태나
+    // 예외 규칙을 외울 필요가 없다.
+    if (hero.origin === "alchemist" && (it.type === "poison" || it.type === "blindness" || it.type === "confusion")) {
+        switch (rng.rnd(3)) {
+            case 0:
+                hero.str = Math.min(31, hero.str + 1);
+                hero.maxStr = Math.max(hero.maxStr, hero.str);
+                say(state, "연금술의 통찰로 독성을 힘으로 바꾸었다!");
+                break;
+            case 1:
+                hero.food = Math.min(2000, Math.max(hero.food, 0) + 800);
+                say(state, "연금술의 통찰로 속이 든든해졌다!");
+                break;
+            default:
+                hero.detect += 200;
+                say(state, "연금술의 통찰로 괴물의 기척이 드러났다!");
+                break;
+        }
+        return true;
+    }
 
     switch (it.type) {
         case "healing": {
@@ -1253,6 +1290,11 @@ function enchant(state: GameState, hero: Hero, it: Item, rng: Rng, blessed: bool
             `   d100 ${roll}  vs  ${Math.round(odds * 100)}%  → ${ok ? "성공" : "실패"}`,
     );
     if (!ok) {
+        if (it.blessed) {
+            it.blessed = false;
+            say(state, `${describe(it, state.known, state.appearance)}의 축복이 깨짐을 막고 사라졌다!`);
+            return;
+        }
         // 쥐고/입고 있던 것이면 그 자리도 같이 빈다(`takeFromPack` 이 한다).
         takeFromPack(hero, it, it.count);
         say(state, `${describe(it, state.known, state.appearance)}이(가) 산산이 부서졌다!`);
@@ -1890,7 +1932,7 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
  * 전직 기술 — 새 자원이나 쿨다운 시계를 만들지 않고 **층마다 한 번**만 쓴다.
  * 실제로 효과가 생긴 뒤에만 사용한 층을 적고 턴을 쓴다.
  */
-function useClassSkill(state: GameState, hero: Hero): boolean {
+function useClassSkill(state: GameState, hero: Hero, ingredients?: [string, string]): boolean {
     if (hero.level < ADVANCE_LEVEL) {
         say(state, `레벨 ${ADVANCE_LEVEL}에 전직해야 쓸 수 있다.`);
         return false;
@@ -1923,17 +1965,31 @@ function useClassSkill(state: GameState, hero: Hero): boolean {
             break;
         }
         case "alchemist": {
-            const before = hero.hp;
-            hero.hp = Math.min(hero.maxHp, hero.hp + Math.max(1, Math.floor(hero.maxHp / 3)));
-            const cured = !!hero.burnTurns || hero.blind > 0 || hero.confused > 0;
-            hero.burnTurns = 0;
-            hero.blind = 0;
-            hero.confused = 0;
-            if (hero.hp === before && !cured) {
-                say(state, "회복하거나 씻어 낼 상처가 없다.");
+            if (!ingredients) {
+                say(state, "축복의 기름을 만들 포션 두 개를 골라야 한다.");
                 return false;
             }
-            say(state, `⚗️ 만능 비약 — 체력 ${hero.hp - before} 회복, 화상·실명·혼란을 씻었다.`);
+            const first = packItem(hero, ingredients[0]);
+            const second = packItem(hero, ingredients[1]);
+            if (!first || !second || first.kind !== "potion" || second.kind !== "potion" || first.type === "blessing" || second.type === "blessing" || (first === second && first.count < 2)) {
+                say(state, "일반 포션 두 개가 필요하다.");
+                return false;
+            }
+            if (hero.pack.length >= 26 && first.count === 1 && second.count === 1) {
+                say(state, "배낭이 꽉 찼다.");
+                return false;
+            }
+            takeFromPack(hero, first);
+            takeFromPack(hero, second);
+            const blessing = makeItem("potion", "blessing", state.nextItemId++, -1, -1);
+            if (!addToPack(hero, blessing)) {
+                // 위의 자리 검사 뒤에는 닿지 않는 방어막이다.
+                say(state, "배낭이 꽉 찼다.");
+                return false;
+            }
+            state.known["potion:blessing"] = true;
+            state.itemCodex["potion:blessing"] = true;
+            say(state, "⚗️ 포션 두 병에서 정수를 뽑아 축복의 기름을 만들었다.");
             break;
         }
         case "scholar":
@@ -2323,7 +2379,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         state.known[potKey] = true;
         state.itemCodex[potKey] = true;
         state.itemUsage[potKey] = (state.itemUsage[potKey] ?? 0) + 1;
-        say(state, `물약이 ${m.def.name}에게 깨졌다.${rest}`);
+                say(state, `포션이 ${m.def.name}에게 깨졌다.${rest}`);
         if (it.type === "confusion") {
             m.speed = -1;
             say(state, `${m.def.name}이(가) 비틀거린다.`);
@@ -2954,7 +3010,7 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = ascend(state, hero, rng);
                 break;
             case "quaff":
-                acted = quaff(state, hero, cmd.letter, rng);
+                acted = quaff(state, hero, cmd.letter, rng, cmd.target);
                 break;
             case "read":
                 acted = read(state, hero, cmd.letter, rng, cmd.target);
@@ -2990,7 +3046,7 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = pickSkill(state, hero, cmd.option);
                 break;
             case "classSkill":
-                acted = useClassSkill(state, hero);
+                acted = useClassSkill(state, hero, cmd.ingredients);
                 break;
             case "putOn":
                 acted = putOn(state, hero, cmd.letter);
