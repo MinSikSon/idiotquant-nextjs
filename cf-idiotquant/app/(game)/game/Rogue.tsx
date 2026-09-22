@@ -1987,7 +1987,7 @@ export default function Rogue() {
                             <span className="text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
                         )}
                         {hRings > 0 && <span className="text-[var(--rg-ring)]">Ring: {hRings}</span>}
-                        {h.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded</span>}
+                        {h.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}

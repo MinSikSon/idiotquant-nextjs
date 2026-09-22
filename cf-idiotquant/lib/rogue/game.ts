@@ -827,7 +827,7 @@ function blockedDiagonal(level: Level, from: Pos, to: Pos): boolean {
     return tileAt(level, from.x, from.y) === T.DOOR || tileAt(level, to.x, to.y) === T.DOOR;
 }
 
-function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng): boolean {
+function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng): { acted: boolean; fought: boolean } {
     const level = state.level;
 
     // 헷갈리는 동안에는 가려던 곳으로 못 간다.
@@ -839,7 +839,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
 
     const nx = hero.x + dx;
     const ny = hero.y + dy;
-    if (!inBounds(nx, ny)) return false;
+    if (!inBounds(nx, ny)) return { acted: false, fought: false };
 
     const target = monsterAt(level, nx, ny);
     if (target) {
@@ -847,11 +847,11 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         const r = heroAttack(state, hero, target, rng);
         say(state, ...r.messages);
         if (r.killed) killMonster(state, target, rng, hero);
-        return true;
+        return { acted: true, fought: true };
     }
 
-    if (!walkable(tileAt(level, nx, ny))) return false;
-    if (blockedDiagonal(level, hero, { x: nx, y: ny })) return false;
+    if (!walkable(tileAt(level, nx, ny))) return { acted: false, fought: false };
+    if (blockedDiagonal(level, hero, { x: nx, y: ny })) return { acted: false, fought: false };
 
     // **동료와는 자리를 바꾼다** — 막히게 두면 폭 한 칸 복도에서 둘이 영영 못 지나간다.
     const mate = state.heroes.find((h) => h !== hero && h.x === nx && h.y === ny);
@@ -911,7 +911,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
 
     const trap = level.traps.find((t) => t.x === nx && t.y === ny);
     if (trap) springTrap(state, hero, trap, rng);
-    return true;
+    return { acted: true, fought: false };
 }
 
 function pickUp(state: GameState, hero: Hero): boolean {
@@ -2680,6 +2680,36 @@ function monsterTurns(state: GameState, rng: Rng) {
     level.monsters = level.monsters.filter((m) => m.hp > 0);
 }
 
+/** 원작의 용 숨결 — 직선·대각선 여섯 칸, 벽에서는 한 번 꺾여 돌아온다. */
+function dragonFlameHits(level: Level, dragon: Monster, victim: Hero): { hit: boolean; bounced: boolean } {
+    let dx = Math.sign(victim.x - dragon.x);
+    let dy = Math.sign(victim.y - dragon.y);
+    const range = Math.max(Math.abs(victim.x - dragon.x), Math.abs(victim.y - dragon.y));
+    if ((dx !== 0 && dy !== 0 && Math.abs(victim.x - dragon.x) !== Math.abs(victim.y - dragon.y)) || range === 0 || range > 6) {
+        return { hit: false, bounced: false };
+    }
+    let x = dragon.x;
+    let y = dragon.y;
+    let steps = 0;
+    let bounced = false;
+    let turns = 0;
+    while (steps < 6 && turns++ < 12) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!inBounds(nx, ny) || !walkable(tileAt(level, nx, ny))) {
+            dx = -dx;
+            dy = -dy;
+            bounced = true;
+            continue;
+        }
+        x = nx;
+        y = ny;
+        steps++;
+        if (x === victim.x && y === victim.y) return { hit: true, bounced };
+    }
+    return { hit: false, bounced };
+}
+
 function monsterAct(state: GameState, m: Monster, rng: Rng) {
     const { level } = state;
     {
@@ -2699,20 +2729,38 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
             }
             return;
         }
-        if (Math.abs(m.x - victim.x) <= 1 && Math.abs(m.y - victim.y) <= 1) {
-            say(state, ...monsterAttack(state, m, victim, rng).messages);
-            return;
+
+        // 원작처럼 용은 직선·대각선 6칸 안의 목표에게 20% 확률로 6d6 불꽃을 쏜다.
+        // 벽에 꺾여 돌아오는 숨결도 그대로 두되, 무력화된 용은 이 수법을 잃는다.
+        const dragonInLine = m.def.ch === "D" && !m.cancelled
+            && (m.x === victim.x || m.y === victim.y || Math.abs(m.x - victim.x) === Math.abs(m.y - victim.y))
+            && Math.max(Math.abs(m.x - victim.x), Math.abs(m.y - victim.y)) <= 6;
+        if (dragonInLine && rng.chance(0.2)) {
+            const flame = dragonFlameHits(level, m, victim);
+            if (flame.hit) {
+                const dmg = rng.rollDice("6d6");
+                victim.hp -= dmg;
+                say(state, `🐉 ${monsterName(m)}이(가) 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
+                say(state, withDamage("화염에 휩싸였다!", dmg));
+                return;
+            }
         }
-        // 박쥐와 황조롱이는 제멋대로 난다 — 원작의 그 성가심이다.
+
+        // 적은 이번 행동에 **실제로** 내 칸에 들어갈 수 있을 때만 때린다. 대각선
+        // 모서리에 막혔거나 내가 이미 다음 칸으로 빠져 있으면, 공격 대신 추적만 한다.
         const erratic = (m.def.ch === "B" || m.def.ch === "K") && rng.chance(0.5);
         const next = erratic
             ? (() => {
                   const d = rng.pick(ALL_DIRS)!;
                   const nx = m.x + d.dx;
                   const ny = m.y + d.dy;
-                  return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) ? { x: nx, y: ny } : null;
+                  return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) && !blockedDiagonal(level, m, { x: nx, y: ny }) ? { x: nx, y: ny } : null;
               })()
             : stepToward(level, m, victim);
+        if (next?.x === victim.x && next?.y === victim.y) {
+            say(state, ...monsterAttack(state, m, victim, rng).messages);
+            return;
+        }
         if (next) {
             m.x = next.x;
             m.y = next.y;
@@ -2851,19 +2899,22 @@ function act(state: GameState, cmd: Command): GameState {
     }
 
     let acted = false;
+    let heldGuard = false;
     if (cmd.t === "rest") {
         if (hero.origin === "knight") {
             hero.guarded = true;
-            say(state, "🛡️ 철벽의 자세를 취했다 (다음 턴 Arm +2 / 받는 피해 2 경감).");
+            hero.guardTurns = 3;
+            say(state, "🛡️ 철벽의 자세를 취했다 (제자리 전투 3턴 Arm +2 / 받는 피해 2 경감).");
         }
         acted = true;
     } else {
-        if (hero.guarded && hero.origin === "knight") say(state, "🛡️ 철벽의 자세가 풀렸다.");
-        hero.guarded = false;
         switch (cmd.t) {
-            case "move":
-                acted = heroMove(state, hero, cmd.dx, cmd.dy, rng);
+            case "move": {
+                const moved = heroMove(state, hero, cmd.dx, cmd.dy, rng);
+                acted = moved.acted;
+                heldGuard = hero.guarded === true && hero.origin === "knight" && moved.fought && (hero.guardTurns ?? 0) > 0;
                 break;
+            }
             case "pickup":
                 acted = pickUp(state, hero);
                 break;
@@ -2937,12 +2988,17 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = socketGemCommand(state, hero, cmd.gearLetter, cmd.gemLetter);
                 break;
         }
+        if (hero.guarded && hero.origin === "knight" && !heldGuard) {
+            hero.guarded = false;
+            hero.guardTurns = 0;
+            say(state, "🛡️ 철벽의 자세가 풀렸다.");
+        }
     }
 
-    return finishTurn(state, hero, rng, acted);
+    return finishTurn(state, hero, rng, acted, heldGuard);
 }
 
-function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): GameState {
+function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, heldGuard = false): GameState {
     sayTag = "";
     if (!acted) {
         // 아무 일도 안 일어났으면 턴을 안 쓴다. 난수 상태만 저장한다.
@@ -3015,6 +3071,16 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean): Gam
             state.pendingSteps = 0;
             state.monsterRound = (state.monsterRound ?? 0) + 1;
             monsterTurns(state, rng);
+        }
+    }
+
+    // 철벽 자세는 이동하지 않고 맞붙어 싸운 뒤의 적 턴까지 지킨다. 세 번째 전투가
+    // 끝나면 바로 풀어 다음 행동에는 보너스가 남지 않는다.
+    if (heldGuard && hero.guarded && hero.origin === "knight") {
+        hero.guardTurns = Math.max(0, (hero.guardTurns ?? 0) - 1);
+        if (hero.guardTurns === 0) {
+            hero.guarded = false;
+            say(state, "🛡️ 철벽의 자세가 풀렸다.");
         }
     }
 

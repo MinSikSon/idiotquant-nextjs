@@ -290,9 +290,11 @@ export interface Hero {
      * 묻지 않아도 됐는데(자리도 하나, 보낸 동료도 하나), 이제는 **누가 돌아왔는지**를
      * 가려야 한다 — 안 그러면 A 가 나간 자리에 B 가 들어오면서 A 의 캐릭터를 가로챈다.
      * `joinGame` 이 이 값으로 `benched` 를 뒤진다.
-     */
+    */
     guestKey?: string;
     guarded?: boolean;
+    /** 철벽 자세로 제자리 전투를 더 버틸 수 있는 횟수. */
+    guardTurns?: number;
     x: number;
     y: number;
     hp: number;

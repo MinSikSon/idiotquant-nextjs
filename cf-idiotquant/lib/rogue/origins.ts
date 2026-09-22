@@ -92,7 +92,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         iconInk: "var(--rg-armor)",
         description: "높은 체력과 단단한 방어구를 갖춘 굳건한 전사.",
         traitName: "철벽의 자세",
-        traitDescription: "제자리 대기(.) 시 다음 턴 방어력 +2 (받는 피해 2 추가 경감)",
+        traitDescription: "제자리 대기(.) 후 전투 3턴 방어력 +2 (받는 피해 2 추가 경감)",
         weaponAffinity: { name: "근위 무기", types: ["mace", "long sword", "two-handed sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword"], description: "명중 +1 · 피해 +1" },
         advancedSkillName: "불굴의 방벽",
         advancedSkillDescription: "체력이 절반 이하일 때 방어력 +2 (철벽의 자세와 중첩)",

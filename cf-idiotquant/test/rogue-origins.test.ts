@@ -3,8 +3,11 @@ import { test } from "node:test";
 import { newGame, perform } from "@/lib/rogue/game";
 import { canOffHand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
+import { spawnMonster } from "@/lib/rogue/monsters";
 import { ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
+import { Rng } from "@/lib/rogue/rng";
 import { bury, graves } from "@/lib/rogue/storage";
+import { idx, T } from "@/lib/rogue/types";
 
 test("4대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
     assert.equal(ORIGIN_LIST.length, 4);
@@ -97,14 +100,36 @@ test("왕실 근위대(Knight) 시작 장비 및 철벽의 자세 패시브 동�
     // 제자리 대기(rest) 시 guarded 상태 활성화 및 방어력 +2
     const s1 = perform(s, { t: "rest" });
     assert.equal(s1.heroes[0].guarded, true);
+    assert.equal(s1.heroes[0].guardTurns, 3);
     assert.equal(heroDefense(s1.heroes[0]), baseDef + 2);
     assert.equal(heroArmorClass(s1.heroes[0]), 10 - (baseDef + 2), "철벽 자세가 방어 등급에도 안 반영된다");
     assert.equal(heroArmorClassTerms(s1.heroes[0]).reduce((sum, term) => sum + term.n, 0), heroArmorClass(s1.heroes[0]), "상태 상세의 방어 등급 식이 실제 값과 다르다");
 
-    // 다른 행동을 하면 자세가 풀리고, 전투 로그에도 이유가 남는다.
-    const s2 = perform(s1, { t: "search" });
+    // 곁의 적을 제자리에서 치면 적의 반격까지 포함해 세 번 버틴다.
+    const hero = s1.heroes[0];
+    const mx = hero.x + 1;
+    const my = hero.y;
+    s1.level.tiles[idx(mx, my)] = T.FLOOR;
+    const target = spawnMonster("Z", mx, my, new Rng(91));
+    target.hp = 999;
+    target.maxHp = 999;
+    target.awake = true;
+    s1.level.monsters = [target];
+    for (const remaining of [2, 1]) {
+        hero.hp = hero.maxHp;
+        perform(s1, { t: "move", dx: 1, dy: 0 });
+        assert.equal(hero.guarded, true);
+        assert.equal(hero.guardTurns, remaining);
+    }
+    hero.hp = hero.maxHp;
+    const s2 = perform(s1, { t: "move", dx: 1, dy: 0 });
     assert.equal(s2.heroes[0].guarded, false);
     assert.ok(s2.messages.some((m) => m.includes("철벽의 자세가 풀렸다")), "자세 해제 안내가 로그에 없다");
+
+    // 다른 행동을 하면 남은 횟수와 관계없이 바로 풀린다.
+    const s3 = perform(s2, { t: "rest" });
+    const s4 = perform(s3, { t: "search" });
+    assert.equal(s4.heroes[0].guarded, false);
 });
 
 test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 자세와 중첩된다", () => {
@@ -116,6 +141,75 @@ test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 �
     assert.equal(heroDefense(hero), healthy + 2);
     hero.guarded = true;
     assert.equal(heroDefense(hero), healthy + 2 + 4);
+});
+
+test("인접한 적에게서도 일반 이동으로 도망칠 수 있고, 공격은 제자리에서 한다", () => {
+    const s = newGame(7, {}, {}, {}, {}, "knight");
+    const hero = s.heroes[0];
+    hero.x = 10;
+    hero.y = 10;
+    s.level.tiles[idx(9, 10)] = T.FLOOR;
+    s.level.tiles[idx(11, 10)] = T.FLOOR;
+    const target = spawnMonster("Z", 11, 10, new Rng(92));
+    target.hp = 999;
+    target.maxHp = 999;
+    s.level.monsters = [target];
+
+    const fled = perform(s, { t: "move", dx: -1, dy: 0 });
+    assert.equal(fled.heroes[0].x, 9);
+    assert.equal(fled.heroes[0].y, 10);
+
+    const s2 = newGame(8, {}, {}, {}, {}, "knight");
+    const fighter = s2.heroes[0];
+    fighter.x = 10;
+    fighter.y = 10;
+    s2.level.tiles[idx(11, 10)] = T.FLOOR;
+    const opponent = spawnMonster("Z", 11, 10, new Rng(93));
+    opponent.hp = 999;
+    opponent.maxHp = 999;
+    s2.level.monsters = [opponent];
+    const fought = perform(s2, { t: "move", dx: 1, dy: 0 });
+    assert.equal(fought.heroes[0].x, 10, "공격은 제자리에서 해야 한다");
+});
+
+test("적은 이번 행동에 합법적으로 영웅 칸에 닿을 때만 공격한다", () => {
+    const s = newGame(9, {}, {}, {}, {}, "knight");
+    const hero = s.heroes[0];
+    hero.x = 10;
+    hero.y = 10;
+    s.level.tiles[idx(10, 10)] = T.FLOOR;
+    s.level.tiles[idx(9, 9)] = T.FLOOR;
+    s.level.tiles[idx(9, 10)] = T.ROCK;
+    s.level.tiles[idx(10, 9)] = T.ROCK;
+    const monster = spawnMonster("Z", 9, 9, new Rng(94));
+    monster.awake = true;
+    s.level.monsters = [monster];
+    const hp = hero.hp;
+
+    perform(s, { t: "rest" });
+    assert.equal(hero.hp, hp, "대각선 모서리에 막힌 적이 벽 너머로 때렸다");
+    assert.equal(monster.x, 9);
+    assert.equal(monster.y, 9);
+});
+
+test("용은 원작처럼 직선·대각선 여섯 칸에서 불꽃을 뿜는다", () => {
+    let breathed = false;
+    for (let seed = 900; seed < 930; seed++) {
+        const s = newGame(seed, {}, {}, {}, {}, "knight");
+        const hero = s.heroes[0];
+        hero.x = 10;
+        hero.y = 10;
+        hero.hp = 1000;
+        hero.maxHp = 1000;
+        for (let y = 4; y <= 10; y++) s.level.tiles[idx(10, y)] = T.FLOOR;
+        const dragon = spawnMonster("D", 10, 4, new Rng(seed));
+        dragon.awake = true;
+        s.level.monsters = [dragon];
+
+        perform(s, { t: "rest" });
+        if (s.messages.some((m) => m.includes("불꽃을 뿜었다"))) breathed = true;
+    }
+    assert.equal(breathed, true, "용이 원거리 불꽃 공격을 한 번도 쓰지 않았다");
 });
 
 test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {

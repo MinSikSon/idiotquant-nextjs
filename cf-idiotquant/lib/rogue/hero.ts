@@ -69,6 +69,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
     const hero: Hero = {
         origin,
         guarded: false,
+        guardTurns: 0,
         x: 0,
         y: 0,
         hp: originDef.baseHp,

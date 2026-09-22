@@ -281,6 +281,8 @@ function normalize(s: Saved): GameState | null {
         offWeaponId: h.offWeaponId ?? null,
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
+        // 예전 저장의 철벽 자세는 다음 제자리 전투 세 번까지로 잇는다.
+        guardTurns: Math.min(3, Math.max(0, num(h.guardTurns, h.guarded ? 3 : 0))),
         blind: num(h.blind, 0),
         confused: num(h.confused, 0),
         asleep: num(h.asleep, 0),
