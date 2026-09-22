@@ -9,9 +9,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { glyphAt, newGame, perform } from "@/lib/rogue/game";
-import { goldGain, heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
+import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
+import { goldGain, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
+import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
 import { T, idx, walkable, type GameState, type Item, type Tile } from "@/lib/rogue/types";
 
@@ -180,16 +181,60 @@ test("반지는 배를 더 고프게 하고, 저주받은 것은 못 뺀다", ()
     }
 });
 
-test("금화 반지는 금화를 절반 더 주고, 반지 효과는 감정 뒤에 바로 읽힌다", () => {
+test("장식 반지는 10 gold 점수 가치만 가지며, 반지 효과는 감정 뒤에 바로 읽힌다", () => {
     const s = newGame(105);
+    const before = score(s);
     const luck = makeItem("ring", "adornment", 931, -1, -1);
     give(s, luck, "y");
     const worn = perform(s, { t: "putOn", letter: "y" });
 
-    assert.equal(goldGain(worn.heroes[0], 11), 17, "금화 반지가 금화를 늘리지 않는다");
-    assert.equal(itemPower(luck, worn.known), "금화 획득 +50%", "금화 반지의 효과가 배낭에 안 보인다");
+    assert.equal(goldGain(worn.heroes[0], 11), 11, "장식 반지가 주운 금화를 늘렸다");
+    assert.equal(score(worn) - before, 10, "장식 반지의 10 gold 가치가 점수에 안 더해진다");
+    assert.equal(itemPower(luck, worn.known), "점수 가치 10 gold", "장식 반지의 효과가 배낭에 안 보인다");
     const escape = makeItem("ring", "teleportation", 932, -1, -1);
     assert.equal(itemPower(escape, { "ring:teleportation": true }), "두 몬스터에게 포위되면 탈출");
+});
+
+test("민첩·피해·재생 반지는 각각 명중, 피해, 회복에만 보탠다", () => {
+    const s = newGame(106);
+    const dexterity = makeItem("ring", "dexterity", 933, -1, -1);
+    dexterity.plusRing = 2;
+    const damage = makeItem("ring", "increase damage", 934, -1, -1);
+    damage.plusRing = 3;
+    give(s, dexterity, "y");
+    give(s, damage, "z");
+    const worn = perform(perform(s, { t: "putOn", letter: "y" }), { t: "putOn", letter: "z" });
+    assert.ok(heroHitTerms(worn.heroes[0]).some((term) => term.why === "민첩" && term.n === 2));
+    assert.ok(heroDamTerms(worn.heroes[0]).some((term) => term.why === "피해 반지" && term.n === 3));
+
+    const regeneration = makeItem("ring", "regeneration", 935, -1, -1);
+    const fresh = newGame(107);
+    give(fresh, regeneration, "y");
+    const regenWorn = perform(fresh, { t: "putOn", letter: "y" });
+    assert.equal(regenEvery(regenWorn.heroes[0]), 1, "재생 반지가 매 턴 회복하지 않는다");
+});
+
+test("투명 보기와 몬스터 도발 반지는 팬텀 시야와 적의 목표를 바꾼다", () => {
+    const sight = newGame(108);
+    const [dx, dy] = openWay(sight);
+    const x = sight.heroes[0].x + dx;
+    const y = sight.heroes[0].y + dy;
+    sight.level.monsters = [spawnMonster("P", x, y, new Rng(108))];
+    sight.level.flags[idx(x, y)] = 3;
+    assert.notEqual(glyphAt(sight, x, y)?.kind, "monster", "반지 없이 팬텀이 보인다");
+    give(sight, makeItem("ring", "see invisible", 936, -1, -1), "y");
+    const seen = perform(sight, { t: "putOn", letter: "y" });
+    assert.deepEqual(glyphAt(seen, x, y), { ch: "P", kind: "monster" }, "투명 보기 반지가 팬텀을 못 본다");
+
+    const provoke = newGame(109);
+    const monster = provoke.level.monsters[0];
+    monster.awake = false;
+    monster.target = undefined;
+    give(provoke, makeItem("ring", "aggravate monsters", 937, -1, -1), "y");
+    const angered = perform(provoke, { t: "putOn", letter: "y" });
+    assert.ok(monster.awake, "도발 반지가 몬스터를 깨우지 않는다");
+    assert.equal(monster.target, 0, "도발 반지가 착용자를 목표로 고정하지 않는다");
+    void angered;
 });
 
 test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {

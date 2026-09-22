@@ -37,11 +37,15 @@ import {
     goldGain,
     hasRing,
     heroArmor,
+    heroArmorClass,
+    heroArmorClassTerms,
+    heroStr,
     hungerOf,
     hungerRate,
     isWorn,
     makeHero,
     packItem,
+    SKILL_PICK_INTERVAL,
     regenEvery,
     searchChance,
     takeFromPack,
@@ -186,7 +190,9 @@ type Action =
      * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
      */
     | { t: "pickSkill"; option: "str" | "def" | "luck" }
+    | { t: "inspectStatus"; kind: "origin" | "str" | "defense" | "wisdom" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
+
     | { t: "classSkill"; ingredients?: [string, string] }
     | { t: "drop"; letter: string }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
@@ -229,7 +235,16 @@ function withPower(it: Item, state: GameState): string {
 let sayTag = "";
 
 function say(state: GameState, ...lines: string[]) {
-    for (const l of lines) if (l) state.messages.push(sayTag && !l.startsWith(DETAIL) ? sayTag + l : l);
+    for (const l of lines) {
+        if (!l) continue;
+        // 전투 계산 줄은 `DETAIL` 표지로 화면이 따로 접어 그린다. 그 줄을 제외한 모든
+        // 기록에는 그 순간의 턴을 앞에 남겨, 사건의 순서를 지난 판에서도 알 수 있게 한다.
+        if (l.startsWith(DETAIL)) state.messages.push(l);
+        else {
+            const player = sayTag && !/^\d+P▸ /.test(l) ? sayTag : "";
+            state.messages.push(`T:${state.turn} ${player}${l}`);
+        }
+    }
     // 오래된 것은 버린다. 화면은 마지막 몇 줄만 보여 준다.
     if (state.messages.length > 200) state.messages.splice(0, state.messages.length - 200);
 }
@@ -1269,13 +1284,13 @@ function enchant(state: GameState, hero: Hero, it: Item, rng: Rng, blessed: bool
         say(
             state,
             `${DETAIL}축복 강화 ${describe(it, state.known, state.appearance)} → +${next}` +
-                `   d3 ${step}${plus + step > safeMax ? `  → 천장 +${safeMax} 에서 잘림` : ""}`,
+            `   d3 ${step}${plus + step > safeMax ? `  → 천장 +${safeMax} 에서 잘림` : ""}`,
         );
         setEnchant(it, next);
         say(
             state,
             `${describe(it, state.known, state.appearance)}이(가) 축복의 빛을 머금고 단숨에 벼려졌다.` +
-                `${withPower(it, state)}`,
+            `${withPower(it, state)}`,
         );
         return;
     }
@@ -1287,7 +1302,7 @@ function enchant(state: GameState, hero: Hero, it: Item, rng: Rng, blessed: bool
     say(
         state,
         `${DETAIL}강화 ${describe(it, state.known, state.appearance)} → +${plus + 1}` +
-            `   d100 ${roll}  vs  ${Math.round(odds * 100)}%  → ${ok ? "성공" : "실패"}`,
+        `   d100 ${roll}  vs  ${Math.round(odds * 100)}%  → ${ok ? "성공" : "실패"}`,
     );
     if (!ok) {
         if (it.blessed) {
@@ -1304,7 +1319,7 @@ function enchant(state: GameState, hero: Hero, it: Item, rng: Rng, blessed: bool
     say(
         state,
         `${describe(it, state.known, state.appearance)}이(가) ` +
-            `${it.kind === "armor" ? "단단해졌다" : "파랗게 빛난다"}.${withPower(it, state)}`,
+        `${it.kind === "armor" ? "단단해졌다" : "파랗게 빛난다"}.${withPower(it, state)}`,
     );
 }
 
@@ -1895,7 +1910,7 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
 }
 
 /**
- * 3레벨마다 쌓이는 성장 하나를 고른다 — 힘 · 방어력 · 아이템운 중 하나.
+ * 3레벨마다 쌓이는 성장 하나를 고른다 — 힘 · 방어력 · 지혜 중 하나.
  *
  * **턴을 안 쓴다**(`acted=false` 로 돌아간다) — 레벨업 자체가 이미 턴을 안 쓰는
  * 자리다(경험치는 몬스터를 잡을 때 는다, 판을 걷는 것과는 다른 시계). 캠프도 필요
@@ -1921,8 +1936,8 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
             say(state, "🛡️ 성장 — 몸놀림이 단단해졌다.");
             break;
         case "luck":
-            hero.itemLuck = Math.min(1, hero.itemLuck + 0.05);
-            say(state, "🍀 성장 — 좋은 물건을 알아보는 눈이 트였다.");
+            hero.itemLuck = Math.min(1, hero.itemLuck + 0.01);
+            say(state, "🔺 성장 — 지혜가 늘었다.");
             break;
     }
     return false;
@@ -2379,7 +2394,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         state.known[potKey] = true;
         state.itemCodex[potKey] = true;
         state.itemUsage[potKey] = (state.itemUsage[potKey] ?? 0) + 1;
-                say(state, `포션이 ${m.def.name}에게 깨졌다.${rest}`);
+        say(state, `포션이 ${m.def.name}에게 깨졌다.${rest}`);
         if (it.type === "confusion") {
             m.speed = -1;
             say(state, `${m.def.name}이(가) 비틀거린다.`);
@@ -2598,8 +2613,8 @@ function tickHunger(state: GameState, hero: Hero, rng: Rng) {
             after === "Hungry"
                 ? "시장해지기 시작했다 (Hungry)."
                 : after === "Weak"
-                  ? "허기져서 힘이 빠진다 (Weak)."
-                  : "배가 너무 고파 쓰러질 것 같다 (Faint).";
+                    ? "허기져서 힘이 빠진다 (Weak)."
+                    : "배가 너무 고파 쓰러질 것 같다 (Faint).";
         say(state, msg);
     }
     if (hero.food <= 0 && rng.chance(0.2)) {
@@ -2723,6 +2738,16 @@ function monsterTarget(state: GameState, m: Monster): Hero {
 
 function monsterTurns(state: GameState, rng: Rng, fled?: { hero: Hero; x: number; y: number }) {
     const { level } = state;
+    // 저주받은 도발 반지는 원작처럼 모든 적을 깨운다. 가까운 적만 건드리는 대신,
+    // 반지 주인을 목표로 고정해 "더 공격적"이라는 값이 분명하게 남는다.
+    const provocateur = state.heroes.find((h) => h.hp > 0 && hasRing(h, "aggravate monsters"));
+    if (provocateur) {
+        const target = state.heroes.indexOf(provocateur);
+        for (const m of level.monsters) {
+            m.awake = true;
+            m.target = target;
+        }
+    }
     // **누구 하나라도 시간을 세웠으면 세상이 선다.** 파티의 것이지 한 사람의 것이 아니다.
     const stopper = state.heroes.find((h) => (h.timeStop ?? 0) > 0);
     if (stopper) {
@@ -2814,9 +2839,13 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             && (m.x === victim.x || m.y === victim.y || Math.abs(m.x - victim.x) === Math.abs(m.y - victim.y))
             && Math.max(Math.abs(m.x - victim.x), Math.abs(m.y - victim.y)) <= 6;
         if (dragonInLine && rng.chance(0.2)) {
+            const victimIndex = state.heroes.indexOf(victim);
+            const target = state.heroes.length > 1
+                ? `${victimIndex + 1}P${victim.nick ? `(${victim.nick})` : ""}`
+                : "나";
             const flame = dragonFlamePath(level, m, victim);
             state.projectile = { id: `${state.turn}:${m.id}:${state.messages.length}`, cells: flame.cells };
-            say(state, `🐉 ${monsterName(m)}이(가) 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
+            say(state, `🐉 ${monsterName(m)} → ${target}: 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
             if (flame.hit) {
                 const dmg = rng.rollDice("6d6");
                 victim.hp -= dmg;
@@ -2830,11 +2859,11 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
         const erratic = (m.def.ch === "B" || m.def.ch === "K") && rng.chance(0.5);
         const next = erratic
             ? (() => {
-                  const d = rng.pick(ALL_DIRS)!;
-                  const nx = m.x + d.dx;
-                  const ny = m.y + d.dy;
-                  return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) && !blockedDiagonal(level, m, { x: nx, y: ny }) ? { x: nx, y: ny } : null;
-              })()
+                const d = rng.pick(ALL_DIRS)!;
+                const nx = m.x + d.dx;
+                const ny = m.y + d.dy;
+                return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) && !blockedDiagonal(level, m, { x: nx, y: ny }) ? { x: nx, y: ny } : null;
+            })()
             : stepToward(level, m, victim);
         if (
             next &&
@@ -2952,6 +2981,27 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
     return true;
 }
 
+function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin" | "str" | "defense" | "wisdom") {
+    const tag = `${who + 1}P▸ `;
+    if (kind === "origin") {
+        const origin = ORIGINS[hero.origin ?? "knight"];
+        const nextGrowth = hero.pendingSkillPicks > 0
+            ? `지금 성장 ${hero.pendingSkillPicks}개 선택 가능`
+            : `다음 성장 Lv ${Math.floor(hero.level / SKILL_PICK_INTERVAL + 1) * SKILL_PICK_INTERVAL}`;
+        const advancement = hero.level < ADVANCE_LEVEL
+            ? `전직: Lv ${ADVANCE_LEVEL} ${origin.advancedSkillName} 해금까지 ${ADVANCE_LEVEL - hero.level}레벨`
+            : `전직: ${origin.advancedName} · ${origin.advancedSkillName}`;
+        say(state, `${tag}직업 · ${origin.advancedName} | 성장: Lv ${SKILL_PICK_INTERVAL}마다 힘·방어·지혜 선택 | ${nextGrowth} | ${advancement}`);
+    } else if (kind === "str") {
+        say(state, `${tag}St:${heroStr(hero)} · 기본 ${hero.str} · 최대 ${hero.maxStr}`);
+    } else if (kind === "defense") {
+        say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
+    } else {
+        const wisdom = Math.round(hero.itemLuck * 100);
+        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}%`);
+    }
+}
+
 function act(state: GameState, cmd: Command): GameState {
     if (state.phase !== "playing") return state;
     const rng = rngOf(state);
@@ -2961,6 +3011,10 @@ function act(state: GameState, cmd: Command): GameState {
     // 「누구 차례인가」를 다시 판단하지 않는다 — 그러면 규칙이 두 벌이 된다.
     const hero = state.heroes[cmd.who ?? 0];
     if (!hero) return state;
+    if (cmd.t === "inspectStatus") {
+        inspectStatus(state, hero, cmd.who ?? 0, cmd.kind);
+        return { ...state };
+    }
     const turnStart = { x: hero.x, y: hero.y };
     // **쓰러진 사람은 못 움직인다.** 화면이 조종을 안 넘기지만 엔진도 한 번 더 본다.
     if (hero.hp <= 0) return state;
@@ -3397,7 +3451,7 @@ function scoreOf(gold: number, deepest: number, amulet: boolean): number {
  * 안 세면, 협동에서는 누가 줍느냐에 따라 점수가 갈린다. 증표는 **누가 들었든** 판의 것이다.
  */
 export function score(state: GameState): number {
-    return scoreOf(partyGold(state), state.deepest, partyAmulet(state));
+    return scoreOf(partyGold(state) + partyAdornmentValue(state), state.deepest, partyAmulet(state));
 }
 
 /** 파티가 가진 금화 — 보낸 동료들(`benched`)이 들고 간 몫도 이 판에서 번 것이다. */
@@ -3406,6 +3460,13 @@ export function partyGold(state: GameState): number {
         state.heroes.reduce((n, h) => n + h.gold, 0) +
         (state.benched?.reduce((n, h) => n + h.gold, 0) ?? 0)
     );
+}
+
+/** 장식 반지는 팔 수 없으므로, 원작의 10 gold 가치를 최종 점수에 바로 더한다. */
+function partyAdornmentValue(state: GameState): number {
+    return [...state.heroes, ...(state.benched ?? [])]
+        .flatMap((hero) => hero.pack)
+        .filter((it) => it.kind === "ring" && it.type === "adornment").length * 10;
 }
 
 /** 증표를 **누군가** 들었는가. */
@@ -3495,7 +3556,9 @@ export function glyphAt(
     // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0) {
         const m = monsterAt(level, x, y);
-        if (m) return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
+        if (m && (!m.def.invisible || hasRing(hero, "see invisible") || hero.detect > 0)) {
+            return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
+        }
     }
     const it = itemAt(level, x, y);
     if (it && (visible || seen)) return { ch: itemChar(it.kind), kind: `item-${it.kind}` };

@@ -117,10 +117,11 @@ test("전직 기술과 사망 회고가 화면에서 사라지지 않는다", ()
     const s = read("app/(game)/game/Rogue.tsx");
     assert.match(s, /advancedSkillKind === "active"[\s\S]*?run\(\{ t: "classSkill" \}\)/, "액티브 전직 기술 단추가 없다");
     assert.match(s, /★ 전직 완료/, "전직 완료 배너가 없다");
-    assert.match(s, /Lv \{ADVANCE_LEVEL\} 전직[\s\S]*?\{ADVANCE_LEVEL - h\.level\}레벨/, "전직 진행도가 없다");
+    assert.match(read("lib/rogue/game.ts"), /ADVANCE_LEVEL - hero\.level/, "전직 진행도가 기록에 없다");
     assert.match(s, /orig\.advancedSkillName/, "직업 선택 카드에 전직 기술 미리보기가 없다");
-    assert.match(s, /성장 \{h\.pendingSkillPicks\}개 선택 가능/, "고를 수 있는 성장을 상태 줄에서 알리지 않는다");
-    assert.match(s, /다음 성장 Lv \{Math\.floor\(h\.level \/ SKILL_PICK_INTERVAL \+ 1\) \* SKILL_PICK_INTERVAL\}/, "다음 성장 레벨을 알리지 않는다");
+    const game = read("lib/rogue/game.ts");
+    assert.match(game, /hero\.pendingSkillPicks/, "고를 수 있는 성장을 직업 기록에 알리지 않는다");
+    assert.match(game, /Math\.floor\(hero\.level \/ SKILL_PICK_INTERVAL \+ 1\)/, "다음 성장 레벨을 직업 기록에 알리지 않는다");
     assert.match(s, /state\.phase === "dead"[\s\S]*?마지막 순간/, "사망 화면에 마지막 순간 회고가 없다");
     assert.match(s, /state\.messages\.filter\(\(m\) => !isDetail\(m\)\)\.slice\(-5\)/, "사망 직전 기록 다섯 줄을 안 보여 준다");
     assert.match(s, /미식별 물건/, "죽을 때 남긴 미식별 물건을 안 센다");
@@ -146,21 +147,23 @@ test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", (
     const rogue = read("app/(game)/game/Rogue.tsx");
     const pad = read(TOUCHPAD);
     const desk = read("app/(game)/game/components/Desk.tsx");
-    assert.match(rogue, /⚠ HP 낮음[\s\S]*?⚠ 배고픔[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
+    assert.match(rogue, /⚠ HP 낮음[\s\S]*?(Hungry|Weak|Faint|든든함)[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
     assert.match(rogue, /latest = visibleMessages[\s\S]*?important = [\s\S]*?recent = important/, "중요 메시지를 유지하지 않는다");
     assert.match(pad, /hot\?: boolean[\s\S]*?a\.hot && !a\.off/, "지금 가능한 행동을 강조하지 않는다");
     assert.match(desk, /const comparedPower[\s\S]*?"better"[\s\S]*?"worse"/, "새 장비의 좋고 나쁨을 가르지 않는다");
     assert.doesNotMatch(desk, /현재 .*→/, "배낭에 장비 비교 문구가 과하게 남아 있다");
 });
 
-test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 펼친다", () => {
+test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에 남긴다", () => {
     const rogue = read("app/(game)/game/Rogue.tsx");
-    assert.match(rogue, /const \[statOpen, setStatOpen\]/, "상태 상세를 열 수 없다");
-    assert.match(rogue, /AC \{heroArmorClass\(h\)\}/, "최종 방어 등급이 상태 줄에 없다");
-    assert.match(rogue, /heroArmorClassTerms\(h\)\.map/, "방어 등급의 실제 계산식을 펼치지 않는다");
-    assert.match(rogue, /반지 = \{heroStr\(h\)\}/, "힘의 실제 계산식을 펼치지 않는다");
-    assert.match(rogue, /\{level\.depth\}층/, "현재 층이 Level로 표시된다");
-    assert.match(rogue, /const statChip = "rounded/, "핵심 스탯이 읽기 쉬운 칩으로 묶이지 않는다");
+    const game = read("lib/rogue/game.ts");
+    assert.match(rogue, /t: "inspectStatus"[\s\S]*?setSheet\("log"\)/, "상태 설명을 기록으로 열지 않는다");
+    assert.match(game, /\$\{who \+ 1\}P▸/, "상태 기록에 플레이어 표식이 없다");
+    assert.match(rogue, /AC:\{heroArmorClass\(h\)\}/, "최종 방어 등급이 상태 줄에 없다");
+    assert.match(game, /heroArmorClassTerms\(hero\)\.map/, "방어 등급의 실제 계산식을 기록하지 않는다");
+    assert.match(game, /St:\$\{heroStr\(hero\)\}/, "힘의 실제 계산식을 기록하지 않는다");
+    assert.match(rogue, /Dlvl:\{level\.depth\}/, "현재 층이 Dlvl로 표시된다");
+    assert.match(rogue, /const statChip = /, "핵심 스탯 표기가 없다");
     assert.doesNotMatch(rogue, /현재 체력 \/ 최대 체력/, "HP에 같은 뜻의 상세 설명이 중복된다");
     assert.doesNotMatch(rogue, /성장: 힘/, "중복 성장 요약이 남아 있다");
 });

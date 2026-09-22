@@ -41,7 +41,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     M: { ch: "M", name: "메두사", exp: 200, level: 8, armor: 2, hp: 36, damage: ["3d4", "3d4", "2d5"], mean: true },
     N: { ch: "N", name: "님프", exp: 37, level: 3, armor: 9, hp: 14, damage: ["0d0"], mean: false, special: "물건을 채고 달아난다" },
     O: { ch: "O", name: "오크", exp: 5, level: 1, armor: 6, hp: 4, damage: ["1d8"], mean: false },
-    P: { ch: "P", name: "팬텀", exp: 120, level: 8, armor: 3, hp: 36, damage: ["4d4"], mean: false },
+    P: { ch: "P", name: "팬텀", exp: 120, level: 8, armor: 3, hp: 36, damage: ["4d4"], mean: false, invisible: true },
     Q: { ch: "Q", name: "콰가", exp: 15, level: 3, armor: 3, hp: 14, damage: ["1d5", "1d5"], mean: true },
     R: { ch: "R", name: "방울뱀", exp: 9, level: 2, armor: 3, hp: 9, damage: ["1d6"], mean: true },
     S: { ch: "S", name: "뱀", exp: 2, level: 1, armor: 5, hp: 4, damage: ["1d3"], mean: true },

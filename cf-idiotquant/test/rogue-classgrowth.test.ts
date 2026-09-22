@@ -79,6 +79,7 @@ test("전직 기술 — 근위대는 패시브, 나머지는 층마다 한 번 �
     const knightTurn = knight.turn;
     run(knight, { t: "classSkill" });
     assert.equal(knight.turn, knightTurn, "패시브 기술이 턴을 썼다");
+    assert.equal(knight.heroes[0].classSkillDepth, 0, "패시브 기술이 층별 사용 기회를 기록했다");
 
     const rogue = ready("rogue", 732);
     const watcher = visibleMonster(rogue);
@@ -194,13 +195,13 @@ test("성장 고르기 — 힘·방어·아이템운, 캠프도 턴도 필요 �
         assert.equal(heroDefense(s1.heroes[0]), before + 1);
     }
 
-    // ── 아이템운 — 5%씩 쌓이고 100%(1)를 넘지 않는다
+    // ── 지혜 — 1씩 쌓이며 아이템 등급 판정 100%(1)를 넘지 않는다
     {
         const s0 = newGame(714);
         s0.heroes[0].pendingSkillPicks = 100;
         let s = s0;
-        for (let i = 0; i < 30; i++) s = run(s, { t: "pickSkill", option: "luck" });
-        assert.equal(s.heroes[0].itemLuck, 1, "아이템운이 100%에서 안 멈췄다");
+        for (let i = 0; i < 100; i++) s = run(s, { t: "pickSkill", option: "luck" });
+        assert.equal(s.heroes[0].itemLuck, 1, "지혜가 100에서 안 멈췄다");
     }
 
     // ── 캠프 밖에서도, 아무 층에서도 된다 — `stash`/`melt` 와 다른 자리다

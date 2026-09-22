@@ -311,8 +311,8 @@ function normalize(s: Saved): GameState | null {
         ...(Array.isArray(s.benched)
             ? { benched: s.benched.filter((h): h is Hero => !!h && typeof h === "object").map(fixHero) }
             : s.benched && typeof s.benched === "object"
-              ? { benched: [fixHero(s.benched as unknown as Hero)] }
-              : {}),
+                ? { benched: [fixHero(s.benched as unknown as Hero)] }
+                : {}),
         messages: Array.isArray(s.messages) ? s.messages : [],
         // **빠진 겉모습을 메운다** — 표에 물건을 더하면 옛 저장에는 그 한 종이 없고,
         // 그러면 그것만 이름 없는 「주문서」로 떠서 오히려 눈에 띈다(`fillAppearances`).
@@ -631,8 +631,14 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             } else if (it.type === "add strength") {
                 const n = it.plusRing ?? 0;
                 power = `힘 ${n > 0 ? "+" : ""}${n}`;
+            } else if (it.type === "dexterity") {
+                const n = it.plusRing ?? 0;
+                power = `명중 ${n > 0 ? "+" : ""}${n}`;
+            } else if (it.type === "increase damage") {
+                const n = it.plusRing ?? 0;
+                power = `피해 ${n > 0 ? "+" : ""}${n}`;
             } else if (it.type === "regeneration") {
-                power = "체력 자연 회복";
+                power = "매 턴 체력 1 회복";
             } else if (it.type === "slow digestion") {
                 power = "소화 속도 둔화";
             } else if (it.type === "searching") {
@@ -641,8 +647,12 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
                 power = "힘 보존";
             } else if (it.type === "teleportation") {
                 power = "순간이동";
+            } else if (it.type === "see invisible") {
+                power = "팬텀을 볼 수 있음";
             } else if (it.type === "adornment") {
-                power = "장식용";
+                power = "점수 가치 10 gold";
+            } else if (it.type === "aggravate monsters") {
+                power = "모든 몬스터를 깨움";
             }
             break;
         }

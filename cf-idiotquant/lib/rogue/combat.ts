@@ -466,6 +466,10 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
     const messages: string[] = [];
     const attacks: Attack[] = [];
     const mName = monsterName(m);
+    const heroIndex = state.heroes.indexOf(hero);
+    const target = state.heroes.length > 1
+        ? `${heroIndex + 1}P${hero.nick ? `(${hero.nick})` : ""}`
+        : "나";
     // **내 방어력** — 대마다 이만큼씩 깎인다. 여러 대를 때리는 놈에게 갑옷이 특히 세게
     // 듣는 자리가 여기다.
     const guard = heroDefense(hero);
@@ -521,7 +525,7 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
             attacks.length === 1
                 ? outcomeOf(attacks[0])
                 : `${attacks.length}대 중 ${hits}대${crits > 0 ? ` (치명타 ${crits})` : ""}`;
-        const against = { who: "나", bonus: dodgeTerms, show: true };
+        const against = { who: target, bonus: dodgeTerms, show: true };
         messages.unshift(
             attacks.length === 1
                 ? attackLine(mName, attacks[0], seen ? bonusTerms : [], against, outcome)
@@ -538,16 +542,16 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
         }
     }
 
-    if (hits === 0) messages.push(`${mName}의 공격이 빗나갔다.`);
+    if (hits === 0) messages.push(`${mName} → ${target}: 공격이 빗나갔다.`);
     else if (total > 0) {
         messages.push(
             withDamage(
-                crits > 0 ? `${mName}에게 급소를 찔렸다!` : `${mName}에게 맞았다.`,
+                crits > 0 ? `${mName} → ${target}: 급소를 찔렀다!` : `${mName} → ${target}: 맞았다.`,
                 total,
             ),
         );
     } else if (blocked > 0) {
-        messages.push(`${mName}의 공격이 갑옷에 튕겼다.`);
+        messages.push(`${mName} → ${target}: 공격이 갑옷에 튕겼다.`);
     }
 
     return {

@@ -30,7 +30,7 @@ export default function RoguePage() {
     // **문서 뿌리까지 지금 테마의 바탕**으로 칠한다 — 고무줄 스크롤로 드러나는 자리가 거기다.
     // 옛 게임(`#game-canvas`)은 언제나 어둡고, 이쪽만 테마를 따른다.
     return (
-        <div id="rogue-root" className="h-[calc(100dvh-112px)] w-full bg-[var(--rg-bg)] md:h-dvh">
+        <div id="rogue-root" className="-mb-[64px] h-[calc(100dvh-112px)] h-[calc(100dvh-48px)] w-full bg-[var(--rg-bg)] md:mb-0 md:h-dvh">
             {/* 판이 터져도 이 주소가 영영 안 열리는 일은 없게 한다 — `GameBoundary` 머리말 참고. */}
             <GameBoundary>
                 <Rogue />

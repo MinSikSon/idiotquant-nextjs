@@ -92,6 +92,8 @@ export interface MonsterDef {
     damage: string[];
     /** 보자마자 쫓아오는가. 아니면 건드릴 때까지 가만히 있는가. */
     mean: boolean;
+    /** 보이지 않는다 — 투명 보기 반지나 감지 효과가 있어야 지도에 드러난다. */
+    invisible?: boolean;
     /** 자기 자리에서 안 움직인다 (파리지옥처럼). */
     still?: boolean;
     /**

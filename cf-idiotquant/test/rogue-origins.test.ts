@@ -222,6 +222,17 @@ test("용은 원작처럼 직선·대각선 여섯 칸에서 불꽃을 뿜는다
     assert.equal(trailSeen, true, "용의 불꽃 궤적이 엔진에 남지 않았다");
 });
 
+test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 자세와 중첩된다", () => {
+    const s = newGame(6, {}, {}, {}, {}, "knight");
+    const hero = s.heroes[0];
+    hero.level = 9;
+    const healthy = heroDefense(hero);
+    hero.hp = Math.floor(hero.maxHp / 2);
+    assert.equal(heroDefense(hero), healthy + 2);
+    hero.guarded = true;
+    assert.equal(heroDefense(hero), healthy + 2 + 4);
+});
+
 test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
     const s = newGame(2, {}, {}, {}, {}, "rogue");
     assert.equal(s.heroes[0].origin, "rogue");

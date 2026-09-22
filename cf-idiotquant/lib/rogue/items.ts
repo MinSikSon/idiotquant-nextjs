@@ -157,19 +157,27 @@ export const RINGS: Record<string, { name: string; freq: number; hunger: number;
     "sustain strength": { name: "힘 유지", freq: 5, hunger: 0, depth: 3 },
     "slow digestion": { name: "소화 억제", freq: 5, hunger: -2, depth: 5 },
     teleportation: { name: "탈출", freq: 4, hunger: 1, depth: 7 },
-    adornment: { name: "금화", freq: 2, hunger: 0, depth: 1 },
+    "see invisible": { name: "투명 보기", freq: 3, hunger: 1, depth: 5 },
+    adornment: { name: "장식", freq: 1, hunger: 0, depth: 1 },
+    "aggravate monsters": { name: "몬스터 도발", freq: 10, hunger: 1, depth: 2 },
+    dexterity: { name: "민첩", freq: 8, hunger: 1, depth: 4 },
+    "increase damage": { name: "피해 증가", freq: 8, hunger: 1, depth: 4 },
 };
 
 /** 반지는 감정한 뒤 배낭과 도감에서 효과를 바로 읽을 수 있어야 한다. */
 export const RING_EFFECTS: Record<string, string> = {
     protection: "방어력 +N",
     "add strength": "힘 +N",
-    regeneration: "체력 회복 2배",
+    regeneration: "매 턴 체력 1 회복",
     searching: "탐색 성공률 65%",
     "sustain strength": "독으로 힘이 줄지 않음",
     "slow digestion": "허기 소모 -2",
     teleportation: "두 몬스터에게 포위되면 탈출",
-    adornment: "금화 획득 +50%",
+    "see invisible": "팬텀을 볼 수 있음",
+    adornment: "점수 가치 10 gold",
+    "aggravate monsters": "저주 · 모든 몬스터를 깨움",
+    dexterity: "명중 +N",
+    "increase damage": "피해 +N",
 };
 
 /** 지팡이 — 방향을 겨눠 쏜다. 횟수가 정해져 있다. */
@@ -701,10 +709,12 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const it = makeItem("ring", type, id, x, y);
         const e = rollEnchant(depth, rng);
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
-        it.plusRing = type === "protection" || type === "add strength" ? Math.max(1, e.plus) : 0;
+        it.plusRing = type === "protection" || type === "add strength" || type === "dexterity" || type === "increase damage"
+            ? Math.max(1, e.plus)
+            : 0;
         // **저주받은 반지도 숫자를 안 깎는다**(위 `rollEnchant` 참고). 대가는 「손가락
         // 하나를 잃는다」다 — 두 개뿐인 자리를 쓸모없는 반지가 차지하고, 뺄 수 없다.
-        if (e.cursed) it.cursed = true;
+        if (e.cursed || type === "aggravate monsters") it.cursed = true;
         return it;
     }
 

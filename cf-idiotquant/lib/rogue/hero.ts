@@ -232,9 +232,10 @@ export function hasRing(hero: Hero, type: string): boolean {
     return wornRings(hero).some((r) => r.type === type);
 }
 
-/** 금화 반지의 금화 보너스 — 금화를 줍는 두 경로가 같은 값을 쓴다. */
+/** 장식 반지는 원작처럼 금화 가치만 가진다. 상점이 없는 이 던전에서는 점수에서 센다. */
 export function goldGain(hero: Hero, gold: number): number {
-    return hasRing(hero, "adornment") ? Math.ceil(gold * 1.5) : gold;
+    void hero;
+    return gold;
 }
 
 /**
@@ -320,6 +321,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
     return [
         { n: proficiency(hero.level), why: "숙련" },
         { n: strHitBonus(heroStr(hero)), why: "힘" },
+        { n: ringSum(hero, "dexterity"), why: "민첩" },
         { n: weapon?.plusHit ?? 0, why: weaponLabel(weapon) },
         ...(affinity ? [{ n: 1, why: affinity.name }] : []),
     ];
@@ -331,6 +333,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
     const affinity = weaponAffinityOf(hero, weapon);
     const terms: Term[] = [
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
+        { n: ringSum(hero, "increase damage"), why: "피해 반지" },
         { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
         ...(affinity ? [{ n: 1, why: affinity.name }] : []),
     ];
@@ -391,7 +394,7 @@ export function hungerRate(hero: Hero): number {
 /** 몇 턴마다 체력이 1 오르는가. 재생 반지가 절반으로 줄인다. */
 export function regenEvery(hero: Hero): number {
     const base = Math.max(3, 21 - hero.level * 2);
-    return hasRing(hero, "regeneration") ? Math.max(2, Math.floor(base / 2)) : base;
+    return hasRing(hero, "regeneration") ? 1 : base;
 }
 
 /** 한 번 뒤졌을 때 숨은 것을 찾을 확률. 탐색 반지가 크게 올린다. */

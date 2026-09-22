@@ -234,6 +234,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
 export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+
   // 관리자가 일반 사용자 화면을 보는 중인가. **권한이 아니라 표시**만 접는다 —
   // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
   const viewAsUser = useViewAsUser();
@@ -424,7 +425,7 @@ export function NavbarWithSimpleLinks() {
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav className={cn("md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3", retroScope,
+      <nav className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3", retroScope,
         barStyle ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
         style={barStyle}>
         <TabItem retro={retro} href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
