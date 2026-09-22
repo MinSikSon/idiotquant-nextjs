@@ -174,6 +174,8 @@ test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다"
     const s = read("app/(game)/game/components/Desk.tsx");
     assert.match(s, /isDualWielding\(hero\)[\s\S]*?hero\.offWeaponId/, "이도류의 두 손을 가르지 않는다");
     assert.match(s, /이도류 장착/, "이도류 장착 표식이 없다");
+    assert.match(s, /const equipped = worn !== null/, "일반 장착 장비를 따로 가르지 않는다");
+    assert.match(s, /border-\[var\(--rg-gold\)\]/, "장착 장비에 구분 색이 없다");
 });
 
 // 누른 단추는 **눌린 뒤 초점을 놓는다.**

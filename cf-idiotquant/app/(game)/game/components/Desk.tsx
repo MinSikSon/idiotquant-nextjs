@@ -743,12 +743,14 @@ export default function Desk({
                                             ? "끼고 있다"
                                             : null;
                                 const dualWield = isDualWielding(hero) && (it.id === hero.weaponId || it.id === hero.offWeaponId);
+                                const equipped = worn !== null;
+                                const equippedInk = dualWield ? "text-[var(--rg-weapon)]" : "text-[var(--rg-gold)]";
                                 return (
                                     <li key={it.id}>
                                         <button
                                             type="button"
                                             onClick={() => setChosen(open ? null : it.id)}
-                                            className={`w-full rounded-[2px] px-1 text-left ${dualWield ? "border border-[var(--rg-weapon)] bg-[var(--rg-hover)]" : open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"} ${side && cursor === i ? CURSOR : ""}`}
+                                            className={`w-full rounded-[2px] px-1 text-left ${dualWield ? "border border-[var(--rg-weapon)] bg-[var(--rg-hover)]" : equipped ? "border border-[var(--rg-gold)] bg-[var(--rg-hover)]" : open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"} ${side && cursor === i ? CURSOR : ""}`}
                                         >
                                             <span className="text-[var(--rg-label)]">{it.letter ?? "?"})</span>{" "}
                                             {/* **종류 표식** — 지도에서 그 물건을 그리는 글자와 색을 그대로 쓴다
@@ -757,7 +759,7 @@ export default function Desk({
                                             <span className="font-bold" style={{ color: `var(--rg-${it.kind})` }}>
                                                 {itemChar(it.kind)}
                                             </span>{" "}
-                                            {name(it)}
+                                            <span className={equipped ? `font-bold ${equippedInk}` : undefined}>{name(it)}</span>
                                             {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
                                             {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
@@ -767,7 +769,7 @@ export default function Desk({
                                                     {" "}{itemPower(it, state.known)}
                                                 </span>
                                             )}
-                                            {worn && <span className="text-[var(--rg-muted)]"> ({worn})</span>}
+                                            {worn && <span className={equippedInk}> ({worn})</span>}
                                             {dualWield && <span className="font-bold text-[var(--rg-weapon)]"> · 이도류 장착</span>}
                                         </button>
                                         {open && (
