@@ -744,7 +744,9 @@ export default function Desk({
                                             : null;
                                 const dualWield = isDualWielding(hero) && (it.id === hero.weaponId || it.id === hero.offWeaponId);
                                 const equipped = worn !== null;
+                                const comparison = comparedPower(it);
                                 const equippedInk = dualWield ? "text-[var(--rg-weapon)]" : "text-[var(--rg-gold)]";
+                                const nameInk = equipped ? equippedInk : comparison === "better" ? "font-bold text-[var(--rg-weapon)]" : undefined;
                                 return (
                                     <li key={it.id}>
                                         <button
@@ -759,13 +761,13 @@ export default function Desk({
                                             <span className="font-bold" style={{ color: `var(--rg-${it.kind})` }}>
                                                 {itemChar(it.kind)}
                                             </span>{" "}
-                                            <span className={equipped ? `font-bold ${equippedInk}` : undefined}>{name(it)}</span>
+                                            <span className={nameInk}>{name(it)}</span>
                                             {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
                                             {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
                                                 모르는 물건은 기본값만 — 화면이 속을 흘리면 안 된다. */}
                                             {(it.kind === "weapon" || it.kind === "armor") && (
-                                                <span className={comparedPower(it) === "better" ? "text-[var(--rg-weapon)]" : comparedPower(it) === "worse" ? "text-[var(--rg-trap)]" : "text-[var(--rg-faint)]"}>
+                                                <span className={comparison === "better" ? "text-[var(--rg-weapon)]" : comparison === "worse" ? "text-[var(--rg-trap)]" : "text-[var(--rg-faint)]"}>
                                                     {" "}{itemPower(it, state.known)}
                                                 </span>
                                             )}
