@@ -33,6 +33,22 @@ test("축복받은 아이템 생성 및 설명 표시 (식별 시 '축복받은 
     assert.ok(desc.startsWith("축복받은 단검 +1"), `예상: 축복받은 단검 +1..., 실제: ${desc}`);
 });
 
+test("축복 주문서를 가진 채 같은 일반 주문서를 주워도 축복이 전파되지 않는다", () => {
+    const s = newGame(41);
+    const blessed = makeItem("scroll", "teleport", 9001, -1, -1);
+    blessed.blessed = true;
+    blessed.letter = "a";
+    const plain = makeItem("scroll", "teleport", 9002, s.heroes[0].x, s.heroes[0].y);
+    s.heroes[0].pack = [blessed];
+    s.level.items.push(plain);
+
+    perform(s, { t: "pickup" });
+
+    const teleports = s.heroes[0].pack.filter((it) => it.kind === "scroll" && it.type === "teleport");
+    assert.equal(teleports.length, 2, "축복·일반 주문서가 한 묶음으로 합쳐졌다");
+    assert.deepEqual(teleports.map((it) => it.blessed).sort(), [false, true], "일반 주문서에 축복이 전파됐다");
+});
+
 test("축복받은 순간이동 주문서 (축순): 계단 주변으로 안전 텔레포트", () => {
     const s = newGame(42);
     const scroll = makeItem("scroll", "teleport", 101, -1, -1);

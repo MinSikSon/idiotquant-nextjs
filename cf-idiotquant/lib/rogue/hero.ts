@@ -121,8 +121,9 @@ function freeLetter(hero: Hero): string | null {
 }
 
 /**
- * 배낭에 넣는다. 같은 것이 이미 있으면 **겹쳐 쌓는다** — 식량 스무 개가 자리를
- * 스무 칸 먹으면 배낭이 금방 찬다.
+ * 배낭에 넣는다. 같은 종류·같은 축복 상태면 **겹쳐 쌓는다** — 식량 스무 개가 자리를
+ * 스무 칸 먹으면 배낭이 금방 찬다. 축복은 한 장의 성질이라, 축복·일반 주문서를 섞어
+ * 쌓으면 새로 주운 일반 주문서까지 축복받는 거짓 묶음이 된다.
  *
  * **넣은 물건이 아니라 배낭에 있는 물건을 돌려준다.** 겹쳐 쌓았을 때 이 둘은 다른
  * 물건이다 — 바닥에서 집은 쪽은 배낭 자리(`letter`)가 없다. 예전에는 `true` 만
@@ -136,7 +137,7 @@ export function addToPack(hero: Hero, it: Item): Item | null {
     const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll";
     if (stackable) {
         const same = hero.pack.find(
-            (p) => p.kind === it.kind && p.type === it.type && p.id !== it.id,
+            (p) => p.kind === it.kind && p.type === it.type && p.blessed === it.blessed && p.id !== it.id,
         );
         if (same) {
             same.count += it.count;
