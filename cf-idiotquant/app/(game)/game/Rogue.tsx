@@ -486,6 +486,9 @@ export default function Rogue() {
     }, []);
 
     const [cellFlashes, setCellFlashes] = useState<Record<string, CellFlash>>({});
+    const [projectileCells, setProjectileCells] = useState<{ x: number; y: number; ch: string }[]>([]);
+    /** 원작처럼 투사체가 지나가는 동안에는 다음 명령을 받지 않는다. */
+    const projectilePlaying = useRef(false);
     const [shake, setShake] = useState(false);
     const [showBanner, setShowBanner] = useState(false);
     const [advanceBanner, setAdvanceBanner] = useState<HeroOrigin | null>(null);
@@ -571,6 +574,34 @@ export default function Rogue() {
             clear();
         }
     }, [state]);
+
+    // 원작은 한 글자를 한 칸씩 옮기고, 지난 칸을 바로 원래 바닥으로 되돌렸다. 엔진이
+    // 남긴 궤적을 화면에서만 재생한다 — 시간이나 피해는 여기서 계산하지 않는다.
+    useEffect(() => {
+        const shot = state?.projectile;
+        if (!shot || shot.cells.length === 0) return;
+        projectilePlaying.current = true;
+        let shown = 0;
+        let tail: ReturnType<typeof setTimeout> | null = null;
+        setProjectileCells([shot.cells[shown++]!]);
+        const timer = setInterval(() => {
+            if (shown >= shot.cells.length) {
+                clearInterval(timer);
+                tail = setTimeout(() => {
+                    setProjectileCells([]);
+                    projectilePlaying.current = false;
+                }, 16);
+                return;
+            }
+            // 누적하지 않는다. 원작 터미널도 이 한 칸만 그리고 직전 칸은 곧바로 지웠다.
+            setProjectileCells([shot.cells[shown++]!]);
+        }, 16);
+        return () => {
+            clearInterval(timer);
+            if (tail) clearTimeout(tail);
+            projectilePlaying.current = false;
+        };
+    }, [state?.projectile?.id]);
 
     // ── 전투 피드백 & 특수 효과 추적 (P6 - 절제된 칸 내 색상 점멸) ──────────────────────────
     useEffect(() => {
@@ -817,7 +848,7 @@ export default function Rogue() {
     const dispatchCmd = useCallback(
         (cmd: Command) => {
             // 단추 판도 키와 같이 막는다.
-            if (frozenRef.current) return;
+            if (frozenRef.current || projectilePlaying.current) return;
             if (online === "guest") {
                 // 끊긴 동안 누른 것은 버린다 — 다시 이어지면 방장의 판을 통째로 받는다.
                 broadcast({ t: "cmd", cmd });
@@ -1722,7 +1753,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} who={eye} cellFlashes={cellFlashes} shake={shake} reveal={reveal} />
+                <MapView state={state} who={eye} cellFlashes={cellFlashes} projectileCells={projectileCells} shake={shake} reveal={reveal} />
 
                 {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 알린다.
                     **늘 떠 있는 것은 우상단의 작은 단추 하나**다. 본문은 눌러야 펼쳐진다.

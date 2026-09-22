@@ -313,6 +313,8 @@ test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진
         const s1 = perform(s0, { t: "throw", letter: "y", dx: 1, dy: 0 });
         assert.equal(packItem(s1.heroes[0], "y"), undefined, "던진 단검이 배낭에 남았다");
         assert.equal(s1.level.items.length, before + 1, "던진 단검이 사라졌다");
+        assert.ok(s1.projectile?.cells.length, "던진 물건의 비행 경로가 남지 않았다");
+        assert.ok(s1.projectile?.cells.every((cell) => cell.ch === ")"), "던진 무기가 원작 물건 문자로 날아가지 않았다");
 
         const potion = makeItem("potion", "healing", 961, -1, -1);
         give(s1, potion, "z");
@@ -328,6 +330,17 @@ test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진
         const s1 = perform(s0, { t: "throw", letter: "y", dx: 0, dy: 0 });
         assert.ok(packItem(s1.heroes[0], "y"), "제자리로 던져서 물건이 사라졌다");
     }
+});
+
+test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
+    const s0 = newGame(109);
+    const missile = makeItem("wand", "magic missile", 980, -1, -1);
+    missile.charges = 2;
+    give(s0, missile, "y");
+    const [dx, dy] = openWay(s0);
+    const s1 = perform(s0, { t: "zap", letter: "y", dx, dy });
+    assert.ok(s1.projectile?.cells.length, "마법 화살의 비행 경로가 남지 않았다");
+    assert.ok(s1.projectile?.cells.every((cell) => cell.ch === "*"), "마법 화살이 `*`로 날아가지 않았다");
 });
 
 test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {

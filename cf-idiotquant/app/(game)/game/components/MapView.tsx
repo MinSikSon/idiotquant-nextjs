@@ -193,6 +193,7 @@ export default function MapView({
     state,
     who = 0,
     cellFlashes = {},
+    projectileCells = [],
     shake = false,
     reveal,
 }: {
@@ -200,6 +201,8 @@ export default function MapView({
     /** 이 화면이 **조종하는** 영웅. 지도는 그 사람을 가운데 두고, 그 사람만 밝게 그린다. */
     who?: number;
     cellFlashes?: Record<string, CellFlash>;
+    /** 엔진이 기록한 투사체 궤적. 화면은 한 칸씩 잠깐 드러내기만 한다. */
+    projectileCells?: { x: number; y: number; ch: string }[];
     shake?: boolean;
     reveal?: Reveal | null;
 }) {
@@ -308,6 +311,33 @@ export default function MapView({
                         </div>
                     ))}
                 </pre>
+                {/* 원작의 불꽃처럼 글자 한 칸씩 지나간 뒤 사라진다. 지도 글자를 바꾸지
+                    않고 그 위에 얹어야, 궤적이 끝난 뒤 벽·물건·괴물이 그대로 남는다. */}
+                {projectileCells.map((shot, i) => {
+                    const cx = shot.x - ox;
+                    const cy = shot.y - oy;
+                    if (cx < 0 || cy < 0 || cx >= view.cols || cy >= view.rows) return null;
+                    return (
+                        <span
+                            key={`${shot.x},${shot.y},${i}`}
+                            aria-hidden
+                            className="pointer-events-none absolute text-center font-[family-name:var(--font-plex-mono)]"
+                            style={{
+                                left: cx * cell.w,
+                                top: cy * cell.h,
+                                width: cell.w,
+                                height: cell.h,
+                                // 투사체도 지도와 같은 문자다. 별도 광원·바탕을 까면 글자
+                                // 던전 위에 게임 밖의 그래픽 하나가 얹힌 것처럼 보인다.
+                                color: "var(--rg-text)",
+                                fontSize: cell.h / LEADING,
+                                lineHeight: `${cell.h}px`,
+                            }}
+                        >
+                            {shot.ch}
+                        </span>
+                    );
+                })}
                 {/* **이름표** — 화면 **안**에 서 있고 이름이 있는 사람에게만.
                     화면 밖은 아래의 화살표가 맡는다. */}
                 {state.heroes.map((h, i) => {

@@ -1957,19 +1957,21 @@ function ray(
     dx: number,
     dy: number,
     range: number,
-): { x: number; y: number; monster?: Monster } {
+): { x: number; y: number; monster?: Monster; cells: { x: number; y: number }[] } {
     let x = from.x;
     let y = from.y;
+    const cells: { x: number; y: number }[] = [];
     for (let i = 0; i < range; i++) {
         const nx = x + dx;
         const ny = y + dy;
         if (!inBounds(nx, ny) || !walkable(tileAt(level, nx, ny))) break;
         x = nx;
         y = ny;
+        cells.push({ x, y });
         const m = monsterAt(level, x, y);
-        if (m) return { x, y, monster: m };
+        if (m) return { x, y, monster: m, cells };
     }
-    return { x, y };
+    return { x, y, cells };
 }
 
 /** 기록 줄에 적을 그 사람의 이름 — 지은 이름이 있으면 그것, 없으면 `1P`·`2P`. */
@@ -2203,6 +2205,10 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     }
 
     if (!hit.monster) {
+        if (def?.damage) {
+            const ch = it.type === "magic missile" ? "*" : boltGlyph(dx, dy);
+            state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: hit.cells.map((cell) => ({ ...cell, ch })) };
+        }
         say(state, `${name()}에서 무언가 뻗어 나가 사라졌다.`);
         return true;
     }
@@ -2211,6 +2217,9 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     const m = hit.monster;
 
     if (def?.damage) {
+        // 원작처럼 마법 화살은 `*`, 세 원소 지팡이는 방향에 맞춘 광선 문자로 날아간다.
+        const ch = it.type === "magic missile" ? "*" : boltGlyph(dx, dy);
+        state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: hit.cells.map((cell) => ({ ...cell, ch })) };
         const dmg = rng.rollDice(def.damage);
         pullAggro(state, m, hero);
         m.hp -= dmg;
@@ -2273,6 +2282,10 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     const left = hero.pack.find((p) => p.id === it.id)?.count ?? 0;
     const rest = left > 0 ? ` (${left}개 남음)` : "";
     const hit = ray(level, hero, dx, dy, 8);
+    // 원작은 던진 물건의 문자 자체를 한 칸씩 옮겼다. 착탄 뒤의 물건 처리와는 분리해
+    // 경로만 남겨, 화면이 지나간 자리에 있던 지형을 그대로 되돌려 그릴 수 있게 한다.
+    const ch = itemChar(it.kind);
+    state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: hit.cells.map((cell) => ({ ...cell, ch })) };
 
     // 물약은 깨진다. 무기는 떨어진 자리에 남는다 — 주우러 갈 수 있어야 한다.
     const land = (): void => {
@@ -2680,19 +2693,26 @@ function monsterTurns(state: GameState, rng: Rng) {
     level.monsters = level.monsters.filter((m) => m.hp > 0);
 }
 
-/** 원작의 용 숨결 — 직선·대각선 여섯 칸, 벽에서는 한 번 꺾여 돌아온다. */
-function dragonFlameHits(level: Level, dragon: Monster, victim: Hero): { hit: boolean; bounced: boolean } {
+function boltGlyph(dx: number, dy: number): string {
+    if (dx === 0) return "|";
+    if (dy === 0) return "-";
+    return dx === dy ? "\\" : "/";
+}
+
+/** 원작의 용 숨결 — 직선·대각선 여섯 칸, 벽에서는 꺾여 돌아온다. */
+function dragonFlamePath(level: Level, dragon: Monster, victim: Hero): { hit: boolean; bounced: boolean; cells: { x: number; y: number; ch: string }[] } {
     let dx = Math.sign(victim.x - dragon.x);
     let dy = Math.sign(victim.y - dragon.y);
     const range = Math.max(Math.abs(victim.x - dragon.x), Math.abs(victim.y - dragon.y));
     if ((dx !== 0 && dy !== 0 && Math.abs(victim.x - dragon.x) !== Math.abs(victim.y - dragon.y)) || range === 0 || range > 6) {
-        return { hit: false, bounced: false };
+        return { hit: false, bounced: false, cells: [] };
     }
     let x = dragon.x;
     let y = dragon.y;
     let steps = 0;
     let bounced = false;
     let turns = 0;
+    const cells: { x: number; y: number; ch: string }[] = [];
     while (steps < 6 && turns++ < 12) {
         const nx = x + dx;
         const ny = y + dy;
@@ -2705,9 +2725,10 @@ function dragonFlameHits(level: Level, dragon: Monster, victim: Hero): { hit: bo
         x = nx;
         y = ny;
         steps++;
-        if (x === victim.x && y === victim.y) return { hit: true, bounced };
+        cells.push({ x, y, ch: boltGlyph(dx, dy) });
+        if (x === victim.x && y === victim.y) return { hit: true, bounced, cells };
     }
-    return { hit: false, bounced };
+    return { hit: false, bounced, cells };
 }
 
 function monsterAct(state: GameState, m: Monster, rng: Rng) {
@@ -2736,14 +2757,15 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
             && (m.x === victim.x || m.y === victim.y || Math.abs(m.x - victim.x) === Math.abs(m.y - victim.y))
             && Math.max(Math.abs(m.x - victim.x), Math.abs(m.y - victim.y)) <= 6;
         if (dragonInLine && rng.chance(0.2)) {
-            const flame = dragonFlameHits(level, m, victim);
+            const flame = dragonFlamePath(level, m, victim);
+            state.projectile = { id: `${state.turn}:${m.id}:${state.messages.length}`, cells: flame.cells };
+            say(state, `🐉 ${monsterName(m)}이(가) 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
             if (flame.hit) {
                 const dmg = rng.rollDice("6d6");
                 victim.hp -= dmg;
-                say(state, `🐉 ${monsterName(m)}이(가) 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
                 say(state, withDamage("화염에 휩싸였다!", dmg));
-                return;
-            }
+            } else say(state, "불꽃이 빗나갔다.");
+            return;
         }
 
         // 적은 이번 행동에 **실제로** 내 칸에 들어갈 수 있을 때만 때린다. 대각선

@@ -194,6 +194,7 @@ test("적은 이번 행동에 합법적으로 영웅 칸에 닿을 때만 공격
 
 test("용은 원작처럼 직선·대각선 여섯 칸에서 불꽃을 뿜는다", () => {
     let breathed = false;
+    let trailSeen = false;
     for (let seed = 900; seed < 930; seed++) {
         const s = newGame(seed, {}, {}, {}, {}, "knight");
         const hero = s.heroes[0];
@@ -207,9 +208,13 @@ test("용은 원작처럼 직선·대각선 여섯 칸에서 불꽃을 뿜는다
         s.level.monsters = [dragon];
 
         perform(s, { t: "rest" });
-        if (s.messages.some((m) => m.includes("불꽃을 뿜었다"))) breathed = true;
+        if (s.messages.some((m) => m.includes("불꽃을 뿜었다"))) {
+            breathed = true;
+            trailSeen ||= !!s.projectile?.cells.some((cell) => cell.ch === "|");
+        }
     }
     assert.equal(breathed, true, "용이 원거리 불꽃 공격을 한 번도 쓰지 않았다");
+    assert.equal(trailSeen, true, "용의 불꽃 궤적이 엔진에 남지 않았다");
 });
 
 test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
