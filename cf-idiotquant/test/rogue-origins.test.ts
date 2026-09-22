@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { newGame, perform } from "@/lib/rogue/game";
-import { canOffHand, heroArmorClass, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
+import { canOffHand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
 import { bury, graves } from "@/lib/rogue/storage";
@@ -99,6 +99,7 @@ test("왕실 근위대(Knight) 시작 장비 및 철벽의 자세 패시브 동�
     assert.equal(s1.heroes[0].guarded, true);
     assert.equal(heroDefense(s1.heroes[0]), baseDef + 2);
     assert.equal(heroArmorClass(s1.heroes[0]), 10 - (baseDef + 2), "철벽 자세가 방어 등급에도 안 반영된다");
+    assert.equal(heroArmorClassTerms(s1.heroes[0]).reduce((sum, term) => sum + term.n, 0), heroArmorClass(s1.heroes[0]), "상태 상세의 방어 등급 식이 실제 값과 다르다");
 
     // 다른 행동을 하면 자세가 풀리고, 전투 로그에도 이유가 남는다.
     const s2 = perform(s1, { t: "search" });

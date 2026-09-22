@@ -66,7 +66,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, weaponAffinityOf, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroArmorClassTerms, heroStr, hungerOf, weaponAffinityOf, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -1947,15 +1947,15 @@ export default function Rogue() {
                         <button type="button" onClick={() => setStatOpen(statOpen === `${i}:str` ? null : `${i}:str`)} className={statChip}>
                             Str {heroStr(h)}
                         </button>
-                        {statOpen === `${i}:str` && <span className="text-[var(--rg-faint)]">기본 {h.str} · 반지 {heroStr(h) - h.str >= 0 ? "+" : ""}{heroStr(h) - h.str} · 최대 {h.maxStr}</span>}
+                        {statOpen === `${i}:str` && <span className="text-[var(--rg-faint)]">{h.str} {heroStr(h) - h.str >= 0 ? "+" : "−"} {Math.abs(heroStr(h) - h.str)} 반지 = {heroStr(h)} · 최대 {h.maxStr}</span>}
                         <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => setStatOpen(statOpen === `${i}:defense` ? null : `${i}:defense`)} className={statChip}>
                             AC {heroArmorClass(h)}
                         </button>
-                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">방어등급: 장비 {heroArmor(h)} · 성장 -{h.bonusDefense} · 최종 {heroArmorClass(h)}{h.guarded && h.origin === "knight" ? " · 철벽 자세 보정 포함" : ""}</span>}
+                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">{heroArmorClassTerms(h).map((term, j) => `${j === 0 ? "" : term.n >= 0 ? "+ " : "− "}${Math.abs(term.n)} ${term.why}`).join(" ")} = {heroArmorClass(h)}</span>}
                         <button type="button" onClick={() => setStatOpen(statOpen === `${i}:luck` ? null : `${i}:luck`)} className={statChip}>
                             Luk {Math.round(h.itemLuck * 100)}%
                         </button>
-                        {statOpen === `${i}:luck` && <span className="text-[var(--rg-faint)]">아이템 등급을 더 좋게 굴릴 확률</span>}
+                        {statOpen === `${i}:luck` && <span className="text-[var(--rg-faint)]">0% + {Math.round(h.itemLuck * 100)}% 성장 = {Math.round(h.itemLuck * 100)}% · 아이템 등급 유리</span>}
                         <span>Lv {h.level} · Exp {h.exp}</span>
                         {hAffinity && (
                             <span className="font-bold text-[var(--rg-weapon)]">

@@ -157,7 +157,8 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 펼친다
     const rogue = read("app/(game)/game/Rogue.tsx");
     assert.match(rogue, /const \[statOpen, setStatOpen\]/, "상태 상세를 열 수 없다");
     assert.match(rogue, /AC \{heroArmorClass\(h\)\}/, "최종 방어 등급이 상태 줄에 없다");
-    assert.match(rogue, /방어등급: 장비 \{heroArmor\(h\)\} · 성장 -\{h\.bonusDefense\}/, "방어의 장비·성장 근거가 없다");
+    assert.match(rogue, /heroArmorClassTerms\(h\)\.map/, "방어 등급의 실제 계산식을 펼치지 않는다");
+    assert.match(rogue, /반지 = \{heroStr\(h\)\}/, "힘의 실제 계산식을 펼치지 않는다");
     assert.match(rogue, /\{level\.depth\}층/, "현재 층이 Level로 표시된다");
     assert.match(rogue, /const statChip = "rounded/, "핵심 스탯이 읽기 쉬운 칩으로 묶이지 않는다");
     assert.doesNotMatch(rogue, /현재 체력 \/ 최대 체력/, "HP에 같은 뜻의 상세 설명이 중복된다");

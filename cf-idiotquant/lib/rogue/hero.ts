@@ -246,6 +246,20 @@ export function heroArmor(hero: Hero): number {
     return armorClassOf(equippedArmor(hero)) - ringSum(hero, "protection");
 }
 
+/** 내 방어력의 항 — 전투와 상태 상세가 같은 계산식을 읽는다. */
+export function heroDefenseTerms(hero: Hero): Term[] {
+    const terms: Term[] = [
+        { n: defenseOf(heroArmor(hero)), why: "장비" },
+        { n: hero.bonusDefense ?? 0, why: "성장" },
+    ];
+    // 기사단장의 전직 보상은 단추가 아니라 위기에서 저절로 서는 방벽이다.
+    if (hero.origin === "knight" && hero.level >= ADVANCE_LEVEL && hero.hp <= hero.maxHp / 2) terms.push({ n: 2, why: "불굴의 방벽" });
+    // 전직(`ADVANCE_LEVEL`)한 근위대는 대기 보너스가 깊어진다 — 「철벽의 자세」가
+    // 켜는 값은 이 자리 하나다. `origins.ADVANCED_GUARD_BONUS` 가 그 수치를 쥔다.
+    if (hero.guarded && hero.origin === "knight") terms.push({ n: hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2, why: "철벽 자세" });
+    return terms;
+}
+
 /**
  * 내 **방어력** — 맞았을 때 상대의 공격력에서 빼는 값이다(맨몸 0, 판금 7 언저리).
  *
@@ -253,13 +267,7 @@ export function heroArmor(hero: Hero): number {
  * `items.defenseOf` 하나뿐이다. 바깥으로 나가는 숫자는 전부 이쪽이다.
  */
 export function heroDefense(hero: Hero): number {
-    let base = defenseOf(heroArmor(hero)) + (hero.bonusDefense ?? 0);
-    // 기사단장의 전직 보상은 단추가 아니라 위기에서 저절로 서는 방벽이다.
-    if (hero.origin === "knight" && hero.level >= ADVANCE_LEVEL && hero.hp <= hero.maxHp / 2) base += 2;
-    if (!hero.guarded || hero.origin !== "knight") return base;
-    // 전직(`ADVANCE_LEVEL`)한 근위대는 대기 보너스가 깊어진다 — 「철벽의 자세」가
-    // 켜는 값은 이 자리 하나다. `origins.ADVANCED_GUARD_BONUS` 가 그 수치를 쥔다.
-    return base + (hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2);
+    return heroDefenseTerms(hero).reduce((sum, term) => sum + term.n, 0);
 }
 
 /**
@@ -269,6 +277,11 @@ export function heroDefense(hero: Hero): number {
  */
 export function heroArmorClass(hero: Hero): number {
     return 10 - heroDefense(hero);
+}
+
+/** Rogue식 방어 등급 식의 항 — 방어력이 늘수록 등급에서는 빼진다. */
+export function heroArmorClassTerms(hero: Hero): Term[] {
+    return [{ n: 10, why: "기본" }, ...heroDefenseTerms(hero).filter((term) => term.n !== 0).map((term) => ({ n: -term.n, why: term.why }))];
 }
 
 /**
