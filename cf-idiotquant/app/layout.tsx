@@ -38,6 +38,11 @@ import { ThemeProviderClient } from "./ThemeProviderClient";
 import { AuthProvider } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
 
+// Cloudflare Pages(next-on-pages)는 모든 서버 라우트를 Edge Runtime으로 빌드한다.
+// 루트에서 선언하면 하위 route segment에도 상속되어 배포 어댑터가 Node 런타임으로
+// 잘못 분류하는 일을 막는다.
+export const runtime = "edge";
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://idiotquant.com'),
   title: {
