@@ -1931,7 +1931,7 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                        className={`flex h-[3.5rem] shrink-0 content-start flex-wrap items-center gap-x-3 overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                className={`flex h-[3.5rem] shrink-0 content-start flex-wrap items-center gap-x-5 overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:gap-x-3 sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
@@ -1974,7 +1974,7 @@ export default function Rogue() {
                             <OriginTag origin={h.origin} level={h.level} />
                         </button>
                         <button type="button" onClick={() => { runAs(i, { t: "inspectStatus", kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
-                            St:{heroStr(h)}
+                            St:{heroStr(h)}({h.maxStr})
                         </button>
                         {i === 0 && <span className="order-4">Dlvl:{level.depth}</span>}
                         <span className="order-5 text-[var(--rg-gold)]">$:{h.gold}</span>
@@ -1986,7 +1986,7 @@ export default function Rogue() {
                             AC:{heroArmorClass(h)}
                         </button>
                         <button type="button" onClick={() => { runAs(i, { t: "inspectStatus", kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
-                            Wi:{Math.round(h.itemLuck * 100)}
+                            Wi:{Math.round(h.itemLuck * 100)}(100)
                         </button>
                         <span className="order-8">Xp:{h.exp}</span>
                         {i === 0 && <span className="order-9 text-[var(--rg-label)]">T:{state.turn}</span>}
