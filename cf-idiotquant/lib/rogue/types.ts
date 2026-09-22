@@ -122,6 +122,8 @@ export interface Monster {
     cancelled: boolean;
     /** 5대 접두사 챔피언 */
     champion?: ChampionPrefix;
+    /** 선택 제단이 부른 수호자 — 처치하면 보석을 남긴다. */
+    altarGuardian?: boolean;
     /** 화상 지속 턴수 */
     burnTurns?: number;
     /**
@@ -260,6 +262,8 @@ export interface Level {
      * 위험과 보상이 같은 자리에 선다. 층에 하나까지고, 옛 저장에는 없다(`null`).
      */
     special: { room: number; kind: SpecialKind } | null;
+    /** 이 층의 선택 제단을 이미 썼는가. */
+    altarUsed?: boolean;
     /** 층 돌발 이벤트 */
     mutator?: FloorMutator | null;
 }

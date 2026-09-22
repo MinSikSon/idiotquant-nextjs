@@ -982,6 +982,7 @@ export function buildLevel(depth: number, rng: Rng): Level {
         anvil: null,
         maze: anyMaze,
         special: null,
+        altarUsed: false,
     };
 
     // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는

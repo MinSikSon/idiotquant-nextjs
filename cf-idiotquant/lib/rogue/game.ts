@@ -191,6 +191,7 @@ type Action =
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
     | { t: "use_relic"; letter: string }
+    | { t: "altar"; choice: "blood" | "hunger" | "guardian" }
     | { t: "socket"; gearLetter: string; gemLetter: string };
 
 /**
@@ -2049,6 +2050,11 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
         state.level.items.push(...dropped);
         say(state, `${monsterName(m)}을(를) 쓰러뜨려 희귀 전리품이 바닥에 떨어졌습니다!`);
     }
+    if (m.altarGuardian) {
+        const gem = makeItem("gem", rng.pick(GEMS) ?? "ruby", state.nextItemId++, m.x, m.y);
+        state.level.items.push(gem);
+        say(state, "제단 수호자가 보석을 남겼다.");
+    }
 
     // 미다스의 건틀릿 소지 시 추가 금화 생성 — **잡은 사람이 낀 것**이다.
     if (hasRelic(by, "midas_gauntlet")) {
@@ -2768,6 +2774,53 @@ export function perform(state: GameState, cmd: Command): GameState {
     }
 }
 
+/** 선택 제단 — 화면은 고르는 것만, 비용·보상·한 번 사용은 이 엔진 자리가 맡는다. */
+function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "guardian", rng: Rng): boolean {
+    const { level } = state;
+    const onAltar = level.special?.kind === "altar" && level.anvil && hero.x === level.anvil.x && hero.y === level.anvil.y;
+    if (!onAltar || level.altarUsed) {
+        say(state, level.altarUsed ? "이 제단의 불빛은 이미 꺼졌다." : "제단 앞에 서야 한다.");
+        return false;
+    }
+    if (choice === "blood") {
+        const cost = Math.max(5, Math.ceil(hero.hp / 3));
+        if (hero.hp <= cost || hero.pack.length >= 26) {
+            say(state, hero.hp <= cost ? "바칠 피가 모자라다." : "배낭이 꽉 찼다.");
+            return false;
+        }
+        hero.hp -= cost;
+        const reward = makeItem("scroll", "blessed enchant", state.nextItemId++, -1, -1);
+        reward.blessed = true;
+        addToPack(hero, reward);
+        say(state, `피 ${cost}를 바쳤다. 축복받은 강화 주문서를 얻었다.`);
+    } else if (choice === "hunger") {
+        if (hero.food <= 400 || hero.pack.length >= 25) {
+            say(state, hero.food <= 400 ? "바칠 식량이 모자라다." : "배낭에 두 장을 담을 자리가 없다.");
+            return false;
+        }
+        hero.food -= 400;
+        addToPack(hero, makeItem("scroll", "magic mapping", state.nextItemId++, -1, -1));
+        addToPack(hero, makeItem("scroll", "identify", state.nextItemId++, -1, -1));
+        say(state, "허기 400을 바쳤다. 지도와 감정 주문서를 얻었다.");
+    } else {
+        const room = level.rooms[level.special!.room];
+        const [spot] = roomSpots(level, room, 1, rng, [hero]);
+        if (!spot) {
+            say(state, "제단방에 수호자가 설 자리가 없다.");
+            return false;
+        }
+        for (const m of level.monsters) {
+            if (m.x > room.x && m.x < room.x + room.w - 1 && m.y > room.y && m.y < room.y + room.h - 1) m.awake = true;
+        }
+        const guardian = spawnMonster(randomMonsterChar(level.depth, rng), spot.x, spot.y, rng, rollChampionPrefix(level.depth, rng) ?? "blazing");
+        guardian.altarGuardian = true;
+        level.monsters.push(guardian);
+        say(state, `${monsterName(guardian)} 수호자가 깨어났다. 쓰러뜨리면 보석을 남긴다.`);
+    }
+    level.altarUsed = true;
+    return true;
+}
+
 function act(state: GameState, cmd: Command): GameState {
     if (state.phase !== "playing") return state;
     const rng = rngOf(state);
@@ -2875,6 +2928,9 @@ function act(state: GameState, cmd: Command): GameState {
                 break;
             case "use_relic":
                 acted = useRelicCommand(state, hero, cmd.letter);
+                break;
+            case "altar":
+                acted = useAltar(state, hero, cmd.choice, rng);
                 break;
             case "socket":
                 acted = socketGemCommand(state, hero, cmd.gearLetter, cmd.gemLetter);

@@ -38,7 +38,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 12;
+const VERSION = 13;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -146,6 +146,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         maze: raw.maze === true,
         // 옛 저장에는 특수 방이 없다 — **그 층에는 없는 것이 맞다**(모루와 같은 까닭).
         special: raw.special ?? null,
+        altarUsed: raw.altarUsed === true,
         mutator: raw.mutator ?? null,
     };
 }

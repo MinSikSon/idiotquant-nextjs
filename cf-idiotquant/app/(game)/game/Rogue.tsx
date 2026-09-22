@@ -737,6 +737,7 @@ export default function Rogue() {
     const [netOpen, setNetOpen] = useState(false);
     /** 좌상단 「성장」 단추를 눌러 펼쳤는가 — 끊김 안내와 같은 자리다(모서리 한 칸). */
     const [skillOpen, setSkillOpen] = useState(false);
+    const [altarOpen, setAltarOpen] = useState(false);
     /**
      * 내보낸 손님들의 **자리표**(`guestKey`) — 이 방이 열려 있는 동안 다시 안 받는다.
      *
@@ -1591,6 +1592,7 @@ export default function Rogue() {
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
     const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
+    const onAltar = onAnvil && level.special?.kind === "altar" && !level.altarUsed;
     const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k);
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
@@ -1829,6 +1831,28 @@ export default function Rogue() {
                     >
                         ★ {classSkill.advancedSkillName}
                     </button>
+                )}
+
+                {onAltar && (
+                    <>
+                        <button type="button" onClick={() => setAltarOpen((v) => !v)} aria-expanded={altarOpen} className="absolute top-9 left-1 z-20 h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)]">
+                            † 선택 제단
+                        </button>
+                        {altarOpen && (
+                            <div className="absolute top-[4.75rem] left-1 z-20 flex w-[min(18rem,calc(100%-0.5rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                <span className="font-bold text-[var(--rg-gold)]">하나만 고른다 · 확정하면 턴을 쓴다</span>
+                                {([
+                                    ["blood", "피의 서약 · 현재 HP 1/3 (최소 5) → 축복 강화 주문서"],
+                                    ["hunger", "굶주림의 서약 · 허기 400 → 지도 · 감정 주문서"],
+                                    ["guardian", "수호자의 서약 · 챔피언 전투 → 처치 시 보석"],
+                                ] as const).map(([choice, label]) => (
+                                    <button key={choice} type="button" onClick={() => { run({ t: "altar", choice }); setAltarOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {advanceBanner && (
