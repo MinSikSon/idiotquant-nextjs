@@ -20,6 +20,7 @@ import {
     defenseOf,
     makeItem,
     weaponDamageOf,
+    weaponHandsOf,
 } from "./items";
 import {
     abilityMod,
@@ -262,10 +263,11 @@ export function isDualWielding(hero: Hero): boolean {
  */
 export function canOffHand(hero: Hero, it: Item): boolean {
     if (it.kind !== "weapon") return false;
+    if (weaponHandsOf(it.type) === 2) return false;
     const allowed = DUAL_WIELD[hero.origin ?? "knight"];
     if (!allowed || !allowed.includes(it.type)) return false;
     const main = equippedWeapon(hero);
-    return !!main && main.type === it.type && main.id !== it.id;
+    return !!main && weaponHandsOf(main.type) === 1 && main.type === it.type && main.id !== it.id;
 }
 
 export function equippedArmor(hero: Hero): Item | undefined {

@@ -61,6 +61,16 @@ export interface WeaponDef {
     throwable?: boolean;
     /** 뭉쳐 다니는가 (화살·다트). */
     stack?: boolean;
+    /** NetHack의 weapon skill 계열. 같은 계열은 같은 숙련을 공유한다. */
+    skill?: string;
+    /** 한 손/양손 무기. 양손 무기는 보조손에 들 수 없다. */
+    hands?: 1 | 2;
+    /** 무기 소재. 향후 부식·은 무기 상호작용의 기준이 된다. */
+    material?: "iron" | "silver" | "wood" | "bone";
+    /** NetHack 표의 소형/대형 대상 피해. 기존 damage는 하위 호환용 소형 피해다. */
+    damageLarge?: string;
+    /** 발사기 없이 던지는 탄약인지. */
+    ammunition?: boolean;
 }
 
 export interface ArmorDef {
@@ -80,20 +90,20 @@ export interface ArmorDef {
  */
 export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
-    dagger: { name: "단검", damage: "1d6", freq: 10, depth: 1, throwable: true },
-    mace: { name: "철퇴", damage: "2d4", freq: 10, depth: 1 },
-    spear: { name: "창", damage: "2d3", freq: 6, depth: 1, throwable: true },
-    dart: { name: "표창", damage: "1d3", freq: 8, depth: 1, throwable: true, stack: true },
-    arrow: { name: "화살", damage: "1d2", freq: 8, depth: 1, throwable: true, stack: true },
+    dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
+    mace: { name: "철퇴", damage: "2d4", damageLarge: "1d6", freq: 10, depth: 1, skill: "mace", hands: 1, material: "iron" },
+    spear: { name: "창", damage: "2d3", damageLarge: "1d6", freq: 6, depth: 1, throwable: true, skill: "spear", hands: 1, material: "iron" },
+    dart: { name: "표창", damage: "1d3", damageLarge: "1d2", freq: 8, depth: 1, throwable: true, stack: true, skill: "dart", hands: 1, material: "iron", ammunition: true },
+    arrow: { name: "화살", damage: "1d2", damageLarge: "1d2", freq: 8, depth: 1, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true },
     // 사다리
-    "long sword": { name: "장검", damage: "3d4", freq: 9, depth: 4 },
-    "two-handed sword": { name: "양손검", damage: "4d4", freq: 7, depth: 8 },
-    "silver arrow": { name: "은화살", damage: "1d4", freq: 6, depth: 9, throwable: true, stack: true },
-    "silver sword": { name: "진은검", damage: "4d5", freq: 6, depth: 12 },
-    "thirsty sword": { name: "목마른 자의 검", damage: "4d6", freq: 5, depth: 16 },
-    "magic sword": { name: "마법의 검", damage: "5d5", freq: 4, depth: 19 },
-    "knight sword": { name: "기사의 검", damage: "5d6", freq: 3, depth: 22 },
-    "baphomet sword": { name: "바포메트의 검", damage: "6d5", freq: 2, depth: 25 },
+    "long sword": { name: "장검", damage: "3d4", damageLarge: "1d8", freq: 9, depth: 4, skill: "long sword", hands: 1, material: "iron" },
+    "two-handed sword": { name: "양손검", damage: "4d4", damageLarge: "2d6", freq: 7, depth: 8, skill: "two-handed sword", hands: 2, material: "iron" },
+    "silver arrow": { name: "은화살", damage: "1d4", damageLarge: "1d4", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true },
+    "silver sword": { name: "진은검", damage: "4d5", damageLarge: "2d6", freq: 6, depth: 12, skill: "long sword", hands: 1, material: "silver" },
+    "thirsty sword": { name: "목마른 자의 검", damage: "4d6", damageLarge: "2d8", freq: 5, depth: 16, skill: "long sword", hands: 1, material: "iron" },
+    "magic sword": { name: "마법의 검", damage: "5d5", damageLarge: "2d7", freq: 4, depth: 19, skill: "long sword", hands: 1, material: "iron" },
+    "knight sword": { name: "기사의 검", damage: "5d6", damageLarge: "2d8", freq: 3, depth: 22, skill: "long sword", hands: 1, material: "iron" },
+    "baphomet sword": { name: "바포메트의 검", damage: "6d5", damageLarge: "3d6", freq: 2, depth: 25, skill: "long sword", hands: 1, material: "iron" },
 };
 
 /** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */
@@ -980,6 +990,25 @@ export function equipmentRating(it: Item): number | null {
 export function weaponDamageOf(it: Item | undefined): string {
     if (!it || it.kind !== "weapon") return "1d2";
     return WEAPONS[it.type]?.damage ?? "1d2";
+}
+
+/** NetHack식 대상 크기별 무기 피해. 기존 호출은 소형 대상 피해를 그대로 받는다. */
+export function weaponDamageAgainst(it: Item | undefined, size: "small" | "large" = "small"): string {
+    if (!it || it.kind !== "weapon") return "1d2";
+    const def = WEAPONS[it.type];
+    return size === "large" ? (def?.damageLarge ?? def?.damage ?? "1d2") : (def?.damage ?? "1d2");
+}
+
+export function weaponSkillOf(type: string): string {
+    return WEAPONS[type]?.skill ?? type;
+}
+
+export function weaponHandsOf(type: string): 1 | 2 {
+    return WEAPONS[type]?.hands ?? 1;
+}
+
+export function weaponMaterialOf(type: string): WeaponDef["material"] {
+    return WEAPONS[type]?.material;
 }
 
 export function isThrowable(it: Item): boolean {
