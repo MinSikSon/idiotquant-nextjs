@@ -181,12 +181,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         baseStr: 13,
         createStartingItems: (nextId) => {
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
-            const slowWand = makeItem("wand", "slow monster", nextId(), -1, -1);
-            slowWand.charges = 8;
+            const missileWand = makeItem("wand", "magic missile", nextId(), -1, -1);
+            missileWand.charges = 8;
             const mapScroll = makeItem("scroll", "magic mapping", nextId(), -1, -1, 1);
             const idScroll = makeItem("scroll", "identify", nextId(), -1, -1, 1);
             const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
-            return [dagger, slowWand, mapScroll, idScroll, food];
+            return [dagger, missileWand, mapScroll, idScroll, food];
         },
     },
 };

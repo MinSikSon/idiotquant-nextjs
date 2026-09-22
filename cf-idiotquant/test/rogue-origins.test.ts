@@ -263,11 +263,11 @@ test("고서 연구자(Scholar) 시작 주문서/지팡이 식별 및 지팡이 
     // 모든 주문서와 지팡이가 시작부터 식별되어 있어야 함
     assert.equal(s.known["scroll:magic mapping"], true);
     assert.equal(s.known["scroll:identify"], true);
-    assert.equal(s.known["wand:slow monster"], true);
+    assert.equal(s.known["wand:magic missile"], true);
 
-    // 둔화 지팡이가 8회 충전되어 있어야 함
-    const wand = s.heroes[0].pack.find((p) => p.kind === "wand" && p.type === "slow monster");
-    assert.ok(wand, "둔화 지팡이가 있어야 함");
+    // 마법 화살 지팡이가 8회 충전되어 있어야 함
+    const wand = s.heroes[0].pack.find((p) => p.kind === "wand" && p.type === "magic missile");
+    assert.ok(wand, "마법 화살 지팡이가 있어야 함");
     assert.equal(wand.charges, 8);
 });
 
