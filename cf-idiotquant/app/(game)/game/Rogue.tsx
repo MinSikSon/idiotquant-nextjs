@@ -1897,10 +1897,11 @@ export default function Rogue() {
                 const hAffinity = weaponAffinityOf(h);
                 const cursedGear = h.pack.some((it) => it.cursed && (it.id === h.weaponId || it.id === h.armorId || it.id === h.leftRingId || it.id === h.rightRingId));
                 const emptyWand = h.pack.some((it) => it.kind === "wand" && (it.charges ?? 0) === 0);
+                const statChip = "rounded-[2px] bg-[var(--rg-raised)] px-1 text-[var(--rg-strong)] hover:bg-[var(--rg-hover)]";
                 return (
                     <div
                         key={i}
-                        className={`flex shrink-0 items-center gap-x-3 overflow-x-auto whitespace-nowrap px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-muted)] [scrollbar-width:none] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                        className={`flex shrink-0 items-center gap-x-2 overflow-x-auto whitespace-nowrap px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-muted)] [scrollbar-width:none] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
@@ -1938,28 +1939,27 @@ export default function Rogue() {
                             <OriginTag origin={h.origin} level={h.level} />
                         </span>
                         {i === 0 && <span>{level.depth}층</span>}
-                        <span className="text-[var(--rg-gold)]">Gold: {h.gold}</span>
-                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:hp` ? null : `${i}:hp`)} className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)] font-bold" : undefined}>
+                        <span className="text-[var(--rg-gold)]">Gold {h.gold}</span>
+                        <span className={h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}>
                             HP {h.hp}/{h.maxHp}{h.hp <= 0 && " 쓰러짐"}
-                        </button>
-                        {statOpen === `${i}:hp` && <span className="text-[var(--rg-faint)]">현재 체력 / 최대 체력</span>}
+                        </span>
                         {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:str` ? null : `${i}:str`)}>
-                            힘 {heroStr(h)}
+                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:str` ? null : `${i}:str`)} className={statChip}>
+                            Str {heroStr(h)}
                         </button>
-                        {statOpen === `${i}:str` && <span className="text-[var(--rg-faint)]">성장 힘 {h.str} · 반지 {heroStr(h) - h.str >= 0 ? "+" : ""}{heroStr(h) - h.str} · 최대 {h.maxStr}</span>}
-                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:defense` ? null : `${i}:defense`)}>
-                            방어등급 {heroArmorClass(h)}
+                        {statOpen === `${i}:str` && <span className="text-[var(--rg-faint)]">기본 {h.str} · 반지 {heroStr(h) - h.str >= 0 ? "+" : ""}{heroStr(h) - h.str} · 최대 {h.maxStr}</span>}
+                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => setStatOpen(statOpen === `${i}:defense` ? null : `${i}:defense`)} className={statChip}>
+                            AC {heroArmorClass(h)}
                         </button>
-                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">장비 등급 {heroArmor(h)} · 성장 -{h.bonusDefense} · 최종 {heroArmorClass(h)}{h.guarded && h.origin === "knight" ? " · 철벽 자세 보정 포함" : ""}</span>}
-                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:luck` ? null : `${i}:luck`)}>
-                            운 {Math.round(h.itemLuck * 100)}%
+                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">방어등급: 장비 {heroArmor(h)} · 성장 -{h.bonusDefense} · 최종 {heroArmorClass(h)}{h.guarded && h.origin === "knight" ? " · 철벽 자세 보정 포함" : ""}</span>}
+                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:luck` ? null : `${i}:luck`)} className={statChip}>
+                            Luk {Math.round(h.itemLuck * 100)}%
                         </button>
                         {statOpen === `${i}:luck` && <span className="text-[var(--rg-faint)]">아이템 등급을 더 좋게 굴릴 확률</span>}
-                        <span>Exp: {h.level}/{h.exp}</span>
+                        <span>Lv {h.level} · Exp {h.exp}</span>
                         {hAffinity && (
                             <span className="font-bold text-[var(--rg-weapon)]">
-                                ⚔ {hAffinity.name} · {hAffinity.description}
+                                ⚔ {hAffinity.name} +1/+1
                             </span>
                         )}
                         {h.pendingSkillPicks > 0 ? (
