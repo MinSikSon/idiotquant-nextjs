@@ -2858,6 +2858,7 @@ function act(state: GameState, cmd: Command): GameState {
         }
         acted = true;
     } else {
+        if (hero.guarded && hero.origin === "knight") say(state, "🛡️ 철벽의 자세가 풀렸다.");
         hero.guarded = false;
         switch (cmd.t) {
             case "move":

@@ -738,6 +738,8 @@ export default function Rogue() {
     /** 좌상단 「성장」 단추를 눌러 펼쳤는가 — 끊김 안내와 같은 자리다(모서리 한 칸). */
     const [skillOpen, setSkillOpen] = useState(false);
     const [altarOpen, setAltarOpen] = useState(false);
+    /** 상태 줄의 수치를 누르면 그 값이 어디서 왔는지 같은 줄에 펼친다. */
+    const [statOpen, setStatOpen] = useState<string | null>(null);
     /**
      * 내보낸 손님들의 **자리표**(`guestKey`) — 이 방이 열려 있는 동안 다시 안 받는다.
      *
@@ -1937,12 +1939,23 @@ export default function Rogue() {
                         </span>
                         {i === 0 && <span>Level: {level.depth}</span>}
                         <span className="text-[var(--rg-gold)]">Gold: {h.gold}</span>
-                        <span className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)] font-bold" : undefined}>
-                            Hp: {h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
-                        </span>
+                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:hp` ? null : `${i}:hp`)} className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)] font-bold" : undefined}>
+                            HP {h.hp}/{h.maxHp}{h.hp <= 0 && " 쓰러짐"}
+                        </button>
+                        {statOpen === `${i}:hp` && <span className="text-[var(--rg-faint)]">현재 체력 / 최대 체력</span>}
                         {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        <span>Str: {heroStr(h)}({h.maxStr})</span>
-                        <span>Arm: {heroArmor(h)}</span>
+                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:str` ? null : `${i}:str`)}>
+                            힘 {heroStr(h)}
+                        </button>
+                        {statOpen === `${i}:str` && <span className="text-[var(--rg-faint)]">성장 힘 {h.str} · 반지 {heroStr(h) - h.str >= 0 ? "+" : ""}{heroStr(h) - h.str} · 최대 {h.maxStr}</span>}
+                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:defense` ? null : `${i}:defense`)}>
+                            방어 {heroDefense(h)}
+                        </button>
+                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">장비 {defenseOf(heroArmor(h))} · 성장 +{h.bonusDefense}{h.guarded && h.origin === "knight" ? " · 철벽 자세 보정 포함" : ""}</span>}
+                        <button type="button" onClick={() => setStatOpen(statOpen === `${i}:luck` ? null : `${i}:luck`)}>
+                            운 {Math.round(h.itemLuck * 100)}%
+                        </button>
+                        {statOpen === `${i}:luck` && <span className="text-[var(--rg-faint)]">아이템 등급을 더 좋게 굴릴 확률</span>}
                         <span>Exp: {h.level}/{h.exp}</span>
                         {hAffinity && (
                             <span className="font-bold text-[var(--rg-weapon)]">
@@ -1954,9 +1967,6 @@ export default function Rogue() {
                         ) : (
                             <span className="text-[var(--rg-faint)]">다음 성장 Lv {Math.floor(h.level / SKILL_PICK_INTERVAL + 1) * SKILL_PICK_INTERVAL}</span>
                         )}
-                        <span className="text-[var(--rg-faint)]">
-                            성장: 힘 {heroStr(h)} · 방어 +{h.bonusDefense} · 운 {Math.round(h.itemLuck * 100)}%
-                        </span>
                         {h.level < ADVANCE_LEVEL ? (
                             <span className="text-[var(--rg-faint)]">
                                 Lv {ADVANCE_LEVEL} 전직 · {ORIGINS[h.origin ?? "knight"].advancedSkillName} 해금까지 {ADVANCE_LEVEL - h.level}레벨

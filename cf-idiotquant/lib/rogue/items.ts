@@ -948,6 +948,24 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
     return "";
 }
 
+/**
+ * 장비 자체의 좋고 나쁨을 가르는 비교용 값.
+ *
+ * 배낭은 영웅의 힘·직업 보정을 다시 계산하지 않고, 아직 확인하지 않은 손질(`+N`)도
+ * 여기서 드러내지 않는다. 화면은 이 값으로 색만 고른다.
+ */
+export function equipmentRating(it: Item): number | null {
+    if (it.kind === "weapon") {
+        const [count, sides] = weaponDamageOf(it).split("d").map(Number);
+        return count * ((sides + 1) / 2) + (it.plusKnown ? (it.plusDam ?? 0) : 0);
+    }
+    if (it.kind === "armor") {
+        const armor = it.plusKnown ? armorClassOf(it) : (ARMORS[it.type]?.armor ?? 10);
+        return defenseOf(armor);
+    }
+    return null;
+}
+
 export function weaponDamageOf(it: Item | undefined): string {
     if (!it || it.kind !== "weapon") return "1d2";
     return WEAPONS[it.type]?.damage ?? "1d2";

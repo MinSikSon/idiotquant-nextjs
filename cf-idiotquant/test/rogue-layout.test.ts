@@ -149,7 +149,16 @@ test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", (
     assert.match(rogue, /⚠ HP 낮음[\s\S]*?⚠ 배고픔[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
     assert.match(rogue, /latest = visibleMessages[\s\S]*?important = [\s\S]*?recent = important/, "중요 메시지를 유지하지 않는다");
     assert.match(pad, /hot\?: boolean[\s\S]*?a\.hot && !a\.off/, "지금 가능한 행동을 강조하지 않는다");
-    assert.match(desk, /const comparedPower[\s\S]*?현재 .*→/, "새 장비를 현재 장비와 비교하지 않는다");
+    assert.match(desk, /const comparedPower[\s\S]*?"better"[\s\S]*?"worse"/, "새 장비의 좋고 나쁨을 가르지 않는다");
+    assert.doesNotMatch(desk, /현재 .*→/, "배낭에 장비 비교 문구가 과하게 남아 있다");
+});
+
+test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 펼친다", () => {
+    const rogue = read("app/(game)/game/Rogue.tsx");
+    assert.match(rogue, /const \[statOpen, setStatOpen\]/, "상태 상세를 열 수 없다");
+    assert.match(rogue, /방어 \{heroDefense\(h\)\}/, "최종 방어력이 상태 줄에 없다");
+    assert.match(rogue, /장비 \{defenseOf\(heroArmor\(h\)\)\} · 성장 \+\{h\.bonusDefense\}/, "방어의 장비·성장 근거가 없다");
+    assert.doesNotMatch(rogue, /성장: 힘/, "중복 성장 요약이 남아 있다");
 });
 
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {

@@ -20,6 +20,7 @@ import {
     ENCHANT_MAX,
     MELT_RETURN,
     describe,
+    equipmentRating,
     enchantOdds,
     enchantOf,
     enchantSafeMax,
@@ -267,11 +268,12 @@ export default function Desk({
     );
 
     const name = (it: Item) => describe(it, state.known, state.appearance);
-    /** 새 장비의 물건 몫만 지금 장비와 나란히 읽는다 — 힘·직업 같은 영웅 값은 여기서 다시 계산하지 않는다. */
-    const comparedPower = (it: Item): string | null => {
+    /** 새 장비의 물건 몫만 지금 장비와 비교한다 — 힘·직업 같은 영웅 값은 여기서 다시 계산하지 않는다. */
+    const comparedPower = (it: Item): "better" | "worse" | null => {
         const current = it.kind === "weapon" ? equippedWeapon(hero) : it.kind === "armor" ? equippedArmor(hero) : undefined;
         if (!current || current.id === it.id) return null;
-        return `현재 ${itemPower(current, state.known)} → ${itemPower(it, state.known)}`;
+        const difference = (equipmentRating(it) ?? 0) - (equipmentRating(current) ?? 0);
+        return difference > 0 ? "better" : difference < 0 ? "worse" : null;
     };
     const rings = wornRings(hero);
     const { level } = state;
@@ -761,9 +763,10 @@ export default function Desk({
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
                                                 모르는 물건은 기본값만 — 화면이 속을 흘리면 안 된다. */}
                                             {(it.kind === "weapon" || it.kind === "armor") && (
-                                                <span className="text-[var(--rg-faint)]"> {itemPower(it, state.known)}</span>
+                                                <span className={comparedPower(it) === "better" ? "text-[var(--rg-weapon)]" : comparedPower(it) === "worse" ? "text-[var(--rg-trap)]" : "text-[var(--rg-faint)]"}>
+                                                    {" "}{itemPower(it, state.known)}
+                                                </span>
                                             )}
-                                            {comparedPower(it) && <span className="text-[var(--rg-gold)]"> · {comparedPower(it)}</span>}
                                             {worn && <span className="text-[var(--rg-muted)]"> ({worn})</span>}
                                             {dualWield && <span className="font-bold text-[var(--rg-weapon)]"> · 이도류 장착</span>}
                                         </button>

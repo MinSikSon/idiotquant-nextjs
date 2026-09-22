@@ -98,9 +98,10 @@ test("왕실 근위대(Knight) 시작 장비 및 철벽의 자세 패시브 동�
     assert.equal(s1.heroes[0].guarded, true);
     assert.equal(heroDefense(s1.heroes[0]), baseDef + 2);
 
-    // 이동 시 guarded 상태 해제
-    const s2 = perform(s1, { t: "rest" }); // again
-    assert.equal(s2.heroes[0].guarded, true);
+    // 다른 행동을 하면 자세가 풀리고, 전투 로그에도 이유가 남는다.
+    const s2 = perform(s1, { t: "search" });
+    assert.equal(s2.heroes[0].guarded, false);
+    assert.ok(s2.messages.some((m) => m.includes("철벽의 자세가 풀렸다")), "자세 해제 안내가 로그에 없다");
 });
 
 test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 자세와 중첩된다", () => {
