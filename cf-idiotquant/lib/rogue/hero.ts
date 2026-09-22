@@ -183,12 +183,12 @@ export function offHandWeapon(hero: Hero): Item | undefined {
     return hero.offWeaponId === null ? undefined : hero.pack.find((i) => i.id === hero.offWeaponId);
 }
 
-/** 제 직업의 짝 무기를 양손에 모두 쥐고 있는가. 도적의 양손 단검도 이 값으로 읽는다. */
+/** 제 직업이 허용한 같은 무기를 양손에 모두 쥐고 있는가. */
 export function isDualWielding(hero: Hero): boolean {
-    const pair = DUAL_WIELD[hero.origin ?? "knight"];
+    const allowed = DUAL_WIELD[hero.origin ?? "knight"];
     const main = equippedWeapon(hero);
     const off = offHandWeapon(hero);
-    return !!pair && main?.type === pair && off?.type === pair;
+    return !!allowed && !!main && main.type === off?.type && allowed.includes(main.type);
 }
 
 /**
@@ -197,16 +197,16 @@ export function isDualWielding(hero: Hero): boolean {
  * 규칙이 넷이고 **여기 한 자리**에서 본다 — 화면도 엔진도 이것만 부른다(자물쇠는 둘이다).
  *
  *   ① 무기여야 한다.
- *   ② **제 직업이 이도류로 쓰는 종류**여야 한다(`DUAL_WIELD`). 도적은 단검, 근위대는 장검.
+ *   ② **제 직업이 이도류로 쓰는 종류**여야 한다(`DUAL_WIELD`). 도적은 단검, 근위대는 단검·철퇴·창·장검.
  *   ③ **주손에 같은 종류를 쥐고** 있어야 한다 — 한 손에만 들면 그냥 한 자루다.
  *   ④ 주손에 쥔 **그 물건 자체**는 안 된다. 한 자루를 두 손에 들 수는 없다.
  */
 export function canOffHand(hero: Hero, it: Item): boolean {
     if (it.kind !== "weapon") return false;
-    const pair = DUAL_WIELD[hero.origin ?? "knight"];
-    if (!pair || it.type !== pair) return false;
+    const allowed = DUAL_WIELD[hero.origin ?? "knight"];
+    if (!allowed || !allowed.includes(it.type)) return false;
     const main = equippedWeapon(hero);
-    return !!main && main.type === pair && main.id !== it.id;
+    return !!main && main.type === it.type && main.id !== it.id;
 }
 
 export function equippedArmor(hero: Hero): Item | undefined {

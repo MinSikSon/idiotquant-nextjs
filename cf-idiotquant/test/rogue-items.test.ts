@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { newGame, perform } from "@/lib/rogue/game";
+import { glyphAt, newGame, perform } from "@/lib/rogue/game";
 import { goldGain, heroArmor, heroDefense, heroStr, hungerRate, packItem, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
@@ -331,6 +331,18 @@ test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진
 });
 
 test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {
+    // ── 밝은 방에 보여도 비밀문은 주변 벽과 똑같은 방향으로 그린다
+    {
+        const s = newGame(107);
+        const x = 20;
+        const y = 10;
+        s.level.tiles[idx(x, y)] = T.SECRET;
+        s.level.tiles[idx(x, y - 1)] = T.WALL_V;
+        s.level.tiles[idx(x, y + 1)] = T.WALL_V;
+        s.level.flags[idx(x, y)] = 3;
+        assert.deepEqual(glyphAt(s, x, y), { ch: "|", kind: "wall" }, "세로 벽의 비밀문 모양이 미리 드러난다");
+    }
+
     // ── 비밀문은 찾기 전에는 벽이고, 뒤지면 문이 된다
     {
         // 비밀문이 있는 층을 찾는다 — 깊을수록 잦다.

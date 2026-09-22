@@ -3302,6 +3302,18 @@ export function standing(mine: number, tombs: Tomb[]): Standing {
     };
 }
 
+/**
+ * 아직 찾지 못한 비밀문이 원래 있던 벽의 방향.
+ *
+ * 비밀문은 여분 통로의 문 자리를 `SECRET`으로 바꾼 값이라 방향을 따로 저장하지 않는다.
+ * 가로 벽 사이면 `-`, 세로 벽 사이면 `|`로 되짚어야 밝은 방에서도 문 모양이 새지 않는다.
+ */
+function secretWallGlyph(level: Level, x: number, y: number): "-" | "|" {
+    const horizontal = tileAt(level, x - 1, y) === T.WALL_H || tileAt(level, x + 1, y) === T.WALL_H;
+    const vertical = tileAt(level, x, y - 1) === T.WALL_V || tileAt(level, x, y + 1) === T.WALL_V;
+    return vertical && !horizontal ? "|" : "-";
+}
+
 /** 화면이 쓰는 글자표 — 한 곳에서만 정한다. */
 export function glyphAt(
     state: GameState,
@@ -3355,8 +3367,9 @@ export function glyphAt(
         case T.DOOR:
             return { ch: "+", kind: visible ? "door" : "door-dim" };
         case T.SECRET:
-            // **찾기 전에는 벽이다.** 다른 글자를 주면 화면이 비밀을 흘린다.
-            return { ch: "-", kind: visible ? "wall" : "wall-dim" };
+            // **찾기 전에는 원래 방향의 벽이다.** 문과 다른 글자는 물론, 벽 방향이 달라도
+            // 밝은 방의 외곽선이 끊겨 비밀문 자리가 새어 버린다.
+            return { ch: secretWallGlyph(level, x, y), kind: visible ? "wall" : "wall-dim" };
         case T.CORRIDOR:
         case T.PASSAGE:
             return { ch: "#", kind: visible ? "corridor" : "corridor-dim" };

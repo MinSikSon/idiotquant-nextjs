@@ -58,8 +58,8 @@ test("직업 무기를 쥐면 명중과 피해에 같은 숙련 보너스가 붙
     }
 });
 
-test("근위대는 장검, 도적은 단검 두 자루를 이도류로 쥔다", () => {
-    for (const [origin, type] of [["knight", "long sword"], ["rogue", "dagger"]] as const) {
+test("근위대는 단검·철퇴·창·장검, 도적은 단검을 이도류로 쥔다", () => {
+    for (const [origin, type] of [["knight", "dagger"], ["knight", "mace"], ["knight", "spear"], ["knight", "long sword"], ["rogue", "dagger"]] as const) {
         const state = newGame(102, {}, {}, {}, {}, origin);
         const hero = state.heroes[0];
         const main = hero.pack.find((it) => it.kind === "weapon")!;

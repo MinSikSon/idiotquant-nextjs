@@ -1,4 +1,4 @@
-// 이도류 — **직업마다 한 종류씩.**
+// 이도류 — **직업마다 정해진 종류만.**
 //
 // 「가벼운 무기」라는 특성을 안 뒀다. 지금 사다리에 가벼운 날붙이가 단검 하나뿐이라,
 // 특성으로 열면 이도류가 **4층에서 끝나는** 기능이 된다. 직업마다 한 종류를 못 박으면
@@ -7,7 +7,7 @@
 //
 // 거는 것:
 //
-//   ① **직업이 정한 그 종류만.** 도적은 단검, 근위대는 장검. 연금술사·연구자는 없다.
+//   ① **직업이 정한 종류만.** 도적은 단검, 근위대는 단검·철퇴·창·장검. 연금술사·연구자는 없다.
 //   ② **주손에 같은 종류를 쥐고 있어야** 한다 — 한 손에만 들면 그냥 한 자루다.
 //   ③ **두 번 굴린다.** 보조손은 명중이 불리하고 피해에 **힘 보정이 안 얹힌다** —
 //      그게 없으면 이도류가 그냥 피해 두 배라 한 자루를 쥘 까닭이 사라진다.
@@ -43,13 +43,15 @@ function armed(seed: number, origin: HeroOrigin, type: string) {
 }
 
 test("직업이 정한 그 종류만 보조손에 쥔다", () => {
-    // ── 도적은 단검, 근위대는 장검
+    // ── 도적은 단검, 근위대는 단검·철퇴·창·장검
     {
-        for (const [origin, type] of Object.entries(DUAL_WIELD) as [HeroOrigin, string][]) {
-            const { s, hero, off } = armed(5001, origin, type);
-            assert.ok(canOffHand(hero, off), `${origin} 이 ${type} 을 보조손에 못 쥔다`);
-            perform(s, { t: "offHand", letter: off.letter! });
-            assert.equal(offHandWeapon(hero)?.id, off.id, `${origin} 의 보조손이 안 채워졌다`);
+        for (const [origin, types] of Object.entries(DUAL_WIELD) as [HeroOrigin, string[]][]) {
+            for (const type of types) {
+                const { s, hero, off } = armed(5001, origin, type);
+                assert.ok(canOffHand(hero, off), `${origin} 이 ${type} 을 보조손에 못 쥔다`);
+                perform(s, { t: "offHand", letter: off.letter! });
+                assert.equal(offHandWeapon(hero)?.id, off.id, `${origin} 의 보조손이 안 채워졌다`);
+            }
         }
     }
 
@@ -61,6 +63,12 @@ test("직업이 정한 그 종류만 보조손에 쥔다", () => {
         const before = hero.offWeaponId;
         perform(s, { t: "offHand", letter: extra.letter! });
         assert.equal(hero.offWeaponId, before, "거절했는데 보조손이 채워졌다");
+    }
+
+    // ── 근위대도 허용 목록 밖의 무기를 보조손에 못 든다
+    {
+        const { hero, off } = armed(50021, "knight", "two-handed sword");
+        assert.ok(!canOffHand(hero, off), "근위대가 양손검을 보조손에 쥔다");
     }
 
     // ── 이도류가 없는 직업은 아무것도 못 쥔다
