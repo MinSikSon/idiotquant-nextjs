@@ -239,13 +239,22 @@ test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
     assert.equal(s.heroes[0].hp, 11);
     assert.equal(s.heroes[0].str, 15);
 
-    // 시작 장비 확인 (단검, 다트 10개, 순간이동 주문서, 식량)
+    // NetHack Rogue의 핵심 장비를 이 게임의 사다리에 맞춘다: 단검 묶음과 +1 가죽 갑옷.
     const dagger = s.heroes[0].pack.find((p) => p.kind === "weapon" && p.type === "dagger");
-    const dart = s.heroes[0].pack.find((p) => p.kind === "weapon" && p.type === "dart");
+    const leather = s.heroes[0].pack.find((p) => p.kind === "armor" && p.type === "leather");
     const teleport = s.heroes[0].pack.find((p) => p.kind === "scroll" && p.type === "teleport");
-    assert.ok(dagger, "단검이 있어야 함");
-    assert.ok(dart && dart.count === 10, "다트 10개가 있어야 함");
+    assert.ok(dagger && dagger.count === 6, "단검 6개 묶음이 있어야 함");
+    assert.ok(leather && leather.plusArmor === 1, "+1 가죽 갑옷이 있어야 함");
     assert.ok(teleport, "순간이동 주문서가 있어야 함");
+});
+
+test("혼자 잠입한 도적은 일부 평범한 적을 잠든 채 만난다", () => {
+    let sleeping = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+        const s = newGame(seed, {}, {}, {}, {}, "rogue");
+        sleeping += s.level.monsters.filter((monster) => !monster.awake).length;
+    }
+    assert.ok(sleeping > 0, "도적의 은신이 시작 몬스터를 한 번도 재우지 않는다");
 });
 
 test("방랑 연금술사(Alchemist) 시작 물약 100% 식별 및 회복 효과", () => {

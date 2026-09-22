@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, wornRings } from "@/lib/rogue/hero";
+import { goldGain, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -235,6 +235,22 @@ test("투명 보기와 몬스터 도발 반지는 팬텀 시야와 적의 목표
     assert.ok(monster.awake, "도발 반지가 몬스터를 깨우지 않는다");
     assert.equal(monster.target, 0, "도발 반지가 착용자를 목표로 고정하지 않는다");
     void angered;
+});
+
+test("도적은 10레벨에 탐색 본능을 얻고 단검을 두 자루씩 던진다", () => {
+    const s = newGame(110, {}, {}, {}, {}, "rogue");
+    const hero = s.heroes[0];
+    assert.equal(searchChance(hero), 0.25, "10레벨 전부터 도적 탐색 본능이 켜졌다");
+    hero.level = 10;
+    assert.equal(searchChance(hero), 0.65, "10레벨 도적의 탐색 본능이 없다");
+
+    hero.level = 1;
+    s.level.monsters = [];
+    const dagger = hero.pack.find((it) => it.kind === "weapon" && it.type === "dagger")!;
+    const [dx, dy] = openWay(s);
+    const thrown = perform(s, { t: "throw", letter: dagger.letter!, dx, dy });
+    assert.equal(dagger.count, 4, "도적이 단검 두 자루를 연달아 던지지 않았다");
+    assert.ok(thrown.messages.some((message) => message.includes("단검 2연사")), "2연사 기록이 없다");
 });
 
 test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {

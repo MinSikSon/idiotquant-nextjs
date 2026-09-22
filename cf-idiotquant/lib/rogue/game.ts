@@ -340,6 +340,11 @@ function populate(state: GameState, level: Level, rng: Rng) {
         const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
         const prefix = rollChampionPrefix(level.depth, rng);
         const m = spawnMonster(randomMonsterChar(level.depth, rng), p.x, p.y, rng, prefix ?? undefined);
+        // NetHack Rogue의 은신: 혼자 잠입한 도적 앞에서는 평범한 적 일부가 처음부터
+        // 잠든 채 선다. 협동에서는 다른 동료가 곧바로 깨울 수 있으므로 이 값도 혼자일 때만 준다.
+        if (state.heroes.length === 1 && state.heroes[0].origin === "rogue" && !prefix && m.awake && rng.chance(0.5)) {
+            m.awake = false;
+        }
         if (level.mutator === "frenzy") {
             m.speed = 1;
         }
@@ -2330,7 +2335,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 }
 
 /** 던지기 — 멀리서 때리는 유일한 길이다. */
-function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy: number, rng: Rng): boolean {
+function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy: number, rng: Rng, volley = true): boolean {
     const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
@@ -2346,6 +2351,15 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     if (dx === 0 && dy === 0) {
         say(state, "어디를 겨눌지 정해야 한다.");
         return false;
+    }
+
+    // NetHack Rogue는 단검을 던질 때 +1 multishot을 얻는다. 이 게임의 던지기는 한 번에
+    // 한 글자 묶음에서 하나씩 빼므로, 두 번째 단검도 같은 조준선으로 즉시 보낸다.
+    if (volley && hero.origin === "rogue" && it.type === "dagger" && it.count > 1) {
+        say(state, "🗡️ 도적의 단검 2연사!");
+        throwItem(state, hero, letter, dx, dy, rng, false);
+        if (packItem(hero, letter)) throwItem(state, hero, letter, dx, dy, rng, false);
+        return true;
     }
 
     // **하나만 던진다.** 남은 개수를 따로 적어 준다 — 안 적으면 줄었는지 알 수 없다.
@@ -2405,6 +2419,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     // 던진 것도 D&D 의 공격 굴림을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
     const hitTerms: Term[] = [
         { n: proficiency(hero.level), why: "숙련" },
+        ...(hero.origin === "rogue" && it.type === "dagger" ? [{ n: 1, why: "도적 단검" }] : []),
         { n: it.plusHit ?? 0, why: "손질" },
     ];
     const seen = seenBefore(state, m);

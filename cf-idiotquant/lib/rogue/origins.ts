@@ -116,9 +116,9 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedTitle: "Shadow Assassin",
         icon: ")",
         iconInk: "var(--rg-weapon)",
-        description: "치명적인 기습과 함정 회피에 능한 재빠른 잠입자.",
+        description: "은신·탐색·단검 연사와 기습에 능한 재빠른 잠입자.",
         traitName: "기습 암습",
-        traitDescription: "자거나 둔화된 적 공격 시 치명타 2배 + 3 추가 피해, 함정 50% 회피",
+        traitDescription: "은신으로 적 일부를 재운 채 시작 · 단검 2연사 · Lv10 탐색 · 기습 치명타 · 함정 50% 회피",
         weaponAffinity: { name: "암살 단검", types: ["dagger"], description: "명중 +1 · 피해 +1" },
         advancedSkillName: "연막",
         advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
@@ -126,13 +126,14 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         baseHp: 11,
         baseStr: 15,
         createStartingItems: (nextId) => {
-            const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
+            const dagger = makeItem("weapon", "dagger", nextId(), -1, -1, 6);
             dagger.plusHit = 1;
             dagger.plusDam = 1;
-            const dart = makeItem("weapon", "dart", nextId(), -1, -1, 10);
+            const leather = makeItem("armor", "leather", nextId(), -1, -1);
+            leather.plusArmor = 1;
             const teleportScroll = makeItem("scroll", "teleport", nextId(), -1, -1, 1);
             const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
-            return [dagger, dart, teleportScroll, food];
+            return [dagger, leather, teleportScroll, food];
         },
     },
     alchemist: {

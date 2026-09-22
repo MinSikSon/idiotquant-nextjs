@@ -397,9 +397,9 @@ export function regenEvery(hero: Hero): number {
     return hasRing(hero, "regeneration") ? 1 : base;
 }
 
-/** 한 번 뒤졌을 때 숨은 것을 찾을 확률. 탐색 반지가 크게 올린다. */
+/** 한 번 뒤졌을 때 숨은 것을 찾을 확률. 탐색 반지와 10레벨 도적의 본능이 크게 올린다. */
 export function searchChance(hero: Hero): number {
-    return hasRing(hero, "searching") ? 0.65 : 0.25;
+    return hasRing(hero, "searching") || (hero.origin === "rogue" && hero.level >= 10) ? 0.65 : 0.25;
 }
 
 export function heroDamageDice(hero: Hero, weapon = equippedWeapon(hero)): string {
