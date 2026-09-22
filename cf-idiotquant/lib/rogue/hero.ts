@@ -262,6 +262,15 @@ export function heroDefense(hero: Hero): number {
 }
 
 /**
+ * 화면에 보이는 Rogue식 최종 방어 등급. 낮을수록 단단하고, 성장·자세까지 더해지면
+ * 0 아래로 내려간다. 실제 피해 경감값(`heroDefense`)과 서로 다른 계산을 하지 않도록
+ * 그 값에서만 뒤집는다.
+ */
+export function heroArmorClass(hero: Hero): number {
+    return 10 - heroDefense(hero);
+}
+
+/**
  * **수비 굴림에 얹히는 것** — 숙련 하나뿐이다.
  *
  * 갑옷은 여기 안 붙는다. 붙이면 갑옷이 **피하는 데에는 피해를 깎는 데에는** 두 번

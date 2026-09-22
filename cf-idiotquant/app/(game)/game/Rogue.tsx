@@ -66,7 +66,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroDefense, heroStr, hungerOf, weaponAffinityOf, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, weaponAffinityOf, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -1937,7 +1937,7 @@ export default function Rogue() {
                         <span className="text-[var(--rg-strong)] font-semibold">
                             <OriginTag origin={h.origin} level={h.level} />
                         </span>
-                        {i === 0 && <span>Level: {level.depth}</span>}
+                        {i === 0 && <span>{level.depth}층</span>}
                         <span className="text-[var(--rg-gold)]">Gold: {h.gold}</span>
                         <button type="button" onClick={() => setStatOpen(statOpen === `${i}:hp` ? null : `${i}:hp`)} className={h.hp <= h.maxHp / 4 ? "text-[var(--rg-trap)] font-bold" : undefined}>
                             HP {h.hp}/{h.maxHp}{h.hp <= 0 && " 쓰러짐"}
@@ -1949,9 +1949,9 @@ export default function Rogue() {
                         </button>
                         {statOpen === `${i}:str` && <span className="text-[var(--rg-faint)]">성장 힘 {h.str} · 반지 {heroStr(h) - h.str >= 0 ? "+" : ""}{heroStr(h) - h.str} · 최대 {h.maxStr}</span>}
                         <button type="button" onClick={() => setStatOpen(statOpen === `${i}:defense` ? null : `${i}:defense`)}>
-                            방어 {heroDefense(h)}
+                            방어등급 {heroArmorClass(h)}
                         </button>
-                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">장비 {defenseOf(heroArmor(h))} · 성장 +{h.bonusDefense}{h.guarded && h.origin === "knight" ? " · 철벽 자세 보정 포함" : ""}</span>}
+                        {statOpen === `${i}:defense` && <span className="text-[var(--rg-faint)]">장비 등급 {heroArmor(h)} · 성장 -{h.bonusDefense} · 최종 {heroArmorClass(h)}{h.guarded && h.origin === "knight" ? " · 철벽 자세 보정 포함" : ""}</span>}
                         <button type="button" onClick={() => setStatOpen(statOpen === `${i}:luck` ? null : `${i}:luck`)}>
                             운 {Math.round(h.itemLuck * 100)}%
                         </button>
@@ -3129,7 +3129,7 @@ export default function Rogue() {
                                                         <span>·</span>
                                                     </>
                                                 )}
-                                                <span>Level: {t.depth}</span>
+                                                <span>{t.depth}층</span>
                                                 <span>·</span>
                                                 <span className="text-[var(--rg-gold)]">Gold: {t.gold}</span>
                                                 <span>·</span>
