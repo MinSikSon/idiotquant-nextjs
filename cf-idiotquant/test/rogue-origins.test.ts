@@ -141,6 +141,10 @@ test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 �
     assert.equal(heroDefense(hero), healthy + 2);
     hero.guarded = true;
     assert.equal(heroDefense(hero), healthy + 2 + 4);
+
+    hero.guarded = false;
+    const guarded = perform(s, { t: "rest" });
+    assert.ok(guarded.messages.at(-1)?.includes("방어 등급 -4"), "전직 뒤 철벽 자세 로그가 실제 방어 등급 변화를 적지 않는다");
 });
 
 test("인접한 적에게서도 일반 이동으로 도망칠 수 있고, 공격은 제자리에서 한다", () => {
@@ -158,6 +162,7 @@ test("인접한 적에게서도 일반 이동으로 도망칠 수 있고, 공격
     const fled = perform(s, { t: "move", dx: -1, dy: 0 });
     assert.equal(fled.heroes[0].x, 9);
     assert.equal(fled.heroes[0].y, 10);
+    assert.equal(target.x, 11, "방금 떠난 칸으로 추격한 적이 공격 대신 이동했다");
 
     const s2 = newGame(8, {}, {}, {}, {}, "knight");
     const fighter = s2.heroes[0];

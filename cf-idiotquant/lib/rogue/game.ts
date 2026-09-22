@@ -48,6 +48,7 @@ import {
     wornRings,
 } from "./hero";
 import {
+    ADVANCED_GUARD_BONUS,
     ADVANCED_HEAL_MULT,
     ADVANCED_PRESERVE_CHANCE,
     ADVANCED_TRAP_EVADE,
@@ -2664,7 +2665,7 @@ function monsterTarget(state: GameState, m: Monster): Hero {
     return best;
 }
 
-function monsterTurns(state: GameState, rng: Rng) {
+function monsterTurns(state: GameState, rng: Rng, fled?: { hero: Hero; x: number; y: number }) {
     const { level } = state;
     // **누구 하나라도 시간을 세웠으면 세상이 선다.** 파티의 것이지 한 사람의 것이 아니다.
     const stopper = state.heroes.find((h) => (h.timeStop ?? 0) > 0);
@@ -2686,7 +2687,7 @@ function monsterTurns(state: GameState, rng: Rng) {
         const acts = m.speed > 0 ? 2 : 1;
         for (let n = 0; n < acts; n++) {
             if (m.hp <= 0 || state.heroes.every((h) => h.hp <= 0)) break;
-            monsterAct(state, m, rng);
+            monsterAct(state, m, rng, fled);
         }
     }
     // 특수 공격으로 스스로 사라진 놈들(레프러콘·님프)을 치운다.
@@ -2731,7 +2732,7 @@ function dragonFlamePath(level: Level, dragon: Monster, victim: Hero): { hit: bo
     return { hit: false, bounced, cells };
 }
 
-function monsterAct(state: GameState, m: Monster, rng: Rng) {
+function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero; x: number; y: number }) {
     const { level } = state;
     {
         if (!m.awake) {
@@ -2768,8 +2769,8 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
             return;
         }
 
-        // 적은 이번 행동에 **실제로** 내 칸에 들어갈 수 있을 때만 때린다. 대각선
-        // 모서리에 막혔거나 내가 이미 다음 칸으로 빠져 있으면, 공격 대신 추적만 한다.
+        // 적은 이번 행동에 **실제로** 내 칸에 들어갈 수 있을 때 때린다. 단, 바로 앞
+        // 칸으로 달아난 표적을 쫓아 방금 떠난 칸에 닿을 때도 추격 공격이 들어간다.
         const erratic = (m.def.ch === "B" || m.def.ch === "K") && rng.chance(0.5);
         const next = erratic
             ? (() => {
@@ -2779,7 +2780,11 @@ function monsterAct(state: GameState, m: Monster, rng: Rng) {
                   return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) && !blockedDiagonal(level, m, { x: nx, y: ny }) ? { x: nx, y: ny } : null;
               })()
             : stepToward(level, m, victim);
-        if (next?.x === victim.x && next?.y === victim.y) {
+        if (
+            next &&
+            ((next.x === victim.x && next.y === victim.y) ||
+                (victim === fled?.hero && next.x === fled.x && next.y === fled.y))
+        ) {
             say(state, ...monsterAttack(state, m, victim, rng).messages);
             return;
         }
@@ -2900,6 +2905,7 @@ function act(state: GameState, cmd: Command): GameState {
     // 「누구 차례인가」를 다시 판단하지 않는다 — 그러면 규칙이 두 벌이 된다.
     const hero = state.heroes[cmd.who ?? 0];
     if (!hero) return state;
+    const turnStart = { x: hero.x, y: hero.y };
     // **쓰러진 사람은 못 움직인다.** 화면이 조종을 안 넘기지만 엔진도 한 번 더 본다.
     if (hero.hp <= 0) return state;
 
@@ -2926,7 +2932,8 @@ function act(state: GameState, cmd: Command): GameState {
         if (hero.origin === "knight") {
             hero.guarded = true;
             hero.guardTurns = 3;
-            say(state, "🛡️ 철벽의 자세를 취했다 (제자리 전투 3턴 Arm +2 / 받는 피해 2 경감).");
+            const guardArmor = hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2;
+            say(state, `🛡️ 철벽의 자세를 취했다 (제자리 전투 3턴 방어 등급 -${guardArmor} / 받는 피해 2 경감).`);
         }
         acted = true;
     } else {
@@ -3017,10 +3024,13 @@ function act(state: GameState, cmd: Command): GameState {
         }
     }
 
-    return finishTurn(state, hero, rng, acted, heldGuard);
+    const fled = cmd.t === "move" && (hero.x !== turnStart.x || hero.y !== turnStart.y)
+        ? { hero, ...turnStart }
+        : undefined;
+    return finishTurn(state, hero, rng, acted, heldGuard, fled);
 }
 
-function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, heldGuard = false): GameState {
+function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, heldGuard = false, fled?: { hero: Hero; x: number; y: number }): GameState {
     sayTag = "";
     if (!acted) {
         // 아무 일도 안 일어났으면 턴을 안 쓴다. 난수 상태만 저장한다.
@@ -3092,7 +3102,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         if (state.pendingSteps >= pace) {
             state.pendingSteps = 0;
             state.monsterRound = (state.monsterRound ?? 0) + 1;
-            monsterTurns(state, rng);
+            monsterTurns(state, rng, fled);
         }
     }
 
