@@ -80,6 +80,14 @@ export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
     knight: ["dagger", "mace", "spear", "long sword"],
 };
 
+/** 직업별 무기 숙련 상한. 표 밖 무기는 Basic까지만 쓸 수 있다. */
+export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
+    knight: { dagger: 1, mace: 2, spear: 2, "long sword": 3, "two-handed sword": 2, "silver sword": 3, "thirsty sword": 3, "magic sword": 2, "knight sword": 3, "baphomet sword": 3 },
+    rogue: { dagger: 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
+    alchemist: { dagger: 3, spear: 1, "magic sword": 2 },
+    scholar: { dagger: 2, "magic sword": 3 },
+};
+
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
     knight: {
         id: "knight",

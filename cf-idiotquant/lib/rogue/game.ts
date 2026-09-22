@@ -48,7 +48,13 @@ import {
     SKILL_PICK_INTERVAL,
     regenEvery,
     searchChance,
+    trainWeaponSkill,
+    enhanceWeaponSkills,
     takeFromPack,
+    weaponSkillLevel,
+    weaponSkillMax,
+    weaponSkillName,
+    weaponSkillTerms,
     wornRings,
 } from "./hero";
 import {
@@ -2116,6 +2122,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
                 say(state, `🎖️ ${tag}${def.advancedName}(${def.advancedTitle})로 전직했다!`);
             }
         }
+        if (levels.length > 0) for (const skill of enhanceWeaponSkills(h)) say(state, `⚔ ${tag}${skill}에 도달했다.`);
         // **쌓인 만큼만** 알린다 — 고르는 화면을 찾는 줄은 화면(★ 단추) 몫이라 여기서는
         // 「생겼다」만 짚는다.
         if (h.pendingSkillPicks > before) {
@@ -2419,6 +2426,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     // 던진 것도 D&D 의 공격 굴림을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
     const hitTerms: Term[] = [
         { n: proficiency(hero.level), why: "숙련" },
+        ...weaponSkillTerms(hero, it).slice(0, 1),
         ...(hero.origin === "rogue" && it.type === "dagger" ? [{ n: 1, why: "도적 단검" }] : []),
         { n: it.plusHit ?? 0, why: "손질" },
     ];
@@ -2435,13 +2443,15 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         return true;
     }
     const dice = weaponDamageOf(it);
-    const damTerms: Term[] = [{ n: it.plusDam ?? 0, why: "손질" }];
-    const d = damageRoll(dice, it.plusDam ?? 0, a.crit, rng);
+    const damTerms: Term[] = [...weaponSkillTerms(hero, it).slice(1).filter((term) => term.n !== 0), { n: it.plusDam ?? 0, why: "손질" }];
+    const d = damageRoll(dice, damTerms.reduce((sum, term) => sum + term.n, 0), a.crit, rng);
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     const guard = monsterDefense(m);
     const got = pierce(d.total, guard);
     pullAggro(state, m, hero);
     m.hp -= got;
+    const advanced = trainWeaponSkill(hero, it, d.rolled.reduce((sum, roll) => sum + roll, 0) > 1);
+    if (advanced) say(state, `⚔ ${advanced}에 도달했다.`);
     say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
     say(
@@ -3006,7 +3016,8 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
         const advancement = hero.level < ADVANCE_LEVEL
             ? `전직: Lv ${ADVANCE_LEVEL} ${origin.advancedSkillName} 해금까지 ${ADVANCE_LEVEL - hero.level}레벨`
             : `전직: ${origin.advancedName} · ${origin.advancedSkillName}`;
-        say(state, `${tag}직업 · ${origin.advancedName} | 성장: Lv ${SKILL_PICK_INTERVAL}마다 힘·방어·지혜 선택 | ${nextGrowth} | ${advancement}`);
+        const skills = Object.entries(hero.weaponSkills ?? {}).map(([type, level]) => `${type} ${weaponSkillName(level)}/${weaponSkillName(weaponSkillMax(hero, type))}`).join(", ") || "무기 훈련 없음";
+        say(state, `${tag}직업 · ${origin.advancedName} | 무기 숙련: ${skills} | 성장: Lv ${SKILL_PICK_INTERVAL}마다 힘·방어·지혜 선택 | ${nextGrowth} | ${advancement}`);
     } else if (kind === "str") {
         say(state, `${tag}St:${heroStr(hero)} · 기본 ${hero.str} · 최대 ${hero.maxStr}`);
     } else if (kind === "defense") {

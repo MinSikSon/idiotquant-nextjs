@@ -25,7 +25,57 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, type WeaponAffinity } from "./origins";
+import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+
+export type WeaponSkill = 0 | 1 | 2 | 3;
+const SKILL_HITS = [0, 20, 80, 180];
+const SKILL_NAME = ["미숙", "기초", "숙련", "전문"];
+
+export function weaponSkillName(level: number): string {
+    return SKILL_NAME[Math.max(0, Math.min(3, level))] ?? "미숙";
+}
+
+export function weaponSkillLevel(hero: Hero, type: string): WeaponSkill {
+    // 예전 저장과 새로 주운 무기는 기존 전투 감각을 보존해 기초부터 선다.
+    return Math.max(0, Math.min(3, hero.weaponSkills?.[type] ?? 1)) as WeaponSkill;
+}
+
+export function weaponSkillMax(hero: Hero, type: string): WeaponSkill {
+    return Math.max(1, WEAPON_SKILL_MAX[hero.origin ?? "knight"]?.[type] ?? 1) as WeaponSkill;
+}
+
+/** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). */
+export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
+    if (!weapon || weapon.kind !== "weapon") return [];
+    const level = weaponSkillLevel(hero, weapon.type);
+    const hit = [-4, 0, 2, 3][level] ?? -4;
+    const dam = [-2, 0, 1, 2][level] ?? -2;
+    return [{ n: hit, why: `${weaponSkillName(level)} ${WEAPONS[weapon.type]?.name ?? "무기"}` }, { n: dam, why: "" }];
+}
+
+/** 의미 있는 적중 하나를 쌓는다. 승급은 레벨업 때만 열어 전투 중 수치가 흔들리지 않는다. */
+export function trainWeaponSkill(hero: Hero, weapon: Item | undefined, meaningful: boolean): string | null {
+    if (!meaningful || !weapon || weapon.kind !== "weapon") return null;
+    const type = weapon.type;
+    const training = (hero.weaponTraining ??= {});
+    training[type] = (training[type] ?? 0) + 1;
+    return null;
+}
+
+/** 레벨업으로 얻은 숙련 기회에, 충분히 훈련한 무기 하나씩을 올린다. */
+export function enhanceWeaponSkills(hero: Hero): string[] {
+    const training = hero.weaponTraining ?? {};
+    const skills = (hero.weaponSkills ??= {});
+    const out: string[] = [];
+    for (const [type, hits] of Object.entries(training)) {
+        const current = weaponSkillLevel(hero, type);
+        const next = current + 1;
+        if (next > weaponSkillMax(hero, type) || hits < SKILL_HITS[next]) continue;
+        skills[type] = next;
+        out.push(`${WEAPONS[type]?.name ?? "무기"} ${weaponSkillName(current)} → ${weaponSkillName(next)}`);
+    }
+    return out;
+}
 
 /** 이 경험치를 넘으면 다음 레벨. 원작의 `e_levels` 와 같은 모양이다. */
 export const EXP_LEVELS = [
@@ -99,6 +149,8 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         pendingSkillPicks: 0,
         bonusDefense: 0,
         itemLuck: 0,
+        weaponSkills: {},
+        weaponTraining: {},
         classSkillDepth: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
@@ -109,6 +161,11 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         } else if (item.kind === "armor" && hero.armorId === null) {
             hero.armorId = item.id;
         }
+    }
+    for (const item of hero.pack) {
+        if (item.kind !== "weapon") continue;
+        hero.weaponSkills![item.type] = 1;
+        hero.weaponTraining![item.type] = 20;
     }
     void rng;
     return hero;
@@ -320,6 +377,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
     const affinity = weaponAffinityOf(hero, weapon);
     return [
         { n: proficiency(hero.level), why: "숙련" },
+        ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
         { n: weapon?.plusHit ?? 0, why: weaponLabel(weapon) },
@@ -333,6 +391,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
     const affinity = weaponAffinityOf(hero, weapon);
     const terms: Term[] = [
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
+        ...weaponSkillTerms(hero, weapon).slice(1).filter((term) => term.n !== 0).map((term) => ({ ...term, why: `${weaponSkillName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
         { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
         ...(affinity ? [{ n: 1, why: affinity.name }] : []),

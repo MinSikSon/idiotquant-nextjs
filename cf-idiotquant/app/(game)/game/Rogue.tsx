@@ -1931,7 +1931,7 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                        className={`flex h-[3.5rem] shrink-0 content-start flex-wrap items-center gap-x-1 overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                        className={`flex h-[3.5rem] shrink-0 content-start flex-wrap items-center gap-x-3 overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button

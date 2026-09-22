@@ -64,6 +64,7 @@ import {
     strDamBonus,
     strHitBonus,
     takeFromPack,
+    trainWeaponSkill,
 } from "./hero";
 export type { Attack, Luck };
 export { heroHitTerms, heroDamTerms };
@@ -373,6 +374,8 @@ function swing(
     const guard = monsterDefense(m);
     const dealt = pierce(d.total, guard);
     m.hp -= dealt;
+    const advanced = trainWeaponSkill(hero, weapon, d.rolled.reduce((sum, roll) => sum + roll, 0) > 1);
+    if (advanced) messages.push(`⚔ ${advanced}에 도달했다.`);
     // 맞은 순간 깨어난다 — 자던 놈도 이제 쫓아온다. **0 이어도 깨운다**: 갑옷에 튕긴
     // 것도 맞은 것이고, 안 깨우면 못 뚫는 놈 옆에서 영영 안전해진다.
     m.awake = true;
