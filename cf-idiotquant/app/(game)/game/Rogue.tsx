@@ -67,7 +67,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, weaponSkillLevel, weaponSkillMax, weaponSkillName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, weaponSkillLevel, weaponSkillMax, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -91,7 +91,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
-import { ADVANCE_LEVEL, ORIGINS, ORIGIN_LIST, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ORIGINS, ORIGIN_LIST, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
@@ -2262,9 +2262,15 @@ export default function Rogue() {
                                                 ? `??? (${appearanceName})`
                                                 : "──────";
 
+                                    const weaponSkill = entry.kind === "weapon"
+                                        ? weaponSkillRankName(weaponSkillLevel(state.heroes[0], entry.type))
+                                        : null;
+                                    const weaponSkillMaximum = entry.kind === "weapon"
+                                        ? weaponSkillRankName(weaponSkillMax(state.heroes[0], entry.type))
+                                        : null;
                                     const statsSummary =
                                         stage >= 3
-                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? ` · 숙련 ${weaponSkillName(weaponSkillLevel(state.heroes[0], entry.type))}/${weaponSkillName(weaponSkillMax(state.heroes[0], entry.type))}` : ""}`
+                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? ` · 현재: ${weaponSkill} (${weaponSkillMaximum})` : ""}`
                                             : stage === 2
                                                 ? "배낭에 있다"
                                                 : stage === 1
@@ -2370,11 +2376,15 @@ export default function Rogue() {
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">숙련: </span>
-                                                                            <span className="text-[var(--rg-strong)]">{weaponSkillName(weaponSkillLevel(state.heroes[0], entry.type))} / {weaponSkillName(weaponSkillMax(state.heroes[0], entry.type))}</span>
+                                                                            <span className="text-[var(--rg-strong)]">현재: {weaponSkill} ({weaponSkillMaximum})</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">무기 계열: </span>
                                                                             <span>{weaponSkillOf(entry.type)}</span>
+                                                                        </div>
+                                                                        <div className="col-span-2">
+                                                                            <span className="text-[var(--rg-faint)]">직업별 최대: </span>
+                                                                            <span>{ORIGIN_LIST.map((origin) => `${origin.name} ${weaponSkillRankName(Math.max(1, WEAPON_SKILL_MAX[origin.id]?.[weaponSkillOf(entry.type)] ?? WEAPON_SKILL_MAX[origin.id]?.[entry.type] ?? 1))}`).join(" · ")}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>

@@ -41,9 +41,15 @@ export type WeaponSkill = 0 | 1 | 2 | 3;
  */
 const SKILL_HITS = [0, 20, 300, 900];
 const SKILL_NAME = ["미숙", "기초", "숙련", "전문"];
+const SKILL_RANK_NAME = ["unskilled", "basic", "skilled", "expert"];
 
 export function weaponSkillName(level: number): string {
     return SKILL_NAME[Math.max(0, Math.min(3, level))] ?? "미숙";
+}
+
+/** 도감·외부 표기용 Rogue 무기숙련 단계명. */
+export function weaponSkillRankName(level: number): string {
+    return SKILL_RANK_NAME[Math.max(0, Math.min(3, level))] ?? "unskilled";
 }
 
 export function weaponSkillLevel(hero: Hero, type: string): WeaponSkill {
