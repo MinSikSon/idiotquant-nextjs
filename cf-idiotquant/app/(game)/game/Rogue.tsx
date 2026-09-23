@@ -2571,7 +2571,7 @@ export default function Rogue() {
                             : statusKind === "gold"
                               ? `$:${statusHero.gold}\n몬스터를 처치하거나 바닥에서 주워 얻습니다. 현재 판의 점수에 반영됩니다.`
                               : statusKind === "xp"
-                                ? `Xp:${statusHero.level}/${statusHero.exp}\n몬스터를 처치하면 경험치를 얻고, 일정량이 쌓이면 레벨이 오릅니다.`
+                                ? `Xp:${statusHero.level}/${statusHero.exp}\n표시 형식은 Xp:레벨/경험치입니다. 몬스터를 처치하면 경험치를 얻고, 일정량이 쌓이면 레벨이 오릅니다.`
                                 : `T:${state.turn}\n플레이어가 행동한 횟수입니다. 행동할 때마다 허기와 몬스터의 차례가 진행됩니다.`;
                 return (
                     <Panel {...shared} title={`${sheetOwner + 1}P 상태 설명`} onClose={() => setSheet("none")} footer="상태창을 누르면 해당 상태의 설명을 다시 볼 수 있습니다.">
