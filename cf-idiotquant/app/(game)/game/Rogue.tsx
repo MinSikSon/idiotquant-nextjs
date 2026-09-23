@@ -2271,7 +2271,7 @@ export default function Rogue() {
                                         : null;
                                     const statsSummary =
                                         stage >= 3
-                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? ` · 현재: ${weaponSkill} (${weaponSkillMaximum})` : ""}`
+                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? ` · ${weaponSkill} (${weaponSkillMaximum})` : ""}`
                                             : stage === 2
                                                 ? "배낭에 있다"
                                                 : stage === 1
@@ -2377,7 +2377,7 @@ export default function Rogue() {
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">숙련: </span>
-                                                                            <span className="text-[var(--rg-strong)]">현재: {weaponSkill} ({weaponSkillMaximum})</span>
+                                                                            <span className="text-[var(--rg-strong)]">{weaponSkill} ({weaponSkillMaximum})</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">무기 계열: </span>
