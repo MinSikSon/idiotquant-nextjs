@@ -1972,7 +1972,8 @@ export default function Rogue() {
                         <button
                             type="button"
                             onClick={() => { runAs(i, { t: "inspectStatus", kind: "origin" }); setSheet("log"); }}
-                            className={`${statChip} order-20`}
+                            // 출신·성장·전직 기술 정보는 기본 스탯을 읽은 뒤에 보도록 맨 뒤에 둔다.
+                            className={`${statChip} order-last`}
                             title="직업 성장 정보 보기"
                         >
                             <OriginTag origin={h.origin} level={h.level} />
@@ -2153,8 +2154,8 @@ export default function Rogue() {
                                                     </div>
                                                     {m.known ? (
                                                         <div className="text-[var(--rg-muted)]">
-                                                            Level {m.level} · Arm {10 - (m.defense ?? 0)} · Dmg{" "}
-                                                            {m.damage?.join(" + ") || "없음"} · Exp {m.exp} · Hp {m.hp}
+                                                            Lv:{m.level} · HP:{m.hp} · AC:{10 - (m.defense ?? 0)} · Dmg:{" "}
+                                                            {m.damage?.join(" + ") || "없음"} · Xp:{m.exp}
                                                             {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         </div>
                                                     ) : (
@@ -2190,8 +2191,8 @@ export default function Rogue() {
                                                         <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
                                                         {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                                         <div className="text-[var(--rg-muted)]">
-                                                            Level {r.level} · Arm {10 - r.defense} · Dmg{" "}
-                                                            {r.damage.join(" + ") || "없음"} · Exp {r.exp} · Hp {r.hp}
+                                                            Lv:{r.level} · HP:{r.hp} · AC:{10 - r.defense} · Dmg:{" "}
+                                                            {r.damage.join(" + ") || "없음"} · Xp:{r.exp}
                                                             {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                             {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을

@@ -971,12 +971,12 @@ export function itemCodexStats(entry: CodexEntry): string {
     switch (entry.kind) {
         case "weapon": {
             const def = WEAPONS[entry.type];
-            return `${def?.damage ?? "1d2"} · ${depthStr}`;
+            return `Dmg:${def?.damage ?? "1d2"} · ${depthStr}`;
         }
         case "armor": {
             const def = ARMORS[entry.type];
             const defVal = defenseOf(def?.armor ?? 10);
-            return `방어력 ${defVal} · ${depthStr}`;
+            return `AC:${defVal} · ${depthStr}`;
         }
         case "potion":
         case "scroll":
