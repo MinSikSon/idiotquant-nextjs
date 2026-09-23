@@ -95,7 +95,6 @@ import { ADVANCE_LEVEL, ORIGINS, ORIGIN_LIST, WEAPON_SKILL_MAX, type HeroOrigin 
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
-import { roomAround } from "@/lib/rogue/fov";
 import MapView, { PARTY_BG, PARTY_INK, type CellFlash, type Reveal } from "./components/MapView";
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
@@ -1281,14 +1280,8 @@ export default function Rogue() {
         const h = state.heroes[eyeRef.current] ?? state.heroes[0];
         if (h.hp <= 0 || (h.blind ?? 0) > 0) return;
         const { level } = state;
-        // **문턱에서 이미 방이 켜진다**(`fov.lightFrom`) — 그래서 연출도 문턱에서 시작해야
-        // 한다. 한 걸음 늦게 돌면 이미 본 방을 도로 껐다가 다시 켜는 꼴이 된다.
-        const ri =
-            level.roomAt[idx(h.x, h.y)] >= 0
-                ? level.roomAt[idx(h.x, h.y)]
-                : level.tiles[idx(h.x, h.y)] === T.DOOR
-                    ? roomAround(level, h.x, h.y)
-                    : -1;
+        // 문턱에서는 삼각형 시야만 보이고, 방 안으로 들어선 순간에만 전체 방을 펼친다.
+        const ri = level.roomAt[idx(h.x, h.y)] >= 0 ? level.roomAt[idx(h.x, h.y)] : -1;
         const room = ri >= 0 ? level.rooms[ri] : undefined;
         if (!room || room.dark || room.gone || room.maze || level.mutator === "fog") return;
         const key = `${level.depth}:${ri}`;
@@ -2182,7 +2175,7 @@ export default function Rogue() {
                                             const open = openMon === r.ch;
                                             const art = monsterArt(r.ch);
                                             return (
-                                                <li key={r.ch}>
+                                                <li key={r.ch} className="border-b border-[var(--rg-line-soft)] pb-1 last:border-b-0">
                                                     {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
                                                     모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
                                                     <button
@@ -2221,11 +2214,6 @@ export default function Rogue() {
                                                                     </div>
                                                                 )
                                                             )}
-                                                            {r.traits.length > 0 && (
-                                                                <div className="text-[var(--rg-faint)]">
-                                                                    특성: {r.traits.join("")} · M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </button>
                                                     {open && art && (
@@ -2240,6 +2228,9 @@ export default function Rogue() {
                                         })}
                                     </ul>
                                 )}
+                                <p className="mt-3 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
+                                    ※ 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명
+                                </p>
                             </>
                         ) : (
                             /* 아이템 도감 목록 */

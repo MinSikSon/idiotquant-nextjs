@@ -96,14 +96,14 @@ function lightFrom(level: Level, from: Viewer): void {
     }
 
     {
-        // 안쪽에 섰으면 그 방, **문턱에 섰으면 그 문이 난 방.** 문에서 방이 안 켜지면
-        // 들어서는 그 한 걸음 동안 방이 깜깜해 보인다 — 원작은 문턱에서도 방을 보여 준다.
-        const ri =
-            roomOf(level, from.x, from.y) >= 0
-                ? roomOf(level, from.x, from.y)
-                : tiles[idx(from.x, from.y)] === T.DOOR
-                  ? roomAround(level, from.x, from.y)
-                  : -1;
+        // 방 안에서는 방 전체가 보이지만, 문턱에서는 방 안쪽을 향한 삼각형만 보인다.
+        // 문을 통과하는 순간(roomOf >= 0)에만 전체 방을 켠다.
+        const inside = roomOf(level, from.x, from.y) >= 0;
+        const ri = inside
+            ? roomOf(level, from.x, from.y)
+            : tiles[idx(from.x, from.y)] === T.DOOR
+              ? roomAround(level, from.x, from.y)
+              : -1;
         if (ri >= 0) {
             const room = level.rooms[ri];
             // 미로 방은 「방」이 아니다 — 안쪽이 얽힌 통로라 통째로 보이면 미로가 아니게 된다.
@@ -112,15 +112,30 @@ function lightFrom(level: Level, from: Viewer): void {
                 // 맞닿은 한 칸뿐이라, 좁히는 사건이 제 할 일을 한다. 예전에는 층 전체를
                 // 반경 2 로 덮어써서 **복도에서 오히려 시야가 넓어졌다.**
                 if (level.mutator !== "fog") {
-                    // 밝은 방 — 벽까지 통째로.
-                    for (let y = room.y; y < room.y + room.h; y++) {
-                        for (let x = room.x; x < room.x + room.w; x++) light(x, y);
+                    if (!inside) {
+                        // 문턱에서는 문이 붙은 변에서 방 안쪽으로 90도 시야를 낸다.
+                        const vx = from.x === room.x ? 1 : from.x === room.x + room.w - 1 ? -1 : 0;
+                        const vy = from.y === room.y ? 1 : from.y === room.y + room.h - 1 ? -1 : 0;
+                        for (let y = room.y; y < room.y + room.h; y++) {
+                            for (let x = room.x; x < room.x + room.w; x++) {
+                                const dx = x - from.x;
+                                const dy = y - from.y;
+                                const depth = dx * vx + dy * vy;
+                                const side = Math.abs(dx * vy - dy * vx);
+                                if (depth > 0 && side <= depth) light(x, y);
+                            }
+                        }
+                    } else {
+                        // 방 안 — 벽까지 통째로.
+                        for (let y = room.y; y < room.y + room.h; y++) {
+                            for (let x = room.x; x < room.x + room.w; x++) light(x, y);
+                        }
                     }
                     // 벽에 난 문도 그 방의 것이다. **안개 속에서는 이것도 안 보인다** —
                     // 문만 떠 있으면 방의 크기가 그대로 읽혀서 안개가 하는 일이 없어진다.
                     for (let y = room.y; y < room.y + room.h; y++) {
                         for (let x = room.x; x < room.x + room.w; x++) {
-                            if (tiles[idx(x, y)] === T.DOOR) light(x, y);
+                            if (tiles[idx(x, y)] === T.DOOR && (inside || isVisible(level, x, y))) light(x, y);
                         }
                     }
                 }
