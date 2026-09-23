@@ -113,7 +113,7 @@ function lightFrom(level: Level, from: Viewer): void {
                 // 반경 2 로 덮어써서 **복도에서 오히려 시야가 넓어졌다.**
                 if (level.mutator !== "fog") {
                     if (!inside) {
-                        // 문턱에서는 문이 붙은 변에서 방 안쪽으로 90도 시야를 낸다.
+                        // 문턱에서는 문이 붙은 변에서 방 안쪽으로 좁은(약 60도) 시야를 낸다.
                         const vx = from.x === room.x ? 1 : from.x === room.x + room.w - 1 ? -1 : 0;
                         const vy = from.y === room.y ? 1 : from.y === room.y + room.h - 1 ? -1 : 0;
                         for (let y = room.y; y < room.y + room.h; y++) {
@@ -122,7 +122,7 @@ function lightFrom(level: Level, from: Viewer): void {
                                 const dy = y - from.y;
                                 const depth = dx * vx + dy * vy;
                                 const side = Math.abs(dx * vy - dy * vx);
-                                if (depth > 0 && side <= depth) light(x, y);
+                                if (depth > 0 && side * 2 <= depth) light(x, y);
                             }
                         }
                     } else {
