@@ -1679,7 +1679,11 @@ function putOn(state: GameState, hero: Hero, letter: string): boolean {
     state.itemCodex[key] = true;
     say(state, `${describe(it, state.known, state.appearance)}을(를) 꼈다.${withPower(it, state)}`);
     if (revealCurse(state, it)) say(state, "손가락에서 빠지지 않는다. 저주받았다!");
-    else say(state, `배가 더 빨리 고파진다. (한 걸음에 ${hungerRate(hero)})`);
+    else if (it.type === "slow digestion") {
+        say(state, "배가 늦게 고파진다.");
+    } else {
+        say(state, `배가 더 빨리 고파진다. (한 걸음에 ${hungerRate(hero)})`);
+    }
     return true;
 }
 

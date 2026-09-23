@@ -167,6 +167,7 @@ test("반지는 배를 더 고프게 하고, 저주받은 것은 못 뺀다", ()
         give(s3, makeItem("ring", "slow digestion", 921, -1, -1), "z");
         const s4 = perform(s3, { t: "putOn", letter: "z" });
         assert.ok(hungerRate(s4.heroes[0]) < 1, "소화 억제가 안 듣는다");
+        assert.ok(s4.messages.some((message) => message.endsWith("배가 늦게 고파진다.")), "소화 억제 로그가 반대로 나왔다");
     }
 
     // ── 저주받은 반지는 뺄 수 없다
