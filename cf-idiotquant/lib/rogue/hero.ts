@@ -29,7 +29,15 @@ import {
 import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
-const SKILL_HITS = [0, 20, 80, 180];
+/**
+ * NetHack처럼 무기 종류별로 따로 익힌다. 처음부터 기초는 알고 시작하지만,
+ * 다음 단계는 그 무기로 실제 명중을 쌓아야 한다.
+ *
+ * `weaponTraining`은 누적 명중 수라서 새 판을 시작해도 이어지고, 직업별 상한은
+ * `weaponSkillMax`가 막는다. 숙련도를 레벨업에 묶지 않는 이유는 좋은 무기를 주웠을
+ * 때 그 무기를 계속 써 볼 동기를 주기 위해서다.
+ */
+const SKILL_HITS = [0, 20, 300, 900];
 const SKILL_NAME = ["미숙", "기초", "숙련", "전문"];
 
 export function weaponSkillName(level: number): string {
@@ -60,6 +68,15 @@ export function trainWeaponSkill(hero: Hero, weapon: Item | undefined, meaningfu
     const type = weapon.type;
     const training = (hero.weaponTraining ??= {});
     training[type] = (training[type] ?? 0) + 1;
+    const skills = (hero.weaponSkills ??= {});
+    const current = weaponSkillLevel(hero, type);
+    const next = current + 1;
+    // NetHack의 unrestricted/expert 경계를 이 게임에서는 직업별 상한으로 표현한다.
+    // 한 번의 명중으로 두 단계를 건너뛰지 않게 하여, 각 승급이 로그에 남는 사건이 된다.
+    if (next <= weaponSkillMax(hero, type) && training[type] >= SKILL_HITS[next]) {
+        skills[type] = next;
+        return `${WEAPONS[type]?.name ?? "무기"} ${weaponSkillName(current)} → ${weaponSkillName(next)}`;
+    }
     return null;
 }
 

@@ -3115,7 +3115,7 @@ export default function Rogue() {
                                     <div>
                                         <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">마지막 기록</h4>
                                         <div className="max-h-24 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2 font-mono text-[11px] leading-relaxed text-[var(--rg-faint)]">
-                                            {selectedTomb.recentLog.map((logMsg, lIdx) => (
+                                            {[...selectedTomb.recentLog].reverse().map((logMsg, lIdx) => (
                                                 <div key={lIdx} className="truncate">
                                                     {logMsg}
                                                 </div>
@@ -3266,7 +3266,7 @@ export default function Rogue() {
                             <div className="mb-3 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-3 py-2">
                                 <p className="mb-1 font-bold text-[var(--rg-strong)]">마지막 순간</p>
                                 <ul className="space-y-0.5 text-[var(--rg-muted)]">
-                                    {state.messages.filter((m) => !isDetail(m)).slice(-5).map((m, i) => (
+                                    {[...state.messages.filter((m) => !isDetail(m)).slice(-5)].reverse().map((m, i) => (
                                         <li key={i}>· <Msg text={m} /></li>
                                     ))}
                                 </ul>
