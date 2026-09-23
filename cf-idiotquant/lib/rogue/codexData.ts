@@ -1,5 +1,5 @@
 /**
- * 아이템 도감 — 56종의 목록과 플레이버 텍스트, 그리고 통달 조건.
+ * 아이템 도감 — 아이템 목록과 플레이버 텍스트, 그리고 통달 조건.
  *
  * `DROP-CODEX.md` §4 기획안의 정의를 따른다.
  *
@@ -562,7 +562,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         masteryFlavor: "위험을 무릅쓰고 걸어 들어가 동료를 끌어냈다. 혼자였다면 셋 다 남지 않았다.",
     },
 
-    // ── 반지 (8종) ───────────────────────────────────────────────────────────
+    // ── 반지 (14종) ──────────────────────────────────────────────────────────
     {
         kind: "ring",
         type: "protection",
@@ -706,6 +706,30 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         masteryGoal: 1000,
         flavor: "무기의 타격에 반지의 수치만큼 피해를 더한다.",
         masteryFlavor: "한 번의 일격이 더 깊고 무겁게 박혔다.",
+    },
+    {
+        kind: "ring",
+        type: "stealth",
+        key: "ring:stealth",
+        name: "은신",
+        category: "ring",
+        categoryLabel: "반지",
+        masteryType: "steps",
+        masteryGoal: 1000,
+        flavor: "발걸음을 숨겨 잠든 몬스터를 깨우지 않는다.",
+        masteryFlavor: "적의 코앞을 지나도 잠을 깨우지 않는 조용한 걸음을 익혔다.",
+    },
+    {
+        kind: "ring",
+        type: "maintain armor",
+        key: "ring:maintain armor",
+        name: "갑옷 유지",
+        category: "ring",
+        categoryLabel: "반지",
+        masteryType: "steps",
+        masteryGoal: 1000,
+        flavor: "아쿠에이터의 부식 공격으로부터 갑옷을 지켜 준다.",
+        masteryFlavor: "갑옷을 지키는 힘을 믿고 녹아내리는 방 앞에서도 물러서지 않았다.",
     },
 
     // ── 지팡이 (8종) ─────────────────────────────────────────────────────────

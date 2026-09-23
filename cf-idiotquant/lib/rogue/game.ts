@@ -2849,7 +2849,7 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             // **누구든 하나를 보면 깨어난다** — 곁의 성한 사람이 안 보인다고 자는 것은
             // 아니다. 깨울 때 본 사람이 첫 목표가 된다.
             const spotted = state.heroes.find((h) => h.hp > 0 && monsterSees(level, m.x, m.y, h));
-            if (spotted && m.def.mean) {
+            if (spotted && m.def.mean && !hasRing(spotted, "stealth")) {
                 m.awake = true;
                 m.target = state.heroes.indexOf(spotted);
             } else return;

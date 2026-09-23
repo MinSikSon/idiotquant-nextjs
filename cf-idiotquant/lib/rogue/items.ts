@@ -163,15 +163,17 @@ export const RINGS: Record<string, { name: string; freq: number; hunger: number;
     protection: { name: "보호", freq: 9, hunger: 1, depth: 1 },
     "add strength": { name: "힘", freq: 9, hunger: 1, depth: 1 },
     regeneration: { name: "재생", freq: 4, hunger: 3, depth: 5 },
-    searching: { name: "탐색", freq: 7, hunger: 1, depth: 3 },
+    searching: { name: "탐색", freq: 10, hunger: 1, depth: 3 },
     "sustain strength": { name: "힘 유지", freq: 5, hunger: 0, depth: 3 },
-    "slow digestion": { name: "소화 억제", freq: 5, hunger: -2, depth: 5 },
-    teleportation: { name: "탈출", freq: 4, hunger: 1, depth: 7 },
-    "see invisible": { name: "투명 보기", freq: 3, hunger: 1, depth: 5 },
+    "slow digestion": { name: "소화 억제", freq: 9, hunger: -2, depth: 5 },
+    teleportation: { name: "탈출", freq: 5, hunger: 1, depth: 7 },
+    "see invisible": { name: "투명 보기", freq: 10, hunger: 1, depth: 5 },
     adornment: { name: "장식", freq: 1, hunger: 0, depth: 1 },
     "aggravate monsters": { name: "몬스터 도발", freq: 10, hunger: 1, depth: 2 },
     dexterity: { name: "민첩", freq: 8, hunger: 1, depth: 4 },
     "increase damage": { name: "피해 증가", freq: 8, hunger: 1, depth: 4 },
+    stealth: { name: "은신", freq: 7, hunger: 1, depth: 4 },
+    "maintain armor": { name: "갑옷 유지", freq: 5, hunger: 1, depth: 6 },
 };
 
 /** 반지는 감정한 뒤 배낭과 도감에서 효과를 바로 읽을 수 있어야 한다. */
@@ -188,6 +190,8 @@ export const RING_EFFECTS: Record<string, string> = {
     "aggravate monsters": "저주 · 모든 몬스터를 깨움",
     dexterity: "명중 +N",
     "increase damage": "피해 +N",
+    stealth: "잠든 몬스터를 깨우지 않음",
+    "maintain armor": "아쿠에이터의 갑옷 부식 방지",
 };
 
 /** 지팡이 — 방향을 겨눠 쏜다. 횟수가 정해져 있다. */

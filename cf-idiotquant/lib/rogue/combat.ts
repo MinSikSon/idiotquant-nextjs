@@ -61,6 +61,7 @@ import {
     heroDodgeBonus,
     heroHitTerms,
     heroStr,
+    hasRing,
     strDamBonus,
     strHitBonus,
     takeFromPack,
@@ -639,6 +640,7 @@ function specialEffect(state: GameState, m: Monster, hero: Hero, rng: Rng): stri
             // 주문서뿐이다. 깎을 것이 남았을 때만 녹는다 — 맨 갑옷은 더 나빠지지 않는다.
             const armor = equippedArmor(hero);
             if (!armor) return ["아쿠에이터가 헛되이 녹이려 든다."];
+            if (hasRing(hero, "maintain armor")) return ["갑옷 유지 반지가 부식을 막았다."];
             if ((armor.plusArmor ?? 0) <= 0) return ["갑옷을 녹이려 들지만 더 녹을 것이 없다."];
             armor.plusArmor = (armor.plusArmor ?? 0) - 1;
             return ["갑옷이 녹아내렸다!"];
