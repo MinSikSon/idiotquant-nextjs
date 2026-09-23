@@ -428,8 +428,9 @@ function higher(a: Record<string, number>, b: Record<string, number>): Record<st
 export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
     const [sheet, setSheet] = useState<
-        "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins"
+        "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins" | "status"
     >("none");
+    const [statusKind, setStatusKind] = useState<"origin" | "str" | "defense" | "wisdom" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
     /**
      * 사람마다의 배낭·고르기·겨누기(`Desk`). 둘이서면 둘이 따로 연다.
      * `modes` 는 그 책상이 지금 무엇을 띄웠는지 — 걷기를 막을지, 끝난 판을 덮을지 읽는다.
@@ -584,6 +585,9 @@ export default function Rogue() {
         const shot = state?.projectile;
         if (!shot || shot.cells.length === 0) return;
         projectilePlaying.current = true;
+        // 한 칸을 눈으로 따라갈 수 있어야 한다. 16ms는 브라우저가 여러 칸을 한 번에
+        // 그려 투사체가 순간이동하는 것처럼 보일 수 있다.
+        const PROJECTILE_STEP_MS = 45;
         let shown = 0;
         let tail: ReturnType<typeof setTimeout> | null = null;
         setProjectileCells([shot.cells[shown++]!]);
@@ -598,7 +602,7 @@ export default function Rogue() {
             }
             // 누적하지 않는다. 원작 터미널도 이 한 칸만 그리고 직전 칸은 곧바로 지웠다.
             setProjectileCells([shot.cells[shown++]!]);
-        }, 16);
+        }, PROJECTILE_STEP_MS);
         return () => {
             clearInterval(timer);
             if (tail) clearTimeout(tail);
@@ -1260,7 +1264,7 @@ export default function Rogue() {
         if (!iAmDown) setView(null);
     }, [iAmDown]);
     useEffect(() => {
-        if (sheet !== "none") setSheetOwner(whoRef.current);
+        if (sheet !== "none" && sheet !== "status") setSheetOwner(whoRef.current);
     }, [sheet]);
 
     // **불 켜진 방에 처음 들어서면 빛이 한 겹씩 퍼진다.**
@@ -1934,7 +1938,7 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                className={`flex h-[3.5rem] shrink-0 content-start flex-wrap items-center gap-x-5 overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:gap-x-3 sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                className={`flex h-auto shrink-0 content-start flex-wrap items-center gap-x-[1ch] overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
@@ -1970,29 +1974,30 @@ export default function Rogue() {
                         )}
                         <button
                             type="button"
-                            onClick={() => { runAs(i, { t: "inspectStatus", kind: "origin" }); setSheet("log"); }}
+                            onClick={() => { setStatusKind("origin"); setSheetOwner(i); setSheet("status"); }}
                             className={`${statChip} order-0`}
                             title="직업 성장 정보 보기"
                         >
-                            <OriginTag origin={h.origin} level={h.level} />
+                            [<OriginTag origin={h.origin} level={h.level} />]
                         </button>
-                        <button type="button" onClick={() => { runAs(i, { t: "inspectStatus", kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
-                            St:{heroStr(h)}({h.maxStr})
+                        <button type="button" onClick={() => { setStatusKind("str"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-1`}>
+                            St:{heroStr(h)}
                         </button>
-                        {i === 0 && <span className="order-4">Dlvl:{level.depth}</span>}
-                        <span className="order-5 text-[var(--rg-gold)]">$:{h.gold}</span>
-                        <span className={`order-6 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
+                        <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />
+                        {i === 0 && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
+                        <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
+                        <span className={`order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
-                        {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-2 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { runAs(i, { t: "inspectStatus", kind: "defense" }); setSheet("log"); }} className={`${statChip} order-7`}>
+                        {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
+                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { setStatusKind("defense"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-8`}>
                             AC:{heroArmorClass(h)}
                         </button>
-                        <button type="button" onClick={() => { runAs(i, { t: "inspectStatus", kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
-                            Wi:{Math.round(h.itemLuck * 100)}(100)
+                        <button type="button" onClick={() => { setStatusKind("wisdom"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-2`}>
+                            Wi:{Math.round(h.itemLuck * 100)}
                         </button>
-                        <span className="order-8">Xp:{h.exp}</span>
-                        {i === 0 && <span className="order-9 text-[var(--rg-label)]">T:{state.turn}</span>}
+                        <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>
+                        {i === 0 && <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>T:{state.turn}</button>}
                         {
                             i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
                                 <span className="text-[var(--rg-gold)] font-medium">
@@ -2010,9 +2015,9 @@ export default function Rogue() {
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                        <span className={`order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
-                            {hHunger || "든든함"}
-                        </span>
+                        <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
+                            {hHunger || "Well-fed"}
+                        </button>
                         {cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
@@ -2547,6 +2552,33 @@ export default function Rogue() {
                     </Panel>
                 )
             }
+
+            {sheet === "status" && (() => {
+                const statusHero = state.heroes[sheetOwner] ?? state.heroes[0];
+                const origin = ORIGINS[statusHero.origin ?? "knight"];
+                const status = statusKind === "origin"
+                    ? `직업: ${origin.name}\n전직: ${statusHero.level >= ADVANCE_LEVEL ? origin.advancedName : `${ADVANCE_LEVEL}레벨에 ${origin.advancedName}`}\n${origin.traitDescription}`
+                    : statusKind === "str"
+                      ? `St:${heroStr(statusHero)}\n현재 공격력에 힘 보정으로 반영됩니다. 물약과 성장 선택으로 올릴 수 있습니다.`
+                      : statusKind === "defense"
+                        ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
+                      : statusKind === "wisdom"
+                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 줍니다. 수치가 높을수록 더 좋은 아이템을 얻을 가능성이 커집니다.`
+                        : statusKind === "hunger"
+                          ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
+                          : statusKind === "dlvl"
+                            ? `Dlvl:${level.depth}\n현재 던전 층입니다. 더 깊이 내려갈수록 강한 몬스터와 좋은 아이템이 나타납니다.`
+                            : statusKind === "gold"
+                              ? `$:${statusHero.gold}\n몬스터를 처치하거나 바닥에서 주워 얻습니다. 현재 판의 점수에 반영됩니다.`
+                              : statusKind === "xp"
+                                ? `Xp:${statusHero.level}/${statusHero.exp}\n몬스터를 처치하면 경험치를 얻고, 일정량이 쌓이면 레벨이 오릅니다.`
+                                : `T:${state.turn}\n플레이어가 행동한 횟수입니다. 행동할 때마다 허기와 몬스터의 차례가 진행됩니다.`;
+                return (
+                    <Panel {...shared} title={`${sheetOwner + 1}P 상태 설명`} onClose={() => setSheet("none")} footer="상태창을 누르면 해당 상태의 설명을 다시 볼 수 있습니다.">
+                        <p className="whitespace-pre-line leading-relaxed text-[var(--rg-muted)]">{status}</p>
+                    </Panel>
+                );
+            })()}
 
             {/*
               * 기록은 **최신이 맨 위**다. 판을 열면 방금 일어난 일이 손 닿는 자리에

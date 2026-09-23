@@ -30,8 +30,9 @@ import {
     itemPower,
     meltMax,
     meltYield,
+    needsBow,
 } from "@/lib/rogue/items";
-import { canOffHand, equippedArmor, equippedWeapon, heroAttackText, heroDefense, heroHitBonus, hungerRate, isDualWielding, offHandWeapon, wornRings } from "@/lib/rogue/hero";
+import { canOffHand, equippedArmor, equippedWeapon, isDualWielding } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -52,11 +53,6 @@ interface Aiming {
     title: string;
     what: string;
     make: (dx: number, dy: number) => Command;
-}
-
-/** `+8` / `-1` / `+0` — 명중은 부호를 붙여야 보정으로 읽힌다. */
-function signed(n: number): string {
-    return n >= 0 ? `+${n}` : `${n}`;
 }
 
 const CURSOR = "outline outline-1 outline-[var(--rg-strong)]";
@@ -157,7 +153,7 @@ export default function Desk({
                     kind === "zap"
                         ? ["wand"]
                         : ["weapon", "potion"],
-                allow: kind === "throw" ? isThrowable : undefined,
+                allow: kind === "throw" ? (it) => isThrowable(it) && (!needsBow(it) || equippedWeapon(hero)?.type === "short bow") : undefined,
                 empty: kind === "zap" ? "지팡이가 없다." : "던질 만한 것이 없다.",
                 make: () => ({ t: "rest" }), // 쓰이지 않는다 — 아래에서 가로챈다
             });
@@ -339,7 +335,6 @@ export default function Desk({
         const difference = (equipmentRating(it) ?? 0) - (equipmentRating(current) ?? 0);
         return difference > 0 ? "better" : difference < 0 ? "worse" : null;
     };
-    const rings = wornRings(hero);
     const { level } = state;
     /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */
     const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
@@ -351,6 +346,24 @@ export default function Desk({
      * 재련이면 `null` 이다(재련은 수치를 올리는 것이 아니라 종류를 바꾸는 것이라 적을 값이 없다).
      */
     const enchantStyle = picker && pendingEnchant.current ? pendingEnchantStyle.current : null;
+
+    // 분류 제목만 끼우고, 각 분류 안에서는 배낭의 기존 순서를 그대로 둔다.
+    const packGroups: { kind: ItemKind; label: string; items: { item: Item; index: number }[] }[] = [
+        { kind: "weapon", label: "무기", items: [] },
+        { kind: "armor", label: "갑옷", items: [] },
+        { kind: "ring", label: "반지", items: [] },
+        { kind: "potion", label: "물약", items: [] },
+        { kind: "scroll", label: "주문서", items: [] },
+        { kind: "wand", label: "지팡이", items: [] },
+        { kind: "food", label: "식량", items: [] },
+        { kind: "gem", label: "보석", items: [] },
+        { kind: "relic", label: "유물", items: [] },
+        { kind: "gold", label: "금화", items: [] },
+        { kind: "amulet", label: "증표", items: [] },
+    ];
+    for (const [index, item] of hero.pack.entries()) {
+        packGroups.find((group) => group.kind === item.kind)?.items.push({ item, index });
+    }
 
     /**
      * 고르는 줄의 「→ +N (…)」 — **값은 전부 엔진의 표에서 온다**(`enchantOdds`·`enchantSafeMax`).
@@ -569,7 +582,7 @@ export default function Desk({
                 });
                 break;
         }
-        if (isThrowable(it)) {
+        if (isThrowable(it) && (!needsBow(it) || equippedWeapon(hero)?.type === "short bow")) {
             out.push({
                 label: "던진다",
                 on: () => {
@@ -794,7 +807,11 @@ export default function Desk({
                         <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
                     ) : (
                         <ul className="space-y-1">
-                            {hero.pack.map((it, i) => {
+                            {packGroups.filter((group) => group.items.length > 0).map((group) => (
+                                <li key={group.kind} className="list-none pt-1 first:pt-0">
+                                    <div className="border-b border-[var(--rg-line-soft)] pb-0.5 text-[var(--rg-label)]">{group.label}</div>
+                                    <ul className="space-y-1 pt-1">
+                                    {group.items.map(({ item: it, index: i }) => {
                                 const open = chosen === it.id;
                                 const worn =
                                     it.id === hero.weaponId
@@ -857,7 +874,10 @@ export default function Desk({
                                         )}
                                     </li>
                                 );
-                            })}
+                                    })}
+                                    </ul>
+                                </li>
+                            ))}
                         </ul>
                     )}
                     {/* ── 캠프 상자 — **모루 칸에 섰을 때만 열린다.**
@@ -896,22 +916,6 @@ export default function Desk({
                         </div>
                     )}
 
-                    <div className="mt-3 space-y-0.5 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-faint)]">
-                        <div>
-                            무기 {equippedWeapon(hero) ? name(equippedWeapon(hero)!) : "맨손"}
-                            {offHandWeapon(hero) && ` · 보조손 ${name(offHandWeapon(hero)!)}`} · 갑옷{" "}
-                            {equippedArmor(hero) ? name(equippedArmor(hero)!) : "맨몸"}
-                        </div>
-                        <div>
-                            반지 {rings.length ? rings.map(name).join(" · ") : "없음"} · 한 걸음에 배고픔{" "}
-                            {hungerRate(hero)}
-                        </div>
-                        {/* 물건마다 적힌 숫자는 **그 물건 몫**이고, 이 줄은 힘까지 더한 **지금의 나**다. */}
-                        <div className="text-[var(--rg-muted)]">
-                            지금 명중 {signed(heroHitBonus(hero, state.known))} · 피해{" "}
-                            {heroAttackText(hero, state.known)} · 방어력 {heroDefense(hero)}
-                        </div>
-                    </div>
                 </Panel>
             )}
 
