@@ -224,13 +224,24 @@ function freeLetter(hero: Hero): string | null {
  *
  * 넣지 못하면 null 을 준다. 부르는 쪽이 "배낭이 꽉 찼다" 를 말해야 한다.
  */
-export function addToPack(hero: Hero, it: Item): Item | null {
+export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | null {
     it.x = -1;
     it.y = -1;
-    const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll";
+    // 단검은 장착 중인 한 자루와 배낭의 예비 단검을 구분해야 한다. 장착 중인 객체를
+    // 묶어 버리면 이도류의 주손·보조손이 같은 묶음을 가리키게 되므로, 미장착 단검만
+    // 같은 강화/저주 상태끼리 합친다.
+    const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll" || (mergeWeapons && it.type === "dagger");
     if (stackable) {
         const same = hero.pack.find(
-            (p) => p.kind === it.kind && p.type === it.type && p.blessed === it.blessed && p.id !== it.id,
+            (p) =>
+                p.kind === it.kind &&
+                p.type === it.type &&
+                p.blessed === it.blessed &&
+                p.id !== it.id &&
+                (it.type !== "dagger" ||
+                    (p.plusHit ?? 0) === (it.plusHit ?? 0) &&
+                        (p.plusDam ?? 0) === (it.plusDam ?? 0) &&
+                        ![hero.weaponId, hero.offWeaponId].includes(p.id)),
         );
         if (same) {
             same.count += it.count;

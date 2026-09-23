@@ -234,8 +234,9 @@ export function damageLine(
     power: number,
     defense: number,
     dealt: number,
+    hand?: "주손" | "보조손",
 ): string {
-    if (!dice) return `${DETAIL}피해 ${dealt}`;
+    if (!dice) return `${DETAIL}피해${hand ? ` ${hand}` : ""} ${dealt}`;
     const sum = rolled.reduce((a, n) => a + n, 0);
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
@@ -244,7 +245,7 @@ export function damageLine(
     const cut = defense > 0 ? `  −${defense} 방어력` : "";
     // **0 은 따로 말해 준다.** 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
     const tail = dealt === 0 ? "피해 0 (튕겨 나갔다)" : `피해 ${dealt}`;
-    return `${DETAIL}공격력 ${eyes}${add}${bonus !== 0 ? ` = ${power}` : ""}${cut}  → ${tail}`;
+    return `${DETAIL}공격력${hand ? ` ${hand}` : ""} ${eyes}${add}${bonus !== 0 ? ` = ${power}` : ""}${cut}  → ${tail}`;
 }
 
 /**
@@ -382,7 +383,12 @@ function swing(
     m.awake = true;
     const killed = m.hp <= 0;
     // **모르는 종에게는 산수를 안 펼친다** — 방어력도 표의 값이라 도감 규칙에 걸린다.
-    messages.push(seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, dealt) : damageLine(null, [], [], 0, 0, dealt));
+    const dualHand = offHandWeapon(hero) ? (off ? "보조손" : "주손") : undefined;
+    messages.push(
+        seen
+            ? damageLine(dice, d.rolled, damTerms, d.total, guard, dealt, dualHand)
+            : damageLine(null, [], [], 0, 0, dealt, dualHand),
+    );
     messages.push(
         withDamage(
             killed

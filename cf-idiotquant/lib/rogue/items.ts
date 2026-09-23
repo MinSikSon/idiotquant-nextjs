@@ -91,6 +91,7 @@ export interface ArmorDef {
 export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
     dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
+    "short bow": { name: "단궁", damage: "1d1", damageLarge: "1d1", freq: 8, depth: 1, skill: "bow", hands: 1, material: "wood" },
     mace: { name: "철퇴", damage: "2d4", damageLarge: "1d6", freq: 10, depth: 1, skill: "mace", hands: 1, material: "iron" },
     spear: { name: "창", damage: "2d3", damageLarge: "1d6", freq: 6, depth: 1, throwable: true, skill: "spear", hands: 1, material: "iron" },
     dart: { name: "표창", damage: "1d3", damageLarge: "1d2", freq: 8, depth: 1, throwable: true, stack: true, skill: "dart", hands: 1, material: "iron", ammunition: true },
@@ -1018,4 +1019,9 @@ export function weaponMaterialOf(type: string): WeaponDef["material"] {
 export function isThrowable(it: Item): boolean {
     if (it.kind === "potion") return true;
     return it.kind === "weapon" && !!WEAPONS[it.type]?.throwable;
+}
+
+/** 화살은 활이 있어야 쏠 수 있는 탄약이다. */
+export function needsBow(it: Item): boolean {
+    return it.kind === "weapon" && (it.type === "arrow" || it.type === "silver arrow");
 }

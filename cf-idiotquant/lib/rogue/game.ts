@@ -93,6 +93,7 @@ import {
     describe,
     isStashable,
     isThrowable,
+    needsBow,
     itemChar,
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
@@ -957,7 +958,7 @@ function pickUp(state: GameState, hero: Hero): boolean {
     }
     // **배낭에 있는 쪽**을 받는다. 겹쳐 쌓였으면 집은 물건과 다른 물건이고, 자리를
     // 가진 것은 배낭 쪽뿐이다.
-    const inPack = addToPack(hero, it);
+    const inPack = addToPack(hero, it, true);
     if (!inPack) {
         say(state, "배낭이 꽉 찼다.");
         return false;
@@ -2350,7 +2351,11 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
-    if (!isThrowable(it)) {
+    if (!isThrowable(it) || (needsBow(it) && equippedWeapon(hero)?.type !== "short bow")) {
+        if (needsBow(it) && equippedWeapon(hero)?.type !== "short bow") {
+            say(state, "활을 쥐어야 화살을 쏠 수 있다.");
+            return false;
+        }
         say(state, "던질 만한 것이 아니다.");
         return false;
     }
@@ -2394,13 +2399,26 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         // **다른 것이 떨어져 있어도 사라지면 안 된다.** 그 자리에 나란히 둔다 —
         // `itemAt` 은 하나만 보여 주지만 `pickUp` 이 집은 것을 지우므로 다음 것이
         // 그때 드러난다. 한 칸에 물건이 둘이면 두 번 주우면 된다.
-        if (here && here.kind === it.kind && here.type === it.type) {
+        if (
+            here &&
+            here.kind === it.kind &&
+            here.type === it.type &&
+            (it.kind !== "weapon" ||
+                ((here.plusHit ?? 0) === (it.plusHit ?? 0) &&
+                    (here.plusDam ?? 0) === (it.plusDam ?? 0) &&
+                    here.blessed === it.blessed &&
+                    here.cursed === it.cursed))
+        ) {
             here.count += 1;
+            here.plusKnown = !!here.plusKnown || !!it.plusKnown;
+            here.curseKnown = !!here.curseKnown || !!it.curseKnown;
             return;
         }
         const dropped = makeItem(it.kind, it.type, state.nextItemId++, hit.x, hit.y, 1);
         dropped.plusHit = it.plusHit;
         dropped.plusDam = it.plusDam;
+        dropped.plusKnown = it.plusKnown;
+        dropped.blessed = it.blessed;
         dropped.cursed = it.cursed;
         dropped.curseKnown = it.curseKnown;
         level.items.push(dropped);
