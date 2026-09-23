@@ -257,7 +257,7 @@ export default function MapView({
                 x < reveal.room.x + reveal.room.w &&
                 y >= reveal.room.y &&
                 y < reveal.room.y + reveal.room.h &&
-                Math.max(Math.abs(x - reveal.cx), Math.abs(y - reveal.cy)) > reveal.r
+                Math.hypot(x - reveal.cx, y - reveal.cy) > reveal.r
             ) {
                 const last0 = runs[runs.length - 1];
                 if (last0 && last0.ink === "transparent" && !last0.bg) last0.text += " ";

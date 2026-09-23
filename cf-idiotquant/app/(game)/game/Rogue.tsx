@@ -1296,7 +1296,13 @@ export default function Rogue() {
         litRooms.current.add(key);
 
         if (revealTimer.current) clearTimeout(revealTimer.current);
-        const far = Math.max(room.w, room.h);
+        // 원형 시야가 방의 먼 모서리까지 닿을 때까지 펼친다.
+        const far = Math.ceil(Math.max(
+            Math.hypot(room.x - h.x, room.y - h.y),
+            Math.hypot(room.x + room.w - 1 - h.x, room.y - h.y),
+            Math.hypot(room.x - h.x, room.y + room.h - 1 - h.y),
+            Math.hypot(room.x + room.w - 1 - h.x, room.y + room.h - 1 - h.y),
+        ));
         setReveal({ cx: h.x, cy: h.y, r: 1, room });
         const step = (r: number) => {
             if (r > far) {
