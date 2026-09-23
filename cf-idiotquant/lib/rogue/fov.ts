@@ -95,6 +95,32 @@ function lightFrom(level: Level, from: Viewer): void {
         for (let dx = -1; dx <= 1; dx++) light(from.x + dx, from.y + dy);
     }
 
+    // 입구 한 칸 전에서는 문 너머를 아주 좁게 엿본다. 문을 통과하기 전에는
+    // 방 전체가 읽히면 안 되므로, 문을 향한 축에서 양옆을 강하게 조인다.
+    if (tiles[idx(from.x, from.y)] !== T.DOOR && level.mutator !== "fog") {
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                if (Math.abs(dx) + Math.abs(dy) !== 1) continue;
+                const doorX = from.x + dx;
+                const doorY = from.y + dy;
+                if (!inBounds(doorX, doorY) || tiles[idx(doorX, doorY)] !== T.DOOR) continue;
+                const ri = roomAround(level, doorX, doorY);
+                const room = ri >= 0 ? level.rooms[ri] : undefined;
+                if (!room || room.dark || room.gone || room.maze) continue;
+                for (let y = room.y; y < room.y + room.h; y++) {
+                    for (let x = room.x; x < room.x + room.w; x++) {
+                        const rx = x - from.x;
+                        const ry = y - from.y;
+                        const depth = rx * dx + ry * dy;
+                        const side = Math.abs(rx * dy - ry * dx);
+                        const tile = tiles[idx(x, y)];
+                        if (tile !== T.CORRIDOR && tile !== T.PASSAGE && depth > 0 && side * 4 <= depth) light(x, y);
+                    }
+                }
+            }
+        }
+    }
+
     {
         // 방 안에서는 방 전체가 보이지만, 문턱에서는 방 안쪽을 향한 삼각형만 보인다.
         // 문을 통과하는 순간(roomOf >= 0)에만 전체 방을 켠다.
@@ -113,7 +139,7 @@ function lightFrom(level: Level, from: Viewer): void {
                 // 반경 2 로 덮어써서 **복도에서 오히려 시야가 넓어졌다.**
                 if (level.mutator !== "fog") {
                     if (!inside) {
-                        // 문턱에서는 문이 붙은 변에서 방 안쪽으로 좁은(약 60도) 시야를 낸다.
+                        // 문턱에서는 문이 붙은 변에서 방 안쪽으로 90도 시야를 낸다.
                         const vx = from.x === room.x ? 1 : from.x === room.x + room.w - 1 ? -1 : 0;
                         const vy = from.y === room.y ? 1 : from.y === room.y + room.h - 1 ? -1 : 0;
                         for (let y = room.y; y < room.y + room.h; y++) {
@@ -122,7 +148,7 @@ function lightFrom(level: Level, from: Viewer): void {
                                 const dy = y - from.y;
                                 const depth = dx * vx + dy * vy;
                                 const side = Math.abs(dx * vy - dy * vx);
-                                if (depth > 0 && side * 2 <= depth) light(x, y);
+                                if (depth > 0 && side <= depth) light(x, y);
                             }
                         }
                     } else {

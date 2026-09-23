@@ -472,7 +472,10 @@ test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로
         const corridor = (() => {
             for (let y = 1; y < MAP_H - 1; y++)
                 for (let x = 1; x < MAP_W - 1; x++)
-                    if (level.tiles[idx(x, y)] === T.CORRIDOR) return { x, y, blind: 0 };
+                    if (
+                        level.tiles[idx(x, y)] === T.CORRIDOR &&
+                        !N4.some(([dx, dy]) => level.tiles[idx(x + dx, y + dy)] === T.DOOR)
+                    ) return { x, y, blind: 0 };
             return null;
         })();
         if (!corridor) continue;
