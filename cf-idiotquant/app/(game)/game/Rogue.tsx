@@ -2997,7 +2997,6 @@ export default function Rogue() {
                                         <div>가장 깊이: <b className="text-[var(--rg-strong)]">지하 {selectedTomb.depth}층</b></div>
                                         <div>버틴 턴: <b className="text-[var(--rg-strong)]">{selectedTomb.turns}턴</b></div>
                                         <div>소지 금화: <b className="text-[var(--rg-gold)]">{selectedTomb.gold} G</b></div>
-                                        <div>결과: <b className={selectedTomb.won ? "text-[var(--rg-amulet)]" : "text-[var(--rg-strong)]"}>{selectedTomb.won ? "승리" : "사망"}</b></div>
                                     </div>
                                 </div>
 
@@ -3014,63 +3013,28 @@ export default function Rogue() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-[var(--rg-muted)]">
                                             <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">Exp</span>
-                                                <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.level}/{selectedTomb.hero.exp}</span>
+                                                <span className="text-[var(--rg-faint)] text-[11px] block">St</span>
+                                                <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.str}({selectedTomb.hero.maxStr})</span>
                                             </div>
                                             <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">Hp</span>
+                                                <span className="text-[var(--rg-faint)] text-[11px] block">HP</span>
                                                 <span className={selectedTomb.hero.hp <= 0 ? "text-[var(--rg-trap)] font-bold" : "text-[var(--rg-hero)] font-bold"}>
                                                     {selectedTomb.hero.hp}({selectedTomb.hero.maxHp})
                                                 </span>
                                             </div>
                                             <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">Str</span>
-                                                <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.str}({selectedTomb.hero.maxStr})</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">Arm</span>
+                                                <span className="text-[var(--rg-faint)] text-[11px] block">AC</span>
                                                 <span className="text-[var(--rg-armor)] font-bold">{10 - selectedTomb.hero.defense}</span>
                                             </div>
+                                            <div>
+                                                <span className="text-[var(--rg-faint)] text-[11px] block">Xp</span>
+                                                <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.exp}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* 3. 장착 장비 */}
-                                {selectedTomb.hero && (
-                                    <div>
-                                        <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">장착 장비</h4>
-                                        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-[var(--rg-muted)] text-xs">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[var(--rg-weapon)] font-mono font-bold">)</span>
-                                                <span className="text-[var(--rg-faint)]">무기:</span>
-                                                <span className="text-[var(--rg-strong)] font-medium">{selectedTomb.hero.weaponName || "맨손"}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[var(--rg-armor)] font-mono font-bold">]</span>
-                                                <span className="text-[var(--rg-faint)]">갑옷:</span>
-                                                <span className="text-[var(--rg-strong)] font-medium">{selectedTomb.hero.armorName || "맨몸"}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[var(--rg-ring)] font-mono font-bold">=</span>
-                                                <span className="text-[var(--rg-faint)]">왼손 반지:</span>
-                                                <span className="text-[var(--rg-strong)]">{selectedTomb.hero.leftRingName || "없음"}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[var(--rg-ring)] font-mono font-bold">=</span>
-                                                <span className="text-[var(--rg-faint)]">오른손 반지:</span>
-                                                <span className="text-[var(--rg-strong)]">{selectedTomb.hero.rightRingName || "없음"}</span>
-                                            </div>
-                                            {selectedTomb.hero.hasAmulet && (
-                                                <div className="col-span-full flex items-center gap-1.5 pt-1 border-t border-[var(--rg-line-soft)] text-[var(--rg-amulet)]">
-                                                    <span className="font-mono font-bold">,</span>
-                                                    <span className="font-bold">옌더의 증표 소지</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 4. 소지품 배낭 (Inventory) */}
+                                {/* 3. 소지품 배낭 (Inventory) */}
                                 {selectedTomb.hero && (
                                     <div>
                                         <div className="mb-1 flex items-center justify-between">
@@ -3134,7 +3098,7 @@ export default function Rogue() {
                                     </div>
                                 )}
 
-                                {/* 5. 마지막 로그 (Recent Log) */}
+                                {/* 4. 마지막 로그 (Recent Log) */}
                                 {selectedTomb.recentLog && selectedTomb.recentLog.length > 0 && (
                                     <div>
                                         <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">마지막 기록</h4>
