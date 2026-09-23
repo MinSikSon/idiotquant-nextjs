@@ -3343,6 +3343,8 @@ export interface Sighting {
     damage?: string[];
     exp?: number;
     hp?: number;
+    /** 원작 Rogue 몬스터 특성 기호. */
+    traits?: string[];
     /** 사납게 구는 놈인가 — 잡아 봐야 안다. */
     mean?: boolean;
     /** 눈으로 보이는 것. 잡아 본 적이 없어도 이건 안다. */
@@ -3397,6 +3399,7 @@ export function survey(state: GameState): Sighting[] {
                 exp: m.def.exp,
                 hp: m.def.hp,
                 mean: m.def.mean,
+                traits: m.def.traits ?? [],
             };
         })
         .sort((a, b) => a.distance - b.distance);
@@ -3413,6 +3416,7 @@ export interface BestiaryRow {
     exp: number;
     hp: number;
     mean: boolean;
+    traits: string[];
     /** 몇 층에서 나오는가. 능력치는 층을 안 타고, 층이 정하는 것은 **어느 종이 나오는가**다. */
     depths: { min: number; max: number } | null;
     /**
@@ -3453,6 +3457,7 @@ export function bestiaryRows(
                 hp: d.hp,
                 depths: depthRange(ch),
                 mean: d.mean,
+                traits: d.traits ?? [],
             };
         })
         .sort((a, b) => a.level - b.level || a.ch.localeCompare(b.ch));

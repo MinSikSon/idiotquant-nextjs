@@ -2160,7 +2160,7 @@ export default function Rogue() {
                                                     {m.known ? (
                                                         <div className="text-[var(--rg-muted)]">
                                                             Lv:{m.level} · HP:{m.hp} · AC:{10 - (m.defense ?? 0)} · Dmg:{" "}
-                                                            {m.damage?.join(" + ") || "없음"} · Xp:{m.exp}
+                                                            {m.damage?.join(" + ") || "없음"} · Xp:{m.exp}{m.traits?.length ? ` · ${m.traits.join("")}` : ""}
                                                             {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         </div>
                                                     ) : (
@@ -2197,7 +2197,7 @@ export default function Rogue() {
                                                         {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
                                                         <div className="text-[var(--rg-muted)]">
                                                             Lv:{r.level} · HP:{r.hp} · AC:{10 - r.defense} · Dmg:{" "}
-                                                            {r.damage.join(" + ") || "없음"} · Xp:{r.exp}
+                                                            {r.damage.join(" + ") || "없음"} · Xp:{r.exp}{r.traits.length ? ` · ${r.traits.join("")}` : ""}
                                                             {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                             {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
@@ -2220,6 +2220,11 @@ export default function Rogue() {
                                                                         수법: 아직 모른다 — 당해 봐야 안다
                                                                     </div>
                                                                 )
+                                                            )}
+                                                            {r.traits.length > 0 && (
+                                                                <div className="text-[var(--rg-faint)]">
+                                                                    특성: {r.traits.join("")} · M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </button>
