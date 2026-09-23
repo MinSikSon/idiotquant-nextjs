@@ -1702,7 +1702,10 @@ export default function Rogue() {
     const latest = visibleMessages.at(-1);
     const important = [...visibleMessages.slice(-8)].reverse().find(isImportantMessage);
     // 중요한 일은 다음 몇 번의 일반 메시지에 밀려나지 않게, 최신 줄과 함께 남긴다.
-    const recent = important && latest && important !== latest ? [important, latest] : visibleMessages.slice(-2);
+    // 짧은 두 줄 요약도 기록 판과 같은 규칙으로 최신 줄을 위에 둔다.
+    const recent = important && latest && important !== latest
+        ? [latest, important]
+        : [...visibleMessages.slice(-2)].reverse();
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
 
