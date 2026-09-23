@@ -21,6 +21,7 @@ import {
     makeItem,
     weaponDamageOf,
     weaponHandsOf,
+    weaponSkillOf,
 } from "./items";
 import {
     abilityMod,
@@ -30,11 +31,12 @@ import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, WEAPON_SKILL_
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
- * NetHack처럼 무기 종류별로 따로 익힌다. 처음부터 기초는 알고 시작하지만,
+ * Rogue/NetHack처럼 무기 계열별로 익힌다. 처음부터 기초는 알고 시작하지만,
  * 다음 단계는 그 무기로 실제 명중을 쌓아야 한다.
  *
- * `weaponTraining`은 누적 명중 수라서 새 판을 시작해도 이어지고, 직업별 상한은
- * `weaponSkillMax`가 막는다. 숙련도를 레벨업에 묶지 않는 이유는 좋은 무기를 주웠을
+ * `weaponTraining`은 계열별 누적 명중 수라서 새 판을 시작해도 이어지고, 직업별 상한은
+ * `weaponSkillMax`가 막는다. 계열은 `items.ts`의 `WeaponDef.skill`로 정의하므로,
+ * 화살 종류를 더해도 활 숙련을 공유한다. 숙련도를 레벨업에 묶지 않는 이유는 좋은 무기를 주웠을
  * 때 그 무기를 계속 써 볼 동기를 주기 위해서다.
  */
 const SKILL_HITS = [0, 20, 300, 900];
@@ -45,12 +47,17 @@ export function weaponSkillName(level: number): string {
 }
 
 export function weaponSkillLevel(hero: Hero, type: string): WeaponSkill {
-    // 예전 저장과 새로 주운 무기는 기존 전투 감각을 보존해 기초부터 선다.
-    return Math.max(0, Math.min(3, hero.weaponSkills?.[type] ?? 1)) as WeaponSkill;
+    const skill = weaponSkillOf(type);
+    // 예전 저장은 무기 종류를 키로 저장했으므로 계열 키를 먼저 보고, 없으면
+    // 종류 키를 읽는다. 새 무기는 `WeaponDef.skill`만 지정하면 같은 계열을 공유한다.
+    const stored = hero.weaponSkills?.[skill] ?? hero.weaponSkills?.[type];
+    return Math.max(0, Math.min(3, stored ?? 1)) as WeaponSkill;
 }
 
 export function weaponSkillMax(hero: Hero, type: string): WeaponSkill {
-    return Math.max(1, WEAPON_SKILL_MAX[hero.origin ?? "knight"]?.[type] ?? 1) as WeaponSkill;
+    const limits = WEAPON_SKILL_MAX[hero.origin ?? "knight"] ?? {};
+    const skill = weaponSkillOf(type);
+    return Math.max(1, limits[skill] ?? limits[type] ?? 1) as WeaponSkill;
 }
 
 /** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). */
@@ -65,9 +72,12 @@ export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
 /** 의미 있는 적중 하나를 쌓는다. 승급은 레벨업 때만 열어 전투 중 수치가 흔들리지 않는다. */
 export function trainWeaponSkill(hero: Hero, weapon: Item | undefined, meaningful: boolean): string | null {
     if (!meaningful || !weapon || weapon.kind !== "weapon") return null;
-    const type = weapon.type;
+    const type = weaponSkillOf(weapon.type);
     const training = (hero.weaponTraining ??= {});
-    training[type] = (training[type] ?? 0) + 1;
+    // 구버전 저장은 종류별로 훈련량을 보관했을 수 있다. 계열 키로 처음 훈련할 때
+    // 기존 종류 키를 흡수해 진행도를 잃지 않는다.
+    training[type] = (training[type] ?? training[weapon.type] ?? 0) + 1;
+    if (type !== weapon.type) delete training[weapon.type];
     const skills = (hero.weaponSkills ??= {});
     const current = weaponSkillLevel(hero, type);
     const next = current + 1;
@@ -75,7 +85,7 @@ export function trainWeaponSkill(hero: Hero, weapon: Item | undefined, meaningfu
     // 한 번의 명중으로 두 단계를 건너뛰지 않게 하여, 각 승급이 로그에 남는 사건이 된다.
     if (next <= weaponSkillMax(hero, type) && training[type] >= SKILL_HITS[next]) {
         skills[type] = next;
-        return `${WEAPONS[type]?.name ?? "무기"} ${weaponSkillName(current)} → ${weaponSkillName(next)}`;
+        return `${WEAPONS[weapon.type]?.name ?? type} ${weaponSkillName(current)} → ${weaponSkillName(next)}`;
     }
     return null;
 }
@@ -90,7 +100,7 @@ export function enhanceWeaponSkills(hero: Hero): string[] {
         const next = current + 1;
         if (next > weaponSkillMax(hero, type) || hits < SKILL_HITS[next]) continue;
         skills[type] = next;
-        out.push(`${WEAPONS[type]?.name ?? "무기"} ${weaponSkillName(current)} → ${weaponSkillName(next)}`);
+        out.push(`${WEAPONS[type]?.name ?? type} ${weaponSkillName(current)} → ${weaponSkillName(next)}`);
     }
     return out;
 }
@@ -182,8 +192,9 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
     }
     for (const item of hero.pack) {
         if (item.kind !== "weapon") continue;
-        hero.weaponSkills![item.type] = 1;
-        hero.weaponTraining![item.type] = 20;
+        const skill = weaponSkillOf(item.type);
+        hero.weaponSkills![skill] = 1;
+        hero.weaponTraining![skill] = 20;
     }
     void rng;
     return hero;

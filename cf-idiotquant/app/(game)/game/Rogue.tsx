@@ -56,6 +56,7 @@ import {
     itemChar,
     itemDepthRange,
     makeItem,
+    weaponSkillOf,
 } from "@/lib/rogue/items";
 import {
     type CodexCategory,
@@ -66,7 +67,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, weaponSkillLevel, weaponSkillMax, weaponSkillName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -2263,7 +2264,7 @@ export default function Rogue() {
 
                                     const statsSummary =
                                         stage >= 3
-                                            ? itemCodexStats(entry)
+                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? ` · 숙련 ${weaponSkillName(weaponSkillLevel(state.heroes[0], entry.type))}/${weaponSkillName(weaponSkillMax(state.heroes[0], entry.type))}` : ""}`
                                             : stage === 2
                                                 ? "배낭에 있다"
                                                 : stage === 1
@@ -2366,6 +2367,14 @@ export default function Rogue() {
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">피해: </span>
                                                                             <span className="text-[var(--rg-strong)]">{WEAPONS[entry.type]?.damage ?? "1d2"}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[var(--rg-faint)]">숙련: </span>
+                                                                            <span className="text-[var(--rg-strong)]">{weaponSkillName(weaponSkillLevel(state.heroes[0], entry.type))} / {weaponSkillName(weaponSkillMax(state.heroes[0], entry.type))}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[var(--rg-faint)]">무기 계열: </span>
+                                                                            <span>{weaponSkillOf(entry.type)}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>
