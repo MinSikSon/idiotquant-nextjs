@@ -27,7 +27,6 @@ import {
     WANDS,
     WEAPONS,
     armorClassOf,
-    defenseOf,
     describe,
     itemChar,
     itemDepthRange,
@@ -975,8 +974,7 @@ export function itemCodexStats(entry: CodexEntry): string {
         }
         case "armor": {
             const def = ARMORS[entry.type];
-            const defVal = defenseOf(def?.armor ?? 10);
-            return `AC:${defVal} · ${depthStr}`;
+            return `AC:${def?.armor ?? 10} · ${depthStr}`;
         }
         case "potion":
         case "scroll":
