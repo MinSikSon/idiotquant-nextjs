@@ -1972,8 +1972,7 @@ export default function Rogue() {
                         <button
                             type="button"
                             onClick={() => { runAs(i, { t: "inspectStatus", kind: "origin" }); setSheet("log"); }}
-                            // 출신·성장·전직 기술 정보는 기본 스탯을 읽은 뒤에 보도록 맨 뒤에 둔다.
-                            className={`${statChip} order-last`}
+                            className={`${statChip} order-0`}
                             title="직업 성장 정보 보기"
                         >
                             <OriginTag origin={h.origin} level={h.level} />
@@ -2004,11 +2003,11 @@ export default function Rogue() {
                         }
                         {
                             (h.timeStop ?? 0) > 0 && (
-                                <span className="text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
+                                <span className="order-30 text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
                             )
                         }
                         {hRings > 0 && <span className="text-[var(--rg-ring)]">Ring: {hRings}</span>}
-                        {h.guarded && <span className="text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
+                        {h.guarded && <span className="order-30 text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
