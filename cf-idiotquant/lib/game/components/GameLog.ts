@@ -4,7 +4,8 @@
 // 예전에는 화면 맨 위에 한 줄이 있었고 다음 일이 일어나면 덮였다. 그래서 "얼마에 샀고
 // 수수료를 얼마 냈는지" 를 보려면 그 순간을 놓치지 않아야 했고, 놓치면 영영 못 봤다.
 //
-// 지금은 **쌓인다.** 새 줄이 아래에 붙고 오래된 것이 위로 밀려 나간다 — 채팅창과 같다.
+// 지금은 **쌓인다.** 새 줄이 위에 붙고 오래된 것이 아래로 밀려 난다 — 최신 소식을
+// 먼저 읽는 기록판이다.
 // 밀려 나간 줄도 사라지지는 않아서 드래그로 되감을 수 있고, 칸을 톡 누르면 화면 가득
 // 펼쳐진다(`onOpen`). 판 위의 이 칸은 석 줄이라 되감기만으로는 스무 줄을 못 읽는다.
 //
@@ -86,7 +87,7 @@ export class GameLog extends Phaser.GameObjects.Container {
     private entries: LogEntry[] = [];
     /** 접어 놓은 결과. **되감기도 그리기도 이것을 센다** — 기록이 아니라 줄이 단위다. */
     private view: Line[] = [];
-    /** 바닥에서 몇 줄 위로 되감아 놨는가. 0 이면 가장 최근 줄이 맨 아래다. */
+    /** 최신 줄에서 몇 줄 아래로 되감아 놨는가. 0이면 가장 최근 줄이 맨 위다. */
     private scroll = 0;
     /** 되감지 않은 동안 오른쪽 아래에 뜨는 말. 누를 데가 있다는 것을 이 두 글자가 말한다. */
     private readonly hint: string;
@@ -162,7 +163,7 @@ export class GameLog extends Phaser.GameObjects.Container {
     setEntries(entries: LogEntry[], keepScroll = false): void {
         this.entries = entries;
         this.fold();
-        if (!keepScroll) this.scroll = 0;   // 새 줄이 붙으면 바닥으로 따라 내려간다
+        if (!keepScroll) this.scroll = 0;   // 새 줄이 붙으면 최신 줄로 돌아온다
         this.render();
     }
 
@@ -176,7 +177,9 @@ export class GameLog extends Phaser.GameObjects.Container {
         const room = Math.floor(
             (this.boxW - PADX * 2 - CHIP_W - 6 - CONT_INDENT) / (FS.xs * 0.6));
         this.view = [];
-        for (const e of this.entries) {
+        // 기록 하나 안의 접힌 줄 순서는 유지하고, 기록 묶음만 최신순으로 뒤집는다.
+        // 전체 줄을 reverse하면 긴 최신 기록의 뒷줄이 제목보다 먼저 나오는 문제가 생긴다.
+        for (const e of [...this.entries].reverse()) {
             // 턴 번호는 첫 줄에만 붙는다 — 뒷줄은 같은 턴의 같은 문장이다.
             const whole = e.turn > 0 ? `${e.turn}턴 ${e.text}` : e.text;
             const folded = wrapCells(whole, room);
@@ -202,15 +205,11 @@ export class GameLog extends Phaser.GameObjects.Container {
         this.moreLabel.setText(this.scroll > 0 ? `↓ ${this.scroll}` : this.hint);
         const gutter = this.moreLabel.text ? this.moreLabel.displayWidth + 8 : 0;
 
-        const end = this.view.length - this.scroll;
-        const start = Math.max(0, end - this.rows);
-        const shown = this.view.slice(Math.max(0, start), Math.max(0, end));
-        // 줄이 아직 몇 개 없으면 **아래에 붙인다.** 위에서부터 채우면 빈 칸이 아래에 남아
-        // 채팅창이 아니라 목록처럼 보인다.
-        const top = this.rows - shown.length;
+        // `fold`에서 기록 묶음만 최신순으로 정렬해 두었으므로 접힌 줄은 그대로 읽는다.
+        const shown = this.view.slice(this.scroll, this.scroll + this.rows);
 
         this.lines.forEach((t, i) => {
-            const ln = shown[i - top];
+            const ln = shown[i];
             if (!ln) { t.setText(""); return; }
             const skin = LOG[ln.kind];
             t.setX(PADX + CHIP_W + 6 + (ln.cont ? CONT_INDENT : 0));
