@@ -2716,10 +2716,18 @@ export default function Rogue() {
                         {/* 결과가 먼저, 바로 아래 들여쓴 줄이 그 결과의 산식이다. 엔진이
                             `DETAIL` 로 가른 값을 읽기만 한다 — 화면이 전투 기록을 다시
                             분류하면 전투 규칙과 기록의 뜻이 갈릴 수 있다. */}
-                        <p className="mb-2 border-b border-[var(--rg-line-soft)] pb-2 text-[11px] text-[var(--rg-faint)]">
-                            결과를 먼저 읽고, 아래 들여쓴 줄에서 명중·피해 계산을 확인합니다.
-                        </p>
-                        <ul className="space-y-1">
+                        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--rg-line-soft)] pb-2 text-[11px] text-[var(--rg-faint)]">
+                            <span>최근 기록 · 최신순</span>
+                            <span className="inline-flex items-center gap-1">
+                                <span className="h-2 w-2 rounded-full bg-[var(--rg-label)]" aria-hidden="true" />
+                                주요 사건
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <span className="h-2 w-2 rounded-full bg-[var(--rg-line)]" aria-hidden="true" />
+                                계산 상세
+                            </span>
+                        </div>
+                        <ul className="space-y-2">
                             {state.messages
                                 .slice(-80)
                                 .reverse()
@@ -2729,8 +2737,8 @@ export default function Rogue() {
                                     <li
                                         key={i}
                                         className={detail
-                                            ? "ml-2 border-l-2 border-[var(--rg-line-soft)] py-0.5 pl-2 text-[var(--rg-muted)]"
-                                            : `pt-1 text-[var(--rg-strong)] ${isImportantMessage(m) ? "font-bold" : ""}`}
+                                            ? "ml-3 border-l-2 border-[var(--rg-line-soft)] bg-[var(--rg-bg)]/30 py-1 pl-3 pr-1 text-[var(--rg-muted)] leading-5 break-words"
+                                            : `relative border-l-2 ${isImportantMessage(m) ? "border-[var(--rg-label)] bg-[var(--rg-bg)]/35 font-bold text-[var(--rg-strong)]" : "border-transparent text-[var(--rg-strong)]"} py-1 pl-3 pr-1 leading-5 break-words`}
                                     >
                                         <Msg text={m} />
                                     </li>

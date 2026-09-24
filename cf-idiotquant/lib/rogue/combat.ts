@@ -112,16 +112,15 @@ export interface Term {
 }
 
 /**
- * ` +1 무기 +2 힘` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다.
+ * ` +1(무기) +2(힘)` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다.
  *
- * **숫자와 이름을 띄운다.** 붙여 쓰면(`+2숙련 +3힘 +2진은검`) 한글이 숫자에 달라붙어
- * 어디서 한 항이 끝나는지가 안 보인다 — 특히 이름이 길 때(`+2진은검`) 통째로 한 덩어리로
- * 읽힌다. 한 칸이 그 경계를 만든다.
+ * **값 뒤에 이유를 괄호로 붙인다.** `+2(숙련) +3(힘)`이면 한 항의 경계와 그 값의 까닭이
+ * 함께 보인다. 긴 무기 이름도 `+2(진은검)`으로 한 항임을 바로 읽는다.
  */
 function terms(list: Term[]): string {
     return list
         .filter((t) => t.n !== 0)
-        .map((t) => ` ${t.n > 0 ? "+" : "−"}${Math.abs(t.n)} ${t.why}`)
+        .map((t) => ` ${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}(${t.why})`)
         .join("");
 }
 
@@ -130,15 +129,15 @@ export function seenBefore(state: GameState, m: Monster): boolean {
     return (state.bestiary[m.def.ch] ?? 0) > 0;
 }
 
-/** `d20 13 +2숙련 +3힘 = 18` — 유리·불리면 두 눈과 고른 쪽까지. */
+/** `13(d20 굴림) +2(숙련) +3(힘) = 18(명중)` — 유리·불리면 두 눈과 고른 쪽까지. */
 function rollText(a: Attack, bonuses: Term[]): string {
     const eyes =
         a.luck === "normal"
-            ? `${a.roll}`
-            : `${a.rolls.join(", ")} (${a.luck === "advantage" ? "유리" : "불리"} → ${a.roll})`;
+            ? `${a.roll}(d20 굴림)`
+            : `${a.rolls.join(", ")}(d20 ${a.luck === "advantage" ? "유리" : "불리"} → ${a.roll} 채택)`;
     const add = terms(bonuses);
     const sum = bonuses.reduce((t, b) => t + b.n, 0);
-    return `d20 ${eyes}${add}${sum === 0 ? "" : ` = ${a.total}`}`;
+    return `${eyes}${add}${sum === 0 ? "" : ` = ${a.total}(명중)`}`;
 }
 
 /** 공격 굴림이 무엇으로 끝났나 — 치명타·자동 실패는 따로 말한다. */
@@ -148,12 +147,12 @@ export function outcomeOf(a: Attack): string {
     return a.hit ? "맞았다" : "빗나갔다";
 }
 
-/** `d20 7 +3숙련 = 10` — 피하는 쪽이 굴린 것. 모르는 종은 보정도 합도 가린다. */
+/** `7(d20 굴림) +3(숙련) = 10(회피)` — 피하는 쪽이 굴린 것. 모르는 종은 보정도 합도 가린다. */
 function dodgeText(a: Attack, who: string, bonus: Term[], show: boolean): string {
-    if (!show) return `${who} d20 ${a.dodgeRoll} +?`;
+    if (!show) return `${who} ${a.dodgeRoll}(d20 굴림) +?(숨김)`;
     const add = terms(bonus);
     const sum = bonus.reduce((t, b) => t + b.n, 0);
-    return `${who} d20 ${a.dodgeRoll}${add}${sum === 0 ? "" : ` = ${a.dodge}`}`;
+    return `${who} ${a.dodgeRoll}(d20 굴림)${add}${sum === 0 ? "" : ` = ${a.dodge}(회피)`}`;
 }
 
 /**
@@ -198,11 +197,11 @@ export function multiAttackLine(
     const mine = attacks.map((a) => `${a.dodgeRoll}`).join(", ");
     const add = terms(against.bonus);
     const sum = against.bonus.reduce((t, b) => t + b.n, 0);
-    const theirs = against.show ? `${add}` : " +?";
+    const theirs = against.show ? `${add}` : " +?(숨김)";
     void sum;
     return (
-        `${DETAIL}명중 ${who} d20 ${eyes}${terms(bonuses)}` +
-        `  vs  ${against.who} d20 ${mine}${theirs}  → ${outcome}`
+        `${DETAIL}명중 ${who} ${eyes}(d20 굴림)${terms(bonuses)}` +
+        `  vs  ${against.who} ${mine}(d20 굴림)${theirs}  → ${outcome}`
     );
 }
 
@@ -240,12 +239,13 @@ export function damageLine(
     const sum = rolled.reduce((a, n) => a + n, 0);
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
-    const eyes =
-        rolled.length > 1 ? `${dice} 두 번 → ${rolled.join(", ")} = ${sum}` : `${dice} → ${sum}`;
-    const cut = defense > 0 ? `  −${defense} 방어력` : "";
+    const eyes = rolled.length > 1
+        ? `${rolled.join(", ")}(${dice} 굴림) = ${sum}(주사위 합)`
+        : `${sum}(${dice} 굴림)`;
+    const cut = defense > 0 ? ` −${defense}(방어력)` : "";
     // **0 은 따로 말해 준다.** 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
-    const tail = dealt === 0 ? "피해 0 (튕겨 나갔다)" : `피해 ${dealt}`;
-    return `${DETAIL}공격력${hand ? ` ${hand}` : ""} ${eyes}${add}${bonus !== 0 ? ` = ${power}` : ""}${cut}  → ${tail}`;
+    const tail = dealt === 0 ? ` = ${dealt}(피해 · 튕겨 나갔다)` : ` = ${dealt}(피해)`;
+    return `${DETAIL}공격력${hand ? ` ${hand}` : ""} ${eyes}${add}${bonus !== 0 ? ` = ${power}(공격력)` : ""}${cut}${tail}`;
 }
 
 /**
@@ -272,16 +272,18 @@ export function monsterDamageLine(
     if (parts.length === 0) return `${DETAIL}피해 ${total}`;
     // **상대의 보정도 적는다.** 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼 **줄 위에서 셈이
     // 안 맞는다** — 실제로 그랬다. 숫자가 안 맞는 줄은 기록을 통째로 못 믿게 만든다.
-    const add = bonus !== 0 ? ` ${bonus > 0 ? "+" : "−"}${Math.abs(bonus)} 공격력` : "";
-    const cut = defense > 0 ? ` −${defense} 방어력` : "";
+    const add = bonus !== 0 ? ` ${bonus > 0 ? "+" : "−"}${Math.abs(bonus)}(공격 보정)` : "";
+    const cut = defense > 0 ? ` −${defense}(방어력)` : "";
     const each = parts
         .map(({ dice, rolled, dealt }) => {
-            const eyes =
-                rolled.length > 1 ? `${dice} 두 번 → ${rolled.join(", ")}` : `${dice} → ${rolled[0] ?? 0}`;
-            return `${eyes}${add}${cut} → ${dealt}`;
+            const sum = rolled.reduce((total, n) => total + n, 0);
+            const eyes = rolled.length > 1
+                ? `${rolled.join(", ")}(${dice} 굴림) = ${sum}(주사위 합)`
+                : `${sum}(${dice} 굴림)`;
+            return `${eyes}${add}${cut} = ${dealt}(피해)`;
         })
         .join(" · ");
-    return `${DETAIL}공격력 ${each}  = 피해 ${total}`;
+    return `${DETAIL}공격력 ${each}  = ${total}(총 피해)`;
 }
 
 import { monsterName } from "./monsters";

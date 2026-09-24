@@ -42,7 +42,7 @@ function theirHalf(line: string, iAttacked: boolean): string {
 }
 
 /** 상대의 숫자가 드러난 모양. */
-const BREAKDOWN = { mine: /[+−]\d+ 숙련/, theirs: /[+−]\d+ 공격/ };
+const BREAKDOWN = { mine: /[+−]\d+\(숙련\)/, theirs: /[+−]\d+\(공격\)/ };
 
 function placeNextTo(s: GameState, ch: string, hp = 1) {
     const x = s.heroes[0].x + 1;
@@ -83,22 +83,22 @@ test("겨룸 줄은 양쪽이 굴린 것을 적는다 — 치명타·여러 대�
     {
         assert.equal(
             attackLine("나", fake(13, 7, 14, 3), [{ n: 2, why: "숙련" }, { n: 3, why: "힘" }, { n: 2, why: "무기" }], foe("트롤", 3), "맞았다"),
-            "· 명중 나 d20 13 +2 숙련 +3 힘 +2 무기 = 20  vs  트롤 d20 14 +3 숙련 = 17  → 맞았다",
+            "· 명중 나 13(d20 굴림) +2(숙련) +3(힘) +2(무기) = 20(명중)  vs  트롤 14(d20 굴림) +3(숙련) = 17(회피)  → 맞았다",
         );
         // **모르는 종의 보정은 가린다** — 곧 레벨이라, 그대로 주면 도감이 뚫린다.
         assert.equal(
             attackLine("나", fake(13, 7, 14, 3), [{ n: 7, why: "숙련" }], foe("에뮤", 3, false), "맞았다"),
-            "· 명중 나 d20 13 +7 숙련 = 20  vs  에뮤 d20 14 +?  → 맞았다",
+            "· 명중 나 13(d20 굴림) +7(숙련) = 20(명중)  vs  에뮤 14(d20 굴림) +?(숨김)  → 맞았다",
         );
         // 0인 보정은 안 적고, 보정이 하나도 없으면 합도 안 적는다.
         assert.equal(
             attackLine("나", fake(4, 0, 15, 0), [{ n: 0, why: "무기" }], foe("뱀", 0), "빗나갔다"),
-            "· 명중 나 d20 4  vs  뱀 d20 15  → 빗나갔다",
+            "· 명중 나 4(d20 굴림)  vs  뱀 15(d20 굴림)  → 빗나갔다",
         );
         // 유리·불리는 두 눈과 고른 쪽을 같이 적는다.
         assert.equal(
             attackLine("나", fake(14, 2, 12, 0, "advantage", 6), [{ n: 2, why: "숙련" }], foe("뱀", 0), "맞았다"),
-            "· 명중 나 d20 14, 6 (유리 → 14) +2 숙련 = 16  vs  뱀 d20 12  → 맞았다",
+            "· 명중 나 14, 6(d20 유리 → 14 채택) +2(숙련) = 16(명중)  vs  뱀 12(d20 굴림)  → 맞았다",
         );
     }
 
@@ -114,7 +114,7 @@ test("겨룸 줄은 양쪽이 굴린 것을 적는다 — 치명타·여러 대�
     {
         assert.equal(
             multiAttackLine("트롤", [fake(4, 5, 14), fake(20, 5, 9), fake(11, 5, 3)], [{ n: 5, why: "공격" }], foe("나", 2), "3대 중 2대 (치명타 1)"),
-            "· 명중 트롤 d20 4, 20!, 11 +5 공격  vs  나 d20 14, 9, 3 +2 숙련  → 3대 중 2대 (치명타 1)",
+            "· 명중 트롤 4, 20!, 11(d20 굴림) +5(공격)  vs  나 14, 9, 3(d20 굴림) +2(숙련)  → 3대 중 2대 (치명타 1)",
         );
     }
 });
@@ -129,20 +129,20 @@ test("겨룸 줄은 양쪽이 굴린 것을 적는다 — 치명타·여러 대�
 test("공격력 줄은 방어력을 빼는 것까지 적고, 치명타는 쉼표로 가른다", () => {
     // ── 공격력 줄은 굴린 눈에서 **방어력을 빼는 것까지** 이어 적는다
     {
-        assert.equal(damageLine("1d8", [5], [], 5, 0, 5), "· 공격력 1d8 → 5  → 피해 5");
+        assert.equal(damageLine("1d8", [5], [], 5, 0, 5), "· 공격력 5(1d8 굴림) = 5(피해)");
         assert.equal(
             damageLine("2d4", [5], [{ n: 3, why: "힘" }, { n: 2, why: "무기" }], 10, 4, 6),
-            "· 공격력 2d4 → 5 +3 힘 +2 무기 = 10  −4 방어력  → 피해 6",
+            "· 공격력 5(2d4 굴림) +3(힘) +2(무기) = 10(공격력) −4(방어력) = 6(피해)",
         );
         // **치명타면 주사위를 두 번 굴린다** — 둘 다 적는다.
         assert.equal(
             damageLine("2d4", [5, 7], [{ n: 3, why: "힘" }], 15, 2, 13),
-            "· 공격력 2d4 두 번 → 5, 7 = 12 +3 힘 = 15  −2 방어력  → 피해 13",
+            "· 공격력 5, 7(2d4 굴림) = 12(주사위 합) +3(힘) = 15(공격력) −2(방어력) = 13(피해)",
         );
         // **0 은 따로 말해 준다** — 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
         assert.equal(
             damageLine("1d6", [3], [], 3, 7, 0),
-            "· 공격력 1d6 → 3  −7 방어력  → 피해 0 (튕겨 나갔다)",
+            "· 공격력 3(1d6 굴림) −7(방어력) = 0(피해 · 튕겨 나갔다)",
         );
         // 주사위를 안 주면 결과만 — 상대의 표기도 방어력도 도감이 할 일이다.
         assert.equal(damageLine(null, [], [], 0, 0, 7), "· 피해 7");
@@ -160,7 +160,7 @@ test("공격력 줄은 방어력을 빼는 것까지 적고, 치명타는 쉼표
                 3,
                 9,
             ),
-            "· 공격력 1d8 → 6 −3 방어력 → 3 · 2d6 → 9 −3 방어력 → 6  = 피해 9",
+            "· 공격력 6(1d8 굴림) −3(방어력) = 3(피해) · 9(2d6 굴림) −3(방어력) = 6(피해)  = 9(총 피해)",
         );
         assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 7");
     }
@@ -173,7 +173,7 @@ test("공격력 줄은 방어력을 빼는 것까지 적고, 치명타는 쉼표
                 const d = damageRoll(dice, 0, true, rng);
                 const line = damageLine(dice, d.rolled, [], d.total, 0, d.total);
 
-                const shown = line.match(/두 번 → ([\d, ]+) =/);
+                const shown = line.match(/공격력 ([\d, ]+)\([^)]*굴림\) =/);
                 assert.ok(shown, `치명타 줄 모양이 아니다: ${line}`);
                 // **`+` 로 잇지 않는다** — 이으면 눈을 더한 것으로 읽힌다.
                 assert.doesNotMatch(shown[1], /\+/, `굴림을 + 로 이었다: ${line}`);
@@ -239,12 +239,12 @@ test("굴림 줄이 결과 줄보다 먼저 온다 — 띠의 마지막 줄이 �
         m.hp = 99999;
         const mine = heroAttack(s, s.heroes[0], m, rng).messages;
         assert.ok(mine.length >= 2, `결과 줄이 없다: ${JSON.stringify(mine)}`);
-        assert.match(mine[0], /^· 명중 나 d20 /);
+        assert.match(mine[0], /^· 명중 나 \d+\(d20 /);
         assert.doesNotMatch(mine[mine.length - 1], /^· /);
 
         const theirs = monsterAttack(s, m, s.heroes[0], rng).messages;
         assert.ok(theirs.length >= 2, `결과 줄이 없다: ${JSON.stringify(theirs)}`);
-        assert.match(theirs[0], /^· 명중 .* d20 /);
+        assert.match(theirs[0], /^· 명중 .*\d+\(d20 /);
         assert.doesNotMatch(theirs[theirs.length - 1], /^· /);
     }
 });
@@ -363,16 +363,16 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
             const line = heroAttack(s, s.heroes[0], m, rng).messages.find((l) => l.startsWith("· 공격력 "));
             if (!line) continue; // 빗나갔다
             seen++;
-            assert.ok(line.includes(`공격력 ${dice} `), `${line} 가 ${dice} 로 안 굴렀다`);
+            assert.ok(line.includes(`(${dice} 굴림)`), `${line} 가 ${dice} 로 안 굴렀다`);
 
             // 치명타면 `2d4 두 번 → 5+7 = 12 +4 힘 = 16 …`, 아니면 `2d4 → 5 +4 힘 = 9 …`.
             // **방어력을 빼기 전의 공격력**을 견준다 — 화면의 「공격」은 내 몫이라서다.
-            const crit = line.includes("두 번");
+            const crit = line.includes("(주사위 합)");
             if (crit) crits++;
             const rolledSum = crit
-                ? Number(line.match(/→ [\d, ]+ = (\d+)/)![1])
-                : Number(line.match(/→ (\d+)/)![1]);
-            const power = Number(line.match(/= (-?\d+)(  −|  →)/)?.[1] ?? rolledSum);
+                ? Number(line.match(/= (\d+)\(주사위 합\)/)![1])
+                : Number(line.match(/공격력 (-?\d+)\(/)![1]);
+            const power = Number(line.match(/= (-?\d+)\(공격력\)/)?.[1] ?? rolledSum);
             assert.equal(power - rolledSum, Number(plus), `${line} 의 보정이 화면의 ${plus} 와 다르다`);
         }
         assert.ok(seen > 20, `맞은 횟수가 ${seen} 뿐이라 못 잰다`);
@@ -407,9 +407,9 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         for (let i = 0; i < 40 && !(sawHit && sawDam); i++) {
             m.hp = 99999;
             for (const line of heroAttack(s, s.heroes[0], m, rng).messages) {
-                if (line.startsWith(`${DETAIL}명중`) && line.includes("+2 진은검")) sawHit = true;
-                if (line.startsWith(`${DETAIL}공격력`) && line.includes("+2 진은검")) sawDam = true;
-                assert.ok(!line.includes("+2 무기"), `아직 「무기」라고 적는다: ${line}`);
+                if (line.startsWith(`${DETAIL}명중`) && line.includes("+2(진은검)")) sawHit = true;
+                if (line.startsWith(`${DETAIL}공격력`) && line.includes("+2(진은검)")) sawDam = true;
+                assert.ok(!line.includes("+2(무기)"), `아직 「무기」라고 적는다: ${line}`);
             }
         }
         assert.ok(sawHit, "명중 줄에 무기 이름이 안 적혔다");
@@ -440,7 +440,7 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         // 치명타는 주사위가 둘이라 둘 다 적는다.
         assert.equal(
             monsterDamageLine([{ dice: "1d8", rolled: [5, 6], dealt: 8 }], 0, 3, 8),
-            "· 공격력 1d8 두 번 → 5, 6 −3 방어력 → 8  = 피해 8",
+            "· 공격력 5, 6(1d8 굴림) = 11(주사위 합) −3(방어력) = 8(피해)  = 8(총 피해)",
         );
         // 여러 대는 대마다 따로 적고 **등호는 줄 끝에 하나**다. 예전에는 치명타가 섞이면
         // `… = 11 = 18` 처럼 등호가 둘 연달아 섰다.
@@ -455,12 +455,12 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
                 3,
                 17,
             ),
-            "· 공격력 1d8 → 7 −3 방어력 → 4 · 1d8 두 번 → 5, 6 −3 방어력 → 8 · 2d6 → 8 −3 방어력 → 5  = 피해 17",
+            "· 공격력 7(1d8 굴림) −3(방어력) = 4(피해) · 5, 6(1d8 굴림) = 11(주사위 합) −3(방어력) = 8(피해) · 8(2d6 굴림) −3(방어력) = 5(피해)  = 17(총 피해)",
         );
         // 맨몸이면 뺄 것이 없으니 빼는 자리도 안 적는다.
         assert.equal(
             monsterDamageLine([{ dice: "1d8", rolled: [5], dealt: 5 }], 0, 0, 5),
-            "· 공격력 1d8 → 5 → 5  = 피해 5",
+            "· 공격력 5(1d8 굴림) = 5(피해)  = 5(총 피해)",
         );
         // 모르는 종은 숫자만.
         assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 7");
@@ -476,7 +476,7 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
 //   ② **표지는 양옆에 두 칸**을 둔다(`  vs  ` · `  → ` · `  = `). 한 항 안에서 쓰는
 //      등호는 한 칸이다(` = 20`). 이 차이가 곧 **화면이 줄을 접는 문법**이라
 //      (`Rogue.Roll`), 무너뜨리면 기록 판이 한 줄로 도로 뭉친다.
-test("굴림 줄은 항마다 띄우고 표지는 두 칸으로 가른다", () => {
+test("굴림 줄은 값(설명)으로 적고 표지는 두 칸으로 가른다", () => {
     const line = attackLine(
         "나",
         { roll: 13, rolls: [13], total: 20, dodgeRoll: 7, dodge: 10, hit: true, luck: "normal" } as never,
@@ -489,9 +489,9 @@ test("굴림 줄은 항마다 띄우고 표지는 두 칸으로 가른다", () =
         "맞았다",
     );
 
-    // ── ① 항마다 한 칸
-    assert.ok(line.includes("+2 숙련"), `숫자와 이름이 붙어 있다: ${line}`);
-    assert.ok(!/[+−]\d+[가-힣]/.test(line), `아직 붙은 항이 남았다: ${line}`);
+    // ── ① 각 값에 설명을 붙인다
+    assert.ok(line.includes("+2(숙련)"), `값의 설명이 없다: ${line}`);
+    assert.ok(line.includes("13(d20 굴림)"), `주사위 굴림이 불분명하다: ${line}`);
 
     // ── ② 표지는 두 칸, 항 안의 등호는 한 칸
     assert.ok(line.includes("  vs  "), `겨룸 표지가 두 칸이 아니다: ${line}`);
@@ -508,5 +508,5 @@ test("굴림 줄은 항마다 띄우고 표지는 두 칸으로 가른다", () =
 
     // ── 공격력 줄도 같은 문법이다
     const dam = damageLine("2d4", [5], [{ n: 3, why: "힘" }, { n: 2, why: "무기" }], 10, 4, 6);
-    assert.equal(dam, "· 공격력 2d4 → 5 +3 힘 +2 무기 = 10  −4 방어력  → 피해 6");
+    assert.equal(dam, "· 공격력 5(2d4 굴림) +3(힘) +2(무기) = 10(공격력) −4(방어력) = 6(피해)");
 });
