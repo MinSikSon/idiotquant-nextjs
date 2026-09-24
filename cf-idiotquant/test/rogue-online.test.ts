@@ -215,3 +215,26 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         );
     }
 });
+
+test("온라인 게임 오버 뒤에도 같은 방으로 다음 판을 연다", () => {
+    // ── 방장이 새 판을 만들 때, 방을 닫지 않고 손님들을 새 던전에 다시 앉힌다.
+    {
+        const at = SRC.indexOf("const startWithOrigin = useCallback");
+        assert.ok(at > 0, "직업을 골라 새 판을 여는 자리가 없다");
+        const body = SRC.slice(at, SRC.indexOf("const restart = useCallback", at));
+        assert.match(body, /if \(online === "host"\) \{[\s\S]*?stateRef\.current\?\.heroes\.slice\(1\)[\s\S]*?joinGame\(next, guest\.origin \?\? "knight", guest\.nick, guest\.chest, guest\.guestKey\)/, "새 판에 기존 손님들의 자리·직업을 다시 앉히지 않는다");
+        assert.match(body, /syncGuests\(next\);[\s\S]*?broadcast\(\{ t: "init", state: serialize\(next\) \}\)/, "같은 방의 손님들에게 새 판을 보내지 않는다");
+        assert.doesNotMatch(body, /closeRoom\(/, "새 판을 열면서 온라인 방을 닫는다");
+    }
+
+    // ── 손님은 독자적으로 판을 열거나 방을 나가지 않고 방장의 새 판을 기다린다.
+    const at = SRC.indexOf("const restart = useCallback");
+    assert.ok(at > 0, "새 판을 여는 자리가 없다");
+    const body = SRC.slice(at, SRC.indexOf("const copySeedLink", at));
+    assert.match(
+        body,
+        /if \(online === "guest"\) \{[\s\S]*?note\("방장이 새 판을 열기를 기다린다\."\);[\s\S]*?return;/,
+        "손님이 방을 유지한 채 방장의 새 판을 기다리지 않는다",
+    );
+    assert.doesNotMatch(body, /closeRoom\(/, "손님의 새 판 대기가 방을 닫는다");
+});

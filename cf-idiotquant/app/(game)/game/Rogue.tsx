@@ -1399,15 +1399,32 @@ export default function Rogue() {
         ignoreHeldDirections();
         clear();
         buried.current = false;
-        // **방은 한 판의 것이다** — 방장이 새 판을 열면 그 판의 방은 닫힌다. 손님은 제 판으로 돌아간다.
-        if (online === "host") closeRoom("");
-        setState(newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin, loadChest(0)));
-    }, [online, closeRoom, stopAllHolds, ignoreHeldDirections]);
+        let next = newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin, loadChest(0));
+        if (online === "host") {
+            // 방은 **한 판만** 가리키지만 연결까지 판과 함께 버릴 이유는 없다. 끝난 판의
+            // 손님들을 같은 자리표·직업으로 새 던전에 다시 앉히면, 방 코드와 WebRTC 줄은
+            // 그대로 두고 모두가 `init` 한 통으로 다음 판을 시작한다.
+            for (const guest of stateRef.current?.heroes.slice(1) ?? []) {
+                next = joinGame(next, guest.origin ?? "knight", guest.nick, guest.chest, guest.guestKey);
+            }
+            setState(next);
+            syncGuests(next);
+            broadcast({ t: "init", state: serialize(next) });
+            return;
+        }
+        setState(next);
+    }, [online, stopAllHolds, ignoreHeldDirections, syncGuests, broadcast]);
 
     const restart = useCallback(() => {
+        // 새 던전은 방장이 하나만 만든다. 손님도 방에 남아, 방장이 보낸 새 `init`을
+        // 받으면 같은 방·같은 파티로 곧바로 이어서 한다.
+        if (online === "guest") {
+            note("방장이 새 판을 열기를 기다린다.");
+            return;
+        }
         setOriginFor({ t: "new" });
         setSheet("origins");
-    }, []);
+    }, [online, note]);
 
     const copySeedLink = useCallback(async () => {
         if (!state) return;
