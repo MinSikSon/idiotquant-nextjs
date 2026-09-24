@@ -2410,8 +2410,9 @@ export default function Rogue() {
                                                 ? `??? (${appearanceName})`
                                                 : "──────";
 
+                                    const currentHero = state.heroes[who] ?? state.heroes[0];
                                     const weaponSkillNow = entry.kind === "weapon"
-                                        ? weaponSkillLevel(state.heroes[0], entry.type)
+                                        ? weaponSkillLevel(currentHero, entry.type)
                                         : null;
                                     const currentWeaponSkill = weaponSkillNow === null
                                         ? null
@@ -2437,7 +2438,9 @@ export default function Rogue() {
                                     const usageStr =
                                         stage === 4
                                             ? entry.kind === "weapon"
-                                                ? `★Expert · ${usage}${usageSuffix}`
+                                                // 도감 통달과 무기 숙련은 다른 값이다. 통달했다고
+                                                // Expert라고 적으면 Basic인 실제 전투 보정과 어긋난다.
+                                                ? `★${currentWeaponSkill?.rank ?? "basic"} · ${usage}${usageSuffix}`
                                                 : `★통달 · ${usage}${usageSuffix}`
                                             : stage === 3 && usageSuffix
                                                 ? `${usage}${usageSuffix}`
@@ -2461,11 +2464,11 @@ export default function Rogue() {
                                                     }`}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-1.5 truncate">
+                                                    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap">
                                                         <span className="w-4 text-center font-mono">{stageBadge}</span>
                                                         <span className="text-[var(--rg-label)] font-mono">{char}</span>
                                                         <span
-                                                            className={`truncate ${stage >= 3
+                                                            className={`shrink-0 ${stage >= 3
                                                                 ? "font-medium text-[var(--rg-strong)]"
                                                                 : stage >= 1
                                                                     ? "text-[var(--rg-muted)]"
@@ -2474,6 +2477,11 @@ export default function Rogue() {
                                                         >
                                                             {displayName}
                                                         </span>
+                                                        {statsSummary && (
+                                                            <span className={`truncate text-[12px] ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>
+                                                                · {statsSummary}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex shrink-0 items-center gap-2 text-[12px]">
                                                         {usageStr && (
@@ -2488,12 +2496,6 @@ export default function Rogue() {
                                                         )}
                                                     </div>
                                                 </div>
-
-                                                {statsSummary && (
-                                                    <div className={`pl-5 text-[12px] ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>
-                                                        {statsSummary}
-                                                    </div>
-                                                )}
                                             </button>
 
                                             {/* 상세 제원 및 플레이버 텍스트 (펼침) */}
