@@ -492,15 +492,9 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
 
 // 입이 둘이면 배도 두 배로 곯는다(`finishTurn` 이 사람마다 `tickHunger` 를 돌린다).
 // 그런데 떨어지는 식량이 그대로면 **굶어 죽는 까닭이 판단이 아니라 인원수**가 된다.
-// 손잡이는 둘이다 — 식량 분류의 가중치와 가뭄 보장선, 둘 다 `foodTilt` 하나를 본다.
-//
-// **가중치를 인원수만큼만(`×2`) 올렸을 때는 실제로 1.74 배밖에 안 뽑혔다** — 가중치가
-// 오르면 다른 분류를 밀어내는 만큼 전체 통도 같이 커져서, 배로 올려도 배로 안 뽑힌다.
-// 필요한 것은 2배인데 못 미쳤다. 그래서 `FOOD_MOUTH_BOOST = 2` — 늘어난 입 하나마다
-// 가중치에 **두 배**를 더 얹는다(혼자면 `×1`, 둘이면 `×3`).
-//
-// 잰 값(씨앗 120 × 8층): **혼자 363 · 둘 750 — 2.07 배.** 필요한 2배를 살짝 넘겨 여유를 둔다.
-test("입이 늘면 식량도 는다", () => {
+// 식량 가중치를 키우는 대신, 추가 입의 몫은 일반 드롭과 별도로 둔다. 그래야 무기·방어구
+// 같은 기존 분류가 식량에 밀려나지 않는다.
+test("입이 늘면 식량도 는다", async () => {
     /** 그 판으로 `floors` 층을 내려가며 바닥에 놓인 식량을 센다. */
     const foods = (seed: number, duo: boolean, floors: number): number => {
         let s: GameState = duo ? joinGame(newGame(seed)) : newGame(seed);
@@ -533,6 +527,12 @@ test("입이 늘면 식량도 는다", () => {
         duo >= solo * 1.9,
         `둘인데 필요한 만큼(2배) 안 떨어진다 (혼자 ${solo} · 둘 ${duo} = ${(duo / solo).toFixed(2)}배)`,
     );
+    // 일반 드롭 통은 파티 인원과 무관하다. 식량을 늘리려고 여기의 분류 확률을 바꾸면
+    // 무기·방어구도 같이 깎인다.
+    const source = await import("node:fs/promises");
+    const game = await source.readFile(new URL("../lib/rogue/game.ts", import.meta.url), "utf8");
+    assert.match(game, /pickCategory\(level\.depth, rng, scale, bias\)/, "식량이 일반 아이템 분류 확률을 밀어낸다");
+    assert.match(game, /itemSpots\(level, extraFood, rng, avoid, sp \? sp\.room : null\)[\s\S]*?makeItem\("food", "food ration"/, "추가 입의 식량을 별도로 놓지 않는다");
 });
 
 test("온라인 — 직렬화해 넘긴 판에 같은 명령을 같은 순서로 주면 같은 판이 된다", async () => {

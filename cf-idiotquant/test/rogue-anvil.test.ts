@@ -23,9 +23,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { newGame, perform } from "@/lib/rogue/game";
+import { newGame, perform, scrollTargetKinds } from "@/lib/rogue/game";
 import { addToPack, equippedWeapon, packItem } from "@/lib/rogue/hero";
-import { MELT_RETURN, enchantOf, makeItem, meltMax, meltYield } from "@/lib/rogue/items";
+import { MELT_RETURN, WAND_RECHARGE, enchantOf, makeItem, meltMax, meltYield, randomItem } from "@/lib/rogue/items";
 import { buildLevel } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
 import { walkable, idx, type GameState, type Item, type Tile } from "@/lib/rogue/types";
@@ -238,5 +238,36 @@ test("무기도 갑옷도 아니면 안 올라간다 · 되뽑은 것으로 다�
         }
         assert.equal(better.plusHit, got, "옮겨 심은 강화가 안 올랐다");
         assert.equal(packItem(after.heroes[0], scroll.letter!), undefined, "다 안 썼다");
+    }
+});
+
+test("지팡이를 녹이면 충전 주문서가 되고, 다른 지팡이에 정확히 여덟 회를 더한다", () => {
+    const s = newGame(8181);
+    const anvil = s.level.anvil!;
+    s.heroes[0].x = anvil.x;
+    s.heroes[0].y = anvil.y;
+    const spent = makeItem("wand", "fire", 981, -1, -1);
+    spent.charges = 0;
+    const target = makeItem("wand", "cold", 982, -1, -1);
+    target.charges = 3;
+    addToPack(s.heroes[0], spent);
+    addToPack(s.heroes[0], target);
+
+    const melted = perform(s, { t: "melt", letter: spent.letter! });
+    assert.ok(!melted.heroes[0].pack.some((p) => p.id === spent.id), "녹인 지팡이가 남았다");
+    const scroll = melted.heroes[0].pack.find((p) => p.kind === "scroll" && p.type === "recharge wand");
+    assert.ok(scroll, "지팡이를 녹였는데 충전 주문서가 안 나왔다");
+    assert.ok(melted.known["scroll:recharge wand"], "모루에서 만든 충전 주문서의 정체를 모른다");
+    assert.deepEqual(scrollTargetKinds(melted, scroll!.letter!), ["wand"], "충전 주문서가 지팡이를 고르게 하지 않는다");
+
+    const after = perform(melted, { t: "read", letter: scroll!.letter!, target: target.letter! });
+    assert.equal(target.charges, 3 + WAND_RECHARGE, "충전 주문서가 지팡이에 정확히 여덟 회를 더하지 않는다");
+    assert.equal(packItem(after.heroes[0], scroll!.letter!), undefined, "충전 주문서가 소비되지 않았다");
+
+    // 충전 주문서는 모루 전용이다 — 일반 주문서 드롭에 섞이면 지팡이 하나가 계속 충전돼
+    // 새 지팡이를 고를 이유가 사라진다.
+    for (let seed = 1; seed <= 200; seed++) {
+        const dropped = randomItem(10, seed, 0, 0, new Rng(seed), "scroll");
+        assert.notEqual(dropped.type, "recharge wand", "충전 주문서가 일반 드롭에 섞였다");
     }
 });

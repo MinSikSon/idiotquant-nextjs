@@ -100,6 +100,7 @@ import {
     CHEST_SLOTS,
     canHoldEnchant,
     MELT_RETURN,
+    WAND_RECHARGE,
     enchantOdds,
     enchantOf,
     enchantSafeMax,
@@ -286,35 +287,14 @@ function itemAt(level: Level, x: number, y: number): Item | undefined {
  * 그랬다. 이 규칙이 없애려는 것은 평균이 아니라 **다섯 층 연속 없는 판**이다.
  */
 const ENCHANT_PER_FLOOR = 2;
-/** 층 단위 상한 — 특수 방을 포함한 총수, 장비, 반지. 넘으면 소모품으로 바꾼다. */
+/** 일반 분배의 층 단위 상한 — 추가 식량은 이 통과 따로 선다. */
 const FLOOR_ITEM_CAP = 8;
 const FLOOR_GEAR_CAP = 3;
 const FLOOR_RING_CAP = 1;
 /** 식량 없이 이만큼 지나면 다음 층에 하나를 보장한다. */
 const FOOD_GRACE = 4;
-/**
- * **사람이 하나 늘 때마다 식량 쪽으로 얼마나 더 기우는가.**
- *
- * 배고픔 시계는 사람마다 따로 돌되 한 시계를 같이 본다(`finishTurn`) — 둘이면 한 걸음에
- * 배가 두 배로 곯는다. 그런데 가중치를 **인원수만큼만**(`×2`) 올렸더니 실제로 뽑히는
- * 양은 1.74배에 그쳤다 — 가중치가 오르면 다른 분류를 밀어내는 만큼 **전체 통도 같이
- * 커지므로**(`pickCategory` 의 `w`), 배로 올려도 배로 안 뽑힌다. 필요한 것은 2배인데
- * 가중치를 2배만 주면 못 미친다.
- *
- * `FOOD_MOUTH_BOOST` 는 **늘어난 입 하나마다 가중치에 몇 배를 더할지**다. 혼자
- * (`mouths=1`)면 그대로(`×1`) — 단독 플레이의 뽑기는 한 글자도 안 바뀐다. 둘이면
- * `1 + 1 × 2 = 3`, 즉 **가중치를 세 배**로 줘야 실제로 뽑히는 양이 목표(2배)를 넘는다.
- * 잰 값(씨앗 120 × 8층, `rogue-coop.test.ts`): **혼자 363 · 둘 750 — 2.07배.**
- *
- * 가뭄 보장선(`FOOD_GRACE`)도 같은 수를 본다 — 손잡이 둘이 다른 수를 보면 「몇 배를
- * 봐줄까」를 두 곳에서 따로 정하는 꼴이라, 인원을 더 받게 되는 날 한쪽만 고치게 된다.
- */
-const FOOD_MOUTH_BOOST = 2;
-
-/** 인원수가 식량에 미치는 기울기 — `pickCategory` 의 가중치와 가뭄 보장선이 같이 본다. */
-function foodTilt(mouths: number): number {
-    return 1 + (mouths - 1) * FOOD_MOUTH_BOOST;
-}
+/** 추가 입 한 명당 일반 드롭과 별도로 놓는 식량 한 개. */
+const FOOD_PER_EXTRA_MOUTH = 1;
 /** 특수 방의 기본 몫과, 무기고의 등급 보너스. */
 const SPECIAL_BASE = 2;
 const ARMORY_TIER_UP = 2;
@@ -383,23 +363,17 @@ function populate(state: GameState, level: Level, rng: Rng) {
     let relicPlaced = false;
 
     /** 한 층의 상한들 — 넘으면 **버리지 않고 다른 것으로 바꾼다**(총량은 층이 정한다). */
-    // **입이 늘면 식량도 는다.** 배고픔 시계는 사람마다 따로 도니(`finishTurn`) 둘이면
-    // 한 층에서 먹는 양도 두 배다. 그런데 떨어지는 양이 그대로면 굶어 죽는 까닭이
-    // **판단이 아니라 인원수**가 된다. `foodTilt` 가 그 기울기다 — 혼자면 `×1` 이라
-    // 단독 플레이의 뽑기는 한 글자도 안 바뀐다.
+    // 일반 드롭은 인원수와 무관하다. 식량 가중치를 키우면 무기·방어구를 비롯한 다른
+    // 분류가 같이 깎이므로, 늘어난 입의 몫은 아래에서 별도 식량으로 더한다.
     const mouths = state.heroes.length;
-    const tilt = foodTilt(mouths);
+    const extraFood = Math.max(0, mouths - 1) * FOOD_PER_EXTRA_MOUTH;
     const put = (p: Pos, bias?: Partial<Record<Category, number>>, tierUp = 0) => {
         if (placed >= FLOOR_ITEM_CAP) return;
-        // 특수 방의 편향이 있으면 **거기에 곱한다** — 보물방의 `food: 0`(식량이 안 나온다)
-        // 같은 규칙을 인원수가 뒤집으면 안 된다.
-        let cat = pickCategory(level.depth, rng, scale, { ...bias, food: (bias?.food ?? 1) * tilt });
+        let cat = pickCategory(level.depth, rng, scale, bias);
         if (cat === "enchant" && enchants >= ENCHANT_PER_FLOOR) cat = "scroll";
         if ((cat === "weapon" || cat === "armor") && gear >= FLOOR_GEAR_CAP) cat = "potion";
         if (cat === "ring" && rings >= FLOOR_RING_CAP) cat = "potion";
-        // 보장선도 **같은 기울기**로 빨리 온다 — 가중치만 올리면 뽑기가 계속 어긋났을 때
-        // 둘이서 굶는 구간이 혼자일 때와 똑같이 길다.
-        if (!bias && foods === 0 && state.foodDrought >= Math.max(1, Math.ceil(FOOD_GRACE / tilt))) cat = "food";
+        if (!bias && foods === 0 && state.foodDrought >= FOOD_GRACE) cat = "food";
         if (cat === "enchant") enchants++;
         if (cat === "weapon" || cat === "armor") gear++;
         if (cat === "ring") rings++;
@@ -467,6 +441,13 @@ function populate(state: GameState, level: Level, rng: Rng) {
     }
 
     for (const p of itemSpots(level, ng, rng, avoid, sp ? sp.room : null)) put(p);
+
+    // 추가 식량은 일반 분배·장비 상한과 다른 통이다. 특수 방의 `food: 0`을 뒤집지 않도록
+    // 그 방 밖의 빈 칸에만 놓는다. 그래서 파티가 커져도 장비 확률은 그대로다.
+    for (const p of itemSpots(level, extraFood, rng, avoid, sp ? sp.room : null)) {
+        level.items.push(makeItem("food", "food ration", state.nextItemId++, p.x, p.y));
+        foods++;
+    }
 
     state.enchantDrought = enchants > 0 ? 0 : state.enchantDrought + 1;
     state.foodDrought = foods > 0 ? 0 : state.foodDrought + 1;
@@ -1152,6 +1133,7 @@ function targetKindsOf(it: Item): ItemKind[] | null {
     if (it.type === "enchant armor") return ["armor"];
     if (it.type === "blessed enchant") return ["weapon", "armor"];
     if (it.type === "transmutation") return ["weapon", "armor", "ring"];
+    if (it.type === "recharge wand") return ["wand"];
     return null;
 }
 
@@ -1164,7 +1146,7 @@ function targetKindsOf(it: Item): ItemKind[] | null {
 function defaultTarget(hero: Hero, kinds: ItemKind[], allow?: (it: Item) => boolean): Item | undefined {
     for (const k of kinds) {
         const it =
-            k === "weapon" ? equippedWeapon(hero) : k === "armor" ? equippedArmor(hero) : wornRings(hero)[0];
+            k === "weapon" ? equippedWeapon(hero) : k === "armor" ? equippedArmor(hero) : k === "ring" ? wornRings(hero)[0] : hero.pack.find((p) => p.kind === "wand");
         // **걸 수 없는 것은 「걸친 것이 없다」와 같이 친다.** 표창을 쥔 채 정체 모르는 강화
         // 주문서를 읽으면 부르는 쪽이 「걸 것이 없었다」로 보내 주문서가 타고 정체가 밝혀진다 —
         // 아무 일도 안 일어나고 턴도 안 쓰는 막다른 길보다 낫다.
@@ -1422,6 +1404,21 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
             state.itemCodex[scrKey] = true;
             state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
             transmute(state, on, rng, it.blessed);
+            return true;
+        } else if (it.type === "recharge wand") {
+            const scholarChance = scholarPreserveChance(hero);
+            const preserved = scholarChance > 0 && rng.chance(scholarChance);
+            if (preserved) {
+                say(state, "🔮 비전 전도: 주문서가 소모되지 않고 보존되었다!");
+            } else {
+                takeFromPack(hero, it);
+            }
+            const scrKey = `scroll:${it.type}`;
+            state.known[scrKey] = true;
+            state.itemCodex[scrKey] = true;
+            state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
+            on.charges = (on.charges ?? 0) + WAND_RECHARGE;
+            say(state, `${describe(on, state.known, state.appearance)}에 마력이 돌아와 사용 횟수가 ${WAND_RECHARGE}회 늘었다.`);
             return true;
         }
     }
@@ -1765,7 +1762,7 @@ function give(state: GameState, hero: Hero, letter: string): boolean {
 }
 
 /**
- * 무기나 갑옷을 모루에 녹여 **강화 주문서를 되뽑는다.** 그 물건은 사라진다.
+ * 무기·갑옷은 강화 주문서로, 지팡이는 충전 주문서로 모루에서 되뽑는다. 그 물건은 사라진다.
  *
  * ── 왜 이것이 있나 ──────────────────────────────────────────────────
  * 강화는 **못 되돌린다.** 4층에서 주운 장검에 주문서 다섯 장을 부어 `+5` 를 만들고 나면,
@@ -1792,7 +1789,7 @@ function melt(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
         return false;
     }
     const it = packItem(hero, letter);
-    if (!it || (it.kind !== "weapon" && it.kind !== "armor")) {
+    if (!it || (it.kind !== "weapon" && it.kind !== "armor" && it.kind !== "wand")) {
         say(state, "모루에 올릴 것이 아니다.");
         return false;
     }
@@ -1800,6 +1797,24 @@ function melt(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
         it.curseKnown = true;
         say(state, "몸에서 떨어지지 않는다!");
         return false;
+    }
+    if (it.kind === "wand") {
+        const name = describe(it, state.known, state.appearance);
+        takeFromPack(hero, it, 1);
+        const made = makeItem("scroll", "recharge wand", state.nextItemId++, -1, -1);
+        const inPack = addToPack(hero, made);
+        const scrKey = "scroll:recharge wand";
+        state.known[scrKey] = true;
+        state.itemCodex[scrKey] = true;
+        say(state, `${name}을(를) 모루에 올렸다. 마력이 굳어 충전 주문서가 되었다.`);
+        if (inPack) say(state, `지팡이 충전 주문서를 얻었다 — 다른 지팡이에 ${WAND_RECHARGE}회를 더한다.`);
+        else {
+            made.x = hero.x;
+            made.y = hero.y;
+            level.items.push(made);
+            say(state, "배낭이 꽉 차 충전 주문서가 발밑에 떨어졌다.");
+        }
+        return true;
     }
     const { sure, risky } = meltYield(it);
     if (sure + risky <= 0) {

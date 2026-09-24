@@ -31,6 +31,7 @@ import {
     meltMax,
     meltYield,
     needsBow,
+    WAND_RECHARGE,
 } from "@/lib/rogue/items";
 import { canOffHand, equippedArmor, equippedWeapon, isDualWielding } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
@@ -177,7 +178,7 @@ export default function Desk({
      * 화면이 두 가지를 못 가리고, 재련 줄이 강화 줄과 **똑같이 생긴 채** 뜬다 — 강화인 줄
      * 알고 눌러서 무기 종류가 바뀌는 사고가 거기서 난다.
      */
-    const pendingEnchantStyle = useRef<"plain" | "blessed" | "transmute" | null>(null);
+    const pendingEnchantStyle = useRef<"plain" | "blessed" | "transmute" | "recharge" | null>(null);
 
     /**
      * 주문서 하나를 읽는다 — **강화나 재련이면 고를 것을 한 번 더 묻는다.**
@@ -198,13 +199,15 @@ export default function Desk({
             // **강화냐 재련이냐는 엔진이 답한다**(`enchantScrollKind`). 대상 종류의 개수로
             // 가르면 축복(무기·갑옷)이 재련(무기·갑옷·반지)과 같은 칸에 떨어져서, 상한에
             // 닿은 물건이 고르는 목록에 그대로 뜬다.
-            const style = enchantScrollKind(state, letter, w) ?? "transmute";
+            const style = enchantScrollKind(state, letter, w) ?? (targetKinds[0] === "wand" ? "recharge" : "transmute");
             pendingEnchant.current = letter;
             pendingEnchantStyle.current = style;
             const wantSingle = targetKinds.length === 1 ? targetKinds[0] : null;
             setPicker({
                 title: style === "transmute"
                     ? "무엇을 재련할까 — 다른 종류로 바뀐다"
+                    : style === "recharge"
+                    ? `어느 지팡이에 ${WAND_RECHARGE}회를 더할까`
                     : style === "blessed"
                     ? "무엇에 축복을 걸까"
                     : wantSingle === "weapon"
@@ -217,9 +220,11 @@ export default function Desk({
                 // 재련은 그대로 둔다: 표창 열 자루가 **한 자루**의 딴 무기가 되므로
                 // 불어나지 않는다. 눌러도 엔진이 한 번 더 막는다 — 자물쇠는 둘이다.
                 allow: (p) =>
-                    style === "transmute" || (canHoldEnchant(p) && enchantOf(p) < ENCHANT_MAX),
+                    style === "transmute" || style === "recharge" || (canHoldEnchant(p) && enchantOf(p) < ENCHANT_MAX),
                 empty: style === "transmute"
                     ? "재련할 장비(무기·갑옷·반지)가 없다."
+                    : style === "recharge"
+                    ? "충전할 지팡이가 없다."
                     : style === "blessed"
                     ? "축복을 걸 무기나 갑옷이 없다."
                     : wantSingle === "weapon"
@@ -372,7 +377,10 @@ export default function Desk({
      * 축복은 안전 구간 안에서 **범위**를 적는다 — 한 번에 `1~3` 칸이 오르기 때문이고,
      * 천장 위에서는 굴림이 일반과 같아서 같은 줄을 적는다.
      */
-    const enchantHint = (it: Item, style: "plain" | "blessed" | "transmute") => {
+    const enchantHint = (it: Item, style: "plain" | "blessed" | "transmute" | "recharge") => {
+        if (style === "recharge") {
+            return <span className="text-[var(--rg-ring)]"> → 사용 횟수 +{WAND_RECHARGE}</span>;
+        }
         // **재련은 숫자가 아니라 종류를 바꾼다.** 줄에 아무것도 안 적으면 강화 창과 똑같이
         // 생겨서, 강화인 줄 알고 눌렀다가 무기가 딴 것이 된다.
         if (style === "transmute") {
@@ -435,6 +443,10 @@ export default function Desk({
          */
         const meltRow = () => {
             if (!onAnvil) return;
+            if (it.kind === "wand") {
+                out.push({ label: `녹인다 (충전 주문서 1장 · +${WAND_RECHARGE}회)`, on: go({ t: "melt", letter: it.letter! }) });
+                return;
+            }
             const { sure, risky } = meltYield(it);
             if (sure + risky <= 0) return;
             const odds = Math.round(MELT_RETURN * 100);
@@ -580,6 +592,7 @@ export default function Desk({
                         });
                     },
                 });
+                meltRow();
                 break;
         }
         if (isThrowable(it) && (!needsBow(it) || equippedWeapon(hero)?.type === "short bow")) {
@@ -755,6 +768,8 @@ export default function Desk({
                         // 화면만 옛말을 하게 된다.
                         enchantStyle === "transmute"
                             ? "고른 장비가 같은 분류의 다른 종류로 바뀝니다 — 강화 수치는 따라갑니다."
+                            : enchantStyle === "recharge"
+                              ? `고른 지팡이의 사용 횟수가 ${WAND_RECHARGE}회 늘어납니다.`
                             : enchantStyle === "blessed"
                               ? `안전 구간 안에서 한 번에 1~3 칸 오르고 천장에서 멈춥니다. 그 위로는 보통 주문서와 같습니다.`
                               : enchantStyle

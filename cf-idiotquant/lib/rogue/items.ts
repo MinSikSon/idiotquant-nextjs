@@ -149,7 +149,13 @@ export const SCROLLS: Record<string, { name: string; freq: number; depth: number
     "remove curse": { name: "저주 해제", freq: 8, depth: 3 },
     "aggravate monsters": { name: "도발", freq: 3, depth: 2 },
     sleep: { name: "수면", freq: 5, depth: 2 },
+    // 모루에서 지팡이를 녹여서만 만든다. 일반 주문서 통에 섞이면 충전이 무한히 쌓여
+    // 지팡이를 바꾸는 선택의 값이 사라진다(`PLAIN_SCROLLS`에서 제외).
+    "recharge wand": { name: "지팡이 충전", freq: 0, depth: 1 },
 };
+
+/** 충전 주문서 한 장이 지팡이에 되돌리는 사용 횟수. */
+export const WAND_RECHARGE = 8;
 
 /**
  * 반지 — **끼고 있으면 배가 더 고프다.**
@@ -613,7 +619,7 @@ const BLESSED_SHARE = 15;
  * 쪽으로 새어 나온다 — 손잡이를 달아 놓고 안 듣는 꼴이다.
  */
 const PLAIN_SCROLLS = Object.fromEntries(
-    Object.entries(SCROLLS).filter(([k]) => !ENCHANT_SCROLLS.includes(k)),
+    Object.entries(SCROLLS).filter(([k]) => !ENCHANT_SCROLLS.includes(k) && k !== "recharge wand"),
 ) as typeof SCROLLS;
 
 /**
