@@ -123,14 +123,14 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
     },
 };
 
-/** 기록 한 줄 — 협동의 앞머리(`1P▸ `, 엔진이 단다)를 그 사람 색으로 칠한다. */
+/** 기록 한 줄 — 협동의 앞머리를 그 사람 색으로 칠하고, 이름이 있으면 `1P` 대신 쓴다. */
 /**
  * 계산 줄 한 줄 — **엔진이 적은 것을 표지에서 접어 보여 준다.**
  *
  * 기록에 이렇게 한 줄로 들어온다:
  *
  * ```
- * · 명중 나 d20 13 +2 숙련 +3 힘 +2 진은검 = 20  vs  트롤 d20 7 +3 숙련 = 10  → 맞았다
+ * · 명중 나 13(d20 굴림) +2(숙련) +3(힘) +2(진은검) = 20(명중)  vs  트롤 7(d20 굴림) +3(숙련) = 10(회피)  → 맞았다
  * ```
  *
  * 390px 에서는 이것이 석 줄로 접히는데, **어디가 내 굴림이고 어디가 상대 것인지**가
@@ -139,8 +139,8 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
  * 표지는 **앞에 두 칸**이 붙는다 — 뒤는 한 칸일 때도 있다(`  → 맞았다`):
  *
  * ```
- * 명중  나 d20 13 +2 숙련 +3 힘 +2 진은검 = 20
- *  vs   트롤 d20 7 +3 숙련 = 10
+ * 명중  나 13(d20 굴림) +2(숙련) +3(힘) +2(진은검) = 20(명중)
+ *  vs   트롤 7(d20 굴림) +3(숙련) = 10(회피)
  *  →    맞았다
  * ```
  *
@@ -173,18 +173,23 @@ function Roll({ text }: { text: string }) {
     );
 }
 
-function Msg({ text }: { text: string }) {
+function Msg({ text, heroes }: { text: string; heroes: GameState["heroes"] }) {
     // 계산 줄에는 협동 앞머리가 안 붙는다(`game.say`) — 그래서 먼저 걸러도 안전하다.
     if (isDetail(text)) return <Roll text={text} />;
     const turn = /^(T:\d+ )/.exec(text);
     const body = turn ? text.slice(turn[0].length) : text;
-    const m = /^([1-4])P▸ /.exec(body);
+    // 엔진은 저장·협동 동기화가 흔들리지 않도록 `1P`라는 붙박이 표식을 남긴다. 화면만
+    // 그 표식을 이름으로 읽는다 — 이름을 바꿔도 지난 기록과 네트워크 판의 문법은 같다.
+    // `▸`는 행동한 사람, 없는 것은 허기처럼 그 사람의 상태가 바뀐 기록이다.
+    const m = /^([1-4])P(▸)? /.exec(body);
     if (!m) return <>{text}</>;
+    const who = Number(m[1]) - 1;
+    const label = heroes[who]?.nick ?? `${m[1]}P`;
     return (
         <>
             {turn?.[1]}
-            <span className="font-bold" style={{ color: PARTY_INK[Number(m[1]) - 1] }}>
-                {m[1]}P▸
+            <span className="font-bold" style={{ color: PARTY_INK[who] }}>
+                {label}{m[2] ?? ""}
             </span>{" "}
             {body.slice(m[0].length)}
         </>
@@ -1868,7 +1873,7 @@ export default function Rogue() {
                 <span className="min-w-0 flex-1">
                     {recent.map((m, i) => (
                         <span key={`${state.turn}-${i}`} className={`block truncate ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
-                            <Msg text={m} />
+                            <Msg text={m} heroes={state.heroes} />
                         </span>
                     ))}
                 </span>
@@ -1961,7 +1966,7 @@ export default function Rogue() {
                                     [
                                         ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
                                         ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                        ["luck", `지혜 +1 · 현재 ${Math.round(hero.itemLuck * 100)}`],
+                                        ["luck", `지혜 +1 · 지팡이 피해 +1 (현재 +${Math.round(hero.itemLuck * 100)})`],
                                     ] as const
                                 ).map(([option, label]) => (
                                     <button
@@ -2085,6 +2090,13 @@ export default function Rogue() {
                                     지도에서 찾는 이름과 상태 줄의 이름이 같아야 눈이 안 헤맨다. */}
                                 {h.hp > 0 ? "@" : "†"}{h.nick ?? `${i + 1}P`}
                             </button>
+                        )}
+                        {/* 방장은 언제나 0번 영웅이다. 이름표 바로 뒤에 왕관을 세워, 여러
+                            상태 줄을 훑을 때 방의 주인을 먼저 찾게 한다. */}
+                        {coop && i === 0 && (
+                            <span className="order-20 shrink-0 font-bold !text-[var(--rg-gold)]" title="방장">
+                                ♛ 방장
+                            </span>
                         )}
                         {/* **쓰러진 사람에게 제일 먼저 알려 줄 것은 이것**이다 — 누워 있는 동안
                             화면에 할 일이 하나도 없으면 판이 끝난 줄 안다. 줄은 가로로 넘치므로
@@ -2681,7 +2693,7 @@ export default function Rogue() {
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 줍니다. 수치가 높을수록 더 좋은 아이템을 얻을 가능성이 커집니다.`
+                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이 피해가 지혜 수치만큼 늘어납니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"
@@ -2718,6 +2730,7 @@ export default function Rogue() {
                             분류하면 전투 규칙과 기록의 뜻이 갈릴 수 있다. */}
                         <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--rg-line-soft)] pb-2 text-[11px] text-[var(--rg-faint)]">
                             <span>최근 기록 · 최신순</span>
+                            <span className="sr-only">결과를 먼저 읽고, 아래 들여쓴 줄에서 명중·피해 계산을 확인합니다.</span>
                             <span className="inline-flex items-center gap-1">
                                 <span className="h-2 w-2 rounded-full bg-[var(--rg-label)]" aria-hidden="true" />
                                 주요 사건
@@ -2738,9 +2751,9 @@ export default function Rogue() {
                                         key={i}
                                         className={detail
                                             ? "ml-3 border-l-2 border-[var(--rg-line-soft)] bg-[var(--rg-bg)]/30 py-1 pl-3 pr-1 text-[var(--rg-muted)] leading-5 break-words"
-                                            : `relative border-l-2 ${isImportantMessage(m) ? "border-[var(--rg-label)] bg-[var(--rg-bg)]/35 font-bold text-[var(--rg-strong)]" : "border-transparent text-[var(--rg-strong)]"} py-1 pl-3 pr-1 leading-5 break-words`}
+                                            : `relative border-l-2 ${isImportantMessage(m) ? "border-[var(--rg-label)] bg-[var(--rg-bg)]/35" : "border-transparent"} ${isImportantMessage(m) ? "font-bold" : ""} py-1 pl-3 pr-1 leading-5 break-words text-[var(--rg-strong)]`}
                                     >
-                                        <Msg text={m} />
+                                        <Msg text={m} heroes={state.heroes} />
                                     </li>
                                     );
                                 })}
@@ -3433,7 +3446,7 @@ export default function Rogue() {
                                 <p className="mb-1 font-bold text-[var(--rg-strong)]">마지막 순간</p>
                                 <ul className="space-y-0.5 text-[var(--rg-muted)]">
                                     {[...state.messages.filter((m) => !isDetail(m)).slice(-5)].reverse().map((m, i) => (
-                                        <li key={i}>· <Msg text={m} /></li>
+                                        <li key={i}>· <Msg text={m} heroes={state.heroes} /></li>
                                     ))}
                                 </ul>
                                 <p className="mt-2 text-[11px] text-[var(--rg-faint)]">

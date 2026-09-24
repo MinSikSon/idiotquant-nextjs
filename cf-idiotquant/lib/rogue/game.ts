@@ -55,6 +55,7 @@ import {
     weaponSkillMax,
     weaponSkillName,
     weaponSkillTerms,
+    wandDamageBonus,
     wornRings,
 } from "./hero";
 import {
@@ -249,7 +250,10 @@ function say(state: GameState, ...lines: string[]) {
         // 기록에는 그 순간의 턴을 앞에 남겨, 사건의 순서를 지난 판에서도 알 수 있게 한다.
         if (l.startsWith(DETAIL)) state.messages.push(l);
         else {
-            const player = sayTag && !/^\d+P▸ /.test(l) ? sayTag : "";
+            // 허기처럼 **다른 사람의 상태**를 이미 `2P `로 밝힌 줄에는, 명령한 사람의
+            // 표식을 한 번 더 붙이지 않는다. 그러면 `1P▸ 2P 시장…`이 되어 색도 주체도
+            // 첫 사람에게 잘못 붙는다.
+            const player = sayTag && !/^\d+P(?:▸)? /.test(l) ? sayTag : "";
             state.messages.push(`T:${state.turn} ${player}${l}`);
         }
     }
@@ -2206,6 +2210,16 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
+    // 지혜는 아이템운과 같은 값 하나에서 읽는다. 공격 지팡이의 주사위 뒤에 더하되,
+    // 난수는 기존과 정확히 한 번만 굴린다 — 지혜를 안 고른 판의 시드 흐름도 그대로다.
+    const wisdom = wandDamageBonus(hero);
+    const spellDamage = (dice: string) => {
+        const rolled = rng.rollDice(dice);
+        return { rolled, total: rolled + wisdom };
+    };
+    const saySpellDamage = (line: string, damage: { rolled: number; total: number }) => {
+        say(state, `${withDamage(line, damage.total)}${wisdom > 0 ? ` (주사위 ${damage.rolled} + 지혜 ${wisdom})` : ""}`);
+    };
 
     // ── 굴착의 지팡이 (digging) : 최대 4칸 벽을 부수고 관통 파편 피해(2d6)를 줌 ──
     if (it.type === "digging") {
@@ -2222,11 +2236,11 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             }
             const m = monsterAt(level, nx, ny);
             if (m) {
-                const dmg = rng.rollDice("2d6");
+                const dmg = spellDamage("2d6");
                 pullAggro(state, m, hero);
-                m.hp -= dmg;
+                m.hp -= dmg.total;
                 m.awake = true;
-                say(state, withDamage(`${m.def.name}이(가) 무너지는 파편에 맞았다.`, dmg));
+                saySpellDamage(`${m.def.name}이(가) 무너지는 파편에 맞았다.`, dmg);
                 if (m.hp <= 0) {
                     say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
                     killMonster(state, m, rng, hero);
@@ -2291,11 +2305,11 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
         if (collided) {
-            const dmg = rng.rollDice("3d4");
+            const dmg = spellDamage("3d4");
             pullAggro(state, m, hero);
-            m.hp -= dmg;
+            m.hp -= dmg.total;
             m.speed = -1;
-            say(state, withDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg));
+            saySpellDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg);
             if (m.hp <= 0) {
                 say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
                 killMonster(state, m, rng, hero);
@@ -2322,11 +2336,11 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         // 원작처럼 마법 화살은 `*`, 세 원소 지팡이는 방향에 맞춘 광선 문자로 날아간다.
         const ch = it.type === "magic missile" ? "*" : boltGlyph(dx, dy);
         state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: hit.cells.map((cell) => ({ ...cell, ch })) };
-        const dmg = rng.rollDice(def.damage);
+        const dmg = spellDamage(def.damage);
         pullAggro(state, m, hero);
-        m.hp -= dmg;
+        m.hp -= dmg.total;
         m.awake = true;
-        say(state, withDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg));
+        saySpellDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg);
         if (m.hp <= 0) {
             say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
             killMonster(state, m, rng, hero);
@@ -3063,7 +3077,7 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
         say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
     } else {
         const wisdom = Math.round(hero.itemLuck * 100);
-        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}%`);
+        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}% · 공격 지팡이 피해 +${wandDamageBonus(hero)}`);
     }
 }
 
