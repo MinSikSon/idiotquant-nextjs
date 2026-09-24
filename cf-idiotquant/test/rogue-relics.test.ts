@@ -116,3 +116,23 @@ test("모루 보석 세공 (Socketing): 루비(화상), 토파즈(방어/회피)
     heroAttack(state, state.heroes[0], monster, rng);
     assert.equal(monster.burnTurns, 3, "루비가 장착된 무기로 공격 시 몬스터에게 3턴 화상이 걸려야 합니다.");
 });
+
+test("세공한 단검은 던지고 주워도 보석 효과를 잃지 않는다", () => {
+    let state = newGame(789);
+    const hero = state.heroes[0];
+    const dagger = addToPack(hero, makeItem("weapon", "dagger", state.nextItemId++, -1, -1))!;
+    const ruby = addToPack(hero, makeItem("gem", "ruby", state.nextItemId++, -1, -1))!;
+    hero.x = state.level.anvil!.x;
+    hero.y = state.level.anvil!.y;
+
+    state = perform(state, { t: "socket", gearLetter: dagger.letter!, gemLetter: ruby.letter! });
+    state = perform(state, { t: "throw", letter: dagger.letter!, dx: 1, dy: 0 });
+    const thrown = state.level.items.find((it) => it.kind === "weapon" && it.type === "dagger" && it.socketGem === "ruby");
+    assert.ok(thrown, "던진 루비 단검이 바닥에서 세공을 잃었다");
+
+    hero.x = thrown.x;
+    hero.y = thrown.y;
+    state = perform(state, { t: "pickup" });
+    const recovered = state.heroes[0].pack.find((it) => it.kind === "weapon" && it.type === "dagger" && it.socketGem === "ruby");
+    assert.ok(recovered, "주운 루비 단검의 세공 효과가 사라졌다");
+});

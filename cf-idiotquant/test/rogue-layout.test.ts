@@ -147,7 +147,7 @@ test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", (
     const rogue = read("app/(game)/game/Rogue.tsx");
     const pad = read(TOUCHPAD);
     const desk = read("app/(game)/game/components/Desk.tsx");
-    assert.match(rogue, /⚠ HP 낮음[\s\S]*?(Hungry|Weak|Faint|든든함)[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
+    assert.match(rogue, /⚠ HP 낮음[\s\S]*?\{hHunger \|\| "Well-fed"\}[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
     assert.match(rogue, /latest = visibleMessages[\s\S]*?important = [\s\S]*?recent = important/, "중요 메시지를 유지하지 않는다");
     assert.match(pad, /hot\?: boolean[\s\S]*?a\.hot && !a\.off/, "지금 가능한 행동을 강조하지 않는다");
     assert.match(desk, /const comparedPower[\s\S]*?"better"[\s\S]*?"worse"/, "새 장비의 좋고 나쁨을 가르지 않는다");
@@ -166,6 +166,15 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
     assert.match(rogue, /const statChip = /, "핵심 스탯 표기가 없다");
     assert.doesNotMatch(rogue, /현재 체력 \/ 최대 체력/, "HP에 같은 뜻의 상세 설명이 중복된다");
     assert.doesNotMatch(rogue, /성장: 힘/, "중복 성장 요약이 남아 있다");
+    assert.match(
+        rogue,
+        /\{hHunger \|\| "Well-fed"\}[\s\S]*?FLOOR_EVENT_BANNER\[level\.mutator\]\.title[\s\S]*?Ring: \{hRings\}/,
+        "층 이벤트와 반지 표기가 배고픔 뒤에 오지 않는다",
+    );
+    assert.match(rogue, /FLOOR_EVENT_BANNER\[level\.mutator\]\.title[\s\S]*?className="order-3 text-\[var\(--rg-ring\)\]"/, "층 이벤트와 반지가 첫 상태 묶음의 순서를 공유하지 않는다");
+    assert.match(rogue, /결과를 먼저 읽고, 아래 들여쓴 줄에서 명중·피해 계산을 확인합니다/, "기록 읽는 순서 안내가 없다");
+    assert.match(rogue, /const detail = isDetail\(m\)[\s\S]*?border-l-2 border-\[var\(--rg-line-soft\)\]/, "계산 줄이 결과 아래에서 묶이지 않는다");
+    assert.match(rogue, /isImportantMessage\(m\) \? "font-bold" : ""/, "중요한 결과가 기록에서 두드러지지 않는다");
 });
 
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {

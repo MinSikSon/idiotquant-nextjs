@@ -240,7 +240,8 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
                 p.id !== it.id &&
                 (it.type !== "dagger" ||
                     (p.plusHit ?? 0) === (it.plusHit ?? 0) &&
-                        (p.plusDam ?? 0) === (it.plusDam ?? 0) &&
+                    (p.plusDam ?? 0) === (it.plusDam ?? 0) &&
+                        p.socketGem === it.socketGem &&
                         ![hero.weaponId, hero.offWeaponId].includes(p.id)),
         );
         if (same) {

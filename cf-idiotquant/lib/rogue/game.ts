@@ -2407,7 +2407,8 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
                 ((here.plusHit ?? 0) === (it.plusHit ?? 0) &&
                     (here.plusDam ?? 0) === (it.plusDam ?? 0) &&
                     here.blessed === it.blessed &&
-                    here.cursed === it.cursed))
+                    here.cursed === it.cursed &&
+                    here.socketGem === it.socketGem))
         ) {
             here.count += 1;
             here.plusKnown = !!here.plusKnown || !!it.plusKnown;
@@ -2421,6 +2422,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         dropped.blessed = it.blessed;
         dropped.cursed = it.cursed;
         dropped.curseKnown = it.curseKnown;
+        dropped.socketGem = it.socketGem;
         level.items.push(dropped);
     };
 

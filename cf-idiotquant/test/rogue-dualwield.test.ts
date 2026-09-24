@@ -118,12 +118,12 @@ test("이도류는 두 번 굴리고, 보조손은 불리하다", () => {
         const swings = (st: GameState) =>
             st.messages
                 .filter(isDetail)
-                .filter((l) => l.startsWith("· 명중 나 ") || l.startsWith("· 명중 보조손 ")).length;
+                .filter((l) => l.startsWith("· 명중 나 ") || l.startsWith("· 명중 주손 ") || l.startsWith("· 명중 보조손 ")).length;
         assert.equal(swings(one.s), 1, "한 자루인데 굴림 줄이 하나가 아니다");
         assert.equal(swings(two.s), 2, "두 자루인데 굴림 줄이 둘이 아니다");
         assert.ok(
-            two.s.messages.some((l) => l.includes("보조손")),
-            "보조손 줄이 기록에 없다",
+            two.s.messages.some((l) => l.startsWith("· 명중 주손 ")) && two.s.messages.some((l) => l.startsWith("· 명중 보조손 ")),
+            "이도류 기록에서 주손과 보조손이 함께 구분되지 않는다",
         );
     }
 

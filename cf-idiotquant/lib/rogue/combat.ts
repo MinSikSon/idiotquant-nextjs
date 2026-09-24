@@ -345,6 +345,10 @@ function swing(
     ];
     const seen = seenBefore(state, m);
     const mName = monsterName(m);
+    // 이도류 기록은 두 줄이 한 짝이라는 것을 즉시 보여야 한다. 공격력 줄은 이미
+    // 주손/보조손으로 갈리므로, 명중 줄도 같은 이름을 써야 `나`와 `보조손`을 머릿속에서
+    // 다시 맞춰 보지 않는다.
+    const hand = off ? "보조손" : offHandWeapon(hero) ? "주손" : "나";
     const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: m.champion === "shadow" ? "숙련+그림자" : "숙련" }];
     const a = opposedRoll(
         hitTerms.reduce((t, b) => t + b.n, 0),
@@ -357,7 +361,7 @@ function swing(
     // 계산이 먼저, 결과가 나중 — 기록 판은 뒤집어 보여 주므로 거기서는 결과가 위로
     // 오고 그 아래에 「왜 그랬나」가 붙는다.
     messages.push(
-        attackLine(off ? "보조손" : "나", a, hitTerms, { who: mName, bonus: dodge, show: seen }, outcomeOf(a)),
+        attackLine(hand, a, hitTerms, { who: mName, bonus: dodge, show: seen }, outcomeOf(a)),
     );
 
     if (!a.hit) {

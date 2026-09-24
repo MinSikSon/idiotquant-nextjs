@@ -1974,13 +1974,13 @@ export default function Rogue() {
                         )}
                         <button
                             type="button"
-                            onClick={() => { setStatusKind("origin"); setSheetOwner(i); setSheet("status"); }}
+                            onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "origin" }); setSheet("log"); }}
                             className={`${statChip} order-0`}
                             title="직업 성장 정보 보기"
                         >
                             [<OriginTag origin={h.origin} level={h.level} />]
                         </button>
-                        <button type="button" onClick={() => { setStatusKind("str"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-1`}>
+                        <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
                             St:{heroStr(h)}
                         </button>
                         <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />
@@ -1990,27 +1990,19 @@ export default function Rogue() {
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
                         {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { setStatusKind("defense"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-8`}>
+                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "defense" }); setSheet("log"); }} className={`${statChip} order-8`}>
                             AC:{heroArmorClass(h)}
                         </button>
-                        <button type="button" onClick={() => { setStatusKind("wisdom"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-2`}>
+                        <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
                             Wi:{Math.round(h.itemLuck * 100)}
                         </button>
                         <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>
                         {i === 0 && <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>T:{state.turn}</button>}
                         {
-                            i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
-                                <span className="text-[var(--rg-gold)] font-medium">
-                                    {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
-                                </span>
-                            )
-                        }
-                        {
                             (h.timeStop ?? 0) > 0 && (
                                 <span className="order-30 text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
                             )
                         }
-                        {hRings > 0 && <span className="text-[var(--rg-ring)]">Ring: {hRings}</span>}
                         {h.guarded && <span className="order-30 text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
@@ -2018,6 +2010,12 @@ export default function Rogue() {
                         <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
                             {hHunger || "Well-fed"}
                         </button>
+                        {i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
+                            <span className="order-3 text-[var(--rg-gold)] font-medium">
+                                {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
+                            </span>
+                        )}
+                        {hRings > 0 && <span className="order-3 text-[var(--rg-ring)]">Ring: {hRings}</span>}
                         {cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
@@ -2595,15 +2593,29 @@ export default function Rogue() {
                            스무면체가 명중에만 쓰인다는 것은 한 줄로 말해 주는 편이 빠르다. */
                         footer={`현재 Turn ${state.turn} · d20 은 명중에만 굴립니다 — 나와 상대가 각각 굴려 내 쪽이 높으면 맞습니다. 피해는 공격력(2d4 같은 것)에서 상대의 방어력을 뺀 값입니다.`}
                     >
-                        <ul className="space-y-0.5">
+                        {/* 결과가 먼저, 바로 아래 들여쓴 줄이 그 결과의 산식이다. 엔진이
+                            `DETAIL` 로 가른 값을 읽기만 한다 — 화면이 전투 기록을 다시
+                            분류하면 전투 규칙과 기록의 뜻이 갈릴 수 있다. */}
+                        <p className="mb-2 border-b border-[var(--rg-line-soft)] pb-2 text-[11px] text-[var(--rg-faint)]">
+                            결과를 먼저 읽고, 아래 들여쓴 줄에서 명중·피해 계산을 확인합니다.
+                        </p>
+                        <ul className="space-y-1">
                             {state.messages
                                 .slice(-80)
                                 .reverse()
-                                .map((m, i) => (
-                                    <li key={i} className="text-[var(--rg-muted)]">
+                                .map((m, i) => {
+                                    const detail = isDetail(m);
+                                    return (
+                                    <li
+                                        key={i}
+                                        className={detail
+                                            ? "ml-2 border-l-2 border-[var(--rg-line-soft)] py-0.5 pl-2 text-[var(--rg-muted)]"
+                                            : `pt-1 text-[var(--rg-strong)] ${isImportantMessage(m) ? "font-bold" : ""}`}
+                                    >
                                         <Msg text={m} />
                                     </li>
-                                ))}
+                                    );
+                                })}
                         </ul>
                     </Panel>
                 )
