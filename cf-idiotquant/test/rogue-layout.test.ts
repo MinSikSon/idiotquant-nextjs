@@ -208,6 +208,12 @@ test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다"
     assert.match(s, /comparison === "better" \? "font-bold text-\[var\(--rg-weapon\)\]"/, "더 좋은 장비 이름을 초록색으로 강조하지 않는다");
 });
 
+test("축복의 기름은 마시지 않고 장비에 바른다", () => {
+    const s = read("app/(game)/game/components/Desk.tsx");
+    assert.match(s, /it\.type === "blessing" \? "장비에 바른다" : "마신다"/, "축복의 기름이 일반 포션처럼 마신다고 표시된다");
+    assert.match(s, /title: "무엇에 축복을 입힐까"[\s\S]*?kinds: \["weapon", "armor"\]/, "기름을 바를 장비를 고르지 않는다");
+});
+
 // 누른 단추는 **눌린 뒤 초점을 놓는다.**
 //
 // 안 놓으면 그 단추가 브라우저 포커스를 쥔 채 남고, 한참 뒤에 상관없는 키(특히 Space —

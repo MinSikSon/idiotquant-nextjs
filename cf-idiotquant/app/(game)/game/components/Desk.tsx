@@ -561,7 +561,9 @@ export default function Desk({
                 }
                 break;
             case "potion":
-                out.push({ label: "마신다", on: () => quaffPotion(it.letter!) });
+                // 축복의 기름은 포션 칸을 빌려 들고 다니지만, 몸에 마시는 물약이 아니다.
+                // 장비를 고르게 하는 아래 `quaffPotion` 흐름으로 가되 동사는 쓰임을 그대로 적는다.
+                out.push({ label: it.type === "blessing" ? "장비에 바른다" : "마신다", on: () => quaffPotion(it.letter!) });
                 break;
             case "scroll":
                 // **배낭에서 읽어도 같은 길로 보낸다.** 강화 주문서는 고를 것을 한 번 더
