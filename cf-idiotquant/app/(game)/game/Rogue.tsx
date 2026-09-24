@@ -1445,17 +1445,23 @@ export default function Rogue() {
     }, []);
 
     /**
-     * 출신 고르기 판을 **누구를 위해** 열었나 — 새 판(방장) · 한 화면 동료 · 온라인 손님(방 코드).
+     * 출신 고르기 판을 **누구를 위해** 열었나 — 새 판 · 온라인 방장 · 한 화면 동료 · 온라인 손님(방 코드).
      * 판은 하나고 고른 뒤 갈 곳만 다르다.
      */
     const [originFor, setOriginFor] = useState<
-        { t: "new" } | { t: "mate" } | { t: "guest"; code: string } | { t: "rematch"; round: number }
+        { t: "new" } | { t: "host" } | { t: "mate" } | { t: "guest"; code: string } | { t: "rematch"; round: number }
     >({ t: "new" });
 
     const pickOrigin = (origin: HeroOrigin) => {
         const f = originFor;
         setOriginFor({ t: "new" });
-        if (f.t === "mate") {
+        if (f.t === "host") {
+            // 방을 열기 전에 방장의 시작 장비부터 정한다. 손님은 이미 `peek` 뒤에 같은
+            // 선택 판을 거치므로, 이 둘을 맞추면 온라인 첫 판도 직업이 우연히 정해지지 않는다.
+            askNick();
+            startWithOrigin(origin);
+            void hostRoom();
+        } else if (f.t === "mate") {
             // 한 화면 둘이서 — **여기는 정원이 둘로 못 박혀 있다.** 곁의 사람은 이
             // 브라우저의 1번 상자를 들고 온다. `guestKey` 는 안 준다 — 핫시트 동료는
             // 온라인 자리표가 없는 사람이다.
@@ -2869,11 +2875,10 @@ export default function Rogue() {
                                             label: "온라인 방 만들기",
                                             hint: `초대 링크나 코드 네 자리를 동료에게 보낸다 — 지금 판에 들어온다 (최대 ${MAX_PARTY - 1}명까지)`,
                                             go: () => {
-                                                // **이름부터 묻는다** — 방을 연 뒤에 물으면 그 사이에 들어온
-                                                // 손님이 이름 없는 방장을 본다(`peek` 이 곧바로 답한다).
-                                                askNick();
-                                                void hostRoom();
-                                                setSheet("none");
+                                                // 방장의 시작 직업도 손님처럼 먼저 고른다. 방을 열고 난
+                                                // 뒤에 고르면 먼저 붙은 손님에게 기본 기사가 보인다.
+                                                setOriginFor({ t: "host" });
+                                                setSheet("origins");
                                             },
                                         },
                                         {
@@ -2919,8 +2924,8 @@ export default function Rogue() {
             {
                 sheet === "origins" && (
                     <Panel
-                        title={originFor.t === "rematch" ? "다음 판의 출신(직업) 선택" : originFor.t === "new" ? "출신(직업) 선택" : "동료의 출신(직업) 선택"}
-                        accent={originFor.t === "new" ? undefined : PARTY_INK[1]}
+                        title={originFor.t === "rematch" ? "다음 판의 출신(직업) 선택" : originFor.t === "host" ? "방장의 출신(직업) 선택" : originFor.t === "new" ? "출신(직업) 선택" : "동료의 출신(직업) 선택"}
+                        accent={originFor.t === "new" || originFor.t === "host" ? undefined : PARTY_INK[1]}
                         onClose={() => {
                             // **안 고르고 닫으면 방에서 나온다.** 물어보려고 붙어만 있는 상태라,
                             // 그냥 닫으면 들어가지도 나가지도 않은 채 「잇는 중…」으로 남는다.
@@ -2941,6 +2946,8 @@ export default function Rogue() {
                             <p className="text-[var(--rg-faint)]">
                                 {originFor.t === "new"
                                     ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
+                                    : originFor.t === "host"
+                                        ? "방을 열기 전에 방장의 출신을 고릅니다 — 손님도 방에 들어올 때 자신의 출신을 고릅니다."
                                     : originFor.t === "rematch"
                                         ? "방장이 다음 판을 준비 중입니다 — 내가 맡을 출신을 다시 고릅니다."
                                     : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}

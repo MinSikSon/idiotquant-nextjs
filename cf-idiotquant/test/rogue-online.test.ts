@@ -216,6 +216,15 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
     }
 });
 
+test("온라인 방장은 방을 열기 전에 시작 직업을 고른다", () => {
+    const at = SRC.indexOf('label: "온라인 방 만들기"');
+    assert.ok(at > 0, "온라인 방 만들기 단추가 없다");
+    const body = SRC.slice(at, SRC.indexOf('label: "온라인 방 들어가기"', at));
+    assert.match(body, /setOriginFor\(\{ t: "host" \}\)/, "방장이 직업 선택 없이 방을 연다");
+    assert.doesNotMatch(body, /hostRoom\(\)/, "방 만들기 단추가 직업 선택 전 방을 연다");
+    assert.match(SRC, /if \(f\.t === "host"\) \{[\s\S]*?startWithOrigin\(origin\);[\s\S]*?hostRoom\(\)/, "고른 방장 직업으로 새 판과 방을 함께 열지 않는다");
+});
+
 test("온라인 다음 판에서는 연결된 모두가 직업을 다시 고른다", () => {
     // ── 방장이 먼저 고르고, 이어진 손님들에게 같은 선택 판을 연다.
     {
