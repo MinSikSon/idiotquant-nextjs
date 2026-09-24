@@ -216,16 +216,21 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
     }
 });
 
-test("온라인 게임 오버 뒤에도 같은 방으로 다음 판을 연다", () => {
-    // ── 방장이 새 판을 만들 때, 방을 닫지 않고 손님들을 새 던전에 다시 앉힌다.
+test("온라인 다음 판에서는 연결된 모두가 직업을 다시 고른다", () => {
+    // ── 방장이 먼저 고르고, 이어진 손님들에게 같은 선택 판을 연다.
     {
         const at = SRC.indexOf("const startWithOrigin = useCallback");
         assert.ok(at > 0, "직업을 골라 새 판을 여는 자리가 없다");
         const body = SRC.slice(at, SRC.indexOf("const restart = useCallback", at));
-        assert.match(body, /if \(online === "host"\) \{[\s\S]*?stateRef\.current\?\.heroes\.slice\(1\)[\s\S]*?joinGame\(next, guest\.origin \?\? "knight", guest\.nick, guest\.chest, guest\.guestKey\)/, "새 판에 기존 손님들의 자리·직업을 다시 앉히지 않는다");
-        assert.match(body, /syncGuests\(next\);[\s\S]*?broadcast\(\{ t: "init", state: serialize\(next\) \}\)/, "같은 방의 손님들에게 새 판을 보내지 않는다");
+        assert.match(body, /online === "host" && beginRematch\(origin\)/, "방장이 손님들의 다음 직업 선택을 열지 않는다");
         assert.doesNotMatch(body, /closeRoom\(/, "새 판을 열면서 온라인 방을 닫는다");
     }
+
+    assert.match(SRC, /\{ t: "rematch"; round: number; origin\?: HeroOrigin; party\?:/, "다음 판 직업 선택 메시지가 없다");
+    assert.match(SRC, /broadcast\(\{ t: "init", state: serialize\(next\) \}\)[\s\S]*?broadcast\(\{ t: "rematch", round, party:/, "방장이 새 판을 먼저 열고 손님에게 직업 선택을 알리지 않는다");
+    assert.match(SRC, /conn\.send\(\{ t: "rematch", round: f\.round, origin \}/, "손님이 고른 직업을 방장에게 보내지 않는다");
+    assert.match(SRC, /plan\.picks\.set\(key, m\.origin\)[\s\S]*?joinGame\(current, m\.origin!, guest\.nick, guest\.chest, guest\.guestKey\)/, "새 판에 새로 고른 손님 직업을 적용하지 않는다");
+    assert.match(SRC, /broadcast\(\{ t: "rematch", round: plan\.round, party:/, "다른 손님의 직업 선택 현황을 알리지 않는다");
 
     // ── 손님은 독자적으로 판을 열거나 방을 나가지 않고 방장의 새 판을 기다린다.
     const at = SRC.indexOf("const restart = useCallback");

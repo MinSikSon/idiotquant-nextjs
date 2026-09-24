@@ -366,6 +366,9 @@ type NetMsg =
     | { t: "full" }
     // 살아 있다는 신호. WebRTC 는 상대가 창을 닫아도 한참 「열림」으로 남는다.
     | { t: "ping" }
+    // 게임 오버 뒤 다음 판의 직업을 다시 고른다. 방장이 `round`를 열고, 손님은 같은
+    // 번호에 자기 선택만 돌려 보낸다 — 늦게 온 지난 선택이 다음 판에 섞이지 않는다.
+    | { t: "rematch"; round: number; origin?: HeroOrigin; party?: { origin: HeroOrigin; nick?: string }[] }
     // 내 책상에 무엇이 떠 있나 — 상대 화면이 「2P 배낭 보는 중」을 적는다. `who` 없이
     // 오면 방장이 보낸 것이다(방장은 자신의 `heroes` 칸 번호를 모르는 사람이 없다).
     | { t: "ui"; mode: DeskMode; who?: number };
@@ -805,6 +808,16 @@ export default function Rogue() {
         | { role: "guest"; peer: Peer; conn?: DataConnection }
         | null
     >(null);
+    /** 이미 열린 다음 판에 아직 합류하지 않은 손님들의 직업 선택. */
+    const rematch = useRef<{
+        round: number;
+        hostOrigin: HeroOrigin;
+        picks: Map<string, HeroOrigin>;
+        guests: { guestKey: string; nick?: string; chest?: Item[] }[];
+    } | null>(null);
+    const rematchRound = useRef(0);
+    /** 내 선택을 이미 보낸 라운드는, 다른 사람이 고른 뒤 온 현황 갱신으로 다시 열지 않는다. */
+    const rematchPicked = useRef<number | null>(null);
     const stateRef = useRef(state);
     stateRef.current = state;
     useEffect(() => () => net.current?.peer.destroy(), []);
@@ -1037,6 +1050,32 @@ export default function Rogue() {
         setAltarOpen(false);
     }, [stopAllHolds, ignoreHeldDirections]);
 
+    /** 방장이 고르는 즉시 새 판을 열고, 손님은 자기 선택을 마친 때에만 합류한다. */
+    const beginRematch = useCallback((hostOrigin: HeroOrigin): boolean => {
+        const n = net.current;
+        const s = stateRef.current;
+        if (n?.role !== "host" || !s) return false;
+        const live = new Set(n.guests.values());
+        const guests = s.heroes.slice(1)
+            .filter((hero) => !!hero.guestKey && live.has(hero.guestKey))
+            .map((hero) => ({ guestKey: hero.guestKey!, nick: hero.nick, chest: hero.chest }));
+        if (guests.length === 0) return false;
+
+        const round = ++rematchRound.current;
+        rematch.current = { round, hostOrigin, picks: new Map(), guests };
+        resetRunInput();
+        clear();
+        buried.current = false;
+        const next = newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), hostOrigin, loadChest(0));
+        setState(next);
+        syncGuests(next);
+        broadcast({ t: "init", state: serialize(next) });
+        // `init` 다음에 보내므로 손님은 새 지도를 본 뒤 자기 직업을 고른다. 이때 다른
+        // 사람이 아직 고르지 않았어도 방장과 먼저 고른 사람은 이미 걸을 수 있다.
+        broadcast({ t: "rematch", round, party: next.heroes.map((hero) => ({ origin: hero.origin ?? "knight", nick: hero.nick })) });
+        return true;
+    }, [broadcast]);
+
     const hostRoom = useCallback(async (code = String(1000 + Math.floor(Math.random() * 9000))) => {
         const { Peer } = await import("peerjs");
         const peer = new Peer(PEER_PREFIX + code);
@@ -1124,6 +1163,28 @@ export default function Rogue() {
                     // **모두에게** 판을 다시 보낸다 — 새로 온 사람은 물론, 이미 있던 손님들도
                     // 늘어난(또는 이름이 바뀐) 파티를 봐야 한다.
                     broadcast({ t: "init", state: serialize(g) });
+                    return;
+                }
+                if (m?.t === "rematch") {
+                    const key = n.guests.get(conn);
+                    const plan = rematch.current;
+                    if (!key || !plan || plan.round !== m.round || !m.origin || !(m.origin in ORIGINS)) return;
+                    // 이 다음 판에 초대한 사람만 고를 수 있다. 뒤늦게 다시 붙은 다른 연결이
+                    // 이전 라운드의 선택을 끼워 넣지 못하게 한다.
+                    if (!plan.guests.some((guest) => guest.guestKey === key)) return;
+                    if (plan.picks.has(key)) return;
+                    plan.picks.set(key, m.origin);
+                    const guest = plan.guests.find((entry) => entry.guestKey === key)!;
+                    setState((current) => {
+                        if (!current) return current;
+                        const next = joinGame(current, m.origin!, guest.nick, guest.chest, guest.guestKey);
+                        syncGuests(next);
+                        broadcast({ t: "init", state: serialize(next) });
+                        // 아직 고르는 사람의 패널에도 먼저 고른 사람의 직업을 바로 적는다.
+                        broadcast({ t: "rematch", round: plan.round, party: next.heroes.map((hero) => ({ origin: hero.origin ?? "knight", nick: hero.nick })) });
+                        return next;
+                    });
+                    if (plan.picks.size === plan.guests.length) rematch.current = null;
                     return;
                 }
                 if (m?.t === "bye") {
@@ -1225,6 +1286,14 @@ export default function Rogue() {
                     // 지금 있는 사람들(방장 + 이미 들어온 손님들)을 받았다 — 이제 **그것을 보고** 고른다.
                     setRoomParty(m.party.map((p) => ({ origin: p.origin in ORIGINS ? p.origin : "knight", nick: cleanNick(p.nick) })));
                     setOriginFor({ t: "guest", code });
+                    setSheet("origins");
+                } else if (m?.t === "rematch" && typeof m.round === "number") {
+                    // 방장은 다음 판을 혼자 만들지 않는다. 이 선택만 되돌려 보내고,
+                    // 완성된 판은 평소처럼 `init`으로 받는다.
+                    if (m.party) setRoomParty(m.party.map((hero) => ({ origin: hero.origin in ORIGINS ? hero.origin : "knight", nick: cleanNick(hero.nick) })));
+                    else setRoomParty((stateRef.current?.heroes ?? []).map((hero) => ({ origin: hero.origin ?? "knight", nick: hero.nick })));
+                    if (rematchPicked.current === m.round) return;
+                    setOriginFor({ t: "rematch", round: m.round });
                     setSheet("origins");
                 } else if (m?.t === "init") {
                     const s = deserialize(m.state);
@@ -1379,7 +1448,9 @@ export default function Rogue() {
      * 출신 고르기 판을 **누구를 위해** 열었나 — 새 판(방장) · 한 화면 동료 · 온라인 손님(방 코드).
      * 판은 하나고 고른 뒤 갈 곳만 다르다.
      */
-    const [originFor, setOriginFor] = useState<{ t: "new" } | { t: "mate" } | { t: "guest"; code: string }>({ t: "new" });
+    const [originFor, setOriginFor] = useState<
+        { t: "new" } | { t: "mate" } | { t: "guest"; code: string } | { t: "rematch"; round: number }
+    >({ t: "new" });
 
     const pickOrigin = (origin: HeroOrigin) => {
         const f = originFor;
@@ -1404,6 +1475,19 @@ export default function Rogue() {
             } else {
                 void joinRoom(f.code, origin);
             }
+        } else if (f.t === "rematch") {
+            setSheet("none");
+            const n = net.current;
+            const conn = n?.role === "guest" ? n.conn : undefined;
+            if (!conn?.open) {
+                note("방장과 끊겼다 — 직업 선택을 보낼 수 없다.");
+                return;
+            }
+            try {
+                if (room) localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: room, origin }));
+            } catch { }
+            rematchPicked.current = f.round;
+            conn.send({ t: "rematch", round: f.round, origin } satisfies NetMsg);
         } else {
             startWithOrigin(origin);
         }
@@ -1413,25 +1497,22 @@ export default function Rogue() {
         setSheet("none");
         // 손님의 새 판은 방장만 연다 — 제멋대로 열면 두 화면이 갈라진다.
         if (online === "guest") return;
+        // 온라인 다음 판은 모두가 직업을 고른 뒤에만 연다. 이어진 손님이 없으면 곧바로
+        // 혼자 새 판을 시작하는 아래 흐름으로 내려간다.
+        if (online === "host" && beginRematch(origin)) return;
         // 이전 판의 키 반복·책상 모드가 새 판의 조작을 가로막지 않게 같이 비운다.
         resetRunInput();
         clear();
         buried.current = false;
         let next = newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin, loadChest(0));
         if (online === "host") {
-            // 방은 **한 판만** 가리키지만 연결까지 판과 함께 버릴 이유는 없다. 끝난 판의
-            // 손님들을 같은 자리표·직업으로 새 던전에 다시 앉히면, 방 코드와 WebRTC 줄은
-            // 그대로 두고 모두가 `init` 한 통으로 다음 판을 시작한다.
-            for (const guest of stateRef.current?.heroes.slice(1) ?? []) {
-                next = joinGame(next, guest.origin ?? "knight", guest.nick, guest.chest, guest.guestKey);
-            }
             setState(next);
             syncGuests(next);
             broadcast({ t: "init", state: serialize(next) });
             return;
         }
         setState(next);
-    }, [online, resetRunInput, syncGuests, broadcast]);
+    }, [online, resetRunInput, syncGuests, broadcast, beginRematch]);
 
     const restart = useCallback(() => {
         // 새 던전은 방장이 하나만 만든다. 손님도 방에 남아, 방장이 보낸 새 `init`을
@@ -2838,7 +2919,7 @@ export default function Rogue() {
             {
                 sheet === "origins" && (
                     <Panel
-                        title={originFor.t === "new" ? "출신(직업) 선택" : "동료의 출신(직업) 선택"}
+                        title={originFor.t === "rematch" ? "다음 판의 출신(직업) 선택" : originFor.t === "new" ? "출신(직업) 선택" : "동료의 출신(직업) 선택"}
                         accent={originFor.t === "new" ? undefined : PARTY_INK[1]}
                         onClose={() => {
                             // **안 고르고 닫으면 방에서 나온다.** 물어보려고 붙어만 있는 상태라,
@@ -2847,6 +2928,9 @@ export default function Rogue() {
                                 setOriginFor({ t: "new" });
                                 setSheet("none");
                                 closeRoom("직업을 안 고르고 방에서 나왔다.");
+                            } else if (originFor.t === "rematch") {
+                                // 선택 없이 닫아 방장과 다른 동료를 영원히 기다리게 하지 않는다.
+                                pickOrigin("knight");
                             } else if (originFor.t !== "new" || (state && state.phase === "playing")) {
                                 setOriginFor({ t: "new" });
                                 setSheet("none");
@@ -2857,13 +2941,15 @@ export default function Rogue() {
                             <p className="text-[var(--rg-faint)]">
                                 {originFor.t === "new"
                                     ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
+                                    : originFor.t === "rematch"
+                                        ? "방장이 다음 판을 준비 중입니다 — 내가 맡을 출신을 다시 고릅니다."
                                     : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                             </p>
                             {/* **지금 누가 무엇인가.** 위의 「다른 쪽을 고르면 서로 메웁니다」가
                             조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. 정원이
                             늘며 **방장뿐 아니라 먼저 들어온 손님들**도 같이 보여야 한다 —
                             셋째로 들어오는 사람은 둘을 보고 고른다. */}
-                            {originFor.t === "guest" && roomParty.length > 0 && (
+                            {(originFor.t === "guest" || originFor.t === "rematch") && roomParty.length > 0 && (
                                 <p className="flex flex-col gap-0.5 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-2 py-1">
                                     {roomParty.map((p, i) => (
                                         <span key={i} className="font-bold" style={{ color: PARTY_INK[i] }}>
