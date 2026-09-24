@@ -264,6 +264,9 @@ export function NavbarWithSimpleLinks() {
 
      둘을 한 깃발로 묶으면 한쪽을 고칠 때 다른 쪽이 따라 움직인다. */
   const inGame = pathname.startsWith("/game");
+  // 게임 안에서는 금융 서비스 이름 대신 게임 묶음의 이름을 쓴다. 공통 헤더지만
+  // 경로에 따라 한 단어만 바꾸므로, 게임 바의 색·배치는 그대로 유지된다.
+  const brandSuffix = inGame ? "GAMES" : "QUANT";
   const imf = pathname.startsWith("/game/imf");
   const retro = imf;
   const retroScope = imf ? "dark" : "";
@@ -308,7 +311,7 @@ export function NavbarWithSimpleLinks() {
               <span className="text-white text-[10px] font-black italic leading-none">IQ</span>
             </div>
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-              IDIOT<span className="text-brand">QUANT</span>
+              IDIOT<span className="text-brand">{brandSuffix}</span>
             </span>
             <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand dark:text-brand bg-brand-light/60 dark:bg-[#052e16]/40">
               BETA
@@ -411,7 +414,7 @@ export function NavbarWithSimpleLinks() {
               <span className="text-white text-[9px] font-black italic leading-none">IQ</span>
             </div>
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-              IDIOT<span className="text-brand">QUANT</span>
+              IDIOT<span className="text-brand">{brandSuffix}</span>
             </span>
           </Link>
           <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand dark:text-brand bg-brand-light/60 dark:bg-[#052e16]/40 shrink-0">

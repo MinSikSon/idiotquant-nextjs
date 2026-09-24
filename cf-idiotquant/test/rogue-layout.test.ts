@@ -89,6 +89,20 @@ test("빼는 숫자가 실제 바 높이의 합이다", () => {
     }
 });
 
+test("게임에서는 공통 헤더의 서비스 이름도 idiotgames로 바뀐다", () => {
+    const nav = read(NAV);
+    assert.match(
+        nav,
+        /const brandSuffix = inGame \? "GAMES" : "QUANT"/,
+        "게임 경로에서 브랜드 접미사를 GAMES로 바꾸지 않는다",
+    );
+    assert.equal(
+        (nav.match(/IDIOT<span className="text-brand">\{brandSuffix\}<\/span>/g) ?? []).length,
+        2,
+        "데스크톱과 모바일 헤더가 같은 게임 브랜드를 쓰지 않는다",
+    );
+});
+
 // ── 명령 단추는 **세 개씩 딱 떨어져야** 한다 ────────────────────────────────
 //
 // 단추 판은 세 칸 격자다(`TouchPad` 의 `grid-cols-3`). 개수가 3의 배수가 아니면
