@@ -110,6 +110,16 @@ test("명령은 누가 하는지를 데리고 다닌다 — 행동은 그 사람
         assert.notEqual(host.food, guestFood, "두 사람의 배고픔이 한 값을 쓰고 있다");
     }
 
+    // ── 허기 기록도 **누구의 배인가**를 적는다 — 방장(1P)을 빼면 같은 턴의 두 줄을 못 가른다.
+    {
+        const s = withGuest(4004);
+        s.heroes[0].food = 301;
+        s.heroes[1].food = 301;
+        const after = perform(s, { t: "rest", who: 1 });
+        assert.ok(after.messages.some((line) => /1P 시장해지기 시작했다/.test(line)), "방장(1P)의 허기 기록에 1P 표기가 없다");
+        assert.ok(after.messages.some((line) => /2P 시장해지기 시작했다/.test(line)), "동료(2P)의 허기 기록에 2P 표기가 없다");
+    }
+
     // ── 움직이는 것도 **그 사람만** 움직인다
     {
         const s = withGuest(4006);

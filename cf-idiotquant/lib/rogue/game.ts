@@ -2679,11 +2679,13 @@ function tickHunger(state: GameState, hero: Hero, rng: Rng) {
                 : after === "Weak"
                     ? "허기져서 힘이 빠진다 (Weak)."
                     : "배가 너무 고파 쓰러질 것 같다 (Faint).";
-        say(state, msg);
+        // 배고픔은 움직인 사람만의 일이 아니다 — 파티 모두의 시계가 돈다. 그래서 1P도
+        // 명시해야 같은 턴에 둘 이상이 허기져도 누구의 몸 상태인지 기록에서 가려진다.
+        say(state, `${heroLabel(state, hero)} ${msg}`);
     }
     if (hero.food <= 0 && rng.chance(0.2)) {
         hero.asleep += 1;
-        say(state, "배가 고파 정신이 아득하다.");
+        say(state, `${heroLabel(state, hero)} 배가 고파 정신이 아득하다.`);
     }
     if (hero.food <= STARVE_AT) {
         hero.hp = 0;
