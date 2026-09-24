@@ -2374,6 +2374,7 @@ export default function Rogue() {
                             </>
                         ) : (
                             /* 아이템 도감 목록 */
+                            <>
                             <ul className="space-y-1.5">
                                 {CODEX_ENTRIES.filter((e) => e.category === codexTab).map((entry) => {
                                     const stage = itemCodexStage(entry, state);
@@ -2690,6 +2691,12 @@ export default function Rogue() {
                                     );
                                 })}
                             </ul>
+                            {codexTab === "weapon" && (
+                                <p className="mt-3 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
+                                    ※ 숙련 보정의 앞값은 명중, 뒷값은 피해 보정입니다. 예: Skilled +2/+1 = 명중 +2 · 피해 +1
+                                </p>
+                            )}
+                            </>
                         )}
                     </Panel>
                 )
