@@ -238,3 +238,15 @@ test("온라인 게임 오버 뒤에도 같은 방으로 다음 판을 연다", 
     );
     assert.doesNotMatch(body, /closeRoom\(/, "손님의 새 판 대기가 방을 닫는다");
 });
+
+test("같은 방의 새 판 init은 손님의 남은 입력 모드를 비운다", () => {
+    const at = SRC.indexOf('m?.t === "init"', SRC.indexOf("const joinRoom"));
+    assert.ok(at > 0, "손님이 방장의 init을 받는 자리가 없다");
+    const body = SRC.slice(at, SRC.indexOf('m?.t === "cmd"', at));
+    assert.match(
+        body,
+        /stateRef\.current\?\.phase !== "playing" && s\.phase === "playing"\) resetRunInput\(\)/,
+        "게임 오버 뒤 새 판을 받아도 손님의 남은 입력 상태를 비우지 않는다",
+    );
+    assert.match(SRC, /const resetRunInput[\s\S]*?stopAllHolds\(\)[\s\S]*?setModes\(\["none", "none"\]\)[\s\S]*?setSheet\("none"\)/, "새 판에서 키 반복·책상·패널 상태를 함께 비우지 않는다");
+});

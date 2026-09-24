@@ -1022,6 +1022,21 @@ export default function Rogue() {
         setTimeout(() => net.current?.peer === peer && again(), RETRY_MS);
     }, []);
 
+    /** 끝난 판에서 남은 화면·입력 상태를 새 판으로 넘기지 않는다. */
+    const resetRunInput = useCallback(() => {
+        stopAllHolds();
+        // 아직 누르고 있는 방향 키는 한 번 떼기 전까지 새 던전을 걷지 않는다.
+        ignoreHeldDirections();
+        projectilePlaying.current = false;
+        setProjectileCells([]);
+        setModes(["none", "none"]);
+        setPeerModes({});
+        setSheet("none");
+        setView(null);
+        setSkillOpen(false);
+        setAltarOpen(false);
+    }, [stopAllHolds, ignoreHeldDirections]);
+
     const hostRoom = useCallback(async (code = String(1000 + Math.floor(Math.random() * 9000))) => {
         const { Peer } = await import("peerjs");
         const peer = new Peer(PEER_PREFIX + code);
@@ -1214,6 +1229,10 @@ export default function Rogue() {
                 } else if (m?.t === "init") {
                     const s = deserialize(m.state);
                     if (s) {
+                        // 게임 오버 뒤 방장이 여는 새 판이다. 손님 쪽에 남은 배낭·겨누기
+                        // 모드가 있으면 키보드가 그 판에만 들어가므로, 새 판을 받는 순간
+                        // 입력 상태부터 비운다. 평상시 재접속 `init`은 건드리지 않는다.
+                        if (stateRef.current?.phase !== "playing" && s.phase === "playing") resetRunInput();
                         setState(s);
                         // **내 자리는 자리표로 다시 찾는다** — 앞선 누군가 나가면 내 칸 번호가
                         // 당겨질 수 있다(`leaveGame`). `who` 는 판의 값이 아니라 화면의 값이므로
@@ -1244,7 +1263,7 @@ export default function Rogue() {
                 again();
             });
         });
-    }, [note, retry]);
+    }, [note, retry, resetRunInput]);
 
     // 새로고침·탭을 닫았다 연 뒤에도 **들어 있던 방으로** 돌아간다.
     /**
@@ -1394,9 +1413,8 @@ export default function Rogue() {
         setSheet("none");
         // 손님의 새 판은 방장만 연다 — 제멋대로 열면 두 화면이 갈라진다.
         if (online === "guest") return;
-        // 이전 판의 키 반복이 새 판을 걷게 두면, 손을 뗄 때까지 새 던전이 멋대로 움직인다.
-        stopAllHolds();
-        ignoreHeldDirections();
+        // 이전 판의 키 반복·책상 모드가 새 판의 조작을 가로막지 않게 같이 비운다.
+        resetRunInput();
         clear();
         buried.current = false;
         let next = newGame(undefined, loadBestiary(), loadSpecials(), loadItemCodex(), loadItemUsage(), origin, loadChest(0));
@@ -1413,7 +1431,7 @@ export default function Rogue() {
             return;
         }
         setState(next);
-    }, [online, stopAllHolds, ignoreHeldDirections, syncGuests, broadcast]);
+    }, [online, resetRunInput, syncGuests, broadcast]);
 
     const restart = useCallback(() => {
         // 새 던전은 방장이 하나만 만든다. 손님도 방에 남아, 방장이 보낸 새 `init`을
@@ -1944,7 +1962,8 @@ export default function Rogue() {
 
                 **둘이면 사람마다 한 줄**이다. 동료의 체력·배고픔을 늘 봐야 하는데 조종을
                 넘겨야 보이면 늦는다. 줄머리의 이름표는 지도의 `@` 와 같은 글자색·바닥색이고,
-                누르면 조종이 넘어간다(조종 중인 쪽은 테두리). 층은 하나라 첫 줄에만 적는다. */}
+                누르면 조종이 넘어간다(조종 중인 쪽은 테두리). 층은 하나지만 상태 줄을 각각
+                읽을 때도 빠지지 않도록 모든 줄에 적는다. */}
             {(state.heroes.length > 1 ? state.heroes : [hero]).map((h, i) => {
                 const coop = state.heroes.length > 1;
                 const hHunger = hungerOf(h);
@@ -2001,7 +2020,7 @@ export default function Rogue() {
                             St:{heroStr(h)}
                         </button>
                         <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />
-                        {i === 0 && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
+                        <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>
                         <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
                         <span className={`order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}

@@ -152,7 +152,8 @@ test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판�
 
 test("새 판을 열면 눌러 둔 방향 키 반복도 멈춘다", () => {
     const s = read("app/(game)/game/Rogue.tsx");
-    assert.match(s, /const stopAllHolds[\s\S]*?startWithOrigin[\s\S]*?stopAllHolds\(\)/, "새 판에서 이전 방향 키 반복을 멈추지 않는다");
+    assert.match(s, /const resetRunInput[\s\S]*?stopAllHolds\(\)/, "새 판에서 이전 방향 키 반복을 멈추지 않는다");
+    assert.match(s, /startWithOrigin[\s\S]*?resetRunInput\(\)/, "새 판 시작이 입력 초기화 함수를 부르지 않는다");
     assert.match(s, /heldDirections[\s\S]*?ignoredDirections[\s\S]*?ignoreHeldDirections\(\)/, "새 판에서 OS 방향 키 반복을 막지 않는다");
     assert.match(s, /ignoredDirections\.current\.delete\(e\.code\)/, "방향 키를 뗀 뒤에도 새 입력을 막는다");
 });
@@ -177,6 +178,7 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
     assert.match(game, /heroArmorClassTerms\(hero\)\.map/, "방어 등급의 실제 계산식을 기록하지 않는다");
     assert.match(game, /St:\$\{heroStr\(hero\)\}/, "힘의 실제 계산식을 기록하지 않는다");
     assert.match(rogue, /Dlvl:\{level\.depth\}/, "현재 층이 Dlvl로 표시된다");
+    assert.doesNotMatch(rogue, /i === 0 && <button[^>]*>Dlvl:/, "멀티플레이 동료 상태 줄에 Dlvl이 없다");
     assert.match(rogue, /const statChip = /, "핵심 스탯 표기가 없다");
     assert.doesNotMatch(rogue, /현재 체력 \/ 최대 체력/, "HP에 같은 뜻의 상세 설명이 중복된다");
     assert.doesNotMatch(rogue, /성장: 힘/, "중복 성장 요약이 남아 있다");
