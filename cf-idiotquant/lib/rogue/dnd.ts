@@ -42,7 +42,7 @@ export interface Attack {
     /** 때리는 쪽이 실제로 쓴 눈. */
     roll: number;
     total: number;
-    /** 자연 20 — 무조건 맞고 공격력 주사위를 두 번 굴린다. */
+    /** 자연 1이 아니면서 최종 명중값이 20 이상 — 공격력 주사위를 두 번 굴린다. */
     crit: boolean;
     /** 자연 1 — 보정이 아무리 커도 빗나간다. */
     fumble: boolean;
@@ -52,9 +52,8 @@ export interface Attack {
 /**
  * D&D식 명중 굴림 하나 — **d20 + 보정이 고정 명중 난이도 이상이면 맞는다.**
  *
- * **자연 20 과 자연 1 은 상대를 보지 않는다.** 20 은 무조건 맞고 1 은 무조건 빗나간다.
- * 그래서 아무리 센 놈에게도 스무 번에 한 번은 닿고, 아무리 약한 놈에게도 스무 번에
- * 한 번은 빗나간다 — 그 두 칸이 없으면 숫자 차이가 큰 싸움이 통째로 결정돼 버린다.
+ * **최종 명중값 20 이상은 대성공이고 자연 1은 자동 실패다.** 대성공은 명중 난이도와
+ * 무관하게 맞는다. 자연 1은 보정이 아무리 커도 빗나간다.
  *
  * 유리·불리는 때리는 쪽에만 붙는다. 자는 놈을 치는 것은 내 몫이 좋아지는 일이지
  * 그놈이 더 굴리는 일이 아니다.
@@ -68,9 +67,9 @@ export function attackRoll(bonus: number, difficulty: number, rng: Rng, luck: Lu
             : luck === "disadvantage"
               ? Math.min(...rolls)
               : rolls[0];
-    const crit = roll === 20;
     const fumble = roll === 1;
     const total = roll + bonus;
+    const crit = !fumble && total >= 20;
     return { hit: crit || (!fumble && total >= difficulty), rolls, roll, total, crit, fumble, luck };
 }
 

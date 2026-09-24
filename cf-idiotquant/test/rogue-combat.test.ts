@@ -76,8 +76,8 @@ test("D&D식 명중 굴림은 고정 난이도를 넘는다", () => {
     }
 });
 
-test("자연 20·1, 치명타 두 번, 유리·불리", () => {
-    // ── 자연 20 은 무조건 맞고, 자연 1 은 무조건 빗나간다
+test("최종값 20 대성공·자연 1, 치명타 두 번, 유리·불리", () => {
+    // ── 최종값 20은 무조건 맞고, 자연 1은 무조건 빗나간다
     {
         const rng = new Rng(9);
         let crits = 0;
@@ -91,6 +91,10 @@ test("자연 20·1, 치명타 두 번, 유리·불리", () => {
             if (lo.roll === 1) { fumbles++; assert.ok(!lo.hit && lo.fumble, "자연 1 이 맞았다"); }
         }
         assert.ok(crits > 500 && fumbles > 500, `20 이 ${crits} 번, 1 이 ${fumbles} 번`);
+        const boosted = attackRoll(10, 99, { rnd: () => 9 } as never);
+        assert.ok(boosted.hit && boosted.crit && boosted.total === 20, "보정을 합친 20이 대성공이 아니다");
+        const naturalOne = attackRoll(99, 1, { rnd: () => 0 } as never);
+        assert.ok(!naturalOne.hit && naturalOne.fumble, "자연 1이 보정으로 대성공이 됐다");
     }
 
     // ── 치명타는 피해 주사위를 **두 번** 굴리고 보정은 한 번만 얹는다
