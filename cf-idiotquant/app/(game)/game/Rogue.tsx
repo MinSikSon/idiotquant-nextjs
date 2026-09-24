@@ -2408,12 +2408,12 @@ export default function Rogue() {
                                     const weaponSkillNow = entry.kind === "weapon"
                                         ? weaponSkillLevel(state.heroes[0], entry.type)
                                         : null;
-                                    const weaponSkillTiers = entry.kind === "weapon"
-                                        ? [1, 2, 3].map((level) => ({ level, rank: weaponSkillRankName(level), ...weaponSkillBonus(level) }))
-                                        : [];
+                                    const currentWeaponSkill = weaponSkillNow === null
+                                        ? null
+                                        : { rank: weaponSkillRankName(weaponSkillNow), ...weaponSkillBonus(weaponSkillNow) };
                                     const statsSummary =
                                         stage >= 3
-                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? " · 숙련 보정" : ""}`
+                                            ? `${itemCodexStats(entry)}${currentWeaponSkill ? ` · ${currentWeaponSkill.rank} ${currentWeaponSkill.hit >= 0 ? `+${currentWeaponSkill.hit}` : currentWeaponSkill.hit}/${currentWeaponSkill.damage >= 0 ? `+${currentWeaponSkill.damage}` : currentWeaponSkill.damage}` : ""}`
                                             : stage === 2
                                                 ? "배낭에 있다"
                                                 : stage === 1
@@ -2485,16 +2485,8 @@ export default function Rogue() {
                                                 </div>
 
                                                 {statsSummary && (
-                                                    <div className="flex flex-wrap gap-x-1 pl-5 text-[12px] text-[var(--rg-faint)]">
-                                                        <span>{statsSummary}</span>
-                                                        {entry.kind === "weapon" && weaponSkillTiers.map((tier) => (
-                                                            <span
-                                                                key={tier.level}
-                                                                className={weaponSkillNow === tier.level ? "font-bold text-[var(--rg-gold)]" : ""}
-                                                            >
-                                                                · {tier.rank} {tier.hit >= 0 ? `+${tier.hit}` : tier.hit}/{tier.damage >= 0 ? `+${tier.damage}` : tier.damage}
-                                                            </span>
-                                                        ))}
+                                                    <div className={`pl-5 text-[12px] ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>
+                                                        {statsSummary}
                                                     </div>
                                                 )}
                                             </button>
@@ -2529,7 +2521,7 @@ export default function Rogue() {
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">숙련: </span>
-                                                                            <span className="text-[var(--rg-strong)]">{weaponSkillTiers.map((tier) => `${tier.rank} ${tier.hit >= 0 ? `+${tier.hit}` : tier.hit}/${tier.damage >= 0 ? `+${tier.damage}` : tier.damage}`).join(" · ")}</span>
+                                                                            <span className="font-bold text-[var(--rg-gold)]">{currentWeaponSkill && `${currentWeaponSkill.rank} ${currentWeaponSkill.hit >= 0 ? `+${currentWeaponSkill.hit}` : currentWeaponSkill.hit}/${currentWeaponSkill.damage >= 0 ? `+${currentWeaponSkill.damage}` : currentWeaponSkill.damage}`}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">무기 계열: </span>
@@ -2693,7 +2685,7 @@ export default function Rogue() {
                             </ul>
                             {codexTab === "weapon" && (
                                 <p className="mt-3 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
-                                    ※ 숙련 보정의 앞값은 명중, 뒷값은 피해 보정입니다. 예: Skilled +2/+1 = 명중 +2 · 피해 +1
+                                    ※ 숙련 보정: Basic +0/+0 · Skilled +2/+1 · Expert +3/+2 (앞값은 명중, 뒷값은 피해)
                                 </p>
                             )}
                             </>

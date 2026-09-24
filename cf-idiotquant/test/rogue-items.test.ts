@@ -389,6 +389,7 @@ test("지혜 성장은 공격 지팡이 피해를 즉시 올리고, 기록에 �
     const wiseHit = wise.level.monsters[0]!.hp;
     assert.ok(baseHit > wiseHit, "지혜 주사위가 피해를 늘리지 않았다");
     assert.ok(after.messages.some((line) => line.includes("지혜 3d4")), "지혜 주사위 기록이 없다");
+    assert.ok(after.messages.some((line) => line.startsWith("· 피해 굴림:") && line.includes("(피해)")), "지팡이 피해 굴림 기록이 없다");
 });
 
 test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진다", () => {

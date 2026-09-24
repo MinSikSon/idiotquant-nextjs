@@ -2221,7 +2221,11 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         return { dice, rolled, bonusDice, wisdom, total: rolled + wisdom };
     };
     const saySpellDamage = (line: string, damage: { dice: string; rolled: number; bonusDice: string | null; wisdom: number; total: number }) => {
-        say(state, `${withDamage(line, damage.total)}${damage.bonusDice ? ` (${damage.dice} ${damage.rolled} + 지혜 ${damage.bonusDice} ${damage.wisdom})` : ""}`);
+        const wisdom = damage.bonusDice ? `+${damage.wisdom}(지혜 ${damage.bonusDice})` : "";
+        // 공격 지팡이도 무기와 같은 기록 문법을 쓴다. 요약 줄에는 결과, 펼친 기록에는
+        // 어느 주사위가 얼마였는지가 남아야 지혜가 실제로 무엇을 더했는지 읽을 수 있다.
+        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.rolled}${wisdom}=${damage.total}(피해)`);
+        say(state, withDamage(line, damage.total));
     };
 
     // ── 굴착의 지팡이 (digging) : 최대 4칸 벽을 부수고 관통 파편 피해(2d6)를 줌 ──
@@ -2479,7 +2483,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
 
     // 던진 것도 D&D 의 공격 굴림을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
     const hitTerms: Term[] = [
-        { n: proficiency(hero.level), why: "숙련" },
+        { n: proficiency(hero.level), why: "레벨" },
         ...weaponSkillTerms(hero, it).slice(0, 1),
         ...(hero.origin === "rogue" && it.type === "dagger" ? [{ n: 1, why: "도적 단검" }] : []),
         { n: it.plusHit ?? 0, why: "손질" },
@@ -2493,7 +2497,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         return true;
     }
     const dice = weaponDamageOf(it);
-    const damTerms: Term[] = [...weaponSkillTerms(hero, it).slice(1).filter((term) => term.n !== 0), { n: it.plusDam ?? 0, why: "손질" }];
+    const damTerms: Term[] = [...weaponSkillTerms(hero, it).slice(1), { n: it.plusDam ?? 0, why: "손질" }];
     const d = damageRoll(dice, damTerms.reduce((sum, term) => sum + term.n, 0), a.crit, rng);
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     const guard = monsterDefense(m);

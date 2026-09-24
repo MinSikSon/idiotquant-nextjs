@@ -77,7 +77,9 @@ export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
     if (!weapon || weapon.kind !== "weapon") return [];
     const level = weaponSkillLevel(hero, weapon.type);
     const { hit, damage: dam } = weaponSkillBonus(level);
-    return [{ n: hit, why: `${weaponSkillName(level)} ${WEAPONS[weapon.type]?.name ?? "무기"}` }, { n: dam, why: "" }];
+    const rank = weaponSkillRankName(level);
+    const label = `${rank} ${WEAPONS[weapon.type]?.name ?? "무기"}`;
+    return [{ n: hit, why: label, showZero: true }, { n: dam, why: label, showZero: true }];
 }
 
 /** 의미 있는 적중 하나를 쌓는다. 승급은 레벨업 때만 열어 전투 중 수치가 흔들리지 않는다. */
@@ -430,6 +432,7 @@ export function heroProficiency(hero: Hero): number {
 export interface Term {
     n: number;
     why: string;
+    showZero?: boolean;
 }
 
 /**
@@ -441,7 +444,7 @@ export interface Term {
 export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] {
     const affinity = weaponAffinityOf(hero, weapon);
     return [
-        { n: proficiency(hero.level), why: "숙련" },
+        { n: proficiency(hero.level), why: "레벨" },
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
@@ -456,7 +459,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
     const affinity = weaponAffinityOf(hero, weapon);
     const terms: Term[] = [
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
-        ...weaponSkillTerms(hero, weapon).slice(1).filter((term) => term.n !== 0).map((term) => ({ ...term, why: `${weaponSkillName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
+        ...weaponSkillTerms(hero, weapon).slice(1).map((term) => ({ ...term, why: `${weaponSkillRankName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
         { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
         ...(affinity ? [{ n: 1, why: affinity.name }] : []),

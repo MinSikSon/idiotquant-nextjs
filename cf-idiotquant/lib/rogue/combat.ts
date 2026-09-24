@@ -109,6 +109,7 @@ export function withDamage(line: string, n: number): string {
 export interface Term {
     n: number;
     why: string;
+    showZero?: boolean;
 }
 
 /**
@@ -119,7 +120,7 @@ export interface Term {
  */
 function terms(list: Term[]): string {
     return list
-        .filter((t) => t.n !== 0)
+        .filter((t) => t.n !== 0 || t.showZero)
         .map((t) => `${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}(${t.why})`)
         .join("");
 }
