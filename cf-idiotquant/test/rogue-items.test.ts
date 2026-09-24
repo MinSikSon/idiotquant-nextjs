@@ -147,26 +147,26 @@ test("저주받은 갑옷은 못 벗고, 반지는 능력을 바꾼다", () => {
     }
 });
 
-test("반지는 배를 더 고프게 하고, 저주받은 것은 못 뺀다", () => {
-    // ── 반지를 끼면 배가 더 고프다 — 이 대가가 없으면 반지는 공짜다
+test("반지는 원작처럼 허기를 늘리지 않고, 저주받은 것은 못 뺀다", () => {
+    // ── 원작 Rogue에서는 반지 착용이 허기를 늘리지 않는다.
     {
         const s0 = newGame(103);
         assert.equal(hungerRate(s0.heroes[0]), 1);
 
         give(s0, makeItem("ring", "regeneration", 920, -1, -1), "y");
         const s1 = perform(s0, { t: "putOn", letter: "y" });
-        assert.ok(hungerRate(s1.heroes[0]) > 1, "재생 반지가 공짜다");
+        assert.equal(hungerRate(s1.heroes[0]), 1, "재생 반지가 허기를 늘렸다");
 
         // 실제로 시계가 더 빨리 돈다.
         const before = s1.heroes[0].food;
         const s2 = perform(s1, { t: "rest" });
         assert.equal(before - s2.heroes[0].food, hungerRate(s2.heroes[0]));
 
-        // 소화 억제는 반대로 간다.
+        // 소화 억제는 음식 소모를 절반으로 줄인다.
         const s3 = perform(s2, { t: "removeRing", letter: "y" });
         give(s3, makeItem("ring", "slow digestion", 921, -1, -1), "z");
         const s4 = perform(s3, { t: "putOn", letter: "z" });
-        assert.ok(hungerRate(s4.heroes[0]) < 1, "소화 억제가 안 듣는다");
+        assert.equal(hungerRate(s4.heroes[0]), 0.5, "소화 억제가 50% 감소하지 않는다");
         assert.ok(s4.messages.some((message) => message.endsWith("배가 늦게 고파진다.")), "소화 억제 로그가 반대로 나왔다");
     }
 
@@ -193,7 +193,7 @@ test("장식 반지는 10 gold 점수 가치만 가지며, 반지 효과는 감�
     assert.equal(score(worn) - before, 10, "장식 반지의 10 gold 가치가 점수에 안 더해진다");
     assert.equal(itemPower(luck, worn.known), "점수 가치 10 gold", "장식 반지의 효과가 배낭에 안 보인다");
     const escape = makeItem("ring", "teleportation", 932, -1, -1);
-    assert.equal(itemPower(escape, { "ring:teleportation": true }), "두 몬스터에게 포위되면 탈출");
+    assert.equal(itemPower(escape, { "ring:teleportation": true }), "무작위 순간이동");
 });
 
 test("민첩·피해·재생 반지는 각각 명중, 피해, 회복에만 보탠다", () => {

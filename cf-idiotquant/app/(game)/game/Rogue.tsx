@@ -2597,11 +2597,8 @@ export default function Rogue() {
                                                                             <span>{itemDepthRange("ring", entry.type) ? `${itemDepthRange("ring", entry.type)!.min}–${itemDepthRange("ring", entry.type)!.max}층` : "1–26층"}</span>
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-[var(--rg-faint)]">배고픔 추가: </span>
-                                                                            {(() => {
-                                                                                const hunger = RINGS[entry.type]?.hunger ?? 1;
-                                                                                return <span>{`${hunger > 0 ? "+" : ""}${hunger}/턴`}</span>;
-                                                                            })()}
+                                                                            <span className="text-[var(--rg-faint)]">허기: </span>
+                                                                            <span>{entry.type === "slow digestion" ? "음식 소모 50% 감소" : "추가 허기 없음"}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">착용 걸음: </span>

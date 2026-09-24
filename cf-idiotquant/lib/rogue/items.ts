@@ -157,30 +157,22 @@ export const SCROLLS: Record<string, { name: string; freq: number; depth: number
 /** 충전 주문서 한 장이 지팡이에 되돌리는 사용 횟수. */
 export const WAND_RECHARGE = 8;
 
-/**
- * 반지 — **끼고 있으면 배가 더 고프다.**
- *
- * 그 대가가 없으면 반지는 그냥 공짜 능력치이고, 두 손에 둘을 끼지 않을 이유가 없어진다.
- * 원작의 설계가 여기 있다: 좋은 반지일수록 식량을 태우므로 **언제 빼는가**가 결정이 된다.
- *
- * **이름은 안 바꿨다.** 반지의 이름은 곧 효과이고(「재생」·「소화 억제」), 그 자리에
- * 물건 이름을 넣으면 알아낸 뒤에도 무슨 반지인지 알 수 없게 된다.
- */
-export const RINGS: Record<string, { name: string; freq: number; hunger: number; depth: number }> = {
-    protection: { name: "보호", freq: 9, hunger: 1, depth: 1 },
-    "add strength": { name: "힘", freq: 9, hunger: 1, depth: 1 },
-    regeneration: { name: "재생", freq: 4, hunger: 3, depth: 5 },
-    searching: { name: "탐색", freq: 10, hunger: 1, depth: 3 },
-    "sustain strength": { name: "힘 유지", freq: 5, hunger: 0, depth: 3 },
-    "slow digestion": { name: "소화 억제", freq: 9, hunger: -2, depth: 5 },
-    teleportation: { name: "탈출", freq: 5, hunger: 1, depth: 7 },
-    "see invisible": { name: "투명 보기", freq: 10, hunger: 1, depth: 5 },
-    adornment: { name: "장식", freq: 1, hunger: 0, depth: 1 },
-    "aggravate monsters": { name: "몬스터 도발", freq: 10, hunger: 1, depth: 2 },
-    dexterity: { name: "민첩", freq: 8, hunger: 1, depth: 4 },
-    "increase damage": { name: "피해 증가", freq: 8, hunger: 1, depth: 4 },
-    stealth: { name: "은신", freq: 7, hunger: 1, depth: 4 },
-    "maintain armor": { name: "갑옷 유지", freq: 5, hunger: 1, depth: 6 },
+/** 원작 Rogue의 반지 14종. 반지는 착용 자체로 허기를 증가시키지 않는다. */
+export const RINGS: Record<string, { name: string; freq: number; depth: number }> = {
+    protection: { name: "보호", freq: 9, depth: 1 },
+    "add strength": { name: "힘", freq: 9, depth: 1 },
+    "sustain strength": { name: "힘 유지", freq: 5, depth: 3 },
+    searching: { name: "탐색", freq: 10, depth: 3 },
+    "see invisible": { name: "투명 보기", freq: 10, depth: 5 },
+    adornment: { name: "장식", freq: 1, depth: 1 },
+    "aggravate monsters": { name: "몬스터 도발", freq: 10, depth: 2 },
+    dexterity: { name: "민첩", freq: 8, depth: 4 },
+    "increase damage": { name: "피해 증가", freq: 8, depth: 4 },
+    regeneration: { name: "재생", freq: 4, depth: 5 },
+    "slow digestion": { name: "소화 억제", freq: 9, depth: 5 },
+    teleportation: { name: "순간이동", freq: 5, depth: 7 },
+    stealth: { name: "은신", freq: 7, depth: 4 },
+    "maintain armor": { name: "갑옷 유지", freq: 5, depth: 6 },
 };
 
 /** 반지는 감정한 뒤 배낭과 도감에서 효과를 바로 읽을 수 있어야 한다. */
@@ -190,8 +182,8 @@ export const RING_EFFECTS: Record<string, string> = {
     regeneration: "매 턴 체력 1 회복",
     searching: "탐색 성공률 65%",
     "sustain strength": "독으로 힘이 줄지 않음",
-    "slow digestion": "허기 소모 -2",
-    teleportation: "두 몬스터에게 포위되면 탈출",
+    "slow digestion": "음식 소모 50% 감소",
+    teleportation: "무작위 순간이동",
     "see invisible": "팬텀을 볼 수 있음",
     adornment: "점수 가치 10 gold",
     "aggravate monsters": "저주 · 모든 몬스터를 깨움",

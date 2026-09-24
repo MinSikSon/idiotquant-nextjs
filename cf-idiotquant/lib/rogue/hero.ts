@@ -487,15 +487,9 @@ export function heroStr(hero: Hero): number {
     return hero.str + ringSum(hero, "add strength");
 }
 
-/**
- * 한 걸음에 배가 얼마나 고픈가.
- *
- * **반지는 식량을 태운다.** 이 대가가 없으면 두 손에 둘을 끼지 않을 이유가 없고,
- * 반지는 공짜 능력치가 된다. 「소화 억제」만 반대로 간다.
- */
+/** 원작 Rogue의 허기 규칙: 반지는 기본 허기를 늘리지 않으며 소화 억제만 절반으로 줄인다. */
 export function hungerRate(hero: Hero): number {
-    const extra = wornRings(hero).reduce((s, r) => s + (RINGS[r.type]?.hunger ?? 0), 0);
-    return Math.max(0, 1 + extra);
+    return hasRing(hero, "slow digestion") ? 0.5 : 1;
 }
 
 /** 몇 턴마다 체력이 1 오르는가. 재생 반지가 절반으로 줄인다. */

@@ -1654,7 +1654,7 @@ function wear(state: GameState, hero: Hero, letter: string): boolean {
     return true;
 }
 
-/** 반지를 낀다 — 양손에 하나씩. **끼면 배가 더 고프다.** */
+/** 반지를 낀다 — 양손에 하나씩. 원작처럼 착용 자체로 허기를 추가하지 않는다. */
 function putOn(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "ring") {
@@ -1679,8 +1679,6 @@ function putOn(state: GameState, hero: Hero, letter: string): boolean {
     if (revealCurse(state, it)) say(state, "손가락에서 빠지지 않는다. 저주받았다!");
     else if (it.type === "slow digestion") {
         say(state, "배가 늦게 고파진다.");
-    } else {
-        say(state, `배가 더 빨리 고파진다. (한 걸음에 ${hungerRate(hero)})`);
     }
     return true;
 }
@@ -3293,14 +3291,13 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         }
     }
 
-    // 탈출 반지는 둘 이상에게 포위된 뒤에만 듣는다. 평소 이동을 방해하지 않는 직관적인 비상 탈출이다.
+    // 원작의 순간이동 반지는 저주받은 반지로, 착용 중에는 매 턴 무작위 위치로 보낸다.
     for (const h of state.heroes) {
-        const surrounded = state.level.monsters.filter((m) => m.hp > 0 && Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1).length >= 2;
-        if (h.hp <= 0 || !hasRing(h, "teleportation") || !surrounded) continue;
+        if (h.hp <= 0 || !hasRing(h, "teleportation")) continue;
         const p = freeSpot(state.level, rng, [state.level.stairs, ...state.heroes.filter((o) => o !== h)]);
         h.x = p.x;
         h.y = p.y;
-        say(state, "탈출 반지가 포위망 밖으로 옮겼다.");
+        say(state, "순간이동 반지가 몸을 무작위 장소로 옮겼다.");
     }
 
     computeFov(state.level, state.heroes);
