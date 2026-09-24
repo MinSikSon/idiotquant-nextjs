@@ -67,7 +67,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillLevel, weaponSkillMax, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -2404,15 +2404,15 @@ export default function Rogue() {
                                                 ? `??? (${appearanceName})`
                                                 : "──────";
 
-                                    const weaponSkill = entry.kind === "weapon"
-                                        ? weaponSkillRankName(weaponSkillLevel(state.heroes[0], entry.type))
+                                    const weaponSkillNow = entry.kind === "weapon"
+                                        ? weaponSkillLevel(state.heroes[0], entry.type)
                                         : null;
-                                    const weaponSkillMaximum = entry.kind === "weapon"
-                                        ? weaponSkillRankName(weaponSkillMax(state.heroes[0], entry.type))
-                                        : null;
+                                    const weaponSkillTiers = entry.kind === "weapon"
+                                        ? [1, 2, 3].map((level) => ({ level, rank: weaponSkillRankName(level), ...weaponSkillBonus(level) }))
+                                        : [];
                                     const statsSummary =
                                         stage >= 3
-                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? ` · ${weaponSkill} (${weaponSkillMaximum})` : ""}`
+                                            ? `${itemCodexStats(entry)}${entry.kind === "weapon" ? " · 숙련 보정" : ""}`
                                             : stage === 2
                                                 ? "배낭에 있다"
                                                 : stage === 1
@@ -2430,7 +2430,9 @@ export default function Rogue() {
 
                                     const usageStr =
                                         stage === 4
-                                            ? `★통달 · ${usage}${usageSuffix}`
+                                            ? entry.kind === "weapon"
+                                                ? `★Expert · ${usage}${usageSuffix}`
+                                                : `★통달 · ${usage}${usageSuffix}`
                                             : stage === 3 && usageSuffix
                                                 ? `${usage}${usageSuffix}`
                                                 : "";
@@ -2482,8 +2484,16 @@ export default function Rogue() {
                                                 </div>
 
                                                 {statsSummary && (
-                                                    <div className="pl-5 text-[12px] text-[var(--rg-faint)]">
-                                                        {statsSummary}
+                                                    <div className="flex flex-wrap gap-x-1 pl-5 text-[12px] text-[var(--rg-faint)]">
+                                                        <span>{statsSummary}</span>
+                                                        {entry.kind === "weapon" && weaponSkillTiers.map((tier) => (
+                                                            <span
+                                                                key={tier.level}
+                                                                className={weaponSkillNow === tier.level ? "font-bold text-[var(--rg-gold)]" : ""}
+                                                            >
+                                                                · {tier.rank} {tier.hit >= 0 ? `+${tier.hit}` : tier.hit}/{tier.damage >= 0 ? `+${tier.damage}` : tier.damage}
+                                                            </span>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </button>
@@ -2518,7 +2528,7 @@ export default function Rogue() {
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">숙련: </span>
-                                                                            <span className="text-[var(--rg-strong)]">{weaponSkill} ({weaponSkillMaximum})</span>
+                                                                            <span className="text-[var(--rg-strong)]">{weaponSkillTiers.map((tier) => `${tier.rank} ${tier.hit >= 0 ? `+${tier.hit}` : tier.hit}/${tier.damage >= 0 ? `+${tier.damage}` : tier.damage}`).join(" · ")}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">무기 계열: </span>
@@ -2727,7 +2737,7 @@ export default function Rogue() {
                         onClose={() => setSheet("none")}
                         /* 「이 d20 은 뭘 정하는 건가」를 여기서 답한다 — 줄에 이름은 붙였지만
                            스무면체가 명중에만 쓰인다는 것은 한 줄로 말해 주는 편이 빠르다. */
-                        footer={`현재 Turn ${state.turn} · d20 은 명중에만 굴립니다 — 내 굴림과 보정의 합이 명중 난이도 이상이면 맞습니다. 최종값 20 이상은 대성공, 자연 1은 자동 실패입니다. 피해는 공격력(2d4 같은 것)에서 상대의 방어력을 뺀 값입니다.`}
+                        footer={`현재 Turn ${state.turn} · d20 은 명중에만 굴립니다 — 내 굴림과 보정의 합이 명중 난이도 이상이면 맞습니다. 최종값 20 이상은 대성공, 자연 1은 대실패입니다. 피해는 공격력(2d4 같은 것)에서 상대의 방어력을 뺀 값입니다.`}
                     >
                         {/* 결과가 먼저, 바로 아래 들여쓴 줄이 그 결과의 산식이다. 엔진이
                             `DETAIL` 로 가른 값을 읽기만 한다 — 화면이 전투 기록을 다시

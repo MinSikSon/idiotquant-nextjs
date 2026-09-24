@@ -42,6 +42,7 @@ export type WeaponSkill = 0 | 1 | 2 | 3;
 const SKILL_HITS = [0, 20, 300, 900];
 const SKILL_NAME = ["미숙", "기초", "숙련", "전문"];
 const SKILL_RANK_NAME = ["unskilled", "basic", "skilled", "expert"];
+const SKILL_BONUSES = [{ hit: -4, damage: -2 }, { hit: 0, damage: 0 }, { hit: 2, damage: 1 }, { hit: 3, damage: 2 }];
 
 export function weaponSkillName(level: number): string {
     return SKILL_NAME[Math.max(0, Math.min(3, level))] ?? "미숙";
@@ -50,6 +51,11 @@ export function weaponSkillName(level: number): string {
 /** 도감·외부 표기용 Rogue 무기숙련 단계명. */
 export function weaponSkillRankName(level: number): string {
     return SKILL_RANK_NAME[Math.max(0, Math.min(3, level))] ?? "unskilled";
+}
+
+/** 무기 숙련 단계의 명중/피해 보정. 도감과 실제 전투가 같은 표를 읽는다. */
+export function weaponSkillBonus(level: number): { hit: number; damage: number } {
+    return SKILL_BONUSES[Math.max(0, Math.min(3, level))] ?? SKILL_BONUSES[0];
 }
 
 export function weaponSkillLevel(hero: Hero, type: string): WeaponSkill {
@@ -70,8 +76,7 @@ export function weaponSkillMax(hero: Hero, type: string): WeaponSkill {
 export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
     if (!weapon || weapon.kind !== "weapon") return [];
     const level = weaponSkillLevel(hero, weapon.type);
-    const hit = [-4, 0, 2, 3][level] ?? -4;
-    const dam = [-2, 0, 1, 2][level] ?? -2;
+    const { hit, damage: dam } = weaponSkillBonus(level);
     return [{ n: hit, why: `${weaponSkillName(level)} ${WEAPONS[weapon.type]?.name ?? "무기"}` }, { n: dam, why: "" }];
 }
 

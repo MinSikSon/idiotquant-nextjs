@@ -19,7 +19,7 @@
  *
  *   · **최종 명중값 20 이상은 치명타** — 명중 난이도와 무관하게 맞고 **공격력 주사위를 두 번** 굴린다
  *     (보정은 한 번). 갑옷은 그래도 깎는다.
- *   · **자연 1 은 자동 실패** — 보정이 아무리 커도 빗나간다.
+ *   · **자연 1 은 대실패** — 보정이 아무리 커도 빗나간다.
  *   · **유리/불리** — 때리는 쪽이 d20 을 두 번 굴려 높은/낮은 쪽을 쓴다. 자는 놈을 치면
  *     유리, 눈이 멀거나 헷갈리면 불리.
  *   · **능력 보정 = (능력치 − 10) ÷ 2 내림**, **숙련 = 2 + (레벨−1) ÷ 4 내림.**
@@ -138,10 +138,10 @@ function rollEyes(a: Attack): string {
     return eyes;
 }
 
-/** 공격 굴림이 무엇으로 끝났나 — 치명타·자동 실패는 따로 말한다. */
+/** 공격 굴림이 무엇으로 끝났나 — 치명타·대실패는 따로 말한다. */
 export function outcomeOf(a: Attack): string {
     if (a.crit) return "치명타!";
-    if (a.fumble) return "자동 실패";
+    if (a.fumble) return "대실패";
     return a.hit ? "맞았다" : "빗나갔다";
 }
 
@@ -168,7 +168,7 @@ export function attackLine(
     bonuses: Term[],
 ): string {
     const add = terms(bonuses);
-    const result = a.crit ? "대성공" : a.fumble ? "자동 실패" : a.hit ? "명중" : "실패";
+    const result = a.crit ? "대성공" : a.fumble ? "대실패" : a.hit ? "명중" : "실패";
     return `${DETAIL}명중 굴림: ${who} ${rollEyes(a)}\n  ${a.roll}${add}${add ? `=${a.total}` : ""}(${result})`;
 }
 
@@ -180,7 +180,7 @@ export function multiAttackLine(
 ): string {
     const eyes = attacks.map((a) => (a.crit ? `${a.roll}!` : `${a.roll}`)).join(", ");
     const add = terms(bonuses);
-    const totals = attacks.map((a) => `${a.roll}${add}${add ? `=${a.total}` : ""}(${a.crit ? "대성공" : a.fumble ? "자동 실패" : a.hit ? "명중" : "실패"})`).join(" · ");
+    const totals = attacks.map((a) => `${a.roll}${add}${add ? `=${a.total}` : ""}(${a.crit ? "대성공" : a.fumble ? "대실패" : a.hit ? "명중" : "실패"})`).join(" · ");
     return `${DETAIL}명중 굴림: ${who} ${eyes}(d20 굴림)\n  ${totals}`;
 }
 

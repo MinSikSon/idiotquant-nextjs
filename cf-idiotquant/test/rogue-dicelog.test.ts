@@ -95,10 +95,10 @@ test("명중 줄은 내 d20과 보정 결과를 적는다 — 치명타·여러 
         );
     }
 
-    // ── 치명타와 자동 실패는 따로 말한다
+    // ── 치명타와 대실패는 따로 말한다
     {
         assert.equal(outcomeOf(fake(20, 0)), "치명타!");
-        assert.equal(outcomeOf(fake(1, 50)), "자동 실패");
+        assert.equal(outcomeOf(fake(1, 50)), "대실패");
         assert.equal(outcomeOf(fake(15, 3)), "맞았다");
         assert.equal(outcomeOf(fake(5, 0)), "빗나갔다");
     }
