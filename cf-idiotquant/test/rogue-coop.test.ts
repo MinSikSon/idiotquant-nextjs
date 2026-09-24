@@ -92,6 +92,9 @@ test("명령은 누가 하는지를 데리고 다닌다 — 행동은 그 사람
         perform(s, { t: "rest", who: 1 });
         assert.equal(guest.guarded, true, "who: 1 인데 손님이 행동을 안 했다");
         assert.equal(host.guarded, false, "who: 1 인데 방장이 행동했다");
+        assert.equal(host.turns, 0, "방장이 안 한 행동까지 개인 턴에 셌다");
+        assert.equal(guest.turns, 1, "손님이 쓴 행동이 개인 턴에 안 셌다");
+        assert.equal(s.turn, 1, "개인 턴과 파티 전체 턴이 같은 행동을 안 셌다");
     }
 
     // ── 배고픔은 **각자 들되 누가 움직이든** 돈다

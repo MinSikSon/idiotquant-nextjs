@@ -171,6 +171,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         maxHp: originDef.baseHp,
         exp: 0,
         level: 1,
+        turns: 0,
         str: originDef.baseStr,
         maxStr: originDef.baseStr,
         gold: 0,

@@ -2190,7 +2190,7 @@ export default function Rogue() {
                         }
                         {
                             coop && i === state.heroes.length - 1 && (
-                                <span className="text-[var(--rg-faint)]">
+                                <span className="order-50 ml-auto shrink-0 text-[var(--rg-faint)]">
                                     {online
                                         ? `온라인 방 ${room} · ${online === "host" ? "내가 방장" : "내가 동료"}${linked ? "" : " · 잇는 중…"}`
                                         : "? 조작"}

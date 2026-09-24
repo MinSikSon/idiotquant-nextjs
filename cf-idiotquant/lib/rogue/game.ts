@@ -3228,6 +3228,9 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     }
 
     state.turn += 1;
+    // 전체 턴은 파티가 쓴 행동 하나씩, 이 값은 그중 이 사람이 실제로 쓴 몫이다.
+    // 벽을 들이받거나 성장만 고른 행동(`acted=false`)은 둘 다 늘지 않는다.
+    hero.turns += 1;
 
     // ── 영웅에게 붙은 것은 **누가 움직이든** 한 칸씩 돈다 ────────────────────────
     //

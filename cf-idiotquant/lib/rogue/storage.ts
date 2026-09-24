@@ -295,6 +295,9 @@ function normalize(s: Saved): GameState | null {
         pendingSkillPicks: Math.max(0, num(h.pendingSkillPicks, 0)),
         bonusDefense: Math.max(0, num(h.bonusDefense, 0)),
         itemLuck: Math.min(1, Math.max(0, num(h.itemLuck, 0))),
+        // v12 이하에는 사람별 행동 횟수가 없다. 지난 판의 전체 턴을 나누어 지어내지 않고
+        // 0에서 새로 센다 — 옛 기록에 없던 일을 누구 몫으로 둘 수는 없다.
+        turns: Math.max(0, num(h.turns, 0)),
         weaponSkills: Object.fromEntries(Object.entries(h.weaponSkills ?? {}).map(([type, level]) => [type, Math.max(0, Math.min(3, num(level, 0)))])),
         weaponTraining: Object.fromEntries(Object.entries(h.weaponTraining ?? {}).map(([type, hits]) => [type, Math.max(0, num(hits, 0))])),
         // v11 이하에는 전직 액티브 기술이 없다. 0은 어느 실제 층과도 같지 않아

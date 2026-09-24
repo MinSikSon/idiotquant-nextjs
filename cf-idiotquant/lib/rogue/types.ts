@@ -308,6 +308,8 @@ export interface Hero {
     /** 경험치와 그것이 만든 레벨. */
     exp: number;
     level: number;
+    /** 이 사람이 실제로 턴을 쓴 행동 횟수. 파티 전체 턴(`GameState.turn`)과 나란히 보여 준다. */
+    turns: number;
     str: number;
     maxStr: number;
     gold: number;
