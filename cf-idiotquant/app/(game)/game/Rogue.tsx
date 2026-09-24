@@ -17,7 +17,7 @@
  * 뜬다. 키는 원작 그대로 살아 있다.
  */
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { DataConnection, Peer } from "peerjs";
 
 import {
@@ -67,7 +67,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, weaponSkillLevel, weaponSkillMax, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillLevel, weaponSkillMax, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -125,50 +125,25 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
 
 /** 기록 한 줄 — 협동의 앞머리를 그 사람 색으로 칠하고, 이름이 있으면 `1P` 대신 쓴다. */
 /**
- * 계산 줄 한 줄 — **엔진이 적은 것을 표지에서 접어 보여 준다.**
+ * 계산 줄 두 줄 — **엔진이 적은 것을 그대로 접어 보여 준다.**
  *
  * 기록에 이렇게 한 줄로 들어온다:
  *
  * ```
- * · 명중 나 13(d20 굴림) +2(숙련) +3(힘) +2(진은검) = 20(명중)  vs  트롤 7(d20 굴림) +3(숙련) = 10(회피)  → 맞았다
+ * · 명중 굴림: 나 13(d20 굴림)
+ *   13+2(숙련)+3(힘)+2(진은검)=20(명중)
  * ```
  *
- * 390px 에서는 이것이 석 줄로 접히는데, **어디가 내 굴림이고 어디가 상대 것인지**가
- * 글자 사이에 묻힌다. 그래서 엔진이 이미 쓰고 있는 표지(`  vs  ` · `  → ` · `  = ` ·
- * ` · `)에서 갈라 **표지를 왼쪽 칸에 세우고** 값을 오른쪽에 붙인다.
- * 표지는 **앞에 두 칸**이 붙는다 — 뒤는 한 칸일 때도 있다(`  → 맞았다`):
- *
- * ```
- * 명중  나 13(d20 굴림) +2(숙련) +3(힘) +2(진은검) = 20(명중)
- *  vs   트롤 7(d20 굴림) +3(숙련) = 10(회피)
- *  →    맞았다
- * ```
- *
- * **화면이 셈을 다시 하지 않는다**(못 박은 규칙 1). 숫자는 한 자도 안 만들고 안 고친다 —
- * 엔진이 적은 글을 그 문법대로 자를 뿐이다. 표지의 **양옆 두 칸**이 곧 그 문법이라,
- * 한 칸짜리(` = 20` 처럼 한 항 안에서 쓰는 등호)는 안 걸린다.
+ * 제목 아래 산식은 한 칸 들여 엔진이 준 줄바꿈만 그린다. 화면은 숫자를 만들거나 계산하지
+ * 않는다(못 박은 규칙 1).
  */
 function Roll({ text }: { text: string }) {
     const body = text.slice(DETAIL.length);
-    const head = body.slice(0, body.indexOf(" "));
-    const rest = body.slice(head.length + 1);
-    // 표지를 남기며 자른다 — `[값, 표지, 값, 표지, 값 …]`
-    const parts = rest.split(/ {2}(vs|→|=) +| (·) /).filter((x) => x !== undefined && x !== "");
-    const rows: { mark: string; text: string }[] = [{ mark: head, text: parts[0] ?? "" }];
-    for (let i = 1; i < parts.length; i += 2) rows.push({ mark: parts[i], text: parts[i + 1] ?? "" });
+    const [title, formula] = body.split("\n", 2);
     return (
-        <span className="grid grid-cols-[2.6em_1fr] gap-x-1">
-            {rows.map((r, i) => (
-                <Fragment key={i}>
-                    <span className={i === 0 ? "text-right font-bold text-[var(--rg-label)]" : "text-right text-[var(--rg-faint)]"}>
-                        {r.mark}
-                    </span>
-                    {/* 마지막 줄이 **결과**다 — 한 톤 밝게 둬서 눈이 거기서 멈춘다. */}
-                    <span className={i === rows.length - 1 && rows.length > 1 ? "text-[var(--rg-text)]" : ""}>
-                        {r.text}
-                    </span>
-                </Fragment>
-            ))}
+        <span className="block">
+            <span className="block font-bold text-[var(--rg-label)]">{title}</span>
+            {formula && <span className="block pl-2 text-[var(--rg-text)]">{formula}</span>}
         </span>
     );
 }
@@ -1989,7 +1964,7 @@ export default function Rogue() {
                                     [
                                         ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
                                         ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                        ["luck", `지혜 +1 · 지팡이 피해 +1 (현재 +${Math.round(hero.itemLuck * 100)})`],
+                                        ["luck", `지혜 +1 · 지팡이 주사위 +1 (현재 +${wandDamageDiceBonus(hero)})`],
                                     ] as const
                                 ).map(([option, label]) => (
                                     <button
@@ -2720,7 +2695,7 @@ export default function Rogue() {
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이 피해가 지혜 수치만큼 늘어납니다.`
+                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"
@@ -2752,7 +2727,7 @@ export default function Rogue() {
                         onClose={() => setSheet("none")}
                         /* 「이 d20 은 뭘 정하는 건가」를 여기서 답한다 — 줄에 이름은 붙였지만
                            스무면체가 명중에만 쓰인다는 것은 한 줄로 말해 주는 편이 빠르다. */
-                        footer={`현재 Turn ${state.turn} · d20 은 명중에만 굴립니다 — 나와 상대가 각각 굴려 내 쪽이 높으면 맞습니다. 피해는 공격력(2d4 같은 것)에서 상대의 방어력을 뺀 값입니다.`}
+                        footer={`현재 Turn ${state.turn} · d20 은 명중에만 굴립니다 — 내 굴림과 보정의 합이 명중 난이도 이상이면 맞습니다. 자연 20은 대성공, 자연 1은 자동 실패입니다. 피해는 공격력(2d4 같은 것)에서 상대의 방어력을 뺀 값입니다.`}
                     >
                         {/* 결과가 먼저, 바로 아래 들여쓴 줄이 그 결과의 산식이다. 엔진이
                             `DETAIL` 로 가른 값을 읽기만 한다 — 화면이 전투 기록을 다시

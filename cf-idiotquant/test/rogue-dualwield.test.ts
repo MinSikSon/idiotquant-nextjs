@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { newGame, perform } from "@/lib/rogue/game";
 import { addToPack, canOffHand, heroAttackText, offHandWeapon } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
-import { isDetail } from "@/lib/rogue/combat";
+import { heroAttack, isDetail } from "@/lib/rogue/combat";
 import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { DUAL_WIELD } from "@/lib/rogue/origins";
@@ -118,11 +118,11 @@ test("이도류는 두 번 굴리고, 보조손은 불리하다", () => {
         const swings = (st: GameState) =>
             st.messages
                 .filter(isDetail)
-                .filter((l) => l.startsWith("· 명중 나 ") || l.startsWith("· 명중 주손 ") || l.startsWith("· 명중 보조손 ")).length;
+                .filter((l) => l.startsWith("· 명중 굴림: 나 ") || l.startsWith("· 명중 굴림: 주손 ") || l.startsWith("· 명중 굴림: 보조손 ")).length;
         assert.equal(swings(one.s), 1, "한 자루인데 굴림 줄이 하나가 아니다");
         assert.equal(swings(two.s), 2, "두 자루인데 굴림 줄이 둘이 아니다");
         assert.ok(
-            two.s.messages.some((l) => l.startsWith("· 명중 주손 ")) && two.s.messages.some((l) => l.startsWith("· 명중 보조손 ")),
+            two.s.messages.some((l) => l.startsWith("· 명중 굴림: 주손 ")) && two.s.messages.some((l) => l.startsWith("· 명중 굴림: 보조손 ")),
             "이도류 기록에서 주손과 보조손이 함께 구분되지 않는다",
         );
     }
@@ -150,15 +150,13 @@ test("이도류는 두 번 굴리고, 보조손은 불리하다", () => {
             m.hp = 900;
             m.maxHp = 900;
             s.level.monsters = [m];
-            const before = s.messages.length;
-            perform(s, { t: "move", dx: 1, dy: 0 });
-            const fresh = s.messages.slice(before).filter(isDetail);
-            const off명중 = fresh.find((l) => l.startsWith("· 명중 보조손 "));
+            const fresh = heroAttack(s, hero, m, new Rng(n)).messages.filter(isDetail);
+            const off명중 = fresh.find((l) => l.startsWith("· 명중 굴림: 보조손 "));
             // **몬스터의 반격도 `· 공격력` 줄을 남긴다** — 그 앞까지만 내 것이다.
-            const stop = fresh.findIndex((l) => l.startsWith("· 명중 좀비"));
+            const stop = fresh.findIndex((l) => l.startsWith("· 명중 굴림: 좀비"));
             const mine = stop >= 0 ? fresh.slice(0, stop) : fresh;
-            const dam = mine.filter((l) => l.startsWith("· 공격력 "));
-            if (off명중 && off명중.includes("맞았다") && dam.length >= 2) {
+            const dam = mine.filter((l) => l.startsWith("· 피해 굴림"));
+            if (off명중 && /\((명중|대성공)\)/.test(off명중) && dam.length >= 2) {
                 hitLine = off명중;
                 damLines = dam;
             }
@@ -168,7 +166,7 @@ test("이도류는 두 번 굴리고, 보조손은 불리하다", () => {
         // ① 명중이 **불리하다** — 굴림 줄에 마이너스로 적힌다.
         assert.match(
             hitLine!,
-            /[−-]\d+ 보조손/,
+            /[−-]\d+\(보조손\)/,
             `보조손의 명중 불리가 굴림에 안 실렸다: ${hitLine}`,
         );
         // ② 피해에 **힘이 안 얹힌다** — 주손 줄에는 「힘」이 있고 보조손 줄에는 없다.

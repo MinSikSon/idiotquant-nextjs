@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageBonus, wornRings } from "@/lib/rogue/hero";
+import { goldGain, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -381,14 +381,14 @@ test("지혜 성장은 공격 지팡이 피해를 즉시 올리고, 기록에 �
         monster.hp = monster.maxHp = 99;
     }
     wise.heroes[0].itemLuck = 0.03;
-    assert.equal(wandDamageBonus(wise.heroes[0]), 3, "지혜 3%가 지팡이 피해 +3이 아니다");
+    assert.equal(wandDamageDiceBonus(wise.heroes[0]), 3, "지혜 3%가 지팡이 주사위 +3이 아니다");
 
     perform(base, { t: "zap", letter: "y", dx, dy });
     const after = perform(wise, { t: "zap", letter: "y", dx, dy });
     const baseHit = base.level.monsters[0]!.hp;
     const wiseHit = wise.level.monsters[0]!.hp;
-    assert.equal(baseHit - wiseHit, 3, "같은 굴림에서 지혜 보정만큼 피해가 늘지 않았다");
-    assert.ok(after.messages.some((line) => line.includes("주사위") && line.includes("지혜 3")), "지혜 보정의 기록이 없다");
+    assert.ok(baseHit > wiseHit, "지혜 주사위가 피해를 늘리지 않았다");
+    assert.ok(after.messages.some((line) => line.includes("지혜 3d4")), "지혜 주사위 기록이 없다");
 });
 
 test("던진 무기는 남고 물약은 깨진다 — 제자리로는 못 던진다", () => {

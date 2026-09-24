@@ -55,7 +55,7 @@ import {
     weaponSkillMax,
     weaponSkillName,
     weaponSkillTerms,
-    wandDamageBonus,
+    wandDamageDiceBonus,
     wornRings,
 } from "./hero";
 import {
@@ -74,13 +74,13 @@ import {
     monsterAttack,
     monsterDefense,
     monsterDodgeBonus,
-    outcomeOf,
     seenBefore,
     withDamage,
 } from "./combat";
 import {
     damageRoll,
-    opposedRoll,
+    attackRoll,
+    hitDifficulty,
     pierce,
     proficiency,
 } from "./dnd";
@@ -2210,15 +2210,18 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
-    // 지혜는 아이템운과 같은 값 하나에서 읽는다. 공격 지팡이의 주사위 뒤에 더하되,
-    // 난수는 기존과 정확히 한 번만 굴린다 — 지혜를 안 고른 판의 시드 흐름도 그대로다.
-    const wisdom = wandDamageBonus(hero);
+    // 지혜는 아이템운과 같은 값 하나에서 읽는다. 지혜 1당 같은 면의 주사위를 하나 더
+    // 굴린다. 지혜를 안 고른 판은 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
+    const wisdomDice = wandDamageDiceBonus(hero);
     const spellDamage = (dice: string) => {
         const rolled = rng.rollDice(dice);
-        return { rolled, total: rolled + wisdom };
+        const [, , sides] = /^(\d+)d(\d+)$/.exec(dice) ?? [];
+        const bonusDice = wisdomDice > 0 && sides ? `${wisdomDice}d${sides}` : null;
+        const wisdom = bonusDice ? rng.rollDice(bonusDice) : 0;
+        return { dice, rolled, bonusDice, wisdom, total: rolled + wisdom };
     };
-    const saySpellDamage = (line: string, damage: { rolled: number; total: number }) => {
-        say(state, `${withDamage(line, damage.total)}${wisdom > 0 ? ` (주사위 ${damage.rolled} + 지혜 ${wisdom})` : ""}`);
+    const saySpellDamage = (line: string, damage: { dice: string; rolled: number; bonusDice: string | null; wisdom: number; total: number }) => {
+        say(state, `${withDamage(line, damage.total)}${damage.bonusDice ? ` (${damage.dice} ${damage.rolled} + 지혜 ${damage.bonusDice} ${damage.wisdom})` : ""}`);
     };
 
     // ── 굴착의 지팡이 (digging) : 최대 4칸 벽을 부수고 관통 파편 피해(2d6)를 줌 ──
@@ -2482,13 +2485,9 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         { n: it.plusHit ?? 0, why: "손질" },
     ];
     const seen = seenBefore(state, m);
-    const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: "숙련" }];
-    const a = opposedRoll(hitTerms.reduce((t, b) => t + b.n, 0), dodge[0].n, rng);
-    say(
-        state,
-        attackLine("나(던짐)", a, hitTerms, { who: m.def.name, bonus: dodge, show: seen }, outcomeOf(a)),
-    );
+    const a = attackRoll(hitTerms.reduce((t, b) => t + b.n, 0), hitDifficulty(monsterDodgeBonus(m)), rng);
     if (!a.hit) {
+        say(state, attackLine("나(던짐)", a, hitTerms));
         say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.${rest}`);
         land();
         return true;
@@ -2504,6 +2503,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     const advanced = trainWeaponSkill(hero, it, d.rolled.reduce((sum, roll) => sum + roll, 0) > 1);
     if (advanced) say(state, `⚔ ${advanced}에 도달했다.`);
     say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
+    say(state, attackLine("나(던짐)", a, hitTerms));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
     say(
         state,
@@ -3077,7 +3077,7 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
         say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
     } else {
         const wisdom = Math.round(hero.itemLuck * 100);
-        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}% · 공격 지팡이 피해 +${wandDamageBonus(hero)}`);
+        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}% · 공격 지팡이 주사위 +${wandDamageDiceBonus(hero)}`);
     }
 }
 

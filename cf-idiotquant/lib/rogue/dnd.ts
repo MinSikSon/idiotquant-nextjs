@@ -10,12 +10,10 @@
  * ```
  *
  * **한때 D&D 5판이었다.** 거기서는 막는 쪽이 안 굴리고 방어도가 넘어야 할 고정된
- * 문턱이었으며, 피해는 주사위가 통째로 들어갔다. 지금은 **양쪽이 굴리고 갑옷이 피해를
- * 깎는** 체계다 — 갑옷이 「안 맞게 해 주는 것」에서 「덜 아프게 해 주는 것」으로 바뀌었고,
- * 그래서 좋은 갑옷의 값이 눈에 보이는 숫자로 남는다.
- *
- * **동점은 빗나간다.** 피하는 쪽이 비기면 이긴다 — 어느 한쪽으로 정해 두지 않으면
- * 「같은 눈인데 어떨 땐 맞고 어떨 땐 안 맞는」 자리가 생긴다.
+ * 문턱이었으며, 피해는 주사위가 통째로 들어갔다. 지금도 갑옷은 **피해를 깎는** 체계다.
+ * 명중은 D&D처럼 때리는 쪽만 d20을 굴려 고정 난이도를 넘는다. 난이도는 예전 수비 굴림의
+ * 평균(11)에 수비 보정을 더한 값이라, 주사위 하나를 없애도 기존 전투 감각이 급격히 흔들리지
+ * 않는다.
  *
  * 이 파일이 따로 있는 이유는 **`hero` 와 `combat` 이 둘 다 쓰기 때문**이다. 한쪽에
  * 두면 둘이 서로를 불러 고리가 생긴다. 여기에는 이 게임의 값이 하나도 없다 —
@@ -44,9 +42,6 @@ export interface Attack {
     /** 때리는 쪽이 실제로 쓴 눈. */
     roll: number;
     total: number;
-    /** **피하는 쪽이 굴린 눈**과 그 합. 대결 굴림이라 이쪽도 남는다. */
-    dodgeRoll: number;
-    dodge: number;
     /** 자연 20 — 무조건 맞고 공격력 주사위를 두 번 굴린다. */
     crit: boolean;
     /** 자연 1 — 보정이 아무리 커도 빗나간다. */
@@ -55,18 +50,16 @@ export interface Attack {
 }
 
 /**
- * 대결 굴림 하나 — **양쪽이 d20 을 굴려 때리는 쪽이 높으면 맞는다.**
+ * D&D식 명중 굴림 하나 — **d20 + 보정이 고정 명중 난이도 이상이면 맞는다.**
  *
  * **자연 20 과 자연 1 은 상대를 보지 않는다.** 20 은 무조건 맞고 1 은 무조건 빗나간다.
  * 그래서 아무리 센 놈에게도 스무 번에 한 번은 닿고, 아무리 약한 놈에게도 스무 번에
  * 한 번은 빗나간다 — 그 두 칸이 없으면 숫자 차이가 큰 싸움이 통째로 결정돼 버린다.
  *
- * **동점은 빗나간다**(`>` 이지 `>=` 가 아니다) — 피하는 쪽이 비기면 이긴다.
- *
- * 유리·불리는 **때리는 쪽에만** 붙는다. 자는 놈을 치는 것은 내 몫이 좋아지는 일이지
+ * 유리·불리는 때리는 쪽에만 붙는다. 자는 놈을 치는 것은 내 몫이 좋아지는 일이지
  * 그놈이 더 굴리는 일이 아니다.
  */
-export function opposedRoll(bonus: number, dodgeBonus: number, rng: Rng, luck: Luck = "normal"): Attack {
+export function attackRoll(bonus: number, difficulty: number, rng: Rng, luck: Luck = "normal"): Attack {
     const rolls = [rng.rnd(20) + 1];
     if (luck !== "normal") rolls.push(rng.rnd(20) + 1);
     const roll =
@@ -75,12 +68,15 @@ export function opposedRoll(bonus: number, dodgeBonus: number, rng: Rng, luck: L
             : luck === "disadvantage"
               ? Math.min(...rolls)
               : rolls[0];
-    const dodgeRoll = rng.rnd(20) + 1;
     const crit = roll === 20;
     const fumble = roll === 1;
     const total = roll + bonus;
-    const dodge = dodgeRoll + dodgeBonus;
-    return { hit: crit || (!fumble && total > dodge), rolls, roll, total, dodgeRoll, dodge, crit, fumble, luck };
+    return { hit: crit || (!fumble && total >= difficulty), rolls, roll, total, crit, fumble, luck };
+}
+
+/** 예전 수비 굴림의 평균값을 고정 문턱으로 옮긴 D&D식 명중 난이도. */
+export function hitDifficulty(defenseBonus: number): number {
+    return 11 + defenseBonus;
 }
 
 /**

@@ -47,9 +47,9 @@ test("도감 대상은 정확히 68종이고 7개 카테고리로 나뉜다", ()
     assert.equal(prog.byCategory.other.total, 2);
 
     // 각 카테고리 정의 항목과 일치하는지 확인
-    assert.equal(Object.keys(WEAPONS).length, 13);
+    assert.equal(Object.keys(WEAPONS).length, 14);
     assert.equal(Object.keys(ARMORS).length, 9);
-    assert.equal(Object.keys(SCROLLS).length, 10);
+    assert.equal(Object.keys(SCROLLS).length, 11);
     assert.equal(Object.keys(POTIONS).length, 9);
     assert.equal(Object.keys(RINGS).length, 14);
     assert.equal(Object.keys(WANDS).length, 11);

@@ -1,17 +1,16 @@
 /**
- * 싸움 — **대결 굴림과 깎는 갑옷.**
+ * 싸움 — **D&D식 명중 굴림과 깎는 갑옷.**
  *
  * ```
  *   때리는 쪽 = d20 + 숙련 + 능력 보정 + 손질
- *   피하는 쪽 = d20 + 숙련
- *   맞았다    = 때리는 쪽 > 피하는 쪽            ← 둘 다 굴린다
+ *   명중 난이도 = 11 + 수비 보정
+ *   맞았다    = 때리는 쪽 ≥ 명중 난이도          ← 때리는 쪽만 굴린다
  *   공격력    = 무기 주사위 + 능력 보정 + 손질
  *   피해      = 공격력 − 상대의 방어력           ← 0 밑은 0, 완전히 막힌다
  * ```
  *
- * **한때 D&D 5판이었다.** 거기서는 막는 쪽이 안 굴리고 방어도가 고정된 문턱이었으며,
- * 피해는 주사위가 통째로 들어갔다. 지금은 갑옷이 **안 맞게 해 주는 것이 아니라 덜 아프게
- * 해 주는 것**이고, 그래서 좋은 갑옷의 값이 매 대마다 눈에 보이는 숫자로 남는다.
+ * 갑옷은 **안 맞게 해 주는 것이 아니라 덜 아프게 해 주는 것**이다. 명중 난이도에는
+ * 숙련 기반 수비 보정만 쓰므로, 갑옷을 명중과 피해에서 두 번 세지 않는다.
  *
  * **여러 대를 때리는 놈은 대마다 따로 깎인다.** 트롤의 세 대는 방어력을 세 번 만난다 —
  * 갑옷이 다중 공격에 특히 세게 듣는 자리이고, 그것이 판금을 입을 까닭이 된다.
@@ -42,7 +41,8 @@ import {
     type Luck,
     damageRoll,
     luckOf,
-    opposedRoll,
+    attackRoll,
+    hitDifficulty,
     pierce,
     proficiency,
 } from "./dnd";
@@ -112,15 +112,15 @@ export interface Term {
 }
 
 /**
- * ` +1(무기) +2(힘)` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다.
+ * `+1(무기)+2(힘)` — 0인 것은 아예 안 적는다. 없는 보정을 적으면 줄만 길어진다.
  *
- * **값 뒤에 이유를 괄호로 붙인다.** `+2(숙련) +3(힘)`이면 한 항의 경계와 그 값의 까닭이
+ * **값 뒤에 이유를 괄호로 붙인다.** `+2(숙련)+3(힘)`이면 한 항의 경계와 그 값의 까닭이
  * 함께 보인다. 긴 무기 이름도 `+2(진은검)`으로 한 항임을 바로 읽는다.
  */
 function terms(list: Term[]): string {
     return list
         .filter((t) => t.n !== 0)
-        .map((t) => ` ${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}(${t.why})`)
+        .map((t) => `${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}(${t.why})`)
         .join("");
 }
 
@@ -129,15 +129,13 @@ export function seenBefore(state: GameState, m: Monster): boolean {
     return (state.bestiary[m.def.ch] ?? 0) > 0;
 }
 
-/** `13(d20 굴림) +2(숙련) +3(힘) = 18(명중)` — 유리·불리면 두 눈과 고른 쪽까지. */
-function rollText(a: Attack, bonuses: Term[]): string {
+/** `13(d20 굴림)` — 유리·불리면 두 눈과 고른 쪽까지. */
+function rollEyes(a: Attack): string {
     const eyes =
         a.luck === "normal"
             ? `${a.roll}(d20 굴림)`
             : `${a.rolls.join(", ")}(d20 ${a.luck === "advantage" ? "유리" : "불리"} → ${a.roll} 채택)`;
-    const add = terms(bonuses);
-    const sum = bonuses.reduce((t, b) => t + b.n, 0);
-    return `${eyes}${add}${sum === 0 ? "" : ` = ${a.total}(명중)`}`;
+    return eyes;
 }
 
 /** 공격 굴림이 무엇으로 끝났나 — 치명타·자동 실패는 따로 말한다. */
@@ -147,16 +145,8 @@ export function outcomeOf(a: Attack): string {
     return a.hit ? "맞았다" : "빗나갔다";
 }
 
-/** `7(d20 굴림) +3(숙련) = 10(회피)` — 피하는 쪽이 굴린 것. 모르는 종은 보정도 합도 가린다. */
-function dodgeText(a: Attack, who: string, bonus: Term[], show: boolean): string {
-    if (!show) return `${who} ${a.dodgeRoll}(d20 굴림) +?(숨김)`;
-    const add = terms(bonus);
-    const sum = bonus.reduce((t, b) => t + b.n, 0);
-    return `${who} ${a.dodgeRoll}(d20 굴림)${add}${sum === 0 ? "" : ` = ${a.dodge}(회피)`}`;
-}
-
 /**
- * 대결 굴림 한 줄 — **양쪽이 굴린 것을 나란히 적는다.**
+ * 명중 굴림 한 줄 — 결과와 산식을 두 줄로 적는다.
  *
  * ```
  * · 명중 나 d20 13 +2숙련 +3힘 +2장검 = 20  vs  트롤 d20 7 +3숙련 = 10  → 맞았다
@@ -176,13 +166,10 @@ export function attackLine(
     who: string,
     a: Attack,
     bonuses: Term[],
-    against: { who: string; bonus: Term[]; show: boolean },
-    outcome: string,
 ): string {
-    return (
-        `${DETAIL}명중 ${who} ${rollText(a, bonuses)}` +
-        `  vs  ${dodgeText(a, against.who, against.bonus, against.show)}  → ${outcome}`
-    );
+    const add = terms(bonuses);
+    const result = a.crit ? "대성공" : a.fumble ? "자동 실패" : a.hit ? "명중" : "실패";
+    return `${DETAIL}명중 굴림: ${who} ${rollEyes(a)}\n  ${a.roll}${add}${add ? `=${a.total}` : ""}(${result})`;
 }
 
 /** 여러 번 때리는 놈의 굴림을 한 줄로 — 눈만 늘어놓는다(어느 눈의 합인지 모른다). */
@@ -190,19 +177,11 @@ export function multiAttackLine(
     who: string,
     attacks: Attack[],
     bonuses: Term[],
-    against: { who: string; bonus: Term[]; show: boolean },
-    outcome: string,
 ): string {
     const eyes = attacks.map((a) => (a.crit ? `${a.roll}!` : `${a.roll}`)).join(", ");
-    const mine = attacks.map((a) => `${a.dodgeRoll}`).join(", ");
-    const add = terms(against.bonus);
-    const sum = against.bonus.reduce((t, b) => t + b.n, 0);
-    const theirs = against.show ? `${add}` : " +?(숨김)";
-    void sum;
-    return (
-        `${DETAIL}명중 ${who} ${eyes}(d20 굴림)${terms(bonuses)}` +
-        `  vs  ${against.who} ${mine}(d20 굴림)${theirs}  → ${outcome}`
-    );
+    const add = terms(bonuses);
+    const totals = attacks.map((a) => `${a.roll}${add}${add ? `=${a.total}` : ""}(${a.crit ? "대성공" : a.fumble ? "자동 실패" : a.hit ? "명중" : "실패"})`).join(" · ");
+    return `${DETAIL}명중 굴림: ${who} ${eyes}(d20 굴림)\n  ${totals}`;
 }
 
 /**
@@ -235,17 +214,17 @@ export function damageLine(
     dealt: number,
     hand?: "주손" | "보조손",
 ): string {
-    if (!dice) return `${DETAIL}피해${hand ? ` ${hand}` : ""} ${dealt}`;
+    if (!dice) return `${DETAIL}피해 ${dealt}`;
     const sum = rolled.reduce((a, n) => a + n, 0);
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
     const eyes = rolled.length > 1
-        ? `${rolled.join(", ")}(${dice} 굴림) = ${sum}(주사위 합)`
+        ? `${rolled.join(", ")}(${dice} 두 번 굴림)=${sum}(주사위 합)`
         : `${sum}(${dice} 굴림)`;
-    const cut = defense > 0 ? ` −${defense}(방어력)` : "";
+    const cut = defense > 0 ? `−${defense}(방어력)` : "";
     // **0 은 따로 말해 준다.** 「피해 0」만 적혀 있으면 고장인지 갑옷인지 알 수 없다.
-    const tail = dealt === 0 ? ` = ${dealt}(피해 · 튕겨 나갔다)` : ` = ${dealt}(피해)`;
-    return `${DETAIL}공격력${hand ? ` ${hand}` : ""} ${eyes}${add}${bonus !== 0 ? ` = ${power}(공격력)` : ""}${cut}${tail}`;
+    const tail = dealt === 0 ? `=${dealt}(피해 · 튕겨 나갔다)` : `=${dealt}(피해)`;
+    return `${DETAIL}피해 굴림${hand ? ` (${hand})` : ""}: ${eyes}\n  ${sum}${add}${bonus !== 0 ? `=${power}(공격력)` : ""}${cut}${tail}`;
 }
 
 /**
@@ -272,15 +251,15 @@ export function monsterDamageLine(
     if (parts.length === 0) return `${DETAIL}피해 ${total}`;
     // **상대의 보정도 적는다.** 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼 **줄 위에서 셈이
     // 안 맞는다** — 실제로 그랬다. 숫자가 안 맞는 줄은 기록을 통째로 못 믿게 만든다.
-    const add = bonus !== 0 ? ` ${bonus > 0 ? "+" : "−"}${Math.abs(bonus)}(공격 보정)` : "";
-    const cut = defense > 0 ? ` −${defense}(방어력)` : "";
+    const add = bonus !== 0 ? `${bonus > 0 ? "+" : "−"}${Math.abs(bonus)}(공격 보정)` : "";
+    const cut = defense > 0 ? `−${defense}(방어력)` : "";
     const each = parts
         .map(({ dice, rolled, dealt }) => {
             const sum = rolled.reduce((total, n) => total + n, 0);
             const eyes = rolled.length > 1
-                ? `${rolled.join(", ")}(${dice} 굴림) = ${sum}(주사위 합)`
+                ? `${rolled.join(", ")}(${dice} 두 번 굴림)=${sum}(주사위 합)`
                 : `${sum}(${dice} 굴림)`;
-            return `${eyes}${add}${cut} = ${dealt}(피해)`;
+            return `${eyes}${add}${cut}=${dealt}(피해)`;
         })
         .join(" · ");
     return `${DETAIL}공격력 ${each}  = ${total}(총 피해)`;
@@ -310,7 +289,7 @@ export function heroLuck(hero: GameState["heroes"][number], m: Monster): Luck {
     return luckOf([!m.awake], [hero.blind > 0, hero.confused > 0]);
 }
 
-/** 몬스터의 **수비 굴림 보정** — 숙련 하나뿐이다(내 쪽과 같은 모양). */
+/** 몬스터의 명중 난이도에 쓰는 수비 보정 — 숙련 하나뿐이다. */
 export function monsterDodgeBonus(m: Monster): number {
     const base = proficiency(m.def.level);
     const shadowBonus = m.champion === "shadow" ? 2 : 0;
@@ -345,28 +324,21 @@ function swing(
         ...heroHitTerms(hero, weapon),
         ...(off ? [{ n: OFF_HAND_HIT, why: "보조손" }] : []),
     ];
-    const seen = seenBefore(state, m);
     const mName = monsterName(m);
     // 이도류 기록은 두 줄이 한 짝이라는 것을 즉시 보여야 한다. 공격력 줄은 이미
     // 주손/보조손으로 갈리므로, 명중 줄도 같은 이름을 써야 `나`와 `보조손`을 머릿속에서
     // 다시 맞춰 보지 않는다.
     const hand = off ? "보조손" : offHandWeapon(hero) ? "주손" : "나";
-    const dodge: Term[] = [{ n: monsterDodgeBonus(m), why: m.champion === "shadow" ? "숙련+그림자" : "숙련" }];
-    const a = opposedRoll(
+    const a = attackRoll(
         hitTerms.reduce((t, b) => t + b.n, 0),
-        dodge[0].n,
+        hitDifficulty(monsterDodgeBonus(m)),
         rng,
         heroLuck(hero, m),
     );
     const messages: string[] = [];
 
-    // 계산이 먼저, 결과가 나중 — 기록 판은 뒤집어 보여 주므로 거기서는 결과가 위로
-    // 오고 그 아래에 「왜 그랬나」가 붙는다.
-    messages.push(
-        attackLine(hand, a, hitTerms, { who: mName, bonus: dodge, show: seen }, outcomeOf(a)),
-    );
-
     if (!a.hit) {
+        messages.push(attackLine(hand, a, hitTerms));
         messages.push(`${mName}을(를) 헛쳤다.`);
         return { hit: false, roll: a.roll, damage: 0, killed: false, messages };
     }
@@ -391,7 +363,7 @@ function swing(
     // **모르는 종에게는 산수를 안 펼친다** — 방어력도 표의 값이라 도감 규칙에 걸린다.
     const dualHand = offHandWeapon(hero) ? (off ? "보조손" : "주손") : undefined;
     messages.push(
-        seen
+        seenBefore(state, m)
             ? damageLine(dice, d.rolled, damTerms, d.total, guard, dealt, dualHand)
             : damageLine(null, [], [], 0, 0, dealt, dualHand),
     );
@@ -409,6 +381,10 @@ function swing(
             dealt,
         ),
     );
+
+    // 기록은 최신순으로 보이므로 결과 아래에 명중, 피해 순서가 되도록 거꾸로 넣는다.
+    const damageAt = messages.findIndex(isDetail);
+    messages.splice(damageAt < 0 ? 0 : damageAt + 1, 0, attackLine(hand, a, hitTerms));
 
     // ── 챔피언 피격 특수 반응 ──
     if (m.champion === "blazing") {
@@ -490,7 +466,6 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
     // 듣는 자리가 여기다.
     const guard = heroDefense(hero);
     const myDodge = heroDodgeBonus(hero);
-    const dodgeTerms: Term[] = [{ n: myDodge, why: "숙련" }];
     const bonus = monsterHitBonus(m);
     const bonusTerms: Term[] = [{ n: bonus, why: m.champion === "swift" ? "공격+신속" : "공격" }];
     // **내가 자거나 덫에 걸려 있으면 상대가 유리하다** — 못 움직이는 상대를 치는 것이다.
@@ -504,7 +479,7 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
     const dealt: { dice: string; rolled: number[]; dealt: number }[] = [];
 
     for (const dice of m.def.damage) {
-        const a = opposedRoll(bonus, myDodge, rng, luck);
+        const a = attackRoll(bonus, hitDifficulty(myDodge), rng, luck);
         attacks.push(a);
         lastRoll = a.roll;
         if (!a.hit) continue;
@@ -541,21 +516,21 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
             attacks.length === 1
                 ? outcomeOf(attacks[0])
                 : `${attacks.length}대 중 ${hits}대${crits > 0 ? ` (치명타 ${crits})` : ""}`;
-        const against = { who: target, bonus: dodgeTerms, show: true };
-        messages.unshift(
+        const hitLine =
             attacks.length === 1
-                ? attackLine(mName, attacks[0], seen ? bonusTerms : [], against, outcome)
-                : multiAttackLine(mName, attacks, seen ? bonusTerms : [], against, outcome),
-        );
+                ? attackLine(mName, attacks[0], seen ? bonusTerms : [])
+                : multiAttackLine(mName, attacks, seen ? bonusTerms : []);
         // **잡아 본 종이면 상대의 주사위까지 적는다.** 싸움의 절반이 상대의 차례인데
         // 그쪽만 속을 안 보여 주면 내가 왜 죽었는지를 기록에서 되짚을 수가 없다. 모르는
         // 종은 숫자만 — 주사위 표기는 표의 값이라 도감 규칙이 뒷문으로 뚫린다.
         //
         // **한 대라도 갑옷에 튕겼으면 0 이어도 적는다.** 갑옷이 일하고 있다는 것이
         // 이 체계에서 제일 보고 싶은 줄이다.
-        if (total > 0 || blocked > 0) {
-            messages.splice(1, 0, monsterDamageLine(seen ? dealt : [], monsterDamBonus(m), guard, total));
+        const hasDamageLine = total > 0 || blocked > 0;
+        if (hasDamageLine) {
+            messages.unshift(monsterDamageLine(seen ? dealt : [], monsterDamBonus(m), guard, total));
         }
+        messages.splice(hasDamageLine ? 1 : 0, 0, hitLine);
     }
 
     if (hits === 0) messages.push(`${mName} → ${target}: 공격이 빗나갔다.`);

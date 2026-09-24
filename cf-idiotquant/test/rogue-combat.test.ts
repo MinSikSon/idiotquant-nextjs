@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { heroAttack, monsterAttack, monsterDamBonus } from "@/lib/rogue/combat";
 import { newGame } from "@/lib/rogue/game";
 import { idx } from "@/lib/rogue/types";
-import { damageRoll, luckOf, opposedRoll, pierce, proficiency } from "@/lib/rogue/dnd";
+import { attackRoll, damageRoll, hitDifficulty, luckOf, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
 import { makeItem } from "@/lib/rogue/items";
 import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero } from "@/lib/rogue/hero";
@@ -52,47 +52,27 @@ test("피해 = 공격력 − 방어력, 0 밑은 0 — 방어력도 0 밑이 없
     }
 });
 
-test("양쪽이 스무면체를 굴리고, 동점은 빗나간다", () => {
+test("D&D식 명중 굴림은 고정 난이도를 넘는다", () => {
     // ── 굴림은 1 에서 20 사이다 — 다면체가 스무 면이다
     {
         const rng = new Rng(7);
         const seen = new Set<number>();
-        for (let i = 0; i < 5000; i++) seen.add(opposedRoll(0, 0, rng).roll);
+        for (let i = 0; i < 5000; i++) seen.add(attackRoll(0, 11, rng).roll);
         assert.equal(Math.min(...seen), 1);
         assert.equal(Math.max(...seen), 20);
         assert.equal(seen.size, 20);
     }
 
-    // ── **양쪽이 굴린다** — 피하는 쪽도 스무면체를 돌린다
+    // ── 수비 쪽은 굴리지 않고, 명중 난이도가 고정이다
     {
         const rng = new Rng(77);
-        const a = opposedRoll(3, 4, rng);
+        const difficulty = hitDifficulty(4);
+        const a = attackRoll(3, difficulty, rng);
         assert.equal(a.total, a.roll + 3);
-        assert.equal(a.dodge, a.dodgeRoll + 4);
         assert.equal(a.rolls.length, 1, "때리는 쪽은 한 번만 굴린다");
-        if (!a.crit && !a.fumble) assert.equal(a.hit, a.total > a.dodge);
-
-        // **굴린다는 것은 값이 달라진다는 뜻이다.** 고정된 문턱을 `dodgeRoll` 에 담아 두면
-        // 위의 assert 는 전부 통과하는데 체계는 옛날 것 그대로다 — 실제로 그렇게 되돌려
-        // 봤더니 이 파일이 아무 말도 안 했다.
-        const seen = new Set<number>();
-        for (let i = 0; i < 5000; i++) seen.add(opposedRoll(0, 0, rng).dodgeRoll);
-        assert.equal(seen.size, 20, `피하는 쪽의 눈이 ${seen.size} 가지뿐이다 — 안 굴리고 있다`);
-        assert.equal(Math.min(...seen), 1);
-        assert.equal(Math.max(...seen), 20);
-    }
-
-    // ── 동점은 **빗나간다** — 피하는 쪽이 비기면 이긴다
-    {
-        const rng = new Rng(4242);
-        let ties = 0;
-        for (let i = 0; i < 40000 && ties < 200; i++) {
-            const a = opposedRoll(0, 0, rng);
-            if (a.total !== a.dodge || a.crit || a.fumble) continue;
-            ties++;
-            assert.equal(a.hit, false, "동점인데 맞았다");
-        }
-        assert.ok(ties > 50, `같은 경우가 ${ties} 번뿐이라 못 잰다`);
+        if (!a.crit && !a.fumble) assert.equal(a.hit, a.total >= difficulty);
+        assert.equal(hitDifficulty(0), 11);
+        assert.equal(hitDifficulty(4), 15);
     }
 });
 
@@ -104,10 +84,10 @@ test("자연 20·1, 치명타 두 번, 유리·불리", () => {
         let fumbles = 0;
         for (let i = 0; i < 20000; i++) {
             // 상대 보정 +99 — 굴림으로는 절대 못 넘는다. 그래도 20 은 맞아야 한다.
-            const hi = opposedRoll(0, 99, rng);
+            const hi = attackRoll(0, 99, rng);
             if (hi.roll === 20) { crits++; assert.ok(hi.hit && hi.crit, "자연 20 이 안 맞았다"); }
             // 내 보정 +99 — 절대 빗나갈 수 없다. 그래도 1 은 빗나가야 한다.
-            const lo = opposedRoll(99, 0, rng);
+            const lo = attackRoll(99, 1, rng);
             if (lo.roll === 1) { fumbles++; assert.ok(!lo.hit && lo.fumble, "자연 1 이 맞았다"); }
         }
         assert.ok(crits > 500 && fumbles > 500, `20 이 ${crits} 번, 1 이 ${fumbles} 번`);
@@ -129,10 +109,10 @@ test("자연 20·1, 치명타 두 번, 유리·불리", () => {
     {
         const rng = new Rng(31);
         for (let i = 0; i < 500; i++) {
-            const up = opposedRoll(0, 0, rng, "advantage");
+            const up = attackRoll(0, 11, rng, "advantage");
             assert.equal(up.rolls.length, 2);
             assert.equal(up.roll, Math.max(...up.rolls));
-            const down = opposedRoll(0, 0, rng, "disadvantage");
+            const down = attackRoll(0, 11, rng, "disadvantage");
             assert.equal(down.roll, Math.min(...down.rolls));
         }
         assert.equal(luckOf([true], [true]), "normal", "유리와 불리가 안 지워졌다");
@@ -271,7 +251,7 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
             if (!line) continue;
 
             // 줄에 적힌 대마다: `1d8 → 6 +6 공격력 −3 방어력 → 3` (치명타면 `→ 5, 6`)
-            const blows = [...line.matchAll(/→ ([\d, ]+?)(?: \+(\d+) 공격력)? −(\d+) 방어력 → (\d+)/g)];
+            const blows = [...line.matchAll(/([\d, ]+)\([^)]*굴림\)(?:=\d+\(주사위 합\))?(?:\+(\d+)\(공격 보정\))?−(\d+)\(방어력\)=(\d+)\(피해\)/g)];
             assert.ok(blows.length > 0, `깎는 자리가 없다: ${line}`);
             for (const [, rolled, add, cut, got] of blows) {
                 const raw = rolled.split(",").reduce((n, x) => n + Number(x.trim()), 0);
