@@ -32,6 +32,8 @@ import {
     equippedArmor,
     canOffHand,
     equippedWeapon,
+    canWieldWand,
+    equippedWand,
     offHandWeapon,
     gainExp,
     goldGain,
@@ -1569,15 +1571,33 @@ function revealCurse(state: GameState, it: Item): boolean {
 }
 
 function wield(state: GameState, hero: Hero, letter: string): boolean {
+    const it = packItem(hero, letter);
+    if (!it || (it.kind !== "weapon" && it.kind !== "wand")) {
+        say(state, "쥘 수 있는 것이 아니다.");
+        return false;
+    }
+    if (it.kind === "wand") {
+        if (!canWieldWand(hero)) {
+            say(state, "이 직업은 지팡이를 장착할 수 없다.");
+            return false;
+        }
+        const curWand = equippedWand(hero);
+        if (curWand?.cursed) {
+            curWand.curseKnown = true;
+            say(state, `${describe(curWand, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
+            return false;
+        }
+        hero.wandId = it.id;
+        state.known[`wand:${it.type}`] = true;
+        state.itemCodex[`wand:${it.type}`] = true;
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 장착했다.`);
+        if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
+        return true;
+    }
     const cur = equippedWeapon(hero);
     if (cur && cur.cursed) {
         cur.curseKnown = true;
         say(state, `${describe(cur, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
-        return false;
-    }
-    const it = packItem(hero, letter);
-    if (!it || it.kind !== "weapon") {
-        say(state, "쥘 수 있는 것이 아니다.");
         return false;
     }
     hero.weaponId = it.id;
@@ -1914,6 +1934,7 @@ function stash(state: GameState, hero: Hero, letter: string): boolean {
             : it;
     takeFromPack(hero, it, 1);
     if (hero.offWeaponId === one.id) hero.offWeaponId = null;
+    if (hero.wandId === one.id) hero.wandId = null;
     delete one.letter;
     one.x = -1;
     one.y = -1;
@@ -2179,7 +2200,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
 /** 지팡이를 쏜다. 남은 횟수가 없으면 아무 일도 안 난다 — 그것도 정보다. */
 function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: number, rng: Rng): boolean {
     const { level } = state;
-    const it = packItem(hero, letter);
+    const it = equippedWand(hero) ?? packItem(hero, letter);
     if (!it || it.kind !== "wand") {
         say(state, "쏠 수 있는 것이 아니다.");
         return false;
@@ -2486,7 +2507,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         { n: proficiency(hero.level), why: "레벨" },
         ...weaponSkillTerms(hero, it).slice(0, 1),
         ...(hero.origin === "rogue" && it.type === "dagger" ? [{ n: 1, why: "도적 단검" }] : []),
-        { n: it.plusHit ?? 0, why: "손질" },
+        { n: it.plusHit ?? 0, why: "enchant" },
     ];
     const seen = seenBefore(state, m);
     const a = attackRoll(hitTerms.reduce((t, b) => t + b.n, 0), hitDifficulty(monsterDodgeBonus(m)), rng);
@@ -2497,7 +2518,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         return true;
     }
     const dice = weaponDamageOf(it);
-    const damTerms: Term[] = [...weaponSkillTerms(hero, it).slice(1), { n: it.plusDam ?? 0, why: "손질" }];
+    const damTerms: Term[] = [...weaponSkillTerms(hero, it).slice(1), { n: it.plusDam ?? 0, why: "enchant" }];
     const d = damageRoll(dice, damTerms.reduce((sum, term) => sum + term.n, 0), a.crit, rng);
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     const guard = monsterDefense(m);
@@ -2749,9 +2770,14 @@ function bearCurse(state: GameState, hero: Hero) {
 
 /** 회복 — 레벨이 높을수록 빠르다. */
 function regenerate(state: GameState, hero: Hero) {
-    if (hero.hp >= hero.maxHp) return;
     const every = regenEvery(hero);
-    if (state.turn % every === 0) hero.hp += 1;
+    if (state.turn % every !== 0) return;
+    if (hero.hp < hero.maxHp) hero.hp += 1;
+    const wand = equippedWand(hero);
+    if (wand) {
+        wand.charges = (wand.charges ?? 0) + 1;
+        say(state, `${describe(wand, state.known, state.appearance)} 충전 +1 (${wand.charges}회).`);
+    }
 }
 
 function stepToward(level: Level, m: Monster, target: Pos): Pos | null {

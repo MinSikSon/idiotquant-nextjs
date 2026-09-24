@@ -67,7 +67,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, equippedWand, heroArmor, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -1571,6 +1571,11 @@ export default function Rogue() {
         (w: number) => {
             const h = state?.heroes[w];
             if (!state || !h || h.hp <= 0) return;
+            if (modes[w] === "none" && equippedWand(h)) {
+                setWho(w);
+                desks.current[w]?.aimEquippedWand();
+                return;
+            }
             if (modes[w] !== "none") {
                 setWho(w);
                 desks.current[w]?.padKey({ act: true });
@@ -1673,7 +1678,7 @@ export default function Rogue() {
                 case ".":
                 case "5":
                     e.preventDefault();
-                    run({ t: "rest" });
+                    if (!desk?.aimEquippedWand()) run({ t: "rest" });
                     break;
                 case ">":
                     e.preventDefault();

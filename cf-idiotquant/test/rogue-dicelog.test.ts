@@ -354,8 +354,8 @@ test("화면에 적는 「공격」과 실제로 들어가는 피해가 같은 �
 // 예전에는 `+2 무기` 였다. 강화 수치는 보이는데 **어느 칼의 것인지가 안 보인다** — 물건이
 // 층을 타는 지금(진은검·목마른 자의 검·기사의 검 …) 그게 곧 판단거리라, 기록을 되짚을 때
 // 「그때 뭘 들고 있었지」를 못 읽는다.
-test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으로 고른다", () => {
-    // ── 굴림 줄에 쥔 무기의 이름이 적힌다 — `+2 무기` 가 아니라 `+2 진은검`
+test("무기 강화는 enchant로 표시하고, 상태 줄에서는 값으로 가린다", () => {
+    // ── 강화 보정은 무기 이름이 아니라 `enchant`로 구분한다.
     {
         const s = newGame(701);
         const w = makeItem("weapon", "silver sword", 990, -1, -1);
@@ -376,8 +376,8 @@ test("무기 이름으로 적는다 — 상태 줄에서 가리는 것은 값으
         for (let i = 0; i < 40 && !(sawHit && sawDam); i++) {
             m.hp = 99999;
             for (const line of heroAttack(s, s.heroes[0], m, rng).messages) {
-                if (line.startsWith(`${DETAIL}명중`) && line.includes("+2(진은검)")) sawHit = true;
-                if (line.startsWith(`${DETAIL}피해 굴림`) && line.includes("+2(진은검)")) sawDam = true;
+                if (line.startsWith(`${DETAIL}명중`) && line.includes("+2(enchant)")) sawHit = true;
+                if (line.startsWith(`${DETAIL}피해 굴림`) && line.includes("+2(enchant)")) sawDam = true;
                 assert.ok(!line.includes("+2(무기)"), `아직 「무기」라고 적는다: ${line}`);
             }
         }

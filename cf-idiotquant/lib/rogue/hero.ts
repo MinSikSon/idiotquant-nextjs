@@ -187,6 +187,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         // 꺼내 `newGame`·`joinGame` 에 넘기고, 그쪽이 여기에 채운다.
         chest: [],
         weaponId: null,
+        wandId: null,
         offWeaponId: null,
         armorId: null,
         leftRingId: null,
@@ -284,6 +285,7 @@ export function takeFromPack(hero: Hero, it: Item, n = 1): void {
     }
     hero.pack = hero.pack.filter((p) => p.id !== it.id);
     if (hero.weaponId === it.id) hero.weaponId = null;
+    if (hero.wandId === it.id) hero.wandId = null;
     if (hero.armorId === it.id) hero.armorId = null;
     if (hero.leftRingId === it.id) hero.leftRingId = null;
     if (hero.rightRingId === it.id) hero.rightRingId = null;
@@ -295,6 +297,15 @@ export function packItem(hero: Hero, letter: string): Item | undefined {
 
 export function equippedWeapon(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.weaponId);
+}
+
+export function canWieldWand(hero: Hero): boolean {
+    return hero.origin === "alchemist" || hero.origin === "scholar";
+}
+
+export function equippedWand(hero: Hero): Item | undefined {
+    if (!canWieldWand(hero)) return undefined;
+    return hero.pack.find((i) => i.id === hero.wandId && i.kind === "wand");
 }
 
 /** 지금 쥔 무기가 제 직업의 무기인가. 전투·화면이 같은 답을 읽는다. */
@@ -448,7 +459,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
-        { n: weapon?.plusHit ?? 0, why: weaponLabel(weapon) },
+        { n: weapon?.plusHit ?? 0, why: "enchant" },
         ...(affinity ? [{ n: 1, why: affinity.name }] : []),
     ];
 }
@@ -461,7 +472,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
         ...weaponSkillTerms(hero, weapon).slice(1).map((term) => ({ ...term, why: `${weaponSkillRankName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
-        { n: weapon?.plusDam ?? 0, why: weaponLabel(weapon) },
+        { n: weapon?.plusDam ?? 0, why: "enchant" },
         ...(affinity ? [{ n: 1, why: affinity.name }] : []),
     ];
     const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")

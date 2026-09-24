@@ -33,7 +33,7 @@ import {
     needsBow,
     WAND_RECHARGE,
 } from "@/lib/rogue/items";
-import { canOffHand, equippedArmor, equippedWeapon, isDualWielding } from "@/lib/rogue/hero";
+import { canOffHand, canWieldWand, equippedArmor, equippedWeapon, equippedWand, isDualWielding } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -67,6 +67,8 @@ export interface DeskHandle {
     /** 원작의 한 글자 명령(`q r e w W P R d`) — 없는 키면 `false`. */
     openPicker(key: string): boolean;
     aim(kind: "zap" | "throw"): void;
+    /** 장착 지팡이를 바로 겨눈다 — 연금술사·고서 연구자의 단축 동작. */
+    aimEquippedWand(): boolean;
     /** 겨누는 중이면 그 방향으로 쏘고 `true`. */
     aimAt(dx: number, dy: number): boolean;
     /** 혼자 할 때의 키 — 판이 떠 있으면 먹고 `true`(아래로 안 흘린다). */
@@ -130,7 +132,7 @@ export default function Desk({
             q: { title: "무엇을 마실까", kinds: ["potion"], make: (letter) => ({ t: "quaff", letter }), empty: "마실 것이 없다." },
             r: { title: "무엇을 읽을까", kinds: ["scroll"], make: (letter) => ({ t: "read", letter }), empty: "읽을 것이 없다." },
             e: { title: "무엇을 먹을까", kinds: ["food"], make: (letter) => ({ t: "eat", letter }), empty: "먹을 것이 없다." },
-            w: { title: "무엇을 쥘까", kinds: ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다." },
+            w: { title: "무엇을 쥘까", kinds: canWieldWand(hero) ? ["weapon", "wand"] : ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다." },
             W: { title: "무엇을 입을까", kinds: ["armor"], make: (letter) => ({ t: "wear", letter }), empty: "입을 것이 없다." },
             P: { title: "무엇을 낄까", kinds: ["ring"], make: (letter) => ({ t: "putOn", letter }), empty: "반지가 없다." },
             R: { title: "무엇을 뺄까", kinds: ["ring"], make: (letter) => ({ t: "removeRing", letter }), empty: "낀 반지가 없다." },
@@ -141,7 +143,7 @@ export default function Desk({
                 empty: "배낭이 비었다.",
             },
         }),
-        [],
+        [hero],
     );
 
     /** 지팡이·던지기는 물건을 고른 **뒤에** 방향을 묻는다. */
@@ -582,6 +584,9 @@ export default function Desk({
                 out.push({ label: "먹는다", on: go({ t: "eat", letter: it.letter! }) });
                 break;
             case "wand":
+                if (canWieldWand(hero)) {
+                    out.push({ label: it.id === hero.wandId ? "장착 중" : "장착", on: go({ t: "wield", letter: it.letter! }) });
+                }
                 out.push({
                     label: "쏜다",
                     on: () => {
@@ -649,6 +654,18 @@ export default function Desk({
             return !!p;
         },
         aim: aimAfterPick,
+        aimEquippedWand() {
+            const wand = equippedWand(hero);
+            if (!wand) return false;
+            setPackOpen(false);
+            setPicker(null);
+            setAiming({
+                title: "어디로 쏠까",
+                what: `${describe(wand, state.known, state.appearance)} 를 겨눕니다.`,
+                make: (dx, dy) => ({ t: "zap", letter: wand.letter!, dx, dy }),
+            });
+            return true;
+        },
         aimAt(dx, dy) {
             if (!aiming) return false;
             if (dx !== 0 || dy !== 0) {

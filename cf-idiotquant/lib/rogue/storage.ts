@@ -279,6 +279,7 @@ function normalize(s: Saved): GameState | null {
         chest: Array.isArray(h.chest) ? liftEnchants(h.chest).slice(0, CHEST_SLOTS) : [],
         // v6 이하에는 보조손이 없다 — 이도류가 없던 때다.
         offWeaponId: h.offWeaponId ?? null,
+        wandId: h.wandId ?? null,
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
         // 예전 저장의 철벽 자세는 다음 제자리 전투 세 번까지로 잇는다.
