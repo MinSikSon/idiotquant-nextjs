@@ -240,6 +240,8 @@ test("온라인 다음 판에서는 연결된 모두가 직업을 다시 고른�
     assert.match(SRC, /conn\.send\(\{ t: "rematch", round: f\.round, origin \}/, "손님이 고른 직업을 방장에게 보내지 않는다");
     assert.match(SRC, /plan\.picks\.set\(key, m\.origin\)[\s\S]*?joinGame\(current, m\.origin!, guest\.nick, guest\.chest, guest\.guestKey\)/, "새 판에 새로 고른 손님 직업을 적용하지 않는다");
     assert.match(SRC, /broadcast\(\{ t: "rematch", round: plan\.round, party:/, "다른 손님의 직업 선택 현황을 알리지 않는다");
+    assert.doesNotMatch(SRC, /const live = new Set\(n\.guests\.values\(\)\);[\s\S]*?beginRematch/, "새 판 초대 명단을 현재 연결된 손님으로만 제한한다");
+    assert.match(SRC, /returningToRematch = plan\?\.guests\.some[\s\S]*?conn\.send\(\{ t: "rematch"/, "새 판 직전에 끊긴 손님에게 재접속 후 선택 라운드를 다시 보내지 않는다");
 
     // ── 손님은 독자적으로 판을 열거나 방을 나가지 않고 방장의 새 판을 기다린다.
     const at = SRC.indexOf("const restart = useCallback");

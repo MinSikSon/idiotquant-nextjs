@@ -1060,9 +1060,10 @@ export default function Rogue() {
         const n = net.current;
         const s = stateRef.current;
         if (n?.role !== "host" || !s) return false;
-        const live = new Set(n.guests.values());
         const guests = s.heroes.slice(1)
-            .filter((hero) => !!hero.guestKey && live.has(hero.guestKey))
+            // 연결이 잠깐 끊긴 손님도 다음 판의 초대 명단에 남긴다.
+            // 돌아오면 현재 새 판과 직업 선택을 다시 받아 합류한다.
+            .filter((hero) => !!hero.guestKey)
             .map((hero) => ({ guestKey: hero.guestKey!, nick: hero.nick, chest: hero.chest }));
         if (guests.length === 0) return false;
 
@@ -1142,6 +1143,28 @@ export default function Rogue() {
                     }
                     // 남이 보낸 값이다 — 없는 직업이면 기사로 받는다.
                     const origin = m.origin in ORIGINS ? m.origin : "knight";
+                    const plan = rematch.current;
+                    const returningToRematch = plan?.guests.some((guest) => guest.guestKey === m.guestKey);
+                    if (plan && returningToRematch && s.heroes.findIndex((h) => h.guestKey === m.guestKey) < 0) {
+                        n.guests.set(conn, m.guestKey);
+                        const picked = plan.picks.get(m.guestKey);
+                        if (picked) {
+                            const guest = plan.guests.find((entry) => entry.guestKey === m.guestKey)!;
+                            const next = joinGame(s, picked, guest.nick, guest.chest, guest.guestKey);
+                            setState(next);
+                            syncGuests(next);
+                            broadcast({ t: "init", state: serialize(next) });
+                            if (plan.picks.size === plan.guests.length) rematch.current = null;
+                        } else {
+                            conn.send({ t: "init", state: serialize(s) } satisfies NetMsg);
+                            conn.send({
+                                t: "rematch",
+                                round: plan.round,
+                                party: s.heroes.map((hero) => ({ origin: hero.origin ?? "knight", nick: hero.nick })),
+                            } satisfies NetMsg);
+                        }
+                        return;
+                    }
                     // **이미 앉아 있는 손님인가** — 자리표로 고른다(칸 번호가 아니다, 셋 이상이면
                     // 누가 몇 번인지 이어질 때마다 바뀐다). 방장(0번)은 자리표가 없으니 안 걸린다.
                     const already = s.heroes.findIndex((h) => h.guestKey === m.guestKey);
@@ -2132,7 +2155,11 @@ export default function Rogue() {
                             Wi:{Math.round(h.itemLuck * 100)}
                         </button>
                         <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>
-                        {i === 0 && <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>T:{state.turn}</button>}
+                        {(coop || i === 0) && (
+                            <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>
+                                {coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`}
+                            </button>
+                        )}
                         {
                             (h.timeStop ?? 0) > 0 && (
                                 <span className="order-30 text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
@@ -2702,6 +2729,8 @@ export default function Rogue() {
                               ? `$:${statusHero.gold}\n몬스터를 처치하거나 바닥에서 주워 얻습니다. 현재 판의 점수에 반영됩니다.`
                               : statusKind === "xp"
                                 ? `Xp:${statusHero.level}/${statusHero.exp}\n표시 형식은 Xp:레벨/경험치입니다. 몬스터를 처치하면 경험치를 얻고, 일정량이 쌓이면 레벨이 오릅니다.`
+                              : state.heroes.length > 1
+                                ? `T:${statusHero.turns}/${state.turn}\n내가 실제로 턴을 쓴 행동 횟수 / 파티 전체 행동 횟수입니다. 벽을 들이받거나 성장만 고른 행동은 세지 않습니다.`
                                 : `T:${state.turn}\n플레이어가 행동한 횟수입니다. 행동할 때마다 허기와 몬스터의 차례가 진행됩니다.`;
                 return (
                     <Panel {...shared} title={`${sheetOwner + 1}P 상태 설명`} onClose={() => setSheet("none")} footer="상태창을 누르면 해당 상태의 설명을 다시 볼 수 있습니다.">
