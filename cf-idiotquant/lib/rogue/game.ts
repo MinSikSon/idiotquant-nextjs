@@ -843,6 +843,13 @@ function blockedDiagonal(level: Level, from: Pos, to: Pos): boolean {
     return tileAt(level, from.x, from.y) === T.DOOR || tileAt(level, to.x, to.y) === T.DOOR;
 }
 
+/** 적은 벽 모서리를 대각선으로 못 넘는다 — 그래야 벽 너머로 못 때린다(NOTES 「쫓는 적」). */
+function monsterBlockedDiagonal(level: Level, from: Pos, to: Pos): boolean {
+    if (blockedDiagonal(level, from, to)) return true;
+    if (from.x === to.x || from.y === to.y) return false;
+    return !walkable(tileAt(level, to.x, from.y)) || !walkable(tileAt(level, from.x, to.y));
+}
+
 function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng): { acted: boolean; fought: boolean } {
     const level = state.level;
 
@@ -2799,7 +2806,7 @@ function stepToward(level: Level, m: Monster, target: Pos): Pos | null {
         const ny = m.y + d.dy;
         if (!inBounds(nx, ny)) continue;
         if (!walkable(tileAt(level, nx, ny))) continue;
-        if (blockedDiagonal(level, m, { x: nx, y: ny })) continue;
+        if (monsterBlockedDiagonal(level, m, { x: nx, y: ny })) continue;
         if (level.monsters.some((o) => o.id !== m.id && o.x === nx && o.y === ny && o.hp > 0)) continue;
         const dist = Math.max(Math.abs(nx - target.x), Math.abs(ny - target.y));
         if (dist < bestD) {
@@ -2981,7 +2988,7 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
                 const d = rng.pick(ALL_DIRS)!;
                 const nx = m.x + d.dx;
                 const ny = m.y + d.dy;
-                return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) && !blockedDiagonal(level, m, { x: nx, y: ny }) ? { x: nx, y: ny } : null;
+                return inBounds(nx, ny) && walkable(tileAt(level, nx, ny)) && !monsterBlockedDiagonal(level, m, { x: nx, y: ny }) ? { x: nx, y: ny } : null;
             })()
             : stepToward(level, m, victim);
         if (
