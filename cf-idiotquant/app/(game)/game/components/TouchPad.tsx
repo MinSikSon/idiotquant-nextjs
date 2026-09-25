@@ -189,7 +189,7 @@ export default function TouchPad({
     centerLabel = "·",
     centerHint = "제자리에서 쉰다",
     centerHot = false,
-    centerOff = false,
+    centerWarn = false,
 }: {
     onMove: (dx: number, dy: number) => void;
     actions: PadAction[];
@@ -206,14 +206,14 @@ export default function TouchPad({
     centerLabel?: string;
     centerHint?: string;
     centerHot?: boolean;
-    centerOff?: boolean;
+    centerWarn?: boolean;
 }) {
     const step = (dx: number, dy: number) => () => onMove(dx, dy);
     return (
         <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
             <div className="grid shrink-0 grid-cols-3 gap-1">
                 {DIRS.map(([dx, dy, arrow, title], i) => (
-                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerOff}>
+                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerWarn}>
                         <span className="flex flex-col items-center gap-0.5">
                             {i === 4 ? <span className="max-w-[40px] whitespace-pre-line text-center text-[9px] font-bold leading-tight">{centerLabel}</span> : arrow}
                             {dirKeys.some((p) => p.keys[i]) && (
