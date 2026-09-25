@@ -9,7 +9,7 @@ import { type Item } from "./types";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
 
-/** 직업 무기를 쥐면 전투에 얹는 보너스. 무기 이름과 효과는 직업 표 한 곳에서 정한다. */
+/** 직업별 선호 무기 계열. 전투 보정은 이 목록이 아니라 무기 숙련도에서 계산한다. */
 export interface WeaponAffinity {
     name: string;
     types: string[];
@@ -100,7 +100,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "높은 체력과 단단한 방어구를 갖춘 굳건한 전사.",
         traitName: "철벽의 자세",
         traitDescription: "제자리 대기(.) 후 전투 3턴 방어력 +2 (받는 피해 2 추가 경감)",
-        weaponAffinity: { name: "근위 무기", types: ["mace", "long sword", "two-handed sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword"], description: "명중 +1 · 피해 +1" },
+        weaponAffinity: { name: "근위 무기", types: ["mace", "long sword", "two-handed sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword"], description: "근위대 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "불굴의 방벽",
         advancedSkillDescription: "체력이 절반 이하일 때 방어력 +2 (철벽의 자세와 중첩)",
         advancedSkillKind: "passive",
@@ -127,7 +127,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "은신·탐색·단검 연사와 기습에 능한 재빠른 잠입자.",
         traitName: "기습 암습",
         traitDescription: "은신으로 적 일부를 재운 채 시작 · 단검 2연사 · Lv10 탐색 · 기습 치명타 · 함정 50% 회피",
-        weaponAffinity: { name: "암살 단검", types: ["dagger"], description: "명중 +1 · 피해 +1" },
+        weaponAffinity: { name: "암살 단검", types: ["dagger"], description: "도적 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "연막",
         advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -155,7 +155,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "모든 포션의 비밀을 꿰뚫고 있는 비약의 대가.",
         traitName: "연금술의 통찰",
         traitDescription: "모든 포션 시작부터 100% 식별, 회복 포션 1.5배 · 해로운 포션은 무작위 이득 · 지팡이 장착 가능, 걷기 회복 때 충전 +1",
-        weaponAffinity: { name: "연금 도구", types: ["dagger", "spear"], description: "명중 +1 · 피해 +1" },
+        weaponAffinity: { name: "연금 도구", types: ["dagger", "spear"], description: "연금술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "축복의 기름 제조",
         advancedSkillDescription: "포션 2개로 축복의 기름 제작 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -183,7 +183,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "고대 주문서와 마법 지팡이를 다루는 비전 탐구자.",
         traitName: "비전 전도",
         traitDescription: "지팡이 충전량 +30%, 장착 지팡이 사용 · 걷기 회복 때 충전 +1 · 주문서 시전 시 25% 확률로 미소모 보존",
-        weaponAffinity: { name: "비전 검", types: ["dagger", "magic sword"], description: "명중 +1 · 피해 +1" },
+        weaponAffinity: { name: "비전 검", types: ["dagger", "magic sword"], description: "연구자 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "비전 통찰",
         advancedSkillDescription: "층의 지형과 괴물의 기척을 밝힌다 · 층마다 한 번",
         advancedSkillKind: "active",

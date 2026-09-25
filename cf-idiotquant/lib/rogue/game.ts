@@ -2518,7 +2518,6 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     const hitTerms: Term[] = [
         { n: proficiency(hero.level), why: "레벨" },
         ...weaponSkillTerms(hero, it).slice(0, 1),
-        ...(hero.origin === "rogue" && it.type === "dagger" ? [{ n: 1, why: "도적 단검" }] : []),
         { n: it.plusHit ?? 0, why: "enchant" },
     ];
     const seen = seenBefore(state, m);

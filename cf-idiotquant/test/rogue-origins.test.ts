@@ -56,8 +56,10 @@ test("직업 무기를 쥐면 명중과 피해에 같은 숙련 보너스가 붙
         const equipped = hero.pack.find((it) => it.kind === "weapon" && it.type === type)!;
         hero.weaponId = equipped.id;
         assert.ok(weaponAffinityOf(hero), `${origin}의 ${type}은 직업 무기여야 한다`);
-        assert.ok(heroHitTerms(hero).some((term) => term.why === ORIGINS[origin].weaponAffinity.name && term.n === 1));
-        assert.ok(heroDamTerms(hero).some((term) => term.why === ORIGINS[origin].weaponAffinity.name && term.n === 1));
+        assert.ok(heroHitTerms(hero).some((term) => term.why.startsWith("basic ") && term.n === 0));
+        assert.ok(heroDamTerms(hero).some((term) => term.why.startsWith("basic ") && term.n === 0));
+        assert.ok(!heroHitTerms(hero).some((term) => term.why === ORIGINS[origin].weaponAffinity.name));
+        assert.ok(!heroDamTerms(hero).some((term) => term.why === ORIGINS[origin].weaponAffinity.name));
     }
 });
 
