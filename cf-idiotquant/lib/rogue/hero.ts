@@ -212,6 +212,8 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         addToPack(hero, item);
         if (item.kind === "weapon" && hero.weaponId === null) {
             hero.weaponId = item.id;
+        } else if (item.kind === "wand" && canWieldWand(hero) && hero.wandId === null) {
+            hero.wandId = item.id;
         } else if (item.kind === "armor" && hero.armorId === null) {
             hero.armorId = item.id;
         }

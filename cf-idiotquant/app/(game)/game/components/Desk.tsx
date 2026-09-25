@@ -850,6 +850,8 @@ export default function Desk({
                                 const worn =
                                     it.id === hero.weaponId
                                         ? "쥐고 있다"
+                                        : it.id === hero.wandId
+                                        ? "장착 중"
                                         // **보조손도 적는다** — 안 적으면 배낭에서 그냥 놀고 있는 한 자루로 읽힌다.
                                         : it.id === hero.offWeaponId
                                         ? "보조손에 쥐고 있다"

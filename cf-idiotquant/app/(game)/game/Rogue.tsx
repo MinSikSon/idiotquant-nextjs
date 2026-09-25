@@ -429,6 +429,7 @@ export default function Rogue() {
             return true;
         }
     });
+    const [wandFireMode, setWandFireMode] = useState<boolean[]>([false, false]);
     const onDeskMode = useCallback((w: number, m: DeskMode) => {
         setModes((ms) => (ms[w] === m ? ms : Object.assign([...ms], { [w]: m })));
     }, []);
@@ -1587,7 +1588,7 @@ export default function Rogue() {
             }
             if (centerWandFire && modes[w] === "none" && equippedWand(h)) {
                 setWho(w);
-                desks.current[w]?.aimEquippedWand();
+                setWandFireMode((current) => Object.assign([...current], { [w]: !current[w] }));
                 return;
             }
             if (modes[w] !== "none") {
@@ -1658,6 +1659,12 @@ export default function Rogue() {
                     } else if (isAct) {
                         confirm(w);
                     } else if (d) {
+                        const wand = equippedWand(h);
+                        if (centerWandFire && wandFireMode[w] && wand) {
+                            runAs(w, { t: "zap", letter: wand.letter!, dx: d[0], dy: d[1] });
+                            stopHold(w);
+                            return;
+                        }
                         const cmd: Command = { t: "move", dx: d[0], dy: d[1] };
                         runAs(w, cmd);
                         stopHold(w);
@@ -1685,14 +1692,24 @@ export default function Rogue() {
             const dir = KEY_DIRS[key];
             if (dir) {
                 e.preventDefault();
+                const hero = state.heroes[who] ?? state.heroes[0];
+                const wand = equippedWand(hero);
+                if (centerWandFire && wandFireMode[who] && wand) {
+                    runAs(who, { t: "zap", letter: wand.letter!, dx: dir[0], dy: dir[1] });
+                    return;
+                }
                 run({ t: "move", dx: dir[0], dy: dir[1] });
                 return;
             }
             switch (key) {
                 case ".":
+                    e.preventDefault();
+                    if (centerWandFire && equippedWand(state.heroes[who] ?? state.heroes[0]) && modes[who] === "none") confirm(who);
+                    else run({ t: "rest" });
+                    break;
                 case "5":
                     e.preventDefault();
-                    if (!desk?.aimEquippedWand()) run({ t: "rest" });
+                    run({ t: "rest" });
                     break;
                 case ">":
                     e.preventDefault();
@@ -1756,7 +1773,7 @@ export default function Rogue() {
             window.removeEventListener("keyup", onUp);
             window.removeEventListener("blur", onBlur);
         };
-    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm]);
+    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm, centerWandFire, wandFireMode]);
 
     if (!state) {
         return (
@@ -2197,6 +2214,22 @@ export default function Rogue() {
 
             <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
                 <TouchPad
+                    centerLabel={(() => {
+                        const activeHero = state.heroes[who] ?? state.heroes[0];
+                        return centerWandFire && modes[who] === "none" && equippedWand(activeHero)
+                            ? `쏘기 ${wandFireMode[who] ? "켬" : "끔"}`
+                            : "·";
+                    })()}
+                    centerHint={(() => {
+                        const activeHero = state.heroes[who] ?? state.heroes[0];
+                        return centerWandFire && modes[who] === "none" && equippedWand(activeHero)
+                            ? `지팡이 발사 모드 ${wandFireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
+                            : "제자리에서 쉰다";
+                    })()}
+                    centerHot={(() => {
+                        const activeHero = state.heroes[who] ?? state.heroes[0];
+                        return centerWandFire && modes[who] === "none" && !!equippedWand(activeHero) && wandFireMode[who];
+                    })()}
                     dirKeys={
                         coopKeys
                             ? [
@@ -2215,6 +2248,12 @@ export default function Rogue() {
                             return;
                         }
                         if (desks.current[who]?.aimAt(dx, dy)) return;
+                        const activeHero = state.heroes[who] ?? state.heroes[0];
+                        const wand = equippedWand(activeHero);
+                        if (centerWandFire && wandFireMode[who] && wand) {
+                            runAs(who, { t: "zap", letter: wand.letter!, dx, dy });
+                            return;
+                        }
                         run({ t: "move", dx, dy });
                     }}
                     actions={actions}

@@ -183,6 +183,9 @@ export default function TouchPad({
     actions,
     dirKeys = [],
     hold = true,
+    centerLabel = "·",
+    centerHint = "제자리에서 쉰다",
+    centerHot = false,
 }: {
     onMove: (dx: number, dy: number) => void;
     actions: PadAction[];
@@ -195,15 +198,19 @@ export default function TouchPad({
      * 첫 번째가 지팡이를 쏘고 **그 뒤로는 그 방향으로 걸어 들어간다.**
      */
     hold?: boolean;
+    /** 장착 지팡이 단축 동작이 켜져 있을 때 가운데 칸에 표시한다. */
+    centerLabel?: string;
+    centerHint?: string;
+    centerHot?: boolean;
 }) {
     const step = (dx: number, dy: number) => () => onMove(dx, dy);
     return (
         <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
             <div className="grid shrink-0 grid-cols-3 gap-1">
                 {DIRS.map(([dx, dy, arrow, title], i) => (
-                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={title}>
+                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} wide={i === 4 && centerLabel !== "·"}>
                         <span className="flex flex-col items-center gap-0.5">
-                            {arrow}
+                            {i === 4 ? centerLabel : arrow}
                             {dirKeys.some((p) => p.keys[i]) && (
                                 <span className="hidden gap-1 text-[9px] leading-none md:flex">
                                     {dirKeys.map((p, j) =>

@@ -166,8 +166,10 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
             const leather = makeItem("armor", "leather", nextId(), -1, -1);
             const healPot = makeItem("potion", "healing", nextId(), -1, -1, 1);
             const extraHealPot = makeItem("potion", "extra healing", nextId(), -1, -1, 1);
+            const missileWand = makeItem("wand", "magic missile", nextId(), -1, -1);
+            missileWand.charges = 5;
             const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
-            return [dagger, leather, healPot, extraHealPot, food];
+            return [dagger, leather, healPot, extraHealPot, missileWand, food];
         },
     },
     scholar: {

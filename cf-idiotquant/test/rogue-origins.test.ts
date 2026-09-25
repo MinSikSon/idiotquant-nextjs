@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { newGame, perform } from "@/lib/rogue/game";
-import { canOffHand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
+import { canOffHand, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
@@ -272,6 +272,12 @@ test("방랑 연금술사(Alchemist) 시작 물약 100% 식별 및 회복 효과
     // 회복 물약이 배낭에 있어야 함
     const healPot = s.heroes[0].pack.find((p) => p.kind === "potion" && p.type === "healing");
     assert.ok(healPot, "체력 회복 물약이 있어야 함");
+    assert.equal(equippedWand(s.heroes[0])?.type, "magic missile", "연금술사는 시작 지팡이를 장착해야 함");
+});
+
+test("지팡이를 다루는 출신은 시작 지팡이를 바로 장착한다", () => {
+    const scholar = newGame(34, {}, {}, {}, {}, "scholar").heroes[0];
+    assert.equal(equippedWand(scholar)?.type, "magic missile");
 });
 
 test("연금술사는 해로운 물약을 무작위 이득으로 바꾼다", () => {
