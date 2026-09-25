@@ -15,6 +15,7 @@ import {
 } from "./types";
 import {
     RINGS,
+    STACK_MAX,
     WEAPONS,
     armorClassOf,
     defenseOf,
@@ -270,23 +271,34 @@ function sameStack(hero: Hero, p: Item, it: Item): boolean {
     );
 }
 
-/** `it` 을 `into` 에 얹는다 — 개수를 더하고, 알던 것(저주·손질)은 합친 쪽으로 옮긴다. */
-function joinStack(into: Item, it: Item): void {
-    into.count += it.count;
+/**
+ * `it` 에서 **뭉치의 빈 자리만큼**(`STACK_MAX`) 덜어 `into` 에 얹는다 — 얹은 개수를 준다.
+ * 알던 것(저주·손질)은 합친 쪽으로 옮긴다.
+ */
+function joinStack(into: Item, it: Item): number {
+    const n = Math.max(0, Math.min(STACK_MAX - into.count, it.count));
+    if (n === 0) return 0;
+    into.count += n;
+    it.count -= n;
     into.curseKnown = !!into.curseKnown || !!it.curseKnown;
     into.plusKnown = !!into.plusKnown || !!it.plusKnown;
+    return n;
 }
 
 /**
  * 배낭에 **갈라져 있는 같은 뭉치**를 합친다 — 화살을 한 대씩 주워 칸마다 따로 쌓이던
- * 때의 저장을 되읽을 때 쓴다(규칙만 고치면 이미 저장된 판은 안 낫는다). 앞의 칸이 남는다.
+ * 때의 저장을 되읽을 때 쓴다(규칙만 고치면 이미 저장된 판은 안 낫는다). 앞의 칸부터
+ * `STACK_MAX` 까지 채우고, 남는 것은 제 칸에 둔다. 이미 40 을 넘긴 옛 뭉치는 가르지 않는다
+ * (새 번호가 필요하다) — 쏘면서 줄어든다.
  */
 export function mergeStacks(hero: Hero): void {
     const kept: Item[] = [];
     for (const it of hero.pack) {
-        const same = kept.find((p) => sameStack(hero, p, it));
-        if (same) joinStack(same, it);
-        else kept.push(it);
+        for (const p of kept) {
+            if (it.count === 0) break;
+            if (sameStack(hero, p, it)) joinStack(p, it);
+        }
+        if (it.count > 0) kept.push(it);
     }
     hero.pack = kept;
 }
@@ -301,11 +313,16 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
     // **겹쳐 쌓이는 무기(화살·은화살·표창)는 언제나 합친다** — 한 대씩 주웠다고 배낭 칸을
     // 하나씩 먹으면 쏘고 줍기를 몇 번만 해도 26칸이 찬다. 강화를 못 가지는 것들이라
     // (`canHoldEnchant`) 가를 것은 축복·저주뿐이고, 아는 것(`curseKnown`)은 합친 쪽으로 옮긴다.
+    //
+    // 한 뭉치는 `STACK_MAX` 까지다 — 빈 자리가 있는 뭉치부터 채우고, **남는 것은 새 칸**에
+    // 새 뭉치로 담는다(아래 공통 길). 새 칸이 없으면 `null` 인데, 그때 **이미 얹은 몫은 배낭에,
+    // 못 얹은 몫은 `it.count` 에** 남는다 — 부르는 쪽은 `it` 을 그대로 쥐고 있으면 잃는 것이 없다.
     if (it.kind === "weapon" && WEAPONS[it.type]?.stack) {
-        const same = hero.pack.find((p) => sameStack(hero, p, it));
-        if (same) {
-            joinStack(same, it);
-            return same;
+        let into: Item | null = null;
+        for (const same of hero.pack) {
+            if (!sameStack(hero, same, it) || joinStack(same, it) === 0) continue;
+            into ??= same;
+            if (it.count === 0) return into;
         }
     }
     const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll" || (mergeWeapons && it.type === "dagger");

@@ -473,6 +473,12 @@ export function canHoldEnchant(it: Item): boolean {
     return !WEAPONS[it.type]?.stack;
 }
 
+/**
+ * 겹쳐 쌓이는 무기(화살·은화살·볼트·표창) **한 뭉치의 상한.** 넘치는 것은 배낭의 새 칸에
+ * 새 뭉치로 담긴다(`addToPack`). 레인저가 들고 시작하는 화살 한 묶음이 이 수다.
+ */
+export const STACK_MAX = 40;
+
 /** 캠프 상자의 칸 수. 화면도 엔진도 이 수 하나를 본다. */
 export const CHEST_SLOTS = 3;
 
