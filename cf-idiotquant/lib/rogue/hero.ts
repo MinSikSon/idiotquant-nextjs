@@ -18,7 +18,9 @@ import {
     WEAPONS,
     armorClassOf,
     defenseOf,
+    isThrowable,
     makeItem,
+    needsBow,
     weaponDamageOf,
     weaponHandsOf,
     weaponSkillOf,
@@ -316,12 +318,41 @@ export function launcherFor(hero: Hero, ammo: Item): Item | undefined {
 /**
  * 한 번 쏠 때 날아갈 수 있는 **최대** 발 수 — NetHack 의 multishot.
  * `1 + 숙련(숙련 +1 · 전문 +2) + 레인저(+1, 전직하면 +2)` 에서 실제 발 수는 `1..이 값` 을 굴린다.
- * 발사기로 쏠 때만 뜻이 있다 — 손으로 던진 탄약은 늘 한 발이다.
+ *
+ * 연사가 붙는 것은 둘뿐이다 — **쥔 발사기로 쏘는 탄약**, 그리고 **레인저가 던지는 표창**
+ * (NetHack 의 Ranger 는 단검 말고는 던지는 것에도 연사가 붙는다). 나머지는 늘 한 발이다 —
+ * 다른 직업의 표창까지 열면 도적의 던지기 셈이 통째로 바뀐다.
  */
 export function volleyMax(hero: Hero, ammo: Item): number {
+    const rangerDart = hero.origin === "ranger" && ammo.kind === "weapon" && ammo.type === "dart";
+    if (!launcherFor(hero, ammo) && !rangerDart) return 1;
     let n = 1 + Math.max(0, weaponSkillLevel(hero, ammo.type) - 1);
     if (hero.origin === "ranger") n += hero.level >= ADVANCE_LEVEL ? ADVANCED_RANGER_VOLLEY_BONUS : RANGER_VOLLEY_BONUS;
     return n;
+}
+
+/**
+ * **`.` 토글 사격**이 쏠 것 — 방향키가 걸음 대신 이것을 쏜다. 없으면 토글이 안 선다.
+ *
+ * - 지팡이를 쥔 연금술사·연구자: 쥔 지팡이(「비전 속사」).
+ * - 레인저: 활을 쥐었으면 **그 활로 쏠 화살**, 아니면(또는 화살이 떨어지면) **손에 안 든
+ *   투척 무기**(표창 → 단검·창 순). 화살이 여럿이면 층이 얕은 것(화살 → 은화살)부터 쓴다 —
+ *   귀한 것은 손으로 골라 쏘라고 남겨 둔다. 활 없이 든 화살은 고르지 않는다(긁히는 정도다).
+ *
+ * 고르기만 하는 **값 읽기**다 — 쏠 수 있는지는 `perform` 의 `zap`·`throw` 가 다시 본다.
+ */
+export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } | undefined {
+    const wand = equippedWand(hero);
+    if (wand) return { kind: "zap", item: wand };
+    if (hero.origin !== "ranger") return undefined;
+    const byDepth = (a: Item, b: Item) => (WEAPONS[a.type]?.depth ?? 0) - (WEAPONS[b.type]?.depth ?? 0);
+    const arrows = hero.pack.filter((it) => launcherFor(hero, it)).sort(byDepth);
+    if (arrows[0]) return { kind: "throw", item: arrows[0] };
+    const thrown = hero.pack
+        .filter((it) => it.kind === "weapon" && isThrowable(it) && !needsBow(it) && it.id !== hero.weaponId && it.id !== hero.offWeaponId)
+        // 겹쳐 쌓인 것(표창)이 먼저다 — 단검·창은 한 자루씩이라 금방 손이 빈다.
+        .sort((a, b) => Number(!!WEAPONS[b.type]?.stack) - Number(!!WEAPONS[a.type]?.stack));
+    return thrown[0] ? { kind: "throw", item: thrown[0] } : undefined;
 }
 
 export function canWieldWand(hero: Hero): boolean {

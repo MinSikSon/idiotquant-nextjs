@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, launcherFor, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
+import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -295,6 +295,37 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         assert.ok(doubles > 0, "열두 번 쏘는 동안 한 번도 연사가 안 났다");
     }
 
+    // ── 레인저는 표창도 연사한다(NetHack Ranger) — 활을 쥔 채여도, 턴은 하나
+    {
+        let t = newGame(116, {}, {}, {}, {}, "ranger");
+        t.level.monsters = [];
+        give(t, makeItem("weapon", "dart", 983, -1, -1, 30), "z");
+        assert.equal(volleyMax(t.heroes[0], packItem(t.heroes[0], "z")!), 2, "레인저 표창의 연사 최대가 1 + 1 이 아니다");
+        const [dx, dy] = openWay(t);
+        let doubles = 0;
+        for (let i = 0; i < 12; i++) {
+            const before = packItem(t.heroes[0], "z")!.count;
+            const turn = t.turn;
+            t = perform(t, { t: "throw", letter: "z", dx, dy });
+            const spent = before - packItem(t.heroes[0], "z")!.count;
+            assert.ok(spent === 1 || spent === 2, `표창이 한 번에 ${spent}개 나갔다`);
+            assert.equal(t.turn, turn + 1, "표창 연사가 턴을 두 번 썼다");
+            if (spent === 2) doubles++;
+        }
+        assert.ok(doubles > 0, "열두 번 던지는 동안 표창 연사가 한 번도 안 났다");
+        assert.ok(t.messages.some((m) => m.includes("표창 2연사")), "표창 2연사 기록이 없다");
+        // 표창은 부러지지 않는다 — 던진 것은 전부 바닥에 있다
+        const onFloor = t.level.items.filter((it) => it.type === "dart").reduce((n, it) => n + it.count, 0);
+        assert.equal(onFloor + packItem(t.heroes[0], "z")!.count, 30, "던진 표창이 사라졌다");
+    }
+
+    // ── 레인저가 아니면 표창은 늘 한 발이다
+    {
+        const t = newGame(117, {}, {}, {}, {}, "rogue");
+        give(t, makeItem("weapon", "dart", 984, -1, -1, 5), "z");
+        assert.equal(volleyMax(t.heroes[0], packItem(t.heroes[0], "z")!), 1, "도적의 표창에 연사가 붙었다");
+    }
+
     // ── 연사 보너스가 없는 직업은 기초 숙련에서 늘 한 발이다
     {
         let t = newGame(113, {}, {}, {}, {}, "knight");
@@ -351,6 +382,53 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         const onFloor = t.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0);
         assert.ok(broken > 0, "열다섯 번 쏘는 동안 한 대도 안 부러졌다");
         assert.equal(inPack + onFloor + broken, 40, `화살 셈이 안 맞는다: 배낭 ${inPack} + 바닥 ${onFloor} + 부러짐 ${broken}`);
+    }
+});
+
+test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화살 또는 투척 무기", () => {
+    // ── 지팡이를 쥔 연구자는 그 지팡이다(예전 「비전 속사」 그대로)
+    {
+        const s = newGame(120, {}, {}, {}, {}, "scholar");
+        const shot = rapidFireOf(s.heroes[0]);
+        assert.equal(shot?.kind, "zap", "연구자의 토글이 지팡이를 안 고른다");
+        assert.equal(shot?.item.type, "magic missile");
+    }
+
+    // ── 레인저가 아니면 활을 쥐어도 토글이 안 선다
+    {
+        let s = newGame(121, {}, {}, {}, {}, "knight");
+        give(s, makeItem("weapon", "short bow", 990, -1, -1), "y");
+        give(s, makeItem("weapon", "arrow", 991, -1, -1, 10), "z");
+        s = perform(s, { t: "wield", letter: "y" });
+        assert.equal(rapidFireOf(s.heroes[0]), undefined, "근위대에게 사격 토글이 섰다");
+    }
+
+    // ── 레인저는 활을 쥐면 화살 — 은화살보다 보통 화살이 먼저다
+    {
+        let s = newGame(122, {}, {}, {}, {}, "ranger");
+        s.level.monsters = [];
+        give(s, makeItem("weapon", "silver arrow", 992, -1, -1, 5), "y");
+        const shot = rapidFireOf(s.heroes[0]);
+        assert.equal(shot?.kind, "throw");
+        assert.equal(shot?.item.type, "arrow", "귀한 은화살을 먼저 골랐다");
+
+        // 토글이 고른 것으로 한 발 — 화살이 줄고 쏜 기록이 남는다
+        const [dx, dy] = openWay(s);
+        const before = shot!.item.count;
+        s = perform(s, { t: "throw", letter: shot!.item.letter!, dx, dy });
+        assert.ok(packItem(s.heroes[0], shot!.item.letter!)!.count < before, "토글이 고른 화살이 안 나갔다");
+        assert.ok(s.messages.some((line) => line.includes("화살을(를) 쏘았다")), "활로 쏜 기록이 없다");
+    }
+
+    // ── 활을 내려놓으면 손에 안 든 투척 무기 — 표창이 먼저, 쥔 단검·활 없는 화살은 안 고른다
+    {
+        let s = newGame(123, {}, {}, {}, {}, "ranger");
+        const dagger = s.heroes[0].pack.find((it) => it.type === "dagger")!;
+        s = perform(s, { t: "wield", letter: dagger.letter! });
+        assert.equal(rapidFireOf(s.heroes[0]), undefined, "쥔 단검이나 활 없는 화살을 토글이 골랐다");
+        give(s, makeItem("weapon", "spear", 993, -1, -1), "x");
+        give(s, makeItem("weapon", "dart", 994, -1, -1, 8), "y");
+        assert.equal(rapidFireOf(s.heroes[0])?.item.type, "dart", "겹쳐 쌓인 표창보다 창을 먼저 골랐다");
     }
 });
 
