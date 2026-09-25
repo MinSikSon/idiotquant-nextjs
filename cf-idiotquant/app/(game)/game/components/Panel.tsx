@@ -82,7 +82,7 @@ export default function Panel({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-[2px] px-2 text-[var(--rg-label)] hover:text-[var(--rg-strong)]"
+                            className="rounded-[2px] border border-[var(--rg-line)] bg-[var(--rg-raised)] px-2 py-1 text-[12px] font-bold text-[var(--rg-label)] shadow-[0_1px_0_var(--rg-shadow)] transition-colors hover:border-[var(--rg-strong)] hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                             aria-label="닫기"
                         >
                             닫기 ({closeKey ?? "Esc"})
