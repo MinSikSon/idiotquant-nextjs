@@ -355,6 +355,7 @@ type NetMsg =
 
 /** 온라인 방의 정원 — 방장 + 손님 셋. */
 const MAX_PARTY = 4;
+const CENTER_WAND_FIRE_KEY = "rogue-center-wand-fire";
 
 /**
  * 이 브라우저의 **붙박이 손님 자리표.** 한 번 만들면 계속 쓴다(`localStorage`).
@@ -420,6 +421,14 @@ export default function Rogue() {
      */
     const desks = useRef<(DeskHandle | null)[]>([]);
     const [modes, setModes] = useState<DeskMode[]>(["none", "none"]);
+    const [centerWandFire, setCenterWandFire] = useState(() => {
+        if (typeof window === "undefined") return true;
+        try {
+            return localStorage.getItem(CENTER_WAND_FIRE_KEY) !== "off";
+        } catch {
+            return true;
+        }
+    });
     const onDeskMode = useCallback((w: number, m: DeskMode) => {
         setModes((ms) => (ms[w] === m ? ms : Object.assign([...ms], { [w]: m })));
     }, []);
@@ -1571,7 +1580,12 @@ export default function Rogue() {
         (w: number) => {
             const h = state?.heroes[w];
             if (!state || !h || h.hp <= 0) return;
-            if (modes[w] === "none" && equippedWand(h)) {
+            if (modes[w] === "aim") {
+                setWho(w);
+                desks.current[w]?.padKey({ act: true });
+                return;
+            }
+            if (centerWandFire && modes[w] === "none" && equippedWand(h)) {
                 setWho(w);
                 desks.current[w]?.aimEquippedWand();
                 return;
@@ -1586,7 +1600,7 @@ export default function Rogue() {
             const onDown = state.level.tiles[idx(h.x, h.y)] === T.STAIRS;
             runAs(w, onItem ? { t: "pickup" } : onDown ? { t: "descend" } : { t: "search" });
         },
-        [state, modes, runAs],
+        [state, modes, runAs, centerWandFire],
     );
 
     useEffect(() => {
@@ -2192,9 +2206,16 @@ export default function Rogue() {
                             : [{ keys: ["y", "k", "u", "h", ".", "l", "b", "j", "n"] }]
                     }
                     onMove={(dx, dy) => {
-                        if (coopKeys && dx === 0 && dy === 0) return confirm(who);
+                        if (dx === 0 && dy === 0) {
+                            if (coopKeys) return confirm(who);
+                            const hero = state.heroes[who] ?? state.heroes[0];
+                            if (centerWandFire && modes[who] === "none" && equippedWand(hero)) return confirm(who);
+                            if (desks.current[who]?.aimAt(0, 0)) return;
+                            runAs(who, { t: "rest" });
+                            return;
+                        }
                         if (desks.current[who]?.aimAt(dx, dy)) return;
-                        run(dx === 0 && dy === 0 ? { t: "rest" } : { t: "move", dx, dy });
+                        run({ t: "move", dx, dy });
                     }}
                     actions={actions}
                     // 겨누는 중에는 연타를 끈다 — 한 번 고르면 끝나는 판이다.
@@ -2789,6 +2810,19 @@ export default function Rogue() {
                     <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
                         <ul className="space-y-1">
                             {[
+                                {
+                                    label: `가운데 버튼 지팡이 발사: ${centerWandFire ? "켬" : "끔"}`,
+                                    hint: "켜면 장착 지팡이가 있을 때 방향 패드 가운데를 눌러 조준하고, 방향 버튼으로 발사",
+                                    go: () => {
+                                        setCenterWandFire((enabled) => {
+                                            const next = !enabled;
+                                            try {
+                                                localStorage.setItem(CENTER_WAND_FIRE_KEY, next ? "on" : "off");
+                                            } catch { }
+                                            return next;
+                                        });
+                                    },
+                                },
                                 {
                                     label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => {
                                         setOriginFor({ t: "new" });
