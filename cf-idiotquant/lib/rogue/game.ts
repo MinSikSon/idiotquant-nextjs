@@ -45,6 +45,7 @@ import {
     hungerOf,
     hungerRate,
     isWorn,
+    launcherFor,
     makeHero,
     packItem,
     SKILL_PICK_INTERVAL,
@@ -53,6 +54,7 @@ import {
     trainWeaponSkill,
     enhanceWeaponSkills,
     takeFromPack,
+    volleyMax,
     weaponSkillLevel,
     weaponSkillMax,
     weaponSkillName,
@@ -97,6 +99,8 @@ import {
     isStashable,
     isThrowable,
     needsBow,
+    HAND_THROWN_AMMO,
+    ARROW_BREAK_CHANCE,
     itemChar,
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
@@ -2035,6 +2039,10 @@ function useClassSkill(state: GameState, hero: Hero, ingredients?: [string, stri
             say(state, "불굴의 방벽은 체력이 절반 이하일 때 저절로 발동한다.");
             return false;
         }
+        case "ranger": {
+            say(state, "명사수의 눈은 활로 쏠 때마다 저절로 듣는다.");
+            return false;
+        }
         case "rogue": {
             const seen = state.level.monsters.filter(
                 (m) => isVisible(state.level, m.x, m.y) && !m.champion,
@@ -2425,11 +2433,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
-    if (!isThrowable(it) || (needsBow(it) && equippedWeapon(hero)?.type !== "short bow")) {
-        if (needsBow(it) && equippedWeapon(hero)?.type !== "short bow") {
-            say(state, "활을 쥐어야 화살을 쏠 수 있다.");
-            return false;
-        }
+    if (!isThrowable(it)) {
         say(state, "던질 만한 것이 아니다.");
         return false;
     }
@@ -2451,6 +2455,20 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         if (packItem(hero, letter)) throwItem(state, hero, letter, dx, dy, rng, false);
         return true;
     }
+
+    // **활로 쏘면 연사를 굴린다** — NetHack 의 multishot. 발 수는 `1..volleyMax` 이고
+    // 남은 화살보다 많을 수 없다. 몇 발이 나가도 **턴은 하나**다(도적의 단검 2연사와 같다).
+    // 최대가 1 이면 굴리지 않는다 — 연사가 없는 사람의 난수 흐름을 안 바꾼다.
+    const bow = launcherFor(hero, it);
+    if (volley && bow) {
+        const most = Math.min(volleyMax(hero, it), it.count);
+        const shots = most > 1 ? 1 + rng.rnd(most) : 1;
+        if (shots > 1) say(state, `🏹 ${WEAPONS[it.type]?.name ?? "화살"} ${shots}연사!`);
+        for (let i = 0; i < shots && packItem(hero, letter); i++) throwItem(state, hero, letter, dx, dy, rng, false);
+        return true;
+    }
+    // 활 없이 던진 화살 — 맞히기도 어렵고 긁히는 정도다(`HAND_THROWN_AMMO`).
+    const byHand = needsBow(it) && !bow;
 
     // **하나만 던진다.** 남은 개수를 따로 적어 준다 — 안 적으면 줄었는지 알 수 없다.
     const name = describe(it, state.known, state.appearance);
@@ -2501,7 +2519,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     };
 
     if (!hit.monster) {
-        say(state, `${name}을(를) 던졌다.${rest}`);
+        say(state, `${name}을(를) ${bow ? "쏘았다" : "던졌다"}.${rest}`);
         land();
         return true;
     }
@@ -2522,31 +2540,40 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     }
 
     // 던진 것도 D&D 의 공격 굴림을 거친다. 손에 쥔 것보다 보정이 적다 — **힘이 안 붙는다.**
+    // 활로 쏘면 **활의 손질이 명중과 피해 둘 다에** 붙는다. NetHack 은 발사기의 손질을 명중에만
+    // 쓰고 피해는 화살의 손질로 올리지만, 여기서는 겹치는 화살이 강화를 못 가진다
+    // (`canHoldEnchant`) — 활에 안 실으면 활잡이가 키울 자리가 없다.
     const hitTerms: Term[] = [
         { n: proficiency(hero.level), why: "레벨" },
-        ...weaponSkillTerms(hero, it).slice(0, 1),
+        ...(byHand ? [{ n: HAND_THROWN_AMMO.hit, why: "활 없이" }] : weaponSkillTerms(hero, it).slice(0, 1)),
+        ...(bow ? [{ n: bow.plusHit ?? 0, why: "활 enchant" }] : []),
         { n: it.plusHit ?? 0, why: "enchant" },
     ];
     const seen = seenBefore(state, m);
     const a = attackRoll(hitTerms.reduce((t, b) => t + b.n, 0), hitDifficulty(monsterDodgeBonus(m)), rng);
     if (!a.hit) {
-        say(state, attackLine("나(던짐)", a, hitTerms));
+        say(state, attackLine(bow ? "나(쏨)" : "나(던짐)", a, hitTerms));
         say(state, `${name}이(가) ${m.def.name}을(를) 비껴갔다.${rest}`);
         land();
         return true;
     }
-    const dice = weaponDamageOf(it);
-    const damTerms: Term[] = [...weaponSkillTerms(hero, it).slice(1), { n: it.plusDam ?? 0, why: "enchant" }];
+    const dice = byHand ? HAND_THROWN_AMMO.damage : weaponDamageOf(it);
+    const damTerms: Term[] = [
+        ...(byHand ? [] : weaponSkillTerms(hero, it).slice(1)),
+        ...(bow ? [{ n: bow.plusDam ?? 0, why: "활 enchant" }] : []),
+        { n: it.plusDam ?? 0, why: "enchant" },
+    ];
     const d = damageRoll(dice, damTerms.reduce((sum, term) => sum + term.n, 0), a.crit, rng);
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     const guard = monsterDefense(m);
     const got = pierce(d.total, guard);
     pullAggro(state, m, hero);
     m.hp -= got;
-    const advanced = trainWeaponSkill(hero, it, d.rolled.reduce((sum, roll) => sum + roll, 0) > 1);
+    // 손으로 던진 화살은 활 숙련을 안 쌓는다 — 활 없이 활이 늘면 활을 쥘 까닭이 없다.
+    const advanced = byHand ? null : trainWeaponSkill(hero, it, d.rolled.reduce((sum, roll) => sum + roll, 0) > 1);
     if (advanced) say(state, `⚔ ${advanced}에 도달했다.`);
     say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
-    say(state, attackLine("나(던짐)", a, hitTerms));
+    say(state, attackLine(bow ? "나(쏨)" : "나(던짐)", a, hitTerms));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
     say(
         state,
@@ -2561,6 +2588,12 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     if (m.hp <= 0) {
         say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
         killMonster(state, m, rng, hero);
+    }
+    // 쏘아 **맞힌** 화살은 부러지기도 한다(NetHack 의 `!rn2(4)`). 빗나간 것과 손으로
+    // 던진 것은 그대로 떨어진다 — 줍는 수고가 곧 탄약의 값이다.
+    if (bow && rng.chance(ARROW_BREAK_CHANCE)) {
+        say(state, `${WEAPONS[it.type]?.name ?? "화살"}이 부러졌다.`);
+        return true;
     }
     land();
     return true;

@@ -1,13 +1,14 @@
 /**
- * 4대 출신(직업) 시스템 — Origin Classes & Traits
+ * 5대 출신(직업) 시스템 — Origin Classes & Traits
  *
- * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 4가지 시작 클래스를 제공합니다.
+ * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 5가지 시작 클래스를 제공합니다.
+ * 레인저는 NetHack 의 Ranger 를 옮겼다 — 활·화살 묶음과 연사(multishot) +1.
  */
 
 import { makeItem } from "./items";
 import { type Item } from "./types";
 
-export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar";
+export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger";
 
 /** 직업별 선호 무기 계열. 전투 보정은 이 목록이 아니라 무기 숙련도에서 계산한다. */
 export interface WeaponAffinity {
@@ -35,6 +36,13 @@ export const ADVANCED_GUARD_BONUS = 4; // 근위대: 대기 시 방어력 +2 →
 export const ADVANCED_TRAP_EVADE = 0.8; // 도적: 함정 회피 50% → 80%
 export const ADVANCED_PRESERVE_CHANCE = 0.4; // 연구자: 주문서 보존 25% → 40%
 
+/**
+ * 레인저의 연사 보너스 — NetHack 의 Ranger 는 발사기로 쏠 때 multishot 이 +1 이다.
+ * 전직(명사수)하면 +2 로 한 단 오른다. 굴리는 자리는 `volleyMax`(`hero.ts`) 하나다.
+ */
+export const RANGER_VOLLEY_BONUS = 1;
+export const ADVANCED_RANGER_VOLLEY_BONUS = 2;
+
 export interface OriginDef {
     id: HeroOrigin;
     name: string;
@@ -46,7 +54,8 @@ export interface OriginDef {
      * 화면에 세우는 표. **이모지가 아니라 글자다** — 지도도 상태 줄도 고정폭 한 벌인데
      * 이모지는 칸 폭이 제각각이라 그 줄만 어긋나고, 기기마다 그림도 다르다.
      * **지도의 물건 글자를 그대로 빌린다** — `]` 갑옷(근위대) · `)` 무기(도적) ·
-     * `!` 포션(연금술사) · `?` 주문서(연구자). 도움말의 기호 설명에 이미 있는 글자라
+     * `!` 포션(연금술사) · `?` 주문서(연구자). 레인저만 예외로 `}` 이다 — 무기 글자 `)` 는
+     * 도적이 쓰고 있어서, 시위를 당긴 활의 모양을 빌렸다. 도움말의 기호 설명에 이미 있는 글자라
      * 따로 외울 것이 없고, 한 칸짜리 글자라 고정폭 줄이 안 흔들린다.
      */
     icon: string;
@@ -86,6 +95,8 @@ export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     rogue: { dagger: 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
     alchemist: { dagger: 3, spear: 1, "magic sword": 2 },
     scholar: { dagger: 2, "magic sword": 3 },
+    // NetHack Ranger: 활·단검·표창 Expert, 창 Skilled.
+    ranger: { bow: 3, dagger: 3, dart: 3, spear: 2 },
 };
 
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
@@ -199,6 +210,40 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
             return [dagger, missileWand, mapScroll, idScroll, food];
         },
     },
+    ranger: {
+        id: "ranger",
+        name: "변방 레인저",
+        title: "Ranger",
+        // NetHack Ranger 의 마지막 칭호가 Marksman 이다.
+        advancedName: "명사수",
+        advancedTitle: "Marksman",
+        icon: "}",
+        iconInk: "var(--rg-food)",
+        description: "활과 화살로 먼 거리에서 적을 쓰러뜨리는 추적자.",
+        traitName: "연사",
+        traitDescription: "활로 쏠 때 연사 +1 (숙련 +1 · 전문 +2와 합산) · 활·단검·표창 전문까지",
+        weaponAffinity: { name: "사냥 도구", types: ["short bow", "arrow", "silver arrow", "dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
+        advancedSkillName: "명사수의 눈",
+        advancedSkillDescription: "활로 쏠 때 연사 +1 → +2",
+        advancedSkillKind: "passive",
+        baseHp: 12,
+        baseStr: 14,
+        createStartingItems: (nextId) => {
+            // NetHack Ranger: +1 활 · 화살 두 묶음 · +1 단검 · 망토. 여기서는 겹치는 화살이
+            // 강화를 못 가지므로(`canHoldEnchant`) 손질은 활에 싣고, 망토 대신 가죽 갑옷이다.
+            // 활을 **먼저** 넣는다 — 처음 넣은 무기를 쥐고 시작한다(`makeHero`).
+            const bow = makeItem("weapon", "short bow", nextId(), -1, -1);
+            bow.plusHit = 1;
+            bow.plusDam = 1;
+            const arrows = makeItem("weapon", "arrow", nextId(), -1, -1, 40);
+            const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
+            dagger.plusHit = 1;
+            dagger.plusDam = 1;
+            const leather = makeItem("armor", "leather", nextId(), -1, -1);
+            const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
+            return [bow, arrows, dagger, leather, food];
+        },
+    },
 };
 
 export const ORIGIN_LIST: OriginDef[] = [
@@ -206,4 +251,5 @@ export const ORIGIN_LIST: OriginDef[] = [
     ORIGINS.rogue,
     ORIGINS.alchemist,
     ORIGINS.scholar,
+    ORIGINS.ranger,
 ];

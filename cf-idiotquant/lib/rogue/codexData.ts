@@ -117,8 +117,8 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         categoryLabel: "무기",
         masteryType: "kills",
         masteryGoal: 20,
-        flavor: "깃이 달린 곧은 살대. 손으로 던져도 날카로운 촉이 상대를 파고든다.",
-        masteryFlavor: "활이 없어도 날카로운 투척 무기로서 제 몫을 톡톡히 해냈다.",
+        flavor: "깃이 달린 곧은 살대. 활에 걸어 쏘아야 제 힘이 나고, 손으로 던지면 긁히는 정도다.",
+        masteryFlavor: "시위를 떠난 살이 연달아 날아가 다가오기도 전에 적을 쓰러뜨렸다.",
     },
     {
         kind: "weapon",

@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
+import { goldGain, launcherFor, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -34,6 +34,12 @@ function openWay(s: GameState): [number, number] {
     const d = dirs.find(([dx, dy]) => walkable(s.level.tiles[idx(s.heroes[0].x + dx, s.heroes[0].y + dy)] as Tile));
     if (!d) throw new Error("사방이 막힌 자리에서 시작했다");
     return d;
+}
+
+/** 첫 영웅이 쥔 무기의 종류. */
+function equippedWeaponType(s: GameState): string | undefined {
+    const h = s.heroes[0];
+    return h.pack.find((it) => it.id === h.weaponId)?.type;
 }
 
 /** 배낭에 물건 하나를 밀어 넣고 그 글자를 준다. */
@@ -252,6 +258,100 @@ test("도적은 10레벨에 탐색 본능을 얻고 단검을 두 자루씩 던�
     const thrown = perform(s, { t: "throw", letter: dagger.letter!, dx, dy });
     assert.equal(dagger.count, 4, "도적이 단검 두 자루를 연달아 던지지 않았다");
     assert.ok(thrown.messages.some((message) => message.includes("단검 2연사")), "2연사 기록이 없다");
+});
+
+test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화살의 파손 (NetHack)", () => {
+    // ── 레인저는 활을 쥐고, 화살 묶음을 들고 시작한다
+    const s = newGame(111, {}, {}, {}, {}, "ranger");
+    const hero = s.heroes[0];
+    const arrows = hero.pack.find((it) => it.type === "arrow")!;
+    assert.equal(equippedWeaponType(s), "short bow", "레인저가 활을 쥐고 시작하지 않았다");
+    assert.equal(arrows.count, 40, "레인저의 화살 묶음이 없다");
+    assert.ok(launcherFor(hero, arrows), "쥔 활이 화살의 발사기로 안 잡힌다");
+    assert.equal(volleyMax(hero, arrows), 2, "기초 숙련 레인저의 연사 최대가 1 + 1 이 아니다");
+    hero.level = 9;
+    assert.equal(volleyMax(hero, arrows), 3, "명사수(전직)의 연사 보너스가 +2 로 안 올랐다");
+    hero.level = 1;
+
+    // ── 연사: 한 턴에 1~2발이 나가고, 두 발이 나가는 때가 있다
+    {
+        let t = newGame(112, {}, {}, {}, {}, "ranger");
+        t.level.monsters = [];
+        const [dx, dy] = openWay(t);
+        const letter = t.heroes[0].pack.find((it) => it.type === "arrow")!.letter!;
+        let doubles = 0;
+        for (let i = 0; i < 12; i++) {
+            const before = t.heroes[0].pack.find((it) => it.type === "arrow")!.count;
+            const turn = t.turn;
+            t = perform(t, { t: "throw", letter, dx, dy });
+            const spent = before - t.heroes[0].pack.find((it) => it.type === "arrow")!.count;
+            assert.ok(spent === 1 || spent === 2, `한 번에 ${spent}발이 나갔다`);
+            assert.equal(t.turn, turn + 1, "연사가 턴을 두 번 썼다");
+            if (spent === 2) {
+                doubles++;
+                assert.ok(t.messages.some((m) => m.includes("2연사")), "2연사 기록이 없다");
+            }
+        }
+        assert.ok(doubles > 0, "열두 번 쏘는 동안 한 번도 연사가 안 났다");
+    }
+
+    // ── 연사 보너스가 없는 직업은 기초 숙련에서 늘 한 발이다
+    {
+        let t = newGame(113, {}, {}, {}, {}, "knight");
+        t.level.monsters = [];
+        const bow = makeItem("weapon", "short bow", 980, -1, -1);
+        give(t, bow, "y");
+        give(t, makeItem("weapon", "arrow", 981, -1, -1, 10), "z");
+        t = perform(t, { t: "wield", letter: "y" });
+        assert.equal(volleyMax(t.heroes[0], packItem(t.heroes[0], "z")!), 1);
+        const [dx, dy] = openWay(t);
+        for (let i = 0; i < 5; i++) t = perform(t, { t: "throw", letter: "z", dx, dy });
+        assert.equal(packItem(t.heroes[0], "z")!.count, 5, "연사 보너스 없는 근위대가 두 발씩 쐈다");
+    }
+
+    // ── 활 없이도 화살은 던진다 — 명중 −4 · 피해 1d2, 활 숙련은 안 쌓인다
+    {
+        let t = newGame(114, {}, {}, {}, {}, "knight");
+        give(t, makeItem("weapon", "arrow", 982, -1, -1, 20), "z");
+        const [dx, dy] = openWay(t);
+        t.level.tiles[idx(t.heroes[0].x + dx, t.heroes[0].y + dy)] = T.FLOOR;
+        const m = spawnMonster("Z", t.heroes[0].x + dx, t.heroes[0].y + dy, new Rng(1));
+        m.hp = m.maxHp = 999;
+        t.level.monsters = [m];
+        const training = t.heroes[0].weaponTraining?.bow ?? 0;
+        t = perform(t, { t: "throw", letter: "z", dx, dy });
+        assert.equal(packItem(t.heroes[0], "z")!.count, 19, "활 없이 화살을 못 던졌다");
+        assert.ok(t.messages.some((line) => line.includes("−4(활 없이)")), "손 투척의 명중 −4 가 기록에 없다");
+        // 맞힌 것이 여럿 나올 만큼 던진다 — 빗나간 것만으로는 숙련이 원래 안 쌓인다.
+        for (let i = 0; i < 12; i++) {
+            t.heroes[0].hp = t.heroes[0].maxHp;
+            t = perform(t, { t: "throw", letter: "z", dx, dy });
+        }
+        assert.ok(t.messages.some((line) => /화살이\(가\) 좀비(에게 맞았다|의 갑옷에 튕겼다)/.test(line)), "열세 번 던져 한 번도 안 맞았다 — 숙련을 잴 수 없다");
+        assert.equal(t.heroes[0].weaponTraining?.bow ?? 0, training, "손으로 던진 화살이 활 숙련을 쌓았다");
+    }
+
+    // ── 맞힌 화살은 부러지기도 한다 — 빗나간 것만 바닥에 남고, 합은 맞는다
+    {
+        let t = newGame(115, {}, {}, {}, {}, "ranger");
+        const [dx, dy] = openWay(t);
+        t.level.tiles[idx(t.heroes[0].x + dx, t.heroes[0].y + dy)] = T.FLOOR;
+        const m = spawnMonster("Z", t.heroes[0].x + dx, t.heroes[0].y + dy, new Rng(1));
+        m.hp = m.maxHp = 9999;
+        t.level.monsters = [m];
+        const letter = t.heroes[0].pack.find((it) => it.type === "arrow")!.letter!;
+        for (let i = 0; i < 15; i++) {
+            t.heroes[0].hp = t.heroes[0].maxHp;
+            t = perform(t, { t: "throw", letter, dx, dy });
+        }
+        // 기록은 쌓이는 줄이다(200줄에서 잘린다) — 끝에서 한 번만 센다.
+        assert.ok(t.messages.length < 200, "기록이 잘려서 부러진 화살을 셀 수 없다");
+        const broken = t.messages.filter((line) => line.includes("화살이 부러졌다")).length;
+        const inPack = packItem(t.heroes[0], letter)?.count ?? 0;
+        const onFloor = t.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0);
+        assert.ok(broken > 0, "열다섯 번 쏘는 동안 한 대도 안 부러졌다");
+        assert.equal(inPack + onFloor + broken, 40, `화살 셈이 안 맞는다: 배낭 ${inPack} + 바닥 ${onFloor} + 부러짐 ${broken}`);
+    }
 });
 
 test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {

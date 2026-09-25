@@ -30,10 +30,9 @@ import {
     itemPower,
     meltMax,
     meltYield,
-    needsBow,
     WAND_RECHARGE,
 } from "@/lib/rogue/items";
-import { canOffHand, canWieldWand, equippedArmor, equippedWeapon, equippedWand, isDualWielding } from "@/lib/rogue/hero";
+import { canOffHand, canWieldWand, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -154,7 +153,8 @@ export default function Desk({
                     kind === "zap"
                         ? ["wand"]
                         : ["weapon", "potion"],
-                allow: kind === "throw" ? (it) => isThrowable(it) && (!needsBow(it) || equippedWeapon(hero)?.type === "short bow") : undefined,
+                // 활 없이도 화살은 던질 수 있다(명중 −4 · 피해 1d2) — 엔진이 가른다.
+                allow: kind === "throw" ? isThrowable : undefined,
                 empty: kind === "zap" ? "지팡이가 없다." : "던질 만한 것이 없다.",
                 make: () => ({ t: "rest" }), // 쓰이지 않는다 — 아래에서 가로챈다
             });
@@ -600,15 +600,17 @@ export default function Desk({
                 meltRow();
                 break;
         }
-        if (isThrowable(it) && (!needsBow(it) || equippedWeapon(hero)?.type === "short bow")) {
+        if (isThrowable(it)) {
+            // 쥔 활로 쏘는 화살만 「쏜다」 — 활 없이 든 화살은 손으로 던진다(`launcherFor`).
+            const fire = !!launcherFor(hero, it);
             out.push({
-                label: "던진다",
+                label: fire ? "쏜다" : "던진다",
                 on: () => {
                     setChosen(null);
                     setPackOpen(false);
                     setAiming({
-                        title: "어디로 던질까",
-                        what: `${name(it)} 를 던집니다.`,
+                        title: fire ? "어디로 쏠까" : "어디로 던질까",
+                        what: `${name(it)} 를 ${fire ? "쏩니다" : "던집니다"}.`,
                         make: (dx, dy) => ({ t: "throw", letter: it.letter!, dx, dy }),
                     });
                 },

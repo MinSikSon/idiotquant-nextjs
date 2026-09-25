@@ -9,8 +9,8 @@ import { Rng } from "@/lib/rogue/rng";
 import { bury, graves } from "@/lib/rogue/storage";
 import { idx, T } from "@/lib/rogue/types";
 
-test("4대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
-    assert.equal(ORIGIN_LIST.length, 4);
+test("5대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
+    assert.equal(ORIGIN_LIST.length, 5);
     for (const origin of ORIGIN_LIST) {
         assert.ok(origin.advancedSkillName);
         assert.ok(origin.advancedSkillDescription);
@@ -36,6 +36,12 @@ test("4대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     assert.equal(ORIGINS.scholar.name, "고서 연구자");
     assert.equal(ORIGINS.scholar.baseHp, 10);
     assert.equal(ORIGINS.scholar.baseStr, 13);
+
+    // Ranger (NetHack) — 활을 쥐고 화살 묶음을 든 채 시작한다
+    assert.equal(ORIGINS.ranger.name, "변방 레인저");
+    assert.equal(ORIGINS.ranger.baseHp, 12);
+    assert.equal(ORIGINS.ranger.baseStr, 14);
+    assert.equal(ORIGINS.ranger.advancedSkillKind, "passive");
 });
 
 test("직업 무기를 쥐면 명중과 피해에 같은 숙련 보너스가 붙는다", () => {
