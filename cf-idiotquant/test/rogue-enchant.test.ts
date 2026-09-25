@@ -368,7 +368,7 @@ test("겹쳐 쌓이는 무기는 강화를 안 가진다 — 주문서 복사 �
     // 가르는 값은 「던질 수 있나」가 아니라 **「한 덩이에 여럿인가」**이고, 도적의 이도류
     // 단검이 그 구분에 걸려 있다.
 
-    const STACKED = ["dart", "arrow", "silver arrow"] as const;
+    const STACKED = ["dart", "arrow", "silver arrow", "mithril arrow", "oriharukon arrow"] as const;
     const SINGLE = ["dagger", "spear"] as const;
 
     // ── 표가 이 테스트의 전제와 같은가 — 표를 고치면 여기서 걸린다

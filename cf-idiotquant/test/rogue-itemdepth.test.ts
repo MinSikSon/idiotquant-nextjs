@@ -66,6 +66,19 @@ test("얕은 층에 깊은 물건이, 깊은 층에 단검이 안 떨어진다",
         }
         assert.ok(seen.size > 0, "26층에서 무기·갑옷이 하나도 안 나왔다 — 세는 자리가 틀렸다");
     }
+
+    // ── 어느 층에서든 화살이 나온다 — 활 사다리가 26층까지 가는데 화살이 끊기면 못 쏜다
+    {
+        for (let depth = 1; depth <= 26; depth++) {
+            const rng = new Rng(depth * 31);
+            let arrows = 0;
+            for (let i = 0; i < 4000; i++) {
+                const it = randomItem(depth, i, 0, 0, rng, "weapon");
+                if (WEAPONS[it.type]?.launcher === "bow") arrows++;
+            }
+            assert.ok(arrows > 0, `지하 ${depth}층에서 활로 쏠 화살이 한 대도 안 나온다`);
+        }
+    }
 });
 
 test("뽑을 것 없는 칸이 없고, 손질은 깊을수록 커진다", () => {

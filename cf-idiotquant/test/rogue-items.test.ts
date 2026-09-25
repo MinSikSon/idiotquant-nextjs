@@ -648,6 +648,15 @@ test("낱개로 주운 화살·표창은 한 뭉치(최대 40)로 합쳐지고, 
         assert.deepEqual(arrowStacks(s), [40], "배낭이 꽉 찼는데 화살 칸이 늘었다");
         assert.equal(s.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0), 3, "못 주운 3 개가 사라졌다");
         assert.ok(s.messages.some((m) => m.includes("2개만 주웠다")), "일부만 주운 기록이 없다");
+        const rest = s.level.items.find((it) => it.type === "arrow")!;
+        assert.deepEqual([rest.x, rest.y], [hero.x, hero.y], "못 주운 3 개가 맵에서 사라졌다");
+
+        // 합칠 곳도 없는 물건은 그대로 발밑에 남는다
+        drop(s, "long sword", 1080, 1);
+        s = perform(s, { t: "pickup" });
+        const sword = s.level.items.find((it) => it.id === 1080);
+        assert.ok(sword && sword.x === hero.x && sword.y === hero.y, "배낭이 꽉 찼는데 주우려던 장검이 사라졌다");
+        assert.ok(!hero.pack.some((it) => it.id === 1080));
     }
 
     // ── 칸마다 갈라져 저장된 옛 판도 되읽으면 40 까지 합쳐진다
