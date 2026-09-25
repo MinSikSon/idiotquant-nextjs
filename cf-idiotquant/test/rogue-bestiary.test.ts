@@ -182,6 +182,31 @@ function suffer(s: GameState, ch: string, tries = 400): GameState | null {
     return null;
 }
 
+// 님프는 **개수가 있는 것은 절반만** 채 간다 — 뭉치째 가져가면 한 번 스친 것으로 화살
+// 40대가 통째로 사라진다. 한 개짜리는 통째로 가져간다.
+test("님프는 겹쳐 쌓인 물건을 절반만 채 간다 — 한 개짜리는 통째로", () => {
+    const robbed = (seed: number, count: number) => {
+        const s = newGame(seed, {}, {}, {}, {}, "knight");
+        const hero = s.heroes[0];
+        // 쥔 것·입은 것만 남기고 털릴 것은 하나로 — 님프가 무엇을 고를지 운이 끼지 않게
+        hero.pack = hero.pack.filter((i) => i.id === hero.weaponId || i.id === hero.armorId);
+        const arrows = makeItem("weapon", "arrow", 990, -1, -1, count);
+        arrows.letter = "z";
+        hero.pack.push(arrows);
+        placeNextTo(s, "N", 999).awake = true;
+        const after = suffer(s, "N");
+        assert.ok(after, "님프에게 한 번도 안 털렸다 — 이 주장이 아무것도 안 잰다");
+        return { left: after!.heroes[0].pack.find((i) => i.type === "arrow")?.count ?? 0, lines: after!.messages };
+    };
+
+    const even = robbed(3500, 40);
+    assert.equal(even.left, 20, `화살 40대 중 ${40 - even.left}대를 채 갔다 — 절반이 아니다`);
+    assert.ok(even.lines.some((l) => l.includes("님프가") && l.includes("(20개 남음)")), "남은 개수가 기록에 없다");
+
+    assert.equal(robbed(3501, 5).left, 3, "5대에서 절반(내림 2대)이 아니라 다른 수를 채 갔다");
+    assert.equal(robbed(3502, 1).left, 0, "한 대짜리는 통째로 가져가야 한다");
+});
+
 // 아쿠에이터는 **갑옷의 손질을 0 아래로는 못 녹인다.**
 //
 // 바닥이 없던 때에는 한 마리에게 오래 붙들리면 `+0` 판금이 `−7` 짜리가 되어 **안 입느니만

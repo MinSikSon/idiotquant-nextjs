@@ -2595,7 +2595,12 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     ];
     const d = damageRoll(dice, damTerms.reduce((sum, term) => sum + term.n, 0), a.crit, rng);
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
-    const guard = monsterDefense(m);
+    // 단, **활·석궁으로 쏜 것이 대성공(명중 합 20 이상)이면 갑옷 틈을 꿰뚫어 방어력을 무시한다.**
+    // 대성공은 이미 주사위를 두 번 굴리는 자리라, 기준을 새로 만들지 않고 그 판정을 그대로 쓴다 —
+    // 활 강화·숙련으로 명중이 오를수록 자주 난다. 손으로 던진 것·표창은 안 꿰뚫는다.
+    const armorPierce = !!bow && a.crit;
+    const guard = armorPierce ? 0 : monsterDefense(m);
+    if (armorPierce && monsterDefense(m) > 0) say(state, `🎯 ${WEAPONS[it.type]?.name ?? "화살"}이(가) 갑옷 틈을 꿰뚫었다 — 방어력 무시!`);
     const got = pierce(d.total, guard);
     pullAggro(state, m, hero);
     m.hp -= got;

@@ -448,6 +448,49 @@ test("활 사다리 — 단궁 → 장궁 → 요정족 활 → 사이하의 활
     assert.ok(!s.messages.some((line) => line.includes("(단궁")), "장궁을 쥐었는데 단궁의 주사위가 붙었다");
 });
 
+test("활로 쏜 대성공은 갑옷 틈을 꿰뚫는다 — 방어력 무시, 손으로 던진 것은 아니다", () => {
+    const shoot = (origin: "ranger" | "knight", seed: number, prep: (s: GameState) => string) => {
+        let s = newGame(seed, {}, {}, {}, {}, origin);
+        s.heroes[0].maxHp = 9999; // 우르바일에게 맞아 쓰러지면 판이 멈춘다 — 재려는 것은 화살이다
+        const letter = prep(s);
+        const [dx, dy] = openWay(s);
+        s.level.tiles[idx(s.heroes[0].x + dx, s.heroes[0].y + dy)] = T.FLOOR;
+        // 우르바일 — 방어력이 높아(갑옷 −2) 보통 화살은 거의 튕긴다
+        const m = spawnMonster("U", s.heroes[0].x + dx, s.heroes[0].y + dy, new Rng(1));
+        m.hp = m.maxHp = 99999;
+        s.level.monsters = [m];
+        s.bestiary.U = 1;
+        // 기록은 200줄에서 잘린다(상대가 한 턴에 세 번 친다) — 턴마다 비우고 모아 둔다.
+        const lines: string[] = [];
+        for (let i = 0; i < 40 && packItem(s.heroes[0], letter); i++) {
+            s.heroes[0].hp = s.heroes[0].maxHp;
+            s.messages = [];
+            s = perform(s, { t: "throw", letter, dx, dy });
+            lines.push(...s.messages);
+        }
+        return lines;
+    };
+
+    // ── 레인저: 대성공이 나면 꿰뚫고, 그 줄의 피해 굴림에는 방어력 뺄셈이 없다
+    const fired = shoot("ranger", 150, (s) => {
+        const bow = s.heroes[0].pack.find((it) => it.id === s.heroes[0].weaponId)!;
+        bow.plusHit = 9; // 대성공(합 20 이상)이 자주 나게
+        return s.heroes[0].pack.find((it) => it.type === "arrow")!.letter!;
+    });
+    const pierceAt = fired.findIndex((line) => line.includes("방어력 무시"));
+    assert.ok(pierceAt >= 0, "활의 대성공이 한 번도 방어력을 무시하지 않았다");
+    const damageLine = fired.slice(pierceAt + 1).find((line) => line.startsWith("· 피해 굴림"))!;
+    assert.ok(!damageLine.includes("(방어력)"), `꿰뚫은 화살의 피해에서 방어력을 뺐다: ${damageLine}`);
+
+    // ── 손으로 던진 화살은 대성공이어도 꿰뚫지 않는다
+    const thrown = shoot("knight", 151, (s) => {
+        s.heroes[0].level = 20; // 숙련 보정을 올려 손 투척(−4)으로도 대성공이 나게
+        return give(s, makeItem("weapon", "arrow", 1080, -1, -1, 40), "z");
+    });
+    assert.ok(thrown.some((line) => line.includes("나(던짐)") && line.includes("(대성공)")), "손 투척이 한 번도 대성공을 안 내서 잴 수 없다");
+    assert.ok(!thrown.some((line) => line.includes("방어력 무시")), "손으로 던진 화살이 갑옷을 꿰뚫었다");
+});
+
 test("석궁과 볼트 — 볼트는 석궁으로만 쏘고, 연사 없이 한 발이 무겁다 (NetHack)", () => {
     // ── 레인저가 석궁을 쥐어도, 숙련이 전문이어도 연사는 없다
     let s = newGame(140, {}, {}, {}, {}, "ranger");
