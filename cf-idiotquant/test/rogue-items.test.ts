@@ -349,6 +349,7 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         const m = spawnMonster("Z", t.heroes[0].x + dx, t.heroes[0].y + dy, new Rng(1));
         m.hp = m.maxHp = 999;
         t.level.monsters = [m];
+        t.bestiary.Z = 1; // 피해 굴림을 펼쳐 적게 한다
         const training = t.heroes[0].weaponTraining?.bow ?? 0;
         t = perform(t, { t: "throw", letter: "z", dx, dy });
         assert.equal(packItem(t.heroes[0], "z")!.count, 19, "활 없이 화살을 못 던졌다");
@@ -360,6 +361,7 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         }
         assert.ok(t.messages.some((line) => /화살이\(가\) 좀비(에게 맞았다|의 갑옷에 튕겼다)/.test(line)), "열세 번 던져 한 번도 안 맞았다 — 숙련을 잴 수 없다");
         assert.equal(t.heroes[0].weaponTraining?.bow ?? 0, training, "손으로 던진 화살이 활 숙련을 쌓았다");
+        assert.ok(!t.messages.some((line) => line.includes("(단궁")), "활 없이 던졌는데 단궁의 주사위가 붙었다");
     }
 
     // ── 맞힌 화살은 부러지기도 한다 — 빗나간 것만 바닥에 남고, 합은 맞는다
@@ -370,6 +372,7 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         const m = spawnMonster("Z", t.heroes[0].x + dx, t.heroes[0].y + dy, new Rng(1));
         m.hp = m.maxHp = 9999;
         t.level.monsters = [m];
+        t.bestiary.Z = 1; // 잡아 본 종이라야 피해 굴림을 펼쳐 적는다
         const letter = t.heroes[0].pack.find((it) => it.type === "arrow")!.letter!;
         for (let i = 0; i < 15; i++) {
             t.heroes[0].hp = t.heroes[0].maxHp;
@@ -381,6 +384,8 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         const inPack = packItem(t.heroes[0], letter)?.count ?? 0;
         const onFloor = t.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0);
         assert.ok(broken > 0, "열다섯 번 쏘는 동안 한 대도 안 부러졌다");
+        // 활로 쏜 화살에는 **활의 주사위**도 실린다 — 기록에 그 항이 남는다(아는 종이라 펼쳐 적는다)
+        assert.ok(t.messages.some((line) => line.includes("(단궁 1d1)")), "쏜 화살의 피해에 단궁의 주사위가 안 붙었다");
         assert.equal(inPack + onFloor + broken, 40, `화살 셈이 안 맞는다: 배낭 ${inPack} + 바닥 ${onFloor} + 부러짐 ${broken}`);
     }
 });

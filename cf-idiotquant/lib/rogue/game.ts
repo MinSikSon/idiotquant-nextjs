@@ -2558,8 +2558,13 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         return true;
     }
     const dice = byHand ? HAND_THROWN_AMMO.damage : weaponDamageOf(it);
+    // **활의 주사위도 굴려 더한다** — 쥔 활의 피해(`WeaponDef.damage`)가 화살에 실린다.
+    // 치명타면 화살 주사위처럼 **활 주사위도 두 번** 굴린다(「치명타는 주사위만 두 배」).
+    const bowDice = bow ? weaponDamageOf(bow) : null;
+    const bowRoll = bowDice ? damageRoll(bowDice, 0, a.crit, rng) : null;
     const damTerms: Term[] = [
         ...(byHand ? [] : weaponSkillTerms(hero, it).slice(1)),
+        ...(bowRoll ? [{ n: bowRoll.total, why: `${WEAPONS[bow!.type]?.name ?? "활"} ${bowDice}`, showZero: true }] : []),
         ...(bow ? [{ n: bow.plusDam ?? 0, why: "활 enchant" }] : []),
         { n: it.plusDam ?? 0, why: "enchant" },
     ];
