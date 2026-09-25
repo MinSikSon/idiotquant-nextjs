@@ -41,17 +41,17 @@ export const MONSTERS: Record<string, MonsterDef> = {
     M: { ch: "M", name: "메두사", exp: 200, level: 8, armor: 2, hp: 36, damage: ["3d4", "3d4", "2d5"], mean: true, traits: ["M"] },
     N: { ch: "N", name: "님프", exp: 37, level: 3, armor: 9, hp: 14, damage: ["0d0"], mean: false, special: "물건을 채고 달아난다" },
     O: { ch: "O", name: "오크", exp: 5, level: 1, armor: 6, hp: 4, damage: ["1d8"], mean: false, traits: ["G"] },
-    P: { ch: "P", name: "팬텀", exp: 120, level: 8, armor: 3, hp: 36, damage: ["4d4"], mean: false, traits: ["I"], invisible: true },
+    P: { ch: "P", name: "팬텀", exp: 120, level: 8, armor: 3, hp: 36, damage: ["4d4"], mean: false, traits: ["I", "S"], invisible: true },
     Q: { ch: "Q", name: "콰가", exp: 15, level: 3, armor: 3, hp: 14, damage: ["1d5", "1d5"], mean: true, traits: ["M"] },
     R: { ch: "R", name: "방울뱀", exp: 9, level: 2, armor: 3, hp: 9, damage: ["1d6"], mean: true, traits: ["M"] },
     S: { ch: "S", name: "뱀", exp: 2, level: 1, armor: 5, hp: 4, damage: ["1d3"], mean: true, traits: ["M"] },
     T: { ch: "T", name: "트롤", exp: 120, level: 6, armor: 4, hp: 27, damage: ["1d8", "1d8", "2d6"], mean: true, traits: ["R", "M"] },
     U: { ch: "U", name: "우르바일", exp: 190, level: 7, armor: -2, hp: 32, damage: ["1d9", "1d9", "2d9"], mean: true, traits: ["M"] },
-    V: { ch: "V", name: "뱀파이어", exp: 350, level: 8, armor: 1, hp: 36, damage: ["1d10"], mean: true, traits: ["R", "M"] },
-    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: 22, damage: ["1d6", "0d0"], mean: false, special: "경험을 빨아먹는다" },
+    V: { ch: "V", name: "뱀파이어", exp: 350, level: 8, armor: 1, hp: 36, damage: ["1d10"], mean: true, traits: ["R", "M", "S"] },
+    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: 22, damage: ["1d6", "0d0"], mean: false, traits: ["S"], special: "경험을 빨아먹는다" },
     X: { ch: "X", name: "제록", exp: 100, level: 7, armor: 7, hp: 32, damage: ["4d4"], mean: false },
     Y: { ch: "Y", name: "예티", exp: 50, level: 4, armor: 6, hp: 18, damage: ["1d6", "1d6"], mean: false },
-    Z: { ch: "Z", name: "좀비", exp: 6, level: 2, armor: 8, hp: 9, damage: ["1d8"], mean: true, traits: ["M"] },
+    Z: { ch: "Z", name: "좀비", exp: 6, level: 2, armor: 8, hp: 9, damage: ["1d8"], mean: true, traits: ["M", "S"] },
 };
 
 /**

@@ -11,9 +11,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { heroAttack, monsterAttack, monsterDamBonus } from "@/lib/rogue/combat";
-import { newGame } from "@/lib/rogue/game";
-import { idx } from "@/lib/rogue/types";
+import { SILVER_BANE, heroAttack, monsterAttack, monsterDamBonus } from "@/lib/rogue/combat";
+import { bestiaryRows, newGame, perform } from "@/lib/rogue/game";
+import { idx, type GameState } from "@/lib/rogue/types";
 import { attackRoll, damageRoll, hitDifficulty, luckOf, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
 import { makeItem } from "@/lib/rogue/items";
@@ -295,5 +295,82 @@ test("대마다 깎인다 · 못 뚫으면 영영 못 죽인다", () => {
         const before = m.hp;
         for (let i = 0; i < 300; i++) heroAttack(s, s.heroes[0], m, rng);
         assert.equal(m.hp, before, "1d6−4 짜리가 방어력 11 을 뚫었다");
+    }
+});
+
+// 은화살·진은검이 이름만 은이면 아낄 까닭도 찾을 까닭도 없다. NetHack 처럼 은에 약한 종에게만
+// 한 항(`1d20`)이 더 붙고, 나머지는 쇠붙이와 똑같아야 한다.
+test("은에 약한 종은 은 무기에 더 다친다 — 은이 아니거나 약하지 않으면 그대로", () => {
+    const SILVER_LINE = "살을 태운다";
+    const swings = (seed: number, ch: string, type: string, strip = false) => {
+        const { s, m } = duel(seed, ch);
+        // 같은 놈에게서 `S` 만 뗀 것 — 무기 주사위·방어력은 그대로 두고 은 한 항만 견준다
+        if (strip) m.def = { ...m.def, traits: m.def.traits?.filter((t) => t !== "S") };
+        s.bestiary[ch] = 1; // 산수 줄이 펼쳐지도록
+        const blade = makeItem("weapon", type, 950, -1, -1);
+        blade.plusHit = 20; // 반드시 맞도록 — 여기서 재는 것은 피해다
+        s.heroes[0].pack.push(blade);
+        s.heroes[0].weaponId = blade.id;
+        const rng = new Rng(seed);
+        let hits = 0;
+        let seared = 0;
+        let dealt = 0;
+        const lines: string[] = [];
+        for (let i = 0; i < 300; i++) {
+            const r = heroAttack(s, s.heroes[0], m, rng);
+            if (!r.hit) continue;
+            hits++;
+            dealt += r.damage;
+            if (r.messages.some((l) => l.includes(SILVER_LINE))) seared++;
+            lines.push(...r.messages);
+        }
+        return { hits, seared, dealt, lines };
+    };
+
+    // ── 표가 정한 종 — 뱀파이어·망령·좀비·팬텀만 은에 약하다
+    {
+        const weak = Object.values(MONSTERS).filter((d) => d.traits?.includes("S")).map((d) => d.ch).sort();
+        assert.deepEqual(weak, ["P", "V", "W", "Z"], `은에 약한 종이 다르다: ${weak.join("")}`);
+        assert.ok(bestiaryRows({ V: 1 })[0].traits.includes("S"), "잡아 본 뱀파이어의 도감에 S 가 안 뜬다");
+    }
+
+    // ── 진은검으로 뱀파이어를 치면 매번 은이 태운다 — 그리고 그 항이 산수 줄에 적힌다
+    const silver = swings(1200, "V", "silver sword");
+    assert.ok(silver.hits > 100, `잰 판이 ${silver.hits} 번뿐이다`);
+    assert.equal(silver.seared, silver.hits, `맞힌 ${silver.hits} 번 중 ${silver.seared} 번만 은이 태웠다`);
+    assert.ok(
+        silver.lines.some((l) => l.includes(`은 ${SILVER_BANE}`)),
+        "피해 줄에 은 항이 안 적혔다 — 더 들어간 까닭이 판 어디에도 안 남는다",
+    );
+
+    // ── 쇠 장검으로는 안 태운다 · 은이라도 약하지 않은 놈(트롤)은 안 태운다
+    const iron = swings(1200, "V", "long sword");
+    assert.equal(iron.seared, 0, "쇠 장검이 뱀파이어를 태웠다");
+    assert.equal(swings(1201, "T", "silver sword").seared, 0, "은에 약하지 않은 트롤이 탔다");
+
+    // ── 더 붙는 것은 1d20 한 항이다 — 같은 진은검으로 `S` 를 뗀 뱀파이어와 견주면 한 대
+    //    평균이 그만큼(≈10.5) 벌어진다. 방어력에 깎이던 몫이 살아나 조금 더 벌어질 수 있다.
+    {
+        const plain = swings(1200, "V", "silver sword", true);
+        assert.equal(plain.seared, 0, "은에 약하지 않게 한 뱀파이어가 탔다");
+        const per = (r: { dealt: number; hits: number }) => r.dealt / r.hits;
+        const gap = per(silver) - per(plain);
+        assert.ok(gap > 8 && gap < 14, `은 한 항의 한 대 차이가 ${gap.toFixed(1)} 이다 — 1d20 한 항이 아니다`);
+    }
+
+    // ── 던진 은화살도 은이다 — 활 없이 던져도 태운다
+    {
+        const { s } = duel(1202, "W");
+        const arrows = makeItem("weapon", "silver arrow", 951, -1, -1, 40);
+        arrows.plusHit = 20;
+        arrows.letter = "z";
+        s.heroes[0].pack.push(arrows);
+        let cur: GameState = s;
+        let seared = false;
+        for (let i = 0; i < 20 && !seared; i++) {
+            cur = perform(cur, { t: "throw", letter: "z", dx: 1, dy: 0 });
+            seared = cur.messages.some((l) => l.includes(`망령의 ${SILVER_LINE}`));
+        }
+        assert.ok(seared, "은화살을 스무 번 던졌는데 망령이 한 번도 안 탔다");
     }
 });
