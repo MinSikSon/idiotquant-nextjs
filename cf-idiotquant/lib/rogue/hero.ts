@@ -15,10 +15,12 @@ import {
 } from "./types";
 import {
     RINGS,
+    STACK_MAX,
     WEAPONS,
     armorClassOf,
     defenseOf,
     isThrowable,
+    launcherDamageOf,
     makeItem,
     needsBow,
     weaponDamageOf,
@@ -74,9 +76,24 @@ export function weaponSkillMax(hero: Hero, type: string): WeaponSkill {
     return Math.max(1, limits[skill] ?? limits[type] ?? 1) as WeaponSkill;
 }
 
-/** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). */
+/**
+ * **활·석궁으로 직접 때리는가** — 발사기는 쏘는 도구라, 휘두르면 막대기로 치는 것과 같다
+ * (NetHack 의 launcher bashing). 그때는 **활 숙련도 활의 손질도 안 붙는다** — 그 둘은 쏠 때의
+ * 값이다(`throwItem`). 붙이면 `+9` 사이하의 활로 때리는 것이 칼보다 세진다.
+ */
+function bashesWith(weapon: Item | undefined): boolean {
+    return !!launcherDamageOf(weapon);
+}
+
+/** 휘두를 때 얹히는 무기의 손질 — 발사기로 때리면 0 이다(`bashesWith`). */
+function meleePlus(weapon: Item | undefined, which: "plusHit" | "plusDam"): number {
+    return bashesWith(weapon) ? 0 : (weapon?.[which] ?? 0);
+}
+
+/** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). 발사기로 때리면 없다. */
 export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
     if (!weapon || weapon.kind !== "weapon") return [];
+    if (bashesWith(weapon)) return [];
     const level = weaponSkillLevel(hero, weapon.type);
     const { hit, damage: dam } = weaponSkillBonus(level);
     const rank = weaponSkillRankName(level);
@@ -270,23 +287,34 @@ function sameStack(hero: Hero, p: Item, it: Item): boolean {
     );
 }
 
-/** `it` 을 `into` 에 얹는다 — 개수를 더하고, 알던 것(저주·손질)은 합친 쪽으로 옮긴다. */
-function joinStack(into: Item, it: Item): void {
-    into.count += it.count;
+/**
+ * `it` 에서 **뭉치의 빈 자리만큼**(`STACK_MAX`) 덜어 `into` 에 얹는다 — 얹은 개수를 준다.
+ * 알던 것(저주·손질)은 합친 쪽으로 옮긴다.
+ */
+function joinStack(into: Item, it: Item): number {
+    const n = Math.max(0, Math.min(STACK_MAX - into.count, it.count));
+    if (n === 0) return 0;
+    into.count += n;
+    it.count -= n;
     into.curseKnown = !!into.curseKnown || !!it.curseKnown;
     into.plusKnown = !!into.plusKnown || !!it.plusKnown;
+    return n;
 }
 
 /**
  * 배낭에 **갈라져 있는 같은 뭉치**를 합친다 — 화살을 한 대씩 주워 칸마다 따로 쌓이던
- * 때의 저장을 되읽을 때 쓴다(규칙만 고치면 이미 저장된 판은 안 낫는다). 앞의 칸이 남는다.
+ * 때의 저장을 되읽을 때 쓴다(규칙만 고치면 이미 저장된 판은 안 낫는다). 앞의 칸부터
+ * `STACK_MAX` 까지 채우고, 남는 것은 제 칸에 둔다. 이미 40 을 넘긴 옛 뭉치는 가르지 않는다
+ * (새 번호가 필요하다) — 쏘면서 줄어든다.
  */
 export function mergeStacks(hero: Hero): void {
     const kept: Item[] = [];
     for (const it of hero.pack) {
-        const same = kept.find((p) => sameStack(hero, p, it));
-        if (same) joinStack(same, it);
-        else kept.push(it);
+        for (const p of kept) {
+            if (it.count === 0) break;
+            if (sameStack(hero, p, it)) joinStack(p, it);
+        }
+        if (it.count > 0) kept.push(it);
     }
     hero.pack = kept;
 }
@@ -301,11 +329,16 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
     // **겹쳐 쌓이는 무기(화살·은화살·표창)는 언제나 합친다** — 한 대씩 주웠다고 배낭 칸을
     // 하나씩 먹으면 쏘고 줍기를 몇 번만 해도 26칸이 찬다. 강화를 못 가지는 것들이라
     // (`canHoldEnchant`) 가를 것은 축복·저주뿐이고, 아는 것(`curseKnown`)은 합친 쪽으로 옮긴다.
+    //
+    // 한 뭉치는 `STACK_MAX` 까지다 — 빈 자리가 있는 뭉치부터 채우고, **남는 것은 새 칸**에
+    // 새 뭉치로 담는다(아래 공통 길). 새 칸이 없으면 `null` 인데, 그때 **이미 얹은 몫은 배낭에,
+    // 못 얹은 몫은 `it.count` 에** 남는다 — 부르는 쪽은 `it` 을 그대로 쥐고 있으면 잃는 것이 없다.
     if (it.kind === "weapon" && WEAPONS[it.type]?.stack) {
-        const same = hero.pack.find((p) => sameStack(hero, p, it));
-        if (same) {
-            joinStack(same, it);
-            return same;
+        let into: Item | null = null;
+        for (const same of hero.pack) {
+            if (!sameStack(hero, same, it) || joinStack(same, it) === 0) continue;
+            into ??= same;
+            if (it.count === 0) return into;
         }
     }
     const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll" || (mergeWeapons && it.type === "dagger");
@@ -374,13 +407,16 @@ export function launcherFor(hero: Hero, ammo: Item): Item | undefined {
  * 한 번 쏠 때 날아갈 수 있는 **최대** 발 수 — NetHack 의 multishot.
  * `1 + 숙련(숙련 +1 · 전문 +2) + 레인저(+1, 전직하면 +2)` 에서 실제 발 수는 `1..이 값` 을 굴린다.
  *
- * 연사가 붙는 것은 둘뿐이다 — **쥔 발사기로 쏘는 탄약**, 그리고 **레인저가 던지는 표창**
+ * 연사가 붙는 것은 둘뿐이다 — **쥔 발사기로 쏘는 탄약**(석궁은 빼고 — `slowReload`), 그리고 **레인저가 던지는 표창**
  * (NetHack 의 Ranger 는 단검 말고는 던지는 것에도 연사가 붙는다). 나머지는 늘 한 발이다 —
  * 다른 직업의 표창까지 열면 도적의 던지기 셈이 통째로 바뀐다.
  */
 export function volleyMax(hero: Hero, ammo: Item): number {
     const rangerDart = hero.origin === "ranger" && ammo.kind === "weapon" && ammo.type === "dart";
-    if (!launcherFor(hero, ammo) && !rangerDart) return 1;
+    const launcher = launcherFor(hero, ammo);
+    if (!launcher && !rangerDart) return 1;
+    // 석궁은 다시 걸기가 느리다 — 숙련도 직업도 발 수를 못 늘린다.
+    if (launcher && WEAPONS[launcher.type]?.slowReload) return 1;
     let n = 1 + Math.max(0, weaponSkillLevel(hero, ammo.type) - 1);
     if (hero.origin === "ranger") n += hero.level >= ADVANCE_LEVEL ? ADVANCED_RANGER_VOLLEY_BONUS : RANGER_VOLLEY_BONUS;
     return n;
@@ -569,7 +605,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
-        { n: weapon?.plusHit ?? 0, why: "enchant" },
+        { n: meleePlus(weapon, "plusHit"), why: "enchant" },
     ];
 }
 
@@ -580,7 +616,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
         ...weaponSkillTerms(hero, weapon).slice(1).map((term) => ({ ...term, why: `${weaponSkillRankName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
-        { n: weapon?.plusDam ?? 0, why: "enchant" },
+        { n: meleePlus(weapon, "plusDam"), why: "enchant" },
     ];
     const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")
         ? Math.min(10, Math.floor(hero.gold / 100))
@@ -617,7 +653,7 @@ export function heroHitBonus(hero: Hero, known: Record<string, boolean> = {}): n
     // **이름표로 고르지 않는다.** 예전에는 `why !== "무기"` 로 걸렀는데, 굴림 줄에 무기
     // 이름을 적기 시작하자(`+2진은검`) 그 문자열이 안 맞아 **조용히 안 가려졌다.**
     // 빼야 할 것은 「무기라고 적힌 항목」이 아니라 **그 무기의 손질값**이다.
-    return identified ? sum : sum - (w?.plusHit ?? 0);
+    return identified ? sum : sum - meleePlus(w, "plusHit");
 }
 
 /** 지금의 힘 — 힘 반지가 얹힌다. 명중·피해 보정은 이 값으로 잰다. */
@@ -661,7 +697,7 @@ export function heroAttackText(hero: Hero, known: Record<string, boolean>): stri
         const identified = !!w && known[`weapon:${w.type}`] === true;
         // `heroHitBonus` 와 같은 이유로 **이름표가 아니라 값으로** 뺀다(거기 주석 참고).
         const all = heroDamTerms(hero, w, withStr).reduce((sum, t) => sum + t.n, 0);
-        const bonus = identified ? all : all - (w?.plusDam ?? 0);
+        const bonus = identified ? all : all - meleePlus(w, "plusDam");
         return `${heroDamageDice(hero, w)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
     };
     const main = one(equippedWeapon(hero), true);

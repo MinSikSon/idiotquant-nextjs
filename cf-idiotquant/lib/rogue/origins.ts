@@ -91,12 +91,13 @@ export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
 
 /** 직업별 무기 숙련 상한. 표 밖 무기는 Basic까지만 쓸 수 있다. */
 export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
-    knight: { dagger: 1, mace: 2, spear: 2, "long sword": 3, "two-handed sword": 2, "silver sword": 3, "thirsty sword": 3, "magic sword": 2, "knight sword": 3, "baphomet sword": 3 },
+    // NetHack Knight 는 석궁을 Skilled 까지 쓴다 — 연사 없는 원거리 한 발.
+    knight: { crossbow: 2, dagger: 1, mace: 2, spear: 2, "long sword": 3, "two-handed sword": 2, "silver sword": 3, "thirsty sword": 3, "magic sword": 2, "knight sword": 3, "baphomet sword": 3 },
     rogue: { dagger: 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
     alchemist: { dagger: 3, spear: 1, "magic sword": 2 },
     scholar: { dagger: 2, "magic sword": 3 },
     // NetHack Ranger: 활·단검·표창 Expert, 창 Skilled.
-    ranger: { bow: 3, dagger: 3, dart: 3, spear: 2 },
+    ranger: { bow: 3, crossbow: 3, dagger: 3, dart: 3, spear: 2 },
 };
 
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
@@ -222,7 +223,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "활과 화살로 먼 거리에서 적을 쓰러뜨리는 추적자.",
         traitName: "연사",
         traitDescription: "활·표창 연사 +1 (숙련 +1 · 전문 +2와 합산) · `.` 토글 사격(활이면 화살, 아니면 표창 등 투척 무기) · 활·단검·표창 전문까지",
-        weaponAffinity: { name: "사냥 도구", types: ["short bow", "long bow", "elven bow", "sayha bow", "arrow", "silver arrow", "dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "사냥 도구", types: ["short bow", "long bow", "elven bow", "sayha bow", "crossbow", "arrow", "silver arrow", "bolt", "dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "명사수의 눈",
         advancedSkillDescription: "활·표창 연사 +1 → +2",
         advancedSkillKind: "passive",

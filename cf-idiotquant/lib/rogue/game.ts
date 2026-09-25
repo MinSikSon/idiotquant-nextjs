@@ -106,6 +106,7 @@ import {
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
     CHEST_SLOTS,
+    STACK_MAX,
     canHoldEnchant,
     MELT_RETURN,
     WAND_RECHARGE,
@@ -956,14 +957,36 @@ function pickUp(state: GameState, hero: Hero): boolean {
         say(state, `금화 ${gold}을(를) 주웠다.`);
         return true;
     }
+    // 겹쳐 쌓이는 무기는 한 뭉치가 `STACK_MAX` 까지다. 바닥 더미가 그보다 크면(한 칸에
+    // 계속 쏘아 쌓인 것) **한 뭉치 몫만** 떼어 줍고 나머지는 발밑에 둔다 — 새 번호를 준다.
+    const pile = it.count;
+    const split = it.kind === "weapon" && !!WEAPONS[it.type]?.stack && it.count > STACK_MAX;
+    const picked = split ? makeItem(it.kind, it.type, state.nextItemId++, -1, -1, STACK_MAX) : it;
+    if (split) {
+        picked.plusHit = it.plusHit;
+        picked.plusDam = it.plusDam;
+        picked.plusKnown = it.plusKnown;
+        picked.blessed = it.blessed;
+        picked.cursed = it.cursed;
+        picked.curseKnown = it.curseKnown;
+        picked.socketGem = it.socketGem;
+        it.count -= STACK_MAX;
+    }
     // **배낭에 있는 쪽**을 받는다. 겹쳐 쌓였으면 집은 물건과 다른 물건이고, 자리를
     // 가진 것은 배낭 쪽뿐이다.
-    const inPack = addToPack(hero, it, true);
+    const inPack = addToPack(hero, picked, true);
     if (!inPack) {
-        say(state, "배낭이 꽉 찼다.");
-        return false;
+        // 못 얹은 몫은 `picked.count` 에 남아 있다 — 떼어 온 것이면 더미로 돌려놓는다.
+        if (split) it.count += picked.count;
+        const took = pile - it.count;
+        if (took === 0) {
+            say(state, "배낭이 꽉 찼다.");
+            return false;
+        }
+        say(state, `${describe(it, state.known, state.appearance)} ${took}개만 주웠다 — 배낭이 꽉 찼다.`);
+        return true;
     }
-    level.items = level.items.filter((i) => i.id !== it.id);
+    if (!split) level.items = level.items.filter((i) => i.id !== it.id);
     if (it.kind === "amulet") {
         hero.hasAmulet = true;
         state.known["amulet:amulet"] = true;
@@ -973,6 +996,7 @@ function pickUp(state: GameState, hero: Hero): boolean {
     } else {
         say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}`);
     }
+    if (split) say(state, `발밑에 ${it.count}개가 남았다.`);
     return true;
 }
 
@@ -2598,7 +2622,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     // 쏘아 **맞힌** 화살은 부러지기도 한다(NetHack 의 `!rn2(4)`). 빗나간 것과 손으로
     // 던진 것은 그대로 떨어진다 — 줍는 수고가 곧 탄약의 값이다.
     if (bow && rng.chance(ARROW_BREAK_CHANCE)) {
-        say(state, `${WEAPONS[it.type]?.name ?? "화살"}이 부러졌다.`);
+        say(state, `${WEAPONS[it.type]?.name ?? "화살"}이(가) 부러졌다.`);
         return true;
     }
     land();

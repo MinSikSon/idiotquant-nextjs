@@ -51,6 +51,7 @@ import {
     SCROLLS,
     WANDS,
     WEAPONS,
+    HAND_THROWN_AMMO,
     defenseOf,
     isThrowable,
     itemChar,
@@ -2583,10 +2584,23 @@ export default function Rogue() {
                                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[var(--rg-muted)] border-b border-[var(--rg-line-soft)] pb-2">
                                                                 {entry.kind === "weapon" && (
                                                                     <>
-                                                                        <div>
-                                                                            <span className="text-[var(--rg-faint)]">피해: </span>
-                                                                            <span className="text-[var(--rg-strong)]">{WEAPONS[entry.type]?.damage ?? "1d2"}</span>
-                                                                        </div>
+                                                                        {/* 활·석궁은 때리기와 쏘기가 다른 값이다 — 둘 다 적는다. 탄약은 쏠 때와 손으로 던질 때가 다르다. */}
+                                                                        {WEAPONS[entry.type]?.fireDamage ? (
+                                                                            <div>
+                                                                                <span className="text-[var(--rg-faint)]">때리기 · 쏘기: </span>
+                                                                                <span className="text-[var(--rg-strong)]">{WEAPONS[entry.type]?.damage} · {WEAPONS[entry.type]?.fireDamage}</span>
+                                                                            </div>
+                                                                        ) : WEAPONS[entry.type]?.launcher ? (
+                                                                            <div>
+                                                                                <span className="text-[var(--rg-faint)]">쏘기 · 던지기: </span>
+                                                                                <span className="text-[var(--rg-strong)]">{WEAPONS[entry.type]?.damage} · {HAND_THROWN_AMMO.damage}</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div>
+                                                                                <span className="text-[var(--rg-faint)]">피해: </span>
+                                                                                <span className="text-[var(--rg-strong)]">{WEAPONS[entry.type]?.damage ?? "1d2"}</span>
+                                                                            </div>
+                                                                        )}
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">숙련: </span>
                                                                             <span className="font-bold text-[var(--rg-gold)]">{currentWeaponSkill && `${currentWeaponSkill.rank} ${currentWeaponSkill.hit >= 0 ? `+${currentWeaponSkill.hit}` : currentWeaponSkill.hit}/${currentWeaponSkill.damage >= 0 ? `+${currentWeaponSkill.damage}` : currentWeaponSkill.damage}`}</span>

@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
-import { WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
+import { STACK_MAX, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
 import { deserialize, serialize } from "@/lib/rogue/storage";
@@ -381,7 +381,7 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         }
         // 기록은 쌓이는 줄이다(200줄에서 잘린다) — 끝에서 한 번만 센다.
         assert.ok(t.messages.length < 200, "기록이 잘려서 부러진 화살을 셀 수 없다");
-        const broken = t.messages.filter((line) => line.includes("화살이 부러졌다")).length;
+        const broken = t.messages.filter((line) => line.includes("화살이(가) 부러졌다")).length;
         const inPack = packItem(t.heroes[0], letter)?.count ?? 0;
         const onFloor = t.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0);
         assert.ok(broken > 0, "열다섯 번 쏘는 동안 한 대도 안 부러졌다");
@@ -409,7 +409,24 @@ test("활 사다리 — 단궁 → 장궁 → 요정족 활 → 사이하의 활
 
     // ── 배낭 줄은 쏘기 주사위를 적는다
     const long = makeItem("weapon", "long bow", 1030, -1, -1);
-    assert.equal(itemPower(long, {}), "쏘기 1d3");
+    assert.equal(itemPower(long, {}), "때리기 1d1 · 쏘기 1d3");
+    assert.equal(itemPower(makeItem("weapon", "arrow", 1031, -1, -1, 5), {}), "쏘기 1d6 · 던지기 1d2");
+
+    // ── 활로 직접 때리면 막대기다 — 활의 손질도 활 숙련도 안 붙는다(쏠 때만 붙는다)
+    {
+        const r = newGame(136, {}, {}, {}, {}, "ranger");
+        const hero = r.heroes[0];
+        const bow = hero.pack.find((it) => it.id === hero.weaponId)!;
+        bow.plusHit = bow.plusDam = 7;
+        hero.weaponSkills!.bow = 3;
+        const weaponPart = (terms: { n: number; why: string }[]) =>
+            terms.filter((t) => t.why === "enchant" || t.why.includes("단궁")).reduce((n, t) => n + t.n, 0);
+        assert.equal(weaponPart(heroHitTerms(hero)), 0, "활로 때리는 명중에 활의 손질·숙련이 붙었다");
+        assert.equal(weaponPart(heroDamTerms(hero)), 0, "활로 때리는 피해에 활의 손질·숙련이 붙었다");
+        // 칼은 그대로 붙는다
+        const dagger = hero.pack.find((it) => it.type === "dagger")!;
+        assert.ok(heroDamTerms(hero, dagger).some((t) => t.why === "enchant" && t.n === 1), "단검의 손질이 빠졌다");
+    }
 
     // ── 화살은 어느 활로든 쏘고, 쥔 활의 주사위가 실린다
     let s = newGame(132, {}, {}, {}, {}, "ranger");
@@ -429,6 +446,42 @@ test("활 사다리 — 단궁 → 장궁 → 요정족 활 → 사이하의 활
     }
     assert.ok(s.messages.some((line) => line.includes("(장궁 1d3)")), "장궁으로 쏜 화살에 장궁의 주사위가 안 붙었다");
     assert.ok(!s.messages.some((line) => line.includes("(단궁")), "장궁을 쥐었는데 단궁의 주사위가 붙었다");
+});
+
+test("석궁과 볼트 — 볼트는 석궁으로만 쏘고, 연사 없이 한 발이 무겁다 (NetHack)", () => {
+    // ── 레인저가 석궁을 쥐어도, 숙련이 전문이어도 연사는 없다
+    let s = newGame(140, {}, {}, {}, {}, "ranger");
+    give(s, makeItem("weapon", "crossbow", 1040, -1, -1), "w");
+    give(s, makeItem("weapon", "bolt", 1041, -1, -1, 20), "x");
+    s = perform(s, { t: "wield", letter: "w" });
+    const hero = s.heroes[0];
+    hero.weaponSkills!.crossbow = 3;
+    const bolts = packItem(hero, "x")!;
+    const arrows = hero.pack.find((it) => it.type === "arrow")!;
+    assert.equal(launcherFor(hero, bolts)?.type, "crossbow", "석궁이 볼트의 발사기로 안 잡힌다");
+    assert.equal(launcherFor(hero, arrows), undefined, "석궁으로 화살을 쏜다");
+    assert.equal(volleyMax(hero, bolts), 1, "석궁에 연사가 붙었다");
+    assert.equal(rapidFireOf(hero)?.item.type, "bolt", "석궁을 쥔 레인저의 토글이 볼트를 안 고른다");
+
+    // ── 쏘면 한 턴에 한 발, 석궁의 주사위가 실린다
+    const [dx, dy] = openWay(s);
+    s.level.tiles[idx(hero.x + dx, hero.y + dy)] = T.FLOOR;
+    const m = spawnMonster("Z", hero.x + dx, hero.y + dy, new Rng(1));
+    m.hp = m.maxHp = 9999;
+    s.level.monsters = [m];
+    s.bestiary.Z = 1;
+    for (let i = 0; i < 8; i++) {
+        s.heroes[0].hp = s.heroes[0].maxHp;
+        const before = packItem(s.heroes[0], "x")!.count;
+        s = perform(s, { t: "throw", letter: "x", dx, dy });
+        assert.equal(before - packItem(s.heroes[0], "x")!.count, 1, "석궁이 한 턴에 두 발 이상 쐈다");
+    }
+    assert.ok(s.messages.some((line) => line.includes("(석궁 2d4)")), "볼트의 피해에 석궁의 주사위가 안 붙었다");
+
+    // ── 활로는 볼트를 못 쏜다(손으로 던진 것이 된다)
+    const t = newGame(141, {}, {}, {}, {}, "ranger");
+    give(t, makeItem("weapon", "bolt", 1042, -1, -1, 5), "x");
+    assert.equal(launcherFor(t.heroes[0], packItem(t.heroes[0], "x")!), undefined, "단궁으로 볼트를 쏜다");
 });
 
 test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화살 또는 투척 무기", () => {
@@ -478,49 +531,91 @@ test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화�
     }
 });
 
-test("낱개로 주운 화살·표창은 배낭의 한 뭉치로 합쳐진다 — 되읽은 옛 저장도", () => {
-    // ── 발밑의 화살을 한 대씩 주워도 배낭 칸은 늘지 않는다
+test("낱개로 주운 화살·표창은 한 뭉치(최대 40)로 합쳐지고, 넘치면 새 뭉치 — 되읽은 옛 저장도", () => {
+    const arrowStacks = (s: GameState) => s.heroes[0].pack.filter((it) => it.type === "arrow").map((it) => it.count);
+    const drop = (s: GameState, type: string, id: number, count: number) => {
+        s.level.items.push(makeItem("weapon", type, id, s.heroes[0].x, s.heroes[0].y, count));
+    };
+
+    // ── 40 개가 찬 뭉치에는 안 얹고, 새 뭉치를 연 뒤 그쪽으로 모은다
     {
         let s = newGame(130, {}, {}, {}, {}, "ranger");
         s.level.monsters = [];
-        const hero = s.heroes[0];
-        const slots = hero.pack.length;
-        const stack = hero.pack.find((it) => it.type === "arrow")!;
+        const slots = s.heroes[0].pack.length;
+        assert.equal(STACK_MAX, 40);
         for (let i = 0; i < 3; i++) {
-            s.level.items.push(makeItem("weapon", "arrow", 1000 + i, s.heroes[0].x, s.heroes[0].y, 1));
+            drop(s, "arrow", 1000 + i, 1);
             s = perform(s, { t: "pickup" });
         }
-        assert.equal(s.heroes[0].pack.length, slots, "주운 화살이 배낭 칸을 새로 차지했다");
-        assert.equal(packItem(s.heroes[0], stack.letter!)!.count, 43, "주운 화살 셋이 원래 뭉치에 안 얹혔다");
+        assert.deepEqual(arrowStacks(s), [40, 3], "꽉 찬 40 뭉치에 얹었거나, 한 대씩 칸을 따로 잡았다");
+        assert.equal(s.heroes[0].pack.length, slots + 1);
 
         // 다른 것은 가른다 — 은화살과 저주받은 화살은 제 칸을 쓴다
-        s.level.items.push(makeItem("weapon", "silver arrow", 1010, s.heroes[0].x, s.heroes[0].y, 1));
+        drop(s, "silver arrow", 1010, 1);
         s = perform(s, { t: "pickup" });
         const cursed = makeItem("weapon", "arrow", 1011, s.heroes[0].x, s.heroes[0].y, 1);
         cursed.cursed = true;
         s.level.items.push(cursed);
         s = perform(s, { t: "pickup" });
-        assert.equal(s.heroes[0].pack.length, slots + 2, "은화살이나 저주받은 화살이 보통 화살에 섞였다");
+        assert.equal(s.heroes[0].pack.length, slots + 3, "은화살이나 저주받은 화살이 보통 화살에 섞였다");
 
         // 표창도 같다
-        s.level.items.push(makeItem("weapon", "dart", 1012, s.heroes[0].x, s.heroes[0].y, 2));
+        drop(s, "dart", 1012, 2);
         s = perform(s, { t: "pickup" });
-        s.level.items.push(makeItem("weapon", "dart", 1013, s.heroes[0].x, s.heroes[0].y, 1));
+        drop(s, "dart", 1013, 1);
         s = perform(s, { t: "pickup" });
-        const darts = s.heroes[0].pack.filter((it) => it.type === "dart");
-        assert.equal(darts.length, 1, "주운 표창이 두 칸으로 갈렸다");
-        assert.equal(darts[0].count, 3);
+        assert.deepEqual(s.heroes[0].pack.filter((it) => it.type === "dart").map((it) => it.count), [3], "주운 표창이 두 칸으로 갈렸다");
     }
 
-    // ── 칸마다 갈라져 저장된 옛 판도 되읽으면 한 뭉치가 된다
+    // ── 뭉치의 빈 자리까지 채우고, 넘치는 몫은 새 뭉치로
+    {
+        let s = newGame(133, {}, {}, {}, {}, "ranger");
+        s.level.monsters = [];
+        const letter = s.heroes[0].pack.find((it) => it.type === "arrow")!.letter!;
+        packItem(s.heroes[0], letter)!.count = 38;
+        drop(s, "arrow", 1050, 5);
+        s = perform(s, { t: "pickup" });
+        assert.deepEqual(arrowStacks(s), [40, 3], "38 + 5 가 40 + 3 으로 안 갈렸다");
+    }
+
+    // ── 40 을 넘는 바닥 더미는 한 뭉치 몫만 줍고 나머지는 발밑에 남는다
+    {
+        let s = newGame(134, {}, {}, {}, {}, "knight");
+        s.level.monsters = [];
+        drop(s, "bolt", 1060, 55);
+        s = perform(s, { t: "pickup" });
+        assert.deepEqual(s.heroes[0].pack.filter((it) => it.type === "bolt").map((it) => it.count), [40]);
+        const left = s.level.items.filter((it) => it.type === "bolt").reduce((n, it) => n + it.count, 0);
+        assert.equal(left, 15, "주운 40 을 뺀 나머지가 발밑에 안 남았다");
+        assert.ok(s.messages.some((m) => m.includes("발밑에 15개가 남았다")));
+        s = perform(s, { t: "pickup" });
+        assert.deepEqual(s.heroes[0].pack.filter((it) => it.type === "bolt").map((it) => it.count), [40, 15]);
+    }
+
+    // ── 배낭 칸이 없으면 빈 자리만큼만 줍고, 나머지는 잃지 않고 발밑에 둔다
+    {
+        let s = newGame(135, {}, {}, {}, {}, "ranger");
+        s.level.monsters = [];
+        const hero = s.heroes[0];
+        packItem(hero, hero.pack.find((it) => it.type === "arrow")!.letter!)!.count = 38;
+        for (let i = hero.pack.length; i < 26; i++) give(s, makeItem("food", "food ration", 1100 + i, -1, -1), "abcdefghijklmnopqrstuvwxyz".split("").find((l) => !packItem(hero, l))!);
+        assert.equal(hero.pack.length, 26);
+        drop(s, "arrow", 1070, 5);
+        s = perform(s, { t: "pickup" });
+        assert.deepEqual(arrowStacks(s), [40], "배낭이 꽉 찼는데 화살 칸이 늘었다");
+        assert.equal(s.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0), 3, "못 주운 3 개가 사라졌다");
+        assert.ok(s.messages.some((m) => m.includes("2개만 주웠다")), "일부만 주운 기록이 없다");
+    }
+
+    // ── 칸마다 갈라져 저장된 옛 판도 되읽으면 40 까지 합쳐진다
     {
         const s = newGame(131, {}, {}, {}, {}, "ranger");
-        give(s, makeItem("weapon", "arrow", 1020, -1, -1, 1), "x");
-        give(s, makeItem("weapon", "arrow", 1021, -1, -1, 2), "y");
+        const hero = s.heroes[0];
+        packItem(hero, hero.pack.find((it) => it.type === "arrow")!.letter!)!.count = 30;
+        give(s, makeItem("weapon", "arrow", 1020, -1, -1, 5), "x");
+        give(s, makeItem("weapon", "arrow", 1021, -1, -1, 10), "y");
         const back = deserialize(serialize(s))!;
-        const arrows = back.heroes[0].pack.filter((it) => it.type === "arrow");
-        assert.equal(arrows.length, 1, "되읽은 판에 화살이 여러 칸으로 남았다");
-        assert.equal(arrows[0].count, 43);
+        assert.deepEqual(arrowStacks(back), [40, 5], "되읽은 판의 화살이 30·5·10 → 40·5 로 안 모였다");
         assert.equal(back.heroes[0].weaponId, s.heroes[0].weaponId, "합치다가 쥔 활이 바뀌었다");
     }
 });

@@ -82,6 +82,11 @@ export interface WeaponDef {
      * 안 쌓인다), 사다리를 타고 오르는 것은 이 값뿐이다.
      */
     fireDamage?: string;
+    /**
+     * **연사가 없는 발사기** — NetHack 의 석궁은 다시 걸기가 느려 multishot 이 막힌다.
+     * 대신 한 발이 무겁다(`fireDamage`). 숙련·레인저 보너스가 있어도 늘 한 발이다(`volleyMax`).
+     */
+    slowReload?: boolean;
 }
 
 export interface ArmorDef {
@@ -124,6 +129,10 @@ export const WEAPONS: Record<string, WeaponDef> = {
     "long bow": { name: "장궁", damage: "1d1", damageLarge: "1d1", fireDamage: "1d3", freq: 7, depth: 6, skill: "bow", hands: 1, material: "wood" },
     "elven bow": { name: "요정족 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d4", freq: 5, depth: 12, skill: "bow", hands: 1, material: "wood" },
     "sayha bow": { name: "사이하의 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d6", freq: 2, depth: 20, skill: "bow", hands: 1, material: "wood" },
+    // 석궁과 볼트 — 활과 계열이 다르다(볼트는 석궁으로만, 화살은 활로만 쏜다). 연사가 없는 대신
+    // 한 발이 무겁다: 볼트 1d6 + 석궁 2d4 = 한 발 기댓값 8.5 — 같은 층 장궁 한 발(5.5)의 1.5배쯤.
+    crossbow: { name: "석궁", damage: "1d1", damageLarge: "1d1", fireDamage: "2d4", slowReload: true, freq: 5, depth: 8, skill: "crossbow", hands: 1, material: "wood" },
+    bolt: { name: "볼트", damage: "1d6", damageLarge: "1d6", freq: 5, depth: 8, throwable: true, stack: true, skill: "crossbow", hands: 1, material: "iron", ammunition: true, launcher: "crossbow" },
 };
 
 /** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */
@@ -463,6 +472,12 @@ export function canHoldEnchant(it: Item): boolean {
     if (it.kind !== "weapon") return true;
     return !WEAPONS[it.type]?.stack;
 }
+
+/**
+ * 겹쳐 쌓이는 무기(화살·은화살·볼트·표창) **한 뭉치의 상한.** 넘치는 것은 배낭의 새 칸에
+ * 새 뭉치로 담긴다(`addToPack`). 레인저가 들고 시작하는 화살 한 묶음이 이 수다.
+ */
+export const STACK_MAX = 40;
 
 /** 캠프 상자의 칸 수. 화면도 엔진도 이 수 하나를 본다. */
 export const CHEST_SLOTS = 3;
@@ -975,9 +990,14 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         // 손질 정도는 **이 물건을 써 봤는지**로 가른다 — 같은 종류의 딴 자루는 모른다.
         const plus = it.plusKnown ? (it.plusDam ?? 0) : 0;
         const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "화염" : it.socketGem === "sapphire" ? "동결" : "흡혈"}]` : "";
-        // 활은 휘두르는 피해(모두 1) 대신 **쏠 때 얹는 주사위**를 적는다 — 사다리가 그 값이다.
+        const signed = plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`;
+        // **활은 때리기와 쏘기를 갈라 적는다.** 손질은 쏠 때만 붙으므로 쏘기 쪽에만 적는다 —
+        // 때리기는 막대기로 치는 것이라 손질도 숙련도 안 붙는다(`hero.ts` 의 `bashesWith`).
         const fire = launcherDamageOf(it);
-        return `${fire ? "쏘기" : "피해"} ${fire ?? weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}${sock}`;
+        if (fire) return `때리기 ${weaponDamageOf(it)} · 쏘기 ${fire}${signed}${sock}`;
+        // 발사기로 쏘는 탄약은 쏠 때의 주사위와 손으로 던질 때의 주사위가 다르다.
+        if (WEAPONS[it.type]?.launcher) return `쏘기 ${weaponDamageOf(it)} · 던지기 ${HAND_THROWN_AMMO.damage}${sock}`;
+        return `피해 ${weaponDamageOf(it)}${signed}${sock}`;
     }
     if (it.kind === "armor") {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
