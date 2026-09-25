@@ -320,8 +320,6 @@ export function mergeStacks(hero: Hero): void {
 }
 
 export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | null {
-    it.x = -1;
-    it.y = -1;
     // 단검은 장착 중인 한 자루와 배낭의 예비 단검을 구분해야 한다. 장착 중인 객체를
     // 묶어 버리면 이도류의 주손·보조손이 같은 묶음을 가리키게 되므로, 미장착 단검만
     // 같은 강화/저주 상태끼리 합친다.
@@ -361,7 +359,10 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
         }
     }
     const letter = freeLetter(hero);
+    // 좌표는 **배낭에 들어갈 때만** 지운다 — 꽉 차서 못 넣은 바닥 물건은 제자리에 남아야 한다.
     if (!letter) return null;
+    it.x = -1;
+    it.y = -1;
     it.letter = letter;
     hero.pack.push(it);
     hero.pack.sort((a, b) => (a.letter ?? "").localeCompare(b.letter ?? ""));
