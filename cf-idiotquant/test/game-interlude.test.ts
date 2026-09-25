@@ -9,11 +9,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { FRAMES } from "@/lib/game/ui/artFrames";
-import sharp from "sharp";
 
-import { cutToPark, ART_KEYS, type ArtKey } from "@/lib/game/core/interlude";
+import { cutToPark, ART_KEYS } from "@/lib/game/core/interlude";
 import { CHAPTERS } from "@/lib/game/core/chapters";
-import type { ChapterSummary, EndReason } from "@/lib/game/core/types";
+import type { EndReason } from "@/lib/game/core/types";
 
 const LAST = CHAPTERS[CHAPTERS.length - 1]!;
 
@@ -48,8 +47,3 @@ test("엔딩 넷이 저마다 자기 그림 키를 낸다 · 표의 모든 키�
         }
     }
 });
-
-/** 표를 키 타입까지 붙여 훑는다. `Object.entries` 는 키를 string 으로 준다. */
-function entries(): Array<[ArtKey, readonly [number, number, number, number]]> {
-    return Object.entries(FRAMES) as Array<[ArtKey, readonly [number, number, number, number]]>;
-}
