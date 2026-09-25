@@ -20,6 +20,7 @@ import {
     armorClassOf,
     defenseOf,
     isThrowable,
+    launcherDamageOf,
     makeItem,
     needsBow,
     weaponDamageOf,
@@ -75,9 +76,24 @@ export function weaponSkillMax(hero: Hero, type: string): WeaponSkill {
     return Math.max(1, limits[skill] ?? limits[type] ?? 1) as WeaponSkill;
 }
 
-/** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). */
+/**
+ * **활·석궁으로 직접 때리는가** — 발사기는 쏘는 도구라, 휘두르면 막대기로 치는 것과 같다
+ * (NetHack 의 launcher bashing). 그때는 **활 숙련도 활의 손질도 안 붙는다** — 그 둘은 쏠 때의
+ * 값이다(`throwItem`). 붙이면 `+9` 사이하의 활로 때리는 것이 칼보다 세진다.
+ */
+function bashesWith(weapon: Item | undefined): boolean {
+    return !!launcherDamageOf(weapon);
+}
+
+/** 휘두를 때 얹히는 무기의 손질 — 발사기로 때리면 0 이다(`bashesWith`). */
+function meleePlus(weapon: Item | undefined, which: "plusHit" | "plusDam"): number {
+    return bashesWith(weapon) ? 0 : (weapon?.[which] ?? 0);
+}
+
+/** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). 발사기로 때리면 없다. */
 export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
     if (!weapon || weapon.kind !== "weapon") return [];
+    if (bashesWith(weapon)) return [];
     const level = weaponSkillLevel(hero, weapon.type);
     const { hit, damage: dam } = weaponSkillBonus(level);
     const rank = weaponSkillRankName(level);
@@ -589,7 +605,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
-        { n: weapon?.plusHit ?? 0, why: "enchant" },
+        { n: meleePlus(weapon, "plusHit"), why: "enchant" },
     ];
 }
 
@@ -600,7 +616,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
         ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
         ...weaponSkillTerms(hero, weapon).slice(1).map((term) => ({ ...term, why: `${weaponSkillRankName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
-        { n: weapon?.plusDam ?? 0, why: "enchant" },
+        { n: meleePlus(weapon, "plusDam"), why: "enchant" },
     ];
     const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")
         ? Math.min(10, Math.floor(hero.gold / 100))
@@ -637,7 +653,7 @@ export function heroHitBonus(hero: Hero, known: Record<string, boolean> = {}): n
     // **이름표로 고르지 않는다.** 예전에는 `why !== "무기"` 로 걸렀는데, 굴림 줄에 무기
     // 이름을 적기 시작하자(`+2진은검`) 그 문자열이 안 맞아 **조용히 안 가려졌다.**
     // 빼야 할 것은 「무기라고 적힌 항목」이 아니라 **그 무기의 손질값**이다.
-    return identified ? sum : sum - (w?.plusHit ?? 0);
+    return identified ? sum : sum - meleePlus(w, "plusHit");
 }
 
 /** 지금의 힘 — 힘 반지가 얹힌다. 명중·피해 보정은 이 값으로 잰다. */
@@ -681,7 +697,7 @@ export function heroAttackText(hero: Hero, known: Record<string, boolean>): stri
         const identified = !!w && known[`weapon:${w.type}`] === true;
         // `heroHitBonus` 와 같은 이유로 **이름표가 아니라 값으로** 뺀다(거기 주석 참고).
         const all = heroDamTerms(hero, w, withStr).reduce((sum, t) => sum + t.n, 0);
-        const bonus = identified ? all : all - (w?.plusDam ?? 0);
+        const bonus = identified ? all : all - meleePlus(w, "plusDam");
         return `${heroDamageDice(hero, w)}${bonus === 0 ? "" : bonus > 0 ? `+${bonus}` : `${bonus}`}`;
     };
     const main = one(equippedWeapon(hero), true);

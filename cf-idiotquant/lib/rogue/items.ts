@@ -990,9 +990,14 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         // 손질 정도는 **이 물건을 써 봤는지**로 가른다 — 같은 종류의 딴 자루는 모른다.
         const plus = it.plusKnown ? (it.plusDam ?? 0) : 0;
         const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "화염" : it.socketGem === "sapphire" ? "동결" : "흡혈"}]` : "";
-        // 활은 휘두르는 피해(모두 1) 대신 **쏠 때 얹는 주사위**를 적는다 — 사다리가 그 값이다.
+        const signed = plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`;
+        // **활은 때리기와 쏘기를 갈라 적는다.** 손질은 쏠 때만 붙으므로 쏘기 쪽에만 적는다 —
+        // 때리기는 막대기로 치는 것이라 손질도 숙련도 안 붙는다(`hero.ts` 의 `bashesWith`).
         const fire = launcherDamageOf(it);
-        return `${fire ? "쏘기" : "피해"} ${fire ?? weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}${sock}`;
+        if (fire) return `때리기 ${weaponDamageOf(it)} · 쏘기 ${fire}${signed}${sock}`;
+        // 발사기로 쏘는 탄약은 쏠 때의 주사위와 손으로 던질 때의 주사위가 다르다.
+        if (WEAPONS[it.type]?.launcher) return `쏘기 ${weaponDamageOf(it)} · 던지기 ${HAND_THROWN_AMMO.damage}${sock}`;
+        return `피해 ${weaponDamageOf(it)}${signed}${sock}`;
     }
     if (it.kind === "armor") {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.

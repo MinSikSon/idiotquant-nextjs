@@ -409,7 +409,24 @@ test("활 사다리 — 단궁 → 장궁 → 요정족 활 → 사이하의 활
 
     // ── 배낭 줄은 쏘기 주사위를 적는다
     const long = makeItem("weapon", "long bow", 1030, -1, -1);
-    assert.equal(itemPower(long, {}), "쏘기 1d3");
+    assert.equal(itemPower(long, {}), "때리기 1d1 · 쏘기 1d3");
+    assert.equal(itemPower(makeItem("weapon", "arrow", 1031, -1, -1, 5), {}), "쏘기 1d6 · 던지기 1d2");
+
+    // ── 활로 직접 때리면 막대기다 — 활의 손질도 활 숙련도 안 붙는다(쏠 때만 붙는다)
+    {
+        const r = newGame(136, {}, {}, {}, {}, "ranger");
+        const hero = r.heroes[0];
+        const bow = hero.pack.find((it) => it.id === hero.weaponId)!;
+        bow.plusHit = bow.plusDam = 7;
+        hero.weaponSkills!.bow = 3;
+        const weaponPart = (terms: { n: number; why: string }[]) =>
+            terms.filter((t) => t.why === "enchant" || t.why.includes("단궁")).reduce((n, t) => n + t.n, 0);
+        assert.equal(weaponPart(heroHitTerms(hero)), 0, "활로 때리는 명중에 활의 손질·숙련이 붙었다");
+        assert.equal(weaponPart(heroDamTerms(hero)), 0, "활로 때리는 피해에 활의 손질·숙련이 붙었다");
+        // 칼은 그대로 붙는다
+        const dagger = hero.pack.find((it) => it.type === "dagger")!;
+        assert.ok(heroDamTerms(hero, dagger).some((t) => t.why === "enchant" && t.n === 1), "단검의 손질이 빠졌다");
+    }
 
     // ── 화살은 어느 활로든 쏘고, 쥔 활의 주사위가 실린다
     let s = newGame(132, {}, {}, {}, {}, "ranger");
