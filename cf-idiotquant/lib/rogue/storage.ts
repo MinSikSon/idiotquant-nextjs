@@ -24,6 +24,7 @@ import {
     defenseOf,
     fillAppearances,
     weaponDamageOf,
+    launcherDamageOf,
 } from "./items";
 import { heroDefense, mergeStacks } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
@@ -674,9 +675,10 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
             const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "루비" : it.socketGem === "sapphire" ? "사파이어" : "에메랄드"}]` : "";
             name = `${base}${plusText(it.plusHit)}${sock}${curseText}`;
-            const dam = weaponDamageOf(it);
+            const fire = launcherDamageOf(it);
+            const dam = fire ?? weaponDamageOf(it);
             const plusDam = it.plusDam ? (it.plusDam > 0 ? `+${it.plusDam}` : `${it.plusDam}`) : "";
-            power = `피해 ${dam}${plusDam}`;
+            power = `${fire ? "쏘기" : "피해"} ${dam}${plusDam}`;
             break;
         }
         case "armor": {

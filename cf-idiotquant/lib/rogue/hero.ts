@@ -366,7 +366,8 @@ export function launcherFor(hero: Hero, ammo: Item): Item | undefined {
     const launcher = WEAPONS[ammo.type]?.launcher;
     if (!launcher) return undefined;
     const held = equippedWeapon(hero);
-    return held?.type === launcher ? held : undefined;
+    // 계열이 맞는 **발사기**면 된다 — 화살은 단궁이든 사이하의 활이든 쏜다.
+    return held && WEAPONS[held.type]?.fireDamage && WEAPONS[held.type]?.skill === launcher ? held : undefined;
 }
 
 /**

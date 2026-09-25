@@ -72,10 +72,16 @@ export interface WeaponDef {
     /** 발사기 없이 던지는 탄약인지. */
     ammunition?: boolean;
     /**
-     * 이 탄약을 **쏘는** 발사기의 종류(NetHack 의 launcher). 있으면 쥔 발사기로 쏘고,
-     * 없이 던지면 손으로 던진 것이 된다(명중 −4 · 피해 1d2).
+     * 이 탄약을 **쏘는** 발사기의 계열(NetHack 의 launcher) — 발사기의 `skill` 과 맞춘다.
+     * 화살은 `"bow"` 라 **어느 활로든** 쏜다. 없이 던지면 손으로 던진 것이 된다(명중 −4 · 피해 1d2).
      */
     launcher?: string;
+    /**
+     * **발사기만 가진다** — 쏠 때 탄약 주사위에 얹는 활의 주사위. 이것이 있으면 발사기다.
+     * 휘두를 때의 `damage` 와 **다른 값**이다: 활로 때리는 것은 모든 활이 `1d1` 이고(숙련도
+     * 안 쌓인다), 사다리를 타고 오르는 것은 이 값뿐이다.
+     */
+    fireDamage?: string;
 }
 
 export interface ArmorDef {
@@ -97,21 +103,27 @@ export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
     dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
     // 활은 **쏘는 도구**다 — 휘두르면 1 뿐이고(`1d1`), 숙련은 쏜 화살로만 쌓인다.
-    "short bow": { name: "단궁", damage: "1d1", damageLarge: "1d1", freq: 8, depth: 1, skill: "bow", hands: 1, material: "wood" },
+    // 쏠 때는 `fireDamage` 가 화살에 얹힌다. 활의 사다리는 아래 「활 사다리」에 있다.
+    "short bow": { name: "단궁", damage: "1d1", damageLarge: "1d1", fireDamage: "1d2", freq: 8, depth: 1, skill: "bow", hands: 1, material: "wood" },
     mace: { name: "철퇴", damage: "2d4", damageLarge: "1d6", freq: 10, depth: 1, skill: "mace", hands: 1, material: "iron" },
     spear: { name: "창", damage: "2d3", damageLarge: "1d6", freq: 6, depth: 1, throwable: true, skill: "spear", hands: 1, material: "iron" },
     dart: { name: "표창", damage: "1d3", damageLarge: "1d2", freq: 8, depth: 1, throwable: true, stack: true, skill: "dart", hands: 1, material: "iron", ammunition: true },
     // 화살의 주사위는 **활로 쏠 때** 굴린다(NetHack 화살 d6). 손으로 던지면 `HAND_THROWN_AMMO`.
-    arrow: { name: "화살", damage: "1d6", damageLarge: "1d6", freq: 8, depth: 1, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "short bow" },
+    arrow: { name: "화살", damage: "1d6", damageLarge: "1d6", freq: 8, depth: 1, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "bow" },
     // 사다리
     "long sword": { name: "장검", damage: "3d4", damageLarge: "1d8", freq: 9, depth: 4, skill: "long sword", hands: 1, material: "iron" },
     "two-handed sword": { name: "양손검", damage: "4d4", damageLarge: "2d6", freq: 7, depth: 8, skill: "two-handed sword", hands: 2, material: "iron" },
-    "silver arrow": { name: "은화살", damage: "1d8", damageLarge: "1d8", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true, launcher: "short bow" },
+    "silver arrow": { name: "은화살", damage: "1d8", damageLarge: "1d8", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true, launcher: "bow" },
     "silver sword": { name: "진은검", damage: "4d5", damageLarge: "2d6", freq: 6, depth: 12, skill: "long sword", hands: 1, material: "silver" },
     "thirsty sword": { name: "목마른 자의 검", damage: "4d6", damageLarge: "2d8", freq: 5, depth: 16, skill: "long sword", hands: 1, material: "iron" },
     "magic sword": { name: "마법의 검", damage: "5d5", damageLarge: "2d7", freq: 4, depth: 19, skill: "long sword", hands: 1, material: "iron" },
     "knight sword": { name: "기사의 검", damage: "5d6", damageLarge: "2d8", freq: 3, depth: 22, skill: "long sword", hands: 1, material: "iron" },
     "baphomet sword": { name: "바포메트의 검", damage: "6d5", damageLarge: "3d6", freq: 2, depth: 25, skill: "long sword", hands: 1, material: "iron" },
+    // 활 사다리 — 쏠 때 화살에 얹는 주사위(`fireDamage`)만 오른다. 연사가 발 수를 곱하므로
+    // 칼의 사다리보다 한 칸이 훨씬 작다(칼은 한 번 휘두르고, 활은 한 턴에 여러 발이다).
+    "long bow": { name: "장궁", damage: "1d1", damageLarge: "1d1", fireDamage: "1d3", freq: 7, depth: 6, skill: "bow", hands: 1, material: "wood" },
+    "elven bow": { name: "요정족 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d4", freq: 5, depth: 12, skill: "bow", hands: 1, material: "wood" },
+    "sayha bow": { name: "사이하의 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d6", freq: 2, depth: 20, skill: "bow", hands: 1, material: "wood" },
 };
 
 /** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */
@@ -963,7 +975,9 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         // 손질 정도는 **이 물건을 써 봤는지**로 가른다 — 같은 종류의 딴 자루는 모른다.
         const plus = it.plusKnown ? (it.plusDam ?? 0) : 0;
         const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "화염" : it.socketGem === "sapphire" ? "동결" : "흡혈"}]` : "";
-        return `피해 ${weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}${sock}`;
+        // 활은 휘두르는 피해(모두 1) 대신 **쏠 때 얹는 주사위**를 적는다 — 사다리가 그 값이다.
+        const fire = launcherDamageOf(it);
+        return `${fire ? "쏘기" : "피해"} ${fire ?? weaponDamageOf(it)}${plus === 0 ? "" : plus > 0 ? `+${plus}` : `${plus}`}${sock}`;
     }
     if (it.kind === "armor") {
         // 모르는 갑옷은 손질을 뺀 기본값으로 적는다.
@@ -989,7 +1003,7 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
  */
 export function equipmentRating(it: Item): number | null {
     if (it.kind === "weapon") {
-        const [count, sides] = weaponDamageOf(it).split("d").map(Number);
+        const [count, sides] = (launcherDamageOf(it) ?? weaponDamageOf(it)).split("d").map(Number);
         return count * ((sides + 1) / 2) + (it.plusKnown ? (it.plusDam ?? 0) : 0);
     }
     if (it.kind === "armor") {
@@ -1026,6 +1040,11 @@ export function weaponMaterialOf(type: string): WeaponDef["material"] {
 export function isThrowable(it: Item): boolean {
     if (it.kind === "potion") return true;
     return it.kind === "weapon" && !!WEAPONS[it.type]?.throwable;
+}
+
+/** 발사기가 쏠 때 화살에 얹는 주사위. 발사기가 아니면 `null`. */
+export function launcherDamageOf(it: Item | undefined): string | null {
+    return it && it.kind === "weapon" ? (WEAPONS[it.type]?.fireDamage ?? null) : null;
 }
 
 /** 화살은 활이 있어야 **쏠** 수 있는 탄약이다 — 없으면 손으로 던진다(`HAND_THROWN_AMMO`). */

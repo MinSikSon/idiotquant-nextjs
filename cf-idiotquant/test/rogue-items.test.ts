@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
-import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
+import { WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
 import { deserialize, serialize } from "@/lib/rogue/storage";
@@ -386,9 +386,49 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         const onFloor = t.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0);
         assert.ok(broken > 0, "열다섯 번 쏘는 동안 한 대도 안 부러졌다");
         // 활로 쏜 화살에는 **활의 주사위**도 실린다 — 기록에 그 항이 남는다(아는 종이라 펼쳐 적는다)
-        assert.ok(t.messages.some((line) => line.includes("(단궁 1d1)")), "쏜 화살의 피해에 단궁의 주사위가 안 붙었다");
+        assert.ok(t.messages.some((line) => line.includes("(단궁 1d2)")), "쏜 화살의 피해에 단궁의 주사위가 안 붙었다");
         assert.equal(inPack + onFloor + broken, 40, `화살 셈이 안 맞는다: 배낭 ${inPack} + 바닥 ${onFloor} + 부러짐 ${broken}`);
     }
+});
+
+test("활 사다리 — 단궁 → 장궁 → 요정족 활 → 사이하의 활, 오르는 것은 쏠 때의 주사위뿐", () => {
+    const ladder = ["short bow", "long bow", "elven bow", "sayha bow"];
+    // ── 층이 깊을수록 쏠 때 얹는 주사위가 크고, 휘두르면 모두 1 이다(활로 때려 숙련을 못 올린다)
+    let prevDepth = 0;
+    let prevMean = 0;
+    for (const type of ladder) {
+        const def = WEAPONS[type];
+        assert.ok(def?.fireDamage, `${type} 에 쏘기 주사위가 없다`);
+        const [n, sides] = def.fireDamage!.split("d").map(Number);
+        const mean = (n * (sides + 1)) / 2;
+        assert.ok(def.depth > prevDepth && mean > prevMean, `${def.name} 이(가) 사다리 순서를 어긴다`);
+        prevDepth = def.depth;
+        prevMean = mean;
+        assert.equal(weaponDamageOf(makeItem("weapon", type, 1, -1, -1)), "1d1", `${def.name} 을(를) 휘두르는 피해가 1 이 아니다`);
+    }
+
+    // ── 배낭 줄은 쏘기 주사위를 적는다
+    const long = makeItem("weapon", "long bow", 1030, -1, -1);
+    assert.equal(itemPower(long, {}), "쏘기 1d3");
+
+    // ── 화살은 어느 활로든 쏘고, 쥔 활의 주사위가 실린다
+    let s = newGame(132, {}, {}, {}, {}, "ranger");
+    give(s, long, "y");
+    s = perform(s, { t: "wield", letter: "y" });
+    const arrows = s.heroes[0].pack.find((it) => it.type === "arrow")!;
+    assert.equal(launcherFor(s.heroes[0], arrows)?.type, "long bow", "장궁이 화살의 발사기로 안 잡힌다");
+    const [dx, dy] = openWay(s);
+    s.level.tiles[idx(s.heroes[0].x + dx, s.heroes[0].y + dy)] = T.FLOOR;
+    const m = spawnMonster("Z", s.heroes[0].x + dx, s.heroes[0].y + dy, new Rng(1));
+    m.hp = m.maxHp = 9999;
+    s.level.monsters = [m];
+    s.bestiary.Z = 1;
+    for (let i = 0; i < 8; i++) {
+        s.heroes[0].hp = s.heroes[0].maxHp;
+        s = perform(s, { t: "throw", letter: arrows.letter!, dx, dy });
+    }
+    assert.ok(s.messages.some((line) => line.includes("(장궁 1d3)")), "장궁으로 쏜 화살에 장궁의 주사위가 안 붙었다");
+    assert.ok(!s.messages.some((line) => line.includes("(단궁")), "장궁을 쥐었는데 단궁의 주사위가 붙었다");
 });
 
 test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화살 또는 투척 무기", () => {
