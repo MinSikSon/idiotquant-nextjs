@@ -35,6 +35,7 @@ import {
     defenseOf,
     describe,
     makeItem,
+    weaponMaterialOf,
 } from "./items";
 import {
     type Attack,
@@ -302,6 +303,26 @@ export function monsterDefense(m: Monster): number {
     return defenseOf(m.def.armor);
 }
 
+/**
+ * 은에 약한 종(`S`)이 은 무기에 맞으면 더 입는 주사위 — NetHack 의 `rnd(20)`.
+ *
+ * 무기 주사위와 **따로** 굴려 한 항으로 적는다. 치명타가 이것까지 두 배로 하면 은화살
+ * 대성공 한 발이 뱀파이어를 통째로 지운다. 은이 아니거나 약하지 않은 상대에게는
+ * **굴리지 않는다** — 난수 흐름이 은을 안 쓴 판과 한 글자도 안 달라진다.
+ */
+export const SILVER_BANE = "1d20";
+
+/** 휘두르거나 쏜 것이 은이고, 맞는 놈이 은에 약하면 그 한 항을 굴려 준다. 아니면 `null`. */
+export function silverTerm(m: Monster, weapon: Item | undefined, rng: Rng): Term | null {
+    if (!weapon || weaponMaterialOf(weapon.type) !== "silver" || !m.def.traits?.includes("S")) return null;
+    return { n: rng.rollDice(SILVER_BANE), why: `은 ${SILVER_BANE}`, showZero: true };
+}
+
+/** 은이 살을 태우는 줄 — 칼로 친 것과 쏜 것이 같은 말을 쓴다. */
+export function silverLine(name: string): string {
+    return `은이 ${name}의 살을 태운다!`;
+}
+
 /** 내가 몬스터를 때린다. */
 /** 이도류의 **보조손이 치르는 값** — 명중에 이만큼 불리하다. */
 export const OFF_HAND_HIT = -2;
@@ -351,6 +372,8 @@ function swing(
     if (isBackstab) {
         damTerms.push({ n: 3, why: "기습" });
     }
+    const silver = silverTerm(m, weapon, rng);
+    if (silver) damTerms.push(silver);
     const d = damageRoll(dice, damTerms.reduce((t, b) => t + b.n, 0), isCrit, rng);
     const guard = monsterDefense(m);
     const dealt = pierce(d.total, guard);
@@ -368,6 +391,7 @@ function swing(
             ? damageLine(dice, d.rolled, damTerms, d.total, guard, dealt, dualHand)
             : damageLine(null, [], [], 0, 0, dealt, dualHand),
     );
+    if (silver) messages.push(silverLine(mName));
     messages.push(
         withDamage(
             killed

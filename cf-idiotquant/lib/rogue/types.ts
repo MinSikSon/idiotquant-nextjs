@@ -92,7 +92,10 @@ export interface MonsterDef {
     damage: string[];
     /** 보자마자 쫓아오는가. 아니면 건드릴 때까지 가만히 있는가. */
     mean: boolean;
-    /** 원작 Rogue 몬스터 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명. */
+    /**
+     * 원작 Rogue 몬스터 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명.
+     * `S` 는 NetHack 에서 가져온 **은에 약함** — 은 무기에 맞으면 `SILVER_BANE` 을 더 입는다.
+     */
     traits?: MonsterTrait[];
     /** 보이지 않는다 — 투명 보기 반지나 감지 효과가 있어야 지도에 드러난다. */
     invisible?: boolean;
@@ -108,7 +111,7 @@ export interface MonsterDef {
     special?: string;
 }
 
-export type MonsterTrait = "M" | "F" | "R" | "G" | "I";
+export type MonsterTrait = "M" | "F" | "R" | "G" | "I" | "S";
 
 export type ChampionPrefix = "blazing" | "shadow" | "gilded" | "swift" | "vampiric";
 

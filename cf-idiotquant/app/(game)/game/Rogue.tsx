@@ -2436,7 +2436,7 @@ export default function Rogue() {
                                     </ul>
                                 )}
                                 <p className="mt-3 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
-                                    ※ 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명
+                                    ※ 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명 · S 은에 약함
                                 </p>
                             </>
                         ) : (

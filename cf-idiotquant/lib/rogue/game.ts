@@ -79,6 +79,8 @@ import {
     monsterDefense,
     monsterDodgeBonus,
     seenBefore,
+    silverLine,
+    silverTerm,
     withDamage,
 } from "./combat";
 import {
@@ -2593,6 +2595,9 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         ...(bow ? [{ n: bow.plusDam ?? 0, why: "활 enchant" }] : []),
         { n: it.plusDam ?? 0, why: "enchant" },
     ];
+    // 은화살이 은에 약한 놈에게 박히면 — 손으로 던졌어도 은은 은이다(NetHack 도 그렇다).
+    const silver = silverTerm(m, it, rng);
+    if (silver) damTerms.push(silver);
     const d = damageRoll(dice, damTerms.reduce((sum, term) => sum + term.n, 0), a.crit, rng);
     // 던진 것도 갑옷에 깎인다 — 손에 쥔 것과 다를 까닭이 없다.
     // 단, **활·석궁으로 쏜 것이 대성공(명중 합 20 이상)이면 갑옷 틈을 꿰뚫어 방어력을 무시한다.**
@@ -2609,6 +2614,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     if (advanced) say(state, `⚔ ${advanced}에 도달했다.`);
     say(state, seen ? damageLine(dice, d.rolled, damTerms, d.total, guard, got) : damageLine(null, [], [], 0, 0, got));
     say(state, attackLine(bow ? "나(쏨)" : "나(던짐)", a, hitTerms));
+    if (silver) say(state, silverLine(m.def.name));
     // 남은 개수보다 피해가 먼저다 — 둘 다 붙으면 「(5개 남음) 피해 3」 순서가 어색하다.
     say(
         state,
