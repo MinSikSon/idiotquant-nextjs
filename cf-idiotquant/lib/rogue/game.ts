@@ -2456,14 +2456,14 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         return true;
     }
 
-    // **활로 쏘면 연사를 굴린다** — NetHack 의 multishot. 발 수는 `1..volleyMax` 이고
-    // 남은 화살보다 많을 수 없다. 몇 발이 나가도 **턴은 하나**다(도적의 단검 2연사와 같다).
-    // 최대가 1 이면 굴리지 않는다 — 연사가 없는 사람의 난수 흐름을 안 바꾼다.
+    // **활로 쏘면(레인저는 표창도) 연사를 굴린다** — NetHack 의 multishot. 발 수는
+    // `1..volleyMax` 이고 남은 개수보다 많을 수 없다. 몇 발이 나가도 **턴은 하나**다(도적의
+    // 단검 2연사와 같다). 최대가 1 이면 굴리지 않는다 — 연사가 없는 사람의 난수 흐름을 안 바꾼다.
     const bow = launcherFor(hero, it);
-    if (volley && bow) {
-        const most = Math.min(volleyMax(hero, it), it.count);
-        const shots = most > 1 ? 1 + rng.rnd(most) : 1;
-        if (shots > 1) say(state, `🏹 ${WEAPONS[it.type]?.name ?? "화살"} ${shots}연사!`);
+    const most = volley ? Math.min(volleyMax(hero, it), it.count) : 1;
+    if (most > 1) {
+        const shots = 1 + rng.rnd(most);
+        if (shots > 1) say(state, `${bow ? "🏹" : "🎯"} ${WEAPONS[it.type]?.name ?? "화살"} ${shots}연사!`);
         for (let i = 0; i < shots && packItem(hero, letter); i++) throwItem(state, hero, letter, dx, dy, rng, false);
         return true;
     }
