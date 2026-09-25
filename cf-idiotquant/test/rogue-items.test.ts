@@ -14,6 +14,7 @@ import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms,
 import { describe, itemPower, makeItem, randomItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
+import { deserialize, serialize } from "@/lib/rogue/storage";
 import { T, idx, walkable, type GameState, type Item, type Tile } from "@/lib/rogue/types";
 
 /**
@@ -434,6 +435,53 @@ test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화�
         give(s, makeItem("weapon", "spear", 993, -1, -1), "x");
         give(s, makeItem("weapon", "dart", 994, -1, -1, 8), "y");
         assert.equal(rapidFireOf(s.heroes[0])?.item.type, "dart", "겹쳐 쌓인 표창보다 창을 먼저 골랐다");
+    }
+});
+
+test("낱개로 주운 화살·표창은 배낭의 한 뭉치로 합쳐진다 — 되읽은 옛 저장도", () => {
+    // ── 발밑의 화살을 한 대씩 주워도 배낭 칸은 늘지 않는다
+    {
+        let s = newGame(130, {}, {}, {}, {}, "ranger");
+        s.level.monsters = [];
+        const hero = s.heroes[0];
+        const slots = hero.pack.length;
+        const stack = hero.pack.find((it) => it.type === "arrow")!;
+        for (let i = 0; i < 3; i++) {
+            s.level.items.push(makeItem("weapon", "arrow", 1000 + i, s.heroes[0].x, s.heroes[0].y, 1));
+            s = perform(s, { t: "pickup" });
+        }
+        assert.equal(s.heroes[0].pack.length, slots, "주운 화살이 배낭 칸을 새로 차지했다");
+        assert.equal(packItem(s.heroes[0], stack.letter!)!.count, 43, "주운 화살 셋이 원래 뭉치에 안 얹혔다");
+
+        // 다른 것은 가른다 — 은화살과 저주받은 화살은 제 칸을 쓴다
+        s.level.items.push(makeItem("weapon", "silver arrow", 1010, s.heroes[0].x, s.heroes[0].y, 1));
+        s = perform(s, { t: "pickup" });
+        const cursed = makeItem("weapon", "arrow", 1011, s.heroes[0].x, s.heroes[0].y, 1);
+        cursed.cursed = true;
+        s.level.items.push(cursed);
+        s = perform(s, { t: "pickup" });
+        assert.equal(s.heroes[0].pack.length, slots + 2, "은화살이나 저주받은 화살이 보통 화살에 섞였다");
+
+        // 표창도 같다
+        s.level.items.push(makeItem("weapon", "dart", 1012, s.heroes[0].x, s.heroes[0].y, 2));
+        s = perform(s, { t: "pickup" });
+        s.level.items.push(makeItem("weapon", "dart", 1013, s.heroes[0].x, s.heroes[0].y, 1));
+        s = perform(s, { t: "pickup" });
+        const darts = s.heroes[0].pack.filter((it) => it.type === "dart");
+        assert.equal(darts.length, 1, "주운 표창이 두 칸으로 갈렸다");
+        assert.equal(darts[0].count, 3);
+    }
+
+    // ── 칸마다 갈라져 저장된 옛 판도 되읽으면 한 뭉치가 된다
+    {
+        const s = newGame(131, {}, {}, {}, {}, "ranger");
+        give(s, makeItem("weapon", "arrow", 1020, -1, -1, 1), "x");
+        give(s, makeItem("weapon", "arrow", 1021, -1, -1, 2), "y");
+        const back = deserialize(serialize(s))!;
+        const arrows = back.heroes[0].pack.filter((it) => it.type === "arrow");
+        assert.equal(arrows.length, 1, "되읽은 판에 화살이 여러 칸으로 남았다");
+        assert.equal(arrows[0].count, 43);
+        assert.equal(back.heroes[0].weaponId, s.heroes[0].weaponId, "합치다가 쥔 활이 바뀌었다");
     }
 });
 
