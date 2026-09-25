@@ -233,16 +233,18 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
             // NetHack Ranger: +1 활 · 화살 두 묶음 · +1 단검 · 망토. 여기서는 겹치는 화살이
             // 강화를 못 가지므로(`canHoldEnchant`) 손질은 활에 싣고, 망토 대신 가죽 갑옷이다.
             // 활을 **먼저** 넣는다 — 처음 넣은 무기를 쥐고 시작한다(`makeHero`).
+            // 표창 한 뭉치는 NetHack 에 없는 몫이다 — 활을 내린 채(`.` 토글이 표창으로 간다) 쓸 탄이다.
             const bow = makeItem("weapon", "short bow", nextId(), -1, -1);
             bow.plusHit = 1;
             bow.plusDam = 1;
             const arrows = makeItem("weapon", "arrow", nextId(), -1, -1, 40);
+            const darts = makeItem("weapon", "dart", nextId(), -1, -1, 10);
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
             dagger.plusHit = 1;
             dagger.plusDam = 1;
             const leather = makeItem("armor", "leather", nextId(), -1, -1);
             const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
-            return [bow, arrows, dagger, leather, food];
+            return [bow, arrows, darts, dagger, leather, food];
         },
     },
 };

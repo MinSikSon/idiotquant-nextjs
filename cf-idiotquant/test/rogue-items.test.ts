@@ -262,12 +262,13 @@ test("도적은 10레벨에 탐색 본능을 얻고 단검을 두 자루씩 던�
 });
 
 test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화살의 파손 (NetHack)", () => {
-    // ── 레인저는 활을 쥐고, 화살 묶음을 들고 시작한다
+    // ── 레인저는 활을 쥐고, 화살 묶음과 표창 뭉치를 들고 시작한다
     const s = newGame(111, {}, {}, {}, {}, "ranger");
     const hero = s.heroes[0];
     const arrows = hero.pack.find((it) => it.type === "arrow")!;
     assert.equal(equippedWeaponType(s), "short bow", "레인저가 활을 쥐고 시작하지 않았다");
     assert.equal(arrows.count, 40, "레인저의 화살 묶음이 없다");
+    assert.equal(hero.pack.find((it) => it.type === "dart")?.count, 10, "레인저의 표창 뭉치가 없다");
     assert.ok(launcherFor(hero, arrows), "쥔 활이 화살의 발사기로 안 잡힌다");
     assert.equal(volleyMax(hero, arrows), 2, "기초 숙련 레인저의 연사 최대가 1 + 1 이 아니다");
     hero.level = 9;
@@ -567,6 +568,9 @@ test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화�
         let s = newGame(123, {}, {}, {}, {}, "ranger");
         const dagger = s.heroes[0].pack.find((it) => it.type === "dagger")!;
         s = perform(s, { t: "wield", letter: dagger.letter! });
+        // 레인저는 표창 뭉치를 들고 시작한다 — 활을 내리면 토글이 곧바로 그것을 고른다
+        assert.equal(rapidFireOf(s.heroes[0])?.item.type, "dart", "활을 내린 레인저의 토글이 시작 표창을 안 골랐다");
+        s.heroes[0].pack = s.heroes[0].pack.filter((it) => it.type !== "dart");
         assert.equal(rapidFireOf(s.heroes[0]), undefined, "쥔 단검이나 활 없는 화살을 토글이 골랐다");
         give(s, makeItem("weapon", "spear", 993, -1, -1), "x");
         give(s, makeItem("weapon", "dart", 994, -1, -1, 8), "y");
@@ -607,7 +611,7 @@ test("낱개로 주운 화살·표창은 한 뭉치(최대 40)로 합쳐지고, 
         s = perform(s, { t: "pickup" });
         drop(s, "dart", 1013, 1);
         s = perform(s, { t: "pickup" });
-        assert.deepEqual(s.heroes[0].pack.filter((it) => it.type === "dart").map((it) => it.count), [3], "주운 표창이 두 칸으로 갈렸다");
+        assert.deepEqual(s.heroes[0].pack.filter((it) => it.type === "dart").map((it) => it.count), [13], "주운 표창이 시작 뭉치(10)에 안 얹히고 칸이 갈렸다");
     }
 
     // ── 뭉치의 빈 자리까지 채우고, 넘치는 몫은 새 뭉치로
