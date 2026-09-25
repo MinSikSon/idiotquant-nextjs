@@ -1594,6 +1594,11 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
             say(state, `${describe(curWand, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
             return false;
         }
+        if (hero.wandId === it.id) {
+            hero.wandId = null;
+            say(state, `${describe(it, state.known, state.appearance)} 장착을 해제했다.`);
+            return true;
+        }
         hero.wandId = it.id;
         state.known[`wand:${it.type}`] = true;
         state.itemCodex[`wand:${it.type}`] = true;

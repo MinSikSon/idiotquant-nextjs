@@ -585,7 +585,7 @@ export default function Desk({
                 break;
             case "wand":
                 if (canWieldWand(hero)) {
-                    out.push({ label: it.id === hero.wandId ? "장착 중" : "장착", on: go({ t: "wield", letter: it.letter! }) });
+                    out.push({ label: it.id === hero.wandId ? "해제" : "장착", on: go({ t: "wield", letter: it.letter! }) });
                 }
                 out.push({
                     label: "쏜다",

@@ -208,9 +208,9 @@ export default function TouchPad({
         <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
             <div className="grid shrink-0 grid-cols-3 gap-1">
                 {DIRS.map(([dx, dy, arrow, title], i) => (
-                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} wide={i === 4 && centerLabel !== "·"}>
+                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot}>
                         <span className="flex flex-col items-center gap-0.5">
-                            {i === 4 ? centerLabel : arrow}
+                            {i === 4 ? <span className="max-w-[40px] text-center text-[9px] leading-tight">{centerLabel}</span> : arrow}
                             {dirKeys.some((p) => p.keys[i]) && (
                                 <span className="hidden gap-1 text-[9px] leading-none md:flex">
                                     {dirKeys.map((p, j) =>
