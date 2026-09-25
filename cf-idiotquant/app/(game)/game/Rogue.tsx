@@ -68,7 +68,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, heroArmor, rapidFireOf, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heroArmor, rapidFireOf, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -92,7 +92,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
-import { ADVANCE_LEVEL, ORIGINS, ORIGIN_LIST, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
@@ -2633,8 +2633,20 @@ export default function Rogue() {
                                                                 {entry.kind === "armor" && (
                                                                     <>
                                                                         <div>
+                                                                            <span className="text-[var(--rg-faint)]">숙련: </span>
+                                                                            <span className="font-bold text-[var(--rg-gold)]">{armorSkillRankName(armorSkillLevel(currentHero, entry.type))}</span>
+                                                                        </div>
+                                                                        <div>
                                                                             <span className="text-[var(--rg-faint)]">방어력: </span>
                                                                             <span className="text-[var(--rg-strong)]">{defenseOf(ARMORS[entry.type]?.armor ?? 10)}</span>
+                                                                        </div>
+                                                                        <div className="col-span-2">
+                                                                            <span className="text-[var(--rg-faint)]">직업별 최대: </span>
+                                                                            <span>{ORIGIN_LIST.map((origin) => `${origin.name} ${armorSkillRankName(ARMOR_SKILL_MAX[origin.id]?.[entry.type] ?? 1)}`).join(" · ")}</span>
+                                                                        </div>
+                                                                        <div className="col-span-2">
+                                                                            <span className="text-[var(--rg-faint)]">내 훈련: </span>
+                                                                            <span>{currentHero.armorTraining?.[entry.type] ?? 0}걸음 · Skilled 1,000 / Expert 5,000</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>

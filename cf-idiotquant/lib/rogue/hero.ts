@@ -31,7 +31,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -47,6 +47,8 @@ const SKILL_HITS = [0, 20, 300, 900];
 const SKILL_NAME = ["미숙", "기초", "숙련", "전문"];
 const SKILL_RANK_NAME = ["unskilled", "basic", "skilled", "expert"];
 const SKILL_BONUSES = [{ hit: -4, damage: -2 }, { hit: 0, damage: 0 }, { hit: 2, damage: 1 }, { hit: 3, damage: 2 }];
+const ARMOR_SKILL_STEPS = [0, 1000, 5000];
+const ARMOR_SKILL_DEFENSE = [0, 0, 1, 2];
 
 export function weaponSkillName(level: number): string {
     return SKILL_NAME[Math.max(0, Math.min(3, level))] ?? "미숙";
@@ -76,6 +78,30 @@ export function weaponSkillMax(hero: Hero, type: string): WeaponSkill {
     return Math.max(1, limits[skill] ?? limits[type] ?? 1) as WeaponSkill;
 }
 
+export function armorSkillLevel(hero: Hero, type: string): WeaponSkill {
+    return Math.max(1, Math.min(3, hero.armorSkills?.[type] ?? 1)) as WeaponSkill;
+}
+
+export function armorSkillMax(hero: Hero, type: string): WeaponSkill {
+    return Math.max(1, Math.min(3, ARMOR_SKILL_MAX[hero.origin ?? "knight"]?.[type] ?? 1)) as WeaponSkill;
+}
+
+export function armorSkillRankName(level: number): string {
+    return SKILL_RANK_NAME[Math.max(1, Math.min(3, level))] ?? "basic";
+}
+
+/** 착용한 채 실제 걸은 걸음으로 숙련을 올린다. */
+export function trainArmorSkill(hero: Hero, armor: Item): string | null {
+    if (armor.kind !== "armor") return null;
+    const training = (hero.armorTraining ??= {});
+    training[armor.type] = (training[armor.type] ?? 0) + 1;
+    const current = armorSkillLevel(hero, armor.type);
+    const next = current + 1;
+    if (next > armorSkillMax(hero, armor.type) || training[armor.type] < ARMOR_SKILL_STEPS[next - 1]) return null;
+    (hero.armorSkills ??= {})[armor.type] = next;
+    return `${armor.type} ${armorSkillRankName(current)} → ${armorSkillRankName(next)}`;
+}
+
 /**
  * **활·석궁으로 직접 때리는가** — 발사기는 쏘는 도구라, 휘두르면 막대기로 치는 것과 같다
  * (NetHack 의 launcher bashing). 그때는 **활 숙련도 활의 손질도 안 붙는다** — 그 둘은 쏠 때의
@@ -90,7 +116,6 @@ function meleePlus(weapon: Item | undefined, which: "plusHit" | "plusDam"): numb
     return bashesWith(weapon) ? 0 : (weapon?.[which] ?? 0);
 }
 
-/** 무기 숙련의 원작 보정(미숙 -4/-2, 기초 0, 숙련 +2/+1, 전문 +3/+2). 발사기로 때리면 없다. */
 export function weaponSkillTerms(hero: Hero, weapon?: Item): Term[] {
     if (!weapon || weapon.kind !== "weapon") return [];
     if (bashesWith(weapon)) return [];
@@ -533,8 +558,11 @@ export function heroArmor(hero: Hero): number {
 
 /** 내 방어력의 항 — 전투와 상태 상세가 같은 계산식을 읽는다. */
 export function heroDefenseTerms(hero: Hero): Term[] {
+    const armor = equippedArmor(hero);
+    const armorSkill = armor ? ARMOR_SKILL_DEFENSE[armorSkillLevel(hero, armor.type)] ?? 0 : 0;
     const terms: Term[] = [
         { n: defenseOf(heroArmor(hero)), why: "장비" },
+        { n: armorSkill, why: "갑옷 숙련" },
         { n: hero.bonusDefense ?? 0, why: "성장" },
     ];
     // 기사단장의 전직 보상은 단추가 아니라 위기에서 저절로 서는 방벽이다.

@@ -100,6 +100,15 @@ export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     ranger: { bow: 3, crossbow: 3, dagger: 3, dart: 3, spear: 2 },
 };
 
+/** 직업별 방어구 숙련 상한: 1 Basic, 2 Skilled, 3 Expert. */
+export const ARMOR_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
+    knight: { leather: 3, "ring mail": 3, "scale mail": 3, "chain mail": 3, "banded mail": 3, "plate mail": 3, "mithril mail": 3, "dragon mail": 3, "baphomet mail": 3 },
+    rogue: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
+    alchemist: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
+    scholar: { leather: 2, "ring mail": 2, "scale mail": 1, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
+    ranger: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
+};
+
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
     knight: {
         id: "knight",

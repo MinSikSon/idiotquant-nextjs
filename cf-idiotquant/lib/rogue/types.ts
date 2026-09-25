@@ -380,6 +380,9 @@ export interface Hero {
     weaponSkills?: Record<string, number>;
     /** 의미 있는 적중 횟수. 승급 문턱(20/80/180)을 재는 값이다. */
     weaponTraining?: Record<string, number>;
+    /** 착용 걸음에 따라 오르는 방어구별 숙련도와 누적 훈련량. */
+    armorSkills?: Record<string, number>;
+    armorTraining?: Record<string, number>;
     /** 전직 기술을 마지막으로 쓴 층. 같은 층에서는 한 번만 쓸 수 있다. */
     classSkillDepth?: number;
 }

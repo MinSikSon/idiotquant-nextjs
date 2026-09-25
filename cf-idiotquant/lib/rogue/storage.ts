@@ -304,6 +304,8 @@ function normalize(s: Saved): GameState | null {
         turns: Math.max(0, num(h.turns, 0)),
         weaponSkills: Object.fromEntries(Object.entries(h.weaponSkills ?? {}).map(([type, level]) => [type, Math.max(0, Math.min(3, num(level, 0)))])),
         weaponTraining: Object.fromEntries(Object.entries(h.weaponTraining ?? {}).map(([type, hits]) => [type, Math.max(0, num(hits, 0))])),
+        armorSkills: Object.fromEntries(Object.entries(h.armorSkills ?? {}).map(([type, level]) => [type, Math.max(1, Math.min(3, num(level, 1)))])),
+        armorTraining: Object.fromEntries(Object.entries(h.armorTraining ?? {}).map(([type, steps]) => [type, Math.max(0, num(steps, 0))])),
         // v11 이하에는 전직 액티브 기술이 없다. 0은 어느 실제 층과도 같지 않아
         // 되읽은 뒤 현재 층에서 한 번 쓸 수 있다.
         classSkillDepth: Math.max(0, num(h.classSkillDepth, 0)),

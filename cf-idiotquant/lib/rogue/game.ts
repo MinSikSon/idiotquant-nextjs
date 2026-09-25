@@ -52,6 +52,7 @@ import {
     regenEvery,
     searchChance,
     trainWeaponSkill,
+    trainArmorSkill,
     enhanceWeaponSkills,
     takeFromPack,
     volleyMax,
@@ -897,6 +898,8 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         if (arm) {
             const k = `armor:${arm.type}`;
             state.itemUsage[k] = (state.itemUsage[k] ?? 0) + 1;
+            const promoted = trainArmorSkill(hero, arm);
+            if (promoted) say(state, `갑옷 숙련 상승: ${promoted}`);
         }
     }
     if (hero.leftRingId) {
