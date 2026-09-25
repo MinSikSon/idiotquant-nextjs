@@ -21,6 +21,7 @@ import {
     MELT_RETURN,
     describe,
     equipmentRating,
+    launcherDamageOf,
     enchantOdds,
     enchantOf,
     enchantSafeMax,
@@ -337,6 +338,8 @@ export default function Desk({
     const comparedPower = (it: Item): "better" | "worse" | null => {
         const current = it.kind === "weapon" ? equippedWeapon(hero) : it.kind === "armor" ? equippedArmor(hero) : undefined;
         if (!current || current.id === it.id) return null;
+        // 활은 쏘기 주사위, 칼은 휘두르는 주사위라 서로 견줄 수 없다 — 활은 활끼리만 견준다.
+        if (!!launcherDamageOf(it) !== !!launcherDamageOf(current)) return null;
         const difference = (equipmentRating(it) ?? 0) - (equipmentRating(current) ?? 0);
         return difference > 0 ? "better" : difference < 0 ? "worse" : null;
     };

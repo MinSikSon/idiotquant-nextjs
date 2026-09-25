@@ -59,7 +59,7 @@ export interface CodexEntry {
 }
 
 export const CODEX_ENTRIES: CodexEntry[] = [
-    // ── 무기 (13종) ───────────────────────────────────────────────────────────
+    // ── 무기 (17종) ───────────────────────────────────────────────────────────
     {
         kind: "weapon",
         type: "dagger",
@@ -107,6 +107,54 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         masteryGoal: 20,
         flavor: "한 손에 쏙 들어오는 얇은 쇳조각. 여러 장을 겹쳐 쥐고 빠르게 던진다.",
         masteryFlavor: "손가락 끝의 스냅만으로 날아가는 궤적이 적의 목덜미에 정확히 꽂힌다.",
+    },
+    {
+        kind: "weapon",
+        type: "short bow",
+        key: "weapon:short bow",
+        name: "단궁",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "짧게 휜 나무 활. 휘두르면 막대기일 뿐이지만, 시위에 화살을 걸면 멀리서 먼저 친다.",
+        masteryFlavor: "좁은 복도 끝에서 다가오는 발소리를 셀 틈도 없이 시위가 먼저 울렸다.",
+    },
+    {
+        kind: "weapon",
+        type: "long bow",
+        key: "weapon:long bow",
+        name: "장궁",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "키만 한 길이의 활. 당기기 무겁지만 떠난 살이 한층 깊게 박힌다.",
+        masteryFlavor: "멀리서부터 한 발씩 꽂아 넣어, 적이 곁에 닿을 때쯤엔 이미 끝나 있었다.",
+    },
+    {
+        kind: "weapon",
+        type: "elven bow",
+        key: "weapon:elven bow",
+        name: "요정족 활",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "요정의 손으로 다듬은 가벼운 활. 시위가 거의 소리를 내지 않는다.",
+        masteryFlavor: "숨소리보다 조용한 시위가 깊은 층의 괴물들을 차례로 눕혔다.",
+    },
+    {
+        kind: "weapon",
+        type: "sayha bow",
+        key: "weapon:sayha bow",
+        name: "사이하의 활",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "바람의 힘이 깃들었다는 전설의 활. 쏜 살이 바람을 타고 더 멀리, 더 세게 날아간다.",
+        masteryFlavor: "바람이 등을 떠미는 듯한 연사 앞에서 어떤 괴물도 거리를 좁히지 못했다.",
     },
     {
         kind: "weapon",

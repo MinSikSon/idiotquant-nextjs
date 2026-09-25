@@ -24,8 +24,9 @@ import {
     defenseOf,
     fillAppearances,
     weaponDamageOf,
+    launcherDamageOf,
 } from "./items";
-import { heroDefense } from "./hero";
+import { heroDefense, mergeStacks } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS } from "./monsters";
 import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster } from "./types";
@@ -259,6 +260,8 @@ function normalize(s: Saved): GameState | null {
 
     const fixHero = (h: Hero): Hero => {
         const fixed = rawHero(h);
+        // 한 대씩 주운 화살이 칸마다 갈라져 저장된 판 — 되읽을 때 한 뭉치로 합친다.
+        mergeStacks(fixed);
         // **이름도 되읽을 때 다시 다듬는다.** 온라인에서는 남이 보낸 판이 이 길로 들어오므로
         // (`deserialize`), 여기서 안 거르면 규칙이 보내는 쪽에만 있는 셈이 된다.
         //
@@ -672,9 +675,10 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
             const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "루비" : it.socketGem === "sapphire" ? "사파이어" : "에메랄드"}]` : "";
             name = `${base}${plusText(it.plusHit)}${sock}${curseText}`;
-            const dam = weaponDamageOf(it);
+            const fire = launcherDamageOf(it);
+            const dam = fire ?? weaponDamageOf(it);
             const plusDam = it.plusDam ? (it.plusDam > 0 ? `+${it.plusDam}` : `${it.plusDam}`) : "";
-            power = `피해 ${dam}${plusDam}`;
+            power = `${fire ? "쏘기" : "피해"} ${dam}${plusDam}`;
             break;
         }
         case "armor": {
