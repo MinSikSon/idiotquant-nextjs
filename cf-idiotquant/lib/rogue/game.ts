@@ -104,6 +104,7 @@ import {
     canHoldEnchant,
     MELT_RETURN,
     WAND_RECHARGE,
+    MAX_WAND_CHARGES,
     enchantOdds,
     enchantOf,
     enchantSafeMax,
@@ -1412,6 +1413,11 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
             transmute(state, on, rng, it.blessed);
             return true;
         } else if (it.type === "recharge wand") {
+            const currentCharges = on.charges ?? 0;
+            if (currentCharges >= MAX_WAND_CHARGES) {
+                say(state, `${describe(on, state.known, state.appearance)}은(는) 이미 최대 충전 횟수(${MAX_WAND_CHARGES}회)입니다.`);
+                return true;
+            }
             const scholarChance = scholarPreserveChance(hero);
             const preserved = scholarChance > 0 && rng.chance(scholarChance);
             if (preserved) {
@@ -1423,8 +1429,9 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
             state.known[scrKey] = true;
             state.itemCodex[scrKey] = true;
             state.itemUsage[scrKey] = (state.itemUsage[scrKey] ?? 0) + 1;
-            on.charges = (on.charges ?? 0) + WAND_RECHARGE;
-            say(state, `${describe(on, state.known, state.appearance)}에 마력이 돌아와 사용 횟수가 ${WAND_RECHARGE}회 늘었다.`);
+            on.charges = Math.min(MAX_WAND_CHARGES, currentCharges + WAND_RECHARGE);
+            const gained = on.charges - currentCharges;
+            say(state, `${describe(on, state.known, state.appearance)}에 마력이 돌아와 사용 횟수가 ${gained}회 늘었다 (최대 ${MAX_WAND_CHARGES}회).`);
             return true;
         }
     }
@@ -2774,9 +2781,9 @@ function regenerate(state: GameState, hero: Hero) {
     if (state.turn % every !== 0) return;
     if (hero.hp < hero.maxHp) hero.hp += 1;
     const wand = equippedWand(hero);
-    if (wand) {
-        wand.charges = (wand.charges ?? 0) + 1;
-        say(state, `${describe(wand, state.known, state.appearance)} 충전 +1 (${wand.charges}회).`);
+    if (wand && (wand.charges ?? 0) < MAX_WAND_CHARGES) {
+        wand.charges = Math.min(MAX_WAND_CHARGES, (wand.charges ?? 0) + 1);
+        say(state, `${describe(wand, state.known, state.appearance)}의 기운이 돌아옵니다 (충전+1).`);
     }
 }
 

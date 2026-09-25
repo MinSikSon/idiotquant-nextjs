@@ -156,6 +156,8 @@ export const SCROLLS: Record<string, { name: string; freq: number; depth: number
 
 /** 충전 주문서 한 장이 지팡이에 되돌리는 사용 횟수. */
 export const WAND_RECHARGE = 8;
+/** 지팡이 한 자루가 보유할 수 있는 최대 사용 횟수. */
+export const MAX_WAND_CHARGES = 15;
 
 /** 원작 Rogue의 반지 14종. 반지는 착용 자체로 허기를 증가시키지 않는다. */
 export const RINGS: Record<string, { name: string; freq: number; depth: number }> = {
