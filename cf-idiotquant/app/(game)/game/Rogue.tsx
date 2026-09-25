@@ -67,7 +67,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, equippedWand, heroArmor, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, heroArmor, rapidFireOf, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -275,6 +275,13 @@ const RETRY_MS = 3000;
  *
  * 방 코드가 다르면 안 쓴다 — 나갔다 다른 방에 들어간 사람에게 옛 직업을 먹이면 안 된다.
  */
+/** `.` 토글 사격의 한 발 — 지팡이는 휘두르고(`zap`), 화살·투척 무기는 던진다(`throw`, 활을 쥐었으면 엔진이 쏜다). */
+function fireCommand(shot: NonNullable<ReturnType<typeof rapidFireOf>>, dx: number, dy: number): Command {
+    return shot.kind === "zap"
+        ? { t: "zap", letter: shot.item.letter!, dx, dy }
+        : { t: "throw", letter: shot.item.letter!, dx, dy };
+}
+
 function savedOrigin(code: string): HeroOrigin | undefined {
     try {
         const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
@@ -420,7 +427,7 @@ export default function Rogue() {
      */
     const desks = useRef<(DeskHandle | null)[]>([]);
     const [modes, setModes] = useState<DeskMode[]>(["none", "none"]);
-    const [wandFireMode, setWandFireMode] = useState<boolean[]>([false, false]);
+    const [fireMode, setFireMode] = useState<boolean[]>([false, false]);
     const onDeskMode = useCallback((w: number, m: DeskMode) => {
         setModes((ms) => (ms[w] === m ? ms : Object.assign([...ms], { [w]: m })));
     }, []);
@@ -1577,9 +1584,9 @@ export default function Rogue() {
                 desks.current[w]?.padKey({ act: true });
                 return;
             }
-            if (modes[w] === "none" && equippedWand(h)) {
+            if (modes[w] === "none" && rapidFireOf(h)) {
                 setWho(w);
-                setWandFireMode((current) => Object.assign([...current], { [w]: !current[w] }));
+                setFireMode((current) => Object.assign([...current], { [w]: !current[w] }));
                 return;
             }
             if (modes[w] !== "none") {
@@ -1650,9 +1657,9 @@ export default function Rogue() {
                     } else if (isAct) {
                         confirm(w);
                     } else if (d) {
-                        const wand = equippedWand(h);
-                        if (wandFireMode[w] && wand) {
-                            runAs(w, { t: "zap", letter: wand.letter!, dx: d[0], dy: d[1] });
+                        const shot = rapidFireOf(h);
+                        if (fireMode[w] && shot) {
+                            runAs(w, fireCommand(shot, d[0], d[1]));
                             stopHold(w);
                             return;
                         }
@@ -1684,9 +1691,9 @@ export default function Rogue() {
             if (dir) {
                 e.preventDefault();
                 const hero = state.heroes[who] ?? state.heroes[0];
-                const wand = equippedWand(hero);
-                if (wandFireMode[who] && wand) {
-                    runAs(who, { t: "zap", letter: wand.letter!, dx: dir[0], dy: dir[1] });
+                const shot = rapidFireOf(hero);
+                if (fireMode[who] && shot) {
+                    runAs(who, fireCommand(shot, dir[0], dir[1]));
                     return;
                 }
                 run({ t: "move", dx: dir[0], dy: dir[1] });
@@ -1695,7 +1702,7 @@ export default function Rogue() {
             switch (key) {
                 case ".":
                     e.preventDefault();
-                    if (equippedWand(state.heroes[who] ?? state.heroes[0]) && modes[who] === "none") confirm(who);
+                    if (rapidFireOf(state.heroes[who] ?? state.heroes[0]) && modes[who] === "none") confirm(who);
                     else run({ t: "rest" });
                     break;
                 case "5":
@@ -1764,7 +1771,7 @@ export default function Rogue() {
             window.removeEventListener("keyup", onUp);
             window.removeEventListener("blur", onBlur);
         };
-    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm, wandFireMode]);
+    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm, fireMode]);
 
     if (!state) {
         return (
@@ -2207,19 +2214,22 @@ export default function Rogue() {
                 <TouchPad
                     centerLabel={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        return modes[who] === "none" && equippedWand(activeHero)
-                            ? "비전\n속사"
-                            : "·";
+                        const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
+                        if (!shot) return "·";
+                        // 켜짐·꺼짐은 글자가 아니라 강조색(`centerWarn`)이 말한다 — 비전 속사와 같은 모양.
+                        return shot.kind === "zap" ? "비전\n속사" : "연속\n사격";
                     })()}
                     centerHint={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        return modes[who] === "none" && equippedWand(activeHero)
-                            ? `비전 속사 ${wandFireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
-                            : "제자리에서 쉰다";
+                        const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
+                        if (!shot) return "제자리에서 쉰다";
+                        return shot.kind === "zap"
+                            ? `비전 속사 ${fireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
+                            : `사격 ${fireMode[who] ? "켜짐" : "꺼짐"} · ${WEAPONS[shot.item.type]?.name ?? "투척 무기"} ${shot.item.count}개 · 눌러 전환`;
                     })()}
                     centerWarn={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        return modes[who] === "none" && !!equippedWand(activeHero) && wandFireMode[who];
+                        return modes[who] === "none" && !!rapidFireOf(activeHero) && fireMode[who];
                     })()}
                     dirKeys={
                         coopKeys
@@ -2233,16 +2243,16 @@ export default function Rogue() {
                         if (dx === 0 && dy === 0) {
                             if (coopKeys) return confirm(who);
                             const hero = state.heroes[who] ?? state.heroes[0];
-                            if (modes[who] === "none" && equippedWand(hero)) return confirm(who);
+                            if (modes[who] === "none" && rapidFireOf(hero)) return confirm(who);
                             if (desks.current[who]?.aimAt(0, 0)) return;
                             runAs(who, { t: "rest" });
                             return;
                         }
                         if (desks.current[who]?.aimAt(dx, dy)) return;
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        const wand = equippedWand(activeHero);
-                        if (wandFireMode[who] && wand) {
-                            runAs(who, { t: "zap", letter: wand.letter!, dx, dy });
+                        const shot = rapidFireOf(activeHero);
+                        if (fireMode[who] && shot) {
+                            runAs(who, fireCommand(shot, dx, dy));
                             return;
                         }
                         run({ t: "move", dx, dy });
