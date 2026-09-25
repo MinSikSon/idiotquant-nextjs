@@ -650,12 +650,17 @@ function specialEffect(state: GameState, m: Monster, hero: Hero, rng: Rng): stri
         }
         case "N": {
             // 님프 — 물건 하나를 채고 사라진다. 쥐고 입은 것은 안 가져간다.
+            // **개수가 있는 것(화살 40대·물약 3병)은 절반만** 채 간다(내림, 한 개짜리는 통째로) —
+            // 뭉치째 가져가면 한 번 스친 것으로 레인저의 화살이 통째로 사라진다.
             const loot = hero.pack.filter((i) => i.id !== hero.weaponId && i.id !== hero.armorId);
             const taken = rng.pick(loot);
             m.hp = 0;
             if (!taken) return ["님프가 빈손으로 달아났다."];
-            takeFromPack(hero, taken, taken.count);
-            return [`님프가 ${describe(taken, state.known, state.appearance)}을(를) 채 갔다!`];
+            const n = taken.count > 1 ? Math.floor(taken.count / 2) : taken.count;
+            const name = describe({ ...taken, count: n }, state.known, state.appearance);
+            takeFromPack(hero, taken, n);
+            const left = hero.pack.find((i) => i.id === taken.id)?.count ?? 0;
+            return [`님프가 ${name}을(를) 채 갔다!${left > 0 ? ` (${left}개 남음)` : ""}`];
         }
         case "I": {
             // 얼음괴물 — 얼린다.
