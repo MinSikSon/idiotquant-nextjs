@@ -2845,7 +2845,7 @@ export default function Rogue() {
                         <ul className="space-y-1">
                             {[
                                 {
-                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => {
+                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저", go: () => {
                                         setOriginFor({ t: "new" });
                                         setSheet("origins");
                                     }

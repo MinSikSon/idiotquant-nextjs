@@ -27,7 +27,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_GUARD_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -299,6 +299,29 @@ export function packItem(hero: Hero, letter: string): Item | undefined {
 
 export function equippedWeapon(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.weaponId);
+}
+
+/**
+ * 이 탄약을 **쏠** 발사기 — 쥔 무기가 그 탄약의 `launcher` 일 때만 준다.
+ * 없으면 손으로 던진다(`HAND_THROWN_AMMO`). 화면(「쏜다」/「던진다」)도 굴림도 이것 하나를 본다.
+ */
+export function launcherFor(hero: Hero, ammo: Item): Item | undefined {
+    if (ammo.kind !== "weapon") return undefined;
+    const launcher = WEAPONS[ammo.type]?.launcher;
+    if (!launcher) return undefined;
+    const held = equippedWeapon(hero);
+    return held?.type === launcher ? held : undefined;
+}
+
+/**
+ * 한 번 쏠 때 날아갈 수 있는 **최대** 발 수 — NetHack 의 multishot.
+ * `1 + 숙련(숙련 +1 · 전문 +2) + 레인저(+1, 전직하면 +2)` 에서 실제 발 수는 `1..이 값` 을 굴린다.
+ * 발사기로 쏠 때만 뜻이 있다 — 손으로 던진 탄약은 늘 한 발이다.
+ */
+export function volleyMax(hero: Hero, ammo: Item): number {
+    let n = 1 + Math.max(0, weaponSkillLevel(hero, ammo.type) - 1);
+    if (hero.origin === "ranger") n += hero.level >= ADVANCE_LEVEL ? ADVANCED_RANGER_VOLLEY_BONUS : RANGER_VOLLEY_BONUS;
+    return n;
 }
 
 export function canWieldWand(hero: Hero): boolean {

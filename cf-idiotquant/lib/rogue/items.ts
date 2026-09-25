@@ -71,6 +71,11 @@ export interface WeaponDef {
     damageLarge?: string;
     /** 발사기 없이 던지는 탄약인지. */
     ammunition?: boolean;
+    /**
+     * 이 탄약을 **쏘는** 발사기의 종류(NetHack 의 launcher). 있으면 쥔 발사기로 쏘고,
+     * 없이 던지면 손으로 던진 것이 된다(명중 −4 · 피해 1d2).
+     */
+    launcher?: string;
 }
 
 export interface ArmorDef {
@@ -91,15 +96,17 @@ export interface ArmorDef {
 export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
     dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
+    // 활은 **쏘는 도구**다 — 휘두르면 1 뿐이고(`1d1`), 숙련은 쏜 화살로만 쌓인다.
     "short bow": { name: "단궁", damage: "1d1", damageLarge: "1d1", freq: 8, depth: 1, skill: "bow", hands: 1, material: "wood" },
     mace: { name: "철퇴", damage: "2d4", damageLarge: "1d6", freq: 10, depth: 1, skill: "mace", hands: 1, material: "iron" },
     spear: { name: "창", damage: "2d3", damageLarge: "1d6", freq: 6, depth: 1, throwable: true, skill: "spear", hands: 1, material: "iron" },
     dart: { name: "표창", damage: "1d3", damageLarge: "1d2", freq: 8, depth: 1, throwable: true, stack: true, skill: "dart", hands: 1, material: "iron", ammunition: true },
-    arrow: { name: "화살", damage: "1d2", damageLarge: "1d2", freq: 8, depth: 1, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true },
+    // 화살의 주사위는 **활로 쏠 때** 굴린다(NetHack 화살 d6). 손으로 던지면 `HAND_THROWN_AMMO`.
+    arrow: { name: "화살", damage: "1d6", damageLarge: "1d6", freq: 8, depth: 1, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "short bow" },
     // 사다리
     "long sword": { name: "장검", damage: "3d4", damageLarge: "1d8", freq: 9, depth: 4, skill: "long sword", hands: 1, material: "iron" },
     "two-handed sword": { name: "양손검", damage: "4d4", damageLarge: "2d6", freq: 7, depth: 8, skill: "two-handed sword", hands: 2, material: "iron" },
-    "silver arrow": { name: "은화살", damage: "1d4", damageLarge: "1d4", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true },
+    "silver arrow": { name: "은화살", damage: "1d8", damageLarge: "1d8", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true, launcher: "short bow" },
     "silver sword": { name: "진은검", damage: "4d5", damageLarge: "2d6", freq: 6, depth: 12, skill: "long sword", hands: 1, material: "silver" },
     "thirsty sword": { name: "목마른 자의 검", damage: "4d6", damageLarge: "2d8", freq: 5, depth: 16, skill: "long sword", hands: 1, material: "iron" },
     "magic sword": { name: "마법의 검", damage: "5d5", damageLarge: "2d7", freq: 4, depth: 19, skill: "long sword", hands: 1, material: "iron" },
@@ -1021,7 +1028,19 @@ export function isThrowable(it: Item): boolean {
     return it.kind === "weapon" && !!WEAPONS[it.type]?.throwable;
 }
 
-/** 화살은 활이 있어야 쏠 수 있는 탄약이다. */
+/** 화살은 활이 있어야 **쏠** 수 있는 탄약이다 — 없으면 손으로 던진다(`HAND_THROWN_AMMO`). */
 export function needsBow(it: Item): boolean {
-    return it.kind === "weapon" && (it.type === "arrow" || it.type === "silver arrow");
+    return it.kind === "weapon" && !!WEAPONS[it.type]?.launcher;
 }
+
+/**
+ * 발사기 없이 손으로 던진 탄약 — NetHack 처럼 **명중 −4 · 피해 1d2** 이고 연사도 없다.
+ * 숙련도 안 쌓는다 — 활 없이 활 숙련이 오르면 활을 쥘 이유가 없다.
+ */
+export const HAND_THROWN_AMMO = { hit: -4, damage: "1d2" } as const;
+
+/**
+ * 쏘아 **맞힌** 화살이 부러질 확률 — NetHack 의 `!rn2(4)`.
+ * 빗나간 것은 떨어진 자리에 남는다. 탄약이 끝없이 돌면 화살 줍기가 판단거리가 아니다.
+ */
+export const ARROW_BREAK_CHANCE = 0.25;

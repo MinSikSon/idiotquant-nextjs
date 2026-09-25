@@ -6,7 +6,7 @@ export interface SharedRun {
 }
 
 const MAX_SEED = 0x7fffffff;
-const ORIGINS = new Set<HeroOrigin>(["knight", "rogue", "alchemist", "scholar"]);
+const ORIGINS = new Set<HeroOrigin>(["knight", "rogue", "alchemist", "scholar", "ranger"]);
 
 /** 공유 링크는 새 판 하나만 가리킨다 — 저장된 진행·도감·상자는 싣지 않는다. */
 export function sharedRun(search: string): SharedRun | null {
