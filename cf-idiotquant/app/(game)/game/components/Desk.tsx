@@ -67,8 +67,6 @@ export interface DeskHandle {
     /** 원작의 한 글자 명령(`q r e w W P R d`) — 없는 키면 `false`. */
     openPicker(key: string): boolean;
     aim(kind: "zap" | "throw"): void;
-    /** 장착 지팡이를 바로 겨눈다 — 연금술사·고서 연구자의 단축 동작. */
-    aimEquippedWand(): boolean;
     /** 겨누는 중이면 그 방향으로 쏘고 `true`. */
     aimAt(dx: number, dy: number): boolean;
     /** 혼자 할 때의 키 — 판이 떠 있으면 먹고 `true`(아래로 안 흘린다). */
@@ -654,18 +652,6 @@ export default function Desk({
             return !!p;
         },
         aim: aimAfterPick,
-        aimEquippedWand() {
-            const wand = equippedWand(hero);
-            if (!wand) return false;
-            setPackOpen(false);
-            setPicker(null);
-            setAiming({
-                title: "어디로 쏠까",
-                what: `${describe(wand, state.known, state.appearance)} 를 겨눕니다.`,
-                make: (dx, dy) => ({ t: "zap", letter: wand.letter!, dx, dy }),
-            });
-            return true;
-        },
         aimAt(dx, dy) {
             if (!aiming) return false;
             if (dx !== 0 || dy !== 0) {

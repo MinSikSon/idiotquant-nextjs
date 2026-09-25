@@ -355,7 +355,6 @@ type NetMsg =
 
 /** 온라인 방의 정원 — 방장 + 손님 셋. */
 const MAX_PARTY = 4;
-const CENTER_WAND_FIRE_KEY = "rogue-center-wand-fire";
 
 /**
  * 이 브라우저의 **붙박이 손님 자리표.** 한 번 만들면 계속 쓴다(`localStorage`).
@@ -421,14 +420,6 @@ export default function Rogue() {
      */
     const desks = useRef<(DeskHandle | null)[]>([]);
     const [modes, setModes] = useState<DeskMode[]>(["none", "none"]);
-    const [centerWandFire, setCenterWandFire] = useState(() => {
-        if (typeof window === "undefined") return true;
-        try {
-            return localStorage.getItem(CENTER_WAND_FIRE_KEY) !== "off";
-        } catch {
-            return true;
-        }
-    });
     const [wandFireMode, setWandFireMode] = useState<boolean[]>([false, false]);
     const onDeskMode = useCallback((w: number, m: DeskMode) => {
         setModes((ms) => (ms[w] === m ? ms : Object.assign([...ms], { [w]: m })));
@@ -1586,7 +1577,7 @@ export default function Rogue() {
                 desks.current[w]?.padKey({ act: true });
                 return;
             }
-            if (centerWandFire && modes[w] === "none" && equippedWand(h)) {
+            if (modes[w] === "none" && equippedWand(h)) {
                 setWho(w);
                 setWandFireMode((current) => Object.assign([...current], { [w]: !current[w] }));
                 return;
@@ -1601,7 +1592,7 @@ export default function Rogue() {
             const onDown = state.level.tiles[idx(h.x, h.y)] === T.STAIRS;
             runAs(w, onItem ? { t: "pickup" } : onDown ? { t: "descend" } : { t: "search" });
         },
-        [state, modes, runAs, centerWandFire],
+        [state, modes, runAs],
     );
 
     useEffect(() => {
@@ -1660,7 +1651,7 @@ export default function Rogue() {
                         confirm(w);
                     } else if (d) {
                         const wand = equippedWand(h);
-                        if (centerWandFire && wandFireMode[w] && wand) {
+                        if (wandFireMode[w] && wand) {
                             runAs(w, { t: "zap", letter: wand.letter!, dx: d[0], dy: d[1] });
                             stopHold(w);
                             return;
@@ -1694,7 +1685,7 @@ export default function Rogue() {
                 e.preventDefault();
                 const hero = state.heroes[who] ?? state.heroes[0];
                 const wand = equippedWand(hero);
-                if (centerWandFire && wandFireMode[who] && wand) {
+                if (wandFireMode[who] && wand) {
                     runAs(who, { t: "zap", letter: wand.letter!, dx: dir[0], dy: dir[1] });
                     return;
                 }
@@ -1704,7 +1695,7 @@ export default function Rogue() {
             switch (key) {
                 case ".":
                     e.preventDefault();
-                    if (centerWandFire && equippedWand(state.heroes[who] ?? state.heroes[0]) && modes[who] === "none") confirm(who);
+                    if (equippedWand(state.heroes[who] ?? state.heroes[0]) && modes[who] === "none") confirm(who);
                     else run({ t: "rest" });
                     break;
                 case "5":
@@ -1773,7 +1764,7 @@ export default function Rogue() {
             window.removeEventListener("keyup", onUp);
             window.removeEventListener("blur", onBlur);
         };
-    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm, centerWandFire, wandFireMode]);
+    }, [state, modes, sheet, sheetOwner, frozen, run, runAs, online, who, stopHold, confirm, wandFireMode]);
 
     if (!state) {
         return (
@@ -2216,19 +2207,19 @@ export default function Rogue() {
                 <TouchPad
                     centerLabel={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        return centerWandFire && modes[who] === "none" && equippedWand(activeHero)
+                        return modes[who] === "none" && equippedWand(activeHero)
                             ? `쏘기 ${wandFireMode[who] ? "켬" : "끔"}`
                             : "·";
                     })()}
                     centerHint={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        return centerWandFire && modes[who] === "none" && equippedWand(activeHero)
+                        return modes[who] === "none" && equippedWand(activeHero)
                             ? `지팡이 발사 모드 ${wandFireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
                             : "제자리에서 쉰다";
                     })()}
                     centerHot={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
-                        return centerWandFire && modes[who] === "none" && !!equippedWand(activeHero) && wandFireMode[who];
+                        return modes[who] === "none" && !!equippedWand(activeHero) && wandFireMode[who];
                     })()}
                     dirKeys={
                         coopKeys
@@ -2242,7 +2233,7 @@ export default function Rogue() {
                         if (dx === 0 && dy === 0) {
                             if (coopKeys) return confirm(who);
                             const hero = state.heroes[who] ?? state.heroes[0];
-                            if (centerWandFire && modes[who] === "none" && equippedWand(hero)) return confirm(who);
+                            if (modes[who] === "none" && equippedWand(hero)) return confirm(who);
                             if (desks.current[who]?.aimAt(0, 0)) return;
                             runAs(who, { t: "rest" });
                             return;
@@ -2250,7 +2241,7 @@ export default function Rogue() {
                         if (desks.current[who]?.aimAt(dx, dy)) return;
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const wand = equippedWand(activeHero);
-                        if (centerWandFire && wandFireMode[who] && wand) {
+                        if (wandFireMode[who] && wand) {
                             runAs(who, { t: "zap", letter: wand.letter!, dx, dy });
                             return;
                         }
@@ -2849,19 +2840,6 @@ export default function Rogue() {
                     <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
                         <ul className="space-y-1">
                             {[
-                                {
-                                    label: `가운데 버튼 지팡이 발사: ${centerWandFire ? "켬" : "끔"}`,
-                                    hint: "켜면 장착 지팡이가 있을 때 방향 패드 가운데를 눌러 조준하고, 방향 버튼으로 발사",
-                                    go: () => {
-                                        setCenterWandFire((enabled) => {
-                                            const next = !enabled;
-                                            try {
-                                                localStorage.setItem(CENTER_WAND_FIRE_KEY, next ? "on" : "off");
-                                            } catch { }
-                                            return next;
-                                        });
-                                    },
-                                },
                                 {
                                     label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자", go: () => {
                                         setOriginFor({ t: "new" });
