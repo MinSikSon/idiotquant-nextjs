@@ -2208,18 +2208,22 @@ export default function Rogue() {
                     centerLabel={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         return modes[who] === "none" && equippedWand(activeHero)
-                            ? `쏘기 ${wandFireMode[who] ? "켬" : "끔"}`
+                            ? `✦ 비전\n속사 ${wandFireMode[who] ? "켬" : "끔"}`
                             : "·";
                     })()}
                     centerHint={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         return modes[who] === "none" && equippedWand(activeHero)
-                            ? `지팡이 발사 모드 ${wandFireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
+                            ? `비전 속사 ${wandFireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
                             : "제자리에서 쉰다";
                     })()}
                     centerHot={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         return modes[who] === "none" && !!equippedWand(activeHero) && wandFireMode[who];
+                    })()}
+                    centerOff={(() => {
+                        const activeHero = state.heroes[who] ?? state.heroes[0];
+                        return modes[who] === "none" && !!equippedWand(activeHero) && !wandFireMode[who];
                     })()}
                     dirKeys={
                         coopKeys

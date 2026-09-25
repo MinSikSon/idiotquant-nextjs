@@ -59,6 +59,7 @@ function Key({
     title,
     wide,
     hot,
+    warn,
     hold,
 }: {
     children: ReactNode;
@@ -67,6 +68,7 @@ function Key({
     title?: string;
     wide?: boolean;
     hot?: boolean;
+    warn?: boolean;
     /** 꾹 누르면 연타되는가. 방향판만 켠다. */
     hold?: boolean;
 }) {
@@ -155,6 +157,7 @@ function Key({
                 "font-[family-name:var(--font-plex-mono)] leading-none text-[var(--rg-text)]",
                 "active:translate-y-px active:bg-[var(--rg-press)]",
                 hot ? "border-[var(--rg-gold)] bg-[var(--rg-raised)] font-bold text-[var(--rg-strong)]" : "",
+                warn ? "border-[var(--rg-trap)] bg-[var(--rg-raised)] font-bold text-[var(--rg-trap)]" : "",
                 "disabled:border-[var(--rg-off-line)] disabled:bg-[var(--rg-off-bg)] disabled:text-[var(--rg-off-ink)]",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
@@ -186,6 +189,7 @@ export default function TouchPad({
     centerLabel = "·",
     centerHint = "제자리에서 쉰다",
     centerHot = false,
+    centerOff = false,
 }: {
     onMove: (dx: number, dy: number) => void;
     actions: PadAction[];
@@ -202,15 +206,16 @@ export default function TouchPad({
     centerLabel?: string;
     centerHint?: string;
     centerHot?: boolean;
+    centerOff?: boolean;
 }) {
     const step = (dx: number, dy: number) => () => onMove(dx, dy);
     return (
         <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
             <div className="grid shrink-0 grid-cols-3 gap-1">
                 {DIRS.map(([dx, dy, arrow, title], i) => (
-                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot}>
+                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerOff}>
                         <span className="flex flex-col items-center gap-0.5">
-                            {i === 4 ? <span className="max-w-[40px] text-center text-[9px] leading-tight">{centerLabel}</span> : arrow}
+                            {i === 4 ? <span className="max-w-[40px] whitespace-pre-line text-center text-[9px] font-bold leading-tight">{centerLabel}</span> : arrow}
                             {dirKeys.some((p) => p.keys[i]) && (
                                 <span className="hidden gap-1 text-[9px] leading-none md:flex">
                                     {dirKeys.map((p, j) =>
