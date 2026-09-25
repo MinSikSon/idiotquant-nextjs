@@ -374,13 +374,16 @@ export function launcherFor(hero: Hero, ammo: Item): Item | undefined {
  * 한 번 쏠 때 날아갈 수 있는 **최대** 발 수 — NetHack 의 multishot.
  * `1 + 숙련(숙련 +1 · 전문 +2) + 레인저(+1, 전직하면 +2)` 에서 실제 발 수는 `1..이 값` 을 굴린다.
  *
- * 연사가 붙는 것은 둘뿐이다 — **쥔 발사기로 쏘는 탄약**, 그리고 **레인저가 던지는 표창**
+ * 연사가 붙는 것은 둘뿐이다 — **쥔 발사기로 쏘는 탄약**(석궁은 빼고 — `slowReload`), 그리고 **레인저가 던지는 표창**
  * (NetHack 의 Ranger 는 단검 말고는 던지는 것에도 연사가 붙는다). 나머지는 늘 한 발이다 —
  * 다른 직업의 표창까지 열면 도적의 던지기 셈이 통째로 바뀐다.
  */
 export function volleyMax(hero: Hero, ammo: Item): number {
     const rangerDart = hero.origin === "ranger" && ammo.kind === "weapon" && ammo.type === "dart";
-    if (!launcherFor(hero, ammo) && !rangerDart) return 1;
+    const launcher = launcherFor(hero, ammo);
+    if (!launcher && !rangerDart) return 1;
+    // 석궁은 다시 걸기가 느리다 — 숙련도 직업도 발 수를 못 늘린다.
+    if (launcher && WEAPONS[launcher.type]?.slowReload) return 1;
     let n = 1 + Math.max(0, weaponSkillLevel(hero, ammo.type) - 1);
     if (hero.origin === "ranger") n += hero.level >= ADVANCE_LEVEL ? ADVANCED_RANGER_VOLLEY_BONUS : RANGER_VOLLEY_BONUS;
     return n;

@@ -2598,7 +2598,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     // 쏘아 **맞힌** 화살은 부러지기도 한다(NetHack 의 `!rn2(4)`). 빗나간 것과 손으로
     // 던진 것은 그대로 떨어진다 — 줍는 수고가 곧 탄약의 값이다.
     if (bow && rng.chance(ARROW_BREAK_CHANCE)) {
-        say(state, `${WEAPONS[it.type]?.name ?? "화살"}이 부러졌다.`);
+        say(state, `${WEAPONS[it.type]?.name ?? "화살"}이(가) 부러졌다.`);
         return true;
     }
     land();

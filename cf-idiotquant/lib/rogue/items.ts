@@ -82,6 +82,11 @@ export interface WeaponDef {
      * 안 쌓인다), 사다리를 타고 오르는 것은 이 값뿐이다.
      */
     fireDamage?: string;
+    /**
+     * **연사가 없는 발사기** — NetHack 의 석궁은 다시 걸기가 느려 multishot 이 막힌다.
+     * 대신 한 발이 무겁다(`fireDamage`). 숙련·레인저 보너스가 있어도 늘 한 발이다(`volleyMax`).
+     */
+    slowReload?: boolean;
 }
 
 export interface ArmorDef {
@@ -124,6 +129,10 @@ export const WEAPONS: Record<string, WeaponDef> = {
     "long bow": { name: "장궁", damage: "1d1", damageLarge: "1d1", fireDamage: "1d3", freq: 7, depth: 6, skill: "bow", hands: 1, material: "wood" },
     "elven bow": { name: "요정족 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d4", freq: 5, depth: 12, skill: "bow", hands: 1, material: "wood" },
     "sayha bow": { name: "사이하의 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d6", freq: 2, depth: 20, skill: "bow", hands: 1, material: "wood" },
+    // 석궁과 볼트 — 활과 계열이 다르다(볼트는 석궁으로만, 화살은 활로만 쏜다). 연사가 없는 대신
+    // 한 발이 무겁다: 볼트 1d6 + 석궁 2d4 = 한 발 기댓값 8.5 — 같은 층 장궁 한 발(5.5)의 1.5배쯤.
+    crossbow: { name: "석궁", damage: "1d1", damageLarge: "1d1", fireDamage: "2d4", slowReload: true, freq: 5, depth: 8, skill: "crossbow", hands: 1, material: "wood" },
+    bolt: { name: "볼트", damage: "1d6", damageLarge: "1d6", freq: 5, depth: 8, throwable: true, stack: true, skill: "crossbow", hands: 1, material: "iron", ammunition: true, launcher: "crossbow" },
 };
 
 /** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */

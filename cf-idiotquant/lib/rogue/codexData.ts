@@ -59,7 +59,7 @@ export interface CodexEntry {
 }
 
 export const CODEX_ENTRIES: CodexEntry[] = [
-    // ── 무기 (17종) ───────────────────────────────────────────────────────────
+    // ── 무기 (19종) ───────────────────────────────────────────────────────────
     {
         kind: "weapon",
         type: "dagger",
@@ -155,6 +155,30 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         masteryGoal: 20,
         flavor: "바람의 힘이 깃들었다는 전설의 활. 쏜 살이 바람을 타고 더 멀리, 더 세게 날아간다.",
         masteryFlavor: "바람이 등을 떠미는 듯한 연사 앞에서 어떤 괴물도 거리를 좁히지 못했다.",
+    },
+    {
+        kind: "weapon",
+        type: "crossbow",
+        key: "weapon:crossbow",
+        name: "석궁",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "개머리에 활을 가로로 얹은 쇠뇌. 다시 걸기가 느려 한 번에 한 발뿐이지만, 그 한 발이 무겁다.",
+        masteryFlavor: "시위를 거는 동안의 긴 숨 뒤에, 한 발로 끝나는 싸움이 늘어 갔다.",
+    },
+    {
+        kind: "weapon",
+        type: "bolt",
+        key: "weapon:bolt",
+        name: "볼트",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "석궁에 거는 짧고 굵은 쇠살. 활에는 걸리지 않고, 손으로 던지면 긁히는 정도다.",
+        masteryFlavor: "두꺼운 가죽도 비늘도 가리지 않고 한 발에 꿰뚫었다.",
     },
     {
         kind: "weapon",
