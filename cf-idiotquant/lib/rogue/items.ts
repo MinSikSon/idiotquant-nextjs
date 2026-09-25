@@ -121,8 +121,8 @@ export const WEAPONS: Record<string, WeaponDef> = {
     "silver arrow": { name: "은화살", damage: "1d8", damageLarge: "1d8", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true, launcher: "bow" },
     // 화살 사다리 — 은화살(9) 뒤로 이어 붙인다. 장비 띠(`GEAR_BAND`)가 탄약에도 걸려서
     // 은화살 하나로 끝나면 23층부터 화살이 한 대도 안 나온다(사이하의 활은 20층부터다).
-    "mithril arrow": { name: "미스릴 화살", damage: "1d10", damageLarge: "1d10", freq: 5, depth: 15, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "bow" },
-    "oriharukon arrow": { name: "오리하루콘 화살", damage: "2d6", damageLarge: "2d6", freq: 4, depth: 21, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "bow" },
+    "mithril arrow": { name: "미스릴 화살", damage: "1d10", damageLarge: "1d10", freq: 2, depth: 15, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "bow" },
+    "oriharukon arrow": { name: "오리하루콘 화살", damage: "2d6", damageLarge: "2d6", freq: 2, depth: 21, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "bow" },
     "silver sword": { name: "진은검", damage: "4d5", damageLarge: "2d6", freq: 6, depth: 12, skill: "long sword", hands: 1, material: "silver" },
     "thirsty sword": { name: "목마른 자의 검", damage: "4d6", damageLarge: "2d8", freq: 5, depth: 16, skill: "long sword", hands: 1, material: "iron" },
     "magic sword": { name: "마법의 검", damage: "5d5", damageLarge: "2d7", freq: 4, depth: 19, skill: "long sword", hands: 1, material: "iron" },
