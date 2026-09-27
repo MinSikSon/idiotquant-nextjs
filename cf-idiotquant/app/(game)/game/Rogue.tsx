@@ -783,7 +783,7 @@ export default function Rogue() {
     const [guests, setGuests] = useState<{ who: number; nick?: string; origin?: HeroOrigin; linked: boolean }[]>([]);
     /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
     const [netOpen, setNetOpen] = useState(false);
-    /** 좌상단 「성장」 단추를 눌러 펼쳤는가 — 끊김 안내와 같은 자리다(모서리 한 칸). */
+    /** 지도 하단 단추 줄의 「성장」 단추를 눌러 펼쳤는가. */
     const [skillOpen, setSkillOpen] = useState(false);
     const [altarOpen, setAltarOpen] = useState(false);
     /**
@@ -1996,112 +1996,116 @@ export default function Rogue() {
                     </>
                 )}
 
-                {/* ── 레벨업 성장 — **좌상단 모서리 한 칸.**
-                    끊김 안내와 같은 자리 값이다: 계속 서 있는 알림은 모서리 한 칸만 쓰고,
-                    본문은 눌러야 펼쳐진다. 쌓인 것이 없으면 안 그린다 — 못 누르는 단추가
-                    늘 떠 있으면 그것도 고장처럼 읽힌다. 캠프가 아니어도, 턴을 안 써도
-                    고를 수 있어서 지도를 막을 까닭이 없다. */}
-                {hero.pendingSkillPicks > 0 && (
-                    <>
+                {/* ── 그때그때 생기는 단추들(성장 · 직업 기술 · 제단 · 상점) — **지도 하단, 상태 줄 바로 위.**
+                    한 줄로 모아 둔다. 지도 위쪽 모서리에 따로따로 떠 있으면 기록 줄 밑에 묻혀 찾기
+                    어렵고, 엄지가 닿는 아래쪽이 폰에서 누르기 쉽다. 펼치는 판은 **위로** 연다. */}
+                <div className="absolute bottom-1 left-1 z-20 flex max-w-[calc(100%-0.5rem)] flex-wrap items-end gap-1">
+                    {/* ── 레벨업 성장 — 단추 줄의 맨 앞 한 칸.
+                        계속 서 있는 알림은 작은 단추 하나만 쓰고, 본문은 눌러야 (위로) 펼쳐진다. 쌓인 것이 없으면 안 그린다 — 못 누르는 단추가
+                        늘 떠 있으면 그것도 고장처럼 읽힌다. 캠프가 아니어도, 턴을 안 써도
+                        고를 수 있어서 지도를 막을 까닭이 없다. */}
+                    {hero.pendingSkillPicks > 0 && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setSkillOpen((v) => !v)}
+                                aria-label={`성장 ${hero.pendingSkillPicks}개를 고를 수 있다`}
+                                aria-expanded={skillOpen}
+                                title="성장을 고른다"
+                                className="grid h-7 min-w-7 place-items-center px-1 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 font-[family-name:var(--font-plex-mono)] text-[13px] leading-none text-[var(--rg-gold)]"
+                            >
+                                ★{hero.pendingSkillPicks}
+                            </button>
+                            {skillOpen && (
+                                <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(15rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                    <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
+                                    <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
+                                    <span className="text-[11px] text-[var(--rg-faint)]">
+                                        현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {Math.round(hero.itemLuck * 100)}
+                                    </span>
+                                    {(
+                                        [
+                                            ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
+                                            ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
+                                            ["luck", `지혜 +1 · 지팡이 주사위 +1 (현재 +${wandDamageDiceBonus(hero)})`],
+                                        ] as const
+                                    ).map(([option, label]) => (
+                                        <button
+                                            key={option}
+                                            type="button"
+                                            onClick={() => {
+                                                run({ t: "pickSkill", option });
+                                                setSkillOpen(hero.pendingSkillPicks > 1);
+                                            }}
+                                            className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]"
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* 액티브 전직 기술만 층마다 한 번 단추 줄에 선다. 기사의 방벽은 패시브다.
+                        정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다). */}
+                    {((hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active") || hero.origin === "elementalist") && (() => {
+                        const summons = hero.origin === "elementalist";
+                        const skillName = summons ? classSkill.traitName : classSkill.advancedSkillName;
+                        const skillText = summons ? "층마다 한 번 곁에 원소 정령을 부른다" : classSkill.advancedSkillDescription;
+                        return (
+                            <button
+                                type="button"
+                                onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
+                                disabled={hero.classSkillDepth === level.depth}
+                                aria-label={`${skillName} — ${skillText}`}
+                                title={`${skillName} · ${skillText}`}
+                                className="h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
+                            >
+                                ★ {skillName}
+                            </button>
+                        );
+                    })()}
+
+                    {onAltar && (
+                        <>
+                            <button type="button" onClick={() => setAltarOpen((v) => !v)} aria-expanded={altarOpen} className="h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)]">
+                                † 선택 제단
+                            </button>
+                            {altarOpen && (
+                                <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(18rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                    <span className="font-bold text-[var(--rg-gold)]">하나만 고른다 · 확정하면 턴을 쓴다</span>
+                                    {([
+                                        ["blood", "피의 서약 · 현재 HP 1/3 (최소 5) → 축복 강화 주문서"],
+                                        ["hunger", "굶주림의 서약 · 허기 400 → 지도 · 감정 주문서"],
+                                        ["guardian", "수호자의 서약 · 챔피언 전투 → 처치 시 보석"],
+                                    ] as const).map(([choice, label]) => (
+                                        <button key={choice} type="button" onClick={() => { run({ t: "altar", choice }); setAltarOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {shopHere && level.shop && (
+                        // 가게의 단추는 **하나**다 — 치를 것이 있으면 치르고, 화났으면 빚을 갚는다. 파는 것은
+                        // 배낭의 줄에서(「판다」), 돌려주는 것은 내려놓기로 한다.
                         <button
                             type="button"
-                            onClick={() => setSkillOpen((v) => !v)}
-                            aria-label={`성장 ${hero.pendingSkillPicks}개를 고를 수 있다`}
-                            aria-expanded={skillOpen}
-                            title="성장을 고른다"
-                            className="absolute top-1 left-1 z-20 grid h-7 w-7 place-items-center rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 font-[family-name:var(--font-plex-mono)] text-[13px] leading-none text-[var(--rg-gold)]"
+                            onClick={() => run({ t: "pay" })}
+                            disabled={!level.shop.angry && bill === 0}
+                            className="h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-60"
                         >
-                            ★{hero.pendingSkillPicks}
+                            {level.shop.angry
+                                ? `빚 갚는다 · ${level.shop.debt}G`
+                                : bill > 0
+                                    ? `값 치른다 · 외상 ${bill}G`
+                                    : "$ 상점 — 집으면 외상 · 배낭에서 판다"}
                         </button>
-                        {skillOpen && (
-                            <div className="absolute top-9 left-1 z-20 flex w-[min(15rem,calc(100%-0.5rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                                <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
-                                <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
-                                <span className="text-[11px] text-[var(--rg-faint)]">
-                                    현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {Math.round(hero.itemLuck * 100)}
-                                </span>
-                                {(
-                                    [
-                                        ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
-                                        ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                        ["luck", `지혜 +1 · 지팡이 주사위 +1 (현재 +${wandDamageDiceBonus(hero)})`],
-                                    ] as const
-                                ).map(([option, label]) => (
-                                    <button
-                                        key={option}
-                                        type="button"
-                                        onClick={() => {
-                                            run({ t: "pickSkill", option });
-                                            setSkillOpen(hero.pendingSkillPicks > 1);
-                                        }}
-                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]"
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {/* 액티브 전직 기술만 층마다 한 번 모서리에 선다. 기사의 방벽은 패시브다.
-                    정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다). */}
-                {((hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active") || hero.origin === "elementalist") && (() => {
-                    const summons = hero.origin === "elementalist";
-                    const skillName = summons ? classSkill.traitName : classSkill.advancedSkillName;
-                    const skillText = summons ? "층마다 한 번 곁에 원소 정령을 부른다" : classSkill.advancedSkillDescription;
-                    return (
-                        <button
-                            type="button"
-                            onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
-                            disabled={hero.classSkillDepth === level.depth}
-                            aria-label={`${skillName} — ${skillText}`}
-                            title={`${skillName} · ${skillText}`}
-                            className="absolute top-1 left-9 z-20 h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
-                        >
-                            ★ {skillName}
-                        </button>
-                    );
-                })()}
-
-                {onAltar && (
-                    <>
-                        <button type="button" onClick={() => setAltarOpen((v) => !v)} aria-expanded={altarOpen} className="absolute top-9 left-1 z-20 h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)]">
-                            † 선택 제단
-                        </button>
-                        {altarOpen && (
-                            <div className="absolute top-[4.75rem] left-1 z-20 flex w-[min(18rem,calc(100%-0.5rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                                <span className="font-bold text-[var(--rg-gold)]">하나만 고른다 · 확정하면 턴을 쓴다</span>
-                                {([
-                                    ["blood", "피의 서약 · 현재 HP 1/3 (최소 5) → 축복 강화 주문서"],
-                                    ["hunger", "굶주림의 서약 · 허기 400 → 지도 · 감정 주문서"],
-                                    ["guardian", "수호자의 서약 · 챔피언 전투 → 처치 시 보석"],
-                                ] as const).map(([choice, label]) => (
-                                    <button key={choice} type="button" onClick={() => { run({ t: "altar", choice }); setAltarOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {shopHere && level.shop && (
-                    // 가게의 단추는 **하나**다 — 치를 것이 있으면 치르고, 화났으면 빚을 갚는다. 파는 것은
-                    // 배낭의 줄에서(「판다」), 돌려주는 것은 내려놓기로 한다.
-                    <button
-                        type="button"
-                        onClick={() => run({ t: "pay" })}
-                        disabled={!level.shop.angry && bill === 0}
-                        className="absolute top-9 left-1 z-20 h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-60"
-                    >
-                        {level.shop.angry
-                            ? `빚 갚는다 · ${level.shop.debt}G`
-                            : bill > 0
-                                ? `값 치른다 · 외상 ${bill}G`
-                                : "$ 상점 — 집으면 외상 · 배낭에서 판다"}
-                    </button>
-                )}
+                    )}
+                </div>
 
                 {advanceBanner && (
                     <div className="banner-pop pointer-events-none absolute top-3 left-1/2 z-30 -translate-x-1/2 rounded border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-4 py-2 text-center shadow-md">
@@ -3235,7 +3239,7 @@ export default function Rogue() {
                         <div className="mt-3 space-y-1 border-t border-[var(--rg-line-soft)] pt-2 text-[var(--rg-muted)]">
                             <div className="mb-2 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-2">
                                 <p className="font-bold text-[var(--rg-strong)]">전직과 기술</p>
-                                <p className="text-[var(--rg-faint)]">레벨 {ADVANCE_LEVEL}에 전직합니다. 기사단장의 불굴의 방벽은 체력이 절반 이하일 때 항상 발동하고, 다른 전직 기술은 지도 왼쪽 위의 ★ 단추로 층마다 한 번 씁니다.</p>
+                                <p className="text-[var(--rg-faint)]">레벨 {ADVANCE_LEVEL}에 전직합니다. 기사단장의 불굴의 방벽은 체력이 절반 이하일 때 항상 발동하고, 다른 전직 기술은 지도 아래(상태 줄 바로 위)의 ★ 단추로 층마다 한 번 씁니다.</p>
                             </div>
                             <p className="text-[var(--rg-strong)]">
                                 갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
