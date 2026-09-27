@@ -16,8 +16,9 @@ import assert from "node:assert/strict";
 
 import {
     ARMORS, ENCHANT_SCROLLS, POTIONS, RINGS, SCROLLS, WANDS, WEAPONS,
-    categoryWeights, itemDepthRange, pickCategory, randomItem,
+    categoryWeights, itemDepthRange, makeItem, pickCategory, randomItem,
 } from "@/lib/rogue/items";
+import { addToPack } from "@/lib/rogue/hero";
 import { newGame, perform } from "@/lib/rogue/game";
 import { effectiveArea } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
@@ -132,6 +133,19 @@ test("적어 놓은 띠와 실제로 떨어지는 층이 같다", () => {
     ] as const) {
         for (const type of Object.keys(table)) {
             const band = itemDepthRange(kind, type)!;
+            // 바닥에 안 떨어지는 것(곡괭이)은 띠가 **없어야** 하고, 어느 층에서도 안 나와야 한다.
+            if ((table as Record<string, { noDrop?: boolean }>)[type].noDrop) {
+                assert.equal(band, null, `${type} 는 안 떨어지는데 띠가 적혀 있다`);
+                for (const depth of [1, 13, 26]) {
+                    for (let seed = 1; seed <= 40; seed++) {
+                        assert.ok(
+                            !drops(depth, 60, seed).some((it) => it.kind === kind && it.type === type),
+                            `${type} 가 ${depth}층(시드 ${seed})에서 떨어졌다`,
+                        );
+                    }
+                }
+                continue;
+            }
             assert.ok(band, `${type} 의 띠가 없다`);
             // 띠의 양 끝에서는 실제로 나와야 하고, 그 바깥에서는 안 나와야 한다.
             const seenAt = (depth: number) => {
@@ -148,6 +162,42 @@ test("적어 놓은 띠와 실제로 떨어지는 층이 같다", () => {
             }
             if (band.max < 26) {
                 assert.ok(!seenAt(band.max + 1), `${type} 가 ${band.max + 1}층에서 나온다`);
+            }
+        }
+    }
+
+    // ── 안 떨어지는 줄은 뽑기 통에 **아예 안 들어간다**
+    {
+        // 곡괭이는 가중치가 바닥값(1)이라 수천 번에 한 번꼴로만 뽑힌다 — 위처럼 뽑아 봐서는
+        // 못 잡는다. 난수를 끝값에 붙여 **통의 마지막 칸**을 겨눈다: 표의 맨 끝 줄이 곡괭이라,
+        // 걸러 내지 않았으면 여기서 곡괭이가 나온다.
+        class Last extends Rng {
+            next(): number {
+                return 0.9999999;
+            }
+        }
+        for (const depth of [1, 2, 3]) {
+            const it = randomItem(depth, 1, 0, 0, new Last(1), "weapon");
+            assert.notEqual(it.type, "pick-axe", `${depth}층 뽑기 통의 끝 칸에서 곡괭이가 나왔다`);
+        }
+    }
+
+    // ── 재련도 곡괭이를 안 낸다 — 뽑기와 다른 통이라 따로 막았다(`transmute`)
+    {
+        // 재련은 표에서 고르게 뽑는다(스무 몇 줄 중 하나). 막지 않았으면 200번에 곡괭이가
+        // 안 나올 확률은 0.01% 아래다. 축복 재련은 「같거나 더 깊은 줄」에서 뽑아 곡괭이(1층)가
+        // 단검에서 나올 수 있다 — 두 갈래를 다 본다.
+        for (const blessed of [false, true]) {
+            for (let seed = 1; seed <= 200; seed++) {
+                const s = newGame(seed);
+                const dagger = makeItem("weapon", "dagger", 940, -1, -1);
+                addToPack(s.heroes[0], dagger);
+                const scroll = makeItem("scroll", "transmutation", 941, -1, -1);
+                scroll.blessed = blessed;
+                addToPack(s.heroes[0], scroll);
+                s.known["scroll:transmutation"] = true;
+                perform(s, { t: "read", letter: scroll.letter!, target: dagger.letter! });
+                assert.notEqual(dagger.type, "pick-axe", `시드 ${seed}${blessed ? " 축복" : ""}: 재련으로 곡괭이가 나왔다`);
             }
         }
     }

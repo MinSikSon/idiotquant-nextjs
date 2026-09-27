@@ -30,15 +30,15 @@ import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { idx, T, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("도감 대상은 정확히 76종이고 7개 카테고리로 나뉜다", () => {
-    assert.equal(CODEX_ENTRIES.length, 76);
+test("도감 대상은 정확히 77종이고 7개 카테고리로 나뉜다", () => {
+    assert.equal(CODEX_ENTRIES.length, 77);
 
     const prog = itemCodexProgress();
-    assert.equal(prog.totalCount, 76);
+    assert.equal(prog.totalCount, 77);
     assert.equal(prog.identifiedCount, 0);
     assert.equal(prog.masteredCount, 0);
 
-    assert.equal(prog.byCategory.weapon.total, 21);
+    assert.equal(prog.byCategory.weapon.total, 22);
     assert.equal(prog.byCategory.armor.total, 9);
     assert.equal(prog.byCategory.scroll.total, 10);
     assert.equal(prog.byCategory.potion.total, 9);
@@ -47,12 +47,19 @@ test("도감 대상은 정확히 76종이고 7개 카테고리로 나뉜다", ()
     assert.equal(prog.byCategory.other.total, 2);
 
     // 각 카테고리 정의 항목과 일치하는지 확인
-    assert.equal(Object.keys(WEAPONS).length, 21);
+    assert.equal(Object.keys(WEAPONS).length, 22);
     assert.equal(Object.keys(ARMORS).length, 9);
     assert.equal(Object.keys(SCROLLS).length, 11);
     assert.equal(Object.keys(POTIONS).length, 9);
     assert.equal(Object.keys(RINGS).length, 14);
     assert.equal(Object.keys(WANDS).length, 11);
+
+    // ── 바닥에 안 떨어지는 곡괭이는 층 띠 대신 어디서 오는지를 적는다(「1–26층」은 거짓말이다)
+    {
+        const pick = CODEX_ENTRIES.find((e) => e.key === "weapon:pick-axe");
+        assert.ok(pick, "곡괭이가 도감에 없다");
+        assert.equal(itemCodexStats(pick), "Dmg:1d6 · 고고학자의 시작 장비");
+    }
 });
 
 test("5단계 해금 판정이 정확하다 (0 미발견 -> 1 목격 -> 2 획득 -> 3 식별 -> 4 통달)", () => {

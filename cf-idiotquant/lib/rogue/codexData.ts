@@ -182,6 +182,18 @@ export const CODEX_ENTRIES: CodexEntry[] = [
     },
     {
         kind: "weapon",
+        type: "pick-axe",
+        key: "weapon:pick-axe",
+        name: "곡괭이",
+        category: "weapon",
+        categoryLabel: "무기",
+        masteryType: "kills",
+        masteryGoal: 20,
+        flavor: "쥔 채 벽으로 걸어가면 벽을 파고, 계단이 없는 곳에서 내려가면 발밑을 판다.",
+        masteryFlavor: "땅을 파던 손으로 휘두른 날이 괴물의 두개골까지 파고들었다.",
+    },
+    {
+        kind: "weapon",
         type: "arrow",
         key: "weapon:arrow",
         name: "화살",
@@ -1090,7 +1102,8 @@ export function itemCodexStats(entry: CodexEntry): string {
     switch (entry.kind) {
         case "weapon": {
             const def = WEAPONS[entry.type];
-            return `Dmg:${def?.damage ?? "1d2"} · ${depthStr}`;
+            // 바닥에 안 떨어지는 것은 층 띠가 없다 — 「1–26층」으로 적으면 거짓말이 된다.
+            return `Dmg:${def?.damage ?? "1d2"} · ${def?.noDrop ? "고고학자의 시작 장비" : depthStr}`;
         }
         case "armor": {
             const def = ARMORS[entry.type];
