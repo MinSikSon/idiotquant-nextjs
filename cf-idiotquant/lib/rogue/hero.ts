@@ -249,6 +249,10 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         itemLuck: 0,
         weaponSkills: {},
         weaponTraining: {},
+        // 되읽기(`storage.ts`)가 늘 `{}` 로 채우므로 여기서도 채운다 — 안 채우면 갑옷 숙련이
+        // 한 번도 안 오른 판은 저장했다 되읽은 판과 달라진다(빈 칸도 칸이다).
+        armorSkills: {},
+        armorTraining: {},
         classSkillDepth: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
