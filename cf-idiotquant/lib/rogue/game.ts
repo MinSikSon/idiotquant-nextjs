@@ -66,7 +66,6 @@ import {
     weaponSkillName,
     weaponSkillTerms,
     wandDamageDiceBonus,
-    elementalDice,
     wornRings,
 } from "./hero";
 import {
@@ -74,8 +73,9 @@ import {
     ADVANCED_PRESERVE_CHANCE,
     ADVANCED_TRAP_EVADE,
     ADVANCE_LEVEL,
-    ELEMENTAL_WANDS,
+    ADVANCED_SPIRIT_TURNS,
     ORIGINS,
+    SPIRIT_TURNS,
 } from "./origins";
 import {
     DETAIL,
@@ -86,6 +86,8 @@ import {
     monsterAttack,
     monsterDefense,
     monsterDodgeBonus,
+    monsterDamBonus,
+    monsterHitBonus,
     seenBefore,
     silverLine,
     silverTerm,
@@ -171,6 +173,7 @@ import {
     monsterName,
     randomMonsterChar,
     spawnMonster,
+    summonSpiritAt,
 } from "./monsters";
 import {
     Rng,
@@ -190,6 +193,7 @@ import {
     MAP_W,
     type Monster,
     type Pos,
+    type SpiritElement,
     type Trap,
     T,
     type Tile,
@@ -532,7 +536,12 @@ function populate(state: GameState, level: Level, rng: Rng) {
 function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "below" | "fall") {
     // **외상을 든 채 층을 떠나면 훔친 것이다** — 구멍으로 떨어졌든 발밑을 팠든 같다.
     if (state.level) for (const h of state.heroes) if (h.pack.some((it) => it.unpaid)) robShop(state, h);
-    if (state.level) state.levels[state.level.depth] = state.level;
+    if (state.level) {
+        // **정령은 층을 못 넘는다** — 그 층에 매인 것이다(「층마다 한 번」과 짝). 두고 온 층에
+        // 남겨 두면 되돌아왔을 때 주인 없이 서 있다.
+        state.level.monsters = state.level.monsters.filter((m) => !m.spirit);
+        state.levels[state.level.depth] = state.level;
+    }
     const seen = state.levels[depth];
     const level = seen ?? buildLevel(depth, rng);
     delete state.levels[depth];
@@ -721,13 +730,6 @@ function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
             state.known[k] = true;
             state.itemCodex[k] = true;
         }
-    } else if (origin === "elementalist") {
-        // 정령술사는 제가 부리는 원소 지팡이 넷의 정체만 안다.
-        for (const w of ELEMENTAL_WANDS) {
-            const k = `wand:${w}`;
-            state.known[k] = true;
-            state.itemCodex[k] = true;
-        }
     }
     return hero;
 }
@@ -911,6 +913,15 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         // **부딪혀도 안 싸운다** — 말을 건다. 턴도 안 쓴다(아무 일도 안 일어났다).
         shopkeeperSays(state, hero);
         return { acted: false, fought: false };
+    }
+    if (target?.spirit) {
+        // **정령과는 자리를 바꾼다** — 동료와 같은 까닭이다(폭 한 칸 복도). 대각선 문턱은 막힌다.
+        if (blockedDiagonal(level, hero, { x: nx, y: ny })) return { acted: false, fought: false };
+        target.x = hero.x;
+        target.y = hero.y;
+        hero.x = nx;
+        hero.y = ny;
+        return { acted: true, fought: false };
     }
     if (target) {
         pullAggro(state, target, hero);
@@ -2149,7 +2160,10 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
  * 전직 기술 — 새 자원이나 쿨다운 시계를 만들지 않고 **층마다 한 번**만 쓴다.
  * 실제로 효과가 생긴 뒤에만 사용한 층을 적고 턴을 쓴다.
  */
-function useClassSkill(state: GameState, hero: Hero, ingredients?: [string, string]): boolean {
+function useClassSkill(state: GameState, hero: Hero, rng: Rng, ingredients?: [string, string]): boolean {
+    // 정령술사의 소환은 **직업 특성**이라 레벨 1부터 쓴다. 「층마다 한 번」은 전직 기술과 같은 칸을 쓴다 —
+    // 정령술사의 전직 기술은 지속 효과(정령 화신)라 칸이 겹치지 않는다.
+    if (hero.origin === "elementalist") return summonSpirit(state, hero, rng);
     if (hero.level < ADVANCE_LEVEL) {
         say(state, `레벨 ${ADVANCE_LEVEL}에 전직해야 쓸 수 있다.`);
         return false;
@@ -2166,10 +2180,6 @@ function useClassSkill(state: GameState, hero: Hero, ingredients?: [string, stri
         }
         case "ranger": {
             say(state, "명사수의 눈은 활로 쏠 때마다 저절로 듣는다.");
-            return false;
-        }
-        case "elementalist": {
-            say(state, "정령 화신은 원소 지팡이를 쏠 때마다 저절로 듣는다.");
             return false;
         }
         case "rogue": {
@@ -2251,7 +2261,8 @@ function ray(
         y = ny;
         cells.push({ x, y });
         const m = monsterAt(level, x, y);
-        if (m) return { x, y, monster: m, cells };
+        // 정령은 **내 편이라 지나간다** — 지팡이도 던진 것도 정령 너머의 적에게 간다.
+        if (m && !m.spirit) return { x, y, monster: m, cells };
     }
     return { x, y, cells };
 }
@@ -2392,23 +2403,18 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     // 지혜는 아이템운과 같은 값 하나에서 읽는다. 지혜 1당 같은 면의 주사위를 하나 더
     // 굴린다. 지혜를 안 고른 판은 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
     const wisdomDice = wandDamageDiceBonus(hero);
-    // 정령술사의 원소 주사위도 같은 면으로 따로 굴린다 — 없으면(0) 굴리지 않아 난수 흐름이 그대로다.
-    const spiritDice = elementalDice(hero, it.type);
     const spellDamage = (dice: string) => {
         const rolled = rng.rollDice(dice);
         const [, , sides] = /^(\d+)d(\d+)$/.exec(dice) ?? [];
         const bonusDice = wisdomDice > 0 && sides ? `${wisdomDice}d${sides}` : null;
         const wisdom = bonusDice ? rng.rollDice(bonusDice) : 0;
-        const spiritDiceText = spiritDice > 0 && sides ? `${spiritDice}d${sides}` : null;
-        const spirit = spiritDiceText ? rng.rollDice(spiritDiceText) : 0;
-        return { dice, rolled, bonusDice, wisdom, spiritDice: spiritDiceText, spirit, total: rolled + wisdom + spirit };
+        return { dice, rolled, bonusDice, wisdom, total: rolled + wisdom };
     };
-    const saySpellDamage = (line: string, damage: ReturnType<typeof spellDamage>) => {
+    const saySpellDamage = (line: string, damage: { dice: string; rolled: number; bonusDice: string | null; wisdom: number; total: number }) => {
         const wisdom = damage.bonusDice ? `+${damage.wisdom}(지혜 ${damage.bonusDice})` : "";
-        const spirit = damage.spiritDice ? `+${damage.spirit}(정령 ${damage.spiritDice})` : "";
         // 공격 지팡이도 무기와 같은 기록 문법을 쓴다. 요약 줄에는 결과, 펼친 기록에는
         // 어느 주사위가 얼마였는지가 남아야 지혜가 실제로 무엇을 더했는지 읽을 수 있다.
-        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.rolled}${wisdom}${spirit}=${damage.total}(피해)`);
+        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.rolled}${wisdom}=${damage.total}(피해)`);
         say(state, withDamage(line, damage.total));
     };
 
@@ -2426,7 +2432,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
                 dug++;
             }
             const m = monsterAt(level, nx, ny);
-            if (m) {
+            if (m && !m.spirit) {
                 const dmg = spellDamage("2d6");
                 pullAggro(state, m, hero);
                 m.hp -= dmg.total;
@@ -3201,6 +3207,10 @@ function dragonFlamePath(level: Level, dragon: Monster, victim: Hero): { hit: bo
 
 function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero; x: number; y: number }) {
     const { level } = state;
+    if (m.spirit) {
+        spiritAct(state, m, rng);
+        return;
+    }
     // 화나지 않은 상점 주인은 **가게를 지킬 뿐** 싸우지 않는다. 화나면 아래의 보통 길로 쫓는다.
     if (peacefulShk(level, m)) {
         shopkeeperAct(state, m);
@@ -3217,6 +3227,15 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             } else return;
         }
         const victim = monsterTarget(state, m);
+        // **목표가 곁에 없고 정령이 곁에 있으면 정령을 친다** — 길을 막고 선 것을 치운다.
+        // 정령이 몸으로 막아 주는 값이 여기서 난다. 목표가 곁에 있으면 목표가 먼저다.
+        if (!adjacent(m, victim)) {
+            const guard = level.monsters.find((o) => o.spirit && o.hp > 0 && adjacent(m, o) && !monsterBlockedDiagonal(level, m, o));
+            if (guard) {
+                strikeMonster(state, m, guard, rng);
+                return;
+            }
+        }
         if (m.def.still) {
             if (Math.abs(m.x - victim.x) <= 1 && Math.abs(m.y - victim.y) <= 1) {
                 say(state, ...monsterAttack(state, m, victim, rng).messages);
@@ -3269,6 +3288,134 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             m.y = next.y;
         }
     }
+}
+
+// ── 정령 ─────────────────────────────────────────────────────────────────────
+//
+// 정령술사가 층마다 한 번 부르는 편. **몬스터의 한 칸을 빌려 쓴다**(`Monster.spirit`) — 적의
+// 차례(`monsterTurns`)에 같이 움직이고, 같은 명중·피해 규칙(`strikeMonster`)으로 싸운다.
+//
+//   ① 가까운 **보이는** 적을 쫓아 친다. 적이 없으면 주인 곁으로 돌아온다.
+//   ② 적은 목표가 곁에 없을 때 곁의 정령을 친다 — 몸으로 막아 주는 값.
+//   ③ 흩어지는 때: 턴이 다 됐을 때 · 맞아 쓰러졌을 때 · 주인이 쓰러졌을 때 · 층을 떠날 때.
+//   ④ 정령이 잡은 몫(경험치)은 주인에게 간다. 지팡이·던진 것은 정령을 지나간다(`ray`).
+
+function adjacent(a: Pos, b: Pos): boolean {
+    return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) === 1;
+}
+
+/** 곁의 빈 칸 하나 — 벽·몬스터·사람이 없고 대각선 문턱도 아닌 곳. */
+function spiritSpot(state: GameState, hero: Hero, rng: Rng): Pos | undefined {
+    const { level } = state;
+    const open = ALL_DIRS.map((d) => ({ x: hero.x + d.dx, y: hero.y + d.dy })).filter(
+        (p) =>
+            inBounds(p.x, p.y) &&
+            walkable(tileAt(level, p.x, p.y)) &&
+            !blockedDiagonal(level, hero, p) &&
+            !monsterAt(level, p.x, p.y) &&
+            !state.heroes.some((h) => h.x === p.x && h.y === p.y),
+    );
+    return rng.pick(open);
+}
+
+const SPIRIT_ELEMENTS: SpiritElement[] = ["fire", "water", "air", "earth"];
+
+/** 정령 소환 — 층마다 한 번. 설 자리가 없으면 턴도 기회도 안 쓴다. */
+function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
+    if (hero.classSkillDepth === state.level.depth) {
+        say(state, "이 층에서는 이미 정령을 불렀다.");
+        return false;
+    }
+    const spot = spiritSpot(state, hero, rng);
+    if (!spot) {
+        say(state, "정령이 설 자리가 없다.");
+        return false;
+    }
+    const advanced = hero.level >= ADVANCE_LEVEL;
+    const spirit = summonSpiritAt(
+        {
+            owner: state.heroes.indexOf(hero),
+            turns: advanced ? ADVANCED_SPIRIT_TURNS : SPIRIT_TURNS,
+            element: rng.pick(SPIRIT_ELEMENTS)!,
+            level: hero.level,
+            advanced,
+        },
+        spot.x,
+        spot.y,
+    );
+    state.level.monsters.push(spirit);
+    hero.classSkillDepth = state.level.depth;
+    say(state, `✦ ${spirit.def.name}을(를) 불러냈다. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
+    return true;
+}
+
+/**
+ * 몬스터가 몬스터를 친다 — 정령과 적 사이의 싸움. **영웅 싸움과 같은 주사위**다: d20 명중
+ * (`attackRoll` · 숙련 난이도), 공격력(`damageRoll`)에서 방어력을 뺀다(`pierce`). 피해 없는
+ * 수법(`0d0`)은 사람에게만 쓰는 것이라 정령에게는 안 든다.
+ */
+function strikeMonster(state: GameState, attacker: Monster, defender: Monster, rng: Rng) {
+    const aName = monsterName(attacker);
+    const dName = monsterName(defender);
+    let total = 0;
+    let hits = 0;
+    for (const dice of attacker.def.damage) {
+        if (dice === "0d0") continue;
+        const a = attackRoll(monsterHitBonus(attacker), hitDifficulty(monsterDodgeBonus(defender)), rng);
+        if (!a.hit) continue;
+        hits++;
+        total += pierce(damageRoll(dice, monsterDamBonus(attacker), a.crit, rng).total, monsterDefense(defender));
+    }
+    if (hits === 0) {
+        say(state, `${aName}의 공격이 ${dName}을(를) 빗나갔다.`);
+        return;
+    }
+    defender.hp -= total;
+    defender.awake = true;
+    say(state, withDamage(`${aName}이(가) ${dName}을(를) 쳤다.`, total));
+    if (defender.hp > 0) return;
+    if (defender.spirit) {
+        say(state, `${dName}이(가) 흩어졌다.`);
+        return;
+    }
+    say(state, `${dName}을(를) 쓰러뜨렸다.`);
+    const owner = attacker.spirit ? state.heroes[attacker.spirit.owner] : undefined;
+    killMonster(state, defender, rng, owner ?? state.heroes[0]);
+}
+
+function spiritAct(state: GameState, m: Monster, rng: Rng) {
+    const { level } = state;
+    const bond = m.spirit!;
+    const owner = state.heroes[bond.owner];
+    bond.turns -= 1;
+    if (!owner || owner.hp <= 0 || bond.turns <= 0) {
+        m.hp = 0;
+        say(state, `${monsterName(m)}이(가) 바람 속으로 흩어졌다.`);
+        return;
+    }
+    // 보이는 적 중 가장 가까운 놈. 화나지 않은 상점 주인은 적이 아니다.
+    let foe: Monster | undefined;
+    let best = Infinity;
+    for (const o of level.monsters) {
+        if (o === m || o.spirit || o.hp <= 0 || peacefulShk(level, o) || !isVisible(level, o.x, o.y)) continue;
+        const d = Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y));
+        if (d < best) {
+            best = d;
+            foe = o;
+        }
+    }
+    if (foe && adjacent(m, foe) && !monsterBlockedDiagonal(level, m, foe)) {
+        strikeMonster(state, m, foe, rng);
+        return;
+    }
+    const goal = foe ?? owner;
+    // 주인 곁이면 가만히 있는다 — 비켜 서지 않으면 복도에서 주인과 자리를 계속 바꾼다.
+    if (!foe && adjacent(m, owner)) return;
+    const next = stepToward(level, m, goal);
+    // 사람을 밀치고 들어서지는 않는다.
+    if (!next || state.heroes.some((h) => h.x === next.x && h.y === next.y)) return;
+    m.x = next.x;
+    m.y = next.y;
 }
 
 // ── 상점 ─────────────────────────────────────────────────────────────────────
@@ -3733,7 +3880,7 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = pickSkill(state, hero, cmd.option);
                 break;
             case "classSkill":
-                acted = useClassSkill(state, hero, cmd.ingredients);
+                acted = useClassSkill(state, hero, rng, cmd.ingredients);
                 break;
             case "putOn":
                 acted = putOn(state, hero, cmd.letter);
@@ -3988,7 +4135,8 @@ export function survey(state: GameState): Sighting[] {
     const { level } = state;
     const hero = state.heroes[0];
     return level.monsters
-        .filter((m) => m.hp > 0 && (isVisible(level, m.x, m.y) || hero.detect > 0))
+        // 정령은 조사할 적이 아니다 — 도감의 스물여섯 밖이기도 하다.
+        .filter((m) => m.hp > 0 && !m.spirit && (isVisible(level, m.x, m.y) || hero.detect > 0))
         .map((m) => {
             const kills = state.bestiary[m.def.ch] ?? 0;
             const base: Sighting = {
@@ -4210,6 +4358,8 @@ export function glyphAt(
             // 화나지 않은 상점 주인은 **몬스터 색이 아니다** — 같은 `@` 인 영웅과도, 쳐야 할
             // 놈과도 갈려야 한다. 화나면 몬스터 색으로 바뀐다.
             if (visible && peacefulShk(level, m)) return { ch: m.def.ch, kind: "shopkeeper" };
+            // 정령도 몬스터 색이 아니다 — 같은 글자의 에뮤와 갈려야 한다.
+            if (m.spirit) return { ch: m.def.ch, kind: visible ? "spirit" : "monster-sensed" };
             return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
         }
     }

@@ -24,6 +24,8 @@ import { SHOPKEEPER } from "./shop";
 import {
     type Monster,
     type MonsterDef,
+    type SpiritBond,
+    type SpiritElement,
 } from "./types";
 
 export const MONSTERS: Record<string, MonsterDef> = {
@@ -134,6 +136,44 @@ export function monsterName(m: Monster): string {
         return p ? `${p} ${m.def.name}` : m.def.name;
     }
     return m.def.name;
+}
+
+/**
+ * 정령의 글자 — NetHack 의 elemental 은 `E` 다. 에뮤와 글자가 같지만 도감의 스물여섯 밖이고
+ * (`MONSTERS` 에 없다), 지도에서는 `spirit` 색으로 칠해 갈린다.
+ */
+export const SPIRIT_CH = "E";
+
+export const SPIRIT_NAMES: Record<SpiritElement, string> = {
+    fire: "불의 정령",
+    water: "물의 정령",
+    air: "바람의 정령",
+    earth: "땅의 정령",
+};
+
+/**
+ * 정령의 몸 — **부를 때의 레벨 하나가 다 정한다.** 명중·공격력 보정은 여느 몬스터처럼
+ * `def.level` 에서 나오므로(`monsterHitBonus`·`monsterDamBonus`) 따로 셈을 두지 않는다.
+ * 그 레벨은 부른 사람보다 **두 단 위**다 — 같은 레벨이면 1층에서 `1d8+1` 이 홉고블린의
+ * 방어력 5 에 거의 다 깎여 부른 보람이 없다. 방어 등급 5 는 홉고블린·뱀과 같은 값이다.
+ */
+export function spiritDef(bond: SpiritBond): MonsterDef {
+    const level = Math.max(1, bond.level);
+    return {
+        ch: SPIRIT_CH,
+        name: SPIRIT_NAMES[bond.element] ?? SPIRIT_NAMES.fire,
+        exp: 0,
+        level: level + 2,
+        armor: 5,
+        hp: 6 + 3 * level,
+        damage: bond.advanced ? ["1d8", "1d8"] : ["1d8"],
+        mean: true,
+    };
+}
+
+export function summonSpiritAt(bond: SpiritBond, x: number, y: number): Monster {
+    const def = spiritDef(bond);
+    return { def, x, y, hp: def.hp, maxHp: def.hp, awake: true, id: nextId++, speed: 0, cancelled: false, spirit: bond };
 }
 
 /** 같은 종은 같은 체력으로 선다 — 굴리지 않는다(`MONSTERS` 머리말 참고). */

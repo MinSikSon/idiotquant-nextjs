@@ -30,7 +30,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_ELEMENTALIST_DICE, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ELEMENTAL_WANDS, ELEMENTALIST_DICE, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -186,16 +186,6 @@ export const SKILL_PICK_INTERVAL = 3;
  */
 export function wandDamageDiceBonus(hero: Hero): number {
     return Math.max(0, Math.round(hero.itemLuck * 100));
-}
-
-/**
- * 정령술사가 원소 지팡이(`ELEMENTAL_WANDS`)에 더 굴리는 같은 면의 주사위 수. 다른 직업·다른
- * 지팡이는 `0` 이라 **난수를 한 번도 더 안 건드린다**. 지혜(`wandDamageDiceBonus`)와 따로 센다 —
- * 둘은 뿌리가 다른 값이라 기록 줄에서도 갈라 적는다.
- */
-export function elementalDice(hero: Hero, wandType: string): number {
-    if (hero.origin !== "elementalist" || !ELEMENTAL_WANDS.includes(wandType)) return 0;
-    return hero.level >= ADVANCE_LEVEL ? ADVANCED_ELEMENTALIST_DICE : ELEMENTALIST_DICE;
 }
 
 /** (하한, 상한] 사이에 있는 `SKILL_PICK_INTERVAL` 의 배수 개수 — 한 번에 여러 레벨을 건너뛰어도 안 놓친다. */
@@ -474,7 +464,7 @@ export function volleyMax(hero: Hero, ammo: Item): number {
 /**
  * **`.` 토글 사격**이 쏠 것 — 방향키가 걸음 대신 이것을 쏜다. 없으면 토글이 안 선다.
  *
- * - 지팡이를 쥔 연금술사·연구자·정령술사: 쥔 지팡이(「비전 속사」).
+ * - 지팡이를 쥔 연금술사·연구자: 쥔 지팡이(「비전 속사」).
  * - 레인저: 활을 쥐었으면 **그 활로 쏠 화살**을 먼저 고른다. 활이 없거나 화살이 없으면
  *   배낭의 표창을 던진다. 화살이 여럿이면 층이 얕은 것(화살 → 은화살)부터 쓴다.
  *
@@ -495,7 +485,7 @@ export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } |
 }
 
 export function canWieldWand(hero: Hero): boolean {
-    return hero.origin === "alchemist" || hero.origin === "scholar" || hero.origin === "elementalist";
+    return hero.origin === "alchemist" || hero.origin === "scholar";
 }
 
 export function equippedWand(hero: Hero): Item | undefined {

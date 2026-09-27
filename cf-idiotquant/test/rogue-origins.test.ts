@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { joinGame, newGame, perform } from "@/lib/rogue/game";
-import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, elementalDice, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
+import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
-import { spawnMonster } from "@/lib/rogue/monsters";
-import { ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
+import { SPIRIT_NAMES, spawnMonster } from "@/lib/rogue/monsters";
+import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_TURNS } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
 import { idx, T, walkable, type GameState, type Tile } from "@/lib/rogue/types";
@@ -49,7 +49,7 @@ test("7대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     assert.equal(ORIGINS.archeologist.baseStr, 15);
     assert.equal(ORIGINS.archeologist.advancedSkillKind, "passive");
 
-    // Elementalist — 돌풍 지팡이를 쥐고 시작한다
+    // Elementalist — 정령을 부르는 것은 직업 특성이다
     assert.equal(ORIGINS.elementalist.name, "정령술사");
     assert.equal(ORIGINS.elementalist.baseHp, 11);
     assert.equal(ORIGINS.elementalist.baseStr, 13);
@@ -391,53 +391,127 @@ test("고서 연구자(Scholar) 시작 주문서/지팡이 식별 및 지팡이 
     assert.equal(wand.charges, 8);
 });
 
-test("정령술사 — 원소 지팡이만 알고, 원소 지팡이에만 주사위를 더 굴린다", () => {
-    // ── 시작: 돌풍 지팡이 8회를 쥐고, 원소 지팡이 넷만 정체를 안다
+/** 정령술사로 새 판을 열고, 판 위의 적을 치운 뒤 정령을 부른다. */
+function summoned(seed: number): { s: GameState; spirit: NonNullable<GameState["level"]["monsters"][number]> } {
+    let s = newGame(seed, {}, {}, {}, {}, "elementalist");
+    s.level.monsters = [];
+    s = perform(s, { t: "classSkill" });
+    const spirit = s.level.monsters.find((m) => m.spirit);
+    assert.ok(spirit, `시드 ${seed}: 정령이 안 섰다`);
+    return { s, spirit };
+}
+
+/** 정령 곁이면서 영웅과는 두 칸 떨어진 빈 바닥 — 적이 영웅 대신 정령을 칠 자리. */
+function besideSpiritOnly(s: GameState, spirit: { x: number; y: number }): { x: number; y: number } | undefined {
+    const h = s.heroes[0];
+    for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+            const x = spirit.x + dx;
+            const y = spirit.y + dy;
+            if (Math.max(Math.abs(x - h.x), Math.abs(y - h.y)) < 2) continue;
+            if (dx !== 0 && dy !== 0) continue; // 대각선 문턱을 피한다
+            if (walkable(s.level.tiles[idx(x, y)] as Tile)) return { x, y };
+        }
+    }
+    return undefined;
+}
+
+test("정령술사 — 층마다 한 번 정령을 부르고, 정령은 편으로 싸운다", () => {
+    // ── 시작: 단검·가죽·회복 물약 · 지팡이는 없다
     {
-        const s = newGame(4, {}, {}, {}, {}, "elementalist");
-        const hero = s.heroes[0];
-        assert.equal(hero.origin, "elementalist");
-        assert.equal(hero.hp, 11);
-        assert.equal(equippedWand(hero)?.type, "gust", "정령술사가 돌풍 지팡이를 안 쥐고 시작했다");
-        assert.equal(equippedWand(hero)?.charges, 8);
-        for (const w of ["fire", "cold", "lightning", "gust"]) assert.equal(s.known[`wand:${w}`], true, `${w} 지팡이를 모른다`);
-        assert.notEqual(s.known["wand:slow monster"], true, "원소가 아닌 지팡이까지 안다");
-        assert.notEqual(s.known["scroll:identify"], true, "주문서까지 안다 — 연구자의 몫이다");
+        const h = newGame(4, {}, {}, {}, {}, "elementalist").heroes[0];
+        assert.equal(h.origin, "elementalist");
+        assert.equal(h.hp, 11);
+        assert.ok(h.pack.some((p) => p.kind === "potion" && p.type === "healing"), "회복 물약이 없다");
+        assert.ok(!h.pack.some((p) => p.kind === "wand"), "정령술사가 지팡이를 들고 시작했다");
     }
 
-    // ── 주사위: 원소 지팡이만 +1, 전직하면 +2. 다른 직업·다른 지팡이는 0
+    // ── 소환: 곁에 서고, 레벨 1부터, 층마다 한 번 — 두 번째는 턴을 안 쓴다
     {
-        const el = newGame(4, {}, {}, {}, {}, "elementalist").heroes[0];
-        assert.equal(elementalDice(el, "fire"), 1);
-        assert.equal(elementalDice(el, "gust"), 1);
-        assert.equal(elementalDice(el, "magic missile"), 0, "마법 화살은 원소가 아니다");
-        el.level = ADVANCE_LEVEL;
-        assert.equal(elementalDice(el, "cold"), 2, "전직 뒤 원소 주사위가 +2가 아니다");
-        const scholar = newGame(4, {}, {}, {}, {}, "scholar").heroes[0];
-        assert.equal(elementalDice(scholar, "fire"), 0, "정령술사가 아닌데 원소 주사위가 붙었다");
+        const { s, spirit } = summoned(4);
+        const h = s.heroes[0];
+        assert.equal(Math.max(Math.abs(spirit.x - h.x), Math.abs(spirit.y - h.y)), 1, "정령이 곁에 안 섰다");
+        // 부른 턴에도 곧바로 움직인다(적의 차례에 같이 돈다) — 한 턴이 이미 흘렀다.
+        assert.equal(spirit.spirit!.turns, SPIRIT_TURNS - 1);
+        assert.ok(Object.values(SPIRIT_NAMES).includes(spirit.def.name), `정령 이름이 이상하다: ${spirit.def.name}`);
+        const turn = s.turn;
+        const again = perform(s, { t: "classSkill" });
+        assert.equal(again.turn, turn, "같은 층의 두 번째 소환이 턴을 썼다");
+        assert.equal(again.level.monsters.filter((m) => m.spirit).length, 1, "같은 층에서 정령이 둘 섰다");
+        // 다른 직업은 여전히 레벨 9 전에는 못 쓴다
+        const scholar = perform(newGame(4, {}, {}, {}, {}, "scholar"), { t: "classSkill" });
+        assert.ok(scholar.messages.some((l) => l.includes(`레벨 ${ADVANCE_LEVEL}에 전직`)), "연구자가 레벨 1에 전직 기술을 썼다");
     }
 
-    // ── 실제로 쏘면 기록에 「정령 1d6」이 남고, 다른 직업의 같은 지팡이에는 안 남는다
-    const zapFire = (origin: "elementalist" | "scholar", level = 1) => {
-        const s = newGame(109, {}, {}, {}, {}, origin);
-        const hero = s.heroes[0];
-        hero.level = level;
-        hero.wandId = null; // 쥔 지팡이가 있으면 그것이 나간다
-        const dirs: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-        const [dx, dy] = dirs.find(([x, y]) => walkable(s.level.tiles[idx(hero.x + x, hero.y + y)] as Tile))!;
-        const wand = makeItem("wand", "fire", 949, -1, -1);
-        wand.charges = 1;
-        wand.letter = "y";
-        hero.pack.push(wand);
-        const m = s.level.monsters[0]!;
-        m.x = hero.x + dx;
-        m.y = hero.y + dy;
-        m.hp = m.maxHp = 999;
-        return perform(s, { t: "zap", letter: "y", dx, dy }).messages;
-    };
-    assert.ok(zapFire("elementalist").some((l) => l.includes("정령 1d6")), "정령 주사위 기록이 없다");
-    assert.ok(zapFire("elementalist", ADVANCE_LEVEL).some((l) => l.includes("정령 2d6")), "전직 뒤 정령 주사위 기록이 없다");
-    assert.ok(!zapFire("scholar").some((l) => l.includes("정령")), "연구자의 화염 지팡이에 정령 주사위가 붙었다");
+    // ── 전직 뒤에는 두 번 때리고 두 배 머문다
+    {
+        let s = newGame(4, {}, {}, {}, {}, "elementalist");
+        s.level.monsters = [];
+        s.heroes[0].level = ADVANCE_LEVEL;
+        s = perform(s, { t: "classSkill" });
+        const spirit = s.level.monsters.find((m) => m.spirit)!;
+        assert.equal(spirit.spirit!.turns, ADVANCED_SPIRIT_TURNS - 1);
+        assert.equal(spirit.def.damage.length, 2, "전직 뒤 정령이 두 번 안 때린다");
+    }
+
+    // ── 싸움: 정령이 적을 잡으면 경험치는 주인에게 · 적은 곁의 정령을 친다
+    {
+        let fought = 0;
+        let hitSpirit = 0;
+        for (let seed = 1; seed <= 40 && (fought === 0 || hitSpirit === 0); seed++) {
+            const { s: s0, spirit } = summoned(seed);
+            const spot = besideSpiritOnly(s0, spirit);
+            if (!spot) continue;
+            const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+            s0.level.monsters.push(foe);
+            let s = s0;
+            const exp = s.heroes[0].exp;
+            for (let i = 0; i < 15 && s.level.monsters.some((m) => m.id === foe.id); i++) s = perform(s, { t: "search" });
+            if (s.messages.some((l) => /홉고블린이\(가\) .+ 정령을\(를\) 쳤다/.test(l))) hitSpirit++;
+            if (!s.level.monsters.some((m) => m.id === foe.id) && s.heroes[0].exp > exp) fought++;
+        }
+        assert.ok(fought > 0, "정령이 적을 잡아 주인에게 경험치를 준 판이 없다");
+        assert.ok(hitSpirit > 0, "적이 곁의 정령을 친 판이 없다");
+    }
+
+    // ── 부딪히면 자리를 바꾼다 · 지팡이는 정령을 지나간다
+    {
+        const { s: s0, spirit } = summoned(4);
+        const h = s0.heroes[0];
+        const [hx, hy, sx, sy] = [h.x, h.y, spirit.x, spirit.y];
+        const s = perform(s0, { t: "move", dx: sx - hx, dy: sy - hy });
+        const moved = s.level.monsters.find((m) => m.spirit);
+        assert.deepEqual([s.heroes[0].x, s.heroes[0].y], [sx, sy], "정령 칸으로 못 들어갔다");
+        assert.ok(moved && Math.max(Math.abs(moved.x - sx), Math.abs(moved.y - sy)) <= 1, "자리를 바꾼 정령이 곁에 없다");
+        assert.ok(moved!.hp === moved!.maxHp, "부딪힌 정령이 맞았다");
+    }
+
+    // ── 흩어지는 때: 턴이 다 되면 · 층을 떠나면
+    {
+        let { s } = summoned(4);
+        for (let i = 0; i < SPIRIT_TURNS; i++) s = perform(s, { t: "search" });
+        assert.ok(!s.level.monsters.some((m) => m.spirit), `${SPIRIT_TURNS}턴이 지나도 정령이 남았다`);
+        assert.ok(s.messages.some((l) => l.includes("흩어졌다")), "흩어졌다는 기록이 없다");
+
+        let t = summoned(4).s;
+        t.heroes[0].x = t.level.stairs.x;
+        t.heroes[0].y = t.level.stairs.y;
+        t = perform(t, { t: "descend" });
+        assert.equal(t.level.depth, 2);
+        assert.ok(!t.level.monsters.some((m) => m.spirit), "정령이 층을 따라 내려왔다");
+        assert.ok(!t.levels[1]?.monsters.some((m) => m.spirit), "두고 온 층에 정령이 남았다");
+    }
+
+    // ── 저장: 정령은 제 몸으로 되살고(에뮤가 아니다), 모양이 틀리면 버린다
+    {
+        const { s, spirit } = summoned(4);
+        const back = deserialize(serialize(s))!.level.monsters.find((m) => m.spirit);
+        assert.ok(back, "되읽은 판에 정령이 없다");
+        assert.equal(back.def.name, spirit.def.name, "되읽은 정령이 다른 몸으로 섰다");
+        assert.deepEqual(back.def.damage, spirit.def.damage);
+        spirit.spirit!.turns = Number.NaN;
+        assert.ok(!deserialize(serialize(s))!.level.monsters.some((m) => m.spirit || m.def.name === "에뮤"), "모양이 틀린 정령이 되읽혔다");
+    }
 });
 
 test("종료 시 무덤(Tomb) 기록에 영웅 origin 정보가 정상 보존된다", () => {

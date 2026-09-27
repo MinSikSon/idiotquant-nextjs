@@ -4,7 +4,7 @@
  * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 7가지 시작 클래스를 제공합니다.
  * 레인저는 NetHack 의 Ranger 를 옮겼다 — 활·화살 묶음과 연사(multishot) +1.
  * 고고학자는 NetHack 의 Archeologist 를 옮겼다 — 곡괭이로 벽과 발밑을 판다.
- * 정령술사는 원소 지팡이(화염·냉기·번개·돌풍)에 주사위를 하나 더 싣는다.
+ * 정령술사는 층마다 한 번 원소 정령을 불러 함께 싸운다.
  */
 
 import { makeItem } from "./items";
@@ -56,14 +56,11 @@ export const ADVANCED_ARCHEOLOGIST_SEARCH = 0.65;
 export const ARCHEOLOGIST_DIG_MULT = 2;
 
 /**
- * 정령술사가 다루는 **원소 지팡이** — 불·물(냉기)·번개·바람(돌풍). 새 지팡이를 만들지 않고
- * 이미 있는 넷을 묶었다. 이 지팡이들의 피해 굴림에만 **같은 면의 주사위**를 더 굴린다
- * (지혜와 같은 모양). 굴리는 자리는 `elementalDice`(`hero.ts`) 하나다.
- * 전직(원소의 군주)하면 +1 → +2 로 한 단 오를 뿐이다.
+ * 정령술사의 정령이 머무는 턴 수 — 층마다 한 번 부르고, 이만큼 지나면 흩어진다.
+ * 전직(원소의 군주)하면 두 배로 머물고 두 번 때린다(`spiritDef`). 새 자원 없이 숫자만 깊어진다.
  */
-export const ELEMENTAL_WANDS = ["fire", "cold", "lightning", "gust"];
-export const ELEMENTALIST_DICE = 1;
-export const ADVANCED_ELEMENTALIST_DICE = 2;
+export const SPIRIT_TURNS = 20;
+export const ADVANCED_SPIRIT_TURNS = 40;
 
 export interface OriginDef {
     id: HeroOrigin;
@@ -321,27 +318,29 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         title: "Elementalist",
         advancedName: "원소의 군주",
         advancedTitle: "Elemental Lord",
-        // 지팡이의 글자 `/` 를 빌렸다 — 지팡이로 싸우는 직업이다. 연구자는 이미 `?` 를 쓴다.
-        icon: "/",
+        // 정령(NetHack 의 elemental)의 글자 `E` 를 빌렸다. 지도에서는 정령만 지팡이 색으로 칠해
+        // 같은 글자의 에뮤와 갈린다.
+        icon: "E",
         iconInk: "var(--rg-wand)",
-        description: "불·얼음·번개·바람의 정령을 지팡이에 깃들여 부리는 술사.",
-        traitName: "원소 공명",
-        traitDescription: "원소 지팡이(화염·냉기·번개·돌풍) 시작부터 식별 · 피해 주사위 +1 · 지팡이 장착 가능, 걷기 회복 때 충전 +1",
+        description: "불·물·바람·땅의 정령을 불러 곁에 세우고 함께 싸우는 술사.",
+        traitName: "정령 소환",
+        traitDescription: "층마다 한 번 곁에 원소 정령을 부른다(★ 단추) · 정령은 나를 따라다니며 가까운 적을 친다 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
         weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "정령 화신",
-        advancedSkillDescription: "원소 지팡이 피해 주사위 +1 → +2",
+        advancedSkillDescription: "정령이 두 번 때리고 40턴 머문다",
         advancedSkillKind: "passive",
         baseHp: 11,
         baseStr: 13,
         createStartingItems: (nextId) => {
-            // 돌풍(바람) 지팡이를 쥐고 시작한다 — 화염·냉기·번개는 10층짜리라 1층에 쥐여 주면
-            // 걷기 충전과 겹쳐 6d6 을 끝없이 쏜다. 나머지 셋은 내려가서 찾는다(정체는 이미 안다).
+            // 싸움은 정령이 맡는다 — 손에는 가벼운 단검 하나. 정령은 층마다 한 번이라
+            // 부르기 전·흩어진 뒤를 버틸 회복 물약을 하나 쥐여 준다.
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
+            dagger.plusHit = 1;
+            dagger.plusDam = 1;
             const leather = makeItem("armor", "leather", nextId(), -1, -1);
-            const gustWand = makeItem("wand", "gust", nextId(), -1, -1);
-            gustWand.charges = 8;
+            const healPot = makeItem("potion", "healing", nextId(), -1, -1, 1);
             const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
-            return [dagger, leather, gustWand, food];
+            return [dagger, leather, healPot, food];
         },
     },
 };
