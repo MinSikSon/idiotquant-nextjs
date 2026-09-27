@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { joinGame, newGame, perform } from "@/lib/rogue/game";
+import { joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { SPIRIT_NAMES, spawnMonster } from "@/lib/rogue/monsters";
-import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_TURNS } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
 import { idx, T, walkable, type GameState, type Tile } from "@/lib/rogue/types";
@@ -416,7 +416,7 @@ function besideSpiritOnly(s: GameState, spirit: { x: number; y: number }): { x: 
     return undefined;
 }
 
-test("정령술사 — 층마다 한 번 정령을 부르고, 정령은 편으로 싸운다", () => {
+test("정령술사 — 정령을 부르고(같은 층은 턴이 쌓이면 다시), 정령은 편으로 싸운다", () => {
     // ── 시작: 단검·가죽·회복 물약 · 지팡이는 없다
     {
         const h = newGame(4, {}, {}, {}, {}, "elementalist").heroes[0];
@@ -426,7 +426,7 @@ test("정령술사 — 층마다 한 번 정령을 부르고, 정령은 편으�
         assert.ok(!h.pack.some((p) => p.kind === "wand"), "정령술사가 지팡이를 들고 시작했다");
     }
 
-    // ── 소환: 곁에 서고, 레벨 1부터, 층마다 한 번 — 두 번째는 턴을 안 쓴다
+    // ── 소환: 곁에 서고, 레벨 1부터 — 기다림이 남은 두 번째는 턴을 안 쓴다
     {
         const { s, spirit } = summoned(4);
         const h = s.heroes[0];
@@ -438,6 +438,7 @@ test("정령술사 — 층마다 한 번 정령을 부르고, 정령은 편으�
         const again = perform(s, { t: "classSkill" });
         assert.equal(again.turn, turn, "같은 층의 두 번째 소환이 턴을 썼다");
         assert.equal(again.level.monsters.filter((m) => m.spirit).length, 1, "같은 층에서 정령이 둘 섰다");
+        assert.ok(again.messages.at(-1)!.includes(`${spiritWait(again, again.heroes[0])}턴 더`), "기다릴 턴을 안 적었다");
         // 다른 직업은 여전히 레벨 9 전에는 못 쓴다
         const scholar = perform(newGame(4, {}, {}, {}, {}, "scholar"), { t: "classSkill" });
         assert.ok(scholar.messages.some((l) => l.includes(`레벨 ${ADVANCE_LEVEL}에 전직`)), "연구자가 레벨 1에 전직 기술을 썼다");
@@ -468,6 +469,10 @@ test("정령술사 — 층마다 한 번 정령을 부르고, 정령은 편으�
             const exp = s.heroes[0].exp;
             for (let i = 0; i < 15 && s.level.monsters.some((m) => m.id === foe.id); i++) s = perform(s, { t: "search" });
             if (s.messages.some((l) => /홉고블린이\(가\) .+ 정령을\(를\) 쳤다/.test(l))) hitSpirit++;
+            // 정령이 낀 싸움 줄은 모두 정령의 체력으로 끝난다
+            for (const l of s.messages.filter((m) => /정령(이\(가\)|의 공격|을\(를\) (쳤다|빗나갔다))/.test(m) && /쳤다|빗나갔다/.test(m))) {
+                assert.match(l, /\(정령 HP \d+\/\d+\)$/, `정령 싸움 줄에 정령의 체력이 없다: ${l}`);
+            }
             if (!s.level.monsters.some((m) => m.id === foe.id) && s.heroes[0].exp > exp) fought++;
         }
         assert.ok(fought > 0, "정령이 적을 잡아 주인에게 경험치를 준 판이 없다");
@@ -484,6 +489,36 @@ test("정령술사 — 층마다 한 번 정령을 부르고, 정령은 편으�
         assert.deepEqual([s.heroes[0].x, s.heroes[0].y], [sx, sy], "정령 칸으로 못 들어갔다");
         assert.ok(moved && Math.max(Math.abs(moved.x - sx), Math.abs(moved.y - sy)) <= 1, "자리를 바꾼 정령이 곁에 없다");
         assert.ok(moved!.hp === moved!.maxHp, "부딪힌 정령이 맞았다");
+    }
+
+    // ── 다시 부르기: 같은 층은 SPIRIT_COOLDOWN 턴이 지나야 · 새 층은 곧바로
+    {
+        let { s } = summoned(4);
+        const at = s.heroes[0].spiritTurn!;
+        while (s.turn < at + SPIRIT_COOLDOWN - 1) {
+            s.level.monsters = s.level.monsters.filter((m) => m.spirit);
+            s = perform(s, { t: "search" });
+        }
+        assert.equal(spiritWait(s, s.heroes[0]), at + SPIRIT_COOLDOWN - s.turn, "남은 턴을 잘못 셌다");
+        assert.ok(spiritWait(s, s.heroes[0]) > 0, "기다림이 끝나기 전에 열렸다");
+        const early = perform(s, { t: "classSkill" });
+        assert.equal(early.turn, s.turn, "기다리는 중의 소환이 턴을 썼다");
+        assert.ok(!early.level.monsters.some((m) => m.spirit), "기다리는 중에 정령이 섰다");
+        s.level.monsters = [];
+        s = perform(s, { t: "search" });
+        assert.equal(spiritWait(s, s.heroes[0]), 0, `${SPIRIT_COOLDOWN}턴이 지났는데 안 열렸다`);
+        s.level.monsters = [];
+        s = perform(s, { t: "classSkill" });
+        assert.equal(s.level.monsters.filter((m) => m.spirit).length, 1, "기다림이 끝났는데 다시 못 불렀다");
+
+        let t = summoned(4).s;
+        t.heroes[0].x = t.level.stairs.x;
+        t.heroes[0].y = t.level.stairs.y;
+        t = perform(t, { t: "descend" });
+        assert.equal(spiritWait(t, t.heroes[0]), 0, "새 층인데 기다리게 한다");
+        t.level.monsters = [];
+        t = perform(t, { t: "classSkill" });
+        assert.ok(t.level.monsters.some((m) => m.spirit), "새 층에 들어서자마자 못 불렀다");
     }
 
     // ── 흩어지는 때: 턴이 다 되면 · 층을 떠나면

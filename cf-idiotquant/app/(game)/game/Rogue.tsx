@@ -38,6 +38,7 @@ import {
     standing,
     survey,
     setChest,
+    spiritWait,
     tombScore,
 } from "@/lib/rogue/game";
 import {
@@ -92,7 +93,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
-import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
@@ -2048,21 +2049,23 @@ export default function Rogue() {
                     )}
 
                     {/* 액티브 전직 기술만 층마다 한 번 단추 줄에 선다. 기사의 방벽은 패시브다.
-                        정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다). */}
+                        정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다).
+                        소환은 같은 층에서 턴이 쌓이면 다시 열린다 — 남은 턴을 이름 옆에 적는다(폰에는 `title` 이 안 뜬다). */}
                     {((hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active") || hero.origin === "elementalist") && (() => {
                         const summons = hero.origin === "elementalist";
                         const skillName = summons ? classSkill.traitName : classSkill.advancedSkillName;
-                        const skillText = summons ? "층마다 한 번 곁에 원소 정령을 부른다" : classSkill.advancedSkillDescription;
+                        const skillText = summons ? `곁에 원소 정령을 부른다 · 같은 층에서는 ${SPIRIT_COOLDOWN}턴 뒤 다시` : classSkill.advancedSkillDescription;
+                        const wait = summons ? spiritWait(state, hero) : 0;
                         return (
                             <button
                                 type="button"
                                 onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
-                                disabled={hero.classSkillDepth === level.depth}
-                                aria-label={`${skillName} — ${skillText}`}
+                                disabled={summons ? wait > 0 : hero.classSkillDepth === level.depth}
+                                aria-label={`${skillName} — ${skillText}${wait > 0 ? ` · ${wait}턴 남음` : ""}`}
                                 title={`${skillName} · ${skillText}`}
                                 className="h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
                             >
-                                ★ {skillName}
+                                ★ {skillName}{wait > 0 ? ` · ${wait}T` : ""}
                             </button>
                         );
                     })()}
