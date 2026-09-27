@@ -21,8 +21,9 @@ import {
 import { addToPack } from "@/lib/rogue/hero";
 import { newGame, perform } from "@/lib/rogue/game";
 import { effectiveArea } from "@/lib/rogue/dungeon";
+import { forSale } from "@/lib/rogue/shop";
 import { Rng } from "@/lib/rogue/rng";
-import { T, idx, type Item } from "@/lib/rogue/types";
+import { T, idx, type Item, type Level } from "@/lib/rogue/types";
 
 /** 그 층에서 물건을 잔뜩 떨어뜨려 본다. */
 function drops(depth: number, n: number, seed = 1): Item[] {
@@ -281,9 +282,10 @@ test("강화 주문서는 분류로 서고, 층 규칙이 그 위에 얹힌다",
 
 test("층이 실제로 강화를 두 장까지만, 1층에는 하나도 안 놓는다", () => {
     // 위는 뽑기의 성질이고, 이건 **층을 실제로 파서** 센다 — 둘이 갈리면 규칙이
-    // 어딘가에서 안 불리고 있는 것이다.
-    const ench = (l: { items: Item[] }) =>
-        l.items.filter((i) => i.kind === "scroll" && ENCHANT_SCROLLS.includes(i.type)).length;
+    // 어딘가에서 안 불리고 있는 것이다. **가게의 진열품은 안 센다** — 값을 치러야 하는
+    // 물건이라 층의 공짜 몫이 아니다(`game.stockShop`).
+    const ench = (l: Level) =>
+        l.items.filter((i) => !forSale(l, i) && i.kind === "scroll" && ENCHANT_SCROLLS.includes(i.type)).length;
 
     let first = 0;
     let worstFloor = 0;
@@ -364,7 +366,9 @@ test("특수 방은 문이 하나뿐인 넓은 방이고, 3층 밑에는 안 선
         const r = level.rooms[room];
         assert.ok(level.depth >= 3, `${level.depth}층에 특수 방이 섰다`);
         assert.ok(!r.gone && !r.maze, "없는 방·미로 방이 특수 방이 됐다");
-        assert.ok(effectiveArea(level, r) >= 20, "좁은 방이 특수 방이 됐다");
+        // 상점은 좁아도 된다 — 주인이 지킬 문이 하나면 된다. 진열할 칸만 있으면 된다(안쪽 3×3).
+        const minArea = level.special?.kind === "shop" ? 9 : 20;
+        assert.ok(effectiveArea(level, r) >= minArea, `좁은 방이 ${level.special?.kind} 이 됐다`);
 
         // **문이 하나**라는 것이 이 방의 전부다 — 들어가면 나오는 길이 하나라
         // 위험과 보상이 같은 자리에 선다. 비밀문도 문으로 센다(찾으면 열린다).
@@ -445,7 +449,8 @@ test("특수 방은 층에서 꾸어 가고, 층 상한은 안 넘는다", () =>
                 s = perform(s, { t: "descend" });
                 if (s.level.depth !== d) break;
             }
-            const items = s.level.items.filter((i) => i.kind !== "amulet");
+            // 가게의 진열품은 **값을 치르는 물건**이라 층의 몫·상한 밖이다.
+            const items = s.level.items.filter((i) => i.kind !== "amulet" && !forSale(s.level, i));
             worstTotal = Math.max(worstTotal, items.length);
             worstGear = Math.max(worstGear, items.filter((i) => i.kind === "weapon" || i.kind === "armor").length);
             worstRing = Math.max(worstRing, items.filter((i) => i.kind === "ring").length);
@@ -453,7 +458,8 @@ test("특수 방은 층에서 꾸어 가고, 층 상한은 안 넘는다", () =>
             worstFoodGap = Math.max(worstFoodGap, gap);
 
             const sp = s.level.special;
-            if (sp) {
+            // 상점은 층에서 **꾸어 가지 않는다**(κ 0) — 몫이 그대로인 층으로 센다.
+            if (sp && sp.kind !== "shop") {
                 const r = s.level.rooms[sp.room];
                 const mine = items.filter(
                     (p) => p.x > r.x && p.x < r.x + r.w - 1 && p.y > r.y && p.y < r.y + r.h - 1,

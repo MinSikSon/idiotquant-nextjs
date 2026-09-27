@@ -29,7 +29,8 @@ import {
 import { heroDefense, mergeStacks } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS } from "./monsters";
-import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster } from "./types";
+import { SHOPKEEPER } from "./shop";
+import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ShopState } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -131,7 +132,8 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         rooms,
         monsters: (Array.isArray(raw.monsters) ? raw.monsters : []).map(({ ch, ...rest }) => ({
             ...rest,
-            def: MONSTERS[ch] ?? MONSTERS.B,
+            // 상점 주인은 도감의 스물여섯 밖이다 — 표에 없다고 박쥐로 되살리면 안 된다.
+            def: ch === SHOPKEEPER.ch ? SHOPKEEPER : MONSTERS[ch] ?? MONSTERS.B,
             speed: num((rest as Partial<Monster>).speed, 0),
             cancelled: (rest as Partial<Monster>).cancelled === true,
             champion: (rest as Partial<Monster>).champion ?? undefined,
@@ -149,6 +151,29 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         special: raw.special ?? null,
         altarUsed: raw.altarUsed === true,
         mutator: raw.mutator ?? null,
+        shop: fixShop(raw.shop, rooms.length),
+    };
+}
+
+/**
+ * 상점 — 모양이 틀리면 **없는 것으로** 한다. 반쯤 맞는 가게(문 자리가 없는 등)를 살리면
+ * 주인이 서 있을 자리를 못 찾아 한 걸음마다 터진다. 옛 저장에는 없다 — 그 층에는 없는 것이 맞다.
+ */
+function fixShop(raw: unknown, roomCount: number): ShopState | null {
+    if (!raw || typeof raw !== "object") return null;
+    const s = raw as Partial<ShopState>;
+    const pos = (p: unknown): p is Pos =>
+        !!p && typeof p === "object" && Number.isFinite((p as Pos).x) && Number.isFinite((p as Pos).y);
+    if (!Number.isInteger(s.room) || s.room! < 0 || s.room! >= roomCount) return null;
+    if (!pos(s.door) || !pos(s.home) || !pos(s.rest)) return null;
+    return {
+        room: s.room!,
+        door: s.door,
+        home: s.home,
+        rest: s.rest,
+        angry: s.angry === true,
+        debt: Math.max(0, num(s.debt, 0)),
+        till: Math.max(0, num(s.till, 0)),
     };
 }
 

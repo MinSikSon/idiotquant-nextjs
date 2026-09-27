@@ -143,6 +143,17 @@ import {
     rollFloorMutator,
 } from "./champions";
 import {
+    SHOPKEEPER,
+    billOf,
+    forSale,
+    inShop,
+    isTradable,
+    price,
+    sellPrice,
+    shopkeeperOf,
+    unitPrice,
+} from "./shop";
+import {
     RELIC_DEFS,
     GEM_DEFS,
     RELICS,
@@ -225,7 +236,11 @@ type Action =
     | { t: "give"; letter: string }
     | { t: "use_relic"; letter: string }
     | { t: "altar"; choice: "blood" | "hunger" | "guardian" }
-    | { t: "socket"; gearLetter: string; gemLetter: string };
+    | { t: "socket"; gearLetter: string; gemLetter: string }
+    /** 가게에서 외상을 치른다. 주인이 적대하면 빚을 갚아 달랜다. */
+    | { t: "pay" }
+    /** 가게에서 배낭의 물건을 판다 — 사는 값의 절반. */
+    | { t: "sell"; letter: string };
 
 /**
  * 명령 하나 — **누가 하는지**까지.
@@ -343,6 +358,8 @@ export function partyItemLuck(state: GameState): number {
 
 function populate(state: GameState, level: Level, rng: Rng) {
     const luck = partyItemLuck(state);
+    // **가게가 먼저다** — 주인과 진열품이 자리를 잡아야 몬스터(`freeSpot`)가 그 위에 안 선다.
+    stockShop(state, level, rng, luck);
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
         const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
@@ -511,6 +528,8 @@ function populate(state: GameState, level: Level, rng: Rng) {
  * 같이 썼는데, 둘은 「계단을 거쳤나」가 정반대라 한 값으로 묶일 수 없다.
  */
 function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "below" | "fall") {
+    // **외상을 든 채 층을 떠나면 훔친 것이다** — 구멍으로 떨어졌든 발밑을 팠든 같다.
+    if (state.level) for (const h of state.heroes) if (h.pack.some((it) => it.unpaid)) robShop(state, h);
     if (state.level) state.levels[state.level.depth] = state.level;
     const seen = state.levels[depth];
     const level = seen ?? buildLevel(depth, rng);
@@ -879,6 +898,11 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     if (!inBounds(nx, ny)) return { acted: false, fought: false };
 
     const target = monsterAt(level, nx, ny);
+    if (target && peacefulShk(level, target)) {
+        // **부딪혀도 안 싸운다** — 말을 건다. 턴도 안 쓴다(아무 일도 안 일어났다).
+        shopkeeperSays(state, hero);
+        return { acted: false, fought: false };
+    }
     if (target) {
         pullAggro(state, target, hero);
         const r = heroAttack(state, hero, target, rng);
@@ -938,7 +962,9 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
             level.items = level.items.filter((i) => i.id !== it.id);
             say(state, `금화 ${gold}을(를) 주웠다.`);
         } else {
-            say(state, `발밑에 ${describe(it, state.known, state.appearance)}이(가) 있다.`);
+            // 파는 물건이면 **값을 같이 말한다** — 이름을 모르는 물약도 값으로 무리를 짐작한다.
+            const tag = forSale(level, it) ? ` — 값 ${price(it)}` : "";
+            say(state, `발밑에 ${describe(it, state.known, state.appearance)}이(가) 있다${tag}.`);
         }
     }
     if (tileAt(level, nx, ny) === T.STAIRS) say(state, "아래로 가는 계단이다.");
@@ -976,6 +1002,8 @@ function pickUp(state: GameState, hero: Hero): boolean {
     // 겹쳐 쌓이는 무기는 한 뭉치가 `STACK_MAX` 까지다. 바닥 더미가 그보다 크면(한 칸에
     // 계속 쏘아 쌓인 것) **한 뭉치 몫만** 떼어 줍고 나머지는 발밑에 둔다 — 새 번호를 준다.
     const pile = it.count;
+    // 가게의 물건은 **집는 순간 외상**이다 — 값은 나가기 전에 치른다(`pay`).
+    const selling = forSale(level, it);
     const split = it.kind === "weapon" && !!WEAPONS[it.type]?.stack && it.count > STACK_MAX;
     const picked = split ? makeItem(it.kind, it.type, state.nextItemId++, -1, -1, STACK_MAX) : it;
     if (split) {
@@ -990,7 +1018,12 @@ function pickUp(state: GameState, hero: Hero): boolean {
     }
     // **배낭에 있는 쪽**을 받는다. 겹쳐 쌓였으면 집은 물건과 다른 물건이고, 자리를
     // 가진 것은 배낭 쪽뿐이다.
+    if (selling) picked.unpaid = true;
     const inPack = addToPack(hero, picked, true);
+    // 외상과 「내가 내려놓은 것」은 **있는 자리에서만** 뜻이 있다 — 바닥에 남은 몫은 외상이
+    // 아니고, 배낭에 든 것은 가게 바닥의 표(`noCharge`)를 안 든다.
+    if (it.x >= 0) delete it.unpaid;
+    else delete it.noCharge;
     if (!inPack) {
         // 못 얹은 몫은 `picked.count` 에 남아 있다 — 떼어 온 것이면 더미로 돌려놓는다.
         if (split) it.count += picked.count;
@@ -1010,7 +1043,8 @@ function pickUp(state: GameState, hero: Hero): boolean {
         state.itemUsage["amulet:amulet"] = Math.max(state.itemUsage["amulet:amulet"] ?? 0, 1);
         say(state, "옌더의 증표를 손에 넣었다! 이제 올라갈 수 있다.");
     } else {
-        say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}`);
+        const bill = selling ? ` — 외상 ${unitPrice(it) * (split ? STACK_MAX : pile)}. 나가기 전에 값을 치른다` : "";
+        say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}${bill}`);
     }
     if (split) say(state, `발밑에 ${it.count}개가 남았다.`);
     return true;
@@ -1835,7 +1869,19 @@ function drop(state: GameState, hero: Hero, letter: string): boolean {
     it.x = hero.x;
     it.y = hero.y;
     level.items.push(it);
-    say(state, `${describe(it, state.known, state.appearance)}을(를) 내려놓았다.`);
+    const name = describe(it, state.known, state.appearance);
+    if (it.unpaid) {
+        // 외상인 것을 내려놓으면 **돌려준 것**이다 — 다시 파는 물건이 된다.
+        delete it.unpaid;
+        say(state, `${name}을(를) 도로 내려놓았다 — 외상에서 뺐다.`);
+    } else if (inShop(level, hero.x, hero.y) && shopkeeperOf(level) && !level.shop!.angry) {
+        // 내 물건은 가게 바닥에 놓아도 내 것이다 — 안 그러면 제 물건을 되사야 한다.
+        it.noCharge = true;
+        say(state, `${name}을(를) 내려놓았다 — 팔려면 「판다」.`);
+    } else {
+        delete it.noCharge;
+        say(state, `${name}을(를) 내려놓았다.`);
+    }
     return true;
 }
 
@@ -2237,7 +2283,9 @@ function expShares(state: GameState, m: Monster, by: Hero, total: number): [Hero
  */
 function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
-    state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
+    // 상점 주인은 도감의 스물여섯 밖이다 — 세지 않는다. 대신 가게가 닫힌다.
+    if (m.shk) closeShop(state, m);
+    else state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
     // 무기 처치 수 누적 (도감 통달) — **잡은 사람이 쥔 칼**이다.
     if (by.weaponId) {
         const wep = by.pack.find((p) => p.id === by.weaponId);
@@ -2585,6 +2633,8 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         dropped.cursed = it.cursed;
         dropped.curseKnown = it.curseKnown;
         dropped.socketGem = it.socketGem;
+        // 가게 안에 떨어져도 **던진 사람의 것**이다 — 제 화살을 되사게 두지 않는다.
+        if (inShop(level, dropped.x, dropped.y)) dropped.noCharge = true;
         level.items.push(dropped);
     };
 
@@ -3133,6 +3183,11 @@ function dragonFlamePath(level: Level, dragon: Monster, victim: Hero): { hit: bo
 
 function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero; x: number; y: number }) {
     const { level } = state;
+    // 화나지 않은 상점 주인은 **가게를 지킬 뿐** 싸우지 않는다. 화나면 아래의 보통 길로 쫓는다.
+    if (peacefulShk(level, m)) {
+        shopkeeperAct(state, m);
+        return;
+    }
     {
         if (!m.awake) {
             // **누구든 하나를 보면 깨어난다** — 곁의 성한 사람이 안 보인다고 자는 것은
@@ -3196,6 +3251,239 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             m.y = next.y;
         }
     }
+}
+
+// ── 상점 ─────────────────────────────────────────────────────────────────────
+//
+// NetHack 의 가게. 값과 「가게 안인가」는 `shop.ts` 가 안다 — 여기는 규칙이다.
+//
+//   ① 집으면 **외상**(`Item.unpaid`) · 내려놓으면 돌려준 것 · 「값 치른다」로 산다.
+//   ② 외상을 들고 있으면 **주인이 문 안쪽에 서서 막는다**(`shopkeeperAct`). 곡괭이를 든 손님도
+//      문 앞에서 막는다(NetHack 그대로).
+//   ③ 그래도 벗어나면(벽을 파고, 순간이동, 구멍, 층 이동) **훔친 것**이다 — 외상이 지워지고
+//      빚(`debt`)이 서고 주인이 화낸다(`robShop`). 주인을 다치게 해도 화낸다.
+//   ④ 화난 주인은 빚을 다 갚으면 누그러진다. 쓰러뜨리면 가게가 닫히고 물건은 임자가 없다.
+
+/** 가게에 놓는 진열품 수 — 깊을수록 조금 는다. 층의 공짜 몫(`floorQuota`)과는 따로 센다. */
+const SHOP_STOCK_BASE = 6;
+const SHOP_STOCK_MAX = 12;
+
+/** 가게의 주인과 진열품 — 새 층을 채울 때 한 번. */
+function stockShop(state: GameState, level: Level, rng: Rng, luck: number) {
+    const shop = level.shop;
+    if (!shop) return;
+    const shk = spawnMonster(SHOPKEEPER.ch, shop.home.x, shop.home.y, rng);
+    shk.shk = true;
+    shk.speed = 1;
+    level.monsters.push(shk);
+    const n = Math.min(SHOP_STOCK_MAX, SHOP_STOCK_BASE + Math.floor(level.depth / 3));
+    const avoid = [shop.home, shop.rest, ...(level.anvil ? [level.anvil] : [])];
+    for (const p of roomSpots(level, level.rooms[shop.room], n, rng, avoid)) {
+        // 금화는 안 판다 — 돈을 돈으로 사는 가게는 없다.
+        const cat = pickCategory(level.depth, rng, 1, { gold: 0 });
+        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat, luck));
+    }
+}
+
+function peacefulShk(level: Level, m: Monster): boolean {
+    return !!m.shk && !!level.shop && !level.shop.angry;
+}
+
+function carriesPickAxe(hero: Hero): boolean {
+    return hero.pack.some((it) => it.kind === "weapon" && it.type === "pick-axe");
+}
+
+/** 주인에게 부딪혔을 때 — 까닭에 맞는 한 마디. */
+function shopkeeperSays(state: GameState, hero: Hero) {
+    const bill = billOf(hero.pack);
+    if (bill > 0) say(state, `상점 주인: 「먼저 값을 치르시오.」 (외상 ${bill} · 가진 금화 ${hero.gold})`);
+    else if (!inShop(state.level, hero.x, hero.y) && carriesPickAxe(hero)) say(state, "상점 주인: 「곡괭이는 밖에 두고 들어오시오.」");
+    else say(state, "상점 주인: 「어서 오시오! 천천히 둘러보시오.」");
+}
+
+/**
+ * 화나지 않은 주인의 걸음 — **막아야 할 때는 문 안쪽(`home`)에, 아니면 비켜 선 자리(`rest`)에.**
+ * 막을 때: 누구든 외상을 들고 있거나, 곡괭이를 든 사람이 문 앞에 왔을 때.
+ */
+function shopkeeperAct(state: GameState, m: Monster) {
+    const { level } = state;
+    const shop = level.shop!;
+    const near = (h: Hero, p: Pos) => Math.max(Math.abs(h.x - p.x), Math.abs(h.y - p.y)) <= 1;
+    const block = state.heroes.some(
+        (h) =>
+            h.hp > 0 &&
+            (h.pack.some((it) => it.unpaid) || (!inShop(level, h.x, h.y) && carriesPickAxe(h) && near(h, shop.door))),
+    );
+    const want = block ? shop.home : shop.rest;
+    if (m.x === want.x && m.y === want.y) return;
+    const next = stepToward(level, m, want);
+    // 사람을 밀치고 들어서지는 않는다 — 비켜 줄 때까지 기다린다.
+    if (!next || state.heroes.some((h) => h.x === next.x && h.y === next.y)) return;
+    m.x = next.x;
+    m.y = next.y;
+}
+
+/** 주인을 화나게 한다 — 그 사람을 쫓는다. */
+function angerShopkeeper(state: GameState, level: Level, by: Hero) {
+    const shk = shopkeeperOf(level);
+    if (!level.shop || !shk) return;
+    level.shop.angry = true;
+    shk.awake = true;
+    const i = state.heroes.indexOf(by);
+    if (i >= 0) shk.target = i;
+}
+
+/** **훔쳤다** — 외상을 지우고 그 값을 빚으로 세운다. 주인은 화낸다. */
+function robShop(state: GameState, hero: Hero) {
+    const level = state.level;
+    const stolen = billOf(hero.pack);
+    for (const it of hero.pack) delete it.unpaid;
+    if (!level.shop || stolen === 0) return;
+    level.shop.debt += stolen;
+    angerShopkeeper(state, level, hero);
+    say(state, `🛎️ 상점 주인: 「도둑이야!」 — 금화 ${stolen}어치를 훔쳤다. 빚 ${level.shop.debt}.`);
+}
+
+/** 턴마다 — 가게를 벗어난 외상, 다친 주인. */
+function shopUpkeep(state: GameState, actor: Hero) {
+    const level = state.level;
+    const shk = shopkeeperOf(level);
+    if (!level.shop || !shk) return;
+    if (!level.shop.angry && shk.hp < shk.maxHp) {
+        angerShopkeeper(state, level, actor);
+        say(state, "상점 주인이 화를 낸다! 「감히 나를 치다니!」");
+    }
+    for (const h of state.heroes) {
+        if (h.pack.some((it) => it.unpaid) && !inShop(level, h.x, h.y)) robShop(state, h);
+    }
+}
+
+/** 주인이 쓰러졌다 — 가게가 닫히고, 금고의 돈이 바닥에 쏟아진다. 외상도 없던 것이 된다. */
+function closeShop(state: GameState, m: Monster) {
+    const level = state.level;
+    const till = level.shop?.till ?? 0;
+    level.shop = null;
+    for (const h of state.heroes) for (const it of h.pack) delete it.unpaid;
+    if (till > 0) level.items.push(makeItem("gold", "gold", state.nextItemId++, m.x, m.y, till));
+    say(state, `상점 주인이 쓰러졌다 — 가게의 물건은 이제 임자가 없다${till > 0 ? ` (금고 ${till}G)` : ""}.`);
+}
+
+/** 명령이 짚는 배낭 물건 중 **외상인 것** — 내려놓기·값 치르기·팔기는 뺀다(따로 본다). */
+function unpaidIn(hero: Hero, cmd: Command): Item | undefined {
+    if (cmd.t === "drop" || cmd.t === "pay" || cmd.t === "sell") return undefined;
+    const c = cmd as Record<string, unknown>;
+    const letters = [c.letter, c.target, c.gearLetter, c.gemLetter, ...(Array.isArray(c.ingredients) ? c.ingredients : [])];
+    return hero.pack.find((it) => it.unpaid && letters.includes(it.letter));
+}
+
+/** 외상을 치른다 — 화난 주인이면 빚을 갚는다. */
+function payShop(state: GameState, hero: Hero): boolean {
+    const level = state.level;
+    const shop = level.shop;
+    const shk = shopkeeperOf(level);
+    if (!shop || !shk) {
+        say(state, "값을 받을 주인이 없다.");
+        return false;
+    }
+    const close = Math.max(Math.abs(hero.x - shk.x), Math.abs(hero.y - shk.y)) <= 1;
+    if (!inShop(level, hero.x, hero.y) && !close) {
+        say(state, "주인이 곁에 없다 — 가게 안에서 치른다.");
+        return false;
+    }
+    if (shop.angry) {
+        if (hero.gold < shop.debt) {
+            say(state, `빚 ${shop.debt} — 금화 ${hero.gold}로는 모자라다.`);
+            return false;
+        }
+        hero.gold -= shop.debt;
+        shop.till += shop.debt;
+        say(state, `빚 ${shop.debt}을(를) 갚았다. 상점 주인이 누그러졌다.`);
+        shop.debt = 0;
+        shop.angry = false;
+        shk.awake = false;
+        shk.target = undefined;
+        shk.hp = shk.maxHp;
+        return true;
+    }
+    const owed = hero.pack.filter((it) => it.unpaid);
+    if (!owed.length) {
+        say(state, "치를 외상이 없다.");
+        return false;
+    }
+    let paid = 0;
+    for (const it of owed) {
+        const p = price(it);
+        if (hero.gold < p) continue;
+        hero.gold -= p;
+        shop.till += p;
+        paid += p;
+        delete it.unpaid;
+    }
+    if (paid === 0) {
+        say(state, `금화가 모자라다 — 외상 ${billOf(hero.pack)}, 가진 금화 ${hero.gold}.`);
+        return false;
+    }
+    const left = billOf(hero.pack);
+    say(state, `금화 ${paid}을(를) 치렀다${left > 0 ? ` — 남은 외상 ${left}` : ""}. 상점 주인: 「고맙소!」`);
+    return true;
+}
+
+/** 가게에 판다 — 사는 값의 절반. 판 물건은 그 자리에 진열된다. */
+function sellItem(state: GameState, hero: Hero, letter: string): boolean {
+    const level = state.level;
+    const shop = level.shop;
+    if (!shop || !shopkeeperOf(level) || shop.angry || !inShop(level, hero.x, hero.y)) {
+        say(state, "가게 안에서만 판다.");
+        return false;
+    }
+    const it = packItem(hero, letter);
+    if (!it) return false;
+    const name = describe(it, state.known, state.appearance);
+    if (it.unpaid) {
+        say(state, `${name} — 아직 가게 물건이다. 도로 내려놓으면 외상에서 뺀다.`);
+        return false;
+    }
+    if (!isTradable(it)) {
+        say(state, `상점 주인이 고개를 젓는다 — ${name}은(는) 안 산다.`);
+        return false;
+    }
+    if (isWorn(hero, it) || it.id === hero.offWeaponId) {
+        say(state, "몸에 걸친 것은 벗어야 판다.");
+        return false;
+    }
+    const offer = sellPrice(it);
+    if (shop.till < offer) {
+        say(state, `상점 주인의 돈(${shop.till})이 모자라다 — ${offer}은(는) 못 준다.`);
+        return false;
+    }
+    const spot = itemAt(level, hero.x, hero.y) ? shopFloorSpot(level) : { x: hero.x, y: hero.y };
+    if (!spot) {
+        say(state, "진열할 자리가 없다.");
+        return false;
+    }
+    takeFromPack(hero, it, it.count);
+    it.x = spot.x;
+    it.y = spot.y;
+    delete it.noCharge;
+    level.items.push(it);
+    hero.gold += offer;
+    shop.till -= offer;
+    say(state, `${name}을(를) 금화 ${offer}에 팔았다.`);
+    return true;
+}
+
+/** 가게 안의 빈 바닥 한 칸 — 주인이 서는 두 자리는 뺀다. */
+function shopFloorSpot(level: Level): Pos | null {
+    const shop = level.shop!;
+    const r = level.rooms[shop.room];
+    for (let y = r.y + 1; y < r.y + r.h - 1; y++) {
+        for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
+            if ((x === shop.home.x && y === shop.home.y) || (x === shop.rest.x && y === shop.rest.y)) continue;
+            if (!walkable(tileAt(level, x, y)) || itemAt(level, x, y)) continue;
+            return { x, y };
+        }
+    }
+    return null;
 }
 
 function useRelicCommand(state: GameState, hero: Hero, letter: string): boolean {
@@ -3355,6 +3643,14 @@ function act(state: GameState, cmd: Command): GameState {
         }
     }
 
+    // **외상인 것은 못 쓴다** — 마시고 읽고 쥐고 던지는 것은 값을 치른 뒤다. NetHack 은 쓰고
+    // 나서 값을 매기지만(usage fee), 여기서는 한 자리에서 막는다. 내려놓기(돌려주기)는 된다.
+    const owed = unpaidIn(hero, cmd);
+    if (owed) {
+        say(state, `${describe(owed, state.known, state.appearance)} — 아직 가게 물건이다. 값을 치르거나 도로 내려놓는다.`);
+        return finishTurn(state, hero, rng, false);
+    }
+
     let acted = false;
     let heldGuard = false;
     if (cmd.t === "rest") {
@@ -3445,6 +3741,12 @@ function act(state: GameState, cmd: Command): GameState {
             case "socket":
                 acted = socketGemCommand(state, hero, cmd.gearLetter, cmd.gemLetter);
                 break;
+            case "pay":
+                acted = payShop(state, hero);
+                break;
+            case "sell":
+                acted = sellItem(state, hero, cmd.letter);
+                break;
         }
         if (hero.guarded && hero.origin === "knight" && !heldGuard) {
             hero.guarded = false;
@@ -3519,6 +3821,10 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
             }
         }
     }
+
+    // 가게 — 훔쳐 나갔는가, 주인을 다치게 했는가. **적이 움직이기 전에** 본다 — 그래야
+    // 화난 주인이 바로 이번 차례부터 쫓는다.
+    shopUpkeep(state, hero);
 
     // ── 적은 **파티의 걸음**에 맞춰 움직인다 ──────────────────────────────────────
     //
@@ -3883,6 +4189,9 @@ export function glyphAt(
     if (visible || hero.detect > 0) {
         const m = monsterAt(level, x, y);
         if (m && (!m.def.invisible || hasRing(hero, "see invisible") || hero.detect > 0)) {
+            // 화나지 않은 상점 주인은 **몬스터 색이 아니다** — 같은 `@` 인 영웅과도, 쳐야 할
+            // 놈과도 갈려야 한다. 화나면 몬스터 색으로 바뀐다.
+            if (visible && peacefulShk(level, m)) return { ch: m.def.ch, kind: "shopkeeper" };
             return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
         }
     }

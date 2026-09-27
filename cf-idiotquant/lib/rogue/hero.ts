@@ -313,6 +313,7 @@ function sameStack(hero: Hero, p: Item, it: Item): boolean {
         (p.plusHit ?? 0) === (it.plusHit ?? 0) &&
         (p.plusDam ?? 0) === (it.plusDam ?? 0) &&
         p.socketGem === it.socketGem &&
+        !!p.unpaid === !!it.unpaid &&
         ![hero.weaponId, hero.offWeaponId].includes(p.id) &&
         ![hero.weaponId, hero.offWeaponId].includes(it.id)
     );
@@ -377,6 +378,8 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
                 p.kind === it.kind &&
                 p.type === it.type &&
                 p.blessed === it.blessed &&
+                // 외상과 치른 것은 따로 든다 — 한 더미가 되면 반만 외상인 더미가 생긴다.
+                !!p.unpaid === !!it.unpaid &&
                 p.id !== it.id &&
                 (it.type !== "dagger" ||
                     (p.plusHit ?? 0) === (it.plusHit ?? 0) &&

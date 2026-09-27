@@ -20,6 +20,7 @@
 import {
     Rng,
 } from "./rng";
+import { SHOPKEEPER } from "./shop";
 import {
     type Monster,
     type MonsterDef,
@@ -137,7 +138,7 @@ export function monsterName(m: Monster): string {
 
 /** 같은 종은 같은 체력으로 선다 — 굴리지 않는다(`MONSTERS` 머리말 참고). */
 export function spawnMonster(ch: string, x: number, y: number, rng: Rng, champion?: Monster["champion"]): Monster {
-    const def = MONSTERS[ch] ?? MONSTERS.B;
+    const def = ch === SHOPKEEPER.ch ? SHOPKEEPER : MONSTERS[ch] ?? MONSTERS.B;
     let hp = Math.max(1, def.hp);
     if (champion) {
         hp = Math.round(hp * 1.5);

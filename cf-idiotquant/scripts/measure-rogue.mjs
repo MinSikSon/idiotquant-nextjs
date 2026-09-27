@@ -15,6 +15,7 @@
 import { newGame, perform } from "../lib/rogue/game.ts";
 import { hungerOf } from "../lib/rogue/hero.ts";
 import { armorClassOf } from "../lib/rogue/items.ts";
+import { forSale } from "../lib/rogue/shop.ts";
 import { MAP_H, MAP_W, T, idx, inBounds, walkable } from "../lib/rogue/types.ts";
 
 /** 길이 막혔을 때 절반은 뒤지고 절반은 아무 데나 간다. */
@@ -73,8 +74,10 @@ function botTurn(s) {
     const hero = s.heroes[0];
 
     // ① 붙은 놈이 있으면 때린다. 도망치는 봇이 아니다 — 그래야 전투 밸런스가 보인다.
+    // 화나지 않은 상점 주인은 빼고 — 부딪혀도 말만 하므로 봇이 그 자리에서 영영 돈다.
+    const hostile = (m) => !(m.shk && level.shop && !level.shop.angry);
     for (const [dx, dy] of STEPS) {
-        if (level.monsters.some((m) => m.x === hero.x + dx && m.y === hero.y + dy)) {
+        if (level.monsters.some((m) => hostile(m) && m.x === hero.x + dx && m.y === hero.y + dy)) {
             return { t: "move", dx, dy };
         }
     }
@@ -96,15 +99,17 @@ function botTurn(s) {
     );
     if (better) return { t: "wear", letter: better.letter };
 
-    // ⑤ 발밑의 것을 줍는다.
-    if (level.items.some((i) => i.x === hero.x && i.y === hero.y)) return { t: "pickup" };
+    // ⑤ 발밑의 것을 줍는다. **가게의 물건은 안 줍는다** — 봇은 사지 않으므로(돈을 쓰는 판단을
+    // 안 한다) 집으면 외상을 든 채 주인에게 막혀 판이 멈춘다.
+    const free = (i) => !forSale(level, i);
+    if (level.items.some((i) => free(i) && i.x === hero.x && i.y === hero.y)) return { t: "pickup" };
 
     // ⑥ 계단 위면 내려간다.
     if (level.tiles[idx(hero.x, hero.y)] === T.STAIRS) return { t: "descend" };
 
     // ⑦ 가까운 물건으로, 없으면 계단으로.
-    const toItem = level.items.length
-        ? firstStep(level, hero, (x, y) => level.items.some((i) => i.x === x && i.y === y))
+    const toItem = level.items.some(free)
+        ? firstStep(level, hero, (x, y) => level.items.some((i) => free(i) && i.x === x && i.y === y))
         : null;
     const step = toItem ?? firstStep(level, hero, (x, y) => level.tiles[idx(x, y)] === T.STAIRS);
     if (step) return { t: "move", dx: step.dx, dy: step.dy };

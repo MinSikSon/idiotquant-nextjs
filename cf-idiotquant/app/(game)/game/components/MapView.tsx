@@ -37,6 +37,8 @@ const INK: Record<string, string> = {
     // 동료 — 나와 같은 `@` 이되 **색이 달라야** 「지금 내가 조종하는 쪽」이 보인다.
     ally: "var(--rg-ally)",
     monster: "var(--rg-monster)",
+    // 화나지 않은 상점 주인 — 금빛. 화나면 `monster` 로 바뀐다(`glyphAt`).
+    shopkeeper: "var(--rg-gold)",
     // 감지 물약으로 벽 너머를 느끼는 것 — **본 것과 색이 달라야 한다.**
     // 같은 색으로 그리면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
     "monster-sensed": "var(--rg-monster-sensed)",
@@ -78,7 +80,7 @@ const INK: Record<string, string> = {
  * 하나 늘 때마다 그 놈만 바닥이 안 깔린다.
  */
 function isMonsterKind(kind?: string): boolean {
-    return !!kind && (kind === "monster" || kind === "monster-sensed" || kind.startsWith("champion-"));
+    return !!kind && (kind === "monster" || kind === "monster-sensed" || kind === "shopkeeper" || kind.startsWith("champion-"));
 }
 
 /**

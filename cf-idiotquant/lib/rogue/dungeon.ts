@@ -17,6 +17,7 @@
  */
 
 import { type Category } from "./items";
+import { doorwayInside, startingTill } from "./shop";
 import {
     Rng,
 } from "./rng";
@@ -28,6 +29,7 @@ import {
     MAP_W,
     type Pos,
     type Room,
+    type ShopState,
     type SpecialKind,
     T,
     type Tile,
@@ -608,7 +610,17 @@ export const SPECIAL_ROOMS: Record<
     // 제단은 **몫이 작다**(κ 0.5). 대신 나오는 것이 강화라 값이 다르다 — 그리고 모루가
     // 여기 선다. 물건 수로 보면 손해인 방인데 그래서 「찾아 들어갈 값이 있나」가 갈린다.
     altar: { name: "제단", kappa: 0.5, bias: { enchant: 3 }, monsters: 1, awake: false },
+    // 상점은 **몫을 안 받는다**(κ 0) — 진열품은 값을 치러야 하는 물건이라 층의 공짜 몫과
+    // 따로 센다(`game.stockShop`). 고르는 길도 따로다(`pickSpecialRoom` 이 먼저 굴린다).
+    shop: { name: "상점", kappa: 0, bias: {}, monsters: 0, awake: false },
 };
+
+/** 상점이 서는 첫 층 — NetHack 은 2층부터지만, 우리 2층은 금화가 거의 없다(잰 것: 중앙값 0). */
+const SHOP_MIN_DEPTH = 3;
+/** 진열할 칸이 있어야 한다 — 안쪽 3×3 이면 주인 자리 둘을 빼고 일곱 칸이 남는다. */
+const SHOP_MIN_AREA = 9;
+/** NetHack 의 `rn2(depth) < 3` — 3층은 늘, 6층 절반, 12층 네 번에 한 번. */
+const SHOP_ODDS = 3;
 
 /** 그 방의 문이 몇 개인가 — **비밀문도 문이다**(찾으면 열린다). */
 function doorCount(level: Level, r: Room): number {
@@ -640,21 +652,32 @@ export function pickSpecialRoom(
     depth: number,
     rng: Rng,
 ): { room: number; kind: SpecialKind } | null {
-    if (depth < SPECIAL_MIN_DEPTH) return null;
+    if (depth < Math.min(SPECIAL_MIN_DEPTH, SHOP_MIN_DEPTH)) return null;
 
     const has = (r: Room, p: Pos | null) =>
         !!p && p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
-    const fits = level.rooms
-        .map((r, i) => ({ r, i }))
-        .filter(
-            ({ r }) =>
-                !r.gone &&
-                !r.maze &&
-                effectiveArea(level, r) >= SPECIAL_MIN_AREA &&
-                doorCount(level, r) === 1 &&
-                !has(r, level.stairs) &&
-                !has(r, level.upStairs),
-        );
+    const oneDoor = (minArea: number) =>
+        level.rooms
+            .map((r, i) => ({ r, i }))
+            .filter(
+                ({ r }) =>
+                    !r.gone &&
+                    !r.maze &&
+                    !r.vault &&
+                    effectiveArea(level, r) >= minArea &&
+                    doorCount(level, r) === 1 &&
+                    !has(r, level.stairs) &&
+                    !has(r, level.upStairs),
+            );
+
+    // **상점을 먼저 굴린다**(NetHack 의 `mkroom(SHOPBASE)` 가 다른 특수 방보다 먼저다).
+    // 문이 하나인 방이면 넓지 않아도 된다 — 들어가고 나오는 길이 하나라야 주인이 지킨다.
+    if (depth >= SHOP_MIN_DEPTH) {
+        const shops = oneDoor(SHOP_MIN_AREA);
+        if (shops.length && rng.rnd(depth) < SHOP_ODDS) return { room: rng.pick(shops)!.i, kind: "shop" };
+    }
+    if (depth < SPECIAL_MIN_DEPTH) return null;
+    const fits = oneDoor(SPECIAL_MIN_AREA);
     // **후보를 먼저 찾고 굴린다.** 굴린 뒤에 후보가 없어 무르면 그 확률이 무슨 뜻인지
     // 아무도 모르게 된다 — 이 값은 「맞는 방이 있을 때 그것이 특수 방이 될 확률」이다.
     if (!fits.length) return null;
@@ -662,7 +685,7 @@ export function pickSpecialRoom(
     if (rng.rnd(1000) >= Math.round(chance * 1000)) return null;
 
     const pick = rng.pick(fits)!;
-    const kinds = Object.keys(SPECIAL_ROOMS) as SpecialKind[];
+    const kinds = (Object.keys(SPECIAL_ROOMS) as SpecialKind[]).filter((k) => k !== "shop");
     return { room: pick.i, kind: rng.pick(kinds)! };
 }
 
@@ -1342,6 +1365,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         maze: anyMaze,
         special: null,
         altarUsed: false,
+        shop: null,
     };
 
     // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는
@@ -1369,6 +1393,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         const spot = rng.pick(openTiles(level, level.rooms[level.special.room], [down, level.upStairs]));
         if (spot) level.anvil = spot;
     }
+    if (level.special?.kind === "shop") level.shop = openShop(level, level.special.room);
 
     // 함정. 1층에는 없다 — 처음 켠 사람이 영문도 모르고 떨어지면 배울 것이 안 남는다.
     if (depth > 1) {
@@ -1383,6 +1408,36 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
     }
 
     return level;
+}
+
+/**
+ * 상점의 자리를 잡는다 — 문 하나, 주인이 막아 서는 문 안쪽 한 칸, 비켜 서는 한 칸.
+ * 주인과 진열품은 `game.populate` 가 놓는다(몬스터·물건 번호가 판의 것이라서).
+ *
+ * **문을 연다** — 가게 문이 비밀문이면 찾기 전에는 가게가 없는 것과 같다.
+ */
+function openShop(level: Level, ri: number): ShopState | null {
+    const r = level.rooms[ri];
+    let door: Pos | null = null;
+    for (let y = r.y; y < r.y + r.h; y++) {
+        for (let x = r.x; x < r.x + r.w; x++) {
+            const edge = x === r.x || x === r.x + r.w - 1 || y === r.y || y === r.y + r.h - 1;
+            const t = level.tiles[idx(x, y)];
+            if (edge && (t === T.DOOR || t === T.SECRET)) door = { x, y };
+        }
+    }
+    const home = door && doorwayInside(r, door);
+    if (!door || !home) return null;
+    level.tiles[idx(door.x, door.y)] = T.DOOR;
+    // 비켜 서는 자리 — 문과 같은 줄이 아닌 이웃 칸을 먼저 본다(그래야 문 앞이 트인다).
+    const inside = (p: Pos) => p.x > r.x && p.x < r.x + r.w - 1 && p.y > r.y && p.y < r.y + r.h - 1;
+    const along = door.x === r.x || door.x === r.x + r.w - 1 ? [[0, 1], [0, -1]] : [[1, 0], [-1, 0]];
+    const cands = [...along, [1, 1], [-1, 1], [1, -1], [-1, -1], [home.x - door.x, home.y - door.y]]
+        .map(([dx, dy]) => ({ x: home.x + dx, y: home.y + dy }))
+        .filter((p) => inside(p) && walkable(level.tiles[idx(p.x, p.y)] as Tile));
+    const rest = cands[0];
+    if (!rest) return null;
+    return { room: ri, door, home, rest, angry: false, debt: 0, till: startingTill(level.depth) };
 }
 
 /**
