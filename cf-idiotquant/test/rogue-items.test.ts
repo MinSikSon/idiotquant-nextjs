@@ -8,10 +8,11 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
-import { STACK_MAX, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
+import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
 import { deserialize, serialize } from "@/lib/rogue/storage";
@@ -849,6 +850,29 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
     const s1 = perform(s0, { t: "zap", letter: "y", dx, dy });
     assert.ok(s1.projectile?.cells.length, "마법 화살의 비행 경로가 남지 않았다");
     assert.ok(s1.projectile?.cells.every((cell) => cell.ch === "*"), "마법 화살이 `*`로 날아가지 않았다");
+
+    // ── 모든 지팡이가 제 궤적을 남긴다 — 화면은 `fx` 로 지팡이마다의 연출을 고른다
+    const glyphs = new Map<string, string>();
+    for (const type of Object.keys(WANDS)) {
+        const s = newGame(109);
+        const wand = makeItem("wand", type, 981, -1, -1);
+        wand.charges = 2;
+        give(s, wand, "y");
+        const [wx, wy] = openWay(s);
+        const after = perform(s, { t: "zap", letter: "y", dx: wx, dy: wy });
+        assert.equal(after.projectile?.fx, type, `${type} 지팡이가 제 연출(fx)을 남기지 않았다`);
+        assert.ok(after.projectile?.cells.length, `${type} 지팡이의 궤적이 비었다`);
+        glyphs.set(type, after.projectile!.cells[0]!.ch);
+    }
+    const plain = [...glyphs].filter(([t]) => !WANDS[t]!.damage || t === "magic missile").map(([, ch]) => ch);
+    assert.equal(new Set(plain).size, plain.length, "공격 광선이 아닌 지팡이끼리 궤적 글자가 겹친다");
+
+    // ── 화면의 연출 표(`ZAP_FX`)가 지팡이를 하나도 빠뜨리지 않는다
+    const mapView = readFileSync("app/(game)/game/components/MapView.tsx", "utf8");
+    const table = mapView.slice(mapView.indexOf("export const ZAP_FX"), mapView.indexOf("};", mapView.indexOf("export const ZAP_FX")));
+    for (const type of Object.keys(WANDS)) {
+        assert.ok(table.includes(/\s/.test(type) ? `"${type}":` : `${type}:`), `ZAP_FX 에 ${type} 지팡이의 연출이 없다`);
+    }
 });
 
 test("비밀문은 뒤져야 열리고, 함정은 밟으면 터진다", () => {

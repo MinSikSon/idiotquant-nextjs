@@ -2421,10 +2421,12 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     // ── 굴착의 지팡이 (digging) : 최대 4칸 벽을 부수고 관통 파편 피해(2d6)를 줌 ──
     if (it.type === "digging") {
         let dug = 0;
+        const cells: { x: number; y: number }[] = [];
         for (let step = 1; step <= 4; step++) {
             const nx = hero.x + dx * step;
             const ny = hero.y + dy * step;
             if (nx <= 0 || nx >= MAP_W - 1 || ny <= 0 || ny >= MAP_H - 1) break;
+            cells.push({ x: nx, y: ny });
             const i = idx(nx, ny);
             const tile = level.tiles[i] as Tile;
             if (!walkable(tile)) {
@@ -2444,6 +2446,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
                 }
             }
         }
+        zapTrail(state, hero, cells, it.type, dx, dy);
         computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
@@ -2456,6 +2459,8 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     }
 
     const hit = ray(level, hero, dx, dy, 12);
+    // 맞든 빗나가든 **모든 지팡이가 제 궤적을 남긴다** — 무엇을 쐈는지가 화면에서 갈린다.
+    zapTrail(state, hero, hit.cells, it.type, dx, dy);
 
     // ── 위치 교환의 지팡이 (swapping) ───────────────────────────────────────────
     if (it.type === "swapping") {
@@ -2518,10 +2523,6 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     }
 
     if (!hit.monster) {
-        if (def?.damage) {
-            const ch = it.type === "magic missile" ? "*" : boltGlyph(dx, dy);
-            state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: hit.cells.map((cell) => ({ ...cell, ch })) };
-        }
         say(state, `${name()}에서 무언가 뻗어 나가 사라졌다.`);
         return true;
     }
@@ -2530,9 +2531,6 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     const m = hit.monster;
 
     if (def?.damage) {
-        // 원작처럼 마법 화살은 `*`, 세 원소 지팡이는 방향에 맞춘 광선 문자로 날아간다.
-        const ch = it.type === "magic missile" ? "*" : boltGlyph(dx, dy);
-        state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: hit.cells.map((cell) => ({ ...cell, ch })) };
         const dmg = spellDamage(def.damage);
         pullAggro(state, m, hero);
         m.hp -= dmg.total;
@@ -3165,6 +3163,27 @@ function monsterTurns(state: GameState, rng: Rng, fled?: { hero: Hero; x: number
     }
     // 특수 공격으로 스스로 사라진 놈들(레프러콘·님프)을 치운다.
     level.monsters = level.monsters.filter((m) => m.hp > 0);
+}
+
+/**
+ * 지팡이마다 날아가는 글자 — 원작처럼 마법 화살은 `*`, 세 원소 지팡이는 방향에 맞춘
+ * 광선 문자다. 나머지는 무엇을 쐈는지 궤적만 보고 갈리도록 한 글자씩 붙였다.
+ */
+const WAND_GLYPH: Record<string, string> = {
+    "magic missile": "*",
+    digging: "%",
+    swapping: "o",
+    gust: "~",
+    "slow monster": ":",
+    "haste monster": "!",
+    "teleport away": "?",
+    cancel: "x",
+};
+
+/** 지팡이의 궤적을 남긴다 — 화면은 `fx`(지팡이 종류)로 색과 착탄 연출을 고른다. */
+function zapTrail(state: GameState, hero: Hero, cells: { x: number; y: number }[], type: string, dx: number, dy: number): void {
+    const ch = WAND_GLYPH[type] ?? boltGlyph(dx, dy);
+    state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: cells.map((cell) => ({ ...cell, ch })), fx: type };
 }
 
 function boltGlyph(dx: number, dy: number): string {

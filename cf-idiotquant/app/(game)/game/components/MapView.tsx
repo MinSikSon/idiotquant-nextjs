@@ -205,6 +205,24 @@ export interface CellFlash {
     bg?: string;
 }
 
+/**
+ * 지팡이마다의 사용 연출 — 궤적 글자 색(`ink`)과 끝 칸의 착탄 번쩍임(`impact`).
+ * `shake` 는 화면을 흔드는 것들(번개·굴착)만. 그림일 뿐 규칙이 아니다 — 키는 `WANDS` 의 키.
+ */
+export const ZAP_FX: Record<string, { ink: string; impact: CellFlash; shake?: boolean }> = {
+    "magic missile": { ink: "var(--rg-wand)", impact: { ink: "var(--rg-wand)", bg: "rgba(139, 92, 246, 0.3)" } },
+    lightning: { ink: "var(--rg-gold)", impact: { ink: "var(--rg-gold)", bg: "rgba(250, 204, 21, 0.45)" }, shake: true },
+    fire: { ink: "var(--rg-anvil)", impact: { ink: "var(--rg-trap)", bg: "rgba(249, 115, 22, 0.45)" } },
+    cold: { ink: "var(--rg-scroll)", impact: { ink: "var(--rg-scroll)", bg: "rgba(56, 189, 248, 0.4)" } },
+    digging: { ink: "var(--rg-door)", impact: { ink: "var(--rg-door)", bg: "rgba(146, 64, 14, 0.35)" }, shake: true },
+    swapping: { ink: "var(--rg-weapon)", impact: { ink: "var(--rg-weapon)", bg: "rgba(148, 163, 184, 0.45)" } },
+    gust: { ink: "var(--rg-ring)", impact: { ink: "var(--rg-ring)", bg: "rgba(45, 212, 191, 0.3)" } },
+    "slow monster": { ink: "var(--rg-armor)", impact: { ink: "var(--rg-armor)", bg: "rgba(59, 130, 246, 0.3)" } },
+    "haste monster": { ink: "var(--rg-fourth)", impact: { ink: "var(--rg-fourth)", bg: "rgba(245, 158, 11, 0.35)" } },
+    "teleport away": { ink: "var(--rg-potion)", impact: { ink: "var(--rg-potion)", bg: "rgba(217, 70, 239, 0.35)" } },
+    cancel: { ink: "var(--rg-faint)", impact: { ink: "var(--rg-faint)", bg: "rgba(100, 116, 139, 0.4)" } },
+};
+
 export default function MapView({
     state,
     who = 0,
@@ -218,7 +236,7 @@ export default function MapView({
     who?: number;
     cellFlashes?: Record<string, CellFlash>;
     /** 엔진이 기록한 투사체 궤적. 화면은 한 칸씩 잠깐 드러내기만 한다. */
-    projectileCells?: { x: number; y: number; ch: string }[];
+    projectileCells?: { x: number; y: number; ch: string; ink?: string }[];
     shake?: boolean;
     reveal?: Reveal | null;
 }) {
@@ -345,7 +363,8 @@ export default function MapView({
                                 height: cell.h,
                                 // 투사체도 지도와 같은 문자다. 별도 광원·바탕을 까면 글자
                                 // 던전 위에 게임 밖의 그래픽 하나가 얹힌 것처럼 보인다.
-                                color: "var(--rg-text)",
+                                // 지팡이는 제 색으로 날아간다(`ZAP_FX`) — 무엇을 쐈는지가 궤적에서 갈린다.
+                                color: shot.ink ?? "var(--rg-text)",
                                 fontSize: cell.h / LEADING,
                                 lineHeight: `${cell.h}px`,
                             }}

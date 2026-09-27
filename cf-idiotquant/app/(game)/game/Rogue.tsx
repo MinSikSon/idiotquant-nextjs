@@ -96,7 +96,7 @@ import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, WEAPON_SKILL_MAX,
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
-import MapView, { PARTY_BG, PARTY_INK, type CellFlash, type Reveal } from "./components/MapView";
+import MapView, { PARTY_BG, PARTY_INK, ZAP_FX, type CellFlash, type Reveal } from "./components/MapView";
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
@@ -483,7 +483,9 @@ export default function Rogue() {
     }, []);
 
     const [cellFlashes, setCellFlashes] = useState<Record<string, CellFlash>>({});
-    const [projectileCells, setProjectileCells] = useState<{ x: number; y: number; ch: string }[]>([]);
+    const [projectileCells, setProjectileCells] = useState<{ x: number; y: number; ch: string; ink?: string }[]>([]);
+    /** 지팡이 궤적이 끝난 칸의 착탄 번쩍임 — 턴마다의 `cellFlashes` 와 따로 둬야 서로 안 지운다. */
+    const [zapFlashes, setZapFlashes] = useState<Record<string, CellFlash>>({});
     /** 원작처럼 투사체가 지나가는 동안에는 다음 명령을 받지 않는다. */
     const projectilePlaying = useRef(false);
     const [shake, setShake] = useState(false);
@@ -581,9 +583,12 @@ export default function Rogue() {
         // 한 칸을 눈으로 따라갈 수 있어야 한다. 16ms는 브라우저가 여러 칸을 한 번에
         // 그려 투사체가 순간이동하는 것처럼 보일 수 있다.
         const PROJECTILE_STEP_MS = 45;
+        const fx = shot.fx ? ZAP_FX[shot.fx] : undefined;
+        const paint = (cell: { x: number; y: number; ch: string }) => (fx ? { ...cell, ink: fx.ink } : cell);
         let shown = 0;
         let tail: ReturnType<typeof setTimeout> | null = null;
-        setProjectileCells([shot.cells[shown++]!]);
+        let impactTimer: ReturnType<typeof setTimeout> | null = null;
+        setProjectileCells([paint(shot.cells[shown++]!)]);
         const timer = setInterval(() => {
             if (shown >= shot.cells.length) {
                 clearInterval(timer);
@@ -591,14 +596,26 @@ export default function Rogue() {
                     setProjectileCells([]);
                     projectilePlaying.current = false;
                 }, 16);
+                // 지팡이는 끝 칸에서 제 색으로 터진다 — 입력은 이미 풀렸고, 보는 것만 남는다.
+                if (fx) {
+                    const end = shot.cells[shot.cells.length - 1]!;
+                    setZapFlashes({ [`${end.x},${end.y}`]: fx.impact });
+                    if (fx.shake) {
+                        setShake(true);
+                        setTimeout(() => setShake(false), 160);
+                    }
+                    impactTimer = setTimeout(() => setZapFlashes({}), 260);
+                }
                 return;
             }
             // 누적하지 않는다. 원작 터미널도 이 한 칸만 그리고 직전 칸은 곧바로 지웠다.
-            setProjectileCells([shot.cells[shown++]!]);
+            setProjectileCells([paint(shot.cells[shown++]!)]);
         }, PROJECTILE_STEP_MS);
         return () => {
             clearInterval(timer);
             if (tail) clearTimeout(tail);
+            if (impactTimer) clearTimeout(impactTimer);
+            setZapFlashes({});
             projectilePlaying.current = false;
         };
     }, [state?.projectile?.id]);
@@ -1929,7 +1946,7 @@ export default function Rogue() {
             </button>
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} who={eye} cellFlashes={cellFlashes} projectileCells={projectileCells} shake={shake} reveal={reveal} />
+                <MapView state={state} who={eye} cellFlashes={{ ...cellFlashes, ...zapFlashes }} projectileCells={projectileCells} shake={shake} reveal={reveal} />
 
                 {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 알린다.
                     **늘 떠 있는 것은 우상단의 작은 단추 하나**다. 본문은 눌러야 펼쳐진다.
