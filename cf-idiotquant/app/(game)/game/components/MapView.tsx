@@ -137,32 +137,44 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
     top: number;
 }) {
     const chars = Array.from(nick);
-    const single = chars.length === 1;
-    const font = single ? cell.h : cell.h / 2;
-    // 안 누른 두 글자의 폭 — 한 글자의 폭(`cell.w`)은 지도 글꼴 크기(`cell.h / LEADING`)의 것이라
-    // 이 글꼴 크기로 환산해서 잡는다.
-    const natural = (single ? 1 : 2) * cell.w * (font / (cell.h / LEADING));
+    // 이름 폭은 `cleanNick` 과 같은 규칙으로 2×2 칸에 놓는다. 한글은 한 칸을
+    // 가로로 차지하므로 같은 줄에 두지 않고 다음 줄로 보낸다.
+    const entries: { ch: string; col: number; row: number; wide: boolean }[] = [];
+    let col = 0;
+    let row = 0;
+    for (const ch of chars) {
+        const wide = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch);
+        if (wide && col === 1) { row++; col = 0; }
+        entries.push({ ch, col, row, wide });
+        col += wide ? 2 : 1;
+        if (col >= 2) { row++; col = 0; }
+    }
     return (
         <span
             aria-hidden
             className="pointer-events-none absolute overflow-hidden"
             style={{ left, top, width: cell.w, height: cell.h, background: bg }}
         >
-            <span
-                className="absolute top-1/2 left-0 text-center font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
-                style={{
-                    width: natural,
-                    color: ink,
-                    fontSize: font,
-                    lineHeight: 1,
-                    transform: `translateY(-50%) scaleX(${cell.w / natural})`,
-                    transformOrigin: "left center",
-                }}
-            >
-                {chars.slice(0, 2).join("")}
-                {chars.length > 2 ? "\n" : ""}
-                {chars.slice(2, 4).join("")}
-            </span>
+            {entries.map(({ ch, col: x, row: y, wide }, i) => (
+                <span
+                    key={i}
+                    className="absolute grid place-items-center overflow-visible font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
+                    style={{
+                        left: x * cell.w / 2,
+                        top: y * cell.h / 2,
+                        width: wide ? cell.w : cell.w / 2,
+                        height: cell.h / 2,
+                        color: ink,
+                        fontSize: cell.h / 2,
+                        lineHeight: 1,
+                    }}
+                >
+                    <span style={{
+                        display: "inline-block",
+                        transform: `scaleX(${(wide ? cell.w : cell.w / 2) / (wide ? cell.h / 2 : cell.w * ((cell.h / 2) / (cell.h / LEADING)))})`,
+                    }}>{ch}</span>
+                </span>
+            ))}
         </span>
     );
 }
