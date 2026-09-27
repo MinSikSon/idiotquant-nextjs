@@ -1,10 +1,14 @@
 /**
- * 층 만들기 — Rogue 원작의 방식 그대로.
+ * 층 만들기 — Rogue 원작의 방식, 깊은 층에는 NetHack 의 방식을 섞는다.
  *
  * 화면을 3×3 칸으로 나누고 칸마다 방을 하나 놓는다. 깊이 들어갈수록 몇몇 칸은
  * **「없는 방」**(방 대신 복도의 교차점 한 칸)이 된다. 그다음 이웃한 칸끼리 꺾인
  * 복도로 잇는데, **먼저 전부 이어질 만큼만 잇고**(신장 트리) 그 위에 몇 개를 더한다 —
  * 그래야 갈림길이 생기면서도 못 가는 방이 없다.
+ *
+ * **4층부터는 넷핵식이 섞인다**(`pickLayout`) — 빈 사각형에 방을 아무 데나 흩고, x 순으로 줄 세워
+ * 옆 방끼리 잇는다(`layNethack`). 두 방식은 **방과 문까지만** 다르고, 비밀문·다듬기·금고·계단은
+ * 같은 길을 지난다(`buildLevel`). 그래서 아래의 자물쇠가 두 방식에 똑같이 걸린다.
  *
  * **모든 방이 이어져야 한다.** 하나라도 끊기면 화면은 멀쩡한데 그 층은 못 깨는 층이
  * 되고, 계단이 거기 있으면 판이 죽는다. `test/rogue-dungeon.test.ts` 가 그것을 건다.
@@ -833,9 +837,354 @@ function carveVault(tiles: Uint8Array, roomAt: Int8Array, rooms: Room[], depth: 
     return false;
 }
 
-export function buildLevel(depth: number, rng: Rng): Level {
-    const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.ROCK);
-    const roomAt = new Int8Array(MAP_W * MAP_H).fill(-1);
+/** 이 층을 어느 방식으로 짓나 — 3×3 칸의 로그식, 아무 데나 방을 흩는 넷핵식. */
+export type Layout = "rogue" | "nethack";
+
+/**
+ * **넷핵식은 깊이 들어가야 섞인다.** 1~3층은 전부 로그식이다 — 처음 켠 사람이 보는
+ * 밝은 3×3 지도가 이 게임의 첫인상이고, 물건 배치·특수 방 확률도 그 모양에 맞춰 잰 것이다.
+ * 4층부터 층마다 6%p 씩 올라 13층에서 천장(60%)에 닿는다. 깊은 층도 로그식이 남는다 —
+ * 두 모양이 번갈아 나와야 「이번 층은 어떻게 생겼나」가 산다.
+ */
+const NETHACK_MIN_DEPTH = 4;
+const NETHACK_SLOPE = 0.06;
+const NETHACK_MAX_CHANCE = 0.6;
+
+/** 그 깊이에서 넷핵식이 설 확률. */
+export function nethackChance(depth: number): number {
+    if (depth < NETHACK_MIN_DEPTH) return 0;
+    return Math.min(NETHACK_MAX_CHANCE, (depth - NETHACK_MIN_DEPTH + 1) * NETHACK_SLOPE);
+}
+
+/**
+ * 이 층의 방식을 굴린다. **확률이 0 인 층에서는 난수를 안 뽑는다** — 그래야 1~3층이
+ * 섞기를 넣기 전과 같은 시드로 같은 층이다.
+ */
+export function pickLayout(depth: number, rng: Rng): Layout {
+    const p = nethackChance(depth);
+    if (p <= 0) return "rogue";
+    return rng.chance(p) ? "nethack" : "rogue";
+}
+
+/** 뼈대 — 방과 문까지. 비밀문·다듬기·금고·계단은 두 방식이 같이 쓴다(`buildLevel`). */
+interface Laid {
+    rooms: Room[];
+    /** 방마다 제 문 — 미로를 팔 때 쓴다. */
+    doorsOf: Pos[][];
+    /** 여분 통로에 난 문 — **비밀문이 될 수 있는 것은 이것뿐이다.** */
+    extraDoors: Pos[];
+}
+
+/*
+ * ── 넷핵식 — NetHack 3.x `mklev.c`·`rect.c`·`sp_lev.c(dig_corridor)` 를 옮겼다.
+ *
+ * 빈 사각형 목록에서 하나를 골라 방을 놓고, 방과 그 둘레(XLIM·YLIM)를 뺀 나머지를 다시
+ * 사각형으로 쪼갠다. 더 놓을 데가 없을 때까지. 방을 x 순으로 줄 세워 **옆 방끼리 잇고**,
+ * 끊긴 데를 이어 붙인 뒤, 아무 두 방이나 몇 쌍 더 잇는다.
+ *
+ * **안 옮긴 것** — 규칙이 바뀌는 것이라 따로 정한다:
+ *   - 숨은 복도 칸(SCORR): 필수 길에도 나서 「못 찾으면 막힌 판」이 된다.
+ *   - 중간에 끊기는 여분 복도(`nxcor && !rn2(35)`): 「눈에 보이는 막다른 길은 비밀문 앞뿐」과 부딪힌다.
+ *   - 복도의 바위(boulder), 문 상태(잠김·부서짐): 여는 수단이 아직 없다.
+ * 비밀문은 로그식과 같은 규칙이다 — **여분 통로의 문만** 숨는다.
+ */
+
+/** 방과 방 사이에 남기는 여백 — 복도가 지나갈 자리. 넷핵의 값 그대로. */
+const XLIM = 4;
+const YLIM = 3;
+/**
+ * 넷핵의 COLNO·ROWNO 자리. 우리 지도는 가장자리 한 줄을 비워 두므로(굴착도 못 한다)
+ * 한 칸씩 줄여서 넣는다 — 방 벽이 가장자리에 서지 않는다.
+ */
+const NH_COLS = MAP_W - 1;
+const NH_ROWS = MAP_H - 1;
+const NH_MAX_RECTS = 50;
+/** 방이 이보다 적으면 다시 짓는다 — 로그식의 「진짜 방은 넷 이상」과 맞춘다. */
+const NH_MIN_ROOMS = 4;
+const NH_TRIES = 8;
+
+/** 넷핵의 사각형 — 네 끝을 **포함한다.** 방이면 안쪽(벽 제외)이다. */
+interface Box {
+    lx: number;
+    ly: number;
+    hx: number;
+    hy: number;
+}
+
+function intersect(a: Box, b: Box): Box | null {
+    const r = { lx: Math.max(a.lx, b.lx), ly: Math.max(a.ly, b.ly), hx: Math.min(a.hx, b.hx), hy: Math.min(a.hy, b.hy) };
+    return r.lx > r.hx || r.ly > r.hy ? null : r;
+}
+
+function addRect(rects: Box[], r: Box) {
+    if (rects.length >= NH_MAX_RECTS) return;
+    // 이미 있는 사각형 안에 들어가면 더하지 않는다(`get_rect`).
+    if (rects.some((q) => q.lx <= r.lx && q.ly <= r.ly && q.hx >= r.hx && q.hy >= r.hy)) return;
+    rects.push(r);
+}
+
+/** 방(`r2`, 벽 포함)이 먹은 자리를 빈 사각형 목록에서 빼고 남은 조각을 넣는다(`split_rects`). */
+function splitRects(rects: Box[], r1: Box, r2: Box) {
+    const old = { ...r1 };
+    rects.splice(rects.indexOf(r1), 1);
+    for (const q of rects.slice().reverse()) {
+        if (!rects.includes(q)) continue;
+        const cut = intersect(q, r2);
+        if (cut) splitRects(rects, q, cut);
+    }
+    if (r2.ly - old.ly - 1 > (old.hy < NH_ROWS - 1 ? 2 * YLIM : YLIM + 1) + 4) addRect(rects, { ...old, hy: r2.ly - 2 });
+    if (r2.lx - old.lx - 1 > (old.hx < NH_COLS - 1 ? 2 * XLIM : XLIM + 1) + 4) addRect(rects, { ...old, hx: r2.lx - 2 });
+    if (old.hy - r2.hy - 1 > (old.ly > 0 ? 2 * YLIM : YLIM + 1) + 4) addRect(rects, { ...old, ly: r2.hy + 2 });
+    if (old.hx - r2.hx - 1 > (old.lx > 0 ? 2 * XLIM : XLIM + 1) + 4) addRect(rects, { ...old, lx: r2.hx + 2 });
+}
+
+/**
+ * 방 하나를 놓는다(`create_room`). 못 놓으면 null — 방 놓기가 거기서 끝난다.
+ *
+ * 크기는 넷핵 그대로 — 안쪽 가로 3~9(넓은 사각형이면 3~13), 세로 3~6, 넓이 50 남짓까지.
+ */
+function nhCreateRoom(rects: Box[], placed: Box[], rng: Rng): Box | null {
+    for (let tries = 0; tries <= 100; tries++) {
+        if (!rects.length) return null;
+        const r1 = rects[rng.rnd(rects.length)];
+        const { lx, ly, hx, hy } = r1;
+        const dx = 2 + rng.rnd(hx - lx > 28 ? 12 : 8);
+        let dy = 2 + rng.rnd(4);
+        if (dx * dy > 50) dy = Math.floor(50 / dx);
+        const xborder = lx > 0 && hx < NH_COLS - 1 ? 2 * XLIM : XLIM + 1;
+        const yborder = ly > 0 && hy < NH_ROWS - 1 ? 2 * YLIM : YLIM + 1;
+        if (hx - lx < dx + 3 + xborder || hy - ly < dy + 3 + yborder) continue;
+        const xabs = lx + (lx > 0 ? XLIM : 3) + rng.rnd(hx - (lx > 0 ? lx : 3) - dx - xborder + 1);
+        let yabs = ly + (ly > 0 ? YLIM : 2) + rng.rnd(hy - (ly > 0 ? ly : 2) - dy - yborder + 1);
+        // 첫 방이 아래쪽에 쏠리지 않게 위로 끌어올린다(넷핵 그대로).
+        if (ly === 0 && hy >= NH_ROWS - 1 && (!placed.length || !rng.rnd(placed.length)) && yabs + dy > NH_ROWS / 2) {
+            yabs = 2 + rng.rnd(3);
+            if (placed.length < 4 && dy > 1) dy--;
+        }
+        const room = { lx: xabs, ly: yabs, hx: xabs + dx, hy: yabs + dy };
+        const walls = { lx: room.lx - 1, ly: room.ly - 1, hx: room.hx + 1, hy: room.hy + 1 };
+        // `check_room` 자리 — 다른 방과 벽이 붙으면 무른다. 가장자리는 위의 여백 셈이 이미 비켜 간다.
+        if (placed.some((p) => intersect({ lx: p.lx - 2, ly: p.ly - 2, hx: p.hx + 2, hy: p.hy + 2 }, walls))) continue;
+        splitRects(rects, r1, walls);
+        return room;
+    }
+    return null;
+}
+
+/** 문을 낼 수 있는 벽인가 — 곁에 문이 붙어 있으면 안 된다(`okdoor`·`bydoor`). */
+function okDoor(tiles: Uint8Array, x: number, y: number): boolean {
+    const t = get(tiles, x, y);
+    if (t !== T.WALL_H && t !== T.WALL_V) return false;
+    return !N4.some(([dx, dy]) => get(tiles, x + dx, y + dy) === T.DOOR);
+}
+
+/** 벽 한 줄에서 문 자리 하나(`finddpos`). 마땅한 데가 없으면 이미 난 문을 같이 쓴다. */
+function findDoorPos(tiles: Uint8Array, xl: number, yl: number, xh: number, yh: number, rng: Rng): Pos {
+    const x = xl + rng.rnd(xh - xl + 1);
+    const y = yl + rng.rnd(yh - yl + 1);
+    if (okDoor(tiles, x, y)) return { x, y };
+    for (let xx = xl; xx <= xh; xx++) for (let yy = yl; yy <= yh; yy++) if (okDoor(tiles, xx, yy)) return { x: xx, y: yy };
+    for (let xx = xl; xx <= xh; xx++) for (let yy = yl; yy <= yh; yy++) if (get(tiles, xx, yy) === T.DOOR) return { x: xx, y: yy };
+    return { x: xl, y: yh };
+}
+
+/**
+ * 복도를 판다(`dig_corridor`). 바위와 이미 난 복도만 지나고, **벽을 만나면 돌아간다** —
+ * 그래서 넷핵의 복도는 남의 방을 비켜 구불구불 간다. 끝까지 못 가면 false.
+ */
+function nhDigCorridor(tiles: Uint8Array, org: Pos, dest: Pos, rng: Rng): boolean {
+    let xx = org.x;
+    let yy = org.y;
+    const tx = dest.x;
+    const ty = dest.y;
+    if (!inBounds(xx, yy) || !inBounds(tx, ty)) return false;
+    let dx = 0;
+    let dy = 0;
+    if (tx > xx) dx = 1;
+    else if (ty > yy) dy = 1;
+    else if (tx < xx) dx = -1;
+    else dy = -1;
+    xx -= dx;
+    yy -= dy;
+    const passable = (x: number, y: number) => {
+        const t = get(tiles, x, y);
+        return t === T.ROCK || t === T.CORRIDOR;
+    };
+    let cct = 0;
+    while (xx !== tx || yy !== ty) {
+        if (cct++ > 500) return false;
+        xx += dx;
+        yy += dy;
+        if (xx >= MAP_W - 1 || xx <= 0 || yy <= 0 || yy >= MAP_H - 1) return false;
+        const t = get(tiles, xx, yy);
+        if (t === T.ROCK) put(tiles, xx, yy, T.CORRIDOR);
+        else if (t !== T.CORRIDOR) return false;
+
+        // 다음 칸 — 남은 거리가 긴 쪽으로 가되, 가끔 짧은 쪽을 먼저 턴다(곧기만 하면 심심하다).
+        let dix = Math.abs(xx - tx);
+        let diy = Math.abs(yy - ty);
+        if (dix > diy && diy && !rng.rnd(dix - diy + 1)) dix = 0;
+        else if (diy > dix && dix && !rng.rnd(diy - dix + 1)) diy = 0;
+
+        if (dy && dix > diy) {
+            const ddx = xx > tx ? -1 : 1;
+            if (passable(xx + ddx, yy)) {
+                dx = ddx;
+                dy = 0;
+                continue;
+            }
+        } else if (dx && diy > dix) {
+            const ddy = yy > ty ? -1 : 1;
+            if (passable(xx, yy + ddy)) {
+                dy = ddy;
+                dx = 0;
+                continue;
+            }
+        }
+        if (passable(xx + dx, yy + dy)) continue;
+        if (dx) {
+            dx = 0;
+            dy = ty < yy ? -1 : 1;
+        } else {
+            dy = 0;
+            dx = tx < xx ? -1 : 1;
+        }
+        if (passable(xx + dx, yy + dy)) continue;
+        dy = -dy;
+        dx = -dx;
+    }
+    return true;
+}
+
+/**
+ * 두 방을 잇는다(`join`). 문 두 개를 돌려준다. 못 이으면 null — 반쯤 판 복도는 넷핵처럼
+ * 그대로 두고 문만 안 낸다. 그 토막은 막다른 길이라 `pruneDeadEnds` 가 되메운다.
+ */
+function nhJoin(tiles: Uint8Array, rooms: Box[], a: number, b: number, extra: boolean, rng: Rng): [Pos, Pos] | null {
+    const c = rooms[a];
+    const t = rooms[b];
+    let dx = 0;
+    let dy = 0;
+    let dd: Pos;
+    let tt: Pos;
+    if (t.lx > c.hx) {
+        dx = 1;
+        dd = findDoorPos(tiles, c.hx + 1, c.ly, c.hx + 1, c.hy, rng);
+        tt = findDoorPos(tiles, t.lx - 1, t.ly, t.lx - 1, t.hy, rng);
+    } else if (t.hy < c.ly) {
+        dy = -1;
+        dd = findDoorPos(tiles, c.lx, c.ly - 1, c.hx, c.ly - 1, rng);
+        tt = findDoorPos(tiles, t.lx, t.hy + 1, t.hx, t.hy + 1, rng);
+    } else if (t.hx < c.lx) {
+        dx = -1;
+        dd = findDoorPos(tiles, c.lx - 1, c.ly, c.lx - 1, c.hy, rng);
+        tt = findDoorPos(tiles, t.hx + 1, t.ly, t.hx + 1, t.hy, rng);
+    } else {
+        dy = 1;
+        dd = findDoorPos(tiles, c.lx, c.hy + 1, c.hx, c.hy + 1, rng);
+        tt = findDoorPos(tiles, t.lx, t.ly - 1, t.hx, t.ly - 1, rng);
+    }
+    const org = { x: dd.x + dx, y: dd.y + dy };
+    const dest = { x: tt.x - dx, y: tt.y - dy };
+    // 여분 통로는 이미 길이 난 자리에서 시작하지 않는다(넷핵 그대로) — 겹친 복도만 는다.
+    if (extra && get(tiles, org.x, org.y) !== T.ROCK) return null;
+    if (!nhDigCorridor(tiles, org, dest, rng)) return null;
+    put(tiles, dd.x, dd.y, T.DOOR);
+    put(tiles, tt.x, tt.y, T.DOOR);
+    return [dd, tt];
+}
+
+/** 넷핵식 뼈대. 끝내 못 지으면 null — 지도를 비워 두고 돌아간다. */
+function layNethack(tiles: Uint8Array, roomAt: Int8Array, depth: number, rng: Rng): Laid | null {
+    for (let attempt = 0; attempt < NH_TRIES; attempt++) {
+        tiles.fill(T.ROCK);
+        roomAt.fill(-1);
+        const laid = tryNethack(tiles, roomAt, depth, rng);
+        if (laid) return laid;
+    }
+    tiles.fill(T.ROCK);
+    roomAt.fill(-1);
+    return null;
+}
+
+function tryNethack(tiles: Uint8Array, roomAt: Int8Array, depth: number, rng: Rng): Laid | null {
+    const rects: Box[] = [{ lx: 0, ly: 0, hx: NH_COLS - 1, hy: NH_ROWS - 1 }];
+    const boxes: Box[] = [];
+    for (;;) {
+        const b = nhCreateRoom(rects, boxes, rng);
+        if (!b) break;
+        boxes.push(b);
+    }
+    if (boxes.length < NH_MIN_ROOMS) return null;
+
+    // x 순으로 줄 세운다(`sort_rooms`) — 「옆 방끼리 잇기」가 이 순서를 탄다.
+    boxes.sort((p, q) => p.lx - q.lx || p.ly - q.ly);
+    const rooms: Room[] = boxes.map((b) => ({
+        x: b.lx - 1,
+        y: b.ly - 1,
+        w: b.hx - b.lx + 3,
+        h: b.hy - b.ly + 3,
+        // 어둠은 로그식과 같은 규칙 — 층의 어둡기는 방식이 아니라 깊이가 정한다.
+        dark: depth > 1 && rng.chance(Math.min(0.6, (depth - 1) * 0.07)),
+        gone: false,
+        maze: false,
+    }));
+    rooms.forEach((r, i) => carveRoom(tiles, roomAt, r, i));
+
+    const n = rooms.length;
+    const uf = new Uf(n);
+    const doorsOf: Pos[][] = rooms.map(() => []);
+    const needed: Pos[] = [];
+    const extras: Pos[] = [];
+    const link = (a: number, b: number, extra: boolean) => {
+        const res = nhJoin(tiles, boxes, a, b, extra, rng);
+        if (!res) return;
+        doorsOf[a].push(res[0]);
+        doorsOf[b].push(res[1]);
+        (extra ? extras : needed).push(...res);
+        if (!extra) uf.union(a, b);
+    };
+
+    // 1) 옆 방끼리. 넷핵은 1/50 로 여기서 끊는다 — 그러면 2)·3) 이 다른 모양으로 잇는다.
+    for (let a = 0; a < n - 1; a++) {
+        link(a, a + 1, false);
+        if (!rng.rnd(50)) break;
+    }
+    // 2) 한 칸 건너 — 아직 안 이어진 것만.
+    for (let a = 0; a < n - 2; a++) if (uf.find(a) !== uf.find(a + 2)) link(a, a + 2, false);
+    // 3) 그래도 떨어진 것은 아무하고나.
+    for (let a = 0, any = true; any && a < n; a++) {
+        any = false;
+        for (let b = 0; b < n; b++) {
+            if (uf.find(a) !== uf.find(b)) {
+                link(a, b, false);
+                any = true;
+            }
+        }
+    }
+    // **여기까지가 필수 길이다.** 하나라도 떨어졌으면 이 층은 버리고 다시 짓는다.
+    for (let i = 1; i < n; i++) if (uf.find(i) !== uf.find(0)) return null;
+
+    // 4) 여분 통로 — 없어도 층은 이어진다. 그래서 **여기 난 문만 숨길 수 있다.**
+    if (n > 2) {
+        for (let i = rng.rnd(n) + 4; i; i--) {
+            const a = rng.rnd(n);
+            let b = rng.rnd(n - 2);
+            if (b >= a) b += 2;
+            link(a, b, true);
+        }
+    }
+    // 여분 통로가 **필수 길의 문을 같이 쓴** 자리는 뺀다 — 그 문을 숨기면 필수 길이 끊긴다.
+    const extraDoors = extras.filter((d) => !needed.some((q) => q.x === d.x && q.y === d.y));
+    return { rooms, doorsOf, extraDoors };
+}
+
+/**
+ * **로그식 뼈대** — 3×3 칸에 방 하나씩, 이웃한 칸끼리 잇는다. 원래의 생성기 그대로다.
+ *
+ * 난수를 뽑는 순서를 바꾸지 말 것 — 같은 시드가 같은 층이어야 한다.
+ */
+function layRogue(tiles: Uint8Array, roomAt: Int8Array, depth: number, rng: Rng): Laid {
     const rooms: Room[] = [];
 
     // 「없는 방」은 깊을수록 잦다. 다만 진짜 방을 넷 아래로 떨어뜨리지 않는다 —
@@ -926,6 +1275,16 @@ export function buildLevel(depth: number, rng: Rng): Level {
             extraDoors.push(...[res.doorA, res.doorB].filter((d): d is Pos => !!d));
         }
     }
+
+    return { rooms, doorsOf, extraDoors };
+}
+
+export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(depth, rng)): Level {
+    const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.ROCK);
+    const roomAt = new Int8Array(MAP_W * MAP_H).fill(-1);
+    // 넷핵식이 안 서면(방이 모자라거나 끝내 못 이으면) 로그식으로 짓는다 — 층은 언제나 선다.
+    const { rooms, doorsOf, extraDoors } =
+        (layout === "nethack" && layNethack(tiles, roomAt, depth, rng)) || layRogue(tiles, roomAt, depth, rng);
 
     // 미로는 **문을 낸 뒤에** 판다. 먼저 파면 문 자리를 모르니 안쪽으로 뚫을 수가 없다.
     let anyMaze = false;
