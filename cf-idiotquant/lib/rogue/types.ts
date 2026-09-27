@@ -280,7 +280,7 @@ export interface Level {
 /** 특수 방의 갈래. 무엇이 더 나오고 무엇이 덜 나오는지는 `dungeon.SPECIAL_ROOMS` 가 안다. */
 export type SpecialKind = "treasure" | "armory" | "store" | "altar";
 
-export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger";
+export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist";
 
 export interface Hero {
     origin?: HeroOrigin;
@@ -388,6 +388,12 @@ export interface Hero {
     armorTraining?: Record<string, number>;
     /** 전직 기술을 마지막으로 쓴 층. 같은 층에서는 한 번만 쓸 수 있다. */
     classSkillDepth?: number;
+    /**
+     * **파다 만 자리** — 곡괭이는 한 번에 안 뚫린다(`digStep`). 같은 층의 같은 칸을 계속
+     * 파면 `effort` 가 쌓이고, 다른 칸으로 돌리면 처음부터다. 발밑을 파는 중이면 `x·y` 가
+     * 제 자리다. 파는 중이 아니면 **칸째 없다**(되읽은 판이 달라지지 않게).
+     */
+    dig?: { x: number; y: number; depth: number; effort: number };
 }
 
 export type Phase = "playing" | "dead" | "won";

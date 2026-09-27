@@ -260,6 +260,10 @@ function normalize(s: Saved): GameState | null {
 
     const fixHero = (h: Hero): Hero => {
         const fixed = rawHero(h);
+        // 파다 만 자리는 숫자 넷이 다 있을 때만 잇는다. 남이 보낸 판(`deserialize`)도 이 길이라
+        // 모양이 틀리면 **칸째 지운다** — 처음부터 다시 파면 그만이다.
+        const d = h.dig;
+        if (!(d && [d.x, d.y, d.depth, d.effort].every(Number.isFinite))) delete fixed.dig;
         // 한 대씩 주운 화살이 칸마다 갈라져 저장된 판 — 되읽을 때 한 뭉치로 합친다.
         mergeStacks(fixed);
         // **이름도 되읽을 때 다시 다듬는다.** 온라인에서는 남이 보낸 판이 이 길로 들어오므로

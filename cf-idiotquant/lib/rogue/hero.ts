@@ -19,6 +19,7 @@ import {
     WEAPONS,
     armorClassOf,
     defenseOf,
+    enchantOf,
     isThrowable,
     launcherDamageOf,
     makeItem,
@@ -31,7 +32,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -707,7 +708,32 @@ export function regenEvery(hero: Hero): number {
 
 /** 한 번 뒤졌을 때 숨은 것을 찾을 확률. 탐색 반지와 10레벨 도적의 본능이 크게 올린다. */
 export function searchChance(hero: Hero): number {
-    return hasRing(hero, "searching") || (hero.origin === "rogue" && hero.level >= 10) ? 0.65 : 0.25;
+    if (hasRing(hero, "searching") || (hero.origin === "rogue" && hero.level >= 10)) return 0.65;
+    if (hero.origin === "archeologist") return hero.level >= ADVANCE_LEVEL ? ADVANCED_ARCHEOLOGIST_SEARCH : ARCHEOLOGIST_SEARCH;
+    return 0.25;
+}
+
+/**
+ * 한 칸을 뚫는 데 드는 힘 — NetHack `dig()` 는 벽·바위가 `100`, 발밑 구멍이 `250` 이다.
+ * 발밑은 여기서 `200` 으로 낮췄다: 명령 단추는 연타가 안 되므로(한 번이 한 번) 250 이면
+ * 고고학자가 아닌 사람은 스무 번 가까이 눌러야 한다.
+ */
+export const DIG_WALL_EFFORT = 100;
+export const DIG_DOWN_EFFORT = 200;
+
+/** 쥐고 있는 곡괭이 — **쥐고 있어야 판다.** 배낭에만 있으면 안 판다(NetHack 도 쓰는 순간 쥔다). */
+export function heldPickAxe(hero: Hero): Item | undefined {
+    const w = equippedWeapon(hero);
+    return w?.type === "pick-axe" ? w : undefined;
+}
+
+/**
+ * 한 턴에 파는 힘 — NetHack `dig()` 의 `10 + rn2(5) + 힘 보정 + 손질`, 고고학자는 두 배.
+ * 손질은 `enchantOf` 하나로 읽는다 — 강화한 곡괭이가 더 빨리 판다.
+ */
+export function digEffort(hero: Hero, pick: Item, rng: Rng): number {
+    const base = Math.max(1, 10 + rng.rnd(5) + strDamBonus(heroStr(hero)) + enchantOf(pick));
+    return hero.origin === "archeologist" ? base * ARCHEOLOGIST_DIG_MULT : base;
 }
 
 export function heroDamageDice(hero: Hero, weapon = equippedWeapon(hero)): string {

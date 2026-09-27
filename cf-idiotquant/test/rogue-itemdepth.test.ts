@@ -132,6 +132,19 @@ test("적어 놓은 띠와 실제로 떨어지는 층이 같다", () => {
     ] as const) {
         for (const type of Object.keys(table)) {
             const band = itemDepthRange(kind, type)!;
+            // 바닥에 안 떨어지는 것(곡괭이)은 띠가 **없어야** 하고, 어느 층에서도 안 나와야 한다.
+            if ((table as Record<string, { noDrop?: boolean }>)[type].noDrop) {
+                assert.equal(band, null, `${type} 는 안 떨어지는데 띠가 적혀 있다`);
+                for (const depth of [1, 13, 26]) {
+                    for (let seed = 1; seed <= 40; seed++) {
+                        assert.ok(
+                            !drops(depth, 60, seed).some((it) => it.kind === kind && it.type === type),
+                            `${type} 가 ${depth}층(시드 ${seed})에서 떨어졌다`,
+                        );
+                    }
+                }
+                continue;
+            }
             assert.ok(band, `${type} 의 띠가 없다`);
             // 띠의 양 끝에서는 실제로 나와야 하고, 그 바깥에서는 안 나와야 한다.
             const seenAt = (depth: number) => {
@@ -149,6 +162,22 @@ test("적어 놓은 띠와 실제로 떨어지는 층이 같다", () => {
             if (band.max < 26) {
                 assert.ok(!seenAt(band.max + 1), `${type} 가 ${band.max + 1}층에서 나온다`);
             }
+        }
+    }
+
+    // ── 안 떨어지는 줄은 뽑기 통에 **아예 안 들어간다**
+    {
+        // 곡괭이는 가중치가 바닥값(1)이라 수천 번에 한 번꼴로만 뽑힌다 — 위처럼 뽑아 봐서는
+        // 못 잡는다. 난수를 끝값에 붙여 **통의 마지막 칸**을 겨눈다: 표의 맨 끝 줄이 곡괭이라,
+        // 걸러 내지 않았으면 여기서 곡괭이가 나온다.
+        class Last extends Rng {
+            next(): number {
+                return 0.9999999;
+            }
+        }
+        for (const depth of [1, 2, 3]) {
+            const it = randomItem(depth, 1, 0, 0, new Last(1), "weapon");
+            assert.notEqual(it.type, "pick-axe", `${depth}층 뽑기 통의 끝 칸에서 곡괭이가 나왔다`);
         }
     }
 });

@@ -87,6 +87,12 @@ export interface WeaponDef {
      * 대신 한 발이 무겁다(`fireDamage`). 숙련·레인저 보너스가 있어도 늘 한 발이다(`volleyMax`).
      */
     slowReload?: boolean;
+    /**
+     * **바닥에 안 떨어진다** — 뽑기(`weightedAt`)도 재련(`transmute`)도 이 줄을 안 본다.
+     * 곡괭이가 그렇다: 고고학자가 들고 들어오는 것뿐이다. 뽑기 표에서 **걸러 내는** 것이라
+     * 이 줄이 있어도 다른 무기가 떨어지는 난수 흐름은 한 글자도 안 바뀐다.
+     */
+    noDrop?: boolean;
 }
 
 export interface ArmorDef {
@@ -137,6 +143,9 @@ export const WEAPONS: Record<string, WeaponDef> = {
     // 한 발이 무겁다: 볼트 1d6 + 석궁 2d4 = 한 발 기댓값 8.5 — 같은 층 장궁 한 발(5.5)의 1.5배쯤.
     crossbow: { name: "석궁", damage: "1d1", damageLarge: "1d1", fireDamage: "2d4", slowReload: true, freq: 5, depth: 8, skill: "crossbow", hands: 1, material: "wood" },
     bolt: { name: "볼트", damage: "1d6", damageLarge: "1d6", freq: 5, depth: 8, throwable: true, stack: true, skill: "crossbow", hands: 1, material: "iron", ammunition: true, launcher: "crossbow" },
+    // 곡괭이 — NetHack 의 pick-axe(d6/d3). 휘두르면 단검만 하고, **쥐고 있으면 판다**
+    // (`digStep`). 고고학자의 시작 장비로만 들어온다(`noDrop`).
+    "pick-axe": { name: "곡괭이", damage: "1d6", damageLarge: "1d3", freq: 0, depth: 1, skill: "pick-axe", hands: 1, material: "iron", noDrop: true },
 };
 
 /** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */
@@ -353,13 +362,13 @@ export function itemTier(depth: number, rng: Rng, luck = 0): number {
  */
 const GEAR_TILT = 0.8;
 
-function weightedAt<T extends { freq: number; depth: number }>(
+function weightedAt<T extends { freq: number; depth: number; noDrop?: boolean }>(
     table: Record<string, T>,
     tier: number,
     rng: Rng,
     band = Infinity,
 ): string {
-    const all = Object.keys(table);
+    const all = Object.keys(table).filter((k) => !table[k].noDrop);
     const fits = all.filter((k) => table[k].depth <= tier);
     const keys = fits.filter((k) => table[k].depth > tier - band);
     const pool = keys.length ? keys : fits.length ? fits : all;
@@ -791,8 +800,8 @@ export function itemDepthRange(kind: ItemKind, type: string): { min: number; max
         : kind === "ring" ? RINGS
         : kind === "wand" ? WANDS
         : null;
-    const def = table?.[type as keyof typeof table] as { depth: number } | undefined;
-    if (!def) return null;
+    const def = table?.[type as keyof typeof table] as { depth: number; noDrop?: boolean } | undefined;
+    if (!def || def.noDrop) return null;
     const band = kind === "weapon" || kind === "armor" ? GEAR_BAND : Infinity;
     let min = Infinity;
     let max = -Infinity;

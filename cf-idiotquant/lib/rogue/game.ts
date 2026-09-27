@@ -33,11 +33,15 @@ import {
     canOffHand,
     equippedWeapon,
     canWieldWand,
+    DIG_DOWN_EFFORT,
+    DIG_WALL_EFFORT,
+    digEffort,
     equippedWand,
     offHandWeapon,
     gainExp,
     goldGain,
     hasRing,
+    heldPickAxe,
     heroArmor,
     heroArmorClass,
     heroArmorClassTerms,
@@ -882,7 +886,13 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         return { acted: true, fought: true };
     }
 
-    if (!walkable(tileAt(level, nx, ny))) return { acted: false, fought: false };
+    if (!walkable(tileAt(level, nx, ny))) {
+        // **곡괭이를 쥐고 벽으로 걸으면 판다** — NetHack 의 autodig. 방향판을 꾹 누르면
+        // 연타되므로 따로 단추가 없어도 계속 판다. 대각선으로는 안 판다 — 방 모서리가
+        // 문이 되고, 대각선으로 이어진 복도는 문 규칙(`blockedDiagonal`)과 엇갈린다.
+        if ((dx === 0 || dy === 0) && digStep(state, hero, dx, dy, rng)) return { acted: true, fought: false };
+        return { acted: false, fought: false };
+    }
     if (blockedDiagonal(level, hero, { x: nx, y: ny })) return { acted: false, fought: false };
 
     // **동료와는 자리를 바꾼다** — 막히게 두면 폭 한 칸 복도에서 둘이 영영 못 지나간다.
@@ -1231,7 +1241,7 @@ function transmute(state: GameState, it: Item, rng: Rng, isBlessed = false): voi
     const oldDesc = describe(it, state.known, state.appearance);
 
     if (it.kind === "weapon") {
-        const pool = Object.keys(WEAPONS).filter((k) => k !== it.type);
+        const pool = Object.keys(WEAPONS).filter((k) => k !== it.type && !WEAPONS[k].noDrop);
         let nextType: string;
         if (isBlessed) {
             const curDepth = WEAPONS[it.type]?.depth ?? 1;
@@ -2644,6 +2654,79 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
 }
 
 /**
+ * 곡괭이로 옆을 팔 수 있는 칸 — 바위·벽·숨은 문. **지도 테두리는 안 판다** — 뚫으면
+ * 판 밖(`inBounds` 바깥)이 한 칸 옆에 붙은 길이 된다.
+ */
+function diggable(level: Level, x: number, y: number): boolean {
+    if (x <= 0 || y <= 0 || x >= MAP_W - 1 || y >= MAP_H - 1) return false;
+    const t = tileAt(level, x, y);
+    return t === T.ROCK || t === T.WALL_H || t === T.WALL_V || t === T.SECRET;
+}
+
+/**
+ * 곡괭이로 한 턴 판다 — 옆(`dx·dy`)이든 발밑(`0·0`)이든.
+ *
+ * **한 번에 안 뚫린다.** 턴마다 `digEffort` 만큼 쌓여 벽·바위는 `DIG_WALL_EFFORT`,
+ * 발밑은 `DIG_DOWN_EFFORT` 에 닿으면 뚫린다. 쌓인 값은 `hero.dig` 에 남아서 같은 층의
+ * 같은 칸을 다시 파면 이어서 판다 — 그 사이 턴과 배고픔이 파는 값이다.
+ *
+ * - 바위는 복도가, 벽은 **문턱(`T.DOOR`)** 이 된다. NetHack 도 방 벽을 파면 문 없는
+ *   출입구가 난다 — 바닥으로 두면 방 테두리가 끊겨 밝은 방의 시야가 복도로 샌다.
+ *   숨은 문도 벽이므로 파면 문턱이 된다(뒤지지 않고 찾는 또 하나의 길).
+ * - 발밑이 뚫리면 **함정문과 같은 길**로 떨어진다(`enterLevel(…, "fall")`) — 협동이면
+ *   파티가 같이 간다. 계단·모루 위는 못 판다(모루는 캠프라 층에 하나뿐이다).
+ * - 굴착 지팡이처럼 **열기만 한다** — 걸을 수 있던 칸을 막는 갈래가 없다.
+ *
+ * @returns 턴을 썼는가. 팔 수 없는 자리면 `false` — 아무 일도 안 일어났으니 턴도 안 쓴다.
+ */
+function digStep(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng): boolean {
+    const pick = heldPickAxe(hero);
+    if (!pick) return false;
+    const { level } = state;
+    const down = dx === 0 && dy === 0;
+    const x = hero.x + dx;
+    const y = hero.y + dy;
+    if (down) {
+        const t = tileAt(level, x, y);
+        const onUp = level.upStairs?.x === x && level.upStairs?.y === y;
+        const onAnvil = level.anvil?.x === x && level.anvil?.y === y;
+        if (onAnvil) {
+            say(state, "모루가 박힌 바닥은 너무 단단해서 팔 수 없다.");
+            return false;
+        }
+        if (onUp || !(t === T.FLOOR || t === T.CORRIDOR || t === T.PASSAGE)) {
+            say(state, "여기는 팔 수 없다.");
+            return false;
+        }
+    } else if (!diggable(level, x, y)) {
+        return false;
+    }
+
+    const prev = hero.dig;
+    const kept = prev && prev.x === x && prev.y === y && prev.depth === level.depth ? prev.effort : 0;
+    const effort = kept + digEffort(hero, pick, rng);
+    const goal = down ? DIG_DOWN_EFFORT : DIG_WALL_EFFORT;
+    if (effort < goal) {
+        hero.dig = { x, y, depth: level.depth, effort };
+        say(state, `${down ? "발밑을" : "벽을"} 판다… (${Math.floor((effort / goal) * 100)}%)`);
+        return true;
+    }
+
+    delete hero.dig;
+    if (down) {
+        say(state, "바닥이 무너졌다! 뚫린 구멍으로 떨어진다.");
+        enterLevel(state, level.depth + 1, rng, "fall");
+        say(state, `지하 ${state.level.depth}층.`);
+        return true;
+    }
+    const was = tileAt(level, x, y);
+    level.tiles[idx(x, y)] = was === T.ROCK ? T.CORRIDOR : T.DOOR;
+    computeFov(level, state.heroes);
+    say(state, was === T.ROCK ? "바위를 뚫고 길을 냈다." : was === T.SECRET ? "벽을 허물자 숨은 문이 드러났다." : "벽에 구멍을 뚫었다.");
+    return true;
+}
+
+/**
  * 벽을 뒤진다 — 비밀문과 함정이 여기서 드러난다.
  *
  * 한 번에 찾을 확률은 낮다(탐색 반지가 크게 올린다). 여러 번 뒤져야 하므로
@@ -2745,6 +2828,8 @@ function springTrap(state: GameState, hero: Hero, trap: Trap, rng: Rng) {
 function descend(state: GameState, hero: Hero, rng: Rng): boolean {
     const { level } = state;
     if (tileAt(level, hero.x, hero.y) !== T.STAIRS) {
+        // 계단이 아닌 곳에서 내려가려 하면 **곡괭이로 발밑을 판다**(NetHack 의 apply → `>`).
+        if (heldPickAxe(hero)) return digStep(state, hero, 0, 0, rng);
         say(state, "여기에는 내려가는 계단이 없다.");
         return false;
     }

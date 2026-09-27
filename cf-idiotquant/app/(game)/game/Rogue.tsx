@@ -68,7 +68,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heroArmor, rapidFireOf, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, rapidFireOf, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -1822,7 +1822,8 @@ export default function Rogue() {
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
         { label: "줍기", hint: ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
-        { label: "내려간다", hint: ">", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs ? undefined : "계단 위가 아니다", hot: onStairs },
+        // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
+        { label: "내려간다", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
             label: "올라간다",
             hint: "< — 1층 계단은 증표가 있어야 열린다",
@@ -2877,7 +2878,7 @@ export default function Rogue() {
                         <ul className="space-y-1">
                             {[
                                 {
-                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저", go: () => {
+                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저 · 고고학자", go: () => {
                                         setOriginFor({ t: "new" });
                                         setSheet("origins");
                                     }

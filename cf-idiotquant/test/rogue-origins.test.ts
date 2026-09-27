@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { newGame, perform } from "@/lib/rogue/game";
-import { canOffHand, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, weaponAffinityOf } from "@/lib/rogue/hero";
+import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, canOffHand, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
-import { ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
-import { bury, graves } from "@/lib/rogue/storage";
-import { idx, T } from "@/lib/rogue/types";
+import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
+import { idx, T, type GameState } from "@/lib/rogue/types";
 
-test("5대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
-    assert.equal(ORIGIN_LIST.length, 5);
+test("6대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
+    assert.equal(ORIGIN_LIST.length, 6);
     for (const origin of ORIGIN_LIST) {
         assert.ok(origin.advancedSkillName);
         assert.ok(origin.advancedSkillDescription);
@@ -42,6 +42,12 @@ test("5대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     assert.equal(ORIGINS.ranger.baseHp, 12);
     assert.equal(ORIGINS.ranger.baseStr, 14);
     assert.equal(ORIGINS.ranger.advancedSkillKind, "passive");
+
+    // Archeologist (NetHack) — 곡괭이를 쥐고 시작한다
+    assert.equal(ORIGINS.archeologist.name, "유적 고고학자");
+    assert.equal(ORIGINS.archeologist.baseHp, 12);
+    assert.equal(ORIGINS.archeologist.baseStr, 15);
+    assert.equal(ORIGINS.archeologist.advancedSkillKind, "passive");
 });
 
 test("직업 무기를 쥐면 명중과 피해에 같은 숙련 보너스가 붙는다", () => {
@@ -390,4 +396,147 @@ test("종료 시 무덤(Tomb) 기록에 영웅 origin 정보가 정상 보존된
     const latest = gravesList[0];
     assert.ok(latest.hero);
     assert.equal(latest.hero.origin, "alchemist");
+});
+
+test("고고학자의 곡괭이 — 벽으로 걸으면 판다", () => {
+    const s = newGame(11, {}, {}, {}, {}, "archeologist");
+    const hero = s.heroes[0];
+
+    // ── 곡괭이를 쥐고 시작한다 · 벽 뒤지기 45% → 전직 65%
+    {
+        const pick = hero.pack.find((p) => p.id === hero.weaponId);
+        assert.equal(pick?.type, "pick-axe", "곡괭이를 쥐고 시작해야 곧바로 판다");
+        assert.equal(pick?.plusHit, 1);
+        assert.equal(searchChance(hero), 0.45);
+        hero.level = ADVANCE_LEVEL;
+        assert.equal(searchChance(hero), 0.65, "전직한 고고학자의 벽 뒤지기가 반지만큼 안 오른다");
+        hero.level = 1;
+    }
+
+    const setup = (st: GameState) => {
+        const h = st.heroes[0];
+        h.x = 10;
+        h.y = 10;
+        h.food = 1300;
+        st.level.monsters = [];
+        st.level.tiles[idx(10, 10)] = T.FLOOR;
+        return h;
+    };
+
+    // ── 벽은 여러 턴에 걸쳐 문턱이 되고, 그동안 제자리다
+    {
+        setup(s);
+        s.level.tiles[idx(11, 10)] = T.WALL_V;
+        let st = s;
+        let turns = 0;
+        while (st.level.tiles[idx(11, 10)] === T.WALL_V && turns < 30) {
+            const before = st.turn;
+            st = perform(st, { t: "move", dx: 1, dy: 0 });
+            assert.equal(st.turn, before + 1, "파는 것은 턴을 쓴다");
+            turns++;
+        }
+        assert.equal(st.level.tiles[idx(11, 10)], T.DOOR, "방 벽을 파면 문턱이 돼야 한다");
+        assert.ok(turns >= 2, `벽이 ${turns}턴 만에 뚫렸다 — 한 번에 뚫리면 곡괭이가 굴착 지팡이보다 싸다`);
+        assert.equal(st.heroes[0].x, 10, "파는 동안 걸어 들어갔다");
+        assert.equal(st.heroes[0].dig, undefined, "다 판 뒤에도 파던 자리가 남았다");
+    }
+
+    // ── 바위는 복도가 된다 · 숨은 문은 문턱이 된다
+    {
+        for (const [tile, expect] of [[T.ROCK, T.CORRIDOR], [T.SECRET, T.DOOR]] as const) {
+            const st0 = newGame(12, {}, {}, {}, {}, "archeologist");
+            setup(st0);
+            st0.level.tiles[idx(10, 9)] = tile;
+            let st = st0;
+            for (let i = 0; i < 30 && st.level.tiles[idx(10, 9)] === tile; i++) st = perform(st, { t: "move", dx: 0, dy: -1 });
+            assert.equal(st.level.tiles[idx(10, 9)], expect, `${tile} 를 파서 ${expect} 가 안 됐다`);
+        }
+    }
+
+    // ── 다른 칸으로 돌리면 처음부터 판다
+    {
+        const st0 = newGame(13, {}, {}, {}, {}, "archeologist");
+        const h = setup(st0);
+        st0.level.tiles[idx(11, 10)] = T.ROCK;
+        st0.level.tiles[idx(9, 10)] = T.ROCK;
+        let st = perform(st0, { t: "move", dx: 1, dy: 0 });
+        assert.equal(st.heroes[0].dig?.x, 11);
+        st = perform(st, { t: "move", dx: -1, dy: 0 });
+        const oneTurnMax = (10 + 4 + strDamBonus(h.str) + 1) * ARCHEOLOGIST_DIG_MULT;
+        assert.equal(st.heroes[0].dig?.x, 9, "새 칸을 파는데 옛 자리를 붙들고 있다");
+        assert.ok(st.heroes[0].dig!.effort <= oneTurnMax, "새 칸에 옛 칸의 힘이 얹혔다");
+    }
+
+    // ── 대각선·지도 테두리·곡괭이 없는 사람은 안 판다 — 턴도 안 쓴다
+    {
+        const st0 = newGame(14, {}, {}, {}, {}, "archeologist");
+        setup(st0);
+        st0.level.tiles[idx(11, 11)] = T.ROCK;
+        const diag = perform(st0, { t: "move", dx: 1, dy: 1 });
+        assert.equal(diag.turn, st0.turn, "대각선으로 팠다");
+        assert.equal(diag.level.tiles[idx(11, 11)], T.ROCK);
+
+        const edge = newGame(15, {}, {}, {}, {}, "archeologist");
+        const eh = setup(edge);
+        eh.x = 1;
+        edge.level.tiles[idx(1, 10)] = T.FLOOR;
+        const t0 = edge.turn;
+        const after = perform(edge, { t: "move", dx: -1, dy: 0 });
+        assert.equal(after.turn, t0, "지도 테두리를 팠다");
+
+        const knight = newGame(16, {}, {}, {}, {}, "knight");
+        setup(knight);
+        knight.level.tiles[idx(11, 10)] = T.WALL_V;
+        const bump = perform(knight, { t: "move", dx: 1, dy: 0 });
+        assert.equal(bump.turn, knight.turn, "곡괭이 없이 벽을 들이받았는데 턴을 썼다");
+        assert.equal(bump.level.tiles[idx(11, 10)], T.WALL_V);
+    }
+});
+
+test("고고학자의 곡괭이 — 계단 밖에서 내려가면 발밑을 판다", () => {
+    const s = newGame(21, {}, {}, {}, {}, "archeologist");
+    const hero = s.heroes[0];
+    hero.x = 10;
+    hero.y = 10;
+    hero.food = 1300;
+    s.level.monsters = [];
+    s.level.tiles[idx(10, 10)] = T.FLOOR;
+    s.level.upStairs = { x: 3, y: 3 };
+
+    // ── 모루 위는 못 판다 — 턴도 안 쓴다
+    s.level.anvil = { x: 10, y: 10 };
+    const refused = perform(s, { t: "descend" });
+    assert.equal(refused.turn, s.turn, "모루 위를 파려다 턴을 썼다");
+    assert.equal(refused.level.depth, 1);
+
+    // ── 여러 턴 파면 아래층으로 떨어진다
+    s.level.anvil = { x: 3, y: 4 };
+    let st = s;
+    let turns = 0;
+    while (st.level.depth === 1 && turns < 40) {
+        st = perform(st, { t: "descend" });
+        turns++;
+    }
+    assert.equal(st.level.depth, 2, "발밑을 40턴 파도 안 떨어진다");
+    assert.ok(turns >= 3, `발밑이 ${turns}턴 만에 뚫렸다 — 계단을 찾을 까닭이 사라진다`);
+    assert.ok(DIG_DOWN_EFFORT > DIG_WALL_EFFORT, "발밑이 벽보다 쉽게 뚫린다");
+    assert.equal(st.heroes[0].dig, undefined);
+
+    // ── 곡괭이가 없으면 계단 밖에서 내려가도 아무 일도 없다
+    const k = newGame(22, {}, {}, {}, {}, "knight");
+    k.heroes[0].x = 10;
+    k.heroes[0].y = 10;
+    k.level.tiles[idx(10, 10)] = T.FLOOR;
+    const none = perform(k, { t: "descend" });
+    assert.equal(none.turn, k.turn);
+    assert.equal(none.level.depth, 1);
+});
+
+test("파다 만 자리는 저장했다 되읽어도 남고, 모양이 틀리면 지운다", () => {
+    const s = newGame(31, {}, {}, {}, {}, "archeologist");
+    s.heroes[0].dig = { x: 4, y: 5, depth: 1, effort: 40 };
+    assert.deepEqual(deserialize(serialize(s))!.heroes[0].dig, { x: 4, y: 5, depth: 1, effort: 40 });
+
+    (s.heroes[0] as { dig?: unknown }).dig = { x: "a" };
+    assert.ok(!("dig" in deserialize(serialize(s))!.heroes[0]), "모양이 틀린 파던 자리가 되읽혔다");
 });

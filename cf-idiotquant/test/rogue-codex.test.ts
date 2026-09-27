@@ -30,15 +30,15 @@ import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { idx, T, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("도감 대상은 정확히 76종이고 7개 카테고리로 나뉜다", () => {
-    assert.equal(CODEX_ENTRIES.length, 76);
+test("도감 대상은 정확히 77종이고 7개 카테고리로 나뉜다", () => {
+    assert.equal(CODEX_ENTRIES.length, 77);
 
     const prog = itemCodexProgress();
-    assert.equal(prog.totalCount, 76);
+    assert.equal(prog.totalCount, 77);
     assert.equal(prog.identifiedCount, 0);
     assert.equal(prog.masteredCount, 0);
 
-    assert.equal(prog.byCategory.weapon.total, 21);
+    assert.equal(prog.byCategory.weapon.total, 22);
     assert.equal(prog.byCategory.armor.total, 9);
     assert.equal(prog.byCategory.scroll.total, 10);
     assert.equal(prog.byCategory.potion.total, 9);
@@ -47,7 +47,7 @@ test("도감 대상은 정확히 76종이고 7개 카테고리로 나뉜다", ()
     assert.equal(prog.byCategory.other.total, 2);
 
     // 각 카테고리 정의 항목과 일치하는지 확인
-    assert.equal(Object.keys(WEAPONS).length, 21);
+    assert.equal(Object.keys(WEAPONS).length, 22);
     assert.equal(Object.keys(ARMORS).length, 9);
     assert.equal(Object.keys(SCROLLS).length, 11);
     assert.equal(Object.keys(POTIONS).length, 9);
