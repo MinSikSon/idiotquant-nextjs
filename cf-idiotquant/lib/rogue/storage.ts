@@ -28,9 +28,9 @@ import {
 } from "./items";
 import { heroDefense, mergeStacks } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
-import { MONSTERS } from "./monsters";
+import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
-import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ShopState } from "./types";
+import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ShopState, type SpiritBond } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -44,6 +44,18 @@ const VERSION = 14;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
+}
+
+function validSpirit(b: SpiritBond): boolean {
+    return (
+        !!b &&
+        [b.owner, b.turns, b.level].every(Number.isInteger) &&
+        b.owner >= 0 &&
+        b.turns > 0 &&
+        b.level >= 1 &&
+        typeof b.advanced === "boolean" &&
+        typeof b.element === "string" && Object.prototype.hasOwnProperty.call(SPIRIT_NAMES, b.element)
+    );
 }
 
 interface SavedLevel extends Omit<Level, "tiles" | "flags" | "roomAt" | "monsters"> {
@@ -130,14 +142,18 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
                 : new Array<number>(tiles.length).fill(-1),
         ),
         rooms,
-        monsters: (Array.isArray(raw.monsters) ? raw.monsters : []).map(({ ch, ...rest }) => ({
-            ...rest,
-            // 상점 주인은 도감의 스물여섯 밖이다 — 표에 없다고 박쥐로 되살리면 안 된다.
-            def: ch === SHOPKEEPER.ch ? SHOPKEEPER : MONSTERS[ch] ?? MONSTERS.B,
-            speed: num((rest as Partial<Monster>).speed, 0),
-            cancelled: (rest as Partial<Monster>).cancelled === true,
-            champion: (rest as Partial<Monster>).champion ?? undefined,
-        })),
+        monsters: (Array.isArray(raw.monsters) ? raw.monsters : [])
+            // 정령은 몸을 제 값(`spirit`)에서 다시 만든다 — 모양이 틀리면 **칸째 버린다**
+            // (에뮤로 되살아나 나를 물면 안 된다). 남이 보낸 판(`deserialize`)도 이 길이다.
+            .filter(({ spirit }) => spirit === undefined || validSpirit(spirit))
+            .map(({ ch, ...rest }) => ({
+                ...rest,
+                // 상점 주인은 도감의 스물여섯 밖이다 — 표에 없다고 박쥐로 되살리면 안 된다.
+                def: rest.spirit ? spiritDef(rest.spirit) : ch === SHOPKEEPER.ch ? SHOPKEEPER : MONSTERS[ch] ?? MONSTERS.B,
+                speed: num((rest as Partial<Monster>).speed, 0),
+                cancelled: (rest as Partial<Monster>).cancelled === true,
+                champion: (rest as Partial<Monster>).champion ?? undefined,
+            })),
         // 바닥에 떨어져 있는 것도 손질을 올린다 — 주우면 배낭으로 들어온다.
         items: liftEnchants(Array.isArray(raw.items) ? raw.items : []),
         traps: Array.isArray(raw.traps) ? raw.traps : [],

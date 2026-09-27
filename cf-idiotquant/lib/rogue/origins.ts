@@ -1,15 +1,16 @@
 /**
- * 6대 출신(직업) 시스템 — Origin Classes & Traits
+ * 7대 출신(직업) 시스템 — Origin Classes & Traits
  *
- * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 6가지 시작 클래스를 제공합니다.
+ * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 7가지 시작 클래스를 제공합니다.
  * 레인저는 NetHack 의 Ranger 를 옮겼다 — 활·화살 묶음과 연사(multishot) +1.
  * 고고학자는 NetHack 의 Archeologist 를 옮겼다 — 곡괭이로 벽과 발밑을 판다.
+ * 정령술사는 층마다 한 번 원소 정령을 불러 함께 싸운다.
  */
 
 import { makeItem } from "./items";
 import { type Item } from "./types";
 
-export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist";
+export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
 
 /** 직업별 선호 무기 계열. 전투 보정은 이 목록이 아니라 무기 숙련도에서 계산한다. */
 export interface WeaponAffinity {
@@ -53,6 +54,13 @@ export const ARCHEOLOGIST_SEARCH = 0.45;
 export const ADVANCED_ARCHEOLOGIST_SEARCH = 0.65;
 /** NetHack 에서 고고학자·드워프는 파는 힘이 두 배다(`dig()` 의 `bonus *= 2`). */
 export const ARCHEOLOGIST_DIG_MULT = 2;
+
+/**
+ * 정령술사의 정령이 머무는 턴 수 — 층마다 한 번 부르고, 이만큼 지나면 흩어진다.
+ * 전직(원소의 군주)하면 두 배로 머물고 두 번 때린다(`spiritDef`). 새 자원 없이 숫자만 깊어진다.
+ */
+export const SPIRIT_TURNS = 20;
+export const ADVANCED_SPIRIT_TURNS = 40;
 
 export interface OriginDef {
     id: HeroOrigin;
@@ -112,6 +120,8 @@ export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     ranger: { bow: 3, crossbow: 3, dagger: 3, dart: 3, spear: 2 },
     // NetHack Archeologist: 곡괭이 Expert, 단검 Basic·표창 Basic 보다 한 칸 넉넉히.
     archeologist: { "pick-axe": 3, dagger: 2, dart: 2 },
+    // 지팡이로 싸우는 직업이라 손 무기는 연구자처럼 얕다.
+    elementalist: { dagger: 2, spear: 2, "magic sword": 2 },
 };
 
 /** 직업별 방어구 숙련 상한: 1 Basic, 2 Skilled, 3 Expert. */
@@ -122,6 +132,7 @@ export const ARMOR_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     scholar: { leather: 2, "ring mail": 2, "scale mail": 1, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
     ranger: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
     archeologist: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
+    elementalist: { leather: 2, "ring mail": 2, "scale mail": 1, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
 };
 
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
@@ -301,6 +312,37 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
             return [pick, leather, food];
         },
     },
+    elementalist: {
+        id: "elementalist",
+        name: "정령술사",
+        title: "Elementalist",
+        advancedName: "원소의 군주",
+        advancedTitle: "Elemental Lord",
+        // 정령(NetHack 의 elemental)의 글자 `E` 를 빌렸다. 지도에서는 정령만 지팡이 색으로 칠해
+        // 같은 글자의 에뮤와 갈린다.
+        icon: "E",
+        iconInk: "var(--rg-wand)",
+        description: "불·물·바람·땅의 정령을 불러 곁에 세우고 함께 싸우는 술사.",
+        traitName: "정령 소환",
+        traitDescription: "층마다 한 번 곁에 원소 정령을 부른다(★ 단추) · 정령은 나를 따라다니며 가까운 적을 친다 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
+        weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
+        advancedSkillName: "정령 화신",
+        advancedSkillDescription: "정령이 두 번 때리고 40턴 머문다",
+        advancedSkillKind: "passive",
+        baseHp: 11,
+        baseStr: 13,
+        createStartingItems: (nextId) => {
+            // 싸움은 정령이 맡는다 — 손에는 가벼운 단검 하나. 정령은 층마다 한 번이라
+            // 부르기 전·흩어진 뒤를 버틸 회복 물약을 하나 쥐여 준다.
+            const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
+            dagger.plusHit = 1;
+            dagger.plusDam = 1;
+            const leather = makeItem("armor", "leather", nextId(), -1, -1);
+            const healPot = makeItem("potion", "healing", nextId(), -1, -1, 1);
+            const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
+            return [dagger, leather, healPot, food];
+        },
+    },
 };
 
 export const ORIGIN_LIST: OriginDef[] = [
@@ -310,4 +352,5 @@ export const ORIGIN_LIST: OriginDef[] = [
     ORIGINS.scholar,
     ORIGINS.ranger,
     ORIGINS.archeologist,
+    ORIGINS.elementalist,
 ];

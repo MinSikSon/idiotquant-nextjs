@@ -153,6 +153,25 @@ export interface Monster {
     target?: number;
     /** 이 층 상점의 주인 — 적대하기 전까지는 싸우지 않고 가게를 지킨다(`Level.shop`). */
     shk?: boolean;
+    /**
+     * **정령술사가 부른 정령** — 있으면 이 놈은 적이 아니라 편이다(`game.ts` 「정령」).
+     * 몸(`def`)은 이 값에서 다시 만든다(`spiritDef`) — 저장에는 글자만 남으므로 이 칸이 참이다.
+     */
+    spirit?: SpiritBond;
+}
+
+export type SpiritElement = "fire" | "water" | "air" | "earth";
+
+export interface SpiritBond {
+    /** 부른 사람의 자리(`heroes` 의 칸 번호). 그 사람이 쓰러지면 흩어진다. */
+    owner: number;
+    /** 남은 턴. 0 이 되면 흩어진다. */
+    turns: number;
+    element: SpiritElement;
+    /** 부를 때의 레벨 — 정령의 힘은 **부를 때** 정해진다(되읽어도 같은 몸이 선다). */
+    level: number;
+    /** 전직 뒤에 불렀나 — 두 번 때린다. */
+    advanced: boolean;
 }
 
 export type ItemKind =
@@ -312,7 +331,7 @@ export interface ShopState {
 /** 특수 방의 갈래. 무엇이 더 나오고 무엇이 덜 나오는지는 `dungeon.SPECIAL_ROOMS` 가 안다. */
 export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop";
 
-export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist";
+export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
 
 export interface Hero {
     origin?: HeroOrigin;

@@ -2027,19 +2027,25 @@ export default function Rogue() {
                     </>
                 )}
 
-                {/* 액티브 전직 기술만 층마다 한 번 모서리에 선다. 기사의 방벽은 패시브다. */}
-                {hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active" && (
-                    <button
-                        type="button"
-                        onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
-                        disabled={hero.classSkillDepth === level.depth}
-                        aria-label={`${classSkill.advancedSkillName} — ${classSkill.advancedSkillDescription}`}
-                        title={`${classSkill.advancedSkillName} · ${classSkill.advancedSkillDescription}`}
-                        className="absolute top-1 left-9 z-20 h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
-                    >
-                        ★ {classSkill.advancedSkillName}
-                    </button>
-                )}
+                {/* 액티브 전직 기술만 층마다 한 번 모서리에 선다. 기사의 방벽은 패시브다.
+                    정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다). */}
+                {((hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active") || hero.origin === "elementalist") && (() => {
+                    const summons = hero.origin === "elementalist";
+                    const skillName = summons ? classSkill.traitName : classSkill.advancedSkillName;
+                    const skillText = summons ? "층마다 한 번 곁에 원소 정령을 부른다" : classSkill.advancedSkillDescription;
+                    return (
+                        <button
+                            type="button"
+                            onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
+                            disabled={hero.classSkillDepth === level.depth}
+                            aria-label={`${skillName} — ${skillText}`}
+                            title={`${skillName} · ${skillText}`}
+                            className="absolute top-1 left-9 z-20 h-7 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-40"
+                        >
+                            ★ {skillName}
+                        </button>
+                    );
+                })()}
 
                 {onAltar && (
                     <>
@@ -2903,7 +2909,7 @@ export default function Rogue() {
                         <ul className="space-y-1">
                             {[
                                 {
-                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저 · 고고학자", go: () => {
+                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저 · 고고학자 · 정령술사", go: () => {
                                         setOriginFor({ t: "new" });
                                         setSheet("origins");
                                     }
