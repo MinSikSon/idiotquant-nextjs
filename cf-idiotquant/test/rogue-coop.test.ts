@@ -612,7 +612,9 @@ test("지도에 적는 이름은 넉 칸 한글·영문·기호로 다듬는다"
         assert.equal(cleanNick("mson"), "MSON", "소문자를 대문자로 안 올린다 — 지도에서 글자가 안 갈린다");
         assert.equal(cleanNick("MinSikSon"), "MINS", "넉 칸을 넘겨 받는다 — 한 칸에 그릴 데가 없다");
         assert.equal(cleanNick("m s"), "MS", "빈칸이 남았다");
-        assert.equal(cleanNick("김민식"), "김민", "한글은 두 칸씩만 받아야 지도에서 읽힌다");
+        assert.equal(cleanNick("김민식"), "김민식", "한글 석 자가 잘렸다");
+        assert.equal(cleanNick("홍길동전설"), "홍길동전", "한글은 넉 자까지 받는다");
+        assert.equal(cleanNick("김a민b식"), "김A민B", "한글과 영문을 섞어도 넉 자다");
         assert.equal(cleanNick("★!"), "★!", "특수문자를 버린다");
         assert.equal(cleanNick("a\nb"), "AB", "줄바꿈이 남았다 — 한 칸이 두 줄이 된다");
         assert.equal(cleanNick("!!!"), "!!!", "기호를 받지 않는다");

@@ -195,8 +195,8 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
 
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {
     const s = read("app/(game)/game/components/MapView.tsx");
-    assert.match(s, /const single = chars\.length === 1/, "한 글자 이름을 따로 가르지 않는다");
-    assert.match(s, /const font = single \? cell\.h : cell\.h \/ 2/, "한 글자 이름이 칸 전체 높이를 안 쓴다");
+    assert.match(s, /const cols = chars\.length > 2 \? 2 : 1;\s*const rows = Math\.ceil\(chars\.length \/ cols\)/, "글자 수로 줄 수를 안 가른다 — 한 글자면 한 줄이어야 한다");
+    assert.match(s, /const font = cell\.h \/ rows/, "한 글자 이름이 칸 전체 높이를 안 쓴다");
 });
 
 test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다", () => {
