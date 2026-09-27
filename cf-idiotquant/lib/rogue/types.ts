@@ -335,6 +335,8 @@ export interface Hero {
     chest: Item[];
     /** 지금 쥔 것 · 입은 것 · 낀 것. 없으면 null. */
     weaponId: number | null;
+    /** 레인저가 활로 쏠 탄약 뭉치. */
+    ammoId: number | null;
     /** 연금술사·고서 연구자가 쏠 때 사용하는 장착 지팡이. */
     wandId: number | null;
     /**

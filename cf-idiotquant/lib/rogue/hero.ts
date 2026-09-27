@@ -230,6 +230,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         // 꺼내 `newGame`·`joinGame` 에 넘기고, 그쪽이 여기에 채운다.
         chest: [],
         weaponId: null,
+        ammoId: null,
         wandId: null,
         offWeaponId: null,
         armorId: null,
@@ -259,6 +260,8 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         addToPack(hero, item);
         if (item.kind === "weapon" && hero.weaponId === null) {
             hero.weaponId = item.id;
+        } else if (origin === "ranger" && WEAPONS[item.type]?.launcher === "bow" && hero.ammoId === null) {
+            hero.ammoId = item.id;
         } else if (item.kind === "wand" && canWieldWand(hero) && hero.wandId === null) {
             hero.wandId = item.id;
         } else if (item.kind === "armor" && hero.armorId === null) {
@@ -405,6 +408,7 @@ export function takeFromPack(hero: Hero, it: Item, n = 1): void {
     }
     hero.pack = hero.pack.filter((p) => p.id !== it.id);
     if (hero.weaponId === it.id) hero.weaponId = null;
+    if (hero.ammoId === it.id) hero.ammoId = null;
     if (hero.wandId === it.id) hero.wandId = null;
     if (hero.armorId === it.id) hero.armorId = null;
     if (hero.leftRingId === it.id) hero.leftRingId = null;
@@ -417,6 +421,10 @@ export function packItem(hero: Hero, letter: string): Item | undefined {
 
 export function equippedWeapon(hero: Hero): Item | undefined {
     return hero.pack.find((i) => i.id === hero.weaponId);
+}
+
+export function equippedAmmo(hero: Hero): Item | undefined {
+    return hero.pack.find((i) => i.id === hero.ammoId);
 }
 
 /**
@@ -465,6 +473,8 @@ export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } |
     if (hero.origin !== "ranger") return undefined;
     // 활로는 화살을 우선한다. 활이 없거나 화살이 없을 때 표창은 토글 사격 예외로 한 발씩 던진다.
     const byDepth = (a: Item, b: Item) => (WEAPONS[a.type]?.depth ?? 0) - (WEAPONS[b.type]?.depth ?? 0);
+    const equipped = equippedAmmo(hero);
+    if (equipped && equipped.count > 0 && launcherFor(hero, equipped)) return { kind: "throw", item: equipped };
     const arrows = hero.pack.filter((it) => launcherFor(hero, it)).sort(byDepth);
     if (arrows[0]) return { kind: "throw", item: arrows[0] };
     const dart = hero.pack.find((it) => it.kind === "weapon" && it.type === "dart" && it.count > 0);
@@ -776,6 +786,7 @@ export function heroAttackText(hero: Hero, known: Record<string, boolean>): stri
 export function isWorn(hero: Hero, it: Item): boolean {
     return (
         it.id === hero.weaponId ||
+        it.id === hero.ammoId ||
         it.id === hero.armorId ||
         it.id === hero.leftRingId ||
         it.id === hero.rightRingId

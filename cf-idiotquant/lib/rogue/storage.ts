@@ -39,7 +39,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 13;
+const VERSION = 14;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -287,6 +287,7 @@ function normalize(s: Saved): GameState | null {
         // v6 이하에는 보조손이 없다 — 이도류가 없던 때다.
         offWeaponId: h.offWeaponId ?? null,
         wandId: h.wandId ?? null,
+        ammoId: h.ammoId ?? null,
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
         // 예전 저장의 철벽 자세는 다음 제자리 전투 세 번까지로 잇는다.

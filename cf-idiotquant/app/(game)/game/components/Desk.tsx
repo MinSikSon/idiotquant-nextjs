@@ -32,6 +32,7 @@ import {
     meltMax,
     meltYield,
     WAND_RECHARGE,
+    WEAPONS,
 } from "@/lib/rogue/items";
 import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
@@ -427,6 +428,7 @@ export default function Desk({
         const out: { label: string; on: () => void }[] = [];
         const worn =
             it.id === hero.weaponId ||
+            it.id === hero.ammoId ||
             it.id === hero.armorId ||
             it.id === hero.leftRingId ||
             it.id === hero.rightRingId;
@@ -480,8 +482,9 @@ export default function Desk({
 
         switch (it.kind) {
             case "weapon":
-                // 직업 전용 무기(곡괭이)는 그 직업에만 세운다 — **값 읽기**다(`canWieldWeapon`).
-                if (!worn && canWieldWeapon(hero, it)) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                if (hero.origin === "ranger" && WEAPONS[it.type]?.launcher === "bow") {
+                    out.push({ label: it.id === hero.ammoId ? "화살통에서 뺀다" : "화살통에 장착", on: go({ t: "wield", letter: it.letter! }) });
+                } else if (!worn && canWieldWeapon(hero, it)) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
                 // 이도류 — **값 읽기지 규칙이 아니다**(`canOffHand`). 눌러도 엔진이 한 번 더 본다.
                 if (hero.offWeaponId === it.id) {
                     out.push({ label: "보조손에서 내린다", on: go({ t: "offHand", letter: it.letter! }) });
@@ -839,9 +842,11 @@ export default function Desk({
                                     <ul className="space-y-1 pt-1">
                                     {group.items.map(({ item: it, index: i }) => {
                                 const open = chosen === it.id;
-                                const worn =
-                                    it.id === hero.weaponId
+                                    const worn =
+                                        it.id === hero.weaponId
                                         ? "쥐고 있다"
+                                        : it.id === hero.ammoId
+                                        ? "화살통에 장착"
                                         : it.id === hero.wandId
                                         ? "장착 중"
                                         // **보조손도 적는다** — 안 적으면 배낭에서 그냥 놀고 있는 한 자루로 읽힌다.
