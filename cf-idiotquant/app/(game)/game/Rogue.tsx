@@ -2962,7 +2962,7 @@ export default function Rogue() {
                                             label: "내 이름 바꾸기",
                                             hint: state.heroes[online === "guest" ? who : 0]?.nick
                                                 ? `지금 ${state.heroes[online === "guest" ? who : 0]?.nick} — 지도의 내 칸에 적힌다`
-                                                : `영문·숫자 ${NICK_MAX}자 — 지도의 내 칸에 적힌다`,
+                                                : `한글·한자 ${NICK_MAX / 2}자 또는 영문·숫자 ${NICK_MAX}자까지`,
                                             go: () => {
                                                 changeNick();
                                                 setSheet("none");
