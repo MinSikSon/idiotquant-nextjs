@@ -34,6 +34,7 @@ import {
     WAND_RECHARGE,
     WEAPONS,
 } from "@/lib/rogue/items";
+import { billOf, inShop, isTradable, price, sellPrice, shopkeeperOf } from "@/lib/rogue/shop";
 import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
@@ -48,6 +49,8 @@ export interface Picker {
     empty: string;
     /** 이 물건이 고를 만한가 — 종류만으로 안 갈리는 경우(던지기). */
     allow?: (it: Item) => boolean;
+    /** 외상인 것도 고를 수 있는가 — 내려놓기(돌려주기)뿐이다. 나머지는 엔진이 막는다. */
+    acceptUnpaid?: boolean;
 }
 
 /** 방향을 기다리는 중 — 지팡이·던지기. */
@@ -140,6 +143,7 @@ export default function Desk({
                 kinds: ["potion", "scroll", "food", "weapon", "armor", "ring", "wand", "amulet"],
                 make: (letter) => ({ t: "drop", letter }),
                 empty: "배낭이 비었다.",
+                acceptUnpaid: true,
             },
         }),
         [hero],
@@ -348,7 +352,8 @@ export default function Desk({
     /** 모루 위인가 — 여기서만 배낭 줄에 「녹인다」가 뜬다. */
     const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
     const pickable = picker
-        ? hero.pack.filter((p) => picker.kinds.includes(p.kind) && (!picker.allow || picker.allow(p)))
+        // 외상인 것은 고를 수 없다 — 엔진도 막는다(`game.unpaidIn`). 자물쇠는 둘이다.
+        ? hero.pack.filter((p) => (picker.acceptUnpaid || !p.unpaid) && picker.kinds.includes(p.kind) && (!picker.allow || picker.allow(p)))
         : [];
     /**
      * 지금 고르는 것이 **강화할 대상**인가 — 그러면 줄마다 거는 값을 적는다.
@@ -436,6 +441,14 @@ export default function Desk({
             run(cmd);
             setChosen(null);
         };
+        // **외상인 것은 돌려주거나 값을 치르는 것뿐이다** — 쓰는 줄을 세우면 눌러도 안 되는
+        // 줄이 된다(엔진이 막는다, `game.unpaidIn`).
+        if (it.unpaid) {
+            return [
+                { label: `값을 치른다 (외상 전부 ${billOf(hero.pack)})`, on: go({ t: "pay" }) },
+                { label: "도로 내려놓는다 — 외상에서 뺀다", on: go({ t: "drop", letter: it.letter! }) },
+            ];
+        }
         /**
          * 모루 줄 — **무기에도 갑옷에도 붙는다.**
          *
@@ -631,6 +644,12 @@ export default function Desk({
         }
         // **맡기는 것은 종류를 안 가린다** — 그래서 갈래 문 뒤가 아니라 여기 선다.
         stashRow();
+        // 가게 안이면 판다 — 사는 값의 절반. 걸친 것·안 사는 것은 안 세운다(엔진도 막는다).
+        const level = state.level;
+        const shopOpen = !!level.shop && !level.shop.angry && !!shopkeeperOf(level) && inShop(level, hero.x, hero.y);
+        if (shopOpen && isTradable(it) && !worn && it.id !== hero.offWeaponId) {
+            out.push({ label: `판다 (+${sellPrice(it)}G)`, on: go({ t: "sell", letter: it.letter! }) });
+        }
         if (it.kind !== "amulet") out.push({ label: "내려놓는다", on: go({ t: "drop", letter: it.letter! }) });
         return out;
     };
@@ -887,6 +906,7 @@ export default function Desk({
                                                 </span>
                                             )}
                                             {worn && <span className={equippedInk}> ({worn})</span>}
+                                            {it.unpaid && <span className="text-[var(--rg-trap)]"> (외상 {price(it)})</span>}
                                             {dualWield && <span className="font-bold text-[var(--rg-weapon)]"> · 이도류 장착</span>}
                                         </button>
                                         {open && (

@@ -100,6 +100,7 @@ import MapView, { PARTY_BG, PARTY_INK, type CellFlash, type Reveal } from "./com
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
+import { billOf, forSale, inShop, price, shopkeeperOf } from "@/lib/rogue/shop";
 
 const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: string }> = {
     fog: {
@@ -1791,7 +1792,13 @@ export default function Rogue() {
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
     const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
     const onAltar = onAnvil && level.special?.kind === "altar" && !level.altarUsed;
-    const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k);
+    // 가게 — 안에 섰거나, 화난 주인이 곁에 있을 때 값 치르는 단추가 선다.
+    const shk = shopkeeperOf(level);
+    const bill = billOf(hero.pack);
+    const shopHere = !!level.shop && !!shk && (inShop(level, hero.x, hero.y) || (level.shop.angry && Math.max(Math.abs(shk.x - hero.x), Math.abs(shk.y - hero.y)) <= 1));
+    const hereWare = hereItem && forSale(level, hereItem) ? price(hereItem) : null;
+    // 외상인 것은 **없는 것으로** 센다 — 쓸 수 없으니 단추가 켜지면 눌러도 빈 목록이다.
+    const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k && !p.unpaid);
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
@@ -1821,7 +1828,7 @@ export default function Rogue() {
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
-        { label: "줍기", hint: ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
+        { label: "줍기", hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
         { label: "내려간다", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
@@ -1847,7 +1854,7 @@ export default function Rogue() {
             hint: "t",
             keys: coopKeys ? undefined : "t",
             on: () => desks.current[who]?.aim("throw"),
-            off: hero.pack.some(isThrowable) ? undefined : "던질 만한 것이 없다",
+            off: hero.pack.some((p) => isThrowable(p) && !p.unpaid) ? undefined : "던질 만한 것이 없다",
         },
         // 살피는 것 · 그 밖
         { label: "뒤진다", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
@@ -2054,6 +2061,23 @@ export default function Rogue() {
                             </div>
                         )}
                     </>
+                )}
+
+                {shopHere && level.shop && (
+                    // 가게의 단추는 **하나**다 — 치를 것이 있으면 치르고, 화났으면 빚을 갚는다. 파는 것은
+                    // 배낭의 줄에서(「판다」), 돌려주는 것은 내려놓기로 한다.
+                    <button
+                        type="button"
+                        onClick={() => run({ t: "pay" })}
+                        disabled={!level.shop.angry && bill === 0}
+                        className="absolute top-9 left-1 z-20 h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)] disabled:opacity-60"
+                    >
+                        {level.shop.angry
+                            ? `빚 갚는다 · ${level.shop.debt}G`
+                            : bill > 0
+                                ? `값 치른다 · 외상 ${bill}G`
+                                : "$ 상점 — 집으면 외상 · 배낭에서 판다"}
+                    </button>
                 )}
 
                 {advanceBanner && (
@@ -3237,6 +3261,16 @@ export default function Rogue() {
                                 다만 <b>꺼내는 것도 캠프에서만</b> 합니다 — 새 판은 맨손으로 시작하고, 모루를 찾아
                                 걸어가야 상자가 열립니다. <b className="text-[var(--rg-trap)]">증표는 못 맡깁니다.</b>{" "}
                                 둘이서 할 때는 <b>사람마다 상자가 따로</b>입니다.
+                            </p>
+                            <p className="text-[var(--rg-faint)]">
+                                <b className="text-[var(--rg-gold)]">@</b>(금빛)는{" "}
+                                <b className="text-[var(--rg-muted)]">상점 주인</b>입니다. 3층부터 문이 하나뿐인 방에 가게가
+                                섭니다. 물건 위에 서면 <b>값</b>이 보이고, <b>집으면 외상</b>입니다 — 외상인 것은 못 쓰고,
+                                나가기 전에 <b>값 치른다</b>로 삽니다. 도로 내려놓으면 돌려준 것입니다. 배낭의 물건은{" "}
+                                <b>사는 값의 절반</b>에 팝니다. 값은 참 이름을 따르니, 이름 모를 물약도 값으로 짐작할 수
+                                있습니다.{" "}
+                                <b className="text-[var(--rg-trap)]">외상을 든 채 벽을 파거나 순간이동으로 빠져나가면
+                                    도둑입니다</b> — 주인이 화내고 쫓아옵니다. 곡괭이는 가게 밖에 두고 들어가야 합니다.
                             </p>
                             <p className="text-[var(--rg-faint)]">
                                 숨은 문은 벽과 똑같이 보입니다. 막힌 것 같으면 <b>뒤져</b> 보십시오.

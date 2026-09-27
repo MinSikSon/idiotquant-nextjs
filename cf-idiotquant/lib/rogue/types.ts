@@ -151,6 +151,8 @@ export interface Monster {
      * 안 붙는다 — 목표가 쓰러지면 풀고 다시 고른다.
      */
     target?: number;
+    /** 이 층 상점의 주인 — 적대하기 전까지는 싸우지 않고 가게를 지킨다(`Level.shop`). */
+    shk?: boolean;
 }
 
 export type ItemKind =
@@ -219,6 +221,14 @@ export interface Item {
     socketGem?: "ruby" | "sapphire" | "emerald" | "topaz";
     /** 액티브 유물 남은 쿨다운 (턴) */
     relicCooldown?: number;
+    /**
+     * **외상** — 가게에서 집어 들고 아직 값을 안 치렀다(`shop.ts`). 이 채로 가게를 벗어나면
+     * 훔친 것이 되고 주인이 적대한다. 값을 치르거나 가게에 도로 내려놓으면 지운다.
+     * 외상인 것과 치른 것은 **한 더미로 합치지 않는다**(`addToPack`) — 합치면 반만 외상이 된다.
+     */
+    unpaid?: boolean;
+    /** 가게 바닥에 **내가 내려놓은** 것 — 파는 물건이 아니다. 다시 주워도 값이 없다. */
+    noCharge?: boolean;
 }
 
 /** 함정 — 밟기 전에는 바닥과 구별되지 않는다. */
@@ -275,10 +285,32 @@ export interface Level {
     altarUsed?: boolean;
     /** 층 돌발 이벤트 */
     mutator?: FloorMutator | null;
+    /**
+     * 이 층의 상점 — `special.kind === "shop"` 인 방. 주인이 죽으면 `null` 이 되고
+     * 가게의 물건은 그냥 바닥의 물건이 된다. 옛 저장에는 없다.
+     */
+    shop?: ShopState | null;
+}
+
+export interface ShopState {
+    /** `rooms` 의 칸 번호. */
+    room: number;
+    /** 가게의 하나뿐인 문. */
+    door: Pos;
+    /** 문 안쪽 한 칸 — 주인이 서서 길을 막는 자리. */
+    home: Pos;
+    /** 길을 비켜 설 때 서는 자리. */
+    rest: Pos;
+    /** 적대하는가 — 훔쳤거나 주인을 때렸다. 빚을 다 갚으면 풀린다. */
+    angry: boolean;
+    /** 갚아야 할 돈 — 훔친 물건의 값. */
+    debt: number;
+    /** 주인의 돈 — 파는 값을 여기서 치른다. 사는 값과 갚은 빚이 여기로 들어온다. */
+    till: number;
 }
 
 /** 특수 방의 갈래. 무엇이 더 나오고 무엇이 덜 나오는지는 `dungeon.SPECIAL_ROOMS` 가 안다. */
-export type SpecialKind = "treasure" | "armory" | "store" | "altar";
+export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist";
 
