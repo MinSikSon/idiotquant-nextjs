@@ -721,10 +721,22 @@ export function searchChance(hero: Hero): number {
 export const DIG_WALL_EFFORT = 100;
 export const DIG_DOWN_EFFORT = 200;
 
-/** 쥐고 있는 곡괭이 — **쥐고 있어야 판다.** 배낭에만 있으면 안 판다(NetHack 도 쓰는 순간 쥔다). */
+/**
+ * 이 무기를 쥘 수 있는가 — 직업 전용 무기(`WeaponDef.origin`)는 그 직업만 쥔다.
+ * 화면은 이 값을 읽어 「쥔다」를 안 세우고, `wield` 가 한 번 더 막는다(자물쇠는 둘이다).
+ */
+export function canWieldWeapon(hero: Hero, it: Item): boolean {
+    const only = it.kind === "weapon" ? WEAPONS[it.type]?.origin : undefined;
+    return !only || only === hero.origin;
+}
+
+/**
+ * 쥐고 있는 곡괭이 — **쥐고 있어야 판다.** 배낭에만 있으면 안 판다(NetHack 도 쓰는 순간 쥔다).
+ * 곡괭이는 고고학자 전용이라 `canWieldWeapon` 도 본다 — 어떤 길로든 남의 손에 들렸어도 안 판다.
+ */
 export function heldPickAxe(hero: Hero): Item | undefined {
     const w = equippedWeapon(hero);
-    return w?.type === "pick-axe" ? w : undefined;
+    return w?.type === "pick-axe" && canWieldWeapon(hero, w) ? w : undefined;
 }
 
 /**

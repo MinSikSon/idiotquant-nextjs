@@ -2612,7 +2612,8 @@ export default function Rogue() {
                                                                         </div>
                                                                         <div className="col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">직업별 최대: </span>
-                                                                            <span>{ORIGIN_LIST.map((origin) => `${origin.name} ${weaponSkillRankName(Math.max(1, WEAPON_SKILL_MAX[origin.id]?.[weaponSkillOf(entry.type)] ?? WEAPON_SKILL_MAX[origin.id]?.[entry.type] ?? 1))}`).join(" · ")}</span>
+                                                                            {/* 직업 전용 무기(곡괭이)는 그 직업만 적는다 — 못 쥐는 직업의 「Basic」은 거짓말이다. */}
+                                                                            <span>{ORIGIN_LIST.filter((origin) => !WEAPONS[entry.type]?.origin || WEAPONS[entry.type]?.origin === origin.id).map((origin) => `${origin.name} ${weaponSkillRankName(Math.max(1, WEAPON_SKILL_MAX[origin.id]?.[weaponSkillOf(entry.type)] ?? WEAPON_SKILL_MAX[origin.id]?.[entry.type] ?? 1))}`).join(" · ")}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>

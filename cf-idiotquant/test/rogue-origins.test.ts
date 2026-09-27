@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { joinGame, newGame, perform } from "@/lib/rogue/game";
-import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
+import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
@@ -545,61 +545,75 @@ test("파다 만 자리는 저장했다 되읽어도 남고, 모양이 틀리면
     assert.ok(!("dig" in deserialize(serialize(s))!.heroes[0]), "모양이 틀린 파던 자리가 되읽혔다");
 });
 
-test("곡괭이의 파는 힘 — 직업이 아니라 쥔 물건이 판다", () => {
-    const pickOf = (origin: "archeologist" | "knight") => {
-        const s = newGame(41, {}, {}, {}, {}, origin);
+test("곡괭이는 고고학자 전용 — 다른 직업은 못 쥐고, 억지로 들려도 못 판다", () => {
+    const withPick = (origin: "archeologist" | "knight", seed: number) => {
+        const s = newGame(seed, {}, {}, {}, {}, origin);
         const h = s.heroes[0];
-        const pick = makeItem("weapon", "pick-axe", 9001, -1, -1);
-        addToPack(h, pick);
-        h.weaponId = pick.id;
-        h.str = 15;
-        h.maxStr = 15;
+        const pick = origin === "archeologist" ? heldPickAxe(h)! : makeItem("weapon", "pick-axe", 9001, -1, -1);
+        if (origin !== "archeologist") addToPack(h, pick);
+        h.x = 10;
+        h.y = 10;
+        s.level.monsters = [];
+        s.level.tiles[idx(10, 10)] = T.FLOOR;
+        s.level.tiles[idx(11, 10)] = T.ROCK;
         return { s, h, pick };
     };
 
-    // ── 같은 굴림이면 고고학자가 정확히 두 배 · 손질이 한 칸마다 얹힌다
+    // ── 파는 힘: 고고학자는 `10 + rn2(5) + 힘 보정 + 손질` 의 두 배 · 손질 한 칸마다 두 칸
     {
-        const a = pickOf("archeologist");
-        const k = pickOf("knight");
+        const { h, pick } = withPick("archeologist", 41);
         for (let seed = 1; seed <= 20; seed++) {
-            const ka = digEffort(k.h, k.pick, new Rng(seed));
-            assert.equal(digEffort(a.h, a.pick, new Rng(seed)), ka * ARCHEOLOGIST_DIG_MULT, `시드 ${seed}: 고고학자가 두 배로 안 판다`);
-            k.pick.plusHit = 3;
-            assert.equal(digEffort(k.h, k.pick, new Rng(seed)), ka + 3, `시드 ${seed}: +3 곡괭이가 세 칸 더 안 판다`);
-            k.pick.plusHit = 0;
+            const base = 10 + new Rng(seed).rnd(5) + strDamBonus(heroStr(h)) + 1;
+            assert.equal(digEffort(h, pick, new Rng(seed)), base * ARCHEOLOGIST_DIG_MULT, `시드 ${seed}: 파는 힘이 식과 다르다`);
+            pick.plusHit = 4;
+            assert.equal(digEffort(h, pick, new Rng(seed)), (base + 3) * ARCHEOLOGIST_DIG_MULT, `시드 ${seed}: 손질이 파는 힘에 안 얹힌다`);
+            pick.plusHit = 1;
         }
     }
 
-    // ── 곡괭이를 쥔 근위대도 판다(고고학자보다 느릴 뿐) · 곡괭이를 내린 고고학자는 안 판다
+    // ── 근위대는 곡괭이를 못 쥔다 — 턴도 안 쓰고, 쥔 무기도 그대로다
     {
-        const k = pickOf("knight");
-        k.h.x = 10;
-        k.h.y = 10;
-        k.s.level.monsters = [];
-        k.s.level.tiles[idx(10, 10)] = T.FLOOR;
-        k.s.level.tiles[idx(11, 10)] = T.ROCK;
-        let st = k.s;
-        for (let i = 0; i < 40 && st.level.tiles[idx(11, 10)] === T.ROCK; i++) st = perform(st, { t: "move", dx: 1, dy: 0 });
-        assert.equal(st.level.tiles[idx(11, 10)], T.CORRIDOR, "곡괭이를 쥔 근위대가 못 판다");
+        const { s, h, pick } = withPick("knight", 42);
+        const before = h.weaponId;
+        const turnBefore = s.turn;
+        const tried = perform(s, { t: "wield", letter: pick.letter! });
+        assert.equal(tried.turn, turnBefore, "못 쥐는 곡괭이를 쥐려다 턴을 썼다");
+        assert.equal(tried.heroes[0].weaponId, before, "근위대가 곡괭이를 쥐었다");
+        assert.match(tried.messages.at(-1) ?? "", /유적 고고학자만/, "왜 못 쥐는지 안 적는다");
+        assert.equal(canWieldWeapon(h, pick), false);
+    }
 
-        const a = newGame(42, {}, {}, {}, {}, "archeologist");
-        const ah = a.heroes[0];
-        const dagger = makeItem("weapon", "dagger", 9002, -1, -1);
-        addToPack(ah, dagger);
-        ah.weaponId = dagger.id;
-        assert.equal(heldPickAxe(ah), undefined);
-        ah.x = 10;
-        ah.y = 10;
-        a.level.monsters = [];
-        a.level.tiles[idx(10, 10)] = T.FLOOR;
-        a.level.tiles[idx(11, 10)] = T.ROCK;
-        const turnBefore = a.turn;
-        const bump = perform(a, { t: "move", dx: 1, dy: 0 });
-        assert.equal(bump.turn, turnBefore, "곡괭이를 배낭에 넣은 채로 팠다");
+    // ── 어떤 길로든 남의 손에 곡괭이가 들렸어도 안 판다(자물쇠는 둘이다)
+    {
+        const { s, h, pick } = withPick("knight", 43);
+        h.weaponId = pick.id;
+        assert.equal(heldPickAxe(h), undefined);
+        const turnBefore = s.turn;
+        const bump = perform(s, { t: "move", dx: 1, dy: 0 });
+        assert.equal(bump.turn, turnBefore, "근위대가 들린 곡괭이로 팠다");
         assert.equal(bump.level.tiles[idx(11, 10)], T.ROCK);
+        const down = perform(bump, { t: "descend" });
+        assert.equal(down.turn, turnBefore, "근위대가 들린 곡괭이로 발밑을 팠다");
+    }
+
+    // ── 고고학자도 곡괭이를 내리면 못 판다 · 다시 쥐면 판다
+    {
+        const { s, h, pick } = withPick("archeologist", 44);
+        const dagger = makeItem("weapon", "dagger", 9002, -1, -1);
+        addToPack(h, dagger);
+        h.weaponId = dagger.id;
+        assert.equal(heldPickAxe(h), undefined);
+        const turnBefore = s.turn;
+        const bump = perform(s, { t: "move", dx: 1, dy: 0 });
+        assert.equal(bump.turn, turnBefore, "곡괭이를 배낭에 넣은 채로 팠다");
         assert.equal(bump.heroes[0].dig, undefined);
+        let st = perform(bump, { t: "wield", letter: pick.letter! });
+        assert.equal(st.heroes[0].weaponId, pick.id, "고고학자가 곡괭이를 다시 못 쥔다");
+        st = perform(st, { t: "move", dx: 1, dy: 0 });
+        assert.ok(st.heroes[0].dig || st.level.tiles[idx(11, 10)] === T.CORRIDOR, "다시 쥔 곡괭이로 못 판다");
     }
 });
+
 
 test("곡괭이로 파다 만 자리 — 이어 파기 · 층이 바뀌면 처음부터 · 배는 고파진다", () => {
     const s = newGame(51, {}, {}, {}, {}, "archeologist");

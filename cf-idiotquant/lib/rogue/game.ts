@@ -33,6 +33,7 @@ import {
     canOffHand,
     equippedWeapon,
     canWieldWand,
+    canWieldWeapon,
     DIG_DOWN_EFFORT,
     DIG_WALL_EFFORT,
     digEffort,
@@ -1656,6 +1657,11 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         say(state, `${describe(it, state.known, state.appearance)}을(를) 장착했다.`);
         if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
         return true;
+    }
+    if (!canWieldWeapon(hero, it)) {
+        const only = WEAPONS[it.type]?.origin;
+        say(state, `${describe(it, state.known, state.appearance)}은(는) ${only ? ORIGINS[only].name : "다른 직업"}만 다룰 수 있다.`);
+        return false;
     }
     const cur = equippedWeapon(hero);
     if (cur && cur.cursed) {

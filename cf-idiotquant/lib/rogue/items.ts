@@ -21,6 +21,7 @@ import {
     Rng,
 } from "./rng";
 import {
+    type HeroOrigin,
     type Item,
     type ItemKind,
 } from "./types";
@@ -93,6 +94,11 @@ export interface WeaponDef {
      * 이 줄이 있어도 다른 무기가 떨어지는 난수 흐름은 한 글자도 안 바뀐다.
      */
     noDrop?: boolean;
+    /**
+     * **그 직업만 쥔다** — 곡괭이는 고고학자 전용이다. 배낭에 넣어 두거나 건네는 것은 되지만
+     * 다른 직업은 쥘 수 없고, 쥐어야 파므로 팔 수도 없다. 판단은 `canWieldWeapon` 하나다.
+     */
+    origin?: HeroOrigin;
 }
 
 export interface ArmorDef {
@@ -144,8 +150,8 @@ export const WEAPONS: Record<string, WeaponDef> = {
     crossbow: { name: "석궁", damage: "1d1", damageLarge: "1d1", fireDamage: "2d4", slowReload: true, freq: 5, depth: 8, skill: "crossbow", hands: 1, material: "wood" },
     bolt: { name: "볼트", damage: "1d6", damageLarge: "1d6", freq: 5, depth: 8, throwable: true, stack: true, skill: "crossbow", hands: 1, material: "iron", ammunition: true, launcher: "crossbow" },
     // 곡괭이 — NetHack 의 pick-axe(d6/d3). 휘두르면 단검만 하고, **쥐고 있으면 판다**
-    // (`digStep`). 고고학자의 시작 장비로만 들어온다(`noDrop`).
-    "pick-axe": { name: "곡괭이", damage: "1d6", damageLarge: "1d3", freq: 0, depth: 1, skill: "pick-axe", hands: 1, material: "iron", noDrop: true },
+    // (`digStep`). 고고학자의 시작 장비로만 들어오고(`noDrop`) 고고학자만 쥔다(`origin`).
+    "pick-axe": { name: "곡괭이", damage: "1d6", damageLarge: "1d3", freq: 0, depth: 1, skill: "pick-axe", hands: 1, material: "iron", noDrop: true, origin: "archeologist" },
 };
 
 /** 갑옷 사다리 — 방어 등급이 내려가고(= 방어도가 올라가고) 층이 오른다. */

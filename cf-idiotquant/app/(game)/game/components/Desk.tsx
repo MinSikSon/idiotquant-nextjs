@@ -33,7 +33,7 @@ import {
     meltYield,
     WAND_RECHARGE,
 } from "@/lib/rogue/items";
-import { canOffHand, canWieldWand, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
+import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
@@ -130,7 +130,7 @@ export default function Desk({
             q: { title: "무엇을 마실까", kinds: ["potion"], make: (letter) => ({ t: "quaff", letter }), empty: "마실 것이 없다." },
             r: { title: "무엇을 읽을까", kinds: ["scroll"], make: (letter) => ({ t: "read", letter }), empty: "읽을 것이 없다." },
             e: { title: "무엇을 먹을까", kinds: ["food"], make: (letter) => ({ t: "eat", letter }), empty: "먹을 것이 없다." },
-            w: { title: "무엇을 쥘까", kinds: canWieldWand(hero) ? ["weapon", "wand"] : ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다." },
+            w: { title: "무엇을 쥘까", kinds: canWieldWand(hero) ? ["weapon", "wand"] : ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다.", allow: (it) => canWieldWeapon(hero, it) },
             W: { title: "무엇을 입을까", kinds: ["armor"], make: (letter) => ({ t: "wear", letter }), empty: "입을 것이 없다." },
             P: { title: "무엇을 낄까", kinds: ["ring"], make: (letter) => ({ t: "putOn", letter }), empty: "반지가 없다." },
             R: { title: "무엇을 뺄까", kinds: ["ring"], make: (letter) => ({ t: "removeRing", letter }), empty: "낀 반지가 없다." },
@@ -480,7 +480,8 @@ export default function Desk({
 
         switch (it.kind) {
             case "weapon":
-                if (!worn) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                // 직업 전용 무기(곡괭이)는 그 직업에만 세운다 — **값 읽기**다(`canWieldWeapon`).
+                if (!worn && canWieldWeapon(hero, it)) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
                 // 이도류 — **값 읽기지 규칙이 아니다**(`canOffHand`). 눌러도 엔진이 한 번 더 본다.
                 if (hero.offWeaponId === it.id) {
                     out.push({ label: "보조손에서 내린다", on: go({ t: "offHand", letter: it.letter! }) });
