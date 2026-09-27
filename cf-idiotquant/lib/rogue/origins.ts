@@ -1,15 +1,16 @@
 /**
- * 6대 출신(직업) 시스템 — Origin Classes & Traits
+ * 7대 출신(직업) 시스템 — Origin Classes & Traits
  *
- * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 6가지 시작 클래스를 제공합니다.
+ * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 7가지 시작 클래스를 제공합니다.
  * 레인저는 NetHack 의 Ranger 를 옮겼다 — 활·화살 묶음과 연사(multishot) +1.
  * 고고학자는 NetHack 의 Archeologist 를 옮겼다 — 곡괭이로 벽과 발밑을 판다.
+ * 정령술사는 원소 지팡이(화염·냉기·번개·돌풍)에 주사위를 하나 더 싣는다.
  */
 
 import { makeItem } from "./items";
 import { type Item } from "./types";
 
-export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist";
+export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
 
 /** 직업별 선호 무기 계열. 전투 보정은 이 목록이 아니라 무기 숙련도에서 계산한다. */
 export interface WeaponAffinity {
@@ -53,6 +54,16 @@ export const ARCHEOLOGIST_SEARCH = 0.45;
 export const ADVANCED_ARCHEOLOGIST_SEARCH = 0.65;
 /** NetHack 에서 고고학자·드워프는 파는 힘이 두 배다(`dig()` 의 `bonus *= 2`). */
 export const ARCHEOLOGIST_DIG_MULT = 2;
+
+/**
+ * 정령술사가 다루는 **원소 지팡이** — 불·물(냉기)·번개·바람(돌풍). 새 지팡이를 만들지 않고
+ * 이미 있는 넷을 묶었다. 이 지팡이들의 피해 굴림에만 **같은 면의 주사위**를 더 굴린다
+ * (지혜와 같은 모양). 굴리는 자리는 `elementalDice`(`hero.ts`) 하나다.
+ * 전직(원소의 군주)하면 +1 → +2 로 한 단 오를 뿐이다.
+ */
+export const ELEMENTAL_WANDS = ["fire", "cold", "lightning", "gust"];
+export const ELEMENTALIST_DICE = 1;
+export const ADVANCED_ELEMENTALIST_DICE = 2;
 
 export interface OriginDef {
     id: HeroOrigin;
@@ -112,6 +123,8 @@ export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     ranger: { bow: 3, crossbow: 3, dagger: 3, dart: 3, spear: 2 },
     // NetHack Archeologist: 곡괭이 Expert, 단검 Basic·표창 Basic 보다 한 칸 넉넉히.
     archeologist: { "pick-axe": 3, dagger: 2, dart: 2 },
+    // 지팡이로 싸우는 직업이라 손 무기는 연구자처럼 얕다.
+    elementalist: { dagger: 2, spear: 2, "magic sword": 2 },
 };
 
 /** 직업별 방어구 숙련 상한: 1 Basic, 2 Skilled, 3 Expert. */
@@ -122,6 +135,7 @@ export const ARMOR_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     scholar: { leather: 2, "ring mail": 2, "scale mail": 1, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
     ranger: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
     archeologist: { leather: 3, "ring mail": 2, "scale mail": 2, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
+    elementalist: { leather: 2, "ring mail": 2, "scale mail": 1, "chain mail": 1, "banded mail": 1, "plate mail": 1, "mithril mail": 1, "dragon mail": 1, "baphomet mail": 1 },
 };
 
 export const ORIGINS: Record<HeroOrigin, OriginDef> = {
@@ -301,6 +315,35 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
             return [pick, leather, food];
         },
     },
+    elementalist: {
+        id: "elementalist",
+        name: "정령술사",
+        title: "Elementalist",
+        advancedName: "원소의 군주",
+        advancedTitle: "Elemental Lord",
+        // 지팡이의 글자 `/` 를 빌렸다 — 지팡이로 싸우는 직업이다. 연구자는 이미 `?` 를 쓴다.
+        icon: "/",
+        iconInk: "var(--rg-wand)",
+        description: "불·얼음·번개·바람의 정령을 지팡이에 깃들여 부리는 술사.",
+        traitName: "원소 공명",
+        traitDescription: "원소 지팡이(화염·냉기·번개·돌풍) 시작부터 식별 · 피해 주사위 +1 · 지팡이 장착 가능, 걷기 회복 때 충전 +1",
+        weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
+        advancedSkillName: "정령 화신",
+        advancedSkillDescription: "원소 지팡이 피해 주사위 +1 → +2",
+        advancedSkillKind: "passive",
+        baseHp: 11,
+        baseStr: 13,
+        createStartingItems: (nextId) => {
+            // 돌풍(바람) 지팡이를 쥐고 시작한다 — 화염·냉기·번개는 10층짜리라 1층에 쥐여 주면
+            // 걷기 충전과 겹쳐 6d6 을 끝없이 쏜다. 나머지 셋은 내려가서 찾는다(정체는 이미 안다).
+            const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
+            const leather = makeItem("armor", "leather", nextId(), -1, -1);
+            const gustWand = makeItem("wand", "gust", nextId(), -1, -1);
+            gustWand.charges = 8;
+            const food = makeItem("food", "food ration", nextId(), -1, -1, 1);
+            return [dagger, leather, gustWand, food];
+        },
+    },
 };
 
 export const ORIGIN_LIST: OriginDef[] = [
@@ -310,4 +353,5 @@ export const ORIGIN_LIST: OriginDef[] = [
     ORIGINS.scholar,
     ORIGINS.ranger,
     ORIGINS.archeologist,
+    ORIGINS.elementalist,
 ];

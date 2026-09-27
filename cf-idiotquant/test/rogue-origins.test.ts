@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { joinGame, newGame, perform } from "@/lib/rogue/game";
-import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
+import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, elementalDice, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST } from "@/lib/rogue/origins";
@@ -9,8 +9,8 @@ import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
 import { idx, T, walkable, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("6대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
-    assert.equal(ORIGIN_LIST.length, 6);
+test("7대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
+    assert.equal(ORIGIN_LIST.length, 7);
     for (const origin of ORIGIN_LIST) {
         assert.ok(origin.advancedSkillName);
         assert.ok(origin.advancedSkillDescription);
@@ -48,6 +48,12 @@ test("6대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     assert.equal(ORIGINS.archeologist.baseHp, 12);
     assert.equal(ORIGINS.archeologist.baseStr, 15);
     assert.equal(ORIGINS.archeologist.advancedSkillKind, "passive");
+
+    // Elementalist — 돌풍 지팡이를 쥐고 시작한다
+    assert.equal(ORIGINS.elementalist.name, "정령술사");
+    assert.equal(ORIGINS.elementalist.baseHp, 11);
+    assert.equal(ORIGINS.elementalist.baseStr, 13);
+    assert.equal(ORIGINS.elementalist.advancedSkillKind, "passive");
 });
 
 test("직업 무기를 쥐면 명중과 피해에 같은 숙련 보너스가 붙는다", () => {
@@ -383,6 +389,55 @@ test("고서 연구자(Scholar) 시작 주문서/지팡이 식별 및 지팡이 
     const wand = s.heroes[0].pack.find((p) => p.kind === "wand" && p.type === "magic missile");
     assert.ok(wand, "마법 화살 지팡이가 있어야 함");
     assert.equal(wand.charges, 8);
+});
+
+test("정령술사 — 원소 지팡이만 알고, 원소 지팡이에만 주사위를 더 굴린다", () => {
+    // ── 시작: 돌풍 지팡이 8회를 쥐고, 원소 지팡이 넷만 정체를 안다
+    {
+        const s = newGame(4, {}, {}, {}, {}, "elementalist");
+        const hero = s.heroes[0];
+        assert.equal(hero.origin, "elementalist");
+        assert.equal(hero.hp, 11);
+        assert.equal(equippedWand(hero)?.type, "gust", "정령술사가 돌풍 지팡이를 안 쥐고 시작했다");
+        assert.equal(equippedWand(hero)?.charges, 8);
+        for (const w of ["fire", "cold", "lightning", "gust"]) assert.equal(s.known[`wand:${w}`], true, `${w} 지팡이를 모른다`);
+        assert.notEqual(s.known["wand:slow monster"], true, "원소가 아닌 지팡이까지 안다");
+        assert.notEqual(s.known["scroll:identify"], true, "주문서까지 안다 — 연구자의 몫이다");
+    }
+
+    // ── 주사위: 원소 지팡이만 +1, 전직하면 +2. 다른 직업·다른 지팡이는 0
+    {
+        const el = newGame(4, {}, {}, {}, {}, "elementalist").heroes[0];
+        assert.equal(elementalDice(el, "fire"), 1);
+        assert.equal(elementalDice(el, "gust"), 1);
+        assert.equal(elementalDice(el, "magic missile"), 0, "마법 화살은 원소가 아니다");
+        el.level = ADVANCE_LEVEL;
+        assert.equal(elementalDice(el, "cold"), 2, "전직 뒤 원소 주사위가 +2가 아니다");
+        const scholar = newGame(4, {}, {}, {}, {}, "scholar").heroes[0];
+        assert.equal(elementalDice(scholar, "fire"), 0, "정령술사가 아닌데 원소 주사위가 붙었다");
+    }
+
+    // ── 실제로 쏘면 기록에 「정령 1d6」이 남고, 다른 직업의 같은 지팡이에는 안 남는다
+    const zapFire = (origin: "elementalist" | "scholar", level = 1) => {
+        const s = newGame(109, {}, {}, {}, {}, origin);
+        const hero = s.heroes[0];
+        hero.level = level;
+        hero.wandId = null; // 쥔 지팡이가 있으면 그것이 나간다
+        const dirs: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const [dx, dy] = dirs.find(([x, y]) => walkable(s.level.tiles[idx(hero.x + x, hero.y + y)] as Tile))!;
+        const wand = makeItem("wand", "fire", 949, -1, -1);
+        wand.charges = 1;
+        wand.letter = "y";
+        hero.pack.push(wand);
+        const m = s.level.monsters[0]!;
+        m.x = hero.x + dx;
+        m.y = hero.y + dy;
+        m.hp = m.maxHp = 999;
+        return perform(s, { t: "zap", letter: "y", dx, dy }).messages;
+    };
+    assert.ok(zapFire("elementalist").some((l) => l.includes("정령 1d6")), "정령 주사위 기록이 없다");
+    assert.ok(zapFire("elementalist", ADVANCE_LEVEL).some((l) => l.includes("정령 2d6")), "전직 뒤 정령 주사위 기록이 없다");
+    assert.ok(!zapFire("scholar").some((l) => l.includes("정령")), "연구자의 화염 지팡이에 정령 주사위가 붙었다");
 });
 
 test("종료 시 무덤(Tomb) 기록에 영웅 origin 정보가 정상 보존된다", () => {

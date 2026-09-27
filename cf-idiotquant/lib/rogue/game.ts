@@ -66,6 +66,7 @@ import {
     weaponSkillName,
     weaponSkillTerms,
     wandDamageDiceBonus,
+    elementalDice,
     wornRings,
 } from "./hero";
 import {
@@ -73,6 +74,7 @@ import {
     ADVANCED_PRESERVE_CHANCE,
     ADVANCED_TRAP_EVADE,
     ADVANCE_LEVEL,
+    ELEMENTAL_WANDS,
     ORIGINS,
 } from "./origins";
 import {
@@ -715,6 +717,13 @@ function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
             state.itemCodex[k] = true;
         }
         for (const w of Object.keys(WANDS)) {
+            const k = `wand:${w}`;
+            state.known[k] = true;
+            state.itemCodex[k] = true;
+        }
+    } else if (origin === "elementalist") {
+        // 정령술사는 제가 부리는 원소 지팡이 넷의 정체만 안다.
+        for (const w of ELEMENTAL_WANDS) {
             const k = `wand:${w}`;
             state.known[k] = true;
             state.itemCodex[k] = true;
@@ -2159,6 +2168,10 @@ function useClassSkill(state: GameState, hero: Hero, ingredients?: [string, stri
             say(state, "명사수의 눈은 활로 쏠 때마다 저절로 듣는다.");
             return false;
         }
+        case "elementalist": {
+            say(state, "정령 화신은 원소 지팡이를 쏠 때마다 저절로 듣는다.");
+            return false;
+        }
         case "rogue": {
             const seen = state.level.monsters.filter(
                 (m) => isVisible(state.level, m.x, m.y) && !m.champion,
@@ -2379,18 +2392,23 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     // 지혜는 아이템운과 같은 값 하나에서 읽는다. 지혜 1당 같은 면의 주사위를 하나 더
     // 굴린다. 지혜를 안 고른 판은 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
     const wisdomDice = wandDamageDiceBonus(hero);
+    // 정령술사의 원소 주사위도 같은 면으로 따로 굴린다 — 없으면(0) 굴리지 않아 난수 흐름이 그대로다.
+    const spiritDice = elementalDice(hero, it.type);
     const spellDamage = (dice: string) => {
         const rolled = rng.rollDice(dice);
         const [, , sides] = /^(\d+)d(\d+)$/.exec(dice) ?? [];
         const bonusDice = wisdomDice > 0 && sides ? `${wisdomDice}d${sides}` : null;
         const wisdom = bonusDice ? rng.rollDice(bonusDice) : 0;
-        return { dice, rolled, bonusDice, wisdom, total: rolled + wisdom };
+        const spiritDiceText = spiritDice > 0 && sides ? `${spiritDice}d${sides}` : null;
+        const spirit = spiritDiceText ? rng.rollDice(spiritDiceText) : 0;
+        return { dice, rolled, bonusDice, wisdom, spiritDice: spiritDiceText, spirit, total: rolled + wisdom + spirit };
     };
-    const saySpellDamage = (line: string, damage: { dice: string; rolled: number; bonusDice: string | null; wisdom: number; total: number }) => {
+    const saySpellDamage = (line: string, damage: ReturnType<typeof spellDamage>) => {
         const wisdom = damage.bonusDice ? `+${damage.wisdom}(지혜 ${damage.bonusDice})` : "";
+        const spirit = damage.spiritDice ? `+${damage.spirit}(정령 ${damage.spiritDice})` : "";
         // 공격 지팡이도 무기와 같은 기록 문법을 쓴다. 요약 줄에는 결과, 펼친 기록에는
         // 어느 주사위가 얼마였는지가 남아야 지혜가 실제로 무엇을 더했는지 읽을 수 있다.
-        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.rolled}${wisdom}=${damage.total}(피해)`);
+        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.rolled}${wisdom}${spirit}=${damage.total}(피해)`);
         say(state, withDamage(line, damage.total));
     };
 
