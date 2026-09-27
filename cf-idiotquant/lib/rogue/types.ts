@@ -561,8 +561,12 @@ export interface GameState {
     itemUsage: Record<string, number>;
     /** 다음 물건에 줄 번호. */
     nextItemId: number;
-    /** 엔진이 남긴 잠깐의 투사체 궤적 — 화면은 이것을 그릴 뿐 규칙은 바꾸지 않는다. */
-    projectile?: { id: string; cells: { x: number; y: number; ch: string }[] };
+    /**
+     * 엔진이 남긴 잠깐의 투사체 궤적 — 화면은 이것을 그릴 뿐 규칙은 바꾸지 않는다.
+     * `fx` 는 지팡이로 쏜 것일 때 **그 지팡이의 종류**(`WANDS` 의 키)다 — 화면이 색과
+     * 착탄 연출을 고르는 값일 뿐이다.
+     */
+    projectile?: { id: string; cells: { x: number; y: number; ch: string }[]; fx?: string };
 }
 
 export type Dir = { dx: number; dy: number };
