@@ -162,18 +162,20 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
                 return (
                     <span
                         key={i}
-                        className="absolute grid place-items-center overflow-visible font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
+                        className="absolute font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
                         style={{
-                            left: (i % cols) * slotW,
+                            // 글자 상자는 누르기 전 폭이라 제 자리보다 넓다 — 가운데 정렬에 맡기면
+                            // 왼쪽에 붙은 채 넘쳐 옆으로 잘린다. 자리의 **가운데**에 세우고 거기서 누른다.
+                            left: (i % cols + 0.5) * slotW,
                             top: Math.floor(i / cols) * font,
-                            width: slotW,
                             height: font,
                             color: ink,
                             fontSize: font,
-                            lineHeight: 1,
+                            lineHeight: `${font}px`,
+                            transform: `translateX(-50%) scaleX(${Math.min(1, slotW / natural)})`,
                         }}
                     >
-                        <span style={{ display: "inline-block", transform: `scaleX(${Math.min(1, slotW / natural)})` }}>{ch}</span>
+                        {ch}
                     </span>
                 );
             })}
