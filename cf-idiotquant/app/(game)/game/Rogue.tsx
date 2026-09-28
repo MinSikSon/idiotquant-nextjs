@@ -94,7 +94,8 @@ import {
     type TombHero,
     type TombItem,
 } from "@/lib/rogue/storage";
-import { T, idx, type GameState, type Item, type ItemKind } from "@/lib/rogue/types";
+import { T, idx, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
+import { SPIRIT_NAMES, SPIRIT_TRAITS } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
@@ -793,6 +794,8 @@ export default function Rogue() {
     /** 지도 하단 단추 줄의 「성장」 단추를 눌러 펼쳤는가. */
     const [skillOpen, setSkillOpen] = useState(false);
     const [altarOpen, setAltarOpen] = useState(false);
+    /** 정령술사의 ★ 단추를 눌러 원소 고르기 줄을 펼쳤는가. */
+    const [spiritOpen, setSpiritOpen] = useState(false);
     /**
      * 내보낸 손님들의 **자리표**(`guestKey`) — 이 방이 열려 있는 동안 다시 안 받는다.
      *
@@ -1062,6 +1065,7 @@ export default function Rogue() {
         setView(null);
         setSkillOpen(false);
         setAltarOpen(false);
+        setSpiritOpen(false);
     }, [stopAllHolds, ignoreHeldDirections]);
 
     /** 방장이 고르는 즉시 새 판을 열고, 손님은 자기 선택을 마친 때에만 합류한다. */
@@ -2056,16 +2060,19 @@ export default function Rogue() {
 
                     {/* 액티브 전직 기술만 층마다 한 번 단추 줄에 선다. 기사의 방벽은 패시브다.
                         정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다).
-                        소환은 같은 층에서 턴이 쌓이면 다시 열린다 — 남은 턴을 이름 옆에 적는다(폰에는 `title` 이 안 뜬다). */}
+                        소환은 같은 층에서 턴이 쌓이면 다시 열린다 — 남은 턴을 이름 옆에 적는다(폰에는 `title` 이 안 뜬다).
+                        소환은 ★ 를 누르면 원소 넷을 펼쳐 고른다 — 원소마다 싸우는 법이 다르다(`SPIRIT_TRAITS`). */}
                     {((hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active") || hero.origin === "elementalist") && (() => {
                         const summons = hero.origin === "elementalist";
                         const skillName = summons ? classSkill.traitName : classSkill.advancedSkillName;
-                        const skillText = summons ? `곁에 원소 정령을 부른다 · 같은 층에서는 ${SPIRIT_COOLDOWN}턴 뒤 다시` : classSkill.advancedSkillDescription;
+                        const skillText = summons ? `곁에 원소 정령을 골라 부른다 · 같은 층에서는 ${SPIRIT_COOLDOWN}턴 뒤 다시` : classSkill.advancedSkillDescription;
                         const wait = summons ? spiritWait(state, hero) : 0;
                         return (
+                            <>
                             <button
                                 type="button"
-                                onClick={() => hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
+                                onClick={() => summons ? setSpiritOpen((v) => !v) : hero.origin === "alchemist" ? desks.current[who]?.craftBlessing() : run({ t: "classSkill" })}
+                                aria-expanded={summons ? spiritOpen : undefined}
                                 disabled={summons ? wait > 0 : hero.classSkillDepth === level.depth}
                                 aria-label={`${skillName} — ${skillText}${wait > 0 ? ` · ${wait}턴 남음` : ""}`}
                                 title={`${skillName} · ${skillText}`}
@@ -2073,6 +2080,17 @@ export default function Rogue() {
                             >
                                 ★ {skillName}{wait > 0 ? ` · ${wait}T` : ""}
                             </button>
+                            {summons && spiritOpen && wait === 0 && (
+                                <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(18rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                    <span className="font-bold text-[var(--rg-gold)]">어느 정령을 부를까</span>
+                                    {(Object.keys(SPIRIT_NAMES) as SpiritElement[]).map((element) => (
+                                        <button key={element} type="button" onClick={() => { run({ t: "classSkill", element }); setSpiritOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
+                                            {SPIRIT_NAMES[element]} · {SPIRIT_TRAITS[element]}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            </>
                         );
                     })()}
 

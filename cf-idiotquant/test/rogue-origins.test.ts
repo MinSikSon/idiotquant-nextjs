@@ -3,11 +3,11 @@ import { test } from "node:test";
 import { joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
-import { SPIRIT_NAMES, spawnMonster } from "@/lib/rogue/monsters";
+import { SPIRIT_NAMES, SPIRIT_TRAITS, spawnMonster } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
-import { idx, T, walkable, type GameState, type Tile } from "@/lib/rogue/types";
+import { idx, T, walkable, type GameState, type SpiritElement, type Tile } from "@/lib/rogue/types";
 
 test("7대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다", () => {
     assert.equal(ORIGIN_LIST.length, 7);
@@ -399,6 +399,33 @@ function summoned(seed: number): { s: GameState; spirit: NonNullable<GameState["
     const spirit = s.level.monsters.find((m) => m.spirit);
     assert.ok(spirit, `시드 ${seed}: 정령이 안 섰다`);
     return { s, spirit };
+}
+
+/** 정령술사로 새 판을 열고, 판 위의 적을 치운 뒤 **고른 원소의** 정령을 부른다. */
+function summonedAs(seed: number, element: SpiritElement): { s: GameState; spirit: NonNullable<GameState["level"]["monsters"][number]> } {
+    let s = newGame(seed, {}, {}, {}, {}, "elementalist");
+    s.level.monsters = [];
+    s = perform(s, { t: "classSkill", element });
+    const spirit = s.level.monsters.find((m) => m.spirit);
+    assert.ok(spirit, `시드 ${seed}: 정령이 안 섰다`);
+    return { s, spirit };
+}
+
+/** 영웅 곁이면서 정령 곁이기도 한 빈 바닥(대각선 문턱은 피한다) — 적이 둘 중 누구든 칠 수 있는 자리. */
+function besideBoth(s: GameState, spirit: { x: number; y: number }): { x: number; y: number } | undefined {
+    const h = s.heroes[0];
+    for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+            if (dx !== 0 && dy !== 0) continue;
+            const x = h.x + dx;
+            const y = h.y + dy;
+            if ((x === h.x && y === h.y) || (x === spirit.x && y === spirit.y)) continue;
+            if (Math.max(Math.abs(x - spirit.x), Math.abs(y - spirit.y)) !== 1) continue;
+            if (spirit.x !== x && spirit.y !== y) continue;
+            if (walkable(s.level.tiles[idx(x, y)] as Tile)) return { x, y };
+        }
+    }
+    return undefined;
 }
 
 /** 정령 곁이면서 영웅과는 두 칸 떨어진 빈 바닥 — 적이 영웅 대신 정령을 칠 자리. */
@@ -874,5 +901,88 @@ test("협동 — 곡괭이는 쥔 사람의 것이고, 발밑이 뚫리면 파�
     for (const h of st.heroes) {
         assert.ok(h.x >= 0 && h.y >= 0, "파티 한 사람이 층 밖에 남았다");
         assert.ok(walkable(st.level.tiles[idx(h.x, h.y)] as Tile), `(${h.x},${h.y}) 바위 속에 떨어졌다`);
+    }
+});
+
+test("정령술사 — 원소를 골라 부르고, 원소마다 싸우는 법이 다르다", () => {
+    // ── 고른 원소가 선다 · 부를 때 그 원소의 특징을 적는다 · 몸이 다르다
+    const bodies = Object.fromEntries(
+        (Object.keys(SPIRIT_NAMES) as SpiritElement[]).map((element) => {
+            const { s, spirit } = summonedAs(4, element);
+            assert.equal(spirit.spirit!.element, element);
+            assert.equal(spirit.def.name, SPIRIT_NAMES[element]);
+            assert.ok(s.messages.some((l) => l.includes(SPIRIT_TRAITS[element])), `${element}: 부를 때 특징을 안 적었다`);
+            return [element, spirit];
+        }),
+    );
+    assert.equal(bodies.fire.def.damage[0], "2d6", "불의 정령이 세게 안 친다");
+    assert.ok(bodies.earth.maxHp > bodies.fire.maxHp && bodies.earth.def.armor < bodies.fire.def.armor, "땅의 정령이 단단하지 않다");
+    assert.ok(bodies.air.maxHp < bodies.fire.maxHp, "바람의 정령의 몸이 약하지 않다");
+    // 바람도 머무는 턴은 한 번만 준다
+    assert.equal(bodies.air.spirit!.turns, SPIRIT_TURNS - 1, "바람의 정령의 수명이 두 배로 준다");
+
+    // ── 모르는 원소(남이 보낸 명령)는 굴린다
+    {
+        let s = newGame(4, {}, {}, {}, {}, "elementalist");
+        s.level.monsters = [];
+        s = perform(s, { t: "classSkill", element: "void" as SpiritElement });
+        const spirit = s.level.monsters.find((m) => m.spirit);
+        assert.ok(spirit && Object.values(SPIRIT_NAMES).includes(spirit.def.name), "모르는 원소로 이상한 정령이 섰다");
+    }
+
+    // ── 바람: 한 턴에 두 번 친다 · 물: 친 만큼 주인을 고친다
+    {
+        let airTwice = 0;
+        let healed = 0;
+        for (let seed = 1; seed <= 40 && (airTwice === 0 || healed === 0); seed++) {
+            for (const element of ["air", "water"] as const) {
+                const { s: s0, spirit } = summonedAs(seed, element);
+                const spot = besideSpiritOnly(s0, spirit);
+                if (!spot) continue;
+                const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+                foe.hp = foe.maxHp = 999;
+                s0.level.monsters.push(foe);
+                s0.heroes[0].hp = 1;
+                const before = s0.messages.length;
+                const s = perform(s0, { t: "search" });
+                const lines = s.messages.slice(before).map((l) => l.replace(/^T:\d+ /, ""));
+                const swings = lines.filter((l) => l.startsWith(SPIRIT_NAMES[element]) && /쳤다|빗나갔다/.test(l)).length;
+                if (element === "air") {
+                    assert.ok(swings <= 2, `바람의 정령이 한 턴에 ${swings}번 쳤다`);
+                    if (swings === 2) airTwice++;
+                } else {
+                    assert.ok(swings <= 1, `물의 정령이 한 턴에 ${swings}번 쳤다`);
+                    const heal = lines.find((l) => l.includes("상처를 씻어"));
+                    if (heal) {
+                        assert.ok(s.heroes[0].hp > 1, "고쳤다고 적었는데 체력이 그대로다");
+                        healed++;
+                    }
+                }
+            }
+        }
+        assert.ok(airTwice > 0, "바람의 정령이 한 턴에 두 번 친 판이 없다");
+        assert.ok(healed > 0, "물의 정령이 주인을 고친 판이 없다");
+    }
+
+    // ── 땅: 곁의 적이 주인이 곁에 있어도 땅의 정령을 먼저 친다 · 불은 그렇지 않다
+    {
+        let taunted = 0;
+        for (let seed = 1; seed <= 40 && taunted === 0; seed++) {
+            const { s: s0, spirit } = summonedAs(seed, "earth");
+            const spot = besideBoth(s0, spirit);
+            if (!spot) continue;
+            const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+            foe.hp = foe.maxHp = 999;
+            foe.awake = true;
+            s0.level.monsters.push(foe);
+            const hp = s0.heroes[0].hp;
+            const before = s0.messages.length;
+            const s = perform(s0, { t: "search" });
+            const lines = s.messages.slice(before).map((l) => l.replace(/^T:\d+ /, ""));
+            if (!lines.some((l) => /^홉고블린(이\(가\) 땅의 정령을\(를\) 쳤다|의 공격이 땅의 정령을\(를\) 빗나갔다)/.test(l))) continue;
+            assert.ok(s.heroes[0].hp >= hp, "땅의 정령 곁의 적이 주인을 쳤다");
+            taunted++;
+        }
+        assert.ok(taunted > 0, "적이 땅의 정령을 먼저 친 판이 없다");
     }
 });

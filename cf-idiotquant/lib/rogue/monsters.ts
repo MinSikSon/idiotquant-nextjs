@@ -152,21 +152,40 @@ export const SPIRIT_NAMES: Record<SpiritElement, string> = {
 };
 
 /**
- * 정령의 몸 — **부를 때의 레벨 하나가 다 정한다.** 명중·공격력 보정은 여느 몬스터처럼
+ * 원소마다 **싸우는 법이 다르다** — 부를 때 고르는 까닭이 여기서 난다. 화면의 고르기 줄도 이 글을 읽는다.
+ *
+ * - 불: 세게 친다(`2d6`).
+ * - 물: 친 피해의 절반(적어도 1)만큼 주인을 고친다(`strikeMonster`).
+ * - 바람: 한 턴에 두 번 움직인다 — 대신 몸이 약하다(`spiritAct`).
+ * - 땅: 단단하고, 곁의 적이 주인보다 **땅의 정령을 먼저** 친다(`monsterAct`).
+ */
+export const SPIRIT_TRAITS: Record<SpiritElement, string> = {
+    fire: "세게 친다",
+    water: "친 만큼 나를 고친다",
+    air: "한 턴에 두 번 움직인다 · 몸이 약하다",
+    earth: "단단하고 곁의 적을 끌어당긴다",
+};
+
+/**
+ * 정령의 몸 — **부를 때의 레벨과 원소가 다 정한다.** 명중·공격력 보정은 여느 몬스터처럼
  * `def.level` 에서 나오므로(`monsterHitBonus`·`monsterDamBonus`) 따로 셈을 두지 않는다.
  * 그 레벨은 부른 사람보다 **두 단 위**다 — 같은 레벨이면 1층에서 `1d8+1` 이 홉고블린의
- * 방어력 5 에 거의 다 깎여 부른 보람이 없다. 방어 등급 5 는 홉고블린·뱀과 같은 값이다.
+ * 방어력 5 에 거의 다 깎여 부른 보람이 없다. 방어 등급 5 는 홉고블린·뱀과 같은 값이고,
+ * 땅의 정령만 2(방어력 8)다. 원소마다 다른 것은 주사위·체력·방어 셋뿐이다(`SPIRIT_TRAITS`).
  */
 export function spiritDef(bond: SpiritBond): MonsterDef {
     const level = Math.max(1, bond.level);
+    const element = SPIRIT_NAMES[bond.element] ? bond.element : "fire";
+    const dice = { fire: "2d6", water: "1d8", air: "1d6", earth: "1d6" }[element];
+    const hp = { fire: 6 + 3 * level, water: 6 + 3 * level, air: 4 + 2 * level, earth: 10 + 4 * level }[element];
     return {
         ch: SPIRIT_CH,
-        name: SPIRIT_NAMES[bond.element] ?? SPIRIT_NAMES.fire,
+        name: SPIRIT_NAMES[element],
         exp: 0,
         level: level + 2,
-        armor: 5,
-        hp: 6 + 3 * level,
-        damage: bond.advanced ? ["1d8", "1d8"] : ["1d8"],
+        armor: element === "earth" ? 2 : 5,
+        hp,
+        damage: bond.advanced ? [dice, dice] : [dice],
         mean: true,
     };
 }

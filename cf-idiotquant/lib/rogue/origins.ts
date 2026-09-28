@@ -327,9 +327,9 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         // 같은 글자의 에뮤와 갈린다.
         icon: "E",
         iconInk: "var(--rg-wand)",
-        description: "불·물·바람·땅의 정령을 불러 곁에 세우고 함께 싸우는 술사.",
+        description: "불·물·바람·땅의 정령을 골라 불러 곁에 세우고 함께 싸우는 술사.",
         traitName: "정령 소환",
-        traitDescription: "곁에 원소 정령을 부른다(★ 단추) · 새 층에서는 곧바로, 같은 층에서는 60턴 뒤 다시 · 정령은 나를 따라다니며 가까운 적을 친다 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
+        traitDescription: "곁에 원소 정령을 골라 부른다(★ 단추) · 불은 세게 치고, 물은 친 만큼 나를 고치고, 바람은 두 번 움직이고, 땅은 단단하게 적을 끌어당긴다 · 새 층에서는 곧바로, 같은 층에서는 60턴 뒤 다시 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
         weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "정령 화신",
         advancedSkillDescription: "정령이 두 번 때리고 40턴 머문다",
