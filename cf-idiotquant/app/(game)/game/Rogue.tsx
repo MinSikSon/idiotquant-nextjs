@@ -604,7 +604,7 @@ export default function Rogue() {
                 }, 16);
                 // 지팡이는 끝 칸에서 제 색으로 터진다 — 입력은 이미 풀렸고, 보는 것만 남는다.
                 if (fx) {
-                    setZapFlashes(zapImpact(fx, shot.cells[shot.cells.length - 1]!, shot.from));
+                    setZapFlashes(zapImpact(fx, shot.cells[shot.cells.length - 1]!, shot.from, shot.dug));
                     if (fx.shake) {
                         setShake(true);
                         shakeTimer = setTimeout(() => setShake(false), 160);

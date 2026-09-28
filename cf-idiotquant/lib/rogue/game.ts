@@ -2421,8 +2421,8 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     // ── 굴착의 지팡이 (digging) : 최대 4칸 벽을 부수고 관통 파편 피해(2d6)를 줌 ──
     if (it.type === "digging") {
-        let dug = 0;
         const cells: { x: number; y: number }[] = [];
+        const broke: { x: number; y: number }[] = [];
         for (let step = 1; step <= 4; step++) {
             const nx = hero.x + dx * step;
             const ny = hero.y + dy * step;
@@ -2432,7 +2432,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             const tile = level.tiles[i] as Tile;
             if (!walkable(tile)) {
                 level.tiles[i] = T.CORRIDOR;
-                dug++;
+                broke.push({ x: nx, y: ny });
             }
             const m = monsterAt(level, nx, ny);
             if (m && !m.spirit) {
@@ -2448,11 +2448,12 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             }
         }
         zapTrail(state, hero, cells, it.type, dx, dy);
+        if (state.projectile && broke.length > 0) state.projectile.dug = broke;
         computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
-        if (dug > 0) {
-            say(state, `지팡이 끝에서 굉음이 일며 벽이 부서지고 새로운 길이 뚫렸다! (${dug}칸)`);
+        if (broke.length > 0) {
+            say(state, `지팡이 끝에서 굉음이 일며 벽이 부서지고 새로운 길이 뚫렸다! (${broke.length}칸)`);
         } else {
             say(state, "지팡이 끝에서 강력한 파쇄 광선이 뻗어 나갔다.");
         }

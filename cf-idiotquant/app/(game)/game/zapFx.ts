@@ -34,6 +34,8 @@ export interface ZapFx {
     burst?: number;
     impactMs: number;
     bothEnds?: boolean;
+    /** 부순 벽 칸(`projectile.dug`)마다 `impact` 로 흙먼지를 일으킨다(굴착). */
+    crumble?: boolean;
     shake?: boolean;
 }
 
@@ -46,8 +48,9 @@ export const ZAP_FX: Record<string, ZapFx> = {
     fire: { mode: "beam", stepMs: 35, ink: "var(--rg-trap)", glyphs: ["*", "&"], tailInk: "var(--rg-anvil)", impact: { ink: "var(--rg-trap)", bg: "rgba(249, 115, 22, 0.55)" }, ring: { bg: "rgba(239, 68, 68, 0.28)" }, burst: 1, impactMs: 340 },
     // 얼음 광선이 천천히 뻗고, 끝이 얼어붙은 듯 오래 남는다.
     cold: { mode: "beam", stepMs: 50, ink: "var(--rg-scroll)", glyphs: ["*"], tailInk: "var(--rg-scroll)", impact: { ink: "var(--rg-scroll)", bg: "rgba(56, 189, 248, 0.5)" }, ring: { bg: "rgba(186, 230, 253, 0.3)" }, burst: 1, impactMs: 520 },
-    // 부서진 돌 부스러기가 뒤로 흩날리며 파고든다. 화면이 흔들린다.
-    digging: { mode: "bolt", stepMs: 70, ink: "var(--rg-door)", glyphs: ["%", "#"], tail: 2, tailGlyph: ".", tailInk: "var(--rg-door)", impact: { ink: "var(--rg-door)", bg: "rgba(146, 64, 14, 0.4)" }, impactMs: 260, shake: true },
+    // 바위를 갈아 내며 **굴이 늘어난다** — 지나온 자리에 부스러기(`:`)가 남고, 부순 벽 칸마다
+    // 흙먼지가 일며 끝에서 먼지가 둘레로 퍼진다. 화면이 묵직하게 흔들린다.
+    digging: { mode: "beam", stepMs: 85, ink: "var(--rg-anvil)", glyphs: ["#", "%"], tailGlyph: ":", tailInk: "var(--rg-door)", impact: { ink: "var(--rg-door)", bg: "rgba(146, 64, 14, 0.5)" }, ring: { bg: "rgba(180, 120, 60, 0.25)" }, burst: 1, crumble: true, impactMs: 420, shake: true },
     // 은빛 고리가 오가고, **쏜 자리와 맞은 자리가 함께** 번쩍인다 — 자리가 바뀌었다.
     swapping: { mode: "bolt", stepMs: 30, ink: "var(--rg-weapon)", glyphs: ["o", "0"], impact: { ink: "var(--rg-weapon)", bg: "rgba(148, 163, 184, 0.5)" }, impactMs: 320, bothEnds: true },
     // 바람 물결이 길게 꼬리를 끌며 휩쓸고 지나간다.
@@ -79,16 +82,17 @@ export function zapFrames(fx: ZapFx, cells: { x: number; y: number; ch: string }
         return frame;
     });
     // 광선은 끝에 닿은 모습으로 한 번 더 머문다.
-    if (fx.mode === "beam") frames.push(cells.map((c) => ({ ...c, ink: fx.tailInk ?? fx.ink })));
+    if (fx.mode === "beam") frames.push(cells.map((c) => ({ ...c, ch: fx.tailGlyph ?? c.ch, ink: fx.tailInk ?? fx.ink })));
     return frames;
 }
 
-/** 착탄의 번쩍임 — 끝 칸(과 둘레), 위치 교환이면 쏜 자리도. */
-export function zapImpact(fx: ZapFx, end: { x: number; y: number }, from?: { x: number; y: number }): Record<string, ZapFlash> {
+/** 착탄의 번쩍임 — 끝 칸(과 둘레), 위치 교환이면 쏜 자리도, 굴착이면 부순 벽 칸마다. */
+export function zapImpact(fx: ZapFx, end: { x: number; y: number }, from?: { x: number; y: number }, dug: { x: number; y: number }[] = []): Record<string, ZapFlash> {
     const out: Record<string, ZapFlash> = {};
     const r = fx.burst ?? 0;
     const ring = fx.ring ?? { bg: fx.impact.bg };
     for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) out[`${end.x + dx},${end.y + dy}`] = dx || dy ? ring : fx.impact;
     if (fx.bothEnds && from) out[`${from.x},${from.y}`] = fx.impact;
+    if (fx.crumble) for (const c of dug) out[`${c.x},${c.y}`] = fx.impact;
     return out;
 }

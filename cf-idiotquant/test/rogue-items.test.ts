@@ -891,6 +891,30 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
         assert.equal(Object.keys(zapImpact(ZAP_FX[type]!, { x: 5, y: 5 })).length, 9, `${type} 착탄이 둘레로 안 번진다`);
     }
     assert.ok(zapImpact(ZAP_FX.swapping!, { x: 5, y: 5 }, { x: 1, y: 5 })["1,5"], "위치 교환이 쏜 자리를 안 밝힌다");
+    // 굴착은 굴이 늘어나고(부스러기가 남는다), 부순 벽 칸마다 흙먼지가 인다
+    {
+        assert.deepEqual(frames("digging").map((f) => f.length).slice(0, path.length), [1, 2, 3, 4, 5], "굴착의 굴이 늘어나지 않는다");
+        const s = newGame(109);
+        const wand = makeItem("wand", "digging", 983, -1, -1);
+        wand.charges = 2;
+        give(s, wand, "y");
+        const h = s.heroes[0];
+        const dirs: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        // 벽까지 걸어가 벽을 향해 쏜다
+        let way: [number, number] | undefined;
+        for (const [dx, dy] of dirs) {
+            let x = h.x;
+            let y = h.y;
+            while (walkable(s.level.tiles[idx(x + dx, y + dy)] as Tile)) { x += dx; y += dy; }
+            if (x + dx * 2 > 0 && x + dx * 2 < 79 && y + dy * 2 > 0 && y + dy * 2 < 21) { h.x = x; h.y = y; way = [dx, dy]; break; }
+        }
+        assert.ok(way, "벽을 향한 자리를 못 찾았다");
+        const after = perform(s, { t: "zap", letter: "y", dx: way[0], dy: way[1] });
+        const dug = after.projectile?.dug ?? [];
+        assert.ok(dug.length > 0, "굴착이 부순 벽 칸을 안 남겼다");
+        const dust = zapImpact(ZAP_FX.digging!, after.projectile!.cells.at(-1)!, after.projectile!.from, dug);
+        for (const c of dug) assert.ok(dust[`${c.x},${c.y}`], `부순 벽 (${c.x},${c.y}) 에 흙먼지가 안 인다`);
+    }
     // 엔진은 쏜 자리를 남긴다 — 위의 연출이 읽는 값이다
     {
         const s = newGame(109);
