@@ -175,6 +175,7 @@ import {
     randomMonsterChar,
     spawnMonster,
     summonSpiritAt,
+    SPIRIT_TRAITS,
 } from "./monsters";
 import {
     Rng,
@@ -237,7 +238,7 @@ type Action =
     | { t: "inspectStatus"; kind: "origin" | "str" | "defense" | "wisdom" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
 
-    | { t: "classSkill"; ingredients?: [string, string] }
+    | { t: "classSkill"; ingredients?: [string, string]; element?: SpiritElement }
     | { t: "drop"; letter: string }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
@@ -2208,10 +2209,10 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
  * 전직 기술 — 새 자원이나 쿨다운 시계를 만들지 않고 **층마다 한 번**만 쓴다.
  * 실제로 효과가 생긴 뒤에만 사용한 층을 적고 턴을 쓴다.
  */
-function useClassSkill(state: GameState, hero: Hero, rng: Rng, ingredients?: [string, string]): boolean {
+function useClassSkill(state: GameState, hero: Hero, rng: Rng, ingredients?: [string, string], element?: SpiritElement): boolean {
     // 정령술사의 소환은 **직업 특성**이라 레벨 1부터 쓴다. 부른 층은 전직 기술과 같은 칸(`classSkillDepth`)에
     // 적는다 — 정령술사의 전직 기술은 지속 효과(정령 화신)라 칸이 겹치지 않는다. 같은 층의 재소환은 `spiritWait`.
-    if (hero.origin === "elementalist") return summonSpirit(state, hero, rng);
+    if (hero.origin === "elementalist") return summonSpirit(state, hero, rng, element);
     if (hero.level < ADVANCE_LEVEL) {
         say(state, `레벨 ${ADVANCE_LEVEL}에 전직해야 쓸 수 있다.`);
         return false;
@@ -3296,9 +3297,11 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
         }
         const victim = monsterTarget(state, m);
         // **목표가 곁에 없고 정령이 곁에 있으면 정령을 친다** — 길을 막고 선 것을 치운다.
-        // 정령이 몸으로 막아 주는 값이 여기서 난다. 목표가 곁에 있으면 목표가 먼저다.
-        if (!adjacent(m, victim)) {
-            const guard = level.monsters.find((o) => o.spirit && o.hp > 0 && adjacent(m, o) && !monsterBlockedDiagonal(level, m, o));
+        // 정령이 몸으로 막아 주는 값이 여기서 난다. 목표가 곁에 있으면 목표가 먼저다 —
+        // **땅의 정령만은 예외**로, 곁에 있으면 목표가 곁에 있어도 그것을 먼저 친다(끌어당긴다).
+        {
+            const guards = level.monsters.filter((o) => o.spirit && o.hp > 0 && adjacent(m, o) && !monsterBlockedDiagonal(level, m, o));
+            const guard = guards.find((o) => o.spirit!.element === "earth") ?? (adjacent(m, victim) ? undefined : guards[0]);
             if (guard) {
                 strikeMonster(state, m, guard, rng);
                 return;
@@ -3398,8 +3401,11 @@ export function spiritWait(state: GameState, hero: Hero): number {
     return Math.max(0, (hero.spiritTurn ?? 0) + SPIRIT_COOLDOWN - state.turn);
 }
 
-/** 정령 소환. 아직 기다려야 하거나 설 자리가 없으면 턴도 기회도 안 쓴다. */
-function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
+/**
+ * 정령 소환. 아직 기다려야 하거나 설 자리가 없으면 턴도 기회도 안 쓴다. 원소는 부르는 사람이
+ * 고른다(`SPIRIT_TRAITS`) — 안 골랐거나 모르는 값이면(남이 보낸 명령) 굴린다.
+ */
+function summonSpirit(state: GameState, hero: Hero, rng: Rng, element?: SpiritElement): boolean {
     const wait = spiritWait(state, hero);
     if (wait > 0) {
         say(state, `정령을 다시 부르려면 ${wait}턴 더 지나야 한다.`);
@@ -3415,7 +3421,7 @@ function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
         {
             owner: state.heroes.indexOf(hero),
             turns: advanced ? ADVANCED_SPIRIT_TURNS : SPIRIT_TURNS,
-            element: rng.pick(SPIRIT_ELEMENTS)!,
+            element: element && SPIRIT_ELEMENTS.includes(element) ? element : rng.pick(SPIRIT_ELEMENTS)!,
             level: hero.level,
             advanced,
         },
@@ -3425,7 +3431,7 @@ function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
     state.level.monsters.push(spirit);
     hero.classSkillDepth = state.level.depth;
     hero.spiritTurn = state.turn;
-    say(state, `✦ ${spirit.def.name}을(를) 불러냈다. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
+    say(state, `✦ ${spirit.def.name}을(를) 불러냈다 — ${SPIRIT_TRAITS[spirit.spirit!.element]}. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
     return true;
 }
 
@@ -3456,6 +3462,13 @@ function strikeMonster(state: GameState, attacker: Monster, defender: Monster, r
     defender.hp -= total;
     defender.awake = true;
     say(state, withDamage(`${aName}이(가) ${dName}을(를) 쳤다.`, total) + spiritHp());
+    // 물의 정령은 친 피해의 절반(적어도 1)만큼 주인을 고친다 — 피해가 0이면 안 고친다.
+    const healer = attacker.spirit?.element === "water" ? state.heroes[attacker.spirit.owner] : undefined;
+    if (healer && healer.hp > 0 && total > 0 && healer.hp < healer.maxHp) {
+        const gain = Math.min(healer.maxHp - healer.hp, Math.max(1, Math.floor(total / 2)));
+        healer.hp += gain;
+        say(state, `물의 정령이 상처를 씻어 준다. (HP +${gain})`);
+    }
     if (defender.hp > 0) return;
     if (defender.spirit) {
         say(state, `${dName}이(가) 흩어졌다.`);
@@ -3467,7 +3480,6 @@ function strikeMonster(state: GameState, attacker: Monster, defender: Monster, r
 }
 
 function spiritAct(state: GameState, m: Monster, rng: Rng) {
-    const { level } = state;
     const bond = m.spirit!;
     const owner = state.heroes[bond.owner];
     bond.turns -= 1;
@@ -3476,6 +3488,15 @@ function spiritAct(state: GameState, m: Monster, rng: Rng) {
         say(state, `${monsterName(m)}이(가) 바람 속으로 흩어졌다.`);
         return;
     }
+    // 바람의 정령은 한 턴에 두 번 움직인다 — 머무는 턴(`turns`)은 한 번만 준다. 몬스터의 빠르기(`speed`)로
+    // 두면 이 첫머리까지 두 번 돌아 수명이 반으로 준다.
+    const moves = bond.element === "air" ? 2 : 1;
+    for (let n = 0; n < moves && m.hp > 0; n++) spiritStep(state, m, owner, rng);
+}
+
+/** 정령의 한 걸음 — 가까운 보이는 적을 치거나 쫓고, 적이 없으면 주인 곁으로 온다. */
+function spiritStep(state: GameState, m: Monster, owner: Hero, rng: Rng) {
+    const { level } = state;
     // 보이는 적 중 가장 가까운 놈. 화나지 않은 상점 주인은 적이 아니다.
     let foe: Monster | undefined;
     let best = Infinity;
@@ -3963,7 +3984,7 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = pickSkill(state, hero, cmd.option);
                 break;
             case "classSkill":
-                acted = useClassSkill(state, hero, rng, cmd.ingredients);
+                acted = useClassSkill(state, hero, rng, cmd.ingredients, cmd.element);
                 break;
             case "putOn":
                 acted = putOn(state, hero, cmd.letter);
