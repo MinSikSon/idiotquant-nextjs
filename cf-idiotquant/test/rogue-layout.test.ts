@@ -408,11 +408,12 @@ test("지도의 이름표는 한 칸을 넘지 않는다", () => {
         const body = s.slice(at, end > at ? end : s.length);
         assert.match(body, /width:\s*cell\.w,\s*height:\s*cell\.h/, "상자가 한 칸 크기가 아니다");
         assert.match(body, /overflow-hidden/, "칸을 넘긴 것을 안 잘라 낸다");
-        assert.match(body, /scaleX\(/, "가로만 누르지 않는다 — 균등 축소면 글자가 절반으로 준다");
+        assert.match(body, /lengthAdjust: "spacingAndGlyphs"/, "가로만 누르지 않는다 — 균등 축소면 글자가 절반으로 준다");
         assert.match(body, /fontSize:\s*font/, "글꼴 크기를 칸에서 안 되짚는다");
-        // 누르기 전 글자는 제 자리보다 넓다 — 가운데 정렬(grid)에 맡기면 왼쪽에 붙은 채 넘쳐
-        // 한글이 옆으로 잘린다(390px 에서 봤다). 자리 가운데에 세우고 거기서 누른다.
-        assert.match(body, /translateX\(-50%\) scaleX\(/, "글자를 자리 가운데에 세우지 않는다 — 한글이 옆으로 잘린다");
+        // CSS `scaleX` 로 절반 아래까지 누르면(한 자 · 서너 자) 기기에 따라 한글이 잘렸다.
+        // 폭은 브라우저가 맞추게 한다 — SVG `textLength` 는 그 글자를 정확히 자리 폭에 그린다.
+        assert.match(body, /textLength: slotW - 2 \* pad/, "글자를 자리 폭에 맞춰 그리지 않는다 — 한글 한 자·서너 자가 잘린다");
+        assert.doesNotMatch(body, /scaleX\(/, "CSS 로 누르는 길이 남았다 — 기기에 따라 한글이 잘린다");
     }
 
     // ── ③ **쓰러진 사람에게는 안 붙인다** — `†` 를 덮으면 생사가 지도에서 안 보인다

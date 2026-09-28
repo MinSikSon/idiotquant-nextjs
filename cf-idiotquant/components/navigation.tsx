@@ -273,7 +273,7 @@ export function NavbarWithSimpleLinks() {
   return (
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
-      <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r", retroScope,
+      <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r",
         barStyle ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
         style={barStyle}>
 
@@ -378,7 +378,7 @@ export function NavbarWithSimpleLinks() {
       </aside>
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-4", retroScope,
+      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-4",
         barStyle ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
         style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">

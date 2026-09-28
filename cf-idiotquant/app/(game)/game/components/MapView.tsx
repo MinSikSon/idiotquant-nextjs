@@ -124,7 +124,7 @@ const LEADING = 1.32;
  * ── 크기 ────────────────────────────────────────────────────────────
  * 390px 에서 한 칸은 **7.8 × 17.16px**. 넉 자를 한 줄에 놓으면 글자 하나가 1.95px 라
  * 브라우저가 그리지도 못한다(재 봤다 — 얼룩으로 나온다). **두 줄로 나누면** 줄당
- * 8.58px 을 쓰고, 가로만 눌러(`scaleX`) 두 글자를 한 칸 폭에 앉힌다.
+ * 8.58px 을 쓰고, 가로만 눌러(SVG `textLength`) 두 글자를 한 칸 폭에 앉힌다.
  * 한 글자 이름은 작게 줄일 까닭이 없다 — 한글 한 글자와 기호 하나는 칸 전체를 쓴다.
  * 세로를 안 줄이는 것이 핵심이다 — 균등 축소면 6.5px 로 떨어진다.
  *
@@ -148,49 +148,47 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
     const rows = Math.ceil(chars.length / cols);
     const slotW = cell.w / cols;
     const font = cell.h / rows;
-    // 누를 비율은 **그려진 글자의 폭을 재서** 정한다. 한글은 기기마다 다른 대체 글꼴로
-    // 그려져 폭이 1em 보다 넓기도 하다 — 짐작으로 누르면 덜 눌린 오른쪽 열이 칸 밖으로 잘린다.
-    // `offsetWidth` 는 `transform` 전의 폭이라 누른 뒤에 다시 재도 값이 안 바뀐다.
-    const glyphs = useRef<(HTMLSpanElement | null)[]>([]);
-    useLayoutEffect(() => {
-        const fit = () => {
-            for (const el of glyphs.current) {
-                if (!el?.offsetWidth) continue;
-                el.style.transform = `translateX(-50%) scaleX(${Math.min(1, slotW / el.offsetWidth)})`;
-            }
-        };
-        fit();
-        // 웹 글꼴이 늦게 도착하면 폭이 바뀐다.
-        let live = true;
-        document.fonts?.ready.then(() => live && fit());
-        return () => { live = false; };
-    }, [nick, slotW, font]);
+    // **SVG 의 `textLength` 로 누른다.** 전에는 CSS `scaleX` 로 눌렀는데, 누르기 전 글자
+    // 상자가 칸보다 훨씬 넓어지는 때(한 자 · 서너 자 — 절반 아래로 눌러야 한다)에 기기에 따라
+    // 글자가 잘렸다(두 자는 거의 안 눌러서 멀쩡했다). `textLength` + `spacingAndGlyphs` 는
+    // 브라우저가 **그 글자를 정확히 그 폭에 그린다** — 글꼴 폭을 재지도 짐작하지도 않는다.
     return (
         <span
             aria-hidden
             className="pointer-events-none absolute overflow-hidden"
             style={{ left, top, width: cell.w, height: cell.h, background: bg }}
         >
-            {chars.map((ch, i) => (
-                <span
-                    key={i}
-                    ref={(el) => { glyphs.current[i] = el; }}
-                    className="absolute font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
-                    style={{
-                        // 글자 상자는 누르기 전 폭이라 제 자리보다 넓다 — 가운데 정렬에 맡기면
-                        // 왼쪽에 붙은 채 넘쳐 옆으로 잘린다. 자리의 **가운데**에 세우고 거기서 누른다.
-                        left: (i % cols + 0.5) * slotW,
-                        top: Math.floor(i / cols) * font,
-                        height: font,
-                        color: ink,
-                        fontSize: font,
-                        lineHeight: `${font}px`,
-                        // 누르는 비율은 위 `fit` 이 잰 폭으로 정한다(그리기 전에 돈다).
-                    }}
-                >
-                    {ch}
-                </span>
-            ))}
+            <svg
+                width={cell.w}
+                height={cell.h}
+                className="absolute inset-0 block font-[family-name:var(--font-plex-mono)] font-bold"
+                // 세로도 줄 높이를 꽉 채우면 한글 받침이 아래 칸 밖으로 잘린다 — 줄의 85% 로 그린다.
+                style={{ fill: ink, fontSize: font * 0.85 }}
+            >
+                {chars.map((ch, i) => {
+                    const wide = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch);
+                    // 안 누른 폭의 짐작 — **누를지 말지만** 가른다(영문 두 자는 칸보다 좁아 안 넓힌다).
+                    // 전각은 1em, 영문·숫자는 지도 글자 폭(`cell.w`, 글꼴 `cell.h / LEADING`)의 환산.
+                    const natural = (wide ? font : cell.w * (font / (cell.h / LEADING))) * 0.85;
+                    // 글자 폭(advance)보다 **획이 오른쪽으로 더 나가는** 글꼴이 있다(굵기를 흉내 낸 한글 등).
+                    // 자리 폭을 꽉 채우면 맨 오른쪽 열의 끝이 칸 밖으로 잘린다 — 양옆에 틈을 두고 앉힌다.
+                    const pad = slotW * 0.15;
+                    const squeeze = natural > slotW - 2 * pad;
+                    return (
+                        <text
+                            key={i}
+                            x={squeeze ? (i % cols) * slotW + pad : (i % cols + 0.5) * slotW}
+                            // 기준선을 직접 잡는다 — `dominant-baseline: central` 은 브라우저마다 달라 한글이
+                            // 아래로 처졌다. 한글·대문자의 획은 기준선 위 약 0.7em 이라 그 가운데를 줄 가운데에 둔다.
+                            y={(Math.floor(i / cols) + 0.5) * font + font * 0.85 * 0.35}
+                            textAnchor={squeeze ? "start" : "middle"}
+                            {...(squeeze ? { textLength: slotW - 2 * pad, lengthAdjust: "spacingAndGlyphs" } : {})}
+                        >
+                            {ch}
+                        </text>
+                    );
+                })}
+            </svg>
         </span>
     );
 }
