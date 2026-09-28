@@ -894,6 +894,7 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
     // 굴착은 굴이 늘어나고(부스러기가 남는다), 부순 벽 칸마다 흙먼지가 인다
     {
         assert.deepEqual(frames("digging").map((f) => f.length).slice(0, path.length), [1, 2, 3, 4, 5], "굴착의 굴이 늘어나지 않는다");
+        assert.ok(frames("digging").slice(0, path.length).every((f) => f.at(-1)!.ch === "#"), "굴착의 앞머리가 `#` 로 통일되지 않았다");
         const s = newGame(109);
         const wand = makeItem("wand", "digging", 983, -1, -1);
         wand.charges = 2;

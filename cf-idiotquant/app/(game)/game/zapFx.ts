@@ -48,9 +48,9 @@ export const ZAP_FX: Record<string, ZapFx> = {
     fire: { mode: "beam", stepMs: 35, ink: "var(--rg-trap)", glyphs: ["*", "&"], tailInk: "var(--rg-anvil)", impact: { ink: "var(--rg-trap)", bg: "rgba(249, 115, 22, 0.55)" }, ring: { bg: "rgba(239, 68, 68, 0.28)" }, burst: 1, impactMs: 340 },
     // 얼음 광선이 천천히 뻗고, 끝이 얼어붙은 듯 오래 남는다.
     cold: { mode: "beam", stepMs: 50, ink: "var(--rg-scroll)", glyphs: ["*"], tailInk: "var(--rg-scroll)", impact: { ink: "var(--rg-scroll)", bg: "rgba(56, 189, 248, 0.5)" }, ring: { bg: "rgba(186, 230, 253, 0.3)" }, burst: 1, impactMs: 520 },
-    // 바위를 갈아 내며 **굴이 늘어난다** — 지나온 자리에 부스러기(`:`)가 남고, 부순 벽 칸마다
+    // 바위를 갈아 내며 **굴이 늘어난다**(앞머리는 늘 굴 글자 `#`) — 지나온 자리에 부스러기(`:`)가 남고, 부순 벽 칸마다
     // 흙먼지가 일며 끝에서 먼지가 둘레로 퍼진다. 화면이 묵직하게 흔들린다.
-    digging: { mode: "beam", stepMs: 85, ink: "var(--rg-anvil)", glyphs: ["#", "%"], tailGlyph: ":", tailInk: "var(--rg-door)", impact: { ink: "var(--rg-door)", bg: "rgba(146, 64, 14, 0.5)" }, ring: { bg: "rgba(180, 120, 60, 0.25)" }, burst: 1, crumble: true, impactMs: 420, shake: true },
+    digging: { mode: "beam", stepMs: 85, ink: "var(--rg-anvil)", glyphs: ["#"], tailGlyph: ":", tailInk: "var(--rg-door)", impact: { ink: "var(--rg-door)", bg: "rgba(146, 64, 14, 0.5)" }, ring: { bg: "rgba(180, 120, 60, 0.25)" }, burst: 1, crumble: true, impactMs: 420, shake: true },
     // 은빛 고리가 오가고, **쏜 자리와 맞은 자리가 함께** 번쩍인다 — 자리가 바뀌었다.
     swapping: { mode: "bolt", stepMs: 30, ink: "var(--rg-weapon)", glyphs: ["o", "0"], impact: { ink: "var(--rg-weapon)", bg: "rgba(148, 163, 184, 0.5)" }, impactMs: 320, bothEnds: true },
     // 바람 물결이 길게 꼬리를 끌며 휩쓸고 지나간다.
