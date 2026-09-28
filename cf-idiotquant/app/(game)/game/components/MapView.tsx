@@ -19,6 +19,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { glyphAt } from "@/lib/rogue/game";
+import { hasRing } from "@/lib/rogue/hero";
 import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
 import type { ZapCell } from "../zapFx";
 
@@ -204,6 +205,7 @@ interface Run {
     text: string;
     ink: string;
     bg?: string;
+    opacity?: number;
 }
 
 /**
@@ -300,6 +302,10 @@ export default function MapView({
             const g = glyphAt(state, x, y, who);
             const ch = g?.ch ?? " ";
             const flash = cellFlashes[`${x},${y}`];
+            const characterIndex = g?.kind === "hero" || g?.kind === "ally"
+                ? state.heroes.findIndex((h) => h.x === x && h.y === y)
+                : -1;
+            const opacity = characterIndex >= 0 && hasRing(state.heroes[characterIndex], "stealth") ? 0.55 : 1;
             // 협동이면 `@` 는 **사람마다 정한 색** — 조종을 넘겨도 누가 누구인지 안 바뀐다.
             const p = (g?.kind === "hero" || g?.kind === "ally") && state.heroes.length > 1
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
@@ -307,10 +313,10 @@ export default function MapView({
             const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent");
             const bg = flash?.bg ?? PARTY_BG[p] ?? monsterBg(g?.kind);
             const last = runs[runs.length - 1];
-            if (last && last.ink === ink && last.bg === bg) {
+            if (last && last.ink === ink && last.bg === bg && last.opacity === opacity) {
                 last.text += ch;
             } else {
-                runs.push({ text: ch, ink, bg });
+                runs.push({ text: ch, ink, bg, opacity });
             }
         }
         rows.push(runs);
@@ -337,7 +343,7 @@ export default function MapView({
                     {rows.map((runs, i) => (
                         <div key={i}>
                             {runs.map((r, j) => (
-                                <span key={j} style={{ color: r.ink, backgroundColor: r.bg }}>
+                                <span key={j} style={{ color: r.ink, backgroundColor: r.bg, opacity: r.opacity }}>
                                     {r.text}
                                 </span>
                             ))}
