@@ -409,10 +409,10 @@ test("지도의 이름표는 한 칸을 넘지 않는다", () => {
         assert.match(body, /width:\s*cell\.w,\s*height:\s*cell\.h/, "상자가 한 칸 크기가 아니다");
         assert.match(body, /overflow-hidden/, "칸을 넘긴 것을 안 잘라 낸다");
         assert.match(body, /lengthAdjust: "spacingAndGlyphs"/, "가로만 누르지 않는다 — 균등 축소면 글자가 절반으로 준다");
-        assert.match(body, /fontSize:\s*font/, "글꼴 크기를 칸에서 안 되짚는다");
+        assert.match(body, /const glyphH = font \*[\s\S]*fontSize:\s*glyphH/, "글꼴 크기를 칸에서 안 되짚는다");
         // CSS `scaleX` 로 절반 아래까지 누르면(한 자 · 서너 자) 기기에 따라 한글이 잘렸다.
         // 폭은 브라우저가 맞추게 한다 — SVG `textLength` 는 그 글자를 정확히 자리 폭에 그린다.
-        assert.match(body, /textLength: slotW - 2 \* pad/, "글자를 자리 폭에 맞춰 그리지 않는다 — 한글 한 자·서너 자가 잘린다");
+        assert.match(body, /textLength: glyphW/, "글자를 자리 폭에 맞춰 그리지 않는다 — 한글 한 자·서너 자가 잘린다");
         assert.doesNotMatch(body, /scaleX\(/, "CSS 로 누르는 길이 남았다 — 기기에 따라 한글이 잘린다");
     }
 

@@ -146,8 +146,15 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
     // 글자마다 제 자리를 따로 갖게 해서 한글과 영문이 섞여도 자리가 안 밀린다.
     const cols = chars.length > 2 ? 2 : 1;
     const rows = Math.ceil(chars.length / cols);
-    const slotW = cell.w / cols;
     const font = cell.h / rows;
+    // 틈은 **칸의 바깥 끝에만** 넉넉히 둔다. 획이 글자 폭(advance)보다 오른쪽으로 더 나가는
+    // 글꼴(굵기를 흉내 낸 한글 등)은 맨 오른쪽 열의 끝만 칸 밖으로 잘린다 — 오른쪽 끝을 조금 더 비운다.
+    // 가운데 틈까지 넓히면 글자만 작아진다(자리마다 양옆 15% 를 비웠더니 가운데가 30% 비었다).
+    const edgeL = cell.w * 0.04;
+    const edgeR = cell.w * 0.08;
+    const gap = cell.w * 0.04;
+    const glyphW = (cell.w - edgeL - edgeR - (cols - 1) * gap) / cols;
+    const glyphH = font * 0.92;
     // **SVG 의 `textLength` 로 누른다.** 전에는 CSS `scaleX` 로 눌렀는데, 누르기 전 글자
     // 상자가 칸보다 훨씬 넓어지는 때(한 자 · 서너 자 — 절반 아래로 눌러야 한다)에 기기에 따라
     // 글자가 잘렸다(두 자는 거의 안 눌러서 멀쩡했다). `textLength` + `spacingAndGlyphs` 는
@@ -162,27 +169,25 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
                 width={cell.w}
                 height={cell.h}
                 className="absolute inset-0 block font-[family-name:var(--font-plex-mono)] font-bold"
-                // 세로도 줄 높이를 꽉 채우면 한글 받침이 아래 칸 밖으로 잘린다 — 줄의 85% 로 그린다.
-                style={{ fill: ink, fontSize: font * 0.85 }}
+                // 세로도 줄 높이를 꽉 채우면 한글 받침이 아래 칸 밖으로 잘린다 — 줄의 92% 로 그린다.
+                style={{ fill: ink, fontSize: glyphH }}
             >
                 {chars.map((ch, i) => {
                     const wide = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch);
                     // 안 누른 폭의 짐작 — **누를지 말지만** 가른다(영문 두 자는 칸보다 좁아 안 넓힌다).
                     // 전각은 1em, 영문·숫자는 지도 글자 폭(`cell.w`, 글꼴 `cell.h / LEADING`)의 환산.
-                    const natural = (wide ? font : cell.w * (font / (cell.h / LEADING))) * 0.85;
-                    // 글자 폭(advance)보다 **획이 오른쪽으로 더 나가는** 글꼴이 있다(굵기를 흉내 낸 한글 등).
-                    // 자리 폭을 꽉 채우면 맨 오른쪽 열의 끝이 칸 밖으로 잘린다 — 양옆에 틈을 두고 앉힌다.
-                    const pad = slotW * 0.15;
-                    const squeeze = natural > slotW - 2 * pad;
+                    const natural = wide ? glyphH : cell.w * (glyphH / (cell.h / LEADING));
+                    const squeeze = natural > glyphW;
+                    const x0 = edgeL + (i % cols) * (glyphW + gap);
                     return (
                         <text
                             key={i}
-                            x={squeeze ? (i % cols) * slotW + pad : (i % cols + 0.5) * slotW}
+                            x={squeeze ? x0 : x0 + glyphW / 2}
                             // 기준선을 직접 잡는다 — `dominant-baseline: central` 은 브라우저마다 달라 한글이
-                            // 아래로 처졌다. 한글·대문자의 획은 기준선 위 약 0.7em 이라 그 가운데를 줄 가운데에 둔다.
-                            y={(Math.floor(i / cols) + 0.5) * font + font * 0.85 * 0.35}
+                            // 아래로 처졌다. 한글 획의 가운데(기준선 위 약 0.29em, 390px 에서 쟀다)를 줄 가운데에 둔다.
+                            y={(Math.floor(i / cols) + 0.5) * font + glyphH * 0.29}
                             textAnchor={squeeze ? "start" : "middle"}
-                            {...(squeeze ? { textLength: slotW - 2 * pad, lengthAdjust: "spacingAndGlyphs" } : {})}
+                            {...(squeeze ? { textLength: glyphW, lengthAdjust: "spacingAndGlyphs" } : {})}
                         >
                             {ch}
                         </text>
