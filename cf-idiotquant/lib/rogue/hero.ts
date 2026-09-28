@@ -254,6 +254,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         armorSkills: {},
         armorTraining: {},
         classSkillDepth: 0,
+        spiritTurn: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
     for (const item of startingItems) {

@@ -441,6 +441,8 @@ export interface Hero {
     armorTraining?: Record<string, number>;
     /** 전직 기술을 마지막으로 쓴 층. 같은 층에서는 한 번만 쓸 수 있다. */
     classSkillDepth?: number;
+    /** 정령술사가 마지막으로 정령을 부른 턴(T). 같은 층에서 다시 부르기까지의 기다림을 잰다(`spiritWait`). */
+    spiritTurn?: number;
     /**
      * **파다 만 자리** — 곡괭이는 한 번에 안 뚫린다(`digStep`). 같은 층의 같은 칸을 계속
      * 파면 `effort` 가 쌓이고, 다른 칸으로 돌리면 처음부터다. 발밑을 파는 중이면 `x·y` 가

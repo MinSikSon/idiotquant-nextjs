@@ -355,6 +355,8 @@ function normalize(s: Saved): GameState | null {
         // v11 이하에는 전직 액티브 기술이 없다. 0은 어느 실제 층과도 같지 않아
         // 되읽은 뒤 현재 층에서 한 번 쓸 수 있다.
         classSkillDepth: Math.max(0, num(h.classSkillDepth, 0)),
+        // 정령을 다시 부르는 기다림이 생기기 전의 판에는 없다 — 0이면 곧바로 부를 수 있다.
+        spiritTurn: Math.max(0, num(h.spiritTurn, 0)),
     });
     const heroes: Hero[] = saved.map(fixHero);
 

@@ -75,6 +75,7 @@ import {
     ADVANCE_LEVEL,
     ADVANCED_SPIRIT_TURNS,
     ORIGINS,
+    SPIRIT_COOLDOWN,
     SPIRIT_TURNS,
 } from "./origins";
 import {
@@ -537,7 +538,7 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
     // **외상을 든 채 층을 떠나면 훔친 것이다** — 구멍으로 떨어졌든 발밑을 팠든 같다.
     if (state.level) for (const h of state.heroes) if (h.pack.some((it) => it.unpaid)) robShop(state, h);
     if (state.level) {
-        // **정령은 층을 못 넘는다** — 그 층에 매인 것이다(「층마다 한 번」과 짝). 두고 온 층에
+        // **정령은 층을 못 넘는다** — 그 층에 매인 것이다(새 층에서는 곧바로 다시 부른다). 두고 온 층에
         // 남겨 두면 되돌아왔을 때 주인 없이 서 있다.
         state.level.monsters = state.level.monsters.filter((m) => !m.spirit);
         state.levels[state.level.depth] = state.level;
@@ -2161,8 +2162,8 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
  * 실제로 효과가 생긴 뒤에만 사용한 층을 적고 턴을 쓴다.
  */
 function useClassSkill(state: GameState, hero: Hero, rng: Rng, ingredients?: [string, string]): boolean {
-    // 정령술사의 소환은 **직업 특성**이라 레벨 1부터 쓴다. 「층마다 한 번」은 전직 기술과 같은 칸을 쓴다 —
-    // 정령술사의 전직 기술은 지속 효과(정령 화신)라 칸이 겹치지 않는다.
+    // 정령술사의 소환은 **직업 특성**이라 레벨 1부터 쓴다. 부른 층은 전직 기술과 같은 칸(`classSkillDepth`)에
+    // 적는다 — 정령술사의 전직 기술은 지속 효과(정령 화신)라 칸이 겹치지 않는다. 같은 층의 재소환은 `spiritWait`.
     if (hero.origin === "elementalist") return summonSpirit(state, hero, rng);
     if (hero.level < ADVANCE_LEVEL) {
         say(state, `레벨 ${ADVANCE_LEVEL}에 전직해야 쓸 수 있다.`);
@@ -3311,7 +3312,8 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
 
 // ── 정령 ─────────────────────────────────────────────────────────────────────
 //
-// 정령술사가 층마다 한 번 부르는 편. **몬스터의 한 칸을 빌려 쓴다**(`Monster.spirit`) — 적의
+// 정령술사가 부르는 편 — 새 층에서는 곧바로, 같은 층에서는 `SPIRIT_COOLDOWN` 턴 뒤 다시.
+// **몬스터의 한 칸을 빌려 쓴다**(`Monster.spirit`) — 적의
 // 차례(`monsterTurns`)에 같이 움직이고, 같은 명중·피해 규칙(`strikeMonster`)으로 싸운다.
 //
 //   ① 가까운 **보이는** 적을 쫓아 친다. 적이 없으면 주인 곁으로 돌아온다.
@@ -3339,10 +3341,20 @@ function spiritSpot(state: GameState, hero: Hero, rng: Rng): Pos | undefined {
 
 const SPIRIT_ELEMENTS: SpiritElement[] = ["fire", "water", "air", "earth"];
 
-/** 정령 소환 — 층마다 한 번. 설 자리가 없으면 턴도 기회도 안 쓴다. */
+/**
+ * 정령을 다시 부르기까지 남은 턴 — `0` 이면 지금 부를 수 있다. 새 층에서는 기다리지 않고,
+ * 같은 층에서는 마지막으로 부른 턴에서 `SPIRIT_COOLDOWN` 이 지나야 한다. 화면의 ★ 단추도 이 값을 읽는다.
+ */
+export function spiritWait(state: GameState, hero: Hero): number {
+    if (hero.classSkillDepth !== state.level.depth) return 0;
+    return Math.max(0, (hero.spiritTurn ?? 0) + SPIRIT_COOLDOWN - state.turn);
+}
+
+/** 정령 소환. 아직 기다려야 하거나 설 자리가 없으면 턴도 기회도 안 쓴다. */
 function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
-    if (hero.classSkillDepth === state.level.depth) {
-        say(state, "이 층에서는 이미 정령을 불렀다.");
+    const wait = spiritWait(state, hero);
+    if (wait > 0) {
+        say(state, `정령을 다시 부르려면 ${wait}턴 더 지나야 한다.`);
         return false;
     }
     const spot = spiritSpot(state, hero, rng);
@@ -3364,6 +3376,7 @@ function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
     );
     state.level.monsters.push(spirit);
     hero.classSkillDepth = state.level.depth;
+    hero.spiritTurn = state.turn;
     say(state, `✦ ${spirit.def.name}을(를) 불러냈다. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
     return true;
 }
@@ -3376,6 +3389,9 @@ function summonSpirit(state: GameState, hero: Hero, rng: Rng): boolean {
 function strikeMonster(state: GameState, attacker: Monster, defender: Monster, rng: Rng) {
     const aName = monsterName(attacker);
     const dName = monsterName(defender);
+    // 정령이 낀 싸움은 줄 끝에 **정령의 체력**을 적는다 — 언제 흩어질지 기록만 보고도 안다.
+    const spirit = attacker.spirit ? attacker : defender.spirit ? defender : undefined;
+    const spiritHp = () => (spirit ? ` (정령 HP ${Math.max(0, spirit.hp)}/${spirit.maxHp})` : "");
     let total = 0;
     let hits = 0;
     for (const dice of attacker.def.damage) {
@@ -3386,12 +3402,12 @@ function strikeMonster(state: GameState, attacker: Monster, defender: Monster, r
         total += pierce(damageRoll(dice, monsterDamBonus(attacker), a.crit, rng).total, monsterDefense(defender));
     }
     if (hits === 0) {
-        say(state, `${aName}의 공격이 ${dName}을(를) 빗나갔다.`);
+        say(state, `${aName}의 공격이 ${dName}을(를) 빗나갔다.${spiritHp()}`);
         return;
     }
     defender.hp -= total;
     defender.awake = true;
-    say(state, withDamage(`${aName}이(가) ${dName}을(를) 쳤다.`, total));
+    say(state, withDamage(`${aName}이(가) ${dName}을(를) 쳤다.`, total) + spiritHp());
     if (defender.hp > 0) return;
     if (defender.spirit) {
         say(state, `${dName}이(가) 흩어졌다.`);

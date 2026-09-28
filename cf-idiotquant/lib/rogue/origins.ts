@@ -4,7 +4,7 @@
  * 원작 Rogue 스탯 체계(Hp, Str, Arm, Exp, Gold)에 기반하여 7가지 시작 클래스를 제공합니다.
  * 레인저는 NetHack 의 Ranger 를 옮겼다 — 활·화살 묶음과 연사(multishot) +1.
  * 고고학자는 NetHack 의 Archeologist 를 옮겼다 — 곡괭이로 벽과 발밑을 판다.
- * 정령술사는 층마다 한 번 원소 정령을 불러 함께 싸운다.
+ * 정령술사는 원소 정령을 불러 함께 싸운다 — 층에 들어서면 곧바로, 같은 층에서는 턴이 쌓이면 다시.
  */
 
 import { makeItem } from "./items";
@@ -61,6 +61,11 @@ export const ARCHEOLOGIST_DIG_MULT = 2;
  */
 export const SPIRIT_TURNS = 20;
 export const ADVANCED_SPIRIT_TURNS = 40;
+/**
+ * 같은 층에서 정령을 **다시** 부르기까지 지나야 하는 턴(T). 새 층에 들어서면 기다리지 않는다.
+ * 전직 정령이 머무는 턴(40)보다 길게 둬서 정령이 둘 서는 일이 없다.
+ */
+export const SPIRIT_COOLDOWN = 60;
 
 export interface OriginDef {
     id: HeroOrigin;
@@ -324,7 +329,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         iconInk: "var(--rg-wand)",
         description: "불·물·바람·땅의 정령을 불러 곁에 세우고 함께 싸우는 술사.",
         traitName: "정령 소환",
-        traitDescription: "층마다 한 번 곁에 원소 정령을 부른다(★ 단추) · 정령은 나를 따라다니며 가까운 적을 친다 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
+        traitDescription: "곁에 원소 정령을 부른다(★ 단추) · 새 층에서는 곧바로, 같은 층에서는 60턴 뒤 다시 · 정령은 나를 따라다니며 가까운 적을 친다 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
         weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "정령 화신",
         advancedSkillDescription: "정령이 두 번 때리고 40턴 머문다",
@@ -332,7 +337,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         baseHp: 11,
         baseStr: 13,
         createStartingItems: (nextId) => {
-            // 싸움은 정령이 맡는다 — 손에는 가벼운 단검 하나. 정령은 층마다 한 번이라
+            // 싸움은 정령이 맡는다 — 손에는 가벼운 단검 하나. 정령을 다시 부르기까지 턴이 들어
             // 부르기 전·흩어진 뒤를 버틸 회복 물약을 하나 쥐여 준다.
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
             dagger.plusHit = 1;
