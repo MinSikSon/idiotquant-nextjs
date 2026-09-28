@@ -65,6 +65,8 @@ const INK: Record<string, string> = {
     "trap-dim": "var(--rg-trap-dim)",
     anvil: "var(--rg-anvil)",
     "anvil-dim": "var(--rg-anvil-dim)",
+    altar: "var(--rg-altar)",
+    "altar-dim": "var(--rg-altar-dim)",
     stairs: "var(--rg-stairs)",
     door: "var(--rg-door)",
     "door-dim": "var(--rg-door-dim)",

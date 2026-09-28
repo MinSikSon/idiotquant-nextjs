@@ -309,6 +309,17 @@ export interface Level {
      * 가게의 물건은 그냥 바닥의 물건이 된다. 옛 저장에는 없다.
      */
     shop?: ShopState | null;
+    /**
+     * 변환 제단 — 물건을 올려놓으면(`drop`) **같은 분류의 다른 물건**으로 바뀌거나 제단이
+     * 삼킨다. 선택 제단(`special.kind === "altar"`)과는 다른 것이고, 모루처럼 칸이 아니라
+     * 자리다. `uses` 가 0 이면 불이 꺼진 채 남는다. 옛 저장에는 없다 — 그 층에는 없는 것이 맞다.
+     */
+    transmuteAltar?: TransmuteAltar | null;
+}
+
+export interface TransmuteAltar extends Pos {
+    /** 남은 변환 횟수. 삼켜도 한 번이다. */
+    uses: number;
 }
 
 export interface ShopState {

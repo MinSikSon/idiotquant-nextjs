@@ -1366,6 +1366,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         special: null,
         altarUsed: false,
         shop: null,
+        transmuteAltar: null,
     };
 
     // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는
@@ -1407,8 +1408,26 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         }
     }
 
+    // 변환 제단은 **함정 뒤에** 굴린다 — 앞에서 굴리면 모든 층의 함정 자리가 바뀐다.
+    // 1층에는 없다(함정과 같은 까닭). 특수 방·금고에는 안 선다 — 선택 제단 옆에 또 제단이
+    // 서면 둘이 헷갈리고, 상점 안이면 가게 물건을 올려 바꾸는 길이 된다. 미로 방·없는 방은
+    // 방이 아니라 통로라 뺀다.
+    if (depth > 1 && rng.rnd(100) < TRANSMUTE_ALTAR_CHANCE) {
+        const avoid = [down, level.upStairs, level.anvil, ...level.traps].filter((p): p is Pos => !!p);
+        const spots = level.rooms.flatMap((r, i) =>
+            r.gone || r.maze || r.vault || i === level.special?.room ? [] : openTiles(level, r, avoid),
+        );
+        const p = rng.pick(spots);
+        if (p) level.transmuteAltar = { x: p.x, y: p.y, uses: TRANSMUTE_ALTAR_USES };
+    }
+
     return level;
 }
+
+/** 변환 제단이 설 확률(%) — 2층부터, 층마다 따로 굴린다. */
+export const TRANSMUTE_ALTAR_CHANCE = 25;
+/** 제단 하나로 바꿀 수 있는 횟수 — 잡동사니를 몽땅 올려 층 드롭을 다시 뽑는 것을 막는다. */
+export const TRANSMUTE_ALTAR_USES = 3;
 
 /**
  * 상점의 자리를 잡는다 — 문 하나, 주인이 막아 서는 문 안쪽 한 칸, 비켜 서는 한 칸.

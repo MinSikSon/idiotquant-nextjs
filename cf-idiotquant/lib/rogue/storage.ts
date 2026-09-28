@@ -30,7 +30,8 @@ import { heroDefense, mergeStacks } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
-import { MAP_H, MAP_W, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ShopState, type SpiritBond } from "./types";
+import { TRANSMUTE_ALTAR_USES } from "./dungeon";
+import { MAP_H, MAP_W, inBounds, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ShopState, type SpiritBond, type TransmuteAltar } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -40,7 +41,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 14;
+const VERSION = 15;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -168,7 +169,18 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         altarUsed: raw.altarUsed === true,
         mutator: raw.mutator ?? null,
         shop: fixShop(raw.shop, rooms.length),
+        // 옛 저장에는 변환 제단이 없다 — 모루와 같은 까닭으로 **없는 것이 맞다.**
+        transmuteAltar: fixTransmuteAltar(raw.transmuteAltar),
     };
+}
+
+/** 변환 제단 — 모양이 틀리면 없는 것으로 한다. 횟수는 0~최대로 자른다(남이 보낸 판도 이 길이다). */
+function fixTransmuteAltar(raw: unknown): TransmuteAltar | null {
+    if (!raw || typeof raw !== "object") return null;
+    const a = raw as Partial<TransmuteAltar>;
+    if (!Number.isInteger(a.x) || !Number.isInteger(a.y) || !inBounds(a.x!, a.y!)) return null;
+    const uses = Number.isInteger(a.uses) ? Math.max(0, Math.min(TRANSMUTE_ALTAR_USES, a.uses!)) : 0;
+    return { x: a.x!, y: a.y!, uses };
 }
 
 /**
