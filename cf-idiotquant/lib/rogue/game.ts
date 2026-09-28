@@ -990,6 +990,16 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
             `모루다 — 캠프. 무기·갑옷을 녹여 강화 주문서를 되뽑고, 상자에 ${CHEST_SLOTS}칸까지 맡긴다 (${hero.chest.length}/${CHEST_SLOTS} · 다음 판까지 남는다).`,
         );
     }
+    // 변환 제단도 밟았을 때 말한다 — 「내려놓는다」가 곧 쓰는 법이라 말 안 하면 아무도 모른다.
+    const altar = level.transmuteAltar;
+    if (altar && altar.x === nx && altar.y === ny) {
+        say(
+            state,
+            altar.uses > 0
+                ? `변환 제단이다 — 물건을 내려놓으면 같은 종류의 다른 물건으로 바뀐다. ${TRANSMUTE_SWALLOW_CHANCE}%는 제단이 삼킨다 (남은 ${altar.uses}번).`
+                : "불 꺼진 변환 제단이다.",
+        );
+    }
 
     const trap = level.traps.find((t) => t.x === nx && t.y === ny);
     if (trap) springTrap(state, hero, trap, rng);
@@ -1863,7 +1873,53 @@ function removeRing(state: GameState, hero: Hero, letter: string): boolean {
     return true;
 }
 
-function drop(state: GameState, hero: Hero, letter: string): boolean {
+/** 변환 제단이 올린 물건을 삼킬 확률(%). 삼켜도 횟수는 하나 준다. */
+export const TRANSMUTE_SWALLOW_CHANCE = 30;
+
+/**
+ * 변환 제단이 받는 물건의 분류 — `randomItem` 의 분류로 옮긴다. 강화 주문서는 강화
+ * 주문서끼리만 바뀐다(`"enchant"`). **안 받는 것은 `null`** — 식량(바꿔도 식량이다)·금화·
+ * 증표(이기는 조건이 사라진다)·유물·보석은 제단에 올려도 그냥 내려놓은 것이다.
+ */
+export function transmuteCategory(it: Item): Category | null {
+    switch (it.kind) {
+        case "potion":
+        case "weapon":
+        case "armor":
+        case "ring":
+        case "wand":
+            return it.kind;
+        case "scroll":
+            return ENCHANT_SCROLLS.includes(it.type) ? "enchant" : "scroll";
+        default:
+            return null;
+    }
+}
+
+/**
+ * 변환 제단에 올린다 — **삼키거나, 같은 분류의 새 물건으로 바꿔 제단 위에 둔다.**
+ * 새 물건은 그 층의 드롭 규칙(`randomItem`, 올린 사람의 아이템운)을 그대로 탄다 — 제단이
+ * 등급을 올려 주지 않는다. 받지 않는 물건이면 `false` 를 돌려 보통 내려놓기로 간다.
+ */
+function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean {
+    const altar = state.level.transmuteAltar;
+    if (!altar || altar.x !== hero.x || altar.y !== hero.y || altar.uses <= 0) return false;
+    const cat = it.unpaid ? null : transmuteCategory(it);
+    if (!cat) return false;
+    const name = describe(it, state.known, state.appearance);
+    altar.uses -= 1;
+    if (rng.rnd(100) < TRANSMUTE_SWALLOW_CHANCE) {
+        say(state, `${name}을(를) 제단에 올렸다 — 제단이 삼켰다.`);
+    } else {
+        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat, hero.itemLuck);
+        state.level.items.push(made);
+        say(state, `${name}을(를) 제단에 올렸다 — 빛이 걷히자 ${describe(made, state.known, state.appearance)}이(가) 놓여 있다.`);
+    }
+    if (altar.uses === 0) say(state, "제단의 불빛이 꺼졌다.");
+    return true;
+}
+
+function drop(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
@@ -1879,6 +1935,7 @@ function drop(state: GameState, hero: Hero, letter: string): boolean {
     takeFromPack(hero, it, it.count);
     it.x = hero.x;
     it.y = hero.y;
+    if (offerAtAltar(state, hero, it, rng)) return true;
     level.items.push(it);
     const name = describe(it, state.known, state.appearance);
     if (it.unpaid) {
@@ -3888,7 +3945,7 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = wear(state, hero, cmd.letter);
                 break;
             case "drop":
-                acted = drop(state, hero, cmd.letter);
+                acted = drop(state, hero, cmd.letter, rng);
                 break;
             case "give":
                 acted = give(state, hero, cmd.letter);
@@ -4402,6 +4459,11 @@ export function glyphAt(
     }
     if (level.anvil && level.anvil.x === x && level.anvil.y === y) {
         return { ch: "&", kind: visible ? "anvil" : "anvil-dim" };
+    }
+    // 변환 제단은 넷핵의 글자 `_` 다. 불이 꺼지면 기억 속 색으로 선다.
+    const altar = level.transmuteAltar;
+    if (altar && altar.x === x && altar.y === y) {
+        return { ch: "_", kind: visible && altar.uses > 0 ? "altar" : "altar-dim" };
     }
     switch (t) {
         case T.FLOOR:

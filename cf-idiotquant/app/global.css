@@ -81,6 +81,9 @@
   /* 모루 — 불에 달군 쇠. 함정(붉은색)과 헷갈리지 않게 주황 쪽으로 민다. */
   --rg-anvil: #a55a06;
   --rg-anvil-dim: #d8b183;
+  /* 변환 제단 — 차가운 빛. 모루(주황)·함정(붉은색)과 갈린다. 불이 꺼지면 dim. */
+  --rg-altar: #1c6fa8;
+  --rg-altar-dim: #a9c6db;
   --rg-stairs: #171b1c;
   --rg-door: #7f5310;
   --rg-door-dim: #c5a778;
@@ -141,6 +144,8 @@ html.dark {
   --rg-trap-dim: #7a382f;
   --rg-anvil: #ffa94d;
   --rg-anvil-dim: #7a5326;
+  --rg-altar: #5cc8ff;
+  --rg-altar-dim: #2a5670;
   --rg-stairs: #f0f0f0;
   --rg-door: #c08a45;
   --rg-door-dim: #6a5029;

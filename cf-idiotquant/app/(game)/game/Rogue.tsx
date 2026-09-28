@@ -40,7 +40,9 @@ import {
     setChest,
     spiritWait,
     tombScore,
+    TRANSMUTE_SWALLOW_CHANCE,
 } from "@/lib/rogue/game";
+import { TRANSMUTE_ALTAR_USES } from "@/lib/rogue/dungeon";
 import {
     ARMORS,
     ENCHANT_MAX,
@@ -3295,6 +3297,14 @@ export default function Rogue() {
                                 다만 <b>꺼내는 것도 캠프에서만</b> 합니다 — 새 판은 맨손으로 시작하고, 모루를 찾아
                                 걸어가야 상자가 열립니다. <b className="text-[var(--rg-trap)]">증표는 못 맡깁니다.</b>{" "}
                                 둘이서 할 때는 <b>사람마다 상자가 따로</b>입니다.
+                            </p>
+                            <p className="text-[var(--rg-faint)]">
+                                <b className="text-[var(--rg-altar)]">_</b> 는{" "}
+                                <b className="text-[var(--rg-muted)]">변환 제단</b>입니다. 2층부터 가끔 서고, 그 칸에서
+                                물약·주문서·무기·갑옷·반지·지팡이를 <b>내려놓으면</b> 같은 종류의 다른 물건으로
+                                바뀝니다 — 등급은 그 층의 것입니다.{" "}
+                                <b className="text-[var(--rg-trap)]">{TRANSMUTE_SWALLOW_CHANCE}%는 제단이 삼킵니다.</b>{" "}
+                                제단 하나에 <b>{TRANSMUTE_ALTAR_USES}번</b>이면 불이 꺼집니다.
                             </p>
                             <p className="text-[var(--rg-faint)]">
                                 <b className="text-[var(--rg-gold)]">@</b>(금빛)는{" "}
