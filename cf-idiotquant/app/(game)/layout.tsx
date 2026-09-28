@@ -48,8 +48,7 @@ const plexKr = IBM_Plex_Sans_KR({
     display: "swap",
 });
 
-// **제목은 여기 없다.** 이 레이아웃 밑에 게임이 둘이라(`/game` 과 `/game/imf`) 한 곳에
-// 적으면 둘 중 하나가 남의 이름을 달고 색인된다. 제목은 각 게임의 `layout.tsx` 가 진다.
+// 제목은 게임 라우트의 `layout.tsx` 가 설정한다.
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
     // id 는 표시용이 아니라 표식이다. global.css 의 html:has(#game-canvas) 규칙이 이걸 보고

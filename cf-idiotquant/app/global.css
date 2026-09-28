@@ -189,8 +189,7 @@ html:has(#game-canvas),
 html:has(#game-canvas) body { background-color: #0b0f10; }
 html:has(#game-canvas) { overscroll-behavior-y: none; }
 
-/* Rogue(`/game`)는 **테마를 따라간다** — 옛 게임(`/game/imf`)과 갈리는 자리다.
-   저쪽은 Phaser 캔버스라 언제나 어둡고, 위 규칙이 그 어둠을 뿌리까지 칠한다. 이쪽은
+/* Rogue(`/game`)는 **테마를 따라간다**.
    DOM 이라 밝은 테마가 되고, 그러면 고무줄 자리도 같이 밝아야 한다. `#rogue-root` 가
    `#game-canvas` 안에 있어 두 규칙이 다 걸리므로 **이 규칙이 뒤에 온다.** */
 html:has(#rogue-root),
@@ -325,4 +324,3 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
   /* 깜빡임은 끄되 글자는 남긴다 — 사라지면 "아무 키나 누르세요"를 못 읽는다 */
   .retro-blink { animation: none; opacity: 1; }
 }
-

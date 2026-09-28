@@ -4,10 +4,6 @@
 > `CLAUDE.md` 에 있고, 여기는 그 규칙 하나하나가 **어떤 사고를 치르고 생겼는지**를
 > 적어 둔 자리다. `CLAUDE.md` 가 「무엇을」이라면 이쪽은 「왜」다.
 
-/ 예전에 여기 있던 IMF 로그라이크는 `imf/` 로 옮겼다. 그 게임의 설계 노트는
-`imf/CLAUDE.md` 에 그대로 있다. **읽을 값어치가 있다** — 이 게임이 피하려는 병들이
-거기 다 적혀 있다.
-
 ## 무엇을 만들었나
 
 1980년 Rogue 를 웹으로 옮긴 것. 지하 26층의 **옌더의 증표**를 집어 1층으로 살아
@@ -1545,15 +1541,9 @@ Rogue 가 안 하는 것이고, 뒤의 것은 「죽으면 그것으로 끝」�
 - **`-dim` 은 「기억」이다.** 어두운 테마에서는 더 어둡게 흐려지고, **밝은 테마에서는 더
   밝게** 흐려진다. 방향을 그대로 두면 기억한 칸이 지금 보이는 칸보다 진해져 지도가 거꾸로
   읽힌다. `test/rogue-theme.test.ts` 가 그 방향을 건다.
-- **옛 게임(`/game/imf`)은 테마를 안 따른다.** 저쪽은 Phaser 캔버스라 언제나 어둡다.
-  고무줄 스크롤로 드러나는 문서 뿌리를 칠하는 규칙도 그래서 둘이다 — `#game-canvas`
-  (언제나 어둠)와 `#rogue-root`(테마를 따라감). **뒤에 오는 쪽이 이긴다.**
 - **위·아래·왼쪽 바도 같이 간다**(`components/navigation.tsx`). 게임 화면에서 그 바는
-  기기의 일부라 게임과 같은 바탕이어야 하는데, 한때 `pathname.startsWith("/game")`
-  하나로 두 게임을 묶어서 **밝은 테마에서 종이 위에 검은 바가 얹혔다.** 지금은 갈라
-  본다 — 옛 게임은 어둠을 박고 바 안에 `dark` 를 씌우며, Rogue 는 `--rg-bg` 로 칠하고
-  `dark` 를 **안 씌운다**(앱 테마가 정하게 둔다). 네온 초록(`R.neon`)도 옛 게임에만
-  남겼다: 종이 위에서는 안 읽힌다. `test/rogue-theme.test.ts` 가 그 갈라짐을 건다.
+  기기의 일부라 게임과 같은 바탕이어야 한다. Rogue 는 앱 테마를 따르므로 바탕도
+  `--rg-bg` 에서 가져온다.
 - 테마를 바꾸는 단추는 게임 안에 없다. 위·왼쪽 바의 `ThemeChanger` 가 이미 그 일을 한다 —
   게임이 제 토글을 따로 들면 **테마를 정하는 자리가 둘**이 된다.
 
@@ -2102,7 +2092,7 @@ node --experimental-strip-types --import ./test/register.mjs scripts/measure-rog
 ```bash
 npx tsc --noEmit    # 에러 0
 npm test            # rogue-{dungeon,mapshape,theme,combat,game,items,itemdepth,enchant,…}.test.ts
-npm run build       # /game · /game/imf 라우트
+npm run build       # /game 라우트
 ```
 
 ### `test()` 하나가 **여러 주장 묶음**을 담는다

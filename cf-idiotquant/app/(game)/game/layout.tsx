@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-// `/game` 은 Rogue(1980) 클론이다. 옛 게임은 `/game/imf` 로 옮겼고 제목도 거기서 진다.
+// `/game` 은 Rogue(1980) 클론이다.
 export const metadata: Metadata = {
     title: "로그 - 웹에서 하는 오리지널 로그라이크",
     description:

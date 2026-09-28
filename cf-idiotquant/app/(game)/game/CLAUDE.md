@@ -528,7 +528,7 @@
 ```bash
 npx tsc --noEmit                        # 에러 0
 npm test                                # 275개
-npm run build                           # /game · /game/imf
+npm run build                           # /game
 node --experimental-strip-types --import ./test/register.mjs scripts/measure-rogue.mjs 300
 ```
 

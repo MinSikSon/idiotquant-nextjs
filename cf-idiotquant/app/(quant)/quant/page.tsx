@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Filter, Search, Calculator, Gamepad2 } from 'lucide-react';
+import { ArrowRight, Filter, Search, Calculator } from 'lucide-react';
 import { STRATEGY_PRESETS_CLIENT } from '@/lib/constants/strategies';
 
 // "퀀트" 를 검색해 들어온 사람이 읽는 글.
@@ -88,14 +88,6 @@ const TOOLS = [
     icon: Calculator,
     title: '수익·손익 계산기',
     body: '매수가와 수량을 넣어 수수료·거래세까지 반영한 실제 손익을 계산합니다.',
-  },
-  {
-    // `/game` 이 Rogue 클론으로 바뀌면서 이 카드가 가리키던 것이 /game/imf 로 옮겨졌다.
-    // 글은 그 게임을 설명하므로 주소만 따라간다 — 글과 도착지가 어긋나면 둘 다 거짓말이 된다.
-    href: '/game/imf',
-    icon: Gamepad2,
-    title: '모의투자로 먼저 굴려 보기',
-    body: '돈을 넣기 전에 12턴짜리 판으로 "싸게 사서 기다린다" 가 어떤 일인지 겪어 봅니다.',
   },
 ];
 

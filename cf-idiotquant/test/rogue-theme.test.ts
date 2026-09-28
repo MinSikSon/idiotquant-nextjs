@@ -24,7 +24,7 @@ const read = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 const GAME = "app/(game)/game";
 const CSS = "app/global.css";
 
-/** 게임 화면이 그리는 파일들 — 옛 게임(`imf/`)은 캔버스라 규칙이 다르다. */
+/** 게임 화면이 그리는 파일들. */
 function viewFiles(): string[] {
     const out: string[] = [];
     for (const dir of [GAME, `${GAME}/components`]) {
@@ -128,7 +128,6 @@ test("밝은 쪽과 어두운 쪽이 같은 이름을 갖고, 기억한 칸이 �
 // 위·아래·왼쪽 바는 게임 화면에서 **기기의 일부**다. 그런데 `/game` 아래에는 게임이
 // 둘이고 둘의 사정이 다르다.
 //
-//   · `/game/imf` — Phaser 캔버스라 언제나 어둡다. 바도 어둡게 고정하고, 바 안에
 //     `dark` 를 씌워 어두운 바탕용 색을 쓰게 한다.
 //   · `/game`(Rogue) — DOM 이라 앱 테마를 따른다. 바도 따라가야 한다.
 //
