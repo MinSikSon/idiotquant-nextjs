@@ -8,10 +8,10 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
+import { ZAP_FX, zapFrames, zapImpact } from "@/app/(game)/game/zapFx";
 import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -868,10 +868,63 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
     assert.equal(new Set(plain).size, plain.length, "공격 광선이 아닌 지팡이끼리 궤적 글자가 겹친다");
 
     // ── 화면의 연출 표(`ZAP_FX`)가 지팡이를 하나도 빠뜨리지 않는다
-    const mapView = readFileSync("app/(game)/game/components/MapView.tsx", "utf8");
-    const table = mapView.slice(mapView.indexOf("export const ZAP_FX"), mapView.indexOf("};", mapView.indexOf("export const ZAP_FX")));
-    for (const type of Object.keys(WANDS)) {
-        assert.ok(table.includes(/\s/.test(type) ? `"${type}":` : `${type}:`), `ZAP_FX 에 ${type} 지팡이의 연출이 없다`);
+    for (const type of Object.keys(WANDS)) assert.ok(ZAP_FX[type], `ZAP_FX 에 ${type} 지팡이의 연출이 없다`);
+
+    // ── 연출은 이름과 효과를 따른다 — 움직임이 지팡이마다 갈린다
+    const path = Array.from({ length: 5 }, (_, i) => ({ x: 10 + i, y: 5, ch: "-" }));
+    const frames = (type: string) => zapFrames(ZAP_FX[type]!, path);
+    // 번개는 길 전체가 한 번에 번쩍인다
+    assert.ok(frames("lightning").every((f) => f.length === path.length), "번개가 길 전체를 한 번에 안 밝힌다");
+    // 화염·냉기 광선은 쏜 자리부터 늘어난다
+    for (const type of ["fire", "cold"]) {
+        const lens = frames(type).map((f) => f.length);
+        assert.deepEqual(lens.slice(0, path.length), [1, 2, 3, 4, 5], `${type} 광선이 늘어나지 않는다`);
+    }
+    // 마법 화살·위치 교환 같은 한 점은 꼬리가 길지 않다
+    assert.ok(frames("swapping").every((f) => f.length === 1), "위치 교환이 한 점으로 안 날아간다");
+    assert.ok(Math.max(...frames("gust").map((f) => f.length)) > 1, "돌풍이 꼬리를 안 끈다");
+    // 둔화는 느리게, 가속은 빠르게 날아간다
+    assert.ok(ZAP_FX["slow monster"]!.stepMs > ZAP_FX["magic missile"]!.stepMs, "둔화가 느리게 안 날아간다");
+    assert.ok(ZAP_FX["haste monster"]!.stepMs < ZAP_FX["magic missile"]!.stepMs, "가속이 빠르게 안 날아간다");
+    // 원소 광선은 둘레까지 번지고, 위치 교환은 쏜 자리도 함께 번쩍인다
+    for (const type of ["lightning", "fire", "cold"]) {
+        assert.equal(Object.keys(zapImpact(ZAP_FX[type]!, { x: 5, y: 5 })).length, 9, `${type} 착탄이 둘레로 안 번진다`);
+    }
+    assert.ok(zapImpact(ZAP_FX.swapping!, { x: 5, y: 5 }, { x: 1, y: 5 })["1,5"], "위치 교환이 쏜 자리를 안 밝힌다");
+    // 굴착은 굴이 늘어나고(부스러기가 남는다), 부순 벽 칸마다 흙먼지가 인다
+    {
+        assert.deepEqual(frames("digging").map((f) => f.length).slice(0, path.length), [1, 2, 3, 4, 5], "굴착의 굴이 늘어나지 않는다");
+        assert.ok(frames("digging").slice(0, path.length).every((f) => f.at(-1)!.ch === "#"), "굴착의 앞머리가 `#` 로 통일되지 않았다");
+        const s = newGame(109);
+        const wand = makeItem("wand", "digging", 983, -1, -1);
+        wand.charges = 2;
+        give(s, wand, "y");
+        const h = s.heroes[0];
+        const dirs: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        // 벽까지 걸어가 벽을 향해 쏜다
+        let way: [number, number] | undefined;
+        for (const [dx, dy] of dirs) {
+            let x = h.x;
+            let y = h.y;
+            while (walkable(s.level.tiles[idx(x + dx, y + dy)] as Tile)) { x += dx; y += dy; }
+            if (x + dx * 2 > 0 && x + dx * 2 < 79 && y + dy * 2 > 0 && y + dy * 2 < 21) { h.x = x; h.y = y; way = [dx, dy]; break; }
+        }
+        assert.ok(way, "벽을 향한 자리를 못 찾았다");
+        const after = perform(s, { t: "zap", letter: "y", dx: way[0], dy: way[1] });
+        const dug = after.projectile?.dug ?? [];
+        assert.ok(dug.length > 0, "굴착이 부순 벽 칸을 안 남겼다");
+        const dust = zapImpact(ZAP_FX.digging!, after.projectile!.cells.at(-1)!, after.projectile!.from, dug);
+        for (const c of dug) assert.ok(dust[`${c.x},${c.y}`], `부순 벽 (${c.x},${c.y}) 에 흙먼지가 안 인다`);
+    }
+    // 엔진은 쏜 자리를 남긴다 — 위의 연출이 읽는 값이다
+    {
+        const s = newGame(109);
+        const wand = makeItem("wand", "swapping", 982, -1, -1);
+        wand.charges = 2;
+        give(s, wand, "y");
+        const [wx, wy] = openWay(s);
+        const from = { x: s.heroes[0].x, y: s.heroes[0].y };
+        assert.deepEqual(perform(s, { t: "zap", letter: "y", dx: wx, dy: wy }).projectile?.from, from, "지팡이를 쏜 자리가 안 남았다");
     }
 });
 
