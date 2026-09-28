@@ -3184,7 +3184,7 @@ const WAND_GLYPH: Record<string, string> = {
 /** 지팡이의 궤적을 남긴다 — 화면은 `fx`(지팡이 종류)로 색과 착탄 연출을 고른다. */
 function zapTrail(state: GameState, hero: Hero, cells: { x: number; y: number }[], type: string, dx: number, dy: number): void {
     const ch = WAND_GLYPH[type] ?? boltGlyph(dx, dy);
-    state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: cells.map((cell) => ({ ...cell, ch })), fx: type };
+    state.projectile = { id: `${state.turn}:${hero.x},${hero.y}:${state.messages.length}`, cells: cells.map((cell) => ({ ...cell, ch })), fx: type, from: { x: hero.x, y: hero.y } };
 }
 
 function boltGlyph(dx: number, dy: number): string {
