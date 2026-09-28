@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
-import { ZAP_FX, zapFrames, zapImpact } from "@/app/(game)/game/zapFx";
+import { ZAP_FX, trimAtTarget, zapFrames, zapImpact } from "@/app/(game)/game/zapFx";
 import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -915,6 +915,24 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
         assert.ok(dug.length > 0, "굴착이 부순 벽 칸을 안 남겼다");
         const dust = zapImpact(ZAP_FX.digging!, after.projectile!.cells.at(-1)!, after.projectile!.from, dug);
         for (const c of dug) assert.ok(dust[`${c.x},${c.y}`], `부순 벽 (${c.x},${c.y}) 에 흙먼지가 안 인다`);
+    }
+    // 투사체는 맞은 몬스터가 **지금 선 칸**에서 멈춘다 — 맞은 뒤 다가왔으면 그 칸까지만
+    {
+        const line = Array.from({ length: 6 }, (_, i) => ({ x: 10 + i, y: 5, ch: "*" }));
+        assert.equal(trimAtTarget(line, { x: 13, y: 5 }).length, 4, "맞은 몬스터를 지나쳐 날아간다");
+        assert.equal(trimAtTarget(line, { x: 13, y: 6 }).length, line.length, "궤적 밖으로 비킨 몬스터 때문에 궤적이 잘렸다");
+        assert.equal(trimAtTarget(line, undefined).length, line.length, "맞은 것이 없는데 궤적이 잘렸다");
+        const s = newGame(109);
+        s.level.monsters = [];
+        const wand = makeItem("wand", "magic missile", 984, -1, -1);
+        wand.charges = 2;
+        give(s, wand, "y");
+        const [wx, wy] = openWay(s);
+        const h = s.heroes[0];
+        const foe = spawnMonster("T", h.x + wx, h.y + wy, new Rng(3));
+        foe.hp = 999;
+        s.level.monsters.push(foe);
+        assert.equal(perform(s, { t: "zap", letter: "y", dx: wx, dy: wy }).projectile?.hit, foe.id, "맞힌 몬스터를 안 남겼다");
     }
     // 엔진은 쏜 자리를 남긴다 — 위의 연출이 읽는 값이다
     {

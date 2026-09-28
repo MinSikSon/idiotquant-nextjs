@@ -568,8 +568,10 @@ export interface GameState {
      * `fx` 는 지팡이로 쏜 것일 때 **그 지팡이의 종류**(`WANDS` 의 키)다 — 화면이 색과
      * 착탄 연출을 고르는 값일 뿐이다. `from` 은 지팡이를 쏜 자리 — 위치 교환처럼 양 끝이 함께
      * 번쩍이는 연출이 읽는다. `dug` 는 굴착 지팡이가 **실제로 부순 벽** 칸 — 그 칸마다 흙먼지가 인다.
+     * `hit` 은 지팡이가 맞힌 몬스터의 `id` — 화면은 그 몬스터가 **지금 선 칸**에서 투사체를 멈춘다
+     * (맞은 뒤 같은 턴에 다가오면, 맞은 자리 그대로 그리면 몬스터를 지나쳐 날아가는 것처럼 보인다).
      */
-    projectile?: { id: string; cells: { x: number; y: number; ch: string }[]; fx?: string; from?: { x: number; y: number }; dug?: { x: number; y: number }[] };
+    projectile?: { id: string; cells: { x: number; y: number; ch: string }[]; fx?: string; from?: { x: number; y: number }; dug?: { x: number; y: number }[]; hit?: number };
 }
 
 export type Dir = { dx: number; dy: number };

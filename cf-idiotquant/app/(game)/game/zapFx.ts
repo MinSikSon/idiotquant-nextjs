@@ -67,6 +67,17 @@ export const ZAP_FX: Record<string, ZapFx> = {
 
 export type ZapCell = { x: number; y: number; ch: string; ink?: string };
 
+/**
+ * 맞은 몬스터가 **지금 선 칸**에서 궤적을 끊는다. 화면은 몬스터 차례가 끝난 판을 그리므로,
+ * 맞은 뒤 한 칸 다가온 몬스터를 두고 맞은 자리까지 그리면 투사체가 몬스터를 지나쳐 보인다.
+ * 몬스터가 궤적 밖에 있으면(쓰러짐·밀려남·사라짐·옆으로 비킴) 궤적을 그대로 둔다.
+ */
+export function trimAtTarget<T extends { x: number; y: number }>(cells: T[], target?: { x: number; y: number }): T[] {
+    if (!target) return cells;
+    const at = cells.findIndex((c) => c.x === target.x && c.y === target.y);
+    return at >= 0 ? cells.slice(0, at + 1) : cells;
+}
+
 /** 궤적을 프레임들로 — 한 프레임은 그 순간 지도 위에 얹을 글자들이다. */
 export function zapFrames(fx: ZapFx, cells: { x: number; y: number; ch: string }[]): ZapCell[][] {
     const head = (i: number, ch: string) => fx.glyphs?.[i % fx.glyphs.length] ?? ch;

@@ -98,7 +98,7 @@ import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
 import MapView, { PARTY_BG, PARTY_INK, type CellFlash, type Reveal } from "./components/MapView";
-import { ZAP_FX, zapFrames, zapImpact, type ZapCell } from "./zapFx";
+import { ZAP_FX, trimAtTarget, zapFrames, zapImpact, type ZapCell } from "./zapFx";
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
 import { monsterArt } from "./monsterArt";
@@ -588,7 +588,9 @@ export default function Rogue() {
         // 지팡이는 제 연출(`ZAP_FX`)대로 — 속도·꼬리·광선·번쩍임이 지팡이마다 다르다. 던진 것과
         // 용의 숨결은 원작처럼 한 글자가 한 칸씩 옮겨 간다(직전 칸은 곧바로 지운다).
         const fx = shot.fx ? ZAP_FX[shot.fx] : undefined;
-        const frames = fx ? zapFrames(fx, shot.cells) : shot.cells.map((c) => [c]);
+        const target = shot.hit !== undefined ? state.level.monsters.find((m) => m.id === shot.hit) : undefined;
+        const cells = trimAtTarget(shot.cells, target);
+        const frames = fx ? zapFrames(fx, cells) : cells.map((c) => [c]);
         const stepMs = fx?.stepMs ?? 45;
         let shown = 0;
         let tail: ReturnType<typeof setTimeout> | null = null;
@@ -604,7 +606,7 @@ export default function Rogue() {
                 }, 16);
                 // 지팡이는 끝 칸에서 제 색으로 터진다 — 입력은 이미 풀렸고, 보는 것만 남는다.
                 if (fx) {
-                    setZapFlashes(zapImpact(fx, shot.cells[shot.cells.length - 1]!, shot.from, shot.dug));
+                    setZapFlashes(zapImpact(fx, cells[cells.length - 1]!, shot.from, shot.dug));
                     if (fx.shake) {
                         setShake(true);
                         shakeTimer = setTimeout(() => setShake(false), 160);
@@ -676,7 +678,9 @@ export default function Rogue() {
         const targetMonster = damagedMonster ?? killedMonster;
 
         if (targetMonster) {
-            const key = `${targetMonster.x},${targetMonster.y}`;
+            // 살아 있으면 **지금 선 칸**을 번쩍인다 — 맞은 뒤 같은 턴에 움직였으면 옛 칸은 빈 바닥이다.
+            const now = state.level.monsters.find((m) => m.id === targetMonster.id) ?? targetMonster;
+            const key = `${now.x},${now.y}`;
             if (hasCritMsg) {
                 // 치명타 적중: 황금빛 텍스트 & 반투명 하이라이트
                 flashes[key] = { ink: "var(--rg-gold)", bg: "rgba(234, 179, 8, 0.25)" };

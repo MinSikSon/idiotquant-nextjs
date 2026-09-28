@@ -2463,6 +2463,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
     const hit = ray(level, hero, dx, dy, 12);
     // 맞든 빗나가든 **모든 지팡이가 제 궤적을 남긴다** — 무엇을 쐈는지가 화면에서 갈린다.
     zapTrail(state, hero, hit.cells, it.type, dx, dy);
+    if (state.projectile && hit.monster) state.projectile.hit = hit.monster.id;
 
     // ── 위치 교환의 지팡이 (swapping) ───────────────────────────────────────────
     if (it.type === "swapping") {
