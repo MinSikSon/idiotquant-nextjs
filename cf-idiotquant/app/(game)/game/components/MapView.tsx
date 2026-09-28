@@ -142,44 +142,41 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
     top: number;
 }) {
     const chars = Array.from(nick);
-    // 이름 폭은 `cleanNick` 과 같은 규칙으로 2×2 칸에 놓는다. 한글은 한 칸을
-    // 가로로 차지하므로 같은 줄에 두지 않고 다음 줄로 보낸다.
-    const entries: { ch: string; col: number; row: number; wide: boolean }[] = [];
-    let col = 0;
-    let row = 0;
-    for (const ch of chars) {
-        const wide = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch);
-        if (wide && col === 1) { row++; col = 0; }
-        entries.push({ ch, col, row, wide });
-        col += wide ? 2 : 1;
-        if (col >= 2) { row++; col = 0; }
-    }
+    // 한 자는 칸 전체, 두 자는 위아래로 한 자씩(한글도 칸 폭을 다 쓴다), 서너 자는 2×2.
+    // 글자마다 제 자리를 따로 갖게 해서 한글과 영문이 섞여도 자리가 안 밀린다.
+    const cols = chars.length > 2 ? 2 : 1;
+    const rows = Math.ceil(chars.length / cols);
+    const slotW = cell.w / cols;
+    const font = cell.h / rows;
     return (
         <span
             aria-hidden
             className="pointer-events-none absolute overflow-hidden"
             style={{ left, top, width: cell.w, height: cell.h, background: bg }}
         >
-            {entries.map(({ ch, col: x, row: y, wide }, i) => (
-                <span
-                    key={i}
-                    className="absolute grid place-items-center overflow-visible font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
-                    style={{
-                        left: x * cell.w / 2,
-                        top: y * cell.h / 2,
-                        width: wide ? cell.w : cell.w / 2,
-                        height: cell.h / 2,
-                        color: ink,
-                        fontSize: cell.h / 2,
-                        lineHeight: 1,
-                    }}
-                >
-                    <span style={{
-                        display: "inline-block",
-                        transform: `scaleX(${(wide ? cell.w : cell.w / 2) / (wide ? cell.h / 2 : cell.w * ((cell.h / 2) / (cell.h / LEADING)))})`,
-                    }}>{ch}</span>
-                </span>
-            ))}
+            {chars.map((ch, i) => {
+                const wide = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch);
+                // 안 누른 글자의 폭 — 전각은 1em, 영문·숫자는 지도 글자 폭(`cell.w`, 글꼴
+                // `cell.h / LEADING`)을 이 글꼴 크기로 환산한 것. 넓히지는 않는다.
+                const natural = wide ? font : cell.w * (font / (cell.h / LEADING));
+                return (
+                    <span
+                        key={i}
+                        className="absolute grid place-items-center overflow-visible font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
+                        style={{
+                            left: (i % cols) * slotW,
+                            top: Math.floor(i / cols) * font,
+                            width: slotW,
+                            height: font,
+                            color: ink,
+                            fontSize: font,
+                            lineHeight: 1,
+                        }}
+                    >
+                        <span style={{ display: "inline-block", transform: `scaleX(${Math.min(1, slotW / natural)})` }}>{ch}</span>
+                    </span>
+                );
+            })}
         </span>
     );
 }
