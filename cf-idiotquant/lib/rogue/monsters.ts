@@ -167,6 +167,17 @@ export const SPIRIT_TRAITS: Record<SpiritElement, string> = {
 };
 
 /**
+ * 전직(정령 화신) 뒤 원소마다 **깊어지는 것** — 공통은 두 배로 머무는 것뿐이다(`ADVANCED_SPIRIT_TURNS`).
+ * 모두에게 「두 번 친다」를 주면 이미 두 번 움직이는 바람이 턴에 넷을 치고, 버티는 땅은 거의 안 는다.
+ */
+export const ADVANCED_SPIRIT_TRAITS: Record<SpiritElement, string> = {
+    fire: "두 번 친다",
+    water: "친 만큼 다 고친다",
+    air: "머무는 턴만 는다",
+    earth: "체력 1.5배 · 맞으면 되받아친다",
+};
+
+/**
  * 정령의 몸 — **부를 때의 레벨과 원소가 다 정한다.** 명중·공격력 보정은 여느 몬스터처럼
  * `def.level` 에서 나오므로(`monsterHitBonus`·`monsterDamBonus`) 따로 셈을 두지 않는다.
  * 그 레벨은 부른 사람보다 **두 단 위**다 — 같은 레벨이면 1층에서 `1d8+1` 이 홉고블린의
@@ -177,7 +188,9 @@ export function spiritDef(bond: SpiritBond): MonsterDef {
     const level = Math.max(1, bond.level);
     const element = SPIRIT_NAMES[bond.element] ? bond.element : "fire";
     const dice = { fire: "2d6", water: "1d8", air: "1d6", earth: "1d6" }[element];
-    const hp = { fire: 6 + 3 * level, water: 6 + 3 * level, air: 4 + 2 * level, earth: 10 + 4 * level }[element];
+    const base = { fire: 6 + 3 * level, water: 6 + 3 * level, air: 4 + 2 * level, earth: 10 + 4 * level }[element];
+    // 전직 뒤 땅만 몸이 커진다(`ADVANCED_SPIRIT_TRAITS`).
+    const hp = bond.advanced && element === "earth" ? Math.floor(base * 1.5) : base;
     return {
         ch: SPIRIT_CH,
         name: SPIRIT_NAMES[element],
@@ -185,7 +198,8 @@ export function spiritDef(bond: SpiritBond): MonsterDef {
         level: level + 2,
         armor: element === "earth" ? 2 : 5,
         hp,
-        damage: bond.advanced ? [dice, dice] : [dice],
+        // 전직 뒤 두 번 치는 것은 불뿐이다.
+        damage: bond.advanced && element === "fire" ? [dice, dice] : [dice],
         mean: true,
     };
 }

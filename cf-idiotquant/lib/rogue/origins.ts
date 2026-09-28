@@ -332,7 +332,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         traitDescription: "곁에 원소 정령을 골라 부른다(★ 단추) · 불은 세게 치고, 물은 친 만큼 나를 고치고, 바람은 두 번 움직이고, 땅은 단단하게 적을 끌어당긴다 · 새 층에서는 곧바로, 같은 층에서는 60턴 뒤 다시 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
         weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "정령 화신",
-        advancedSkillDescription: "정령이 두 번 때리고 40턴 머문다",
+        advancedSkillDescription: "정령이 40턴 머문다 · 불은 두 번 치고, 물은 친 만큼 다 고치고, 땅은 체력 1.5배에 맞으면 되받아친다",
         advancedSkillKind: "passive",
         baseHp: 11,
         baseStr: 13,

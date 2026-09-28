@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
-import { SPIRIT_NAMES, SPIRIT_TRAITS, spawnMonster } from "@/lib/rogue/monsters";
+import { ADVANCED_SPIRIT_TRAITS, SPIRIT_NAMES, SPIRIT_TRAITS, spawnMonster, spiritDef } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
@@ -471,15 +471,15 @@ test("정령술사 — 정령을 부르고(같은 층은 턴이 쌓이면 다시
         assert.ok(scholar.messages.some((l) => l.includes(`레벨 ${ADVANCE_LEVEL}에 전직`)), "연구자가 레벨 1에 전직 기술을 썼다");
     }
 
-    // ── 전직 뒤에는 두 번 때리고 두 배 머문다
+    // ── 전직 뒤에는 두 배 머문다 — 두 번 치는 것은 불뿐이다(원소별 깊어짐은 아래 원소 테스트)
     {
         let s = newGame(4, {}, {}, {}, {}, "elementalist");
         s.level.monsters = [];
         s.heroes[0].level = ADVANCE_LEVEL;
-        s = perform(s, { t: "classSkill" });
+        s = perform(s, { t: "classSkill", element: "fire" });
         const spirit = s.level.monsters.find((m) => m.spirit)!;
         assert.equal(spirit.spirit!.turns, ADVANCED_SPIRIT_TURNS - 1);
-        assert.equal(spirit.def.damage.length, 2, "전직 뒤 정령이 두 번 안 때린다");
+        assert.equal(spirit.def.damage.length, 2, "전직 뒤 불의 정령이 두 번 안 때린다");
     }
 
     // ── 싸움: 정령이 적을 잡으면 경험치는 주인에게 · 적은 곁의 정령을 친다
@@ -984,5 +984,80 @@ test("정령술사 — 원소를 골라 부르고, 원소마다 싸우는 법이
             taunted++;
         }
         assert.ok(taunted > 0, "적이 땅의 정령을 먼저 친 판이 없다");
+    }
+});
+
+/** 전직한 정령술사로 새 판을 열고, 고른 원소의 정령을 부른다. */
+function advancedAs(seed: number, element: SpiritElement): { s: GameState; spirit: NonNullable<GameState["level"]["monsters"][number]> } {
+    let s = newGame(seed, {}, {}, {}, {}, "elementalist");
+    s.level.monsters = [];
+    s.heroes[0].level = ADVANCE_LEVEL;
+    s = perform(s, { t: "classSkill", element });
+    const spirit = s.level.monsters.find((m) => m.spirit);
+    assert.ok(spirit, `시드 ${seed}: 정령이 안 섰다`);
+    return { s, spirit };
+}
+
+test("정령술사 — 전직 뒤에는 원소마다 한 가지가 깊어진다", () => {
+    // ── 몸: 두 번 치는 것은 불뿐 · 땅만 체력 1.5배 · 모두 두 배 머문다 · 부를 때 깊어진 것을 적는다
+    for (const element of Object.keys(SPIRIT_NAMES) as SpiritElement[]) {
+        const { s, spirit } = advancedAs(4, element);
+        const plain = spiritDef({ ...spirit.spirit!, advanced: false });
+        assert.equal(spirit.spirit!.turns, ADVANCED_SPIRIT_TURNS - 1, `${element}: 두 배로 안 머문다`);
+        assert.equal(spirit.def.damage.length, element === "fire" ? 2 : 1, `${element}: 치는 횟수가 이상하다`);
+        assert.equal(spirit.maxHp, element === "earth" ? Math.floor(plain.hp * 1.5) : plain.hp, `${element}: 체력이 이상하다`);
+        assert.ok(s.messages.some((l) => l.includes(ADVANCED_SPIRIT_TRAITS[element])), `${element}: 깊어진 것을 안 적었다`);
+    }
+
+    // ── 물: 친 피해를 다 고친다 · 땅: 맞고 버티면 되받아친다
+    {
+        let fullHeal = 0;
+        let countered = 0;
+        for (let seed = 1; seed <= 60 && (fullHeal === 0 || countered === 0); seed++) {
+            for (const element of ["water", "earth"] as const) {
+                const { s: s0, spirit } = advancedAs(seed, element);
+                const spot = besideSpiritOnly(s0, spirit);
+                if (!spot) continue;
+                const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+                foe.hp = foe.maxHp = 999;
+                foe.awake = true;
+                s0.level.monsters.push(foe);
+                s0.heroes[0].hp = 1;
+                s0.heroes[0].maxHp = 999;
+                const before = s0.messages.length;
+                const s = perform(s0, { t: "search" });
+                const lines = s.messages.slice(before).map((l) => l.replace(/^T:\d+ /, ""));
+                if (element === "water") {
+                    const hit = lines.find((l) => l.startsWith("물의 정령이(가) 홉고블린을(를) 쳤다"));
+                    const dealt = Number(hit?.match(/피해 (\d+)/)?.[1] ?? 0);
+                    const heal = Number(lines.find((l) => l.includes("상처를 씻어"))?.match(/HP \+(\d+)/)?.[1] ?? 0);
+                    if (dealt > 0) {
+                        assert.equal(heal, dealt, "전직한 물의 정령이 친 만큼 다 안 고쳤다");
+                        fullHeal++;
+                    }
+                } else {
+                    const i = lines.findIndex((l) => l.includes("땅의 정령이(가) 되받아친다"));
+                    if (i < 0) continue;
+                    assert.ok(i > 0 && /^홉고블린이\(가\) 땅의 정령을\(를\) 쳤다/.test(lines[i - 1]), "맞지 않았는데 되받아쳤다");
+                    assert.match(lines[i + 1], /^땅의 정령(이\(가\) 홉고블린을\(를\) 쳤다|의 공격이 홉고블린을\(를\) 빗나갔다)/, "되받아친 줄이 없다");
+                    countered++;
+                }
+            }
+        }
+        assert.ok(fullHeal > 0, "전직한 물의 정령이 친 판이 없다");
+        assert.ok(countered > 0, "전직한 땅의 정령이 되받아친 판이 없다");
+    }
+
+    // ── 전직 전 땅의 정령은 되받아치지 않는다
+    for (let seed = 1; seed <= 20; seed++) {
+        const { s: s0, spirit } = summonedAs(seed, "earth");
+        const spot = besideSpiritOnly(s0, spirit);
+        if (!spot) continue;
+        const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+        foe.hp = foe.maxHp = 999;
+        s0.level.monsters.push(foe);
+        let s = s0;
+        for (let i = 0; i < 5; i++) s = perform(s, { t: "search" });
+        assert.ok(!s.messages.some((l) => l.includes("되받아친다")), "전직 전 땅의 정령이 되받아쳤다");
     }
 });
