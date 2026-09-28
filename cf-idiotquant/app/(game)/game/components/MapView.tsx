@@ -148,37 +148,49 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
     const rows = Math.ceil(chars.length / cols);
     const slotW = cell.w / cols;
     const font = cell.h / rows;
+    // 누를 비율은 **그려진 글자의 폭을 재서** 정한다. 한글은 기기마다 다른 대체 글꼴로
+    // 그려져 폭이 1em 보다 넓기도 하다 — 짐작으로 누르면 덜 눌린 오른쪽 열이 칸 밖으로 잘린다.
+    // `offsetWidth` 는 `transform` 전의 폭이라 누른 뒤에 다시 재도 값이 안 바뀐다.
+    const glyphs = useRef<(HTMLSpanElement | null)[]>([]);
+    useLayoutEffect(() => {
+        const fit = () => {
+            for (const el of glyphs.current) {
+                if (!el?.offsetWidth) continue;
+                el.style.transform = `translateX(-50%) scaleX(${Math.min(1, slotW / el.offsetWidth)})`;
+            }
+        };
+        fit();
+        // 웹 글꼴이 늦게 도착하면 폭이 바뀐다.
+        let live = true;
+        document.fonts?.ready.then(() => live && fit());
+        return () => { live = false; };
+    }, [nick, slotW, font]);
     return (
         <span
             aria-hidden
             className="pointer-events-none absolute overflow-hidden"
             style={{ left, top, width: cell.w, height: cell.h, background: bg }}
         >
-            {chars.map((ch, i) => {
-                const wide = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Extended_Pictographic}]/u.test(ch);
-                // 안 누른 글자의 폭 — 전각은 1em, 영문·숫자는 지도 글자 폭(`cell.w`, 글꼴
-                // `cell.h / LEADING`)을 이 글꼴 크기로 환산한 것. 넓히지는 않는다.
-                const natural = wide ? font : cell.w * (font / (cell.h / LEADING));
-                return (
-                    <span
-                        key={i}
-                        className="absolute font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
-                        style={{
-                            // 글자 상자는 누르기 전 폭이라 제 자리보다 넓다 — 가운데 정렬에 맡기면
-                            // 왼쪽에 붙은 채 넘쳐 옆으로 잘린다. 자리의 **가운데**에 세우고 거기서 누른다.
-                            left: (i % cols + 0.5) * slotW,
-                            top: Math.floor(i / cols) * font,
-                            height: font,
-                            color: ink,
-                            fontSize: font,
-                            lineHeight: `${font}px`,
-                            transform: `translateX(-50%) scaleX(${Math.min(1, slotW / natural)})`,
-                        }}
-                    >
-                        {ch}
-                    </span>
-                );
-            })}
+            {chars.map((ch, i) => (
+                <span
+                    key={i}
+                    ref={(el) => { glyphs.current[i] = el; }}
+                    className="absolute font-[family-name:var(--font-plex-mono)] font-bold whitespace-pre"
+                    style={{
+                        // 글자 상자는 누르기 전 폭이라 제 자리보다 넓다 — 가운데 정렬에 맡기면
+                        // 왼쪽에 붙은 채 넘쳐 옆으로 잘린다. 자리의 **가운데**에 세우고 거기서 누른다.
+                        left: (i % cols + 0.5) * slotW,
+                        top: Math.floor(i / cols) * font,
+                        height: font,
+                        color: ink,
+                        fontSize: font,
+                        lineHeight: `${font}px`,
+                        // 누르는 비율은 위 `fit` 이 잰 폭으로 정한다(그리기 전에 돈다).
+                    }}
+                >
+                    {ch}
+                </span>
+            ))}
         </span>
     );
 }
