@@ -2216,7 +2216,7 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                className={`flex h-auto shrink-0 content-start flex-wrap items-center gap-x-[1ch] overflow-x-auto overflow-y-hidden whitespace-normal px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] overflow-x-auto overflow-y-hidden px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${coop && expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap" : "flex-wrap whitespace-normal"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
@@ -2250,6 +2250,14 @@ export default function Rogue() {
                                 쓰러졌다 — 동료 이름표를 누르면 그쪽 눈으로 본다
                             </span>
                         )}
+                        {coop && expandedPartyStats !== i && <span className="shrink-0">[<OriginTag origin={h.origin} level={h.level} />]</span>}
+                        {coop && expandedPartyStats !== i && ([
+                            ["str", `St:${heroStr(h)}`],
+                            ["defense", `AC:${heroArmorClass(h)}`],
+                            ["xp", `Xp:${h.level}/${h.exp}`],
+                            ["turn", `T:${h.turns}/${state.turn}`],
+                        ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
+                        {coop && expandedPartyStats !== i && <button type="button" className={`shrink-0 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`} onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger || "Well-fed"}</button>}
                         {!coop && <button
                             type="button"
                             onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "origin" }); setSheet("log"); }}
@@ -2291,7 +2299,7 @@ export default function Rogue() {
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                        {(!coop || hHunger) && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
+                        {(!coop || expandedPartyStats === i) && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
                             {hHunger || "Well-fed"}
                         </button>}
                         {(!coop || foodCount <= 2) && <span className={`order-3 ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
@@ -2314,7 +2322,7 @@ export default function Rogue() {
                         >
                             {expandedPartyStats === i ? "간략히" : "상세"}
                         </button>}
-                        {coop && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
+                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["str", `St:${heroStr(h)}`],
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
