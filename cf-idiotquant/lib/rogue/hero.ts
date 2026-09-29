@@ -549,6 +549,11 @@ function ringSum(hero: Hero, type: string): number {
         .reduce((s, r) => s + (r.plusRing ?? 0), 0);
 }
 
+/** Worn dexterity rings add directly to attack accuracy. */
+export function heroDexterity(hero: Hero): number {
+    return ringSum(hero, "dexterity");
+}
+
 export function hasRing(hero: Hero, type: string): boolean {
     return wornRings(hero).some((r) => r.type === type);
 }

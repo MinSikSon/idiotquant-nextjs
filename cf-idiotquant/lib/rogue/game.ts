@@ -4137,13 +4137,17 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         }
     }
 
-    // 원작의 순간이동 반지는 저주받은 반지로, 착용 중에는 매 턴 무작위 위치로 보낸다.
-    for (const h of state.heroes) {
-        if (h.hp <= 0 || !hasRing(h, "teleportation")) continue;
+    // 원작의 순간이동 반지는 솔로에서 착용 중 매 턴 무작위 위치로 보낸다.
+    // 협동에서는 플레이어마다 행동하므로, **움직인 착용자만** 순간이동한다 —
+    // 다른 사람의 행동에 끌려가거나 제자리에서 행동해도 발동하지 않는다.
+    const coOp = state.heroes.length > 1;
+    for (let i = 0; i < state.heroes.length; i++) {
+        const h = state.heroes[i];
+        if (h.hp <= 0 || !hasRing(h, "teleportation") || (coOp && (h !== hero || !fled))) continue;
         const p = freeSpot(state.level, rng, [state.level.stairs, ...state.heroes.filter((o) => o !== h)]);
         h.x = p.x;
         h.y = p.y;
-        say(state, "순간이동 반지가 몸을 무작위 장소로 옮겼다.");
+        say(state, coOp ? `${i + 1}P 순간이동 반지가 몸을 무작위 장소로 옮겼다.` : "순간이동 반지가 몸을 무작위 장소로 옮겼다.");
     }
 
     computeFov(state.level, state.heroes);

@@ -72,7 +72,7 @@ import {
     itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, rapidFireOf, heroArmorClass, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -465,7 +465,7 @@ export default function Rogue() {
     const [sheet, setSheet] = useState<
         "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins" | "status"
     >("none");
-    const [statusKind, setStatusKind] = useState<"origin" | "str" | "defense" | "wisdom" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
+    const [statusKind, setStatusKind] = useState<"origin" | "str" | "dexterity" | "defense" | "wisdom" | "luck" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
     const [expandedPartyStats, setExpandedPartyStats] = useState<number | null>(null);
     /**
      * 사람마다의 배낭·고르기·겨누기(`Desk`). 둘이서면 둘이 따로 연다.
@@ -2314,12 +2314,18 @@ export default function Rogue() {
                         >
                             {expandedPartyStats === i ? "간략히" : "상세"}
                         </button>}
-                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)]">
+                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             <span>[<OriginTag origin={h.origin} level={h.level} />]</span>
-                            <span>힘:{heroStr(h)}</span><span>방어:{heroArmorClass(h)}</span>
-                            <span>경험치:{h.level}/{h.exp}</span>
+                            {([
+                                ["str", `St:${heroStr(h)}`],
+                                ["dexterity", `Dx:${heroDexterity(h)}`],
+                                ["wisdom", `Wi:${Math.round(h.itemLuck * 100)}`],
+                                ["luck", `Lu:${Math.round(h.itemLuck * 100)}`],
+                                ["defense", `AC:${heroArmorClass(h)}`],
+                                ["xp", `Xp:${h.level}/${h.exp}`],
+                                ["turn", `T:${h.turns}/${state.turn}`],
+                            ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded px-0.5 underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                             {hRings > 0 && <span>반지:{hRings}</span>}
-                            <span>행동:{h.turns}/{state.turn}</span>
                         </div>}
                         {
                             online && linked && i !== who && DESK_DOING[peerModes[i] ?? "none"] && (
@@ -2924,10 +2930,14 @@ export default function Rogue() {
                     ? `직업: ${origin.name}\n전직: ${statusHero.level >= ADVANCE_LEVEL ? origin.advancedName : `${ADVANCE_LEVEL}레벨에 ${origin.advancedName}`}\n${origin.traitDescription}`
                     : statusKind === "str"
                       ? `St:${heroStr(statusHero)}\n현재 공격력에 힘 보정으로 반영됩니다. 물약과 성장 선택으로 올릴 수 있습니다.`
+                      : statusKind === "dexterity"
+                        ? `Dx:${heroDexterity(statusHero)}\n민첩 반지의 명중 보너스입니다. 값이 높을수록 공격이 잘 맞습니다.`
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
                         ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다.`
+                      : statusKind === "luck"
+                        ? `Lu:${Math.round(statusHero.itemLuck * 100)}\n아이템운입니다. 값이 높을수록 더 좋은 등급의 아이템을 얻기 쉽습니다. 현재 Wi와 같은 아이템운 수치를 사용합니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"

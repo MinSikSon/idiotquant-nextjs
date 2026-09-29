@@ -101,8 +101,8 @@
 }
 
 html.dark {
-  --rg-bg: #0b0c0c;
-  --rg-panel: #0f1413;
+  --rg-bg: #000000;
+  --rg-panel: #080a09;
   --rg-raised: #1b2321;
   --rg-hover: #161c1a;
   --rg-line: #3a4a45;
