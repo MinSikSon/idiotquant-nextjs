@@ -2245,7 +2245,7 @@ export default function Rogue() {
                             화면에 할 일이 하나도 없으면 판이 끝난 줄 안다. 줄은 가로로 넘치므로
                             (`overflow-x-auto whitespace-nowrap`) **이름표 바로 뒤**에 세운다 —
                             줄 끝에 뒀더니 390px 에서 통째로 밀려 나가 안 보였다(재 봤다). */}
-                        {coop && i === who && iAmDown && state.heroes.some((o) => o.hp > 0) && (
+                        {coop && expandedPartyStats === i && i === who && iAmDown && state.heroes.some((o) => o.hp > 0) && (
                             <span className="font-bold text-[var(--rg-gold)]">
                                 쓰러졌다 — 동료 이름표를 누르면 그쪽 눈으로 본다
                             </span>
@@ -2271,11 +2271,11 @@ export default function Rogue() {
                         </button>}
                         {!coop && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
                         {!coop && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
-                        <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
-                        <span className={`order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
+                        <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
+                        <span className={`shrink-0 order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
-                        {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
+                        {(!coop || expandedPartyStats === i) && h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
                         {!coop && <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "defense" }); setSheet("log"); }} className={`${statChip} order-8`}>
                             AC:{heroArmorClass(h)}
                         </button>}
@@ -2291,18 +2291,18 @@ export default function Rogue() {
                             </button>
                         )}
                         {
-                            (h.timeStop ?? 0) > 0 && (
+                            (!coop || expandedPartyStats === i) && (h.timeStop ?? 0) > 0 && (
                                 <span className="order-30 text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
                             )
                         }
-                        {h.guarded && <span className="order-30 text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
-                        {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
-                        {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
-                        {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
+                        {(!coop || expandedPartyStats === i) && h.guarded && <span className="order-30 text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
+                        {(!coop || expandedPartyStats === i) && h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
+                        {(!coop || expandedPartyStats === i) && h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
+                        {(!coop || expandedPartyStats === i) && h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
                         {(!coop || expandedPartyStats === i) && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
                             {hHunger || "Well-fed"}
                         </button>}
-                        {(!coop || foodCount <= 2) && <span className={`order-3 ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
+                        {(!coop || expandedPartyStats === i) && (!coop || foodCount <= 2) && <span className={`order-3 ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
                             식량:{foodCount}
                         </span>}
                         {!coop && i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
@@ -2311,9 +2311,9 @@ export default function Rogue() {
                             </span>
                         )}
                         {!coop && hRings > 0 && <span className="order-3 text-[var(--rg-ring)]">Ring: {hRings}</span>}
-                        {cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
-                        {emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
-                        {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
+                        {(!coop || expandedPartyStats === i) && cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
+                        {(!coop || expandedPartyStats === i) && emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
+                        {(!coop || expandedPartyStats === i) && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
                         {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["str", `St:${heroStr(h)}`],
@@ -2330,14 +2330,14 @@ export default function Rogue() {
                             {hRings > 0 && <span>반지:{hRings}</span>}
                         </div>}
                         {
-                            online && linked && i !== who && DESK_DOING[peerModes[i] ?? "none"] && (
+                            online && linked && i !== who && expandedPartyStats === i && DESK_DOING[peerModes[i] ?? "none"] && (
                                 <span className="font-bold" style={{ color: PARTY_INK[i] }}>
                                     {DESK_DOING[peerModes[i] ?? "none"]}
                                 </span>
                             )
                         }
                         {
-                            coop && !online && i === state.heroes.length - 1 && (
+                            coop && expandedPartyStats === i && !online && i === state.heroes.length - 1 && (
                                 <span className="order-50 ml-auto shrink-0 text-[var(--rg-faint)]">
                                     ? 조작
                                 </span>
