@@ -32,8 +32,8 @@ export function proficiency(level: number): number {
     return 2 + Math.floor((Math.max(1, level) - 1) / 4);
 }
 
-/** 굴림에 얹히는 운 — 유리는 두 번 굴려 높은 쪽, 불리는 낮은 쪽. */
-export type Luck = "normal" | "advantage" | "disadvantage";
+/** 유리·불리(D&D 5판) — 유리는 두 번 굴려 높은 쪽, 불리는 낮은 쪽. 넷핵 행운(`hero.luck`)과는 다른 것이다. */
+export type Edge = "normal" | "advantage" | "disadvantage";
 
 export interface Attack {
     hit: boolean;
@@ -46,7 +46,7 @@ export interface Attack {
     crit: boolean;
     /** 자연 1 — 대실패, 보정이 아무리 커도 빗나간다. */
     fumble: boolean;
-    luck: Luck;
+    edge: Edge;
 }
 
 /**
@@ -58,19 +58,19 @@ export interface Attack {
  * 유리·불리는 때리는 쪽에만 붙는다. 자는 놈을 치는 것은 내 몫이 좋아지는 일이지
  * 그놈이 더 굴리는 일이 아니다.
  */
-export function attackRoll(bonus: number, difficulty: number, rng: Rng, luck: Luck = "normal"): Attack {
+export function attackRoll(bonus: number, difficulty: number, rng: Rng, edge: Edge = "normal"): Attack {
     const rolls = [rng.rnd(20) + 1];
-    if (luck !== "normal") rolls.push(rng.rnd(20) + 1);
+    if (edge !== "normal") rolls.push(rng.rnd(20) + 1);
     const roll =
-        luck === "advantage"
+        edge === "advantage"
             ? Math.max(...rolls)
-            : luck === "disadvantage"
+            : edge === "disadvantage"
               ? Math.min(...rolls)
               : rolls[0];
     const fumble = roll === 1;
     const total = roll + bonus;
     const crit = !fumble && total >= 20;
-    return { hit: crit || (!fumble && total >= difficulty), rolls, roll, total, crit, fumble, luck };
+    return { hit: crit || (!fumble && total >= difficulty), rolls, roll, total, crit, fumble, edge };
 }
 
 /** 예전 수비 굴림의 평균값을 고정 문턱으로 옮긴 D&D식 명중 난이도. */
@@ -110,7 +110,7 @@ export function damageRoll(
 }
 
 /** 유리와 불리는 **서로 지운다** — 5판의 규칙. 둘 다 있으면 그냥 굴린다. */
-export function luckOf(advantages: boolean[], disadvantages: boolean[]): Luck {
+export function edgeOf(advantages: boolean[], disadvantages: boolean[]): Edge {
     const up = advantages.some(Boolean);
     const down = disadvantages.some(Boolean);
     if (up === down) return "normal";

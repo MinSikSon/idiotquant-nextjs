@@ -26,7 +26,7 @@ import {
     weaponDamageOf,
     launcherDamageOf,
 } from "./items";
-import { heroDefense, mergeStacks } from "./hero";
+import { LUCK_MAX, LUCK_MIN, heroDefense, mergeStacks, PRAYER_TIMEOUT_START } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
@@ -356,7 +356,8 @@ function normalize(s: Saved): GameState | null {
         // 옛 저장에는 애초에 없던 값이니 맞는 처지다.
         pendingSkillPicks: Math.max(0, num(h.pendingSkillPicks, 0)),
         bonusDefense: Math.max(0, num(h.bonusDefense, 0)),
-        itemLuck: Math.min(1, Math.max(0, num(h.itemLuck, 0))),
+        // 옛 이름은 `itemLuck` 이다 — 넷핵 행운(`luck`)에 이름을 내주며 바꿨다.
+        wisdom: Math.min(1, Math.max(0, num(h.wisdom ?? (h as { itemLuck?: number }).itemLuck, 0))),
         // v12 이하에는 사람별 행동 횟수가 없다. 지난 판의 전체 턴을 나누어 지어내지 않고
         // 0에서 새로 센다 — 옛 기록에 없던 일을 누구 몫으로 둘 수는 없다.
         turns: Math.max(0, num(h.turns, 0)),
@@ -369,6 +370,10 @@ function normalize(s: Saved): GameState | null {
         classSkillDepth: Math.max(0, num(h.classSkillDepth, 0)),
         // 정령을 다시 부르는 기다림이 생기기 전의 판에는 없다 — 0이면 곧바로 부를 수 있다.
         spiritTurn: Math.max(0, num(h.spiritTurn, 0)),
+        // 기도가 생기기 전의 판에는 없다 — 새 판과 같은 값에서 센다(곧바로 빌 수는 없다).
+        prayerTimeout: Math.max(0, num(h.prayerTimeout, PRAYER_TIMEOUT_START)),
+        // 행운이 생기기 전의 판에는 없다 — 원작의 시작값 0 이다.
+        luck: Math.max(LUCK_MIN, Math.min(LUCK_MAX, Math.trunc(num(h.luck, 0)))),
     });
     const heroes: Hero[] = saved.map(fixHero);
 

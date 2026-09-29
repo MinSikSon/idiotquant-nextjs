@@ -48,6 +48,11 @@ import {
     heroArmorClassTerms,
     heroStr,
     hungerOf,
+    EXP_LEVELS,
+    tickLuck,
+    changeLuck,
+    luckOf,
+    luckyChance,
     hungerRate,
     isWorn,
     launcherFor,
@@ -235,7 +240,7 @@ type Action =
      * 3레벨마다 쌓이는 성장 하나를 고른다 — **캠프도, 턴도 필요 없다**(레벨업 자체가
      * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
      */
-    | { t: "pickSkill"; option: "str" | "def" | "luck" }
+    | { t: "pickSkill"; option: "str" | "def" | "wis" }
     | { t: "inspectStatus"; kind: "origin" | "str" | "defense" | "wisdom" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
 
@@ -249,7 +254,9 @@ type Action =
     /** 가게에서 외상을 치른다. 주인이 적대하면 빚을 갚아 달랜다. */
     | { t: "pay" }
     /** 가게에서 배낭의 물건을 판다 — 사는 값의 절반. */
-    | { t: "sell"; letter: string };
+    | { t: "sell"; letter: string }
+    /** 신에게 빈다 — NetHack 의 `#pray`. 들어줄지는 기도 시간 제한과 곤경이 정한다. */
+    | { t: "pray" };
 
 /**
  * 명령 하나 — **누가 하는지**까지.
@@ -357,18 +364,18 @@ const DROUGHT_STEP = 1.0;
  * 사람과 값이 갈리는 자리가 아니다). **쓰러진 사람은 안 센다** — 서 있지도 않은 사람의
  * 안목이 바닥에 영향을 주면 안 된다.
  */
-export function partyItemLuck(state: GameState): number {
+export function partyWisdom(state: GameState): number {
     let best = 0;
     for (const h of state.heroes) {
-        if (h.hp > 0 && h.itemLuck > best) best = h.itemLuck;
+        if (h.hp > 0 && h.wisdom > best) best = h.wisdom;
     }
     return best;
 }
 
 function populate(state: GameState, level: Level, rng: Rng) {
-    const luck = partyItemLuck(state);
+    const wis = partyWisdom(state);
     // **가게가 먼저다** — 주인과 진열품이 자리를 잡아야 몬스터(`freeSpot`)가 그 위에 안 선다.
-    stockShop(state, level, rng, luck);
+    stockShop(state, level, rng, wis);
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
         const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
@@ -448,7 +455,7 @@ function populate(state: GameState, level: Level, rng: Rng) {
         }
 
         // 무기고는 **등급이 두 칸 위**다 — 무기고에서 단검이 나오면 무기고가 아니다.
-        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat, luck));
+        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat, wis));
     };
 
     const avoid = [state.heroes[0], level.stairs];
@@ -1900,7 +1907,7 @@ export function transmuteCategory(it: Item): Category | null {
 
 /**
  * 변환 제단에 올린다 — **삼키거나, 같은 분류의 새 물건으로 바꿔 제단 위에 둔다.**
- * 새 물건은 그 층의 드롭 규칙(`randomItem`, 올린 사람의 아이템운)을 그대로 탄다 — 제단이
+ * 새 물건은 그 층의 드롭 규칙(`randomItem`, 올린 사람의 지혜)을 그대로 탄다 — 제단이
  * 등급을 올려 주지 않는다. 받지 않는 물건이면 `false` 를 돌려 보통 내려놓기로 간다.
  */
 function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean {
@@ -1913,7 +1920,7 @@ function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean
     if (rng.rnd(100) < TRANSMUTE_SWALLOW_CHANCE) {
         say(state, `${name}을(를) 제단에 올렸다 — 제단이 삼켰다.`);
     } else {
-        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat, hero.itemLuck);
+        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat, hero.wisdom);
         state.level.items.push(made);
         say(state, `${name}을(를) 제단에 올렸다 — 빛이 걷히자 ${describe(made, state.known, state.appearance)}이(가) 놓여 있다.`);
     }
@@ -2182,7 +2189,7 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
  * **힘은 물약(`quaff` 의 `"strength"`)과 같은 식**이다(상한 31 · `maxStr` 을 따라 올림) —
  * 두 길이 갈리면 「힘 31 을 넘겼다」가 한쪽에서만 막힌다.
  */
-function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck"): boolean {
+function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "wis"): boolean {
     if (hero.pendingSkillPicks <= 0) {
         say(state, "지금은 고를 수 있는 성장이 없다.");
         return false;
@@ -2198,8 +2205,8 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
             hero.bonusDefense += 1;
             say(state, "🛡️ 성장 — 몸놀림이 단단해졌다.");
             break;
-        case "luck":
-            hero.itemLuck = Math.min(1, hero.itemLuck + 0.01);
+        case "wis":
+            hero.wisdom = Math.min(1, hero.wisdom + 0.01);
             say(state, "🔺 성장 — 지혜가 늘었다.");
             break;
     }
@@ -2450,7 +2457,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
-    // 지혜는 아이템운과 같은 값 하나에서 읽는다. 지혜 1당 같은 면의 주사위를 하나 더
+    // 지혜는 물건 등급과 같은 값(`hero.wisdom`) 하나에서 읽는다. 지혜 1당 같은 면의 주사위를 하나 더
     // 굴린다. 지혜를 안 고른 판은 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
     const wisdomDice = wandDamageDiceBonus(hero);
     const spellDamage = (dice: string) => {
@@ -2741,6 +2748,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
         ...(byHand ? [{ n: HAND_THROWN_AMMO.hit, why: "활 없이" }] : weaponSkillTerms(hero, it).slice(0, 1)),
         ...(bow ? [{ n: bow.plusHit ?? 0, why: "활 enchant" }] : []),
         { n: it.plusHit ?? 0, why: "enchant" },
+        { n: luckOf(hero), why: "행운" },
     ];
     const seen = seenBefore(state, m);
     const a = attackRoll(hitTerms.reduce((t, b) => t + b.n, 0), hitDifficulty(monsterDodgeBonus(m)), rng);
@@ -2894,14 +2902,14 @@ function search(state: GameState, hero: Hero, rng: Rng): boolean {
             const x = hero.x + dx;
             const y = hero.y + dy;
             if (!inBounds(x, y)) continue;
-            if (tileAt(level, x, y) === T.SECRET && rng.chance(chance)) {
+            if (tileAt(level, x, y) === T.SECRET && luckyChance(chance, hero, rng)) {
                 level.tiles[idx(x, y)] = T.DOOR;
                 level.flags[idx(x, y)] |= 1;
                 found++;
                 say(state, "숨은 문을 찾았다!");
             }
             const trap = level.traps.find((t) => t.x === x && t.y === y && !t.found);
-            if (trap && rng.chance(chance)) {
+            if (trap && luckyChance(chance, hero, rng)) {
                 trap.found = true;
                 found++;
                 say(state, `${TRAP_NAME[trap.kind]}을(를) 찾았다.`);
@@ -3552,7 +3560,7 @@ const SHOP_STOCK_BASE = 6;
 const SHOP_STOCK_MAX = 12;
 
 /** 가게의 주인과 진열품 — 새 층을 채울 때 한 번. */
-function stockShop(state: GameState, level: Level, rng: Rng, luck: number) {
+function stockShop(state: GameState, level: Level, rng: Rng, wis: number) {
     const shop = level.shop;
     if (!shop) return;
     const shk = spawnMonster(SHOPKEEPER.ch, shop.home.x, shop.home.y, rng);
@@ -3564,7 +3572,7 @@ function stockShop(state: GameState, level: Level, rng: Rng, luck: number) {
     for (const p of roomSpots(level, level.rooms[shop.room], n, rng, avoid)) {
         // 금화는 안 판다 — 돈을 돈으로 사는 가게는 없다.
         const cat = pickCategory(level.depth, rng, 1, { gold: 0 });
-        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat, luck));
+        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat, wis));
     }
 }
 
@@ -3870,6 +3878,166 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
     return true;
 }
 
+// ── 기도 — NetHack 의 #pray (`pray.c`) ─────────────────────────────────────────
+//
+// 행운(`hero.luck`)은 원작 그대로 쓴다. 성향과 신의 분노 누적은 옮기지 않았다 — 이 게임에는
+// 성향이 없고, 분노를 푸는 제물도 없다. 그래서 늘 「성향 기록이 넉넉한 사람」의 표를 쓰고,
+// 너무 이른 기도의 분노는 그때 한 번만 센다(`angrygods` 의 `anger`).
+
+/**
+ * NetHack `rnz(i)` — 가운데가 `i` 쯤이고 양쪽 꼬리가 긴 굴림(드물게 10배 · 1/10).
+ * `rne(4)` 의 상한은 원작처럼 레벨 15 미만이면 5, 그 위로는 레벨/3 이다.
+ */
+function rnz(i: number, hero: Hero, rng: Rng): number {
+    const cap = hero.level < 15 ? 5 : Math.floor(hero.level / 3);
+    let e = 1;
+    while (e < cap && rng.rnd(4) === 0) e++;
+    const tmp = (1000 + rng.rnd(1000)) * e;
+    return rng.rnd(2) ? Math.floor((i * tmp) / 1000) : Math.floor((i * 1000) / tmp);
+}
+
+type Trouble = "hunger" | "hit" | "cursed" | "blind" | "hungry" | "confused";
+
+/**
+ * 신이 보는 곤경 — **큰 것부터 작은 것 순서로.** 원작 `in_trouble` 의 순서를 따르되 이
+ * 게임에 있는 것만 남겼다. 큰 곤경은 허기(Weak 이하)와 체력(5 이하 또는 최대의 1/7 이하).
+ */
+function prayerTroubles(hero: Hero): { major: Trouble[]; minor: Trouble[] } {
+    const hunger = hungerOf(hero);
+    const major: Trouble[] = [];
+    if (hunger === "Weak" || hunger === "Faint") major.push("hunger");
+    if (hero.hp <= 5 || hero.hp * 7 <= hero.maxHp) major.push("hit");
+    const minor: Trouble[] = [];
+    if (hero.pack.some((it) => it.cursed && isWorn(hero, it))) minor.push("cursed");
+    if (hero.blind > 0) minor.push("blind");
+    if (hunger === "Hungry") minor.push("hungry");
+    if (hero.confused > 0) minor.push("confused");
+    return { major, minor };
+}
+
+function fixTrouble(state: GameState, hero: Hero, trouble: Trouble) {
+    switch (trouble) {
+        case "hunger":
+        case "hungry":
+            hero.food = 900;
+            say(state, "배가 더 이상 고프지 않다.");
+            break;
+        case "hit":
+            // 원작은 최대 체력도 굴려 올리지만 여기서는 체력을 굴리지 않는다 — 채우기만 한다.
+            hero.hp = hero.maxHp;
+            say(state, "몸이 한결 나아졌다.");
+            break;
+        case "cursed": {
+            // 원작 `worst_cursed_item` — 쥔 것 · 입은 것 · 낀 것 순서로 하나만.
+            const order = [hero.weaponId, hero.offWeaponId, hero.armorId, hero.leftRingId, hero.rightRingId];
+            const it = order.map((id) => hero.pack.find((p) => p.id === id && p.cursed)).find(Boolean);
+            if (!it) break;
+            it.cursed = false;
+            it.curseKnown = true;
+            say(state, `${describe(it, state.known, state.appearance)}이(가) 은은하게 빛난다.`);
+            break;
+        }
+        case "blind":
+            hero.blind = 0;
+            say(state, "눈이 다시 보인다.");
+            break;
+        case "confused":
+            hero.confused = 0;
+            say(state, "머리가 맑아졌다.");
+            break;
+    }
+}
+
+/**
+ * 신에게 빈다 — **늘 한 턴을 쓴다**(신은 어떻게든 답한다). NetHack `can_pray` → `prayer_done`.
+ *
+ * 1. 기도 시간 제한(`hero.prayerTimeout`)이 큰 곤경이면 200, 작은 곤경이면 100, 곤경이 없으면
+ *    0 **이하**가 아니면 **너무 이르다** — 행운 −3 을 치르고 신이 노한다.
+ * 2. 제한은 됐어도 **행운이 음수면** 신이 노한다.
+ * 3. 아니면 들어준다 — 얼마나 고쳐 줄지는 **행운이** 정한다(`pleased`).
+ */
+function pray(state: GameState, hero: Hero, rng: Rng): boolean {
+    say(state, "신에게 기도를 올린다…");
+    const { major, minor } = prayerTroubles(hero);
+    const limit = major.length ? 200 : minor.length ? 100 : 0;
+    if (hero.prayerTimeout > limit) {
+        changeLuck(hero, -3);
+        angrygods(state, hero, rng, 1);
+    } else if (luckOf(hero) < 0) {
+        angrygods(state, hero, rng, 0);
+    } else {
+        pleased(state, hero, rng, major, minor);
+    }
+    return true;
+}
+
+/**
+ * 신이 들어준다 — NetHack `pleased`. `action = rn1(행운 + 2, 1)` 을 굴려 **제단 밖이라 3 에서
+ * 자른다**(4·5 — 곤경 모두 · 선물 — 는 제단 위 기도의 몫이다. 이 게임에는 그 기도가 없다).
+ *   3: 가장 나쁜 곤경 하나(작은 것이라도) + 남은 큰 곤경 모두
+ *   2: 큰 곤경 모두
+ *   1: 가장 나쁜 곤경이 큰 것이면 그것 하나
+ * 행운 0 이면 1~2 뿐이라 **작은 곤경은 행운이 있어야** 고쳐진다(원작 그대로).
+ */
+function pleased(state: GameState, hero: Hero, rng: Rng, major: Trouble[], minor: Trouble[]) {
+    const action = Math.min(3, 1 + rng.rnd(Math.max(luckOf(hero), -1) + 2));
+    const fixes: Trouble[] =
+        action >= 3 ? (major.length ? major : minor.slice(0, 1)) : action === 2 ? major : major.slice(0, 1);
+    if (fixes.length) {
+        say(state, "따스한 빛이 몸을 감싼다.");
+        for (const t of fixes) fixTrouble(state, hero, t);
+    } else if (major.length || minor.length) {
+        say(state, "희망 같은 것이 느껴진다.");
+    } else {
+        say(state, "신이 흡족해하는 것이 느껴진다.");
+    }
+    hero.prayerTimeout = rnz(350, hero, rng);
+}
+
+/**
+ * 신이 노한다 — NetHack `angrygods`. 분노의 폭은 `3×분노 + (행운 > 0 ? −행운/3 : −행운)`
+ * (1..15)이고 그 안에서 굴린다. 행운이 나쁠수록 아래 표의 끝으로 간다.
+ *   0–1 불쾌해할 뿐 · 2–3 지혜 −1 과 이번 레벨의 경험(**레벨은 안 내린다** — 망령과 같은 까닭)
+ *   4–6 검은 빛 — 배낭의 물건을 저주한다(6 은 원작의 쇠공이지만 이 게임에 없어 저주로 넘어간다)
+ *   7–8 하수인을 보낸다(깊은 층의 챔피언) · 9 이상 번개 — **죽는다**
+ */
+function angrygods(state: GameState, hero: Hero, rng: Rng, anger: number) {
+    const luck = luckOf(hero);
+    const maxAnger = Math.max(1, Math.min(15, 3 * anger + (luck > 0 ? -Math.trunc(luck / 3) : -luck)));
+    const wrath = rng.rnd(maxAnger);
+    if (wrath < 2) {
+        say(state, "신이 불쾌해하는 것이 느껴진다.");
+    } else if (wrath < 4) {
+        hero.wisdom = Math.max(0, Math.round((hero.wisdom - 0.01) * 100) / 100);
+        hero.exp = Math.min(hero.exp, hero.level >= 2 ? EXP_LEVELS[hero.level - 2] : 0);
+        say(state, "「네 배움을 처음부터 다시 닦으라!」 — 지혜와 쌓은 경험이 빠져나갔다.");
+    } else if (wrath < 7) {
+        // 원작 `rndcurse` — 1d6 번 아무 물건이나 집어, 축복받은 것은 축복만 벗기고 나머지는 저주한다.
+        const pool = hero.pack.filter((it) => (it.kind === "weapon" || it.kind === "armor" || it.kind === "ring") && !it.unpaid);
+        for (let n = rng.rnd(6) + 1; n > 0 && pool.length; n--) {
+            const it = pool[rng.rnd(pool.length)];
+            if (it.blessed) it.blessed = false;
+            else it.cursed = true;
+        }
+        say(state, "검은 빛이 몸을 감싼다.");
+    } else if (wrath < 9) {
+        const spot = spiritSpot(state, hero, rng);
+        say(state, "「감히 나를 부르느냐? 그렇다면 죽어라, 필멸자여!」");
+        if (spot) {
+            const depth = Math.min(26, state.level.depth + 6);
+            const minion = spawnMonster(randomMonsterChar(depth, rng), spot.x, spot.y, rng, rollChampionPrefix(depth, rng) ?? "blazing");
+            minion.awake = true;
+            state.level.monsters.push(minion);
+            say(state, `${monsterName(minion)}이(가) 나타났다!`);
+        }
+    } else {
+        hero.hp = 0;
+        state.epitaph = "신의 번개에 맞아 재가 되었다.";
+        say(state, "하늘에서 번개가 내리꽂힌다!");
+    }
+    hero.prayerTimeout = rnz(300, hero, rng);
+}
+
 function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin" | "str" | "defense" | "wisdom") {
     const tag = `${who + 1}P▸ `;
     if (kind === "origin") {
@@ -3887,8 +4055,8 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
     } else if (kind === "defense") {
         say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
     } else {
-        const wisdom = Math.round(hero.itemLuck * 100);
-        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}% · 공격 지팡이 주사위 +${wandDamageDiceBonus(hero)}`);
+        const wisdom = Math.round(hero.wisdom * 100);
+        say(state, `${tag}Wis:${wisdom} · 아이템 등급 판정 +${wisdom}% · 공격 지팡이 주사위 +${wandDamageDiceBonus(hero)}`);
     }
 }
 
@@ -4030,6 +4198,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "sell":
                 acted = sellItem(state, hero, cmd.letter);
                 break;
+            case "pray":
+                acted = pray(state, hero, rng);
+                break;
         }
         if (hero.guarded && hero.origin === "knight" && !heldGuard) {
             hero.guarded = false;
@@ -4072,6 +4243,8 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         if (h.blind > 0) h.blind -= 1;
         if (h.confused > 0) h.confused -= 1;
         if (h.detect > 0) h.detect -= 1;
+        if (h.prayerTimeout > 0) h.prayerTimeout -= 1;
+        tickLuck(h, state.turn);
         // 눈이 멀면 탐지가 꺼진다 — 안 보이는데 생명만 짚어 낼 수는 없다.
         if (h.blind > 0) h.detect = 0;
 

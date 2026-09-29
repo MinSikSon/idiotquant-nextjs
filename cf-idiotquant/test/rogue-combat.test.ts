@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { SILVER_BANE, heroAttack, monsterAttack, monsterDamBonus } from "@/lib/rogue/combat";
 import { bestiaryRows, newGame, perform } from "@/lib/rogue/game";
 import { idx, type GameState } from "@/lib/rogue/types";
-import { attackRoll, damageRoll, hitDifficulty, luckOf, pierce, proficiency } from "@/lib/rogue/dnd";
+import { attackRoll, damageRoll, hitDifficulty, edgeOf, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
 import { makeItem } from "@/lib/rogue/items";
 import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero } from "@/lib/rogue/hero";
@@ -119,10 +119,10 @@ test("최종값 20 대성공·자연 1, 치명타 두 번, 유리·불리", () =
             const down = attackRoll(0, 11, rng, "disadvantage");
             assert.equal(down.roll, Math.min(...down.rolls));
         }
-        assert.equal(luckOf([true], [true]), "normal", "유리와 불리가 안 지워졌다");
-        assert.equal(luckOf([true], [false]), "advantage");
-        assert.equal(luckOf([false], [true]), "disadvantage");
-        assert.equal(luckOf([], []), "normal");
+        assert.equal(edgeOf([true], [true]), "normal", "유리와 불리가 안 지워졌다");
+        assert.equal(edgeOf([true], [false]), "advantage");
+        assert.equal(edgeOf([false], [true]), "disadvantage");
+        assert.equal(edgeOf([], []), "normal");
     }
 });
 

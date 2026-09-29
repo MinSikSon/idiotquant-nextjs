@@ -800,7 +800,7 @@ test("지혜 성장은 공격 지팡이 피해를 즉시 올리고, 기록에 �
         monster.y = state.heroes[0].y + dy;
         monster.hp = monster.maxHp = 99;
     }
-    wise.heroes[0].itemLuck = 0.03;
+    wise.heroes[0].wisdom = 0.03;
     assert.equal(wandDamageDiceBonus(wise.heroes[0]), 3, "지혜 3%가 지팡이 주사위 +3이 아니다");
 
     perform(base, { t: "zap", letter: "y", dx, dy });

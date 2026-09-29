@@ -342,15 +342,15 @@ export function fillAppearances(saved: Record<string, string>, seed: number): Re
  * 그래서 가끔 한 수 위의 물건이 일찍 나오고(그 한 번이 판을 바꾼다), 가끔 한 수
  * 아래의 것이 늦게 나온다. 층과 딱 맞아떨어지면 주울 때마다 놀랄 일이 없다.
  *
- * **`luck` 은 유리(advantage) 굴림이다**(`dnd.ts` 와 같은 모양 — 두 번 굴려 높은 쪽).
- * 그 몫만큼만 한 번 더 굴린다. **`luck` 이 `0` 이면 `rng` 를 한 번도 더 안 건드린다** —
- * 레벨업 성장에서 아무도 아이템운을 안 고른 판은 물건 뽑는 난수 흐름이 예전과 한 글자도
+ * **`wis`(지혜) 는 유리(advantage) 굴림이다**(`dnd.ts` 와 같은 모양 — 두 번 굴려 높은 쪽).
+ * 그 몫만큼만 한 번 더 굴린다. **`wis` 가 `0` 이면 `rng` 를 한 번도 더 안 건드린다** —
+ * 레벨업 성장에서 아무도 지혜를 안 고른 판은 물건 뽑는 난수 흐름이 예전과 한 글자도
  * 안 바뀐다(「시드가 같으면 판도 같다」를 지키는 자리).
  */
-export function itemTier(depth: number, rng: Rng, luck = 0): number {
+export function itemTier(depth: number, rng: Rng, wis = 0): number {
     const roll = () => Math.min(26, Math.max(1, depth + rng.rnd(10) - 6));
     const a = roll();
-    if (luck <= 0 || !rng.chance(luck)) return a;
+    if (wis <= 0 || !rng.chance(wis)) return a;
     return Math.max(a, roll());
 }
 
@@ -718,13 +718,13 @@ export function rollCharges(rng: Rng): number {
  * 분류는 부르는 쪽이 골라서 넘긴다(`pickCategory`) — 한 층에 강화 주문서를 두 장까지만
  * 놓는 것 같은 **층 단위 규칙**은 물건 하나가 알 수 있는 것이 아니기 때문이다.
  *
- * `luck` 은 등급 굴림(`itemTier`)에만 얹는다 — 금화(액수는 따로 굴린다)·물건의 종류
+ * `wis`(지혜) 는 등급 굴림(`itemTier`)에만 얹는다 — 금화(액수는 따로 굴린다)·물건의 종류
  * (`weightedAt`)는 그대로다. 「좋은 물건이 나온다」는 곧 「등급이 한 수 높게 잡힌다」다.
  */
-export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: Category, luck = 0): Item {
+export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: Category, wis = 0): Item {
     const c = cat ?? pickCategory(depth, rng);
     if (c === "gold") return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
-    const tier = itemTier(depth, rng, luck);
+    const tier = itemTier(depth, rng, wis);
     const rollBlessed = () => rng.rnd(10) === 0;
 
     if (c === "potion") {
