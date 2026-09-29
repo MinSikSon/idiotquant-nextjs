@@ -2314,15 +2314,7 @@ export default function Rogue() {
                         {cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
-                        {coop && <button
-                            type="button"
-                            className="order-3 rounded border border-[var(--rg-line-soft)] px-1.5 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]"
-                            aria-expanded={expandedPartyStats === i}
-                            onClick={() => setExpandedPartyStats((current) => current === i ? null : i)}
-                        >
-                            {expandedPartyStats === i ? "간략히" : "상세"}
-                        </button>}
-                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
+                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["str", `St:${heroStr(h)}`],
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
@@ -2331,9 +2323,9 @@ export default function Rogue() {
                                 ["defense", `AC:${heroArmorClass(h)}`],
                                 ["xp", `Xp:${h.level}/${h.exp}`],
                                 ["turn", `T:${h.turns}/${state.turn}`],
-                            ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded px-0.5 underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
+                            ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                         </div>}
-                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
+                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             <span>[<OriginTag origin={h.origin} level={h.level} />]</span>
                             {hRings > 0 && <span>반지:{hRings}</span>}
                         </div>}
@@ -2351,6 +2343,14 @@ export default function Rogue() {
                                 </span>
                             )
                         }
+                        {coop && <button
+                            type="button"
+                            className="shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]"
+                            aria-expanded={expandedPartyStats === i}
+                            onClick={() => setExpandedPartyStats((current) => current === i ? null : i)}
+                        >
+                            {expandedPartyStats === i ? "한 줄로 보기" : "여러 줄로 보기"}
+                        </button>}
                     </div >
                 );
             })}
