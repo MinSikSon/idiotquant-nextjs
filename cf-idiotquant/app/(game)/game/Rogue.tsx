@@ -2198,13 +2198,7 @@ export default function Rogue() {
                 )}
             </div>
 
-            {/* 상태 줄 — 원작의 맨 아랫줄.
-                **한 줄로 묶어 둔다.** 접히게 두면 좁은 폰에서 「금화」가 둘째 줄로 내려가
-                그만큼 지도가 줄고, 값이 하나 늘 때마다 지도의 높이가 달라진다. 넘치면
-                옆으로 민다 — 세로는 지도의 것이다.
-
-                **협동에서는 급한 값만 먼저 보인다** — 이름·체력·허기·식량과 위험 상태다.
-                직업·능력치·금화·경험치·행동 수는 「상세」를 눌렀을 때만 펼친다. */}
+            {/* 캐릭터 상태: 접힌 줄에는 요청된 핵심 정보만, 펼치면追加 능력치를 둘째 줄에 둔다. */}
             {(state.heroes.length > 1 ? state.heroes : [hero]).map((h, i) => {
                 const coop = state.heroes.length > 1;
                 const hHunger = hungerOf(h);
@@ -2216,7 +2210,7 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] overflow-x-auto overflow-y-hidden px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${coop && expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap" : "flex-wrap whitespace-normal"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] overflow-x-auto overflow-y-hidden px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&>*]:order-20 [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap" : "flex-wrap whitespace-normal"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
@@ -2250,15 +2244,17 @@ export default function Rogue() {
                                 쓰러졌다 — 동료 이름표를 누르면 그쪽 눈으로 본다
                             </span>
                         )}
-                        {coop && expandedPartyStats !== i && <span className="shrink-0">[<OriginTag origin={h.origin} level={h.level} />]</span>}
+                        {expandedPartyStats !== i && <span className="shrink-0">[<OriginTag origin={h.origin} level={h.level} />]</span>}
+                        {!coop && expandedPartyStats !== i && <span className="shrink-0">{h.nick ?? "나"}</span>}
+                        {expandedPartyStats !== i && hHunger && <button type="button" className="shrink-0 font-bold text-[var(--rg-monster)]" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger}</button>}
+                        {!coop && expandedPartyStats !== i && <button type="button" className="shrink-0" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }}>St:{heroStr(h)}</button>}
                         {coop && expandedPartyStats !== i && ([
                             ["str", `St:${heroStr(h)}`],
                             ["defense", `AC:${heroArmorClass(h)}`],
                             ["xp", `Xp:${h.level}/${h.exp}`],
                             ["turn", `T:${h.turns}/${state.turn}`],
                         ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
-                        {coop && expandedPartyStats !== i && <button type="button" className={`shrink-0 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`} onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger || "Well-fed"}</button>}
-                        {!coop && <button
+                        {!coop && expandedPartyStats === i && <button
                             type="button"
                             onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "origin" }); setSheet("log"); }}
                             className={`${statChip} order-0`}
@@ -2266,26 +2262,26 @@ export default function Rogue() {
                         >
                             [<OriginTag origin={h.origin} level={h.level} />]
                         </button>}
-                        {!coop && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
+                        {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
                             St:{heroStr(h)}
-                        </button>}
-                        {!coop && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
-                        {!coop && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
+                        </button>
+                        {!coop && expandedPartyStats === i && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
+                        {!coop && expandedPartyStats === i && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
                         <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
                         <span className={`shrink-0 order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
-                        {(!coop || expandedPartyStats === i) && h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        {!coop && <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "defense" }); setSheet("log"); }} className={`${statChip} order-8`}>
+                        {expandedPartyStats === i && h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
+                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "defense" }); setSheet("log"); }} className={`${statChip} order-8`}>
                             AC:{heroArmorClass(h)}
-                        </button>}
-                        {!coop && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
+                        </button>
+                        {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
                             Wi:{Math.round(h.itemLuck * 100)}
                         </button>}
-                        {!coop && <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>
+                        <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>
                             Xp:{h.level}/{h.exp}
                         </button>}
-                        {!coop && i === 0 && (
+                        {i === 0 && (
                             <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>
                                 {coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`}
                             </button>
@@ -2295,26 +2291,26 @@ export default function Rogue() {
                                 <span className="order-30 text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
                             )
                         }
-                        {(!coop || expandedPartyStats === i) && h.guarded && <span className="order-30 text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
-                        {(!coop || expandedPartyStats === i) && h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
-                        {(!coop || expandedPartyStats === i) && h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
-                        {(!coop || expandedPartyStats === i) && h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                        {(!coop || expandedPartyStats === i) && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
+                        {expandedPartyStats === i && h.guarded && <span className="order-30 text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
+                        {expandedPartyStats === i && h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
+                        {expandedPartyStats === i && h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
+                        {expandedPartyStats === i && h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
+                        {expandedPartyStats === i && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
                             {hHunger || "Well-fed"}
                         </button>}
-                        {(!coop || expandedPartyStats === i) && (!coop || foodCount <= 2) && <span className={`order-3 ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
+                        {expandedPartyStats === i && (!coop || foodCount <= 2) && <span className={`order-3 ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
                             식량:{foodCount}
                         </span>}
-                        {!coop && i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
+                        {expandedPartyStats === i && !coop && i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
                             <span className="order-3 text-[var(--rg-gold)] font-medium">
                                 {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
                             </span>
                         )}
-                        {!coop && hRings > 0 && <span className="order-3 text-[var(--rg-ring)]">Ring: {hRings}</span>}
-                        {(!coop || expandedPartyStats === i) && cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
-                        {(!coop || expandedPartyStats === i) && emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
-                        {(!coop || expandedPartyStats === i) && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
-                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
+                        {expandedPartyStats === i && !coop && hRings > 0 && <span className="order-3 text-[var(--rg-ring)]">Ring: {hRings}</span>}
+                        {expandedPartyStats === i && cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
+                        {expandedPartyStats === i && emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
+                        {expandedPartyStats === i && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
+                        {expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["str", `St:${heroStr(h)}`],
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
@@ -2343,14 +2339,14 @@ export default function Rogue() {
                                 </span>
                             )
                         }
-                        {coop && <button
+                        <button
                             type="button"
                             className="shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]"
                             aria-expanded={expandedPartyStats === i}
                             onClick={() => setExpandedPartyStats((current) => current === i ? null : i)}
                         >
                             {expandedPartyStats === i ? "한 줄로 보기" : "여러 줄로 보기"}
-                        </button>}
+                        </button>
                     </div >
                 );
             })}
