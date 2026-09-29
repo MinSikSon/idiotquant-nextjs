@@ -95,7 +95,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
-import { SPIRIT_NAMES, SPIRIT_TRAITS } from "@/lib/rogue/monsters";
+import { ADVANCED_SPIRIT_TRAITS, SPIRIT_NAMES, SPIRIT_TRAITS } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
@@ -2085,7 +2085,7 @@ export default function Rogue() {
                                     <span className="font-bold text-[var(--rg-gold)]">어느 정령을 부를까</span>
                                     {(Object.keys(SPIRIT_NAMES) as SpiritElement[]).map((element) => (
                                         <button key={element} type="button" onClick={() => { run({ t: "classSkill", element }); setSpiritOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
-                                            {SPIRIT_NAMES[element]} · {SPIRIT_TRAITS[element]}
+                                            {SPIRIT_NAMES[element]} · {SPIRIT_TRAITS[element]}{hero.level >= ADVANCE_LEVEL ? ` · ${ADVANCED_SPIRIT_TRAITS[element]}` : ""}
                                         </button>
                                     ))}
                                 </div>

@@ -176,6 +176,7 @@ import {
     spawnMonster,
     summonSpiritAt,
     SPIRIT_TRAITS,
+    ADVANCED_SPIRIT_TRAITS,
 } from "./monsters";
 import {
     Rng,
@@ -3431,7 +3432,9 @@ function summonSpirit(state: GameState, hero: Hero, rng: Rng, element?: SpiritEl
     state.level.monsters.push(spirit);
     hero.classSkillDepth = state.level.depth;
     hero.spiritTurn = state.turn;
-    say(state, `✦ ${spirit.def.name}을(를) 불러냈다 — ${SPIRIT_TRAITS[spirit.spirit!.element]}. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
+    const bond = spirit.spirit!;
+    const traits = bond.advanced ? `${SPIRIT_TRAITS[bond.element]} · ${ADVANCED_SPIRIT_TRAITS[bond.element]}` : SPIRIT_TRAITS[bond.element];
+    say(state, `✦ ${spirit.def.name}을(를) 불러냈다 — ${traits}. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
     return true;
 }
 
@@ -3462,14 +3465,22 @@ function strikeMonster(state: GameState, attacker: Monster, defender: Monster, r
     defender.hp -= total;
     defender.awake = true;
     say(state, withDamage(`${aName}이(가) ${dName}을(를) 쳤다.`, total) + spiritHp());
-    // 물의 정령은 친 피해의 절반(적어도 1)만큼 주인을 고친다 — 피해가 0이면 안 고친다.
+    // 물의 정령은 친 피해의 절반(적어도 1)만큼 주인을 고친다 — 전직 뒤에는 다. 피해가 0이면 안 고친다.
     const healer = attacker.spirit?.element === "water" ? state.heroes[attacker.spirit.owner] : undefined;
     if (healer && healer.hp > 0 && total > 0 && healer.hp < healer.maxHp) {
-        const gain = Math.min(healer.maxHp - healer.hp, Math.max(1, Math.floor(total / 2)));
+        const heal = attacker.spirit!.advanced ? total : Math.max(1, Math.floor(total / 2));
+        const gain = Math.min(healer.maxHp - healer.hp, heal);
         healer.hp += gain;
         say(state, `물의 정령이 상처를 씻어 준다. (HP +${gain})`);
     }
-    if (defender.hp > 0) return;
+    if (defender.hp > 0) {
+        // 전직한 땅의 정령은 맞고 버티면 되받아친다 — 적이 친 때만이라 되받기가 되받기를 안 부른다.
+        if (defender.spirit?.element === "earth" && defender.spirit.advanced && !attacker.spirit && attacker.hp > 0) {
+            say(state, `${dName}이(가) 되받아친다!`);
+            strikeMonster(state, defender, attacker, rng);
+        }
+        return;
+    }
     if (defender.spirit) {
         say(state, `${dName}이(가) 흩어졌다.`);
         return;
