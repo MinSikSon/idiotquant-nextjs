@@ -175,8 +175,8 @@ import {
     randomMonsterChar,
     spawnMonster,
     summonSpiritAt,
-    SPIRIT_TRAITS,
-    ADVANCED_SPIRIT_TRAITS,
+    SPIRIT_GLYPHS,
+    SPIRIT_VERBS,
 } from "./monsters";
 import {
     Rng,
@@ -3302,8 +3302,11 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
         // **땅의 정령만은 예외**로, 곁에 있으면 목표가 곁에 있어도 그것을 먼저 친다(끌어당긴다).
         {
             const guards = level.monsters.filter((o) => o.spirit && o.hp > 0 && adjacent(m, o) && !monsterBlockedDiagonal(level, m, o));
-            const guard = guards.find((o) => o.spirit!.element === "earth") ?? (adjacent(m, victim) ? undefined : guards[0]);
+            const earth = guards.find((o) => o.spirit!.element === "earth");
+            const guard = earth ?? (adjacent(m, victim) ? undefined : guards[0]);
             if (guard) {
+                // 목표를 두고 땅에 끌려간 때만 적는다 — 도발이 기록에서 드러나는 자리.
+                if (earth && adjacent(m, victim)) say(state, `${monsterName(m)}이(가) ${monsterName(earth)}에게 발이 묶였다.`);
                 strikeMonster(state, m, guard, rng);
                 return;
             }
@@ -3404,7 +3407,7 @@ export function spiritWait(state: GameState, hero: Hero): number {
 
 /**
  * 정령 소환. 아직 기다려야 하거나 설 자리가 없으면 턴도 기회도 안 쓴다. 원소는 부르는 사람이
- * 고른다(`SPIRIT_TRAITS`) — 안 골랐거나 모르는 값이면(남이 보낸 명령) 굴린다.
+ * 고른다(`SPIRIT_GLYPHS`) — 안 골랐거나 모르는 값이면(남이 보낸 명령) 굴린다.
  */
 function summonSpirit(state: GameState, hero: Hero, rng: Rng, element?: SpiritElement): boolean {
     const wait = spiritWait(state, hero);
@@ -3432,9 +3435,7 @@ function summonSpirit(state: GameState, hero: Hero, rng: Rng, element?: SpiritEl
     state.level.monsters.push(spirit);
     hero.classSkillDepth = state.level.depth;
     hero.spiritTurn = state.turn;
-    const bond = spirit.spirit!;
-    const traits = bond.advanced ? `${SPIRIT_TRAITS[bond.element]} · ${ADVANCED_SPIRIT_TRAITS[bond.element]}` : SPIRIT_TRAITS[bond.element];
-    say(state, `✦ ${spirit.def.name}을(를) 불러냈다 — ${traits}. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
+    say(state, `✦ ${SPIRIT_GLYPHS[spirit.spirit!.element]} ${spirit.def.name}을(를) 불러냈다. (HP ${spirit.hp} · ${spirit.spirit!.turns}턴)`);
     return true;
 }
 
@@ -3464,7 +3465,9 @@ function strikeMonster(state: GameState, attacker: Monster, defender: Monster, r
     }
     defender.hp -= total;
     defender.awake = true;
-    say(state, withDamage(`${aName}이(가) ${dName}을(를) 쳤다.`, total) + spiritHp());
+    // 정령이 친 줄은 원소의 말로 적는다(`SPIRIT_VERBS`) — 설명 없이 기록에서 원소가 드러난다. 두 번 맞으면 그렇게 적는다.
+    const verb = attacker.spirit ? `${hits > 1 ? "두 번 " : ""}${SPIRIT_VERBS[attacker.spirit.element]}` : "쳤다";
+    say(state, withDamage(`${aName}이(가) ${dName}을(를) ${verb}.`, total) + spiritHp());
     // 물의 정령은 친 피해의 절반(적어도 1)만큼 주인을 고친다 — 전직 뒤에는 다. 피해가 0이면 안 고친다.
     const healer = attacker.spirit?.element === "water" ? state.heroes[attacker.spirit.owner] : undefined;
     if (healer && healer.hp > 0 && total > 0 && healer.hp < healer.maxHp) {
