@@ -2263,7 +2263,7 @@ export default function Rogue() {
                         </button>}
                         {!coop && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
                         {!coop && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
-                        {!coop && <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>}
+                        <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
                         <span className={`order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
@@ -2274,7 +2274,9 @@ export default function Rogue() {
                         {!coop && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
                             Wi:{Math.round(h.itemLuck * 100)}
                         </button>}
-                        {!coop && <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>}
+                        <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>
+                            {coop ? `Lv:${h.level} Xp:${h.exp}` : `Xp:${h.level}/${h.exp}`}
+                        </button>
                         {!coop && i === 0 && (
                             <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>
                                 {coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`}
@@ -2315,7 +2317,7 @@ export default function Rogue() {
                         {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)]">
                             <span>[<OriginTag origin={h.origin} level={h.level} />]</span>
                             <span>힘:{heroStr(h)}</span><span>방어:{heroArmorClass(h)}</span>
-                            <span>금화:{h.gold}</span><span>경험치:{h.level}/{h.exp}</span>
+                            <span>경험치:{h.level}/{h.exp}</span>
                             {hRings > 0 && <span>반지:{hRings}</span>}
                             <span>행동:{h.turns}/{state.turn}</span>
                         </div>}
