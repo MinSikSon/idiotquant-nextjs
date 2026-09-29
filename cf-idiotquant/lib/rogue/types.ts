@@ -466,6 +466,14 @@ export interface Hero {
      * 화면에는 안 적는다 — 원작도 안 보여 준다(`game.ts` 「기도」).
      */
     prayerTimeout: number;
+    /**
+     * **행운** — NetHack 의 `u.uluck`(−10..+10). 화면에는 안 적는다(원작도 숨긴다).
+     *
+     * 이름이 `luck` 이 아닌 까닭: `itemLuck`(아이템운 · Wi) · `dnd.Luck`(유리 굴림) ·
+     * `pickSkill` 의 `"luck"` 이 이미 **다른 뜻**으로 그 이름을 쓴다. 읽는 자리는
+     * `fortuneOf` · 바꾸는 자리는 `changeFortune` **하나씩**이다(`hero.ts` 「행운」).
+     */
+    fortune: number;
 }
 
 export type Phase = "playing" | "dead" | "won";

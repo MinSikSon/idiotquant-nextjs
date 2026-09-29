@@ -49,7 +49,7 @@ import {
     heroStr,
     hungerOf,
     EXP_LEVELS,
-    PRAYER_TIMEOUT_START,
+    tickFortune,
     hungerRate,
     isWorn,
     launcherFor,
@@ -4195,6 +4195,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         if (h.confused > 0) h.confused -= 1;
         if (h.detect > 0) h.detect -= 1;
         if (h.prayerTimeout > 0) h.prayerTimeout -= 1;
+        tickFortune(h, state.turn);
         // 눈이 멀면 탐지가 꺼진다 — 안 보이는데 생명만 짚어 낼 수는 없다.
         if (h.blind > 0) h.detect = 0;
 

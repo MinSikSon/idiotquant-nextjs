@@ -26,7 +26,7 @@ import {
     weaponDamageOf,
     launcherDamageOf,
 } from "./items";
-import { heroDefense, mergeStacks, PRAYER_TIMEOUT_START } from "./hero";
+import { FORTUNE_MAX, FORTUNE_MIN, heroDefense, mergeStacks, PRAYER_TIMEOUT_START } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
@@ -371,6 +371,8 @@ function normalize(s: Saved): GameState | null {
         spiritTurn: Math.max(0, num(h.spiritTurn, 0)),
         // 기도가 생기기 전의 판에는 없다 — 새 판과 같은 값에서 센다(곧바로 빌 수는 없다).
         prayerTimeout: Math.max(0, num(h.prayerTimeout, PRAYER_TIMEOUT_START)),
+        // 행운이 생기기 전의 판에는 없다 — 원작의 시작값 0 이다.
+        fortune: Math.max(FORTUNE_MIN, Math.min(FORTUNE_MAX, Math.trunc(num(h.fortune, 0)))),
     });
     const heroes: Hero[] = saved.map(fixHero);
 

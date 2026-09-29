@@ -256,6 +256,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         classSkillDepth: 0,
         spiritTurn: 0,
         prayerTimeout: PRAYER_TIMEOUT_START,
+        fortune: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
     for (const item of startingItems) {
@@ -801,6 +802,56 @@ export function isWorn(hero: Hero, it: Item): boolean {
 /**
  * 경험치를 준다. 레벨이 올랐으면 그 사실을 돌려준다 — 메시지는 부르는 쪽이 쓴다.
  */
+// ── 행운 — NetHack 의 Luck (`attrib.c` · `rnd.c`) ─────────────────────────────
+//
+// **밑 작업만 있다** — 값·경계·되돌아옴·`rnl` 굴림까지. 아직 어느 규칙도 이 값을 안 읽고
+// 안 바꾼다(기도·명중·뒤지기에 붙이는 것은 다음 일). 그래서 지금은 늘 0 이고, `rnl` 도
+// 행운 0 에서는 `rng.rnd(x)` 와 **같은 난수를 같은 수만큼** 쓴다.
+
+/** 행운의 경계 — NetHack `LUCKMAX`/`LUCKMIN`. 행운 물건의 ±3(`u.moreluck`)은 아직 없다. */
+export const FORTUNE_MAX = 10;
+export const FORTUNE_MIN = -10;
+
+/** 행운이 0 쪽으로 한 칸 돌아오는 주기(턴). 증표를 들면 반으로 준다 — NetHack `nh_timeout`. */
+export const FORTUNE_TIMEOUT = 600;
+export const FORTUNE_TIMEOUT_AMULET = 300;
+
+/** 규칙이 읽는 행운 — 행운 물건이 생기면 **여기서만** 더한다(NetHack 의 `Luck` 매크로). */
+export function fortuneOf(hero: Hero): number {
+    return hero.fortune;
+}
+
+/** 행운을 바꾸는 유일한 자리 — NetHack `change_luck`. 경계에서 자른다. */
+export function changeFortune(hero: Hero, n: number) {
+    hero.fortune = Math.max(FORTUNE_MIN, Math.min(FORTUNE_MAX, hero.fortune + n));
+}
+
+/**
+ * 행운이 저절로 0 쪽으로 돌아온다 — 턴마다 부르고, 주기가 된 턴에만 한 칸 움직인다.
+ * 시계는 판의 `turn` 이다(배고픔과 같은 시계 — 협동에서 가만히 있는 사람도 같이 돈다).
+ * 원작의 보름달(+1 기준선)은 옮기지 않는다 — 실제 날짜라 같은 시드가 다른 판이 된다.
+ */
+export function tickFortune(hero: Hero, turn: number) {
+    if (hero.fortune === 0) return;
+    if (turn % (hero.hasAmulet ? FORTUNE_TIMEOUT_AMULET : FORTUNE_TIMEOUT) !== 0) return;
+    hero.fortune += hero.fortune > 0 ? -1 : 1;
+}
+
+/**
+ * NetHack 3.6 `rnl(x)` — **행운이 기울이는** `0..x-1` 굴림. **낮을수록 좋은 결과**다
+ * (원작의 쓰임이 모두 「0 이면 성공」 꼴이다). 좋은 행운은 값을 깎고 나쁜 행운은 올린다.
+ * `x` 가 15 이하면 행운을 1/3 로(부호는 지키며) 줄여 쓴다. 행운이 0 이면 `rng.rnd(x)` 와 같다.
+ */
+export function rnl(x: number, hero: Hero, rng: Rng): number {
+    const luck = fortuneOf(hero);
+    const adjustment = x <= 15 ? Math.sign(luck) * Math.floor((Math.abs(luck) + 1) / 3) : luck;
+    let i = rng.rnd(x);
+    if (adjustment && rng.rnd(37 + Math.abs(adjustment))) {
+        i = Math.max(0, Math.min(x - 1, i - adjustment));
+    }
+    return i;
+}
+
 /** 새 판의 기도 시간 제한 — NetHack 의 `u.ublesscnt = 300`. */
 export const PRAYER_TIMEOUT_START = 300;
 
