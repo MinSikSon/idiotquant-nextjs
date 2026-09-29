@@ -2274,9 +2274,9 @@ export default function Rogue() {
                         {!coop && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
                             Wi:{Math.round(h.itemLuck * 100)}
                         </button>}
-                        <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>
-                            {coop ? `Lv:${h.level} Xp:${h.exp}` : `Xp:${h.level}/${h.exp}`}
-                        </button>
+                        {!coop && <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>
+                            Xp:{h.level}/{h.exp}
+                        </button>}
                         {!coop && i === 0 && (
                             <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>
                                 {coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`}
@@ -2314,8 +2314,7 @@ export default function Rogue() {
                         >
                             {expandedPartyStats === i ? "간략히" : "상세"}
                         </button>}
-                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
-                            <span>[<OriginTag origin={h.origin} level={h.level} />]</span>
+                        {coop && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["str", `St:${heroStr(h)}`],
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
@@ -2325,6 +2324,9 @@ export default function Rogue() {
                                 ["xp", `Xp:${h.level}/${h.exp}`],
                                 ["turn", `T:${h.turns}/${state.turn}`],
                             ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded px-0.5 underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
+                        </div>}
+                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
+                            <span>[<OriginTag origin={h.origin} level={h.level} />]</span>
                             {hRings > 0 && <span>반지:{hRings}</span>}
                         </div>}
                         {
