@@ -20,7 +20,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { glyphAt } from "@/lib/rogue/game";
 import { hasRing } from "@/lib/rogue/hero";
-import { MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
+import { MAP_H, MAP_W, type GameState, type SpiritElement } from "@/lib/rogue/types";
 import type { ZapCell } from "../zapFx";
 
 /**
@@ -33,6 +33,14 @@ export const PARTY_INK = ["var(--rg-leader)", "var(--rg-mate)", "var(--rg-third)
 /** 그 사람의 `@` 밑에 까는 바닥 — 글자색만으로는 작은 글씨에서 여럿이 헷갈린다. */
 export const PARTY_BG = ["var(--rg-leader-bg)", "var(--rg-mate-bg)", "var(--rg-third-bg)", "var(--rg-fourth-bg)"];
 
+/** 정령의 원소별 색 — 지도의 `E` 와 고르기 단추(`Rogue.tsx`)의 문양이 같은 값을 읽는다. */
+export const SPIRIT_INK: Record<SpiritElement, string> = {
+    fire: "var(--rg-spirit-fire)",
+    water: "var(--rg-spirit-water)",
+    air: "var(--rg-spirit-air)",
+    earth: "var(--rg-spirit-earth)",
+};
+
 /** 글자 색 — **한 곳에서만 정한다.** 화면마다 정하면 같은 `@` 가 달라 보인다. */
 const INK: Record<string, string> = {
     hero: "var(--rg-hero)",
@@ -41,8 +49,11 @@ const INK: Record<string, string> = {
     monster: "var(--rg-monster)",
     // 화나지 않은 상점 주인 — 금빛. 화나면 `monster` 로 바뀐다(`glyphAt`).
     shopkeeper: "var(--rg-gold)",
-    // 정령술사가 부른 정령 — 지팡이 색. 같은 글자 `E` 의 에뮤(몬스터 색)와 갈린다.
-    spirit: "var(--rg-wand)",
+    // 정령술사가 부른 정령 — 원소마다 색이 다르다. 같은 글자 `E` 의 에뮤(몬스터 색·몬스터 바닥)와 갈린다.
+    "spirit-fire": SPIRIT_INK.fire,
+    "spirit-water": SPIRIT_INK.water,
+    "spirit-air": SPIRIT_INK.air,
+    "spirit-earth": SPIRIT_INK.earth,
     // 감지 물약으로 벽 너머를 느끼는 것 — **본 것과 색이 달라야 한다.**
     // 같은 색으로 그리면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
     "monster-sensed": "var(--rg-monster-sensed)",

@@ -100,7 +100,7 @@ import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, 
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
-import MapView, { PARTY_BG, PARTY_INK, type CellFlash, type Reveal } from "./components/MapView";
+import MapView, { PARTY_BG, PARTY_INK, SPIRIT_INK, type CellFlash, type Reveal } from "./components/MapView";
 import { ZAP_FX, zapFrames, zapImpact, type ZapCell } from "./zapFx";
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
@@ -2083,8 +2083,8 @@ export default function Rogue() {
                             {summons && spiritOpen && wait === 0 && (
                                 <div className="absolute bottom-full left-0 z-20 mb-1 flex gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] p-1.5 shadow-[0_0_0_1px_var(--rg-shadow)]">
                                     {(Object.keys(SPIRIT_GLYPHS) as SpiritElement[]).map((element) => (
-                                        // 문양만 보인다 — 이름은 읽어 주는 기계에게만(`aria-label`). 색은 지도의 정령 색(지팡이 색)이다.
-                                        <button key={element} type="button" aria-label={SPIRIT_NAMES[element]} onClick={() => { run({ t: "classSkill", element }); setSpiritOpen(false); }} className="grid h-10 w-10 place-items-center rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] font-[family-name:var(--font-plex-mono)] text-[20px] font-bold text-[var(--rg-wand)] hover:bg-[var(--rg-raised)]">
+                                        // 문양만 보인다 — 이름은 읽어 주는 기계에게만(`aria-label`). 색은 지도에 선 그 원소 정령의 색이다.
+                                        <button key={element} type="button" aria-label={SPIRIT_NAMES[element]} onClick={() => { run({ t: "classSkill", element }); setSpiritOpen(false); }} className="grid h-10 w-10 place-items-center rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] font-[family-name:var(--font-plex-mono)] text-[20px] font-bold hover:bg-[var(--rg-raised)]" style={{ color: SPIRIT_INK[element] }}>
                                             {SPIRIT_GLYPHS[element]}
                                         </button>
                                     ))}

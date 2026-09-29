@@ -4476,8 +4476,8 @@ export function glyphAt(
             // 화나지 않은 상점 주인은 **몬스터 색이 아니다** — 같은 `@` 인 영웅과도, 쳐야 할
             // 놈과도 갈려야 한다. 화나면 몬스터 색으로 바뀐다.
             if (visible && peacefulShk(level, m)) return { ch: m.def.ch, kind: "shopkeeper" };
-            // 정령도 몬스터 색이 아니다 — 같은 글자의 에뮤와 갈려야 한다.
-            if (m.spirit) return { ch: m.def.ch, kind: visible ? "spirit" : "monster-sensed" };
+            // 정령도 몬스터 색이 아니다 — 같은 글자의 에뮤와 갈려야 한다. 원소마다 색이 다르다.
+            if (m.spirit) return { ch: m.def.ch, kind: visible ? `spirit-${m.spirit.element}` : "monster-sensed" };
             return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
         }
     }
