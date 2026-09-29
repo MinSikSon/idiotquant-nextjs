@@ -13,7 +13,8 @@
  */
 
 import { newGame, perform } from "../lib/rogue/game.ts";
-import { hungerOf } from "../lib/rogue/hero.ts";
+import { hungerOf, rapidFireOf } from "../lib/rogue/hero.ts";
+import { isVisible } from "../lib/rogue/fov.ts";
 import { armorClassOf } from "../lib/rogue/items.ts";
 import { forSale } from "../lib/rogue/shop.ts";
 import { MAP_H, MAP_W, T, idx, inBounds, walkable } from "../lib/rogue/types.ts";
@@ -22,6 +23,7 @@ import { MAP_H, MAP_W, T, idx, inBounds, walkable } from "../lib/rogue/types.ts"
 const rngSearch = () => Math.random() < 0.5;
 
 const RUNS = Number(process.argv[2] ?? 300);
+const ORIGIN = process.argv[3] ?? "knight";
 const MAX_TURNS = 4000;
 
 const STEPS = [
@@ -73,6 +75,45 @@ function botTurn(s) {
     const { level } = s;
     const hero = s.heroes[0];
 
+    // 레벨 9 직업 액티브는 조건이 맞을 때 실제 명령으로 쓴다.
+    if (hero.level >= 9 && hero.classSkillDepth !== level.depth) {
+        if (hero.origin === "rogue" && level.monsters.some((m) => !m.champion && isVisible(level, m.x, m.y))) {
+            return { t: "classSkill" };
+        }
+        if (hero.origin === "scholar" && level.monsters.length > 0) return { t: "classSkill" };
+        if (hero.origin === "alchemist") {
+            const potions = hero.pack.filter((p) => p.kind === "potion" && p.type !== "blessing");
+            if (potions.length >= 2) return { t: "classSkill", ingredients: [potions[0].letter, potions[1].letter] };
+        }
+    }
+
+    // 직업 특성을 쓴다: 근위대는 철벽 자세, 레인저·마법 직업은 원거리 무기를 쓴다.
+    const adjacent = STEPS.some(([dx, dy]) => level.monsters.some((m) => m.x === hero.x + dx && m.y === hero.y + dy));
+    if (hero.origin === "knight" && adjacent && !hero.guarded) return { t: "rest" };
+
+    const rangedTarget = level.monsters
+        .filter((m) => m.hp > 0 && isVisible(level, m.x, m.y))
+        .map((m) => {
+            const dx = m.x - hero.x;
+            const dy = m.y - hero.y;
+            const distance = Math.max(Math.abs(dx), Math.abs(dy));
+            const aligned = dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy);
+            const dir = { dx: Math.sign(dx), dy: Math.sign(dy) };
+            let clear = aligned;
+            for (let n = 1; n < distance && clear; n++) {
+                if (!walkable(level.tiles[idx(hero.x + dir.dx * n, hero.y + dir.dy * n)])) clear = false;
+            }
+            return { m, distance, clear, dir };
+        })
+        .filter(({ distance, clear }) => distance >= 2 && distance <= 6 && clear)
+        .sort((a, b) => a.distance - b.distance)[0];
+    const rapid = rapidFireOf(hero);
+    if (rangedTarget && rapid && ((rapid.kind === "zap" && (rapid.item.charges ?? 0) > 0) || rapid.item.count > 0)) {
+        const dx = rangedTarget.dir.dx;
+        const dy = rangedTarget.dir.dy;
+        return { t: rapid.kind, letter: rapid.item.letter, dx, dy };
+    }
+
     // ① 붙은 놈이 있으면 때린다. 도망치는 봇이 아니다 — 그래야 전투 밸런스가 보인다.
     // 화나지 않은 상점 주인은 빼고 — 부딪혀도 말만 하므로 봇이 그 자리에서 영영 돈다.
     const hostile = (m) => !(m.shk && level.shop && !level.shop.angry);
@@ -122,7 +163,7 @@ function botTurn(s) {
 
 const results = [];
 for (let seed = 1; seed <= RUNS; seed++) {
-    let s = newGame(seed);
+    let s = newGame(seed, {}, {}, {}, {}, ORIGIN);
     let turns = 0;
     while (s.phase === "playing" && turns < MAX_TURNS) {
         s = perform(s, botTurn(s));
@@ -143,10 +184,18 @@ const pct = (arr, p) => num(arr)[Math.min(arr.length - 1, Math.floor(arr.length 
 const depths = results.map((r) => r.depth);
 const mean = (a) => (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1);
 
+console.log("층별 도달률");
+for (let depth = 1; depth <= 26; depth++) {
+    const reached = depths.filter((d) => d >= depth).length;
+    if (reached === 0) break;
+    console.log(`${String(depth).padStart(2)}층 ${String(reached).padStart(4)} (${((reached / RUNS) * 100).toFixed(1)}%)`);
+}
+console.log("");
+
 const byPhase = {};
 for (const r of results) byPhase[r.phase] = (byPhase[r.phase] ?? 0) + 1;
 
-console.log(`판 ${RUNS} · 최대 ${MAX_TURNS}턴`);
+console.log(`직업 ${ORIGIN} · 판 ${RUNS} · 최대 ${MAX_TURNS}턴`);
 console.log("");
 console.log("도달 깊이   평균 %s · 중앙값 %d · 상위10%% %d · 최대 %d",
     mean(depths), pct(depths, 0.5), pct(depths, 0.9), Math.max(...depths));

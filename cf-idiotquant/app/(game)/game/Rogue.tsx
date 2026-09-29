@@ -33,6 +33,7 @@ import {
     leaveGame,
     newGame,
     perform,
+    partyAmulet,
     score,
     setNick,
     standing,
@@ -129,6 +130,43 @@ const FLOOR_EVENT_BANNER: Record<string, { title: string; desc: string; icon: st
         icon: "⚔️",
     },
 };
+
+function runGoals(depth: number, hasAmulet: boolean, won: boolean) {
+    return [
+        { label: "지하 5층 돌파", done: depth >= 5 },
+        { label: "지하 10층 도달", done: depth >= 10 },
+        { label: "지하 20층 도달", done: depth >= 20 },
+        { label: "지하 26층 도달", done: depth >= 26 },
+        { label: "옌더의 증표 획득", done: hasAmulet },
+        { label: "증표를 들고 탈출", done: won },
+    ];
+}
+
+function RunGoalList({ depth, hasAmulet, won }: { depth: number; hasAmulet: boolean; won: boolean }) {
+    const goals = runGoals(depth, hasAmulet, won);
+    const achieved = goals.filter((goal) => goal.done).length;
+    const next = goals.find((goal) => !goal.done);
+
+    return (
+        <section aria-label="이번 판 목표" className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="font-bold text-[var(--rg-strong)]">이번 판 목표</h3>
+                <span className="text-xs font-semibold text-[var(--rg-label)]">{achieved} / {goals.length} 달성</span>
+            </div>
+            <ul className="grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-2">
+                {goals.map((goal) => (
+                    <li key={goal.label} className={`flex items-center gap-2 rounded bg-[var(--rg-bg)] px-2.5 py-1.5 ${goal.done ? "text-[var(--rg-strong)]" : "text-[var(--rg-faint)]"}`}>
+                        <span aria-hidden="true" className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${goal.done ? "border-[var(--rg-amulet)] bg-[var(--rg-amulet)] text-[var(--rg-bg)]" : "border-[var(--rg-line)]"}`}>
+                            {goal.done ? "✓" : "·"}
+                        </span>
+                        <span>{goal.label}</span>
+                    </li>
+                ))}
+            </ul>
+            {next && <p className="mt-2 text-xs text-[var(--rg-faint)]">다음 목표 · {next.label}</p>}
+        </section>
+    );
+}
 
 /** 기록 한 줄 — 협동의 앞머리를 그 사람 색으로 칠하고, 이름이 있으면 `1P` 대신 쓴다. */
 /**
@@ -428,6 +466,7 @@ export default function Rogue() {
         "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins" | "status"
     >("none");
     const [statusKind, setStatusKind] = useState<"origin" | "str" | "defense" | "wisdom" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
+    const [expandedPartyStats, setExpandedPartyStats] = useState<number | null>(null);
     /**
      * 사람마다의 배낭·고르기·겨누기(`Desk`). 둘이서면 둘이 따로 연다.
      * `modes` 는 그 책상이 지금 무엇을 띄웠는지 — 걷기를 막을지, 끝난 판을 덮을지 읽는다.
@@ -2165,13 +2204,12 @@ export default function Rogue() {
                 그만큼 지도가 줄고, 값이 하나 늘 때마다 지도의 높이가 달라진다. 넘치면
                 옆으로 민다 — 세로는 지도의 것이다.
 
-                **둘이면 사람마다 한 줄**이다. 동료의 체력·배고픔을 늘 봐야 하는데 조종을
-                넘겨야 보이면 늦는다. 줄머리의 이름표는 지도의 `@` 와 같은 글자색·바닥색이고,
-                누르면 조종이 넘어간다(조종 중인 쪽은 테두리). 층은 하나지만 상태 줄을 각각
-                읽을 때도 빠지지 않도록 모든 줄에 적는다. */}
+                **협동에서는 급한 값만 먼저 보인다** — 이름·체력·허기·식량과 위험 상태다.
+                직업·능력치·금화·경험치·행동 수는 「상세」를 눌렀을 때만 펼친다. */}
             {(state.heroes.length > 1 ? state.heroes : [hero]).map((h, i) => {
                 const coop = state.heroes.length > 1;
                 const hHunger = hungerOf(h);
+                const foodCount = h.pack.filter((it) => it.kind === "food").reduce((n, it) => n + it.count, 0);
                 const hRings = wornRings(h).length;
                 const cursedGear = h.pack.some((it) => it.cursed && (it.id === h.weaponId || it.id === h.armorId || it.id === h.leftRingId || it.id === h.rightRingId));
                 const emptyWand = h.pack.some((it) => it.kind === "wand" && (it.charges ?? 0) === 0);
@@ -2204,13 +2242,6 @@ export default function Rogue() {
                                 {h.hp > 0 ? "@" : "†"}{h.nick ?? `${i + 1}P`}
                             </button>
                         )}
-                        {/* 방장은 언제나 0번 영웅이다. 이름표 바로 뒤에 왕관을 세워, 여러
-                            상태 줄을 훑을 때 방의 주인을 먼저 찾게 한다. */}
-                        {coop && i === 0 && (
-                            <span className="order-20 shrink-0 font-bold !text-[var(--rg-gold)]" title="방장">
-                                ♛ 방장
-                            </span>
-                        )}
                         {/* **쓰러진 사람에게 제일 먼저 알려 줄 것은 이것**이다 — 누워 있는 동안
                             화면에 할 일이 하나도 없으면 판이 끝난 줄 안다. 줄은 가로로 넘치므로
                             (`overflow-x-auto whitespace-nowrap`) **이름표 바로 뒤**에 세운다 —
@@ -2220,32 +2251,32 @@ export default function Rogue() {
                                 쓰러졌다 — 동료 이름표를 누르면 그쪽 눈으로 본다
                             </span>
                         )}
-                        <button
+                        {!coop && <button
                             type="button"
                             onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "origin" }); setSheet("log"); }}
                             className={`${statChip} order-0`}
                             title="직업 성장 정보 보기"
                         >
                             [<OriginTag origin={h.origin} level={h.level} />]
-                        </button>
-                        <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
+                        </button>}
+                        {!coop && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
                             St:{heroStr(h)}
-                        </button>
-                        <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />
-                        <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>
-                        <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
+                        </button>}
+                        {!coop && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
+                        {!coop && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
+                        {!coop && <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>}
                         <span className={`order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
                         {h.hp > 0 && h.hp <= h.maxHp / 4 && <span className="order-30 font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "defense" }); setSheet("log"); }} className={`${statChip} order-8`}>
+                        {!coop && <button type="button" title="방어등급 — 낮을수록 좋음" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "defense" }); setSheet("log"); }} className={`${statChip} order-8`}>
                             AC:{heroArmorClass(h)}
-                        </button>
-                        <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
+                        </button>}
+                        {!coop && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
                             Wis:{Math.round(h.wisdom * 100)}
-                        </button>
-                        <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>
-                        {(coop || i === 0) && (
+                        </button>}
+                        {!coop && <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>}
+                        {!coop && i === 0 && (
                             <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>
                                 {coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`}
                             </button>
@@ -2259,18 +2290,36 @@ export default function Rogue() {
                         {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                        <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
+                        {(!coop || hHunger) && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-3 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
                             {hHunger || "Well-fed"}
-                        </button>
-                        {i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
+                        </button>}
+                        {(!coop || foodCount <= 2) && <span className={`order-3 ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
+                            식량:{foodCount}
+                        </span>}
+                        {!coop && i === 0 && level.mutator && FLOOR_EVENT_BANNER[level.mutator] && (
                             <span className="order-3 text-[var(--rg-gold)] font-medium">
                                 {FLOOR_EVENT_BANNER[level.mutator].icon} {FLOOR_EVENT_BANNER[level.mutator].title}
                             </span>
                         )}
-                        {hRings > 0 && <span className="order-3 text-[var(--rg-ring)]">Ring: {hRings}</span>}
+                        {!coop && hRings > 0 && <span className="order-3 text-[var(--rg-ring)]">Ring: {hRings}</span>}
                         {cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
+                        {coop && <button
+                            type="button"
+                            className="order-3 rounded border border-[var(--rg-line-soft)] px-1.5 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]"
+                            aria-expanded={expandedPartyStats === i}
+                            onClick={() => setExpandedPartyStats((current) => current === i ? null : i)}
+                        >
+                            {expandedPartyStats === i ? "간략히" : "상세"}
+                        </button>}
+                        {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)]">
+                            <span>[<OriginTag origin={h.origin} level={h.level} />]</span>
+                            <span>힘:{heroStr(h)}</span><span>방어:{heroArmorClass(h)}</span>
+                            <span>금화:{h.gold}</span><span>경험치:{h.level}/{h.exp}</span>
+                            {hRings > 0 && <span>반지:{hRings}</span>}
+                            <span>행동:{h.turns}/{state.turn}</span>
+                        </div>}
                         {
                             online && linked && i !== who && DESK_DOING[peerModes[i] ?? "none"] && (
                                 <span className="font-bold" style={{ color: PARTY_INK[i] }}>
@@ -2279,11 +2328,9 @@ export default function Rogue() {
                             )
                         }
                         {
-                            coop && i === state.heroes.length - 1 && (
+                            coop && !online && i === state.heroes.length - 1 && (
                                 <span className="order-50 ml-auto shrink-0 text-[var(--rg-faint)]">
-                                    {online
-                                        ? `온라인 방 ${room} · ${online === "host" ? "내가 방장" : "내가 동료"}${linked ? "" : " · 잇는 중…"}`
-                                        : "? 조작"}
+                                    ? 조작
                                 </span>
                             )
                         }
@@ -3385,7 +3432,7 @@ export default function Rogue() {
                                 </div>
                             }
                         >
-                            <div className="space-y-3.5 text-[13px] leading-relaxed">
+                            <div className="space-y-4 text-sm leading-relaxed">
                                 {/* 1. 기본 판 요약 */}
                                 <div className="rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
                                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--rg-line-soft)] pb-2">
@@ -3396,43 +3443,35 @@ export default function Rogue() {
                                             {tombScore(selectedTomb)}점
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-2 sm:grid-cols-4 text-xs text-[var(--rg-muted)]">
-                                        <div>가장 깊이: <b className="text-[var(--rg-strong)]">지하 {selectedTomb.depth}층</b></div>
-                                        <div>버틴 턴: <b className="text-[var(--rg-strong)]">{selectedTomb.turns}턴</b></div>
-                                        <div>소지 금화: <b className="text-[var(--rg-gold)]">{selectedTomb.gold} G</b></div>
+                                    <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3 text-xs">
+                                        <div className="rounded bg-[var(--rg-bg)] p-2"><span className="block text-[var(--rg-faint)]">도달 층</span><b className="text-[var(--rg-strong)]">지하 {selectedTomb.depth}층</b></div>
+                                        <div className="rounded bg-[var(--rg-bg)] p-2"><span className="block text-[var(--rg-faint)]">생존 턴</span><b className="text-[var(--rg-strong)]">{selectedTomb.turns}턴</b></div>
+                                        <div className="rounded bg-[var(--rg-bg)] p-2"><span className="block text-[var(--rg-faint)]">소지 금화</span><b className="text-[var(--rg-gold)]">{selectedTomb.gold} G</b></div>
                                     </div>
                                 </div>
+
+                                <RunGoalList
+                                    depth={selectedTomb.depth}
+                                    hasAmulet={selectedTomb.amulet ?? selectedTomb.hero?.hasAmulet ?? selectedTomb.won}
+                                    won={selectedTomb.won}
+                                />
 
                                 {/* 2. 영웅 능력치 (Hero Stats) */}
                                 {selectedTomb.hero && (
                                     <div>
                                         <div className="mb-1 flex items-center justify-between">
-                                            <h4 className="text-xs font-bold text-[var(--rg-label)]">Stats</h4>
+                                            <h4 className="text-sm font-bold text-[var(--rg-label)]">능력치</h4>
                                             {selectedTomb.hero.origin && (
                                                 <span className="text-xs font-bold text-[var(--rg-strong)]">
                                                     <OriginTag origin={selectedTomb.hero.origin} nick={selectedTomb.hero.nick} level={selectedTomb.hero.level} title />
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-[var(--rg-muted)]">
-                                            <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">St</span>
-                                                <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.str}({selectedTomb.hero.maxStr})</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">HP</span>
-                                                <span className={selectedTomb.hero.hp <= 0 ? "text-[var(--rg-trap)] font-bold" : "text-[var(--rg-hero)] font-bold"}>
-                                                    {selectedTomb.hero.hp}({selectedTomb.hero.maxHp})
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">AC</span>
-                                                <span className="text-[var(--rg-armor)] font-bold">{10 - selectedTomb.hero.defense}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[var(--rg-faint)] text-[11px] block">Xp</span>
-                                                <span className="text-[var(--rg-strong)] font-bold">{selectedTomb.hero.exp}</span>
-                                            </div>
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-sm text-[var(--rg-muted)]">
+                                            <div><span className="block text-xs text-[var(--rg-faint)]">힘</span><b className="text-[var(--rg-strong)]">{selectedTomb.hero.str} / {selectedTomb.hero.maxStr}</b></div>
+                                            <div><span className="block text-xs text-[var(--rg-faint)]">체력</span><b className={selectedTomb.hero.hp <= 0 ? "text-[var(--rg-trap)]" : "text-[var(--rg-hero)]"}>{selectedTomb.hero.hp} / {selectedTomb.hero.maxHp}</b></div>
+                                            <div><span className="block text-xs text-[var(--rg-faint)]">방어</span><b className="text-[var(--rg-armor)]">{10 - selectedTomb.hero.defense}</b></div>
+                                            <div><span className="block text-xs text-[var(--rg-faint)]">레벨 · 경험치</span><b className="text-[var(--rg-strong)]">{selectedTomb.hero.level} · {selectedTomb.hero.exp}</b></div>
                                         </div>
                                     </div>
                                 )}
@@ -3504,10 +3543,10 @@ export default function Rogue() {
                                 {/* 4. 마지막 로그 (Recent Log) */}
                                 {selectedTomb.recentLog && selectedTomb.recentLog.length > 0 && (
                                     <div>
-                                        <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">마지막 기록</h4>
-                                        <div className="max-h-24 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2 font-mono text-[11px] leading-relaxed text-[var(--rg-faint)]">
+                                        <h4 className="mb-1 text-sm font-bold text-[var(--rg-label)]">마지막 기록</h4>
+                                        <div className="max-h-36 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 font-mono text-xs leading-5 text-[var(--rg-muted)]">
                                             {[...selectedTomb.recentLog].reverse().map((logMsg, lIdx) => (
-                                                <div key={lIdx} className="truncate">
+                                                <div key={lIdx} className="break-words whitespace-normal">
                                                     {logMsg}
                                                 </div>
                                             ))}
@@ -3525,20 +3564,20 @@ export default function Rogue() {
                                     <p className="text-xs text-[var(--rg-faint)]">
                                         총 {tombs.length}판의 기록 — 원하는 판을 누르면 스탯·장비·배낭 상세를 조회할 수 있습니다.
                                     </p>
-                                    <div className="max-h-[60vh] overflow-y-auto space-y-1.5 pr-1">
+                                    <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
                                         {tombs.map((t, i) => (
                                             <button
                                                 key={i}
                                                 type="button"
                                                 onClick={() => setSelectedTomb(t)}
-                                                className="w-full text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-2.5 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus:outline-none"
+                                                className="w-full text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                             >
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
                                                         <span className={t.won ? "text-[var(--rg-amulet)] font-bold text-base" : "text-[var(--rg-muted)] font-bold text-base"}>
                                                             {t.won ? "★" : "†"}
                                                         </span>
-                                                        <span className="font-bold text-xs text-[var(--rg-strong)] truncate">
+                                                        <span className="line-clamp-2 min-w-0 break-words text-sm font-bold leading-snug text-[var(--rg-strong)]">
                                                             {t.epitaph}
                                                         </span>
                                                     </div>
@@ -3547,34 +3586,28 @@ export default function Rogue() {
                                                     </span>
                                                 </div>
 
-                                                <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--rg-muted)]">
+                                                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-[var(--rg-muted)]">
                                                     {t.hero?.origin && (
                                                         <>
                                                             <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={t.hero.origin} nick={t.hero.nick} level={t.hero.level} /></span>
-                                                            <span>·</span>
                                                         </>
                                                     )}
-                                                    <span>{t.depth}층</span>
-                                                    <span>·</span>
-                                                    <span className="text-[var(--rg-gold)]">Gold: {t.gold}</span>
-                                                    <span>·</span>
-                                                    <span>{t.turns} turns</span>
-                                                    {t.hero && (
-                                                        <>
-                                                            <span>·</span>
-                                                            <span className="text-[var(--rg-strong)]">Hp: {t.hero.hp}({t.hero.maxHp})</span>
-                                                            <span>·</span>
-                                                            <span>Str: {t.hero.str}({t.hero.maxStr})</span>
-                                                            <span>·</span>
-                                                            <span>Arm: {10 - t.hero.defense}</span>
-                                                            <span>·</span>
-                                                            <span>Exp: {t.hero.level}/{t.hero.exp}</span>
-                                                        </>
-                                                    )}
+                                                    <span className="rounded bg-[var(--rg-bg)] px-2 py-1">지하 {t.depth}층</span>
+                                                    <span className="rounded bg-[var(--rg-bg)] px-2 py-1">생존 {t.turns}턴</span>
+                                                    <span className="rounded bg-[var(--rg-bg)] px-2 py-1 text-[var(--rg-gold)]">금화 {t.gold} G</span>
                                                 </div>
 
+                                                {t.hero && (
+                                                    <div className="mt-2 grid grid-cols-2 gap-1.5 text-xs sm:grid-cols-4">
+                                                        <span className="rounded bg-[var(--rg-bg)] px-2 py-1">체력 <b className={t.hero.hp <= 0 ? "text-[var(--rg-trap)]" : "text-[var(--rg-hero)]"}>{t.hero.hp}/{t.hero.maxHp}</b></span>
+                                                        <span className="rounded bg-[var(--rg-bg)] px-2 py-1">힘 <b className="text-[var(--rg-strong)]">{t.hero.str}/{t.hero.maxStr}</b></span>
+                                                        <span className="rounded bg-[var(--rg-bg)] px-2 py-1">방어 <b className="text-[var(--rg-armor)]">{10 - t.hero.defense}</b></span>
+                                                        <span className="rounded bg-[var(--rg-bg)] px-2 py-1">레벨 <b className="text-[var(--rg-strong)]">{t.hero.level}</b></span>
+                                                    </div>
+                                                )}
+
                                                 {t.hero && (t.hero.weaponName || t.hero.armorName) && (
-                                                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-[var(--rg-faint)]">
+                                                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-[var(--rg-muted)]">
                                                         {t.hero.weaponName && (
                                                             <span className="rounded-[2px] bg-[var(--rg-bg)] px-1 py-0.2">
                                                                 ⚔️ {t.hero.weaponName}
@@ -3593,8 +3626,9 @@ export default function Rogue() {
                                                     </div>
                                                 )}
 
-                                                <div className="mt-1 text-right text-[10.5px] text-[var(--rg-faint)]">
-                                                    {new Date(t.at).toLocaleDateString()} {new Date(t.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 상세 보기 →
+                                                <div className="mt-2 flex items-center justify-between gap-2 border-t border-[var(--rg-line-soft)] pt-2 text-xs text-[var(--rg-faint)]">
+                                                    <span>{new Date(t.at).toLocaleDateString()} {new Date(t.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="shrink-0 text-[var(--rg-label)]">상세 보기 →</span>
                                                 </div>
                                             </button>
                                         ))}
@@ -3652,16 +3686,16 @@ export default function Rogue() {
                             </div>
                         }
                     >
-                        <p className="mb-2 text-[var(--rg-strong)]">{state.epitaph}</p>
+                        <p className="mb-3 text-base font-bold leading-relaxed text-[var(--rg-strong)]">{state.epitaph}</p>
                         {state.phase === "dead" && (
                             <div className="mb-3 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-3 py-2">
                                 <p className="mb-1 font-bold text-[var(--rg-strong)]">마지막 순간</p>
-                                <ul className="space-y-0.5 text-[var(--rg-muted)]">
+                                <ul className="space-y-1 text-sm leading-relaxed text-[var(--rg-muted)]">
                                     {[...state.messages.filter((m) => !isDetail(m)).slice(-5)].reverse().map((m, i) => (
                                         <li key={i}>· <Msg text={m} heroes={state.heroes} /></li>
                                     ))}
                                 </ul>
-                                <p className="mt-2 text-[11px] text-[var(--rg-faint)]">
+                                <p className="mt-2 border-t border-[var(--rg-line-soft)] pt-2 text-xs leading-relaxed text-[var(--rg-muted)]">
                                     남긴 포션 {hero.pack.filter((it) => it.kind === "potion").reduce((n, it) => n + it.count, 0)} 개
                                     {" · "}미식별 물건 {hero.pack.filter((it) => ["potion", "scroll", "ring", "wand"].includes(it.kind) && !state.known[`${it.kind}:${it.type}`]).length} 종
                                     {" · "}남은 식량 {hero.pack.filter((it) => it.kind === "food").reduce((n, it) => n + it.count, 0)} 개
@@ -3669,18 +3703,28 @@ export default function Rogue() {
                             </div >
                         )
                         }
-                        <dl className="grid grid-cols-[6em_1fr] gap-y-1 text-[var(--rg-muted)]">
-                            <dt>출신</dt><dd className="text-[var(--rg-strong)] font-semibold"><OriginTag origin={hero.origin} nick={hero.nick} level={hero.level} title /></dd>
-                            <dt>Level</dt><dd>지하 {state.deepest}층</dd>
-                            <dt>Exp</dt><dd>{hero.level}/{hero.exp}</dd>
-                            <dt>Hp</dt><dd>{hero.hp}({hero.maxHp})</dd>
-                            <dt>Str</dt><dd>{heroStr(hero)}({hero.maxStr})</dd>
-                            <dt>Arm</dt><dd>{heroArmor(hero)}</dd>
-                            <dt>Gold</dt><dd className="text-[var(--rg-gold)]">{hero.gold}</dd>
-                            <dt>Turns</dt><dd>{state.turn}</dd>
-                            <dt>Score</dt><dd className="text-[var(--rg-gold)] font-bold">{score(state)}</dd>
-                            <dt>Rank</dt>
-                            <dd>
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+                            <div><span className="block text-xs text-[var(--rg-faint)]">이번 판 점수</span><strong className="font-mono text-xl text-[var(--rg-gold)]">{score(state)}</strong></div>
+                            <div className="text-right"><span className="block text-xs text-[var(--rg-faint)]">최고 도달</span><strong className="text-base text-[var(--rg-strong)]">지하 {state.deepest}층</strong></div>
+                        </div>
+                        <div className="mb-3">
+                            <RunGoalList depth={state.deepest} hasAmulet={partyAmulet(state)} won={state.phase === "won"} />
+                        </div>
+                        <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--rg-muted)]">
+                            <span className="text-xs text-[var(--rg-faint)]">출신</span>
+                            <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={hero.origin} nick={hero.nick} level={hero.level} title /></span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                            <div className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2"><span className="block text-xs text-[var(--rg-faint)]">레벨 · 경험치</span><b className="text-[var(--rg-strong)]">{hero.level} · {hero.exp}</b></div>
+                            <div className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2"><span className="block text-xs text-[var(--rg-faint)]">체력</span><b className={hero.hp <= 0 ? "text-[var(--rg-trap)]" : "text-[var(--rg-hero)]"}>{hero.hp} / {hero.maxHp}</b></div>
+                            <div className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2"><span className="block text-xs text-[var(--rg-faint)]">힘</span><b className="text-[var(--rg-strong)]">{heroStr(hero)} / {hero.maxStr}</b></div>
+                            <div className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2"><span className="block text-xs text-[var(--rg-faint)]">방어</span><b className="text-[var(--rg-armor)]">{heroArmor(hero)}</b></div>
+                            <div className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2"><span className="block text-xs text-[var(--rg-faint)]">금화</span><b className="text-[var(--rg-gold)]">{hero.gold} G</b></div>
+                            <div className="rounded border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2"><span className="block text-xs text-[var(--rg-faint)]">생존 턴</span><b className="text-[var(--rg-strong)]">{state.turn}</b></div>
+                        </div>
+                        <div className="mt-3 rounded border border-[var(--rg-line-soft)] px-3 py-2 text-sm text-[var(--rg-muted)]">
+                            <span className="mr-2 text-xs text-[var(--rg-faint)]">지난 판 순위</span>
+                            <span>
                                 {place.total <= 1 ? (
                                     "첫 판"
                                 ) : place.place === 1 && !place.shared ? (
@@ -3695,8 +3739,8 @@ export default function Rogue() {
                                         <span className="text-[var(--rg-faint)]">(최고 {place.best})</span>
                                     </>
                                 )}
-                            </dd>
-                        </dl>
+                            </span>
+                        </div>
                     </Panel >
                 )}
         </div >
