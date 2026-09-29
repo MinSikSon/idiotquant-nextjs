@@ -460,6 +460,12 @@ export interface Hero {
      * 제 자리다. 파는 중이 아니면 **칸째 없다**(되읽은 판이 달라지지 않게).
      */
     dig?: { x: number; y: number; depth: number; effort: number };
+    /**
+     * **기도 시간 제한** — NetHack 의 `u.ublesscnt`. 새 판은 300 에서 시작해 이 사람이 살아
+     * 있는 턴마다 1 씩 준다. 기도가 들어주면 `rnz(350)`, 노하면 `rnz(300)` 으로 다시 선다.
+     * 화면에는 안 적는다 — 원작도 안 보여 준다(`game.ts` 「기도」).
+     */
+    prayerTimeout: number;
 }
 
 export type Phase = "playing" | "dead" | "won";

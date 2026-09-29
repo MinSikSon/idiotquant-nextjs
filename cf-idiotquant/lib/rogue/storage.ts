@@ -26,7 +26,7 @@ import {
     weaponDamageOf,
     launcherDamageOf,
 } from "./items";
-import { heroDefense, mergeStacks } from "./hero";
+import { heroDefense, mergeStacks, PRAYER_TIMEOUT_START } from "./hero";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
@@ -369,6 +369,8 @@ function normalize(s: Saved): GameState | null {
         classSkillDepth: Math.max(0, num(h.classSkillDepth, 0)),
         // 정령을 다시 부르는 기다림이 생기기 전의 판에는 없다 — 0이면 곧바로 부를 수 있다.
         spiritTurn: Math.max(0, num(h.spiritTurn, 0)),
+        // 기도가 생기기 전의 판에는 없다 — 새 판과 같은 값에서 센다(곧바로 빌 수는 없다).
+        prayerTimeout: Math.max(0, num(h.prayerTimeout, PRAYER_TIMEOUT_START)),
     });
     const heroes: Hero[] = saved.map(fixHero);
 

@@ -1756,6 +1756,10 @@ export default function Rogue() {
                     e.preventDefault();
                     run({ t: "search" });
                     break;
+                case "p":
+                    e.preventDefault();
+                    run({ t: "pray" });
+                    break;
                 case "z":
                     e.preventDefault();
                     desk?.aim("zap");
@@ -1844,6 +1848,8 @@ export default function Rogue() {
     //   · **기록** → 맨 위 메시지 줄을 누르면 열린다. 요약을 보다가 더 보고 싶어지는
     //     자리가 거기라, 단추를 따로 세울 까닭이 없다.
     //   · **도움말 · 지난 판** → 「⚙ 옵션」 안으로. 걸으면서 쓰는 것이 아니다.
+    //   · **도감** → 이것도 「⚙ 옵션」 안으로(`x` 키는 그대로). 「기도한다」가 들어설
+    //     자리를 냈다 — 위급할 때 누르는 것이 한 판에 몇 번 여는 것보다 앞이다.
     //   · **조사** → 도감 맨 위로. 「지금 보이는 놈」과 「여태 잡은 놈」은 같은 질문
     //     (이놈이 센가)의 앞뒤라, 판이 둘일 까닭이 없었다.
     /** 한 화면 둘이면 글자 키가 이동이 되므로 단추에 적는 키도 달라진다(`COOP_KEYS`). */
@@ -1886,13 +1892,8 @@ export default function Rogue() {
         },
         // 살피는 것 · 그 밖
         { label: "뒤진다", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
-        {
-            label: "도감",
-            keys: coopKeys ? undefined : "x",
-            hint: `x — 몬스터 ${progress.found}/${progress.total} · 아이템 ${itemProg.identifiedCount}/${itemProg.totalCount}`,
-            on: () => setSheet("bestiary"),
-        },
-        { label: "⚙ 옵션", hint: "도움말 · 지난 판", on: () => setSheet("options") },
+        { label: "기도한다", hint: "p — 위기에 신을 부른다 · 너무 자주 빌면 노한다", keys: coopKeys ? undefined : "p", on: () => run({ t: "pray" }) },
+        { label: "⚙ 옵션", hint: "도감 · 도움말 · 지난 판", on: () => setSheet("options") },
     ];
 
     // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
@@ -3099,6 +3100,11 @@ export default function Rogue() {
                                             },
                                         },
                                     ]),
+                                {
+                                    label: "도감",
+                                    hint: `x — 몬스터 ${progress.found}/${progress.total} · 아이템 ${itemProg.identifiedCount}/${itemProg.totalCount}`,
+                                    go: () => setSheet("bestiary"),
+                                },
                                 { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
                                 {
                                     label: "지난 판",
@@ -3252,6 +3258,7 @@ export default function Rogue() {
                                 <dt className="text-[var(--rg-label)]">.</dt><dd>제자리에서 쉰다</dd>
                                 <dt className="text-[var(--rg-label)]">, 또는 g</dt><dd>발밑의 것을 줍는다</dd>
                                 <dt className="text-[var(--rg-label)]">s</dt><dd>벽을 뒤진다 — 숨은 문과 함정이 드러난다</dd>
+                                <dt className="text-[var(--rg-label)]">p</dt><dd><b>기도한다</b> — 체력이 바닥이거나 굶주릴 때 신이 들어준다. 너무 자주 빌면 노한다</dd>
                                 <dt className="text-[var(--rg-label)]">&gt; &lt;</dt><dd>계단을 내려간다 · 올라간다</dd>
                                 <dt className="text-[var(--rg-label)]">q r e</dt><dd>마신다 · 읽는다 · 먹는다</dd>
                                 <dt className="text-[var(--rg-label)]">w W</dt><dd><b>쥔다 · 입는다</b></dd>

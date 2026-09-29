@@ -48,6 +48,8 @@ import {
     heroArmorClassTerms,
     heroStr,
     hungerOf,
+    EXP_LEVELS,
+    PRAYER_TIMEOUT_START,
     hungerRate,
     isWorn,
     launcherFor,
@@ -249,7 +251,9 @@ type Action =
     /** 가게에서 외상을 치른다. 주인이 적대하면 빚을 갚아 달랜다. */
     | { t: "pay" }
     /** 가게에서 배낭의 물건을 판다 — 사는 값의 절반. */
-    | { t: "sell"; letter: string };
+    | { t: "sell"; letter: string }
+    /** 신에게 빈다 — NetHack 의 `#pray`. 들어줄지는 기도 시간 제한과 곤경이 정한다. */
+    | { t: "pray" };
 
 /**
  * 명령 하나 — **누가 하는지**까지.
@@ -3870,6 +3874,121 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
     return true;
 }
 
+// ── 기도 — NetHack 의 #pray (`pray.c`) ─────────────────────────────────────────
+//
+// 행운·성향·신의 분노 누적은 옮기지 않았다 — 이 게임에는 그 값들도, 분노를 푸는 제물도
+// 없다. 그래서 늘 「행운 0 · 처음 노한 신」의 표를 쓴다. 누적을 넣으면 한 번 실수한 판은
+// 기도가 영영 막힌다.
+
+/**
+ * NetHack `rnz(i)` — 가운데가 `i` 쯤이고 양쪽 꼬리가 긴 굴림(드물게 10배 · 1/10).
+ * `rne(4)` 의 상한은 원작처럼 레벨 15 미만이면 5, 그 위로는 레벨/3 이다.
+ */
+function rnz(i: number, hero: Hero, rng: Rng): number {
+    const cap = hero.level < 15 ? 5 : Math.floor(hero.level / 3);
+    let e = 1;
+    while (e < cap && rng.rnd(4) === 0) e++;
+    const tmp = (1000 + rng.rnd(1000)) * e;
+    return rng.rnd(2) ? Math.floor((i * tmp) / 1000) : Math.floor((i * 1000) / tmp);
+}
+
+type Trouble = "hunger" | "hit" | "cursed" | "blind" | "hungry" | "confused";
+
+/**
+ * 신이 보는 곤경 — **큰 것부터 작은 것 순서로.** 원작 `in_trouble` 의 순서를 따르되 이
+ * 게임에 있는 것만 남겼다. 큰 곤경은 허기(Weak 이하)와 체력(5 이하 또는 최대의 1/7 이하).
+ */
+function prayerTroubles(hero: Hero): { major: Trouble[]; minor: Trouble[] } {
+    const hunger = hungerOf(hero);
+    const major: Trouble[] = [];
+    if (hunger === "Weak" || hunger === "Faint") major.push("hunger");
+    if (hero.hp <= 5 || hero.hp * 7 <= hero.maxHp) major.push("hit");
+    const minor: Trouble[] = [];
+    if (hero.pack.some((it) => it.cursed && isWorn(hero, it))) minor.push("cursed");
+    if (hero.blind > 0) minor.push("blind");
+    if (hunger === "Hungry") minor.push("hungry");
+    if (hero.confused > 0) minor.push("confused");
+    return { major, minor };
+}
+
+function fixTrouble(state: GameState, hero: Hero, trouble: Trouble) {
+    switch (trouble) {
+        case "hunger":
+        case "hungry":
+            hero.food = 900;
+            say(state, "배가 더 이상 고프지 않다.");
+            break;
+        case "hit":
+            // 원작은 최대 체력도 굴려 올리지만 여기서는 체력을 굴리지 않는다 — 채우기만 한다.
+            hero.hp = hero.maxHp;
+            say(state, "몸이 한결 나아졌다.");
+            break;
+        case "cursed": {
+            // 원작 `worst_cursed_item` — 쥔 것 · 입은 것 · 낀 것 순서로 하나만.
+            const order = [hero.weaponId, hero.offWeaponId, hero.armorId, hero.leftRingId, hero.rightRingId];
+            const it = order.map((id) => hero.pack.find((p) => p.id === id && p.cursed)).find(Boolean);
+            if (!it) break;
+            it.cursed = false;
+            it.curseKnown = true;
+            say(state, `${describe(it, state.known, state.appearance)}이(가) 은은하게 빛난다.`);
+            break;
+        }
+        case "blind":
+            hero.blind = 0;
+            say(state, "눈이 다시 보인다.");
+            break;
+        case "confused":
+            hero.confused = 0;
+            say(state, "머리가 맑아졌다.");
+            break;
+    }
+}
+
+/**
+ * 신에게 빈다 — **늘 한 턴을 쓴다**(신은 어떻게든 답한다).
+ *
+ * 기도 시간 제한(`hero.prayerTimeout`)이 큰 곤경이면 200, 작은 곤경이면 100, 곤경이 없으면
+ * 0 이하여야 들어준다. 들어주면 큰 곤경을 모두 고치고, 큰 것이 없으면 작은 것 하나를
+ * 고친다(원작은 행운 0 에서 작은 곤경을 안 고친다 — 그러면 작은 곤경의 기도가 헛일이다).
+ * 너무 이르면 신이 노한다: 1/3 은 불쾌해하기만, 1/3 은 이번 레벨에서 쌓은 경험을 앗고,
+ * 1/3 은 배낭의 물건을 저주한다(원작 `angrygods` 의 처음 노한 신 표).
+ */
+function pray(state: GameState, hero: Hero, rng: Rng): boolean {
+    say(state, "신에게 기도를 올린다…");
+    const { major, minor } = prayerTroubles(hero);
+    const limit = major.length ? 200 : minor.length ? 100 : 0;
+    if (hero.prayerTimeout <= limit) {
+        if (major.length || minor.length) {
+            say(state, "따스한 빛이 몸을 감싼다.");
+            for (const t of major.length ? major : minor.slice(0, 1)) fixTrouble(state, hero, t);
+        } else {
+            say(state, "신이 흡족해하는 것이 느껴진다.");
+        }
+        hero.prayerTimeout = rnz(350, hero, rng);
+        return true;
+    }
+
+    const wrath = rng.rnd(6);
+    if (wrath < 2) {
+        say(state, "신이 불쾌해하는 것이 느껴진다.");
+    } else if (wrath < 4) {
+        // 원작은 레벨을 내리지만 여기서는 레벨을 안 내린다(망령과 같은 까닭 — 최대 체력이 꼬인다).
+        hero.exp = Math.min(hero.exp, hero.level >= 2 ? EXP_LEVELS[hero.level - 2] : 0);
+        say(state, "「네 배움을 처음부터 다시 닦으라!」 — 쌓은 경험이 빠져나갔다.");
+    } else {
+        // 원작 `rndcurse` — 1d6 번 아무 물건이나 집어, 축복받은 것은 축복만 벗기고 나머지는 저주한다.
+        const pool = hero.pack.filter((it) => (it.kind === "weapon" || it.kind === "armor" || it.kind === "ring") && !it.unpaid);
+        for (let n = rng.rnd(6) + 1; n > 0 && pool.length; n--) {
+            const it = pool[rng.rnd(pool.length)];
+            if (it.blessed) it.blessed = false;
+            else it.cursed = true;
+        }
+        say(state, "검은 빛이 몸을 감싼다.");
+    }
+    hero.prayerTimeout = rnz(300, hero, rng);
+    return true;
+}
+
 function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin" | "str" | "defense" | "wisdom") {
     const tag = `${who + 1}P▸ `;
     if (kind === "origin") {
@@ -4030,6 +4149,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "sell":
                 acted = sellItem(state, hero, cmd.letter);
                 break;
+            case "pray":
+                acted = pray(state, hero, rng);
+                break;
         }
         if (hero.guarded && hero.origin === "knight" && !heldGuard) {
             hero.guarded = false;
@@ -4072,6 +4194,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         if (h.blind > 0) h.blind -= 1;
         if (h.confused > 0) h.confused -= 1;
         if (h.detect > 0) h.detect -= 1;
+        if (h.prayerTimeout > 0) h.prayerTimeout -= 1;
         // 눈이 멀면 탐지가 꺼진다 — 안 보이는데 생명만 짚어 낼 수는 없다.
         if (h.blind > 0) h.detect = 0;
 

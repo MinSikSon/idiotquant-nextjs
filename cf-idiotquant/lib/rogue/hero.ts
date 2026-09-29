@@ -255,6 +255,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         armorTraining: {},
         classSkillDepth: 0,
         spiritTurn: 0,
+        prayerTimeout: PRAYER_TIMEOUT_START,
     };
     const startingItems = originDef.createStartingItems(nextId);
     for (const item of startingItems) {
@@ -800,6 +801,9 @@ export function isWorn(hero: Hero, it: Item): boolean {
 /**
  * 경험치를 준다. 레벨이 올랐으면 그 사실을 돌려준다 — 메시지는 부르는 쪽이 쓴다.
  */
+/** 새 판의 기도 시간 제한 — NetHack 의 `u.ublesscnt = 300`. */
+export const PRAYER_TIMEOUT_START = 300;
+
 export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
     hero.exp += amount;
     const gained: number[] = [];
