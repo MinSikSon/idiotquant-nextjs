@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
-import { ADVANCED_SPIRIT_TRAITS, SPIRIT_NAMES, SPIRIT_TRAITS, spawnMonster, spiritDef } from "@/lib/rogue/monsters";
+import { SPIRIT_GLYPHS, SPIRIT_NAMES, SPIRIT_VERBS, spawnMonster, spiritDef } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
 import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
@@ -497,7 +497,7 @@ test("정령술사 — 정령을 부르고(같은 층은 턴이 쌓이면 다시
             for (let i = 0; i < 15 && s.level.monsters.some((m) => m.id === foe.id); i++) s = perform(s, { t: "search" });
             if (s.messages.some((l) => /홉고블린이\(가\) .+ 정령을\(를\) 쳤다/.test(l))) hitSpirit++;
             // 정령이 낀 싸움 줄은 모두 정령의 체력으로 끝난다
-            for (const l of s.messages.filter((m) => /정령(이\(가\)|의 공격|을\(를\) (쳤다|빗나갔다))/.test(m) && /쳤다|빗나갔다/.test(m))) {
+            for (const l of s.messages.filter((m) => /정령(이\(가\)|의 공격|을\(를\) (쳤다|빗나갔다))/.test(m) && /(쳤다|태웠다|때렸다|베었다|짓눌렀다|빗나갔다)\./.test(m))) {
                 assert.match(l, /\(정령 HP \d+\/\d+\)$/, `정령 싸움 줄에 정령의 체력이 없다: ${l}`);
             }
             if (!s.level.monsters.some((m) => m.id === foe.id) && s.heroes[0].exp > exp) fought++;
@@ -911,7 +911,8 @@ test("정령술사 — 원소를 골라 부르고, 원소마다 싸우는 법이
             const { s, spirit } = summonedAs(4, element);
             assert.equal(spirit.spirit!.element, element);
             assert.equal(spirit.def.name, SPIRIT_NAMES[element]);
-            assert.ok(s.messages.some((l) => l.includes(SPIRIT_TRAITS[element])), `${element}: 부를 때 특징을 안 적었다`);
+            // 부를 때는 문양만 — 설명은 안 적는다
+            assert.ok(s.messages.some((l) => l.includes(`${SPIRIT_GLYPHS[element]} ${SPIRIT_NAMES[element]}을(를) 불러냈다.`)), `${element}: 부를 때 문양을 안 적었다`);
             return [element, spirit];
         }),
     );
@@ -946,7 +947,7 @@ test("정령술사 — 원소를 골라 부르고, 원소마다 싸우는 법이
                 const before = s0.messages.length;
                 const s = perform(s0, { t: "search" });
                 const lines = s.messages.slice(before).map((l) => l.replace(/^T:\d+ /, ""));
-                const swings = lines.filter((l) => l.startsWith(SPIRIT_NAMES[element]) && /쳤다|빗나갔다/.test(l)).length;
+                const swings = lines.filter((l) => l.startsWith(SPIRIT_NAMES[element]) && (l.includes(SPIRIT_VERBS[element]) || l.includes("빗나갔다"))).length;
                 if (element === "air") {
                     assert.ok(swings <= 2, `바람의 정령이 한 턴에 ${swings}번 쳤다`);
                     if (swings === 2) airTwice++;
@@ -981,6 +982,7 @@ test("정령술사 — 원소를 골라 부르고, 원소마다 싸우는 법이
             const lines = s.messages.slice(before).map((l) => l.replace(/^T:\d+ /, ""));
             if (!lines.some((l) => /^홉고블린(이\(가\) 땅의 정령을\(를\) 쳤다|의 공격이 땅의 정령을\(를\) 빗나갔다)/.test(l))) continue;
             assert.ok(s.heroes[0].hp >= hp, "땅의 정령 곁의 적이 주인을 쳤다");
+            assert.ok(lines.some((l) => l === "홉고블린이(가) 땅의 정령에게 발이 묶였다."), "도발을 기록에 안 적었다");
             taunted++;
         }
         assert.ok(taunted > 0, "적이 땅의 정령을 먼저 친 판이 없다");
@@ -1006,7 +1008,6 @@ test("정령술사 — 전직 뒤에는 원소마다 한 가지가 깊어진다"
         assert.equal(spirit.spirit!.turns, ADVANCED_SPIRIT_TURNS - 1, `${element}: 두 배로 안 머문다`);
         assert.equal(spirit.def.damage.length, element === "fire" ? 2 : 1, `${element}: 치는 횟수가 이상하다`);
         assert.equal(spirit.maxHp, element === "earth" ? Math.floor(plain.hp * 1.5) : plain.hp, `${element}: 체력이 이상하다`);
-        assert.ok(s.messages.some((l) => l.includes(ADVANCED_SPIRIT_TRAITS[element])), `${element}: 깊어진 것을 안 적었다`);
     }
 
     // ── 물: 친 피해를 다 고친다 · 땅: 맞고 버티면 되받아친다
@@ -1028,7 +1029,7 @@ test("정령술사 — 전직 뒤에는 원소마다 한 가지가 깊어진다"
                 const s = perform(s0, { t: "search" });
                 const lines = s.messages.slice(before).map((l) => l.replace(/^T:\d+ /, ""));
                 if (element === "water") {
-                    const hit = lines.find((l) => l.startsWith("물의 정령이(가) 홉고블린을(를) 쳤다"));
+                    const hit = lines.find((l) => l.startsWith(`물의 정령이(가) 홉고블린을(를) ${SPIRIT_VERBS.water}`));
                     const dealt = Number(hit?.match(/피해 (\d+)/)?.[1] ?? 0);
                     const heal = Number(lines.find((l) => l.includes("상처를 씻어"))?.match(/HP \+(\d+)/)?.[1] ?? 0);
                     if (dealt > 0) {
@@ -1039,7 +1040,7 @@ test("정령술사 — 전직 뒤에는 원소마다 한 가지가 깊어진다"
                     const i = lines.findIndex((l) => l.includes("땅의 정령이(가) 되받아친다"));
                     if (i < 0) continue;
                     assert.ok(i > 0 && /^홉고블린이\(가\) 땅의 정령을\(를\) 쳤다/.test(lines[i - 1]), "맞지 않았는데 되받아쳤다");
-                    assert.match(lines[i + 1], /^땅의 정령(이\(가\) 홉고블린을\(를\) 쳤다|의 공격이 홉고블린을\(를\) 빗나갔다)/, "되받아친 줄이 없다");
+                    assert.match(lines[i + 1], /^땅의 정령(이\(가\) 홉고블린을\(를\) 바위로 짓눌렀다|의 공격이 홉고블린을\(를\) 빗나갔다)/, "되받아친 줄이 없다");
                     countered++;
                 }
             }
@@ -1060,4 +1061,42 @@ test("정령술사 — 전직 뒤에는 원소마다 한 가지가 깊어진다"
         for (let i = 0; i < 5; i++) s = perform(s, { t: "search" });
         assert.ok(!s.messages.some((l) => l.includes("되받아친다")), "전직 전 땅의 정령이 되받아쳤다");
     }
+});
+
+test("정령술사 — 원소는 설명 대신 싸움 기록의 말로 드러난다", () => {
+    for (const element of Object.keys(SPIRIT_NAMES) as SpiritElement[]) {
+        let found = false;
+        for (let seed = 1; seed <= 40 && !found; seed++) {
+            const { s: s0, spirit } = summonedAs(seed, element);
+            const spot = besideSpiritOnly(s0, spirit);
+            if (!spot) continue;
+            const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+            foe.hp = foe.maxHp = 999;
+            s0.level.monsters.push(foe);
+            let s = s0;
+            for (let i = 0; i < 3; i++) s = perform(s, { t: "search" });
+            const hits = s.messages.filter((l) => l.includes(`${SPIRIT_NAMES[element]}이(가) 홉고블린을(를) `));
+            if (hits.length === 0) continue;
+            for (const l of hits) {
+                assert.ok(l.includes(SPIRIT_VERBS[element]), `${element}: 원소의 말이 아니다: ${l}`);
+                assert.ok(!l.includes("쳤다"), `${element}: 정령이 친 줄이 여느 말이다: ${l}`);
+            }
+            found = true;
+        }
+        assert.ok(found, `${element}: 정령이 적을 친 판이 없다`);
+    }
+    // 전직한 불은 두 번 맞으면 그렇게 적는다
+    let twice = false;
+    for (let seed = 1; seed <= 60 && !twice; seed++) {
+        const { s: s0, spirit } = advancedAs(seed, "fire");
+        const spot = besideSpiritOnly(s0, spirit);
+        if (!spot) continue;
+        const foe = spawnMonster("H", spot.x, spot.y, new Rng(seed));
+        foe.hp = foe.maxHp = 999;
+        s0.level.monsters.push(foe);
+        let s = s0;
+        for (let i = 0; i < 5; i++) s = perform(s, { t: "search" });
+        twice = s.messages.some((l) => l.includes(`불의 정령이(가) 홉고블린을(를) 두 번 ${SPIRIT_VERBS.fire}`));
+    }
+    assert.ok(twice, "전직한 불의 정령이 두 번 맞힌 줄이 없다");
 });

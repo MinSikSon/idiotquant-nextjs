@@ -152,29 +152,30 @@ export const SPIRIT_NAMES: Record<SpiritElement, string> = {
 };
 
 /**
- * 원소마다 **싸우는 법이 다르다** — 부를 때 고르는 까닭이 여기서 난다. 화면의 고르기 줄도 이 글을 읽는다.
+ * 원소의 문양 — 부를 때 고르는 줄에는 **이것만** 선다. 이모지가 아니라 **글자 기호**다 — 기기마다 그림이
+ * 달라지지 않고 지도의 글자들과 같은 결로 선다(불은 오르는 △ · 물은 떨어지는 ▽ · 바람은 물결 ≈ · 땅은 바위 ■). 원소마다 싸우는 법이 다르지만 설명은 안 붙인다 —
+ * 싸움 기록(`SPIRIT_VERBS` · 물의 「상처를 씻어」 · 땅의 「발이 묶였다」·「되받아친다」)을 보고 알아 간다.
  *
- * - 불: 세게 친다(`2d6`).
- * - 물: 친 피해의 절반(적어도 1)만큼 주인을 고친다(`strikeMonster`).
- * - 바람: 한 턴에 두 번 움직인다 — 대신 몸이 약하다(`spiritAct`).
- * - 땅: 단단하고, 곁의 적이 주인보다 **땅의 정령을 먼저** 친다(`monsterAct`).
- */
-export const SPIRIT_TRAITS: Record<SpiritElement, string> = {
-    fire: "세게 친다",
-    water: "친 만큼 나를 고친다",
-    air: "한 턴에 두 번 움직인다 · 몸이 약하다",
-    earth: "단단하고 곁의 적을 끌어당긴다",
-};
-
-/**
- * 전직(정령 화신) 뒤 원소마다 **깊어지는 것** — 공통은 두 배로 머무는 것뿐이다(`ADVANCED_SPIRIT_TURNS`).
+ * - 불: 세게 친다(`2d6`) · 전직 뒤 두 번.
+ * - 물: 친 피해의 절반(적어도 1)만큼 주인을 고친다(`strikeMonster`) · 전직 뒤 다.
+ * - 바람: 한 턴에 두 번 움직인다 — 대신 몸이 약하다(`spiritAct`) · 전직 뒤 머무는 턴만 는다.
+ * - 땅: 단단하고, 곁의 적이 주인보다 **땅의 정령을 먼저** 친다(`monsterAct`) · 전직 뒤 체력 1.5배에 되받아친다.
+ *
  * 모두에게 「두 번 친다」를 주면 이미 두 번 움직이는 바람이 턴에 넷을 치고, 버티는 땅은 거의 안 는다.
  */
-export const ADVANCED_SPIRIT_TRAITS: Record<SpiritElement, string> = {
-    fire: "두 번 친다",
-    water: "친 만큼 다 고친다",
-    air: "머무는 턴만 는다",
-    earth: "체력 1.5배 · 맞으면 되받아친다",
+export const SPIRIT_GLYPHS: Record<SpiritElement, string> = {
+    fire: "△",
+    water: "▽",
+    air: "≈",
+    earth: "■",
+};
+
+/** 정령이 적을 쳤을 때의 말 — 원소가 기록에서 드러나는 자리. 빗나간 줄은 여느 싸움과 같다. */
+export const SPIRIT_VERBS: Record<SpiritElement, string> = {
+    fire: "불길로 태웠다",
+    water: "물살로 때렸다",
+    air: "바람칼로 베었다",
+    earth: "바위로 짓눌렀다",
 };
 
 /**
@@ -182,14 +183,14 @@ export const ADVANCED_SPIRIT_TRAITS: Record<SpiritElement, string> = {
  * `def.level` 에서 나오므로(`monsterHitBonus`·`monsterDamBonus`) 따로 셈을 두지 않는다.
  * 그 레벨은 부른 사람보다 **두 단 위**다 — 같은 레벨이면 1층에서 `1d8+1` 이 홉고블린의
  * 방어력 5 에 거의 다 깎여 부른 보람이 없다. 방어 등급 5 는 홉고블린·뱀과 같은 값이고,
- * 땅의 정령만 2(방어력 8)다. 원소마다 다른 것은 주사위·체력·방어 셋뿐이다(`SPIRIT_TRAITS`).
+ * 땅의 정령만 2(방어력 8)다. 원소마다 다른 것은 주사위·체력·방어 셋뿐이다(`SPIRIT_GLYPHS`).
  */
 export function spiritDef(bond: SpiritBond): MonsterDef {
     const level = Math.max(1, bond.level);
     const element = SPIRIT_NAMES[bond.element] ? bond.element : "fire";
     const dice = { fire: "2d6", water: "1d8", air: "1d6", earth: "1d6" }[element];
     const base = { fire: 6 + 3 * level, water: 6 + 3 * level, air: 4 + 2 * level, earth: 10 + 4 * level }[element];
-    // 전직 뒤 땅만 몸이 커진다(`ADVANCED_SPIRIT_TRAITS`).
+    // 전직 뒤 땅만 몸이 커진다(`SPIRIT_GLYPHS`).
     const hp = bond.advanced && element === "earth" ? Math.floor(base * 1.5) : base;
     return {
         ch: SPIRIT_CH,

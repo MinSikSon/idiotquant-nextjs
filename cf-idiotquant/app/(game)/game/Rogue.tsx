@@ -95,7 +95,7 @@ import {
     type TombItem,
 } from "@/lib/rogue/storage";
 import { T, idx, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
-import { ADVANCED_SPIRIT_TRAITS, SPIRIT_NAMES, SPIRIT_TRAITS } from "@/lib/rogue/monsters";
+import { SPIRIT_GLYPHS, SPIRIT_NAMES } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
@@ -2061,7 +2061,7 @@ export default function Rogue() {
                     {/* 액티브 전직 기술만 층마다 한 번 단추 줄에 선다. 기사의 방벽은 패시브다.
                         정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다).
                         소환은 같은 층에서 턴이 쌓이면 다시 열린다 — 남은 턴을 이름 옆에 적는다(폰에는 `title` 이 안 뜬다).
-                        소환은 ★ 를 누르면 원소 넷을 펼쳐 고른다 — 원소마다 싸우는 법이 다르다(`SPIRIT_TRAITS`). */}
+                        소환은 ★ 를 누르면 원소 넷의 **문양만** 펼쳐 고른다(`SPIRIT_GLYPHS`) — 원소의 쓰임은 싸움 기록에서 알아 간다. */}
                     {((hero.level >= ADVANCE_LEVEL && classSkill.advancedSkillKind === "active") || hero.origin === "elementalist") && (() => {
                         const summons = hero.origin === "elementalist";
                         const skillName = summons ? classSkill.traitName : classSkill.advancedSkillName;
@@ -2081,11 +2081,11 @@ export default function Rogue() {
                                 ★ {skillName}{wait > 0 ? ` · ${wait}T` : ""}
                             </button>
                             {summons && spiritOpen && wait === 0 && (
-                                <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(18rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                                    <span className="font-bold text-[var(--rg-gold)]">어느 정령을 부를까</span>
-                                    {(Object.keys(SPIRIT_NAMES) as SpiritElement[]).map((element) => (
-                                        <button key={element} type="button" onClick={() => { run({ t: "classSkill", element }); setSpiritOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
-                                            {SPIRIT_NAMES[element]} · {SPIRIT_TRAITS[element]}{hero.level >= ADVANCE_LEVEL ? ` · ${ADVANCED_SPIRIT_TRAITS[element]}` : ""}
+                                <div className="absolute bottom-full left-0 z-20 mb-1 flex gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] p-1.5 shadow-[0_0_0_1px_var(--rg-shadow)]">
+                                    {(Object.keys(SPIRIT_GLYPHS) as SpiritElement[]).map((element) => (
+                                        // 문양만 보인다 — 이름은 읽어 주는 기계에게만(`aria-label`). 색은 지도의 정령 색(지팡이 색)이다.
+                                        <button key={element} type="button" aria-label={SPIRIT_NAMES[element]} onClick={() => { run({ t: "classSkill", element }); setSpiritOpen(false); }} className="grid h-10 w-10 place-items-center rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] font-[family-name:var(--font-plex-mono)] text-[20px] font-bold text-[var(--rg-wand)] hover:bg-[var(--rg-raised)]">
+                                            {SPIRIT_GLYPHS[element]}
                                         </button>
                                     ))}
                                 </div>
