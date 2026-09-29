@@ -323,7 +323,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         title: "Elementalist",
         advancedName: "원소의 군주",
         advancedTitle: "Elemental Lord",
-        // 정령(NetHack 의 elemental)의 글자 `E` 를 빌렸다. 지도에서는 정령만 지팡이 색으로 칠해
+        // 정령(NetHack 의 elemental)의 글자 `E` 를 빌렸다. 지도에서는 정령만 원소마다 다른 색으로 칠해
         // 같은 글자의 에뮤와 갈린다.
         icon: "E",
         iconInk: "var(--rg-wand)",

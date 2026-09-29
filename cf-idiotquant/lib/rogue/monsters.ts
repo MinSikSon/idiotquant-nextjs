@@ -140,7 +140,7 @@ export function monsterName(m: Monster): string {
 
 /**
  * 정령의 글자 — NetHack 의 elemental 은 `E` 다. 에뮤와 글자가 같지만 도감의 스물여섯 밖이고
- * (`MONSTERS` 에 없다), 지도에서는 `spirit` 색으로 칠해 갈린다.
+ * (`MONSTERS` 에 없다), 지도에서는 원소마다 다른 색(`spirit-<원소>`)으로 칠해 갈린다.
  */
 export const SPIRIT_CH = "E";
 

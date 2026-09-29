@@ -75,6 +75,11 @@
   --rg-food: #7d5019;
   --rg-ring: #0c6f59;
   --rg-wand: #52399c;
+  /* 정령 — 원소마다 한 색. 에뮤(몬스터 주황·몬스터 바닥)와 갈리게 바닥 없이 글자색만 다르다. */
+  --rg-spirit-fire: #c8161d;
+  --rg-spirit-water: #08609f;
+  --rg-spirit-air: #6b4fc4;
+  --rg-spirit-earth: #5e5d0e;
   --rg-amulet: #7d5e00;
   --rg-trap: #b32b18;
   --rg-trap-dim: #dda99f;
@@ -139,6 +144,10 @@ html.dark {
   --rg-food: #cfa878;
   --rg-ring: #7fe0c8;
   --rg-wand: #b6a2e8;
+  --rg-spirit-fire: #ff5a4f;
+  --rg-spirit-water: #4fb4ff;
+  --rg-spirit-air: #c2b0ff;
+  --rg-spirit-earth: #c9c25a;
   --rg-amulet: #ffe27a;
   --rg-trap: #ff6b5a;
   --rg-trap-dim: #7a382f;

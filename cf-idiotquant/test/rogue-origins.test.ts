@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
+import { glyphAt, joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { makeItem } from "@/lib/rogue/items";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES, SPIRIT_VERBS, spawnMonster, spiritDef } from "@/lib/rogue/monsters";
@@ -1099,4 +1099,15 @@ test("정령술사 — 원소는 설명 대신 싸움 기록의 말로 드러난
         twice = s.messages.some((l) => l.includes(`불의 정령이(가) 홉고블린을(를) 두 번 ${SPIRIT_VERBS.fire}`));
     }
     assert.ok(twice, "전직한 불의 정령이 두 번 맞힌 줄이 없다");
+});
+
+test("정령술사 — 지도에서 정령은 원소마다 다른 색으로 선다", () => {
+    const kinds = new Set<string>();
+    for (const element of Object.keys(SPIRIT_NAMES) as SpiritElement[]) {
+        const { s, spirit } = summonedAs(4, element);
+        const g = glyphAt(s, spirit.x, spirit.y);
+        assert.equal(g?.kind, `spirit-${element}`, `${element}: 지도 색 이름이 다르다`);
+        kinds.add(g!.kind);
+    }
+    assert.equal(kinds.size, 4, "원소끼리 색이 겹친다");
 });
