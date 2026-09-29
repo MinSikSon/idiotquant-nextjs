@@ -7,7 +7,7 @@
 //
 // 열면서 값을 둘 붙였다:
 //
-//   ① **3레벨마다 성장 하나를 고른다** — 힘 · 방어력 · 아이템운. **캠프도, 턴도
+//   ① **3레벨마다 성장 하나를 고른다** — 힘 · 방어력 · 지혜. **캠프도, 턴도
 //      필요 없다** — 레벨업 자체가 이미 턴을 안 쓰는 자리이기 때문이다(경험치는 몬스터를
 //      잡을 때 는다). 한 번에 여러 레벨을 건너뛰면(경험치 배율 몬스터 등) 지나친 3의
 //      배수만큼 쌓인다 — 하나만 세면 큰 사냥감 한 마리로 성장을 잃는다.
@@ -18,7 +18,7 @@
 //      「한 값은 한 자리에서 낸다」·「판을 걷는 동안 두는 것과 옵션 메뉴」 같은 다른
 //      규칙까지 같이 흔들면 안 된다.
 //
-// **아이템운은 `luck = 0` 이면 `rng` 를 한 번도 더 안 건드린다.** 아무도 안 고른 판은
+// **지혜는 `wis = 0` 이면 `rng` 를 한 번도 더 안 건드린다.** 아무도 안 고른 판은
 // 물건 뽑는 난수 흐름이 예전과 한 글자도 안 바뀐다 — 「시드가 같으면 판도 같다」가
 // 고르지 않은 사람에게는 그대로 지켜진다.
 
@@ -28,7 +28,7 @@ import assert from "node:assert/strict";
 import {
     alchemistHealMult,
     newGame,
-    partyItemLuck,
+    partyWisdom,
     perform,
     rogueTrapEvade,
     scholarPreserveChance,
@@ -148,7 +148,7 @@ test("레벨업 성장 — 3레벨마다 쌓이고, 여러 레벨을 건너뛰�
     }
 });
 
-test("성장 고르기 — 힘·방어·아이템운, 캠프도 턴도 필요 없다", () => {
+test("성장 고르기 — 힘·방어·지혜, 캠프도 턴도 필요 없다", () => {
     // ── 쌓인 것이 없으면 아무 일도 안 난다 — 주문서 대상 없이 읽는 것과 같은 자리
     {
         const s0 = newGame(710);
@@ -200,8 +200,8 @@ test("성장 고르기 — 힘·방어·아이템운, 캠프도 턴도 필요 �
         const s0 = newGame(714);
         s0.heroes[0].pendingSkillPicks = 100;
         let s = s0;
-        for (let i = 0; i < 100; i++) s = run(s, { t: "pickSkill", option: "luck" });
-        assert.equal(s.heroes[0].itemLuck, 1, "지혜가 100에서 안 멈췄다");
+        for (let i = 0; i < 100; i++) s = run(s, { t: "pickSkill", option: "wis" });
+        assert.equal(s.heroes[0].wisdom, 1, "지혜가 100에서 안 멈췄다");
     }
 
     // ── 캠프 밖에서도, 아무 층에서도 된다 — `stash`/`melt` 와 다른 자리다
@@ -217,18 +217,18 @@ test("성장 고르기 — 힘·방어·아이템운, 캠프도 턴도 필요 �
     }
 });
 
-test("아이템운 — 0이면 난수를 한 번도 더 안 건드리고, 있으면 등급이 올라간다", () => {
-    // ── luck=0 은 인자를 안 준 것과 완전히 같다 — 결과도 난수 소모도
+test("지혜 — 0이면 난수를 한 번도 더 안 건드리고, 있으면 등급이 올라간다", () => {
+    // ── wis=0 은 인자를 안 준 것과 완전히 같다 — 결과도 난수 소모도
     {
         const rngA = new Rng(42);
         const a = itemTier(10, rngA);
         const rngB = new Rng(42);
         const b = itemTier(10, rngB, 0);
-        assert.equal(a, b, "luck=0 인데 등급이 다르다");
-        assert.equal(rngA.state, rngB.state, "luck=0 인데 난수 소모가 달라졌다 — 안 고른 판의 시드가 갈린다");
+        assert.equal(a, b, "wis=0 인데 등급이 다르다");
+        assert.equal(rngA.state, rngB.state, "wis=0 인데 난수 소모가 달라졌다 — 안 고른 판의 시드가 갈린다");
     }
 
-    // ── luck>0 은 평균 등급을 올린다(유리 굴림 — 두 번 굴려 높은 쪽)
+    // ── wis>0 은 평균 등급을 올린다(유리 굴림 — 두 번 굴려 높은 쪽)
     {
         const N = 4000;
         let sumPlain = 0;
@@ -239,7 +239,7 @@ test("아이템운 — 0이면 난수를 한 번도 더 안 건드리고, 있으
         for (let i = 0; i < N; i++) sumLucky += itemTier(10, r2, 0.3);
         assert.ok(
             sumLucky / N > sumPlain / N,
-            `아이템운이 있는데 평균 등급(${(sumLucky / N).toFixed(2)}) 이 없을 때(${(sumPlain / N).toFixed(2)}) 보다 안 높다`,
+            `지혜가 있는데 평균 등급(${(sumLucky / N).toFixed(2)}) 이 없을 때(${(sumPlain / N).toFixed(2)}) 보다 안 높다`,
         );
     }
 
@@ -250,28 +250,28 @@ test("아이템운 — 0이면 난수를 한 번도 더 안 건드리고, 있으
         for (let seed = 1; seed <= TRIALS; seed++) {
             const rPlain = new Rng(seed);
             const rLucky = new Rng(seed);
-            // 같은 시드로 같은 분류를 뽑되, luck 만 다르게 준다.
+            // 같은 시드로 같은 분류를 뽑되, wis 만 다르게 준다.
             const plain = randomItem(10, seed, -1, -1, rPlain, "weapon", 0);
             const lucky = randomItem(10, seed, -1, -1, rLucky, "weapon", 0.5);
             // enchantOf 를 직접 비교하긴 번거로우니 손질(plusHit)로 등급 상승의 낌새만 본다.
             if ((lucky.plusHit ?? 0) >= (plain.plusHit ?? 0)) higher++;
         }
-        assert.ok(higher > TRIALS * 0.5, `아이템운을 줬는데 반 이상에서도 안 나아졌다 (${higher}/${TRIALS})`);
+        assert.ok(higher > TRIALS * 0.5, `지혜를 줬는데 반 이상에서도 안 나아졌다 (${higher}/${TRIALS})`);
     }
 
-    // ── partyItemLuck — **가장 높은 값**, 쓰러진 사람은 안 센다
+    // ── partyWisdom — **가장 높은 값**, 쓰러진 사람은 안 센다
     {
         const s = newGame(720);
-        s.heroes[0].itemLuck = 0.1;
-        assert.equal(partyItemLuck(s), 0.1);
+        s.heroes[0].wisdom = 0.1;
+        assert.equal(partyWisdom(s), 0.1);
 
         const s2 = newGame(721);
-        s2.heroes[0].itemLuck = 0.1;
-        s2.heroes.push({ ...s2.heroes[0], itemLuck: 0.3 });
-        assert.equal(partyItemLuck(s2), 0.3, "더 높은 쪽을 안 썼다");
+        s2.heroes[0].wisdom = 0.1;
+        s2.heroes.push({ ...s2.heroes[0], wisdom: 0.3 });
+        assert.equal(partyWisdom(s2), 0.3, "더 높은 쪽을 안 썼다");
 
         s2.heroes[1].hp = 0;
-        assert.equal(partyItemLuck(s2), 0.1, "쓰러진 사람의 아이템운을 그대로 셌다");
+        assert.equal(partyWisdom(s2), 0.1, "쓰러진 사람의 지혜를 그대로 셌다");
     }
 });
 
@@ -338,12 +338,12 @@ test("레벨업 성장 — 저장했다 되읽어도 그대로다, 옛 저장은
         const s0 = newGame(740);
         s0.heroes[0].pendingSkillPicks = 2;
         s0.heroes[0].bonusDefense = 3;
-        s0.heroes[0].itemLuck = 0.15;
+        s0.heroes[0].wisdom = 0.15;
         const back = deserialize(serialize(s0));
         assert.ok(back, "되읽기가 실패했다");
         assert.equal(back!.heroes[0].pendingSkillPicks, 2);
         assert.equal(back!.heroes[0].bonusDefense, 3);
-        assert.equal(back!.heroes[0].itemLuck, 0.15);
+        assert.equal(back!.heroes[0].wisdom, 0.15);
     }
 
     // ── **옛 저장에는 이 칸들이 없다** — 안 채우면 성장 단추를 여는 순간 터진다
@@ -353,13 +353,13 @@ test("레벨업 성장 — 저장했다 되읽어도 그대로다, 옛 저장은
         for (const h of raw.heroes) {
             delete h.pendingSkillPicks;
             delete h.bonusDefense;
-            delete h.itemLuck;
+            delete h.wisdom;
         }
         const back = deserialize(JSON.stringify(raw));
         assert.ok(back, "빈 칸이 있는 옛 저장을 못 읽었다");
         assert.equal(back!.heroes[0].pendingSkillPicks, 0);
         assert.equal(back!.heroes[0].bonusDefense, 0);
-        assert.equal(back!.heroes[0].itemLuck, 0);
+        assert.equal(back!.heroes[0].wisdom, 0);
 
         // 실제로 굴려 본다 — 고르기까지 한 번 지나가야 「불러와지긴 하는데 터진다」가 없다.
         back!.heroes[0].pendingSkillPicks = 1;

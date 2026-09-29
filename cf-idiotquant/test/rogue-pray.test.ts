@@ -51,17 +51,54 @@ test("허기(Weak)는 큰 곤경이다 — 배를 900 으로 채운다", () => {
     assert.ok(after.heroes[0].food >= 890, `배가 안 찼다: ${after.heroes[0].food}`);
 });
 
-test("작은 곤경(쥔 것의 저주)은 제한 100 이하에서만 풀어 준다", () => {
-    for (const [timeout, freed] of [[100, true], [101, false]] as const) {
-        const s = quiet(5);
-        const hero = s.heroes[0];
-        const weapon = hero.pack.find((it) => it.id === hero.weaponId)!;
-        weapon.cursed = true;
-        hero.prayerTimeout = timeout;
+/** 쥔 무기를 저주하고 빈다 — 풀렸는가. */
+function prayCursed(seed: number, timeout: number, luck: number): boolean {
+    const s = quiet(seed);
+    const hero = s.heroes[0];
+    hero.pack.find((it) => it.id === hero.weaponId)!.cursed = true;
+    hero.prayerTimeout = timeout;
+    hero.luck = luck;
+    const after = perform(s, { t: "pray" });
+    return !after.heroes[0].pack.find((it) => it.id === hero.weaponId)!.cursed;
+}
+
+test("작은 곤경(쥔 것의 저주)은 행운이 있고 제한이 100 이하일 때만 풀린다", () => {
+    const seeds = Array.from({ length: 40 }, (_, i) => i + 1);
+    assert.ok(seeds.every((seed) => !prayCursed(seed, 100, 0)), "행운 0 인데 작은 곤경을 고쳤다(원작은 action 1~2)");
+    assert.ok(seeds.some((seed) => prayCursed(seed, 100, 5)), "행운이 있는데 한 번도 안 풀렸다");
+    assert.ok(seeds.every((seed) => !prayCursed(seed, 101, 10)), "제한 101 에서 풀렸다");
+});
+
+test("행운이 음수면 제한이 차 있어도 신이 노한다", () => {
+    const s = quiet(11);
+    s.heroes[0].hp = 2;
+    s.heroes[0].prayerTimeout = 0;
+    s.heroes[0].luck = -1;
+    const after = perform(s, { t: "pray" });
+    assert.ok(after.heroes[0].hp < after.heroes[0].maxHp);
+    assert.ok(after.messages.some((m) => WRATH.test(m) || /나타났다|번개/.test(m)));
+});
+
+test("너무 이른 기도는 행운 −3 을 치른다", () => {
+    const s = quiet(12);
+    s.heroes[0].prayerTimeout = 999;
+    const after = perform(s, { t: "pray" });
+    assert.equal(after.heroes[0].luck, -3);
+});
+
+test("행운이 바닥이면 노한 신의 번개에 죽을 수 있다", () => {
+    for (let seed = 1; seed <= 200; seed++) {
+        const s = quiet(seed);
+        s.heroes[0].prayerTimeout = 999;
+        s.heroes[0].luck = -10;
         const after = perform(s, { t: "pray" });
-        const w = after.heroes[0].pack.find((it) => it.id === hero.weaponId)!;
-        assert.equal(!w.cursed, freed, `제한 ${timeout}`);
+        if (after.messages.some((m) => /번개/.test(m))) {
+            assert.equal(after.phase, "dead");
+            assert.match(after.epitaph ?? "", /번개/);
+            return;
+        }
     }
+    assert.fail("행운 −10 에서 번개가 한 번도 안 났다");
 });
 
 test("곤경이 없으면 제한이 0 일 때만 흡족해하고, 그 전에 빌면 노한다", () => {

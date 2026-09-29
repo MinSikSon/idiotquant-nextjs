@@ -2033,13 +2033,13 @@ export default function Rogue() {
                                     <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
                                     <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
                                     <span className="text-[11px] text-[var(--rg-faint)]">
-                                        현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {Math.round(hero.itemLuck * 100)}
+                                        현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {Math.round(hero.wisdom * 100)}
                                     </span>
                                     {(
                                         [
                                             ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
                                             ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                            ["luck", `지혜 +1 · 지팡이 주사위 +1 (현재 +${wandDamageDiceBonus(hero)})`],
+                                            ["wis", `지혜 +1 · 지팡이 주사위 +1 (현재 +${wandDamageDiceBonus(hero)})`],
                                         ] as const
                                     ).map(([option, label]) => (
                                         <button
@@ -2242,7 +2242,7 @@ export default function Rogue() {
                             AC:{heroArmorClass(h)}
                         </button>
                         <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip} order-2`}>
-                            Wi:{Math.round(h.itemLuck * 100)}
+                            Wis:{Math.round(h.wisdom * 100)}
                         </button>
                         <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>Xp:{h.level}/{h.exp}</button>
                         {(coop || i === 0) && (
@@ -2879,7 +2879,7 @@ export default function Rogue() {
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다.`
+                        ? `Wis:${Math.round(statusHero.wisdom * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"

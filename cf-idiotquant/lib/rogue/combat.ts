@@ -39,9 +39,9 @@ import {
 } from "./items";
 import {
     type Attack,
-    type Luck,
+    type Edge,
     damageRoll,
-    luckOf,
+    edgeOf,
     attackRoll,
     hitDifficulty,
     pierce,
@@ -68,7 +68,7 @@ import {
     takeFromPack,
     trainWeaponSkill,
 } from "./hero";
-export type { Attack, Luck };
+export type { Attack, Edge };
 export { heroHitTerms, heroDamTerms };
 import {
     type GameState,
@@ -134,9 +134,9 @@ export function seenBefore(state: GameState, m: Monster): boolean {
 /** `13(d20 굴림)` — 유리·불리면 두 눈과 고른 쪽까지. */
 function rollEyes(a: Attack): string {
     const eyes =
-        a.luck === "normal"
+        a.edge === "normal"
             ? `${a.roll}(d20 굴림)`
-            : `${a.rolls.join(", ")}(d20 ${a.luck === "advantage" ? "유리" : "불리"} → ${a.roll} 채택)`;
+            : `${a.rolls.join(", ")}(d20 ${a.edge === "advantage" ? "유리" : "불리"} → ${a.roll} 채택)`;
     return eyes;
 }
 
@@ -285,10 +285,10 @@ export interface AttackResult {
  * · **자는 놈을 친다** → 유리. 5판에서 의식을 잃은 상대를 치면 유리다.
  * · **눈이 멀었거나 헷갈린다** → 불리.
  *
- * 둘 다면 서로 지운다(`luckOf`) — 이것도 5판의 규칙이다.
+ * 둘 다면 서로 지운다(`edgeOf`) — 이것도 5판의 규칙이다.
  */
-export function heroLuck(hero: GameState["heroes"][number], m: Monster): Luck {
-    return luckOf([!m.awake], [hero.blind > 0, hero.confused > 0]);
+export function heroEdge(hero: GameState["heroes"][number], m: Monster): Edge {
+    return edgeOf([!m.awake], [hero.blind > 0, hero.confused > 0]);
 }
 
 /** 몬스터의 명중 난이도에 쓰는 수비 보정 — 숙련 하나뿐이다. */
@@ -355,7 +355,7 @@ function swing(
         hitTerms.reduce((t, b) => t + b.n, 0),
         hitDifficulty(monsterDodgeBonus(m)),
         rng,
-        heroLuck(hero, m),
+        heroEdge(hero, m),
     );
     const messages: string[] = [];
 
@@ -494,7 +494,7 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
     const bonus = monsterHitBonus(m);
     const bonusTerms: Term[] = [{ n: bonus, why: m.champion === "swift" ? "공격+신속" : "공격" }];
     // **내가 자거나 덫에 걸려 있으면 상대가 유리하다** — 못 움직이는 상대를 치는 것이다.
-    const luck = luckOf([hero.asleep > 0 || hero.stuck > 0], []);
+    const edge = edgeOf([hero.asleep > 0 || hero.stuck > 0], []);
     let total = 0;
     let hits = 0;
     let crits = 0;
@@ -504,7 +504,7 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
     const dealt: { dice: string; rolled: number[]; dealt: number }[] = [];
 
     for (const dice of m.def.damage) {
-        const a = attackRoll(bonus, hitDifficulty(myDodge), rng, luck);
+        const a = attackRoll(bonus, hitDifficulty(myDodge), rng, edge);
         attacks.push(a);
         lastRoll = a.roll;
         if (!a.hit) continue;

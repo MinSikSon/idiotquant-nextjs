@@ -60,7 +60,7 @@ function placeNextTo(s: GameState, ch: string, hp = 1) {
 function fake(
     roll: number,
     bonus: number,
-    luck: "normal" | "advantage" | "disadvantage" = "normal",
+    edge: "normal" | "advantage" | "disadvantage" = "normal",
     second?: number,
 ) {
     const rolls = second === undefined ? [roll] : [roll, second];
@@ -68,7 +68,7 @@ function fake(
     return {
         hit: roll === 20 || (roll !== 1 && total >= 15),
         rolls, roll, total,
-        crit: roll === 20, fumble: roll === 1, luck,
+        crit: roll === 20, fumble: roll === 1, edge,
     };
 }
 
@@ -446,7 +446,7 @@ test("무기 강화는 enchant로 표시하고, 상태 줄에서는 값으로 �
 test("굴림 줄은 값(설명)으로 적고 표지는 두 칸으로 가른다", () => {
     const line = attackLine(
         "나",
-        { roll: 13, rolls: [13], total: 20, hit: true, luck: "normal" } as never,
+        { roll: 13, rolls: [13], total: 20, hit: true, edge: "normal" } as never,
         [
             { n: 2, why: "숙련" },
             { n: 3, why: "힘" },

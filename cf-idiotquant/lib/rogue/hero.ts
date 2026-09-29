@@ -171,21 +171,21 @@ export const EXP_LEVELS = [
 export const HP_PER_LEVEL = 5;
 
 /**
- * 이 레벨마다 성장 하나를 고른다(힘·방어·아이템운) — `hero.pendingSkillPicks` 하나가
+ * 이 레벨마다 성장 하나를 고른다(힘·방어·지혜) — `hero.pendingSkillPicks` 하나가
  * 쌓고, `game.pickSkill` 하나가 던다. 캠프가 아니어도, 턴을 안 써도 고를 수 있다 —
  * 레벨업 자체가 턴을 안 쓰는 것과 같은 자리다.
  */
 export const SKILL_PICK_INTERVAL = 3;
 
 /**
- * 지혜 성장 한 번(아이템운 +1%)마다 공격 지팡이에 같은 면의 주사위 하나를 더한다.
+ * 지혜 성장 한 번(지혜 +1%)마다 공격 지팡이에 같은 면의 주사위 하나를 더한다.
  *
  * 지혜는 세 레벨마다 겨우 한 번 고르는 값이라, 1% 확률 보정만으로는 손에 잡히는 선택이
  * 되기 어렵다. 지팡이는 횟수가 정해진 소모품이므로 같은 +1이라도 무기 강화처럼 매 턴
- * 누적되지 않는다. `itemLuck` 하나에서 읽어 별도 능력치를 만들지 않는다.
+ * 누적되지 않는다. `wisdom` 하나에서 읽어 별도 능력치를 만들지 않는다.
  */
 export function wandDamageDiceBonus(hero: Hero): number {
-    return Math.max(0, Math.round(hero.itemLuck * 100));
+    return Math.max(0, Math.round(hero.wisdom * 100));
 }
 
 /** (하한, 상한] 사이에 있는 `SKILL_PICK_INTERVAL` 의 배수 개수 — 한 번에 여러 레벨을 건너뛰어도 안 놓친다. */
@@ -246,7 +246,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         detect: 0,
         pendingSkillPicks: 0,
         bonusDefense: 0,
-        itemLuck: 0,
+        wisdom: 0,
         weaponSkills: {},
         weaponTraining: {},
         // 되읽기(`storage.ts`)가 늘 `{}` 로 채우므로 여기서도 채운다 — 안 채우면 갑옷 숙련이
@@ -256,7 +256,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         classSkillDepth: 0,
         spiritTurn: 0,
         prayerTimeout: PRAYER_TIMEOUT_START,
-        fortune: 0,
+        luck: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
     for (const item of startingItems) {
@@ -650,6 +650,8 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
         { n: meleePlus(weapon, "plusHit"), why: "enchant" },
+        // NetHack `find_roll_to_hit` 의 `+ Luck` — 0 이면 굴림 줄에 안 찍힌다(`terms()` 가 0 을 뺀다).
+        { n: luckOf(hero), why: "행운" },
     ];
 }
 
@@ -804,26 +806,26 @@ export function isWorn(hero: Hero, it: Item): boolean {
  */
 // ── 행운 — NetHack 의 Luck (`attrib.c` · `rnd.c`) ─────────────────────────────
 //
-// **밑 작업만 있다** — 값·경계·되돌아옴·`rnl` 굴림까지. 아직 어느 규칙도 이 값을 안 읽고
-// 안 바꾼다(기도·명중·뒤지기에 붙이는 것은 다음 일). 그래서 지금은 늘 0 이고, `rnl` 도
-// 행운 0 에서는 `rng.rnd(x)` 와 **같은 난수를 같은 수만큼** 쓴다.
+// 듣는 곳은 셋이다 — 기도(`game.ts` 「기도」) · 명중(`heroHitTerms`·던지기에 `+행운`) ·
+// 뒤지기(`luckyChance`). 바뀌는 곳은 지금 너무 이른 기도(−3) 하나이고, 저절로 0 으로
+// 돌아온다. `rnl` 은 행운 0 에서 `rng.rnd(x)` 와 **같은 난수를 같은 수만큼** 쓴다.
 
 /** 행운의 경계 — NetHack `LUCKMAX`/`LUCKMIN`. 행운 물건의 ±3(`u.moreluck`)은 아직 없다. */
-export const FORTUNE_MAX = 10;
-export const FORTUNE_MIN = -10;
+export const LUCK_MAX = 10;
+export const LUCK_MIN = -10;
 
 /** 행운이 0 쪽으로 한 칸 돌아오는 주기(턴). 증표를 들면 반으로 준다 — NetHack `nh_timeout`. */
-export const FORTUNE_TIMEOUT = 600;
-export const FORTUNE_TIMEOUT_AMULET = 300;
+export const LUCK_TIMEOUT = 600;
+export const LUCK_TIMEOUT_AMULET = 300;
 
 /** 규칙이 읽는 행운 — 행운 물건이 생기면 **여기서만** 더한다(NetHack 의 `Luck` 매크로). */
-export function fortuneOf(hero: Hero): number {
-    return hero.fortune;
+export function luckOf(hero: Hero): number {
+    return hero.luck;
 }
 
 /** 행운을 바꾸는 유일한 자리 — NetHack `change_luck`. 경계에서 자른다. */
-export function changeFortune(hero: Hero, n: number) {
-    hero.fortune = Math.max(FORTUNE_MIN, Math.min(FORTUNE_MAX, hero.fortune + n));
+export function changeLuck(hero: Hero, n: number) {
+    hero.luck = Math.max(LUCK_MIN, Math.min(LUCK_MAX, hero.luck + n));
 }
 
 /**
@@ -831,10 +833,10 @@ export function changeFortune(hero: Hero, n: number) {
  * 시계는 판의 `turn` 이다(배고픔과 같은 시계 — 협동에서 가만히 있는 사람도 같이 돈다).
  * 원작의 보름달(+1 기준선)은 옮기지 않는다 — 실제 날짜라 같은 시드가 다른 판이 된다.
  */
-export function tickFortune(hero: Hero, turn: number) {
-    if (hero.fortune === 0) return;
-    if (turn % (hero.hasAmulet ? FORTUNE_TIMEOUT_AMULET : FORTUNE_TIMEOUT) !== 0) return;
-    hero.fortune += hero.fortune > 0 ? -1 : 1;
+export function tickLuck(hero: Hero, turn: number) {
+    if (hero.luck === 0) return;
+    if (turn % (hero.hasAmulet ? LUCK_TIMEOUT_AMULET : LUCK_TIMEOUT) !== 0) return;
+    hero.luck += hero.luck > 0 ? -1 : 1;
 }
 
 /**
@@ -843,13 +845,23 @@ export function tickFortune(hero: Hero, turn: number) {
  * `x` 가 15 이하면 행운을 1/3 로(부호는 지키며) 줄여 쓴다. 행운이 0 이면 `rng.rnd(x)` 와 같다.
  */
 export function rnl(x: number, hero: Hero, rng: Rng): number {
-    const luck = fortuneOf(hero);
+    const luck = luckOf(hero);
     const adjustment = x <= 15 ? Math.sign(luck) * Math.floor((Math.abs(luck) + 1) / 3) : luck;
     let i = rng.rnd(x);
     if (adjustment && rng.rnd(37 + Math.abs(adjustment))) {
         i = Math.max(0, Math.min(x - 1, i - adjustment));
     }
     return i;
+}
+
+/**
+ * 확률 `p` 의 성공을 **행운이 기울인다** — `rnl(100)` 이 `p` 의 백분율보다 작으면 성공.
+ * 행운 0 이면 `rng.chance(p)` 와 같은 난수 하나로 같은 결과를 낸다(`p` 가 1% 단위일 때).
+ * 원작의 뒤지기는 `!rnl(7)`(1/7) 이지만, 여기서는 기존 확률표(`searchChance`)를 지키고
+ * 행운만 얹는다 — 행운 한 칸이 1%p 다.
+ */
+export function luckyChance(p: number, hero: Hero, rng: Rng): boolean {
+    return rnl(100, hero, rng) < Math.round(p * 100);
 }
 
 /** 새 판의 기도 시간 제한 — NetHack 의 `u.ublesscnt = 300`. */

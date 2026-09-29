@@ -438,11 +438,11 @@ export interface Hero {
     /** 레벨업 성장으로 쌓은 방어력. `heroDefense` **하나**가 더한다. */
     bonusDefense: number;
     /**
-     * 레벨업 성장으로 쌓은 「좋은 물건」 확률(0~1) — 그 몫만큼 `itemTier` 를 한 번 더
+     * **지혜(Wis)** — 레벨업 성장으로 쌓은 「좋은 물건」 확률(0~1) — 그 몫만큼 `itemTier` 를 한 번 더
      * 굴려 높은 쪽을 쓴다(`dnd.ts` 의 유리 굴림과 같은 모양). 0 이면 **굴림 자체를
      * 안 건드린다** — 아무도 안 고른 판은 난수 흐름이 예전과 한 글자도 안 바뀐다.
      */
-    itemLuck: number;
+    wisdom: number;
     /** NetHack식 무기 숙련 — 종류마다 Unskilled(0)부터 Expert(3)까지. */
     weaponSkills?: Record<string, number>;
     /** 의미 있는 적중 횟수. 승급 문턱(20/80/180)을 재는 값이다. */
@@ -467,13 +467,13 @@ export interface Hero {
      */
     prayerTimeout: number;
     /**
-     * **행운** — NetHack 의 `u.uluck`(−10..+10). 화면에는 안 적는다(원작도 숨긴다).
+     * **행운** — NetHack 의 `u.uluck`(−10..+10). 상태 줄에 칸이 없다(원작도 숨긴다).
      *
-     * 이름이 `luck` 이 아닌 까닭: `itemLuck`(아이템운 · Wi) · `dnd.Luck`(유리 굴림) ·
-     * `pickSkill` 의 `"luck"` 이 이미 **다른 뜻**으로 그 이름을 쓴다. 읽는 자리는
-     * `fortuneOf` · 바꾸는 자리는 `changeFortune` **하나씩**이다(`hero.ts` 「행운」).
+     * 지혜(`wisdom`)와 유리·불리(`dnd.Edge`)는 **다른 값**이다 — 예전에 둘 다 `luck` 이라는
+     * 이름을 썼다가 이 값에 이름을 내줬다. 읽는 자리는 `luckOf` · 바꾸는 자리는
+     * `changeLuck` **하나씩**이다(`hero.ts` 「행운」).
      */
-    fortune: number;
+    luck: number;
 }
 
 export type Phase = "playing" | "dead" | "won";
