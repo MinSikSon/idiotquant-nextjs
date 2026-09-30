@@ -2248,6 +2248,10 @@ export default function Rogue() {
                         {!coop && <span className="shrink-0">{h.nick ?? "나"}</span>}
                         <span className="shrink-0">[{expandedPartyStats === i ? <OriginTag origin={h.origin} level={h.level} /> : <span className="font-[family-name:var(--font-plex-mono)] font-bold" style={{ color: originInfo.iconInk }}>{originInfo.icon}</span>}]</span>
                         {expandedPartyStats !== i && hHunger && <button type="button" className="shrink-0 font-bold text-[var(--rg-monster)]" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger}</button>}
+                        {expandedPartyStats !== i && ([
+                            ["defense", `AC:${heroArmorClass(h)}`],
+                            ["turn", coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`],
+                        ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                         {expandedPartyStats === i && ([
                             ["str", `St:${heroStr(h)}`],
                             ["defense", `AC:${heroArmorClass(h)}`],
@@ -2317,7 +2321,7 @@ export default function Rogue() {
                             aria-expanded={expandedPartyStats === i}
                             onClick={() => setExpandedPartyStats((current) => current === i ? null : i)}
                         >
-                            {expandedPartyStats === i ? "한 줄로 보기" : "여러 줄로 보기"}
+                            {expandedPartyStats === i ? "간략히" : "더 보기"}
                         </button>
                     </div >
                 );
