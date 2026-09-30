@@ -2255,10 +2255,10 @@ export default function Rogue() {
                             ["turn", `T:${h.turns}/${state.turn}`],
                         ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                         {expandedPartyStats === i && !coop && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} mr-[5ch]`}>Dlvl:{level.depth}</button>}
-                        {expandedPartyStats === i && <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 text-[var(--rg-gold)]`}>$:{h.gold}</button>}
-                        {expandedPartyStats === i && <span className={`shrink-0 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
+                        <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 text-[var(--rg-gold)]`}>$:{h.gold}</button>
+                        <span className={`shrink-0 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
-                        </span>}
+                        </span>
                         {expandedPartyStats === i && h.hp > 0 && h.hp <= h.maxHp / 4 && <span className=" font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
                         {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip}`}>
                             Wi:{Math.round(h.itemLuck * 100)}
