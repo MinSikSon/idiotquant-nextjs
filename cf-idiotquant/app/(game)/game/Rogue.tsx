@@ -2264,7 +2264,7 @@ export default function Rogue() {
                         </button>}
                         {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
                             St:{heroStr(h)}
-                        </button>
+                        </button>}
                         {!coop && expandedPartyStats === i && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
                         {!coop && expandedPartyStats === i && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
                         <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
@@ -2280,7 +2280,7 @@ export default function Rogue() {
                         </button>}
                         <button type="button" onClick={() => { setStatusKind("xp"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-9`}>
                             Xp:{h.level}/{h.exp}
-                        </button>}
+                        </button>
                         {i === 0 && (
                             <button type="button" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-10 text-[var(--rg-label)]`}>
                                 {coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`}
