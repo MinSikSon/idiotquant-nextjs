@@ -2244,28 +2244,18 @@ export default function Rogue() {
                                 쓰러졌다 — 동료 이름표를 누르면 그쪽 눈으로 본다
                             </span>
                         )}
-                        {expandedPartyStats !== i && <span className="shrink-0">[<OriginTag origin={h.origin} level={h.level} />]</span>}
-                        {!coop && expandedPartyStats !== i && <span className="shrink-0">{h.nick ?? "나"}</span>}
+                        {!coop && <span className="shrink-0">{h.nick ?? "나"}</span>}
+                        <span className="shrink-0">[<OriginTag origin={h.origin} level={h.level} />]</span>
                         {expandedPartyStats !== i && hHunger && <button type="button" className="shrink-0 font-bold text-[var(--rg-monster)]" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger}</button>}
-                        {!coop && expandedPartyStats !== i && <button type="button" className="shrink-0" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }}>St:{heroStr(h)}</button>}
-                        {coop && expandedPartyStats !== i && ([
+                        {expandedPartyStats === i && ([
                             ["str", `St:${heroStr(h)}`],
                             ["defense", `AC:${heroArmorClass(h)}`],
                             ["xp", `Xp:${h.level}/${h.exp}`],
                             ["turn", `T:${h.turns}/${state.turn}`],
                         ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
-                        {!coop && expandedPartyStats === i && <button
-                            type="button"
-                            onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "origin" }); setSheet("log"); }}
-                            className={`${statChip} order-0`}
-                            title="직업 성장 정보 보기"
-                        >
-                            [<OriginTag origin={h.origin} level={h.level} />]
-                        </button>}
                         {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "str" }); setSheet("log"); }} className={`${statChip} order-1`}>
                             St:{heroStr(h)}
                         </button>}
-                        {!coop && expandedPartyStats === i && <span className="order-4 basis-full h-0 p-0" aria-hidden="true" />}
                         {!coop && expandedPartyStats === i && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} order-5 mr-[5ch]`}>Dlvl:{level.depth}</button>}
                         <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 order-6 text-[var(--rg-gold)]`}>$:{h.gold}</button>
                         <span className={`shrink-0 order-7 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
@@ -2310,15 +2300,11 @@ export default function Rogue() {
                         {expandedPartyStats === i && cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {expandedPartyStats === i && emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {expandedPartyStats === i && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
-                        {expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
+                        {expandedPartyStats === i && <div className="order-40 flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
-                                ["str", `St:${heroStr(h)}`],
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
                                 ["wisdom", `Wi:${Math.round(h.itemLuck * 100)}`],
                                 ["luck", `Lu:${Math.round(h.itemLuck * 100)}`],
-                                ["defense", `AC:${heroArmorClass(h)}`],
-                                ["xp", `Xp:${h.level}/${h.exp}`],
-                                ["turn", `T:${h.turns}/${state.turn}`],
                             ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                         </div>}
                         {coop && expandedPartyStats === i && <div className="order-40 flex basis-full flex-nowrap items-center gap-x-[1ch] overflow-x-auto border-t border-[var(--rg-line-faint)] pt-1 text-[var(--rg-faint)] [scrollbar-width:none]">
