@@ -622,11 +622,12 @@ function ScreenerContent() {
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
     // 시가총액 필터 (단위: 억원, URL param: mincap)
-    const [minMarketCap, setMinMarketCap] = useState<number>(() =>
-        initNum('mincap', 'mincap', MKTCAP_PRESETS.map(p => p.value))
-    );
+    // 시가총액 직접 입력값과 PBR 슬라이더의 중간값도 URL·저장 조합에서 그대로 복원해야
+    // 한다. 프리셋만 허용하면 750억·PBR 0.65처럼 사용자가 직접 고른 값이 재진입 때
+    // 조용히 사라져 "저장" 기능을 믿을 수 없게 된다.
+    const [minMarketCap, setMinMarketCap] = useState<number>(() => initNum('mincap', 'mincap'));
     // 밸류에이션 필터 (0 = 미적용)
-    const [maxPbr, setMaxPbr] = useState<number>(() => initNum('maxpbr', 'maxpbr', PBR_MAX_PRESETS));
+    const [maxPbr, setMaxPbr] = useState<number>(() => initNum('maxpbr', 'maxpbr'));
     const [maxPer, setMaxPer] = useState<number>(() => initNum('maxper', 'maxper', PER_MAX_PRESETS));
     const [minRoe, setMinRoe] = useState<number>(() => initNum('minroe', 'minroe', ROE_MIN_PRESETS));
     const [minNcav, setMinNcav] = useState<number>(() => initNum('minncav', 'minncav', NCAV_MIN_PRESETS));
@@ -812,6 +813,13 @@ function ScreenerContent() {
         setExcludeHoldings(false);
         setExcludeDeficit(false);
         setExcludePreferred(false);
+        setExcludeHalted(false);
+        setExcludeManaged(false);
+        setExcludeDelisting(false);
+        setSectors(new Set());
+        setMarkets(new Set());
+        setMaxW52Pos(0);
+        setMinTrAmt(0);
         setMinMarketCap(0);
         setMaxPbr(0);
         setMaxPer(0);
@@ -1111,6 +1119,13 @@ function ScreenerContent() {
         setExcludeHoldings(ex.includes('holdings'));
         setExcludeDeficit(ex.includes('deficit'));
         setExcludePreferred(ex.includes('preferred'));
+        setExcludeHalted(ex.includes('halted'));
+        setExcludeManaged(ex.includes('managed'));
+        setExcludeDelisting(ex.includes('delisting'));
+        setSectors(new Set((p.get('sectors') ?? '').split(',').map(v => v.trim()).filter(Boolean)));
+        setMarkets(new Set((p.get('markets') ?? '').split(',').map(v => v.trim().toUpperCase()).filter(Boolean)));
+        setMaxW52Pos(safeNum(p.get('w52')));
+        setMinTrAmt(safeNum(p.get('mintr')));
         setMinMarketCap(safeNum(p.get('mincap')));
         setMaxPbr(safeNum(p.get('maxpbr')));
         setMaxPer(safeNum(p.get('maxper')));
@@ -1118,7 +1133,8 @@ function ScreenerContent() {
         setMinNcav(safeNum(p.get('minncav')));
         setSearchQuery(p.get('q') ?? '');
         setShowLikedOnly(p.get('filter') === 'liked');
-        setGroupMode((p.get('group') as GroupMode) ?? 'none');
+        const group = p.get('group');
+        setGroupMode(group === 'sector' || group === 'strategy' ? group : 'none');
         setViewMode(parseViewMode(p.get('view')));
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
