@@ -186,6 +186,10 @@ html.dark {
 
 html { scroll-behavior: smooth; }
 
+@media (max-width: 767px) {
+  html { font-size: 115%; }
+}
+
 /* ── 게임 화면의 바탕은 문서 뿌리까지 ──
    /game 은 앱 테마와 무관하게 브라운관 안이고, 그 어둠은 페이지 안쪽 div 에 칠해져 있다.
    그런데 끝까지 내린 뒤 한 번 더 당기면(고무줄 스크롤) 화면 밖이 잠깐 드러나는데, 그 자리를
