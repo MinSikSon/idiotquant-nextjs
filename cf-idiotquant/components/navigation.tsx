@@ -58,7 +58,7 @@ const MORE_NAV: NavItem[] = [
   // 「로그」로 안 쓴다 — 이 앱에는 가계부와 기록이 있어서 그 두 글자가 log 로 읽힌다.
   // 게임의 이름 그대로 두는 편이 덜 헷갈린다.
   //
-  { label: "Rogue",     href: "/game",        icon: Swords },
+  { label: "Rogue",     href: "/games",       icon: Swords },
 ];
 
 // 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
@@ -241,7 +241,7 @@ export function NavbarWithSimpleLinks() {
      화면이 쓰는 것이라, 게임 때문에 배치가 달라지면 다른 화면이 그 값을 치른다.
 
      `/game` Rogue는 DOM이라 앱 테마를 따른다. */
-  const inGame = pathname.startsWith("/game");
+  const inGame = pathname.startsWith("/games");
   // 게임 안에서는 금융 서비스 이름 대신 게임 묶음의 이름을 쓴다. 공통 헤더지만
   // 경로에 따라 한 단어만 바꾸므로, 게임 바의 색·배치는 그대로 유지된다.
   const brandSuffix = inGame ? "GAMES" : "QUANT";

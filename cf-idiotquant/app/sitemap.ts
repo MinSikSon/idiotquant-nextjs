@@ -20,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { path: '/analyze',      changeFrequency: 'weekly',  priority: 0.85 },
         { path: '/search',       changeFrequency: 'weekly',  priority: 0.7 },
         { path: '/calculator',   changeFrequency: 'monthly', priority: 0.6 },
-        { path: '/game',         changeFrequency: 'monthly', priority: 0.5 },
+        { path: '/games',        changeFrequency: 'monthly', priority: 0.5 },
         { path: '/terms',        changeFrequency: 'yearly',  priority: 0.2 },
         { path: '/privacy',      changeFrequency: 'yearly',  priority: 0.2 },
     ];

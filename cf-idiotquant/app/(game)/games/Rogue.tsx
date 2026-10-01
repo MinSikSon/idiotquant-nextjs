@@ -1980,7 +1980,7 @@ export default function Rogue() {
             <button
                 type="button"
                 onClick={() => setSheet("log")}
-                className="flex h-[2.9em] w-full shrink-0 items-start gap-1 overflow-hidden px-2 pt-1 text-left font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.45] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] sm:text-[13px]"
+                className="flex h-[3.25em] w-full shrink-0 items-start gap-1 overflow-hidden px-2 pt-1 text-left font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.45] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] sm:text-[13px]"
             >
                 <span className="min-w-0 flex-1">
                     {recent.map((m, i) => (
