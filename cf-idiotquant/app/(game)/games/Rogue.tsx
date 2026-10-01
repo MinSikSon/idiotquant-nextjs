@@ -1971,27 +1971,25 @@ export default function Rogue() {
                     {seedLinkNote}
                 </div>
             )}
-            {/* 맨 위 두 줄 — 원작의 메시지 줄이다. 높이를 고정해 둔다: 줄 수가 들쭉날쭉하면
-                지도가 매 턴 위아래로 흔들린다.
-
-                **이 줄이 곧 「기록」의 문이다.** 요약을 읽다가 더 보고 싶어지는 자리가
-                여기라, 단추를 따로 세울 까닭이 없었다. 높이와 글자는 그대로 두고 누를 수
-                있게만 했다 — `<button>` 이라 키보드로도 닿고 스크린리더도 읽는다. */}
+            {/* 맨 위 두 줄 — 넷핵의 메시지 창처럼 두 칸을 늘 확보한다. 줄마다 제 높이를
+                가져야 한글 글꼴의 아래 획이 다음 줄 또는 지도에 먹히지 않는다. */}
             <button
                 type="button"
                 onClick={() => setSheet("log")}
-                className="flex h-auto min-h-[4em] w-full shrink-0 items-start gap-1 px-2 py-1 text-left font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.6] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] sm:text-[13px]"
+                className="grid h-[4.5rem] w-full shrink-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
             >
-                <span className="min-w-0 flex-1">
+                <span className="grid min-w-0 grid-rows-2 overflow-hidden py-1">
                     {recent.map((m, i) => (
-                        <span key={`${state.turn}-${i}`} className={`block truncate ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
-                            <Msg text={m} heroes={state.heroes} />
+                        <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
+                            <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
+                            <span className="min-w-0 truncate leading-[1.45]"><Msg text={m} heroes={state.heroes} /></span>
                         </span>
                     ))}
                 </span>
-                {/* 누를 수 있다는 표시. 글자가 아니라 자리라서 줄 수가 바뀌어도 안 흔들린다. */}
-                <span aria-hidden className="shrink-0 text-[var(--rg-ghost)]">
-                    기록 ▾
+                {/* 누를 수 있다는 표시도 메시지 창의 오른쪽 고정 칸에 둔다. */}
+                <span aria-hidden className="flex w-12 shrink-0 flex-col items-center justify-center border-l border-[var(--rg-line-faint)] text-[11px] leading-tight text-[var(--rg-faint)]">
+                    <span>기록</span>
+                    <span className="text-[var(--rg-ghost)]">[↵]</span>
                 </span>
                 {/* **`aria-label` 을 안 단다.** 달면 그것이 이름을 통째로 덮어서 **방금 일어난
                     일이 안 읽힌다** — 이 줄에서 제일 중요한 것이 그것이다. 대신 뒤에 한 마디를
@@ -2953,7 +2951,7 @@ export default function Rogue() {
                 sheet === "log" && (
                     <Panel
                         {...shared}
-                        title="지나온 기록"
+                        title="기록"
                         onClose={() => setSheet("none")}
                         /* 「이 d20 은 뭘 정하는 건가」를 여기서 답한다 — 줄에 이름은 붙였지만
                            스무면체가 명중에만 쓰인다는 것은 한 줄로 말해 주는 편이 빠르다. */
@@ -2962,19 +2960,15 @@ export default function Rogue() {
                         {/* 결과가 먼저, 바로 아래 들여쓴 줄이 그 결과의 산식이다. 엔진이
                             `DETAIL` 로 가른 값을 읽기만 한다 — 화면이 전투 기록을 다시
                             분류하면 전투 규칙과 기록의 뜻이 갈릴 수 있다. */}
-                        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--rg-line-soft)] pb-2 text-[11px] text-[var(--rg-faint)]">
-                            <span>최근 기록 · 최신순</span>
-                            <span className="sr-only">결과를 먼저 읽고, 아래 들여쓴 줄에서 명중·피해 계산을 확인합니다.</span>
-                            <span className="inline-flex items-center gap-1">
-                                <span className="h-2 w-2 rounded-full bg-[var(--rg-label)]" aria-hidden="true" />
-                                주요 사건
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                                <span className="h-2 w-2 rounded-full bg-[var(--rg-line)]" aria-hidden="true" />
-                                계산 상세
-                            </span>
+                        <div className="mb-3 border border-[var(--rg-line)] bg-[var(--rg-bg)] px-2 py-1.5 text-[11px] leading-relaxed text-[var(--rg-faint)]">
+                            <div className="flex items-center justify-between gap-2 text-[var(--rg-label)]">
+                                <span>┌─ MESSAGE LOG</span>
+                                <span>TURN {state.turn}</span>
+                            </div>
+                            <p className="mt-0.5">최신 기록이 위에 있습니다. <span className="text-[var(--rg-strong)]">&gt;</span> 사건 · <span className="text-[var(--rg-muted)]">:</span> 명중과 피해 계산</p>
+                            <span className="sr-only">결과를 먼저 읽고, 들여쓴 줄에서 명중과 피해 계산을 확인합니다.</span>
                         </div>
-                        <ul className="space-y-2">
+                        <ul className="overflow-hidden border border-[var(--rg-line)] bg-[var(--rg-bg)]">
                             {state.messages
                                 .slice(-80)
                                 .reverse()
@@ -2984,10 +2978,11 @@ export default function Rogue() {
                                     <li
                                         key={i}
                                         className={detail
-                                            ? "ml-3 border-l-2 border-[var(--rg-line-soft)] bg-[var(--rg-bg)]/30 py-1 pl-3 pr-1 text-[var(--rg-muted)] leading-5 break-words"
-                                            : `relative border-l-2 ${isImportantMessage(m) ? "border-[var(--rg-label)] bg-[var(--rg-bg)]/35" : "border-transparent"} ${isImportantMessage(m) ? "font-bold" : ""} py-1 pl-3 pr-1 leading-5 break-words text-[var(--rg-strong)]`}
+                                            ? "ml-4 border-t border-[var(--rg-line-faint)] bg-[var(--rg-raised)]/40 py-1.5 pl-3 pr-2 text-[var(--rg-muted)] leading-[1.55] break-words"
+                                            : `flex gap-2 border-t border-[var(--rg-line-faint)] px-2 py-2 leading-[1.55] break-words text-[var(--rg-strong)] first:border-t-0 ${isImportantMessage(m) ? "bg-[var(--rg-raised)] font-bold" : ""}`}
                                     >
-                                        <Msg text={m} heroes={state.heroes} />
+                                        {!detail && <span aria-hidden className={`shrink-0 ${isImportantMessage(m) ? "text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>&gt;</span>}
+                                        <span className="min-w-0"><Msg text={m} heroes={state.heroes} /></span>
                                     </li>
                                     );
                                 })}
