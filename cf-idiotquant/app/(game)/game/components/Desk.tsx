@@ -897,6 +897,14 @@ export default function Desk({
                                             </span>{" "}
                                             <span className={nameInk}>{name(it)}</span>
                                             {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
+                                            {/* 지팡이의 충전량은 정체를 안 뒤에만 보인다. 미식별 지팡이에
+                                                숨은 자원을 드러내지 않으면서, 쓸 지팡이를 고를 때는
+                                                남은 횟수와 빈 지팡이를 한눈에 구분한다. */}
+                                            {it.kind === "wand" && state.known[`wand:${it.type}`] && (
+                                                <span className={(it.charges ?? 0) > 0 ? "text-[var(--rg-muted)]" : "font-bold text-[var(--rg-trap)]"}>
+                                                    {` · ${(it.charges ?? 0) > 0 ? `${it.charges}회 남음` : "충전 없음"}`}
+                                                </span>
+                                            )}
                                             {/* 고르는 자리에서 숫자가 보여야 고를 수 있다. **손질이 붙은
                                                 값**을 적되(그래야 `+1` 이 더 좋아 보인다) 아직 정체를
                                                 모르는 물건은 기본값만 — 화면이 속을 흘리면 안 된다. */}

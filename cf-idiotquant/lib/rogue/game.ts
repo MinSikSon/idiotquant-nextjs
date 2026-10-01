@@ -2299,7 +2299,8 @@ function ray(
     dx: number,
     dy: number,
     range: number,
-): { x: number; y: number; monster?: Monster; cells: { x: number; y: number }[] } {
+    heroes: Hero[] = [],
+): { x: number; y: number; monster?: Monster; hero?: Hero; cells: { x: number; y: number }[] } {
     let x = from.x;
     let y = from.y;
     const cells: { x: number; y: number }[] = [];
@@ -2313,6 +2314,8 @@ function ray(
         const m = monsterAt(level, x, y);
         // 정령은 **내 편이라 지나간다** — 지팡이도 던진 것도 정령 너머의 적에게 간다.
         if (m && !m.spirit) return { x, y, monster: m, cells };
+        const targetHero = heroes.find((h) => h !== from && h.hp > 0 && h.x === x && h.y === y);
+        if (targetHero) return { x, y, hero: targetHero, cells };
     }
     return { x, y, cells };
 }
@@ -2509,28 +2512,30 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         return true;
     }
 
-    const hit = ray(level, hero, dx, dy, 12);
+    const hit = ray(level, hero, dx, dy, 12, it.type === "swapping" ? state.heroes : []);
     // 맞든 빗나가든 **모든 지팡이가 제 궤적을 남긴다** — 무엇을 쐈는지가 화면에서 갈린다.
     zapTrail(state, hero, hit.cells, it.type, dx, dy);
 
     // ── 위치 교환의 지팡이 (swapping) ───────────────────────────────────────────
     if (it.type === "swapping") {
-        if (!hit.monster) {
+        const target = hit.monster ?? hit.hero;
+        if (!target) {
             say(state, `${name()}에서 은빛 광선이 허공을 갈랐으나 아무도 맞지 않았다.`);
             return true;
         }
-        const m = hit.monster;
         const hx = hero.x;
         const hy = hero.y;
-        hero.x = m.x;
-        hero.y = m.y;
-        m.x = hx;
-        m.y = hy;
-        m.awake = true;
+        hero.x = target.x;
+        hero.y = target.y;
+        target.x = hx;
+        target.y = hy;
+        if (hit.monster) hit.monster.awake = true;
         computeFov(level, state.heroes);
         state.known[wandKey] = true;
         state.itemCodex[wandKey] = true;
-        say(state, `공간이 뒤틀리며 ${m.def.name}와(과) 위치가 바뀌었다!`);
+        say(state, hit.hero
+            ? `공간이 뒤틀리며 ${heroLabel(state, hero)}와(과) ${heroLabel(state, hit.hero)}의 위치가 바뀌었다!`
+            : `공간이 뒤틀리며 ${hit.monster?.def.name ?? "괴물"}와(과) 위치가 바뀌었다!`);
         return true;
     }
 
