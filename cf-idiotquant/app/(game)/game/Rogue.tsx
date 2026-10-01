@@ -3216,7 +3216,7 @@ export default function Rogue() {
                                     ))}
                                 </p>
                             )}
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            <div className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${expandedOrigin ? "hidden sm:grid" : ""}`}>
                                 {ORIGIN_LIST.map((orig) => (
                                     <button key={orig.id} type="button" aria-expanded={expandedOrigin === orig.id}
                                         onClick={() => setExpandedOrigin(orig.id)}
@@ -3234,6 +3234,9 @@ export default function Rogue() {
                                 if (!orig) return null;
                                 return (
                                     <section aria-live="polite" className="rounded-[4px] border border-[var(--rg-line)] bg-[var(--rg-raised)] p-3">
+                                        <button type="button" onClick={() => setExpandedOrigin(null)} className="mb-2 rounded-[3px] border border-[var(--rg-line-soft)] px-2 py-1 text-xs text-[var(--rg-muted)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:hidden">
+                                            ← 직업 목록
+                                        </button>
                                         <div className="mb-1 flex items-center gap-2">
                                             <span className="font-mono text-xl" style={{ color: orig.iconInk }}>{orig.icon}</span>
                                             <h3 className="font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
