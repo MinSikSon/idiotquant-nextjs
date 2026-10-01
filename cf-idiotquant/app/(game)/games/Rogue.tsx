@@ -2254,6 +2254,8 @@ export default function Rogue() {
                         {expandedPartyStats !== i && hHunger && <button type="button" className="shrink-0 font-bold text-[var(--rg-monster)]" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger}</button>}
                         {expandedPartyStats !== i && ([
                             ["defense", `AC:${heroArmorClass(h)}`],
+                            ["xp", `Xp:${h.level}/${h.exp}`],
+                            ["dlvl", `Dlvl:${level.depth}`],
                             ["turn", coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`],
                         ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                         {expandedPartyStats === i && ([
