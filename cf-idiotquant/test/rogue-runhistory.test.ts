@@ -3,7 +3,7 @@
 // 1. 게임 종료 시 hero의 모든 스탯 (Lv, Exp, HP/MaxHP, Str/MaxStr, Gold, Defense) 보존
 // 2. 장착 장비 (무기, 갑옷, 좌/우 반지, 증표)의 정확한 이름 및 강화/저주 상태 보존
 // 3. 배낭 아이템 목록 (모든 소지품의 수량, 강화, 충전량, 성능, 장착 태그) 보존
-// 4. 사망/승리 직전의 최근 로그 (recentLog) 보존
+// 4. 사망/승리까지의 전체 로그 (recentLog) 보존
 // 5. graves()를 통한 영구 저장 및 되읽기 무결성
 // 6. 이전 버전 간이 Tomb 객체와의 완벽한 하위 호환성
 
@@ -131,7 +131,7 @@ test("게임 종료 시 영웅 스탯, 장비, 배낭 소지품이 모두 상세
         assert.ok(pPotion);
         assert.equal(pPotion.count, 2);
 
-        // 5. 최근 로그
+        // 5. 전체 로그
         assert.ok(record.recentLog);
         assert.equal(record.recentLog.length, 4);
         assert.equal(record.recentLog[3], "오크에게 맞아 전사했다.");

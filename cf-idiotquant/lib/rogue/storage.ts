@@ -850,7 +850,9 @@ export function bury(state: GameState): Tomb[] {
         score: score(state),
         seed: state.seed,
         hero: tombHero,
-        recentLog: (state.messages ?? []).slice(-10),
+        // 필드 이름은 예전 저장 데이터와 읽는 코드를 위해 그대로 둔다. 이제는 마지막
+        // 몇 줄만 남기지 않고, 끝난 판의 전체 기록을 보존한다.
+        recentLog: [...(state.messages ?? [])],
     };
     const list = [
         item,

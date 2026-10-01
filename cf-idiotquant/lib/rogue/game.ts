@@ -298,8 +298,8 @@ function say(state: GameState, ...lines: string[]) {
             state.messages.push(`T:${state.turn} ${player}${l}`);
         }
     }
-    // 오래된 것은 버린다. 화면은 마지막 몇 줄만 보여 준다.
-    if (state.messages.length > 200) state.messages.splice(0, state.messages.length - 200);
+    // 기록은 판이 끝날 때까지 모두 남긴다. 위쪽 메시지 창은 두 줄만 보여 주지만,
+    // 기록 판에서는 처음부터 끝까지 되짚을 수 있어야 한다.
 }
 
 /** 판 안의 업적은 결산을 위해서만 기록한다 — 보상이나 게임 규칙에는 영향을 주지 않는다. */

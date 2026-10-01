@@ -2969,8 +2969,7 @@ export default function Rogue() {
                             <span className="sr-only">결과를 먼저 읽고, 들여쓴 줄에서 명중과 피해 계산을 확인합니다.</span>
                         </div>
                         <ul className="overflow-hidden border border-[var(--rg-line)] bg-[var(--rg-bg)]">
-                            {state.messages
-                                .slice(-80)
+                            {[...state.messages]
                                 .reverse()
                                 .map((m, i) => {
                                     const detail = isDetail(m);
@@ -3542,10 +3541,10 @@ export default function Rogue() {
                                     </div>
                                 )}
 
-                                {/* 4. 마지막 로그 (Recent Log) */}
+                                {/* 4. 이번 판의 전체 기록 */}
                                 {selectedTomb.recentLog && selectedTomb.recentLog.length > 0 && (
                                     <div>
-                                        <h4 className="mb-1 text-sm font-bold text-[var(--rg-label)]">마지막 기록</h4>
+                                        <h4 className="mb-1 text-sm font-bold text-[var(--rg-label)]">이번 판 기록</h4>
                                         <div className="max-h-36 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 font-mono text-xs leading-5 text-[var(--rg-muted)]">
                                             {[...selectedTomb.recentLog].reverse().map((logMsg, lIdx) => (
                                                 <div key={lIdx} className="break-words whitespace-normal">
