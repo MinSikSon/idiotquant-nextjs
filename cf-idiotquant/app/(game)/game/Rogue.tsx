@@ -2995,7 +2995,7 @@ export default function Rogue() {
             {
                 sheet === "options" && (
                     <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
-                        <ul className="space-y-1">
+                        <ul className="space-y-2">
                             {[
                                 {
                                     label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저 · 고고학자 · 정령술사", go: () => {
@@ -3155,10 +3155,10 @@ export default function Rogue() {
                                     <button
                                         type="button"
                                         onClick={o.go}
-                                        className="w-full rounded-[2px] px-1 text-left hover:bg-[var(--rg-hover)]"
+                                        className="flex w-full flex-col gap-1 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-3 py-2.5 text-left transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                     >
-                                        <span className="text-[var(--rg-strong)]">{o.label}</span>
-                                        <span className="text-[var(--rg-faint)]"> — {o.hint}</span>
+                                        <span className="font-bold leading-snug text-[var(--rg-strong)]">{o.label}</span>
+                                        <span className="text-xs leading-relaxed text-[var(--rg-muted)]">{o.hint}</span>
                                     </button>
                                 </li>
                             ))}
