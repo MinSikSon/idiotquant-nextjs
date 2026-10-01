@@ -1531,6 +1531,10 @@ export default function Rogue() {
     const [originFor, setOriginFor] = useState<
         { t: "new" } | { t: "host" } | { t: "mate" } | { t: "guest"; code: string } | { t: "rematch"; round: number }
     >({ t: "new" });
+    const [expandedOrigin, setExpandedOrigin] = useState<HeroOrigin | null>(null);
+    useEffect(() => {
+        if (sheet === "origins") setExpandedOrigin(null);
+    }, [sheet, originFor]);
 
     const pickOrigin = (origin: HeroOrigin) => {
         const f = originFor;
@@ -3212,47 +3216,44 @@ export default function Rogue() {
                                     ))}
                                 </p>
                             )}
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 {ORIGIN_LIST.map((orig) => (
-                                    <button
-                                        key={orig.id}
-                                        type="button"
-                                        onClick={() => pickOrigin(orig.id)}
-                                        className="flex flex-col text-left rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3 transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus:outline-none"
-                                    >
-                                        {/* 이름 · 영문 이름 · 값을 **줄마다 하나씩** 세운다. 한 줄에 다 넣으면
-                                        좁은 칸에서 이름이 두 줄로 접히면서 카드 높이가 제각각이 된다. */}
-                                        <div className="mb-0.5 flex items-baseline gap-1.5">
-                                            {/* 표는 지도에서 그 물건을 칠하는 색으로 — 뜻이 색으로도 읽힌다. */}
-                                            <span className="font-mono text-base leading-none" style={{ color: orig.iconInk }}>
-                                                {orig.icon}
-                                            </span>
-                                            <span className="truncate font-bold text-sm text-[var(--rg-strong)]">{orig.name}</span>
-                                        </div>
-                                        <div className="mb-1.5 flex items-baseline justify-between gap-2 font-mono text-[11px]">
-                                            <span className="text-[var(--rg-faint)]">{orig.title}</span>
-                                            <span className="shrink-0 text-[var(--rg-gold)]">
-                                                Hp {orig.baseHp} · Str {orig.baseStr}
-                                            </span>
-                                        </div>
-                                        <p className="text-[11.5px] text-[var(--rg-muted)] mb-2">
-                                            {orig.description}
-                                        </p>
-                                        <div className="mt-auto border-t border-[var(--rg-line-soft)] pt-1.5 text-[11px]">
-                                            <span className="font-bold text-[var(--rg-strong)]">
-                                                <span className="font-mono text-[var(--rg-gold)]">*</span> {orig.traitName}:{" "}
-                                            </span>
-                                            <span className="text-[var(--rg-faint)]">{orig.traitDescription}</span>
-                                        </div>
-                                        <div className="mt-1.5 border-t border-[var(--rg-line-soft)] pt-1.5 text-[11px]">
-                                            <span className="font-bold text-[var(--rg-gold)]">Lv {ADVANCE_LEVEL} 전직 · {orig.advancedName}</span>
-                                            <p className="mt-0.5 text-[var(--rg-faint)]">
-                                                ★ {orig.advancedSkillName} — {orig.advancedSkillDescription}
-                                            </p>
-                                        </div>
+                                    <button key={orig.id} type="button" aria-expanded={expandedOrigin === orig.id}
+                                        onClick={() => setExpandedOrigin(orig.id)}
+                                        className={`flex min-h-20 items-center gap-2 rounded-[4px] border p-3 text-left transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${expandedOrigin === orig.id ? "border-[var(--rg-gold)] bg-[var(--rg-hover)]" : "border-[var(--rg-line-soft)] bg-[var(--rg-raised)]"}`}>
+                                        <span className="font-mono text-2xl leading-none" style={{ color: orig.iconInk }}>{orig.icon}</span>
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-sm font-bold text-[var(--rg-strong)]">{orig.name}</span>
+                                            <span className="mt-0.5 block text-[11px] text-[var(--rg-faint)]">{orig.title}</span>
+                                        </span>
                                     </button>
                                 ))}
                             </div>
+                            {expandedOrigin && (() => {
+                                const orig = ORIGINS[expandedOrigin];
+                                if (!orig) return null;
+                                return (
+                                    <section aria-live="polite" className="rounded-[4px] border border-[var(--rg-line)] bg-[var(--rg-raised)] p-3">
+                                        <div className="mb-1 flex items-center gap-2">
+                                            <span className="font-mono text-xl" style={{ color: orig.iconInk }}>{orig.icon}</span>
+                                            <h3 className="font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
+                                        </div>
+                                        <p className="mb-2 text-xs text-[var(--rg-gold)]">Hp {orig.baseHp} · Str {orig.baseStr}</p>
+                                        <p className="mb-2 text-[11.5px] text-[var(--rg-muted)]">{orig.description}</p>
+                                        <div className="border-t border-[var(--rg-line-soft)] pt-2 text-[11px]">
+                                            <b className="text-[var(--rg-strong)]"><span className="font-mono text-[var(--rg-gold)]">*</span> {orig.traitName}: </b>
+                                            <span className="text-[var(--rg-faint)]">{orig.traitDescription}</span>
+                                        </div>
+                                        <div className="mt-2 border-t border-[var(--rg-line-soft)] pt-2 text-[11px]">
+                                            <b className="text-[var(--rg-gold)]">Lv {ADVANCE_LEVEL} 전직 · {orig.advancedName}</b>
+                                            <p className="mt-0.5 text-[var(--rg-faint)]">★ {orig.advancedSkillName} — {orig.advancedSkillDescription}</p>
+                                        </div>
+                                        <button type="button" onClick={() => pickOrigin(orig.id)} className="mt-3 w-full rounded-[3px] border border-[var(--rg-line)] px-3 py-2 font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]">
+                                            {orig.name} 선택
+                                        </button>
+                                    </section>
+                                );
+                            })()}
                         </div>
                     </Panel>
                 )
