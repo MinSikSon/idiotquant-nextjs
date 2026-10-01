@@ -464,6 +464,14 @@ export interface Hero {
 
 export type Phase = "playing" | "dead" | "won";
 
+/** 한 판 안에서 얻은 결산 업적. 획득 순서대로 저장한다. */
+export interface RunAchievement {
+    id: string;
+    title: string;
+    depth: number;
+    turn: number;
+}
+
 export interface GameState {
     seed: number;
     rngState: number;
@@ -520,6 +528,8 @@ export interface GameState {
     phase: Phase;
     /** 죽은 까닭 · 이긴 까닭. */
     epitaph: string;
+    /** 이 판에서 달성한 기록 — 결산에 획득 순서대로 남긴다. */
+    achievements: RunAchievement[];
     /** 가 본 제일 깊은 곳. */
     deepest: number;
     /**

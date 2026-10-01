@@ -823,11 +823,11 @@ export function itemDepthRange(kind: ItemKind, type: string): { min: number; max
     return Number.isFinite(min) ? { min, max } : null;
 }
 
-/** 화면의 글자. */
+/** 지도·배낭·도감이 함께 쓰는 한 칸짜리 아이템 글리프. 금화·보석은 NetHack 기호를 따른다. */
 export function itemChar(kind: ItemKind): string {
     switch (kind) {
         case "gold":
-            return "*";
+            return "$";
         case "food":
             return "%";
         case "potion":
@@ -845,9 +845,9 @@ export function itemChar(kind: ItemKind): string {
         case "amulet":
             return ",";
         case "relic":
-            return "$";
+            return "✦";
         case "gem":
-            return "^";
+            return "*";
     }
 }
 

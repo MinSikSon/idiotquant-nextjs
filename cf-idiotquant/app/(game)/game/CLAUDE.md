@@ -27,7 +27,7 @@
 | 공격·피해·특수 공격 · 기록 줄 | `lib/rogue/combat.ts` |
 | 상점 — 가격표 · 가게 안인가 · 상점 주인 | `lib/rogue/shop.ts` (규칙은 `game.ts` 「상점」) |
 | **판이 도는 자리** — `perform(state, cmd)` | `lib/rogue/game.ts` |
-| localStorage 저장 · 빈 칸 채우기 · 도감 · 지난 판들 | `lib/rogue/storage.ts` |
+| localStorage 저장 · 빈 칸 채우기 · 도감 · 지난 판들 · 결산 업적 | `lib/rogue/storage.ts` |
 | 터졌을 때 빠져나갈 문 | `app/(game)/game/GameBoundary.tsx` |
 | 화면 | `app/(game)/game/{page,Rogue}.tsx` · `components/` |
 | 온라인 방 · 내보내기 (PeerJS) | `app/(game)/game/Rogue.tsx` (`hostRoom`·`joinRoom`·`kickGuest`) |

@@ -3317,8 +3317,8 @@ export default function Rogue() {
                                 갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
                                 키보드로는 <b>W</b>.
                             </p>
-                            <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">*</span> 금화 · <span className="text-[var(--rg-potion)]">!</span> 포션 · <span className="text-[var(--rg-scroll)]">?</span> 주문서</p>
-                            <p><span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
+                            <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">$</span> 금화 · <span className="text-[var(--rg-gem)]">*</span> 보석 · <span className="text-[var(--rg-amulet)]">✦</span> 전설 유물</p>
+                            <p><span className="text-[var(--rg-potion)]">!</span> 포션 · <span className="text-[var(--rg-scroll)]">?</span> 주문서 · <span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
                             <p><span className="text-[var(--rg-trap)]">^</span> 함정 · <span className="text-[var(--rg-stairs)]">&gt;</span> 아래 계단 · <span className="text-[var(--rg-stairs)]">&lt;</span> 위 계단 · <span className="text-[var(--rg-door)]">+</span> 문</p>
                             <p className="pt-1 text-[var(--rg-faint)]">
                                 <b className="text-[var(--rg-muted)]">명중은 서로 굴려서 겨룹니다.</b>{" "}
@@ -3446,6 +3446,20 @@ export default function Rogue() {
                                     hasAmulet={selectedTomb.amulet ?? selectedTomb.hero?.hasAmulet ?? selectedTomb.won}
                                     won={selectedTomb.won}
                                 />
+
+                                {selectedTomb.achievements && selectedTomb.achievements.length > 0 && (
+                                    <section className="rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+                                        <h4 className="mb-2 text-sm font-bold text-[var(--rg-label)]">이번 판의 업적</h4>
+                                        <ol className="space-y-1.5 text-xs text-[var(--rg-muted)]">
+                                            {selectedTomb.achievements.map((achievement) => (
+                                                <li key={achievement.id} className="flex items-baseline justify-between gap-3">
+                                                    <span><b className="mr-2 text-[var(--rg-amulet)]">★</b>{achievement.title}</span>
+                                                    <span className="shrink-0 font-mono text-[var(--rg-faint)]">{achievement.depth}층 · T:{achievement.turn}</span>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    </section>
+                                )}
 
                                 {/* 2. 영웅 능력치 (Hero Stats) */}
                                 {selectedTomb.hero && (
@@ -3701,6 +3715,24 @@ export default function Rogue() {
                         <div className="mb-3">
                             <RunGoalList depth={state.deepest} hasAmulet={partyAmulet(state)} won={state.phase === "won"} />
                         </div>
+                        {(state.achievements.length > 0 || state.phase === "won") && (
+                            <section className="mb-3 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+                                <h4 className="mb-2 text-sm font-bold text-[var(--rg-label)]">이번 판의 업적</h4>
+                                <ol className="space-y-1.5 text-xs text-[var(--rg-muted)]">
+                                    {[
+                                        ...state.achievements,
+                                        ...(state.phase === "won" && !state.achievements.some((a) => a.id === "escape")
+                                            ? [{ id: "escape", title: "옌더의 증표를 지상으로 가져왔다", depth: 1, turn: state.turn }]
+                                            : []),
+                                    ].map((achievement) => (
+                                        <li key={achievement.id} className="flex items-baseline justify-between gap-3">
+                                            <span><b className="mr-2 text-[var(--rg-amulet)]">★</b>{achievement.title}</span>
+                                            <span className="shrink-0 font-mono text-[var(--rg-faint)]">{achievement.depth}층 · T:{achievement.turn}</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </section>
+                        )}
                         <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--rg-muted)]">
                             <span className="text-xs text-[var(--rg-faint)]">출신</span>
                             <span className="font-semibold text-[var(--rg-strong)]"><OriginTag origin={hero.origin} nick={hero.nick} level={hero.level} title /></span>

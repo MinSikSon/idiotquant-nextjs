@@ -67,7 +67,7 @@ const INK: Record<string, string> = {
     "item-wand": "var(--rg-wand)",
     "item-amulet": "var(--rg-amulet)",
     "item-relic": "var(--rg-gold)",
-    "item-gem": "var(--rg-potion)",
+    "item-gem": "var(--rg-gem)",
     "champion-blazing": "var(--rg-trap)",
     "champion-shadow": "var(--rg-wand)",
     "champion-gilded": "var(--rg-gold)",

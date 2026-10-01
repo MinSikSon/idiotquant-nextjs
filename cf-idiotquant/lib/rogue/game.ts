@@ -302,6 +302,12 @@ function say(state: GameState, ...lines: string[]) {
     if (state.messages.length > 200) state.messages.splice(0, state.messages.length - 200);
 }
 
+/** 판 안의 업적은 결산을 위해서만 기록한다 — 보상이나 게임 규칙에는 영향을 주지 않는다. */
+function recordRunAchievement(state: GameState, id: string, title: string) {
+    if (state.achievements.some((a) => a.id === id)) return;
+    state.achievements.push({ id, title, depth: state.level.depth, turn: state.turn });
+}
+
 function tileAt(level: Level, x: number, y: number): Tile {
     return inBounds(x, y) ? (level.tiles[idx(x, y)] as Tile) : T.ROCK;
 }
@@ -599,6 +605,9 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
     }
     computeFov(level, state.heroes);
     state.deepest = Math.max(state.deepest, depth);
+    if (depth === 5) recordRunAchievement(state, "depth-5", "지하 5층에 도달했다");
+    if (depth === 10) recordRunAchievement(state, "depth-10", "지하 10층에 도달했다");
+    if (depth === AMULET_LEVEL) recordRunAchievement(state, "depth-26", "던전의 가장 깊은 곳에 도달했다");
 }
 
 /** 시야 내에 들어온 바닥의 물건들을 이번 판 목격 목록에 기록한다. */
@@ -671,6 +680,7 @@ export function newGame(
         levels: {},
         heroes: [],
         messages: [],
+        achievements: [],
         turn: 0,
         phase: "playing",
         epitaph: "",
@@ -1061,6 +1071,7 @@ function pickUp(state: GameState, hero: Hero): boolean {
     if (!split) level.items = level.items.filter((i) => i.id !== it.id);
     if (it.kind === "amulet") {
         hero.hasAmulet = true;
+        recordRunAchievement(state, "amulet", "옌더의 증표를 손에 넣었다");
         state.known["amulet:amulet"] = true;
         state.itemCodex["amulet:amulet"] = true;
         state.itemUsage["amulet:amulet"] = Math.max(state.itemUsage["amulet:amulet"] ?? 0, 1);
@@ -2362,7 +2373,10 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
     // 상점 주인은 도감의 스물여섯 밖이다 — 세지 않는다. 대신 가게가 닫힌다.
     if (m.shk) closeShop(state, m);
-    else state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
+    else {
+        state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
+        recordRunAchievement(state, "first-kill", "첫 몬스터를 쓰러뜨렸다");
+    }
     // 무기 처치 수 누적 (도감 통달) — **잡은 사람이 쥔 칼**이다.
     if (by.weaponId) {
         const wep = by.pack.find((p) => p.id === by.weaponId);
@@ -3872,6 +3886,7 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
         say(state, `${monsterName(guardian)} 수호자가 깨어났다. 쓰러뜨리면 보석을 남긴다.`);
     }
     level.altarUsed = true;
+    recordRunAchievement(state, "altar", "제단의 힘을 사용했다");
     return true;
 }
 
@@ -4061,6 +4076,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     // 전체 턴은 파티가 쓴 행동 하나씩, 이 값은 그중 이 사람이 실제로 쓴 몫이다.
     // 벽을 들이받거나 성장만 고른 행동(`acted=false`)은 둘 다 늘지 않는다.
     hero.turns += 1;
+    if (inShop(state.level, hero.x, hero.y)) recordRunAchievement(state, "shop", "상점에 들어섰다");
 
     // ── 영웅에게 붙은 것은 **누가 움직이든** 한 칸씩 돈다 ────────────────────────
     //

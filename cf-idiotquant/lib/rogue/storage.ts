@@ -31,7 +31,7 @@ import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
 import { TRANSMUTE_ALTAR_USES } from "./dungeon";
-import { MAP_H, MAP_W, inBounds, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ShopState, type SpiritBond, type TransmuteAltar } from "./types";
+import { MAP_H, MAP_W, inBounds, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type RunAchievement, type ShopState, type SpiritBond, type TransmuteAltar } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -385,6 +385,10 @@ function normalize(s: Saved): GameState | null {
                 ? { benched: [fixHero(s.benched as unknown as Hero)] }
                 : {}),
         messages: Array.isArray(s.messages) ? s.messages : [],
+        achievements: Array.isArray(s.achievements)
+            ? s.achievements.filter((a): a is RunAchievement => !!a && typeof a.id === "string" && typeof a.title === "string")
+                .map((a) => ({ id: a.id, title: a.title, depth: Math.max(1, num(a.depth, 1)), turn: Math.max(0, num(a.turn, 0)) }))
+            : [],
         // **빠진 겉모습을 메운다** — 표에 물건을 더하면 옛 저장에는 그 한 종이 없고,
         // 그러면 그것만 이름 없는 「주문서」로 떠서 오히려 눈에 띈다(`fillAppearances`).
         appearance: fillAppearances(
@@ -643,6 +647,8 @@ export interface Tomb {
     seed?: number;
     hero?: TombHero;
     recentLog?: string[];
+    /** 해당 판에서 획득한 업적. 구버전 기록에는 없다. */
+    achievements?: RunAchievement[];
 }
 
 const TOMB_KEY = "rogue:graves:v1";
@@ -834,6 +840,12 @@ export function bury(state: GameState): Tomb[] {
         turns: state.turn,
         epitaph: state.epitaph || (state.phase === "won" ? "던전을 탈출했다" : "던전에서 쓰러졌다"),
         won: state.phase === "won",
+        achievements: [
+            ...state.achievements,
+            ...(state.phase === "won" && !state.achievements.some((a) => a.id === "escape")
+                ? [{ id: "escape", title: "옌더의 증표를 지상으로 가져왔다", depth: 1, turn: state.turn }]
+                : []),
+        ],
         amulet: partyAmulet(state),
         score: score(state),
         seed: state.seed,

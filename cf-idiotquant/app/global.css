@@ -68,6 +68,7 @@
   --rg-monster-sensed: #cf9b78;  /* 감지 물약 — 본 것과 달라야 한다 */
   --rg-monster-sensed-bg: #f3ece8;  /* 벽 너머로 느낀 것 — 본 것보다 더 옅다 */
   --rg-gold: #8a6800;
+  --rg-gem: #087e8b;
   --rg-potion: #8e3379;
   --rg-scroll: #2a5f88;
   --rg-weapon: #3c4750;
@@ -137,6 +138,7 @@ html.dark {
   --rg-monster-sensed: #8a5a3a;
   --rg-monster-sensed-bg: #241a15;
   --rg-gold: #ffd24a;
+  --rg-gem: #67e8f9;
   --rg-potion: #d987c4;
   --rg-scroll: #cfe3f5;
   --rg-weapon: #c3ced6;
