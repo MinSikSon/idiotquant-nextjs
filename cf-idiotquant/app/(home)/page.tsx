@@ -751,7 +751,7 @@ function StatsBand({ scannedCount }: { scannedCount: number }) {
   ];
   return (
     <div className="border-y border-neutral-100 dark:border-[#1c2f26] bg-white dark:bg-[#081109]/85">
-      <div className="max-w-4xl mx-auto px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-neutral-100 dark:divide-[#1c2f26]">
+      <div className="max-w-4xl mx-auto px-3 sm:px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-neutral-100 dark:divide-[#1c2f26]">
         {stats.map((s, i) => (
           <div key={s.label} className="reveal py-6 text-center" style={delay(i * 80)}>
             <div className="text-2xl font-black font-[family-name:var(--font-mono)] text-neutral-900 dark:text-white tabular-nums leading-none">
@@ -940,7 +940,7 @@ export default function HomePage() {
         {/* 가독성 비네트 — 글이 놓이는 왼쪽만 눌러 덮는다. 화면 전체를 덮으면 금화가 통째로 죽는다. */}
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(74%_62%_at_22%_46%,rgba(250,249,247,0.94)_0%,rgba(250,249,247,0.62)_44%,transparent_76%)] dark:bg-[radial-gradient(74%_62%_at_22%_46%,rgba(4,11,8,0.94)_0%,rgba(4,11,8,0.6)_44%,transparent_76%)]" />
 
-        <div className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-5 pt-20 pb-14 sm:pt-24 grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-6 items-center">
+        <div className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-3 sm:px-5 pt-20 pb-14 sm:pt-24 grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-6 items-center">
           <div>
             <div className="reveal flex items-center gap-2.5 mb-5">
               <span className="w-5 h-px bg-[#a1730a]/60 dark:bg-[#e3b34a]/50" />
@@ -996,7 +996,7 @@ export default function HomePage() {
 
       {/* ── 발굴 — 스플릿 2단 ─────────────────────────────────────── */}
       <section className="relative border-b border-neutral-100 dark:border-[#1c2f26] bg-surface-canvas dark:bg-[#0a1510]/85">
-        <div className="max-w-4xl mx-auto px-5 py-20 md:py-40 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+        <div className="max-w-4xl mx-auto px-3 sm:px-5 py-20 md:py-40 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="reveal h-52 sm:h-72 rounded-3xl border border-neutral-200/70 dark:border-[#22402f] bg-gradient-to-b from-[#fdf6e9] to-white dark:from-[#1c1608] dark:to-[#0a1510] overflow-hidden">
             <SpinArt kind="coin" />
           </div>
@@ -1019,7 +1019,7 @@ export default function HomePage() {
           01과 좌우만 뒤집으면 같은 레이아웃이 두 번 반복돼 리듬이 죽는다 → 큰 아트 패널 하나에
           텍스트 셀·기능 셀 2개를 붙인 비대칭 벤토로 짠다. */}
       <section className="relative border-b border-neutral-100 dark:border-[#1c2f26] bg-white dark:bg-[#08120d]/85">
-        <div className="max-w-4xl mx-auto px-5 py-20 md:py-40">
+        <div className="max-w-4xl mx-auto px-3 sm:px-5 py-20 md:py-40">
           <div className="grid md:grid-cols-5 gap-4">
             <div className="reveal md:col-span-3 h-52 sm:h-72 md:h-auto md:min-h-[22rem] rounded-3xl border border-neutral-200/70 dark:border-[#22402f] bg-gradient-to-b from-[#eafaf0] to-white dark:from-[#0e2016] dark:to-[#08120d] overflow-hidden">
               <SpinArt kind="gem" />
@@ -1122,7 +1122,7 @@ export default function HomePage() {
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="bg-white dark:bg-[#050d09]">
-        <div className="max-w-4xl mx-auto px-5 py-6 flex items-center justify-between gap-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-5 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-brand dark:text-[#22c55e] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-white/80">

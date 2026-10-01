@@ -1164,7 +1164,7 @@ function ScreenerContent() {
             {/* ── 수집 중 안내 배너 ── */}
             {scanningInProgress && !showLikedOnly && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
                         <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
                             최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
@@ -1178,7 +1178,7 @@ function ScreenerContent() {
                 "sticky top-0 z-30 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-md",
                 "border-b border-neutral-200 dark:border-surface-dark-border"
             )}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="max-w-7xl mx-auto px-2 sm:px-6">
 
                     {/* 첫째 줄: 전략 격자.
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
@@ -1431,7 +1431,7 @@ function ScreenerContent() {
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
                 <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-brand-light dark:border-[#166534]/40">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-[18px]">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-5 pb-[18px]">
 
                         <div className="flex items-end justify-between gap-3 mb-4">
                             <div className="min-w-0">
@@ -1735,7 +1735,7 @@ function ScreenerContent() {
                    기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
             {bannerPreset && (
                 <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-brand-light dark:border-[#166534]/40">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-start gap-2">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-start gap-2">
                         <span className={cn(
                             "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
                             STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-hover"
@@ -1753,7 +1753,7 @@ function ScreenerContent() {
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
                 <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
                             <button
@@ -1803,7 +1803,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-20">
+            <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-5 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">

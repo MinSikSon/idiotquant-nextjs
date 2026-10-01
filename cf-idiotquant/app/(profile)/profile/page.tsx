@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/pageHeader";
 /* 계정 화면은 카드 한 줄짜리 좁은 단이라 PAGE_WIDTH 프리셋(4xl/7xl)에 얹으면
    글이 화면 끝까지 늘어난다. 헤더와 본문이 같은 값을 쓰기만 하면 되므로
    프리셋 대신 이 한 곳에서 정한다. 좌우 패딩은 프리셋과 같다. */
-const PROFILE_CONTAINER = "max-w-sm mx-auto px-4 sm:px-6";
+const PROFILE_CONTAINER = "max-w-sm mx-auto px-2 sm:px-6";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {

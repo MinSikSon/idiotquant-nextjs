@@ -94,7 +94,7 @@ const TOOLS = [
 export default function QuantPage() {
   return (
     <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
-      <article className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+      <article className="max-w-3xl mx-auto px-2 sm:px-6 py-10 sm:py-16">
 
         {/* ── 머리 ── */}
         <header>

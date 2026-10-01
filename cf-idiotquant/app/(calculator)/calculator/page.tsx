@@ -360,7 +360,7 @@ function Calculator() {
 
     return (
         <div
-            className="group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 sm:px-5 pt-5 sm:pt-8 pb-20 sm:pb-24"
+            className="group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-2 sm:px-5 pt-5 sm:pt-8 pb-20 sm:pb-24"
             data-help={showHelp ? "on" : "off"}
         >
             <div className="max-w-[860px] mx-auto">

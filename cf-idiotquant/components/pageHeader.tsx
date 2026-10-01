@@ -34,8 +34,8 @@ import { cn } from "@/lib/utils";
    헤더와 본문이 **같은 프리셋**을 써야 한다. 페이지에서 <main> 을 직접 감쌀
    때도 PAGE_WIDTH[width] 를 그대로 가져다 쓴다. */
 export const PAGE_WIDTH = {
-  content: "max-w-4xl mx-auto px-4 sm:px-6",  // 읽는 화면 — 분석 · 계산기 · 프로필 · 관리자 · 약관
-  data: "max-w-7xl mx-auto px-4 sm:px-6",     // 표 · 그리드 화면 — 발굴 · 백테스트 · 가계부 · 잔고
+  content: "max-w-4xl mx-auto px-2 sm:px-6",  // 읽는 화면 — 분석 · 계산기 · 프로필 · 관리자 · 약관
+  data: "max-w-7xl mx-auto px-2 sm:px-6",     // 표 · 그리드 화면 — 발굴 · 백테스트 · 가계부 · 잔고
 } as const;
 
 export type PageWidth = keyof typeof PAGE_WIDTH;

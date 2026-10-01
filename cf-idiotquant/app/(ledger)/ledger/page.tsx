@@ -502,7 +502,7 @@ export default function LedgerPage() {
         return (
             <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
                 {header}
-                <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
+                <div className="max-w-3xl mx-auto px-2 sm:px-6 py-5">
                     <div className={cn(CARD_CLS, "py-12 px-4 text-center")}>
                         <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                             로그인이 풀렸습니다.
@@ -535,7 +535,7 @@ export default function LedgerPage() {
                 </div>
             )}
 
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 space-y-3.5">
+            <div className="max-w-3xl mx-auto px-2 sm:px-6 py-5 space-y-3.5">
 
                 {/* ⓪ 가계부 전환 — 볼 수 있는 가계부가 둘 이상일 때만 나온다.
                     혼자 쓰는 사람에게는 없던 UI 가 생기지 않는다. */}
