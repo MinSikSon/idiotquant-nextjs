@@ -457,6 +457,48 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
     );
 });
 
+// 비로그인 첫 화면은 "무슨 도구인지"보다 "오늘 무엇을 볼지"를 먼저 답한다.
+// NCAV 1배 이상이면 순유동자산(청산가치)이 현재 시가총액보다 크므로,
+// (NCAV - 1) × 100 을 청산가치 기준 기대수익으로 보인다. 실제 수익을 보장하는
+// 값은 아니어서 이름과 산식도 카드 안에 함께 밝힌다.
+const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, rank, onClick }: {
+    item: any;
+    rank: number;
+    onClick: (ticker: string, name: string) => void;
+}) {
+    const ncav = safeNum(item.ncav_ratio);
+    const expectedReturn = Math.max(0, (ncav - 1) * 100);
+    const strategy = primaryStrategyOf(item);
+
+    return (
+        <button
+            type="button"
+            onClick={() => onClick(item.ticker, item.name)}
+            className="w-full text-left rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md active:scale-[0.99] transition-all"
+        >
+            <div className="flex items-start gap-3">
+                <span className="mt-0.5 w-6 h-6 shrink-0 rounded-full bg-brand-light dark:bg-[#052e16]/50 text-brand flex items-center justify-center text-[11px] font-black tabular-nums">
+                    {rank}
+                </span>
+                <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-extrabold text-neutral-900 dark:text-white">{item.name}</span>
+                    <span className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-mono tracking-[0.05em] text-neutral-400">
+                        {item.ticker}
+                        {strategy && <span className="font-sans font-bold tracking-normal text-brand">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
+                    </span>
+                </span>
+                <span className="shrink-0 text-right">
+                    <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>
+                    <span className="block mt-0.5 font-mono text-lg font-black tabular-nums text-brand">+{expectedReturn.toFixed(0)}%</span>
+                </span>
+            </div>
+            <span className="block mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark text-[11px] text-neutral-500 dark:text-neutral-400">
+                순유동자산이 시가총액의 <strong className="font-mono text-neutral-700 dark:text-neutral-200">{ncav.toFixed(2)}배</strong> · 자세히 보기 <ChevronRight className="inline -mt-px" size={12} />
+            </span>
+        </button>
+    );
+});
+
 
 // =========================================================================
 // 필터 서랍 — 조건을 좁히면서 결과가 몇 개 남는지 즉시 확인한다.
@@ -877,6 +919,18 @@ function ScreenerContent() {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
 
+    // 비로그인에게는 조작 가능한 전체 목록 대신, 청산가치보다 싼 종목만 기대수익 순으로
+    // 짧게 보여 준다. 저장된 개인 필터나 URL 필터가 첫 화면을 빈 화면으로 만들지 않게
+    // 원본 미리보기 목록에서 항상 같은 기준으로 뽑는다.
+    const guestRecommendations = useMemo(() =>
+        sortList(
+            ncavDailyList.list.filter((item: any) => safeNum(item.ncav_ratio) >= 1),
+            'ncav_ratio',
+            'desc'
+        ).slice(0, PREVIEW_SIZE),
+        [ncavDailyList.list]
+    );
+
     // 조건 하나만 다르게 걸었을 때 남는 개수 — 서랍의 −N 표기용
     const countWith = useCallback(
         (override: Partial<ScreenerFilters>) => applyFilters(baseList, { ...filters, ...override }).length,
@@ -1144,7 +1198,7 @@ function ScreenerContent() {
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
-            <PageHeader
+            {isLoggedIn ? <PageHeader
                 emoji={showLikedOnly ? "♡" : "🥇"}
                 title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
                 meta={
@@ -1175,10 +1229,20 @@ function ScreenerContent() {
                         </button>
                     </>
                 }
-            />
+            /> : (
+                <section className="border-b border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card">
+                    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                        <p className="text-[11px] font-black tracking-[0.12em] text-brand uppercase">Today&apos;s value picks</p>
+                        <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white">오늘의 기대수익 추천</h1>
+                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
+                            순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다.
+                        </p>
+                    </div>
+                </section>
+            )}
 
             {/* ── 수집 중 안내 배너 ── */}
-            {scanningInProgress && !showLikedOnly && (
+            {isLoggedIn && scanningInProgress && !showLikedOnly && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
                     <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
@@ -1192,7 +1256,8 @@ function ScreenerContent() {
             {/* ── 전략 탭 + 통합 툴바 (sticky) ── */}
             <div className={cn(
                 "sticky top-0 z-30 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-md",
-                "border-b border-neutral-200 dark:border-surface-dark-border"
+                "border-b border-neutral-200 dark:border-surface-dark-border",
+                !isLoggedIn && "hidden"
             )}>
                 <div className="max-w-7xl mx-auto px-2 sm:px-6">
 
@@ -1828,7 +1893,7 @@ function ScreenerContent() {
                     </div>
                 )}
 
-                {!isLoading && filteredList.length === 0 && (
+                {!isLoading && (isLoggedIn ? filteredList.length : guestRecommendations.length) === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
                         <div className="p-4 bg-surface-canvas dark:bg-surface-dark-card rounded-2xl">
                             {showLikedOnly
@@ -1837,7 +1902,12 @@ function ScreenerContent() {
                             }
                         </div>
                         <div>
-                            {showLikedOnly ? (
+                            {!isLoggedIn ? (
+                                <>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">오늘은 추천 기준을 만족한 종목이 없습니다</p>
+                                    <p className="text-xs text-neutral-400 mt-1">다음 스캔 결과에서 다시 확인해 주세요.</p>
+                                </>
+                            ) : showLikedOnly ? (
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">관심 종목이 없습니다</p>
                                     <p className="text-xs text-neutral-400 mt-1">종목 목록에서 하트를 눌러 관심 종목을 추가해보세요.</p>
@@ -1870,7 +1940,30 @@ function ScreenerContent() {
                     </div>
                 )}
 
-                {!isLoading && filteredList.length > 0 && (
+                {!isLoading && (isLoggedIn ? filteredList.length > 0 : guestRecommendations.length > 0) && (
+                    <>
+                    {!isLoggedIn ? (
+                        <section className="max-w-3xl mx-auto">
+                            <div className="mb-3 flex items-baseline justify-between gap-3">
+                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
+                                {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {guestRecommendations.map((item: any, index) => (
+                                    <GuestRecommendationCard key={item.ticker} item={item} rank={index + 1} onClick={handleStockClick} />
+                                ))}
+                            </div>
+                            <p className="mt-4 text-center text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500">
+                                기대수익은 순유동자산 대비 시가총액으로 계산한 참고 지표이며, 실제 수익을 보장하지 않습니다.
+                            </p>
+                            <button
+                                onClick={requireLogin}
+                                className="mx-auto mt-5 flex items-center gap-1.5 text-xs font-bold text-brand hover:text-brand-hover"
+                            >
+                                전체 종목과 상세 조건 보기 <ChevronRight size={13} />
+                            </button>
+                        </section>
+                    ) : (
                     <>
                         {/* 결과 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
                             업종과 전략을 한 카드에 둔다: 같은 목록을 두 각도로 자른 것이라
@@ -2043,6 +2136,8 @@ function ScreenerContent() {
                                 </button>
                             </div>
                         )}
+                    </>
+                    )}
                     </>
                 )}
             </div>
