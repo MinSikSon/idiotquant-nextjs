@@ -628,6 +628,7 @@ function ScreenerContent() {
     const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() =>
         (searchParams.get('mode') ?? saved.mode) === 'AND' ? 'AND' : 'OR'
     );
+    const [strategyOpen, setStrategyOpen] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     // 분포·산점도는 유용하지만 매번 목록보다 먼저 읽을 정보는 아니다. 기본은 결과에
     // 집중하고, 비교가 필요할 때만 같은 자리에서 펼친다.
@@ -1275,7 +1276,7 @@ function ScreenerContent() {
                         열 줄 중 몇 개" 가 된다. 거짓 숫자를 그리는 것보다 없는 편이 낫다.
                         검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
                     {isLoggedIn && <>
-                    <div className="flex items-baseline gap-2 pt-3 pb-1.5">
+                    <div className="hidden sm:flex items-baseline gap-2 pt-3 pb-1.5">
                         <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
                         <span className="text-[10.5px] font-bold text-brand">
                             {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
@@ -1295,7 +1296,23 @@ function ScreenerContent() {
                         </button>
                     </div>
 
-                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-5 xl:grid-cols-10">
+                    <button
+                        type="button"
+                        onClick={() => setStrategyOpen(v => !v)}
+                        aria-expanded={strategyOpen}
+                        className="sm:hidden w-full flex items-center gap-2 py-2 text-left"
+                    >
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
+                        <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-brand">
+                            {isAllActive ? '전체 전략' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
+                        </span>
+                        <ChevronRight size={14} className={cn("shrink-0 text-neutral-400 transition-transform", strategyOpen && "rotate-90")} />
+                    </button>
+
+                    <div className={cn(
+                        "gap-1.5 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-5 xl:grid-cols-10",
+                        strategyOpen ? "flex" : "hidden sm:flex"
+                    )}>
                         <StrategyCell
                             label="전체" count={strategyCounts.all} active={isAllActive}
                             activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
@@ -1434,7 +1451,7 @@ function ScreenerContent() {
                     {activeStrategyIds.size > 1 && (
                         <div className="pb-2 flex items-center gap-2 min-w-0">
                             <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">조합:</span>
-                            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
+                            <div className="hidden sm:flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                             {Array.from(activeStrategyIds).map(id => {
                                 const preset = STRATEGY_PRESETS.find(p => p.id === id);
                                 if (!preset) return null;
@@ -1455,6 +1472,8 @@ function ScreenerContent() {
                             <div className="flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[10px] font-black">
                                 <button
                                     onClick={() => setFilterMode('OR')}
+                                    aria-label="선택 전략 중 하나 이상 만족"
+                                    title="선택한 전략 중 하나 이상 충족"
                                     className={cn(
                                         "px-2 py-0.5 transition-colors",
                                         filterMode === 'OR'
@@ -1466,6 +1485,8 @@ function ScreenerContent() {
                                 </button>
                                 <button
                                     onClick={() => setFilterMode('AND')}
+                                    aria-label="선택 전략 모두 만족"
+                                    title="선택한 전략을 모두 충족"
                                     className={cn(
                                         "px-2 py-0.5 transition-colors border-l border-neutral-200 dark:border-surface-dark-border",
                                         filterMode === 'AND'
