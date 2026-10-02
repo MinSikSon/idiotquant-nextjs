@@ -487,8 +487,9 @@ export default function Desk({
          */
         const stashRow = () => {
             if (!onAnvil || !isStashable(it) || hero.chest.length >= CHEST_SLOTS) return;
+            const ammoStack = it.kind === "weapon" && !!WEAPONS[it.type]?.stack && !!WEAPONS[it.type]?.launcher && !!WEAPONS[it.type]?.ammunition;
             out.push({
-                label: `맡긴다 (${hero.chest.length}/${CHEST_SLOTS})`,
+                label: `${ammoStack ? "탄약 묶음 맡긴다" : "맡긴다"} (${hero.chest.length}/${CHEST_SLOTS})`,
                 on: go({ t: "stash", letter: it.letter! }),
             });
         };

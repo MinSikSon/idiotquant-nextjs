@@ -2146,20 +2146,24 @@ function stash(state: GameState, hero: Hero, letter: string): boolean {
     }
 
     const name = describe(it, state.known, state.appearance);
-    // **하나만 떼어 낸다.** 겹쳐 쌓인 것에서 하나를 뽑을 때는 상자에 넣을 몫을 따로 빚는다 —
-    // 같은 객체를 넣으면 배낭의 남은 개수와 상자의 것이 한 몸이 된다.
-    const one =
-        it.count > 1
-            ? { ...it, id: state.nextItemId++, count: 1 }
-            : it;
-    takeFromPack(hero, it, 1);
-    if (hero.offWeaponId === one.id) hero.offWeaponId = null;
-    if (hero.wandId === one.id) hero.wandId = null;
-    delete one.letter;
-    one.x = -1;
-    one.y = -1;
-    hero.chest.push(one);
-    say(state, `${name}을(를) 상자에 맡겼다. (${hero.chest.length}/${CHEST_SLOTS})`);
+    // 화살·은화살·상위 화살·볼트는 탄약 한 묶음으로 다룬다. 표창 등 나머지
+    // 겹치는 물건은 기존 규칙대로 한 개씩만 맡겨 상자 칸 수의 제한을 지킨다.
+    const ammoStack = it.kind === "weapon" && !!WEAPONS[it.type]?.stack && !!WEAPONS[it.type]?.launcher && !!WEAPONS[it.type]?.ammunition;
+    const stashCount = ammoStack ? it.count : 1;
+    // 화살 묶음 전체를 옮길 땐 별도 객체와 번호를 만들어 배낭과 상자가 같은
+    // 객체/ID를 공유하지 않게 한다. 다른 겹치는 물건은 한 개만 떼어 낸다.
+    const stored = it.count > 1
+        ? { ...it, id: state.nextItemId++, count: stashCount }
+        : it;
+    const oldId = it.id;
+    takeFromPack(hero, it, stashCount);
+    if (hero.offWeaponId === oldId) hero.offWeaponId = null;
+    if (hero.wandId === oldId) hero.wandId = null;
+    delete stored.letter;
+    stored.x = -1;
+    stored.y = -1;
+    hero.chest.push(stored);
+    say(state, `${name}${ammoStack ? ` ×${stashCount} 묶음` : ""}을(를) 상자에 맡겼다. (${hero.chest.length}/${CHEST_SLOTS})`);
     return true;
 }
 
