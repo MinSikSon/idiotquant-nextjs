@@ -627,6 +627,9 @@ function ScreenerContent() {
         (searchParams.get('mode') ?? saved.mode) === 'AND' ? 'AND' : 'OR'
     );
     const [showGuide, setShowGuide] = useState(false);
+    // 분포·산점도는 유용하지만 매번 목록보다 먼저 읽을 정보는 아니다. 기본은 결과에
+    // 집중하고, 비교가 필요할 때만 같은 자리에서 펼친다.
+    const [showInsights, setShowInsights] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>(() => {
         const s = (searchParams.get('sort') ?? saved.sort) as DiscoverySortKey;
         return VALID_SORT_KEYS.includes(s) ? s : DEFAULT_SORT;
@@ -1324,20 +1327,31 @@ function ScreenerContent() {
                             />
                         </div>
 
-                        {/* 정렬 — NCAV 비율순 (활성 시 반전) */}
-                        <button
-                            onClick={() => { setSortKey(DEFAULT_SORT); setSortOrder(sortKey === DEFAULT_SORT && sortOrder === "desc" ? "asc" : "desc"); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            title="NCAV 비율 높은 순으로 정렬 (순유동자산 ÷ 시가총액)"
-                            className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
-                                sortKey === DEFAULT_SORT
-                                    ? "bg-neutral-900 dark:bg-white border-neutral-900 dark:border-white text-white dark:text-neutral-900"
-                                    : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-surface-dark-card"
-                            )}
+                        {/* 표 헤더를 열지 않아도 어떤 보기에서나 정렬을 바꿀 수 있다. */}
+                        <select
+                            value={`${sortKey}:${sortOrder}`}
+                            onChange={e => {
+                                const [key, order] = e.target.value.split(':') as [DiscoverySortKey, SortOrder];
+                                setSortKey(key); setSortOrder(order); setDisplayCount(DAILY_PAGE_SIZE);
+                            }}
+                            aria-label="결과 정렬"
+                            className="shrink-0 max-w-[132px] px-2.5 py-2 rounded-lg text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
                         >
-                            NCAV순
-                            <span className="font-mono text-[10px]">{sortKey === DEFAULT_SORT && sortOrder === "asc" ? "↑" : "↓"}</span>
-                        </button>
+                            <option value="ncav_ratio:desc">NCAV 높은 순</option>
+                            <option value="ncav_ratio:asc">NCAV 낮은 순</option>
+                            <option value="pbr:asc">PBR 낮은 순</option>
+                            <option value="pbr:desc">PBR 높은 순</option>
+                            <option value="per:asc">PER 낮은 순</option>
+                            <option value="per:desc">PER 높은 순</option>
+                            <option value="roe:desc">ROE 높은 순</option>
+                            <option value="roe:asc">ROE 낮은 순</option>
+                            <option value="market_cap:desc">시가총액 큰 순</option>
+                            <option value="market_cap:asc">시가총액 작은 순</option>
+                            <option value="ticker:asc">종목명 가나다순</option>
+                            <option value="ticker:desc">종목명 역순</option>
+                            <option value="last_price:desc">현재가 높은 순</option>
+                            <option value="last_price:asc">현재가 낮은 순</option>
+                        </select>
 
                         {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
                             서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
@@ -1971,7 +1985,7 @@ function ScreenerContent() {
                         {/* 업종·전략 비중도 같은 이유로 로그인한 사람에게만 보인다.
                             열 줄로 만든 비중은 "오늘의 쏠림" 이 아니라 "그 열 줄의 쏠림" 이라,
                             여기서 고르면 그 업황에 거는 셈이라는 경고까지 거짓이 된다. */}
-                        {isLoggedIn && (sectorMix || strategyMix) && (
+                        {showInsights && (sectorMix || strategyMix) && (
                             <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card px-3.5 py-3">
                                 <div className="flex items-baseline justify-between gap-2 mb-2">
                                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">결과 분포</span>
@@ -2017,15 +2031,28 @@ function ScreenerContent() {
                                     </button>
                                 ))}
                             </div>
+                            <button
+                                onClick={() => setShowInsights(v => !v)}
+                                className={cn(
+                                    "px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors whitespace-nowrap",
+                                    showInsights
+                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-brand-hover dark:text-brand"
+                                        : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
+                                )}
+                            >
+                                {showInsights ? '결과 해석 접기' : '결과 해석'}
+                            </button>
                             <span className="ml-auto hidden sm:inline text-[11px] text-neutral-400 font-medium">목록 복사</span>
                             <div className="ml-auto sm:ml-0 flex items-center gap-2">
                                 <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                             </div>
                         </div>
 
-                        {/* 숫자를 읽는 법 + 결과가 대체로 어떤 모양인지 — 스크롤 전에 먼저 준다 */}
-                        <TermStrip />
-                        <ResultSummary list={filteredList} />
+                        {/* 지표 설명과 산점도는 필요할 때만 펼친다 — 목록을 훑는 흐름을 막지 않는다. */}
+                        {showInsights && <>
+                            <TermStrip />
+                            <ResultSummary list={filteredList} />
+                        </>}
 
                         {viewMode === 'ratio' ? (
                             groups ? (
