@@ -146,11 +146,12 @@ const LEADING = 1.32;
  * **쓰러진 사람에게는 안 붙인다.** `†` 를 덮어 버리면 생사가 지도에서 안 보인다.
  * 이름이 없으면(혼자 하는 판) 당연히 안 붙는다 — `@` 그대로다.
  */
-function NickTag({ nick, ink, bg, cell, left, top }: {
+function NickTag({ nick, ink, bg, opacity = 1, cell, left, top }: {
     nick: string;
     ink: string;
     /** `background` 로 그대로 쓴다 — 번쩍임은 **반투명이라 겹쳐 깔아야** 밑의 `@` 가 안 비친다. */
     bg?: string;
+    opacity?: number;
     cell: { w: number; h: number };
     left: number;
     top: number;
@@ -177,7 +178,7 @@ function NickTag({ nick, ink, bg, cell, left, top }: {
         <span
             aria-hidden
             className="pointer-events-none absolute overflow-hidden"
-            style={{ left, top, width: cell.w, height: cell.h, background: bg }}
+            style={{ left, top, width: cell.w, height: cell.h, background: bg, opacity }}
         >
             <svg
                 width={cell.w}
@@ -316,7 +317,8 @@ export default function MapView({
             const characterIndex = g?.kind === "hero" || g?.kind === "ally"
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
                 : -1;
-            const opacity = characterIndex >= 0 && hasRing(state.heroes[characterIndex], "stealth") ? 0.55 : 1;
+            // 은신 반지는 지도의 흐린 기억처럼 캐릭터와 이름표를 함께 옅게 보이게 한다.
+            const opacity = characterIndex >= 0 && hasRing(state.heroes[characterIndex], "stealth") ? 0.35 : 1;
             // 협동이면 `@` 는 **사람마다 정한 색** — 조종을 넘겨도 누가 누구인지 안 바뀐다.
             const p = (g?.kind === "hero" || g?.kind === "ally") && state.heroes.length > 1
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
@@ -410,6 +412,7 @@ export default function MapView({
                             nick={h.nick}
                             ink={flash?.ink ?? PARTY_INK[i] ?? INK[i === who ? "hero" : "ally"]}
                             bg={flash?.bg ? `linear-gradient(${flash.bg}, ${flash.bg}), ${base}` : base}
+                            opacity={hasRing(h, "stealth") ? 0.35 : 1}
                             cell={cell}
                             left={cx * cell.w}
                             top={cy * cell.h}
