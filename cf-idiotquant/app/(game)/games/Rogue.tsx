@@ -2426,7 +2426,7 @@ export default function Rogue() {
                         }
                     >
                         {/* 카테고리 탭 목록 */}
-                        <div className="mb-2.5 flex flex-wrap gap-1 border-b border-[var(--rg-line-soft)] pb-2 text-[12px]">
+                        <div className="mb-2.5 flex flex-nowrap gap-1 overflow-x-auto border-b border-[var(--rg-line-soft)] pb-2 text-[12px] [scrollbar-width:none]">
                             {[
                                 { id: "monster" as const, label: "몬스터", countStr: `${progress.found}/${progress.total}` },
                                 { id: "weapon" as const, label: "무기", countStr: `${itemProg.byCategory.weapon.identified}/${itemProg.byCategory.weapon.total}` },
@@ -2464,10 +2464,10 @@ export default function Rogue() {
                                 {sightings.length > 0 && (
                                     <div className="mb-3 border-b border-[var(--rg-line-soft)] pb-2">
                                         <p className="mb-1 text-[var(--rg-faint)]">지금 보이는 놈</p>
-                                        <ul className="space-y-2">
+                                        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                             {sightings.map((m: Sighting) => (
-                                                <li key={m.id}>
-                                                    <div>
+                                                <li key={m.id} className="min-w-0 rounded border border-[var(--rg-line-soft)] p-2 break-words">
+                                                    <div className="min-w-0">
                                                         <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
                                                         <span className="text-[var(--rg-strong)]">{m.name}</span>
                                                         <span className="text-[var(--rg-faint)]">
@@ -2478,13 +2478,13 @@ export default function Rogue() {
                                                         </span>
                                                     </div>
                                                     {m.known ? (
-                                                        <div className="text-[var(--rg-muted)]">
+                                                        <div className="break-words text-[var(--rg-muted)]">
                                                             Lv:{m.level} · HP:{m.hp} · AC:{10 - (m.defense ?? 0)} · Dmg:{" "}
                                                             {m.damage?.join(" + ") || "없음"} · Xp:{m.exp}{m.traits?.length ? ` · ${m.traits.join("")}` : ""}
                                                             {m.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
                                                         </div>
                                                     ) : (
-                                                        <div className="text-[var(--rg-faint)]">
+                                                        <div className="break-words text-[var(--rg-faint)]">
                                                             처음 보는 놈이다 — 한 마리를 잡아야 속을 안다.
                                                         </div>
                                                     )}
@@ -2497,25 +2497,25 @@ export default function Rogue() {
                                 {progress.found === 0 ? (
                                     <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
                                 ) : (
-                                    <ul className="space-y-1">
+                                    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                         {bestiaryRows(state.bestiary, state.specials).map((r: BestiaryRow) => {
                                             const open = openMon === r.ch;
                                             const art = monsterArt(r.ch);
                                             return (
-                                                <li key={r.ch} className="border-b border-[var(--rg-line-soft)] pb-1 last:border-b-0">
+                                                <li key={r.ch} className={`min-w-0 rounded border border-[var(--rg-line-soft)] ${open ? "sm:col-span-2" : ""}`}>
                                                     {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
                                                     모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
                                                     <button
                                                         type="button"
                                                         onClick={() => setOpenMon(open ? null : r.ch)}
                                                         aria-expanded={open}
-                                                        className={`w-full rounded-[2px] px-1 text-left ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
+                                                        className={`w-full min-w-0 rounded-[2px] p-2 text-left whitespace-normal break-words ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
                                                     >
                                                         <span className="text-[var(--rg-monster)]">{r.ch}</span>{" "}
                                                         <span className="text-[var(--rg-strong)]">{r.name}</span>
                                                         <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
                                                         {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
-                                                        <div className="text-[var(--rg-muted)]">
+                                                        <div className="min-w-0 break-words text-[var(--rg-muted)]">
                                                             Lv:{r.level} · HP:{r.hp} · AC:{10 - r.defense} · Dmg:{" "}
                                                             {r.damage.join(" + ") || "없음"} · Xp:{r.exp}{r.traits.length ? ` · ${r.traits.join("")}` : ""}
                                                             {r.mean && <span className="text-[var(--rg-monster)]"> · 보자마자 달려든다</span>}
@@ -2523,7 +2523,7 @@ export default function Rogue() {
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
                                                             수 있는 「층에 따른 것」은 이 띠 하나다. */}
                                                             {r.depths && (
-                                                                <div className="text-[var(--rg-faint)]">
+                                                            <div className="break-words text-[var(--rg-faint)]">
                                                                     지하 {r.depths.min}–{r.depths.max}층에 나온다 · 어디서 만나도 같은 능력치
                                                                 </div>
                                                             )}
@@ -2643,11 +2643,11 @@ export default function Rogue() {
                                             >
                                                 <div className="flex h-full min-w-0 flex-col justify-between gap-2">
                                                     <div className="flex min-w-0 flex-col gap-1">
-                                                      <div className="flex min-w-0 items-start gap-1.5 overflow-hidden whitespace-nowrap">
+                                                      <div className="flex min-w-0 flex-wrap items-start gap-1.5 whitespace-normal break-words">
                                                         <span className="w-4 shrink-0 text-center font-mono">{stageBadge}</span>
                                                         <span className="shrink-0 text-[var(--rg-label)] font-mono">{char}</span>
                                                         <span
-                                                            className={`truncate ${stage >= 3
+                                                            className={`min-w-0 break-words ${stage >= 3
                                                                 ? "font-medium text-[var(--rg-strong)]"
                                                                 : stage >= 1
                                                                     ? "text-[var(--rg-muted)]"
@@ -2657,7 +2657,7 @@ export default function Rogue() {
                                                             {displayName}
                                                         </span>
                                                     </div>
-                                                    {statsSummary && <span className={`truncate pl-6 text-[11px] ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>{statsSummary}</span>}
+                                                    {statsSummary && <span className={`pl-6 text-[11px] whitespace-normal break-words ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>{statsSummary}</span>}
                                                     </div>
                                                     <div className="flex min-w-0 items-center justify-between gap-2 text-[12px]">
                                                         {usageStr && (
@@ -2677,11 +2677,11 @@ export default function Rogue() {
 
                                             {/* 상세 제원 및 플레이버 텍스트 (펼침) */}
                                             {open && stage > 0 && (
-                                                <div className="my-1.5 ml-4 rounded border border-[var(--rg-line)] bg-[var(--rg-bg)] p-2.5 text-[12px] space-y-2">
+                                                <div className="my-1.5 min-w-0 rounded border border-[var(--rg-line)] bg-[var(--rg-bg)] p-2.5 text-[12px] space-y-2 break-words">
                                                     {stage < 3 ? (
                                                         /* 미식별 상세 (정보 누출 차단) */
-                                                        <div className="space-y-1 text-[var(--rg-muted)]">
-                                                            <div className="flex gap-4">
+                                                        <div className="min-w-0 space-y-1 text-[var(--rg-muted)]">
+                                                            <div className="flex flex-wrap gap-x-4 gap-y-1">
                                                                 <span className="text-[var(--rg-faint)]">분류:</span>
                                                                 <span>{entry.categoryLabel}</span>
                                                                 <span className="text-[var(--rg-faint)]">나오는 층:</span>
@@ -2696,7 +2696,7 @@ export default function Rogue() {
                                                     ) : (
                                                         /* 식별 / 통달 상세 */
                                                         <>
-                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[var(--rg-muted)] border-b border-[var(--rg-line-soft)] pb-2">
+                                                            <div className="grid min-w-0 grid-cols-1 gap-x-4 gap-y-1 text-[var(--rg-muted)] border-b border-[var(--rg-line-soft)] pb-2 sm:grid-cols-2 [&>div]:min-w-0 [&>div]:break-words">
                                                                 {entry.kind === "weapon" && (
                                                                     <>
                                                                         {/* 활·석궁은 때리기와 쏘기가 다른 값이다 — 둘 다 적는다. 탄약은 쏠 때와 손으로 던질 때가 다르다. */}
@@ -2724,7 +2724,7 @@ export default function Rogue() {
                                                                             <span className="text-[var(--rg-faint)]">무기 계열: </span>
                                                                             <span>{weaponSkillOf(entry.type)}</span>
                                                                         </div>
-                                                                        <div className="col-span-2">
+                                                                        <div className="sm:col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">직업별 최대: </span>
                                                                             {/* 직업 전용 무기(곡괭이)는 그 직업만 적는다 — 못 쥐는 직업의 「Basic」은 거짓말이다. */}
                                                                             <span>{ORIGIN_LIST.filter((origin) => !WEAPONS[entry.type]?.origin || WEAPONS[entry.type]?.origin === origin.id).map((origin) => `${origin.name} ${weaponSkillRankName(Math.max(1, WEAPON_SKILL_MAX[origin.id]?.[weaponSkillOf(entry.type)] ?? WEAPON_SKILL_MAX[origin.id]?.[entry.type] ?? 1))}`).join(" · ")}</span>
@@ -2741,7 +2741,7 @@ export default function Rogue() {
                                                                             <span className="text-[var(--rg-faint)]">잡은 수: </span>
                                                                             <span>{usage}킬</span>
                                                                         </div>
-                                                                        <div className="col-span-2 text-[11px] text-[var(--rg-faint)]">
+                                                                        <div className="sm:col-span-2 text-[11px] text-[var(--rg-faint)]">
                                                                             강화: +{ENCHANT_MAX}까지 · 모루: 분해 시 주문서 추출({Math.round(MELT_RETURN * 100)}%)
                                                                         </div>
                                                                     </>
@@ -2756,11 +2756,11 @@ export default function Rogue() {
                                                                             <span className="text-[var(--rg-faint)]">방어력: </span>
                                                                             <span className="text-[var(--rg-strong)]">{defenseOf(ARMORS[entry.type]?.armor ?? 10)}</span>
                                                                         </div>
-                                                                        <div className="col-span-2">
+                                                                        <div className="sm:col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">직업별 최대: </span>
                                                                             <span>{ORIGIN_LIST.map((origin) => `${origin.name} ${armorSkillRankName(ARMOR_SKILL_MAX[origin.id]?.[entry.type] ?? 1)}`).join(" · ")}</span>
                                                                         </div>
-                                                                        <div className="col-span-2">
+                                                                        <div className="sm:col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">내 훈련: </span>
                                                                             <span>{currentHero.armorTraining?.[entry.type] ?? 0}걸음 · Skilled 1,000 / Expert 5,000</span>
                                                                         </div>
@@ -2772,7 +2772,7 @@ export default function Rogue() {
                                                                             <span className="text-[var(--rg-faint)]">착용 걸음: </span>
                                                                             <span>{usage}걸음</span>
                                                                         </div>
-                                                                        <div className="col-span-2 text-[11px] text-[var(--rg-faint)]">
+                                                                        <div className="sm:col-span-2 text-[11px] text-[var(--rg-faint)]">
                                                                             강화: +{ENCHANT_MAX}까지 · 모루: 1장 확정 + 분해 추출({Math.round(MELT_RETURN * 100)}%)
                                                                         </div>
                                                                     </>
@@ -2787,7 +2787,7 @@ export default function Rogue() {
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>
                                                                             <span>{itemDepthRange(entry.kind, entry.type) ? `${itemDepthRange(entry.kind, entry.type)!.min}–${itemDepthRange(entry.kind, entry.type)!.max}층` : "1–26층"}</span>
                                                                         </div>
-                                                                        <div className="col-span-2">
+                                                                        <div className="sm:col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">사용 횟수: </span>
                                                                             <span>{usage}회</span>
                                                                         </div>
@@ -2803,7 +2803,7 @@ export default function Rogue() {
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>
                                                                             <span>{itemDepthRange("wand", entry.type) ? `${itemDepthRange("wand", entry.type)!.min}–${itemDepthRange("wand", entry.type)!.max}층` : "1–26층"}</span>
                                                                         </div>
-                                                                        <div className="col-span-2">
+                                                                        <div className="sm:col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">발사 횟수: </span>
                                                                             <span>{usage}회</span>
                                                                         </div>
@@ -2811,7 +2811,7 @@ export default function Rogue() {
                                                                 )}
                                                                 {entry.kind === "ring" && (
                                                                     <>
-                                                                        <div className="col-span-2">
+                                                                        <div className="sm:col-span-2">
                                                                             <span className="text-[var(--rg-faint)]">효과: </span>
                                                                             <span className="text-[var(--rg-strong)]">{RING_EFFECTS[entry.type] ?? "알 수 없음"}</span>
                                                                         </div>
@@ -2860,7 +2860,7 @@ export default function Rogue() {
                                                             </div>
 
                                                             {/* 1문단 플레이버 텍스트 */}
-                                                            <p className="text-[var(--rg-muted)] leading-relaxed">{entry.flavor}</p>
+                                                            <p className="break-words text-[var(--rg-muted)] leading-relaxed">{entry.flavor}</p>
 
                                                         </>
                                                     )}
