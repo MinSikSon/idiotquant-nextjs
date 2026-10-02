@@ -1027,9 +1027,10 @@ export function itemCodexStage(
         return 3;
     }
 
-    const inPack = state.heroes[0].pack.some(
+    // 협동전 도감은 파티가 함께 보므로 어느 영웅의 배낭에 있든 획득으로 보인다.
+    const inPack = state.heroes.some((hero) => hero.pack.some(
         (it) => it.kind === entry.kind && it.type === entry.type,
-    );
+    ));
     if (inPack) return 2;
 
     if (state.seenItems?.[key]) return 1;

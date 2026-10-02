@@ -2412,7 +2412,7 @@ export default function Rogue() {
                         title={
                             codexTab === "monster"
                                 ? `몬스터 도감 ${progress.found}/${progress.total}`
-                                : `아이템 도감 · 식별 ${itemProg.identifiedCount}/${itemProg.totalCount} · 통달 ${itemProg.masteredCount}/${itemProg.totalCount}`
+                                : `아이템 도감 · 식별 ${itemProg.identifiedCount}/${itemProg.totalCount}`
                         }
                         onClose={() => {
                             setOpenMon(null);
@@ -2422,7 +2422,7 @@ export default function Rogue() {
                         footer={
                             codexTab === "monster"
                                 ? "줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
-                                : "줄을 누르면 상세 제원과 플레이버 텍스트가 펼쳐집니다. 식별(●)과 통달(★)은 판을 넘어 영구 보존됩니다."
+                                : "줄을 누르면 상세 제원과 플레이버 텍스트가 펼쳐집니다. 식별(●)은 판을 넘어 영구 보존됩니다. 무기와 방어구 숙련은 Basic · Skilled · Expert로 표시합니다."
                         }
                     >
                         {/* 카테고리 탭 목록 */}
@@ -2562,7 +2562,7 @@ export default function Rogue() {
                         ) : (
                             /* 아이템 도감 목록 */
                             <>
-                            <ul className="space-y-1.5">
+                            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 {CODEX_ENTRIES.filter((e) => e.category === codexTab).map((entry) => {
                                     const stage = itemCodexStage(entry, state);
                                     const open = openItemKey === entry.key;
@@ -2571,9 +2571,7 @@ export default function Rogue() {
 
                                     // 단계 기호와 색상
                                     const stageBadge =
-                                        stage === 4 ? (
-                                            <span className="text-[var(--rg-gold)] font-bold">★</span>
-                                        ) : stage === 3 ? (
+                                        stage >= 3 ? (
                                             <span className="text-[var(--rg-strong)]">●</span>
                                         ) : stage === 2 ? (
                                             <span className="text-[var(--rg-muted)]">○</span>
@@ -2608,28 +2606,26 @@ export default function Rogue() {
                                                     ? "본 적 있다"
                                                     : "";
 
-                                    const usageSuffix =
-                                        entry.masteryType === "kills"
-                                            ? "킬"
-                                            : entry.masteryType === "steps"
-                                                ? "걸음"
-                                                : entry.masteryType === "uses"
-                                                    ? "회"
-                                                    : "";
-
-                                    const usageStr =
-                                        stage === 4
-                                            ? entry.kind === "weapon"
-                                                // 도감 통달과 무기 숙련은 다른 값이다. 통달했다고
-                                                // Expert라고 적으면 Basic인 실제 전투 보정과 어긋난다.
-                                                ? `★${currentWeaponSkill?.rank ?? "basic"} · ${usage}${usageSuffix}`
-                                                : `★통달 · ${usage}${usageSuffix}`
-                                            : stage === 3 && usageSuffix
-                                                ? `${usage}${usageSuffix}`
+                                    const currentArmorSkill = entry.kind === "armor"
+                                        ? armorSkillRankName(armorSkillLevel(currentHero, entry.type))
+                                        : null;
+                                    const usageSuffix = entry.masteryType === "kills"
+                                        ? "킬"
+                                        : entry.masteryType === "steps"
+                                            ? "걸음"
+                                            : entry.masteryType === "uses"
+                                                ? "회"
                                                 : "";
+                                    const usageStr = stage >= 3
+                                        ? entry.kind === "weapon"
+                                            ? currentWeaponSkill?.rank ?? "basic"
+                                            : entry.kind === "armor"
+                                                ? currentArmorSkill ?? "basic"
+                                                : usageSuffix ? `${usage}${usageSuffix}` : ""
+                                        : "";
 
                                     return (
-                                        <li key={entry.key} className="border-b border-[var(--rg-line-soft)] pb-1 last:border-b-0">
+                                        <li key={entry.key} className={`min-w-0 rounded border border-[var(--rg-line-soft)] ${open ? "col-span-2 sm:col-span-3" : ""}`}>
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -2638,19 +2634,20 @@ export default function Rogue() {
                                                 }}
                                                 disabled={stage === 0}
                                                 aria-expanded={open}
-                                                className={`w-full rounded-[2px] px-1 text-left transition-colors ${stage === 0
+                                                className={`w-full min-h-[5.25rem] rounded-[2px] p-2 text-left transition-colors ${stage === 0
                                                     ? "cursor-default opacity-60"
                                                     : open
                                                         ? "bg-[var(--rg-raised)]"
                                                         : "hover:bg-[var(--rg-hover)]"
                                                     }`}
                                             >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap">
-                                                        <span className="w-4 text-center font-mono">{stageBadge}</span>
-                                                        <span className="text-[var(--rg-label)] font-mono">{char}</span>
+                                                <div className="flex h-full min-w-0 flex-col justify-between gap-2">
+                                                    <div className="flex min-w-0 flex-col gap-1">
+                                                      <div className="flex min-w-0 items-start gap-1.5 overflow-hidden whitespace-nowrap">
+                                                        <span className="w-4 shrink-0 text-center font-mono">{stageBadge}</span>
+                                                        <span className="shrink-0 text-[var(--rg-label)] font-mono">{char}</span>
                                                         <span
-                                                            className={`shrink-0 ${stage >= 3
+                                                            className={`truncate ${stage >= 3
                                                                 ? "font-medium text-[var(--rg-strong)]"
                                                                 : stage >= 1
                                                                     ? "text-[var(--rg-muted)]"
@@ -2659,20 +2656,18 @@ export default function Rogue() {
                                                         >
                                                             {displayName}
                                                         </span>
-                                                        {statsSummary && (
-                                                            <span className={`truncate text-[12px] ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>
-                                                                · {statsSummary}
-                                                            </span>
-                                                        )}
                                                     </div>
-                                                    <div className="flex shrink-0 items-center gap-2 text-[12px]">
+                                                    {statsSummary && <span className={`truncate pl-6 text-[11px] ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>{statsSummary}</span>}
+                                                    </div>
+                                                    <div className="flex min-w-0 items-center justify-between gap-2 text-[12px]">
                                                         {usageStr && (
-                                                            <span className={stage === 4 ? "text-[var(--rg-gold)] font-medium" : "text-[var(--rg-muted)]"}>
+                                                            <span className={entry.kind === "weapon" || entry.kind === "armor" ? "text-[var(--rg-gold)] font-medium" : "text-[var(--rg-muted)]"}>
                                                                 {usageStr}
                                                             </span>
                                                         )}
+                                                        {!usageStr && stage > 0 && <span className="text-[var(--rg-faint)]">{stage >= 3 ? "식별됨" : stage === 2 ? "소지 중" : "목격"}</span>}
                                                         {stage > 0 && (
-                                                            <span className="text-[var(--rg-ghost)] text-[10px]">
+                                                            <span className="ml-auto text-[var(--rg-ghost)] text-[10px]">
                                                                 {open ? "▾" : "▸"}
                                                             </span>
                                                         )}
@@ -2867,29 +2862,6 @@ export default function Rogue() {
                                                             {/* 1문단 플레이버 텍스트 */}
                                                             <p className="text-[var(--rg-muted)] leading-relaxed">{entry.flavor}</p>
 
-                                                            {/* 2문단 플레이버 텍스트 (통달 시) */}
-                                                            {stage === 4 ? (
-                                                                <div className="mt-2 border-t border-[var(--rg-line-soft)] pt-2">
-                                                                    <div className="mb-1 text-[11px] font-bold text-[var(--rg-gold)] tracking-wider">
-                                                                        ── ★ 통달 ──
-                                                                    </div>
-                                                                    <p className="text-[var(--rg-strong)] leading-relaxed italic">
-                                                                        {entry.masteryFlavor}
-                                                                    </p>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="mt-1 border-t border-[var(--rg-line-soft)] pt-1 text-[11px] text-[var(--rg-faint)]">
-                                                                    ── 통달 목표: {
-                                                                        entry.masteryType === "kills"
-                                                                            ? `20킬 달성 (${usage}/${entry.masteryGoal})`
-                                                                            : entry.masteryType === "steps"
-                                                                                ? `1,000걸음 착용 (${usage}/${entry.masteryGoal})`
-                                                                                : entry.masteryType === "uses"
-                                                                                    ? `${entry.masteryGoal}회 사용 (${usage}/${entry.masteryGoal})`
-                                                                                    : "식별 즉시 통달"
-                                                                    } ──
-                                                                </div>
-                                                            )}
                                                         </>
                                                     )}
                                                 </div>
