@@ -1,10 +1,9 @@
 "use client";
 
-import { Heart, ChevronRight } from "lucide-react";
+import { ChevronRight, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiquidityBadge } from "./LiquidityBadge";
-import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
-import SectorSprite, { sectorAccent } from "./SectorSprite";
+import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
@@ -67,25 +66,15 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
             onClick={() => onClick(item.ticker, item.name)}
             className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
         >
-            {/* 헤더 — 주가 시리즈가 응답에 없어 차트 스프라이트는 생략하고 한 장을 100% 폭으로 */}
-            <div className="relative h-[72px] border-b border-neutral-100 dark:border-border-subtle-dark">
-                <SectorSprite
-                    sector={sector}
-                    color={sectorAccent(sector) ?? (strategy ? STRATEGY_HEX[strategy] : "#16a34a")}
-                />
-                {(sector || strategy) && (
-                    <span className="absolute left-2 top-2 px-1.5 py-0.5 rounded bg-white/80 dark:bg-black/50 text-[9.5px] font-bold text-neutral-600 dark:text-neutral-300">
-                        {sector ?? STRATEGY_LABEL[strategy!] ?? strategy}
-                    </span>
-                )}
-            </div>
-
-            <div className="p-4">
-                <div className="flex items-start gap-2 mb-3">
+            <div className="p-3 sm:p-3.5">
+                <div className="flex items-center gap-2 mb-2.5">
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <span className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400">{item.ticker}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</span>
+                            {sector && <span className="hidden sm:inline shrink-0 text-[9px] font-bold text-neutral-400">{sector}</span>}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                            <span className="text-[10px] font-mono tracking-[0.05em] text-neutral-400 shrink-0">{item.ticker}</span>
                             <LiquidityBadge item={item} />
                         </div>
                     </div>
@@ -99,38 +88,30 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                     </button>
                 </div>
 
-                {strategy && (
-                    <span className={cn("inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mb-3", STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500")}>
-                        {STRATEGY_LABEL[strategy] ?? strategy}
-                    </span>
-                )}
-
-                <div className="grid grid-cols-4 gap-1 py-2.5 border-y border-neutral-100 dark:border-border-subtle-dark">
+                <div className="grid grid-cols-4 gap-1 py-2 border-y border-neutral-100 dark:border-border-subtle-dark">
                     <Metric label="NCAV" value={ncav > 0 ? `${ncav.toFixed(2)}x` : "—"} ok={ncav >= 1} />
                     <Metric label="PBR" value={pbr > 0 ? pbr.toFixed(2) : "—"} ok={pbr > 0 && pbr < 1} />
                     <Metric label="ROE" value={roe > 0 ? `${roe.toFixed(1)}%` : "—"} ok={roe >= 8} />
                     <Metric label="PER" value={per > 0 ? per.toFixed(1) : "—"} ok={per > 0 && per < 10} />
                 </div>
 
-                {why && (
-                    <div className="mt-3">
-                        <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-brand mb-1">왜 걸렸나</p>
-                        <p className="text-[11.5px] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">{why}</p>
-                    </div>
-                )}
-
-                {warn.length > 0 && (
-                    <p className="mt-3 rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-[#fffdf5] dark:bg-amber-950/10 px-2.5 py-2 text-[11px] leading-relaxed text-[#92400e] dark:text-amber-500 break-keep">
-                        ⚠ {warn.join(" ")}
-                    </p>
-                )}
-
-                <button
-                    onClick={e => { e.stopPropagation(); onClick(item.ticker, item.name); }}
-                    className="mt-3 w-full flex items-center justify-center gap-1 py-2 rounded-lg bg-surface-canvas dark:bg-surface-dark hover:bg-brand hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-colors"
-                >
-                    분석 <ChevronRight size={12} />
-                </button>
+                <div className="mt-2 flex items-center gap-1.5 min-w-0">
+                    {strategy && (
+                        <span className={cn("shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold", STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500")}>
+                            {STRATEGY_LABEL[strategy] ?? strategy}
+                        </span>
+                    )}
+                    {warn.length > 0 ? (
+                        <span title={warn.join(" ")} className="min-w-0 truncate text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                            ⚠ {warn[0]}
+                        </span>
+                    ) : why ? (
+                        <span title={why} className="min-w-0 truncate text-[10px] text-neutral-500 dark:text-neutral-400">
+                            {why}
+                        </span>
+                    ) : <span className="flex-1" />}
+                    <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-bold text-brand">분석 <ChevronRight size={11} /></span>
+                </div>
             </div>
         </div>
     );
