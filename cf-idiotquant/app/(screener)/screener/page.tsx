@@ -201,13 +201,14 @@ const TOOLTIP_CLS =
 // =========================================================================
 // 전략 격자 셀 — 이름 위 / 종목 수 아래. 폭이 고정이라 개수가 같은 열에 선다.
 // =========================================================================
-function StrategyCell({ label, count, active, activeCls, title, onClick }: {
+function StrategyCell({ label, count, active, activeCls, title, onClick, compact = false }: {
     label: string;
     count: number;
     active: boolean;
     activeCls: string;
     title?: string;
     onClick: () => void;
+    compact?: boolean;
 }) {
     return (
         <button
@@ -215,14 +216,15 @@ function StrategyCell({ label, count, active, activeCls, title, onClick }: {
             title={title}
             aria-pressed={active}
             className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg border text-center leading-none transition-all",
+                "flex items-center justify-center gap-1 rounded-lg border text-center leading-none transition-all",
+                compact ? "w-[82px] shrink-0 py-2 md:w-auto md:flex-col md:gap-0.5 md:py-1.5" : "flex-col py-1.5",
                 active
                     ? activeCls
                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-surface-dark-card"
             )}
         >
             <span className="text-[11.5px] font-extrabold truncate max-w-full px-1">{label}</span>
-            <span className={cn("text-[10px] font-black font-mono tabular-nums", active ? "opacity-75" : "text-neutral-400")}>
+            <span className={cn("text-[10px] font-black font-mono tabular-nums", active ? "opacity-75" : "text-neutral-400", compact && "md:mt-0.5")}>
                 {count}
             </span>
         </button>
@@ -1222,13 +1224,13 @@ function ScreenerContent() {
                 }
                 actions={
                     <>
-                        <button onClick={handleShare} className={PAGE_ACTION_CLS} title="현재 필터링 결과 링크 공유">
+                        <button onClick={handleShare} className={cn(PAGE_ACTION_CLS, "px-2.5 py-2 sm:px-3.5 sm:py-2.5")} title="현재 필터링 결과 링크 공유">
                             {shareCopied ? <Check size={13} /> : <Share2 size={13} />}
-                            {shareCopied ? "복사됨" : "공유"}
+                            <span className="hidden sm:inline">{shareCopied ? "복사됨" : "공유"}</span>
                         </button>
-                        <button onClick={handleRefresh} disabled={isLoading} className={PAGE_ACTION_CLS}>
+                        <button onClick={handleRefresh} disabled={isLoading} className={cn(PAGE_ACTION_CLS, "px-2.5 py-2 sm:px-3.5 sm:py-2.5")} title="목록 새로고침">
                             <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
-                            새로고침
+                            <span className="hidden sm:inline">새로고침</span>
                         </button>
                     </>
                 }
@@ -1293,10 +1295,10 @@ function ScreenerContent() {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-4 sm:grid-cols-5 xl:grid-cols-10 gap-1.5 pb-2">
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-5 xl:grid-cols-10">
                         <StrategyCell
                             label="전체" count={strategyCounts.all} active={isAllActive}
-                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies}
+                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
                         />
                         {STRATEGY_PRESETS.map(preset => (
                             <StrategyCell
@@ -1307,6 +1309,7 @@ function ScreenerContent() {
                                 activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
                                 title={preset.hint}
                                 onClick={() => toggleStrategy(preset.id)}
+                                compact
                             />
                         ))}
                     </div>
@@ -1429,14 +1432,15 @@ function ScreenerContent() {
 
                     {/* 선택된 전략 조합 안내 */}
                     {activeStrategyIds.size > 1 && (
-                        <div className="pb-2 flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] text-neutral-400 font-medium">조합:</span>
+                        <div className="pb-2 flex items-center gap-2 min-w-0">
+                            <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">조합:</span>
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                             {Array.from(activeStrategyIds).map(id => {
                                 const preset = STRATEGY_PRESETS.find(p => p.id === id);
                                 if (!preset) return null;
                                 return (
                                     <span key={id} className={cn(
-                                        "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded",
+                                        "inline-flex shrink-0 items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded",
                                         STRATEGY_BADGE[id] ?? "bg-surface-canvas text-neutral-500"
                                     )}>
                                         {preset.label}
@@ -1446,6 +1450,7 @@ function ScreenerContent() {
                                     </span>
                                 );
                             })}
+                            </div>
                             {/* OR / AND 토글 */}
                             <div className="flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[10px] font-black">
                                 <button
@@ -1471,7 +1476,7 @@ function ScreenerContent() {
                                     AND
                                 </button>
                             </div>
-                            <span className="text-[10px] text-neutral-400">
+                            <span className="hidden sm:inline text-[10px] text-neutral-400 shrink-0">
                                 {filterMode === 'AND' ? '모두 충족' : '중 하나 이상 충족'} · {filteredList.length}개
                             </span>
                         </div>
@@ -1500,19 +1505,21 @@ function ScreenerContent() {
                         // 칩이 없어도 걸린 조건(정렬·관심·전략)이 있으면 초기화 경로는 남겨야 한다.
                         if (chips.length === 0 && !hasActiveFilters) return null;
                         return (
-                            <div className="pb-2.5 flex items-center gap-1.5 flex-wrap">
-                                {chips.length > 0 && <span className="text-[10px] text-neutral-400 font-medium">적용:</span>}
+                            <div className="pb-2.5 flex items-center gap-1.5 min-w-0">
+                                {chips.length > 0 && <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">적용:</span>}
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                                 {chips.map(c => (
-                                    <span key={c.key} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-brand-hover dark:text-brand">
+                                    <span key={c.key} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-brand-hover dark:text-brand">
                                         {c.label}
                                         <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
                                     </span>
                                 ))}
+                                </div>
                                 {hasActiveFilters && (
                                     <button
                                         onClick={resetAllFilters}
                                         title="모든 조건 초기화"
-                                        className="ml-auto shrink-0 text-[10px] font-bold text-neutral-400 hover:text-red-500 underline underline-offset-2 transition-colors"
+                                        className="shrink-0 text-[10px] font-bold text-neutral-400 hover:text-red-500 underline underline-offset-2 transition-colors"
                                     >
                                         전체 해제
                                     </button>
