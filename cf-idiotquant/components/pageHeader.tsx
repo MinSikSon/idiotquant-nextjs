@@ -63,6 +63,7 @@ export function PageHeader({
   actions,
   width = "data",
   sticky = false,
+  mobileCompact = false,
   containerClassName,
   className,
 }: {
@@ -76,6 +77,8 @@ export function PageHeader({
   width?: PageWidth;
   /** 스크롤해도 헤더를 위에 남긴다 — 지금 보는 대상(종목명·가격)이 계속 보여야 하는 화면용. */
   sticky?: boolean;
+  /** 좁은 화면에서 제목·요약·아이콘을 짧은 헤더로 배치한다. */
+  mobileCompact?: boolean;
   /** 프리셋 밖의 폭이 필요할 때만. (예: 초대 수락 같은 좁은 단일 폼) */
   containerClassName?: string;
   className?: string;
@@ -88,23 +91,29 @@ export function PageHeader({
         className
       )}
     >
-      <div className={cn(containerClassName ?? PAGE_WIDTH[width], "pt-5 pb-[18px]")}>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <div className={cn(containerClassName ?? PAGE_WIDTH[width], "pt-5 pb-[18px]", mobileCompact && "py-2.5 sm:pt-5 sm:pb-[18px]")}>
+        <div className={cn(
+          "flex flex-col sm:flex-row sm:items-end justify-between gap-3",
+          mobileCompact && "flex-row items-center gap-2 sm:items-end sm:gap-3"
+        )}>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {emoji && <span className="text-[17px] leading-none shrink-0" aria-hidden>{emoji}</span>}
               {!emoji && icon && <span className="shrink-0 text-brand flex items-center" aria-hidden>{icon}</span>}
-              <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 dark:text-white truncate">
+              <h1 className={cn("text-xl font-black tracking-[-0.03em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
                 {title}
               </h1>
             </div>
             {meta && (
-              <div className="mt-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500 flex items-center flex-wrap gap-x-1.5 gap-y-1">
+              <div className={cn(
+                "mt-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500 flex items-center flex-wrap gap-x-1.5 gap-y-1",
+                mobileCompact && "mt-1 sm:mt-1.5 flex-nowrap overflow-hidden whitespace-nowrap"
+              )}>
                 {meta}
               </div>
             )}
           </div>
-          {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+          {actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
         </div>
       </div>
     </div>

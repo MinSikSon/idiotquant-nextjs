@@ -1207,6 +1207,7 @@ function ScreenerContent() {
             {isLoggedIn ? <PageHeader
                 emoji={showLikedOnly ? "♡" : "🥇"}
                 title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
+                mobileCompact
                 meta={
                     isLoading && !showLikedOnly ? (
                         <span className="flex items-center gap-1.5">
@@ -1252,7 +1253,7 @@ function ScreenerContent() {
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
                     <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
-                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        <p className="min-w-0 truncate whitespace-nowrap text-xs text-amber-700 dark:text-amber-400 font-medium">
                             최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
                         </p>
                     </div>
@@ -1334,9 +1335,10 @@ function ScreenerContent() {
 
                     {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
                         세로 공간만 먹고 무엇이 주된 조작인지 위계가 없었다. */}
-                    <div className="flex items-center gap-2 flex-wrap pb-3">
+                    <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
+                        <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
-                        <div className="relative flex-1 min-w-[180px]">
+                        <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-600 pointer-events-none" />
                             <input
                                 type="text"
@@ -1355,7 +1357,7 @@ function ScreenerContent() {
                                 setSortKey(key); setSortOrder(order); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             aria-label="결과 정렬"
-                            className="shrink-0 max-w-[132px] px-2.5 py-2 rounded-lg text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            className="shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
                         >
                             <option value="ncav_ratio:desc">NCAV 높은 순</option>
                             <option value="ncav_ratio:asc">NCAV 낮은 순</option>
@@ -1372,7 +1374,9 @@ function ScreenerContent() {
                             <option value="last_price:desc">현재가 높은 순</option>
                             <option value="last_price:asc">현재가 낮은 순</option>
                         </select>
+                        </div>
 
+                        <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto sm:contents">
                         {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
                             서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
                             버튼이 감싸는 flex 줄 한가운데 있고 아래로 sticky 끝·칩 줄이 끼어서,
@@ -1445,11 +1449,19 @@ function ScreenerContent() {
                             </span>
                         </button>
 
+                        {activeStrategyIds.size > 1 && (
+                            <div className="sm:hidden flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black">
+                                <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("px-1.5 py-1", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
+                                <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("px-1.5 py-1 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
+                            </div>
+                        )}
+
+                    </div>
                     </div>
 
                     {/* 선택된 전략 조합 안내 */}
                     {activeStrategyIds.size > 1 && (
-                        <div className="pb-2 flex items-center gap-2 min-w-0">
+                        <div className="hidden sm:flex pb-2 items-center gap-2 min-w-0">
                             <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">조합:</span>
                             <div className="hidden sm:flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                             {Array.from(activeStrategyIds).map(id => {
