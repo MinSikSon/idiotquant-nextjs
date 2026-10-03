@@ -484,6 +484,8 @@ export default function Rogue() {
     const [openMon, setOpenMon] = useState<string | null>(null);
     /** 도감에서 선택된 탭 */
     const [codexTab, setCodexTab] = useState<"monster" | CodexCategory>("monster");
+    const [codexQuery, setCodexQuery] = useState("");
+    const [codexKnownOnly, setCodexKnownOnly] = useState(false);
     /** 아이템 도감에서 펼쳐 둔 아이템 키 */
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const [seedLinkNote, setSeedLinkNote] = useState<string | null>(null);
@@ -1874,6 +1876,18 @@ export default function Rogue() {
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
     const itemProg = itemCodexProgress(state.itemCodex, state.itemUsage);
+    const codexSearch = codexQuery.trim().toLocaleLowerCase();
+    const monsterRows = bestiaryRows(state.bestiary, state.specials).filter((row) =>
+        `${row.ch} ${row.name}`.toLocaleLowerCase().includes(codexSearch),
+    );
+    const itemRows = CODEX_ENTRIES.filter((entry) => {
+        if (entry.category !== codexTab) return false;
+        const stage = itemCodexStage(entry, state);
+        if (codexKnownOnly && stage === 0) return false;
+        // 모르는 물건의 참이름으로 검색 결과를 좁히면 도감 밖에서 정체를 알 수 있다.
+        const visibleName = stage >= 3 ? entry.name : stage >= 1 ? state.appearance[entry.key] ?? entry.categoryLabel : "";
+        return `${itemChar(entry.kind)} ${visibleName}`.toLocaleLowerCase().includes(codexSearch);
+    });
     const classSkill = ORIGINS[hero.origin ?? "knight"];
 
     // **세 개씩 한 묶음**으로 늘어놓는다. 단추 판이 세 칸 격자라(`TouchPad`) 한 줄이
@@ -2421,7 +2435,7 @@ export default function Rogue() {
                         }}
                         footer={
                             codexTab === "monster"
-                                ? "줄을 누르면 그 놈의 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다 — 층은 「어느 종이 나오는가」만 정합니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
+                                ? "줄을 누르면 제원과 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
                                 : "줄을 누르면 상세 제원과 플레이버 텍스트가 펼쳐집니다. 식별(●)은 판을 넘어 영구 보존됩니다. 무기와 방어구 숙련은 Basic · Skilled · Expert로 표시합니다."
                         }
                     >
@@ -2444,9 +2458,11 @@ export default function Rogue() {
                                         type="button"
                                         onClick={() => {
                                             setCodexTab(tab.id);
+                                            setCodexQuery("");
                                             setOpenMon(null);
                                             setOpenItemKey(null);
                                         }}
+                                        aria-pressed={active}
                                         className={`shrink-0 px-1.5 py-1 transition-colors ${active
                                             ? "bg-[var(--rg-line)] font-bold text-[var(--rg-strong)]"
                                             : "text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"
@@ -2456,6 +2472,30 @@ export default function Rogue() {
                                     </button>
                                 );
                             })}
+                        </div>
+
+                        <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-[var(--rg-line-soft)] pb-2 font-mono text-[11px]">
+                            <label className="flex min-w-0 flex-1 items-center gap-2 border border-[var(--rg-line)] bg-[var(--rg-bg)] px-2 py-1.5 text-[var(--rg-muted)] focus-within:border-[var(--rg-strong)]">
+                                <span className="shrink-0">/ 찾기</span>
+                                <input
+                                    type="search"
+                                    value={codexQuery}
+                                    onChange={(e) => setCodexQuery(e.target.value)}
+                                    placeholder={codexTab === "monster" ? "이름 또는 글자" : "드러난 이름 또는 글자"}
+                                    aria-label="도감 검색"
+                                    className="min-w-0 w-full bg-transparent text-[var(--rg-strong)] outline-none placeholder:text-[var(--rg-ghost)]"
+                                />
+                            </label>
+                            {codexTab !== "monster" && (
+                                <button
+                                    type="button"
+                                    aria-pressed={codexKnownOnly}
+                                    onClick={() => setCodexKnownOnly((known) => !known)}
+                                    className={`shrink-0 border px-2 py-1.5 ${codexKnownOnly ? "border-[var(--rg-strong)] bg-[var(--rg-raised)] text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"}`}
+                                >
+                                    {codexKnownOnly ? "[x] 본 물건만" : "[ ] 본 물건만"}
+                                </button>
+                            )}
                         </div>
 
                         {codexTab === "monster" ? (
@@ -2497,28 +2537,30 @@ export default function Rogue() {
                                     </div>
                                 )}
 
-                                {progress.found === 0 ? (
-                                    <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
+                                {monsterRows.length === 0 ? (
+                                    <p className="py-3 text-[var(--rg-faint)]">{progress.found === 0 ? "아직 아무것도 못 잡았다." : "찾은 몬스터가 없다."}</p>
                                 ) : (
                                     <ul className="space-y-0 font-mono text-[12px]">
-                                        {bestiaryRows(state.bestiary, state.specials).map((r: BestiaryRow) => {
+                                        {monsterRows.map((r: BestiaryRow) => {
                                             const open = openMon === r.ch;
                                             const art = monsterArt(r.ch);
                                             return (
                                                 <li key={r.ch} className="min-w-0 border-b border-[var(--rg-line-soft)]">
-                                                    {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
-                                                    모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
+                                                    {/* 목록은 한 종 한 줄로 훑고, 제원과 얼굴은 고른 뒤 읽는다. */}
                                                     <button
                                                         type="button"
                                                         onClick={() => setOpenMon(open ? null : r.ch)}
                                                         aria-expanded={open}
-                                                        className={`w-full min-w-0 px-1 py-1.5 text-left whitespace-normal break-words ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
+                                                        className={`flex w-full min-w-0 items-start gap-2 px-1 py-2 text-left whitespace-normal break-words ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
                                                     >
-                                                        <span className="text-[var(--rg-monster)]">{r.ch}</span>{" "}
-                                                        <span className="text-[var(--rg-strong)]">{r.name}</span>
-                                                        <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
-                                                        {art && <span className="text-[var(--rg-ghost)]"> {open ? "[-]" : "[+]"}</span>}
-                                                        <div className="mt-1 grid min-w-0 grid-cols-[4ch_minmax(0,1fr)] gap-x-2 break-words text-[var(--rg-muted)]">
+                                                        <span className="shrink-0 text-[var(--rg-monster)]">{r.ch}</span>
+                                                        <span className="min-w-0 flex-1 text-[var(--rg-strong)]">{r.name}</span>
+                                                        <span className="shrink-0 text-[var(--rg-gold)]">×{r.kills}</span>
+                                                        <span className="shrink-0 text-[var(--rg-ghost)]">{open ? "[-]" : "[+]"}</span>
+                                                    </button>
+                                                    {open && (
+                                                        <div className="border-l-2 border-[var(--rg-line)] bg-[var(--rg-raised)] px-2 py-2">
+                                                            <div className="grid min-w-0 grid-cols-[4ch_minmax(0,1fr)] gap-x-2 break-words text-[var(--rg-muted)]">
                                                             <span>Lv</span><span>{r.level}</span>
                                                             <span>HP</span><span>{r.hp}</span>
                                                             <span>AC</span><span>{10 - r.defense}</span>
@@ -2540,14 +2582,15 @@ export default function Rogue() {
                                                                     <><span className="text-[var(--rg-faint)]">수법</span><span className="text-[var(--rg-faint)]">아직 모른다 — 당해 봐야 안다</span></>
                                                                 )
                                                             )}
-                                                        </div>
-                                                    </button>
-                                                    {open && art && (
-                                                        /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
+                                                            </div>
+                                                            {art && (
+                                                                /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
                                                            좁은 폰에서도 안 접히게 스무 칸을 안 넘긴다(`monsterArt`). */
-                                                        <pre className="mt-1 mb-2 overflow-x-auto whitespace-pre px-1 text-[12px] leading-[1.15] text-[var(--rg-ring)]">
-                                                            {art}
-                                                        </pre>
+                                                                <pre className="mt-2 overflow-x-auto whitespace-pre text-[12px] leading-[1.15] text-[var(--rg-ring)]">
+                                                                    {art}
+                                                                </pre>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </li>
                                             );
@@ -2561,8 +2604,10 @@ export default function Rogue() {
                         ) : (
                             /* 아이템 도감 목록 */
                             <>
+                            <p className="mb-1 text-[11px] text-[var(--rg-faint)]">● 식별 · ○ 소지 · ◌ 목격 · 확인 전은 빈 칸</p>
+                            {itemRows.length === 0 && <p className="py-3 text-[var(--rg-faint)]">찾은 물건이 없다.</p>}
                             <ul className="space-y-0 font-mono text-[12px]">
-                                {CODEX_ENTRIES.filter((e) => e.category === codexTab).map((entry) => {
+                                {itemRows.map((entry) => {
                                     const stage = itemCodexStage(entry, state);
                                     const open = openItemKey === entry.key;
                                     const usage = state.itemUsage?.[entry.key] ?? 0;
@@ -2965,8 +3010,8 @@ export default function Rogue() {
                 「도움말」이 「마신다」와 같은 무게로 보이고, 급할 때 손가락이 헤맨다. */}
             {
                 sheet === "options" && (
-                    <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면의 밝기(밝은 테마·어두운 테마)는 위·왼쪽 바의 단추가 정합니다.">
-                        <ul className="space-y-2">
+                    <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면 밝기는 위·왼쪽 바의 테마 단추에서 바꿉니다.">
+                        <ul className="font-mono text-[12px]">
                             {[
                                 {
                                     label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저 · 고고학자 · 정령술사", go: () => {
@@ -3121,15 +3166,23 @@ export default function Rogue() {
                                         setSheet("graves");
                                     },
                                 },
-                            ].map((o) => (
+                            ].map((o, index, all) => (
                                 <li key={o.label}>
+                                    {(index === 0 || index === 2 || index === all.length - 2) && (
+                                        <p className="mt-3 border-b border-[var(--rg-line)] pb-1 text-[11px] font-bold text-[var(--rg-label)] first:mt-0">
+                                            {index === 0 ? "── 판" : index === 2 ? "── 함께하기" : "── 참고"}
+                                        </p>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={o.go}
-                                        className="flex w-full flex-col gap-1 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-3 py-2.5 text-left transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                                        className="flex w-full items-start gap-2 border-b border-[var(--rg-line-soft)] px-1 py-2.5 text-left transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                     >
-                                        <span className="font-bold leading-snug text-[var(--rg-strong)]">{o.label}</span>
-                                        <span className="text-xs leading-relaxed text-[var(--rg-muted)]">{o.hint}</span>
+                                        <span aria-hidden="true" className="shrink-0 text-[var(--rg-faint)]">&gt;</span>
+                                        <span className="min-w-0">
+                                            <span className="block font-bold leading-snug text-[var(--rg-strong)]">{o.label}</span>
+                                            <span className="mt-0.5 block leading-relaxed text-[var(--rg-muted)]">{o.hint}</span>
+                                        </span>
                                     </button>
                                 </li>
                             ))}
