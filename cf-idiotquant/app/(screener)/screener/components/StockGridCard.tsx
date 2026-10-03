@@ -64,7 +64,16 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
+            onKeyDown={e => {
+                if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onClick(item.ticker, item.name);
+                }
+            }}
+            role="link"
+            tabIndex={0}
+            aria-label={`${item.name} 분석 보기`}
+            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-all"
         >
             <div className="p-3 sm:p-3.5">
                 <div className="flex items-center gap-2 mb-2.5">
@@ -80,7 +89,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                     </div>
                     <button
                         onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                        className={cn("p-1 rounded-lg shrink-0 transition-colors",
+                        className={cn("flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-colors",
                             isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
                         title={isLiked ? "관심 해제" : "관심 추가"}
                     >

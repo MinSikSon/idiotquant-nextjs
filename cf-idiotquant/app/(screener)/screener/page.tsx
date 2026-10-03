@@ -153,7 +153,9 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
     card: "카드로 보기",
     ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
 };
-const DEFAULT_VIEW: ViewMode = 'ratio';
+// 한눈에 여러 종목을 비교할 수 있는 카드가 첫 방문의 기본 보기다.
+// 자산 비율 보기는 필요할 때 선택하는 상세 보기로 남긴다.
+const DEFAULT_VIEW: ViewMode = 'card';
 // 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
 const GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3';
 // URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
@@ -687,7 +689,7 @@ function ScreenerContent() {
         catch { return []; }
     });
 
-    // 묶어 보기 / 뷰 모드 — 기본값이 none·table 이라 배포 직후 동작은 그대로다
+    // 묶어 보기 / 뷰 모드. 저장한 선택은 유지하고 첫 방문만 카드 보기로 시작한다.
     const [groupMode, setGroupMode] = useState<GroupMode>(() => {
         const v = (searchParams.get('group') ?? saved.group) as GroupMode;
         return (['sector', 'strategy'] as GroupMode[]).includes(v) ? v : 'none';
@@ -696,6 +698,21 @@ function ScreenerContent() {
         () => parseViewMode(searchParams.get('view') ?? saved.view)
     );
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (!filterOpen) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setFilterOpen(false);
+        };
+        const isMobile = window.matchMedia('(max-width: 639px)').matches;
+        const previousOverflow = document.body.style.overflow;
+        if (isMobile) document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', onKeyDown);
+        return () => {
+            if (isMobile) document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [filterOpen]);
 
     // 날짜 목록(/ncav/daily/dates)은 더 이상 받지 않는다. 이 화면은 그 값을 한 번도
     // 그리지 않으면서 — 날짜를 쓰는 곳은 admin 전용 /backtest 다 — 받아만 왔는데,
@@ -1266,7 +1283,7 @@ function ScreenerContent() {
                 "border-b border-neutral-200 dark:border-surface-dark-border",
                 !isLoggedIn && "hidden"
             )}>
-                <div className="max-w-7xl mx-auto px-2 sm:px-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
                     {/* 첫째 줄: 전략 격자.
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
@@ -1277,50 +1294,38 @@ function ScreenerContent() {
                         열 줄 중 몇 개" 가 된다. 거짓 숫자를 그리는 것보다 없는 편이 낫다.
                         검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
                     {isLoggedIn && <>
-                    <div className="hidden sm:flex items-baseline gap-2 pt-3 pb-1.5">
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
-                        <span className="text-[10.5px] font-bold text-brand">
-                            {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
-                        </span>
-                        <button
-                            onClick={() => setShowGuide(o => !o)}
-                            title="전략 설명 보기"
-                            className={cn(
-                                "ml-auto shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-colors",
-                                showGuide
-                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand-hover dark:text-brand"
-                                    : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-                            )}
-                        >
-                            <Info size={11} />
-                            <span className="hidden sm:inline">전략 안내</span>
-                        </button>
-                    </div>
-
-                    <div className="sm:hidden flex w-full items-center gap-2 py-1.5">
+                    <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <button
                             type="button"
                             onClick={() => setStrategyOpen(v => !v)}
                             aria-expanded={strategyOpen}
-                            className="min-w-0 flex-1 flex items-center gap-2 py-1 text-left"
+                            className="min-w-0 flex-1 flex items-center gap-2 text-left"
                         >
-                            <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
-                            <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-brand">
-                                {isAllActive ? '전체 전략' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
+                            <span className="text-[11px] font-black text-neutral-600 dark:text-neutral-300">전략</span>
+                            <span className="min-w-0 truncate text-[11px] font-bold text-brand">
+                                {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
                             </span>
                             <ChevronRight size={14} className={cn("shrink-0 text-neutral-400 transition-transform", strategyOpen && "rotate-90")} />
                         </button>
                         {activeStrategyIds.size > 1 && (
-                            <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black">
+                            <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black sm:text-[10px]">
                                 <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("px-2 py-1.5", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
                                 <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("px-2 py-1.5 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
                             </div>
                         )}
+                        <button
+                            onClick={() => setShowGuide(o => !o)}
+                            title="전략 설명 보기"
+                            aria-label="전략 설명 보기"
+                            className={cn("shrink-0 p-1.5 rounded-lg transition-colors", showGuide ? "bg-brand-light text-brand" : "text-neutral-400 hover:text-neutral-600")}
+                        >
+                            <Info size={14} />
+                        </button>
                     </div>
 
                     <div className={cn(
-                        "gap-1.5 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-5 xl:grid-cols-10",
-                        strategyOpen ? "flex" : "hidden sm:flex"
+                        "gap-1.5 overflow-x-auto no-scrollbar pb-2.5 md:grid md:grid-cols-5 xl:grid-cols-10",
+                        strategyOpen ? "flex md:grid" : "hidden"
                     )}>
                         <StrategyCell
                             label="전체" count={strategyCounts.all} active={isAllActive}
@@ -1384,7 +1389,7 @@ function ScreenerContent() {
                         </select>
                         </div>
 
-                        <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:w-auto sm:contents">
+                        <div className="grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:flex">
                         {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
                             서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
                             버튼이 감싸는 flex 줄 한가운데 있고 아래로 sticky 끝·칩 줄이 끼어서,
@@ -1411,27 +1416,8 @@ function ScreenerContent() {
                                     {activeFilterCount}
                                 </span>
                             )}
-                            <span className="font-mono text-[9px]">{filterOpen ? "▲" : "▼"}</span>
+                            <span className="font-mono text-[9px] sm:hidden">{filterOpen ? "▲" : "▼"}</span>
                         </button>
-
-                        {/* 표 ↔ 카드 ↔ 비율 */}
-                        <div className="shrink-0 flex items-center justify-self-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
-                            {([['table', '☰'], ['card', '▦'], ['ratio', '▤']] as const).map(([id, icon]) => (
-                                <button
-                                    key={id}
-                                    onClick={() => setViewMode(id)}
-                                    title={VIEW_MODE_TITLE[id]}
-                                    className={cn(
-                                        "flex h-8 w-8 items-center justify-center rounded-lg text-xs transition-colors",
-                                        viewMode === id
-                                            ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm"
-                                            : "text-neutral-500 dark:text-neutral-400"
-                                    )}
-                                >
-                                    {icon}
-                                </button>
-                            ))}
-                        </div>
 
                         {/* 관심 종목 */}
                         <button
@@ -1459,62 +1445,6 @@ function ScreenerContent() {
 
                     </div>
                     </div>
-
-                    {/* 선택된 전략 조합 안내 */}
-                    {activeStrategyIds.size > 1 && (
-                        <div className="hidden sm:flex pb-2 items-center gap-2 min-w-0">
-                            <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">조합:</span>
-                            <div className="hidden sm:flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
-                            {Array.from(activeStrategyIds).map(id => {
-                                const preset = STRATEGY_PRESETS.find(p => p.id === id);
-                                if (!preset) return null;
-                                return (
-                                    <span key={id} className={cn(
-                                        "inline-flex shrink-0 items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded",
-                                        STRATEGY_BADGE[id] ?? "bg-surface-canvas text-neutral-500"
-                                    )}>
-                                        {preset.label}
-                                        <button onClick={() => toggleStrategy(id)} className="hover:opacity-70">
-                                            <X size={9} />
-                                        </button>
-                                    </span>
-                                );
-                            })}
-                            </div>
-                            {/* OR / AND 토글 */}
-                            <div className="flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[10px] font-black">
-                                <button
-                                    onClick={() => setFilterMode('OR')}
-                                    aria-label="선택 전략 중 하나 이상 만족"
-                                    title="선택한 전략 중 하나 이상 충족"
-                                    className={cn(
-                                        "px-2 py-0.5 transition-colors",
-                                        filterMode === 'OR'
-                                            ? "bg-brand text-white"
-                                            : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card"
-                                    )}
-                                >
-                                    OR
-                                </button>
-                                <button
-                                    onClick={() => setFilterMode('AND')}
-                                    aria-label="선택 전략 모두 만족"
-                                    title="선택한 전략을 모두 충족"
-                                    className={cn(
-                                        "px-2 py-0.5 transition-colors border-l border-neutral-200 dark:border-surface-dark-border",
-                                        filterMode === 'AND'
-                                            ? "bg-brand text-white"
-                                            : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card"
-                                    )}
-                                >
-                                    AND
-                                </button>
-                            </div>
-                            <span className="hidden sm:inline text-[10px] text-neutral-400 shrink-0">
-                                {filterMode === 'AND' ? '모두 충족' : '중 하나 이상 충족'} · {filteredList.length}개
-                            </span>
-                        </div>
-                    )}
 
                     {/* 적용된 조건 칩 — 서랍이 닫혀 있을 때만. 열려 있으면 같은 조건이 서랍 안에
                         그대로 보이므로 두 번 나열할 이유가 없다. */}
@@ -1566,24 +1496,22 @@ function ScreenerContent() {
 
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
-                <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-brand-light dark:border-[#166534]/40">
-                    <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-5 pb-[18px]">
+                <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#f8faf8] dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-[#f0fdf4] sm:dark:bg-[#052e16]/25 sm:border-b sm:border-brand-light sm:dark:border-[#166534]/40">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
 
-                        <div className="flex items-end justify-between gap-3 mb-4">
+                        <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="min-w-0">
-                                <p className="text-[12.5px] font-extrabold text-[#14532d] dark:text-[#86efac]">상세 필터</p>
-                                <p className="text-[11px] text-brand dark:text-[#4ade80]/80 mt-0.5">조건을 좁힐 때마다 결과가 즉시 갱신됩니다</p>
+                                <p className="text-base sm:text-[12.5px] font-extrabold text-[#14532d] dark:text-[#86efac]">상세 필터</p>
+                                <p className="text-[11px] text-brand dark:text-[#4ade80]/80 mt-0.5">현재 {filteredList.length}종목 · 조건을 바꾸면 바로 반영됩니다</p>
                             </div>
-                            <button
-                                onClick={clearDetailFilters}
-                                className="text-[11.5px] font-bold text-brand hover:opacity-70 transition-opacity shrink-0"
-                            >
-                                전체 해제
-                            </button>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <button onClick={clearDetailFilters} className="text-[11.5px] font-bold text-brand hover:opacity-70 transition-opacity">전체 해제</button>
+                                <button onClick={() => setFilterOpen(false)} aria-label="필터 닫기" className="sm:hidden rounded-lg border border-neutral-200 bg-white p-2 text-neutral-600 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-300"><X size={16} /></button>
+                            </div>
                         </div>
 
                         {/* 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 한눈에 */}
-                        <div className="mb-4 flex flex-col gap-1">
+                        <div className="mb-4 hidden sm:flex flex-col gap-1">
                             {funnel.map((s, i) => (
                                 <div key={s.label} className="flex items-center gap-2">
                                     <span className="w-[76px] shrink-0 text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400">{s.label}</span>
@@ -1864,6 +1792,11 @@ function ScreenerContent() {
                             </DrawerCard>
                         </div>
                     </div>
+                    <div className="sticky bottom-0 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur-md dark:border-surface-dark-border dark:bg-surface-dark/95 sm:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+                        <button onClick={() => setFilterOpen(false)} className="w-full rounded-xl bg-brand py-3 text-sm font-extrabold text-white shadow-sm">
+                            {filteredList.length}종목 결과 보기
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -1939,7 +1872,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-5 pb-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -2045,11 +1978,31 @@ function ScreenerContent() {
                             </div>
                         )}
 
-                        {/* 결과에 거는 조작(묶기)과 목록 복사 — 조건을 고르는 상단과 분리한다.
-                            묶기는 "무엇을 걸러낼지"가 아니라 "고른 결과를 어떻게 늘어놓을지"라
-                            결과 바로 위가 제자리다. */}
-                        <div className="flex items-center gap-2 flex-wrap mb-3">
-                            <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                        {/* 검색 조건과 결과 표현을 분리해, 목록을 훑으면서 보기/묶기를 바꿀 수 있게 한다. */}
+                        <div className="mb-3 flex items-center gap-2">
+                            <h2 className="text-sm font-extrabold text-neutral-900 dark:text-white">
+                                {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand">{filteredList.length}</span>
+                            </h2>
+                            <button
+                                onClick={() => setShowInsights(v => !v)}
+                                className={cn(
+                                    "ml-auto rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-colors whitespace-nowrap",
+                                    showInsights
+                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-brand-hover dark:text-brand"
+                                        : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
+                                )}
+                            >
+                                {showInsights ? '해석 접기' : '결과 해석'}
+                            </button>
+                            <details className="relative sm:hidden">
+                                <summary aria-label="결과 복사 메뉴" className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 marker:hidden dark:border-surface-dark-border dark:text-neutral-400">···</summary>
+                                <div className="absolute right-0 top-full z-10 mt-1 flex w-max items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg dark:border-surface-dark-border dark:bg-surface-dark-card">
+                                    <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
+                                </div>
+                            </details>
+                        </div>
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                                 {([
                                     { id: 'none',     label: '안 묶기' },
                                     { id: 'sector',   label: '업종', disabled: !hasSectorData },
@@ -2072,19 +2025,25 @@ function ScreenerContent() {
                                     </button>
                                 ))}
                             </div>
-                            <button
-                                onClick={() => setShowInsights(v => !v)}
-                                className={cn(
-                                    "px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors whitespace-nowrap",
-                                    showInsights
-                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-brand-hover dark:text-brand"
-                                        : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
-                                )}
-                            >
-                                {showInsights ? '결과 해석 접기' : '결과 해석'}
-                            </button>
-                            <span className="ml-auto hidden sm:inline text-[11px] text-neutral-400 font-medium">목록 복사</span>
-                            <div className="ml-auto sm:ml-0 flex items-center gap-2">
+                            <div role="group" aria-label="결과 보기 방식" className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                                {([['table', '목록'], ['card', '카드'], ['ratio', '비율']] as const).map(([id, label]) => (
+                                    <button
+                                        key={id}
+                                        onClick={() => setViewMode(id)}
+                                        title={VIEW_MODE_TITLE[id]}
+                                        aria-pressed={viewMode === id}
+                                        className={cn(
+                                            "rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors sm:px-2.5",
+                                            viewMode === id
+                                                ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm"
+                                                : "text-neutral-500 dark:text-neutral-400"
+                                        )}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="hidden sm:flex items-center gap-2">
                                 <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                             </div>
                         </div>
