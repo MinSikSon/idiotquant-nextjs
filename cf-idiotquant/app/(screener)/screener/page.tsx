@@ -1297,18 +1297,26 @@ function ScreenerContent() {
                         </button>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => setStrategyOpen(v => !v)}
-                        aria-expanded={strategyOpen}
-                        className="sm:hidden w-full flex items-center gap-2 py-2 text-left"
-                    >
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
-                        <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-brand">
-                            {isAllActive ? '전체 전략' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
-                        </span>
-                        <ChevronRight size={14} className={cn("shrink-0 text-neutral-400 transition-transform", strategyOpen && "rotate-90")} />
-                    </button>
+                    <div className="sm:hidden flex w-full items-center gap-2 py-1.5">
+                        <button
+                            type="button"
+                            onClick={() => setStrategyOpen(v => !v)}
+                            aria-expanded={strategyOpen}
+                            className="min-w-0 flex-1 flex items-center gap-2 py-1 text-left"
+                        >
+                            <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
+                            <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-brand">
+                                {isAllActive ? '전체 전략' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
+                            </span>
+                            <ChevronRight size={14} className={cn("shrink-0 text-neutral-400 transition-transform", strategyOpen && "rotate-90")} />
+                        </button>
+                        {activeStrategyIds.size > 1 && (
+                            <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black">
+                                <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("px-2 py-1.5", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
+                                <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("px-2 py-1.5 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
+                            </div>
+                        )}
+                    </div>
 
                     <div className={cn(
                         "gap-1.5 overflow-x-auto no-scrollbar pb-2 md:grid md:grid-cols-5 xl:grid-cols-10",
@@ -1376,7 +1384,7 @@ function ScreenerContent() {
                         </select>
                         </div>
 
-                        <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto sm:contents">
+                        <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:w-auto sm:contents">
                         {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
                             서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
                             버튼이 감싸는 flex 줄 한가운데 있고 아래로 sticky 끝·칩 줄이 끼어서,
@@ -1384,7 +1392,7 @@ function ScreenerContent() {
                         <button
                             onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap",
+                                "shrink-0 flex min-h-[38px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap sm:px-3",
                                 filterOpen
                                     ? "bg-brand border-brand text-white shadow-sm"
                                     : activeFilterCount > 0
@@ -1407,14 +1415,14 @@ function ScreenerContent() {
                         </button>
 
                         {/* 표 ↔ 카드 ↔ 비율 */}
-                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                        <div className="shrink-0 flex items-center justify-self-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                             {([['table', '☰'], ['card', '▦'], ['ratio', '▤']] as const).map(([id, icon]) => (
                                 <button
                                     key={id}
                                     onClick={() => setViewMode(id)}
                                     title={VIEW_MODE_TITLE[id]}
                                     className={cn(
-                                        "px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                                        "flex h-8 w-8 items-center justify-center rounded-lg text-xs transition-colors",
                                         viewMode === id
                                             ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm"
                                             : "text-neutral-500 dark:text-neutral-400"
@@ -1432,7 +1440,7 @@ function ScreenerContent() {
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                "shrink-0 flex min-h-[38px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap sm:px-3",
                                 showLikedOnly
                                     ? "bg-rose-500 border-rose-500 text-white shadow-sm"
                                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
@@ -1448,13 +1456,6 @@ function ScreenerContent() {
                                 {likedTickers.size}
                             </span>
                         </button>
-
-                        {activeStrategyIds.size > 1 && (
-                            <div className="sm:hidden flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black">
-                                <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("px-1.5 py-1", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
-                                <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("px-1.5 py-1 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
-                            </div>
-                        )}
 
                     </div>
                     </div>
