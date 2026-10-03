@@ -2426,7 +2426,7 @@ export default function Rogue() {
                         }
                     >
                         {/* 카테고리 탭 목록 */}
-                        <div className="mb-2.5 flex flex-nowrap gap-1 overflow-x-auto border-b border-[var(--rg-line-soft)] pb-2 text-[12px] [scrollbar-width:none]">
+                        <div className="mb-2.5 flex flex-nowrap gap-1 overflow-x-auto border-y border-[var(--rg-line-soft)] py-1.5 font-mono text-[11px] [scrollbar-width:none]">
                             {[
                                 { id: "monster" as const, label: "몬스터", countStr: `${progress.found}/${progress.total}` },
                                 { id: "weapon" as const, label: "무기", countStr: `${itemProg.byCategory.weapon.identified}/${itemProg.byCategory.weapon.total}` },
@@ -2447,7 +2447,7 @@ export default function Rogue() {
                                             setOpenMon(null);
                                             setOpenItemKey(null);
                                         }}
-                                        className={`rounded px-1.5 py-0.5 transition-colors ${active
+                                        className={`shrink-0 px-1.5 py-1 transition-colors ${active
                                             ? "bg-[var(--rg-line)] font-bold text-[var(--rg-strong)]"
                                             : "text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"
                                             }`}
@@ -2464,10 +2464,10 @@ export default function Rogue() {
                                 {sightings.length > 0 && (
                                     <div className="mb-3 border-b border-[var(--rg-line-soft)] pb-2">
                                         <p className="mb-1 text-[var(--rg-faint)]">지금 보이는 놈</p>
-                                        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <ul className="space-y-1 font-mono text-[12px]">
                                             {sightings.map((m: Sighting) => (
-                                                <li key={m.id} className="min-w-0 rounded border border-[var(--rg-line-soft)] p-2 break-words">
-                                                    <div className="min-w-0">
+                                                <li key={m.id} className="min-w-0 border-b border-[var(--rg-line-soft)] py-1 break-words">
+                                                    <div className="min-w-0 whitespace-normal">
                                                         <span className="text-[var(--rg-monster)]">{m.ch}</span>{" "}
                                                         <span className="text-[var(--rg-strong)]">{m.name}</span>
                                                         <span className="text-[var(--rg-faint)]">
@@ -2497,24 +2497,24 @@ export default function Rogue() {
                                 {progress.found === 0 ? (
                                     <p className="text-[var(--rg-faint)]">아직 아무것도 못 잡았다.</p>
                                 ) : (
-                                    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <ul className="space-y-0 font-mono text-[12px]">
                                         {bestiaryRows(state.bestiary, state.specials).map((r: BestiaryRow) => {
                                             const open = openMon === r.ch;
                                             const art = monsterArt(r.ch);
                                             return (
-                                                <li key={r.ch} className={`min-w-0 rounded border border-[var(--rg-line-soft)] ${open ? "sm:col-span-2" : ""}`}>
+                                                <li key={r.ch} className="min-w-0 border-b border-[var(--rg-line-soft)]">
                                                     {/* 줄을 누르면 얼굴이 펼쳐진다. 글자 하나로만 아는 놈에게
                                                     모습을 붙여 주는 자리라, **잡아 본 종만** 여기 선다. */}
                                                     <button
                                                         type="button"
                                                         onClick={() => setOpenMon(open ? null : r.ch)}
                                                         aria-expanded={open}
-                                                        className={`w-full min-w-0 rounded-[2px] p-2 text-left whitespace-normal break-words ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
+                                                        className={`w-full min-w-0 px-1 py-1.5 text-left whitespace-normal break-words ${open ? "bg-[var(--rg-raised)]" : "hover:bg-[var(--rg-hover)]"}`}
                                                     >
                                                         <span className="text-[var(--rg-monster)]">{r.ch}</span>{" "}
                                                         <span className="text-[var(--rg-strong)]">{r.name}</span>
                                                         <span className="text-[var(--rg-gold)]"> ×{r.kills}</span>
-                                                        {art && <span className="text-[var(--rg-ghost)]"> {open ? "▾" : "▸"}</span>}
+                                                        {art && <span className="text-[var(--rg-ghost)]"> {open ? "[-]" : "[+]"}</span>}
                                                         <div className="min-w-0 break-words text-[var(--rg-muted)]">
                                                             Lv:{r.level} · HP:{r.hp} · AC:{10 - r.defense} · Dmg:{" "}
                                                             {r.damage.join(" + ") || "없음"} · Xp:{r.exp}{r.traits.length ? ` · ${r.traits.join("")}` : ""}
@@ -2562,7 +2562,7 @@ export default function Rogue() {
                         ) : (
                             /* 아이템 도감 목록 */
                             <>
-                            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            <ul className="space-y-0 font-mono text-[12px]">
                                 {CODEX_ENTRIES.filter((e) => e.category === codexTab).map((entry) => {
                                     const stage = itemCodexStage(entry, state);
                                     const open = openItemKey === entry.key;
@@ -2625,7 +2625,7 @@ export default function Rogue() {
                                         : "";
 
                                     return (
-                                        <li key={entry.key} className={`min-w-0 rounded border border-[var(--rg-line-soft)] ${open ? "col-span-2 sm:col-span-3" : ""}`}>
+                                        <li key={entry.key} className="min-w-0 border-b border-[var(--rg-line-soft)]">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -2634,7 +2634,7 @@ export default function Rogue() {
                                                 }}
                                                 disabled={stage === 0}
                                                 aria-expanded={open}
-                                                className={`w-full min-h-[5.25rem] rounded-[2px] p-2 text-left transition-colors ${stage === 0
+                                                className={`w-full min-w-0 px-1 py-1.5 text-left transition-colors ${stage === 0
                                                     ? "cursor-default opacity-60"
                                                     : open
                                                         ? "bg-[var(--rg-raised)]"
@@ -2668,7 +2668,7 @@ export default function Rogue() {
                                                         {!usageStr && stage > 0 && <span className="text-[var(--rg-faint)]">{stage >= 3 ? "식별됨" : stage === 2 ? "소지 중" : "목격"}</span>}
                                                         {stage > 0 && (
                                                             <span className="ml-auto text-[var(--rg-ghost)] text-[10px]">
-                                                                {open ? "▾" : "▸"}
+                                                                {open ? "[-]" : "[+]"}
                                                             </span>
                                                         )}
                                                     </div>
@@ -2677,7 +2677,7 @@ export default function Rogue() {
 
                                             {/* 상세 제원 및 플레이버 텍스트 (펼침) */}
                                             {open && stage > 0 && (
-                                                <div className="my-1.5 min-w-0 rounded border border-[var(--rg-line)] bg-[var(--rg-bg)] p-2.5 text-[12px] space-y-2 break-words">
+                                                <div className="my-1.5 min-w-0 border-l-2 border-[var(--rg-line)] bg-[var(--rg-bg)] p-2 text-[12px] space-y-2 break-words">
                                                     {stage < 3 ? (
                                                         /* 미식별 상세 (정보 누출 차단) */
                                                         <div className="min-w-0 space-y-1 text-[var(--rg-muted)]">
