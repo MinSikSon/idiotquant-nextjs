@@ -2435,8 +2435,8 @@ export default function Rogue() {
                         }}
                         footer={
                             codexTab === "monster"
-                                ? "줄을 누르면 제원과 모습이 펼쳐집니다. 한 종은 어디서나 같은 능력치입니다. 펼쳐 보는 데는 턴을 쓰지 않습니다."
-                                : "줄을 누르면 상세 제원과 플레이버 텍스트가 펼쳐집니다. 식별(●)은 판을 넘어 영구 보존됩니다. 무기와 방어구 숙련은 Basic · Skilled · Expert로 표시합니다."
+                                ? "줄 선택: 제원과 모습 보기 · 턴 소모 없음"
+                                : "줄 선택: 상세 보기 · ● 식별은 판을 넘어 남음"
                         }
                     >
                         {/* 카테고리 탭 목록 */}
@@ -2474,8 +2474,8 @@ export default function Rogue() {
                             })}
                         </div>
 
-                        <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-[var(--rg-line-soft)] pb-2 font-mono text-[11px]">
-                            <label className="flex min-w-0 flex-1 items-center gap-2 border border-[var(--rg-line)] bg-[var(--rg-bg)] px-2 py-1.5 text-[var(--rg-muted)] focus-within:border-[var(--rg-strong)]">
+                        <div className="mb-2 flex min-w-0 items-center gap-1.5 border-b border-[var(--rg-line-soft)] pb-2 font-mono text-[11px]">
+                            <label className="flex min-w-0 flex-1 items-center gap-1.5 border border-[var(--rg-line)] bg-[var(--rg-bg)] px-1.5 py-1.5 text-[var(--rg-muted)] focus-within:border-[var(--rg-strong)]">
                                 <span className="shrink-0">/ 찾기</span>
                                 <input
                                     type="search"
@@ -2491,9 +2491,9 @@ export default function Rogue() {
                                     type="button"
                                     aria-pressed={codexKnownOnly}
                                     onClick={() => setCodexKnownOnly((known) => !known)}
-                                    className={`shrink-0 border px-2 py-1.5 ${codexKnownOnly ? "border-[var(--rg-strong)] bg-[var(--rg-raised)] text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"}`}
+                                    className={`shrink-0 border px-1.5 py-1.5 ${codexKnownOnly ? "border-[var(--rg-strong)] bg-[var(--rg-raised)] text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"}`}
                                 >
-                                    {codexKnownOnly ? "[x] 본 물건만" : "[ ] 본 물건만"}
+                                    {codexKnownOnly ? "[x] 본 물건" : "[ ] 본 물건"}
                                 </button>
                             )}
                         </div>
@@ -2518,13 +2518,9 @@ export default function Rogue() {
                                                         </span>
                                                     </div>
                                                     {m.known ? (
-                                                        <div className="grid grid-cols-[4ch_minmax(0,1fr)] gap-x-2 break-words text-[var(--rg-muted)]">
-                                                            <span>Lv</span><span>{m.level}</span>
-                                                            <span>HP</span><span>{m.hp}</span>
-                                                            <span>AC</span><span>{10 - (m.defense ?? 0)}</span>
-                                                            <span>Dmg</span><span>{m.damage?.join(" + ") || "없음"}</span>
-                                                            <span>Xp</span><span>{m.exp}</span>
-                                                            {(m.traits?.length || m.mean) ? <><span>특성</span><span>{[...(m.traits ?? []), ...(m.mean ? ["보자마자 달려든다"] : [])].join(" · ")}</span></> : null}
+                                                        <div className="break-words text-[var(--rg-muted)]">
+                                                            Lv:{m.level} · HP:{m.hp} · AC:{10 - (m.defense ?? 0)} · Dmg:{m.damage?.join("+") || "없음"} · Xp:{m.exp}
+                                                            {(m.traits?.length || m.mean) ? ` · ${[...(m.traits ?? []), ...(m.mean ? ["보자마자 달려든다"] : [])].join(" · ")}` : ""}
                                                         </div>
                                                     ) : (
                                                         <div className="break-words text-[var(--rg-faint)]">
@@ -2644,11 +2640,7 @@ export default function Rogue() {
                                     const statsSummary =
                                         stage >= 3
                                             ? itemCodexStats(entry)
-                                            : stage === 2
-                                                ? "배낭에 있다"
-                                                : stage === 1
-                                                    ? "본 적 있다"
-                                                    : "";
+                                            : "";
 
                                     const currentArmorSkill = entry.kind === "armor"
                                         ? armorSkillRankName(armorSkillLevel(currentHero, entry.type))
@@ -2667,6 +2659,7 @@ export default function Rogue() {
                                                 ? currentArmorSkill ?? "basic"
                                                 : usageSuffix ? `${usage}${usageSuffix}` : ""
                                         : "";
+                                    const summary = !!statsSummary || !!usageStr;
 
                                     return (
                                         <li key={entry.key} className="min-w-0 border-b border-[var(--rg-line-soft)]">
@@ -2685,9 +2678,8 @@ export default function Rogue() {
                                                         : "hover:bg-[var(--rg-hover)]"
                                                     }`}
                                             >
-                                                <div className="flex h-full min-w-0 flex-col justify-between gap-2">
-                                                    <div className="flex min-w-0 flex-col gap-1">
-                                                      <div className="grid min-w-0 grid-cols-[2ch_2ch_minmax(0,1fr)] items-baseline gap-x-1 whitespace-normal break-words">
+                                                <div className="min-w-0">
+                                                      <div className="grid min-w-0 grid-cols-[2ch_2ch_minmax(0,1fr)_auto] items-baseline gap-x-1 whitespace-normal break-words">
                                                         <span className="text-center font-mono">{stageBadge}</span>
                                                         <span className="text-center text-[var(--rg-label)] font-mono">{char}</span>
                                                         <span
@@ -2700,22 +2692,19 @@ export default function Rogue() {
                                                         >
                                                             {displayName}
                                                         </span>
-                                                    </div>
-                                                    {statsSummary && <span className={`pl-[5ch] text-[11px] whitespace-normal break-words ${entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}`}>{statsSummary}</span>}
-                                                    </div>
-                                                    <div className="flex min-w-0 items-center justify-between gap-2 text-[12px]">
-                                                        {usageStr && (
-                                                            <span className={`pl-[5ch] ${entry.kind === "weapon" || entry.kind === "armor" ? "text-[var(--rg-gold)] font-medium" : "text-[var(--rg-muted)]"}`}>
-                                                                {usageStr}
-                                                            </span>
-                                                        )}
-                                                        {!usageStr && stage > 0 && <span className="pl-[5ch] text-[var(--rg-faint)]">{stage >= 3 ? "식별됨" : stage === 2 ? "소지 중" : "목격"}</span>}
                                                         {stage > 0 && (
-                                                            <span className="ml-auto text-[var(--rg-ghost)] text-[10px]">
+                                                            <span className="text-[var(--rg-ghost)] text-[10px]">
                                                                 {open ? "[-]" : "[+]"}
                                                             </span>
                                                         )}
-                                                    </div>
+                                                      </div>
+                                                      {summary && (
+                                                          <div className="min-w-0 pl-[5ch] text-[11px] leading-snug whitespace-normal break-words">
+                                                              {statsSummary && <span className={entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}>{statsSummary}</span>}
+                                                              {statsSummary && usageStr && <span className="text-[var(--rg-faint)]"> · </span>}
+                                                              {usageStr && <span className={entry.kind === "weapon" || entry.kind === "armor" ? "font-medium text-[var(--rg-gold)]" : "text-[var(--rg-muted)]"}>{usageStr}</span>}
+                                                          </div>
+                                                      )}
                                                 </div>
                                             </button>
 
@@ -3010,18 +2999,18 @@ export default function Rogue() {
                 「도움말」이 「마신다」와 같은 무게로 보이고, 급할 때 손가락이 헤맨다. */}
             {
                 sheet === "options" && (
-                    <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면 밝기는 위·왼쪽 바의 테마 단추에서 바꿉니다.">
+                    <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면 밝기: 위·왼쪽 바의 테마 단추">
                         <ul className="font-mono text-[12px]">
                             {[
                                 {
-                                    label: "새 판 시작 (출신 직업 선택)", hint: "왕실 근위대 · 도적 · 연금술사 · 연구자 · 레인저 · 고고학자 · 정령술사", go: () => {
+                                    label: "새 판 시작", hint: "출신 직업과 시작 장비 선택", go: () => {
                                         setOriginFor({ t: "new" });
                                         setSheet("origins");
                                     }
                                 },
                                 {
                                     label: "시드 링크 복사",
-                                    hint: `시드 ${state.seed} · ${ORIGINS[(state.heroes[who] ?? state.heroes[0]).origin ?? "knight"].name}로 새 던전을 연다`,
+                                    hint: `시드 ${state.seed} · ${ORIGINS[(state.heroes[who] ?? state.heroes[0]).origin ?? "knight"].name}`,
                                     go: () => {
                                         void copySeedLink();
                                         setSheet("none");
@@ -3176,12 +3165,12 @@ export default function Rogue() {
                                     <button
                                         type="button"
                                         onClick={o.go}
-                                        className="flex w-full items-start gap-2 border-b border-[var(--rg-line-soft)] px-1 py-2.5 text-left transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                                        className="flex w-full items-start gap-2 border-b border-[var(--rg-line-soft)] px-1 py-1.5 text-left transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                     >
                                         <span aria-hidden="true" className="shrink-0 text-[var(--rg-faint)]">&gt;</span>
-                                        <span className="min-w-0">
-                                            <span className="block font-bold leading-snug text-[var(--rg-strong)]">{o.label}</span>
-                                            <span className="mt-0.5 block leading-relaxed text-[var(--rg-muted)]">{o.hint}</span>
+                                        <span className="min-w-0 leading-snug break-words">
+                                            <span className="font-bold text-[var(--rg-strong)]">{o.label}</span>
+                                            <span className="text-[var(--rg-muted)]"> · {o.hint}</span>
                                         </span>
                                     </button>
                                 </li>
