@@ -34,7 +34,7 @@
  * 「읽는다」가 주문서를 연달아 태운다 — 그쪽은 한 번이 한 번이어야 한다.
  */
 
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 /** 첫 걸음 뒤 이만큼 기다렸다가, 그 뒤로 이 간격으로 걷는다. */
 export const HOLD_DELAY = 400;
@@ -56,6 +56,7 @@ function Key({
     children,
     onPress,
     disabled,
+    onBlocked,
     title,
     wide,
     hot,
@@ -65,6 +66,7 @@ function Key({
     children: ReactNode;
     onPress?: () => void;
     disabled?: boolean;
+    onBlocked?: () => void;
     title?: string;
     wide?: boolean;
     hot?: boolean;
@@ -98,7 +100,7 @@ function Key({
         <button
             type="button"
             title={title}
-            disabled={disabled}
+            aria-disabled={disabled || undefined}
             onPointerDown={
                 hold
                     ? (e) => {
@@ -138,6 +140,11 @@ function Key({
             // 길게 누르면 뜨는 「복사·공유」 메뉴가 연타를 끊는다.
             onContextMenu={hold ? (e) => e.preventDefault() : undefined}
             onClick={(e) => {
+                if (disabled) {
+                    onBlocked?.();
+                    e.currentTarget.blur();
+                    return;
+                }
                 // 손가락·마우스로 누른 것은 `pointerdown` 에서 이미 걸었다. 여기까지
                 // 오는 것은 **키보드(Enter·Space)와 보조기술**이 만든 클릭뿐이고,
                 // 그것만 `detail` 이 0 이다. 안 가르면 한 번 누를 때 두 걸음 걷는다.
@@ -158,7 +165,7 @@ function Key({
                 "active:translate-y-px active:bg-[var(--rg-press)]",
                 hot ? "border-[var(--rg-gold)] bg-[var(--rg-raised)] font-bold text-[var(--rg-strong)]" : "",
                 warn ? "border-[var(--rg-trap)] bg-[var(--rg-raised)] font-bold text-[var(--rg-trap)]" : "",
-                "disabled:border-[var(--rg-off-line)] disabled:bg-[var(--rg-off-bg)] disabled:text-[var(--rg-off-ink)]",
+                disabled ? "border-[var(--rg-off-line)] bg-[var(--rg-off-bg)] text-[var(--rg-off-ink)]" : "",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
                 wide ? "h-9 w-full overflow-hidden whitespace-nowrap px-1 text-[12px]" : "h-11 w-11 text-[13px]",
@@ -209,8 +216,19 @@ export default function TouchPad({
     centerWarn?: boolean;
 }) {
     const step = (dx: number, dy: number) => () => onMove(dx, dy);
+    const [blockedReason, setBlockedReason] = useState("");
+    useEffect(() => {
+        if (!blockedReason) return;
+        const timer = setTimeout(() => setBlockedReason(""), 3000);
+        return () => clearTimeout(timer);
+    }, [blockedReason]);
     return (
-        <div className="mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
+        <div className="relative mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
+            {blockedReason && (
+                <div role="status" className="pointer-events-none absolute inset-x-2 bottom-full z-10 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-2 py-1 text-center text-xs text-[var(--rg-strong)] shadow-md">
+                    {blockedReason}
+                </div>
+            )}
             <div className="grid shrink-0 grid-cols-3 gap-1">
                 {DIRS.map(([dx, dy, arrow, title], i) => (
                     <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerWarn}>
@@ -235,7 +253,7 @@ export default function TouchPad({
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
             <div className="grid min-w-0 flex-1 grid-cols-3 content-start gap-1">
                 {actions.map((a) => (
-                    <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} title={a.off ?? a.hint}>
+                    <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
                         <span>
                             {a.label}
                             {a.keys && (

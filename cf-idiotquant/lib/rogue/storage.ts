@@ -425,11 +425,13 @@ export function deserialize(text: string): GameState | null {
     }
 }
 
-export function save(state: GameState): void {
+export function save(state: GameState): boolean {
     try {
         localStorage.setItem(KEY, serialize(state));
+        return true;
     } catch {
-        // 사생활 보호 창이나 저장 공간이 꽉 찬 경우. 판은 그대로 굴러가야 한다.
+        // 사생활 보호 창이나 저장 공간이 꽉 찬 경우. 판은 그대로 굴리되 화면에 알려 준다.
+        return false;
     }
 }
 

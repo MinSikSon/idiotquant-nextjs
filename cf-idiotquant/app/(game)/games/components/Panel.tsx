@@ -10,7 +10,7 @@
  * 공짜로 붙는다.
  */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
 
 export default function Panel({
     title,
@@ -39,6 +39,16 @@ export default function Panel({
 }) {
     /** 이번 누름이 바탕에서 시작했는가 — 아래 `onClick` 의 까닭 참고. */
     const fromBackdrop = useRef(false);
+    const panelRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
+
+    useLayoutEffect(() => {
+        const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        panelRef.current?.focus();
+        return () => {
+            if (previous?.isConnected) previous.focus();
+        };
+    }, []);
 
     useEffect(() => {
         if (!onClose || closeKey) return;
@@ -53,6 +63,27 @@ export default function Panel({
         window.addEventListener("keydown", onKey, true);
         return () => window.removeEventListener("keydown", onKey, true);
     }, [onClose, closeKey]);
+
+    const keepFocusInside = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key !== "Tab" || side) return;
+        const focusable = [...(panelRef.current?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [])].filter((element) => element.getClientRects().length > 0);
+        if (!focusable.length) {
+            e.preventDefault();
+            panelRef.current?.focus();
+            return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
 
     return (
         <div
@@ -75,9 +106,9 @@ export default function Panel({
                 if (onClose && fromBackdrop.current && e.target === e.currentTarget) onClose();
             }}
         >
-            <div style={accent ? { borderColor: accent } : undefined} className={`max-h-[calc(100%-2rem)] sm:max-h-[calc(100%-3rem)] w-full max-w-[520px] overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] ${accent ? "border-2 border-t-[6px]" : ""} font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]`}>
+            <div ref={panelRef} role="dialog" aria-modal={side ? undefined : true} aria-labelledby={titleId} tabIndex={-1} onKeyDown={keepFocusInside} style={accent ? { borderColor: accent } : undefined} className={`max-h-[calc(100%-2rem)] sm:max-h-[calc(100%-3rem)] w-full max-w-[520px] overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] ${accent ? "border-2 border-t-[6px]" : ""} font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]`}>
                 <div className="flex items-center justify-between border-b border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-strong)]">
-                    <span style={accent ? { color: accent, fontWeight: 700 } : undefined}>{title}</span>
+                    <span id={titleId} style={accent ? { color: accent, fontWeight: 700 } : undefined}>{title}</span>
                     {onClose && (
                         <button
                             type="button"

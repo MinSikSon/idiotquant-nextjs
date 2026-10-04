@@ -488,6 +488,7 @@ export default function Rogue() {
     /** 아이템 도감에서 펼쳐 둔 아이템 키 */
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const [seedLinkNote, setSeedLinkNote] = useState<string | null>(null);
+    const [saveFailed, setSaveFailed] = useState(false);
     // 복사는 끝난 일이다 — 확인할 시간만 남기고 지도 위 안내는 저절로 걷는다.
     useEffect(() => {
         if (!seedLinkNote) return;
@@ -603,12 +604,16 @@ export default function Rogue() {
             if (!online && state.heroes[1]) saveChest(1, state.heroes[1].chest);
         }
         // **손님은 남의 판을 제 저장 칸에 안 쓴다** — 혼자 하던 판이 덮인다.
-        if (online === "guest") return;
+        if (online === "guest") {
+            setSaveFailed(false);
+            return;
+        }
         if (state.phase === "playing") {
-            save(state);
+            setSaveFailed(!save(state));
             buried.current = false;
             return;
         }
+        setSaveFailed(false);
         if (!buried.current) {
             buried.current = true;
             // **적은 쪽이 돌려준 목록을 그대로 받는다** — 죽음 화면의 등수는 이번 판이
@@ -1539,6 +1544,8 @@ export default function Rogue() {
 
     const pickOrigin = (origin: HeroOrigin) => {
         const f = originFor;
+        if ((f.t === "new" || f.t === "host") && state?.phase === "playing" &&
+            !window.confirm("현재 진행 중인 판을 지우고 새 판을 시작할까요? 이 판은 되돌릴 수 없습니다.")) return;
         setOriginFor({ t: "new" });
         if (f.t === "host") {
             // 방을 열기 전에 방장의 시작 장비부터 정한다. 손님은 이미 `peek` 뒤에 같은
@@ -2009,6 +2016,12 @@ export default function Rogue() {
                     붙여 「눌러도 되는 것」임을 알린다. */}
                 <span className="sr-only">— 누르면 지나온 기록이 펼쳐집니다</span>
             </button>
+
+            {saveFailed && (
+                <div role="alert" className="shrink-0 border-b border-[var(--rg-trap)] bg-[var(--rg-raised)] px-3 py-2 text-center text-xs font-bold text-[var(--rg-trap)]">
+                    저장에 실패했습니다. 새로고침하면 진행 상황을 잃을 수 있습니다. 브라우저 저장 공간을 확인하세요.
+                </div>
+            )}
 
             <div className="relative min-h-0 flex-1">
                 <MapView state={state} who={eye} cellFlashes={{ ...cellFlashes, ...zapFlashes }} projectileCells={projectileCells} shake={shake} reveal={reveal} />
@@ -3124,7 +3137,7 @@ export default function Rogue() {
                                     : [
                                         {
                                             label: "온라인 방 만들기",
-                                            hint: `초대 링크나 코드 네 자리를 동료에게 보낸다 — 지금 판에 들어온다 (최대 ${MAX_PARTY - 1}명까지)`,
+                                            hint: `새 판으로 방을 열고 초대 링크나 코드 네 자리를 동료에게 보낸다 (최대 ${MAX_PARTY - 1}명까지)`,
                                             go: () => {
                                                 // 방장의 시작 직업도 손님처럼 먼저 고른다. 방을 열고 난
                                                 // 뒤에 고르면 먼저 붙은 손님에게 기본 기사가 보인다.
@@ -3211,6 +3224,9 @@ export default function Rogue() {
                                         ? "방장이 다음 판을 준비 중입니다 — 내가 맡을 출신을 다시 고릅니다."
                                     : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                             </p>
+                            {(originFor.t === "new" || originFor.t === "host") && state.phase === "playing" && (
+                                <p className="font-bold text-[var(--rg-trap)]">직업을 확정하면 현재 판이 지워집니다. 확정 전에 한 번 더 묻습니다.</p>
+                            )}
                             {/* **지금 누가 무엇인가.** 위의 「다른 쪽을 고르면 서로 메웁니다」가
                             조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. 정원이
                             늘며 **방장뿐 아니라 먼저 들어온 손님들**도 같이 보여야 한다 —

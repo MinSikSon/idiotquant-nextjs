@@ -19,9 +19,34 @@ import assert from "node:assert/strict";
 import { newGame, perform, survey, type Command } from "@/lib/rogue/game";
 import { ENCHANT_MAX } from "@/lib/rogue/items";
 import { packItem } from "@/lib/rogue/hero";
-import { deserialize, serialize } from "@/lib/rogue/storage";
+import { deserialize, save, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
 import { ALL_DIRS, MAP_H, MAP_W, type GameState } from "@/lib/rogue/types";
+
+test("저장 실패를 호출자에게 알리고 다시 저장되면 회복한다", () => {
+    const original = globalThis.localStorage;
+    let fail = true;
+    let written = "";
+    Object.defineProperty(globalThis, "localStorage", {
+        configurable: true,
+        value: {
+            setItem(_key: string, value: string) {
+                if (fail) throw new Error("QuotaExceededError");
+                written = value;
+            },
+        },
+    });
+    try {
+        const state = newGame(42);
+        assert.equal(save(state), false, "저장 공간이 없는데 성공으로 표시했다");
+        fail = false;
+        assert.equal(save(state), true, "저장 공간이 회복됐는데 실패 상태가 남았다");
+        assert.ok(deserialize(written), "성공으로 표시한 판을 되읽을 수 없다");
+    } finally {
+        if (original === undefined) delete (globalThis as { localStorage?: Storage }).localStorage;
+        else Object.defineProperty(globalThis, "localStorage", { configurable: true, value: original });
+    }
+});
 
 /** 되읽은 판을 실제로 굴려 본다. 터지면 그대로 던진다. */
 function play(s: GameState, turns = 120) {
