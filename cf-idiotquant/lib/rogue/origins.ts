@@ -110,15 +110,18 @@ export interface OriginDef {
  * 연금술사와 고서 연구자는 안 준다. 둘은 포션·주문서로 푸는 직업이라 손이 비어야 한다.
  */
 export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
-    rogue: ["dagger"],
-    knight: ["dagger", "mace", "spear", "long sword"],
+    rogue: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"],
+    knight: [
+        "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger",
+        "mace", "spear", "long sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword",
+    ],
 };
 
 /** 직업별 무기 숙련 상한. 표 밖 무기는 Basic까지만 쓸 수 있다. */
 export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     // NetHack Knight 는 석궁을 Skilled 까지 쓴다 — 연사 없는 원거리 한 발.
-    knight: { crossbow: 2, dagger: 1, mace: 2, spear: 2, "long sword": 3, "two-handed sword": 2, "silver sword": 3, "thirsty sword": 3, "magic sword": 2, "knight sword": 3, "baphomet sword": 3 },
-    rogue: { dagger: 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
+    knight: { crossbow: 2, dagger: 1, "magic dagger": 1, "crystal dagger": 1, "oriharukon dagger": 1, "damascus dagger": 1, mace: 2, spear: 2, "long sword": 3, "two-handed sword": 2, "silver sword": 3, "thirsty sword": 3, "magic sword": 2, "knight sword": 3, "baphomet sword": 3 },
+    rogue: { dagger: 3, "magic dagger": 3, "crystal dagger": 3, "oriharukon dagger": 3, "damascus dagger": 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
     alchemist: { dagger: 3, spear: 1, "magic sword": 2 },
     scholar: { dagger: 2, "magic sword": 3 },
     // NetHack Ranger: 활·단검·표창 Expert, 창 Skilled.
@@ -179,7 +182,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "은신·탐색·단검 연사와 기습에 능한 재빠른 잠입자.",
         traitName: "기습 암습",
         traitDescription: "은신으로 적 일부를 재운 채 시작 · 단검 2연사 · Lv10 탐색 · 기습 치명타 · 함정 50% 회피",
-        weaponAffinity: { name: "암살 단검", types: ["dagger"], description: "도적 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "암살 단검", types: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"], description: "도적 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "연막",
         advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -207,7 +210,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "모든 포션의 비밀을 꿰뚫고 있는 비약의 대가.",
         traitName: "연금술의 통찰",
         traitDescription: "모든 포션 시작부터 100% 식별, 회복 포션 1.5배 · 해로운 포션은 무작위 이득 · 지팡이 장착 가능, 걷기 회복 때 충전 +1",
-        weaponAffinity: { name: "연금 도구", types: ["dagger", "spear"], description: "연금술사 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "연금 도구", types: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "spear"], description: "연금술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "축복의 기름 제조",
         advancedSkillDescription: "포션 2개로 축복의 기름 제작 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -235,7 +238,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "고대 주문서와 마법 지팡이를 다루는 비전 탐구자.",
         traitName: "비전 전도",
         traitDescription: "지팡이 충전량 +30%, 장착 지팡이 사용 · 걷기 회복 때 충전 +1 · 주문서 시전 시 25% 확률로 미소모 보존",
-        weaponAffinity: { name: "비전 검", types: ["dagger", "magic sword"], description: "연구자 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "비전 검", types: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "magic sword"], description: "연구자 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "비전 통찰",
         advancedSkillDescription: "층의 지형과 괴물의 기척을 밝힌다 · 층마다 한 번",
         advancedSkillKind: "active",
@@ -263,7 +266,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "활과 화살로 먼 거리에서 적을 쓰러뜨리는 추적자.",
         traitName: "연사",
         traitDescription: "활·표창 연사 +1 (숙련 +1 · 전문 +2와 합산) · `.` 토글 사격(활이면 화살, 아니면 표창 등 투척 무기) · 활·단검·표창 전문까지",
-        weaponAffinity: { name: "사냥 도구", types: ["short bow", "long bow", "elven bow", "sayha bow", "crossbow", "arrow", "silver arrow", "mithril arrow", "oriharukon arrow", "bolt", "dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "사냥 도구", types: ["short bow", "long bow", "elven bow", "sayha bow", "crossbow", "arrow", "silver arrow", "mithril arrow", "oriharukon arrow", "bolt", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "명사수의 눈",
         advancedSkillDescription: "활·표창 연사 +1 → +2",
         advancedSkillKind: "passive",
@@ -299,7 +302,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "곡괭이로 벽을 뚫고 발밑을 파 내려가는 유적 탐사가.",
         traitName: "발굴 본능",
         traitDescription: "곡괭이를 쥐고 벽으로 걸으면 판다 · 계단 없는 곳에서 내려가면 발밑을 판다 · 파는 힘 2배 · 벽 뒤지기 45%",
-        weaponAffinity: { name: "발굴 도구", types: ["pick-axe", "dagger"], description: "고고학자 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "발굴 도구", types: ["pick-axe", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"], description: "고고학자 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "숨은 길의 감",
         advancedSkillDescription: "벽 뒤지기·함정 찾기 45% → 65%",
         advancedSkillKind: "passive",
@@ -330,7 +333,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "불·물·바람·땅의 정령을 골라 불러 곁에 세우고 함께 싸우는 술사.",
         traitName: "정령 소환",
         traitDescription: "곁에 원소 정령을 골라 부른다(★ 단추) · 원소마다 싸우는 법이 다르다 · 새 층에서는 곧바로, 같은 층에서는 60턴 뒤 다시 · 내 레벨만큼 세지고 20턴 머문다 · 부딪히면 자리를 바꾼다",
-        weaponAffinity: { name: "정령 매개", types: ["dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "정령 매개", types: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "spear", "magic sword"], description: "정령술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "정령 화신",
         advancedSkillDescription: "정령이 40턴 머물고, 원소마다 한 가지가 깊어진다",
         advancedSkillKind: "passive",

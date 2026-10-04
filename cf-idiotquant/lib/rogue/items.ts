@@ -119,6 +119,11 @@ export interface ArmorDef {
 export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
     dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
+    // 리니지풍 단검 사다리 — 단검 숙련을 공유하며, 표준 단검만 던질 수 있다.
+    "magic dagger": { name: "마력의 단검", damage: "2d4", damageLarge: "1d6", freq: 7, depth: 5, skill: "dagger", hands: 1, material: "iron" },
+    "crystal dagger": { name: "수정 단검", damage: "2d5", damageLarge: "1d8", freq: 5, depth: 10, skill: "dagger", hands: 1, material: "silver" },
+    "oriharukon dagger": { name: "오리하루콘 단검", damage: "3d4", damageLarge: "2d5", freq: 4, depth: 16, skill: "dagger", hands: 1, material: "iron" },
+    "damascus dagger": { name: "다마스커스 단검", damage: "3d5", damageLarge: "2d6", freq: 2, depth: 22, skill: "dagger", hands: 1, material: "iron" },
     // 활은 **쏘는 도구**다 — 휘두르면 1 뿐이고(`1d1`), 숙련은 쏜 화살로만 쌓인다.
     // 쏠 때는 `fireDamage` 가 화살에 얹힌다. 활의 사다리는 아래 「활 사다리」에 있다.
     "short bow": { name: "단궁", damage: "1d1", damageLarge: "1d1", fireDamage: "1d2", freq: 8, depth: 1, skill: "bow", hands: 1, material: "wood" },

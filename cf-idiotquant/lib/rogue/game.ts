@@ -39,6 +39,7 @@ import {
     digEffort,
     equippedWand,
     offHandWeapon,
+    isDualWielding,
     gainExp,
     goldGain,
     hasRing,
@@ -3965,7 +3966,9 @@ function act(state: GameState, cmd: Command): GameState {
     let acted = false;
     let heldGuard = false;
     if (cmd.t === "rest") {
-        if (hero.origin === "knight") {
+        if (hero.origin === "knight" && isDualWielding(hero)) {
+            say(state, "이도류를 쓰는 동안에는 철벽의 자세를 취할 수 없다.");
+        } else if (hero.origin === "knight") {
             hero.guarded = true;
             hero.guardTurns = 3;
             const guardArmor = hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2;

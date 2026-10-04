@@ -587,7 +587,7 @@ export function heroDefenseTerms(hero: Hero): Term[] {
     if (hero.origin === "knight" && hero.level >= ADVANCE_LEVEL && hero.hp <= hero.maxHp / 2) terms.push({ n: 2, why: "불굴의 방벽" });
     // 전직(`ADVANCE_LEVEL`)한 근위대는 대기 보너스가 깊어진다 — 「철벽의 자세」가
     // 켜는 값은 이 자리 하나다. `origins.ADVANCED_GUARD_BONUS` 가 그 수치를 쥔다.
-    if (hero.guarded && hero.origin === "knight") terms.push({ n: hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2, why: "철벽 자세" });
+    if (hero.guarded && hero.origin === "knight" && !isDualWielding(hero)) terms.push({ n: hero.level >= ADVANCE_LEVEL ? ADVANCED_GUARD_BONUS : 2, why: "철벽 자세" });
     return terms;
 }
 

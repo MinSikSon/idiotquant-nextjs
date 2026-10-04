@@ -71,7 +71,7 @@ import {
     itemCodexStage,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -2357,14 +2357,20 @@ export default function Rogue() {
                     centerLabel={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
-                        if (!shot) return "·";
+                        if (!shot) {
+                            if (!coopKeys && modes[who] === "none" && activeHero.origin === "knight" && !isDualWielding(activeHero)) return "철벽의\n자세";
+                            return "·";
+                        }
                         // 켜짐·꺼짐은 글자가 아니라 강조색(`centerWarn`)이 말한다 — 비전 속사와 같은 모양.
                         return shot.kind === "zap" ? "비전\n속사" : "연속\n사격";
                     })()}
                     centerHint={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
-                        if (!shot) return "제자리에서 쉰다";
+                        if (!shot) {
+                            if (!coopKeys && modes[who] === "none" && activeHero.origin === "knight" && !isDualWielding(activeHero)) return "철벽의 자세 · 제자리에서 쉬며 방어 자세를 잡는다";
+                            return "제자리에서 쉰다";
+                        }
                         return shot.kind === "zap"
                             ? `비전 속사 ${fireMode[who] ? "켜짐" : "꺼짐"} · 눌러 전환`
                             : `사격 ${fireMode[who] ? "켜짐" : "꺼짐"} · ${WEAPONS[shot.item.type]?.name ?? "투척 무기"} ${shot.item.count}개 · 눌러 전환`;
