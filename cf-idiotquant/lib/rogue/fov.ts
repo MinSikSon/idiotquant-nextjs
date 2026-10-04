@@ -4,7 +4,7 @@
  * 그림자 캐스팅을 쓰지 않는다. 원작은 훨씬 단순하고, 그 단순함이 곧 이 게임의 긴장이다.
  *
  *   · **밝은 방**에 들어서면 그 방이 통째로 보인다 (벽과 문까지).
- *   · **어두운 방과 복도**에서는 **맞닿은 여덟 칸**만 보인다.
+ *   · **어두운 방과 복도**에서는 보통 맞닿은 여덟 칸만 보인다. 레인저는 한 칸 더 멀리 본다.
  *   · 한 번 본 칸은 **기억**에 남아 흐리게 그려진다. 다만 **몬스터는 기억되지 않는다** —
  *     지금 보이는 놈만 화면에 선다. 기억된 지도 위에 없는 몬스터를 그리면 그건 지도가
  *     아니라 거짓말이다.
@@ -16,6 +16,7 @@ import {
     type Level,
     MAP_H,
     MAP_W,
+    type HeroOrigin,
     type Pos,
     T,
     type Tile,
@@ -48,7 +49,7 @@ export function roomAround(level: Level, x: number, y: number): number {
 }
 
 /** 시야를 보태는 사람 — 영웅 하나. 눈이 멀었으면 발밑만 보탠다. */
-export type Viewer = Pos & { blind?: number; pack?: { kind: string; type: string }[] };
+export type Viewer = Pos & { blind?: number; origin?: HeroOrigin; pack?: { kind: string; type: string }[] };
 
 /**
  * 지금 **파티가** 보는 것을 다시 센다. 한 걸음마다 부른다.
@@ -89,10 +90,11 @@ function lightFrom(level: Level, from: Viewer): void {
         flags[idx(x, y)] |= VISIBLE | SEEN;
     };
 
-    // 제자리와 맞닿은 여덟 칸은 언제나 보인다 — 어디에 서 있든. **두 칸으로 넓혀 봤더니
-    // 복도가 너무 훤해서** 되돌렸다(원작 Rogue 도 복도는 한 칸이다).
-    for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) light(from.x + dx, from.y + dy);
+    // 제자리 주변은 언제나 보인다. 레인저는 타고난 관찰력으로 어두운 복도에서도
+    // 한 칸 더 멀리 본다. 짙은 안개는 이 이점을 덮고 기본 한 칸만 보이게 한다.
+    const sightRadius = from.origin === "ranger" && level.mutator !== "fog" ? 3 : 1;
+    for (let dy = -sightRadius; dy <= sightRadius; dy++) {
+        for (let dx = -sightRadius; dx <= sightRadius; dx++) light(from.x + dx, from.y + dy);
     }
 
     // 입구 한 칸 전에서는 문 너머를 아주 좁게 엿본다. 문을 통과하기 전에는
