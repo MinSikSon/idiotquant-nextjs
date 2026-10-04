@@ -69,7 +69,6 @@ import {
     CODEX_ENTRIES,
     itemCodexProgress,
     itemCodexStage,
-    itemCodexStats,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
 import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
@@ -2637,29 +2636,12 @@ export default function Rogue() {
                                     const currentWeaponSkill = weaponSkillNow === null
                                         ? null
                                         : { rank: weaponSkillRankName(weaponSkillNow), ...weaponSkillBonus(weaponSkillNow) };
-                                    const statsSummary =
-                                        stage >= 3
-                                            ? itemCodexStats(entry)
-                                            : "";
-
                                     const currentArmorSkill = entry.kind === "armor"
                                         ? armorSkillRankName(armorSkillLevel(currentHero, entry.type))
                                         : null;
-                                    const usageSuffix = entry.masteryType === "kills"
-                                        ? "킬"
-                                        : entry.masteryType === "steps"
-                                            ? "걸음"
-                                            : entry.masteryType === "uses"
-                                                ? "회"
-                                                : "";
-                                    const usageStr = stage >= 3
-                                        ? entry.kind === "weapon"
-                                            ? `${currentWeaponSkill?.rank ?? "basic"} ${currentWeaponSkill ? `${currentWeaponSkill.hit >= 0 ? `+${currentWeaponSkill.hit}` : currentWeaponSkill.hit}/${currentWeaponSkill.damage >= 0 ? `+${currentWeaponSkill.damage}` : currentWeaponSkill.damage}` : "+0/+0"}`
-                                            : entry.kind === "armor"
-                                                ? currentArmorSkill ?? "basic"
-                                                : usageSuffix ? `${usage}${usageSuffix}` : ""
-                                        : "";
-                                    const summary = !!statsSummary || !!usageStr;
+                                    const rankTag = stage >= 3
+                                        ? currentWeaponSkill?.rank ?? currentArmorSkill
+                                        : null;
 
                                     return (
                                         <li key={entry.key} className="min-w-0 border-b border-[var(--rg-line-soft)]">
@@ -2671,40 +2653,33 @@ export default function Rogue() {
                                                 }}
                                                 disabled={stage === 0}
                                                 aria-expanded={open}
+                                                title={displayName}
                                                 className={`w-full min-w-0 px-1 py-1.5 text-left transition-colors ${stage === 0
                                                     ? "cursor-default opacity-60"
                                                     : open
                                                         ? "bg-[var(--rg-raised)]"
                                                         : "hover:bg-[var(--rg-hover)]"
-                                                    }`}
+                                                }`}
                                             >
-                                                <div className="min-w-0">
-                                                      <div className="grid min-w-0 grid-cols-[2ch_2ch_minmax(0,1fr)_auto] items-baseline gap-x-1 whitespace-normal break-words">
-                                                        <span className="text-center font-mono">{stageBadge}</span>
-                                                        <span className="text-center text-[var(--rg-label)] font-mono">{char}</span>
-                                                        <span
-                                                            className={`min-w-0 break-words ${stage >= 3
-                                                                ? "font-medium text-[var(--rg-strong)]"
-                                                                : stage >= 1
-                                                                    ? "text-[var(--rg-muted)]"
-                                                                    : "text-[var(--rg-ghost)]"
-                                                                }`}
-                                                        >
-                                                            {displayName}
+                                                <div className="grid min-w-0 grid-cols-[2ch_2ch_minmax(0,1fr)_auto_auto] items-center gap-x-1 whitespace-nowrap">
+                                                    <span className="text-center font-mono">{stageBadge}</span>
+                                                    <span className="text-center text-[var(--rg-label)] font-mono">{char}</span>
+                                                    <span
+                                                        className={`min-w-0 ${open ? "whitespace-normal break-words" : "truncate"} ${stage >= 3
+                                                            ? "font-medium text-[var(--rg-strong)]"
+                                                            : stage >= 1
+                                                                ? "text-[var(--rg-muted)]"
+                                                                : "text-[var(--rg-ghost)]"
+                                                            }`}
+                                                    >
+                                                        {displayName}
+                                                    </span>
+                                                    {rankTag && <span className="shrink-0 text-[11px] font-medium text-[var(--rg-gold)]">{rankTag}</span>}
+                                                    {stage > 0 && (
+                                                        <span className="shrink-0 text-[var(--rg-ghost)] text-[10px]">
+                                                            {open ? "[-]" : "[+]"}
                                                         </span>
-                                                        {stage > 0 && (
-                                                            <span className="text-[var(--rg-ghost)] text-[10px]">
-                                                                {open ? "[-]" : "[+]"}
-                                                            </span>
-                                                        )}
-                                                      </div>
-                                                      {summary && (
-                                                          <div className="min-w-0 pl-[5ch] text-[11px] leading-snug whitespace-normal break-words">
-                                                              {statsSummary && <span className={entry.kind === "weapon" ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-faint)]"}>{statsSummary}</span>}
-                                                              {statsSummary && usageStr && <span className="text-[var(--rg-faint)]"> · </span>}
-                                                              {usageStr && <span className={entry.kind === "weapon" || entry.kind === "armor" ? "font-medium text-[var(--rg-gold)]" : "text-[var(--rg-muted)]"}>{usageStr}</span>}
-                                                          </div>
-                                                      )}
+                                                    )}
                                                 </div>
                                             </button>
 
