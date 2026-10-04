@@ -1962,13 +1962,8 @@ export default function Rogue() {
     // 차서 정작 무슨 일이 났는지가 밀려난다. 계산은 기록 판이 전부 갖고 있다.
     const visibleMessages = state.messages.filter((m) => !isDetail(m));
     const isImportantMessage = (m: string) => /함정|저주|쓰러|피해|반지가.*옮겼|증표/.test(m);
-    const latest = visibleMessages.at(-1);
-    const important = [...visibleMessages.slice(-8)].reverse().find(isImportantMessage);
-    // 중요한 일은 다음 몇 번의 일반 메시지에 밀려나지 않게, 최신 줄과 함께 남긴다.
-    // 짧은 두 줄 요약도 기록 판과 같은 규칙으로 최신 줄을 위에 둔다.
-    const recent = important && latest && important !== latest
-        ? [latest, important]
-        : [...visibleMessages.slice(-2)].reverse();
+    // 중요 이벤트 여부와 관계없이 가장 최근 두 줄만 요약 띠에 둔다.
+    const recent = [...visibleMessages.slice(-2)].reverse();
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
 
