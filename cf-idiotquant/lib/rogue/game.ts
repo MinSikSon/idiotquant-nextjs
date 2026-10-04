@@ -2780,7 +2780,7 @@ function throwItem(state: GameState, hero: Hero, letter: string, dx: number, dy:
     const bowRoll = bowDice ? damageRoll(bowDice, 0, a.crit, rng) : null;
     const damTerms: Term[] = [
         ...(byHand ? [] : weaponSkillTerms(hero, it).slice(1)),
-        ...(bowRoll ? [{ n: bowRoll.total, why: `${WEAPONS[bow!.type]?.name ?? "활"} ${bowDice}`, showZero: true }] : []),
+        ...(bowRoll ? [{ n: bowRoll.total, why: `${WEAPONS[bow!.type]?.name ?? "활"} ${bowDice}`, showZero: true, rolled: bowRoll.rolled }] : []),
         ...(bow ? [{ n: bow.plusDam ?? 0, why: "활 enchant" }] : []),
         { n: it.plusDam ?? 0, why: "enchant" },
     ];

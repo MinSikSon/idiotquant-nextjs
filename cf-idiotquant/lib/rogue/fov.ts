@@ -91,8 +91,8 @@ function lightFrom(level: Level, from: Viewer): void {
     };
 
     // 제자리 주변은 언제나 보인다. 레인저는 타고난 관찰력으로 어두운 복도에서도
-    // 한 칸 더 멀리 본다. 짙은 안개는 이 이점을 덮고 기본 한 칸만 보이게 한다.
-    const sightRadius = from.origin === "ranger" && level.mutator !== "fog" ? 3 : 1;
+    // 두 칸까지 본다. 짙은 안개는 이 이점을 덮고 기본 한 칸만 보이게 한다.
+    const sightRadius = from.origin === "ranger" && level.mutator !== "fog" ? 2 : 1;
     for (let dy = -sightRadius; dy <= sightRadius; dy++) {
         for (let dx = -sightRadius; dx <= sightRadius; dx++) light(from.x + dx, from.y + dy);
     }

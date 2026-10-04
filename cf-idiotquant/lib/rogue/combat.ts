@@ -116,6 +116,8 @@ export interface Term {
     n: number;
     why: string;
     showZero?: boolean;
+    /** 별도로 굴린 보너스 주사위의 눈. 치명타 로그에서 굴림을 숨기지 않는다. */
+    rolled?: number[];
 }
 
 /**
@@ -127,7 +129,12 @@ export interface Term {
 function terms(list: Term[]): string {
     return list
         .filter((t) => t.n !== 0 || t.showZero)
-        .map((t) => `${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}(${t.why})`)
+        .map((t) => {
+            const roll = t.rolled?.length
+                ? ` ${t.rolled.length > 1 ? "두 번" : ""} 굴림: ${t.rolled.join(", ")}`
+                : "";
+            return `${t.n > 0 ? "+" : "−"}${Math.abs(t.n)}(${t.why}${roll})`;
+        })
         .join("");
 }
 
