@@ -274,6 +274,7 @@ export function NavbarWithSimpleLinks() {
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
       <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r",
+        inGame && "md:max-lg:hidden",
         barStyle ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
         style={barStyle}>
 

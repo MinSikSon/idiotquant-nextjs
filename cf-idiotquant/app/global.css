@@ -248,6 +248,13 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 }
 .flash-mine { animation: flash-mine 520ms ease-out both; }
 
+/* 태블릿에서 Rogue 는 앱 사이드바를 접고 화면 너비를 전부 쓴다. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  main:has(#rogue-root) {
+    margin-left: 0;
+  }
+}
+
 /* 정답 공개 — 45일을 가린 끝에 종목명이 흐릿한 데서 잡힌다. */
 @keyframes reveal-answer {
   from { opacity: 0; filter: blur(7px); letter-spacing: 0.12em; }

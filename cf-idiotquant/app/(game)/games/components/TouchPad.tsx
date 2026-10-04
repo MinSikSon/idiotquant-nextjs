@@ -223,13 +223,13 @@ export default function TouchPad({
         return () => clearTimeout(timer);
     }, [blockedReason]);
     return (
-        <div className="relative mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2">
+        <div className="relative mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2 md:max-lg:fixed md:max-lg:inset-x-0 md:max-lg:bottom-2 md:max-lg:z-40 md:max-lg:pointer-events-none md:max-lg:max-w-none md:max-lg:justify-between md:max-lg:gap-0 md:max-lg:px-3 md:max-lg:py-0">
             {blockedReason && (
                 <div role="status" className="pointer-events-none absolute inset-x-2 bottom-full z-10 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-2 py-1 text-center text-xs text-[var(--rg-strong)] shadow-md">
                     {blockedReason}
                 </div>
             )}
-            <div className="grid shrink-0 grid-cols-3 gap-1">
+            <div className="pointer-events-auto grid shrink-0 grid-cols-3 gap-1">
                 {DIRS.map(([dx, dy, arrow, title], i) => (
                     <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerWarn}>
                         <span className="flex flex-col items-center gap-0.5">
@@ -251,7 +251,7 @@ export default function TouchPad({
             </div>
 
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
-            <div className="grid min-w-0 flex-1 grid-cols-3 content-start gap-1">
+            <div className="pointer-events-auto grid min-w-0 flex-1 grid-cols-3 content-start gap-1 md:max-lg:w-[min(42vw,360px)] md:max-lg:flex-none">
                 {actions.map((a) => (
                     <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
                         <span>
