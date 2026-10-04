@@ -1,4 +1,4 @@
-// 도감의 얼굴 — **스물여섯이 다 있고, 폰에서 안 접힌다.**
+// 도감의 얼굴 — **몬스터 전부 있고, 폰에서 안 접힌다.**
 //
 // 그림은 규칙이 아니지만 두 가지가 조용히 망가진다.
 //
@@ -14,7 +14,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { ART_LETTERS, artWidth, monsterArt } from "@/app/(game)/game/monsterArt";
+import { ART_LETTERS, artWidth, monsterArt } from "@/app/(game)/games/monsterArt";
 import { MONSTERS } from "@/lib/rogue/monsters";
 
 /** 패널 안쪽에 들어가는 칸 수. 이보다 길면 접힌다. */
@@ -23,6 +23,7 @@ const MAX_COLS = 20;
 const MAX_ROWS = 8;
 
 test("폰에서 안 무너진다 — 너비·줄 수·탭", () => {
+    assert.deepEqual([...ART_LETTERS].sort(), Object.keys(MONSTERS).sort(), "그림이 빠진 몬스터가 있다");
     // ── 어떤 줄도 스무 칸을 안 넘는다 — 넘으면 폰에서 접혀 그림이 무너진다
     {
         for (const ch of ART_LETTERS) {

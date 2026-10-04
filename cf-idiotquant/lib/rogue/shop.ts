@@ -133,7 +133,7 @@ export function sellPrice(it: Item): number {
 }
 
 /**
- * 상점 주인 — 도감의 스물여섯(`MONSTERS`)에 안 넣는다. 안 넣어야 무작위로 안 나오고,
+ * 상점 주인 — 도감의 몬스터 표(`MONSTERS`)에 안 넣는다. 안 넣어야 무작위로 안 나오고,
  * 도감의 「몇 종 중 몇 종」이 그대로다. 되읽을 때는 `storage` 가 이 글자로 되찾는다.
  *
  * NetHack 의 shopkeeper 처럼 **얕은 층에서는 못 이기는 상대**다(레벨 12, 방어 0, 4d4 두 번,

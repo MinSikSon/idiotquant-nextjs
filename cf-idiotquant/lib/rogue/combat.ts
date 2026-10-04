@@ -75,6 +75,11 @@ import {
     type Hero,
     type Item,
     type Monster,
+    type Tile,
+    ALL_DIRS,
+    idx,
+    inBounds,
+    walkable,
 } from "./types";
 
 /**
@@ -267,7 +272,39 @@ export function monsterDamageLine(
     return `${DETAIL}공격력 ${each}  = ${total}(총 피해)`;
 }
 
-import { monsterName } from "./monsters";
+import { monsterName, spawnMonster } from "./monsters";
+
+/** 검은 푸딩은 철 타격을 견디면 갈라진다. 두 몸은 체력과 경험치를 나눠 갖는다. */
+function splitOnIron(state: GameState, m: Monster, weapon: Item | undefined, dealt: number, rng: Rng): boolean {
+    if (!m.def.traits?.includes("D") || m.cancelled || !weapon || weaponMaterialOf(weapon.type) !== "iron" ||
+        dealt <= 0 || m.hp <= 1 || m.maxHp <= 1) return false;
+    const spot = ALL_DIRS.find(({ dx, dy }) => {
+        if (dx !== 0 && dy !== 0) return false;
+        const x = m.x + dx;
+        const y = m.y + dy;
+        return inBounds(x, y) && walkable(state.level.tiles[idx(x, y)] as Tile) &&
+            !state.heroes.some((h) => h.x === x && h.y === y) &&
+            !state.level.monsters.some((other) => other.hp > 0 && other.x === x && other.y === y);
+    });
+    if (!spot) return false;
+    const oldMax = m.maxHp;
+    const childHp = Math.floor(m.hp / 2);
+    const childReward = Math.floor((m.rewardExp ?? m.def.exp) / 2);
+    const child = spawnMonster(m.def.ch, m.x + spot.dx, m.y + spot.dy, rng, m.champion);
+    m.hp -= childHp;
+    m.maxHp = Math.max(m.hp, Math.ceil(oldMax / 2));
+    m.rewardExp = (m.rewardExp ?? m.def.exp) - childReward;
+    child.hp = childHp;
+    child.maxHp = Math.max(childHp, Math.floor(oldMax / 2));
+    child.rewardExp = childReward;
+    child.awake = m.awake;
+    child.target = m.target;
+    child.cancelled = m.cancelled;
+    child.speed = m.speed;
+    child.splitNewborn = true;
+    state.level.monsters.push(child);
+    return true;
+}
 
 export interface AttackResult {
     hit: boolean;
@@ -392,6 +429,9 @@ function swing(
             : damageLine(null, [], [], 0, 0, dealt, dualHand),
     );
     if (silver) messages.push(silverLine(mName));
+    if (!killed && splitOnIron(state, m, weapon, dealt, rng)) {
+        messages.push(`${mName}의 몸이 갈라져 둘이 되었다!`);
+    }
     messages.push(
         withDamage(
             killed

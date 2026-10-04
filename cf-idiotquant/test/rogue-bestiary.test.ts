@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
-import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
+import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
 import { defenseOf } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
 import { idx, type GameState } from "@/lib/rogue/types";
@@ -141,7 +141,7 @@ test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
         const s = newGame(308, kept);
         assert.deepEqual(s.bestiary, kept);
         assert.equal(bestiaryProgress(s.bestiary).found, 2);
-        assert.equal(bestiaryProgress(s.bestiary).total, 26);
+        assert.equal(bestiaryProgress(s.bestiary).total, 27);
 
         // 넘긴 객체를 게임이 물들이면 안 된다 — 부르는 쪽의 값이 몰래 바뀐다.
         placeNextTo(s, "S", 1);
@@ -157,6 +157,18 @@ test("도감은 새 판으로 이어지고, 약한 것부터 선다", () => {
         assert.equal(rows[0].name, MONSTERS.S.name);
         // 안 잡은 것은 목록에 아예 없다.
         assert.equal(bestiaryRows({}).length, 0);
+    }
+
+    // ── 검은 푸딩은 새 종으로 도감에 서고, 깊은 층에만 생성된다.
+    {
+        assert.equal(MONSTERS.X.traits?.includes("D") ?? false, false, "제록에 분열 특성이 남았다");
+        assert.equal(MONSTERS.p.name, "검은 푸딩");
+        assert.equal(spawnMonster("p", 1, 1, new Rng(1)).speed, -1, "푸딩이 느리게 움직이지 않는다");
+        assert.deepEqual(depthRange("p"), { min: 14, max: 26 });
+        const rng = new Rng(310);
+        assert.ok(Array.from({ length: 500 }, () => randomMonsterChar(13, rng)).every((ch) => ch !== "p"), "얕은 층에 푸딩이 나왔다");
+        assert.ok(Array.from({ length: 500 }, () => randomMonsterChar(14, rng)).some((ch) => ch === "p"), "깊은 층에서도 푸딩이 나오지 않는다");
+        assert.equal(bestiaryRows({ p: 1 })[0]?.name, "검은 푸딩", "새 몬스터가 도감에 없다");
     }
 });
 

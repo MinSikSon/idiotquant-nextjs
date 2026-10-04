@@ -2375,7 +2375,7 @@ function expShares(state: GameState, m: Monster, by: Hero, total: number): [Hero
  */
 function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
-    // 상점 주인은 도감의 스물여섯 밖이다 — 세지 않는다. 대신 가게가 닫힌다.
+    // 상점 주인은 도감의 몬스터 표 밖이다 — 세지 않는다. 대신 가게가 닫힌다.
     if (m.shk) closeShop(state, m);
     else {
         state.bestiary[m.def.ch] = (state.bestiary[m.def.ch] ?? 0) + 1;
@@ -2390,7 +2390,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
         }
     }
     const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
-    const expGained = m.def.exp * expMultiplier;
+    const expGained = (m.rewardExp ?? m.def.exp) * expMultiplier;
     for (const [h, got] of expShares(state, m, by, expGained)) {
         const before = h.pendingSkillPicks;
         const levels = gainExp(h, got, rng);
@@ -3221,6 +3221,10 @@ function monsterTurns(state: GameState, rng: Rng, fled?: { hero: Hero; x: number
     }
     for (const m of [...level.monsters]) {
         if (m.hp <= 0) continue;
+        if (m.splitNewborn) {
+            m.splitNewborn = false;
+            continue;
+        }
         if (m.frozenTurns && m.frozenTurns > 0) {
             m.frozenTurns -= 1;
             say(state, `${monsterName(m)}이(가) 얼어붙어 움직이지 못한다.`);
@@ -4282,7 +4286,7 @@ export function survey(state: GameState): Sighting[] {
     const { level } = state;
     const hero = state.heroes[0];
     return level.monsters
-        // 정령은 조사할 적이 아니다 — 도감의 스물여섯 밖이기도 하다.
+        // 정령은 조사할 적이 아니다 — 도감의 몬스터 표 밖이기도 하다.
         .filter((m) => m.hp > 0 && !m.spirit && (isVisible(level, m.x, m.y) || hero.detect > 0))
         .map((m) => {
             const kills = state.bestiary[m.def.ch] ?? 0;
@@ -4315,7 +4319,7 @@ export function survey(state: GameState): Sighting[] {
         .sort((a, b) => a.distance - b.distance);
 }
 
-/** 도감 — 여태 잡아 본 것 전부. 스물여섯 중 몇을 채웠는지가 곧 진행이다. */
+/** 도감 — 여태 잡아 본 것 전부. 몬스터 표의 몇 종을 채웠는지가 곧 진행이다. */
 export interface BestiaryRow {
     ch: string;
     name: string;
@@ -4373,7 +4377,7 @@ export function bestiaryRows(
         .sort((a, b) => a.level - b.level || a.ch.localeCompare(b.ch));
 }
 
-/** 도감을 몇 칸 채웠나 — 스물여섯이 전부다. */
+/** 도감을 몇 칸 채웠나 — 몬스터 표를 센다. */
 export function bestiaryProgress(bestiary: Record<string, number>): { found: number; total: number } {
     return {
         found: Object.keys(MONSTERS).filter((ch) => (bestiary[ch] ?? 0) > 0).length,

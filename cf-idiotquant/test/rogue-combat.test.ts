@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 
 import { SILVER_BANE, heroAttack, monsterAttack, monsterDamBonus } from "@/lib/rogue/combat";
 import { bestiaryRows, newGame, perform } from "@/lib/rogue/game";
-import { idx, type GameState } from "@/lib/rogue/types";
+import { ALL_DIRS, T, idx, inBounds, type GameState } from "@/lib/rogue/types";
 import { attackRoll, damageRoll, hitDifficulty, luckOf, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
 import { makeItem } from "@/lib/rogue/items";
@@ -23,6 +23,89 @@ import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero } from "@/lib/
 const heroDefenseOf = (s: { heroes: Parameters<typeof heroDefense>[0][] }) => heroDefense(s.heroes[0]);
 import { Rng } from "@/lib/rogue/rng";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
+import { deserialize, serialize } from "@/lib/rogue/storage";
+
+test("검은 푸딩은 철 근접 타격에만 분열하고 체력·경험치를 나눈다", () => {
+    const setup = () => {
+        const s = newGame(91);
+        const hero = s.heroes[0];
+        s.level.monsters = [];
+        const x = hero.x + 1;
+        const y = hero.y;
+        s.level.tiles[idx(x, y)] = T.FLOOR;
+        for (const { dx, dy } of ALL_DIRS) {
+            if (inBounds(x + dx, y + dy)) s.level.tiles[idx(x + dx, y + dy)] = T.FLOOR;
+        }
+        const m = spawnMonster("p", x, y, new Rng(1));
+        m.hp = m.maxHp = 100;
+        s.level.monsters.push(m);
+        return { s, hero, m };
+    };
+
+    // ── 철로 때려 살아남으면 둘로 갈라진다. 두 몸의 보상 총합은 한 마리 몫이다.
+    {
+        const { s, hero, m } = setup();
+        const rng = new Rng(4);
+        let dealt = 0;
+        for (let i = 0; i < 20 && s.level.monsters.length === 1; i++) dealt += heroAttack(s, hero, m, rng).damage;
+        assert.equal(s.level.monsters.length, 2, "철 무기로 맞혔는데 분열하지 않았다");
+        const child = s.level.monsters.find((other) => other !== m)!;
+        assert.ok(child.id !== m.id && child.def.ch === "p", "새 몸이 검은 푸딩으로 생성되지 않았다");
+        assert.equal(m.hp + child.hp, 100 - dealt, "분열 중 체력이 늘거나 사라졌다");
+        assert.ok(m.maxHp < 100 && child.maxHp < 100, "최대 체력이 절반으로 나뉘지 않았다");
+        assert.equal((m.rewardExp ?? 0) + (child.rewardExp ?? 0), MONSTERS.p.exp, "분열로 경험치가 불어났다");
+        assert.equal(child.splitNewborn, true, "새 몸이 즉시 공격할 수 있다");
+        const restored = deserialize(serialize(s));
+        assert.equal(restored?.level.monsters.length, 2, "저장 뒤 새 몸이 사라졌다");
+        assert.equal(restored?.level.monsters.find((other) => other.id === child.id)?.rewardExp, child.rewardExp, "분열 경험치가 저장되지 않았다");
+    }
+
+    // ── 은 무기와 빈 옆 칸은 분열을 일으키지 않는다.
+    {
+        const { s, hero, m } = setup();
+        const sword = makeItem("weapon", "silver sword", 9001, -1, -1);
+        hero.pack.push(sword);
+        hero.weaponId = sword.id;
+        let dealt = 0;
+        for (let i = 0; i < 5; i++) dealt += heroAttack(s, hero, m, new Rng(i + 1)).damage;
+        assert.ok(dealt > 0, "은 무기로 피해를 주지 못해 분열 조건을 검증하지 못했다");
+        assert.equal(s.level.monsters.length, 1, "은 무기로 때렸는데 분열했다");
+    }
+    {
+        const { s, hero, m } = setup();
+        for (const { dx, dy } of ALL_DIRS) {
+            if (inBounds(m.x + dx, m.y + dy) && !(m.x + dx === hero.x && m.y + dy === hero.y)) {
+                s.level.tiles[idx(m.x + dx, m.y + dy)] = T.ROCK;
+            }
+        }
+        let dealt = 0;
+        for (let i = 0; i < 5; i++) dealt += heroAttack(s, hero, m, new Rng(i + 1)).damage;
+        assert.ok(dealt > 0, "철 무기로 피해를 주지 못해 빈 칸 조건을 검증하지 못했다");
+        assert.equal(s.level.monsters.length, 1, "옆 칸이 없는데 겹쳐서 분열했다");
+    }
+    {
+        const { s, hero, m } = setup();
+        m.hp = 1;
+        for (let i = 0; i < 20 && m.hp > 0; i++) heroAttack(s, hero, m, new Rng(i + 1));
+        assert.ok(m.hp <= 0, "마지막 공격이 맞지 않아 처치 조건을 검증하지 못했다");
+        assert.equal(s.level.monsters.length, 1, "죽는 타격에도 분열했다");
+    }
+    {
+        const { s, hero, m } = setup();
+        m.cancelled = true;
+        let dealt = 0;
+        for (let i = 0; i < 5; i++) dealt += heroAttack(s, hero, m, new Rng(i + 1)).damage;
+        assert.ok(dealt > 0, "피해를 주지 못해 무력화 조건을 검증하지 못했다");
+        assert.equal(s.level.monsters.length, 1, "무력화된 푸딩이 분열했다");
+    }
+    {
+        const { s, hero, m } = setup();
+        m.def = MONSTERS.X;
+        m.hp = m.maxHp = 100;
+        for (let i = 0; i < 5; i++) heroAttack(s, hero, m, new Rng(i + 1));
+        assert.equal(s.level.monsters.length, 1, "기존 제록에 분열이 남았다");
+    }
+});
 
 // 이 파일의 핵심 한 줄. 부호가 뒤집히면 「갑옷을 입을수록 더 아픈 게임」이 된다.
 test("피해 = 공격력 − 방어력, 0 밑은 0 — 방어력도 0 밑이 없다", () => {

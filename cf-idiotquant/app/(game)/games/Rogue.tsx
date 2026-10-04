@@ -2605,7 +2605,7 @@ export default function Rogue() {
                                     </ul>
                                 )}
                                 <p className="mt-3 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
-                                    ※ 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명 · S 은에 약함
+                                    ※ 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명 · S 은에 약함 · D 철에 분열
                                 </p>
                             </>
                         ) : (
@@ -3342,7 +3342,7 @@ export default function Rogue() {
                                 갑옷을 입으려면 <b>배낭</b>을 열고 갑옷을 누른 뒤 <b>「입는다」</b>를 누릅니다.
                                 키보드로는 <b>W</b>.
                             </p>
-                            <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z</span> 몬스터 · <span className="text-[var(--rg-gold)]">$</span> 금화 · <span className="text-[var(--rg-gem)]">*</span> 보석 · <span className="text-[var(--rg-amulet)]">✦</span> 전설 유물</p>
+                            <p><span className="text-[var(--rg-hero)]">@</span> 나 · <span className="text-[var(--rg-hero)]">†</span> 쓰러진 사람 · <span className="text-[var(--rg-monster)]">A–Z·p</span> 몬스터 · <span className="text-[var(--rg-gold)]">$</span> 금화 · <span className="text-[var(--rg-gem)]">*</span> 보석 · <span className="text-[var(--rg-amulet)]">✦</span> 전설 유물</p>
                             <p><span className="text-[var(--rg-potion)]">!</span> 포션 · <span className="text-[var(--rg-scroll)]">?</span> 주문서 · <span className="text-[var(--rg-weapon)]">)</span> 무기 · <span className="text-[var(--rg-armor)]">]</span> 갑옷 · <span className="text-[var(--rg-ring)]">=</span> 반지 · <span className="text-[var(--rg-wand)]">/</span> 지팡이 · <span className="text-[var(--rg-food)]">%</span> 식량</p>
                             <p><span className="text-[var(--rg-trap)]">^</span> 함정 · <span className="text-[var(--rg-stairs)]">&gt;</span> 아래 계단 · <span className="text-[var(--rg-stairs)]">&lt;</span> 위 계단 · <span className="text-[var(--rg-door)]">+</span> 문</p>
                             <p className="pt-1 text-[var(--rg-faint)]">

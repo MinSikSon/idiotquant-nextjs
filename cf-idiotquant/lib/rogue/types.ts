@@ -75,7 +75,7 @@ export interface Room {
 }
 
 export interface MonsterDef {
-    /** 화면의 글자. Rogue 는 A–Z 스물여섯이다. */
+    /** 화면의 글자. Rogue의 A–Z와 검은 푸딩 p. */
     ch: string;
     name: string;
     /** 경험치. */
@@ -94,7 +94,7 @@ export interface MonsterDef {
     mean: boolean;
     /**
      * 원작 Rogue 몬스터 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명.
-     * `S` 는 NetHack 에서 가져온 **은에 약함** — 은 무기에 맞으면 `SILVER_BANE` 을 더 입는다.
+     * `S` 는 NetHack 에서 가져온 **은에 약함**, `D` 는 **철 근접 타격에 분열**이다.
      */
     traits?: MonsterTrait[];
     /** 보이지 않는다 — 투명 보기 반지나 감지 효과가 있어야 지도에 드러난다. */
@@ -111,7 +111,7 @@ export interface MonsterDef {
     special?: string;
 }
 
-export type MonsterTrait = "M" | "F" | "R" | "G" | "I" | "S";
+export type MonsterTrait = "M" | "F" | "R" | "G" | "I" | "S" | "D";
 
 export type ChampionPrefix = "blazing" | "shadow" | "gilded" | "swift" | "vampiric";
 
@@ -131,6 +131,10 @@ export interface Monster {
     cancelled: boolean;
     /** 5대 접두사 챔피언 */
     champion?: ChampionPrefix;
+    /** 분열하면 두 몸에 나눠 남기는 처치 경험치. 없으면 종의 기본 경험치를 쓴다. */
+    rewardExp?: number;
+    /** 분열 직후 한 번의 몬스터 차례를 쉰다. */
+    splitNewborn?: boolean;
     /** 선택 제단이 부른 수호자 — 처치하면 보석을 남긴다. */
     altarGuardian?: boolean;
     /** 화상 지속 턴수 */

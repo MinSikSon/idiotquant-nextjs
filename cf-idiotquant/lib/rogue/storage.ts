@@ -149,7 +149,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
             .filter(({ spirit }) => spirit === undefined || validSpirit(spirit))
             .map(({ ch, ...rest }) => ({
                 ...rest,
-                // 상점 주인은 도감의 스물여섯 밖이다 — 표에 없다고 박쥐로 되살리면 안 된다.
+                // 상점 주인은 도감의 몬스터 표 밖이다 — 표에 없다고 박쥐로 되살리면 안 된다.
                 def: rest.spirit ? spiritDef(rest.spirit) : ch === SHOPKEEPER.ch ? SHOPKEEPER : MONSTERS[ch] ?? MONSTERS.B,
                 speed: num((rest as Partial<Monster>).speed, 0),
                 cancelled: (rest as Partial<Monster>).cancelled === true,

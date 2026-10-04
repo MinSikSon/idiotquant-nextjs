@@ -1,7 +1,7 @@
 /**
- * 몬스터 스물여섯 — A부터 Z까지.
+ * Rogue의 A부터 Z까지 스물여섯과 NetHack의 검은 푸딩.
  *
- * Rogue 의 서명이 이 표다. 글자 하나가 곧 정체이고, `D` 를 보면 도망쳐야 한다는 것을
+ * Rogue 의 서명이 A–Z 표다. 글자 하나가 곧 정체이고, `D` 를 보면 도망쳐야 한다는 것을
  * 사람이 **배워서** 안다. 그림이 아니라 글자라서 배울 것이 남는다.
  *
  * **`armor` 는 원작의 방어 등급이라 낮을수록 단단하다** — 용은 −1 이고 좀비는 8 이다.
@@ -55,10 +55,12 @@ export const MONSTERS: Record<string, MonsterDef> = {
     X: { ch: "X", name: "제록", exp: 100, level: 7, armor: 7, hp: 32, damage: ["4d4"], mean: false },
     Y: { ch: "Y", name: "예티", exp: 50, level: 4, armor: 6, hp: 18, damage: ["1d6", "1d6"], mean: false },
     Z: { ch: "Z", name: "좀비", exp: 6, level: 2, armor: 8, hp: 9, damage: ["1d8"], mean: true, traits: ["M", "S"] },
+    // P는 기존 팬텀의 글자다. 지도에서 둘을 가르기 위해 소문자 p를 쓴다.
+    p: { ch: "p", name: "검은 푸딩", exp: 180, level: 10, armor: 6, hp: 45, damage: ["3d8"], mean: false, traits: ["D"] },
 };
 
 /**
- * 난이도 순서 — 1부터 26까지의 자리에 글자가 하나씩 있다.
+ * Rogue 몬스터 난이도 순서 — 1부터 26까지의 자리에 글자가 하나씩 있다.
  *
  * 원작의 `lvl_mons` 와 같은 장치다. 층수가 이 표의 자리를 고르므로 **깊이가 곧 난이도**가
  * 되고, 표를 고치는 것만으로 곡선이 움직인다.
@@ -72,6 +74,8 @@ const LVL_MONS = "KEBHISORZLNQCYAWTUXFMPVDGJ".split("");
  * 가끔 무서운 놈이 나온다. 그 예외가 없으면 층수만 보고 안심하게 된다.
  */
 export function randomMonsterChar(depth: number, rng: Rng): string {
+    // 기존 A–Z 순위는 그대로 두고, 깊은 층에 푸딩이 드물게 섞인다.
+    if (depth >= 14 && rng.rnd(100) < 6) return "p";
     let d = depth + (rng.rnd(10) - 6);
     if (d < 1) d = rng.rnd(5) + 1;
     if (d > 26) d = rng.rnd(5) + 22;
@@ -108,6 +112,7 @@ function ranksAt(depth: number): Set<number> {
  * **어느 종이 나오는가**뿐이고, 도감이 적을 수 있는 「층에 따른 것」은 이 띠 하나다.
  */
 export function depthRange(ch: string): { min: number; max: number } | null {
+    if (ch === "p") return { min: 14, max: 26 };
     const rank = LVL_MONS.indexOf(ch);
     if (rank < 0) return null;
     let min = Infinity;
@@ -139,7 +144,7 @@ export function monsterName(m: Monster): string {
 }
 
 /**
- * 정령의 글자 — NetHack 의 elemental 은 `E` 다. 에뮤와 글자가 같지만 도감의 스물여섯 밖이고
+ * 정령의 글자 — NetHack 의 elemental 은 `E` 다. 에뮤와 글자가 같지만 도감의 몬스터 표 밖이고
  * (`MONSTERS` 에 없다), 지도에서는 원소마다 다른 색(`spirit-<원소>`)으로 칠해 갈린다.
  */
 export const SPIRIT_CH = "E";
@@ -226,7 +231,7 @@ export function spawnMonster(ch: string, x: number, y: number, rng: Rng, champio
         maxHp: hp,
         awake: champion ? true : def.mean,
         id: nextId++,
-        speed: champion === "swift" ? 1 : 0,
+        speed: champion === "swift" ? 1 : ch === "p" ? -1 : 0,
         cancelled: false,
         champion,
     };
