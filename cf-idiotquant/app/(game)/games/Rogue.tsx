@@ -2555,29 +2555,28 @@ export default function Rogue() {
                                                     </button>
                                                     {open && (
                                                         <div className="border-l-2 border-[var(--rg-line)] bg-[var(--rg-raised)] px-2 py-2">
-                                                            <div className="grid min-w-0 grid-cols-[4ch_minmax(0,1fr)] gap-x-2 break-words text-[var(--rg-muted)]">
-                                                            <span>Lv</span><span>{r.level}</span>
-                                                            <span>HP</span><span>{r.hp}</span>
-                                                            <span>AC</span><span>{10 - r.defense}</span>
-                                                            <span>Dmg</span><span>{r.damage.join(" + ") || "없음"}</span>
-                                                            <span>Xp</span><span>{r.exp}</span>
-                                                            {r.traits.length > 0 && <><span>특성</span><span>{r.traits.join(" ")}{r.mean ? " · 보자마자 달려든다" : ""}</span></>}
-                                                            {r.mean && r.traits.length === 0 && <><span>수법</span><span className="text-[var(--rg-monster)]">보자마자 달려든다</span></>}
+                                                            <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-1 break-words text-[var(--rg-muted)] [&>div]:grid [&>div]:min-w-0 [&>div]:grid-cols-[4ch_minmax(0,1fr)] [&>div]:gap-x-1 [&_dd]:m-0">
+                                                                <div><dt>Lv</dt><dd>{r.level}</dd></div>
+                                                                <div><dt>HP</dt><dd>{r.hp}</dd></div>
+                                                                <div><dt>AC</dt><dd>{10 - r.defense}</dd></div>
+                                                                <div><dt>Xp</dt><dd>{r.exp}</dd></div>
+                                                                <div className="col-span-2"><dt>Dmg</dt><dd>{r.damage.join(" + ") || "없음"}</dd></div>
+                                                                {(r.traits.length > 0 || r.mean) && <div className="col-span-2"><dt>특성</dt><dd>{[...r.traits, ...(r.mean ? ["보자마자 달려든다"] : [])].join(" · ")}</dd></div>}
                                                             {/* 종의 능력치는 층을 안 탄다 — 같은 트롤은 어디서나 같다.
                                                             층이 정하는 것은 **어느 종이 나오는가**뿐이라, 도감이 적을
                                                             수 있는 「층에 따른 것」은 이 띠 하나다. */}
-                                                            {r.depths && <><span className="text-[var(--rg-faint)]">층</span><span className="text-[var(--rg-faint)]">{r.depths.min}–{r.depths.max}층 · 어디서나 같은 능력치</span></>}
+                                                                {r.depths && <div className="col-span-2 text-[var(--rg-faint)]"><dt>층</dt><dd>{r.depths.min}–{r.depths.max}층 · 어디서나 같은 능력치</dd></div>}
                                                             {/* **수법은 잡아서 아는 것이 아니라 당해서 아는 것이다.**
                                                             그래서 잡은 수와 따로 적는다 — 열 마리를 잡고도 한 번도
                                                             안 당했으면 여기는 아직 비어 있어야 맞다. */}
-                                                            {r.hasSpecial && (
-                                                                r.special ? (
-                                                                    <><span className="text-[var(--rg-trap)]">수법</span><span className="text-[var(--rg-trap)]">{r.special} · {r.suffered}번 당했다</span></>
-                                                                ) : (
-                                                                    <><span className="text-[var(--rg-faint)]">수법</span><span className="text-[var(--rg-faint)]">아직 모른다 — 당해 봐야 안다</span></>
-                                                                )
-                                                            )}
-                                                            </div>
+                                                                {r.hasSpecial && (
+                                                                    r.special ? (
+                                                                        <div className="col-span-2 text-[var(--rg-trap)]"><dt>수법</dt><dd>{r.special} · {r.suffered}번 당했다</dd></div>
+                                                                    ) : (
+                                                                        <div className="col-span-2 text-[var(--rg-faint)]"><dt>수법</dt><dd>아직 모른다 — 당해 봐야 안다</dd></div>
+                                                                    )
+                                                                )}
+                                                            </dl>
                                                             {art && (
                                                                 /* 고정폭 글꼴 그대로 — 그림은 칸이 어긋나면 무너진다.
                                                            좁은 폰에서도 안 접히게 스무 칸을 안 넘긴다(`monsterArt`). */
@@ -2642,6 +2641,22 @@ export default function Rogue() {
                                     const rankTag = stage >= 3
                                         ? currentWeaponSkill?.rank ?? currentArmorSkill
                                         : null;
+                                    const originCaps = stage < 3 ? [] : entry.kind === "weapon"
+                                        ? ORIGIN_LIST
+                                            // 곡괭이처럼 직업 전용인 무기는 쓸 수 있는 직업만 적는다.
+                                            .filter((origin) => !WEAPONS[entry.type]?.origin || WEAPONS[entry.type]?.origin === origin.id)
+                                            .map((origin) => ({
+                                                id: origin.id,
+                                                name: origin.name,
+                                                rank: weaponSkillRankName(Math.max(1, WEAPON_SKILL_MAX[origin.id]?.[weaponSkillOf(entry.type)] ?? WEAPON_SKILL_MAX[origin.id]?.[entry.type] ?? 1)),
+                                            }))
+                                        : entry.kind === "armor"
+                                            ? ORIGIN_LIST.map((origin) => ({
+                                                id: origin.id,
+                                                name: origin.name,
+                                                rank: armorSkillRankName(ARMOR_SKILL_MAX[origin.id]?.[entry.type] ?? 1),
+                                            }))
+                                            : [];
 
                                     return (
                                         <li key={entry.key} className="min-w-0 border-b border-[var(--rg-line-soft)]">
@@ -2733,11 +2748,6 @@ export default function Rogue() {
                                                                             <span>{weaponSkillOf(entry.type)}</span>
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-[var(--rg-faint)]">직업별 최대: </span>
-                                                                            {/* 직업 전용 무기(곡괭이)는 그 직업만 적는다 — 못 쥐는 직업의 「Basic」은 거짓말이다. */}
-                                                                            <span>{ORIGIN_LIST.filter((origin) => !WEAPONS[entry.type]?.origin || WEAPONS[entry.type]?.origin === origin.id).map((origin) => `${origin.name} ${weaponSkillRankName(Math.max(1, WEAPON_SKILL_MAX[origin.id]?.[weaponSkillOf(entry.type)] ?? WEAPON_SKILL_MAX[origin.id]?.[entry.type] ?? 1))}`).join(" · ")}</span>
-                                                                        </div>
-                                                                        <div>
                                                                             <span className="text-[var(--rg-faint)]">나오는 층: </span>
                                                                             <span>{itemDepthRange("weapon", entry.type) ? `${itemDepthRange("weapon", entry.type)!.min}–${itemDepthRange("weapon", entry.type)!.max}층` : "1–26층"}</span>
                                                                         </div>
@@ -2763,10 +2773,6 @@ export default function Rogue() {
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">방어력: </span>
                                                                             <span className="text-[var(--rg-strong)]">{defenseOf(ARMORS[entry.type]?.armor ?? 10)}</span>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span className="text-[var(--rg-faint)]">직업별 최대: </span>
-                                                                            <span>{ORIGIN_LIST.map((origin) => `${origin.name} ${armorSkillRankName(ARMOR_SKILL_MAX[origin.id]?.[entry.type] ?? 1)}`).join(" · ")}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">내 훈련: </span>
@@ -2866,6 +2872,25 @@ export default function Rogue() {
                                                                     </>
                                                                 )}
                                                             </div>
+
+                                                            {originCaps.length > 0 && (
+                                                                <section className="border-b border-[var(--rg-line-soft)] pb-2">
+                                                                    <h3 className="mb-1 text-[11px] font-bold text-[var(--rg-label)]">직업별 최대 숙련 · › 현재 직업</h3>
+                                                                    <dl className="grid grid-cols-1 gap-x-4 sm:grid-cols-2 [&_dd]:m-0">
+                                                                        {originCaps.map((origin) => {
+                                                                            const mine = origin.id === (currentHero.origin ?? "knight");
+                                                                            return (
+                                                                                <div key={origin.id} className="flex min-w-0 items-baseline justify-between gap-3 border-b border-[var(--rg-line-soft)] py-0.5">
+                                                                                    <dt className={`min-w-0 break-words ${mine ? "font-bold text-[var(--rg-strong)]" : "text-[var(--rg-muted)]"}`}>
+                                                                                        {mine ? "› " : ""}{origin.name}
+                                                                                    </dt>
+                                                                                    <dd className={`shrink-0 ${mine ? "font-bold text-[var(--rg-gold)]" : "text-[var(--rg-label)]"}`}>{origin.rank}</dd>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </dl>
+                                                                </section>
+                                                            )}
 
                                                             {/* 1문단 플레이버 텍스트 */}
                                                             <p className="break-words text-[var(--rg-muted)] leading-relaxed">{entry.flavor}</p>
