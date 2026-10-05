@@ -41,7 +41,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 15;
+const VERSION = 16;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -313,6 +313,7 @@ function normalize(s: Saved): GameState | null {
 
     const fixHero = (h: Hero): Hero => {
         const fixed = rawHero(h);
+        delete fixed.itemLuck;
         // 파다 만 자리는 숫자 넷이 다 있을 때만 잇는다. 남이 보낸 판(`deserialize`)도 이 길이라
         // 모양이 틀리면 **칸째 지운다** — 처음부터 다시 파면 그만이다.
         const d = h.dig;
@@ -356,7 +357,10 @@ function normalize(s: Saved): GameState | null {
         // 옛 저장에는 애초에 없던 값이니 맞는 처지다.
         pendingSkillPicks: Math.max(0, num(h.pendingSkillPicks, 0)),
         bonusDefense: Math.max(0, num(h.bonusDefense, 0)),
-        itemLuck: Math.min(1, Math.max(0, num(h.itemLuck, 0))),
+        // 예전 `itemLuck` 은 Luck 판정과 Wi(지팡이 주사위 +1/성장)에 함께 쓰였다.
+        // 진행도를 각각 새 Luck(기존 등급 보정과 비슷한 확률)과 Wisdom으로 옮긴다.
+        luck: Math.max(-13, Math.min(13, Math.trunc(num(h.luck, Math.round(num((h as Hero).itemLuck, 0) * 20))))),
+        wisdom: Math.max(0, Math.min(100, Math.trunc(num(h.wisdom, num((h as Hero).itemLuck, 0) * 100)))),
         // v12 이하에는 사람별 행동 횟수가 없다. 지난 판의 전체 턴을 나누어 지어내지 않고
         // 0에서 새로 센다 — 옛 기록에 없던 일을 누구 몫으로 둘 수는 없다.
         turns: Math.max(0, num(h.turns, 0)),

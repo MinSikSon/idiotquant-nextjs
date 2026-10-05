@@ -364,16 +364,23 @@ const DROUGHT_STEP = 1.0;
  * 사람과 값이 갈리는 자리가 아니다). **쓰러진 사람은 안 센다** — 서 있지도 않은 사람의
  * 안목이 바닥에 영향을 주면 안 된다.
  */
-export function partyItemLuck(state: GameState): number {
-    let best = 0;
+export function partyLuck(state: GameState): number {
+    let best = -13;
     for (const h of state.heroes) {
-        if (h.hp > 0 && h.itemLuck > best) best = h.itemLuck;
+        if (h.hp > 0 && h.luck > best) best = h.luck;
     }
-    return best;
+    return best === -13 && !state.heroes.some((h) => h.hp > 0) ? 0 : best;
+}
+
+/** @deprecated 이전 테스트/외부 호출 이름만 잇는다. 실제 규칙은 `partyLuck`을 쓴다. */
+export function partyItemLuck(state: GameState): number {
+    return state.heroes.some((h) => h.hp > 0 && h.itemLuck !== undefined)
+        ? Math.max(0, ...state.heroes.filter((h) => h.hp > 0).map((h) => h.itemLuck ?? 0))
+        : partyLuck(state);
 }
 
 function populate(state: GameState, level: Level, rng: Rng) {
-    const luck = partyItemLuck(state);
+    const luck = partyLuck(state);
     // **가게가 먼저다** — 주인과 진열품이 자리를 잡아야 몬스터(`freeSpot`)가 그 위에 안 선다.
     stockShop(state, level, rng, luck);
     const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
@@ -1912,7 +1919,7 @@ export function transmuteCategory(it: Item): Category | null {
 
 /**
  * 변환 제단에 올린다 — **삼키거나, 같은 분류의 새 물건으로 바꿔 제단 위에 둔다.**
- * 새 물건은 그 층의 드롭 규칙(`randomItem`, 올린 사람의 아이템운)을 그대로 탄다 — 제단이
+ * 새 물건은 그 층의 드롭 규칙(`randomItem`, 올린 사람의 Luck)을 그대로 탄다 — 제단이
  * 등급을 올려 주지 않는다. 받지 않는 물건이면 `false` 를 돌려 보통 내려놓기로 간다.
  */
 function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean {
@@ -1925,7 +1932,7 @@ function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean
     if (rng.rnd(100) < TRANSMUTE_SWALLOW_CHANCE) {
         say(state, `${name}을(를) 제단에 올렸다 — 제단이 삼켰다.`);
     } else {
-        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat, hero.itemLuck);
+        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat, hero.luck);
         state.level.items.push(made);
         say(state, `${name}을(를) 제단에 올렸다 — 빛이 걷히자 ${describe(made, state.known, state.appearance)}이(가) 놓여 있다.`);
     }
@@ -2215,8 +2222,8 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
             say(state, "🛡️ 성장 — 몸놀림이 단단해졌다.");
             break;
         case "luck":
-            hero.itemLuck = Math.min(1, hero.itemLuck + 0.01);
-            say(state, "🔺 성장 — 지혜가 늘었다.");
+            hero.luck = Math.min(13, hero.luck + 1);
+            say(state, "🔺 성장 — 운이 좋아졌다.");
             break;
     }
     return false;
@@ -2472,8 +2479,8 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
-    // 지혜는 아이템운과 같은 값 하나에서 읽는다. 지혜 1당 같은 면의 주사위를 하나 더
-    // 굴린다. 지혜를 안 고른 판은 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
+    // 지혜 1당 같은 면의 주사위를 하나 더 굴린다. Wisdom은 Luck과 별도 능력치다.
+    // 지혜가 0이면 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
     const wisdomDice = wandDamageDiceBonus(hero);
     const spellDamage = (dice: string) => {
         const rolled = rng.rollDice(dice);
@@ -3916,8 +3923,7 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
     } else if (kind === "defense") {
         say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
     } else {
-        const wisdom = Math.round(hero.itemLuck * 100);
-        say(state, `${tag}Wi:${wisdom} · 아이템 등급 판정 +${wisdom}% · 공격 지팡이 주사위 +${wandDamageDiceBonus(hero)}`);
+        say(state, `${tag}Wi:${hero.wisdom} · 공격 지팡이 주사위 +${wandDamageDiceBonus(hero)}`);
     }
 }
 
@@ -4087,6 +4093,12 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     // 전체 턴은 파티가 쓴 행동 하나씩, 이 값은 그중 이 사람이 실제로 쓴 몫이다.
     // 벽을 들이받거나 성장만 고른 행동(`acted=false`)은 둘 다 늘지 않는다.
     hero.turns += 1;
+    // NetHack natural Luck drifts toward neutral every 600 player actions. The counter is
+    // per hero so co-op turns by another player do not silently change this hero's Luck.
+    if (hero.turns % 600 === 0 && hero.luck !== 0) {
+        hero.luck -= Math.sign(hero.luck);
+        say(state, `행운이 시간에 씻겨 ${hero.luck > 0 ? "+" : ""}${hero.luck}이(가) 되었다.`);
+    }
     if (inShop(state.level, hero.x, hero.y)) recordRunAchievement(state, "shop", "상점에 들어섰다");
 
     // ── 영웅에게 붙은 것은 **누가 움직이든** 한 칸씩 돈다 ────────────────────────

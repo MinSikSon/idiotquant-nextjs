@@ -171,21 +171,21 @@ export const EXP_LEVELS = [
 export const HP_PER_LEVEL = 5;
 
 /**
- * 이 레벨마다 성장 하나를 고른다(힘·방어·아이템운) — `hero.pendingSkillPicks` 하나가
+ * 이 레벨마다 성장 하나를 고른다(힘·방어·행운) — `hero.pendingSkillPicks` 하나가
  * 쌓고, `game.pickSkill` 하나가 던다. 캠프가 아니어도, 턴을 안 써도 고를 수 있다 —
  * 레벨업 자체가 턴을 안 쓰는 것과 같은 자리다.
  */
 export const SKILL_PICK_INTERVAL = 3;
 
 /**
- * 지혜 성장 한 번(아이템운 +1%)마다 공격 지팡이에 같은 면의 주사위 하나를 더한다.
+ * 지혜 성장 한 번마다 공격 지팡이에 같은 면의 주사위 하나를 더한다.
  *
  * 지혜는 세 레벨마다 겨우 한 번 고르는 값이라, 1% 확률 보정만으로는 손에 잡히는 선택이
  * 되기 어렵다. 지팡이는 횟수가 정해진 소모품이므로 같은 +1이라도 무기 강화처럼 매 턴
- * 누적되지 않는다. `itemLuck` 하나에서 읽어 별도 능력치를 만들지 않는다.
+ * 누적되지 않는다. 지혜와 Luck은 서로 다른 능력치다.
  */
 export function wandDamageDiceBonus(hero: Hero): number {
-    return Math.max(0, Math.round(hero.itemLuck * 100));
+    return Math.max(0, Math.round(hero.wisdom));
 }
 
 /** (하한, 상한] 사이에 있는 `SKILL_PICK_INTERVAL` 의 배수 개수 — 한 번에 여러 레벨을 건너뛰어도 안 놓친다. */
@@ -246,7 +246,8 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         detect: 0,
         pendingSkillPicks: 0,
         bonusDefense: 0,
-        itemLuck: 0,
+        luck: 0,
+        wisdom: 0,
         weaponSkills: {},
         weaponTraining: {},
         // 되읽기(`storage.ts`)가 늘 `{}` 로 채우므로 여기서도 채운다 — 안 채우면 갑옷 숙련이

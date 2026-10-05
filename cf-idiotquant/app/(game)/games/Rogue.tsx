@@ -2104,13 +2104,13 @@ export default function Rogue() {
                                     <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
                                     <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
                                     <span className="text-[11px] text-[var(--rg-faint)]">
-                                        현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {Math.round(hero.itemLuck * 100)}
+                                        현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {hero.wisdom}
                                     </span>
                                     {(
                                         [
                                             ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
                                             ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                            ["luck", `지혜 +1 · 지팡이 주사위 +1 (현재 +${wandDamageDiceBonus(hero)})`],
+                                            ["luck", `운 +1 · 좋은 등급 물건을 얻을 가능성이 커진다 (현재 ${hero.luck})`],
                                         ] as const
                                     ).map(([option, label]) => (
                                         <button
@@ -2300,7 +2300,7 @@ export default function Rogue() {
                         </span>
                         {expandedPartyStats === i && h.hp > 0 && h.hp <= h.maxHp / 4 && <span className=" font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
                         {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip}`}>
-                            Wi:{Math.round(h.itemLuck * 100)}
+                            Wi:{h.wisdom}
                         </button>}
                         {
                             expandedPartyStats === i && (h.timeStop ?? 0) > 0 && (
@@ -2329,8 +2329,8 @@ export default function Rogue() {
                         {expandedPartyStats === i && <div className=" flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
-                                ["wisdom", `Wi:${Math.round(h.itemLuck * 100)}`],
-                                ["luck", `Lu:${Math.round(h.itemLuck * 100)}`],
+                                ["wisdom", `Wi:${h.wisdom}`],
+                                ["luck", `Lu:${h.luck}`],
                             ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
                         </div>}
                         {coop && expandedPartyStats === i && <div className=" flex flex-nowrap items-center gap-x-[1ch] overflow-x-auto text-[var(--rg-faint)] [scrollbar-width:none]">
@@ -2950,9 +2950,9 @@ export default function Rogue() {
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${Math.round(statusHero.itemLuck * 100)}\n아이템 등급 판정에 영향을 주며, 공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다.`
+                        ? `Wi:${statusHero.wisdom}\n공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다. Luck과 별개의 능력치입니다.`
                       : statusKind === "luck"
-                        ? `Lu:${Math.round(statusHero.itemLuck * 100)}\n아이템운입니다. 값이 높을수록 더 좋은 등급의 아이템을 얻기 쉽습니다. 현재 Wi와 같은 아이템운 수치를 사용합니다.`
+                        ? `Lu:${statusHero.luck}\n넷핵식 행운입니다. -13부터 +13까지이며 물건 등급에 영향을 줍니다. 600번의 본인 행동마다 0에 가까워집니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"

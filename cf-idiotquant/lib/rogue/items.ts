@@ -347,16 +347,16 @@ export function fillAppearances(saved: Record<string, string>, seed: number): Re
  * 그래서 가끔 한 수 위의 물건이 일찍 나오고(그 한 번이 판을 바꾼다), 가끔 한 수
  * 아래의 것이 늦게 나온다. 층과 딱 맞아떨어지면 주울 때마다 놀랄 일이 없다.
  *
- * **`luck` 은 유리(advantage) 굴림이다**(`dnd.ts` 와 같은 모양 — 두 번 굴려 높은 쪽).
- * 그 몫만큼만 한 번 더 굴린다. **`luck` 이 `0` 이면 `rng` 를 한 번도 더 안 건드린다** —
- * 레벨업 성장에서 아무도 아이템운을 안 고른 판은 물건 뽑는 난수 흐름이 예전과 한 글자도
- * 안 바뀐다(「시드가 같으면 판도 같다」를 지키는 자리).
+ * NetHack Luck은 -13..13. 양수일수록 한 단계 높은 등급으로 다시 뽑을 기회가 생기고,
+ * 음수일수록 한 단계 낮은 등급으로 다시 뽑힐 위험이 생긴다. Luck 0은 난수를 더 쓰지 않는다.
  */
 export function itemTier(depth: number, rng: Rng, luck = 0): number {
     const roll = () => Math.min(26, Math.max(1, depth + rng.rnd(10) - 6));
     const a = roll();
-    if (luck <= 0 || !rng.chance(luck)) return a;
-    return Math.max(a, roll());
+    const chance = Math.min(0.65, Math.abs(luck) * 0.05);
+    if (chance === 0 || !rng.chance(chance)) return a;
+    const b = roll();
+    return luck > 0 ? Math.max(a, b) : Math.min(a, b);
 }
 
 /**

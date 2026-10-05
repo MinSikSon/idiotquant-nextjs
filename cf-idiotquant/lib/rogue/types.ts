@@ -441,12 +441,12 @@ export interface Hero {
     pendingSkillPicks: number;
     /** 레벨업 성장으로 쌓은 방어력. `heroDefense` **하나**가 더한다. */
     bonusDefense: number;
-    /**
-     * 레벨업 성장으로 쌓은 「좋은 물건」 확률(0~1) — 그 몫만큼 `itemTier` 를 한 번 더
-     * 굴려 높은 쪽을 쓴다(`dnd.ts` 의 유리 굴림과 같은 모양). 0 이면 **굴림 자체를
-     * 안 건드린다** — 아무도 안 고른 판은 난수 흐름이 예전과 한 글자도 안 바뀐다.
-     */
-    itemLuck: number;
+    /** NetHack식 행운. 자연 운의 범위는 -13..13이며, 운 기반 확률과 물건 등급에 반영한다. */
+    luck: number;
+    /** 지혜. 공격 지팡이의 추가 피해 주사위에 반영한다. */
+    wisdom: number;
+    /** 저장 이전 호환 전용. normalize에서 Wisdom으로 옮기며 게임 규칙은 읽지 않는다. */
+    itemLuck?: number;
     /** NetHack식 무기 숙련 — 종류마다 Unskilled(0)부터 Expert(3)까지. */
     weaponSkills?: Record<string, number>;
     /** 의미 있는 적중 횟수. 승급 문턱(20/80/180)을 재는 값이다. */
