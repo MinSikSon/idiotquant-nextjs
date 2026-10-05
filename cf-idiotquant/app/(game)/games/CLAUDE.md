@@ -35,6 +35,10 @@
 | 도감의 몬스터 얼굴 (그림 — 규칙 아님) | `app/(game)/game/monsterArt.ts` |
 | 밸런스 자 | `scripts/measure-rogue.mjs` |
 
+분수는 `Level.fountain` 에 층별 상태(위치·마법 여부·사용 횟수)를 저장하고, `perform` 의
+`fountain` 명령만이 효과를 계산한다. `glyphAt` 은 `}` 로 보이고, 걸음 확인과 모바일 행동
+단추가 같은 명령을 보낸다. 효과 없는 명령은 턴을 쓰지 않는다.
+
 ## 못 박은 규칙 넷
 
 **새 규칙을 붙일 때 이 넷으로 판단한다.**

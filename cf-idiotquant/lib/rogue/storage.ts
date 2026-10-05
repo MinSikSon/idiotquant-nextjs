@@ -171,6 +171,9 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         shop: fixShop(raw.shop, rooms.length),
         // 옛 저장에는 변환 제단이 없다 — 모루와 같은 까닭으로 **없는 것이 맞다.**
         transmuteAltar: fixTransmuteAltar(raw.transmuteAltar),
+        fountain: raw.fountain && Number.isFinite(raw.fountain.x) && Number.isFinite(raw.fountain.y)
+            ? { x: raw.fountain.x, y: raw.fountain.y, magic: !!raw.fountain.magic, magicUsed: !!raw.fountain.magicUsed, drinks: Math.max(0, Math.trunc(num(raw.fountain.drinks, 0))) }
+            : null,
     };
 }
 

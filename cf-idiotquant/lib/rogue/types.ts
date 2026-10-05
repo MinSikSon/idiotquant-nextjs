@@ -319,11 +319,20 @@ export interface Level {
      * 자리다. `uses` 가 0 이면 불이 꺼진 채 남는다. 옛 저장에는 없다 — 그 층에는 없는 것이 맞다.
      */
     transmuteAltar?: TransmuteAltar | null;
+    /** 이 층의 분수. 말라 없어지면 null이다. */
+    fountain?: Fountain | null;
 }
 
 export interface TransmuteAltar extends Pos {
     /** 남은 변환 횟수. 삼켜도 한 번이다. */
     uses: number;
+}
+
+/** 넷핵식 분수. 마법 성질과 마신 횟수는 층을 떠나도 저장한다. */
+export interface Fountain extends Pos {
+    magic: boolean;
+    magicUsed: boolean;
+    drinks: number;
 }
 
 export interface ShopState {

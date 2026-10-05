@@ -1661,9 +1661,14 @@ export default function Rogue() {
         (w: number) => {
             const h = state?.heroes[w];
             if (!state || !h || h.hp <= 0) return;
+            const onFountain = state.level.fountain?.x === h.x && state.level.fountain?.y === h.y;
             if (modes[w] === "aim") {
                 setWho(w);
                 desks.current[w]?.padKey({ act: true });
+                return;
+            }
+            if (modes[w] === "none" && onFountain) {
+                runAs(w, { t: "fountain" });
                 return;
             }
             if (modes[w] === "none" && rapidFireOf(h)) {
@@ -1679,7 +1684,7 @@ export default function Rogue() {
             // 발밑을 **읽기만** 한다 — 할 수 있는지는 엔진이 다시 본다.
             const onItem = state.level.items.some((it) => it.x === h.x && it.y === h.y);
             const onDown = state.level.tiles[idx(h.x, h.y)] === T.STAIRS;
-            runAs(w, onItem ? { t: "pickup" } : onDown ? { t: "descend" } : { t: "search" });
+            runAs(w, onItem ? { t: "pickup" } : onFountain ? { t: "fountain" } : onDown ? { t: "descend" } : { t: "search" });
         },
         [state, modes, runAs],
     );
@@ -1808,6 +1813,10 @@ export default function Rogue() {
                     e.preventDefault();
                     run({ t: "search" });
                     break;
+                case "f":
+                    e.preventDefault();
+                    run({ t: "fountain" });
+                    break;
                 case "z":
                     e.preventDefault();
                     desk?.aim("zap");
@@ -1868,6 +1877,7 @@ export default function Rogue() {
     const { level } = state;
     const hero = state.heroes[who] ?? state.heroes[0];
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
+    const onFountain = level.fountain?.x === hero.x && level.fountain?.y === hero.y;
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
     const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;
@@ -1925,6 +1935,7 @@ export default function Rogue() {
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
         { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", mobileMark: hereItem ? itemChar(hereItem.kind) : undefined, hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
+        { label: "분수 물", detail: onFountain ? "운에 따라 효과가 달라진다" : "분수", mobileMark: "}", hint: "f — 분수 물을 마신다", keys: "f", on: () => run({ t: "fountain" }), off: onFountain ? undefined : "분수 위에 서야 한다", hot: onFountain },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
         { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", mobileMark: ">", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
@@ -2368,6 +2379,7 @@ export default function Rogue() {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
                         if (!shot) {
+                            if (onFountain) return "분수 물";
                             if (!coopKeys && modes[who] === "none" && activeHero.origin === "knight" && !isDualWielding(activeHero)) return "철벽의\n자세";
                             return "·";
                         }
@@ -2378,6 +2390,7 @@ export default function Rogue() {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
                         if (!shot) {
+                            if (onFountain) return "분수 물을 마신다 · Luck에 따라 효과가 달라진다";
                             if (!coopKeys && modes[who] === "none" && activeHero.origin === "knight" && !isDualWielding(activeHero)) return "철벽의 자세 · 제자리에서 쉬며 방어 자세를 잡는다";
                             return "제자리에서 쉰다";
                         }
@@ -2400,6 +2413,7 @@ export default function Rogue() {
                     onMove={(dx, dy) => {
                         if (dx === 0 && dy === 0) {
                             if (coopKeys) return confirm(who);
+                            if (onFountain) return confirm(who);
                             const hero = state.heroes[who] ?? state.heroes[0];
                             if (modes[who] === "none" && rapidFireOf(hero)) return confirm(who);
                             if (desks.current[who]?.aimAt(0, 0)) return;
@@ -3313,7 +3327,7 @@ export default function Rogue() {
                                         <dl className="grid grid-cols-[7.5em_1fr] gap-y-1">
                                             <dt className="text-[var(--rg-label)]">{k.move}</dt><dd>위 왼 아래 오른쪽</dd>
                                             <dt className="text-[var(--rg-label)]">{k.diag}</dt><dd>대각선 — 왼위 · 오른위 · 왼아래 · 오른아래</dd>
-                                            <dt className="text-[var(--rg-label)]">{k.act}</dt><dd><b>확인</b> — 걸을 때는 발밑에 물건이 있으면 줍고, 계단이면 내려가고, 아니면 뒤진다. 배낭·고르기에서는 고른다. 화면 방향판의 가운데 단추도 같다</dd>
+                                            <dt className="text-[var(--rg-label)]">{k.act}</dt><dd><b>확인</b> — 걸을 때는 발밑 물건을 줍고, 분수에서는 물을 마시고, 계단에서는 내려간다. 그 밖에는 뒤진다. 배낭·고르기에서는 고른다</dd>
                                             <dt className="text-[var(--rg-label)]">{k.pack}</dt><dd><b>내 배낭</b> — 화면의 내 반쪽에 열린다. 위아래로 줄을 옮기고 확인으로 짚은 뒤, 좌우로 할 일을 골라 확인으로 한다. 다시 누르면 닫힌다</dd>
                                             <dt className="text-[var(--rg-label)]">{k.cancel}</dt><dd><b>취소</b> — 내 판만 한 단계 물린다(짚은 줄 풀기 → 닫기). Esc 는 둘이서는 안 쓴다</dd>
                                         </dl>
@@ -3333,6 +3347,7 @@ export default function Rogue() {
                                 <dt className="text-[var(--rg-label)]">.</dt><dd>제자리에서 쉰다</dd>
                                 <dt className="text-[var(--rg-label)]">, 또는 g</dt><dd>발밑의 것을 줍는다</dd>
                                 <dt className="text-[var(--rg-label)]">s</dt><dd>벽을 뒤진다 — 숨은 문과 함정이 드러난다</dd>
+                                <dt className="text-[var(--rg-label)]">f</dt><dd>발밑 분수의 물을 마신다 — 행운에 따라 이롭거나 위험한 일이 생기며, 분수는 말라 없어질 수 있다</dd>
                                 <dt className="text-[var(--rg-label)]">&gt; &lt;</dt><dd>계단을 내려간다 · 올라간다</dd>
                                 <dt className="text-[var(--rg-label)]">q r e</dt><dd>마신다 · 읽는다 · 먹는다</dd>
                                 <dt className="text-[var(--rg-label)]">w W</dt><dd><b>쥔다 · 입는다</b></dd>

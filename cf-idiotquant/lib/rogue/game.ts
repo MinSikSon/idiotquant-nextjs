@@ -212,6 +212,7 @@ type Action =
     | { t: "descend" }
     | { t: "ascend" }
     | { t: "pickup" }
+    | { t: "fountain" }
     /** 축복의 기름은 대상 장비에 바른다. 다른 포션은 대상 없이 마신다. */
     | { t: "quaff"; letter: string; target?: string }
     /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
@@ -1240,6 +1241,75 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: 
                     : "이 층에는 아무것도 없다.",
             );
             break;
+    }
+    return true;
+}
+
+/** 분수에서 마신다. 순수 Luck은 이 생명체를 이롭게도 해롭게도 기울인다. */
+function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
+    const fountain = state.level.fountain;
+    if (!fountain || fountain.x !== hero.x || fountain.y !== hero.y) {
+        say(state, "분수 위에 서야 물을 마실 수 있다.");
+        return false;
+    }
+
+    const roll = rng.rnd(30);
+    const fate = Math.max(0, Math.min(29, roll + hero.luck));
+    if (fountain.magic && !fountain.magicUsed && hero.luck >= 0 && roll >= 10) {
+        hero.hp = hero.maxHp;
+        if (hero.luck >= 4) {
+            hero.str = Math.min(31, hero.str + 1);
+            hero.maxStr = Math.max(hero.maxStr, hero.str);
+            hero.wisdom = Math.min(100, hero.wisdom + 1);
+            say(state, "분수의 마력이 온몸을 채운다. 체력이 회복되고 힘과 지혜가 늘었다!");
+        } else if (rng.rnd(2) === 0) {
+            hero.str = Math.min(31, hero.str + 1);
+            hero.maxStr = Math.max(hero.maxStr, hero.str);
+            say(state, "분수의 마력이 온몸을 채운다. 체력이 회복되고 힘이 늘었다!");
+        } else {
+            hero.wisdom = Math.min(100, hero.wisdom + 1);
+            say(state, "분수의 마력이 온몸을 채운다. 체력이 회복되고 지혜가 늘었다!");
+        }
+        fountain.magicUsed = true;
+    } else {
+        const goodChance = Math.max(0.15, Math.min(0.85, 0.5 + hero.luck * 0.025));
+        if (fate >= 30 * (1 - goodChance)) {
+            switch (fate % 3) {
+                case 0:
+                    hero.hp = Math.min(hero.maxHp, hero.hp + Math.max(2, rng.rnd(5) + 1));
+                    hero.food = Math.min(2000, hero.food + 80);
+                    say(state, "맑은 물이 목을 축이고 상처를 조금 아물게 한다.");
+                    break;
+                case 1: {
+                    const gem = rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!;
+                    state.level.items.push(makeItem("gem", gem, state.nextItemId++, fountain.x, fountain.y));
+                    say(state, "물결 속에서 보석 하나가 반짝인다.");
+                    break;
+                }
+                default:
+                    hero.luck = Math.min(13, hero.luck + 1);
+                    say(state, "시원한 물을 마셨다. 행운이 조금 좋아진 듯하다.");
+                    break;
+            }
+        } else if (fate % 2 === 0) {
+            const damage = rng.rnd(4) + 2;
+            hero.hp -= damage;
+            hero.luck = Math.max(-13, hero.luck - 1);
+            say(state, `탁한 물이 속을 뒤집는다. ${damage} 피해를 입고 행운이 나빠졌다.`);
+        } else {
+            const spot = freeSpot(state.level, rng, [...state.heroes, fountain]);
+            const monster = spawnMonster(randomMonsterChar(state.level.depth, rng), spot.x, spot.y, rng);
+            monster.awake = true;
+            monster.target = state.heroes.indexOf(hero);
+            state.level.monsters.push(monster);
+            say(state, `${monsterName(monster)}이(가) 분수에서 튀어나왔다!`);
+        }
+    }
+
+    fountain.drinks += 1;
+    if (rng.chance(1 / 3)) {
+        state.level.fountain = null;
+        say(state, "분수가 바싹 말라 사라졌다.");
     }
     return true;
 }
@@ -3992,6 +4062,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "pickup":
                 acted = pickUp(state, hero);
                 break;
+            case "fountain":
+                acted = drinkFountain(state, hero, rng);
+                break;
             case "descend":
                 acted = descend(state, hero, rng);
                 break;
@@ -4547,6 +4620,9 @@ export function glyphAt(
     const altar = level.transmuteAltar;
     if (altar && altar.x === x && altar.y === y) {
         return { ch: "_", kind: visible && altar.uses > 0 ? "altar" : "altar-dim" };
+    }
+    if (level.fountain && level.fountain.x === x && level.fountain.y === y) {
+        return { ch: "}", kind: visible ? "fountain" : "fountain-dim" };
     }
     switch (t) {
         case T.FLOOR:

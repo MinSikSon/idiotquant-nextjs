@@ -545,6 +545,7 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
         const p = randomSpotIn(room, rng);
         if (!walkable(level.tiles[idx(p.x, p.y)] as Tile)) continue;
         if (avoid.some((q) => q.x === p.x && q.y === p.y)) continue;
+        if (level.fountain?.x === p.x && level.fountain?.y === p.y) continue;
         if (level.monsters.some((m) => m.x === p.x && m.y === p.y)) continue;
         if (level.items.some((it) => it.x === p.x && it.y === p.y)) continue;
         return p;
@@ -555,6 +556,7 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
         for (let x = 0; x < MAP_W; x++) {
             if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
             if (avoid.some((q) => q.x === x && q.y === y)) continue;
+            if (level.fountain?.x === x && level.fountain?.y === y) continue;
             // 훑어서 주는 이 마지막 길에서도 금고는 뺀다 — 여기가 뚫리면 위의 거름이 헛것이다.
             if (inVault(level, x, y)) continue;
             return { x, y };
@@ -1367,6 +1369,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         altarUsed: false,
         shop: null,
         transmuteAltar: null,
+        fountain: null,
     };
 
     // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는
@@ -1419,6 +1422,18 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         );
         const p = rng.pick(spots);
         if (p) level.transmuteAltar = { x: p.x, y: p.y, uses: TRANSMUTE_ALTAR_USES };
+    }
+
+    // 분수는 방 안에만 선다. 계단·모루·특수 방·함정·변환 제단과 자리를 겹치지 않는다.
+    // 2층부터 층마다 1/5 확률로 두어 희귀하지만 찾아볼 만한 자원으로 둔다.
+    if (depth > 1 && rng.chance(0.2)) {
+        const avoid = [down, level.upStairs, level.anvil, ...level.traps,
+            ...(level.transmuteAltar ? [level.transmuteAltar] : [])].filter((p): p is Pos => !!p);
+        const spots = level.rooms.flatMap((r, i) =>
+            r.gone || r.maze || r.vault || i === level.special?.room ? [] : openTiles(level, r, avoid),
+        );
+        const p = rng.pick(spots);
+        if (p) level.fountain = { ...p, magic: rng.chance(0.1), magicUsed: false, drinks: 0 };
     }
 
     return level;
