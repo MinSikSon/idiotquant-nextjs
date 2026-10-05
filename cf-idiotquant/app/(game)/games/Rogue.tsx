@@ -1940,6 +1940,7 @@ export default function Rogue() {
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
+        { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", mobileMark: hereItem ? itemChar(hereItem.kind) : undefined, hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
         { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", mobileMark: ">", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
@@ -1987,8 +1988,8 @@ export default function Rogue() {
     // 차서 정작 무슨 일이 났는지가 밀려난다. 계산은 기록 판이 전부 갖고 있다.
     const visibleMessages = state.messages.filter((m) => !isDetail(m));
     const isImportantMessage = (m: string) => /함정|저주|쓰러|피해|반지가.*옮겼|증표/.test(m);
-    // 중요 이벤트 여부와 관계없이 가장 최근 세 줄만 요약 띠에 둔다.
-    const recent = [...visibleMessages.slice(-3)].reverse();
+    // 중요 이벤트 여부와 관계없이 가장 최근 네 줄만 요약 띠에 둔다.
+    const recent = [...visibleMessages.slice(-4)].reverse();
     /** 이번 판이 내 지난 판들 사이에서 선 자리 — 끝난 판에서만 쓴다. */
     const place = standing(score(state), tombs);
 
@@ -2011,18 +2012,17 @@ export default function Rogue() {
                     {seedLinkNote}
                 </div>
             )}
-            {/* 맨 위 세 줄 — 넷핵의 메시지 창처럼 세 칸을 늘 확보한다. 줄마다 제 높이를
-                가져야 한글 글꼴의 아래 획이 다음 줄 또는 지도에 먹히지 않는다. */}
+            {/* 맨 위 네 줄 — 간격을 줄여 메시지 공간을 늘린다. */}
             <button
                 type="button"
                 onClick={() => setSheet("log")}
-                className="grid h-[4.5rem] w-full shrink-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
+                className="grid h-[5rem] w-full shrink-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
             >
-                <span className="grid min-w-0 grid-rows-3 overflow-hidden py-1">
+                <span className="grid min-w-0 grid-rows-4 overflow-hidden py-0.5">
                     {recent.map((m, i) => (
                         <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
                             <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
-                            <span className="min-w-0 truncate leading-[1.45]"><Msg text={m} heroes={state.heroes} /></span>
+                            <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
                         </span>
                     ))}
                 </span>
@@ -2990,7 +2990,7 @@ export default function Rogue() {
             {/*
               * 기록은 **최신이 맨 위**다. 판을 열면 방금 일어난 일이 손 닿는 자리에
               * 있어야 한다 — 아래로 굴려 내려가서 찾을 일이 아니다.
-              * 위쪽 세 줄 띠는 그대로 시간순이다(그쪽은 「방금」만 보여 주므로).
+              * 위쪽 네 줄 띠는 그대로 시간순이다(그쪽은 「방금」만 보여 주므로).
               */}
             {
                 sheet === "log" && (
