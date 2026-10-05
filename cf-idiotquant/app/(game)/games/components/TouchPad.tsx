@@ -257,11 +257,11 @@ export default function TouchPad({
                 {actions.map((a) => (
                     <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
                         <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-tight">
-                            <span className="max-w-full truncate">{a.label}</span>
+                            <span className="flex max-w-full items-center gap-1">
+                                <span className="truncate">{a.label}</span>
+                                {a.keys && <span className="shrink-0 text-[9px] font-normal text-[var(--rg-faint)]">{a.keys}</span>}
+                            </span>
                             {a.detail && <span className="max-w-full truncate text-[9px] font-normal text-[var(--rg-faint)]">{a.detail}</span>}
-                            {a.keys && (
-                                <span className="ml-1.5 hidden text-[10px] text-[var(--rg-faint)] md:inline">{a.keys}</span>
-                            )}
                         </span>
                     </Key>
                 ))}
