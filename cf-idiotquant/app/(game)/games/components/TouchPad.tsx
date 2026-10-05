@@ -44,6 +44,8 @@ export interface PadAction {
     label: string;
     /** 짧은 보조 설명이나 대상 아이템 이름. */
     detail?: string;
+    /** 모바일에서 단축키·설명 대신 표시할 아이템 또는 계단 표식. */
+    mobileMark?: string;
     hint?: string;
     /** 단축키 — **넓은 화면에서만** 이름 옆에 적는다. 폰에서는 칸이 모자라고 키보드도 없다. */
     keys?: string;
@@ -259,9 +261,10 @@ export default function TouchPad({
                         <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-tight">
                             <span className="flex max-w-full items-center gap-1">
                                 <span className="truncate">{a.label}</span>
-                                {a.keys && <span className="shrink-0 text-[9px] font-normal text-[var(--rg-faint)]">{a.keys}</span>}
+                                {a.mobileMark && <span className="shrink-0 text-[11px] font-bold text-[var(--rg-gold)] md:hidden">{a.mobileMark}</span>}
+                                {a.keys && <span className="hidden shrink-0 text-[9px] font-normal text-[var(--rg-faint)] md:inline">{a.keys}</span>}
                             </span>
-                            {a.detail && <span className="max-w-full truncate text-[9px] font-normal text-[var(--rg-faint)]">{a.detail}</span>}
+                            {a.detail && <span className="hidden max-w-full truncate text-[9px] font-normal text-[var(--rg-faint)] md:block">{a.detail}</span>}
                         </span>
                     </Key>
                 ))}

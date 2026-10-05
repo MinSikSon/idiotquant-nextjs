@@ -1924,12 +1924,13 @@ export default function Rogue() {
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
-        { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
+        { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", mobileMark: hereItem ? itemChar(hereItem.kind) : undefined, hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
-        { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
+        { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", mobileMark: ">", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
             label: "올라간다",
             detail: "올라가는 계단",
+            mobileMark: "<",
             hint: "< — 1층 계단은 증표가 있어야 열린다",
             keys: "<",
             on: () => run({ t: "ascend" }),
@@ -1942,13 +1943,14 @@ export default function Rogue() {
         },
         // 배낭에서 꺼내 쓰는 것들
         { label: "배낭", detail: itemText("weapon") ?? itemText("potion") ?? itemText("scroll") ?? "소지품", hint: "i — 쥐기·입기·끼기는 여기서", keys: coopKeys ? "R · P" : "i", on: () => desks.current[who]?.togglePack(), hot: onAnvil },
-        { label: "마신다", detail: itemText("potion") ?? "물약", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
-        { label: "읽는다", detail: itemText("scroll") ?? "주문서", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
-        { label: "먹는다", detail: itemText("food") ?? "음식", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
-        { label: "쏜다", detail: itemText("wand") ?? "지팡이", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
+        { label: "마신다", detail: itemText("potion") ?? "물약", mobileMark: "!", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
+        { label: "읽는다", detail: itemText("scroll") ?? "주문서", mobileMark: "?", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
+        { label: "먹는다", detail: itemText("food") ?? "음식", mobileMark: "%", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
+        { label: "쏜다", detail: itemText("wand") ?? "지팡이", mobileMark: "/", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
         {
             label: "던진다",
             detail: hero.pack.find((p) => isThrowable(p) && !p.unpaid) ? describe(hero.pack.find((p) => isThrowable(p) && !p.unpaid)!, state.known, state.appearance) : "투척 무기",
+            mobileMark: ")",
             hint: "t",
             keys: coopKeys ? undefined : "t",
             on: () => desks.current[who]?.aim("throw"),
