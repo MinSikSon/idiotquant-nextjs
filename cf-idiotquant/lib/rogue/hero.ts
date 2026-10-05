@@ -506,12 +506,20 @@ export function offHandWeapon(hero: Hero): Item | undefined {
     return hero.offWeaponId === null ? undefined : hero.pack.find((i) => i.id === hero.offWeaponId);
 }
 
-/** 제 직업이 허용한 같은 무기를 양손에 모두 쥐고 있는가. */
+/** 직업이 허용한 한손 무기 두 자루를 실제로 양손에 쥐고 있는가. */
 export function isDualWielding(hero: Hero): boolean {
     const allowed = DUAL_WIELD[hero.origin ?? "knight"];
     const main = equippedWeapon(hero);
     const off = offHandWeapon(hero);
-    return !!allowed && !!main && main.type === off?.type && allowed.includes(main.type);
+    return !!allowed && !!main && !!off && allowed.includes(main.type) && allowed.includes(off.type)
+        && weaponHandsOf(main.type) === 1 && weaponHandsOf(off.type) === 1;
+}
+
+/** 같은 종류의 무기 두 자루를 맞춰 든 보너스 대상인가. */
+export function hasMatchedDualWield(hero: Hero): boolean {
+    const main = equippedWeapon(hero);
+    const off = offHandWeapon(hero);
+    return isDualWielding(hero) && !!main && !!off && main.type === off.type;
 }
 
 /**
@@ -521,7 +529,7 @@ export function isDualWielding(hero: Hero): boolean {
  *
  *   ① 무기여야 한다.
  *   ② **제 직업이 이도류로 쓰는 종류**여야 한다(`DUAL_WIELD`). 도적은 단검, 근위대는 단검·철퇴·창·장검.
- *   ③ **주손에 같은 종류를 쥐고** 있어야 한다 — 한 손에만 들면 그냥 한 자루다.
+ *   ③ 주손에도 직업이 허용한 한손 무기를 쥐고 있어야 한다 — 한 손에만 들면 그냥 한 자루다.
  *   ④ 주손에 쥔 **그 물건 자체**는 안 된다. 한 자루를 두 손에 들 수는 없다.
  */
 export function canOffHand(hero: Hero, it: Item): boolean {
@@ -530,7 +538,8 @@ export function canOffHand(hero: Hero, it: Item): boolean {
     const allowed = DUAL_WIELD[hero.origin ?? "knight"];
     if (!allowed || !allowed.includes(it.type)) return false;
     const main = equippedWeapon(hero);
-    return !!main && weaponHandsOf(main.type) === 1 && main.type === it.type && main.id !== it.id;
+    return !!main && allowed.includes(main.type) && weaponHandsOf(main.type) === 1
+        && weaponHandsOf(it.type) === 1 && main.id !== it.id;
 }
 
 export function equippedArmor(hero: Hero): Item | undefined {
@@ -653,6 +662,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
         { n: ringSum(hero, "dexterity"), why: "민첩" },
+        ...(hasMatchedDualWield(hero) ? [{ n: 1, why: "쌍무기" }] : []),
         { n: meleePlus(weapon, "plusHit"), why: "enchant" },
     ];
 }

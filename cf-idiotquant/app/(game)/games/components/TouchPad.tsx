@@ -198,6 +198,7 @@ export default function TouchPad({
     dirKeys = [],
     hold = true,
     centerLabel = "·",
+    centerMark,
     centerHint = "제자리에서 쉰다",
     centerHot = false,
     centerWarn = false,
@@ -215,6 +216,7 @@ export default function TouchPad({
     hold?: boolean;
     /** 장착 지팡이 단축 동작이 켜져 있을 때 가운데 칸에 표시한다. */
     centerLabel?: string;
+    centerMark?: string;
     centerHint?: string;
     centerHot?: boolean;
     centerWarn?: boolean;
@@ -237,7 +239,7 @@ export default function TouchPad({
                 {DIRS.map(([dx, dy, arrow, title], i) => (
                     <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerWarn}>
                         <span className="flex flex-col items-center gap-0.5">
-                            {i === 4 ? <span className="max-w-[40px] whitespace-pre-line text-center text-[9px] font-bold leading-tight">{centerLabel}</span> : arrow}
+                            {i === 4 ? <span className="flex max-w-[40px] flex-col items-center gap-0.5 whitespace-pre-line text-center text-[9px] font-bold leading-tight">{centerLabel}{centerMark && <span className="text-[11px] text-[var(--rg-gold)] md:hidden">{centerMark}</span>}</span> : arrow}
                             {dirKeys.some((p) => p.keys[i]) && (
                                 <span className="hidden gap-1 text-[9px] leading-none md:flex">
                                     {dirKeys.map((p, j) =>

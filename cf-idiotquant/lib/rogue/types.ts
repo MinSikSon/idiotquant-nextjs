@@ -417,8 +417,8 @@ export interface Hero {
     /**
      * 보조손에 쥔 것 — **이도류.** 없으면 `null`.
      *
-     * 직업마다 쥘 수 있는 종류가 정해져 있고(`origins.DUAL_WIELD`), 주손에 같은 종류를
-     * 쥐고 있어야 한다. 규칙은 `hero.canOffHand` 한 자리에서 본다.
+     * 직업마다 쌍수로 쥘 수 있는 한손 무기 종류가 정해져 있다(`origins.DUAL_WIELD`).
+     * 주손·보조손 종류는 달라도 된다. 규칙은 `hero.canOffHand` 한 자리에서 본다.
      */
     offWeaponId: number | null;
     armorId: number | null;

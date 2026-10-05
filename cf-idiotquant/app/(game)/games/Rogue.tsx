@@ -1662,6 +1662,7 @@ export default function Rogue() {
             const h = state?.heroes[w];
             if (!state || !h || h.hp <= 0) return;
             const onFountain = state.level.fountain?.x === h.x && state.level.fountain?.y === h.y;
+            const onAltar = state.level.special?.kind === "altar" && !state.level.altarUsed && state.level.anvil?.x === h.x && state.level.anvil?.y === h.y;
             if (modes[w] === "aim") {
                 setWho(w);
                 desks.current[w]?.padKey({ act: true });
@@ -1669,6 +1670,11 @@ export default function Rogue() {
             }
             if (modes[w] === "none" && onFountain) {
                 runAs(w, { t: "fountain" });
+                return;
+            }
+            if (modes[w] === "none" && onAltar) {
+                setWho(w);
+                setAltarOpen((open) => !open);
                 return;
             }
             if (modes[w] === "none" && rapidFireOf(h)) {
@@ -1934,8 +1940,6 @@ export default function Rogue() {
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
-        { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", mobileMark: hereItem ? itemChar(hereItem.kind) : undefined, hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
-        { label: "분수 물", detail: onFountain ? "운에 따라 효과가 달라진다" : "분수", mobileMark: "}", hint: "f — 분수 물을 마신다", keys: "f", on: () => run({ t: "fountain" }), off: onFountain ? undefined : "분수 위에 서야 한다", hot: onFountain },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
         { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", mobileMark: ">", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
@@ -2177,26 +2181,19 @@ export default function Rogue() {
                         );
                     })()}
 
-                    {onAltar && (
-                        <>
-                            <button type="button" onClick={() => setAltarOpen((v) => !v)} aria-expanded={altarOpen} className="h-7 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)]/90 px-2 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold text-[var(--rg-gold)]">
-                                † 선택 제단
-                            </button>
-                            {altarOpen && (
-                                <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(18rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                                    <span className="font-bold text-[var(--rg-gold)]">하나만 고른다 · 확정하면 턴을 쓴다</span>
-                                    {([
-                                        ["blood", "피의 서약 · 현재 HP 1/3 (최소 5) → 축복 강화 주문서"],
-                                        ["hunger", "굶주림의 서약 · 허기 400 → 지도 · 감정 주문서"],
-                                        ["guardian", "수호자의 서약 · 챔피언 전투 → 처치 시 보석"],
-                                    ] as const).map(([choice, label]) => (
-                                        <button key={choice} type="button" onClick={() => { run({ t: "altar", choice }); setAltarOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
-                                            {label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </>
+                    {onAltar && altarOpen && (
+                        <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(18rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
+                            <span className="font-bold text-[var(--rg-gold)]">하나만 고른다 · 확정하면 턴을 쓴다</span>
+                            {([
+                                ["blood", "피의 서약 · 현재 HP 1/3 (최소 5) → 축복 강화 주문서"],
+                                ["hunger", "굶주림의 서약 · 허기 400 → 지도 · 감정 주문서"],
+                                ["guardian", "수호자의 서약 · 챔피언 전투 → 처치 시 보석"],
+                            ] as const).map(([choice, label]) => (
+                                <button key={choice} type="button" onClick={() => { run({ t: "altar", choice }); setAltarOpen(false); }} className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]">
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                     )}
 
                     {shopHere && level.shop && (
@@ -2379,6 +2376,8 @@ export default function Rogue() {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
                         if (!shot) {
+                            if (onAltar) return "제단\n선택";
+                            if (hereItem) return "줍기";
                             if (onFountain) return "분수 물";
                             if (!coopKeys && modes[who] === "none" && activeHero.origin === "knight" && !isDualWielding(activeHero)) return "철벽의\n자세";
                             return "·";
@@ -2386,10 +2385,13 @@ export default function Rogue() {
                         // 켜짐·꺼짐은 글자가 아니라 강조색(`centerWarn`)이 말한다 — 비전 속사와 같은 모양.
                         return shot.kind === "zap" ? "비전\n속사" : "연속\n사격";
                     })()}
+                    centerMark={onAltar ? "†" : hereItem ? itemChar(hereItem.kind) : onFountain ? "}" : undefined}
                     centerHint={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
                         if (!shot) {
+                            if (onAltar) return "제단의 힘을 고른다";
+                            if (hereItem) return `발밑의 ${describe(hereItem, state.known, state.appearance)}를 줍는다`;
                             if (onFountain) return "분수 물을 마신다 · Luck에 따라 효과가 달라진다";
                             if (!coopKeys && modes[who] === "none" && activeHero.origin === "knight" && !isDualWielding(activeHero)) return "철벽의 자세 · 제자리에서 쉬며 방어 자세를 잡는다";
                             return "제자리에서 쉰다";
@@ -2413,7 +2415,7 @@ export default function Rogue() {
                     onMove={(dx, dy) => {
                         if (dx === 0 && dy === 0) {
                             if (coopKeys) return confirm(who);
-                            if (onFountain) return confirm(who);
+                            if (onFountain || onAltar || hereItem) return confirm(who);
                             const hero = state.heroes[who] ?? state.heroes[0];
                             if (modes[who] === "none" && rapidFireOf(hero)) return confirm(who);
                             if (desks.current[who]?.aimAt(0, 0)) return;

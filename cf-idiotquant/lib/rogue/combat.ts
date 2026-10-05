@@ -388,6 +388,8 @@ function swing(
 ): AttackResult {
     const hitTerms = [
         ...heroHitTerms(hero, weapon),
+        // 같은 종류 두 자루는 맞춰 쥔 이점을 얻는다. 양손 모두의 표시와 굴림은
+        // `heroHitTerms` 하나가 함께 계산한다.
         ...(off ? [{ n: OFF_HAND_HIT, why: "보조손" }] : []),
     ];
     const mName = monsterName(m);
