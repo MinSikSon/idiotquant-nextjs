@@ -42,6 +42,8 @@ export const HOLD_STEP = 120;
 
 export interface PadAction {
     label: string;
+    /** 짧은 보조 설명이나 대상 아이템 이름. */
+    detail?: string;
     hint?: string;
     /** 단축키 — **넓은 화면에서만** 이름 옆에 적는다. 폰에서는 칸이 모자라고 키보드도 없다. */
     keys?: string;
@@ -168,7 +170,7 @@ function Key({
                 disabled ? "border-[var(--rg-off-line)] bg-[var(--rg-off-bg)] text-[var(--rg-off-ink)]" : "",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
-                wide ? "h-9 w-full overflow-hidden whitespace-nowrap px-1 text-[12px]" : "h-11 w-11 text-[13px]",
+                wide ? "h-10 w-full overflow-hidden whitespace-nowrap px-1 text-[11px]" : "h-11 w-11 text-[13px]",
             ].join(" ")}
         >
             {children}
@@ -254,8 +256,9 @@ export default function TouchPad({
             <div className="pointer-events-auto grid min-w-0 flex-1 grid-cols-3 content-start gap-1 md:max-lg:w-[min(42vw,360px)] md:max-lg:flex-none">
                 {actions.map((a) => (
                     <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
-                        <span>
-                            {a.label}
+                        <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-tight">
+                            <span className="max-w-full truncate">{a.label}</span>
+                            {a.detail && <span className="max-w-full truncate text-[9px] font-normal text-[var(--rg-faint)]">{a.detail}</span>}
                             {a.keys && (
                                 <span className="ml-1.5 hidden text-[10px] text-[var(--rg-faint)] md:inline">{a.keys}</span>
                             )}

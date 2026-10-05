@@ -56,6 +56,7 @@ import {
     WANDS,
     WEAPONS,
     HAND_THROWN_AMMO,
+    describe,
     defenseOf,
     isThrowable,
     itemChar,
@@ -1878,6 +1879,10 @@ export default function Rogue() {
     const hereWare = hereItem && forSale(level, hereItem) ? price(hereItem) : null;
     // 외상인 것은 **없는 것으로** 센다 — 쓸 수 없으니 단추가 켜지면 눌러도 빈 목록이다.
     const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k && !p.unpaid);
+    const itemText = (k: ItemKind) => {
+        const it = hero.pack.find((p) => p.kind === k && !p.unpaid);
+        return it ? describe(it, state.known, state.appearance) : undefined;
+    };
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
     const sightings = survey(state);
     const progress = bestiaryProgress(state.bestiary);
@@ -1919,11 +1924,12 @@ export default function Rogue() {
         // 발밑 — **줍기가 맨 앞이다.** 셋 다 발밑을 보는 일이지만 줍는 것이 압도적으로
         // 잦고(층마다 여러 번), 계단은 층에 한 번씩이다. 잦은 것이 첫 칸에 서야 손가락이
         // 제일 짧은 길을 간다.
-        { label: "줍기", hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
+        { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
-        { label: "내려간다", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
+        { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
             label: "올라간다",
+            detail: "올라가는 계단",
             hint: "< — 1층 계단은 증표가 있어야 열린다",
             keys: "<",
             on: () => run({ t: "ascend" }),
@@ -1935,27 +1941,29 @@ export default function Rogue() {
             hot: onUpStairs && !(level.depth === 1 && !hero.hasAmulet),
         },
         // 배낭에서 꺼내 쓰는 것들
-        { label: "배낭", hint: "i — 쥐기·입기·끼기는 여기서", keys: coopKeys ? "R · P" : "i", on: () => desks.current[who]?.togglePack(), hot: onAnvil },
-        { label: "마신다", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
-        { label: "읽는다", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
-        { label: "먹는다", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
-        { label: "쏜다", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
+        { label: "배낭", detail: itemText("weapon") ?? itemText("potion") ?? itemText("scroll") ?? "소지품", hint: "i — 쥐기·입기·끼기는 여기서", keys: coopKeys ? "R · P" : "i", on: () => desks.current[who]?.togglePack(), hot: onAnvil },
+        { label: "마신다", detail: itemText("potion") ?? "물약", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
+        { label: "읽는다", detail: itemText("scroll") ?? "주문서", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
+        { label: "먹는다", detail: itemText("food") ?? "음식", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
+        { label: "쏜다", detail: itemText("wand") ?? "지팡이", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
         {
             label: "던진다",
+            detail: hero.pack.find((p) => isThrowable(p) && !p.unpaid) ? describe(hero.pack.find((p) => isThrowable(p) && !p.unpaid)!, state.known, state.appearance) : "투척 무기",
             hint: "t",
             keys: coopKeys ? undefined : "t",
             on: () => desks.current[who]?.aim("throw"),
             off: hero.pack.some((p) => isThrowable(p) && !p.unpaid) ? undefined : "던질 만한 것이 없다",
         },
         // 살피는 것 · 그 밖
-        { label: "뒤진다", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
+        { label: "뒤진다", detail: "숨은 문 · 함정", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
         {
             label: "도감",
+            detail: "몬스터 · 아이템",
             keys: coopKeys ? undefined : "x",
             hint: `x — 몬스터 ${progress.found}/${progress.total} · 아이템 ${itemProg.identifiedCount}/${itemProg.totalCount}`,
             on: () => setSheet("bestiary"),
         },
-        { label: "⚙ 옵션", hint: "도움말 · 지난 판", on: () => setSheet("options") },
+        { label: "⚙ 옵션", detail: "도움말 · 지난 판", hint: "도움말 · 지난 판", on: () => setSheet("options") },
     ];
 
     // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
