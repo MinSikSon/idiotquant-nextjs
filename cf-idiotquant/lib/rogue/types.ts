@@ -344,6 +344,8 @@ export function fountainAt(level: Pick<Level, "fountain" | "fountains">, x: numb
 export interface TransmuteAltar extends Pos {
     /** 남은 변환 횟수. 삼켜도 한 번이다. */
     uses: number;
+    /** 이 제단을 섬기는 신의 정렬. 층 시드에서 위치로 고정 계산한다. */
+    alignment: ReligionAlignment;
 }
 
 /** 넷핵식 분수. 마법 성질과 마신 횟수는 층을 떠나도 저장한다. */
@@ -376,9 +378,14 @@ export interface ShopState {
 export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
+export type ReligionAlignment = "lawful" | "neutral" | "chaotic";
 
 export interface Hero {
     origin?: HeroOrigin;
+    /** 직업이 섬기는 신의 정렬. 제단과 다른 정렬이면 기도가 거부되고 신이 노한다. */
+    alignment: ReligionAlignment;
+    /** 잘못된 기도 등으로 쌓인 신의 분노. 제물을 바쳐 낮춘다. */
+    deityAnger: number;
     /**
      * 온라인에서 지도에 적는 **이름 넉 자.** 없으면 `@` 그대로다.
      *
@@ -472,6 +479,8 @@ export interface Hero {
     bonusDefense: number;
     /** NetHack식 행운. 자연 운의 범위는 -13..13이며, 운 기반 확률과 물건 등급에 반영한다. */
     luck: number;
+    /** 기도 뒤 다시 응답받기까지 남은 게임 턴. 새 판은 입장 때 받은 도움으로 300부터 시작한다. */
+    prayerTimeout: number;
     /** 지혜. 공격 지팡이의 추가 피해 주사위에 반영한다. */
     wisdom: number;
     /** 저장 이전 호환 전용. normalize에서 Wisdom으로 옮기며 게임 규칙은 읽지 않는다. */

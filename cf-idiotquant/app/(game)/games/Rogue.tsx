@@ -97,7 +97,7 @@ import {
 } from "@/lib/rogue/storage";
 import { T, idx, fountainAt, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES } from "@/lib/rogue/monsters";
-import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ALIGNMENT_NAME, ARMOR_SKILL_MAX, ORIGIN_ALIGNMENT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
@@ -1698,9 +1698,16 @@ export default function Rogue() {
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (!state) return;
-            if (e.metaKey || e.ctrlKey || e.altKey) return;
             const target = e.target as HTMLElement | null;
             if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+            if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === "KeyP") {
+                if (!frozen && sheet === "none") {
+                    e.preventDefault();
+                    run({ t: "pray" });
+                }
+                return;
+            }
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
 
             // **글자는 자판 자리로 읽는다** — 한글 입력 상태면 `e.key` 가 `ㅈ`·`ㅁ` 으로 와서
             // 어떤 키도 안 먹는다. 대문자(`W`·`P`·`R`)는 그대로 둔다.
@@ -1962,6 +1969,7 @@ export default function Rogue() {
         { label: "마신다", detail: itemText("potion") ?? "물약", mobileMark: "!", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
         { label: "읽는다", detail: itemText("scroll") ?? "주문서", mobileMark: "?", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
         { label: "먹는다", detail: itemText("food") ?? "음식", mobileMark: "%", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
+        { label: "기도", detail: "위기에서 신에게 도움을 청한다", mobileMark: "†", hint: "Alt+p — 서두르면 벌을 받을 수 있다", keys: "Alt+P", on: () => run({ t: "pray" }) },
         { label: "쏜다", detail: itemText("wand") ?? "지팡이", mobileMark: "/", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
         {
             label: "던진다",
@@ -3293,7 +3301,7 @@ export default function Rogue() {
                                             <span className="font-mono text-xl" style={{ color: orig.iconInk }}>{orig.icon}</span>
                                             <h3 className="font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
                                         </div>
-                                        <p className="mb-2 text-xs text-[var(--rg-gold)]">Hp {orig.baseHp} · Str {orig.baseStr}</p>
+                                        <p className="mb-2 text-xs text-[var(--rg-gold)]">Hp {orig.baseHp} · Str {orig.baseStr} · 신앙 {ALIGNMENT_NAME[ORIGIN_ALIGNMENT[orig.id]]}</p>
                                         <p className="mb-2 text-[11.5px] text-[var(--rg-muted)]">{orig.description}</p>
                                         <div className="border-t border-[var(--rg-line-soft)] pt-2 text-[11px]">
                                             <b className="text-[var(--rg-strong)]"><span className="font-mono text-[var(--rg-gold)]">*</span> {orig.traitName}: </b>
@@ -3338,6 +3346,7 @@ export default function Rogue() {
                                 <dl className="grid grid-cols-[7.5em_1fr] gap-y-1 border-t border-[var(--rg-line-soft)] pt-2">
                                     <dt className="text-[var(--rg-label)]">&lt;</dt><dd>올라간다 — 실수로 오르지 않게 행동 키에서 뺐습니다 (마지막에 움직인 사람)</dd>
                                     <dt className="text-[var(--rg-label)]">?</dt><dd>이 화면 (도감은 단추로 — <b>X</b> 는 방장의 아래쪽이다)</dd>
+                                    <dt className="text-[var(--rg-label)]">Alt+p</dt><dd>기도 — 위기에서 도움을 청합니다. 너무 이르거나 운이 나쁘면 벌을 받을 수 있습니다</dd>
                                     <dt className="text-[var(--rg-label)]">단추 판</dt><dd>마지막에 움직인 사람이 합니다 — 파티 줄을 눌러 바꿀 수도 있습니다</dd>
                                     <dt className="text-[var(--rg-label)]">쓰러지면</dt><dd>살아 있는 사람이 <b>더 깊은 층</b>에 닿으면 체력 1/4 로 일어납니다 (올라갈 때는 안 일어납니다). 계단은 한 명만 눌러도 둘이 함께 옮깁니다</dd>
                                 </dl>
@@ -3349,6 +3358,7 @@ export default function Rogue() {
                                 <dt className="text-[var(--rg-label)]">.</dt><dd>제자리에서 쉰다</dd>
                                 <dt className="text-[var(--rg-label)]">, 또는 g</dt><dd>발밑의 것을 줍는다</dd>
                                 <dt className="text-[var(--rg-label)]">s</dt><dd>벽을 뒤진다 — 숨은 문과 함정이 드러난다</dd>
+                                <dt className="text-[var(--rg-label)]">Alt+p</dt><dd>기도 — 위기에서 도움을 청합니다. 너무 이르거나 운이 나쁘면 벌을 받을 수 있습니다</dd>
                                 <dt className="text-[var(--rg-label)]">f</dt><dd>발밑 분수의 물을 마신다 — 행운에 따라 이롭거나 위험한 일이 생기며, 분수는 말라 없어질 수 있다</dd>
                                 <dt className="text-[var(--rg-label)]">&gt; &lt;</dt><dd>계단을 내려간다 · 올라간다</dd>
                                 <dt className="text-[var(--rg-label)]">q r e</dt><dd>마신다 · 읽는다 · 먹는다</dd>
@@ -3420,7 +3430,8 @@ export default function Rogue() {
                                 물약·주문서·무기·갑옷·반지·지팡이를 <b>내려놓으면</b> 같은 종류의 다른 물건으로
                                 바뀝니다 — 등급은 그 층의 것입니다.{" "}
                                 <b className="text-[var(--rg-trap)]">{TRANSMUTE_SWALLOW_CHANCE}%는 제단이 삼킵니다.</b>{" "}
-                                제단 하나에 <b>{TRANSMUTE_ALTAR_USES}번</b>이면 불이 꺼집니다.
+                                제단의 정렬은 밟으면 로그에 나옵니다. 같은 정렬의 신에게 식량 한 개를 바치면 기도 대기 시간과 신의 분노가 줄고, 다른 정렬의 제단에서 기도하거나 제물을 바치면 신이 노합니다. 같은 정렬 제단 위의 물은 성공한 기도로 축복받습니다. 제물과 변환을 합쳐{" "}
+                                <b>{TRANSMUTE_ALTAR_USES}번</b> 쓰면 불이 꺼집니다.
                             </p>
                             <p className="text-[var(--rg-faint)]">
                                 <b className="text-[var(--rg-gold)]">@</b>(금빛)는{" "}

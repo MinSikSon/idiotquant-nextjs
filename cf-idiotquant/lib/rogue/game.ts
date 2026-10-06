@@ -76,6 +76,7 @@ import {
     ADVANCED_TRAP_EVADE,
     ADVANCE_LEVEL,
     ADVANCED_SPIRIT_TURNS,
+    ALIGNMENT_NAME,
     ORIGINS,
     SPIRIT_COOLDOWN,
     SPIRIT_TURNS,
@@ -216,6 +217,7 @@ type Action =
     | { t: "pickup" }
     | { t: "fountain" }
     | { t: "dip"; letter: string }
+    | { t: "pray" }
     /** 축복의 기름은 대상 장비에 바른다. 다른 포션은 대상 없이 마신다. */
     | { t: "quaff"; letter: string; target?: string }
     /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
@@ -1022,7 +1024,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         say(
             state,
             altar.uses > 0
-                ? `변환 제단이다 — 물건을 내려놓으면 같은 종류의 다른 물건으로 바뀐다. ${TRANSMUTE_SWALLOW_CHANCE}%는 제단이 삼킨다 (남은 ${altar.uses}번).`
+                ? `변환 제단이다 — 신의 정렬은 ${ALIGNMENT_NAME[altar.alignment]}이다 (내 신: ${ALIGNMENT_NAME[hero.alignment]}). 같은 정렬의 제단에서 기도하면 대기 시간이 최대 100턴 줄고, 식량 제물은 대기 시간·신의 분노를 줄인다. 다른 정렬에서 기도하면 신이 노한다. 물은 같은 정렬의 성공한 기도로 축복한다. 물건은 ${TRANSMUTE_SWALLOW_CHANCE}%로 삼켜진다 (남은 ${altar.uses}번).`
                 : "불 꺼진 변환 제단이다.",
         );
     }
@@ -1489,6 +1491,81 @@ function resolveDipEvent(state: GameState, hero: Hero, item: Item, fountain: Non
         say(state, result === 27 ? "물결 속에서 보석이 반짝인다." : "분수 바닥에서 금화가 떠올랐다."); return;
     }
     say(state, "물결이 잦아들고 분수는 조용해졌다.");
+}
+
+/** 넷핵식 기도: 대기 시간이 끝나고 Luck이 중립 이상일 때 위기를 걷어낸다. */
+function pray(state: GameState, hero: Hero, rng: Rng): boolean {
+    const cursed = hero.pack.filter((item) => item.cursed);
+    const majorTrouble = hero.hp <= Math.max(5, Math.floor(hero.maxHp / 4)) || hero.food <= 0 || !!hero.burnTurns;
+    const minorTrouble = hero.hp < hero.maxHp || hero.food < 700 || hero.blind > 0 || hero.confused > 0 || hero.stuck > 0 || cursed.length > 0 || hero.str < hero.maxStr;
+    const criticalHealth = hero.hp <= 5;
+    const allowedTimeout = majorTrouble ? 200 : minorTrouble ? 100 : 0;
+    const altar = state.level.transmuteAltar;
+    const atAltar = !!altar && altar.uses > 0 && altar.x === hero.x && altar.y === hero.y;
+    const misalignedAltar = !!altar && atAltar && altar.alignment !== hero.alignment;
+    if (hero.luck < 0 || hero.prayerTimeout > allowedTimeout || misalignedAltar || hero.deityAnger > 0) {
+        hero.luck = Math.max(-13, hero.luck - 3);
+        const damage = rng.between(1, Math.max(4, Math.ceil(hero.level / 2)));
+        hero.hp -= damage;
+        hero.prayerTimeout = Math.max(hero.prayerTimeout, 300);
+        hero.deityAnger = Math.min(3, hero.deityAnger + 1);
+        if (misalignedAltar) {
+            const water = state.level.items.find((item) => item.x === hero.x && item.y === hero.y && item.kind === "potion" && item.type === "water");
+            if (water) {
+                water.blessed = false;
+                water.cursed = true;
+                water.curseKnown = false;
+                say(state, "다른 정렬의 제단에서 빈 기도를 올려 물이 저주받은 물로 변했다.");
+            }
+        }
+        say(state, `기도가 받아들여지지 않았다${misalignedAltar ? " — 다른 정렬의 신의 제단이다" : hero.deityAnger > 0 ? " — 신의 분노가 가라앉지 않았다" : ""}. 행운이 짙어지고 신의 분노 ${hero.deityAnger}/3, ${damage} 피해.`);
+        return true;
+    }
+
+    const healed = hero.hp < hero.maxHp;
+    hero.hp = hero.maxHp;
+    if (criticalHealth && hero.maxHp < 5 * hero.level + 11) {
+        hero.maxHp = Math.min(5 * hero.level + 11, hero.maxHp + rng.between(1, 5));
+        hero.hp = hero.maxHp;
+    }
+    const fed = hero.food < 900;
+    hero.food = Math.max(hero.food, 900);
+    const restored = hero.str < hero.maxStr;
+    hero.str = hero.maxStr;
+    const cleared = hero.blind > 0 || hero.confused > 0 || hero.stuck > 0 || !!hero.burnTurns;
+    hero.blind = 0;
+    hero.confused = 0;
+    hero.stuck = 0;
+    hero.burnTurns = 0;
+    for (const item of cursed) {
+        item.cursed = false;
+        item.curseKnown = false;
+    }
+    if (!healed && !fed && !restored && !cleared && cursed.length === 0) {
+        // 평온한 기도에 대한 이 게임의 호의: 도달 가능한 치유 상한 안에서 생명력을 늘린다.
+        const maxHealth = 5 * hero.level + 11;
+        if (hero.maxHp < maxHealth) hero.maxHp += 1;
+        else hero.luck = Math.min(13, hero.luck + 1);
+        hero.hp = hero.maxHp;
+    }
+    const atCoAltar = !!altar && atAltar && altar.alignment === hero.alignment;
+    hero.prayerTimeout = Math.max(50, rng.between(50, 1000) - (atCoAltar ? 100 : 0));
+    const altarWater = atAltar
+        ? state.level.items.find((item) => item.x === hero.x && item.y === hero.y && item.kind === "potion" && item.type === "water")
+        : undefined;
+    if (altarWater && atCoAltar) {
+        altarWater.blessed = true;
+        altarWater.cursed = false;
+        altarWater.curseKnown = false;
+    }
+    say(state, cursed.length
+        ? `기도가 응답했다. 몸의 상처와 저주 ${cursed.length}개가 사라졌다.`
+        : healed || fed || restored || cleared
+            ? "기도가 응답했다. 몸과 마음의 고통이 가라앉았다."
+            : "기도가 응답해 생명력이 한층 깊어졌다.");
+    if (atCoAltar) say(state, `같은 정렬의 제단이 기도를 북돋웠다. 신의 분노 ${hero.deityAnger}/3 · 다음 기도까지 ${hero.prayerTimeout}턴.`);
+    if (altarWater && atCoAltar) say(state, "제단 위 물이 축복받은 물로 변했다.");
+    return true;
 }
 
 function poolSpots(state: GameState, x: number, y: number): Pos[] {
@@ -2179,13 +2256,34 @@ export function transmuteCategory(it: Item): Category | null {
 }
 
 /**
- * 변환 제단에 올린다 — **삼키거나, 같은 분류의 새 물건으로 바꿔 제단 위에 둔다.**
- * 새 물건은 그 층의 드롭 규칙(`randomItem`, 올린 사람의 Luck)을 그대로 탄다 — 제단이
- * 등급을 올려 주지 않는다. 받지 않는 물건이면 `false` 를 돌려 보통 내려놓기로 간다.
+ * 변환 제단에 올린다 — 식량은 기도 제물, 물은 기도 때 축복 대상으로 두고, 그 밖의 받는
+ * 물건은 삼키거나 같은 분류의 새 물건으로 바꾼다. 새 물건은 그 층의 드롭 규칙을 탄다.
  */
 function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean {
     const altar = state.level.transmuteAltar;
     if (!altar || altar.x !== hero.x || altar.y !== hero.y || altar.uses <= 0) return false;
+    if (it.kind === "potion" && it.type === "water") return false;
+    if (it.kind === "food" && !it.unpaid) {
+        const name = describe(it, state.known, state.appearance);
+        if (hero.alignment !== altar.alignment) {
+            hero.deityAnger = Math.min(3, hero.deityAnger + 1);
+            altar.uses -= 1;
+            say(state, `${name}을(를) 다른 정렬의 제단에 바쳤다. 제단이 거부했고 신의 분노가 ${hero.deityAnger}/3이 되었다.`);
+            if (altar.uses === 0) say(state, "제단의 불빛이 꺼졌다.");
+            return true;
+        }
+        const timeout = hero.prayerTimeout;
+        hero.prayerTimeout = Math.max(0, timeout - 100);
+        const afterTurnTimeout = Math.max(0, hero.prayerTimeout - 1);
+        hero.deityAnger = Math.max(0, hero.deityAnger - 1);
+        const gainedLuck = (timeout === 0 || afterTurnTimeout === 0) && hero.deityAnger === 0 && hero.luck < 13;
+        if (gainedLuck) hero.luck += 1;
+        altar.uses -= 1;
+        const timeoutText = timeout > 0 ? `기도 대기 시간이 ${timeout} → ${afterTurnTimeout}턴으로 줄었다` : "기도할 수 있는 상태다";
+        say(state, `${name}을(를) 같은 정렬의 신에게 바쳤다. ${timeoutText} · 신의 분노 ${hero.deityAnger}/3${gainedLuck ? ` · 행운 ${hero.luck > 0 ? "+" : ""}${hero.luck}` : ""}.`);
+        if (altar.uses === 0) say(state, "제단의 불빛이 꺼졌다.");
+        return true;
+    }
     const cat = it.unpaid ? null : transmuteCategory(it);
     if (!cat) return false;
     const name = describe(it, state.known, state.appearance);
@@ -2214,22 +2312,27 @@ function drop(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
         say(state, "발밑에 이미 뭔가 있다.");
         return false;
     }
-    takeFromPack(hero, it, it.count);
-    it.x = hero.x;
-    it.y = hero.y;
-    if (offerAtAltar(state, hero, it, rng)) return true;
-    level.items.push(it);
-    const name = describe(it, state.known, state.appearance);
-    if (it.unpaid) {
+    const offeringFood = level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && it.kind === "food" && !it.unpaid;
+    const altarWater = level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && it.kind === "potion" && it.type === "water";
+    const dropped = offeringFood && it.count > 1 || altarWater && it.count > 1
+        ? { ...it, id: state.nextItemId++, count: 1, letter: undefined }
+        : it;
+    takeFromPack(hero, it, offeringFood || altarWater ? 1 : it.count);
+    dropped.x = hero.x;
+    dropped.y = hero.y;
+    if (offerAtAltar(state, hero, dropped, rng)) return true;
+    level.items.push(dropped);
+    const name = describe(dropped, state.known, state.appearance);
+    if (dropped.unpaid) {
         // 외상인 것을 내려놓으면 **돌려준 것**이다 — 다시 파는 물건이 된다.
-        delete it.unpaid;
+        delete dropped.unpaid;
         say(state, `${name}을(를) 도로 내려놓았다 — 외상에서 뺐다.`);
     } else if (inShop(level, hero.x, hero.y) && shopkeeperOf(level) && !level.shop!.angry) {
         // 내 물건은 가게 바닥에 놓아도 내 것이다 — 안 그러면 제 물건을 되사야 한다.
-        it.noCharge = true;
+        dropped.noCharge = true;
         say(state, `${name}을(를) 내려놓았다 — 팔려면 「판다」.`);
     } else {
-        delete it.noCharge;
+        delete dropped.noCharge;
         say(state, `${name}을(를) 내려놓았다.`);
     }
     return true;
@@ -3500,6 +3603,12 @@ function monsterTurns(state: GameState, rng: Rng, fled?: { hero: Hero; x: number
     }
     for (const m of [...level.monsters]) {
         if (m.hp <= 0) continue;
+        // NetHack의 자연 회복은 20턴에 1HP, 재생 특성은 매 턴 1HP다.
+        // 이 게임의 몬스터 시계(`monsterRound`)에 맞춰 회복시켜 협동 인원에 따라
+        // 회복 속도가 달라지지 않게 한다. 이미 가득 찬 체력은 넘기지 않는다.
+        if (m.hp < m.maxHp && ((m.def.traits ?? []).includes("R") || (state.monsterRound ?? 0) % 20 === 0)) {
+            m.hp += 1;
+        }
         if (m.splitNewborn) {
             m.splitNewborn = false;
             continue;
@@ -4269,6 +4378,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "dip":
                 acted = dipFountain(state, hero, cmd.letter, rng);
                 break;
+            case "pray":
+                acted = pray(state, hero, rng);
+                break;
             case "descend":
                 acted = descend(state, hero, rng);
                 break;
@@ -4385,6 +4497,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     // 상대가 층을 다 뒤지는 동안 굶지도, 불타지도, 눈이 풀리지도 않는다. 그건 협동이
     // 아니라 얌체다.
     for (const h of state.heroes) {
+        if (h.prayerTimeout > 0) h.prayerTimeout -= 1;
         // **쓰러진 사람의 시계는 선다.** 누워 있는 사람이 굶어 죽으면 살릴 길이 없다.
         if (h.hp <= 0) continue;
         tickHunger(state, h, rng);

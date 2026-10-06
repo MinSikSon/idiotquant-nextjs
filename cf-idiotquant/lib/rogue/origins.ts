@@ -8,9 +8,26 @@
  */
 
 import { makeItem } from "./items";
-import { type Item } from "./types";
+import { type HeroOrigin, type Item, type ReligionAlignment } from "./types";
 
-export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
+export type { HeroOrigin } from "./types";
+
+/** NetHack 직업 정렬에서 가져온 신앙 성향. 나머지 직업은 이 게임에서 중립 신을 섬긴다. */
+export const ORIGIN_ALIGNMENT: Record<HeroOrigin, ReligionAlignment> = {
+    knight: "lawful",
+    rogue: "chaotic",
+    alchemist: "neutral",
+    scholar: "neutral",
+    ranger: "neutral",
+    archeologist: "lawful",
+    elementalist: "neutral",
+};
+
+export const ALIGNMENT_NAME: Record<ReligionAlignment, string> = {
+    lawful: "질서",
+    neutral: "중립",
+    chaotic: "혼돈",
+};
 
 /** 직업별 선호 무기 계열. 전투 보정은 이 목록이 아니라 무기 숙련도에서 계산한다. */
 export interface WeaponAffinity {

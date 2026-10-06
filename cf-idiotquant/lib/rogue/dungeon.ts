@@ -1439,7 +1439,16 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
             r.gone || r.maze || r.vault || i === level.special?.room ? [] : openTiles(level, r, avoid),
         );
         const p = rng.pick(spots);
-        if (p) level.transmuteAltar = { x: p.x, y: p.y, uses: TRANSMUTE_ALTAR_USES };
+        if (p) {
+            // 파생값으로 정렬을 정해 새 난수를 쓰지 않는다 — 이후 층 생성의 RNG 흐름을 보존한다.
+            const alignments = ["lawful", "neutral", "chaotic"] as const;
+            level.transmuteAltar = {
+                x: p.x,
+                y: p.y,
+                uses: TRANSMUTE_ALTAR_USES,
+                alignment: alignments[(p.x + p.y + depth) % alignments.length],
+            };
+        }
     }
 
     // 빅룸 일부 변형에는 마법이 아닌 분수가 무리 지어 선다. 자리는 겹치지 않게 고른다.

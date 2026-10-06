@@ -30,7 +30,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGIN_ALIGNMENT, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -213,6 +213,8 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
     const originDef = ORIGINS[origin] ?? ORIGINS.knight;
     const hero: Hero = {
         origin,
+        alignment: ORIGIN_ALIGNMENT[origin],
+        deityAnger: 0,
         guarded: false,
         guardTurns: 0,
         x: 0,
@@ -247,6 +249,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         pendingSkillPicks: 0,
         bonusDefense: 0,
         luck: 0,
+        prayerTimeout: 300,
         wisdom: 0,
         weaponSkills: {},
         weaponTraining: {},

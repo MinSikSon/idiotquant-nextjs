@@ -8,8 +8,8 @@
 //      강화 주문서는 강화 주문서끼리만 바뀐다 — 안 그러면 지도 주문서가 강화 주문서를 뽑는
 //      뒷문이 된다.
 //   ③ **제단마다 `TRANSMUTE_ALTAR_USES` 번.** 삼켜도 한 번이다. 다 쓰면 그냥 바닥이다.
-//   ④ **안 받는 물건은 그냥 내려놓은 것이다** — 식량·증표·금화·유물·보석. 증표가 삼켜지면
-//      이기는 조건이 사라진다.
+//   ④ **분류가 없는 물건은 그냥 내려놓는다** — 증표·금화·유물·보석. 식량은 정렬이 맞으면
+//      기도 제물로 바치며, 다른 정렬에 바치면 신의 분노가 쌓인다.
 //   ⑤ **저장을 오가도 남은 횟수가 그대로다.** 되읽으며 채워지면 제단이 무한이 된다.
 
 import { test } from "node:test";
@@ -27,7 +27,7 @@ import { walkable, idx, type GameState, type Item, type ItemKind, type Tile } fr
 function atAltar(seed: number, uses = TRANSMUTE_ALTAR_USES): GameState {
     const s = newGame(seed);
     const h = s.heroes[0];
-    s.level.transmuteAltar = { x: h.x, y: h.y, uses };
+    s.level.transmuteAltar = { x: h.x, y: h.y, uses, alignment: h.alignment };
     s.level.items = s.level.items.filter((it) => it.x !== h.x || it.y !== h.y);
     s.level.monsters = [];
     return s;
@@ -110,9 +110,19 @@ test("올리면 같은 분류로 바뀌거나 삼켜진다", () => {
     assert.ok(Math.abs(rate - TRANSMUTE_SWALLOW_CHANCE) < 8, `삼키는 비율이 ${rate.toFixed(1)}% — ${TRANSMUTE_SWALLOW_CHANCE}% 근처여야 한다`);
 });
 
-test("안 받는 물건 · 다 쓴 제단 · 제단 밖은 그냥 내려놓는다", () => {
-    // ── 식량과 증표는 제단에 올려도 그대로 놓인다 — 횟수도 안 준다
-    for (const [kind, type] of [["food", "food ration"], ["amulet", "amulet"]] as [ItemKind, string][]) {
+test("제물과 분류가 없는 물건 · 다 쓴 제단 · 제단 밖은 구분한다", () => {
+    // ── 같은 정렬의 식량은 제물로 바쳐 기도 대기 시간을 줄인다
+    {
+        const s = atAltar(3);
+        const it = give(s, "food", "food ration");
+        const after = perform(s, { t: "drop", letter: it.letter! });
+        assert.equal(underfoot(after), undefined, "제물 식량이 바닥에 남았다");
+        assert.equal(after.heroes[0].prayerTimeout, 199, "제물이 대기 시간을 줄이지 않았다");
+        assert.equal(after.level.transmuteAltar!.uses, TRANSMUTE_ALTAR_USES - 1, "제물 횟수가 줄지 않았다");
+    }
+
+    // ── 증표는 제단 분류에 없으므로 그냥 내려놓는다
+    for (const [kind, type] of [["amulet", "amulet"]] as [ItemKind, string][]) {
         const s = atAltar(3);
         const it = give(s, kind, type);
         const after = perform(s, { t: "drop", letter: it.letter! });

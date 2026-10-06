@@ -27,11 +27,12 @@ import {
     launcherDamageOf,
 } from "./items";
 import { heroDefense, mergeStacks } from "./hero";
+import { ORIGIN_ALIGNMENT } from "./origins";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
 import { TRANSMUTE_ALTAR_USES } from "./dungeon";
-import { MAP_H, MAP_W, inBounds, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type RunAchievement, type ShopState, type SpiritBond, type TransmuteAltar } from "./types";
+import { MAP_H, MAP_W, inBounds, type GameState, type Hero, type HeroOrigin, type Item, type ItemKind, type Level, type Monster, type Pos, type ReligionAlignment, type RunAchievement, type ShopState, type SpiritBond, type TransmuteAltar } from "./types";
 
 const KEY = "rogue:save:v1";
 
@@ -41,7 +42,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 18;
+const VERSION = 20;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -171,7 +172,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         mutator: raw.mutator ?? null,
         shop: fixShop(raw.shop, rooms.length),
         // 옛 저장에는 변환 제단이 없다 — 모루와 같은 까닭으로 **없는 것이 맞다.**
-        transmuteAltar: fixTransmuteAltar(raw.transmuteAltar),
+        transmuteAltar: fixTransmuteAltar(raw.transmuteAltar, num(raw.depth, fallbackDepth)),
         fountain: null,
         fountains: (Array.isArray(raw.fountains) ? raw.fountains : raw.fountain ? [raw.fountain] : [])
             .filter((f) => Number.isFinite(f.x) && Number.isFinite(f.y) && inBounds(f.x, f.y))
@@ -180,12 +181,17 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
 }
 
 /** 변환 제단 — 모양이 틀리면 없는 것으로 한다. 횟수는 0~최대로 자른다(남이 보낸 판도 이 길이다). */
-function fixTransmuteAltar(raw: unknown): TransmuteAltar | null {
+function fixTransmuteAltar(raw: unknown, depth: number): TransmuteAltar | null {
     if (!raw || typeof raw !== "object") return null;
     const a = raw as Partial<TransmuteAltar>;
     if (!Number.isInteger(a.x) || !Number.isInteger(a.y) || !inBounds(a.x!, a.y!)) return null;
     const uses = Number.isInteger(a.uses) ? Math.max(0, Math.min(TRANSMUTE_ALTAR_USES, a.uses!)) : 0;
-    return { x: a.x!, y: a.y!, uses };
+    const alignments: ReligionAlignment[] = ["lawful", "neutral", "chaotic"];
+    const derived = alignments[(a.x! + a.y! + depth) % alignments.length];
+    const alignment = a.alignment === "lawful" || a.alignment === "neutral" || a.alignment === "chaotic"
+        ? a.alignment
+        : derived;
+    return { x: a.x!, y: a.y!, uses, alignment };
 }
 
 /**
@@ -365,6 +371,11 @@ function normalize(s: Saved): GameState | null {
         // 예전 `itemLuck` 은 Luck 판정과 Wi(지팡이 주사위 +1/성장)에 함께 쓰였다.
         // 진행도를 각각 새 Luck(기존 등급 보정과 비슷한 확률)과 Wisdom으로 옮긴다.
         luck: Math.max(-13, Math.min(13, Math.trunc(num(h.luck, Math.round(num((h as Hero).itemLuck, 0) * 20))))),
+        prayerTimeout: Math.max(0, Math.trunc(num(h.prayerTimeout, Math.max(0, 300 - num(s.turn, 0))))),
+        alignment: h.alignment === "lawful" || h.alignment === "neutral" || h.alignment === "chaotic"
+            ? h.alignment
+            : (ORIGIN_ALIGNMENT[h.origin ?? "knight"] ?? "lawful"),
+        deityAnger: Math.max(0, Math.min(3, Math.trunc(num(h.deityAnger, 0)))),
         wisdom: Math.max(0, Math.min(100, Math.trunc(num(h.wisdom, num((h as Hero).itemLuck, 0) * 100)))),
         // v12 이하에는 사람별 행동 횟수가 없다. 지난 판의 전체 턴을 나누어 지어내지 않고
         // 0에서 새로 센다 — 옛 기록에 없던 일을 누구 몫으로 둘 수는 없다.
