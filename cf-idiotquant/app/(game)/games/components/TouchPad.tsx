@@ -194,6 +194,7 @@ const DIRS: [number, number, string, string][] = [
 
 export default function TouchPad({
     onMove,
+    onOptions,
     actions,
     dirKeys = [],
     hold = true,
@@ -204,6 +205,7 @@ export default function TouchPad({
     centerWarn = false,
 }: {
     onMove: (dx: number, dy: number) => void;
+    onOptions: () => void;
     actions: PadAction[];
     /** 넓은 화면에서만 칸 아래에 적는다. 둘이면 둘 다, 사람마다 제 색으로. */
     dirKeys?: PadKeys[];
@@ -235,25 +237,37 @@ export default function TouchPad({
                     {blockedReason}
                 </div>
             )}
-            <div className="pointer-events-auto grid shrink-0 grid-cols-3 gap-1">
-                {DIRS.map(([dx, dy, arrow, title], i) => (
-                    <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerWarn}>
-                        <span className="flex flex-col items-center gap-0.5">
-                            {i === 4 ? <span className="flex max-w-[40px] flex-col items-center gap-0.5 whitespace-pre-line text-center text-[9px] font-bold leading-tight">{centerLabel}{centerMark && <span className="text-[11px] text-[var(--rg-gold)] md:hidden">{centerMark}</span>}</span> : arrow}
-                            {dirKeys.some((p) => p.keys[i]) && (
-                                <span className="hidden gap-1 text-[9px] leading-none md:flex">
-                                    {dirKeys.map((p, j) =>
-                                        p.keys[i] ? (
-                                            <span key={j} style={{ color: p.ink ?? "var(--rg-faint)" }}>
-                                                {p.keys[i]}
-                                            </span>
-                                        ) : null,
-                                    )}
-                                </span>
-                            )}
-                        </span>
-                    </Key>
-                ))}
+            <div className="pointer-events-auto flex shrink-0 flex-col items-end gap-1">
+                <div className="grid grid-cols-3 gap-1">
+                    {DIRS.map(([dx, dy, arrow, title], i) => (
+                        <Key key={i} hold={hold} onPress={step(dx, dy)} title={i === 4 ? centerHint : title} hot={i === 4 && centerHot} warn={i === 4 && centerWarn}>
+                            <span className="flex flex-col items-center gap-0.5">
+                                {i === 4 ? <span className="flex max-w-[40px] flex-col items-center gap-0.5 whitespace-pre-line text-center text-[9px] font-bold leading-tight">{centerLabel}{centerMark && <span className="text-[11px] text-[var(--rg-gold)] md:hidden">{centerMark}</span>}</span> : arrow}
+                                {dirKeys.some((p) => p.keys[i]) && (
+                                    <span className="hidden gap-1 text-[9px] leading-none md:flex">
+                                        {dirKeys.map((p, j) =>
+                                            p.keys[i] ? (
+                                                <span key={j} style={{ color: p.ink ?? "var(--rg-faint)" }}>
+                                                    {p.keys[i]}
+                                                </span>
+                                            ) : null,
+                                        )}
+                                    </span>
+                                )}
+                            </span>
+                        </Key>
+                    ))}
+                </div>
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        onOptions();
+                        event.currentTarget.blur();
+                    }}
+                    className="rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[10px] leading-none text-[var(--rg-faint)] hover:bg-[var(--rg-raised)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                >
+                    옵션
+                </button>
             </div>
 
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}

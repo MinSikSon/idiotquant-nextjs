@@ -2033,16 +2033,6 @@ export default function Rogue() {
                     </span>
                 ))}
             </button>
-            <button
-                type="button"
-                onClick={() => setSheet("options")}
-                aria-label="옵션 열기 — 도움말과 지난 판"
-                title="옵션 · 도움말 · 지난 판"
-                className="absolute right-2 top-[5.25rem] z-30 grid h-9 w-9 place-items-center rounded-full border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 text-[var(--rg-faint)] shadow-md backdrop-blur-sm hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
-            >
-                <span aria-hidden className="text-base leading-none">⚙</span>
-            </button>
-
             {saveFailed && (
                 <div role="alert" className="shrink-0 border-b border-[var(--rg-trap)] bg-[var(--rg-raised)] px-3 py-2 text-center text-xs font-bold text-[var(--rg-trap)]">
                     저장에 실패했습니다. 새로고침하면 진행 상황을 잃을 수 있습니다. 브라우저 저장 공간을 확인하세요.
@@ -2378,6 +2368,7 @@ export default function Rogue() {
 
             <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
                 <TouchPad
+                    onOptions={() => setSheet("options")}
                     centerLabel={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;
