@@ -1989,7 +1989,6 @@ export default function Rogue() {
             hint: `x — 몬스터 ${progress.found}/${progress.total} · 아이템 ${itemProg.identifiedCount}/${itemProg.totalCount}`,
             on: () => setSheet("bestiary"),
         },
-        { label: "⚙ 옵션", detail: "도움말 · 지난 판", hint: "도움말 · 지난 판", on: () => setSheet("options") },
     ];
 
     // 띠는 **일어난 일**만 보여 준다. 계산 줄(`· 명중 …`)까지 넣으면 두 줄이 산수로
@@ -2020,30 +2019,38 @@ export default function Rogue() {
                     {seedLinkNote}
                 </div>
             )}
-            {/* 맨 위 네 줄 — 간격을 줄여 메시지 공간을 늘린다. */}
-            <button
-                type="button"
-                onClick={() => setSheet("log")}
-                className="grid h-[5rem] w-full shrink-0 grid-cols-[minmax(0,1fr)_auto] border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
-            >
-                <span className="grid min-w-0 grid-rows-4 overflow-hidden py-0.5">
-                    {recent.map((m, i) => (
-                        <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
-                            <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
-                            <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
-                        </span>
-                    ))}
-                </span>
-                {/* 누를 수 있다는 표시도 메시지 창의 오른쪽 고정 칸에 둔다. */}
-                <span aria-hidden className="flex w-12 shrink-0 flex-col items-center justify-center border-l border-[var(--rg-line-faint)] text-[11px] leading-tight text-[var(--rg-faint)]">
-                    <span>기록</span>
-                    <span className="text-[var(--rg-ghost)]">[↵]</span>
-                </span>
-                {/* **`aria-label` 을 안 단다.** 달면 그것이 이름을 통째로 덮어서 **방금 일어난
-                    일이 안 읽힌다** — 이 줄에서 제일 중요한 것이 그것이다. 대신 뒤에 한 마디를
-                    붙여 「눌러도 되는 것」임을 알린다. */}
-                <span className="sr-only">— 누르면 지나온 기록이 펼쳐집니다</span>
-            </button>
+            {/* 맨 위 네 줄 — 기록은 넓게, 옵션은 작은 보조 단추로 둔다. */}
+            <div className="grid h-[5rem] w-full shrink-0 grid-cols-[minmax(0,1fr)_3rem] border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)]">
+                <button
+                    type="button"
+                    onClick={() => setSheet("log")}
+                    aria-label="기록 열기 — 지나온 메시지"
+                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
+                >
+                    <span className="grid min-w-0 grid-rows-4 overflow-hidden py-0.5">
+                        {recent.map((m, i) => (
+                            <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
+                                <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
+                                <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
+                            </span>
+                        ))}
+                    </span>
+                    <span aria-hidden className="flex w-12 shrink-0 flex-col items-center justify-center border-l border-[var(--rg-line-faint)] text-[11px] leading-tight text-[var(--rg-faint)]">
+                        <span>기록</span>
+                        <span className="text-[var(--rg-ghost)]">[↵]</span>
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSheet("options")}
+                    aria-label="옵션 열기 — 도움말과 지난 판"
+                    title="옵션 · 도움말 · 지난 판"
+                    className="flex flex-col items-center justify-center gap-0.5 border-l border-[var(--rg-line-faint)] text-[var(--rg-faint)] hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                >
+                    <span aria-hidden className="text-base leading-none">⚙</span>
+                    <span className="text-[9px] leading-none">옵션</span>
+                </button>
+            </div>
 
             {saveFailed && (
                 <div role="alert" className="shrink-0 border-b border-[var(--rg-trap)] bg-[var(--rg-raised)] px-3 py-2 text-center text-xs font-bold text-[var(--rg-trap)]">
