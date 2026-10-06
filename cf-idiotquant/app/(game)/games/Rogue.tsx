@@ -2019,38 +2019,29 @@ export default function Rogue() {
                     {seedLinkNote}
                 </div>
             )}
-            {/* 맨 위 네 줄 — 기록은 넓게, 옵션은 작은 보조 단추로 둔다. */}
-            <div className="grid h-[5rem] w-full shrink-0 grid-cols-[minmax(0,1fr)_3rem] border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)]">
-                <button
-                    type="button"
-                    onClick={() => setSheet("log")}
-                    aria-label="기록 열기 — 지나온 메시지"
-                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
-                >
-                    <span className="grid min-w-0 grid-rows-4 overflow-hidden py-0.5">
-                        {recent.map((m, i) => (
-                            <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
-                                <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
-                                <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
-                            </span>
-                        ))}
+            {/* 맨 위 네 줄은 전체 너비를 로그 요약에 쓴다. */}
+            <button
+                type="button"
+                onClick={() => setSheet("log")}
+                aria-label="기록 열기 — 지나온 메시지"
+                className="grid h-[5rem] w-full shrink-0 grid-rows-4 overflow-hidden border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] py-0.5 text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
+            >
+                {recent.map((m, i) => (
+                    <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
+                        <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
+                        <span className="min-w-0 truncate leading-[1.1]"><Msg text={m} heroes={state.heroes} /></span>
                     </span>
-                    <span aria-hidden className="flex w-12 shrink-0 flex-col items-center justify-center border-l border-[var(--rg-line-faint)] text-[11px] leading-tight text-[var(--rg-faint)]">
-                        <span>기록</span>
-                        <span className="text-[var(--rg-ghost)]">[↵]</span>
-                    </span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setSheet("options")}
-                    aria-label="옵션 열기 — 도움말과 지난 판"
-                    title="옵션 · 도움말 · 지난 판"
-                    className="flex flex-col items-center justify-center gap-0.5 border-l border-[var(--rg-line-faint)] text-[var(--rg-faint)] hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
-                >
-                    <span aria-hidden className="text-base leading-none">⚙</span>
-                    <span className="text-[9px] leading-none">옵션</span>
-                </button>
-            </div>
+                ))}
+            </button>
+            <button
+                type="button"
+                onClick={() => setSheet("options")}
+                aria-label="옵션 열기 — 도움말과 지난 판"
+                title="옵션 · 도움말 · 지난 판"
+                className="absolute right-2 top-[5.25rem] z-30 grid h-9 w-9 place-items-center rounded-full border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 text-[var(--rg-faint)] shadow-md backdrop-blur-sm hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+            >
+                <span aria-hidden className="text-base leading-none">⚙</span>
+            </button>
 
             {saveFailed && (
                 <div role="alert" className="shrink-0 border-b border-[var(--rg-trap)] bg-[var(--rg-raised)] px-3 py-2 text-center text-xs font-bold text-[var(--rg-trap)]">
