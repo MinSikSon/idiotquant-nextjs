@@ -333,6 +333,8 @@ export interface Fountain extends Pos {
     magic: boolean;
     magicUsed: boolean;
     drinks: number;
+    /** 보석 사건이 이미 일어났는가. */
+    looted?: boolean;
 }
 
 export interface ShopState {

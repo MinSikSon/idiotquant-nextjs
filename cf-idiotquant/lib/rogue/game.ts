@@ -1245,7 +1245,7 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: 
     return true;
 }
 
-/** 분수에서 마신다. 순수 Luck은 이 생명체를 이롭게도 해롭게도 기울인다. */
+/** 분수에서 마신다. 보통 결과표는 원작처럼 Luck과 무관한 1~30 균등 추첨이다. */
 function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
     const fountain = state.level.fountain;
     if (!fountain || fountain.x !== hero.x || fountain.y !== hero.y) {
@@ -1253,69 +1253,113 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
         return false;
     }
 
-    // 결과 종류와 Luck 판정은 독립시킨다. Luck을 roll에 더한 뒤 확률에도 반영하면
-    // 좋은 결과가 중복으로 늘어 고 Luck에서 100%, 낮은 Luck에서 0%까지 치우친다.
-    const roll = rng.rnd(30);
+    const fate = rng.rnd(30) + 1;
     const freshMagicFountain = fountain.magic && !fountain.magicUsed;
-    const magicFountainSkipsDrying = freshMagicFountain && (hero.luck >= 0 || roll < 10);
-    if (freshMagicFountain && roll < 10) {
+    const refresh = fate < 10;
+    const magicEffect = freshMagicFountain && hero.luck >= 0 && !refresh;
+    if (refresh) {
         hero.food = Math.min(2000, hero.food + rng.rnd(10) + 1);
         say(state, "시원한 물이 목을 축인다.");
-    } else if (freshMagicFountain && hero.luck >= 0 && roll >= 10) {
-        hero.hp = hero.maxHp;
+    } else if (magicEffect) {
+        hero.str = hero.maxStr;
         if (hero.luck >= 4) {
             hero.str = Math.min(31, hero.str + 1);
             hero.maxStr = Math.max(hero.maxStr, hero.str);
             hero.wisdom = Math.min(100, hero.wisdom + 1);
-            say(state, "분수의 마력이 온몸을 채운다. 체력이 회복되고 힘과 지혜가 늘었다!");
+            say(state, "분수의 마력이 온몸을 채운다. 힘과 지혜가 크게 늘었다!");
         } else if (rng.rnd(2) === 0) {
             hero.str = Math.min(31, hero.str + 1);
             hero.maxStr = Math.max(hero.maxStr, hero.str);
-            say(state, "분수의 마력이 온몸을 채운다. 체력이 회복되고 힘이 늘었다!");
+            say(state, "분수의 마력이 온몸을 채운다. 힘이 늘었다!");
         } else {
             hero.wisdom = Math.min(100, hero.wisdom + 1);
-            say(state, "분수의 마력이 온몸을 채운다. 체력이 회복되고 지혜가 늘었다!");
+            say(state, "분수의 마력이 온몸을 채운다. 지혜가 늘었다!");
         }
         fountain.magicUsed = true;
     } else {
-        const goodChance = Math.max(0.15, Math.min(0.85, 0.5 + (hero.luck / 13) * 0.35));
-        if (rng.chance(goodChance)) {
-            switch (roll % 3) {
-                case 0:
-                    hero.hp = Math.min(hero.maxHp, hero.hp + Math.max(2, rng.rnd(5) + 1));
-                    hero.food = Math.min(2000, hero.food + 80);
-                    say(state, "맑은 물이 목을 축이고 상처를 조금 아물게 한다.");
-                    break;
-                case 1: {
+        switch (fate) {
+            case 19:
+                hero.wisdom = Math.min(100, hero.wisdom + 1);
+                say(state, "물속을 들여다보자 세상의 이치가 떠오른다. 지혜가 늘었다.");
+                break;
+            case 20:
+                hero.food = Math.max(0, hero.food - 100);
+                say(state, "비린 물을 마시고 속을 게워냈다.");
+                break;
+            case 21: {
+                const loss = rng.between(1, 3);
+                if (!hasRing(hero, "sustain strength")) hero.str = Math.max(3, hero.str - loss);
+                const damage = rng.between(1, 10);
+                hero.hp -= damage;
+                say(state, `독이 온몸에 퍼진다. ${damage} 피해를 입었다${hasRing(hero, "sustain strength") ? "" : `, 힘이 ${loss} 줄었다`}.`);
+                break;
+            }
+            case 22:
+            case 23:
+            case 28: {
+                const ch = fate === 22 ? "S" : fate === 23 ? randomMonsterChar(state.level.depth, rng) : "N";
+                const count = fate === 22 ? 2 : 1;
+                for (let i = 0; i < count; i++) {
+                    const spot = freeSpot(state.level, rng, [...state.heroes, fountain, ...state.level.monsters]);
+                    const monster = spawnMonster(ch, spot.x, spot.y, rng);
+                    monster.awake = true;
+                    monster.target = state.heroes.indexOf(hero);
+                    state.level.monsters.push(monster);
+                }
+                say(state, fate === 22 ? "분수에서 뱀들이 기어 나온다!" : fate === 23 ? "분수에서 적대적인 존재가 솟아난다!" : "물속에서 님프가 나타났다!");
+                break;
+            }
+            case 24: {
+                let cursed = 0;
+                for (const item of hero.pack) {
+                    if (!item.cursed && rng.chance(0.2)) { item.cursed = true; item.blessed = false; item.curseKnown = true; cursed++; }
+                }
+                say(state, cursed ? `검은 물이 배낭의 물건 ${cursed}개를 저주했다.` : "검은 물결이 배낭을 훑었지만 달라진 것은 없다.");
+                break;
+            }
+            case 25:
+                hero.detect = Math.max(hero.detect, 30);
+                say(state, "시야가 또렷해져 보이지 않던 것이 드러난다.");
+                break;
+            case 26:
+                hero.detect = Math.max(hero.detect, rng.between(150, 300));
+                say(state, "이 층의 괴물들이 감지된다.");
+                break;
+            case 27:
+                if (!fountain.looted) {
                     const gem = rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!;
                     state.level.items.push(makeItem("gem", gem, state.nextItemId++, fountain.x, fountain.y));
+                    fountain.looted = true;
                     say(state, "물결 속에서 보석 하나가 반짝인다.");
                     break;
                 }
-                default:
-                    hero.luck = Math.min(13, hero.luck + 1);
-                    say(state, "시원한 물을 마셨다. 행운이 조금 좋아진 듯하다.");
-                    break;
-            }
-        } else if (roll % 2 === 0) {
-            const damage = rng.rnd(4) + 2;
-            hero.hp -= damage;
-            hero.luck = Math.max(-13, hero.luck - 1);
-            say(state, `탁한 물이 속을 뒤집는다. ${damage} 피해를 입고 행운이 나빠졌다.`);
-        } else {
-            const spot = freeSpot(state.level, rng, [...state.heroes, fountain]);
-            const monster = spawnMonster(randomMonsterChar(state.level.depth, rng), spot.x, spot.y, rng);
-            monster.awake = true;
-            monster.target = state.heroes.indexOf(hero);
-            state.level.monsters.push(monster);
-            say(state, `${monsterName(monster)}이(가) 분수에서 튀어나왔다!`);
+                // 보석을 이미 건진 분수의 27번 결과는 님프 사건으로 이어진다.
+                {
+                    const spot = freeSpot(state.level, rng, [...state.heroes, fountain, ...state.level.monsters]);
+                    const monster = spawnMonster("N", spot.x, spot.y, rng);
+                    monster.awake = true; monster.target = state.heroes.indexOf(hero);
+                    state.level.monsters.push(monster);
+                    say(state, "물속에서 님프가 나타났다!");
+                }
+                break;
+            case 29:
+                for (const monster of state.level.monsters) {
+                    if (monster.hp > 0 && !monster.spirit) { monster.awake = false; monster.target = undefined; }
+                }
+                say(state, "분수의 물소리가 괴물들을 움츠러들게 했다.");
+                break;
+            case 30:
+                say(state, "분수가 갑자기 솟구쳐 방 안으로 물을 쏟아낸다!");
+                break;
+            default:
+                say(state, "물은 밋밋하고 아무 일도 일어나지 않는다.");
         }
     }
 
     fountain.drinks += 1;
     // NetHack's unused magic fountain returns early for its magical result, and also
     // for the ordinary refresh result (fate < 10). Those cases bypass the dry-up roll.
-    if (!magicFountainSkipsDrying && rng.chance(1 / 3)) {
+    if (!(magicEffect || (freshMagicFountain && refresh)) && rng.chance(1 / 3)) {
         state.level.fountain = null;
         say(state, "분수가 바싹 말라 사라졌다.");
     }
