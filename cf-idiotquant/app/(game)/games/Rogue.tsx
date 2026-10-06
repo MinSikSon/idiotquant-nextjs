@@ -2968,7 +2968,7 @@ export default function Rogue() {
                       : statusKind === "wisdom"
                         ? `Wi:${statusHero.wisdom}\n공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다. Luck과 별개의 능력치입니다.`
                       : statusKind === "luck"
-                        ? `Lu:${statusHero.luck}\n넷핵식 행운입니다. -13부터 +13까지이며 물건 등급에 영향을 줍니다. 600번의 본인 행동마다 0에 가까워집니다.`
+                        ? `Lu:${statusHero.luck}\n운 수치입니다. -13부터 +13까지이며 물건 등급에 영향을 줍니다. 600번의 본인 행동마다 0에 가까워집니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"
