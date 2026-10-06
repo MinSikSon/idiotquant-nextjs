@@ -297,6 +297,8 @@ export interface Level {
     anvil: Pos | null;
     /** 미로층인가 — 방 대신 통로가 얽힌 층. 깊을수록 잦다. */
     maze: boolean;
+    /** NetHack식 단일 대형 방 층인가. */
+    bigRoom?: boolean;
     /**
      * 특수 방 — **새로 만들지 않고 이미 생긴 방 중에서 고른다.**
      *
@@ -319,8 +321,18 @@ export interface Level {
      * 자리다. `uses` 가 0 이면 불이 꺼진 채 남는다. 옛 저장에는 없다 — 그 층에는 없는 것이 맞다.
      */
     transmuteAltar?: TransmuteAltar | null;
-    /** 이 층의 분수. 말라 없어지면 null이다. */
+    /** 구버전 저장을 읽기 위한 단일 분수 칸. 새 층은 `fountains` 를 쓴다. */
     fountain?: Fountain | null;
+    /** 여러 분수가 있는 특별 층에서 쓴다. 옛 저장의 `fountain` 도 읽는다. */
+    fountains?: Fountain[];
+}
+
+export function fountainsOf(level: Pick<Level, "fountain" | "fountains">): Fountain[] {
+    return level.fountains?.length ? level.fountains : level.fountain ? [level.fountain] : (level.fountains ?? []);
+}
+
+export function fountainAt(level: Pick<Level, "fountain" | "fountains">, x: number, y: number): Fountain | undefined {
+    return fountainsOf(level).find((fountain) => fountain.x === x && fountain.y === y);
 }
 
 export interface TransmuteAltar extends Pos {

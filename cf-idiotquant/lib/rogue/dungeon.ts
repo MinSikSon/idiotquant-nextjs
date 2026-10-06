@@ -33,6 +33,7 @@ import {
     type SpecialKind,
     T,
     type Tile,
+    fountainsOf,
     idx,
     inBounds,
     walkable,
@@ -545,7 +546,7 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
         const p = randomSpotIn(room, rng);
         if (!walkable(level.tiles[idx(p.x, p.y)] as Tile)) continue;
         if (avoid.some((q) => q.x === p.x && q.y === p.y)) continue;
-        if (level.fountain?.x === p.x && level.fountain?.y === p.y) continue;
+        if (fountainsOf(level).some((fountain) => fountain.x === p.x && fountain.y === p.y)) continue;
         if (level.monsters.some((m) => m.x === p.x && m.y === p.y)) continue;
         if (level.items.some((it) => it.x === p.x && it.y === p.y)) continue;
         return p;
@@ -556,7 +557,7 @@ export function freeSpot(level: Level, rng: Rng, avoid: Pos[] = []): Pos {
         for (let x = 0; x < MAP_W; x++) {
             if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
             if (avoid.some((q) => q.x === x && q.y === y)) continue;
-            if (level.fountain?.x === x && level.fountain?.y === y) continue;
+            if (fountainsOf(level).some((fountain) => fountain.x === x && fountain.y === y)) continue;
             // 훑어서 주는 이 마지막 길에서도 금고는 뺀다 — 여기가 뚫리면 위의 거름이 헛것이다.
             if (inVault(level, x, y)) continue;
             return { x, y };
@@ -701,6 +702,7 @@ function openTiles(level: Level, r: Room, avoid: Pos[]): Pos[] {
         for (let x = x0; x <= x1; x++) {
             if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
             if (avoid.some((q) => q.x === x && q.y === y)) continue;
+            if (fountainsOf(level).some((fountain) => fountain.x === x && fountain.y === y)) continue;
             if (level.monsters.some((m) => m.x === x && m.y === y)) continue;
             if (level.items.some((it) => it.x === x && it.y === y)) continue;
             out.push({ x, y });
@@ -1304,17 +1306,31 @@ function layRogue(tiles: Uint8Array, roomAt: Int8Array, depth: number, rng: Rng)
     return { rooms, doorsOf, extraDoors };
 }
 
-export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(depth, rng)): Level {
+/** 넷핵 Big Room이 한 판의 10~12층 중 하나에 생기는가. 층 재생성에도 결과가 고정된다. */
+export function isBigRoomDepth(seed: number, depth: number): boolean {
+    const roll = new Rng((seed ^ 0x42494752) >>> 0);
+    if (!roll.chance(0.4)) return false;
+    return depth === 10 + roll.rnd(3);
+}
+
+function layBigRoom(tiles: Uint8Array, roomAt: Int8Array): Laid {
+    const room: Room = { x: 1, y: 1, w: MAP_W - 2, h: MAP_H - 2, dark: false, gone: false, maze: false };
+    carveRoom(tiles, roomAt, room, 0);
+    return { rooms: [room], doorsOf: [[]], extraDoors: [] };
+}
+
+export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(depth, rng), bigRoom = false): Level {
     const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.ROCK);
     const roomAt = new Int8Array(MAP_W * MAP_H).fill(-1);
     // 넷핵식이 안 서면(방이 모자라거나 끝내 못 이으면) 로그식으로 짓는다 — 층은 언제나 선다.
-    const { rooms, doorsOf, extraDoors } =
-        (layout === "nethack" && layNethack(tiles, roomAt, depth, rng)) || layRogue(tiles, roomAt, depth, rng);
+    const { rooms, doorsOf, extraDoors } = bigRoom
+        ? layBigRoom(tiles, roomAt)
+        : (layout === "nethack" && layNethack(tiles, roomAt, depth, rng)) || layRogue(tiles, roomAt, depth, rng);
 
     // 미로는 **문을 낸 뒤에** 판다. 먼저 파면 문 자리를 모르니 안쪽으로 뚫을 수가 없다.
     let anyMaze = false;
     rooms.forEach((r, i) => {
-        if (!r.maze || r.gone) return;
+        if (bigRoom || !r.maze || r.gone) return;
         if (!carveMaze(tiles, roomAt, r, rng)) {
             r.maze = false;
             return;
@@ -1350,7 +1366,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
     // 「길이 막힌 판」 규칙과 부딪히지 않는 까닭: 금고는 `Room.vault` 로 **표가 나 있고**,
     // 연결성 자물쇠가 그 표만 콕 집어 뺀다. 자물쇠를 무르게 하는 것이 아니라 예외를
     // **한 군데에 모아** 두는 것이다. 계단·모루·물건은 여전히 전부 닿아야 한다.
-    carveVault(tiles, roomAt, rooms, depth, rng);
+    if (!bigRoom) carveVault(tiles, roomAt, rooms, depth, rng);
 
     const level: Level = {
         depth,
@@ -1365,11 +1381,13 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         upStairs: null,
         anvil: null,
         maze: anyMaze,
+        bigRoom,
         special: null,
         altarUsed: false,
         shop: null,
         transmuteAltar: null,
         fountain: null,
+        fountains: [],
     };
 
     // **`freeSpot` 을 쓴다.** 예전에는 `randomSpotIn` 을 그냥 불러서 걸어갈 수 있는
@@ -1390,7 +1408,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
 
     // 특수 방은 **모루 다음, 함정 앞**이다. 제단이면 모루를 그 방으로 옮기는데, 함정이
     // 피해야 할 자리가 그 옮긴 뒤의 자리이기 때문이다.
-    level.special = pickSpecialRoom(level, depth, rng);
+    level.special = bigRoom ? null : pickSpecialRoom(level, depth, rng);
     if (level.special?.kind === "altar") {
         // **제단에는 모루가 선다.** 그 방을 찾는 것이 곧 모루를 찾는 것이 되어, 「문이
         // 하나뿐인 방에 들어간다」는 위험에 값이 붙는다.
@@ -1415,7 +1433,7 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
     // 1층에는 없다(함정과 같은 까닭). 특수 방·금고에는 안 선다 — 선택 제단 옆에 또 제단이
     // 서면 둘이 헷갈리고, 상점 안이면 가게 물건을 올려 바꾸는 길이 된다. 미로 방·없는 방은
     // 방이 아니라 통로라 뺀다.
-    if (depth > 1 && rng.rnd(100) < TRANSMUTE_ALTAR_CHANCE) {
+    if (!bigRoom && depth > 1 && rng.rnd(100) < TRANSMUTE_ALTAR_CHANCE) {
         const avoid = [down, level.upStairs, level.anvil, ...level.traps].filter((p): p is Pos => !!p);
         const spots = level.rooms.flatMap((r, i) =>
             r.gone || r.maze || r.vault || i === level.special?.room ? [] : openTiles(level, r, avoid),
@@ -1424,16 +1442,24 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         if (p) level.transmuteAltar = { x: p.x, y: p.y, uses: TRANSMUTE_ALTAR_USES };
     }
 
-    // 분수는 방 안에만 선다. 계단·모루·특수 방·함정·변환 제단과 자리를 겹치지 않는다.
-    // 2층부터 층마다 1/5 확률로 두어 희귀하지만 찾아볼 만한 자원으로 둔다.
-    if (depth > 1 && rng.chance(0.2)) {
+    // 빅룸 일부 변형에는 마법이 아닌 분수가 무리 지어 선다. 자리는 겹치지 않게 고른다.
+    if (bigRoom && rng.chance(0.5)) {
+        const avoid = [down, level.upStairs, level.anvil, ...level.traps];
+        const spots = rng.shuffle(openTiles(level, level.rooms[0], avoid));
+        const count = rng.between(4, 7);
+        for (const p of spots.slice(0, count)) level.fountains!.push({ ...p, magic: false, magicUsed: false, drinks: 0 });
+    }
+
+    // 일반 층 분수는 방 안에만 선다. 계단·모루·특수 방·함정·변환 제단과 자리를 겹치지 않는다.
+    // 2층부터 층마다 1/5 확률로 하나까지 둔다.
+    if (!bigRoom && depth > 1 && rng.chance(0.2)) {
         const avoid = [down, level.upStairs, level.anvil, ...level.traps,
             ...(level.transmuteAltar ? [level.transmuteAltar] : [])].filter((p): p is Pos => !!p);
         const spots = level.rooms.flatMap((r, i) =>
             r.gone || r.maze || r.vault || i === level.special?.room ? [] : openTiles(level, r, avoid),
         );
         const p = rng.pick(spots);
-        if (p) level.fountain = { ...p, magic: rng.chance(0.1), magicUsed: false, drinks: 0 };
+        if (p) level.fountains!.push({ ...p, magic: rng.chance(0.1), magicUsed: false, drinks: 0 });
     }
 
     return level;

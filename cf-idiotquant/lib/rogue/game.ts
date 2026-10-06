@@ -17,6 +17,7 @@ import {
     SPECIAL_ROOMS,
     floorQuota,
     freeSpot,
+    isBigRoomDepth,
     itemSpots,
     roomSpots,
     randomSpotIn,
@@ -197,6 +198,7 @@ import {
     MAP_W,
     type Monster,
     type Pos,
+    fountainAt,
     type SpiritElement,
     type Trap,
     T,
@@ -384,7 +386,9 @@ function populate(state: GameState, level: Level, rng: Rng) {
     const luck = partyLuck(state);
     // **가게가 먼저다** — 주인과 진열품이 자리를 잡아야 몬스터(`freeSpot`)가 그 위에 안 선다.
     stockShop(state, level, rng, luck);
-    const monsterCount = rng.rnd(4) + 2 + Math.floor(level.depth / 3);
+    const monsterCount = level.bigRoom
+        ? rng.between(12, 15)
+        : rng.rnd(4) + 2 + Math.floor(level.depth / 3);
     for (let i = 0; i < monsterCount; i++) {
         const p = freeSpot(level, rng, [...state.heroes, level.stairs]);
         const prefix = rollChampionPrefix(level.depth, rng);
@@ -561,7 +565,7 @@ function enterLevel(state: GameState, depth: number, rng: Rng, from: "above" | "
         state.levels[state.level.depth] = state.level;
     }
     const seen = state.levels[depth];
-    const level = seen ?? buildLevel(depth, rng);
+    const level = seen ?? buildLevel(depth, rng, undefined, isBigRoomDepth(state.seed, depth));
     delete state.levels[depth];
 
     const back = from === "above" ? level.upStairs : from === "below" ? level.stairs : null;
@@ -1247,7 +1251,7 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: 
 
 /** 분수에서 마신다. 보통 결과표는 원작처럼 Luck과 무관한 1~30 균등 추첨이다. */
 function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
-    const fountain = state.level.fountain;
+    const fountain = fountainAt(state.level, hero.x, hero.y);
     if (!fountain || fountain.x !== hero.x || fountain.y !== hero.y) {
         say(state, "분수 위에 서야 물을 마실 수 있다.");
         return false;
@@ -1360,7 +1364,8 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
     // NetHack's unused magic fountain returns early for its magical result, and also
     // for the ordinary refresh result (fate < 10). Those cases bypass the dry-up roll.
     if (!(magicEffect || (freshMagicFountain && refresh)) && rng.chance(1 / 3)) {
-        state.level.fountain = null;
+        state.level.fountains = (state.level.fountains ?? []).filter((candidate) => candidate !== fountain);
+        if (state.level.fountain === fountain) state.level.fountain = null;
         say(state, "분수가 바싹 말라 사라졌다.");
     }
     return true;
@@ -4673,7 +4678,7 @@ export function glyphAt(
     if (altar && altar.x === x && altar.y === y) {
         return { ch: "_", kind: visible && altar.uses > 0 ? "altar" : "altar-dim" };
     }
-    if (level.fountain && level.fountain.x === x && level.fountain.y === y) {
+    if (fountainAt(level, x, y)) {
         return { ch: "}", kind: visible ? "fountain" : "fountain-dim" };
     }
     switch (t) {

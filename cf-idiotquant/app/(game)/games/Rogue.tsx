@@ -95,7 +95,7 @@ import {
     type TombHero,
     type TombItem,
 } from "@/lib/rogue/storage";
-import { T, idx, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
+import { T, idx, fountainAt, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ARMOR_SKILL_MAX, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
@@ -1661,7 +1661,7 @@ export default function Rogue() {
         (w: number) => {
             const h = state?.heroes[w];
             if (!state || !h || h.hp <= 0) return;
-            const onFountain = state.level.fountain?.x === h.x && state.level.fountain?.y === h.y;
+            const onFountain = !!fountainAt(state.level, h.x, h.y);
             const onAltar = state.level.special?.kind === "altar" && !state.level.altarUsed && state.level.anvil?.x === h.x && state.level.anvil?.y === h.y;
             if (modes[w] === "aim") {
                 setWho(w);
@@ -1883,7 +1883,7 @@ export default function Rogue() {
     const { level } = state;
     const hero = state.heroes[who] ?? state.heroes[0];
     const onStairs = level.tiles[idx(hero.x, hero.y)] === T.STAIRS;
-    const onFountain = level.fountain?.x === hero.x && level.fountain?.y === hero.y;
+    const onFountain = !!fountainAt(level, hero.x, hero.y);
     const onUpStairs = !!level.upStairs && level.upStairs.x === hero.x && level.upStairs.y === hero.y;
     const hereItem = level.items.find((i) => i.x === hero.x && i.y === hero.y);
     const onAnvil = !!level.anvil && level.anvil.x === hero.x && level.anvil.y === hero.y;

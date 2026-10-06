@@ -41,7 +41,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 16;
+const VERSION = 17;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -164,6 +164,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         // 없던 것을 되읽으며 슬쩍 세우면 「아까는 없었는데」가 된다.
         anvil: raw.anvil ?? null,
         maze: raw.maze === true,
+        bigRoom: raw.bigRoom === true,
         // 옛 저장에는 특수 방이 없다 — **그 층에는 없는 것이 맞다**(모루와 같은 까닭).
         special: raw.special ?? null,
         altarUsed: raw.altarUsed === true,
@@ -171,9 +172,10 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         shop: fixShop(raw.shop, rooms.length),
         // 옛 저장에는 변환 제단이 없다 — 모루와 같은 까닭으로 **없는 것이 맞다.**
         transmuteAltar: fixTransmuteAltar(raw.transmuteAltar),
-        fountain: raw.fountain && Number.isFinite(raw.fountain.x) && Number.isFinite(raw.fountain.y)
-            ? { x: raw.fountain.x, y: raw.fountain.y, magic: !!raw.fountain.magic, magicUsed: !!raw.fountain.magicUsed, drinks: Math.max(0, Math.trunc(num(raw.fountain.drinks, 0))), looted: !!raw.fountain.looted }
-            : null,
+        fountain: null,
+        fountains: (Array.isArray(raw.fountains) ? raw.fountains : raw.fountain ? [raw.fountain] : [])
+            .filter((f) => Number.isFinite(f.x) && Number.isFinite(f.y) && inBounds(f.x, f.y))
+            .map((f) => ({ x: f.x, y: f.y, magic: !!f.magic, magicUsed: !!f.magicUsed, drinks: Math.max(0, Math.trunc(num(f.drinks, 0))), looted: !!f.looted })),
     };
 }
 
