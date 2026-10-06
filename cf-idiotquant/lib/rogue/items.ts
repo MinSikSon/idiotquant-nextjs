@@ -134,6 +134,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
     arrow: { name: "화살", damage: "1d6", damageLarge: "1d6", freq: 8, depth: 1, throwable: true, stack: true, skill: "bow", hands: 1, material: "iron", ammunition: true, launcher: "bow" },
     // 사다리
     "long sword": { name: "장검", damage: "3d4", damageLarge: "1d8", freq: 9, depth: 4, skill: "long sword", hands: 1, material: "iron" },
+    excalibur: { name: "엑스칼리버", damage: "5d5", damageLarge: "2d8", freq: 0, depth: 1, skill: "long sword", hands: 1, material: "iron", noDrop: true },
     "two-handed sword": { name: "양손검", damage: "4d4", damageLarge: "2d6", freq: 7, depth: 8, skill: "two-handed sword", hands: 2, material: "iron" },
     "silver arrow": { name: "은화살", damage: "1d8", damageLarge: "1d8", freq: 6, depth: 9, throwable: true, stack: true, skill: "bow", hands: 1, material: "silver", ammunition: true, launcher: "bow" },
     // 화살 사다리 — 은화살(9) 뒤로 이어 붙인다. 장비 띠(`GEAR_BAND`)가 탄약에도 걸려서
@@ -172,7 +173,8 @@ export const ARMORS: Record<string, ArmorDef> = {
     "baphomet mail": { name: "바포메트의 갑옷", armor: 0, freq: 2, depth: 23 },
 };
 
-export const POTIONS: Record<string, { name: string; freq: number; depth: number }> = {
+export const POTIONS: Record<string, { name: string; freq: number; depth: number; noDrop?: boolean }> = {
+    water: { name: "물", freq: 0, depth: 1, noDrop: true },
     healing: { name: "체력 회복", freq: 14, depth: 1 },
     "extra healing": { name: "고급 체력 회복", freq: 6, depth: 6 },
     // 리니지의 「용기의 포션」이 근력을 올린다. 여기서도 그 일을 한다.
@@ -190,7 +192,8 @@ export const POTIONS: Record<string, { name: string; freq: number; depth: number
     revival: { name: "소생", freq: 5, depth: 2 },
 };
 
-export const SCROLLS: Record<string, { name: string; freq: number; depth: number }> = {
+export const SCROLLS: Record<string, { name: string; freq: number; depth: number; noDrop?: boolean }> = {
+    blank: { name: "빈 주문서", freq: 0, depth: 1, noDrop: true },
     "magic mapping": { name: "지도", freq: 8, depth: 3 },
     teleport: { name: "순간이동", freq: 8, depth: 1 },
     "enchant weapon": { name: "무기 강화", freq: 12, depth: 1 },
@@ -301,7 +304,7 @@ export function rollAppearances(rng: Rng): Record<string, string> {
     const out: Record<string, string> = {};
 
     const looks = rng.shuffle([...POTION_LOOKS]);
-    Object.keys(POTIONS).forEach((k, i) => {
+    Object.keys(POTIONS).filter((k) => !POTIONS[k].noDrop).forEach((k, i) => {
         out[`potion:${k}`] = `${looks[i % looks.length]} 포션`;
     });
 
@@ -316,7 +319,7 @@ export function rollAppearances(rng: Rng): Record<string, string> {
     });
 
     const used = new Set<string>();
-    for (const k of Object.keys(SCROLLS)) {
+    for (const k of Object.keys(SCROLLS).filter((key) => !SCROLLS[key].noDrop)) {
         let t = randomTitle(rng);
         while (used.has(t)) t = randomTitle(rng);
         used.add(t);
@@ -921,8 +924,10 @@ export function describe(
         }
         case "potion":
             if (it.type === "blessing") return "축복의 기름";
-            return known[key] ? `${blessPrefix(it, true)}${POTIONS[it.type]?.name ?? "이름 없는"} 포션` : (appearance[key] ?? "포션");
+            if (it.type === "water") return `${blessPrefix(it, true)}물`;
+            return known[key] ? `${it.diluted ? "희석된 " : ""}${blessPrefix(it, true)}${POTIONS[it.type]?.name ?? "이름 없는"} 포션` : `${it.diluted ? "희석된 " : ""}${appearance[key] ?? "포션"}`;
         case "scroll":
+            if (it.type === "blank") return "빈 주문서";
             return known[key] ? `${blessPrefix(it, true)}${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
         case "ring": {
             const base = known[key] ? `${blessPrefix(it, true)}${RINGS[it.type]?.name ?? "이름 없는"} 반지` : (appearance[key] ?? "반지");

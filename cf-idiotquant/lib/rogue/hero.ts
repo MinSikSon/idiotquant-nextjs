@@ -382,6 +382,7 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
                 p.blessed === it.blessed &&
                 // 외상과 치른 것은 따로 든다 — 한 더미가 되면 반만 외상인 더미가 생긴다.
                 !!p.unpaid === !!it.unpaid &&
+                (it.kind !== "potion" || !!p.diluted === !!it.diluted) &&
                 p.id !== it.id &&
                 (it.type !== "dagger" ||
                     (p.plusHit ?? 0) === (it.plusHit ?? 0) &&

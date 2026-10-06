@@ -215,6 +215,7 @@ type Action =
     | { t: "ascend" }
     | { t: "pickup" }
     | { t: "fountain" }
+    | { t: "dip"; letter: string }
     /** 축복의 기름은 대상 장비에 바른다. 다른 포션은 대상 없이 마신다. */
     | { t: "quaff"; letter: string; target?: string }
     /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
@@ -1167,6 +1168,9 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: 
             say(state, "기운이 돈다.");
             break;
         }
+        case "water":
+            say(state, "맹물이다.");
+            break;
         case "extra healing": {
             let heal = rng.roll(hero.level, 8);
             heal = Math.floor(heal * alchemistHealMult(hero));
@@ -1369,6 +1373,133 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
         say(state, "분수가 바싹 말라 사라졌다.");
     }
     return true;
+}
+
+/** 분수의 물에 물건을 담근다. 젖는 효과와 마법 분수의 사건을 각각 한 번 굴린다. */
+function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
+    const item = packItem(hero, letter);
+    const fountain = fountainAt(state.level, hero.x, hero.y);
+    const pool = tileAt(state.level, hero.x, hero.y) === T.POOL;
+    if (!item || (!fountain && !pool)) {
+        say(state, "분수나 물웅덩이 위에서 물건을 골라야 한다.");
+        return false;
+    }
+    if (item.count > 1 && hero.pack.length >= 26) {
+        say(state, "뭉치에서 한 개를 나눌 배낭 자리가 없다.");
+        return false;
+    }
+    let dipped = item;
+    if (item.count > 1) {
+        item.count--;
+        dipped = { ...item, id: state.nextItemId++, count: 1, letter: undefined, x: -1, y: -1 };
+    }
+    const canBecomeExcalibur = !!(fountain?.magic && !fountain.magicUsed && hero.luck >= 0 && dipped.kind === "weapon" &&
+        dipped.type === "long sword" && hero.level >= 5 && !allItems(state).some((it) => it.type === "excalibur"));
+    let wetEffect = false;
+    if (dipped.kind === "potion" && dipped.type !== "water") {
+        if (dipped.diluted) {
+            dipped.type = "water";
+            dipped.diluted = false;
+            say(state, "포션이 묽어져 맹물이 되었다.");
+        } else {
+            dipped.diluted = true;
+            say(state, "포션이 물에 희석되었다.");
+        }
+        wetEffect = true;
+    } else if (dipped.kind === "scroll" && dipped.type !== "blank") {
+        dipped.type = "blank";
+        say(state, "주문서의 글씨가 물에 씻겨 빈 주문서가 되었다.");
+        wetEffect = true;
+    } else if (dipped.kind === "weapon" && WEAPONS[dipped.type]?.material === "iron" && !dipped.erosionProof && !canBecomeExcalibur) {
+        const plus = enchantOf(dipped);
+        if (plus > -3) setEnchant(dipped, plus - 1);
+        dipped.plusKnown = true;
+        say(state, plus > -3 ? "철 무기가 녹슬어 손질이 나빠졌다." : "철 무기에 녹이 슬었지만 더 약해지진 않았다.");
+        wetEffect = true;
+    }
+
+    if (fountain?.magic && !fountain.magicUsed && hero.luck >= 0) {
+        if (wetEffect && rng.chance(1 / 2)) {
+            say(state, "분수의 물이 출렁였지만 다른 일은 일어나지 않았다.");
+        } else if (canBecomeExcalibur) {
+            const odds = hero.origin === "knight" ? 1 / 6 : 1 / 30;
+            if (rng.chance(odds)) {
+                dipped.type = "excalibur";
+                dipped.blessed = true;
+                dipped.cursed = false;
+                dipped.curseKnown = false;
+                dipped.erosionProof = true;
+                dipped.plusKnown = true;
+                state.known["weapon:excalibur"] = true;
+                say(state, "분수에서 솟은 목소리가 울린다. 장검이 엑스칼리버로 변했다!");
+                dryFountain(state, fountain);
+                return true;
+            }
+            resolveDipEvent(state, hero, dipped, fountain, rng);
+        } else {
+            resolveDipEvent(state, hero, dipped, fountain, rng);
+        }
+        fountain.magicUsed = true;
+    }
+    if (fountain && rng.chance(1 / 3)) dryFountain(state, fountain);
+    if (dipped !== item) addToPack(hero, dipped);
+    return true;
+}
+
+function allItems(state: GameState): Item[] {
+    return [...state.heroes.flatMap((hero) => [...hero.pack, ...hero.chest]), ...(state.benched ?? []).flatMap((hero) => [...hero.pack, ...hero.chest]), ...state.level.items,
+        ...Object.values(state.levels ?? {}).flatMap((level) => level.items)];
+}
+
+function dryFountain(state: GameState, fountain?: NonNullable<ReturnType<typeof fountainAt>>, message = "분수가 바싹 말라 사라졌다."): void {
+    if (!fountain) return;
+    state.level.fountains = (state.level.fountains ?? []).filter((candidate) => candidate !== fountain);
+    if (state.level.fountain === fountain) state.level.fountain = null;
+    say(state, message);
+}
+
+function resolveDipEvent(state: GameState, hero: Hero, item: Item, fountain: NonNullable<ReturnType<typeof fountainAt>>, rng: Rng): void {
+    const result = rng.rnd(30);
+    if (result < 18) { say(state, "물속에서 아무 일도 일어나지 않았다."); return; }
+    if (result < 22) {
+        if (item.cursed) { item.cursed = false; item.blessed = false; item.curseKnown = false; say(state, "물결이 담근 물건의 저주를 씻어냈다."); }
+        else say(state, "물결이 물건을 감쌌지만 달라진 것은 없다.");
+        return;
+    }
+    if (result === 22) {
+        item.cursed = true; item.blessed = false; item.curseKnown = true;
+        say(state, `담근 ${describe(item, state.known, state.appearance)}에 저주가 깃들었다.`); return;
+    }
+    if (result === 23 || result === 24 || result === 25) {
+        const ch = result === 23 ? "S" : result === 25 ? "N" : randomMonsterChar(state.level.depth, rng);
+        const spot = freeSpot(state.level, rng, [...state.heroes, ...state.level.monsters, ...state.level.items, fountain]);
+        const monster = spawnMonster(ch, spot.x, spot.y, rng);
+        monster.awake = true; monster.target = state.heroes.indexOf(hero); state.level.monsters.push(monster);
+        say(state, result === 23 ? "분수에서 물뱀들이 기어 나온다!" : result === 25 ? "물속에서 님프가 나타났다!" : "분수에서 적대적인 존재가 솟아난다!"); return;
+    }
+    if (result === 26) {
+        const spots = poolSpots(state, fountain.x, fountain.y);
+        for (const p of rng.shuffle(spots).slice(0, rng.between(1, 3))) state.level.tiles[idx(p.x,p.y)] = T.POOL;
+        say(state, "분수가 솟구쳐 주변 바닥에 물웅덩이를 만들었다."); return;
+    }
+    if ((result === 27 || result === 28) && !fountain.looted) {
+        const item = result === 27 ? makeItem("gem", rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!, state.nextItemId++, fountain.x, fountain.y) : makeItem("gold", "gold", state.nextItemId++, fountain.x, fountain.y);
+        if (result === 28) item.count = rng.between(10, 100);
+        state.level.items.push(item); fountain.looted = true;
+        say(state, result === 27 ? "물결 속에서 보석이 반짝인다." : "분수 바닥에서 금화가 떠올랐다."); return;
+    }
+    say(state, "물결이 잦아들고 분수는 조용해졌다.");
+}
+
+function poolSpots(state: GameState, x: number, y: number): Pos[] {
+    const level = state.level;
+    return Array.from({ length: MAP_W * MAP_H }, (_, n) => ({ x: n % MAP_W, y: Math.floor(n / MAP_W) })).filter((p) =>
+        Math.max(Math.abs(p.x - x), Math.abs(p.y - y)) <= 4 && (p.x !== x || p.y !== y) &&
+        tileAt(level, p.x, p.y) === T.FLOOR && !state.heroes.some((h) => h.x === p.x && h.y === p.y) &&
+        !level.monsters.some((m) => m.x === p.x && m.y === p.y) && !level.items.some((it) => it.x === p.x && it.y === p.y) &&
+        !fountainAt(level, p.x, p.y) && !(level.stairs.x === p.x && level.stairs.y === p.y) &&
+        !(level.upStairs?.x === p.x && level.upStairs?.y === p.y) && !(level.anvil?.x === p.x && level.anvil?.y === p.y),
+    );
 }
 
 /**
@@ -1704,6 +1835,9 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
     state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
 
     switch (it.type) {
+        case "blank":
+            say(state, "빈 주문서에는 읽을 글이 없다.");
+            break;
         case "magic mapping":
             revealAll(level);
             if (it.blessed) {
@@ -3025,6 +3159,16 @@ function digStep(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng)
 
     delete hero.dig;
     if (down) {
+        const fountain = fountainAt(level, x, y);
+        if (fountain) {
+            dryFountain(state, fountain, "곡괭이가 분수를 깨뜨렸다.");
+            const candidates = poolSpots(state, x, y);
+            const chosen = rng.shuffle(candidates).slice(0, rng.between(3, 6));
+            for (const p of chosen) level.tiles[idx(p.x, p.y)] = T.POOL;
+            say(state, `분수를 파내자 물이 터져 나와 ${chosen.length}개의 웅덩이를 만들었다.`);
+            computeFov(level, state.heroes);
+            return true;
+        }
         say(state, "바닥이 무너졌다! 뚫린 구멍으로 떨어진다.");
         enterLevel(state, level.depth + 1, rng, "fall");
         say(state, `지하 ${state.level.depth}층.`);
@@ -4122,6 +4266,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "fountain":
                 acted = drinkFountain(state, hero, rng);
                 break;
+            case "dip":
+                acted = dipFountain(state, hero, cmd.letter, rng);
+                break;
             case "descend":
                 acted = descend(state, hero, rng);
                 break;
@@ -4699,6 +4846,8 @@ export function glyphAt(
             return { ch: "#", kind: visible ? "corridor" : "corridor-dim" };
         case T.STAIRS:
             return { ch: ">", kind: "stairs" };
+        case T.POOL:
+            return { ch: "}", kind: visible ? "pool" : "pool-dim" };
         default:
             return null;
     }

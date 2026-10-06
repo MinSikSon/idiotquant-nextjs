@@ -22,7 +22,8 @@ export type Tile =
     | 5 // 복도
     | 6 // 아래로 가는 계단
     | 7 // 통로 (없는 방의 교차점)
-    | 8; // 비밀문 — 찾기 전에는 벽이다
+    | 8 // 비밀문 — 찾기 전에는 벽이다
+    | 9; // 물웅덩이
 
 export const T = {
     ROCK: 0 as Tile,
@@ -34,6 +35,7 @@ export const T = {
     STAIRS: 6 as Tile,
     PASSAGE: 7 as Tile,
     SECRET: 8 as Tile,
+    POOL: 9 as Tile,
 } as const;
 
 /**
@@ -44,7 +46,7 @@ export const T = {
  * walkable 에 넣으면 찾지도 않은 문을 걸어서 지나가게 된다.
  */
 export function walkable(t: Tile): boolean {
-    return t === T.FLOOR || t === T.DOOR || t === T.CORRIDOR || t === T.STAIRS || t === T.PASSAGE;
+    return t === T.FLOOR || t === T.DOOR || t === T.CORRIDOR || t === T.STAIRS || t === T.PASSAGE || t === T.POOL;
 }
 
 export interface Pos {
@@ -210,6 +212,10 @@ export interface Item {
     plusArmor?: number;
     /** 반지의 세기. 보호 반지 +2 는 방어 등급을 2 내린다. */
     plusRing?: number;
+    /** 물에 젖어 희석된 물약인가. 한 번 더 담그면 물이 된다. */
+    diluted?: boolean;
+    /** 녹슬지 않도록 보호됐는가. */
+    erosionProof?: boolean;
     /** 지팡이에 남은 횟수. 0 이면 아무 일도 안 난다. */
     charges?: number;
     /**
@@ -345,7 +351,7 @@ export interface Fountain extends Pos {
     magic: boolean;
     magicUsed: boolean;
     drinks: number;
-    /** 보석 사건이 이미 일어났는가. */
+    /** 보석 또는 금화 보상이 이미 나왔는가. */
     looted?: boolean;
 }
 

@@ -1942,7 +1942,7 @@ export default function Rogue() {
         // 제일 짧은 길을 간다.
         { label: "줍기", detail: hereItem ? describe(hereItem, state.known, state.appearance) : "발밑 아이템", mobileMark: hereItem ? itemChar(hereItem.kind) : undefined, hint: hereWare !== null ? `, 또는 g — 값 ${hereWare}G · 집으면 외상` : ", 또는 g", keys: coopKeys ? "S · K" : "g", on: () => run({ t: "pickup" }), off: hereItem ? undefined : "발밑에 아무것도 없다", hot: !!hereItem },
         // 곡괭이를 쥐었으면 계단 밖에서도 열린다 — 누르면 발밑을 판다(`descend` 가 가른다).
-        { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? "발밑 굴착" : "내려가는 계단", mobileMark: ">", hint: "> — 곡괭이를 쥐면 계단 밖에서는 발밑을 판다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
+        { label: "내려간다", detail: heldPickAxe(hero) && !onStairs ? onFountain ? "분수 파내기" : "발밑 굴착" : "내려가는 계단", mobileMark: ">", hint: "> — 곡괭이는 발밑을 파고, 분수도 파낼 수 있다", keys: coopKeys ? "S · K" : ">", on: () => run({ t: "descend" }), off: onStairs || heldPickAxe(hero) ? undefined : "계단 위가 아니다", hot: onStairs },
         {
             label: "올라간다",
             detail: "올라가는 계단",

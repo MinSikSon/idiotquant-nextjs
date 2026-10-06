@@ -37,6 +37,7 @@ import {
 import { billOf, inShop, isTradable, price, sellPrice, shopkeeperOf } from "@/lib/rogue/shop";
 import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
+import { T, fountainAt, idx } from "@/lib/rogue/types";
 
 import Aim from "./Aim";
 import Panel from "./Panel";
@@ -441,6 +442,9 @@ export default function Desk({
             run(cmd);
             setChosen(null);
         };
+        const atFountain = !!fountainAt(state.level, hero.x, hero.y);
+        const atPool = state.level.tiles[idx(hero.x, hero.y)] === T.POOL;
+        if (atFountain || atPool) out.push({ label: atFountain ? "분수에 담근다" : "웅덩이에 담근다", on: go({ t: "dip", letter: it.letter! }) });
         // **외상인 것은 돌려주거나 값을 치르는 것뿐이다** — 쓰는 줄을 세우면 눌러도 안 되는
         // 줄이 된다(엔진이 막는다, `game.unpaidIn`).
         if (it.unpaid) {
