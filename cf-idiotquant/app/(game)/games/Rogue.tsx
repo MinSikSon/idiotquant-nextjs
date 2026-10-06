@@ -2125,7 +2125,7 @@ export default function Rogue() {
                                         [
                                             ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
                                             ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                            ["luck", `운 +1 · 좋은 등급 물건을 얻을 가능성이 커진다 (현재 ${hero.luck})`],
+                                            ["wisdom", `지혜 +1 · 공격 지팡이 피해 주사위 +1 (현재 ${hero.wisdom})`],
                                         ] as const
                                     ).map(([option, label]) => (
                                         <button

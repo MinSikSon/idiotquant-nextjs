@@ -240,7 +240,7 @@ type Action =
      * 3레벨마다 쌓이는 성장 하나를 고른다 — **캠프도, 턴도 필요 없다**(레벨업 자체가
      * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
      */
-    | { t: "pickSkill"; option: "str" | "def" | "luck" }
+    | { t: "pickSkill"; option: "str" | "def" | "wisdom" }
     | { t: "inspectStatus"; kind: "origin" | "str" | "defense" | "wisdom" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
 
@@ -2466,7 +2466,7 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
  * **힘은 물약(`quaff` 의 `"strength"`)과 같은 식**이다(상한 31 · `maxStr` 을 따라 올림) —
  * 두 길이 갈리면 「힘 31 을 넘겼다」가 한쪽에서만 막힌다.
  */
-function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck"): boolean {
+function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "wisdom"): boolean {
     if (hero.pendingSkillPicks <= 0) {
         say(state, "지금은 고를 수 있는 성장이 없다.");
         return false;
@@ -2482,9 +2482,9 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "luck")
             hero.bonusDefense += 1;
             say(state, "🛡️ 성장 — 몸놀림이 단단해졌다.");
             break;
-        case "luck":
-            hero.luck = Math.min(13, hero.luck + 1);
-            say(state, "🔺 성장 — 운이 좋아졌다.");
+        case "wisdom":
+            hero.wisdom = Math.min(100, hero.wisdom + 1);
+            say(state, "🔺 성장 — 지혜가 늘었다.");
             break;
     }
     return false;

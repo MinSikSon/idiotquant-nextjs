@@ -171,7 +171,7 @@ export const EXP_LEVELS = [
 export const HP_PER_LEVEL = 5;
 
 /**
- * 이 레벨마다 성장 하나를 고른다(힘·방어·행운) — `hero.pendingSkillPicks` 하나가
+ * 이 레벨마다 성장 하나를 고른다(힘·방어·지혜) — `hero.pendingSkillPicks` 하나가
  * 쌓고, `game.pickSkill` 하나가 던다. 캠프가 아니어도, 턴을 안 써도 고를 수 있다 —
  * 레벨업 자체가 턴을 안 쓰는 것과 같은 자리다.
  */

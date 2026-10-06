@@ -148,7 +148,7 @@ test("레벨업 성장 — 3레벨마다 쌓이고, 여러 레벨을 건너뛰�
     }
 });
 
-test("성장 고르기 — 힘·방어·아이템운, 캠프도 턴도 필요 없다", () => {
+test("성장 고르기 — 힘·방어·지혜, 캠프도 턴도 필요 없다", () => {
     // ── 쌓인 것이 없으면 아무 일도 안 난다 — 주문서 대상 없이 읽는 것과 같은 자리
     {
         const s0 = newGame(710);
@@ -195,13 +195,15 @@ test("성장 고르기 — 힘·방어·아이템운, 캠프도 턴도 필요 �
         assert.equal(heroDefense(s1.heroes[0]), before + 1);
     }
 
-    // ── 지혜 — 1씩 쌓이며 아이템 등급 판정 100%(1)를 넘지 않는다
+    // ── 지혜 — 1씩 쌓이고 100에서 멈추며, 별도 Luck은 바꾸지 않는다
     {
         const s0 = newGame(714);
         s0.heroes[0].pendingSkillPicks = 100;
+        const luckBefore = s0.heroes[0].luck;
         let s = s0;
-        for (let i = 0; i < 100; i++) s = run(s, { t: "pickSkill", option: "luck" });
-        assert.equal(s.heroes[0].itemLuck, 1, "지혜가 100에서 안 멈췄다");
+        for (let i = 0; i < 100; i++) s = run(s, { t: "pickSkill", option: "wisdom" });
+        assert.equal(s.heroes[0].wisdom, 100, "지혜가 100에서 안 멈췄다");
+        assert.equal(s.heroes[0].luck, luckBefore, "지혜 성장이 Luck도 바꿨다");
     }
 
     // ── 캠프 밖에서도, 아무 층에서도 된다 — `stash`/`melt` 와 다른 자리다
