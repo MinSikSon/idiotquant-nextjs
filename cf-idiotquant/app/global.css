@@ -404,3 +404,10 @@ html.dark .landing-style-page {
 .landing-style-page :is(div, section, article)[class~="rounded-2xl"] {
   border-radius: 8px;
 }
+
+@media (max-width: 639px) {
+  .landing-style-page [class*="max-w-"].mx-auto {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
