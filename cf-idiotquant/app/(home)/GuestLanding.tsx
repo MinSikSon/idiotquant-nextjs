@@ -64,6 +64,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
             <nav aria-label="주요 메뉴" className="flex flex-1 items-center gap-7 text-sm text-neutral-600 dark:text-neutral-300">
               <a href="#features" className="hover:text-neutral-950 dark:hover:text-white">서비스</a>
               <Link href="/screener" className="hover:text-neutral-950 dark:hover:text-white">종목 발굴</Link>
+              <Link href="/compare" className="hover:text-neutral-950 dark:hover:text-white">종목 비교</Link>
               <Link href="/analyze" className="hover:text-neutral-950 dark:hover:text-white">종목 분석</Link>
               <a href="#faq" className="hover:text-neutral-950 dark:hover:text-white">안내</a>
             </nav>
@@ -150,7 +151,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
               <Search size={19} className="text-[#635bdb] dark:text-[#aaa4ff]" aria-hidden="true" />
               <h3 className="mt-5 text-lg font-semibold">핵심 숫자 비교하기</h3>
               <p className="mt-2 min-h-[3.5rem] text-sm leading-6 text-neutral-600 dark:text-neutral-300">PER, PBR, 재무 정보를 나란히 비교해 후보를 좁혀보세요.</p>
-              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-[4px] border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/screener">종목 비교하기 <ArrowRight size={15} aria-hidden="true" /></Link>
+              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-[4px] border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/compare">종목 비교하기 <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
             <article className="rounded-md border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-[#101812]">
               <ChartNoAxesCombined size={19} className="text-[#635bdb] dark:text-[#aaa4ff]" aria-hidden="true" />
