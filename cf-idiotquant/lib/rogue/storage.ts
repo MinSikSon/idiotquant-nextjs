@@ -26,7 +26,7 @@ import {
     weaponDamageOf,
     launcherDamageOf,
 } from "./items";
-import { heroDefense, mergeStacks } from "./hero";
+import { heroDefense, mergeStacks, PACK_LETTERS } from "./hero";
 import { ORIGIN_ALIGNMENT, ORIGINS } from "./origins";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
@@ -278,8 +278,6 @@ function liftEnchants(items: Item[]): Item[] {
     return items;
 }
 
-const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
-
 /**
  * 배낭의 **빈 자리를 메운다.**
  *
@@ -301,7 +299,7 @@ function fixLetters(pack: Item[]): Item[] {
             continue;
         }
         const free = PACK_LETTERS.find((l) => !used.has(l));
-        // 스물여섯을 넘겨 담긴 저장이면 더 줄 자리가 없다. 그래도 판은 굴러가야 하므로
+        // 50칸을 넘겨 담긴 저장이면 더 줄 자리가 없다. 그래도 판은 굴러가야 하므로
         // 그 물건만 자리 없이 둔다 — 화면이 `?)` 로 찍고, 버리면 자리가 난다.
         it.letter = free;
         if (free) used.add(free);

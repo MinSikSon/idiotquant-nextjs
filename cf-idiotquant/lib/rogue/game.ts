@@ -57,6 +57,7 @@ import {
     launcherFor,
     makeHero,
     packItem,
+    PACK_CAPACITY,
     SKILL_PICK_INTERVAL,
     regenEvery,
     searchChance,
@@ -1406,7 +1407,7 @@ function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): bo
         say(state, "분수나 물웅덩이 위에서 물건을 골라야 한다.");
         return false;
     }
-    if (item.count > 1 && hero.pack.length >= 26) {
+    if (item.count > 1 && hero.pack.length >= PACK_CAPACITY) {
         say(state, "뭉치에서 한 개를 나눌 배낭 자리가 없다.");
         return false;
     }
@@ -2741,7 +2742,7 @@ function useClassSkill(state: GameState, hero: Hero, rng: Rng, ingredients?: [st
                 say(state, "일반 포션 두 개가 필요하다.");
                 return false;
             }
-            if (hero.pack.length >= 26 && first.count === 1 && second.count === 1) {
+            if (hero.pack.length >= PACK_CAPACITY && first.count === 1 && second.count === 1) {
                 say(state, "배낭이 꽉 찼다.");
                 return false;
             }
@@ -4369,7 +4370,7 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
     }
     if (choice === "blood") {
         const cost = Math.max(5, Math.ceil(hero.hp / 3));
-        if (hero.hp <= cost || hero.pack.length >= 26) {
+        if (hero.hp <= cost || hero.pack.length >= PACK_CAPACITY) {
             say(state, hero.hp <= cost ? "바칠 피가 모자라다." : "배낭이 꽉 찼다.");
             return false;
         }
@@ -4379,7 +4380,7 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
         addToPack(hero, reward);
         say(state, `피 ${cost}를 바쳤다. 축복받은 강화 주문서를 얻었다.`);
     } else if (choice === "hunger") {
-        if (hero.food <= 400 || hero.pack.length >= 25) {
+        if (hero.food <= 400 || hero.pack.length >= PACK_CAPACITY - 1) {
             say(state, hero.food <= 400 ? "바칠 식량이 모자라다." : "배낭에 두 장을 담을 자리가 없다.");
             return false;
         }

@@ -35,7 +35,7 @@ import {
     WEAPONS,
 } from "@/lib/rogue/items";
 import { billOf, inShop, isTradable, price, sellPrice, shopkeeperOf } from "@/lib/rogue/shop";
-import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor } from "@/lib/rogue/hero";
+import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor, PACK_CAPACITY } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 import { T, fountainAt, idx } from "@/lib/rogue/types";
 
@@ -856,7 +856,7 @@ export default function Desk({
                     side={side}
                     accent={accent}
                     closeKey={closeKey}
-                    title={`${who}배낭 (${hero.pack.length}/26)`}
+                    title={`${who}배낭 (${hero.pack.length}/${PACK_CAPACITY})`}
                     onClose={() => {
                         setChosen(null);
                         setPackOpen(false);

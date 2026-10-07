@@ -201,7 +201,8 @@ function triplesInRange(lo: number, hi: number): number {
     return Math.floor(hi / SKILL_PICK_INTERVAL) - Math.floor(lo / SKILL_PICK_INTERVAL);
 }
 
-const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+export const PACK_CAPACITY = 50;
+export const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX".split("");
 
 /**
  * 힘이 주는 보정 — **D&D 의 능력 보정 하나로 명중과 피해에 같이 쓴다.**
@@ -408,7 +409,7 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
     // 같은 강화/저주 상태끼리 합친다.
     //
     // **겹쳐 쌓이는 무기(화살·은화살·표창)는 언제나 합친다** — 한 대씩 주웠다고 배낭 칸을
-    // 하나씩 먹으면 쏘고 줍기를 몇 번만 해도 26칸이 찬다. 강화를 못 가지는 것들이라
+    // 하나씩 먹으면 쏘고 줍기를 몇 번만 해도 배낭이 찬다. 강화를 못 가지는 것들이라
     // (`canHoldEnchant`) 가를 것은 축복·저주뿐이고, 아는 것(`curseKnown`)은 합친 쪽으로 옮긴다.
     //
     // 한 뭉치는 `STACK_MAX` 까지다 — 빈 자리가 있는 뭉치부터 채우고, **남는 것은 새 칸**에
