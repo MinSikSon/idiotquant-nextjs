@@ -56,9 +56,9 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
+            className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2.5 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
         >
-            <div className="flex items-start gap-2 mb-3">
+            <div className="flex items-start gap-2 mb-2 sm:mb-3">
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
@@ -85,7 +85,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
                      hint="시가총액 — 시장이 이 회사에 매긴 값" />
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-3 gap-1">
+            <div className="mt-2 sm:mt-3 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-3 gap-1">
                 <Ratio label="순유동/시총" value={m.ncavMultiple} ok={(m.ncavMultiple ?? 0) >= 1}
                        hint="(유동자산 − 부채총계) ÷ 시가총액. 1x 이상이면 청산가치가 시가총액보다 큽니다." />
                 <Ratio label="부채/유동자산" value={m.debtToAssets} ok={m.debtToAssets !== null && m.debtToAssets < 1}

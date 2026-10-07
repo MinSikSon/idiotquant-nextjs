@@ -158,6 +158,7 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
 const DEFAULT_VIEW: ViewMode = 'card';
 // 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
 const GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3';
+const CARD_GRID_BODY = 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 p-1.5 sm:gap-3 sm:p-3';
 // URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
 const parseViewMode = (v: string | null | undefined): ViewMode =>
     (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
@@ -380,33 +381,32 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
 
     return (
         <div
-            className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 cursor-pointer hover:border-brand-light-hover dark:hover:border-brand-hover/50 hover:shadow-md transition-all active:scale-[0.99]"
+            className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 cursor-pointer hover:border-brand-light-hover dark:hover:border-brand-hover/50 transition-colors active:bg-neutral-50 dark:active:bg-surface-dark-hover"
             onClick={() => onClick(item.ticker, item.name)}
         >
-            <div className="flex items-start justify-between gap-2 mb-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                    </div>
-                    <p className="font-bold text-base text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
+                    <p className="font-bold text-[13px] text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-[11px] text-neutral-400 font-mono tracking-wider">{item.ticker}</span>
+                        <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{item.ticker}</span>
                         <LiquidityBadge item={item} />
+                        {strategies.length > 0 && <span className="text-[9px] font-bold text-brand">{STRATEGY_LABEL[strategies[0]] ?? strategies[0]}</span>}
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                     <button
                         className={cn(
-                            "p-1.5 rounded-lg transition-all",
+                            "p-1 rounded-lg transition-all",
                             isLiked
                                 ? "text-rose-500 dark:text-rose-400"
                                 : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
                         )}
                         onClick={(e) => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
                     >
-                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                        <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                     </button>
                     <div className={cn(
-                        "px-2.5 py-1.5 rounded-xl text-sm font-black font-mono",
+                        "px-2 py-1 rounded-md text-[13px] font-black font-mono",
                         ncav >= 1
                             ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                             : ncav >= 0.7
@@ -419,17 +419,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                 </div>
             </div>
 
-            {strategies.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-4">
-                    {strategies.map(s => (
-                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
-                            {STRATEGY_LABEL[s] ?? s}
-                        </span>
-                    ))}
-                </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-3 gap-1 border-t border-neutral-100 pt-1.5 dark:border-border-subtle-dark">
                 {([
                     { key: "pbr" as MetricKey, label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—" },
                     { key: "per" as MetricKey, label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
@@ -439,13 +429,13 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                     const met = rel && highlight![m.key]!(item);
                     return (
                         <div key={m.label} title={m.key === "roe" ? ROE_BASIS_HINT : undefined} className={cn(
-                            "text-center p-3.5 rounded-xl",
+                            "text-center py-1",
                             rel && met ? "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60"
                                 : "bg-surface-canvas dark:bg-surface-dark-card/60"
                         )}>
-                            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
+                            <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
                             <p className={cn(
-                                "text-sm font-mono font-bold mt-0.5",
+                                "text-[12px] font-mono font-bold",
                                 rel && met ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-200"
                             )}>{m.value}</p>
                         </div>
@@ -453,10 +443,6 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                 })}
             </div>
 
-            <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-surface-canvas dark:bg-surface-dark-card hover:bg-brand hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all">
-                상세 분석
-                <ChevronRight size={12} />
-            </button>
         </div>
     );
 });
@@ -478,10 +464,10 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
         <button
             type="button"
             onClick={() => onClick(item.ticker, item.name)}
-            className="w-full text-left rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md active:scale-[0.99] transition-all"
+            className="w-full text-left rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 transition-colors"
         >
-            <div className="flex items-start gap-3">
-                <span className="mt-0.5 w-6 h-6 shrink-0 rounded-full bg-brand-light dark:bg-[#052e16]/50 text-brand flex items-center justify-center text-[11px] font-black tabular-nums">
+            <div className="flex items-start gap-1.5 sm:gap-3">
+                <span className="mt-0.5 w-5 h-5 shrink-0 rounded-full bg-brand-light dark:bg-[#052e16]/50 text-brand flex items-center justify-center text-[10px] font-black tabular-nums">
                     {rank}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -493,10 +479,10 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
                 </span>
                 <span className="shrink-0 text-right">
                     <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>
-                    <span className="block mt-0.5 font-mono text-lg font-black tabular-nums text-brand">+{expectedReturn.toFixed(0)}%</span>
+                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-black tabular-nums text-brand">+{expectedReturn.toFixed(0)}%</span>
                 </span>
             </div>
-            <span className="block mt-3 pt-3 border-t border-neutral-100 dark:border-border-subtle-dark text-[11px] text-neutral-500 dark:text-neutral-400">
+            <span className="block mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
                 순유동자산이 시가총액의 <strong className="font-mono text-neutral-700 dark:text-neutral-200">{ncav.toFixed(2)}배</strong> · 자세히 보기 <ChevronRight className="inline -mt-px" size={12} />
             </span>
         </button>
@@ -1872,7 +1858,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-20">
+            <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-2 sm:pt-5 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -1936,7 +1922,7 @@ function ScreenerContent() {
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5 sm:gap-3">
                                 {guestRecommendations.map((item: any, index) => (
                                     <GuestRecommendationCard key={item.ticker} item={item} rank={index + 1} onClick={handleStockClick} />
                                 ))}
@@ -2072,13 +2058,13 @@ function ScreenerContent() {
                         ) : viewMode === 'card' ? (
                             groups ? (
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
-                                    <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
+                                    <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
                                         )} />
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3">
                                     {visibleList.map((item: any) => (
                                         <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
                                     ))}
@@ -2119,13 +2105,13 @@ function ScreenerContent() {
                         <div className="md:hidden">
                             {groups ? (
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
-                                    <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3"
+                                    <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-2 sm:grid-cols-2 gap-1.5 p-1.5 sm:gap-3 sm:p-3"
                                         renderRow={(item: any) => (
                                             <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         )} />
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5 sm:gap-3">
                                     {visibleList.map((item: any) => (
                                         <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                     ))}

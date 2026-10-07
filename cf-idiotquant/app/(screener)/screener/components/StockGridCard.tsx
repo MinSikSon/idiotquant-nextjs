@@ -73,13 +73,13 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
             role="link"
             tabIndex={0}
             aria-label={`${item.name} 분석 보기`}
-            className="cursor-pointer rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-all"
+            className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-all"
         >
-            <div className="p-3 sm:p-3.5">
-                <div className="flex items-center gap-2 mb-2.5">
+            <div className="p-2 sm:p-3.5">
+                <div className="flex items-center gap-1.5 mb-1.5 sm:gap-2 sm:mb-2.5">
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</span>
+                            <span className="text-[12px] sm:text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</span>
                             {sector && <span className="hidden sm:inline shrink-0 text-[9px] font-bold text-neutral-400">{sector}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
@@ -89,7 +89,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                     </div>
                     <button
                         onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                        className={cn("flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-colors",
+                        className={cn("flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg shrink-0 transition-colors",
                             isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
                         title={isLiked ? "관심 해제" : "관심 추가"}
                     >
@@ -97,14 +97,14 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1 py-2 border-y border-neutral-100 dark:border-border-subtle-dark">
+                <div className="grid grid-cols-4 gap-0.5 py-1.5 sm:gap-1 sm:py-2 border-y border-neutral-100 dark:border-border-subtle-dark">
                     <Metric label="NCAV" value={ncav > 0 ? `${ncav.toFixed(2)}x` : "—"} ok={ncav >= 1} />
                     <Metric label="PBR" value={pbr > 0 ? pbr.toFixed(2) : "—"} ok={pbr > 0 && pbr < 1} />
                     <Metric label="ROE" value={roe > 0 ? `${roe.toFixed(1)}%` : "—"} ok={roe >= 8} />
                     <Metric label="PER" value={per > 0 ? per.toFixed(1) : "—"} ok={per > 0 && per < 10} />
                 </div>
 
-                <div className="mt-2 flex items-center gap-1.5 min-w-0">
+                <div className="mt-1.5 sm:mt-2 flex items-center gap-1 min-w-0">
                     {strategy && (
                         <span className={cn("shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold", STRATEGY_BADGE[strategy] ?? "bg-surface-canvas text-neutral-500")}>
                             {STRATEGY_LABEL[strategy] ?? strategy}
