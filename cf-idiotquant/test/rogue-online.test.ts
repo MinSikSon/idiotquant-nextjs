@@ -131,6 +131,15 @@ test("온라인 방 코드는 숫자 네 자리만 입력할 수 있다", () => 
     assert.match(SRC, /if \(!\/\^\\d\{4\}\$\/\.test\(roomCodeInput\)\) return;/, "네 자리 숫자가 아니어도 방 입장을 제출할 수 있다");
 });
 
+test("Safari 화면 복귀 시 손님은 즉시 다시 잇고 방장은 신호 연결을 복구한다", () => {
+    const at = SRC.indexOf('document.addEventListener("visibilitychange", resume)');
+    assert.ok(at > 0, "화면에 돌아왔을 때 연결을 확인하는 감시가 없다");
+    const body = SRC.slice(SRC.lastIndexOf("useEffect(() => {", at), SRC.indexOf('document.addEventListener("visibilitychange", resume)', at) + 500);
+    assert.match(body, /document\.visibilityState !== "visible"/, "숨겨진 시점을 기억하지 않는다");
+    assert.match(body, /current\.peer\.disconnected[\s\S]*?current\.peer\.reconnect\(\)/, "복귀한 방장이 신호 연결을 복구하지 않는다");
+    assert.match(body, /retry\(current\.peer, \(\) => joinRoom\(saved\.code!, saved\.origin\), 0\)/, "복귀한 손님이 즉시 새 연결을 시도하지 않는다");
+});
+
 test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", () => {
     // ── ① 규약에 물음과 답이 둘 다 있다
     //

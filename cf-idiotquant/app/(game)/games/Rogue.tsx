@@ -1126,10 +1126,10 @@ export default function Rogue() {
      * 브로커와의 연결이 깨지면 피어를 새로 만든다. 같은 코드가 브로커에 잠깐 남아 있으면
      * (`unavailable-id`) 그것도 몇 초 뒤 다시 된다. 나간 뒤에는 안 돈다(`net.current` 로 본다).
      */
-    const retry = useCallback((peer: Peer, again: () => void) => {
+    const retry = useCallback((peer: Peer, again: () => void, delay = RETRY_MS) => {
         if (net.current?.peer !== peer) return;
         peer.destroy();
-        setTimeout(() => net.current?.peer === peer && again(), RETRY_MS);
+        setTimeout(() => net.current?.peer === peer && again(), delay);
     }, []);
 
     /** 끝난 판에서 남은 화면·입력 상태를 새 판으로 넘기지 않는다. */
@@ -1450,6 +1450,40 @@ export default function Rogue() {
             });
         });
     }, [note, retry, resetRunInput]);
+
+    // iOS Safari may suspend the tab's WebRTC/socket timers while the screen is locked or
+    // another app is foregrounded. Recover as soon as this tab becomes visible again instead
+    // of waiting for the six-second heartbeat timeout to notice a dead guest connection.
+    useEffect(() => {
+        let hiddenAt: number | null = null;
+        const resume = () => {
+            if (document.visibilityState !== "visible") {
+                hiddenAt ??= Date.now();
+                return;
+            }
+            const awayFor = hiddenAt === null ? 0 : Date.now() - hiddenAt;
+            hiddenAt = null;
+            if (awayFor < PING_MS) return;
+
+            const current = net.current;
+            if (current?.role === "host") {
+                if (current.peer.disconnected && !current.peer.destroyed) current.peer.reconnect();
+                return;
+            }
+            if (current?.role !== "guest") return;
+            const saved = readRoomRecord();
+            if (!saved?.code) return;
+            setLinked(false);
+            note("방으로 다시 잇는 중…");
+            retry(current.peer, () => joinRoom(saved.code!, saved.origin), 0);
+        };
+        document.addEventListener("visibilitychange", resume);
+        window.addEventListener("pageshow", resume);
+        return () => {
+            document.removeEventListener("visibilitychange", resume);
+            window.removeEventListener("pageshow", resume);
+        };
+    }, [joinRoom, note, retry]);
 
     // 새로고침·탭을 닫았다 연 뒤에도 **들어 있던 방으로** 돌아간다.
     /**
