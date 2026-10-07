@@ -124,6 +124,13 @@ test("같은 Safari의 초대 탭은 방장 탭과 역할 저장이 분리된다
     assert.match(SRC, /localStorage\.removeItem\(ROOM_KEY\)/, "옛 공유 저장소를 비우지 않아 다음 탭이 방 역할을 이어받는다");
 });
 
+test("온라인 방 코드는 숫자 네 자리만 입력할 수 있다", () => {
+    assert.match(SRC, /label: "온라인 방 들어가기"[\s\S]*?setSheet\("roomCode"\)/, "방 입장 메뉴가 숫자 코드 입력 화면을 열지 않는다");
+    assert.match(SRC, /type="tel"[\s\S]*?inputMode="numeric"[\s\S]*?pattern="\[0-9\]\*"[\s\S]*?maxLength=\{4\}/, "모바일 숫자 키보드나 네 자리 제한이 없다");
+    assert.match(SRC, /value\.replace\(\/\\D\/g, ""\)\.slice\(0, 4\)/, "문자나 다섯 번째 숫자를 입력값에서 거르지 않는다");
+    assert.match(SRC, /if \(!\/\^\\d\{4\}\$\/\.test\(roomCodeInput\)\) return;/, "네 자리 숫자가 아니어도 방 입장을 제출할 수 있다");
+});
+
 test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", () => {
     // ── ① 규약에 물음과 답이 둘 다 있다
     //

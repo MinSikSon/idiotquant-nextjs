@@ -498,8 +498,9 @@ function higher(a: Record<string, number>, b: Record<string, number>): Record<st
 export default function Rogue() {
     const [state, setState] = useState<GameState | null>(null);
     const [sheet, setSheet] = useState<
-        "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins" | "status"
+        "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins" | "status" | "roomCode"
     >("none");
+    const [roomCodeInput, setRoomCodeInput] = useState("");
     const [statusKind, setStatusKind] = useState<"origin" | "str" | "dexterity" | "defense" | "wisdom" | "luck" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
     const [expandedPartyStats, setExpandedPartyStats] = useState<number | null>(null);
     /**
@@ -3059,6 +3060,45 @@ export default function Rogue() {
             {/* 걸으면서 쓰지 않는 것들이 여기 모인다. 단추 판에 나란히 세워 두면
                 「도움말」이 「마신다」와 같은 무게로 보이고, 급할 때 손가락이 헤맨다. */}
             {
+                sheet === "roomCode" && (
+                    <Panel {...shared} title="온라인 방 들어가기" onClose={() => setSheet("options")}>
+                        <form
+                            className="space-y-3 p-3"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                if (!/^\d{4}$/.test(roomCodeInput)) return;
+                                askNick();
+                                setSheet("none");
+                                // **먼저 붙는다** — 방장의 직업을 받아야 고르는 판이 열린다.
+                                void joinRoom(roomCodeInput);
+                            }}
+                        >
+                            <label htmlFor="rogue-room-code" className="block text-[var(--rg-label)]">방 코드 네 자리</label>
+                            <input
+                                id="rogue-room-code"
+                                type="tel"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="one-time-code"
+                                maxLength={4}
+                                value={roomCodeInput}
+                                onChange={(event) => setRoomCodeInput(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                                aria-label="방 코드 네 자리"
+                                placeholder="0000"
+                                className="w-full rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-bg)] px-3 py-2 text-center font-[family-name:var(--font-plex-mono)] text-2xl tracking-[0.35em] text-[var(--rg-strong)] outline-none focus:border-[var(--rg-strong)]"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!/^\d{4}$/.test(roomCodeInput)}
+                                className="w-full rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-raised)] px-3 py-2 font-bold text-[var(--rg-label)] enabled:hover:bg-[var(--rg-hover)] disabled:opacity-40"
+                            >
+                                방 들어가기
+                            </button>
+                        </form>
+                    </Panel>
+                )
+            }
+            {
                 sheet === "options" && (
                     <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면 밝기: 위·왼쪽 바의 테마 단추">
                         <ul className="font-mono text-[12px]">
@@ -3197,12 +3237,8 @@ export default function Rogue() {
                                             label: "온라인 방 들어가기",
                                             hint: "동료가 알려 준 코드로 — 내 저장 판은 그대로 남는다",
                                             go: () => {
-                                                const code = window.prompt("방 코드 네 자리")?.trim();
-                                                if (!code) return;
-                                                askNick();
-                                                setSheet("none");
-                                                // **먼저 붙는다** — 방장의 직업을 받아야 고르는 판이 열린다.
-                                                void joinRoom(code);
+                                                setRoomCodeInput("");
+                                                setSheet("roomCode");
                                             },
                                         },
                                     ]),
