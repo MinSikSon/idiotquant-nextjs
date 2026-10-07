@@ -501,7 +501,7 @@ export default function Rogue() {
         "none" | "log" | "help" | "graves" | "options" | "bestiary" | "origins" | "status" | "roomCode"
     >("none");
     const [roomCodeInput, setRoomCodeInput] = useState("");
-    const [statusKind, setStatusKind] = useState<"origin" | "str" | "dexterity" | "defense" | "wisdom" | "luck" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
+    const [statusKind, setStatusKind] = useState<"origin" | "str" | "dexterity" | "constitution" | "charisma" | "intelligence" | "defense" | "wisdom" | "luck" | "hunger" | "dlvl" | "gold" | "xp" | "turn">("origin");
     const [expandedPartyStats, setExpandedPartyStats] = useState<number | null>(null);
     /**
      * 사람마다의 배낭·고르기·겨누기(`Desk`). 둘이서면 둘이 따로 연다.
@@ -2209,23 +2209,27 @@ export default function Rogue() {
                                     <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
                                     <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
                                     <span className="text-[11px] text-[var(--rg-faint)]">
-                                        현재: 힘 {heroStr(hero)} · 방어 보너스 +{hero.bonusDefense} · 지혜 {hero.wisdom}
+                                        현재: St {heroStr(hero)} · Dx {hero.dexterity} · Co {hero.constitution} · In {hero.intelligence} · Wi {hero.wisdom} · Ch {hero.charisma}
                                     </span>
                                     {(
                                         [
-                                            ["str", `힘 +1 · 현재 ${heroStr(hero)}`],
-                                            ["def", `방어 보너스 +1 · 현재 +${hero.bonusDefense}`],
-                                            ["wisdom", `지혜 +1 · 공격 지팡이 피해 주사위 +1 (현재 ${hero.wisdom})`],
+                                            ["str", `힘 +1 · 현재 ${heroStr(hero)}`, hero.str >= 31],
+                                            ["dexterity", `민첩 +1 · 명중·회피 보정 (현재 ${hero.dexterity})`, hero.dexterity >= 18],
+                                            ["constitution", `건강 +1 · 레벨업 체력·회복 보정 (현재 ${hero.constitution})`, hero.constitution >= 18],
+                                            ["intelligence", `지능 +1 · 현재 ${hero.intelligence}`, hero.intelligence >= 18],
+                                            ["wisdom", `지혜 +1 · 지팡이 피해 보정 (현재 ${hero.wisdom})`, hero.wisdom >= hero.wisdomMax],
+                                            ["charisma", `매력 +1 · 상점 가격 보정 (현재 ${hero.charisma})`, hero.charisma >= 18],
                                         ] as const
-                                    ).map(([option, label]) => (
+                                    ).map(([option, label, capped]) => (
                                         <button
                                             key={option}
                                             type="button"
+                                            disabled={capped}
                                             onClick={() => {
                                                 run({ t: "pickSkill", option });
                                                 setSkillOpen(hero.pendingSkillPicks > 1);
                                             }}
-                                            className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left hover:bg-[var(--rg-raised)]"
+                                            className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left enabled:hover:bg-[var(--rg-raised)] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             {label}
                                         </button>
@@ -2427,6 +2431,9 @@ export default function Rogue() {
                         {expandedPartyStats === i && <div className=" flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)] [scrollbar-width:none]">
                             {([
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
+                                ["constitution", `Co:${h.constitution}`],
+                                ["intelligence", `In:${h.intelligence}`],
+                                ["charisma", `Ch:${h.charisma}`],
                                 ["wisdom", `Wi:${h.wisdom}`],
                                 ["luck", `Lu:${h.luck}`],
                             ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
@@ -3053,13 +3060,19 @@ export default function Rogue() {
                     : statusKind === "str"
                       ? `St:${heroStr(statusHero)}\n현재 공격력에 힘 보정으로 반영됩니다. 물약과 성장 선택으로 올릴 수 있습니다.`
                       : statusKind === "dexterity"
-                        ? `Dx:${heroDexterity(statusHero)}\n민첩 반지의 명중 보너스입니다. 값이 높을수록 공격이 잘 맞습니다.`
+                        ? `Dx:${heroDexterity(statusHero)}\n직업의 초기 민첩과 민첩 반지의 합입니다. 원작 참고 규칙으로 명중과 회피 굴림에 반영됩니다.`
+                      : statusKind === "constitution"
+                        ? `Co:${statusHero.constitution}\n건강입니다. 높을수록 레벨업 때 얻는 최대 체력과 자연 회복 속도가 좋아집니다.`
+                      : statusKind === "charisma"
+                        ? `Ch:${statusHero.charisma}\n매력 보정치에 따라 상점 가격 비율이 달라집니다.`
+                      : statusKind === "intelligence"
+                        ? `In:${statusHero.intelligence}\n지능 보정치와 지혜 보정치가 함께 공격 지팡이의 추가 피해 주사위를 정합니다. 직업 시작 보정치보다 높아진 합계가 적용됩니다.`
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${statusHero.wisdom}\n공격 지팡이에 지혜 1당 같은 면의 주사위가 하나 더 추가됩니다. Luck과 별개의 능력치입니다.`
+                        ? `Wi:${statusHero.wisdom}\n지혜와 지능의 보정치 합이 직업 시작 합계를 넘으면 공격 지팡이에 추가 피해 주사위가 붙습니다. Luck과 별개입니다.`
                       : statusKind === "luck"
-                        ? `Lu:${statusHero.luck}\n운 수치입니다. -13부터 +13까지이며 물건 등급에 영향을 줍니다. 600번의 본인 행동마다 0에 가까워집니다.`
+                        ? `Lu:${statusHero.luck}\n넷핵식 자연 행운입니다. 공격 명중과 마법 분수·기도에 영향을 줍니다. 평소 600번, 증표 소지나 신의 분노 중에는 300번의 본인 행동마다 0에 가까워집니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"
@@ -3433,7 +3446,7 @@ export default function Rogue() {
                                             <span className="font-mono text-xl" style={{ color: orig.iconInk }}>{orig.icon}</span>
                                             <h3 className="font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
                                         </div>
-                                        <p className="mb-2 text-xs text-[var(--rg-gold)]">Hp {orig.baseHp} · Str {orig.baseStr} · 신앙 {ALIGNMENT_NAME[ORIGIN_ALIGNMENT[orig.id]]}</p>
+                                        <p className="mb-2 text-xs text-[var(--rg-gold)]">Hp {orig.baseHp} · St {orig.baseStr} · Dx {orig.baseDex} · Co {orig.baseCon} · In {orig.baseInt} · Wi {orig.baseWis} · Ch {orig.baseCha} · 신앙 {ALIGNMENT_NAME[ORIGIN_ALIGNMENT[orig.id]]}</p>
                                         <p className="mb-2 text-[11.5px] text-[var(--rg-muted)]">{orig.description}</p>
                                         <div className="border-t border-[var(--rg-line-soft)] pt-2 text-[11px]">
                                             <b className="text-[var(--rg-strong)]"><span className="font-mono text-[var(--rg-gold)]">*</span> {orig.traitName}: </b>

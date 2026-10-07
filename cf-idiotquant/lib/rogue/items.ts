@@ -350,16 +350,11 @@ export function fillAppearances(saved: Record<string, string>, seed: number): Re
  * 그래서 가끔 한 수 위의 물건이 일찍 나오고(그 한 번이 판을 바꾼다), 가끔 한 수
  * 아래의 것이 늦게 나온다. 층과 딱 맞아떨어지면 주울 때마다 놀랄 일이 없다.
  *
- * NetHack Luck은 -13..13. 양수일수록 한 단계 높은 등급으로 다시 뽑을 기회가 생기고,
- * 음수일수록 한 단계 낮은 등급으로 다시 뽑힐 위험이 생긴다. Luck 0은 난수를 더 쓰지 않는다.
+ * NetHack의 자연 Luck은 일반 아이템 등급을 다시 굴리지 않는다. 이 게임에서도 아이템 등급은
+ * 층에만 따르고, Luck은 원작처럼 명중과 Luck 판정에 적용한다.
  */
-export function itemTier(depth: number, rng: Rng, luck = 0): number {
-    const roll = () => Math.min(26, Math.max(1, depth + rng.rnd(10) - 6));
-    const a = roll();
-    const chance = Math.min(0.65, Math.abs(luck) * 0.05);
-    if (chance === 0 || !rng.chance(chance)) return a;
-    const b = roll();
-    return luck > 0 ? Math.max(a, b) : Math.min(a, b);
+export function itemTier(depth: number, rng: Rng, _luck = 0): number {
+    return Math.min(26, Math.max(1, depth + rng.rnd(10) - 6));
 }
 
 /**
@@ -726,13 +721,13 @@ export function rollCharges(rng: Rng): number {
  * 분류는 부르는 쪽이 골라서 넘긴다(`pickCategory`) — 한 층에 강화 주문서를 두 장까지만
  * 놓는 것 같은 **층 단위 규칙**은 물건 하나가 알 수 있는 것이 아니기 때문이다.
  *
- * `luck` 은 등급 굴림(`itemTier`)에만 얹는다 — 금화(액수는 따로 굴린다)·물건의 종류
- * (`weightedAt`)는 그대로다. 「좋은 물건이 나온다」는 곧 「등급이 한 수 높게 잡힌다」다.
+ * NetHack의 자연 Luck은 일반 드롭의 종류나 등급을 바꾸지 않는다. `luck` 인수는 저장된
+ * 옛 호출부와 외부 도구의 호환을 위해 남겨 두고 계산에는 사용하지 않는다.
  */
-export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: Category, luck = 0): Item {
+export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: Category, _luck = 0): Item {
     const c = cat ?? pickCategory(depth, rng);
     if (c === "gold") return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
-    const tier = itemTier(depth, rng, luck);
+    const tier = itemTier(depth, rng);
     const rollBlessed = () => rng.rnd(10) === 0;
 
     if (c === "potion") {

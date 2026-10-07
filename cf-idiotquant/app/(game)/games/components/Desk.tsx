@@ -449,7 +449,7 @@ export default function Desk({
         // 줄이 된다(엔진이 막는다, `game.unpaidIn`).
         if (it.unpaid) {
             return [
-                { label: `값을 치른다 (외상 전부 ${billOf(hero.pack)})`, on: go({ t: "pay" }) },
+                { label: `값을 치른다 (외상 전부 ${billOf(hero.pack, hero.charisma)})`, on: go({ t: "pay" }) },
                 { label: "도로 내려놓는다 — 외상에서 뺀다", on: go({ t: "drop", letter: it.letter! }) },
             ];
         }
@@ -924,7 +924,7 @@ export default function Desk({
                                                 </span>
                                             )}
                                             {worn && <span className={equippedInk}> ({worn})</span>}
-                                            {it.unpaid && <span className="text-[var(--rg-trap)]"> (외상 {price(it)})</span>}
+                                            {it.unpaid && <span className="text-[var(--rg-trap)]"> (외상 {price(it, hero.charisma)})</span>}
                                             {dualWield && <span className="font-bold text-[var(--rg-weapon)]"> · 이도류 장착</span>}
                                         </button>
                                         {open && (

@@ -9,6 +9,7 @@
  */
 
 import { type Item, type Level, type Monster, type MonsterDef, type Pos } from "./types";
+import { abilityMod } from "./dnd";
 
 export const PRICES: Record<string, Record<string, number>> = {
     potion: {
@@ -115,16 +116,19 @@ export function isTradable(it: Item): boolean {
  * 한 개의 값. 무기·갑옷은 손질 한 칸마다 10 을 더한다(NetHack 그대로) — **알든 모르든**
  * 붙으므로, 값이 곧 손질을 귀띔한다.
  */
-export function unitPrice(it: Item): number {
+export function unitPrice(it: Item, charisma = 10): number {
     const base = PRICES[it.kind]?.[it.type] ?? 0;
-    if (it.kind === "weapon") return base + 10 * Math.max(0, Math.max(it.plusHit ?? 0, it.plusDam ?? 0));
-    if (it.kind === "armor") return base + 10 * Math.max(0, it.plusArmor ?? 0);
-    return base;
+    const value = it.kind === "weapon"
+        ? base + 10 * Math.max(0, Math.max(it.plusHit ?? 0, it.plusDam ?? 0))
+        : it.kind === "armor" ? base + 10 * Math.max(0, it.plusArmor ?? 0) : base;
+    // NetHack-style ability modifier drives one smooth price ratio around CHA 10.
+    const factor = Math.max(0.5, Math.min(2, 1 - abilityMod(charisma) * 0.05));
+    return Math.max(1, Math.round(value * factor));
 }
 
 /** 더미째의 값 — 사는 값. */
-export function price(it: Item): number {
-    return unitPrice(it) * Math.max(1, it.count);
+export function price(it: Item, charisma = 10): number {
+    return unitPrice(it, charisma) * Math.max(1, it.count);
 }
 
 /** 파는 값 — 사는 값의 절반(NetHack 의 보통 값). 한 푼 아래로는 안 내려간다. */
@@ -174,8 +178,8 @@ export function forSale(level: Level, it: Item): boolean {
 }
 
 /** 외상 — 배낭에서 아직 값을 안 치른 것들의 합. */
-export function billOf(pack: Item[]): number {
-    return pack.filter((it) => it.unpaid).reduce((n, it) => n + price(it), 0);
+export function billOf(pack: Item[], charisma = 10): number {
+    return pack.filter((it) => it.unpaid).reduce((n, it) => n + price(it, charisma), 0);
 }
 
 /** 문에서 가게 안으로 한 칸 — 주인이 서서 길을 막는 자리. 문이 방 벽에 없으면 null. */

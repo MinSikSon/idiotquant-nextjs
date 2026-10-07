@@ -150,6 +150,8 @@ export interface Monster {
     burnBy?: number;
     /** 동결 지속 턴수 */
     frozenTurns?: number;
+    /** 분수 효과 등으로 도망치는 남은 몬스터 행동 수. */
+    fleeTurns?: number;
     /**
      * 쫓는 영웅의 자리(`heroes` 의 칸 번호) — **마지막에 나를 때린 쪽.**
      *
@@ -423,6 +425,16 @@ export interface Hero {
     turns: number;
     str: number;
     maxStr: number;
+    /** 직업별 초기 민첩·건강·매력. NetHack 참고 능력치이며 3~18 범위를 쓴다. */
+    dexterity: number;
+    constitution: number;
+    charisma: number;
+    intelligence: number;
+    baseIntelligence: number;
+    /** 지혜의 직업 시작값. `wisdom` 전체값과 분리해 지팡이 성장분을 계산한다. */
+    baseWisdom: number;
+    /** 새 캐릭터는 25, 이전 저장은 기존 지혜 성장 상한을 보존한다. */
+    wisdomMax: number;
     gold: number;
     /** 배낭. 자리는 `letter` 가 진다. */
     pack: Item[];
@@ -468,6 +480,8 @@ export interface Hero {
     stuck: number;
     /** 괴물이 벽 너머로도 보이는 남은 턴. */
     detect: number;
+    /** 분수 효과로 투명한 괴물을 볼 수 있는 남은 턴. */
+    seeInvisible?: number;
     /** 화상 지속 턴 */
     burnTurns?: number;
     /** 시간 정지 남은 턴 (시간의 모래시계) */
@@ -483,13 +497,13 @@ export interface Hero {
     pendingSkillPicks: number;
     /** 레벨업 성장으로 쌓은 방어력. `heroDefense` **하나**가 더한다. */
     bonusDefense: number;
-    /** NetHack식 행운. 자연 운의 범위는 -13..13이며, 운 기반 확률과 물건 등급에 반영한다. */
+    /** NetHack식 자연 행운. -13..13이며 명중, 마법 분수, 기도와 운 판정에 반영한다. */
     luck: number;
     /** 기도 뒤 다시 응답받기까지 남은 게임 턴. 새 판은 입장 때 받은 도움으로 300부터 시작한다. */
     prayerTimeout: number;
     /** 이동한 칸의 아이템을 자동으로 줍는가. 사람별 옵션이며 기본은 켜짐이다. */
     autoPickup: boolean;
-    /** 지혜. 공격 지팡이의 추가 피해 주사위에 반영한다. */
+    /** 지혜. 직업 시작값을 넘긴 성장분만 공격 지팡이의 추가 피해 주사위에 반영한다. */
     wisdom: number;
     /** 저장 이전 호환 전용. normalize에서 Wisdom으로 옮기며 게임 규칙은 읽지 않는다. */
     itemLuck?: number;

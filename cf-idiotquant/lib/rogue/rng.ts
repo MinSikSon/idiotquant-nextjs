@@ -29,6 +29,19 @@ export class Rng {
         return n <= 0 ? 0 : Math.floor(this.next() * n);
     }
 
+    /** NetHack rnl(n): good Luck pulls a selected random check toward 0, bad Luck toward n-1. */
+    rnl(n: number, luck: number): number {
+        if (n <= 0) return 0;
+        const boundedLuck = Math.max(-13, Math.min(13, Math.trunc(luck)));
+        let adjustment = boundedLuck;
+        if (n <= 15) adjustment = Math.sign(adjustment) * Math.floor((Math.abs(adjustment) + 1) / 3);
+        let roll = this.rnd(n);
+        if (adjustment && this.rnd(37 + Math.abs(adjustment)) !== 0) {
+            roll = Math.max(0, Math.min(n - 1, roll - adjustment));
+        }
+        return roll;
+    }
+
     /** 주사위 — `roll(2, 4)` 는 2d4. 다면체는 전부 이 함수를 지난다. */
     roll(count: number, sides: number): number {
         let sum = 0;

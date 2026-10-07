@@ -1451,24 +1451,16 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         }
     }
 
-    // 빅룸 일부 변형에는 마법이 아닌 분수가 무리 지어 선다. 자리는 겹치지 않게 고른다.
-    if (bigRoom && rng.chance(0.5)) {
-        const avoid = [down, level.upStairs, level.anvil, ...level.traps];
-        const spots = rng.shuffle(openTiles(level, level.rooms[0], avoid));
-        const count = rng.between(4, 7);
-        for (const p of spots.slice(0, count)) level.fountains!.push({ ...p, magic: false, magicUsed: false, drinks: 0 });
-    }
-
-    // 일반 층 분수는 방 안에만 선다. 계단·모루·특수 방·함정·변환 제단과 자리를 겹치지 않는다.
-    // 2층부터 층마다 1/5 확률로 하나까지 둔다.
-    if (!bigRoom && depth > 1 && rng.chance(0.2)) {
-        const avoid = [down, level.upStairs, level.anvil, ...level.traps,
-            ...(level.transmuteAltar ? [level.transmuteAltar] : [])].filter((p): p is Pos => !!p);
-        const spots = level.rooms.flatMap((r, i) =>
-            r.gone || r.maze || r.vault || i === level.special?.room ? [] : openTiles(level, r, avoid),
-        );
-        const p = rng.pick(spots);
-        if (p) level.fountains!.push({ ...p, magic: rng.chance(0.1), magicUsed: false, drinks: 0 });
+    // NetHack mklev: 일반 방마다 1/10로 분수를 시도하고, 그 분수는 1/7로 마법 분수다.
+    // 방 하나에 층 전체 확률을 한 번만 굴리거나 빅룸에 여러 개를 일괄 배치하지 않는다.
+    const avoid = [down, level.upStairs, level.anvil, ...level.traps,
+        ...(level.transmuteAltar ? [level.transmuteAltar] : [])].filter((p): p is Pos => !!p);
+    for (const [roomIndex, room] of level.rooms.entries()) {
+        if (room.gone || room.maze || room.vault || roomIndex === level.special?.room) continue;
+        if (!rng.chance(0.1)) continue;
+        const spot = rng.pick(openTiles(level, room, avoid));
+        if (!spot) continue;
+        level.fountains!.push({ ...spot, magic: rng.rnd(7) === 0, magicUsed: false, drinks: 0 });
     }
 
     return level;

@@ -112,6 +112,12 @@ export interface OriginDef {
     advancedSkillKind: "passive" | "active";
     baseHp: number;
     baseStr: number;
+    /** NetHack 직업별 초기 능력치에서 참고한 이 게임의 3~18 능력치. */
+    baseDex: number;
+    baseCon: number;
+    baseCha: number;
+    baseInt: number;
+    baseWis: number;
     createStartingItems: (nextId: () => number) => Item[];
 }
 
@@ -178,6 +184,11 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillKind: "passive",
         baseHp: 14,
         baseStr: 16,
+        baseDex: 12,
+        baseCon: 15,
+        baseCha: 14,
+        baseInt: 10,
+        baseWis: 15,
         createStartingItems: (nextId) => {
             const mace = makeItem("weapon", "mace", nextId(), -1, -1);
             mace.plusHit = 1;
@@ -204,7 +215,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
         advancedSkillKind: "active",
         baseHp: 11,
-        baseStr: 15,
+        baseStr: 13,
+        baseDex: 16,
+        baseCon: 12,
+        baseCha: 10,
+        baseInt: 10,
+        baseWis: 12,
         createStartingItems: (nextId) => {
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1, 6);
             dagger.plusHit = 1;
@@ -232,7 +248,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillDescription: "포션 2개로 축복의 기름 제작 · 층마다 한 번",
         advancedSkillKind: "active",
         baseHp: 12,
-        baseStr: 14,
+        baseStr: 11,
+        baseDex: 12,
+        baseCon: 14,
+        baseCha: 13,
+        baseInt: 15,
+        baseWis: 15,
         createStartingItems: (nextId) => {
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
             const leather = makeItem("armor", "leather", nextId(), -1, -1);
@@ -260,7 +281,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillDescription: "층의 지형과 괴물의 기척을 밝힌다 · 층마다 한 번",
         advancedSkillKind: "active",
         baseHp: 10,
-        baseStr: 13,
+        baseStr: 9,
+        baseDex: 12,
+        baseCon: 10,
+        baseCha: 12,
+        baseInt: 18,
+        baseWis: 12,
         createStartingItems: (nextId) => {
             const dagger = makeItem("weapon", "dagger", nextId(), -1, -1);
             const missileWand = makeItem("wand", "magic missile", nextId(), -1, -1);
@@ -288,7 +314,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillDescription: "활·표창 연사 +1 → +2",
         advancedSkillKind: "passive",
         baseHp: 12,
-        baseStr: 14,
+        baseStr: 16,
+        baseDex: 15,
+        baseCon: 14,
+        baseCha: 11,
+        baseInt: 13,
+        baseWis: 14,
         createStartingItems: (nextId) => {
             // NetHack Ranger: +1 활 · 화살 두 묶음 · +1 단검 · 망토. 여기서는 겹치는 화살이
             // 강화를 못 가지므로(`canHoldEnchant`) 손질은 활에 싣고, 망토 대신 가죽 갑옷이다.
@@ -325,6 +356,11 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillKind: "passive",
         baseHp: 12,
         baseStr: 15,
+        baseDex: 12,
+        baseCon: 14,
+        baseCha: 12,
+        baseInt: 15,
+        baseWis: 14,
         createStartingItems: (nextId) => {
             // NetHack Archeologist: 곡괭이 · 가죽 재킷 · 식량 셋. 곡괭이를 **먼저** 넣는다 —
             // 처음 넣은 무기를 쥐고 시작하고(`makeHero`), 쥐고 있어야 판다.
@@ -355,7 +391,12 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         advancedSkillDescription: "정령이 40턴 머물고, 원소마다 한 가지가 깊어진다",
         advancedSkillKind: "passive",
         baseHp: 11,
-        baseStr: 13,
+        baseStr: 9,
+        baseDex: 12,
+        baseCon: 11,
+        baseCha: 10,
+        baseInt: 18,
+        baseWis: 12,
         createStartingItems: (nextId) => {
             // 싸움은 정령이 맡는다 — 손에는 가벼운 단검 하나. 정령을 다시 부르기까지 턴이 들어
             // 부르기 전·흩어진 뒤를 버틸 회복 물약을 하나 쥐여 준다.

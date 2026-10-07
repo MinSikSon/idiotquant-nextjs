@@ -48,7 +48,9 @@ import {
     heroArmor,
     heroArmorClass,
     heroArmorClassTerms,
+    heroDexterity,
     heroStr,
+    hpGainPerLevel,
     hungerOf,
     hungerRate,
     isWorn,
@@ -243,8 +245,8 @@ type Action =
      * 3레벨마다 쌓이는 성장 하나를 고른다 — **캠프도, 턴도 필요 없다**(레벨업 자체가
      * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
      */
-    | { t: "pickSkill"; option: "str" | "def" | "wisdom" }
-    | { t: "inspectStatus"; kind: "origin" | "str" | "defense" | "wisdom" }
+    | { t: "pickSkill"; option: "str" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma" }
+    | { t: "inspectStatus"; kind: "origin" | "str" | "dexterity" | "constitution" | "charisma" | "intelligence" | "defense" | "wisdom" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
 
     | { t: "classSkill"; ingredients?: [string, string]; element?: SpiritElement }
@@ -364,13 +366,7 @@ const VAULT_TIER_UP = 2;
 const DROUGHT_GRACE = 2;
 const DROUGHT_STEP = 1.0;
 
-/**
- * 파티의 「좋은 물건」운 — **가장 높은 값 하나를 쓴다.**
- *
- * 바닥에 뭐가 떨어지는지는 층 하나의 일이라 사람마다 나누지 않는다(경험치처럼 곁에 선
- * 사람과 값이 갈리는 자리가 아니다). **쓰러진 사람은 안 센다** — 서 있지도 않은 사람의
- * 안목이 바닥에 영향을 주면 안 된다.
- */
+/** 일부 기존 호출부와 외부 도구를 위한 파티의 자연 Luck 조회다. 아이템 생성에는 쓰지 않는다. */
 export function partyLuck(state: GameState): number {
     let best = -13;
     for (const h of state.heroes) {
@@ -387,9 +383,8 @@ export function partyItemLuck(state: GameState): number {
 }
 
 function populate(state: GameState, level: Level, rng: Rng) {
-    const luck = partyLuck(state);
     // **가게가 먼저다** — 주인과 진열품이 자리를 잡아야 몬스터(`freeSpot`)가 그 위에 안 선다.
-    stockShop(state, level, rng, luck);
+    stockShop(state, level, rng);
     const monsterCount = level.bigRoom
         ? rng.between(12, 15)
         : rng.rnd(4) + 2 + Math.floor(level.depth / 3);
@@ -471,7 +466,7 @@ function populate(state: GameState, level: Level, rng: Rng) {
         }
 
         // 무기고는 **등급이 두 칸 위**다 — 무기고에서 단검이 나오면 무기고가 아니다.
-        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat, luck));
+        level.items.push(randomItem(level.depth + tierUp, state.nextItemId++, p.x, p.y, rng, cat));
     };
 
     const avoid = [state.heroes[0], level.stairs];
@@ -1005,7 +1000,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
             }
         } else {
             // 파는 물건이면 **값을 같이 말한다** — 이름을 모르는 물약도 값으로 무리를 짐작한다.
-            const tag = forSale(level, it) ? ` — 값 ${price(it)}` : "";
+            const tag = forSale(level, it) ? ` — 값 ${price(it, hero.charisma)}` : "";
             say(state, `발밑에 ${describe(it, state.known, state.appearance)}이(가) 있다${tag}.`);
         }
     }
@@ -1096,7 +1091,7 @@ function pickUp(state: GameState, hero: Hero): boolean {
         state.itemUsage["amulet:amulet"] = Math.max(state.itemUsage["amulet:amulet"] ?? 0, 1);
         say(state, "옌더의 증표를 손에 넣었다! 이제 올라갈 수 있다.");
     } else {
-        const bill = selling ? ` — 외상 ${unitPrice(it) * (split ? STACK_MAX : pile)}. 나가기 전에 값을 치른다` : "";
+        const bill = selling ? ` — 외상 ${unitPrice(it, hero.charisma) * (split ? STACK_MAX : pile)}. 나가기 전에 값을 치른다` : "";
         say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}${bill}`);
     }
     if (split) say(state, `발밑에 ${it.count}개가 남았다.`);
@@ -1258,7 +1253,7 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: 
     return true;
 }
 
-/** 분수에서 마신다. 보통 결과표는 원작처럼 Luck과 무관한 1~30 균등 추첨이다. */
+/** 원작처럼 마법 분수는 처음 마셨을 때 행운이 0 이상이면 특별 효과를 낸다. */
 function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
     const fountain = fountainAt(state.level, hero.x, hero.y);
     if (!fountain || fountain.x !== hero.x || fountain.y !== hero.y) {
@@ -1274,44 +1269,75 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
         hero.food = Math.min(2000, hero.food + rng.rnd(10) + 1);
         say(state, "시원한 물이 목을 축인다.");
     } else if (magicEffect) {
+        // blessed restore ability + gain ability. 이 게임에 존재하는 능력치에 대응한다.
         hero.str = hero.maxStr;
+        const raise = (which: "strength" | "wisdom" | "dexterity" | "constitution" | "intelligence" | "charisma" | "defense") => {
+            if (which === "strength" && hero.maxStr < 31) {
+                hero.maxStr += 1;
+                hero.str = hero.maxStr;
+                return true;
+            }
+            if (which === "wisdom" && hero.wisdom < hero.wisdomMax) {
+                hero.wisdom += 1;
+                return true;
+            }
+            if (which === "dexterity" && hero.dexterity < 18) { hero.dexterity += 1; return true; }
+            if (which === "constitution" && hero.constitution < 18) { hero.constitution += 1; return true; }
+            if (which === "intelligence" && hero.intelligence < 18) { hero.intelligence += 1; return true; }
+            if (which === "charisma" && hero.charisma < 18) { hero.charisma += 1; return true; }
+            if (which === "defense" && hero.bonusDefense < 18) {
+                hero.bonusDefense += 1;
+                return true;
+            }
+            return false;
+        };
+        const attributes = ["strength", "wisdom", "dexterity", "constitution", "intelligence", "charisma"] as const;
         if (hero.luck >= 4) {
-            hero.str = Math.min(31, hero.str + 1);
-            hero.maxStr = Math.max(hero.maxStr, hero.str);
-            hero.wisdom = Math.min(100, hero.wisdom + 1);
-            say(state, "분수의 마력이 온몸을 채운다. 힘과 지혜가 크게 늘었다!");
-        } else if (rng.rnd(2) === 0) {
-            hero.str = Math.min(31, hero.str + 1);
-            hero.maxStr = Math.max(hero.maxStr, hero.str);
-            say(state, "분수의 마력이 온몸을 채운다. 힘이 늘었다!");
+            for (const attribute of attributes) raise(attribute);
+            say(state, "분수의 마력이 온몸을 채운다. 잃은 힘이 회복되고 여러 능력이 높아졌다!");
         } else {
-            hero.wisdom = Math.min(100, hero.wisdom + 1);
-            say(state, "분수의 마력이 온몸을 채운다. 지혜가 늘었다!");
+            const start = rng.rnd(attributes.length);
+            let gained = false;
+            for (let i = 0; i < attributes.length; i++) {
+                if (raise(attributes[(start + i) % attributes.length])) { gained = true; break; }
+            }
+            say(state, gained
+                ? "분수의 마력이 온몸을 채운다. 잃은 힘이 회복되고 능력 하나가 높아졌다!"
+                : "분수의 마력이 온몸을 채운다. 잃은 힘이 회복됐다.");
         }
         fountain.magicUsed = true;
     } else {
         switch (fate) {
             case 19:
-                hero.wisdom = Math.min(100, hero.wisdom + 1);
-                say(state, "물속을 들여다보자 세상의 이치가 떠오른다. 지혜가 늘었다.");
+                say(state, `물속을 들여다보며 자신을 돌아본다. 체력 ${hero.hp}/${hero.maxHp} · 힘 ${hero.str}/${hero.maxStr} · 지혜 ${hero.wisdom}.`);
                 break;
             case 20:
-                hero.food = Math.max(0, hero.food - 100);
-                say(state, "비린 물을 마시고 속을 게워냈다.");
+                hero.food = Math.max(0, hero.food - rng.between(11, 30));
+                say(state, "물이 역해 토하고 허기가 몰려온다.");
                 break;
             case 21: {
-                const loss = rng.between(1, 3);
-                if (!hasRing(hero, "sustain strength")) hero.str = Math.max(3, hero.str - loss);
-                const damage = rng.between(1, 10);
+                const resisted = hasRing(hero, "poison resistance");
+                const loss = resisted ? 0 : rng.between(3, 6);
+                if (loss) hero.str = Math.max(3, hero.str - loss);
+                const damage = rng.between(1, resisted ? 4 : 10);
                 hero.hp -= damage;
-                say(state, `독이 온몸에 퍼진다. ${damage} 피해를 입었다${hasRing(hero, "sustain strength") ? "" : `, 힘이 ${loss} 줄었다`}.`);
+                say(state, `오염된 물의 독이 퍼진다. ${damage} 피해${loss ? `와 힘 ${loss} 감소` : ""}를 입었다.`);
                 break;
             }
             case 22:
             case 23:
-            case 28: {
+            case 28:
+            case 27: {
+                if (fate === 27 && !fountain.looted) {
+                    const gem = rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!;
+                    state.level.items.push(makeItem("gem", gem, state.nextItemId++, fountain.x, fountain.y));
+                    fountain.looted = true;
+                    say(state, "물결 속에서 보석 하나가 반짝인다.");
+                    break;
+                }
+                // Water demon has no entry in this game's monster roster; use an existing hostile.
                 const ch = fate === 22 ? "S" : fate === 23 ? randomMonsterChar(state.level.depth, rng) : "N";
-                const count = fate === 22 ? 2 : 1;
+                const count = fate === 22 ? rng.between(2, 6) : 1;
                 for (let i = 0; i < count; i++) {
                     const spot = freeSpot(state.level, rng, [...state.heroes, fountain, ...state.level.monsters]);
                     const monster = spawnMonster(ch, spot.x, spot.y, rng);
@@ -1319,51 +1345,42 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
                     monster.target = state.heroes.indexOf(hero);
                     state.level.monsters.push(monster);
                 }
-                say(state, fate === 22 ? "분수에서 뱀들이 기어 나온다!" : fate === 23 ? "분수에서 적대적인 존재가 솟아난다!" : "물속에서 님프가 나타났다!");
+                say(state, fate === 22 ? `${count}마리의 뱀이 분수에서 쏟아져 나온다!` : fate === 23 ? "분수에서 적대적인 물의 악마가 나타났다!" : "물속에서 님프가 나타났다!");
                 break;
             }
             case 24: {
+                hero.food = Math.max(0, hero.food - rng.between(11, 30));
                 let cursed = 0;
                 for (const item of hero.pack) {
-                    if (!item.cursed && rng.chance(0.2)) { item.cursed = true; item.blessed = false; item.curseKnown = true; cursed++; }
+                    if (rng.rnd(5) === 0) { item.cursed = true; item.blessed = false; item.curseKnown = false; cursed++; }
                 }
-                say(state, cursed ? `검은 물이 배낭의 물건 ${cursed}개를 저주했다.` : "검은 물결이 배낭을 훑었지만 달라진 것은 없다.");
+                say(state, cursed ? `역한 물을 마시고 토했다. 허기가 지고 배낭의 물건 ${cursed}개가 저주받았다.` : "역한 물을 마시고 토했다. 허기가 졌지만 물건은 변하지 않았다.");
                 break;
             }
             case 25:
-                hero.detect = Math.max(hero.detect, 30);
-                say(state, "시야가 또렷해져 보이지 않던 것이 드러난다.");
+                hero.seeInvisible = Math.max(hero.seeInvisible ?? 0, 200);
+                say(state, "투명한 존재의 모습이 드러나기 시작한다.");
                 break;
             case 26:
                 hero.detect = Math.max(hero.detect, rng.between(150, 300));
                 say(state, "이 층의 괴물들이 감지된다.");
                 break;
-            case 27:
-                if (!fountain.looted) {
-                    const gem = rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!;
-                    state.level.items.push(makeItem("gem", gem, state.nextItemId++, fountain.x, fountain.y));
-                    fountain.looted = true;
-                    say(state, "물결 속에서 보석 하나가 반짝인다.");
-                    break;
-                }
-                // 보석을 이미 건진 분수의 27번 결과는 님프 사건으로 이어진다.
-                {
-                    const spot = freeSpot(state.level, rng, [...state.heroes, fountain, ...state.level.monsters]);
-                    const monster = spawnMonster("N", spot.x, spot.y, rng);
-                    monster.awake = true; monster.target = state.heroes.indexOf(hero);
-                    state.level.monsters.push(monster);
-                    say(state, "물속에서 님프가 나타났다!");
-                }
-                break;
             case 29:
                 for (const monster of state.level.monsters) {
-                    if (monster.hp > 0 && !monster.spirit) { monster.awake = false; monster.target = undefined; }
+                    if (monster.hp > 0 && !monster.spirit) {
+                        monster.awake = true;
+                        monster.target = state.heroes.indexOf(hero);
+                        monster.fleeTurns = Math.max(monster.fleeTurns ?? 0, 5);
+                    }
                 }
-                say(state, "분수의 물소리가 괴물들을 움츠러들게 했다.");
+                say(state, "나쁜 입 냄새에 괴물들이 물러난다.");
                 break;
-            case 30:
-                say(state, "분수가 갑자기 솟구쳐 방 안으로 물을 쏟아낸다!");
+            case 30: {
+                const spots = fountainGushSpots(state, fountain.x, fountain.y, rng);
+                for (const spot of spots) state.level.tiles[idx(spot.x, spot.y)] = T.POOL;
+                say(state, spots.length ? "분수에서 물줄기가 뿜어져 나와 주변 바닥을 적셨다." : "분수에서 물이 솟구쳤지만 발밑으로만 쏟아졌다.");
                 break;
+            }
             default:
                 say(state, "물은 밋밋하고 아무 일도 일어나지 않는다.");
         }
@@ -1372,7 +1389,7 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
     fountain.drinks += 1;
     // NetHack's unused magic fountain returns early for its magical result, and also
     // for the ordinary refresh result (fate < 10). Those cases bypass the dry-up roll.
-    if (!(magicEffect || (freshMagicFountain && refresh)) && rng.chance(1 / 3)) {
+    if (!(magicEffect || (freshMagicFountain && refresh)) && rng.rnd(3) === 0) {
         state.level.fountains = (state.level.fountains ?? []).filter((candidate) => candidate !== fountain);
         if (state.level.fountain === fountain) state.level.fountain = null;
         say(state, "분수가 바싹 말라 사라졌다.");
@@ -1380,7 +1397,7 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
     return true;
 }
 
-/** 분수의 물에 물건을 담근다. 젖는 효과와 마법 분수의 사건을 각각 한 번 굴린다. */
+/** NetHack fountain.c의 담그기 사건표와 Excalibur 조건을 따른다. */
 function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const item = packItem(hero, letter);
     const fountain = fountainAt(state.level, hero.x, hero.y);
@@ -1398,8 +1415,30 @@ function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): bo
         item.count--;
         dipped = { ...item, id: state.nextItemId++, count: 1, letter: undefined, x: -1, y: -1 };
     }
-    const canBecomeExcalibur = !!(fountain?.magic && !fountain.magicUsed && hero.luck >= 0 && dipped.kind === "weapon" &&
+    const eligibleSword = !!(fountain && dipped.count === 1 && dipped.kind === "weapon" &&
         dipped.type === "long sword" && hero.level >= 5 && !allItems(state).some((it) => it.type === "excalibur"));
+    if (eligibleSword && rng.rnd(6) === 0) {
+        if (hero.alignment === "lawful") {
+            dipped.type = "excalibur";
+            dipped.blessed = true;
+            dipped.cursed = false;
+            dipped.curseKnown = false;
+            dipped.erosionProof = true;
+            dipped.plusKnown = true;
+            state.known["weapon:excalibur"] = true;
+            say(state, "탁한 물속에서 손이 솟아 장검을 축복한다. 엑스칼리버를 얻었다!");
+        } else {
+            dipped.cursed = true;
+            dipped.blessed = false;
+            dipped.curseKnown = true;
+            if (enchantOf(dipped) > -6 && rng.rnd(3) === 0) setEnchant(dipped, enchantOf(dipped) - 1);
+            dipped.erosionProof = false;
+            say(state, "얼어붙은 안개가 장검을 휘감는다. 검이 저주받고 분수가 사라졌다.");
+        }
+        dryFountain(state, fountain);
+        if (dipped !== item) addToPack(hero, dipped);
+        return true;
+    }
     let wetEffect = false;
     if (dipped.kind === "potion" && dipped.type !== "water") {
         if (dipped.diluted) {
@@ -1415,7 +1454,7 @@ function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): bo
         dipped.type = "blank";
         say(state, "주문서의 글씨가 물에 씻겨 빈 주문서가 되었다.");
         wetEffect = true;
-    } else if (dipped.kind === "weapon" && WEAPONS[dipped.type]?.material === "iron" && !dipped.erosionProof && !canBecomeExcalibur) {
+    } else if (dipped.kind === "weapon" && WEAPONS[dipped.type]?.material === "iron" && !dipped.erosionProof) {
         const plus = enchantOf(dipped);
         if (plus > -3) setEnchant(dipped, plus - 1);
         dipped.plusKnown = true;
@@ -1423,30 +1462,15 @@ function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): bo
         wetEffect = true;
     }
 
-    if (fountain?.magic && !fountain.magicUsed && hero.luck >= 0) {
-        if (wetEffect && rng.chance(1 / 2)) {
-            say(state, "분수의 물이 출렁였지만 다른 일은 일어나지 않았다.");
-        } else if (canBecomeExcalibur) {
-            const odds = hero.origin === "knight" ? 1 / 6 : 1 / 30;
-            if (rng.chance(odds)) {
-                dipped.type = "excalibur";
-                dipped.blessed = true;
-                dipped.cursed = false;
-                dipped.curseKnown = false;
-                dipped.erosionProof = true;
-                dipped.plusKnown = true;
-                state.known["weapon:excalibur"] = true;
-                say(state, "분수에서 솟은 목소리가 울린다. 장검이 엑스칼리버로 변했다!");
-                dryFountain(state, fountain);
-                return true;
-            }
-            resolveDipEvent(state, hero, dipped, fountain, rng);
-        } else {
-            resolveDipEvent(state, hero, dipped, fountain, rng);
+    if (fountain) {
+        if (wetEffect && rng.rnd(2) === 0) {
+            say(state, "물에 젖은 물건에서 다른 효과는 일어나지 않았다.");
+            if (dipped !== item) addToPack(hero, dipped);
+            return true;
         }
-        fountain.magicUsed = true;
+        resolveDipEvent(state, hero, dipped, fountain, rng);
+        if (rng.rnd(3) === 0) dryFountain(state, fountain);
     }
-    if (fountain && rng.chance(1 / 3)) dryFountain(state, fountain);
     if (dipped !== item) addToPack(hero, dipped);
     return true;
 }
@@ -1464,36 +1488,46 @@ function dryFountain(state: GameState, fountain?: NonNullable<ReturnType<typeof 
 }
 
 function resolveDipEvent(state: GameState, hero: Hero, item: Item, fountain: NonNullable<ReturnType<typeof fountainAt>>, rng: Rng): void {
-    const result = rng.rnd(30);
-    if (result < 18) { say(state, "물속에서 아무 일도 일어나지 않았다."); return; }
-    if (result < 22) {
-        if (item.cursed) { item.cursed = false; item.blessed = false; item.curseKnown = false; say(state, "물결이 담근 물건의 저주를 씻어냈다."); }
-        else say(state, "물결이 물건을 감쌌지만 달라진 것은 없다.");
-        return;
+    const result = rng.rnd(30) + 1;
+    if (result === 16) {
+        item.cursed = true; item.blessed = false; item.curseKnown = false;
+        say(state, "분수의 물이 담근 물건을 저주했다.");
+    } else if (result >= 17 && result <= 20) {
+        if (item.cursed) { item.cursed = false; item.curseKnown = false; say(state, "분수의 물이 담근 물건의 저주를 씻어냈다."); }
+        else say(state, "물결이 담근 물건을 감싸지만 달라진 것은 없다.");
+    } else if (result === 21 || result === 22 || result === 23) {
+        const ch = result === 21 ? randomMonsterChar(state.level.depth, rng) : result === 22 ? "N" : "S";
+        const count = result === 23 ? rng.between(2, 6) : 1;
+        for (let i = 0; i < count; i++) {
+            const spot = freeSpot(state.level, rng, [...state.heroes, ...state.level.monsters, ...state.level.items, fountain]);
+            const monster = spawnMonster(ch, spot.x, spot.y, rng);
+            monster.awake = true; monster.target = state.heroes.indexOf(hero); state.level.monsters.push(monster);
+        }
+        say(state, result === 22 ? "물속에서 님프가 나타났다!" : result === 23 ? "분수에서 뱀들이 끝없이 기어 나온다!" : "분수에서 적대적인 존재가 솟아난다!");
+    } else if (result === 24 && !fountain.looted) {
+        const gem = rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!;
+        state.level.items.push(makeItem("gem", gem, state.nextItemId++, fountain.x, fountain.y));
+        fountain.looted = true;
+        say(state, "물결 속에서 보석 하나가 반짝인다.");
+    } else if (result === 24 || result === 25) {
+        const spots = fountainGushSpots(state, fountain.x, fountain.y, rng);
+        for (const spot of spots) state.level.tiles[idx(spot.x, spot.y)] = T.POOL;
+        say(state, spots.length ? "분수에서 물줄기가 뿜어져 나와 주변 바닥을 적셨다." : "분수에서 물이 솟구쳤다.");
+    } else if (result === 28 && hero.gold > 10) {
+        const loss = Math.max(1, Math.floor(hero.gold / 10));
+        hero.gold -= loss;
+        fountain.looted = false;
+        say(state, `분수에 돈을 씻기다가 금화 ${loss}개를 잃었다.`);
+    } else if (result === 29 && !fountain.looted) {
+        const count = rng.rnd(Math.max(1, 2 * (27 - state.level.depth + 1) + 5)) + 1;
+        const gold = makeItem("gold", "gold", state.nextItemId++, fountain.x, fountain.y);
+        gold.count = count;
+        state.level.items.push(gold);
+        fountain.looted = true;
+        say(state, `분수 밑에서 금화 ${count}개가 반짝인다.`);
+    } else {
+        say(state, "물결이 담근 물건을 스치고 지나간다.");
     }
-    if (result === 22) {
-        item.cursed = true; item.blessed = false; item.curseKnown = true;
-        say(state, `담근 ${describe(item, state.known, state.appearance)}에 저주가 깃들었다.`); return;
-    }
-    if (result === 23 || result === 24 || result === 25) {
-        const ch = result === 23 ? "S" : result === 25 ? "N" : randomMonsterChar(state.level.depth, rng);
-        const spot = freeSpot(state.level, rng, [...state.heroes, ...state.level.monsters, ...state.level.items, fountain]);
-        const monster = spawnMonster(ch, spot.x, spot.y, rng);
-        monster.awake = true; monster.target = state.heroes.indexOf(hero); state.level.monsters.push(monster);
-        say(state, result === 23 ? "분수에서 물뱀들이 기어 나온다!" : result === 25 ? "물속에서 님프가 나타났다!" : "분수에서 적대적인 존재가 솟아난다!"); return;
-    }
-    if (result === 26) {
-        const spots = poolSpots(state, fountain.x, fountain.y);
-        for (const p of rng.shuffle(spots).slice(0, rng.between(1, 3))) state.level.tiles[idx(p.x,p.y)] = T.POOL;
-        say(state, "분수가 솟구쳐 주변 바닥에 물웅덩이를 만들었다."); return;
-    }
-    if ((result === 27 || result === 28) && !fountain.looted) {
-        const item = result === 27 ? makeItem("gem", rng.pick(["ruby", "sapphire", "emerald", "topaz"] as const)!, state.nextItemId++, fountain.x, fountain.y) : makeItem("gold", "gold", state.nextItemId++, fountain.x, fountain.y);
-        if (result === 28) item.count = rng.between(10, 100);
-        state.level.items.push(item); fountain.looted = true;
-        say(state, result === 27 ? "물결 속에서 보석이 반짝인다." : "분수 바닥에서 금화가 떠올랐다."); return;
-    }
-    say(state, "물결이 잦아들고 분수는 조용해졌다.");
 }
 
 /** 넷핵식 기도: 대기 시간이 끝나고 Luck이 중립 이상일 때 위기를 걷어낸다. */
@@ -1571,15 +1605,23 @@ function pray(state: GameState, hero: Hero, rng: Rng): boolean {
     return true;
 }
 
-function poolSpots(state: GameState, x: number, y: number): Pos[] {
+function poolSpots(state: GameState, x: number, y: number, radius = 4): Pos[] {
     const level = state.level;
     return Array.from({ length: MAP_W * MAP_H }, (_, n) => ({ x: n % MAP_W, y: Math.floor(n / MAP_W) })).filter((p) =>
-        Math.max(Math.abs(p.x - x), Math.abs(p.y - y)) <= 4 && (p.x !== x || p.y !== y) &&
+        Math.max(Math.abs(p.x - x), Math.abs(p.y - y)) <= radius && (p.x !== x || p.y !== y) &&
         tileAt(level, p.x, p.y) === T.FLOOR && !state.heroes.some((h) => h.x === p.x && h.y === p.y) &&
         !level.monsters.some((m) => m.x === p.x && m.y === p.y) && !level.items.some((it) => it.x === p.x && it.y === p.y) &&
         !fountainAt(level, p.x, p.y) && !(level.stairs.x === p.x && level.stairs.y === p.y) &&
         !(level.upStairs?.x === p.x && level.upStairs?.y === p.y) && !(level.anvil?.x === p.x && level.anvil?.y === p.y),
     );
+}
+
+/** NetHack fountain gush: visible checkerboard cells within radius 7, with 1/(1+d) chance. */
+function fountainGushSpots(state: GameState, x: number, y: number, rng: Rng): Pos[] {
+    return poolSpots(state, x, y, 7).filter((p) => {
+        const distance = Math.max(Math.abs(p.x - x), Math.abs(p.y - y));
+        return (p.x + p.y) % 2 === 0 && rng.rnd(distance + 1) === 0;
+    });
 }
 
 /**
@@ -2322,7 +2364,7 @@ function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean
     if (rng.rnd(100) < TRANSMUTE_SWALLOW_CHANCE) {
         say(state, `${name}을(를) 제단에 올렸다 — 제단이 삼켰다.`);
     } else {
-        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat, hero.luck);
+        const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat);
         state.level.items.push(made);
         say(state, `${name}을(를) 제단에 올렸다 — 빛이 걷히자 ${describe(made, state.known, state.appearance)}이(가) 놓여 있다.`);
     }
@@ -2591,7 +2633,7 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
 }
 
 /**
- * 3레벨마다 쌓이는 성장 하나를 고른다 — 힘 · 방어력 · 지혜 중 하나.
+ * 3레벨마다 쌓이는 성장 하나를 고른다 — 여섯 능력치 중 하나.
  *
  * **턴을 안 쓴다**(`acted=false` 로 돌아간다) — 레벨업 자체가 이미 턴을 안 쓰는
  * 자리다(경험치는 몬스터를 잡을 때 는다, 판을 걷는 것과는 다른 시계). 캠프도 필요
@@ -2600,9 +2642,15 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
  * **힘은 물약(`quaff` 의 `"strength"`)과 같은 식**이다(상한 31 · `maxStr` 을 따라 올림) —
  * 두 길이 갈리면 「힘 31 을 넘겼다」가 한쪽에서만 막힌다.
  */
-function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "wisdom"): boolean {
+function pickSkill(state: GameState, hero: Hero, option: "str" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma"): boolean {
     if (hero.pendingSkillPicks <= 0) {
         say(state, "지금은 고를 수 있는 성장이 없다.");
+        return false;
+    }
+    const caps = { str: 31, dexterity: 18, constitution: 18, intelligence: 18, wisdom: hero.wisdomMax, charisma: 18 };
+    const current = option === "str" ? hero.str : option === "wisdom" ? hero.wisdom : hero[option];
+    if (current >= caps[option]) {
+        say(state, "그 능력치는 더 높일 수 없다.");
         return false;
     }
     hero.pendingSkillPicks -= 1;
@@ -2612,13 +2660,25 @@ function pickSkill(state: GameState, hero: Hero, option: "str" | "def" | "wisdom
             hero.maxStr = Math.max(hero.maxStr, hero.str);
             say(state, "🔺 성장 — 힘이 늘었다.");
             break;
-        case "def":
-            hero.bonusDefense += 1;
-            say(state, "🛡️ 성장 — 몸놀림이 단단해졌다.");
+        case "dexterity":
+            hero.dexterity = Math.min(18, hero.dexterity + 1);
+            say(state, "🔺 성장 — 민첩이 늘었다.");
+            break;
+        case "constitution":
+            hero.constitution = Math.min(18, hero.constitution + 1);
+            say(state, "🔺 성장 — 건강이 늘었다.");
+            break;
+        case "intelligence":
+            hero.intelligence = Math.min(18, hero.intelligence + 1);
+            say(state, "🔺 성장 — 지능이 늘었다.");
             break;
         case "wisdom":
-            hero.wisdom = Math.min(100, hero.wisdom + 1);
+            hero.wisdom = Math.min(hero.wisdomMax, hero.wisdom + 1);
             say(state, "🔺 성장 — 지혜가 늘었다.");
+            break;
+        case "charisma":
+            hero.charisma = Math.min(18, hero.charisma + 1);
+            say(state, "🔺 성장 — 매력이 늘었다.");
             break;
     }
     return false;
@@ -2881,7 +2941,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
-    // 지혜 1당 같은 면의 주사위를 하나 더 굴린다. Wisdom은 Luck과 별도 능력치다.
+    // 지능·지혜 보정치 합의 성장은 같은 면의 주사위로 반영한다. Luck은 별도 능력치다.
     // 지혜가 0이면 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
     const wisdomDice = wandDamageDiceBonus(hero);
     const spellDamage = (dice: string) => {
@@ -3337,14 +3397,14 @@ function search(state: GameState, hero: Hero, rng: Rng): boolean {
             const x = hero.x + dx;
             const y = hero.y + dy;
             if (!inBounds(x, y)) continue;
-            if (tileAt(level, x, y) === T.SECRET && rng.chance(chance)) {
+            if (tileAt(level, x, y) === T.SECRET && rng.rnl(100, hero.luck) < Math.round(chance * 100)) {
                 level.tiles[idx(x, y)] = T.DOOR;
                 level.flags[idx(x, y)] |= 1;
                 found++;
                 say(state, "숨은 문을 찾았다!");
             }
             const trap = level.traps.find((t) => t.x === x && t.y === y && !t.found);
-            if (trap && rng.chance(chance)) {
+            if (trap && rng.rnl(100, hero.luck) < Math.round(chance * 100)) {
                 trap.found = true;
                 found++;
                 say(state, `${TRAP_NAME[trap.kind]}을(를) 찾았다.`);
@@ -3375,7 +3435,7 @@ function springTrap(state: GameState, hero: Hero, trap: Trap, rng: Rng) {
     const { level } = state;
     trap.found = true;
     const evade = rogueTrapEvade(hero);
-    if (evade > 0 && rng.chance(evade)) {
+    if (evade > 0 && rng.rnl(100, hero.luck) < Math.round(evade * 100)) {
         say(state, "🗡️ 기습 본능: 재빠른 몸놀림으로 함정을 회피했다!");
         return;
     }
@@ -3575,6 +3635,19 @@ function stepToward(level: Level, m: Monster, target: Pos): Pos | null {
     return best;
 }
 
+/** 겁먹은 적이 목표에서 가장 멀어지는 합법 칸을 고른다. */
+function stepAway(state: GameState, m: Monster, target: Pos): Pos | null {
+    const { level } = state;
+    const options = ALL_DIRS.map((d) => ({ x: m.x + d.dx, y: m.y + d.dy })).filter((p) =>
+        inBounds(p.x, p.y) && walkable(tileAt(level, p.x, p.y)) &&
+        !monsterBlockedDiagonal(level, m, p) && !level.monsters.some((other) => other !== m && other.hp > 0 && other.x === p.x && other.y === p.y) &&
+        !state.heroes.some((hero) => hero.hp > 0 && hero.x === p.x && hero.y === p.y),
+    );
+    if (!options.length) return null;
+    options.sort((a, b) => Math.max(Math.abs(b.x - target.x), Math.abs(b.y - target.y)) - Math.max(Math.abs(a.x - target.x), Math.abs(a.y - target.y)));
+    return options[0];
+}
+
 /**
  * 몬스터의 차례. 자는 놈은 나를 알아보면 깬다.
  *
@@ -3750,6 +3823,13 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             } else return;
         }
         const victim = monsterTarget(state, m);
+        if ((m.fleeTurns ?? 0) > 0) {
+            const away = stepAway(state, m, victim);
+            if (away) { m.x = away.x; m.y = away.y; }
+            m.fleeTurns = Math.max(0, (m.fleeTurns ?? 0) - 1);
+            if (m.fleeTurns === 0) m.awake = false;
+            return;
+        }
         // **목표가 곁에 없고 정령이 곁에 있으면 정령을 친다** — 길을 막고 선 것을 치운다.
         // 정령이 몸으로 막아 주는 값이 여기서 난다. 목표가 곁에 있으면 목표가 먼저다 —
         // **땅의 정령만은 예외**로, 곁에 있으면 목표가 곁에 있어도 그것을 먼저 친다(끌어당긴다).
@@ -4005,7 +4085,7 @@ const SHOP_STOCK_BASE = 6;
 const SHOP_STOCK_MAX = 12;
 
 /** 가게의 주인과 진열품 — 새 층을 채울 때 한 번. */
-function stockShop(state: GameState, level: Level, rng: Rng, luck: number) {
+function stockShop(state: GameState, level: Level, rng: Rng) {
     const shop = level.shop;
     if (!shop) return;
     const shk = spawnMonster(SHOPKEEPER.ch, shop.home.x, shop.home.y, rng);
@@ -4017,7 +4097,7 @@ function stockShop(state: GameState, level: Level, rng: Rng, luck: number) {
     for (const p of roomSpots(level, level.rooms[shop.room], n, rng, avoid)) {
         // 금화는 안 판다 — 돈을 돈으로 사는 가게는 없다.
         const cat = pickCategory(level.depth, rng, 1, { gold: 0 });
-        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat, luck));
+        level.items.push(randomItem(level.depth, state.nextItemId++, p.x, p.y, rng, cat));
     }
 }
 
@@ -4031,7 +4111,7 @@ function carriesPickAxe(hero: Hero): boolean {
 
 /** 주인에게 부딪혔을 때 — 까닭에 맞는 한 마디. */
 function shopkeeperSays(state: GameState, hero: Hero) {
-    const bill = billOf(hero.pack);
+    const bill = billOf(hero.pack, hero.charisma);
     if (bill > 0) say(state, `상점 주인: 「먼저 값을 치르시오.」 (외상 ${bill} · 가진 금화 ${hero.gold})`);
     else if (!inShop(state.level, hero.x, hero.y) && carriesPickAxe(hero)) say(state, "상점 주인: 「곡괭이는 밖에 두고 들어오시오.」");
     else say(state, "상점 주인: 「어서 오시오! 천천히 둘러보시오.」");
@@ -4072,7 +4152,7 @@ function angerShopkeeper(state: GameState, level: Level, by: Hero) {
 /** **훔쳤다** — 외상을 지우고 그 값을 빚으로 세운다. 주인은 화낸다. */
 function robShop(state: GameState, hero: Hero) {
     const level = state.level;
-    const stolen = billOf(hero.pack);
+    const stolen = billOf(hero.pack, hero.charisma);
     for (const it of hero.pack) delete it.unpaid;
     if (!level.shop || stolen === 0) return;
     level.shop.debt += stolen;
@@ -4148,7 +4228,7 @@ function payShop(state: GameState, hero: Hero): boolean {
     }
     let paid = 0;
     for (const it of owed) {
-        const p = price(it);
+        const p = price(it, hero.charisma);
         if (hero.gold < p) continue;
         hero.gold -= p;
         shop.till += p;
@@ -4156,10 +4236,10 @@ function payShop(state: GameState, hero: Hero): boolean {
         delete it.unpaid;
     }
     if (paid === 0) {
-        say(state, `금화가 모자라다 — 외상 ${billOf(hero.pack)}, 가진 금화 ${hero.gold}.`);
+        say(state, `금화가 모자라다 — 외상 ${billOf(hero.pack, hero.charisma)}, 가진 금화 ${hero.gold}.`);
         return false;
     }
-    const left = billOf(hero.pack);
+    const left = billOf(hero.pack, hero.charisma);
     say(state, `금화 ${paid}을(를) 치렀다${left > 0 ? ` — 남은 외상 ${left}` : ""}. 상점 주인: 「고맙소!」`);
     return true;
 }
@@ -4324,7 +4404,7 @@ function useAltar(state: GameState, hero: Hero, choice: "blood" | "hunger" | "gu
     return true;
 }
 
-function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin" | "str" | "defense" | "wisdom") {
+function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin" | "str" | "dexterity" | "constitution" | "charisma" | "intelligence" | "defense" | "wisdom") {
     const tag = `${who + 1}P▸ `;
     if (kind === "origin") {
         const origin = ORIGINS[hero.origin ?? "knight"];
@@ -4335,9 +4415,18 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
             ? `전직: Lv ${ADVANCE_LEVEL} ${origin.advancedSkillName} 해금까지 ${ADVANCE_LEVEL - hero.level}레벨`
             : `전직: ${origin.advancedName} · ${origin.advancedSkillName}`;
         const skills = Object.entries(hero.weaponSkills ?? {}).map(([type, level]) => `${type} ${weaponSkillName(level)}/${weaponSkillName(weaponSkillMax(hero, type))}`).join(", ") || "무기 훈련 없음";
-        say(state, `${tag}직업 · ${origin.advancedName} | 무기 숙련: ${skills} | 성장: Lv ${SKILL_PICK_INTERVAL}마다 힘·방어·지혜 선택 | ${nextGrowth} | ${advancement}`);
+        say(state, `${tag}직업 · ${origin.advancedName} | 무기 숙련: ${skills} | 성장: Lv ${SKILL_PICK_INTERVAL}마다 6능력치 중 선택 | ${nextGrowth} | ${advancement}`);
     } else if (kind === "str") {
         say(state, `${tag}St:${heroStr(hero)} · 기본 ${hero.str} · 최대 ${hero.maxStr}`);
+    } else if (kind === "dexterity") {
+        say(state, `${tag}Dx:${heroDexterity(hero)} · 명중·회피에 능력 보정이 적용된다`);
+    } else if (kind === "constitution") {
+        say(state, `${tag}Co:${hero.constitution} · 레벨업 체력 +${hpGainPerLevel(hero)} · 자연 회복 ${regenEvery(hero)}턴마다 1HP`);
+    } else if (kind === "charisma") {
+        const factor = Math.max(0.5, Math.min(2, 1 - Math.floor((hero.charisma - 10) / 2) * 0.05));
+        say(state, `${tag}Ch:${hero.charisma} · 상점 구매가 ${Math.round(factor * 100)}%`);
+    } else if (kind === "intelligence") {
+        say(state, `${tag}In:${hero.intelligence} · 지혜 보정치 합과 함께 공격 지팡이 피해를 보정한다`);
     } else if (kind === "defense") {
         say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
     } else {
@@ -4527,7 +4616,8 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     hero.turns += 1;
     // NetHack natural Luck drifts toward neutral every 600 player actions. The counter is
     // per hero so co-op turns by another player do not silently change this hero's Luck.
-    if (hero.turns % 600 === 0 && hero.luck !== 0) {
+    const luckDriftPeriod = hero.hasAmulet || hero.deityAnger > 0 ? 300 : 600;
+    if (hero.turns % luckDriftPeriod === 0 && hero.luck !== 0) {
         hero.luck -= Math.sign(hero.luck);
         say(state, `행운이 시간에 씻겨 ${hero.luck > 0 ? "+" : ""}${hero.luck}이(가) 되었다.`);
     }
@@ -4549,6 +4639,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         if (h.blind > 0) h.blind -= 1;
         if (h.confused > 0) h.confused -= 1;
         if (h.detect > 0) h.detect -= 1;
+        if (h.seeInvisible && h.seeInvisible > 0) h.seeInvisible -= 1;
         // 눈이 멀면 탐지가 꺼진다 — 안 보이는데 생명만 짚어 낼 수는 없다.
         if (h.blind > 0) h.detect = 0;
 
@@ -4953,7 +5044,7 @@ export function glyphAt(
     // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0) {
         const m = monsterAt(level, x, y);
-        if (m && (!m.def.invisible || hasRing(hero, "see invisible") || hero.detect > 0)) {
+        if (m && (!m.def.invisible || hasRing(hero, "see invisible") || (hero.seeInvisible ?? 0) > 0 || hero.detect > 0)) {
             // 화나지 않은 상점 주인은 **몬스터 색이 아니다** — 같은 `@` 인 영웅과도, 쳐야 할
             // 놈과도 갈려야 한다. 화나면 몬스터 색으로 바뀐다.
             if (visible && peacefulShk(level, m)) return { ch: m.def.ch, kind: "shopkeeper" };

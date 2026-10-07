@@ -27,7 +27,7 @@ import {
     launcherDamageOf,
 } from "./items";
 import { heroDefense, mergeStacks } from "./hero";
-import { ORIGIN_ALIGNMENT } from "./origins";
+import { ORIGIN_ALIGNMENT, ORIGINS } from "./origins";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
@@ -42,7 +42,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 23;
+const VERSION = 26;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -154,6 +154,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
                 def: rest.spirit ? spiritDef(rest.spirit) : ch === SHOPKEEPER.ch ? SHOPKEEPER : MONSTERS[ch] ?? MONSTERS.B,
                 speed: num((rest as Partial<Monster>).speed, 0),
                 cancelled: (rest as Partial<Monster>).cancelled === true,
+                fleeTurns: Math.max(0, Math.trunc(num((rest as Partial<Monster>).fleeTurns, 0))),
                 champion: (rest as Partial<Monster>).champion ?? undefined,
             })),
         // 바닥에 떨어져 있는 것도 손질을 올린다 — 주우면 배낭으로 들어온다.
@@ -352,6 +353,18 @@ function normalize(s: Saved): GameState | null {
     const rawHero = (h: Hero): Hero => ({
         ...h,
         maxStr: num(h.maxStr, num(h.str, 16)),
+        dexterity: Math.max(3, Math.min(18, Math.trunc(num(h.dexterity, ORIGINS[h.origin ?? "knight"]?.baseDex ?? 12)))),
+        constitution: Math.max(3, Math.min(18, Math.trunc(num(h.constitution, ORIGINS[h.origin ?? "knight"]?.baseCon ?? 12)))),
+        charisma: Math.max(3, Math.min(18, Math.trunc(num(h.charisma, ORIGINS[h.origin ?? "knight"]?.baseCha ?? 12)))),
+        intelligence: Math.max(3, Math.min(18, Math.trunc(num(h.intelligence, ORIGINS[h.origin ?? "knight"]?.baseInt ?? 12)))),
+        baseIntelligence: Math.max(3, Math.min(18, Math.trunc(num(h.baseIntelligence, ORIGINS[h.origin ?? "knight"]?.baseInt ?? 12)))),
+        baseWisdom: Math.max(3, Math.min(18, Math.trunc(num(h.baseWisdom, ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12)))),
+        wisdomMax: Math.max(
+            Math.trunc(num(h.baseWisdom, ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12)),
+            Math.min(125, Math.trunc(num(h.wisdomMax, h.baseWisdom == null
+                ? (ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12) + 100
+                : 25))),
+        ),
         pack: liftEnchants(fixLetters(learnPlus(Array.isArray(h.pack) ? h.pack : [], s.known ?? {}))),
         // **v8 이하에는 캠프 상자가 없다.** 안 채우면 모루에 올라선 순간 `chest.length` 가
         // undefined 를 읽어 터지고, 새로고침해도 같은 저장을 또 읽어 영영 안 열린다.
@@ -370,6 +383,7 @@ function normalize(s: Saved): GameState | null {
         asleep: num(h.asleep, 0),
         stuck: num(h.stuck, 0),
         detect: num(h.detect, 0),
+        seeInvisible: Math.max(0, Math.trunc(num(h.seeInvisible, 0))),
         // **v9 이하에는 레벨업 성장이 없다.** 안 채우면 `pickSkill` 을 여는 순간
         // `pendingSkillPicks` 가 undefined 를 읽어 터진다. 음수는 0 으로, 지어낼 수
         // 없는 「이미 쓴 성장」은 못 채우므로 **가진 것이 없던 것으로** 돌아간다 —
@@ -385,7 +399,14 @@ function normalize(s: Saved): GameState | null {
             ? h.alignment
             : (ORIGIN_ALIGNMENT[h.origin ?? "knight"] ?? "lawful"),
         deityAnger: Math.max(0, Math.min(3, Math.trunc(num(h.deityAnger, 0)))),
-        wisdom: Math.max(0, Math.min(100, Math.trunc(num(h.wisdom, num((h as Hero).itemLuck, 0) * 100)))),
+        // v24 and earlier stored only wand-damage growth. Preserve each earned die over the new origin baseline.
+        wisdom: Math.max(
+            Math.trunc(num(h.baseWisdom, ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12)),
+            Math.min(
+                Math.max(25, Math.trunc(num(h.wisdomMax, 125))),
+                Math.trunc(num(h.wisdom, num((h as Hero).itemLuck, 0) * 100) + (h.baseWisdom == null ? (ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12) : 0)),
+            ),
+        ),
         // v12 이하에는 사람별 행동 횟수가 없다. 지난 판의 전체 턴을 나누어 지어내지 않고
         // 0에서 새로 센다 — 옛 기록에 없던 일을 누구 몫으로 둘 수는 없다.
         turns: Math.max(0, num(h.turns, 0)),

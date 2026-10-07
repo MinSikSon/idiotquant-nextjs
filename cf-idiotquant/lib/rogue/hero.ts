@@ -167,11 +167,16 @@ export const EXP_LEVELS = [
     160000, 320000, 1000000, 3333333, 6666666, 10000000,
 ];
 
-/** 레벨이 오를 때마다 느는 체력. 고정값이다. */
+/** 레벨마다 얻는 체력의 기준값. Constitution 보정은 `hpGainPerLevel` 에서 더한다. */
 export const HP_PER_LEVEL = 5;
 
+/** NetHack-style Constitution modifier scales the deterministic HP increase. */
+export function hpGainPerLevel(hero: Hero): number {
+    return Math.max(2, HP_PER_LEVEL + abilityMod(hero.constitution));
+}
+
 /**
- * 이 레벨마다 성장 하나를 고른다(힘·방어·지혜) — `hero.pendingSkillPicks` 하나가
+ * 이 레벨마다 성장 하나를 고른다(여섯 능력치 중 하나) — `hero.pendingSkillPicks` 하나가
  * 쌓고, `game.pickSkill` 하나가 던다. 캠프가 아니어도, 턴을 안 써도 고를 수 있다 —
  * 레벨업 자체가 턴을 안 쓰는 것과 같은 자리다.
  */
@@ -185,7 +190,10 @@ export const SKILL_PICK_INTERVAL = 3;
  * 누적되지 않는다. 지혜와 Luck은 서로 다른 능력치다.
  */
 export function wandDamageDiceBonus(hero: Hero): number {
-    return Math.max(0, Math.round(hero.wisdom));
+    return Math.max(0,
+        abilityMod(hero.wisdom) + abilityMod(hero.intelligence)
+        - abilityMod(hero.baseWisdom) - abilityMod(hero.baseIntelligence),
+    );
 }
 
 /** (하한, 상한] 사이에 있는 `SKILL_PICK_INTERVAL` 의 배수 개수 — 한 번에 여러 레벨을 건너뛰어도 안 놓친다. */
@@ -226,6 +234,13 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         turns: 0,
         str: originDef.baseStr,
         maxStr: originDef.baseStr,
+        dexterity: originDef.baseDex,
+        constitution: originDef.baseCon,
+        charisma: originDef.baseCha,
+        intelligence: originDef.baseInt,
+        baseIntelligence: originDef.baseInt,
+        baseWisdom: originDef.baseWis,
+        wisdomMax: 25,
         gold: 0,
         pack: [],
         // 상자는 **판이 주는 것이 아니라 그 사람이 들고 오는 것**이다 — 화면이 저장소에서
@@ -246,12 +261,13 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         asleep: 0,
         stuck: 0,
         detect: 0,
+        seeInvisible: 0,
         pendingSkillPicks: 0,
         bonusDefense: 0,
         luck: 0,
         prayerTimeout: 300,
         autoPickup: true,
-        wisdom: 0,
+        wisdom: originDef.baseWis,
         weaponSkills: {},
         weaponTraining: {},
         // 되읽기(`storage.ts`)가 늘 `{}` 로 채우므로 여기서도 채운다 — 안 채우면 갑옷 숙련이
@@ -594,9 +610,9 @@ function ringSum(hero: Hero, type: string): number {
         .reduce((s, r) => s + (r.plusRing ?? 0), 0);
 }
 
-/** Worn dexterity rings add directly to attack accuracy. */
+/** 직업 시작 민첩에 착용한 민첩 반지 보정을 더한다. */
 export function heroDexterity(hero: Hero): number {
-    return ringSum(hero, "dexterity");
+    return hero.dexterity + ringSum(hero, "dexterity");
 }
 
 export function hasRing(hero: Hero, type: string): boolean {
@@ -661,16 +677,17 @@ export function heroArmorClassTerms(hero: Hero): Term[] {
 }
 
 /**
- * **수비 굴림에 얹히는 것** — 숙련 하나뿐이다.
+ * **회피 굴림 보정** — 레벨 숙련과 민첩이 적용된다.
  *
  * 갑옷은 여기 안 붙는다. 붙이면 갑옷이 **피하는 데에는 피해를 깎는 데에는** 두 번
  * 세이고, 그러면 판금 갑옷 한 벌에 싸움이 끝난다. 갑옷은 「덜 아프게」만 한다.
  */
 export function heroDodgeBonus(hero: Hero): number {
     const base = proficiency(hero.level);
+    const dexterity = abilityMod(hero.dexterity) + ringSum(hero, "dexterity");
     const armor = equippedArmor(hero);
     const topazBonus = armor?.socketGem === "topaz" ? 2 : 0;
-    return base + topazBonus;
+    return base + dexterity + topazBonus;
 }
 
 /** 내 숙련 보너스 — 레벨이 오르면 네 레벨마다 하나씩 는다. */
@@ -696,7 +713,9 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         { n: proficiency(hero.level), why: "레벨" },
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero)), why: "힘" },
-        { n: ringSum(hero, "dexterity"), why: "민첩" },
+        { n: abilityMod(hero.dexterity) + ringSum(hero, "dexterity"), why: "민첩" },
+        // NetHack 3.6.7의 find_roll_to_hit은 자연 Luck을 명중 보정에 더한다.
+        { n: hero.luck, why: "행운" },
         ...(hasMatchedDualWield(hero) ? [{ n: 1, why: "쌍무기" }] : []),
         { n: meleePlus(weapon, "plusHit"), why: "enchant" },
     ];
@@ -759,9 +778,10 @@ export function hungerRate(hero: Hero): number {
     return hasRing(hero, "slow digestion") ? 0.5 : 1;
 }
 
-/** 몇 턴마다 체력이 1 오르는가. 재생 반지가 절반으로 줄인다. */
+/** 몇 턴마다 체력이 1 오르는가. Constitution이 줄이고 재생 반지는 1턴으로 만든다. */
 export function regenEvery(hero: Hero): number {
-    const base = Math.max(3, 21 - hero.level * 2);
+    const conModifier = abilityMod(hero.constitution);
+    const base = Math.max(3, 21 - hero.level * 2 - conModifier);
     return hasRing(hero, "regeneration") ? 1 : base;
 }
 
@@ -859,8 +879,9 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         hero.level += 1;
         // **굴리지 않는다.** 몬스터 체력과 같은 이유다 — 같은 레벨의 두 판이 체력만
         // 다른 것은 판단거리가 아니라 그냥 운이다(`monsters.ts` 머리말 참고).
-        hero.maxHp += HP_PER_LEVEL;
-        hero.hp += HP_PER_LEVEL;
+        const hpGain = hpGainPerLevel(hero);
+        hero.maxHp += hpGain;
+        hero.hp += hpGain;
         gained.push(hero.level);
     }
     // **건너뛴 레벨도 센다.** 큰 몬스터 하나로 두 레벨을 한 번에 오르면 3레벨짜리 문턱을
