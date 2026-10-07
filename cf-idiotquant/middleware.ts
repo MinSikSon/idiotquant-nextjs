@@ -13,10 +13,14 @@ export default auth((req: any) => {
     const isAdmin = session?.user?.role === "admin";
     const path: string = req.nextUrl.pathname;
 
+    // 전략 히스토리 페이지는 일시적으로 비활성화한다. 기존 북마크와 직접 URL도 발굴 화면으로 보낸다.
+    if (path.startsWith("/backtest")) {
+        return NextResponse.redirect(new URL("/screener", req.nextUrl));
+    }
+
     // admin 전용 페이지: 서버 단에서 차단 (페이지 코드가 비admin에게 전달되지 않음)
     const isAdminOnly =
         path.startsWith("/admin") ||
-        path.startsWith("/backtest") ||
         path.startsWith("/balance");
     if (isAdminOnly) {
         if (!isLoggedIn) return Response.redirect(new URL("/login", req.nextUrl));

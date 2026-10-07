@@ -16,7 +16,6 @@ import {
   LogIn,
   Eye,
   ShieldCheck,
-  History,
   MoreHorizontal,
   ChevronDown,
   NotebookText,
@@ -40,7 +39,6 @@ type NavItem = {
 const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
-  { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search,     emoji: "💎"   },
 ];
 
@@ -411,9 +409,6 @@ export function NavbarWithSimpleLinks() {
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
-        {isAdmin && (
-          <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
-        )}
         <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <button
           type="button"
