@@ -28,11 +28,11 @@
 | 상점 — 가격표 · 가게 안인가 · 상점 주인 | `lib/rogue/shop.ts` (규칙은 `game.ts` 「상점」) |
 | **판이 도는 자리** — `perform(state, cmd)` | `lib/rogue/game.ts` |
 | localStorage 저장 · 빈 칸 채우기 · 도감 · 지난 판들 · 결산 업적 | `lib/rogue/storage.ts` |
-| 터졌을 때 빠져나갈 문 | `app/(game)/game/GameBoundary.tsx` |
-| 화면 | `app/(game)/game/{page,Rogue}.tsx` · `components/` |
-| 온라인 방 · 내보내기 (PeerJS) | `app/(game)/game/Rogue.tsx` (`hostRoom`·`joinRoom`·`kickGuest`) |
-| 방향판·명령 단추 (꾹 누르면 연타) | `app/(game)/game/components/TouchPad.tsx` |
-| 도감의 몬스터 얼굴 (그림 — 규칙 아님) | `app/(game)/game/monsterArt.ts` |
+| 터졌을 때 빠져나갈 문 | `app/(game)/games/GameBoundary.tsx` |
+| 화면 | `app/(game)/games/{page,Rogue}.tsx` · `components/` |
+| 온라인 방 · 내보내기 (PeerJS) | `app/(game)/games/Rogue.tsx` (`hostRoom`·`joinRoom`·`kickGuest`) |
+| 방향판·명령 단추 (꾹 누르면 연타) | `app/(game)/games/components/TouchPad.tsx` |
+| 도감의 몬스터 얼굴 (그림 — 규칙 아님) | `app/(game)/games/monsterArt.ts` |
 | 밸런스 자 | `scripts/measure-rogue.mjs` |
 
 분수는 `Level.fountains` 에 층별 상태(위치·마법 여부·사용 횟수)를 저장하고, 옛 저장은

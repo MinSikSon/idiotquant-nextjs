@@ -28,10 +28,10 @@
 | 공격·피해·특수 공격 · 기록 줄 | `lib/rogue/combat.ts` |
 | **판이 도는 자리** — `perform(state, cmd)` | `lib/rogue/game.ts` |
 | localStorage 저장 · 빈 칸 채우기 · 도감 · 지난 판들 | `lib/rogue/storage.ts` |
-| 터졌을 때 빠져나갈 문 | `app/(game)/game/GameBoundary.tsx` |
-| 화면 | `app/(game)/game/{page,Rogue}.tsx` · `components/` |
-| 방향 고르기(지팡이·던지기) | `app/(game)/game/components/Aim.tsx` |
-| 도감의 몬스터 얼굴 (그림 — 규칙 아님) | `app/(game)/game/monsterArt.ts` |
+| 터졌을 때 빠져나갈 문 | `app/(game)/games/GameBoundary.tsx` |
+| 화면 | `app/(game)/games/{page,Rogue}.tsx` · `components/` |
+| 방향 고르기(지팡이·던지기) | `app/(game)/games/components/Aim.tsx` |
+| 도감의 몬스터 얼굴 (그림 — 규칙 아님) | `app/(game)/games/monsterArt.ts` |
 | 밸런스 자 | `scripts/measure-rogue.mjs` |
 
 ## 못 박은 규칙 넷

@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 
-const GAME = "app/(game)/game";
+const GAME = "app/(game)/games";
 const CSS = "app/global.css";
 
 /** 게임 화면이 그리는 파일들. */

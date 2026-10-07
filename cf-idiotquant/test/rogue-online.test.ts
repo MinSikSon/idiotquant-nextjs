@@ -21,7 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SRC = readFileSync(path.join(ROOT, "app/(game)/game/Rogue.tsx"), "utf8");
+const SRC = readFileSync(path.join(ROOT, "app/(game)/games/Rogue.tsx"), "utf8");
 
 test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", () => {
     // ── ① 내보내기는 방 나가기와 **다른 인사**다

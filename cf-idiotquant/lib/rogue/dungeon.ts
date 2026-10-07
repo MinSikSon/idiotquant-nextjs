@@ -44,7 +44,7 @@ const ROWS = 3;
 
 /*
  * 물건이 **어디에 몇 개** 놓이나 — 손잡이는 전부 여기 있다.
- * 기획과 값이 같아야 한다: `app/(game)/game/DROP-CODEX.md` §5.
+ * 기획과 값이 같아야 한다: `app/(game)/games/DROP-CODEX.md` §5.
  */
 /** 이 장단비까지는 안 깎는다 — 이 생성기의 방은 중앙값이 이미 3.0 이다. */
 const ASPECT_FREE = 2.5;

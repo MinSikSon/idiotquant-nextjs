@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
-import { ZAP_FX, zapFrames, zapImpact } from "@/app/(game)/game/zapFx";
+import { ZAP_FX, zapFrames, zapImpact } from "@/app/(game)/games/zapFx";
 import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";

@@ -23,9 +23,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 
 const LAYOUT = "app/layout.tsx";
-const GAME = "app/(game)/game/page.tsx";
+const GAME = "app/(game)/games/page.tsx";
 const NAV = "components/navigation.tsx";
-const TOUCHPAD = "app/(game)/game/components/TouchPad.tsx";
+const TOUCHPAD = "app/(game)/games/components/TouchPad.tsx";
 
 test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
     // ── 루트 레이아웃은 dvh 로 잰다
@@ -112,7 +112,7 @@ test("게임에서는 공통 헤더의 서비스 이름도 idiotgames로 바뀐�
 // 사람이 세다가 틀리는 자리라 여기서 센다. 단추 하나를 더하거나 뺄 때는 **셋 단위로**.
 
 test("명령 단추는 세 개씩 딱 떨어진다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
     const from = s.indexOf("const actions: PadAction[] = [");
     assert.ok(from >= 0, "Rogue.tsx 에서 명령 단추 목록을 못 찾았다");
     const to = s.indexOf("\n    ];", from);
@@ -128,7 +128,7 @@ test("명령 단추는 세 개씩 딱 떨어진다", () => {
 });
 
 test("전직 기술과 사망 회고가 화면에서 사라지지 않는다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
     assert.match(s, /advancedSkillKind === "active"[\s\S]*?run\(\{ t: "classSkill" \}\)/, "액티브 전직 기술 단추가 없다");
     assert.match(s, /★ 전직 완료/, "전직 완료 배너가 없다");
     assert.match(read("lib/rogue/game.ts"), /ADVANCE_LEVEL - hero\.level/, "전직 진행도가 기록에 없다");
@@ -142,7 +142,7 @@ test("전직 기술과 사망 회고가 화면에서 사라지지 않는다", ()
 });
 
 test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판보다 먼저 새 판을 연다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
     assert.match(s, /sharedRun\(location\.search\)[\s\S]*?newGame\(shared\.seed[\s\S]*?shared\.origin/, "공유 시드가 새 판으로 이어지지 않는다");
     assert.match(s, /label: "시드 링크 복사"[\s\S]*?copySeedLink\(\)/, "시드 링크 복사 단추가 없다");
     assert.match(s, /sharedRunUrl\(location\.href/, "현재 주소에서 시드 공유 링크를 만들지 않는다");
@@ -151,7 +151,7 @@ test("시드 링크는 시작 직업과 함께 복사하고, 열면 저장 판�
 });
 
 test("새 판을 열면 눌러 둔 방향 키 반복도 멈춘다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
     assert.match(s, /const resetRunInput[\s\S]*?stopAllHolds\(\)/, "새 판에서 이전 방향 키 반복을 멈추지 않는다");
     assert.match(s, /startWithOrigin[\s\S]*?resetRunInput\(\)/, "새 판 시작이 입력 초기화 함수를 부르지 않는다");
     assert.match(s, /heldDirections[\s\S]*?ignoredDirections[\s\S]*?ignoreHeldDirections\(\)/, "새 판에서 OS 방향 키 반복을 막지 않는다");
@@ -159,9 +159,9 @@ test("새 판을 열면 눌러 둔 방향 키 반복도 멈춘다", () => {
 });
 
 test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", () => {
-    const rogue = read("app/(game)/game/Rogue.tsx");
+    const rogue = read("app/(game)/games/Rogue.tsx");
     const pad = read(TOUCHPAD);
-    const desk = read("app/(game)/game/components/Desk.tsx");
+    const desk = read("app/(game)/games/components/Desk.tsx");
     assert.match(rogue, /⚠ HP 낮음[\s\S]*?\{hHunger \|\| "Well-fed"\}[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
     assert.match(rogue, /latest = visibleMessages[\s\S]*?important = [\s\S]*?recent = important/, "중요 메시지를 유지하지 않는다");
     assert.match(pad, /hot\?: boolean[\s\S]*?a\.hot && !a\.off/, "지금 가능한 행동을 강조하지 않는다");
@@ -170,7 +170,7 @@ test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", (
 });
 
 test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에 남긴다", () => {
-    const rogue = read("app/(game)/game/Rogue.tsx");
+    const rogue = read("app/(game)/games/Rogue.tsx");
     const game = read("lib/rogue/game.ts");
     assert.match(rogue, /t: "inspectStatus"[\s\S]*?setSheet\("log"\)/, "상태 설명을 기록으로 열지 않는다");
     assert.match(game, /\$\{who \+ 1\}P▸/, "상태 기록에 플레이어 표식이 없다");
@@ -194,13 +194,13 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
 });
 
 test("한 글자 이름은 지도 한 칸을 가득 쓴다", () => {
-    const s = read("app/(game)/game/components/MapView.tsx");
+    const s = read("app/(game)/games/components/MapView.tsx");
     assert.match(s, /const cols = chars\.length > 2 \? 2 : 1;\s*const rows = Math\.ceil\(chars\.length \/ cols\)/, "글자 수로 줄 수를 안 가른다 — 한 글자면 한 줄이어야 한다");
     assert.match(s, /const font = cell\.h \/ rows/, "한 글자 이름이 칸 전체 높이를 안 쓴다");
 });
 
 test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다", () => {
-    const s = read("app/(game)/game/components/Desk.tsx");
+    const s = read("app/(game)/games/components/Desk.tsx");
     assert.match(s, /isDualWielding\(hero\)[\s\S]*?hero\.offWeaponId/, "이도류의 두 손을 가르지 않는다");
     assert.match(s, /이도류 장착/, "이도류 장착 표식이 없다");
     assert.match(s, /const equipped = worn !== null/, "일반 장착 장비를 따로 가르지 않는다");
@@ -209,7 +209,7 @@ test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다"
 });
 
 test("축복의 기름은 마시지 않고 장비에 바른다", () => {
-    const s = read("app/(game)/game/components/Desk.tsx");
+    const s = read("app/(game)/games/components/Desk.tsx");
     assert.match(s, /it\.type === "blessing" \? "장비에 바른다" : "마신다"/, "축복의 기름이 일반 포션처럼 마신다고 표시된다");
     assert.match(s, /title: "무엇에 축복을 입힐까"[\s\S]*?kinds: \["weapon", "armor"\]/, "기름을 바를 장비를 고르지 않는다");
 });
@@ -255,7 +255,7 @@ test("눌린 단추는 초점을 놓는다 — 안 놓으면 나중에 딴 키�
 // 지금 거는 것: **늘 떠 있는 것은 우상단 작은 단추 하나**이고, 본문은 **눌러야** 펼쳐진다.
 // 끊긴 상태를 브라우저에서 매번 만들기가 까다로워 글자로 건다.
 test("끊김 안내는 늘 떠 있는 작은 단추 하나다 — 본문은 눌러야 뜬다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
 
     // ── 안내 자체는 있어야 한다 — 없애서 통과시키면 안 된다
     const idx = s.indexOf("{online && !linked && (");
@@ -294,7 +294,7 @@ test("끊김 안내는 늘 떠 있는 작은 단추 하나다 — 본문은 눌�
 //
 // 프레임 단위라 보통 테스트로는 못 잡는다. 그래서 **갈고리의 종류**를 글자로 건다.
 test("방이 밝아지는 연출은 그리기 전에 걸린다 — useLayoutEffect", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
 
     const at = s.indexOf("불 켜진 방에 처음 들어서면");
     assert.ok(at > 0, "방 밝히기 연출이 통째로 사라졌다");
@@ -315,7 +315,7 @@ test("방이 밝아지는 연출은 그리기 전에 걸린다 — useLayoutEffe
 // `OriginTag` **하나**로 두고, 그리는 쪽은 이름을 넘기기만 한다 — 화면마다 따로 이어
 // 붙이면 어느 날 한 곳만 이름이 빠진다.
 test("직업이 뜨는 자리에는 이름도 같이 뜬다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
 
     // ── ① 잇는 자리는 `OriginTag` 하나다
     {
@@ -347,7 +347,7 @@ test("직업이 뜨는 자리에는 이름도 같이 뜬다", () => {
 // 있었다.** 2P 쪽에서는 무슨 일이 난 건지 기록 줄을 읽어야만 알 수 있다. 프레임 단위의
 // 연출이라 테스트로 눈으로는 못 잡으니 **무엇을 보고 있는지**를 글자로 건다.
 test("피격·치유 번쩍임은 사람마다 돈다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
 
     // ── ① 지난 판의 기억을 **사람마다** 든다
     {
@@ -384,7 +384,7 @@ test("피격·치유 번쩍임은 사람마다 돈다", () => {
 // 내는데(`글꼴 = 칸높이 ÷ LEADING`), 그 비율이 `<pre>` 의 `leading-[…]` 과 어긋나면
 // 이름표만 칸 밖으로 삐져나간다 — 화면으로는 잘 안 보이는 자리라 글자로 건다.
 test("지도의 이름표는 한 칸을 넘지 않는다", () => {
-    const s = read("app/(game)/game/components/MapView.tsx");
+    const s = read("app/(game)/games/components/MapView.tsx");
 
     // ── ① 줄 높이 비율이 `<pre>` 의 것과 **같은 수**다
     {
@@ -444,7 +444,7 @@ test("지도의 이름표는 한 칸을 넘지 않는다", () => {
 // 그건 협동이 아니라 대리 조종이다. 브라우저로는 피어 둘을 붙여야 재지는 자리라
 // **배선의 모양**을 글자로 건다.
 test("쓰러지면 동료의 눈을 빌린다 — 조종은 안 옮긴다", () => {
-    const s = read("app/(game)/game/Rogue.tsx");
+    const s = read("app/(game)/games/Rogue.tsx");
 
     // ── ① 시점과 조종은 **다른 값**이다
     {
@@ -485,7 +485,7 @@ test("쓰러지면 동료의 눈을 빌린다 — 조종은 안 옮긴다", () =
 // 뒤집히면 맞는 순간의 붉은 번쩍임이 몬스터 바닥에 먹혀 **화면이 아무 일도 없었던 것처럼
 // 보인다.** 눈으로는 한 프레임이라 못 잡으니 순서를 글자로 건다.
 test("몬스터 칸은 바닥색으로 갈리고, 번쩍임이 그 위에 온다", () => {
-    const s = read("app/(game)/game/components/MapView.tsx");
+    const s = read("app/(game)/games/components/MapView.tsx");
 
     // ── ① 바닥을 고르는 순서: 번쩍임 > 파티 > 몬스터
     {
