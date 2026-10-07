@@ -13,6 +13,7 @@ type GuestLandingProps = {
   isLoading: boolean;
   scanDate: string | null;
   backgroundArt: ReactNode;
+  isLoggedIn?: boolean;
 };
 
 const formatPrice = (value: number) =>
@@ -39,7 +40,7 @@ function ActionLink({
   );
 }
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt }: GuestLandingProps) {
+export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false }: GuestLandingProps) {
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "오늘";
@@ -90,9 +91,9 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
                 <ActionLink href="/screener?mincap=500" primary>
                   오늘의 발굴 종목 보기 <ArrowRight size={16} aria-hidden="true" />
                 </ActionLink>
-                <StartAuthButtons callbackUrl="/screener" />
+                {!isLoggedIn && <StartAuthButtons callbackUrl="/screener" />}
               </div>
-              <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">종목 발굴과 분석은 로그인 없이 둘러볼 수 있습니다.</p>
+              {!isLoggedIn && <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">종목 발굴과 분석은 로그인 없이 둘러볼 수 있습니다.</p>}
             </div>
 
             <div className="relative mx-auto w-full max-w-xl lg:ml-auto">
