@@ -919,6 +919,7 @@ export default function HomePage() {
         totalCount={matchedCount}
         isLoading={scanLoading}
         scanDate={scanDate}
+        backgroundArt={<HeroArt />}
       />
     );
   }

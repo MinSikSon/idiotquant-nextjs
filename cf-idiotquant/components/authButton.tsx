@@ -29,6 +29,43 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 /** 어느 문으로 들어가는 중인가. 둘 다 도는 것처럼 보이면 안 눌린 쪽도 눌린 줄 안다. */
 type Pending = null | "kakao" | "google"
 
+export function StartAuthButtons({ callbackUrl = "/screener" }: { callbackUrl?: string }) {
+    const [pending, setPending] = useState<Pending>(null)
+
+    const handleStart = async (provider: Exclude<Pending, null>) => {
+        setPending(provider)
+        try {
+            await signIn(provider, { redirectTo: callbackUrl })
+        } catch {
+            setPending(null)
+        }
+    }
+
+    const busy = pending !== null
+    return (
+        <div className="grid w-full gap-2 sm:grid-cols-2">
+            <button
+                type="button"
+                onClick={() => handleStart("google")}
+                disabled={busy}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] border border-neutral-300 bg-white px-3 py-2.5 text-sm font-semibold text-[#1f1f1f] transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+                {pending === "google" ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" /> : <GoogleIcon size={18} />}
+                {pending === "google" ? "Google 연결 중..." : "Google 계정으로 시작하기"}
+            </button>
+            <button
+                type="button"
+                onClick={() => handleStart("kakao")}
+                disabled={busy}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-[#FEE500] px-3 py-2.5 text-sm font-semibold text-[#191919] transition-colors hover:bg-[#F6DC00] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+                {pending === "kakao" ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#191919]/30 border-t-[#191919]" /> : <KakaoIcon size={18} />}
+                {pending === "kakao" ? "카카오 연결 중..." : "카카오 계정으로 시작하기"}
+            </button>
+        </div>
+    )
+}
+
 export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?: string }) {
     const { data: session, status } = useSession()
     const [pending, setPending] = useState<Pending>(null)

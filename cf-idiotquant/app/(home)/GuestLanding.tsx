@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import ThemeChanger from "@/components/theme_changer";
+import { StartAuthButtons } from "@/components/authButton";
 
 type GuestLandingProps = {
   list: NcavDailyItem[];
   totalCount: number;
   isLoading: boolean;
   scanDate: string | null;
+  backgroundArt: ReactNode;
 };
 
 const formatPrice = (value: number) =>
@@ -35,28 +39,35 @@ function ActionLink({
   );
 }
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate }: GuestLandingProps) {
+export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt }: GuestLandingProps) {
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "오늘";
   const preview = list.slice(0, 4);
 
   return (
-    <div id="public-home" className="min-h-screen bg-white text-neutral-900 dark:bg-[#080d0a] dark:text-neutral-100">
-      <header className="border-b border-neutral-200/80 bg-white/90 dark:border-neutral-800 dark:bg-[#080d0a]/90">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4 sm:px-8 lg:px-10">
-          <Link href="/" className="shrink-0 text-lg font-bold tracking-tight">
-            idiot<span className="text-[#635bdb]">quant</span>
-          </Link>
-          <nav aria-label="주요 메뉴" className="hidden flex-1 items-center gap-7 text-sm text-neutral-600 dark:text-neutral-300 sm:flex">
-            <a href="#features" className="hover:text-neutral-950 dark:hover:text-white">서비스</a>
-            <Link href="/screener" className="hover:text-neutral-950 dark:hover:text-white">종목 발굴</Link>
-            <Link href="/analyze" className="hover:text-neutral-950 dark:hover:text-white">종목 분석</Link>
-            <a href="#faq" className="hover:text-neutral-950 dark:hover:text-white">안내</a>
-          </nav>
-          <div className="ml-auto flex w-full flex-col gap-2 sm:ml-0 sm:w-auto sm:flex-row sm:items-center">
-            <ActionLink href="/login">로그인</ActionLink>
-            <ActionLink href="/screener?mincap=500" primary>지금 시작하기</ActionLink>
+    <div id="public-home" className="relative isolate min-h-screen text-neutral-900 dark:text-neutral-100">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(130%_90%_at_74%_-10%,#eaf6ee_0%,#f4faf6_46%,#faf9f7_100%)] dark:bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
+        <div className="absolute inset-0">{backgroundArt}</div>
+      </div>
+
+      <div className="relative z-10">
+      <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-[#080d0a]/80">
+        <div className="mx-auto max-w-7xl px-5 py-3 sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between sm:hidden">
+            <Link href="/" className="shrink-0 text-lg font-bold tracking-tight">idiot<span className="text-[#635bdb]">quant</span></Link>
+            <ThemeChanger compact />
+          </div>
+          <div className="hidden items-center gap-8 sm:flex">
+            <Link href="/" className="shrink-0 text-lg font-bold tracking-tight">idiot<span className="text-[#635bdb]">quant</span></Link>
+            <nav aria-label="주요 메뉴" className="flex flex-1 items-center gap-7 text-sm text-neutral-600 dark:text-neutral-300">
+              <a href="#features" className="hover:text-neutral-950 dark:hover:text-white">서비스</a>
+              <Link href="/screener" className="hover:text-neutral-950 dark:hover:text-white">종목 발굴</Link>
+              <Link href="/analyze" className="hover:text-neutral-950 dark:hover:text-white">종목 분석</Link>
+              <a href="#faq" className="hover:text-neutral-950 dark:hover:text-white">안내</a>
+            </nav>
+            <ThemeChanger compact />
           </div>
         </div>
       </header>
@@ -74,11 +85,11 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate }: 
               <p className="mt-6 max-w-xl text-base leading-7 text-neutral-600 dark:text-neutral-300 sm:text-lg sm:leading-8">
                 매일 재무 기준으로 종목을 찾고, 핵심 숫자와 기업 가치를 한곳에서 비교할 수 있습니다.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col items-stretch gap-3 sm:items-start">
                 <ActionLink href="/screener?mincap=500" primary>
                   오늘의 발굴 종목 보기 <ArrowRight size={16} aria-hidden="true" />
                 </ActionLink>
-                <ActionLink href="/login">계정 만들기</ActionLink>
+                <StartAuthButtons callbackUrl="/screener" />
               </div>
               <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">종목 발굴과 분석은 로그인 없이 둘러볼 수 있습니다.</p>
             </div>
@@ -150,7 +161,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate }: 
           </div>
         </section>
 
-        <section id="today" className="border-y border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-[#0d130f]">
+        <section id="today" className="border-y border-neutral-200 bg-neutral-50/75 backdrop-blur-[2px] dark:border-neutral-800 dark:bg-[#0d130f]/75">
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -189,7 +200,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate }: 
           </div>
         </section>
 
-        <section className="border-t border-neutral-200 bg-[#f5f4ff] dark:border-neutral-800 dark:bg-[#17152a]">
+        <section className="border-t border-neutral-200 bg-[#f5f4ff]/80 backdrop-blur-[2px] dark:border-neutral-800 dark:bg-[#17152a]/80">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-12 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
             <div><h2 className="text-2xl font-semibold tracking-[-0.04em]">오늘의 종목부터 살펴보세요.</h2><p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">마음에 드는 회사를 찾고, 분석을 이어가세요.</p></div>
             <ActionLink href="/screener?mincap=500" primary>종목 찾기 <ArrowRight size={16} aria-hidden="true" /></ActionLink>
@@ -197,12 +208,13 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate }: 
         </section>
       </div>
 
-      <footer className="border-t border-neutral-200 dark:border-neutral-800">
+      <footer className="border-t border-neutral-200 bg-white/65 backdrop-blur-[2px] dark:border-neutral-800 dark:bg-[#080d0a]/65">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-6 text-xs text-neutral-500 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
           <span>© 2026 IdiotQuant</span>
           <span>본 서비스는 투자 참고 정보이며 투자 판단과 결과는 이용자에게 있습니다.</span>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
