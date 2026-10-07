@@ -21,6 +21,7 @@ export default function Panel({
     side,
     accent,
     closeKey,
+    size = "default",
 }: {
     title: string;
     onClose?: () => void;
@@ -36,6 +37,8 @@ export default function Panel({
      * Esc 하나가 둘 다 닫으면 안 된다. 그 키는 부르는 쪽이 듣는다.
      */
     closeKey?: string;
+    /** 긴 기록 화면은 넓은 화면을 더 활용한다. */
+    size?: "default" | "wide";
 }) {
     /** 이번 누름이 바탕에서 시작했는가 — 아래 `onClick` 의 까닭 참고. */
     const fromBackdrop = useRef(false);
@@ -106,14 +109,14 @@ export default function Panel({
                 if (onClose && fromBackdrop.current && e.target === e.currentTarget) onClose();
             }}
         >
-            <div ref={panelRef} role="dialog" aria-modal={side ? undefined : true} aria-labelledby={titleId} tabIndex={-1} onKeyDown={keepFocusInside} style={accent ? { borderColor: accent } : undefined} className={`max-h-[calc(100%-2rem)] sm:max-h-[calc(100%-3rem)] w-full max-w-[520px] overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] ${accent ? "border-2 border-t-[6px]" : ""} font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]`}>
+            <div ref={panelRef} role="dialog" aria-modal={side ? undefined : true} aria-labelledby={titleId} tabIndex={-1} onKeyDown={keepFocusInside} style={accent ? { borderColor: accent } : undefined} className={`max-h-[calc(100%-1rem)] sm:max-h-[calc(100%-3rem)] w-full ${size === "wide" ? "max-w-3xl" : "max-w-[520px]"} overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] ${accent ? "border-2 border-t-[6px]" : ""} font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]`}>
                 <div className="flex items-center justify-between border-b border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-strong)]">
                     <span id={titleId} style={accent ? { color: accent, fontWeight: 700 } : undefined}>{title}</span>
                     {onClose && (
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-[2px] border border-[var(--rg-line)] bg-[var(--rg-raised)] px-2 py-1 text-[12px] font-bold text-[var(--rg-label)] shadow-[0_1px_0_var(--rg-shadow)] transition-colors hover:border-[var(--rg-strong)] hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                            className="min-h-10 rounded-[2px] border border-[var(--rg-line)] bg-[var(--rg-raised)] px-3 py-1 text-[12px] font-bold text-[var(--rg-label)] shadow-[0_1px_0_var(--rg-shadow)] transition-colors hover:border-[var(--rg-strong)] hover:bg-[var(--rg-hover)] hover:text-[var(--rg-strong)] active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                             aria-label="닫기"
                         >
                             닫기 ({closeKey ?? "Esc"})

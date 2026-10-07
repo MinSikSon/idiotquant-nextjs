@@ -1697,6 +1697,41 @@ export default function Rogue() {
         }
     }, [state, who]);
 
+    const shareTombSummary = useCallback(async (tomb: Tomb) => {
+        const origin = tomb.hero?.origin ? ORIGINS[tomb.hero.origin]?.name : undefined;
+        const summary = [
+            tomb.won ? "★ 던전 탈출 성공" : `† ${tomb.epitaph}`,
+            origin,
+            `점수 ${tombScore(tomb)}점 · 지하 ${tomb.depth}층 · ${tomb.turns}턴 · 금화 ${tomb.gold}G`,
+        ].filter(Boolean).join("\n");
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: "Rogue 지난 판 기록", text: summary });
+                setSeedLinkNote("지난 판 기록을 공유했다.");
+                return;
+            }
+            await navigator.clipboard.writeText(summary);
+            setSeedLinkNote("지난 판 기록을 복사했다 — 동료에게 보내면 된다.");
+        } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            window.prompt("지난 판 기록 — 복사해서 공유하세요", summary);
+            setSeedLinkNote("지난 판 기록을 열었다 — 복사해서 동료에게 보내면 된다.");
+        }
+    }, []);
+
+    const shareTombSeed = useCallback(async (tomb: Tomb) => {
+        if (tomb.seed === undefined) return;
+        const origin = tomb.hero?.origin ?? "knight";
+        const url = sharedRunUrl(location.href, { seed: tomb.seed, origin });
+        try {
+            await navigator.clipboard.writeText(url);
+            setSeedLinkNote(`시드 ${tomb.seed} 링크를 복사했다 — 같은 직업으로 새 던전이 열린다.`);
+        } catch {
+            window.prompt("해당 판의 시드 공유 링크 — 열면 같은 시드로 새 판을 시작합니다", url);
+            setSeedLinkNote("시드 공유 링크를 열었다 — 복사해서 동료에게 보내면 된다.");
+        }
+    }, []);
+
     // ── 키보드 ─────────────────────────────────────────────────────────
     /** 한 화면 협동에서 사람마다 꾹 누르고 있는 방향 키. */
     const runAsRef = useRef(runAs);
@@ -3567,26 +3602,28 @@ export default function Rogue() {
                     selectedTomb ? (
                         <Panel
                             {...shared}
+                            size="wide"
                             title={selectedTomb.won ? "★ 탈출 기록 상세" : "† 지난 판 상세"}
                             onClose={() => setSheet("none")}
                             footer={
-                                <div className="flex items-center justify-between">
+                                <div className="sticky bottom-[-1px] flex items-center justify-between gap-3 bg-[var(--rg-panel)]/95 py-1">
                                     <button
                                         type="button"
                                         onClick={() => setSelectedTomb(null)}
-                                        className="rounded-[2px] border border-[var(--rg-line-soft)] px-3 py-1 text-[var(--rg-strong)] hover:bg-[var(--rg-raised)]"
+                                        className="min-h-10 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-raised)] px-3 py-2 text-xs font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                     >
-                                        ← 목록으로
+                                        ← 지난 판 목록
                                     </button>
-                                    <span className="text-[11px] text-[var(--rg-faint)]">
+                                    <span className="text-right text-[11px] text-[var(--rg-faint)]">
                                         {new Date(selectedTomb.at).toLocaleString()}
                                     </span>
                                 </div>
                             }
                         >
-                            <div className="space-y-4 text-sm leading-relaxed">
+                            <div className="space-y-3 text-xs leading-relaxed sm:space-y-4">
                                 {/* 1. 기본 판 요약 */}
-                                <div className="rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+                                <section aria-label="판 결과" className="rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
+                                    <h3 className="mb-2 text-[11px] font-bold tracking-wide text-[var(--rg-label)]">판 결과</h3>
                                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--rg-line-soft)] pb-2">
                                         <span className={selectedTomb.won ? "font-bold text-[var(--rg-amulet)]" : "font-bold text-[var(--rg-strong)]"}>
                                             {selectedTomb.won ? "★ 옌더의 증표를 쥐고 던전을 탈출했다!" : `† ${selectedTomb.epitaph}`}
@@ -3595,12 +3632,31 @@ export default function Rogue() {
                                             {tombScore(selectedTomb)}점
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3 text-xs">
+                                    <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-3 text-[11px]">
                                         <div className="rounded bg-[var(--rg-bg)] p-2"><span className="block text-[var(--rg-faint)]">도달 층</span><b className="text-[var(--rg-strong)]">지하 {selectedTomb.depth}층</b></div>
                                         <div className="rounded bg-[var(--rg-bg)] p-2"><span className="block text-[var(--rg-faint)]">생존 턴</span><b className="text-[var(--rg-strong)]">{selectedTomb.turns}턴</b></div>
                                         <div className="rounded bg-[var(--rg-bg)] p-2"><span className="block text-[var(--rg-faint)]">소지 금화</span><b className="text-[var(--rg-gold)]">{selectedTomb.gold} G</b></div>
                                     </div>
-                                </div>
+                                    <div className="mt-3 grid grid-cols-1 gap-2 border-t border-[var(--rg-line-soft)] pt-3 sm:grid-cols-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => void shareTombSummary(selectedTomb)}
+                                            className="min-h-10 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-bg)] px-3 py-2 text-left text-xs font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                                        >
+                                            지난 판 기록 공유
+                                            <span className="mt-0.5 block text-[10px] font-normal text-[var(--rg-muted)]">결과와 점수 요약을 공유하거나 복사합니다</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={selectedTomb.seed === undefined}
+                                            onClick={() => void shareTombSeed(selectedTomb)}
+                                            className="min-h-10 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-bg)] px-3 py-2 text-left text-xs font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+                                        >
+                                            {selectedTomb.seed === undefined ? "시드 정보 없음" : `시드 ${selectedTomb.seed} 공유`}
+                                            <span className="mt-0.5 block text-[10px] font-normal text-[var(--rg-muted)]">{selectedTomb.seed === undefined ? "오래된 기록에는 시드가 저장되지 않았습니다" : "같은 시드와 직업으로 새 판을 엽니다"}</span>
+                                        </button>
+                                    </div>
+                                </section>
 
                                 <RunGoalList
                                     depth={selectedTomb.depth}
@@ -3610,7 +3666,7 @@ export default function Rogue() {
 
                                 {selectedTomb.achievements && selectedTomb.achievements.length > 0 && (
                                     <section className="rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] p-3">
-                                        <h4 className="mb-2 text-sm font-bold text-[var(--rg-label)]">이번 판의 업적</h4>
+                                        <h4 className="mb-2 text-xs font-bold text-[var(--rg-label)]">이번 판의 업적</h4>
                                         <ol className="space-y-1.5 text-xs text-[var(--rg-muted)]">
                                             {selectedTomb.achievements.map((achievement) => (
                                                 <li key={achievement.id} className="flex items-baseline justify-between gap-3">
@@ -3624,22 +3680,22 @@ export default function Rogue() {
 
                                 {/* 2. 영웅 능력치 (Hero Stats) */}
                                 {selectedTomb.hero && (
-                                    <div>
+                                    <section className="rounded-[4px] border border-[var(--rg-line-soft)] p-3">
                                         <div className="mb-1 flex items-center justify-between">
-                                            <h4 className="text-sm font-bold text-[var(--rg-label)]">능력치</h4>
+                                            <h4 className="text-xs font-bold text-[var(--rg-label)]">영웅 · 능력치</h4>
                                             {selectedTomb.hero.origin && (
                                                 <span className="text-xs font-bold text-[var(--rg-strong)]">
                                                     <OriginTag origin={selectedTomb.hero.origin} nick={selectedTomb.hero.nick} level={selectedTomb.hero.level} title />
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-sm text-[var(--rg-muted)]">
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 text-xs text-[var(--rg-muted)]">
                                             <div><span className="block text-xs text-[var(--rg-faint)]">힘</span><b className="text-[var(--rg-strong)]">{selectedTomb.hero.str} / {selectedTomb.hero.maxStr}</b></div>
                                             <div><span className="block text-xs text-[var(--rg-faint)]">체력</span><b className={selectedTomb.hero.hp <= 0 ? "text-[var(--rg-trap)]" : "text-[var(--rg-hero)]"}>{selectedTomb.hero.hp} / {selectedTomb.hero.maxHp}</b></div>
                                             <div><span className="block text-xs text-[var(--rg-faint)]">방어</span><b className="text-[var(--rg-armor)]">{10 - selectedTomb.hero.defense}</b></div>
                                             <div><span className="block text-xs text-[var(--rg-faint)]">레벨 · 경험치</span><b className="text-[var(--rg-strong)]">{selectedTomb.hero.level} · {selectedTomb.hero.exp}</b></div>
                                         </div>
-                                    </div>
+                                    </section>
                                 )}
 
                                 {/* 3. 소지품 배낭 (Inventory) */}
@@ -3647,7 +3703,7 @@ export default function Rogue() {
                                     <div>
                                         <div className="mb-1 flex items-center justify-between">
                                             <h4 className="text-xs font-bold text-[var(--rg-label)]">
-                                                소지품 배낭 ({selectedTomb.hero.pack.length}개)
+                                                장비 · 소지품 배낭 ({selectedTomb.hero.pack.length}개)
                                             </h4>
                                         </div>
                                         {selectedTomb.hero.pack.length === 0 ? (
@@ -3709,8 +3765,8 @@ export default function Rogue() {
                                 {/* 4. 이번 판의 전체 기록 */}
                                 {selectedTomb.recentLog && selectedTomb.recentLog.length > 0 && (
                                     <div>
-                                        <h4 className="mb-1 text-sm font-bold text-[var(--rg-label)]">이번 판 기록</h4>
-                                        <div className="max-h-36 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 font-mono text-xs leading-5 text-[var(--rg-muted)]">
+                                        <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">진행 · 이번 판 기록</h4>
+                                        <div className="max-h-52 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 font-mono text-[11px] leading-[1.65] text-[var(--rg-muted)]">
                                             {[...selectedTomb.recentLog].reverse().map((logMsg, lIdx) => (
                                                 <div key={lIdx} className="break-words whitespace-normal">
                                                     {logMsg}
