@@ -450,7 +450,8 @@ export default function Desk({
         if (it.unpaid) {
             return [
                 { label: `값을 치른다 (외상 전부 ${billOf(hero.pack, hero.charisma)})`, on: go({ t: "pay" }) },
-                { label: "도로 내려놓는다 — 외상에서 뺀다", on: go({ t: "drop", letter: it.letter! }) },
+                { label: it.count > 1 ? "1개 돌려준다 — 외상에서 뺀다" : "도로 내려놓는다 — 외상에서 뺀다", on: go({ t: "drop", letter: it.letter! }) },
+                ...(it.count > 1 ? [{ label: `전부 돌려준다 (${it.count}개) — 외상에서 뺀다`, on: go({ t: "drop", letter: it.letter!, count: it.count }) }] : []),
             ];
         }
         /**
@@ -655,12 +656,17 @@ export default function Desk({
         if (shopOpen && isTradable(it) && !worn && it.id !== hero.offWeaponId) {
             out.push({ label: `판다 (+${sellPrice(it)}G)`, on: go({ t: "sell", letter: it.letter! }) });
         }
-        if (it.kind !== "amulet") out.push({
-            label: it.corpseOf && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && level.transmuteAltar.uses > 0
-                ? "제물로 바친다"
-                : "내려놓는다",
-            on: go({ t: "drop", letter: it.letter! }),
-        });
+        if (it.kind !== "amulet") {
+            const offer = it.corpseOf && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && level.transmuteAltar.uses > 0;
+            out.push({
+                label: offer ? "제물로 바친다" : it.count > 1 ? "버린다 (1개)" : "내려놓는다",
+                on: go({ t: "drop", letter: it.letter! }),
+            });
+            if (it.count > 1) out.push({
+                label: `전부 버린다 (${it.count}개)`,
+                on: go({ t: "drop", letter: it.letter!, count: it.count }),
+            });
+        }
         return out;
     };
 

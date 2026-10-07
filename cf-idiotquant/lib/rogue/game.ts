@@ -250,7 +250,7 @@ type Action =
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
 
     | { t: "classSkill"; ingredients?: [string, string]; element?: SpiritElement }
-    | { t: "drop"; letter: string }
+    | { t: "drop"; letter: string; count?: number }
     /** 곁에 선 동료에게 건넨다 — 협동에서만 쓴다. */
     | { t: "give"; letter: string }
     | { t: "use_relic"; letter: string }
@@ -2372,7 +2372,7 @@ function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean
     return true;
 }
 
-function drop(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
+function drop(state: GameState, hero: Hero, letter: string, rng: Rng, requestedCount = 1): boolean {
     const { level } = state;
     const it = packItem(hero, letter);
     if (!it) return false;
@@ -2385,15 +2385,18 @@ function drop(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
         say(state, "발밑에 이미 뭔가 있다.");
         return false;
     }
-    const offeringFood = level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && it.kind === "food" && !it.unpaid;
-    const altarWater = level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && it.kind === "potion" && it.type === "water";
-    const dropped = offeringFood && it.count > 1 || altarWater && it.count > 1
-        ? { ...it, id: state.nextItemId++, count: 1, letter: undefined }
+    const offeringFood = requestedCount <= 1 && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && it.kind === "food" && !it.unpaid;
+    const altarWater = requestedCount <= 1 && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && it.kind === "potion" && it.type === "water" && !it.unpaid;
+    const count = offeringFood || altarWater
+        ? 1
+        : Math.max(1, Math.min(it.count, Math.trunc(requestedCount) || 1));
+    const dropped = count < it.count
+        ? { ...it, id: state.nextItemId++, count, letter: undefined }
         : it;
-    takeFromPack(hero, it, offeringFood || altarWater ? 1 : it.count);
+    takeFromPack(hero, it, count);
     dropped.x = hero.x;
     dropped.y = hero.y;
-    if (offerAtAltar(state, hero, dropped, rng)) return true;
+    if (requestedCount <= 1 && offerAtAltar(state, hero, dropped, rng)) return true;
     level.items.push(dropped);
     const name = describe(dropped, state.known, state.appearance);
     if (dropped.unpaid) {
@@ -4538,7 +4541,7 @@ function act(state: GameState, cmd: Command): GameState {
                 acted = wear(state, hero, cmd.letter);
                 break;
             case "drop":
-                acted = drop(state, hero, cmd.letter, rng);
+                acted = drop(state, hero, cmd.letter, rng, cmd.count);
                 break;
             case "give":
                 acted = give(state, hero, cmd.letter);
