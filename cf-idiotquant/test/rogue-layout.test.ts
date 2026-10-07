@@ -169,6 +169,17 @@ test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", (
     assert.doesNotMatch(desk, /현재 .*→/, "배낭에 장비 비교 문구가 과하게 남아 있다");
 });
 
+test("옵션 메뉴는 제목과 설명을 나눠 보여 주고 토글 상태를 표시한다", () => {
+    const s = read("app/(game)/games/Rogue.tsx");
+    const at = s.indexOf('sheet === "options"');
+    assert.ok(at >= 0, "옵션 메뉴가 없다");
+    const menu = s.slice(at, s.indexOf('sheet === "origins"', at));
+    assert.match(menu, /항목 이름과 설명을 나눠 표시합니다/, "옵션 메뉴에 읽는 법을 안내하지 않는다");
+    assert.match(menu, /<span className="block font-bold text-\[var\(--rg-strong\)\]">\{o\.label\}<\/span>\s*<span className="mt-0\.5 block text-\[11px\] text-\[var\(--rg-muted\)\]">\{o\.hint\}<\/span>/, "항목 이름과 설명이 한 줄에 붙어 있다");
+    assert.match(menu, /label: "자동 줍기",\s*status: .*\? "켜짐" : "꺼짐",\s*pressed:/, "자동 줍기 토글에 현재 상태가 없다");
+    assert.match(menu, /aria-pressed=\{\"pressed\" in o \? o\.pressed : undefined\}/, "토글의 현재 상태를 접근성 속성으로 표시하지 않는다");
+});
+
 test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에 남긴다", () => {
     const rogue = read("app/(game)/games/Rogue.tsx");
     const game = read("lib/rogue/game.ts");

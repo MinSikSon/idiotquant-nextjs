@@ -3135,6 +3135,9 @@ export default function Rogue() {
             {
                 sheet === "options" && (
                     <Panel {...shared} title="옵션" onClose={() => setSheet("none")} footer="화면 밝기: 위·왼쪽 바의 테마 단추">
+                        <p className="border-b border-[var(--rg-line-soft)] bg-[var(--rg-raised)]/40 px-3 py-2 text-[11px] leading-relaxed text-[var(--rg-muted)]">
+                            항목 이름과 설명을 나눠 표시합니다. 오른쪽 상태 표시는 설정 토글의 현재 값입니다.
+                        </p>
                         <ul className="font-mono text-[12px]">
                             {[
                                 {
@@ -3277,8 +3280,10 @@ export default function Rogue() {
                                         },
                                     ]),
                                 {
-                                    label: `자동 줍기 ${(state.heroes[who] ?? state.heroes[0]).autoPickup ? "켜짐" : "꺼짐"}`,
-                                    hint: "이동한 칸의 아이템을 자동으로 줍는다 · 눌러서 전환 · 꺼도 줍기 버튼과 , / g 키는 쓸 수 있다",
+                                    label: "자동 줍기",
+                                    status: (state.heroes[who] ?? state.heroes[0]).autoPickup ? "켜짐" : "꺼짐",
+                                    pressed: (state.heroes[who] ?? state.heroes[0]).autoPickup,
+                                    hint: "이동한 칸의 아이템을 자동으로 줍습니다. 눌러서 켜고 끕니다. 꺼도 줍기 버튼과 , / g 키는 쓸 수 있습니다.",
                                     go: () => run({ t: "toggleAutopickup" }),
                                 },
                                 { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
@@ -3301,13 +3306,17 @@ export default function Rogue() {
                                     <button
                                         type="button"
                                         onClick={o.go}
-                                        className="flex w-full items-start gap-2 border-b border-[var(--rg-line-soft)] px-1 py-1.5 text-left transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                                        aria-pressed={"pressed" in o ? o.pressed : undefined}
+                                        className="flex w-full items-start justify-between gap-3 border-b border-[var(--rg-line-soft)] px-2 py-2 text-left transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                     >
-                                        <span aria-hidden="true" className="shrink-0 text-[var(--rg-faint)]">&gt;</span>
-                                        <span className="min-w-0 leading-snug break-words">
-                                            <span className="font-bold text-[var(--rg-strong)]">{o.label}</span>
-                                            <span className="text-[var(--rg-muted)]"> · {o.hint}</span>
+                                        <span className="flex min-w-0 items-start gap-2">
+                                            <span aria-hidden="true" className="mt-px shrink-0 text-[var(--rg-faint)]">&gt;</span>
+                                            <span className="min-w-0 leading-snug break-words">
+                                                <span className="block font-bold text-[var(--rg-strong)]">{o.label}</span>
+                                                <span className="mt-0.5 block text-[11px] text-[var(--rg-muted)]">{o.hint}</span>
+                                            </span>
                                         </span>
+                                        {"status" in o && <span className={`mt-0.5 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold ${o.status === "켜짐" ? "border-[var(--rg-strong)] text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-muted)]"}`}>{o.status}</span>}
                                     </button>
                                 </li>
                             ))}
