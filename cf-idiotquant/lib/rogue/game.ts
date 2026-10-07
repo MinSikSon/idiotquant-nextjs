@@ -1340,7 +1340,7 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
                 const ch = fate === 22 ? "S" : fate === 23 ? randomMonsterChar(state.level.depth, rng) : "N";
                 const count = fate === 22 ? rng.between(2, 6) : 1;
                 for (let i = 0; i < count; i++) {
-                    const spot = freeSpot(state.level, rng, [...state.heroes, fountain, ...state.level.monsters]);
+                    const spot = fountainMonsterSpot(state, fountain, rng);
                     const monster = spawnMonster(ch, spot.x, spot.y, rng);
                     monster.awake = true;
                     monster.target = state.heroes.indexOf(hero);
@@ -1500,7 +1500,7 @@ function resolveDipEvent(state: GameState, hero: Hero, item: Item, fountain: Non
         const ch = result === 21 ? randomMonsterChar(state.level.depth, rng) : result === 22 ? "N" : "S";
         const count = result === 23 ? rng.between(2, 6) : 1;
         for (let i = 0; i < count; i++) {
-            const spot = freeSpot(state.level, rng, [...state.heroes, ...state.level.monsters, ...state.level.items, fountain]);
+            const spot = fountainMonsterSpot(state, fountain, rng);
             const monster = spawnMonster(ch, spot.x, spot.y, rng);
             monster.awake = true; monster.target = state.heroes.indexOf(hero); state.level.monsters.push(monster);
         }
@@ -1529,6 +1529,33 @@ function resolveDipEvent(state: GameState, hero: Hero, item: Item, fountain: Non
     } else {
         say(state, "물결이 담근 물건을 스치고 지나간다.");
     }
+}
+
+/** 분수에서 나온 적은 먼저 분수 주변에 나타나며, 주변이 막혔을 때만 다른 빈칸을 찾는다. */
+function fountainMonsterSpot(
+    state: GameState,
+    fountain: NonNullable<ReturnType<typeof fountainAt>>,
+    rng: Rng,
+): Pos {
+    const { level } = state;
+    const avoid = [...state.heroes, ...level.monsters, ...level.items, ...(level.fountains ?? []), fountain];
+    for (let radius = 1; radius <= 2; radius++) {
+        const nearby: Pos[] = [];
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                const x = fountain.x + dx;
+                const y = fountain.y + dy;
+                if (x <= 0 || x >= MAP_W - 1 || y <= 0 || y >= MAP_H - 1) continue;
+                if (!walkable(level.tiles[idx(x, y)] as Tile)) continue;
+                if (avoid.some((p) => p.x === x && p.y === y)) continue;
+                nearby.push({ x, y });
+            }
+        }
+        if (nearby.length) return rng.pick(nearby)!;
+    }
+    // 주변이 모두 막혔을 때는 적을 아예 누락하지 않도록 층의 다른 빈칸으로 보낸다.
+    return freeSpot(level, rng, avoid);
 }
 
 /** 넷핵식 기도: 대기 시간이 끝나고 Luck이 중립 이상일 때 위기를 걷어낸다. */
