@@ -172,7 +172,7 @@ function Key({
                 disabled ? "border-[var(--rg-off-line)] bg-[var(--rg-off-bg)] text-[var(--rg-off-ink)]" : "",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
-                wide ? "h-10 w-full overflow-hidden whitespace-nowrap px-1 text-[11px]" : "h-11 w-11 text-[13px]",
+                wide ? "h-9 w-full overflow-hidden whitespace-nowrap px-1 text-[11px]" : "h-11 w-11 text-[13px]",
             ].join(" ")}
         >
             {children}
