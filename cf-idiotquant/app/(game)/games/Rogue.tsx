@@ -1901,9 +1901,9 @@ export default function Rogue() {
     const shopHere = !!level.shop && !!shk && (inShop(level, hero.x, hero.y) || (level.shop.angry && Math.max(Math.abs(shk.x - hero.x), Math.abs(shk.y - hero.y)) <= 1));
     const hereWare = hereItem && forSale(level, hereItem) ? price(hereItem) : null;
     // 외상인 것은 **없는 것으로** 센다 — 쓸 수 없으니 단추가 켜지면 눌러도 빈 목록이다.
-    const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k && !p.unpaid);
+    const has = (k: ItemKind) => hero.pack.some((p) => p.kind === k && !p.unpaid && (k !== "food" || !p.corpseOf));
     const itemText = (k: ItemKind) => {
-        const it = hero.pack.find((p) => p.kind === k && !p.unpaid);
+        const it = hero.pack.find((p) => p.kind === k && !p.unpaid && (k !== "food" || !p.corpseOf));
         return it ? describe(it, state.known, state.appearance) : undefined;
     };
     // 도감이 읽는 것 — **화면이 세지 않는다.** 엔진이 낸 것을 늘어놓을 뿐이다.
@@ -2239,7 +2239,7 @@ export default function Rogue() {
             {(state.heroes.length > 1 ? state.heroes : [hero]).map((h, i) => {
                 const coop = state.heroes.length > 1;
                 const hHunger = hungerOf(h);
-                const foodCount = h.pack.filter((it) => it.kind === "food").reduce((n, it) => n + it.count, 0);
+                const foodCount = h.pack.filter((it) => it.kind === "food" && !it.corpseOf).reduce((n, it) => n + it.count, 0);
                 const hRings = wornRings(h).length;
                 const cursedGear = h.pack.some((it) => it.cursed && (it.id === h.weaponId || it.id === h.armorId || it.id === h.leftRingId || it.id === h.rightRingId));
                 const emptyWand = h.pack.some((it) => it.kind === "wand" && (it.charges ?? 0) === 0);
@@ -3182,6 +3182,11 @@ export default function Rogue() {
                                             },
                                         },
                                     ]),
+                                {
+                                    label: `자동 줍기 ${(state.heroes[who] ?? state.heroes[0]).autoPickup ? "켜짐" : "꺼짐"}`,
+                                    hint: "이동한 칸의 아이템을 자동으로 줍는다 · 눌러서 전환 · 꺼도 줍기 버튼과 , / g 키는 쓸 수 있다",
+                                    go: () => run({ t: "toggleAutopickup" }),
+                                },
                                 { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
                                 {
                                     label: "지난 판",
@@ -3196,7 +3201,7 @@ export default function Rogue() {
                                 <li key={o.label}>
                                     {(index === 0 || index === 2 || index === all.length - 2) && (
                                         <p className="mt-3 border-b border-[var(--rg-line)] pb-1 text-[11px] font-bold text-[var(--rg-label)] first:mt-0">
-                                            {index === 0 ? "── 판" : index === 2 ? "── 함께하기" : "── 참고"}
+                                            {index === 0 ? "── 판" : index === 2 ? "── 함께하기" : "── 설정 · 참고"}
                                         </p>
                                     )}
                                     <button
@@ -3345,7 +3350,7 @@ export default function Rogue() {
                                 <dt className="text-[var(--rg-label)]">h j k l</dt><dd>왼 아래 위 오른쪽 (방향키도 됩니다)</dd>
                                 <dt className="text-[var(--rg-label)]">y u b n</dt><dd>대각선 넷</dd>
                                 <dt className="text-[var(--rg-label)]">.</dt><dd>제자리에서 쉰다</dd>
-                                <dt className="text-[var(--rg-label)]">, 또는 g</dt><dd>발밑의 것을 줍는다</dd>
+                                <dt className="text-[var(--rg-label)]">, 또는 g</dt><dd>발밑의 것을 줍는다 · 자동 줍기는 옵션에서 켜고 끈다</dd>
                                 <dt className="text-[var(--rg-label)]">s</dt><dd>벽을 뒤진다 — 숨은 문과 함정이 드러난다</dd>
                                 <dt className="text-[var(--rg-label)]">Alt+p</dt><dd>기도 — 위기에서 도움을 청합니다. 너무 이르거나 운이 나쁘면 벌을 받을 수 있습니다</dd>
                                 <dt className="text-[var(--rg-label)]">f</dt><dd>발밑 분수의 물을 마신다 — 행운에 따라 이롭거나 위험한 일이 생기며, 분수는 말라 없어질 수 있다</dd>
@@ -3756,7 +3761,7 @@ export default function Rogue() {
                                 <p className="mt-2 border-t border-[var(--rg-line-soft)] pt-2 text-xs leading-relaxed text-[var(--rg-muted)]">
                                     남긴 포션 {hero.pack.filter((it) => it.kind === "potion").reduce((n, it) => n + it.count, 0)} 개
                                     {" · "}미식별 물건 {hero.pack.filter((it) => ["potion", "scroll", "ring", "wand"].includes(it.kind) && !state.known[`${it.kind}:${it.type}`]).length} 종
-                                    {" · "}남은 식량 {hero.pack.filter((it) => it.kind === "food").reduce((n, it) => n + it.count, 0)} 개
+                                    {" · "}남은 식량 {hero.pack.filter((it) => it.kind === "food" && !it.corpseOf).reduce((n, it) => n + it.count, 0)} 개
                                 </p >
                             </div >
                         )

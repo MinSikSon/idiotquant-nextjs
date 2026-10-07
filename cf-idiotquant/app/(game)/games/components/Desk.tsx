@@ -134,7 +134,7 @@ export default function Desk({
         () => ({
             q: { title: "무엇을 마실까", kinds: ["potion"], make: (letter) => ({ t: "quaff", letter }), empty: "마실 것이 없다." },
             r: { title: "무엇을 읽을까", kinds: ["scroll"], make: (letter) => ({ t: "read", letter }), empty: "읽을 것이 없다." },
-            e: { title: "무엇을 먹을까", kinds: ["food"], make: (letter) => ({ t: "eat", letter }), empty: "먹을 것이 없다." },
+            e: { title: "무엇을 먹을까", kinds: ["food"], allow: (it) => !it.corpseOf, make: (letter) => ({ t: "eat", letter }), empty: "먹을 것이 없다." },
             w: { title: "무엇을 쥘까", kinds: canWieldWand(hero) ? ["weapon", "wand"] : ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다.", allow: (it) => canWieldWeapon(hero, it) },
             W: { title: "무엇을 입을까", kinds: ["armor"], make: (letter) => ({ t: "wear", letter }), empty: "입을 것이 없다." },
             P: { title: "무엇을 낄까", kinds: ["ring"], make: (letter) => ({ t: "putOn", letter }), empty: "반지가 없다." },
@@ -604,7 +604,7 @@ export default function Desk({
                 });
                 break;
             case "food":
-                out.push({ label: "먹는다", on: go({ t: "eat", letter: it.letter! }) });
+                if (!it.corpseOf) out.push({ label: "먹는다", on: go({ t: "eat", letter: it.letter! }) });
                 break;
             case "wand":
                 if (canWieldWand(hero)) {
@@ -655,7 +655,12 @@ export default function Desk({
         if (shopOpen && isTradable(it) && !worn && it.id !== hero.offWeaponId) {
             out.push({ label: `판다 (+${sellPrice(it)}G)`, on: go({ t: "sell", letter: it.letter! }) });
         }
-        if (it.kind !== "amulet") out.push({ label: "내려놓는다", on: go({ t: "drop", letter: it.letter! }) });
+        if (it.kind !== "amulet") out.push({
+            label: it.corpseOf && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && level.transmuteAltar.uses > 0
+                ? "제물로 바친다"
+                : "내려놓는다",
+            on: go({ t: "drop", letter: it.letter! }),
+        });
         return out;
     };
 

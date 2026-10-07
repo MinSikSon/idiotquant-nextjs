@@ -215,6 +215,7 @@ type Action =
     | { t: "descend" }
     | { t: "ascend" }
     | { t: "pickup" }
+    | { t: "toggleAutopickup" }
     | { t: "fountain" }
     | { t: "dip"; letter: string }
     | { t: "pray" }
@@ -993,13 +994,15 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         }
     }
 
-    const it = itemAt(level, nx, ny);
+    let it = itemAt(level, nx, ny);
     if (it) {
-        if (it.kind === "gold") {
-            const gold = goldGain(hero, it.count);
-            hero.gold += gold;
-            level.items = level.items.filter((i) => i.id !== it.id);
-            say(state, `금화 ${gold}을(를) 주웠다.`);
+        if (hero.autoPickup) {
+            // 이동 턴 안에서 그 칸의 아이템을 전부 줍는다. 용량이 다 차면 남은 것은 바닥에 둔다.
+            while (it) {
+                const before = level.items.length;
+                if (!pickUp(state, hero) || level.items.length === before) break;
+                it = itemAt(level, nx, ny);
+            }
         } else {
             // 파는 물건이면 **값을 같이 말한다** — 이름을 모르는 물약도 값으로 무리를 짐작한다.
             const tag = forSale(level, it) ? ` — 값 ${price(it)}` : "";
@@ -2017,6 +2020,10 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
 
 function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const it = packItem(hero, letter);
+    if (it?.corpseOf) {
+        say(state, "시체는 먹을 수 없다.");
+        return false;
+    }
     if (!it || it.kind !== "food") {
         say(state, "먹을 수 있는 것이 아니다.");
         return false;
@@ -2263,6 +2270,30 @@ function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean
     const altar = state.level.transmuteAltar;
     if (!altar || altar.x !== hero.x || altar.y !== hero.y || altar.uses <= 0) return false;
     if (it.kind === "potion" && it.type === "water") return false;
+    if (it.kind === "food" && it.corpseOf && !it.unpaid) {
+        const corpseName = describe(it, state.known, state.appearance);
+        if (state.turn - (it.corpseTurn ?? state.turn) > 200) {
+            say(state, `${corpseName}은(는) 너무 오래되어 제물이 되지 못한다.`);
+            return true;
+        }
+        if (hero.alignment !== altar.alignment) {
+            hero.deityAnger = Math.min(3, hero.deityAnger + 1);
+            altar.uses -= 1;
+            say(state, `${corpseName}을(를) 다른 정렬의 제단에 바쳤다. 제단이 거부했고 신의 분노가 ${hero.deityAnger}/3이 되었다.`);
+        } else {
+            const timeout = hero.prayerTimeout;
+            const offering = Math.min(300, 100 + Math.max(1, it.corpseValue ?? 1) * 10);
+            hero.prayerTimeout = Math.max(0, timeout - offering);
+            const afterTurnTimeout = Math.max(0, hero.prayerTimeout - 1);
+            hero.deityAnger = Math.max(0, hero.deityAnger - 1);
+            const gainedLuck = (timeout === 0 || afterTurnTimeout === 0) && hero.deityAnger === 0 && hero.luck < 13;
+            if (gainedLuck) hero.luck += 1;
+            altar.uses -= 1;
+            say(state, `${corpseName}을(를) 같은 정렬의 신에게 바쳤다. 기도 대기 시간이 ${timeout} → ${afterTurnTimeout}턴으로 줄었다 · 신의 분노 ${hero.deityAnger}/3${gainedLuck ? ` · 행운 ${hero.luck > 0 ? "+" : ""}${hero.luck}` : ""}.`);
+        }
+        if (altar.uses === 0) say(state, "제단의 불빛이 꺼졌다.");
+        return true;
+    }
     if (it.kind === "food" && !it.unpaid) {
         const name = describe(it, state.known, state.appearance);
         if (hero.alignment !== altar.alignment) {
@@ -2747,6 +2778,13 @@ function expShares(state: GameState, m: Monster, by: Hero, total: number): [Hero
  */
 function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
+    if (!m.shk && !m.spirit && !hasRelic(by, "midas_gauntlet")) {
+        const corpse = makeItem("food", "food", state.nextItemId++, m.x, m.y);
+        corpse.corpseOf = m.def.name;
+        corpse.corpseTurn = state.turn;
+        corpse.corpseValue = m.def.level;
+        state.level.items.push(corpse);
+    }
     // 상점 주인은 도감의 몬스터 표 밖이다 — 세지 않는다. 대신 가게가 닫힌다.
     if (m.shk) closeShop(state, m);
     else {
@@ -4318,6 +4356,11 @@ function act(state: GameState, cmd: Command): GameState {
     if (!hero) return state;
     if (cmd.t === "inspectStatus") {
         inspectStatus(state, hero, cmd.who ?? 0, cmd.kind);
+        return { ...state };
+    }
+    if (cmd.t === "toggleAutopickup") {
+        hero.autoPickup = !hero.autoPickup;
+        say(state, `자동 줍기를 ${hero.autoPickup ? "켰다" : "껐다"}.`);
         return { ...state };
     }
     const turnStart = { x: hero.x, y: hero.y };

@@ -42,7 +42,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 20;
+const VERSION = 22;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -257,6 +257,14 @@ function learnPlus(items: Item[], known: Record<string, boolean>): Item[] {
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
+        if (typeof it.corpseOf !== "string") {
+            delete it.corpseOf;
+            delete it.corpseTurn;
+            delete it.corpseValue;
+        } else {
+            it.corpseTurn = Math.max(0, Math.trunc(num(it.corpseTurn, 0)));
+            it.corpseValue = Math.max(1, Math.min(20, Math.trunc(num(it.corpseValue, 1))));
+        }
         if (!canHoldEnchant(it)) {
             it.plusHit = 0;
             it.plusDam = 0;
@@ -372,6 +380,7 @@ function normalize(s: Saved): GameState | null {
         // 진행도를 각각 새 Luck(기존 등급 보정과 비슷한 확률)과 Wisdom으로 옮긴다.
         luck: Math.max(-13, Math.min(13, Math.trunc(num(h.luck, Math.round(num((h as Hero).itemLuck, 0) * 20))))),
         prayerTimeout: Math.max(0, Math.trunc(num(h.prayerTimeout, Math.max(0, 300 - num(s.turn, 0))))),
+        autoPickup: h.autoPickup !== false,
         alignment: h.alignment === "lawful" || h.alignment === "neutral" || h.alignment === "chaotic"
             ? h.alignment
             : (ORIGIN_ALIGNMENT[h.origin ?? "knight"] ?? "lawful"),
@@ -687,7 +696,7 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             name = `금화 ${it.count}`;
             break;
         case "food":
-            name = it.count > 1 ? `식량 ${it.count}개` : "식량";
+            name = it.corpseOf ? `${it.corpseOf}의 시체` : it.count > 1 ? `식량 ${it.count}개` : "식량";
             break;
         case "amulet":
             name = "옌더의 증표";

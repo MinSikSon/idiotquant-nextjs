@@ -200,6 +200,12 @@ export interface Item {
     type: string;
     /** 금화 더미의 액수, 또는 같은 물건이 몇 개인가. */
     count: number;
+    /** 식량 칸을 빌려 든 몬스터 시체의 종명. 시체는 먹을 수 없고 제단에 바칠 수 있다. */
+    corpseOf?: string;
+    /** 시체가 생긴 게임 턴 — 200턴이 지나면 제물이 되지 않는다. */
+    corpseTurn?: number;
+    /** 제물 가치 계산에 쓰는 몬스터 레벨. */
+    corpseValue?: number;
     /** 바닥에 있으면 좌표, 들고 있으면 −1. */
     x: number;
     y: number;
@@ -481,6 +487,8 @@ export interface Hero {
     luck: number;
     /** 기도 뒤 다시 응답받기까지 남은 게임 턴. 새 판은 입장 때 받은 도움으로 300부터 시작한다. */
     prayerTimeout: number;
+    /** 이동한 칸의 아이템을 자동으로 줍는가. 사람별 옵션이며 기본은 켜짐이다. */
+    autoPickup: boolean;
     /** 지혜. 공격 지팡이의 추가 피해 주사위에 반영한다. */
     wisdom: number;
     /** 저장 이전 호환 전용. normalize에서 Wisdom으로 옮기며 게임 규칙은 읽지 않는다. */

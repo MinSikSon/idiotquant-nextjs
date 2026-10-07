@@ -250,6 +250,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         bonusDefense: 0,
         luck: 0,
         prayerTimeout: 300,
+        autoPickup: true,
         wisdom: 0,
         weaponSkills: {},
         weaponTraining: {},
@@ -376,7 +377,7 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
             if (it.count === 0) return into;
         }
     }
-    const stackable = it.kind === "food" || it.kind === "potion" || it.kind === "scroll" || (mergeWeapons && it.type === "dagger");
+    const stackable = (it.kind === "food" && !it.corpseOf) || it.kind === "potion" || it.kind === "scroll" || (mergeWeapons && it.type === "dagger");
     if (stackable) {
         const same = hero.pack.find(
             (p) =>
@@ -387,6 +388,7 @@ export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | nu
                 !!p.unpaid === !!it.unpaid &&
                 (it.kind !== "potion" || !!p.diluted === !!it.diluted) &&
                 p.id !== it.id &&
+                (it.kind !== "food" || (!it.corpseOf && !p.corpseOf)) &&
                 (it.type !== "dagger" ||
                     (p.plusHit ?? 0) === (it.plusHit ?? 0) &&
                     (p.plusDam ?? 0) === (it.plusDam ?? 0) &&

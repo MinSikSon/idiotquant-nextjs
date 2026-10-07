@@ -900,6 +900,7 @@ export function describe(
         case "gold":
             return `금화 ${it.count}`;
         case "food":
+            if (it.corpseOf) return `${it.corpseOf}의 시체`;
             return it.count > 1 ? `식량 ${it.count}개` : "식량";
         case "amulet":
             return "옌더의 증표";
