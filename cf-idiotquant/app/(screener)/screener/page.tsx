@@ -1218,7 +1218,7 @@ function ScreenerContent() {
 
     return (
         <Tooltip.Provider delayDuration={300}>
-        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
+        <div id="screener-page" className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             {isLoggedIn ? <PageHeader

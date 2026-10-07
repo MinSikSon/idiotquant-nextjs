@@ -544,7 +544,7 @@ function AnalyzeContent() {
   if (!hasMounted) return <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas" />;
 
   return (
-    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 antialiased">
+    <div id="analyze-page" className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 antialiased">
 
       <ToastContainer toasts={toasts} onRemove={dismissToast} />
 

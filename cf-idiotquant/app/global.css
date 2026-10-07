@@ -358,3 +358,49 @@ body:has(#public-home) main {
   padding-top: 0;
   padding-bottom: 0;
 }
+
+/* 공개 랜딩의 간결한 표면과 직각에 가까운 컨트롤을 스크리너·분석에도 맞춘다. */
+.landing-style-page {
+  --landing-accent: #635bdb;
+  --landing-accent-hover: #5148c8;
+  --landing-accent-soft: #efefff;
+  background-color: #faf9f7;
+}
+
+html.dark .landing-style-page {
+  background-color: #080d0a;
+}
+
+.landing-style-page :is([class~="text-brand"], [class~="text-brand-hover"], [class~="dark:text-brand"], [class~="dark:text-brand-hover"]) {
+  color: var(--landing-accent);
+}
+
+.landing-style-page :is([class~="bg-brand"], [class~="dark:bg-brand"]) {
+  background-color: var(--landing-accent);
+}
+
+.landing-style-page :is([class~="bg-brand-hover"], [class~="dark:bg-brand-hover"]) {
+  background-color: var(--landing-accent-hover);
+}
+
+.landing-style-page :is([class~="bg-brand-light"], [class~="dark:bg-brand-light"]) {
+  background-color: var(--landing-accent-soft);
+}
+
+.landing-style-page :is([class~="border-brand"], [class~="border-brand-light"], [class~="border-brand-light-hover"], [class~="dark:border-brand"], [class~="dark:border-brand-light"], [class~="dark:border-brand-light-hover"]) {
+  border-color: #c8c4ff;
+}
+
+.landing-style-page :is([class~="hover:bg-brand"]:hover, [class~="hover:bg-brand-hover"]:hover) {
+  background-color: var(--landing-accent-hover);
+}
+
+.landing-style-page :is(button, a, input, select)[class~="rounded-xl"],
+.landing-style-page :is(button, a, input, select)[class~="rounded-lg"],
+.landing-style-page :is(button, a)[class~="rounded-full"] {
+  border-radius: 4px;
+}
+
+.landing-style-page :is(div, section, article)[class~="rounded-2xl"] {
+  border-radius: 8px;
+}
