@@ -83,9 +83,9 @@ test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 �
         // `changeNick` 도 같은 칸을 읽으므로 **되살리는 자리**를 따로 짚는다.
         const at = SRC.indexOf("resumed.current = true;");
         assert.ok(at > 0, "들어 있던 방을 되살리는 자리를 못 찾았다");
-        const body = SRC.slice(at, at + 500);
-        assert.match(body, /r\?\.role === "host"\) hostRoom\(r\.code\)/, "방장이 돌아와도 같은 코드로 안 연다");
-        assert.match(body, /r\?\.role === "guest"\) joinRoom\(r\.code/, "손님이 돌아와도 그 방으로 안 간다");
+        const body = SRC.slice(at, at + 1000);
+        assert.match(body, /r\?\.role === "host" && r\.code\) hostRoom\(r\.code\)/, "방장이 돌아와도 같은 코드로 안 연다");
+        assert.match(body, /r\?\.role === "guest" && r\.code\) joinRoom\(r\.code/, "손님이 돌아와도 그 방으로 안 간다");
     }
 
     // ── ② 돌아온 방장은 **이미 앉은 손님을 다시 안 앉힌다** — 판에 이미 있다
@@ -110,10 +110,18 @@ test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 �
     {
         assert.match(
             SRC,
-            /if \(online === "guest"\) return;\n\s*if \(state\.phase === "playing"\) \{\n\s*save\(state\);/,
+            /if \(online === "guest"\) \{\n\s*setSaveFailed\(false\);\n\s*return;\n\s*\}\n\s*if \(state\.phase === "playing"\) \{\n\s*setSaveFailed\(!save\(state\)\);/,
             "방장이 제 판을 저장하는 자리가 없다 — 창을 닫으면 손님 자리까지 사라진다",
         );
     }
+});
+
+test("같은 Safari의 초대 탭은 방장 탭과 역할 저장이 분리된다", () => {
+    assert.match(SRC, /sessionStorage\.getItem\(ROOM_KEY\)/, "방 상태를 탭별 sessionStorage 에서 읽지 않는다");
+    assert.match(SRC, /sessionStorage\.setItem\(ROOM_KEY/, "방 상태를 탭별로 저장하지 않는다");
+    assert.match(SRC, /const validInvite = invited && \/\^\\d\{4\}\$\/\.test\(invited\) \? invited : null;[\s\S]*?if \(!validInvite\) \{[\s\S]*?readRoomRecord\(\)/, "초대 링크를 기존 방 상태보다 먼저 처리하지 않는다");
+    assert.match(SRC, /if \(validInvite\) \{[\s\S]*?void joinRoom\(validInvite\)/, "초대 링크가 있으면 해당 방에 합류하지 않는다");
+    assert.match(SRC, /localStorage\.removeItem\(ROOM_KEY\)/, "옛 공유 저장소를 비우지 않아 다음 탭이 방 역할을 이어받는다");
 });
 
 test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", () => {

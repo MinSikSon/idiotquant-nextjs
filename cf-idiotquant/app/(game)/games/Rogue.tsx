@@ -311,6 +311,41 @@ const NICK_KEY = "rogue-nick";
 const RETRY_MS = 3000;
 
 /**
+ * 방 상태는 탭마다 따로 둔다. 같은 아이폰 Safari에서 초대 링크를 새 탭으로 열어
+ * 방장과 손님을 시험할 때 localStorage 를 쓰면 한 탭의 역할이 다른 탭을 덮어쓴다.
+ * sessionStorage 는 새로고침에는 남고 탭이 닫히면 정리된다.
+ */
+function readRoomRecord(): { role?: string; code?: string; origin?: HeroOrigin } | null {
+    try {
+        const current = sessionStorage.getItem(ROOM_KEY);
+        if (current) return JSON.parse(current);
+        // 한 번만 옛 저장을 현재 탭으로 옮긴다. 옛 localStorage 키를 남겨 두면 다음 탭도
+        // 같은 방장/손님 역할을 물려받으므로 옮긴 뒤 지운다.
+        const legacy = localStorage.getItem(ROOM_KEY);
+        if (!legacy) return null;
+        sessionStorage.setItem(ROOM_KEY, legacy);
+        localStorage.removeItem(ROOM_KEY);
+        return JSON.parse(legacy);
+    } catch {
+        return null;
+    }
+}
+
+function writeRoomRecord(room: { role: "host" | "guest"; code: string; origin?: HeroOrigin }): void {
+    try {
+        sessionStorage.setItem(ROOM_KEY, JSON.stringify(room));
+        localStorage.removeItem(ROOM_KEY);
+    } catch { }
+}
+
+function clearRoomRecord(): void {
+    try {
+        sessionStorage.removeItem(ROOM_KEY);
+        localStorage.removeItem(ROOM_KEY);
+    } catch { }
+}
+
+/**
  * 그 방에서 **이미 고른 직업** — 없으면 아직 안 골랐다.
  *
  * 고르기는 한 번이면 된다. 그런데 끊겨서 다시 잇는 길도 `joinRoom` 을 지나고, 그때
@@ -329,7 +364,7 @@ function fireCommand(shot: NonNullable<ReturnType<typeof rapidFireOf>>, dx: numb
 
 function savedOrigin(code: string): HeroOrigin | undefined {
     try {
-        const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
+        const r = readRoomRecord();
         if (!r || r.code !== code || typeof r.origin !== "string") return undefined;
         return r.origin in ORIGINS ? (r.origin as HeroOrigin) : undefined;
     } catch {
@@ -983,9 +1018,7 @@ export default function Rogue() {
         }
         // 곧바로 부수면 방금 보낸 인사가 안 나간다.
         setTimeout(() => n?.peer.destroy(), 500);
-        try {
-            localStorage.removeItem(ROOM_KEY);
-        } catch { }
+        clearRoomRecord();
         if (onlineRef.current === "guest") {
             const own = load();
             setState(
@@ -1073,8 +1106,8 @@ export default function Rogue() {
         if (onlineRef.current === "guest") {
             let origin: HeroOrigin = "knight";
             try {
-                const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
-                if (r?.origin in ORIGINS) origin = r.origin;
+                const r = readRoomRecord();
+                if (r?.origin && r.origin in ORIGINS) origin = r.origin;
             } catch { }
             broadcast({ t: "hello", origin, nick, chest: loadChest(0), guestKey: guestKey() });
             return;
@@ -1145,9 +1178,7 @@ export default function Rogue() {
         const { Peer } = await import("peerjs");
         const peer = new Peer(PEER_PREFIX + code);
         net.current = { role: "host", peer, guests: new Map() };
-        try {
-            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "host", code }));
-        } catch { }
+        writeRoomRecord({ role: "host", code });
         // **내 이름을 판에 올린다** — 판을 통째로 보내므로(`init`) 이 한 줄로 손님 화면까지 간다.
         setState((g) => (g ? setNick(g, 0, savedNick()) : g));
         setOnline("host");
@@ -1328,9 +1359,7 @@ export default function Rogue() {
         // `origin` 은 처음 붙을 때의 값이라 비어 있다 — 그것으로 덮어쓰면 고른 것이 날아가
         // 고르기 창이 다시 뜬다.
         const chosen = origin ?? savedOrigin(code);
-        try {
-            localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code, ...(chosen ? { origin: chosen } : {}) }));
-        } catch { }
+        writeRoomRecord({ role: "guest", code, ...(chosen ? { origin: chosen } : {}) });
         // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 자리를 쥔 채 기다린다.
         setOnline("guest");
         setRoom(code);
@@ -1506,26 +1535,25 @@ export default function Rogue() {
         // 개발 모드는 효과를 두 번 돌린다 — 같은 코드로 피어가 둘 서면 서로 자리를 뺏는다.
         if (resumed.current) return;
         resumed.current = true;
-        let inRoom = false;
-        try {
-            const r = JSON.parse(localStorage.getItem(ROOM_KEY) ?? "null");
-            if (r?.role === "host") hostRoom(r.code);
-            // 직업이 안 적혀 있으면 **아직 안 고르고 나간 것**이다 — 다시 붙어서 다시 묻는다.
-            else if (r?.role === "guest") joinRoom(r.code, r.origin);
-            inRoom = !!r;
-        } catch { }
-        // 초대 링크로 왔다 — 주소에서 코드를 걷어 내고(새로고침에 또 묻지 않게) 직업부터 묻는다.
-        // 이미 어느 방에 들어 있으면 그 방이 먼저다.
         const invited = new URLSearchParams(location.search).get("room");
-        if (invited && /^\d{4}$/.test(invited)) {
+        const validInvite = invited && /^\d{4}$/.test(invited) ? invited : null;
+        // 명시적인 초대 링크는 이 탭에 남은 방 상태보다 우선한다. 그래야 같은 Safari에서
+        // 방장 탭을 둔 채 새 탭으로 초대 링크를 열어도 손님으로 합류한다.
+        if (!validInvite) {
+            const r = readRoomRecord();
+            if (r?.role === "host" && r.code) hostRoom(r.code);
+            // 직업이 안 적혀 있으면 **아직 안 고르고 나간 것**이다 — 다시 붙어서 다시 묻는다.
+            else if (r?.role === "guest" && r.code) joinRoom(r.code, r.origin);
+        }
+        // 초대 링크로 왔다 — 주소에서 코드를 걷어 내고(새로고침에 또 묻지 않게) 직업부터 묻는다.
+        // 명시한 초대 링크가 이 탭에 저장된 방보다 우선한다.
+        if (validInvite) {
             history.replaceState(null, "", location.pathname);
             // **먼저 붙는다** — 방장의 직업을 받아 와야 고르는 판이 열린다(`joinRoom` 의 `room`).
             // 이름은 **묻지 않는다**(`ask = false`) — 링크를 열자마자 창이 뜨면 놀란다.
             // 기억해 둔 것이 없으면 이름 없이 들어가고, 옵션에서 나중에 정할 수 있다.
-            if (!inRoom) {
-                askNick(false);
-                void joinRoom(invited);
-            }
+            askNick(false);
+            void joinRoom(validInvite);
         }
         // 첫 그림에서 한 번만.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1567,9 +1595,7 @@ export default function Rogue() {
             // 물어보려고 이미 붙어 있으면 **그 줄로 인사만** 보낸다 — 다시 붙으면 방장 쪽에
             // 죽은 연결이 하나 남고, 그 사이에 자리가 찼다고 튕길 수도 있다.
             if (conn?.open) {
-                try {
-                    localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: f.code, origin }));
-                } catch { }
+                writeRoomRecord({ role: "guest", code: f.code, origin });
                 conn.send({ t: "hello", origin, nick: savedNick(), chest: loadChest(0), guestKey: guestKey() } satisfies NetMsg);
             } else {
                 void joinRoom(f.code, origin);
@@ -1582,9 +1608,7 @@ export default function Rogue() {
                 note("방장과 끊겼다 — 직업 선택을 보낼 수 없다.");
                 return;
             }
-            try {
-                if (room) localStorage.setItem(ROOM_KEY, JSON.stringify({ role: "guest", code: room, origin }));
-            } catch { }
+            if (room) writeRoomRecord({ role: "guest", code: room, origin });
             rematchPicked.current = f.round;
             conn.send({ t: "rematch", round: f.round, origin } satisfies NetMsg);
         } else {
