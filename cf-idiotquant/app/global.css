@@ -351,3 +351,10 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
   /* 깜빡임은 끄되 글자는 남긴다 — 사라지면 "아무 키나 누르세요"를 못 읽는다 */
   .retro-blink { animation: none; opacity: 1; }
 }
+
+/* 비회원 홈은 앱 셸 여백 없이 독립 랜딩으로 전체 폭을 쓴다. */
+body:has(#public-home) main {
+  margin-left: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}

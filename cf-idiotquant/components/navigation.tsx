@@ -270,6 +270,9 @@ export function NavbarWithSimpleLinks() {
     return () => observer.disconnect();
   }, []);
 
+  // 비회원 홈에서는 제품용 사이드바·모바일 탭 대신 랜딩 페이지의 자체 내비게이션을 쓴다.
+  if (pathname === "/" && status !== "authenticated") return null;
+
   return (
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}

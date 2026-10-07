@@ -12,6 +12,7 @@ import { selectTheme } from "@/lib/features/control/controlSlice";
 import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import { TodayDiscovery } from "./components/todayDiscovery";
+import GuestLanding from "./GuestLanding";
 
 // =========================================================================
 // 홈 3D 일러스트 (three.js / WebGL)
@@ -910,6 +911,17 @@ export default function HomePage() {
   const formattedScanDate = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : null;
+
+  if (!isLoggedIn) {
+    return (
+      <GuestLanding
+        list={ncavDailyList.list}
+        totalCount={matchedCount}
+        isLoading={scanLoading}
+        scanDate={scanDate}
+      />
+    );
+  }
 
   // 랜딩은 히어로부터 푸터까지 하나의 어두운 무대로 간다. 밝은 섹션이 섞이면 히어로에서
   // 만든 분위기가 다음 스크롤에서 끊긴다. 테마와 무관하게 이 톤 하나만 쓴다.
