@@ -325,6 +325,24 @@ function sameStack(hero: Hero, p: Item, it: Item): boolean {
     );
 }
 
+/** 같은 종의 시체는 원작처럼 한 더미로 합친다. 현재 게임에는 되살아나는 시체가 없다. */
+function sameCorpseStack(p: Item, it: Item): boolean {
+    return p.id !== it.id && p.kind === "food" && it.kind === "food" &&
+        !!p.corpseOf && p.corpseOf === it.corpseOf &&
+        (p.corpseValue ?? 1) === (it.corpseValue ?? 1) &&
+        !!p.unpaid === !!it.unpaid;
+}
+
+/** NetHack은 합쳐진 시체 묶음의 부패 나이를 개수 가중 평균으로 근사한다. */
+function joinCorpses(into: Item, it: Item): void {
+    const oldCount = into.count;
+    const addedCount = it.count;
+    const oldTurn = into.corpseTurn ?? 0;
+    const addedTurn = it.corpseTurn ?? 0;
+    into.corpseTurn = Math.floor((oldTurn * oldCount + addedTurn * addedCount) / (oldCount + addedCount));
+    into.count += addedCount;
+}
+
 /**
  * `it` 에서 **뭉치의 빈 자리만큼**(`STACK_MAX`) 덜어 `into` 에 얹는다 — 얹은 개수를 준다.
  * 알던 것(저주·손질)은 합친 쪽으로 옮긴다.
@@ -350,7 +368,11 @@ export function mergeStacks(hero: Hero): void {
     for (const it of hero.pack) {
         for (const p of kept) {
             if (it.count === 0) break;
-            if (sameStack(hero, p, it)) joinStack(p, it);
+            if (sameCorpseStack(p, it)) {
+                joinCorpses(p, it);
+                it.count = 0;
+            }
+            else if (sameStack(hero, p, it)) joinStack(p, it);
         }
         if (it.count > 0) kept.push(it);
     }
@@ -358,6 +380,13 @@ export function mergeStacks(hero: Hero): void {
 }
 
 export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | null {
+    if (it.kind === "food" && it.corpseOf) {
+        const corpse = hero.pack.find((p) => sameCorpseStack(p, it));
+        if (corpse) {
+            joinCorpses(corpse, it);
+            return corpse;
+        }
+    }
     // 단검은 장착 중인 한 자루와 배낭의 예비 단검을 구분해야 한다. 장착 중인 객체를
     // 묶어 버리면 이도류의 주손·보조손이 같은 묶음을 가리키게 되므로, 미장착 단검만
     // 같은 강화/저주 상태끼리 합친다.

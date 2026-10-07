@@ -42,7 +42,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 22;
+const VERSION = 23;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;

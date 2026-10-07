@@ -1521,7 +1521,7 @@ function pray(state: GameState, hero: Hero, rng: Rng): boolean {
                 say(state, "다른 정렬의 제단에서 빈 기도를 올려 물이 저주받은 물로 변했다.");
             }
         }
-        say(state, `기도가 받아들여지지 않았다${misalignedAltar ? " — 다른 정렬의 신의 제단이다" : hero.deityAnger > 0 ? " — 신의 분노가 가라앉지 않았다" : ""}. 행운이 짙어지고 신의 분노 ${hero.deityAnger}/3, ${damage} 피해.`);
+        say(state, `기도가 받아들여지지 않았다${misalignedAltar ? " — 다른 정렬의 신의 제단이다" : hero.deityAnger > 0 ? " — 신의 분노가 가라앉지 않았다" : ""}. 행운이 나빠지고 신의 분노 ${hero.deityAnger}/3, ${damage} 피해.`);
         return true;
     }
 
