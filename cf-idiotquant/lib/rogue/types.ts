@@ -202,7 +202,7 @@ export interface Item {
     type: string;
     /** 금화 더미의 액수, 또는 같은 물건이 몇 개인가. */
     count: number;
-    /** 식량 칸을 빌려 든 몬스터 시체의 종명. 시체는 먹을 수 없고 제단에 바칠 수 있다. */
+    /** 식량 칸을 빌려 든 몬스터 시체의 종명. 먹거나 제단에 바칠 수 있다. */
     corpseOf?: string;
     /** 시체가 생긴 게임 턴 — 200턴이 지나면 제물이 되지 않는다. */
     corpseTurn?: number;

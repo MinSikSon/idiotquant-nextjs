@@ -2063,21 +2063,38 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
 
 function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const it = packItem(hero, letter);
-    if (it?.corpseOf) {
-        say(state, "시체는 먹을 수 없다.");
-        return false;
-    }
     if (!it || it.kind !== "food") {
         say(state, "먹을 수 있는 것이 아니다.");
         return false;
     }
+    const corpse = it.corpseOf;
+    const age = corpse ? Math.max(0, state.turn - (it.corpseTurn ?? state.turn)) : 0;
+    const rotten = !!corpse && age > 200;
+    const nutrition = corpse
+        ? Math.max(100, Math.min(800, 100 + Math.max(1, it.corpseValue ?? 1) * 40))
+        : rng.between(900, 1300);
     takeFromPack(hero, it);
     const key = `food:${it.type}`;
     state.known[key] = true;
     state.itemCodex[key] = true;
     state.itemUsage[key] = (state.itemUsage[key] ?? 0) + 1;
-    hero.food = Math.min(2000, Math.max(hero.food, 0) + rng.between(900, 1300));
-    say(state, "배가 든든하다.");
+    hero.food = Math.min(2000, Math.max(hero.food, 0) + (rotten ? Math.max(100, Math.floor(nutrition / 3)) : nutrition));
+    if (corpse) {
+        say(state, `${corpse} 시체를 먹었다. 허기가 ${rotten ? "조금" : "크게"} 가셨다${rotten ? " — 오래되어 상했다." : "."}`);
+        // 독을 가진 뱀·전갈 고기는 원작처럼 위험한 음식으로 취급한다.
+        if (/방울뱀|뱀|전갈/.test(corpse)) {
+            const damage = rng.between(1, 6);
+            hero.hp -= damage;
+            if (hero.str > 3) hero.str -= 1;
+            say(state, `독이 퍼진다! 체력 ${damage} 피해, 힘이 1 줄었다.`);
+        } else if (rotten && rng.rnd(2) === 1) {
+            const damage = rng.between(1, 4);
+            hero.hp -= damage;
+            say(state, `상한 시체에 탈이 났다. 체력 ${damage} 피해.`);
+        }
+    } else {
+        say(state, "배가 든든하다.");
+    }
     return true;
 }
 
