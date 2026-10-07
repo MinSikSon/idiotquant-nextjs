@@ -2063,7 +2063,6 @@ export default function Rogue() {
         { label: "마신다", detail: itemText("potion") ?? "물약", mobileMark: "!", hint: "q", keys: coopKeys ? undefined : "q", on: () => desks.current[who]?.openPicker("q"), off: has("potion") ? undefined : "마실 것이 없다" },
         { label: "읽는다", detail: itemText("scroll") ?? "주문서", mobileMark: "?", hint: "r", keys: coopKeys ? undefined : "r", on: () => desks.current[who]?.openPicker("r"), off: has("scroll") ? undefined : "읽을 것이 없다" },
         { label: "먹는다", detail: itemText("food") ?? "음식", mobileMark: "%", hint: "e", keys: coopKeys ? undefined : "e", on: () => desks.current[who]?.openPicker("e"), off: has("food") ? undefined : "먹을 것이 없다" },
-        { label: "기도", detail: "위기에서 신에게 도움을 청한다", mobileMark: "†", hint: "Alt+p — 서두르면 벌을 받을 수 있다", keys: "Alt+P", on: () => run({ t: "pray" }) },
         { label: "쏜다", detail: itemText("wand") ?? "지팡이", mobileMark: "/", hint: "z", keys: coopKeys ? undefined : "z", on: () => desks.current[who]?.aim("zap"), off: has("wand") ? undefined : "지팡이가 없다" },
         {
             label: "던진다",
@@ -2076,6 +2075,7 @@ export default function Rogue() {
         },
         // 살피는 것 · 그 밖
         { label: "뒤진다", detail: "숨은 문 · 함정", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
+        { label: "기도", detail: "위기에서 신에게 도움을 청한다", mobileMark: "†", hint: "Alt+p — 서두르면 벌을 받을 수 있다", keys: "Alt+P", on: () => run({ t: "pray" }) },
         {
             label: "도감",
             detail: "몬스터 · 아이템",
