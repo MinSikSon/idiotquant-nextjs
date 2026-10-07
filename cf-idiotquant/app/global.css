@@ -410,4 +410,9 @@ html.dark .landing-style-page {
     padding-left: 6px;
     padding-right: 6px;
   }
+
+  #analyze-page main {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }

@@ -860,7 +860,7 @@ function AnalyzeContent() {
                 )}
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className={cn("bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-1 shadow-sm", activeTab !== 'strategy' && 'hidden')}>
+                <div className={cn("bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-0 sm:p-1 shadow-sm", activeTab !== 'strategy' && 'hidden')}>
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
