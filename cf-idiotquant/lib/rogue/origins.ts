@@ -23,6 +23,8 @@ export const ORIGIN_ALIGNMENT: Record<HeroOrigin, ReligionAlignment> = {
     elementalist: "neutral",
 };
 
+export const RACE_NAME = { human: "인간", orc: "오크", gnome: "노움", elf: "엘프", dwarf: "드워프" } as const;
+
 export const ALIGNMENT_NAME: Record<ReligionAlignment, string> = {
     lawful: "질서",
     neutral: "중립",
