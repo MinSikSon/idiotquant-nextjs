@@ -82,6 +82,22 @@ export function randomMonsterChar(depth: number, rng: Rng): string {
     return LVL_MONS[Math.min(25, Math.max(0, d - 1))];
 }
 
+/** NetHack 3.6 계열의 사체 생성 확률을 이 표의 대응 종에 적용한다. */
+export function shouldDropCorpse(def: MonsterDef, rng: Rng): boolean {
+    // 좀비와 흡혈귀는 자기 시체 대신 오래된 사람 시체를 확정으로 남긴다.
+    if (def.ch === "V" || def.ch === "Z") return true;
+
+    // 큰 몸집은 보통 사체를 확정으로 남긴다. 넷핵 원형 중 덩치가 큰 종을 대응시킨다.
+    if (["D", "G", "J", "T", "Y"].includes(def.ch)) return true;
+
+    // 박쥐·황조롱이·레프러콘·얼음괴물은 작은 종으로 보고 기본 분모에 1을 더한다.
+    const tiny = ["B", "I", "K", "L"].includes(def.ch);
+    // 메두사·망령은 희귀 종으로 보고 분모에 1을 더한다.
+    const rare = ["M", "W"].includes(def.ch);
+    const denominator = 2 + Number(tiny) + Number(rare);
+    return rng.rnd(denominator) === 0;
+}
+
 /**
  * 그 깊이에서 **나올 수 있는 순위**들. `randomMonsterChar` 와 **같은 식**을 쓴다.
  *

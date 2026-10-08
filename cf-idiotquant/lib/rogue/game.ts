@@ -179,6 +179,7 @@ import {
     depthRange,
     monsterName,
     randomMonsterChar,
+    shouldDropCorpse,
     spawnMonster,
     summonSpiritAt,
     SPIRIT_GLYPHS,
@@ -2886,10 +2887,11 @@ function expShares(state: GameState, m: Monster, by: Hero, total: number): [Hero
  */
 function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     state.level.monsters = state.level.monsters.filter((o) => o.id !== m.id);
-    if (!m.shk && !m.spirit && !hasRelic(by, "midas_gauntlet")) {
+    if (!m.shk && !m.spirit && !hasRelic(by, "midas_gauntlet") && shouldDropCorpse(m.def, rng)) {
         const corpse = makeItem("food", "food", state.nextItemId++, m.x, m.y);
-        corpse.corpseOf = m.def.name;
-        corpse.corpseTurn = state.turn;
+        // 좀비와 흡혈귀는 넷핵처럼 본래 종의 신선한 사체 대신 오래된 사람 시체를 남긴다.
+        corpse.corpseOf = m.def.ch === "Z" || m.def.ch === "V" ? "사람" : m.def.name;
+        corpse.corpseTurn = state.turn - (m.def.ch === "Z" || m.def.ch === "V" ? 100 : 0);
         corpse.corpseValue = m.def.level;
         state.level.items.push(corpse);
     }
