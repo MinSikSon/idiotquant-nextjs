@@ -162,7 +162,7 @@ export default function CandleChart({
                     domain={[lo, hi]}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: textColor, fontSize: 9, fontFamily: "var(--font-mono)" }}
+                    tick={{ fill: textColor, fontSize: 9, fontFamily: "Pretendard Variable, sans-serif" }}
                     width={35}
                 />
                 <Tooltip
@@ -207,7 +207,7 @@ export default function CandleChart({
                             position: m.labelPosition ?? "top",
                             fontSize: 9,
                             fontWeight: 700,
-                            fontFamily: "var(--font-mono)",
+                            fontFamily: "Pretendard Variable, sans-serif",
                             fill: m.color,
                         } : undefined}
                     />

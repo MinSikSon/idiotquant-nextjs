@@ -156,8 +156,8 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* Pretendard — 본문 기본 서체. 가변 폰트(45~920) 동적 서브셋이라 한글 전체를 받지 않고
-            실제 쓰인 글자만 내려받는다. `(game)` 페이지는 명시적 font-serif로 Lora/Noto Serif KR 유지. */}
+        {/* Pretendard — 일반 화면의 본문·지표 서체. 가변 폰트 동적 서브셋이라
+            실제 쓰인 글자만 내려받는다. 게임 화면의 픽셀·고정폭 글꼴은 별도로 유지한다. */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
@@ -196,7 +196,7 @@ export default function RootLayout({
           <ThemeProviderClient>
             <AuthProvider>
               <NavbarWithSimpleLinks />
-              {/* offset: mobile top header + bottom tab bar; desktop: sidebar left margin */}
+              {/* 모바일 상단 헤더 + 하단 탭바. 데스크톱 헤더는 문서 흐름 안에 있다. */}
               {/* min-h-screen(100vh) 이 아니라 100dvh 다.
                   모바일 브라우저에서 100vh 는 주소창이 접혔을 때의 큰 높이라, 주소창이
                   보이는 동안에는 화면보다 늘 커진다 — 내용이 다 들어가는 페이지에서도
@@ -204,10 +204,9 @@ export default function RootLayout({
                   보이는 높이라 그 차이가 없다.
                   padding 은 box-sizing:border-box 라 이 높이에 포함된다(위 48 + 아래 64). */}
               <main className={cn(
-                "md:ml-[220px]",
                 "pt-[48px] md:pt-0",
                 "pb-[64px] md:pb-0",
-                "min-h-[100dvh] overflow-x-hidden"
+                "min-h-[100dvh] md:min-h-[calc(100dvh-64px)] overflow-x-hidden"
               )}>
                 {children}
               </main>

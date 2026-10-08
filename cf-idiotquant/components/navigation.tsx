@@ -21,6 +21,7 @@ import {
   NotebookText,
   EyeOff,
   Swords,
+  GitCompareArrows,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -39,7 +40,8 @@ type NavItem = {
 const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
-  { label: "적정 주가", href: "/analyze",     icon: Search,     emoji: "💎"   },
+  { label: "종목 비교", href: "/compare",     icon: GitCompareArrows },
+  { label: "종목 분석", href: "/analyze",     icon: Search,     emoji: "💎"   },
 ];
 
 // '더 보기'로 숨기는 보조 메뉴
@@ -123,10 +125,10 @@ function TabItem({
       href={href}
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 transition-colors",
-        // 각진 모서리도 일체감의 일부다. 이 기기에는 둥근 것이 없다.
-        "rounded-xl",
+        // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
+        "rounded-[4px]",
         isActive
-          ? "text-brand dark:text-brand bg-surface-canvas dark:bg-surface-dark-muted"
+          ? "text-[#5148c8] dark:text-[#aaa4ff] bg-[#efefff] dark:bg-[#282544]"
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
@@ -208,7 +210,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
   return (
     <Link
       href="/login"
-      className="px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-hover text-white text-xs font-bold transition-colors"
+      className="px-3 py-1.5 rounded-[4px] bg-[#635bdb] hover:bg-[#5148c8] text-white text-xs font-semibold transition-colors"
     >
       로그인
     </Link>
@@ -232,7 +234,10 @@ export function NavbarWithSimpleLinks() {
   // '더 보기' — 보조 메뉴(계산기·가계부) 접기/펼치기. 해당 경로에 있으면 자동 노출.
   // 필터는 한 번만 만들어 데스크톱·모바일이 같은 목록을 본다 — 따로 걸면 둘이 어긋난다.
   const moreNav = MORE_NAV.filter(i => !i.authOnly || status === "authenticated");
-  const moreActive = moreNav.some(i => active(pathname, i.href));
+  const utilityNav = [...moreNav, ...(isMasterUser ? PORTFOLIO_NAV : []),
+    ...(isMasterUser ? [{ label: "회원 관리", href: "/admin", icon: ShieldCheck }] : [])];
+  const moreActive = moreNav.some(i => active(pathname, i.href)) ||
+    (isMasterUser && (active(pathname, "/balance") || active(pathname, "/admin")));
 
   /* 게임 화면에서는 이 바도 **기기의 일부**다. 흰 앱 껍데기로 남아 있으면 기기가 그
      안에 얹힌 다른 물건으로 보인다. 구조는 그대로 두고 색만 바꿔 끼운다 — 이 바는 모든
@@ -273,9 +278,8 @@ export function NavbarWithSimpleLinks() {
 
   return (
     <>
-      {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
-      <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r",
-        inGame && "md:max-lg:hidden",
+      {/* 게임은 전체 높이 지도에 맞춘 사이드바를 유지한다. */}
+      {inGame && <aside className={cn("hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 border-r md:max-lg:hidden",
         barStyle ? "" : "bg-white dark:bg-surface-dark border-neutral-200/70 dark:border-surface-dark-border")}
         style={barStyle}>
 
@@ -377,24 +381,63 @@ export function NavbarWithSimpleLinks() {
           </div>
           <SidebarUser session={session} status={status} />
         </div>
-      </aside>
+      </aside>}
+
+      {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
+      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-[#080d0a]/80">
+        <div className="mx-auto flex min-h-[64px] max-w-7xl items-center gap-6 px-5 sm:px-8 lg:gap-8 lg:px-10">
+          <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+            idiot<span className="text-[#635bdb] dark:text-[#aaa4ff]">quant</span>
+          </Link>
+          <nav aria-label="주요 메뉴" className="flex min-w-0 flex-1 items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300 lg:gap-6 lg:text-sm">
+            {MAIN_NAV.filter(item => item.href !== "/").map(item => (
+              <Link key={item.href} href={item.href} aria-current={active(pathname, item.href) ? "page" : undefined}
+                className={cn("whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
+                  active(pathname, item.href) && "font-semibold text-[#5148c8] dark:text-[#aaa4ff]")}>
+                {item.label}
+              </Link>
+            ))}
+            <div className="relative">
+              <button type="button" onClick={() => setMoreOpen(v => !v)} aria-expanded={moreOpen} aria-controls="desktop-more-menu"
+                className={cn("inline-flex items-center gap-1 whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
+                  moreActive && "text-[#5148c8] dark:text-[#aaa4ff]")}>
+                더 보기 <ChevronDown size={14} className={cn("transition-transform", moreOpen && "rotate-180")} />
+              </button>
+              {moreOpen && <div id="desktop-more-menu" className="absolute left-0 top-full z-50 mt-2 min-w-44 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-[#101812]">
+                {utilityNav.map(item => (
+                  <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)}
+                    className={cn("block rounded-[4px] px-3 py-2 text-sm transition-colors hover:bg-[#efefff] dark:hover:bg-[#282544]",
+                      active(pathname, item.href) && "font-semibold text-[#5148c8] dark:text-[#aaa4ff]")}>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>}
+            </div>
+          </nav>
+          <div className="flex shrink-0 items-center gap-3">
+            <ThemeChanger compact />
+            {status === "authenticated" ? <>
+              <Link href="/profile" className="max-w-28 truncate rounded-[4px] border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-neutral-400">
+                {session?.user?.name || "내 계정"}
+              </Link>
+              <button type="button" onClick={() => signOut({ callbackUrl: "/" })} aria-label="로그아웃" title="로그아웃"
+                className="text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"><LogOut size={16} /></button>
+            </> : status === "unauthenticated" ?
+              <Link href="/login" className="rounded-[4px] bg-[#635bdb] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#5148c8]">로그인</Link> : null}
+          </div>
+        </div>
+      </header>}
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-4",
-        barStyle ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
+      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
+        barStyle ? "" : "bg-white/85 dark:bg-[#080d0a]/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
-            <div className="w-6 h-6 bg-brand rounded-md flex items-center justify-center shadow-sm shadow-brand/25 shrink-0">
-              <span className="text-white text-[9px] font-black italic leading-none">IQ</span>
-            </div>
-            <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-              IDIOT<span className="text-brand">{brandSuffix}</span>
+            <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+              idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-[#635bdb] dark:text-[#aaa4ff]"}>{inGame ? "games" : "quant"}</span>
             </span>
           </Link>
-          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand dark:text-brand bg-brand-light/60 dark:bg-[#052e16]/40 shrink-0">
-            BETA
-          </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ThemeChanger />
@@ -404,19 +447,20 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3",
-        barStyle ? "" : "bg-white/95 dark:bg-surface-dark/95 backdrop-blur-xl border-neutral-200/70 dark:border-surface-dark-border")}
+        barStyle ? "" : "bg-white/85 dark:bg-[#080d0a]/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
+        <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />
         <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <button
           type="button"
           onClick={() => setMoreSheet(v => !v)}
           className={cn(
-            "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
+            "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-[4px] transition-colors",
             moreActive || moreSheet
-              ? "text-brand dark:text-brand bg-surface-canvas dark:bg-surface-dark-muted"
+              ? "text-[#5148c8] dark:text-[#aaa4ff] bg-[#efefff] dark:bg-[#282544]"
               : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
           )}
         >
@@ -429,8 +473,8 @@ export function NavbarWithSimpleLinks() {
       {moreSheet && (
         <>
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setMoreSheet(false)} />
-          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
-            {moreNav.map(item => {
+          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-md bg-white dark:bg-[#101812] border border-neutral-200 dark:border-neutral-700 shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            {utilityNav.map(item => {
               const Icon = item.icon;
               const isActive = active(pathname, item.href);
               return (
@@ -439,13 +483,13 @@ export function NavbarWithSimpleLinks() {
                   href={item.href}
                   onClick={() => setMoreSheet(false)}
                   className={cn(
-                    "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-[4px] text-sm font-semibold transition-colors",
                     isActive
-                      ? "bg-surface-canvas dark:bg-surface-dark-muted text-brand"
-                      : "text-neutral-600 dark:text-neutral-300 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
+                      ? "bg-[#efefff] dark:bg-[#282544] text-[#5148c8] dark:text-[#aaa4ff]"
+                      : "text-neutral-600 dark:text-neutral-300 hover:bg-[#efefff] dark:hover:bg-[#282544]"
                   )}
                 >
-                  <Icon size={16} className={cn("shrink-0", isActive && "text-brand")} />
+                  <Icon size={16} className="shrink-0" />
                   {item.label}
                 </Link>
               );
@@ -463,7 +507,7 @@ export function NavbarWithSimpleLinks() {
         <button
           type="button"
           onClick={() => setViewAsUser(false)}
-          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-[236px] flex items-center gap-2 rounded-full border border-brand/40 bg-[#052e16] px-3.5 py-2 text-[11px] font-bold text-brand-light shadow-lg hover:bg-[#064e2b] transition-colors"
+          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-[4px] border border-[#c8c4ff] bg-[#efefff] px-3.5 py-2 text-[11px] font-bold text-[#5148c8] shadow-lg hover:bg-[#e5e3ff] dark:border-[#625b9e] dark:bg-[#282544] dark:text-[#c6c1ff]"
         >
           <EyeOff size={13} className="shrink-0" />
           일반 사용자 화면

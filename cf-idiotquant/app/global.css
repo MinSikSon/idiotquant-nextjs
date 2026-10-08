@@ -188,6 +188,29 @@ html.dark {
 
 html { scroll-behavior: smooth; }
 
+/* 일반 화면의 지표와 표도 랜딩의 Pretendard를 사용한다. 게임의 고정폭 글자는 유지한다. */
+body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
+  font-family: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 각 화면의 고정 헤더는 공통 네비게이션 바로 아래에 놓인다. */
+@media (max-width: 767px) {
+  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 48px; }
+}
+
+@media (min-width: 768px) {
+  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 64px; }
+}
+
+@media (min-width: 768px) {
+  main:has(#game-canvas) { min-height: 100dvh; }
+}
+
+@media (min-width: 1024px) {
+  main:has(#game-canvas) { margin-left: var(--sidebar-w); }
+}
+
 @media (max-width: 767px) {
   html { font-size: 115%; }
 }

@@ -135,7 +135,7 @@ export default function LineChart(props: any) {
                     hide={true}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fill: textColor, fontSize: 9, fontFamily: "var(--font-mono)" }}
+                    tick={{ fill: textColor, fontSize: 9, fontFamily: "Pretendard Variable, sans-serif" }}
                 />
                 
                 <YAxis
@@ -143,7 +143,7 @@ export default function LineChart(props: any) {
                     tickLine={false}
                     axisLine={false}
                     domain={['auto', 'auto']}
-                    tick={{ fill: textColor, fontSize: 9, fontFamily: "var(--font-mono)" }}
+                    tick={{ fill: textColor, fontSize: 9, fontFamily: "Pretendard Variable, sans-serif" }}
                     width={props.show_yaxis_label === false ? 0 : 35}
                 />
 
@@ -164,7 +164,7 @@ export default function LineChart(props: any) {
                         wrapperStyle={{
                             fontSize: "10px",
                             fontWeight: 700,
-                            fontFamily: "var(--font-mono)",
+                            fontFamily: "Pretendard Variable, sans-serif",
                             letterSpacing: "0.05em",
                             textTransform: "uppercase",
                             paddingTop: "6px",
@@ -236,7 +236,7 @@ export default function LineChart(props: any) {
                             position: m.labelPosition ?? "top",
                             fontSize: 9,
                             fontWeight: 700,
-                            fontFamily: "var(--font-mono)",
+                            fontFamily: "Pretendard Variable, sans-serif",
                             fill: m.color,
                         } : undefined}
                     />
