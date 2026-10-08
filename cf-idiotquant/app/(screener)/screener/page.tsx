@@ -36,6 +36,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
+const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_56px_40px_40px_24px] sm:grid-cols-[minmax(0,1fr)_62px_46px_46px_28px] lg:grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px]";
 
 // 비로그인에게 보여 주는 줄 수. 검색엔진과 처음 온 사람에게 "무엇이 나오는 화면인지"는
 // 보여 주되, 목록 전체는 계정이 있어야 본다.
@@ -183,8 +184,8 @@ const STRATEGY_HIGHLIGHT: Record<string, HighlightMap> = {
 function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): string {
     if (!highlight || !(key in highlight)) return "";
     return highlight[key]!(item)
-        ? "px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60 text-emerald-600 dark:text-emerald-400 font-bold"
-        : "px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-surface-dark-hover text-neutral-400";
+        ? "px-0.5 sm:px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60 text-emerald-600 dark:text-emerald-400 font-bold"
+        : "px-0.5 sm:px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-surface-dark-hover text-neutral-400";
 }
 
 // =========================================================================
@@ -265,7 +266,7 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
 }
 
 // =========================================================================
-// TableRow — 데스크탑
+// TableRow — 목록 뷰 공통 행. 좁은 화면에서는 핵심 지표만 한 줄에 표시한다.
 // =========================================================================
 const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, highlight }: {
     item: any;
@@ -280,20 +281,18 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
     return (
         <div
-            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px] gap-4 items-center px-6 py-5 hover:bg-[#f0fdf4]/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0"
+            className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-[#f0fdf4]/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0 flex items-center gap-2">
-                <div className="min-w-0">
-                    <p className="font-bold text-sm text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                        <span className="text-[11px] text-neutral-400 font-mono tracking-wider shrink-0">{item.ticker}</span>
-                        <LiquidityBadge item={item} />
-                    </div>
+                <div className="min-w-0 flex items-center gap-1.5">
+                    <p className="min-w-0 truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
+                    <span className="hidden xl:inline shrink-0 text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
+                    <span className="hidden xl:inline"><LiquidityBadge item={item} /></span>
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-1">
+            <div className="hidden lg:flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
                 {strategies.slice(0, 2).map(s => (
                     <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-surface-canvas text-neutral-500")}>
                         {STRATEGY_LABEL[s] ?? s}
@@ -306,9 +305,9 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 )}
             </div>
 
-            <div className="text-right">
+            <div className="text-right whitespace-nowrap">
                 <span className={cn(
-                    "text-sm font-mono font-black tabular-nums",
+                    "text-xs sm:text-sm font-mono font-bold tabular-nums",
                     ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
                     ncav >= 0.7 ? "text-amber-500" : "text-neutral-400",
                     hlPillCls(highlight, "ncav_ratio", item)
@@ -317,19 +316,19 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 </span>
             </div>
 
-            <div className="text-right">
-                <span className={cn("text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "pbr", item))}>
+            <div className="text-right whitespace-nowrap">
+                <span className={cn("text-xs sm:text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "pbr", item))}>
                     {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}
                 </span>
             </div>
 
-            <div className="text-right">
-                <span className={cn("text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "per", item))}>
+            <div className="text-right whitespace-nowrap">
+                <span className={cn("text-xs sm:text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "per", item))}>
                     {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}
                 </span>
             </div>
 
-            <div className="text-right">
+            <div className="hidden lg:block text-right whitespace-nowrap">
                 <span className={cn(
                     "text-sm font-mono tabular-nums",
                     roe && roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" :
@@ -343,106 +342,25 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             <div className="flex justify-end items-center gap-1.5">
                 <button
                     className={cn(
-                        "p-1.5 rounded-lg transition-all",
+                        "p-1 rounded transition-all",
                         isLiked
                             ? "text-rose-500 dark:text-rose-400"
                             : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
                     )}
                     onClick={(e) => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
                     title={isLiked ? "관심 해제" : "관심 추가"}
+                    aria-label={`${item.name} ${isLiked ? "관심 해제" : "관심 추가"}`}
                 >
                     <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                 </button>
                 <button
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-brand group-hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
+                    className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-brand group-hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
                     onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
                 >
                     분석
                     <ChevronRight size={12} />
                 </button>
             </div>
-        </div>
-    );
-});
-
-// =========================================================================
-// StockRowCard — 모바일
-// =========================================================================
-const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onToggleLike, highlight }: {
-    item: any;
-    onClick: (ticker: string, name: string) => void;
-    isLiked: boolean;
-    onToggleLike: (ticker: string, name: string) => void;
-    highlight: HighlightMap | null;
-}) {
-    const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
-    const strategies: string[] = resolveStrategies(item);
-    const ncav = safeNum(item.ncav_ratio);
-
-    return (
-        <div
-            className="bg-white dark:bg-surface-dark-card rounded-lg border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 cursor-pointer hover:border-brand-light-hover dark:hover:border-brand-hover/50 transition-colors active:bg-neutral-50 dark:active:bg-surface-dark-hover"
-            onClick={() => onClick(item.ticker, item.name)}
-        >
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="min-w-0 flex-1">
-                    <p className="font-bold text-[13px] text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{item.ticker}</span>
-                        <LiquidityBadge item={item} />
-                        {strategies.length > 0 && <span className="text-[9px] font-bold text-brand">{STRATEGY_LABEL[strategies[0]] ?? strategies[0]}</span>}
-                    </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                        className={cn(
-                            "p-1 rounded-lg transition-all",
-                            isLiked
-                                ? "text-rose-500 dark:text-rose-400"
-                                : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
-                        )}
-                        onClick={(e) => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
-                    >
-                        <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
-                    </button>
-                    <div className={cn(
-                        "px-2 py-1 rounded-md text-[13px] font-black font-mono",
-                        ncav >= 1
-                            ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
-                            : ncav >= 0.7
-                            ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
-                            : "bg-surface-canvas dark:bg-surface-dark-card text-neutral-500",
-                        highlight && "ncav_ratio" in highlight && "ring-2 ring-emerald-400/60 dark:ring-emerald-500/50"
-                    )}>
-                        {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 border-t border-neutral-100 pt-1.5 dark:border-border-subtle-dark">
-                {([
-                    { key: "pbr" as MetricKey, label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—" },
-                    { key: "per" as MetricKey, label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
-                    { key: "roe" as MetricKey, label: "ROE", value: roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—" },
-                ]).map(m => {
-                    const rel = !!highlight && m.key in highlight;
-                    const met = rel && highlight![m.key]!(item);
-                    return (
-                        <div key={m.label} title={m.key === "roe" ? ROE_BASIS_HINT : undefined} className={cn(
-                            "text-center py-1",
-                            rel && met ? "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60"
-                                : "bg-surface-canvas dark:bg-surface-dark-card/60"
-                        )}>
-                            <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
-                            <p className={cn(
-                                "text-[12px] font-mono font-bold",
-                                rel && met ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-200"
-                            )}>{m.value}</p>
-                        </div>
-                    );
-                })}
-            </div>
-
         </div>
     );
 });
@@ -2111,21 +2029,18 @@ function ScreenerContent() {
                                 </div>
                             )
                         ) : (
-                        <>
-                        {/* 데스크탑 테이블 */}
-                        <div className="hidden md:block">
-                            <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
-                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+                                <div className={cn("grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
-                                    <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
-                                    <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
+                                    <div className="hidden lg:block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
+                                    <SortableHeader label="NCAV" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
                                     <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "pbr" in metricHighlight} />
                                     <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "per" in metricHighlight} />
-                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "roe" in metricHighlight} title={ROE_BASIS_HINT} />
+                                    <div className="hidden lg:block"><SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "roe" in metricHighlight} title={ROE_BASIS_HINT} /></div>
                                     <div />
                                 </div>
                                 {groups ? (
-                                    <GroupedResults {...groupedProps}
+                                    <GroupedResults {...groupedProps} bodyClassName=""
                                         renderRow={(item: any) => (
                                             <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         )}
@@ -2137,28 +2052,7 @@ function ScreenerContent() {
                                         ))}
                                     </div>
                                 )}
-                            </div>
                         </div>
-
-                        {/* 모바일 카드 — 데스크톱 표와 같은 묶기를 여기서도 해 준다.
-                            예전에는 이 블록이 묶기를 무시해, 폰에서는 버튼을 눌러도 아무 일이 없었다. */}
-                        <div className="md:hidden">
-                            {groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
-                                    <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-2 sm:grid-cols-2 gap-1.5 p-1.5 sm:gap-3 sm:p-3"
-                                        renderRow={(item: any) => (
-                                            <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
-                                        )} />
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5 sm:gap-3">
-                                    {visibleList.map((item: any) => (
-                                        <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        </>
                         )}
 
                         {previewCapped && (
