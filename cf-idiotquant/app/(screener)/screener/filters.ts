@@ -8,13 +8,17 @@
  */
 
 import { STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS } from "@/lib/constants/strategies";
-import { trAmtEok, isHalted, isManaged, isDelisting, w52Position } from "@/lib/utils/stockRisk";
+import { isHalted, isManaged, isDelisting, w52Position } from "@/lib/utils/stockRisk";
+import { profitableScanStock, scanMarketCap, scanRoePercent, scanTradingAmount } from "@/lib/utils/scanFinancials";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
 
 /** 삼성전자우·현대차2우B 같은 우선주. 본주와 같은 회사가 목록에 두 번 서는 것을 막는다. */
-export const isPreferredStock = (name: string): boolean => /\d*우[A-C]?$/.test((name ?? "").trim());
+export const isPreferredStock = (name: string, ticker = "", country: "KR" | "US" = "KR"): boolean =>
+    country === "US"
+        ? /\b(preferred|depositary shares)\b/i.test(name) || /[.-]P[A-Z]?$/.test(ticker.toUpperCase())
+        : /\d*우[A-C]?$/.test((name ?? "").trim());
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function marketOf(i: any): string {
@@ -32,7 +36,7 @@ export const sectorOf = (i: any): string => String(i?.sector ?? i?.industry ?? "
 
 /** ROE = EPS ÷ BPS (지배주주 기준). bps 가 없으면 0 — 필터에서는 minRoe > 0 이라 자동으로 걸러진다. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const roeOf = (i: any) => safeNum(i.bps) > 0 ? (safeNum(i.eps) / safeNum(i.bps)) * 100 : 0;
+export const roeOf = scanRoePercent;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const grahamOk = (i: any) => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && safeNum(i.per) * safeNum(i.pbr) < 22.5;
@@ -40,7 +44,10 @@ export const grahamOk = (i: any) => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && 
 // 백엔드 strategies + 프론트엔드 clientFilter 병합 (백엔드 미분류 종목도 표시)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function resolveStrategies(item: Record<string, any>): string[] {
-    const base = new Set<string>(item.strategies ?? []);
+    const base = new Set<string>((item.strategies ?? []).filter((id: string) => {
+        const preset = STRATEGY_PRESETS.find(p => p.id === id);
+        return !preset?.clientFilter || preset.clientFilter(item);
+    }));
     for (const preset of STRATEGY_PRESETS) {
         if (preset.clientFilter && preset.clientFilter(item)) base.add(preset.id);
     }
@@ -53,11 +60,12 @@ export function resolveStrategies(item: Record<string, any>): string[] {
 // 띠에서만 사라져 합계가 전체보다 적어지고, 점 색의 범례로도 성립하지 않는다.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const primaryStrategyOf = (i: any): string =>
-    STRATEGY_PRESETS.find(p => p.clientFilter?.(i))?.id ?? i?.strategies?.[0] ?? "";
+    STRATEGY_PRESETS.find(p => p.clientFilter?.(i))?.id ?? resolveStrategies(i)[0] ?? "";
 
 /* ── 필터 ─────────────────────────────────────────────────────── */
 
 export interface ScreenerFilters {
+    country?: "KR" | "US";
     strategies: Set<string>;
     mode: "OR" | "AND";
     q: string;
@@ -97,6 +105,7 @@ export const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<string, any>[] {
     let out = list;
+    const country = f.country ?? "KR";
 
     if (f.strategies.size > 0) {
         const check = f.mode === "AND" ? "every" : "some";
@@ -117,22 +126,21 @@ export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): R
         );
     }
 
-    if (f.excludeHoldings)  out = out.filter(item => !item.name?.includes("홀딩스"));
-    if (f.excludeDeficit)   out = out.filter(item => safeNum(item.eps) > 0);
-    if (f.excludePreferred) out = out.filter(item => !isPreferredStock(item.name ?? ""));
-    if (f.minMarketCap > 0) out = out.filter(item => safeNum(item.market_cap) >= f.minMarketCap);
+    if (f.excludeHoldings)  out = out.filter(item => !/홀딩스|\bholdings?\b/i.test(item.name ?? ""));
+    if (f.excludeDeficit)   out = out.filter(profitableScanStock);
+    if (f.excludePreferred) out = out.filter(item => !isPreferredStock(item.name ?? "", item.ticker ?? "", country));
+    if (f.minMarketCap > 0) out = out.filter(item => scanMarketCap(item, country) >= f.minMarketCap);
     if (f.maxPbr > 0)  out = out.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= f.maxPbr);
-    if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer);
+    if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer && (country !== "US" || profitableScanStock(item)));
     if (f.minNcav > 0) out = out.filter(item => safeNum(item.ncav_ratio) >= f.minNcav);
     if (f.minRoe > 0)  out = out.filter(item => roeOf(item) >= f.minRoe);
 
     if (f.sectors.size > 0) out = out.filter(item => f.sectors.has(sectorOf(item)));
     if (f.markets.size > 0) out = out.filter(item => f.markets.has(marketOf(item)));
-    // 값이 아직 없는 종목은 통과시킨다. 배포 직후처럼 일부만 채워진 구간에서 "모르는 것"을
-    // "조건 위반"으로 취급하면 목록이 통째로 비어 고장난 것처럼 보인다.
-    // (아래 두 서랍 카드는 애초에 데이터가 있을 때만 뜨므로 정상 상태에서는 이 경로가 드물다.)
-    if (f.minTrAmt > 0) out = out.filter(item => { const v = trAmtEok(item); return v === null || v >= f.minTrAmt; });
-    if (f.maxW52Pos > 0) out = out.filter(item => { const v = w52Position(item); return v === null || v <= f.maxW52Pos; });
+    // KR의 과거 수집 누락은 기존 동작대로 통과시킨다. US는 수집 누락이 흔하므로
+    // 선택한 수치 조건에서 값이 없는 종목을 제외해야 필터 결과를 믿을 수 있다.
+    if (f.minTrAmt > 0) out = out.filter(item => { const v = scanTradingAmount(item, country); return v === null ? country === "KR" : v >= f.minTrAmt; });
+    if (f.maxW52Pos > 0) out = out.filter(item => { const v = w52Position(item); return v === null ? country === "KR" : v <= f.maxW52Pos; });
     if (f.excludeHalted) out = out.filter(item => !isHalted(item));
     if (f.excludeManaged) out = out.filter(item => !isManaged(item));
     if (f.excludeDelisting) out = out.filter(item => !isDelisting(item));
@@ -164,8 +172,8 @@ export function sortList(list: Record<string, any>[], sortKey: DiscoverySortKey,
                 : (b.ticker ?? "").localeCompare(a.ticker ?? "");
         }
         if (sortKey === "roe") {
-            const ra = safeNum(a.bps) > 0 ? (safeNum(a.eps) / safeNum(a.bps)) * 100 : -Infinity;
-            const rb = safeNum(b.bps) > 0 ? (safeNum(b.eps) / safeNum(b.bps)) * 100 : -Infinity;
+            const ra = safeNum(a.bps) > 0 || (a.country === "US" && a.roe != null) ? roeOf(a) : -Infinity;
+            const rb = safeNum(b.bps) > 0 || (b.country === "US" && b.roe != null) ? roeOf(b) : -Infinity;
             return sortOrder === "asc" ? ra - rb : rb - ra;
         }
         const va = safeNum(a[sortKey]);

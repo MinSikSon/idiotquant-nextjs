@@ -20,7 +20,8 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupM
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
-import { LiquidityBadge, trAmtEok, w52Position } from "./components/LiquidityBadge";
+import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
+import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
     safeNum, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
@@ -57,7 +58,13 @@ const STRATEGY_HEX_BY_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 // 일 거래대금 하한 프리셋 (단위: 억원, 0 = 미적용)
-const TR_AMT_PRESETS = [1, 3, 10, 50];
+const KR_TR_AMT_PRESETS = [1, 3, 10, 50]; // 억원
+const US_TR_AMT_PRESETS = [0.1, 0.3, 1, 5]; // 백만 달러
+const US_MKTCAP_PRESETS = [
+    { label: "$50M+", value: 50 },
+    { label: "$100M+", value: 100 },
+    { label: "$500M+", value: 500 },
+];
 // 52주 구간에서 현재가 위치의 상한(%). 0=저점, 100=고점 → 낮게 잡을수록 저점권만 남는다.
 const W52_POS_PRESETS = [10, 25, 50];
 
@@ -275,7 +282,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
     onToggleLike: (ticker: string, name: string) => void;
     highlight: HighlightMap | null;
 }) {
-    const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
+    const roe = roeOf(item);
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
 
@@ -331,11 +338,11 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             <div className="hidden lg:block text-right whitespace-nowrap">
                 <span className={cn(
                     "text-sm font-mono tabular-nums",
-                    roe && roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" :
-                    roe && roe > 0 ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400",
+                    roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" :
+                    roe > 0 ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400",
                     hlPillCls(highlight, "roe", item)
                 )}>
-                    {roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—"}
+                    {roe > 0 ? `${roe.toFixed(1)}%` : "—"}
                 </span>
             </div>
 
@@ -572,13 +579,13 @@ function ScreenerContent() {
     });
     // 52주 위치 상한 (%, URL param: w52)
     const [maxW52Pos, setMaxW52Pos] = useState<number>(() => initNum('w52', 'w52', W52_POS_PRESETS));
-    // 일 거래대금 하한 (단위: 억원, URL param: mintr)
-    const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', TR_AMT_PRESETS));
+    // 일 거래대금 하한 (KR: 억원, US: 백만 달러, URL param: mintr)
+    const [minTrAmt, setMinTrAmt] = useState<number>(() => initNum('mintr', 'mintr', country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS));
     const [filterOpen, setFilterOpen] = useState(false);
     const [showLikedOnly, setShowLikedOnly] = useState(() =>
         (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
-    // 시가총액 필터 (단위: 억원, URL param: mincap)
+    // 시가총액 필터 (KR: 억원, US: 백만 달러, URL param: mincap)
     // 시가총액 직접 입력값과 PBR 슬라이더의 중간값도 URL·저장 조합에서 그대로 복원해야
     // 한다. 프리셋만 허용하면 750억·PBR 0.65처럼 사용자가 직접 고른 값이 재진입 때
     // 조용히 사라져 "저장" 기능을 믿을 수 없게 된다.
@@ -828,20 +835,21 @@ function ScreenerContent() {
             const fromScan = scanMap.get(ticker);
             if (fromScan) return fromScan;
             const fromLiked = likedMap.get(ticker);
-            if (fromLiked) return { ...fromLiked, name: fromLiked.stock_name ?? ticker };
-            return { ticker, name: ticker, strategies: [] as string[] };
+            if (fromLiked) return { ...fromLiked, country, name: fromLiked.stock_name ?? ticker };
+            return { ticker, country, name: ticker, strategies: [] as string[] };
         }) as Record<string, any>[];
     }, [likedTickers, likedList, ncavDailyList.list, country]);
 
     // 현재 필터 상태 스냅샷 — 목록·파생 카운트가 같은 입력을 쓰도록 한 곳에서 만든다
     const filters = useMemo<ScreenerFilters>(() => ({
+        country,
         strategies: activeStrategyIds,
         mode: filterMode,
         q: searchQuery,
         excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting,
         sectors, markets, maxW52Pos, minTrAmt,
         minMarketCap, maxPbr, maxPer, minRoe, minNcav,
-    }), [activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
+    }), [country, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
 
     const baseList = useMemo(
         () => (showLikedOnly ? normalizedLikedList : ncavDailyList.list) as Record<string, any>[],
@@ -969,7 +977,7 @@ function ScreenerContent() {
         ncav: item.ncav_ratio,
         pbr: item.pbr,
         per: item.per,
-        roe: safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null,
+        roe: roeOf(item) || null,
     })), [filteredList]);
     const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init" || ncavDailyList.country !== country);
 
@@ -1000,7 +1008,7 @@ function ScreenerContent() {
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
     // 워커가 아직 이 값을 채우기 전(migration 0013 배포 전)에는 해당 서랍 카드를 아예 띄우지
     // 않는다. 조작해도 아무 일이 없는 손잡이를 두는 것보다 없는 편이 낫다.
-    const hasTrAmtData = useMemo(() => baseList.some(i => trAmtEok(i) !== null), [baseList]);
+    const hasTrAmtData = useMemo(() => baseList.some(i => scanTradingAmount(i, country) !== null), [baseList, country]);
     // 거래정지 판정은 stat_cls_code(58) 도 본다 → 둘 중 하나라도 있으면 손잡이를 띄운다.
     const hasHaltData = useMemo(() => baseList.some(i => i.temp_stop_yn != null || i.stat_cls_code != null), [baseList]);
     // 관리종목은 전용 플래그(migration 0014) 우선, 옛 데이터는 stat_cls_code(51) 로도 잡힌다.
@@ -1045,7 +1053,7 @@ function ScreenerContent() {
 
     // 현재 걸려 있는 상세 조건 목록 — 서랍 카운트·빈 결과 제안이 공유한다
     const activeConditions = useMemo(() => ([
-        minMarketCap > 0 && { label: `시총 ${minMarketCap}억+`, override: { minMarketCap: 0 } as Partial<ScreenerFilters>, clear: () => setMinMarketCap(0) },
+        minMarketCap > 0 && { label: `시총 ${minMarketCap}${country === 'US' ? 'M달러' : '억'}+`, override: { minMarketCap: 0 } as Partial<ScreenerFilters>, clear: () => setMinMarketCap(0) },
         maxPbr > 0       && { label: `PBR ≤ ${maxPbr}`,        override: { maxPbr: 0 } as Partial<ScreenerFilters>,       clear: () => setMaxPbr(0) },
         maxPer > 0       && { label: `PER ≤ ${maxPer}`,        override: { maxPer: 0 } as Partial<ScreenerFilters>,       clear: () => setMaxPer(0) },
         minNcav > 0      && { label: `NCAV ≥ ${minNcav}`,      override: { minNcav: 0 } as Partial<ScreenerFilters>,      clear: () => setMinNcav(0) },
@@ -1056,12 +1064,12 @@ function ScreenerContent() {
         excludeHalted    && { label: '거래정지 제외',             override: { excludeHalted: false } as Partial<ScreenerFilters>,    clear: () => setExcludeHalted(false) },
         excludeManaged   && { label: '관리종목 제외',             override: { excludeManaged: false } as Partial<ScreenerFilters>,   clear: () => setExcludeManaged(false) },
         excludeDelisting && { label: '정리매매 제외',             override: { excludeDelisting: false } as Partial<ScreenerFilters>, clear: () => setExcludeDelisting(false) },
-        minTrAmt > 0     && { label: `거래대금 ${minTrAmt}억+`,   override: { minTrAmt: 0 } as Partial<ScreenerFilters>,             clear: () => setMinTrAmt(0) },
+        minTrAmt > 0     && { label: `거래대금 ${minTrAmt}${country === 'US' ? 'M달러' : '억'}+`, override: { minTrAmt: 0 } as Partial<ScreenerFilters>, clear: () => setMinTrAmt(0) },
         maxW52Pos > 0    && { label: `52주 저점권 ${maxW52Pos}%`, override: { maxW52Pos: 0 } as Partial<ScreenerFilters>,            clear: () => setMaxW52Pos(0) },
         sectors.size > 0 && { label: `업종 ${sectors.size}개`,    override: { sectors: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setSectors(new Set()) },
         markets.size > 0 && { label: `시장 ${Array.from(markets).join('·')}`, override: { markets: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setMarkets(new Set()) },
     ].filter(Boolean) as { label: string; override: Partial<ScreenerFilters>; clear: () => void }[]),
-    [minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
+    [country, minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
 
     // 결과가 0개일 때 — "무엇을 풀면 몇 개가 돌아오는지"를 짚어준다. 그냥 "없습니다"로 끝내면
     // 어떤 조건이 결과를 죽였는지 사용자가 하나씩 꺼보며 찾아야 한다.
@@ -1187,6 +1195,12 @@ function ScreenerContent() {
                                 setCountry(value);
                                 setMarkets(new Set());
                                 setSectors(new Set());
+                                // 두 시장의 시가총액·거래대금 입력 단위가 달라 이전 값을 옮길 수 없다.
+                                setMinMarketCap(0);
+                                setMinTrAmt(0);
+                                setExcludeHalted(false);
+                                setExcludeManaged(false);
+                                setExcludeDelisting(false);
                                 setShowLikedOnly(false);
                                 setDisplayCount(DAILY_PAGE_SIZE);
                             }}
@@ -1385,7 +1399,7 @@ function ScreenerContent() {
                     {!filterOpen && (() => {
                         const chips: { key: string; label: string; clear: () => void }[] = [];
                         if (searchQuery)     chips.push({ key: 'q',   label: `검색 "${searchQuery}"`, clear: () => { setSearchQuery(''); setDisplayCount(DAILY_PAGE_SIZE); } });
-                        if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${country === 'US' ? `${minMarketCap}M달러+` : (MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`)}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minNcav > 0)     chips.push({ key: 'ncav', label: `NCAV ≥ ${minNcav}`, clear: () => { setMinNcav(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (maxPbr > 0)      chips.push({ key: 'pbr', label: `PBR ≤ ${maxPbr}`, clear: () => { setMaxPbr(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (maxPer > 0)      chips.push({ key: 'per', label: `PER ≤ ${maxPer}`, clear: () => { setMaxPer(0); setDisplayCount(DAILY_PAGE_SIZE); } });
@@ -1396,7 +1410,7 @@ function ScreenerContent() {
                         if (excludeHalted)   chips.push({ key: 'halt', label: '거래정지 제외', clear: () => setExcludeHalted(false) });
                         if (excludeManaged)  chips.push({ key: 'mang', label: '관리종목 제외', clear: () => setExcludeManaged(false) });
                         if (excludeDelisting) chips.push({ key: 'slt', label: '정리매매 제외', clear: () => setExcludeDelisting(false) });
-                        if (minTrAmt > 0)    chips.push({ key: 'tr',   label: `거래대금 ${minTrAmt}억+`, clear: () => { setMinTrAmt(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (minTrAmt > 0)    chips.push({ key: 'tr',   label: `거래대금 ${minTrAmt}${country === 'US' ? 'M달러' : '억'}+`, clear: () => { setMinTrAmt(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (maxW52Pos > 0)   chips.push({ key: 'w52',  label: `52주 저점권 ${maxW52Pos}%`, clear: () => { setMaxW52Pos(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (sectors.size > 0) chips.push({ key: 'sec', label: `업종 ${sectors.size}개`, clear: () => { setSectors(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (markets.size > 0) chips.push({ key: 'mkt', label: `시장 ${Array.from(markets).join('·')}`, clear: () => { setMarkets(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
@@ -1469,7 +1483,7 @@ function ScreenerContent() {
                                 못 넣고, 입력만 있으면 초보자가 무슨 값을 넣을지 모른다. */}
                             <DrawerCard label="시가총액" remain={cumulativeCounts.mktcap}>
                                 <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
-                                    {MKTCAP_PRESETS.filter(p => p.value > 0).map(p => (
+                                    {(country === 'US' ? US_MKTCAP_PRESETS : MKTCAP_PRESETS.filter(p => p.value > 0)).map(p => (
                                         <DrawerChip
                                             key={p.value}
                                             active={minMarketCap === p.value}
@@ -1490,7 +1504,7 @@ function ScreenerContent() {
                                     />
                                     <span className="text-neutral-400">~</span>
                                     <span className="text-neutral-300 dark:text-neutral-600">제한 없음</span>
-                                    <span className="text-neutral-400">억원</span>
+                                    <span className="text-neutral-400">{country === 'US' ? '백만 달러' : '억원'}</span>
                                 </div>
                             </DrawerCard>
 
@@ -1637,9 +1651,9 @@ function ScreenerContent() {
                             {hasTrAmtData && (
                                 <DrawerCard label="일 거래대금" remain={cumulativeCounts.liquidity}>
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                        {TR_AMT_PRESETS.map(v => (
+                                        {(country === 'US' ? US_TR_AMT_PRESETS : KR_TR_AMT_PRESETS).map(v => (
                                             <DrawerChip key={v} active={minTrAmt === v} onClick={() => { setMinTrAmt(minTrAmt === v ? 0 : v); setDisplayCount(DAILY_PAGE_SIZE); }}>
-                                                {v}억 이상
+                                                {v}{country === 'US' ? 'M달러' : '억'} 이상
                                             </DrawerChip>
                                         ))}
                                     </div>

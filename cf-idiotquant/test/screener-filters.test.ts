@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { applyFilters, sortList, roeOf, grahamOk, marketOf, sectorOf, isPreferredStock, safeNum, type ScreenerFilters } from "@/app/(screener)/screener/filters";
+import { applyFilters, sortList, roeOf, grahamOk, marketOf, sectorOf, isPreferredStock, resolveStrategies, safeNum, type ScreenerFilters } from "@/app/(screener)/screener/filters";
 
 /** 아무것도 안 거르는 기본값. 테스트마다 한 조건씩만 켠다. */
 const none = (over: Partial<ScreenerFilters> = {}): ScreenerFilters => ({
@@ -142,6 +142,41 @@ test("값을 모르는 종목은 유동성·52주 조건에서 통과시킨다 �
         const f = none({ maxPbr: 0.5, maxPer: 10, minNcav: 1.0, excludeDeficit: true });
         assert.deepEqual(names(applyFilters(list, f)), ["다만족"]);
     }
+});
+
+test("미국 시총·거래대금은 달러 원값을 백만 달러 조건과 비교한다", () => {
+    const list = [
+        stock({ country: "US", ticker: "SMALL", name: "Small", market_cap: 40_000_000, acml_tr_pbmn: 300_000 }),
+        stock({ country: "US", ticker: "LARGE", name: "Large", market_cap: 120_000_000, acml_tr_pbmn: 2_000_000 }),
+    ];
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", minMarketCap: 50 }))), ["Large"]);
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", minTrAmt: 0.5 }))), ["Large"]);
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", minTrAmt: 0.3 }))), ["Small", "Large"]);
+    assert.equal(applyFilters([stock({ country: "US", acml_tr_pbmn: null })], none({ country: "US", minTrAmt: 0.1 })).length, 0);
+    assert.equal(applyFilters([stock({ country: "US" })], none({ country: "US", maxW52Pos: 25 })).length, 0);
+});
+
+test("미국 순이익이 적자면 양수 EPS·PER·백엔드 전략 태그가 있어도 흑자 조건에서 빠진다", () => {
+    const loss = stock({ country: "US", ticker: "LOSS", name: "Loss", net_income: -85_580_000, eps: 177.33, bps: 36.69, per: 5, pbr: 0.4, strategies: ["low_per", "s_rim", "ncav"] });
+    const profit = stock({ country: "US", ticker: "PROFIT", name: "Profit", net_income: 2_000_000, eps: 2, bps: 10, per: 5, pbr: 0.4 });
+    assert.equal(roeOf(loss), 0);
+    assert.equal(roeOf(profit), 20);
+    assert.deepEqual(names(applyFilters([loss, profit], none({ country: "US", excludeDeficit: true }))), ["Profit"]);
+    assert.deepEqual(names(applyFilters([loss, profit], none({ country: "US", maxPer: 10 }))), ["Profit"]);
+    assert.deepEqual(names(applyFilters([loss, profit], none({ country: "US", minRoe: 10 }))), ["Profit"]);
+    assert.deepEqual(names(applyFilters([loss, profit], none({ country: "US", strategies: new Set(["low_per"]) }))), ["Profit"]);
+    assert.equal(resolveStrategies(loss).includes("low_per"), false);
+    assert.equal(resolveStrategies(loss).includes("s_rim"), false);
+});
+
+test("미국 회사명과 티커로 지주사·우선주를 제외한다", () => {
+    const list = [
+        stock({ country: "US", ticker: "ABC", name: "ABC Corp" }),
+        stock({ country: "US", ticker: "HLD", name: "ABC Holdings" }),
+        stock({ country: "US", ticker: "ABC-P", name: "ABC Preferred Shares" }),
+    ];
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", excludeHoldings: true }))), ["ABC Corp", "ABC Preferred Shares"]);
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", excludePreferred: true }))), ["ABC Corp", "ABC Holdings"]);
 });
 
 /* ── 정렬 ────────────────────────────────────────────────────── */

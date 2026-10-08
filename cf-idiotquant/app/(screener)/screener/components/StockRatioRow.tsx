@@ -8,14 +8,14 @@ import { ratioMetrics, barPct } from "./ratioMetrics";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
 
-const 억 = (v: number) => `${Math.round(v).toLocaleString()}억`;
+const money = (v: number, us: boolean) => us ? `$${(v / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M` : `${Math.round(v).toLocaleString()}억`;
 const x = (v: number | null) => (v === null ? "—" : `${v.toFixed(2)}x`);
 
 // 세 막대를 같은 축(scale)에 그려 길이 자체가 비율이 되게 한다. 숫자만 나열하면
 // "유동자산 3000억 / 부채 1000억 / 시총 1500억" 을 머릿속에서 비교해야 하지만,
 // 같은 축에 눕히면 어느 쪽이 큰지 한눈에 읽힌다.
-function Bar({ label, value, scale, color, hint }: {
-    label: string; value: number; scale: number; color: string; hint: string;
+function Bar({ label, value, scale, color, hint, us }: {
+    label: string; value: number; scale: number; color: string; hint: string; us: boolean;
 }) {
     return (
         <div className="flex items-center gap-2" title={hint}>
@@ -27,7 +27,7 @@ function Bar({ label, value, scale, color, hint }: {
                 />
             </div>
             <span className="w-[68px] shrink-0 text-right text-[11px] font-mono font-bold tabular-nums text-neutral-700 dark:text-neutral-200">
-                {억(value)}
+                {money(value, us)}
             </span>
         </div>
     );
@@ -52,6 +52,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
     onToggleLike: (ticker: string, name: string) => void;
 }) {
     const m = ratioMetrics(item);
+    const us = item.country === "US";
 
     return (
         <div
@@ -77,11 +78,11 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-brand"
+                <Bar label="유동자산" value={m.currentAssets} scale={m.scale} color="bg-brand" us={us}
                      hint="유동자산 — 1년 안에 현금화할 수 있는 자산" />
-                <Bar label="부채총계" value={m.liabilities} scale={m.scale} color="bg-[#d4525c]"
+                <Bar label="부채총계" value={m.liabilities} scale={m.scale} color="bg-[#d4525c]" us={us}
                      hint="부채총계 — 갚아야 할 돈 전체" />
-                <Bar label="시가총액" value={m.marketCap} scale={m.scale} color="bg-neutral-400 dark:bg-neutral-500"
+                <Bar label="시가총액" value={m.marketCap} scale={m.scale} color="bg-neutral-400 dark:bg-neutral-500" us={us}
                      hint="시가총액 — 시장이 이 회사에 매긴 값" />
             </div>
 
@@ -95,7 +96,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
             </div>
 
             <p className="mt-2 text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
-                순유동자산 <span className="font-mono font-bold">{억(m.netCurrent)}</span>
+                순유동자산 <span className="font-mono font-bold">{money(m.netCurrent, us)}</span>
                 {m.ncavMultiple !== null && m.ncavMultiple >= 1
                     ? " — 시가총액보다 큽니다(청산가치 이하 거래)."
                     : m.netCurrent < 0

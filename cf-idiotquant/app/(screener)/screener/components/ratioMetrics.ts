@@ -1,11 +1,11 @@
 // 종목의 유동자산·부채총계·시가총액을 서로 비교하기 위한 순수 계산.
-// 세 값은 스캔 응답에서 모두 억원 단위로 들어온다(ncav_ratio 가 이 셋으로 계산되므로 단위가 같다).
+// 세 값은 시장별로 같은 단위로 들어온다(KR: 억원, US: 달러).
 // React 비의존 — 값 계산만 담당하고 표현은 StockRatioRow 가 맡는다.
 
 export interface RatioInput {
-    current_assets?: unknown;   // 유동자산 (억원)
-    total_liabilities?: unknown; // 부채총계 (억원)
-    market_cap?: unknown;        // 시가총액 (억원)
+    current_assets?: unknown;   // 유동자산 (KR: 억원, US: 달러)
+    total_liabilities?: unknown; // 부채총계 (KR: 억원, US: 달러)
+    market_cap?: unknown;        // 시가총액 (KR: 억원, US: 달러)
 }
 
 export interface RatioMetrics {

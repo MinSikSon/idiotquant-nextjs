@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { STRATEGY_LABEL, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
+import { scanRoePercent } from "@/lib/utils/scanFinancials";
 import SectorSprite, { sectorAccent } from "./SectorSprite";
 
 /* 결과를 묶어 읽게 만드는 부분. 낱개 147행을 훑는 것보다 "이 전략 12개는 PBR 중위 0.4" 처럼
@@ -12,7 +13,7 @@ export type GroupMode = "none" | "sector" | "strategy";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
 const num = (v: unknown) => { const n = Number(v); return isNaN(n) ? 0 : n; };
-const roeOf = (i: Item) => (num(i.bps) > 0 ? (num(i.eps) / num(i.bps)) * 100 : 0);
+const roeOf = scanRoePercent;
 
 // 평균이 아니라 중위값 — 저PBR 모집단은 이상치가 많아 평균이 쉽게 왜곡된다
 function median(xs: number[]): number {

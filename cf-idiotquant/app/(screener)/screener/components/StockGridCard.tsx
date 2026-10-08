@@ -4,12 +4,12 @@ import { ChevronRight, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LiquidityBadge } from "./LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
+import { profitableScanStock, scanRoePercent } from "@/lib/utils/scanFinancials";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
 const num = (v: unknown) => { const n = Number(v); return isNaN(n) ? 0 : n; };
-const roeOf = (i: Item) => (num(i.bps) > 0 ? (num(i.eps) / num(i.bps)) * 100 : 0);
-const 억 = (v: number) => `${Math.round(v).toLocaleString()}억`;
+const money = (v: number, us: boolean) => us ? `$${(v / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M` : `${Math.round(v).toLocaleString()}억`;
 
 /* 왜 이 종목이 걸렸는지를 수치에서 문장으로 만든다 — 하드코딩 금지.
    2문장까지만. 3개를 넘으면 정보가 아니라 벽이 된다. */
@@ -17,22 +17,23 @@ export function whySelected(i: Item): string {
     const parts: string[] = [];
     const ncav = num(i.ncav_ratio);
     const netCurrent = num(i.current_assets) - num(i.total_liabilities);
+    const us = i.country === "US";
     if (ncav >= 1) {
         parts.push(netCurrent > 0
-            ? `시가총액 ${억(num(i.market_cap))}보다 순유동자산 ${억(netCurrent)}이 더 큽니다.`
+            ? `시가총액 ${money(num(i.market_cap), us)}보다 순유동자산 ${money(netCurrent, us)}이 더 큽니다.`
             : `순유동자산이 시가총액의 ${ncav.toFixed(2)}배입니다.`);
     }
     if (num(i.pbr) > 0 && num(i.pbr) < 0.5) parts.push(`장부 순자산의 ${Math.round(num(i.pbr) * 100)}% 값에 거래됩니다.`);
-    if (num(i.eps) > 0 && num(i.per) > 0 && num(i.per) < 10) parts.push(`한 해 이익의 ${num(i.per).toFixed(1)}배 가격입니다.`);
-    if (roeOf(i) >= 8) parts.push(`ROE ${roeOf(i).toFixed(1)}%로 자기자본 대비 수익성이 좋습니다.`);
+    if (profitableScanStock(i) && num(i.per) > 0 && num(i.per) < 10) parts.push(`한 해 이익의 ${num(i.per).toFixed(1)}배 가격입니다.`);
+    if (scanRoePercent(i) >= 8) parts.push(`ROE ${scanRoePercent(i).toFixed(1)}%로 자기자본 대비 수익성이 좋습니다.`);
     return parts.slice(0, 2).join(" ");
 }
 
 // 주의 — 스캔 응답에 있는 신호만. 배당·변동성은 필드가 없어 다루지 않는다.
 function cautions(i: Item): string[] {
     const out: string[] = [];
-    if (num(i.market_cap) > 0 && num(i.market_cap) < 500) out.push("시가총액 500억 미만 — 거래량이 적어 사고팔기 어려울 수 있습니다.");
-    if (num(i.eps) <= 0) out.push("최근 실적이 적자입니다.");
+    if (num(i.market_cap) > 0 && num(i.market_cap) < (i.country === "US" ? 50_000_000 : 500)) out.push(`시가총액 ${i.country === "US" ? "$50M" : "500억"} 미만 — 거래량이 적어 사고팔기 어려울 수 있습니다.`);
+    if (!profitableScanStock(i)) out.push("최근 실적이 적자입니다.");
     if (num(i.bps) <= 0) out.push("자본잠식 상태입니다.");
     return out;
 }
@@ -57,7 +58,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
     const ncav = num(item.ncav_ratio);
     const pbr = num(item.pbr);
     const per = num(item.per);
-    const roe = roeOf(item);
+    const roe = scanRoePercent(item);
     const why = whySelected(item);
     const warn = cautions(item);
 

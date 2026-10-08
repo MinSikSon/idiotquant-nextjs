@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
+import { scanRoePercent } from "@/lib/utils/scanFinancials";
 
 /* 표 위 요약 — 147행을 스크롤하기 전에 "이 결과가 대체로 어떤 모양인지"를 먼저 준다. */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Item = Record<string, any>;
 const num = (v: unknown) => { const n = Number(v); return isNaN(n) ? 0 : n; };
-const roeOf = (i: Item) => (num(i.bps) > 0 ? (num(i.eps) / num(i.bps)) * 100 : 0);
+const roeOf = scanRoePercent;
 // 95분위 — 축 상한용. 최댓값을 쓰면 이상치 하나가 나머지를 전부 원점으로 밀어붙인다.
 const p95 = (xs: number[]) => {
   const v = xs.filter(x => x > 0).sort((a, b) => a - b);

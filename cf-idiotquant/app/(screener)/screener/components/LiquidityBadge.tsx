@@ -11,6 +11,7 @@ import {
     trAmtEok, isHalted, isManaged, isDelisting,
     isCautionAdvised, isOverheated, marketWarn, w52Position, LOW_TR_AMT_EOK,
 } from "@/lib/utils/stockRisk";
+import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 
 export {
     trAmtEok, isHalted, isManaged, isDelisting,
@@ -39,14 +40,17 @@ export function LiquidityBadge({ item }: { item: any }) {
     if (isCautionAdvised(item)) return <span className={AMBER}>투자유의</span>;
     if (isOverheated(item)) return <span className={AMBER} title="단기과열 지정 — 주가가 단기간에 급등한 상태입니다">단기과열</span>;
 
-    const v = trAmtEok(item);
-    if (v === null || v >= LOW_TR_AMT_EOK) return null;
+    const us = item.country === "US";
+    const v = scanTradingAmount(item, us ? "US" : "KR");
+    const limit = us ? 0.1 : LOW_TR_AMT_EOK;
+    if (v === null || v >= limit) return null;
+    const amount = us ? `$${v.toFixed(2)}M` : `${v.toFixed(1)}억`;
     return (
         <span
-            title={`하루 거래대금 약 ${v.toFixed(1)}억원 — 원하는 수량을 한 번에 담기 어렵습니다`}
+            title={`하루 거래대금 약 ${amount} — 원하는 수량을 한 번에 담기 어렵습니다`}
             className={AMBER}
         >
-            거래 {v.toFixed(1)}억
+            거래 {amount}
         </span>
     );
 }
