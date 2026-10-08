@@ -3,6 +3,8 @@
  * `.tsx` 밖에 두는 까닭: 테스트가 프레임을 직접 만들어 보려면 JSX 없이 읽혀야 한다(`monsterArt.ts` 와 같다).
  */
 
+import { idx, inBounds } from "@/lib/rogue/types";
+
 /** 한 칸의 번쩍임 — `MapView` 의 `CellFlash` 와 같은 모양이다. */
 export interface ZapFlash {
     ink?: string;
@@ -66,6 +68,21 @@ export const ZAP_FX: Record<string, ZapFx> = {
 };
 
 export type ZapCell = { x: number; y: number; ch: string; ink?: string };
+
+/** 지팡이가 지난 길을 비추는 화면용 시야. 탐험 기록은 바꾸지 않는다. */
+export function zapLight(flags: Uint8Array, path: { x: number; y: number }[]): Uint8Array {
+    const lit = flags.slice();
+    for (const shot of path) {
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const x = shot.x + dx;
+            const y = shot.y + dy;
+            if (!inBounds(x, y)) continue;
+            const i = idx(x, y);
+            lit[i] |= 3;
+        }
+    }
+    return lit;
+}
 
 /** 궤적을 프레임들로 — 한 프레임은 그 순간 지도 위에 얹을 글자들이다. */
 export function zapFrames(fx: ZapFx, cells: { x: number; y: number; ch: string }[]): ZapCell[][] {

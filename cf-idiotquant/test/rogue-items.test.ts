@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
 import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
-import { ZAP_FX, zapFrames, zapImpact } from "@/app/(game)/games/zapFx";
+import { ZAP_FX, zapFrames, zapImpact, zapLight } from "@/app/(game)/games/zapFx";
 import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
@@ -850,6 +850,18 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
     const s1 = perform(s0, { t: "zap", letter: "y", dx, dy });
     assert.ok(s1.projectile?.cells.length, "마법 화살의 비행 경로가 남지 않았다");
     assert.ok(s1.projectile?.cells.every((cell) => cell.ch === "*"), "마법 화살이 `*`로 날아가지 않았다");
+
+    // ── 지나간 자리와 바로 곁만 잠깐 밝힌다. 원래 탐험 기록은 바뀌지 않는다.
+    {
+        const flags = new Uint8Array(s0.level.flags.length);
+        const first = zapLight(flags, [{ x: 10, y: 5 }]);
+        assert.equal(first[idx(11, 6)] & 3, 3, "발사체 곁의 가려진 칸이 안 밝혀졌다");
+        assert.equal(first[idx(12, 5)] & 3, 0, "발사체가 닿기 전 칸이 먼저 밝혀졌다");
+        const next = zapLight(flags, [{ x: 10, y: 5 }, { x: 11, y: 5 }]);
+        assert.equal(next[idx(12, 5)] & 3, 3, "발사체가 나아간 칸이 안 밝혀졌다");
+        assert.equal(flags[idx(10, 5)], 0, "발사 연출이 탐험 기록을 바꿨다");
+        assert.equal(zapLight(flags, [{ x: 0, y: 0 }])[idx(0, 0)] & 3, 3, "지도 가장자리의 빛이 빠졌다");
+    }
 
     // ── 모든 지팡이가 제 궤적을 남긴다 — 화면은 `fx` 로 지팡이마다의 연출을 고른다
     const glyphs = new Map<string, string>();

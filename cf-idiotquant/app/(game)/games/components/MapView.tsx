@@ -21,7 +21,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { glyphAt } from "@/lib/rogue/game";
 import { hasRing } from "@/lib/rogue/hero";
 import { MAP_H, MAP_W, type GameState, type SpiritElement } from "@/lib/rogue/types";
-import type { ZapCell } from "../zapFx";
+import { zapLight, type ZapCell } from "../zapFx";
 
 /**
  * 협동에서 `heroes` 칸 번호마다의 색. 파티 줄도 이것을 쓴다.
@@ -224,17 +224,6 @@ interface Run {
     opacity?: number;
 }
 
-/**
- * 불 켜진 방에 **처음 들어설 때** 한 겹씩 밝아지는 중 — 선 자리에서 `r` 칸까지만 보이고
- * 나머지 방 안은 아직 어둡다. 화면의 연출이라 판(`GameState`)에는 없다.
- */
-export interface Reveal {
-    cx: number;
-    cy: number;
-    r: number;
-    room: { x: number; y: number; w: number; h: number };
-}
-
 export interface CellFlash {
     ink?: string;
     bg?: string;
@@ -245,8 +234,8 @@ export default function MapView({
     who = 0,
     cellFlashes = {},
     projectileCells = [],
+    projectileLight = [],
     shake = false,
-    reveal,
 }: {
     state: GameState;
     /** 이 화면이 **조종하는** 영웅. 지도는 그 사람을 가운데 두고, 그 사람만 밝게 그린다. */
@@ -254,8 +243,9 @@ export default function MapView({
     cellFlashes?: Record<string, CellFlash>;
     /** 엔진이 기록한 투사체 궤적. 화면은 한 칸씩 잠깐 드러내기만 한다. */
     projectileCells?: ZapCell[];
+    /** 지팡이가 이미 지나간 칸. 발사 중에만 주변 지형을 비춘다. */
+    projectileLight?: ZapCell[];
     shake?: boolean;
-    reveal?: Reveal | null;
 }) {
     const boxRef = useRef<HTMLDivElement>(null);
     const probeRef = useRef<HTMLSpanElement>(null);
@@ -296,26 +286,18 @@ export default function MapView({
     const ox = clamp(me.x - Math.floor(view.cols / 2), 0, MAP_W - view.cols);
     const oy = clamp(me.y - Math.floor(view.rows / 2), 0, MAP_H - view.rows);
 
+    // 지팡이의 빛은 화면에서만 보인다. 탐험 기록(flags)은 건드리지 않고, 발사체가
+    // 지나간 칸과 바로 곁 칸만 이 프레임의 지도에 비춘다.
+    let litState = state;
+    if (projectileLight.length > 0 && (me.blind ?? 0) <= 0) {
+        litState = { ...state, level: { ...state.level, flags: zapLight(state.level.flags, projectileLight) } };
+    }
+
     const rows: Run[][] = [];
     for (let y = oy; y < oy + view.rows; y++) {
         const runs: Run[] = [];
         for (let x = ox; x < ox + view.cols; x++) {
-            // 밝아지는 중인 방 — 아직 빛이 안 닿은 칸은 **비워 둔다.** 처음 들어선 방이라
-            // 기억도 없어서, 비워 두는 것이 곧 「아직 못 봤다」와 같다.
-            if (
-                reveal &&
-                x >= reveal.room.x &&
-                x < reveal.room.x + reveal.room.w &&
-                y >= reveal.room.y &&
-                y < reveal.room.y + reveal.room.h &&
-                Math.hypot(x - reveal.cx, y - reveal.cy) > reveal.r
-            ) {
-                const last0 = runs[runs.length - 1];
-                if (last0 && last0.ink === "transparent" && !last0.bg) last0.text += " ";
-                else runs.push({ text: " ", ink: "transparent" });
-                continue;
-            }
-            const g = glyphAt(state, x, y, who);
+            const g = glyphAt(litState, x, y, who);
             const ch = g?.ch ?? " ";
             const flash = cellFlashes[`${x},${y}`];
             const characterIndex = g?.kind === "hero" || g?.kind === "ally"

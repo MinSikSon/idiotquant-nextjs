@@ -293,30 +293,12 @@ test("끊김 안내는 늘 떠 있는 작은 단추 하나다 — 본문은 눌�
     assert.ok(!block.includes("shrink-0"), "안내가 흐름 안의 줄로 서 있다 — 지도가 그만큼 줄어든다");
 });
 
-// 방에 불이 번지는 연출은 **그리기 전에** 걸려야 한다.
-//
-// 보고된 자리: 「불이 있는 방에 들어서면 **이미 밝혀지고** 순차적으로 다시 밝혀진다.」
-// 범인은 `useEffect` 였다 — 브라우저가 **그린 뒤**에 도는 갈고리라, 방이 통째로 환한
-// 프레임이 먼저 나가고 그 다음에야 `reveal` 이 걸려 도로 어두워졌다가 번졌다.
-// 재 본 것(390px, 지도에 보이는 글자 수를 프레임마다):
-//
-//     useEffect        0 0 64  9  9 20 20 20 28 …   ← 64칸이 한 번에 켜졌다가 9 로 꺼진다
-//     useLayoutEffect  0 0  9  9  9 25 25 35 35 …   ← 어두운 데서 시작해 번지기만 한다
-//
-// 프레임 단위라 보통 테스트로는 못 잡는다. 그래서 **갈고리의 종류**를 글자로 건다.
-test("방이 밝아지는 연출은 그리기 전에 걸린다 — useLayoutEffect", () => {
-    const s = read("app/(game)/games/Rogue.tsx");
-
-    const at = s.indexOf("불 켜진 방에 처음 들어서면");
-    assert.ok(at > 0, "방 밝히기 연출이 통째로 사라졌다");
-    // 그 주석 바로 뒤에 오는 갈고리를 본다.
-    const hook = /use(Layout)?Effect\(\(\) => \{/.exec(s.slice(at));
-    assert.ok(hook, "연출을 거는 갈고리를 못 찾았다 — 이 테스트가 무엇을 재는지 잃었다");
-    assert.equal(
-        hook![0],
-        "useLayoutEffect(() => {",
-        "`useEffect` 로 걸려 있다 — 방이 통째로 환한 프레임이 한 번 나간 뒤에 다시 어두워진다",
-    );
+// 엔진이 이미 밝힌 방을 화면에서 다시 가리면 밝음 → 어두움 → 밝음으로 보인다.
+test("불 켜진 방은 엔진의 시야를 그대로 그린다", () => {
+    const rogue = read("app/(game)/games/Rogue.tsx");
+    const map = read("app/(game)/games/components/MapView.tsx");
+    assert.doesNotMatch(rogue, /setReveal\(/, "밝은 방을 다시 가리는 연출이 남았다");
+    assert.doesNotMatch(map, /reveal\.room|reveal\.r/, "지도에서 밝은 방을 다시 가린다");
 });
 
 // 이름은 **직업이 뜨는 자리마다 같이** 뜬다.

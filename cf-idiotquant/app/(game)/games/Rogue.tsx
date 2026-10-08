@@ -17,7 +17,7 @@
  * 뜬다. 키는 원작 그대로 살아 있다.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataConnection, Peer } from "peerjs";
 
 import {
@@ -97,11 +97,11 @@ import {
 } from "@/lib/rogue/storage";
 import { T, idx, fountainAt, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES } from "@/lib/rogue/monsters";
-import { ADVANCE_LEVEL, ALIGNMENT_NAME, ARMOR_SKILL_MAX, ORIGIN_ALIGNMENT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ALIGNMENT_NAME, ARMOR_SKILL_MAX, ORIGIN_ALIGNMENT, ORIGINS, ORIGIN_LIST, RACE_NAME, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
-import MapView, { PARTY_BG, PARTY_INK, SPIRIT_INK, type CellFlash, type Reveal } from "./components/MapView";
+import MapView, { PARTY_BG, PARTY_INK, SPIRIT_INK, type CellFlash } from "./components/MapView";
 import { ZAP_FX, zapFrames, zapImpact, type ZapCell } from "./zapFx";
 import Panel from "./components/Panel";
 import TouchPad, { HOLD_DELAY, HOLD_STEP, type PadAction } from "./components/TouchPad";
@@ -300,9 +300,6 @@ const COOP_KEYS: { dirs: Record<string, [number, number]>; act: string[]; pack: 
 ];
 
 /** 온라인 방 코드 앞에 붙는 이름 — 공개 PeerJS 브로커에서 남의 방과 안 겹치게. */
-/** 불 켜진 방이 밝아지는 속도 — 한 겹에 이만큼. 열두 칸짜리 방이 반 초쯤 걸린다. */
-const REVEAL_STEP = 40;
-
 const PEER_PREFIX = "idiotquant-rogue-";
 /** 들어 있던 방 — 새로고침해도 다시 잇는다. */
 const ROOM_KEY = "rogue-room";
@@ -551,22 +548,9 @@ export default function Rogue() {
     }, []);
 
     /** 전투 피드백 & 특수 효과 연출 상태 (P6 - 칸 내 색상 점멸) */
-    /**
-     * 불 켜진 방에 **처음 들어설 때** 빛이 퍼지는 중.
-     *
-     * 「이 방은 왜 통째로 보이고 저 방은 한 칸씩인가」를 글로 적는 대신 **눈에 보이게** 한다 —
-     * 선 자리에서 한 겹씩 밝아지면 「횃불이 켜져 있다」가 저절로 읽힌다. 화면의 연출이라
-     * 판에는 없고, 방마다 **한 번만** 돈다(`litRooms`).
-     */
-    const [reveal, setReveal] = useState<Reveal | null>(null);
-    const litRooms = useRef(new Set<string>());
-    const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => () => {
-        if (revealTimer.current) clearTimeout(revealTimer.current);
-    }, []);
-
     const [cellFlashes, setCellFlashes] = useState<Record<string, CellFlash>>({});
     const [projectileCells, setProjectileCells] = useState<ZapCell[]>([]);
+    const [projectileLight, setProjectileLight] = useState<ZapCell[]>([]);
     /** 지팡이 궤적이 끝난 칸의 착탄 번쩍임 — 턴마다의 `cellFlashes` 와 따로 둬야 서로 안 지운다. */
     const [zapFlashes, setZapFlashes] = useState<Record<string, CellFlash>>({});
     /** 원작처럼 투사체가 지나가는 동안에는 다음 명령을 받지 않는다. */
@@ -680,11 +664,13 @@ export default function Rogue() {
         let impactTimer: ReturnType<typeof setTimeout> | null = null;
         let shakeTimer: ReturnType<typeof setTimeout> | null = null;
         setProjectileCells(frames[shown++]!);
+        if (fx) setProjectileLight(shot.cells.slice(0, fx.mode === "flash" ? shot.cells.length : 1));
         const timer = setInterval(() => {
             if (shown >= frames.length) {
                 clearInterval(timer);
                 tail = setTimeout(() => {
                     setProjectileCells([]);
+                    setProjectileLight([]);
                     projectilePlaying.current = false;
                 }, 16);
                 // 지팡이는 끝 칸에서 제 색으로 터진다 — 입력은 이미 풀렸고, 보는 것만 남는다.
@@ -699,6 +685,7 @@ export default function Rogue() {
                 return;
             }
             setProjectileCells(frames[shown++]!);
+            if (fx) setProjectileLight(shot.cells.slice(0, fx.mode === "flash" ? shot.cells.length : Math.min(shown, shot.cells.length)));
         }, stepMs);
         return () => {
             clearInterval(timer);
@@ -1495,8 +1482,6 @@ export default function Rogue() {
     whoRef.current = who;
     /** 지도가 따라가는 사람 — 빌린 눈이 있으면 그쪽이다. */
     const eye = view ?? who;
-    const eyeRef = useRef(eye);
-    eyeRef.current = eye;
     /** 내가 조종하는 영웅이 쓰러져 있는가 — 눈은 **그동안만** 빌린다. */
     const iAmDown = !!state && (state.heroes[who]?.hp ?? 1) <= 0;
     useEffect(() => {
@@ -1505,51 +1490,6 @@ export default function Rogue() {
     useEffect(() => {
         if (sheet !== "none" && sheet !== "status") setSheetOwner(whoRef.current);
     }, [sheet]);
-
-    // **불 켜진 방에 처음 들어서면 빛이 한 겹씩 퍼진다.**
-    //
-    // 어두운 방·미로·안개 층에서는 안 돈다 — 거기서는 원래 한두 칸만 보이므로 퍼질 것이 없고,
-    // 「이 방은 왜 좁은가」는 퍼지지 **않는 것**으로 읽힌다.
-    //
-    // **`useLayoutEffect` 여야 한다.** `useEffect` 는 브라우저가 **그린 뒤**에 돈다. 그러면
-    // 방이 통째로 환한 프레임이 먼저 나가고, 그 다음에야 `reveal` 이 걸려 도로 어두워졌다가
-    // 번진다 — 「이미 밝혀지고 **다시** 밝혀지는」 것이 이 한 글자에서 났다. 재 봤다(390px,
-    // 지도에 보이는 글자 수를 프레임마다):
-    //
-    //     useEffect       30 30 30 30 30 · 9 9 20 20 25 25 25 · 30 …   ← 다섯 프레임 환하다
-    //     useLayoutEffect  9 9 20 20 25 25 25 · 30 …                   ← 어두운 데서 시작한다
-    useLayoutEffect(() => {
-        if (!state) return;
-        const h = state.heroes[eyeRef.current] ?? state.heroes[0];
-        if (h.hp <= 0 || (h.blind ?? 0) > 0) return;
-        const { level } = state;
-        // 문턱에서는 삼각형 시야만 보이고, 방 안으로 들어선 순간에만 전체 방을 펼친다.
-        const ri = level.roomAt[idx(h.x, h.y)] >= 0 ? level.roomAt[idx(h.x, h.y)] : -1;
-        const room = ri >= 0 ? level.rooms[ri] : undefined;
-        if (!room || room.dark || room.gone || room.maze || level.mutator === "fog") return;
-        const key = `${level.depth}:${ri}`;
-        if (litRooms.current.has(key)) return;
-        litRooms.current.add(key);
-
-        if (revealTimer.current) clearTimeout(revealTimer.current);
-        // 원형 시야가 방의 먼 모서리까지 닿을 때까지 펼친다.
-        const far = Math.ceil(Math.max(
-            Math.hypot(room.x - h.x, room.y - h.y),
-            Math.hypot(room.x + room.w - 1 - h.x, room.y - h.y),
-            Math.hypot(room.x - h.x, room.y + room.h - 1 - h.y),
-            Math.hypot(room.x + room.w - 1 - h.x, room.y + room.h - 1 - h.y),
-        ));
-        setReveal({ cx: h.x, cy: h.y, r: 1, room });
-        const step = (r: number) => {
-            if (r > far) {
-                setReveal(null);
-                return;
-            }
-            setReveal((v) => (v ? { ...v, r } : v));
-            revealTimer.current = setTimeout(() => step(r + 1), REVEAL_STEP);
-        };
-        revealTimer.current = setTimeout(() => step(2), REVEAL_STEP);
-    }, [state]);
 
     /** 남들의 책상에 떠 있는 것 — `heroes` 칸 번호마다. 이어져 있을 때만 적는다. */
     const [peerModes, setPeerModes] = useState<Record<number, DeskMode>>({});
@@ -2134,7 +2074,7 @@ export default function Rogue() {
             )}
 
             <div className="relative min-h-0 flex-1">
-                <MapView state={state} who={eye} cellFlashes={{ ...cellFlashes, ...zapFlashes }} projectileCells={projectileCells} shake={shake} reveal={reveal} />
+                <MapView state={state} who={eye} cellFlashes={{ ...cellFlashes, ...zapFlashes }} projectileCells={projectileCells} projectileLight={projectileLight} shake={shake} />
 
                 {/* 온라인에서 **이어져 있지 않은 동안** — 누른 키가 안 먹는 까닭을 알린다.
                     **늘 떠 있는 것은 우상단의 작은 단추 하나**다. 본문은 눌러야 펼쳐진다.
