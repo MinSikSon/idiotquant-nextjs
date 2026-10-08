@@ -124,13 +124,19 @@ function makeStack(
     parts: { label: string; value: number | null; tone: Tone; pale?: boolean }[],
     legend?: { label: string; tone: Tone }[],
     note?: string,
+    requireBalance = false,
 ): StackRow | null {
     if (total === null || total <= 0) return null;
     const segs: StackSeg[] = [];
+    let partsTotal = 0;
     for (const p of parts) {
         if (p.value === null || p.value < 0) return null;
+        partsTotal += p.value;
         segs.push({ label: p.label, pct: (p.value / total) * 100, tone: p.tone, pale: p.pale });
     }
+    // 재무상태표 구성은 반드시 총자산과 대조한다. 서로 다른 자본 범위나 잘못된
+    // XBRL 항목이 섞이면 합계가 100%를 넘으므로, 그 경우 구성 막대를 숨긴다.
+    if (requireBalance && Math.abs(partsTotal - total) > Math.max(1, total * 0.001)) return null;
     return { title, note, segs, legend };
 }
 
@@ -219,8 +225,9 @@ const US_CONCEPTS = {
     inventory: ["us-gaap_InventoryNet", "InventoryNet"],
     currentAssets: ["us-gaap_AssetsCurrent", "AssetsCurrent"],
     assets: ["us-gaap_Assets", "Assets"],
-    liabilities: ["us-gaap_Liabilities", "Liabilities", "us-gaap_LiabilitiesAndStockholdersEquity"],
-    equity: ["us-gaap_StockholdersEquity", "StockholdersEquity", "us-gaap_StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"],
+    liabilities: ["us-gaap_Liabilities", "Liabilities"],
+    // 부채와 합쳐 총자산을 설명할 때는 비지배지분을 포함한 연결 자본을 써야 한다.
+    equity: ["us-gaap_StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", "us-gaap_StockholdersEquity", "StockholdersEquity"],
     revenue: [
         "us-gaap_RevenueFromContractWithCustomerExcludingAssessedTax",
         "RevenueFromContractWithCustomerExcludingAssessedTax",
@@ -282,7 +289,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
         ], [
             { label: `갚아야 할 돈 ${fmtUsd(latest("liabilities"))}`, tone: "rose" },
             { label: `주주 몫 ${fmtUsd(latest("equity"))}`, tone: "emerald" },
-        ]),
+        ], undefined, true),
     ].filter((s): s is StackRow => s !== null);
 
     const bs: BarModel = {
