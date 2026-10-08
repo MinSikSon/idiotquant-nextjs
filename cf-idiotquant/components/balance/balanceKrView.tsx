@@ -469,7 +469,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
       isLoading={isLoading}
       onRefresh={handleRefresh}
-      dividerClass="via-[#86efac] dark:via-[#166534]"
+      dividerClass="via-[#c8c4ff] dark:via-[#625b9e]"
       accountSelector={
         <AccountSelector
           balanceKey={balanceKey}

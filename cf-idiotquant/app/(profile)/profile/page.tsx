@@ -173,7 +173,7 @@ export default function ProfilePage() {
     const initial = session.user?.name?.[0]?.toUpperCase() ?? "U";
 
     return (
-        <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
+        <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
             <PageHeader
                 containerClassName={PROFILE_CONTAINER}
                 icon={<UserRound size={18} />}

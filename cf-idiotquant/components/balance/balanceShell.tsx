@@ -50,7 +50,7 @@ export function BalanceShell({
   sections: BalanceSection[];
 }) {
   return (
-    <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas transition-colors duration-300">
+    <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas transition-colors duration-300">
 
       <ToastContainer toasts={toasts} onRemove={onRemoveToast} />
 
