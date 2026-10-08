@@ -53,10 +53,10 @@ export const getQuantRuleDesc: any = async () => {
  *
  * 몇 개가 조건에 맞았는지는 목록 길이가 아니라 응답의 `meta.matched` 로 읽는다.
  */
-export const getScanDailyList: any = async (date?: string, strategy?: string, limit = 2500) => {
+export const getScanDailyList: any = async (date?: string, strategy?: string, limit = 2500, country: "KR" | "US" = "KR") => {
     const dateParam = date ?? "latest";
     const strategyParam = strategy ?? "all";
-    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=${limit}&sort=ncav_ratio&order=desc`;
+    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=${limit}&sort=ncav_ratio&order=desc&country=${country}`;
     return getAlgorithmTradeRequest(subUrl);
 }
 

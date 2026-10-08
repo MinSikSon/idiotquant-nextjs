@@ -598,6 +598,9 @@ function ScreenerContent() {
         try { return JSON.parse(localStorage.getItem('screener:filters') || '{}') as Record<string, any>; }
         catch { return {} as Record<string, any>; }
     }, []);
+    const [country, setCountry] = useState<"KR" | "US">(() =>
+        (searchParams.get('country') ?? saved.country) === 'US' ? 'US' : 'KR'
+    );
     const urlExclude = useMemo(() => searchParams.get('exclude')?.split(',') ?? null, [searchParams]);
     const initExclude = (key: string): boolean =>
         urlExclude ? urlExclude.includes(key) : (Array.isArray(saved.exclude) && saved.exclude.includes(key));
@@ -718,9 +721,9 @@ function ScreenerContent() {
     useEffect(() => {
         if (sessionStatus === "loading") return;
         dispatch(reqGetNcavDailyList(
-            isLoggedIn ? "latest" : { date: "latest", limit: PREVIEW_SIZE }
+            { date: "latest", limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
         ));
-    }, [dispatch, sessionStatus, isLoggedIn]);
+    }, [dispatch, sessionStatus, isLoggedIn, country]);
 
     useEffect(() => {
         if (isLoggedIn) dispatch(reqGetMyLikes());
@@ -729,6 +732,7 @@ function ScreenerContent() {
     // 현재 필터 상태를 그대로 재현하는 쿼리 스트링 (URL 동기화 + 공유 링크 공용)
     const queryString = useMemo(() => {
         const params = new URLSearchParams();
+        if (country === 'US') params.set('country', 'US');
         if (activeStrategyIds.size > 0)
             params.set('strategies', Array.from(activeStrategyIds).join(','));
         if (filterMode !== 'OR')
@@ -760,7 +764,7 @@ function ScreenerContent() {
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
+    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -770,6 +774,7 @@ function ScreenerContent() {
 
         // 전체 필터 스냅샷을 단일 키에 저장 — 다른 페이지 이동 후 복귀 시 그대로 복원
         const snapshot: Record<string, any> = {};
+        if (country === 'US') snapshot.country = country;
         if (activeStrategyIds.size > 0) snapshot.strategies = Array.from(activeStrategyIds);
         if (filterMode !== 'OR') snapshot.mode = filterMode;
         if (sortKey !== DEFAULT_SORT) snapshot.sort = sortKey;
@@ -806,7 +811,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
+    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
     const handleShare = useCallback(async () => {
@@ -826,9 +831,9 @@ function ScreenerContent() {
     }, [queryString]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList("latest"));
+        dispatch(reqGetNcavDailyList({ date: "latest", limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
         setDisplayCount(DAILY_PAGE_SIZE);
-    }, [dispatch]);
+    }, [dispatch, isLoggedIn, country]);
 
     const toggleSort = useCallback((key: DiscoverySortKey) => {
         setSortKey(prev => {
@@ -898,16 +903,17 @@ function ScreenerContent() {
     // 관심 종목 뷰: likedTickers(optimistic) 기준으로 scan 데이터 → server 데이터 → 최소 항목 순으로 병합
     const normalizedLikedList = useMemo(() => {
         if (likedTickers.size === 0) return [] as Record<string, any>[];
-        const scanMap = new Map(ncavDailyList.list.map((item: any) => [item.name, item]));
-        const likedMap = new Map<string, (typeof likedList)[number]>(likedList.map(item => [item.ticker, item]));
-        return Array.from(likedTickers).map((ticker: string) => {
+        const scanMap = new Map(ncavDailyList.list.map((item: any) => [country === 'US' ? item.ticker : item.name, item]));
+        const countryLikes = likedList.filter(item => Boolean(item.is_us) === (country === 'US'));
+        const likedMap = new Map<string, (typeof likedList)[number]>(countryLikes.map(item => [item.ticker, item]));
+        return Array.from(likedTickers).filter(ticker => scanMap.has(ticker) || likedMap.has(ticker)).map((ticker: string) => {
             const fromScan = scanMap.get(ticker);
             if (fromScan) return fromScan;
             const fromLiked = likedMap.get(ticker);
             if (fromLiked) return { ...fromLiked, name: fromLiked.stock_name ?? ticker };
             return { ticker, name: ticker, strategies: [] as string[] };
         }) as Record<string, any>[];
-    }, [likedTickers, likedList, ncavDailyList.list]);
+    }, [likedTickers, likedList, ncavDailyList.list, country]);
 
     // 현재 필터 상태 스냅샷 — 목록·파생 카운트가 같은 입력을 쓰도록 한 곳에서 만든다
     const filters = useMemo<ScreenerFilters>(() => ({
@@ -1047,18 +1053,16 @@ function ScreenerContent() {
         per: item.per,
         roe: safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null,
     })), [filteredList]);
-    const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init");
+    const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init" || ncavDailyList.country !== country);
 
     const handleStockClick = useCallback((ticker: string, name: string) => {
-        // KR 종목은 종목명으로 검색 (corpCodeJson[종목명] → stock_code 매핑)
-        router.push(`/analyze?ticker=${encodeURIComponent(name)}&from=screener`);
-    }, [router]);
+        router.push(`/analyze?ticker=${encodeURIComponent(country === 'US' ? ticker : name)}&from=screener`);
+    }, [router, country]);
 
     const handleToggleLike = useCallback((ticker: string, name: string) => {
         if (!isLoggedIn) { requireLogin(); return; }
-        // KR 종목 좋아요 키는 종목명 기준 — analyze와 동일하게 통일
-        dispatch(reqToggleLike({ ticker: name, name, isUs: false }));
-    }, [dispatch, isLoggedIn, requireLogin]);
+        dispatch(reqToggleLike({ ticker: country === 'US' ? ticker : name, name, isUs: country === 'US' }));
+    }, [dispatch, isLoggedIn, requireLogin, country]);
 
     const scanDate = ncavDailyList.scanDate;
     const formattedDate = scanDate
@@ -1174,6 +1178,7 @@ function ScreenerContent() {
 
     const applySavedSet = useCallback((qs: string) => {
         const p = new URLSearchParams(qs);
+        setCountry(p.get('country') === 'US' ? 'US' : 'KR');
         setActiveStrategyIds(new Set((p.get('strategies') ?? '').split(',').filter(id => STRATEGY_PRESETS.some(s => s.id === id))));
         setFilterMode(p.get('mode') === 'AND' ? 'AND' : 'OR');
         setSortKey(VALID_SORT_KEYS.includes(p.get('sort') as DiscoverySortKey) ? p.get('sort') as DiscoverySortKey : DEFAULT_SORT);
@@ -1250,6 +1255,31 @@ function ScreenerContent() {
                     </div>
                 </section>
             )}
+
+            <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+                <div className="max-w-7xl mx-auto flex gap-1 px-4 sm:px-6" role="tablist" aria-label="발굴 시장">
+                    {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
+                        <button
+                            key={value}
+                            type="button"
+                            role="tab"
+                            aria-selected={country === value}
+                            onClick={() => {
+                                if (country === value) return;
+                                setCountry(value);
+                                setMarkets(new Set());
+                                setSectors(new Set());
+                                setShowLikedOnly(false);
+                                setDisplayCount(DAILY_PAGE_SIZE);
+                            }}
+                            className={cn(
+                                "px-4 py-3 text-sm font-bold border-b-2 transition-colors",
+                                country === value ? "border-brand text-brand" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                            )}
+                        >{label}</button>
+                    ))}
+                </div>
+            </div>
 
             {/* ── 수집 중 안내 배너 ── */}
             {isLoggedIn && scanningInProgress && !showLikedOnly && (
@@ -1876,7 +1906,17 @@ function ScreenerContent() {
                             }
                         </div>
                         <div>
-                            {!isLoggedIn ? (
+                            {ncavDailyList.state === 'rejected' && !showLikedOnly ? (
+                                <>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">스캔 데이터를 불러오지 못했습니다</p>
+                                    <button onClick={handleRefresh} className="text-xs font-bold text-brand hover:underline mt-1">다시 시도</button>
+                                </>
+                            ) : country === 'US' && !showLikedOnly && ncavDailyList.list.length === 0 ? (
+                                <>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">미국 종목 데이터 수집 전입니다</p>
+                                    <p className="text-xs text-neutral-400 mt-1">수집이 시작되면 이곳에 발굴 결과가 표시됩니다.</p>
+                                </>
+                            ) : !isLoggedIn ? (
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">오늘은 추천 기준을 만족한 종목이 없습니다</p>
                                     <p className="text-xs text-neutral-400 mt-1">다음 스캔 결과에서 다시 확인해 주세요.</p>
@@ -2045,13 +2085,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
-                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                            <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {visibleList.map((item: any) => (
-                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
                                     ))}
                                 </div>
                             )
@@ -2060,13 +2100,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
                                     <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
                                         renderRow={(item: any) => (
-                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                            <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3">
                                     {visibleList.map((item: any) => (
-                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
                                     ))}
                                 </div>
                             )
@@ -2087,13 +2127,13 @@ function ScreenerContent() {
                                 {groups ? (
                                     <GroupedResults {...groupedProps}
                                         renderRow={(item: any) => (
-                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         )}
                                     />
                                 ) : (
                                     <div>
                                         {visibleList.map((item: any) => (
-                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         ))}
                                     </div>
                                 )}
@@ -2107,13 +2147,13 @@ function ScreenerContent() {
                                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
                                     <GroupedResults {...groupedProps} bodyClassName="grid grid-cols-2 sm:grid-cols-2 gap-1.5 p-1.5 sm:gap-3 sm:p-3"
                                         renderRow={(item: any) => (
-                                            <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                            <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                         )} />
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5 sm:gap-3">
                                     {visibleList.map((item: any) => (
-                                        <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                        <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                     ))}
                                 </div>
                             )}
