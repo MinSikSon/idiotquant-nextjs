@@ -82,6 +82,7 @@ import {
     ADVANCED_SPIRIT_TURNS,
     ALIGNMENT_NAME,
     ORIGINS,
+    ROLE_GROWTH,
     SPIRIT_COOLDOWN,
     SPIRIT_TURNS,
 } from "./origins";
@@ -2154,9 +2155,19 @@ function study(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
 export function spellCastingChance(hero: Hero, spell: string): number {
     const def = SPELLBOOKS[spell];
     if (!def) return 0;
-    const caster = hero.origin === "scholar" || hero.origin === "alchemist" || hero.origin === "elementalist"
-        ? hero.intelligence : hero.wisdom;
-    return Math.max(0, Math.min(95, Math.floor(11 * caster / 2) + hero.level * 2 - def.level * 10));
+    const role = ROLE_GROWTH[hero.origin ?? "knight"];
+    const caster = hero[role.spellStat];
+    let chance = Math.floor(11 * caster / 2);
+    const difficulty = (def.level - 1) * 4 - (Math.floor(hero.level / 3) + 1);
+    if (difficulty > 0) chance -= Math.floor(Math.sqrt(900 * difficulty + 2000));
+    else chance += Math.min(20, Math.floor(15 * -difficulty / def.level));
+    chance = Math.max(0, Math.min(120, chance));
+    let casterPenalty = role.spellBase;
+    if (spell === "healing") casterPenalty += role.healPenalty;
+    if (spell === role.specialty) casterPenalty += role.specialtyBonus;
+    const armor = hero.pack.find((item) => item.id === hero.armorId);
+    if (armor && armor.type !== "leather") casterPenalty += role.armorPenalty;
+    return Math.max(0, Math.min(100, Math.floor(chance * (20 - casterPenalty) / 15 - casterPenalty)));
 }
 
 function cast(state: GameState, hero: Hero, spell: string, rng: Rng): boolean {

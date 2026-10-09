@@ -31,7 +31,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGIN_ALIGNMENT, ORIGIN_RACE, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGIN_ALIGNMENT, ORIGIN_RACE, ORIGINS, RACE_GROWTH, ROLE_GROWTH, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -168,14 +168,20 @@ export const EXP_LEVELS = [
     160000, 320000, 1000000, 3333333, 6666666, 10000000,
 ];
 
-/** 레벨마다 얻는 체력의 기준값. Constitution 보정은 `hpGainPerLevel` 에서 더한다. */
-export const HP_PER_LEVEL = 5;
-
 /** NetHack-style Constitution modifier scales the deterministic HP increase. */
-export function hpGainPerLevel(hero: Hero): number {
+function growthAmount(fixed: number, random: number, rng?: Rng): number {
+    return fixed + (random > 0 ? (rng ? rng.between(1, random) : Math.floor((random + 1) / 2)) : 0);
+}
+
+export function hpGainPerLevel(hero: Hero, rng?: Rng): number {
     const con = hero.constitution;
     const bonus = con <= 3 ? -2 : con <= 6 ? -1 : con <= 14 ? 0 : con <= 16 ? 1 : con === 17 ? 2 : con === 18 ? 3 : 4;
-    return Math.max(1, HP_PER_LEVEL + bonus);
+    const role = ROLE_GROWTH[hero.origin ?? "knight"];
+    const race = RACE_GROWTH[hero.race ?? "human"];
+    const high = hero.level >= role.highAt;
+    const roleGrowth = high ? role.hpHigh : role.hpLow;
+    const raceGrowth = high ? race.hpHigh : race.hpLow;
+    return Math.max(1, growthAmount(roleGrowth[0], roleGrowth[1], rng) + growthAmount(raceGrowth[0], raceGrowth[1], rng) + bonus);
 }
 
 export const PACK_CAPACITY = 50;
@@ -215,6 +221,11 @@ export function strDamBonus(str: number): number {
 
 export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "knight"): Hero {
     const originDef = ORIGINS[origin] ?? ORIGINS.knight;
+    const roleGrowth = ROLE_GROWTH[origin];
+    const raceGrowth = RACE_GROWTH[ORIGIN_RACE[origin]];
+    const initialPower = Math.max(1,
+        growthAmount(roleGrowth.enInitial[0], roleGrowth.enInitial[1], rng) +
+        growthAmount(raceGrowth.enInitial[0], raceGrowth.enInitial[1], rng));
     const hero: Hero = {
         origin,
         race: ORIGIN_RACE[origin],
@@ -235,8 +246,8 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         constitution: originDef.baseCon,
         charisma: originDef.baseCha,
         intelligence: originDef.baseInt,
-        power: Math.max(1, Math.floor(originDef.baseWis / 2)),
-        maxPower: Math.max(1, Math.floor(originDef.baseWis / 2)),
+        power: initialPower,
+        maxPower: initialPower,
         spells: {},
         baseIntelligence: originDef.baseInt,
         baseWisdom: originDef.baseWis,
@@ -888,10 +899,15 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         hero.level += 1;
         // **굴리지 않는다.** 몬스터 체력과 같은 이유다 — 같은 레벨의 두 판이 체력만
         // 다른 것은 판단거리가 아니라 그냥 운이다(`monsters.ts` 머리말 참고).
-        const hpGain = hpGainPerLevel(hero);
+        const hpGain = hpGainPerLevel(hero, rng);
         hero.maxHp += hpGain;
         hero.hp += hpGain;
-        const powerGain = Math.max(1, Math.floor(hero.wisdom / 2) + rng.between(1, 4));
+        const role = ROLE_GROWTH[hero.origin ?? "knight"];
+        const race = RACE_GROWTH[hero.race ?? "human"];
+        const high = hero.level >= role.highAt;
+        const roleGrowth = high ? role.enHigh : role.enLow;
+        const raceGrowth = high ? race.enHigh : race.enLow;
+        const powerGain = Math.max(1, Math.floor(hero.wisdom / 2) + growthAmount(roleGrowth[0], roleGrowth[1], rng) + growthAmount(raceGrowth[0], raceGrowth[1], rng));
         hero.maxPower += powerGain;
         hero.power += powerGain;
         gained.push(hero.level);

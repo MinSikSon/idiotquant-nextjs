@@ -36,6 +36,28 @@ export const ORIGIN_RACE = {
 
 export const RACE_NAME = { human: "인간", orc: "오크", gnome: "노움", elf: "엘프", dwarf: "드워프" } as const;
 
+/** NetHack 3.6 역할·종족 성장표. 커스텀 직업은 가장 가까운 역할 성장표를 빌린다. */
+type Growth = readonly [fixed: number, random: number];
+type RoleGrowth = { hpLow: Growth; hpHigh: Growth; enInitial: Growth; enLow: Growth; enHigh: Growth; highAt: number; spellStat: "intelligence" | "wisdom"; spellBase: number; healPenalty: number; armorPenalty: number; specialty: string | null; specialtyBonus: number };
+export const ROLE_GROWTH: Record<HeroOrigin, RoleGrowth> = {
+    knight: { hpLow: [0, 8], hpHigh: [2, 0], enInitial: [1, 4], enLow: [0, 1], enHigh: [0, 2], highAt: 10, spellStat: "wisdom", spellBase: 8, healPenalty: -2, armorPenalty: 9, specialty: null, specialtyBonus: -4 },
+    rogue: { hpLow: [0, 8], hpHigh: [1, 0], enInitial: [1, 0], enLow: [0, 1], enHigh: [0, 1], highAt: 11, spellStat: "intelligence", spellBase: 8, healPenalty: 0, armorPenalty: 9, specialty: "detect treasure", specialtyBonus: -4 },
+    alchemist: { hpLow: [0, 8], hpHigh: [1, 0], enInitial: [1, 4], enLow: [0, 1], enHigh: [0, 2], highAt: 20, spellStat: "wisdom", spellBase: 3, healPenalty: -3, armorPenalty: 10, specialty: "cure sickness", specialtyBonus: -4 },
+    scholar: { hpLow: [0, 8], hpHigh: [1, 0], enInitial: [4, 3], enLow: [0, 2], enHigh: [0, 3], highAt: 12, spellStat: "intelligence", spellBase: 1, healPenalty: 0, armorPenalty: 10, specialty: "magic missile", specialtyBonus: -4 },
+    ranger: { hpLow: [0, 6], hpHigh: [1, 0], enInitial: [1, 0], enLow: [0, 1], enHigh: [0, 1], highAt: 12, spellStat: "intelligence", spellBase: 9, healPenalty: 2, armorPenalty: 10, specialty: "invisibility", specialtyBonus: -4 },
+    archeologist: { hpLow: [0, 8], hpHigh: [1, 0], enInitial: [1, 0], enLow: [0, 1], enHigh: [0, 1], highAt: 14, spellStat: "intelligence", spellBase: 5, healPenalty: 0, armorPenalty: 10, specialty: "magic mapping", specialtyBonus: -4 },
+    elementalist: { hpLow: [0, 8], hpHigh: [1, 0], enInitial: [4, 3], enLow: [0, 2], enHigh: [0, 3], highAt: 12, spellStat: "intelligence", spellBase: 1, healPenalty: 0, armorPenalty: 10, specialty: "magic missile", specialtyBonus: -4 },
+};
+
+/** NetHack 역할 성장에 더하는 종족 성장 (고정치, 1..주사위). */
+export const RACE_GROWTH = {
+    human: { hpLow: [2, 1] as Growth, hpHigh: [0, 0] as Growth, enInitial: [1, 0] as Growth, enLow: [2, 0] as Growth, enHigh: [2, 0] as Growth },
+    elf: { hpLow: [1, 1] as Growth, hpHigh: [1, 0] as Growth, enInitial: [2, 0] as Growth, enLow: [3, 0] as Growth, enHigh: [3, 0] as Growth },
+    dwarf: { hpLow: [3, 2] as Growth, hpHigh: [0, 0] as Growth, enInitial: [0, 0] as Growth, enLow: [0, 0] as Growth, enHigh: [0, 0] as Growth },
+    gnome: { hpLow: [1, 0] as Growth, hpHigh: [0, 0] as Growth, enInitial: [2, 0] as Growth, enLow: [2, 0] as Growth, enHigh: [2, 0] as Growth },
+    orc: { hpLow: [1, 0] as Growth, hpHigh: [0, 0] as Growth, enInitial: [1, 0] as Growth, enLow: [1, 0] as Growth, enHigh: [1, 0] as Growth },
+} satisfies Record<import("./types").HeroRace, { hpLow: Growth; hpHigh: Growth; enInitial: Growth; enLow: Growth; enHigh: Growth }>;
+
 export const ALIGNMENT_NAME: Record<ReligionAlignment, string> = {
     lawful: "질서",
     neutral: "중립",
