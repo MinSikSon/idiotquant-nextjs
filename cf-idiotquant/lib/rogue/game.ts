@@ -359,7 +359,7 @@ function itemAt(level: Level, x: number, y: number): Item | undefined {
 const ENCHANT_PER_FLOOR = 2;
 /** 일반 분배의 층 단위 상한 — 추가 식량은 이 통과 따로 선다. */
 const FLOOR_ITEM_CAP = 8;
-const FLOOR_GEAR_CAP = 3;
+const FLOOR_GEAR_CAP = 5;
 const FLOOR_RING_CAP = 1;
 /** 식량 없이 이만큼 지나면 다음 층에 하나를 보장한다. */
 const FOOD_GRACE = 4;

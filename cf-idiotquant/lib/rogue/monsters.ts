@@ -30,30 +30,30 @@ import {
 
 export const MONSTERS: Record<string, MonsterDef> = {
     A: { ch: "A", name: "아쿠에이터", exp: 20, level: 5, armor: 2, hp: 22, damage: ["0d0", "0d0"], mean: true, traits: ["M"], special: "갑옷을 녹인다" },
-    B: { ch: "B", name: "박쥐", exp: 1, level: 1, armor: 3, hp: 4, damage: ["1d2"], mean: false, traits: ["F"] },
-    C: { ch: "C", name: "켄타우로스", exp: 17, level: 4, armor: 4, hp: 18, damage: ["1d2", "1d5", "1d5"], mean: false },
-    D: { ch: "D", name: "용", exp: 5000, level: 10, armor: -1, hp: 45, damage: ["1d8", "1d8", "3d10"], mean: true, traits: ["M"] },
+    B: { ch: "B", name: "박쥐", exp: 1, level: 1, armor: 3, hp: 4, corpseSize: "tiny", damage: ["1d2"], mean: false, traits: ["F"] },
+    C: { ch: "C", name: "켄타우로스", exp: 17, level: 4, armor: 4, hp: 18, corpseSize: "large", damage: ["1d2", "1d5", "1d5"], mean: false },
+    D: { ch: "D", name: "용", exp: 5000, level: 10, armor: -1, hp: 45, corpseSize: "large", damage: ["1d8", "1d8", "3d10"], mean: true, traits: ["M"] },
     E: { ch: "E", name: "에뮤", exp: 2, level: 1, armor: 7, hp: 4, damage: ["1d2"], mean: true },
-    F: { ch: "F", name: "파리지옥", exp: 80, level: 8, armor: 3, hp: 36, damage: ["1d6", "0d0"], mean: true, traits: ["M"], still: true, special: "덩굴로 붙잡는다" },
-    G: { ch: "G", name: "그리핀", exp: 2000, level: 13, armor: 2, hp: 58, damage: ["4d3", "3d5"], mean: true, traits: ["M", "F", "R"] },
+    F: { ch: "F", name: "파리지옥", exp: 80, level: 8, armor: 3, hp: 36, corpseSize: "large", damage: ["1d6", "0d0"], mean: true, traits: ["M"], still: true, special: "덩굴로 붙잡는다" },
+    G: { ch: "G", name: "그리핀", exp: 2000, level: 13, armor: 2, hp: 58, corpseSize: "large", damage: ["4d3", "3d5"], mean: true, traits: ["M", "F", "R"] },
     H: { ch: "H", name: "홉고블린", exp: 3, level: 1, armor: 5, hp: 4, damage: ["1d8"], mean: true },
     I: { ch: "I", name: "얼음괴물", exp: 15, level: 1, armor: 9, hp: 4, damage: ["0d0"], mean: false, special: "얼려서 못 움직이게 한다" },
-    J: { ch: "J", name: "재버워크", exp: 3000, level: 15, armor: 6, hp: 68, damage: ["2d12", "2d4"], mean: false },
-    K: { ch: "K", name: "황조롱이", exp: 1, level: 1, armor: 7, hp: 4, damage: ["1d4"], mean: true, traits: ["M", "F"] },
+    J: { ch: "J", name: "재버워크", exp: 3000, level: 15, armor: 6, hp: 68, corpseSize: "large", damage: ["2d12", "2d4"], mean: false },
+    K: { ch: "K", name: "황조롱이", exp: 1, level: 1, armor: 7, hp: 4, corpseSize: "tiny", damage: ["1d4"], mean: true, traits: ["M", "F"] },
     L: { ch: "L", name: "레프러콘", exp: 10, level: 3, armor: 8, hp: 14, damage: ["0d0"], mean: false, special: "금화를 채고 달아난다" },
-    M: { ch: "M", name: "메두사", exp: 200, level: 8, armor: 2, hp: 36, damage: ["3d4", "3d4", "2d5"], mean: true, traits: ["M"] },
+    M: { ch: "M", name: "메두사", exp: 200, level: 8, armor: 2, hp: 36, generationFrequency: 1, damage: ["3d4", "3d4", "2d5"], mean: true, traits: ["M"] },
     N: { ch: "N", name: "님프", exp: 37, level: 3, armor: 9, hp: 14, damage: ["0d0"], mean: false, special: "물건을 채고 달아난다" },
     O: { ch: "O", name: "오크", exp: 5, level: 1, armor: 6, hp: 4, damage: ["1d8"], mean: false, traits: ["G"] },
     P: { ch: "P", name: "팬텀", exp: 120, level: 8, armor: 3, hp: 36, damage: ["4d4"], mean: false, traits: ["I", "S"], invisible: true },
     Q: { ch: "Q", name: "콰가", exp: 15, level: 3, armor: 3, hp: 14, damage: ["1d5", "1d5"], mean: true, traits: ["M"] },
     R: { ch: "R", name: "방울뱀", exp: 9, level: 2, armor: 3, hp: 9, damage: ["1d6"], mean: true, traits: ["M"] },
     S: { ch: "S", name: "뱀", exp: 2, level: 1, armor: 5, hp: 4, damage: ["1d3"], mean: true, traits: ["M"] },
-    T: { ch: "T", name: "트롤", exp: 120, level: 6, armor: 4, hp: 27, damage: ["1d8", "1d8", "2d6"], mean: true, traits: ["R", "M"] },
+    T: { ch: "T", name: "트롤", exp: 120, level: 6, armor: 4, hp: 27, corpseSize: "large", damage: ["1d8", "1d8", "2d6"], mean: true, traits: ["R", "M"] },
     U: { ch: "U", name: "우르바일", exp: 190, level: 7, armor: -2, hp: 32, damage: ["1d9", "1d9", "2d9"], mean: true, traits: ["M"] },
     V: { ch: "V", name: "뱀파이어", exp: 350, level: 8, armor: 1, hp: 36, damage: ["1d10"], mean: true, traits: ["R", "M", "S"] },
-    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: 22, damage: ["1d6", "0d0"], mean: false, traits: ["S"], special: "경험을 빨아먹는다" },
+    W: { ch: "W", name: "망령", exp: 55, level: 5, armor: 4, hp: 22, generationFrequency: 1, damage: ["1d6", "0d0"], mean: false, traits: ["S"], special: "경험을 빨아먹는다" },
     X: { ch: "X", name: "제록", exp: 100, level: 7, armor: 7, hp: 32, damage: ["4d4"], mean: false },
-    Y: { ch: "Y", name: "예티", exp: 50, level: 4, armor: 6, hp: 18, damage: ["1d6", "1d6"], mean: false },
+    Y: { ch: "Y", name: "예티", exp: 50, level: 4, armor: 6, hp: 18, corpseSize: "large", damage: ["1d6", "1d6"], mean: false },
     Z: { ch: "Z", name: "좀비", exp: 6, level: 2, armor: 8, hp: 9, damage: ["1d8"], mean: true, traits: ["M", "S"] },
     // P는 기존 팬텀의 글자다. 지도에서 둘을 가르기 위해 소문자 p를 쓴다.
     p: { ch: "p", name: "검은 푸딩", exp: 180, level: 10, armor: 6, hp: 45, damage: ["3d8"], mean: false, traits: ["D"] },
@@ -82,18 +82,13 @@ export function randomMonsterChar(depth: number, rng: Rng): string {
     return LVL_MONS[Math.min(25, Math.max(0, d - 1))];
 }
 
-/** NetHack 3.6 계열의 사체 생성 확률을 이 표의 대응 종에 적용한다. */
+/** NetHack 3.6 계열의 사체 생성 확률을 몸집·생성 빈도에 따라 적용한다. */
 export function shouldDropCorpse(def: MonsterDef, rng: Rng): boolean {
-    // 좀비와 흡혈귀는 자기 시체 대신 오래된 사람 시체를 확정으로 남긴다.
-    if (def.ch === "V" || def.ch === "Z") return true;
+    // 큰 몸집은 확정. 좀비·흡혈귀는 사람 시체를 남기되 사체 자체는 보장되지 않는다.
+    if (def.corpseSize === "large") return true;
 
-    // 큰 몸집은 보통 사체를 확정으로 남긴다. 넷핵 원형 중 덩치가 큰 종을 대응시킨다.
-    if (["D", "G", "J", "T", "Y"].includes(def.ch)) return true;
-
-    // 박쥐·황조롱이·레프러콘·얼음괴물은 작은 종으로 보고 기본 분모에 1을 더한다.
-    const tiny = ["B", "I", "K", "L"].includes(def.ch);
-    // 메두사·망령은 희귀 종으로 보고 분모에 1을 더한다.
-    const rare = ["M", "W"].includes(def.ch);
+    const tiny = def.corpseSize === "tiny";
+    const rare = (def.generationFrequency ?? 2) < 2;
     const denominator = 2 + Number(tiny) + Number(rare);
     return rng.rnd(denominator) === 0;
 }

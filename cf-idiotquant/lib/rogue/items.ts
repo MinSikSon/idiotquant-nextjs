@@ -705,15 +705,14 @@ export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "en
 /**
  * 층 구간별 분류 가중치.
  *
- * **여기서 층을 타는 것은 강화 주문서뿐이라고 봐도 된다**(6 → 11). 나머지는 그 몫을
- * 내주느라 조금씩 줄 뿐이다. 식량과 물약을 거의 안 건드리는 까닭이 그것이다 —
- * 깊은 층에서 그 둘이 마르면 **굶어 죽는 까닭이 운**이 된다.
+ * 일반 아이템 표에서 식량은 원작의 20%로 유지하고, 무기·방어구를 합계 30%로 높였다.
+ * 깊은 층으로 갈수록 강화 주문서도 늘린다. 층별 몫은 항상 100이다.
  */
 const CATEGORIES: { upTo: number; w: Record<Category, number> }[] = [
-    { upTo: 5, w: { gold: 23, potion: 15, scroll: 10, spellbook: 3, food: 10, enchant: 6, weapon: 12, armor: 10, ring: 5, wand: 5, tool: 1 } },
-    { upTo: 12, w: { gold: 21, potion: 15, scroll: 9, spellbook: 3, food: 9, enchant: 8, weapon: 12, armor: 10, ring: 6, wand: 6, tool: 1 } },
-    { upTo: 19, w: { gold: 19, potion: 14, scroll: 9, spellbook: 2, food: 9, enchant: 10, weapon: 12, armor: 11, ring: 6, wand: 7, tool: 1 } },
-    { upTo: 26, w: { gold: 17, potion: 14, scroll: 8, spellbook: 2, food: 9, enchant: 11, weapon: 13, armor: 12, ring: 5, wand: 8, tool: 1 } },
+    { upTo: 5, w: { gold: 9, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 6, weapon: 15, armor: 15, ring: 4, wand: 5, tool: 1 } },
+    { upTo: 12, w: { gold: 7, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 8, weapon: 15, armor: 15, ring: 4, wand: 5, tool: 1 } },
+    { upTo: 19, w: { gold: 6, potion: 13, scroll: 8, spellbook: 2, food: 20, enchant: 10, weapon: 15, armor: 16, ring: 4, wand: 5, tool: 1 } },
+    { upTo: 26, w: { gold: 4, potion: 13, scroll: 7, spellbook: 2, food: 20, enchant: 11, weapon: 16, armor: 16, ring: 4, wand: 6, tool: 1 } },
 ];
 
 export function categoryWeights(depth: number): Record<Category, number> {

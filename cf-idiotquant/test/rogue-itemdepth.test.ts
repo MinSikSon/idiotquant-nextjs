@@ -23,6 +23,7 @@ import { newGame, perform } from "@/lib/rogue/game";
 import { effectiveArea } from "@/lib/rogue/dungeon";
 import { forSale } from "@/lib/rogue/shop";
 import { Rng } from "@/lib/rogue/rng";
+import { MONSTERS, shouldDropCorpse } from "@/lib/rogue/monsters";
 import { T, idx, type Item, type Level } from "@/lib/rogue/types";
 
 /** 그 층에서 물건을 잔뜩 떨어뜨려 본다. */
@@ -260,10 +261,34 @@ test("강화 주문서는 분류로 서고, 층 규칙이 그 위에 얹힌다",
             assert.equal(sum, 100, `${d}층 가중치 합이 ${sum} 이다`);
             assert.ok(w.enchant >= last, `${d}층에서 강화 가중치가 내려갔다`);
             last = w.enchant;
-            // 식량과 물약은 깊어져도 마르면 안 된다 — 굶어 죽는 까닭이 운이 된다.
-            assert.ok(w.food >= 9 && w.potion >= 14, `${d}층에서 식량·물약이 너무 말랐다`);
+            assert.ok(w.food === 20 && w.potion >= 13, `${d}층에서 원작 식량 비중 또는 물약 안전선이 깨졌다`);
+            assert.ok(w.weapon + w.armor >= 30, `${d}층에서 일반 장비 비중이 ${w.weapon + w.armor}% 뿐이다`);
         }
         assert.ok(categoryWeights(26).enchant > categoryWeights(1).enchant);
+    }
+
+    // ── 식량·일반 장비 비중과 시체 확률
+    {
+        const rng = new Rng(20261010);
+        const seen = { food: 0, weapon: 0, armor: 0 };
+        for (let i = 0; i < 30000; i++) {
+            const category = pickCategory(1, rng, 1);
+            if (category === "food") seen.food++;
+            if (category === "weapon") seen.weapon++;
+            if (category === "armor") seen.armor++;
+        }
+        assert.ok(seen.food / 30000 > 0.19, `식량이 원작 20% 수준보다 낮다 (${seen.food / 300}%)`);
+        assert.ok((seen.weapon + seen.armor) / 30000 > 0.29, `일반 장비가 상향 비중에 못 미친다 (${(seen.weapon + seen.armor) / 300}%)`);
+
+        const rate = (ch: string) => {
+            const corpseRng = new Rng(1234);
+            let drops = 0;
+            for (let i = 0; i < 12000; i++) if (shouldDropCorpse(MONSTERS[ch], corpseRng)) drops++;
+            return drops / 12000;
+        };
+        assert.ok(rate("D") === 1, "큰 몬스터는 사체를 확정으로 남겨야 한다");
+        for (const ch of ["E", "Z", "V"]) assert.ok(rate(ch) > 0.47 && rate(ch) < 0.53, `${ch} 일반 빈도 종은 약 1/2이어야 한다`);
+        for (const ch of ["B", "M", "W"]) assert.ok(rate(ch) > 0.30 && rate(ch) < 0.37, `${ch} 초소형·희귀 종은 약 1/3이어야 한다`);
     }
 
     // ── 가뭄 보정이 **실제로 켜진다**
@@ -483,7 +508,7 @@ test("특수 방은 층에서 꾸어 가고, 층 상한은 안 넘는다", () =>
     );
 
     assert.ok(worstTotal <= 8, `한 층에 물건이 ${worstTotal} 개 — 상한은 8 이다`);
-    assert.ok(worstGear <= 3, `한 층에 장비가 ${worstGear} 개 — 상한은 3 이다`);
+    assert.ok(worstGear <= 5, `한 층에 장비가 ${worstGear} 개 — 상한은 5 이다`);
     assert.ok(worstRing <= 1, `한 층에 반지가 ${worstRing} 개 — 상한은 1 이다`);
     // 식량 보정은 밸런스가 아니라 **죽는 까닭의 문제**다. 굶는 것이 운이면 배울 것이 없다.
     assert.ok(worstFoodGap <= 5, `식량 없이 ${worstFoodGap} 층을 지났다 — 가뭄 보장이 안 듣는다`);

@@ -90,6 +90,10 @@ export interface MonsterDef {
     armor: number;
     /** 체력. **고정값이다** — 굴리지 않는다. */
     hp: number;
+    /** 사체 판정용 몸집. 큰 몸집은 원작처럼 항상 사체를 남긴다. */
+    corpseSize?: "tiny" | "small" | "medium" | "large";
+    /** 원작의 생성 빈도(G_FREQ). 2 미만이면 사체 확률 분모에 1을 더한다. */
+    generationFrequency?: number;
     /** 때릴 때 굴리는 것. 여러 번 때리는 놈은 여러 개. */
     damage: string[];
     /** 보자마자 쫓아오는가. 아니면 건드릴 때까지 가만히 있는가. */
