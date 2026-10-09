@@ -402,8 +402,8 @@ test("무기 강화는 enchant로 표시하고, 상태 줄에서는 값으로 �
         s.heroes[0].weaponId = w.id;
         s.heroes[0].str = 16; // 능력 보정 +3, 숙련 +2
 
-        assert.equal(heroHitBonus(s.heroes[0], {}), 2, "모르는 무기의 손질이 상태 줄에 샜다");
-        assert.equal(heroHitBonus(s.heroes[0], { "weapon:knight sword": true }), 5);
+        assert.equal(heroHitBonus(s.heroes[0], {}), 3, "모르는 무기의 손질이 상태 줄에 샜다");
+        assert.equal(heroHitBonus(s.heroes[0], { "weapon:knight sword": true }), 6);
     }
 
     // ── 상대의 공격력 줄은 등호를 하나만 쓴다 — 어느 쪽이 총합인지 읽혀야 한다

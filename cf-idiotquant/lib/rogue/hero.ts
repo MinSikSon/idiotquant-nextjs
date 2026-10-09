@@ -200,7 +200,7 @@ export function packWeight(hero: Hero): number {
 export function encumbrance(hero: Hero, extraWeight = 0): number {
     const capacity = carryCapacity(hero);
     const weight = packWeight(hero) + extraWeight;
-    return weight <= 0 ? 0 : Math.min(5, Math.floor(weight * 2 / capacity) + 1);
+    return Math.min(5, Math.floor(weight * 2 / capacity));
 }
 
 /** NetHack `abon()`의 힘 명중 표. 이 게임의 19~31은 18/xx 대신 쓰는 성장 구간이다. */

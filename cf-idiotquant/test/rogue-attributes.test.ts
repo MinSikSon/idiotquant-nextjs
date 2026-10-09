@@ -59,6 +59,20 @@ test("힘과 건강이 무게 한도를 정하고 과적은 명중과 이동을 
     assert.equal(packWeight(hero), before);
 });
 
+test("짐을 덜어 과적 단계가 풀리면 명중 굴림에서 과적 보정도 사라진다", () => {
+    let id = 0;
+    const hero = makeHero(new Rng(31), () => ++id);
+    const potion = makeItem("potion", "healing", ++id, -1, -1, 100);
+    hero.pack = [potion];
+
+    assert.ok(encumbrance(hero) > 0);
+    assert.ok(heroHitTerms(hero).some((term) => term.why === "과적"));
+
+    potion.count = 1;
+    assert.equal(encumbrance(hero), 0);
+    assert.ok(!heroHitTerms(hero).some((term) => term.why === "과적"));
+});
+
 test("지능은 마법책 학습, 지혜는 마력 성장과 직업별 시전에 반영된다", () => {
     const scholar = newGame(301, {}, {}, {}, {}, "scholar");
     const knight = newGame(302);
