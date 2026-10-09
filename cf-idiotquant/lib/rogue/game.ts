@@ -1615,73 +1615,87 @@ function fountainMonsterSpot(
 /** 넷핵식 기도: 대기 시간이 끝나고 Luck이 중립 이상일 때 위기를 걷어낸다. */
 function pray(state: GameState, hero: Hero, rng: Rng): boolean {
     const cursed = hero.pack.filter((item) => item.cursed);
-    const criticalHealth = hero.hp <= 5;
+    const criticalHealth = hero.hp <= Math.max(5, Math.floor(hero.maxHp / 4));
     const allowedTimeout = prayerTimeoutLimit(hero);
     const altar = state.level.transmuteAltar;
     const atAltar = !!altar && altar.uses > 0 && altar.x === hero.x && altar.y === hero.y;
     const misalignedAltar = !!altar && atAltar && altar.alignment !== hero.alignment;
-    if (hero.luck < 0 || hero.prayerTimeout > allowedTimeout || misalignedAltar || hero.deityAnger > 0) {
-        hero.luck = Math.max(-13, hero.luck - 3);
-        const damage = rng.between(1, Math.max(4, Math.ceil(hero.level / 2)));
-        hero.hp -= damage;
-        hero.prayerTimeout = Math.max(hero.prayerTimeout, 300);
-        hero.deityAnger = Math.min(3, hero.deityAnger + 1);
-        if (misalignedAltar) {
-            const water = state.level.items.find((item) => item.x === hero.x && item.y === hero.y && item.kind === "potion" && item.type === "water");
-            if (water) {
-                water.blessed = false;
-                water.cursed = true;
-                water.curseKnown = false;
-                say(state, "다른 정렬의 제단에서 빈 기도를 올려 물이 저주받은 물로 변했다.");
-            }
-        }
-        say(state, `기도가 받아들여지지 않았다${misalignedAltar ? " — 다른 정렬의 신의 제단이다" : hero.deityAnger > 0 ? " — 신의 분노가 가라앉지 않았다" : ""}. 행운이 나빠지고 신의 분노 ${hero.deityAnger}/3, ${damage} 피해.`);
-        return true;
-    }
-
-    const healed = hero.hp < hero.maxHp;
-    hero.hp = hero.maxHp;
-    if (criticalHealth && hero.maxHp < 5 * hero.level + 11) {
-        hero.maxHp = Math.min(5 * hero.level + 11, hero.maxHp + rng.between(1, 5));
-        hero.hp = hero.maxHp;
-    }
-    const fed = hero.food < 900;
-    hero.food = Math.max(hero.food, 900);
-    const restored = hero.str < hero.maxStr;
-    hero.str = hero.maxStr;
-    const cleared = hero.blind > 0 || hero.confused > 0 || hero.stuck > 0 || !!hero.burnTurns;
-    hero.blind = 0;
-    hero.confused = 0;
-    hero.stuck = 0;
-    hero.burnTurns = 0;
-    for (const item of cursed) {
-        item.cursed = false;
-        item.curseKnown = false;
-    }
-    if (!healed && !fed && !restored && !cleared && cursed.length === 0) {
-        // 평온한 기도에 대한 이 게임의 호의: 도달 가능한 치유 상한 안에서 생명력을 늘린다.
-        const maxHealth = 5 * hero.level + 11;
-        if (hero.maxHp < maxHealth) hero.maxHp += 1;
-        else hero.luck = Math.min(13, hero.luck + 1);
-        hero.hp = hero.maxHp;
-    }
-    const atCoAltar = !!altar && atAltar && altar.alignment === hero.alignment;
-    hero.prayerTimeout = Math.max(50, rng.between(50, 1000) - (atCoAltar ? 100 : 0));
     const altarWater = atAltar
         ? state.level.items.find((item) => item.x === hero.x && item.y === hero.y && item.kind === "potion" && item.type === "water")
         : undefined;
-    if (altarWater && atCoAltar) {
+    const wrongAltarWater = misalignedAltar && !!altarWater && !altarWater.cursed;
+    if (hero.luck < 0 || hero.prayerTimeout > allowedTimeout || wrongAltarWater || hero.deityAnger > 0) {
+        const tooSoon = hero.prayerTimeout > allowedTimeout;
+        hero.luck = Math.max(-13, hero.luck - 3);
+        const damage = rng.between(1, Math.max(4, Math.ceil(hero.level / 2)));
+        hero.hp -= damage;
+        hero.prayerTimeout = Math.max(hero.prayerTimeout, tooSoon ? rng.between(1, 500) : 300);
+        hero.deityAnger = Math.min(3, hero.deityAnger + 1);
+        if (wrongAltarWater && altarWater) {
+            altarWater.blessed = false;
+            altarWater.cursed = true;
+            altarWater.curseKnown = false;
+            say(state, "다른 정렬의 제단에서 빈 기도를 올려 물이 저주받은 물로 변했다.");
+        }
+        say(state, `기도가 받아들여지지 않았다${tooSoon ? " — 아직 너무 이르다" : misalignedAltar ? " — 다른 신의 제단 위 물을 축복하려 했다" : " — 신이 노했다"}. 행운이 나빠지고 신의 분노 ${hero.deityAnger}/3, ${damage} 피해.`);
+        return true;
+    }
+
+    // NetHack의 pleased()처럼 한 번에 모든 상태를 지우지 않고, 위기가 큰 것부터 돕는다.
+    // 제단과 행운은 도움의 폭을 넓힌다. 이 게임에 없는 상태 이상은 판정에서 뺀다.
+    const major: Array<() => boolean> = [
+        () => { if (criticalHealth) { hero.hp = hero.maxHp; return true; } return false; },
+        () => { if (hero.food <= 0) { hero.food = 900; return true; } return false; },
+        () => { if (hero.burnTurns) { hero.burnTurns = 0; return true; } return false; },
+        () => { if (hero.stuck) { hero.stuck = 0; return true; } return false; },
+    ];
+    let curedCurses = 0;
+    const minor: Array<() => boolean> = [
+        () => { if (hero.hp < hero.maxHp) { hero.hp = hero.maxHp; return true; } return false; },
+        () => { if (hero.food < 700) { hero.food = 700; return true; } return false; },
+        () => { if (hero.str < hero.maxStr) { hero.str = hero.maxStr; return true; } return false; },
+        () => { if (hero.blind) { hero.blind = 0; return true; } return false; },
+        () => { if (hero.confused) { hero.confused = 0; return true; } return false; },
+        () => {
+            const item = cursed.find((candidate) => candidate.cursed);
+            if (!item) return false;
+            item.cursed = false;
+            item.curseKnown = false;
+            curedCurses++;
+            return true;
+        },
+    ];
+    const coAltar = !!altar && atAltar && altar.alignment === hero.alignment;
+    let favor = rng.between(1, Math.max(1, hero.luck + (atAltar ? 3 : 2)));
+    if (!atAltar) favor = Math.min(3, favor);
+    let helped = false;
+    const fixOne = (troubles: Array<() => boolean>) => {
+        for (const fix of troubles) if (fix()) { helped = true; return true; }
+        return false;
+    };
+    const hasMajorTrouble = criticalHealth || hero.food <= 0 || !!hero.burnTurns || !!hero.stuck;
+    if (hasMajorTrouble) {
+        fixOne(major);
+        if (favor >= 2) while (fixOne(major)) { /* clear remaining major troubles */ }
+    }
+    if (favor >= 3) fixOne(minor);
+    if (favor >= 4) while (fixOne(minor)) { /* clear remaining lesser troubles */ }
+    hero.prayerTimeout = Math.max(50, rng.between(50, 1000) - (coAltar ? 100 : 0));
+    if (altarWater && coAltar) {
         altarWater.blessed = true;
         altarWater.cursed = false;
         altarWater.curseKnown = false;
     }
-    say(state, cursed.length
-        ? `기도가 응답했다. 몸의 상처와 저주 ${cursed.length}개가 사라졌다.`
-        : healed || fed || restored || cleared
+    const unresolved = hero.hp < hero.maxHp || hero.food < 700 || hero.blind > 0 || hero.confused > 0 || hero.stuck > 0 || (hero.burnTurns ?? 0) > 0 || hero.str < hero.maxStr || hero.pack.some((item) => item.cursed);
+    say(state, curedCurses
+        ? `기도가 응답했다. 몸의 고통이 가라앉고 저주 ${curedCurses}개가 풀렸다.`
+        : helped
             ? "기도가 응답했다. 몸과 마음의 고통이 가라앉았다."
-            : "기도가 응답해 생명력이 한층 깊어졌다.");
-    if (atCoAltar) say(state, `같은 정렬의 제단이 기도를 북돋웠다. 신의 분노 ${hero.deityAnger}/3 · 다음 기도까지 ${hero.prayerTimeout}턴.`);
-    if (altarWater && atCoAltar) say(state, "제단 위 물이 축복받은 물로 변했다.");
+            : unresolved
+                ? "기도는 들렸지만 신의 도움이 충분하지 않았다."
+                : "기도가 응답했지만 당장 바로잡을 문제는 없었다.");
+    if (coAltar) say(state, `같은 정렬의 제단에서 기도했다. 신의 분노 ${hero.deityAnger}/3 · 다음 기도까지 ${hero.prayerTimeout}턴.`);
+    if (altarWater && coAltar) say(state, "제단 위 물이 축복받은 물로 변했다.");
     return true;
 }
 
@@ -5291,7 +5305,7 @@ export function glyphAt(
         return { ch: "_", kind: visible && altar.uses > 0 ? "altar" : "altar-dim" };
     }
     if (fountainAt(level, x, y)) {
-        return { ch: "}", kind: visible ? "fountain" : "fountain-dim" };
+        return { ch: "{", kind: visible ? "fountain" : "fountain-dim" };
     }
     switch (t) {
         case T.FLOOR:

@@ -123,6 +123,14 @@ test("밝은 쪽과 어두운 쪽이 같은 이름을 갖고, 기억한 칸이 �
     }
 });
 
+test("지도에서 분수와 웅덩이는 서로 다른 물 색을 쓴다", () => {
+    const map = read(`${GAME}/components/MapView.tsx`);
+    assert.match(map, /fountain: "var\(--rg-fountain\)"/);
+    assert.match(map, /"fountain-dim": "var\(--rg-fountain-dim\)"/);
+    assert.match(map, /pool: "var\(--rg-pool\)"/);
+    assert.match(map, /"pool-dim": "var\(--rg-pool-dim\)"/);
+});
+
 // ── 바(네비)도 게임과 같은 테마를 입는다 ────────────────────────────────────
 //
 // 위·아래·왼쪽 바는 게임 화면에서 **기기의 일부**다. 그런데 `/game` 아래에는 게임이
