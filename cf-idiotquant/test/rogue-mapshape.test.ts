@@ -468,13 +468,13 @@ test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로
         computeFov(level, [at]);
         assert.ok(!isVisible(level, far.x, far.y), `시드 ${seed}: 안개 속인데 방 저쪽이 보인다`);
 
-        // 복도의 시야는 **평소에도 안개 속에서도 맞닿은 한 칸**이다 — 안개가 넓혀 주면 안 된다.
+        // 방 입구에서 두 칸 이내가 아닌 복도에서는 두 칸 반경이 새로 밝아지면 안 된다.
         const corridor = (() => {
             for (let y = 1; y < MAP_H - 1; y++)
                 for (let x = 1; x < MAP_W - 1; x++)
                     if (
                         level.tiles[idx(x, y)] === T.CORRIDOR &&
-                        !N4.some(([dx, dy]) => level.tiles[idx(x + dx, y + dy)] === T.DOOR)
+                        !N4.some(([dx, dy]) => level.tiles[idx(x + dx, y + dy)] === T.DOOR || level.tiles[idx(x + 2 * dx, y + 2 * dy)] === T.DOOR)
                     ) return { x, y, blind: 0 };
             return null;
         })();
@@ -494,6 +494,52 @@ test("짙은 안개는 밝은 방만 좁힌다 — 복도의 시야는 그대로
         }
         return;
     }
+});
+
+test("밝은 방은 곧은 복도 다섯 칸 전부터 좁게 보이고, 다가가면 더 열린다", async () => {
+    const { computeFov, isVisible } = await import("@/lib/rogue/fov");
+    const room = { x: 10, y: 8, w: 9, h: 7, dark: false, gone: false, maze: false };
+    const tiles = new Uint8Array(MAP_W * MAP_H).fill(T.ROCK);
+    const roomAt = new Int8Array(MAP_W * MAP_H).fill(-1);
+    for (let y = room.y; y < room.y + room.h; y++) {
+        for (let x = room.x; x < room.x + room.w; x++) {
+            tiles[idx(x, y)] = T.WALL_H;
+            if (x > room.x && x < room.x + room.w - 1 && y > room.y && y < room.y + room.h - 1) {
+                tiles[idx(x, y)] = T.FLOOR;
+                roomAt[idx(x, y)] = 0;
+            }
+        }
+    }
+    tiles[idx(10, 11)] = T.DOOR;
+    for (let x = 4; x <= 9; x++) tiles[idx(x, 11)] = T.CORRIDOR;
+    tiles[idx(5, 10)] = T.CORRIDOR;
+    const level = { tiles, roomAt, rooms: [room], flags: new Uint8Array(MAP_W * MAP_H) } as Level;
+
+    computeFov(level, [{ x: 4, y: 11 }]);
+    assert.ok(!isVisible(level, 17, 11), "입구 여섯 칸 전부터 방이 보인다");
+    computeFov(level, [{ x: 5, y: 11 }]);
+    assert.ok(isVisible(level, 17, 11), "입구 다섯 칸 전에서 밝은 방의 안쪽이 안 보인다");
+    assert.ok(!isVisible(level, 17, 9), "먼 복도에서 방 전체가 한꺼번에 드러난다");
+    computeFov(level, [{ x: 8, y: 11 }]);
+    assert.ok(isVisible(level, 17, 11), "입구 두 칸 전에서 밝은 방의 안쪽이 안 보인다");
+    assert.ok(!isVisible(level, 17, 9), "입구 두 칸 전에서 방 전체가 한꺼번에 드러난다");
+    computeFov(level, [{ x: 9, y: 11 }]);
+    assert.ok(isVisible(level, 17, 9), "입구에 다가가도 보이는 범위가 넓어지지 않는다");
+
+    room.dark = true;
+    computeFov(level, [{ x: 5, y: 11 }]);
+    assert.ok(!isVisible(level, 17, 11), "어두운 방이 입구 밖에서 밝혀진다");
+    room.dark = false;
+    level.mutator = "fog";
+    computeFov(level, [{ x: 5, y: 11 }]);
+    assert.ok(!isVisible(level, 17, 11), "짙은 안개가 조기 시야를 막지 않는다");
+    level.mutator = undefined;
+    tiles[idx(7, 11)] = T.WALL_H;
+    computeFov(level, [{ x: 5, y: 11 }]);
+    assert.ok(!isVisible(level, 17, 11), "막힌 입구 너머를 벽을 통해 본다");
+    tiles[idx(7, 11)] = T.CORRIDOR;
+    computeFov(level, [{ x: 5, y: 10 }]);
+    assert.ok(!isVisible(level, 17, 11), "꺾인 복도에서 방을 직선으로 본다");
 });
 
 // ── 「길이 막힌 판」은 **절대 없다** ─────────────────────────────────────────────

@@ -22,6 +22,7 @@ import {
     type Tile,
     idx,
     inBounds,
+    walkable,
 } from "./types";
 
 export const SEEN = 1;
@@ -97,27 +98,33 @@ function lightFrom(level: Level, from: Viewer): void {
         for (let dx = -sightRadius; dx <= sightRadius; dx++) light(from.x + dx, from.y + dy);
     }
 
-    // 입구 한 칸 전에서는 문 너머를 아주 좁게 엿본다. 문을 통과하기 전에는
-    // 방 전체가 읽히면 안 되므로, 문을 향한 축에서 양옆을 강하게 조인다.
+    // 곧은 복도에서는 입구 다섯 칸 전부터 밝은 방을 엿본다. 멀수록 폭을 좁히고,
+    // 중간에 벽이나 굽은 길이 있으면 방까지 시야를 잇지 않는다.
     if (tiles[idx(from.x, from.y)] !== T.DOOR && level.mutator !== "fog") {
+        const clearApproach = roomOf(level, from.x, from.y) < 0 && walkable(tiles[idx(from.x, from.y)] as Tile);
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
                 if (Math.abs(dx) + Math.abs(dy) !== 1) continue;
-                const doorX = from.x + dx;
-                const doorY = from.y + dy;
-                if (!inBounds(doorX, doorY) || tiles[idx(doorX, doorY)] !== T.DOOR) continue;
-                const ri = roomAround(level, doorX, doorY);
-                const room = ri >= 0 ? level.rooms[ri] : undefined;
-                if (!room || room.dark || room.gone || room.maze) continue;
-                for (let y = room.y; y < room.y + room.h; y++) {
-                    for (let x = room.x; x < room.x + room.w; x++) {
-                        const rx = x - from.x;
-                        const ry = y - from.y;
-                        const depth = rx * dx + ry * dy;
-                        const side = Math.abs(rx * dy - ry * dx);
-                        const tile = tiles[idx(x, y)];
-                        if (tile !== T.CORRIDOR && tile !== T.PASSAGE && depth > 0 && side * 4 <= depth) light(x, y);
+                for (let distance = 1; distance <= 5; distance++) {
+                    const doorX = from.x + dx * distance;
+                    const doorY = from.y + dy * distance;
+                    if (!inBounds(doorX, doorY)) break;
+                    if (distance > 1 && (!clearApproach || !walkable(tiles[idx(from.x + dx * (distance - 1), from.y + dy * (distance - 1))] as Tile))) break;
+                    if (tiles[idx(doorX, doorY)] !== T.DOOR) continue;
+                    const ri = roomAround(level, doorX, doorY);
+                    const room = ri >= 0 ? level.rooms[ri] : undefined;
+                    if (!room || room.dark || room.gone || room.maze) break;
+                    for (let y = room.y; y < room.y + room.h; y++) {
+                        for (let x = room.x; x < room.x + room.w; x++) {
+                            const rx = x - from.x;
+                            const ry = y - from.y;
+                            const depth = rx * dx + ry * dy;
+                            const side = Math.abs(rx * dy - ry * dx);
+                            const tile = tiles[idx(x, y)];
+                            if (tile !== T.CORRIDOR && tile !== T.PASSAGE && depth > 0 && side * (distance * 2 + 2) <= depth) light(x, y);
+                        }
                     }
+                    break;
                 }
             }
         }
