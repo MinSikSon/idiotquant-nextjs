@@ -74,7 +74,7 @@ export function SectionHeader({
             <h3 className="font-black text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
             {badge}
           </div>
-          {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="shrink-0 self-start sm:self-center">{action}</div>}
@@ -164,9 +164,9 @@ export function MetricChip({ label, value, valueClass = "text-neutral-900 dark:t
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
-      <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
-      <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
+    <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-4 py-2.5 flex flex-col gap-0.5">
+      <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{label}</span>
+      <span className={cn("text-sm font-mono font-black break-words", valueClass)}>{value}</span>
     </div>
   );
 }
@@ -184,12 +184,12 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
     <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-wider leading-tight">{label}</span>
+        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
         <div className={cn("p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div>
-        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", valueColor)}>{value}</div>
-        <p className="text-[10px] text-neutral-400 mt-1 leading-tight">{sub}</p>
+        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono break-words", valueColor)}>{value}</div>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">{sub}</p>
       </div>
     </div>
   );
@@ -213,14 +213,14 @@ export function UsdKpiCard({
     <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-wider leading-tight">{label}</span>
+        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
         <div className={cn("p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div>
-        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", mainColor)}>{mainValue}</div>
-        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between text-[10px] font-bold text-neutral-400">
+        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono break-words", mainColor)}>{mainValue}</div>
+        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-center justify-between gap-x-2 text-xs font-bold text-neutral-500 dark:text-neutral-400">
           <span>{subLabel}</span>
-          <span className={cn("font-mono", subColor)}>{subValue}</span>
+          <span className={cn("font-mono break-words", subColor)}>{subValue}</span>
         </div>
       </div>
     </div>
@@ -395,7 +395,7 @@ export function SectionPanel({ id, children, className }: { id?: string; childre
     <section
       id={id}
       className={cn(
-        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-5 md:p-6",
+        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-4 sm:p-5 md:p-6",
         "animate-in fade-in duration-500",
         className
       )}

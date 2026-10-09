@@ -215,13 +215,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         <h1 className="text-lg font-black tracking-tight dark:text-white">
                             {isUs ? "미국 주식 실시간 잔고 (원화 환산)" : "국내 주식 실시간 잔고"}
                         </h1>
-                        <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider">Real-time Portfolio</p>
+                        <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">Real-time Portfolio</p>
                     </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {/* 🔍 실시간 신규 종목 검색 및 주문 컴포넌트 */}
-                    <div className="relative min-w-[260px]">
+                    <div className="relative w-full min-w-0 sm:min-w-[260px]">
                         <div className="relative">
                             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                             <input

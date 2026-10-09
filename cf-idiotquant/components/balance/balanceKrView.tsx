@@ -539,7 +539,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-kpi",
           node: (
             <>
-              <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <KpiCard
                   label="총 평가 금액"
                   value={isFirstLoad ? null : `${totalEvalAmt.toLocaleString()}원`}
@@ -577,8 +577,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               </section>
 
               {!isFirstLoad && (
-                <div className="overflow-x-auto no-scrollbar mt-3">
-                  <div className="flex gap-2 min-w-max pb-0.5">
+                <div className="mt-3">
+                  <div className="flex flex-wrap gap-2 pb-0.5">
                     <MetricChip
                       label="당일 등락"
                       value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}

@@ -1273,8 +1273,8 @@ function GroupSection({
                   </div>
                 </div>
 
-                {/* 지표 4열 */}
-                <div className="mt-2.5 grid grid-cols-4 gap-1.5">
+                {/* 좁은 화면에서 지표 값이 잘리지 않도록 두 열로 배치 */}
+                <div className="mt-2.5 grid grid-cols-2 min-[480px]:grid-cols-4 gap-1.5">
                   <MiniStat label="PER/PBR" value={`${row.per ?? "-"} / ${row.pbr ?? "-"}`} />
                   <MiniStat label="BPS/EPS" value={`${row.bps?.toLocaleString() ?? "-"} / ${row.eps?.toLocaleString() ?? "-"}`} />
                   <MiniStat label="시총(억)" value={(row.marketCap || 0).toLocaleString()} />
@@ -1283,7 +1283,7 @@ function GroupSection({
 
                 {/* 예산 + Refill (운용 종목만) */}
                 {row.movable && (
-                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                  <div className="mt-2.5 flex flex-col items-start gap-2 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
                     <span className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
                       <span>예산 <b className="font-mono font-black text-brand">{row.token?.toLocaleString() ?? 0}</b></span>
                       {monthlyPerStock > 0 && (
@@ -1293,7 +1293,7 @@ function GroupSection({
                       )}
                     </span>
                     {showRefill && (
-                      <div className="flex flex-wrap justify-end gap-1">
+                      <div className="flex flex-wrap gap-1 min-[480px]:justify-end">
                         {tokenAmounts.map(amt => (
                           <div key={`m-indiv-${amt}`} className="flex items-center overflow-hidden rounded-md border border-neutral-200 dark:border-border-subtle-dark">
                             <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-brand active:bg-[#f0fdf4] dark:active:bg-[#14532d]/30">
@@ -1327,8 +1327,8 @@ function GroupSection({
 function MiniStat({ label, value, highlight }: { label: string; value: React.ReactNode; highlight?: boolean }) {
   return (
     <div className="rounded-lg bg-surface-canvas px-1.5 py-1 dark:bg-surface-dark-card">
-      <div className="text-[8px] font-black uppercase tracking-tight text-neutral-400">{label}</div>
-      <div className={cn("truncate font-mono text-[11px] font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
+      <div className="text-[11px] font-black uppercase tracking-tight text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className={cn("break-words font-mono text-xs font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
         {value}
       </div>
     </div>

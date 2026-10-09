@@ -136,15 +136,15 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
                 style={{ backgroundColor: colors[index % colors.length] }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                <p className="text-sm font-bold text-neutral-900 dark:text-white break-words">
                   {item.name}
                 </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
                   {formatter(item.value)}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs font-black text-neutral-900 dark:text-white">
+                <p className="text-sm font-black text-neutral-900 dark:text-white">
                   {percent.toFixed(1)}%
                 </p>
               </div>
