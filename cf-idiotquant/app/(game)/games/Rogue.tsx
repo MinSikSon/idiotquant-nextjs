@@ -73,7 +73,7 @@ import {
     itemCodexStage,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, prayerTimeoutLimit, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -2058,7 +2058,15 @@ export default function Rogue() {
         },
         // 살피는 것 · 그 밖
         { label: "뒤진다", detail: "숨은 문 · 함정", hint: "s — 숨은 문과 함정", keys: coopKeys ? "S · K" : "s", on: () => run({ t: "search" }) },
-        { label: "기도", detail: "위기에서 신에게 도움을 청한다", mobileMark: "†", hint: "Alt+p — 서두르면 벌을 받을 수 있다", keys: "Alt+P", on: () => run({ t: "pray" }) },
+        {
+            label: "기도",
+            detail: hero.prayerTimeout > prayerTimeoutLimit(hero) ? `기도 대기 ${hero.prayerTimeout - prayerTimeoutLimit(hero)}턴` : "위기에서 신에게 도움을 청한다",
+            mobileMark: "†",
+            hint: "Alt+p — 서두르면 벌을 받을 수 있다",
+            keys: "Alt+P",
+            on: () => run({ t: "pray" }),
+            off: hero.prayerTimeout > prayerTimeoutLimit(hero) ? `기도 대기 중 · ${hero.prayerTimeout - prayerTimeoutLimit(hero)}턴 남음` : undefined,
+        },
         {
             label: "도감",
             detail: "몬스터 · 아이템",

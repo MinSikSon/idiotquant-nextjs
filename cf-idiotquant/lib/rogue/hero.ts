@@ -203,6 +203,14 @@ export function encumbrance(hero: Hero, extraWeight = 0): number {
     return Math.min(5, Math.floor(weight * 2 / capacity));
 }
 
+/** 위기 정도에 따라 기도 응답을 허용하는 남은 대기 시간. */
+export function prayerTimeoutLimit(hero: Hero): number {
+    const majorTrouble = hero.hp <= Math.max(5, Math.floor(hero.maxHp / 4)) || hero.food <= 0 || !!hero.burnTurns;
+    if (majorTrouble) return 200;
+    const minorTrouble = hero.hp < hero.maxHp || hero.food < 700 || hero.blind > 0 || hero.confused > 0 || hero.stuck > 0 || hero.pack.some((item) => item.cursed) || hero.str < hero.maxStr;
+    return minorTrouble ? 100 : 0;
+}
+
 /** NetHack `abon()`의 힘 명중 표. 이 게임의 19~31은 18/xx 대신 쓰는 성장 구간이다. */
 export function strHitBonus(str: number, level = 3): number {
     const bonus = str < 6 ? -2 : str < 8 ? -1 : str < 17 ? 0 : str <= 25 ? 1 : str < 31 ? 2 : 3;

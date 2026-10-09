@@ -60,6 +60,7 @@ import {
     makeHero,
     packItem,
     PACK_CAPACITY,
+    prayerTimeoutLimit,
     regenEvery,
     searchChance,
     trainWeaponSkill,
@@ -1614,10 +1615,8 @@ function fountainMonsterSpot(
 /** 넷핵식 기도: 대기 시간이 끝나고 Luck이 중립 이상일 때 위기를 걷어낸다. */
 function pray(state: GameState, hero: Hero, rng: Rng): boolean {
     const cursed = hero.pack.filter((item) => item.cursed);
-    const majorTrouble = hero.hp <= Math.max(5, Math.floor(hero.maxHp / 4)) || hero.food <= 0 || !!hero.burnTurns;
-    const minorTrouble = hero.hp < hero.maxHp || hero.food < 700 || hero.blind > 0 || hero.confused > 0 || hero.stuck > 0 || cursed.length > 0 || hero.str < hero.maxStr;
     const criticalHealth = hero.hp <= 5;
-    const allowedTimeout = majorTrouble ? 200 : minorTrouble ? 100 : 0;
+    const allowedTimeout = prayerTimeoutLimit(hero);
     const altar = state.level.transmuteAltar;
     const atAltar = !!altar && altar.uses > 0 && altar.x === hero.x && altar.y === hero.y;
     const misalignedAltar = !!altar && atAltar && altar.alignment !== hero.alignment;

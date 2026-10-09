@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { addToPack, carryCapacity, dexHitBonus, encumbrance, gainExp, heroDamTerms, heroHitTerms, hpGainPerLevel, makeHero, packWeight, regenEvery, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
+import { addToPack, carryCapacity, dexHitBonus, encumbrance, gainExp, heroDamTerms, heroHitTerms, hpGainPerLevel, makeHero, packWeight, prayerTimeoutLimit, regenEvery, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
 import { newGame, perform, spellCastingChance } from "@/lib/rogue/game";
 import { Rng } from "@/lib/rogue/rng";
 import { charismaPriceFactor, unitPrice } from "@/lib/rogue/shop";
@@ -71,6 +71,14 @@ test("짐을 덜어 과적 단계가 풀리면 명중 굴림에서 과적 보정
     potion.count = 1;
     assert.equal(encumbrance(hero), 0);
     assert.ok(!heroHitTerms(hero).some((term) => term.why === "과적"));
+});
+
+test("기도 대기 허용치는 위기 때만 늘어난다", () => {
+    let id = 0;
+    const hero = makeHero(new Rng(32), () => ++id);
+    assert.equal(prayerTimeoutLimit(hero), 0);
+    assert.equal(prayerTimeoutLimit({ ...hero, food: 699 }), 100);
+    assert.equal(prayerTimeoutLimit({ ...hero, hp: Math.floor(hero.maxHp / 4) }), 200);
 });
 
 test("지능은 마법책 학습, 지혜는 마력 성장과 직업별 시전에 반영된다", () => {
