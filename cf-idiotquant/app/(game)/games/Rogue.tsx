@@ -2991,7 +2991,7 @@ export default function Rogue() {
                       : statusKind === "constitution"
                         ? `Co:${statusHero.constitution}\n레벨업 때 얻는 최대 체력, 10레벨부터 자연 회복량, 들 수 있는 무게를 정합니다.`
                       : statusKind === "charisma"
-                        ? `Ch:${statusHero.charisma}\nNetHack의 매력 구간에 따라 상점 구매가가 달라집니다.`
+                        ? `Ch:${statusHero.charisma}\n매력 수치에 따라 상점 구매가가 달라집니다.`
                       : statusKind === "intelligence"
                         ? `In:${statusHero.intelligence}\n마법책 학습 성공률과 마력 회복을 높입니다. 주문 시전은 직업에 따라 지능 또는 지혜를 씁니다.`
                       : statusKind === "defense"
