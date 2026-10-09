@@ -1591,7 +1591,7 @@ export default function Rogue() {
     const pickOrigin = (origin: HeroOrigin) => {
         const f = originFor;
         if ((f.t === "new" || f.t === "host") && state?.phase === "playing" &&
-            !window.confirm("현재 진행 중인 판을 지우고 새 판을 시작할까요? 이 판은 되돌릴 수 없습니다.")) return;
+            !window.confirm("직업을 확정하면 현재 판이 지워집니다. 새 판을 시작할까요? 현재 판은 되돌릴 수 없습니다.")) return;
         setOriginFor({ t: "new" });
         if (f.t === "host") {
             // 방을 열기 전에 방장의 시작 장비부터 정한다. 손님은 이미 `peek` 뒤에 같은
@@ -3339,9 +3339,6 @@ export default function Rogue() {
                                         ? "방장이 다음 판을 준비 중입니다 — 내가 맡을 출신을 다시 고릅니다."
                                     : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                             </p>
-                            {(originFor.t === "new" || originFor.t === "host") && state.phase === "playing" && (
-                                <p className="font-bold text-[var(--rg-trap)]">직업을 확정하면 현재 판이 지워집니다. 확정 전에 한 번 더 묻습니다.</p>
-                            )}
                             {/* **지금 누가 무엇인가.** 위의 「다른 쪽을 고르면 서로 메웁니다」가
                             조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. 정원이
                             늘며 **방장뿐 아니라 먼저 들어온 손님들**도 같이 보여야 한다 —

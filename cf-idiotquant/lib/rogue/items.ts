@@ -276,20 +276,29 @@ export const TOOLS: Record<string, { name: string; freq: number; depth: number }
     "tinning kit": { name: "통조림 도구", freq: 1, depth: 3 },
 };
 
-/** NetHack 물건 무게(au). 이 게임 고유 장비는 같은 계열의 원전 장비 무게를 따른다. */
+/** NetHack 물건 무게(au). 계열 안에서도 크기·재료가 다른 것은 종류별로 나눈다. */
+const WEAPON_WEIGHT: Record<string, number> = {
+    dagger: 10, "magic dagger": 10, "crystal dagger": 10, "oriharukon dagger": 10, "damascus dagger": 10,
+    "short bow": 30, "long bow": 30, "elven bow": 30, "sayha bow": 30, crossbow: 50,
+    mace: 30, spear: 30, dart: 1, arrow: 1, "silver arrow": 5, "mithril arrow": 1, "oriharukon arrow": 1, bolt: 1,
+    "long sword": 40, excalibur: 40, "two-handed sword": 150, "silver sword": 40, "thirsty sword": 40,
+    "magic sword": 40, "knight sword": 40, "baphomet sword": 40, "pick-axe": 100,
+};
+
+const ARMOR_WEIGHT: Record<string, number> = {
+    leather: 150, "ring mail": 250, "scale mail": 250, "chain mail": 300,
+    "banded mail": 350, "plate mail": 450, "mithril mail": 150,
+    "dragon mail": 40, "baphomet mail": 450,
+};
+
+const RELIC_WEIGHT: Record<string, number> = {
+    daedalus_compass: 10, midas_gauntlet: 30, time_hourglass: 40, phoenix_feather: 1,
+};
+
 export function itemWeight(it: Item): number {
-    const weapon = it.kind === "weapon" ? WEAPONS[it.type] : undefined;
-    const unit = weapon
-        ? weapon.ammunition ? 1
-            : it.type.includes("dagger") ? 10
-            : it.type.includes("bow") ? 30
-            : it.type === "crossbow" ? 50
-            : it.type === "pick-axe" ? 100
-            : it.type.includes("sword") || it.type === "excalibur" ? 40
-            : it.type === "spear" || it.type === "mace" ? 30 : 40
-        : it.kind === "armor"
-            ? ({ leather: 150, "ring mail": 250, "scale mail": 250, "chain mail": 300, "banded mail": 350, "plate mail": 450, "mithril mail": 150, "dragon mail": 40, "baphomet mail": 450 }[it.type] ?? 200)
-        : it.kind === "food" ? it.corpseOf ? Math.max(10, (it.corpseValue ?? 5) * 10) : 20
+    const unit = it.kind === "weapon" ? (WEAPON_WEIGHT[it.type] ?? 40)
+        : it.kind === "armor" ? (ARMOR_WEIGHT[it.type] ?? 200)
+        : it.kind === "food" ? it.corpseOf ? Math.max(10, (it.corpseValue ?? 1) * 10) + (it.corpseTinned ? 10 : 0) : 20
         : it.kind === "potion" ? 20
         : it.kind === "scroll" ? 5
         : it.kind === "spellbook" ? 50
@@ -298,7 +307,8 @@ export function itemWeight(it: Item): number {
         : it.kind === "gem" ? 1
         : it.kind === "tool" ? 100
         : it.kind === "amulet" ? 20
-        : it.kind === "relic" ? 40 : 0;
+        : it.kind === "relic" ? (RELIC_WEIGHT[it.type] ?? 40)
+        : 0;
     return unit * Math.max(1, it.count);
 }
 
