@@ -2398,6 +2398,8 @@ export default function Rogue() {
             <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
                 <TouchPad
                     onOptions={() => setSheet("options")}
+                    onAutoPickup={() => run({ t: "toggleAutopickup" })}
+                    autoPickup={(state.heroes[who] ?? state.heroes[0]).autoPickup}
                     centerLabel={(() => {
                         const activeHero = state.heroes[who] ?? state.heroes[0];
                         const shot = modes[who] === "none" ? rapidFireOf(activeHero) : undefined;

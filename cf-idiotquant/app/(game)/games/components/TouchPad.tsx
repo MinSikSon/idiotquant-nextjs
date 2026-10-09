@@ -195,6 +195,8 @@ const DIRS: [number, number, string, string][] = [
 export default function TouchPad({
     onMove,
     onOptions,
+    onAutoPickup,
+    autoPickup,
     actions,
     dirKeys = [],
     hold = true,
@@ -206,6 +208,8 @@ export default function TouchPad({
 }: {
     onMove: (dx: number, dy: number) => void;
     onOptions: () => void;
+    onAutoPickup: () => void;
+    autoPickup: boolean;
     actions: PadAction[];
     /** 넓은 화면에서만 칸 아래에 적는다. 둘이면 둘 다, 사람마다 제 색으로. */
     dirKeys?: PadKeys[];
@@ -258,16 +262,30 @@ export default function TouchPad({
                         </Key>
                     ))}
                 </div>
-                <button
-                    type="button"
-                    onClick={(event) => {
-                        onOptions();
-                        event.currentTarget.blur();
-                    }}
-                    className="rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[10px] leading-none text-[var(--rg-faint)] hover:bg-[var(--rg-raised)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
-                >
-                    옵션
-                </button>
+                <div className="flex gap-1">
+                    <button
+                        type="button"
+                        aria-pressed={autoPickup}
+                        title={`아이템 자동 줍기 ${autoPickup ? "켜짐" : "꺼짐"}`}
+                        onClick={(event) => {
+                            onAutoPickup();
+                            event.currentTarget.blur();
+                        }}
+                        className={`rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[10px] leading-none hover:bg-[var(--rg-raised)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${autoPickup ? "text-[var(--rg-strong)]" : "text-[var(--rg-faint)]"}`}
+                    >
+                        자동줍기 {autoPickup ? "켬" : "끔"}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            onOptions();
+                            event.currentTarget.blur();
+                        }}
+                        className="rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[10px] leading-none text-[var(--rg-faint)] hover:bg-[var(--rg-raised)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                    >
+                        옵션
+                    </button>
+                </div>
             </div>
 
             {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
