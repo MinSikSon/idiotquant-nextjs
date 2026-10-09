@@ -252,12 +252,12 @@ function OriginTag({
 }
 
 const ORIGIN_STATS = [
-    { key: "baseStr", short: "St", name: "힘" },
-    { key: "baseDex", short: "Dx", name: "민첩" },
-    { key: "baseCon", short: "Co", name: "건강" },
-    { key: "baseInt", short: "In", name: "지능" },
-    { key: "baseWis", short: "Wi", name: "지혜" },
-    { key: "baseCha", short: "Ch", name: "매력" },
+    { key: "baseStr", short: "St", name: "힘", description: "공격 명중과 피해에 보정치를 더합니다." },
+    { key: "baseDex", short: "Dx", name: "민첩", description: "공격 명중과 회피에 보정치를 더합니다." },
+    { key: "baseCon", short: "Co", name: "건강", description: "레벨업 때 늘어나는 최대 체력과 자연 회복 속도에 영향을 줍니다." },
+    { key: "baseInt", short: "In", name: "지능", description: "지혜와 함께 공격 지팡이의 추가 피해 주사위를 정합니다." },
+    { key: "baseWis", short: "Wi", name: "지혜", description: "지능과 함께 공격 지팡이의 추가 피해 주사위를 정합니다." },
+    { key: "baseCha", short: "Ch", name: "매력", description: "상점에서 물건을 사는 가격에 영향을 줍니다." },
 ] as const;
 
 function OriginStatRadar({ origin, className }: { origin: OriginDef; className: string }) {
@@ -1580,8 +1580,12 @@ export default function Rogue() {
         { t: "new" } | { t: "host" } | { t: "mate" } | { t: "guest"; code: string } | { t: "rematch"; round: number }
     >({ t: "new" });
     const [selectedOrigin, setSelectedOrigin] = useState<HeroOrigin>("knight");
+    const [selectedOriginStat, setSelectedOriginStat] = useState<(typeof ORIGIN_STATS)[number]["key"] | null>(null);
     useEffect(() => {
-        if (sheet === "origins") setSelectedOrigin("knight");
+        if (sheet === "origins") {
+            setSelectedOrigin("knight");
+            setSelectedOriginStat(null);
+        }
     }, [sheet, originFor]);
 
     const pickOrigin = (origin: HeroOrigin) => {
@@ -3322,7 +3326,7 @@ export default function Rogue() {
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-[var(--rg-faint)]">
+                            <p className="text-[11px] text-[var(--rg-faint)]">
                                 {originFor.t === "new"
                                     ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
                                     : originFor.t === "host"
@@ -3358,16 +3362,20 @@ export default function Rogue() {
                                             <h3 className="min-w-0 flex-1 font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
                                             <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--rg-gold)]">Hp {orig.baseHp}</span>
                                         </div>
-                                        <p className="text-[11px] text-[var(--rg-faint)]">시작 능력치 · <span className="font-bold text-[var(--rg-gold)]">강점</span>은 15 이상</p>
+                                        <p className="text-[11px] text-[var(--rg-faint)]">시작 능력치 · <span className="font-bold text-[var(--rg-gold)]">강점</span>은 15 이상 · 능력치를 눌러 설명 보기</p>
                                         <div className="mb-2 flex flex-col items-center gap-2 sm:flex-row">
                                             <OriginStatRadar origin={orig} className="h-auto w-full max-w-[205px] shrink-0" />
                                             <div className="grid w-full grid-cols-3 gap-1 font-mono text-xs tabular-nums">
                                                 {ORIGIN_STATS.map((stat) => {
                                                     const value = orig[stat.key];
-                                                    return <div key={stat.key} aria-label={`${stat.name} ${value}${value >= 15 ? ", 강점" : ""}`} className={`flex justify-between gap-1 rounded-[3px] border px-2 py-1 ${value >= 15 ? "border-[var(--rg-gold)] bg-[var(--rg-hover)] font-bold text-[var(--rg-gold)]" : "border-[var(--rg-line-soft)] text-[var(--rg-muted)]"}`}><span>{stat.short}</span><span>{value}</span></div>;
+                                                    return <button key={stat.key} type="button" aria-label={`${stat.name} ${value}${value >= 15 ? ", 강점" : ""} 설명 보기`} aria-pressed={selectedOriginStat === stat.key} onClick={() => setSelectedOriginStat(stat.key)} className={`flex justify-between gap-1 rounded-[3px] border px-2 py-1 text-left hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${selectedOriginStat === stat.key ? "border-[var(--rg-strong)] bg-[var(--rg-hover)] text-[var(--rg-strong)]" : value >= 15 ? "border-[var(--rg-gold)] bg-[var(--rg-hover)] font-bold text-[var(--rg-gold)]" : "border-[var(--rg-line-soft)] text-[var(--rg-muted)]"}`}><span>{stat.short}</span><span>{value}</span></button>;
                                                 })}
                                             </div>
                                         </div>
+                                        {selectedOriginStat && (() => {
+                                            const stat = ORIGIN_STATS.find((entry) => entry.key === selectedOriginStat);
+                                            return stat && <p role="status" className="mb-2 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-hover)] px-2 py-1.5 text-[11px] text-[var(--rg-strong)]"><b>{stat.name} ({stat.short})</b> · {stat.description}</p>;
+                                        })()}
                                         <p className="mb-2 text-[11px] text-[var(--rg-faint)]">신앙 {ALIGNMENT_NAME[ORIGIN_ALIGNMENT[orig.id]]}</p>
                                         <p className="mb-2 text-[11.5px] text-[var(--rg-muted)]">{orig.description}</p>
                                         <div className="border-t border-[var(--rg-line-soft)] pt-2 text-[11px]">

@@ -266,14 +266,15 @@ export default function TouchPad({
                     <button
                         type="button"
                         aria-pressed={autoPickup}
+                        aria-label={`아이템 자동 줍기 ${autoPickup ? "켜짐" : "꺼짐"}`}
                         title={`아이템 자동 줍기 ${autoPickup ? "켜짐" : "꺼짐"}`}
                         onClick={(event) => {
                             onAutoPickup();
                             event.currentTarget.blur();
                         }}
-                        className={`rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[10px] leading-none hover:bg-[var(--rg-raised)] hover:text-[var(--rg-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${autoPickup ? "text-[var(--rg-strong)]" : "text-[var(--rg-faint)]"}`}
+                        className={`rounded-[3px] border bg-[var(--rg-hover)] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[10px] leading-none text-[var(--rg-strong)] hover:bg-[var(--rg-raised)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${autoPickup ? "border-[var(--rg-gold)]" : "border-[var(--rg-key-line)]"}`}
                     >
-                        자동줍기 {autoPickup ? "켬" : "끔"}
+                        자동줍기 <span className={`font-bold ${autoPickup ? "text-[var(--rg-gold)]" : "text-[var(--rg-trap)]"}`}>{autoPickup ? "ON" : "OFF"}</span>
                     </button>
                     <button
                         type="button"
