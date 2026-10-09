@@ -176,29 +176,15 @@ export function hpGainPerLevel(hero: Hero): number {
 }
 
 /**
- * 이 레벨마다 성장 하나를 고른다(여섯 능력치 중 하나) — `hero.pendingSkillPicks` 하나가
- * 쌓고, `game.pickSkill` 하나가 던다. 캠프가 아니어도, 턴을 안 써도 고를 수 있다 —
- * 레벨업 자체가 턴을 안 쓰는 것과 같은 자리다.
- */
-export const SKILL_PICK_INTERVAL = 3;
-
-/**
  * 지혜 성장 한 번마다 공격 지팡이에 같은 면의 주사위 하나를 더한다.
  *
- * 지혜는 세 레벨마다 겨우 한 번 고르는 값이라, 1% 확률 보정만으로는 손에 잡히는 선택이
- * 되기 어렵다. 지팡이는 횟수가 정해진 소모품이므로 같은 +1이라도 무기 강화처럼 매 턴
- * 누적되지 않는다. 지혜와 Luck은 서로 다른 능력치다.
+ * 지팡이는 횟수가 정해진 소모품이다. 지혜와 Luck은 서로 다른 능력치다.
  */
 export function wandDamageDiceBonus(hero: Hero): number {
     return Math.max(0,
         abilityMod(hero.wisdom) + abilityMod(hero.intelligence)
         - abilityMod(hero.baseWisdom) - abilityMod(hero.baseIntelligence),
     );
-}
-
-/** (하한, 상한] 사이에 있는 `SKILL_PICK_INTERVAL` 의 배수 개수 — 한 번에 여러 레벨을 건너뛰어도 안 놓친다. */
-function triplesInRange(lo: number, hi: number): number {
-    return Math.floor(hi / SKILL_PICK_INTERVAL) - Math.floor(lo / SKILL_PICK_INTERVAL);
 }
 
 export const PACK_CAPACITY = 50;
@@ -263,7 +249,6 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         stuck: 0,
         detect: 0,
         seeInvisible: 0,
-        pendingSkillPicks: 0,
         bonusDefense: 0,
         luck: 0,
         prayerTimeout: 300,
@@ -875,7 +860,6 @@ export function isWorn(hero: Hero, it: Item): boolean {
 export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
     hero.exp += amount;
     const gained: number[] = [];
-    const startLevel = hero.level;
     while (hero.level - 1 < EXP_LEVELS.length && hero.exp >= EXP_LEVELS[hero.level - 1]) {
         hero.level += 1;
         // **굴리지 않는다.** 몬스터 체력과 같은 이유다 — 같은 레벨의 두 판이 체력만
@@ -885,9 +869,6 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         hero.hp += hpGain;
         gained.push(hero.level);
     }
-    // **건너뛴 레벨도 센다.** 큰 몬스터 하나로 두 레벨을 한 번에 오르면 3레벨짜리 문턱을
-    // 하나 넘었을 수 있다 — `triplesInRange` 가 시작과 끝 **사이**의 배수를 센다.
-    hero.pendingSkillPicks += triplesInRange(startLevel, hero.level);
     return gained;
 }
 

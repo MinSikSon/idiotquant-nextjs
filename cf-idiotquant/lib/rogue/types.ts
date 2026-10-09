@@ -486,15 +486,6 @@ export interface Hero {
     burnTurns?: number;
     /** 시간 정지 남은 턴 (시간의 모래시계) */
     timeStop?: number;
-    /**
-     * **레벨업 성장 — 3레벨마다 하나씩 쌓이고, 캠프 없이 아무 데서나 고른다.**
-     *
-     * 한 번에 여러 레벨을 건너뛰면(경험치 배율 몬스터 등) 그만큼 쌓인다 —
-     * `hero.gainExp` 가 지난 레벨과 새 레벨 **사이**의 3의 배수를 센다. 고르는 것은
-     * 턴을 안 쓴다(`pickSkill` 이 `acted=false`) — 레벨업 자체가 턴을 안 쓰는 것과
-     * 같은 자리다.
-     */
-    pendingSkillPicks: number;
     /** 레벨업 성장으로 쌓은 방어력. `heroDefense` **하나**가 더한다. */
     bonusDefense: number;
     /** NetHack식 자연 행운. -13..13이며 명중, 마법 분수, 기도와 운 판정에 반영한다. */

@@ -58,7 +58,6 @@ import {
     makeHero,
     packItem,
     PACK_CAPACITY,
-    SKILL_PICK_INTERVAL,
     regenEvery,
     searchChance,
     trainWeaponSkill,
@@ -243,11 +242,6 @@ type Action =
     | { t: "stash"; letter: string }
     /** 모루(캠프) 위에서 상자의 칸 하나를 배낭으로 꺼낸다. */
     | { t: "unstash"; slot: number }
-    /**
-     * 3레벨마다 쌓이는 성장 하나를 고른다 — **캠프도, 턴도 필요 없다**(레벨업 자체가
-     * 턴을 안 쓰는 것과 같은 자리). `hero.pendingSkillPicks` 가 남아 있을 때만 된다.
-     */
-    | { t: "pickSkill"; option: "str" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma" }
     | { t: "inspectStatus"; kind: "origin" | "str" | "dexterity" | "constitution" | "charisma" | "intelligence" | "defense" | "wisdom" }
     /** 레벨 9 전직 뒤 층마다 한 번 쓰는 직업 고유 기술. */
 
@@ -2682,58 +2676,6 @@ function unstash(state: GameState, hero: Hero, slot: number): boolean {
 }
 
 /**
- * 3레벨마다 쌓이는 성장 하나를 고른다 — 여섯 능력치 중 하나.
- *
- * **턴을 안 쓴다**(`acted=false` 로 돌아간다) — 레벨업 자체가 이미 턴을 안 쓰는
- * 자리다(경험치는 몬스터를 잡을 때 는다, 판을 걷는 것과는 다른 시계). 캠프도 필요
- * 없다 — 어디서든, 언제든 쌓인 것을 쓸 수 있다.
- *
- * **힘은 물약(`quaff` 의 `"strength"`)과 같은 식**이다(상한 31 · `maxStr` 을 따라 올림) —
- * 두 길이 갈리면 「힘 31 을 넘겼다」가 한쪽에서만 막힌다.
- */
-function pickSkill(state: GameState, hero: Hero, option: "str" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma"): boolean {
-    if (hero.pendingSkillPicks <= 0) {
-        say(state, "지금은 고를 수 있는 성장이 없다.");
-        return false;
-    }
-    const caps = { str: 31, dexterity: 18, constitution: 18, intelligence: 18, wisdom: hero.wisdomMax, charisma: 18 };
-    const current = option === "str" ? hero.str : option === "wisdom" ? hero.wisdom : hero[option];
-    if (current >= caps[option]) {
-        say(state, "그 능력치는 더 높일 수 없다.");
-        return false;
-    }
-    hero.pendingSkillPicks -= 1;
-    switch (option) {
-        case "str":
-            hero.str = Math.min(31, hero.str + 1);
-            hero.maxStr = Math.max(hero.maxStr, hero.str);
-            say(state, "🔺 성장 — 힘이 늘었다.");
-            break;
-        case "dexterity":
-            hero.dexterity = Math.min(18, hero.dexterity + 1);
-            say(state, "🔺 성장 — 민첩이 늘었다.");
-            break;
-        case "constitution":
-            hero.constitution = Math.min(18, hero.constitution + 1);
-            say(state, "🔺 성장 — 건강이 늘었다.");
-            break;
-        case "intelligence":
-            hero.intelligence = Math.min(18, hero.intelligence + 1);
-            say(state, "🔺 성장 — 지능이 늘었다.");
-            break;
-        case "wisdom":
-            hero.wisdom = Math.min(hero.wisdomMax, hero.wisdom + 1);
-            say(state, "🔺 성장 — 지혜가 늘었다.");
-            break;
-        case "charisma":
-            hero.charisma = Math.min(18, hero.charisma + 1);
-            say(state, "🔺 성장 — 매력이 늘었다.");
-            break;
-    }
-    return false;
-}
-
-/**
  * 전직 기술 — 새 자원이나 쿨다운 시계를 만들지 않고 **층마다 한 번**만 쓴다.
  * 실제로 효과가 생긴 뒤에만 사용한 층을 적고 턴을 쓴다.
  */
@@ -2912,7 +2854,6 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
     const expMultiplier = (m.champion ? 2 : 1) * (state.level.mutator === "frenzy" ? 2 : 1);
     const expGained = (m.rewardExp ?? m.def.exp) * expMultiplier;
     for (const [h, got] of expShares(state, m, by, expGained)) {
-        const before = h.pendingSkillPicks;
         const levels = gainExp(h, got, rng);
         // 둘이면 **누가 올랐는지**를 적는다 — 한 줄만 뜨면 제 레벨이 오른 줄 안다.
         const tag = state.heroes.length > 1 ? `${heroLabel(state, h)} ` : "";
@@ -2926,11 +2867,6 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
             }
         }
         if (levels.length > 0) for (const skill of enhanceWeaponSkills(h)) say(state, `⚔ ${tag}${skill}에 도달했다.`);
-        // **쌓인 만큼만** 알린다 — 고르는 화면을 찾는 줄은 화면(★ 단추) 몫이라 여기서는
-        // 「생겼다」만 짚는다.
-        if (h.pendingSkillPicks > before) {
-            say(state, `${tag}★ 성장을 고를 수 있다.`);
-        }
     }
 
     // 챔피언 처치 시 100% 확정 전리품 드랍
@@ -4458,14 +4394,11 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
     const tag = `${who + 1}P▸ `;
     if (kind === "origin") {
         const origin = ORIGINS[hero.origin ?? "knight"];
-        const nextGrowth = hero.pendingSkillPicks > 0
-            ? `지금 성장 ${hero.pendingSkillPicks}개 선택 가능`
-            : `다음 성장 Lv ${Math.floor(hero.level / SKILL_PICK_INTERVAL + 1) * SKILL_PICK_INTERVAL}`;
         const advancement = hero.level < ADVANCE_LEVEL
             ? `전직: Lv ${ADVANCE_LEVEL} ${origin.advancedSkillName} 해금까지 ${ADVANCE_LEVEL - hero.level}레벨`
             : `전직: ${origin.advancedName} · ${origin.advancedSkillName}`;
         const skills = Object.entries(hero.weaponSkills ?? {}).map(([type, level]) => `${type} ${weaponSkillName(level)}/${weaponSkillName(weaponSkillMax(hero, type))}`).join(", ") || "무기 훈련 없음";
-        say(state, `${tag}직업 · ${origin.advancedName} | 무기 숙련: ${skills} | 성장: Lv ${SKILL_PICK_INTERVAL}마다 6능력치 중 선택 | ${nextGrowth} | ${advancement}`);
+        say(state, `${tag}직업 · ${origin.advancedName} | 무기 숙련: ${skills} | ${advancement}`);
     } else if (kind === "str") {
         say(state, `${tag}St:${heroStr(hero)} · 기본 ${hero.str} · 최대 ${hero.maxStr}`);
     } else if (kind === "dexterity") {
@@ -4602,9 +4535,6 @@ function act(state: GameState, cmd: Command): GameState {
             case "unstash":
                 acted = unstash(state, hero, cmd.slot);
                 break;
-            case "pickSkill":
-                acted = pickSkill(state, hero, cmd.option);
-                break;
             case "classSkill":
                 acted = useClassSkill(state, hero, rng, cmd.ingredients, cmd.element);
                 break;
@@ -4662,7 +4592,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
 
     state.turn += 1;
     // 전체 턴은 파티가 쓴 행동 하나씩, 이 값은 그중 이 사람이 실제로 쓴 몫이다.
-    // 벽을 들이받거나 성장만 고른 행동(`acted=false`)은 둘 다 늘지 않는다.
+    // 벽을 들이받은 행동(`acted=false`)은 둘 다 늘지 않는다.
     hero.turns += 1;
     // NetHack natural Luck drifts toward neutral every 600 player actions. The counter is
     // per hero so co-op turns by another player do not silently change this hero's Luck.

@@ -72,7 +72,7 @@ import {
     itemCodexStage,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { SKILL_PICK_INTERVAL, armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -97,7 +97,7 @@ import {
 } from "@/lib/rogue/storage";
 import { T, idx, fountainAt, type GameState, type Item, type ItemKind, type SpiritElement } from "@/lib/rogue/types";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES } from "@/lib/rogue/monsters";
-import { ADVANCE_LEVEL, ALIGNMENT_NAME, ARMOR_SKILL_MAX, ORIGIN_ALIGNMENT, ORIGINS, ORIGIN_LIST, RACE_NAME, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ALIGNMENT_NAME, ARMOR_SKILL_MAX, ORIGIN_ALIGNMENT, ORIGINS, ORIGIN_LIST, RACE_NAME, SPIRIT_COOLDOWN, WEAPON_SKILL_MAX, type HeroOrigin, type OriginDef } from "@/lib/rogue/origins";
 import { sharedRun, sharedRunUrl } from "@/lib/rogue/share";
 
 import Desk, { type DeskHandle, type DeskMode } from "./components/Desk";
@@ -248,6 +248,46 @@ function OriginTag({
             {advanced ? o.advancedName : o.name}
             {title && <span className="text-[var(--rg-faint)]"> ({advanced ? o.advancedTitle : o.title})</span>}
         </>
+    );
+}
+
+const ORIGIN_STATS = [
+    { key: "baseStr", short: "St", name: "힘" },
+    { key: "baseDex", short: "Dx", name: "민첩" },
+    { key: "baseCon", short: "Co", name: "건강" },
+    { key: "baseInt", short: "In", name: "지능" },
+    { key: "baseWis", short: "Wi", name: "지혜" },
+    { key: "baseCha", short: "Ch", name: "매력" },
+] as const;
+
+function OriginStatRadar({ origin, className }: { origin: OriginDef; className: string }) {
+    const point = (index: number, radius: number) => {
+        const angle = -Math.PI / 2 + index * Math.PI / 3;
+        return { x: 90 + Math.cos(angle) * radius, y: 80 + Math.sin(angle) * radius };
+    };
+    const outline = (radius: number) => ORIGIN_STATS.map((_, index) => {
+        const { x, y } = point(index, radius);
+        return `${x},${y}`;
+    }).join(" ");
+    const values = ORIGIN_STATS.map((stat, index) => point(index, 52 * origin[stat.key] / 18));
+
+    return (
+        <svg aria-hidden="true" viewBox="0 0 180 160" className={className}>
+            {[6, 12, 18].map((score) => <polygon key={score} points={outline(52 * score / 18)} fill="none" stroke="var(--rg-line)" strokeWidth="1" />)}
+            {ORIGIN_STATS.map((stat, index) => {
+                const edge = point(index, 52);
+                const label = point(index, 72);
+                const value = origin[stat.key];
+                return (
+                    <g key={stat.key}>
+                        <line x1="90" y1="80" x2={edge.x} y2={edge.y} stroke="var(--rg-line-soft)" />
+                        <text x={label.x} y={label.y} textAnchor="middle" dominantBaseline="middle" fill={value >= 15 ? "var(--rg-gold)" : "var(--rg-muted)"} fontSize="11" fontWeight={value >= 15 ? "bold" : "normal"}>{stat.short} {value}</text>
+                    </g>
+                );
+            })}
+            <polygon points={values.map(({ x, y }) => `${x},${y}`).join(" ")} fill="var(--rg-gold)" fillOpacity="0.22" stroke="var(--rg-gold)" strokeWidth="2" strokeLinejoin="round" />
+            {values.map(({ x, y }, index) => <circle key={ORIGIN_STATS[index].key} cx={x} cy={y} r="2.5" fill="var(--rg-gold)" />)}
+        </svg>
     );
 }
 
@@ -861,7 +901,6 @@ export default function Rogue() {
     /** 우상단 단추를 눌러 안내를 펼쳤는가 — **지도를 가리는 것은 이때뿐**이다. */
     const [netOpen, setNetOpen] = useState(false);
     /** 지도 하단 단추 줄의 「성장」 단추를 눌러 펼쳤는가. */
-    const [skillOpen, setSkillOpen] = useState(false);
     const [altarOpen, setAltarOpen] = useState(false);
     /** 정령술사의 ★ 단추를 눌러 원소 고르기 줄을 펼쳤는가. */
     const [spiritOpen, setSpiritOpen] = useState(false);
@@ -1130,7 +1169,6 @@ export default function Rogue() {
         setPeerModes({});
         setSheet("none");
         setView(null);
-        setSkillOpen(false);
         setAltarOpen(false);
         setSpiritOpen(false);
     }, [stopAllHolds, ignoreHeldDirections]);
@@ -1541,9 +1579,9 @@ export default function Rogue() {
     const [originFor, setOriginFor] = useState<
         { t: "new" } | { t: "host" } | { t: "mate" } | { t: "guest"; code: string } | { t: "rematch"; round: number }
     >({ t: "new" });
-    const [expandedOrigin, setExpandedOrigin] = useState<HeroOrigin | null>(null);
+    const [selectedOrigin, setSelectedOrigin] = useState<HeroOrigin>("knight");
     useEffect(() => {
-        if (sheet === "origins") setExpandedOrigin(null);
+        if (sheet === "origins") setSelectedOrigin("knight");
     }, [sheet, originFor]);
 
     const pickOrigin = (origin: HeroOrigin) => {
@@ -2124,61 +2162,10 @@ export default function Rogue() {
                     </>
                 )}
 
-                {/* ── 그때그때 생기는 단추들(성장 · 직업 기술 · 제단 · 상점) — **지도 하단, 상태 줄 바로 위.**
+                {/* ── 그때그때 생기는 단추들(직업 기술 · 제단 · 상점) — **지도 하단, 상태 줄 바로 위.**
                     한 줄로 모아 둔다. 지도 위쪽 모서리에 따로따로 떠 있으면 기록 줄 밑에 묻혀 찾기
                     어렵고, 엄지가 닿는 아래쪽이 폰에서 누르기 쉽다. 펼치는 판은 **위로** 연다. */}
                 <div className="absolute bottom-1 left-1 z-20 flex max-w-[calc(100%-0.5rem)] flex-wrap items-end gap-1">
-                    {/* ── 레벨업 성장 — 단추 줄의 맨 앞 한 칸.
-                        계속 서 있는 알림은 작은 단추 하나만 쓰고, 본문은 눌러야 (위로) 펼쳐진다. 쌓인 것이 없으면 안 그린다 — 못 누르는 단추가
-                        늘 떠 있으면 그것도 고장처럼 읽힌다. 캠프가 아니어도, 턴을 안 써도
-                        고를 수 있어서 지도를 막을 까닭이 없다. */}
-                    {hero.pendingSkillPicks > 0 && (
-                        <>
-                            <button
-                                type="button"
-                                onClick={() => setSkillOpen((v) => !v)}
-                                aria-label={`성장 ${hero.pendingSkillPicks}개를 고를 수 있다`}
-                                aria-expanded={skillOpen}
-                                title="성장을 고른다"
-                                className="grid h-7 min-w-7 place-items-center px-1 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)]/90 font-[family-name:var(--font-plex-mono)] text-[13px] leading-none text-[var(--rg-gold)]"
-                            >
-                                ★{hero.pendingSkillPicks}
-                            </button>
-                            {skillOpen && (
-                                <div className="absolute bottom-full left-0 z-20 mb-1 flex w-[min(15rem,calc(100vw-1rem))] flex-col gap-1.5 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-3 py-2 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-strong)] shadow-[0_0_0_1px_var(--rg-shadow)]">
-                                    <span className="font-bold text-[var(--rg-gold)]">성장 {hero.pendingSkillPicks}개 선택 가능</span>
-                                    <span className="text-[var(--rg-muted)]">레벨 {SKILL_PICK_INTERVAL}마다 하나 · 선택해도 턴을 쓰지 않는다</span>
-                                    <span className="text-[11px] text-[var(--rg-faint)]">
-                                        현재: St {heroStr(hero)} · Dx {hero.dexterity} · Co {hero.constitution} · In {hero.intelligence} · Wi {hero.wisdom} · Ch {hero.charisma}
-                                    </span>
-                                    {(
-                                        [
-                                            ["str", `힘 +1 · 현재 ${heroStr(hero)}`, hero.str >= 31],
-                                            ["dexterity", `민첩 +1 · 명중·회피 보정 (현재 ${hero.dexterity})`, hero.dexterity >= 18],
-                                            ["constitution", `건강 +1 · 레벨업 체력·회복 보정 (현재 ${hero.constitution})`, hero.constitution >= 18],
-                                            ["intelligence", `지능 +1 · 현재 ${hero.intelligence}`, hero.intelligence >= 18],
-                                            ["wisdom", `지혜 +1 · 지팡이 피해 보정 (현재 ${hero.wisdom})`, hero.wisdom >= hero.wisdomMax],
-                                            ["charisma", `매력 +1 · 상점 가격 보정 (현재 ${hero.charisma})`, hero.charisma >= 18],
-                                        ] as const
-                                    ).map(([option, label, capped]) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            disabled={capped}
-                                            onClick={() => {
-                                                run({ t: "pickSkill", option });
-                                                setSkillOpen(hero.pendingSkillPicks > 1);
-                                            }}
-                                            className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-left enabled:hover:bg-[var(--rg-raised)] disabled:cursor-not-allowed disabled:opacity-40"
-                                        >
-                                            {label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </>
-                    )}
-
                     {/* 액티브 전직 기술만 층마다 한 번 단추 줄에 선다. 기사의 방벽은 패시브다.
                         정령술사의 소환은 직업 특성이라 레벨 1부터 같은 자리에 선다(엔진이 같은 명령으로 받는다).
                         소환은 같은 층에서 턴이 쌓이면 다시 열린다 — 남은 턴을 이름 옆에 적는다(폰에는 `title` 이 안 뜬다).
@@ -2988,7 +2975,7 @@ export default function Rogue() {
                 const status = statusKind === "origin"
                     ? `직업: ${origin.name}\n전직: ${statusHero.level >= ADVANCE_LEVEL ? origin.advancedName : `${ADVANCE_LEVEL}레벨에 ${origin.advancedName}`}\n${origin.traitDescription}`
                     : statusKind === "str"
-                      ? `St:${heroStr(statusHero)}\n현재 공격력에 힘 보정으로 반영됩니다. 물약과 성장 선택으로 올릴 수 있습니다.`
+                      ? `St:${heroStr(statusHero)}\n현재 공격력에 힘 보정으로 반영됩니다. 힘 물약 등으로 올릴 수 있습니다.`
                       : statusKind === "dexterity"
                         ? `Dx:${heroDexterity(statusHero)}\n직업의 초기 민첩과 민첩 반지의 합입니다. 원작 참고 규칙으로 명중과 회피 굴림에 반영됩니다.`
                       : statusKind === "constitution"
@@ -3325,6 +3312,16 @@ export default function Rogue() {
                         }}
                     >
                         <div className="space-y-2 text-xs">
+                            <div role="group" aria-label="캐릭터 미리보기" className="grid grid-cols-7 gap-1">
+                                {ORIGIN_LIST.map((orig) => (
+                                    <button key={orig.id} type="button" aria-label={`${orig.name} 미리보기`} aria-pressed={selectedOrigin === orig.id}
+                                        title={orig.name} onClick={() => setSelectedOrigin(orig.id)}
+                                        className={`grid min-h-11 min-w-0 place-items-center rounded-[3px] border font-mono text-xl leading-none transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${selectedOrigin === orig.id ? "border-[var(--rg-gold)] bg-[var(--rg-hover)]" : "border-[var(--rg-line-soft)] bg-[var(--rg-raised)]"}`}
+                                        style={{ color: orig.iconInk }}>
+                                        {orig.icon}
+                                    </button>
+                                ))}
+                            </div>
                             <p className="text-[var(--rg-faint)]">
                                 {originFor.t === "new"
                                     ? "새 판을 떠날 출신을 고릅니다 — 시작 장비와 고유 특성이 갈립니다."
@@ -3351,32 +3348,27 @@ export default function Rogue() {
                                     ))}
                                 </p>
                             )}
-                            <div className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${expandedOrigin ? "hidden sm:grid" : ""}`}>
-                                {ORIGIN_LIST.map((orig) => (
-                                    <button key={orig.id} type="button" aria-expanded={expandedOrigin === orig.id}
-                                        onClick={() => setExpandedOrigin(orig.id)}
-                                        className={`flex min-h-20 items-center gap-2 rounded-[4px] border p-3 text-left transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${expandedOrigin === orig.id ? "border-[var(--rg-gold)] bg-[var(--rg-hover)]" : "border-[var(--rg-line-soft)] bg-[var(--rg-raised)]"}`}>
-                                        <span className="font-mono text-2xl leading-none" style={{ color: orig.iconInk }}>{orig.icon}</span>
-                                        <span className="min-w-0">
-                                            <span className="block truncate text-sm font-bold text-[var(--rg-strong)]">{orig.name}</span>
-                                            <span className="mt-0.5 block text-[11px] text-[var(--rg-faint)]">{orig.title}</span>
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                            {expandedOrigin && (() => {
-                                const orig = ORIGINS[expandedOrigin];
+                            {(() => {
+                                const orig = ORIGINS[selectedOrigin];
                                 if (!orig) return null;
                                 return (
                                     <section aria-live="polite" className="rounded-[4px] border border-[var(--rg-line)] bg-[var(--rg-raised)] p-3">
-                                        <button type="button" onClick={() => setExpandedOrigin(null)} className="mb-2 rounded-[3px] border border-[var(--rg-line-soft)] px-2 py-1 text-xs text-[var(--rg-muted)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:hidden">
-                                            ← 직업 목록
-                                        </button>
                                         <div className="mb-1 flex items-center gap-2">
                                             <span className="font-mono text-xl" style={{ color: orig.iconInk }}>{orig.icon}</span>
-                                            <h3 className="font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
+                                            <h3 className="min-w-0 flex-1 font-bold text-[var(--rg-strong)]">{orig.name} <span className="font-normal text-[var(--rg-faint)]">· {orig.title}</span></h3>
+                                            <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--rg-gold)]">Hp {orig.baseHp}</span>
                                         </div>
-                                        <p className="mb-2 text-xs text-[var(--rg-gold)]">Hp {orig.baseHp} · St {orig.baseStr} · Dx {orig.baseDex} · Co {orig.baseCon} · In {orig.baseInt} · Wi {orig.baseWis} · Ch {orig.baseCha} · 신앙 {ALIGNMENT_NAME[ORIGIN_ALIGNMENT[orig.id]]}</p>
+                                        <p className="text-[11px] text-[var(--rg-faint)]">시작 능력치 · <span className="font-bold text-[var(--rg-gold)]">강점</span>은 15 이상</p>
+                                        <div className="mb-2 flex flex-col items-center gap-2 sm:flex-row">
+                                            <OriginStatRadar origin={orig} className="h-auto w-full max-w-[205px] shrink-0" />
+                                            <div className="grid w-full grid-cols-3 gap-1 font-mono text-xs tabular-nums">
+                                                {ORIGIN_STATS.map((stat) => {
+                                                    const value = orig[stat.key];
+                                                    return <div key={stat.key} aria-label={`${stat.name} ${value}${value >= 15 ? ", 강점" : ""}`} className={`flex justify-between gap-1 rounded-[3px] border px-2 py-1 ${value >= 15 ? "border-[var(--rg-gold)] bg-[var(--rg-hover)] font-bold text-[var(--rg-gold)]" : "border-[var(--rg-line-soft)] text-[var(--rg-muted)]"}`}><span>{stat.short}</span><span>{value}</span></div>;
+                                                })}
+                                            </div>
+                                        </div>
+                                        <p className="mb-2 text-[11px] text-[var(--rg-faint)]">신앙 {ALIGNMENT_NAME[ORIGIN_ALIGNMENT[orig.id]]}</p>
                                         <p className="mb-2 text-[11.5px] text-[var(--rg-muted)]">{orig.description}</p>
                                         <div className="border-t border-[var(--rg-line-soft)] pt-2 text-[11px]">
                                             <b className="text-[var(--rg-strong)]"><span className="font-mono text-[var(--rg-gold)]">*</span> {orig.traitName}: </b>

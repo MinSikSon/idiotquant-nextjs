@@ -332,6 +332,7 @@ function normalize(s: Saved): GameState | null {
     const fixHero = (h: Hero): Hero => {
         const fixed = rawHero(h);
         delete fixed.itemLuck;
+        delete (fixed as Hero & { pendingSkillPicks?: number }).pendingSkillPicks;
         // 파다 만 자리는 숫자 넷이 다 있을 때만 잇는다. 남이 보낸 판(`deserialize`)도 이 길이라
         // 모양이 틀리면 **칸째 지운다** — 처음부터 다시 파면 그만이다.
         const d = h.dig;
@@ -382,11 +383,6 @@ function normalize(s: Saved): GameState | null {
         stuck: num(h.stuck, 0),
         detect: num(h.detect, 0),
         seeInvisible: Math.max(0, Math.trunc(num(h.seeInvisible, 0))),
-        // **v9 이하에는 레벨업 성장이 없다.** 안 채우면 `pickSkill` 을 여는 순간
-        // `pendingSkillPicks` 가 undefined 를 읽어 터진다. 음수는 0 으로, 지어낼 수
-        // 없는 「이미 쓴 성장」은 못 채우므로 **가진 것이 없던 것으로** 돌아간다 —
-        // 옛 저장에는 애초에 없던 값이니 맞는 처지다.
-        pendingSkillPicks: Math.max(0, num(h.pendingSkillPicks, 0)),
         bonusDefense: Math.max(0, num(h.bonusDefense, 0)),
         // 예전 `itemLuck` 은 Luck 판정과 Wi(지팡이 주사위 +1/성장)에 함께 쓰였다.
         // 진행도를 각각 새 Luck(기존 등급 보정과 비슷한 확률)과 Wisdom으로 옮긴다.

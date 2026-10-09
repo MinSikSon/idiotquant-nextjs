@@ -134,8 +134,7 @@ test("전직 기술과 사망 회고가 화면에서 사라지지 않는다", ()
     assert.match(read("lib/rogue/game.ts"), /ADVANCE_LEVEL - hero\.level/, "전직 진행도가 기록에 없다");
     assert.match(s, /orig\.advancedSkillName/, "직업 선택 카드에 전직 기술 미리보기가 없다");
     const game = read("lib/rogue/game.ts");
-    assert.match(game, /hero\.pendingSkillPicks/, "고를 수 있는 성장을 직업 기록에 알리지 않는다");
-    assert.match(game, /Math\.floor\(hero\.level \/ SKILL_PICK_INTERVAL \+ 1\)/, "다음 성장 레벨을 직업 기록에 알리지 않는다");
+    assert.doesNotMatch(game, /pendingSkillPicks|SKILL_PICK_INTERVAL|pickSkill/, "삭제한 레벨업 선택이 직업 기록에 남았다");
     assert.match(s, /state\.phase === "dead"[\s\S]*?마지막 순간/, "사망 화면에 마지막 순간 회고가 없다");
     assert.match(s, /state\.messages\.filter\(\(m\) => !isDetail\(m\)\)\.slice\(-5\)/, "사망 직전 기록 다섯 줄을 안 보여 준다");
     assert.match(s, /미식별 물건/, "죽을 때 남긴 미식별 물건을 안 센다");
