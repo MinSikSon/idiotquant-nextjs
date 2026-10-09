@@ -2322,28 +2322,29 @@ export default function Rogue() {
                         )}
                         {!coop && <span className="shrink-0">{h.nick ?? "나"}</span>}
                         <span className="shrink-0">[{expandedPartyStats === i ? <OriginTag origin={h.origin} level={h.level} /> : <span className="font-[family-name:var(--font-plex-mono)] font-bold" style={{ color: originInfo.iconInk }}>{originInfo.icon}</span>}]</span>
-                        {expandedPartyStats !== i && hHunger && <button type="button" className="shrink-0 font-bold text-[var(--rg-monster)]" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger}</button>}
-                        {expandedPartyStats !== i && ([
-                            ["defense", `AC:${heroArmorClass(h)}`],
-                            ["xp", `Xp:${h.level}/${h.exp}`],
-                            ["dlvl", `Dlvl:${level.depth}`],
-                            ["turn", coop ? `T:${h.turns}/${state.turn}` : `T:${state.turn}`],
-                        ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
-                        {expandedPartyStats === i && ([
-                            ["str", `St:${heroStr(h)}`],
-                            ["defense", `AC:${heroArmorClass(h)}`],
-                            ["xp", `Xp:${h.level}/${h.exp}`],
-                            ["turn", `T:${h.turns}/${state.turn}`],
-                        ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
-                        {expandedPartyStats === i && !coop && <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} mr-[5ch]`}>Dlvl:{level.depth}</button>}
+                        {expandedPartyStats === i && <button type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind("str"); setSheetOwner(i); setSheet("status"); }}>St:{heroStr(h)}</button>}
+                        {expandedPartyStats === i && <div className="flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)]">
+                            {([
+                                ["dexterity", `Dx:${heroDexterity(h)}`],
+                                ["constitution", `Co:${h.constitution}`],
+                                ["intelligence", `In:${h.intelligence}`],
+                                ["wisdom", `Wi:${h.wisdom}`],
+                                ["charisma", `Ch:${h.charisma}`],
+                                ["luck", `Lu:${h.luck}`],
+                            ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
+                        </div>}
+                        <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className="shrink-0 hover:underline">Dlvl:{level.depth}</button>
                         <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 text-[var(--rg-gold)]`}>$:{h.gold}</button>
                         <span className={`shrink-0 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
                             HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
                         </span>
+                        {([
+                            ["defense", `AC:${heroArmorClass(h)}`],
+                            ["xp", `Xp:${h.level}/${h.exp}`],
+                        ] as const).map(([kind, label]) => <button key={kind} type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
+                        <button type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind("turn"); setSheetOwner(i); setSheet("status"); }}>T:{coop || expandedPartyStats === i ? `${h.turns}/${state.turn}` : state.turn}</button>
+                        {(hHunger || expandedPartyStats === i) && <button type="button" className={`shrink-0 font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`} onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }}>{hHunger || "Well-fed"}</button>}
                         {expandedPartyStats === i && h.hp > 0 && h.hp <= h.maxHp / 4 && <span className=" font-bold text-[var(--rg-trap)]">⚠ HP 낮음</span>}
-                        {!coop && expandedPartyStats === i && <button type="button" onClick={() => { dispatchCmd({ t: "inspectStatus", who: i, kind: "wisdom" }); setSheet("log"); }} className={`${statChip}`}>
-                            Wi:{h.wisdom}
-                        </button>}
                         {
                             expandedPartyStats === i && (h.timeStop ?? 0) > 0 && (
                                 <span className=" text-[var(--rg-wand)] font-bold">TimeStop({h.timeStop})</span>
@@ -2353,9 +2354,6 @@ export default function Rogue() {
                         {expandedPartyStats === i && h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {expandedPartyStats === i && h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {expandedPartyStats === i && h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
-                        {expandedPartyStats === i && <button type="button" onClick={() => { setStatusKind("hunger"); setSheetOwner(i); setSheet("status"); }} className={`${statChip}  font-bold ${hHunger ? "text-[var(--rg-monster)]" : "text-[var(--rg-faint)]"}`}>
-                            {hHunger || "Well-fed"}
-                        </button>}
                         {expandedPartyStats === i && (!coop || foodCount <= 2) && <span className={` ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
                             식량:{foodCount}
                         </span>}
@@ -2368,16 +2366,6 @@ export default function Rogue() {
                         {expandedPartyStats === i && cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {expandedPartyStats === i && emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {expandedPartyStats === i && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
-                        {expandedPartyStats === i && <div className=" flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)] [scrollbar-width:none]">
-                            {([
-                                ["dexterity", `Dx:${heroDexterity(h)}`],
-                                ["constitution", `Co:${h.constitution}`],
-                                ["intelligence", `In:${h.intelligence}`],
-                                ["charisma", `Ch:${h.charisma}`],
-                                ["wisdom", `Wi:${h.wisdom}`],
-                                ["luck", `Lu:${h.luck}`],
-                            ] as const).map(([kind, label]) => <button key={kind} type="button" className="rounded underline decoration-dotted underline-offset-2 hover:text-[var(--rg-strong)]" onClick={() => { setStatusKind(kind); setSheetOwner(i); setSheet("status"); }}>{label}</button>)}
-                        </div>}
                         {coop && expandedPartyStats === i && <div className=" flex flex-nowrap items-center gap-x-[1ch] overflow-x-auto text-[var(--rg-faint)] [scrollbar-width:none]">
                             {hRings > 0 && <span>반지:{hRings}</span>}
                         </div>}
@@ -3012,7 +3000,7 @@ export default function Rogue() {
                       : statusKind === "wisdom"
                         ? `Wi:${statusHero.wisdom}\n지혜와 지능의 보정치 합이 직업 시작 합계를 넘으면 공격 지팡이에 추가 피해 주사위가 붙습니다. Luck과 별개입니다.`
                       : statusKind === "luck"
-                        ? `Lu:${statusHero.luck}\n넷핵식 자연 행운입니다. 공격 명중과 마법 분수·기도에 영향을 줍니다. 평소 600번, 증표 소지나 신의 분노 중에는 300번의 본인 행동마다 0에 가까워집니다.`
+                        ? `Lu:${statusHero.luck}\n자연 행운입니다. 공격 명중과 마법 분수·기도에 영향을 줍니다. 평소 600번, 증표 소지나 신의 분노 중에는 300번의 본인 행동마다 0에 가까워집니다.`
                         : statusKind === "hunger"
                           ? `${hungerOf(statusHero) || "Well-fed"}\n걸음을 옮길 때마다 줄어드는 허기 상태입니다. 식량을 먹으면 회복됩니다.`
                           : statusKind === "dlvl"
