@@ -1013,7 +1013,19 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         flavor: "몬스터 시체를 통조림으로 밀봉해 부패와 독 피해를 막는다. 통조림은 제물이나 부활에 쓸 수 없다.",
         masteryFlavor: "위험한 시체를 보존해 식량으로 쓰는 법을 익혔다.",
     },
-    ...Object.entries(SPELLBOOKS).map(([type, def]) => ({
+    {
+        kind: "tool",
+        type: "magic marker",
+        key: "tool:magic marker",
+        name: TOOLS["magic marker"].name,
+        category: "other",
+        categoryLabel: "그 밖",
+        masteryType: "uses",
+        masteryGoal: 10,
+        flavor: "빈 주문서나 빈 마법책에 이미 알아낸 마법을 기록한다. 주문서보다 마법책은 더 많은 잉크가 든다.",
+        masteryFlavor: "마법 표식기의 잉크를 아껴 필요한 마법 문서를 만들어 냈다.",
+    },
+    ...Object.entries(SPELLBOOKS).filter(([type]) => type !== "blank").map(([type, def]) => ({
         kind: "spellbook" as const,
         type,
         key: `spellbook:${type}`,
@@ -1145,7 +1157,7 @@ export function itemCodexStats(entry: CodexEntry): string {
         case "food":
             return entry.type === "food ration" ? "1–26층 · 허기 회복" : "시체 식량 · 독 저항, 용 화염/예티 냉기 저항, 망령 레벨 상승";
         case "tool":
-            return `층 ${depths?.min ?? 1}+ · 시체 보존 도구`;
+            return entry.type === "magic marker" ? `층 ${depths?.min ?? 1}+ · 빈 주문서/마법책에 기록` : `층 ${depths?.min ?? 1}+ · 시체 보존 도구`;
         case "amulet":
             return "지하 26층";
         default:

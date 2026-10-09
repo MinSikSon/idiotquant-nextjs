@@ -98,8 +98,8 @@ test("게임에서는 공통 헤더의 서비스 이름도 idiotgames로 바뀐�
     );
     assert.equal(
         (nav.match(/IDIOT<span className="text-brand">\{brandSuffix\}<\/span>/g) ?? []).length,
-        2,
-        "데스크톱과 모바일 헤더가 같은 게임 브랜드를 쓰지 않는다",
+        1,
+        "공통 게임 내비게이션이 같은 브랜드 변수를 쓰지 않는다",
     );
 });
 
@@ -162,7 +162,7 @@ test("게임은 위험과 지금 가능한 행동을 눈에 띄게 알린다", (
     const pad = read(TOUCHPAD);
     const desk = read("app/(game)/games/components/Desk.tsx");
     assert.match(rogue, /\{hHunger \|\| "Well-fed"\}[\s\S]*?⚠ HP 낮음[\s\S]*?⚠ 저주 장비[\s\S]*?⚠ 빈 지팡이/, "위험 상태 요약이 없다");
-    assert.match(rogue, /latest = visibleMessages[\s\S]*?important = [\s\S]*?recent = important/, "중요 메시지를 유지하지 않는다");
+    assert.match(rogue, /visibleMessages = state\.messages\.filter\(\(m\) => !isDetail\(m\)\)[\s\S]*?isImportantMessage[\s\S]*?\[\.\.\.visibleMessages\.slice\(-4\)\]\.reverse\(\)/, "최근 결과와 중요 메시지 강조가 없다");
     assert.match(pad, /hot\?: boolean[\s\S]*?a\.hot && !a\.off/, "지금 가능한 행동을 강조하지 않는다");
     assert.match(desk, /const comparedPower[\s\S]*?"better"[\s\S]*?"worse"/, "새 장비의 좋고 나쁨을 가르지 않는다");
     assert.doesNotMatch(desk, /현재 .*→/, "배낭에 장비 비교 문구가 과하게 남아 있다");
@@ -182,9 +182,9 @@ test("옵션 메뉴는 제목과 설명을 나눠 보여 주고 토글 상태를
 test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에 남긴다", () => {
     const rogue = read("app/(game)/games/Rogue.tsx");
     const game = read("lib/rogue/game.ts");
-    assert.match(rogue, /t: "inspectStatus"[\s\S]*?setSheet\("log"\)/, "상태 설명을 기록으로 열지 않는다");
-    assert.match(game, /\$\{who \+ 1\}P▸/, "상태 기록에 플레이어 표식이 없다");
-    assert.match(rogue, /AC:\{heroArmorClass\(h\)\}/, "최종 방어 등급이 상태 줄에 없다");
+    assert.match(rogue, /setStatusKind\("str"\); setSheetOwner\(i\); setSheet\("status"\)/, "스탯을 눌러도 설명 창을 열지 않는다");
+    assert.match(rogue, /sheet === "status"[\s\S]*?statusKind === "str"[\s\S]*?heroStr\(statusHero\)[\s\S]*?공격 명중·피해/, "스탯 설명 창에 선택한 힘의 설명이 없다");
+    assert.match(rogue, /\["defense", `AC:\$\{heroArmorClass\(h\)\}`\]/, "최종 방어 등급이 상태 줄에 없다");
     assert.match(game, /heroArmorClassTerms\(hero\)\.map/, "방어 등급의 실제 계산식을 기록하지 않는다");
     assert.match(game, /St:\$\{heroStr\(hero\)\}/, "힘의 실제 계산식을 기록하지 않는다");
     assert.match(rogue, /Dlvl:\{level\.depth\}/, "현재 층이 Dlvl로 표시된다");
@@ -197,10 +197,10 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
         /\{hHunger \|\| "Well-fed"\}[\s\S]*?FLOOR_EVENT_BANNER\[level\.mutator\]\.title[\s\S]*?Ring: \{hRings\}/,
         "층 이벤트와 반지 표기가 배고픔 뒤에 오지 않는다",
     );
-    assert.match(rogue, /FLOOR_EVENT_BANNER\[level\.mutator\]\.title[\s\S]*?className="order-3 text-\[var\(--rg-ring\)\]"/, "층 이벤트와 반지가 첫 상태 묶음의 순서를 공유하지 않는다");
-    assert.match(rogue, /결과를 먼저 읽고, 아래 들여쓴 줄에서 명중·피해 계산을 확인합니다/, "기록 읽는 순서 안내가 없다");
-    assert.match(rogue, /const detail = isDetail\(m\)[\s\S]*?border-l-2 border-\[var\(--rg-line-soft\)\]/, "계산 줄이 결과 아래에서 묶이지 않는다");
-    assert.match(rogue, /isImportantMessage\(m\) \? "font-bold" : ""/, "중요한 결과가 기록에서 두드러지지 않는다");
+    assert.match(rogue, /FLOOR_EVENT_BANNER\[level\.mutator\]\.title[\s\S]*?Ring: \{hRings\}/, "층 이벤트와 반지 표기가 확장 상태에 없다");
+    assert.match(rogue, /최신 기록이 위에 있습니다\.[\s\S]*?명중과 피해 계산/, "기록의 결과·계산 줄 읽는 순서를 안내하지 않는다");
+    assert.match(rogue, /const detail = isDetail\(m\)[\s\S]*?ml-4 border-t border-\[var\(--rg-line-faint\)\]/, "계산 줄이 결과 아래에서 묶이지 않는다");
+    assert.match(rogue, /isImportantMessage\(m\) \? "bg-\[var\(--rg-raised\)\] font-bold" : ""/, "중요한 결과가 기록에서 두드러지지 않는다");
 });
 
 test("상태 줄을 펼쳐도 공통 항목의 순서가 유지된다", () => {
@@ -231,7 +231,7 @@ test("근위대 장검과 도적 단검 이도류는 배낭에서 눈에 띈다"
 
 test("축복의 기름은 마시지 않고 장비에 바른다", () => {
     const s = read("app/(game)/games/components/Desk.tsx");
-    assert.match(s, /it\.type === "blessing" \? "장비에 바른다" : "마신다"/, "축복의 기름이 일반 포션처럼 마신다고 표시된다");
+    assert.match(s, /it\.type === "blessing" \? "장비에 바른다" : it\.type === "revival" && corpseAtFeet \? "시체를 되살린다" : "마신다"/, "축복의 기름·부활 물약의 행동명이 잘못됐다");
     assert.match(s, /title: "무엇에 축복을 입힐까"[\s\S]*?kinds: \["weapon", "armor"\]/, "기름을 바를 장비를 고르지 않는다");
 });
 

@@ -211,7 +211,10 @@ test("집으면 외상 — 주인이 문을 막고, 외상인 것은 못 쓰고,
         perform(s, { t: "drop", letter: got.letter! });
         assert.equal(billOf(hero.pack), 0, "내려놓았는데 외상이 남았다");
         assert.ok(forSale(s.level, got), "돌려준 물건이 파는 물건으로 안 돌아갔다");
-        perform(s, { t: "search" });
+        // 주인의 걸음은 영웅의 턴이 흘러야 갱신된다. 길을 비켜 주고 한 턴을 보낸다.
+        hero.x = ware.x;
+        hero.y = ware.y;
+        perform(s, { t: "rest" });
         assert.ok(at(shk, shop.rest), "외상이 없는데 주인이 문을 계속 막는다");
         assert.equal(shop.angry, false);
     }

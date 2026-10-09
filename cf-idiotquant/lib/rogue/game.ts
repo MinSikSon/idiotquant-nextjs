@@ -125,7 +125,9 @@ import {
     HAND_THROWN_AMMO,
     ARROW_BREAK_CHANCE,
     itemChar,
+    itemInk,
     itemWeight,
+    markerInkRange,
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
     CHEST_SLOTS,
@@ -233,6 +235,7 @@ type Action =
     /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
     | { t: "read"; letter: string; target?: string }
     | { t: "study"; letter: string }
+    | { t: "write"; markerLetter: string; paperLetter: string; kind: "scroll" | "spellbook"; type: string }
     | { t: "cast"; spell: string }
     | { t: "eat"; letter: string }
     | { t: "tin"; kitLetter: string; corpseLetter: string }
@@ -1003,6 +1006,9 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     if (it) {
         if (hero.autoPickup) {
             // 이동 턴 안에서 그 칸의 아이템을 전부 줍는다. 용량이 다 차면 남은 것은 바닥에 둔다.
+            if (forSale(level, it)) {
+                say(state, `발밑에 ${describe(it, state.known, state.appearance)}이(가) 있다 — 값 ${price(it, hero.charisma)}`);
+            }
             while (it) {
                 const before = level.items.length;
                 if (!pickUp(state, hero) || level.items.length === before) break;
@@ -1076,7 +1082,7 @@ function pickUp(state: GameState, hero: Hero): boolean {
     // **배낭에 있는 쪽**을 받는다. 겹쳐 쌓였으면 집은 물건과 다른 물건이고, 자리를
     // 가진 것은 배낭 쪽뿐이다.
     if (selling) picked.unpaid = true;
-    const inPack = addToPack(hero, picked, true);
+    const inPack = addToPack(hero, picked, true, true);
     // 외상과 「내가 내려놓은 것」은 **있는 자리에서만** 뜻이 있다 — 바닥에 남은 몫은 외상이
     // 아니고, 배낭에 든 것은 가게 바닥의 표(`noCharge`)를 안 든다.
     if (it.x >= 0) delete it.unpaid;
@@ -1103,7 +1109,8 @@ function pickUp(state: GameState, hero: Hero): boolean {
         say(state, "옌더의 증표를 손에 넣었다! 이제 올라갈 수 있다.");
     } else {
         const bill = selling ? ` — 외상 ${unitPrice(it, hero.charisma) * (split ? STACK_MAX : pile)}. 나가기 전에 값을 치른다` : "";
-        say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}${bill}`);
+        const loadWarning = encumbrance(hero) >= 3 ? " — 짐이 과중해져 이동이 둔해졌다" : "";
+        say(state, `${inPack.letter}) ${describe(inPack, state.known, state.appearance)}${bill}${loadWarning}`);
     }
     if (split) say(state, `발밑에 ${it.count}개가 남았다.`);
     return true;
@@ -1496,6 +1503,10 @@ function dipFountain(state: GameState, hero: Hero, letter: string, rng: Rng): bo
     } else if (dipped.kind === "scroll" && dipped.type !== "blank") {
         dipped.type = "blank";
         say(state, "주문서의 글씨가 물에 씻겨 빈 주문서가 되었다.");
+        wetEffect = true;
+    } else if (dipped.kind === "spellbook" && dipped.type !== "blank") {
+        dipped.type = "blank";
+        say(state, "마법책의 글씨가 물에 씻겨 빈 마법책이 되었다.");
         wetEffect = true;
     } else if (dipped.kind === "weapon" && WEAPONS[dipped.type]?.material === "iron" && !dipped.erosionProof) {
         const plus = enchantOf(dipped);
@@ -2133,7 +2144,7 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
 /** NetHack의 지능 독서 판정과 20,000턴 주문 기억을 적용한다. */
 function study(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const book = packItem(hero, letter);
-    if (!book || book.kind !== "spellbook" || !SPELLBOOKS[book.type]) return false;
+    if (!book || book.kind !== "spellbook" || !SPELLBOOKS[book.type] || book.type === "blank") return false;
     if (hero.blind > 0) { say(state, "앞이 안 보여 마법책을 읽을 수 없다."); return false; }
     if ((book.studyCount ?? 0) >= 3) { say(state, "이 책에서 더 배울 수 없다."); return false; }
     const def = SPELLBOOKS[book.type];
@@ -2148,6 +2159,35 @@ function study(state: GameState, hero: Hero, letter: string, rng: Rng): boolean 
     state.itemCodex[`spellbook:${book.type}`] = true;
     state.itemUsage[`spellbook:${book.type}`] = (state.itemUsage[`spellbook:${book.type}`] ?? 0) + 1;
     say(state, `${def.name} 주문을 익혔다 (기억 20,000턴).`);
+    return true;
+}
+
+/** NetHack 표식기: 빈 종이에 이미 알아낸 주문서·마법책을 쓰며 잉크와 종이를 소모한다. */
+function writeWithMarker(state: GameState, hero: Hero, markerLetter: string, paperLetter: string, kind: "scroll" | "spellbook", type: string, rng: Rng): boolean {
+    const marker = packItem(hero, markerLetter);
+    const paper = packItem(hero, paperLetter);
+    const table = kind === "scroll" ? SCROLLS : SPELLBOOKS;
+    if (!marker || marker.kind !== "tool" || marker.type !== "magic marker" || !paper || paper.kind !== kind || paper.type !== "blank" || !table[type] || type === "blank") return false;
+    if (kind === "spellbook" && hero.blind > 0) { say(state, "앞이 보이지 않아 마법책을 쓸 수 없다."); return false; }
+    // NetHack write.c: book base cost is 10 × spell level; scroll costs are by kind.
+    const [minimumCost, lastCost] = markerInkRange(kind, type);
+    const ink = marker.charges ?? 0;
+    if (ink < minimumCost) { say(state, "마법 표식기가 너무 말라 쓸 수 없다."); return true; }
+    const cost = rng.between(minimumCost, lastCost);
+    if (ink < cost) {
+        marker.charges = 0;
+        if (kind === "scroll") hero.pack = hero.pack.filter((item) => item.id !== paper.id);
+        say(state, kind === "scroll" ? "표식기의 잉크가 마르는 바람에 주문서가 쓸모없이 사라졌다." : "표식기의 잉크가 말랐다. 마법책의 글씨는 흐려져 빈 책으로 남았다.");
+        return true;
+    }
+    marker.charges = ink - cost;
+    paper.type = type;
+    const blessing = (marker.blessed ? 1 : marker.cursed ? -1 : 0) + (paper.blessed ? 1 : paper.cursed ? -1 : 0);
+    paper.blessed = blessing > 0;
+    paper.cursed = blessing < 0;
+    state.known[`${kind}:${type}`] = true;
+    state.itemCodex[`${kind}:${type}`] = true;
+    say(state, `${kind === "scroll" ? SCROLLS[type].name + " 주문서" : SPELLBOOKS[type].name + " 마법책"}를 썼다 (잉크 ${cost}).`);
     return true;
 }
 
@@ -2175,11 +2215,13 @@ function cast(state: GameState, hero: Hero, spell: string, rng: Rng): boolean {
     if (!def || (hero.spells[spell] ?? 0) <= state.turn) { say(state, "외운 주문이 아니다."); return false; }
     if (hero.power < def.cost) { say(state, `마력이 모자라다 (${hero.power}/${def.cost}).`); return false; }
     if (spell === "healing" && hero.hp >= hero.maxHp) { say(state, "이미 체력이 가득하다."); return false; }
-    hero.power -= def.cost;
+    hero.food = Math.max(0, hero.food - 2 * def.level);
     if (rng.rnd(100) >= spellCastingChance(hero, spell)) {
+        hero.power -= Math.floor(def.cost / 2);
         say(state, `${def.name} 주문 시전에 실패했다.`);
         return true;
     }
+    hero.power -= def.cost;
     if (spell === "healing") hero.hp = Math.min(hero.maxHp, hero.hp + rng.roll(1, 8) + Math.floor(hero.level / 3));
     else if (spell === "detect monsters") hero.detect = Math.max(hero.detect, 30);
     else if (spell === "magic mapping") revealAll(state.level);
@@ -2503,6 +2545,8 @@ export function transmuteCategory(it: Item): Category | null {
             return it.kind;
         case "scroll":
             return ENCHANT_SCROLLS.includes(it.type) ? "enchant" : "scroll";
+        case "spellbook":
+            return "spellbook";
         default:
             return null;
     }
@@ -3200,6 +3244,8 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
             pullAggro(state, m, hero);
             m.hp -= dmg.total;
             m.speed = -1;
+            // `finishTurn` 에서 이번 턴의 동작을 처리하기 전에 한 번 줄이므로 2 를 넣는다.
+            m.frozenTurns = Math.max(m.frozenTurns ?? 0, 2);
             saySpellDamage(`돌풍에 밀려난 ${m.def.name}이(가) 벽에 강하게 충돌했다! (기절)`, dmg);
             if (m.hp <= 0) {
                 say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
@@ -4682,6 +4728,9 @@ function act(state: GameState, cmd: Command): GameState {
             case "study":
                 acted = study(state, hero, cmd.letter, rng);
                 break;
+            case "write":
+                acted = writeWithMarker(state, hero, cmd.markerLetter, cmd.paperLetter, cmd.kind, cmd.type, rng);
+                break;
             case "cast":
                 acted = cast(state, hero, cmd.spell, rng);
                 break;
@@ -5194,7 +5243,7 @@ export function glyphAt(
     y: number,
     /** 이 화면이 **조종하는** 영웅. 그 사람만 밝게 선다 — 나머지는 동료다. */
     who = 0,
-): { ch: string; kind: string } | null {
+): { ch: string; kind: string; ink?: string } | null {
     const { level } = state;
     const hero = state.heroes[who] ?? state.heroes[0];
     if (!inBounds(x, y)) return null;
@@ -5224,7 +5273,7 @@ export function glyphAt(
         }
     }
     const it = itemAt(level, x, y);
-    if (it && (visible || seen)) return { ch: itemChar(it.kind), kind: `item-${it.kind}` };
+    if (it && (visible || seen)) return { ch: itemChar(it.kind), kind: `item-${it.kind}`, ink: itemInk(it, state.appearance) };
 
     // 찾은 함정만 뜬다. 못 찾은 것은 바닥과 구별되지 않는다 — 그것이 함정이다.
     const trap = level.traps.find((t) => t.x === x && t.y === y && t.found);

@@ -188,7 +188,7 @@ export function forSale(level: Level, it: Item): boolean {
 }
 
 /** 외상 — 배낭에서 아직 값을 안 치른 것들의 합. */
-export function billOf(pack: Item[], charisma = 10): number {
+export function billOf(pack: Item[], charisma?: number): number {
     return pack.filter((it) => it.unpaid).reduce((n, it) => n + price(it, charisma), 0);
 }
 

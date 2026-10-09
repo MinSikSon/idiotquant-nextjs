@@ -248,6 +248,7 @@ export function spawnMonster(ch: string, x: number, y: number, rng: Rng, champio
         awake: champion ? true : def.mean,
         id: nextId++,
         speed: champion === "swift" ? 1 : ch === "p" ? -1 : 0,
+        fleeTurns: 0,
         cancelled: false,
         champion,
     };

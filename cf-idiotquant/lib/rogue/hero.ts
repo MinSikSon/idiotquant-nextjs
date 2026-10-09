@@ -199,8 +199,8 @@ export function packWeight(hero: Hero): number {
 /** NetHack `calc_capacity()`의 0~5 적재 단계. */
 export function encumbrance(hero: Hero, extraWeight = 0): number {
     const capacity = carryCapacity(hero);
-    const excess = packWeight(hero) + extraWeight - capacity;
-    return excess <= 0 ? 0 : Math.min(5, Math.floor(excess * 2 / capacity) + 1);
+    const weight = packWeight(hero) + extraWeight;
+    return weight <= 0 ? 0 : Math.min(5, Math.floor(weight * 2 / capacity) + 1);
 }
 
 /** NetHack `abon()`의 힘 명중 표. 이 게임의 19~31은 18/xx 대신 쓰는 성장 구간이다. */
@@ -409,8 +409,10 @@ export function mergeStacks(hero: Hero): void {
     hero.pack = kept;
 }
 
-export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | null {
-    if (encumbrance(hero, itemWeight(it)) >= 5) return null;
+export function addToPack(hero: Hero, it: Item, mergeWeapons = false, allowOverload = false): Item | null {
+    if (allowOverload
+        ? packWeight(hero) + itemWeight(it) > carryCapacity(hero) * 2
+        : encumbrance(hero, itemWeight(it)) >= 5) return null;
     if (it.kind === "food" && it.corpseOf) {
         const corpse = hero.pack.find((p) => sameCorpseStack(p, it));
         if (corpse) {
@@ -899,7 +901,7 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         hero.level += 1;
         // **굴리지 않는다.** 몬스터 체력과 같은 이유다 — 같은 레벨의 두 판이 체력만
         // 다른 것은 판단거리가 아니라 그냥 운이다(`monsters.ts` 머리말 참고).
-        const hpGain = hpGainPerLevel(hero, rng);
+        const hpGain = hpGainPerLevel(hero);
         hero.maxHp += hpGain;
         hero.hp += hpGain;
         const role = ROLE_GROWTH[hero.origin ?? "knight"];
@@ -907,7 +909,7 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         const high = hero.level >= role.highAt;
         const roleGrowth = high ? role.enHigh : role.enLow;
         const raceGrowth = high ? race.enHigh : race.enLow;
-        const powerGain = Math.max(1, Math.floor(hero.wisdom / 2) + growthAmount(roleGrowth[0], roleGrowth[1], rng) + growthAmount(raceGrowth[0], raceGrowth[1], rng));
+        const powerGain = Math.max(1, Math.floor(hero.wisdom / 2) + growthAmount(roleGrowth[0], roleGrowth[1]) + growthAmount(raceGrowth[0], raceGrowth[1]));
         hero.maxPower += powerGain;
         hero.power += powerGain;
         gained.push(hero.level);

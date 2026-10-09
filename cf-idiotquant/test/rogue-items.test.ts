@@ -10,9 +10,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wornRings } from "@/lib/rogue/hero";
+import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, PACK_LETTERS, regenEvery, searchChance, wornRings } from "@/lib/rogue/hero";
 import { ZAP_FX, zapFrames, zapImpact, zapLight } from "@/app/(game)/games/zapFx";
-import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
+import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, markerInkRange, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
 import { deserialize, serialize } from "@/lib/rogue/storage";
@@ -52,6 +52,32 @@ function give(s: GameState, it: Item, letter: string): string {
     s.heroes[0].pack.push(it);
     return letter;
 }
+
+test("마법 표식기는 빈 종이에 이미 알아낸 주문서와 마법책을 쓴다", () => {
+    const s = newGame(140);
+    const hero = s.heroes[0];
+    const marker = makeItem("tool", "magic marker", 990, -1, -1);
+    marker.charges = 50;
+    give(s, marker, "z");
+    const blankScroll = makeItem("scroll", "blank", 991, -1, -1);
+    give(s, blankScroll, "y");
+    const blankBook = makeItem("spellbook", "blank", 992, -1, -1);
+    give(s, blankBook, "x");
+    s.known["scroll:identify"] = true;
+    s.itemCodex["spellbook:healing"] = true;
+
+    const before = marker.charges;
+    const writtenScroll = perform(s, { t: "write", markerLetter: "z", paperLetter: "y", kind: "scroll", type: "identify" });
+    assert.equal(blankScroll.type, "identify");
+    assert.ok(marker.charges! < before && marker.charges! >= 0);
+    assert.equal(describe(blankScroll, writtenScroll.known, writtenScroll.appearance), "감정 주문서");
+
+    const writtenBook = perform(writtenScroll, { t: "write", markerLetter: "z", paperLetter: "x", kind: "spellbook", type: "healing" });
+    assert.equal(blankBook.type, "healing");
+    assert.ok(marker.charges! < before);
+    assert.equal(describe(blankBook, writtenBook.known, writtenBook.appearance), "치유 마법책");
+    assert.deepEqual(markerInkRange("spellbook", "healing"), [5, 9]);
+});
 
 test("저주받은 갑옷은 못 벗고, 반지는 능력을 바꾼다", () => {
     // ── 저주받은 갑옷은 입으면 드러나고, 그 뒤로는 벗을 수 없다
@@ -213,7 +239,7 @@ test("민첩·피해·재생 반지는 각각 명중, 피해, 회복에만 보�
     give(s, dexterity, "y");
     give(s, damage, "z");
     const worn = perform(perform(s, { t: "putOn", letter: "y" }), { t: "putOn", letter: "z" });
-    assert.ok(heroHitTerms(worn.heroes[0]).some((term) => term.why === "민첩" && term.n === 2));
+    assert.ok(heroHitTerms(worn.heroes[0]).some((term) => term.why === "민첩" && term.n === 3));
     assert.ok(heroDamTerms(worn.heroes[0]).some((term) => term.why === "피해 반지" && term.n === 3));
 
     const regeneration = makeItem("ring", "regeneration", 935, -1, -1);
@@ -385,7 +411,7 @@ test("활은 쏘는 도구다 — 레인저 연사 · 손 투척 · 맞힌 화�
         const onFloor = t.level.items.filter((it) => it.type === "arrow").reduce((n, it) => n + it.count, 0);
         assert.ok(broken > 0, "열다섯 번 쏘는 동안 한 대도 안 부러졌다");
         // 활로 쏜 화살에는 **활의 주사위**도 실린다 — 기록에 그 항이 남는다(아는 종이라 펼쳐 적는다)
-        assert.ok(t.messages.some((line) => line.includes("(단궁 1d2)")), "쏜 화살의 피해에 단궁의 주사위가 안 붙었다");
+        assert.ok(t.messages.some((line) => /\(단궁 1d2(?: 두 번)? 굴림/.test(line)), "쏜 화살의 피해에 단궁의 주사위가 안 붙었다");
         assert.equal(inPack + onFloor + broken, 40, `화살 셈이 안 맞는다: 배낭 ${inPack} + 바닥 ${onFloor} + 부러짐 ${broken}`);
     }
 });
@@ -443,7 +469,7 @@ test("활 사다리 — 단궁 → 장궁 → 요정족 활 → 사이하의 활
         s.heroes[0].hp = s.heroes[0].maxHp;
         s = perform(s, { t: "throw", letter: arrows.letter!, dx, dy });
     }
-    assert.ok(s.messages.some((line) => line.includes("(장궁 1d3)")), "장궁으로 쏜 화살에 장궁의 주사위가 안 붙었다");
+    assert.ok(s.messages.some((line) => /\(장궁 1d3(?: 두 번)? 굴림/.test(line)), "장궁으로 쏜 화살에 장궁의 주사위가 안 붙었다");
     assert.ok(!s.messages.some((line) => line.includes("(단궁")), "장궁을 쥐었는데 단궁의 주사위가 붙었다");
 });
 
@@ -518,7 +544,7 @@ test("석궁과 볼트 — 볼트는 석궁으로만 쏘고, 연사 없이 한 �
         s = perform(s, { t: "throw", letter: "x", dx, dy });
         assert.equal(before - packItem(s.heroes[0], "x")!.count, 1, "석궁이 한 턴에 두 발 이상 쐈다");
     }
-    assert.ok(s.messages.some((line) => line.includes("(석궁 2d4)")), "볼트의 피해에 석궁의 주사위가 안 붙었다");
+    assert.ok(s.messages.some((line) => /\(석궁 2d4(?: 두 번)? 굴림/.test(line)), "볼트의 피해에 석궁의 주사위가 안 붙었다");
 
     // ── 활로는 볼트를 못 쏜다(손으로 던진 것이 된다)
     const t = newGame(141, {}, {}, {}, {}, "ranger");
@@ -643,8 +669,11 @@ test("낱개로 주운 화살·표창은 한 뭉치(최대 40)로 합쳐지고, 
         s.level.monsters = [];
         const hero = s.heroes[0];
         packItem(hero, hero.pack.find((it) => it.type === "arrow")!.letter!)!.count = 38;
-        for (let i = hero.pack.length; i < 26; i++) give(s, makeItem("food", "food ration", 1100 + i, -1, -1), "abcdefghijklmnopqrstuvwxyz".split("").find((l) => !packItem(hero, l))!);
-        assert.equal(hero.pack.length, 26);
+        for (let i = hero.pack.length; i < PACK_LETTERS.length; i++) {
+            const letter = PACK_LETTERS.find((l) => !packItem(hero, l))!;
+            give(s, makeItem("food", "food ration", 1100 + i, -1, -1), letter);
+        }
+        assert.equal(hero.pack.length, PACK_LETTERS.length);
         drop(s, "arrow", 1070, 5);
         s = perform(s, { t: "pickup" });
         assert.deepEqual(arrowStacks(s), [40], "배낭이 꽉 찼는데 화살 칸이 늘었다");

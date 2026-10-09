@@ -60,6 +60,7 @@ import {
     defenseOf,
     isThrowable,
     itemChar,
+    itemInk,
     itemDepthRange,
     makeItem,
     weaponSkillOf,
@@ -2669,6 +2670,7 @@ export default function Rogue() {
                                     const open = openItemKey === entry.key;
                                     const usage = state.itemUsage?.[entry.key] ?? 0;
                                     const char = itemChar(entry.kind);
+                                    const iconInk = itemInk(entry, stage >= 1 ? state.appearance : {});
 
                                     // 단계 기호와 색상
                                     const stageBadge =
@@ -2741,7 +2743,7 @@ export default function Rogue() {
                                             >
                                                 <div className="grid min-w-0 grid-cols-[2ch_2ch_minmax(0,1fr)_auto_auto] items-center gap-x-1 whitespace-nowrap">
                                                     <span className="text-center font-mono">{stageBadge}</span>
-                                                    <span className="text-center text-[var(--rg-label)] font-mono">{char}</span>
+                                                    <span className="text-center font-mono" style={{ color: iconInk }}>{char}</span>
                                                     <span
                                                         className={`min-w-0 ${open ? "whitespace-normal break-words" : "truncate"} ${stage >= 3
                                                             ? "font-medium text-[var(--rg-strong)]"
@@ -2991,11 +2993,11 @@ export default function Rogue() {
                       : statusKind === "charisma"
                         ? `Ch:${statusHero.charisma}\nNetHack의 매력 구간에 따라 상점 구매가가 달라집니다.`
                       : statusKind === "intelligence"
-                        ? `In:${statusHero.intelligence}\n마법책 학습 성공률과 마력 회복을 높입니다. 연구자·연금술사·정령술사의 주문 시전에도 쓰입니다.`
+                        ? `In:${statusHero.intelligence}\n마법책 학습 성공률과 마력 회복을 높입니다. 주문 시전은 직업에 따라 지능 또는 지혜를 씁니다.`
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${statusHero.wisdom}\n레벨업 때 얻는 마력과 마력 회복을 높입니다. 다른 직업의 주문 시전에도 쓰입니다. 현재 마력 ${statusHero.power}/${statusHero.maxPower}.`
+                        ? `Wi:${statusHero.wisdom}\n레벨업 마력과 마력 회복을 높입니다. 주문 시전은 직업에 따라 지능 또는 지혜를 씁니다. 현재 마력 ${statusHero.power}/${statusHero.maxPower}.`
                       : statusKind === "luck"
                         ? `Lu:${statusHero.luck}\n자연 행운입니다. 공격 명중과 마법 분수·기도에 영향을 줍니다. 평소 600번, 증표 소지나 신의 분노 중에는 300번의 본인 행동마다 0에 가까워집니다.`
                         : statusKind === "hunger"
@@ -3663,7 +3665,7 @@ export default function Rogue() {
                                                         >
                                                             <div className="flex items-center gap-1.5 min-w-0 truncate">
                                                                 <span className="font-mono text-[var(--rg-faint)]">{it.letter ? `${it.letter})` : "·"}</span>
-                                                                <span className="font-mono font-bold" style={{ color: `var(--rg-${it.kind})` }}>
+                                                                <span className="font-mono font-bold" style={{ color: itemInk(it, {}) }}>
                                                                     {char}
                                                                 </span>
                                                                 <span className="text-[var(--rg-strong)] truncate">{it.name}</span>

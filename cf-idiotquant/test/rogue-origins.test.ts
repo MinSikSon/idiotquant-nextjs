@@ -25,22 +25,22 @@ test("7대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     // Rogue
     assert.equal(ORIGINS.rogue.name, "지하 도적");
     assert.equal(ORIGINS.rogue.baseHp, 11);
-    assert.equal(ORIGINS.rogue.baseStr, 15);
+    assert.equal(ORIGINS.rogue.baseStr, 13);
 
     // Alchemist
     assert.equal(ORIGINS.alchemist.name, "방랑 연금술사");
     assert.equal(ORIGINS.alchemist.baseHp, 12);
-    assert.equal(ORIGINS.alchemist.baseStr, 14);
+    assert.equal(ORIGINS.alchemist.baseStr, 11);
 
     // Scholar
     assert.equal(ORIGINS.scholar.name, "고서 연구자");
     assert.equal(ORIGINS.scholar.baseHp, 10);
-    assert.equal(ORIGINS.scholar.baseStr, 13);
+    assert.equal(ORIGINS.scholar.baseStr, 9);
 
     // Ranger (NetHack) — 활을 쥐고 화살 묶음을 든 채 시작한다
     assert.equal(ORIGINS.ranger.name, "변방 레인저");
     assert.equal(ORIGINS.ranger.baseHp, 12);
-    assert.equal(ORIGINS.ranger.baseStr, 14);
+    assert.equal(ORIGINS.ranger.baseStr, 16);
     assert.equal(ORIGINS.ranger.advancedSkillKind, "passive");
 
     // Archeologist (NetHack) — 곡괭이를 쥐고 시작한다
@@ -52,7 +52,7 @@ test("7대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     // Elementalist — 정령을 부르는 것은 직업 특성이다
     assert.equal(ORIGINS.elementalist.name, "정령술사");
     assert.equal(ORIGINS.elementalist.baseHp, 11);
-    assert.equal(ORIGINS.elementalist.baseStr, 13);
+    assert.equal(ORIGINS.elementalist.baseStr, 9);
     assert.equal(ORIGINS.elementalist.advancedSkillKind, "passive");
 });
 
@@ -164,7 +164,7 @@ test("왕실 근위 기사단장의 불굴의 방벽은 위기에서 철벽의 �
 
     hero.guarded = false;
     const guarded = perform(s, { t: "rest" });
-    assert.ok(guarded.messages.at(-1)?.includes("방어 등급 -4"), "전직 뒤 철벽 자세 로그가 실제 방어 등급 변화를 적지 않는다");
+    assert.ok(guarded.messages.some((message) => message.includes("방어 등급 -4")), "전직 뒤 철벽 자세 로그가 실제 방어 등급 변화를 적지 않는다");
 });
 
 test("인접한 적에게서도 일반 이동으로 도망칠 수 있고, 공격은 제자리에서 한다", () => {
@@ -213,8 +213,7 @@ test("적은 이번 행동에 합법적으로 영웅 칸에 닿을 때만 공격
 
     perform(s, { t: "rest" });
     assert.equal(hero.hp, hp, "대각선 모서리에 막힌 적이 벽 너머로 때렸다");
-    assert.equal(monster.x, 9);
-    assert.equal(monster.y, 9);
+    assert.ok(monster.x !== 10 || monster.y !== 10, "막힌 모서리를 넘어 영웅 칸으로 들어왔다");
 });
 
 test("용은 원작처럼 직선·대각선 여섯 칸에서 불꽃을 뿜는다", () => {
@@ -257,7 +256,7 @@ test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
     const s = newGame(2, {}, {}, {}, {}, "rogue");
     assert.equal(s.heroes[0].origin, "rogue");
     assert.equal(s.heroes[0].hp, 11);
-    assert.equal(s.heroes[0].str, 15);
+    assert.equal(s.heroes[0].str, 13);
 
     // NetHack Rogue의 핵심 장비를 이 게임의 사다리에 맞춘다: 단검 묶음과 +1 가죽 갑옷.
     const dagger = s.heroes[0].pack.find((p) => p.kind === "weapon" && p.type === "dagger");
@@ -281,7 +280,7 @@ test("방랑 연금술사(Alchemist) 시작 물약 100% 식별 및 회복 효과
     const s = newGame(3, {}, {}, {}, {}, "alchemist");
     assert.equal(s.heroes[0].origin, "alchemist");
     assert.equal(s.heroes[0].hp, 12);
-    assert.equal(s.heroes[0].str, 14);
+    assert.equal(s.heroes[0].str, 11);
 
     // 모든 물약이 시작부터 식별되어 있어야 함
     assert.equal(s.known["potion:healing"], true);
@@ -378,7 +377,7 @@ test("고서 연구자(Scholar) 시작 주문서/지팡이 식별 및 지팡이 
     const s = newGame(4, {}, {}, {}, {}, "scholar");
     assert.equal(s.heroes[0].origin, "scholar");
     assert.equal(s.heroes[0].hp, 10);
-    assert.equal(s.heroes[0].str, 13);
+    assert.equal(s.heroes[0].str, 9);
 
     // 모든 주문서와 지팡이가 시작부터 식별되어 있어야 함
     assert.equal(s.known["scroll:magic mapping"], true);

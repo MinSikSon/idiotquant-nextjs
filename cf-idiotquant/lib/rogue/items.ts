@@ -211,6 +211,7 @@ export const SCROLLS: Record<string, { name: string; freq: number; depth: number
 
 /** 현재 던전에서 시전할 수 있는 NetHack 주문의 작은 묶음. */
 export const SPELLBOOKS: Record<string, { name: string; level: number; depth: number; cost: number }> = {
+    blank: { name: "빈", level: 0, depth: 1, cost: 0 },
     healing: { name: "치유", level: 1, depth: 1, cost: 5 },
     "detect monsters": { name: "괴물 탐지", level: 1, depth: 2, cost: 5 },
     "magic mapping": { name: "지도 작성", level: 5, depth: 10, cost: 25 },
@@ -272,9 +273,22 @@ export const WANDS: Record<string, { name: string; freq: number; damage?: string
     "cancel": { name: "무력화", freq: 5, depth: 7 },
 };
 
-export const TOOLS: Record<string, { name: string; freq: number; depth: number }> = {
+export const TOOLS: Record<string, { name: string; freq: number; depth: number; noDrop?: boolean }> = {
     "tinning kit": { name: "통조림 도구", freq: 1, depth: 3 },
+    "magic marker": { name: "마법 표식기", freq: 1, depth: 4 },
 };
+
+const MARKER_SCROLL_COST: Record<string, number> = {
+    "magic mapping": 8, teleport: 20, "enchant weapon": 16, "enchant armor": 16,
+    "blessed enchant": 16, transmutation: 10, identify: 14, "remove curse": 16,
+    "aggravate monsters": 10, sleep: 8, "recharge wand": 16,
+};
+
+/** NetHack write.c의 실제 잉크 굴림 범위(기본 비용 절반부터 기본 비용 직전까지). */
+export function markerInkRange(kind: "scroll" | "spellbook", type: string): [number, number] {
+    const baseCost = kind === "spellbook" ? (SPELLBOOKS[type]?.level ?? 0) * 10 : MARKER_SCROLL_COST[type] ?? 10;
+    return [Math.floor(baseCost / 2), baseCost - 1];
+}
 
 /** NetHack 물건 무게(au). 계열 안에서도 크기·재료가 다른 것은 종류별로 나눈다. */
 const WEAPON_WEIGHT: Record<string, number> = {
@@ -305,7 +319,7 @@ export function itemWeight(it: Item): number {
         : it.kind === "ring" ? 3
         : it.kind === "wand" ? 7
         : it.kind === "gem" ? 1
-        : it.kind === "tool" ? 100
+        : it.kind === "tool" ? it.type === "magic marker" ? 2 : 100
         : it.kind === "amulet" ? 20
         : it.kind === "relic" ? (RELIC_WEIGHT[it.type] ?? 40)
         : 0;
@@ -329,6 +343,9 @@ const WAND_LOOKS = [
     "떡갈나무", "주목", "은", "구리", "놋쇠", "상아", "수정", "흑단", "대나무", "주석",
     "백금", "뼈",
 ];
+
+/** NetHack 마법책의 표지 묘사 — 주문 종류는 공부하거나 감정하기 전까지 가린다. */
+const BOOK_LOOKS = ["양피지 표지", "벨럼 표지", "천 표지", "가죽 표지", "흰 표지", "붉은 표지"];
 
 /** 주문서의 이름 — 뜻 없는 음절을 이어 붙인다. Rogue 가 그렇게 한다. */
 const SYLLABLES = [
@@ -363,6 +380,11 @@ export function rollAppearances(rng: Rng): Record<string, string> {
     const woods = rng.shuffle([...WAND_LOOKS]);
     Object.keys(WANDS).forEach((k, i) => {
         out[`wand:${k}`] = `${woods[i % woods.length]} 지팡이`;
+    });
+
+    const covers = rng.shuffle([...BOOK_LOOKS]);
+    Object.keys(SPELLBOOKS).filter((k) => k !== "blank").forEach((k, i) => {
+        out[`spellbook:${k}`] = `${covers[i % covers.length]} 마법책`;
     });
 
     const used = new Set<string>();
@@ -457,7 +479,7 @@ export function makeItem(kind: ItemKind, type: string, id: number, x: number, y:
     if (kind === "armor") it.plusArmor = 0;
     if (kind === "ring") it.plusRing = 0;
     if (kind === "wand") it.charges = 0;
-    if (kind === "tool") it.charges = 0;
+    if (kind === "tool") it.charges = type === "magic marker" ? 40 : 0;
     return it;
 }
 
@@ -678,7 +700,7 @@ export function meltRoll(it: Item, rng: Rng): number {
  * 키우기 자리인데(`CLAUDE.md`), 주문서 안에 섞여 있으면 **층별로 조절할 손잡이가
  * 없다** — 여덟 종 중 둘이라 빈도표를 건드리면 감정·지도까지 같이 움직인다.
  */
-export type Category = "gold" | "potion" | "scroll" | "food" | "enchant" | "weapon" | "armor" | "ring" | "wand" | "tool";
+export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "enchant" | "weapon" | "armor" | "ring" | "wand" | "tool";
 
 /**
  * 층 구간별 분류 가중치.
@@ -688,10 +710,10 @@ export type Category = "gold" | "potion" | "scroll" | "food" | "enchant" | "weap
  * 깊은 층에서 그 둘이 마르면 **굶어 죽는 까닭이 운**이 된다.
  */
 const CATEGORIES: { upTo: number; w: Record<Category, number> }[] = [
-    { upTo: 5, w: { gold: 23, potion: 15, scroll: 13, food: 10, enchant: 6, weapon: 12, armor: 10, ring: 5, wand: 5, tool: 1 } },
-    { upTo: 12, w: { gold: 21, potion: 15, scroll: 12, food: 9, enchant: 8, weapon: 12, armor: 10, ring: 6, wand: 6, tool: 1 } },
-    { upTo: 19, w: { gold: 19, potion: 14, scroll: 11, food: 9, enchant: 10, weapon: 12, armor: 11, ring: 6, wand: 7, tool: 1 } },
-    { upTo: 26, w: { gold: 17, potion: 14, scroll: 10, food: 9, enchant: 11, weapon: 13, armor: 12, ring: 5, wand: 8, tool: 1 } },
+    { upTo: 5, w: { gold: 23, potion: 15, scroll: 10, spellbook: 3, food: 10, enchant: 6, weapon: 12, armor: 10, ring: 5, wand: 5, tool: 1 } },
+    { upTo: 12, w: { gold: 21, potion: 15, scroll: 9, spellbook: 3, food: 9, enchant: 8, weapon: 12, armor: 10, ring: 6, wand: 6, tool: 1 } },
+    { upTo: 19, w: { gold: 19, potion: 14, scroll: 9, spellbook: 2, food: 9, enchant: 10, weapon: 12, armor: 11, ring: 6, wand: 7, tool: 1 } },
+    { upTo: 26, w: { gold: 17, potion: 14, scroll: 8, spellbook: 2, food: 9, enchant: 11, weapon: 13, armor: 12, ring: 5, wand: 8, tool: 1 } },
 ];
 
 export function categoryWeights(depth: number): Record<Category, number> {
@@ -781,11 +803,11 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     if (c === "potion") {
         return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
     }
+    if (c === "spellbook") {
+        const available = Object.entries(SPELLBOOKS).filter(([type, def]) => type !== "blank" && def.depth <= depth);
+        return makeItem("spellbook", available[rng.rnd(available.length)][0], id, x, y);
+    }
     if (c === "scroll") {
-        if (rng.rnd(5) === 0) {
-            const available = Object.entries(SPELLBOOKS).filter(([, def]) => def.depth <= depth);
-            return makeItem("spellbook", available[rng.rnd(available.length)][0], id, x, y);
-        }
         const it = makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
         it.blessed = rollBlessed();
         return it;
@@ -793,7 +815,7 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
     if (c === "food") return makeItem("food", "food ration", id, x, y);
     if (c === "tool") {
         const it = makeItem("tool", weightedAt(TOOLS, tier, rng), id, x, y);
-        it.charges = rollCharges(rng);
+        it.charges = it.type === "magic marker" ? rng.between(30, 50) : rollCharges(rng);
         return it;
     }
     if (c === "enchant") {
@@ -901,13 +923,13 @@ export function itemChar(kind: ItemKind): string {
         case "weapon":
             return ")";
         case "armor":
-            return "]";
+            return "[";
         case "ring":
             return "=";
         case "wand":
             return "/";
         case "amulet":
-            return ",";
+            return '"';
         case "relic":
             return "✦";
         case "gem":
@@ -915,6 +937,46 @@ export function itemChar(kind: ItemKind): string {
         case "tool":
             return "(";
     }
+}
+
+/** NetHack처럼 알려지지 않은 물건은 종류가 아니라 이 판의 겉모습 색으로 그린다. */
+export function itemInk(it: Pick<Item, "kind" | "type">, appearance: Record<string, string>): string {
+    const shown = appearance[`${it.kind}:${it.type}`] ?? "";
+    const tones: Record<string, string> = {
+        빨간: "red", 붉은: "red", 루비: "red", 석류석: "red", 주황: "orange", 마노: "orange", 노란: "yellow", 호박: "yellow", 토파즈: "yellow",
+        초록: "green", 에메랄드: "green", 대나무: "green", 터키석: "cyan", 거품: "cyan", 은빛: "white", 사파이어: "blue", 파란: "blue",
+        보라: "magenta", 자수정: "magenta", 분홍: "magenta", 하얀: "white", 다이아몬드: "white", 진주: "white", 검은: "dark", 흑요석: "dark", 짙은: "dark",
+        갈색: "brown", 탁한: "brown", 떡갈나무: "brown", 주목: "brown", 뼈: "brown", 가죽: "brown", 양피지: "brown", 벨럼: "brown", 천: "blue",
+        투명한: "cyan", 반짝이는: "yellow", 흑단: "dark", 수정: "cyan", 은: "white", 백금: "white", 상아: "white", 주석: "white", 놋쇠: "yellow", 구리: "orange",
+    };
+    const match = Object.entries(tones).find(([label]) => shown.includes(label));
+    if (it.kind === "potion" || it.kind === "ring" || it.kind === "wand" || it.kind === "spellbook") {
+        if (match) return `var(--rg-item-${match[1]})`;
+    }
+    if (it.kind === "scroll") return "var(--rg-item-white)";
+    if (it.kind === "spellbook") return "var(--rg-item-white)";
+    if (it.kind === "tool") return it.type === "magic marker" ? "var(--rg-item-magenta)" : "var(--rg-item-brown)";
+    if (it.kind === "gem") {
+        const gemTone: Record<string, string> = { ruby: "red", sapphire: "blue", emerald: "green", topaz: "yellow" };
+        return `var(--rg-item-${gemTone[it.type] ?? "white"})`;
+    }
+    if (it.kind === "weapon") {
+        const material = WEAPONS[it.type]?.material;
+        if (material === "silver") return "var(--rg-item-white)";
+        if (material === "wood") return "var(--rg-item-brown)";
+        if (material === "bone") return "var(--rg-item-yellow)";
+    }
+    if (it.kind === "armor") {
+        if (it.type.includes("dragon")) return "var(--rg-item-green)";
+        if (it.type.includes("mithril")) return "var(--rg-item-cyan)";
+        if (it.type.includes("leather")) return "var(--rg-item-brown)";
+    }
+    const base: Partial<Record<ItemKind, string>> = {
+        gold: "--rg-gold", food: "--rg-food", potion: "--rg-potion", scroll: "--rg-scroll", spellbook: "--rg-item-white",
+        weapon: "--rg-weapon", armor: "--rg-armor", ring: "--rg-ring", wand: "--rg-wand", amulet: "--rg-amulet",
+        relic: "--rg-gold", gem: "--rg-gem", tool: "--rg-item-brown",
+    };
+    return `var(${base[it.kind] ?? "--rg-wall"})`;
 }
 
 function plusText(n: number | undefined): string {
@@ -989,7 +1051,8 @@ export function describe(
             if (it.type === "blank") return "빈 주문서";
             return known[key] ? `${blessPrefix(it, true)}${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
         case "spellbook":
-            return `${SPELLBOOKS[it.type]?.name ?? "이름 없는"} 마법책`;
+            if (it.type === "blank") return "빈 마법책";
+            return known[key] ? `${SPELLBOOKS[it.type]?.name ?? "이름 없는"} 마법책` : (appearance[key] ?? "표지가 낡은 마법책");
         case "ring": {
             const base = known[key] ? `${blessPrefix(it, true)}${RINGS[it.type]?.name ?? "이름 없는"} 반지` : (appearance[key] ?? "반지");
             return known[key] ? `${base}${plusText(it.plusRing)}${curseText(it)}` : `${base}${curseText(it)}`;
@@ -999,7 +1062,7 @@ export function describe(
             return known[key] ? `${base} (${it.charges ?? 0}회)` : base;
         }
         case "tool":
-            return `${TOOLS[it.type]?.name ?? "도구"} (${it.charges ?? 0}회)`;
+            return it.type === "magic marker" ? `${TOOLS[it.type].name} (${it.charges ?? 0}회분)` : `${TOOLS[it.type]?.name ?? "도구"} (${it.charges ?? 0}회)`;
         // 무기·갑옷의 손질 정도는 **물건마다** 안다(`plusKnown`). `known` 은 종류의
         // 지식이라 도감이 쓰고, 이름은 그것으로 늘 보인다 — 숨기는 것은 `+N` 과 축복뿐이다.
         case "weapon": {
@@ -1104,6 +1167,8 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         if (it.type === "add strength") return n === 0 ? "" : `힘 ${n > 0 ? "+" : ""}${n}`;
         return RING_EFFECTS[it.type] ?? "";
     }
+    if (it.kind === "tool" && it.type === "magic marker") return `잉크 ${it.charges ?? 0} · 주문서/마법책 작성`;
+    if (it.kind === "spellbook" && it.type === "blank") return "마법 표식기로 주문을 기록할 수 있음";
     return "";
 }
 

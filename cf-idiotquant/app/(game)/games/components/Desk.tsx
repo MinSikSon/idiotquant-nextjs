@@ -28,11 +28,14 @@ import {
     isStashable,
     isThrowable,
     itemChar,
+    itemInk,
     itemPower,
     meltMax,
     meltYield,
     WAND_RECHARGE,
     SPELLBOOKS,
+    SCROLLS,
+    markerInkRange,
     WEAPONS,
 } from "@/lib/rogue/items";
 import { billOf, inShop, isTradable, price, sellPrice, shopkeeperOf } from "@/lib/rogue/shop";
@@ -142,7 +145,7 @@ export default function Desk({
             R: { title: "무엇을 뺄까", kinds: ["ring"], make: (letter) => ({ t: "removeRing", letter }), empty: "낀 반지가 없다." },
             d: {
                 title: "무엇을 내려놓을까",
-                kinds: ["potion", "scroll", "food", "weapon", "armor", "ring", "wand", "amulet"],
+                kinds: ["potion", "scroll", "spellbook", "food", "weapon", "armor", "ring", "wand", "tool", "amulet"],
                 make: (letter) => ({ t: "drop", letter }),
                 empty: "배낭이 비었다.",
                 acceptUnpaid: true,
@@ -614,7 +617,7 @@ export default function Desk({
                 });
                 break;
             case "spellbook":
-                if ((it.studyCount ?? 0) < 3) out.push({ label: `공부한다 (${it.studyCount ?? 0}/3회)`, on: go({ t: "study", letter: it.letter! }) });
+                if (it.type !== "blank" && (it.studyCount ?? 0) < 3) out.push({ label: `공부한다 (${it.studyCount ?? 0}/3회)`, on: go({ t: "study", letter: it.letter! }) });
                 break;
             case "food":
                 out.push({ label: it.corpseOf ? "시체를 먹는다" : "먹는다", on: go({ t: "eat", letter: it.letter! }) });
@@ -627,6 +630,25 @@ export default function Desk({
                             label: `통조림으로 보존 (${corpse.corpseOf}${corpse.count > 1 ? ` 1/${corpse.count}개` : ""})`,
                             on: go({ t: "tin", kitLetter: it.letter!, corpseLetter: corpse.letter! }),
                         });
+                    }
+                }
+                if (it.type === "magic marker") {
+                    for (const paper of hero.pack.filter((p) => (p.kind === "scroll" || p.kind === "spellbook") && p.type === "blank")) {
+                        if (paper.kind === "scroll") {
+                            for (const [type, def] of Object.entries(SCROLLS)) {
+                                if (type === "blank" || !state.known[`scroll:${type}`]) continue;
+                                const [minCost, maxCost] = markerInkRange("scroll", type);
+                                if ((it.charges ?? 0) < minCost) continue;
+                                out.push({ label: `${def.name} 주문서 쓰기 (빈 주문서 · 잉크 ${minCost}~${maxCost})`, on: go({ t: "write", markerLetter: it.letter!, paperLetter: paper.letter!, kind: "scroll", type }) });
+                            }
+                        } else {
+                            for (const [type, def] of Object.entries(SPELLBOOKS)) {
+                                if (type === "blank" || !(hero.spells[type] || state.itemCodex[`spellbook:${type}`])) continue;
+                                const [minCost, maxCost] = markerInkRange("spellbook", type);
+                                if ((it.charges ?? 0) < minCost) continue;
+                                out.push({ label: `${def.name} 마법책 쓰기 (빈 마법책 · 잉크 ${minCost}~${maxCost})`, on: go({ t: "write", markerLetter: it.letter!, paperLetter: paper.letter!, kind: "spellbook", type }) });
+                            }
+                        }
                     }
                 }
                 break;
@@ -944,7 +966,7 @@ export default function Desk({
                                             {/* **종류 표식** — 지도에서 그 물건을 그리는 글자와 색을 그대로 쓴다
                                                 (`itemChar`·`--rg-${kind}`). 줄이 길어지면 이름만으로는 무기인지
                                                 갑옷인지 한눈에 안 갈린다. */}
-                                            <span className="font-bold" style={{ color: `var(--rg-${it.kind})` }}>
+                                            <span className="font-bold" style={{ color: itemInk(it, state.appearance) }}>
                                                 {itemChar(it.kind)}
                                             </span>{" "}
                                             <span className={nameInk}>{name(it)}</span>

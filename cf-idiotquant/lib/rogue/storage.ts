@@ -44,7 +44,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 29;
+const VERSION = 30;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -761,8 +761,8 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             name = `${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서`;
             break;
         case "spellbook":
-            name = `${SPELLBOOKS[it.type]?.name ?? "이름 없는"} 마법책`;
-            power = `${Math.max(0, 3 - (it.studyCount ?? 0))}회 더 공부할 수 있음`;
+            name = it.type === "blank" ? "빈 마법책" : `${SPELLBOOKS[it.type]?.name ?? "이름 없는"} 마법책`;
+            power = it.type === "blank" ? "마법 표식기로 주문을 기록할 수 있음" : `${Math.max(0, 3 - (it.studyCount ?? 0))}회 더 공부할 수 있음`;
             break;
         case "ring": {
             const base = `${RINGS[it.type]?.name ?? "이름 없는"} 반지`;
@@ -806,7 +806,7 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
         }
         case "tool":
             name = TOOLS[it.type]?.name ?? "도구";
-            power = `${it.charges ?? 0}회 남음`;
+            power = it.type === "magic marker" ? `잉크 ${it.charges ?? 0}` : `${it.charges ?? 0}회 남음`;
             break;
         case "weapon": {
             const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";

@@ -132,6 +132,7 @@ test("이도류는 두 번 굴리고, 보조손은 불리하다", () => {
         // 잡아 본 종이라야 산수를 펼친다(`seenBefore`). 안 그러면 피해 줄이 숫자 하나로 접힌다.
         const s = newGame(5150, { Z: 1 }, {}, {}, {}, "rogue");
         const hero = s.heroes[0];
+        hero.str = 18;
         const mk = (id: number) => addToPack(hero, makeItem("weapon", "dagger", id, -1, -1))!;
         const main = mk(970);
         const off = mk(971);
@@ -206,6 +207,7 @@ test("이도류는 두 번 굴리고, 보조손은 불리하다", () => {
 
 test("화면이 적는 피해와 실제로 쥔 것이 같다", () => {
     const { s, hero, off } = armed(5301, "rogue", "dagger");
+    hero.str = 18;
     const alone = heroAttackText(hero, s.known);
     perform(s, { t: "offHand", letter: off.letter! });
     const both = heroAttackText(hero, s.known);

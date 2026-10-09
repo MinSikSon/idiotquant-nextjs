@@ -309,7 +309,7 @@ export default function MapView({
             const p = (g?.kind === "hero" || g?.kind === "ally") && state.heroes.length > 1
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
                 : -1;
-            const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (INK[g.kind] ?? "var(--rg-wall)") : "transparent");
+            const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (g.ink ?? INK[g.kind] ?? "var(--rg-wall)") : "transparent");
             const bg = flash?.bg ?? PARTY_BG[p] ?? monsterBg(g?.kind);
             const last = runs[runs.length - 1];
             if (last && last.ink === ink && last.bg === bg && last.opacity === opacity) {

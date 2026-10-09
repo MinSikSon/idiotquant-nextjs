@@ -1,6 +1,6 @@
 // 아이템 도감 (Item Codex) & 최단 거리 통로 테스트
 //
-// 1. 76종 아이템 (무기 21, 방어구 9, 주문서 10, 물약 9, 반지 14, 지팡이 11, 식량 1, 증표 1)
+// 1. 현재 게임의 82종 아이템 (무기 22, 방어구 9, 주문서 10, 물약 9, 반지 14, 지팡이 11, 그 밖 7)
 // 2. 5단계 해금 모델 (0 미발견, 1 목격, 2 획득, 3 식별, 4 통달)
 // 3. 미식별 정보 누출 차단 (스탯/층/피해 미공개)
 // 4. 통달 조건 (무기 20킬, 방어구 1000걸음, 소모품 5회, 지팡이 15회, 반지 1000걸음, 식량/증표 즉시)
@@ -30,11 +30,11 @@ import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { idx, T, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("도감 대상은 정확히 77종이고 7개 카테고리로 나뉜다", () => {
-    assert.equal(CODEX_ENTRIES.length, 77);
+test("도감은 현재 게임의 82종 아이템을 7개 카테고리로 나눈다", () => {
+    assert.equal(CODEX_ENTRIES.length, 82);
 
     const prog = itemCodexProgress();
-    assert.equal(prog.totalCount, 77);
+    assert.equal(prog.totalCount, 82);
     assert.equal(prog.identifiedCount, 0);
     assert.equal(prog.masteredCount, 0);
 
@@ -44,13 +44,14 @@ test("도감 대상은 정확히 77종이고 7개 카테고리로 나뉜다", ()
     assert.equal(prog.byCategory.potion.total, 9);
     assert.equal(prog.byCategory.ring.total, 14);
     assert.equal(prog.byCategory.wand.total, 11);
-    assert.equal(prog.byCategory.other.total, 2);
+    assert.equal(prog.byCategory.other.total, 7);
+    assert.ok(CODEX_ENTRIES.some((e) => e.key === "tool:magic marker"), "마법 표식기가 도감에 없다");
 
     // 각 카테고리 정의 항목과 일치하는지 확인
-    assert.equal(Object.keys(WEAPONS).length, 22);
+    assert.equal(Object.keys(WEAPONS).length, 27); // 드랍 불가 시작 장비도 종류 표에는 남는다
     assert.equal(Object.keys(ARMORS).length, 9);
-    assert.equal(Object.keys(SCROLLS).length, 11);
-    assert.equal(Object.keys(POTIONS).length, 9);
+    assert.equal(Object.keys(SCROLLS).length, 12); // 빈 종이와 모루 제작용 충전 주문서 포함
+    assert.equal(Object.keys(POTIONS).length, 10);
     assert.equal(Object.keys(RINGS).length, 14);
     assert.equal(Object.keys(WANDS).length, 11);
 
@@ -110,9 +111,15 @@ test("통달 목표 수치가 기획안과 일치한다", () => {
         } else if (e.category === "ring") {
             assert.equal(e.masteryType, "steps");
             assert.equal(e.masteryGoal, 1000);
-        } else if (e.category === "other") {
+        } else if (e.category === "other" && (e.kind === "food" || e.kind === "amulet")) {
             assert.equal(e.masteryType, "instant");
             assert.equal(e.masteryGoal, 1);
+        } else if (e.kind === "tool") {
+            assert.equal(e.masteryType, "uses");
+            assert.equal(e.masteryGoal, 10);
+        } else if (e.kind === "spellbook") {
+            assert.equal(e.masteryType, "uses");
+            assert.equal(e.masteryGoal, 3);
         }
     }
 });
