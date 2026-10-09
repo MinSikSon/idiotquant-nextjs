@@ -64,7 +64,7 @@ export function SectionHeader({
   badge?: React.ReactNode; action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2.5 md:gap-3 md:mb-5 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-surface-canvas dark:bg-surface-dark-muted rounded-xl text-neutral-600 dark:text-neutral-400 shrink-0">
           {icon}
@@ -92,7 +92,7 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
   if (!isMaster) return null;
   const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
   return (
-    <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-4 py-3 shadow-sm">
+    <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-sm">
       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase">
         <Key size={12} /> MASTER MODE
       </div>
@@ -164,7 +164,7 @@ export function MetricChip({ label, value, valueClass = "text-neutral-900 dark:t
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-4 py-2.5 flex flex-col gap-0.5">
+    <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-col gap-0.5">
       <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{label}</span>
       <span className={cn("text-sm font-mono font-black break-words", valueClass)}>{value}</span>
     </div>
@@ -181,7 +181,7 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
   if (value === null) return <KpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-4 sm:p-5">
+    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-2.5 py-2 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-3 md:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="contents min-[480px]:flex min-[480px]:items-center min-[480px]:justify-between">
         <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
@@ -210,7 +210,7 @@ export function UsdKpiCard({
   if (loading || mainValue === null) return <UsdKpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-3 py-2.5 min-[480px]:p-4 sm:p-5 shadow-sm overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
+    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-2.5 py-2 min-[480px]:p-3 md:p-5 shadow-sm overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="contents min-[480px]:flex min-[480px]:items-center min-[480px]:justify-between">
         <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
@@ -395,7 +395,7 @@ export function SectionPanel({ id, children, className }: { id?: string; childre
     <section
       id={id}
       className={cn(
-        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-4 sm:p-5 md:p-6",
+        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-2.5 sm:p-3 md:p-6",
         "animate-in fade-in duration-500",
         className
       )}

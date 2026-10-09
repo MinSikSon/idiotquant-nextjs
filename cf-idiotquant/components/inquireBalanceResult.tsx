@@ -206,10 +206,10 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }, [searchQuery, MARKET_STOCK_MASTER]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-6">
             <ToastContainer toasts={toasts} onRemove={removeToast} />
             {/* 헤더 섹션 */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-brand rounded-xl text-white">
                         {isUs ? <Globe size={20} /> : <TrendingUp size={20} />}
@@ -328,7 +328,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 // KIS rt_cd: "0" = 정상. 그 외 값이면 오류/경고로 보고 강조.
                 const isError = props.kiBalance.rt_cd != null && String(props.kiBalance.rt_cd) !== "0";
                 return (
-                    <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
+                    <div className={`flex items-start gap-2 p-2.5 md:gap-3 md:p-4 rounded-2xl border ${
                         isError
                             ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50"
                             : "bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-border-subtle-dark"
@@ -375,9 +375,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
 function SummaryItem({ label, value, subValue, colorClass = "dark:text-white" }: any) {
     return (
-        <div className="p-6 text-center md:text-left">
-            <span className="block text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">{label}</span>
-            <div className={`text-2xl font-black tracking-tighter mb-1 ${colorClass}`}>{value}</div>
+        <div className="p-2.5 md:p-6 text-center md:text-left">
+            <span className="block text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1 md:mb-2">{label}</span>
+            <div className={`text-xl md:text-2xl font-black tracking-tighter md:mb-1 ${colorClass}`}>{value}</div>
             <span className="text-xs font-bold text-neutral-500">{subValue}</span>
         </div>
     );
@@ -518,7 +518,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
         <>
             {/* 잔고 목록 복사 (종목명만 / 상세) */}
             {copyRows.length > 0 && (
-                <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-neutral-100 dark:border-border-subtle-dark">
+                <div className="flex items-center justify-end gap-2 px-2.5 py-1.5 md:px-4 md:py-2 border-b border-neutral-100 dark:border-border-subtle-dark">
                     <span className="text-[11px] text-neutral-400 font-medium">잔고 복사</span>
                     <CopyStockButtons rows={copyRows} label="잔고" />
                 </div>

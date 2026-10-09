@@ -129,7 +129,7 @@ export default function TradingActivityPanel({
     <div>
       {/* 가동 상태 배너 */}
       <div className={cn(
-        "flex items-center gap-3 rounded-xl border px-4 py-3 mb-4",
+        "flex items-center gap-2 rounded-xl border px-2.5 py-2 mb-2 md:gap-3 md:px-4 md:py-3 md:mb-4",
         open
           ? "border-brand-light-hover dark:border-[#166534] bg-[#f0fdf4] dark:bg-[#14532d]/20"
           : "border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card"
@@ -156,7 +156,7 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 요약 지표 */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-2 md:mb-4">
         <Stat icon={<Clock size={12} />} label="마지막 실행" value={relTime(capital?.time_stamp?.current)} />
         <Stat icon={<Gauge size={12} />} label="충전 속도" value={`${won(chargeRate)}`} hint="/ 5분 틱" />
         <Stat icon={<Layers size={12} />} label="활성 토큰 합계" value={won(activeTokenSum)} hint={`활성 ${activeCount}종목`} />

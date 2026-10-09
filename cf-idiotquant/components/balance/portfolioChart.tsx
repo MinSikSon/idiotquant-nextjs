@@ -99,7 +99,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
   const totalValue = pieData.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="flex flex-col sm:flex-row gap-6 items-start">
+    <div className="flex flex-col sm:flex-row gap-3 md:gap-6 items-start">
       {/* 파이차트 */}
       <div className="w-full sm:flex-1 sm:min-w-0">
         <ResponsiveContainer width="100%" height={260}>
@@ -124,13 +124,13 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
       </div>
 
       {/* 종목별 비중 리스트 */}
-      <div className="w-full sm:flex-1 sm:min-w-0 space-y-2.5 sm:max-h-[260px] sm:overflow-y-auto">
+      <div className="w-full sm:flex-1 sm:min-w-0 space-y-1 sm:space-y-2.5 sm:max-h-[260px] sm:overflow-y-auto">
         {pieData.map((item, index) => {
           const percent = (item.value / totalValue) * 100;
           const formatter = fmtKrw;
 
           return (
-            <div key={index} className="flex items-center gap-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark last:border-0">
+            <div key={index} className="flex items-center gap-2 pb-1.5 sm:gap-3 sm:pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark last:border-0">
               <div
                 className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: colors[index % colors.length] }}
@@ -243,7 +243,7 @@ export function PortfolioChartSection({
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-6 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl w-fit">
+      <div className="flex items-center gap-2 mb-3 md:mb-6 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl w-fit">
         <TabButton
           active={activeTab === "pie"}
           onClick={() => setActiveTab("pie")}

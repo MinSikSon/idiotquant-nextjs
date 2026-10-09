@@ -114,7 +114,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
   return (
     <div className={cn("w-full space-y-4", className)}>
       {/* 헤더 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
+      <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3 rounded-xl border border-neutral-200 bg-white px-2.5 py-2 md:px-4 md:py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex items-center gap-2">
           <div className="rounded-lg bg-brand/10 p-1.5 text-brand">
             <SlidersHorizontal className="h-4 w-4" />
@@ -134,7 +134,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       </div>
 
       {noAccount && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-400">
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-2.5 py-2 md:px-4 md:py-3 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-400">
           이 계좌에는 자동매매 계정(trading_account)이 없어 조건을 저장할 수 없습니다. 표시값은 전역 기본값입니다.
         </div>
       )}

@@ -27,8 +27,8 @@ export default function TradingAccountList({ country, balanceKey, onSelect, refr
   useEffect(() => { load(); }, [load, refreshToken]);
 
   return (
-    <div className="mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-canvas p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <div className="mb-2 md:mb-3 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-canvas p-2.5 md:p-4">
+      <div className="mb-2 md:mb-3 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 dark:text-neutral-400">
           <Users className="w-3.5 h-3.5" />
           등록된 자동매매 계정

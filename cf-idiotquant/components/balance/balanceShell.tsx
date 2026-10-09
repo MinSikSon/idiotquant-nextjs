@@ -54,10 +54,10 @@ export function BalanceShell({
 
       <ToastContainer toasts={toasts} onRemove={onRemoveToast} />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 md:py-10 space-y-6">
+      <div className="max-w-7xl mx-auto px-2.5 py-4 md:px-4 md:py-10 space-y-3 md:space-y-6">
 
         {/* 헤더 */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-5">
           <div className="space-y-2.5 min-w-0">
             {breadcrumb}
             {title}

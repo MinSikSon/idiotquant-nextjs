@@ -69,14 +69,14 @@ export default function TradingFlowSummary({
 
   return (
     <div className={cn(
-      "rounded-2xl border p-4 sm:p-5",
+      "rounded-2xl border p-2.5 md:p-5",
       ready
         ? "border-[#bbf7d0] dark:border-[#166534]/60 bg-[#f0fdf4] dark:bg-[#052e16]/20"
         : "border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20",
       className
     )}>
       {/* 헤더: 상태 + 토글 */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="flex items-center justify-between gap-2 mb-2 md:gap-3 md:mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <span className={cn("p-1.5 rounded-lg shrink-0", ready ? "bg-brand text-white" : "bg-amber-400 text-white")}>
             {ready ? <Zap size={14} /> : <AlertTriangle size={14} />}

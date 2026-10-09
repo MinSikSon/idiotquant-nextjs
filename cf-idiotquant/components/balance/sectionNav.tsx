@@ -25,7 +25,7 @@ export function SectionNav({
 }) {
   return (
     <nav className="sticky top-0 z-30 bg-white/90 dark:bg-surface-dark/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-border-subtle-dark transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-2.5 md:px-4">
 
         {/* 모바일 탭바 */}
         <div className="flex md:hidden overflow-x-auto scrollbar-hide">
@@ -34,7 +34,7 @@ export function SectionNav({
               key={id}
               onClick={() => onMobileTabChange?.(id)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-3 text-xs whitespace-nowrap transition-all shrink-0 border-b-2 font-semibold",
+                "flex items-center gap-1.5 px-2.5 py-2 text-xs whitespace-nowrap transition-all shrink-0 border-b-2 font-semibold",
                 mobileTab === id
                   ? "border-brand text-brand dark:text-brand"
                   : "border-transparent text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"

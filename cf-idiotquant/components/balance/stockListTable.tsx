@@ -405,7 +405,7 @@ function StockListTable({
   return (
     <div className={cn("w-full space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
-      <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
+      <section className="rounded-xl border border-neutral-200 bg-white p-2.5 md:p-4 shadow-sm dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className={cn(
@@ -474,7 +474,7 @@ function StockListTable({
       {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
       {isMaster && (
         <section className="overflow-hidden rounded-xl border border-red-200 bg-red-50/30 p-1 dark:border-red-900/30 dark:bg-red-900/10">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-red-100 dark:border-red-900/20">
+          <div className="flex items-center justify-between px-2.5 py-2 md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
               <h3 className="text-sm font-bold text-red-900 dark:text-red-400">Global Token Master Control</h3>
@@ -483,7 +483,7 @@ function StockListTable({
               Master Only
             </span>
           </div>
-          <div className="p-4 flex flex-wrap items-center gap-4">
+          <div className="p-2.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
             <span className="text-[10px] font-bold text-red-800/60 dark:text-red-400/60 uppercase">Batch Refill</span>
             <div className="flex flex-wrap gap-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
@@ -954,7 +954,7 @@ function GroupSection({
 
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
-        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-4 py-3">
+        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2.5 py-2 md:px-4 md:py-3">
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
             <span className="col-span-2 text-[11px] font-bold text-brand uppercase tracking-wider shrink-0">그룹 조건 설정</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
