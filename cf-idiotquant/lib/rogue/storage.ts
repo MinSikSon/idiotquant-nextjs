@@ -17,7 +17,9 @@ import {
     POTIONS,
     RINGS,
     SCROLLS,
+    TOOLS,
     WANDS,
+    SPELLBOOKS,
     WEAPONS,
     armorClassOf,
     canHoldEnchant,
@@ -27,7 +29,7 @@ import {
     launcherDamageOf,
 } from "./items";
 import { heroDefense, mergeStacks, PACK_LETTERS } from "./hero";
-import { ORIGIN_ALIGNMENT, ORIGINS } from "./origins";
+import { ORIGIN_ALIGNMENT, ORIGIN_RACE, ORIGINS } from "./origins";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
 import { SHOPKEEPER } from "./shop";
@@ -42,7 +44,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 26;
+const VERSION = 29;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -258,6 +260,8 @@ function learnPlus(items: Item[], known: Record<string, boolean>): Item[] {
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
+        if (typeof it.corpseTinned !== "boolean" || !it.corpseOf) delete it.corpseTinned;
+        if (it.kind === "tool") it.charges = Math.max(0, Math.min(99, Math.trunc(num(it.charges, 0))));
         if (typeof it.corpseOf !== "string") {
             delete it.corpseOf;
             delete it.corpseTurn;
@@ -351,11 +355,19 @@ function normalize(s: Saved): GameState | null {
     };
     const rawHero = (h: Hero): Hero => ({
         ...h,
+        race: h.race === "human" || h.race === "orc" || h.race === "gnome" || h.race === "elf" || h.race === "dwarf"
+            ? h.race
+            : ORIGIN_RACE[h.origin ?? "knight"],
         maxStr: num(h.maxStr, num(h.str, 16)),
         dexterity: Math.max(3, Math.min(18, Math.trunc(num(h.dexterity, ORIGINS[h.origin ?? "knight"]?.baseDex ?? 12)))),
         constitution: Math.max(3, Math.min(18, Math.trunc(num(h.constitution, ORIGINS[h.origin ?? "knight"]?.baseCon ?? 12)))),
         charisma: Math.max(3, Math.min(18, Math.trunc(num(h.charisma, ORIGINS[h.origin ?? "knight"]?.baseCha ?? 12)))),
         intelligence: Math.max(3, Math.min(18, Math.trunc(num(h.intelligence, ORIGINS[h.origin ?? "knight"]?.baseInt ?? 12)))),
+        maxPower: Math.max(1, Math.trunc(num(h.maxPower, Math.floor(num(h.wisdom, ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12) / 2)))),
+        power: Math.max(0, Math.min(Math.trunc(num(h.maxPower, Math.floor(num(h.wisdom, 12) / 2))), Math.trunc(num(h.power, Math.floor(num(h.wisdom, 12) / 2))))),
+        spells: Object.fromEntries(Object.entries(h.spells && typeof h.spells === "object" && !Array.isArray(h.spells) ? h.spells : {})
+            .filter(([spell, until]) => SPELLBOOKS[spell] && typeof until === "number" && Number.isFinite(until) && until >= 0)
+            .map(([spell, until]) => [spell, Math.trunc(until)])),
         baseIntelligence: Math.max(3, Math.min(18, Math.trunc(num(h.baseIntelligence, ORIGINS[h.origin ?? "knight"]?.baseInt ?? 12)))),
         baseWisdom: Math.max(3, Math.min(18, Math.trunc(num(h.baseWisdom, ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12)))),
         wisdomMax: Math.max(
@@ -393,7 +405,10 @@ function normalize(s: Saved): GameState | null {
             ? h.alignment
             : (ORIGIN_ALIGNMENT[h.origin ?? "knight"] ?? "lawful"),
         deityAnger: Math.max(0, Math.min(3, Math.trunc(num(h.deityAnger, 0)))),
-        // v24 and earlier stored only wand-damage growth. Preserve each earned die over the new origin baseline.
+        poisonResistant: h.poisonResistant === true,
+        fireResistant: h.fireResistant === true,
+        coldResistant: h.coldResistant === true,
+        // v24 and earlier encoded Wisdom growth in itemLuck. Keep that earned Wisdom on migration.
         wisdom: Math.max(
             Math.trunc(num(h.baseWisdom, ORIGINS[h.origin ?? "knight"]?.baseWis ?? 12)),
             Math.min(
@@ -711,7 +726,7 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             name = `금화 ${it.count}`;
             break;
         case "food":
-            name = it.corpseOf ? `${it.corpseOf}의 시체` : it.count > 1 ? `식량 ${it.count}개` : "식량";
+            name = it.corpseOf ? (it.corpseTinned ? `${it.corpseOf} 고기 통조림` : `${it.corpseOf}의 시체`) : it.count > 1 ? `식량 ${it.count}개` : "식량";
             break;
         case "amulet":
             name = "옌더의 증표";
@@ -744,6 +759,10 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             break;
         case "scroll":
             name = `${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서`;
+            break;
+        case "spellbook":
+            name = `${SPELLBOOKS[it.type]?.name ?? "이름 없는"} 마법책`;
+            power = `${Math.max(0, 3 - (it.studyCount ?? 0))}회 더 공부할 수 있음`;
             break;
         case "ring": {
             const base = `${RINGS[it.type]?.name ?? "이름 없는"} 반지`;
@@ -785,6 +804,10 @@ export function tombItemOf(it: Item, hero: Hero): TombItem {
             power = `${it.charges ?? 0}회 남음`;
             break;
         }
+        case "tool":
+            name = TOOLS[it.type]?.name ?? "도구";
+            power = `${it.charges ?? 0}회 남음`;
+            break;
         case "weapon": {
             const base = WEAPONS[it.type]?.name ?? "이름 없는 무기";
             const sock = it.socketGem ? ` [${it.socketGem === "ruby" ? "루비" : it.socketGem === "sapphire" ? "사파이어" : "에메랄드"}]` : "";

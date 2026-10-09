@@ -24,7 +24,9 @@ import {
     POTIONS,
     RINGS,
     SCROLLS,
+    SPELLBOOKS,
     WANDS,
+    TOOLS,
     WEAPONS,
     armorClassOf,
     describe,
@@ -974,7 +976,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         masteryFlavor: "위협적인 특수 공격을 무력화하여 평범한 짐승으로 격하시켰다.",
     },
 
-    // ── 그 밖 (2종) ──────────────────────────────────────────────────────────
+    // ── 그 밖 (3종) ──────────────────────────────────────────────────────────
     {
         kind: "food",
         type: "food ration",
@@ -999,6 +1001,30 @@ export const CODEX_ENTRIES: CodexEntry[] = [
         flavor: "지하 26층 심연의 제단에 안치된 신비로운 부적. 이것을 쥐고 1층으로 살아 나가야 한다.",
         masteryFlavor: "던전의 가장 깊은 바닥에 도달해 영광의 증표를 손에 넣은 전설적인 위업이다.",
     },
+    {
+        kind: "tool",
+        type: "tinning kit",
+        key: "tool:tinning kit",
+        name: TOOLS["tinning kit"].name,
+        category: "other",
+        categoryLabel: "그 밖",
+        masteryType: "uses",
+        masteryGoal: 10,
+        flavor: "몬스터 시체를 통조림으로 밀봉해 부패와 독 피해를 막는다. 통조림은 제물이나 부활에 쓸 수 없다.",
+        masteryFlavor: "위험한 시체를 보존해 식량으로 쓰는 법을 익혔다.",
+    },
+    ...Object.entries(SPELLBOOKS).map(([type, def]) => ({
+        kind: "spellbook" as const,
+        type,
+        key: `spellbook:${type}`,
+        name: `${def.name} 마법책`,
+        category: "other" as const,
+        categoryLabel: "그 밖",
+        masteryType: "uses" as const,
+        masteryGoal: 3,
+        flavor: "지능으로 내용을 익히고 주문을 기억한다. 주문을 쓸 때는 마력을 쓴다.",
+        masteryFlavor: "같은 책을 거듭 연구해 주문을 오래 기억하게 되었다.",
+    })),
 ];
 
 export const CODEX_BY_KEY: Record<string, CodexEntry> = Object.fromEntries(
@@ -1112,11 +1138,14 @@ export function itemCodexStats(entry: CodexEntry): string {
         }
         case "potion":
         case "scroll":
+        case "spellbook":
         case "wand":
         case "ring":
             return depthStr;
         case "food":
-            return "1–26층 · 허기 1300 회복";
+            return entry.type === "food ration" ? "1–26층 · 허기 회복" : "시체 식량 · 독 저항, 용 화염/예티 냉기 저항, 망령 레벨 상승";
+        case "tool":
+            return `층 ${depths?.min ?? 1}+ · 시체 보존 도구`;
         case "amulet":
             return "지하 26층";
         default:

@@ -110,6 +110,9 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         delete old.heroes[0].leftRingId;
         delete old.heroes[0].rightRingId;
         delete old.heroes[0].maxStr;
+        delete old.heroes[0].power;
+        delete old.heroes[0].maxPower;
+        delete old.heroes[0].spells;
         for (const m of old.level.monsters) {
             delete m.speed;
             delete m.cancelled;
@@ -120,6 +123,8 @@ test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", (
         assert.deepEqual(back!.level.traps, []);
         assert.deepEqual(back!.bestiary, {});
         assert.equal(back!.heroes[0].stuck, 0);
+        assert.ok(back!.heroes[0].maxPower > 0);
+        assert.deepEqual(back!.heroes[0].spells, {});
         assert.equal(back!.heroes[0].leftRingId, null);
         // 그리고 실제로 굴러가야 한다. 예전에는 여기서 터졌다.
         play(back!);

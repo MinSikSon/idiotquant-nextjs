@@ -17,7 +17,7 @@ import { ALL_DIRS, T, idx, inBounds, type GameState } from "@/lib/rogue/types";
 import { attackRoll, damageRoll, hitDifficulty, luckOf, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
 import { makeItem } from "@/lib/rogue/items";
-import { EXP_LEVELS, HP_PER_LEVEL, gainExp, heroDefense, makeHero } from "@/lib/rogue/hero";
+import { EXP_LEVELS, gainExp, heroDefense, hpGainPerLevel, makeHero } from "@/lib/rogue/hero";
 
 /** 지금 내 방어력. */
 const heroDefenseOf = (s: { heroes: Parameters<typeof heroDefense>[0][] }) => heroDefense(s.heroes[0]);
@@ -250,7 +250,7 @@ test("체력은 굴리지 않는다 — 종마다도, 레벨업도 고정", () =
         const hero = makeHero(rng, (() => { let n = 100; return () => n++; })());
         const before = hero.maxHp;
         gainExp(hero, EXP_LEVELS[0], rng);
-        assert.equal(hero.maxHp, before + HP_PER_LEVEL);
+        assert.equal(hero.maxHp, before + hpGainPerLevel(hero));
         // 같은 레벨의 두 판이 체력만 다르면 그건 판단거리가 아니라 운이다.
         const other = makeHero(new Rng(999), (() => { let n = 200; return () => n++; })());
         gainExp(other, EXP_LEVELS[0], new Rng(1));

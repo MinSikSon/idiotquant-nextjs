@@ -72,7 +72,7 @@ import {
     itemCodexStage,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, wandDamageDiceBonus, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -252,11 +252,11 @@ function OriginTag({
 }
 
 const ORIGIN_STATS = [
-    { key: "baseStr", short: "St", name: "힘", description: "공격 명중과 피해에 보정치를 더합니다." },
+    { key: "baseStr", short: "St", name: "힘", description: "공격 명중·피해와 들 수 있는 무게를 정합니다." },
     { key: "baseDex", short: "Dx", name: "민첩", description: "공격 명중과 회피에 보정치를 더합니다." },
-    { key: "baseCon", short: "Co", name: "건강", description: "레벨업 때 늘어나는 최대 체력과 자연 회복 속도에 영향을 줍니다." },
-    { key: "baseInt", short: "In", name: "지능", description: "지혜와 함께 공격 지팡이의 추가 피해 주사위를 정합니다." },
-    { key: "baseWis", short: "Wi", name: "지혜", description: "지능과 함께 공격 지팡이의 추가 피해 주사위를 정합니다." },
+    { key: "baseCon", short: "Co", name: "건강", description: "레벨업 체력·고레벨 회복량과 들 수 있는 무게를 정합니다." },
+    { key: "baseInt", short: "In", name: "지능", description: "마법책 학습과 마법 계열 직업의 주문 시전을 돕습니다." },
+    { key: "baseWis", short: "Wi", name: "지혜", description: "마력 성장과 나머지 직업의 주문 시전을 돕습니다." },
     { key: "baseCha", short: "Ch", name: "매력", description: "상점에서 물건을 사는 가격에 영향을 줍니다." },
 ] as const;
 
@@ -2345,6 +2345,7 @@ export default function Rogue() {
                         {expandedPartyStats === i && h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
                         {expandedPartyStats === i && h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
                         {expandedPartyStats === i && h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
+                        {expandedPartyStats === i && h.race && <span className="text-[var(--rg-faint)]" title="직업별 기본 종족. 같은 종족의 시체를 먹으면 행운이 감소합니다.">{RACE_NAME[h.race]}</span>}
                         {expandedPartyStats === i && (!coop || foodCount <= 2) && <span className={` ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
                             식량:{foodCount}
                         </span>}
@@ -2354,6 +2355,9 @@ export default function Rogue() {
                             </span>
                         )}
                         {expandedPartyStats === i && !coop && hRings > 0 && <span className=" text-[var(--rg-ring)]">Ring: {hRings}</span>}
+                        {expandedPartyStats === i && h.poisonResistant && <span className="text-[var(--rg-ring)]" title="독 피해와 독으로 인한 힘 감소에 저항합니다.">독 저항</span>}
+                        {expandedPartyStats === i && h.fireResistant && <span className="text-[var(--rg-trap)]" title="용의 불꽃 공격에 저항합니다.">화염 저항</span>}
+                        {expandedPartyStats === i && h.coldResistant && <span className="text-[var(--rg-ice)]" title="냉기 공격과 동결에 저항합니다.">냉기 저항</span>}
                         {expandedPartyStats === i && cursedGear && <span className="font-bold text-[var(--rg-trap)]">⚠ 저주 장비</span>}
                         {expandedPartyStats === i && emptyWand && <span className="text-[var(--rg-wand)]">⚠ 빈 지팡이</span>}
                         {expandedPartyStats === i && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
@@ -2979,19 +2983,19 @@ export default function Rogue() {
                 const status = statusKind === "origin"
                     ? `직업: ${origin.name}\n전직: ${statusHero.level >= ADVANCE_LEVEL ? origin.advancedName : `${ADVANCE_LEVEL}레벨에 ${origin.advancedName}`}\n${origin.traitDescription}`
                     : statusKind === "str"
-                      ? `St:${heroStr(statusHero)}\n현재 공격력에 힘 보정으로 반영됩니다. 힘 물약 등으로 올릴 수 있습니다.`
+                      ? `St:${heroStr(statusHero)}\n공격 명중·피해와 들 수 있는 무게를 정합니다. 힘 물약 등으로 올릴 수 있습니다.`
                       : statusKind === "dexterity"
                         ? `Dx:${heroDexterity(statusHero)}\n직업의 초기 민첩과 민첩 반지의 합입니다. 원작 참고 규칙으로 명중과 회피 굴림에 반영됩니다.`
                       : statusKind === "constitution"
-                        ? `Co:${statusHero.constitution}\n건강입니다. 높을수록 레벨업 때 얻는 최대 체력과 자연 회복 속도가 좋아집니다.`
+                        ? `Co:${statusHero.constitution}\n레벨업 때 얻는 최대 체력, 10레벨부터 자연 회복량, 들 수 있는 무게를 정합니다.`
                       : statusKind === "charisma"
-                        ? `Ch:${statusHero.charisma}\n매력 보정치에 따라 상점 가격 비율이 달라집니다.`
+                        ? `Ch:${statusHero.charisma}\nNetHack의 매력 구간에 따라 상점 구매가가 달라집니다.`
                       : statusKind === "intelligence"
-                        ? `In:${statusHero.intelligence}\n지능 보정치와 지혜 보정치가 함께 공격 지팡이의 추가 피해 주사위를 정합니다. 직업 시작 보정치보다 높아진 합계가 적용됩니다.`
+                        ? `In:${statusHero.intelligence}\n마법책 학습 성공률과 마력 회복을 높입니다. 연구자·연금술사·정령술사의 주문 시전에도 쓰입니다.`
                       : statusKind === "defense"
                         ? `AC:${heroArmorClass(statusHero)}\n방어등급은 낮을수록 좋습니다. 적의 공격 판정에서 받는 피해를 줄입니다.`
                       : statusKind === "wisdom"
-                        ? `Wi:${statusHero.wisdom}\n지혜와 지능의 보정치 합이 직업 시작 합계를 넘으면 공격 지팡이에 추가 피해 주사위가 붙습니다. Luck과 별개입니다.`
+                        ? `Wi:${statusHero.wisdom}\n레벨업 때 얻는 마력과 마력 회복을 높입니다. 다른 직업의 주문 시전에도 쓰입니다. 현재 마력 ${statusHero.power}/${statusHero.maxPower}.`
                       : statusKind === "luck"
                         ? `Lu:${statusHero.luck}\n자연 행운입니다. 공격 명중과 마법 분수·기도에 영향을 줍니다. 평소 600번, 증표 소지나 신의 분노 중에는 300번의 본인 행동마다 0에 가까워집니다.`
                         : statusKind === "hunger"

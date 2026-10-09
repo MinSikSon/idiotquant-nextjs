@@ -187,13 +187,15 @@ export type ItemKind =
     | "food"
     | "potion"
     | "scroll"
+    | "spellbook"
     | "weapon"
     | "armor"
     | "ring"
     | "wand"
     | "amulet"
     | "relic"
-    | "gem";
+    | "gem"
+    | "tool";
 
 export interface Item {
     id: number;
@@ -202,12 +204,16 @@ export interface Item {
     type: string;
     /** 금화 더미의 액수, 또는 같은 물건이 몇 개인가. */
     count: number;
+    /** 마법책을 성공적으로 공부한 횟수. */
+    studyCount?: number;
     /** 식량 칸을 빌려 든 몬스터 시체의 종명. 먹거나 제단에 바칠 수 있다. */
     corpseOf?: string;
-    /** 시체가 생긴 게임 턴 — 200턴이 지나면 제물이 되지 않는다. */
+    /** 시체가 생긴 게임 턴 — 제물 신선도와 부패 시계를 계산한다. */
     corpseTurn?: number;
     /** 제물 가치 계산에 쓰는 몬스터 레벨. */
     corpseValue?: number;
+    /** 통조림으로 보존된 시체는 상하지 않으며 제물·부활 대상이 되지 않는다. */
+    corpseTinned?: boolean;
     /** 바닥에 있으면 좌표, 들고 있으면 −1. */
     x: number;
     y: number;
@@ -386,10 +392,13 @@ export interface ShopState {
 export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
+export type HeroRace = "human" | "orc" | "gnome" | "elf" | "dwarf";
 export type ReligionAlignment = "lawful" | "neutral" | "chaotic";
 
 export interface Hero {
     origin?: HeroOrigin;
+    /** 직업에 따라 정해지는 기본 종족. 식인 판정에 사용한다. */
+    race?: HeroRace;
     /** 직업이 섬기는 신의 정렬. 제단과 다른 정렬이면 기도가 거부되고 신이 노한다. */
     alignment: ReligionAlignment;
     /** 잘못된 기도 등으로 쌓인 신의 분노. 제물을 바쳐 낮춘다. */
@@ -430,8 +439,12 @@ export interface Hero {
     constitution: number;
     charisma: number;
     intelligence: number;
+    /** NetHack식 마력과 외운 주문의 기억 만료 턴. */
+    power: number;
+    maxPower: number;
+    spells: Record<string, number>;
     baseIntelligence: number;
-    /** 지혜의 직업 시작값. `wisdom` 전체값과 분리해 지팡이 성장분을 계산한다. */
+    /** 마력·주문 효과의 기준을 위한 직업 시작 지혜. */
     baseWisdom: number;
     /** 새 캐릭터는 25, 이전 저장은 기존 지혜 성장 상한을 보존한다. */
     wisdomMax: number;
@@ -490,11 +503,17 @@ export interface Hero {
     bonusDefense: number;
     /** NetHack식 자연 행운. -13..13이며 명중, 마법 분수, 기도와 운 판정에 반영한다. */
     luck: number;
+    /** 독사 시체를 먹어 얻는 영구 독 저항. */
+    poisonResistant?: boolean;
+    /** 용 시체를 먹어 얻는 영구 화염 저항. */
+    fireResistant?: boolean;
+    /** 예티 시체를 먹어 얻는 영구 냉기 저항. */
+    coldResistant?: boolean;
     /** 기도 뒤 다시 응답받기까지 남은 게임 턴. 새 판은 입장 때 받은 도움으로 300부터 시작한다. */
     prayerTimeout: number;
     /** 이동한 칸의 아이템을 자동으로 줍는가. 사람별 옵션이며 기본은 켜짐이다. */
     autoPickup: boolean;
-    /** 지혜. 직업 시작값을 넘긴 성장분만 공격 지팡이의 추가 피해 주사위에 반영한다. */
+    /** NetHack식 지혜 능력치. 마력 성장·회복과 일부 직업의 주문 시전에 쓴다. */
     wisdom: number;
     /** 저장 이전 호환 전용. normalize에서 Wisdom으로 옮기며 게임 규칙은 읽지 않는다. */
     itemLuck?: number;

@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wandDamageDiceBonus, wornRings } from "@/lib/rogue/hero";
+import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, regenEvery, searchChance, wornRings } from "@/lib/rogue/hero";
 import { ZAP_FX, zapFrames, zapImpact, zapLight } from "@/app/(game)/games/zapFx";
 import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
@@ -207,7 +207,7 @@ test("장식 반지는 10 gold 점수 가치만 가지며, 반지 효과는 감�
 test("민첩·피해·재생 반지는 각각 명중, 피해, 회복에만 보탠다", () => {
     const s = newGame(106);
     const dexterity = makeItem("ring", "dexterity", 933, -1, -1);
-    dexterity.plusRing = 2;
+    dexterity.plusRing = 5;
     const damage = makeItem("ring", "increase damage", 934, -1, -1);
     damage.plusRing = 3;
     give(s, dexterity, "y");
@@ -785,7 +785,7 @@ test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {
     }
 });
 
-test("지혜 성장은 공격 지팡이 피해를 즉시 올리고, 기록에 근거를 남긴다", () => {
+test("지팡이 피해는 지혜와 지능에 영향받지 않는다", () => {
     const base = newGame(109);
     const wise = newGame(109);
     const [dx, dy] = openWay(base);
@@ -800,15 +800,14 @@ test("지혜 성장은 공격 지팡이 피해를 즉시 올리고, 기록에 �
         monster.y = state.heroes[0].y + dy;
         monster.hp = monster.maxHp = 99;
     }
-    wise.heroes[0].itemLuck = 0.03;
-    assert.equal(wandDamageDiceBonus(wise.heroes[0]), 3, "지혜 3%가 지팡이 주사위 +3이 아니다");
+    wise.heroes[0].wisdom += 3;
+    wise.heroes[0].intelligence += 3;
 
     perform(base, { t: "zap", letter: "y", dx, dy });
     const after = perform(wise, { t: "zap", letter: "y", dx, dy });
     const baseHit = base.level.monsters[0]!.hp;
     const wiseHit = wise.level.monsters[0]!.hp;
-    assert.ok(baseHit > wiseHit, "지혜 주사위가 피해를 늘리지 않았다");
-    assert.ok(after.messages.some((line) => line.includes("지혜 3d4")), "지혜 주사위 기록이 없다");
+    assert.equal(baseHit, wiseHit, "능력치가 지팡이 피해를 바꿨다");
     assert.ok(after.messages.some((line) => line.startsWith("· 피해 굴림:") && line.includes("(피해)")), "지팡이 피해 굴림 기록이 없다");
 });
 

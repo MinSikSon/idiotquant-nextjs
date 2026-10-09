@@ -737,6 +737,7 @@ function specialEffect(state: GameState, m: Monster, hero: Hero, rng: Rng): stri
         }
         case "I": {
             // 얼음괴물 — 얼린다.
+            if (hero.coldResistant) return ["냉기가 닿았지만 저항했다."];
             const t = freeze(hero, rng.between(2, 4));
             if (t === null) return ["얼음괴물이 이미 얼어붙은 몸을 할퀸다."];
             hero.asleep = t;

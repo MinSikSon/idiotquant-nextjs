@@ -9,7 +9,6 @@
  */
 
 import { type Item, type Level, type Monster, type MonsterDef, type Pos } from "./types";
-import { abilityMod } from "./dnd";
 
 export const PRICES: Record<string, Record<string, number>> = {
     potion: {
@@ -36,6 +35,7 @@ export const PRICES: Record<string, Record<string, number>> = {
         transmutation: 200,
         "recharge wand": 300,
     },
+    spellbook: { healing: 100, "detect monsters": 100, "magic mapping": 500 },
     ring: {
         protection: 100,
         "sustain strength": 100,
@@ -116,18 +116,28 @@ export function isTradable(it: Item): boolean {
  * 한 개의 값. 무기·갑옷은 손질 한 칸마다 10 을 더한다(NetHack 그대로) — **알든 모르든**
  * 붙으므로, 값이 곧 손질을 귀띔한다.
  */
-export function unitPrice(it: Item, charisma = 10): number {
+export function unitPrice(it: Item, charisma?: number): number {
     const base = PRICES[it.kind]?.[it.type] ?? 0;
     const value = it.kind === "weapon"
         ? base + 10 * Math.max(0, Math.max(it.plusHit ?? 0, it.plusDam ?? 0))
         : it.kind === "armor" ? base + 10 * Math.max(0, it.plusArmor ?? 0) : base;
-    // NetHack-style ability modifier drives one smooth price ratio around CHA 10.
-    const factor = Math.max(0.5, Math.min(2, 1 - abilityMod(charisma) * 0.05));
+    const factor = charisma === undefined ? 1 : charismaPriceFactor(charisma);
     return Math.max(1, Math.round(value * factor));
 }
 
+/** NetHack `shk.c`의 매력별 구매가 배율. */
+export function charismaPriceFactor(charisma: number): number {
+    if (charisma > 18) return 0.5;
+    if (charisma === 18) return 2 / 3;
+    if (charisma >= 16) return 0.75;
+    if (charisma <= 5) return 2;
+    if (charisma <= 7) return 1.5;
+    if (charisma <= 10) return 4 / 3;
+    return 1;
+}
+
 /** 더미째의 값 — 사는 값. */
-export function price(it: Item, charisma = 10): number {
+export function price(it: Item, charisma?: number): number {
     return unitPrice(it, charisma) * Math.max(1, it.count);
 }
 

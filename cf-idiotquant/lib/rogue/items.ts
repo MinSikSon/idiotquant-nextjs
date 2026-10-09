@@ -209,6 +209,13 @@ export const SCROLLS: Record<string, { name: string; freq: number; depth: number
     "recharge wand": { name: "지팡이 충전", freq: 0, depth: 1 },
 };
 
+/** 현재 던전에서 시전할 수 있는 NetHack 주문의 작은 묶음. */
+export const SPELLBOOKS: Record<string, { name: string; level: number; depth: number; cost: number }> = {
+    healing: { name: "치유", level: 1, depth: 1, cost: 5 },
+    "detect monsters": { name: "괴물 탐지", level: 1, depth: 2, cost: 5 },
+    "magic mapping": { name: "지도 작성", level: 5, depth: 10, cost: 25 },
+};
+
 /** 충전 주문서 한 장이 지팡이에 되돌리는 사용 횟수. */
 export const WAND_RECHARGE = 8;
 /** 지팡이 한 자루가 보유할 수 있는 최대 사용 횟수. */
@@ -264,6 +271,36 @@ export const WANDS: Record<string, { name: string; freq: number; damage?: string
     "teleport away": { name: "밀어내기", freq: 5, depth: 5 },
     "cancel": { name: "무력화", freq: 5, depth: 7 },
 };
+
+export const TOOLS: Record<string, { name: string; freq: number; depth: number }> = {
+    "tinning kit": { name: "통조림 도구", freq: 1, depth: 3 },
+};
+
+/** NetHack 물건 무게(au). 이 게임 고유 장비는 같은 계열의 원전 장비 무게를 따른다. */
+export function itemWeight(it: Item): number {
+    const weapon = it.kind === "weapon" ? WEAPONS[it.type] : undefined;
+    const unit = weapon
+        ? weapon.ammunition ? 1
+            : it.type.includes("dagger") ? 10
+            : it.type.includes("bow") ? 30
+            : it.type === "crossbow" ? 50
+            : it.type === "pick-axe" ? 100
+            : it.type.includes("sword") || it.type === "excalibur" ? 40
+            : it.type === "spear" || it.type === "mace" ? 30 : 40
+        : it.kind === "armor"
+            ? ({ leather: 150, "ring mail": 250, "scale mail": 250, "chain mail": 300, "banded mail": 350, "plate mail": 450, "mithril mail": 150, "dragon mail": 40, "baphomet mail": 450 }[it.type] ?? 200)
+        : it.kind === "food" ? it.corpseOf ? Math.max(10, (it.corpseValue ?? 5) * 10) : 20
+        : it.kind === "potion" ? 20
+        : it.kind === "scroll" ? 5
+        : it.kind === "spellbook" ? 50
+        : it.kind === "ring" ? 3
+        : it.kind === "wand" ? 7
+        : it.kind === "gem" ? 1
+        : it.kind === "tool" ? 100
+        : it.kind === "amulet" ? 20
+        : it.kind === "relic" ? 40 : 0;
+    return unit * Math.max(1, it.count);
+}
 
 /** 포션이 이 판에서 무슨 색으로 보이는가. */
 const POTION_LOOKS = [
@@ -410,6 +447,7 @@ export function makeItem(kind: ItemKind, type: string, id: number, x: number, y:
     if (kind === "armor") it.plusArmor = 0;
     if (kind === "ring") it.plusRing = 0;
     if (kind === "wand") it.charges = 0;
+    if (kind === "tool") it.charges = 0;
     return it;
 }
 
@@ -630,7 +668,7 @@ export function meltRoll(it: Item, rng: Rng): number {
  * 키우기 자리인데(`CLAUDE.md`), 주문서 안에 섞여 있으면 **층별로 조절할 손잡이가
  * 없다** — 여덟 종 중 둘이라 빈도표를 건드리면 감정·지도까지 같이 움직인다.
  */
-export type Category = "gold" | "potion" | "scroll" | "food" | "enchant" | "weapon" | "armor" | "ring" | "wand";
+export type Category = "gold" | "potion" | "scroll" | "food" | "enchant" | "weapon" | "armor" | "ring" | "wand" | "tool";
 
 /**
  * 층 구간별 분류 가중치.
@@ -640,10 +678,10 @@ export type Category = "gold" | "potion" | "scroll" | "food" | "enchant" | "weap
  * 깊은 층에서 그 둘이 마르면 **굶어 죽는 까닭이 운**이 된다.
  */
 const CATEGORIES: { upTo: number; w: Record<Category, number> }[] = [
-    { upTo: 5, w: { gold: 24, potion: 15, scroll: 13, food: 10, enchant: 6, weapon: 12, armor: 10, ring: 5, wand: 5 } },
-    { upTo: 12, w: { gold: 22, potion: 15, scroll: 12, food: 9, enchant: 8, weapon: 12, armor: 10, ring: 6, wand: 6 } },
-    { upTo: 19, w: { gold: 20, potion: 14, scroll: 11, food: 9, enchant: 10, weapon: 12, armor: 11, ring: 6, wand: 7 } },
-    { upTo: 26, w: { gold: 18, potion: 14, scroll: 10, food: 9, enchant: 11, weapon: 13, armor: 12, ring: 5, wand: 8 } },
+    { upTo: 5, w: { gold: 23, potion: 15, scroll: 13, food: 10, enchant: 6, weapon: 12, armor: 10, ring: 5, wand: 5, tool: 1 } },
+    { upTo: 12, w: { gold: 21, potion: 15, scroll: 12, food: 9, enchant: 8, weapon: 12, armor: 10, ring: 6, wand: 6, tool: 1 } },
+    { upTo: 19, w: { gold: 19, potion: 14, scroll: 11, food: 9, enchant: 10, weapon: 12, armor: 11, ring: 6, wand: 7, tool: 1 } },
+    { upTo: 26, w: { gold: 17, potion: 14, scroll: 10, food: 9, enchant: 11, weapon: 13, armor: 12, ring: 5, wand: 8, tool: 1 } },
 ];
 
 export function categoryWeights(depth: number): Record<Category, number> {
@@ -734,11 +772,20 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         return makeItem("potion", weightedAt(POTIONS, tier, rng), id, x, y);
     }
     if (c === "scroll") {
+        if (rng.rnd(5) === 0) {
+            const available = Object.entries(SPELLBOOKS).filter(([, def]) => def.depth <= depth);
+            return makeItem("spellbook", available[rng.rnd(available.length)][0], id, x, y);
+        }
         const it = makeItem("scroll", weightedAt(PLAIN_SCROLLS, tier, rng), id, x, y);
         it.blessed = rollBlessed();
         return it;
     }
     if (c === "food") return makeItem("food", "food ration", id, x, y);
+    if (c === "tool") {
+        const it = makeItem("tool", weightedAt(TOOLS, tier, rng), id, x, y);
+        it.charges = rollCharges(rng);
+        return it;
+    }
     if (c === "enchant") {
         // **축복은 얕은 층부터 나온다.** 한 번에 `1~3` 칸을 올리는 것이라 **수치가 낮을수록
         // 값어치가 크다** — 깊은 층에만 두면 주웠을 때는 이미 안전 구간을 채운 뒤라 쓸 데가
@@ -806,8 +853,10 @@ export function itemDepthRange(kind: ItemKind, type: string): { min: number; max
         : kind === "armor" ? ARMORS
         : kind === "potion" ? POTIONS
         : kind === "scroll" ? SCROLLS
+        : kind === "spellbook" ? SPELLBOOKS
         : kind === "ring" ? RINGS
         : kind === "wand" ? WANDS
+        : kind === "tool" ? TOOLS
         : null;
     const def = table?.[type as keyof typeof table] as { depth: number; noDrop?: boolean } | undefined;
     if (!def || def.noDrop) return null;
@@ -837,6 +886,8 @@ export function itemChar(kind: ItemKind): string {
             return "!";
         case "scroll":
             return "?";
+        case "spellbook":
+            return "+";
         case "weapon":
             return ")";
         case "armor":
@@ -851,6 +902,8 @@ export function itemChar(kind: ItemKind): string {
             return "✦";
         case "gem":
             return "*";
+        case "tool":
+            return "(";
     }
 }
 
@@ -895,7 +948,7 @@ export function describe(
         case "gold":
             return `금화 ${it.count}`;
         case "food":
-            if (it.corpseOf) return `${it.corpseOf}의 시체`;
+            if (it.corpseOf) return it.corpseTinned ? `${it.corpseOf} 고기 통조림` : `${it.corpseOf}의 시체`;
             return it.count > 1 ? `식량 ${it.count}개` : "식량";
         case "amulet":
             return "옌더의 증표";
@@ -925,6 +978,8 @@ export function describe(
         case "scroll":
             if (it.type === "blank") return "빈 주문서";
             return known[key] ? `${blessPrefix(it, true)}${SCROLLS[it.type]?.name ?? "이름 없는"} 주문서` : (appearance[key] ?? "주문서");
+        case "spellbook":
+            return `${SPELLBOOKS[it.type]?.name ?? "이름 없는"} 마법책`;
         case "ring": {
             const base = known[key] ? `${blessPrefix(it, true)}${RINGS[it.type]?.name ?? "이름 없는"} 반지` : (appearance[key] ?? "반지");
             return known[key] ? `${base}${plusText(it.plusRing)}${curseText(it)}` : `${base}${curseText(it)}`;
@@ -933,6 +988,8 @@ export function describe(
             const base = known[key] ? `${blessPrefix(it, true)}${WANDS[it.type]?.name ?? "이름 없는"} 지팡이` : (appearance[key] ?? "지팡이");
             return known[key] ? `${base} (${it.charges ?? 0}회)` : base;
         }
+        case "tool":
+            return `${TOOLS[it.type]?.name ?? "도구"} (${it.charges ?? 0}회)`;
         // 무기·갑옷의 손질 정도는 **물건마다** 안다(`plusKnown`). `known` 은 종류의
         // 지식이라 도감이 쓰고, 이름은 그것으로 늘 보인다 — 숨기는 것은 `+N` 과 축복뿐이다.
         case "weapon": {

@@ -33,12 +33,14 @@ import {
     equippedArmor,
     canOffHand,
     equippedWeapon,
+    EXP_LEVELS,
     canWieldWand,
     canWieldWeapon,
     DIG_DOWN_EFFORT,
     DIG_WALL_EFFORT,
     digEffort,
     equippedWand,
+    encumbrance,
     offHandWeapon,
     isDualWielding,
     gainExp,
@@ -69,7 +71,7 @@ import {
     weaponSkillMax,
     weaponSkillName,
     weaponSkillTerms,
-    wandDamageDiceBonus,
+    wandRechargeEvery,
     wornRings,
 } from "./hero";
 import {
@@ -111,6 +113,7 @@ import {
     POTIONS,
     RINGS,
     SCROLLS,
+    SPELLBOOKS,
     WANDS,
     WEAPONS,
     describe,
@@ -121,6 +124,7 @@ import {
     HAND_THROWN_AMMO,
     ARROW_BREAK_CHANCE,
     itemChar,
+    itemWeight,
     ENCHANT_MAX,
     ENCHANT_SCROLLS,
     CHEST_SLOTS,
@@ -155,6 +159,7 @@ import {
 import {
     SHOPKEEPER,
     billOf,
+    charismaPriceFactor,
     forSale,
     inShop,
     isTradable,
@@ -226,7 +231,10 @@ type Action =
     | { t: "quaff"; letter: string; target?: string }
     /** 강화 주문서는 **무엇에 걸지**를 같이 준다. 없으면 아무 일도 안 난다. */
     | { t: "read"; letter: string; target?: string }
+    | { t: "study"; letter: string }
+    | { t: "cast"; spell: string }
     | { t: "eat"; letter: string }
+    | { t: "tin"; kitLetter: string; corpseLetter: string }
     | { t: "wield"; letter: string }
     /** 보조손에 쥔다(이도류). 같은 글자를 다시 주면 내려놓는다. */
     | { t: "offHand"; letter: string }
@@ -942,6 +950,11 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         return { acted: true, fought: true };
     }
 
+    if (encumbrance(hero) >= 5) {
+        say(state, "짐이 너무 무거워 움직일 수 없다. 물건을 내려놓아야 한다.");
+        return { acted: false, fought: false };
+    }
+
     if (!walkable(tileAt(level, nx, ny))) {
         // **곡괭이를 쥐고 벽으로 걸으면 판다** — NetHack 의 autodig. 방향판을 꾹 누르면
         // 연타되므로 따로 단추가 없어도 계속 판다. 대각선으로는 안 판다 — 방 모서리가
@@ -1068,14 +1081,15 @@ function pickUp(state: GameState, hero: Hero): boolean {
     if (it.x >= 0) delete it.unpaid;
     else delete it.noCharge;
     if (!inPack) {
+        const reason = encumbrance(hero, itemWeight(picked)) >= 5 ? "짐이 너무 무겁다" : "배낭이 꽉 찼다";
         // 못 얹은 몫은 `picked.count` 에 남아 있다 — 떼어 온 것이면 더미로 돌려놓는다.
         if (split) it.count += picked.count;
         const took = pile - it.count;
         if (took === 0) {
-            say(state, "배낭이 꽉 찼다.");
+            say(state, `${reason}.`);
             return false;
         }
-        say(state, `${describe(it, state.known, state.appearance)} ${took}개만 주웠다 — 배낭이 꽉 찼다.`);
+        say(state, `${describe(it, state.known, state.appearance)} ${took}개만 주웠다 — ${reason}.`);
         return true;
     }
     if (!split) level.items = level.items.filter((i) => i.id !== it.id);
@@ -1104,6 +1118,32 @@ export function alchemistHealMult(hero: Hero): number {
 export function scholarPreserveChance(hero: Hero): number {
     if (hero.origin !== "scholar") return 0;
     return hero.level >= ADVANCE_LEVEL ? ADVANCED_PRESERVE_CHANCE : 0.25;
+}
+
+/** 되살리는 마법이 사체 하나를 근처의 빈 칸에서 다시 몬스터로 만든다. */
+function reviveCorpse(state: GameState, corpse: Item, anchor: Pos, rng: Rng): boolean {
+    if (!corpse.corpseOf || corpse.corpseTinned) return false;
+    const ch = corpse.corpseOf === "사람" ? "Z" : Object.values(MONSTERS).find((def) => def.name === corpse.corpseOf)?.ch;
+    if (!ch) return false;
+    const candidates = corpse.x >= 0
+        ? [{ x: corpse.x, y: corpse.y }, ...ALL_DIRS.map(({ dx, dy }) => ({ x: corpse.x + dx, y: corpse.y + dy }))]
+        : ALL_DIRS.map(({ dx, dy }) => ({ x: anchor.x + dx, y: anchor.y + dy }));
+    const spot = candidates.find((p) =>
+        inBounds(p.x, p.y) && walkable(tileAt(state.level, p.x, p.y)) &&
+        !monsterAt(state.level, p.x, p.y) && !state.heroes.some((h) => h.hp > 0 && h.x === p.x && h.y === p.y),
+    );
+    if (!spot) return false;
+
+    const carrier = state.heroes.find((h) => h.pack.some((it) => it.id === corpse.id));
+    if (carrier) takeFromPack(carrier, corpse);
+    else if (corpse.count > 1) corpse.count -= 1;
+    else state.level.items = state.level.items.filter((it) => it.id !== corpse.id);
+    const monster = spawnMonster(ch, spot.x, spot.y, rng);
+    monster.hp = Math.max(1, Math.ceil(monster.maxHp / 2));
+    monster.awake = true;
+    state.level.monsters.push(monster);
+    say(state, `${corpse.corpseOf} 시체가 되살아났다!`);
+    return true;
 }
 
 function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: string): boolean {
@@ -1191,6 +1231,12 @@ function quaff(state: GameState, hero: Hero, letter: string, rng: Rng, target?: 
          * 되지 않게 하는 자리다 — 협동에서만 듣는 물건은 혼자인 사람에게 함정이다.
          */
         case "revival": {
+            const body = state.level.items.find((p) => p.corpseOf && !p.corpseTinned && p.x === hero.x && p.y === hero.y);
+            if (body) {
+                if (reviveCorpse(state, body, hero, rng)) break;
+                say(state, "시체를 일으킬 빈자리가 없다.");
+                break;
+            }
             const fallen = state.heroes.find(
                 (h) => h !== hero && h.hp <= 0 && Math.max(Math.abs(h.x - hero.x), Math.abs(h.y - hero.y)) <= 1,
             );
@@ -1312,7 +1358,7 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
                 say(state, "물이 역해 토하고 허기가 몰려온다.");
                 break;
             case 21: {
-                const resisted = hasRing(hero, "poison resistance");
+                const resisted = hasRing(hero, "poison resistance") || hero.poisonResistant === true;
                 const loss = resisted ? 0 : rng.between(3, 6);
                 if (loss) hero.str = Math.max(3, hero.str - loss);
                 const damage = rng.between(1, resisted ? 4 : 10);
@@ -2083,6 +2129,53 @@ function read(state: GameState, hero: Hero, letter: string, rng: Rng, target?: s
     return true;
 }
 
+/** NetHack의 지능 독서 판정과 20,000턴 주문 기억을 적용한다. */
+function study(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
+    const book = packItem(hero, letter);
+    if (!book || book.kind !== "spellbook" || !SPELLBOOKS[book.type]) return false;
+    if (hero.blind > 0) { say(state, "앞이 안 보여 마법책을 읽을 수 없다."); return false; }
+    if ((book.studyCount ?? 0) >= 3) { say(state, "이 책에서 더 배울 수 없다."); return false; }
+    const def = SPELLBOOKS[book.type];
+    const threshold = hero.intelligence + 4 + Math.floor(hero.level / 2) - 2 * def.level;
+    if (rng.between(1, 20) > threshold) {
+        hero.confused = Math.max(hero.confused, rng.between(2, 5));
+        say(state, `${def.name} 마법책을 이해하지 못해 혼란에 빠졌다.`);
+        return true;
+    }
+    book.studyCount = (book.studyCount ?? 0) + 1;
+    hero.spells[book.type] = state.turn + 20_000;
+    state.itemCodex[`spellbook:${book.type}`] = true;
+    state.itemUsage[`spellbook:${book.type}`] = (state.itemUsage[`spellbook:${book.type}`] ?? 0) + 1;
+    say(state, `${def.name} 주문을 익혔다 (기억 20,000턴).`);
+    return true;
+}
+
+/** NetHack에서는 마법 계열이 지능, 성직 계열이 지혜로 시전한다. */
+export function spellCastingChance(hero: Hero, spell: string): number {
+    const def = SPELLBOOKS[spell];
+    if (!def) return 0;
+    const caster = hero.origin === "scholar" || hero.origin === "alchemist" || hero.origin === "elementalist"
+        ? hero.intelligence : hero.wisdom;
+    return Math.max(0, Math.min(95, Math.floor(11 * caster / 2) + hero.level * 2 - def.level * 10));
+}
+
+function cast(state: GameState, hero: Hero, spell: string, rng: Rng): boolean {
+    const def = SPELLBOOKS[spell];
+    if (!def || (hero.spells[spell] ?? 0) <= state.turn) { say(state, "외운 주문이 아니다."); return false; }
+    if (hero.power < def.cost) { say(state, `마력이 모자라다 (${hero.power}/${def.cost}).`); return false; }
+    if (spell === "healing" && hero.hp >= hero.maxHp) { say(state, "이미 체력이 가득하다."); return false; }
+    hero.power -= def.cost;
+    if (rng.rnd(100) >= spellCastingChance(hero, spell)) {
+        say(state, `${def.name} 주문 시전에 실패했다.`);
+        return true;
+    }
+    if (spell === "healing") hero.hp = Math.min(hero.maxHp, hero.hp + rng.roll(1, 8) + Math.floor(hero.level / 3));
+    else if (spell === "detect monsters") hero.detect = Math.max(hero.detect, 30);
+    else if (spell === "magic mapping") revealAll(state.level);
+    say(state, `${def.name} 주문을 시전했다.`);
+    return true;
+}
+
 function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     const it = packItem(hero, letter);
     if (!it || it.kind !== "food") {
@@ -2091,7 +2184,7 @@ function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     }
     const corpse = it.corpseOf;
     const age = corpse ? Math.max(0, state.turn - (it.corpseTurn ?? state.turn)) : 0;
-    const rotten = !!corpse && age > 200;
+    const rotten = !!corpse && !it.corpseTinned && age > 200;
     const nutrition = corpse
         ? Math.max(100, Math.min(800, 100 + Math.max(1, it.corpseValue ?? 1) * 40))
         : rng.between(900, 1300);
@@ -2103,20 +2196,80 @@ function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
     hero.food = Math.min(2000, Math.max(hero.food, 0) + (rotten ? Math.max(100, Math.floor(nutrition / 3)) : nutrition));
     if (corpse) {
         say(state, `${corpse} 시체를 먹었다. 허기가 ${rotten ? "조금" : "크게"} 가셨다${rotten ? " — 오래되어 상했다." : "."}`);
+        const cannibal = (hero.race === "orc" && corpse === "오크")
+            || (hero.race === "human" && corpse === "사람")
+            || (hero.race === "elf" && corpse === "엘프")
+            || (hero.race === "dwarf" && corpse === "드워프")
+            || (hero.race === "gnome" && corpse === "노움");
+        if (cannibal) {
+            const oldLuck = hero.luck;
+            hero.luck = Math.max(-13, hero.luck - 2);
+            say(state, `같은 종족의 시체를 먹었다. 식인으로 행운이 ${oldLuck - hero.luck} 감소했다 (현재 ${hero.luck}).`);
+        }
         // 독을 가진 뱀·전갈 고기는 원작처럼 위험한 음식으로 취급한다.
-        if (/방울뱀|뱀|전갈/.test(corpse)) {
-            const damage = rng.between(1, 6);
-            hero.hp -= damage;
-            if (hero.str > 3) hero.str -= 1;
-            say(state, `독이 퍼진다! 체력 ${damage} 피해, 힘이 1 줄었다.`);
+        if (!it.corpseTinned && /방울뱀|뱀|전갈|용/.test(corpse)) {
+            if (hero.poisonResistant) {
+                say(state, "독사 시체의 독이 몸에 듣지 않는다.");
+            } else {
+                const damage = rng.between(1, 6);
+                hero.hp -= damage;
+                if (hero.str > 3) hero.str -= 1;
+                say(state, `독이 퍼진다! 체력 ${damage} 피해, 힘이 1 줄었다.`);
+                if (hero.hp > 0 && rng.rnd(3) === 0) {
+                    hero.poisonResistant = true;
+                    say(state, "몸이 독에 적응했다. 이제 독 피해와 힘 감소를 막는다.");
+                }
+            }
         } else if (rotten && rng.rnd(2) === 1) {
             const damage = rng.between(1, 4);
             hero.hp -= damage;
             say(state, `상한 시체에 탈이 났다. 체력 ${damage} 피해.`);
         }
+        if (corpse === "망령" && hero.hp > 0 && hero.level - 1 < EXP_LEVELS.length) {
+            const nextLevel = hero.level + 1;
+            gainExp(hero, Math.max(0, EXP_LEVELS[hero.level - 1] - hero.exp), rng);
+            if (hero.level >= nextLevel) say(state, `망령의 생기를 흡수해 레벨 ${hero.level}이 되었다!`);
+        }
+        if (corpse === "용" && hero.hp > 0 && !hero.fireResistant) {
+            hero.fireResistant = true;
+            say(state, "용의 마력이 몸에 깃들었다. 이제 화염 피해를 막는다.");
+        }
+        if (corpse === "예티" && hero.hp > 0 && !hero.coldResistant && rng.rnd(3) === 0) {
+            hero.coldResistant = true;
+            say(state, "예티의 마력이 몸에 깃들었다. 이제 냉기 공격에 저항한다.");
+        }
     } else {
         say(state, "배가 든든하다.");
     }
+    return true;
+}
+
+/** 배낭의 시체 더미를 통조림으로 보존한다. */
+function tinCorpse(state: GameState, hero: Hero, kitLetter: string, corpseLetter: string): boolean {
+    const kit = packItem(hero, kitLetter);
+    const corpse = packItem(hero, corpseLetter);
+    if (!kit || kit.kind !== "tool" || kit.type !== "tinning kit" || !corpse?.corpseOf || corpse.kind !== "food") {
+        say(state, "통조림 도구와 시체가 필요하다.");
+        return false;
+    }
+    if (kit.id === corpse.id || (kit.charges ?? 0) < 1 || corpse.corpseTinned) {
+        say(state, corpse.corpseTinned ? "이미 통조림으로 보존된 시체다." : "통조림 도구의 충전이 없다.");
+        return false;
+    }
+    if (corpse.count > 1) {
+        const preserved: Item = { ...corpse, id: state.nextItemId++, count: 1, corpseTinned: true };
+        corpse.count -= 1;
+        if (!addToPack(hero, preserved)) {
+            corpse.count += 1;
+            say(state, "통조림을 넣을 배낭 자리가 없다.");
+            return false;
+        }
+    } else corpse.corpseTinned = true;
+    kit.charges = (kit.charges ?? 0) - 1;
+    state.itemUsage["tool:tinning kit"] = (state.itemUsage["tool:tinning kit"] ?? 0) + 1;
+    state.itemCodex["tool:tinning kit"] = true;
+    state.known["tool:tinning kit"] = true;
+    say(state, `${corpse.corpseOf} 시체 한 구를 통조림으로 보존했다. 상하거나 독이 퍼지지 않는다.`);
     return true;
 }
 
@@ -2351,10 +2504,11 @@ export function transmuteCategory(it: Item): Category | null {
 function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean {
     const altar = state.level.transmuteAltar;
     if (!altar || altar.x !== hero.x || altar.y !== hero.y || altar.uses <= 0) return false;
+    if (it.corpseTinned) return false;
     if (it.kind === "potion" && it.type === "water") return false;
-    if (it.kind === "food" && it.corpseOf && !it.unpaid) {
+    if (it.kind === "food" && it.corpseOf && !it.corpseTinned && !it.unpaid) {
         const corpseName = describe(it, state.known, state.appearance);
-        if (state.turn - (it.corpseTurn ?? state.turn) > 200) {
+        if (state.turn - (it.corpseTurn ?? state.turn) > 50) {
             say(state, `${corpseName}은(는) 너무 오래되어 제물이 되지 못한다.`);
             return true;
         }
@@ -2836,6 +2990,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
         corpse.corpseTurn = state.turn - (m.def.ch === "Z" || m.def.ch === "V" ? 100 : 0);
         corpse.corpseValue = m.def.level;
         state.level.items.push(corpse);
+        if (m.def.ch === "T") say(state, "트롤 시체는 다시 살아날 수 있다. 통조림으로 보존하면 막을 수 있다.");
     }
     // 상점 주인은 도감의 몬스터 표 밖이다 — 세지 않는다. 대신 가게가 닫힌다.
     if (m.shk) closeShop(state, m);
@@ -2927,21 +3082,14 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const def = WANDS[it.type];
     const name = () => describe(it, state.known, state.appearance);
-    // 지능·지혜 보정치 합의 성장은 같은 면의 주사위로 반영한다. Luck은 별도 능력치다.
-    // 지혜가 0이면 기존과 같은 한 번만 굴러 시드 흐름도 그대로다.
-    const wisdomDice = wandDamageDiceBonus(hero);
     const spellDamage = (dice: string) => {
         const rolled = rng.rollDice(dice);
-        const [, , sides] = /^(\d+)d(\d+)$/.exec(dice) ?? [];
-        const bonusDice = wisdomDice > 0 && sides ? `${wisdomDice}d${sides}` : null;
-        const wisdom = bonusDice ? rng.rollDice(bonusDice) : 0;
-        return { dice, rolled, bonusDice, wisdom, total: rolled + wisdom };
+        return { dice, rolled, total: rolled };
     };
-    const saySpellDamage = (line: string, damage: { dice: string; rolled: number; bonusDice: string | null; wisdom: number; total: number }) => {
-        const wisdom = damage.bonusDice ? `+${damage.wisdom}(지혜 ${damage.bonusDice})` : "";
+    const saySpellDamage = (line: string, damage: { dice: string; rolled: number; total: number }) => {
         // 공격 지팡이도 무기와 같은 기록 문법을 쓴다. 요약 줄에는 결과, 펼친 기록에는
         // 어느 주사위가 얼마였는지가 남아야 지혜가 실제로 무엇을 더했는지 읽을 수 있다.
-        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.rolled}${wisdom}=${damage.total}(피해)`);
+        say(state, `${DETAIL}피해 굴림: ${damage.rolled}(${damage.dice} 굴림)\n  ${damage.total}(피해)`);
         say(state, withDamage(line, damage.total));
     };
 
@@ -3591,10 +3739,18 @@ function bearCurse(state: GameState, hero: Hero) {
 }
 
 /** 회복 — 레벨이 높을수록 빠르다. */
-function regenerate(state: GameState, hero: Hero) {
+function regenerate(state: GameState, hero: Hero, rng: Rng) {
     const every = regenEvery(hero);
-    if (state.turn % every !== 0) return;
-    if (hero.hp < hero.maxHp) hero.hp += 1;
+    if (state.turn % every === 0 && hero.hp < hero.maxHp) {
+        const naturalTurn = hero.level > 9 && state.turn % 3 === 0;
+        const healed = naturalTurn && hero.constitution > 12
+            ? Math.min(hero.level - 9, rng.between(1, hero.constitution)) : 1;
+        hero.hp = Math.min(hero.maxHp, hero.hp + healed);
+    }
+    if (state.turn % 20 === 0 && hero.power < hero.maxPower) {
+        hero.power = Math.min(hero.maxPower, hero.power + Math.max(1, Math.floor((hero.wisdom + hero.intelligence) / 15)));
+    }
+    if (state.turn % wandRechargeEvery(hero) !== 0) return;
     const wand = equippedWand(hero);
     if (wand && (wand.charges ?? 0) < MAX_WAND_CHARGES) {
         wand.charges = Math.min(MAX_WAND_CHARGES, (wand.charges ?? 0) + 1);
@@ -3851,9 +4007,12 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             state.projectile = { id: `${state.turn}:${m.id}:${state.messages.length}`, cells: flame.cells };
             say(state, `🐉 ${monsterName(m)} → ${target}: 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
             if (flame.hit) {
-                const dmg = rng.rollDice("6d6");
-                victim.hp -= dmg;
-                say(state, withDamage("화염에 휩싸였다!", dmg));
+                if (victim.fireResistant) say(state, `${target}에게 화염이 닿았지만 저항했다.`);
+                else {
+                    const dmg = rng.rollDice("6d6");
+                    victim.hp -= dmg;
+                    say(state, withDamage("화염에 휩싸였다!", dmg));
+                }
             } else say(state, "불꽃이 빗나갔다.");
             return;
         }
@@ -4174,7 +4333,7 @@ function closeShop(state: GameState, m: Monster) {
 function unpaidIn(hero: Hero, cmd: Command): Item | undefined {
     if (cmd.t === "drop" || cmd.t === "pay" || cmd.t === "sell") return undefined;
     const c = cmd as Record<string, unknown>;
-    const letters = [c.letter, c.target, c.gearLetter, c.gemLetter, ...(Array.isArray(c.ingredients) ? c.ingredients : [])];
+    const letters = [c.letter, c.target, c.gearLetter, c.gemLetter, c.kitLetter, c.corpseLetter, ...(Array.isArray(c.ingredients) ? c.ingredients : [])];
     return hero.pack.find((it) => it.unpaid && letters.includes(it.letter));
 }
 
@@ -4404,16 +4563,17 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
     } else if (kind === "dexterity") {
         say(state, `${tag}Dx:${heroDexterity(hero)} · 명중·회피에 능력 보정이 적용된다`);
     } else if (kind === "constitution") {
-        say(state, `${tag}Co:${hero.constitution} · 레벨업 체력 +${hpGainPerLevel(hero)} · 자연 회복 ${regenEvery(hero)}턴마다 1HP`);
+        const regenAmount = hero.level > 9 && hero.constitution > 12 ? `1~${Math.min(hero.level - 9, hero.constitution)}HP` : "1HP";
+        say(state, `${tag}Co:${hero.constitution} · 레벨업 체력 +${hpGainPerLevel(hero)} · 자연 회복 ${regenEvery(hero)}턴마다 ${regenAmount}`);
     } else if (kind === "charisma") {
-        const factor = Math.max(0.5, Math.min(2, 1 - Math.floor((hero.charisma - 10) / 2) * 0.05));
+        const factor = charismaPriceFactor(hero.charisma);
         say(state, `${tag}Ch:${hero.charisma} · 상점 구매가 ${Math.round(factor * 100)}%`);
     } else if (kind === "intelligence") {
-        say(state, `${tag}In:${hero.intelligence} · 지혜 보정치 합과 함께 공격 지팡이 피해를 보정한다`);
+        say(state, `${tag}In:${hero.intelligence} · 마법책 학습과 마력 회복에 쓰인다. 마법 계열 직업은 주문 시전에도 쓴다`);
     } else if (kind === "defense") {
         say(state, `${tag}AC:${heroArmorClass(hero)} · ${heroArmorClassTerms(hero).map((term) => `${term.why} ${term.n >= 0 ? "+" : ""}${term.n}`).join(" · ")}`);
     } else {
-        say(state, `${tag}Wi:${hero.wisdom} · 공격 지팡이 주사위 +${wandDamageDiceBonus(hero)}`);
+        say(state, `${tag}Wi:${hero.wisdom} · 레벨업 마력·마력 회복에 쓰인다. 다른 직업은 주문 시전에도 쓴다`);
     }
 }
 
@@ -4508,8 +4668,17 @@ function act(state: GameState, cmd: Command): GameState {
             case "read":
                 acted = read(state, hero, cmd.letter, rng, cmd.target);
                 break;
+            case "study":
+                acted = study(state, hero, cmd.letter, rng);
+                break;
+            case "cast":
+                acted = cast(state, hero, cmd.spell, rng);
+                break;
             case "eat":
                 acted = eat(state, hero, cmd.letter, rng);
+                break;
+            case "tin":
+                acted = tinCorpse(state, hero, cmd.kitLetter, cmd.corpseLetter);
                 break;
             case "wield":
                 acted = wield(state, hero, cmd.letter);
@@ -4591,6 +4760,16 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     }
 
     state.turn += 1;
+    const trollBodies = [
+        ...state.level.items.filter((it) => it.corpseOf === "트롤" && !it.corpseTinned).map((corpse) => ({ corpse, anchor: { x: corpse.x, y: corpse.y } })),
+        ...state.heroes.flatMap((h) => h.pack.filter((it) => it.corpseOf === "트롤" && !it.corpseTinned).map((corpse) => ({ corpse, anchor: h }))),
+    ];
+    for (const { corpse, anchor } of trollBodies) {
+        if (state.turn - (corpse.corpseTurn ?? state.turn) >= 12 && rng.rnd(3) === 0) reviveCorpse(state, corpse, anchor, rng);
+    }
+    const decayed = (it: Item) => !!it.corpseOf && !it.corpseTinned && !/도마뱀|이끼/.test(it.corpseOf) && state.turn - (it.corpseTurn ?? state.turn) >= 250;
+    state.level.items = state.level.items.filter((it) => !decayed(it));
+    for (const h of state.heroes) h.pack = h.pack.filter((it) => !decayed(it));
     // 전체 턴은 파티가 쓴 행동 하나씩, 이 값은 그중 이 사람이 실제로 쓴 몫이다.
     // 벽을 들이받은 행동(`acted=false`)은 둘 다 늘지 않는다.
     hero.turns += 1;
@@ -4614,7 +4793,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         // **쓰러진 사람의 시계는 선다.** 누워 있는 사람이 굶어 죽으면 살릴 길이 없다.
         if (h.hp <= 0) continue;
         tickHunger(state, h, rng);
-        regenerate(state, h);
+        regenerate(state, h, rng);
         bearCurse(state, h);
         if (h.blind > 0) h.blind -= 1;
         if (h.confused > 0) h.confused -= 1;

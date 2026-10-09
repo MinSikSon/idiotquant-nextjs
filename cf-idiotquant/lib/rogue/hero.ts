@@ -22,6 +22,7 @@ import {
     enchantOf,
     launcherDamageOf,
     makeItem,
+    itemWeight,
     weaponDamageOf,
     weaponHandsOf,
     weaponSkillOf,
@@ -30,7 +31,7 @@ import {
     abilityMod,
     proficiency,
 } from "./dnd";
-import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGIN_ALIGNMENT, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
+import { ADVANCED_ARCHEOLOGIST_SEARCH, ADVANCED_GUARD_BONUS, ADVANCED_RANGER_VOLLEY_BONUS, ADVANCE_LEVEL, ARCHEOLOGIST_DIG_MULT, ARCHEOLOGIST_SEARCH, ARMOR_SKILL_MAX, DUAL_WIELD, ORIGIN_ALIGNMENT, ORIGIN_RACE, ORIGINS, RANGER_VOLLEY_BONUS, WEAPON_SKILL_MAX, type WeaponAffinity } from "./origins";
 
 export type WeaponSkill = 0 | 1 | 2 | 3;
 /**
@@ -172,42 +173,51 @@ export const HP_PER_LEVEL = 5;
 
 /** NetHack-style Constitution modifier scales the deterministic HP increase. */
 export function hpGainPerLevel(hero: Hero): number {
-    return Math.max(2, HP_PER_LEVEL + abilityMod(hero.constitution));
-}
-
-/**
- * 지혜 성장 한 번마다 공격 지팡이에 같은 면의 주사위 하나를 더한다.
- *
- * 지팡이는 횟수가 정해진 소모품이다. 지혜와 Luck은 서로 다른 능력치다.
- */
-export function wandDamageDiceBonus(hero: Hero): number {
-    return Math.max(0,
-        abilityMod(hero.wisdom) + abilityMod(hero.intelligence)
-        - abilityMod(hero.baseWisdom) - abilityMod(hero.baseIntelligence),
-    );
+    const con = hero.constitution;
+    const bonus = con <= 3 ? -2 : con <= 6 ? -1 : con <= 14 ? 0 : con <= 16 ? 1 : con === 17 ? 2 : con === 18 ? 3 : 4;
+    return Math.max(1, HP_PER_LEVEL + bonus);
 }
 
 export const PACK_CAPACITY = 50;
 export const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX".split("");
 
-/**
- * 힘이 주는 보정 — **D&D 의 능력 보정 하나로 명중과 피해에 같이 쓴다.**
- *
- * 원작 Rogue 는 명중과 피해에 서로 다른 표를 썼지만 D&D 는 능력 보정 하나가 둘 다
- * 맡는다. `(능력치 − 10) ÷ 2` 내림이라 힘 16 이면 +3, 10~11 이면 0, 8 이면 −1 이다.
- */
-export function strHitBonus(str: number): number {
-    return abilityMod(str);
+/** NetHack `weight_cap()`의 인간 기준. 힘 반지와 건강을 함께 센다. */
+export function carryCapacity(hero: Hero): number {
+    return Math.min(1000, 25 * (heroStr(hero) + hero.constitution) + 50);
 }
 
+export function packWeight(hero: Hero): number {
+    return hero.pack.reduce((sum, item) => sum + itemWeight(item), 0);
+}
+
+/** NetHack `calc_capacity()`의 0~5 적재 단계. */
+export function encumbrance(hero: Hero, extraWeight = 0): number {
+    const capacity = carryCapacity(hero);
+    const excess = packWeight(hero) + extraWeight - capacity;
+    return excess <= 0 ? 0 : Math.min(5, Math.floor(excess * 2 / capacity) + 1);
+}
+
+/** NetHack `abon()`의 힘 명중 표. 이 게임의 19~31은 18/xx 대신 쓰는 성장 구간이다. */
+export function strHitBonus(str: number, level = 3): number {
+    const bonus = str < 6 ? -2 : str < 8 ? -1 : str < 17 ? 0 : str <= 25 ? 1 : str < 31 ? 2 : 3;
+    return bonus + (level < 3 ? 1 : 0);
+}
+
+/** NetHack `abon()`의 민첩 명중 표. */
+export function dexHitBonus(dex: number): number {
+    return dex < 4 ? -3 : dex < 6 ? -2 : dex < 8 ? -1 : dex < 14 ? 0 : dex - 14;
+}
+
+/** NetHack `dbon()`의 힘 피해 표. 19~31은 18/xx 구간에 대응한다. */
 export function strDamBonus(str: number): number {
-    return abilityMod(str);
+    return str < 6 ? -1 : str < 16 ? 0 : str < 18 ? 1 : str === 18 ? 2 : str <= 25 ? 3 : str <= 28 ? 4 : str < 31 ? 5 : 6;
 }
 
 export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "knight"): Hero {
     const originDef = ORIGINS[origin] ?? ORIGINS.knight;
     const hero: Hero = {
         origin,
+        race: ORIGIN_RACE[origin],
         alignment: ORIGIN_ALIGNMENT[origin],
         deityAnger: 0,
         guarded: false,
@@ -225,6 +235,9 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         constitution: originDef.baseCon,
         charisma: originDef.baseCha,
         intelligence: originDef.baseInt,
+        power: Math.max(1, Math.floor(originDef.baseWis / 2)),
+        maxPower: Math.max(1, Math.floor(originDef.baseWis / 2)),
+        spells: {},
         baseIntelligence: originDef.baseInt,
         baseWisdom: originDef.baseWis,
         wisdomMax: 25,
@@ -253,6 +266,9 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         luck: 0,
         prayerTimeout: 300,
         autoPickup: true,
+        poisonResistant: false,
+        fireResistant: false,
+        coldResistant: false,
         wisdom: originDef.baseWis,
         weaponSkills: {},
         weaponTraining: {},
@@ -327,11 +343,12 @@ function sameStack(hero: Hero, p: Item, it: Item): boolean {
     );
 }
 
-/** 같은 종의 시체는 원작처럼 한 더미로 합친다. 현재 게임에는 되살아나는 시체가 없다. */
+/** 같은 종·같은 보존 상태의 시체는 한 더미로 합친다. */
 function sameCorpseStack(p: Item, it: Item): boolean {
     return p.id !== it.id && p.kind === "food" && it.kind === "food" &&
         !!p.corpseOf && p.corpseOf === it.corpseOf &&
         (p.corpseValue ?? 1) === (it.corpseValue ?? 1) &&
+        !!p.corpseTinned === !!it.corpseTinned &&
         !!p.unpaid === !!it.unpaid;
 }
 
@@ -382,6 +399,7 @@ export function mergeStacks(hero: Hero): void {
 }
 
 export function addToPack(hero: Hero, it: Item, mergeWeapons = false): Item | null {
+    if (encumbrance(hero, itemWeight(it)) >= 5) return null;
     if (it.kind === "food" && it.corpseOf) {
         const corpse = hero.pack.find((p) => sameCorpseStack(p, it));
         if (corpse) {
@@ -698,8 +716,9 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
     return [
         { n: proficiency(hero.level), why: "레벨" },
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
-        { n: strHitBonus(heroStr(hero)), why: "힘" },
-        { n: abilityMod(hero.dexterity) + ringSum(hero, "dexterity"), why: "민첩" },
+        { n: strHitBonus(heroStr(hero), hero.level), why: "힘" },
+        { n: dexHitBonus(heroDexterity(hero)), why: "민첩" },
+        ...(encumbrance(hero) > 0 ? [{ n: -(encumbrance(hero) * 2 - 1), why: "과적" }] : []),
         // NetHack 3.6.7의 find_roll_to_hit은 자연 Luck을 명중 보정에 더한다.
         { n: hero.luck, why: "행운" },
         ...(hasMatchedDualWield(hero) ? [{ n: 1, why: "쌍무기" }] : []),
@@ -711,7 +730,7 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
 /** `withStr` 가 거짓이면 **힘 보정을 안 얹는다** — 이도류의 보조손이 그렇다. */
 export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr = true): Term[] {
     const terms: Term[] = [
-        ...(withStr ? [{ n: strHitBonus(heroStr(hero)), why: "힘" }] : []),
+        ...(withStr ? [{ n: strDamBonus(heroStr(hero)), why: "힘" }] : []),
         ...weaponSkillTerms(hero, weapon).slice(1).map((term) => ({ ...term, why: `${weaponSkillRankName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
         { n: meleePlus(weapon, "plusDam"), why: "enchant" },
@@ -764,11 +783,16 @@ export function hungerRate(hero: Hero): number {
     return hasRing(hero, "slow digestion") ? 0.5 : 1;
 }
 
-/** 몇 턴마다 체력이 1 오르는가. Constitution이 줄이고 재생 반지는 1턴으로 만든다. */
+/** NetHack `regen_hp()`의 회복 간격. 10레벨부터 건강은 양에 반영한다. */
 export function regenEvery(hero: Hero): number {
+    if (hasRing(hero, "regeneration")) return 1;
+    return hero.level > 9 ? 3 : Math.floor(42 / (hero.level + 2)) + 1;
+}
+
+/** 기존 지팡이 충전 주기. 체력 회복 수식 변경과 별개로 둔다. */
+export function wandRechargeEvery(hero: Hero): number {
     const conModifier = abilityMod(hero.constitution);
-    const base = Math.max(3, 21 - hero.level * 2 - conModifier);
-    return hasRing(hero, "regeneration") ? 1 : base;
+    return hasRing(hero, "regeneration") ? 1 : Math.max(3, 21 - hero.level * 2 - conModifier);
 }
 
 /** 한 번 뒤졌을 때 숨은 것을 찾을 확률. 탐색 반지와 10레벨 도적의 본능이 크게 올린다. */
@@ -867,6 +891,9 @@ export function gainExp(hero: Hero, amount: number, rng: Rng): number[] {
         const hpGain = hpGainPerLevel(hero);
         hero.maxHp += hpGain;
         hero.hp += hpGain;
+        const powerGain = Math.max(1, Math.floor(hero.wisdom / 2) + rng.between(1, 4));
+        hero.maxPower += powerGain;
+        hero.power += powerGain;
         gained.push(hero.level);
     }
     return gained;

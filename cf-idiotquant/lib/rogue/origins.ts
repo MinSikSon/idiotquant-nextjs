@@ -23,6 +23,17 @@ export const ORIGIN_ALIGNMENT: Record<HeroOrigin, ReligionAlignment> = {
     elementalist: "neutral",
 };
 
+/** 플레이어는 종족을 고르지 않는다. 직업의 기본 설정으로만 정하고 식인 판정에 쓴다. */
+export const ORIGIN_RACE = {
+    knight: "human",
+    rogue: "orc",
+    alchemist: "gnome",
+    scholar: "human",
+    ranger: "elf",
+    archeologist: "dwarf",
+    elementalist: "elf",
+} as const satisfies Record<HeroOrigin, import("./types").HeroRace>;
+
 export const RACE_NAME = { human: "인간", orc: "오크", gnome: "노움", elf: "엘프", dwarf: "드워프" } as const;
 
 export const ALIGNMENT_NAME: Record<ReligionAlignment, string> = {

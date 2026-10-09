@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
-import { type Command, enchantScrollKind, scrollTargetKinds } from "@/lib/rogue/game";
+import { type Command, enchantScrollKind, scrollTargetKinds, spellCastingChance } from "@/lib/rogue/game";
 import {
     CHEST_SLOTS,
     canHoldEnchant,
@@ -32,10 +32,11 @@ import {
     meltMax,
     meltYield,
     WAND_RECHARGE,
+    SPELLBOOKS,
     WEAPONS,
 } from "@/lib/rogue/items";
 import { billOf, inShop, isTradable, price, sellPrice, shopkeeperOf } from "@/lib/rogue/shop";
-import { canOffHand, canWieldWand, canWieldWeapon, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor, PACK_CAPACITY } from "@/lib/rogue/hero";
+import { canOffHand, canWieldWand, canWieldWeapon, carryCapacity, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor, packWeight, PACK_CAPACITY } from "@/lib/rogue/hero";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 import { T, fountainAt, idx } from "@/lib/rogue/types";
 
@@ -369,8 +370,10 @@ export default function Desk({
         { kind: "ring", label: "반지", items: [] },
         { kind: "potion", label: "물약", items: [] },
         { kind: "scroll", label: "주문서", items: [] },
+        { kind: "spellbook", label: "마법책", items: [] },
         { kind: "wand", label: "지팡이", items: [] },
         { kind: "food", label: "식량", items: [] },
+        { kind: "tool", label: "도구", items: [] },
         { kind: "gem", label: "보석", items: [] },
         { kind: "relic", label: "유물", items: [] },
         { kind: "gold", label: "금화", items: [] },
@@ -589,7 +592,13 @@ export default function Desk({
             case "potion":
                 // 축복의 기름은 포션 칸을 빌려 들고 다니지만, 몸에 마시는 물약이 아니다.
                 // 장비를 고르게 하는 아래 `quaffPotion` 흐름으로 가되 동사는 쓰임을 그대로 적는다.
-                out.push({ label: it.type === "blessing" ? "장비에 바른다" : "마신다", on: () => quaffPotion(it.letter!) });
+                {
+                    const corpseAtFeet = state.level.items.some((p) => p.corpseOf && !p.corpseTinned && p.x === hero.x && p.y === hero.y);
+                    out.push({
+                        label: it.type === "blessing" ? "장비에 바른다" : it.type === "revival" && corpseAtFeet ? "시체를 되살린다" : "마신다",
+                        on: () => quaffPotion(it.letter!),
+                    });
+                }
                 break;
             case "scroll":
                 // **배낭에서 읽어도 같은 길로 보낸다.** 강화 주문서는 고를 것을 한 번 더
@@ -604,8 +613,22 @@ export default function Desk({
                     },
                 });
                 break;
+            case "spellbook":
+                if ((it.studyCount ?? 0) < 3) out.push({ label: `공부한다 (${it.studyCount ?? 0}/3회)`, on: go({ t: "study", letter: it.letter! }) });
+                break;
             case "food":
                 out.push({ label: it.corpseOf ? "시체를 먹는다" : "먹는다", on: go({ t: "eat", letter: it.letter! }) });
+                break;
+            case "tool":
+                if (it.type === "tinning kit") {
+                    for (const corpse of hero.pack.filter((p) => p.corpseOf && !p.corpseTinned)) {
+                        if ((it.charges ?? 0) < 1) continue;
+                        out.push({
+                            label: `통조림으로 보존 (${corpse.corpseOf}${corpse.count > 1 ? ` 1/${corpse.count}개` : ""})`,
+                            on: go({ t: "tin", kitLetter: it.letter!, corpseLetter: corpse.letter! }),
+                        });
+                    }
+                }
                 break;
             case "wand":
                 if (canWieldWand(hero)) {
@@ -657,7 +680,7 @@ export default function Desk({
             out.push({ label: `판다 (+${sellPrice(it)}G)`, on: go({ t: "sell", letter: it.letter! }) });
         }
         if (it.kind !== "amulet") {
-            const offer = it.corpseOf && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && level.transmuteAltar.uses > 0;
+            const offer = it.corpseOf && !it.corpseTinned && level.transmuteAltar?.x === hero.x && level.transmuteAltar.y === hero.y && level.transmuteAltar.uses > 0;
             out.push({
                 label: offer ? "제물로 바친다" : it.count > 1 ? "버린다 (1개)" : "내려놓는다",
                 on: go({ t: "drop", letter: it.letter! }),
@@ -856,7 +879,7 @@ export default function Desk({
                     side={side}
                     accent={accent}
                     closeKey={closeKey}
-                    title={`${who}배낭 (${hero.pack.length}/${PACK_CAPACITY})`}
+                    title={`${who}배낭 (${hero.pack.length}/${PACK_CAPACITY}칸 · 무게 ${packWeight(hero)}/${carryCapacity(hero)})`}
                     onClose={() => {
                         setChosen(null);
                         setPackOpen(false);
@@ -867,6 +890,19 @@ export default function Desk({
                             : "물건을 누르거나 그 앞의 글자를 누르면 할 수 있는 일이 뜹니다. 그 일은 앞에 적힌 숫자로 합니다."
                     }
                 >
+                    <div className="mb-2 border-b border-[var(--rg-line-soft)] pb-2">
+                        <div className="text-[var(--rg-label)]">마력 {hero.power}/{hero.maxPower} · 외운 주문</div>
+                        <div className="flex flex-wrap gap-1 pt-1">
+                            {Object.entries(hero.spells).filter(([spell, until]) => SPELLBOOKS[spell] && until > state.turn).length === 0
+                                ? <span className="text-[var(--rg-faint)]">없음</span>
+                                : Object.entries(hero.spells).filter(([spell, until]) => SPELLBOOKS[spell] && until > state.turn).map(([spell, until]) => (
+                                    <button key={spell} type="button" onClick={() => run({ t: "cast", spell })}
+                                        className="rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-hover)] px-2 py-1 text-[var(--rg-strong)]">
+                                        {SPELLBOOKS[spell].name} ({SPELLBOOKS[spell].cost}마력 · {spellCastingChance(hero, spell)}% · 기억 {until - state.turn}턴)
+                                    </button>
+                                ))}
+                        </div>
+                    </div>
                     {hero.pack.length === 0 ? (
                         <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
                     ) : (
