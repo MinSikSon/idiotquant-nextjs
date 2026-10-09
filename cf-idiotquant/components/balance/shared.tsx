@@ -181,15 +181,15 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
   if (value === null) return <KpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-4 sm:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
-      <div className="flex items-center justify-between">
+      <div className="contents min-[480px]:flex min-[480px]:items-center min-[480px]:justify-between">
         <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
-        <div className={cn("p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
+        <div className={cn("hidden min-[480px]:block p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
-      <div>
-        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono break-words", valueColor)}>{value}</div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">{sub}</p>
+      <div className="min-w-0 text-right min-[480px]:text-left">
+        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", valueColor)}>{value}</div>
+        <p className="text-[11px] min-[480px]:text-xs text-neutral-500 dark:text-neutral-400 leading-snug">{sub}</p>
       </div>
     </div>
   );
@@ -210,15 +210,15 @@ export function UsdKpiCard({
   if (loading || mainValue === null) return <UsdKpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
+    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-3 py-2.5 min-[480px]:p-4 sm:p-5 shadow-sm overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
-      <div className="flex items-center justify-between">
+      <div className="contents min-[480px]:flex min-[480px]:items-center min-[480px]:justify-between">
         <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
-        <div className={cn("p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
+        <div className={cn("hidden min-[480px]:block p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
-      <div>
-        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono break-words", mainColor)}>{mainValue}</div>
-        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-center justify-between gap-x-2 text-xs font-bold text-neutral-500 dark:text-neutral-400">
+      <div className="min-w-0 text-right min-[480px]:text-left">
+        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", mainColor)}>{mainValue}</div>
+        <div className="mt-0.5 min-[480px]:mt-2 min-[480px]:pt-2 min-[480px]:border-t border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-center justify-end min-[480px]:justify-between gap-x-2 text-[11px] min-[480px]:text-xs font-bold text-neutral-500 dark:text-neutral-400">
           <span>{subLabel}</span>
           <span className={cn("font-mono break-words", subColor)}>{subValue}</span>
         </div>

@@ -77,13 +77,15 @@ function StatusBadge({ lr }: { lr?: LastResult }) {
 
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card px-3 py-2.5">
-      <div className="flex items-center gap-1.5 text-neutral-400 dark:text-neutral-500 mb-1">
-        {icon}
-        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+    <div className="rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card px-2.5 py-2 sm:px-3 sm:py-2.5">
+      <div className="flex items-center justify-between gap-2 sm:block">
+        <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 sm:mb-1">
+          {icon}
+          <span className="text-[11px] font-bold uppercase tracking-wide">{label}</span>
+        </div>
+        <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight text-right sm:text-left">{value}</p>
       </div>
-      <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight">{value}</p>
-      {hint && <p className="text-[10px] text-neutral-400 mt-0.5">{hint}</p>}
+      {hint && <p className="text-[11px] text-neutral-500 dark:text-neutral-400 text-right sm:text-left sm:mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -154,7 +156,7 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 요약 지표 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-4">
         <Stat icon={<Clock size={12} />} label="마지막 실행" value={relTime(capital?.time_stamp?.current)} />
         <Stat icon={<Gauge size={12} />} label="충전 속도" value={`${won(chargeRate)}`} hint="/ 5분 틱" />
         <Stat icon={<Layers size={12} />} label="활성 토큰 합계" value={won(activeTokenSum)} hint={`활성 ${activeCount}종목`} />

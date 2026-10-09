@@ -821,7 +821,7 @@ function GroupSection({
   return (
     <section className={cn("overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-surface-dark-canvas", accentBorder)}>
       {/* 헤더 */}
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40">
         <button onClick={onToggleCollapse} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -1234,7 +1234,7 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("p-3", isPicked(row.symbol) && "bg-[#f0fdf4] dark:bg-[#14532d]/20")}
+                className={cn("px-2.5 py-2", isPicked(row.symbol) && "bg-[#f0fdf4] dark:bg-[#14532d]/20")}
               >
                 {/* 상단: 체크 + 종목 + 상태 */}
                 <div className="flex items-center gap-2">
@@ -1247,13 +1247,13 @@ function GroupSection({
                     />
                   )}
                   <button onClick={() => openDetail(row.raw)} className="flex min-w-0 items-center gap-1.5">
-                    <div className="shrink-0 rounded-md bg-surface-canvas p-1.5 dark:bg-surface-dark-muted">
+                    <div className="hidden min-[480px]:block shrink-0 rounded-md bg-surface-canvas p-1.5 dark:bg-surface-dark-muted">
                       <TrendingUp className="w-3.5 h-3.5" />
                     </div>
                     {row.name ? (
-                      <span className="flex min-w-0 flex-col items-start leading-tight">
-                        <span className="truncate max-w-[160px] text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name}</span>
-                        <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{row.symbol}</span>
+                      <span className="flex min-w-0 items-baseline gap-1.5 leading-tight">
+                        <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name}</span>
+                        <span className="shrink-0 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">{row.symbol}</span>
                       </span>
                     ) : (
                       <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
@@ -1273,8 +1273,8 @@ function GroupSection({
                   </div>
                 </div>
 
-                {/* 좁은 화면에서 지표 값이 잘리지 않도록 두 열로 배치 */}
-                <div className="mt-2.5 grid grid-cols-2 min-[480px]:grid-cols-4 gap-1.5">
+                {/* 항목명과 값을 한 줄에 두고 좁은 화면에서는 전체 폭을 사용 */}
+                <div className="mt-1.5 grid grid-cols-1 min-[480px]:grid-cols-2 gap-1">
                   <MiniStat label="PER/PBR" value={`${row.per ?? "-"} / ${row.pbr ?? "-"}`} />
                   <MiniStat label="BPS/EPS" value={`${row.bps?.toLocaleString() ?? "-"} / ${row.eps?.toLocaleString() ?? "-"}`} />
                   <MiniStat label="시총(억)" value={(row.marketCap || 0).toLocaleString()} />
@@ -1283,7 +1283,7 @@ function GroupSection({
 
                 {/* 예산 + Refill (운용 종목만) */}
                 {row.movable && (
-                  <div className="mt-2.5 flex flex-col items-start gap-2 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
                       <span>예산 <b className="font-mono font-black text-brand">{row.token?.toLocaleString() ?? 0}</b></span>
                       {monthlyPerStock > 0 && (
@@ -1293,7 +1293,7 @@ function GroupSection({
                       )}
                     </span>
                     {showRefill && (
-                      <div className="flex flex-wrap gap-1 min-[480px]:justify-end">
+                      <div className="flex flex-wrap gap-1">
                         {tokenAmounts.map(amt => (
                           <div key={`m-indiv-${amt}`} className="flex items-center overflow-hidden rounded-md border border-neutral-200 dark:border-border-subtle-dark">
                             <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-brand active:bg-[#f0fdf4] dark:active:bg-[#14532d]/30">
@@ -1326,9 +1326,9 @@ function GroupSection({
 /** 모바일 카드용 지표 칩 */
 function MiniStat({ label, value, highlight }: { label: string; value: React.ReactNode; highlight?: boolean }) {
   return (
-    <div className="rounded-lg bg-surface-canvas px-1.5 py-1 dark:bg-surface-dark-card">
-      <div className="text-[11px] font-black uppercase tracking-tight text-neutral-500 dark:text-neutral-400">{label}</div>
-      <div className={cn("break-words font-mono text-xs font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
+    <div className="min-w-0 flex items-baseline justify-between gap-2 rounded-lg bg-surface-canvas px-2 py-1 dark:bg-surface-dark-card">
+      <div className="shrink-0 text-[11px] font-black uppercase tracking-tight text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className={cn("min-w-0 break-words text-right font-mono text-xs font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
         {value}
       </div>
     </div>
