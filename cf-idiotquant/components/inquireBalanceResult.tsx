@@ -74,6 +74,9 @@ function formatValue(value: number | string, type: "MONEY" | "QTY") {
     return num.toLocaleString();
 }
 
+const compactMoney = (value: number | string) =>
+    `₩${new Intl.NumberFormat("ko-KR", { notation: "compact", maximumFractionDigits: 1 }).format(Math.floor(Number(value) || 0))}`;
+
 interface InquireBalanceResultProps {
     balanceKey: any;
     setBalanceKey: any;
@@ -432,6 +435,11 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
     // 모바일 카드 뷰
     const MobileCardList = () => (
         <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
+            {sortedItems.length > 0 && (
+                <div className="grid grid-cols-[minmax(0,1fr)_4rem_3.5rem_1rem] gap-1.5 px-2 pb-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
+                    <span>종목</span><span className="text-right">평가액</span><span className="text-right">수익률</span><span aria-hidden />
+                </div>
+            )}
             {sortedItems.length === 0 && (
                 <EmptyState message="보유 종목이 없습니다" />
             )}
@@ -439,23 +447,24 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                 const profitRt = Number(getFieldValue(item, "profit_rt"));
                 const price = Number(getFieldValue(item, "price"));
                 const qty = getFieldValue(item, "qty");
+                const evalAmount = getFieldValue(item, "evlu_amt");
                 const isPositive = profitRt >= 0;
 
                 return (
-                    <div key={idx} className="px-3 py-2.5 space-y-2">
-                        {/* 종목명 + 수익률 */}
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                                <div className="flex min-w-0 items-baseline gap-1.5">
-                                    <span className="truncate font-black text-sm dark:text-neutral-100">{getFieldValue(item, "name")}</span>
-                                    <span className="shrink-0 text-[11px] font-mono text-neutral-500">{item.pdno || item.ovrs_pdno}</span>
-                                </div>
+                    <details key={idx} className="group">
+                        <summary className="grid grid-cols-[minmax(0,1fr)_4rem_3.5rem_1rem] items-center gap-1.5 px-2 py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                            <span className="min-w-0 truncate text-xs font-bold text-neutral-900 dark:text-neutral-100" title={getFieldValue(item, "name")}>{getFieldValue(item, "name") || item.pdno || item.ovrs_pdno}</span>
+                            <span className="font-mono text-xs font-bold text-right text-neutral-700 dark:text-neutral-200 tabular-nums whitespace-nowrap" title={formatValue(evalAmount, "MONEY")}>{compactMoney(evalAmount)}</span>
+                            <span className={`font-mono text-[11px] font-black text-right tabular-nums whitespace-nowrap ${isPositive ? "text-rose-500" : "text-brand"}`}>
+                                {isPositive ? "+" : ""}{profitRt.toFixed(1)}%
+                            </span>
+                            <ChevronDown size={13} className="text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
+                        </summary>
+                        <div className="px-3 pb-2.5 space-y-2 border-t border-neutral-100 dark:border-border-subtle-dark">
+                            <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-neutral-500 dark:text-neutral-400">
+                                <span>{item.pdno || item.ovrs_pdno}</span>
                                 {renderGroupBadge(item)}
                             </div>
-                            <span className={`text-sm font-black font-mono shrink-0 ${isPositive ? "text-rose-500" : "text-brand"}`}>
-                                {isPositive ? "▲" : "▼"} {isPositive ? "+" : ""}{profitRt.toFixed(2)}%
-                            </span>
-                        </div>
                         {/* 항목명과 값을 한 줄에 배치 */}
                         <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-x-4 gap-y-1 text-xs">
                             <div className="flex items-baseline justify-between gap-2">
@@ -472,7 +481,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                             </div>
                             <div className="flex items-baseline justify-between gap-2">
                                 <span className="shrink-0 text-neutral-500 dark:text-neutral-400 font-bold">평가금액</span>
-                                <span className="min-w-0 text-right font-mono font-black dark:text-white">{formatValue(getFieldValue(item, "evlu_amt"), "MONEY")}</span>
+                                <span className="min-w-0 text-right font-mono font-black dark:text-white">{formatValue(evalAmount, "MONEY")}</span>
                             </div>
                         </div>
                         {/* 액션 */}
@@ -498,7 +507,8 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                                 </button>
                             )}
                         </div>
-                    </div>
+                        </div>
+                    </details>
                 );
             })}
         </div>
@@ -516,7 +526,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
 
             {/* 모바일: 카드 뷰 */}
             <div className="md:hidden">
-                <MobileCardList />
+                {MobileCardList()}
             </div>
 
             {/* 데스크탑: 테이블 뷰 */}
