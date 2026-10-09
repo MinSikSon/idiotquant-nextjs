@@ -262,7 +262,25 @@ export default function TouchPad({
                         </Key>
                     ))}
                 </div>
-                <div className="flex gap-1">
+            </div>
+
+            {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
+            <div className="pointer-events-auto flex min-w-0 flex-1 flex-col gap-1 md:max-lg:w-[min(42vw,360px)] md:max-lg:flex-none">
+                <div className="grid min-w-0 grid-cols-3 content-start gap-1">
+                    {actions.map((a) => (
+                        <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
+                            <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-tight">
+                                <span className="flex max-w-full items-center gap-1">
+                                    <span className="truncate">{a.label}</span>
+                                    {a.mobileMark && <span className="shrink-0 text-[11px] font-bold text-[var(--rg-gold)] md:hidden">{a.mobileMark}</span>}
+                                    {a.keys && <span className="hidden shrink-0 text-[9px] font-normal text-[var(--rg-faint)] md:inline">{a.keys}</span>}
+                                </span>
+                                {a.detail && <span className="hidden max-w-full truncate text-[9px] font-normal text-[var(--rg-faint)] md:block">{a.detail}</span>}
+                            </span>
+                        </Key>
+                    ))}
+                </div>
+                <div className="flex justify-end gap-1">
                     <button
                         type="button"
                         aria-pressed={autoPickup}
@@ -287,22 +305,6 @@ export default function TouchPad({
                         옵션
                     </button>
                 </div>
-            </div>
-
-            {/* 어느 화면에서나 세 칸 × 다섯 줄. 자리가 안 바뀌어야 손가락이 외운다. */}
-            <div className="pointer-events-auto grid min-w-0 flex-1 grid-cols-3 content-start gap-1 md:max-lg:w-[min(42vw,360px)] md:max-lg:flex-none">
-                {actions.map((a) => (
-                    <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
-                        <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-tight">
-                            <span className="flex max-w-full items-center gap-1">
-                                <span className="truncate">{a.label}</span>
-                                {a.mobileMark && <span className="shrink-0 text-[11px] font-bold text-[var(--rg-gold)] md:hidden">{a.mobileMark}</span>}
-                                {a.keys && <span className="hidden shrink-0 text-[9px] font-normal text-[var(--rg-faint)] md:inline">{a.keys}</span>}
-                            </span>
-                            {a.detail && <span className="hidden max-w-full truncate text-[9px] font-normal text-[var(--rg-faint)] md:block">{a.detail}</span>}
-                        </span>
-                    </Key>
-                ))}
             </div>
         </div>
     );
