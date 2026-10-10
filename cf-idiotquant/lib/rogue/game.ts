@@ -1025,6 +1025,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
     if (level.upStairs && level.upStairs.x === nx && level.upStairs.y === ny) {
         say(state, level.depth === 1 ? "바깥으로 나가는 계단이다." : "위로 가는 계단이다.");
     }
+    if (tileAt(level, nx, ny) === T.POOL) say(state, "물웅덩이를 첨벙 지나간다 — 여기서 물건을 담글 수 있다.");
     // **모루는 밟았을 때 말해 준다.** 「배낭 → 무기 → 녹인다」는 눌러 봐야 나오는 길이라,
     // 여기서 한 마디 안 하면 `&` 가 그냥 못 보던 글자로 남는다.
     if (level.anvil && level.anvil.x === nx && level.anvil.y === ny) {
@@ -1429,7 +1430,7 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
             case 30: {
                 const spots = fountainGushSpots(state, fountain.x, fountain.y, rng);
                 for (const spot of spots) state.level.tiles[idx(spot.x, spot.y)] = T.POOL;
-                say(state, spots.length ? "분수에서 물줄기가 뿜어져 나와 주변 바닥을 적셨다." : "분수에서 물이 솟구쳤지만 발밑으로만 쏟아졌다.");
+                say(state, spots.length ? `분수가 넘쳐 물줄기가 뿜어져 나와 주변 바닥 ${spots.length}칸을 적셨다.` : "분수가 넘쳐 물이 솟구쳤지만 발밑으로만 쏟아졌다.");
                 break;
             }
             default:
@@ -1567,7 +1568,7 @@ function resolveDipEvent(state: GameState, hero: Hero, item: Item, fountain: Non
     } else if (result === 24 || result === 25) {
         const spots = fountainGushSpots(state, fountain.x, fountain.y, rng);
         for (const spot of spots) state.level.tiles[idx(spot.x, spot.y)] = T.POOL;
-        say(state, spots.length ? "분수에서 물줄기가 뿜어져 나와 주변 바닥을 적셨다." : "분수에서 물이 솟구쳤다.");
+        say(state, spots.length ? `분수가 넘쳐 물줄기가 뿜어져 나와 주변 바닥 ${spots.length}칸을 적셨다.` : "분수가 넘쳐 물이 솟구쳤다.");
     } else if (result === 28 && hero.gold > 10) {
         const loss = Math.max(1, Math.floor(hero.gold / 10));
         hero.gold -= loss;

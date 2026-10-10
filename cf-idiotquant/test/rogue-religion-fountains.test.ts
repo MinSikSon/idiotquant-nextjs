@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { glyphAt, newGame, perform } from "@/lib/rogue/game";
-import { MAP_W, T } from "@/lib/rogue/types";
+import { MAP_W, T, idx } from "@/lib/rogue/types";
 
 test("지도에서 분수와 웅덩이는 원작 글리프로 구별된다", () => {
     const state = newGame(891);
@@ -14,6 +14,34 @@ test("지도에서 분수와 웅덩이는 원작 글리프로 구별된다", () 
 
     assert.equal(glyphAt(state, 3, 3)?.ch, "{", "분수는 { 로 표시한다");
     assert.equal(glyphAt(state, 4, 3)?.ch, "}", "웅덩이는 } 로 표시한다");
+});
+
+test("웅덩이에 들어가면 첨벙 소리와 담그기 안내가 나온다", () => {
+    const state = newGame(894);
+    const hero = state.heroes[0];
+    hero.x = 20;
+    hero.y = 10;
+    state.level.tiles[idx(hero.x, hero.y)] = T.FLOOR;
+    state.level.tiles[idx(hero.x + 1, hero.y)] = T.POOL;
+    state.level.monsters = state.level.monsters.filter((m) => m.x !== hero.x + 1 || m.y !== hero.y);
+    state.level.items = state.level.items.filter((it) => it.x !== hero.x + 1 || it.y !== hero.y);
+    state.messages = [];
+
+    const after = perform(state, { t: "move", dx: 1, dy: 0 });
+
+    assert.equal(after.heroes[0].x, 21, "웅덩이는 걸어서 건널 수 있다");
+    assert.ok(after.messages.some((line) => line.includes("물웅덩이를 첨벙 지나간다") && line.includes("담글 수 있다")), "웅덩이에 들어갔다는 안내가 없다");
+});
+
+test("분수 물줄기가 솟으면 분수가 넘쳤다고 알린다", () => {
+    const state = newGame(51);
+    const hero = state.heroes[0];
+    state.level.fountains = [{ x: hero.x, y: hero.y, magic: false, magicUsed: false, drinks: 0 }];
+    state.level.fountain = null;
+
+    const after = perform(state, { t: "fountain" });
+
+    assert.ok(after.messages.some((line) => line.includes("분수가 넘쳐")), "넘침 사건이 발생했는데 안내하지 않았다");
 });
 
 test("문제가 가벼우면 낮은 행운의 기도는 응답을 받지 못할 수 있다", () => {
