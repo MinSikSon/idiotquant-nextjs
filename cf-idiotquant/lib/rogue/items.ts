@@ -778,10 +778,10 @@ export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "en
  * 깊은 층으로 갈수록 강화 주문서도 늘린다. 층별 몫은 항상 100이다.
  */
 const CATEGORIES: { upTo: number; w: Record<Category, number> }[] = [
-    { upTo: 5, w: { gold: 9, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 5, weapon: 15, armor: 15, ring: 4, amulet: 1, wand: 5, tool: 1 } },
-    { upTo: 12, w: { gold: 7, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 7, weapon: 15, armor: 15, ring: 4, amulet: 1, wand: 5, tool: 1 } },
-    { upTo: 19, w: { gold: 6, potion: 13, scroll: 8, spellbook: 2, food: 20, enchant: 9, weapon: 15, armor: 16, ring: 4, amulet: 1, wand: 5, tool: 1 } },
-    { upTo: 26, w: { gold: 4, potion: 13, scroll: 7, spellbook: 2, food: 20, enchant: 10, weapon: 16, armor: 16, ring: 4, amulet: 1, wand: 6, tool: 1 } },
+    { upTo: 5, w: { gold: 9, potion: 14, scroll: 8, spellbook: 3, food: 15, enchant: 5, weapon: 18, armor: 17, ring: 4, amulet: 1, wand: 5, tool: 1 } },
+    { upTo: 12, w: { gold: 7, potion: 14, scroll: 8, spellbook: 3, food: 15, enchant: 7, weapon: 18, armor: 17, ring: 4, amulet: 1, wand: 5, tool: 1 } },
+    { upTo: 19, w: { gold: 6, potion: 13, scroll: 8, spellbook: 2, food: 15, enchant: 9, weapon: 18, armor: 18, ring: 4, amulet: 1, wand: 5, tool: 1 } },
+    { upTo: 26, w: { gold: 4, potion: 13, scroll: 7, spellbook: 2, food: 15, enchant: 10, weapon: 19, armor: 18, ring: 4, amulet: 1, wand: 6, tool: 1 } },
 ];
 
 export function categoryWeights(depth: number): Record<Category, number> {

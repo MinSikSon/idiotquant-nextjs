@@ -261,7 +261,7 @@ test("강화 주문서는 분류로 서고, 층 규칙이 그 위에 얹힌다",
             assert.equal(sum, 100, `${d}층 가중치 합이 ${sum} 이다`);
             assert.ok(w.enchant >= last, `${d}층에서 강화 가중치가 내려갔다`);
             last = w.enchant;
-            assert.ok(w.food === 20 && w.potion >= 13, `${d}층에서 원작 식량 비중 또는 물약 안전선이 깨졌다`);
+            assert.ok(w.food === 15 && w.potion >= 13, `${d}층에서 식량 조정 또는 물약 안전선이 깨졌다`);
             assert.ok(w.weapon + w.armor >= 30, `${d}층에서 일반 장비 비중이 ${w.weapon + w.armor}% 뿐이다`);
         }
         assert.ok(categoryWeights(26).enchant > categoryWeights(1).enchant);
@@ -277,7 +277,7 @@ test("강화 주문서는 분류로 서고, 층 규칙이 그 위에 얹힌다",
             if (category === "weapon") seen.weapon++;
             if (category === "armor") seen.armor++;
         }
-        assert.ok(seen.food / 30000 > 0.19, `식량이 원작 20% 수준보다 낮다 (${seen.food / 300}%)`);
+        assert.ok(seen.food / 30000 > 0.14, `식량이 목표 15%보다 낮다 (${seen.food / 300}%)`);
         assert.ok((seen.weapon + seen.armor) / 30000 > 0.29, `일반 장비가 상향 비중에 못 미친다 (${(seen.weapon + seen.armor) / 300}%)`);
 
         const rate = (ch: string) => {
