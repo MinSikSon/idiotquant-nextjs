@@ -222,7 +222,7 @@ export const WAND_RECHARGE = 8;
 /** 지팡이 한 자루가 보유할 수 있는 최대 사용 횟수. */
 export const MAX_WAND_CHARGES = 15;
 
-/** 원작 Rogue의 반지 14종. 반지는 착용 자체로 허기를 증가시키지 않는다. */
+/** 원작 반지와 NetHack에서 가져온 착용 효과. */
 export const RINGS: Record<string, { name: string; freq: number; depth: number }> = {
     protection: { name: "보호", freq: 9, depth: 1 },
     "add strength": { name: "힘", freq: 9, depth: 1 },
@@ -238,6 +238,33 @@ export const RINGS: Record<string, { name: string; freq: number; depth: number }
     teleportation: { name: "순간이동", freq: 5, depth: 7 },
     stealth: { name: "은신", freq: 7, depth: 4 },
     "maintain armor": { name: "갑옷 유지", freq: 5, depth: 6 },
+    "increase accuracy": { name: "명중 증가", freq: 7, depth: 4 },
+    constitution: { name: "건강", freq: 6, depth: 4 },
+    "fire resistance": { name: "화염 저항", freq: 5, depth: 7 },
+    "cold resistance": { name: "냉기 저항", freq: 5, depth: 7 },
+    "poison resistance": { name: "독 저항", freq: 5, depth: 5 },
+    "shock resistance": { name: "전격 저항", freq: 4, depth: 8 },
+    "free action": { name: "자유 행동", freq: 5, depth: 6 },
+    warning: { name: "위험 감지", freq: 6, depth: 5 },
+    invisibility: { name: "투명화", freq: 4, depth: 8 },
+    conflict: { name: "갈등", freq: 3, depth: 8 },
+    hunger: { name: "허기", freq: 4, depth: 4 },
+    levitation: { name: "비행", freq: 3, depth: 8 },
+};
+
+/** 착용하는 목걸이. `amulet` 은 승리 조건인 옌더의 증표를 위해 예약한다. */
+export const AMULETS: Record<string, { name: string; freq: number; depth: number }> = {
+    "amulet of life saving": { name: "생명 구명 목걸이", freq: 8, depth: 8 },
+    "amulet of ESP": { name: "감응 목걸이", freq: 12, depth: 3 },
+    "amulet versus poison": { name: "독 저항 목걸이", freq: 11, depth: 4 },
+    "amulet of guarding": { name: "수호 목걸이", freq: 8, depth: 6 },
+    "amulet of reflection": { name: "반사 목걸이", freq: 8, depth: 8 },
+    "amulet of strangulation": { name: "교살 목걸이", freq: 11, depth: 3 },
+    "amulet of restful sleep": { name: "안식 목걸이", freq: 11, depth: 3 },
+    "amulet of change": { name: "변화 목걸이", freq: 11, depth: 3 },
+    "amulet of magical breathing": { name: "호흡 목걸이", freq: 7, depth: 7 },
+    "amulet of flying": { name: "비행 목걸이", freq: 6, depth: 8 },
+    "amulet of unchanging": { name: "불변 목걸이", freq: 6, depth: 8 },
 };
 
 /** 반지는 감정한 뒤 배낭과 도감에서 효과를 바로 읽을 수 있어야 한다. */
@@ -256,6 +283,32 @@ export const RING_EFFECTS: Record<string, string> = {
     "increase damage": "피해 +N",
     stealth: "잠든 몬스터를 깨우지 않음",
     "maintain armor": "아쿠에이터의 갑옷 부식 방지",
+    "increase accuracy": "명중 +N",
+    constitution: "건강 +N · 자연 회복 개선",
+    "fire resistance": "화염 피해 저항",
+    "cold resistance": "냉기 피해 저항",
+    "poison resistance": "독 피해와 힘 감소 저항",
+    "shock resistance": "전격 효과 저항",
+    "free action": "수면·마비 저항",
+    warning: "근처 위험한 적을 감지",
+    invisibility: "적에게 들키지 않음",
+    conflict: "적들이 서로 싸움",
+    hunger: "허기가 더 빨리 참",
+    levitation: "함정·웅덩이를 건너뜀",
+};
+
+export const AMULET_EFFECTS: Record<string, string> = {
+    "amulet of life saving": "치명상을 한 번 막고 목걸이가 사라짐",
+    "amulet of ESP": "벽 너머의 몬스터를 감지",
+    "amulet versus poison": "독 피해와 힘 감소 저항",
+    "amulet of guarding": "방어력 +2",
+    "amulet of reflection": "용의 숨결을 되돌림",
+    "amulet of strangulation": "매 턴 체력 감소 · 저주받으면 벗을 수 없음",
+    "amulet of restful sleep": "착용하면 잠듦",
+    "amulet of change": "행운에 따라 능력치가 바뀜",
+    "amulet of magical breathing": "웅덩이를 안전하게 건넘",
+    "amulet of flying": "함정을 밟지 않고 웅덩이를 건넘",
+    "amulet of unchanging": "변이·변환 효과를 막음",
 };
 
 /** 지팡이 — 방향을 겨눠 쏜다. 횟수가 정해져 있다. */
@@ -336,7 +389,10 @@ const POTION_LOOKS = [
 const RING_LOOKS = [
     "루비", "사파이어", "에메랄드", "다이아몬드", "오팔", "호박", "흑요석", "진주",
     "자수정", "석류석", "터키석", "마노",
+    "철", "강철", "구리", "놋쇠", "청동", "은", "금", "백금", "유리", "나무", "뼈", "산호",
+    "수정", "흑진주", "월장석", "비취", "석영", "자철석", "황동",
 ];
+const AMULET_LOOKS = ["원형", "구형", "타원형", "삼각형", "피라미드형", "사각형", "오목한", "육각형", "팔각형", "오각형", "정육면체", "마름모형"];
 
 /** 지팡이의 재질. */
 const WAND_LOOKS = [
@@ -375,6 +431,11 @@ export function rollAppearances(rng: Rng): Record<string, string> {
     const gems = rng.shuffle([...RING_LOOKS]);
     Object.keys(RINGS).forEach((k, i) => {
         out[`ring:${k}`] = `${gems[i % gems.length]} 반지`;
+    });
+
+    const amulets = rng.shuffle([...AMULET_LOOKS]);
+    Object.keys(AMULETS).forEach((k, i) => {
+        out[`amulet:${k}`] = `${amulets[i % amulets.length]} 목걸이`;
     });
 
     const woods = rng.shuffle([...WAND_LOOKS]);
@@ -449,7 +510,10 @@ function weightedAt<T extends { freq: number; depth: number; noDrop?: boolean }>
     const all = Object.keys(table).filter((k) => !table[k].noDrop);
     const fits = all.filter((k) => table[k].depth <= tier);
     const keys = fits.filter((k) => table[k].depth > tier - band);
-    const pool = keys.length ? keys : fits.length ? fits : all;
+    // 조건을 만족하는 등급이 아직 없으면 가장 낮은 등급만 나온다. 전체 표로
+    // 되돌아가면 높은 층 전용 목걸이도 1층에서 떨어진다.
+    const shallowest = Math.min(...all.map((k) => table[k].depth));
+    const pool = keys.length ? keys : fits.length ? fits : all.filter((k) => table[k].depth === shallowest);
 
     // 기울기는 **띠를 줄 때만**(장비). 물약·주문서까지 기울이면 깊은 층에서 감정과
     // 체력 회복이 밀려나는데, 그건 「등급이 오른다」가 아니라 그냥 소모품이 마르는 것이다.
@@ -497,8 +561,8 @@ export function makeItem(kind: ItemKind, type: string, id: number, x: number, y:
  * 좋은 것을 주워도 못 바꾸는 것이 그 값이고, 사다리가 층을 타는 지금은 그 값이 예전보다
  * 오히려 크다 — 20층에서 4층짜리 장검에 손이 묶이는 것이 `−2` 보다 아프다.
  *
- * 그래서 화면에 `−` 가 붙은 물건은 이제 안 나온다. 힘이 깎여서(독) 보정이 음수가 되는
- * 일은 그대로다 — 그건 물건이 아니라 내 몸이다.
+ * 그래서 저주 자체로 `−` 가 붙은 물건은 안 나온다. 다만 철 무기 부식이나 저주받은
+ * 분수는 강화 수치를 낮출 수 있다 — 그 값은 `−6` 까지 저장하고 유지한다.
  */
 function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean } {
     const best = 1 + Math.floor(Math.min(26, Math.max(1, depth)) / 9); // 1 … 3
@@ -534,6 +598,8 @@ function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean }
  * 사람은 자기가 본 숫자를 믿고 걸었다가 영문을 모른 채 물건을 잃는다.
  */
 export const ENCHANT_MAX = 9;
+/** 부식과 저주받은 분수로 낮아지는 장비 강화의 최저값. */
+export const ENCHANT_MIN = -6;
 
 /**
  * 이 물건이 **강화를 가질 수 있나** — 겹쳐 쌓이는 무기(표창·화살·은화살)는 못 가진다.
@@ -584,7 +650,7 @@ export const CHEST_SLOTS = 3;
  * - **금화**(`gold`)는 배낭의 물건이 아니라 점수다. 맡길 자리가 아니다.
  */
 export function isStashable(it: Item): boolean {
-    return it.kind !== "amulet" && it.kind !== "gold";
+    return !(it.kind === "amulet" && it.type === "amulet") && it.kind !== "gold";
 }
 
 /**
@@ -700,7 +766,7 @@ export function meltRoll(it: Item, rng: Rng): number {
  * 키우기 자리인데(`CLAUDE.md`), 주문서 안에 섞여 있으면 **층별로 조절할 손잡이가
  * 없다** — 여덟 종 중 둘이라 빈도표를 건드리면 감정·지도까지 같이 움직인다.
  */
-export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "enchant" | "weapon" | "armor" | "ring" | "wand" | "tool";
+export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "enchant" | "weapon" | "armor" | "ring" | "amulet" | "wand" | "tool";
 
 /**
  * 층 구간별 분류 가중치.
@@ -709,10 +775,10 @@ export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "en
  * 깊은 층으로 갈수록 강화 주문서도 늘린다. 층별 몫은 항상 100이다.
  */
 const CATEGORIES: { upTo: number; w: Record<Category, number> }[] = [
-    { upTo: 5, w: { gold: 9, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 6, weapon: 15, armor: 15, ring: 4, wand: 5, tool: 1 } },
-    { upTo: 12, w: { gold: 7, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 8, weapon: 15, armor: 15, ring: 4, wand: 5, tool: 1 } },
-    { upTo: 19, w: { gold: 6, potion: 13, scroll: 8, spellbook: 2, food: 20, enchant: 10, weapon: 15, armor: 16, ring: 4, wand: 5, tool: 1 } },
-    { upTo: 26, w: { gold: 4, potion: 13, scroll: 7, spellbook: 2, food: 20, enchant: 11, weapon: 16, armor: 16, ring: 4, wand: 6, tool: 1 } },
+    { upTo: 5, w: { gold: 9, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 5, weapon: 15, armor: 15, ring: 4, amulet: 1, wand: 5, tool: 1 } },
+    { upTo: 12, w: { gold: 7, potion: 14, scroll: 8, spellbook: 3, food: 20, enchant: 7, weapon: 15, armor: 15, ring: 4, amulet: 1, wand: 5, tool: 1 } },
+    { upTo: 19, w: { gold: 6, potion: 13, scroll: 8, spellbook: 2, food: 20, enchant: 9, weapon: 15, armor: 16, ring: 4, amulet: 1, wand: 5, tool: 1 } },
+    { upTo: 26, w: { gold: 4, potion: 13, scroll: 7, spellbook: 2, food: 20, enchant: 10, weapon: 16, armor: 16, ring: 4, amulet: 1, wand: 6, tool: 1 } },
 ];
 
 export function categoryWeights(depth: number): Record<Category, number> {
@@ -858,12 +924,20 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         const it = makeItem("ring", type, id, x, y);
         const e = rollEnchant(depth, rng);
         // 세기가 있는 반지만 숫자를 쓴다. 나머지는 끼는 것만으로 듣는다.
-        it.plusRing = type === "protection" || type === "add strength" || type === "dexterity" || type === "increase damage"
-            ? Math.max(1, e.plus)
-            : 0;
+        const chargeable = ["protection", "add strength", "dexterity", "increase damage", "increase accuracy", "constitution"].includes(type);
+        const negative = chargeable && rng.rnd(10) === 0;
+        it.plusRing = chargeable ? negative ? -(rng.rnd(3) + 1) : e.plus : 0;
         // **저주받은 반지도 숫자를 안 깎는다**(위 `rollEnchant` 참고). 대가는 「손가락
         // 하나를 잃는다」다 — 두 개뿐인 자리를 쓸모없는 반지가 차지하고, 뺄 수 없다.
         if (e.cursed || type === "aggravate monsters") it.cursed = true;
+        return it;
+    }
+
+    if (c === "amulet") {
+        const type = weightedAt(AMULETS, tier, rng);
+        const it = makeItem("amulet", type, id, x, y);
+        const malign = ["amulet of strangulation", "amulet of restful sleep", "amulet of change"].includes(type);
+        it.cursed = rng.rnd(100) < (malign ? 90 : 10);
         return it;
     }
 
@@ -886,6 +960,7 @@ export function itemDepthRange(kind: ItemKind, type: string): { min: number; max
         : kind === "scroll" ? SCROLLS
         : kind === "spellbook" ? SPELLBOOKS
         : kind === "ring" ? RINGS
+        : kind === "amulet" ? AMULETS
         : kind === "wand" ? WANDS
         : kind === "tool" ? TOOLS
         : null;
@@ -1021,8 +1096,11 @@ export function describe(
         case "food":
             if (it.corpseOf) return it.corpseTinned ? `${it.corpseOf} 고기 통조림` : `${it.corpseOf}의 시체`;
             return it.count > 1 ? `식량 ${it.count}개` : "식량";
-        case "amulet":
-            return "옌더의 증표";
+        case "amulet": {
+            if (it.type === "amulet") return "옌더의 증표";
+            const base = known[key] ? `${AMULETS[it.type]?.name ?? "이름 없는 목걸이"}` : (appearance[key] ?? "목걸이");
+            return `${blessPrefix(it, !!known[key])}${base}${curseText(it)}`;
+        }
         case "gem": {
             const gemNames: Record<string, string> = {
                 ruby: "불꽃의 루비",
@@ -1149,6 +1227,7 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         // 때리기는 막대기로 치는 것이라 손질도 숙련도 안 붙는다(`hero.ts` 의 `bashesWith`).
         const fire = launcherDamageOf(it);
         if (fire) return `때리기 ${weaponDamageOf(it)} · 쏘기 ${fire}${signed}${sock}`;
+        if (it.type === "excalibur") return `피해 ${weaponDamageOf(it)} · 엑스칼리버 +3명중 +5피해${signed}${sock}`;
         // 발사기로 쏘는 탄약은 쏠 때의 주사위와 손으로 던질 때의 주사위가 다르다.
         if (WEAPONS[it.type]?.launcher) return `쏘기 ${weaponDamageOf(it)} · 던지기 ${HAND_THROWN_AMMO.damage}${sock}`;
         return `피해 ${weaponDamageOf(it)}${signed}${sock}`;
@@ -1164,7 +1243,14 @@ export function itemPower(it: Item, known: Record<string, boolean>): string {
         const n = it.plusRing ?? 0;
         if (it.type === "protection") return n === 0 ? "" : `방어력 ${n > 0 ? "+" : ""}${n}`;
         if (it.type === "add strength") return n === 0 ? "" : `힘 ${n > 0 ? "+" : ""}${n}`;
+        if (it.type === "dexterity" || it.type === "increase accuracy") return n === 0 ? RING_EFFECTS[it.type] : `명중 +${n}`;
+        if (it.type === "increase damage") return n === 0 ? RING_EFFECTS[it.type] : `피해 +${n}`;
+        if (it.type === "constitution") return n === 0 ? RING_EFFECTS[it.type] : `건강 +${n}`;
         return RING_EFFECTS[it.type] ?? "";
+    }
+    if (it.kind === "amulet" && it.type !== "amulet") {
+        if (!seen) return "";
+        return AMULET_EFFECTS[it.type] ?? "목걸이 효과";
     }
     if (it.kind === "tool" && it.type === "magic marker") return `잉크 ${it.charges ?? 0} · 주문서/마법책 작성`;
     if (it.kind === "spellbook" && it.type === "blank") return "마법 표식기로 주문을 기록할 수 있음";

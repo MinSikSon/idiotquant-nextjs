@@ -174,7 +174,7 @@ function growthAmount(fixed: number, random: number, rng?: Rng): number {
 }
 
 export function hpGainPerLevel(hero: Hero, rng?: Rng): number {
-    const con = hero.constitution;
+    const con = heroConstitution(hero);
     const bonus = con <= 3 ? -2 : con <= 6 ? -1 : con <= 14 ? 0 : con <= 16 ? 1 : con === 17 ? 2 : con === 18 ? 3 : 4;
     const role = ROLE_GROWTH[hero.origin ?? "knight"];
     const race = RACE_GROWTH[hero.race ?? "human"];
@@ -189,7 +189,7 @@ export const PACK_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX"
 
 /** NetHack `weight_cap()`의 인간 기준. 힘 반지와 건강을 함께 센다. */
 export function carryCapacity(hero: Hero): number {
-    return Math.min(1000, 25 * (heroStr(hero) + hero.constitution) + 50);
+    return Math.min(1000, 25 * (heroStr(hero) + heroConstitution(hero)) + 50);
 }
 
 export function packWeight(hero: Hero): number {
@@ -272,6 +272,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         armorId: null,
         leftRingId: null,
         rightRingId: null,
+        wornAmuletId: null,
         // 원작의 허기 시계. 한 걸음에 1 씩 준다.
         food: 1300,
         hasAmulet: false,
@@ -494,6 +495,7 @@ export function takeFromPack(hero: Hero, it: Item, n = 1): void {
     if (hero.armorId === it.id) hero.armorId = null;
     if (hero.leftRingId === it.id) hero.leftRingId = null;
     if (hero.rightRingId === it.id) hero.rightRingId = null;
+    if (hero.wornAmuletId === it.id) hero.wornAmuletId = null;
 }
 
 export function packItem(hero: Hero, letter: string): Item | undefined {
@@ -629,6 +631,26 @@ export function wornRings(hero: Hero): Item[] {
         .filter((i): i is Item => !!i);
 }
 
+export function wornAmulet(hero: Hero): Item | undefined {
+    return hero.wornAmuletId === null ? undefined : hero.pack.find((it) => it.id === hero.wornAmuletId && it.kind === "amulet" && it.type !== "amulet");
+}
+
+export function hasAmuletType(hero: Hero, type: string): boolean {
+    return wornAmulet(hero)?.type === type;
+}
+
+export function resistsPoison(hero: Hero): boolean {
+    return hero.poisonResistant === true || hasRing(hero, "poison resistance") || hasAmuletType(hero, "amulet versus poison");
+}
+
+export function resistsFire(hero: Hero): boolean {
+    return hero.fireResistant === true || hasRing(hero, "fire resistance");
+}
+
+export function resistsCold(hero: Hero): boolean {
+    return hero.coldResistant === true || hasRing(hero, "cold resistance");
+}
+
 function ringSum(hero: Hero, type: string): number {
     return wornRings(hero)
         .filter((r) => r.type === type)
@@ -638,6 +660,10 @@ function ringSum(hero: Hero, type: string): number {
 /** 직업 시작 민첩에 착용한 민첩 반지 보정을 더한다. */
 export function heroDexterity(hero: Hero): number {
     return hero.dexterity + ringSum(hero, "dexterity");
+}
+
+export function heroConstitution(hero: Hero): number {
+    return hero.constitution + ringSum(hero, "constitution");
 }
 
 export function hasRing(hero: Hero, type: string): boolean {
@@ -657,7 +683,7 @@ export function goldGain(hero: Hero, gold: number): number {
  * 적힌 방어와 실제로 맞는 방어가 달라진다.
  */
 export function heroArmor(hero: Hero): number {
-    return armorClassOf(equippedArmor(hero)) - ringSum(hero, "protection");
+    return armorClassOf(equippedArmor(hero)) - ringSum(hero, "protection") - (hasAmuletType(hero, "amulet of guarding") ? 2 : 0);
 }
 
 /** 내 방어력의 항 — 전투와 상태 상세가 같은 계산식을 읽는다. */
@@ -739,6 +765,8 @@ export function heroHitTerms(hero: Hero, weapon = equippedWeapon(hero)): Term[] 
         ...(weaponSkillTerms(hero, weapon).slice(0, 1)),
         { n: strHitBonus(heroStr(hero), hero.level), why: "힘" },
         { n: dexHitBonus(heroDexterity(hero)), why: "민첩" },
+        { n: ringSum(hero, "increase accuracy"), why: "명중 반지" },
+        ...(weapon?.type === "excalibur" ? [{ n: 3, why: "엑스칼리버" }] : []),
         ...(encumbrance(hero) > 0 ? [{ n: -(encumbrance(hero) * 2 - 1), why: "과적" }] : []),
         // NetHack 3.6.7의 find_roll_to_hit은 자연 Luck을 명중 보정에 더한다.
         { n: hero.luck, why: "행운" },
@@ -754,6 +782,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
         ...(withStr ? [{ n: strDamBonus(heroStr(hero)), why: "힘" }] : []),
         ...weaponSkillTerms(hero, weapon).slice(1).map((term) => ({ ...term, why: `${weaponSkillRankName(weaponSkillLevel(hero, weapon?.type ?? ""))} ${weaponLabel(weapon)}` })),
         { n: ringSum(hero, "increase damage"), why: "피해 반지" },
+        ...(weapon?.type === "excalibur" ? [{ n: 5, why: "엑스칼리버" }] : []),
         { n: meleePlus(weapon, "plusDam"), why: "enchant" },
     ];
     const midas = hero.pack.some((it) => it.kind === "relic" && it.type === "midas_gauntlet")
@@ -801,18 +830,21 @@ export function heroStr(hero: Hero): number {
 
 /** 원작 Rogue의 허기 규칙: 반지는 기본 허기를 늘리지 않으며 소화 억제만 절반으로 줄인다. */
 export function hungerRate(hero: Hero): number {
-    return hasRing(hero, "slow digestion") ? 0.5 : 1;
+    const rings = wornRings(hero);
+    const ringHunger = rings.length * 0.05 + (wornAmulet(hero) ? 0.05 : 0) + (hero.hasAmulet ? 0.05 : 0);
+    const extraHunger = rings.filter((r) => ["regeneration", "conflict", "hunger"].includes(r.type)).length * 0.5;
+    return (hasRing(hero, "slow digestion") ? 0.5 : 1) + ringHunger + extraHunger;
 }
 
 /** NetHack `regen_hp()`의 회복 간격. 10레벨부터 건강은 양에 반영한다. */
 export function regenEvery(hero: Hero): number {
     if (hasRing(hero, "regeneration")) return 1;
-    return hero.level > 9 ? 3 : Math.floor(42 / (hero.level + 2)) + 1;
+    return hero.level > 9 ? Math.max(1, 3 - Math.max(0, abilityMod(heroConstitution(hero)))) : Math.floor(42 / (hero.level + 2)) + 1;
 }
 
 /** 기존 지팡이 충전 주기. 체력 회복 수식 변경과 별개로 둔다. */
 export function wandRechargeEvery(hero: Hero): number {
-    const conModifier = abilityMod(hero.constitution);
+    const conModifier = abilityMod(heroConstitution(hero));
     return hasRing(hero, "regeneration") ? 1 : Math.max(3, 21 - hero.level * 2 - conModifier);
 }
 
@@ -895,7 +927,8 @@ export function isWorn(hero: Hero, it: Item): boolean {
         it.id === hero.ammoId ||
         it.id === hero.armorId ||
         it.id === hero.leftRingId ||
-        it.id === hero.rightRingId
+        it.id === hero.rightRingId ||
+        it.id === hero.wornAmuletId
     );
 }
 

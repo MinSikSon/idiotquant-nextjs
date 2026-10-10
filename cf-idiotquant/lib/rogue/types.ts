@@ -487,6 +487,8 @@ export interface Hero {
     /** 반지는 양손에 하나씩. 두 개를 끼면 배가 두 배로 고프다. */
     leftRingId: number | null;
     rightRingId: number | null;
+    /** 목걸이 칸 — 옌더의 증표 소지 여부(`hasAmulet`)와는 별개다. */
+    wornAmuletId: number | null;
     /** 남은 식량 시계. 0 밑으로 내려가면 굶어 죽는다. */
     food: number;
     hasAmulet: boolean;

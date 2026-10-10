@@ -9,6 +9,7 @@
  */
 
 import { type Item, type Level, type Monster, type MonsterDef, type Pos } from "./types";
+import { AMULETS } from "./items";
 
 export const PRICES: Record<string, Record<string, number>> = {
     potion: {
@@ -51,7 +52,20 @@ export const PRICES: Record<string, Record<string, number>> = {
         regeneration: 200,
         "slow digestion": 200,
         teleportation: 200,
+        "increase accuracy": 150,
+        constitution: 150,
+        "fire resistance": 200,
+        "cold resistance": 150,
+        "poison resistance": 150,
+        "shock resistance": 150,
+        "free action": 200,
+        warning: 100,
+        invisibility: 150,
+        conflict: 300,
+        hunger: 100,
+        levitation: 200,
     },
+    amulet: Object.fromEntries(Object.keys(AMULETS).map((type) => [type, 150])),
     wand: {
         "magic missile": 150,
         digging: 150,
@@ -109,7 +123,7 @@ export const PRICES: Record<string, Record<string, number>> = {
  * 까닭 — `items.isStashable`), 유물은 층마다 하나뿐인 상이라 값을 매기면 사고파는 물건이 된다.
  */
 export function isTradable(it: Item): boolean {
-    return it.kind !== "gold" && it.kind !== "amulet" && it.kind !== "relic" && PRICES[it.kind]?.[it.type] !== undefined;
+    return it.kind !== "gold" && !(it.kind === "amulet" && it.type === "amulet") && it.kind !== "relic" && PRICES[it.kind]?.[it.type] !== undefined;
 }
 
 /**

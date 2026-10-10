@@ -181,26 +181,26 @@ test("저주받은 갑옷은 못 벗고, 반지는 능력을 바꾼다", () => {
     }
 });
 
-test("반지는 원작처럼 허기를 늘리지 않고, 저주받은 것은 못 뺀다", () => {
-    // ── 원작 Rogue에서는 반지 착용이 허기를 늘리지 않는다.
+test("반지는 착용 부담만큼 허기를 늘리고 소화 억제로 줄이며, 저주받은 것은 못 뺀다", () => {
+    // ── 반지 하나는 기본 허기를 5% 늘린다. 재생 효과도 별도 부담을 더한다.
     {
         const s0 = newGame(103);
         assert.equal(hungerRate(s0.heroes[0]), 1);
 
         give(s0, makeItem("ring", "regeneration", 920, -1, -1), "y");
         const s1 = perform(s0, { t: "putOn", letter: "y" });
-        assert.equal(hungerRate(s1.heroes[0]), 1, "재생 반지가 허기를 늘렸다");
+        assert.equal(hungerRate(s1.heroes[0]), 1.55, "반지 착용/재생 부담이 반영되지 않는다");
 
         // 실제로 시계가 더 빨리 돈다.
         const before = s1.heroes[0].food;
         const s2 = perform(s1, { t: "rest" });
-        assert.equal(before - s2.heroes[0].food, hungerRate(s2.heroes[0]));
+        assert.ok(Math.abs((before - s2.heroes[0].food) - hungerRate(s2.heroes[0])) < 1e-9);
 
         // 소화 억제는 음식 소모를 절반으로 줄인다.
         const s3 = perform(s2, { t: "removeRing", letter: "y" });
         give(s3, makeItem("ring", "slow digestion", 921, -1, -1), "z");
         const s4 = perform(s3, { t: "putOn", letter: "z" });
-        assert.equal(hungerRate(s4.heroes[0]), 0.5, "소화 억제가 50% 감소하지 않는다");
+        assert.equal(hungerRate(s4.heroes[0]), 0.55, "소화 억제와 반지 착용 부담이 함께 반영되지 않는다");
         assert.ok(s4.messages.some((message) => message.endsWith("배가 늦게 고파진다.")), "소화 억제 로그가 반대로 나왔다");
     }
 

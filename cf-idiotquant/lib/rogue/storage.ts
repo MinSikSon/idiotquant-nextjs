@@ -14,6 +14,7 @@ import {
     ARMORS,
     CHEST_SLOTS,
     ENCHANT_MAX,
+    ENCHANT_MIN,
     POTIONS,
     RINGS,
     SCROLLS,
@@ -44,7 +45,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 30;
+const VERSION = 31;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -220,18 +221,15 @@ function fixShop(raw: unknown, roomCount: number): ShopState | null {
 }
 
 /**
- * **마이너스 손질을 0 으로 올린다.**
+ * **손질을 허용 범위로 맞춘다.**
  *
- * 규칙에서 `−N` 을 없앴지만(`items.rollEnchant`), **이미 그렇게 저장된 판은 안 낫는다.**
- * 「undefined) 식량」 때와 같은 자리다 — 새로 생기는 것을 막는 것과 이미 있는 것을 고치는
- * 것은 다른 일이고, 되읽는 여기가 뒤쪽을 맡는다.
+ * 무기·갑옷은 부식되거나 저주받은 분수에 담가 `−6` 까지 낮아질 수 있다. 이 값은
+ * 게임 규칙이므로 되읽을 때 0 으로 올리면 안 된다. 상한 밖의 낡은 값만 잘라낸다.
  *
  * 저주는 **안 푼다.** 없앤 것은 깎인 숫자이지 저주가 아니다 — 저주받은 것은 여전히 못
  * 벗는다. 바닥에 떨어져 있는 물건도 같이 본다(주우면 배낭으로 들어온다).
  *
- * **상한(`ENCHANT_MAX`)도 같이 건다.** 강화에 상한이 없던 때의 저장에는 `+12` 짜리가
- * 있을 수 있는데, 그것 하나가 층 사다리를 통째로 무의미하게 만든다. 위아래 양쪽을 한
- * 자리에서 맞춘다.
+ * **하한(`ENCHANT_MIN`)과 상한(`ENCHANT_MAX`)을 같이 건다.**
  */
 /**
  * **v7 까지는 손질 정도를 종류로 알았다** — `known["weapon:long sword"]`. 이제는 물건마다
@@ -252,13 +250,13 @@ function learnPlus(items: Item[], known: Record<string, boolean>): Item[] {
 /**
  * 강화 수치를 **규칙 안으로 되돌린다.**
  *
- * 마이너스와 상한 넘김을 자르고, **겹쳐 쌓이는 무기의 강화는 통째로 내린다**
+ * 허용 범위 밖 수치를 자르고, **겹쳐 쌓이는 무기의 강화는 통째로 내린다**
  * (`canHoldEnchant`). 뒤엣것이 새로 붙은 까닭은 **규칙만 고치면 이미 저장된 판은 안 낫기**
  * 때문이다 — `+2` 표창 열 자루를 든 채 저장한 사람은 새 규칙이 와도 그 열 자루를 녹여
  * 주문서를 불릴 수 있다. 새로 생기는 길을 막았으면 되읽을 때도 고쳐야 끝이다.
  */
 function liftEnchants(items: Item[]): Item[] {
-    const fit = (n: number | undefined) => Math.max(0, Math.min(ENCHANT_MAX, n ?? 0));
+    const fit = (n: number | undefined) => Math.max(ENCHANT_MIN, Math.min(ENCHANT_MAX, n ?? 0));
     for (const it of items) {
         if (typeof it.corpseTinned !== "boolean" || !it.corpseOf) delete it.corpseTinned;
         if (it.kind === "tool") it.charges = Math.max(0, Math.min(99, Math.trunc(num(it.charges, 0))));
@@ -274,10 +272,10 @@ function liftEnchants(items: Item[]): Item[] {
             it.plusHit = 0;
             it.plusDam = 0;
         }
-        if ((it.plusHit ?? 0) < 0 || (it.plusHit ?? 0) > ENCHANT_MAX) it.plusHit = fit(it.plusHit);
-        if ((it.plusDam ?? 0) < 0 || (it.plusDam ?? 0) > ENCHANT_MAX) it.plusDam = fit(it.plusDam);
-        if ((it.plusArmor ?? 0) < 0 || (it.plusArmor ?? 0) > ENCHANT_MAX) it.plusArmor = fit(it.plusArmor);
-        if ((it.plusRing ?? 0) < 0) it.plusRing = 0;
+        if ((it.plusHit ?? 0) < ENCHANT_MIN || (it.plusHit ?? 0) > ENCHANT_MAX) it.plusHit = fit(it.plusHit);
+        if ((it.plusDam ?? 0) < ENCHANT_MIN || (it.plusDam ?? 0) > ENCHANT_MAX) it.plusDam = fit(it.plusDam);
+        if ((it.plusArmor ?? 0) < ENCHANT_MIN || (it.plusArmor ?? 0) > ENCHANT_MAX) it.plusArmor = fit(it.plusArmor);
+        if ((it.plusRing ?? 0) < ENCHANT_MIN) it.plusRing = ENCHANT_MIN;
     }
     return items;
 }
@@ -387,6 +385,7 @@ function normalize(s: Saved): GameState | null {
         ammoId: h.ammoId ?? null,
         leftRingId: h.leftRingId ?? null,
         rightRingId: h.rightRingId ?? null,
+        wornAmuletId: h.wornAmuletId ?? null,
         // 예전 저장의 철벽 자세는 다음 제자리 전투 세 번까지로 잇는다.
         guardTurns: Math.min(3, Math.max(0, num(h.guardTurns, h.guarded ? 3 : 0))),
         blind: num(h.blind, 0),

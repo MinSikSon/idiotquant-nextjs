@@ -21,6 +21,7 @@
 
 import {
     ARMORS,
+    AMULETS,
     POTIONS,
     RINGS,
     SCROLLS,
@@ -1039,6 +1040,23 @@ export const CODEX_ENTRIES: CodexEntry[] = [
     })),
 ];
 
+// 표에 새 장신구가 추가되면 도감에도 빠지지 않도록 효과표에서 기본 항목을 채운다.
+const codexKeys = new Set(CODEX_ENTRIES.map((entry) => entry.key));
+for (const [type, def] of Object.entries(RINGS)) {
+    const key = `ring:${type}`;
+    if (codexKeys.has(key)) continue;
+    CODEX_ENTRIES.push({ kind: "ring", type, key, name: def.name, category: "ring", categoryLabel: "반지", masteryType: "steps", masteryGoal: 1000,
+        flavor: `착용하는 동안 ${type === "hunger" ? "허기가 빨리 찾아온다" : "마법 효과가 지속된다"}.`, masteryFlavor: "천 걸음을 함께하며 이 반지의 힘을 익혔다." });
+    codexKeys.add(key);
+}
+for (const [type, def] of Object.entries(AMULETS)) {
+    const key = `amulet:${type}`;
+    if (codexKeys.has(key)) continue;
+    CODEX_ENTRIES.push({ kind: "amulet", type, key, name: def.name, category: "other", categoryLabel: "목걸이", masteryType: "steps", masteryGoal: 1000,
+        flavor: "목에 걸어 마법 효과를 얻는 장신구다.", masteryFlavor: "천 걸음 동안 목걸이의 힘과 함께했다." });
+    codexKeys.add(key);
+}
+
 export const CODEX_BY_KEY: Record<string, CodexEntry> = Object.fromEntries(
     CODEX_ENTRIES.map((e) => [e.key, e]),
 );
@@ -1159,7 +1177,7 @@ export function itemCodexStats(entry: CodexEntry): string {
         case "tool":
             return entry.type === "magic marker" ? `층 ${depths?.min ?? 1}+ · 빈 주문서/마법책에 기록` : `층 ${depths?.min ?? 1}+ · 시체 보존 도구`;
         case "amulet":
-            return "지하 26층";
+            return entry.type === "amulet" ? "지하 26층 · 승리의 증표" : `목걸이 · ${depthStr}`;
         default:
             return depthStr;
     }

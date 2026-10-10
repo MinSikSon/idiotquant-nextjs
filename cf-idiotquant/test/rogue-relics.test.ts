@@ -69,6 +69,20 @@ test("불사조의 깃털 (Phoenix Feather) 치명상 시 1회 완전 부활", (
     assert.ok(!hasRelic(state.heroes[0], "phoenix_feather"), "사용한 불사조의 깃털은 소멸해야 합니다.");
 });
 
+test("생명 구명 목걸이는 착용자의 치명상을 한 번 막고 소비된다", () => {
+    let state = newGame(124);
+    const amulet = makeItem("amulet", "amulet of life saving", state.nextItemId++, 0, 0);
+    const packed = addToPack(state.heroes[0], amulet)!;
+    state = perform(state, { t: "putOn", letter: packed.letter! });
+    state.heroes[0].hp = 1;
+    state.heroes[0].burnTurns = 3;
+    state = perform(state, { t: "rest" });
+    assert.equal(state.phase, "playing", "목걸이가 치명상을 막아야 한다");
+    assert.equal(state.heroes[0].hp, Math.ceil(state.heroes[0].maxHp / 2));
+    assert.equal(state.heroes[0].wornAmuletId, null, "사용한 목걸이가 계속 착용 상태다");
+    assert.ok(!state.heroes[0].pack.some((it) => it.type === "amulet of life saving"), "사용한 목걸이가 배낭에 남았다");
+});
+
 test("시간의 모래시계 (Time Hourglass) 3턴 시간 정지 액티브", () => {
     let state = newGame(123);
     const hourglass = makeItem("relic", "time_hourglass", state.nextItemId++, 0, 0);

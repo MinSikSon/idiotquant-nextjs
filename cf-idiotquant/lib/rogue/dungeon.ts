@@ -599,7 +599,7 @@ export const SPECIAL_ROOMS: Record<
 > = {
     // 금화와 반지가 쌓여 있고 **지키는 놈들이 깨어 있다.** 식량은 없다 — 보물방이
     // 「먹을 것도 주는 방」이면 위험을 무릅쓸 까닭이 두 겹이 되어 저울이 흐려진다.
-    treasure: { name: "보물방", kappa: 2.0, bias: { gold: 5, ring: 2, food: 0 }, monsters: 2, awake: true },
+    treasure: { name: "보물방", kappa: 2.0, bias: { gold: 12, ring: 2, amulet: 0, food: 0 }, monsters: 2, awake: true },
     // 장비만 나온다. 등급도 두 칸 위 — 무기고에서 단검이 나오면 무기고가 아니다.
     armory: {
         name: "무기고",

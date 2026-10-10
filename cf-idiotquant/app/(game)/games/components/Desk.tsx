@@ -141,8 +141,8 @@ export default function Desk({
             e: { title: "무엇을 먹을까", kinds: ["food"], make: (letter) => ({ t: "eat", letter }), empty: "먹을 것이 없다." },
             w: { title: "무엇을 쥘까", kinds: canWieldWand(hero) ? ["weapon", "wand"] : ["weapon"], make: (letter) => ({ t: "wield", letter }), empty: "쥘 것이 없다.", allow: (it) => canWieldWeapon(hero, it) },
             W: { title: "무엇을 입을까", kinds: ["armor"], make: (letter) => ({ t: "wear", letter }), empty: "입을 것이 없다." },
-            P: { title: "무엇을 낄까", kinds: ["ring"], make: (letter) => ({ t: "putOn", letter }), empty: "반지가 없다." },
-            R: { title: "무엇을 뺄까", kinds: ["ring"], make: (letter) => ({ t: "removeRing", letter }), empty: "낀 반지가 없다." },
+            P: { title: "무엇을 낄까", kinds: ["ring", "amulet"], make: (letter) => ({ t: "putOn", letter }), empty: "낄 반지나 목걸이가 없다." },
+            R: { title: "무엇을 뺄까", kinds: ["ring", "amulet"], make: (letter) => ({ t: "removeRing", letter }), empty: "낀 반지나 목걸이가 없다." },
             d: {
                 title: "무엇을 내려놓을까",
                 kinds: ["potion", "scroll", "spellbook", "food", "weapon", "armor", "ring", "wand", "tool", "amulet"],
@@ -443,7 +443,8 @@ export default function Desk({
             it.id === hero.ammoId ||
             it.id === hero.armorId ||
             it.id === hero.leftRingId ||
-            it.id === hero.rightRingId;
+            it.id === hero.rightRingId ||
+            it.id === hero.wornAmuletId;
         const go = (cmd: Command) => () => {
             run(cmd);
             setChosen(null);
@@ -557,6 +558,12 @@ export default function Desk({
             case "ring":
                 if (worn) out.push({ label: "뺀다", on: go({ t: "removeRing", letter: it.letter! }) });
                 else out.push({ label: "낀다", on: go({ t: "putOn", letter: it.letter! }) });
+                break;
+            case "amulet":
+                if (it.type !== "amulet") {
+                    if (worn) out.push({ label: "목에서 뺀다", on: go({ t: "removeRing", letter: it.letter! }) });
+                    else out.push({ label: "목에 건다", on: go({ t: "putOn", letter: it.letter! }) });
+                }
                 break;
             case "relic":
                 if (it.type === "time_hourglass") {

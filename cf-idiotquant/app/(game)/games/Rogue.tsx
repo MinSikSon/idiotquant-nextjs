@@ -46,6 +46,8 @@ import {
 import { TRANSMUTE_ALTAR_USES } from "@/lib/rogue/dungeon";
 import {
     ARMORS,
+    AMULETS,
+    AMULET_EFFECTS,
     ENCHANT_MAX,
     CHEST_SLOTS,
     MELT_RETURN,
@@ -73,7 +75,7 @@ import {
     itemCodexStage,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, prayerTimeoutLimit, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornRings } from "@/lib/rogue/hero";
+import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, prayerTimeoutLimit, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornAmulet, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -2279,7 +2281,7 @@ export default function Rogue() {
                 const hHunger = hungerOf(h);
                 const foodCount = h.pack.filter((it) => it.kind === "food" && !it.corpseOf).reduce((n, it) => n + it.count, 0);
                 const hRings = wornRings(h).length;
-                const cursedGear = h.pack.some((it) => it.cursed && (it.id === h.weaponId || it.id === h.armorId || it.id === h.leftRingId || it.id === h.rightRingId));
+                const cursedGear = h.pack.some((it) => it.cursed && (it.id === h.weaponId || it.id === h.armorId || it.id === h.leftRingId || it.id === h.rightRingId || it.id === h.wornAmuletId));
                 const emptyWand = h.pack.some((it) => it.kind === "wand" && (it.charges ?? 0) === 0);
                 const statChip = "p-0 font-inherit text-inherit hover:underline";
                 const originInfo = ORIGINS[h.origin ?? "knight"];
@@ -2374,6 +2376,7 @@ export default function Rogue() {
                         {expandedPartyStats === i && h.hasAmulet && <span className="text-[var(--rg-amulet)] font-bold">Amulet</span>}
                         {coop && expandedPartyStats === i && <div className=" flex flex-nowrap items-center gap-x-[1ch] overflow-x-auto text-[var(--rg-faint)] [scrollbar-width:none]">
                             {hRings > 0 && <span>반지:{hRings}</span>}
+                            {wornAmulet(h) && <span>목걸이:{describe(wornAmulet(h)!, state.known, state.appearance)}</span>}
                         </div>}
                         {
                             online && linked && i !== who && expandedPartyStats === i && DESK_DOING[peerModes[i] ?? "none"] && (
@@ -2907,7 +2910,7 @@ export default function Rogue() {
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">허기: </span>
-                                                                            <span>{entry.type === "slow digestion" ? "음식 소모 50% 감소" : "추가 허기 없음"}</span>
+                                                                            <span>{entry.type === "slow digestion" ? "음식 소모 50% 감소 · 착용마다 허기 5% 증가" : `${["regeneration", "conflict", "hunger"].includes(entry.type) ? "고유 효과로 허기 증가 · " : ""}착용마다 허기 5% 증가`}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">착용 걸음: </span>
@@ -2928,7 +2931,7 @@ export default function Rogue() {
                                                                     </>
                                                                 )}
                                                                 {entry.kind === "amulet" && (
-                                                                    <>
+                                                                    entry.type === "amulet" ? <>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">목표: </span>
                                                                             <span className="text-[var(--rg-gold)] font-bold">승리의 증표</span>
@@ -2936,6 +2939,15 @@ export default function Rogue() {
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">위치: </span>
                                                                             <span>지하 26층</span>
+                                                                        </div>
+                                                                    </> : <>
+                                                                        <div>
+                                                                            <span className="text-[var(--rg-faint)]">분류: </span>
+                                                                            <span>목걸이 · {itemDepthRange("amulet", entry.type) ? `${itemDepthRange("amulet", entry.type)!.min}–${itemDepthRange("amulet", entry.type)!.max}층` : "출현 안 함"}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[var(--rg-faint)]">효과: </span>
+                                                                            <span>{AMULET_EFFECTS[entry.type] ?? AMULETS[entry.type]?.name ?? "목걸이 효과"}</span>
                                                                         </div>
                                                                     </>
                                                                 )}

@@ -30,11 +30,11 @@ import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { idx, T, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("도감은 현재 게임의 82종 아이템을 7개 카테고리로 나눈다", () => {
-    assert.equal(CODEX_ENTRIES.length, 82);
+test("도감은 현재 게임의 105종 아이템을 7개 카테고리로 나눈다", () => {
+    assert.equal(CODEX_ENTRIES.length, 105);
 
     const prog = itemCodexProgress();
-    assert.equal(prog.totalCount, 82);
+    assert.equal(prog.totalCount, 105);
     assert.equal(prog.identifiedCount, 0);
     assert.equal(prog.masteredCount, 0);
 
@@ -42,9 +42,9 @@ test("도감은 현재 게임의 82종 아이템을 7개 카테고리로 나눈�
     assert.equal(prog.byCategory.armor.total, 9);
     assert.equal(prog.byCategory.scroll.total, 10);
     assert.equal(prog.byCategory.potion.total, 9);
-    assert.equal(prog.byCategory.ring.total, 14);
+    assert.equal(prog.byCategory.ring.total, Object.keys(RINGS).length);
     assert.equal(prog.byCategory.wand.total, 11);
-    assert.equal(prog.byCategory.other.total, 7);
+    assert.equal(prog.byCategory.other.total, 18);
     assert.ok(CODEX_ENTRIES.some((e) => e.key === "tool:magic marker"), "마법 표식기가 도감에 없다");
 
     // 각 카테고리 정의 항목과 일치하는지 확인
@@ -52,7 +52,7 @@ test("도감은 현재 게임의 82종 아이템을 7개 카테고리로 나눈�
     assert.equal(Object.keys(ARMORS).length, 9);
     assert.equal(Object.keys(SCROLLS).length, 12); // 빈 종이와 모루 제작용 충전 주문서 포함
     assert.equal(Object.keys(POTIONS).length, 10);
-    assert.equal(Object.keys(RINGS).length, 14);
+    assert.equal(Object.keys(RINGS).length, 26);
     assert.equal(Object.keys(WANDS).length, 11);
 
     // ── 바닥에 안 떨어지는 곡괭이는 층 띠 대신 어디서 오는지를 적는다(「1–26층」은 거짓말이다)
@@ -111,9 +111,12 @@ test("통달 목표 수치가 기획안과 일치한다", () => {
         } else if (e.category === "ring") {
             assert.equal(e.masteryType, "steps");
             assert.equal(e.masteryGoal, 1000);
-        } else if (e.category === "other" && (e.kind === "food" || e.kind === "amulet")) {
+        } else if (e.category === "other" && (e.kind === "food" || (e.kind === "amulet" && e.type === "amulet"))) {
             assert.equal(e.masteryType, "instant");
             assert.equal(e.masteryGoal, 1);
+        } else if (e.kind === "amulet") {
+            assert.equal(e.masteryType, "steps");
+            assert.equal(e.masteryGoal, 1000);
         } else if (e.kind === "tool") {
             assert.equal(e.masteryType, "uses");
             assert.equal(e.masteryGoal, 10);

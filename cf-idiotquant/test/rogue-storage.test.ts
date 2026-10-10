@@ -17,7 +17,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { newGame, perform, survey, type Command } from "@/lib/rogue/game";
-import { ENCHANT_MAX } from "@/lib/rogue/items";
+import { ENCHANT_MAX, ENCHANT_MIN } from "@/lib/rogue/items";
 import { packItem } from "@/lib/rogue/hero";
 import { deserialize, save, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
@@ -371,13 +371,9 @@ test("배낭 자리는 되읽을 때 고친다 — 없는 것도 겹친 것도 �
     }
 });
 
-// ── 마이너스 손질이 박힌 옛 저장 ────────────────────────────────────────────
-//
-// 규칙에서 `−N` 을 없앴다(`items.rollEnchant`). 하지만 **새로 생기는 것을 막는 것과 이미
-// 저장된 것을 고치는 것은 다른 일**이다 — 「undefined) 식량」 때 배운 그 자리다. 규칙만
-// 고치면 `−2` 짜리 칼을 들고 있던 판은 열 때마다 계속 `−2` 다.
-test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () => {
-    // ── 옛 저장의 마이너스 손질은 되읽으면서 0 으로 올린다
+// ── 마이너스 손질 저장 복원 ────────────────────────────────────────────────
+test("마이너스 손질을 저장에서 보존하고 범위 밖 값만 자른다", () => {
+    // ── 부식이나 분수 효과로 생긴 마이너스 손질은 페이지를 다시 열어도 남는다
     {
         const s = newGame(21);
         const o = JSON.parse(serialize(s));
@@ -387,11 +383,10 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
         // 바닥에 떨어져 있는 것도 본다 — 주우면 배낭으로 들어온다.
         o.level.items.push({ id: 9001, kind: "ring", type: "protection", count: 1, x: 1, y: 1, plusRing: -3 });
         const back = deserialize(JSON.stringify(o))!;
-        for (const it of [...back.heroes[0].pack, ...back.level.items]) {
-            for (const n of [it.plusHit, it.plusDam, it.plusArmor, it.plusRing]) {
-                assert.ok((n ?? 0) >= 0, `마이너스가 남았다: ${it.type} ${n}`);
-            }
-        }
+        assert.equal(back.heroes[0].pack[0].plusHit, -2);
+        assert.equal(back.heroes[0].pack[0].plusDam, -2);
+        assert.equal(back.heroes[0].pack[1].plusArmor, -1);
+        assert.equal(back.level.items.at(-1)?.plusRing, -3);
         play(back);
     }
 
@@ -403,7 +398,7 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
         o.heroes[0].pack[0].cursed = true;
         o.heroes[0].pack[0].curseKnown = true;
         const back = deserialize(JSON.stringify(o))!;
-        assert.equal(back.heroes[0].pack[0].plusHit, 0, "손질이 안 올라갔다");
+        assert.equal(back.heroes[0].pack[0].plusHit, -2, "저주받은 무기의 마이너스 손질이 사라졌다");
         assert.equal(back.heroes[0].pack[0].cursed, true, "저주까지 풀렸다 — 못 벗는 것이 저주의 값이다");
     }
 
@@ -416,11 +411,13 @@ test("손질은 되읽으며 0~+9 로 맞춘다 — 저주는 안 푼다", () =>
         o.heroes[0].pack[0].plusHit = 12;
         o.heroes[0].pack[0].plusDam = 12;
         o.heroes[0].pack[1].plusArmor = 40;
+        o.level.items.push({ id: 9003, kind: "armor", type: o.heroes[0].pack[1].type, count: 1, x: 2, y: 2, plusArmor: -99 });
         o.level.items.push({ id: 9002, kind: "weapon", type: "long sword", count: 1, x: 1, y: 1, plusHit: 99, plusDam: 99 });
         const back = deserialize(JSON.stringify(o))!;
         for (const it of [...back.heroes[0].pack, ...back.level.items]) {
             for (const n of [it.plusHit, it.plusDam, it.plusArmor]) {
                 assert.ok((n ?? 0) <= ENCHANT_MAX, `상한을 넘긴 것이 남았다: ${it.type} +${n}`);
+                assert.ok((n ?? 0) >= ENCHANT_MIN, `하한을 넘긴 것이 남았다: ${it.type} ${n}`);
             }
         }
         assert.equal(back.heroes[0].pack[0].plusHit, ENCHANT_MAX);

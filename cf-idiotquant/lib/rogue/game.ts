@@ -51,6 +51,10 @@ import {
     heroArmorClass,
     heroArmorClassTerms,
     heroDexterity,
+    heroConstitution,
+    hasAmuletType,
+    resistsFire,
+    resistsPoison,
     heroStr,
     hpGainPerLevel,
     hungerOf,
@@ -74,6 +78,7 @@ import {
     weaponSkillTerms,
     wandRechargeEvery,
     wornRings,
+    wornAmulet,
 } from "./hero";
 import {
     ADVANCED_GUARD_BONUS,
@@ -1102,7 +1107,7 @@ function pickUp(state: GameState, hero: Hero): boolean {
         return true;
     }
     if (!split) level.items = level.items.filter((i) => i.id !== it.id);
-    if (it.kind === "amulet") {
+    if (it.kind === "amulet" && it.type === "amulet") {
         hero.hasAmulet = true;
         recordRunAchievement(state, "amulet", "옌더의 증표를 손에 넣었다");
         state.known["amulet:amulet"] = true;
@@ -1368,7 +1373,7 @@ function drinkFountain(state: GameState, hero: Hero, rng: Rng): boolean {
                 say(state, "물이 역해 토하고 허기가 몰려온다.");
                 break;
             case 21: {
-                const resisted = hasRing(hero, "poison resistance") || hero.poisonResistant === true;
+            const resisted = resistsPoison(hero);
                 const loss = resisted ? 0 : rng.between(3, 6);
                 if (loss) hero.str = Math.max(3, hero.str - loss);
                 const damage = rng.between(1, resisted ? 4 : 10);
@@ -2275,7 +2280,7 @@ function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
         }
         // 독을 가진 뱀·전갈 고기는 원작처럼 위험한 음식으로 취급한다.
         if (!it.corpseTinned && /방울뱀|뱀|전갈|용/.test(corpse)) {
-            if (hero.poisonResistant) {
+            if (resistsPoison(hero)) {
                 say(state, "독사 시체의 독이 몸에 듣지 않는다.");
             } else {
                 const damage = rng.between(1, 6);
@@ -2297,7 +2302,7 @@ function eat(state: GameState, hero: Hero, letter: string, rng: Rng): boolean {
             gainExp(hero, Math.max(0, EXP_LEVELS[hero.level - 1] - hero.exp), rng);
             if (hero.level >= nextLevel) say(state, `망령의 생기를 흡수해 레벨 ${hero.level}이 되었다!`);
         }
-        if (corpse === "용" && hero.hp > 0 && !hero.fireResistant) {
+        if (corpse === "용" && hero.hp > 0 && !resistsFire(hero)) {
             hero.fireResistant = true;
             say(state, "용의 마력이 몸에 깃들었다. 이제 화염 피해를 막는다.");
         }
@@ -2494,12 +2499,37 @@ function wear(state: GameState, hero: Hero, letter: string): boolean {
     return true;
 }
 
-/** 반지를 낀다 — 양손에 하나씩. 원작처럼 착용 자체로 허기를 추가하지 않는다. */
+/** 반지는 양손에 하나씩, 목걸이는 한 칸에 하나만 착용한다. */
 function putOn(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
-    if (!it || it.kind !== "ring") {
+    if (!it || (it.kind !== "ring" && !(it.kind === "amulet" && it.type !== "amulet"))) {
         say(state, "낄 수 있는 것이 아니다.");
         return false;
+    }
+    if (it.kind === "amulet") {
+        if (hero.wornAmuletId === it.id) {
+            say(state, "이미 목에 걸고 있다.");
+            return false;
+        }
+        const current = wornAmulet(hero);
+        if (current?.cursed) {
+            current.curseKnown = true;
+            say(state, `${describe(current, state.known, state.appearance)}이(가) 목에서 빠지지 않는다!`);
+            return false;
+        }
+        if (current) {
+            say(state, "이미 목걸이를 걸고 있다. 먼저 빼야 한다.");
+            return false;
+        }
+        hero.wornAmuletId = it.id;
+        const key = `amulet:${it.type}`;
+        state.known[key] = true;
+        state.itemCodex[key] = true;
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 목에 걸었다.${withPower(it, state)}`);
+        if (revealCurse(state, it)) say(state, "목에 착 달라붙는다. 저주받았다!");
+        if (it.type === "amulet of restful sleep") hero.asleep = Math.max(hero.asleep, 8);
+        if (it.type === "amulet of change") say(state, "목걸이의 힘이 외모를 바꾸었다.");
+        return true;
     }
     if (it.id === hero.leftRingId || it.id === hero.rightRingId) {
         say(state, "이미 끼고 있다.");
@@ -2525,7 +2555,21 @@ function putOn(state: GameState, hero: Hero, letter: string): boolean {
 
 function removeRing(state: GameState, hero: Hero, letter: string): boolean {
     const it = packItem(hero, letter);
-    if (!it || it.kind !== "ring") return false;
+    if (!it || (it.kind !== "ring" && !(it.kind === "amulet" && it.type !== "amulet"))) return false;
+    if (it.kind === "amulet") {
+        if (it.id !== hero.wornAmuletId) {
+            say(state, "목에 걸고 있지 않다.");
+            return false;
+        }
+        if (it.cursed) {
+            it.curseKnown = true;
+            say(state, "목걸이가 목에서 빠지지 않는다!");
+            return false;
+        }
+        hero.wornAmuletId = null;
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 뺐다.`);
+        return true;
+    }
     if (it.id !== hero.leftRingId && it.id !== hero.rightRingId) {
         say(state, "끼고 있지 않다.");
         return false;
@@ -3658,10 +3702,18 @@ function springTrap(state: GameState, hero: Hero, trap: Trap, rng: Rng) {
             break;
         }
         case "sleep":
+            if (hasRing(hero, "free action")) {
+                say(state, "자유 행동 반지가 수면 가스를 막았다.");
+                break;
+            }
             hero.asleep += rng.between(3, 6);
             say(state, "가스가 뿜어져 나온다. 정신이 아득하다…");
             break;
         case "beartrap":
+            if (hasRing(hero, "free action")) {
+                say(state, "자유 행동 반지가 곰덫에서 발을 빼게 했다.");
+                break;
+            }
             hero.stuck += rng.between(2, 5);
             say(state, "곰덫이 발목을 물었다!");
             break;
@@ -3891,7 +3943,8 @@ function pullAggro(state: GameState, m: Monster, by: Hero): void {
  */
 function monsterTarget(state: GameState, m: Monster): Hero {
     const standing = state.heroes.filter((h) => h.hp > 0);
-    const pool = standing.length > 0 ? standing : state.heroes;
+    const visibleStanding = standing.filter((h) => !hasRing(h, "invisibility") || adjacent(m, h));
+    const pool = visibleStanding.length > 0 ? visibleStanding : standing.length > 0 ? standing : state.heroes;
     const marked = m.target === undefined ? undefined : state.heroes[m.target];
     if (marked && marked.hp > 0) return marked;
     let best = pool[0];
@@ -4029,13 +4082,30 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
         if (!m.awake) {
             // **누구든 하나를 보면 깨어난다** — 곁의 성한 사람이 안 보인다고 자는 것은
             // 아니다. 깨울 때 본 사람이 첫 목표가 된다.
-            const spotted = state.heroes.find((h) => h.hp > 0 && monsterSees(level, m.x, m.y, h));
+            const spotted = state.heroes.find((h) => h.hp > 0 && (!hasRing(h, "invisibility") || adjacent(m, h)) && monsterSees(level, m.x, m.y, h));
             if (spotted && m.def.mean && !hasRing(spotted, "stealth")) {
                 m.awake = true;
                 m.target = state.heroes.indexOf(spotted);
             } else return;
         }
         const victim = monsterTarget(state, m);
+        if (hasRing(victim, "invisibility") && !adjacent(m, victim)) return;
+        if (state.heroes.some((h) => h.hp > 0 && hasRing(h, "conflict"))) {
+            const rivals = level.monsters.filter((other) => other !== m && !other.spirit && other.hp > 0)
+                .sort((a, b) => Math.max(Math.abs(a.x - m.x), Math.abs(a.y - m.y)) - Math.max(Math.abs(b.x - m.x), Math.abs(b.y - m.y)));
+            const rival = rivals[0];
+            if (rival) {
+                if (adjacent(m, rival) && !monsterBlockedDiagonal(level, m, rival)) strikeMonster(state, m, rival, rng);
+                else {
+                    const step = stepToward(level, m, rival);
+                    if (step && !level.monsters.some((other) => other !== m && other.hp > 0 && other.x === step.x && other.y === step.y)) {
+                        m.x = step.x;
+                        m.y = step.y;
+                    }
+                }
+                return;
+            }
+        }
         if ((m.fleeTurns ?? 0) > 0) {
             const away = stepAway(state, m, victim);
             if (away) { m.x = away.x; m.y = away.y; }
@@ -4078,7 +4148,7 @@ function monsterAct(state: GameState, m: Monster, rng: Rng, fled?: { hero: Hero;
             state.projectile = { id: `${state.turn}:${m.id}:${state.messages.length}`, cells: flame.cells };
             say(state, `🐉 ${monsterName(m)} → ${target}: 불꽃을 뿜었다${flame.bounced ? " — 벽에 튕겨 돌아왔다" : ""}!`);
             if (flame.hit) {
-                if (victim.fireResistant) say(state, `${target}에게 화염이 닿았지만 저항했다.`);
+                if (resistsFire(victim)) say(state, `${target}에게 화염이 닿았지만 저항했다.`);
                 else {
                     const dmg = rng.rollDice("6d6");
                     victim.hp -= dmg;
@@ -4867,6 +4937,10 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         // **쓰러진 사람의 시계는 선다.** 누워 있는 사람이 굶어 죽으면 살릴 길이 없다.
         if (h.hp <= 0) continue;
         tickHunger(state, h, rng);
+        if (hasAmuletType(h, "amulet of strangulation")) {
+            h.hp -= 1;
+            say(state, "교살 목걸이가 목을 조른다!");
+        }
         regenerate(state, h, rng);
         bearCurse(state, h);
         if (h.blind > 0) h.blind -= 1;
@@ -4958,6 +5032,18 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
     // 쓰러질 수 있고, 그 턴에 움직인 사람이 아닐 수 있다.
     if (state.phase === "playing") {
         for (const h of state.heroes) {
+            if (h.hp > 0) continue;
+            const lifeSaving = h.pack.findIndex((it) => it.id === h.wornAmuletId && it.type === "amulet of life saving");
+            if (lifeSaving >= 0) {
+                h.pack.splice(lifeSaving, 1);
+                h.wornAmuletId = null;
+                h.hp = Math.max(1, Math.ceil(h.maxHp / 2));
+                h.burnTurns = 0;
+                h.asleep = 0;
+                h.confused = 0;
+                h.blind = 0;
+                say(state, "생명 구명 목걸이가 산산이 부서지며 죽음을 막았다!");
+            }
             if (h.hp > 0) continue;
             const featherIdx = h.pack.findIndex((it) => it.kind === "relic" && it.type === "phoenix_feather");
             if (featherIdx < 0) continue;
@@ -5275,9 +5361,9 @@ export function glyphAt(
     if (other) return { ch: face(other), kind: "ally" };
 
     // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
-    if (visible || hero.detect > 0) {
+    if (visible || hero.detect > 0 || hasRing(hero, "warning") || hasAmuletType(hero, "amulet of ESP")) {
         const m = monsterAt(level, x, y);
-        if (m && (!m.def.invisible || hasRing(hero, "see invisible") || (hero.seeInvisible ?? 0) > 0 || hero.detect > 0)) {
+        if (m && (!m.def.invisible || hasRing(hero, "see invisible") || (hero.seeInvisible ?? 0) > 0 || hero.detect > 0) && (visible || hero.detect > 0 || hasRing(hero, "warning") || hasAmuletType(hero, "amulet of ESP"))) {
             // 화나지 않은 상점 주인은 **몬스터 색이 아니다** — 같은 `@` 인 영웅과도, 쳐야 할
             // 놈과도 갈려야 한다. 화나면 몬스터 색으로 바뀐다.
             if (visible && peacefulShk(level, m)) return { ch: m.def.ch, kind: "shopkeeper" };

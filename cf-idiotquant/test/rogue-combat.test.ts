@@ -17,10 +17,20 @@ import { ALL_DIRS, T, idx, inBounds, type GameState } from "@/lib/rogue/types";
 import { attackRoll, damageRoll, hitDifficulty, luckOf, pierce, proficiency } from "@/lib/rogue/dnd";
 import { defenseOf } from "@/lib/rogue/items";
 import { makeItem } from "@/lib/rogue/items";
-import { EXP_LEVELS, gainExp, heroDefense, hpGainPerLevel, makeHero } from "@/lib/rogue/hero";
+import { EXP_LEVELS, gainExp, heroDamTerms, heroDefense, heroHitTerms, hpGainPerLevel, makeHero } from "@/lib/rogue/hero";
 
 /** 지금 내 방어력. */
 const heroDefenseOf = (s: { heroes: Parameters<typeof heroDefense>[0][] }) => heroDefense(s.heroes[0]);
+
+test("엑스칼리버는 원작 유물의 명중·피해 보너스를 적용한다", () => {
+    const state = newGame(199);
+    const hero = state.heroes[0];
+    const sword = makeItem("weapon", "excalibur", state.nextItemId++, -1, -1);
+    hero.pack.push(sword);
+    hero.weaponId = sword.id;
+    assert.ok(heroHitTerms(hero, sword).some((term) => term.why === "엑스칼리버" && term.n === 3));
+    assert.ok(heroDamTerms(hero, sword).some((term) => term.why === "엑스칼리버" && term.n === 5));
+});
 import { Rng } from "@/lib/rogue/rng";
 import { MONSTERS, spawnMonster } from "@/lib/rogue/monsters";
 import { deserialize, serialize } from "@/lib/rogue/storage";
