@@ -249,6 +249,7 @@ export default function MapView({
 }) {
     const boxRef = useRef<HTMLDivElement>(null);
     const probeRef = useRef<HTMLSpanElement>(null);
+    const [fontSize, setFontSize] = useState(13);
     const [cell, setCell] = useState({ w: 8.4, h: 17 });
     const [view, setView] = useState({ cols: MAP_W, rows: MAP_H });
 
@@ -263,13 +264,15 @@ export default function MapView({
         measure();
         const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
         fonts?.ready?.then(measure).catch(() => {});
-    }, []);
+    }, [fontSize]);
 
     useEffect(() => {
         const box = boxRef.current;
         if (!box) return;
         const fit = () => {
             const r = box.getBoundingClientRect();
+            // 폰에서 22줄 전체가 들어가는 높이라면 글자를 키워 남는 칸을 지도에 쓴다.
+            setFontSize(window.innerWidth < 768 ? Math.max(13, r.height / (MAP_H * LEADING)) : 15);
             setView({
                 cols: clamp(Math.floor(r.width / cell.w), 20, MAP_W),
                 rows: clamp(Math.floor(r.height / cell.h), 8, MAP_H),
@@ -329,7 +332,8 @@ export default function MapView({
             <span
                 ref={probeRef}
                 aria-hidden
-                className="pointer-events-none absolute -left-[9999px] top-0 whitespace-pre font-[family-name:var(--font-plex-mono)] text-[13px] leading-[1.32] sm:text-[15px]"
+                className="pointer-events-none absolute -left-[9999px] top-0 whitespace-pre font-[family-name:var(--font-plex-mono)] leading-[1.32]"
+                style={{ fontSize }}
             >
                 00000000000000000000
             </span>
@@ -337,7 +341,8 @@ export default function MapView({
             <div className={`relative inline-block ${shake ? "shake-crit" : ""}`}>
                 <pre
                     aria-label={`지하 ${state.level.depth}층 지도`}
-                    className="m-0 select-none whitespace-pre font-[family-name:var(--font-plex-mono)] text-[13px] leading-[1.32] sm:text-[15px]"
+                    className="m-0 select-none whitespace-pre font-[family-name:var(--font-plex-mono)] leading-[1.32]"
+                    style={{ fontSize }}
                 >
                     {rows.map((runs, i) => (
                         <div key={i}>

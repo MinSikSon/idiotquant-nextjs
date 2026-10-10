@@ -898,6 +898,7 @@ export default function Desk({
 
             {packOpen && !picker && !aiming && (
                 <Panel
+                    belowLog
                     side={side}
                     accent={accent}
                     closeKey={closeKey}

@@ -22,6 +22,7 @@ export default function Panel({
     accent,
     closeKey,
     size = "default",
+    belowLog = false,
 }: {
     title: string;
     onClose?: () => void;
@@ -39,6 +40,8 @@ export default function Panel({
     closeKey?: string;
     /** 긴 기록 화면은 넓은 화면을 더 활용한다. */
     size?: "default" | "wide";
+    /** 모바일 배낭은 맨 위의 5rem 기록 요약 아래에서 연다. */
+    belowLog?: boolean;
 }) {
     /** 이번 누름이 바탕에서 시작했는가 — 아래 `onClick` 의 까닭 참고. */
     const fromBackdrop = useRef(false);
@@ -90,7 +93,7 @@ export default function Panel({
 
     return (
         <div
-            className={`absolute ${side === "left" ? "inset-y-0 left-0 w-1/2" : side === "right" ? "inset-y-0 right-0 w-1/2" : "inset-0"} z-20 flex justify-center overflow-y-auto bg-[var(--rg-scrim)] p-3 ${
+            className={`absolute ${belowLog ? "top-[5rem] bottom-0 md:top-0" : "inset-y-0"} ${side === "left" ? "left-0 w-1/2" : side === "right" ? "right-0 w-1/2" : "inset-x-0"} z-20 flex justify-center overflow-y-auto bg-[var(--rg-scrim)] p-3 ${
                 align === "center" ? "items-center" : "items-start pt-6 sm:pt-10"
             }`}
             /* 바깥의 빈 곳을 눌러도 닫는다. 조건이 둘인 데에는 까닭이 있다.
