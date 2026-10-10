@@ -211,6 +211,7 @@ test("상태 줄을 펼쳐도 공통 항목의 순서가 유지된다", () => {
     assert.ok(positions.every((position) => position >= 0), "상태 항목이 빠졌다");
     assert.ok(positions.every((position, index) => index === 0 || positions[index - 1] < position), "상태 항목이 이름·능력치·층·금화·HP·방어·경험치·턴·허기 순서가 아니다");
     assert.match(status, /\{\(hHunger \|\| expandedPartyStats === i\) && <button/, "허기가 두 보기에 같은 자리를 쓰지 않는다");
+    assert.match(status, /max-h-\[3\.5rem\][\s\S]*?overflow-y-auto/, "펼친 상태창이 세 줄 높이를 넘으면 안쪽으로 스크롤되지 않는다");
     assert.doesNotMatch(rogue, /넷핵식 자연 행운/, "상태 설명에 게임 이름을 붙이지 않는다");
 });
 

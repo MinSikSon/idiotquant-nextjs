@@ -2273,7 +2273,7 @@ export default function Rogue() {
                 )}
             </div>
 
-            {/* 캐릭터 상태: 접힌 줄에는 요청된 핵심 정보만, 펼치면追加 능력치를 둘째 줄에 둔다. */}
+            {/* 캐릭터 상태: 접힌 줄은 가로로 넘기고, 펼친 상세 줄은 세 줄 높이에서 안쪽으로 넘긴다. */}
             {(state.heroes.length > 1 ? state.heroes : [hero]).map((h, i) => {
                 const coop = state.heroes.length > 1;
                 const hHunger = hungerOf(h);
@@ -2286,7 +2286,7 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] overflow-x-auto overflow-y-hidden px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-text)] [scrollbar-width:none] [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap" : "flex-wrap whitespace-normal"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.1] text-[var(--rg-text)] [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]" : "max-h-[3.5rem] flex-wrap whitespace-normal overflow-x-hidden overflow-y-auto [scrollbar-width:thin]"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
