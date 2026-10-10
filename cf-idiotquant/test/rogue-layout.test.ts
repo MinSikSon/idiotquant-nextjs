@@ -212,7 +212,10 @@ test("상태 줄을 펼쳐도 공통 항목의 순서가 유지된다", () => {
     assert.ok(positions.every((position, index) => index === 0 || positions[index - 1] < position), "상태 항목이 이름·능력치·층·금화·HP·방어·경험치·턴·허기 순서가 아니다");
     assert.match(status, /\{\(hHunger \|\| expandedPartyStats === i\) && <button/, "허기가 두 보기에 같은 자리를 쓰지 않는다");
     assert.match(status, /max-h-\[3\.5rem\][\s\S]*?overflow-y-auto/, "펼친 상태창이 세 줄 높이를 넘으면 안쪽으로 스크롤되지 않는다");
-    assert.ok(status.indexOf("aria-expanded={true}") >= 0 && status.indexOf("aria-expanded={true}") < positions[0], "펼친 상태의 간략히 단추가 세 줄 영역 첫 줄에 없다");
+    const collapseButton = status.indexOf("aria-expanded={true}");
+    const identity = status.indexOf("<OriginTag origin={h.origin} level={h.level} />");
+    const firstRowBreak = status.indexOf("basis-full h-0");
+    assert.ok(identity >= 0 && identity < collapseButton && collapseButton < firstRowBreak && firstRowBreak < positions[0], "펼친 상태의 간략히 단추가 이름표 다음 첫 줄 끝에 없다");
     assert.doesNotMatch(rogue, /넷핵식 자연 행운/, "상태 설명에 게임 이름을 붙이지 않는다");
 });
 
