@@ -268,14 +268,6 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
     padding-bottom: 0;
     overflow: hidden;
   }
-  /* 아이폰 Safari 115% 확대에 맞춰 게임 화면만 키운다. 확대後에도 상하단은 화면 안에
-     들어오도록 게임의 기준 상자를 1/1.15 로 줄인다. 사이트 헤더는 확대하지 않는다. */
-  #rogue-root {
-    zoom: 1.15;
-    width: 86.9565%;
-    height: calc(86.9565svh - 41.739px);
-    margin-inline: auto;
-  }
 }
 
 @media (min-width: 768px) {
