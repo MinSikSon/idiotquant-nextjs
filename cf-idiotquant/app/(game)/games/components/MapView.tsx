@@ -41,14 +41,22 @@ export const SPIRIT_INK: Record<SpiritElement, string> = {
     earth: "var(--rg-spirit-earth)",
 };
 
-/** Rogue의 A–Z 몬스터는 NetHack의 기본 괴물 문자 팔레트에 맞춘다. */
+/** 내부 종 키는 유지하고, 지도에는 NetHack처럼 몬스터 부류 기호를 쓴다. */
+const MONSTER_GLYPH: Record<string, string> = {
+    A: "R", B: "B", C: "C", D: "D", E: "B", F: "F", G: "Y", H: "o",
+    I: "E", J: "J", K: "B", L: "l", M: "@", N: "n", O: "o", P: "W",
+    Q: "q", R: "S", S: "S", T: "T", U: "&", V: "V", W: "W", X: "m",
+    Y: "Y", Z: "Z", p: "P",
+};
+
+/** 부류 문자는 공유하되, 잉크색으로 같은 부류의 종을 구분한다. */
 const MONSTER_INK: Record<string, string> = {
     A: "var(--rg-nh-brown)", B: "var(--rg-nh-brown)", C: "var(--rg-nh-brown)", D: "var(--rg-nh-red)",
-    E: "var(--rg-nh-brown)", F: "var(--rg-nh-green)", G: "var(--rg-nh-brown)", H: "var(--rg-nh-red)",
-    I: "var(--rg-nh-light-blue)", J: "var(--rg-nh-orange)", K: "var(--rg-nh-brown)", L: "var(--rg-nh-green)",
+    E: "var(--rg-nh-orange)", F: "var(--rg-nh-green)", G: "var(--rg-nh-brown)", H: "var(--rg-nh-red)",
+    I: "var(--rg-nh-light-blue)", J: "var(--rg-nh-orange)", K: "var(--rg-nh-light-cyan)", L: "var(--rg-nh-green)",
     M: "var(--rg-nh-green)", N: "var(--rg-nh-green)", O: "var(--rg-nh-green)", P: "var(--rg-nh-gray)",
     Q: "var(--rg-nh-brown)", R: "var(--rg-nh-red)", S: "var(--rg-nh-green)", T: "var(--rg-nh-brown)",
-    U: "var(--rg-nh-red)", V: "var(--rg-nh-red)", W: "var(--rg-nh-gray)", X: "var(--rg-nh-magenta)",
+    U: "var(--rg-nh-red)", V: "var(--rg-nh-red)", W: "var(--rg-nh-black)", X: "var(--rg-nh-magenta)",
     Y: "var(--rg-nh-white)", Z: "var(--rg-nh-green)", p: "var(--rg-nh-black)",
 };
 
@@ -288,7 +296,11 @@ export default function MapView({
         const runs: Run[] = [];
         for (let x = ox; x < ox + view.cols; x++) {
             const g = glyphAt(litState, x, y, who);
-            const ch = g?.ch ?? " ";
+            const ch = g
+                ? (g.kind === "monster" || g.kind === "monster-sensed"
+                    ? MONSTER_GLYPH[g.ch] ?? g.ch
+                    : g.kind === "shopkeeper" ? "@" : g.ch)
+                : " ";
             const flash = cellFlashes[`${x},${y}`];
             const characterIndex = g?.kind === "hero" || g?.kind === "ally"
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
