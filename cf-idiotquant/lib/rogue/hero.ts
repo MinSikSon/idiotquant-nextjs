@@ -836,10 +836,10 @@ export function hungerRate(hero: Hero): number {
     return (hasRing(hero, "slow digestion") ? 0.5 : 1) + ringHunger + extraHunger;
 }
 
-/** NetHack `regen_hp()`의 회복 간격. 10레벨부터 건강은 양에 반영한다. */
+/** NetHack `regen_hp()`의 기본 회복 간격. 착용 반지는 별도 재생 효과로 반영한다. */
 export function regenEvery(hero: Hero): number {
     if (hasRing(hero, "regeneration")) return 1;
-    return hero.level > 9 ? Math.max(1, 3 - Math.max(0, abilityMod(heroConstitution(hero)))) : Math.floor(42 / (hero.level + 2)) + 1;
+    return hero.level > 9 ? 3 : Math.floor(42 / (hero.level + 2)) + 1;
 }
 
 /** 기존 지팡이 충전 주기. 체력 회복 수식 변경과 별개로 둔다. */

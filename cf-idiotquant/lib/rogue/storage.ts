@@ -180,7 +180,7 @@ function unpackLevel(raw: SavedLevel | undefined, fallbackDepth: number): Level 
         fountain: null,
         fountains: (Array.isArray(raw.fountains) ? raw.fountains : raw.fountain ? [raw.fountain] : [])
             .filter((f) => Number.isFinite(f.x) && Number.isFinite(f.y) && inBounds(f.x, f.y))
-            .map((f) => ({ x: f.x, y: f.y, magic: !!f.magic, magicUsed: !!f.magicUsed, drinks: Math.max(0, Math.trunc(num(f.drinks, 0))), looted: !!f.looted })),
+            .map((f) => ({ x: f.x, y: f.y, magic: !!f.magic, magicUsed: !!f.magicUsed, drinks: Math.max(0, Math.trunc(num(f.drinks, 0))), ...(f.looted ? { looted: true } : {}) })),
     };
 }
 

@@ -433,7 +433,10 @@ export function rollAppearances(rng: Rng): Record<string, string> {
         out[`ring:${k}`] = `${gems[i % gems.length]} 반지`;
     });
 
-    const amulets = rng.shuffle([...AMULET_LOOKS]);
+    // 목걸이 겉모습은 새 아이템 표의 난수만 쓴다. 주사위 흐름을 공유하면
+    // 장신구를 추가할 때마다 같은 시드의 지도·분수·전투까지 달라진다.
+    const amuletRng = new Rng(rng.state ^ 0x6a09e667);
+    const amulets = amuletRng.shuffle([...AMULET_LOOKS]);
     Object.keys(AMULETS).forEach((k, i) => {
         out[`amulet:${k}`] = `${amulets[i % amulets.length]} 목걸이`;
     });

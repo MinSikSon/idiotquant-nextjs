@@ -38,6 +38,9 @@ test("분수 물줄기가 솟으면 분수가 넘쳤다고 알린다", () => {
     const hero = state.heroes[0];
     state.level.fountains = [{ x: hero.x, y: hero.y, magic: false, magicUsed: false, drinks: 0 }];
     state.level.fountain = null;
+    // 분수 사건은 상태 초기 난수와 별개로 직접 고정한다 — 시드로 전체 층을 만들면
+    // 지형 생성이 바뀔 때 이 테스트가 넘침 사건 대신 다른 사건을 시험하게 된다.
+    state.rngState = 43; // 첫 굴림의 분수 사건표가 30이다.
 
     const after = perform(state, { t: "fountain" });
 

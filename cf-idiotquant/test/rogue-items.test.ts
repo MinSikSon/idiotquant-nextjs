@@ -769,10 +769,11 @@ test("지팡이는 횟수를 쓰고, 둔화는 상대를 늦춘다", () => {
         wand.charges = 3;
         give(s0, wand, "y");
         const m = s0.level.monsters[0];
-        m.x = s0.heroes[0].x + 1;
-        m.y = s0.heroes[0].y;
+        const [dx, dy] = openWay(s0);
+        m.x = s0.heroes[0].x + dx;
+        m.y = s0.heroes[0].y + dy;
         assert.equal(m.speed, 0);
-        perform(s0, { t: "zap", letter: "y", dx: 1, dy: 0 });
+        perform(s0, { t: "zap", letter: "y", dx, dy });
         assert.equal(m.speed, -1, "둔화가 안 걸렸다");
     }
 

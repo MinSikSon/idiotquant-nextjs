@@ -369,7 +369,7 @@ const FLOOR_RING_CAP = 1;
 /** 식량 없이 이만큼 지나면 다음 층에 하나를 보장한다. */
 const FOOD_GRACE = 4;
 /** 추가 입 한 명당 일반 드롭과 별도로 놓는 식량 한 개. */
-const FOOD_PER_EXTRA_MOUTH = 1;
+const FOOD_PER_EXTRA_MOUTH = 2;
 /** 특수 방의 기본 몫과, 무기고의 등급 보너스. */
 const SPECIAL_BASE = 2;
 const ARMORY_TIER_UP = 2;
