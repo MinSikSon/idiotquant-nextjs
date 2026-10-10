@@ -1650,7 +1650,9 @@ function pray(state: GameState, hero: Hero, rng: Rng): boolean {
     // NetHack의 pleased()처럼 한 번에 모든 상태를 지우지 않고, 위기가 큰 것부터 돕는다.
     // 제단과 행운은 도움의 폭을 넓힌다. 이 게임에 없는 상태 이상은 판정에서 뺀다.
     const major: Array<() => boolean> = [
-        () => { if (criticalHealth) { hero.hp = hero.maxHp; return true; } return false; },
+        // 반복 도움 판정이 있으므로 처음의 criticalHealth 상수를 다시 쓰지 않는다.
+        // 회복 뒤에도 그 상수가 true면 높은 호의의 기도가 이 while 에서 멈추지 않는다.
+        () => { if (hero.hp <= Math.max(5, Math.floor(hero.maxHp / 4))) { hero.hp = hero.maxHp; return true; } return false; },
         () => { if (hero.food <= 0) { hero.food = 900; return true; } return false; },
         () => { if (hero.burnTurns) { hero.burnTurns = 0; return true; } return false; },
         () => { if (hero.stuck) { hero.stuck = 0; return true; } return false; },

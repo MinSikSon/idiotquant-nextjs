@@ -74,3 +74,19 @@ test("큰 위기에서 받아들여진 기도는 최악의 문제부터 해결�
     assert.equal(after.heroes[0].hp, after.heroes[0].maxHp, "치명적인 부상은 우선 치료한다");
     assert.ok(after.heroes[0].blind > 0, "추가 호의가 없으면 사소한 문제는 남는다");
 });
+
+test("분수 위에서 큰 호의로 치명상을 기도하면 멈추지 않고 회복한다", () => {
+    const state = newGame(895);
+    const hero = state.heroes[0];
+    hero.prayerTimeout = 0;
+    hero.luck = 13;
+    hero.hp = 1;
+    state.level.fountains = [{ x: hero.x, y: hero.y, magic: false, magicUsed: false, drinks: 0 }];
+    state.level.fountain = null;
+    state.level.monsters = [];
+
+    const after = perform(state, { t: "pray" });
+
+    assert.equal(after.heroes[0].hp, after.heroes[0].maxHp, "치명상 기도는 체력을 회복한다");
+    assert.equal(after.turn, 1, "기도가 끝나면 턴도 정상적으로 처리한다");
+});
