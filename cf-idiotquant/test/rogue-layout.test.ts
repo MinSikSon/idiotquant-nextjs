@@ -40,12 +40,18 @@ test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
         const box = /h-\[calc\(100(\w+)-(\d+)px\)\]/.exec(s);
         assert.ok(box, `${GAME} 에서 높이 식을 못 찾았다`);
         assert.equal(
+            [...s.matchAll(/h-\[calc\(100\w+-\d+px\)\]/g)].length,
+            1,
+            "게임 칸에 서로 다른 모바일 높이 식이 겹쳐 있다",
+        );
+        assert.equal(
             box![1],
             "dvh",
             "게임 칸이 루트(dvh)와 다른 자를 쓴다 — 주소창이 접히면 그 차이가 빈 칸이 된다",
         );
         // 데스크톱 쪽도 같은 자여야 한다.
         assert.match(s, /md:h-dvh/, `${GAME} 의 md 높이가 dvh 가 아니다`);
+        assert.doesNotMatch(s, /-mb-\[\d+px\]/, "하단 여백을 음수 마진으로 다시 당기고 있다");
         assert.doesNotMatch(s.replace(/\/\*[\s\S]*?\*\//g, ""), /svh/, "주석 밖에 svh 가 남아 있다");
     }
 });
