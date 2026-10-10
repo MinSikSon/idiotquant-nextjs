@@ -2288,6 +2288,7 @@ export default function Rogue() {
                         key={i}
                 className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.1] text-[var(--rg-text)] [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]" : "max-h-[3.5rem] flex-wrap whitespace-normal overflow-x-hidden overflow-y-auto [scrollbar-width:thin]"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
+                        {expandedPartyStats === i && <button type="button" className="shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]" aria-expanded={true} onClick={() => setExpandedPartyStats(null)}>간략히</button>}
                         {coop && (
                             <button
                                 type="button"
@@ -2387,14 +2388,7 @@ export default function Rogue() {
                                 </span>
                             )
                         }
-                        <button
-                            type="button"
-                            className="shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]"
-                            aria-expanded={expandedPartyStats === i}
-                            onClick={() => setExpandedPartyStats((current) => current === i ? null : i)}
-                        >
-                            {expandedPartyStats === i ? "간략히" : "더 보기"}
-                        </button>
+                        {expandedPartyStats !== i && <button type="button" className="shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]" aria-expanded={false} onClick={() => setExpandedPartyStats(i)}>더 보기</button>}
                     </div >
                 );
             })}
