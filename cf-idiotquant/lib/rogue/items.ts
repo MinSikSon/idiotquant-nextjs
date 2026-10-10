@@ -365,7 +365,8 @@ const RELIC_WEIGHT: Record<string, number> = {
 export function itemWeight(it: Item): number {
     const unit = it.kind === "weapon" ? (WEAPON_WEIGHT[it.type] ?? 40)
         : it.kind === "armor" ? (ARMOR_WEIGHT[it.type] ?? 200)
-        : it.kind === "food" ? it.corpseOf ? Math.max(10, (it.corpseValue ?? 1) * 10) + (it.corpseTinned ? 10 : 0) : 20
+        : it.kind === "gold" ? Math.floor((it.count + 50) / 100)
+        : it.kind === "food" ? it.corpseOf ? it.corpseTinned ? 10 : (it.corpseWeight ?? 0) : 20
         : it.kind === "potion" ? 20
         : it.kind === "scroll" ? 5
         : it.kind === "spellbook" ? 50
@@ -376,7 +377,7 @@ export function itemWeight(it: Item): number {
         : it.kind === "amulet" ? 20
         : it.kind === "relic" ? (RELIC_WEIGHT[it.type] ?? 40)
         : 0;
-    return unit * Math.max(1, it.count);
+    return it.kind === "gold" ? unit : unit * Math.max(1, it.count);
 }
 
 /** 포션이 이 판에서 무슨 색으로 보이는가. */

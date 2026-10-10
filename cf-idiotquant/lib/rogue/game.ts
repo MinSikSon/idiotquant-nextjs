@@ -3102,6 +3102,7 @@ function killMonster(state: GameState, m: Monster, rng: Rng, by: Hero) {
         corpse.corpseOf = m.def.ch === "Z" || m.def.ch === "V" ? "사람" : m.def.name;
         corpse.corpseTurn = state.turn - (m.def.ch === "Z" || m.def.ch === "V" ? 100 : 0);
         corpse.corpseValue = m.def.level;
+        corpse.corpseWeight = m.def.corpseWeight ?? 0;
         state.level.items.push(corpse);
         if (m.def.ch === "T") say(state, "트롤 시체는 다시 살아날 수 있다. 통조림으로 보존하면 막을 수 있다.");
     }

@@ -257,6 +257,9 @@ function learnPlus(items: Item[], known: Record<string, boolean>): Item[] {
  */
 function liftEnchants(items: Item[]): Item[] {
     const fit = (n: number | undefined) => Math.max(ENCHANT_MIN, Math.min(ENCHANT_MAX, n ?? 0));
+    const corpseWeight = (name: string) => name === "사람"
+        ? 1450
+        : Object.values(MONSTERS).find((monster) => monster.name === name)?.corpseWeight ?? 0;
     for (const it of items) {
         if (typeof it.corpseTinned !== "boolean" || !it.corpseOf) delete it.corpseTinned;
         if (it.kind === "tool") it.charges = Math.max(0, Math.min(99, Math.trunc(num(it.charges, 0))));
@@ -264,9 +267,11 @@ function liftEnchants(items: Item[]): Item[] {
             delete it.corpseOf;
             delete it.corpseTurn;
             delete it.corpseValue;
+            delete it.corpseWeight;
         } else {
             it.corpseTurn = Math.max(0, Math.trunc(num(it.corpseTurn, 0)));
             it.corpseValue = Math.max(1, Math.min(20, Math.trunc(num(it.corpseValue, 1))));
+            it.corpseWeight = Math.max(0, Math.trunc(num(it.corpseWeight, corpseWeight(it.corpseOf))));
         }
         if (!canHoldEnchant(it)) {
             it.plusHit = 0;

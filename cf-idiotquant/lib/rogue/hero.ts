@@ -193,14 +193,14 @@ export function carryCapacity(hero: Hero): number {
 }
 
 export function packWeight(hero: Hero): number {
-    return hero.pack.reduce((sum, item) => sum + itemWeight(item), 0);
+    return hero.pack.reduce((sum, item) => sum + itemWeight(item), Math.floor((hero.gold + 50) / 100));
 }
 
 /** NetHack `calc_capacity()`의 0~5 적재 단계. */
 export function encumbrance(hero: Hero, extraWeight = 0): number {
     const capacity = carryCapacity(hero);
-    const weight = packWeight(hero) + extraWeight;
-    return Math.min(5, Math.floor(weight * 2 / capacity));
+    const excess = packWeight(hero) + extraWeight - capacity;
+    return excess <= 0 ? 0 : Math.min(5, Math.floor(excess * 2 / capacity) + 1);
 }
 
 /** 위기 정도에 따라 기도 응답을 허용하는 남은 대기 시간. */
@@ -368,6 +368,7 @@ function sameCorpseStack(p: Item, it: Item): boolean {
     return p.id !== it.id && p.kind === "food" && it.kind === "food" &&
         !!p.corpseOf && p.corpseOf === it.corpseOf &&
         (p.corpseValue ?? 1) === (it.corpseValue ?? 1) &&
+        (p.corpseWeight ?? 0) === (it.corpseWeight ?? 0) &&
         !!p.corpseTinned === !!it.corpseTinned &&
         !!p.unpaid === !!it.unpaid;
 }
@@ -420,7 +421,7 @@ export function mergeStacks(hero: Hero): void {
 
 export function addToPack(hero: Hero, it: Item, mergeWeapons = false, allowOverload = false): Item | null {
     if (allowOverload
-        ? packWeight(hero) + itemWeight(it) > carryCapacity(hero) * 2
+        ? packWeight(hero) + itemWeight(it) >= carryCapacity(hero) * 3
         : encumbrance(hero, itemWeight(it)) >= 5) return null;
     if (it.kind === "food" && it.corpseOf) {
         const corpse = hero.pack.find((p) => sameCorpseStack(p, it));
