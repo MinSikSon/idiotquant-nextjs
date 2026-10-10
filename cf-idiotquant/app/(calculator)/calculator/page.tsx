@@ -352,6 +352,15 @@ function Calculator() {
     const ranged = effective.rateMode === "range";
     const loss = result.profit < 0;
     const stamp = loss ? "원금 손실" : result.final >= result.principal * 2 ? "원금 2배 이상" : null;
+    const comparisons = [
+        { label: "원화 구매력", benchmark: result.valueComparison.krw, assumption: `물가 연 ${inputs.inflation}%` },
+        { label: "달러 가치", benchmark: result.valueComparison.usd, assumption: `원/달러 연 ${inputs.usdChange >= 0 ? "+" : ""}${inputs.usdChange}%` },
+        { label: "금 가치", benchmark: result.valueComparison.gold, assumption: `달러 금값 연 ${inputs.goldChange >= 0 ? "+" : ""}${inputs.goldChange}% · 환율 포함` },
+    ];
+    const moneyComparisons = [
+        { label: "원화 M2", benchmark: result.moneySupplyComparison.krw, assumption: `연 ${inputs.krwM2Growth}% 증가 가정` },
+        { label: "달러 M2", benchmark: result.moneySupplyComparison.usd, assumption: `연 ${inputs.usdM2Growth}% 증가 · 환율 포함` },
+    ];
 
     /* 연도별 명세는 40년을 고르면 40줄이라, 휴대폰에서는 이 표 하나가 화면 몇 개를 먹는다.
        만기 금액은 위 결과 칸에 이미 크게 적혀 있으니 표는 앞쪽만 펴 둔다. */
@@ -363,7 +372,7 @@ function Calculator() {
             className="group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-2 sm:px-5 pt-5 sm:pt-8 pb-20 sm:pb-24"
             data-help={showHelp ? "on" : "off"}
         >
-            <div className="max-w-[860px] mx-auto">
+            <div className="max-w-[1380px] mx-auto">
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
                 <header className="flex items-end justify-between gap-5 flex-wrap">
@@ -408,6 +417,8 @@ function Calculator() {
                     </div>
                 </header>
 
+                <div className="lg:grid lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start lg:gap-8">
+                <section className="min-w-0" aria-label="계산 조건">
                 {/* ── 입력 ──────────────────────────────────────── */}
                 <SectionHead tag="INPUT" title="조건" note="금액 단위: 만원" />
 
@@ -572,6 +583,50 @@ function Calculator() {
                                 <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
                             </div>
                         </div>
+
+                        <div className={ROW_CLS}>
+                            <label htmlFor="usdChange" className={LABEL_CLS}>
+                                원/달러 환율 변동<span className={HINT_CLS}>연간 가정 · +면 원화 약세</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <NumberField id="usdChange" value={inputs.usdChange} allowNegative
+                                    onCommit={(v) => set("usdChange", v)} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                            </div>
+                        </div>
+
+                        <div className={ROW_CLS}>
+                            <label htmlFor="goldChange" className={LABEL_CLS}>
+                                금값 변동<span className={HINT_CLS}>달러 기준 연간 가정 · 환율과 함께 반영</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <NumberField id="goldChange" value={inputs.goldChange} allowNegative
+                                    onCommit={(v) => set("goldChange", v)} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                            </div>
+                        </div>
+
+                        <div className={ROW_CLS}>
+                            <label htmlFor="krwM2Growth" className={LABEL_CLS}>
+                                한국 M2 증가율<span className={HINT_CLS}>광의통화 · 예상 연평균을 직접 입력</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <NumberField id="krwM2Growth" value={inputs.krwM2Growth} allowNegative
+                                    onCommit={(v) => set("krwM2Growth", v)} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                            </div>
+                        </div>
+
+                        <div className={ROW_CLS}>
+                            <label htmlFor="usdM2Growth" className={LABEL_CLS}>
+                                미국 M2 증가율<span className={HINT_CLS}>광의통화 · 예상 연평균을 직접 입력</span>
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <NumberField id="usdM2Growth" value={inputs.usdM2Growth} allowNegative
+                                    onCommit={(v) => set("usdM2Growth", v)} className={INPUT_CLS} />
+                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                            </div>
+                        </div>
                     </>
                 )}
                 </div>
@@ -581,7 +636,9 @@ function Calculator() {
                         이 단계의 가정 — {SIMPLE_ASSUMPTIONS.join(" · ")}
                     </p>
                 )}
+                </section>
 
+                <section className="min-w-0" aria-label="계산 결과">
                 {/* ── 결과 ──────────────────────────────────────── */}
                 <SectionHead tag="RESULT" title="결과" note={basisOf(effective)} />
 
@@ -612,7 +669,7 @@ function Calculator() {
                     )}
                 </div>
 
-                <div className={cn(CARD, "grid grid-cols-2 sm:grid-cols-4 mt-3 overflow-hidden")}>
+                <div className={cn(CARD, "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 mt-3 overflow-hidden")}>
                     {[
                         { k: "총 납입 원금", v: won(result.principal), tone: "" },
                         { k: "총 투자수익", v: won(result.profit), tone: loss ? "loss" : "gain" },
@@ -621,8 +678,9 @@ function Calculator() {
                     ].map((cell, i) => (
                         <div key={cell.k} className={cn(
                             "px-4 py-3 sm:py-4",
-                            i < 3 && cn("sm:border-r", DIVIDE),
-                            i < 2 && cn("border-b sm:border-b-0", DIVIDE)
+                            i % 2 === 0 && cn("border-r", DIVIDE),
+                            i === 1 && cn("sm:border-r lg:border-r-0 xl:border-r", DIVIDE),
+                            i < 2 && cn("border-b sm:border-b-0 lg:border-b xl:border-b-0", DIVIDE)
                         )}>
                             <div className="text-[11.5px] text-neutral-500 dark:text-neutral-400">{cell.k}</div>
                             <div className={cn(
@@ -635,6 +693,62 @@ function Calculator() {
                         </div>
                     ))}
                 </div>
+
+                {detailed && (
+                    <>
+                        <SectionHead tag="VALUE" title="가치 희석 비교" note="각 납입 시점부터 보유한 경우와 비교" />
+                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                            {comparisons.map(({ label, benchmark, assumption }) => {
+                                const relative = benchmark > 0 ? (result.final / benchmark - 1) * 100 : null;
+                                const status = relative === null ? "비교 불가" : relative < -0.000001 ? "가치 희석" : relative > 0.000001 ? "가치 방어" : "가치 유지";
+                                return (
+                                    <div key={label} className={cn(CARD, "px-4 py-4 sm:px-5")}>
+                                        <div className="text-[12px] font-bold text-neutral-600 dark:text-neutral-300">{label}</div>
+                                        <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-brand dark:text-[#2fa85a]")}>
+                                            {relative === null ? "—" : pct(relative)}
+                                        </div>
+                                        <div className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-1">{status} · {assumption}</div>
+                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                                            비교 자산의 만기 가치 {won(benchmark)}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-2 px-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                            입력한 변동률이 매년 일정하다고 가정합니다. 달러·금은 실제 수량이 아니라 원화 투자 결과와 보유 가치를 비교한 값입니다.
+                        </p>
+                    </>
+                )}
+
+                {detailed && (
+                    <>
+                        <SectionHead tag="MONEY SUPPLY" title="통화량 증가 대비" note="M2 증가율을 직접 입력한 가정" />
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {moneyComparisons.map(({ label, benchmark, assumption }) => {
+                                const relative = benchmark > 0 ? (result.final / benchmark - 1) * 100 : null;
+                                return (
+                                    <div key={label} className={cn(CARD, "px-4 py-4 sm:px-5")}>
+                                        <div className="text-[12px] font-bold text-neutral-600 dark:text-neutral-300">{label} 증가 속도 대비 투자금</div>
+                                        <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-brand dark:text-[#2fa85a]")}>
+                                            {relative === null ? "—" : pct(relative)}
+                                        </div>
+                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">{assumption}</div>
+                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2">M2 증가 속도를 맞춘 만기 금액 {won(benchmark)}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-2 px-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                            M2는 통화량 지표입니다. 이 비교는 실제 구매력·환율 변화나 양적완화의 효과를 추정하지 않습니다.
+                            과거 발표치는{" "}
+                            <a href="https://snapshot.bok.or.kr/search/M2" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand">한국은행</a>
+                            {" · "}
+                            <a href="https://www.federalreserve.gov/releases/h6/current/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand">미국 연준</a>
+                            에서 확인할 수 있습니다.
+                        </p>
+                    </>
+                )}
 
                 {/* ── 그래프 ────────────────────────────────────── */}
                 <SectionHead tag="GROWTH" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
@@ -745,13 +859,17 @@ function Calculator() {
                             `이자소득세는 이자가 편입되는 시점에 ${TAX_RATE}%를 차감합니다.`,
                             "실질 금액은 만기 평가금액을 물가상승률로 할인해 오늘의 구매력으로 환산한 값입니다.",
                             "연평균(CAGR)은 원금이 한 번에 들어갔다고 본 근사값입니다 — 적립식에서는 실제보다 낮게 나옵니다.",
-                            "이 계산서는 단순 모형이며 거래비용·환율·중도 인출을 반영하지 않습니다.",
+                            "달러·금 비교는 입력한 환율·금값 변동률을 복리로 적용하며, 매월 납입 시점부터 각각 보유한 경우와 비교합니다.",
+                            "M2 비교는 입력한 통화량 증가율을 일정하게 적용한 시나리오이며, 실제 물가상승률이나 통화 가치 하락률을 뜻하지 않습니다.",
+                            "이 계산서는 단순 모형이며 거래비용·중도 인출을 반영하지 않습니다.",
                         ].map((n) => (
                             <li key={n} className="text-[11.5px] text-neutral-500 dark:text-neutral-400 leading-[1.85]">
                                 {n}
                             </li>
                         ))}
                     </ol>
+                </div>
+                </section>
                 </div>
             </div>
         </div>

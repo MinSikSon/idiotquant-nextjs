@@ -87,6 +87,39 @@ test("손실이 나면 세금을 걷지 않는다 · 물가 반영 값은 명목
     }
 });
 
+test("매월 납입금은 납입 시점부터 달러·금 가치로 불어난다", () => {
+    const inputs = base({ initial: 1000, monthly: 50, years: 2, rate: 0,
+        inflation: 4, usdChange: 10, goldChange: 20 });
+    const { final, valueComparison } = simulate(inputs);
+    const expected = (annualFactor: number) => {
+        const monthlyFactor = Math.pow(annualFactor, 1 / 12);
+        return 1000 * Math.pow(annualFactor, 2)
+            + 50 * Array.from({ length: 24 }, (_, month) => Math.pow(monthlyFactor, 24 - month))
+                .reduce((sum, value) => sum + value, 0);
+    };
+
+    near(final, 1000 + 50 * 24);
+    near(valueComparison.krw, expected(1.04));
+    near(valueComparison.usd, expected(1.10));
+    near(valueComparison.gold, expected(1.10 * 1.20));
+    assert.ok(final < valueComparison.usd);
+    assert.ok(valueComparison.gold > valueComparison.usd);
+});
+
+test("M2 비교는 납입 시점을 반영하고 달러 기준에는 환율을 함께 적용한다", () => {
+    const inputs = base({ initial: 1000, monthly: 50, years: 1, rate: 0,
+        usdChange: 10, krwM2Growth: 5, usdM2Growth: 8 });
+    const { moneySupplyComparison } = simulate(inputs);
+    const expected = (annualFactor: number) => {
+        const monthlyFactor = Math.pow(annualFactor, 1 / 12);
+        return 1000 * annualFactor
+            + 50 * Array.from({ length: 12 }, (_, month) => Math.pow(monthlyFactor, 12 - month))
+                .reduce((sum, value) => sum + value, 0);
+    };
+    near(moneySupplyComparison.krw, expected(1.05));
+    near(moneySupplyComparison.usd, expected(1.10 * 1.08));
+});
+
 test("원금이 0이면 나눗셈으로 NaN 을 내지 않는다 · sanitize 는 범위 밖 값을 잘라내고 쓰레기는 기본값으로", () => {
     // ── 원금이 0이면 나눗셈으로 NaN 을 내지 않는다
     {
@@ -110,12 +143,12 @@ test("원금이 0이면 나눗셈으로 NaN 을 내지 않는다 · sanitize 는
 test("간단 단계는 화면에 없는 조건을 계산에서도 뺀다 · 같은 씨앗이면 언제나 같은 결과 — 새로 그릴 때마다 숫자가 바뀌면 안 된다", () => {
     // ── 간단 단계는 화면에 없는 조건을 계산에서도 뺀다
     {
-        const custom = base({ method: "simple", periods: 1, tax: false, inflation: 5 });
+        const custom = base({ method: "simple", periods: 1, tax: false, inflation: 5, usdChange: 10, goldChange: 20, krwM2Growth: 5, usdM2Growth: 8 });
 
         const simple = maskDetail(custom, "simple");
         assert.deepEqual(
-            [simple.method, simple.periods, simple.tax, simple.inflation],
-            ["compound", 12, true, 0],
+            [simple.method, simple.periods, simple.tax, simple.inflation, simple.usdChange, simple.goldChange, simple.krwM2Growth, simple.usdM2Growth],
+            ["compound", 12, true, 0, 0, 0, 0, 0],
         );
 
         // 상세로 돌아오면 고쳐둔 조건이 그대로 살아 있어야 한다.
@@ -177,6 +210,24 @@ test("sanitize 는 깨진 씨앗을 1 로 되돌린다 · 링크에 방식·범�
         assert.equal(back.inputs.seed, 777);
         assert.equal(simulate(back.inputs).final, simulate(inputs).final);
     }
+});
+
+test("가치 변동 가정은 공유 링크에 보존되고 이전 링크에는 기본값을 쓴다", () => {
+    const inputs = base({ usdChange: -2.5, goldChange: 8, krwM2Growth: 5.2, usdM2Growth: 7.1 });
+    const shared = parse(new URLSearchParams(serialize(inputs, "detailed")))!;
+    assert.equal(shared.inputs.usdChange, -2.5);
+    assert.equal(shared.inputs.goldChange, 8);
+    assert.equal(shared.inputs.krwM2Growth, 5.2);
+    assert.equal(shared.inputs.usdM2Growth, 7.1);
+    assert.deepEqual(simulate(shared.inputs).valueComparison, simulate(inputs).valueComparison);
+
+    const oldLink = parse(new URLSearchParams("initial=1000&detail=detailed"))!;
+    assert.equal(oldLink.inputs.usdChange, 0);
+    assert.equal(oldLink.inputs.goldChange, 0);
+    assert.equal(oldLink.inputs.krwM2Growth, 0);
+    assert.equal(oldLink.inputs.usdM2Growth, 0);
+    assert.equal(sanitize({ usdChange: -100, goldChange: 300 }).usdChange, -90);
+    assert.equal(sanitize({ usdChange: -100, goldChange: 300 }).goldChange, 200);
 });
 
 /* ── 치는 중인 글자 — 「0 이 안 지워진다」가 났던 자리 ───────── */

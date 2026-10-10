@@ -22,6 +22,10 @@ export interface CalcInputs {
     periods: Periods;   // 복리 편입 주기 (연 1 / 반기 2 / 분기 4 / 월 12)
     tax: boolean;       // 이자소득세 15.4%
     inflation: number;  // 물가상승률 (%)
+    usdChange: number;  // 원/달러 환율의 연간 변동률 (%)
+    goldChange: number; // 달러 기준 금값의 연간 변동률 (%)
+    krwM2Growth: number; // 한국 M2 통화량의 연간 변동률 (%)
+    usdM2Growth: number; // 미국 M2 통화량의 연간 변동률 (%)
 
     rateMode: RateMode;
     rateMin: number;    // 범위 하한 (%)
@@ -41,18 +45,26 @@ export const DEFAULTS: CalcInputs = {
     periods: 12,
     tax: true,
     inflation: 2.5,
+    usdChange: 0,
+    goldChange: 0,
+    krwM2Growth: 0,
+    usdM2Growth: 0,
     rateMode: "fixed",
     rateMin: 0,
     rateMax: 14,
     seed: 1,
 };
 
-const LIMITS: Record<"initial" | "monthly" | "rate" | "years" | "inflation", [number, number]> = {
+const LIMITS: Record<"initial" | "monthly" | "rate" | "years" | "inflation" | "usdChange" | "goldChange" | "krwM2Growth" | "usdM2Growth", [number, number]> = {
     initial: [0, 1_000_000],
     monthly: [0, 10_000],
     rate: [-50, 100],
     years: [1, 60],
     inflation: [0, 20],
+    usdChange: [-90, 200],
+    goldChange: [-90, 200],
+    krwM2Growth: [-90, 200],
+    usdM2Growth: [-90, 200],
 };
 
 const clamp = (v: number, [min, max]: [number, number], fallback: number) =>
@@ -133,6 +145,10 @@ export function sanitize(raw: Partial<CalcInputs>): CalcInputs {
         rate: clamp(Number(base.rate), LIMITS.rate, DEFAULTS.rate),
         years: Math.round(clamp(Number(base.years), LIMITS.years, DEFAULTS.years)),
         inflation: clamp(Number(base.inflation), LIMITS.inflation, DEFAULTS.inflation),
+        usdChange: clamp(Number(base.usdChange), LIMITS.usdChange, DEFAULTS.usdChange),
+        goldChange: clamp(Number(base.goldChange), LIMITS.goldChange, DEFAULTS.goldChange),
+        krwM2Growth: clamp(Number(base.krwM2Growth), LIMITS.krwM2Growth, DEFAULTS.krwM2Growth),
+        usdM2Growth: clamp(Number(base.usdM2Growth), LIMITS.usdM2Growth, DEFAULTS.usdM2Growth),
         method: base.method === "simple" ? "simple" : "compound",
         periods: ([1, 2, 4, 12] as const).includes(base.periods as Periods) ? base.periods : 12,
         tax: Boolean(base.tax),
@@ -148,13 +164,15 @@ export function sanitize(raw: Partial<CalcInputs>): CalcInputs {
  */
 export function maskDetail(inputs: CalcInputs, detail: Detail): CalcInputs {
     if (detail === "detailed") return inputs;
-    return { ...inputs, method: "compound", periods: 12, tax: true, inflation: 0 };
+    return { ...inputs, method: "compound", periods: 12, tax: true, inflation: 0, usdChange: 0, goldChange: 0, krwM2Growth: 0, usdM2Growth: 0 };
 }
 
 export const SIMPLE_ASSUMPTIONS = [
     "월 복리",
     `이자소득세 ${TAX_RATE}% 차감`,
     "물가 미반영 (명목 금액)",
+    "환율·금값 미반영",
+    "통화량 미반영",
 ];
 
 export interface YearRow {
@@ -206,6 +224,23 @@ export interface CalcResult {
     cagr: number;       // 연평균 %
     real: number;       // 물가 반영 후 오늘의 구매력
     taxPaid: number;
+    valueComparison: {
+        krw: number;  // 물가만큼 원화 구매력을 보존하는 데 필요한 만기 금액
+        usd: number;  // 각 납입 시점에 달러를 사서 보유했을 때의 만기 원화 가치
+        gold: number; // 각 납입 시점에 금을 사서 보유했을 때의 만기 원화 가치
+    };
+    moneySupplyComparison: {
+        krw: number; // 원화 M2 증가 속도를 맞추는 데 필요한 만기 금액
+        usd: number; // 달러 M2 증가 속도와 환율 변화를 함께 맞추는 데 필요한 만기 원화 금액
+    };
+}
+
+/** 월초에 납입할 때마다 비교 자산을 사서 만기까지 보유한 경우. */
+function holdingValue(initial: number, monthly: number, years: number, annualFactor: number): number {
+    const monthlyFactor = Math.pow(annualFactor, 1 / 12);
+    let value = initial;
+    for (let m = 0; m < years * 12; m++) value = (value + monthly) * monthlyFactor;
+    return value;
 }
 
 /**
@@ -214,7 +249,7 @@ export interface CalcResult {
  * 한 번 곱하는 방식보다 실제 적립식 상품에 가깝다.
  */
 export function simulate(inputs: CalcInputs): CalcResult {
-    const { initial, monthly, years, method, periods, tax, inflation } = inputs;
+    const { initial, monthly, years, method, periods, tax, inflation, usdChange, goldChange, krwM2Growth, usdM2Growth } = inputs;
 
     const months = years * 12;
     const step = 12 / periods;              // 편입 간격(개월)
@@ -276,6 +311,15 @@ export function simulate(inputs: CalcInputs): CalcResult {
             : 0,
         real: last.value / Math.pow(1 + inflation / 100, years),
         taxPaid,
+        valueComparison: {
+            krw: holdingValue(initial, monthly, years, 1 + inflation / 100),
+            usd: holdingValue(initial, monthly, years, 1 + usdChange / 100),
+            gold: holdingValue(initial, monthly, years, (1 + usdChange / 100) * (1 + goldChange / 100)),
+        },
+        moneySupplyComparison: {
+            krw: holdingValue(initial, monthly, years, 1 + krwM2Growth / 100),
+            usd: holdingValue(initial, monthly, years, (1 + usdChange / 100) * (1 + usdM2Growth / 100)),
+        },
     };
 }
 
@@ -336,6 +380,10 @@ export function parse(params: URLSearchParams): { inputs: CalcInputs; detail: De
             rate: num("rate"),
             years: num("years"),
             inflation: num("inflation"),
+            usdChange: num("usdChange"),
+            goldChange: num("goldChange"),
+            krwM2Growth: num("krwM2Growth"),
+            usdM2Growth: num("usdM2Growth"),
             method: (params.get("method") as Method) ?? undefined,
             periods: (Number(params.get("periods")) as Periods) || undefined,
             tax: params.get("tax") === null ? undefined : params.get("tax") === "true",
