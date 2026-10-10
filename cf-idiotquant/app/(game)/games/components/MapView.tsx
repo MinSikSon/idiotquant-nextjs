@@ -425,10 +425,11 @@ export default function MapView({
                     const hunger = hungerOf(h);
                     const hungerMark = hunger === "Hungry" ? "!" : hunger === "Weak" ? "‼" : hunger === "Faint" ? "×" : "";
                     const hungerLabel = hunger === "Hungry" ? "배고픔" : hunger === "Weak" ? "허약" : hunger === "Faint" ? "기진" : "";
+                    const downed = h.hp <= 0;
                     return (
                         <span
                             key={i}
-                            aria-label={`${tag} 는 화면 밖 ${dist}칸${hungerLabel ? `, ${hungerLabel}` : ""}`}
+                            aria-label={`${tag} 는 화면 밖 ${dist}칸${downed ? ", 쓰러짐" : ""}${hungerLabel ? `, ${hungerLabel}` : ""}`}
                             className="pointer-events-none absolute whitespace-nowrap rounded-[2px] px-1 font-[family-name:var(--font-plex-mono)] text-[11px] font-bold leading-[1.4]"
                             style={{
                                 color: PARTY_INK[i],
@@ -439,8 +440,9 @@ export default function MapView({
                             }}
                         >
                             {dx < 0 || (!dx && dy) ? arrow : ""}
-                            {h.hp > 0 ? "@" : "†"}
+                            {downed ? "†" : "@"}
                             {tag} {dist}
+                            {downed && <span className="ml-1 text-[var(--rg-trap)]">쓰러짐</span>}
                             {hungerMark && <span title={`배고픔 상태: ${hungerLabel}`} className={`ml-1 ${hunger === "Faint" ? "text-[var(--rg-trap)]" : hunger === "Weak" ? "text-[var(--rg-monster)]" : "text-[var(--rg-gold)]"}`}>{hungerMark}</span>}
                             {dx > 0 ? arrow : ""}
                         </span>

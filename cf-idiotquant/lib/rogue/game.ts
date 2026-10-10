@@ -5069,14 +5069,21 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
         // **둘 다 쓰러져야 판이 끝난다.** 혼자면 한 명이 곧 전부라 규칙이 한 벌로 남는다 —
         // 「혼자일 때」를 따로 적으면 어느 날 한쪽만 고쳐진다.
         const down = state.heroes.filter((h) => h.hp <= 0);
-        for (const h of down) h.hp = 0;
+        const newlyDowned = down.some((h) => !h.downedLogged);
+        for (const h of down) {
+            h.hp = 0;
+            h.downedLogged = true;
+        }
+        for (const h of state.heroes) {
+            if (h.hp > 0) h.downedLogged = false;
+        }
         if (down.length === state.heroes.length) {
             state.phase = "dead";
             if (!state.epitaph) {
                 state.epitaph = `지하 ${state.level.depth}층에서 쓰러졌다. 금화 ${state.heroes[0].gold}.`;
             }
             revealAll(state.level);
-        } else if (down.length > 0) {
+        } else if (newlyDowned) {
             say(state, "동료가 쓰러졌다. 살아서 더 깊은 층에 닿으면 일으킬 수 있다.");
         }
     }

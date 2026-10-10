@@ -434,6 +434,8 @@ export interface Hero {
     x: number;
     y: number;
     hp: number;
+    /** 현재 쓰러진 상태에 대한 동료 알림을 이미 남겼는가. 일어나면 다시 초기화한다. */
+    downedLogged?: boolean;
     maxHp: number;
     /** 경험치와 그것이 만든 레벨. */
     exp: number;

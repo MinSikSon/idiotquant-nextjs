@@ -393,6 +393,7 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
     {
         const s = withGuest(4402);
         const [, guest] = s.heroes;
+        s.level.monsters = [];
         guest.hp = 1;
         guest.burnTurns = 3;
         perform(s, { t: "rest" }); // 방장이 움직인다
@@ -402,6 +403,8 @@ test("쓰러져도 판은 안 끝난다 — 살아서 층을 넘으면 일어난
             s.messages.some((m) => m.includes("동료가 쓰러졌다")),
             "쓰러진 것을 안 알려 준다",
         );
+        for (let i = 0; i < 3; i++) perform(s, { t: "rest" });
+        assert.equal(s.messages.filter((m) => m.includes("동료가 쓰러졌다. 살아서 더 깊은 층에 닿으면 일으킬 수 있다.")).length, 1, "쓰러진 상태가 이어지는 동안 기록을 반복하지 않는다");
     }
 
     // ── 쓰러진 사람은 **못 움직이고 배도 안 고프다**
