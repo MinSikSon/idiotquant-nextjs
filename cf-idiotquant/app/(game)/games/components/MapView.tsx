@@ -41,12 +41,23 @@ export const SPIRIT_INK: Record<SpiritElement, string> = {
     earth: "var(--rg-spirit-earth)",
 };
 
+/** Rogue의 A–Z 몬스터는 NetHack의 기본 괴물 문자 팔레트에 맞춘다. */
+const MONSTER_INK: Record<string, string> = {
+    A: "var(--rg-nh-brown)", B: "var(--rg-nh-brown)", C: "var(--rg-nh-brown)", D: "var(--rg-nh-red)",
+    E: "var(--rg-nh-brown)", F: "var(--rg-nh-green)", G: "var(--rg-nh-brown)", H: "var(--rg-nh-red)",
+    I: "var(--rg-nh-light-blue)", J: "var(--rg-nh-orange)", K: "var(--rg-nh-brown)", L: "var(--rg-nh-green)",
+    M: "var(--rg-nh-green)", N: "var(--rg-nh-green)", O: "var(--rg-nh-green)", P: "var(--rg-nh-gray)",
+    Q: "var(--rg-nh-brown)", R: "var(--rg-nh-red)", S: "var(--rg-nh-green)", T: "var(--rg-nh-brown)",
+    U: "var(--rg-nh-red)", V: "var(--rg-nh-red)", W: "var(--rg-nh-gray)", X: "var(--rg-nh-magenta)",
+    Y: "var(--rg-nh-white)", Z: "var(--rg-nh-green)", p: "var(--rg-nh-black)",
+};
+
 /** 글자 색 — **한 곳에서만 정한다.** 화면마다 정하면 같은 `@` 가 달라 보인다. */
 const INK: Record<string, string> = {
     hero: "var(--rg-hero)",
     // 동료 — 나와 같은 `@` 이되 **색이 달라야** 「지금 내가 조종하는 쪽」이 보인다.
     ally: "var(--rg-ally)",
-    monster: "var(--rg-monster)",
+    monster: "var(--rg-nh-orange)",
     // 화나지 않은 상점 주인 — 금빛. 화나면 `monster` 로 바뀐다(`glyphAt`).
     shopkeeper: "var(--rg-gold)",
     // 정령술사가 부른 정령 — 원소마다 색이 다르다. 같은 글자 `E` 의 에뮤(몬스터 색·몬스터 바닥)와 갈린다.
@@ -75,48 +86,24 @@ const INK: Record<string, string> = {
     "champion-vampiric": "var(--rg-potion)",
     trap: "var(--rg-trap)",
     "trap-dim": "var(--rg-trap-dim)",
-    anvil: "var(--rg-anvil)",
+    anvil: "var(--rg-nh-cyan)",
     "anvil-dim": "var(--rg-anvil-dim)",
-    altar: "var(--rg-altar)",
+    altar: "var(--rg-nh-gray)",
     "altar-dim": "var(--rg-altar-dim)",
-    fountain: "var(--rg-fountain)",
+    fountain: "var(--rg-nh-light-blue)",
     "fountain-dim": "var(--rg-fountain-dim)",
-    pool: "var(--rg-pool)",
+    pool: "var(--rg-nh-blue)",
     "pool-dim": "var(--rg-pool-dim)",
-    stairs: "var(--rg-stairs)",
-    door: "var(--rg-door)",
+    stairs: "var(--rg-nh-gray)",
+    door: "var(--rg-nh-brown)",
     "door-dim": "var(--rg-door-dim)",
-    wall: "var(--rg-wall)",
+    wall: "var(--rg-nh-gray)",
     "wall-dim": "var(--rg-wall-dim)",
-    floor: "var(--rg-floor)",
+    floor: "var(--rg-nh-gray)",
     "floor-dim": "var(--rg-floor-dim)",
-    corridor: "var(--rg-corridor)",
+    corridor: "var(--rg-nh-gray)",
     "corridor-dim": "var(--rg-corridor-dim)",
 };
-
-/**
- * 이 칸이 **몬스터**인가 — 챔피언도 몬스터다.
- *
- * 바닥색을 까는 자리가 여기 하나다. 종류를 늘어놓고 일일이 적으면 챔피언 접두사가
- * 하나 늘 때마다 그 놈만 바닥이 안 깔린다.
- */
-function isMonsterKind(kind?: string): boolean {
-    return !!kind && (kind === "monster" || kind === "monster-sensed" || kind === "shopkeeper" || kind.startsWith("champion-"));
-}
-
-/**
- * 몬스터 칸의 **바닥색** — 글자만으로는 `E`(에뮤)와 물건·벽이 한눈에 안 갈린다.
- *
- * 영웅의 파티 바닥색과 같은 수법이되(`PARTY_BG`) **훨씬 옅다.** 영웅은 화면에 많아야
- * 네뿐이라 진해도 되지만, 몬스터는 한 방에 여럿이라 진하면 지도가 얼룩덜룩해진다.
- *
- * 벽 너머로 느낀 것은 **더 옅다** — 잉크를 갈라 둔 것과 같은 까닭이다(`INK`).
- * 같은 바닥을 깔면 벽 뒤의 놈이 눈앞에 있는 것처럼 읽힌다.
- */
-function monsterBg(kind?: string): string | undefined {
-    if (!isMonsterKind(kind)) return undefined;
-    return kind === "monster-sensed" ? "var(--rg-monster-sensed-bg)" : "var(--rg-monster-bg)";
-}
 
 function clamp(v: number, lo: number, hi: number) {
     return Math.max(lo, Math.min(hi, v));
@@ -312,8 +299,8 @@ export default function MapView({
             const p = (g?.kind === "hero" || g?.kind === "ally") && state.heroes.length > 1
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
                 : -1;
-            const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (g.ink ?? INK[g.kind] ?? "var(--rg-wall)") : "transparent");
-            const bg = flash?.bg ?? PARTY_BG[p] ?? monsterBg(g?.kind);
+            const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (g.ink ?? (g.kind === "monster" ? MONSTER_INK[g.ch] : undefined) ?? INK[g.kind] ?? "var(--rg-wall)") : "transparent");
+            const bg = flash?.bg ?? PARTY_BG[p];
             const last = runs[runs.length - 1];
             if (last && last.ink === ink && last.bg === bg && last.opacity === opacity) {
                 last.text += ch;

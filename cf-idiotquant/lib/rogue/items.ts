@@ -1030,8 +1030,7 @@ export function itemInk(it: Pick<Item, "kind" | "type">, appearance: Record<stri
     if (it.kind === "potion" || it.kind === "ring" || it.kind === "wand" || it.kind === "spellbook") {
         if (match) return `var(--rg-item-${match[1]})`;
     }
-    if (it.kind === "scroll") return "var(--rg-item-white)";
-    if (it.kind === "spellbook") return "var(--rg-item-white)";
+    if (it.kind === "scroll" || it.kind === "spellbook") return "var(--rg-nh-white)";
     if (it.kind === "tool") return it.type === "magic marker" ? "var(--rg-item-magenta)" : "var(--rg-item-brown)";
     if (it.kind === "gem") {
         const gemTone: Record<string, string> = { ruby: "red", sapphire: "blue", emerald: "green", topaz: "yellow" };
@@ -1039,14 +1038,16 @@ export function itemInk(it: Pick<Item, "kind" | "type">, appearance: Record<stri
     }
     if (it.kind === "weapon") {
         const material = WEAPONS[it.type]?.material;
-        if (material === "silver") return "var(--rg-item-white)";
+        if (material === "silver") return "var(--rg-nh-gray)";
         if (material === "wood") return "var(--rg-item-brown)";
-        if (material === "bone") return "var(--rg-item-yellow)";
+        if (material === "bone") return "var(--rg-nh-yellow)";
+        return "var(--rg-nh-cyan)";
     }
     if (it.kind === "armor") {
         if (it.type.includes("dragon")) return "var(--rg-item-green)";
-        if (it.type.includes("mithril")) return "var(--rg-item-cyan)";
+        if (it.type.includes("mithril")) return "var(--rg-nh-cyan)";
         if (it.type.includes("leather")) return "var(--rg-item-brown)";
+        return "var(--rg-nh-cyan)";
     }
     const base: Partial<Record<ItemKind, string>> = {
         gold: "--rg-gold", food: "--rg-food", potion: "--rg-potion", scroll: "--rg-scroll", spellbook: "--rg-item-white",

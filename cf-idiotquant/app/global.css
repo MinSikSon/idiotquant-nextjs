@@ -49,6 +49,22 @@
   --rg-ghost: #8b948f;       /* 거의 안 보이는 것 */
   /* 지도의 잉크 */
   --rg-hero: #0d1012;
+  /* NetHack의 16색 문자 팔레트. 실제 RGB는 터미널마다 달라, 종이 테마에서 읽히는 잉크색으로 둔다. */
+  --rg-nh-black: #545b58;
+  --rg-nh-red: #b42318;
+  --rg-nh-green: #216e39;
+  --rg-nh-brown: #78522c;
+  --rg-nh-blue: #2352a4;
+  --rg-nh-magenta: #8e3a92;
+  --rg-nh-cyan: #087e8b;
+  --rg-nh-gray: #5c6764;
+  --rg-nh-orange: #b54708;
+  --rg-nh-light-green: #16803c;
+  --rg-nh-yellow: #8a6700;
+  --rg-nh-light-blue: #176da0;
+  --rg-nh-light-magenta: #a23a9c;
+  --rg-nh-light-cyan: #087e8b;
+  --rg-nh-white: #3b4240;
   --rg-ally: #1d6b5f;        /* 동료 — 나와 같은 `@` 이되 색이 달라야 한다 */
   /* 협동 — 사람마다의 색. 조종을 넘겨도 안 바뀐다. **색상환의 반대편**(파랑 ↔ 장미)에 두고
      `@` 밑에 바닥색까지 깔아서, 몬스터·물건 글자와도 섞이지 않게 한다. */
@@ -139,6 +155,21 @@ html.dark {
   --rg-faint: #7d8d88;
   --rg-ghost: #5f706b;
   --rg-hero: #ffffff;
+  --rg-nh-black: #8b9490;
+  --rg-nh-red: #ff6b6b;
+  --rg-nh-green: #6ddc8b;
+  --rg-nh-brown: #d0a675;
+  --rg-nh-blue: #73a4ff;
+  --rg-nh-magenta: #e18ae8;
+  --rg-nh-cyan: #5dd6e8;
+  --rg-nh-gray: #aeb8b3;
+  --rg-nh-orange: #ff9f43;
+  --rg-nh-light-green: #4ade80;
+  --rg-nh-yellow: #ffd166;
+  --rg-nh-light-blue: #85d7ff;
+  --rg-nh-light-magenta: #f0a0f4;
+  --rg-nh-light-cyan: #8be9f5;
+  --rg-nh-white: #f0f0f0;
   --rg-ally: #63d9c0;        /* 동료 — 나와 같은 `@` 이되 색이 달라야 한다 */
   --rg-leader: #6aaeff;
   --rg-mate: #ff6fa8;
