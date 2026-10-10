@@ -227,6 +227,8 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
 /* 각 화면의 고정 헤더는 공통 네비게이션 바로 아래에 놓인다. */
 @media (max-width: 767px) {
   body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 48px; }
+  /* 게임 경로는 하단 탭이 숨겨져 있으므로 그 높이를 비우지 않는다. */
+  main:has(#rogue-root) { padding-bottom: 0; }
 }
 
 @media (min-width: 768px) {

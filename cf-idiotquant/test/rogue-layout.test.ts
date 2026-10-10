@@ -9,9 +9,10 @@
 // 같은 값이고, 재 보면 고치기 전에도 멀쩡하다. 그래서 **두 파일이 서로 맞는지**를
 // 글자로 본다.
 //
-// 여기서 지키는 것 둘:
+// 여기서 지키는 것 셋:
 //   ① 같은 자를 쓴다 (둘 다 `dvh`)
-//   ② 빼는 숫자가 실제 바 높이의 합과 같다 (48 + 64 = 112)
+//   ② 게임 화면에는 하단 탭이 없으므로 모바일에서 상단 48px 만 뺀다
+//   ③ 게임 경로의 `main` 은 하단 padding 을 없애 게임 칸과 화면 높이를 맞춘다
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -56,8 +57,8 @@ test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
     }
 });
 
-test("빼는 숫자가 실제 바 높이의 합이다", () => {
-    // ── 빼는 숫자는 실제 바 높이의 합이다 — 한쪽만 바뀌면 그 차이가 빈 칸이 된다
+test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤다", () => {
+    // ── 게임 경로에는 하단 탭이 없으므로 상단 헤더 높이만 뺀다
     {
         const layout = read(LAYOUT);
         const pt = /pt-\[(\d+)px\]/.exec(layout);
@@ -70,20 +71,25 @@ test("빼는 숫자가 실제 바 높이의 합이다", () => {
 
         assert.equal(
             Number(off![1]),
-            Number(pt![1]) + Number(pb![1]),
-            `게임 칸이 빼는 ${off![1]}px 가 레이아웃의 여백 합(${pt![1]}+${pb![1]})과 다르다`,
+            Number(pt![1]),
+            `게임 칸은 상단 헤더 ${pt![1]}px 만 빼야 한다`,
+        );
+        assert.match(
+            read("app/global.css"),
+            /main:has\(#rogue-root\)\s*\{\s*padding-bottom:\s*0\s*;?\s*\}/,
+            "모바일 게임의 하단 여백이 남아 있다",
         );
     }
 
-    // ── 그 여백은 실제 바의 높이와 같다 — 숫자가 세 곳에 있다
+    // ── 공통 모바일 바의 치수는 레이아웃 여백 값과 맞는다
     {
         const layout = read(LAYOUT);
         const nav = read(NAV);
         const pt = Number(/pt-\[(\d+)px\]/.exec(layout)![1]);
         const pb = Number(/pb-\[(\d+)px\]/.exec(layout)![1]);
 
-        // 위 머리줄과 아래 탭 바는 `md:hidden fixed` 라 흐름에서 빠져 있다. 그래서 그 높이를
-        // 레이아웃이 여백으로 대신 만들어 주는데, 둘이 어긋나면 가려지거나 빈 칸이 남는다.
+        // 공통 상단 머리줄과 하단 탭 바 치수는 레이아웃 여백 값과 일치해야 한다.
+        // 게임은 하단 탭이 숨겨져 있어 해당 padding 만 별도로 없앤다.
         assert.ok(
             nav.includes(`h-[${pt}px]`),
             `위 머리줄의 높이가 ${pt}px 가 아니다 — 레이아웃의 pt 와 어긋난다`,
