@@ -227,8 +227,16 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
 /* 각 화면의 고정 헤더는 공통 네비게이션 바로 아래에 놓인다. */
 @media (max-width: 767px) {
   body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 48px; }
-  /* 게임 경로는 하단 탭이 숨겨져 있으므로 그 높이를 비우지 않는다. */
-  main:has(#rogue-root) { padding-bottom: 0; }
+  /* Rogue 는 스크롤할 페이지가 아니다. Safari 도구 막대가 보이는 높이에 고정해
+     dvh 와 visual viewport 가 어긋날 때 생기는 하단 빈 칸과 세로 스크롤을 막는다. */
+  html:has(#rogue-root) { height: 100svh; overflow: hidden; }
+  html:has(#rogue-root) body { height: 100%; overflow: hidden; }
+  main:has(#rogue-root) {
+    height: 100svh;
+    min-height: 100svh;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
 }
 
 @media (min-width: 768px) {

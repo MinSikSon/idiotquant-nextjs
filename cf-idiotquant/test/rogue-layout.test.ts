@@ -1,16 +1,14 @@
-// 게임 칸의 높이는 **루트 레이아웃과 같은 자로 재야 한다.**
+// 게임 칸의 높이는 **루트 레이아웃과 맞아야 한다.**
 //
-// 아이폰 사파리에서 주소창이 접히면 화면이 커진다. `dvh` 는 그 값을 따라가고 `svh` 는
-// 주소창이 보일 때의 값에 머문다. 루트 `<main>` 은 `min-h-[100dvh]` 인데 게임 칸만
-// `100svh` 로 재고 있었고, 그래서 주소창이 접힐 때마다 **그 차이가 그대로 검은 빈 칸**
-// 으로 화면 아래에 남았다.
+// Rogue 는 스크롤할 화면이 아니다. 모바일은 Safari 도구 막대가 보이는 `svh` 에 맞춰
+// 문서와 게임 칸을 고정한다. `dvh` 가 visual viewport 보다 크게 잡히면 화면이 밀려
+// 버튼 아래에 빈 칸이 생긴다.
 //
-// 이건 브라우저로 못 잡는다 — 헤드리스 크로뮴에는 주소창이 없어서 `svh` 와 `dvh` 가
-// 같은 값이고, 재 보면 고치기 전에도 멀쩡하다. 그래서 **두 파일이 서로 맞는지**를
-// 글자로 본다.
+// 뷰포트 동작은 헤드리스 크로뮴에서 재현되지 않으므로, 화면 높이와 상단 여백 계산이
+// 서로 맞는지 글자로 확인한다.
 //
 // 여기서 지키는 것 셋:
-//   ① 같은 자를 쓴다 (둘 다 `dvh`)
+//   ① 모바일 게임은 `svh`, 데스크톱은 `dvh` 를 쓴다
 //   ② 게임 화면에는 하단 탭이 없으므로 모바일에서 상단 48px 만 뺀다
 //   ③ 게임 경로의 `main` 은 하단 padding 을 없애 게임 칸과 화면 높이를 맞춘다
 
@@ -28,14 +26,14 @@ const GAME = "app/(game)/games/page.tsx";
 const NAV = "components/navigation.tsx";
 const TOUCHPAD = "app/(game)/games/components/TouchPad.tsx";
 
-test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
-    // ── 루트 레이아웃은 dvh 로 잰다
+test("모바일 게임은 보이는 브라우저 화면(svh)에 고정한다", () => {
+    // ── 루트는 최소한 화면 높이를 보장한다
     {
         const s = read(LAYOUT);
         assert.match(s, /min-h-\[100dvh\]/, `${LAYOUT} 이 100dvh 를 안 쓴다`);
     }
 
-    // ── 게임 칸도 **같은 자**로 잰다 — svh 를 쓰면 주소창이 접힐 때 빈 칸이 남는다
+    // ── 모바일 게임 칸은 Safari 도구 막대가 보일 때의 높이를 쓴다
     {
         const s = read(GAME);
         const box = /h-\[calc\(100(\w+)-(\d+)px\)\]/.exec(s);
@@ -47,13 +45,12 @@ test("게임 칸은 루트와 같은 자(dvh)로 잰다", () => {
         );
         assert.equal(
             box![1],
-            "dvh",
-            "게임 칸이 루트(dvh)와 다른 자를 쓴다 — 주소창이 접히면 그 차이가 빈 칸이 된다",
+            "svh",
+            "모바일 게임 칸은 도구 막대가 보이는 높이(svh)를 써야 한다",
         );
-        // 데스크톱 쪽도 같은 자여야 한다.
+        // 데스크톱 쪽은 주소창 높이가 바뀌지 않으므로 dvh 를 쓴다.
         assert.match(s, /md:h-dvh/, `${GAME} 의 md 높이가 dvh 가 아니다`);
         assert.doesNotMatch(s, /-mb-\[\d+px\]/, "하단 여백을 음수 마진으로 다시 당기고 있다");
-        assert.doesNotMatch(s.replace(/\/\*[\s\S]*?\*\//g, ""), /svh/, "주석 밖에 svh 가 남아 있다");
     }
 });
 
@@ -66,7 +63,7 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
         assert.ok(pt && pb, `${LAYOUT} 에서 위아래 여백을 못 찾았다`);
 
         const game = read(GAME);
-        const off = /h-\[calc\(100dvh-(\d+)px\)\]/.exec(game);
+        const off = /h-\[calc\(100svh-(\d+)px\)\]/.exec(game);
         assert.ok(off, `${GAME} 에서 빼는 숫자를 못 찾았다`);
 
         assert.equal(
@@ -76,8 +73,8 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
         );
         assert.match(
             read("app/global.css"),
-            /main:has\(#rogue-root\)\s*\{\s*padding-bottom:\s*0\s*;?\s*\}/,
-            "모바일 게임의 하단 여백이 남아 있다",
+            /main:has\(#rogue-root\)\s*\{[^}]*height:\s*100svh;[^}]*min-height:\s*100svh;[^}]*padding-bottom:\s*0;[^}]*overflow:\s*hidden;/,
+            "모바일 게임이 보이는 화면에 고정되지 않거나 하단 여백·세로 스크롤이 남아 있다",
         );
     }
 

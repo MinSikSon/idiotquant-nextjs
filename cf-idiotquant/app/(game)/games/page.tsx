@@ -8,9 +8,9 @@
  * 지도는 부모 칸을 재서 몇 칸을 보여 줄지 정한다. 그래서 이 칸이 화면과 어긋나면 지도가
  * 통째로 어긋난다. 두 가지를 지킨다.
  *
- *   · **`dvh` 를 쓴다** — 루트 `<main>` 이 `min-h-[100dvh]` 라서 여기만 `svh` 를 쓰면
- *     둘이 어긋난다. 아이폰 사파리에서 주소창이 접히면 `dvh > svh` 가 되고, `main` 은
- *     그만큼 커지는데 게임은 안 커져서 **아래에 검은 빈 칸이 남는다.** 실제로 그랬다.
+ *   · **모바일은 `svh` 를 쓴다** — 게임은 스크롤하지 않는 한 화면이라 브라우저 도구 막대가
+ *     보일 때의 높이에 맞춘다. `dvh` 가 Safari 에서 그보다 크게 잡히면 페이지가 밀리고
+ *     하단에 빈 칸이 생긴다. 문서 스크롤도 모바일 게임에서 잠근다(`app/global.css`).
  *
  *     지도는 DOM 이고 `MapView` 의 `ResizeObserver` 가 칸 수를 다시 잰다.
  *   · 모바일에서는 상단 헤더 48px 만 뺀다. 게임 경로에는 하단 탭 바가 없으므로
@@ -24,7 +24,7 @@ export default function RoguePage() {
     // `id` 는 표시용이 아니라 표식이다. `global.css` 의 `html:has(#rogue-root)` 가 이걸 보고
     // **문서 뿌리까지 지금 테마의 바탕**으로 칠한다 — 고무줄 스크롤로 드러나는 자리가 거기다.
     return (
-        <div id="rogue-root" className="h-[calc(100dvh-48px)] w-full bg-[var(--rg-bg)] md:h-dvh">
+        <div id="rogue-root" className="h-[calc(100svh-48px)] w-full bg-[var(--rg-bg)] md:h-dvh">
             {/* 판이 터져도 이 주소가 영영 안 열리는 일은 없게 한다 — `GameBoundary` 머리말 참고. */}
             <GameBoundary>
                 <Rogue />
