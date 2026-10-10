@@ -214,8 +214,9 @@ test("상태 줄을 펼쳐도 공통 항목의 순서가 유지된다", () => {
     assert.match(status, /max-h-\[3\.5rem\][\s\S]*?overflow-y-auto/, "펼친 상태창이 세 줄 높이를 넘으면 안쪽으로 스크롤되지 않는다");
     const collapseButton = status.indexOf("aria-expanded={true}");
     const identity = status.indexOf("<OriginTag origin={h.origin} level={h.level} />");
+    const rightAlignedCollapse = status.indexOf('className="ml-auto shrink-0');
     const firstRowBreak = status.indexOf("basis-full h-0");
-    assert.ok(identity >= 0 && identity < collapseButton && collapseButton < firstRowBreak && firstRowBreak < positions[0], "펼친 상태의 간략히 단추가 이름표 다음 첫 줄 끝에 없다");
+    assert.ok(identity >= 0 && rightAlignedCollapse > identity && rightAlignedCollapse < collapseButton && collapseButton < firstRowBreak && firstRowBreak < positions[0], "펼친 상태의 간략히 단추가 첫 줄 오른쪽 끝에 없다");
     assert.doesNotMatch(rogue, /넷핵식 자연 행운/, "상태 설명에 게임 이름을 붙이지 않는다");
 });
 

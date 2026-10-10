@@ -2322,7 +2322,7 @@ export default function Rogue() {
                         )}
                         {!coop && <span className="shrink-0">{h.nick ?? "나"}</span>}
                         <span className="shrink-0">[{expandedPartyStats === i ? <OriginTag origin={h.origin} level={h.level} /> : <span className="font-[family-name:var(--font-plex-mono)] font-bold" style={{ color: originInfo.iconInk }}>{originInfo.icon}</span>}]</span>
-                        {expandedPartyStats === i && <button type="button" className="shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]" aria-expanded={true} onClick={() => setExpandedPartyStats(null)}>간략히</button>}
+                        {expandedPartyStats === i && <button type="button" className="ml-auto shrink-0 rounded border border-[var(--rg-line-soft)] px-1 text-[var(--rg-faint)] hover:text-[var(--rg-strong)]" aria-expanded={true} onClick={() => setExpandedPartyStats(null)}>간략히</button>}
                         {expandedPartyStats === i && <span className="basis-full h-0" />}
                         {expandedPartyStats === i && <button type="button" className="shrink-0 hover:underline" onClick={() => { setStatusKind("str"); setSheetOwner(i); setSheet("status"); }}>St:{heroStr(h)}</button>}
                         {expandedPartyStats === i && <div className="flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)]">
