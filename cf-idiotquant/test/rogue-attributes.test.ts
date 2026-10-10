@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { addToPack, carryCapacity, dexHitBonus, encumbrance, gainExp, heroDamTerms, heroHitTerms, hpGainPerLevel, makeHero, packWeight, prayerTimeoutLimit, regenEvery, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
+import { addToPack, carryCapacity, dexHitBonus, encumbrance, gainExp, heroConstitution, heroDamTerms, heroHitTerms, hpGainPerLevel, makeHero, packWeight, prayerTimeoutLimit, regenEvery, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
 import { newGame, perform, spellCastingChance } from "@/lib/rogue/game";
 import { Rng } from "@/lib/rogue/rng";
 import { charismaPriceFactor, unitPrice } from "@/lib/rogue/shop";
@@ -21,6 +21,26 @@ test("NetHack 건강 구간이 레벨업 체력에 반영된다", () => {
     assert.equal(regenEvery(hero), 15);
     assert.equal(regenEvery({ ...hero, level: 9 }), 4);
     assert.equal(regenEvery({ ...hero, level: 10 }), 3);
+});
+
+test("건강 반지가 레벨 10 이후 자연 회복량에도 반영된다", () => {
+    const state = newGame(191);
+    const hero = state.heroes[0];
+    hero.level = 10;
+    hero.constitution = 10;
+    hero.hp = 20;
+    hero.maxHp = 100;
+    const ring = makeItem("ring", "constitution", state.nextItemId++, -1, -1);
+    ring.plusRing = 3;
+    ring.letter = "z";
+    hero.pack.push(ring);
+    hero.leftRingId = ring.id;
+    assert.equal(heroConstitution(hero), 13);
+
+    // 자연 회복 발동 턴(3의 배수)을 만든다. Con 13이면 1~3HP를 회복한다.
+    state.turn = 2;
+    const after = perform(state, { t: "rest" });
+    assert.ok(after.heroes[0].hp >= 21 && after.heroes[0].hp <= 23, `건강 반지 회복량이 잘못됐다: ${after.heroes[0].hp - 20}`);
 });
 
 test("전투는 힘의 명중 표와 별도 피해 표를 사용한다", () => {

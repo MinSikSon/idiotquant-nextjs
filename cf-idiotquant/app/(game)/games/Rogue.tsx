@@ -75,7 +75,8 @@ import {
     itemCodexStage,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
-import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, prayerTimeoutLimit, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornAmulet, wornRings } from "@/lib/rogue/hero";
+import { runHighlights } from "@/lib/rogue/runHighlights";
+import { armorSkillLevel, armorSkillRankName, heldPickAxe, heroArmor, heroConstitution, isDualWielding, rapidFireOf, heroArmorClass, heroDexterity, heroStr, hungerOf, prayerTimeoutLimit, weaponSkillBonus, weaponSkillLevel, weaponSkillName, weaponSkillRankName, wornAmulet, wornRings } from "@/lib/rogue/hero";
 import {
     bury,
     clear,
@@ -216,6 +217,38 @@ function Msg({ text, heroes }: { text: string; heroes: GameState["heroes"] }) {
             </span>{" "}
             {body.slice(m[0].length)}
         </>
+    );
+}
+
+function RunHighlights({ logs, heroes }: { logs: string[]; heroes?: GameState["heroes"] }) {
+    const { dangers, finds } = runHighlights(logs);
+    if (dangers.length === 0 && finds.length === 0) return null;
+
+    const groups = [
+        { title: "위험했던 순간", icon: "⚠", entries: dangers, ink: "var(--rg-trap)" },
+        { title: "좋은 아이템 획득", icon: "✦", entries: finds, ink: "var(--rg-amulet)" },
+    ];
+
+    return (
+        <section className="mb-3 rounded-[4px] border border-[var(--rg-line)] bg-[var(--rg-raised)] p-3">
+            <h4 className="mb-2 text-sm font-bold text-[var(--rg-strong)]">이번 모험의 주요 순간</h4>
+            <div className="grid gap-3 sm:grid-cols-2">
+                {groups.map((group) => group.entries.length > 0 && (
+                    <div key={group.title} className="min-w-0">
+                        <h5 className="mb-1 text-xs font-bold" style={{ color: group.ink }}>
+                            {group.icon} {group.title}
+                        </h5>
+                        <ul className="space-y-1.5 text-xs leading-relaxed text-[var(--rg-muted)]">
+                            {group.entries.map(({ log }, index) => (
+                                <li key={`${index}:${log}`} className="break-words rounded bg-[var(--rg-bg)] px-2 py-1.5">
+                                    {heroes ? <Msg text={log} heroes={heroes} /> : log}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }
 
@@ -2330,7 +2363,7 @@ export default function Rogue() {
                         {expandedPartyStats === i && <div className="flex shrink-0 flex-nowrap items-center gap-x-[1ch] text-[var(--rg-faint)]">
                             {([
                                 ["dexterity", `Dx:${heroDexterity(h)}`],
-                                ["constitution", `Co:${h.constitution}`],
+                                ["constitution", `Co:${heroConstitution(h)}`],
                                 ["intelligence", `In:${h.intelligence}`],
                                 ["wisdom", `Wi:${h.wisdom}`],
                                 ["charisma", `Ch:${h.charisma}`],
@@ -3004,7 +3037,7 @@ export default function Rogue() {
                       : statusKind === "dexterity"
                         ? `Dx:${heroDexterity(statusHero)}\n직업의 초기 민첩과 민첩 반지의 합입니다. 원작 참고 규칙으로 명중과 회피 굴림에 반영됩니다.`
                       : statusKind === "constitution"
-                        ? `Co:${statusHero.constitution}\n레벨업 때 얻는 최대 체력, 10레벨부터 자연 회복량, 들 수 있는 무게를 정합니다.`
+                        ? `Co:${heroConstitution(statusHero)}\n레벨업 때 얻는 최대 체력, 10레벨부터 자연 회복량, 들 수 있는 무게를 정합니다.`
                       : statusKind === "charisma"
                         ? `Ch:${statusHero.charisma}\n매력 수치에 따라 상점 구매가가 달라집니다.`
                       : statusKind === "intelligence"
@@ -3726,6 +3759,7 @@ export default function Rogue() {
                                 {/* 4. 이번 판의 전체 기록 */}
                                 {selectedTomb.recentLog && selectedTomb.recentLog.length > 0 && (
                                     <div>
+                                        <RunHighlights logs={selectedTomb.recentLog} />
                                         <h4 className="mb-1 text-xs font-bold text-[var(--rg-label)]">진행 · 이번 판 기록</h4>
                                         <div className="max-h-52 overflow-y-auto rounded-[4px] border border-[var(--rg-line-soft)] bg-[var(--rg-bg)] p-2.5 font-mono text-[11px] leading-[1.65] text-[var(--rg-muted)]">
                                             {[...selectedTomb.recentLog].reverse().map((logMsg, lIdx) => (
@@ -3870,6 +3904,7 @@ export default function Rogue() {
                         }
                     >
                         <p className="mb-3 text-base font-bold leading-relaxed text-[var(--rg-strong)]">{state.epitaph}</p>
+                        <RunHighlights logs={state.messages} heroes={state.heroes} />
                         {state.phase === "dead" && (
                             <div className="mb-3 rounded-[3px] border border-[var(--rg-line-soft)] bg-[var(--rg-raised)] px-3 py-2">
                                 <p className="mb-1 font-bold text-[var(--rg-strong)]">마지막 순간</p>

@@ -583,12 +583,8 @@ function rollEnchant(depth: number, rng: Rng): { plus: number; cursed: boolean }
  *
  * 규칙 넷:
  *
- *   1. **안전 구간은 종류마다 다르다** — 무기는 `+6`, 갑옷은 `+4` 까지 안 굴린다.
- *      안전 구간이 없으면 첫 주문서부터 도박이 되고, 그건 키우기가 아니라 그냥 운이다.
- *      그런데 **떨어지는 물건이 이미 `+0~+3`**(`rollEnchant`)이라, 안전 구간을 `+3` 에
- *      두면 **강화가 운 좋은 드랍과 똑같아진다** — 재 보고 알았다.
- *      갑옷이 두 칸 낮은 것은 **한 칸의 무게가 다르기 때문**이다: 갑옷 `+1` 은 맞는 것
- *      자체를 줄여 모든 싸움에 듣고, 무기 `+1` 은 이미 이기는 싸움을 조금 빨리 끝낸다.
+ *   1. **무기와 갑옷 모두 `+3` 까지 안전 강화다.** 그 뒤에는 강화 수치 3칸을 표준편차로
+ *      둔 정규분포 곡선에 따라 성공률이 내려간다.
  *   2. **실패하면 부서진다.** 수치가 내려가는 대신 물건이 사라진다 — 마이너스를 없앤
  *      방향과 결이 같고(`rollEnchant` 머리말), 대가가 한눈에 읽힌다.
  *   3. **`+9` 가 끝이다.** 상한이 없으면 운 좋은 `+12 장검`(4층짜리)이
@@ -657,37 +653,32 @@ export function isStashable(it: Item): boolean {
     return !(it.kind === "amulet" && it.type === "amulet") && it.kind !== "gold";
 }
 
+/** 강화 시도 시작 단계. +3까지는 안전 성공이며 +3에서 +4로 올릴 때부터 확률을 굴린다. */
+export const ENCHANT_SAFE_MAX = 3;
+
 /**
- * 성공률표 — **안전 구간만 갈리고 그 위는 안 갈린다.**
- *
- * `+6` 부터는 두 종류가 같은 값을 쓴다. 갑옷이 **먼저** 도박을 시작할 뿐, 같은 자리에서
- * 더 가혹하지는 않다 — 종류마다 꼬리를 따로 밀면 `+9` 도달률이 한쪽만 수십 배로
- * 벌어진다(꼬리를 천장에 붙여 밀면 무기 15.4% 대 갑옷 0.6%가 된다. 지금은 5.5% 대 3.3%).
+ * 성공률은 정규분포 종 모양 곡선을 따른다. 강화 수치 3칸을 표준편차 하나로 두며,
+ * +3 시도의 확률은 평균(+2)에서 1/3 표준편차 떨어진 값이다. 무기와 방어구는 같은 곡선.
  */
-const ODDS: Record<"weapon" | "armor", readonly number[]> = {
-    //       +0 +1 +2 +3    +4   +5    +6   +7    +8
-    weapon: [1, 1, 1, 1,    1,   1, 0.55, 0.4, 0.25],
-    armor:  [1, 1, 1, 1, 0.85, 0.7, 0.55, 0.4, 0.25],
-};
+function enchantGaussianOdds(plus: number): number {
+    if (plus < ENCHANT_SAFE_MAX) return 1;
+    const z = (plus - ENCHANT_SAFE_MAX + 1) / 3;
+    return Math.exp(-0.5 * z * z);
+}
 
 /** `+plus` 에서 한 칸 더 올릴 때의 성공률(0~1). 상한에서는 0. */
 export function enchantOdds(plus: number, kind: ItemKind): number {
-    const table = kind === "armor" ? ODDS.armor : ODDS.weapon;
     if (plus < 0) return 1;
-    return table[plus] ?? 0;
+    if (plus >= ENCHANT_MAX) return 0;
+    return enchantGaussianOdds(plus);
 }
 
 /**
- * **안전 구간의 천장** — 여기까지는 굴리지 않고 오른다(무기 `+6`, 갑옷 `+4`).
- *
- * 표에서 **세어서** 낸다. 숫자를 따로 적어 두면 표를 고친 날 한쪽만 바뀌어, 화면은
- * 「안전」이라 적는데 실제로는 굴리는 자리가 난다.
+ * **안전 구간의 천장** — 무기와 방어구 모두 `+3`까지 확정 성공.
  */
 export function enchantSafeMax(kind: ItemKind): number {
-    const table = kind === "armor" ? ODDS.armor : ODDS.weapon;
-    let n = 0;
-    while (n < table.length && table[n] === 1) n++;
-    return n;
+    void kind;
+    return ENCHANT_SAFE_MAX;
 }
 
 /**
@@ -771,6 +762,7 @@ export function meltRoll(it: Item, rng: Rng): number {
  * 없다** — 여덟 종 중 둘이라 빈도표를 건드리면 감정·지도까지 같이 움직인다.
  */
 export type Category = "gold" | "potion" | "scroll" | "spellbook" | "food" | "enchant" | "weapon" | "armor" | "ring" | "amulet" | "wand" | "tool";
+export type ItemRollCategory = Category | "darts" | "arrows" | "bolts";
 
 /**
  * 층 구간별 분류 가중치.
@@ -863,7 +855,7 @@ export function rollCharges(rng: Rng): number {
  * NetHack의 자연 Luck은 일반 드롭의 종류나 등급을 바꾸지 않는다. `luck` 인수는 저장된
  * 옛 호출부와 외부 도구의 호환을 위해 남겨 두고 계산에는 사용하지 않는다.
  */
-export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: Category, _luck = 0): Item {
+export function randomItem(depth: number, id: number, x: number, y: number, rng: Rng, cat?: ItemRollCategory, _luck = 0): Item {
     const c = cat ?? pickCategory(depth, rng);
     if (c === "gold") return makeItem("gold", "gold", id, x, y, rng.between(2, 50 + depth * 10));
     const tier = itemTier(depth, rng);
@@ -899,8 +891,13 @@ export function randomItem(depth: number, id: number, x: number, y: number, rng:
         return it;
     }
 
-    if (c === "weapon") {
-        const type = weightedAt(WEAPONS, tier, rng, GEAR_BAND);
+    if (c === "weapon" || c === "darts" || c === "arrows" || c === "bolts") {
+        const weaponTable = c === "weapon"
+            ? WEAPONS
+            : Object.fromEntries(Object.entries(WEAPONS).filter(([type, def]) =>
+                c === "darts" ? type === "dart" : c === "arrows" ? def.launcher === "bow" : def.launcher === "crossbow",
+            )) as typeof WEAPONS;
+        const type = weightedAt(weaponTable, tier, rng, GEAR_BAND);
         const def = WEAPONS[type];
         // 화살과 다트는 한 줌씩 나온다 — 하나씩 던져 봐야 아무 일도 안 난다.
         const count = def.stack ? rng.between(5, 14) : 1;

@@ -215,7 +215,7 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
 test("상태 줄을 펼쳐도 공통 항목의 순서가 유지된다", () => {
     const rogue = read("app/(game)/games/Rogue.tsx");
     const status = rogue.slice(rogue.indexOf("{/* 캐릭터 상태:"), rogue.indexOf("<TouchPad", rogue.indexOf("{/* 캐릭터 상태:")));
-    const labels = ['St:{heroStr(h)}', 'Dx:${heroDexterity(h)}', 'Co:${h.constitution}', 'In:${h.intelligence}', 'Wi:${h.wisdom}', 'Ch:${h.charisma}', 'Lu:${h.luck}', 'Dlvl:{level.depth}', '$:{h.gold}', 'HP:{h.hp}', 'AC:${heroArmorClass(h)}', 'Xp:${h.level}/${h.exp}', 'T:{coop', '{hHunger || "Well-fed"}'];
+    const labels = ['St:{heroStr(h)}', 'Dx:${heroDexterity(h)}', 'Co:${heroConstitution(h)}', 'In:${h.intelligence}', 'Wi:${h.wisdom}', 'Ch:${h.charisma}', 'Lu:${h.luck}', 'Dlvl:{level.depth}', '$:{h.gold}', 'HP:{h.hp}', 'AC:${heroArmorClass(h)}', 'Xp:${h.level}/${h.exp}', 'T:{coop', '{hHunger || "Well-fed"}'];
     const positions = labels.map((label) => status.indexOf(label));
     assert.ok(positions.every((position) => position >= 0), "상태 항목이 빠졌다");
     assert.ok(positions.every((position, index) => index === 0 || positions[index - 1] < position), "상태 항목이 이름·능력치·층·금화·HP·방어·경험치·턴·허기 순서가 아니다");

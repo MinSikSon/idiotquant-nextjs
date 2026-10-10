@@ -4,7 +4,7 @@
 //
 //   ① **2층부터 가끔 선다.** 1층에는 없다(그래야 1층은 섞기 전과 같은 판이다). 계단·모루·
 //      함정 위, 특수 방·금고 안에는 안 선다.
-//   ② **올리면 같은 분류의 다른 물건이 되거나, 제단이 삼킨다**(`TRANSMUTE_SWALLOW_CHANCE`).
+//   ② **올릴수록 삼킬 위험이 커진다**(30% → 50% → 70%). 살아남으면 같은 분류의 다른 물건이다.
 //      강화 주문서는 강화 주문서끼리만 바뀐다 — 안 그러면 지도 주문서가 강화 주문서를 뽑는
 //      뒷문이 된다.
 //   ③ **제단마다 `TRANSMUTE_ALTAR_USES` 번.** 삼켜도 한 번이다. 다 쓰면 그냥 바닥이다.
@@ -15,9 +15,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { TRANSMUTE_SWALLOW_CHANCE, newGame, perform, transmuteCategory } from "@/lib/rogue/game";
+import { TRANSMUTE_SWALLOW_CHANCE, newGame, perform, transmuteCategory, transmuteSwallowChance } from "@/lib/rogue/game";
 import { addToPack } from "@/lib/rogue/hero";
-import { makeItem } from "@/lib/rogue/items";
+import { makeItem, WEAPONS } from "@/lib/rogue/items";
 import { TRANSMUTE_ALTAR_CHANCE, TRANSMUTE_ALTAR_USES, buildLevel } from "@/lib/rogue/dungeon";
 import { deserialize, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
@@ -80,6 +80,10 @@ test("올리면 같은 분류로 바뀌거나 삼켜진다", () => {
         ["scroll", "identify"],
         ["scroll", "enchant weapon"],
         ["weapon", "long sword"],
+        ["weapon", "dart"],
+        ["weapon", "arrow"],
+        ["weapon", "silver arrow"],
+        ["weapon", "bolt"],
         ["armor", "leather"],
         ["ring", "protection"],
         ["wand", "magic missile"],
@@ -103,11 +107,36 @@ test("올리면 같은 분류로 바뀌거나 삼켜진다", () => {
                 continue;
             }
             assert.notEqual(made.id, it.id, `${tag}: 올린 물건이 그대로 놓여 있다`);
-            assert.equal(transmuteCategory(made), transmuteCategory(it), `${tag}: ${made.kind}/${made.type} 로 분류가 바뀌었다`);
+            if (kind === "weapon" && !WEAPONS[type]?.ammunition) {
+                assert.equal(made.kind, it.kind, `${tag}: 무기 분류가 바뀌었다`);
+            } else {
+                assert.equal(transmuteCategory(made), transmuteCategory(it), `${tag}: ${made.kind}/${made.type} 로 분류가 바뀌었다`);
+            }
+            if (type === "dart") assert.equal(made.type, "dart", `${tag}: 표창이 다른 무기로 바뀌었다`);
+            if (kind === "weapon" && WEAPONS[type]?.launcher) {
+                assert.equal(WEAPONS[made.type].launcher, WEAPONS[type].launcher, `${tag}: 탄약 발사 계열이 바뀌었다`);
+            }
         }
     }
     const rate = (swallowed / offered) * 100;
     assert.ok(Math.abs(rate - TRANSMUTE_SWALLOW_CHANCE) < 8, `삼키는 비율이 ${rate.toFixed(1)}% — ${TRANSMUTE_SWALLOW_CHANCE}% 근처여야 한다`);
+});
+
+test("제단을 연달아 쓸수록 삼킬 위험이 오른다", () => {
+    assert.deepEqual([3, 2, 1].map(transmuteSwallowChance), [30, 50, 70]);
+
+    for (const [uses, expected] of [[3, 30], [2, 50], [1, 70]] as const) {
+        let swallowed = 0;
+        const trials = 300;
+        for (let seed = 1; seed <= trials; seed++) {
+            const s = atAltar(seed * 19, uses);
+            const it = give(s, "weapon", "long sword");
+            const after = perform(s, { t: "drop", letter: it.letter! });
+            if (!underfoot(after)) swallowed++;
+        }
+        const rate = swallowed / trials * 100;
+        assert.ok(Math.abs(rate - expected) < 8, `${uses}회 남았을 때 ${rate.toFixed(1)}% — ${expected}% 근처여야 한다`);
+    }
 });
 
 test("제물과 분류가 없는 물건 · 다 쓴 제단 · 제단 밖은 구분한다", () => {

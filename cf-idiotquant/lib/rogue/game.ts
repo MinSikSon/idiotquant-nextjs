@@ -21,6 +21,7 @@ import {
     itemSpots,
     roomSpots,
     randomSpotIn,
+    TRANSMUTE_ALTAR_USES,
 } from "./dungeon";
 import {
     computeFov,
@@ -152,6 +153,7 @@ import {
     makeItem,
     defenseOf,
     type Category,
+    type ItemRollCategory,
     pickCategory,
     randomItem,
     rollCharges,
@@ -1045,7 +1047,7 @@ function heroMove(state: GameState, hero: Hero, dx: number, dy: number, rng: Rng
         say(
             state,
             altar.uses > 0
-                ? `변환 제단이다 — 신의 정렬은 ${ALIGNMENT_NAME[altar.alignment]}이다 (내 신: ${ALIGNMENT_NAME[hero.alignment]}). 같은 정렬의 제단에서 기도하면 대기 시간이 최대 100턴 줄고, 식량 제물은 대기 시간·신의 분노를 줄인다. 다른 정렬에서 기도하면 신이 노한다. 물은 같은 정렬의 성공한 기도로 축복한다. 물건은 ${TRANSMUTE_SWALLOW_CHANCE}%로 삼켜진다 (남은 ${altar.uses}번).`
+                ? `변환 제단이다 — 신의 정렬은 ${ALIGNMENT_NAME[altar.alignment]}이다 (내 신: ${ALIGNMENT_NAME[hero.alignment]}). 같은 정렬의 제단에서 기도하면 대기 시간이 최대 100턴 줄고, 식량 제물은 대기 시간·신의 분노를 줄인다. 다른 정렬에서 기도하면 신이 노한다. 물은 같은 정렬의 성공한 기도로 축복한다. 이번 물건은 ${transmuteSwallowChance(altar.uses)}%로 삼켜진다 (남은 ${altar.uses}번, 쓸수록 위험 증가).`
                 : "불 꺼진 변환 제단이다.",
         );
     }
@@ -2589,20 +2591,35 @@ function removeRing(state: GameState, hero: Hero, letter: string): boolean {
 
 /** 변환 제단이 올린 물건을 삼킬 확률(%). 삼켜도 횟수는 하나 준다. */
 export const TRANSMUTE_SWALLOW_CHANCE = 30;
+const TRANSMUTE_SWALLOW_STEP = 20;
+
+/** 제단은 쓸수록 더 많은 것을 요구한다 — 세 번의 위험은 30% · 50% · 70%다. */
+export function transmuteSwallowChance(usesRemaining: number): number {
+    const used = TRANSMUTE_ALTAR_USES - Math.max(1, Math.min(TRANSMUTE_ALTAR_USES, usesRemaining));
+    return TRANSMUTE_SWALLOW_CHANCE + used * TRANSMUTE_SWALLOW_STEP;
+}
 
 /**
  * 변환 제단이 받는 물건의 분류 — `randomItem` 의 분류로 옮긴다. 강화 주문서는 강화
  * 주문서끼리만 바뀐다(`"enchant"`). **안 받는 것은 `null`** — 식량(바꿔도 식량이다)·금화·
  * 증표(이기는 조건이 사라진다)·유물·보석은 제단에 올려도 그냥 내려놓은 것이다.
  */
-export function transmuteCategory(it: Item): Category | null {
+export function transmuteCategory(it: Item): ItemRollCategory | null {
     switch (it.kind) {
         case "potion":
-        case "weapon":
         case "armor":
         case "ring":
         case "wand":
             return it.kind;
+        case "weapon": {
+            const def = WEAPONS[it.type];
+            if (def?.ammunition) {
+                if (it.type === "dart") return "darts";
+                if (def.launcher === "bow") return "arrows";
+                if (def.launcher === "crossbow") return "bolts";
+            }
+            return "weapon";
+        }
         case "scroll":
             return ENCHANT_SCROLLS.includes(it.type) ? "enchant" : "scroll";
         case "spellbook":
@@ -2669,8 +2686,9 @@ function offerAtAltar(state: GameState, hero: Hero, it: Item, rng: Rng): boolean
     const cat = it.unpaid ? null : transmuteCategory(it);
     if (!cat) return false;
     const name = describe(it, state.known, state.appearance);
+    const swallowChance = transmuteSwallowChance(altar.uses);
     altar.uses -= 1;
-    if (rng.rnd(100) < TRANSMUTE_SWALLOW_CHANCE) {
+    if (rng.rnd(100) < swallowChance) {
         say(state, `${name}을(를) 제단에 올렸다 — 제단이 삼켰다.`);
     } else {
         const made = randomItem(state.level.depth, state.nextItemId++, altar.x, altar.y, rng, cat);
@@ -3869,8 +3887,9 @@ function regenerate(state: GameState, hero: Hero, rng: Rng) {
     const every = regenEvery(hero);
     if (state.turn % every === 0 && hero.hp < hero.maxHp) {
         const naturalTurn = hero.level > 9 && state.turn % 3 === 0;
-        const healed = naturalTurn && hero.constitution > 12
-            ? Math.min(hero.level - 9, rng.between(1, hero.constitution)) : 1;
+        const constitution = heroConstitution(hero);
+        const healed = naturalTurn && constitution > 12
+            ? Math.min(hero.level - 9, rng.between(1, constitution)) : 1;
         hero.hp = Math.min(hero.maxHp, hero.hp + healed);
     }
     if (state.turn % 20 === 0 && hero.power < hero.maxPower) {
@@ -4707,8 +4726,9 @@ function inspectStatus(state: GameState, hero: Hero, who: number, kind: "origin"
     } else if (kind === "dexterity") {
         say(state, `${tag}Dx:${heroDexterity(hero)} · 명중·회피에 능력 보정이 적용된다`);
     } else if (kind === "constitution") {
-        const regenAmount = hero.level > 9 && hero.constitution > 12 ? `1~${Math.min(hero.level - 9, hero.constitution)}HP` : "1HP";
-        say(state, `${tag}Co:${hero.constitution} · 레벨업 체력 +${hpGainPerLevel(hero)} · 자연 회복 ${regenEvery(hero)}턴마다 ${regenAmount}`);
+        const constitution = heroConstitution(hero);
+        const regenAmount = hero.level > 9 && constitution > 12 ? `1~${Math.min(hero.level - 9, constitution)}HP` : "1HP";
+        say(state, `${tag}Co:${constitution} · 레벨업 체력 +${hpGainPerLevel(hero)} · 자연 회복 ${regenEvery(hero)}턴마다 ${regenAmount}`);
     } else if (kind === "charisma") {
         const factor = charismaPriceFactor(hero.charisma);
         say(state, `${tag}Ch:${hero.charisma} · 상점 구매가 ${Math.round(factor * 100)}%`);

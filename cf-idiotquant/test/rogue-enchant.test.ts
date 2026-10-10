@@ -5,11 +5,8 @@
 //
 // 거는 것:
 //
-//   ① **안전 구간은 종류마다 다르다** — 무기는 `+6`, 갑옷은 `+4` 까지 안 굴린다. 안전
-//      구간이 없으면 첫 주문서부터 도박이고, 그건 키우기가 아니라 그냥 운이다. 그런데
-//      **떨어지는 물건이 이미 `+0~+3`** 이라 안전 구간을 `+3` 에 두면 강화가 운 좋은
-//      드랍과 똑같아진다 — 재 보고 알았다. 갑옷이 두 칸 낮은 것은 **한 칸의 무게가 다르기
-//      때문**이다: 갑옷 `+1` 은 맞는 것 자체를 줄여 모든 싸움에 듣는다.
+//   ① 무기와 갑옷 모두 `+3` 까지 안전 강화다. 이후 성공률은 강화 수치 3칸을 표준편차로
+//      둔 정규분포 곡선으로 낮아진다.
 //   ② **실패하면 부서진다** — 수치가 내려가는 게 아니라 물건이 사라진다.
 //   ③ **+9 가 끝이다.** 상한이 없으면 운 좋은 `+12 장검`(4층짜리)이 바포메트의 검
 //      (25층짜리)을 이겨서 **내려갈 이유가 사라진다.**
@@ -55,11 +52,11 @@ function setup(seed: number, kind: "weapon" | "armor", type: string, plus: numbe
 
 /** 종류마다 「어디까지 안전한가」 — 표와 테스트가 같은 것을 본다. */
 const SAFE = [
-    ["weapon", "long sword", 6],
-    ["armor", "plate mail", 4],
+    ["weapon", "long sword", 3],
+    ["armor", "plate mail", 3],
 ] as const;
 
-test("안전 구간은 종류마다 다르다 — 무기 +6 · 갑옷 +4", () => {
+test("무기와 방어구는 +3까지 안전하고 이후 정규분포로 확률이 낮아진다", () => {
     // ── 표: 천장까지 100%, 그 위는 단조 감소, 상한에서 0
     {
         for (const [kind, , safe] of SAFE) {
@@ -75,6 +72,7 @@ test("안전 구간은 종류마다 다르다 — 무기 +6 · 갑옷 +4", () =>
                 );
             }
             assert.equal(enchantOdds(ENCHANT_MAX, kind), 0, `${kind} 가 상한에서 더 오른다`);
+            assert.equal(enchantOdds(ENCHANT_MAX + 1, kind), 0, `${kind} 가 +9를 넘어 성공 확률을 얻는다`);
             for (let n = safe; n < ENCHANT_MAX; n++) {
                 assert.ok(
                     enchantOdds(n, kind) > 0 && enchantOdds(n, kind) < 1,
@@ -84,23 +82,19 @@ test("안전 구간은 종류마다 다르다 — 무기 +6 · 갑옷 +4", () =>
         }
     }
 
-    // ── 갑옷은 **먼저** 도박을 시작할 뿐, 같은 자리에서 더 가혹하지는 않다
+    // ── 두 종류는 같은 정규분포 확률을 쓴다
     {
         for (let n = 0; n <= ENCHANT_MAX; n++) {
-            assert.ok(
-                enchantOdds(n, "armor") <= enchantOdds(n, "weapon"),
-                `+${n} 에서 갑옷이 무기보다 잘 붙는다 — 안전 구간이 좁은 쪽이 유리해졌다`,
-            );
-        }
-        // 두 천장을 다 지난 뒤로는 **같은 값**을 쓴다. 종류마다 꼬리를 따로 밀면 `+9`
-        // 도달률이 한쪽만 수십 배로 벌어진다(밀면 무기 15.4% 대 갑옷 0.6%).
-        for (let n = 6; n <= ENCHANT_MAX; n++) {
             assert.equal(
                 enchantOdds(n, "armor"),
                 enchantOdds(n, "weapon"),
-                `+${n} 에서 두 종류의 꼬리가 갈렸다`,
+                `+${n} 에서 무기와 방어구의 성공률이 갈렸다`,
             );
         }
+        const close = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 0.002, `${actual} ≉ ${expected}`);
+        close(enchantOdds(3, "weapon"), 0.946);
+        close(enchantOdds(6, "weapon"), 0.411);
+        close(enchantOdds(8, "weapon"), 0.135);
     }
 
     // ── 천장까지는 절대 안 부서진다
@@ -173,6 +167,16 @@ test("상한과 대상 없는 읽기는 주문서도 턴도 안 쓴다", () => {
         assert.ok(after.messages.some((m) => m.includes("더 손댈 곳이 없다")));
     }
 
+    // 저장 데이터 등이 이미 +9를 넘은 경우에도 더 강화되지 않는다.
+    {
+        const { s, it, scroll } = setup(79, "armor", "plate mail", ENCHANT_MAX + 1);
+        const turnBefore = s.turn;
+        const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
+        assert.equal(enchantOf(it), ENCHANT_MAX + 1, "상한 초과 장비가 더 강화됐다");
+        assert.equal(after.turn, turnBefore, "상한 초과 장비에서 턴이 갔다");
+        assert.ok(after.messages.some((m) => m.includes("더 손댈 곳이 없다")));
+    }
+
     // ── 대상 없이 읽으면 아무 일도 안 난다 — 주문서도 턴도 그대로
     {
         const { s, scroll } = setup(78, "weapon", "long sword", 0);
@@ -224,18 +228,18 @@ test("갑옷도 강화되고, 엉뚱한 것에는 안 걸린다", () => {
 test("굴림 줄이 남고, 저주받은 것도 걸리고, 정체를 알게 된다", () => {
     // ── 굴림 줄이 남는다 — 확률과 굴린 눈과 결과
     {
-        const { s, it, scroll } = setup(81, "weapon", "silver sword", 6); // 무기 천장 바로 위 — 55%
+        const { s, it, scroll } = setup(81, "weapon", "silver sword", 3); // 안전 구간 다음 시도 — 약 95%
         const after = perform(s, { t: "read", letter: scroll.letter!, target: it.letter! });
         // **마지막 계산 줄이 아니라 강화 줄을 집는다.** 같은 턴에 몬스터가 때리면 그
         // 뒤에 `· 피해 …` 가 붙어서, 마지막 줄로 잡으면 엉뚱한 것을 본다.
         const line = after.messages.filter(isDetail).find((l) => l.startsWith("· 강화 "))!;
         assert.ok(line, `강화 줄이 없다: ${JSON.stringify(after.messages.filter(isDetail))}`);
         assert.match(line, /^· 강화 /, `강화 줄이 없다: ${line}`);
-        assert.match(line, /→ \+7/, "어디로 가는지가 없다");
+        assert.match(line, /→ \+4/, "어디로 가는지가 없다");
         assert.match(line, /d100 \d+/, "굴린 눈이 없다");
         // **화면이 적는 확률과 같은 자리에서 온다**(`enchantOdds`).
         assert.ok(
-            line.includes(`${Math.round(enchantOdds(6, "weapon") * 100)}%`),
+            line.includes(`${Math.round(enchantOdds(3, "weapon") * 100)}%`),
             `적힌 확률이 표와 다르다: ${line}`,
         );
         assert.match(line, /→ (성공|실패)$/, "결과가 없다");
