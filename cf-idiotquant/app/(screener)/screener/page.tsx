@@ -860,12 +860,16 @@ function ScreenerContent() {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
 
-    // 비로그인에게는 조작 가능한 전체 목록 대신, 청산가치보다 싼 종목만 기대수익 순으로
+    // 비로그인에게는 조작 가능한 전체 목록 대신, NCAV 1배 이상·PBR 1 미만·PER 양수인 종목만 기대수익 순으로
     // 짧게 보여 준다. 저장된 개인 필터나 URL 필터가 첫 화면을 빈 화면으로 만들지 않게
     // 원본 미리보기 목록에서 항상 같은 기준으로 뽑는다.
     const guestRecommendations = useMemo(() =>
         sortList(
-            ncavDailyList.list.filter((item: any) => safeNum(item.ncav_ratio) >= 1),
+            ncavDailyList.list.filter((item: any) =>
+                safeNum(item.ncav_ratio) >= 1 &&
+                safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1 &&
+                safeNum(item.per) > 0
+            ),
             'ncav_ratio',
             'desc'
         ).slice(0, PREVIEW_SIZE),
