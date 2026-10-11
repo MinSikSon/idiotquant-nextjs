@@ -397,7 +397,7 @@ export interface ShopState {
 }
 
 /** 특수 방의 갈래. 무엇이 더 나오고 무엇이 덜 나오는지는 `dungeon.SPECIAL_ROOMS` 가 안다. */
-export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop";
+export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop" | "fountain";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
 export type HeroRace = "human" | "orc" | "gnome" | "elf" | "dwarf";

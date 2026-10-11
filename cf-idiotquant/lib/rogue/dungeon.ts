@@ -616,6 +616,9 @@ export const SPECIAL_ROOMS: Record<
     // 상점은 **몫을 안 받는다**(κ 0) — 진열품은 값을 치러야 하는 물건이라 층의 공짜 몫과
     // 따로 센다(`game.stockShop`). 고르는 길도 따로다(`pickSpecialRoom` 이 먼저 굴린다).
     shop: { name: "상점", kappa: 0, bias: {}, monsters: 0, awake: false },
+    // 분수방은 여러 분수를 직접 찾아다니는 탐험 보상이다. 일반 분수처럼 각 분수의
+    // 마법 여부와 효과는 따로 굴리고, 방 안의 아이템 몫은 소모품 쪽으로 기울인다.
+    fountain: { name: "분수방", kappa: 0.8, bias: { potion: 2, food: 0.5 }, monsters: 1, awake: false },
 };
 
 /** 상점이 서는 첫 층 — NetHack 은 2층부터지만, 우리 2층은 금화가 거의 없다(잰 것: 중앙값 0). */
@@ -1462,6 +1465,21 @@ export function buildLevel(depth: number, rng: Rng, layout: Layout = pickLayout(
         const spot = rng.pick(openTiles(level, room, avoid));
         if (!spot) continue;
         level.fountains!.push({ ...spot, magic: rng.rnd(7) === 0, magicUsed: false, drinks: 0 });
+    }
+
+    // 특별 분수방은 일반 방 확률을 대신해 2~4개의 독립된 분수를 둔다.
+    // 계단·모루·함정·변환 제단과 겹치지 않으며, 기존 fountain 명령을 그대로 사용한다.
+    if (level.special?.kind === "fountain") {
+        const room = level.rooms[level.special.room];
+        const avoid = [down, level.upStairs, level.anvil, ...level.traps,
+            ...(level.transmuteAltar ? [level.transmuteAltar] : [])].filter((p): p is Pos => !!p);
+        const count = rng.between(2, 4);
+        for (let i = 0; i < count; i++) {
+            const spot = rng.pick(openTiles(level, room, avoid));
+            if (!spot) break;
+            level.fountains!.push({ ...spot, magic: rng.rnd(7) === 0, magicUsed: false, drinks: 0 });
+            avoid.push(spot);
+        }
     }
 
     return level;

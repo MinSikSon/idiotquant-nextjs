@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 
 import { buildLevel, reachable } from "@/lib/rogue/dungeon";
 import { Rng } from "@/lib/rogue/rng";
-import { MAP_H, MAP_W, T, idx, walkable, type Tile } from "@/lib/rogue/types";
+import { MAP_H, MAP_W, T, fountainsOf, idx, walkable, type Tile } from "@/lib/rogue/types";
 
 /** 방 안쪽(없는 방이면 그 점)에서 대표 칸 하나. */
 function anchorOf(r: { x: number; y: number; w: number; h: number; gone: boolean }) {
@@ -67,6 +67,22 @@ test("층은 끊기지 않는다 — 방도 계단도 걸어서 닿는다", () =
             );
         }
     }
+});
+
+test("특수 분수방에는 서로 다른 자리에 2~4개의 분수가 선다", () => {
+    let found = false;
+    for (let seed = 1; seed <= 2000 && !found; seed++) {
+        const level = buildLevel(15, new Rng(seed));
+        if (level.special?.kind !== "fountain") continue;
+        found = true;
+        const room = level.rooms[level.special.room];
+        const inRoom = fountainsOf(level).filter((f) =>
+            f.x > room.x && f.x < room.x + room.w - 1 && f.y > room.y && f.y < room.y + room.h - 1,
+        );
+        assert.ok(inRoom.length >= 2 && inRoom.length <= 4, `분수방에 ${inRoom.length}개가 있다`);
+        assert.equal(new Set(inRoom.map(({ x, y }) => `${x},${y}`)).size, inRoom.length);
+    }
+    assert.ok(found, "검사한 시드에서 분수방이 한 번도 나오지 않았다");
 });
 
 test("같은 시드는 같은 층이고, 방은 안 겹친다", () => {
