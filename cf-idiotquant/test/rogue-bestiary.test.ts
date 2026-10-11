@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 
 import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
+import { addToPack, carryCapacity, makeHero, packWeight } from "@/lib/rogue/hero";
 import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
 import { defenseOf } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
@@ -79,6 +80,53 @@ test("잡기 전에는 속을 안 보이고, 한 마리 잡으면 알게 된다"
         assert.equal(seen.exp, MONSTERS.S.exp);
         assert.equal(seen.hp, MONSTERS.S.hp);
         assert.deepEqual(seen.damage, MONSTERS.S.damage);
+    }
+});
+
+test("NetHack 시체 무게와 직업별 기본 운반 한도를 반영한다", () => {
+    assert.equal(MONSTERS.J.corpseWeight, 1300, "재버워크는 NetHack 기준 1,300 aum이어야 한다");
+    assert.equal(MONSTERS.T.corpseWeight, 800, "일반 트롤은 NetHack 기준 800 aum이어야 한다");
+
+    const origins = ["knight", "rogue", "alchemist", "scholar", "ranger", "archeologist", "elementalist"] as const;
+    const cannotPick = (origin: typeof origins[number], weight: number) => {
+        const hero = makeHero(new Rng(1), (() => { let id = 1; return () => id++; })(), origin);
+        const corpse = makeItem("food", "food", 999, -1, -1);
+        corpse.corpseOf = "검증용 시체";
+        corpse.corpseWeight = weight;
+        return addToPack(hero, corpse) === null;
+    };
+
+    // 기본 능력치와 시작 장비를 그대로 둔 새 캐릭터 기준. 중간에 주운 짐이 있으면
+    // 이보다 더 가벼운 시체도 못 들 수 있다.
+    const expected: Record<typeof origins[number], { emu: boolean; yeti: boolean; jabberwock: boolean; dragon: boolean }> = {
+        knight:       { emu: false, yeti: false, jabberwock: false, dragon: true },
+        rogue:        { emu: true,  yeti: false, jabberwock: false, dragon: true },
+        alchemist:    { emu: true,  yeti: false, jabberwock: false, dragon: true },
+        scholar:      { emu: true,  yeti: true,  jabberwock: false, dragon: true },
+        ranger:       { emu: false, yeti: false, jabberwock: false, dragon: true },
+        archeologist: { emu: false, yeti: false, jabberwock: false, dragon: true },
+        elementalist: { emu: true,  yeti: true,  jabberwock: false, dragon: true },
+    };
+    for (const origin of origins) {
+        assert.equal(cannotPick(origin, MONSTERS.E.corpseWeight!), expected[origin].emu, `${origin}: 에뮤 시체 운반 판정`);
+        assert.equal(cannotPick(origin, MONSTERS.Y.corpseWeight!), expected[origin].yeti, `${origin}: 예티 시체 운반 판정`);
+        assert.equal(cannotPick(origin, MONSTERS.J.corpseWeight!), expected[origin].jabberwock, `${origin}: 재버워크 시체 운반 판정`);
+        assert.equal(cannotPick(origin, MONSTERS.D.corpseWeight!), expected[origin].dragon, `${origin}: 용 시체 운반 판정`);
+    }
+    for (const origin of origins) {
+        assert.equal(cannotPick(origin, MONSTERS.C.corpseWeight!), true, `${origin}: 켄타우로스 시체 운반 판정`);
+    }
+
+    for (const origin of origins) {
+        for (const def of Object.values(MONSTERS)) {
+            if (!def.corpseWeight) continue;
+            const hero = makeHero(new Rng(1), (() => { let id = 1; return () => id++; })(), origin);
+            const corpse = makeItem("food", "food", 999, -1, -1);
+            corpse.corpseOf = def.name;
+            corpse.corpseWeight = def.corpseWeight;
+            const overloaded = packWeight(hero) + def.corpseWeight >= carryCapacity(hero) * 3;
+            assert.equal(addToPack(hero, corpse) === null, overloaded, `${origin}: ${def.name} 시체의 무게 한도`);
+        }
     }
 });
 
