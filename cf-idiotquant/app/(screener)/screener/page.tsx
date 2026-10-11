@@ -22,7 +22,6 @@ import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
-import { selectGuestRecommendations } from "@/lib/utils/guestRecommendations";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
     safeNum, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
@@ -638,13 +637,17 @@ function ScreenerContent() {
     // 날짜가 비었을 때 돌던 대체 탐색(reqDiscoverNcavDates)도 함께 뺀다. 그건 하루치를
     // 훑는 요청을 일곱 번 더 보내는 것이라, 위를 없애고 이것만 남기면 오히려 늘어난다.
     // 화면에 날짜 선택을 붙이는 날 둘을 함께 되살리면 된다.
-    // 비로그인은 캐시된 추천 10개만 받고, 로그인하면 전체 목록을 받는다.
+    // 비로그인은 그릴 만큼만 받는다. 어차피 앞 PREVIEW_SIZE 줄만 보이는데 목록 전체를
+    // 받아 오면 압축 전 1.3MB 가 오간다(한 행 570바이트 × 2,400행). 크롤러와 처음 온
+    // 사람이 대부분이라 그 값이 곧 이 화면의 부하다.
     //
     // 세션이 정해지기 전에는 부르지 않는다. status 가 loading → authenticated 로 바뀌는
     // 동안 두 번 부르면, 아끼려고 만든 분기가 요청을 하나 더 만드는 꼴이 된다.
     useEffect(() => {
         if (sessionStatus === "loading") return;
-        dispatch(reqGetNcavDailyList({ date: "latest", guestPreview: !isLoggedIn, country }));
+        dispatch(reqGetNcavDailyList(
+            { date: "latest", limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
+        ));
     }, [dispatch, sessionStatus, isLoggedIn, country]);
 
     useEffect(() => {
@@ -753,7 +756,7 @@ function ScreenerContent() {
     }, [queryString]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: "latest", guestPreview: !isLoggedIn, country }));
+        dispatch(reqGetNcavDailyList({ date: "latest", limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
         setDisplayCount(DAILY_PAGE_SIZE);
     }, [dispatch, isLoggedIn, country]);
 
@@ -859,9 +862,17 @@ function ScreenerContent() {
 
     // 비로그인에게는 조작 가능한 전체 목록 대신, NCAV 1배 이상·PBR 1 미만·PER 양수인 종목만 기대수익 순으로
     // 짧게 보여 준다. 저장된 개인 필터나 URL 필터가 첫 화면을 빈 화면으로 만들지 않게
-    // 공개 추천 응답에서 항상 같은 기준으로 뽑는다.
+    // 원본 미리보기 목록에서 항상 같은 기준으로 뽑는다.
     const guestRecommendations = useMemo(() =>
-        selectGuestRecommendations(ncavDailyList.list, PREVIEW_SIZE),
+        sortList(
+            ncavDailyList.list.filter((item: any) =>
+                safeNum(item.ncav_ratio) >= 1 &&
+                safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1 &&
+                safeNum(item.per) > 0
+            ),
+            'ncav_ratio',
+            'desc'
+        ).slice(0, PREVIEW_SIZE),
         [ncavDailyList.list]
     );
 
@@ -906,7 +917,9 @@ function ScreenerContent() {
             : '',
     };
 
-    // 오늘 조건에 맞은 전체 개수. 서버가 따로 세어 주는 meta.matched 를 우선 쓴다.
+    // 오늘 조건에 맞은 전체 개수. 비로그인은 목록을 PREVIEW_SIZE 만큼만 받으므로
+    // 받아 온 길이로 세면 "10개 발굴" 이 되어 버린다. 개수는 서버가 따로 세어 주는
+    // meta.matched 를 쓴다 — limit 과 무관한 값이다.
     const matchedTotal = isLoggedIn
         ? filteredList.length
         : (ncavDailyList.total || filteredList.length);
@@ -1228,8 +1241,10 @@ function ScreenerContent() {
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
                         종목 수가 매번 다른 위치에 서고, 전략끼리 개수를 비교할 수가 없었다.
                         격자는 이름 위 / 개수 아래로 열을 맞추므로 훑는 것만으로 비교가 된다. */}
-                    {/* 전략별 개수는 비로그인에게 보여 주지 않는다. 비로그인 화면은
-                        추천 카드만 보여 주므로 전략별 필터를 조작할 수 없다. */}
+                    {/* 전략별 개수는 비로그인에게 보여 주지 않는다. 목록을 PREVIEW_SIZE 만큼만
+                        받으므로 이 격자가 세는 것은 "오늘 이 전략에 몇 개" 가 아니라 "받아 온
+                        열 줄 중 몇 개" 가 된다. 거짓 숫자를 그리는 것보다 없는 편이 낫다.
+                        검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
                     {isLoggedIn && <>
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <button

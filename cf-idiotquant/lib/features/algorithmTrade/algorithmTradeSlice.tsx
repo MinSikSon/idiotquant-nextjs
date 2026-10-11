@@ -417,14 +417,11 @@ export const algorithmTradeSlice = createAppSlice({
         ),
         reqGetNcavDailyList: create.asyncThunk(
             // limit 을 주면 그만큼만 받는다. 미리보기만 그리는 화면(홈·게임 종목 풀)이 쓴다.
-            async (arg?: string | { date?: string; limit?: number; country?: "KR" | "US"; guestPreview?: boolean }) => {
+            async (arg?: string | { date?: string; limit?: number; country?: "KR" | "US" }) => {
                 const date = typeof arg === "string" ? arg : arg?.date;
                 const limit = typeof arg === "object" ? arg?.limit : undefined;
                 const country = typeof arg === "object" ? arg?.country : undefined;
-                const guestPreview = typeof arg === "object" && arg?.guestPreview;
-                const result = guestPreview
-                    ? await fetch(`/api/screener/recommendations?country=${country ?? "KR"}`).then(response => response.json())
-                    : await getScanDailyList(date, undefined, limit, country);
+                const result = await getScanDailyList(date, undefined, limit, country);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
