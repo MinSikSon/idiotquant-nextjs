@@ -306,8 +306,10 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
             hero.weaponId = item.id;
         } else if (origin === "ranger" && WEAPONS[item.type]?.launcher === "bow" && hero.ammoId === null) {
             hero.ammoId = item.id;
-        } else if (item.kind === "wand" && canWieldWand(hero) && hero.wandId === null) {
-            hero.wandId = item.id;
+        } else if (item.kind === "wand" && (origin === "alchemist" || origin === "scholar")) {
+            // 이 두 출신은 시작 지팡이를 주손에 든다. 지팡이와 단검을 별도 슬롯에
+            // 동시에 장착하던 옛 규칙은 이제 weaponId 하나로 합친다.
+            hero.weaponId = item.id;
         } else if (item.kind === "armor" && hero.armorId === null) {
             hero.armorId = item.id;
         }
@@ -492,7 +494,7 @@ export function takeFromPack(hero: Hero, it: Item, n = 1): void {
     hero.pack = hero.pack.filter((p) => p.id !== it.id);
     if (hero.weaponId === it.id) hero.weaponId = null;
     if (hero.ammoId === it.id) hero.ammoId = null;
-    if (hero.wandId === it.id) hero.wandId = null;
+    if (hero.wandId === it.id) hero.wandId = null; // 구 저장 호환용
     if (hero.armorId === it.id) hero.armorId = null;
     if (hero.leftRingId === it.id) hero.leftRingId = null;
     if (hero.rightRingId === it.id) hero.rightRingId = null;
@@ -559,7 +561,7 @@ export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } |
     if (equipped && equipped.count > 0 && launcherFor(hero, equipped)) return { kind: "throw", item: equipped };
     const ammo = hero.pack.filter((it) => it.count > 0 && launcherFor(hero, it)).sort(byDepth);
     if (ammo[0]) return { kind: "throw", item: ammo[0] };
-    const wand = equippedWand(hero);
+    const wand = hero.origin === "alchemist" || hero.origin === "scholar" ? equippedWand(hero) : undefined;
     if (wand) return { kind: "zap", item: wand };
     if (hero.origin !== "ranger") return undefined;
     const dart = hero.pack.find((it) => it.kind === "weapon" && it.type === "dart" && it.count > 0);
@@ -567,12 +569,14 @@ export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } |
 }
 
 export function canWieldWand(hero: Hero): boolean {
-    return hero.origin === "alchemist" || hero.origin === "scholar";
+    // NetHack에서는 역할 제한 없이 지팡이를 손에 들 수 있다.
+    void hero;
+    return true;
 }
 
 export function equippedWand(hero: Hero): Item | undefined {
-    if (!canWieldWand(hero)) return undefined;
-    return hero.pack.find((i) => i.id === hero.wandId && i.kind === "wand");
+    const held = equippedWeapon(hero);
+    return held?.kind === "wand" ? held : undefined;
 }
 
 /** 지금 쥔 무기가 제 직업의 무기인가. 전투·화면이 같은 답을 읽는다. */

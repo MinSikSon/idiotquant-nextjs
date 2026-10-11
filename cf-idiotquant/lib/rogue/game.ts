@@ -35,7 +35,6 @@ import {
     canOffHand,
     equippedWeapon,
     EXP_LEVELS,
-    canWieldWand,
     canWieldWeapon,
     DIG_DOWN_EFFORT,
     DIG_WALL_EFFORT,
@@ -2368,25 +2367,22 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         return false;
     }
     if (it.kind === "wand") {
-        if (!canWieldWand(hero)) {
-            say(state, "이 직업은 지팡이를 장착할 수 없다.");
+        const current = equippedWeapon(hero);
+        if (current?.cursed) {
+            current.curseKnown = true;
+            say(state, `${describe(current, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
             return false;
         }
-        const curWand = equippedWand(hero);
-        if (curWand?.cursed) {
-            curWand.curseKnown = true;
-            say(state, `${describe(curWand, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
-            return false;
-        }
-        if (hero.wandId === it.id) {
-            hero.wandId = null;
+        if (hero.weaponId === it.id) {
+            hero.weaponId = null;
             say(state, `${describe(it, state.known, state.appearance)} 장착을 해제했다.`);
             return true;
         }
-        hero.wandId = it.id;
+        hero.weaponId = it.id;
+        hero.offWeaponId = null;
         state.known[`wand:${it.type}`] = true;
         state.itemCodex[`wand:${it.type}`] = true;
-        say(state, `${describe(it, state.known, state.appearance)}을(를) 장착했다.`);
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 주손에 쥐었다.`);
         if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
         return true;
     }
@@ -2410,7 +2406,7 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         if (revealCurse(state, it)) say(state, "화살통에 착 달라붙는다. 저주받았다!");
         return true;
     }
-    if (!canWieldWeapon(hero, it)) {
+    if (!canWieldWeapon(hero, it) && hero.weaponId !== it.id) {
         const only = WEAPONS[it.type]?.origin;
         say(state, `${describe(it, state.known, state.appearance)}은(는) ${only ? ORIGINS[only].name : "다른 직업"}만 다룰 수 있다.`);
         return false;
@@ -2420,6 +2416,16 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         cur.curseKnown = true;
         say(state, `${describe(cur, state.known, state.appearance)}이(가) 손에서 떨어지지 않는다!`);
         return false;
+    }
+    if (hero.weaponId === it.id) {
+        hero.weaponId = null;
+        if (hero.offWeaponId !== null) {
+            const off = offHandWeapon(hero);
+            hero.offWeaponId = null;
+            if (off) say(state, `${describe(off, state.known, state.appearance)}을(를) 보조손에서 내렸다.`);
+        }
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 손에서 뺐다.`);
+        return true;
     }
     hero.weaponId = it.id;
     // **써 봤으니 안다** — 종류가 아니라 이 물건의 손질 정도를 안다(`Item.plusKnown`).
@@ -2488,6 +2494,11 @@ function wear(state: GameState, hero: Hero, letter: string): boolean {
     if (!it || it.kind !== "armor") {
         say(state, "입을 수 있는 것이 아니다.");
         return false;
+    }
+    if (hero.armorId === it.id) {
+        hero.armorId = null;
+        say(state, `${describe(it, state.known, state.appearance)}을(를) 벗었다.`);
+        return true;
     }
     hero.armorId = it.id;
     it.plusKnown = true;
@@ -2929,7 +2940,7 @@ function stash(state: GameState, hero: Hero, letter: string): boolean {
     const oldId = it.id;
     takeFromPack(hero, it, stashCount);
     if (hero.offWeaponId === oldId) hero.offWeaponId = null;
-    if (hero.wandId === oldId) hero.wandId = null;
+    if (hero.wandId === oldId) hero.wandId = null; // 구 저장 호환용
     delete stored.letter;
     stored.x = -1;
     stored.y = -1;
@@ -3891,7 +3902,7 @@ function regenerate(state: GameState, hero: Hero, rng: Rng) {
     if (state.turn % 20 === 0 && hero.power < hero.maxPower) {
         hero.power = Math.min(hero.maxPower, hero.power + Math.max(1, Math.floor((hero.wisdom + hero.intelligence) / 15)));
     }
-    if (state.turn % wandRechargeEvery(hero) !== 0) return;
+    if ((hero.origin !== "alchemist" && hero.origin !== "scholar") || state.turn % wandRechargeEvery(hero) !== 0) return;
     const wand = equippedWand(hero);
     if (wand && (wand.charges ?? 0) < MAX_WAND_CHARGES) {
         wand.charges = Math.min(MAX_WAND_CHARGES, (wand.charges ?? 0) + 1);

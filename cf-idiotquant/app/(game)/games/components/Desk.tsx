@@ -510,7 +510,9 @@ export default function Desk({
             case "weapon":
                 if (WEAPONS[it.type]?.launcher === "bow") {
                     out.push({ label: it.id === hero.ammoId ? "화살통에서 뺀다" : "화살통에 장착", on: go({ t: "wield", letter: it.letter! }) });
-                } else if (!worn && canWieldWeapon(hero, it)) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                } else if (it.id === hero.weaponId || (!worn && canWieldWeapon(hero, it))) {
+                    out.push({ label: it.id === hero.weaponId ? "손에서 뺀다" : "쥔다", on: go({ t: "wield", letter: it.letter! }) });
+                }
                 // 이도류 — **값 읽기지 규칙이 아니다**(`canOffHand`). 눌러도 엔진이 한 번 더 본다.
                 if (hero.offWeaponId === it.id) {
                     out.push({ label: "보조손에서 내린다", on: go({ t: "offHand", letter: it.letter! }) });
@@ -536,7 +538,9 @@ export default function Desk({
                 meltRow();
                 break;
             case "armor":
-                if (!worn) out.push({ label: "입는다", on: go({ t: "wear", letter: it.letter! }) });
+                if (it.id === hero.armorId || !worn) {
+                    out.push({ label: it.id === hero.armorId ? "벗는다" : "입는다", on: go({ t: "wear", letter: it.letter! }) });
+                }
                 if (onAnvil && !it.socketGem && hero.pack.some((p) => p.kind === "gem")) {
                     out.push({
                         label: "보석 세공 (모루)",
@@ -661,7 +665,7 @@ export default function Desk({
                 break;
             case "wand":
                 if (canWieldWand(hero)) {
-                    out.push({ label: it.id === hero.wandId ? "해제" : "장착", on: go({ t: "wield", letter: it.letter! }) });
+                    out.push({ label: it.id === hero.weaponId ? "손에서 뺀다" : "주손에 쥔다", on: go({ t: "wield", letter: it.letter! }) });
                 }
                 out.push({
                     label: "쏜다",
@@ -948,8 +952,6 @@ export default function Desk({
                                         ? "쥐고 있다"
                                         : it.id === hero.ammoId
                                         ? "화살통에 장착"
-                                        : it.id === hero.wandId
-                                        ? "장착 중"
                                         // **보조손도 적는다** — 안 적으면 배낭에서 그냥 놀고 있는 한 자루로 읽힌다.
                                         : it.id === hero.offWeaponId
                                         ? "보조손에 쥐고 있다"

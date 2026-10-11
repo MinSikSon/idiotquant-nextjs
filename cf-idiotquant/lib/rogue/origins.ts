@@ -277,7 +277,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         iconInk: "var(--rg-potion)",
         description: "모든 포션의 비밀을 꿰뚫고 있는 비약의 대가.",
         traitName: "연금술의 통찰",
-        traitDescription: "모든 포션 시작부터 100% 식별, 회복 포션 1.5배 · 해로운 포션은 무작위 이득 · 지팡이 장착 가능, 걷기 회복 때 충전 +1",
+        traitDescription: "모든 포션 시작부터 100% 식별, 회복 포션 1.5배 · 해로운 포션은 무작위 이득 · 시작 지팡이를 주손에 쥠, 걷기 회복 때 충전 +1",
         weaponAffinity: { name: "연금 도구", types: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "spear"], description: "연금술사 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "축복의 기름 제조",
         advancedSkillDescription: "포션 2개로 축복의 기름 제작 · 층마다 한 번",

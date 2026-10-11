@@ -480,7 +480,7 @@ export interface Hero {
     weaponId: number | null;
     /** 레인저가 활로 쏠 탄약 뭉치. */
     ammoId: number | null;
-    /** 연금술사·고서 연구자가 쏠 때 사용하는 장착 지팡이. */
+    /** 예전 저장 자료를 읽기 위한 필드. 현재 지팡이는 weaponId로 장착한다. */
     wandId: number | null;
     /**
      * 보조손에 쥔 것 — **이도류.** 없으면 `null`.

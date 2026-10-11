@@ -338,6 +338,13 @@ function normalize(s: Saved): GameState | null {
 
     const fixHero = (h: Hero): Hero => {
         const fixed = rawHero(h);
+        // 예전 저장은 지팡이를 별도 슬롯에 들었다. 무기 슬롯이 비어 있으면 그 장착을
+        // 새 주손 슬롯으로 옮기고, 일반 무기를 이미 쥐었다면 그것을 유지한다.
+        if (fixed.wandId != null) {
+            const legacyWand = fixed.pack.find((item) => item.id === fixed.wandId && item.kind === "wand");
+            if (fixed.weaponId == null && legacyWand) fixed.weaponId = legacyWand.id;
+            fixed.wandId = null;
+        }
         delete fixed.itemLuck;
         delete (fixed as Hero & { pendingSkillPicks?: number }).pendingSkillPicks;
         // 파다 만 자리는 숫자 넷이 다 있을 때만 잇는다. 남이 보낸 판(`deserialize`)도 이 길이라
