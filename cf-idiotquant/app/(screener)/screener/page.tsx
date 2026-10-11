@@ -166,7 +166,7 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
 const DEFAULT_VIEW: ViewMode = 'card';
 // 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
 const GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3';
-const CARD_GRID_BODY = 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 p-1.5 sm:gap-3 sm:p-3';
+const CARD_GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 p-1.5 sm:gap-3 sm:p-3';
 // URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
 const parseViewMode = (v: string | null | undefined): ViewMode =>
     (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
@@ -407,7 +407,7 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
                     <span className="block mt-0.5 font-mono text-base sm:text-lg font-black tabular-nums text-brand">+{expectedReturn.toFixed(0)}%</span>
                 </span>
             </div>
-            <span className="block mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
+            <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 border-t border-neutral-100 dark:border-border-subtle-dark text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
                 순유동자산이 시가총액의 <strong className="font-mono text-neutral-700 dark:text-neutral-200">{ncav.toFixed(2)}배</strong> · 자세히 보기 <ChevronRight className="inline -mt-px" size={12} />
             </span>
         </button>
@@ -1894,7 +1894,7 @@ function ScreenerContent() {
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5 sm:gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3">
                                 {guestRecommendations.map((item: any, index) => (
                                     <GuestRecommendationCard key={item.ticker} item={item} rank={index + 1} onClick={handleStockClick} />
                                 ))}
@@ -2036,7 +2036,7 @@ function ScreenerContent() {
                                         )} />
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3">
                                     {visibleList.map((item: any) => (
                                         <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
                                     ))}
