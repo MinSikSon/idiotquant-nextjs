@@ -546,21 +546,22 @@ export function volleyMax(hero: Hero, ammo: Item): number {
  * **`.` 토글 사격**이 쏠 것 — 방향키가 걸음 대신 이것을 쏜다. 없으면 토글이 안 선다.
  *
  * - 지팡이를 쥔 연금술사·연구자: 쥔 지팡이(「비전 속사」).
- * - 레인저: 활을 쥐었으면 **그 활로 쏠 화살**을 먼저 고른다. 활이 없거나 화살이 없으면
- *   배낭의 표창을 던진다. 화살이 여럿이면 층이 얕은 것(화살 → 은화살)부터 쓴다.
+ * - 활을 쥔 직업: **그 활로 쏠 화살**을 먼저 고른다. 화살이 여럿이면 층이 얕은 것
+ *   (화살 → 은화살)부터 쓴다.
+ * - 레인저: 활과 화살이 없으면 배낭의 표창을 던진다.
  *
  * 고르기만 하는 **값 읽기**다 — 쏠 수 있는지는 `perform` 의 `zap`·`throw` 가 다시 본다.
  */
 export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } | undefined {
-    const wand = equippedWand(hero);
-    if (wand) return { kind: "zap", item: wand };
-    if (hero.origin !== "ranger") return undefined;
-    // 활로는 화살을 우선한다. 활이 없거나 화살이 없을 때 표창은 토글 사격 예외로 한 발씩 던진다.
+    // 쥔 발사기에 맞는 탄약을 우선한다. 화살통 장착분이 있으면 먼저 쓰고, 없으면 배낭에서 고른다.
     const byDepth = (a: Item, b: Item) => (WEAPONS[a.type]?.depth ?? 0) - (WEAPONS[b.type]?.depth ?? 0);
     const equipped = equippedAmmo(hero);
     if (equipped && equipped.count > 0 && launcherFor(hero, equipped)) return { kind: "throw", item: equipped };
-    const arrows = hero.pack.filter((it) => launcherFor(hero, it)).sort(byDepth);
-    if (arrows[0]) return { kind: "throw", item: arrows[0] };
+    const ammo = hero.pack.filter((it) => it.count > 0 && launcherFor(hero, it)).sort(byDepth);
+    if (ammo[0]) return { kind: "throw", item: ammo[0] };
+    const wand = equippedWand(hero);
+    if (wand) return { kind: "zap", item: wand };
+    if (hero.origin !== "ranger") return undefined;
     const dart = hero.pack.find((it) => it.kind === "weapon" && it.type === "dart" && it.count > 0);
     return dart ? { kind: "throw", item: dart } : undefined;
 }

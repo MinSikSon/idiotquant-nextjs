@@ -2390,12 +2390,8 @@ function wield(state: GameState, hero: Hero, letter: string): boolean {
         if (revealCurse(state, it)) say(state, "손에 착 달라붙는다. 저주받았다!");
         return true;
     }
-    // 레인저의 화살통 — 활로 쏠 수 있는 화살 뭉치 하나를 골라 둔다.
+    // 화살통 — 활로 쏠 수 있는 화살 뭉치 하나를 골라 둔다.
     if (WEAPONS[it.type]?.launcher === "bow") {
-        if (hero.origin !== "ranger") {
-            say(state, "레인저만 화살을 장착할 수 있다.");
-            return false;
-        }
         const currentAmmo = hero.pack.find((p) => p.id === hero.ammoId);
         if (currentAmmo?.cursed) {
             currentAmmo.curseKnown = true;

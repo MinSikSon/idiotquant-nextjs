@@ -552,7 +552,7 @@ test("석궁과 볼트 — 볼트는 석궁으로만 쏘고, 연사 없이 한 �
     assert.equal(launcherFor(t.heroes[0], packItem(t.heroes[0], "x")!), undefined, "단궁으로 볼트를 쏜다");
 });
 
-test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화살 또는 투척 무기", () => {
+test("`.` 토글 사격 — 쥔 발사기의 탄약, 마법 직업의 지팡이, 레인저의 표창", () => {
     // ── 지팡이를 쥔 연구자는 그 지팡이다(예전 「비전 속사」 그대로)
     {
         const s = newGame(120, {}, {}, {}, {}, "scholar");
@@ -561,13 +561,21 @@ test("`.` 토글 사격 — 마법사는 쥔 지팡이, 레인저는 활의 화�
         assert.equal(shot?.item.type, "magic missile");
     }
 
-    // ── 레인저가 아니면 활을 쥐어도 토글이 안 선다
+    // ── 모든 직업이 활과 화살을 장착하고 조작키 사격을 쓸 수 있다
     {
-        let s = newGame(121, {}, {}, {}, {}, "knight");
-        give(s, makeItem("weapon", "short bow", 990, -1, -1), "y");
-        give(s, makeItem("weapon", "arrow", 991, -1, -1, 10), "z");
-        s = perform(s, { t: "wield", letter: "y" });
-        assert.equal(rapidFireOf(s.heroes[0]), undefined, "근위대에게 사격 토글이 섰다");
+        const origins = ["knight", "rogue", "alchemist", "scholar", "ranger", "archeologist", "elementalist"] as const;
+        for (const [index, origin] of origins.entries()) {
+            let s = newGame(121 + index, {}, {}, {}, {}, origin);
+            give(s, makeItem("weapon", "short bow", 990 + index * 2, -1, -1), "y");
+            give(s, makeItem("weapon", "arrow", 991 + index * 2, -1, -1, 10), "z");
+            s = perform(s, { t: "wield", letter: "y" });
+            s = perform(s, { t: "wield", letter: "z" });
+            const hero = s.heroes[0];
+            assert.equal(hero.weaponId, packItem(hero, "y")!.id, `${origin}: 활을 쥐지 못했다`);
+            assert.equal(hero.ammoId, packItem(hero, "z")!.id, `${origin}: 화살통에 장착하지 못했다`);
+            assert.equal(rapidFireOf(hero)?.item.id, packItem(hero, "z")!.id, `${origin}: 조작키 사격이 화살을 선택하지 않았다`);
+            assert.equal(volleyMax(hero, packItem(hero, "z")!), origin === "ranger" ? 2 : 1, `${origin}: 직업 연사 보너스가 잘못됐다`);
+        }
     }
 
     // ── 레인저는 활을 쥐면 화살 — 은화살보다 보통 화살이 먼저다

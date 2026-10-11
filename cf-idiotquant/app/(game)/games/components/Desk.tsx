@@ -508,7 +508,7 @@ export default function Desk({
 
         switch (it.kind) {
             case "weapon":
-                if (hero.origin === "ranger" && WEAPONS[it.type]?.launcher === "bow") {
+                if (WEAPONS[it.type]?.launcher === "bow") {
                     out.push({ label: it.id === hero.ammoId ? "화살통에서 뺀다" : "화살통에 장착", on: go({ t: "wield", letter: it.letter! }) });
                 } else if (!worn && canWieldWeapon(hero, it)) out.push({ label: "쥔다", on: go({ t: "wield", letter: it.letter! }) });
                 // 이도류 — **값 읽기지 규칙이 아니다**(`canOffHand`). 눌러도 엔진이 한 번 더 본다.
