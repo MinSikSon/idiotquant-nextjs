@@ -132,6 +132,8 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
     : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`;
 
   const hasChart = chartConfig?.data?.length > 0;
+  const latestChartDate = chartConfig?.categories?.at(-1);
+  const latestChartPrice = chartConfig?.data?.at(-1);
 
   // 지표 설명에 계산식을 적는다 — 이름만으로는 초보자가 판단할 수 없다.
   // 색은 기준 충족 시에만 초록, 아니면 중립.
@@ -339,16 +341,24 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
       {/* ── 미니 차트 ── */}
       {hasChart ? (
         <div className="px-5 pb-4">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Activity size={9} className="text-neutral-400" />
-            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">가격 추이</p>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5">
+              <Activity size={9} className="text-neutral-400" />
+              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">일별 종가</p>
+            </div>
+            <p className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+              {latestChartDate && /^\d{8}$/.test(latestChartDate)
+                ? `${latestChartDate.slice(0, 4)}.${latestChartDate.slice(4, 6)}.${latestChartDate.slice(6)}`
+                : latestChartDate} · {currency}{latestChartPrice?.toLocaleString()}
+            </p>
           </div>
-          <div className="h-[68px] rounded-xl overflow-hidden border border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas">
+          <div className="h-[180px] rounded-xl border border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas">
             <LineChart
-              data_array={[{ name: "P", data: chartConfig.data, color: cfg.chartColor }]}
+              data_array={[{ name: "종가", data: chartConfig.data, color: cfg.chartColor }]}
               category_array={chartConfig.categories}
-              height={68}
-              show_yaxis_label={false}
+              height={180}
+              show_xaxis
+              currency={currency}
               legend_disable
             />
           </div>

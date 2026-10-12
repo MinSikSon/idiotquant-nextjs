@@ -155,7 +155,7 @@ const StockCardSkeleton = memo(() => (
       <div className="h-10 bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl border border-neutral-100 dark:border-border-subtle-dark" />
     </div>
     <div className="px-5 pb-4">
-      <div className="h-[68px] bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl border border-neutral-100 dark:border-border-subtle-dark" />
+      <div className="h-[180px] bg-surface-canvas dark:bg-surface-dark-canvas rounded-xl border border-neutral-100 dark:border-border-subtle-dark" />
     </div>
     {/* 카드의 지표 4칸 + 복사줄과 같은 구성 */}
     <div className="border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-surface-dark-muted">
