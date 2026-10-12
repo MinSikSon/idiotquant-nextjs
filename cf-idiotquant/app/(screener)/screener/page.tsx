@@ -9,7 +9,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectNcavDailyList, reqGetNcavDailyList,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { getScanDailyDates } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
+import { getScanDailyDates, getScanWeeklyPeriods } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import {
     selectLikedTickers, selectLikedList, selectTogglePending,
     reqGetMyLikes, reqToggleLike,
@@ -511,9 +511,11 @@ function ScreenerContent() {
     const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
     const [selectedDate, setSelectedDate] = useState("latest");
     const [availableDates, setAvailableDates] = useState<string[]>([]);
+    const [weeklyPeriods, setWeeklyPeriods] = useState<string[]>([]);
     const [datesLoading, setDatesLoading] = useState(false);
     const [datesError, setDatesError] = useState(false);
-    const requestedDate = isAdmin ? selectedDate : "latest";
+    const weeklyPeriod = isAdmin && selectedDate.startsWith("weekly:") ? selectedDate.slice(7) : null;
+    const requestedDate = isAdmin && !weeklyPeriod ? selectedDate : "latest";
     // 비로그인 시 고급 필터/관심 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
     const requireLogin = useCallback(() => {
         router.push(`/login?callbackUrl=${encodeURIComponent(`/screener${window.location.search}`)}`);
@@ -635,21 +637,26 @@ function ScreenerContent() {
         };
     }, [filterOpen]);
 
-    // 날짜 목록은 관리자에게만 요청하고, 현재 시장의 스캔일만 선택지로 보여준다.
+    // 날짜 목록은 관리자에게만 요청하고, 현재 시장의 일간·주간 스캔일만 선택지로 보여준다.
     useEffect(() => {
         if (!isAdmin) return;
         let active = true;
         setDatesLoading(true);
         setDatesError(false);
-        getScanDailyDates(country).then((result: any) => {
+        Promise.all([getScanDailyDates(country), getScanWeeklyPeriods(country)]).then(([result, weeklyResult]: any[]) => {
             if (!active) return;
-            if (result?.success === false) throw new Error(result.error);
+            if (result?.success === false || weeklyResult?.success === false) throw new Error("scan dates unavailable");
             const dates = [...new Set<string>((result?.data ?? [])
                 .filter((item: any) => (item.total_cnt ?? item.cnt ?? 0) > 0)
                 .map((item: any) => String(item.scan_date).replaceAll("-", ""))
                 .filter((date: string) => /^\d{8}$/.test(date)))].sort((a, b) => b.localeCompare(a));
+            const weeks = [...new Set<string>((weeklyResult?.data ?? [])
+                .filter((item: any) => (item.total_stocks ?? 0) > 0)
+                .map((item: any) => String(item.period_label))
+                .filter((period: string) => /^\d{8}$/.test(period)))].sort((a, b) => b.localeCompare(a));
             setAvailableDates(dates);
-            setSelectedDate(current => current === "latest" || dates.includes(current) ? current : "latest");
+            setWeeklyPeriods(weeks);
+            setSelectedDate(current => current === "latest" || dates.includes(current) || (current.startsWith("weekly:") && weeks.includes(current.slice(7))) ? current : "latest");
         }).catch(() => {
             if (active) setDatesError(true);
         }).finally(() => {
@@ -667,9 +674,9 @@ function ScreenerContent() {
     useEffect(() => {
         if (sessionStatus === "loading") return;
         dispatch(reqGetNcavDailyList(
-            { date: requestedDate, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
+            { date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
         ));
-    }, [dispatch, sessionStatus, isLoggedIn, country, requestedDate]);
+    }, [dispatch, sessionStatus, isLoggedIn, country, requestedDate, weeklyPeriod]);
 
     useEffect(() => {
         if (isLoggedIn) dispatch(reqGetMyLikes());
@@ -777,9 +784,9 @@ function ScreenerContent() {
     }, [queryString]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: requestedDate, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
+        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
         setDisplayCount(DAILY_PAGE_SIZE);
-    }, [dispatch, isLoggedIn, country, requestedDate]);
+    }, [dispatch, isLoggedIn, country, requestedDate, weeklyPeriod]);
 
     const toggleSort = useCallback((key: DiscoverySortKey) => {
         setSortKey(prev => {
@@ -1017,7 +1024,7 @@ function ScreenerContent() {
 
     const scanDate = ncavDailyList.scanDate;
     const formattedDate = scanDate
-        ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
+        ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}${weeklyPeriod ? " 주간" : ""}`
         : null;
     const prevDate = ncavDailyList.prevDate;
     const formattedPrevDate = prevDate
@@ -1221,6 +1228,7 @@ function ScreenerContent() {
                                 setCountry(value);
                                 setSelectedDate("latest");
                                 setAvailableDates([]);
+                                setWeeklyPeriods([]);
                                 setMarkets(new Set());
                                 setSectors(new Set());
                                 // 두 시장의 시가총액·거래대금 입력 단위가 달라 이전 값을 옮길 수 없다.
@@ -1248,6 +1256,7 @@ function ScreenerContent() {
                                 value={selectedDate}
                                 onChange={event => {
                                     setSelectedDate(event.target.value);
+                                    setShowLikedOnly(false);
                                     setDisplayCount(DAILY_PAGE_SIZE);
                                 }}
                                 disabled={datesLoading || datesError}
@@ -1257,6 +1266,11 @@ function ScreenerContent() {
                                 {availableDates.map(date => (
                                     <option key={date} value={date}>{date.slice(0, 4)}.{date.slice(4, 6)}.{date.slice(6, 8)}</option>
                                 ))}
+                                {weeklyPeriods.length > 0 && <optgroup label="주간 아카이브">
+                                    {weeklyPeriods.map(period => (
+                                        <option key={period} value={`weekly:${period}`}>주간 {period.slice(0, 4)}.{period.slice(4, 6)}.{period.slice(6, 8)} 시작</option>
+                                    ))}
+                                </optgroup>}
                             </select>
                             {datesError && <span className="text-xs text-red-500">날짜 조회 실패</span>}
                         </div>
