@@ -2190,11 +2190,16 @@ function writeWithMarker(state: GameState, hero: Hero, markerLetter: string, pap
     const paper = packItem(hero, paperLetter);
     const table = kind === "scroll" ? SCROLLS : SPELLBOOKS;
     if (!marker || marker.kind !== "tool" || marker.type !== "magic marker" || !paper || paper.kind !== kind || paper.type !== "blank" || !table[type] || type === "blank") return false;
+    // 화면의 목록을 우회한 명령도 같은 지식 조건을 지킨다.
+    if (kind === "scroll" ? !state.known[`scroll:${type}`] : !(hero.spells[type] || state.itemCodex[`spellbook:${type}`])) {
+        say(state, "아직 모르는 주문이라 쓸 수 없다.");
+        return false;
+    }
     if (kind === "spellbook" && hero.blind > 0) { say(state, "앞이 보이지 않아 마법책을 쓸 수 없다."); return false; }
     // NetHack write.c: book base cost is 10 × spell level; scroll costs are by kind.
     const [minimumCost, lastCost] = markerInkRange(kind, type);
     const ink = marker.charges ?? 0;
-    if (ink < minimumCost) { say(state, "마법 표식기가 너무 말라 쓸 수 없다."); return true; }
+    if (ink < minimumCost) { say(state, "마법 표식기가 너무 말라 쓸 수 없다."); return false; }
     const cost = rng.between(minimumCost, lastCost);
     if (ink < cost) {
         marker.charges = 0;
@@ -5387,7 +5392,8 @@ export function glyphAt(
     const flags = level.flags[idx(x, y)];
     const visible = (flags & 2) !== 0;
     const seen = (flags & 1) !== 0;
-    if (!seen) return null;
+    // 탐지는 아직 가 본 적 없는 칸의 괴물도 가리킨다. 지형과 아이템은 그대로 숨긴다.
+    if (!seen && hero.detect <= 0) return null;
 
     // **조종하는 쪽을 먼저 본다.** 둘이 한 칸에 겹칠 일은 없지만, 겹치더라도 화면은
     // 「내가 어디 있나」를 먼저 답해야 한다.
@@ -5397,7 +5403,7 @@ export function glyphAt(
     const other = state.heroes.find((h) => h !== hero && h.x === x && h.y === y);
     if (other) return { ch: face(other), kind: "ally" };
 
-    // 생명 탐지 물약을 마신 동안에는 벽 너머의 놈도 보인다.
+    // 괴물 탐지 주문·물약이 지속되는 동안에는 벽 너머의 놈도 보인다.
     if (visible || hero.detect > 0 || hasRing(hero, "warning") || hasAmuletType(hero, "amulet of ESP")) {
         const m = monsterAt(level, x, y);
         if (m && (!m.def.invisible || hasRing(hero, "see invisible") || (hero.seeInvisible ?? 0) > 0 || hero.detect > 0) && (visible || hero.detect > 0 || hasRing(hero, "warning") || hasAmuletType(hero, "amulet of ESP"))) {
@@ -5409,6 +5415,7 @@ export function glyphAt(
             return { ch: m.def.ch, kind: visible ? "monster" : "monster-sensed" };
         }
     }
+    if (!seen) return null;
     const it = itemAt(level, x, y);
     if (it && (visible || seen)) return { ch: itemChar(it.kind), kind: `item-${it.kind}`, ink: itemInk(it, state.appearance) };
 

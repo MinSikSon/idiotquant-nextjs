@@ -77,6 +77,26 @@ test("마법 표식기는 빈 종이에 이미 알아낸 주문서와 마법책�
     assert.ok(marker.charges! < before);
     assert.equal(describe(blankBook, writtenBook.known, writtenBook.appearance), "치유 마법책");
     assert.deepEqual(markerInkRange("spellbook", "healing"), [5, 9]);
+
+    // 화면의 목록을 거치지 않고 명령을 보내도 모르는 주문은 기록할 수 없다.
+    const unknown = newGame(141);
+    const unknownMarker = makeItem("tool", "magic marker", 993, -1, -1);
+    unknownMarker.charges = 50;
+    const unknownBook = makeItem("spellbook", "blank", 994, -1, -1);
+    give(unknown, unknownMarker, "z");
+    give(unknown, unknownBook, "x");
+    const turn = unknown.turn;
+    perform(unknown, { t: "write", markerLetter: "z", paperLetter: "x", kind: "spellbook", type: "magic mapping" });
+    assert.equal(unknown.turn, turn, "모르는 주문을 기록하는 데 턴을 썼다");
+    assert.equal(unknownBook.type, "blank", "모르는 주문을 마법책에 기록했다");
+    assert.equal(unknownMarker.charges, 50, "모르는 주문에 잉크를 썼다");
+
+    unknown.itemCodex["spellbook:healing"] = true;
+    unknownMarker.charges = 4; // 치유 마법책 최소 비용은 5
+    perform(unknown, { t: "write", markerLetter: "z", paperLetter: "x", kind: "spellbook", type: "healing" });
+    assert.equal(unknown.turn, turn, "최소 잉크도 없는데 턴을 썼다");
+    assert.equal(unknownBook.type, "blank", "잉크가 부족한데 책을 썼다");
+    assert.equal(unknownMarker.charges, 4, "시작조차 못 한 집필에 잉크를 썼다");
 });
 
 test("저주받은 갑옷은 못 벗고, 반지는 능력을 바꾼다", () => {

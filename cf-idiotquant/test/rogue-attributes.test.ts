@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addToPack, carryCapacity, dexHitBonus, encumbrance, gainExp, heroConstitution, heroDamTerms, heroHitTerms, hpGainPerLevel, makeHero, packWeight, prayerTimeoutLimit, regenEvery, strDamBonus, strHitBonus } from "@/lib/rogue/hero";
-import { newGame, perform, spellCastingChance } from "@/lib/rogue/game";
+import { glyphAt, newGame, perform, spellCastingChance, survey } from "@/lib/rogue/game";
+import { SEEN } from "@/lib/rogue/fov";
+import { spawnMonster } from "@/lib/rogue/monsters";
 import { Rng } from "@/lib/rogue/rng";
+import { MAP_W, T } from "@/lib/rogue/types";
 import { charismaPriceFactor, unitPrice } from "@/lib/rogue/shop";
 import { itemWeight, makeItem } from "@/lib/rogue/items";
+import { deserialize, serialize } from "@/lib/rogue/storage";
 
 test("NetHack 힘과 민첩의 명중·피해 구간을 따른다", () => {
     assert.deepEqual([3, 6, 8, 16, 17, 18].map((str) => strHitBonus(str, 3)), [-2, -1, 0, 0, 1, 1]);
@@ -127,4 +131,91 @@ test("지능은 마법책 학습, 지혜는 마력 성장과 직업별 시전에
     gainExp(lowWis, 10, new Rng(8));
     gainExp(highWis, 10, new Rng(8));
     assert.ok(highWis.maxPower > lowWis.maxPower);
+});
+
+test("마법책 세 종류를 익혀 시전하고, 실패·기억 만료·저장을 처리한다", () => {
+    const state = newGame(303, {}, {}, {}, {}, "scholar");
+    const hero = state.heroes[0];
+    state.level.monsters = [];
+    hero.level = 30;
+    hero.intelligence = 100;
+    hero.power = hero.maxPower = 100;
+    for (const [i, spell] of ["healing", "detect monsters", "magic mapping"].entries()) {
+        const book = makeItem("spellbook", spell, 7100 + i, -1, -1);
+        assert.ok(addToPack(hero, book));
+        const before = state.turn;
+        perform(state, { t: "study", letter: book.letter! });
+        assert.equal(state.turn, before + 1, `${spell}: 공부가 턴을 쓰지 않았다`);
+        assert.equal(book.studyCount, 1, `${spell}: 책의 학습 횟수가 안 올랐다`);
+        assert.ok(hero.spells[spell] > state.turn, `${spell}: 주문을 못 외웠다`);
+        assert.equal(spellCastingChance(hero, spell), 100, `${spell}: 성공 경로를 확정할 수 없다`);
+    }
+
+    const healingBook = hero.pack.find((it) => it.kind === "spellbook" && it.type === "healing")!;
+    perform(state, { t: "study", letter: healingBook.letter! });
+    perform(state, { t: "study", letter: healingBook.letter! });
+    assert.equal(healingBook.studyCount, 3);
+    const exhaustedTurn = state.turn;
+    perform(state, { t: "study", letter: healingBook.letter! });
+    assert.equal(state.turn, exhaustedTurn, "세 번 읽은 책을 다시 읽으며 턴을 썼다");
+    hero.blind = 1;
+    const detectBook = hero.pack.find((it) => it.kind === "spellbook" && it.type === "detect monsters")!;
+    perform(state, { t: "study", letter: detectBook.letter! });
+    assert.equal(state.turn, exhaustedTurn, "눈이 먼 상태에서 책을 읽으며 턴을 썼다");
+    hero.blind = 0;
+
+    const restored = deserialize(serialize(state));
+    assert.ok(restored, "주문을 외운 판이 저장 복원되지 않았다");
+    assert.deepEqual(restored.heroes[0].spells, hero.spells);
+    assert.equal(restored.heroes[0].pack.find((it) => it.type === "healing" && it.kind === "spellbook")?.studyCount, 3);
+
+    hero.maxHp = 30;
+    hero.hp = 20;
+    const mana = hero.power;
+    perform(state, { t: "cast", spell: "healing" });
+    assert.ok(hero.hp > 20, "치유 주문이 체력을 회복하지 않았다");
+    assert.equal(hero.power, mana - 5, "치유 마력 비용이 다르다");
+    const hidden = state.level.tiles.findIndex((tile, i) => tile === T.FLOOR && !(state.level.flags[i] & SEEN));
+    assert.ok(hidden >= 0, "탐지와 지도 작성 효과를 시험할 미탐사 칸이 없다");
+    const hiddenX = hidden % MAP_W;
+    const hiddenY = Math.floor(hidden / MAP_W);
+    const monster = spawnMonster("B", hiddenX, hiddenY, new Rng(303));
+    monster.awake = false;
+    state.level.monsters = [monster];
+    assert.equal(glyphAt(state, hiddenX, hiddenY), null, "시전 전 미탐사 칸에 괴물이 보인다");
+    perform(state, { t: "cast", spell: "detect monsters" });
+    assert.ok(hero.detect > 0, "괴물 탐지 주문이 감지를 켜지 않았다");
+    assert.ok(survey(state).some((entry) => entry.id === monster.id), "괴물 탐지가 조사 목록에 발현되지 않았다");
+    assert.equal(state.level.flags[monster.y * MAP_W + monster.x] & SEEN, 0, "탐지 시험 대상이 시야에 들어왔다");
+    assert.deepEqual(glyphAt(state, monster.x, monster.y), { ch: "B", kind: "monster-sensed" }, "괴물 탐지가 미탐사 지도 칸에 표시되지 않았다");
+    state.level.monsters = [];
+    const unmapped = state.level.tiles.findIndex((tile, i) => tile === T.FLOOR && !(state.level.flags[i] & SEEN));
+    assert.ok(unmapped >= 0, "지도 작성 효과를 시험할 미탐사 바닥이 없다");
+    const mapX = unmapped % MAP_W;
+    const mapY = Math.floor(unmapped / MAP_W);
+    assert.equal(glyphAt(state, mapX, mapY), null, "지도 작성 전 미탐사 바닥이 보인다");
+    const seenBefore = state.level.flags.reduce((n, flag) => n + (flag & SEEN ? 1 : 0), 0);
+    perform(state, { t: "cast", spell: "magic mapping" });
+    const seenAfter = state.level.flags.reduce((n, flag) => n + (flag & SEEN ? 1 : 0), 0);
+    assert.ok(seenAfter > seenBefore, "지도 작성 주문이 지형을 밝히지 않았다");
+    assert.notEqual(glyphAt(state, mapX, mapY), null, "지도 작성 주문이 지도 글자표에 발현되지 않았다");
+
+    const beforeExpired = state.turn;
+    hero.spells.healing = state.turn;
+    perform(state, { t: "cast", spell: "healing" });
+    assert.equal(state.turn, beforeExpired, "기억이 만료된 주문이 턴을 썼다");
+
+    const novice = newGame(304);
+    novice.level.monsters = [];
+    const weak = novice.heroes[0];
+    weak.wisdom = 3;
+    weak.hp = Math.max(1, weak.maxHp - 5);
+    weak.power = 10;
+    weak.spells.healing = 100;
+    assert.equal(spellCastingChance(weak, "healing"), 0);
+    const weakMana = weak.power;
+    const weakTurn = novice.turn;
+    perform(novice, { t: "cast", spell: "healing" });
+    assert.equal(novice.turn, weakTurn + 1, "실패한 시전이 턴을 쓰지 않았다");
+    assert.equal(weak.power, weakMana - 2, "실패 시전은 마력 절반을 써야 한다");
 });

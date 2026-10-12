@@ -594,7 +594,7 @@ export default function Rogue() {
     /** 도감에서 선택된 탭 */
     const [codexTab, setCodexTab] = useState<"monster" | CodexCategory>("monster");
     const [codexQuery, setCodexQuery] = useState("");
-    const [codexKnownOnly, setCodexKnownOnly] = useState(false);
+    const [codexKnownOnly, setCodexKnownOnly] = useState(true);
     /** 아이템 도감에서 펼쳐 둔 아이템 키 */
     const [openItemKey, setOpenItemKey] = useState<string | null>(null);
     const [seedLinkNote, setSeedLinkNote] = useState<string | null>(null);
@@ -2528,7 +2528,9 @@ export default function Rogue() {
                         title={
                             codexTab === "monster"
                                 ? `몬스터 도감 ${progress.found}/${progress.total}`
-                                : `아이템 도감 · 식별 ${itemProg.identifiedCount}/${itemProg.totalCount}`
+                                : coopKeys
+                                    ? `아이템 ${itemProg.identifiedCount}/${itemProg.totalCount} · ★${itemProg.masteredCount}`
+                                    : `아이템 도감 · 식별 ${itemProg.identifiedCount}/${itemProg.totalCount} · 통달 ${itemProg.masteredCount}`
                         }
                         onClose={() => {
                             setOpenMon(null);
@@ -2538,7 +2540,7 @@ export default function Rogue() {
                         footer={
                             codexTab === "monster"
                                 ? "줄 선택: 제원과 모습 보기 · 턴 소모 없음"
-                                : "줄 선택: 상세 보기 · ● 식별은 판을 넘어 남음"
+                                : "줄 선택: 상세 보기 · ● 식별과 ★ 통달은 판을 넘어 남음"
                         }
                     >
                         {/* 카테고리 탭 목록 */}
@@ -2595,7 +2597,7 @@ export default function Rogue() {
                                     onClick={() => setCodexKnownOnly((known) => !known)}
                                     className={`shrink-0 border px-1.5 py-1.5 ${codexKnownOnly ? "border-[var(--rg-strong)] bg-[var(--rg-raised)] text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-muted)] hover:bg-[var(--rg-hover)]"}`}
                                 >
-                                    {codexKnownOnly ? "[x] 본 물건" : "[ ] 본 물건"}
+                                    {codexKnownOnly ? "확인한 것" : "전체 목록"}
                                 </button>
                             )}
                         </div>
@@ -2694,6 +2696,11 @@ export default function Rogue() {
                                         })}
                                     </ul>
                                 )}
+                                {progress.total > progress.found && !codexSearch && (
+                                    <p className="mt-2 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
+                                        미발견 {progress.total - progress.found}종 · 처치하면 이름과 제원이 열린다.
+                                    </p>
+                                )}
                                 <p className="mt-3 border-t border-[var(--rg-line-soft)] pt-2 text-[11px] text-[var(--rg-faint)]">
                                     ※ 특성: M 사나움 · F 비행 · R 재생 · G 탐욕 · I 투명 · S 은에 약함 · D 철에 분열
                                 </p>
@@ -2701,19 +2708,22 @@ export default function Rogue() {
                         ) : (
                             /* 아이템 도감 목록 */
                             <>
-                            <p className="mb-1 text-[11px] text-[var(--rg-faint)]">● 식별 · ○ 소지 · ◌ 목격 · 확인 전은 빈 칸</p>
-                            {itemRows.length === 0 && <p className="py-3 text-[var(--rg-faint)]">찾은 물건이 없다.</p>}
+                            <p className="mb-1 text-[11px] text-[var(--rg-faint)]">★ 통달 · ● 식별 · ○ 소지 · ◌ 목격 · · 미발견</p>
+                            {itemRows.length === 0 && <p className="py-3 text-[var(--rg-faint)]">{codexKnownOnly && !codexSearch ? "이 분류에서 확인한 물건이 없다. 전체 목록으로 빈 칸을 볼 수 있다." : "검색 결과가 없다."}</p>}
                             <ul className="space-y-0 font-mono text-[12px]">
                                 {itemRows.map((entry) => {
                                     const stage = itemCodexStage(entry, state);
                                     const open = openItemKey === entry.key;
                                     const usage = state.itemUsage?.[entry.key] ?? 0;
+                                    const masteryUnit = entry.masteryType === "kills" ? "킬" : entry.masteryType === "steps" ? "걸음" : "회";
                                     const char = itemChar(entry.kind);
                                     const iconInk = itemInk(entry, stage >= 1 ? state.appearance : {});
 
                                     // 단계 기호와 색상
                                     const stageBadge =
-                                        stage >= 3 ? (
+                                        stage === 4 ? (
+                                            <span className="text-[var(--rg-gold)]">★</span>
+                                        ) : stage === 3 ? (
                                             <span className="text-[var(--rg-strong)]">●</span>
                                         ) : stage === 2 ? (
                                             <span className="text-[var(--rg-muted)]">○</span>
@@ -3007,6 +3017,12 @@ export default function Rogue() {
 
                                                             {/* 1문단 플레이버 텍스트 */}
                                                             <p className="break-words text-[var(--rg-muted)] leading-relaxed">{entry.flavor}</p>
+                                                            <div className="border-t border-[var(--rg-line-soft)] pt-2">
+                                                                <p className={`font-bold ${stage === 4 ? "text-[var(--rg-gold)]" : "text-[var(--rg-muted)]"}`}>
+                                                                    {stage === 4 ? "★ 통달" : "통달까지"} · {Math.min(usage, entry.masteryGoal)}/{entry.masteryGoal}{entry.masteryType === "instant" ? "" : masteryUnit}
+                                                                </p>
+                                                                {stage === 4 && <p className="mt-1 break-words text-[var(--rg-muted)] leading-relaxed">{entry.masteryFlavor}</p>}
+                                                            </div>
 
                                                         </>
                                                     )}
