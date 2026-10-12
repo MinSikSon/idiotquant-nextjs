@@ -36,11 +36,11 @@ const tailwindPalette = {
 };
 
 // 커스텀 고해상도 툴팁 컴포넌트
-const CustomTooltip = ({ active, payload, label, mode }: any) => {
+const CustomTooltip = ({ active, payload, label, currency }: any) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-white/80 dark:bg-surface-dark-canvas/80 backdrop-blur-md px-3 py-2 rounded-xl border border-neutral-200/60 dark:border-border-subtle-dark/80 shadow-xl text-[11px] font-medium transition-all duration-200">
-                <p className="text-neutral-400 dark:text-neutral-500 font-bold mb-1 font-mono tracking-wider">{label}</p>
+                <p className="text-neutral-400 dark:text-neutral-500 font-bold mb-1 font-mono tracking-wider">{formatChartDate(label)}</p>
                 <div className="space-y-1">
                     {payload.map((entry: any, index: number) => (
                         <div key={index} className="flex items-center gap-2">
@@ -50,7 +50,7 @@ const CustomTooltip = ({ active, payload, label, mode }: any) => {
                             />
                             <span className="text-neutral-500 dark:text-neutral-400 font-semibold">{entry.name}:</span>
                             <span className="font-bold text-neutral-900 dark:text-white font-mono italic">
-                                {typeof entry.value === "number" ? entry.value.toLocaleString() : entry.value}
+                                {typeof entry.value === "number" ? `${currency ?? ""}${entry.value.toLocaleString()}` : entry.value}
                             </span>
                         </div>
                     ))}
@@ -59,6 +59,13 @@ const CustomTooltip = ({ active, payload, label, mode }: any) => {
         );
     }
     return null;
+};
+
+const formatChartDate = (label: unknown) => {
+    const value = String(label ?? "");
+    return /^\d{8}$/.test(value)
+        ? `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6)}`
+        : value;
 };
 
 export default function LineChart(props: any) {
@@ -132,10 +139,11 @@ export default function LineChart(props: any) {
 
                 <XAxis
                     dataKey="label"
-                    hide={true}
+                    hide={!props.show_xaxis}
                     tickLine={false}
                     axisLine={false}
                     tick={{ fill: textColor, fontSize: 9, fontFamily: "Pretendard Variable, sans-serif" }}
+                    tickFormatter={(label: string) => formatChartDate(label).slice(5)}
                 />
                 
                 <YAxis
@@ -150,7 +158,7 @@ export default function LineChart(props: any) {
                 {/* 미니 차트 레이아웃 내부에서는 마우스 상호작용 툴팁 오버레이 비활성화 */}
                 {!isMiniMode && (
                     <Tooltip
-                        content={<CustomTooltip mode={mode} />}
+                        content={<CustomTooltip currency={props.currency} />}
                         cursor={{ stroke: tailwindPalette[mode].grid, strokeWidth: 1, strokeDasharray: "4 4" }}
                     />
                 )}
