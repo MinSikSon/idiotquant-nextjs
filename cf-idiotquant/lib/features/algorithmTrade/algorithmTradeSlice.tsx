@@ -9,6 +9,7 @@ import {
     getUsPurchaseLogLatest,
     getScanDailyList,
     getScanDailyDates,
+    getScanWeeklyList,
     checkScanDailyDate,
 } from "./algorithmTradeAPI";
 import { fetchTradingStatus, setTradingActive } from "./tradingStatusAPI";
@@ -417,11 +418,14 @@ export const algorithmTradeSlice = createAppSlice({
         ),
         reqGetNcavDailyList: create.asyncThunk(
             // limit 을 주면 그만큼만 받는다. 미리보기만 그리는 화면(홈·게임 종목 풀)이 쓴다.
-            async (arg?: string | { date?: string; limit?: number; country?: "KR" | "US" }) => {
+            async (arg?: string | { date?: string; weeklyPeriod?: string | null; limit?: number; country?: "KR" | "US" }) => {
                 const date = typeof arg === "string" ? arg : arg?.date;
                 const limit = typeof arg === "object" ? arg?.limit : undefined;
                 const country = typeof arg === "object" ? arg?.country : undefined;
-                const result = await getScanDailyList(date, undefined, limit, country);
+                const weeklyPeriod = typeof arg === "object" ? arg?.weeklyPeriod : undefined;
+                const result = weeklyPeriod
+                    ? await getScanWeeklyList(weeklyPeriod, country ?? "KR")
+                    : await getScanDailyList(date, undefined, limit, country);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
@@ -457,7 +461,7 @@ export const algorithmTradeSlice = createAppSlice({
                     const rawPrevDate = action.payload?.meta?.prevDate;
                     state.ncavDailyList.prevDate = rawPrevDate ? normalizeDate(rawPrevDate) : null;
                     state.ncavDailyList.scanDate = scanDate;
-                    if (scanDate && state.ncavDailyList.country === "KR") {
+                    if (scanDate && state.ncavDailyList.country === "KR" && !(typeof action.meta.arg === "object" && action.meta.arg?.weeklyPeriod)) {
                         if (!state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
                             const total = action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
                             const merged = [...state.ncavDailyDates.dates, {

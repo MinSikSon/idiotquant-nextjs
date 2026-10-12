@@ -65,6 +65,24 @@ export const getScanDailyDates: any = async (country?: "KR" | "US") => {
     return getAlgorithmTradeRequest(subUrl);
 }
 
+export const getScanWeeklyPeriods = (country: "KR" | "US") =>
+    getAlgorithmTradeRequest(`/scan/archive?period_type=weekly&country=${country}&limit=100`);
+
+export const getScanWeeklyList = async (period: string, country: "KR" | "US") => {
+    const data: any[] = [];
+    for (let offset = 0; ; offset += 500) {
+        const result = await getAlgorithmTradeRequest(
+            `/scan/archive?period_type=weekly&country=${country}&period=${encodeURIComponent(period)}&strategy=all&limit=500&offset=${offset}`
+        );
+        if (result?.success === false) return result;
+        if (result?.meta?.offset !== offset) return { success: false, error: "주간 스캔 조회를 준비 중입니다." };
+        const page: any[] = result?.data ?? [];
+        data.push(...page);
+        if (page.length < 500) break;
+    }
+    return { success: true, data, meta: { country, scanDate: period, total: data.length, matched: data.length } };
+}
+
 export const checkScanDailyDate: any = async (date: string) => {
     const subUrl = `/scan/daily?date=${encodeURIComponent(date)}&strategy=all&limit=1`;
     return getAlgorithmTradeRequest(subUrl);
