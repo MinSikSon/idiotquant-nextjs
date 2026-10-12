@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Loader2, Plus, Search, X } from 'lucide-react';
@@ -11,7 +11,7 @@ import nyse from '@/public/data/usStockSymbols/nyse_tickers.json';
 import amex from '@/public/data/usStockSymbols/amex_tickers.json';
 import { getInquireDailyItemChartPrice, getInquirePrice } from '@/lib/features/koreaInvestment/koreaInvestmentAPI';
 import { getOverseasPriceQuotationsDailyPrice, getQuotationsPriceDetail, getQuotationsSearchInfo } from '@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketAPI';
-import { calculatePriceReturns } from './priceReturns';
+import { calculatePriceReturns, summarizeReturns } from './priceReturns';
 
 type ComparisonStock = {
   id: string; name: string; ticker: string; market: 'KR' | 'US';
@@ -51,6 +51,31 @@ async function getHistoricalClose(ticker: string, market: 'KR' | 'US', date: str
   return { price, priceDate: market === 'KR' ? row.stck_bsop_date : row.xymd };
 }
 
+async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, dates: string[]): Promise<ComparisonStock> {
+  let stock: ComparisonStock;
+  if (market === 'US') {
+    const [detailRes, infoRes] = await Promise.all([getQuotationsPriceDetail(ticker), getQuotationsSearchInfo(ticker)]);
+    const d = detailRes?.output ?? detailRes?.output1 ?? {};
+    const i = infoRes?.output ?? {};
+    const eps = numberOrNull(d.epsx), bps = numberOrNull(d.bpsx);
+    stock = { id: crypto.randomUUID(), ticker, name: i.prdt_eng_name || i.ovrs_item_name || ticker, market, currency: '$', prices: {}, per: numberOrNull(d.perx), pbr: numberOrNull(d.pbrx), eps, bps, roe: eps && bps ? eps / bps * 100 : undefined };
+  } else {
+    const res = await getInquirePrice(ticker);
+    const d = res?.output ?? {};
+    const name = Object.entries(corpCodes as Record<string, { stock_code?: string }>).find(([, item]) => item.stock_code === ticker)?.[0] ?? nameHint;
+    const eps = numberOrNull(d.eps), bps = numberOrNull(d.bps);
+    stock = { id: crypto.randomUUID(), ticker, name, market, currency: '₩', prices: {}, per: numberOrNull(d.per), pbr: numberOrNull(d.pbr), eps, bps, roe: eps && bps ? eps / bps * 100 : undefined };
+  }
+  stock.prices = Object.fromEntries(await Promise.all(dates.map(async date => {
+    try { return [date, await getHistoricalClose(ticker, market, date)]; }
+    catch (e) { return [date, { error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }]; }
+  })));
+  if (Object.values(stock.prices).every(item => !item.price) && !stock.per && !stock.pbr) {
+    throw new Error('종목 정보를 불러오지 못했습니다. 종목명이나 티커를 확인해 주세요.');
+  }
+  return stock;
+}
+
 export default function ComparePage() {
   const [query, setQuery] = useState('');
   const [dateInput, setDateInput] = useState('');
@@ -61,6 +86,8 @@ export default function ComparePage() {
   const [error, setError] = useState('');
   const [recentStocks, setRecentStocks] = useState<RecentStock[]>([]);
   const [recentLoaded, setRecentLoaded] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ loaded: number; total: number } | null>(null);
+  const importedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -80,6 +107,36 @@ export default function ComparePage() {
     try { window.localStorage.setItem(RECENT_STOCKS_KEY, JSON.stringify(recentStocks)); }
     catch { /* 저장소가 막혀 있어도 종목 비교는 계속 쓸 수 있다. */ }
   }, [recentStocks, recentLoaded]);
+  useEffect(() => {
+    if (importedRef.current) return;
+    importedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const market = params.get('country');
+    const date = params.get('date');
+    if ((market !== 'KR' && market !== 'US') || !date || !/^\d{8}$/.test(date)) return;
+    const tickers = [...new Set((params.get('tickers') ?? '').split(',').map(ticker => ticker.trim().toUpperCase()))]
+      .filter(ticker => market === 'KR' ? /^\d{6}$/.test(ticker) : /^[A-Z][A-Z0-9.-]{0,5}$/.test(ticker))
+      .slice(0, MAX_COMPARISON_STOCKS);
+    if (!tickers.length) return;
+    const selectedDate = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}`;
+    setDates([selectedDate]);
+    setDateInput(selectedDate);
+    setLoading(true);
+    setImportProgress({ loaded: 0, total: tickers.length });
+    void (async () => {
+      let failed = 0;
+      for (const [index, ticker] of tickers.entries()) {
+        try {
+          const stock = await loadStock(ticker, market, ticker, [selectedDate]);
+          setStocks(current => [...current, stock]);
+        } catch { failed++; }
+        setImportProgress({ loaded: index + 1, total: tickers.length });
+      }
+      if (failed) setError(`${failed}개 종목의 시세를 불러오지 못했습니다. 나머지 종목은 비교표에 추가했습니다.`);
+      setLoading(false);
+      setImportProgress(null);
+    })();
+  }, []);
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -91,6 +148,13 @@ export default function ComparePage() {
     id: `${stock.id}:${date}`, ticker: stock.ticker, market: stock.market,
     price: stock.prices[date]?.price, priceDate: stock.prices[date]?.priceDate,
   })))), [stocks, dates]);
+  const returnStats = useMemo(() => dates.map(date => ({
+    date,
+    summary: summarizeReturns(stocks.flatMap(stock => {
+      const result = priceReturns.get(`${stock.id}:${date}`);
+      return result && stock.prices[date]?.priceDate !== result.baselineDate ? [result.percent] : [];
+    })),
+  })).filter(item => item.summary), [dates, stocks, priceReturns]);
 
   async function addStock(raw: string) {
     const value = raw.trim();
@@ -106,27 +170,7 @@ export default function ComparePage() {
     }
     setLoading(true); setError('');
     try {
-      let stock: ComparisonStock;
-      if (isUs) {
-        const [detailRes, infoRes] = await Promise.all([getQuotationsPriceDetail(ticker), getQuotationsSearchInfo(ticker)]);
-        const d = detailRes?.output ?? detailRes?.output1 ?? {};
-        const i = infoRes?.output ?? {};
-        const eps = numberOrNull(d.epsx), bps = numberOrNull(d.bpsx);
-        stock = { id: crypto.randomUUID(), ticker, name: i.prdt_eng_name || i.ovrs_item_name || ticker, market: 'US', currency: '$', prices: {}, per: numberOrNull(d.perx), pbr: numberOrNull(d.pbrx), eps, bps, roe: eps && bps ? eps / bps * 100 : undefined };
-      } else {
-        const res = await getInquirePrice(ticker);
-        const d = res?.output ?? {};
-        const name = Object.entries(corpCodes as Record<string, { stock_code?: string }>).find(([, item]) => item.stock_code === ticker)?.[0] ?? value;
-        const eps = numberOrNull(d.eps), bps = numberOrNull(d.bps);
-        stock = { id: crypto.randomUUID(), ticker, name: d.rprs_mrkt_kor_name ? `${name}` : name, market: 'KR', currency: '₩', prices: {}, per: numberOrNull(d.per), pbr: numberOrNull(d.pbr), eps, bps, roe: eps && bps ? eps / bps * 100 : undefined };
-      }
-      stock.prices = Object.fromEntries(await Promise.all(dates.map(async date => {
-        try { return [date, await getHistoricalClose(ticker, stock.market, date)]; }
-        catch (e) { return [date, { error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }]; }
-      })));
-      if (Object.values(stock.prices).every(item => !item.price) && !stock.per && !stock.pbr) {
-        throw new Error('종목 정보를 불러오지 못했습니다. 종목명이나 티커를 확인해 주세요.');
-      }
+      const stock = await loadStock(ticker, isUs ? 'US' : 'KR', value, dates);
       setStocks(current => [...current, stock]);
       setRecentStocks(current => [
         { ticker: stock.ticker, name: stock.name, market: stock.market },
@@ -214,6 +258,7 @@ export default function ComparePage() {
           <button disabled={loading || dateLoading || !dates.length || stocks.length >= MAX_COMPARISON_STOCKS || !query.trim()} className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[4px] bg-[#635bdb] px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
         </form>
         <p className="mt-2 text-xs text-neutral-500">종목 최대 10개 · 국내와 미국 종목을 함께 볼 수 있습니다.</p>
+        {importProgress && <p role="status" className="mt-2 text-xs text-neutral-500">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
         {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       </section>
 
@@ -229,6 +274,17 @@ export default function ComparePage() {
         </div>
       </section>}
 
+      {returnStats.length > 0 && <section className="mt-6" aria-label="날짜별 수익률 통계">
+        <h2 className="text-base font-semibold">날짜별 수익률 통계</h2>
+        <p className="mt-1 text-xs text-neutral-500">각 종목의 첫 거래일 종가와 비교할 수 있는 종목만 집계합니다.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-[4px] border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-[#101812]">
+            <p className="text-xs font-semibold text-neutral-500">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
+            <p className={`mt-2 text-xl font-semibold tabular-nums ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
+            <p className="mt-1 text-xs text-neutral-500">중앙값 {summary.median >= 0 ? '+' : ''}{show(summary.median)}% · 상승 {summary.positiveCount}/{summary.count}종목</p>
+          </div>)}
+        </div>
+      </section>}
       {stocks.length === 0 ? <section className="mt-8 rounded-md border border-dashed border-neutral-300 bg-white/70 px-5 py-12 text-center dark:border-neutral-700 dark:bg-[#101812]">
         <p className="text-sm font-medium">{dates.length ? '비교할 종목을 추가해 주세요.' : '비교할 날짜를 먼저 추가해 주세요.'}</p>
         <p className="mt-2 text-sm text-neutral-500">{dates.length ? '예: 삼성전자와 SK하이닉스, 또는 AAPL과 MSFT' : '날짜를 등록하면 종목별 가격을 해당 날짜마다 조회합니다.'}</p>

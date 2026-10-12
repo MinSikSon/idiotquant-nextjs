@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculatePriceReturns } from '../app/(compare)/compare/priceReturns.ts';
+import { calculatePriceReturns, summarizeReturns } from '../app/(compare)/compare/priceReturns.ts';
 
 test('같은 종목의 실제 거래일을 순서대로 정렬해 첫 종가 대비 수익률을 계산한다', () => {
   const result = calculatePriceReturns([
@@ -32,4 +32,11 @@ test('하락한 종목은 음수 수익률로 표시한다', () => {
     { id: 'end', market: 'US', ticker: 'AAPL', priceDate: '20261009', price: 80 },
   ]);
   assert.ok(Math.abs(result.get('end')!.percent + 20) < 0.000001);
+});
+
+test('유효한 종목의 수익률만 평균·중앙값·상승 수로 집계한다', () => {
+  assert.deepEqual(summarizeReturns([10, -5, 0, Number.NaN, 30]), {
+    count: 4, average: 8.75, median: 5, positiveCount: 2,
+  });
+  assert.equal(summarizeReturns([Number.NaN]), null);
 });
