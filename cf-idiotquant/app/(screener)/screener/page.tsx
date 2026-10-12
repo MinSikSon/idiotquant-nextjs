@@ -507,6 +507,9 @@ function ScreenerContent() {
     const searchParams = useSearchParams();
     const { data: session, status: sessionStatus } = useSession();
     const isLoggedIn = !!session;
+    const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
+    const [selectedDate, setSelectedDate] = useState("latest");
+    const requestedDate = isAdmin ? selectedDate : "latest";
     // 비로그인 시 고급 필터/관심 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
     const requireLogin = useCallback(() => {
         router.push(`/login?callbackUrl=${encodeURIComponent(`/screener${window.location.search}`)}`);
@@ -628,15 +631,8 @@ function ScreenerContent() {
         };
     }, [filterOpen]);
 
-    // 날짜 목록(/ncav/daily/dates)은 더 이상 받지 않는다. 이 화면은 그 값을 한 번도
-    // 그리지 않으면서 — 날짜를 쓰는 곳은 admin 전용 /backtest 다 — 받아만 왔는데,
-    // 하필 그게 D1 을 가장 많이 읽는 요청이었다. stock_data_daily 를 GROUP BY scan_date
-    // 로 훑는데 WHERE 가 없어 보관 중인 14일치가 통째로 읽히고, LIMIT 30 은 묶은 뒤에
-    // 걸려서 읽는 양을 줄이지 못한다.
-    //
-    // 날짜가 비었을 때 돌던 대체 탐색(reqDiscoverNcavDates)도 함께 뺀다. 그건 하루치를
-    // 훑는 요청을 일곱 번 더 보내는 것이라, 위를 없애고 이것만 남기면 오히려 늘어난다.
-    // 화면에 날짜 선택을 붙이는 날 둘을 함께 되살리면 된다.
+    // 관리자는 날짜를 직접 지정한다. 날짜 목록 API는 보관된 스캔 전체를 집계하므로
+    // 선택 UI를 위해 추가로 호출하지 않는다.
     // 비로그인은 그릴 만큼만 받는다. 어차피 앞 PREVIEW_SIZE 줄만 보이는데 목록 전체를
     // 받아 오면 압축 전 1.3MB 가 오간다(한 행 570바이트 × 2,400행). 크롤러와 처음 온
     // 사람이 대부분이라 그 값이 곧 이 화면의 부하다.
@@ -646,9 +642,9 @@ function ScreenerContent() {
     useEffect(() => {
         if (sessionStatus === "loading") return;
         dispatch(reqGetNcavDailyList(
-            { date: "latest", limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
+            { date: requestedDate, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
         ));
-    }, [dispatch, sessionStatus, isLoggedIn, country]);
+    }, [dispatch, sessionStatus, isLoggedIn, country, requestedDate]);
 
     useEffect(() => {
         if (isLoggedIn) dispatch(reqGetMyLikes());
@@ -756,9 +752,9 @@ function ScreenerContent() {
     }, [queryString]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: "latest", limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
+        dispatch(reqGetNcavDailyList({ date: requestedDate, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
         setDisplayCount(DAILY_PAGE_SIZE);
-    }, [dispatch, isLoggedIn, country]);
+    }, [dispatch, isLoggedIn, country, requestedDate]);
 
     const toggleSort = useCallback((key: DiscoverySortKey) => {
         setSortKey(prev => {
@@ -1187,8 +1183,9 @@ function ScreenerContent() {
             )}
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <div className="max-w-7xl mx-auto flex gap-1 px-4 sm:px-6" role="tablist" aria-label="발굴 시장">
-                    {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
+                <div className="max-w-7xl mx-auto flex items-center gap-1 px-4 sm:px-6">
+                    <div className="flex gap-1" role="tablist" aria-label="발굴 시장">
+                        {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
                             key={value}
                             type="button"
@@ -1213,7 +1210,25 @@ function ScreenerContent() {
                                 country === value ? "border-brand text-brand" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
                             )}
                         >{label}</button>
-                    ))}
+                        ))}
+                    </div>
+                    {isAdmin && (
+                        <div className="ml-auto flex items-center gap-2">
+                            <label htmlFor="screener-date" className="hidden sm:inline text-xs font-semibold text-neutral-500 dark:text-neutral-400">조회 날짜</label>
+                            <input
+                                id="screener-date"
+                                type="date"
+                                aria-label="조회 날짜"
+                                value={selectedDate === "latest" ? (ncavDailyList.scanDate?.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3") ?? "") : selectedDate.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3")}
+                                onChange={event => {
+                                    setSelectedDate(event.target.value ? event.target.value.replaceAll("-", "") : "latest");
+                                    setDisplayCount(DAILY_PAGE_SIZE);
+                                }}
+                                className="w-[120px] sm:w-[130px] rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-medium text-neutral-700 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-200"
+                            />
+                            <button type="button" onClick={() => setSelectedDate("latest")} disabled={selectedDate === "latest"} className="text-xs font-bold text-brand disabled:text-neutral-400">최신</button>
+                        </div>
+                    )}
                 </div>
             </div>
 
