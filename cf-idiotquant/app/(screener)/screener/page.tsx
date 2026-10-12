@@ -9,6 +9,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectNcavDailyList, reqGetNcavDailyList,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { getScanDailyDates } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import {
     selectLikedTickers, selectLikedList, selectTogglePending,
     reqGetMyLikes, reqToggleLike,
@@ -509,6 +510,9 @@ function ScreenerContent() {
     const isLoggedIn = !!session;
     const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
     const [selectedDate, setSelectedDate] = useState("latest");
+    const [availableDates, setAvailableDates] = useState<string[]>([]);
+    const [datesLoading, setDatesLoading] = useState(false);
+    const [datesError, setDatesError] = useState(false);
     const requestedDate = isAdmin ? selectedDate : "latest";
     // 비로그인 시 고급 필터/관심 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
     const requireLogin = useCallback(() => {
@@ -631,8 +635,29 @@ function ScreenerContent() {
         };
     }, [filterOpen]);
 
-    // 관리자는 날짜를 직접 지정한다. 날짜 목록 API는 보관된 스캔 전체를 집계하므로
-    // 선택 UI를 위해 추가로 호출하지 않는다.
+    // 날짜 목록은 관리자에게만 요청하고, 현재 시장의 스캔일만 선택지로 보여준다.
+    useEffect(() => {
+        if (!isAdmin) return;
+        let active = true;
+        setDatesLoading(true);
+        setDatesError(false);
+        getScanDailyDates(country).then((result: any) => {
+            if (!active) return;
+            if (result?.success === false) throw new Error(result.error);
+            const dates = [...new Set<string>((result?.data ?? [])
+                .filter((item: any) => (item.total_cnt ?? item.cnt ?? 0) > 0)
+                .map((item: any) => String(item.scan_date).replaceAll("-", ""))
+                .filter((date: string) => /^\d{8}$/.test(date)))].sort((a, b) => b.localeCompare(a));
+            setAvailableDates(dates);
+            setSelectedDate(current => current === "latest" || dates.includes(current) ? current : "latest");
+        }).catch(() => {
+            if (active) setDatesError(true);
+        }).finally(() => {
+            if (active) setDatesLoading(false);
+        });
+        return () => { active = false; };
+    }, [isAdmin, country]);
+
     // 비로그인은 그릴 만큼만 받는다. 어차피 앞 PREVIEW_SIZE 줄만 보이는데 목록 전체를
     // 받아 오면 압축 전 1.3MB 가 오간다(한 행 570바이트 × 2,400행). 크롤러와 처음 온
     // 사람이 대부분이라 그 값이 곧 이 화면의 부하다.
@@ -1194,6 +1219,8 @@ function ScreenerContent() {
                             onClick={() => {
                                 if (country === value) return;
                                 setCountry(value);
+                                setSelectedDate("latest");
+                                setAvailableDates([]);
                                 setMarkets(new Set());
                                 setSectors(new Set());
                                 // 두 시장의 시가총액·거래대금 입력 단위가 달라 이전 값을 옮길 수 없다.
@@ -1215,18 +1242,23 @@ function ScreenerContent() {
                     {isAdmin && (
                         <div className="ml-auto flex items-center gap-2">
                             <label htmlFor="screener-date" className="hidden sm:inline text-xs font-semibold text-neutral-500 dark:text-neutral-400">조회 날짜</label>
-                            <input
+                            <select
                                 id="screener-date"
-                                type="date"
                                 aria-label="조회 날짜"
-                                value={selectedDate === "latest" ? (ncavDailyList.scanDate?.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3") ?? "") : selectedDate.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3")}
+                                value={selectedDate}
                                 onChange={event => {
-                                    setSelectedDate(event.target.value ? event.target.value.replaceAll("-", "") : "latest");
+                                    setSelectedDate(event.target.value);
                                     setDisplayCount(DAILY_PAGE_SIZE);
                                 }}
-                                className="w-[120px] sm:w-[130px] rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-medium text-neutral-700 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-200"
-                            />
-                            <button type="button" onClick={() => setSelectedDate("latest")} disabled={selectedDate === "latest"} className="text-xs font-bold text-brand disabled:text-neutral-400">최신</button>
+                                disabled={datesLoading || datesError}
+                                className="w-[130px] rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-medium text-neutral-700 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-200"
+                            >
+                                <option value="latest">최신 스캔</option>
+                                {availableDates.map(date => (
+                                    <option key={date} value={date}>{date.slice(0, 4)}.{date.slice(4, 6)}.{date.slice(6, 8)}</option>
+                                ))}
+                            </select>
+                            {datesError && <span className="text-xs text-red-500">날짜 조회 실패</span>}
                         </div>
                     )}
                 </div>

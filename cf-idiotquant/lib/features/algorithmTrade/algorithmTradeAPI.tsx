@@ -60,8 +60,8 @@ export const getScanDailyList: any = async (date?: string, strategy?: string, li
     return getAlgorithmTradeRequest(subUrl);
 }
 
-export const getScanDailyDates: any = async () => {
-    const subUrl = `/scan/daily/dates`;
+export const getScanDailyDates: any = async (country?: "KR" | "US") => {
+    const subUrl = `/scan/daily/dates${country ? `?country=${country}` : ""}`;
     return getAlgorithmTradeRequest(subUrl);
 }
 
