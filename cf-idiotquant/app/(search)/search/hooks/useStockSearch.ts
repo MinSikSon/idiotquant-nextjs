@@ -91,6 +91,7 @@ export function useStockSearch() {
     const finnhubData = useAppSelector(selectFinnhubFinancialsAsReported);
 
     const lastLoggedTicker = useRef<string>("");
+    const searchIdRef = useRef(0);
     // 로깅 Side Effect
     useEffect(() => {
         const currentTicker = name.toUpperCase();
@@ -107,6 +108,7 @@ export function useStockSearch() {
     // [중요] useCallback으로 감싸서 함수 참조값을 고정합니다.
     const onSearch = useCallback(async (stockName: string) => {
         if (!stockName) return;
+        const searchId = ++searchIdRef.current;
 
         // 연속 검색 시 이전 호출의 await가 나중에 끝나 name이 뒤집히는 것을 막기 위해
         // await 이전에 동기적으로 호출 순서대로 세팅한다.
@@ -115,43 +117,19 @@ export function useStockSearch() {
         setWaitResponse(true);
 
         const upper = stockName.toUpperCase();
-        const usOverrides = await loadUsOverrides();
-        const isUs = us_tickers.includes(upper) || usOverrides.has(upper);
-
-        if (!isUs) {
+        const searchKr = (code: string) => {
             setKrOrUs("KR");
             dispatch(resetKrStockData());
-            const corp: any = corpCodeJson;
-            const jsonStock = corp[stockName];
-            // 이름 조회 실패 시 6자리 종목코드 직접 입력으로 폴백, 그 다음 ticker-map override 폴백
-            let code: string | undefined = jsonStock?.stock_code
-                ?? (/^\d{6}$/.test(stockName) ? stockName : undefined);
-            if (!code) {
-                const overrides = await loadKrOverrides();
-                code = overrides.get(stockName);
-            }
-            if (code && /^\d{6}$/.test(code)) {
-                dispatch(reqGetInquirePrice({ PDNO: code }));
-                dispatch(reqGetInquireDailyItemChartPrice({
-                    PDNO: code,
-                    FID_INPUT_DATE_1: "20170101",
-                    FID_INPUT_DATE_2: new Date().toISOString().split('T')[0].replaceAll("-", "")
-                }));
-                dispatch(reqGetBalanceSheet({ PDNO: code }));
-                dispatch(reqGetIncomeStatement({ PDNO: code }));
-            } else {
-                // 유효한 6자리 KR 코드가 없으면 US 티커로 폴백 (오버라이드 country 미설정 등)
-                setKrOrUs("US");
-                const ticker = upper;
-                dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
-                dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker }));
-                dispatch(reqGetOverseasPriceQuotationsDailyPrice({
-                    PDNO: ticker,
-                    FID_INPUT_DATE_1: new Date().toISOString().split('T')[0].replaceAll("-", "")
-                }));
-                dispatch(reqGetFinnhubUsFinancialsReported(ticker));
-            }
-        } else {
+            dispatch(reqGetInquirePrice({ PDNO: code }));
+            dispatch(reqGetInquireDailyItemChartPrice({
+                PDNO: code,
+                FID_INPUT_DATE_1: "20170101",
+                FID_INPUT_DATE_2: new Date().toISOString().split('T')[0].replaceAll("-", "")
+            }));
+            dispatch(reqGetBalanceSheet({ PDNO: code }));
+            dispatch(reqGetIncomeStatement({ PDNO: code }));
+        };
+        const searchUs = () => {
             setKrOrUs("US");
             const ticker = upper;
             dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
@@ -161,6 +139,21 @@ export function useStockSearch() {
                 FID_INPUT_DATE_1: new Date().toISOString().split('T')[0].replaceAll("-", "")
             }));
             dispatch(reqGetFinnhubUsFinancialsReported(ticker));
+        };
+
+        if (us_tickers.includes(upper)) { searchUs(); return; }
+        const localCode = (corpCodeJson as Record<string, { stock_code?: string }>)[stockName]?.stock_code
+            ?? (/^\d{6}$/.test(stockName) ? stockName : undefined);
+        if (localCode && /^\d{6}$/.test(localCode)) { searchKr(localCode); return; }
+
+        // 정적 목록에 없는 종목만 오버라이드를 조회한다. 두 목록은 동시에 받을 수 있다.
+        const [usOverrides, krOverrides] = await Promise.all([loadUsOverrides(), loadKrOverrides()]);
+        if (searchId !== searchIdRef.current) return;
+        if (usOverrides.has(upper)) searchUs();
+        else {
+            const code = krOverrides.get(stockName);
+            if (code && /^\d{6}$/.test(code)) searchKr(code);
+            else searchUs(); // 유효한 국내 코드가 없으면 미국 티커로 폴백
         }
     }, [dispatch]);
 

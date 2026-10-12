@@ -449,7 +449,7 @@ function AnalyzeContent() {
   const isPriceLoaded =
     tickerFromUrl === name &&
     (
-      (krOrUs === 'KR' && data.kiChart.state === 'fulfilled') ||
+      (krOrUs === 'KR' && data.kiPrice.state === 'fulfilled') ||
       (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.usDetail?.output?.last !== "")
     );
 

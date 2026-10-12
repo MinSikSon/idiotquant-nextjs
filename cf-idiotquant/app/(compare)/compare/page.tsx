@@ -52,24 +52,26 @@ async function getHistoricalClose(ticker: string, market: 'KR' | 'US', date: str
 }
 
 async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, dates: string[]): Promise<ComparisonStock> {
+  const pricesPromise = Promise.all(dates.map(async date => {
+    try { return [date, await getHistoricalClose(ticker, market, date)] as const; }
+    catch (e) { return [date, { error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }] as const; }
+  }));
   let stock: ComparisonStock;
   if (market === 'US') {
-    const [detailRes, infoRes] = await Promise.all([getQuotationsPriceDetail(ticker), getQuotationsSearchInfo(ticker)]);
+    const [detailRes, infoRes, prices] = await Promise.all([getQuotationsPriceDetail(ticker), getQuotationsSearchInfo(ticker), pricesPromise]);
     const d = detailRes?.output ?? detailRes?.output1 ?? {};
     const i = infoRes?.output ?? {};
     const eps = numberOrNull(d.epsx), bps = numberOrNull(d.bpsx);
     stock = { id: crypto.randomUUID(), ticker, name: i.prdt_eng_name || i.ovrs_item_name || ticker, market, currency: '$', prices: {}, per: numberOrNull(d.perx), pbr: numberOrNull(d.pbrx), eps, bps, roe: eps && bps ? eps / bps * 100 : undefined };
+    stock.prices = Object.fromEntries(prices);
   } else {
-    const res = await getInquirePrice(ticker);
+    const [res, prices] = await Promise.all([getInquirePrice(ticker), pricesPromise]);
     const d = res?.output ?? {};
     const name = Object.entries(corpCodes as Record<string, { stock_code?: string }>).find(([, item]) => item.stock_code === ticker)?.[0] ?? nameHint;
     const eps = numberOrNull(d.eps), bps = numberOrNull(d.bps);
     stock = { id: crypto.randomUUID(), ticker, name, market, currency: '₩', prices: {}, per: numberOrNull(d.per), pbr: numberOrNull(d.pbr), eps, bps, roe: eps && bps ? eps / bps * 100 : undefined };
+    stock.prices = Object.fromEntries(prices);
   }
-  stock.prices = Object.fromEntries(await Promise.all(dates.map(async date => {
-    try { return [date, await getHistoricalClose(ticker, market, date)]; }
-    catch (e) { return [date, { error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }]; }
-  })));
   if (Object.values(stock.prices).every(item => !item.price) && !stock.per && !stock.pbr) {
     throw new Error('종목 정보를 불러오지 못했습니다. 종목명이나 티커를 확인해 주세요.');
   }
