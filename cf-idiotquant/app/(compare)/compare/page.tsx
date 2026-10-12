@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Loader2, Plus, Search, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Loader2, Plus, Search, X } from 'lucide-react';
 import corpCodes from '@/public/data/validCorpCode.json';
 import corpNames from '@/public/data/validCorpNameArray.json';
 import nasdaq from '@/public/data/usStockSymbols/nasdaq_tickers.json';
@@ -287,46 +287,67 @@ export default function ComparePage() {
       </section>}
 
       {returnStats.length > 0 && <section className="mt-6" aria-label="날짜별 수익률 통계">
-        <h2 className="text-base font-semibold">날짜별 수익률 통계</h2>
-        <p className="mt-1 text-xs text-neutral-500">각 종목의 첫 거래일 종가와 비교할 수 있는 종목만 집계합니다.</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-[4px] border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-[#101812]">
-            <p className="text-xs font-semibold text-neutral-500">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
-            <p className={`mt-2 text-xl font-semibold tabular-nums ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
-            <p className="mt-1 text-xs text-neutral-500">중앙값 {summary.median >= 0 ? '+' : ''}{show(summary.median)}% · 상승 {summary.positiveCount}/{summary.count}종목</p>
+        <h2 className="text-sm font-semibold sm:text-base">날짜별 수익률 통계</h2>
+        <p className="mt-1 hidden text-xs text-neutral-500 sm:block">각 종목의 첫 거래일 종가와 비교할 수 있는 종목만 집계합니다.</p>
+        <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-[4px] border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-[#101812] sm:p-4">
+            <div className="flex items-center justify-between gap-2 sm:block">
+              <p className="text-xs font-semibold text-neutral-500">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
+              <p className={`text-sm font-semibold tabular-nums sm:mt-2 sm:text-xl ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
+            </div>
+            <p className="mt-0.5 text-[11px] text-neutral-500 sm:mt-1 sm:text-xs">중앙값 {summary.median >= 0 ? '+' : ''}{show(summary.median)}% · 상승 {summary.positiveCount}/{summary.count}종목</p>
           </div>)}
         </div>
       </section>}
       {stocks.length === 0 ? <section className="mt-8 rounded-md border border-dashed border-neutral-300 bg-white/70 px-5 py-12 text-center dark:border-neutral-700 dark:bg-[#101812]">
         <p className="text-sm font-medium">{dates.length ? '비교할 종목을 추가해 주세요.' : '비교할 날짜를 먼저 추가해 주세요.'}</p>
         <p className="mt-2 text-sm text-neutral-500">{dates.length ? '예: 삼성전자와 SK하이닉스, 또는 AAPL과 MSFT' : '날짜를 등록하면 종목별 가격을 해당 날짜마다 조회합니다.'}</p>
-      </section> : <section className="mt-8" aria-label="종목 비교 결과">
-        <div className="space-y-3 md:hidden">
-          {stocks.map(stock => <article key={stock.id} className="overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812]">
-            <div className="flex items-start justify-between gap-3 px-4 py-4">
-              <div className="min-w-0">
-                <h2 className="break-words text-base font-semibold">{stock.name}</h2>
-                <p className="mt-1 text-xs text-neutral-500">{stock.ticker} · {stock.market}</p>
-                <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#5148c8] dark:text-[#aaa4ff]">상세 분석 <ArrowRight size={13} /></Link>
-              </div>
-              <button type="button" aria-label={`${stock.name} 제거`} onClick={() => setStocks(items => items.filter(item => item.id !== stock.id))} disabled={loading || dateLoading} className="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-white"><X size={17} /></button>
-            </div>
-            <div className="divide-y divide-neutral-100 border-y border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
-              {dates.map(date => <div key={date} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 px-4 py-3 text-sm">
-                <p className="text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 종가</p>
-                <div className="text-right font-semibold tabular-nums">{priceContent(stock, date)}</div>
-              </div>)}
-            </div>
-            <div className="px-4 py-4">
-              <p className="text-xs text-neutral-500">현재 기준 지표</p>
-              <dl className="mt-3 grid grid-cols-3 gap-x-3 gap-y-4">
-                {rows.map(row => <div key={row.label} className="min-w-0">
-                  <dt className="text-xs text-neutral-500">{row.label}</dt>
-                  <dd className="mt-1 break-words text-sm font-medium tabular-nums">{row.value(stock)}</dd>
+      </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
+        <div className="space-y-2 md:hidden">
+          {stocks.map(stock => {
+            const latestDate = dates[dates.length - 1];
+            const latest = stock.prices[latestDate];
+            const latestReturn = priceReturns.get(`${stock.id}:${latestDate}`);
+            const hasReturn = latestReturn && latest.priceDate !== latestReturn.baselineDate;
+            return <details key={stock.id} className="group overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812]">
+              <summary className="cursor-pointer list-none px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{stock.name}</span>
+                  <span className="shrink-0 text-[11px] text-neutral-500">{stock.ticker} · {stock.market}</span>
+                  <ChevronDown size={15} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
+                  <span className="shrink-0 text-neutral-500">{formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} 종가</span>
+                  <span className={`min-w-0 text-right font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`}>
+                    {latest?.loading ? '조회 중' : latest?.price ? `${stock.currency}${show(latest.price, stock.market === 'KR' ? 0 : 2)}` : latest?.error ?? '가격 없음'}
+                  </span>
+                </div>
+                {hasReturn && <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+                  <span className="text-neutral-500">{formatDate(latestReturn.baselineDate)} 대비</span>
+                  <span className={`font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>
+                </div>}
+              </summary>
+              <div className="divide-y divide-neutral-100 border-t border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
+                {dates.map(date => <div key={date} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 py-2.5 text-sm">
+                  <p className="text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 종가</p>
+                  <div className="text-right font-semibold tabular-nums">{priceContent(stock, date)}</div>
                 </div>)}
-              </dl>
-            </div>
-          </article>)}
+              </div>
+              <div className="border-t border-neutral-100 px-3 py-3 dark:border-neutral-800">
+                <p className="text-xs text-neutral-500">현재 기준 지표</p>
+                <dl className="mt-2 grid grid-cols-3 gap-x-3 gap-y-3">
+                  {rows.map(row => <div key={row.label} className="min-w-0">
+                    <dt className="text-xs text-neutral-500">{row.label}</dt>
+                    <dd className="mt-1 break-words text-sm font-medium tabular-nums">{row.value(stock)}</dd>
+                  </div>)}
+                </dl>
+                <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                  <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="inline-flex items-center gap-1 text-xs font-semibold text-[#5148c8] dark:text-[#aaa4ff]">상세 분석 <ArrowRight size={13} /></Link>
+                  <button type="button" aria-label={`${stock.name} 제거`} onClick={() => setStocks(items => items.filter(item => item.id !== stock.id))} disabled={loading || dateLoading} className="inline-flex items-center gap-1 rounded p-1 text-xs text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-white"><X size={15} /> 제거</button>
+                </div>
+              </div>
+            </details>;
+          })}
         </div>
         <div className="hidden overflow-x-auto rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812] md:block">
           <table className="w-full min-w-max border-collapse text-sm">
