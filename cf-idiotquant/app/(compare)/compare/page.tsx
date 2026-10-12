@@ -305,10 +305,10 @@ export default function ComparePage() {
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
         <div className="space-y-2 md:hidden">
           {stocks.map(stock => {
-            const latestDate = dates[dates.length - 1];
-            const latest = stock.prices[latestDate];
-            const latestReturn = priceReturns.get(`${stock.id}:${latestDate}`);
-            const hasReturn = latestReturn && latest.priceDate !== latestReturn.baselineDate;
+            const latestDate = dates.at(-1);
+            const latest = latestDate ? stock.prices[latestDate] : undefined;
+            const latestReturn = latestDate ? priceReturns.get(`${stock.id}:${latestDate}`) : undefined;
+            const hasReturn = latestReturn && latest?.priceDate !== latestReturn.baselineDate;
             return <details key={stock.id} className="group overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812]">
               <summary className="cursor-pointer list-none px-3 py-2.5 [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
@@ -316,12 +316,12 @@ export default function ComparePage() {
                   <span className="shrink-0 text-[11px] text-neutral-500">{stock.ticker} · {stock.market}</span>
                   <ChevronDown size={15} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
                 </div>
-                <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
+                {latestDate ? <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
                   <span className="shrink-0 text-neutral-500">{formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} 종가</span>
                   <span className={`min-w-0 text-right font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`}>
                     {latest?.loading ? '조회 중' : latest?.price ? `${stock.currency}${show(latest.price, stock.market === 'KR' ? 0 : 2)}` : latest?.error ?? '가격 없음'}
                   </span>
-                </div>
+                </div> : <p className="mt-1.5 text-xs text-neutral-500">비교 날짜를 추가하면 가격을 볼 수 있습니다.</p>}
                 {hasReturn && <div className="mt-1 flex items-center justify-between gap-2 text-xs">
                   <span className="text-neutral-500">{formatDate(latestReturn.baselineDate)} 대비</span>
                   <span className={`font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>
