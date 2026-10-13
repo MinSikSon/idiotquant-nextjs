@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Loader2, Plus, Search, X } from 'lucide-react';
 import corpCodes from '@/public/data/validCorpCode.json';
 import corpNames from '@/public/data/validCorpNameArray.json';
@@ -21,7 +22,8 @@ type ComparisonStock = {
 type RecentStock = Pick<ComparisonStock, 'ticker' | 'name' | 'market'>;
 const RECENT_STOCKS_KEY = 'idiotquant:compare:recent-stocks:v1';
 const RECENT_STOCKS_LIMIT = 10;
-const MAX_COMPARISON_STOCKS = 10;
+const GUEST_LIMITS = { stocks: 4, dates: 2 };
+const MEMBER_LIMITS = { stocks: 20, dates: 10 };
 
 const usTickers = new Set([...nasdaq, ...nyse, ...amex].map((x) => String(x).toUpperCase()));
 const numberOrNull = (v: unknown): number | undefined => {
@@ -79,6 +81,11 @@ async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, 
 }
 
 export default function ComparePage() {
+  const { status: sessionStatus } = useSession();
+  const limits = sessionStatus === 'authenticated' ? MEMBER_LIMITS : GUEST_LIMITS;
+  const sessionLoading = sessionStatus === 'loading';
+  const limitsRef = useRef(limits);
+  limitsRef.current = limits;
   const [query, setQuery] = useState('');
   const [dateInput, setDateInput] = useState('');
   const [dates, setDates] = useState<string[]>([]);
@@ -110,7 +117,7 @@ export default function ComparePage() {
     catch { /* 저장소가 막혀 있어도 종목 비교는 계속 쓸 수 있다. */ }
   }, [recentStocks, recentLoaded]);
   useEffect(() => {
-    if (importedRef.current) return;
+    if (sessionLoading || importedRef.current) return;
     importedRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const market = params.get('country');
@@ -118,7 +125,7 @@ export default function ComparePage() {
     if ((market !== 'KR' && market !== 'US') || !date || !/^\d{8}$/.test(date)) return;
     const tickers = [...new Set((params.get('tickers') ?? '').split(',').map(ticker => ticker.trim().toUpperCase()))]
       .filter(ticker => market === 'KR' ? /^\d{6}$/.test(ticker) : /^[A-Z][A-Z0-9.-]{0,5}$/.test(ticker))
-      .slice(0, MAX_COMPARISON_STOCKS);
+      .slice(0, limits.stocks);
     if (!tickers.length) return;
     const selectedDate = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}`;
     setDates([selectedDate]);
@@ -130,7 +137,7 @@ export default function ComparePage() {
       for (const [index, ticker] of tickers.entries()) {
         try {
           const stock = await loadStock(ticker, market, ticker, [selectedDate]);
-          setStocks(current => [...current, stock]);
+          setStocks(current => current.length < limitsRef.current.stocks ? [...current, stock] : current);
         } catch { failed++; }
         setImportProgress({ loaded: index + 1, total: tickers.length });
       }
@@ -138,7 +145,12 @@ export default function ComparePage() {
       setLoading(false);
       setImportProgress(null);
     })();
-  }, []);
+  }, [sessionLoading, limits.stocks]);
+  useEffect(() => {
+    if (sessionLoading) return;
+    setDates(current => current.length > limits.dates ? current.slice(0, limits.dates) : current);
+    setStocks(current => current.length > limits.stocks ? current.slice(0, limits.stocks) : current);
+  }, [sessionLoading, limits.dates, limits.stocks]);
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -160,7 +172,7 @@ export default function ComparePage() {
 
   async function addStock(raw: string) {
     const value = raw.trim();
-    if (!value || stocks.length >= MAX_COMPARISON_STOCKS || loading || dateLoading) return;
+    if (!value || sessionLoading || stocks.length >= limits.stocks || loading || dateLoading) return;
     if (!dates.length) { setError('비교할 날짜를 먼저 추가해 주세요.'); return; }
     const upper = value.toUpperCase();
     const code = (corpCodes as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^\d{6}$/.test(value) ? value : undefined);
@@ -173,7 +185,7 @@ export default function ComparePage() {
     setLoading(true); setError('');
     try {
       const stock = await loadStock(ticker, isUs ? 'US' : 'KR', value, dates);
-      setStocks(current => [...current, stock]);
+      setStocks(current => current.length < limitsRef.current.stocks ? [...current, stock] : current);
       setRecentStocks(current => [
         { ticker: stock.ticker, name: stock.name, market: stock.market },
         ...current.filter(item => item.ticker !== stock.ticker || item.market !== stock.market),
@@ -187,9 +199,9 @@ export default function ComparePage() {
 
   async function addDate() {
     const date = dateInput;
-    if (!date || dates.includes(date) || loading || dateLoading) return;
+    if (!date || sessionLoading || dates.includes(date) || dates.length >= limits.dates || loading || dateLoading) return;
     setError(''); setDateLoading(true);
-    setDates(current => [...current, date].sort());
+    setDates(current => current.length < limits.dates ? [...current, date].sort() : current);
     setStocks(current => current.map(stock => ({ ...stock, prices: { ...stock.prices, [date]: { loading: true } } })));
     await Promise.all(stocks.map(async stock => {
       let result;
@@ -241,15 +253,16 @@ export default function ComparePage() {
 
       <section className="mt-8" aria-label="비교 날짜">
         <h2 className="text-sm font-semibold">1. 비교할 날짜 추가</h2>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+        <div className="mt-2 flex items-end gap-2">
+          <label className="min-w-0 flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300 sm:flex-none">
             가격 기준일
-            <input type="date" value={dateInput} max={localToday()} onChange={e => setDateInput(e.target.value)} disabled={dateLoading || loading} className="mt-1 block h-11 w-full rounded-[4px] border border-neutral-300 bg-white px-3 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-[#111a14] dark:text-neutral-100 sm:w-auto" />
+            <input type="date" value={dateInput} max={localToday()} onChange={e => setDateInput(e.target.value)} disabled={sessionLoading || dateLoading || loading} className="mt-1 block h-11 w-full min-w-0 rounded-[4px] border border-neutral-300 bg-white px-2 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-[#111a14] dark:text-neutral-100 sm:w-56 sm:px-3" />
           </label>
-          <button type="button" onClick={() => void addDate()} disabled={!dateInput || dates.includes(dateInput) || dateLoading || loading} className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[4px] border border-[#635bdb] px-4 text-sm font-semibold text-[#5148c8] disabled:opacity-50 dark:text-[#aaa4ff]">
+          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[4px] border border-[#635bdb] px-3 text-sm font-semibold text-[#5148c8] disabled:opacity-50 dark:text-[#aaa4ff] sm:px-4">
             {dateLoading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} 날짜 추가
           </button>
         </div>
+        <p className="mt-2 text-xs text-neutral-500">날짜 {dates.length}/{limits.dates}개 · {sessionStatus === 'authenticated' ? '로그인' : '비로그인'} 기준</p>
         {dates.length > 0 && <div className="mt-3 flex flex-wrap gap-2">
           {dates.map(date => <span key={date} className="inline-flex items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium dark:border-neutral-700 dark:bg-[#101812]">
             {formatDate(date.replaceAll('-', ''))}
@@ -264,17 +277,17 @@ export default function ComparePage() {
         <form onSubmit={submit} className="relative mt-2 flex gap-2">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="예: 삼성전자, 005930, AAPL" disabled={loading || dateLoading || stocks.length >= MAX_COMPARISON_STOCKS || !dates.length} className="h-12 w-full rounded-[4px] border border-neutral-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-[#111a14]" />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="예: 삼성전자, 005930, AAPL" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-[4px] border border-neutral-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-[#111a14]" />
             {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-[4px] border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-[#111a14]">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}</button></li>)}</ul>}
           </div>
-          <button disabled={loading || dateLoading || !dates.length || stocks.length >= MAX_COMPARISON_STOCKS || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[4px] bg-[#635bdb] px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
+          <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[4px] bg-[#635bdb] px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
         </form>
-        <p className="mt-2 text-xs text-neutral-500">종목 최대 10개 · 국내와 미국 종목을 함께 볼 수 있습니다.</p>
+        <p className="mt-2 text-xs text-neutral-500">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다.</p>
         {importProgress && <p role="status" className="mt-2 text-xs text-neutral-500">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
         {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       </section>
 
-      {recentStocks.length > 0 && !query.trim() && dates.length > 0 && stocks.length < MAX_COMPARISON_STOCKS && <section className="mt-5" aria-label="최근 검색한 종목">
+      {recentStocks.length > 0 && !query.trim() && dates.length > 0 && stocks.length < limits.stocks && <section className="mt-5" aria-label="최근 검색한 종목">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xs font-semibold text-neutral-500">최근 검색</h2>
           <button type="button" onClick={() => setRecentStocks([])} className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">기록 지우기</button>

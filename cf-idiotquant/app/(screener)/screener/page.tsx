@@ -1023,9 +1023,10 @@ function ScreenerContent() {
     }, [dispatch, isLoggedIn, requireLogin, country]);
 
     const scanDate = ncavDailyList.scanDate;
+    const compareLimit = isLoggedIn ? 20 : 4;
     const compareTickers = useMemo(() => [...new Set(filteredList.map(item => String(item.ticker ?? '').trim().toUpperCase()))]
         .filter(ticker => country === 'KR' ? /^\d{6}$/.test(ticker) : /^[A-Z][A-Z0-9.-]{0,5}$/.test(ticker))
-        .slice(0, 10), [filteredList, country]);
+        .slice(0, compareLimit), [filteredList, country, compareLimit]);
     const compareHref = /^\d{8}$/.test(scanDate ?? '') && compareTickers.length > 0
         ? `/compare?${new URLSearchParams({ country, date: scanDate!, tickers: compareTickers.join(',') })}`
         : null;
@@ -2016,8 +2017,8 @@ function ScreenerContent() {
                                 type="button"
                                 onClick={() => router.push(compareHref)}
                                 className="rounded-lg border border-brand-light-hover px-2.5 py-1.5 text-[11px] font-bold text-brand-hover whitespace-nowrap dark:border-[#166534] dark:text-brand"
-                                title={filteredList.length > 10 ? '현재 정렬 순서의 상위 10개 종목을 비교합니다.' : '필터 결과를 비교 페이지에서 엽니다.'}
-                            >{filteredList.length > 10 ? '상위 10개 비교' : `${compareTickers.length}종목 비교`}</button>}
+                                title={filteredList.length > compareLimit ? `현재 정렬 순서의 상위 ${compareLimit}개 종목을 비교합니다.` : '필터 결과를 비교 페이지에서 엽니다.'}
+                            >{filteredList.length > compareLimit ? `상위 ${compareLimit}개 비교` : `${compareTickers.length}종목 비교`}</button>}
                             <button
                                 onClick={() => setShowInsights(v => !v)}
                                 className={cn(

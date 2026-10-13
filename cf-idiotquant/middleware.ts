@@ -48,6 +48,7 @@ export default auth((req: any) => {
         // 검색엔진이 들어오는 문이다. 로그인으로 돌려보내면 색인 자체가 안 된다.
         path === "/quant" ||
         path === "/analyze" ||
+        path === "/compare" ||
         path === "/screener" ||
         // 게임은 로그인 없이 굴러간다. 진행은 localStorage 에만 쌓이므로 계정이
         // 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.
