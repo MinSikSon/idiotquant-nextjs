@@ -245,10 +245,8 @@ export default function ComparePage() {
 
   return <main className="min-h-screen bg-surface-canvas py-8 text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100 sm:py-12">
     <div className={PAGE_WIDTH.data}>
-      <Link href="/" className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white">← idiotquant</Link>
-      <header className="mt-8 max-w-2xl">
-        <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">종목 비교</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">궁금한 회사의 숫자를<br className="sm:hidden" /> 나란히 살펴보세요.</h1>
+      <header className="max-w-2xl">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">궁금한 회사의 숫자를<br className="sm:hidden" /> 나란히 살펴보세요.</h1>
         <p className="mt-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">비교할 날짜를 등록한 뒤 종목을 추가하세요. 각 종목의 모든 날짜별 종가와 수익률을 한눈에 볼 수 있습니다.</p>
       </header>
 
