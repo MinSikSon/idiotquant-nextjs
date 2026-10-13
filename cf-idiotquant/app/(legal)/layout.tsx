@@ -12,7 +12,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
                             <span className="text-white text-[12px] font-black italic leading-none">IQ</span>
                         </div>
                         <span className="font-black tracking-tighter text-lg text-neutral-900 dark:text-white">
-                            IDIOT<span className="text-brand">QUANT</span>
+                            IDIOT<span className="text-brand-ink">QUANT</span>
                         </span>
                     </Link>
                 </div>

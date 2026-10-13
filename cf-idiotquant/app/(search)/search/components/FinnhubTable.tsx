@@ -31,7 +31,7 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자산",
         labelEn: "ASSETS",
-        accent: "border-brand/50 bg-[#f0fdf4] text-brand-hover dark:bg-[#052e16]/40 dark:text-[#86efac]",
+        accent: "border-brand/50 bg-brand-light text-brand-ink-hover dark:bg-brand-muted/40 dark:text-brand-ink",
         dotColor: "bg-brand",
         items: [
             {
@@ -110,7 +110,7 @@ const IS_SECTIONS: SectionDef[] = [
     {
         label: "이익",
         labelEn: "PROFIT",
-        accent: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+        accent: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-brand-ink",
         dotColor: "bg-emerald-400",
         items: [
             {
@@ -195,7 +195,7 @@ function InfoPopover({ label, description }: { label: string; description: strin
                 <button
                     type="button"
                     aria-label={`${label} 설명`}
-                    className="shrink-0 rounded-full p-0.5 text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+                    className="shrink-0 rounded-xl p-0.5 text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
                 >
                     <Info size={11} />
                 </button>
@@ -264,13 +264,13 @@ function SectionTable({
                                 key={idx}
                                 className={cn(
                                     "px-5 py-3 text-right min-w-[9rem]",
-                                    idx === 0 && "bg-[#f0fdf4]/50 dark:bg-[#052e16]/10"
+                                    idx === 0 && "bg-brand-light/50 dark:bg-brand-muted/10"
                                 )}
                             >
                                 <div className="flex flex-col items-end gap-0.5">
                                     <span className={cn(
                                         "text-[9px] font-black uppercase tracking-wider font-mono",
-                                        idx === 0 ? "text-brand dark:text-brand" : "text-neutral-400 dark:text-neutral-500"
+                                        idx === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
                                     )}>
                                         {idx === 0 ? "Latest" : `FY T-${idx}`}
                                     </span>
@@ -348,7 +348,7 @@ function SectionTable({
                                                 key={colIdx}
                                                 className={cn(
                                                     "px-5 py-3 text-right font-mono tabular-nums",
-                                                    colIdx === 0 && "bg-[#f0fdf4]/30 dark:bg-[#052e16]/5"
+                                                    colIdx === 0 && "bg-brand-light/30 dark:bg-brand-muted/5"
                                                 )}
                                             >
                                                 <div className="flex flex-col items-end gap-0.5">
@@ -421,7 +421,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
                     <Tabs.List className="flex gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
-                            className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-hover dark:data-[state=active]:text-[#86efac]")}
+                            className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-ink-hover dark:data-[state=active]:text-brand-ink")}
                         >
                             <BookOpen size={12} />
                             Balance Sheet

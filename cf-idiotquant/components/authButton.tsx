@@ -29,6 +29,31 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 /** 어느 문으로 들어가는 중인가. 둘 다 도는 것처럼 보이면 안 눌린 쪽도 눌린 줄 안다. */
 type Pending = null | "kakao" | "google"
 
+/** 홈과 로그인 화면이 같은 제공자 버튼의 크기·모서리·로딩 상태를 공유한다. */
+function ProviderAuthButton({ provider, pending, onClick, label }: {
+    provider: Exclude<Pending, null>
+    pending: Pending
+    onClick: () => void
+    label: string
+}) {
+    const google = provider === "google"
+    const loading = pending === provider
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={pending !== null}
+            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${google
+                ? "border border-neutral-300 bg-white text-[#1f1f1f] hover:bg-neutral-50"
+                : "bg-[#FEE500] text-[#191919] hover:bg-[#F6DC00]"}`}
+        >
+            {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                : google ? <GoogleIcon size={18} /> : <KakaoIcon size={18} />}
+            {loading ? `${google ? "Google" : "카카오"} 연결 중...` : label}
+        </button>
+    )
+}
+
 export function StartAuthButtons({ callbackUrl = "/screener" }: { callbackUrl?: string }) {
     const [pending, setPending] = useState<Pending>(null)
 
@@ -41,27 +66,10 @@ export function StartAuthButtons({ callbackUrl = "/screener" }: { callbackUrl?: 
         }
     }
 
-    const busy = pending !== null
     return (
         <div className="grid w-full gap-2 sm:grid-cols-2">
-            <button
-                type="button"
-                onClick={() => handleStart("google")}
-                disabled={busy}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] border border-neutral-300 bg-white px-3 py-2.5 text-sm font-semibold text-[#1f1f1f] transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-                {pending === "google" ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" /> : <GoogleIcon size={18} />}
-                {pending === "google" ? "Google 연결 중..." : "Google 계정으로 시작하기"}
-            </button>
-            <button
-                type="button"
-                onClick={() => handleStart("kakao")}
-                disabled={busy}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] bg-[#FEE500] px-3 py-2.5 text-sm font-semibold text-[#191919] transition-colors hover:bg-[#F6DC00] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-                {pending === "kakao" ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#191919]/30 border-t-[#191919]" /> : <KakaoIcon size={18} />}
-                {pending === "kakao" ? "카카오 연결 중..." : "카카오 계정으로 시작하기"}
-            </button>
+            <ProviderAuthButton provider="google" pending={pending} onClick={() => handleStart("google")} label="Google 계정으로 시작하기" />
+            <ProviderAuthButton provider="kakao" pending={pending} onClick={() => handleStart("kakao")} label="카카오 계정으로 시작하기" />
         </div>
     )
 }
@@ -99,48 +107,11 @@ export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?
         }
     }
 
-    // 하나를 누르면 나머지도 잠근다 — 넘어가는 중에 다른 문을 누르면 두 번 돈다.
-    const busy = pending !== null
-
+    // 연결 중에는 두 제공자 버튼을 함께 잠근다.
     return (
-        <div className="flex flex-col gap-2.5">
-            <button
-                onClick={() => handleLogin("kakao")}
-                disabled={busy}
-                className="w-full flex items-center justify-center gap-3 bg-[#FEE500] hover:bg-[#F6DC00] active:scale-[0.98] text-[#191919] font-black text-sm py-3.5 px-5 rounded-xl transition-all duration-150 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed select-none"
-            >
-                {pending === "kakao" ? (
-                    <>
-                        <span className="inline-block w-4 h-4 rounded-full border-2 border-[#191919]/30 border-t-[#191919] animate-spin" />
-                        카카오 연결 중...
-                    </>
-                ) : (
-                    <>
-                        <KakaoIcon size={20} />
-                        카카오로 로그인
-                    </>
-                )}
-            </button>
-
-            {/* 구글은 흰 바탕에 회색 테두리 — 구글 브랜드 가이드가 정한 모양이다.
-                어두운 화면에서도 흰 버튼을 그대로 둔다. 색을 뒤집으면 그 로고가 아니게 된다. */}
-            <button
-                onClick={() => handleLogin("google")}
-                disabled={busy}
-                className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-50 active:scale-[0.98] text-[#1f1f1f] font-bold text-sm py-3.5 px-5 rounded-xl border border-neutral-300 transition-all duration-150 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed select-none"
-            >
-                {pending === "google" ? (
-                    <>
-                        <span className="inline-block w-4 h-4 rounded-full border-2 border-neutral-300 border-t-neutral-600 animate-spin" />
-                        구글 연결 중...
-                    </>
-                ) : (
-                    <>
-                        <GoogleIcon size={18} />
-                        Google로 로그인
-                    </>
-                )}
-            </button>
+        <div className="flex flex-col gap-2">
+            <ProviderAuthButton provider="kakao" pending={pending} onClick={() => handleLogin("kakao")} label="카카오로 로그인" />
+            <ProviderAuthButton provider="google" pending={pending} onClick={() => handleLogin("google")} label="Google로 로그인" />
         </div>
     )
 }

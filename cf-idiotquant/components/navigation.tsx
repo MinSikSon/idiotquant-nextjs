@@ -96,7 +96,7 @@ function SideItem({
         <Icon
           size={16}
           strokeWidth={isActive ? 2.2 : 1.8}
-          className={cn("shrink-0 transition-colors", isActive ? "text-brand dark:text-brand" : "")}
+          className={cn("shrink-0 transition-colors", isActive ? "text-brand-ink dark:text-brand-ink" : "")}
         />
       )}
       <span className="flex-1 truncate">{label}</span>
@@ -104,7 +104,7 @@ function SideItem({
         <span className={cn(
           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
           isActive
-            ? "bg-brand-light dark:bg-[#052e16]/50 text-brand dark:text-brand"
+            ? "bg-brand-light dark:bg-brand-muted/50 text-brand-ink dark:text-brand-ink"
             : "bg-neutral-200/60 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400"
         )}>
           {badge}
@@ -126,9 +126,9 @@ function TabItem({
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 transition-colors",
         // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
-        "rounded-[4px]",
+        "rounded-xl",
         isActive
-          ? "text-[#5148c8] dark:text-[#aaa4ff] bg-[#efefff] dark:bg-[#282544]"
+          ? "text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted"
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
@@ -200,7 +200,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     return (
       <Link
         href="/profile"
-        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-brand/50 transition-all"
+        className="w-7 h-7 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-brand/50 transition-all"
       >
         {session?.user?.name?.[0] ?? "U"}
       </Link>
@@ -210,7 +210,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
   return (
     <Link
       href="/login"
-      className="px-3 py-1.5 rounded-[4px] bg-[#635bdb] hover:bg-[#5148c8] text-white text-xs font-semibold transition-colors"
+      className="px-3 py-1.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-semibold transition-colors"
     >
       로그인
     </Link>
@@ -284,7 +284,7 @@ export function NavbarWithSimpleLinks() {
         style={barStyle}>
 
         {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#2c2b27] shrink-0">
+        <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-surface-dark-hover shrink-0">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-brand rounded-lg flex items-center justify-center shadow-md shadow-brand/25 shrink-0">
               <span className="text-white text-[10px] font-black italic leading-none">IQ</span>
@@ -292,7 +292,7 @@ export function NavbarWithSimpleLinks() {
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
               IDIOT<span className="text-brand">{brandSuffix}</span>
             </span>
-            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand dark:text-brand bg-brand-light/60 dark:bg-[#052e16]/40">
+            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-brand/40 text-brand-ink dark:text-brand-ink bg-brand-light/60 dark:bg-brand-muted/40">
               BETA
             </span>
           </Link>
@@ -344,7 +344,7 @@ export function NavbarWithSimpleLinks() {
           {isMasterUser && (
             <>
               <div className="pt-4 pb-1.5 px-1">
-                <div className="h-px bg-neutral-100 dark:bg-[#3a3834] mb-3" />
+                <div className="h-px bg-neutral-100 dark:bg-surface-dark-border mb-3" />
                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                   Portfolio
                 </span>
@@ -359,7 +359,7 @@ export function NavbarWithSimpleLinks() {
                 />
               ))}
               <div className="pt-4 pb-1.5 px-1">
-                <div className="h-px bg-neutral-100 dark:bg-[#3a3834] mb-3" />
+                <div className="h-px bg-neutral-100 dark:bg-surface-dark-border mb-3" />
                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                   Admin
                 </span>
@@ -375,7 +375,7 @@ export function NavbarWithSimpleLinks() {
         </nav>
 
         {/* Theme toggle + User */}
-        <div className="border-t border-neutral-100 dark:border-[#2c2b27] shrink-0">
+        <div className="border-t border-neutral-100 dark:border-surface-dark-hover shrink-0">
           <div className="flex items-center justify-end px-4 py-2.5">
             <ThemeChanger />
           </div>
@@ -384,30 +384,30 @@ export function NavbarWithSimpleLinks() {
       </aside>}
 
       {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
-      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-[#080d0a]/80">
+      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-surface-dark-canvas/80">
         <div className="mx-auto flex min-h-[64px] max-w-7xl items-center gap-6 px-5 sm:px-8 lg:gap-8 lg:px-10">
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-            idiot<span className="text-[#635bdb] dark:text-[#aaa4ff]">quant</span>
+            idiot<span className="text-[#635bdb] dark:text-brand-ink">quant</span>
           </Link>
           <nav aria-label="주요 메뉴" className="flex min-w-0 flex-1 items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300 lg:gap-6 lg:text-sm">
             {MAIN_NAV.filter(item => item.href !== "/").map(item => (
               <Link key={item.href} href={item.href} aria-current={active(pathname, item.href) ? "page" : undefined}
                 className={cn("whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
-                  active(pathname, item.href) && "font-semibold text-[#5148c8] dark:text-[#aaa4ff]")}>
+                  active(pathname, item.href) && "font-semibold text-brand-ink dark:text-brand-ink")}>
                 {item.label}
               </Link>
             ))}
             <div className="relative">
               <button type="button" onClick={() => setMoreOpen(v => !v)} aria-expanded={moreOpen} aria-controls="desktop-more-menu"
                 className={cn("inline-flex items-center gap-1 whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
-                  moreActive && "text-[#5148c8] dark:text-[#aaa4ff]")}>
+                  moreActive && "text-brand-ink dark:text-brand-ink")}>
                 더 보기 <ChevronDown size={14} className={cn("transition-transform", moreOpen && "rotate-180")} />
               </button>
-              {moreOpen && <div id="desktop-more-menu" className="absolute left-0 top-full z-50 mt-2 min-w-44 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-[#101812]">
+              {moreOpen && <div id="desktop-more-menu" className="absolute left-0 top-full z-50 mt-2 min-w-44 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
                 {utilityNav.map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)}
-                    className={cn("block rounded-[4px] px-3 py-2 text-sm transition-colors hover:bg-[#efefff] dark:hover:bg-[#282544]",
-                      active(pathname, item.href) && "font-semibold text-[#5148c8] dark:text-[#aaa4ff]")}>
+                    className={cn("block rounded-xl px-3 py-2 text-sm transition-colors hover:bg-brand-light dark:hover:bg-brand-muted",
+                      active(pathname, item.href) && "font-semibold text-brand-ink dark:text-brand-ink")}>
                     {item.label}
                   </Link>
                 ))}
@@ -417,25 +417,25 @@ export function NavbarWithSimpleLinks() {
           <div className="flex shrink-0 items-center gap-3">
             <ThemeChanger compact />
             {status === "authenticated" ? <>
-              <Link href="/profile" className="max-w-28 truncate rounded-[4px] border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-neutral-400">
+              <Link href="/profile" className="max-w-28 truncate rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-neutral-400">
                 {session?.user?.name || "내 계정"}
               </Link>
               <button type="button" onClick={() => signOut({ callbackUrl: "/" })} aria-label="로그아웃" title="로그아웃"
                 className="text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"><LogOut size={16} /></button>
             </> : status === "unauthenticated" ?
-              <Link href="/login" className="rounded-[4px] bg-[#635bdb] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#5148c8]">로그인</Link> : null}
+              <Link href="/login" className="rounded-xl bg-brand px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-hover">로그인</Link> : null}
           </div>
         </div>
       </header>}
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
       <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
-        barStyle ? "" : "bg-white/85 dark:bg-[#080d0a]/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
+        barStyle ? "" : "bg-white/85 dark:bg-surface-dark-canvas/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-[#635bdb] dark:text-[#aaa4ff]"}>{inGame ? "games" : "quant"}</span>
+              idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-[#635bdb] dark:text-brand-ink"}>{inGame ? "games" : "quant"}</span>
             </span>
           </Link>
         </div>
@@ -447,7 +447,7 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3",
-        barStyle ? "" : "bg-white/85 dark:bg-[#080d0a]/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
+        barStyle ? "" : "bg-white/85 dark:bg-surface-dark-canvas/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
@@ -458,9 +458,9 @@ export function NavbarWithSimpleLinks() {
           type="button"
           onClick={() => setMoreSheet(v => !v)}
           className={cn(
-            "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-[4px] transition-colors",
+            "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
             moreActive || moreSheet
-              ? "text-[#5148c8] dark:text-[#aaa4ff] bg-[#efefff] dark:bg-[#282544]"
+              ? "text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted"
               : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
           )}
         >
@@ -473,7 +473,7 @@ export function NavbarWithSimpleLinks() {
       {moreSheet && (
         <>
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setMoreSheet(false)} />
-          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-md bg-white dark:bg-[#101812] border border-neutral-200 dark:border-neutral-700 shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-md bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-neutral-700 shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
             {utilityNav.map(item => {
               const Icon = item.icon;
               const isActive = active(pathname, item.href);
@@ -483,10 +483,10 @@ export function NavbarWithSimpleLinks() {
                   href={item.href}
                   onClick={() => setMoreSheet(false)}
                   className={cn(
-                    "flex items-center gap-2.5 px-3 py-2.5 rounded-[4px] text-sm font-semibold transition-colors",
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                     isActive
-                      ? "bg-[#efefff] dark:bg-[#282544] text-[#5148c8] dark:text-[#aaa4ff]"
-                      : "text-neutral-600 dark:text-neutral-300 hover:bg-[#efefff] dark:hover:bg-[#282544]"
+                      ? "bg-brand-light dark:bg-brand-muted text-brand-ink dark:text-brand-ink"
+                      : "text-neutral-600 dark:text-neutral-300 hover:bg-brand-light dark:hover:bg-brand-muted"
                   )}
                 >
                   <Icon size={16} className="shrink-0" />
@@ -507,7 +507,7 @@ export function NavbarWithSimpleLinks() {
         <button
           type="button"
           onClick={() => setViewAsUser(false)}
-          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-[4px] border border-[#c8c4ff] bg-[#efefff] px-3.5 py-2 text-[11px] font-bold text-[#5148c8] shadow-lg hover:bg-[#e5e3ff] dark:border-[#625b9e] dark:bg-[#282544] dark:text-[#c6c1ff]"
+          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-xl border border-brand-light-hover bg-brand-light px-3.5 py-2 text-[11px] font-bold text-brand-ink shadow-lg hover:bg-[#e5e3ff] dark:border-brand/40 dark:bg-brand-muted dark:text-brand-ink-hover"
         >
           <EyeOff size={13} className="shrink-0" />
           일반 사용자 화면

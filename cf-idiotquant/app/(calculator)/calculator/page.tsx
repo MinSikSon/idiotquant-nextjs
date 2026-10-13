@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Share2, Check, Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { PAGE_WIDTH } from "@/components/pageHeader";
 import GrowthChart from "./GrowthChart";
 import CalculatorHistory from "./CalculatorHistory";
 import { NumberField } from "./NumberField";
@@ -16,10 +17,7 @@ import {
 const STORAGE_KEY = "compound_calc_inputs_v1";
 const DETAIL_KEY = "compound_calc_detail_v1";
 
-/* ─── 조각 ───────────────────────────────────────────────────
-   홈 화면의 문법을 그대로 쓴다 — 둥근 카드, 굵은 제목, 초록 머리표,
-   손을 올리면 살짝 뜨는 버튼. 예전의 인쇄 서식(각진 모서리·괘선)은 그 자체로는
-   단정했지만 이 앱의 다른 화면과 남처럼 보였다. */
+/* 공통 카드 표면 안에 조건과 결과를 나란히 배치한다. */
 
 const CARD = cn(
     "rounded-2xl border bg-white dark:bg-surface-dark-card",
@@ -62,7 +60,7 @@ const LIFT = "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] tr
 function StepLabel({ tag }: { tag: string }) {
     return (
         <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-brand dark:text-[#22c55e] shrink-0">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-brand-ink dark:text-brand-ink shrink-0">
                 {tag}
             </span>
             <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
@@ -221,7 +219,7 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
                     "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border shrink-0 ml-auto",
                     "border-neutral-200 dark:border-surface-dark-border",
                     "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-700 dark:text-neutral-300",
-                    "hover:border-brand/50 dark:hover:border-[#22c55e]/60", LIFT,
+                    "hover:border-brand/50 dark:hover:border-brand/60", LIFT,
                     "focus:outline-none focus:ring-2 focus:ring-brand"
                 )}
             >
@@ -270,7 +268,7 @@ function Segmented<T extends string | number>({
                         "text-[12.5px] font-bold px-3.5 py-1.5 min-h-[36px] transition-colors",
                         i > 0 && "border-l border-neutral-200 dark:border-surface-dark-border",
                         value === o.v
-                            ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915]"
+                            ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-surface-dark-canvas"
                             : "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
                         "focus:outline-none focus:ring-2 focus:ring-brand focus:z-10"
                     )}
@@ -369,10 +367,10 @@ function Calculator() {
 
     return (
         <div
-            className="group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-2 sm:px-5 pt-5 sm:pt-8 pb-20 sm:pb-24"
+            className="landing-style-page group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas pt-5 sm:pt-8 pb-20 sm:pb-24"
             data-help={showHelp ? "on" : "off"}
         >
-            <div className="max-w-[1380px] mx-auto">
+            <div className={PAGE_WIDTH.data}>
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
                 <header className="flex items-end justify-between gap-5 flex-wrap">
@@ -408,7 +406,7 @@ function Calculator() {
                                 copied
                                     ? "bg-brand border-brand text-white"
                                     : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
-                                         "text-neutral-700 dark:text-neutral-300 hover:border-brand/50 dark:hover:border-[#22c55e]/60")
+                                         "text-neutral-700 dark:text-neutral-300 hover:border-brand/50 dark:hover:border-brand/60")
                             )}
                         >
                             {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}
@@ -685,7 +683,7 @@ function Calculator() {
                             <div className="text-[11.5px] text-neutral-500 dark:text-neutral-400">{cell.k}</div>
                             <div className={cn(
                                 NUM_CLS, "text-[19px] font-semibold mt-0.5",
-                                cell.tone === "gain" && "text-brand dark:text-[#2fa85a]",
+                                cell.tone === "gain" && "text-emerald-700 dark:text-[#2fa85a]",
                                 cell.tone === "loss" && "text-[#b91c1c] dark:text-[#ef6a6a]"
                             )}>
                                 {cell.v}
@@ -704,7 +702,7 @@ function Calculator() {
                                 return (
                                     <div key={label} className={cn(CARD, "px-4 py-4 sm:px-5")}>
                                         <div className="text-[12px] font-bold text-neutral-600 dark:text-neutral-300">{label}</div>
-                                        <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-brand dark:text-[#2fa85a]")}>
+                                        <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]")}>
                                             {relative === null ? "—" : pct(relative)}
                                         </div>
                                         <div className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-1">{status} · {assumption}</div>
@@ -730,7 +728,7 @@ function Calculator() {
                                 return (
                                     <div key={label} className={cn(CARD, "px-4 py-4 sm:px-5")}>
                                         <div className="text-[12px] font-bold text-neutral-600 dark:text-neutral-300">{label} 증가 속도 대비 투자금</div>
-                                        <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-brand dark:text-[#2fa85a]")}>
+                                        <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]")}>
                                             {relative === null ? "—" : pct(relative)}
                                         </div>
                                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">{assumption}</div>
@@ -742,9 +740,9 @@ function Calculator() {
                         <p className="mt-2 px-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                             M2는 통화량 지표입니다. 이 비교는 실제 구매력·환율 변화나 양적완화의 효과를 추정하지 않습니다.
                             과거 발표치는{" "}
-                            <a href="https://snapshot.bok.or.kr/search/M2" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand">한국은행</a>
+                            <a href="https://snapshot.bok.or.kr/search/M2" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-ink">한국은행</a>
                             {" · "}
-                            <a href="https://www.federalreserve.gov/releases/h6/current/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand">미국 연준</a>
+                            <a href="https://www.federalreserve.gov/releases/h6/current/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-ink">미국 연준</a>
                             에서 확인할 수 있습니다.
                         </p>
                     </>
@@ -780,7 +778,7 @@ function Calculator() {
                             {shownRows.map((d, i, arr) => {
                                 const profit = d.value - d.principal;
                                 const rate = d.principal > 0 ? (d.value / d.principal - 1) * 100 : 0;
-                                const tone = profit < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-brand dark:text-[#2fa85a]";
+                                const tone = profit < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]";
                                 const bottom = i === arr.length - 1;
                                 /* 굵게는 "만기"라는 뜻이다 — 표를 접었을 때 앞줄에 찍히면 거짓말이 된다. */
                                 const final = d.year === yearRows.length;
@@ -824,7 +822,7 @@ function Calculator() {
                             "mt-2 w-full text-[11.5px] font-bold py-2.5 rounded-xl border",
                             "border-neutral-200 dark:border-surface-dark-border",
                             "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300",
-                            "hover:border-brand/50 dark:hover:border-[#22c55e]/60",
+                            "hover:border-brand/50 dark:hover:border-brand/60",
                             "focus:outline-none focus:ring-2 focus:ring-brand", LIFT
                         )}
                     >

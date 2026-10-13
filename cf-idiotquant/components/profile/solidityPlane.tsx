@@ -161,7 +161,7 @@ export default function SolidityPlane({
                             <line x1={px(value)} y1={py(safety) - 5} x2={px(value)} y2={py(safety) + 5}
                                   className="stroke-neutral-900 dark:stroke-neutral-100" strokeWidth="1.1" />
                             <circle cx={px(value)} cy={py(safety)} r="2.2"
-                                    className="fill-white dark:fill-[#242320] stroke-neutral-900 dark:stroke-neutral-100"
+                                    className="fill-white dark:fill-surface-dark-card stroke-neutral-900 dark:stroke-neutral-100"
                                     strokeWidth="1.1" />
                         </g>
 
@@ -206,8 +206,8 @@ export default function SolidityPlane({
                     ) : sample ? (
                         <div>
                             <p className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                                가로는 <b className="font-black text-brand dark:text-[#22c55e]">얼마나 싼가</b>,
-                                세로는 <b className="font-black text-brand dark:text-[#22c55e]">지금 팔 수 있는가</b>입니다.
+                                가로는 <b className="font-black text-brand-ink dark:text-brand-ink">얼마나 싼가</b>,
+                                세로는 <b className="font-black text-brand-ink dark:text-brand-ink">지금 팔 수 있는가</b>입니다.
                             </p>
                             <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1.5">
                                 오른쪽 아래 <b className="font-bold text-rose-600 dark:text-rose-400">함정</b>은
@@ -229,7 +229,7 @@ export default function SolidityPlane({
                         </div>
                     ) : (
                         <div>
-                            <p className="text-[11px] font-black text-brand dark:text-[#22c55e]">
+                            <p className="text-[11px] font-black text-brand-ink dark:text-brand-ink">
                                 함정 구역 없음
                             </p>
                             <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-1">

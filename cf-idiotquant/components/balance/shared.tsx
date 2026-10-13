@@ -50,7 +50,7 @@ export function LoadingState({ message = "계좌 데이터를 불러오는 중..
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-surface-dark-canvas gap-3">
       <div className="p-4 rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
-        <Loader2 className="w-7 h-7 text-brand animate-spin" />
+        <Loader2 className="w-7 h-7 text-brand-ink animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -322,15 +322,15 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
 export function pnlIconBg(positive: boolean) {
   return positive
     ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand";
+    : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400";
 }
 
 export function pnlValueColor(positive: boolean) {
-  return positive ? "text-red-500" : "text-brand";
+  return positive ? "text-red-500" : "text-emerald-600 dark:text-emerald-400";
 }
 
 export function pnlAccentColor(positive: boolean) {
-  return positive ? "bg-red-400 dark:bg-red-600" : "bg-brand dark:bg-brand";
+  return positive ? "bg-red-400 dark:bg-red-600" : "bg-emerald-500 dark:bg-emerald-500";
 }
 
 // =========================================================================

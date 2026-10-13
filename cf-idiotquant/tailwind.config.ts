@@ -14,21 +14,8 @@ const config = {
 
   mode: 'jit',
 
-  /* 모서리 반경 — 역할이 값을 정한다.
-     아래 여섯 단계 밖의 임의값(rounded-[10px] 같은)은 쓰지 않는다. 같은 역할에
-     두 값이 생기는 순간 어느 쪽이 맞는지 아무도 모르게 되고, 실제로 그렇게 됐었다
-     (헤더 액션 버튼만 10px, 나머지 같은 크기 버튼은 8px).
-
-       rounded-sm     범례 표식 등 8~10px 짜리 작은 사각형
-       rounded-md     표 안의 작은 태그 · 체크박스
-       rounded-lg     작은 컨트롤 — 아이콘 버튼, 칩, 세그먼트 토글
-       rounded-xl     기본 버튼 · 입력 · 아이콘 상자 · 스켈레톤 블록
-       rounded-2xl    카드 · 패널 · 모달
-       rounded-full   배지 · 아바타 · 점
-
-     rounded-3xl 은 (home) 히어로와 not-found·ErrorFallback 의 큰 일러스트
-     면에만 쓴다. 랜딩은 공통 골격에서 빼기로 한 자리라 여기 규칙 밖이다.
-  */
+  /* 컨트롤은 4px, 카드·패널은 8px. 배지·아바타의 rounded-full은 유지한다.
+     게임은 자체 화면 루트에서 기존 반경 변수를 사용한다. */
 
   /* 로딩 자리표시자(animate-pulse 막대)의 색은 하나다:
        bg-neutral-200 dark:bg-surface-dark-elevated
@@ -45,6 +32,11 @@ const config = {
      그림자를 깔면 무엇이 떠 있는 것인지가 사라진다. */
   theme: {
     extend: {
+      borderRadius: {
+        lg: "var(--radius-control)",
+        xl: "var(--radius-input)",
+        "2xl": "var(--radius-panel)",
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
@@ -84,46 +76,42 @@ const config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
 
-        // 브랜드 액센트 (시그니처 그린)
+        // 브랜드 채움색과 테마별 글자색을 분리해 흰 버튼 글자의 대비를 유지한다.
         brand: {
-          DEFAULT: "#16a34a",
-          hover: "#15803d",
-          light: "#dcfce7",
-          "light-hover": "#86efac",
+          DEFAULT: "#635bdb",
+          hover: "#5148c8",
+          light: "#efefff",
+          muted: "#282544",
+          ink: "rgb(var(--brand-ink) / <alpha-value>)",
+          "ink-hover": "rgb(var(--brand-ink-hover) / <alpha-value>)",
+          "light-hover": "#c8c4ff",
         },
 
         // 라이트 모드 표면
         surface: {
           canvas: "#faf9f7",
           card: "#ffffff",
-          muted: "#ede8df",
-          "muted-hover": "#f5f0e8",
+          muted: "#f0efec",
+          "muted-hover": "#f5f4f1",
         },
 
         // 다크 모드 표면 (7단계 계층)
         "surface-dark": {
-          canvas: "#1a1915",
-          DEFAULT: "#1f1e1b",
-          card: "#242320",
-          hover: "#2c2b27",
-          muted: "#35332e",
+          canvas: "#080d0a",
+          DEFAULT: "#0d130f",
+          card: "#101812",
+          hover: "#1a241d",
+          muted: "#28352c",
           // 테두리는 아래 border-subtle.dark 와 같은 값이다. 이름이 둘인 것은
           // 역사적 이유이고, 값이 갈라지면 안 된다 — 아래 주석 참고.
-          border: "#3a3834",
-          elevated: "#4a4641",
+          border: "#404640",
+          elevated: "#536158",
         },
 
-        // 테두리 — 다크 값은 단 하나다.
-        //
-        // 예전에는 border-subtle.dark(#35332e)와 surface-dark.border(#3a3834)가
-        // 서로 다른 값이면서 같은 용도로 섞여 쓰였다. 둘 중 #3a3834 로 모은다:
-        // #35332e 는 surface-dark.muted 와 정확히 같은 값이라, muted 배경 위에
-        // 얹힌 테두리가 다크 모드에서 보이지 않았다(analyze 의 지표 그리드,
-        // StockCard 의 지표 그리드, stockListTable 의 hover 셀 등).
-        // 테두리 토큰이 표면 토큰과 같은 값이면 테두리로서 할 일을 못 한다.
+        // 카드·패널의 테두리는 surface-dark.border와 같은 값을 쓴다.
         "border-subtle": {
           DEFAULT: "#e5e5e5",
-          dark: "#3a3834",
+          dark: "#404640",
         },
       },
     },

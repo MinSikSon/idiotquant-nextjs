@@ -96,7 +96,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       <td className="py-3.5 px-4">
         <span className={cn(
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
-          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-[#f0fdf4] text-brand dark:bg-[#052e16]/40"
+          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
         )}>
           {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
         </span>
@@ -474,7 +474,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             해외 투자
           </span>
           <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-          <span className="flex items-center gap-1 text-brand dark:text-brand bg-[#f0fdf4] dark:bg-[#14532d]/20 px-2 py-0.5 rounded-md">
+          <span className="flex items-center gap-1 text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/20 px-2 py-0.5 rounded-md">
             <Building2 size={11} />미국(US)
           </span>
         </nav>
@@ -500,18 +500,18 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
               tradingStatus.US
-                ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-brand border-brand-light-hover dark:border-[#166534]"
+                ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink border-brand-light-hover dark:border-brand/40"
                 : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
               (tradingStatus.state === "pending" || tradingStatus.US === null) && "opacity-60 cursor-not-allowed"
             )}
           >
-            <Power size={13} className={tradingStatus.US ? "text-brand" : ""} />
+            <Power size={13} className={tradingStatus.US ? "text-brand-ink" : ""} />
             {tradingStatus.US === null ? "자동매매" : tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
           </button>
           {exRate > 0 && (
             <div className="flex items-center gap-2 bg-white dark:bg-surface-dark-card px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
               <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
-              <span className="text-sm font-mono font-black text-brand dark:text-brand">
+              <span className="text-sm font-mono font-black text-brand-ink dark:text-brand-ink">
                 {exRate.toLocaleString()}원
               </span>
             </div>
@@ -527,11 +527,11 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 <UsdKpiCard
                   label="총 자산 (USD)"
                   mainValue={isFirstLoad ? null : fmtUsd(totalAssetUsd)}
-                  mainColor="text-brand dark:text-brand"
+                  mainColor="text-brand-ink dark:text-brand-ink"
                   subLabel="원화 평가액"
                   subValue={isFirstLoad ? null : fmtKrw(totalAssetKrw)}
                   icon={<BarChart3 size={15} />}
-                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand"
+                  iconBg="bg-brand-light dark:bg-brand-muted/40 text-brand-ink"
                   accentColor="bg-brand dark:bg-brand"
                   loading={isFirstLoad}
                 />
@@ -590,12 +590,12 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     <MetricChip
                       label="금일 매도 (USD)"
                       value={fmtUsd(frcr_sll_smtl)}
-                      valueClass="text-brand"
+                      valueClass="text-brand-ink"
                     />
                     <MetricChip
                       label="금일 순매수"
                       value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
-                      valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-brand"}
+                      valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     {cmaEvluAmtUs > 0 && (
                       <MetricChip
@@ -739,7 +739,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                   usQuantRule.state === "pending"
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : usQuantRule.is_override
-                    ? <span className="text-[10px] font-mono text-brand bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
+                    ? <span className="text-[10px] font-mono text-brand-ink bg-brand-light dark:bg-brand-muted/30 px-2 py-0.5 rounded-full">계좌 전용</span>
                     : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
                 }
               />

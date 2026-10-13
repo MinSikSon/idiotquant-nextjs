@@ -57,7 +57,7 @@ const RESULT_META: Record<string, { label: string; tone: "green" | "amber" | "re
   order_error: { label: "주문 오류", tone: "red" },
 };
 const RESULT_TONE_CLS: Record<string, string> = {
-  green: "bg-[#f0fdf4] text-brand dark:bg-[#14532d]/30 dark:text-[#4ade80]",
+  green: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
   amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
   red: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
   neutral: "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
@@ -131,7 +131,7 @@ export default function TradingActivityPanel({
       <div className={cn(
         "flex items-center gap-2 rounded-xl border px-2.5 py-2 mb-2 md:gap-3 md:px-4 md:py-3 md:mb-4",
         open
-          ? "border-brand-light-hover dark:border-[#166534] bg-[#f0fdf4] dark:bg-[#14532d]/20"
+          ? "border-brand-light-hover dark:border-brand/40 bg-brand-light dark:bg-brand-muted/20"
           : "border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card"
       )}>
         <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -139,7 +139,7 @@ export default function TradingActivityPanel({
           <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", open ? "bg-brand" : "bg-neutral-400")} />
         </span>
         <div className="flex-1 min-w-0">
-          <p className={cn("text-sm font-black", open ? "text-brand-hover dark:text-[#4ade80]" : "text-neutral-500 dark:text-neutral-400")}>
+          <p className={cn("text-sm font-black", open ? "text-brand-ink-hover dark:text-[#4ade80]" : "text-neutral-500 dark:text-neutral-400")}>
             {open ? "매매 시간대 · 5분마다 실행" : "매매 시간대 아님 · 대기"}
           </p>
           <p className="text-[11px] text-neutral-400 mt-0.5">{country} 스케줄 {windowLabel} · 마지막 실행 {relTime(capital?.time_stamp?.current)}</p>
@@ -165,7 +165,7 @@ export default function TradingActivityPanel({
 
       {/* 현재 매매 대상 (활성 그룹 소속 · action=active) — 워커가 이 종목들을 자동매매 */}
       <div className="flex items-baseline justify-between mb-2">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand">현재 매매 대상</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand-ink">현재 매매 대상</p>
         <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
       </div>
       <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark mb-4">
@@ -192,7 +192,7 @@ export default function TradingActivityPanel({
                       {nm !== s.symbol && <p className="text-[10px] text-neutral-400 font-mono">{s.symbol}</p>}
                     </td>
                     <td className="px-3 py-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f0fdf4] text-brand dark:bg-[#14532d]/30 dark:text-[#4ade80] truncate max-w-[90px]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 truncate max-w-[90px]">
                         {grp?.name ?? "-"}
                       </span>
                     </td>
@@ -208,7 +208,7 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 최근 자동 체결 */}
-      <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand mb-2">최근 자동 체결</p>
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand-ink mb-2">최근 자동 체결</p>
       <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
         <table className="w-full text-sm text-left min-w-[460px]">
           <thead>
@@ -241,7 +241,7 @@ export default function TradingActivityPanel({
                         "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black",
                         sell
                           ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
-                          : "bg-[#f0fdf4] text-brand dark:bg-[#14532d]/30 dark:text-[#4ade80]"
+                          : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
                       )}>
                         {sell ? <ArrowDownCircle size={11} /> : <ArrowUpCircle size={11} />}
                         {sell ? "매도" : "매수"}

@@ -347,7 +347,7 @@ export function BalancePanel({
                         <span className={FIELD_LABEL_CLS}>순자산</span>
                         <span className={cn(
                             "text-[17px] font-black tabular-nums",
-                            numOf(fAssets) - numOf(fLiab) < 0 ? "text-red-600 dark:text-red-400" : "text-brand",
+                            numOf(fAssets) - numOf(fLiab) < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink",
                         )}>
                             {won(numOf(fAssets) - numOf(fLiab))}
                         </span>
@@ -389,7 +389,7 @@ export function BalancePanel({
                     <div className={FIELD_LABEL_CLS}>순자산</div>
                     <div className={cn(
                         "mt-0.5 text-[27px] font-black tracking-[-0.03em] tabular-nums",
-                        netWorth(thisMonth) < 0 ? "text-red-600 dark:text-red-400" : "text-brand",
+                        netWorth(thisMonth) < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink",
                     )}>
                         {won(netWorth(thisMonth))}
                     </div>
@@ -400,7 +400,7 @@ export function BalancePanel({
                         {here?.delta != null && (
                             <> · 전월 대비 <b className={cn(
                                 "font-black",
-                                here.delta < 0 ? "text-red-600 dark:text-red-400" : "text-brand",
+                                here.delta < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink",
                             )}>
                                 {here.delta > 0 ? "+" : here.delta < 0 ? "−" : ""}{compact(Math.abs(here.delta))}
                             </b></>

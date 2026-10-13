@@ -59,8 +59,8 @@ export const KIND_STYLE: Record<LedgerKind, {
         label: "수입",
         solid: "bg-brand border-brand text-white",
         bar: "bg-brand",
-        badge: "bg-brand-light text-brand dark:bg-[#052e16]/60 dark:text-brand",
-        amount: "text-brand",
+        badge: "bg-brand-light text-brand-ink dark:bg-brand-muted/60 dark:text-brand-ink",
+        amount: "text-brand-ink",
     },
     expense: {
         label: "지출",

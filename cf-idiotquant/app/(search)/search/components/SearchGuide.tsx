@@ -27,7 +27,7 @@ const GRADES = [
 ];
 
 const MODELS = [
-  { name: "NCAV", category: "자산가치", color: "text-brand", bg: "bg-[#f0fdf4] dark:bg-[#052e16]/30" },
+  { name: "NCAV", category: "자산가치", color: "text-brand-ink", bg: "bg-brand-light dark:bg-brand-muted/30" },
   { name: "PBR", category: "자산가치", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-950/30" },
   { name: "SRIM", label: "S-RIM", category: "수익가치", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
   { name: "DCF", category: "수익가치", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-950/30" },
@@ -87,10 +87,10 @@ export const SearchGuide = () => {
                 key={q.ticker}
                 href={`/analyze?ticker=${encodeURIComponent(q.ticker)}`}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all hover:scale-105 active:scale-95",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all hover:scale-105 active:scale-95",
                   q.market === "KR"
                     ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/40 hover:bg-indigo-100 dark:hover:bg-indigo-950/60"
-                    : "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-brand-hover dark:text-brand border-[#bbf7d0]/60 dark:border-[#166534]/40 hover:bg-brand-light dark:hover:bg-[#052e16]/60"
+                    : "bg-brand-light dark:bg-brand-muted/30 text-brand-ink-hover dark:text-brand-ink border-brand-light-hover/60 dark:border-brand/40 hover:bg-brand-light dark:hover:bg-brand-muted/60"
                 )}
               >
                 <span className="text-[9px] font-black opacity-50 uppercase tracking-wider">{q.market}</span>
@@ -183,7 +183,7 @@ export const SearchGuide = () => {
 
             <div className="flex flex-wrap items-center gap-2 px-4 py-3 bg-surface-canvas dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark text-xs">
               <span className="text-neutral-500 dark:text-neutral-400 font-medium">그레이엄 기준</span>
-              <code className="font-mono font-black text-brand bg-[#f0fdf4] dark:bg-[#052e16]/30 px-2.5 py-1 rounded-lg border border-[#bbf7d0]/50 dark:border-[#166534]/40">
+              <code className="font-mono font-black text-brand-ink bg-brand-light dark:bg-brand-muted/30 px-2.5 py-1 rounded-lg border border-brand-light-hover/50 dark:border-brand/40">
                 시가총액 {'<'} NCAV × 0.67
               </code>
               <span className="text-neutral-400 dark:text-neutral-500">→ S 등급 이상 (Net-Net)</span>

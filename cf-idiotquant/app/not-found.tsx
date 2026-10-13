@@ -33,7 +33,7 @@ export default function NotFound({ warnText = "Oops! Not Found!" }: NotFoundProp
             입력하신 주소가 정확한지 다시 한번 확인해 주세요.
           </p>
 
-          <div className="inline-block px-4 py-2 rounded-lg bg-neutral-200/50 dark:bg-surface-dark-muted/50 border border-neutral-300 dark:border-[#4a4641]">
+          <div className="inline-block px-4 py-2 rounded-lg bg-neutral-200/50 dark:bg-surface-dark-muted/50 border border-neutral-300 dark:border-surface-dark-elevated">
             <code className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-300 tracking-tight">
               {warnText}
             </code>

@@ -38,7 +38,7 @@ const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null
         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
         <p className={cn(
             "text-[13px] font-mono font-bold tabular-nums mt-0.5",
-            value === null ? "text-neutral-400" : ok ? "text-brand" : "text-neutral-700 dark:text-neutral-200"
+            value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
         )}>
             {x(value)}
         </p>

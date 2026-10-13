@@ -13,7 +13,7 @@ function SearchRedirect() {
     }, [router, searchParams]);
     return (
         <div className="flex items-center justify-center min-h-screen bg-[#fcfaf7] dark:bg-surface-dark-canvas">
-            <Loader2 className="animate-spin text-brand" size={24} />
+            <Loader2 className="animate-spin text-brand-ink" size={24} />
         </div>
     );
 }
@@ -22,7 +22,7 @@ export default function SearchPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-[#fcfaf7] dark:bg-surface-dark-canvas">
-                <Loader2 className="animate-spin text-brand" size={24} />
+                <Loader2 className="animate-spin text-brand-ink" size={24} />
             </div>
         }>
             <SearchRedirect />

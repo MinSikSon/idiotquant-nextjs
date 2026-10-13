@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
+import { PAGE_WIDTH } from '@/components/pageHeader';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Loader2, Plus, Search, X } from 'lucide-react';
 import corpCodes from '@/public/data/validCorpCode.json';
@@ -242,11 +243,11 @@ export default function ComparePage() {
     { label: 'ROE', value: s => s.roe == null ? '—' : `${show(s.roe)}%` },
   ];
 
-  return <main className="min-h-screen bg-[#fafaf9] px-4 py-8 text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100 sm:px-6 sm:py-12">
-    <div className="mx-auto max-w-5xl">
+  return <main className="min-h-screen bg-surface-canvas py-8 text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100 sm:py-12">
+    <div className={PAGE_WIDTH.data}>
       <Link href="/" className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white">← idiotquant</Link>
       <header className="mt-8 max-w-2xl">
-        <p className="text-sm font-semibold text-[#5148c8] dark:text-[#aaa4ff]">종목 비교</p>
+        <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">종목 비교</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">궁금한 회사의 숫자를<br className="sm:hidden" /> 나란히 살펴보세요.</h1>
         <p className="mt-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">비교할 날짜를 등록한 뒤 종목을 추가하세요. 각 종목의 모든 날짜별 종가와 수익률을 한눈에 볼 수 있습니다.</p>
       </header>
@@ -256,15 +257,15 @@ export default function ComparePage() {
         <div className="mt-2 flex items-end gap-2">
           <label className="min-w-0 flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300 sm:flex-none">
             가격 기준일
-            <input type="date" value={dateInput} max={localToday()} onChange={e => setDateInput(e.target.value)} disabled={sessionLoading || dateLoading || loading} className="mt-1 block h-11 w-full min-w-0 rounded-[4px] border border-neutral-300 bg-white px-2 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-[#111a14] dark:text-neutral-100 sm:w-56 sm:px-3" />
+            <input type="date" value={dateInput} max={localToday()} onChange={e => setDateInput(e.target.value)} disabled={sessionLoading || dateLoading || loading} className="mt-1 block h-11 w-full min-w-0 rounded-xl border border-neutral-300 bg-white px-2 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:px-3" />
           </label>
-          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[4px] border border-[#635bdb] px-3 text-sm font-semibold text-[#5148c8] disabled:opacity-50 dark:text-[#aaa4ff] sm:px-4">
+          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#635bdb] px-3 text-sm font-semibold text-brand-ink disabled:opacity-50 dark:text-brand-ink sm:px-4">
             {dateLoading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} 날짜 추가
           </button>
         </div>
         <p className="mt-2 text-xs text-neutral-500">날짜 {dates.length}/{limits.dates}개 · {sessionStatus === 'authenticated' ? '로그인' : '비로그인'} 기준</p>
         {dates.length > 0 && <div className="mt-3 flex flex-wrap gap-2">
-          {dates.map(date => <span key={date} className="inline-flex items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium dark:border-neutral-700 dark:bg-[#101812]">
+          {dates.map(date => <span key={date} className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium dark:border-neutral-700 dark:bg-surface-dark-card">
             {formatDate(date.replaceAll('-', ''))}
             <button type="button" onClick={() => removeDate(date)} disabled={dateLoading || loading} aria-label={`${date} 날짜 제거`} className="rounded p-0.5 text-neutral-400 hover:text-neutral-800 disabled:opacity-50 dark:hover:text-white"><X size={13} /></button>
           </span>)}
@@ -277,10 +278,10 @@ export default function ComparePage() {
         <form onSubmit={submit} className="relative mt-2 flex gap-2">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="예: 삼성전자, 005930, AAPL" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-[4px] border border-neutral-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-[#111a14]" />
-            {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-[4px] border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-[#111a14]">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}</button></li>)}</ul>}
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="예: 삼성전자, 005930, AAPL" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-xl border border-neutral-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card" />
+            {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}</button></li>)}</ul>}
           </div>
-          <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[4px] bg-[#635bdb] px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
+          <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
         </form>
         <p className="mt-2 text-xs text-neutral-500">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다.</p>
         {importProgress && <p role="status" className="mt-2 text-xs text-neutral-500">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
@@ -293,7 +294,7 @@ export default function ComparePage() {
           <button type="button" onClick={() => setRecentStocks([])} className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">기록 지우기</button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {recentStocks.map(stock => <button key={`${stock.market}:${stock.ticker}`} type="button" onClick={() => void addStock(stock.market === 'US' ? stock.ticker : stock.name)} disabled={loading || dateLoading || stocks.some(item => item.ticker === stock.ticker && item.market === stock.market)} className="rounded-[4px] border border-neutral-200 bg-white px-3 py-2 text-left text-xs font-medium hover:border-[#635bdb] hover:text-[#5148c8] disabled:cursor-default disabled:opacity-45 dark:border-neutral-700 dark:bg-[#101812] dark:hover:text-[#aaa4ff]">
+          {recentStocks.map(stock => <button key={`${stock.market}:${stock.ticker}`} type="button" onClick={() => void addStock(stock.market === 'US' ? stock.ticker : stock.name)} disabled={loading || dateLoading || stocks.some(item => item.ticker === stock.ticker && item.market === stock.market)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-xs font-medium hover:border-[#635bdb] hover:text-brand-ink disabled:cursor-default disabled:opacity-45 dark:border-neutral-700 dark:bg-surface-dark-card dark:hover:text-brand-ink">
             {stock.name} <span className="ml-1 font-mono text-neutral-400">{stock.ticker} · {stock.market}</span>
           </button>)}
         </div>
@@ -303,7 +304,7 @@ export default function ComparePage() {
         <h2 className="text-sm font-semibold sm:text-base">날짜별 수익률 통계</h2>
         <p className="mt-1 hidden text-xs text-neutral-500 sm:block">각 종목의 첫 거래일 종가와 비교할 수 있는 종목만 집계합니다.</p>
         <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-[4px] border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-[#101812] sm:p-4">
+          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-surface-dark-card sm:p-4">
             <div className="flex items-center justify-between gap-2 sm:block">
               <p className="text-xs font-semibold text-neutral-500">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
               <p className={`text-sm font-semibold tabular-nums sm:mt-2 sm:text-xl ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
@@ -312,7 +313,7 @@ export default function ComparePage() {
           </div>)}
         </div>
       </section>}
-      {stocks.length === 0 ? <section className="mt-8 rounded-md border border-dashed border-neutral-300 bg-white/70 px-5 py-12 text-center dark:border-neutral-700 dark:bg-[#101812]">
+      {stocks.length === 0 ? <section className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white/70 px-5 py-12 text-center dark:border-neutral-700 dark:bg-surface-dark-card">
         <p className="text-sm font-medium">{dates.length ? '비교할 종목을 추가해 주세요.' : '비교할 날짜를 먼저 추가해 주세요.'}</p>
         <p className="mt-2 text-sm text-neutral-500">{dates.length ? '예: 삼성전자와 SK하이닉스, 또는 AAPL과 MSFT' : '날짜를 등록하면 종목별 가격을 해당 날짜마다 조회합니다.'}</p>
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
@@ -322,7 +323,7 @@ export default function ComparePage() {
             const latest = latestDate ? stock.prices[latestDate] : undefined;
             const latestReturn = latestDate ? priceReturns.get(`${stock.id}:${latestDate}`) : undefined;
             const hasReturn = latestReturn && latest?.priceDate !== latestReturn.baselineDate;
-            return <details key={stock.id} className="group overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812]">
+            return <details key={stock.id} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card">
               <summary className="cursor-pointer list-none px-3 py-2.5 [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">{stock.name}</span>
@@ -355,24 +356,24 @@ export default function ComparePage() {
                   </div>)}
                 </dl>
                 <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                  <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="inline-flex items-center gap-1 text-xs font-semibold text-[#5148c8] dark:text-[#aaa4ff]">상세 분석 <ArrowRight size={13} /></Link>
+                  <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-ink dark:text-brand-ink">상세 분석 <ArrowRight size={13} /></Link>
                   <button type="button" aria-label={`${stock.name} 제거`} onClick={() => setStocks(items => items.filter(item => item.id !== stock.id))} disabled={loading || dateLoading} className="inline-flex items-center gap-1 rounded p-1 text-xs text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-white"><X size={15} /> 제거</button>
                 </div>
               </div>
             </details>;
           })}
         </div>
-        <div className="hidden overflow-x-auto rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812] md:block">
+        <div className="hidden overflow-x-auto rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card md:block">
           <table className="w-full min-w-max border-collapse text-sm">
             <thead><tr className="border-b border-neutral-200 dark:border-neutral-700">
-              <th className="sticky left-0 z-10 min-w-44 bg-white px-4 py-4 text-left text-xs font-medium text-neutral-500 dark:bg-[#101812]">종목</th>
+              <th className="sticky left-0 z-10 min-w-44 bg-white px-4 py-4 text-left text-xs font-medium text-neutral-500 dark:bg-surface-dark-card">종목</th>
               {dates.map(date => <th key={date} className="min-w-40 px-4 py-4 text-left text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 종가</th>)}
               {rows.map(row => <th key={row.label} className="min-w-24 px-4 py-4 text-left text-xs font-medium text-neutral-500">{row.label}<span className="block text-[10px] font-normal">현재 기준</span></th>)}
             </tr></thead>
             <tbody>{stocks.map(stock => <tr key={stock.id} className="border-b border-neutral-100 last:border-0 dark:border-neutral-800">
-              <th className="sticky left-0 z-10 bg-white px-4 py-4 text-left dark:bg-[#101812]">
+              <th className="sticky left-0 z-10 bg-white px-4 py-4 text-left dark:bg-surface-dark-card">
                 <div className="flex items-start justify-between gap-2"><div><p className="font-semibold">{stock.name}</p><p className="mt-1 text-xs font-normal text-neutral-500">{stock.ticker} · {stock.market}</p></div><button type="button" aria-label={`${stock.name} 제거`} onClick={() => setStocks(items => items.filter(item => item.id !== stock.id))} disabled={loading || dateLoading} className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-white"><X size={15} /></button></div>
-                <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#5148c8] dark:text-[#aaa4ff]">상세 분석 <ArrowRight size={13} /></Link>
+                <Link href={`/analyze?ticker=${encodeURIComponent(stock.market === 'US' ? stock.ticker : stock.name)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-ink dark:text-brand-ink">상세 분석 <ArrowRight size={13} /></Link>
               </th>
               {dates.map(date => <td key={date} className="px-4 py-4 align-top font-medium tabular-nums">{priceContent(stock, date)}</td>)}
               {rows.map(row => <td key={row.label} className="px-4 py-4 align-top font-medium tabular-nums">{row.value(stock)}</td>)}

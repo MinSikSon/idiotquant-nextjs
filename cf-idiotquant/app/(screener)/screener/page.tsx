@@ -262,7 +262,7 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
             onClick={() => onToggle(key)}
             className={cn(
                 "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
-                active ? "text-brand dark:text-brand" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
+                active ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
         >
@@ -289,7 +289,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
     return (
         <div
-            className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-[#f0fdf4]/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
+            className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0 flex items-center gap-2">
@@ -390,22 +390,22 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
         <button
             type="button"
             onClick={() => onClick(item.ticker, item.name)}
-            className="w-full text-left rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 transition-colors"
+            className="w-full text-left rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 transition-colors"
         >
             <div className="flex items-start gap-1.5 sm:gap-3">
-                <span className="mt-0.5 w-5 h-5 shrink-0 rounded-full bg-brand-light dark:bg-[#052e16]/50 text-brand flex items-center justify-center text-[10px] font-black tabular-nums">
+                <span className="mt-0.5 w-5 h-5 shrink-0 rounded-full bg-brand-light dark:bg-brand-muted/50 text-brand-ink flex items-center justify-center text-[10px] font-black tabular-nums">
                     {rank}
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-extrabold text-neutral-900 dark:text-white">{item.name}</span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-mono tracking-[0.05em] text-neutral-400">
                         {item.ticker}
-                        {strategy && <span className="font-sans font-bold tracking-normal text-brand">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
+                        {strategy && <span className="font-sans font-bold tracking-normal text-brand-ink">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
                     </span>
                 </span>
                 <span className="shrink-0 text-right">
                     <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>
-                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-black tabular-nums text-brand">+{expectedReturn.toFixed(0)}%</span>
+                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-black tabular-nums text-brand-ink">+{expectedReturn.toFixed(0)}%</span>
                 </span>
             </div>
             <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 border-t border-neutral-100 dark:border-border-subtle-dark text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -433,14 +433,14 @@ function DrawerCard({ label, remain, dashed, span2, children }: {
         <div className={cn(
             "rounded-xl px-4 py-3.5 bg-white dark:bg-surface-dark-card",
             dashed
-                ? "border border-dashed border-[#bbf7d0] dark:border-[#166534]/60"
-                : "border border-brand-light dark:border-[#166534]/40",
+                ? "border border-dashed border-brand-light-hover dark:border-brand/60"
+                : "border border-brand-light dark:border-brand/40",
             span2 && "sm:col-span-2"
         )}>
             <div className="flex items-center justify-between gap-2 mb-2.5">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</span>
                 {remain !== undefined && (
-                    <span className="text-[10.5px] font-bold font-mono text-brand tabular-nums shrink-0">→ {remain}개</span>
+                    <span className="text-[10.5px] font-bold font-mono text-brand-ink tabular-nums shrink-0">→ {remain}개</span>
                 )}
             </div>
             {children}
@@ -477,7 +477,7 @@ function DrawerCheck({ checked, onChange, label, delta }: {
                     "w-[15px] h-[15px] rounded-md flex items-center justify-center shrink-0 transition-colors",
                     checked
                         ? "bg-brand"
-                        : "bg-white dark:bg-surface-dark border-[1.5px] border-neutral-300 dark:border-[#4a4641]"
+                        : "bg-white dark:bg-surface-dark border-[1.5px] border-neutral-300 dark:border-surface-dark-elevated"
                 )}
             >
                 {checked && <Check size={10} className="text-white" strokeWidth={3.5} />}
@@ -1190,7 +1190,7 @@ function ScreenerContent() {
                     ) : (
                         <>
                             {!showLikedOnly && formattedDate && <><span className="font-mono">{formattedDate}</span><span>·</span></>}
-                            <span>조건 충족 <span className={cn("font-extrabold", isFiltered ? "text-brand-hover dark:text-brand" : "text-neutral-700 dark:text-neutral-300")}>{matchedTotal}개</span></span>
+                            <span>조건 충족 <span className={cn("font-extrabold", isFiltered ? "text-brand-ink-hover dark:text-brand-ink" : "text-neutral-700 dark:text-neutral-300")}>{matchedTotal}개</span></span>
                             {!showLikedOnly && ncavDailyList.list.length !== filteredList.length && (
                                 <span className="text-neutral-300 dark:text-neutral-600">(전체 {ncavDailyList.list.length}개 중)</span>
                             )}
@@ -1211,8 +1211,8 @@ function ScreenerContent() {
                 }
             /> : (
                 <section className="border-b border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card">
-                    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-                        <p className="text-[11px] font-black tracking-[0.12em] text-brand uppercase">Today&apos;s value picks</p>
+                    <div className="max-w-3xl mx-auto px-2 sm:px-6 py-6 sm:py-8">
+                        <p className="text-[11px] font-black tracking-[0.12em] text-brand-ink uppercase">Today&apos;s value picks</p>
                         <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white">오늘의 기대수익 추천</h1>
                         <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                             순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다.
@@ -1249,7 +1249,7 @@ function ScreenerContent() {
                             }}
                             className={cn(
                                 "px-4 py-3 text-sm font-bold border-b-2 transition-colors",
-                                country === value ? "border-brand text-brand" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                                country === value ? "border-brand text-brand-ink" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
                             )}
                         >{label}</button>
                         ))}
@@ -1322,7 +1322,7 @@ function ScreenerContent() {
                             className="min-w-0 flex-1 flex items-center gap-2 text-left"
                         >
                             <span className="text-[11px] font-black text-neutral-600 dark:text-neutral-300">전략</span>
-                            <span className="min-w-0 truncate text-[11px] font-bold text-brand">
+                            <span className="min-w-0 truncate text-[11px] font-bold text-brand-ink">
                                 {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
                             </span>
                             <ChevronRight size={14} className={cn("shrink-0 text-neutral-400 transition-transform", strategyOpen && "rotate-90")} />
@@ -1337,7 +1337,7 @@ function ScreenerContent() {
                             onClick={() => setShowGuide(o => !o)}
                             title="전략 설명 보기"
                             aria-label="전략 설명 보기"
-                            className={cn("shrink-0 p-1.5 rounded-lg transition-colors", showGuide ? "bg-brand-light text-brand" : "text-neutral-400 hover:text-neutral-600")}
+                            className={cn("shrink-0 p-1.5 rounded-lg transition-colors", showGuide ? "bg-brand-light text-brand-ink" : "text-neutral-400 hover:text-neutral-600")}
                         >
                             <Info size={14} />
                         </button>
@@ -1421,7 +1421,7 @@ function ScreenerContent() {
                                 filterOpen
                                     ? "bg-brand border-brand text-white shadow-sm"
                                     : activeFilterCount > 0
-                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-brand-hover dark:text-brand"
+                                        ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
                                         : "bg-white dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
                             )}
                         >
@@ -1431,7 +1431,7 @@ function ScreenerContent() {
                             {activeFilterCount > 0 && (
                                 <span className={cn(
                                     "px-1.5 rounded-full text-[10px] font-black",
-                                    filterOpen ? "bg-white/25 text-white" : "bg-brand-light dark:bg-[#14532d]/60 text-brand"
+                                    filterOpen ? "bg-white/25 text-white" : "bg-brand-light dark:bg-brand-muted/60 text-brand-ink"
                                 )}>
                                     {activeFilterCount}
                                 </span>
@@ -1493,7 +1493,7 @@ function ScreenerContent() {
                                 {chips.length > 0 && <span className="hidden sm:inline text-[10px] text-neutral-400 font-medium shrink-0">적용:</span>}
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
                                 {chips.map(c => (
-                                    <span key={c.key} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-brand-hover dark:text-brand">
+                                    <span key={c.key} className="inline-flex shrink-0 items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/30 border border-brand-light-hover dark:border-brand/50 text-brand-ink-hover dark:text-brand-ink">
                                         {c.label}
                                         <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
                                     </span>
@@ -1516,16 +1516,16 @@ function ScreenerContent() {
 
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
-                <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#f8faf8] dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-[#f0fdf4] sm:dark:bg-[#052e16]/25 sm:border-b sm:border-brand-light sm:dark:border-[#166534]/40">
+                <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#f8faf8] dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-brand-light sm:dark:bg-brand-muted/25 sm:border-b sm:border-brand-light sm:dark:border-brand/40">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
 
                         <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="min-w-0">
-                                <p className="text-base sm:text-[12.5px] font-extrabold text-[#14532d] dark:text-[#86efac]">상세 필터</p>
-                                <p className="text-[11px] text-brand dark:text-[#4ade80]/80 mt-0.5">현재 {filteredList.length}종목 · 조건을 바꾸면 바로 반영됩니다</p>
+                                <p className="text-base sm:text-[12.5px] font-extrabold text-brand-ink dark:text-brand-ink">상세 필터</p>
+                                <p className="text-[11px] text-brand-ink dark:text-[#4ade80]/80 mt-0.5">현재 {filteredList.length}종목 · 조건을 바꾸면 바로 반영됩니다</p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
-                                <button onClick={clearDetailFilters} className="text-[11.5px] font-bold text-brand hover:opacity-70 transition-opacity">전체 해제</button>
+                                <button onClick={clearDetailFilters} className="text-[11.5px] font-bold text-brand-ink hover:opacity-70 transition-opacity">전체 해제</button>
                                 <button onClick={() => setFilterOpen(false)} aria-label="필터 닫기" className="sm:hidden rounded-lg border border-neutral-200 bg-white p-2 text-neutral-600 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-300"><X size={16} /></button>
                             </div>
                         </div>
@@ -1544,7 +1544,7 @@ function ScreenerContent() {
                                             }}
                                         />
                                     </span>
-                                    <span className="w-12 shrink-0 text-right text-[10.5px] font-mono font-bold tabular-nums text-brand-hover dark:text-brand">{s.count}</span>
+                                    <span className="w-12 shrink-0 text-right text-[10.5px] font-mono font-bold tabular-nums text-brand-ink-hover dark:text-brand-ink">{s.count}</span>
                                 </div>
                             ))}
                         </div>
@@ -1598,7 +1598,7 @@ function ScreenerContent() {
                                 />
                                 <div className="flex items-center justify-between mt-1.5 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
                                     <span>0</span>
-                                    <span className={cn(maxPbr > 0 && "font-bold text-brand")}>{maxPbr > 0 ? maxPbr.toFixed(2) : '미적용'}</span>
+                                    <span className={cn(maxPbr > 0 && "font-bold text-brand-ink")}>{maxPbr > 0 ? maxPbr.toFixed(2) : '미적용'}</span>
                                     <span>1.3</span>
                                 </div>
                             </DrawerCard>
@@ -1792,7 +1792,7 @@ function ScreenerContent() {
                                 {savedSets.length > 0 && (
                                     <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
                                         {savedSets.map(s => (
-                                            <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#bbf7d0] dark:border-[#166534]/50 text-[11px] font-bold text-brand-hover dark:text-brand">
+                                            <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-light dark:bg-brand-muted/40 border border-brand-light-hover dark:border-brand/50 text-[11px] font-bold text-brand-ink-hover dark:text-brand-ink">
                                                 <button onClick={() => applySavedSet(s.qs)} className="hover:opacity-70 max-w-[160px] truncate" title={s.name}>
                                                     {s.name}
                                                 </button>
@@ -1823,15 +1823,15 @@ function ScreenerContent() {
             {/* ── 전략 기준 배너 — 어떤 값이 왜 초록으로 표시되는지 한 줄로 밝힌다.
                    기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
             {bannerPreset && (
-                <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-brand-light dark:border-[#166534]/40">
+                <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
                     <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-start gap-2">
                         <span className={cn(
                             "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
-                            STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-hover"
+                            STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-ink-hover"
                         )}>
                             {bannerPreset.label}
                         </span>
-                        <p className="text-xs leading-relaxed text-brand-hover dark:text-[#86efac] break-keep">
+                        <p className="text-xs leading-relaxed text-brand-ink-hover dark:text-brand-ink break-keep">
                             <span className="font-bold">{bannerPreset.formula}</span>
                             {` — ${bannerPreset.plain}. 기준을 충족한 값에 초록 표시가 붙습니다.`}
                         </p>
@@ -1860,7 +1860,7 @@ function ScreenerContent() {
                                     className={cn(
                                         "text-left p-3.5 rounded-xl border-2 transition-all",
                                         activeStrategyIds.has(preset.id)
-                                            ? "border-brand dark:border-brand bg-[#f0fdf4] dark:bg-[#052e16]/20"
+                                            ? "border-brand dark:border-brand bg-brand-light dark:bg-brand-muted/20"
                                             : "border-neutral-200 dark:border-surface-dark-border hover:border-neutral-300 dark:hover:border-neutral-600 bg-surface-canvas dark:bg-surface-dark-card/50"
                                     )}
                                 >
@@ -1875,7 +1875,7 @@ function ScreenerContent() {
                                             {strategyCounts[preset.id] ?? 0}개
                                         </span>
                                         {activeStrategyIds.has(preset.id) && (
-                                            <span className="ml-auto text-[9px] font-black text-brand dark:text-brand bg-brand-light dark:bg-[#14532d]/40 px-1.5 py-0.5 rounded">선택됨</span>
+                                            <span className="ml-auto text-[9px] font-black text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/40 px-1.5 py-0.5 rounded">선택됨</span>
                                         )}
                                     </div>
                                     <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
@@ -1896,7 +1896,7 @@ function ScreenerContent() {
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <Loader2 size={32} className="animate-spin text-brand/50" />
+                        <Loader2 size={32} className="animate-spin text-brand-ink/50" />
                         <p className="text-sm font-bold text-neutral-400">스캔 데이터 불러오는 중...</p>
                     </div>
                 )}
@@ -1913,7 +1913,7 @@ function ScreenerContent() {
                             {ncavDailyList.state === 'rejected' && !showLikedOnly ? (
                                 <>
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">스캔 데이터를 불러오지 못했습니다</p>
-                                    <button onClick={handleRefresh} className="text-xs font-bold text-brand hover:underline mt-1">다시 시도</button>
+                                    <button onClick={handleRefresh} className="text-xs font-bold text-brand-ink hover:underline mt-1">다시 시도</button>
                                 </>
                             ) : country === 'US' && !showLikedOnly && ncavDailyList.list.length === 0 ? (
                                 <>
@@ -1942,7 +1942,7 @@ function ScreenerContent() {
                         {emptySuggestion && (
                             <button
                                 onClick={() => { emptySuggestion.clear(); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                className="px-4 py-2 rounded-xl bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-xs font-bold text-brand-hover dark:text-brand hover:bg-brand-light dark:hover:bg-[#052e16]/50 transition-colors"
+                                className="px-4 py-2 rounded-xl bg-brand-light dark:bg-brand-muted/30 border border-brand-light-hover dark:border-brand/50 text-xs font-bold text-brand-ink-hover dark:text-brand-ink hover:bg-brand-light dark:hover:bg-brand-muted/50 transition-colors"
                             >
                                 &lsquo;{emptySuggestion.label}&rsquo; 해제하면 {emptySuggestion.count}개
                             </button>
@@ -1950,7 +1950,7 @@ function ScreenerContent() {
                         {activeStrategyIds.size > 0 && (
                             <button
                                 onClick={clearStrategies}
-                                className="text-xs font-bold text-brand hover:underline"
+                                className="text-xs font-bold text-brand-ink hover:underline"
                             >
                                 전략 필터 초기화
                             </button>
@@ -1961,7 +1961,7 @@ function ScreenerContent() {
                 {!isLoading && (isLoggedIn ? filteredList.length > 0 : guestRecommendations.length > 0) && (
                     <>
                     {!isLoggedIn ? (
-                        <section className="max-w-3xl mx-auto">
+                        <section className="max-w-3xl mx-auto px-2 sm:px-6">
                             <div className="mb-3 flex items-baseline justify-between gap-3">
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
@@ -1976,7 +1976,7 @@ function ScreenerContent() {
                             </p>
                             <button
                                 onClick={requireLogin}
-                                className="mx-auto mt-5 flex items-center gap-1.5 text-xs font-bold text-brand hover:text-brand-hover"
+                                className="mx-auto mt-5 flex items-center gap-1.5 text-xs font-bold text-brand-ink hover:text-brand-ink-hover"
                             >
                                 전체 종목과 상세 조건 보기 <ChevronRight size={13} />
                             </button>
@@ -2011,12 +2011,12 @@ function ScreenerContent() {
                         {/* 검색 조건과 결과 표현을 분리해, 목록을 훑으면서 보기/묶기를 바꿀 수 있게 한다. */}
                         <div className="mb-3 flex items-center gap-2">
                             <h2 className="text-sm font-extrabold text-neutral-900 dark:text-white">
-                                {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand">{filteredList.length}</span>
+                                {showLikedOnly ? '관심 종목' : '발굴 결과'} <span className="font-mono tabular-nums text-brand-ink">{filteredList.length}</span>
                             </h2>
                             {compareHref && <button
                                 type="button"
                                 onClick={() => router.push(compareHref)}
-                                className="rounded-lg border border-brand-light-hover px-2.5 py-1.5 text-[11px] font-bold text-brand-hover whitespace-nowrap dark:border-[#166534] dark:text-brand"
+                                className="rounded-lg border border-brand-light-hover px-2.5 py-1.5 text-[11px] font-bold text-brand-ink-hover whitespace-nowrap dark:border-brand/40 dark:text-brand-ink"
                                 title={filteredList.length > compareLimit ? `현재 정렬 순서의 상위 ${compareLimit}개 종목을 비교합니다.` : '필터 결과를 비교 페이지에서 엽니다.'}
                             >{filteredList.length > compareLimit ? `상위 ${compareLimit}개 비교` : `${compareTickers.length}종목 비교`}</button>}
                             <button
@@ -2024,7 +2024,7 @@ function ScreenerContent() {
                                 className={cn(
                                     "ml-auto rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-colors whitespace-nowrap",
                                     showInsights
-                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-brand-light-hover dark:border-[#166534] text-brand-hover dark:text-brand"
+                                        ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
                                         : "border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300"
                                 )}
                             >
@@ -2169,7 +2169,7 @@ function ScreenerContent() {
                             <div className="flex justify-center mt-10">
                                 <button
                                     onClick={() => setDisplayCount(c => c + DAILY_PAGE_SIZE)}
-                                    className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-[#4a4641] hover:text-neutral-900 dark:hover:text-white transition-all"
+                                    className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-surface-dark-elevated hover:text-neutral-900 dark:hover:text-white transition-all"
                                 >
                                     더 보기 ({filteredList.length - displayCount}개 남음)
                                 </button>
@@ -2192,7 +2192,7 @@ export default function ScreenerPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
-                <Loader2 className="animate-spin text-brand" size={24} />
+                <Loader2 className="animate-spin text-brand-ink" size={24} />
             </div>
         }>
             <ScreenerContent />

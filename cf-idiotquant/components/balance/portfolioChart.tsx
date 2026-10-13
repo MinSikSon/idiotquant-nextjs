@@ -36,7 +36,7 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
     : "";
 
   return (
-    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-[#4a4641] shadow-lg">
+    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated shadow-lg">
       <p className="text-xs font-bold text-neutral-900 dark:text-white">{name}</p>
       <p className="text-xs text-neutral-600 dark:text-neutral-300">
         {formatter(value)}{pctStr ? ` (${pctStr})` : ""}
@@ -51,7 +51,7 @@ function BarTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
   const { name, value } = payload[0];
 
   return (
-    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-[#4a4641] shadow-lg">
+    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated shadow-lg">
       <p className="text-xs font-bold text-neutral-900 dark:text-white">{name}</p>
       <p className="text-xs font-mono text-neutral-600 dark:text-neutral-300">
         {value.toFixed(2)}%

@@ -373,7 +373,7 @@ export default function TickerMapPage() {
                             onKeyDown={e => { if (e.key === "Enter") handleEditSave(row.ticker); if (e.key === "Escape") setEditingTicker(null); }}
                             className="flex-1 px-2 py-1 text-xs border border-brand rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas focus:outline-none dark:text-white"
                           />
-                          <button onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="p-1 text-brand hover:bg-[#f0fdf4] rounded-lg">
+                          <button onClick={() => handleEditSave(row.ticker)} disabled={editLoading} className="p-1 text-brand-ink hover:bg-brand-light rounded-lg">
                             {editLoading ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                           </button>
                           <button onClick={() => setEditingTicker(null)} className="p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted rounded-lg">
@@ -402,7 +402,7 @@ export default function TickerMapPage() {
                         "text-[10px] font-black px-2 py-0.5 rounded-full",
                         row.source === "hardcoded"
                           ? "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500"
-                          : "bg-brand-light dark:bg-[#052e16]/30 text-brand"
+                          : "bg-brand-light dark:bg-brand-muted/30 text-brand-ink"
                       )}>{row.source === "hardcoded" ? "기본" : "오버라이드"}</span>
                     </td>
                     {isAdmin && (

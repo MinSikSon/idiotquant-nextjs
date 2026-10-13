@@ -52,9 +52,9 @@ const ICONS: Record<ToastType, React.ReactNode> = {
 };
 
 const TONES: Record<ToastType, string> = {
-  success: "bg-emerald-50/95 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300",
+  success: "bg-emerald-50/95 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-brand-ink",
   error: "bg-red-50/95 dark:bg-red-950/60 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300",
-  info: "bg-[#f0fdf4]/95 dark:bg-[#052e16]/60 border-[#bbf7d0] dark:border-[#166534] text-[#166534] dark:text-[#86efac]",
+  info: "bg-brand-light/95 dark:bg-brand-muted/60 border-brand-light-hover dark:border-brand/40 text-brand-ink dark:text-brand-ink",
   warning: "bg-amber-50/95 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300",
 };
 

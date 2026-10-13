@@ -42,11 +42,11 @@ export function ThemeProviderClient({ children }: { children: React.ReactNode })
     return (
         <Theme
             appearance={theme}
-            accentColor="mint"
+            accentColor="iris"
             grayColor="gray"
             panelBackground="solid"
             scaling="100%"
-            radius="full"
+            radius="small"
             className="w-full"
         >
             {children}

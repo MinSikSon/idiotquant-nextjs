@@ -129,7 +129,7 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
           isBuy
             ? "bg-red-50 text-red-500 dark:bg-red-950/40"
-            : "bg-[#f0fdf4] text-brand dark:bg-[#052e16]/40"
+            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
         )}>
           {item.ord_dvsn_name || (isNccs ? "대기" : "현금")}
         </span>
@@ -488,7 +488,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
             투자 현황
           </span>
           <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-          <span className="flex items-center gap-1 text-brand dark:text-brand bg-[#f0fdf4] dark:bg-[#14532d]/20 px-2 py-0.5 rounded-md">
+          <span className="flex items-center gap-1 text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/20 px-2 py-0.5 rounded-md">
             <MapPin size={11} />한국(KR)
           </span>
           {currentKakaoUser && (
@@ -520,12 +520,12 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           className={cn(
             "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
             tradingStatus.KR
-              ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-brand border-brand-light-hover dark:border-[#166534]"
+              ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink border-brand-light-hover dark:border-brand/40"
               : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
             (tradingStatus.state === "pending" || tradingStatus.KR === null) && "opacity-60 cursor-not-allowed"
           )}
         >
-          <Power size={13} className={tradingStatus.KR ? "text-brand" : ""} />
+          <Power size={13} className={tradingStatus.KR ? "text-brand-ink" : ""} />
           {tradingStatus.KR === null ? "자동매매" : tradingStatus.KR ? "자동매매 ON" : "자동매매 OFF"}
         </button>
       )}
@@ -545,7 +545,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                   value={isFirstLoad ? null : `${totalEvalAmt.toLocaleString()}원`}
                   sub={isFirstLoad ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
                   icon={<Wallet size={15} />}
-                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-brand"
+                  iconBg="bg-brand-light dark:bg-brand-muted/40 text-brand-ink"
                   accentColor="bg-brand dark:bg-brand"
                 />
                 <KpiCard
@@ -582,7 +582,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     <MetricChip
                       label="당일 등락"
                       value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
-                      valueClass={isDailyPositive ? "text-rose-500" : "text-brand"}
+                      valueClass={isDailyPositive ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     <MetricChip
                       label="금일 매수"
@@ -592,12 +592,12 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     <MetricChip
                       label="금일 매도"
                       value={`${thdtSllAmt.toLocaleString()}원`}
-                      valueClass="text-brand dark:text-brand"
+                      valueClass="text-brand-ink dark:text-brand-ink"
                     />
                     <MetricChip
                       label="금일 순매수"
                       value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
-                      valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-brand"}
+                      valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     {totLoanAmt > 0 && (
                       <MetricChip
@@ -718,7 +718,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                   krQuantRule.state === "pending"
                     ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : krQuantRule.is_override
-                    ? <span className="text-[10px] font-mono text-brand bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
+                    ? <span className="text-[10px] font-mono text-brand-ink bg-brand-light dark:bg-brand-muted/30 px-2 py-0.5 rounded-full">계좌 전용</span>
                     : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
                 }
               />

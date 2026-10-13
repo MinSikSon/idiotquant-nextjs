@@ -116,7 +116,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3 rounded-xl border border-neutral-200 bg-white px-2.5 py-2 md:px-4 md:py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-brand/10 p-1.5 text-brand">
+          <div className="rounded-lg bg-brand/10 p-1.5 text-brand-ink">
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
@@ -156,7 +156,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
                   {meta.label}
-                  {changed && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[9px] font-extrabold text-brand">변경됨</span>}
+                  {changed && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[9px] font-extrabold text-brand-ink">변경됨</span>}
                 </span>
                 <code className="text-[9px] text-neutral-300 dark:text-neutral-600">{k}</code>
               </div>
@@ -202,7 +202,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                 <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-neutral-400">
                   <span>기본값 <span className="font-mono">{defaultVal}</span></span>
                   {changed && isMaster && (
-                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-brand">되돌리기</button>
+                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-brand-ink">되돌리기</button>
                   )}
                 </div>
               )}
@@ -215,10 +215,10 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {isMaster && (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {changedCount > 0 && (
-            <span className="mr-auto text-xs font-bold text-brand">{changedCount}개 변경됨</span>
+            <span className="mr-auto text-xs font-bold text-brand-ink">{changedCount}개 변경됨</span>
           )}
           {data?.saveState === "fulfilled" && !dirty && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-brand">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-ink">
               <CheckCircle2 className="h-3.5 w-3.5" /> 저장됨
             </span>
           )}

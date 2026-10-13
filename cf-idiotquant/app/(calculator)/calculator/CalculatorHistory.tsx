@@ -169,7 +169,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                         "block text-[10px] font-bold font-[family-name:var(--font-mono)] tabular-nums mt-0.5",
                                         run.final_value < 0
                                             ? "text-[#b91c1c] dark:text-[#ef6a6a]"
-                                            : "text-brand dark:text-[#2fa85a]"
+                                            : "text-emerald-700 dark:text-[#2fa85a]"
                                     )}>
                                         만기 {formatMan(run.final_value)}
                                     </span>
@@ -178,7 +178,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => handleLoad(run)}
-                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-brand hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
+                                    className="p-1.5 rounded-lg text-neutral-500 hover:text-brand-ink hover:bg-white dark:hover:bg-surface-dark-card transition-colors shrink-0"
                                     aria-label={`${run.label || stampKst(run.created_at)} 불러오기`}
                                 >
                                     <Undo2 className="w-3.5 h-3.5" />

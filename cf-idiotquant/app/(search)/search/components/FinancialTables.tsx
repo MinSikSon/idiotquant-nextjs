@@ -19,7 +19,7 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자산",
         labelEn: "ASSETS",
-        accent: "border-brand/50 bg-[#f0fdf4] text-brand-hover dark:bg-[#052e16]/40 dark:text-[#86efac]",
+        accent: "border-brand/50 bg-brand-light text-brand-ink-hover dark:bg-brand-muted/40 dark:text-brand-ink",
         dotColor: "bg-brand",
         rows: [
             { label: "유동자산", key: "cras", description: "1년 내 현금화 가능한 자산 — NCAV 청산가치의 핵심 안전마진 원천" },
@@ -41,7 +41,7 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자본",
         labelEn: "EQUITY",
-        accent: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+        accent: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-brand-ink",
         dotColor: "bg-emerald-400",
         rows: [
             { label: "자본금", key: "cpfn", description: "주주가 납입한 주식의 액면가 총액" },
@@ -96,7 +96,7 @@ function InfoPopover({ label, description }: { label: string; description: strin
                 <button
                     type="button"
                     aria-label={`${label} 설명`}
-                    className="shrink-0 rounded-full p-0.5 text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+                    className="shrink-0 rounded-xl p-0.5 text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
                 >
                     <Info size={11} />
                 </button>
@@ -168,13 +168,13 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                     key={i}
                                     className={cn(
                                         "px-5 py-3 text-right min-w-[8rem]",
-                                        i === 0 && "bg-[#f0fdf4]/50 dark:bg-[#052e16]/10"
+                                        i === 0 && "bg-brand-light/50 dark:bg-brand-muted/10"
                                     )}
                                 >
                                     <div className="flex flex-col items-end gap-0.5">
                                         <span className={cn(
                                             "text-[9px] font-black uppercase tracking-wider font-mono",
-                                            i === 0 ? "text-brand dark:text-brand" : "text-neutral-400 dark:text-neutral-500"
+                                            i === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
                                         )}>
                                             {i === 0 ? "최근 결산" : `T − ${i}`}
                                         </span>
@@ -254,7 +254,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                                 key={i}
                                                 className={cn(
                                                     "px-5 py-3 text-right font-mono tabular-nums",
-                                                    i === 0 && "bg-[#f0fdf4]/30 dark:bg-[#052e16]/5"
+                                                    i === 0 && "bg-brand-light/30 dark:bg-brand-muted/5"
                                                 )}
                                             >
                                                 <div className="flex flex-col items-end gap-0.5">
@@ -309,7 +309,7 @@ export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
                 <Tabs.List className="flex gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
                     <Tabs.Trigger
                         value="bs"
-                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-hover dark:data-[state=active]:text-[#86efac]")}
+                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-ink-hover dark:data-[state=active]:text-brand-ink")}
                     >
                         <BookOpen size={12} />
                         재무상태표
