@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 /* ─────────────────────────────────────────────────────────────────────────
    공통 페이지 헤더 — 발굴·적정 주가 등 주요 화면이 같은 골격을 쓰도록 한 규칙.
 
-   ███ 3px solid #16a34a   (상단 강조선)
-   [이모지] 제목 (20px/900)
+   ███ 3px 브랜드 강조선   (상단 강조선)
+   [이모지] 제목 (20px/600)
    메타 정보 (12px)                              [액션들]
    ─────────────────────────────────────── 1px
 
@@ -34,8 +34,8 @@ import { cn } from "@/lib/utils";
    헤더와 본문이 **같은 프리셋**을 써야 한다. 페이지에서 <main> 을 직접 감쌀
    때도 PAGE_WIDTH[width] 를 그대로 가져다 쓴다. */
 export const PAGE_WIDTH = {
-  content: "max-w-4xl mx-auto px-2 sm:px-6",  // 읽는 화면 — 분석 · 계산기 · 프로필 · 관리자 · 약관
-  data: "max-w-7xl mx-auto px-2 sm:px-6",     // 표 · 그리드 화면 — 발굴 · 백테스트 · 가계부 · 잔고
+  content: "max-w-4xl mx-auto px-2 sm:px-6",  // 읽는 화면 — 분석 · 프로필 · 관리자 · 약관
+  data: "max-w-7xl mx-auto px-2 sm:px-6",     // 표 · 그리드 화면 — 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
 } as const;
 
 export type PageWidth = keyof typeof PAGE_WIDTH;
@@ -99,8 +99,8 @@ export function PageHeader({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {emoji && <span className="text-[17px] leading-none shrink-0" aria-hidden>{emoji}</span>}
-              {!emoji && icon && <span className="shrink-0 text-brand flex items-center" aria-hidden>{icon}</span>}
-              <h1 className={cn("text-xl font-black tracking-[-0.03em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
+              {!emoji && icon && <span className="shrink-0 text-brand-ink flex items-center" aria-hidden>{icon}</span>}
+              <h1 className={cn("text-xl font-semibold tracking-[-0.03em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
                 {title}
               </h1>
             </div>

@@ -32,8 +32,8 @@ function ActionLink({
     <Link
       href={href}
       className={primary
-        ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-[4px] bg-[#635bdb] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#5148c8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#635bdb]"
-        : "inline-flex min-h-11 items-center justify-center gap-2 rounded-[4px] border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-500 dark:border-neutral-600 dark:bg-[#111a14] dark:text-neutral-100 dark:hover:border-neutral-400"}
+        ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#635bdb]"
+        : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-500 dark:border-neutral-600 dark:bg-surface-dark-card dark:text-neutral-100 dark:hover:border-neutral-400"}
     >
       {children}
     </Link>
@@ -54,7 +54,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
       </div>
 
       <div className="relative z-10">
-      <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-[#080d0a]/80">
+      <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-surface-dark-canvas/80">
         <div className="mx-auto max-w-7xl px-5 py-3 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between sm:hidden">
             <Link href="/" className="shrink-0 text-lg font-bold tracking-tight">idiot<span className="text-[#635bdb]">quant</span></Link>
@@ -79,10 +79,10 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_76%_0%,rgba(126,160,255,0.3),transparent_37%),radial-gradient(ellipse_at_88%_38%,rgba(201,155,255,0.22),transparent_38%),radial-gradient(ellipse_at_58%_92%,rgba(255,208,164,0.16),transparent_35%)] dark:opacity-50" />
           <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-2 lg:gap-14 lg:px-10 lg:py-24">
             <div>
-              <p className="mb-5 text-sm font-semibold text-[#5148c8] dark:text-[#aaa4ff]">코스피·코스닥 종목 발굴과 분석</p>
+              <p className="mb-5 text-sm font-semibold text-brand-ink dark:text-brand-ink">코스피·코스닥 종목 발굴과 분석</p>
               <h1 className="max-w-2xl text-4xl font-semibold leading-[1.12] tracking-[-0.045em] sm:text-5xl lg:text-[3.65rem]">
                 좋은 회사를 찾고,<br />
-                <span className="text-[#5148c8] dark:text-[#aaa4ff]">더 깊이 살펴보세요.</span>
+                <span className="text-brand-ink dark:text-brand-ink">더 깊이 살펴보세요.</span>
               </h1>
               <p className="mt-6 max-w-xl text-base leading-7 text-neutral-600 dark:text-neutral-300 sm:text-lg sm:leading-8">
                 매일 재무 기준으로 종목을 찾고, 핵심 숫자와 기업 가치를 한곳에서 비교할 수 있습니다.
@@ -98,13 +98,13 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
 
             <div className="relative mx-auto w-full max-w-xl lg:ml-auto">
               <div className="absolute -inset-5 rounded-[2rem] bg-gradient-to-br from-[#b7c9ff]/60 via-[#e5d6ff]/60 to-[#ffe4d2]/60 blur-2xl dark:opacity-30" />
-              <section aria-label="오늘의 종목 미리보기" className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-[0_24px_80px_rgba(36,40,72,0.14)] dark:border-neutral-700 dark:bg-[#111a14]">
+              <section aria-label="오늘의 종목 미리보기" className="relative overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-[0_24px_80px_rgba(36,40,72,0.14)] dark:border-neutral-700 dark:bg-surface-dark-card">
                 <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4 dark:border-neutral-700">
                   <div>
                     <p className="text-sm font-semibold">오늘의 발굴 종목</p>
                     <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{dateLabel} 기준</p>
                   </div>
-                  <span className="rounded-[3px] bg-[#efefff] px-2 py-1 text-xs font-semibold text-[#5148c8] dark:bg-[#282544] dark:text-[#c6c1ff]">{totalCount.toLocaleString()}개</span>
+                  <span className="rounded-[3px] bg-brand-light px-2 py-1 text-xs font-semibold text-brand-ink dark:bg-brand-muted dark:text-brand-ink-hover">{totalCount.toLocaleString()}개</span>
                 </div>
                 <div className="grid grid-cols-[1.5fr_.7fr_.7fr] gap-3 border-b border-neutral-200 px-5 py-2.5 text-[11px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
                   <span>회사</span><span>PER</span><span>PBR</span>
@@ -127,7 +127,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
                 )) : (
                   <p className="px-5 py-6 text-sm text-neutral-500 dark:text-neutral-400">현재 표시할 발굴 종목이 없습니다.</p>
                 )}
-                <Link href="/screener?mincap=500" className="flex min-h-12 items-center justify-between border-t border-neutral-200 px-5 text-sm font-semibold text-[#5148c8] hover:bg-neutral-50 dark:border-neutral-700 dark:text-[#aaa4ff] dark:hover:bg-neutral-800/50">
+                <Link href="/screener?mincap=500" className="flex min-h-12 items-center justify-between border-t border-neutral-200 px-5 text-sm font-semibold text-brand-ink hover:bg-neutral-50 dark:border-neutral-700 dark:text-brand-ink dark:hover:bg-neutral-800/50">
                   발굴 결과 전체 보기 <ArrowRight size={15} aria-hidden="true" />
                 </Link>
               </section>
@@ -137,28 +137,28 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
 
         <section id="features" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-[#5148c8] dark:text-[#aaa4ff]">발굴부터 분석까지</p>
+            <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">발굴부터 분석까지</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">투자에 필요한 정보를 한곳에서</h2>
             <p className="mt-4 text-base leading-7 text-neutral-600 dark:text-neutral-300">관심 있는 기준으로 찾고, 여러 지표를 비교하고, 회사별 분석 근거를 확인하세요.</p>
           </div>
           <div className="mt-9 grid gap-4 md:grid-cols-3">
-            <article className="rounded-md border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-[#101812]">
-              <SlidersHorizontal size={19} className="text-[#635bdb] dark:text-[#aaa4ff]" aria-hidden="true" />
+            <article className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-surface-dark-card">
+              <SlidersHorizontal size={19} className="text-[#635bdb] dark:text-brand-ink" aria-hidden="true" />
               <h3 className="mt-5 text-lg font-semibold">기준으로 종목 찾기</h3>
               <p className="mt-2 min-h-[3.5rem] text-sm leading-6 text-neutral-600 dark:text-neutral-300">NCAV, 저PBR, 저PER 등 다양한 기준으로 회사를 찾아보세요.</p>
-              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-[4px] border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/screener">발굴 기준 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
+              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/screener">발굴 기준 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
-            <article className="rounded-md border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-[#101812]">
-              <Search size={19} className="text-[#635bdb] dark:text-[#aaa4ff]" aria-hidden="true" />
+            <article className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-surface-dark-card">
+              <Search size={19} className="text-[#635bdb] dark:text-brand-ink" aria-hidden="true" />
               <h3 className="mt-5 text-lg font-semibold">핵심 숫자 비교하기</h3>
               <p className="mt-2 min-h-[3.5rem] text-sm leading-6 text-neutral-600 dark:text-neutral-300">PER, PBR, 재무 정보를 나란히 비교해 후보를 좁혀보세요.</p>
-              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-[4px] border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/compare">종목 비교하기 <ArrowRight size={15} aria-hidden="true" /></Link>
+              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/compare">종목 비교하기 <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
-            <article className="rounded-md border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-[#101812]">
-              <ChartNoAxesCombined size={19} className="text-[#635bdb] dark:text-[#aaa4ff]" aria-hidden="true" />
+            <article className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-surface-dark-card">
+              <ChartNoAxesCombined size={19} className="text-[#635bdb] dark:text-brand-ink" aria-hidden="true" />
               <h3 className="mt-5 text-lg font-semibold">기업 가치 살펴보기</h3>
               <p className="mt-2 min-h-[3.5rem] text-sm leading-6 text-neutral-600 dark:text-neutral-300">여러 평가 방법으로 계산한 가치와 계산 근거를 확인하세요.</p>
-              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-[4px] border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/analyze">종목 분석하기 <ArrowRight size={15} aria-hidden="true" /></Link>
+              <Link className="mt-5 inline-flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-300 px-3 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800/50 sm:w-auto sm:justify-center sm:gap-2" href="/analyze">종목 분석하기 <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
           </div>
         </section>
@@ -167,13 +167,13 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-[#5148c8] dark:text-[#aaa4ff]">{dateLabel} 업데이트</p>
+                <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">{dateLabel} 업데이트</p>
                 <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">오늘 찾은 회사</h2>
                 <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-300">조건에 맞는 종목 {totalCount.toLocaleString()}개</p>
               </div>
-              <Link href="/screener?mincap=500" className="hidden min-h-11 items-center gap-2 rounded-[4px] border border-neutral-300 bg-white px-4 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:bg-[#111a14] dark:hover:bg-neutral-800/50 sm:inline-flex">전체 결과 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
+              <Link href="/screener?mincap=500" className="hidden min-h-11 items-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:bg-surface-dark-card dark:hover:bg-neutral-800/50 sm:inline-flex">전체 결과 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
             </div>
-            <div className="mt-7 overflow-hidden rounded-md border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-[#101812]">
+            <div className="mt-7 overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card">
               <div className="grid grid-cols-[1.5fr_.7fr_.7fr] gap-3 border-b border-neutral-200 px-4 py-3 text-xs text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 sm:px-6"><span>회사</span><span>PER</span><span>PBR</span></div>
               {preview.map((item) => (
                 <div key={item.ticker} className="grid grid-cols-[1.5fr_.7fr_.7fr] items-center gap-3 border-b border-neutral-100 px-4 py-4 text-sm last:border-0 dark:border-neutral-800 sm:px-6">
@@ -184,14 +184,14 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
               ))}
               {!isLoading && preview.length === 0 && <p className="px-4 py-8 text-sm text-neutral-500 dark:text-neutral-400">현재 표시할 종목이 없습니다.</p>}
             </div>
-            <Link href="/screener?mincap=500" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[4px] border border-neutral-300 bg-white px-4 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:bg-[#111a14] dark:hover:bg-neutral-800/50 sm:hidden">전체 결과 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
+            <Link href="/screener?mincap=500" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 text-sm font-semibold hover:bg-neutral-50 dark:border-neutral-600 dark:bg-surface-dark-card dark:hover:bg-neutral-800/50 sm:hidden">전체 결과 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
           </div>
         </section>
 
         <section id="faq" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
           <div className="grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
             <div>
-              <p className="text-sm font-semibold text-[#5148c8] dark:text-[#aaa4ff]">궁금한 점</p>
+              <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">궁금한 점</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">처음이라면</h2>
             </div>
             <div className="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
@@ -210,7 +210,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
         </section>
       </div>
 
-      <footer className="border-t border-neutral-200 bg-white/65 backdrop-blur-[2px] dark:border-neutral-800 dark:bg-[#080d0a]/65">
+      <footer className="border-t border-neutral-200 bg-white/65 backdrop-blur-[2px] dark:border-neutral-800 dark:bg-surface-dark-canvas/65">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-6 text-xs text-neutral-500 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
           <span>© 2026 IdiotQuant</span>
           <span>본 서비스는 투자 참고 정보이며 투자 판단과 결과는 이용자에게 있습니다.</span>

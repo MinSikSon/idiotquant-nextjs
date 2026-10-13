@@ -41,7 +41,7 @@ function cautions(i: Item): string[] {
 const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boolean }) => (
     <div className="text-center">
         <p className="text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-        <p className={cn("text-[13px] font-mono font-bold tabular-nums mt-0.5", ok ? "text-brand" : "text-neutral-700 dark:text-neutral-200")}>
+        <p className={cn("text-[13px] font-mono font-bold tabular-nums mt-0.5", ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200")}>
             {value}
         </p>
     </div>
@@ -120,7 +120,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                             {why}
                         </span>
                     ) : <span className="flex-1" />}
-                    <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-bold text-brand">분석 <ChevronRight size={11} /></span>
+                    <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-bold text-brand-ink">분석 <ChevronRight size={11} /></span>
                 </div>
             </div>
         </div>

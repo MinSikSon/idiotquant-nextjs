@@ -242,7 +242,7 @@ export default function ProfilePage() {
                     <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-1 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-brand" />
+                                <Blocks size={12} className="text-brand-ink" />
                                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                     탄탄함이란
                                 </span>
@@ -271,7 +271,7 @@ export default function ProfilePage() {
                                 </p>
                             )}
                             {isMasterUser && (
-                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-light dark:bg-[#052e16]/50 text-brand dark:text-brand uppercase tracking-tight">
+                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-brand-light dark:bg-brand-muted/50 text-brand-ink dark:text-brand-ink uppercase tracking-tight">
                                     Admin
                                 </span>
                             )}
@@ -334,8 +334,8 @@ export default function ProfilePage() {
                                     href="/admin"
                                     className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-hover transition-colors group"
                                 >
-                                    <div className="w-8 h-8 rounded-xl bg-brand-light dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
-                                        <ShieldCheck size={15} className="text-brand" />
+                                    <div className="w-8 h-8 rounded-xl bg-brand-light dark:bg-brand-muted/50 flex items-center justify-center shrink-0">
+                                        <ShieldCheck size={15} className="text-brand-ink" />
                                     </div>
                                     <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                         회원 관리
@@ -355,10 +355,10 @@ export default function ProfilePage() {
                                 <div className={cn(
                                     "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
                                     viewAsUser
-                                        ? "bg-brand-light dark:bg-[#052e16]/50"
+                                        ? "bg-brand-light dark:bg-brand-muted/50"
                                         : "bg-surface-canvas dark:bg-surface-dark-muted",
                                 )}>
-                                    <EyeOff size={15} className={viewAsUser ? "text-brand" : "text-neutral-500 dark:text-neutral-400"} />
+                                    <EyeOff size={15} className={viewAsUser ? "text-brand-ink" : "text-neutral-500 dark:text-neutral-400"} />
                                 </div>
                                 <span className="flex-1 min-w-0">
                                     <span className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -372,7 +372,7 @@ export default function ProfilePage() {
                                 </span>
                                 <span className={cn(
                                     "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-                                    viewAsUser ? "bg-brand" : "bg-neutral-200 dark:bg-[#3a3834]",
+                                    viewAsUser ? "bg-brand" : "bg-neutral-200 dark:bg-surface-dark-border",
                                 )}>
                                     <span className={cn(
                                         "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
@@ -389,7 +389,7 @@ export default function ProfilePage() {
                     <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                         <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-brand" />
+                                <Blocks size={12} className="text-brand-ink" />
                                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                                     포트폴리오 탄탄함
                                 </span>
@@ -398,7 +398,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* 3D 레고 타워 */}
-                        <div className="h-60 sm:h-72 bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#242320]">
+                        <div className="h-60 sm:h-72 bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-surface-dark-card">
                             <PortfolioLegoTower items={likedList} />
                         </div>
 
@@ -406,7 +406,7 @@ export default function ProfilePage() {
                         <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="shrink-0">
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
-                                <p className="text-3xl font-black text-brand tabular-nums leading-none mt-1">
+                                <p className="text-3xl font-black text-brand-ink tabular-nums leading-none mt-1">
                                     {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
                                 </p>
                             </div>
@@ -489,7 +489,7 @@ export default function ProfilePage() {
                         </div>
                         <Link
                             href="/screener?filter=liked"
-                            className="text-[10px] font-bold text-brand hover:underline"
+                            className="text-[10px] font-bold text-brand-ink hover:underline"
                         >
                             발굴 페이지에서 보기
                         </Link>
@@ -511,7 +511,7 @@ export default function ProfilePage() {
                             <Heart size={22} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
                             <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">관심 종목이 없습니다</p>
                             <p className="text-[11px] text-neutral-400 mt-1">
-                                <Link href="/screener" className="text-brand hover:underline font-bold">발굴 페이지</Link>에서 종목을 추가해보세요
+                                <Link href="/screener" className="text-brand-ink hover:underline font-bold">발굴 페이지</Link>에서 종목을 추가해보세요
                             </p>
                         </div>
                     ) : (
@@ -524,7 +524,7 @@ export default function ProfilePage() {
                                                 {item.stock_name ?? item.ticker}
                                             </span>
                                             {!!item.is_us && (
-                                                <span className="text-[9px] font-black px-1 py-0.5 rounded bg-[#f0fdf4] text-brand shrink-0">
+                                                <span className="text-[9px] font-black px-1 py-0.5 rounded bg-brand-light text-brand-ink shrink-0">
                                                     US
                                                 </span>
                                             )}
@@ -584,7 +584,7 @@ export default function ProfilePage() {
                                     </div>
                                     <Link
                                         href={`/analyze?ticker=${encodeURIComponent(item.stock_name ?? item.ticker)}&from=screener`}
-                                        className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-brand hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]/30 transition-colors"
+                                        className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-brand-ink hover:bg-brand-light dark:hover:bg-brand-muted/30 transition-colors"
                                         title="분석 보기"
                                     >
                                         <ChevronRight size={14} />

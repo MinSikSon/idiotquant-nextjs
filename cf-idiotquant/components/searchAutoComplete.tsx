@@ -60,7 +60,7 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
         <span>
             {parts.map((part, index) => 
                 regex.test(part) ? (
-                    <mark key={index} className="bg-brand-light text-[#166534] dark:bg-[#052e16]/80 dark:text-emerald-300 font-bold px-0.5 rounded-xs">
+                    <mark key={index} className="bg-brand-light text-brand-ink dark:bg-brand-muted/80 dark:text-brand-ink font-bold px-0.5 rounded-xs">
                         {part}
                     </mark>
                 ) : (
@@ -176,7 +176,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
             >
                 <Search className={cn(
                     "h-4.5 w-4.5 transition-colors duration-200 shrink-0",
-                    isFocused ? "text-brand dark:text-brand" : "text-neutral-400 dark:text-neutral-500"
+                    isFocused ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
                 )} />
                 
                 <input
@@ -238,7 +238,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     {/* 상단 라벨링 정보 바 */}
                     <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-border-subtle-dark/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md z-10">
                         <span className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-brand dark:text-brand" />
+                            <Sparkles className="w-3 h-3 text-brand-ink dark:text-brand-ink" />
                             퀀트 인텔리전스 추천
                         </span>
                         {suggestions.length > 0 && selectedIndex >= 0 && (

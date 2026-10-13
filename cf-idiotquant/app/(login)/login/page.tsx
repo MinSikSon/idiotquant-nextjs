@@ -11,7 +11,7 @@ const BENEFITS = [
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-surface-canvas dark:bg-surface-dark-canvas">
+        <div className="landing-style-page min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-surface-canvas dark:bg-surface-dark-canvas">
 
             <div className="relative w-full max-w-sm flex flex-col gap-8">
 
@@ -26,7 +26,7 @@ export default function LoginPage() {
                             <span className="text-white text-[13px] font-black italic leading-none">IQ</span>
                         </div>
                         <span className="font-black tracking-tighter text-xl text-neutral-900 dark:text-white">
-                            IDIOT<span className="text-brand">QUANT</span>
+                            IDIOT<span className="text-brand-ink">QUANT</span>
                         </span>
                     </Link>
                 </div>
@@ -48,8 +48,8 @@ export default function LoginPage() {
                     <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-border-subtle-dark">
                         {BENEFITS.map((b) => (
                             <div key={b.label} className="flex items-start gap-3">
-                                <div className="mt-0.5 w-5 h-5 rounded-full bg-brand-light dark:bg-[#052e16]/60 flex items-center justify-center shrink-0">
-                                    <svg className="w-2.5 h-2.5 text-brand dark:text-brand" viewBox="0 0 10 8" fill="none">
+                                <div className="mt-0.5 w-5 h-5 rounded-full bg-brand-light dark:bg-brand-muted/60 flex items-center justify-center shrink-0">
+                                    <svg className="w-2.5 h-2.5 text-brand-ink dark:text-brand-ink" viewBox="0 0 10 8" fill="none">
                                         <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
                                 </div>

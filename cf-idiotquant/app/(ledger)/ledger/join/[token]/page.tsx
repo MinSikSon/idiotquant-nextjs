@@ -126,7 +126,7 @@ export default function LedgerJoinPage() {
     if (preview.already_member || preview.is_mine) {
         return shell(
             <>
-                <Check size={28} className="mx-auto mb-3 text-brand" strokeWidth={2.4} />
+                <Check size={28} className="mx-auto mb-3 text-brand-ink" strokeWidth={2.4} />
                 <p className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">
                     {preview.is_mine ? "내가 만든 초대입니다." : `이미 ${owner}님의 가계부에 들어와 있습니다.`}
                 </p>
@@ -152,7 +152,7 @@ export default function LedgerJoinPage() {
 
     return shell(
         <>
-            <Users size={28} className="mx-auto mb-3 text-brand" strokeWidth={2.2} />
+            <Users size={28} className="mx-auto mb-3 text-brand-ink" strokeWidth={2.2} />
             <p className="text-[15px] font-black text-neutral-900 dark:text-white">
                 {owner}님이 가계부에 초대했습니다
             </p>

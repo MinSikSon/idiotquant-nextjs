@@ -73,7 +73,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
     }
   };
 
-  const inputCls = "w-full rounded-lg border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-surface-dark-canvas px-3 py-2 text-sm";
+  const inputCls = "w-full rounded-lg border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-3 py-2 text-sm";
   const exists = !!info?.exists;
 
   return (
@@ -84,7 +84,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
           {exists ? "등록된 계정" : "계정 미등록"}
           {exists && (
             <span className={cn("ml-1 rounded-full px-2 py-0.5 text-[10px] font-black",
-              info?.is_active ? "bg-[#f0fdf4] text-brand dark:bg-[#14532d]/30" : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
+              info?.is_active ? "bg-brand-light text-brand-ink dark:bg-brand-muted/30" : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
               <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{info?.is_active ? "대상" : "제외"}
             </span>
           )}
@@ -118,16 +118,16 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs font-bold text-neutral-600 dark:text-neutral-300 cursor-pointer">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)}
-            className="h-4 w-4 rounded border-neutral-300 text-brand focus:ring-brand" />
+            className="h-4 w-4 rounded border-neutral-300 text-brand-ink focus:ring-brand" />
           자동매매 대상에 포함
         </label>
         {msg && (
-          <span className={cn("text-xs font-bold", msg.type === "ok" ? "text-brand" : "text-red-500")}>{msg.text}</span>
+          <span className={cn("text-xs font-bold", msg.type === "ok" ? "text-brand-ink" : "text-red-500")}>{msg.text}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
           {exists && (
             <button onClick={onDelete} disabled={saving}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-[#4a4641] px-3 py-2 text-xs font-bold text-neutral-500 hover:text-red-600 hover:border-red-300 disabled:opacity-50">
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated px-3 py-2 text-xs font-bold text-neutral-500 hover:text-red-600 hover:border-red-300 disabled:opacity-50">
               <Trash2 className="w-3.5 h-3.5" /> 삭제
             </button>
           )}

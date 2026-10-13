@@ -84,7 +84,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
               <span
                 key={d.ticker}
                 title={`${d.name} · PBR ${d.pbr.toFixed(2)} · ROE ${d.roe.toFixed(1)}%`}
-                className="absolute rounded-full opacity-75 -translate-x-1/2 translate-y-1/2 ring-[1.5px] ring-white dark:ring-[#242320]"
+                className="absolute rounded-full opacity-75 -translate-x-1/2 translate-y-1/2 ring-[1.5px] ring-white dark:ring-surface-dark-card"
                 style={{ left: `${d.x}%`, bottom: `${d.y}%`, width: d.size, height: d.size, background: d.color }}
               />
             ))}
@@ -102,7 +102,7 @@ export function ResultSummary({ list }: { list: Item[] }) {
         </div>
 
         <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
-          가로 = PBR(낮을수록 쌈) · 세로 = ROE(높을수록 잘 범) — <span className="font-bold text-brand">왼쪽 위</span>가 싸면서 잘 버는 쪽입니다.
+          가로 = PBR(낮을수록 쌈) · 세로 = ROE(높을수록 잘 범) — <span className="font-bold text-brand-ink">왼쪽 위</span>가 싸면서 잘 버는 쪽입니다.
         </p>
       </div>
 
@@ -142,7 +142,7 @@ export function TermStrip() {
             <div key={t.term} className="rounded-lg border border-[#fef3c7] dark:border-amber-900/40 bg-white dark:bg-surface-dark-card px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[11.5px] font-extrabold text-neutral-900 dark:text-neutral-100">{t.term}</span>
-                <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-[#052e16]/60 text-brand text-[10px] font-mono font-bold">{t.rule}</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-brand-light dark:bg-brand-muted/60 text-brand-ink text-[10px] font-mono font-bold">{t.rule}</span>
               </div>
               <p className="text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">{t.desc}</p>
             </div>

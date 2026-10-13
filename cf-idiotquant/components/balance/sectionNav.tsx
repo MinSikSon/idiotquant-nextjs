@@ -36,7 +36,7 @@ export function SectionNav({
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-2 text-xs whitespace-nowrap transition-all shrink-0 border-b-2 font-semibold",
                 mobileTab === id
-                  ? "border-brand text-brand dark:text-brand"
+                  ? "border-brand text-brand-ink dark:text-brand-ink"
                   : "border-transparent text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
               )}
             >

@@ -7,6 +7,23 @@
   --sidebar-w: 220px;
   --topbar-h: 48px;
   --bottombar-h: 64px;
+  --brand-ink: 81 72 200;
+  --brand-ink-hover: 67 56 170;
+  --radius-control: 4px;
+  --radius-input: 4px;
+  --radius-panel: 8px;
+}
+
+html.dark {
+  --brand-ink: 170 164 255;
+  --brand-ink-hover: 198 193 255;
+}
+
+/* 게임은 서비스 카드·입력 규칙과 별도의 기기 UI를 사용한다. */
+#game-canvas {
+  --radius-control: 8px;
+  --radius-input: 12px;
+  --radius-panel: 16px;
 }
 
 /* ── /game (Rogue) 의 색 — **여기가 유일한 자리다** ──────────────────────────
@@ -453,104 +470,8 @@ body:has(#public-home) main {
   padding-bottom: 0;
 }
 
-/* 공개 랜딩의 색, 서체, 표면을 발굴·분석·계정·잔고 화면에 공유한다. */
-.landing-style-page {
-  --landing-accent: #635bdb;
-  --landing-accent-hover: #5148c8;
-  --landing-accent-soft: #efefff;
-  --landing-fill: #635bdb;
-  --landing-fill-hover: #5148c8;
-  background-color: #faf9f7;
-  font-family: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
-}
-
-html.dark .landing-style-page {
-  --landing-accent: #aaa4ff;
-  --landing-accent-hover: #c6c1ff;
-  --landing-accent-soft: #282544;
-  background-color: #080d0a;
-}
-
+/* 페이지 골격을 공유하되 홈의 히어로와 게임의 타이포그래피는 별도로 둔다. */
 .landing-style-page :is(h1, h2) {
   font-weight: 600;
   letter-spacing: -0.04em;
-}
-
-.landing-style-page :is(div, section, article)[class~="rounded-2xl"][class~="bg-white"] {
-  border-color: #e5e5e5;
-}
-
-html.dark .landing-style-page :is(div, section, article)[class~="rounded-2xl"][class~="dark:bg-surface-dark-card"] {
-  background-color: #101812;
-  border-color: #404640;
-}
-
-.landing-style-page [class~="bg-[#f0fdf4]"] {
-  background-color: var(--landing-accent-soft);
-}
-
-html.dark .landing-style-page :is([class~="dark:bg-[#052e16]/30"], [class~="dark:bg-[#14532d]/20"], [class~="dark:bg-[#14532d]/30"], [class~="dark:bg-[#14532d]/40"]) {
-  background-color: var(--landing-accent-soft);
-}
-
-.landing-style-page :is([class~="text-brand"], [class~="text-brand-hover"], [class~="dark:text-brand"], [class~="dark:text-brand-hover"]) {
-  color: var(--landing-accent);
-}
-
-.landing-style-page :is([class~="bg-brand"], [class~="dark:bg-brand"]) {
-  background-color: var(--landing-fill);
-}
-
-.landing-style-page :is([class~="bg-brand-hover"], [class~="dark:bg-brand-hover"]) {
-  background-color: var(--landing-fill-hover);
-}
-
-.landing-style-page :is([class~="bg-brand-light"], [class~="dark:bg-brand-light"]) {
-  background-color: var(--landing-accent-soft);
-}
-
-.landing-style-page [class~="bg-brand/10"] {
-  background-color: var(--landing-accent-soft);
-}
-
-.landing-style-page :is([class~="border-brand"], [class~="border-brand-light"], [class~="border-brand-light-hover"], [class~="dark:border-brand"], [class~="dark:border-brand-light"], [class~="dark:border-brand-light-hover"]) {
-  border-color: #c8c4ff;
-}
-
-.landing-style-page [class~="border-t-brand"] { border-top-color: #635bdb; }
-html.dark .landing-style-page [class~="border-t-brand"] { border-top-color: #aaa4ff; }
-
-html.dark .landing-style-page :is([class~="border-brand"], [class~="border-brand-light"], [class~="border-brand-light-hover"], [class~="dark:border-brand"], [class~="dark:border-brand-light"], [class~="dark:border-brand-light-hover"]) {
-  border-color: #625b9e;
-}
-
-.landing-style-page :is([class~="hover:bg-brand"]:hover, [class~="hover:bg-brand-hover"]:hover) {
-  background-color: var(--landing-fill-hover);
-}
-
-.landing-style-page :is(button, a, input, select)[class~="rounded-xl"],
-.landing-style-page :is(button, a, input, select)[class~="rounded-lg"],
-.landing-style-page :is(button, a)[class~="rounded-full"] {
-  border-radius: 4px;
-}
-
-.landing-style-page :is(input, select, textarea):focus-visible,
-.landing-style-page :is(button, a):focus-visible {
-  outline-color: var(--landing-accent);
-}
-
-.landing-style-page :is(div, section, article)[class~="rounded-2xl"] {
-  border-radius: 8px;
-}
-
-@media (max-width: 639px) {
-  .landing-style-page [class*="max-w-"].mx-auto {
-    padding-left: 6px;
-    padding-right: 6px;
-  }
-
-  #analyze-page main {
-    padding-left: 0;
-    padding-right: 0;
-  }
 }

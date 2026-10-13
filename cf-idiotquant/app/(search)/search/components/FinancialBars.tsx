@@ -87,7 +87,7 @@ function DeltaBadge({ item }: { item: BarItem }) {
         <span className={cn(
             "font-mono text-[10.5px] font-bold tabular-nums",
             item.neutral || flat ? "text-neutral-400"
-                : good ? "text-brand dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
+                : good ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
         )}>
             {d.spanCount}기 {flat ? "±0.0%" : `${d.pct > 0 ? "+" : "−"}${Math.abs(d.pct).toFixed(1)}%`}
         </span>

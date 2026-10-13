@@ -198,7 +198,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         <div className={cn(
           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-black font-mono uppercase tracking-wider shrink-0",
           isUs
-            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-brand-hover dark:text-brand border-[#bbf7d0]/60 dark:border-[#14532d]/40"
+            ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink-hover dark:text-brand-ink border-brand-light-hover/60 dark:border-[#14532d]/40"
             : "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/40"
         )}>
       <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", isUs ? "bg-brand" : "bg-indigo-500")} />

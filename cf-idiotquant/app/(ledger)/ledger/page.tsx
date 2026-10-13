@@ -695,7 +695,7 @@ export default function LedgerPage() {
                         <div className={FIELD_LABEL_CLS}>남은 돈</div>
                         <div className={cn(
                             "mt-0.5 text-[27px] font-black tracking-[-0.03em] tabular-nums",
-                            net < 0 ? "text-red-600 dark:text-red-400" : "text-brand"
+                            net < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink"
                         )}>
                             {loading ? "—" : `${net > 0 ? "+" : ""}${won(net)}`}
                         </div>
@@ -841,7 +841,7 @@ export default function LedgerPage() {
                                         className={cn(
                                             "flex items-baseline justify-between gap-3 px-4 py-1.5 bg-surface-canvas dark:bg-surface-dark border-y border-neutral-100 dark:border-border-subtle-dark scroll-mt-20",
                                             // 머리글 위에 놓으면 그 날 맨 위로 간다 — 그 사실을 색으로 알린다
-                                            dropTarget?.date === day.date && dropTarget.index === 0 && "bg-brand-light dark:bg-[#052e16]/60"
+                                            dropTarget?.date === day.date && dropTarget.index === 0 && "bg-brand-light dark:bg-brand-muted/60"
                                         )}
                                     >
                                         <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 tabular-nums">
@@ -849,7 +849,7 @@ export default function LedgerPage() {
                                         </span>
                                         <span className={cn(
                                             "text-[11px] font-black tabular-nums",
-                                            day.net < 0 ? "text-red-600 dark:text-red-400" : "text-brand"
+                                            day.net < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink"
                                         )}>
                                             {signed(day.net)}
                                         </span>
@@ -880,7 +880,7 @@ export default function LedgerPage() {
                                                         lifted
                                                             ? "opacity-45 bg-surface-muted-hover dark:bg-surface-dark-hover"
                                                             : justAddedId === e.id
-                                                                ? "bg-brand-light/70 dark:bg-[#052e16]/40"
+                                                                ? "bg-brand-light/70 dark:bg-brand-muted/40"
                                                                 : "hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover"
                                                     )}
                                                     aria-label={`${e.entry_date} ${categoryLabel(e.kind, e.category, customCategories)} ${e.amount.toLocaleString("ko-KR")}원 수정`}
@@ -1182,7 +1182,7 @@ export default function LedgerPage() {
                                     <button
                                         type="button"
                                         onClick={() => openCatForm()}
-                                        className={cn(CHIP_CLS, "flex items-center gap-1 border-dashed border-neutral-300 dark:border-[#4a4641] bg-transparent text-neutral-500 dark:text-neutral-400")}
+                                        className={cn(CHIP_CLS, "flex items-center gap-1 border-dashed border-neutral-300 dark:border-surface-dark-elevated bg-transparent text-neutral-500 dark:text-neutral-400")}
                                     >
                                         <Plus size={13} strokeWidth={2.8} />
                                         항목
@@ -1252,7 +1252,7 @@ export default function LedgerPage() {
                         {/* 누가 적었고 누가 고쳤는가 — 함께 쓰는 가계부에서만.
                             0028 이전 내역은 기록이 없어 줄 자체를 띄우지 않는다(빈칸도, 지어낸 이름도 두지 않는다). */}
                         {shared && editingEntry?.created_by && (
-                            <div className="mb-3 pt-3 border-t border-neutral-100 dark:border-[#2c2b27] flex flex-col gap-0.5">
+                            <div className="mb-3 pt-3 border-t border-neutral-100 dark:border-surface-dark-hover flex flex-col gap-0.5">
                                 <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
                                     기록 {editingEntry.created_by_name ?? "알 수 없음"} · {stampKst(editingEntry.created_at)}
                                 </p>

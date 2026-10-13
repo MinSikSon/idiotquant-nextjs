@@ -23,11 +23,11 @@ function FlowNode({ label, value, sub, accent }: { label: string; value: string;
         <div className={
             "flex-1 min-w-0 rounded-xl border px-3 py-2.5 flex flex-col gap-0.5 " +
             (accent
-                ? "border-[#bbf7d0] dark:border-[#166534]/60 bg-[#f0fdf4] dark:bg-[#052e16]/20"
+                ? "border-brand-light-hover dark:border-brand/60 bg-brand-light dark:bg-brand-muted/20"
                 : "border-neutral-200/70 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark")
         }>
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{label}</span>
-            <span className={"text-sm font-black tabular-nums truncate " + (accent ? "text-brand-hover dark:text-brand" : "text-neutral-800 dark:text-neutral-100")}>{value}</span>
+            <span className={"text-sm font-black tabular-nums truncate " + (accent ? "text-brand-ink-hover dark:text-brand-ink" : "text-neutral-800 dark:text-neutral-100")}>{value}</span>
             {sub && <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{sub}</span>}
         </div>
     );
@@ -75,7 +75,7 @@ export default function RefillSettings({
             {/* 월 예산 조절 */}
             <div className="bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl p-3.5">
                 <div className="flex items-center gap-1.5 mb-1">
-                    <Coins size={13} className="text-brand" />
+                    <Coins size={13} className="text-brand-ink" />
                     <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">월 예산 (총 리필량)</span>
                 </div>
                 <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mb-2.5 leading-relaxed">

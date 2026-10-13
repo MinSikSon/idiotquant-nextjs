@@ -73,7 +73,7 @@ export default function GrowthChart({ rows }: Props) {
                     납입 원금
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                    <i className="w-2.5 h-2.5 rounded-sm bg-brand dark:bg-[#2fa85a]" />
+                    <i className="w-2.5 h-2.5 rounded-sm bg-[#16a34a] dark:bg-[#2fa85a]" />
                     투자수익
                 </span>
             </div>
@@ -91,7 +91,7 @@ export default function GrowthChart({ rows }: Props) {
                     <g key={g}>
                         <line
                             x1={PAD.l} x2={PAD.l + iw} y1={Y(g)} y2={Y(g)}
-                            className="stroke-neutral-200 dark:stroke-[#35332e]" strokeWidth={1}
+                            className="stroke-neutral-200 dark:stroke-border-subtle-dark" strokeWidth={1}
                         />
                         <text
                             x={PAD.l + iw + 8} y={Y(g) + 4} fontSize={10}
@@ -103,12 +103,12 @@ export default function GrowthChart({ rows }: Props) {
                 ))}
 
                 <path d={area((d) => d.principal, () => 0)} className="fill-[#1d4ed8]/[0.13] dark:fill-[#4f83e0]/20" />
-                <path d={area((d) => d.value, (d) => d.principal)} className="fill-brand/[0.14] dark:fill-[#2fa85a]/20" />
+                <path d={area((d) => d.value, (d) => d.principal)} className="fill-[#16a34a]/[0.14] dark:fill-[#2fa85a]/20" />
 
                 {/* 두 띠 사이의 틈 — 종이색을 한 겹 깔아 경계가 붙어 보이지 않게 한다 */}
-                <path d={line((d) => d.principal)} fill="none" strokeWidth={4} className="stroke-[#faf9f7] dark:stroke-[#1a1915]" />
+                <path d={line((d) => d.principal)} fill="none" strokeWidth={4} className="stroke-[#faf9f7] dark:stroke-surface-dark-canvas" />
                 <path d={line((d) => d.principal)} fill="none" strokeWidth={2} className="stroke-[#1d4ed8] dark:stroke-[#4f83e0]" />
-                <path d={line((d) => d.value)} fill="none" strokeWidth={2} className="stroke-brand dark:stroke-[#2fa85a]" />
+                <path d={line((d) => d.value)} fill="none" strokeWidth={2} className="stroke-[#16a34a] dark:stroke-[#2fa85a]" />
 
                 {rows.map((d, i) =>
                     i % everyN === 0 || i === rows.length - 1 ? (
@@ -129,11 +129,11 @@ export default function GrowthChart({ rows }: Props) {
                         />
                         <circle
                             cx={X(hover)} cy={Y(at.principal)} r={4} strokeWidth={2}
-                            className="fill-[#1d4ed8] dark:fill-[#4f83e0] stroke-[#faf9f7] dark:stroke-[#1a1915]"
+                            className="fill-[#1d4ed8] dark:fill-[#4f83e0] stroke-[#faf9f7] dark:stroke-surface-dark-canvas"
                         />
                         <circle
                             cx={X(hover)} cy={Y(at.value)} r={4} strokeWidth={2}
-                            className="fill-brand dark:fill-[#2fa85a] stroke-[#faf9f7] dark:stroke-[#1a1915]"
+                            className="fill-[#16a34a] dark:fill-[#2fa85a] stroke-[#faf9f7] dark:stroke-surface-dark-canvas"
                         />
                     </g>
                 )}
@@ -141,7 +141,7 @@ export default function GrowthChart({ rows }: Props) {
 
             {at && hover !== null && (
                 <div
-                    className="absolute pointer-events-none bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-[#1a1915] rounded-xl px-2.5 py-2 text-[11px] leading-relaxed whitespace-nowrap z-10"
+                    className="absolute pointer-events-none bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-surface-dark-canvas rounded-xl px-2.5 py-2 text-[11px] leading-relaxed whitespace-nowrap z-10"
                     style={{
                         left: `min(max(${(X(hover) / W) * 100}% - 60px, 0px), calc(100% - 190px))`,
                         top: `max(${(Y(at.value) / H) * 100}% - 74px, 0px)`,

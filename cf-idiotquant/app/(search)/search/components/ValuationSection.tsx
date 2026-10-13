@@ -351,7 +351,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                       onBlur={() => setHoveredModel(null)}
                       aria-expanded={isExplained}
                       aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
-                      className="w-full text-left text-[12px] font-bold text-neutral-900 dark:text-neutral-100 hover:text-brand dark:hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
+                      className="w-full text-left text-[12px] font-bold text-neutral-900 dark:text-neutral-100 hover:text-brand-ink dark:hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
                     >
                       <span className="block break-keep sm:truncate">{r.config.name}</span>
                     </button>
@@ -381,7 +381,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     <div
                       title={`${r.config.name} ${currency}${r.targetPrice.toLocaleString()}`}
                       className={cn(
-                        "absolute top-1/2 -mt-1.5 w-3 h-3 -ml-1.5 rounded-full ring-[2.5px] ring-white dark:ring-[#242320]",
+                        "absolute top-1/2 -mt-1.5 w-3 h-3 -ml-1.5 rounded-full ring-[2.5px] ring-white dark:ring-surface-dark-card",
                         r.config.dotBg
                       )}
                       style={{ left: `${target}%` }}
@@ -393,7 +393,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   </span>
                   <span className={cn(
                     "text-[11.5px] font-extrabold font-mono tabular-nums text-right",
-                    isPositive ? "text-brand dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                    isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
                   </span>
@@ -474,7 +474,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
         {/* 블러 오버레이 */}
         {!isLoggedIn && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-surface-dark-card/40 dark:to-surface-dark-card/95">
             <Link
               href={loginHref}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold shadow-md shadow-brand/20 transition-all"

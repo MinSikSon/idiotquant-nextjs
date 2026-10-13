@@ -44,7 +44,7 @@ const PLAN_LABEL: Record<string, string> = {
 
 const PLAN_CLASS: Record<string, string> = {
   free: "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400",
-  pro: "bg-brand-light dark:bg-[#052e16]/50 text-brand dark:text-brand",
+  pro: "bg-brand-light dark:bg-brand-muted/50 text-brand-ink dark:text-brand-ink",
   business: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
 };
 
@@ -130,11 +130,11 @@ export default function AdminPage() {
       <div className="flex flex-wrap gap-2 mb-6">
         <Link
           href="/admin/ticker-map"
-          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-brand hover:text-brand transition-colors group"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-brand hover:text-brand-ink transition-colors group"
         >
-          <BookOpen size={13} className="text-neutral-400 group-hover:text-brand transition-colors" />
+          <BookOpen size={13} className="text-neutral-400 group-hover:text-brand-ink transition-colors" />
           종목명 매핑 관리
-          <ArrowRight size={11} className="text-neutral-300 group-hover:text-brand transition-colors" />
+          <ArrowRight size={11} className="text-neutral-300 group-hover:text-brand-ink transition-colors" />
         </Link>
       </div>
 
@@ -185,7 +185,7 @@ export default function AdminPage() {
 
       {/* User Table */}
       <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-[#2c2b27]">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-100 dark:border-surface-dark-hover">
           <Users size={14} className="text-neutral-400" />
           {/* 문이 둘이 됐으므로 "카카오 가입자" 가 아니다 — 가입 경로는 줄마다 배지로 적는다 */}
           <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">가입자 목록</span>
@@ -204,7 +204,7 @@ export default function AdminPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-100 dark:border-[#2c2b27] bg-surface-canvas dark:bg-surface-dark-card">
+                <tr className="border-b border-neutral-100 dark:border-surface-dark-hover bg-surface-canvas dark:bg-surface-dark-card">
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이름</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">이메일</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">가입 경로</th>
