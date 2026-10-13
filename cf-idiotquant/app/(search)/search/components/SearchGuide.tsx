@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Search, ArrowRight, BarChart3, CheckCircle, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VALUATION_MODEL_DESCRIPTIONS } from "./valuationModelDescriptions";
 
 const QUICK_SEARCHES = [
   { label: "삼성전자",   ticker: "삼성전자",  market: "KR" },
@@ -25,13 +27,13 @@ const GRADES = [
 ];
 
 const MODELS = [
-  { name: "NCAV",  category: "자산가치", desc: "유동자산 − 총부채로 청산가치 계산",    color: "text-brand",                         bg: "bg-[#f0fdf4] dark:bg-[#052e16]/30" },
-  { name: "PBR",   category: "자산가치", desc: "역사적 PBR 밴드 상·하단 역산",         color: "text-cyan-600 dark:text-cyan-400",        bg: "bg-cyan-50 dark:bg-cyan-950/30" },
-  { name: "S-RIM", category: "수익가치", desc: "ROE 기반 초과수익의 현재가치 합산",     color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
-  { name: "DCF",   category: "수익가치", desc: "잉여현금흐름을 WACC로 할인",           color: "text-purple-600 dark:text-purple-400",   bg: "bg-purple-50 dark:bg-purple-950/30" },
-  { name: "PER",   category: "수익가치", desc: "EPS × 업종 평균 배수",                color: "text-indigo-600 dark:text-indigo-400",   bg: "bg-indigo-50 dark:bg-indigo-950/30" },
-  { name: "PEG",   category: "수익가치", desc: "PER ÷ 이익성장률로 성장 프리미엄 조정", color: "text-amber-600 dark:text-amber-400",    bg: "bg-amber-50 dark:bg-amber-950/30" },
-];
+  { name: "NCAV", category: "자산가치", color: "text-brand", bg: "bg-[#f0fdf4] dark:bg-[#052e16]/30" },
+  { name: "PBR", category: "자산가치", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-950/30" },
+  { name: "SRIM", label: "S-RIM", category: "수익가치", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+  { name: "DCF", category: "수익가치", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-950/30" },
+  { name: "PER", category: "수익가치", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950/30" },
+  { name: "PEG", category: "수익가치", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30" },
+] as const;
 
 const MOCK_VALUATION = [
   { model: "NCAV",  target: "82,400", ret: "+7.9%",  pct: 32, up: true },
@@ -42,6 +44,9 @@ const MOCK_VALUATION = [
 ];
 
 export const SearchGuide = () => {
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [hoveredModel, setHoveredModel] = useState<string | null>(null);
+
   return (
     <div className="w-full min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas">
 
@@ -61,12 +66,12 @@ export const SearchGuide = () => {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-neutral-900 dark:text-white leading-[1.06] mb-4 break-keep">
             종목명 하나로<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand to-violet-500 dark:from-brand dark:to-violet-400">
-              6가지 모델 동시 분석
+              여러 방법으로 가치 비교
             </span>
           </h1>
 
           <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-8 break-keep max-w-sm mx-auto">
-            NCAV · PBR · S-RIM · DCF · PER · PEG — 국내·미국 종목의 본질 가치를 즉시 산출합니다.
+            종목과 시장에 맞는 계산 방법으로 예상 주가를 나란히 비교합니다.
           </p>
 
           <div className="flex items-center gap-3 max-w-sm mx-auto px-4 py-3 bg-white dark:bg-surface-dark-card border-2 border-dashed border-neutral-300 dark:border-surface-dark-border rounded-2xl mb-6 text-neutral-400 cursor-default">
@@ -188,23 +193,54 @@ export const SearchGuide = () => {
           {/* Valuation models */}
           <div>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">Valuation Models</p>
-            <h2 className="text-xl font-black text-neutral-900 dark:text-white tracking-tight mb-1">6가지 모델로 교차 검증</h2>
+            <h2 className="text-xl font-black text-neutral-900 dark:text-white tracking-tight mb-1">주식 가치를 보는 6가지 방법</h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-6">
-              자산가치 2가지 + 수익가치 4가지를 병렬 실행해 단일 모델의 한계를 보완합니다.
+              자산을 보는 2가지, 이익과 현금을 보는 4가지 방법이 있습니다. 종목과 시장에 따라 계산할 수 있는 방법이 달라요.
             </p>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3 sm:hidden">모델을 누르면 계산 방식과 주의점을 볼 수 있어요.</p>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3 hidden sm:block">모델을 클릭하거나 마우스를 올리면 계산 방식과 주의점을 볼 수 있어요.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {MODELS.map(m => (
-                <div key={m.name} className="flex items-center gap-3.5 p-3.5 bg-surface-canvas dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
-                  <div className={cn("px-2.5 py-1.5 rounded-lg font-black font-mono text-sm tracking-tight shrink-0 min-w-[3.5rem] text-center", m.bg, m.color)}>
-                    {m.name}
+              {MODELS.map(m => {
+                const description = VALUATION_MODEL_DESCRIPTIONS[m.name];
+                const isExplained = (hoveredModel ?? selectedModel) === m.name;
+                return (
+                  <div
+                    key={m.name}
+                    onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(m.name); }}
+                    onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
+                    className="p-3.5 bg-surface-canvas dark:bg-surface-dark-card rounded-xl border border-neutral-200 dark:border-border-subtle-dark"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHoveredModel(null);
+                        setSelectedModel(current => current === m.name ? null : m.name);
+                      }}
+                      onFocus={event => { if (event.currentTarget.matches(":focus-visible")) setHoveredModel(m.name); }}
+                      onBlur={() => setHoveredModel(null)}
+                      aria-expanded={isExplained}
+                      aria-controls={isExplained ? `guide-model-${m.name}` : undefined}
+                      className="w-full flex items-center gap-3.5 text-left rounded-md focus-visible:outline-2 focus-visible:outline-brand"
+                    >
+                      <span className={cn("px-2.5 py-1.5 rounded-lg font-black font-mono text-sm tracking-tight shrink-0 min-w-[3.5rem] text-center", m.bg, m.color)}>
+                        {"label" in m ? m.label : m.name}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{m.category}</span>
+                        <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 leading-snug break-keep">{description.short}</span>
+                      </span>
+                      <ChevronRight className={cn("w-3.5 h-3.5 shrink-0 text-neutral-400 transition-transform", isExplained && "rotate-90")} />
+                    </button>
+                    {isExplained && (
+                      <div id={`guide-model-${m.name}`} className="mt-3 pt-3 border-t border-neutral-200 dark:border-border-subtle-dark text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300 break-keep">
+                        <p><strong className="text-neutral-900 dark:text-white">계산 방식</strong> · {description.detail}</p>
+                        <p className="mt-1.5"><strong className="text-neutral-900 dark:text-white">주의할 점</strong> · {description.caution}</p>
+                      </div>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{m.category}</p>
-                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 leading-snug break-keep">{m.desc}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
