@@ -276,7 +276,7 @@ test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
         let repeatId = 1;
         assert.deepEqual(makeHero(new Rng(seed), () => repeatId++, "rogue"), h, "같은 시드의 희귀 장비가 달라졌다");
     }
-    assert.ok(rare > 0 && rare < 60, `희귀 시작이 드물게 나와야 한다: ${rare}/2000`);
+    assert.ok(rare >= 150 && rare <= 250, `희귀 시작 확률은 약 10%여야 한다: ${rare}/2000`);
 
     // ── 배낭 스팅은 보이지 않는 오크에도 반응하고 상태 전환만 알린다
     {

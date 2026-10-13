@@ -301,7 +301,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
     };
     const startingItems = originDef.createStartingItems(nextId);
     // 같은 시드는 같은 희귀 시작 장비를 준다. 단검 묶음은 투척용으로 남긴다.
-    if (origin === "rogue" && rng.chance(0.01)) {
+    if (origin === "rogue" && rng.chance(0.1)) {
         const sting = makeItem("weapon", "sting", nextId(), -1, -1);
         sting.plusHit = 1;
         sting.plusDam = 1;
