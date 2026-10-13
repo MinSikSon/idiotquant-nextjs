@@ -12,6 +12,8 @@
  * 행동은 턴을 안 쓴다** — 그것이 원작이고, 그래야 배고픔 시계가 거짓말을 안 한다.
  */
 
+import { updateStingGlow } from "./sting";
+
 import {
     buildLevel,
     SPECIAL_ROOMS,
@@ -728,6 +730,7 @@ export function newGame(
     seatChest(state, state.heroes[0], chest);
     enterLevel(state, 1, rng, "above");
     updateSeenItems(state);
+    refreshStingGlow(state);
     state.rngState = rng.state;
     say(state, "지하 1층. 옌더의 증표는 26층에 있다.");
     return state;
@@ -899,6 +902,7 @@ export function joinGame(
 
     computeFov(state.level, state.heroes);
     updateSeenItems(state);
+    refreshStingGlow(state);
     state.rngState = rng.state;
     say(state, back ? "동료가 돌아왔다." : "동료가 합류했다.");
     return { ...state };
@@ -4925,9 +4929,15 @@ function act(state: GameState, cmd: Command): GameState {
     return finishTurn(state, hero, rng, acted, heldGuard, fled);
 }
 
+function refreshStingGlow(state: GameState): void {
+    updateStingGlow(state, (h, glowing) => say(state,
+        `${h.nick ?? `${state.heroes.indexOf(h) + 1}P`} ${glowing ? "스팅이 푸른빛을 띤다. 주변에 오크가 있다!" : "스팅의 푸른빛이 잦아들었다."}`));
+}
+
 function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, heldGuard = false, fled?: { hero: Hero; x: number; y: number }): GameState {
     sayTag = "";
     if (!acted) {
+        refreshStingGlow(state);
         // 아무 일도 안 일어났으면 턴을 안 쓴다. 난수 상태만 저장한다.
         state.rngState = rng.state;
         return { ...state };
@@ -5057,6 +5067,7 @@ function finishTurn(state: GameState, hero: Hero, rng: Rng, acted: boolean, held
 
     computeFov(state.level, state.heroes);
     updateSeenItems(state);
+    refreshStingGlow(state);
 
     // **쓰러진 사람을 훑는다** — 행동한 사람만이 아니다. 불길에도 몬스터에게도 누구나
     // 쓰러질 수 있고, 그 턴에 움직인 사람이 아닐 수 있다.

@@ -118,6 +118,7 @@ export interface ArmorDef {
  */
 export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
+    sting: { name: "스팅", damage: "2d4", damageLarge: "1d6", freq: 0, depth: 1, skill: "dagger", hands: 1, material: "iron", noDrop: true },
     dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
     // 리니지풍 단검 사다리 — 단검 숙련을 공유하며, 표준 단검만 던질 수 있다.
     "magic dagger": { name: "마력의 단검", damage: "2d4", damageLarge: "1d6", freq: 7, depth: 5, skill: "dagger", hands: 1, material: "iron" },
@@ -345,7 +346,7 @@ export function markerInkRange(kind: "scroll" | "spellbook", type: string): [num
 
 /** NetHack 물건 무게(au). 계열 안에서도 크기·재료가 다른 것은 종류별로 나눈다. */
 const WEAPON_WEIGHT: Record<string, number> = {
-    dagger: 10, "magic dagger": 10, "crystal dagger": 10, "oriharukon dagger": 10, "damascus dagger": 10,
+    sting: 10, dagger: 10, "magic dagger": 10, "crystal dagger": 10, "oriharukon dagger": 10, "damascus dagger": 10,
     "short bow": 30, "long bow": 30, "elven bow": 30, "sayha bow": 30, crossbow: 50,
     mace: 30, spear: 30, dart: 1, arrow: 1, "silver arrow": 5, "mithril arrow": 1, "oriharukon arrow": 1, bolt: 1,
     "long sword": 40, excalibur: 40, "two-handed sword": 150, "silver sword": 40, "thirsty sword": 40,
@@ -1015,7 +1016,8 @@ export function itemChar(kind: ItemKind): string {
 }
 
 /** NetHack처럼 알려지지 않은 물건은 종류가 아니라 이 판의 겉모습 색으로 그린다. */
-export function itemInk(it: Pick<Item, "kind" | "type">, appearance: Record<string, string>): string {
+export function itemInk(it: Pick<Item, "kind" | "type" | "stingGlowing">, appearance: Record<string, string>): string {
+    if (it.kind === "weapon" && it.type === "sting" && it.stingGlowing) return "var(--rg-item-blue)";
     const shown = appearance[`${it.kind}:${it.type}`] ?? "";
     const tones: Record<string, string> = {
         빨간: "red", 붉은: "red", 루비: "red", 석류석: "red", 주황: "orange", 마노: "orange", 노란: "yellow", 호박: "yellow", 토파즈: "yellow",

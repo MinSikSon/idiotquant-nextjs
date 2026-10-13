@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { glyphAt, joinGame, newGame, perform, spiritWait } from "@/lib/rogue/game";
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
-import { makeItem } from "@/lib/rogue/items";
+import { itemInk, makeItem } from "@/lib/rogue/items";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES, SPIRIT_VERBS, spawnMonster, spiritDef } from "@/lib/rogue/monsters";
 import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
+import { makeHero } from "@/lib/rogue/hero";
+import { updateStingGlow } from "@/lib/rogue/sting";
 import { Rng } from "@/lib/rogue/rng";
 import { bury, deserialize, graves, serialize } from "@/lib/rogue/storage";
 import { idx, T, walkable, type GameState, type SpiritElement, type Tile } from "@/lib/rogue/types";
@@ -257,6 +259,54 @@ test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
     assert.equal(s.heroes[0].origin, "rogue");
     assert.equal(s.heroes[0].hp, 11);
     assert.equal(s.heroes[0].str, 13);
+
+    assert.equal(s.heroes[0].race, "hobbit", "도적 기본 종족은 호빗이다");
+
+    // ── 희귀 시작: 시드마다 재현되고 일반 장비와 함께 나온다
+    let rare = 0;
+    for (let seed = 1; seed <= 2000; seed++) {
+        let id = 1;
+        const h = makeHero(new Rng(seed), () => id++, "rogue");
+        const sting = h.pack.find((it) => it.type === "sting");
+        if (!sting) continue;
+        rare++;
+        assert.equal(h.weaponId, sting.id, "스팅을 주손에 착용해야 한다");
+        assert.equal(h.pack.find((it) => it.id === h.armorId)?.type, "mithril mail", "미스릴 갑옷을 함께 입어야 한다");
+        assert.ok(canOffHand(h, makeItem("weapon", "sting", 9999, -1, -1)), "스팅은 도적의 단검 계열이다");
+        let repeatId = 1;
+        assert.deepEqual(makeHero(new Rng(seed), () => repeatId++, "rogue"), h, "같은 시드의 희귀 장비가 달라졌다");
+    }
+    assert.ok(rare > 0 && rare < 60, `희귀 시작이 드물게 나와야 한다: ${rare}/2000`);
+
+    // ── 배낭 스팅은 보이지 않는 오크에도 반응하고 상태 전환만 알린다
+    {
+        const h = s.heroes[0];
+        h.hp = h.maxHp = 1000;
+        const sting = makeItem("weapon", "sting", 9900, -1, -1);
+        addToPack(h, sting);
+        const orc = spawnMonster("O", h.x + 5, h.y + 5, new Rng(7));
+        orc.awake = false;
+        s.level.monsters = [orc];
+        let transitions = 0;
+        updateStingGlow(s, () => transitions++);
+        assert.equal(sting.stingGlowing, true, "대각선 5칸의 오크를 감지하지 못했다");
+        assert.equal(itemInk(sting, {}), "var(--rg-item-blue)", "배낭 스팅의 기호가 푸르지 않다");
+        updateStingGlow(s, () => transitions++);
+        assert.equal(transitions, 1, "주변에 계속 있는 오크를 매번 알렸다");
+        orc.x = h.x + 6;
+        updateStingGlow(s, () => transitions++);
+        assert.equal(sting.stingGlowing, false, "범위를 벗어난 오크의 빛이 남았다");
+        orc.x = h.x + 4;
+        perform(s, { t: "rest" });
+        assert.equal(sting.stingGlowing, true, "턴이 끝나도 스팅의 빛을 갱신하지 않았다");
+        assert.ok(s.messages.some((m) => m.includes("스팅이 푸른빛")), "오크 접근 알림이 로그에 없다");
+        const count = s.messages.filter((m) => m.includes("스팅이 푸른빛")).length;
+        perform(s, { t: "rest" });
+        assert.equal(s.messages.filter((m) => m.includes("스팅이 푸른빛")).length, count, "접근 알림이 매 턴 반복된다");
+        orc.hp = 0;
+        updateStingGlow(s);
+        assert.equal(sting.stingGlowing, false, "죽은 오크를 감지한다");
+    }
 
     // NetHack Rogue의 핵심 장비를 이 게임의 사다리에 맞춘다: 단검 묶음과 +1 가죽 갑옷.
     const dagger = s.heroes[0].pack.find((p) => p.kind === "weapon" && p.type === "dagger");

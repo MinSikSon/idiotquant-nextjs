@@ -300,6 +300,16 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         spiritTurn: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
+    // 같은 시드는 같은 희귀 시작 장비를 준다. 단검 묶음은 투척용으로 남긴다.
+    if (origin === "rogue" && rng.chance(0.01)) {
+        const sting = makeItem("weapon", "sting", nextId(), -1, -1);
+        sting.plusHit = 1;
+        sting.plusDam = 1;
+        sting.stingGlowing = false;
+        const armorIndex = startingItems.findIndex((it) => it.kind === "armor");
+        startingItems[armorIndex] = makeItem("armor", "mithril mail", startingItems[armorIndex].id, -1, -1);
+        startingItems.unshift(sting);
+    }
     for (const item of startingItems) {
         addToPack(hero, item);
         if (item.kind === "weapon" && hero.weaponId === null) {
@@ -320,7 +330,6 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         hero.weaponSkills![skill] = 1;
         hero.weaponTraining![skill] = 20;
     }
-    void rng;
     return hero;
 }
 

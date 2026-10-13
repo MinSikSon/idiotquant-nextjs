@@ -212,6 +212,8 @@ export interface Item {
     count: number;
     /** 마법책을 성공적으로 공부한 횟수. */
     studyCount?: number;
+    /** 엔진이 갱신하는 스팅의 오크 감지 빛. */
+    stingGlowing?: boolean;
     /** 식량 칸을 빌려 든 몬스터 시체의 종명. 먹거나 제단에 바칠 수 있다. */
     corpseOf?: string;
     /** 시체가 생긴 게임 턴 — 제물 신선도와 부패 시계를 계산한다. */
@@ -400,7 +402,7 @@ export interface ShopState {
 export type SpecialKind = "treasure" | "armory" | "store" | "altar" | "shop" | "fountain";
 
 export type HeroOrigin = "knight" | "rogue" | "alchemist" | "scholar" | "ranger" | "archeologist" | "elementalist";
-export type HeroRace = "human" | "orc" | "gnome" | "elf" | "dwarf";
+export type HeroRace = "human" | "orc" | "gnome" | "elf" | "dwarf" | "hobbit";
 export type ReligionAlignment = "lawful" | "neutral" | "chaotic";
 
 export interface Hero {

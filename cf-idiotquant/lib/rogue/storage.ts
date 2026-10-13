@@ -30,6 +30,7 @@ import {
     launcherDamageOf,
 } from "./items";
 import { heroDefense, mergeStacks, PACK_LETTERS } from "./hero";
+import { updateStingGlow } from "./sting";
 import { ORIGIN_ALIGNMENT, ORIGIN_RACE, ORIGINS } from "./origins";
 import { cleanNick, partyAmulet, partyGold, score } from "./game";
 import { MONSTERS, SPIRIT_NAMES, spiritDef } from "./monsters";
@@ -45,7 +46,7 @@ const KEY = "rogue:save:v1";
  * 값이 늘 때마다 올린다. 되읽는 쪽은 **옛 판도 받아서 빈 칸을 채워 준다**(`normalize`) —
  * 굴리던 판을 버리지 않기 위해서다.
  */
-const VERSION = 31;
+const VERSION = 32;
 
 interface SavedMonster extends Omit<Monster, "def"> {
     ch: string;
@@ -365,7 +366,7 @@ function normalize(s: Saved): GameState | null {
     };
     const rawHero = (h: Hero): Hero => ({
         ...h,
-        race: h.race === "human" || h.race === "orc" || h.race === "gnome" || h.race === "elf" || h.race === "dwarf"
+        race: h.origin === "rogue" ? "hobbit" : h.race === "human" || h.race === "orc" || h.race === "gnome" || h.race === "elf" || h.race === "dwarf" || h.race === "hobbit"
             ? h.race
             : ORIGIN_RACE[h.origin ?? "knight"],
         maxStr: num(h.maxStr, num(h.str, 16)),
@@ -442,7 +443,7 @@ function normalize(s: Saved): GameState | null {
     });
     const heroes: Hero[] = saved.map(fixHero);
 
-    return {
+    const state: GameState = {
         ...(s as unknown as GameState),
         level,
         levels,
@@ -481,6 +482,8 @@ function normalize(s: Saved): GameState | null {
         deepest: num(s.deepest, num(s.level.depth, 1)),
         phase: s.phase === "dead" || s.phase === "won" ? s.phase : "playing",
     };
+    updateStingGlow(state);
+    return state;
 }
 
 export function deserialize(text: string): GameState | null {

@@ -48,7 +48,7 @@ test("도감은 현재 게임의 105종 아이템을 7개 카테고리로 나눈
     assert.ok(CODEX_ENTRIES.some((e) => e.key === "tool:magic marker"), "마법 표식기가 도감에 없다");
 
     // 각 카테고리 정의 항목과 일치하는지 확인
-    assert.equal(Object.keys(WEAPONS).length, 27); // 드랍 불가 시작 장비도 종류 표에는 남는다
+    assert.equal(Object.keys(WEAPONS).length, 28); // 드랍 불가 시작 장비도 종류 표에는 남는다
     assert.equal(Object.keys(ARMORS).length, 9);
     assert.equal(Object.keys(SCROLLS).length, 12); // 빈 종이와 모루 제작용 충전 주문서 포함
     assert.equal(Object.keys(POTIONS).length, 10);

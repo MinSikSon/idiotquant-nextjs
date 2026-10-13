@@ -979,7 +979,8 @@ export default function Desk({
                                             <span className="font-bold" style={{ color: itemInk(it, state.appearance) }}>
                                                 {itemChar(it.kind)}
                                             </span>{" "}
-                                            <span className={nameInk}>{name(it)}</span>
+                                            <span className={nameInk} style={it.stingGlowing ? { color: itemInk(it, state.appearance), textShadow: "0 0 8px var(--rg-item-blue)" } : undefined}>{name(it)}</span>
+                                            {it.stingGlowing && <span className="text-[var(--rg-item-blue)]"> · 푸른빛</span>}
                                             {it.count > 1 && <span className="text-[var(--rg-faint)]"> ×{it.count}</span>}
                                             {/* 지팡이의 충전량은 정체를 안 뒤에만 보인다. 미식별 지팡이에
                                                 숨은 자원을 드러내지 않으면서, 쓸 지팡이를 고를 때는

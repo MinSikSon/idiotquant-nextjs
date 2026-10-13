@@ -17,7 +17,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { newGame, perform, survey, type Command } from "@/lib/rogue/game";
-import { ENCHANT_MAX, ENCHANT_MIN } from "@/lib/rogue/items";
+import { ENCHANT_MAX, ENCHANT_MIN, makeItem } from "@/lib/rogue/items";
 import { packItem } from "@/lib/rogue/hero";
 import { deserialize, save, serialize } from "@/lib/rogue/storage";
 import { Rng } from "@/lib/rogue/rng";
@@ -79,6 +79,20 @@ function play(s: GameState, turns = 120) {
 }
 
 test("저장했다 되읽으면 같은 판이고, 옛 저장도 굴러간다", () => {
+    // ── 호빗과 스팅의 빛은 옛 저장에서도 현재 층에 맞춰 복구한다
+    {
+        const s = newGame(2, {}, {}, {}, {}, "rogue");
+        s.heroes[0].pack.push(makeItem("weapon", "sting", 9900, -1, -1));
+        s.level.monsters = [];
+        const back = deserialize(serialize(s))!;
+        assert.equal(back.heroes[0].race, "hobbit", "호빗 종족이 저장에서 사라졌다");
+        assert.equal(back.heroes[0].pack.at(-1)?.stingGlowing, false, "빛 필드가 없는 스팅을 복구하지 않았다");
+        const old = JSON.parse(serialize(s));
+        old.heroes[0].race = "orc";
+        assert.equal(deserialize(JSON.stringify(old))?.heroes[0].race, "hobbit", "기존 오크 도적도 호빗으로 바뀌어야 한다");
+        delete old.heroes[0].race;
+        assert.equal(deserialize(JSON.stringify(old))?.heroes[0].race, "hobbit", "옛 도적의 기본 종족이 호빗이 아니다");
+    }
     // ── 저장했다 되읽으면 같은 판이다 — 지도가 배열로 돌아온다
     {
         const s = newGame(1234);

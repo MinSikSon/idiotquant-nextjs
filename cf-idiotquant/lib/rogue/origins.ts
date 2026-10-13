@@ -26,7 +26,7 @@ export const ORIGIN_ALIGNMENT: Record<HeroOrigin, ReligionAlignment> = {
 /** 플레이어는 종족을 고르지 않는다. 직업의 기본 설정으로만 정하고 식인 판정에 쓴다. */
 export const ORIGIN_RACE = {
     knight: "human",
-    rogue: "orc",
+    rogue: "hobbit",
     alchemist: "gnome",
     scholar: "human",
     ranger: "elf",
@@ -34,7 +34,7 @@ export const ORIGIN_RACE = {
     elementalist: "elf",
 } as const satisfies Record<HeroOrigin, import("./types").HeroRace>;
 
-export const RACE_NAME = { human: "인간", orc: "오크", gnome: "노움", elf: "엘프", dwarf: "드워프" } as const;
+export const RACE_NAME = { human: "인간", orc: "오크", gnome: "노움", elf: "엘프", dwarf: "드워프", hobbit: "호빗" } as const;
 
 /** NetHack 3.6 역할·종족 성장표. 커스텀 직업은 가장 가까운 역할 성장표를 빌린다. */
 type Growth = readonly [fixed: number, random: number];
@@ -55,6 +55,8 @@ export const RACE_GROWTH = {
     elf: { hpLow: [1, 1] as Growth, hpHigh: [1, 0] as Growth, enInitial: [2, 0] as Growth, enLow: [3, 0] as Growth, enHigh: [3, 0] as Growth },
     dwarf: { hpLow: [3, 2] as Growth, hpHigh: [0, 0] as Growth, enInitial: [0, 0] as Growth, enLow: [0, 0] as Growth, enHigh: [0, 0] as Growth },
     gnome: { hpLow: [1, 0] as Growth, hpHigh: [0, 0] as Growth, enInitial: [2, 0] as Growth, enLow: [2, 0] as Growth, enHigh: [2, 0] as Growth },
+    // 호빗은 이 게임의 종족이다. 기존 도적의 체력·마력 성장 수치를 유지한다.
+    hobbit: { hpLow: [1, 0] as Growth, hpHigh: [0, 0] as Growth, enInitial: [1, 0] as Growth, enLow: [1, 0] as Growth, enHigh: [1, 0] as Growth },
     orc: { hpLow: [1, 0] as Growth, hpHigh: [0, 0] as Growth, enInitial: [1, 0] as Growth, enLow: [1, 0] as Growth, enHigh: [1, 0] as Growth },
 } satisfies Record<import("./types").HeroRace, { hpLow: Growth; hpHigh: Growth; enInitial: Growth; enLow: Growth; enHigh: Growth }>;
 
@@ -168,7 +170,7 @@ export interface OriginDef {
  * 연금술사와 고서 연구자는 안 준다. 둘은 포션·주문서로 푸는 직업이라 손이 비어야 한다.
  */
 export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
-    rogue: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"],
+    rogue: ["sting", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"],
     knight: [
         "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger",
         "mace", "spear", "long sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword",
@@ -179,7 +181,7 @@ export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
 export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     // NetHack Knight 는 석궁을 Skilled 까지 쓴다 — 연사 없는 원거리 한 발.
     knight: { crossbow: 2, dagger: 1, "magic dagger": 1, "crystal dagger": 1, "oriharukon dagger": 1, "damascus dagger": 1, mace: 2, spear: 2, "long sword": 3, "two-handed sword": 2, "silver sword": 3, "thirsty sword": 3, "magic sword": 2, "knight sword": 3, "baphomet sword": 3 },
-    rogue: { dagger: 3, "magic dagger": 3, "crystal dagger": 3, "oriharukon dagger": 3, "damascus dagger": 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
+    rogue: { sting: 3, dagger: 3, "magic dagger": 3, "crystal dagger": 3, "oriharukon dagger": 3, "damascus dagger": 3, dart: 3, "long sword": 2, mace: 2, spear: 1 },
     alchemist: { dagger: 3, spear: 1, "magic sword": 2 },
     scholar: { dagger: 2, "magic sword": 3 },
     // NetHack Ranger: 활·단검·표창 Expert, 창 Skilled.
@@ -245,7 +247,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "은신·탐색·단검 연사와 기습에 능한 재빠른 잠입자.",
         traitName: "기습 암습",
         traitDescription: "은신으로 적 일부를 재운 채 시작 · 단검 2연사 · Lv10 탐색 · 기습 치명타 · 함정 50% 회피",
-        weaponAffinity: { name: "암살 단검", types: ["dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"], description: "도적 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "암살 단검", types: ["sting", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"], description: "도적 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "연막",
         advancedSkillDescription: "보이는 일반 괴물이 나를 놓친다 · 층마다 한 번",
         advancedSkillKind: "active",
