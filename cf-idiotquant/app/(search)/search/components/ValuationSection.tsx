@@ -30,7 +30,7 @@ type FilterTabType = "ALL" | "ASSET" | "EARNING";
 interface ModelConfig {
   name: string;
   category: "ASSET" | "EARNING";
-  description: { summary: string; idea: string; target: string };
+  description: { short: string; detail: string; caution: string };
   icon: React.ReactNode;
   dotBg: string;
   accentLine: string;
@@ -46,9 +46,9 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     name: "NCAV 청산가치",
     category: "ASSET",
     description: {
-      summary: "유동자산에서 총부채를 차감한 순유동자산(NCAV)과 시가총액을 비교합니다. 벤자민 그레이엄의 Net-Net 전략에 기반합니다.",
-      idea: "시가총액 < NCAV × 0.67이면 완전한 안전마진이 확보된 상태로 판단합니다.",
-      target: "시장 소외주, 하방 경직성이 보장된 극단적 저평가 자산주",
+      short: "빚을 갚고 남는 단기 자산을 봅니다.",
+      detail: "유동자산에서 모든 부채를 빼고 주식 수로 나눕니다. 이 값을 1.0·1.2·1.5로 나눈 가격을 각각 비교합니다.",
+      caution: "재고나 받을 돈이 장부에 적힌 금액대로 현금이 된다는 보장은 없습니다.",
     },
     icon: <Calculator size={14} />,
     dotBg: "bg-blue-500",
@@ -75,9 +75,9 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     name: "PBR 자본밴드",
     category: "ASSET",
     description: {
-      summary: "순자산(장부가) 대비 주가 비율인 PBR의 역사적 밴드 상·하단을 역산하여 목표주가를 산출합니다.",
-      idea: "현재 PBR이 역사적 바닥권에 도달했는지 확인하여 매수 타이밍을 포착합니다.",
-      target: "실적 변동성이 크지만 자산이 단단한 대형주, 경기 민감 사이클 종목",
+      short: "회사의 순자산을 한 주 가격과 비교합니다.",
+      detail: "한 주당 순자산(BPS)에 0.6·1.0·1.4배를 곱해 세 가지 가격을 계산합니다.",
+      caution: "이 배수는 과거 주가에서 구한 값이 아니라 비교를 위해 정한 가정입니다.",
     },
     icon: <Layers size={14} />,
     dotBg: "bg-cyan-500",
@@ -91,9 +91,9 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     name: "S-RIM 초과수익",
     category: "EARNING",
     description: {
-      summary: "순자산 가치에 '주주 요구수익률을 초과하는 ROE로 창출되는 미래 초과이익의 현재가치'를 더해 내재가치를 구합니다.",
-      idea: "자본 효율성(ROE vs 요구수익률)을 측정해 지속 성장 기업의 내재가치를 평가합니다.",
-      target: "우량 제조 강소기업, 자본 효율성이 우수하고 지속 성장이 기대되는 종목",
+      short: "자기자본으로 얼마나 이익을 내는지 봅니다.",
+      detail: "회사의 자기자본에 자기자본이익률(ROE)을 투자자가 기대하는 수익률로 나눈 비율을 적용합니다. 기대 수익률 7.5·8.0·8.5%를 각각 비교합니다.",
+      caution: "지금의 이익률이 계속되지 않으면 계산한 가치도 달라집니다.",
     },
     icon: <Activity size={14} />,
     dotBg: "bg-emerald-500",
@@ -107,9 +107,9 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     name: "DCF 현금흐름할인",
     category: "EARNING",
     description: {
-      summary: "미래 잉여현금흐름(FCF)을 가중평균자본비용(WACC)으로 할인하여 기업의 절대적 내재가치를 산출합니다.",
-      idea: "회계 이익이 아닌 실제 현금 창출력에 기반한 본질 가치를 측정합니다.",
-      target: "현금흐름 예측이 안정적인 성숙기 대형주, 경제적 해자를 보유한 기업",
+      short: "앞으로 벌 현금을 오늘 가치로 바꿉니다.",
+      detail: "현재 영업현금흐름이 앞으로 5년간 늘어난다고 가정하고, 그 이후의 가치까지 오늘 돈의 가치로 환산합니다.",
+      caution: "잉여현금흐름 대신 영업현금흐름을 쓰며, 성장률과 할인율 가정에 따라 결과가 크게 달라집니다.",
     },
     icon: <TrendingUp size={14} />,
     dotBg: "bg-purple-500",
@@ -123,9 +123,9 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     name: "PER 멀티플",
     category: "EARNING",
     description: {
-      summary: "주당순이익(EPS)에 업종 평균·과거 평균 배수를 결합하는 대중적인 상대가치 모델입니다.",
-      idea: "현재 시장 심리와 섹터 평균을 반영해 직관적인 밸류에이션 상한·하한을 설정합니다.",
-      target: "보편적 업종 내 종목 비교, 시장 트렌드가 빠르게 반영되는 주도주",
+      short: "한 주가 버는 이익에 정해 둔 배수를 곱합니다.",
+      detail: "주당순이익(EPS)에 미리 정한 PER 배수를 곱해 여러 가격을 계산합니다.",
+      caution: "올해 이익이 일시적으로 높거나 낮으면 계산한 가격도 흔들립니다.",
     },
     icon: <BarChart3 size={14} />,
     dotBg: "bg-indigo-500",
@@ -139,9 +139,9 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     name: "PEG 가치성장",
     category: "EARNING",
     description: {
-      summary: "피터 린치가 대중화한 지표로, PER을 이익성장률(G)로 나눠 성장 프리미엄의 정당성을 검증합니다.",
-      idea: "고PER이더라도 그를 압도하는 성장력이 있다면 저평가일 수 있음을 수치로 나타냅니다.",
-      target: "성장 초기·중기의 기술주, 고성장 혁신 기업 및 트렌드 주도 종목",
+      short: "이익이 얼마나 늘지 가정해 가격을 봅니다.",
+      detail: "주당순이익(EPS)에 성장률 가정과 PEG 배수를 곱해 세 가지 가격을 계산합니다.",
+      caution: "실제 성장 전망을 읽어 오는 대신 연 15% 성장을 가정합니다.",
     },
     icon: <Zap size={14} />,
     dotBg: "bg-amber-500",
@@ -156,7 +156,7 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
 const DEFAULT_CONFIG: ModelConfig = {
   name: "기타",
   category: "ASSET",
-  description: { summary: "등록되지 않은 밸류에이션 모델입니다.", idea: "", target: "" },
+  description: { short: "추가 설명이 없는 모델입니다.", detail: "계산 방식은 아래 모델 표를 확인하세요.", caution: "" },
   icon: <BarChart3 size={14} />,
   dotBg: "bg-neutral-500",
   accentLine: "bg-neutral-400",
@@ -181,6 +181,8 @@ interface ValuationSectionProps {
 
 export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/login" }: ValuationSectionProps) => {
   const [activeTab, setActiveTab] = useState<FilterTabType>("ALL");
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [hoveredModel, setHoveredModel] = useState<string | null>(null);
   const currency = isUs ? "$" : "₩";
 
   // 실제 시세. analyze 페이지가 이미 같은 필드를 직접 쓰고 있고, 같은 data prop 으로 들어온다.
@@ -309,6 +311,9 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               {axis.rows.length} Models
             </span>
           </div>
+          <p className="mb-3 text-[11px] text-neutral-500 dark:text-neutral-400">
+            모델마다 다른 기준으로 계산한 예상 가격입니다. <span className="sm:hidden">이름을 누르면 설명을 볼 수 있어요.</span><span className="hidden sm:inline">이름을 클릭하거나 마우스를 올리면 설명을 볼 수 있어요.</span>
+          </p>
 
           {showBaseNote && (
             <p className="mb-2.5 text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500 break-keep">
@@ -350,14 +355,27 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             {axis.rows.map(r => {
               const isPositive = r.returnPct >= 0;
               const target = axis.pos(r.targetPrice);
+              const isExplained = (hoveredModel ?? selectedModel) === r.type;
               return (
                 <div
                   key={r.type}
+                  onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(r.type); }}
+                  onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
                   className={cn(AXIS_GRID, "px-3 sm:px-4 py-2.5 bg-white dark:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
                 >
                   <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-neutral-900 dark:text-neutral-100 truncate">{r.config.name}</p>
-                    <p className="hidden sm:block text-[9.5px] text-neutral-400 truncate" title={r.formula}>{r.formula}</p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedModel(current => current === r.type ? null : r.type)}
+                      onFocus={event => { if (event.currentTarget.matches(":focus-visible")) setHoveredModel(r.type); }}
+                      onBlur={() => setHoveredModel(null)}
+                      aria-expanded={isExplained}
+                      aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
+                      className="w-full text-left text-[12px] font-bold text-neutral-900 dark:text-neutral-100 hover:text-brand dark:hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
+                    >
+                      <span className="block break-keep sm:truncate">{r.config.name}</span>
+                    </button>
+                    <p className="hidden sm:block text-[9.5px] text-neutral-500 dark:text-neutral-400 truncate">{r.config.description.short}</p>
                   </div>
 
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
@@ -399,6 +417,20 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
                   </span>
+                  <p className="col-span-4 sm:hidden text-[11px] leading-snug text-neutral-600 dark:text-neutral-300 break-keep">
+                    {r.config.description.short}
+                  </p>
+                  {isExplained && (
+                    <div
+                      id={`model-explanation-${r.type}`}
+                      className="col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep"
+                    >
+                      <p><strong className="text-neutral-900 dark:text-white">계산 방식</strong> · {r.config.description.detail}</p>
+                      {r.config.description.caution && (
+                        <p className="mt-1.5"><strong className="text-neutral-900 dark:text-white">주의할 점</strong> · {r.config.description.caution}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -553,7 +585,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           {/* 모델 설명 */}
           <div className="px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
-              {config.description.summary}
+              {config.description.short}
             </p>
           </div>
 
