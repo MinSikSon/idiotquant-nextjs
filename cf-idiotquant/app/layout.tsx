@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   metadataBase: new URL('https://idiotquant.com'),
   title: {
-    default: 'IdiotQuant - 무료 NCAV·저PBR·저PER 주식 스크리너',
+    default: 'IdiotQuant - NCAV·저PBR·저PER 주식 스크리너',
     template: '%s | IdiotQuant',
   },
   description: '퀀트 알고리즘이 매일 코스피·코스닥 2,400개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 재무분석·목표주가·자동매매 기능 제공.',
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     canonical: 'https://idiotquant.com',
   },
   openGraph: {
-    title: 'IdiotQuant - 무료 NCAV·저PBR 주식 스크리너',
+    title: 'IdiotQuant - NCAV·저PBR 주식 스크리너',
     description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다. NCAV, 저PBR, 저PER, S-RIM 전략 제공.',
     url: 'https://idiotquant.com',
     siteName: 'IdiotQuant',
@@ -94,7 +94,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IdiotQuant - 무료 NCAV·저PBR 주식 스크리너',
+    title: 'IdiotQuant - NCAV·저PBR 주식 스크리너',
     description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다.',
     creator: '@idiotquant',
     images: ['https://idiotquant.com/icon-512.png'],
@@ -106,7 +106,7 @@ const jsonLdWebSite = {
   '@type': 'WebSite',
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
-  'description': '퀀트 전략 기반 무료 주식 스크리너 및 재무분석 서비스',
+  'description': '퀀트 전략 기반 주식 스크리너 및 재무분석 서비스',
   'potentialAction': {
     '@type': 'SearchAction',
     'target': {
@@ -123,7 +123,7 @@ const jsonLdOrg = {
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
   'logo': 'https://idiotquant.com/icon-512.png',
-  'description': '퀀트 알고리즘 기반 무료 주식 스크리너 및 재무분석 서비스',
+  'description': '퀀트 알고리즘 기반 주식 스크리너 및 재무분석 서비스',
   'contactPoint': {
     '@type': 'ContactPoint',
     'contactType': 'customer support',
@@ -136,7 +136,7 @@ const jsonLdApp = {
   '@type': 'WebApplication',
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
-  'description': '퀀트 전략(NCAV, 저PBR, 저PER, S-RIM)으로 코스피·코스닥 저평가 주식을 매일 자동 발굴하는 무료 주식 스크리너.',
+  'description': '퀀트 전략(NCAV, 저PBR, 저PER, S-RIM)으로 코스피·코스닥 저평가 주식을 매일 자동 발굴하는 주식 스크리너.',
   'applicationCategory': 'FinanceApplication',
   'operatingSystem': 'Web',
   'offers': {

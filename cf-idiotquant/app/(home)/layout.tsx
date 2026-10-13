@@ -4,17 +4,17 @@ export const metadata: Metadata = {
   // `absolute` 가 없으면 루트의 template(`%s | IdiotQuant`)이 한 번 더 붙어
   // "IdiotQuant - … | IdiotQuant" 가 된다 — 검색 결과에서 브랜드가 두 번 나온다.
   // 그리고 이 사이트가 무엇인지 첫 낱말로 말한다: 사람들은 "퀀트" 를 검색한다.
-  title: { absolute: '퀀트 주식 스크리너 - 무료 퀀트 투자 종목 발굴 | IdiotQuant' },
-  description: '퀀트(quant) 알고리즘이 매일 코스피·코스닥 2,400개 종목에 NCAV·저PBR·저PER·S-RIM 기준을 적용해 저평가 주식을 발굴합니다. 가입 없이 무료, 코드 없이 시작하는 퀀트 투자.',
+  title: { absolute: '퀀트 주식 스크리너 - 퀀트 투자 종목 발굴 | IdiotQuant' },
+  description: '퀀트(quant) 알고리즘이 매일 코스피·코스닥 2,400개 종목에 NCAV·저PBR·저PER·S-RIM 기준을 적용해 저평가 주식을 발굴합니다. 가입 없이 발굴 결과를 확인하고 코드 없이 퀀트 투자를 시작하세요.',
   keywords: [
-    '퀀트', 'quant', '퀀트 투자', '퀀트 주식', '퀀트 스크리너', '무료 퀀트',
+    '퀀트', 'quant', '퀀트 투자', '퀀트 주식', '퀀트 스크리너',
     'NCAV 주식', '저PBR 주식', '저PER 주식', '주식 스크리너',
     '저평가 주식', '주식 발굴', '퀀트 전략', '가치투자', '코스피 저평가 주식',
   ],
   alternates: { canonical: 'https://idiotquant.com' },
   openGraph: {
-    title: '퀀트 주식 스크리너 - 무료 퀀트 투자 종목 발굴',
-    description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다. 가입 없이 무료.',
+    title: '퀀트 주식 스크리너 - 퀀트 투자 종목 발굴',
+    description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다. 가입 없이 오늘의 발굴 결과를 확인하세요.',
     url: 'https://idiotquant.com',
   },
 };
@@ -49,10 +49,10 @@ const jsonLdFaq = {
     },
     {
       '@type': 'Question',
-      name: '무료로 사용할 수 있나요?',
+      name: '로그인 없이 어떤 기능을 사용할 수 있나요?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '네, 스크리너와 오늘의 발굴 종목 확인은 완전 무료입니다. 카카오 또는 구글 계정으로 간편 로그인하면 상세 재무분석, 목표주가 계산(DCF·RIM·그레이엄 공식), 상장폐지 위험도 분석 기능을 추가로 이용할 수 있습니다.',
+        text: '스크리너와 오늘의 발굴 종목은 로그인 없이 확인할 수 있습니다. 카카오 또는 구글 계정으로 로그인하면 상세 재무분석, 목표주가 계산(DCF·RIM·그레이엄 공식), 상장폐지 위험도 분석 기능을 추가로 이용할 수 있습니다.',
       },
     },
     {

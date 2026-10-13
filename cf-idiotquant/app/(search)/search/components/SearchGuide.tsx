@@ -55,7 +55,7 @@ export const SearchGuide = () => {
               <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">실시간 분석 · 무료</span>
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">실시간 분석</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-neutral-900 dark:text-white leading-[1.06] mb-4 break-keep">

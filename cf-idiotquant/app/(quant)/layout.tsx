@@ -3,19 +3,19 @@ import type { Metadata } from 'next';
 // "퀀트" 로 검색해서 들어오는 사람이 닿는 자리. 서비스 소개가 아니라 **설명**이 먼저다 —
 // 무엇을 파는지부터 말하면 검색한 사람이 찾던 답이 아니라 광고를 읽게 된다.
 export const metadata: Metadata = {
-  title: { absolute: '퀀트 투자란? 퀀트 주식 전략 9가지와 무료 스크리너 | IdiotQuant' },
+  title: { absolute: '퀀트 투자란? 퀀트 주식 전략 9가지와 스크리너 | IdiotQuant' },
   description:
-    '퀀트(quant) 투자는 감이 아니라 숫자 규칙으로 종목을 고르는 방법입니다. NCAV·저PBR·저PER·S-RIM·마법공식 등 대표 퀀트 전략의 기준식과 한계를 정리하고, 코스피·코스닥 전 종목에 그 기준을 매일 적용한 결과를 무료로 봅니다.',
+    '퀀트(quant) 투자는 감이 아니라 숫자 규칙으로 종목을 고르는 방법입니다. NCAV·저PBR·저PER·S-RIM·마법공식 등 대표 퀀트 전략의 기준식과 한계를 정리하고, 코스피·코스닥 전 종목에 그 기준을 매일 적용한 결과를 확인하세요.',
   keywords: [
     '퀀트', 'quant', '퀀트 투자', '퀀트 주식', '퀀트 전략', '퀀트 투자란',
-    '퀀트 스크리너', '무료 퀀트', '퀀트 프로그램', '퀀트 종목 발굴',
+    '퀀트 스크리너', '퀀트 프로그램', '퀀트 종목 발굴',
     'NCAV', '저PBR', '저PER', 'S-RIM', '마법공식', '가치투자', '계량투자',
   ],
   alternates: { canonical: 'https://idiotquant.com/quant' },
   openGraph: {
-    title: '퀀트 투자란? 퀀트 주식 전략 9가지와 무료 스크리너',
+    title: '퀀트 투자란? 퀀트 주식 전략 9가지와 스크리너',
     description:
-      '퀀트 투자는 감이 아니라 숫자 규칙으로 종목을 고르는 방법입니다. 대표 퀀트 전략의 기준식과 한계, 그리고 무료로 시작하는 법.',
+      '퀀트 투자는 감이 아니라 숫자 규칙으로 종목을 고르는 방법입니다. 대표 퀀트 전략의 기준식과 한계, 그리고 시작하는 방법.',
     url: 'https://idiotquant.com/quant',
     type: 'article',
   },
@@ -39,7 +39,7 @@ const jsonLdBreadcrumb = {
 const jsonLdArticle = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: '퀀트 투자란? 퀀트 주식 전략 9가지와 무료 스크리너',
+  headline: '퀀트 투자란? 퀀트 주식 전략 9가지와 스크리너',
   description:
     '퀀트(quant) 투자의 뜻과 절차, NCAV·저PBR·저PER·S-RIM 등 대표 전략의 기준식, 그리고 퀀트가 못 하는 일까지 정리했습니다.',
   inLanguage: 'ko',
@@ -71,7 +71,7 @@ const jsonLdFaq = {
       name: '퀀트 투자는 프로그래밍을 할 줄 알아야 하나요?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '아닙니다. 파이썬으로 직접 데이터를 받아 돌리는 방법도 있지만, 기준이 이미 정해진 스크리너를 쓰면 코드 없이 같은 일을 할 수 있습니다. IdiotQuant는 코스피·코스닥 전 종목에 NCAV·저PBR·저PER·S-RIM 등의 기준을 매일 적용한 결과를 가입 없이 무료로 보여 줍니다.',
+        text: '아닙니다. 파이썬으로 직접 데이터를 받아 돌리는 방법도 있지만, 기준이 이미 정해진 스크리너를 쓰면 코드 없이 같은 일을 할 수 있습니다. IdiotQuant는 코스피·코스닥 전 종목에 NCAV·저PBR·저PER·S-RIM 등의 기준을 매일 적용한 결과를 가입 없이 보여 줍니다.',
       },
     },
     {
@@ -92,10 +92,10 @@ const jsonLdFaq = {
     },
     {
       '@type': 'Question',
-      name: '퀀트 주식 스크리너는 무료인가요?',
+      name: '퀀트 주식 스크리너를 쓰려면 가입해야 하나요?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'IdiotQuant의 종목 발굴(스크리너)과 오늘의 발굴 결과는 가입 없이 무료입니다. 카카오 로그인을 하면 종목별 상세 재무분석, 목표주가 계산(DCF·RIM·그레이엄), 상장폐지 위험도까지 무료로 볼 수 있습니다.',
+        text: 'IdiotQuant의 종목 발굴(스크리너)과 오늘의 발굴 결과는 가입 없이 볼 수 있습니다. 로그인하면 종목별 상세 재무분석, 목표주가 계산(DCF·RIM·그레이엄), 상장폐지 위험도도 볼 수 있습니다.',
       },
     },
   ],
