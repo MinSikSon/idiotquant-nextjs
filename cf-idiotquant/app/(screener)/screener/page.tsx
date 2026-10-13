@@ -2154,7 +2154,7 @@ function ScreenerContent() {
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                                    전체 목록과 필터·정렬·과거 날짜 조회는 로그인하면 무료로 쓸 수 있습니다.
+                                    로그인하면 전체 목록과 필터·정렬·과거 날짜 조회를 이용할 수 있습니다.
                                 </p>
                                 <button
                                     onClick={requireLogin}

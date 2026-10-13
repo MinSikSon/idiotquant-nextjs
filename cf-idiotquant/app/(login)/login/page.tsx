@@ -69,7 +69,7 @@ export default function LoginPage() {
 
                         <div className="flex items-center gap-3 my-5">
                             <div className="flex-1 h-px bg-surface-canvas dark:bg-surface-dark-card" />
-                            <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-600 uppercase tracking-widest">무료 · 1초 가입</span>
+                            <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-600 uppercase tracking-widest">간편 가입</span>
                             <div className="flex-1 h-px bg-surface-canvas dark:bg-surface-dark-card" />
                         </div>
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
                                 <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
                                     <path d="M6 1L7.5 4.5L11 5L8.5 7.5L9.2 11L6 9.2L2.8 11L3.5 7.5L1 5L4.5 4.5L6 1Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" fill="none"/>
                                 </svg>
-                                무료 이용
+                                로그인하고 이용하기
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
