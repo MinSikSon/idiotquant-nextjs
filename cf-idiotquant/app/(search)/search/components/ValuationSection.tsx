@@ -48,12 +48,12 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     category: "ASSET",
     description: VALUATION_MODEL_DESCRIPTIONS.NCAV,
     icon: <Calculator size={14} />,
-    dotBg: "bg-blue-500",
-    accentLine: "bg-blue-500",
-    iconBg: "bg-blue-50 dark:bg-blue-950/40",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    badgeClass: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40",
-    textColor: "text-blue-600 dark:text-blue-400",
+    dotBg: "bg-neutral-500 dark:bg-neutral-300",
+    accentLine: "bg-neutral-200 dark:bg-neutral-700",
+    iconBg: "bg-neutral-100 dark:bg-neutral-800",
+    iconColor: "text-neutral-600 dark:text-neutral-300",
+    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+    textColor: "text-neutral-700 dark:text-neutral-200",
     extendMetrics: (base, rows) => {
       const priceMetric = base.find((m: any) => /현재가|주가|price/i.test(m.label));
       const curPrice = priceMetric ? parseFloat(priceMetric.value.replace(/[^0-9.-]/g, "")) : 0;
@@ -73,60 +73,60 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     category: "ASSET",
     description: VALUATION_MODEL_DESCRIPTIONS.PBR,
     icon: <Layers size={14} />,
-    dotBg: "bg-cyan-500",
-    accentLine: "bg-cyan-500",
-    iconBg: "bg-cyan-50 dark:bg-cyan-950/40",
-    iconColor: "text-cyan-600 dark:text-cyan-400",
-    badgeClass: "bg-cyan-50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-800/40",
-    textColor: "text-cyan-600 dark:text-cyan-400",
+    dotBg: "bg-neutral-500 dark:bg-neutral-300",
+    accentLine: "bg-neutral-200 dark:bg-neutral-700",
+    iconBg: "bg-neutral-100 dark:bg-neutral-800",
+    iconColor: "text-neutral-600 dark:text-neutral-300",
+    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   SRIM: {
     name: "S-RIM 초과수익",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.SRIM,
     icon: <Activity size={14} />,
-    dotBg: "bg-emerald-500",
-    accentLine: "bg-emerald-500",
-    iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-    badgeClass: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/40",
-    textColor: "text-emerald-600 dark:text-emerald-400",
+    dotBg: "bg-neutral-500 dark:bg-neutral-300",
+    accentLine: "bg-neutral-200 dark:bg-neutral-700",
+    iconBg: "bg-neutral-100 dark:bg-neutral-800",
+    iconColor: "text-neutral-600 dark:text-neutral-300",
+    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   DCF: {
     name: "DCF 현금흐름할인",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.DCF,
     icon: <TrendingUp size={14} />,
-    dotBg: "bg-purple-500",
-    accentLine: "bg-purple-500",
-    iconBg: "bg-purple-50 dark:bg-purple-950/40",
-    iconColor: "text-purple-600 dark:text-purple-400",
-    badgeClass: "bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 border border-purple-200/50 dark:border-purple-800/40",
-    textColor: "text-purple-600 dark:text-purple-400",
+    dotBg: "bg-neutral-500 dark:bg-neutral-300",
+    accentLine: "bg-neutral-200 dark:bg-neutral-700",
+    iconBg: "bg-neutral-100 dark:bg-neutral-800",
+    iconColor: "text-neutral-600 dark:text-neutral-300",
+    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   PER: {
     name: "PER 멀티플",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.PER,
     icon: <BarChart3 size={14} />,
-    dotBg: "bg-indigo-500",
-    accentLine: "bg-indigo-500",
-    iconBg: "bg-indigo-50 dark:bg-indigo-950/40",
-    iconColor: "text-indigo-600 dark:text-indigo-400",
-    badgeClass: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/40",
-    textColor: "text-indigo-600 dark:text-indigo-400",
+    dotBg: "bg-neutral-500 dark:bg-neutral-300",
+    accentLine: "bg-neutral-200 dark:bg-neutral-700",
+    iconBg: "bg-neutral-100 dark:bg-neutral-800",
+    iconColor: "text-neutral-600 dark:text-neutral-300",
+    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+    textColor: "text-neutral-700 dark:text-neutral-200",
   },
   PEG: {
     name: "PEG 가치성장",
     category: "EARNING",
     description: VALUATION_MODEL_DESCRIPTIONS.PEG,
     icon: <Zap size={14} />,
-    dotBg: "bg-amber-500",
-    accentLine: "bg-amber-500",
-    iconBg: "bg-amber-50 dark:bg-amber-950/40",
-    iconColor: "text-amber-600 dark:text-amber-400",
-    badgeClass: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/40",
-    textColor: "text-amber-600 dark:text-amber-400",
+    dotBg: "bg-neutral-500 dark:bg-neutral-300",
+    accentLine: "bg-neutral-200 dark:bg-neutral-700",
+    iconBg: "bg-neutral-100 dark:bg-neutral-800",
+    iconColor: "text-neutral-600 dark:text-neutral-300",
+    badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+    textColor: "text-neutral-700 dark:text-neutral-200",
   },
 };
 
@@ -135,12 +135,12 @@ const DEFAULT_CONFIG: ModelConfig = {
   category: "ASSET",
   description: { short: "추가 설명이 없는 모델입니다.", detail: "계산 방식은 아래 모델 표를 확인하세요.", caution: "" },
   icon: <BarChart3 size={14} />,
-  dotBg: "bg-neutral-500",
-  accentLine: "bg-neutral-400",
-  iconBg: "bg-surface-canvas dark:bg-surface-dark-card",
-  iconColor: "text-neutral-500 dark:text-neutral-400",
-  badgeClass: "bg-surface-canvas dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-surface-dark-border",
-  textColor: "text-neutral-600 dark:text-neutral-400",
+  dotBg: "bg-neutral-500 dark:bg-neutral-300",
+  accentLine: "bg-neutral-200 dark:bg-neutral-700",
+  iconBg: "bg-neutral-100 dark:bg-neutral-800",
+  iconColor: "text-neutral-600 dark:text-neutral-300",
+  badgeClass: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300",
+  textColor: "text-neutral-700 dark:text-neutral-200",
 };
 
 // 눈금 행과 모델 행이 같은 그리드를 써야 라벨과 점의 x 좌표가 일치한다
@@ -278,7 +278,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
       {/* ────── 모델별 적정주가 (모델별 트랙) ────── */}
       {axis && (
-        <div className="px-3 sm:px-5 pt-5 pb-6 border-b border-neutral-100 dark:border-border-subtle-dark">
+        <div className="px-0 sm:px-5 pt-2 pb-4 border-b border-neutral-100 dark:border-border-subtle-dark">
           <div className="flex items-center gap-2 mb-3">
             <Target size={13} className="text-neutral-400 shrink-0" />
             <span className="text-[13.5px] font-extrabold text-neutral-700 dark:text-neutral-200 tracking-tight">
@@ -302,11 +302,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
-          <div className="rounded-lg overflow-hidden border border-neutral-100 dark:border-border-subtle-dark">
+          <div className="overflow-hidden">
             {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
                 축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
                 12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
-            <div className={cn(AXIS_GRID, "px-3 sm:px-4 pt-2 pb-1")}>
+            <div className={cn(AXIS_GRID, "px-0 sm:px-4 pt-2 pb-1")}>
               <div />
               <div className="relative h-4">
                 {axis.curPrice > 0 && (
@@ -338,7 +338,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   key={r.type}
                   onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(r.type); }}
                   onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
-                  className={cn(AXIS_GRID, "px-3 sm:px-4 py-2.5 bg-white dark:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
+                  className={cn(AXIS_GRID, "px-0 sm:px-4 py-2.5 bg-transparent sm:bg-white dark:sm:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
                 >
                   <div className="min-w-0">
                     <button
@@ -351,7 +351,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                       onBlur={() => setHoveredModel(null)}
                       aria-expanded={isExplained}
                       aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
-                      className="w-full text-left text-[12px] font-bold text-neutral-900 dark:text-neutral-100 hover:text-brand-ink dark:hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
+                      className="w-full text-left text-[12px] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
                     >
                       <span className="block break-keep sm:truncate">{r.config.name}</span>
                     </button>
@@ -423,7 +423,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
         <div className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}>
 
           {/* 필터 탭 */}
-          <div className="px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-1">
+          <div className="px-0 sm:px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center gap-1">
             {([
               { id: "ALL",     label: "전체",     count: models.length },
               { id: "ASSET",   label: "자산가치", count: assetCount },
@@ -454,7 +454,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
           {/* 카드 그리드 */}
           {filteredModels.length > 0 ? (
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="py-3 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {filteredModels.map(m => (
                 <StrategyCard
                   key={m.type}
@@ -477,7 +477,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-surface-dark-card/40 dark:to-surface-dark-card/95">
             <Link
               href={loginHref}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold shadow-md shadow-brand/20 transition-all"
+              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-sm font-medium transition-colors"
             >
               <Lock size={13} />
               로그인하여 세부 모델 보기
@@ -522,7 +522,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col">
+    <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col">
 
       {/* 상단 컬러 액센트 라인 */}
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />
@@ -530,7 +530,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {/* 카드 헤더 */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between cursor-pointer hover:bg-surface-muted-hover/50 dark:hover:bg-surface-dark-hover/50 transition-colors select-none"
+        className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between cursor-pointer hover:bg-surface-muted-hover/50 dark:hover:bg-surface-dark-hover/50 transition-colors select-none"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
@@ -563,7 +563,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {isExpanded && (
         <>
           {/* 모델 설명 */}
-          <div className="px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
+          <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
               {config.description.short}
             </p>
@@ -571,11 +571,11 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
           {/* 핵심 지표 그리드 */}
           {extendedMetrics.length > 0 && (
-            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
+            <div className="px-0 sm:px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
               {extendedMetrics.map((m: any, i: number) => (
                 <div
                   key={i}
-                  className="p-3 bg-surface-canvas dark:bg-surface-dark-card/50 rounded-xl border border-neutral-100 dark:border-border-subtle-dark"
+                  className="px-0 py-2 sm:p-3 border-b border-neutral-100 dark:border-border-subtle-dark"
                 >
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider mb-1 truncate">
                     {m.label}
@@ -597,7 +597,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     <th
                       key={i}
                       className={cn(
-                        "px-5 py-2.5 text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider font-mono whitespace-nowrap",
+                        "px-2 sm:px-5 py-2.5 text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider font-mono whitespace-nowrap",
                         i > 0 && "text-right"
                       )}
                     >
@@ -622,7 +622,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                           : "hover:bg-surface-muted-hover/40 dark:hover:bg-surface-dark-card/10"
                       )}
                     >
-                      <td className="px-5 py-3 whitespace-nowrap">
+                      <td className="px-2 sm:px-5 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <span className={cn(
                             "w-1.5 h-1.5 rounded-full shrink-0",
@@ -641,7 +641,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-right whitespace-nowrap">
+                      <td className="px-2 sm:px-5 py-3 text-right whitespace-nowrap">
                         <span className={cn(
                           "text-xs font-black font-mono tabular-nums px-2.5 py-0.5 rounded-lg inline-block",
                           isPositive
@@ -652,7 +652,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                         </span>
                       </td>
                       <td className={cn(
-                        "px-5 py-3 text-xs font-black font-mono text-right tabular-nums whitespace-nowrap",
+                        "px-2 sm:px-5 py-3 text-xs font-black font-mono text-right tabular-nums whitespace-nowrap",
                         isBase ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
                       )}>
                         {currency}{row.targetPrice.toLocaleString()}
@@ -665,7 +665,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
 
           {/* 푸터 노트 */}
-          <div className="px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
+          <div className="px-0 sm:px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
             <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
               {result.footerNotice}

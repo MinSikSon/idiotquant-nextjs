@@ -239,7 +239,7 @@ const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-surface-dark-card/40 dark:to-surface-dark-card/95">
         <Link
           href={loginHref}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold shadow-md shadow-brand/20 transition-all"
+          className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-sm font-medium transition-colors"
         >
           <Lock size={13} />
           로그인하여 전체 보기
@@ -332,19 +332,19 @@ function buildVerdict(m: VerdictMetrics) {
 
 const VERDICT_TONE = {
   good: {
-    box: 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800',
-    label: 'text-emerald-600 dark:text-emerald-400',
-    text: 'text-emerald-700 dark:text-emerald-200',
+    box: 'border-neutral-200 dark:border-neutral-800',
+    label: 'text-neutral-500 dark:text-neutral-400',
+    text: 'text-neutral-800 dark:text-neutral-200',
   },
   neutral: {
-    box: 'bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border',
+    box: 'border-neutral-200 dark:border-neutral-800',
     label: 'text-neutral-400',
     text: 'text-neutral-600 dark:text-neutral-300',
   },
   caution: {
-    box: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40',
-    label: 'text-amber-600 dark:text-amber-500',
-    text: 'text-amber-800 dark:text-amber-300',
+    box: 'border-neutral-200 dark:border-neutral-800',
+    label: 'text-neutral-500 dark:text-neutral-400',
+    text: 'text-neutral-800 dark:text-neutral-200',
   },
 } as const;
 
@@ -558,7 +558,7 @@ function AnalyzeContent() {
       <header className={cn(PAGE_HEADER_CHROME, "sticky top-0 z-30")}>
         {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
         {(!isPriceLoaded || searchOpen) && (
-          <div className={cn(PAGE_WIDTH.content, "py-4 flex items-center gap-2")}>
+          <div className={cn(PAGE_WIDTH.data, "py-4 flex items-center gap-2")}>
             <div className="flex-1">
               <SearchAutocomplete
                 placeHolder="국내 종목명 또는 미국 티커 입력"
@@ -578,7 +578,7 @@ function AnalyzeContent() {
 
         {/* 종목줄 — 스크롤을 내려도 지금 보는 종목이 헤더에 남는다 */}
         {isPriceLoaded && (
-          <div className={cn(PAGE_WIDTH.content, "py-2.5 flex items-center gap-2.5 animate-in fade-in duration-200")}>
+          <div className={cn(PAGE_WIDTH.data, "py-2.5 flex items-center gap-2.5 animate-in fade-in duration-200")}>
             <div className="min-w-0 flex-1">
               <p className="text-[13.5px] font-black text-neutral-900 dark:text-white truncate leading-tight">
                 {displayName}
@@ -637,18 +637,18 @@ function AnalyzeContent() {
         {/* 상세 분석 탭 — 헤더 안에 두면 스크롤 위치와 무관하게 항상 닿는다.
             재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
         {isPriceLoaded && (
-          <div className={cn(PAGE_WIDTH.content, "pb-2.5")}>
-            <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#2a2825] rounded-xl">
+          <div className={cn(PAGE_WIDTH.data, "pb-2.5")}>
+            <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800">
               {DETAIL_TABS.map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
                   aria-pressed={activeTab === key}
                   className={cn(
-                    "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                    "flex-1 min-h-11 border-b-2 py-2 text-xs font-medium transition-colors",
                     activeTab === key
-                      ? "bg-white dark:bg-surface-dark text-brand-ink shadow-sm"
-                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                      ? "border-neutral-900 text-neutral-900 dark:border-neutral-100 dark:text-neutral-100"
+                      : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                   )}
                 >
                   {label}
@@ -662,7 +662,7 @@ function AnalyzeContent() {
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
           <div className="border-t border-neutral-100 dark:border-border-subtle-dark/50 bg-surface-canvas/50 dark:bg-surface-dark-card/30">
             {popularStocks.length > 0 && (
-              <div className={cn(PAGE_WIDTH.content, "py-2 flex items-center gap-3")}>
+              <div className={cn(PAGE_WIDTH.data, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
                   <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">인기</span>
@@ -680,7 +680,7 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className={cn(PAGE_WIDTH.content, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
+              <div className={cn(PAGE_WIDTH.data, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
@@ -698,13 +698,13 @@ function AnalyzeContent() {
       </header>
 
       {/* ── 메인 ── */}
-      {/* 좌우 여백은 PAGE_WIDTH.content 하나를 따른다(헤더·푸터도 같은 값).
+      {/* 좌우 여백은 PAGE_WIDTH.data 하나를 따른다(헤더·푸터도 같은 값).
           원래는 모바일 12px 을 따로 썼다 — 20px 바깥 여백에 카드 자신의 여백이 겹쳐
           글이 시작되는 자리가 390px 화면에서 40px 이 되던 문제를 막으려던 것이다.
           지금 프리셋은 16px 이라 그 합이 36px 이고, 무엇보다 페이지마다 본문
           시작선이 다른 쪽이 더 크게 걸린다. 카드 여백이 다시 두꺼워지면 여기가
           아니라 카드 쪽을 줄인다. */}
-      <main className={cn(PAGE_WIDTH.content, "py-4 sm:py-8")}>
+      <main className={cn(PAGE_WIDTH.data, "py-4 sm:py-8")}>
 
         {!tickerFromUrl ? (
           <SearchGuide />
@@ -718,14 +718,14 @@ function AnalyzeContent() {
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
-                <div className={cn("rounded-2xl border p-3 sm:p-6 mb-4 sm:mb-5", VERDICT_TONE[verdict.tone].box)}>
+                <div className={cn("border-b px-0 py-2 sm:px-0 sm:py-4 mb-3 sm:mb-5", VERDICT_TONE[verdict.tone].box)}>
                   {/* 모바일 — 한 줄 요약. 눌러서 지표 4개를 펼친다(접힌 상태가 기본).
                       truncate 로 문장이 길어져도 줄바꿈이 생기지 않게 못 박는다. */}
                   <button
                     type="button"
                     onClick={() => setVerdictOpen(o => !o)}
                     aria-expanded={verdictOpen}
-                    className="w-full flex items-center gap-1 sm:hidden text-left"
+                    className="w-full min-h-11 flex items-center gap-1 sm:hidden text-left"
                   >
                     <span className={cn(
                       "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
@@ -757,7 +757,7 @@ function AnalyzeContent() {
                           <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
                           <span className={cn(
                             "ml-auto text-[12px] font-black font-mono tabular-nums shrink-0",
-                            c.ok ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                            c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500"
                           )}>
                             {c.value}
                           </span>
@@ -788,7 +788,7 @@ function AnalyzeContent() {
                           <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
                           <span className={cn(
                             "ml-auto text-[12.5px] font-black font-mono tabular-nums shrink-0",
-                            c.ok ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                            c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500"
                           )}>
                             {c.value}
                           </span>
@@ -841,16 +841,16 @@ function AnalyzeContent() {
 
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
               {isLoaded ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {activeTab === 'metrics' && <TechnicalSummary bars={technicalBars} currency={currency} />}
                 {/* 비로그인 안내 — 블러 구간에 들어가기 직전 한 번만.
                     예전엔 헤더 배지·블러 오버레이·페이지 맨 아래 CTA 로 같은 말이 흩어져 있었다. */}
                 {!isLoggedIn && (
-                  <div className="p-5 bg-gradient-to-br from-[#f0fdf4] to-emerald-50 dark:from-[#052e16]/20 dark:to-emerald-950/20 rounded-2xl border border-brand-light-hover/60 dark:border-[#14532d]/40 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="border-b border-neutral-200 dark:border-neutral-800 py-3 flex items-center gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+                      <p className="text-xs font-medium text-neutral-900 dark:text-white flex items-center gap-1.5">
                         <Lock size={11} className="shrink-0" />
-                        전체 분석은 로그인 후 볼 수 있어요
+                        전체 분석은 로그인 후 제공됩니다
                       </p>
                       <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 break-keep">
                         30초 가입 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
@@ -858,16 +858,16 @@ function AnalyzeContent() {
                     </div>
                     <Link
                       href={loginHref}
-                      className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-[13px] font-bold shadow-lg shadow-brand/20 transition-all"
+                      className="shrink-0 inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-neutral-300 px-3 text-xs font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
                     >
-                      로그인하고 분석하기
+                      로그인
                       <ArrowRight size={14} />
                     </Link>
                   </div>
                 )}
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className={cn("bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-0 sm:p-1 shadow-sm", activeTab !== 'strategy' && 'hidden')}>
+                <div className={cn("min-w-0", activeTab !== 'strategy' && 'hidden')}>
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
@@ -956,7 +956,7 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className={cn(PAGE_WIDTH.content, "pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark")}>
+      <footer className={cn(PAGE_WIDTH.data, "pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark")}>
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-brand-ink" strokeWidth={2.5} />

@@ -84,7 +84,7 @@ export default function FactorWorkbench({ items, scanDate, country, isAdmin, ava
     }
     const historyDates = [...new Set(history.map(row => row.date))].sort();
     return (
-        <details className="mx-auto max-w-7xl border-t border-neutral-200 px-4 py-6 dark:border-surface-dark-border sm:px-6">
+        <details className="mx-auto max-w-[1600px] border-t border-neutral-200 px-4 py-6 dark:border-surface-dark-border sm:px-6">
             <summary className="cursor-pointer text-sm font-semibold">팩터 실험실 · 나만의 조합과 과거 검증</summary>
             <div className="mt-5 space-y-6">
                 <p className="text-sm leading-6 text-neutral-500">팩터별 범위와 가중치를 직접 정해 조합하세요. 아래 순위는 현재 발굴 화면에 불러온 {items.length.toLocaleString()}개 종목 안에서 계산합니다. 선택한 지표가 없는 종목은 제외합니다.</p>

@@ -1212,7 +1212,7 @@ function ScreenerContent() {
                 }
             /> : (
                 <section className="border-b border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-canvas">
-                    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
                         <h1 className="text-2xl font-medium tracking-tight text-neutral-900 dark:text-white">종목 발굴</h1>
                         <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                             순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다.
@@ -1222,7 +1222,7 @@ function ScreenerContent() {
             )}
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <div className="max-w-7xl mx-auto flex items-center gap-1 px-4 sm:px-6">
+                <div className="max-w-[1600px] mx-auto flex items-center gap-1 px-4 sm:px-6">
                     <div className="flex gap-1" role="tablist" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
@@ -1288,7 +1288,7 @@ function ScreenerContent() {
             {/* ── 수집 중 안내 배너 ── */}
             {isLoggedIn && scanningInProgress && !showLikedOnly && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
-                    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-center gap-2">
+                    <div className="max-w-[1600px] mx-auto px-2 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
                         <p className="min-w-0 truncate whitespace-nowrap text-xs text-amber-700 dark:text-amber-400 font-medium">
                             최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
@@ -1303,7 +1303,7 @@ function ScreenerContent() {
                 "border-b border-neutral-200 dark:border-surface-dark-border",
                 !isLoggedIn && "hidden"
             )}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
 
                     {/* 첫째 줄: 전략 격자.
                         칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
@@ -1517,7 +1517,7 @@ function ScreenerContent() {
             {/* ── 필터 서랍 ── */}
             {filterOpen && (
                 <div aria-label="상세 필터" className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#f8faf8] dark:bg-surface-dark sm:static sm:overflow-visible sm:bg-brand-light sm:dark:bg-brand-muted/25 sm:border-b sm:border-brand-light sm:dark:border-brand/40">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
+                    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-5 sm:pb-[18px]">
 
                         <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="min-w-0">
@@ -1833,7 +1833,7 @@ function ScreenerContent() {
                    기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
             {bannerPreset && (
                 <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
-                    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2.5 flex items-start gap-2">
+                    <div className="max-w-[1600px] mx-auto px-2 sm:px-6 py-2.5 flex items-start gap-2">
                         <span className={cn(
                             "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
                             STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-ink-hover"
@@ -1851,7 +1851,7 @@ function ScreenerContent() {
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
                 <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
-                    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-5">
+                    <div className="max-w-[1600px] mx-auto px-2 sm:px-6 py-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
                             <button
@@ -1903,7 +1903,7 @@ function ScreenerContent() {
             {/* ── 종목 리스트 ── */}
             <FactorWorkbench items={ncavDailyList.country === country ? (isLoggedIn ? filteredList : guestRecommendations) : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -1972,12 +1972,12 @@ function ScreenerContent() {
                 {!isLoading && (isLoggedIn ? filteredList.length > 0 : guestRecommendations.length > 0) && (
                     <>
                     {!isLoggedIn ? (
-                        <section className="max-w-3xl mx-auto px-0 sm:px-6">
+                        <section className="max-w-[1600px] mx-auto px-0 sm:px-6">
                             <div className="mb-3 flex items-baseline justify-between gap-3">
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
                             </div>
-                            <div className="divide-y divide-neutral-200 dark:divide-border-subtle-dark">
+                            <div className="divide-y divide-neutral-200 dark:divide-border-subtle-dark lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0 xl:grid-cols-3">
                                 {guestRecommendations.map((item: any, index) => (
                                     <GuestRecommendationCard key={item.ticker} item={item} rank={index + 1} onClick={handleStockClick} />
                                 ))}

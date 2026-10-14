@@ -25,7 +25,7 @@ export function SectionNav({
 }) {
   return (
     <nav className="sticky top-0 z-30 bg-white/90 dark:bg-surface-dark/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-border-subtle-dark transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-2.5 md:px-4">
+      <div className="max-w-[1600px] mx-auto px-2.5 md:px-4">
 
         {/* 모바일 탭바 */}
         <div className="flex md:hidden overflow-x-auto scrollbar-hide">
