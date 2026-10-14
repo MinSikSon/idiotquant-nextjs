@@ -167,10 +167,10 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
             {/* 검색 아키텍처 입력 폼 바디 */}
             <div 
                 className={cn(
-                    "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-2xl border transition-all duration-300 ease-in-out",
-                    "bg-surface-canvas/90 dark:bg-surface-dark/90 border-neutral-200/60 dark:border-border-subtle-dark/60 backdrop-blur-md",
+                    "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-xl border transition-colors duration-150",
+                    "bg-white dark:bg-surface-dark-card border-neutral-200 dark:border-border-subtle-dark",
                     isFocused 
-                        ? "bg-white dark:bg-surface-dark-canvas border-brand/70 dark:border-brand/70 ring-4 ring-brand/10 dark:ring-brand/15 shadow-lg"
+                        ? "bg-white dark:bg-surface-dark-canvas border-brand/70 dark:border-brand/70 ring-2 ring-brand/10 dark:ring-brand/15"
                         : "hover:border-neutral-300 dark:hover:border-neutral-700"
                 )}
             >
@@ -233,7 +233,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     id="search-listbox"
                     role="listbox"
                     aria-label="종목 검색 결과"
-                    className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-surface-dark-canvas/95 backdrop-blur-xl border border-neutral-200 dark:border-border-subtle-dark/80 rounded-2xl shadow-2xl max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
+                    className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark/80 rounded-xl shadow-sm max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
                 >
                     {/* 상단 라벨링 정보 바 */}
                     <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-border-subtle-dark/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md z-10">
@@ -262,7 +262,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                                         "flex items-center justify-between text-xs py-2.5 px-3 cursor-pointer rounded-xl transition-all duration-150 font-medium my-0.5",
                                         isSelected
                                             ? "bg-brand dark:bg-brand text-white font-bold shadow-sm translate-x-0.5"
-                                            : "text-neutral-700 dark:text-neutral-300 hover:bg-surface-muted-hover/70 dark:hover:bg-surface-dark-hover/70 hover:translate-x-0.5"
+                                            : "text-neutral-700 dark:text-neutral-300 hover:bg-surface-muted-hover/70 dark:hover:bg-surface-dark-hover/70 "
                                     )}
                                 >
                                     <span className="truncate">

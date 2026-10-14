@@ -72,7 +72,6 @@ export default function LedgerJoinPage() {
 
     const header = (
         <PageHeader
-            emoji="📒"
             title="가계부 초대"
             containerClassName="max-w-lg mx-auto px-4 sm:px-6"
         />

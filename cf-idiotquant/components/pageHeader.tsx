@@ -5,8 +5,7 @@ import { cn } from "@/lib/utils";
 /* ─────────────────────────────────────────────────────────────────────────
    공통 페이지 헤더 — 발굴·적정 주가 등 주요 화면이 같은 골격을 쓰도록 한 규칙.
 
-   ███ 3px 브랜드 강조선   (상단 강조선)
-   [이모지] 제목 (20px/600)
+   제목 (20px/600)
    메타 정보 (12px)                              [액션들]
    ─────────────────────────────────────── 1px
 
@@ -19,11 +18,6 @@ import { cn } from "@/lib/utils";
    (analyze)          헤더에 제목이 없다 — 검색줄·종목줄·탭이 그 자리를 쓴다.
                       대신 껍데기(PAGE_HEADER_CHROME)와 폭(PAGE_WIDTH)은 함께 쓴다.
 
-   제목 앞 표식은 사이드바 nav 항목과 같은 것을 쓴다 — nav ↔ 헤더가 눈으로
-   이어져야 "지금 어느 메뉴에 있는지"가 한 번에 읽힌다. nav 는 항목에 따라
-   이모지(발굴 🥇, 분석 💎)를 쓰기도 하고 lucide 아이콘을 쓰기도 하므로
-   여기도 emoji 와 icon 을 둘 다 받는다. 쓰는 쪽은 nav 가 쓰는 것을 그대로
-   넘기면 된다.
    ───────────────────────────────────────────────────────────────────────── */
 
 /* 본문 폭 — 화면 성격에 따라 둘 중 하나다.
@@ -34,29 +28,25 @@ import { cn } from "@/lib/utils";
    헤더와 본문이 **같은 프리셋**을 써야 한다. 페이지에서 <main> 을 직접 감쌀
    때도 PAGE_WIDTH[width] 를 그대로 가져다 쓴다. */
 export const PAGE_WIDTH = {
-  content: "max-w-4xl mx-auto px-2 sm:px-6",  // 읽는 화면 — 분석 · 프로필 · 관리자 · 약관
-  data: "max-w-7xl mx-auto px-2 sm:px-6",     // 표 · 그리드 화면 — 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
+  content: "max-w-4xl mx-auto px-4 sm:px-6",  // 읽는 화면 — 분석 · 프로필 · 관리자 · 약관
+  data: "max-w-7xl mx-auto px-4 sm:px-6",     // 표 · 그리드 화면 — 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
 } as const;
 
 export type PageWidth = keyof typeof PAGE_WIDTH;
 
-/* 헤더 껍데기 — 상단 3px 브랜드 선 + 흰 바탕 + 아래 실선.
-   "지금 페이지의 머리" 라는 신호는 이 세 줄이 전부다. 제목 골격(PageHeader)을
-   쓸 수 없는 화면도 이 껍데기는 같아야 한다 — analyze 의 헤더는 제목이 아니라
-   검색줄·종목줄·탭으로 채워지지만, 껍데기까지 따로 적을 이유는 없다. */
+/* 검색·제목 헤더는 중성 표면과 얇은 아래 구분선만 공유한다. */
 export const PAGE_HEADER_CHROME =
-  "bg-white dark:bg-surface-dark border-t-[3px] border-t-brand " +
+  "bg-white dark:bg-surface-dark-canvas " +
   "border-b border-neutral-200 dark:border-surface-dark-border";
 
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
-  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border text-xs font-bold transition-colors " +
-  "bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border " +
+  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors " +
+  "bg-transparent " +
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 
 export function PageHeader({
-  emoji,
   icon,
   title,
   meta,
@@ -67,7 +57,6 @@ export function PageHeader({
   containerClassName,
   className,
 }: {
-  emoji?: string;
   /** nav 가 이모지 대신 lucide 아이콘을 쓰는 화면용. emoji 와 같은 자리에 들어간다. */
   icon?: React.ReactNode;
   title: React.ReactNode;
@@ -98,8 +87,7 @@ export function PageHeader({
         )}>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              {emoji && <span className="text-[17px] leading-none shrink-0" aria-hidden>{emoji}</span>}
-              {!emoji && icon && <span className="shrink-0 text-brand-ink flex items-center" aria-hidden>{icon}</span>}
+              {icon && <span className="shrink-0 text-neutral-500 flex items-center" aria-hidden>{icon}</span>}
               <h1 className={cn("text-xl font-semibold tracking-[-0.03em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
                 {title}
               </h1>
@@ -136,7 +124,7 @@ export function ContextBar({
   containerClassName?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-surface-dark border-t-[3px] border-t-brand border-b border-neutral-100 dark:border-border-subtle-dark/60">
+    <div className="bg-white dark:bg-surface-dark-canvas border-b border-neutral-100 dark:border-border-subtle-dark/60">
       <div className={cn(containerClassName ?? PAGE_WIDTH[width], "py-2.5 flex items-center justify-between gap-2")}>
         <div className="flex items-center gap-1.5 min-w-0">
           {emoji && <span className="text-[11px] leading-none shrink-0" aria-hidden>{emoji}</span>}

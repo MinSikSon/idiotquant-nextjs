@@ -128,15 +128,11 @@ function TabItem({
         // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
         "rounded-xl",
         isActive
-          ? "text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted"
+          ? "text-brand-ink dark:text-brand-ink"
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
-      {emoji && isActive ? (
-        <span className="text-[19px] leading-none h-5 flex items-center" aria-hidden>{emoji}</span>
-      ) : (
-        <Icon size={20} strokeWidth={isActive ? 2.2 : 1.6} />
-      )}
+      <Icon size={20} strokeWidth={isActive ? 2 : 1.6} />
       <span className="text-[10px] font-semibold leading-none">{label}</span>
     </Link>
   );
@@ -273,9 +269,6 @@ export function NavbarWithSimpleLinks() {
     return () => observer.disconnect();
   }, []);
 
-  // 홈은 로그인 상태와 관계없이 랜딩 페이지 자체 내비게이션을 사용한다.
-  if (pathname === "/") return null;
-
   return (
     <>
       {/* 게임은 전체 높이 지도에 맞춘 사이드바를 유지한다. */}
@@ -384,7 +377,7 @@ export function NavbarWithSimpleLinks() {
       </aside>}
 
       {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
-      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur-md dark:border-neutral-800 dark:bg-surface-dark-canvas/80">
+      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-surface-dark-canvas">
         <div className="mx-auto flex min-h-[64px] max-w-7xl items-center gap-6 px-5 sm:px-8 lg:gap-8 lg:px-10">
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             idiot<span className="text-[#635bdb] dark:text-brand-ink">quant</span>
@@ -430,7 +423,7 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
       <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
-        barStyle ? "" : "bg-white/85 dark:bg-surface-dark-canvas/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
+        barStyle ? "" : "bg-white dark:bg-surface-dark-canvas border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
@@ -447,7 +440,7 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3",
-        barStyle ? "" : "bg-white/85 dark:bg-surface-dark-canvas/80 backdrop-blur-md border-neutral-200/80 dark:border-neutral-800")}
+        barStyle ? "" : "bg-white dark:bg-surface-dark-canvas border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
@@ -460,7 +453,7 @@ export function NavbarWithSimpleLinks() {
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
             moreActive || moreSheet
-              ? "text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted"
+              ? "text-brand-ink dark:text-brand-ink"
               : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
           )}
         >

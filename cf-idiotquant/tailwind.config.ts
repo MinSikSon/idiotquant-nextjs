@@ -14,7 +14,8 @@ const config = {
 
   mode: 'jit',
 
-  /* 컨트롤은 4px, 카드·패널은 8px. 배지·아바타의 rounded-full은 유지한다.
+  /* 작업 중심 UI: 중성 표면, 얇은 구분선, 강조색은 주요 동작에 사용한다.
+     컨트롤은 4px, 카드·패널은 8px. 배지·아바타의 rounded-full은 유지한다.
      게임은 자체 화면 루트에서 기존 반경 변수를 사용한다. */
 
   /* 로딩 자리표시자(animate-pulse 막대)의 색은 하나다:
@@ -89,29 +90,29 @@ const config = {
 
         // 라이트 모드 표면
         surface: {
-          canvas: "#faf9f7",
+          canvas: "#fafafa",
           card: "#ffffff",
-          muted: "#f0efec",
-          "muted-hover": "#f5f4f1",
+          muted: "#f4f4f5",
+          "muted-hover": "#f7f7f8",
         },
 
         // 다크 모드 표면 (7단계 계층)
         "surface-dark": {
-          canvas: "#080d0a",
-          DEFAULT: "#0d130f",
-          card: "#101812",
-          hover: "#1a241d",
-          muted: "#28352c",
+          canvas: "#141416",
+          DEFAULT: "#18181b",
+          card: "#1c1c20",
+          hover: "#252529",
+          muted: "#2d2d33",
           // 테두리는 아래 border-subtle.dark 와 같은 값이다. 이름이 둘인 것은
           // 역사적 이유이고, 값이 갈라지면 안 된다 — 아래 주석 참고.
-          border: "#404640",
-          elevated: "#536158",
+          border: "#35353b",
+          elevated: "#52525b",
         },
 
         // 카드·패널의 테두리는 surface-dark.border와 같은 값을 쓴다.
         "border-subtle": {
           DEFAULT: "#e5e5e5",
-          dark: "#404640",
+          dark: "#35353b",
         },
       },
     },

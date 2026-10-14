@@ -29,7 +29,7 @@ export const viewport: Viewport = {
   userScalable: false,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#080d0a' },
+    { media: '(prefers-color-scheme: dark)', color: '#141416' },
   ],
 };
 import { StoreProvider } from "./StoreProvider";

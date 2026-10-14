@@ -53,14 +53,13 @@ const INPUT_CLS = cn(
 const TABLE_PREVIEW = 10;
 
 /** 손을 올리면 살짝 뜬다 — 홈의 버튼이 전부 이렇게 움직인다. */
-const LIFT = "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out";
+const LIFT = "transition-colors duration-150";
 
-/* 홈의 섹션 머리표 — 초록 영문 태그 + 가는 선. 페이지가 "같은 시리즈"로 읽히게 하는
-   가장 작은 장치라, 계산기도 이걸 쓴다. */
+/* 조건·결과·차트를 구분하는 조용한 섹션 머리표. */
 function StepLabel({ tag }: { tag: string }) {
     return (
         <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-brand-ink dark:text-brand-ink shrink-0">
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400 shrink-0">
                 {tag}
             </span>
             <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
@@ -375,8 +374,7 @@ function Calculator() {
                 {/* ── 문서 머리 ─────────────────────────────────── */}
                 <header className="flex items-end justify-between gap-5 flex-wrap">
                     <div>
-                        <StepLabel tag="COMPOUND CALCULATOR" />
-                        <h1 className="text-[26px] sm:text-[34px] font-black tracking-tight leading-[1.28] text-neutral-900 dark:text-white break-keep">
+                        <h1 className="text-2xl font-medium tracking-tight leading-[1.28] text-neutral-900 dark:text-white break-keep">
                             복리 수익률 계산기
                         </h1>
                     </div>
