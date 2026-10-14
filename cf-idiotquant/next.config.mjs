@@ -57,6 +57,8 @@ const nextConfig = {
     async redirects() {
         return [
             { source: '/game/roguelike', destination: '/games', permanent: true },
+            // 기존 종목 검색 주소와 쿼리는 대표 분석 URL로 영구 이동한다.
+            { source: '/search', destination: '/analyze', permanent: true },
         ];
     },
 };

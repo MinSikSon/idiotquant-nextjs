@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { HOME_FAQ } from "@/lib/seo-content";
 import type { ReactNode } from "react";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -143,11 +144,15 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
             <div>
               <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">궁금한 점</p>
               <h2 className="mt-3 text-2xl font-medium tracking-tight">처음이라면</h2>
+              <Link href="/quant" className="mt-4 inline-block text-sm text-brand-ink hover:underline">퀀트 투자와 전략 안내 →</Link>
             </div>
             <div className="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-              <details className="group py-5" open><summary className="cursor-pointer list-none pr-6 text-base font-semibold">무엇을 하는 서비스인가요?<span className="float-right text-brand-ink group-open:rotate-45">＋</span></summary><p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">재무 기준으로 종목을 찾고, 회사별 숫자와 가치 평가를 살펴볼 수 있습니다.</p></details>
-              <details className="group py-5"><summary className="cursor-pointer list-none pr-6 text-base font-semibold">발굴 결과는 매수 추천인가요?<span className="float-right text-brand-ink group-open:rotate-45">＋</span></summary><p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">아닙니다. 투자 판단을 위한 참고 정보이며 수익을 보장하지 않습니다.</p></details>
-              <details className="group py-5"><summary className="cursor-pointer list-none pr-6 text-base font-semibold">로그인하면 무엇이 달라지나요?<span className="float-right text-brand-ink group-open:rotate-45">＋</span></summary><p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">관심 종목과 포트폴리오를 저장하고 이어서 관리할 수 있습니다.</p></details>
+              {HOME_FAQ.map(({ q, a }, index) => (
+                <details key={q} className="group py-5" open={index === 0}>
+                  <summary className="cursor-pointer list-none pr-6 text-base font-semibold">{q}<span aria-hidden="true" className="float-right text-brand-ink group-open:rotate-45">＋</span></summary>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">{a}</p>
+                </details>
+              ))}
             </div>
           </div>
         </section>

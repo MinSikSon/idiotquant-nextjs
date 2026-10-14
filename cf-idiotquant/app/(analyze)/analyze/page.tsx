@@ -1,5 +1,7 @@
 'use client';
 
+import TechnicalSummary from '@/components/research/TechnicalSummary';
+import { normalizeBars } from '@/lib/research/technical';
 import {
   useState,
   useEffect,
@@ -466,6 +468,10 @@ function AnalyzeContent() {
     };
   }, [krOrUs, data]);
 
+  const technicalBars = useMemo(() => normalizeBars(
+    (krOrUs === 'US' ? data.usDaily?.output2 : data.kiChart?.output2) ?? [], krOrUs
+  ), [krOrUs, data]);
+
   // 차트 데이터가 비어 추이를 그릴 수 없을 때, 실제 종목 상태 플래그로 거래정지/상장폐지가
   // 확인된 경우에만 안내한다. 플래그가 없으면(단순 빈 응답·로딩 등) 오안내를 피하기 위해 표시하지 않음.
   const chartNotice: 'suspended' | 'delisted' | undefined = (() => {
@@ -836,6 +842,7 @@ function AnalyzeContent() {
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
               {isLoaded ? (
               <div className="space-y-6">
+                <TechnicalSummary bars={technicalBars} currency={currency} />
                 {/* 비로그인 안내 — 블러 구간에 들어가기 직전 한 번만.
                     예전엔 헤더 배지·블러 오버레이·페이지 맨 아래 CTA 로 같은 말이 흩어져 있었다. */}
                 {!isLoggedIn && (

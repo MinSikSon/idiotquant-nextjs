@@ -1,20 +1,8 @@
-import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/seo';
+import { ANALYZE_FAQ } from '@/lib/seo-content';
+import PageAnswers from '@/components/pageAnswers';
 
-export const metadata: Metadata = {
-  title: '주식 분석 - 재무지표·목표주가·밸류에이션',
-  description: 'PER, PBR, EPS, BPS, 52주 최고/최저, 시가총액 등 상세 재무지표와 DCF·RIM·그레이엄 공식 기반 목표주가를 분석합니다. 국내·미국 주식 모두 지원.',
-  keywords: [
-    '주식 재무분석', '주식 목표주가', 'PER PBR 분석', '52주 최고 최저',
-    'DCF 계산', 'RIM 계산', '그레이엄 공식', '시가총액 조회',
-    '국내 주식 분석', '미국 주식 분석', '주식 밸류에이션',
-  ],
-  alternates: { canonical: 'https://idiotquant.com/analyze' },
-  openGraph: {
-    title: '주식 분석 - 재무지표·목표주가 | IdiotQuant',
-    description: 'PER, PBR, EPS, BPS, DCF·RIM 기반 목표주가 분석. 국내·미국 주식 지원.',
-    url: 'https://idiotquant.com/analyze',
-  },
-};
+export const metadata = publicPageMetadata('/analyze', '주식 분석 - 재무·모멘텀·기술적 지표', '국내·미국 주식의 재무지표와 가치 평가, 모멘텀·이동평균·RSI·거래량을 확인하세요. 종목별 데이터와 모델 가정을 함께 비교할 수 있습니다.');
 
 const jsonLdBreadcrumb = {
   '@context': 'https://schema.org',
@@ -30,6 +18,7 @@ export default function AnalyzeLayout({ children }: { children: React.ReactNode 
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }} />
       {children}
+      <PageAnswers title="주식 분석" path="/analyze" items={ANALYZE_FAQ} />
     </>
   );
 }

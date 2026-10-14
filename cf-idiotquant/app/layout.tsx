@@ -44,11 +44,11 @@ export const metadata: Metadata = {
     default: 'IdiotQuant - NCAV·저PBR·저PER 주식 스크리너',
     template: '%s | IdiotQuant',
   },
-  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,400개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 재무분석·목표주가·자동매매 기능 제공.',
+  description: 'NCAV·PBR·PER 등 재무 기준으로 종목을 발굴하고 국내·미국 주식의 재무지표와 가치 평가를 확인하세요. 종목 비교와 복리 계산기를 제공합니다.',
   keywords: [
     '퀀트 투자', 'NCAV 주식', '저평가 주식', '주식 스크리너',
     '저PBR 주식', '저PER 주식', 'S-RIM', '주식 재무분석',
-    '목표주가', '자동매매', '코스피 저평가', '코스닥 저평가',
+    '목표주가', '종목 비교', '코스피 저평가', '코스닥 저평가',
     '퀀트 전략', '주식 발굴', '가치투자',
   ],
   icons: {
@@ -93,10 +93,9 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'IdiotQuant - NCAV·저PBR 주식 스크리너',
     description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다.',
-    creator: '@idiotquant',
     images: ['https://idiotquant.com/icon-512.png'],
   },
 };
@@ -104,6 +103,9 @@ export const metadata: Metadata = {
 const jsonLdWebSite = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
+  '@id': 'https://idiotquant.com/#website',
+  'inLanguage': 'ko-KR',
+  'publisher': { '@id': 'https://idiotquant.com/#organization' },
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
   'description': '퀀트 전략 기반 주식 스크리너 및 재무분석 서비스',
@@ -120,31 +122,24 @@ const jsonLdWebSite = {
 const jsonLdOrg = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
+  '@id': 'https://idiotquant.com/#organization',
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
   'logo': 'https://idiotquant.com/icon-512.png',
   'description': '퀀트 알고리즘 기반 주식 스크리너 및 재무분석 서비스',
-  'contactPoint': {
-    '@type': 'ContactPoint',
-    'contactType': 'customer support',
-    'availableLanguage': '한국어',
-  },
 };
 
 const jsonLdApp = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
+  '@id': 'https://idiotquant.com/#application',
+  'publisher': { '@id': 'https://idiotquant.com/#organization' },
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
   'description': '퀀트 전략(NCAV, 저PBR, 저PER, S-RIM)으로 코스피·코스닥 저평가 주식을 매일 자동 발굴하는 주식 스크리너.',
   'applicationCategory': 'FinanceApplication',
   'operatingSystem': 'Web',
-  'offers': {
-    '@type': 'Offer',
-    'price': '0',
-    'priceCurrency': 'KRW',
-  },
-  'featureList': 'NCAV 스크리너, 저PBR 스크리너, 주식 재무분석, 목표주가 계산, 자동매매',
+  'featureList': 'NCAV 스크리너, 저PBR 스크리너, 주식 재무분석, 주식 가치 평가, 종목 비교, 복리 계산기',
   'inLanguage': 'ko',
 };
 
