@@ -22,6 +22,15 @@ export function legacyMarketCap(data: Record<string, any>, ticker: string, name:
   return Number.isFinite(cap) && cap > 0 ? cap : undefined;
 }
 
+export function currentSnapshotMarketCap(result: Record<string, any>, ticker: string, date: string): number | undefined {
+  if (result?.rt_cd !== '0' || result.output1?.stck_shrn_iscd !== ticker || !Array.isArray(result.output2)) return undefined;
+  const latest = [...result.output2].sort((a, b) => String(b.stck_bsop_date).localeCompare(String(a.stck_bsop_date)))[0];
+  // 과거 날짜로 조회해도 output1은 현재값이다. 오늘 기준으로 별도 조회한 최신 거래일에만 사용한다.
+  if (latest?.stck_bsop_date !== date || Number(latest.stck_clpr) !== Number(result.output1.stck_prpr)) return undefined;
+  const cap = Number(result.output1.hts_avls) * 100_000_000;
+  return Number.isFinite(cap) && cap > 0 ? cap : undefined;
+}
+
 // 같은 날짜·종목을 반복 추가해도 불필요한 전체 목록 조회를 줄인다. 실패 응답은 캐시하지 않는다.
 const requests = new Map<string, Promise<any>>();
 function cached(key: string, read: () => Promise<any>) {
@@ -56,6 +65,10 @@ function legacyDates() {
   });
 }
 
+export async function getLegacyMarketDates(): Promise<string[]> {
+  return [...await legacyDates()].sort().reverse() as string[];
+}
+
 export async function getHistoricalMarketCap(ticker: string, name: string, market: 'KR' | 'US', date: string) {
   let cap: number | undefined;
   let failed = false;
@@ -63,6 +76,18 @@ export async function getHistoricalMarketCap(ticker: string, name: string, marke
   catch { failed = true; /* 일간 스캔 조회 실패 시에도 같은 날짜의 시장 데이터를 확인한다. */ }
   if (cap != null) return cap;
   if (market === 'KR') {
+    try {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()).replaceAll('-', '');
+      const start = new Date(`${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6)}T00:00:00Z`);
+      start.setUTCDate(start.getUTCDate() - 14);
+      const startDate = start.toISOString().slice(0, 10).replaceAll('-', '');
+      if (date >= startDate && date <= today) {
+        // 장중 최신 거래일·시총이 바뀔 수 있으므로 현재 시세는 장기 캐시하지 않는다.
+        const result = await apiRequest(`/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?PDNO=${encodeURIComponent(ticker)}&FID_INPUT_DATE_1=${startDate}&FID_INPUT_DATE_2=${today}`);
+        cap = currentSnapshotMarketCap(result, ticker, date);
+        if (cap != null) return cap;
+      }
+    } catch { /* 현재 시세를 확인할 수 없어도 저장된 과거 자료는 조회한다. */ }
     try {
       if ((await legacyDates()).has(date)) {
         const result = await cached(`legacy:${date}`, async () => {
@@ -76,5 +101,5 @@ export async function getHistoricalMarketCap(ticker: string, name: string, marke
     } catch { failed = true; }
   }
   if (failed) throw new Error('과거 시가총액 조회에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-  throw new Error('이 거래일의 과거 시가총액을 확보하지 못해 환산가를 계산할 수 없습니다.');
+  throw new Error('이 거래일의 시가총액이 서버에 저장되어 있지 않아 환산가를 계산할 수 없습니다. 다른 날짜를 선택해 주세요.');
 }

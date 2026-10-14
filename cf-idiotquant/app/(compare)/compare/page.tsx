@@ -14,7 +14,7 @@ import amex from '@/public/data/usStockSymbols/amex_tickers.json';
 import { getInquireDailyItemChartPrice, getInquirePrice } from '@/lib/features/koreaInvestment/koreaInvestmentAPI';
 import { getOverseasPriceQuotationsDailyPrice, getQuotationsPriceDetail, getQuotationsSearchInfo } from '@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketAPI';
 import { calculatePriceReturns, summarizeReturns } from './priceReturns';
-import { getHistoricalMarketCap, marketCapPrice } from './marketCapitalization';
+import { getHistoricalMarketCap, getLegacyMarketDates, marketCapPrice } from './marketCapitalization';
 
 type ComparisonStock = {
   id: string; name: string; ticker: string; market: 'KR' | 'US';
@@ -116,6 +116,7 @@ export default function ComparePage() {
   limitsRef.current = limits;
   const [query, setQuery] = useState('');
   const [dateInput, setDateInput] = useState('');
+  const [legacyMarketDates, setLegacyMarketDates] = useState<string[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [stockData, setStocks] = useState<ComparisonStock[]>([]);
   const stocks = useMemo(() => stockData.map(stock => ({
@@ -132,6 +133,12 @@ export default function ComparePage() {
   const [recentLoaded, setRecentLoaded] = useState(false);
   const [importProgress, setImportProgress] = useState<{ loaded: number; total: number } | null>(null);
   const importedRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    void getLegacyMarketDates().then(dates => { if (active) setLegacyMarketDates(dates); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     try {
@@ -309,6 +316,14 @@ export default function ComparePage() {
           </span>)}
         </div>}
         <p className="mt-2 text-xs text-neutral-500">휴장일은 선택일 이전의 최근 거래일을 기준으로 조회합니다. 환산가는 해당 거래일의 시가총액 ÷ 현재 조회한 상장주식 수입니다. 시가총액이 없으면 환산가를 표시하지 않습니다.</p>
+        <p className="mt-2 text-xs leading-5 text-neutral-500">국내 최신 거래일의 시가총액은 KIS 시세로 확인합니다. 그 이전 날짜는 서버에 저장된 자료가 필요하며, 주가를 조회할 수 있어도 시가총액이 없으면 환산가를 제공하지 못합니다.</p>
+        {legacyMarketDates.length > 0 && <details className="mt-3 text-xs text-neutral-500">
+          <summary className="cursor-pointer py-2">국내 과거 시가총액 저장 날짜 보기</summary>
+          <p className="mt-1 leading-5">날짜를 누르면 가격 기준일에 입력됩니다. 종목 추가 전에 날짜 추가를 눌러 주세요. 최근 일간 스캔 날짜는 이 목록에 포함되지 않으며, 종목에 따라 자료가 없을 수 있습니다.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {legacyMarketDates.map(date => <button key={date} type="button" disabled={sessionLoading || dateLoading || loading} onClick={() => setDateInput(`${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}`)} className="min-h-11 rounded-lg border border-neutral-200 px-3 tabular-nums hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-800">{formatDate(date)}</button>)}
+          </div>
+        </details>}
       </section>
 
       <section className="mt-8" aria-label="비교 종목 추가">
