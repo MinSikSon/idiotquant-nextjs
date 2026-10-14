@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import GuestLanding from "./GuestLanding";
+
+const HeroArt = dynamic(() => import("./HeroArt"), { ssr: false });
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -25,6 +28,7 @@ export default function HomePage() {
       totalCount={matchedCount}
       isLoading={scanLoading}
       scanDate={scanDate}
+      backgroundArt={<HeroArt />}
       isLoggedIn={status === "loading" || !!session}
     />
   );

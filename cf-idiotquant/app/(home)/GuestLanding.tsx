@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
@@ -9,6 +10,7 @@ type GuestLandingProps = {
   totalCount: number;
   isLoading: boolean;
   scanDate: string | null;
+  backgroundArt: ReactNode;
   isLoggedIn?: boolean;
 };
 
@@ -36,7 +38,7 @@ function ActionLink({
   );
 }
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate, isLoggedIn = false }: GuestLandingProps) {
+export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false }: GuestLandingProps) {
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "오늘";
@@ -48,6 +50,9 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, is
 
       <div>
         <section className="relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-60 [mask-image:linear-gradient(to_right,transparent,black_60%)]">
+            {backgroundArt}
+          </div>
           <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-2 lg:gap-14 lg:px-10 lg:py-16">
             <div>
               <p className="mb-5 text-sm font-semibold text-brand-ink dark:text-brand-ink">코스피·코스닥 종목 발굴과 분석</p>
