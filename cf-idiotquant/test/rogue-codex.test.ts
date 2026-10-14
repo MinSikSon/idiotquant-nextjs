@@ -30,15 +30,15 @@ import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { idx, T, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("도감은 현재 게임의 105종 아이템을 7개 카테고리로 나눈다", () => {
-    assert.equal(CODEX_ENTRIES.length, 105);
+test("도감은 현재 게임의 106종 아이템을 7개 카테고리로 나눈다", () => {
+    assert.equal(CODEX_ENTRIES.length, 106);
 
     const prog = itemCodexProgress();
-    assert.equal(prog.totalCount, 105);
+    assert.equal(prog.totalCount, 106);
     assert.equal(prog.identifiedCount, 0);
     assert.equal(prog.masteredCount, 0);
 
-    assert.equal(prog.byCategory.weapon.total, 22);
+    assert.equal(prog.byCategory.weapon.total, 23);
     assert.equal(prog.byCategory.armor.total, 9);
     assert.equal(prog.byCategory.scroll.total, 10);
     assert.equal(prog.byCategory.potion.total, 9);
@@ -46,6 +46,11 @@ test("도감은 현재 게임의 105종 아이템을 7개 카테고리로 나눈
     assert.equal(prog.byCategory.wand.total, 11);
     assert.equal(prog.byCategory.other.total, 18);
     assert.ok(CODEX_ENTRIES.some((e) => e.key === "tool:magic marker"), "마법 표식기가 도감에 없다");
+
+    const sting = CODEX_ENTRIES.find((e) => e.key === "weapon:sting")!;
+    assert.ok(sting, "스팅이 아이템 도감에 없다");
+    assert.match(sting.flavor, /10%/, "스팅의 희귀 시작 확률을 설명하지 않는다");
+    assert.match(itemCodexStats(sting), /오크 감지 5칸/, "스팅의 감지 범위가 도감에 없다");
 
     // 각 카테고리 정의 항목과 일치하는지 확인
     assert.equal(Object.keys(WEAPONS).length, 28); // 드랍 불가 시작 장비도 종류 표에는 남는다

@@ -180,22 +180,22 @@ export function outcomeOf(a: Attack): string {
 export function attackLine(
     who: string,
     a: Attack,
-    bonuses: Term[],
+    bonuses: Term[] | null,
 ): string {
-    const add = terms(bonuses);
+    const add = bonuses === null ? "+???(공격 보정)" : terms(bonuses);
     const result = a.crit ? "대성공" : a.fumble ? "대실패" : a.hit ? "명중" : "실패";
-    return `${DETAIL}명중 굴림: ${who} ${rollEyes(a)}\n  ${a.roll}${add}${add ? `=${a.total}` : ""}(${result})`;
+    return `${DETAIL}명중 굴림: ${who} ${rollEyes(a)}\n  ${a.roll}${add}${bonuses === null ? "=???(합계)" : add ? `=${a.total}` : ""}(${result})`;
 }
 
 /** 여러 번 때리는 놈의 굴림을 한 줄로 — 눈만 늘어놓는다(어느 눈의 합인지 모른다). */
 export function multiAttackLine(
     who: string,
     attacks: Attack[],
-    bonuses: Term[],
+    bonuses: Term[] | null,
 ): string {
     const eyes = attacks.map((a) => (a.crit ? `${a.roll}!` : `${a.roll}`)).join(", ");
-    const add = terms(bonuses);
-    const totals = attacks.map((a) => `${a.roll}${add}${add ? `=${a.total}` : ""}(${a.crit ? "대성공" : a.fumble ? "대실패" : a.hit ? "명중" : "실패"})`).join(" · ");
+    const add = bonuses === null ? "+???(공격 보정)" : terms(bonuses);
+    const totals = attacks.map((a) => `${a.roll}${add}${bonuses === null ? "=???(합계)" : add ? `=${a.total}` : ""}(${a.crit ? "대성공" : a.fumble ? "대실패" : a.hit ? "명중" : "실패"})`).join(" · ");
     return `${DETAIL}명중 굴림: ${who} ${eyes}(d20 굴림)\n  ${totals}`;
 }
 
@@ -214,9 +214,9 @@ export function multiAttackLine(
  * 한 벌을 통째로 굴린 값**(2~8)이지 낱개 눈이 아니다. 쉼표는 이 기록에서 이미 「따로
  * 굴린 것들」을 뜻한다(`d20 4, 20!, 11`).
  *
- * `dice` 가 없으면 **결과만** 적는다. 잡아 본 적 없는 종의 주사위 표기도 방어력도
+ * `dice` 가 없으면 모르는 산식 칸을 `???`로 남기고 최종 피해만 공개한다. 잡아 본 적 없는 종의 주사위 표기도 방어력도
  * 표의 값이라, 보여 주면 「한 마리 잡아야 준다」는 도감 규칙이 뒷문으로 뚫린다 —
- * 그래서 부르는 쪽이 안 넘기면 여기서도 산수를 안 펼친다.
+ * 그래서 부르는 쪽이 안 넘기면 여기서도 실제 중간값을 펼치지 않는다.
  *
  * 치명타면 굴린 값이 둘이다 — `2d4 두 번 → 5, 7 = 12` 처럼 둘 다 적는다.
  */
@@ -229,7 +229,7 @@ export function damageLine(
     dealt: number,
     hand?: "주손" | "보조손",
 ): string {
-    if (!dice) return `${DETAIL}피해 ${dealt}`;
+    if (!dice) return `${DETAIL}피해 굴림${hand ? ` (${hand})` : ""}: ???(주사위 굴림)\n  ???(공격력)−???(방어력)=${dealt}(피해${dealt === 0 ? " · 튕겨 나갔다" : ""})`;
     const sum = rolled.reduce((a, n) => a + n, 0);
     const add = terms(bonuses);
     const bonus = bonuses.reduce((a, t) => a + t.n, 0);
@@ -255,7 +255,7 @@ export function damageLine(
  * 갑옷이 **대마다** 듣는다는 것이 이 체계에서 제일 중요한 한 줄이라, 세 대를 뭉쳐
  * 한 번만 빼는 것처럼 적으면 안 된다.
  *
- * `parts` 가 비면 총합만 적는다(모르는 종).
+ * `parts` 가 비면 주사위·공격 보정은 `???`, 내 방어력과 총 피해는 숫자로 적는다.
  */
 export function monsterDamageLine(
     parts: { dice: string; rolled: number[]; dealt: number }[],
@@ -263,7 +263,7 @@ export function monsterDamageLine(
     defense: number,
     total: number,
 ): string {
-    if (parts.length === 0) return `${DETAIL}피해 ${total}`;
+    if (parts.length === 0) return `${DETAIL}피해 굴림: ???(주사위 굴림)\n  ???+???(공격 보정)−${defense}(방어력)=${total}(총 피해)`;
     // **상대의 보정도 적는다.** 안 적으면 `1d8 → 1 −4방어력 → 3` 처럼 **줄 위에서 셈이
     // 안 맞는다** — 실제로 그랬다. 숫자가 안 맞는 줄은 기록을 통째로 못 믿게 만든다.
     const add = bonus !== 0 ? `${bonus > 0 ? "+" : "−"}${Math.abs(bonus)}(공격 보정)` : "";
@@ -431,7 +431,7 @@ function swing(
     // 것도 맞은 것이고, 안 깨우면 못 뚫는 놈 옆에서 영영 안전해진다.
     m.awake = true;
     const killed = m.hp <= 0;
-    // **모르는 종에게는 산수를 안 펼친다** — 방어력도 표의 값이라 도감 규칙에 걸린다.
+    // 모르는 종의 산식은 ???로 남긴다. 내 공격력 중간값도 숨겨 상대 방어력 역산을 막는다.
     const dualHand = offHandWeapon(hero) ? (off ? "보조손" : "주손") : undefined;
     messages.push(
         seenBefore(state, m)
@@ -593,8 +593,8 @@ export function monsterAttack(state: GameState, m: Monster, hero: Hero, rng: Rng
                 : `${attacks.length}대 중 ${hits}대${crits > 0 ? ` (치명타 ${crits})` : ""}`;
         const hitLine =
             attacks.length === 1
-                ? attackLine(mName, attacks[0], seen ? bonusTerms : [])
-                : multiAttackLine(mName, attacks, seen ? bonusTerms : []);
+                ? attackLine(mName, attacks[0], seen ? bonusTerms : null)
+                : multiAttackLine(mName, attacks, seen ? bonusTerms : null);
         // **잡아 본 종이면 상대의 주사위까지 적는다.** 싸움의 절반이 상대의 차례인데
         // 그쪽만 속을 안 보여 주면 내가 왜 죽었는지를 기록에서 되짚을 수가 없다. 모르는
         // 종은 숫자만 — 주사위 표기는 표의 값이라 도감 규칙이 뒷문으로 뚫린다.

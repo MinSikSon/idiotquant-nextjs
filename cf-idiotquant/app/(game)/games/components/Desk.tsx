@@ -40,6 +40,7 @@ import {
 } from "@/lib/rogue/items";
 import { billOf, inShop, isTradable, price, sellPrice, shopkeeperOf } from "@/lib/rogue/shop";
 import { canOffHand, canWieldWand, canWieldWeapon, carryCapacity, equippedArmor, equippedWeapon, equippedWand, isDualWielding, launcherFor, packWeight, PACK_CAPACITY } from "@/lib/rogue/hero";
+import { activeRelicCombos } from "@/lib/rogue/relics";
 import type { GameState, Item, ItemKind } from "@/lib/rogue/types";
 import { T, fountainAt, idx } from "@/lib/rogue/types";
 
@@ -332,6 +333,7 @@ export default function Desk({
         [picker, quaffPotion, readScroll, run],
     );
 
+    const relicCombos = activeRelicCombos(hero);
     const name = (it: Item) => describe(it, state.known, state.appearance);
     const craftBlessing = useCallback(() => {
         setPackOpen(false);
@@ -937,6 +939,9 @@ export default function Desk({
                                 ))}
                         </div>
                     </div>
+                    {relicCombos.length > 0 && <div className="mb-2 border-b border-[var(--rg-line-soft)] pb-2 text-xs text-[var(--rg-gold)]">
+                        {relicCombos.map((combo) => <p key={combo.name}>유물 조합 · {combo.name} · 피해 +{combo.damage}</p>)}
+                    </div>}
                     {hero.pack.length === 0 ? (
                         <p className="text-[var(--rg-faint)]">아무것도 없다.</p>
                     ) : (

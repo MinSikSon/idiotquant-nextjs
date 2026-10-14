@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { bestiaryProgress, bestiaryRows, newGame, perform, survey } from "@/lib/rogue/game";
+import { bestiaryProgress, bestiaryRows, bestiarySlots, newGame, perform, survey } from "@/lib/rogue/game";
 import { makeItem } from "@/lib/rogue/items";
 import { addToPack, carryCapacity, makeHero, packWeight } from "@/lib/rogue/hero";
 import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
@@ -334,6 +334,19 @@ test("수법은 표와 방아쇠가 한 짝이다", () => {
 });
 
 test("잡아서 아는 것과 당해서 아는 것은 따로다", () => {
+    // ── 빈 도감도 모든 종의 칸을 보여 주되 제원·이름은 넘기지 않는다
+    {
+        const slots = bestiarySlots({}, { N: 3 });
+        assert.equal(slots.length, Object.keys(MONSTERS).length, "미발견 몬스터 칸이 빠졌다");
+        for (const slot of slots) {
+            assert.deepEqual(Object.keys(slot).sort(), ["ch", "kills", "known", "name"], "빈 칸에 숨은 제원이 섞였다");
+            assert.equal(slot.name, "???", "미발견 몬스터의 참 이름이 샜다");
+        }
+        const known = bestiarySlots({ A: 1 }, { A: 2 }).find((row) => row.ch === "A")!;
+        assert.equal(known.known, true, "잡아 본 몬스터 칸이 열리지 않는다");
+        assert.equal(known.name, MONSTERS.A.name);
+        assert.ok(known.known && known.special === MONSTERS.A.special, "기존 수법 해금이 깨졌다");
+    }
     // ── 잡기만 해서는 수법 칸이 안 열린다
     {
         const rows = bestiaryRows({ A: 5 }, {});

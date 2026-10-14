@@ -5,6 +5,8 @@
  * 레벨업은 갈수록 사건이 된다.
  */
 
+import { activeRelicCombos } from "./relics";
+
 import {
     Rng,
 } from "./rng";
@@ -806,6 +808,7 @@ export function heroDamTerms(hero: Hero, weapon = equippedWeapon(hero), withStr 
     if (midas > 0) {
         terms.push({ n: midas, why: "미다스" });
     }
+    for (const combo of activeRelicCombos(hero)) terms.push({ n: combo.damage, why: combo.name });
     return terms;
 }
 

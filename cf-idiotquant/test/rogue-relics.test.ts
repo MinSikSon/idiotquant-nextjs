@@ -7,18 +7,41 @@ import {
     RELIC_DEFS,
     RELICS,
     hasRelic,
+    activeRelicCombos,
     midasBonus,
     socketGemIntoItem,
 } from "../lib/rogue/relics";
-import { addToPack, equippedArmor, equippedWeapon, heroDodgeBonus } from "../lib/rogue/hero";
+import { addToPack, equippedArmor, equippedWeapon, heroDodgeBonus, heroDamTerms, heroAttackText } from "../lib/rogue/hero";
 import { armorClassOf, makeItem } from "../lib/rogue/items";
 import { newGame, perform } from "../lib/rogue/game";
 import { heroAttack } from "../lib/rogue/combat";
 import { spawnMonster } from "../lib/rogue/monsters";
 import { Rng } from "../lib/rogue/rng";
+import { deserialize, serialize } from "../lib/rogue/storage";
 
 test("4대 전설 유물 및 4대 원소 보석 정의 확인", () => {
     assert.equal(RELICS.length, 4);
+    // ── 조합은 제 배낭의 두 유물이 함께 있을 때만, 각 쌍당 한 번 적용한다
+    {
+        const s = newGame(123);
+        const h = s.heroes[0];
+        const bonus = () => heroDamTerms(h).reduce((n, term) => n + term.n, 0);
+        const before = bonus();
+        for (const type of ["daedalus_compass", "midas_gauntlet", "time_hourglass", "phoenix_feather"] as const) {
+            addToPack(h, makeItem("relic", type, s.nextItemId++, -1, -1));
+        }
+        assert.equal(activeRelicCombos(h).length, 2, "두 유물 조합이 활성화되지 않았다");
+        assert.equal(bonus(), before + 2, "피해 보너스를 쌍마다 한 번씩 더해야 한다");
+        assert.equal(heroAttackText(h, s.known), `2d4+${before + 2}`, "상태 줄과 조합을 포함한 실제 피해 보정이 다르다");
+        assert.deepEqual(activeRelicCombos(deserialize(serialize(s))!.heroes[0]), activeRelicCombos(h), "저장 복원 후 유물 조합이 달라졌다");
+        addToPack(h, makeItem("relic", "midas_gauntlet", s.nextItemId++, -1, -1));
+        assert.equal(bonus(), before + 2, "같은 유물 두 개로 보너스가 중복된다");
+        h.pack = h.pack.filter((it) => it.type !== "phoenix_feather");
+        assert.equal(bonus(), before + 1, "깃털을 소비해도 조합 보너스가 남는다");
+        const guest = newGame(124).heroes[0];
+        assert.equal(activeRelicCombos(guest).length, 0, "다른 영웅의 유물 조합이 공유된다");
+    }
+
     for (const relic of RELICS) {
         const def = RELIC_DEFS[relic];
         assert.ok(def, `${relic} 유물 정의가 누락되었습니다.`);

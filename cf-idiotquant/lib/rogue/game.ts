@@ -5283,6 +5283,17 @@ export function bestiaryRows(
         .sort((a, b) => a.level - b.level || a.ch.localeCompare(b.ch));
 }
 
+/** 미발견 칸에는 이름과 제원을 넣지 않는다. 검색·정렬에서도 숨은 정보가 새지 않는다. */
+export type BestiarySlot = (BestiaryRow & { known: true }) | { ch: string; name: "???"; kills: 0; known: false };
+
+export function bestiarySlots(bestiary: Record<string, number>, specials: Record<string, number> = {}): BestiarySlot[] {
+    const known = new Map(bestiaryRows(bestiary, specials).map((row) => [row.ch, row]));
+    return Object.keys(MONSTERS).sort().map((ch) => {
+        const row = known.get(ch);
+        return row ? { ...row, known: true } : { ch, name: "???", kills: 0, known: false };
+    });
+}
+
 /** 도감을 몇 칸 채웠나 — 몬스터 표를 센다. */
 export function bestiaryProgress(bestiary: Record<string, number>): { found: number; total: number } {
     return {

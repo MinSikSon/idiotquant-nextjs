@@ -147,3 +147,13 @@ export function socketGemIntoItem(
         message: `${gemDef.name}을(를) ${gearItem.type}에 완벽히 세공하여 장착했습니다!`,
     };
 }
+
+/** 조합은 소지한 유물만 읽는다. 보너스는 heroDamTerms 한 자리에서 적용한다. */
+export const RELIC_COMBOS = [
+    { name: "황금의 길", pair: ["daedalus_compass", "midas_gauntlet"], damage: 1 },
+    { name: "불멸의 순간", pair: ["time_hourglass", "phoenix_feather"], damage: 1 },
+] as const;
+
+export function activeRelicCombos(hero: Hero): (typeof RELIC_COMBOS)[number][] {
+    return RELIC_COMBOS.filter((combo) => combo.pair.every((type) => hasRelic(hero, type)));
+}

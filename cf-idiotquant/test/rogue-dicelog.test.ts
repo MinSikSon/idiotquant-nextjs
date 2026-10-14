@@ -95,6 +95,42 @@ test("명중 줄은 내 d20과 보정 결과를 적는다 — 치명타·여러 
         );
     }
 
+    // ── 모르는 종도 산식 자리는 남기고 보정·합계만 감춘다
+    {
+        assert.equal(attackLine("미발견", fake(13, 7), null), "· 명중 굴림: 미발견 13(d20 굴림)\n  13+???(공격 보정)=???(합계)(명중)");
+        const multi = multiAttackLine("미발견", [fake(13, 7), fake(4, 7)], null);
+        assert.match(multi, /13\+\?\?\?/, "미발견 종의 명중 보정 자리도 없어졌다");
+        assert.doesNotMatch(multi, /\+7|=20/, "미발견 종의 보정 또는 합계가 샜다");
+    }
+
+    // ── 실제 미발견 몬스터와의 양쪽 공격도 숨긴 칸을 기록에 남긴다
+    {
+        const s = newGame(603);
+        const m = placeNextTo(s, "O", 999999);
+        s.heroes[0].hp = s.heroes[0].maxHp = 999999;
+        const rng = new Rng(8);
+        let outgoing = false;
+        let incoming = false;
+        for (let i = 0; i < 100 && (!outgoing || !incoming); i++) {
+            const mine = heroAttack(s, s.heroes[0], m, rng);
+            if (mine.hit) {
+                const line = mine.messages.find((line) => line.startsWith("· 피해 굴림"));
+                assert.ok(line?.includes("???(방어력)"), "미발견 적을 때린 피해 기록이 생략됐다");
+                assert.doesNotMatch(line!, /\d+\(공격력\)|−\d+\(방어력\)/, "미발견 적의 방어력을 역산할 수 있다");
+                outgoing = true;
+            }
+            const theirs = monsterAttack(s, m, s.heroes[0], rng);
+            const hitLine = theirs.messages.find((line) => line.startsWith("· 명중 굴림"));
+            assert.ok(hitLine?.includes("???(공격 보정)"), "미발견 적의 명중 보정 자리가 없어졌다");
+            const line = theirs.messages.find((line) => line.startsWith("· 피해 굴림"));
+            if (line) {
+                assert.match(line, /\?\?\?\(주사위 굴림\)/, "미발견 적의 주사위가 샜다");
+                incoming = true;
+            }
+        }
+        assert.ok(outgoing && incoming, "양쪽의 실제 피해 기록을 검증하지 못했다");
+    }
+
     // ── 치명타와 대실패는 따로 말한다
     {
         assert.equal(outcomeOf(fake(20, 0)), "치명타!");
@@ -141,8 +177,8 @@ test("공격력 줄은 방어력을 빼는 것까지 적고, 치명타는 쉼표
             damageLine("1d6", [3], [], 3, 7, 0),
             "· 피해 굴림: 3(1d6 굴림)\n  3−7(방어력)=0(피해 · 튕겨 나갔다)",
         );
-        // 주사위를 안 주면 결과만 — 상대의 표기도 방어력도 도감이 할 일이다.
-        assert.equal(damageLine(null, [], [], 0, 0, 7), "· 피해 7");
+        // 주사위를 안 주면 산식은 ???, 최종 피해는 숫자로 남긴다.
+        assert.equal(damageLine(null, [], [], 0, 0, 7), "· 피해 굴림: ???(주사위 굴림)\n  ???(공격력)−???(방어력)=7(피해)");
     }
 
     // ── 여러 대의 공격력은 **대마다** 방어력을 만난다
@@ -159,7 +195,7 @@ test("공격력 줄은 방어력을 빼는 것까지 적고, 치명타는 쉼표
             ),
             "· 공격력 6(1d8 굴림)−3(방어력)=3(피해) · 9(2d6 굴림)−3(방어력)=6(피해)  = 9(총 피해)",
         );
-        assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 7");
+        assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 굴림: ???(주사위 굴림)\n  ???+???(공격 보정)−3(방어력)=7(총 피해)");
     }
 
     // ── 치명타의 두 굴림은 **더하는 것처럼** 안 적는다
@@ -433,8 +469,8 @@ test("무기 강화는 enchant로 표시하고, 상태 줄에서는 값으로 �
             monsterDamageLine([{ dice: "1d8", rolled: [5], dealt: 5 }], 0, 0, 5),
             "· 공격력 5(1d8 굴림)=5(피해)  = 5(총 피해)",
         );
-        // 모르는 종은 숫자만.
-        assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 7");
+        // 모르는 종은 숨긴 칸을 ???로 표시한다.
+        assert.equal(monsterDamageLine([], 6, 3, 7), "· 피해 굴림: ???(주사위 굴림)\n  ???+???(공격 보정)−3(방어력)=7(총 피해)");
     }
 });
 

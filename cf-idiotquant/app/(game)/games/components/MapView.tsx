@@ -98,9 +98,9 @@ const INK: Record<string, string> = {
     "anvil-dim": "var(--rg-anvil-dim)",
     altar: "var(--rg-nh-gray)",
     "altar-dim": "var(--rg-altar-dim)",
-    fountain: "var(--rg-nh-light-blue)",
+    fountain: "var(--rg-fountain)",
     "fountain-dim": "var(--rg-fountain-dim)",
-    pool: "var(--rg-nh-blue)",
+    pool: "var(--rg-pool)",
     "pool-dim": "var(--rg-pool-dim)",
     stairs: "var(--rg-nh-gray)",
     door: "var(--rg-nh-brown)",
@@ -212,6 +212,15 @@ function NickTag({ nick, ink, bg, opacity = 1, cell, left, top }: {
     );
 }
 
+function isMonsterKind(kind: string): boolean {
+    return kind === "monster" || kind === "monster-sensed" || kind.startsWith("champion-");
+}
+
+function monsterBg(kind: string | undefined): string | undefined {
+    if (kind === "monster-sensed") return "var(--rg-monster-sensed-bg)";
+    return kind && isMonsterKind(kind) ? "var(--rg-monster-bg)" : undefined;
+}
+
 interface Run {
     text: string;
     ink: string;
@@ -312,7 +321,7 @@ export default function MapView({
                 ? state.heroes.findIndex((h) => h.x === x && h.y === y)
                 : -1;
             const ink = flash?.ink ?? PARTY_INK[p] ?? (g ? (g.ink ?? (g.kind === "monster" ? MONSTER_INK[g.ch] : undefined) ?? INK[g.kind] ?? "var(--rg-wall)") : "transparent");
-            const bg = flash?.bg ?? PARTY_BG[p];
+            const bg = flash?.bg ?? PARTY_BG[p] ?? monsterBg(g?.kind);
             const last = runs[runs.length - 1];
             if (last && last.ink === ink && last.bg === bg && last.opacity === opacity) {
                 last.text += ch;

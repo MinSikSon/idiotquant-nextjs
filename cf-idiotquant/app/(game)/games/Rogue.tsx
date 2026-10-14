@@ -21,12 +21,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DataConnection, Peer } from "peerjs";
 
 import {
-    type BestiaryRow,
     type Command,
     type Sighting,
     NICK_MAX,
     bestiaryProgress,
-    bestiaryRows,
+    bestiarySlots,
     cleanNick,
     enchantTarget,
     joinGame,
@@ -73,6 +72,7 @@ import {
     CODEX_ENTRIES,
     itemCodexProgress,
     itemCodexStage,
+    weaponCodexSource,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
 import { runHighlights } from "@/lib/rogue/runHighlights";
@@ -2023,7 +2023,7 @@ export default function Rogue() {
     const progress = bestiaryProgress(state.bestiary);
     const itemProg = itemCodexProgress(state.itemCodex, state.itemUsage);
     const codexSearch = codexQuery.trim().toLocaleLowerCase();
-    const monsterRows = bestiaryRows(state.bestiary, state.specials).filter((row) =>
+    const monsterRows = bestiarySlots(state.bestiary, state.specials).filter((row) =>
         `${row.ch} ${row.name}`.toLocaleLowerCase().includes(codexSearch),
     );
     const itemRows = CODEX_ENTRIES.filter((entry) => {
@@ -2639,7 +2639,12 @@ export default function Rogue() {
                                     <p className="py-3 text-[var(--rg-faint)]">{progress.found === 0 ? "아직 아무것도 못 잡았다." : "찾은 몬스터가 없다."}</p>
                                 ) : (
                                     <ul className="space-y-0 font-mono text-[12px]">
-                                        {monsterRows.map((r: BestiaryRow) => {
+                                        {monsterRows.map((r) => {
+                                            if (!r.known) return (
+                                                <li key={r.ch} className="min-w-0 border-b border-[var(--rg-line-soft)] px-1 py-2 text-[var(--rg-faint)]">
+                                                    <span className="mr-2">{r.ch}</span> ??? <span className="float-right">미발견 · 처치하면 공개</span>
+                                                </li>
+                                            );
                                             const open = openMon === r.ch;
                                             const art = monsterArt(r.ch);
                                             return (
@@ -2852,8 +2857,8 @@ export default function Rogue() {
                                                                             <span>{weaponSkillOf(entry.type)}</span>
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-[var(--rg-faint)]">나오는 층: </span>
-                                                                            <span>{itemDepthRange("weapon", entry.type) ? `${itemDepthRange("weapon", entry.type)!.min}–${itemDepthRange("weapon", entry.type)!.max}층` : "1–26층"}</span>
+                                                                            <span className="text-[var(--rg-faint)]">{WEAPONS[entry.type]?.noDrop ? "획득: " : "나오는 층: "}</span>
+                                                                            <span>{weaponCodexSource(entry.type)}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">던지기: </span>

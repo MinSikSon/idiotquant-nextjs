@@ -62,6 +62,12 @@ export interface CodexEntry {
 }
 
 export const CODEX_ENTRIES: CodexEntry[] = [
+    {
+        kind: "weapon", type: "sting", key: "weapon:sting", name: "스팅",
+        category: "weapon", categoryLabel: "무기", masteryType: "kills", masteryGoal: 20,
+        flavor: "호빗 도적이 10% 확률로 미스릴 갑옷과 함께 지니고 출발하는 작은 검. 배낭에 있으면 벽과 시야에 관계없이 주변 5칸의 오크를 감지해 푸르게 빛난다.",
+        masteryFlavor: "푸른빛이 켜지는 순간 발걸음을 멈춘다. 이제 보이지 않는 오크의 접근도 놓치지 않는다.",
+    },
     // ── 무기 (19종) ───────────────────────────────────────────────────────────
     {
         kind: "weapon",
@@ -1152,6 +1158,14 @@ export function itemCodexProgress(
 /**
  * 아이템의 통계 요약 (식별된 경우만 출력할 문자열).
  */
+export function weaponCodexSource(type: string): string {
+    if (type === "sting") return "도적의 희귀 시작 장비 · 10% · 오크 감지 5칸";
+    if (type === "excalibur") return "분수에서 얻는 유물 무기";
+    if (WEAPONS[type]?.noDrop) return "고고학자의 시작 장비";
+    const depths = itemDepthRange("weapon", type);
+    return depths ? `${depths.min}–${depths.max}층` : "1–26층";
+}
+
 export function itemCodexStats(entry: CodexEntry): string {
     const depths = itemDepthRange(entry.kind, entry.type);
     const depthStr = depths ? `${depths.min}–${depths.max}층` : "1–26층";
@@ -1160,7 +1174,7 @@ export function itemCodexStats(entry: CodexEntry): string {
         case "weapon": {
             const def = WEAPONS[entry.type];
             // 바닥에 안 떨어지는 것은 층 띠가 없다 — 「1–26층」으로 적으면 거짓말이 된다.
-            return `Dmg:${def?.damage ?? "1d2"} · ${def?.noDrop ? "고고학자의 시작 장비" : depthStr}`;
+            return `Dmg:${def?.damage ?? "1d2"} · ${weaponCodexSource(entry.type)}`;
         }
         case "armor": {
             const def = ARMORS[entry.type];
