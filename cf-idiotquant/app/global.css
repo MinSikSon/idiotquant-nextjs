@@ -463,13 +463,6 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
   .retro-blink { animation: none; opacity: 1; }
 }
 
-/* 비회원 홈은 앱 셸 여백 없이 독립 랜딩으로 전체 폭을 쓴다. */
-body:has(#public-home) main {
-  margin-left: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
 /* 페이지 골격을 공유하되 홈의 히어로와 게임의 타이포그래피는 별도로 둔다. */
 .landing-style-page :is(h1, h2) {
   font-weight: 600;

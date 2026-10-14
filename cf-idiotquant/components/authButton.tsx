@@ -29,7 +29,7 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 /** 어느 문으로 들어가는 중인가. 둘 다 도는 것처럼 보이면 안 눌린 쪽도 눌린 줄 안다. */
 type Pending = null | "kakao" | "google"
 
-/** 홈과 로그인 화면이 같은 제공자 버튼의 크기·모서리·로딩 상태를 공유한다. */
+/** 로그인 제공자 버튼의 크기·모서리·로딩 상태를 공유한다. */
 function ProviderAuthButton({ provider, pending, onClick, label }: {
     provider: Exclude<Pending, null>
     pending: Pending
@@ -51,26 +51,6 @@ function ProviderAuthButton({ provider, pending, onClick, label }: {
                 : google ? <GoogleIcon size={18} /> : <KakaoIcon size={18} />}
             {loading ? `${google ? "Google" : "카카오"} 연결 중...` : label}
         </button>
-    )
-}
-
-export function StartAuthButtons({ callbackUrl = "/screener" }: { callbackUrl?: string }) {
-    const [pending, setPending] = useState<Pending>(null)
-
-    const handleStart = async (provider: Exclude<Pending, null>) => {
-        setPending(provider)
-        try {
-            await signIn(provider, { redirectTo: callbackUrl })
-        } catch {
-            setPending(null)
-        }
-    }
-
-    return (
-        <div className="grid w-full gap-2 sm:grid-cols-2">
-            <ProviderAuthButton provider="google" pending={pending} onClick={() => handleStart("google")} label="Google 계정으로 시작하기" />
-            <ProviderAuthButton provider="kakao" pending={pending} onClick={() => handleStart("kakao")} label="카카오 계정으로 시작하기" />
-        </div>
     )
 }
 

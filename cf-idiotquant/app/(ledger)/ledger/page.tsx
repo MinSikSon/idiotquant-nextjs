@@ -475,7 +475,6 @@ export default function LedgerPage() {
 
     const header = (
         <PageHeader
-            emoji="📒"
             title={viewingShared ? `${activeLedger?.owner_name ?? "공유"}님의 가계부` : "가계부"}
             meta={
                 viewingShared

@@ -390,25 +390,25 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
         <button
             type="button"
             onClick={() => onClick(item.ticker, item.name)}
-            className="w-full text-left rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 transition-colors"
+            className="w-full text-left bg-transparent py-4 hover:bg-neutral-100 dark:hover:bg-surface-dark-hover transition-colors"
         >
             <div className="flex items-start gap-1.5 sm:gap-3">
-                <span className="mt-0.5 w-5 h-5 shrink-0 rounded-full bg-brand-light dark:bg-brand-muted/50 text-brand-ink flex items-center justify-center text-[10px] font-black tabular-nums">
+                <span className="mt-0.5 w-5 h-5 shrink-0 text-neutral-400 flex items-center justify-center text-[10px] font-medium tabular-nums">
                     {rank}
                 </span>
                 <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-extrabold text-neutral-900 dark:text-white">{item.name}</span>
+                    <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-mono tracking-[0.05em] text-neutral-400">
                         {item.ticker}
-                        {strategy && <span className="font-sans font-bold tracking-normal text-brand-ink">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
+                        {strategy && <span className="font-sans font-bold tracking-normal text-neutral-700 dark:text-neutral-300">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
                     </span>
                 </span>
                 <span className="shrink-0 text-right">
                     <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>
-                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-black tabular-nums text-brand-ink">+{expectedReturn.toFixed(0)}%</span>
+                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-medium tabular-nums text-neutral-700 dark:text-neutral-300">+{expectedReturn.toFixed(0)}%</span>
                 </span>
             </div>
-            <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 border-t border-neutral-100 dark:border-border-subtle-dark text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
+            <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
                 순유동자산이 시가총액의 <strong className="font-mono text-neutral-700 dark:text-neutral-200">{ncav.toFixed(2)}배</strong> · 자세히 보기 <ChevronRight className="inline -mt-px" size={12} />
             </span>
         </button>
@@ -1178,7 +1178,6 @@ function ScreenerContent() {
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
             {isLoggedIn ? <PageHeader
-                emoji={showLikedOnly ? "♡" : "🥇"}
                 title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
                 mobileCompact
                 meta={
@@ -1210,10 +1209,9 @@ function ScreenerContent() {
                     </>
                 }
             /> : (
-                <section className="border-b border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card">
-                    <div className="max-w-3xl mx-auto px-2 sm:px-6 py-6 sm:py-8">
-                        <p className="text-[11px] font-black tracking-[0.12em] text-brand-ink uppercase">Today&apos;s value picks</p>
-                        <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white">오늘의 기대수익 추천</h1>
+                <section className="border-b border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-canvas">
+                    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                        <h1 className="text-2xl font-medium tracking-tight text-neutral-900 dark:text-white">종목 발굴</h1>
                         <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
                             순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다.
                         </p>
@@ -1892,7 +1890,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-2 sm:pt-5 pb-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -1961,12 +1959,12 @@ function ScreenerContent() {
                 {!isLoading && (isLoggedIn ? filteredList.length > 0 : guestRecommendations.length > 0) && (
                     <>
                     {!isLoggedIn ? (
-                        <section className="max-w-3xl mx-auto px-2 sm:px-6">
+                        <section className="max-w-3xl mx-auto px-0 sm:px-6">
                             <div className="mb-3 flex items-baseline justify-between gap-3">
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3">
+                            <div className="divide-y divide-neutral-200 dark:divide-border-subtle-dark">
                                 {guestRecommendations.map((item: any, index) => (
                                     <GuestRecommendationCard key={item.ticker} item={item} rank={index + 1} onClick={handleStockClick} />
                                 ))}

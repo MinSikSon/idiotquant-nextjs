@@ -246,19 +246,19 @@ export default function ComparePage() {
   return <main className="min-h-screen bg-surface-canvas py-8 text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100 sm:py-12">
     <div className={PAGE_WIDTH.data}>
       <header className="max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">궁금한 회사의 숫자를<br className="sm:hidden" /> 나란히 살펴보세요.</h1>
-        <p className="mt-4 text-sm leading-6 text-neutral-600 dark:text-neutral-300">비교할 날짜를 등록한 뒤 종목을 추가하세요. 각 종목의 모든 날짜별 종가와 수익률을 한눈에 볼 수 있습니다.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">종목 비교</h1>
+        <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-300">날짜와 종목을 추가해 가격과 수익률을 비교하세요.</p>
       </header>
 
       <section className="mt-8" aria-label="비교 날짜">
-        <h2 className="text-sm font-semibold">1. 비교할 날짜 추가</h2>
-        <div className="mt-2 flex items-end gap-2">
-          <label className="min-w-0 flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300 sm:flex-none">
+        <h2 className="text-sm font-semibold">비교 날짜</h2>
+        <div className="mt-2 grid min-w-0 gap-2 sm:flex sm:items-end">
+          <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
             가격 기준일
-            <input type="date" value={dateInput} max={localToday()} onChange={e => setDateInput(e.target.value)} disabled={sessionLoading || dateLoading || loading} className="mt-1 block h-11 w-full min-w-0 rounded-xl border border-neutral-300 bg-white px-2 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:px-3" />
+            <input type="date" value={dateInput} max={localToday()} onChange={e => setDateInput(e.target.value)} disabled={sessionLoading || dateLoading || loading} className="mt-1 block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-neutral-300 bg-white px-3 text-center text-base text-neutral-900 outline-none focus:border-[#635bdb] dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:text-sm [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:p-0" />
           </label>
-          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[#635bdb] px-3 text-sm font-semibold text-brand-ink disabled:opacity-50 dark:text-brand-ink sm:px-4">
-            {dateLoading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} 날짜 추가
+          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-[#635bdb] px-3 text-sm font-semibold text-brand-ink disabled:opacity-50 dark:text-brand-ink sm:px-4">
+            {dateLoading ? <Loader2 size={16} className="shrink-0 animate-spin" /> : <Plus size={16} className="shrink-0" />} 날짜 추가
           </button>
         </div>
         <p className="mt-2 text-xs text-neutral-500">날짜 {dates.length}/{limits.dates}개 · {sessionStatus === 'authenticated' ? '로그인' : '비로그인'} 기준</p>
@@ -272,11 +272,11 @@ export default function ComparePage() {
       </section>
 
       <section className="mt-8" aria-label="비교 종목 추가">
-        <h2 className="text-sm font-semibold">2. 종목 추가</h2>
+        <h2 className="text-sm font-semibold">비교 종목</h2>
         <form onSubmit={submit} className="relative mt-2 flex gap-2">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="예: 삼성전자, 005930, AAPL" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-xl border border-neutral-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card" />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="예: 삼성전자, 005930, AAPL" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-xl border border-neutral-300 bg-white pl-10 pr-3 text-base outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card sm:text-sm" />
             {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}</button></li>)}</ul>}
           </div>
           <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
@@ -311,7 +311,7 @@ export default function ComparePage() {
           </div>)}
         </div>
       </section>}
-      {stocks.length === 0 ? <section className="mt-8 rounded-2xl border border-dashed border-neutral-300 bg-white/70 px-5 py-12 text-center dark:border-neutral-700 dark:bg-surface-dark-card">
+      {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
         <p className="text-sm font-medium">{dates.length ? '비교할 종목을 추가해 주세요.' : '비교할 날짜를 먼저 추가해 주세요.'}</p>
         <p className="mt-2 text-sm text-neutral-500">{dates.length ? '예: 삼성전자와 SK하이닉스, 또는 AAPL과 MSFT' : '날짜를 등록하면 종목별 가격을 해당 날짜마다 조회합니다.'}</p>
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">

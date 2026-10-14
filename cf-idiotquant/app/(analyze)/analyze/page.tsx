@@ -955,11 +955,11 @@ function AnalyzeContent() {
             <TrendingUp size={13} className="text-brand-ink" strokeWidth={2.5} />
             <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
-          <p className="text-[11px] text-neutral-400 dark:text-neutral-600 text-center max-w-md leading-relaxed">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center max-w-md leading-relaxed">
             본 서비스의 분석 결과는 투자 참고 목적의 정량적 자료이며, 투자 권유를 목적으로 하지 않습니다.
             실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
           </p>
-          <span className="text-[10px] font-mono text-neutral-300 dark:text-neutral-700">© 2026 IdiotQuant</span>
+          <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-500">© 2026 IdiotQuant</span>
         </div>
       </footer>
     </div>
