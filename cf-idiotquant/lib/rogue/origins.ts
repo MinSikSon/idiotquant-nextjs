@@ -34,6 +34,18 @@ export const ORIGIN_RACE = {
     elementalist: "elf",
 } as const satisfies Record<HeroOrigin, import("./types").HeroRace>;
 
+/** 반지의 제왕 모티프의 시작 무기. 확률은 직업마다 한 번만 굴린다. */
+export const RARE_START_CHANCE = 0.2;
+export const RARE_STARTS = {
+    knight: { kind: "weapon", type: "anduril", character: "아라고른" },
+    rogue: { kind: "weapon", type: "sting", character: "프로도" },
+    alchemist: { kind: "wand", type: "gandalf grey staff", character: "회색 간달프" },
+    scholar: { kind: "wand", type: "saruman staff", character: "사루만" },
+    ranger: { kind: "weapon", type: "legolas bow", character: "레골라스" },
+    archeologist: { kind: "weapon", type: "gimli axe", character: "김리" },
+    elementalist: { kind: "wand", type: "gandalf white staff", character: "백색 간달프" },
+} as const satisfies Record<HeroOrigin, { kind: "weapon" | "wand"; type: string; character: string }>;
+
 export const RACE_NAME = { human: "인간", orc: "오크", gnome: "노움", elf: "엘프", dwarf: "드워프", hobbit: "호빗" } as const;
 
 /** NetHack 3.6 역할·종족 성장표. 커스텀 직업은 가장 가까운 역할 성장표를 빌린다. */
@@ -173,7 +185,7 @@ export const DUAL_WIELD: Partial<Record<HeroOrigin, string[]>> = {
     rogue: ["sting", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"],
     knight: [
         "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger",
-        "mace", "spear", "long sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword",
+        "mace", "spear", "long sword", "anduril", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword",
     ],
 };
 
@@ -187,7 +199,7 @@ export const WEAPON_SKILL_MAX: Record<HeroOrigin, Record<string, number>> = {
     // NetHack Ranger: 활·단검·표창 Expert, 창 Skilled.
     ranger: { bow: 3, crossbow: 3, dagger: 3, dart: 3, spear: 2 },
     // NetHack Archeologist: 곡괭이 Expert, 단검 Basic·표창 Basic 보다 한 칸 넉넉히.
-    archeologist: { "pick-axe": 3, dagger: 2, dart: 2 },
+    archeologist: { "pick-axe": 3, axe: 3, dagger: 2, dart: 2 },
     // 지팡이로 싸우는 직업이라 손 무기는 연구자처럼 얕다.
     elementalist: { dagger: 2, spear: 2, "magic sword": 2 },
 };
@@ -215,7 +227,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "높은 체력과 단단한 방어구를 갖춘 굳건한 전사.",
         traitName: "철벽의 자세",
         traitDescription: "제자리 대기(.) 후 전투 3턴 방어력 +2 (받는 피해 2 추가 경감)",
-        weaponAffinity: { name: "근위 무기", types: ["mace", "long sword", "two-handed sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword"], description: "근위대 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "근위 무기", types: ["anduril", "mace", "long sword", "two-handed sword", "silver sword", "thirsty sword", "magic sword", "knight sword", "baphomet sword"], description: "근위대 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "불굴의 방벽",
         advancedSkillDescription: "체력이 절반 이하일 때 방어력 +2 (철벽의 자세와 중첩)",
         advancedSkillKind: "passive",
@@ -346,7 +358,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "활과 화살로 먼 거리에서 적을 쓰러뜨리는 추적자.",
         traitName: "연사",
         traitDescription: "활·표창 연사 +1 (숙련 +1 · 전문 +2와 합산) · `.` 토글 사격(활이면 화살, 아니면 표창 등 투척 무기) · 활·단검·표창 전문까지",
-        weaponAffinity: { name: "사냥 도구", types: ["short bow", "long bow", "elven bow", "sayha bow", "crossbow", "arrow", "silver arrow", "mithril arrow", "oriharukon arrow", "bolt", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "사냥 도구", types: ["legolas bow", "short bow", "long bow", "elven bow", "sayha bow", "crossbow", "arrow", "silver arrow", "mithril arrow", "oriharukon arrow", "bolt", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger", "dart"], description: "레인저 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "명사수의 눈",
         advancedSkillDescription: "활·표창 연사 +1 → +2",
         advancedSkillKind: "passive",
@@ -387,7 +399,7 @@ export const ORIGINS: Record<HeroOrigin, OriginDef> = {
         description: "곡괭이로 벽을 뚫고 발밑을 파 내려가는 유적 탐사가.",
         traitName: "발굴 본능",
         traitDescription: "곡괭이를 쥐고 벽으로 걸으면 판다 · 계단 없는 곳에서 내려가면 발밑을 판다 · 파는 힘 2배 · 벽 뒤지기 45%",
-        weaponAffinity: { name: "발굴 도구", types: ["pick-axe", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"], description: "고고학자 선호 계열 · 숙련도 보정 적용" },
+        weaponAffinity: { name: "발굴 도구", types: ["gimli axe", "pick-axe", "dagger", "magic dagger", "crystal dagger", "oriharukon dagger", "damascus dagger"], description: "고고학자 선호 계열 · 숙련도 보정 적용" },
         advancedSkillName: "숨은 길의 감",
         advancedSkillDescription: "벽 뒤지기·함정 찾기 45% → 65%",
         advancedSkillKind: "passive",

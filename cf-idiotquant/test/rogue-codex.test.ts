@@ -30,35 +30,41 @@ import { Rng } from "@/lib/rogue/rng";
 import { spawnMonster } from "@/lib/rogue/monsters";
 import { idx, T, type GameState, type Tile } from "@/lib/rogue/types";
 
-test("도감은 현재 게임의 106종 아이템을 7개 카테고리로 나눈다", () => {
-    assert.equal(CODEX_ENTRIES.length, 106);
+test("도감은 현재 게임의 112종 아이템을 7개 카테고리로 나눈다", () => {
+    assert.equal(CODEX_ENTRIES.length, 112);
 
     const prog = itemCodexProgress();
-    assert.equal(prog.totalCount, 106);
+    assert.equal(prog.totalCount, 112);
     assert.equal(prog.identifiedCount, 0);
     assert.equal(prog.masteredCount, 0);
 
-    assert.equal(prog.byCategory.weapon.total, 23);
+    assert.equal(prog.byCategory.weapon.total, 26);
     assert.equal(prog.byCategory.armor.total, 9);
     assert.equal(prog.byCategory.scroll.total, 10);
     assert.equal(prog.byCategory.potion.total, 9);
     assert.equal(prog.byCategory.ring.total, Object.keys(RINGS).length);
-    assert.equal(prog.byCategory.wand.total, 11);
+    assert.equal(prog.byCategory.wand.total, 14);
     assert.equal(prog.byCategory.other.total, 18);
     assert.ok(CODEX_ENTRIES.some((e) => e.key === "tool:magic marker"), "마법 표식기가 도감에 없다");
 
+    for (const type of ["anduril", "legolas bow", "gimli axe", "gandalf grey staff", "saruman staff", "gandalf white staff"]) {
+        const entry = CODEX_ENTRIES.find((e) => e.type === type)!;
+        assert.ok(entry, `${type}: 희귀 무기가 도감에 없다`);
+        assert.match(itemCodexStats(entry), /20%/, `${type}: 희귀 시작 획득 조건을 보여 주지 않는다`);
+        assert.doesNotMatch(itemCodexStats(entry), /1–26층/, `${type}: 바닥에 떨어지는 장비처럼 표시된다`);
+    }
     const sting = CODEX_ENTRIES.find((e) => e.key === "weapon:sting")!;
     assert.ok(sting, "스팅이 아이템 도감에 없다");
-    assert.match(sting.flavor, /10%/, "스팅의 희귀 시작 확률을 설명하지 않는다");
+    assert.match(sting.flavor, /20%/, "스팅의 희귀 시작 확률을 설명하지 않는다");
     assert.match(itemCodexStats(sting), /오크 감지 5칸/, "스팅의 감지 범위가 도감에 없다");
 
     // 각 카테고리 정의 항목과 일치하는지 확인
-    assert.equal(Object.keys(WEAPONS).length, 28); // 드랍 불가 시작 장비도 종류 표에는 남는다
+    assert.equal(Object.keys(WEAPONS).length, 31); // 드랍 불가 시작 장비도 종류 표에는 남는다
     assert.equal(Object.keys(ARMORS).length, 9);
     assert.equal(Object.keys(SCROLLS).length, 12); // 빈 종이와 모루 제작용 충전 주문서 포함
     assert.equal(Object.keys(POTIONS).length, 10);
     assert.equal(Object.keys(RINGS).length, 26);
-    assert.equal(Object.keys(WANDS).length, 11);
+    assert.equal(Object.keys(WANDS).length, 14);
 
     // ── 바닥에 안 떨어지는 곡괭이는 층 띠 대신 어디서 오는지를 적는다(「1–26층」은 거짓말이다)
     {

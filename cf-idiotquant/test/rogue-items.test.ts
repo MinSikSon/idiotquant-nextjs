@@ -937,7 +937,7 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
         give(s, wand, "y");
         const [wx, wy] = openWay(s);
         const after = perform(s, { t: "zap", letter: "y", dx: wx, dy: wy });
-        assert.equal(after.projectile?.fx, type, `${type} 지팡이가 제 연출(fx)을 남기지 않았다`);
+        assert.equal(after.projectile?.fx, WANDS[type].effect ?? type, `${type} 지팡이가 제 연출(fx)을 남기지 않았다`);
         assert.ok(after.projectile?.cells.length, `${type} 지팡이의 궤적이 비었다`);
         glyphs.set(type, after.projectile!.cells[0]!.ch);
     }
@@ -945,7 +945,7 @@ test("공격 지팡이는 원작 문자로 비행 경로를 남긴다", () => {
     assert.equal(new Set(plain).size, plain.length, "공격 광선이 아닌 지팡이끼리 궤적 글자가 겹친다");
 
     // ── 화면의 연출 표(`ZAP_FX`)가 지팡이를 하나도 빠뜨리지 않는다
-    for (const type of Object.keys(WANDS)) assert.ok(ZAP_FX[type], `ZAP_FX 에 ${type} 지팡이의 연출이 없다`);
+    for (const type of Object.keys(WANDS)) assert.ok(ZAP_FX[WANDS[type].effect ?? type], `ZAP_FX 에 ${type} 지팡이의 연출이 없다`);
 
     // ── 연출은 이름과 효과를 따른다 — 움직임이 지팡이마다 갈린다
     const path = Array.from({ length: 5 }, (_, i) => ({ x: 10 + i, y: 5, ch: "-" }));

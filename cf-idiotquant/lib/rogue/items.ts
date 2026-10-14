@@ -118,6 +118,9 @@ export interface ArmorDef {
  */
 export const WEAPONS: Record<string, WeaponDef> = {
     // 1층부터 — 처음 쥐는 것들
+    anduril: { name: "안두릴", damage: "3d4", damageLarge: "1d8", freq: 0, depth: 1, skill: "long sword", hands: 1, material: "iron", noDrop: true },
+    "legolas bow": { name: "레골라스의 활", damage: "1d1", damageLarge: "1d1", fireDamage: "1d3", freq: 0, depth: 1, skill: "bow", hands: 1, material: "wood", noDrop: true },
+    "gimli axe": { name: "김리의 도끼", damage: "2d4", damageLarge: "1d8", freq: 0, depth: 1, skill: "axe", hands: 1, material: "iron", noDrop: true },
     sting: { name: "스팅", damage: "2d4", damageLarge: "1d6", freq: 0, depth: 1, skill: "dagger", hands: 1, material: "iron", noDrop: true },
     dagger: { name: "단검", damage: "1d6", damageLarge: "1d4", freq: 10, depth: 1, throwable: true, skill: "dagger", hands: 1, material: "iron" },
     // 리니지풍 단검 사다리 — 단검 숙련을 공유하며, 표준 단검만 던질 수 있다.
@@ -313,7 +316,10 @@ export const AMULET_EFFECTS: Record<string, string> = {
 };
 
 /** 지팡이 — 방향을 겨눠 쏜다. 횟수가 정해져 있다. */
-export const WANDS: Record<string, { name: string; freq: number; damage?: string; depth: number }> = {
+export const WANDS: Record<string, { name: string; freq: number; damage?: string; depth: number; noDrop?: boolean; effect?: string }> = {
+    "gandalf grey staff": { name: "회색 간달프의", freq: 0, damage: "3d4", depth: 1, noDrop: true, effect: "magic missile" },
+    "saruman staff": { name: "사루만의", freq: 0, damage: "3d4", depth: 1, noDrop: true, effect: "lightning" },
+    "gandalf white staff": { name: "백색 간달프의", freq: 0, damage: "3d4", depth: 1, noDrop: true, effect: "magic missile" },
     "magic missile": { name: "마법 화살", freq: 10, damage: "2d4", depth: 1 },
     lightning: { name: "번개", freq: 5, damage: "6d6", depth: 10 },
     fire: { name: "화염", freq: 5, damage: "6d6", depth: 10 },
@@ -346,7 +352,7 @@ export function markerInkRange(kind: "scroll" | "spellbook", type: string): [num
 
 /** NetHack 물건 무게(au). 계열 안에서도 크기·재료가 다른 것은 종류별로 나눈다. */
 const WEAPON_WEIGHT: Record<string, number> = {
-    sting: 10, dagger: 10, "magic dagger": 10, "crystal dagger": 10, "oriharukon dagger": 10, "damascus dagger": 10,
+    anduril: 40, "legolas bow": 30, "gimli axe": 40, sting: 10, dagger: 10, "magic dagger": 10, "crystal dagger": 10, "oriharukon dagger": 10, "damascus dagger": 10,
     "short bow": 30, "long bow": 30, "elven bow": 30, "sayha bow": 30, crossbow: 50,
     mace: 30, spear: 30, dart: 1, arrow: 1, "silver arrow": 5, "mithril arrow": 1, "oriharukon arrow": 1, bolt: 1,
     "long sword": 40, excalibur: 40, "two-handed sword": 150, "silver sword": 40, "thirsty sword": 40,
@@ -444,7 +450,7 @@ export function rollAppearances(rng: Rng): Record<string, string> {
     });
 
     const woods = rng.shuffle([...WAND_LOOKS]);
-    Object.keys(WANDS).forEach((k, i) => {
+    Object.keys(WANDS).filter((k) => !WANDS[k].noDrop).forEach((k, i) => {
         out[`wand:${k}`] = `${woods[i % woods.length]} 지팡이`;
     });
 

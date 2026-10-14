@@ -3281,7 +3281,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
 
     const hit = ray(level, hero, dx, dy, 12, it.type === "swapping" ? state.heroes : []);
     // 맞든 빗나가든 **모든 지팡이가 제 궤적을 남긴다** — 무엇을 쐈는지가 화면에서 갈린다.
-    zapTrail(state, hero, hit.cells, it.type, dx, dy);
+    zapTrail(state, hero, hit.cells, def?.effect ?? it.type, dx, dy);
 
     // ── 위치 교환의 지팡이 (swapping) ───────────────────────────────────────────
     if (it.type === "swapping") {
@@ -3360,7 +3360,7 @@ function zap(state: GameState, hero: Hero, letter: string, dx: number, dy: numbe
         pullAggro(state, m, hero);
         m.hp -= dmg.total;
         m.awake = true;
-        saySpellDamage(`${m.def.name}이(가) ${def.name}에 맞았다.`, dmg);
+        saySpellDamage(`${m.def.name}이(가) ${def.noDrop ? `${def.name} 지팡이` : def.name}에 맞았다.`, dmg);
         if (m.hp <= 0) {
             say(state, `${m.def.name}을(를) 쓰러뜨렸다.`);
             killMonster(state, m, rng, hero);

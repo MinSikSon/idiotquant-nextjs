@@ -73,6 +73,7 @@ import {
     itemCodexProgress,
     itemCodexStage,
     weaponCodexSource,
+    rareStartSource,
 } from "@/lib/rogue/codexData";
 import { DETAIL, isDetail } from "@/lib/rogue/combat";
 import { runHighlights } from "@/lib/rogue/runHighlights";
@@ -1724,7 +1725,7 @@ export default function Rogue() {
         ].filter(Boolean).join("\n");
         try {
             if (navigator.share) {
-                await navigator.share({ title: "Rogue 지난 판 기록", text: summary });
+                await navigator.share({ title: "게임 지난 판 기록", text: summary });
                 setSeedLinkNote("지난 판 기록을 공유했다.");
                 return;
             }
@@ -2923,8 +2924,8 @@ export default function Rogue() {
                                                                             <span>지팡이</span>
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-[var(--rg-faint)]">나오는 층: </span>
-                                                                            <span>{itemDepthRange("wand", entry.type) ? `${itemDepthRange("wand", entry.type)!.min}–${itemDepthRange("wand", entry.type)!.max}층` : "1–26층"}</span>
+                                                                            <span className="text-[var(--rg-faint)]">{WANDS[entry.type]?.noDrop ? "획득: " : "나오는 층: "}</span>
+                                                                            <span>{rareStartSource("wand", entry.type) ?? (itemDepthRange("wand", entry.type) ? `${itemDepthRange("wand", entry.type)!.min}–${itemDepthRange("wand", entry.type)!.max}층` : "1–26층")}</span>
                                                                         </div>
                                                                         <div>
                                                                             <span className="text-[var(--rg-faint)]">발사 횟수: </span>

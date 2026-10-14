@@ -9,7 +9,7 @@ export const metadata: Metadata = {
         title: "IdiotGames",
         statusBarStyle: "black-translucent",
     },
-    title: "로그 - 웹에서 하는 오리지널 로그라이크",
+    title: "게임 - 웹에서 하는 오리지널 로그라이크",
     description:
         "1980년 Rogue 를 웹으로 옮겼습니다. 지하 26층의 옌더의 증표를 찾아 살아서 돌아오십시오. 방마다 어둡고, 포션은 마셔 봐야 알고, 죽으면 그것으로 끝입니다.",
     keywords: [
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     ],
     alternates: { canonical: "https://idiotquant.com/games" },
     openGraph: {
-        title: "로그 | IdiotQuant",
+        title: "게임 | IdiotQuant",
         description: "지하 26층. 옌더의 증표를 찾아 살아서 돌아오십시오.",
         url: "https://idiotquant.com/games",
     },

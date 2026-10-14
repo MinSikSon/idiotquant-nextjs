@@ -5,6 +5,7 @@
  * 레벨업은 갈수록 사건이 된다.
  */
 
+import { RARE_START_CHANCE, RARE_STARTS } from "./origins";
 import { activeRelicCombos } from "./relics";
 
 import {
@@ -302,15 +303,25 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
         spiritTurn: 0,
     };
     const startingItems = originDef.createStartingItems(nextId);
-    // 같은 시드는 같은 희귀 시작 장비를 준다. 단검 묶음은 투척용으로 남긴다.
-    if (origin === "rogue" && rng.chance(0.1)) {
-        const sting = makeItem("weapon", "sting", nextId(), -1, -1);
-        sting.plusHit = 1;
-        sting.plusDam = 1;
-        sting.stingGlowing = false;
-        const armorIndex = startingItems.findIndex((it) => it.kind === "armor");
-        startingItems[armorIndex] = makeItem("armor", "mithril mail", startingItems[armorIndex].id, -1, -1);
-        startingItems.unshift(sting);
+    // 직업별로 한 번만 굴리고, 기존 기본 장비는 도구·예비 무기로 남긴다.
+    let rareWeapon: Item | undefined;
+    // 기존 도적의 추첨은 유지한다. 새 직업 추첨은 독립 시드로 일반 던전의 난수 흐름을 지킨다.
+    const startRng = origin === "rogue" ? rng : new Rng(rng.state ^ 0x51f15e);
+    if (startRng.chance(RARE_START_CHANCE)) {
+        const rare = RARE_STARTS[origin];
+        rareWeapon = makeItem(rare.kind, rare.type, nextId(), -1, -1);
+        if (rareWeapon.kind === "weapon") {
+            rareWeapon.plusHit = 1;
+            rareWeapon.plusDam = 1;
+        } else {
+            rareWeapon.charges = 8;
+        }
+        if (origin === "rogue") {
+            rareWeapon.stingGlowing = false;
+            const armorIndex = startingItems.findIndex((it) => it.kind === "armor");
+            startingItems[armorIndex] = makeItem("armor", "mithril mail", startingItems[armorIndex].id, -1, -1);
+        }
+        startingItems.unshift(rareWeapon);
     }
     for (const item of startingItems) {
         addToPack(hero, item);
@@ -326,6 +337,7 @@ export function makeHero(rng: Rng, nextId: () => number, origin: HeroOrigin = "k
             hero.armorId = item.id;
         }
     }
+    if (rareWeapon) hero.weaponId = rareWeapon.id;
     for (const item of hero.pack) {
         if (item.kind !== "weapon") continue;
         const skill = weaponSkillOf(item.type);

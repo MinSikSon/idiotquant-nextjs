@@ -35,6 +35,7 @@ import {
     itemDepthRange,
     makeItem,
 } from "./items";
+import { ORIGINS, RARE_START_CHANCE, RARE_STARTS } from "./origins";
 import { type GameState, type Item, type ItemKind } from "./types";
 
 export type CodexCategory =
@@ -65,7 +66,7 @@ export const CODEX_ENTRIES: CodexEntry[] = [
     {
         kind: "weapon", type: "sting", key: "weapon:sting", name: "스팅",
         category: "weapon", categoryLabel: "무기", masteryType: "kills", masteryGoal: 20,
-        flavor: "호빗 도적이 10% 확률로 미스릴 갑옷과 함께 지니고 출발하는 작은 검. 배낭에 있으면 벽과 시야에 관계없이 주변 5칸의 오크를 감지해 푸르게 빛난다.",
+        flavor: `호빗 도적이 ${RARE_START_CHANCE * 100}% 확률로 미스릴 갑옷과 함께 지니고 출발하는 작은 검. 배낭에 있으면 벽과 시야에 관계없이 주변 5칸의 오크를 감지해 푸르게 빛난다.`,
         masteryFlavor: "푸른빛이 켜지는 순간 발걸음을 멈춘다. 이제 보이지 않는 오크의 접근도 놓치지 않는다.",
     },
     // ── 무기 (19종) ───────────────────────────────────────────────────────────
@@ -1047,6 +1048,26 @@ export const CODEX_ENTRIES: CodexEntry[] = [
 ];
 
 // 표에 새 장신구가 추가되면 도감에도 빠지지 않도록 효과표에서 기본 항목을 채운다.
+// 희귀 시작 장비도 일반 장비와 같은 식별·통달 규칙을 쓴다.
+for (const [origin, rare] of Object.entries(RARE_STARTS)) {
+    if (rare.type === "sting") continue; // 오크 감지 설명을 가진 기존 항목.
+    const name = rare.kind === "weapon" ? WEAPONS[rare.type].name : `${WANDS[rare.type].name} 지팡이`;
+    CODEX_ENTRIES.push({
+        kind: rare.kind, type: rare.type, key: `${rare.kind}:${rare.type}`, name,
+        category: rare.kind, categoryLabel: rare.kind === "weapon" ? "무기" : "지팡이",
+        masteryType: rare.kind === "weapon" ? "kills" : "uses", masteryGoal: rare.kind === "weapon" ? 20 : 15,
+        flavor: `${rare.character}의 무기를 본뜬 장비. ${ORIGINS[origin as keyof typeof RARE_STARTS].name}가 ${RARE_START_CHANCE * 100}% 확률로 착용하고 시작한다. 일반 던전 드롭으로는 나오지 않는다.${rare.type === "gimli axe" ? " 굴착할 때는 함께 가진 곡괭이로 바꿔 쥔다." : ""}`,
+        masteryFlavor: `${rare.character}의 무기로 수많은 싸움을 넘겼다. 이제 손에 익은 장비가 되어 다음 행동을 망설이지 않는다.`,
+    });
+}
+
+/** 드롭 층 대신 보여 주는 희귀 시작 장비의 획득 경로. */
+export function rareStartSource(kind: ItemKind, type: string): string | null {
+    const found = Object.entries(RARE_STARTS).find(([, rare]) => rare.kind === kind && rare.type === type);
+    if (!found) return null;
+    return `${ORIGINS[found[0] as keyof typeof RARE_STARTS].name}의 희귀 시작 장비 · ${RARE_START_CHANCE * 100}%`;
+}
+
 const codexKeys = new Set(CODEX_ENTRIES.map((entry) => entry.key));
 for (const [type, def] of Object.entries(RINGS)) {
     const key = `ring:${type}`;
@@ -1159,7 +1180,9 @@ export function itemCodexProgress(
  * 아이템의 통계 요약 (식별된 경우만 출력할 문자열).
  */
 export function weaponCodexSource(type: string): string {
-    if (type === "sting") return "도적의 희귀 시작 장비 · 10% · 오크 감지 5칸";
+    if (type === "sting") return `도적의 희귀 시작 장비 · ${RARE_START_CHANCE * 100}% · 오크 감지 5칸`;
+    const rare = rareStartSource("weapon", type);
+    if (rare) return rare;
     if (type === "excalibur") return "분수에서 얻는 유물 무기";
     if (WEAPONS[type]?.noDrop) return "고고학자의 시작 장비";
     const depths = itemDepthRange("weapon", type);
@@ -1183,9 +1206,10 @@ export function itemCodexStats(entry: CodexEntry): string {
         case "potion":
         case "scroll":
         case "spellbook":
-        case "wand":
         case "ring":
             return depthStr;
+        case "wand":
+            return rareStartSource("wand", entry.type) ?? depthStr;
         case "food":
             return entry.type === "food ration" ? "1–26층 · 허기 회복" : "시체 식량 · 독 저항, 용 화염/예티 냉기 저항, 망령 레벨 상승";
         case "tool":

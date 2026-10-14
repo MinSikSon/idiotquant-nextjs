@@ -30,8 +30,8 @@ test("새 판은 내려온 계단 위에서 — 다만 함정으로 떨어지면
             assert.equal(level.depth, 1);
             assert.equal(s.phase, "playing");
             assert.ok(hero.hp > 0 && hero.hp === hero.maxHp);
-            // 처음에는 철퇴·갑옷·식량 셋을 들고 있다.
-            assert.equal(hero.pack.length, 3);
+            // 기본 철퇴·갑옷·식량에 희귀 시작이면 안두릴 한 자루가 더해진다.
+            assert.equal(hero.pack.length, hero.pack.some((it) => it.type === "anduril") ? 4 : 3);
             assert.ok(hero.weaponId !== null && hero.armorId !== null);
         }
     }

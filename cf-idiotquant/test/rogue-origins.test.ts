@@ -4,7 +4,7 @@ import { glyphAt, joinGame, newGame, perform, spiritWait } from "@/lib/rogue/gam
 import { DIG_DOWN_EFFORT, DIG_WALL_EFFORT, addToPack, canOffHand, canWieldWeapon, digEffort, heldPickAxe, equippedWand, heroArmorClass, heroArmorClassTerms, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerOf, isDualWielding, searchChance, strDamBonus, weaponAffinityOf } from "@/lib/rogue/hero";
 import { itemInk, makeItem } from "@/lib/rogue/items";
 import { SPIRIT_GLYPHS, SPIRIT_NAMES, SPIRIT_VERBS, spawnMonster, spiritDef } from "@/lib/rogue/monsters";
-import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
+import { ADVANCE_LEVEL, ADVANCED_SPIRIT_TURNS, ARCHEOLOGIST_DIG_MULT, ORIGINS, ORIGIN_LIST, RARE_STARTS, SPIRIT_COOLDOWN, SPIRIT_TURNS } from "@/lib/rogue/origins";
 import { makeHero } from "@/lib/rogue/hero";
 import { updateStingGlow } from "@/lib/rogue/sting";
 import { Rng } from "@/lib/rogue/rng";
@@ -19,6 +19,37 @@ test("7대 출신(직업) 목록 및 스탯이 올바르게 정의되어 있다"
     }
     assert.equal(ORIGINS.knight.advancedSkillKind, "passive");
     
+    // ── 모든 직업이 20% 확률로 자신의 반지의 제왕 무기를 장착한다
+    for (const origin of ORIGIN_LIST) {
+        const rare = RARE_STARTS[origin.id];
+        let count = 0;
+        for (let seed = 1; seed <= 2000; seed++) {
+            let id = 1;
+            const h = makeHero(new Rng(seed), () => id++, origin.id);
+            const item = h.pack.find((it) => it.kind === rare.kind && it.type === rare.type);
+            if (!item) continue;
+            count++;
+            assert.equal(h.weaponId, item.id, `${origin.id}: 희귀 무기를 쥐고 시작하지 않았다`);
+            assert.equal(item.count, 1, `${origin.id}: 희귀 무기는 한 개여야 한다`);
+            if (item.kind === "wand") {
+                assert.equal(item.charges, 8, `${origin.id}: 희귀 지팡이의 충전 횟수가 없다`);
+            } else {
+                assert.ok(canWieldWeapon(h, item), `${origin.id}: 자기 희귀 무기를 쥘 수 없다`);
+                assert.equal(item.plusHit, 1, `${origin.id}: 희귀 무기 강화가 다르다`);
+            }
+            let repeatId = 1;
+            assert.deepEqual(makeHero(new Rng(seed), () => repeatId++, origin.id), h, `${origin.id}: 같은 시드에서 시작 장비가 달라졌다`);
+        }
+        assert.ok(count >= 330 && count <= 470, `${origin.id}: 희귀 시작 확률이 20%와 다르다 (${count}/2000)`);
+        const actual = Array.from({ length: 200 }, (_, seed) => newGame(seed + 1, {}, {}, {}, {}, origin.id)).find((s) => s.heroes[0].pack.some((it) => it.type === rare.type))!;
+        assert.ok(actual, `${origin.id}: 실제 새 판에 희귀 무기가 나오지 않는다`);
+        assert.equal(actual.known[`${rare.kind}:${rare.type}`], true, `${origin.id}: 시작 무기가 미식별이다`);
+        assert.equal(actual.itemCodex[`${rare.kind}:${rare.type}`], true, `${origin.id}: 시작 무기가 도감에서 안 열린다`);
+        const restored = deserialize(serialize(actual))!;
+        const held = restored.heroes[0].pack.find((it) => it.id === restored.heroes[0].weaponId);
+        assert.equal(held?.type, rare.type, `${origin.id}: 저장을 읽으면 희귀 장착 무기가 사라진다`);
+    }
+
     // Knight
     assert.equal(ORIGINS.knight.name, "왕실 근위대");
     assert.equal(ORIGINS.knight.baseHp, 14);
@@ -276,7 +307,7 @@ test("지하 도적(Rogue) 시작 장비 및 스탯 확인", () => {
         let repeatId = 1;
         assert.deepEqual(makeHero(new Rng(seed), () => repeatId++, "rogue"), h, "같은 시드의 희귀 장비가 달라졌다");
     }
-    assert.ok(rare >= 150 && rare <= 250, `희귀 시작 확률은 약 10%여야 한다: ${rare}/2000`);
+    assert.ok(rare >= 330 && rare <= 470, `희귀 시작 확률은 약 20%여야 한다: ${rare}/2000`);
 
     // ── 배낭 스팅은 보이지 않는 오크에도 반응하고 상태 전환만 알린다
     {
@@ -327,7 +358,7 @@ test("혼자 잠입한 도적은 일부 평범한 적을 잠든 채 만난다", 
 });
 
 test("방랑 연금술사(Alchemist) 시작 물약 100% 식별 및 회복 효과", () => {
-    const s = newGame(3, {}, {}, {}, {}, "alchemist");
+    const s = newGame(2, {}, {}, {}, {}, "alchemist");
     assert.equal(s.heroes[0].origin, "alchemist");
     assert.equal(s.heroes[0].hp, 12);
     assert.equal(s.heroes[0].str, 11);
@@ -641,11 +672,13 @@ test("종료 시 무덤(Tomb) 기록에 영웅 origin 정보가 정상 보존된
 test("고고학자의 곡괭이 — 벽으로 걸으면 판다", () => {
     const s = newGame(11, {}, {}, {}, {}, "archeologist");
     const hero = s.heroes[0];
+    // 희귀 도끼로 출발해도 굴착 검증은 배낭에 남은 곡괭이를 쥐고 한다.
+    hero.weaponId = hero.pack.find((it) => it.type === "pick-axe")!.id;
 
-    // ── 곡괭이를 쥐고 시작한다 · 벽 뒤지기 45% → 전직 65%
+    // ── 곡괭이를 쥔다 · 벽 뒤지기 45% → 전직 65%
     {
         const pick = hero.pack.find((p) => p.id === hero.weaponId);
-        assert.equal(pick?.type, "pick-axe", "곡괭이를 쥐고 시작해야 곧바로 판다");
+        assert.equal(pick?.type, "pick-axe", "곡괭이를 쥐어야 곧바로 판다");
         assert.equal(pick?.plusHit, 1);
         assert.equal(searchChance(hero), 0.45);
         hero.level = ADVANCE_LEVEL;
@@ -655,6 +688,7 @@ test("고고학자의 곡괭이 — 벽으로 걸으면 판다", () => {
 
     const setup = (st: GameState) => {
         const h = st.heroes[0];
+        if (h.origin === "archeologist") h.weaponId = h.pack.find((it) => it.type === "pick-axe")!.id;
         h.x = 10;
         h.y = 10;
         h.food = 1300;
@@ -789,6 +823,7 @@ test("곡괭이는 고고학자 전용 — 다른 직업은 못 쥐고, 억지�
     const withPick = (origin: "archeologist" | "knight", seed: number) => {
         const s = newGame(seed, {}, {}, {}, {}, origin);
         const h = s.heroes[0];
+        if (origin === "archeologist") h.weaponId = h.pack.find((it) => it.type === "pick-axe")!.id;
         const pick = origin === "archeologist" ? heldPickAxe(h)! : makeItem("weapon", "pick-axe", 9001, -1, -1);
         if (origin !== "archeologist") addToPack(h, pick);
         h.x = 10;
@@ -921,7 +956,9 @@ test("협동 — 곡괭이는 쥔 사람의 것이고, 발밑이 뚫리면 파�
     const s = joinGame(newGame(71, {}, {}, {}, {}, "knight"), "archeologist");
     const [host, guest] = s.heroes;
     assert.equal(guest.origin, "archeologist");
-    assert.equal(heldPickAxe(guest)?.type, "pick-axe", "손님 고고학자가 곡괭이를 안 쥐었다");
+    // 희귀 도끼로 시작했어도 곡괭이는 배낭에 남는다. 이 사례는 곡괭이 굴착을 검증한다.
+    guest.weaponId = guest.pack.find((it) => it.type === "pick-axe")!.id;
+    assert.equal(heldPickAxe(guest)?.type, "pick-axe", "손님 고고학자의 곡괭이가 사라졌다");
     s.level.monsters = [];
     guest.x = 10;
     guest.y = 10;
