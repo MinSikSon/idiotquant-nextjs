@@ -9,7 +9,7 @@ type PricePoint = {
 export function calculatePriceReturns(stocks: PricePoint[]) {
   const groups = new Map<string, PricePoint[]>();
   for (const stock of stocks) {
-    if (!stock.priceDate || !stock.price || stock.price <= 0) continue;
+    if (!stock.priceDate || !Number.isFinite(stock.price) || !stock.price || stock.price <= 0) continue;
     const key = `${stock.market}:${stock.ticker}`;
     groups.set(key, [...(groups.get(key) ?? []), stock]);
   }

@@ -2,7 +2,7 @@ import { publicPageMetadata } from '@/lib/seo';
 import { COMPARE_FAQ } from '@/lib/seo-content';
 import PageAnswers from '@/components/pageAnswers';
 
-export const metadata = publicPageMetadata('/compare', '종목 비교 - 날짜별 주가·수익률 비교', '비교할 날짜와 종목을 등록해 날짜별 종가와 수익률을 나란히 확인하세요. PER·PBR·EPS·BPS·ROE 등 현재 재무지표도 함께 비교합니다.');
+export const metadata = publicPageMetadata('/compare', '종목 비교 - 현재 주식 수 기준 환산가 비교', '비교할 날짜와 종목을 등록해 과거 시가총액을 현재 상장주식 수로 나눈 환산가와 변화율을 확인하세요. PER·PBR·EPS·BPS·ROE 등 현재 재무지표도 함께 비교합니다.');
 
 const jsonLdBreadcrumb = {
   '@context': 'https://schema.org',
