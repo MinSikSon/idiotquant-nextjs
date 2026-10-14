@@ -1,3 +1,4 @@
+import { QUANT_FAQ as FAQ } from '@/lib/seo-content';
 import Link from 'next/link';
 import { ArrowRight, Filter, Search, Calculator } from 'lucide-react';
 import { STRATEGY_PRESETS_CLIENT } from '@/lib/constants/strategies';
@@ -10,28 +11,7 @@ import { STRATEGY_PRESETS_CLIENT } from '@/lib/constants/strategies';
 // 전략 표는 `STRATEGY_PRESETS_CLIENT` 를 그대로 읽는다 — 스크리너가 쓰는 그 기준이다.
 // 여기에 기준을 다시 적으면 언젠가 둘이 어긋나고, 그때 이 글은 거짓말이 된다.
 
-const FAQ = [
-  {
-    q: '퀀트 투자란 무엇인가요?',
-    a: '퀀트(quant) 투자는 정량(quantitative) 지표로 규칙을 먼저 정하고, 그 규칙을 모든 종목에 똑같이 적용해 종목을 고르는 방법입니다. "PBR 0.5 미만" 처럼 숫자로 적을 수 있는 기준만 쓰기 때문에, 같은 기준이면 누가 언제 돌려도 같은 목록이 나옵니다. 뉴스나 감이 아니라 재무제표와 시세라는 같은 데이터를 봅니다.',
-  },
-  {
-    q: '퀀트 투자는 프로그래밍을 할 줄 알아야 하나요?',
-    a: '아닙니다. 파이썬으로 직접 데이터를 받아 돌리는 방법도 있지만, 기준이 이미 정해진 스크리너를 쓰면 코드 없이 같은 일을 할 수 있습니다. IdiotQuant는 코스피·코스닥 전 종목에 NCAV·저PBR·저PER·S-RIM 등의 기준을 매일 적용한 결과를 가입 없이 보여 줍니다.',
-  },
-  {
-    q: '퀀트 투자에서 가장 많이 쓰는 전략은 무엇인가요?',
-    a: '자산 기준으로는 NCAV(순유동자산 > 시가총액)와 저PBR(PBR 0.5 미만), 이익 기준으로는 저PER(PER 10 미만, 흑자)과 마법공식(PER 15 미만 & ROE 10% 초과)이 대표적입니다. 둘을 합친 그레이엄 기준(PER × PBR < 22.5)과 초과이익모델 S-RIM(ROE 8% 초과 & PBR 1.0 미만)도 널리 쓰입니다.',
-  },
-  {
-    q: '퀀트 투자는 무조건 수익이 나나요?',
-    a: '아닙니다. 퀀트는 과거 데이터에서 통했던 규칙을 앞으로도 쓰는 방법이라, 그 규칙이 통하지 않는 구간이 몇 년씩 이어질 수 있습니다. 싼 데는 이유가 있는 종목(적자 지속, 상장폐지 위험, 거래량 부족)이 기준에 걸려 올라오기도 하므로, 스크리너가 내준 목록은 매수 목록이 아니라 조사 목록으로 봐야 합니다.',
-  },
-  {
-    q: '퀀트 주식 스크리너를 쓰려면 가입해야 하나요?',
-    a: 'IdiotQuant의 종목 발굴(스크리너)과 오늘의 발굴 결과는 가입 없이 볼 수 있습니다. 로그인하면 종목별 상세 재무분석, 목표주가 계산(DCF·RIM·그레이엄), 상장폐지 위험도도 볼 수 있습니다.',
-  },
-];
+
 
 const STEPS = [
   {
@@ -86,8 +66,8 @@ const TOOLS = [
   {
     href: '/calculator',
     icon: Calculator,
-    title: '수익·손익 계산기',
-    body: '매수가와 수량을 넣어 수수료·거래세까지 반영한 실제 손익을 계산합니다.',
+    title: '복리 수익률 계산기',
+    body: '초기 투자금과 매월 적립금, 수익률을 넣어 복리와 세후·실질 금액을 비교합니다.',
   },
 ];
 
@@ -218,7 +198,7 @@ export default function QuantPage() {
           </div>
         </section>
 
-        {/* ── FAQ ── 검색 결과에 그대로 펼쳐지는 자리(FAQPage JSON-LD)와 같은 문장이다 */}
+        {/* ── FAQ ── 화면의 답변과 FAQPage 구조화 데이터가 같은 원본을 사용한다 */}
         <section className="mt-14">
           <h2 className="text-[20px] sm:text-[26px] font-black text-neutral-900 dark:text-white break-keep">
             퀀트 투자 자주 묻는 질문

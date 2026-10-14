@@ -31,6 +31,8 @@ import {
     type ScreenerFilters, type FilterGroupKey, type DiscoverySortKey, type SortOrder,
 } from "./filters";
 
+import FactorWorkbench from "@/components/research/FactorWorkbench";
+
 import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Share2, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -601,9 +603,9 @@ function ScreenerContent() {
     const [minMarketCap, setMinMarketCap] = useState<number>(() => initNum('mincap', 'mincap'));
     // 밸류에이션 필터 (0 = 미적용)
     const [maxPbr, setMaxPbr] = useState<number>(() => initNum('maxpbr', 'maxpbr'));
-    const [maxPer, setMaxPer] = useState<number>(() => initNum('maxper', 'maxper', PER_MAX_PRESETS));
-    const [minRoe, setMinRoe] = useState<number>(() => initNum('minroe', 'minroe', ROE_MIN_PRESETS));
-    const [minNcav, setMinNcav] = useState<number>(() => initNum('minncav', 'minncav', NCAV_MIN_PRESETS));
+    const [maxPer, setMaxPer] = useState<number>(() => initNum('maxper', 'maxper'));
+    const [minRoe, setMinRoe] = useState<number>(() => initNum('minroe', 'minroe'));
+    const [minNcav, setMinNcav] = useState<number>(() => initNum('minncav', 'minncav'));
 
     // 저장된 필터 조합 — 자주 쓰는 조건을 이름 붙여 두면 다음에 한 번에 불러올 수 있다.
     const [savedSets, setSavedSets] = useState<SavedFilterSet[]>(() => {
@@ -1610,6 +1612,9 @@ function ScreenerContent() {
                                         </DrawerChip>
                                     ))}
                                 </div>
+                                <label className="mt-3 block text-xs text-neutral-500">직접 입력 · PER
+                                    <input aria-label="PER 직접 입력" type="number" min="0" step="0.1" value={maxPer || ''} placeholder="미적용" onChange={e => { setMaxPer(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                </label>
                             </DrawerCard>
 
                             {/* NCAV */}
@@ -1621,6 +1626,9 @@ function ScreenerContent() {
                                         </DrawerChip>
                                     ))}
                                 </div>
+                                <label className="mt-3 block text-xs text-neutral-500">직접 입력 · NCAV 비율
+                                    <input aria-label="NCAV 비율 직접 입력" type="number" min="0" step="0.01" value={minNcav || ''} placeholder="미적용" onChange={e => { setMinNcav(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                </label>
                             </DrawerCard>
 
                             {/* 수익성 — −N 표기가 핵심. 어떤 조건이 결과를 많이 죽이는지 켜기 전에 안다. */}
@@ -1640,6 +1648,9 @@ function ScreenerContent() {
                                         ? countWith({ excludeDeficit: false }) - filteredList.length
                                         : filteredList.length - countWith({ excludeDeficit: true })}
                                 />
+                                <label className="mt-3 block text-xs text-neutral-500">직접 입력 · ROE (%)
+                                    <input aria-label="ROE (%) 직접 입력" type="number" min="0" step="0.1" value={minRoe || ''} placeholder="미적용" onChange={e => { setMinRoe(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                </label>
                             </DrawerCard>
 
                             {/* 시장 — 코스닥은 같은 지표라도 변동성·유동성 성격이 다르다. */}
@@ -1890,6 +1901,8 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
+            <FactorWorkbench items={ncavDailyList.country === country ? (isLoggedIn ? filteredList : guestRecommendations) : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
 
                 {isLoading && (
@@ -2152,7 +2165,7 @@ function ScreenerContent() {
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                                    로그인하면 전체 목록과 필터·정렬·과거 날짜 조회를 이용할 수 있습니다.
+                                    로그인하면 전체 목록과 필터·정렬을 이용할 수 있습니다. 과거 시점 검증은 팩터 실험실에서 CSV로 실행할 수 있습니다.
                                 </p>
                                 <button
                                     onClick={requireLogin}

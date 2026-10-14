@@ -1,27 +1,15 @@
-import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/seo';
+import { SCREENER_FAQ } from '@/lib/seo-content';
+import PageAnswers from '@/components/pageAnswers';
 
-export const metadata: Metadata = {
-  title: '오늘의 발굴 종목 - NCAV·저PBR·저PER 주식 스크리너',
-  description: '매일 업데이트되는 퀀트 기반 저평가 주식 목록. NCAV(순유동자산), 저PBR, 저PER, S-RIM, 그레이엄 공식으로 검증된 코스피·코스닥 투자 후보 종목을 확인하세요.',
-  keywords: [
-    'NCAV 스크리너', '오늘의 추천 주식', '저평가 주식 목록', '퀀트 스크리너',
-    '국내 주식 스크리너', '코스닥 저평가', '코스피 저평가', '저PBR 종목',
-    '저PER 종목', 'S-RIM 주식', '그레이엄 공식', '가치주 발굴',
-  ],
-  alternates: { canonical: 'https://idiotquant.com/screener' },
-  openGraph: {
-    title: '오늘의 발굴 종목 - NCAV·저PBR·저PER 스크리너 | IdiotQuant',
-    description: '매일 업데이트. 퀀트 전략으로 검증된 코스피·코스닥 저평가 주식 목록.',
-    url: 'https://idiotquant.com/screener',
-  },
-};
+export const metadata = publicPageMetadata('/screener', '주식 스크리너 - NCAV·저PBR·저PER 종목 발굴', '코스피·코스닥 재무 기준 발굴 결과를 확인하고 팩터 범위·가중치를 직접 조합하세요. 과거 시점 CSV로 보유 수·리밸런싱·거래 비용을 설정해 검증할 수 있습니다.');
 
 const jsonLdBreadcrumb = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: '홈', item: 'https://idiotquant.com' },
-    { '@type': 'ListItem', position: 2, name: '오늘의 발굴 종목', item: 'https://idiotquant.com/screener' },
+    { '@type': 'ListItem', position: 2, name: '종목 발굴', item: 'https://idiotquant.com/screener' },
   ],
 };
 
@@ -30,6 +18,7 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }} />
       {children}
+      <PageAnswers title="종목 발굴" path="/screener" items={SCREENER_FAQ} />
     </>
   );
 }
