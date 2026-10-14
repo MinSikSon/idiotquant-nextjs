@@ -842,7 +842,7 @@ function AnalyzeContent() {
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
               {isLoaded ? (
               <div className="space-y-6">
-                <TechnicalSummary bars={technicalBars} currency={currency} />
+                {activeTab === 'metrics' && <TechnicalSummary bars={technicalBars} currency={currency} />}
                 {/* 비로그인 안내 — 블러 구간에 들어가기 직전 한 번만.
                     예전엔 헤더 배지·블러 오버레이·페이지 맨 아래 CTA 로 같은 말이 흩어져 있었다. */}
                 {!isLoggedIn && (
