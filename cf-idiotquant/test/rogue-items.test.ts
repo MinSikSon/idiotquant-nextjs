@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { glyphAt, newGame, perform, score } from "@/lib/rogue/game";
-import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, PACK_LETTERS, regenEvery, searchChance, wornRings } from "@/lib/rogue/hero";
+import { goldGain, launcherFor, rapidFireOf, volleyMax, heroArmor, heroDamTerms, heroDefense, heroHitTerms, heroStr, hungerRate, packItem, PACK_LETTERS, regenEvery, wandRechargeEvery, searchChance, wornRings } from "@/lib/rogue/hero";
 import { ZAP_FX, zapFrames, zapImpact, zapLight } from "@/app/(game)/games/zapFx";
 import { STACK_MAX, WANDS, WEAPONS, describe, itemPower, makeItem, markerInkRange, randomItem, weaponDamageOf } from "@/lib/rogue/items";
 import { spawnMonster } from "@/lib/rogue/monsters";
@@ -552,13 +552,41 @@ test("석궁과 볼트 — 볼트는 석궁으로만 쏘고, 연사 없이 한 �
     assert.equal(launcherFor(t.heroes[0], packItem(t.heroes[0], "x")!), undefined, "단궁으로 볼트를 쏜다");
 });
 
-test("`.` 토글 사격 — 쥔 발사기의 탄약, 마법 직업의 지팡이, 레인저의 표창", () => {
+test("`.` 토글 사격 — 쥔 발사기의 탄약, 모든 직업의 지팡이, 레인저의 표창", () => {
     // ── 지팡이를 쥔 연구자는 그 지팡이다(예전 「비전 속사」 그대로)
     {
         const s = newGame(120, {}, {}, {}, {}, "scholar");
         const shot = rapidFireOf(s.heroes[0]);
         assert.equal(shot?.kind, "zap", "연구자의 토글이 지팡이를 안 고른다");
         assert.equal(shot?.item.type, "magic missile");
+    }
+
+    // ── 누구나 장착 지팡이로 속사를 쓰되, 자연 충전은 연금술사·연구자뿐이다
+    {
+        const origins = ["knight", "rogue", "alchemist", "scholar", "ranger", "archeologist", "elementalist"] as const;
+        for (const [index, origin] of origins.entries()) {
+            let s = newGame(130 + index, {}, {}, {}, {}, origin);
+            s.level.monsters = [];
+            const wand = makeItem("wand", "magic missile", 9800 + index, -1, -1);
+            wand.charges = 3;
+            give(s, wand, "z");
+            s = perform(s, { t: "wield", letter: "z" });
+            const hero = s.heroes[0];
+            const shot = rapidFireOf(hero);
+            assert.equal(shot?.kind, "zap", `${origin}: 지팡이를 쥐어도 비전 속사가 안 열린다`);
+            assert.equal(shot?.item.id, wand.id, `${origin}: 장착한 지팡이 대신 다른 것을 골랐다`);
+            s.turn = 0;
+            const [dx, dy] = openWay(s);
+            s = perform(s, { t: "zap", letter: shot!.item.letter!, dx, dy });
+            assert.equal(wand.charges, 2, `${origin}: 속사 한 번에 충전 한 회를 소모하지 않았다`);
+            s.turn = wandRechargeEvery(hero) - 1;
+            s = perform(s, { t: "rest" });
+            const recharges = origin === "alchemist" || origin === "scholar";
+            assert.equal(wand.charges, recharges ? 3 : 2, `${origin}: 지팡이 자연 충전 직업 조건이 다르다`);
+            assert.equal(s.messages.some((line) => line.includes("충전+1")), recharges, `${origin}: 자연 충전 알림이 잘못됐다`);
+            const restored = deserialize(serialize(s))!;
+            assert.equal(rapidFireOf(restored.heroes[0])?.item.charges, wand.charges, `${origin}: 저장 복원 후 지팡이 속사가 달라졌다`);
+        }
     }
 
     // ── 모든 직업이 활과 화살을 장착하고 조작키 사격을 쓸 수 있다

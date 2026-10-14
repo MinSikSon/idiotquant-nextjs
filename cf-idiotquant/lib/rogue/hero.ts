@@ -558,7 +558,7 @@ export function volleyMax(hero: Hero, ammo: Item): number {
 /**
  * **`.` 토글 사격**이 쏠 것 — 방향키가 걸음 대신 이것을 쏜다. 없으면 토글이 안 선다.
  *
- * - 지팡이를 쥔 연금술사·연구자: 쥔 지팡이(「비전 속사」).
+ * - 지팡이를 쥔 모든 직업: 쥔 지팡이(「비전 속사」). 자연 충전은 연금술사·연구자만 한다.
  * - 활을 쥔 직업: **그 활로 쏠 화살**을 먼저 고른다. 화살이 여럿이면 층이 얕은 것
  *   (화살 → 은화살)부터 쓴다.
  * - 레인저: 활과 화살이 없으면 배낭의 표창을 던진다.
@@ -572,7 +572,7 @@ export function rapidFireOf(hero: Hero): { kind: "zap" | "throw"; item: Item } |
     if (equipped && equipped.count > 0 && launcherFor(hero, equipped)) return { kind: "throw", item: equipped };
     const ammo = hero.pack.filter((it) => it.count > 0 && launcherFor(hero, it)).sort(byDepth);
     if (ammo[0]) return { kind: "throw", item: ammo[0] };
-    const wand = hero.origin === "alchemist" || hero.origin === "scholar" ? equippedWand(hero) : undefined;
+    const wand = equippedWand(hero);
     if (wand) return { kind: "zap", item: wand };
     if (hero.origin !== "ranger") return undefined;
     const dart = hero.pack.find((it) => it.kind === "weapon" && it.type === "dart" && it.count > 0);

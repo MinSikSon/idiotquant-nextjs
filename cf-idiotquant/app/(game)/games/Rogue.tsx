@@ -2446,7 +2446,7 @@ export default function Rogue() {
                             return "·";
                         }
                         // 켜짐·꺼짐은 글자가 아니라 강조색(`centerWarn`)이 말한다 — 비전 속사와 같은 모양.
-                        return shot.kind === "zap" ? "비전\n속사" : "연속\n사격";
+                        return shot.kind === "zap" ? "비전\n속사" : activeHero.origin === "ranger" ? "연속\n사격" : "사격";
                     })()}
                     centerMark={onAltar ? "†" : hereItem ? itemChar(hereItem.kind) : onFountain ? "}" : undefined}
                     centerHint={(() => {
