@@ -53,11 +53,11 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=20261014', sizes: 'any' },
+      { url: '/icon.svg?v=20261014', type: 'image/svg+xml' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-icon.png',
+    shortcut: '/favicon.ico?v=20261014',
+    apple: '/apple-icon.png?v=20261014',
   },
   authors: [{ name: 'IdiotQuant', url: 'https://idiotquant.com' }],
   creator: 'IdiotQuant',

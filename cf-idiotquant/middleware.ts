@@ -36,6 +36,11 @@ export default auth((req: any) => {
         path.startsWith("/.well-known") ||
         path.startsWith("/images") ||
         path === "/favicon.ico" ||
+        // 브라우저·홈 화면 아이콘은 로그인 없이도 이미지로 응답해야 한다.
+        path === "/icon.svg" ||
+        path === "/apple-icon.png" ||
+        path === "/icon-512.png" ||
+        path === "/icon-preview-256.png" ||
         path === "/login" ||
         path === "/terms" ||
         path === "/privacy" ||
