@@ -54,7 +54,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-60 [mask-image:linear-gradient(to_right,transparent,black_60%)]">
             {backgroundArt}
           </div>
-          <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-2 lg:gap-14 lg:px-10 lg:py-16">
+          <div className="relative mx-auto grid max-w-[1600px] items-center gap-12 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-2 lg:gap-14 lg:px-10 lg:py-16">
             <div>
               <p className="mb-5 text-sm font-semibold text-brand-ink dark:text-brand-ink">코스피·코스닥 종목 발굴과 분석</p>
               <h1 className="max-w-2xl text-3xl font-medium leading-[1.3] tracking-[-0.035em] sm:text-4xl">
@@ -111,7 +111,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
           </div>
         </section>
 
-        <section id="features" className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
+        <section id="features" className="mx-auto max-w-[1600px] px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">발굴부터 분석까지</p>
             <h2 className="mt-3 text-2xl font-medium tracking-tight">투자에 필요한 정보를 한곳에서</h2>
@@ -139,7 +139,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
           </div>
         </section>
 
-        <section id="faq" className="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
+        <section id="faq" className="mx-auto max-w-[1600px] px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
           <div className="grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
             <div>
               <p className="text-sm font-semibold text-brand-ink dark:text-brand-ink">궁금한 점</p>
@@ -160,7 +160,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
       </div>
 
       <footer className="border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-surface-dark-canvas">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-6 text-xs text-neutral-500 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-5 py-6 text-xs text-neutral-500 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
           <span>© 2026 IdiotQuant</span>
           <span>본 서비스는 투자 참고 정보이며 투자 판단과 결과는 이용자에게 있습니다.</span>
         </div>

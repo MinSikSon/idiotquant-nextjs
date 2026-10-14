@@ -4,12 +4,12 @@ export default function TechnicalSummary({ bars, currency }: { bars: PriceBar[];
     const result = technicalSummary(bars);
     const format = (v: number | null, unit = '') => v == null ? '데이터 부족' : `${v.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}${unit}`;
     return (
-        <section aria-label="모멘텀과 기술적 지표" className="rounded-lg border border-neutral-200 bg-white p-5 dark:border-surface-dark-border dark:bg-surface-dark-card">
+        <section aria-label="모멘텀과 기술적 지표" className="border-t border-neutral-200 py-4 sm:rounded-lg sm:border sm:bg-white sm:p-5 dark:border-surface-dark-border dark:sm:bg-surface-dark-card">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-base font-semibold">모멘텀 · 기술적 지표</h2>
                 <span className="text-xs text-neutral-500">{result.date ? `${result.date.slice(0, 4)}.${result.date.slice(4, 6)}.${result.date.slice(6)} 기준 · ${result.count}개 관측값` : '일별 시세를 기다리고 있습니다'}</span>
             </div>
-            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+            <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
                 {[
                     ['20기간 가격 변화', format(result.momentum20, '%')],
                     ['60기간 가격 변화', format(result.momentum60, '%')],

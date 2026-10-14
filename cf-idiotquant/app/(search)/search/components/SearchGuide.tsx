@@ -80,7 +80,7 @@ export const SearchGuide = () => {
         <summary className="cursor-pointer py-4 text-sm font-medium text-neutral-600 dark:text-neutral-300">분석 결과 예시와 계산 방법</summary>
       {/* ── Output Preview ── */}
       <section className="px-4 pb-16 border-t border-neutral-200 dark:border-border-subtle-dark pt-12">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           <div className="text-center mb-8">
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">Output Preview</p>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white tracking-tight">검색하면 이런 결과가 나옵니다</h2>
@@ -133,7 +133,7 @@ export const SearchGuide = () => {
 
       {/* ── Grade + Models ── */}
       <section className="px-4 py-14 border-t border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark">
-        <div className="max-w-3xl mx-auto space-y-12">
+        <div className="max-w-[1600px] mx-auto space-y-12">
 
           {/* Grade scale */}
           <div>

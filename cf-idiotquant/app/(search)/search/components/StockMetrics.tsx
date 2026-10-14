@@ -23,21 +23,21 @@ interface MetricItem {
 function MetricCard({ m }: { m: MetricItem }) {
   return (
     <div className={cn(
-      "p-3.5 rounded-xl border relative group cursor-help transition-colors select-none",
+      "px-0 py-3 sm:p-3.5 rounded-none sm:rounded-lg border-0 border-b sm:border relative group cursor-help transition-colors select-none",
       m.highlight
-        ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/40"
-        : "bg-surface-canvas dark:bg-surface-dark-card/50 border-neutral-100 dark:border-border-subtle-dark hover:border-neutral-200 dark:hover:border-neutral-700"
+        ? "bg-transparent border-neutral-200 dark:border-neutral-800"
+        : "bg-transparent border-neutral-200 dark:border-neutral-800"
     )}>
       <p className={cn(
         "text-[9px] font-bold uppercase tracking-wider mb-1.5 truncate",
-        m.highlight ? "text-indigo-500 dark:text-indigo-400" : "text-neutral-400"
+        m.highlight ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400"
       )}>
         {m.label}
       </p>
       <p className={cn(
         "text-sm font-black font-mono tabular-nums leading-tight",
         m.highlight
-          ? "text-indigo-700 dark:text-indigo-300"
+          ? "text-neutral-900 dark:text-neutral-100"
           : "text-neutral-900 dark:text-white"
       )}>
         {m.val}
@@ -177,10 +177,10 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
   const volumeMetrics    = metrics.filter(m => m.type === "volume");
 
   return (
-    <div className="w-full h-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark flex flex-col">
+    <div className="w-full h-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark flex flex-col">
 
       {/* ── 헤더 ── */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
+      <div className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <BarChart3 size={14} className="text-neutral-500 dark:text-neutral-400" />
@@ -198,10 +198,10 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         <div className={cn(
           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-black font-mono uppercase tracking-wider shrink-0",
           isUs
-            ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink-hover dark:text-brand-ink border-brand-light-hover/60 dark:border-[#14532d]/40"
-            : "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/40"
+            ? "bg-transparent text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700"
+            : "bg-transparent text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700"
         )}>
-      <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", isUs ? "bg-brand" : "bg-indigo-500")} />
+      <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", "bg-neutral-400")} />
           {isUs
             ? <><DollarSign size={10} />USD</>
             : <><Coins size={10} />KRW</>
@@ -211,7 +211,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
 
       {/* ── 상장폐지 의심 배너 ── */}
       {isDelistedSuspect && (
-        <div className="px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-2.5">
+        <div className="px-0 sm:px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-2.5">
           <AlertTriangle size={14} className="text-red-500 dark:text-red-400 shrink-0" />
           <p className="text-xs font-bold text-red-600 dark:text-red-400 leading-snug">
             상장폐지 의심 종목 — 상장주식수 정보가 제공되지 않습니다. 투자 전 반드시 확인하세요.
@@ -220,7 +220,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       )}
 
       {/* ── 콘텐츠 ── */}
-      <div className="flex-1 p-5 space-y-5">
+      <div className="flex-1 py-3 sm:p-5 space-y-4">
 
         {/* 밸류에이션 지표 */}
         {valuationMetrics.length > 0 && (

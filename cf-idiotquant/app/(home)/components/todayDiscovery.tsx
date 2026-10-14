@@ -49,7 +49,7 @@ export function TodayDiscovery({
 
   return (
     <section className="border-b border-neutral-100 dark:border-[#1c2f26] bg-white dark:bg-[#0a1510]/85">
-      <div className="max-w-4xl mx-auto px-5 py-10">
+      <div className="max-w-[1600px] mx-auto px-5 py-10">
 
         <div className="flex items-end justify-between gap-3 mb-3.5">
           <div className="flex items-baseline gap-2 min-w-0">

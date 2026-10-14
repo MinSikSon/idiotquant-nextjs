@@ -279,10 +279,10 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
   const cfg = OVERALL_CONFIG[overall];
 
   return (
-    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+    <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
 
       {/* ── 헤더 ── */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
+      <div className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <ShieldAlert size={14} className="text-neutral-500 dark:text-neutral-400" />
@@ -302,7 +302,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       </div>
 
       {/* ── 본문 ── */}
-      <div className="p-5 space-y-2">
+      <div className="p-0 sm:p-5 space-y-2">
         <p className="text-[10px] text-neutral-400 pb-1">{cfg.sub}</p>
 
         {/* 기준 항목 목록 */}

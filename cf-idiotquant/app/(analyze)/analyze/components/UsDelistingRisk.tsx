@@ -276,7 +276,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
 
   if (!result) {
     return (
-      <div className="w-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-6">
+      <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark p-0 sm:p-6">
         <p className="text-sm text-neutral-500">재무 데이터 없음 — Finnhub 10-K 미제공 종목</p>
       </div>
     );
@@ -287,9 +287,9 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   const cfg = OVERALL_CONFIG[overallGrade as Exclude<Status, "—">] ?? OVERALL_CONFIG["양호"];
 
   return (
-    <div className="w-full bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+    <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark">
+      <div className="flex items-center justify-between px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark">
         <div className="flex items-center gap-2">
           <ShieldAlert size={16} className="text-neutral-500 dark:text-neutral-400" />
           <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">미국 상장유지 위험도</span>
@@ -300,7 +300,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         </span>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-0 sm:p-5 space-y-5">
         <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{cfg.sub}</p>
 
         {/* 기준 목록 */}
