@@ -1378,7 +1378,7 @@ function ScreenerContent() {
                                 value={searchQuery}
                                 onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
                                 placeholder="종목명 또는 코드로 검색"
-                                className="w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+                                className="h-[38px] sm:h-auto w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             />
                         </div>
 
@@ -1390,7 +1390,7 @@ function ScreenerContent() {
                                 setSortKey(key); setSortOrder(order); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             aria-label="결과 정렬"
-                            className="shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            className="h-[38px] sm:h-auto shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
                         >
                             <option value="ncav_ratio:desc">NCAV 높은 순</option>
                             <option value="ncav_ratio:asc">NCAV 낮은 순</option>
