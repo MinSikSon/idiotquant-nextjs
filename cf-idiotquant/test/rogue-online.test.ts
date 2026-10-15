@@ -19,9 +19,58 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = readFileSync(path.join(ROOT, "app/(game)/games/Rogue.tsx"), "utf8");
+
+test("온라인 연결 협상은 heartbeat보다 오래 기다리고 열린 뒤부터 생존을 확인한다", () => {
+    // 실제 감시 함수를 가상 시계와 연결에 붙인다. 외부 브로커 없이 느린 ICE 협상을 재현한다.
+    const start = SRC.indexOf("const PING_MS =");
+    const end = SRC.indexOf("/** 판을 넘어 남는 기록", start);
+    const script = ts.transpile(SRC.slice(start, end) + "\nwatchConn(conn);", { target: ts.ScriptTarget.ES2020 });
+    const make = () => {
+        let now = 0;
+        let tick: (() => void) | undefined;
+        const handlers = new Map<string, (() => void)[]>();
+        const conn = {
+            open: false,
+            closed: false,
+            sent: 0,
+            on(event: string, fn: () => void) { handlers.set(event, [...(handlers.get(event) ?? []), fn]); },
+            send() { this.sent++; },
+            close() { this.closed = true; emit("close"); },
+        };
+        const emit = (event: string) => handlers.get(event)?.forEach((fn) => fn());
+        runInNewContext(script, {
+            conn, Date: { now: () => now },
+            setInterval: (fn: () => void) => { tick = fn; return 1; },
+            clearInterval: () => { tick = undefined; },
+        });
+        return { conn, emit, advance(ms: number) { now += ms; tick?.(); }, active: () => !!tick };
+    };
+
+    const slow = make();
+    slow.advance(8000);
+    assert.equal(slow.conn.closed, false, "연결 협상이 6초를 넘었다고 입장을 끊었다");
+    slow.advance(12000);
+    slow.conn.open = true;
+    slow.emit("open");
+    slow.advance(2000);
+    assert.equal(slow.conn.closed, false, "연결 전 대기 시간을 열린 연결의 무응답 시간에 포함했다");
+    assert.equal(slow.conn.sent, 1, "열린 연결에 ping을 보내지 않는다");
+    slow.emit("data");
+    slow.advance(4000);
+    assert.equal(slow.conn.closed, false, "응답이 오는 연결을 끊었다");
+    slow.advance(4000);
+    assert.equal(slow.conn.closed, true, "열린 뒤 응답이 끊긴 연결을 닫지 않는다");
+    assert.equal(slow.active(), false, "닫힌 연결의 타이머가 남는다");
+
+    const stuck = make();
+    stuck.advance(32000);
+    assert.equal(stuck.conn.closed, true, "끝나지 않는 협상을 영원히 기다린다");
+});
 
 test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", () => {
     // ── ① 내보내기는 방 나가기와 **다른 인사**다
