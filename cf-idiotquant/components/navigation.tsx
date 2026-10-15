@@ -123,8 +123,9 @@ function TabItem({
   return (
     <Link
       href={href}
+      aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 transition-colors",
+        "flex h-full min-h-[44px] flex-1 flex-col items-center justify-center gap-[3px] py-2 transition-colors",
         // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
         "rounded-xl",
         isActive
@@ -249,7 +250,31 @@ export function NavbarWithSimpleLinks() {
       : undefined;
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
+  const [bottomBarCompact, setBottomBarCompact] = useState(false);
+  const compactBottomBar = bottomBarCompact && !moreSheet;
   const showMore = moreOpen || moreActive;
+
+  useEffect(() => {
+    setBottomBarCompact(false);
+    if (inGame) return;
+
+    const mobile = window.matchMedia("(max-width: 767px)");
+    let previousY = Math.max(0, window.scrollY);
+    const onScroll = () => {
+      const currentY = Math.max(0, window.scrollY);
+      if (!mobile.matches || currentY <= 64) {
+        setBottomBarCompact(false);
+      } else {
+        // 손떨림 정도의 움직임에는 바 크기를 바꾸지 않는다.
+        if (Math.abs(currentY - previousY) < 8) return;
+        setBottomBarCompact(currentY > previousY);
+      }
+      previousY = currentY;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [pathname, inGame]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -439,7 +464,8 @@ export function NavbarWithSimpleLinks() {
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 border-t flex items-center px-3",
+      <nav aria-label="하단 메뉴" className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 transition-[height] duration-200 motion-reduce:transition-none",
+        compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1" : "h-[64px]",
         barStyle ? "" : "bg-white dark:bg-surface-dark-canvas border-neutral-200/80 dark:border-neutral-800")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
@@ -451,7 +477,7 @@ export function NavbarWithSimpleLinks() {
           type="button"
           onClick={() => setMoreSheet(v => !v)}
           className={cn(
-            "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
+            "flex h-full min-h-[44px] flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
             moreActive || moreSheet
               ? "text-brand-ink dark:text-brand-ink"
               : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
