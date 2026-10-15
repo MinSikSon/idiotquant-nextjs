@@ -562,8 +562,8 @@ export default function LedgerPage() {
                     </div>
                 )}
 
-                {/* ① 월 선택 — 터치 타겟 44px. 달을 누르면 달력이 아래로 펼쳐진다. */}
-                <div className={CARD_CLS}>
+                {/* 모바일에서는 선택 카드가 상단 메뉴(48px)에 닿으면 고정된다. */}
+                <div className={cn(CARD_CLS, "sticky top-[48px] z-30 md:static md:z-auto")}>
                     <div className="flex items-center justify-center gap-1 p-1.5">
                         <button
                             type="button"
@@ -599,7 +599,7 @@ export default function LedgerPage() {
                     </div>
 
                     {calendarOpen && (
-                        <div className="px-2 pb-2.5 border-t border-neutral-100 dark:border-border-subtle-dark">
+                        <div className="max-h-[calc(100dvh-184px)] overflow-y-auto overscroll-contain md:max-h-none md:overflow-visible px-2 pb-2.5 border-t border-neutral-100 dark:border-border-subtle-dark">
                             <div className="grid grid-cols-7 pt-2 pb-1">
                                 {WEEKDAY.map((w, i) => (
                                     <div key={w} className={cn(
