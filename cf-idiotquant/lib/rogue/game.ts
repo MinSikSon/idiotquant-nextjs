@@ -791,9 +791,8 @@ function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
  * 동료 하나를 보낸다 — **그 자리만** 비운다. 방장(`heroes[0]`)은 못 보낸다.
  *
  * `who` 를 안 주면 옛 뜻 그대로 `heroes[1]`(핫시트 동료 · 온라인 손님이 하나뿐이던 시절의
- * 자리)이다. 방장이 쓰러져 있으면 못 보낸다: 혼자 남은 사람이 쓰러진 판은 이미 끝난 판이다
- * — 다만 이 규칙은 **방장이 떠날 때만** 묻는다(방장 자신을 못 보내므로 사실상 안 걸린다,
- * 남아 있던 옛 검사를 그대로 옮겼다).
+ * 자리)이다. 한 화면 협동은 방장이 쓰러져 있으면 못 보낸다. 온라인 참가자(`guestKey`)의
+ * 접속 종료는 방장의 생존 여부와 무관하게 처리한다.
  *
  * **가운데 자리가 빠지면 뒤엣사람들의 칸 번호가 하나씩 당겨진다.** 몬스터가 쥐고 있던
  * 어그로(`target`)는 사람의 **칸 번호**라 그대로 두면 엉뚱한 사람을 쫓는다 — 떠난 자리를
@@ -803,7 +802,7 @@ function makePartyHero(state: GameState, rng: Rng, origin: HeroOrigin): Hero {
 export function leaveGame(state: GameState, who = 1): GameState {
     const hero = state.heroes[who];
     if (!hero || who === 0) return state;
-    if (state.heroes[0].hp <= 0) {
+    if (state.heroes[0].hp <= 0 && !hero.guestKey) {
         say(state, "쓰러진 채로는 동료를 보낼 수 없다.");
         return { ...state };
     }

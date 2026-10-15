@@ -61,6 +61,13 @@ test("방장은 못 내보낸다", () => {
     const next = leaveGame(s, 0);
     assert.equal(next, s, "방장을 내보내는 명령이 판을 바꿨다");
     assert.equal(next.heroes.length, 4);
+
+    // 온라인 접속 종료는 방장의 생존 여부와 무관하다.
+    s.heroes[0].hp = 0;
+    const removed = leaveGame(s, 2);
+    assert.equal(removed.heroes.length, 3, "방장이 쓰러졌다는 이유로 온라인 참가자가 남는다");
+    assert.deepEqual(removed.heroes.map((h) => h.guestKey), [undefined, "a", "c"], "다른 참가자를 내보냈다");
+    assert.equal(removed.benched?.[0].guestKey, "b", "내보낸 참가자의 캐릭터를 보존하지 않았다");
 });
 
 test("돌아온 손님은 자리표로 고른다 — 대기석에 여럿이 있어도 안 섞인다", () => {

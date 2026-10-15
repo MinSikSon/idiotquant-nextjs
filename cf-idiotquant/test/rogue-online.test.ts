@@ -119,6 +119,34 @@ test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", 
         assert.match(after, /closeRoomRef\.current\(/, "`kick` 을 받고도 방을 안 나간다");
         assert.match(after, /내보냈다/, "왜 나가는지를 손님 화면에 안 적는다");
     }
+
+    // ── ⑤ 같은 참가자의 재접속이 겹쳐도 모든 연결을 끊고 다른 참가자는 남긴다.
+    {
+        const start = SRC.indexOf("const kickGuest = useCallback(");
+        const end = SRC.indexOf("// 네트워크 콜백은", start);
+        const script = ts.transpile(SRC.slice(start, end) + "\nkickGuest(1);", { target: ts.ScriptTarget.ES2020 });
+        const connection = () => ({ open: true, kicked: false, closed: false,
+            send(m: { t: string }) { this.kicked = m.t === "kick"; },
+            close() { this.closed = true; },
+        });
+        const a1 = connection(), a2 = connection(), b = connection();
+        const guests = new Map([[a1, "a"], [a2, "a"], [b, "b"]]);
+        const banned = { current: new Set<string>() };
+        const timers: (() => void)[] = [];
+        runInNewContext(script, {
+            useCallback: (fn: unknown) => fn,
+            net: { current: { role: "host", guests } },
+            stateRef: { current: { heroes: [{}, { guestKey: "a" }, { guestKey: "b" }] } },
+            banned, setState: () => {}, note: () => {}, syncGuests: () => {}, broadcast: () => {},
+            setTimeout: (fn: () => void) => timers.push(fn),
+        });
+        timers.forEach((fn) => fn());
+        assert.ok(a1.kicked && a2.kicked, "같은 참가자의 연결 중 하나에 내보내기 인사를 안 보냈다");
+        assert.ok(a1.closed && a2.closed, "같은 참가자의 이전 연결이 살아 있다");
+        assert.deepEqual([...guests.values()], ["b"], "내보낸 사람의 연결이 명부에 남거나 다른 사람을 끊었다");
+        assert.equal(b.closed, false, "다른 참가자까지 끊었다");
+        assert.ok(banned.current.has("a"), "내보낸 사람이 다시 들어올 수 있다");
+    }
 });
 
 // 방장이 끊겼다 돌아오면 **이어서** 한다.
@@ -171,6 +199,19 @@ test("같은 Safari의 초대 탭은 방장 탭과 역할 저장이 분리된다
     assert.match(SRC, /const validInvite = invited && \/\^\\d\{4\}\$\/\.test\(invited\) \? invited : null;[\s\S]*?if \(!validInvite\) \{[\s\S]*?readRoomRecord\(\)/, "초대 링크를 기존 방 상태보다 먼저 처리하지 않는다");
     assert.match(SRC, /if \(validInvite\) \{[\s\S]*?void joinRoom\(validInvite\)/, "초대 링크가 있으면 해당 방에 합류하지 않는다");
     assert.match(SRC, /localStorage\.removeItem\(ROOM_KEY\)/, "옛 공유 저장소를 비우지 않아 다음 탭이 방 역할을 이어받는다");
+
+    // 이름이 없는 첫 방문도 prompt 없이 입장하며, prompt 미지원 환경에서도 흐름이 안 끊긴다.
+    const start = SRC.indexOf("function askNick(");
+    const end = SRC.indexOf("/**", start);
+    const script = ts.transpile(SRC.slice(start, end), { target: ts.ScriptTarget.ES2020 });
+    let prompts = 0;
+    const context = {
+        savedNick: () => undefined, NICK_MAX: 4,
+        window: { prompt: () => { prompts++; throw new Error("prompt() is not supported"); } },
+    };
+    assert.equal(runInNewContext(script + "\naskNick(false);", { ...context }), undefined, "이름 없는 첫 입장에서 예외가 났다");
+    assert.equal(prompts, 0, "이름을 묻지 않는 입장에서 prompt를 호출했다");
+    assert.equal(runInNewContext(script + "\naskNick();", { ...context }), undefined, "prompt 미지원 브라우저에서 입장이 중단된다");
 });
 
 test("온라인 방 코드는 숫자 네 자리만 입력할 수 있다", () => {
@@ -189,7 +230,47 @@ test("Safari 화면 복귀 시 손님은 즉시 다시 잇고 방장은 신호 �
     assert.match(body, /retry\(current\.peer, \(\) => joinRoom\(saved\.code!, saved\.origin\), 0\)/, "복귀한 손님이 즉시 새 연결을 시도하지 않는다");
 });
 
-test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", () => {
+test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자리에 안 앉는다", async () => {
+    // ── 연결이 늦어도 선택 화면은 먼저 열고, 파티 응답이 와도 미리 고른 직업을 초기화하지 않는다.
+    {
+        const start = SRC.indexOf("const joinRoom = useCallback(");
+        const end = SRC.indexOf("// iOS Safari", start);
+        const script = ts.transpile(SRC.slice(start, end).replace('const { Peer } = await import("peerjs");', 'const Peer = TestPeer;') + '\njoinRoom("1234");', { target: ts.ScriptTarget.ES2020 });
+        const peerEvents = new Map<string, (...args: any[]) => void>();
+        const connEvents = new Map<string, (...args: any[]) => void>();
+        const sent: unknown[] = [];
+        const conn = { open: true, on: (event: string, fn: (...args: any[]) => void) => connEvents.set(event, fn), send: (msg: unknown) => sent.push(msg) };
+        let sheet = "none";
+        let originFor: any = { t: "new" };
+        let party: unknown[] = [];
+        let saved: string | undefined;
+        const context = {
+            TestPeer: class { on(event: string, fn: (...args: any[]) => void) { peerEvents.set(event, fn); } connect() { return conn; } },
+            useCallback: (fn: unknown) => fn, net: { current: null },
+            savedOrigin: () => saved, writeRoomRecord: () => {},
+            setOnline: () => {}, setRoom: () => {}, setLinked: () => {},
+            setRoomParty: (value: unknown[]) => { party = value; },
+            setOriginFor: (value: any) => { originFor = typeof value === "function" ? value(originFor) : value; },
+            setSheet: (value: string) => { sheet = value; },
+            retry: () => {}, note: () => {}, resetRunInput: () => {}, watchConn: () => {},
+            PEER_PREFIX: "test-", ORIGINS: { knight: {} }, cleanNick: (value: string) => value,
+        };
+        await runInNewContext(script, { ...context });
+        assert.equal(sheet, "origins", "방장 응답 전에는 직업 화면이 전혀 안 열린다");
+        const selection = originFor;
+        peerEvents.get("open")!();
+        connEvents.get("open")!();
+        assert.equal((sent[0] as { t: string }).t, "peek", "선택 전에 방장 정보를 묻지 않는다");
+        connEvents.get("data")!({ t: "room", party: [{ origin: "knight", nick: "방장" }] });
+        assert.equal(party.length, 1, "방장 정보를 선택 화면에 반영하지 않는다");
+        assert.equal(originFor, selection, "방장 응답이 오면 선택 화면을 다시 초기화한다");
+
+        saved = "rogue";
+        sheet = "none";
+        await runInNewContext(script, { ...context });
+        assert.equal(sheet, "none", "이미 직업을 고른 재접속자에게도 다시 선택을 묻는다");
+    }
+
     // ── ① 규약에 물음과 답이 둘 다 있다
     //
     // 정원이 늘며 답(`room`)이 **방장 하나**가 아니라 **지금 있는 모두**를 실어야 한다 —
