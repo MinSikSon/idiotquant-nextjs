@@ -1,4 +1,5 @@
 import { apiRequest } from "../apiRequest";
+import type { BalanceItem } from "./balances";
 import type { LedgerKind, StoredCategory } from "./categories";
 
 export interface LedgerEntry {
@@ -90,10 +91,10 @@ export const getLedgerBalances = (owner: Owner, from: string, to: string) =>
 
 /** 그 달을 적는다. **같은 달을 다시 적으면 덮어쓴다** — 잔고는 값 하나뿐이다. */
 export const putLedgerBalance = (
-    owner: Owner, month: string, assets: number, liabilities: number,
+    owner: Owner, month: string, assets: number, liabilities: number, items?: BalanceItem[],
 ) =>
     ledgerRequest(`/user/ledger/balances${q(`month=${month}`, own(owner))}`, "PUT",
-        { assets, liabilities });
+        { assets, liabilities, items });
 
 /** 그 달을 지운다. 0 을 적는 것과 다르다 — **안 적은 달**로 되돌린다. */
 export const deleteLedgerBalance = (owner: Owner, month: string) =>

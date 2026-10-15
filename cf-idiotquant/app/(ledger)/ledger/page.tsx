@@ -780,10 +780,10 @@ export default function LedgerPage() {
                     range={balanceRange}
                     onRange={setBalanceRange}
                     onMonth={(m) => dispatch(setLedgerMonth(m))}
-                    onSave={async (assets, liabilities) => {
+                    onSave={async (assets, liabilities, items) => {
                         // **결과를 돌려준다.** 예전에는 던지고 잊어서, 워커가 404 를 내도
                         // 폼이 닫히고 값은 그대로였다 — 「저장했는데 반영이 안 된다」의 정체다.
-                        const r = await dispatch(reqPutLedgerBalance({ month, assets, liabilities }));
+                        const r = await dispatch(reqPutLedgerBalance({ month, assets, liabilities, items }));
                         const failed = (r as unknown as { error?: { message?: string } }).error;
                         return failed ? (failed.message ?? "알 수 없는 오류") : null;
                     }}
