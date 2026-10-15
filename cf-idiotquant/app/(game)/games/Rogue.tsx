@@ -463,8 +463,14 @@ function savedNick(): string | undefined {
  */
 function askNick(ask = true): string | undefined {
     const had = savedNick();
-    if (!ask && had) return had;
-    const typed = window.prompt(`지도에 적을 이름 (한글·영문·숫자·기호, ${NICK_MAX}자)`, had ?? "");
+    if (!ask) return had;
+    let typed: string | null;
+    try {
+        typed = window.prompt(`지도에 적을 이름 (한글·영문·숫자·기호, ${NICK_MAX}자)`, had ?? "");
+    } catch {
+        // 앱 내 브라우저에서 prompt를 지원하지 않아도 접속은 계속한다.
+        return had;
+    }
     if (typed === null) return had;
     const nick = cleanNick(typed);
     try {
@@ -1135,14 +1141,13 @@ export default function Rogue() {
             const hero = s.heroes[who];
             if (!hero) return;
             if (hero.guestKey) banned.current.add(hero.guestKey);
-            let target: DataConnection | undefined;
-            for (const [conn, key] of n.guests) if (key === hero.guestKey) target = conn;
-            if (target) {
-                if (target.open) target.send({ t: "kick" } satisfies NetMsg);
+            for (const [conn, key] of n.guests) {
+                if (key !== hero.guestKey) continue;
+                if (conn.open) conn.send({ t: "kick" } satisfies NetMsg);
                 // **먼저 명부에서 지운다** — 그래야 뒤따라 오는 `close` 가 「끊겼다」로 안 읽힌다.
-                n.guests.delete(target);
+                n.guests.delete(conn);
                 // 곧바로 닫으면 방금 보낸 인사가 안 나간다.
-                setTimeout(() => target!.close(), 500);
+                setTimeout(() => conn.close(), 500);
             }
             setState((g) => {
                 if (!g) return g;
@@ -1428,6 +1433,11 @@ export default function Rogue() {
         // 고르기 창이 다시 뜬다.
         const chosen = origin ?? savedOrigin(code);
         writeRoomRecord({ role: "guest", code, ...(chosen ? { origin: chosen } : {}) });
+        if (!chosen) {
+            setRoomParty([]);
+            setOriginFor((current) => current.t === "guest" && current.code === code ? current : { t: "guest", code });
+            setSheet("origins");
+        }
         // **끊긴 동안에도 손님이다** — 제 저장 칸을 안 덮고, 자리를 쥔 채 기다린다.
         setOnline("guest");
         setRoom(code);
@@ -1469,7 +1479,7 @@ export default function Rogue() {
                     }
                     // 지금 있는 사람들(방장 + 이미 들어온 손님들)을 받았다 — 이제 **그것을 보고** 고른다.
                     setRoomParty(m.party.map((p) => ({ origin: p.origin in ORIGINS ? p.origin : "knight", nick: cleanNick(p.nick) })));
-                    setOriginFor({ t: "guest", code });
+                    setOriginFor((current) => current.t === "guest" && current.code === code ? current : { t: "guest", code });
                     setSheet("origins");
                 } else if (m?.t === "rematch" && typeof m.round === "number") {
                     // 방장은 다음 판을 혼자 만들지 않는다. 이 선택만 되돌려 보내고,
@@ -1648,6 +1658,7 @@ export default function Rogue() {
             setState((g) => (g && g.heroes.length < 2 ? joinGame(g, origin, undefined, loadChest(1)) : g));
             setSheet("none");
         } else if (f.t === "guest") {
+            if (roomParty.length === 0) return;
             setSheet("none");
             const n = net.current;
             const conn = n?.role === "guest" ? n.conn : undefined;
@@ -3135,7 +3146,7 @@ export default function Rogue() {
                             onSubmit={(event) => {
                                 event.preventDefault();
                                 if (!/^\d{4}$/.test(roomCodeInput)) return;
-                                askNick();
+                                askNick(false);
                                 setSheet("none");
                                 // **먼저 붙는다** — 방장의 직업을 받아야 고르는 판이 열린다.
                                 void joinRoom(roomCodeInput);
@@ -3400,6 +3411,11 @@ export default function Rogue() {
                                         ? "방장이 다음 판을 준비 중입니다 — 내가 맡을 출신을 다시 고릅니다."
                                     : "동료가 맡을 출신을 고릅니다 — 방장과 다른 쪽을 고르면 서로 메웁니다."}
                             </p>
+                            {originFor.t === "guest" && roomParty.length === 0 && (
+                                <p role="status" className="text-[11px] text-[var(--rg-label)]">
+                                    방 {originFor.code}에 연결 중… 직업을 미리 살펴보세요. 방장 정보를 받으면 입장할 수 있습니다.
+                                </p>
+                            )}
                             {/* **지금 누가 무엇인가.** 위의 「다른 쪽을 고르면 서로 메웁니다」가
                             조언이 되려면 이 줄이 있어야 한다 — 없으면 그건 수수께끼다. 정원이
                             늘며 **방장뿐 아니라 먼저 들어온 손님들**도 같이 보여야 한다 —
@@ -3448,8 +3464,8 @@ export default function Rogue() {
                                             <b className="text-[var(--rg-gold)]">Lv {ADVANCE_LEVEL} 전직 · {orig.advancedName}</b>
                                             <p className="mt-0.5 text-[var(--rg-faint)]">★ {orig.advancedSkillName} — {orig.advancedSkillDescription}</p>
                                         </div>
-                                        <button type="button" onClick={() => pickOrigin(orig.id)} className="mt-3 w-full rounded-[3px] border border-[var(--rg-line)] px-3 py-2 font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]">
-                                            {orig.name} 선택
+                                        <button type="button" onClick={() => pickOrigin(orig.id)} disabled={originFor.t === "guest" && roomParty.length === 0} className="mt-3 w-full rounded-[3px] border border-[var(--rg-line)] px-3 py-2 font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] disabled:opacity-40">
+                                            {originFor.t === "guest" && roomParty.length === 0 ? "방 연결 중…" : `${orig.name} 선택`}
                                         </button>
                                     </section>
                                 );
