@@ -7,7 +7,7 @@ import {
     getLedgerBalances, putLedgerBalance, deleteLedgerBalance,
     type LedgerEntry, type NewLedgerEntry, type LedgerAccess, type LedgerMember,
 } from "./ledgerAPI";
-import { rangeStart, type LedgerBalance } from "./balances";
+import { rangeStart, type LedgerBalance, type BalanceItem } from "./balances";
 import { catKey, frozenKey, type LedgerKind, type StoredCategory } from "./categories";
 
 /** 사용자가 보는 달은 KST 기준이다 — UTC 로 세면 매달 1일 오전 9시 전에 지난달이 열린다. */
@@ -382,13 +382,16 @@ export const ledgerSlice = createAppSlice({
 
         reqPutLedgerBalance: create.asyncThunk(
             async (
-                arg: { month: string; assets: number; liabilities: number },
+                arg: { month: string; assets: number; liabilities: number; items: BalanceItem[] },
                 { getState },
             ) => {
                 const result = await putLedgerBalance(
-                    ownerOf(getState), arg.month, arg.assets, arg.liabilities,
+                    ownerOf(getState), arg.month, arg.assets, arg.liabilities, arg.items,
                 );
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
+                if (!Array.isArray(result?.data?.balance?.items)) {
+                    throw new Error("항목 저장을 지원하는 서버 업데이트가 필요합니다. 입력한 항목은 저장되지 않았습니다.");
+                }
                 return result;
             },
             {

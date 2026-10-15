@@ -25,14 +25,22 @@ import {
 
 import { cn } from "@/lib/utils";
 import {
-    balancePoints, netWorth, BALANCE_RANGES,
-    type BalancePoint, type LedgerBalance,
+    balancePoints, balanceItems, balanceTotals, netWorth, BALANCE_RANGES,
+    type BalancePoint, type LedgerBalance, type BalanceItem,
 } from "@/lib/features/ledger/balances";
 
 const FIELD_LABEL_CLS =
     "text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest";
 const CARD_CLS =
     "bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl";
+
+interface DraftItem {
+    id: number;
+    kind: BalanceItem["kind"];
+    name: string;
+    amount: string;
+    rate: string;
+}
 
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 
@@ -238,7 +246,7 @@ export function BalancePanel({
      * 예전에는 돌려주는 것이 없어서 화면이 **무조건 폼을 닫았다.** 워커가 404 를 내도
      * 폼이 닫히고 값은 그대로라, 사용자에게는 「저장했는데 반영이 안 된다」로만 보였다.
      */
-    onSave: (assets: number, liabilities: number) => Promise<string | null>;
+    onSave: (assets: number, liabilities: number, items: BalanceItem[]) => Promise<string | null>;
     onClear: () => void;
 }) {
     const points = useMemo(() => balancePoints(balances), [balances]);
@@ -250,41 +258,57 @@ export function BalancePanel({
     const [open, setOpen] = useState(false);
     /** 저장이 실패한 까닭. 있으면 폼을 안 닫는다. */
     const [saveError, setSaveError] = useState<string | null>(null);
-    // 금액은 글자로 들고 있다 — 숫자로 들면 지우는 순간 0 이 되어 칸을 비울 수 없다
-    // (계산기에서 고친 것과 같은 자리다). 위 내역 입력칸과도 같은 규약이다.
-    const [fAssets, setFAssets] = useState("");
-    const [fLiab, setFLiab] = useState("");
-
-
-
+    const nextId = useRef(0);
+    const [draft, setDraft] = useState<DraftItem[]>([]);
     const digits = (s: string) => s.replace(/[^\d]/g, "").slice(0, 15);
     const fmt = (s: string) => (s ? Number(s).toLocaleString("ko-KR") : "");
     const numOf = (s: string) => Number(s.replace(/[^\d]/g, "") || "0");
-
-    const startEdit = () => {
+    const totals = balanceTotals(draft.map(item => ({ ...item, amount: numOf(item.amount), rate: null })));
+    const updateItem = (id: number, patch: Partial<DraftItem>) =>
+        setDraft(prev => prev.map(item => item.id === id ? { ...item, ...patch } : item));
+    const resetDraft = () => {
+        const items = balanceItems(thisMonth);
+        setDraft(items.map(item => ({
+            ...item, id: nextId.current++, amount: fmt(String(item.amount)),
+            rate: item.rate == null ? "" : String(item.rate),
+        })));
         setSaveError(null);
+    };
+    const startEdit = () => {
+        resetDraft();
         setOpen(true);
     };
 
-    // 폼이 열려 있는 동안 달이 바뀌면(폼 안의 달 고르개) **그 달 값으로 다시 채운다.**
-    // 닫아 버리면 「2025년 3월을 적으려고 달을 옮겼는데 폼이 사라지는」 꼴이 된다.
+    // 달을 바꾸면 그 달의 기록으로 채운다. 취소 후 다시 열 때도 저장된 값으로 시작한다.
     useEffect(() => {
-        setFAssets(thisMonth ? fmt(String(thisMonth.assets)) : "");
-        setFLiab(thisMonth ? fmt(String(thisMonth.liabilities)) : "");
-        setSaveError(null);
-        // `thisMonth` 는 달이 바뀌거나 저장이 반영될 때만 달라진다.
-    }, [month, thisMonth?.assets, thisMonth?.liabilities]);
+        resetDraft();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [month, thisMonth]);
 
     const save = async () => {
         setSaveError(null);
-        const failed = await onSave(numOf(fAssets), numOf(fLiab));
-        // **됐을 때만 닫는다.** 실패했는데 닫으면 값이 그대로인 채 폼만 사라져서,
-        // 사용자에게는 「저장했는데 반영이 안 된다」로만 보인다.
+        const items: BalanceItem[] = [];
+        for (const item of draft) {
+            const rate = item.rate.trim() === "" ? null : Number(item.rate);
+            if (!item.name.trim() || !item.amount.trim()) {
+                setSaveError("각 항목의 이름과 금액을 입력해 주세요.");
+                return;
+            }
+            if (rate !== null && (!Number.isFinite(rate) ||
+                !/^-?\d+(\.\d+)?$/.test(item.rate) || (item.kind === "liability" && rate < 0))) {
+                setSaveError("수익률은 숫자로, 부채의 연 이자율은 0 이상의 숫자로 입력해 주세요.");
+                return;
+            }
+            items.push({ kind: item.kind, name: item.name.trim(), amount: numOf(item.amount), rate });
+        }
+        if (totals.assets > 1e15 || totals.liabilities > 1e15) {
+            setSaveError("자산·부채 합계는 각각 1,000조 원 이하여야 합니다.");
+            return;
+        }
+        const failed = await onSave(totals.assets, totals.liabilities, items);
         if (failed === null) setOpen(false);
         else setSaveError(failed);
     };
-
-
 
     return (
         <section className={CARD_CLS}>
@@ -293,6 +317,7 @@ export function BalancePanel({
                 {!open && (
                     <button
                         type="button"
+                        disabled={mutating}
                         onClick={startEdit}
                         className="min-h-[34px] px-3 rounded-lg border border-neutral-200 dark:border-border-subtle-dark text-[11px] font-black text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted transition-colors"
                     >
@@ -313,6 +338,7 @@ export function BalancePanel({
                             id="bal-month" type="month"
                             value={month}
                             max={thisMonthKst}
+                            disabled={mutating}
                             onChange={(e) => { if (e.target.value) onMonth(e.target.value); }}
                             className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas text-[13px] font-bold tabular-nums text-neutral-800 dark:text-neutral-100"
                         />
@@ -320,36 +346,61 @@ export function BalancePanel({
                     <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
                         그 달 <b className="font-black">말 기준</b>입니다. 순자산은 자산에서 부채를 뺀 값이라 따로 적지 않습니다.
                     </p>
-                    {([
-                        ["자산", fAssets, setFAssets, "예금 · 주식 · 집 …"],
-                        ["부채", fLiab, setFLiab, "대출 · 카드값 …"],
-                    ] as const).map(([label, val, setVal, hint]) => (
-                        <div key={label} className="flex flex-col gap-1.5">
-                            <label className={FIELD_LABEL_CLS} htmlFor={`bal-${label}`}>
-                                {label}
-                                <span className="ml-1.5 normal-case tracking-normal font-bold text-neutral-400">{hint}</span>
-                            </label>
-                            <div className="flex items-baseline gap-1.5 px-3.5 py-2.5 rounded-2xl bg-surface-canvas dark:bg-surface-dark-canvas border border-neutral-200 dark:border-border-subtle-dark focus-within:border-brand focus-within:ring-1 focus-within:ring-brand">
-                                <input
-                                    id={`bal-${label}`}
-                                    type="text" inputMode="numeric" autoComplete="off" placeholder="0"
-                                    value={val}
-                                    onChange={(e) => setVal(fmt(digits(e.target.value)))}
-                                    onFocus={(e) => e.currentTarget.select()}
-                                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-right text-xl font-black tabular-nums text-neutral-900 dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600"
-                                />
-                                <span className="text-sm font-black text-neutral-400">원</span>
-                            </div>
-                        </div>
-                    ))}
+                    <fieldset disabled={mutating} className="flex flex-col gap-4 disabled:opacity-60">
+                        {(["asset", "liability"] as const).map(kind => {
+                            const label = kind === "asset" ? "자산" : "부채";
+                            const rateLabel = kind === "asset" ? "수익률 (%)" : "연 이자율 (%)";
+                            return (
+                                <div key={kind} className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <h3 className={FIELD_LABEL_CLS}>{label} · {won(kind === "asset" ? totals.assets : totals.liabilities)}</h3>
+                                        <button type="button" disabled={draft.length >= 200}
+                                            onClick={() => setDraft(prev => [...prev, { id: nextId.current++, kind, name: "", amount: "", rate: "" }])}
+                                            className="min-h-[36px] px-3 rounded-lg border border-neutral-200 dark:border-border-subtle-dark text-xs font-bold text-brand-ink">
+                                            + {label} 추가
+                                        </button>
+                                    </div>
+                                    {draft.filter(item => item.kind === kind).map((item, index) => (
+                                        <div key={item.id} className="grid grid-cols-2 gap-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas p-3">
+                                            <label className="col-span-2 text-[11px] font-bold text-neutral-500">
+                                                {label} 이름
+                                                <input type="text" maxLength={80} value={item.name}
+                                                    placeholder={kind === "asset" ? "예: 예금, 주식, 부동산" : "예: 주택담보대출, 카드값"}
+                                                    onChange={e => updateItem(item.id, { name: e.target.value })}
+                                                    className="mt-1 w-full min-w-0 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 text-sm text-neutral-900 dark:text-white" />
+                                            </label>
+                                            <label className="min-w-0 text-[11px] font-bold text-neutral-500">
+                                                금액 (원)
+                                                <input type="text" inputMode="numeric" autoComplete="off" placeholder="0" value={item.amount}
+                                                    onChange={e => updateItem(item.id, { amount: fmt(digits(e.target.value)) })}
+                                                    onFocus={e => e.currentTarget.select()}
+                                                    className="mt-1 w-full min-w-0 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 text-right text-sm tabular-nums text-neutral-900 dark:text-white" />
+                                            </label>
+                                            <label className="min-w-0 text-[11px] font-bold text-neutral-500">
+                                                {rateLabel}
+                                                <input type="text" inputMode={kind === "asset" ? "text" : "decimal"} autoComplete="off" placeholder="선택 입력" value={item.rate}
+                                                    onChange={e => updateItem(item.id, { rate: e.target.value })}
+                                                    className="mt-1 w-full min-w-0 rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2 text-right text-sm tabular-nums text-neutral-900 dark:text-white" />
+                                            </label>
+                                            <button type="button" aria-label={`${label} ${index + 1} ${item.name} 삭제`}
+                                                onClick={() => setDraft(prev => prev.filter(row => row.id !== item.id))}
+                                                className="col-span-2 min-h-[36px] justify-self-end px-2 text-xs font-bold text-red-600 dark:text-red-400">항목 삭제</button>
+                                        </div>
+                                    ))}
+                                    {!draft.some(item => item.kind === kind) && <p className="text-xs text-neutral-400">{label} 항목을 추가해 주세요.</p>}
+                                </div>
+                            );
+                        })}
+                    </fieldset>
+                    <p className="text-[11px] text-neutral-500">자산 수익률은 손실 시 음수로 입력할 수 있습니다. 부채 이자율은 연 기준입니다. 항목은 총 200개까지 추가할 수 있습니다.</p>
                     {/* 치는 동안에도 순자산이 따라 움직인다 — 저장하기 전에 결과를 본다. */}
                     <div className="flex items-baseline justify-between px-1">
                         <span className={FIELD_LABEL_CLS}>순자산</span>
                         <span className={cn(
                             "text-[17px] font-black tabular-nums",
-                            numOf(fAssets) - numOf(fLiab) < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink",
+                            netWorth(totals) < 0 ? "text-red-600 dark:text-red-400" : "text-brand-ink",
                         )}>
-                            {won(numOf(fAssets) - numOf(fLiab))}
+                            {won(netWorth(totals))}
                         </span>
                     </div>
                     {/* **실패는 이 자리에서 말한다.** 가계부의 오류 띠는 내역을 못 불러왔을
@@ -361,7 +412,7 @@ export function BalancePanel({
                     )}
                     <div className="flex gap-2">
                         <button
-                            type="button" onClick={() => { setOpen(false); setSaveError(null); }}
+                            type="button" disabled={mutating} onClick={() => { setOpen(false); setSaveError(null); }}
                             className="min-h-[44px] px-4 rounded-xl border border-neutral-200 dark:border-border-subtle-dark text-[13px] font-black text-neutral-500"
                         >
                             그만두기
@@ -406,6 +457,18 @@ export function BalancePanel({
                             </b></>
                         )}
                     </div>
+                    {balanceItems(thisMonth).length > 0 && (
+                        <ul className="mt-3 space-y-2 text-left text-xs">
+                            {balanceItems(thisMonth).map((item, index) => (
+                                <li key={index} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-neutral-100 dark:border-border-subtle-dark pt-2">
+                                    <span className="min-w-0 break-all text-neutral-600 dark:text-neutral-300">{item.kind === "asset" ? "자산" : "부채"} · {item.name}</span>
+                                    <span className="tabular-nums text-neutral-800 dark:text-neutral-100">
+                                        {won(item.amount)} · {item.kind === "asset" ? "수익률" : "연 이자율"} {item.rate == null ? "미입력" : `${item.rate}%`}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             ) : (
                 <div className="px-4 py-5 text-center text-xs text-neutral-400 dark:text-neutral-500">

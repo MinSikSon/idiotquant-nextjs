@@ -117,3 +117,34 @@ test("구간이 0 이나 음수여도 달 하나는 본다", () => {
 test("기본 구간은 고르는 목록 안에 있다", () => {
     assert.ok(BALANCE_RANGES.some(r => r.months === DEFAULT_BALANCE_RANGE));
 });
+
+/* ── 항목별 자산·부채 ── */
+test("여러 항목의 합계는 수익률과 무관하게 금액을 합산한다", async () => {
+    const { balanceTotals } = await import("@/lib/features/ledger/balances");
+    assert.deepEqual(balanceTotals([
+        { kind: "asset", name: "예금", amount: 100, rate: 3.5 },
+        { kind: "asset", name: "주식", amount: 200, rate: -12.5 },
+        { kind: "liability", name: "대출", amount: 80, rate: 4.2 },
+        { kind: "liability", name: "카드", amount: 20, rate: null },
+    ]), { assets: 300, liabilities: 100 });
+    assert.deepEqual(balanceTotals([]), { assets: 0, liabilities: 0 });
+});
+
+test("과거 합계 기록을 편집해도 금액은 보존하고 수익률은 미입력으로 둔다", async () => {
+    const { balanceItems, balanceTotals } = await import("@/lib/features/ledger/balances");
+    const legacy = row("2026-03", 100, 30);
+    const items = balanceItems(legacy);
+    assert.deepEqual(balanceTotals(items), { assets: 100, liabilities: 30 });
+    assert.ok(items.every(item => item.rate === null));
+    assert.deepEqual(balanceItems(null), []);
+    assert.deepEqual(balanceItems({ ...legacy, items: [] }), []);
+});
+
+test("저장된 항목을 다시 편집할 때 음수 수익률과 0%를 보존한다", async () => {
+    const { balanceItems } = await import("@/lib/features/ledger/balances");
+    const items = [
+        { kind: "asset" as const, name: "주식", amount: 100, rate: -2.5 },
+        { kind: "liability" as const, name: "무이자 대출", amount: 30, rate: 0 },
+    ];
+    assert.deepEqual(balanceItems({ ...row("2026-03", 100, 30), items }), items);
+});

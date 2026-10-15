@@ -13,11 +13,37 @@
  * 맞는지 알 방법이 없다. **뺄셈하는 자리는 이 파일 하나다.**
  */
 
+export interface BalanceItem {
+    kind: "asset" | "liability";
+    name: string;
+    amount: number;
+    /** 자산 수익률 / 부채 연 이자율(%). 미입력은 null. */
+    rate: number | null;
+}
+
+export function balanceTotals(items: readonly BalanceItem[]) {
+    return items.reduce((total, item) => {
+        total[item.kind === "asset" ? "assets" : "liabilities"] += item.amount;
+        return total;
+    }, { assets: 0, liabilities: 0 });
+}
+
+/** 합계만 있던 과거 기록도 금액을 잃지 않고 항목으로 편집한다. */
+export function balanceItems(balance: LedgerBalance | null): BalanceItem[] {
+    if (!balance) return [];
+    if (balance.items != null) return balance.items;
+    const items: BalanceItem[] = [];
+    if (balance.assets) items.push({ kind: "asset", name: "기존 자산", amount: balance.assets, rate: null });
+    if (balance.liabilities) items.push({ kind: "liability", name: "기존 부채", amount: balance.liabilities, rate: null });
+    return items;
+}
+
 /** 워커가 돌려주는 한 달치. 순자산은 여기 없다 — 위 주석 참고. */
 export interface LedgerBalance {
     month: string;          // 'YYYY-MM'
     assets: number;         // 원 단위 0 이상
     liabilities: number;    // 원 단위 0 이상
+    items?: BalanceItem[] | null;
     updated_by?: string | null;
     updated_by_name?: string | null;
     updated_at?: number | null;
