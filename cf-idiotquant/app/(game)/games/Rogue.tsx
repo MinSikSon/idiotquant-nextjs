@@ -3248,12 +3248,14 @@ export default function Rogue() {
                                                 : `한글·영문·숫자 ${NICK_MAX}자까지 — 지도의 내 칸에 적힌다`,
                                             go: () => {
                                                 changeNick();
+                                    section: "판",
                                                 setSheet("none");
                                             },
                                         },
                                     ]
                                     : []),
                                 // **방장이 보는 손님 명부** — 사람마다 내보내기 단추 하나. 정원이
+                                    section: "판",
                                 // 늘며 「동료 내보내기」한 줄로는 **누구를** 내보내는지 못 적게 됐다.
                                 ...(room && online === "host"
                                     ? guests.map((g2) => ({
@@ -3268,6 +3270,7 @@ export default function Rogue() {
                                         },
                                     }))
                                     : []),
+                                                section: "판",
                                 ...(room && online === "host"
                                     ? [
                                         {
@@ -3283,6 +3286,7 @@ export default function Rogue() {
                                                 closeRoom("방을 닫았다. 다시 혼자다.");
                                                 setSheet("none");
                                             },
+                                                section: "판",
                                         },
                                     ]
                                     : []),
@@ -3304,6 +3308,7 @@ export default function Rogue() {
                                             },
                                         },
                                     ]
+                                            section: "함께하기",
                                     : [
                                         {
                                             label: "온라인 방 만들기",
@@ -3319,6 +3324,7 @@ export default function Rogue() {
                                             label: "온라인 방 들어가기",
                                             hint: "동료가 알려 준 코드로 — 내 저장 판은 그대로 남는다",
                                             go: () => {
+                                        section: "함께하기",
                                                 setRoomCodeInput("");
                                                 setSheet("roomCode");
                                             },
@@ -3331,8 +3337,9 @@ export default function Rogue() {
                                     hint: "이동한 칸의 아이템을 자동으로 줍습니다. 눌러서 켜고 끕니다. 꺼도 줍기 버튼과 , / g 키는 쓸 수 있습니다.",
                                     go: () => run({ t: "toggleAutopickup" }),
                                 },
-                                { label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
+                                { section: "설정 · 참고", label: "도움말", hint: "키와 규칙 — ?", go: () => setSheet("help") },
                                 {
+                                            section: "함께하기",
                                     label: "지난 판",
                                     hint: "여태 죽은 자리와 점수",
                                     go: () => {
@@ -3343,31 +3350,33 @@ export default function Rogue() {
                                 },
                             ].map((o, index, all) => (
                                 <li key={o.label}>
-                                    {(index === 0 || index === 2 || index === all.length - 2) && (
-                                        <p className="mt-3 border-b border-[var(--rg-line)] pb-1 text-[11px] font-bold text-[var(--rg-label)] first:mt-0">
-                                            {index === 0 ? "── 판" : index === 2 ? "── 함께하기" : "── 설정 · 참고"}
+                                    {(index === 0 || o.section !== all[index - 1]?.section) && (
+                                        <p className={`${index === 0 ? "" : "mt-4"} mb-2 border-b border-[var(--rg-line)] pb-1.5 text-xs font-bold tracking-wide text-[var(--rg-label)]`}>
+                                            {o.section}
                                         </p>
                                     )}
                                     <button
                                         type="button"
                                         onClick={o.go}
+                                            section: "함께하기",
                                         aria-pressed={"pressed" in o ? o.pressed : undefined}
-                                        className="flex w-full items-start justify-between gap-3 border-b border-[var(--rg-line-soft)] px-2 py-2 text-left transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
+                                        className="mb-1.5 flex w-full items-start justify-between gap-3 rounded border border-[var(--rg-line-soft)] bg-[var(--rg-raised)]/30 px-3 py-2.5 text-left transition-colors hover:border-[var(--rg-line)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)]"
                                     >
                                         <span className="flex min-w-0 items-start gap-2">
-                                            <span aria-hidden="true" className="mt-px shrink-0 text-[var(--rg-faint)]">&gt;</span>
+                                            <span aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--rg-label)]">›</span>
                                             <span className="min-w-0 leading-snug break-words">
-                                                <span className="block font-bold text-[var(--rg-strong)]">{o.label}</span>
-                                                <span className="mt-0.5 block text-[11px] text-[var(--rg-muted)]">{o.hint}</span>
+                                                <span className="block font-semibold text-[var(--rg-strong)]">{o.label}</span>
+                                                <span className="mt-1 block text-xs leading-relaxed text-[var(--rg-label)]">{o.hint}</span>
                                             </span>
                                         </span>
-                                        {"status" in o && <span className={`mt-0.5 shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold ${o.status === "켜짐" ? "border-[var(--rg-strong)] text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-muted)]"}`}>{o.status}</span>}
+                                        {"status" in o && <span className={`mt-0.5 shrink-0 rounded border px-2 py-1 text-[11px] font-bold ${o.status === "켜짐" ? "border-[var(--rg-strong)] bg-[var(--rg-strong)]/10 text-[var(--rg-strong)]" : "border-[var(--rg-line)] text-[var(--rg-label)]"}`}>{o.status}</span>}
                                     </button>
                                 </li>
                             ))}
                         </ul>
                     </Panel>
                 )
+                                            section: "함께하기",
             }
 
             {
@@ -3378,6 +3387,7 @@ export default function Rogue() {
                         onClose={() => {
                             // **안 고르고 닫으면 방에서 나온다.** 물어보려고 붙어만 있는 상태라,
                             // 그냥 닫으면 들어가지도 나가지도 않은 채 「잇는 중…」으로 남는다.
+                                            section: "함께하기",
                             if (originFor.t === "guest") {
                                 setOriginFor({ t: "new" });
                                 setSheet("none");
@@ -3387,6 +3397,7 @@ export default function Rogue() {
                                 pickOrigin("knight");
                             } else if (originFor.t !== "new" || (state && state.phase === "playing")) {
                                 setOriginFor({ t: "new" });
+                                    section: "설정 · 참고",
                                 setSheet("none");
                             } else startWithOrigin("knight");
                         }}
@@ -3395,6 +3406,7 @@ export default function Rogue() {
                             <div role="group" aria-label="캐릭터 미리보기" className="grid grid-cols-7 gap-1">
                                 {ORIGIN_LIST.map((orig) => (
                                     <button key={orig.id} type="button" aria-label={`${orig.name} 미리보기`} aria-pressed={selectedOrigin === orig.id}
+                                    section: "설정 · 참고",
                                         title={orig.name} onClick={() => setSelectedOrigin(orig.id)}
                                         className={`grid min-h-11 min-w-0 place-items-center rounded-[3px] border font-mono text-xl leading-none transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${selectedOrigin === orig.id ? "border-[var(--rg-gold)] bg-[var(--rg-hover)]" : "border-[var(--rg-line-soft)] bg-[var(--rg-raised)]"}`}
                                         style={{ color: orig.iconInk }}>
