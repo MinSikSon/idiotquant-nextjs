@@ -546,13 +546,18 @@ function guestKey(): string {
  */
 const PING_MS = 2000;
 const DEAD_MS = 6000;
+// ICE 후보 교환·TURN 우회는 heartbeat보다 오래 걸릴 수 있다.
+const CONNECT_MS = 30000;
 function watchConn(conn: DataConnection) {
     let last = Date.now();
+    conn.on("open", () => {
+        last = Date.now();
+    });
     conn.on("data", () => {
         last = Date.now();
     });
     const t = setInterval(() => {
-        if (Date.now() - last > DEAD_MS) {
+        if (Date.now() - last > (conn.open ? DEAD_MS : CONNECT_MS)) {
             clearInterval(t);
             conn.close();
             return;
