@@ -183,7 +183,8 @@ test("옵션 메뉴는 제목과 설명을 나눠 보여 주고 토글 상태를
     assert.ok(at >= 0, "옵션 메뉴가 없다");
     const menu = s.slice(at, s.indexOf('sheet === "origins"', at));
     assert.match(menu, /항목 이름과 설명을 나눠 표시합니다/, "옵션 메뉴에 읽는 법을 안내하지 않는다");
-    assert.match(menu, /<span className="block font-bold text-\[var\(--rg-strong\)\]">\{o\.label\}<\/span>\s*<span className="mt-0\.5 block text-\[11px\] text-\[var\(--rg-muted\)\]">\{o\.hint\}<\/span>/, "항목 이름과 설명이 한 줄에 붙어 있다");
+    assert.match(menu, /<span className="block font-semibold text-\[var\(--rg-strong\)\]">\{o\.label\}<\/span>\s*<span className="mt-1 block text-xs leading-relaxed text-\[var\(--rg-label\)\]">\{o\.hint\}<\/span>/, "항목 이름과 설명이 한 줄에 붙어 있다");
+    assert.match(menu, /o\.section !== all\[index - 1\]\?\.section/, "메뉴 섹션 경계가 항목 위치에 따라 흔들린다");
     assert.match(menu, /label: "자동 줍기",\s*status: .*\? "켜짐" : "꺼짐",\s*pressed:/, "자동 줍기 토글에 현재 상태가 없다");
     assert.match(menu, /aria-pressed=\{\"pressed\" in o \? o\.pressed : undefined\}/, "토글의 현재 상태를 접근성 속성으로 표시하지 않는다");
 });

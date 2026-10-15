@@ -21,6 +21,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import { EventEmitter } from "node:events";
+import { createRequire } from "node:module";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = readFileSync(path.join(ROOT, "app/(game)/games/Rogue.tsx"), "utf8");
@@ -70,6 +72,22 @@ test("온라인 연결 협상은 heartbeat보다 오래 기다리고 열린 뒤�
     const stuck = make();
     stuck.advance(32000);
     assert.equal(stuck.conn.closed, true, "끝나지 않는 협상을 영원히 기다린다");
+
+    // 신호 서버에서 open 자체가 안 와도 무한 대기하지 않는다.
+    for (const opened of [false, true]) {
+        let timeout: (() => void) | undefined;
+        let failed = false;
+        const events = new Map<string, () => void>();
+        runInNewContext(ts.transpile(SRC.slice(start, end) + "\nwatchPeer(peer, timedOut);", { target: ts.ScriptTarget.ES2020 }), {
+            peer: { on: (event: string, fn: () => void) => events.set(event, fn) },
+            timedOut: () => { failed = true; },
+            setTimeout: (fn: () => void) => { timeout = fn; return 1; },
+            clearTimeout: () => { timeout = undefined; },
+        });
+        if (opened) events.get("open")!();
+        timeout?.();
+        assert.equal(failed, !opened, opened ? "정상 등록 후에도 시간 초과가 발생한다" : "신호 서버 무응답을 감지하지 않는다");
+    }
 });
 
 test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", () => {
@@ -155,6 +173,54 @@ test("내보낸 동료는 방이 열려 있는 동안 다시 못 들어온다", 
 // 창을 닫았다 열어도 **같은 코드로 방을 다시 열기만** 하면 기다리던 손님이 붙어 판을
 // 통째로 돌려받는다. 새 코드로 열면 손님은 영영 못 찾는다.
 test("방장이 돌아오면 같은 방을 다시 연다 — 손님 자리는 판에 남아 있다", () => {
+    // PeerJS 1.5.5의 실제 destroy는 destroyed를 세우기 전에 disconnected를 내보낸다.
+    // 의도적으로 닫을 때 자동 reconnect가 끼어들면 죽은 피어의 신호 소켓이 다시 열린다.
+    {
+        const { Peer } = createRequire(import.meta.url)("peerjs") as typeof import("peerjs");
+        class FakePeer extends EventEmitter {
+            _destroyed = false;
+            reconnects = 0;
+            get destroyed() { return this._destroyed; }
+            disconnect() { this.emit("disconnected"); }
+            reconnect() { this.reconnects++; }
+            _cleanup() { this.emit("cleanup"); }
+            destroy() { Peer.prototype.destroy.call(this as unknown as import("peerjs").Peer); }
+        }
+        const listener = SRC.match(/peer\.on\("disconnected",[^\n]+/);
+        assert.ok(listener, "방장의 신호 복구 감시가 없다");
+        const start = SRC.indexOf("function destroyPeer(");
+        const end = SRC.indexOf("function watchPeer(", start);
+        const destroy = start < 0 ? "peer.destroy();" : SRC.slice(start, end) + "\ndestroyPeer(peer);";
+        const closed = new FakePeer();
+        runInNewContext(ts.transpile(listener[0] + "\n" + destroy, { target: ts.ScriptTarget.ES2020 }), { peer: closed });
+        assert.equal(closed.reconnects, 0, "방을 닫는 도중 신호 소켓을 다시 열었다");
+        assert.equal(closed.destroyed, true, "이전 피어를 종료하지 않았다");
+        const disconnected = new FakePeer();
+        runInNewContext(listener[0], { peer: disconnected });
+        disconnected.disconnect();
+        assert.equal(disconnected.reconnects, 1, "실제 망 끊김에서도 복구를 꺼버렸다");
+
+        const retryStart = SRC.indexOf("const retry = useCallback(");
+        const retryEnd = SRC.indexOf("/** 끝난 판", retryStart);
+        const retryScript = ts.transpile(SRC.slice(start, end) + "\n" + SRC.slice(retryStart, retryEnd)
+            + '\npeer.on("cleanup", () => retry(peer, again)); retry(peer, again);', { target: ts.ScriptTarget.ES2020 });
+        for (const cancelled of [false, true]) {
+            const retryPeer = new FakePeer();
+            const pending: (() => void)[] = [];
+            const attempt = { current: 1 };
+            let retried = 0;
+            runInNewContext(retryScript, {
+                peer: retryPeer, net: { current: { peer: retryPeer } }, netAttempt: attempt,
+                useCallback: (fn: unknown) => fn, RETRY_MS: 3000,
+                setTimeout: (fn: () => void) => pending.push(fn), again: () => { retried++; },
+            });
+            assert.equal(pending.length, 1, "종료 이벤트가 재시도를 중복 예약한다");
+            if (cancelled) attempt.current++;
+            pending.forEach((fn) => fn());
+            assert.equal(retried, cancelled ? 0 : 1, "취소한 재시도가 되살아나거나 정상 재시도가 사라졌다");
+        }
+    }
+
     // ── ① 들어 있던 방을 **그 코드 그대로** 다시 연다
     {
         // `changeNick` 도 같은 칸을 읽으므로 **되살리는 자리**를 따로 짚는다.
@@ -244,18 +310,28 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         let originFor: any = { t: "new" };
         let party: unknown[] = [];
         let saved: string | undefined;
+        let status: string | null = null;
+        let peerOptions: any;
+        let retries = 0;
+        const timers = new Map<number, () => void>();
+        let timerId = 0;
+        const iceConfig = { iceServers: [{ urls: "turns:turn.example:443" }] };
         const context = {
-            TestPeer: class { on(event: string, fn: (...args: any[]) => void) { peerEvents.set(event, fn); } connect() { return conn; } },
-            useCallback: (fn: unknown) => fn, net: { current: null },
+            TestPeer: class { constructor(options: any) { peerOptions = options; } on(event: string, fn: (...args: any[]) => void) { peerEvents.set(event, fn); } connect() { return conn; } },
+            useCallback: (fn: unknown) => fn, net: { current: null }, netAttempt: { current: 0 },
+            loadOnlineConfig: async () => ({ config: iceConfig, relay: false }),
+            watchPeer: () => {}, setNetStatus: (value: any) => { status = typeof value === "function" ? value(status) : value; }, onlineErrorMessage: (type: string) => type,
+            setTimeout: (fn: () => void) => { timers.set(++timerId, fn); return timerId; }, clearTimeout: (id: number) => timers.delete(id), CONNECT_MS: 30000,
             savedOrigin: () => saved, writeRoomRecord: () => {},
             setOnline: () => {}, setRoom: () => {}, setLinked: () => {},
             setRoomParty: (value: unknown[]) => { party = value; },
             setOriginFor: (value: any) => { originFor = typeof value === "function" ? value(originFor) : value; },
             setSheet: (value: string) => { sheet = value; },
-            retry: () => {}, note: () => {}, resetRunInput: () => {}, watchConn: () => {},
+            retry: () => { retries++; }, note: () => {}, resetRunInput: () => {}, watchConn: () => {},
             PEER_PREFIX: "test-", ORIGINS: { knight: {} }, cleanNick: (value: string) => value,
         };
         await runInNewContext(script, { ...context });
+        assert.equal(peerOptions.config, iceConfig, "발급된 중계 설정을 실제 게스트 Peer에 적용하지 않았다");
         assert.equal(sheet, "origins", "방장 응답 전에는 직업 화면이 전혀 안 열린다");
         const selection = originFor;
         peerEvents.get("open")!();
@@ -264,11 +340,35 @@ test("손님은 방장의 직업을 보고 고른다 — 고르기 전에는 자
         connEvents.get("data")!({ t: "room", party: [{ origin: "knight", nick: "방장" }] });
         assert.equal(party.length, 1, "방장 정보를 선택 화면에 반영하지 않는다");
         assert.equal(originFor, selection, "방장 응답이 오면 선택 화면을 다시 초기화한다");
+        assert.equal(timers.size, 0, "방장 응답 뒤에도 입장 시간 제한이 남는다");
+        peerEvents.get("error")!({ type: "peer-unavailable" });
+        assert.equal(status, "peer-unavailable", "방 번호 오류를 연결 중으로 숨긴다");
+        assert.equal(retries, 1, "방 번호 오류 후 재시도하지 않는다");
+
+        await runInNewContext(script, { ...context });
+        peerEvents.get("open")!();
+        connEvents.get("open")!();
+        connEvents.get("data")!({ t: "ping" });
+        for (const fn of timers.values()) fn();
+        assert.equal(status, "room-timeout", "heartbeat만 오고 방 정보가 안 와도 무한 대기한다");
+        timers.clear();
 
         saved = "rogue";
         sheet = "none";
         await runInNewContext(script, { ...context });
         assert.equal(sheet, "none", "이미 직업을 고른 재접속자에게도 다시 선택을 묻는다");
+
+        const pendingNet = { current: null };
+        const attempt = { current: 0 };
+        let finishConfig!: (value: { config: {}; relay: boolean }) => void;
+        const pending = runInNewContext(script, {
+            ...context, net: pendingNet, netAttempt: attempt,
+            loadOnlineConfig: () => new Promise((resolve) => { finishConfig = resolve; }),
+        });
+        attempt.current++; // 중계 설정을 불러오는 동안 선택창을 닫았다.
+        finishConfig({ config: {}, relay: false });
+        await pending;
+        assert.equal(pendingNet.current, null, "나간 뒤 늦게 받은 설정으로 연결을 다시 열었다");
     }
 
     // ── ① 규약에 물음과 답이 둘 다 있다
