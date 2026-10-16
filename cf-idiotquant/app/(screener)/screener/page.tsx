@@ -1878,7 +1878,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
-            <FactorWorkbench items={ncavDailyList.country === country ? (isLoggedIn ? filteredList : guestRecommendations) : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />
+            {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
 
@@ -2142,7 +2142,7 @@ function ScreenerContent() {
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
                                 </p>
                                 <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-                                    로그인하면 전체 목록과 필터·정렬을 이용할 수 있습니다. 과거 시점 검증은 팩터 실험실에서 CSV로 실행할 수 있습니다.
+                                    로그인하면 전체 목록과 필터·정렬을 이용할 수 있습니다.
                                 </p>
                                 <button
                                     onClick={requireLogin}
