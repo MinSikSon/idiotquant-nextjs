@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
+import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
@@ -402,10 +403,10 @@ export function NavbarWithSimpleLinks() {
       </aside>}
 
       {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
-      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-surface-dark-canvas">
+      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/85 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/85">
         <div className="mx-auto flex min-h-[64px] max-w-[1600px] items-center gap-6 px-5 sm:px-8 lg:gap-8 lg:px-10">
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-            idiot<span className="text-[#635bdb] dark:text-brand-ink">quant</span>
+            idiot<span className="text-brand-ink">quant</span>
           </Link>
           <nav aria-label="주요 메뉴" className="flex min-w-0 flex-1 items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300 lg:gap-6 lg:text-sm">
             {MAIN_NAV.filter(item => item.href !== "/").map(item => (
@@ -433,6 +434,7 @@ export function NavbarWithSimpleLinks() {
             </div>
           </nav>
           <div className="flex shrink-0 items-center gap-3">
+            <QuickNavigation items={[...MAIN_NAV, ...utilityNav]} />
             <ThemeChanger compact />
             {status === "authenticated" ? <>
               <Link href="/profile" className="max-w-28 truncate rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-neutral-400">
@@ -448,16 +450,17 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
       <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
-        barStyle ? "" : "bg-white dark:bg-surface-dark-canvas border-neutral-200/80 dark:border-neutral-800")}
+        barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-[#635bdb] dark:text-brand-ink"}>{inGame ? "games" : "quant"}</span>
+              idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-brand-ink"}>{inGame ? "games" : "quant"}</span>
             </span>
           </Link>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {!inGame && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
           <ThemeChanger />
           <MiniSession session={session} status={status} />
         </div>
@@ -466,7 +469,7 @@ export function NavbarWithSimpleLinks() {
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav aria-label="하단 메뉴" className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 transition-[height] duration-200 motion-reduce:transition-none",
         compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1" : "h-[64px]",
-        barStyle ? "" : "bg-white dark:bg-surface-dark-canvas border-neutral-200/80 dark:border-neutral-800")}
+        barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}

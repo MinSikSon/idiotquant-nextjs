@@ -79,18 +79,18 @@ const config = {
 
         // 브랜드 채움색과 테마별 글자색을 분리해 흰 버튼 글자의 대비를 유지한다.
         brand: {
-          DEFAULT: "#635bdb",
-          hover: "#5148c8",
-          light: "#efefff",
-          muted: "#282544",
+          DEFAULT: "#421d24",
+          hover: "#5a2a33",
+          light: "#eee7fa",
+          muted: "#3a3048",
           ink: "rgb(var(--brand-ink) / <alpha-value>)",
           "ink-hover": "rgb(var(--brand-ink-hover) / <alpha-value>)",
-          "light-hover": "#c8c4ff",
+          "light-hover": "#d4c7ff",
         },
 
         // 라이트 모드 표면
         surface: {
-          canvas: "#fafafa",
+          canvas: "#f2f0eb",
           card: "#ffffff",
           muted: "#f4f4f5",
           "muted-hover": "#f7f7f8",
@@ -98,7 +98,7 @@ const config = {
 
         // 다크 모드 표면 (7단계 계층)
         "surface-dark": {
-          canvas: "#141416",
+          canvas: "#1b1819",
           DEFAULT: "#18181b",
           card: "#1c1c20",
           hover: "#252529",
