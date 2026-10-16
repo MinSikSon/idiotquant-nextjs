@@ -7,16 +7,16 @@
   --sidebar-w: 220px;
   --topbar-h: 48px;
   --bottombar-h: 64px;
-  --brand-ink: 81 72 200;
-  --brand-ink-hover: 67 56 170;
+  --brand-ink: 113 76 182;
+  --brand-ink-hover: 89 54 153;
   --radius-control: 4px;
   --radius-input: 4px;
   --radius-panel: 8px;
 }
 
 html.dark {
-  --brand-ink: 170 164 255;
-  --brand-ink-hover: 198 193 255;
+  --brand-ink: 201 176 239;
+  --brand-ink-hover: 221 204 250;
 }
 
 /* 게임은 서비스 카드·입력 규칙과 별도의 기기 UI를 사용한다. */
