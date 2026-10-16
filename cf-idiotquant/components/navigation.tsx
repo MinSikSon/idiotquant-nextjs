@@ -468,7 +468,7 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav aria-label="하단 메뉴" className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 transition-[height] duration-200 motion-reduce:transition-none",
-        compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1" : "h-[64px]",
+        compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1 [&>a]:gap-0 [&>button]:gap-0 [&>a>span]:sr-only [&>button>span]:sr-only" : "h-[64px]",
         barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
