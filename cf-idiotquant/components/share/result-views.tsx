@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import Link from 'next/link';
+import { sharedStockAnalysisHref } from '@/lib/share/navigation';
 import { ChevronDown, LayoutGrid, List } from 'lucide-react';
 import LineChart from '@/components/LineChart';
 import { FinancialBars } from '@/app/(search)/search/components/FinancialBars';
@@ -203,6 +205,15 @@ function ScreenerView({ snapshot }: { snapshot: ResultSnapshot }) {
                       </div>
                     ))}
                   </dl>
+                  <div className="border-t border-neutral-100 px-4 py-2 dark:border-neutral-800">
+                    <Link
+                      href={sharedStockAnalysisHref(row[0])}
+                      prefetch={false}
+                      className="inline-flex min-h-9 items-center text-xs font-medium text-brand-ink"
+                    >
+                      이 종목의 최신 분석 보기 →
+                    </Link>
+                  </div>
                 </article>
               );
             })}
@@ -317,6 +328,15 @@ function CompareView({ snapshot }: { snapshot: ResultSnapshot }) {
                       </div>
                     ))}
                   </dl>
+                  <div className="border-t border-neutral-100 px-4 py-2 dark:border-neutral-800">
+                    <Link
+                      href={sharedStockAnalysisHref(row[0])}
+                      prefetch={false}
+                      className="inline-flex min-h-9 items-center text-xs font-medium text-brand-ink"
+                    >
+                      이 종목의 최신 분석 보기 →
+                    </Link>
+                  </div>
                 </details>
               );
             })}
