@@ -108,3 +108,10 @@ export function analysisFinancialPeriods(
     return [{ label: String(label), date: report?.output?.[0]?.stac_yymm }];
   });
 }
+
+export function financialSourceLabel(source: unknown): string {
+  if (source === 'sec') return 'SEC EDGAR';
+  if (source === 'finnhub') return 'Finnhub';
+  if (source === 'kis') return '한국투자증권';
+  return '';
+}

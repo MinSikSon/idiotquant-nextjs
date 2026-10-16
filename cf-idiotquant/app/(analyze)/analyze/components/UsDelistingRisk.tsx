@@ -119,7 +119,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   const result = useMemo(() => {
     const allReports: any[] = finnhubData?.data ?? [];
     const annuals = allReports
-      .filter((r: any) => r.form === "10-K")
+      .filter((r: any) => /^(10-K|20-F|40-F)(\/A)?$/.test(r.form ?? ""))
       .sort((a: any, b: any) => (b.year ?? 0) - (a.year ?? 0))
       .slice(0, 5);
 
@@ -277,7 +277,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   if (!result) {
     return (
       <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark p-0 sm:p-6">
-        <p className="text-sm text-neutral-500">재무 데이터 없음 — Finnhub 10-K 미제공 종목</p>
+        <p className="text-sm text-neutral-500">연간 공시 재무자료를 확인할 수 없습니다.</p>
       </div>
     );
   }
@@ -329,7 +329,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         {opYears.length > 0 && (
           <div>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-2.5">
-              연도별 영업이익 추이 (10-K)
+              연도별 영업이익 추이 (연간 공시)
             </p>
             <div className="space-y-2">
               {opYears.map(y => (

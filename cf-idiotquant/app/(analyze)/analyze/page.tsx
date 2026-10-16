@@ -675,7 +675,7 @@ function AnalyzeContent() {
             {waitResponse && !isPriceLoaded && <ResultSkeleton />}
 
             <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
-              {isLoaded && <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />}
+              {isLoaded && <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={krOrUs === 'US' ? data.finnhubData?.source : undefined} banner />}
 
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서

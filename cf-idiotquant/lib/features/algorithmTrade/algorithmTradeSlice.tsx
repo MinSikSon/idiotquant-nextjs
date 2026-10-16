@@ -138,6 +138,7 @@ export interface NcavDailyItem {
     name: string;
     country?: "KR" | "US";
     scan_date: string;
+    financial_source?: "sec" | "finnhub" | "kis" | null;
     financial_bs_date?: string | null;
     financial_is_date?: string | null;
     ncav_ratio: number;

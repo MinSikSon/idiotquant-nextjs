@@ -68,7 +68,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
                         <span className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400 shrink-0">{item.ticker}</span>
                         <LiquidityBadge item={item} />
                     </div>
-                    <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} /></div>
+                    <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} /></div>
                 </div>
                 <button
                     onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
