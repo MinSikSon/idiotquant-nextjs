@@ -853,7 +853,7 @@ function AnalyzeContent() {
                         전체 분석은 로그인 후 제공됩니다
                       </p>
                       <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 break-keep">
-                        30초 가입 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
+                        구글/카카오로 로그인 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
                       </p>
                     </div>
                     <Link

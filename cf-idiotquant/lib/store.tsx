@@ -21,6 +21,8 @@ import { stockLikesSlice } from "./features/stockLikes/stockLikesSlice";
 import { ledgerSlice } from "./features/ledger/ledgerSlice";
 import { calculatorSlice } from "./features/calculator/calculatorSlice";
 
+import { compareSlice } from "./features/compare/compareSlice";
+
 const rootReducer: any = combineSlices(
     financialInfoSlice,
     marketInfoSlice,
@@ -43,6 +45,7 @@ const rootReducer: any = combineSlices(
     stockLikesSlice,
     ledgerSlice,
     calculatorSlice,
+    compareSlice,
 );
 
 export type RootState = ReturnType<typeof rootReducer>;
