@@ -304,7 +304,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                     <span className="hidden xl:inline shrink-0 text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
                     <span className="hidden xl:inline"><LiquidityBadge item={item} /></span>
                 </div>
-                <FinancialFreshnessNotice periods={scanFinancialPeriods(item)} />
+                <FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} />
             </div>
 
             <div className="hidden lg:flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
@@ -409,7 +409,7 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
                         {item.ticker}
                         {strategy && <span className="font-sans font-bold tracking-normal text-neutral-700 dark:text-neutral-300">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
                     </span>
-                    <span className="mt-1 block"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} /></span>
+                    <span className="mt-1 block"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} /></span>
                 </span>
                 <span className="shrink-0 text-right">
                     <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>

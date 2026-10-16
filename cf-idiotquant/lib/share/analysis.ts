@@ -1,7 +1,7 @@
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 import { technicalSummary, type PriceBar } from '@/lib/research/technical';
 import { valuationModels } from '@/lib/utils/valuationModels';
-import { financialFreshness, analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
+import { financialFreshness, financialSourceLabel, analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { shareNumber } from './builders';
 import type { ResultSnapshot } from './snapshot';
 
@@ -22,6 +22,8 @@ export function analysisSnapshot({ title, sourcePath, market, values, ncav, roe,
     ] }],
     notes: ['공유자가 조회한 시점의 결과이며 실시간 데이터가 아닙니다.', '평가 모델의 가정에 따른 참고값이며 투자 수익을 보장하지 않습니다.'],
   };
+  const source = market === 'US' ? financialSourceLabel(data?.finnhubData?.source) : '';
+  if (source) snapshot.notes.push(`재무 출처: ${source}`);
   const freshness = financialFreshness(analysisFinancialPeriods(data, market));
   snapshot.notes.push(`재무정보 기준: ${freshness.periods || '미확인'}. ${freshness.message || freshness.label}`);
   if (verdict) {

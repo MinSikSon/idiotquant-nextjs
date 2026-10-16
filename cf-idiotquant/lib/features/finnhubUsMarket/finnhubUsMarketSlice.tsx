@@ -33,6 +33,7 @@ interface FinnhubFinancialsAsReportedDataType {
 export interface FinnhubFinancialsAsReportedType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     cik: string;
+    source?: "finnhub" | "sec";
     data: FinnhubFinancialsAsReportedDataType[];
     symbol: string;
 }
