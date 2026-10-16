@@ -2,6 +2,8 @@
 
 import { ChevronRight, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import FinancialFreshnessNotice from "@/components/financial-freshness";
+import { scanFinancialPeriods } from "@/lib/utils/financialFreshness";
 import { LiquidityBadge } from "./LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import { profitableScanStock, scanRoePercent } from "@/lib/utils/scanFinancials";
@@ -87,6 +89,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                             <span className="text-[10px] font-mono tracking-[0.05em] text-neutral-400 shrink-0">{item.ticker}</span>
                             <LiquidityBadge item={item} />
                         </div>
+                        <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} /></div>
                     </div>
                     <button
                         onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}

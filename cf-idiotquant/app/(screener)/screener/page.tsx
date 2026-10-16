@@ -33,6 +33,8 @@ import {
     type ScreenerFilters, type FilterGroupKey, type DiscoverySortKey, type SortOrder,
 } from "./filters";
 
+import FinancialFreshnessNotice from "@/components/financial-freshness";
+import { scanFinancialPeriods } from "@/lib/utils/financialFreshness";
 import FactorWorkbench from "@/components/research/FactorWorkbench";
 
 import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
@@ -296,12 +298,13 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
             onClick={() => onClick(item.ticker, item.name)}
         >
-            <div className="min-w-0 flex items-center gap-2">
+            <div className="min-w-0">
                 <div className="min-w-0 flex items-center gap-1.5">
                     <p className="min-w-0 truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
                     <span className="hidden xl:inline shrink-0 text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
                     <span className="hidden xl:inline"><LiquidityBadge item={item} /></span>
                 </div>
+                <FinancialFreshnessNotice periods={scanFinancialPeriods(item)} />
             </div>
 
             <div className="hidden lg:flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
@@ -406,6 +409,7 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
                         {item.ticker}
                         {strategy && <span className="font-sans font-bold tracking-normal text-neutral-700 dark:text-neutral-300">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
                     </span>
+                    <span className="mt-1 block"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} /></span>
                 </span>
                 <span className="shrink-0 text-right">
                     <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>

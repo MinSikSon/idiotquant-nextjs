@@ -1,6 +1,7 @@
 import type { ComparisonStock } from '@/lib/features/compare/compareSlice';
 import { calculatePriceReturns, summarizeReturns } from '@/app/(compare)/compare/priceReturns';
 import { scanRoePercent } from '@/lib/utils/scanFinancials';
+import { financialFreshness, scanFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { STRATEGY_LABEL } from '@/lib/constants/strategies';
 import type { ResultSnapshot, SnapshotTable } from './snapshot';
 
@@ -18,13 +19,17 @@ export function screenerSnapshot(items: Record<string, any>[], sourcePath: strin
   const snapshot = base('screener', '종목 발굴 결과', sourcePath);
   snapshot.summary = [{ label: '공유 종목', value: `${items.length}개` }, { label: '시장', value: country === 'US' ? '미국' : '국내' }, { label: '데이터 기준일', value: date || '미제공' }];
   snapshot.tables = [{
-    title: '발굴 종목', columns: ['종목', '현재가', 'PER', 'PBR', 'ROE', 'NCAV 배수', country === 'US' ? '시가총액 (USD)' : '시가총액 (억 원)', '전략'],
-    rows: items.map(item => [
+    title: '발굴 종목', columns: ['종목', '현재가', 'PER', 'PBR', 'ROE', 'NCAV 배수', country === 'US' ? '시가총액 (USD)' : '시가총액 (억 원)', '전략', '재무 기준일', '재무정보 상태'],
+    rows: items.map(item => {
+      const freshness = financialFreshness(scanFinancialPeriods(item), new Date(snapshot.createdAt));
+      return [
       `${item.name} (${item.ticker})`, shareNumber(item.last_price, '', country === 'US' ? '$' : '₩'),
       shareNumber(item.per, '배'), shareNumber(item.pbr, '배'), shareNumber(scanRoePercent(item), '%'),
       shareNumber(item.ncav_ratio, '배'), shareNumber(item.market_cap),
       (Array.isArray(item.strategies) ? item.strategies.map((id: string) => STRATEGY_LABEL[id] ?? id).join(' · ') : '') || '—',
-    ]),
+      freshness.periods || '미확인', freshness.label,
+      ];
+    }),
   }];
   if (conditions.length) snapshot.notes.unshift(`적용 조건: ${conditions.join(' · ')}`);
   snapshot.notes.push('공유자의 결과 목록 순서를 유지합니다. 전체 시장의 종목 수가 아닌 공유에 포함된 종목 수입니다.');
