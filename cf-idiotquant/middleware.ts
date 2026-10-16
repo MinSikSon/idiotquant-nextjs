@@ -54,6 +54,7 @@ export default auth((req: any) => {
         path === "/quant" ||
         path === "/analyze" ||
         path === "/compare" ||
+        path === "/share" ||
         path === "/screener" ||
         // 게임은 로그인 없이 굴러간다. 진행은 localStorage 에만 쌓이므로 계정이
         // 필요 없고, 계정을 요구하면 "한 판 해 보고 정한다" 가 막힌다.

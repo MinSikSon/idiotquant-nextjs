@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
    (calculator)       문서형 화면. StepLabel 눈썹 + 34px 제목이 의도된 편집 디자인이라
                       20px 짜리 공통 제목으로 바꾸면 그 의도가 사라진다.
    (legal)            가운데 정렬된 단독 문서. 자체 로고 머리를 이미 갖고 있다.
-   (analyze)          헤더에 제목이 없다 — 검색줄·종목줄·탭이 그 자리를 쓴다.
-                      대신 껍데기(PAGE_HEADER_CHROME)와 폭(PAGE_WIDTH)은 함께 쓴다.
+   분석은 검색 전에는 페이지 제목, 검색 후에는 종목명을 제목으로 쓴다.
+   검색줄·분석 탭은 children으로 내려 공통 헤더 안에 유지한다.
 
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -41,16 +41,18 @@ export const PAGE_HEADER_CHROME =
 
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
-  "flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors " +
-  "bg-transparent " +
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors " +
+  "border border-neutral-200 dark:border-surface-dark-border bg-transparent " +
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 
 export function PageHeader({
   icon,
   title,
+  description,
   meta,
   actions,
+  children,
   width = "data",
   sticky = false,
   mobileCompact = false,
@@ -60,8 +62,11 @@ export function PageHeader({
   /** nav 가 이모지 대신 lucide 아이콘을 쓰는 화면용. emoji 와 같은 자리에 들어간다. */
   icon?: React.ReactNode;
   title: React.ReactNode;
+  description?: React.ReactNode;
   meta?: React.ReactNode;
   actions?: React.ReactNode;
+  /** 검색줄·탭처럼 페이지별로 필요한 도구를 헤더 아래에 둔다. */
+  children?: React.ReactNode;
   /** 본문 폭 프리셋. 페이지의 <main> 도 같은 값을 써야 한다. */
   width?: PageWidth;
   /** 스크롤해도 헤더를 위에 남긴다 — 지금 보는 대상(종목명·가격)이 계속 보여야 하는 화면용. */
@@ -73,7 +78,7 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div
+    <header
       className={cn(
         PAGE_HEADER_CHROME,
         sticky && "sticky top-0 z-30",
@@ -88,14 +93,15 @@ export function PageHeader({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {icon && <span className="shrink-0 text-neutral-500 flex items-center" aria-hidden>{icon}</span>}
-              <h1 className={cn("text-xl font-semibold tracking-[-0.03em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
+              <h1 className={cn("text-xl font-semibold tracking-[-0.04em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
                 {title}
               </h1>
             </div>
+            {description && <p className="mt-1.5 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">{description}</p>}
             {meta && (
               <div className={cn(
                 "mt-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500 flex items-center flex-wrap gap-x-1.5 gap-y-1",
-                mobileCompact && "mt-1 sm:mt-1.5 flex-nowrap overflow-hidden whitespace-nowrap"
+                mobileCompact && "mt-1 sm:mt-1.5"
               )}>
                 {meta}
               </div>
@@ -104,7 +110,8 @@ export function PageHeader({
           {actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
         </div>
       </div>
-    </div>
+      {children}
+    </header>
   );
 }
 
