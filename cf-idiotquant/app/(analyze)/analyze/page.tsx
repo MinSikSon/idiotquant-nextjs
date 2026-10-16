@@ -20,11 +20,13 @@ import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
-  AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
+  AlertCircle, Loader2, Flame, CheckCircle,
   Search, Heart, X, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PAGE_WIDTH, PAGE_HEADER_CHROME } from '@/components/pageHeader';
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import ResultShare from '@/components/result-share';
+import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 
@@ -368,7 +370,6 @@ function AnalyzeContent() {
 
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
@@ -396,24 +397,6 @@ function AnalyzeContent() {
     }
     startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(stockName)}`); });
   }, [router, addToast, staticStockData.allTickers]);
-
-  const handleShareResult = useCallback(async () => {
-    if (typeof window === 'undefined') return;
-    const currentUrl = window.location.href;
-    if (navigator.share) {
-      try { await navigator.share({ title: name ? `[IdiotQuant] ${name} 분석` : '[IdiotQuant]', url: currentUrl }); return; }
-      catch (e) { if ((e as Error).name === 'AbortError') return; }
-    }
-    try {
-      await navigator.clipboard.writeText(currentUrl);
-      setShareStatus('copied');
-      setTimeout(() => setShareStatus('idle'), 2500);
-    } catch {
-      setShareStatus('error');
-      addToast('error', '링크 복사에 실패했습니다.');
-      setTimeout(() => setShareStatus('idle'), 2500);
-    }
-  }, [name, addToast]);
 
   useEffect(() => {
     const ticker = searchParams.get('ticker');
@@ -555,7 +538,42 @@ function AnalyzeContent() {
       <ToastContainer toasts={toasts} onRemove={dismissToast} />
 
       {/* ── 헤더 ── */}
-      <header className={cn(PAGE_HEADER_CHROME, "sticky top-0 z-30")}>
+      <PageHeader
+        title={isPriceLoaded ? displayName : '종목 분석'}
+        description={!isPriceLoaded ? '종목을 검색하고, 재무지표와 여러 방법으로 계산한 가치를 비교하세요.' : undefined}
+        meta={isPriceLoaded ? <>
+          <span>{[tickerLabel, marketName].filter(Boolean).join(' · ')}</span>
+          <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
+          {gradeLabel && <span className="rounded border border-neutral-200 px-1.5 py-0.5 font-medium text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">{gradeLabel}</span>}
+        </> : undefined}
+        sticky
+        mobileCompact
+        actions={isPriceLoaded ? <>
+          <button type="button" onClick={handleToggleLike}
+            aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
+            className={cn(PAGE_ACTION_CLS, isInWatchlist && 'text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400')}>
+            <Heart size={14} fill={isInWatchlist ? 'currentColor' : 'none'} />
+          </button>
+          <ResultShare iconOnly disabled={!stockData || waitResponse} getSnapshot={() => {
+            const snapshot = analysisSnapshot({
+              title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
+              market: krOrUs, values: stockData!, ncav: ncavMultiple, roe, data, bars: technicalBars,
+              includeDetails: isLoggedIn && isLoaded, verdict,
+            });
+            if (isLoggedIn && isLoaded) {
+              const risk = document.querySelector('[data-share-risk]');
+              if (risk) {
+                snapshot.summary.push({ label: '상장유지 위험도', value: risk.getAttribute('data-share-overall') || '—' });
+                snapshot.tables.push({ title: '상장유지 위험도 확인', columns: ['항목', '판정', '값', '설명', '기준'], rows: Array.from(risk.querySelectorAll('[data-share-risk-row]')).map(row => ['label', 'status', 'value', 'note', 'law'].map(key => row.getAttribute(`data-share-${key}`) || '—')) });
+              }
+            }
+            return snapshot;
+          }} />
+          {!searchOpen && <button type="button" onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색" className={PAGE_ACTION_CLS}>
+            <Search size={14} />
+          </button>}
+        </> : undefined}
+      >
         {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
         {(!isPriceLoaded || searchOpen) && (
           <div className={cn(PAGE_WIDTH.data, "py-4 flex items-center gap-2")}>
@@ -569,68 +587,10 @@ function AnalyzeContent() {
             </div>
             {isPriceLoaded && (
               <button onClick={() => setSearchOpen(false)} aria-label="검색 닫기"
-                className="shrink-0 p-2 rounded-xl border border-neutral-200 dark:border-surface-dark-border text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
+                className={PAGE_ACTION_CLS}>
                 <X size={14} />
               </button>
             )}
-          </div>
-        )}
-
-        {/* 종목줄 — 스크롤을 내려도 지금 보는 종목이 헤더에 남는다 */}
-        {isPriceLoaded && (
-          <div className={cn(PAGE_WIDTH.data, "py-2.5 flex items-center gap-2.5 animate-in fade-in duration-200")}>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13.5px] font-black text-neutral-900 dark:text-white truncate leading-tight">
-                {displayName}
-              </p>
-              <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate">
-                {[tickerLabel, marketName].filter(Boolean).join(' · ')}
-              </p>
-            </div>
-
-            <span className="text-[13.5px] font-black font-mono tabular-nums text-neutral-900 dark:text-white shrink-0">
-              {headerPrice}
-            </span>
-            {gradeLabel && (
-              <span className="shrink-0 px-2 py-0.5 rounded-lg text-[11px] font-black font-mono border border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-300">
-                {gradeLabel}
-              </span>
-            )}
-
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={handleToggleLike}
-                aria-label={isInWatchlist ? "관심 종목에서 빼기" : "관심 종목에 담기"}
-                className={cn(
-                  "p-2 rounded-xl border transition-all",
-                  isInWatchlist
-                    ? "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/50 dark:text-rose-400"
-                    : "text-neutral-500 bg-surface-canvas border-neutral-200 hover:text-rose-500 dark:bg-surface-dark-card/40 dark:border-surface-dark-border"
-                )}
-              >
-                <Heart size={14} fill={isInWatchlist ? "currentColor" : "none"} />
-              </button>
-              <button
-                onClick={handleShareResult}
-                aria-label="링크 공유"
-                className={cn(
-                  "p-2 rounded-xl border transition-all",
-                  shareStatus === 'copied'
-                    ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
-                    : shareStatus === 'error'
-                    ? "bg-rose-50 text-rose-600 border-rose-200"
-                    : "text-neutral-500 bg-surface-canvas border-neutral-200 hover:text-neutral-700 dark:bg-surface-dark-card/40 dark:border-surface-dark-border"
-                )}
-              >
-                {shareStatus === 'copied' ? <Check size={14} /> : shareStatus === 'error' ? <AlertCircle size={14} /> : <Share2 size={14} />}
-              </button>
-              {!searchOpen && (
-                <button onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색"
-                  className="p-2 rounded-xl border border-neutral-200 dark:border-surface-dark-border bg-surface-canvas dark:bg-surface-dark-card/40 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
-                  <Search size={14} />
-                </button>
-              )}
-            </div>
           </div>
         )}
 
@@ -695,7 +655,7 @@ function AnalyzeContent() {
             )}
           </div>
         )}
-      </header>
+      </PageHeader>
 
       {/* ── 메인 ── */}
       {/* 좌우 여백은 PAGE_WIDTH.data 하나를 따른다(헤더·푸터도 같은 값).

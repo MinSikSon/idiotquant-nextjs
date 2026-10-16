@@ -1,16 +1,18 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Share2, Check, Dice5, Info } from "lucide-react";
+import { Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { PAGE_WIDTH } from "@/components/pageHeader";
+import ResultShare from "@/components/result-share";
+import { calculatorSnapshot } from "@/lib/share/calculator";
 import GrowthChart from "./GrowthChart";
 import CalculatorHistory from "./CalculatorHistory";
 import { NumberField } from "./NumberField";
 import {
     DEFAULTS, TAX_RATE, SIMPLE_ASSUMPTIONS, PERIOD_LABEL,
-    sanitize, maskDetail, simulate, serialize, parse, won, pct, basisOf,
+    sanitize, maskDetail, simulate, parse, won, pct, basisOf,
     type CalcInputs, type Detail, type Periods, type RateMode,
 } from "./calc";
 
@@ -290,7 +292,6 @@ export default function CompoundCalculatorPage() {
 function Calculator() {
     const [inputs, setInputs] = useState<CalcInputs>(DEFAULTS);
     const [detail, setDetail] = useState<Detail>("simple");
-    const [copied, setCopied] = useState(false);
     /* 좁은 화면에서만 접히는 설명글(FOLD)의 스위치. 넓은 화면은 이 값과 무관하게 늘 보인다. */
     const [showHelp, setShowHelp] = useState(false);
     /* 연도별 명세는 40년이면 40줄이다 — 처음엔 앞쪽만 편다. */
@@ -334,16 +335,6 @@ function Calculator() {
 
     /* 씨앗만 바꾼다. 조건은 그대로 두고 "다른 갈래"만 다시 뽑는 것이다. */
     const reroll = () => set("seed", Math.floor(Math.random() * 1_000_000) + 1);
-
-    async function share() {
-        try {
-            const url = new URL(window.location.href);
-            url.search = serialize(inputs, detail);
-            await navigator.clipboard.writeText(url.toString());
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch { /* 클립보드를 막아둔 브라우저도 있다 */ }
-    }
 
     const detailed = detail === "detailed";
     const ranged = effective.rateMode === "range";
@@ -396,20 +387,7 @@ function Calculator() {
                             <Info size={13} strokeWidth={2.4} />
                             설명
                         </button>
-                        <button
-                            type="button"
-                            onClick={share}
-                            className={cn(
-                                "inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
-                                copied
-                                    ? "bg-brand border-brand text-white"
-                                    : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
-                                         "text-neutral-700 dark:text-neutral-300 hover:border-brand/50 dark:hover:border-brand/60")
-                            )}
-                        >
-                            {copied ? <Check size={13} strokeWidth={2.6} /> : <Share2 size={13} strokeWidth={2.4} />}
-                            {copied ? "링크 복사됨" : "조건 공유"}
-                        </button>
+                        <ResultShare getSnapshot={() => calculatorSnapshot(effective, detail, result)} />
                     </div>
                 </header>
 

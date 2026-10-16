@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
-import { PAGE_WIDTH } from '@/components/pageHeader';
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import ResultShare from '@/components/result-share';
+import { compareSnapshot } from '@/lib/share/builders';
 import { useSession } from 'next-auth/react';
 import { ArrowRight, ChevronDown, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import corpCodes from '@/public/data/validCorpCode.json';
@@ -227,22 +229,23 @@ export default function ComparePage() {
     { label: 'ROE', value: s => s.roe == null ? '—' : `${show(s.roe)}%` },
   ];
 
-  return <main className="min-h-screen bg-surface-canvas py-8 text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100 sm:py-12">
-    <div className={PAGE_WIDTH.data}>
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">종목 비교</h1>
-          <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-300">날짜와 종목을 추가해 주가와 변화율을 비교하세요.</p>
-          <p className="mt-1 text-xs text-neutral-500">다른 페이지에 다녀와도 비교 내용이 유지됩니다.</p>
-        </div>
+  return <div className="min-h-screen bg-surface-canvas text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100">
+    <PageHeader
+      title="종목 비교"
+      description="날짜와 종목을 추가해 주가와 변화율을 비교하세요."
+      meta="다른 페이지에 다녀와도 비교 내용이 유지됩니다."
+      mobileCompact
+      actions={<>
+        <ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />
         <button type="button" onClick={() => dispatch(clearComparison())}
           disabled={loading || dateLoading || (!stocks.length && !dates.length && !query && !dateInput && !error)}
-          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-neutral-300 px-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800">
+          className={PAGE_ACTION_CLS}>
           <Trash2 size={15} aria-hidden="true" /> 전체 비우기
         </button>
-      </header>
-
-      <section className="mt-8" aria-label="비교 날짜">
+      </>}
+    />
+    <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
+      <section aria-label="비교 날짜">
         <h2 className="text-sm font-semibold">비교 날짜</h2>
         <div className="mt-2 grid min-w-0 gap-2 sm:flex sm:items-end">
           <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
@@ -372,6 +375,6 @@ export default function ComparePage() {
         </div>
       </section>}
       <p className="mt-5 text-xs leading-5 text-neutral-500">비교 가격은 제공된 시세의 종가 기준입니다. 액면분할·병합이 있었던 종목은 시세에 반영된 조정 방식에 따라 가격과 변화율 비교가 부정확할 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 현재 기준입니다.</p>
-    </div>
-  </main>;
+    </main>
+  </div>;
 }

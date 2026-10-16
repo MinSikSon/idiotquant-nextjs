@@ -287,7 +287,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   const cfg = OVERALL_CONFIG[overallGrade as Exclude<Status, "—">] ?? OVERALL_CONFIG["양호"];
 
   return (
-    <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+    <div data-share-risk data-share-overall={overallGrade} className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark">
         <div className="flex items-center gap-2">
@@ -308,7 +308,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
           {criteria.map(c => {
             const Icon = STATUS_ICON[c.status];
             return (
-              <div key={c.label} className={cn("flex items-start gap-3 p-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
+              <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("flex items-start gap-3 p-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
                 <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 flex-wrap">

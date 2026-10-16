@@ -279,7 +279,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
   const cfg = OVERALL_CONFIG[overall];
 
   return (
-    <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+    <div data-share-risk data-share-overall={overall} className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
 
       {/* ── 헤더 ── */}
       <div className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
@@ -309,7 +309,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         {criteria.map(c => {
           const Icon = STATUS_ICON[c.status];
           return (
-            <div key={c.label} className={cn("flex items-start gap-3 px-3.5 py-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
+            <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("flex items-start gap-3 px-3.5 py-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
               <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-0.5">

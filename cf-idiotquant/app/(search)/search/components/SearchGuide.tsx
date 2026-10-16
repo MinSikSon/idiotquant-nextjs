@@ -50,12 +50,8 @@ export const SearchGuide = () => {
   return (
     <div className="w-full bg-surface-canvas dark:bg-surface-dark-canvas">
 
-      <section className="px-0 pt-6 pb-8 sm:pt-8">
+      <section className="px-0 pb-6">
         <div className="max-w-2xl">
-          <h1 className="text-2xl font-medium tracking-tight text-neutral-900 dark:text-white">종목 분석</h1>
-          <p className="mt-2 mb-5 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-            종목을 검색하고, 재무지표와 여러 방법으로 계산한 가치를 비교하세요.
-          </p>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-neutral-400 font-medium">바로 검색:</span>
             {QUICK_SEARCHES.map(q => (

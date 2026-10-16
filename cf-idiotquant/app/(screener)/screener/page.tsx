@@ -17,6 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
+import ResultShare from "@/components/result-share";
+import { screenerSnapshot } from "@/lib/share/builders";
 import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
@@ -33,7 +35,7 @@ import {
 
 import FactorWorkbench from "@/components/research/FactorWorkbench";
 
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Share2, Check, Lock } from "lucide-react";
+import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -569,7 +571,6 @@ function ScreenerContent() {
     );
     const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? saved.q ?? "");
     const [displayCount, setDisplayCount] = useState(DAILY_PAGE_SIZE);
-    const [shareCopied, setShareCopied] = useState(false);
     const [excludeHoldings, setExcludeHoldings] = useState(() => initExclude('holdings'));
     const [excludeDeficit, setExcludeDeficit] = useState(() => initExclude('deficit'));
     const [excludePreferred, setExcludePreferred] = useState(() => initExclude('preferred'));
@@ -767,23 +768,6 @@ function ScreenerContent() {
         }, 300);
         return () => clearTimeout(debounce);
     }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
-
-    // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
-    const handleShare = useCallback(async () => {
-        const url = `${window.location.origin}/screener${queryString ? `?${queryString}` : ''}`;
-        const nav = typeof navigator !== 'undefined' ? navigator : undefined;
-        if (nav?.share) {
-            try {
-                await nav.share({ title: "아이디어퀀트 발굴 종목", text: "필터링한 발굴 종목 보기", url });
-            } catch { /* 사용자가 공유 취소 — 무시 */ }
-            return;
-        }
-        try {
-            await nav?.clipboard?.writeText(url);
-            setShareCopied(true);
-            setTimeout(() => setShareCopied(false), 2000);
-        } catch { /* 클립보드 권한 없음 — 무시 */ }
-    }, [queryString]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
@@ -1179,10 +1163,11 @@ function ScreenerContent() {
         <div id="screener-page" className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100">
 
             {/* ── 페이지 헤더 (공통 규칙) ── */}
-            {isLoggedIn ? <PageHeader
+            <PageHeader
                 title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
                 mobileCompact
-                meta={
+                description={isLoggedIn ? "재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요." : "순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다."}
+                meta={isLoggedIn && (
                     isLoading && !showLikedOnly ? (
                         <span className="flex items-center gap-1.5">
                             <Loader2 size={11} className="animate-spin" />
@@ -1197,29 +1182,21 @@ function ScreenerContent() {
                             )}
                         </>
                     )
-                }
-                actions={
-                    <>
-                        <button onClick={handleShare} className={cn(PAGE_ACTION_CLS, "px-2.5 py-2 sm:px-3.5 sm:py-2.5")} title="현재 필터링 결과 링크 공유">
-                            {shareCopied ? <Check size={13} /> : <Share2 size={13} />}
-                            <span className="hidden sm:inline">{shareCopied ? "복사됨" : "공유"}</span>
-                        </button>
-                        <button onClick={handleRefresh} disabled={isLoading} className={cn(PAGE_ACTION_CLS, "px-2.5 py-2 sm:px-3.5 sm:py-2.5")} title="목록 새로고침">
-                            <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
-                            <span className="hidden sm:inline">새로고침</span>
-                        </button>
-                    </>
-                }
-            /> : (
-                <section className="border-b border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-canvas">
-                    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
-                        <h1 className="text-2xl font-medium tracking-tight text-neutral-900 dark:text-white">종목 발굴</h1>
-                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-                            순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다.
-                        </p>
-                    </div>
-                </section>
-            )}
+                )}
+                actions={<>
+                    <ResultShare disabled={isLoading || !(isLoggedIn ? filteredList.length : guestRecommendations.length)}
+                        getSnapshot={() => screenerSnapshot(
+                            isLoggedIn ? filteredList : guestRecommendations,
+                            `/screener${queryString ? `?${queryString}` : ''}`,
+                            ncavDailyList.scanDate, country,
+                            isLoggedIn ? activeConditions.map(condition => condition.label) : ['순유동자산이 시가총액 이상', 'PBR 0 초과·1 미만', 'PER 양수', '청산가치 기준 상위 종목']
+                        )} />
+                    {isLoggedIn && <button onClick={handleRefresh} disabled={isLoading} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
+                        <span className="hidden sm:inline">새로고침</span>
+                    </button>}
+                </>}
+            />
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="max-w-[1600px] mx-auto flex items-center gap-1 px-4 sm:px-6">
