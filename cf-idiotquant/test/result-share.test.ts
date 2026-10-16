@@ -153,3 +153,70 @@ test('압축을 지원하지 않는 환경에서도 작은 결과는 링크로 �
     assert.deepEqual(await decodeSnapshot(encoded), result);
   } finally { Object.defineProperty(globalThis, 'CompressionStream', { value: original, configurable: true, writable: true }); }
 });
+
+test('큰 결과도 데이터 손실 없이 저장하고 100자 미만의 링크로 전달한다', async () => {
+  const { createSnapshotLink, loadSnapshot } = await import('../lib/share/client.ts');
+  const large: ResultSnapshot = { ...result, tables: [{ title: '전체 종목', columns: ['종목', '값'], rows: Array.from({ length: 2500 }, (_, index) => [`종목 ${index}`, `${index}원`]) }] };
+  const id = 'abc012345678901234567890';
+  let stored = '';
+  const calls: string[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const path = String(input); calls.push(path);
+    if (path === '/api/proxy/result-shares' && init?.method === 'POST') {
+      stored = String(init.body);
+      return Response.json({ id }, { status: 201 });
+    }
+    if (path === `/api/proxy/result-shares/${id}`) return new Response(stored);
+    throw new Error(`시세 API 재요청: ${path}`);
+  };
+  try {
+    const url = await createSnapshotLink(large, 'https://idiotquant.com');
+    assert.ok(url.length < 100);
+    assert.equal(new URL(url).hash, '');
+    assert.equal(url.includes('종목'), false);
+    assert.deepEqual(await loadSnapshot(new URL(url).searchParams.get('id')!), large);
+    assert.equal(calls.length, 2);
+  } finally { globalThis.fetch = original; }
+});
+
+test('저장 실패·잘못된 응답·만료된 링크를 성공한 공유로 처리하지 않는다', async () => {
+  const { createSnapshotLink, loadSnapshot } = await import('../lib/share/client.ts');
+  const original = globalThis.fetch;
+  try {
+    for (const status of [413, 429, 503]) {
+      globalThis.fetch = async () => new Response('{}', { status });
+      await assert.rejects(createSnapshotLink(result, 'https://idiotquant.com'));
+    }
+    globalThis.fetch = async () => Response.json({ id: 'https://evil.example' });
+    await assert.rejects(createSnapshotLink(result, 'https://idiotquant.com'));
+    globalThis.fetch = async () => new Response('{}', { status: 404 });
+    await assert.rejects(loadSnapshot('000000000000000000000000'), /보관 기간/);
+    globalThis.fetch = async () => { throw new Error('잘못된 id는 요청하지 않음'); };
+    await assert.rejects(loadSnapshot('../user'), /올바르지/);
+  } finally { globalThis.fetch = original; }
+});
+
+test('이미지 기본 공유 데이터에 서비스 접속 URL을 포함한다', async () => {
+  const { imageShareData, SERVICE_URL } = await import('../lib/share/client.ts');
+  const image = new File(['png'], 'result.png', { type: 'image/png' });
+  const payload = imageShareData(result, image);
+  assert.equal(payload.url, SERVICE_URL);
+  assert.equal(payload.url, 'https://idiotquant.com');
+  assert.equal(payload.files?.[0], image);
+  assert.ok(payload.text?.includes('발굴하고 비교'));
+});
+
+test('저장·복사하는 이미지 자체에도 서비스 URL과 접속 안내가 들어간다', async () => {
+  const { snapshotImage } = await import('../lib/share/image.ts');
+  const original = globalThis.document;
+  const drawn: string[] = [];
+  const canvas = { width: 0, height: 0, getContext: () => ({ measureText: (text: string) => ({ width: text.length * 10 }), fillText: (text: string) => drawn.push(text), fillRect() {} }), toBlob: (callback: BlobCallback) => callback(new Blob(['png'], { type: 'image/png' })) };
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => canvas } });
+  try {
+    const image = await snapshotImage(result);
+    assert.equal(image.type, 'image/png');
+    assert.ok(drawn.some(text => text.includes('https://idiotquant.com') && text.includes('직접 발굴')));
+    assert.ok(canvas.height > 380 + result.tables[0].rows.length * 80);
+  } finally { Object.defineProperty(globalThis, 'document', { configurable: true, value: original }); }
+});

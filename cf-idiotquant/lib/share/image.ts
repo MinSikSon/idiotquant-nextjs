@@ -1,3 +1,4 @@
+import { SERVICE_URL } from './client';
 import type { ResultSnapshot } from './snapshot';
 
 // 화면 크기·스크롤 위치와 무관하게 읽기 쉬운 요약 카드로 캡처한다.
@@ -6,7 +7,7 @@ export async function snapshotImage(snapshot: ResultSnapshot): Promise<File> {
   const rows = table?.rows.slice(0, 5) ?? [];
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
-  canvas.height = 380 + rows.length * 80;
+  canvas.height = 440 + rows.length * 80;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('이미지를 만들 수 없습니다.');
   const font = '"Pretendard Variable", -apple-system, BlinkMacSystemFont, sans-serif';
@@ -39,7 +40,8 @@ export async function snapshotImage(snapshot: ResultSnapshot): Promise<File> {
       columnX += widths[columnIndex];
     });
   });
-  draw(`${table && table.rows.length > rows.length ? `전체 ${table.rows.length}개 중 ${rows.length}개 요약 · ` : ''}조회 시점의 참고 정보 · 실시간 시세가 아닙니다`, 60, canvas.height - 30, 1080, 20, '#666666');
+  draw(`${table && table.rows.length > rows.length ? `전체 ${table.rows.length}개 중 ${rows.length}개 요약 · ` : ''}조회 시점의 참고 정보 · 실시간 시세가 아닙니다`, 60, canvas.height - 90, 1080, 20, '#666666');
+  draw(`직접 발굴하고 비교해 보세요  →  ${SERVICE_URL}`, 60, canvas.height - 35, 1080, 27, '#714cb6', 500);
   const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('이미지를 만들 수 없습니다.')), 'image/png'));
   return new File([blob], `idiotquant-${snapshot.kind}-${snapshot.createdAt.slice(0, 10)}.png`, { type: 'image/png' });
 }

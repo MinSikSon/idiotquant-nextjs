@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { FileUp, Loader2 } from 'lucide-react';
 import { PageHeader, PAGE_ACTION_CLS, PAGE_WIDTH } from '@/components/pageHeader';
 import ResultShare from '@/components/result-share';
+import { loadSnapshot } from '@/lib/share/client';
 import { decodeSnapshot, MAX_SNAPSHOT_BYTES, parseSnapshot, type ResultSnapshot, type SnapshotTable } from '@/lib/share/snapshot';
 
 function SharedTable({ table }: { table: SnapshotTable }) {
@@ -21,6 +23,11 @@ function SharedTable({ table }: { table: SnapshotTable }) {
 }
 
 export default function SharedResultPage() {
+  return <Suspense fallback={<p className="p-6 text-sm">공유 결과를 여는 중…</p>}><SharedResult /></Suspense>;
+}
+
+function SharedResult() {
+  const searchParams = useSearchParams();
   const [snapshot, setSnapshot] = useState<ResultSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,10 +37,11 @@ export default function SharedResultPage() {
     async function load() {
       const current = ++request.current;
       setLoading(true); setError(''); setSnapshot(null);
+      const id = searchParams.get('id');
       const encoded = new URLSearchParams(window.location.hash.slice(1)).get('r');
       try {
-        if (encoded) {
-          const result = await decodeSnapshot(encoded);
+        if (id || encoded) {
+          const result = id ? await loadSnapshot(id) : await decodeSnapshot(encoded!);
           if (request.current === current) setSnapshot(result);
         }
       } catch (reason) {
@@ -43,7 +51,7 @@ export default function SharedResultPage() {
     void load();
     window.addEventListener('hashchange', load);
     return () => { request.current++; window.removeEventListener('hashchange', load); };
-  }, []);
+  }, [searchParams]);
 
   async function openFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
