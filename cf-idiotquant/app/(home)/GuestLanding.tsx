@@ -29,7 +29,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "최신 데이터";
-  const preview = list.slice(0, 5);
+  const preview = list.filter(item => Number.isFinite(item.per) && item.per > 0 && item.per <= 20).slice(0, 5);
 
   return (
     <div id="public-home" className={styles.home}>
@@ -49,8 +49,8 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
 
           <section aria-labelledby="preview-title" className={styles.preview}>
             <div className={styles.previewTop}><span className={styles.eyebrow}>DISCOVERY</span><span className={styles.date}>{dateLabel}</span></div>
-            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading && !preview.length ? "조회 중" : `${totalCount.toLocaleString()}개 종목`}</span></div>
-            <p className={styles.previewDescription}>재무 기준으로 찾은 코스피·코스닥 기업</p>
+            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading && !preview.length ? "조회 중" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
+            <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기</p>
             <div className={styles.table}>
               <div className={styles.tableHead}><span>종목 / 현재가</span><span>PER <small>배</small></span><span>PBR <small>배</small></span><span /></div>
               {isLoading && !preview.length ? (
@@ -62,7 +62,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
                   <span className={styles.metric}>{item.pbr > 0 ? item.pbr.toFixed(2) : "—"}</span>
                   <ArrowUpRight size={14} aria-hidden="true" className={styles.rowArrow} />
                 </Link>
-              )) : <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>현재 표시할 발굴 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
+              )) : <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>PER 조건에 맞는 미리보기 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
             </div>
             <Link href="/screener?mincap=500" className={styles.previewFooter}>발굴 결과 전체 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
           </section>
