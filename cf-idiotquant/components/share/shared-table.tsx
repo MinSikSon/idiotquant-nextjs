@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { sharedStockAnalysisHref } from '@/lib/share/navigation';
 import { PAGE_ACTION_CLS } from '@/components/pageHeader';
 import type { SnapshotTable } from '@/lib/share/snapshot';
 import { snapshotNumber, snapshotStockName } from '@/lib/share/presentation';
@@ -86,6 +88,15 @@ export function SharedTable({
                         <span className="mt-1 block text-xs font-normal text-neutral-500">
                           {stock.code}
                         </span>
+                      )}
+                      {stock && (
+                        <Link
+                          href={sharedStockAnalysisHref(value)}
+                          prefetch={false}
+                          className="mt-2 inline-flex min-h-9 items-center text-xs font-medium text-brand-ink"
+                        >
+                          최신 분석 보기 →
+                        </Link>
                       )}
                     </th>
                   ) : (
