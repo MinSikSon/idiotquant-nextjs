@@ -1,6 +1,7 @@
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
 import { technicalSummary, type PriceBar } from '@/lib/research/technical';
 import { valuationModels } from '@/lib/utils/valuationModels';
+import { financialFreshness, analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { shareNumber } from './builders';
 import type { ResultSnapshot } from './snapshot';
 
@@ -21,6 +22,8 @@ export function analysisSnapshot({ title, sourcePath, market, values, ncav, roe,
     ] }],
     notes: ['공유자가 조회한 시점의 결과이며 실시간 데이터가 아닙니다.', '평가 모델의 가정에 따른 참고값이며 투자 수익을 보장하지 않습니다.'],
   };
+  const freshness = financialFreshness(analysisFinancialPeriods(data, market));
+  snapshot.notes.push(`재무정보 기준: ${freshness.periods || '미확인'}. ${freshness.message || freshness.label}`);
   if (verdict) {
     snapshot.notes.push(verdict.lead);
     snapshot.tables.push({ title: '저평가 기준 확인', columns: ['지표', '기준', '조회값', '충족 여부'], rows: verdict.checks.map(check => [check.label, check.criterion, check.value, check.ok ? '충족' : '미충족']) });
