@@ -14,6 +14,7 @@ export type Detail = "simple" | "detailed";
 export type RateMode = "fixed" | "range";
 
 export interface CalcInputs {
+    target: number;     // 목표 자산 (만원), 0이면 미설정
     initial: number;    // 초기 투자금 (만원)
     monthly: number;    // 매월 적립금 (만원)
     rate: number;       // 연 수익률 (%) — rateMode 가 fixed 일 때 쓰인다
@@ -37,6 +38,7 @@ export interface CalcInputs {
 export const TAX_RATE = 15.4;
 
 export const DEFAULTS: CalcInputs = {
+    target: 0,
     initial: 1000,
     monthly: 50,
     rate: 7,
@@ -135,6 +137,7 @@ export function sanitize(raw: Partial<CalcInputs>): CalcInputs {
 
     return {
         ...base,
+        target: clamp(Number(base.target), [0, 100_000_000_000], DEFAULTS.target),
         rateMode: base.rateMode === "range" ? "range" : "fixed",
         rateMin: Math.min(lo, hi),
         rateMax: Math.max(lo, hi),
@@ -375,6 +378,7 @@ export function parse(params: URLSearchParams): { inputs: CalcInputs; detail: De
 
     return {
         inputs: sanitize({
+            target: num("target"),
             initial: num("initial"),
             monthly: num("monthly"),
             rate: num("rate"),

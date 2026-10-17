@@ -30,5 +30,14 @@ export function calculatorSnapshot(inputs: CalcInputs, detail: Detail, result: C
       ['달러 M2', `${inputs.usdM2Growth}% · 환율 ${inputs.usdChange}%`, won(result.moneySupplyComparison.usd)],
     ] });
   }
+  if (inputs.target > 0) {
+    const first = result.rows.find(row => row.value >= inputs.target);
+    snapshot.tables.push({ title: '목표 자산', columns: ['항목', '값'], rows: [
+      ['목표 금액', won(inputs.target)],
+      ['만기 달성률', `${Math.max(0, result.final / inputs.target * 100).toFixed(1)}%`],
+      ['목표까지 남은 금액', won(Math.max(0, inputs.target - result.final))],
+      ['연말 기준 첫 도달', first ? (first.year === 0 ? '초기 투자금으로 달성' : `${first.year}년차`) : `${inputs.years}년 내 미도달`],
+    ] });
+  }
   return snapshot;
 }
