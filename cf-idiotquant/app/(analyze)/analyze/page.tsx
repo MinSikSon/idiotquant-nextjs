@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
 import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
+import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
 import ResultShare from '@/components/result-share';
 import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
@@ -425,11 +426,12 @@ function AnalyzeContent() {
     ? (data.kiChart?.output1?.hts_kor_isnm || name)
     : (data.usSearchInfo?.output?.prdt_eng_name || data.usSearchInfo?.output?.ovrs_item_name || name);
 
+  const usAvailability = usAnalysisAvailability(data);
   const isLoaded =
     tickerFromUrl === name &&
     (
       (krOrUs === 'KR' && data.kiChart.state === 'fulfilled' && data.kiBS.state === 'fulfilled') ||
-      (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.finnhubData.state === 'fulfilled')
+      (krOrUs === 'US' && usAvailability.priceReady && usAvailability.financialsReady)
     );
 
   // 가격 정보만 필요한 섹션(StockCard·기본 지표)을 위한 조건 — 재무제표 없이도 주가·PBR·PER·EPS 표시
@@ -437,7 +439,7 @@ function AnalyzeContent() {
     tickerFromUrl === name &&
     (
       (krOrUs === 'KR' && data.kiPrice.state === 'fulfilled') ||
-      (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.usDetail?.output?.last !== "")
+      (krOrUs === 'US' && usAvailability.priceReady)
     );
 
   const currency = krOrUs === 'US' ? '$' : '₩';
@@ -673,8 +675,19 @@ function AnalyzeContent() {
         ) : (
           <>
             {waitResponse && !isPriceLoaded && <ResultSkeleton />}
+            {!waitResponse && tickerFromUrl === name && krOrUs === 'US' && !isPriceLoaded && (
+              <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-700">
+                <p>시세 정보를 불러오지 못했습니다. 잠시 후 다시 조회해 주세요.</p>
+                <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
+              </div>
+            )}
 
             <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
+              {krOrUs === 'US' && data.usSearchInfo.state === 'rejected' && (
+                <p role="status" className="mb-4 text-xs leading-5 text-neutral-500 dark:text-neutral-400">
+                  종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
+                </p>
+              )}
               {isLoaded && <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={krOrUs === 'US' ? data.finnhubData?.source : undefined} banner />}
 
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
@@ -908,6 +921,12 @@ function AnalyzeContent() {
 
               </div>
               ) : (
+              krOrUs === 'US' && !waitResponse ? (
+                <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-700">
+                  <p>재무정보를 불러오지 못했습니다. 시세 정보는 확인할 수 있습니다.</p>
+                  <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
+                </div>
+              ) :
               /* 탭 하나 분량의 패널 한 장 — 실제로 표시되는 것도 선택된 탭 하나뿐이다 */
               <div className="animate-pulse">
                 <div className="h-[520px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark" />
