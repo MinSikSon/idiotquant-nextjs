@@ -688,7 +688,9 @@ function AnalyzeContent() {
                   종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
                 </p>
               )}
-              {isLoaded && <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={krOrUs === 'US' ? data.finnhubData?.source : undefined} banner />}
+              {isLoaded && !(krOrUs === 'US' && activeTab === 'financials') && (
+                <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />
+              )}
 
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
@@ -876,6 +878,9 @@ function AnalyzeContent() {
                 {/* 재무제표 (블러) — 막대가 기본, 원본 숫자표는 토글로 남긴다.
                     막대에도 값을 함께 적지만 정렬·복사에는 표가 낫다. */}
                 <div className={cn(activeTab !== 'financials' && 'hidden')}>
+                  {krOrUs === 'US' && (
+                    <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
+                  )}
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center gap-2">
@@ -910,7 +915,7 @@ function AnalyzeContent() {
                           <div className="overflow-x-auto">
                             {krOrUs === 'KR'
                               ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                              : <FinnhubTable data={data.finnhubData.data} />
+                              : <FinnhubTable data={data.finnhubData.data} source={data.finnhubData.source} />
                             }
                           </div>
                         </div>
