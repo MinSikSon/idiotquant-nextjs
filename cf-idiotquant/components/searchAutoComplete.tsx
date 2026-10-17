@@ -2,6 +2,7 @@
 
 import { useState, useMemo, KeyboardEvent, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { buildStockSearchIndex, findStockSuggestions } from "@/lib/utils/stockSuggestions";
 import { Search, CornerDownLeft, Sparkles, AlertCircle, X } from "lucide-react";
 
 interface SearchAutocompleteProps {
@@ -10,40 +11,6 @@ interface SearchAutocompleteProps {
     placeHolder?: string;
     onSearchStateChange?: (focused: boolean, isEmpty: boolean) => void;
 }
-
-const getChosung = (str: string) => {
-    const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-    let result = "";
-    for (let i = 0; i < str.length; i++) {
-        const code = str.charCodeAt(i) - 44032;
-        if (code > -1 && code < 11172) {
-            const choIdx = Math.floor(code / 588);
-            result += CHO[choIdx];
-        } else {
-            result += str.charAt(i);
-        }
-    }
-    return result;
-};
-
-const disassembleHangul = (str: string) => {
-    const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-    const JOONG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
-    const JONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-    let result = "";
-    for (let i = 0; i < str.length; i++) {
-        const code = str.charCodeAt(i) - 44032;
-        if (code > -1 && code < 11172) {
-            const choIdx = Math.floor(code / 588);
-            const joongIdx = Math.floor((code % 588) / 28);
-            const jongIdx = code % 28;
-            result += CHO[choIdx] + JOONG[joongIdx] + (JONG[jongIdx] || "");
-        } else {
-            result += str.charAt(i);
-        }
-    }
-    return result.toLowerCase();
-};
 
 /**
  * 쿼리와 매칭되는 텍스트 영역을 하이라이팅 처리하는 유틸리티 컴포넌트
@@ -78,29 +45,8 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLUListElement>(null);
 
-    const suggestions = useMemo(() => {
-        const trimmedQuery = query.trim().toLowerCase();
-        if (!trimmedQuery) return [];
-        const disassembledQuery = disassembleHangul(trimmedQuery);
-        const queryChosung = getChosung(trimmedQuery);
-
-        const filtered = validCorpNameArray.filter((item: string) => {
-            const itemLow = item.toLowerCase();
-            return itemLow.includes(trimmedQuery) ||
-                getChosung(itemLow).includes(queryChosung) ||
-                disassembleHangul(itemLow).includes(disassembledQuery);
-        });
-
-        return filtered.sort((a: string, b: string) => {
-            const aLow = a.toLowerCase();
-            const bLow = b.toLowerCase();
-            if (aLow === trimmedQuery) return -1;
-            if (bLow === trimmedQuery) return 1;
-            if (aLow.startsWith(trimmedQuery) && !bLow.startsWith(trimmedQuery)) return -1;
-            if (!aLow.startsWith(trimmedQuery) && bLow.startsWith(trimmedQuery)) return 1;
-            return a.length - b.length;
-        }).slice(0, 10);
-    }, [query, validCorpNameArray]);
+    const searchIndex = useMemo(() => buildStockSearchIndex(validCorpNameArray), [validCorpNameArray]);
+    const suggestions = useMemo(() => findStockSuggestions(searchIndex, query), [query, searchIndex]);
 
     useEffect(() => {
         if (suggestions.length > 0) {
