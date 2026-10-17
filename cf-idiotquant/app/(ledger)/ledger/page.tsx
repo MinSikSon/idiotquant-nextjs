@@ -26,7 +26,8 @@ import {
 } from "@/lib/features/ledger/categories";
 import { useEntryDrag } from "./useEntryDrag";
 import { BalancePanel } from "./BalancePanel";
-import { DEFAULT_BALANCE_RANGE } from "@/lib/features/ledger/balances";
+import AssetGoalPanel from "./AssetGoalPanel";
+import { DEFAULT_BALANCE_RANGE, netWorth } from "@/lib/features/ledger/balances";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
 const CTL_CLS =
@@ -115,7 +116,7 @@ const inviteUrl = (token: string) =>
     `${typeof window === "undefined" ? "" : window.location.origin}/ledger/join/${token}`;
 
 export default function LedgerPage() {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const dispatch = useAppDispatch();
 
     const month = useAppSelector(selectLedgerMonth);
@@ -129,6 +130,9 @@ export default function LedgerPage() {
     const mutating = useAppSelector(selectLedgerMutating);
     const error = useAppSelector(selectLedgerError);
     const balances = useAppSelector(selectLedgerBalances);
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    const goalStorageKey = userId ? `ledger_asset_goal_v1:${encodeURIComponent(userId)}:${encodeURIComponent(activeOwner ?? userId)}` : null;
+    const goalBalance = balances.find(balance => balance.month === month);
 
     const [barKind, setBarKind] = useState<LedgerKind>("income");
     /** 잔액 차트가 보는 달 수. 「1년 / 2년 / 전체」를 고르면 바뀐다. */
@@ -789,6 +793,11 @@ export default function LedgerPage() {
                     }}
                     onClear={() => dispatch(reqDeleteLedgerBalance(month))}
                 />
+
+                {goalStorageKey && (
+                    <AssetGoalPanel key={goalStorageKey} storageKey={goalStorageKey} month={month}
+                        current={goalBalance ? netWorth(goalBalance) : null} />
+                )}
 
                 {/* ⑤ 기입 — 데스크톱은 흐름 안의 버튼, 모바일은 아래 고정 FAB */}
                 <button

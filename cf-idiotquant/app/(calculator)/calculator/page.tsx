@@ -6,6 +6,7 @@ import { Dice5, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAGE_WIDTH } from "@/components/pageHeader";
 import ResultShare from "@/components/result-share";
+import AssetGoal from "@/components/AssetGoal";
 import { calculatorSnapshot } from "@/lib/share/calculator";
 import GrowthChart from "./GrowthChart";
 import CalculatorHistory from "./CalculatorHistory";
@@ -329,6 +330,7 @@ function Calculator() {
     /** 이 단계에서 실제로 쓰이는 조건. 안 보이는 항목은 계산에서도 빠진다. */
     const effective = useMemo(() => maskDetail(inputs, detail), [inputs, detail]);
     const result = useMemo(() => simulate(effective), [effective]);
+    const goalYear = inputs.target > 0 ? result.rows.find(row => row.value >= inputs.target)?.year : undefined;
 
     const set = <K extends keyof CalcInputs>(key: K, value: CalcInputs[K]) =>
         setInputs((prev) => sanitize({ ...prev, [key]: value }));
@@ -666,6 +668,19 @@ function Calculator() {
                             </div>
                         </div>
                     ))}
+                </div>
+
+                <div className="mt-3">
+                    <AssetGoal target={inputs.target} current={result.final} onChange={v => set("target", v)}
+                        format={won} unit="만원" max={100_000_000_000}
+                        note="만기 명목 평가금액 기준 · 이 브라우저에 자동 저장">
+                        <p className="text-neutral-500 dark:text-neutral-400">
+                            {goalYear === undefined ? `설정한 ${inputs.years}년 안에는 목표에 도달하지 않습니다.`
+                                : goalYear === 0 ? "초기 투자금이 이미 목표에 도달했습니다."
+                                : `연말 평가금액 기준 첫 도달: ${goalYear}년차`}
+                            {ranged && " · 현재 수익률 시나리오 기준"}
+                        </p>
+                    </AssetGoal>
                 </div>
 
                 {detailed && (
