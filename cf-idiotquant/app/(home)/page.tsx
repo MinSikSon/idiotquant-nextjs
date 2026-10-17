@@ -15,7 +15,7 @@ export default function HomePage() {
   const dispatch = useAppDispatch();
   const ncavDailyList = useAppSelector(selectNcavDailyList);
   // 미리보기는 일부 종목만 가져오고 전체 개수는 API 메타데이터를 사용한다.
-  useEffect(() => { dispatch(reqGetNcavDailyList({ date: "latest", limit: 60 })); }, [dispatch]);
+  useEffect(() => { dispatch(reqGetNcavDailyList({ date: "latest", preview: true })); }, [dispatch]);
 
   const scanLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
   // 조건에 맞은 전체 수. 목록은 그중 일부만 받아 오므로 length 로 세면 안 된다.

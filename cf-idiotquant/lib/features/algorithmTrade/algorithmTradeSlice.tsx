@@ -422,14 +422,14 @@ export const algorithmTradeSlice = createAppSlice({
         ),
         reqGetNcavDailyList: create.asyncThunk(
             // limit 을 주면 그만큼만 받는다. 미리보기만 그리는 화면(홈·게임 종목 풀)이 쓴다.
-            async (arg?: string | { date?: string; weeklyPeriod?: string | null; limit?: number; country?: "KR" | "US" }) => {
+            async (arg?: string | { date?: string; weeklyPeriod?: string | null; limit?: number; country?: "KR" | "US"; preview?: boolean; force?: boolean }) => {
                 const date = typeof arg === "string" ? arg : arg?.date;
                 const limit = typeof arg === "object" ? arg?.limit : undefined;
                 const country = typeof arg === "object" ? arg?.country : undefined;
                 const weeklyPeriod = typeof arg === "object" ? arg?.weeklyPeriod : undefined;
                 const result = weeklyPeriod
                     ? await getScanWeeklyList(weeklyPeriod, country ?? "KR")
-                    : await getScanDailyList(date, undefined, limit, country);
+                    : await getScanDailyList(date, undefined, limit, country, typeof arg === "object" && arg?.preview, typeof arg === "object" && arg?.force);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
@@ -455,8 +455,8 @@ export const algorithmTradeSlice = createAppSlice({
                             ? item.strategies
                             : (() => { try { return JSON.parse(item.strategies ?? "[]"); } catch { return []; } })(),
                     }));
-                    // matched = 조건에 맞는 전체 수(limit 과 무관). 없으면 옛 응답이라 total 로 읽는다.
-                    state.ncavDailyList.total = action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
+                    // 미리보기의 universeTotal은 PER 필터 전 전체 수다. 일반 목록은 matched를 쓴다.
+                    state.ncavDailyList.total = action.payload?.meta?.universeTotal ?? action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.scanningInProgress = action.payload?.meta?.scanningInProgress ?? false;
                     state.ncavDailyList.state = "fulfilled";
                     state.ncavDailyList.requestId = null;
@@ -467,7 +467,7 @@ export const algorithmTradeSlice = createAppSlice({
                     state.ncavDailyList.scanDate = scanDate;
                     if (scanDate && state.ncavDailyList.country === "KR" && !(typeof action.meta.arg === "object" && action.meta.arg?.weeklyPeriod)) {
                         if (!state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
-                            const total = action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
+                            const total = state.ncavDailyList.total;
                             const merged = [...state.ncavDailyDates.dates, {
                                 scan_date: scanDate,
                                 cnt: total,
