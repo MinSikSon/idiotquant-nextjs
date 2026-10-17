@@ -26,6 +26,7 @@ import { StockRatioRow } from "./components/StockRatioRow";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 import { matchesGuestPer } from "@/lib/utils/guestStocks";
+import ScanRefreshNotice from "@/components/scan-refresh-notice";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
     safeNum, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
@@ -1187,12 +1188,18 @@ function ScreenerContent() {
                             ncavDailyList.scanDate, country,
                             isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
                         )} />
-                    {isLoggedIn && <button onClick={handleRefresh} disabled={isLoading} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
-                        <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
+                    {isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                        <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
                     </button>}
                 </>}
             />
+
+            {!showLikedOnly && ncavDailyList.country === country && (ncavDailyList.refreshing || (ncavDailyList.receivedAt !== null && ncavDailyList.error)) && (
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
+                    <ScanRefreshNotice refreshing={ncavDailyList.refreshing} error={ncavDailyList.error} onRetry={handleRefresh} />
+                </div>
+            )}
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="max-w-[1600px] mx-auto flex items-center gap-1 px-4 sm:px-6">
