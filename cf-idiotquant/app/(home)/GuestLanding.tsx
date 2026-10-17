@@ -6,6 +6,7 @@ import { HOME_FAQ } from "@/lib/seo-content";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined, GitCompareArrows, ArrowUpRight } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import styles from "./home.module.css";
+import { matchesGuestPer } from "@/lib/utils/guestStocks";
 
 type GuestLandingProps = {
   list: NcavDailyItem[];
@@ -29,7 +30,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "최신 데이터";
-  const preview = list.filter(item => Number.isFinite(item.per) && item.per > 0 && item.per <= 20).slice(0, 5);
+  const preview = list.filter(matchesGuestPer).slice(0, 5);
 
   return (
     <div id="public-home" className={styles.home}>

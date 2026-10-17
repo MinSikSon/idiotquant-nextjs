@@ -25,6 +25,7 @@ import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
+import { matchesGuestPer } from "@/lib/utils/guestStocks";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
     safeNum, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
@@ -380,17 +381,13 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
     );
 });
 
-// 비로그인 첫 화면은 "무슨 도구인지"보다 "오늘 무엇을 볼지"를 먼저 답한다.
-// NCAV 1배 이상이면 순유동자산(청산가치)이 현재 시가총액보다 크므로,
-// (NCAV - 1) × 100 을 청산가치 기준 기대수익으로 보인다. 실제 수익을 보장하는
-// 값은 아니어서 이름과 산식도 카드 안에 함께 밝힌다.
+// 비로그인 카드에서도 발굴 조건인 PER을 바로 확인할 수 있게 한다.
 const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, rank, onClick }: {
     item: any;
     rank: number;
     onClick: (ticker: string, name: string) => void;
 }) {
     const ncav = safeNum(item.ncav_ratio);
-    const expectedReturn = Math.max(0, (ncav - 1) * 100);
     const strategy = primaryStrategyOf(item);
 
     return (
@@ -412,8 +409,8 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
                     <span className="mt-1 block"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
                 </span>
                 <span className="shrink-0 text-right">
-                    <span className="block text-[10px] font-bold text-neutral-400">청산가치 기준</span>
-                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-medium tabular-nums text-neutral-700 dark:text-neutral-300">+{expectedReturn.toFixed(0)}%</span>
+                    <span className="block text-[10px] font-bold text-neutral-400">PER</span>
+                    <span className="block mt-0.5 font-mono text-base sm:text-lg font-medium tabular-nums text-neutral-700 dark:text-neutral-300">{item.per.toFixed(2)}배</span>
                 </span>
             </div>
             <span className="block mt-1 pt-1 sm:mt-2 sm:pt-2 text-[10px] sm:text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -672,16 +669,14 @@ function ScreenerContent() {
         return () => { active = false; };
     }, [isAdmin, country]);
 
-    // 비로그인은 그릴 만큼만 받는다. 어차피 앞 PREVIEW_SIZE 줄만 보이는데 목록 전체를
-    // 받아 오면 압축 전 1.3MB 가 오간다(한 행 570바이트 × 2,400행). 크롤러와 처음 온
-    // 사람이 대부분이라 그 값이 곧 이 화면의 부하다.
-    //
+    // 전체 후보에서 PER 조건을 적용한 뒤 미리보기 수를 제한한다.
+    // 서버에서 먼저 10개로 자르면 조건을 만족하는 뒤쪽 종목이 누락된다.
     // 세션이 정해지기 전에는 부르지 않는다. status 가 loading → authenticated 로 바뀌는
     // 동안 두 번 부르면, 아끼려고 만든 분기가 요청을 하나 더 만드는 꼴이 된다.
     useEffect(() => {
         if (sessionStatus === "loading") return;
         dispatch(reqGetNcavDailyList(
-            { date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }
+            { date: requestedDate, weeklyPeriod, country }
         ));
     }, [dispatch, sessionStatus, isLoggedIn, country, requestedDate, weeklyPeriod]);
 
@@ -774,7 +769,7 @@ function ScreenerContent() {
     }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
+        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, country }));
         setDisplayCount(DAILY_PAGE_SIZE);
     }, [dispatch, isLoggedIn, country, requestedDate, weeklyPeriod]);
 
@@ -878,16 +873,12 @@ function ScreenerContent() {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);
     }, [baseList, filters, sortKey, sortOrder]);
 
-    // 비로그인에게는 조작 가능한 전체 목록 대신, NCAV 1배 이상·PBR 1 미만·PER 양수인 종목만 기대수익 순으로
+    // 비로그인에게는 홈과 같은 PER 조건의 종목을 NCAV 비율 순으로
     // 짧게 보여 준다. 저장된 개인 필터나 URL 필터가 첫 화면을 빈 화면으로 만들지 않게
     // 원본 미리보기 목록에서 항상 같은 기준으로 뽑는다.
     const guestRecommendations = useMemo(() =>
         sortList(
-            ncavDailyList.list.filter((item: any) =>
-                safeNum(item.ncav_ratio) >= 1 &&
-                safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1 &&
-                safeNum(item.per) > 0
-            ),
+            ncavDailyList.list.filter(matchesGuestPer),
             'ncav_ratio',
             'desc'
         ).slice(0, PREVIEW_SIZE),
@@ -1170,7 +1161,7 @@ function ScreenerContent() {
             <PageHeader
                 title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
                 mobileCompact
-                description={isLoggedIn ? "재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요." : "순유동자산이 시가총액보다 큰 종목만, 청산가치 기준 기대수익이 높은 순으로 보여드립니다."}
+                description={isLoggedIn ? "재무 기준과 전략을 조합해 조건에 맞는 종목을 찾아보세요." : "PER 0 초과·20 이하인 종목을 순유동자산 비율이 높은 순으로 보여드립니다."}
                 meta={isLoggedIn && (
                     isLoading && !showLikedOnly ? (
                         <span className="flex items-center gap-1.5">
@@ -1193,7 +1184,7 @@ function ScreenerContent() {
                             isLoggedIn ? filteredList : guestRecommendations,
                             `/screener${queryString ? `?${queryString}` : ''}`,
                             ncavDailyList.scanDate, country,
-                            isLoggedIn ? activeConditions.map(condition => condition.label) : ['순유동자산이 시가총액 이상', 'PBR 0 초과·1 미만', 'PER 양수', '청산가치 기준 상위 종목']
+                            isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
                         )} />
                     {isLoggedIn && <button onClick={handleRefresh} disabled={isLoading} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
@@ -1955,7 +1946,7 @@ function ScreenerContent() {
                     {!isLoggedIn ? (
                         <section className="max-w-[1600px] mx-auto px-0 sm:px-6">
                             <div className="mb-3 flex items-baseline justify-between gap-3">
-                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">청산가치 기준 상위 {guestRecommendations.length}종목</h2>
+                                <h2 className="text-sm font-black text-neutral-900 dark:text-white">PER 조건에 맞는 발굴 종목 {guestRecommendations.length}개</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}
                             </div>
                             <div className="divide-y divide-neutral-200 dark:divide-border-subtle-dark lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0 xl:grid-cols-3">
@@ -1964,7 +1955,7 @@ function ScreenerContent() {
                                 ))}
                             </div>
                             <p className="mt-4 text-center text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500">
-                                기대수익은 순유동자산 대비 시가총액으로 계산한 참고 지표이며, 실제 수익을 보장하지 않습니다.
+                                PER 0 초과·20 이하인 종목 중 순유동자산 비율이 높은 순으로 최대 10개를 보여드립니다.
                             </p>
                             <button
                                 onClick={requireLogin}
