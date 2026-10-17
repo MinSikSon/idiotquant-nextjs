@@ -13,6 +13,7 @@ import {
     checkScanDailyDate,
 } from "./algorithmTradeAPI";
 import { fetchTradingStatus, setTradingActive } from "./tradingStatusAPI";
+import { scanRequestKey, shouldFetchScan, type ScanDailyRequest } from "@/lib/utils/scanRequest";
 
 const DEBUG = false;
 
@@ -169,6 +170,9 @@ export interface NcavDailyDateItem {
 export interface NcavDailyState {
     state: "init" | "pending" | "fulfilled" | "rejected";
     requestId: string | null;
+    requestKey: string | null;
+    receivedAt: number | null;
+    refreshing: boolean;
     list: NcavDailyItem[];
     country: "KR" | "US";
     scanDate: string | null;
@@ -267,7 +271,7 @@ const initialState: AlgorithmTradeType = {
     stockDetails: {},
     strategyLists: {},
     ncavDailyDates: { state: "init", dates: [], selectedDate: "latest", error: null },
-    ncavDailyList: { state: "init", requestId: null, list: [], country: "KR", scanDate: null, prevDate: null, total: 0, scanningInProgress: false, error: null },
+    ncavDailyList: { state: "init", requestId: null, requestKey: null, receivedAt: null, refreshing: false, list: [], country: "KR", scanDate: null, prevDate: null, total: 0, scanningInProgress: false, error: null },
     tradingStatus: { KR: null, US: null, state: "init" },
 }
 
@@ -422,7 +426,7 @@ export const algorithmTradeSlice = createAppSlice({
         ),
         reqGetNcavDailyList: create.asyncThunk(
             // limit 을 주면 그만큼만 받는다. 미리보기만 그리는 화면(홈·게임 종목 풀)이 쓴다.
-            async (arg?: string | { date?: string; weeklyPeriod?: string | null; limit?: number; country?: "KR" | "US"; preview?: boolean; force?: boolean }) => {
+            async (arg: ScanDailyRequest) => {
                 const date = typeof arg === "string" ? arg : arg?.date;
                 const limit = typeof arg === "object" ? arg?.limit : undefined;
                 const country = typeof arg === "object" ? arg?.country : undefined;
@@ -434,15 +438,28 @@ export const algorithmTradeSlice = createAppSlice({
                 return result;
             },
             {
+                options: {
+                    condition: (arg, { getState }) => {
+                        const { algorithmTrade } = getState() as { algorithmTrade: { ncavDailyList: NcavDailyState } };
+                        return shouldFetchScan(algorithmTrade.ncavDailyList, arg);
+                    },
+                },
                 pending: (state, action) => {
-                    state.ncavDailyList.state = "pending";
+                    const key = scanRequestKey(action.meta.arg);
+                    const retain = state.ncavDailyList.requestKey === key && state.ncavDailyList.receivedAt !== null;
+                    state.ncavDailyList.state = retain ? "fulfilled" : "pending";
+                    state.ncavDailyList.refreshing = retain;
+                    state.ncavDailyList.requestKey = key;
                     state.ncavDailyList.requestId = action.meta.requestId;
                     state.ncavDailyList.country = typeof action.meta.arg === "object" ? action.meta.arg?.country ?? "KR" : "KR";
-                    state.ncavDailyList.list = [];
-                    state.ncavDailyList.scanDate = null;
-                    state.ncavDailyList.prevDate = null;
-                    state.ncavDailyList.total = 0;
-                    state.ncavDailyList.scanningInProgress = false;
+                    if (!retain) {
+                        state.ncavDailyList.list = [];
+                        state.ncavDailyList.receivedAt = null;
+                        state.ncavDailyList.scanDate = null;
+                        state.ncavDailyList.prevDate = null;
+                        state.ncavDailyList.total = 0;
+                        state.ncavDailyList.scanningInProgress = false;
+                    }
                     state.ncavDailyList.error = null;
                 },
                 fulfilled: (state, action) => {
@@ -459,6 +476,8 @@ export const algorithmTradeSlice = createAppSlice({
                     state.ncavDailyList.total = action.payload?.meta?.universeTotal ?? action.payload?.meta?.matched ?? action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.scanningInProgress = action.payload?.meta?.scanningInProgress ?? false;
                     state.ncavDailyList.state = "fulfilled";
+                    state.ncavDailyList.receivedAt = Date.now();
+                    state.ncavDailyList.refreshing = false;
                     state.ncavDailyList.requestId = null;
                     const rawScanDate = action.payload?.meta?.scanDate;
                     const scanDate = rawScanDate ? normalizeDate(rawScanDate) : null;
@@ -483,7 +502,8 @@ export const algorithmTradeSlice = createAppSlice({
                 },
                 rejected: (state, action) => {
                     if (state.ncavDailyList.requestId !== action.meta.requestId) return;
-                    state.ncavDailyList.state = "rejected";
+                    state.ncavDailyList.state = state.ncavDailyList.receivedAt !== null ? "fulfilled" : "rejected";
+                    state.ncavDailyList.refreshing = false;
                     state.ncavDailyList.requestId = null;
                     state.ncavDailyList.error = action.error?.message ?? null;
                 },

@@ -15,6 +15,7 @@ type GuestLandingProps = {
   scanDate: string | null;
   backgroundArt: ReactNode;
   isLoggedIn?: boolean;
+  refreshStatus?: ReactNode;
 };
 
 const formatPrice = (value: number) =>
@@ -26,7 +27,7 @@ const tools = [
   { href: "/analyze", icon: ChartNoAxesCombined, number: "03", title: "근거까지 분석", description: "재무 정보부터 기업 가치까지, 숫자의 이유를 확인하세요.", action: "종목 분석" },
 ];
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false }: GuestLandingProps) {
+export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false, refreshStatus }: GuestLandingProps) {
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "최신 데이터";
@@ -52,6 +53,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
             <div className={styles.previewTop}><span className={styles.eyebrow}>DISCOVERY</span><span className={styles.date}>{dateLabel}</span></div>
             <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading && !preview.length ? "조회 중" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
             <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기</p>
+            {refreshStatus}
             <div className={styles.table}>
               <div className={styles.tableHead}><span>종목 / 현재가</span><span>PER <small>배</small></span><span>PBR <small>배</small></span><span /></div>
               {isLoading && !preview.length ? (

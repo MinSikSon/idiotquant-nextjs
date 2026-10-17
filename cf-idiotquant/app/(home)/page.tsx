@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import GuestLanding from "./GuestLanding";
+import ScanRefreshNotice from "@/components/scan-refresh-notice";
 
 const HeroArt = dynamic(() => import("./HeroArt"), { ssr: false });
 
@@ -30,6 +31,9 @@ export default function HomePage() {
       scanDate={scanDate}
       backgroundArt={<HeroArt />}
       isLoggedIn={status === "loading" || !!session}
+      refreshStatus={<ScanRefreshNotice refreshing={ncavDailyList.refreshing}
+        error={ncavDailyList.receivedAt !== null ? ncavDailyList.error : null}
+        onRetry={() => dispatch(reqGetNcavDailyList({ date: "latest", preview: true, force: true }))} />}
     />
   );
 
