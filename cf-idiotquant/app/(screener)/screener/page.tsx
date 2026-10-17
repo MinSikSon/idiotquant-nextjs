@@ -669,14 +669,13 @@ function ScreenerContent() {
         return () => { active = false; };
     }, [isAdmin, country]);
 
-    // 전체 후보에서 PER 조건을 적용한 뒤 미리보기 수를 제한한다.
-    // 서버에서 먼저 10개로 자르면 조건을 만족하는 뒤쪽 종목이 누락된다.
+    // 비로그인은 서버에서 PER 조건을 먼저 적용한 고정 10개 미리보기를 받는다.
     // 세션이 정해지기 전에는 부르지 않는다. status 가 loading → authenticated 로 바뀌는
     // 동안 두 번 부르면, 아끼려고 만든 분기가 요청을 하나 더 만드는 꼴이 된다.
     useEffect(() => {
         if (sessionStatus === "loading") return;
         dispatch(reqGetNcavDailyList(
-            { date: requestedDate, weeklyPeriod, country }
+            { date: requestedDate, weeklyPeriod, country, preview: !isLoggedIn }
         ));
     }, [dispatch, sessionStatus, isLoggedIn, country, requestedDate, weeklyPeriod]);
 
@@ -769,7 +768,7 @@ function ScreenerContent() {
     }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, country }));
+        dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, country, preview: !isLoggedIn, force: true }));
         setDisplayCount(DAILY_PAGE_SIZE);
     }, [dispatch, isLoggedIn, country, requestedDate, weeklyPeriod]);
 

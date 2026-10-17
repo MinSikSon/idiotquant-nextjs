@@ -1,6 +1,9 @@
 
 import { AdditionalHeaders } from "../koreaInvestment/koreaInvestmentAPI";
 import { apiRequest } from "../apiRequest";
+import { createPublicRequestCache } from "@/lib/utils/publicRequestCache";
+
+const reuseDailyList = createPublicRequestCache<any>();
 
 export const getCapitalToken: any = async () => {
     const subUrl = `/algorithm/trade/kr/capital/token`;
@@ -53,11 +56,19 @@ export const getQuantRuleDesc: any = async () => {
  *
  * 몇 개가 조건에 맞았는지는 목록 길이가 아니라 응답의 `meta.matched` 로 읽는다.
  */
-export const getScanDailyList: any = async (date?: string, strategy?: string, limit = 2500, country: "KR" | "US" = "KR") => {
+export const getScanDailyList: any = async (date?: string, strategy?: string, limit = 2500, country: "KR" | "US" = "KR", preview = false, force = false) => {
     const dateParam = date ?? "latest";
     const strategyParam = strategy ?? "all";
-    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=${limit}&sort=ncav_ratio&order=desc&country=${country}`;
-    return getAlgorithmTradeRequest(subUrl);
+    const subUrl = preview
+        ? `/scan/daily?country=${country}&date=${encodeURIComponent(dateParam)}&preview=per20`
+        : `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=${limit}&sort=ncav_ratio&order=desc&country=${country}`;
+    return reuseDailyList(subUrl, async () => {
+        const result = await getAlgorithmTradeRequest(subUrl);
+        if (result?.success === false) throw new Error(result.error ?? "API error");
+        if (!Array.isArray(result?.data)) throw new Error("발굴 목록을 읽지 못했습니다.");
+        if (preview && result?.meta?.preview !== "per20") throw new Error("발굴 미리보기 서버 업데이트가 필요합니다.");
+        return result;
+    }, force);
 }
 
 export const getScanDailyDates: any = async (country?: "KR" | "US") => {
