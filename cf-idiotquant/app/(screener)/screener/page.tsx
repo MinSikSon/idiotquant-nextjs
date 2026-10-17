@@ -895,13 +895,14 @@ function ScreenerContent() {
     // 뒤 그룹은 기본값으로 되돌려 "여기까지 좁히면 이만큼 남는다"를 보여준다.
     const cumulativeCounts = useMemo(() => {
         const out = {} as Record<FilterGroupKey, number>;
+        if (!filterOpen) return out;
         FILTER_GROUP_ORDER.forEach((key, idx) => {
             const reset = FILTER_GROUP_ORDER.slice(idx + 1)
                 .reduce<Partial<ScreenerFilters>>((acc, k) => ({ ...acc, ...GROUP_DEFAULTS[k] }), {});
             out[key] = applyFilters(baseList, { ...filters, ...reset }).length;
         });
         return out;
-    }, [baseList, filters]);
+    }, [baseList, filters, filterOpen]);
 
     // 묶어 보기는 전체 결과를 대상으로 한다 — 페이지를 넘길 때마다 그룹 개수가 변하면
     // "이 전략에 12개"라는 숫자를 믿을 수 없다. 대신 상위 2개 그룹만 펼쳐 DOM을 작게 유지한다.
@@ -957,6 +958,7 @@ function ScreenerContent() {
 
     // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
     const funnel = useMemo(() => {
+        if (!filterOpen) return [];
         const none: ScreenerFilters = {
             strategies: new Set(), mode: 'OR', q: '',
             excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false,
@@ -977,7 +979,7 @@ function ScreenerContent() {
             acc = { ...acc, ...s.patch };
             return { label: s.label, count: applyFilters(baseList, acc).length };
         });
-    }, [baseList, filters]);
+    }, [baseList, filters, filterOpen]);
 
     // 단일 전략만 선택했을 때, 그 전략 기준 컬럼을 강조 (0개·복수 선택이면 강조 안 함)
     const highlightMap: HighlightMap | null =
