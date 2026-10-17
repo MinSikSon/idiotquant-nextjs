@@ -151,6 +151,7 @@ test('공유 데이터에도 재무 기준일과 경고를 포함한다', () => 
       {
         name: '오래된 기업',
         ticker: '001000',
+        scan_date: '20261016',
         financial_bs_date: '200012',
         financial_is_date: '200112',
       },
@@ -163,7 +164,7 @@ test('공유 데이터에도 재무 기준일과 경고를 포함한다', () => 
   const shared = parseSnapshot(serializeSnapshot(snapshot));
   assert.equal(
     shared.tables[0].rows[0][shared.tables[0].columns.indexOf('재무정보 상태')],
-    '재무정보 3년 경과'
+    '수집일과 약 25년 9개월 차이'
   );
   assert.ok(
     shared.tables[0].rows[0][

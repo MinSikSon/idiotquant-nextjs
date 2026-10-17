@@ -93,6 +93,58 @@ export function scanFinancialPeriods(
   ];
 }
 
+/** 주간 보관 자료는 해당 종목의 마지막 수집일을 사용한다. 화면의 선택일로 대체하지 않는다. */
+export function scanCollectionDate(item: Record<string, any>): unknown {
+  return item.period_end_date ?? item.scan_date;
+}
+
+/** 수집 당시 재무자료의 나이를 비교한다. 과거 결과를 오늘 기준으로 재판정하지 않는다. */
+export function collectionFinancialFreshness(
+  periods: FinancialPeriod[],
+  collectedAt: unknown,
+  now = new Date()
+): FinancialFreshness & { collectionDate: string } {
+  const collected = financialDate(collectedAt);
+  const today = new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+  if (!collected || collected.label.length !== 10 || collected.end > today) {
+    const dates = financialFreshness(periods, now).periods;
+    return {
+      status: 'unknown', label: '수집일 미확인', collectionDate: '',
+      periods: dates,
+      message: `수집일 미확인${dates ? ` · ${dates}` : ''}. 수집일과 재무 기준일의 차이를 판단할 수 없습니다.`,
+    };
+  }
+  const result = financialFreshness(periods, new Date(`${collected.end}T00:00:00+09:00`));
+  const valid = periods.flatMap(period => {
+    const parsed = financialDate(period.date);
+    return parsed && parsed.end <= collected.end ? [{ ...period, parsed }] : [];
+  });
+  const oldest = valid.map(period => period.parsed.end).sort()[0];
+  let gap = '';
+  if (oldest) {
+    const days = Math.floor((Date.parse(collected.end) - Date.parse(oldest)) / 86400000);
+    const [cy, cm, cd] = collected.end.split('-').map(Number);
+    const [fy, fm, fd] = oldest.split('-').map(Number);
+    const months = (cy - fy) * 12 + cm - fm - (cd < fd ? 1 : 0);
+    gap = months < 1 ? `${days}일` : [
+      months >= 12 ? `${Math.floor(months / 12)}년` : '',
+      months % 12 ? `${months % 12}개월` : '',
+    ].join(' ');
+  }
+  const dates = result.periods || '재무 기준일 미확인';
+  const detail = `수집 ${collected.label} · ${dates}`;
+  if (result.status === 'stale') return {
+    ...result, collectionDate: collected.label,
+    label: `수집일과 약 ${gap} 차이`,
+    message: `${detail}. 수집 당시 이미 3년을 초과한 재무정보입니다.${valid.length < periods.length ? ' 일부 재무 기준일도 확인할 수 없습니다.' : ''}`,
+  };
+  return {
+    ...result, collectionDate: collected.label,
+    label: result.status === 'fresh' ? '수집일 기준 3년 이내' : result.label,
+    message: result.status === 'fresh' ? `${detail}. 수집일 기준 최근 3년 이내 자료입니다.` : `${detail}. 수집일과 일부 재무 기준일의 차이를 확인할 수 없습니다.`,
+  };
+}
+
 /** 지표 계산이 사용하는 첫 응답 행의 회계 종료일을 확인한다. 수집일·공시 제출일로 대체하지 않는다. */
 export function analysisFinancialPeriods(
   data: any,

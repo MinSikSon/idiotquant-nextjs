@@ -1,20 +1,22 @@
 import { AlertTriangle, Info } from 'lucide-react';
 import {
   financialFreshness,
+  collectionFinancialFreshness,
   financialSourceLabel,
   type FinancialPeriod,
 } from '@/lib/utils/financialFreshness';
 
-export default function FinancialFreshnessNotice({
-  periods,
-  banner = false,
-  source,
-}: {
+export default function FinancialFreshnessNotice(props: {
   periods: FinancialPeriod[];
   banner?: boolean;
   source?: string | null;
+  collectionDate?: unknown;
 }) {
-  const result = financialFreshness(periods);
+  const { periods, banner = false, source } = props;
+  const collected = 'collectionDate' in props;
+  const result = collected
+    ? collectionFinancialFreshness(periods, props.collectionDate)
+    : financialFreshness(periods);
   const sourceLabel = financialSourceLabel(source);
   if (result.status === 'fresh' && !sourceLabel) return null;
   const Icon = result.status === 'stale' ? AlertTriangle : Info;
@@ -25,11 +27,16 @@ export default function FinancialFreshnessNotice({
   if (!banner)
     return (
       <span
-        className={`inline-flex max-w-full items-center gap-1 text-[10px] font-medium ${tone}`}
-        title={`${sourceLabel ? `재무 출처: ${sourceLabel}. ` : ''}${result.message}${result.periods ? ` (${result.periods})` : ''}`}
+        className={`inline-flex max-w-full flex-col items-start text-[10px] font-medium ${tone}`}
+        title={`${sourceLabel ? `재무 출처: ${sourceLabel}. ` : ''}${result.message}${!collected && result.periods ? ` (${result.periods})` : ''}`}
       >
-        <Icon size={11} className="shrink-0" aria-hidden="true" />
-        <span>{sourceLabel}{sourceLabel && result.status !== 'fresh' ? ' · ' : ''}{result.status !== 'fresh' ? result.label : ''}</span>
+        <span className="inline-flex items-center gap-1">
+          <Icon size={11} className="shrink-0" aria-hidden="true" />
+          <span>{sourceLabel}{sourceLabel && result.status !== 'fresh' ? ' · ' : ''}{result.status !== 'fresh' ? result.label : ''}</span>
+        </span>
+        {collected && result.status !== 'fresh' && (
+          <span className="mt-0.5 text-[10px] font-normal leading-4">{result.message}</span>
+        )}
       </span>
     );
   return (
