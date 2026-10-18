@@ -426,7 +426,7 @@ function AnalyzeContent() {
   const handleToggleLike = useCallback(() => {
     if (!tickerFromUrl) return;
     if (!session?.user) {
-      addToast('info', '로그인 후 관심 종목에 저장됩니다.');
+      addToast('info', '관심 종목을 저장하려면 로그인 후 하트를 다시 눌러 주세요.');
       return;
     }
     dispatch(reqToggleLike({ ticker: tickerFromUrl, name: name ?? undefined, isUs: krOrUs === 'US' }));
@@ -571,11 +571,14 @@ function AnalyzeContent() {
         sticky
         mobileCompact={!!tickerFromUrl}
         actions={isPriceLoaded ? <>
-          <button type="button" onClick={handleToggleLike}
+          {isLoggedIn ? <button type="button" onClick={handleToggleLike}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
             className={cn(PAGE_ACTION_CLS, isInWatchlist && 'text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400')}>
             <Heart size={14} fill={isInWatchlist ? 'currentColor' : 'none'} />
-          </button>
+          </button> : <Link href={loginHref} aria-label="로그인하고 관심 종목 저장" className={PAGE_ACTION_CLS}>
+            <Heart size={14} />
+            <span className="hidden sm:inline">로그인 후 저장</span>
+          </Link>}
           <ResultShare iconOnly disabled={!stockData || waitResponse} getSnapshot={() => {
             const snapshot = analysisSnapshot({
               title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
@@ -871,7 +874,7 @@ function AnalyzeContent() {
 
                 {/* 지표 탭 (2/2) — 상세 지표 표 (블러). 위 카드와 같은 탭이다. */}
                 <div className={cn(activeTab !== 'metrics' && 'hidden')}>
-                  <BlurGate isLoggedIn={isLoggedIn}>
+                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <StockMetrics data={data} isUs={krOrUs === 'US'} />
                   </BlurGate>
                 </div>

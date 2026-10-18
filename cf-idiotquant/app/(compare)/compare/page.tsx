@@ -232,7 +232,7 @@ export default function ComparePage() {
   return <div className="min-h-screen bg-surface-canvas text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100">
     <PageHeader
       title="종목 비교"
-      description="날짜와 종목을 추가해 주가와 변화율을 비교하세요."
+      description="① 날짜 추가 → ② 종목 추가 → ③ 날짜별 종가와 변화율 비교"
       meta="다른 페이지에 다녀와도 비교 내용이 유지됩니다."
       mobileCompact
       actions={<>
@@ -246,7 +246,8 @@ export default function ComparePage() {
     />
     <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
       <section aria-label="비교 날짜">
-        <h2 className="text-sm font-semibold">비교 날짜</h2>
+        <h2 className="text-sm font-semibold">1. 비교 날짜 추가</h2>
+        <p className="mt-2 text-xs text-neutral-500">날짜 하나로 종가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
         <div className="mt-2 grid min-w-0 gap-2 sm:flex sm:items-end">
           <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
             가격 기준일
@@ -267,7 +268,8 @@ export default function ComparePage() {
       </section>
 
       <section className="mt-8" aria-label="비교 종목 추가">
-        <h2 className="text-sm font-semibold">비교 종목</h2>
+        <h2 className="text-sm font-semibold">2. 비교 종목 추가</h2>
+        {!dates.length && <p className="mt-2 text-xs text-neutral-500">위에서 가격 기준일을 선택하고 ‘날짜 추가’를 누르면 종목 검색을 시작할 수 있습니다.</p>}
         <form onSubmit={submit} className="relative mt-2 flex gap-2">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -276,7 +278,8 @@ export default function ComparePage() {
           </div>
           <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
         </form>
-        <p className="mt-2 text-xs text-neutral-500">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다.</p>
+        <p className="mt-2 text-xs text-neutral-500">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
+        {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-500">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
         {importProgress && <p role="status" className="mt-2 text-xs text-neutral-500">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
         {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       </section>
