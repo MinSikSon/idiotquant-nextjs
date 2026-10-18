@@ -2,11 +2,12 @@
 
 import { useState, useMemo, KeyboardEvent, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { buildStockSearchIndex, findStockSuggestions } from "@/lib/utils/stockSuggestions";
+import { buildStockSearchIndex, findStockSuggestions, type StockSearchName } from "@/lib/utils/stockSuggestions";
 import { Search, CornerDownLeft, Sparkles, AlertCircle, X } from "lucide-react";
 
 interface SearchAutocompleteProps {
     validCorpNameArray: string[];
+    stockNames?: StockSearchName[];
     onSearchButton: (value: string) => void;
     placeHolder?: string;
     autoFocus?: boolean;
@@ -40,14 +41,15 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
     );
 };
 
-const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
+const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLUListElement>(null);
 
-    const searchIndex = useMemo(() => buildStockSearchIndex(validCorpNameArray), [validCorpNameArray]);
+    const searchIndex = useMemo(() => buildStockSearchIndex(validCorpNameArray, stockNames), [validCorpNameArray, stockNames]);
+    const companyNames = useMemo(() => new Map(stockNames?.map(stock => [stock.symbol, stock])), [stockNames]);
     const suggestions = useMemo(() => findStockSuggestions(searchIndex, query), [query, searchIndex]);
 
     useEffect(() => {
@@ -202,6 +204,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     {suggestions.length > 0 ? (
                         suggestions.map((suggestion: string, index: number) => {
                             const isSelected = selectedIndex === index;
+                            const company = companyNames.get(suggestion);
                             return (
                                 <li
                                     key={index}
@@ -216,8 +219,11 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                                             : "text-neutral-700 dark:text-neutral-300 hover:bg-surface-muted-hover/70 dark:hover:bg-surface-dark-hover/70 "
                                     )}
                                 >
-                                    <span className="truncate">
-                                        {isSelected ? suggestion : <HighlightText text={suggestion} query={query} />}
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate"><HighlightText text={company?.koreanName || company?.name || suggestion} query={query} /></span>
+                                        {company && <span className={cn("mt-0.5 block truncate text-[11px]", isSelected ? "text-white/80" : "text-neutral-500 dark:text-neutral-400")}>
+                                            <HighlightText text={`${suggestion} · ${company.name}`} query={query} />
+                                        </span>}
                                     </span>
                                     
                                     {isSelected && (
@@ -235,7 +241,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                             <AlertCircle size={16} className="text-neutral-300 dark:text-neutral-700" />
                             <div className="text-xs font-bold tracking-tight">매칭된 자산 데이터가 없습니다</div>
                             <div className="text-[10px] font-medium text-neutral-400/80 max-w-[240px]">
-                                국문 정식 사명이나 영문 티커 코드가 올바른지 확인 후 엔터를 눌러 강제 검색하세요.
+                                국내·미국 종목명으로 찾거나, 정확한 종목코드·티커를 입력하고 엔터를 눌러 조회하세요.
                             </div>
                         </div>
                     )}

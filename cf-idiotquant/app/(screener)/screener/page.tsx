@@ -27,6 +27,7 @@ import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 import { matchesGuestPer } from "@/lib/utils/guestStocks";
+import { isUsTicker } from "@/lib/utils/stockSearchInput";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
@@ -1009,7 +1010,7 @@ function ScreenerContent() {
     const scanDate = ncavDailyList.scanDate;
     const compareLimit = isLoggedIn ? 20 : 4;
     const compareTickers = useMemo(() => [...new Set(filteredList.map(item => String(item.ticker ?? '').trim().toUpperCase()))]
-        .filter(ticker => country === 'KR' ? /^\d{6}$/.test(ticker) : /^[A-Z][A-Z0-9.-]{0,5}$/.test(ticker))
+        .filter(ticker => country === 'KR' ? /^\d{6}$/.test(ticker) : isUsTicker(ticker))
         .slice(0, compareLimit), [filteredList, country, compareLimit]);
     const compareHref = /^\d{8}$/.test(scanDate ?? '') && compareTickers.length > 0
         ? `/compare?${new URLSearchParams({ country, date: scanDate!, tickers: compareTickers.join(',') })}`

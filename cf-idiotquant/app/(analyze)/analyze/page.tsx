@@ -28,6 +28,8 @@ import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader
 import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
+import { resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
+import type { StockSearchName } from '@/lib/utils/stockSuggestions';
 import ResultShare from '@/components/result-share';
 import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
@@ -91,6 +93,7 @@ const AnalysisIntro = dynamic(() => import('./components/AnalysisIntro'));
 // =========================================================================
 interface StaticStockData {
   allTickers: string[];
+  usStocks: StockSearchName[];
   corpCodeJson: Record<string, any>;
 }
 
@@ -102,9 +105,9 @@ const loadStaticStockData = (): Promise<StaticStockData> => {
   if (staticDataPromise) return staticDataPromise;
 
   staticDataPromise = Promise.all([
-    import('@/public/data/usStockSymbols/nasdaq_tickers.json'),
-    import('@/public/data/usStockSymbols/nyse_tickers.json'),
-    import('@/public/data/usStockSymbols/amex_tickers.json'),
+    import('@/public/data/usStockSymbols/nasdaq_full_tickers.json'),
+    import('@/public/data/usStockSymbols/nyse_full_tickers.json'),
+    import('@/public/data/usStockSymbols/amex_full_tickers.json'),
     import('@/public/data/validCorpCodeArray.json'),
     import('@/public/data/validCorpNameArray.json'),
     import('@/public/data/validCorpCode.json'),
@@ -116,12 +119,22 @@ const loadStaticStockData = (): Promise<StaticStockData> => {
     const overrideEntries: string[] = (overrides.data ?? []).flatMap((o: any) =>
       o.country === 'KR' ? [o.ticker, o.name].filter(Boolean) : [o.ticker].filter(Boolean)
     );
+    const usStocks: StockSearchName[] = [
+      ...nasdaq.default, ...nyse.default, ...amex.default,
+    ];
+    // 같은 티커의 관리자 이름도 검색 별칭으로 남긴다.
+    for (const entry of overrides.data ?? []) {
+      if (entry.country === 'US' && entry.ticker && entry.name) {
+        usStocks.push({ symbol: entry.ticker.toUpperCase(), name: entry.name });
+      }
+    }
     cachedStaticData = {
-      allTickers: [
-        ...nasdaq.default, ...nyse.default, ...amex.default,
+      allTickers: [...new Set([
+        ...usStocks.map(stock => stock.symbol),
         ...corpCode.default, ...corpName.default,
         ...overrideEntries,
-      ],
+      ])],
+      usStocks,
       corpCodeJson: corpCodeData.default,
     };
     return cachedStaticData;
@@ -387,7 +400,7 @@ function AnalyzeContent() {
   const fromScreener = searchParams.get('from') === 'screener';
 
   const [hasMounted, setHasMounted] = useState(false);
-  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
+  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], usStocks: [], corpCodeJson: {} });
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
@@ -407,13 +420,13 @@ function AnalyzeContent() {
 
 
   const handleSearch = useCallback((stockName: string) => {
-    if (!stockName) return;
-    if (staticStockData.allTickers.length > 0 &&
-        !staticStockData.allTickers.some(t => t.toLowerCase() === stockName.toLowerCase())) {
-      addToast('error', `'${stockName}'은(는) 지원하지 않는 종목입니다.`);
+    if (!stockName.trim()) return;
+    const ticker = resolveStockSearchInput(stockName, staticStockData.allTickers);
+    if (!ticker) {
+      addToast('error', '국내·미국 종목명으로 검색 결과를 선택하거나 종목코드·티커를 확인해 주세요.');
       return;
     }
-    startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(stockName)}`); });
+    startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`); });
   }, [router, addToast, staticStockData.allTickers]);
 
   useEffect(() => {
@@ -606,9 +619,10 @@ function AnalyzeContent() {
               <SearchAutocomplete
                 autoFocus={searchOpen}
                 onEscape={() => setSearchOpen(false)}
-                placeHolder="국내 종목명 또는 미국 티커 입력"
+                placeHolder="종목명·티커 검색 (예: 코어위브, CoreWeave, CRWV)"
                 onSearchButton={handleSearch}
                 validCorpNameArray={staticStockData.allTickers}
+                stockNames={staticStockData.usStocks}
                 onSearchStateChange={() => {}}
               />
             </div>

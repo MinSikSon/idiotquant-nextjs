@@ -17,6 +17,7 @@ import { getInquireDailyItemChartPrice, getInquirePrice } from '@/lib/features/k
 import { getOverseasPriceQuotationsDailyPrice, getQuotationsPriceDetail, getQuotationsSearchInfo } from '@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketAPI';
 import { calculatePriceReturns, summarizeReturns } from './priceReturns';
 import { historicalPrice } from './historicalPrice';
+import { isUsTicker, resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
   type ComparisonStock, selectComparison, setQuery, setDateInput, setError,
@@ -123,7 +124,7 @@ export default function ComparePage() {
     const date = params.get('date');
     if ((market !== 'KR' && market !== 'US') || !date || !/^\d{8}$/.test(date)) return;
     const tickers = [...new Set((params.get('tickers') ?? '').split(',').map(ticker => ticker.trim().toUpperCase()))]
-      .filter(ticker => market === 'KR' ? /^\d{6}$/.test(ticker) : /^[A-Z][A-Z0-9.-]{0,5}$/.test(ticker))
+      .filter(ticker => market === 'KR' ? /^\d{6}$/.test(ticker) : isUsTicker(ticker))
       .slice(0, limits.stocks);
     if (!tickers.length) return;
     const selectedDate = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}`;
@@ -170,9 +171,9 @@ export default function ComparePage() {
     const value = raw.trim();
     if (!value || sessionLoading || stocks.length >= limits.stocks || loading || dateLoading) return;
     if (!dates.length) { dispatch(setError('비교할 날짜를 먼저 추가해 주세요.')); return; }
-    const upper = value.toUpperCase();
+    const upper = resolveStockSearchInput(value, [...usTickers]) ?? value.toUpperCase();
     const code = (corpCodes as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^\d{6}$/.test(value) ? value : undefined);
-    const isUs = !code && (usTickers.has(upper) || /^[A-Z][A-Z0-9.-]{0,5}$/.test(upper));
+    const isUs = !code && (usTickers.has(upper) || isUsTicker(upper));
     const ticker = code ?? (isUs ? upper : '');
     if (!ticker) { dispatch(setError('종목명 또는 6자리 종목코드를 확인해 주세요. 미국 종목은 티커를 입력할 수 있습니다.')); return; }
     if (stocks.some(stock => stock.ticker === ticker && stock.market === (isUs ? 'US' : 'KR'))) {
