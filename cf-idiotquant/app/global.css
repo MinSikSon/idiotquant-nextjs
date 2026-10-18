@@ -274,7 +274,7 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
 
 /* 각 화면의 고정 헤더는 공통 네비게이션 바로 아래에 놓인다. */
 @media (max-width: 767px) {
-  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 48px; }
+  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: var(--topbar-h); }
   /* Rogue 는 스크롤할 페이지가 아니다. Safari 도구 막대가 보이는 높이에 고정해
      dvh 와 visual viewport 가 어긋날 때 생기는 하단 빈 칸과 세로 스크롤을 막는다. */
   html:has(#rogue-root) { height: 100svh; overflow: hidden; }
@@ -467,4 +467,16 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 .landing-style-page :is(h1, h2) {
   font-weight: 600;
   letter-spacing: -0.04em;
+}
+
+/* 모바일에서는 모든 경로의 상단바를 요약하고, 페이지 머리의 부가 설명을 접는다.
+   입력·버튼을 조작하는 동안에는 전체 머리를 유지한다. */
+@media (max-width: 767px) {
+  html[data-mobile-header-compact="true"] { --topbar-h: 44px; }
+  html[data-mobile-header-compact="true"] [data-mobile-header] { height: 44px; }
+  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-main] { padding-top: 8px; padding-bottom: 8px; }
+  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-row] { flex-direction: row; align-items: center; gap: 8px; }
+  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) h1 { font-size: 16px; line-height: 1.4; }
+  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-detail] { display: none; }
+  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-compact-meta] { display: flex; }
 }

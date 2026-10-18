@@ -9,6 +9,8 @@ interface SearchAutocompleteProps {
     validCorpNameArray: string[];
     onSearchButton: (value: string) => void;
     placeHolder?: string;
+    autoFocus?: boolean;
+    onEscape?: () => void;
     onSearchStateChange?: (focused: boolean, isEmpty: boolean) => void;
 }
 
@@ -38,7 +40,7 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
     );
 };
 
-const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, onSearchStateChange }: SearchAutocompleteProps) => {
+const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -102,9 +104,11 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
             if (suggestions.length === 0) return;
             setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0));
         } else if (e.key === "Escape") {
+            e.preventDefault();
             setIsFocused(false);
             if (onSearchStateChange) onSearchStateChange(false, !query.trim());
             inputRef.current?.blur();
+            onEscape?.();
         }
     };
 
@@ -127,6 +131,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                 
                 <input
                     ref={inputRef}
+                    autoFocus={autoFocus}
                     autoComplete="off"
                     placeholder={placeHolder}
                     value={query}

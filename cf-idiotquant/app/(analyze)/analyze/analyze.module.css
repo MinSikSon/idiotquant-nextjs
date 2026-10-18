@@ -37,11 +37,15 @@
 }
 .page .header h1 {
   color: var(--analysis-ink);
+  min-width: 0;
   font-size: 30px;
   font-weight: 460;
   letter-spacing: -.027em;
   line-height: 1.25;
 }
+.stockName { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; text-align: left; }
+.stockName > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.stockName[aria-expanded="true"] > span { white-space: normal; overflow-wrap: anywhere; }
 .page .emptyHeader h1 { font-size: clamp(32px, 4vw, 48px); }
 .page .emptyHeader > div:first-child { padding-top: 44px; padding-bottom: 12px; }
 .page .header p { color: var(--analysis-muted); }

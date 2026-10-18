@@ -567,7 +567,7 @@ export default function LedgerPage() {
                 )}
 
                 {/* 모바일에서는 선택 카드가 상단 메뉴(48px)에 닿으면 고정된다. */}
-                <div className={cn(CARD_CLS, "sticky top-[48px] z-30 md:static md:z-auto")}>
+                <div className={cn(CARD_CLS, "sticky top-[var(--topbar-h)] z-30 md:static md:z-auto")}>
                     <div className="flex items-center justify-center gap-1 p-1.5">
                         <button
                             type="button"

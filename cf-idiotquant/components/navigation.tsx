@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
+import { nextMobileHeaderCompact } from "@/lib/utils/mobileHeader";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   Home,
@@ -67,6 +68,22 @@ const MORE_NAV: NavItem[] = [
 // 같은 화면에 도착했다 — 누를 때마다 "이동 중…" 이 한 번 스쳤다.
 const PORTFOLIO_NAV = [
   { label: "포트폴리오", href: "/balance", icon: Eye },
+];
+
+const MOBILE_PAGE_LABELS = [
+  { href: "/admin/ticker-map", label: "종목 매핑" },
+  { href: "/ledger/join", label: "가계부 초대" },
+  { href: "/login/callback", label: "로그인" },
+  { href: "/share", label: "공유 결과" },
+  { href: "/privacy", label: "개인정보 처리방침" },
+  { href: "/terms", label: "이용약관" },
+  { href: "/profile", label: "내 계정" },
+  { href: "/backtest", label: "과거 검증" },
+  { href: "/quant", label: "퀀트 투자" },
+  { href: "/login", label: "로그인" },
+  ...MAIN_NAV, ...MORE_NAV, ...PORTFOLIO_NAV,
+  { href: "/admin", label: "회원 관리" },
+  { href: "/game", label: "게임" },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────── */
@@ -252,18 +269,23 @@ export function NavbarWithSimpleLinks() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const [bottomBarCompact, setBottomBarCompact] = useState(false);
+  const [headerCompact, setHeaderCompact] = useState(false);
+  const pageLabel = MOBILE_PAGE_LABELS.find(item => active(pathname, item.href))?.label ?? "IdiotQuant";
   const compactBottomBar = bottomBarCompact && !moreSheet;
   const showMore = moreOpen || moreActive;
 
   useEffect(() => {
     setBottomBarCompact(false);
-    if (inGame) return;
+    setHeaderCompact(false);
 
     const mobile = window.matchMedia("(max-width: 767px)");
     let previousY = Math.max(0, window.scrollY);
-    const onScroll = () => {
+    let frame: number | null = null;
+    const update = () => {
+      frame = null;
       const currentY = Math.max(0, window.scrollY);
-      if (!mobile.matches || currentY <= 64) {
+      setHeaderCompact(previous => nextMobileHeaderCompact(previous, currentY, mobile.matches));
+      if (inGame || !mobile.matches || currentY <= 64) {
         setBottomBarCompact(false);
       } else {
         // 손떨림 정도의 움직임에는 바 크기를 바꾸지 않는다.
@@ -273,9 +295,23 @@ export function NavbarWithSimpleLinks() {
       previousY = currentY;
     };
 
+    const onScroll = () => {
+      if (frame === null) frame = window.requestAnimationFrame(update);
+    };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    mobile.addEventListener("change", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      mobile.removeEventListener("change", onScroll);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, [pathname, inGame]);
+
+  useEffect(() => {
+    document.documentElement.dataset.mobileHeaderCompact = String(headerCompact);
+    return () => { delete document.documentElement.dataset.mobileHeaderCompact; };
+  }, [headerCompact]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -449,14 +485,14 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
+      <header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
         barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <div className="flex items-center gap-1.5 min-w-0">
-          <Link href="/" className="flex items-center gap-1.5 shrink-0">
-            <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+          <Link href="/" aria-label="IdiotQuant 홈" className="flex min-w-0 items-center gap-1.5">
+            {headerCompact ? <span className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{pageLabel}</span> : <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
               idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-brand-ink"}>{inGame ? "games" : "quant"}</span>
-            </span>
+            </span>}
           </Link>
         </div>
         <div className="flex items-center gap-2 shrink-0">
