@@ -16,7 +16,7 @@ export default function AnalysisIntro({ onSearch }: { onSearch: (value: string) 
           <p className={styles.eyebrow}>분석을 시작하는 세 가지 관점</p>
           <h2 id="analysis-intro-title" className={styles.introTitle}>가격을 넘어,<br />가치의 근거까지.</h2>
         </div>
-        <p className={styles.introNote}>국내 종목명이나 미국 티커를 검색하세요.<br />지표에서 재무까지, 한 흐름으로 살펴봅니다.</p>
+        <p className={styles.introNote}>국내·미국 종목명이나 티커를 검색하세요.<br />지표에서 재무까지, 한 흐름으로 살펴봅니다.</p>
       </div>
       <div className={styles.steps}>
         {steps.map(({ title, description, icon: Icon }, index) => (

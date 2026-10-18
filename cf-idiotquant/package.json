@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "symbols:refresh": "python3 scripts/refresh-us-symbols.py",
     "art": "node scripts/build-game-sheet.mjs",
     "dev": "next dev",
     "build": "next build",

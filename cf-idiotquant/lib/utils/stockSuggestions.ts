@@ -32,19 +32,37 @@ const disassembleHangul = (str: string) => {
     return result.toLowerCase();
 };
 
-type SearchEntry = {
-    text: string;
+export type StockSearchName = {
+    symbol: string;
+    name: string;
+    koreanName?: string;
+};
+
+type SearchTerm = {
     lower: string;
     chosung: string;
     disassembled: string;
 };
 
+type SearchEntry = SearchTerm & { text: string; aliases: SearchTerm[] };
+
+function searchTerm(text: string): SearchTerm {
+    const lower = text.toLowerCase();
+    return { lower, chosung: getChosung(lower), disassembled: disassembleHangul(lower) };
+}
+
 /** 목록이 바뀔 때만 한글 검색용 문자열을 준비한다. */
-export function buildStockSearchIndex(names: readonly string[]): SearchEntry[] {
-    return names.map(text => {
-        const lower = text.toLowerCase();
-        return { text, lower, chosung: getChosung(lower), disassembled: disassembleHangul(lower) };
-    });
+export function buildStockSearchIndex(names: readonly string[], stocks: readonly StockSearchName[] = []): SearchEntry[] {
+    const entries = new Map(names.map(text => [text, { text, ...searchTerm(text), aliases: [] as SearchTerm[] }]));
+    for (const stock of stocks) {
+        const entry: SearchEntry = entries.get(stock.symbol) ?? { text: stock.symbol, ...searchTerm(stock.symbol), aliases: [] };
+        const companyName = stock.name.replace(/\s+(?:INC|CORP|CORPORATION|LTD|LIMITED|PLC)\.?$/i, '');
+        for (const name of new Set([stock.name, stock.koreanName, companyName])) {
+            if (name) entry.aliases.push(searchTerm(name));
+        }
+        entries.set(stock.symbol, entry);
+    }
+    return [...entries.values()];
 }
 
 export function findStockSuggestions(index: readonly SearchEntry[], query: string): string[] {
@@ -52,13 +70,16 @@ export function findStockSuggestions(index: readonly SearchEntry[], query: strin
     if (!trimmed) return [];
     const disassembled = disassembleHangul(trimmed);
     const chosung = getChosung(trimmed);
-    return index.filter(item =>
-        item.lower.includes(trimmed) || item.chosung.includes(chosung) || item.disassembled.includes(disassembled)
-    ).sort((a, b) => {
-        if (a.lower === trimmed) return -1;
-        if (b.lower === trimmed) return 1;
-        if (a.lower.startsWith(trimmed) && !b.lower.startsWith(trimmed)) return -1;
-        if (!a.lower.startsWith(trimmed) && b.lower.startsWith(trimmed)) return 1;
-        return a.text.length - b.text.length;
+    const initialsOnly = /^[ㄱ-ㅎ]+$/.test(trimmed);
+    const matches = (item: SearchTerm) => item.lower.includes(trimmed) || (initialsOnly && item.chosung.includes(chosung)) || item.disassembled.includes(disassembled);
+    const rank = (item: SearchEntry) => {
+        if (item.lower === trimmed) return 0;
+        if (item.aliases.some(alias => alias.lower === trimmed)) return 1;
+        if (item.lower.startsWith(trimmed)) return 2;
+        if (item.aliases.some(alias => alias.lower.startsWith(trimmed))) return 3;
+        return 4;
+    };
+    return index.filter(item => matches(item) || item.aliases.some(matches)).sort((a, b) => {
+        return rank(a) - rank(b) || a.text.length - b.text.length;
     }).slice(0, 10).map(item => item.text);
 }
