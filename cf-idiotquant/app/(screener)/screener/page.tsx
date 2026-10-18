@@ -23,6 +23,7 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type Group, type GroupM
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
+import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
 import { matchesGuestPer } from "@/lib/utils/guestStocks";
@@ -1264,6 +1265,8 @@ function ScreenerContent() {
                     )}
                 </div>
             </div>
+
+            {isLoggedIn && <ScreenerUsageGuide />}
 
             {/* ── 수집 중 안내 배너 ── */}
             {isLoggedIn && scanningInProgress && !showLikedOnly && (
