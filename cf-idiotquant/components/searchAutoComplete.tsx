@@ -60,25 +60,26 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
         }
     }, [suggestions]);
 
-    // 스크롤 포커싱 추적: 선택된 아이템이 드롭다운 가시영역을 벗어나면 자동 스크롤
+    // 키보드 선택은 목록 안에서만 스크롤한다. 페이지나 고정 헤더는 움직이지 않는다.
     useEffect(() => {
         if (selectedIndex >= 0 && dropdownRef.current) {
-            const activeElement = dropdownRef.current.children[selectedIndex + 1] as HTMLElement; // 헤더 디브 오프셋 감안
+            const activeElement = dropdownRef.current.querySelector<HTMLElement>(`#suggestion-${selectedIndex}`);
             if (activeElement) {
                 const container = dropdownRef.current;
                 const activeTop = activeElement.offsetTop;
                 const activeBottom = activeTop + activeElement.offsetHeight;
-                const containerTop = container.scrollTop + 40; // 헤더 높이만큼 버퍼링
-                const containerBottom = containerTop + container.clientHeight;
+                const labelHeight = container.firstElementChild?.getBoundingClientRect().height ?? 0;
+                const containerTop = container.scrollTop + labelHeight;
+                const containerBottom = container.scrollTop + container.clientHeight;
 
                 if (activeTop < containerTop) {
-                    container.scrollTop = activeTop - 40;
+                    container.scrollTop = activeTop - labelHeight;
                 } else if (activeBottom > containerBottom) {
                     container.scrollTop = activeBottom - container.clientHeight;
                 }
             }
         }
-    }, [selectedIndex]);
+    }, [selectedIndex, suggestions]);
 
     const executeSearch = (value: string) => {
         if (!value) return;
@@ -186,10 +187,10 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
                     id="search-listbox"
                     role="listbox"
                     aria-label="종목 검색 결과"
-                    className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark/80 rounded-xl shadow-sm max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
+                    className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark/80 rounded-xl shadow-sm max-h-[min(19rem,40dvh)] overflow-y-auto overscroll-contain touch-pan-y p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top"
                 >
-                    {/* 상단 라벨링 정보 바 */}
-                    <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-border-subtle-dark/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md z-10">
+                    {/* 목록 안에 고정한다. 페이지 헤더의 .sticky.top-0 위치 보정과 분리한다. */}
+                    <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-border-subtle-dark/50 mb-1 flex justify-between items-center sticky top-[0px] bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md z-10">
                         <span className="flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-brand-ink dark:text-brand-ink" />
                             퀀트 인텔리전스 추천
