@@ -94,7 +94,7 @@ export interface StockGroup {
     quant_rule?: QuantRule;
     budget_krw?: number;   // 그룹별 월 예산(DCA 리필). 미설정 시 계좌예산 fallback.
     side?: "buy" | "sell"; // 그룹별 매수/매도 방향. 미설정 시 buy.
-    dca?: boolean;         // DCA(정액매수) 모드. NCAV 조건 무시하고 예산으로 매수 (ETF 등). 미설정 시 false.
+    dca?: boolean;         // DCA(정액매매) 모드. 매수/매도 방향에 따라 적립 예산으로 수량 계산. 미설정 시 false.
 }
 
 export interface UsCapitalStockItem {

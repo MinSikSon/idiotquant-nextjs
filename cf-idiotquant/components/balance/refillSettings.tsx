@@ -69,7 +69,7 @@ export default function RefillSettings({
                 <FlowOp text={`÷ 활성 ${data.active_count}종목`} />
                 <FlowNode label="종목당 (월)" value={won(data.monthly_per_stock)} />
                 <FlowOp text={`${data.period_minutes}분마다 적립`} />
-                <FlowNode label="종목당 (5분)" value={won(data.per_tick_per_stock)} sub={`전체 ${won(data.per_tick_total)}`} />
+                <FlowNode label={`종목당 (${data.period_minutes}분)`} value={won(data.per_tick_per_stock)} sub={`전체 ${won(data.per_tick_total)}`} />
             </div>
 
             {/* 월 예산 조절 */}
@@ -92,13 +92,14 @@ export default function RefillSettings({
                             value={budget}
                             onChange={(e) => setBudget(e.target.value)}
                             disabled={!isMaster || !data.has_account}
-                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 tabular-nums outline-none focus:border-brand disabled:opacity-50"
+                            aria-label="자동매매 월 예산 (원)"
+                            className="min-h-11 w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-[#1c1b19] text-base sm:text-sm text-neutral-800 dark:text-neutral-200 tabular-nums outline-none focus:border-brand disabled:opacity-50"
                         />
                     </div>
                     <button
                         onClick={() => onSave(Math.trunc(Number(budget) || 0))}
                         disabled={!canSave}
-                        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand hover:bg-brand-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        className="min-h-11 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand hover:bg-brand-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                         {saving ? "저장 중…" : "저장"}
                     </button>

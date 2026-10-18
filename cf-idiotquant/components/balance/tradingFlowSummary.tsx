@@ -85,7 +85,7 @@ export default function TradingFlowSummary({
             <p className={cn("text-sm font-black leading-tight", ready ? "text-brand-ink-hover dark:text-brand-ink" : "text-amber-700 dark:text-amber-400")}>
               {ready ? "자동매매 가동 중" : "자동매매 대기"}
             </p>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed sm:truncate">
               {ready
                 ? (condBits.length ? `${condBits.join(" · ")} 조건으로 5분마다 매매` : "조건 충족 종목을 5분마다 매매합니다")
                 : `매매 실행에 필요: ${missing.join(", ")}`}
@@ -97,7 +97,7 @@ export default function TradingFlowSummary({
             onClick={onToggleTrading}
             disabled={togglePending}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all shrink-0 disabled:opacity-60",
+              "min-h-11 sm:min-h-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all shrink-0 disabled:opacity-60",
               isOn
                 ? "bg-brand text-white border-brand hover:bg-brand-hover"
                 : "bg-white dark:bg-surface-dark-card text-neutral-500 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400"

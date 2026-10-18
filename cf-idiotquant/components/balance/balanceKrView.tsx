@@ -54,6 +54,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import RefillSettings from "@/components/balance/refillSettings";
+import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
 import dynamic from "next/dynamic";
@@ -682,6 +683,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 togglePending={tradingStatus.state === "pending"}
                 className="mb-5"
               />
+              <TradingCyclePanel country="KR" tradingActive={tradingStatus.KR} capital={krCapital} activity={krActivity} budget={krBudget} />
               <StockListTable
                 data={krCapital}
                 kakaoTotal={kakaoTotal}
@@ -761,7 +763,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 country="KR"
                 capital={krCapital}
                 activity={krActivity}
-                onRefresh={() => dispatch(reqGetKrTradingActivity(balanceKey))}
+                onRefresh={() => { dispatch(reqGetKrTradingActivity(balanceKey)); dispatch(reqGetKrCapital(balanceKey)); }}
               />
             </SectionPanel>
           ) : null,
