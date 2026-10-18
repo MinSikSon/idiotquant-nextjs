@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, Clock, RefreshCw, Gauge, Layers, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { executionAmount, numericValue, stockBudgetProgress } from "@/lib/features/capital/tradingSummary";
 import { cn } from "@/lib/utils";
 import { KrUsCapitalType, TradingActivityState, TradingLog, UsCapitalStockItem, LIKES_GROUP_ID } from "@/lib/features/capital/capitalSlice";
 import validCorpCodeArray from "@/public/data/validCorpCodeArray.json";
@@ -46,8 +47,8 @@ const won = (n: number) => `₩${Math.round(Number(n) || 0).toLocaleString("ko-K
 // 워커가 종목별로 기록한 마지막 매매 결과(last_result.code) → 표시 라벨/색상.
 type LastResult = { at?: string; code?: string; msg?: string };
 const RESULT_META: Record<string, { label: string; tone: "green" | "amber" | "red" | "neutral" }> = {
-  bought: { label: "매수 체결", tone: "green" },
-  sold: { label: "매도 체결", tone: "green" },
+  bought: { label: "매수 접수", tone: "green" },
+  sold: { label: "매도 접수", tone: "green" },
   insufficient_token: { label: "예산 모으는 중", tone: "amber" },
   condition_fail: { label: "조건 미달", tone: "amber" },
   no_financials: { label: "재무 없음", tone: "amber" },
@@ -78,14 +79,14 @@ function StatusBadge({ lr }: { lr?: LastResult }) {
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-card px-2.5 py-2 sm:px-3 sm:py-2.5">
-      <div className="flex items-center justify-between gap-2 sm:block">
+      <div className="flex items-center justify-between gap-2 flex-wrap sm:block">
         <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 sm:mb-1">
           {icon}
           <span className="text-[11px] font-bold uppercase tracking-wide">{label}</span>
         </div>
-        <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight text-right sm:text-left">{value}</p>
+        <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight text-left sm:text-left">{value}</p>
       </div>
-      {hint && <p className="text-[11px] text-neutral-500 dark:text-neutral-400 text-right sm:text-left sm:mt-0.5">{hint}</p>}
+      {hint && <p className="text-[11px] text-neutral-500 dark:text-neutral-400 text-left sm:text-left sm:mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -147,7 +148,7 @@ export default function TradingActivityPanel({
         {onRefresh && (
           <button
             onClick={onRefresh}
-            className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-white dark:bg-surface-dark border border-neutral-200 dark:border-border-subtle-dark hover:border-brand/50 transition-colors"
+            className="min-h-11 sm:min-h-0 shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-neutral-500 dark:text-neutral-400 bg-white dark:bg-surface-dark border border-neutral-200 dark:border-border-subtle-dark hover:border-brand/50 transition-colors"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
             새로고침
@@ -156,11 +157,11 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 요약 지표 */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-2 md:mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-2 md:mb-4">
         <Stat icon={<Clock size={12} />} label="마지막 실행" value={relTime(capital?.time_stamp?.current)} />
         <Stat icon={<Gauge size={12} />} label="충전 속도" value={`${won(chargeRate)}`} hint="/ 5분 틱" />
-        <Stat icon={<Layers size={12} />} label="활성 토큰 합계" value={won(activeTokenSum)} hint={`활성 ${activeCount}종목`} />
-        <Stat icon={<Activity size={12} />} label="리필 인덱스" value={`${refillIdx} / ${stockList.length}`} hint="다음 매수 대상 위치" />
+        <Stat icon={<Layers size={12} />} label="활성 포인트 합계" value={won(activeTokenSum)} hint={`활성 ${activeCount}종목`} />
+        <Stat icon={<Activity size={12} />} label="리필 인덱스" value={`${refillIdx} / ${stockList.length}`} hint="다음 매매 대상 위치" />
       </div>
 
       {/* 현재 매매 대상 (활성 그룹 소속 · action=active) — 워커가 이 종목들을 자동매매 */}
@@ -168,7 +169,30 @@ export default function TradingActivityPanel({
         <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand-ink">현재 매매 대상</p>
         <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark mb-4">
+      <div className="mb-4 space-y-2 sm:hidden">
+        {activeStocks.length === 0 && <p className="rounded-xl border border-neutral-200 p-4 text-xs text-neutral-500 dark:border-border-subtle-dark">활성 그룹에 매매 대상 종목이 없습니다.</p>}
+        {activeStocks.map((stock, index) => {
+          const group = stock.group_id ? gmap.get(stock.group_id) : undefined;
+          const point = stockBudgetProgress(stock, country, capital.frst_bltn_exrt);
+          const unitKrw = point?.unitKrw ?? null;
+          const points = point?.points ?? 0;
+          const progress = point?.percent ?? 0;
+          return <article key={`${stock.symbol}-${index}`} className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-border-subtle-dark">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0"><p className="break-words text-sm font-bold">{displayName(stock.symbol, stock.name)}</p><p className="mt-0.5 break-words text-[11px] text-neutral-500 dark:text-neutral-400">{group?.name ?? "—"} · {group?.dca ? "정액" : "일반"}{group?.side === "sell" ? "매도" : "매수"}</p></div>
+              <StatusBadge lr={(stock as unknown as { last_result?: LastResult }).last_result} />
+            </div>
+            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 text-xs"><span className="text-neutral-500 dark:text-neutral-400">현재 포인트</span><strong className="break-all text-base tabular-nums text-brand-ink">{won(stock.token ?? 0)}</strong></div>
+            {group?.dca && unitKrw !== null && <div className="mt-2">
+              <div className="flex flex-wrap justify-between gap-1 text-[11px] text-neutral-500 dark:text-neutral-400"><span>1주 예산 적립</span><span>{points >= unitKrw ? `예산 기준 ${Math.floor(points / unitKrw).toLocaleString("ko-KR")}주` : `${won(unitKrw - points)} 더 필요`}</span></div>
+              <div role="progressbar" aria-label={`${displayName(stock.symbol, stock.name)} 1주 예산 적립`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-surface-dark-muted"><div className="h-full rounded-full bg-brand" style={{ width: `${progress}%` }} /></div>
+              <p className="mt-1 text-[10px] text-neutral-400">저장된 시세 기준{group.side === "sell" ? " · 매도는 보유 수량 한도" : " · 실제 주문 수량은 달라질 수 있음"}</p>
+            </div>}
+            <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">NCAV {Number.isFinite(Number(stock.ncavRatio)) ? `${Number(stock.ncavRatio).toFixed(2)}x` : "—"}</p>
+          </article>;
+        })}
+      </div>
+      <div className="hidden sm:block overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark mb-4">
         <table className="w-full text-sm text-left min-w-[500px]">
           <thead>
             <tr className="bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark">
@@ -208,23 +232,50 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 최근 자동 체결 */}
-      <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand-ink mb-2">최근 자동 체결</p>
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand-ink mb-2">최근 자동 주문 접수 · 포인트 기록</p>
+      <details className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
+        <summary className="min-h-11 cursor-pointer py-3 font-medium">주문 접수와 실제 체결·포인트의 차이</summary>
+        <p className="pb-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">주문금액은 로그의 가격 × 주문 수량이며 실제 체결금액과 다를 수 있습니다. 기록된 포인트는 차감 전 값입니다. 매수·정액매도 접수 시 포인트가 차감되지만, 이 로그에는 차감 후 잔액과 실제 체결 확인이 없어 차감·체결 검증은 할 수 없습니다.</p>
+      </details>
+      {activity.state === "rejected" && <p role="alert" className="mb-2 text-xs text-rose-500">체결 내역 조회 실패 · 새로고침해 주세요. 기존 내역이 표시될 수 있습니다.</p>}
+      <div className="space-y-2 sm:hidden">
+        {logs.length === 0 && <p className="rounded-xl border border-neutral-200 p-4 text-xs text-neutral-500 dark:border-border-subtle-dark">{loading ? "불러오는 중…" : "아직 자동 주문 접수 내역이 없습니다."}</p>}
+        {logs.map((log, index) => {
+          const amount = executionAmount(log);
+          const remaining = numericValue(log.remaining_token);
+          const sell = log.buyOrSell === "sell";
+          const name = country === "US" ? log.symbol : log.stock_name || log.stock_code || log.symbol;
+          return <article key={`${log.ts}-${index}`} className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-border-subtle-dark">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0"><p className="break-words text-sm font-bold">{name || "—"}</p><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{Number.isFinite(log.ts) ? new Date(log.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
+              <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-bold", sell ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30")}>{sell ? "매도 접수" : "매수 접수"}</span>
+            </div>
+            <dl className="mt-3 space-y-2 text-xs">
+              <div className="flex flex-wrap justify-between gap-2"><dt className="text-neutral-500 dark:text-neutral-400">주문금액</dt><dd className="break-all text-sm font-bold tabular-nums">{amount === null ? "미확인" : fmtPrice(amount)}</dd></div>
+              <div className="flex flex-wrap justify-between gap-2"><dt className="text-neutral-500 dark:text-neutral-400">수량 × 기준가</dt><dd className="break-all tabular-nums">{Number(log.ORD_QTY ?? 0).toLocaleString("ko-KR")}주 × {fmtPrice(log.stck_prpr)}</dd></div>
+              <div className="flex flex-wrap justify-between gap-2 border-t border-neutral-100 pt-2 dark:border-border-subtle-dark"><dt className="text-neutral-500 dark:text-neutral-400">차감 전 포인트 · 원화</dt><dd className="break-all font-bold tabular-nums">{remaining === null ? "잔액 기록 없음" : won(remaining)}</dd></div>
+            </dl>
+          </article>;
+        })}
+      </div>
+      <div className="hidden sm:block overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
         <table className="w-full text-sm text-left min-w-[460px]">
           <thead>
             <tr className="bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark">
-              {["시각", "종목", "구분", "수량", "체결가"].map((h, i) => (
+              {["시각", "종목", "구분", "수량", "주문 기준가", "주문금액", "차감 전 포인트 (원)"].map((h, i) => (
                 <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-50 dark:divide-border-subtle-dark/40">
             {loading && logs.length === 0 ? (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">불러오는 중…</td></tr>
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-xs text-neutral-400">불러오는 중…</td></tr>
             ) : logs.length === 0 ? (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">아직 자동 체결 내역이 없습니다.</td></tr>
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-xs text-neutral-400">아직 자동 주문 접수 내역이 없습니다.</td></tr>
             ) : (
               logs.map((l, i) => {
+                const amount = executionAmount(l);
+                const remaining = numericValue(l.remaining_token);
                 const sell = (l.buyOrSell ?? "") === "sell";
                 const name = country === "US" ? (l.symbol ?? "-") : (l.stock_name ?? l.symbol ?? "-");
                 const code = country === "US" ? (l.symbol ?? "") : (l.stock_code ?? "");
@@ -249,6 +300,8 @@ export default function TradingActivityPanel({
                     </td>
                     <td className="px-3 py-2 text-right text-xs font-bold text-neutral-800 dark:text-neutral-100 tabular-nums">{Number(l.ORD_QTY ?? 0).toLocaleString("ko-KR")}주</td>
                     <td className="px-3 py-2 text-right text-xs font-mono text-neutral-600 dark:text-neutral-300 tabular-nums">{fmtPrice(l.stck_prpr)}</td>
+                    <td className="px-3 py-2 text-right text-xs font-bold tabular-nums whitespace-nowrap">{amount === null ? "미확인" : fmtPrice(amount)}</td>
+                    <td className="px-3 py-2 text-right text-xs tabular-nums whitespace-nowrap">{remaining === null ? <span className="text-neutral-400">잔액 기록 없음</span> : <span className="font-bold text-brand-ink">{won(remaining)}</span>}</td>
                   </tr>
                 );
               })

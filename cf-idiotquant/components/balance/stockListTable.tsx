@@ -819,7 +819,7 @@ function GroupSection({
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
-    <section className={cn("overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-surface-dark-canvas", accentBorder)}>
+    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-24 overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-surface-dark-canvas", accentBorder)}>
       {/* 헤더 */}
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40">
         <button onClick={onToggleCollapse} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
@@ -850,7 +850,7 @@ function GroupSection({
             </span>
           )}
           {!hideTrading && groupDca && (
-            <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black bg-amber-400/20 text-amber-600 dark:text-amber-400" title="정액매수(DCA): NCAV 조건 무시하고 예산으로 매수">
+            <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black bg-amber-400/20 text-amber-600 dark:text-amber-400" title={groupSide === "sell" ? "정액매도(DCA): 적립 포인트 범위에서 보유 수량까지 매도" : "정액매수(DCA): NCAV 조건 무시하고 예산으로 매수"}>
               정액
             </span>
           )}
@@ -906,8 +906,10 @@ function GroupSection({
                 setShowRuleEditor(v => !v);
               }}
               title="이 그룹의 트레이딩 조건 설정"
+              aria-label={`${title} 매매 설정`}
+              aria-expanded={showRuleEditor}
               className={cn(
-                "rounded-lg p-1.5 transition-colors",
+                "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg p-1.5 transition-colors",
                 showRuleEditor
                   ? "bg-brand/10 text-brand-ink"
                   : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-surface-dark-muted dark:hover:text-neutral-200"
@@ -925,7 +927,7 @@ function GroupSection({
             <button
               onClick={onToggleTrading}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+                "min-h-11 sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                 tradingActive
                   ? "bg-brand text-white hover:bg-brand-hover"
                   : "bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-surface-dark-muted dark:text-neutral-400"
@@ -958,30 +960,32 @@ function GroupSection({
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
             <span className="col-span-2 text-[11px] font-bold text-brand-ink uppercase tracking-wider shrink-0">그룹 조건 설정</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">방향</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">방향</label>
               <div className="inline-flex w-full sm:w-auto rounded-lg border border-neutral-300 dark:border-surface-dark-elevated overflow-hidden">
-                <button type="button" onClick={() => setDraftSide("buy")}
-                  className={cn("flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
+                <button type="button" aria-pressed={draftSide === "buy"} onClick={() => setDraftSide("buy")}
+                  className={cn("min-h-11 sm:min-h-0 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
                     draftSide === "buy" ? "bg-brand text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
                   매수
                 </button>
-                <button type="button" onClick={() => setDraftSide("sell")}
-                  className={cn("flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
+                <button type="button" aria-pressed={draftSide === "sell"} onClick={() => setDraftSide("sell")}
+                  className={cn("min-h-11 sm:min-h-0 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
                     draftSide === "sell" ? "bg-rose-500 text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
                   매도
                 </button>
               </div>
             </div>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0" title="켜면 NCAV 조건을 무시하고 예산으로 정액 매수 (ETF 등)">정액매수(DCA)</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" title={draftSide === "sell" ? "켜면 적립 포인트로 계산한 수량만 매도합니다. 끄면 보유 전량을 매도합니다." : "켜면 NCAV 조건을 무시하고 예산으로 정액 매수 (ETF 등)"}>{draftSide === "sell" ? "정액매도(DCA)" : "정액매수(DCA)"}</label>
               <button type="button" onClick={() => setDraftDca(v => !v)}
-                className={cn("w-full sm:w-auto px-2.5 py-1.5 sm:py-1 text-xs font-bold rounded-lg border transition-colors",
+                aria-pressed={draftDca}
+                className={cn("min-h-11 sm:min-h-0 w-full sm:w-auto px-2.5 py-1.5 sm:py-1 text-xs font-bold rounded-lg border transition-colors",
                   draftDca ? "bg-brand text-white border-brand" : "bg-white dark:bg-surface-dark-canvas text-neutral-500 border-neutral-300 dark:border-surface-dark-elevated")}>
                 {draftDca ? "ON" : "OFF"}
               </button>
             </div>
+            {draftSide === "sell" && <p className="col-span-2 text-[11px] text-rose-500">{draftDca ? "적립 포인트 ÷ 1주 가격으로 수량을 계산하고 보유 수량 내에서 매도합니다. 주문 접수 성공 시 사용 포인트를 차감합니다." : "정액매도 OFF: 보유 수량 전량을 매도합니다."}</p>}
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
               <input
                 type="number"
                 min={1}
@@ -990,11 +994,11 @@ function GroupSection({
                 value={draftActiveCount}
                 onChange={e => setDraftActiveCount(e.target.value)}
                 placeholder="계좌 기본값"
-                className="w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-xs"
+                className="min-h-11 sm:min-h-0 w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">NCAV 비율</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">NCAV 비율</label>
               <input
                 type="number"
                 min={0}
@@ -1002,11 +1006,11 @@ function GroupSection({
                 value={draftNcavRatio}
                 onChange={e => setDraftNcavRatio(e.target.value)}
                 placeholder="계좌 기본값"
-                className="w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-xs"
+                className="min-h-11 sm:min-h-0 w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">월 예산(원)</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">월 예산(원)</label>
               <input
                 type="number"
                 min={0}
@@ -1014,21 +1018,21 @@ function GroupSection({
                 value={draftBudget}
                 onChange={e => setDraftBudget(e.target.value)}
                 placeholder="계좌예산 분배"
-                className="w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-xs"
+                className="min-h-11 sm:min-h-0 w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
             <div className="col-span-2 flex items-center gap-1.5 justify-end sm:ml-auto">
               {(groupQuantRule || groupBudget != null) && (
                 <button
                   onClick={() => { onSaveGroupSettings({ quant_rule: null, budget_krw: null }); setShowRuleEditor(false); }}
-                  className="rounded px-2.5 py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-surface-dark-elevated"
+                  className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-surface-dark-elevated"
                 >
                   초기화
                 </button>
               )}
               <button
                 onClick={() => setShowRuleEditor(false)}
-                className="rounded px-2.5 py-1 text-xs text-neutral-500 border border-neutral-200 dark:border-surface-dark-elevated"
+                className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-neutral-500 border border-neutral-200 dark:border-surface-dark-elevated"
               >
                 취소
               </button>
@@ -1048,7 +1052,7 @@ function GroupSection({
                   });
                   setShowRuleEditor(false);
                 }}
-                className="rounded px-2.5 py-1 text-xs font-bold bg-brand text-white hover:bg-brand-hover"
+                className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-bold bg-brand text-white hover:bg-brand-hover"
               >
                 저장
               </button>

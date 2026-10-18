@@ -58,6 +58,7 @@ import { getQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
+import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
 import StockListTable from "@/components/balance/stockListTable";
@@ -708,6 +709,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 togglePending={tradingStatus.state === "pending"}
                 className="mb-5"
               />
+              <TradingCyclePanel country="US" tradingActive={tradingStatus.US} capital={usCapital} activity={usActivity} />
               <StockListTable
                 data={usCapital}
                 kakaoTotal={kakaoTotal}
@@ -780,7 +782,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 country="US"
                 capital={usCapital}
                 activity={usActivity}
-                onRefresh={() => dispatch(reqGetUsTradingActivity(balanceKey))}
+                onRefresh={() => { dispatch(reqGetUsTradingActivity(balanceKey)); dispatch(reqGetUsCapital(balanceKey)); }}
               />
             </SectionPanel>
           ) : null,
