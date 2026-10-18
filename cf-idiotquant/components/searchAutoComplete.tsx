@@ -3,7 +3,7 @@
 import { useState, useMemo, KeyboardEvent, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { buildStockSearchIndex, findStockSuggestions, type StockSearchName } from "@/lib/utils/stockSuggestions";
-import { Search, CornerDownLeft, Sparkles, AlertCircle, X } from "lucide-react";
+import { Search, CornerDownLeft, AlertCircle, X } from "lucide-react";
 
 interface SearchAutocompleteProps {
     validCorpNameArray: string[];
@@ -68,12 +68,11 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
                 const container = dropdownRef.current;
                 const activeTop = activeElement.offsetTop;
                 const activeBottom = activeTop + activeElement.offsetHeight;
-                const labelHeight = container.firstElementChild?.getBoundingClientRect().height ?? 0;
-                const containerTop = container.scrollTop + labelHeight;
+                const containerTop = container.scrollTop;
                 const containerBottom = container.scrollTop + container.clientHeight;
 
                 if (activeTop < containerTop) {
-                    container.scrollTop = activeTop - labelHeight;
+                    container.scrollTop = activeTop;
                 } else if (activeBottom > containerBottom) {
                     container.scrollTop = activeBottom - container.clientHeight;
                 }
@@ -189,19 +188,6 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
                     aria-label="종목 검색 결과"
                     className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark/80 rounded-xl shadow-sm max-h-[min(19rem,40dvh)] overflow-y-auto overscroll-contain touch-pan-y p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top"
                 >
-                    {/* 목록 안에 고정한다. 페이지 헤더의 .sticky.top-0 위치 보정과 분리한다. */}
-                    <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-border-subtle-dark/50 mb-1 flex justify-between items-center sticky top-[0px] bg-white/90 dark:bg-surface-dark-canvas/90 backdrop-blur-md z-10">
-                        <span className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-brand-ink dark:text-brand-ink" />
-                            퀀트 인텔리전스 추천
-                        </span>
-                        {suggestions.length > 0 && selectedIndex >= 0 && (
-                            <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 font-mono">
-                                {selectedIndex + 1} / {suggestions.length}
-                            </span>
-                        )}
-                    </div>
-
                     {suggestions.length > 0 ? (
                         suggestions.map((suggestion: string, index: number) => {
                             const isSelected = selectedIndex === index;
