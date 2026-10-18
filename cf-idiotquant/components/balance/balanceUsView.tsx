@@ -7,6 +7,7 @@ import {
   Wallet, TrendingUp, BarChart3, RefreshCw,
   AlertCircle, Database,
   PieChart, ClipboardList, TrendingDown, Power, SlidersHorizontal, Activity, KeyRound,
+  ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark, Banknote, Layers, Coins,
 } from "lucide-react";
 import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
 import TradingAccountList from "@/components/balance/tradingAccountList";
@@ -510,7 +511,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           </button>
           {exRate > 0 && (
             <div className="flex items-center gap-2 bg-white dark:bg-surface-dark-card px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
-              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
+              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
               <span className="text-sm font-mono font-black text-brand-ink dark:text-brand-ink">
                 {exRate.toLocaleString()}원
               </span>
@@ -573,32 +574,38 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-2 pb-0.5">
                     <MetricChip
+                      icon={<Banknote size={13} />}
                       label="매입원금 (USD)"
                       value={fmtUsd(pchsAmtUsd)}
                       valueClass="text-neutral-700 dark:text-neutral-300"
                     />
                     <MetricChip
+                      icon={<ArrowUpFromLine size={13} />}
                       label="출금 가능 (USD)"
                       value={fmtUsd(wdrwPsblUsd)}
                       valueClass="text-emerald-500"
                     />
                     <MetricChip
+                      icon={<ArrowDownToLine size={13} />}
                       label="금일 매수 (USD)"
                       value={fmtUsd(frcr_buy_smtl)}
                       valueClass="text-rose-400"
                     />
                     <MetricChip
+                      icon={<ArrowUpFromLine size={13} />}
                       label="금일 매도 (USD)"
                       value={fmtUsd(frcr_sll_smtl)}
                       valueClass="text-brand-ink"
                     />
                     <MetricChip
+                      icon={<ArrowLeftRight size={13} />}
                       label="금일 순매수"
                       value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
                       valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     {cmaEvluAmtUs > 0 && (
                       <MetricChip
+                        icon={<Coins size={13} />}
                         label="CMA 평가 (KRW)"
                         value={fmtKrw(cmaEvluAmtUs)}
                         valueClass="text-indigo-500 dark:text-indigo-400"
@@ -606,6 +613,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     )}
                     {positions.length > 0 && (
                       <MetricChip
+                        icon={<Layers size={13} />}
                         label="보유 종목 수"
                         value={`${positions.length}종목`}
                         valueClass="text-neutral-700 dark:text-neutral-300"
@@ -613,6 +621,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     )}
                     {positions.length > 0 && totalAssetKrw > 0 && (
                       <MetricChip
+                        icon={<PieChart size={13} />}
                         label="주식 비중"
                         value={`${stockWeight.toFixed(1)}%`}
                         valueClass="text-indigo-500 dark:text-indigo-400"
@@ -620,6 +629,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     )}
                     {totLoanAmtUs > 0 && (
                       <MetricChip
+                        icon={<Landmark size={13} />}
                         label="대출 잔고 (KRW)"
                         value={fmtKrw(totLoanAmtUs)}
                         valueClass="text-orange-500"

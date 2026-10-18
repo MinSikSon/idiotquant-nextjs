@@ -160,12 +160,12 @@ export function EmptyRow({ colSpan, message }: { colSpan: number; message: strin
 // =========================================================================
 // 상세 지표 칩 (스크롤 스트립용 — KR/US 공용)
 // =========================================================================
-export function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neutral-100" }: {
-  label: string; value: string; valueClass?: string;
+export function MetricChip({ icon, label, value, valueClass = "text-neutral-900 dark:text-neutral-100" }: {
+  icon: React.ReactNode; label: string; value: string; valueClass?: string;
 }) {
   return (
     <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-col gap-0.5">
-      <span className="text-[11px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{label}</span>
+      <span className="flex items-center gap-1.5 text-[11px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
       <span className={cn("text-sm font-mono font-black break-words", valueClass)}>{value}</span>
     </div>
   );
@@ -183,9 +183,9 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
   return (
     <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-2.5 py-2 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-3 md:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
-      <div className="contents min-[480px]:flex min-[480px]:items-center min-[480px]:justify-between">
+      <div className="flex items-center gap-2 min-[480px]:justify-between">
         <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
-        <div className={cn("hidden min-[480px]:block p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
+        <div aria-hidden="true" className={cn("order-first min-[480px]:order-last p-1.5 min-[480px]:p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div className="min-w-0 text-right min-[480px]:text-left">
         <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", valueColor)}>{value}</div>
@@ -212,9 +212,9 @@ export function UsdKpiCard({
   return (
     <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-2.5 py-2 min-[480px]:p-3 md:p-5 shadow-sm overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
-      <div className="contents min-[480px]:flex min-[480px]:items-center min-[480px]:justify-between">
+      <div className="flex items-center gap-2 min-[480px]:justify-between">
         <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
-        <div className={cn("hidden min-[480px]:block p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
+        <div aria-hidden="true" className={cn("order-first min-[480px]:order-last p-1.5 min-[480px]:p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div className="min-w-0 text-right min-[480px]:text-left">
         <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", mainColor)}>{mainValue}</div>
