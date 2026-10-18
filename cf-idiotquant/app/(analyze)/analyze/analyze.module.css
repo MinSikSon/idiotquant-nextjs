@@ -138,6 +138,28 @@
   .step { padding: 20px; }
   .stepTop { margin-bottom: 16px; }
 }
+@media (max-width: 767px) {
+  .page .header :global([data-header-main]),
+  .page .header .searchRow,
+  .page .header .tabsRow,
+  .page .header .tabStrip,
+  .page .header .tab {
+    transition: padding 220ms ease, min-height 220ms ease, font-size 220ms ease;
+  }
+  .page .header h1 { transition: font-size 220ms ease, line-height 220ms ease; }
+  .page .searchField > div > div:first-child {
+    transition: padding 220ms ease, min-height 220ms ease, border-radius 220ms ease, border-color 150ms ease;
+  }
+  .page .searchField :global(input[role="combobox"]) { transition: min-height 220ms ease; }
+  .page .searchField > div > div:first-child > svg {
+    width: 18px;
+    height: 18px;
+    transition: width 220ms ease, height 220ms ease;
+  }
+  .page .headerCompact .searchField > div > div:first-child > svg { width: 14px; height: 14px; }
+  .page .searchField > div > div:first-child > button svg { transition: width 220ms ease, height 220ms ease; }
+  .page .headerCompact .searchField > div > div:first-child > button svg { width: 14px; height: 14px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { transition-duration: 0ms; animation-duration: 0ms; }
 }
