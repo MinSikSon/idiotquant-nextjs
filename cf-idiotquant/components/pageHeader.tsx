@@ -57,6 +57,7 @@ export function PageHeader({
   width = "data",
   sticky = false,
   mobileCompact = false,
+  mobileTitleInNavigation = false,
   containerClassName,
   className,
 }: {
@@ -76,6 +77,8 @@ export function PageHeader({
   sticky?: boolean;
   /** 좁은 화면에서 제목·요약·아이콘을 짧은 헤더로 배치한다. */
   mobileCompact?: boolean;
+  /** 모바일 상단바가 페이지명을 표시하면 반복되는 제목을 시각적으로 접는다. 종목명 등 대상 제목은 유지한다. */
+  mobileTitleInNavigation?: boolean;
   /** 프리셋 밖의 폭이 필요할 때만. (예: 초대 수락 같은 좁은 단일 폼) */
   containerClassName?: string;
   className?: string;
@@ -83,6 +86,8 @@ export function PageHeader({
   return (
     <header
       data-page-header
+      data-title-in-navigation={mobileTitleInNavigation || undefined}
+      data-header-title-only={mobileTitleInNavigation && !actions && !compactMeta || undefined}
       className={cn(
         PAGE_HEADER_CHROME,
         sticky && "sticky top-0 z-30",
@@ -95,7 +100,7 @@ export function PageHeader({
           mobileCompact && "flex-row items-center gap-2 sm:items-end sm:gap-3"
         )}>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div data-header-title className="flex items-center gap-2">
               {icon && <span className="shrink-0 text-neutral-500 flex items-center" aria-hidden>{icon}</span>}
               <h1 className={cn("text-xl font-semibold tracking-[-0.04em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
                 {title}

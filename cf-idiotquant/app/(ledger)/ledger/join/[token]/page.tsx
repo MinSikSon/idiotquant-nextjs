@@ -73,6 +73,7 @@ export default function LedgerJoinPage() {
     const header = (
         <PageHeader
             title="가계부 초대"
+            mobileTitleInNavigation
             containerClassName="max-w-lg mx-auto px-4 sm:px-6"
         />
     );

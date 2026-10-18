@@ -439,7 +439,6 @@ function AnalyzeContent() {
   const tickerFromUrl = searchParams.get('ticker');
 
   useEffect(() => {
-    if (!tickerFromUrl) { setHeaderCompact(false); return; }
     let frame: number | null = null;
     const update = () => {
       frame = null;
@@ -592,7 +591,7 @@ function AnalyzeContent() {
 
       {/* ── 헤더 ── */}
       <PageHeader
-        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader, headerCompact && !searchOpen && styles.headerCompact)}
+        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader, headerCompact && styles.headerCompact)}
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
@@ -604,6 +603,7 @@ function AnalyzeContent() {
         compactMeta={isPriceLoaded ? <span className={styles.price}>현재가 {headerPrice}</span> : undefined}
         sticky
         mobileCompact={!!tickerFromUrl}
+        mobileTitleInNavigation={!isPriceLoaded}
         actions={tickerFromUrl ? <>
           {isPriceLoaded && <>
           {isLoggedIn ? <button type="button" onClick={handleToggleLike}

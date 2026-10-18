@@ -178,6 +178,7 @@ export default function ProfilePage() {
                 containerClassName={PROFILE_CONTAINER}
                 icon={<UserRound size={18} />}
                 title={isNewUser ? "시작하기" : "내 계정"}
+                mobileTitleInNavigation={!isNewUser}
             />
             <div className={cn(PROFILE_CONTAINER, "py-6 md:py-10 space-y-4")}>
 
