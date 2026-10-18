@@ -354,6 +354,23 @@ const VERDICT_TONE = {
 // =========================================================================
 // 메인 콘텐츠
 // =========================================================================
+function StockName({ name }: { name: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <button
+      type="button"
+      className={styles.stockName}
+      aria-expanded={expanded}
+      aria-label={`${name} 전체 이름 ${expanded ? '접기' : '보기'}`}
+      title={name}
+      onClick={() => setExpanded(value => !value)}
+    >
+      <span>{name}</span>
+      <ChevronDown size={14} aria-hidden="true" className={cn("shrink-0", expanded && "rotate-180")} />
+    </button>
+  );
+}
+
 function AnalyzeContent() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -543,7 +560,7 @@ function AnalyzeContent() {
       <PageHeader
         className={cn(styles.header, !tickerFromUrl && styles.emptyHeader)}
         containerClassName={ANALYZE_WIDTH}
-        title={isPriceLoaded ? displayName : '종목 분석'}
+        title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
         meta={isPriceLoaded ? <>
           <span>{[tickerLabel, marketName].filter(Boolean).join(' · ')}</span>
