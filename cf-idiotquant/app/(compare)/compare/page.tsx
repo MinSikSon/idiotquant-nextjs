@@ -233,6 +233,7 @@ export default function ComparePage() {
   return <div className="min-h-screen bg-surface-canvas text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100">
     <PageHeader
       title="종목 비교"
+      mobileTitleInNavigation
       description="① 날짜 추가 → ② 종목 추가 → ③ 날짜별 종가와 변화율 비교"
       meta="다른 페이지에 다녀와도 비교 내용이 유지됩니다."
       mobileCompact

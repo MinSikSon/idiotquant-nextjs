@@ -480,6 +480,7 @@ export default function LedgerPage() {
     const header = (
         <PageHeader
             title={viewingShared ? `${activeLedger?.owner_name ?? "공유"}님의 가계부` : "가계부"}
+            mobileTitleInNavigation={!viewingShared}
             meta={
                 viewingShared
                     ? <><span>함께 쓰는 가계부</span><span aria-hidden>·</span><span>기입·수정이 모두 반영됩니다</span></>

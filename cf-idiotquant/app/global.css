@@ -474,9 +474,13 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 @media (max-width: 767px) {
   html[data-mobile-header-compact="true"] { --topbar-h: 44px; }
   html[data-mobile-header-compact="true"] [data-mobile-header] { height: 44px; }
+  /* 페이지명은 상단바에 한 번만 보인다. h1은 스크린 리더의 문서 구조에 남긴다. */
+  html[data-mobile-header-compact="true"] [data-title-in-navigation] [data-header-title] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html[data-mobile-header-compact="true"] [data-title-in-navigation] [data-header-detail] { display: none; }
   html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-main] { padding-top: 8px; padding-bottom: 8px; }
   html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-row] { flex-direction: row; align-items: center; gap: 8px; }
   html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) h1 { font-size: 16px; line-height: 1.4; }
   html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-detail] { display: none; }
   html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-compact-meta] { display: flex; }
+  html[data-mobile-header-compact="true"] [data-page-header][data-header-title-only] [data-header-main] { height: 0; padding-top: 0; padding-bottom: 0; }
 }

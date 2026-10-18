@@ -122,6 +122,7 @@ export default function AdminPage() {
         width="content"
         icon={<Shield size={18} />}
         title="어드민 대시보드"
+        mobileTitleInNavigation
         meta="카카오 가입 회원 현황"
       />
       <div className={cn(PAGE_WIDTH.content, "py-8 md:py-12")}>
