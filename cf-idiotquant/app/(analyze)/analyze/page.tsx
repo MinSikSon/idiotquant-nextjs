@@ -600,6 +600,8 @@ function AnalyzeContent() {
           <div className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
             <div className={cn("flex-1 min-w-0", styles.searchField)}>
               <SearchAutocomplete
+                autoFocus={searchOpen}
+                onEscape={() => setSearchOpen(false)}
                 placeHolder="국내 종목명 또는 미국 티커 입력"
                 onSearchButton={handleSearch}
                 validCorpNameArray={staticStockData.allTickers}
