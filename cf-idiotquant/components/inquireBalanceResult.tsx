@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
     Globe,
+    Wallet, Percent, Layers, Banknote, BadgeDollarSign, Landmark, Building2,
     TrendingUp,
     RefreshCw,
     Info,
@@ -305,17 +306,20 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             <div className="bg-white dark:bg-surface-dark-card rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-border-subtle-dark">
                     <SummaryItem
+                        icon={<Percent size={13} />}
                         label="평가 손익률"
                         value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
                         subValue={`손익 합계: ${formatValue(evlu_smtl - pchs_smtl, "MONEY")}`}
                         colorClass={totalProfitRate >= 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     <SummaryItem
+                        icon={<BadgeDollarSign size={13} />}
                         label="총 평가금액"
                         value={formatValue(evlu_smtl, "MONEY")}
                         subValue={`매입 합계: ${formatValue(pchs_smtl, "MONEY")}`}
                     />
                     <SummaryItem
+                        icon={<Landmark size={13} />}
                         label="순자산 (NAV)"
                         value={formatValue(evlu_smtl + cash, "MONEY")}
                         subValue={isUs && exRate ? `추정 달러잔고: 약 $${Math.round((evlu_smtl + cash) / exRate).toLocaleString()}` : `예수금: ${formatValue(cash, "MONEY")}`}
@@ -373,10 +377,10 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     );
 }
 
-function SummaryItem({ label, value, subValue, colorClass = "dark:text-white" }: any) {
+function SummaryItem({ icon, label, value, subValue, colorClass = "dark:text-white" }: any) {
     return (
         <div className="p-2.5 md:p-6 text-center md:text-left">
-            <span className="block text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1 md:mb-2">{label}</span>
+            <span className="flex items-center justify-center md:justify-start gap-1.5 text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1 md:mb-2"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
             <div className={`text-xl md:text-2xl font-black tracking-tighter md:mb-1 ${colorClass}`}>{value}</div>
             <span className="text-xs font-bold text-neutral-500">{subValue}</span>
         </div>
@@ -468,19 +472,19 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                         {/* 항목명과 값을 한 줄에 배치 */}
                         <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-x-4 gap-y-1 text-xs">
                             <div className="flex items-baseline justify-between gap-2">
-                                <span className="shrink-0 text-neutral-500 dark:text-neutral-400 font-bold">보유수량</span>
+                                <span className="shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 font-bold"><Layers size={12} aria-hidden="true" />보유수량</span>
                                 <span className="min-w-0 text-right font-mono font-bold dark:text-neutral-300">{formatValue(qty, "QTY")}</span>
                             </div>
                             <div className="flex items-baseline justify-between gap-2">
-                                <span className="shrink-0 text-neutral-500 dark:text-neutral-400 font-bold">현재가</span>
+                                <span className="shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 font-bold"><Banknote size={12} aria-hidden="true" />현재가</span>
                                 <span className="min-w-0 text-right font-mono font-bold dark:text-neutral-300">{formatValue(price, "MONEY")}</span>
                             </div>
                             <div className="flex items-baseline justify-between gap-2">
-                                <span className="shrink-0 text-neutral-500 dark:text-neutral-400 font-bold">매입금액</span>
+                                <span className="shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 font-bold"><Wallet size={12} aria-hidden="true" />매입금액</span>
                                 <span className="min-w-0 text-right font-mono font-bold dark:text-neutral-400">{formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}</span>
                             </div>
                             <div className="flex items-baseline justify-between gap-2">
-                                <span className="shrink-0 text-neutral-500 dark:text-neutral-400 font-bold">평가금액</span>
+                                <span className="shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 font-bold"><BadgeDollarSign size={12} aria-hidden="true" />평가금액</span>
                                 <span className="min-w-0 text-right font-mono font-black dark:text-white">{formatValue(evalAmount, "MONEY")}</span>
                             </div>
                         </div>
@@ -535,12 +539,12 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                     <thead>
                         <tr className="bg-[#fcfaf7] dark:bg-surface-dark-muted/50 border-b border-neutral-100 dark:border-border-subtle-dark">
                             <th className="p-4 text-center w-16 text-[10px] font-black text-neutral-400 uppercase">#</th>
-                            <TableHeader label="종목명" sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
-                            <TableHeader label="보유수량" sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                            <TableHeader label={isUs ? "현재가 / 매입단가 (KRW 환산)" : "현재가 / 매입단가 (KRW)"} sortKey="price" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                            <TableHeader label="수익률" sortKey="profit_rt" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                            <TableHeader label="매입금액" sortKey="pchs_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                            <TableHeader label="평가금액" sortKey="evlu_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="종목명" icon={<Building2 size={12} />} sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="보유수량" icon={<Layers size={12} />} sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label={isUs ? "현재가 / 매입단가 (KRW 환산)" : "현재가 / 매입단가 (KRW)"} icon={<Banknote size={12} />} sortKey="price" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="수익률" icon={<Percent size={12} />} sortKey="profit_rt" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="매입금액" icon={<Wallet size={12} />} sortKey="pchs_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="평가금액" icon={<BadgeDollarSign size={12} />} sortKey="evlu_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
                             <th className="p-4 text-center text-[10px] font-black text-neutral-400 uppercase">Action</th>
                         </tr>
                     </thead>
@@ -624,7 +628,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
     );
 }
 
-function TableHeader({ label, sortKey, align = "left", currentConfig, onSort }: any) {
+function TableHeader({ label, icon, sortKey, align = "left", currentConfig, onSort }: any) {
     const isActive = currentConfig.key === sortKey;
     return (
         <th
@@ -632,6 +636,7 @@ function TableHeader({ label, sortKey, align = "left", currentConfig, onSort }: 
             onClick={() => onSort(sortKey)}
         >
             <div className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
+                <span aria-hidden="true" className="shrink-0 text-neutral-400">{icon}</span>
                 <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? "text-brand-ink" : "text-neutral-400"}`}>
                     {label}
                 </span>

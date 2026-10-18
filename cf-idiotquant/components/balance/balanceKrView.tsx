@@ -6,6 +6,7 @@ import {
   LayoutDashboard, ChevronRight, MapPin,
   Wallet, Coins, Percent,
   Database, User, PieChart, ClipboardList, Power, SlidersHorizontal, Activity, KeyRound,
+  ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark,
 } from "lucide-react";
 import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
 import TradingAccountList from "@/components/balance/tradingAccountList";
@@ -580,27 +581,32 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-2 pb-0.5">
                     <MetricChip
+                      icon={<PnlIcon positive={isDailyPositive} size={13} />}
                       label="당일 등락"
                       value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
                       valueClass={isDailyPositive ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     <MetricChip
+                      icon={<ArrowDownToLine size={13} />}
                       label="금일 매수"
                       value={`${thdtBuyAmt.toLocaleString()}원`}
                       valueClass="text-rose-400 dark:text-rose-400"
                     />
                     <MetricChip
+                      icon={<ArrowUpFromLine size={13} />}
                       label="금일 매도"
                       value={`${thdtSllAmt.toLocaleString()}원`}
                       valueClass="text-brand-ink dark:text-brand-ink"
                     />
                     <MetricChip
+                      icon={<ArrowLeftRight size={13} />}
                       label="금일 순매수"
                       value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
                       valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     {totLoanAmt > 0 && (
                       <MetricChip
+                        icon={<Landmark size={13} />}
                         label="대출 잔고"
                         value={`${totLoanAmt.toLocaleString()}원`}
                         valueClass="text-orange-500"
