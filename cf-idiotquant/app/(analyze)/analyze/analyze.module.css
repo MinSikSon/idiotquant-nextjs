@@ -68,6 +68,21 @@
 .tab { flex: 1; min-height: 44px; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 460; color: var(--analysis-muted); transition: background-color 100ms, color 100ms; }
 .tab:hover { color: var(--analysis-ink); background: var(--analysis-panel); }
 .tabActive, .tabActive:hover { background: var(--analysis-lilac); color: var(--analysis-lilac-ink); font-weight: 540; }
+.tabsRow { padding-bottom: 10px; }
+.page .headerCompact :global([data-header-main]) { padding-top: 6px; padding-bottom: 6px; }
+.page .headerCompact :global([data-header-row]) { flex-direction: row; align-items: center; gap: 8px; }
+.page .headerCompact :global([data-header-row]) > div:first-child { display: flex; align-items: center; gap: 8px; }
+.page .headerCompact :global([data-header-row]) > div:first-child > div:first-child { flex: 1; min-width: 0; }
+.page .header.headerCompact h1 { font-size: 16px; line-height: 1.4; }
+.page .headerCompact :global([data-header-detail]) { display: none; }
+.page .headerCompact :global([data-header-compact-meta]) { display: flex; flex-shrink: 0; margin-top: 0; white-space: nowrap; }
+.page .headerCompact .price { font-size: 12px; }
+.page .headerCompact .tabsRow { padding-bottom: 4px; }
+.page .headerCompact .tabStrip { padding: 2px; gap: 2px; }
+.page .headerCompact .tab { min-height: 36px; padding: 4px 8px; font-size: 12px; }
+@media (pointer: coarse) {
+  .page .headerCompact .tab { min-height: 44px; }
+}
 .page .history { border-color: var(--analysis-line); background: transparent; }
 .page .historyButton { background: var(--analysis-panel); border-color: var(--analysis-line); border-radius: 8px; font-weight: 460; }
 .page .rank { color: var(--analysis-muted); background: var(--analysis-soft); font-weight: 540; }

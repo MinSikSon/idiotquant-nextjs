@@ -408,6 +408,7 @@ function AnalyzeContent() {
   const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
   const [searchOpen, setSearchOpen] = useState(false);
+  const [headerCompact, setHeaderCompact] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -426,6 +427,7 @@ function AnalyzeContent() {
       addToast('error', '국내·미국 종목명으로 검색 결과를 선택하거나 종목코드·티커를 확인해 주세요.');
       return;
     }
+    setSearchOpen(false);
     startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`); });
   }, [router, addToast, staticStockData.allTickers]);
 
@@ -435,6 +437,25 @@ function AnalyzeContent() {
   }, [searchParams, name, onSearch]);
 
   const tickerFromUrl = searchParams.get('ticker');
+
+  useEffect(() => {
+    if (!tickerFromUrl) { setHeaderCompact(false); return; }
+    let frame: number | null = null;
+    const update = () => {
+      frame = null;
+      // 높이가 줄어 scrollY가 되돌아가도 헤더가 깜빡이지 않도록 복원 기준을 분리한다.
+      setHeaderCompact(previous => window.scrollY <= 24 ? false : previous || window.scrollY >= 128);
+    };
+    const onScroll = () => {
+      if (frame === null) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [tickerFromUrl]);
 
   const handleToggleLike = useCallback(() => {
     if (!tickerFromUrl) return;
@@ -571,7 +592,7 @@ function AnalyzeContent() {
 
       {/* ── 헤더 ── */}
       <PageHeader
-        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader)}
+        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader, headerCompact && !searchOpen && styles.headerCompact)}
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
@@ -583,7 +604,8 @@ function AnalyzeContent() {
         compactMeta={isPriceLoaded ? <span className={styles.price}>현재가 {headerPrice}</span> : undefined}
         sticky
         mobileCompact={!!tickerFromUrl}
-        actions={isPriceLoaded ? <>
+        actions={tickerFromUrl ? <>
+          {isPriceLoaded && <>
           {isLoggedIn ? <button type="button" onClick={handleToggleLike}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
             className={cn(PAGE_ACTION_CLS, isInWatchlist && 'text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400')}>
@@ -607,13 +629,14 @@ function AnalyzeContent() {
             }
             return snapshot;
           }} />
+          </>}
           {!searchOpen && <button type="button" onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색" className={cn(PAGE_ACTION_CLS, styles.searchAction)}>
             <Search size={14} />
           </button>}
         </> : undefined}
       >
-        {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
-        {(!isPriceLoaded || searchOpen) && (
+        {/* 종목 선택 즉시 접는다. 조회 실패 중에도 돋보기로 다시 검색할 수 있다. */}
+        {(!tickerFromUrl || searchOpen) && (
           <div className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
             <div className={cn("flex-1 min-w-0", styles.searchField)}>
               <SearchAutocomplete
@@ -626,7 +649,7 @@ function AnalyzeContent() {
                 onSearchStateChange={() => {}}
               />
             </div>
-            {isPriceLoaded && (
+            {tickerFromUrl && (
               <button onClick={() => setSearchOpen(false)} aria-label="검색 닫기"
                 className={PAGE_ACTION_CLS}>
                 <X size={14} />
@@ -638,7 +661,7 @@ function AnalyzeContent() {
         {/* 상세 분석 탭 — 헤더 안에 두면 스크롤 위치와 무관하게 항상 닿는다.
             재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
         {isPriceLoaded && (
-          <div className={cn(ANALYZE_WIDTH, "pb-2.5")}>
+          <div className={cn(ANALYZE_WIDTH, styles.tabsRow)}>
             <div className={styles.tabStrip} aria-label="분석 보기 선택">
               {DETAIL_TABS.map(({ key, label }) => (
                 <button
