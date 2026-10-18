@@ -51,6 +51,7 @@ export function PageHeader({
   title,
   description,
   meta,
+  compactMeta,
   actions,
   children,
   width = "data",
@@ -64,6 +65,8 @@ export function PageHeader({
   title: React.ReactNode;
   description?: React.ReactNode;
   meta?: React.ReactNode;
+  /** 모바일 스크롤 요약에도 남길 핵심 정보(예: 현재가). */
+  compactMeta?: React.ReactNode;
   actions?: React.ReactNode;
   /** 검색줄·탭처럼 페이지별로 필요한 도구를 헤더 아래에 둔다. */
   children?: React.ReactNode;
@@ -79,14 +82,15 @@ export function PageHeader({
 }) {
   return (
     <header
+      data-page-header
       className={cn(
         PAGE_HEADER_CHROME,
         sticky && "sticky top-0 z-30",
         className
       )}
     >
-      <div className={cn(containerClassName ?? PAGE_WIDTH[width], "pt-5 pb-[18px]", mobileCompact && "py-2.5 sm:pt-5 sm:pb-[18px]")}>
-        <div className={cn(
+      <div data-header-main className={cn(containerClassName ?? PAGE_WIDTH[width], "pt-5 pb-[18px]", mobileCompact && "py-2.5 sm:pt-5 sm:pb-[18px]")}>
+        <div data-header-row className={cn(
           "flex flex-col sm:flex-row sm:items-end justify-between gap-3",
           mobileCompact && "flex-row items-center gap-2 sm:items-end sm:gap-3"
         )}>
@@ -97,15 +101,16 @@ export function PageHeader({
                 {title}
               </h1>
             </div>
-            {description && <p className="mt-1.5 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">{description}</p>}
+            {description && <p data-header-detail className="mt-1.5 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">{description}</p>}
             {meta && (
-              <div className={cn(
+              <div data-header-detail className={cn(
                 "mt-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500 flex items-center flex-wrap gap-x-1.5 gap-y-1",
                 mobileCompact && "mt-1 sm:mt-1.5"
               )}>
                 {meta}
               </div>
             )}
+            {compactMeta && <div data-header-compact-meta className="hidden mt-1 text-xs font-medium">{compactMeta}</div>}
           </div>
           {actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
         </div>
