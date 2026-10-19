@@ -17,13 +17,26 @@ export function fundingMetrics(capital: KrUsCapitalType, cashKrw: number | null)
     const buyMonthly = buyGroups.reduce((sum, group) => sum + group.monthly_budget_krw, 0);
     const buyPerTick = buyGroups.reduce((sum, group) => sum + group.per_tick_krw, 0);
     const sellPerTick = groups.filter(group => group.side === "sell").reduce((sum, group) => sum + group.per_tick_krw, 0);
-    const buyIds = new Set((capital.groups ?? []).filter(group => group.side !== "sell" && group.id !== "__likes__").map(group => group.id));
-    const buyTokens = (capital.stock_list ?? []).filter(stock => stock.group_id && buyIds.has(stock.group_id)).reduce((sum, stock) => sum + (numericValue(stock.token) ?? 0), 0);
+    // 현재 ON인 풀의 활성 종목만 합산한다. 마지막 리필 계획은 설정 변경보다 늦을 수 있다.
+    const activeGroups = new Map((capital.groups ?? []).filter(group => group.id !== "__likes__" && group.is_trading_active !== false).map(group => [group.id, group]));
+    let activeBuy = 0, activeSell = 0, activeStocks = 0;
+    const activePools = new Set<string>();
+    for (const stock of capital.stock_list ?? []) {
+        const group = stock.group_id ? activeGroups.get(stock.group_id) : undefined;
+        if (!group || stock.action !== "active") continue;
+        const amount = Math.max(0, numericValue(stock.token) ?? 0);
+        if (group.side === "sell") activeSell += amount;
+        else activeBuy += amount;
+        activeStocks++;
+        activePools.add(group.id);
+    }
+    const activeTotal = activeBuy + activeSell;
     const period = capital.refill_plan?.period_minutes || 5;
     const ratio = (value: number) => cashKrw !== null && cashKrw > 0 ? value / cashKrw * 100 : null;
-    return { hasPlan: !!capital.refill_plan, buyMonthly, buyPerTick, sellPerTick, buyTokens, period,
+    return { activeBuy, activeSell, activeTotal, activeStocks, activePools: activePools.size, activeRatio: ratio(activeTotal), activeBuyRatio: ratio(activeBuy), activeSellRatio: ratio(activeSell),
+        hasPlan: !!capital.refill_plan, buyMonthly, buyPerTick, sellPerTick, period,
         buyPerHour: buyPerTick * 60 / period, sellPerHour: sellPerTick * 60 / period,
-        monthlyRatio: capital.refill_plan ? ratio(buyMonthly) : null, tokenRatio: ratio(buyTokens),
+        monthlyRatio: capital.refill_plan ? ratio(buyMonthly) : null,
         tickRatio: capital.refill_plan ? ratio(buyPerTick) : null, hourlyRatio: capital.refill_plan ? ratio(buyPerTick * 60 / period) : null,
     };
 }

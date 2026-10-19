@@ -28,15 +28,13 @@ const capital = {
 test("충전 비중은 활성 매수 월 예산만 포함하고 매도 포인트·좋아요를 제외한다", () => {
     const result = fundingMetrics(capital, 2000);
     assert.equal(result.monthlyRatio, 50);
-    assert.equal(result.buyTokens, 200);
-    assert.equal(result.tokenRatio, 10);
     assert.equal(result.buyPerHour, 120);
     assert.equal(result.tickRatio, 0.5);
     assert.equal(result.hourlyRatio, 6);
     assert.equal(result.sellPerHour, 60);
     assert.equal(fundingMetrics(capital, 500).monthlyRatio, 200);
     assert.equal(fundingMetrics(capital, 0).monthlyRatio, null);
-    assert.equal(fundingMetrics(capital, null).tokenRatio, null);
+    assert.equal(fundingMetrics(capital, null).activeRatio, null);
     assert.equal(fundingMetrics({ ...capital, refill_plan: undefined }, 2000).monthlyRatio, null);
 });
 test("충전 그래프는 실제 기록만 합산하고 미래·범위 밖·음수 기록을 제외한다", () => {
@@ -61,4 +59,51 @@ test("국장·미장 스케줄을 한국 시간으로 구분하고 미국 자정
     assert.equal(refillWindowOpen("KR", Date.parse("2026-10-19T20:00:00+09:00")), false);
     assert.equal(refillWindowOpen("US", Date.parse("2026-10-20T02:00:00+09:00")), true);
     assert.equal(refillWindowOpen("US", Date.parse("2026-10-20T06:01:00+09:00")), false);
+});
+
+
+test("활성 예산은 ON인 풀의 활성 종목만 매수·매도로 합산한다", () => {
+    const current = {
+        ...capital,
+        groups: [{ id: "a", is_trading_active: true }, { id: "b", side: "sell", is_trading_active: true }, { id: "off", is_trading_active: false }, { id: "__likes__", is_trading_active: true }],
+        stock_list: [
+            { symbol: "A", group_id: "a", action: "active", token: 300 },
+            { symbol: "B", group_id: "a", action: "active", token: 200 },
+            { symbol: "C", group_id: "b", action: "active", token: 100 },
+            { symbol: "D", group_id: "a", action: "inactive", token: 9000 },
+            { symbol: "E", group_id: "off", action: "active", token: 9000 },
+            { symbol: "F", group_id: "__likes__", action: "active", token: 9000 },
+            { symbol: "G", group_id: null, action: "active", token: 9000 },
+            { symbol: "H", group_id: "deleted", action: "active", token: 9000 },
+        ],
+    } as KrUsCapitalType;
+    const result = fundingMetrics(current, 1000);
+    assert.equal(result.activeBuy, 500);
+    assert.equal(result.activeSell, 100);
+    assert.equal(result.activeTotal, 600);
+    assert.equal(result.activeRatio, 60);
+    assert.equal(result.activeBuyRatio, 50);
+    assert.equal(result.activeSellRatio, 10);
+    assert.equal(result.activeStocks, 3);
+    assert.equal(result.activePools, 2);
+    // 마지막 실행 계획과 무관하게 현재 설정을 즉시 반영한다.
+    const paused = fundingMetrics({ ...current, groups: current.groups!.map(group => ({ ...group, is_trading_active: false })) }, 1000);
+    assert.equal(paused.activeTotal, 0);
+    assert.equal(paused.activePools, 0);
+    assert.equal(paused.activeStocks, 0);
+});
+
+test("활성 예산은 음수·미확인 포인트를 제외하고 예수금 초과 비율을 그대로 제공한다", () => {
+    const current = { ...capital, stock_list: [
+        { symbol: "A", group_id: "a", action: "active", token: 1500 },
+        { symbol: "B", group_id: "a", action: "active", token: -100 },
+        { symbol: "C", group_id: "a", action: "active" },
+    ] } as KrUsCapitalType;
+    assert.equal(fundingMetrics(current, 1000).activeRatio, 150);
+    assert.equal(fundingMetrics(current, 0).activeRatio, null);
+    assert.equal(fundingMetrics(current, null).activeRatio, null);
+    assert.equal(fundingMetrics({ ...current, refill_plan: undefined }, 1000).activeTotal, 1500);
+    assert.equal(fundingMetrics({ ...current, stock_list: [] }, 1000).activeTotal, 0);
+    const usdCash = tradingCash("US", {state: "fulfilled", output2: [{crcy_cd: "USD", frcr_dncl_amt_2: "2", frst_bltn_exrt: "1500"}]});
+    assert.equal(fundingMetrics(current, usdCash.krw).activeRatio, 50);
 });
