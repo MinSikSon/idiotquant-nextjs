@@ -474,15 +474,15 @@ function StockListTable({
           <div className="flex items-center justify-between px-2.5 py-2 md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
-              <h3 className="text-sm font-bold text-red-900 dark:text-red-400">Global Token Master Control</h3>
+              <h3 className="text-sm font-bold text-red-900 dark:text-red-400">포인트 수동 관리</h3>
             </div>
             <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-red-600 text-white rounded uppercase tracking-wider">
               Master Only
             </span>
           </div>
           <div className="p-2.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <span className="text-[10px] font-bold text-red-800/60 dark:text-red-400/60 uppercase">Batch Refill</span>
-            <div className="flex flex-wrap gap-2">
+            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+            <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-sm border border-red-200 dark:border-red-800 overflow-hidden">
                   <button
@@ -509,6 +509,7 @@ function StockListTable({
                 </button>
               )}
             </div>
+            </details>
             {/* 새 그룹 추가 */}
             <div className="ml-auto flex items-center gap-2">
               {creating ? (
