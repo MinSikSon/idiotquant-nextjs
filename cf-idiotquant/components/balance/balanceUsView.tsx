@@ -58,6 +58,8 @@ import { getQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
+import TradingFundingPanel from "@/components/balance/tradingFundingPanel";
+import { tradingCash } from "@/lib/features/capital/fundingInsights";
 import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
@@ -338,7 +340,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
-      if (balanceKey) dispatch(reqGetOverseasStockTradingInquirePresentBalance(balanceKey));
+      if (balanceKey) { dispatch(reqGetOverseasStockTradingInquirePresentBalance(balanceKey)); dispatch(reqGetUsCapital(balanceKey)); }
     }, 30000);
     return () => clearInterval(interval);
   }, [autoRefresh, balanceKey, dispatch]);
@@ -699,6 +701,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     : null
                 }
               />
+              <TradingFundingPanel country="US" capital={usCapital} cash={tradingCash("US", kiBalance)} tradingActive={tradingStatus.US} live={autoRefresh} onToggleLive={() => setAutoRefresh(value => !value)} onRefresh={handleRefresh} />
               <TradingFlowSummary
                 country="US"
                 tradingActive={tradingStatus.US}
