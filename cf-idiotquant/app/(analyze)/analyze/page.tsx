@@ -631,14 +631,17 @@ function AnalyzeContent() {
             return snapshot;
           }} />
           </>}
-          {!searchOpen && <button type="button" onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색" className={cn(PAGE_ACTION_CLS, styles.searchAction)}>
-            <Search size={14} />
-          </button>}
+          <button type="button" onClick={() => setSearchOpen(open => !open)}
+            aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
+            aria-expanded={searchOpen} aria-controls="analyze-stock-search"
+            className={cn(PAGE_ACTION_CLS, styles.searchAction)}>
+            <Search size={14} aria-hidden="true" />검색
+          </button>
         </> : undefined}
       >
         {/* 종목 선택 즉시 접는다. 조회 실패 중에도 돋보기로 다시 검색할 수 있다. */}
         {(!tickerFromUrl || searchOpen) && (
-          <div className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
+          <div id="analyze-stock-search" className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
             <div className={cn("flex-1 min-w-0", styles.searchField)}>
               <SearchAutocomplete
                 autoFocus={searchOpen}
