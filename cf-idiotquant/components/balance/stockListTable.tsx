@@ -1,5 +1,7 @@
 "use client";
 
+import { DetailHelp } from "./detailHelp";
+
 import React, { useState, useMemo } from "react";
 import {
   Key,
@@ -431,20 +433,15 @@ function StockListTable({
         </div>
 
         {/* 적용 조건 */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-neutral-100 pt-3 dark:border-border-subtle-dark">
-          <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">적용 조건</span>
+        <details className="mt-2 border-t border-neutral-100 dark:border-border-subtle-dark"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">적용 조건 {conditionChips.length}개</summary><div className="flex flex-wrap items-center gap-1.5">
           {conditionChips.length > 0 ? conditionChips.map((c, i) => (
             <span key={i} className="rounded-full bg-surface-canvas px-2 py-0.5 text-[11px] font-mono text-neutral-600 dark:bg-surface-dark-card dark:text-neutral-300">{c}</span>
           )) : (
             <span className="text-[11px] text-neutral-400">조건 정보를 불러오는 중…</span>
           )}
-        </div>
+        </div></details>
 
-        {/* 동작 안내 */}
-        <p className="mt-2 flex items-start gap-1 text-[10px] leading-relaxed text-neutral-400">
-          <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b> → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-brand-ink">매매중</b>이 됩니다. <b className="font-bold text-rose-500">좋아요</b>는 관심목록이며, 매매하려면 <b className="font-bold text-brand-ink">복사</b>로 그룹에 넣으세요.
-        </p>
+        <div className="mt-1 flex items-center text-[11px] text-neutral-500 dark:text-neutral-400">매매·좋아요 안내<DetailHelp label="매매·좋아요 안내">자동매매 ON → 그룹 ON → 설정 조건을 충족하는 NCAV 상위 종목이 매매 대상이 됩니다. 좋아요는 관심목록이며, 매매하려면 복사로 풀에 넣으세요.</DetailHelp></div>
 
         {/* 상태 설명 토글 */}
         <button

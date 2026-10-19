@@ -1,12 +1,12 @@
 "use client";
 
+import { DetailHelp } from "@/components/balance/detailHelp";
 import React, { useEffect, useState, useMemo } from "react";
 import {
     Globe,
     Wallet, Percent, Layers, Banknote, BadgeDollarSign, Landmark, Building2,
     TrendingUp,
     RefreshCw,
-    Info,
     ChevronUp,
     ChevronDown,
     BarChart3,
@@ -303,7 +303,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {/* 메인 요약 카드 (계좌 선택기는 페이지 상단 AccountSelector로 이동됨) */}
-            <div className="bg-white dark:bg-surface-dark-card rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-sm overflow-hidden">
+            <details className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden"><summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">보유 자산 상세 지표</summary>
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-border-subtle-dark">
                     <SummaryItem
                         icon={<Percent size={13} />}
@@ -326,23 +326,16 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         colorClass="text-indigo-500"
                     />
                 </div>
-            </div>
+            </details>
 
             {props.kiBalance.msg1 && (() => {
                 // KIS rt_cd: "0" = 정상. 그 외 값이면 오류/경고로 보고 강조.
                 const isError = props.kiBalance.rt_cd != null && String(props.kiBalance.rt_cd) !== "0";
+                if (!isError) return <div className="flex items-center text-xs text-neutral-500 dark:text-neutral-400">잔고 조회 완료<DetailHelp label="잔고 조회 결과">{props.kiBalance.msg1}</DetailHelp></div>;
                 return (
-                    <div className={`flex items-start gap-2 p-2.5 md:gap-3 md:p-4 rounded-2xl border ${
-                        isError
-                            ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50"
-                            : "bg-surface-canvas dark:bg-surface-dark-card border-neutral-200 dark:border-border-subtle-dark"
-                    }`}>
-                        {isError
-                            ? <AlertCircle size={18} className="text-red-500 mt-0.5 shrink-0" />
-                            : <Info size={18} className="text-neutral-400 mt-0.5 shrink-0" />}
-                        <p className={`text-sm font-medium leading-relaxed ${
-                            isError ? "text-red-700 dark:text-red-300" : "text-neutral-600 dark:text-neutral-400"
-                        }`}>
+                    <div role="alert" className="flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-2.5 dark:border-red-900/50 dark:bg-red-950/30 md:gap-3 md:p-4">
+                        <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
+                        <p className="text-sm font-medium leading-relaxed text-red-700 dark:text-red-300">
                             {props.kiBalance.msg1}
                         </p>
                     </div>
@@ -380,9 +373,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 function SummaryItem({ icon, label, value, subValue, colorClass = "dark:text-white" }: any) {
     return (
         <div className="p-2.5 md:p-6 text-center md:text-left">
-            <span className="flex items-center justify-center md:justify-start gap-1.5 text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1 md:mb-2"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
+            <span className="flex items-center justify-center md:justify-start gap-1.5 text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1 md:mb-2"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}<DetailHelp label={label}>{subValue}</DetailHelp></span>
             <div className={`text-xl md:text-2xl font-black tracking-tighter md:mb-1 ${colorClass}`}>{value}</div>
-            <span className="text-xs font-bold text-neutral-500">{subValue}</span>
         </div>
     );
 }

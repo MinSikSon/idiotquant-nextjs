@@ -574,7 +574,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
               </section>
 
               {!isFirstLoad && (
-                <div className="mt-3">
+                <details className="group/metrics mt-2"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-bold text-neutral-500 dark:text-neutral-400 [&::-webkit-details-marker]:hidden">추가 자산 지표<ChevronRight size={14} className="transition-transform group-open/metrics:rotate-90" /></summary>
                   <div className="flex flex-wrap gap-2 pb-0.5">
                     <MetricChip
                       icon={<Banknote size={13} />}
@@ -639,7 +639,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                       />
                     )}
                   </div>
-                </div>
+                </details>
               )}
             </>
           ),
@@ -648,7 +648,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-portfolio",
           tab: "section-kpi",
           node: (
-            <SectionPanel id="section-portfolio">
+            <SectionPanel id="section-portfolio" summary="자산 구성·수익률 차트">
               <SectionHeader
                 icon={<PieChart size={16} />}
                 title="포트폴리오 자산 구성"
@@ -745,7 +745,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-conditions",
           tab: "section-stocks",
           node: hasCapital ? (
-            <SectionPanel id="section-conditions">
+            <SectionPanel id="section-conditions" summary="자동매매 조건·예산 설정" hasError={usQuantRule.state === "rejected" || usQuantRule.saveState === "rejected"}>
               <SectionHeader
                 icon={<SlidersHorizontal size={16} />}
                 title="자동매매 트레이딩 조건"
@@ -770,7 +770,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-activity",
           tab: "section-stocks",
           node: hasCapital ? (
-            <SectionPanel id="section-activity">
+            <SectionPanel id="section-activity" summary="상세 자동매매 현황" hasError={usActivity.state === "rejected"}>
               <SectionHeader
                 icon={<Activity size={16} />}
                 title="자동매매 현황"

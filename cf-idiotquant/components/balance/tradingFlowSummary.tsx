@@ -110,7 +110,7 @@ export default function TradingFlowSummary({
       </div>
 
       {/* 파이프라인 단계 */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <details><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">단계별 가동 조건</summary><div className="flex items-center gap-1.5 flex-wrap">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1.5">
             <div className={cn(
@@ -129,7 +129,7 @@ export default function TradingFlowSummary({
             {i < steps.length - 1 && <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 shrink-0" />}
           </div>
         ))}
-      </div>
+      </div></details>
     </div>
   );
 }
