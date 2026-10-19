@@ -57,6 +57,12 @@
   border-color: transparent;
 }
 .page .searchAction:hover, .page .primary:hover { background: var(--analysis-action-hover); }
+.quoteRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 6px; padding-bottom: 8px; }
+.quoteMeta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-width: 0; font-size: 12px; color: var(--analysis-muted); }
+.quoteTicker { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.quotePrice { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.quoteGrade { padding: 2px 6px; border: 1px solid var(--analysis-line); border-radius: 4px; font-size: 11px; }
+.quoteSearch { display: inline-flex; min-height: 36px; min-width: 36px; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; padding: 8px 10px; border: 1px solid transparent; border-radius: 8px; font-size: 12px; }
 .primary { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 16px; font-size: 13px; font-weight: 500; transition: background-color 100ms; }
 .page .searchRow { padding-top: 20px; padding-bottom: 24px; }
 .page .searchField :global(input[role="combobox"]) { min-height: 34px; font-weight: 460; letter-spacing: 0; }
@@ -162,4 +168,15 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { transition-duration: 0ms; animation-duration: 0ms; }
+}
+
+@media (max-width: 767px) {
+  .page .header { top: var(--topbar-h, 48px); }
+  .page .headerCompact .quoteRow { padding-top: 2px; padding-bottom: 2px; }
+  .page .headerCompact .quoteMeta { flex-wrap: nowrap; gap: 8px; }
+  .page .headerCompact .quoteAux { display: none; }
+  .page .headerCompact .quoteSearch { min-height: 32px; min-width: 36px; padding: 6px 10px; }
+  .page .headerCompact .tabsRow { padding-bottom: 2px; }
+  .page .headerCompact .tabStrip { padding: 1px; gap: 1px; }
+  .page .headerCompact .tab { min-height: 26px; padding: 2px 6px; font-size: 11px; }
 }

@@ -596,12 +596,6 @@ function AnalyzeContent() {
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         mobileTitle={isPriceLoaded ? displayName || tickerLabel : '종목 분석'}
         description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
-        meta={isPriceLoaded ? <>
-          <span>{[tickerLabel, marketName].filter(Boolean).join(' · ')}</span>
-          <span className={cn(styles.price, "tabular-nums")}><span className={styles.priceLabel}>현재가</span>{headerPrice}</span>
-          {gradeLabel && <span className="rounded border border-neutral-200 px-1.5 py-0.5 font-medium text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">{gradeLabel}</span>}
-        </> : undefined}
-        compactMeta={isPriceLoaded ? <span className={styles.price}>현재가 {headerPrice}</span> : undefined}
         sticky
         mobileCompact={!!tickerFromUrl}
         mobileTitleInNavigation={!isPriceLoaded}
@@ -631,14 +625,23 @@ function AnalyzeContent() {
             return snapshot;
           }} />
           </>}
+
+        </> : undefined}
+      >
+        {tickerFromUrl && <div className={cn(ANALYZE_WIDTH, styles.quoteRow)}>
+          <div className={styles.quoteMeta} aria-label="현재 종목 시세">
+            <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
+            {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
+            <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
+            {isPriceLoaded && gradeLabel && <span className={cn(styles.quoteAux, styles.quoteGrade)}>{gradeLabel}</span>}
+          </div>
           <button type="button" onClick={() => setSearchOpen(open => !open)}
             aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
             aria-expanded={searchOpen} aria-controls="analyze-stock-search"
-            className={cn(PAGE_ACTION_CLS, styles.searchAction)}>
-            <Search size={14} aria-hidden="true" />검색
+            className={cn(styles.quoteSearch, styles.searchAction)}>
+            <Search size={16} aria-hidden="true" /><span className="hidden sm:inline">검색</span>
           </button>
-        </> : undefined}
-      >
+        </div>}
         {/* 종목 선택 즉시 접는다. 조회 실패 중에도 돋보기로 다시 검색할 수 있다. */}
         {(!tickerFromUrl || searchOpen) && (
           <div id="analyze-stock-search" className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
