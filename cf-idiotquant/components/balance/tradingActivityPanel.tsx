@@ -1,5 +1,6 @@
 "use client";
 
+import { DetailHelp } from "./detailHelp";
 import { Activity, Clock, RefreshCw, Gauge, Layers, ArrowDownCircle, ArrowUpCircle, ChevronDown } from "lucide-react";
 import { executionAmount, numericValue, stockBudgetProgress } from "@/lib/features/capital/tradingSummary";
 import { cn } from "@/lib/utils";
@@ -83,11 +84,10 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
       <div className="flex items-center justify-between gap-2 flex-wrap sm:block">
         <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 sm:mb-1">
           {icon}
-          <span className="text-[11px] font-bold uppercase tracking-wide">{label}</span>
+          <span className="text-[11px] font-bold uppercase tracking-wide">{label}</span>{hint && <DetailHelp label={label}>{hint}</DetailHelp>}
         </div>
         <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 tabular-nums leading-tight text-left sm:text-left">{value}</p>
       </div>
-      {hint && <p className="text-[11px] text-neutral-500 dark:text-neutral-400 text-left sm:text-left sm:mt-0.5">{hint}</p>}
     </div>
   );
 }

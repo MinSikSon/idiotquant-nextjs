@@ -4,6 +4,7 @@ import {
   Loader2, CheckCircle2, Clock, ArrowUpRight, ArrowDownRight,
   RefreshCw, Activity, InboxIcon, ChevronDown, Key,
 } from "lucide-react";
+import { DetailHelp } from "./detailHelp";
 import { cn } from "@/lib/utils";
 
 // =========================================================================
@@ -73,8 +74,8 @@ export function SectionHeader({
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-black text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
             {badge}
+            {subtitle && <DetailHelp label={title}>{subtitle}</DetailHelp>}
           </div>
-          {subtitle && <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400 mt-0.5">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="shrink-0 self-start sm:self-center">{action}</div>}
@@ -184,12 +185,11 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
     <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-2.5 py-2 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-3 md:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center gap-2 min-[480px]:justify-between">
-        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
+        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
         <div aria-hidden="true" className={cn("order-first min-[480px]:order-last p-1.5 min-[480px]:p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div className="min-w-0 text-right min-[480px]:text-left">
         <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", valueColor)}>{value}</div>
-        <p className="text-[11px] min-[480px]:text-xs text-neutral-500 dark:text-neutral-400 leading-snug">{sub}</p>
       </div>
     </div>
   );
@@ -213,15 +213,12 @@ export function UsdKpiCard({
     <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-2.5 py-2 min-[480px]:p-3 md:p-5 shadow-sm overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center gap-2 min-[480px]:justify-between">
-        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}</span>
+        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
         <div aria-hidden="true" className={cn("order-first min-[480px]:order-last p-1.5 min-[480px]:p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div className="min-w-0 text-right min-[480px]:text-left">
         <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", mainColor)}>{mainValue}</div>
-        <div className="mt-0.5 min-[480px]:mt-2 min-[480px]:pt-2 min-[480px]:border-t border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-center justify-end min-[480px]:justify-between gap-x-2 text-[11px] min-[480px]:text-xs font-bold text-neutral-500 dark:text-neutral-400">
-          <span>{subLabel}</span>
-          <span className={cn("font-mono break-words", subColor)}>{subValue}</span>
-        </div>
+
       </div>
     </div>
   );
@@ -390,7 +387,7 @@ export function ChartSectionSkeleton() {
 // =========================================================================
 // 섹션 패널 래퍼
 // =========================================================================
-export function SectionPanel({ id, children, className }: { id?: string; children: React.ReactNode; className?: string }) {
+export function SectionPanel({ id, children, className, summary, hasError }: { id?: string; children: React.ReactNode; className?: string; summary?: string; hasError?: boolean }) {
   return (
     <section
       id={id}
@@ -400,7 +397,7 @@ export function SectionPanel({ id, children, className }: { id?: string; childre
         className
       )}
     >
-      {children}
+      {summary ? <details className="group/section" open={hasError || undefined}><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-neutral-900 dark:text-neutral-100 [&::-webkit-details-marker]:hidden">{summary}<ChevronDown size={16} className="shrink-0 text-neutral-400 transition-transform group-open/section:rotate-180" /></summary><div className="pt-3">{children}</div></details> : children}
     </section>
   );
 }

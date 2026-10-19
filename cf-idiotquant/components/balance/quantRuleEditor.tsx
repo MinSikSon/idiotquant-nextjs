@@ -1,7 +1,8 @@
 "use client";
 
+import { DetailHelp } from "./detailHelp";
 import React, { useEffect, useMemo, useState } from "react";
-import { SlidersHorizontal, Save, RotateCcw, Info, Lock, CheckCircle2 } from "lucide-react";
+import { SlidersHorizontal, Save, RotateCcw, Lock, CheckCircle2 } from "lucide-react";
 import { QuantRule, QuantRuleState } from "@/lib/features/capital/capitalSlice";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -155,15 +156,10 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             )}>
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                  {meta.label}
+                  {meta.label}<DetailHelp label={meta.label}>{meta.desc}<span className="mt-2 block font-mono text-[10px] text-neutral-400">{k}</span></DetailHelp>
                   {changed && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[9px] font-extrabold text-brand-ink">변경됨</span>}
                 </span>
-                <code className="text-[9px] text-neutral-300 dark:text-neutral-600">{k}</code>
               </div>
-              <p className="mb-2 flex items-start gap-1 text-[10px] leading-tight text-neutral-400">
-                <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                {meta.desc}
-              </p>
               {meta.type === "boolean" ? (
                 <button
                   type="button"

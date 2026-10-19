@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { Clock3, RefreshCw, Wallet, Zap } from "lucide-react";
 import type { KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
 import { fundingMetrics, refillBuckets, refillWindowOpen, type TradingCash } from "@/lib/features/capital/fundingInsights";
+import { DetailHelp } from "./detailHelp";
 import { cn } from "@/lib/utils";
 
 const won = (value: number) => `₩${Math.round(value).toLocaleString("ko-KR")}`;
@@ -50,7 +51,7 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
     return (
         <section className="mb-5 space-y-4 rounded-2xl border border-neutral-200 bg-white p-3 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5" aria-label="충전 흐름과 예수금">
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-neutral-900 dark:text-neutral-100"><Zap size={16} className="text-brand-ink" /> 예수금 대비 자동 충전</h3>
+                <h3 className="flex items-center gap-2 text-sm font-bold text-neutral-900 dark:text-neutral-100"><Zap size={16} className="text-brand-ink" /> 예수금 대비 자동 충전<DetailHelp label="충전·예산 계산 기준">예산 합계 비중은 ON인 풀의 활성 종목 적립 포인트(매수·매도) ÷ 현재 예수금입니다. 월 충전계획 비중은 마지막 실행의 매수 풀 월 예산 기준입니다. 충전은 예산 장부 적립이며 실제 현금 이체·예약이 아닙니다. 주문가능금액은 미결제·증거금 등에 따라 예수금과 다를 수 있습니다. 시간당 금액은 {metrics.period}분 배분 속도의 환산값이며 그래프는 실제 충전 기록만 표시합니다.</DetailHelp></h3>
                 <div className="flex gap-2">
                     <button type="button" onClick={onToggleLive} aria-pressed={live} className={cn("min-h-11 rounded-lg border px-3 text-xs font-bold", live ? "border-brand/30 bg-brand/10 text-brand-ink" : "border-neutral-200 text-neutral-500 dark:border-border-subtle-dark dark:text-neutral-400")}>실시간 {live ? "ON" : "OFF"}</button>
                     <button type="button" onClick={onRefresh} aria-label="예수금과 충전 기록 새로고침" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 dark:border-border-subtle-dark dark:text-neutral-400"><RefreshCw size={15} className={cash.state === "pending" || capital.state === "pending" ? "animate-spin" : ""} /></button>
@@ -64,7 +65,7 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                     <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{country === "US" ? cash.krw === null ? "달러 잔고·환율 확인 대기" : `원화 환산 ${won(cash.krw)} · $1 = ${won(cash.rate!)}` : "증권사 잔고의 예수금 총액 기준"}</p>
                     <div className="mt-4 border-t border-neutral-200 pt-4 dark:border-border-subtle-dark">
                         <div className="flex flex-wrap items-center justify-between gap-1">
-                            <h4 className="text-xs font-bold text-neutral-800 dark:text-neutral-100">활성 자동매매 예산 합계</h4>
+                            <h4 className="flex items-center text-xs font-bold text-neutral-800 dark:text-neutral-100">활성 자동매매 예산 합계<DetailHelp label="활성 예산">ON인 풀의 활성 종목 적립 포인트 합계이며 매도 예산도 포함합니다. 비활성 종목과 OFF 풀은 제외합니다. 자동매매 실행이 OFF여도 적립된 예산은 남아 있습니다.</DetailHelp></h4>
                             <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{budgetKnown ? `${metrics.activePools}개 풀 · ${metrics.activeStocks}종목` : budgetLabel}</span>
                         </div>
                         <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -74,11 +75,10 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                         <div role="img" aria-label={`활성 종목 적립 예산은 예수금의 ${budgetKnown ? pct(metrics.activeRatio) : "확인 중"}`} className="mt-3 flex h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-surface-dark-muted">
                             {budgetKnown && <><div className="h-full bg-brand-ink" style={{ width: `${metrics.activeTotal > 0 ? ratioWidth * metrics.activeBuy / metrics.activeTotal : 0}%` }} /><div className="h-full bg-rose-400" style={{ width: `${metrics.activeTotal > 0 ? ratioWidth * metrics.activeSell / metrics.activeTotal : 0}%` }} /></>}
                         </div>
-                        <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <details className="mt-1 text-xs text-neutral-500 dark:text-neutral-400"><summary className="min-h-11 cursor-pointer py-3 font-medium">매수·매도 예산 구성</summary><dl className="grid grid-cols-2 gap-2 text-xs">
                             <div className="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-surface-dark-card"><dt className="text-[11px] text-brand-ink">● 매수 예산</dt><dd className="mt-1 break-all font-bold tabular-nums dark:text-neutral-100">{budgetKnown ? won(metrics.activeBuy) : "—"}</dd><dd className="mt-1 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">예수금의 {budgetKnown ? pct(metrics.activeBuyRatio) : "—"}</dd></div>
                             <div className="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-surface-dark-card"><dt className="text-[11px] text-rose-500 dark:text-rose-400">■ 매도 예산</dt><dd className="mt-1 break-all font-bold tabular-nums dark:text-neutral-100">{budgetKnown ? won(metrics.activeSell) : "—"}</dd><dd className="mt-1 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">예수금의 {budgetKnown ? pct(metrics.activeSellRatio) : "—"}</dd></div>
-                        </dl>
-                        <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">ON인 풀의 활성 종목 적립 포인트 합계 · 매도 예산 포함{tradingActive === false ? " · 자동매매 실행 OFF" : ""}</p>
+                        </dl></details>
                         {budgetKnown && metrics.activeRatio !== null && metrics.activeRatio > 100 && <p className="mt-1 text-[11px] font-bold text-brand-ink">적립 예산이 현재 예수금보다 {won(metrics.activeTotal - cash.krw!)} 많습니다.</p>}
                     </div>
                     <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-neutral-200 pt-3 text-xs dark:border-border-subtle-dark">
@@ -89,6 +89,8 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                 </div>
 
                 <div className="min-w-0 space-y-3">
+                    <p className={cn("flex items-center gap-1.5 text-xs font-bold", enabled ? "text-brand-ink" : "text-neutral-500 dark:text-neutral-400")}><Clock3 size={13} />{status}</p>
+                    <details><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">충전 속도·최근 충전 상세</summary><div className="space-y-3">
                     <div className="rounded-xl border border-neutral-200 p-4 dark:border-border-subtle-dark">
                         <p className={cn("flex items-center gap-1.5 text-xs font-bold", enabled ? "text-brand-ink" : "text-neutral-500 dark:text-neutral-400")}><Clock3 size={13} />{status}</p>
                         <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{country === "KR" ? "08:00–18:00" : "21:00–06:00"} KST · {metrics.period}분 주기 · {live ? "잔고·기록 30초마다 갱신" : "새로고침하면 최신 기록 반영"}</p>
@@ -104,10 +106,11 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                         <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100">마지막으로 확인된 실제 충전</p>
                         {latest ? <><p className="mt-2 break-all text-xl font-black tabular-nums text-brand-ink">+{won(latest.buy_krw + latest.sell_krw)}</p><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{new Date(latest.at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })} {time(latest.at)} · {ageMinutes === 0 ? "방금" : `${ageMinutes}분 전`} · 매수 {won(latest.buy_krw)} / 매도 {won(latest.sell_krw)}</p></> : <p className="mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">아직 충전 관측 기록이 없습니다. 기록 기능 배포 후 실제 자동 충전부터 표시합니다.</p>}
                     </div>
+                    </div></details>
                 </div>
             </div>
 
-            <div className="border-t border-neutral-100 pt-4 dark:border-border-subtle-dark">
+            <details className="border-t border-neutral-100 dark:border-border-subtle-dark"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-600 dark:text-neutral-300">시간별 충전 그래프</summary><div className="pt-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div><h4 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">시간별 실제 충전</h4><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{unit} 단위 · 원화 포인트 · 확인된 {tickCount}회만 합산</p></div>
                     <div className="flex rounded-lg bg-surface-canvas p-1 dark:bg-surface-dark">{([60, 1440] as const).map(minutes => <button key={minutes} type="button" onClick={() => setRange(minutes)} aria-pressed={range === minutes} className={cn("min-h-11 rounded-md px-3 text-xs font-bold", range === minutes ? "bg-white text-brand-ink shadow-sm dark:bg-surface-dark-card" : "text-neutral-500 dark:text-neutral-400")}>{minutes === 60 ? "최근 1시간" : "최근 24시간"}</button>)}</div>
@@ -125,8 +128,7 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                 <div className="flex justify-between text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400"><span>{observedAt ? time(buckets[0].at) : "—"}</span><span>{observedAt ? time(buckets[Math.floor(buckets.length / 2)].at) : "—"}</span><span>{observedAt ? time(observedAt) : "—"}</span></div>
                 {!tickCount && <p className="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-400">선택한 시간에 확인된 충전 기록이 없습니다.</p>}
                 {history.length > 0 && <details className="mt-2 text-xs text-neutral-600 dark:text-neutral-300"><summary className="min-h-11 cursor-pointer py-3 font-medium">최근 충전 내역 보기</summary><ul className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">{[...history].sort((a, b) => b.at - a.at).slice(0, 12).map((tick, i) => <li key={`${tick.at}-${i}`} className="flex flex-wrap justify-between gap-2 py-2"><span>{new Date(tick.at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" })} {time(tick.at)}</span><span className="font-bold tabular-nums">매수 +{won(tick.buy_krw)} · 매도 +{won(tick.sell_krw)}</span></li>)}</ul></details>}
-            </div>
-            <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">예산 합계 비중은 ON인 풀의 활성 종목 적립 포인트(매수·매도) ÷ 현재 예수금입니다. 월 충전계획 비중은 마지막 실행의 매수 풀 월 예산 기준입니다. 충전은 예산 장부 적립이며 실제 현금 이체·예약이 아닙니다. 주문가능금액은 미결제·증거금 등에 따라 예수금과 다를 수 있습니다. 시간당 금액은 {metrics.period}분 배분 속도의 환산값이며 그래프는 실제 충전 기록만 표시합니다.</p>
+            </div></details>
         </section>
     );
 }
