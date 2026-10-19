@@ -1066,7 +1066,7 @@ function GroupSection({
         </div>
       )}
 
-      {/* 본문 — 데스크탑: 테이블 / 모바일: 카드 */}
+      {/* 본문 — 데스크탑: 테이블 / 모바일: 한 줄 요약 + 펼침 */}
       {!collapsed && (
         <>
         <div className="hidden md:block relative overflow-x-auto">
@@ -1227,7 +1227,7 @@ function GroupSection({
           </table>
         </div>
 
-        {/* 모바일 카드 뷰 */}
+        {/* 모바일 한 줄 요약 — 지표·예산 조작은 펼친 뒤 표시 */}
         <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
           {rows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 opacity-40">
@@ -1238,44 +1238,27 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("px-2.5 py-2", isPicked(row.symbol) && "bg-brand-light dark:bg-brand-muted/20")}
+                className={cn("flex items-start gap-1 px-2.5", isPicked(row.symbol) && "bg-brand-light dark:bg-brand-muted/20")}
               >
-                {/* 상단: 체크 + 종목 + 상태 */}
-                <div className="flex items-center gap-2">
-                  {showCheck && (
-                    <input
-                      type="checkbox"
-                      checked={isPicked(row.symbol)}
-                      onChange={() => onTogglePick(sectionKey, row.symbol)}
-                      className="h-5 w-5 shrink-0 rounded border-neutral-300 text-brand-ink focus:ring-brand"
-                    />
-                  )}
-                  <button onClick={() => openDetail(row.raw)} className="flex min-w-0 items-center gap-1.5">
-                    <div className="hidden min-[480px]:block shrink-0 rounded-md bg-surface-canvas p-1.5 dark:bg-surface-dark-muted">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                    </div>
-                    {row.name ? (
-                      <span className="flex min-w-0 items-baseline gap-1.5 leading-tight">
-                        <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name}</span>
-                        <span className="shrink-0 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">{row.symbol}</span>
-                      </span>
-                    ) : (
-                      <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
-                    )}
-                  </button>
-                  <div className="ml-auto shrink-0 flex items-center gap-1">
-                    <StatusBadge status={row.status} />
-                    {onDeleteStock && (
-                      <button
-                        onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }}
-                        title="종목 제거"
-                        className="rounded-md p-1 text-neutral-300 active:text-red-500 active:bg-red-50 dark:active:bg-red-950 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
+                {showCheck && <label className="flex min-h-11 w-7 shrink-0 cursor-pointer items-center justify-center">
+                  <input type="checkbox" aria-label={`${row.name || row.symbol} 선택`} checked={isPicked(row.symbol)} onChange={() => onTogglePick(sectionKey, row.symbol)} className="h-4 w-4 rounded border-neutral-300 text-brand-ink focus:ring-brand" />
+                </label>}
+                <details className="group/stock min-w-0 flex-1">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
+                    <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", row.status?.tone === "active" ? "bg-brand" : row.status?.tone === "excluded" ? "bg-red-400" : row.status?.tone === "idle" ? "bg-amber-400" : "bg-neutral-400")} role="img" aria-label={row.status?.label ?? "상태 미확인"} />
+                    <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums text-brand-ink" aria-label={row.movable ? `포인트 ${Number(row.token ?? 0).toLocaleString()}원` : "관심 종목"}>{row.movable ? `₩${Number(row.token ?? 0).toLocaleString()}` : "관심"}</span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="pb-3 pt-1">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <button onClick={() => openDetail(row.raw)} className="min-w-0 text-left text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                        <span className="block break-words">{row.name || row.symbol}</span><span className="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">{row.symbol} · 상세 분석 보기</span>
                       </button>
-                    )}
-                  </div>
-                </div>
+                      <div className="flex shrink-0 items-center gap-1"><StatusBadge status={row.status} />
+                        {onDeleteStock && <button onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }} aria-label={`${row.name || row.symbol} 종목 제거`} className="flex h-11 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>}
+                      </div>
+                    </div>
 
                 {/* 항목명과 값을 한 줄에 두고 좁은 화면에서는 전체 폭을 사용 */}
                 <div className="mt-1.5 grid grid-cols-1 min-[480px]:grid-cols-2 gap-1">
@@ -1317,6 +1300,8 @@ function GroupSection({
                     )}
                   </div>
                 )}
+                  </div>
+                </details>
               </div>
             ))
           )}
