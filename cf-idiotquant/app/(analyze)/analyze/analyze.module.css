@@ -180,3 +180,49 @@
   .page .headerCompact .tabStrip { padding: 1px; gap: 1px; }
   .page .headerCompact .tab { min-height: 26px; padding: 2px 6px; font-size: 11px; }
 }
+
+@media (min-width: 768px) {
+  .page .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0 20px;
+    padding: 10px max(24px, calc((100% - 1152px) / 2));
+  }
+  .page .header > :global([data-header-main]),
+  .page .header .quoteRow,
+  .page .header .searchRow,
+  .page .header .tabsRow {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .page .header :global([data-header-row]) { align-items: center; gap: 8px; }
+  .page .header :global([data-header-row]) > div:first-child { min-width: 0; flex: 1; }
+  .page .header h1 { font-size: 20px; line-height: 1.4; }
+  .page .header p { margin-top: 2px; font-size: 12px; line-height: 1.5; }
+  .page .header .searchField > div > div:first-child { padding: 6px 10px; border-radius: 8px; }
+  .page .header .searchField :global(input[role="combobox"]) { min-height: 28px; }
+  .page .header .history { grid-column: 1 / -1; margin-top: 8px; }
+  .page .header .history > div { padding-inline: 0; }
+  .page .resultHeader { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; }
+  .page .resultHeader > :global([data-header-main]) { grid-column: 1; grid-row: 1; }
+  .page .resultHeader .quoteRow { grid-column: 2; grid-row: 1; }
+  .page .resultHeader .tabsRow { grid-column: 1 / -1; grid-row: 2; }
+  .page .resultHeader .searchRow { grid-column: 1; grid-row: 2; }
+  .page .resultHeader:has(.searchRow) .tabsRow { grid-column: 2; }
+  .page .resultHeader .tabStrip { padding: 2px; gap: 2px; }
+  .page .resultHeader .tab { min-height: 36px; padding: 6px 12px; white-space: nowrap; }
+  .page .resultHeader .quoteMeta { gap: 4px 8px; }
+  .page .resultHeader .quoteAux { display: none; }
+  .page .resultHeader .stockName { min-height: 36px; }
+  .page .resultHeader .stockName > svg { flex-shrink: 0; }
+}
+
+@media (min-width: 1024px) {
+  .page .resultHeader { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .page .resultHeader .tabsRow,
+  .page .resultHeader:has(.searchRow) .tabsRow { grid-column: 3; grid-row: 1; }
+  .page .resultHeader .searchRow { grid-column: 1 / -1; }
+}

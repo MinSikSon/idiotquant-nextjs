@@ -591,7 +591,7 @@ function AnalyzeContent() {
 
       {/* ── 헤더 ── */}
       <PageHeader
-        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader, headerCompact && styles.headerCompact)}
+        className={cn(styles.header, tickerFromUrl ? styles.resultHeader : styles.emptyHeader, headerCompact && styles.headerCompact)}
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         mobileTitle={isPriceLoaded ? displayName || tickerLabel : '종목 분석'}
