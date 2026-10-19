@@ -36,6 +36,7 @@ import { StoreProvider } from "./StoreProvider";
 import NavbarWithSimpleLinks from "@/components/navigation";
 import { ThemeProviderClient } from "./ThemeProviderClient";
 import { AuthProvider } from "@/components/auth-provider";
+import { MobilePageHeaderProvider } from "@/components/mobile-page-header";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -190,6 +191,7 @@ export default function RootLayout({
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>
+              <MobilePageHeaderProvider>
               <NavbarWithSimpleLinks />
               {/* 모바일 상단 헤더 + 하단 탭바. 데스크톱 헤더는 문서 흐름 안에 있다. */}
               {/* min-h-screen(100vh) 이 아니라 100dvh 다.
@@ -206,6 +208,7 @@ export default function RootLayout({
               )}>
                 {children}
               </main>
+              </MobilePageHeaderProvider>
             </AuthProvider>
           </ThemeProviderClient>
         </StoreProvider>
