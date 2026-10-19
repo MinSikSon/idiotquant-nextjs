@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, ChevronRight, Coins, RefreshCw } from "lucide-react";
+import { useId, useState } from "react";
+import { ArrowDownRight, ArrowUpRight, ChevronDown, ChevronRight, Coins, RefreshCw } from "lucide-react";
 import type { BudgetState, KrUsCapitalType, TradingActivityState } from "@/lib/features/capital/capitalSlice";
 import { LIKES_GROUP_ID } from "@/lib/features/capital/capitalSlice";
 import { currentLogGroup, executionTotals, numericValue, stockBudgetProgress } from "@/lib/features/capital/tradingSummary";
@@ -15,6 +16,9 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
     budget?: BudgetState;
     tradingActive: boolean | null;
 }) {
+    const panelId = useId();
+    const [planExpanded, setPlanExpanded] = useState(false);
+    const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set());
     const groups = (capital.groups ?? []).filter(group => group.id !== LIKES_GROUP_ID);
     const stocks = capital.stock_list ?? [];
     const tokens = (items: typeof stocks) => items.reduce((sum, stock) => sum + (numericValue(stock.token) ?? 0), 0);
@@ -29,28 +33,29 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
     const logValue = (value: number) => ready ? money(value) : activity.state === "rejected" ? "조회 실패" : "조회 중…";
 
     return (
-        <section className="mb-5 space-y-4" aria-label="자동매매 플랜">
-            <div className="rounded-2xl border border-brand/20 bg-brand-light p-4 dark:bg-brand-muted/20 sm:p-5">
+        <section className="mb-5 space-y-2 sm:space-y-4" aria-label="자동매매 플랜">
+            <div className="rounded-2xl border border-brand/20 bg-brand-light px-3 pb-3 dark:bg-brand-muted/20 sm:p-5">
                 <div className="flex items-center justify-between gap-2">
-                    <h3 className="flex items-center gap-1.5 text-sm font-bold text-neutral-800 dark:text-neutral-100"><Coins size={16} className="text-brand-ink" /> 자동매매 플랜</h3>
+                    <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-100"><button type="button" onClick={() => setPlanExpanded(value => !value)} aria-expanded={planExpanded} aria-controls={`${panelId}-plan`} className="flex min-h-11 items-center gap-1.5 sm:hidden"><Coins size={16} className="text-brand-ink" />자동매매 플랜<ChevronDown size={13} className={cn("transition-transform", planExpanded && "rotate-180")} /></button><span className="hidden items-center gap-1.5 sm:flex"><Coins size={16} className="text-brand-ink" />자동매매 플랜</span></h3>
                     <span className="shrink-0 text-xs font-bold text-brand-ink">{tradingActive === null ? "상태 확인 중" : tradingActive ? "자동매매 ON" : "자동매매 OFF"}</span>
                 </div>
-                <p className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">종목별로 모인 포인트 · 원화 합계</p>
-                <p className="mt-1 break-all text-3xl font-black tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50">{won(tokens(stocks.filter(stock => stock.group_id !== LIKES_GROUP_ID)))}</p>
-                <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-neutral-600 dark:text-neutral-300">
-                    <span>월 기본 예산 <b className="tabular-nums">{monthly === null ? "확인 중" : won(monthly)}</b></span>
-                    <span>{groups.length}개 풀 · 그룹별 예산 설정 가능</span>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 sm:mt-4 sm:block">
+                    <div className="flex items-baseline gap-1.5 sm:block"><p className="text-[11px] text-neutral-500 dark:text-neutral-400 sm:text-xs"><span className="sm:hidden">적립</span><span className="hidden sm:inline">종목별로 모인 포인트 · 원화 합계</span></p><p className="break-all text-lg font-black tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50 sm:mt-1 sm:text-3xl">{won(tokens(stocks.filter(stock => stock.group_id !== LIKES_GROUP_ID)))}</p></div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-neutral-600 dark:text-neutral-300 sm:mt-3 sm:justify-between sm:text-xs">
+                        <span>월<span className="hidden sm:inline"> 기본 예산</span> <b className="tabular-nums">{monthly === null ? "확인 중" : won(monthly)}</b></span>
+                        <span>{groups.length}개 풀<span className="hidden sm:inline"> · 그룹별 예산 설정 가능</span></span>
+                    </div>
                 </div>
-                <ol className="mt-4 grid grid-cols-4 gap-1 border-t border-brand/15 pt-3 text-center text-[11px] font-bold text-brand-ink sm:text-xs">
+                <ol id={`${panelId}-plan`} className={cn("mt-3 grid-cols-4 gap-1 border-t border-brand/15 pt-3 text-center text-[11px] font-bold text-brand-ink sm:mt-4 sm:grid sm:text-xs", planExpanded ? "grid" : "hidden")}>
                     {["예산 설정", "포인트 적립", "조건 확인", "주문·차감"].map((step, index) => <li key={step} className="min-w-0"><span className="mb-1 block text-[10px] opacity-60">0{index + 1}</span>{step}</li>)}
                 </ol>
             </div>
 
-            <div className="flex flex-wrap items-baseline justify-between gap-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-1 pt-1 sm:pt-0">
                 <h4 className="text-sm font-bold text-neutral-800 dark:text-neutral-100">내 자동매매 풀</h4>
-                <span className="text-[11px] text-neutral-500 dark:text-neutral-400">포인트는 종목마다 따로 적립됩니다</span>
+                <span className="text-[11px] text-neutral-500 dark:text-neutral-400"><span className="sm:hidden">눌러서 상세 보기</span><span className="hidden sm:inline">포인트는 종목마다 따로 적립됩니다</span></span>
             </div>
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid gap-2 sm:gap-3 lg:grid-cols-2">
                 {rows.map(row => {
                     const { group } = row;
                     const groupRefill = capital.refill_plan?.groups.find(item => item.group_id === group.id);
@@ -64,9 +69,18 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                     const paused = tradingActive !== true || group.is_trading_active === false;
                     const status = tradingActive === null ? "상태 확인 중" : !tradingActive ? "자동매매 OFF" : group.is_trading_active === false ? "풀 OFF" : !active.length ? "활성 종목 선정 대기" : fullSell ? "보유 수량 확인 후 전량 매도" : funded ? `${funded}종목 예산 확보 · 조건 확인 대기` : !known.length ? "시세 확인 필요" : "1주 예산 모으는 중";
                     const totals = executionTotals(row.logs);
+                    const expanded = expandedPools.has(group.id);
+                    const detailId = `${panelId}-pool-${encodeURIComponent(group.id)}`;
+                    const compactStatus = tradingActive === null ? "확인 중" : !tradingActive ? "매매 OFF" : group.is_trading_active === false ? "풀 OFF" : !active.length ? "종목 대기" : fullSell ? "전량 매도" : funded ? "조건 대기" : !known.length ? "시세 대기" : "적립 중";
                     return (
-                        <article key={group.id} className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card">
-                            <div className="flex items-start justify-between gap-3">
+                        <article key={group.id} className="min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-border-subtle-dark dark:bg-surface-dark-card sm:rounded-2xl sm:p-4">
+                            <button type="button" aria-expanded={expanded} aria-controls={detailId} aria-label={`${group.name} 상세 ${expanded ? "접기" : "보기"}`} onClick={() => setExpandedPools(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })} className="w-full space-y-1.5 px-3 py-3 text-left sm:hidden">
+                                <span className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-bold text-neutral-900 dark:text-neutral-100" title={group.name}>{group.name}</span><span className={cn("shrink-0 text-[11px] font-bold", sell ? "text-rose-500 dark:text-rose-400" : "text-brand-ink")}>{group.dca ? "정액" : "일반"}{sell ? "매도" : "매수"}</span><ChevronDown size={14} className={cn("shrink-0 text-neutral-400 transition-transform", expanded && "rotate-180")} /></span>
+                                <span className="flex items-baseline justify-between gap-2"><span className="min-w-0 truncate text-[11px] text-neutral-500 dark:text-neutral-400">활성 {active.length}/{row.stocks.length} · {compactStatus}</span><span className="shrink-0 text-sm font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{won(tokens(row.stocks))}</span></span>
+                            </button>
+                            <div id={detailId} className={cn("border-t border-neutral-100 px-3 pb-3 dark:border-border-subtle-dark sm:block sm:border-0 sm:p-0", !expanded && "hidden")}>
+                            <p className="mt-3 break-words text-sm font-bold text-neutral-900 dark:text-neutral-100 sm:hidden">{group.name}</p>
+                            <div className="hidden items-start justify-between gap-3 sm:flex">
                                 <div className="min-w-0"><h5 className="break-words text-sm font-bold text-neutral-900 dark:text-neutral-100">{group.name}</h5><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{row.stocks.length}종목 · 활성 {active.length}종목</p></div>
                                 <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold", sell ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400" : "bg-brand/10 text-brand-ink")}>
                                     {sell ? <ArrowDownRight size={13} /> : <ArrowUpRight size={13} />}{group.dca ? "정액" : "일반"}{sell ? "매도" : "매수"}
@@ -93,6 +107,7 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                             <div className="mt-3 border-t border-neutral-100 pt-1 dark:border-border-subtle-dark">
                                 {!fullSell && progress.length > 0 && <details className="text-xs text-neutral-600 dark:text-neutral-300"><summary className="min-h-11 cursor-pointer py-3 font-medium">종목별 적립 보기 ({progress.length})</summary><ul className="space-y-3 pb-3">{progress.map(({ stock, budget: point }) => <li key={stock.symbol} className="flex flex-wrap justify-between gap-1"><span className="break-words">{stock.name || stock.symbol}</span><span className="tabular-nums">{won(numericValue(stock.token) ?? 0)} · {point ? `${Math.round(point.percent)}%` : "시세 미확인"}</span></li>)}</ul></details>}
                                 <a href={`#trading-pool-${encodeURIComponent(group.id)}`} className="flex min-h-11 items-center justify-between gap-2 text-xs font-bold text-brand-ink" aria-label={`${group.name} 종목·설정 보기`}>종목·설정 보기<ChevronRight size={14} /></a>
+                            </div>
                             </div>
                         </article>
                     );
