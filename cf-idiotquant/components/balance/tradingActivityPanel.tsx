@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Clock, RefreshCw, Gauge, Layers, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Activity, Clock, RefreshCw, Gauge, Layers, ArrowDownCircle, ArrowUpCircle, ChevronDown } from "lucide-react";
 import { executionAmount, numericValue, stockBudgetProgress } from "@/lib/features/capital/tradingSummary";
 import { cn } from "@/lib/utils";
 import { KrUsCapitalType, TradingActivityState, TradingLog, UsCapitalStockItem, LIKES_GROUP_ID } from "@/lib/features/capital/capitalSlice";
@@ -64,10 +64,11 @@ const RESULT_TONE_CLS: Record<string, string> = {
   neutral: "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
 };
 
-function StatusBadge({ lr }: { lr?: LastResult }) {
-  if (!lr?.code) return <span className="text-[11px] text-neutral-400">대기</span>;
+function StatusBadge({ lr, compact = false }: { lr?: LastResult; compact?: boolean }) {
+  if (!lr?.code) return compact ? <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" role="img" aria-label="대기" /> : <span className="text-[11px] text-neutral-400">대기</span>;
   const meta = RESULT_META[lr.code] ?? { label: lr.code, tone: "neutral" as const };
   const detail = [lr.msg, relTime(lr.at)].filter(Boolean).join(" · ");
+  if (compact) return <span title={detail} role="img" aria-label={meta.label} className={cn("inline-block h-1.5 w-1.5 rounded-full", meta.tone === "green" ? "bg-emerald-500" : meta.tone === "amber" ? "bg-amber-400" : meta.tone === "red" ? "bg-rose-500" : "bg-neutral-400")} />;
   return (
     <span title={detail}
       className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap", RESULT_TONE_CLS[meta.tone])}>
@@ -177,7 +178,14 @@ export default function TradingActivityPanel({
           const unitKrw = point?.unitKrw ?? null;
           const points = point?.points ?? 0;
           const progress = point?.percent ?? 0;
-          return <article key={`${stock.symbol}-${index}`} className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-border-subtle-dark">
+          return <details key={`${stock.symbol}-${index}`} className="group/stock min-w-0 rounded-xl border border-neutral-200 px-3 dark:border-border-subtle-dark">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0 flex-1 truncate text-sm font-bold">{displayName(stock.symbol, stock.name)}</span>
+              <span className="shrink-0"><StatusBadge lr={(stock as unknown as { last_result?: LastResult }).last_result} compact /></span>
+              <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums text-brand-ink">{won(stock.token ?? 0)}</span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="pb-3 pt-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0"><p className="break-words text-sm font-bold">{displayName(stock.symbol, stock.name)}</p><p className="mt-0.5 break-words text-[11px] text-neutral-500 dark:text-neutral-400">{group?.name ?? "—"} · {group?.dca ? "정액" : "일반"}{group?.side === "sell" ? "매도" : "매수"}</p></div>
               <StatusBadge lr={(stock as unknown as { last_result?: LastResult }).last_result} />
@@ -189,7 +197,8 @@ export default function TradingActivityPanel({
               <p className="mt-1 text-[10px] text-neutral-400">저장된 시세 기준{group.side === "sell" ? " · 매도는 보유 수량 한도" : " · 실제 주문 수량은 달라질 수 있음"}</p>
             </div>}
             <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">NCAV {Number.isFinite(Number(stock.ncavRatio)) ? `${Number(stock.ncavRatio).toFixed(2)}x` : "—"}</p>
-          </article>;
+            </div>
+          </details>;
         })}
       </div>
       <div className="hidden sm:block overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark mb-4">
@@ -245,7 +254,14 @@ export default function TradingActivityPanel({
           const remaining = numericValue(log.remaining_token);
           const sell = log.buyOrSell === "sell";
           const name = country === "US" ? log.symbol : log.stock_name || log.stock_code || log.symbol;
-          return <article key={`${log.ts}-${index}`} className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-border-subtle-dark">
+          return <details key={`${log.ts}-${index}`} className="group/order min-w-0 rounded-xl border border-neutral-200 px-3 dark:border-border-subtle-dark">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0 flex-1 truncate text-sm font-bold">{name || "—"}</span>
+              <span className={cn("shrink-0 text-[11px] font-bold", sell ? "text-rose-500" : "text-brand-ink")}>{sell ? "매도" : "매수"}</span>
+              <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums">{amount === null ? "미확인" : fmtPrice(amount)}</span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/order:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="pb-3 pt-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0"><p className="break-words text-sm font-bold">{name || "—"}</p><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{Number.isFinite(log.ts) ? new Date(log.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
               <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-bold", sell ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30")}>{sell ? "매도 접수" : "매수 접수"}</span>
@@ -255,7 +271,8 @@ export default function TradingActivityPanel({
               <div className="flex flex-wrap justify-between gap-2"><dt className="text-neutral-500 dark:text-neutral-400">수량 × 기준가</dt><dd className="break-all tabular-nums">{Number(log.ORD_QTY ?? 0).toLocaleString("ko-KR")}주 × {fmtPrice(log.stck_prpr)}</dd></div>
               <div className="flex flex-wrap justify-between gap-2 border-t border-neutral-100 pt-2 dark:border-border-subtle-dark"><dt className="text-neutral-500 dark:text-neutral-400">차감 전 포인트 · 원화</dt><dd className="break-all font-bold tabular-nums">{remaining === null ? "잔액 기록 없음" : won(remaining)}</dd></div>
             </dl>
-          </article>;
+            </div>
+          </details>;
         })}
       </div>
       <div className="hidden sm:block overflow-x-auto rounded-xl border border-neutral-200 dark:border-border-subtle-dark">
