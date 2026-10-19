@@ -1,6 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { useMobilePageHeader } from "@/components/mobile-page-header";
 
 /* ─────────────────────────────────────────────────────────────────────────
    공통 페이지 헤더 — 발굴·적정 주가 등 주요 화면이 같은 골격을 쓰도록 한 규칙.
@@ -12,8 +15,6 @@ import { cn } from "@/lib/utils";
    ── 이 골격을 쓰지 않는 화면 (일부러 뺀 것이지 빠뜨린 것이 아니다) ──
    (home) · (quant)   랜딩. 히어로가 첫 화면이라 여기에 머리를 얹으면 밋밋해진다.
    (game)             브라운관 안이다. retroPalette.ts 가 색을 따로 정한다.
-   (calculator)       문서형 화면. StepLabel 눈썹 + 34px 제목이 의도된 편집 디자인이라
-                      20px 짜리 공통 제목으로 바꾸면 그 의도가 사라진다.
    (legal)            가운데 정렬된 단독 문서. 자체 로고 머리를 이미 갖고 있다.
    분석은 검색 전에는 페이지 제목, 검색 후에는 종목명을 제목으로 쓴다.
    검색줄·분석 탭은 children으로 내려 공통 헤더 안에 유지한다.
@@ -49,6 +50,7 @@ export const PAGE_ACTION_CLS =
 export function PageHeader({
   icon,
   title,
+  mobileTitle,
   description,
   meta,
   compactMeta,
@@ -64,6 +66,8 @@ export function PageHeader({
   /** nav 가 이모지 대신 lucide 아이콘을 쓰는 화면용. emoji 와 같은 자리에 들어간다. */
   icon?: React.ReactNode;
   title: React.ReactNode;
+  /** 고정 상단바에 사용할 짧은 제목. 생략하면 본문 제목을 그대로 쓴다. */
+  mobileTitle?: string;
   description?: React.ReactNode;
   meta?: React.ReactNode;
   /** 모바일 스크롤 요약에도 남길 핵심 정보(예: 현재가). */
@@ -83,9 +87,35 @@ export function PageHeader({
   containerClassName?: string;
   className?: string;
 }) {
+  const slots = useMobilePageHeader();
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  const integrated = mobile && !!slots?.titleTarget && !!slots?.actionsTarget;
+  const setActive = slots?.setActive;
+  useEffect(() => {
+    setActive?.(integrated);
+    return () => setActive?.(false);
+  }, [integrated, setActive]);
+
   return (
+    <>
+    {integrated && createPortal(<div data-mobile-page-title className="min-w-0">
+      <h1 title={mobileTitle} className="truncate text-sm font-semibold leading-5 text-neutral-900 dark:text-white">{mobileTitle ?? title}</h1>
+      {compactMeta && <div className="truncate text-xs leading-4 text-neutral-600 dark:text-neutral-300">{compactMeta}</div>}
+    </div>, slots!.titleTarget!)}
+    {integrated && createPortal(<div className="space-y-3">
+      <div className="text-sm font-semibold text-neutral-900 dark:text-white">{mobileTitle ?? title}</div>
+      {actions && <div data-mobile-page-actions className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>, slots!.actionsTarget!)}
     <header
       data-page-header
+      data-mobile-integrated={integrated || undefined}
       data-title-in-navigation={mobileTitleInNavigation || undefined}
       data-header-title-only={mobileTitleInNavigation && !actions && !compactMeta || undefined}
       className={cn(
@@ -117,11 +147,16 @@ export function PageHeader({
             )}
             {compactMeta && <div data-header-compact-meta className="hidden mt-1 text-xs font-medium">{compactMeta}</div>}
           </div>
-          {actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
+          {!integrated && actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
         </div>
       </div>
+      {integrated && (description || meta) && <div data-mobile-header-details className={cn(containerClassName ?? PAGE_WIDTH[width], "space-y-1 py-2 text-xs text-neutral-500 dark:text-neutral-400")}>
+        {description && <p>{description}</p>}
+        {meta && <div className="flex flex-wrap items-center gap-1.5">{meta}</div>}
+      </div>}
       {children}
     </header>
+    </>
   );
 }
 

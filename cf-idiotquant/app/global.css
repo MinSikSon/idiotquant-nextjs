@@ -274,6 +274,13 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
 
 /* 각 화면의 고정 헤더는 공통 네비게이션 바로 아래에 놓인다. */
 @media (max-width: 767px) {
+  [data-page-header][data-mobile-integrated] [data-header-main] { display: none; }
+  [data-mobile-page-actions] > :is(button, a)[aria-label] > span { display: none; }
+  [data-mobile-page-actions] > :is(button, a)[aria-label]::after { content: attr(aria-label); }
+  /* 단축키로 연 네이티브 대화상자는 도구 메뉴가 닫혀 있어도 표시한다. */
+  #mobile-page-tools[hidden]:has(dialog[open]) { display: block; }
+  [data-mobile-page-title] .tabular-nums { font-variant-numeric: tabular-nums; }
+  html[data-mobile-header-compact="true"] [data-mobile-header-details] { display: none; }
   body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: var(--topbar-h); }
   /* Rogue 는 스크롤할 페이지가 아니다. Safari 도구 막대가 보이는 높이에 고정해
      dvh 와 visual viewport 가 어긋날 때 생기는 하단 빈 칸과 세로 스크롤을 막는다. */
