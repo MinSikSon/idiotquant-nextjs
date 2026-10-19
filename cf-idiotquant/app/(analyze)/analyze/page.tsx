@@ -649,7 +649,7 @@ function AnalyzeContent() {
               <SearchAutocomplete
                 autoFocus={searchOpen}
                 onEscape={() => setSearchOpen(false)}
-                placeHolder="종목명·티커 검색 (예: 코어위브, CoreWeave, CRWV)"
+                placeHolder="종목명·티커 검색"
                 onSearchButton={handleSearch}
                 validCorpNameArray={staticStockData.allTickers}
                 stockNames={staticStockData.usStocks}
