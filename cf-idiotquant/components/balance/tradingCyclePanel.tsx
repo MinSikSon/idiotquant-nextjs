@@ -20,7 +20,7 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
     const tokens = (items: typeof stocks) => items.reduce((sum, stock) => sum + (numericValue(stock.token) ?? 0), 0);
     const ready = activity.state === "fulfilled";
     const money = (value: number) => country === "KR" ? won(value) : `$${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}`;
-    const monthly = budget?.state === "fulfilled" ? budget.monthly_budget_krw : numericValue(capital.charge_info?.capital_charge_per_month);
+    const monthly = budget?.state === "fulfilled" ? budget.monthly_budget_krw : capital.refill_plan?.account_monthly_krw ?? numericValue(capital.charge_info?.capital_charge_per_month);
     const assigned = new Map(activity.logs.map(log => [log, currentLogGroup(log, stocks, country)]));
     const unmatched = activity.logs.filter(log => !groups.some(group => group.id === assigned.get(log)));
     const rows = groups.map(group => ({ group, stocks: stocks.filter(stock => stock.group_id === group.id), logs: activity.logs.filter(log => assigned.get(log) === group.id) }));
@@ -53,6 +53,7 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
             <div className="grid gap-3 lg:grid-cols-2">
                 {rows.map(row => {
                     const { group } = row;
+                    const groupRefill = capital.refill_plan?.groups.find(item => item.group_id === group.id);
                     const sell = group.side === "sell";
                     const fullSell = sell && !group.dca;
                     const active = row.stocks.filter(stock => stock.action === "active");
@@ -75,6 +76,7 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                                 <div><p className="text-xs text-neutral-500 dark:text-neutral-400">적립 포인트</p><p className="mt-1 break-all text-2xl font-black tabular-nums text-neutral-900 dark:text-neutral-100">{won(tokens(row.stocks))}</p></div>
                                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400">월 예산 {Number(group.budget_krw) > 0 ? won(group.budget_krw!) : "계좌 예산 분배"}</p>
                             </div>
+                            {groupRefill && <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">마지막 실행 기준 {capital.refill_plan?.period_minutes}분마다 <b className="tabular-nums text-brand-ink">+{won(groupRefill.per_tick_krw)}</b> · 종목당 +{won(groupRefill.per_stock_krw)}</p>}
                             <div className="mt-4 rounded-xl bg-surface-canvas p-3 dark:bg-surface-dark">
                                 <p className={cn("flex items-center gap-1.5 text-xs font-bold", paused ? "text-neutral-500 dark:text-neutral-400" : "text-brand-ink")}><span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", paused ? "bg-neutral-400" : "bg-brand")} />{status}</p>
                                 {fullSell ? <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">정액매도 OFF · 포인트와 무관하게 보유 전량을 매도합니다.</p> : closest?.budget ? <>
