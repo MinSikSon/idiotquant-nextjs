@@ -61,3 +61,22 @@
     gap: 4px;
   }
 }
+
+
+@media (max-width: 639px) {
+  .page :global(.text-xs) { font-size: 11px; line-height: 1rem; }
+  .page :global(.text-sm) { font-size: 13px; line-height: 1.15rem; }
+  .page :global(.text-base) { font-size: 14px; line-height: 1.25rem; }
+  .page :global(.text-lg) { font-size: 16px; line-height: 1.4rem; }
+  .page :global(.text-xl) { font-size: 18px; line-height: 1.5rem; }
+  .page :global(.text-2xl) { font-size: 20px; line-height: 1.6rem; }
+  .page :global(.px-2\.5) { padding-inline: 0.5rem; }
+  .page :global(.px-3) { padding-inline: 0.625rem; }
+  .page :global(.px-4) { padding-inline: 0.75rem; }
+  .page :global(.px-5),
+  .page :global(.px-6) { padding-inline: 0.875rem; }
+  .page :global(.p-3) { padding: 0.625rem; }
+  .page :global(.p-4) { padding: 0.75rem; }
+  .page :global(.p-5),
+  .page :global(.p-6) { padding: 0.875rem; }
+}
