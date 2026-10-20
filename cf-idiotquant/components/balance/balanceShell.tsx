@@ -57,9 +57,9 @@ export function BalanceShell({
       <div className="max-w-[1280px] mx-auto px-2.5 py-4 md:px-4 md:py-10 space-y-3 md:space-y-6">
 
         {/* 헤더 */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-5">
+        <header className={cn(styles.header, "flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-5")}>
           <div className="space-y-2.5 min-w-0">
-            {breadcrumb}
+            <div className="hidden md:block">{breadcrumb}</div>
             {title}
             {lastUpdated ? (
               <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 tabular-nums">
@@ -80,7 +80,7 @@ export function BalanceShell({
               onRefresh={onRefresh}
               extra={headerExtra}
             />
-            {footerBadge}
+            <div className="hidden md:block">{footerBadge}</div>
           </div>
         </header>
 

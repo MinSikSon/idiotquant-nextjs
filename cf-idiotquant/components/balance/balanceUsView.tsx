@@ -484,7 +484,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       }
       title={
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
+          <h1 className="text-xl sm:text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
             US Portfolio
           </h1>
           <span className="flex items-center gap-1 px-3 py-1.5 bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white rounded-xl text-[10px] font-semibold tracking-widest uppercase shadow-none">
@@ -512,7 +512,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             {tradingStatus.US === null ? "자동매매" : tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
           </button>
           {exRate > 0 && (
-            <div className="flex items-center gap-2 bg-white dark:bg-surface-dark-card px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark shadow-none">
+            <div className="order-last flex w-full items-center gap-2 py-1 sm:order-none sm:w-auto sm:bg-white sm:dark:bg-surface-dark-card sm:px-3 sm:py-2 sm:rounded-xl sm:border sm:border-neutral-200 sm:dark:border-border-subtle-dark">
               <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
               <span className="text-sm tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">
                 {exRate.toLocaleString()}원
@@ -526,7 +526,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-kpi",
           node: (
             <>
-              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-0 min-[480px]:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <UsdKpiCard
                   label="총 자산 (USD)"
                   mainValue={isFirstLoad ? null : fmtUsd(totalAssetUsd)}

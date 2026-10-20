@@ -22,3 +22,42 @@
   font-weight: 460;
   letter-spacing: -0.025em;
 }
+
+/* Mobile uses a single quiet ledger instead of four floating KPI cards. */
+@media (max-width: 479px) {
+  .page :global(#section-kpi) {
+    overflow: hidden;
+    border: 1px solid #e3e3e2;
+    border-radius: 12px;
+    background: white;
+  }
+
+  .page :global(#section-kpi) > div {
+    min-height: 44px;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .page :global(#section-kpi) > div + div {
+    border-top: 1px solid #e3e3e2;
+  }
+
+  :global(.dark) .page :global(#section-kpi),
+  :global(.dark) .page :global(#section-kpi) > div + div {
+    border-color: #393638;
+  }
+}
+
+@media (max-width: 767px) {
+  .header {
+    gap: 8px;
+  }
+
+  .header > div:last-child {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

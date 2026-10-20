@@ -507,7 +507,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       }
       title={
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
+          <h1 className="text-xl sm:text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
             Portfolio Balance
           </h1>
           <span className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">KR</span>
@@ -542,7 +542,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-kpi",
           node: (
             <>
-              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-0 min-[480px]:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <KpiCard
                   label="총 평가 금액"
                   value={isFirstLoad ? null : `${totalEvalAmt.toLocaleString()}원`}
