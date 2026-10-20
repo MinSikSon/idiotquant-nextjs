@@ -24,47 +24,25 @@ export function SectionNav({
   onMobileTabChange?: (id: string) => void;
 }) {
   return (
-    <nav className="sticky top-0 z-30 bg-white/90 dark:bg-surface-dark/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-border-subtle-dark transition-colors duration-300">
-      <div className="max-w-[1600px] mx-auto px-2.5 md:px-4">
-
-        {/* 모바일 탭바 */}
-        <div className="flex md:hidden overflow-x-auto scrollbar-hide">
-          {sections.map(({ id, label, icon }) => (
-            <button
-              key={id}
-              onClick={() => onMobileTabChange?.(id)}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-2 text-xs whitespace-nowrap transition-all shrink-0 border-b-2 font-semibold",
-                mobileTab === id
-                  ? "border-brand text-brand-ink dark:text-brand-ink"
-                  : "border-transparent text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300"
-              )}
-            >
-              <span className="shrink-0">{icon}</span>
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* 데스크탑 탭 네비 */}
-        <div className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 md:py-4">
-          {sections.map(({ id, label, icon }) => (
-            <button
-              key={id}
-              onClick={() => onMobileTabChange?.(id)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all shrink-0",
-                mobileTab === id
-                  ? "bg-surface-muted/80 dark:bg-surface-dark-muted text-neutral-900 dark:text-neutral-50 font-semibold"
-                  : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
-              )}
-            >
-              <span className="shrink-0">{icon}</span>
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
+    <nav aria-label="포트폴리오 보기" className="sticky top-[var(--topbar-h,48px)] z-30 border-b border-neutral-200 bg-surface-canvas/95 backdrop-blur-md dark:border-neutral-700 dark:bg-surface-dark-canvas/95">
+      <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+        {sections.map(({ id, label, icon }) => (
+          <button
+            key={id}
+            type="button"
+            aria-current={mobileTab === id ? "page" : undefined}
+            onClick={() => onMobileTabChange?.(id)}
+            className={cn(
+              "flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-500 md:px-4 md:text-sm",
+              mobileTab === id
+                ? "border-neutral-900 text-neutral-900 dark:border-neutral-100 dark:text-neutral-100"
+                : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+            )}
+          >
+            <span aria-hidden="true" className="shrink-0">{icon}</span>
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
     </nav>
   );

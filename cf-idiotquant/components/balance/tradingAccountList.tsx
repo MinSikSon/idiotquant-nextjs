@@ -58,14 +58,14 @@ export default function TradingAccountList({ country, balanceKey, onSelect, refr
                   className={cn(
                     "w-full flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-left transition-colors",
                     selected
-                      ? "border-brand bg-brand-light dark:bg-brand-muted/20"
+                      ? "border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800/20"
                       : "border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-300 dark:hover:border-surface-dark-elevated"
                   )}
                 >
-                  <span className="font-mono text-xs font-bold dark:text-white">{acc.user_id}</span>
-                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black",
+                  <span className="tabular-nums text-xs font-bold dark:text-white">{acc.user_id}</span>
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold",
                     acc.is_active
-                      ? "bg-brand-light text-brand-ink dark:bg-brand-muted/40"
+                      ? "bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/40"
                       : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
                     <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{acc.is_active ? "대상" : "제외"}
                   </span>

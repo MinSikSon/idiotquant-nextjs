@@ -83,13 +83,13 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
           <KeyRound className="w-3.5 h-3.5" />
           {exists ? "등록된 계정" : "계정 미등록"}
           {exists && (
-            <span className={cn("ml-1 rounded-full px-2 py-0.5 text-[10px] font-black",
-              info?.is_active ? "bg-brand-light text-brand-ink dark:bg-brand-muted/30" : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
+            <span className={cn("ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+              info?.is_active ? "bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/30" : "bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted")}>
               <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{info?.is_active ? "대상" : "제외"}
             </span>
           )}
         </span>
-        <span className="text-[11px] font-mono text-neutral-400">{balanceKey || "-"}</span>
+        <span className="text-[11px] tabular-nums text-neutral-400">{balanceKey || "-"}</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -118,11 +118,11 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs font-bold text-neutral-600 dark:text-neutral-300 cursor-pointer">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)}
-            className="h-4 w-4 rounded border-neutral-300 text-brand-ink focus:ring-brand" />
+            className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
           자동매매 대상에 포함
         </label>
         {msg && (
-          <span className={cn("text-xs font-bold", msg.type === "ok" ? "text-brand-ink" : "text-red-500")}>{msg.text}</span>
+          <span className={cn("text-xs font-bold", msg.type === "ok" ? "text-neutral-900 dark:text-neutral-100" : "text-red-500")}>{msg.text}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
           {exists && (
@@ -132,7 +132,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
             </button>
           )}
           <button onClick={onSave} disabled={saving || loading}
-            className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-xs font-black text-white hover:bg-brand-hover disabled:opacity-50">
+            className="flex items-center gap-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-900 dark:hover:bg-neutral-100 disabled:opacity-50">
             <Save className="w-3.5 h-3.5" /> {saving ? "저장 중…" : "저장"}
           </button>
         </div>
