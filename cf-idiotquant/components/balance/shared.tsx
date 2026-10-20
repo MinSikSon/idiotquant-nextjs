@@ -71,7 +71,7 @@ export function SectionHeader({
           {icon}
         </div>
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
             <h3 className="font-semibold text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
             {badge}
             {subtitle && <DetailHelp label={title}>{subtitle}</DetailHelp>}
@@ -283,7 +283,7 @@ export function BalanceHeaderActions({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-1.5 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
       {extra}
       <button
         onClick={onToggleAutoRefresh}
@@ -300,10 +300,11 @@ export function BalanceHeaderActions({
       <button
         onClick={onRefresh}
         disabled={isLoading}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
+        aria-label="잔고 새로고침"
+        className="flex min-w-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
       >
         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
-        새로고침
+        <span className="hidden sm:inline">새로고침</span>
       </button>
     </div>
   );
