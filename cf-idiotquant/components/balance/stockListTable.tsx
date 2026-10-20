@@ -28,7 +28,7 @@ import {
   ArrowRightLeft,
   CircleCheck,
   CircleSlash,
-  CircleDashed,
+  Clock3,
   RotateCcw,
   SlidersHorizontal,
 } from "lucide-react";
@@ -66,31 +66,40 @@ function resolveDisplayName(symbol: string, rawName?: string | null): string | u
 const PICK_SEP = "::";
 const pickKey = (section: string, symbol: string) => `${section}${PICK_SEP}${symbol}`;
 
-type Tone = "active" | "idle" | "excluded" | "off";
-interface EffStatus { label: string; tone: Tone; }
+type Tone = "active" | "idle" | "excluded" | "off" | "watch";
+interface EffStatus { label: string; tone: Tone; description: string; }
+
+const STOCK_STATUS: Record<Tone, EffStatus> = {
+  active: { label: "매매 대상", tone: "active", description: "최근 실행에서 자동매매 대상으로 선정되었습니다. 실제 주문·체결 여부는 거래 내역에서 확인하세요." },
+  idle: { label: "선정 대기", tone: "idle", description: "풀은 켜져 있으나 최근 실행에서 선정되지 않았거나 다음 실행을 기다리고 있습니다. 조건과 상위 종목 수를 확인하세요." },
+  excluded: { label: "매매 제외", tone: "excluded", description: "소속 풀의 자동매매가 꺼져 있거나 풀에 배정되지 않아 자동매매 대상에서 제외됩니다." },
+  off: { label: "매매 OFF", tone: "off", description: "해당 국가의 자동매매가 꺼져 있어 이 종목도 자동매매하지 않습니다." },
+  watch: { label: "관심", tone: "watch", description: "관심목록에만 있는 종목입니다. 자동매매하려면 복사하여 운용 풀에 넣으세요." },
+};
 
 /** 종목의 실제 자동매매 상태(최근 스케줄 실행 + 현재 토글 기준) */
 function capitalStatus(action: string | undefined | null, groupActive: boolean, countryActive: boolean): EffStatus {
-  if (!countryActive) return { label: "자동매매 OFF", tone: "off" };
-  if (!groupActive) return { label: "제외", tone: "excluded" };
-  if (action === "active") return { label: "매매중", tone: "active" };
-  return { label: "대기", tone: "idle" };
+  if (!countryActive) return STOCK_STATUS.off;
+  if (!groupActive) return STOCK_STATUS.excluded;
+  if (action === "active") return STOCK_STATUS.active;
+  return STOCK_STATUS.idle;
 }
 // 좋아요는 관심목록 전용(자동매매 대상 아님). 매매하려면 '복사'로 실제 그룹에 넣는다.
-const WATCH_STATUS: EffStatus = { label: "관심", tone: "off" };
+const WATCH_STATUS = STOCK_STATUS.watch;
 
 function StatusBadge({ status }: { status?: EffStatus }) {
-  if (!status) return <span className="text-neutral-300">-</span>;
+  if (!status) return <span className="text-neutral-500">미확인</span>;
   const map: Record<Tone, string> = {
-    active: "bg-brand text-white",
-    idle: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    excluded: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-    off: "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
+    active: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+    idle: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
+    excluded: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300",
+    off: "border-neutral-300 bg-neutral-100 text-neutral-600 dark:border-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-300",
+    watch: "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300",
   };
-  const Icon = status.tone === "active" ? CircleCheck : status.tone === "excluded" ? CircleSlash : CircleDashed;
+  const Icon = { active: CircleCheck, idle: Clock3, excluded: CircleSlash, off: Power, watch: Heart }[status.tone];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold", map[status.tone])}>
-      <Icon className="w-3 h-3" /> {status.label}
+    <span title={status.description} className={cn("inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-1 text-[11px] font-bold leading-none", map[status.tone])}>
+      <Icon className="h-3 w-3" aria-hidden="true" />{status.label}
     </span>
   );
 }
@@ -418,7 +427,7 @@ function StockListTable({
             </span>
             {countryTradingActive ? (
               <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                현재 <span className="text-brand-ink">{summary.active}종목</span> 매매중
+                현재 <span className="text-brand-ink">{summary.active}종목</span> 매매 대상
                 <span className="ml-1 text-xs font-normal text-neutral-400">/ 운용 {summary.total}종목</span>
               </span>
             ) : (
@@ -426,9 +435,9 @@ function StockListTable({
             )}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-mono">
-            <span className="rounded-md bg-brand/10 px-2 py-1 font-bold text-brand-ink">매매중 {summary.active}</span>
-            <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">대기 {summary.idle}</span>
-            <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">제외 {summary.excluded}</span>
+            <span className="rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">매매 대상 {summary.active}</span>
+            <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">선정 대기 {summary.idle}</span>
+            <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">매매 제외 {summary.excluded}</span>
           </div>
         </div>
 
@@ -446,22 +455,17 @@ function StockListTable({
         {/* 상태 설명 토글 */}
         <button
           onClick={() => setShowLegend(v => !v)}
-          className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+          aria-expanded={showLegend}
+          className="mt-2 inline-flex min-h-9 items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
         >
           {showLegend ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />} 종목 상태 설명
         </button>
         {showLegend && (
           <div className="mt-2 grid grid-cols-1 gap-1.5 rounded-lg border border-neutral-100 bg-[#fcfaf7] p-3 sm:grid-cols-2 dark:border-border-subtle-dark dark:bg-surface-dark-card">
-            {([
-              { s: { label: "매매중", tone: "active" as Tone }, d: "현재 자동매매 대상. 마지막 실행에서 활성 종목으로 선정됨." },
-              { s: { label: "대기", tone: "idle" as Tone }, d: "운용 목록엔 있으나 이번엔 미선정 (NCAV 상위 N 밖 / 조건 미달 / 다음 실행 대기)." },
-              { s: { label: "후보(찜)", tone: "idle" as Tone }, d: "좋아요 종목. 찜 그룹 자동매매 ON이면 다음 실행 때 후보로 합류 (아직 운용 목록 아님)." },
-              { s: { label: "제외", tone: "excluded" as Tone }, d: "속한 그룹(또는 찜)의 자동매매가 OFF라 매매에서 제외됨." },
-              { s: { label: "자동매매 OFF", tone: "off" as Tone }, d: "국가 자동매매가 꺼져 있어 어떤 종목도 매매되지 않음." },
-            ]).map((row, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <StatusBadge status={row.s} />
-                <span className="text-[10px] leading-snug text-neutral-500 dark:text-neutral-400">{row.d}</span>
+            {Object.values(STOCK_STATUS).map(status => (
+              <div key={status.tone} className="flex items-start gap-2">
+                <StatusBadge status={status} />
+                <span className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">{status.description}</span>
               </div>
             ))}
           </div>
@@ -1244,8 +1248,8 @@ function GroupSection({
                 <details className="group/stock min-w-0 flex-1">
                   <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
                     <span className="min-w-0 flex-1 truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
-                    <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", row.status?.tone === "active" ? "bg-brand" : row.status?.tone === "excluded" ? "bg-red-400" : row.status?.tone === "idle" ? "bg-amber-400" : "bg-neutral-400")} role="img" aria-label={row.status?.label ?? "상태 미확인"} />
-                    <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums text-brand-ink" aria-label={row.movable ? `포인트 ${Number(row.token ?? 0).toLocaleString()}원` : "관심 종목"}>{row.movable ? `₩${Number(row.token ?? 0).toLocaleString()}` : "관심"}</span>
+                    <StatusBadge status={row.status} />
+                    {row.movable && <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums text-brand-ink" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
                   </summary>
                   <div className="pb-3 pt-1">
@@ -1257,6 +1261,8 @@ function GroupSection({
                         {onDeleteStock && <button onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }} aria-label={`${row.name || row.symbol} 종목 제거`} className="flex h-11 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>}
                       </div>
                     </div>
+
+                    {row.status && <p className="mb-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">{row.status.description}</p>}
 
                 {/* 항목명과 값을 한 줄에 두고 좁은 화면에서는 전체 폭을 사용 */}
                 <div className="mt-1.5 grid grid-cols-1 min-[480px]:grid-cols-2 gap-1">
