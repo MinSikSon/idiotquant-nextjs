@@ -13,24 +13,25 @@ type Country = "kr" | "us";
 // KR / US 전환 토글
 // =========================================================================
 function CountryToggle({ country, onChange }: { country: Country; onChange: (c: Country) => void }) {
-  const items: { id: Country; label: string; flag: string }[] = [
-    { id: "kr", label: "한국", flag: "🇰🇷" },
-    { id: "us", label: "미국", flag: "🇺🇸" },
+  const items: { id: Country; label: string; code: string }[] = [
+    { id: "kr", label: "한국", code: "KR" },
+    { id: "us", label: "미국", code: "US" },
   ];
   return (
     <div className="flex items-center gap-1 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl">
       {items.map(it => (
         <button
           key={it.id}
+          aria-pressed={country === it.id}
           onClick={() => onChange(it.id)}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap",
+            "flex items-center gap-1.5 min-h-11 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
             country === it.id
-              ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-sm"
+              ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none"
               : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300"
           )}
         >
-          <span aria-hidden>{it.flag}</span>
+          <span className="text-[10px] tracking-wide text-neutral-500" aria-hidden="true">{it.code}</span>
           {it.label}
         </button>
       ))}

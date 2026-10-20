@@ -50,8 +50,8 @@ export type { ToastType, ToastItem } from "@/components/ui/toast";
 export function LoadingState({ message = "계좌 데이터를 불러오는 중..." }: { message?: string }) {
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-surface-dark-canvas gap-3">
-      <div className="p-4 rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
-        <Loader2 className="w-7 h-7 text-brand-ink animate-spin" />
+      <div className="p-4 rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-none">
+        <Loader2 className="w-7 h-7 text-neutral-900 dark:text-neutral-100 animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -67,12 +67,12 @@ export function SectionHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2.5 md:gap-3 md:mb-5 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-surface-canvas dark:bg-surface-dark-muted rounded-xl text-neutral-600 dark:text-neutral-400 shrink-0">
+        <div className="text-neutral-500 dark:text-neutral-400 shrink-0">
           {icon}
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-black text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
+            <h3 className="font-semibold text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
             {badge}
             {subtitle && <DetailHelp label={title}>{subtitle}</DetailHelp>}
           </div>
@@ -93,8 +93,8 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
   if (!isMaster) return null;
   const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
   return (
-    <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-sm">
-      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase">
+    <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-[10px] font-semibold uppercase">
         <Key size={12} /> MASTER MODE
       </div>
       <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">계좌 선택</span>
@@ -125,9 +125,9 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap",
+        "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
         active
-          ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-sm"
+          ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none"
           : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300"
       )}
     >
@@ -166,8 +166,8 @@ export function MetricChip({ icon, label, value, valueClass = "text-neutral-900 
 }) {
   return (
     <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-col gap-0.5">
-      <span className="flex items-center gap-1.5 text-[11px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
-      <span className={cn("text-sm font-mono font-black break-words", valueClass)}>{value}</span>
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
+      <span className={cn("text-sm tabular-nums font-semibold break-words", valueClass)}>{value}</span>
     </div>
   );
 }
@@ -175,21 +175,21 @@ export function MetricChip({ icon, label, value, valueClass = "text-neutral-900 
 // =========================================================================
 // KPI 카드 (단일값 — KR)
 // =========================================================================
-export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-neutral-900 dark:text-white", accentColor = "bg-neutral-200 dark:bg-surface-dark-elevated" }: {
+export function KpiCard({ label, value, sub, icon, valueColor = "text-neutral-900 dark:text-white" }: {
   label: string; value: string | null; sub: string;
-  icon: React.ReactNode; iconBg: string; valueColor?: string; accentColor?: string;
+  icon: React.ReactNode; valueColor?: string;
 }) {
   if (value === null) return <KpiCardSkeleton />;
 
   return (
     <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-2.5 py-2 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-3 md:p-5">
-      <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
+
       <div className="flex items-center gap-2 min-[480px]:justify-between">
-        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
-        <div aria-hidden="true" className={cn("order-first min-[480px]:order-last p-1.5 min-[480px]:p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
+        <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
+        <div aria-hidden="true" className="order-first shrink-0 text-neutral-500 min-[480px]:order-last dark:text-neutral-400">{icon}</div>
       </div>
       <div className="min-w-0 text-right min-[480px]:text-left">
-        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", valueColor)}>{value}</div>
+        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-semibold tracking-tight tabular-nums break-words", valueColor)}>{value}</div>
       </div>
     </div>
   );
@@ -201,23 +201,23 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
 export function UsdKpiCard({
   label, mainValue, mainColor = "text-neutral-900 dark:text-white",
   subLabel, subValue, subColor = "text-neutral-800 dark:text-neutral-200",
-  icon, iconBg, loading, accentColor = "bg-neutral-200 dark:bg-surface-dark-elevated",
+  icon, loading,
 }: {
   label: string; mainValue: string | null; mainColor?: string;
   subLabel: string; subValue: string | null; subColor?: string;
-  icon: React.ReactNode; iconBg: string; loading: boolean; accentColor?: string;
+  icon: React.ReactNode; loading: boolean;
 }) {
   if (loading || mainValue === null) return <UsdKpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-2.5 py-2 min-[480px]:p-3 md:p-5 shadow-sm overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
-      <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
+    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-2.5 py-2 min-[480px]:p-3 md:p-5 shadow-none overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
+
       <div className="flex items-center gap-2 min-[480px]:justify-between">
-        <span className="text-xs font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
-        <div aria-hidden="true" className={cn("order-first min-[480px]:order-last p-1.5 min-[480px]:p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
+        <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
+        <div aria-hidden="true" className="order-first shrink-0 text-neutral-500 min-[480px]:order-last dark:text-neutral-400">{icon}</div>
       </div>
       <div className="min-w-0 text-right min-[480px]:text-left">
-        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-black tracking-tight font-mono break-words", mainColor)}>{mainValue}</div>
+        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-semibold tracking-tight tabular-nums break-words", mainColor)}>{mainValue}</div>
 
       </div>
     </div>
@@ -316,18 +316,8 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
   return positive ? <ArrowUpRight size={size} /> : <ArrowDownRight size={size} />;
 }
 
-export function pnlIconBg(positive: boolean) {
-  return positive
-    ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400";
-}
-
 export function pnlValueColor(positive: boolean) {
   return positive ? "text-red-500" : "text-emerald-600 dark:text-emerald-400";
-}
-
-export function pnlAccentColor(positive: boolean) {
-  return positive ? "bg-red-400 dark:bg-red-600" : "bg-emerald-500 dark:bg-emerald-500";
 }
 
 // =========================================================================
@@ -351,7 +341,7 @@ export function KpiCardSkeleton() {
 
 export function UsdKpiCardSkeleton() {
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
+    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-4 sm:p-5 shadow-none overflow-hidden flex flex-col justify-between gap-3">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
       <div className="flex items-center justify-between">
         <div className="h-3 w-20 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
@@ -413,7 +403,7 @@ export function TableHeader({ headers }: { headers: { label: string; align?: str
           <th
             key={h.label}
             className={cn(
-              "py-3 px-4 text-[10px] font-black text-neutral-400 uppercase tracking-widest",
+              "py-3 px-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest",
               h.align
             )}
           >

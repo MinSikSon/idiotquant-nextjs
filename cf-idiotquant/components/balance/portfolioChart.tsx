@@ -11,17 +11,8 @@ import { TabButton, ChartSectionSkeleton, fmtKrw } from "@/components/balance/sh
 // =========================================================================
 // 팔레트
 // =========================================================================
-const PIE_COLORS_LIGHT = [
-  "#3b82f6", "#10b981", "#f59e0b", "#ec4899",
-  "#8b5cf6", "#ef4444", "#14b8a6", "#6366f1",
-  "#f97316", "#06b6d4",
-];
-
-const PIE_COLORS_DARK = [
-  "#60a5fa", "#34d399", "#fbbf24", "#f472b6",
-  "#a78bfa", "#f87171", "#2dd4bf", "#818cf8",
-  "#fb923c", "#22d3ee",
-];
+const PIE_COLORS_LIGHT = ["#292827", "#8b8985", "#555350", "#c7c4be", "#716e68", "#e3e0da", "#aaa69e", "#403e3a"];
+const PIE_COLORS_DARK = ["#eeece7", "#898680", "#c5c1b9", "#55534e", "#a6a198", "#3b3936", "#706c65", "#d8d4cc"];
 
 // =========================================================================
 // 커스텀 툴팁
@@ -36,7 +27,7 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
     : "";
 
   return (
-    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated shadow-lg">
+    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated shadow-none">
       <p className="text-xs font-bold text-neutral-900 dark:text-white">{name}</p>
       <p className="text-xs text-neutral-600 dark:text-neutral-300">
         {formatter(value)}{pctStr ? ` (${pctStr})` : ""}
@@ -51,9 +42,9 @@ function BarTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
   const { name, value } = payload[0];
 
   return (
-    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated shadow-lg">
+    <div className="bg-white dark:bg-surface-dark-muted px-3 py-2 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated shadow-none">
       <p className="text-xs font-bold text-neutral-900 dark:text-white">{name}</p>
-      <p className="text-xs font-mono text-neutral-600 dark:text-neutral-300">
+      <p className="text-xs tabular-nums text-neutral-600 dark:text-neutral-300">
         {value.toFixed(2)}%
       </p>
     </div>
@@ -115,7 +106,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
               endAngle={-270}
             >
               {pieData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} stroke={isDark ? "#1c1c20" : "#ffffff"} strokeWidth={2} />
               ))}
             </Pie>
             <Tooltip content={<PieTooltip />} />
@@ -139,12 +130,12 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
                 <p className="text-sm font-bold text-neutral-900 dark:text-white break-words">
                   {item.name}
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
                   {formatter(item.value)}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-sm font-black text-neutral-900 dark:text-white">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
                   {percent.toFixed(1)}%
                 </p>
               </div>

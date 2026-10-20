@@ -77,7 +77,7 @@ import {
   useToast,
   SectionHeader, SectionPanel, EmptyRow, AccountSelector,
   UsdKpiCard, MetricChip, TableHeader, OrderTabAction, OrderSectionIcon,
-  PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
+  PnlIcon, pnlValueColor,
   fmtUsd, fmtKrw, formatTime,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
@@ -95,11 +95,11 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {formatTime(item.ord_tmd)}
         </span>
-        <span className="text-[10px] font-mono text-neutral-400 block mt-0.5">No. {item.odno}</span>
+        <span className="text-[10px] tabular-nums text-neutral-400 block mt-0.5">No. {item.odno}</span>
       </td>
       <td className="py-3.5 px-4">
         <span className={cn(
-          "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
+          "px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide",
           isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
         )}>
           {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
@@ -107,23 +107,23 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       </td>
       <td className="py-3.5 px-4">
         <span className="font-bold text-neutral-900 dark:text-white text-xs block">{item.prdt_name}</span>
-        <span className="text-[10px] font-mono text-neutral-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
+        <span className="text-[10px] tabular-nums text-neutral-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
       </td>
-      <td className="py-3.5 px-4 text-right font-mono">
+      <td className="py-3.5 px-4 text-right tabular-nums">
         <span className="block text-xs font-bold text-neutral-700 dark:text-neutral-300">{item.ft_ord_qty || "-"}</span>
         <span className="text-[10px] text-neutral-400">주문</span>
       </td>
-      <td className="py-3.5 px-4 text-right font-mono">
+      <td className="py-3.5 px-4 text-right tabular-nums">
         {hasPartialFill ? (
           <>
-            <span className="block text-xs font-black text-neutral-900 dark:text-white">{item.ft_ccld_qty}</span>
+            <span className="block text-xs font-semibold text-neutral-900 dark:text-white">{item.ft_ccld_qty}</span>
             <span className="text-[10px] font-bold text-emerald-500">체결</span>
           </>
         ) : (
           <span className="text-xs text-neutral-400">-</span>
         )}
       </td>
-      <td className="py-3.5 px-4 text-right font-mono">
+      <td className="py-3.5 px-4 text-right tabular-nums">
         <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block">
           {Number(item.ft_ord_unpr3 || 0) > 0 ? fmtUsd(item.ft_ord_unpr3) : "-"}
         </span>
@@ -131,15 +131,15 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           <span className="text-[10px] text-neutral-400">{fmtUsd(item.ft_ccld_unpr3)} 체결가</span>
         )}
       </td>
-      <td className="py-3.5 px-4 text-right font-mono">
+      <td className="py-3.5 px-4 text-right tabular-nums">
         {hasPartialFill && Number(item.ft_ccld_amt3 || 0) > 0
-          ? <span className="text-xs font-black text-neutral-900 dark:text-white">{fmtUsd(item.ft_ccld_amt3)}</span>
+          ? <span className="text-xs font-semibold text-neutral-900 dark:text-white">{fmtUsd(item.ft_ccld_amt3)}</span>
           : <span className="text-xs text-neutral-400">-</span>
         }
       </td>
       <td className="py-3.5 px-4 text-center">
         <span className={cn(
-          "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide",
+          "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide",
           item.prcs_stat_name?.includes("체결") || item.prcs_stat_name?.includes("완료")
             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
             : isNccs
@@ -149,9 +149,9 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           {item.prcs_stat_name || (isNccs ? "대기" : "-")}
         </span>
       </td>
-      <td className="py-3.5 px-4 text-right font-mono">
+      <td className="py-3.5 px-4 text-right tabular-nums">
         <span className={cn(
-          "text-xs font-black px-2 py-0.5 rounded-full",
+          "text-xs font-semibold px-2 py-0.5 rounded-full",
           Number(item.nccs_qty || 0) > 0
             ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30"
             : "text-neutral-400"
@@ -427,11 +427,11 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
         <div className="p-5 bg-red-50 dark:bg-red-900/20 rounded-2xl mb-4">
           <AlertCircle className="w-10 h-10 text-red-500" />
         </div>
-        <h2 className="text-xl font-black mb-2 dark:text-white">미국 계좌 조회 권한 없음</h2>
+        <h2 className="text-xl font-semibold mb-2 dark:text-white">미국 계좌 조회 권한 없음</h2>
         <p className="text-sm text-neutral-500 mb-5 max-w-xs">해외 주식 API 권한 또는 접근 토큰을 확인해 주세요.</p>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-black rounded-xl"
+          className="flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-semibold rounded-xl"
         >
           <RefreshCw size={13} /> 다시 시도
         </button>
@@ -459,7 +459,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
       isLoading={isLoading}
       onRefresh={handleRefresh}
-      dividerClass="via-brand dark:via-brand-hover"
       accountSelector={
         <AccountSelector
           balanceKey={balanceKey}
@@ -478,17 +477,17 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             해외 투자
           </span>
           <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-          <span className="flex items-center gap-1 text-brand-ink dark:text-brand-ink bg-brand-light dark:bg-brand-muted/20 px-2 py-0.5 rounded-md">
+          <span className="flex items-center gap-1 text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800/20 px-2 py-0.5 rounded-md">
             <Building2 size={11} />미국(US)
           </span>
         </nav>
       }
       title={
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-brand to-indigo-500 dark:from-brand dark:to-indigo-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
             US Portfolio
           </h1>
-          <span className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-brand/30">
+          <span className="flex items-center gap-1 px-3 py-1.5 bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white rounded-xl text-[10px] font-semibold tracking-widest uppercase shadow-none">
             <DollarSign size={11} /> USD Account
           </span>
         </div>
@@ -504,18 +503,18 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
               tradingStatus.US
-                ? "bg-brand-light dark:bg-brand-muted/30 text-brand-ink border-brand-light-hover dark:border-brand/40"
+                ? "bg-neutral-100 dark:bg-neutral-800/30 text-neutral-900 dark:text-neutral-100 border-neutral-300 dark:border-neutral-600/40"
                 : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
               (tradingStatus.state === "pending" || tradingStatus.US === null) && "opacity-60 cursor-not-allowed"
             )}
           >
-            <Power size={13} className={tradingStatus.US ? "text-brand-ink" : ""} />
+            <Power size={13} className={tradingStatus.US ? "text-neutral-900 dark:text-neutral-100" : ""} />
             {tradingStatus.US === null ? "자동매매" : tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
           </button>
           {exRate > 0 && (
-            <div className="flex items-center gap-2 bg-white dark:bg-surface-dark-card px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark shadow-sm">
-              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
-              <span className="text-sm font-mono font-black text-brand-ink dark:text-brand-ink">
+            <div className="flex items-center gap-2 bg-white dark:bg-surface-dark-card px-3 py-2 rounded-xl border border-neutral-200 dark:border-border-subtle-dark shadow-none">
+              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
+              <span className="text-sm tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">
                 {exRate.toLocaleString()}원
               </span>
             </div>
@@ -531,12 +530,10 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 <UsdKpiCard
                   label="총 자산 (USD)"
                   mainValue={isFirstLoad ? null : fmtUsd(totalAssetUsd)}
-                  mainColor="text-brand-ink dark:text-brand-ink"
+                  mainColor="text-neutral-900 dark:text-neutral-100"
                   subLabel="원화 평가액"
                   subValue={isFirstLoad ? null : fmtKrw(totalAssetKrw)}
                   icon={<BarChart3 size={15} />}
-                  iconBg="bg-brand-light dark:bg-brand-muted/40 text-brand-ink"
-                  accentColor="bg-brand dark:bg-brand"
                   loading={isFirstLoad}
                 />
                 <UsdKpiCard
@@ -545,8 +542,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                   subLabel="익일 출금 가능"
                   subValue={isFirstLoad ? null : fmtUsd(nxdyFrcrDrwg)}
                   icon={<Wallet size={15} />}
-                  iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
-                  accentColor="bg-amber-400 dark:bg-amber-600"
                   loading={isFirstLoad}
                 />
                 <UsdKpiCard
@@ -555,8 +550,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                   subLabel="원화 환산액"
                   subValue={isFirstLoad ? null : fmtKrw(stockEvalKrw)}
                   icon={<TrendingUp size={15} />}
-                  iconBg="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500"
-                  accentColor="bg-indigo-400 dark:bg-indigo-600"
                   loading={isFirstLoad}
                 />
                 <UsdKpiCard
@@ -567,8 +560,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                   subValue={isFirstLoad ? null : fmtKrw(totalPnlKrw)}
                   subColor={pnlValueColor(isPnlPositive)}
                   icon={<PnlIcon positive={isPnlPositive} />}
-                  iconBg={pnlIconBg(isPnlPositive)}
-                  accentColor={pnlAccentColor(isPnlPositive)}
                   loading={isFirstLoad}
                 />
               </section>
@@ -598,7 +589,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                       icon={<ArrowUpFromLine size={13} />}
                       label="금일 매도 (USD)"
                       value={fmtUsd(frcr_sll_smtl)}
-                      valueClass="text-brand-ink"
+                      valueClass="text-neutral-900 dark:text-neutral-100"
                     />
                     <MetricChip
                       icon={<ArrowLeftRight size={13} />}
@@ -611,7 +602,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                         icon={<Coins size={13} />}
                         label="CMA 평가 (KRW)"
                         value={fmtKrw(cmaEvluAmtUs)}
-                        valueClass="text-indigo-500 dark:text-indigo-400"
+                        valueClass="text-neutral-700 dark:text-neutral-300"
                       />
                     )}
                     {positions.length > 0 && (
@@ -627,7 +618,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                         icon={<PieChart size={13} />}
                         label="주식 비중"
                         value={`${stockWeight.toFixed(1)}%`}
-                        valueClass="text-indigo-500 dark:text-indigo-400"
+                        valueClass="text-neutral-700 dark:text-neutral-300"
                       />
                     )}
                     {totLoanAmtUs > 0 && (
@@ -695,9 +686,9 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 subtitle="미국 전략 자동매매 종목 풀 및 토큰(예산) 관리"
                 badge={
                   usCapital.state === "pending"
-                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : usCapital.stock_list?.length > 0
-                    ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
+                    ? <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
                     : null
                 }
               />
@@ -752,10 +743,10 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 subtitle="백엔드 quant rule(NCAV 비율·필터·활성 종목 수 등) 조회 및 수정"
                 badge={
                   usQuantRule.state === "pending"
-                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                     : usQuantRule.is_override
-                    ? <span className="text-[10px] font-mono text-brand-ink bg-brand-light dark:bg-brand-muted/30 px-2 py-0.5 rounded-full">계좌 전용</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
+                    ? <span className="text-[10px] tabular-nums text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800/30 px-2 py-0.5 rounded-full">계좌 전용</span>
+                    : <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
                 }
               />
               <QuantRuleEditor
@@ -777,8 +768,8 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 subtitle="스케줄러(5분마다) 가동 상태 · 토큰 리필 · 최근 자동 체결 내역"
                 badge={
                   usActivity.state === "pending"
-                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">최근 {usActivity.logs.length}건</span>
+                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    : <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">최근 {usActivity.logs.length}건</span>
                 }
               />
               <TradingActivityPanel
