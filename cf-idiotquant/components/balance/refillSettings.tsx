@@ -46,14 +46,14 @@ export default function RefillSettings({
     const editorOpen = editing;
 
     return (
-        <section className="rounded-xl border border-neutral-200 bg-white p-3 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-4" aria-label="자동매매 토큰 리필">
+        <section className="rounded-xl border border-neutral-200 bg-white px-2.5 py-1.5 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-4" aria-label="자동매매 토큰 리필">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                 <h4 className="flex items-center gap-1.5 text-sm font-bold text-neutral-900 dark:text-neutral-100"><Coins size={15} className="text-neutral-900 dark:text-neutral-100" />토큰 자동 리필<DetailHelp label="토큰 자동 리필">월 예산을 바탕으로 활성 종목에 원화 포인트를 나눠 적립합니다. 리필 주기는 {data.period_minutes}분으로 고정이며, 충전 시간은 {data.market_hours || "설정된 장중 시간"}입니다. 아래 금액은 저장된 계좌 기본 예산의 배분값이며, 풀별 예산 설정에 따라 실제 충전액은 달라질 수 있습니다. 실제 충전 내역은 충전 그래프에서 확인할 수 있습니다.</DetailHelp></h4>
                 {canEdit ? <button type="button" aria-expanded={editorOpen} aria-controls={editorId} disabled={saving} onClick={() => { if (!editorOpen) setBudget(String(data.monthly_budget_krw ?? 0)); setEditing(!editorOpen); }} className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:bg-neutral-900/10 dark:hover:bg-neutral-100/10 disabled:opacity-50"><Pencil size={12} />예산 변경</button> : <span className="text-[11px] text-neutral-400">{data.has_account ? "읽기 전용" : "계좌 미등록"}</span>}
             </div>
-            <dl className="mt-2 grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-3">
-                <div className="min-w-0"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">월 충전 예산</dt><dd className="mt-1 break-all text-base font-semibold tracking-tight tabular-nums sm:text-lg text-neutral-900 dark:text-neutral-100">{won(data.monthly_budget_krw)}</dd></div>
-                <div className="min-w-0"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">전체 · {data.period_minutes}분마다</dt><dd className="mt-1 break-all text-base font-semibold tracking-tight tabular-nums sm:text-lg text-neutral-900 dark:text-neutral-100">+{won(data.per_tick_total)}</dd></div>
+            <dl className="mt-1 grid gap-1 sm:mt-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] sm:gap-3">
+                <div className="min-w-0 flex flex-wrap items-baseline justify-between gap-x-2 sm:block"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">월 충전 예산</dt><dd className="sm:mt-1 break-words text-sm font-semibold tracking-tight tabular-nums sm:text-lg text-neutral-900 dark:text-neutral-100">{won(data.monthly_budget_krw)}</dd></div>
+                <div className="min-w-0 flex flex-wrap items-baseline justify-between gap-x-2 sm:block"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">전체 · {data.period_minutes}분마다</dt><dd className="sm:mt-1 break-words text-sm font-semibold tracking-tight tabular-nums sm:text-lg text-neutral-900 dark:text-neutral-100">+{won(data.per_tick_total)}</dd></div>
             </dl>
             <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">{data.active_count > 0 ? `활성 ${data.active_count}종목 · 종목당 +${won(data.per_tick_per_stock)} / ${data.period_minutes}분` : "활성 종목이 선정되면 배분됩니다"}</p>
 

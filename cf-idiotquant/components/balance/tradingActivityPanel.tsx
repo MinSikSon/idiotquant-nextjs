@@ -166,11 +166,11 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 현재 매매 대상 (활성 그룹 소속 · action=active) — 워커가 이 종목들을 자동매매 */}
-      <div className="flex items-baseline justify-between mb-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 mb-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">현재 매매 대상</p>
         <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
       </div>
-      <div className="mb-4 space-y-2 sm:hidden">
+      <div className="mb-2 space-y-1 sm:hidden">
         {activeStocks.length === 0 && <p className="rounded-xl border border-neutral-200 p-4 text-xs text-neutral-500 dark:border-border-subtle-dark">활성 그룹에 매매 대상 종목이 없습니다.</p>}
         {activeStocks.map((stock, index) => {
           const group = stock.group_id ? gmap.get(stock.group_id) : undefined;
@@ -247,7 +247,7 @@ export default function TradingActivityPanel({
         <p className="pb-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">주문금액은 로그의 가격 × 주문 수량이며 실제 체결금액과 다를 수 있습니다. 기록된 포인트는 차감 전 값입니다. 매수·정액매도 접수 시 포인트가 차감되지만, 이 로그에는 차감 후 잔액과 실제 체결 확인이 없어 차감·체결 검증은 할 수 없습니다.</p>
       </details>
       {activity.state === "rejected" && <p role="alert" className="mb-2 text-xs text-rose-500">체결 내역 조회 실패 · 새로고침해 주세요. 기존 내역이 표시될 수 있습니다.</p>}
-      <div className="space-y-2 sm:hidden">
+      <div className="space-y-1 sm:hidden">
         {logs.length === 0 && <p className="rounded-xl border border-neutral-200 p-4 text-xs text-neutral-500 dark:border-border-subtle-dark">{loading ? "불러오는 중…" : "아직 자동 주문 접수 내역이 없습니다."}</p>}
         {logs.map((log, index) => {
           const amount = executionAmount(log);
@@ -266,7 +266,7 @@ export default function TradingActivityPanel({
               <div className="min-w-0"><p className="break-words text-sm font-bold">{name || "—"}</p><p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{Number.isFinite(log.ts) ? new Date(log.ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
               <span className={cn("shrink-0 rounded-md px-2 py-1 text-xs font-bold", sell ? "bg-rose-50 text-rose-600 dark:bg-rose-950/30" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30")}>{sell ? "매도 접수" : "매수 접수"}</span>
             </div>
-            <dl className="mt-3 space-y-2 text-xs">
+            <dl className="mt-2 space-y-1 text-xs">
               <div className="flex flex-wrap justify-between gap-2"><dt className="text-neutral-500 dark:text-neutral-400">주문금액</dt><dd className="break-all text-sm font-bold tabular-nums">{amount === null ? "미확인" : fmtPrice(amount)}</dd></div>
               <div className="flex flex-wrap justify-between gap-2"><dt className="text-neutral-500 dark:text-neutral-400">수량 × 기준가</dt><dd className="break-all tabular-nums">{Number(log.ORD_QTY ?? 0).toLocaleString("ko-KR")}주 × {fmtPrice(log.stck_prpr)}</dd></div>
               <div className="flex flex-wrap justify-between gap-2 border-t border-neutral-100 pt-2 dark:border-border-subtle-dark"><dt className="text-neutral-500 dark:text-neutral-400">차감 전 포인트 · 원화</dt><dd className="break-all font-bold tabular-nums">{remaining === null ? "잔액 기록 없음" : won(remaining)}</dd></div>

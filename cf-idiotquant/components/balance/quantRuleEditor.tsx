@@ -113,7 +113,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
   const noAccount = data && data.state === "fulfilled" && !data.has_account;
 
   return (
-    <div className={cn("w-full space-y-4", className)}>
+    <div className={cn("w-full space-y-2 sm:space-y-4", className)}>
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3 rounded-xl border border-neutral-200 bg-white px-2.5 py-2 md:px-4 md:py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       )}
 
       {/* 필드 그리드 */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-1.5 sm:gap-3 sm:grid-cols-2">
         {fieldKeys.map((k) => {
           const meta = metaFor(k);
           const val = draft[k];
@@ -149,12 +149,12 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
           const defaultVal = fmtDefault(k);
           return (
             <div key={k} className={cn(
-              "rounded-xl border bg-white p-3 dark:bg-surface-dark-canvas transition-colors",
+              "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-xl border bg-white px-2.5 py-1.5 sm:block sm:p-3 dark:bg-surface-dark-canvas transition-colors",
               changed
                 ? "border-neutral-300 ring-1 ring-neutral-500/30 dark:ring-neutral-400/30 dark:border-neutral-600"
                 : "border-neutral-200 dark:border-border-subtle-dark"
             )}>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
+              <div className="min-w-0 flex items-center justify-between gap-2 sm:mb-1.5">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
                   {meta.label}<DetailHelp label={meta.label}>{meta.desc}<span className="mt-2 block tabular-nums text-[10px] text-neutral-400">{k}</span></DetailHelp>
                   {changed && <span className="rounded bg-neutral-900/10 dark:bg-neutral-100/10 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-900 dark:text-neutral-100">변경됨</span>}
@@ -166,7 +166,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   disabled={!isMaster}
                   onClick={() => setField(k, !val)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+                    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                     val
                       ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white"
                       : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
@@ -182,7 +182,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
                   placeholder="쉼표로 구분 (예: 홀딩스, 지주)"
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 tabular-nums text-xs text-neutral-800 outline-none focus:border-neutral-300 dark:focus:border-neutral-600 disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
+                  className="col-span-2 min-h-11 min-w-0 w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 tabular-nums text-base sm:text-xs text-neutral-800 outline-none focus:border-neutral-300 dark:focus:border-neutral-600 disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               ) : (
                 <input
@@ -191,11 +191,11 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   disabled={!isMaster}
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 tabular-nums text-sm font-bold text-neutral-800 outline-none focus:border-neutral-300 dark:focus:border-neutral-600 disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
+                  className="min-h-11 min-w-0 w-28 sm:w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-2 sm:px-3 py-1.5 tabular-nums text-base sm:text-sm font-bold text-neutral-800 outline-none focus:border-neutral-300 dark:focus:border-neutral-600 disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               )}
               {defaultVal != null && (
-                <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-neutral-400">
+                <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:mt-1.5 text-[10px] text-neutral-400">
                   <span>기본값 <span className="tabular-nums">{defaultVal}</span></span>
                   {changed && isMaster && (
                     <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100">되돌리기</button>
