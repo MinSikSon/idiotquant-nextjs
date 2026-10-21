@@ -372,9 +372,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
 function SummaryItem({ icon, label, value, subValue, colorClass = "dark:text-white" }: any) {
     return (
-        <div className="p-2.5 md:p-6 text-center md:text-left">
-            <span className="flex items-center justify-center md:justify-start gap-1.5 text-[10px] font-semibold text-neutral-400 uppercase tracking-[0.2em] mb-1 md:mb-2"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}<DetailHelp label={label}>{subValue}</DetailHelp></span>
-            <div className={`text-xl md:text-2xl font-semibold tracking-tighter md:mb-1 ${colorClass}`}>{value}</div>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2.5 py-1.5 md:block md:p-6 md:text-left">
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-neutral-400 uppercase tracking-wide md:tracking-[0.2em] md:mb-2"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}<DetailHelp label={label}>{subValue}</DetailHelp></span>
+            <div className={`min-w-0 break-words text-right text-base md:text-left md:text-2xl font-semibold tracking-tighter md:mb-1 ${colorClass}`}>{value}</div>
         </div>
     );
 }

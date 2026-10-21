@@ -54,12 +54,12 @@ export function BalanceShell({
 
       <ToastContainer toasts={toasts} onRemove={onRemoveToast} />
 
-      <div className="max-w-[1280px] mx-auto px-2 py-4 md:px-4 md:py-10 space-y-3 md:space-y-6">
+      <div className="max-w-[1280px] mx-auto px-2 py-2 md:px-4 md:py-10 space-y-2 md:space-y-6">
 
         {/* 헤더 */}
-        <header className={cn(styles.header, "flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-5")}>
-          <div className="space-y-2.5 min-w-0">
-            <div className="hidden md:block">{breadcrumb}</div>
+        <header className={cn(styles.header, "flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-5")}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:block md:space-y-2.5 min-w-0">
+            <div className="hidden w-full md:block">{breadcrumb}</div>
             {title}
             {lastUpdated ? (
               <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 tabular-nums">
@@ -71,7 +71,7 @@ export function BalanceShell({
             )}
           </div>
 
-          <div className="flex flex-col items-stretch md:items-end gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 md:flex-col md:items-end md:gap-2">
             {countryToggle}
             <BalanceHeaderActions
               autoRefresh={autoRefresh}

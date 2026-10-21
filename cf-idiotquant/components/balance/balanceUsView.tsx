@@ -526,7 +526,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-kpi",
           node: (
             <>
-              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-0 min-[480px]:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-1.5 md:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <UsdKpiCard
                   label="총 자산 (USD)"
                   mainValue={isFirstLoad ? null : fmtUsd(totalAssetUsd)}

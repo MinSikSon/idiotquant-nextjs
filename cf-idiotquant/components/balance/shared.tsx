@@ -65,13 +65,13 @@ export function SectionHeader({
   badge?: React.ReactNode; action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2.5 md:gap-3 md:mb-5 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
-      <div className="flex items-center gap-3">
-        <div className="text-neutral-500 dark:text-neutral-400 shrink-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2 pb-1.5 md:gap-3 md:mb-5 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
+      <div className="flex items-center gap-1.5 md:gap-3">
+        <div className="p-1.5 md:p-2 text-neutral-500 dark:text-neutral-400 shrink-0">
           {icon}
         </div>
         <div>
-          <div className="flex items-center gap-1.5 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
+          <div className="flex items-center gap-1.5 md:gap-2 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
             <h3 className="font-semibold text-base text-neutral-900 dark:text-neutral-100 tracking-tight">{title}</h3>
             {badge}
             {subtitle && <DetailHelp label={title}>{subtitle}</DetailHelp>}
@@ -139,7 +139,7 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
 // 표가 아닌 곳(모바일 카드 등)에서 쓰는 빈 상태
 export function EmptyState({ message, icon }: { message: string; icon?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center py-14 gap-3">
+    <div className="flex flex-col items-center justify-center py-6 md:py-14 gap-2 md:gap-3">
       <div className="p-3 rounded-2xl bg-surface-canvas dark:bg-surface-dark-muted">
         {icon ?? <InboxIcon size={20} className="text-neutral-400" />}
       </div>
@@ -165,7 +165,7 @@ export function MetricChip({ icon, label, value, valueClass = "text-neutral-900 
   icon: React.ReactNode; label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-col gap-0.5">
+    <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-col md:items-stretch">
       <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
       <span className={cn("text-sm tabular-nums font-semibold break-words", valueClass)}>{value}</span>
     </div>
@@ -283,7 +283,7 @@ export function BalanceHeaderActions({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-1.5 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
+    <div className="flex items-center gap-1.5 md:gap-2 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
       {extra}
       <button
         onClick={onToggleAutoRefresh}
