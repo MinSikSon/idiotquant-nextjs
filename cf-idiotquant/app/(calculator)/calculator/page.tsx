@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { PAGE_WIDTH } from "@/components/pageHeader";
 import ResultShare from "@/components/result-share";
+import AssetGoal from "@/components/AssetGoal";
 import { calculatorSnapshot } from "@/lib/share/calculator";
 import GrowthChart from "./GrowthChart";
 import CalculatorHistory from "./CalculatorHistory";
@@ -28,8 +29,8 @@ const CARD = cn(
 const DIVIDE = "border-neutral-100 dark:border-border-subtle-dark";
 
 const ROW_CLS = cn(
-    "grid grid-cols-1 sm:grid-cols-[168px_1fr] gap-1.5 sm:gap-x-5 sm:items-center",
-    "px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE
+    "grid grid-cols-[100px_minmax(0,1fr)] sm:grid-cols-[168px_1fr] gap-2 sm:gap-x-5 items-center [&>div]:min-w-0 [&>div>span]:shrink-0",
+    "px-3 sm:px-5 py-1.5 sm:py-3 border-b last:border-b-0", DIVIDE
 );
 const LABEL_CLS = "text-[13px] font-bold text-neutral-700 dark:text-neutral-300";
 
@@ -44,9 +45,9 @@ const HINT_CLS = cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-ne
 const NUM_CLS = "font-[family-name:var(--font-mono)] tabular-nums";
 
 const INPUT_CLS = cn(
-    "font-[family-name:var(--font-mono)] tabular-nums text-[15px] font-bold text-right",
+    "font-[family-name:var(--font-mono)] tabular-nums text-base sm:text-[15px] font-bold text-right",
     "text-neutral-900 dark:text-neutral-50 bg-surface-canvas dark:bg-surface-dark-canvas",
-    "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-3 py-2 w-full sm:w-[150px]",
+    "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-2 sm:px-3 py-2 min-h-11 sm:min-h-0 min-w-0 w-full sm:w-[150px]",
     "focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand",
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
@@ -96,7 +97,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
     const max = Math.max(range.max, value);
 
     return (
-        <div className={cn("px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
+        <div className={cn("px-3 sm:px-5 py-1.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             <div className="flex items-baseline justify-between gap-3">
                 <label htmlFor={id} className={LABEL_CLS}>
                     {label}
@@ -120,11 +121,11 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                 onChange={(e) => onChange(Number(e.target.value))}
                 aria-valuetext={`${format(value)}${unit}`}
                 className={cn(
-                    "w-full mt-2 sm:mt-2.5 h-6 bg-transparent cursor-pointer accent-brand",
+                    "block w-full mt-0 sm:mt-2.5 h-9 sm:h-6 bg-transparent cursor-pointer accent-brand",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg"
                 )}
             />
-            <div className="flex justify-between text-[10.5px] text-neutral-500 dark:text-neutral-400 -mt-0.5">
+            <div className="hidden group-data-[help=on]:flex sm:flex justify-between text-[10.5px] text-neutral-500 dark:text-neutral-400 -mt-0.5">
                 <span>{format(min)}</span>
                 <span>{format(max)}</span>
             </div>
@@ -155,7 +156,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
     const hi = Math.max(SLIDER_RANGE.rate.max, value);
 
     return (
-        <div className={ROW_CLS}>
+        <div className={cn(ROW_CLS, "grid-cols-1 sm:grid-cols-[168px_1fr]")}>
             <label htmlFor={id} className={LABEL_CLS}>
                 {label}<span className={HINT_CLS}>{hint}</span>
             </label>
@@ -168,7 +169,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
                     aria-label={`${label} 눈금`}
                     aria-valuetext={`${value.toFixed(1)}%`}
                     className={cn(
-                        "flex-1 min-w-0 h-6 bg-transparent cursor-pointer accent-brand",
+                        "flex-1 min-w-0 h-11 sm:h-6 bg-transparent cursor-pointer accent-brand",
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg"
                     )}
                 />
@@ -185,7 +186,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
 
 function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateMode) => void }) {
     return (
-        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
+        <div className={cn("flex items-center justify-between gap-3 px-3 sm:px-5 py-1.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             <span className={LABEL_CLS}>
                 수익률
                 <span className={HINT_CLS}>
@@ -206,7 +207,7 @@ function RateModeRow({ value, onChange }: { value: RateMode; onChange: (v: RateM
 
 function RerollRow({ onReroll }: { onReroll: () => void }) {
     return (
-        <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
+        <div className={cn("flex items-center justify-between gap-3 px-3 sm:px-5 py-1.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             {/* 한 번 굴린 결과는 "일어날 수 있는 하나"일 뿐이다. 그 사실을 적어 두지 않으면
                 마음에 드는 숫자가 나올 때까지 굴리고 그걸 예상으로 삼게 된다. */}
             <span className={cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-neutral-400 leading-relaxed")}>
@@ -231,14 +232,15 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
     );
 }
 
-function SectionHead({ tag, title, note }: { tag: string; title: string; note?: string }) {
+function SectionHead({ tag, title, note, action }: { tag: string; title: string; note?: string; action?: ReactNode }) {
     return (
-        <div className="mt-6 sm:mt-10 mb-2.5 sm:mb-3">
-            <StepLabel tag={tag} />
-            <div className="flex items-baseline gap-3 flex-wrap">
+        <div className="mt-4 sm:mt-10 mb-2 sm:mb-3">
+            <div className="hidden sm:block"><StepLabel tag={tag} /></div>
+            <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-[19px] sm:text-[21px] font-black tracking-tight text-neutral-900 dark:text-white break-keep">
                     {title}
                 </h2>
+                {action && <div className="ml-auto">{action}</div>}
                 {note && (
                     <span className={cn(FOLD, "ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right")}>
                         {note}
@@ -266,7 +268,7 @@ function Segmented<T extends string | number>({
                     onClick={() => onChange(o.v)}
                     aria-pressed={value === o.v}
                     className={cn(
-                        "text-[12.5px] font-bold px-3.5 py-1.5 min-h-[36px] transition-colors",
+                        "text-[12.5px] font-bold px-2.5 sm:px-3.5 py-1.5 min-h-11 sm:min-h-[36px] whitespace-nowrap transition-colors",
                         i > 0 && "border-l border-neutral-200 dark:border-surface-dark-border",
                         value === o.v
                             ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-surface-dark-canvas"
@@ -329,6 +331,7 @@ function Calculator() {
     /** 이 단계에서 실제로 쓰이는 조건. 안 보이는 항목은 계산에서도 빠진다. */
     const effective = useMemo(() => maskDetail(inputs, detail), [inputs, detail]);
     const result = useMemo(() => simulate(effective), [effective]);
+    const goalYear = inputs.target > 0 ? result.rows.find(row => row.value >= inputs.target)?.year : undefined;
 
     const set = <K extends keyof CalcInputs>(key: K, value: CalcInputs[K]) =>
         setInputs((prev) => sanitize({ ...prev, [key]: value }));
@@ -357,15 +360,15 @@ function Calculator() {
 
     return (
         <div
-            className="landing-style-page group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas pt-5 sm:pt-8 pb-20 sm:pb-24"
+            className="landing-style-page group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas pt-3 sm:pt-8 pb-20 sm:pb-24"
             data-help={showHelp ? "on" : "off"}
         >
             <div className={PAGE_WIDTH.data}>
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
-                <header className="flex items-end justify-between gap-5 flex-wrap">
+                <header className="flex items-end justify-between gap-2 sm:gap-5 flex-wrap">
                     <div>
-                        <h1 className="text-2xl font-medium tracking-tight leading-[1.28] text-neutral-900 dark:text-white break-keep">
+                        <h1 className="text-[18px] min-[380px]:text-xl sm:text-2xl font-medium tracking-tight leading-[1.28] text-neutral-900 dark:text-white break-keep">
                             복리 수익률 계산기
                         </h1>
                     </div>
@@ -376,8 +379,10 @@ function Calculator() {
                             type="button"
                             onClick={() => setShowHelp((v) => !v)}
                             aria-pressed={showHelp}
+                            aria-label="설명"
+                            title="설명 표시"
                             className={cn(
-                                "sm:hidden inline-flex items-center gap-1.5 text-[11px] font-bold px-3.5 py-2 rounded-xl border", LIFT,
+                                "sm:hidden inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-2 min-h-11 min-w-11 justify-center rounded-xl border", LIFT,
                                 showHelp
                                     ? "bg-brand border-brand text-white"
                                     : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
@@ -385,7 +390,7 @@ function Calculator() {
                             )}
                         >
                             <Info size={13} strokeWidth={2.4} />
-                            설명
+                            <span className="hidden min-[380px]:inline">설명</span>
                         </button>
                         <ResultShare getSnapshot={() => calculatorSnapshot(effective, detail, result)} />
                     </div>
@@ -394,19 +399,16 @@ function Calculator() {
                 <div className="lg:grid lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start lg:gap-8">
                 <section className="min-w-0" aria-label="계산 조건">
                 {/* ── 입력 ──────────────────────────────────────── */}
-                <SectionHead tag="INPUT" title="조건" note="금액 단위: 만원" />
-
-                <div className={cn(CARD, "overflow-hidden")}>
-                    <div className={cn("flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b", DIVIDE)}>
-                    <span className={LABEL_CLS}>표시 항목</span>
+                <SectionHead tag="INPUT" title="조건" action={
                     <Segmented
                         label="표시 항목"
                         value={detail}
                         onChange={setDetail}
                         options={[{ v: "simple" as Detail, label: "간단" }, { v: "detailed" as Detail, label: "상세" }]}
                     />
-                </div>
+                } />
 
+                <div className={cn(CARD, "overflow-hidden")}>
                 {/* 간단 단계는 눈금으로 — 값을 정확히 아는 게 아니라 "이쯤이면 얼마"를
                     가늠하는 단계다. 정확한 값이 필요하면 상세에서 직접 친다. */}
                 {!detailed ? (
@@ -525,7 +527,7 @@ function Calculator() {
                         </div>
 
                         {inputs.method === "compound" && (
-                            <div className={ROW_CLS}>
+                            <div className={cn(ROW_CLS, "grid-cols-1 min-[380px]:grid-cols-[100px_minmax(0,1fr)] sm:grid-cols-[168px_1fr]")}>
                                 <span className={LABEL_CLS}>
                                     복리 주기<span className={HINT_CLS}>이자를 원금에 편입하는 간격</span>
                                 </span>
@@ -540,7 +542,7 @@ function Calculator() {
 
                         <div className={ROW_CLS}>
                             <span className={LABEL_CLS}>세금</span>
-                            <label className="inline-flex items-center gap-2 text-[13px] font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer w-fit">
+                            <label className="inline-flex items-center gap-2 text-[13px] font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer w-fit min-h-11 sm:min-h-0">
                                 <input type="checkbox" checked={inputs.tax} onChange={(e) => set("tax", e.target.checked)}
                                     className="w-4 h-4 accent-brand cursor-pointer" />
                                 이자소득세 {TAX_RATE}% 차감
@@ -616,7 +618,7 @@ function Calculator() {
                 {/* ── 결과 ──────────────────────────────────────── */}
                 <SectionHead tag="RESULT" title="결과" note={basisOf(effective)} />
 
-                <div className={cn(CARD, "flex items-end justify-between gap-5 flex-wrap px-4 sm:px-5 py-4 sm:py-6")}>
+                <div className={cn(CARD, "flex items-end justify-between gap-2 sm:gap-5 flex-wrap px-3 sm:px-5 py-3 sm:py-6")}>
                     <div>
                         <div className="text-[10px] font-black tracking-[0.15em] text-neutral-500 dark:text-neutral-400 uppercase">
                             만기 평가금액
@@ -651,7 +653,7 @@ function Calculator() {
                         { k: "연평균 (CAGR)", v: pct(result.cagr), tone: result.cagr < 0 ? "loss" : "gain" },
                     ].map((cell, i) => (
                         <div key={cell.k} className={cn(
-                            "px-4 py-3 sm:py-4",
+                            "px-3 sm:px-4 py-2 sm:py-4",
                             i % 2 === 0 && cn("border-r", DIVIDE),
                             i === 1 && cn("sm:border-r lg:border-r-0 xl:border-r", DIVIDE),
                             i < 2 && cn("border-b sm:border-b-0 lg:border-b xl:border-b-0", DIVIDE)
@@ -668,6 +670,19 @@ function Calculator() {
                     ))}
                 </div>
 
+                <div className="mt-3 max-sm:[&_input]:text-base max-sm:[&_input]:min-h-11">
+                    <AssetGoal target={inputs.target} current={result.final} onChange={v => set("target", v)}
+                        format={won} unit="만원" max={100_000_000_000}
+                        note="만기 명목 평가금액 기준 · 이 브라우저에 자동 저장">
+                        <p className="text-neutral-500 dark:text-neutral-400">
+                            {goalYear === undefined ? `설정한 ${inputs.years}년 안에는 목표에 도달하지 않습니다.`
+                                : goalYear === 0 ? "초기 투자금이 이미 목표에 도달했습니다."
+                                : `연말 평가금액 기준 첫 도달: ${goalYear}년차`}
+                            {ranged && " · 현재 수익률 시나리오 기준"}
+                        </p>
+                    </AssetGoal>
+                </div>
+
                 {detailed && (
                     <>
                         <SectionHead tag="VALUE" title="가치 희석 비교" note="각 납입 시점부터 보유한 경우와 비교" />
@@ -676,7 +691,7 @@ function Calculator() {
                                 const relative = benchmark > 0 ? (result.final / benchmark - 1) * 100 : null;
                                 const status = relative === null ? "비교 불가" : relative < -0.000001 ? "가치 희석" : relative > 0.000001 ? "가치 방어" : "가치 유지";
                                 return (
-                                    <div key={label} className={cn(CARD, "px-4 py-4 sm:px-5")}>
+                                    <div key={label} className={cn(CARD, "px-3 py-2.5 sm:px-5 sm:py-4")}>
                                         <div className="text-[12px] font-bold text-neutral-600 dark:text-neutral-300">{label}</div>
                                         <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]")}>
                                             {relative === null ? "—" : pct(relative)}
@@ -702,7 +717,7 @@ function Calculator() {
                             {moneyComparisons.map(({ label, benchmark, assumption }) => {
                                 const relative = benchmark > 0 ? (result.final / benchmark - 1) * 100 : null;
                                 return (
-                                    <div key={label} className={cn(CARD, "px-4 py-4 sm:px-5")}>
+                                    <div key={label} className={cn(CARD, "px-3 py-2.5 sm:px-5 sm:py-4")}>
                                         <div className="text-[12px] font-bold text-neutral-600 dark:text-neutral-300">{label} 증가 속도 대비 투자금</div>
                                         <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]")}>
                                             {relative === null ? "—" : pct(relative)}
