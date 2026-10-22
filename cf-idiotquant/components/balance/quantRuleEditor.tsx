@@ -1,7 +1,8 @@
 "use client";
 
+import { DetailHelp } from "./detailHelp";
 import React, { useEffect, useMemo, useState } from "react";
-import { SlidersHorizontal, Save, RotateCcw, Info, Lock, CheckCircle2 } from "lucide-react";
+import { SlidersHorizontal, Save, RotateCcw, Lock, CheckCircle2 } from "lucide-react";
 import { QuantRule, QuantRuleState } from "@/lib/features/capital/capitalSlice";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -112,15 +113,15 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
   const noAccount = data && data.state === "fulfilled" && !data.has_account;
 
   return (
-    <div className={cn("w-full space-y-4", className)}>
+    <div className={cn("w-full space-y-2 sm:space-y-4", className)}>
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3 rounded-xl border border-neutral-200 bg-white px-2.5 py-2 md:px-4 md:py-3 dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-brand/10 p-1.5 text-brand-ink">
+          <div className="rounded-lg bg-neutral-900/10 dark:bg-neutral-100/10 p-1.5 text-neutral-900 dark:text-neutral-100">
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">트레이딩 조건 (quant rule)</span>
+            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">종목 선정 조건</span>
             <span className="text-[11px] text-neutral-400">
               {data?.is_override ? "계좌 전용 조건 적용 중" : "전역 기본값 적용 중 (저장 시 계좌 전용으로 전환)"}
             </span>
@@ -135,12 +136,16 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
 
       {noAccount && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-2.5 py-2 md:px-4 md:py-3 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-400">
-          이 계좌에는 자동매매 계정(trading_account)이 없어 조건을 저장할 수 없습니다. 표시값은 전역 기본값입니다.
+          이 계좌에는 자동매매 계정이 없어 조건을 저장할 수 없습니다. 표시값은 전역 기본값입니다.
         </div>
       )}
 
+      {data?.state === "pending" && <p role="status" className="text-xs text-neutral-500">조건을 불러오는 중…</p>}
+      {data?.state === "rejected" && <p role="alert" className="text-xs text-rose-500">조건 조회에 실패했습니다. 페이지를 새로고침해 다시 시도하세요.</p>}
+      {data?.saveState === "rejected" && <p role="alert" className="text-xs text-rose-500">조건을 저장하지 못했습니다. 입력 내용을 확인하고 다시 저장하세요.</p>}
+
       {/* 필드 그리드 */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-1.5 sm:gap-3 sm:grid-cols-2">
         {fieldKeys.map((k) => {
           const meta = metaFor(k);
           const val = draft[k];
@@ -148,31 +153,26 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
           const defaultVal = fmtDefault(k);
           return (
             <div key={k} className={cn(
-              "rounded-xl border bg-white p-3 dark:bg-surface-dark-canvas transition-colors",
+              "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-xl border bg-white px-2.5 py-1.5 sm:block sm:p-3 dark:bg-surface-dark-canvas transition-colors",
               changed
-                ? "border-brand ring-1 ring-brand/30 dark:border-brand"
+                ? "border-neutral-300 ring-1 ring-neutral-500/30 dark:ring-neutral-400/30 dark:border-neutral-600"
                 : "border-neutral-200 dark:border-border-subtle-dark"
             )}>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
+              <div className="min-w-0 flex items-center justify-between gap-2 sm:mb-1.5">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
-                  {meta.label}
-                  {changed && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[9px] font-extrabold text-brand-ink">변경됨</span>}
+                  {meta.label}<DetailHelp label={meta.label}>{meta.desc}<span className="mt-2 block tabular-nums text-[10px] text-neutral-400">{k}</span></DetailHelp>
+                  {changed && <span className="rounded bg-neutral-900/10 dark:bg-neutral-100/10 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-900 dark:text-neutral-100">변경됨</span>}
                 </span>
-                <code className="text-[9px] text-neutral-300 dark:text-neutral-600">{k}</code>
               </div>
-              <p className="mb-2 flex items-start gap-1 text-[10px] leading-tight text-neutral-400">
-                <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-                {meta.desc}
-              </p>
               {meta.type === "boolean" ? (
                 <button
                   type="button"
                   disabled={!isMaster}
                   onClick={() => setField(k, !val)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+                    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                     val
-                      ? "bg-brand text-white"
+                      ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white"
                       : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
                     !isMaster && "cursor-not-allowed opacity-60"
                   )}
@@ -186,7 +186,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
                   placeholder="쉼표로 구분 (예: 홀딩스, 지주)"
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-xs text-neutral-800 outline-none focus:border-brand disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
+                  className="col-span-2 min-h-11 min-w-0 w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 tabular-nums text-base sm:text-xs text-neutral-800 outline-none focus:border-neutral-300 dark:focus:border-neutral-600 disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               ) : (
                 <input
@@ -195,14 +195,14 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   disabled={!isMaster}
                   value={String(val ?? "")}
                   onChange={(e) => setField(k, e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-sm font-bold text-neutral-800 outline-none focus:border-brand disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
+                  className="min-h-11 min-w-0 w-28 sm:w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-2 sm:px-3 py-1.5 tabular-nums text-base sm:text-sm font-bold text-neutral-800 outline-none focus:border-neutral-300 dark:focus:border-neutral-600 disabled:opacity-60 dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-200"
                 />
               )}
               {defaultVal != null && (
-                <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-neutral-400">
-                  <span>기본값 <span className="font-mono">{defaultVal}</span></span>
+                <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:mt-1.5 text-[10px] text-neutral-400">
+                  <span>기본값 <span className="tabular-nums">{defaultVal}</span></span>
                   {changed && isMaster && (
-                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-brand-ink">되돌리기</button>
+                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100">되돌리기</button>
                   )}
                 </div>
               )}
@@ -215,10 +215,10 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {isMaster && (
         <div className="flex flex-wrap items-center justify-end gap-2">
           {changedCount > 0 && (
-            <span className="mr-auto text-xs font-bold text-brand-ink">{changedCount}개 변경됨</span>
+            <span className="mr-auto text-xs font-bold text-neutral-900 dark:text-neutral-100">{changedCount}개 변경됨</span>
           )}
           {data?.saveState === "fulfilled" && !dirty && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-ink">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 dark:text-neutral-100">
               <CheckCircle2 className="h-3.5 w-3.5" /> 저장됨
             </span>
           )}
@@ -234,7 +234,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             onClick={handleSave}
             disabled={saving || !dirty || noAccount}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-brand-hover active:scale-95",
+              "inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 px-5 py-2 text-xs font-bold text-white shadow-none transition-all hover:bg-neutral-900 dark:hover:bg-neutral-100 active:scale-95",
               (saving || !dirty || noAccount) && "cursor-not-allowed opacity-50"
             )}
           >

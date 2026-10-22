@@ -1,5 +1,7 @@
 "use client";
 
+import { DetailHelp } from "./detailHelp";
+
 import React, { useState, useMemo } from "react";
 import {
   Key,
@@ -26,7 +28,7 @@ import {
   ArrowRightLeft,
   CircleCheck,
   CircleSlash,
-  CircleDashed,
+  Clock3,
   RotateCcw,
   SlidersHorizontal,
 } from "lucide-react";
@@ -64,31 +66,40 @@ function resolveDisplayName(symbol: string, rawName?: string | null): string | u
 const PICK_SEP = "::";
 const pickKey = (section: string, symbol: string) => `${section}${PICK_SEP}${symbol}`;
 
-type Tone = "active" | "idle" | "excluded" | "off";
-interface EffStatus { label: string; tone: Tone; }
+type Tone = "active" | "idle" | "excluded" | "off" | "watch";
+interface EffStatus { label: string; tone: Tone; description: string; }
+
+const STOCK_STATUS: Record<Tone, EffStatus> = {
+  active: { label: "매매 대상", tone: "active", description: "최근 실행에서 자동매매 대상으로 선정되었습니다. 실제 주문·체결 여부는 거래 내역에서 확인하세요." },
+  idle: { label: "선정 대기", tone: "idle", description: "풀은 켜져 있으나 최근 실행에서 선정되지 않았거나 다음 실행을 기다리고 있습니다. 조건과 상위 종목 수를 확인하세요." },
+  excluded: { label: "매매 제외", tone: "excluded", description: "소속 풀의 자동매매가 꺼져 있거나 풀에 배정되지 않아 자동매매 대상에서 제외됩니다." },
+  off: { label: "매매 OFF", tone: "off", description: "해당 국가의 자동매매가 꺼져 있어 이 종목도 자동매매하지 않습니다." },
+  watch: { label: "관심", tone: "watch", description: "관심목록에만 있는 종목입니다. 자동매매하려면 복사하여 운용 풀에 넣으세요." },
+};
 
 /** 종목의 실제 자동매매 상태(최근 스케줄 실행 + 현재 토글 기준) */
 function capitalStatus(action: string | undefined | null, groupActive: boolean, countryActive: boolean): EffStatus {
-  if (!countryActive) return { label: "자동매매 OFF", tone: "off" };
-  if (!groupActive) return { label: "제외", tone: "excluded" };
-  if (action === "active") return { label: "매매중", tone: "active" };
-  return { label: "대기", tone: "idle" };
+  if (!countryActive) return STOCK_STATUS.off;
+  if (!groupActive) return STOCK_STATUS.excluded;
+  if (action === "active") return STOCK_STATUS.active;
+  return STOCK_STATUS.idle;
 }
 // 좋아요는 관심목록 전용(자동매매 대상 아님). 매매하려면 '복사'로 실제 그룹에 넣는다.
-const WATCH_STATUS: EffStatus = { label: "관심", tone: "off" };
+const WATCH_STATUS = STOCK_STATUS.watch;
 
 function StatusBadge({ status }: { status?: EffStatus }) {
-  if (!status) return <span className="text-neutral-300">-</span>;
+  if (!status) return <span className="text-neutral-500">미확인</span>;
   const map: Record<Tone, string> = {
-    active: "bg-brand text-white",
-    idle: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    excluded: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-    off: "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400",
+    active: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+    idle: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
+    excluded: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300",
+    off: "border-neutral-300 bg-neutral-100 text-neutral-600 dark:border-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-300",
+    watch: "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300",
   };
-  const Icon = status.tone === "active" ? CircleCheck : status.tone === "excluded" ? CircleSlash : CircleDashed;
+  const Icon = { active: CircleCheck, idle: Clock3, excluded: CircleSlash, off: Power, watch: Heart }[status.tone];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold", map[status.tone])}>
-      <Icon className="w-3 h-3" /> {status.label}
+    <span title={status.description} className={cn("inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-1 text-[11px] font-bold leading-none", map[status.tone])}>
+      <Icon className="h-3 w-3" aria-hidden="true" />{status.label}
     </span>
   );
 }
@@ -405,66 +416,56 @@ function StockListTable({
   return (
     <div className={cn("w-full space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
-      <section className="rounded-xl border border-neutral-200 bg-white p-2.5 md:p-4 shadow-sm dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
+      <section className="rounded-xl border border-neutral-200 bg-white p-2.5 md:p-4 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
-              countryTradingActive ? "bg-brand text-white" : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400"
+              countryTradingActive ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white" : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400"
             )}>
               <Power className="w-3.5 h-3.5" /> 자동매매 {countryTradingActive ? "ON" : "OFF"}
             </span>
             {countryTradingActive ? (
               <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                현재 <span className="text-brand-ink">{summary.active}종목</span> 매매중
+                현재 <span className="text-neutral-900 dark:text-neutral-100">{summary.active}종목</span> 매매 대상
                 <span className="ml-1 text-xs font-normal text-neutral-400">/ 운용 {summary.total}종목</span>
               </span>
             ) : (
               <span className="text-sm font-medium text-neutral-500">자동매매가 꺼져 있어 어떤 종목도 매매되지 않습니다.</span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-mono">
-            <span className="rounded-md bg-brand/10 px-2 py-1 font-bold text-brand-ink">매매중 {summary.active}</span>
-            <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">대기 {summary.idle}</span>
-            <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">제외 {summary.excluded}</span>
+          <div className="flex items-center gap-1.5 text-[11px] tabular-nums">
+            <span className="rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">매매 대상 {summary.active}</span>
+            <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">선정 대기 {summary.idle}</span>
+            <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-neutral-600 dark:bg-red-900/30 dark:text-red-400">매매 제외 {summary.excluded}</span>
           </div>
         </div>
 
         {/* 적용 조건 */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-neutral-100 pt-3 dark:border-border-subtle-dark">
-          <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">적용 조건</span>
+        <details className="mt-2 border-t border-neutral-100 dark:border-border-subtle-dark"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">적용 조건 {conditionChips.length}개</summary><div className="flex flex-wrap items-center gap-1.5">
           {conditionChips.length > 0 ? conditionChips.map((c, i) => (
-            <span key={i} className="rounded-full bg-surface-canvas px-2 py-0.5 text-[11px] font-mono text-neutral-600 dark:bg-surface-dark-card dark:text-neutral-300">{c}</span>
+            <span key={i} className="rounded-full bg-surface-canvas px-2 py-0.5 text-[11px] tabular-nums text-neutral-600 dark:bg-surface-dark-card dark:text-neutral-300">{c}</span>
           )) : (
             <span className="text-[11px] text-neutral-400">조건 정보를 불러오는 중…</span>
           )}
-        </div>
+        </div></details>
 
-        {/* 동작 안내 */}
-        <p className="mt-2 flex items-start gap-1 text-[10px] leading-relaxed text-neutral-400">
-          <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b> → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-brand-ink">매매중</b>이 됩니다. <b className="font-bold text-rose-500">좋아요</b>는 관심목록이며, 매매하려면 <b className="font-bold text-brand-ink">복사</b>로 그룹에 넣으세요.
-        </p>
+        <div className="mt-1 flex items-center text-[11px] text-neutral-500 dark:text-neutral-400">매매·좋아요 안내<DetailHelp label="매매·좋아요 안내">자동매매 ON → 그룹 ON → 설정 조건을 충족하는 NCAV 상위 종목이 매매 대상이 됩니다. 좋아요는 관심목록이며, 매매하려면 복사로 풀에 넣으세요.</DetailHelp></div>
 
         {/* 상태 설명 토글 */}
         <button
           onClick={() => setShowLegend(v => !v)}
-          className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+          aria-expanded={showLegend}
+          className="mt-2 inline-flex min-h-9 items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
         >
           {showLegend ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />} 종목 상태 설명
         </button>
         {showLegend && (
           <div className="mt-2 grid grid-cols-1 gap-1.5 rounded-lg border border-neutral-100 bg-[#fcfaf7] p-3 sm:grid-cols-2 dark:border-border-subtle-dark dark:bg-surface-dark-card">
-            {([
-              { s: { label: "매매중", tone: "active" as Tone }, d: "현재 자동매매 대상. 마지막 실행에서 활성 종목으로 선정됨." },
-              { s: { label: "대기", tone: "idle" as Tone }, d: "운용 목록엔 있으나 이번엔 미선정 (NCAV 상위 N 밖 / 조건 미달 / 다음 실행 대기)." },
-              { s: { label: "후보(찜)", tone: "idle" as Tone }, d: "좋아요 종목. 찜 그룹 자동매매 ON이면 다음 실행 때 후보로 합류 (아직 운용 목록 아님)." },
-              { s: { label: "제외", tone: "excluded" as Tone }, d: "속한 그룹(또는 찜)의 자동매매가 OFF라 매매에서 제외됨." },
-              { s: { label: "자동매매 OFF", tone: "off" as Tone }, d: "국가 자동매매가 꺼져 있어 어떤 종목도 매매되지 않음." },
-            ]).map((row, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <StatusBadge status={row.s} />
-                <span className="text-[10px] leading-snug text-neutral-500 dark:text-neutral-400">{row.d}</span>
+            {Object.values(STOCK_STATUS).map(status => (
+              <div key={status.tone} className="flex items-start gap-2">
+                <StatusBadge status={status} />
+                <span className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">{status.description}</span>
               </div>
             ))}
           </div>
@@ -473,21 +474,21 @@ function StockListTable({
 
       {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
       {isMaster && (
-        <section className="overflow-hidden rounded-xl border border-red-200 bg-red-50/30 p-1 dark:border-red-900/30 dark:bg-red-900/10">
+        <section className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 p-1 dark:border-neutral-700 dark:bg-surface-dark-card">
           <div className="flex items-center justify-between px-2.5 py-2 md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
-              <h3 className="text-sm font-bold text-red-900 dark:text-red-400">Global Token Master Control</h3>
+              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300">포인트 수동 관리</h3>
             </div>
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-red-600 text-white rounded uppercase tracking-wider">
+            <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded uppercase tracking-wider">
               Master Only
             </span>
           </div>
           <div className="p-2.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <span className="text-[10px] font-bold text-red-800/60 dark:text-red-400/60 uppercase">Batch Refill</span>
-            <div className="flex flex-wrap gap-2">
+            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+            <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
-                <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-sm border border-red-200 dark:border-red-800 overflow-hidden">
+                <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-none border border-red-200 dark:border-red-800 overflow-hidden">
                   <button
                     onClick={() => doTokenPlusAll(amt)}
                     className="bg-white dark:bg-surface-dark-card hover:bg-red-50 dark:hover:bg-red-950 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors border-r border-red-100 dark:border-red-800"
@@ -512,6 +513,7 @@ function StockListTable({
                 </button>
               )}
             </div>
+            </details>
             {/* 새 그룹 추가 */}
             <div className="ml-auto flex items-center gap-2">
               {creating ? (
@@ -524,7 +526,7 @@ function StockListTable({
                     placeholder="그룹 이름"
                     className="w-28 rounded-md border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1 text-xs"
                   />
-                  <button onClick={commitCreate} className="rounded-md bg-brand p-1.5 text-white hover:bg-brand-hover">
+                  <button onClick={commitCreate} className="rounded-md bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 p-1.5 text-white hover:bg-neutral-900 dark:hover:bg-neutral-100">
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => { setCreating(false); setNewGroupName(""); }} className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-surface-dark-muted">
@@ -534,7 +536,7 @@ function StockListTable({
               ) : (
                 <button
                   onClick={() => setCreating(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand-ink hover:bg-brand/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300/40 dark:border-neutral-600/40 bg-neutral-900/10 dark:bg-neutral-100/10 px-3 py-1.5 text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:bg-neutral-900/20 dark:hover:bg-neutral-100/20 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> 새 그룹
                 </button>
@@ -546,8 +548,8 @@ function StockListTable({
 
       {/* ===== 선택 작업 바 (이동 / 복사) ===== */}
       {isMaster && picked.size > 0 && (
-        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-brand/40 bg-brand-light px-3 py-2.5 shadow-md dark:border-brand/40 dark:bg-brand-muted/30 sm:px-4">
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-ink">
+        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-300/40 bg-neutral-100 px-3 py-2.5 shadow-none dark:border-neutral-600/40 dark:bg-neutral-800/30 sm:px-4">
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 dark:text-neutral-100">
             <ArrowRightLeft className="w-3.5 h-3.5" /> {pickedSymbols.length}개 선택
           </span>
           <button onClick={clearPick} className="rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-surface-dark-canvas sm:order-last sm:ml-auto">
@@ -556,7 +558,7 @@ function StockListTable({
           <select
             value={bulkTarget}
             onChange={(e) => setBulkTarget(e.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-brand/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-surface-dark-canvas sm:flex-none"
+            className="min-w-0 flex-1 rounded-md border border-neutral-300/40 dark:border-neutral-600/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-surface-dark-canvas sm:flex-none"
           >
             <option value="">미지정</option>
             {realGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -565,7 +567,7 @@ function StockListTable({
             <button
               onClick={() => doCopyToGroup(bulkTarget || null)}
               title="좋아요 종목을 선택한 그룹의 운용 종목으로 복사 (원본 좋아요 유지)"
-              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-brand px-2.5 py-1.5 text-xs font-bold text-white hover:bg-brand-hover"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-neutral-900 dark:hover:bg-neutral-100"
             >
               <Copy className="w-3.5 h-3.5" /> 복사
             </button>
@@ -573,7 +575,7 @@ function StockListTable({
           <button
             onClick={() => doBulkMove(bulkTarget || null)}
             title="운용 종목을 선택한 그룹으로 이동"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-brand/40 bg-white px-2.5 py-1.5 text-xs font-bold text-brand-ink hover:bg-brand/10 dark:bg-surface-dark-canvas"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-300/40 dark:border-neutral-600/40 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:bg-neutral-900/10 dark:hover:bg-neutral-100/10 dark:bg-surface-dark-canvas"
           >
             <ArrowRightLeft className="w-3.5 h-3.5" /> 이동
           </button>
@@ -627,7 +629,7 @@ function StockListTable({
           key={g.id}
           sectionKey={g.id}
           title={g.name}
-          icon={<FolderOpen className="w-4 h-4 text-brand-ink" />}
+          icon={<FolderOpen className="w-4 h-4 text-neutral-900 dark:text-neutral-100" />}
           accent="green"
           count={(byGroup.get(g.id) ?? []).length}
           rows={byGroup.get(g.id) ?? []}
@@ -691,14 +693,14 @@ function StockListTable({
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={closeModal} />
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-surface-dark-card animate-in zoom-in-95 duration-300">
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-none dark:bg-surface-dark-card animate-in zoom-in-95 duration-300">
             <div className="flex items-center justify-between border-b border-neutral-100 p-4 dark:border-border-subtle-dark">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-brand p-1.5 text-white">
+                <div className="rounded-lg bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 p-1.5 text-white">
                   <BarChart3 className="h-4 w-4" />
                 </div>
                 <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  Strategy Analysis: <span className="text-brand-ink">{selectedDetail?.symbol}</span>
+                  Strategy Analysis: <span className="text-neutral-900 dark:text-neutral-100">{selectedDetail?.symbol}</span>
                 </h2>
               </div>
               <button onClick={closeModal} className="rounded-xl p-2 text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-muted transition-colors">
@@ -713,22 +715,22 @@ function StockListTable({
                 <StatItem label="현재가" value={`₩${Number(selectedDetail?.condition?.LastPrice || 0).toLocaleString()}`} icon={<TrendingUp className="w-3.5 h-3.5" />} />
               </div>
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
+                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
                   <Info className="w-3 h-3" />
                   <span>Technical Metadata</span>
                 </div>
                 <div className="relative group">
-                  <pre className="max-h-[300px] overflow-auto rounded-xl border border-neutral-200 bg-[#fcfaf7] p-4 font-mono text-[11px] leading-relaxed dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400">
+                  <pre className="max-h-[300px] overflow-auto rounded-xl border border-neutral-200 bg-[#fcfaf7] p-4 tabular-nums text-[11px] leading-relaxed dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400">
                     {JSON.stringify(selectedDetail, null, 2)}
                   </pre>
-                  <button onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedDetail))} className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-sm border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-brand-light transition-all dark:bg-surface-dark-muted dark:border-surface-dark-elevated">
+                  <button onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedDetail))} className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-none border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all dark:bg-surface-dark-muted dark:border-surface-dark-elevated">
                     <Copy className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
                   </button>
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t border-neutral-100 bg-neutral-50/50 p-4 dark:border-border-subtle-dark dark:bg-surface-dark-card/50">
-              <button onClick={closeModal} className="rounded-lg bg-brand px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand/20 hover:bg-brand-hover active:scale-95 transition-all">
+              <button onClick={closeModal} className="rounded-lg bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 px-8 py-2.5 text-sm font-bold text-white shadow-none hover:bg-neutral-900 dark:hover:bg-neutral-100 active:scale-95 transition-all">
                 확인
               </button>
             </div>
@@ -815,11 +817,11 @@ function GroupSection({
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0) + (onDeleteStock ? 1 : 0);
 
   const accentBorder = accent === "rose" ? "border-rose-200 dark:border-rose-900/30"
-    : accent === "green" ? "border-brand/20 dark:border-brand/20"
+    : accent === "green" ? "border-neutral-300/20 dark:border-neutral-600/20"
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
-    <section className={cn("overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-surface-dark-canvas", accentBorder)}>
+    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-24 overflow-hidden rounded-xl border bg-white shadow-none dark:bg-surface-dark-canvas", accentBorder)}>
       {/* 헤더 */}
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40">
         <button onClick={onToggleCollapse} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
@@ -841,16 +843,16 @@ function GroupSection({
           )}
           {!hideTrading && groupSide && (
             <span className={cn(
-              "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black",
+              "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
               groupSide === "sell"
                 ? "bg-rose-500 text-white"
-                : "bg-brand/10 text-brand-ink"
+                : "bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100"
             )}>
               {groupSide === "sell" ? "매도" : "매수"}
             </span>
           )}
           {!hideTrading && groupDca && (
-            <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black bg-amber-400/20 text-amber-600 dark:text-amber-400" title="정액매수(DCA): NCAV 조건 무시하고 예산으로 매수">
+            <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-amber-400/20 text-amber-600 dark:text-amber-400" title={groupSide === "sell" ? "정액매도(DCA): 적립 포인트 범위에서 보유 수량까지 매도" : "정액매수(DCA): NCAV 조건 무시하고 예산으로 매수"}>
               정액
             </span>
           )}
@@ -859,11 +861,11 @@ function GroupSection({
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
-          <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400 rounded-full">
+          <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400 rounded-full">
             {count}종목
           </span>
           {tokenTotal > 0 && (
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-brand-light text-brand-ink dark:bg-brand-muted/30 rounded-full" title="이 그룹 예산(토큰) 합계">
+            <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/30 rounded-full" title="이 그룹 예산(토큰) 합계">
               예산 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}
             </span>
           )}
@@ -875,7 +877,7 @@ function GroupSection({
                 checked={allChecked}
                 ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
                 onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
-                className="h-3.5 w-3.5 rounded border-neutral-300 text-brand-ink focus:ring-brand"
+                className="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400"
               />
               전체
             </label>
@@ -890,7 +892,7 @@ function GroupSection({
           {conditionChips && conditionChips.length > 0 && (
             <div className="hidden md:flex items-center gap-1">
               {conditionChips.map((c, i) => (
-                <span key={i} className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-mono text-brand-ink">{c}</span>
+                <span key={i} className="rounded-full bg-neutral-900/10 dark:bg-neutral-100/10 px-2 py-0.5 text-[10px] tabular-nums text-neutral-900 dark:text-neutral-100">{c}</span>
               ))}
             </div>
           )}
@@ -906,10 +908,12 @@ function GroupSection({
                 setShowRuleEditor(v => !v);
               }}
               title="이 그룹의 트레이딩 조건 설정"
+              aria-label={`${title} 매매 설정`}
+              aria-expanded={showRuleEditor}
               className={cn(
-                "rounded-lg p-1.5 transition-colors",
+                "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg p-1.5 transition-colors",
                 showRuleEditor
-                  ? "bg-brand/10 text-brand-ink"
+                  ? "bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100"
                   : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-surface-dark-muted dark:hover:text-neutral-200"
               )}
             >
@@ -925,9 +929,9 @@ function GroupSection({
             <button
               onClick={onToggleTrading}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+                "min-h-11 sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                 tradingActive
-                  ? "bg-brand text-white hover:bg-brand-hover"
+                  ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white hover:bg-neutral-900 dark:hover:bg-neutral-100"
                   : "bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-surface-dark-muted dark:text-neutral-400"
               )}
             >
@@ -937,7 +941,7 @@ function GroupSection({
           ) : (
             <span className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
-              tradingActive ? "bg-brand/10 text-brand-ink" : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted"
+              tradingActive ? "bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100" : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted"
             )}>
               <Power className="w-3.5 h-3.5" />
               자동매매 {tradingActive ? "ON" : "OFF"}
@@ -956,32 +960,34 @@ function GroupSection({
       {showRuleEditor && onSaveGroupSettings && (
         <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2.5 py-2 md:px-4 md:py-3">
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
-            <span className="col-span-2 text-[11px] font-bold text-brand-ink uppercase tracking-wider shrink-0">그룹 조건 설정</span>
+            <span className="col-span-2 text-[11px] font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider shrink-0">그룹 조건 설정</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">방향</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">방향</label>
               <div className="inline-flex w-full sm:w-auto rounded-lg border border-neutral-300 dark:border-surface-dark-elevated overflow-hidden">
-                <button type="button" onClick={() => setDraftSide("buy")}
-                  className={cn("flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
-                    draftSide === "buy" ? "bg-brand text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
+                <button type="button" aria-pressed={draftSide === "buy"} onClick={() => setDraftSide("buy")}
+                  className={cn("min-h-11 sm:min-h-0 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
+                    draftSide === "buy" ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
                   매수
                 </button>
-                <button type="button" onClick={() => setDraftSide("sell")}
-                  className={cn("flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
+                <button type="button" aria-pressed={draftSide === "sell"} onClick={() => setDraftSide("sell")}
+                  className={cn("min-h-11 sm:min-h-0 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
                     draftSide === "sell" ? "bg-rose-500 text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
                   매도
                 </button>
               </div>
             </div>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0" title="켜면 NCAV 조건을 무시하고 예산으로 정액 매수 (ETF 등)">정액매수(DCA)</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" title={draftSide === "sell" ? "켜면 적립 포인트로 계산한 수량만 매도합니다. 끄면 보유 전량을 매도합니다." : "켜면 NCAV 조건을 무시하고 예산으로 정액 매수 (ETF 등)"}>{draftSide === "sell" ? "정액매도(DCA)" : "정액매수(DCA)"}</label>
               <button type="button" onClick={() => setDraftDca(v => !v)}
-                className={cn("w-full sm:w-auto px-2.5 py-1.5 sm:py-1 text-xs font-bold rounded-lg border transition-colors",
-                  draftDca ? "bg-brand text-white border-brand" : "bg-white dark:bg-surface-dark-canvas text-neutral-500 border-neutral-300 dark:border-surface-dark-elevated")}>
+                aria-pressed={draftDca}
+                className={cn("min-h-11 sm:min-h-0 w-full sm:w-auto px-2.5 py-1.5 sm:py-1 text-xs font-bold rounded-lg border transition-colors",
+                  draftDca ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white border-neutral-300 dark:border-neutral-600" : "bg-white dark:bg-surface-dark-canvas text-neutral-500 border-neutral-300 dark:border-surface-dark-elevated")}>
                 {draftDca ? "ON" : "OFF"}
               </button>
             </div>
+            {draftSide === "sell" && <p className="col-span-2 text-[11px] text-rose-500">{draftDca ? "적립 포인트 ÷ 1주 가격으로 수량을 계산하고 보유 수량 내에서 매도합니다. 주문 접수 성공 시 사용 포인트를 차감합니다." : "정액매도 OFF: 보유 수량 전량을 매도합니다."}</p>}
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
               <input
                 type="number"
                 min={1}
@@ -990,11 +996,11 @@ function GroupSection({
                 value={draftActiveCount}
                 onChange={e => setDraftActiveCount(e.target.value)}
                 placeholder="계좌 기본값"
-                className="w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-xs"
+                className="min-h-11 sm:min-h-0 w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">NCAV 비율</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">NCAV 비율</label>
               <input
                 type="number"
                 min={0}
@@ -1002,11 +1008,11 @@ function GroupSection({
                 value={draftNcavRatio}
                 onChange={e => setDraftNcavRatio(e.target.value)}
                 placeholder="계좌 기본값"
-                className="w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-xs"
+                className="min-h-11 sm:min-h-0 w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-[11px] text-neutral-500 shrink-0">월 예산(원)</label>
+              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">월 예산(원)</label>
               <input
                 type="number"
                 min={0}
@@ -1014,21 +1020,21 @@ function GroupSection({
                 value={draftBudget}
                 onChange={e => setDraftBudget(e.target.value)}
                 placeholder="계좌예산 분배"
-                className="w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-xs"
+                className="min-h-11 sm:min-h-0 w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
             <div className="col-span-2 flex items-center gap-1.5 justify-end sm:ml-auto">
               {(groupQuantRule || groupBudget != null) && (
                 <button
                   onClick={() => { onSaveGroupSettings({ quant_rule: null, budget_krw: null }); setShowRuleEditor(false); }}
-                  className="rounded px-2.5 py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-surface-dark-elevated"
+                  className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-surface-dark-elevated"
                 >
                   초기화
                 </button>
               )}
               <button
                 onClick={() => setShowRuleEditor(false)}
-                className="rounded px-2.5 py-1 text-xs text-neutral-500 border border-neutral-200 dark:border-surface-dark-elevated"
+                className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-neutral-500 border border-neutral-200 dark:border-surface-dark-elevated"
               >
                 취소
               </button>
@@ -1048,7 +1054,7 @@ function GroupSection({
                   });
                   setShowRuleEditor(false);
                 }}
-                className="rounded px-2.5 py-1 text-xs font-bold bg-brand text-white hover:bg-brand-hover"
+                className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-bold bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white hover:bg-neutral-900 dark:hover:bg-neutral-100"
               >
                 저장
               </button>
@@ -1062,7 +1068,7 @@ function GroupSection({
         </div>
       )}
 
-      {/* 본문 — 데스크탑: 테이블 / 모바일: 카드 */}
+      {/* 본문 — 데스크탑: 테이블 / 모바일: 한 줄 요약 + 펼침 */}
       {!collapsed && (
         <>
         <div className="hidden md:block relative overflow-x-auto">
@@ -1078,7 +1084,7 @@ function GroupSection({
                       checked={allChecked}
                       ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
                       onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
-                      className="h-4 w-4 rounded border-neutral-300 text-brand-ink focus:ring-brand"
+                      className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400"
                     />
                   </th>
                 )}
@@ -1107,7 +1113,7 @@ function GroupSection({
                 rows.map((row, idx) => (
                   <tr key={`${sectionKey}-${row.symbol}-${idx}`} className={cn(
                     "group transition-colors",
-                    isPicked(row.symbol) ? "bg-brand-light dark:bg-brand-muted/20" : "hover:bg-brand-light/30 dark:hover:bg-brand-muted/10"
+                    isPicked(row.symbol) ? "bg-neutral-100 dark:bg-neutral-800/20" : "hover:bg-neutral-100/30 dark:hover:bg-neutral-800/10"
                   )}>
                     {showCheck && (
                       <td className="px-3 py-3">
@@ -1115,7 +1121,7 @@ function GroupSection({
                           type="checkbox"
                           checked={isPicked(row.symbol)}
                           onChange={() => onTogglePick(sectionKey, row.symbol)}
-                          className="h-4 w-4 rounded border-neutral-300 text-brand-ink focus:ring-brand"
+                          className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400"
                         />
                       </td>
                     )}
@@ -1127,13 +1133,13 @@ function GroupSection({
                         <span className="flex min-w-0 flex-col items-start leading-tight">
                           {row.name ? (
                             <>
-                              <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-brand-ink transition-colors tracking-tight truncate max-w-[180px]">
+                              <span className="font-bold text-sm text-neutral-900 group-hover/btn:text-neutral-900 dark:text-neutral-100 transition-colors tracking-tight truncate max-w-[180px]">
                                 {row.name}
                               </span>
-                              <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{row.symbol}</span>
+                              <span className="text-[10px] text-neutral-400 tabular-nums tracking-wider">{row.symbol}</span>
                             </>
                           ) : (
-                            <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-brand-ink transition-colors tracking-tight">
+                            <span className="font-bold text-sm text-neutral-900 group-hover/btn:text-neutral-900 dark:text-neutral-100 transition-colors tracking-tight">
                               {row.symbol}
                             </span>
                           )}
@@ -1144,23 +1150,23 @@ function GroupSection({
                       <StatusBadge status={row.status} />
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex flex-col items-center font-mono">
+                      <div className="flex flex-col items-center tabular-nums">
                         <span className="text-neutral-700 dark:text-neutral-300">{row.per ?? "-"}</span>
                         <span className="text-[10px] text-neutral-400">{row.pbr ?? "-"}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono leading-tight">
+                    <td className="px-4 py-3 tabular-nums leading-tight">
                       <div className="flex flex-col">
                         <span className="font-bold text-neutral-700 dark:text-neutral-300">B: {row.bps?.toLocaleString() ?? "-"}</span>
                         <span className="text-[10px] text-neutral-400">E: {row.eps?.toLocaleString() ?? "-"}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-neutral-600 dark:text-neutral-400">
+                    <td className="px-4 py-3 tabular-nums text-neutral-600 dark:text-neutral-400">
                       ₩{(row.marketCap || 0).toLocaleString()}억
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={cn(
-                        "inline-block px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-colors",
+                        "inline-block px-2 py-0.5 rounded text-[11px] font-bold tabular-nums transition-colors",
                         Number(row.ncavRatio) > 1
                           ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                           : "bg-surface-canvas text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-500"
@@ -1168,13 +1174,13 @@ function GroupSection({
                         {row.ncavRatio ?? "-"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-black text-brand-ink dark:text-brand-ink">
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">
                       {row.movable ? (
                         <div className="flex flex-col items-end gap-1">
                           <span>{row.token?.toLocaleString() ?? 0}</span>
                           {monthlyPerStock > 0 && (
                             <div className="w-16 h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden" title={`종목당 월 예산 대비 ${Math.round(Math.min(1, (Number(row.token) || 0) / monthlyPerStock) * 100)}%`}>
-                              <div className="h-full bg-brand rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
+                              <div className="h-full bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
                             </div>
                           )}
                         </div>
@@ -1185,7 +1191,7 @@ function GroupSection({
                         {row.movable ? (
                           <div className="flex justify-end gap-1.5 flex-wrap">
                             {tokenAmounts.map(amt => (
-                              <div key={`indiv-${amt}`} className="flex items-center rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden shadow-xs">
+                              <div key={`indiv-${amt}`} className="flex items-center rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card overflow-hidden shadow-none">
                                 <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2 py-1 hover:bg-[#f5f1eb] dark:hover:bg-surface-dark-muted text-[10px] font-bold border-r border-neutral-100 dark:border-border-subtle-dark">
                                   {amt / 10000}만
                                 </button>
@@ -1223,7 +1229,7 @@ function GroupSection({
           </table>
         </div>
 
-        {/* 모바일 카드 뷰 */}
+        {/* 모바일 한 줄 요약 — 지표·예산 조작은 펼친 뒤 표시 */}
         <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
           {rows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 opacity-40">
@@ -1234,44 +1240,29 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("px-2.5 py-2", isPicked(row.symbol) && "bg-brand-light dark:bg-brand-muted/20")}
+                className={cn("flex items-start gap-1 px-2.5", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
               >
-                {/* 상단: 체크 + 종목 + 상태 */}
-                <div className="flex items-center gap-2">
-                  {showCheck && (
-                    <input
-                      type="checkbox"
-                      checked={isPicked(row.symbol)}
-                      onChange={() => onTogglePick(sectionKey, row.symbol)}
-                      className="h-5 w-5 shrink-0 rounded border-neutral-300 text-brand-ink focus:ring-brand"
-                    />
-                  )}
-                  <button onClick={() => openDetail(row.raw)} className="flex min-w-0 items-center gap-1.5">
-                    <div className="hidden min-[480px]:block shrink-0 rounded-md bg-surface-canvas p-1.5 dark:bg-surface-dark-muted">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                    </div>
-                    {row.name ? (
-                      <span className="flex min-w-0 items-baseline gap-1.5 leading-tight">
-                        <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name}</span>
-                        <span className="shrink-0 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">{row.symbol}</span>
-                      </span>
-                    ) : (
-                      <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
-                    )}
-                  </button>
-                  <div className="ml-auto shrink-0 flex items-center gap-1">
+                {showCheck && <label className="flex min-h-11 w-7 shrink-0 cursor-pointer items-center justify-center">
+                  <input type="checkbox" aria-label={`${row.name || row.symbol} 선택`} checked={isPicked(row.symbol)} onChange={() => onTogglePick(sectionKey, row.symbol)} className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
+                </label>}
+                <details className="group/stock min-w-0 flex-1">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
                     <StatusBadge status={row.status} />
-                    {onDeleteStock && (
-                      <button
-                        onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }}
-                        title="종목 제거"
-                        className="rounded-md p-1 text-neutral-300 active:text-red-500 active:bg-red-50 dark:active:bg-red-950 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
+                    {row.movable && <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="pb-3 pt-1">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <button onClick={() => openDetail(row.raw)} className="min-w-0 text-left text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                        <span className="block break-words">{row.name || row.symbol}</span><span className="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">{row.symbol} · 상세 분석 보기</span>
                       </button>
-                    )}
-                  </div>
-                </div>
+                      <div className="flex shrink-0 items-center gap-1"><StatusBadge status={row.status} />
+                        {onDeleteStock && <button onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }} aria-label={`${row.name || row.symbol} 종목 제거`} className="flex h-11 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>}
+                      </div>
+                    </div>
+
+                    {row.status && <p className="mb-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">{row.status.description}</p>}
 
                 {/* 항목명과 값을 한 줄에 두고 좁은 화면에서는 전체 폭을 사용 */}
                 <div className="mt-1.5 grid grid-cols-1 min-[480px]:grid-cols-2 gap-1">
@@ -1285,10 +1276,10 @@ function GroupSection({
                 {row.movable && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
-                      <span>예산 <b className="font-mono font-black text-brand-ink">{row.token?.toLocaleString() ?? 0}</b></span>
+                      <span>예산 <b className="tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">{row.token?.toLocaleString() ?? 0}</b></span>
                       {monthlyPerStock > 0 && (
                         <span className="w-14 h-1 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden inline-block" title={`종목당 월 예산 대비 ${Math.round(Math.min(1, (Number(row.token) || 0) / monthlyPerStock) * 100)}%`}>
-                          <span className="block h-full bg-brand rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
+                          <span className="block h-full bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
                         </span>
                       )}
                     </span>
@@ -1296,7 +1287,7 @@ function GroupSection({
                       <div className="flex flex-wrap gap-1">
                         {tokenAmounts.map(amt => (
                           <div key={`m-indiv-${amt}`} className="flex items-center overflow-hidden rounded-md border border-neutral-200 dark:border-border-subtle-dark">
-                            <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-brand-ink active:bg-brand-light dark:active:bg-brand-muted/30">
+                            <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-neutral-900 dark:text-neutral-100 active:bg-neutral-100 dark:active:bg-neutral-800/30">
                               +{amt / 10000}만
                             </button>
                             <button onClick={() => doTokenMinusOne(amt, row.symbol)} className="border-l border-neutral-200 px-2 py-1.5 text-red-500 active:bg-red-50 dark:border-border-subtle-dark dark:active:bg-red-950">
@@ -1313,6 +1304,8 @@ function GroupSection({
                     )}
                   </div>
                 )}
+                  </div>
+                </details>
               </div>
             ))
           )}
@@ -1327,8 +1320,8 @@ function GroupSection({
 function MiniStat({ label, value, highlight }: { label: string; value: React.ReactNode; highlight?: boolean }) {
   return (
     <div className="min-w-0 flex items-baseline justify-between gap-2 rounded-lg bg-surface-canvas px-2 py-1 dark:bg-surface-dark-card">
-      <div className="shrink-0 text-[11px] font-black uppercase tracking-tight text-neutral-500 dark:text-neutral-400">{label}</div>
-      <div className={cn("min-w-0 break-words text-right font-mono text-xs font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
+      <div className="shrink-0 text-[11px] font-semibold uppercase tracking-tight text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className={cn("min-w-0 break-words text-right tabular-nums text-xs font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
         {value}
       </div>
     </div>
@@ -1341,9 +1334,9 @@ function StatItem({ label, value, icon }: { label: string; value: string; icon: 
     <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[#fcfaf7] border border-neutral-100 dark:bg-surface-dark-card dark:border-border-subtle-dark">
       <div className="flex items-center gap-1.5 text-neutral-400 dark:text-neutral-500">
         {icon}
-        <span className="text-[10px] font-black uppercase tracking-tight">{label}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-tight">{label}</span>
       </div>
-      <p className="text-base font-mono font-black text-neutral-900 dark:text-neutral-100">{value}</p>
+      <p className="text-base tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">{value}</p>
     </div>
   );
 }

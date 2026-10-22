@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { financialSourceLabel } from "@/lib/utils/financialFreshness";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Popover from "@radix-ui/react-popover";
 import { TrendingUp, TrendingDown, Info, BookOpen, BarChart2, Banknote, Minus } from "lucide-react";
@@ -22,6 +23,7 @@ type FinnhubReport = {
 interface Props {
     data: FinnhubReport[];
     className?: string;
+    source?: string | null;
 }
 
 type ItemDef = { label: string; concept: string[]; isTotal?: boolean; description: string };
@@ -377,7 +379,7 @@ function SectionTable({
     );
 }
 
-export default function FinnhubTable({ data = [], className = "" }: Props) {
+export default function FinnhubTable({ data = [], className = "", source }: Props) {
     const columns = useMemo(() => {
         const reports = Array.isArray(data) ? data : [];
         return reports.slice(0, 5).map((r) => {
@@ -403,7 +405,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
         <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse shrink-0" />
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
-                Finnhub · SEC Fundamentals · US-GAAP · USD
+                {[financialSourceLabel(source), 'US-GAAP', 'USD'].filter(Boolean).join(' · ')}
             </span>
             <div className="ml-auto flex items-center gap-2">
                 <span className="text-[9px] font-mono text-neutral-400 dark:text-neutral-600 flex items-center gap-1">

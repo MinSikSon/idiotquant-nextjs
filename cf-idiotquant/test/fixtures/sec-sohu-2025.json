@@ -1,0 +1,140 @@
+{
+  "symbol": "SOHU",
+  "cik": "1734107",
+  "source": "sec",
+  "data": [
+    {
+      "symbol": "SOHU",
+      "cik": "1734107",
+      "year": 2025,
+      "quarter": 0,
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "filedDate": "2026-03-12",
+      "form": "20-F",
+      "accessNumber": "0001193125-26-102990",
+      "source": "sec",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1734107/000119312526102990/0001193125-26-102990-index.html",
+      "report": {
+        "bs": [
+          {
+            "concept": "CashAndCashEquivalentsAtCarryingValue",
+            "label": "Cash and Cash Equivalents, at Carrying Value",
+            "value": 128308000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "AccountsReceivableNetCurrent",
+            "label": "Accounts Receivable, after Allowance for Credit Loss, Current",
+            "value": 43335000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "AssetsCurrent",
+            "label": "Assets, Current",
+            "value": 967918000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "Assets",
+            "label": "Assets",
+            "value": 1636053000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "Liabilities",
+            "label": "Liabilities",
+            "value": 357982000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "LiabilitiesCurrent",
+            "label": "Liabilities, Current",
+            "value": 333713000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "LiabilitiesNoncurrent",
+            "label": "Liabilities, Noncurrent",
+            "value": 24269000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "StockholdersEquity",
+            "label": "Stockholders' Equity Attributable to Parent",
+            "value": 1277727000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+            "label": "Stockholders' Equity, Including Portion Attributable to Noncontrolling Interest",
+            "value": 1278071000,
+            "unit": "USD",
+            "form": "20-F"
+          }
+        ],
+        "ic": [
+          {
+            "concept": "RevenueFromContractWithCustomerExcludingAssessedTax",
+            "label": "Revenue from Contract with Customer, Excluding Assessed Tax",
+            "value": 584333000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "OperatingIncomeLoss",
+            "label": "Operating Income (Loss)",
+            "value": -93805000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "NetIncomeLoss",
+            "label": "Net Income (Loss) Attributable to Parent",
+            "value": 394095000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "NetIncomeLossAvailableToCommonStockholdersBasic",
+            "label": "Net Income (Loss) Available to Common Stockholders, Basic",
+            "value": 394095000,
+            "unit": "USD",
+            "form": "20-F"
+          }
+        ],
+        "cf": [
+          {
+            "concept": "NetCashProvidedByUsedInOperatingActivities",
+            "label": "Net Cash Provided by (Used in) Operating Activities",
+            "value": -4762000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "NetCashProvidedByUsedInInvestingActivities",
+            "label": "Net Cash Provided by (Used in) Investing Activities",
+            "value": 24843000,
+            "unit": "USD",
+            "form": "20-F"
+          },
+          {
+            "concept": "NetCashProvidedByUsedInFinancingActivities",
+            "label": "Net Cash Provided by (Used in) Financing Activities",
+            "value": -54077000,
+            "unit": "USD",
+            "form": "20-F"
+          }
+        ]
+      }
+    }
+  ]
+}

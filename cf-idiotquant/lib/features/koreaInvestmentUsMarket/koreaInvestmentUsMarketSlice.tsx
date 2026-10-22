@@ -898,7 +898,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             {
                 pending: (state) => {
                     // console.log(`[reqGetQuotationsSearchInfo] pending`);
-                    state.searchInfo.state = "pending";
+                    state.searchInfo = { ...initialState.searchInfo, state: "pending" };
                     // state.koreaInvestmentApproval.state = "pending";
                 },
                 fulfilled: (state, action) => {
@@ -919,6 +919,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             {
                 pending: (state) => {
                     // console.log(`[reqGetQuotationsPriceDetail] pending`);
+                    state.priceDetail = initialState.priceDetail;
                     state.state = "pending";
                     // state.koreaInvestmentApproval.state = "pending";
                 },

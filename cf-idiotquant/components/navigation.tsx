@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useRef, useState, Fragment } from "react";
+import { useMobilePageHeader } from "@/components/mobile-page-header";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
+import { nextMobileHeaderCompact } from "@/lib/utils/mobileHeader";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
   Home,
@@ -67,6 +69,22 @@ const MORE_NAV: NavItem[] = [
 // 같은 화면에 도착했다 — 누를 때마다 "이동 중…" 이 한 번 스쳤다.
 const PORTFOLIO_NAV = [
   { label: "포트폴리오", href: "/balance", icon: Eye },
+];
+
+const MOBILE_PAGE_LABELS = [
+  { href: "/admin/ticker-map", label: "종목 매핑" },
+  { href: "/ledger/join", label: "가계부 초대" },
+  { href: "/login/callback", label: "로그인" },
+  { href: "/share", label: "공유 결과" },
+  { href: "/privacy", label: "개인정보 처리방침" },
+  { href: "/terms", label: "이용약관" },
+  { href: "/profile", label: "내 계정" },
+  { href: "/backtest", label: "과거 검증" },
+  { href: "/quant", label: "퀀트 투자" },
+  { href: "/login", label: "로그인" },
+  ...MAIN_NAV, ...MORE_NAV, ...PORTFOLIO_NAV,
+  { href: "/admin", label: "회원 관리" },
+  { href: "/game", label: "게임" },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────── */
@@ -219,6 +237,33 @@ function MiniSession({ session, status }: { session: any; status: string }) {
 export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const pageHeader = useMobilePageHeader();
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { setToolsOpen(false); }, [pathname, pageHeader?.active]);
+  useEffect(() => {
+    if (!toolsOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !toolsRef.current?.contains(event.target)) setToolsOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
+        setToolsOpen(false);
+        toolsRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      }
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      if (event.target instanceof Element && !event.target.closest("dialog") && !toolsRef.current?.contains(event.target)) setToolsOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocusIn);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", onFocusIn);
+    };
+  }, [toolsOpen]);
 
   // 관리자가 일반 사용자 화면을 보는 중인가. **권한이 아니라 표시**만 접는다 —
   // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
@@ -252,18 +297,23 @@ export function NavbarWithSimpleLinks() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const [bottomBarCompact, setBottomBarCompact] = useState(false);
+  const [headerCompact, setHeaderCompact] = useState(false);
+  const pageLabel = MOBILE_PAGE_LABELS.find(item => active(pathname, item.href))?.label ?? "IdiotQuant";
   const compactBottomBar = bottomBarCompact && !moreSheet;
   const showMore = moreOpen || moreActive;
 
   useEffect(() => {
     setBottomBarCompact(false);
-    if (inGame) return;
+    setHeaderCompact(false);
 
     const mobile = window.matchMedia("(max-width: 767px)");
     let previousY = Math.max(0, window.scrollY);
-    const onScroll = () => {
+    let frame: number | null = null;
+    const update = () => {
+      frame = null;
       const currentY = Math.max(0, window.scrollY);
-      if (!mobile.matches || currentY <= 64) {
+      setHeaderCompact(previous => nextMobileHeaderCompact(previous, currentY, mobile.matches));
+      if (inGame || !mobile.matches || currentY <= 64) {
         setBottomBarCompact(false);
       } else {
         // 손떨림 정도의 움직임에는 바 크기를 바꾸지 않는다.
@@ -273,9 +323,23 @@ export function NavbarWithSimpleLinks() {
       previousY = currentY;
     };
 
+    const onScroll = () => {
+      if (frame === null) frame = window.requestAnimationFrame(update);
+    };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    mobile.addEventListener("change", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      mobile.removeEventListener("change", onScroll);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, [pathname, inGame]);
+
+  useEffect(() => {
+    document.documentElement.dataset.mobileHeaderCompact = String(headerCompact);
+    return () => { delete document.documentElement.dataset.mobileHeaderCompact; };
+  }, [headerCompact]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -449,26 +513,42 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
+      <header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
         barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Link href="/" className="flex items-center gap-1.5 shrink-0">
-            <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+        <div className={cn("flex items-center gap-1.5 min-w-0", pageHeader?.active && "shrink-0")}>
+          <Link href="/" aria-label="IdiotQuant 홈" className="flex min-w-0 items-center gap-1.5">
+            {pageHeader?.active ? <Home size={18} className="m-3" /> : headerCompact ? <span className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{pageLabel}</span> : <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
               idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-brand-ink"}>{inGame ? "games" : "quant"}</span>
-            </span>
+            </span>}
           </Link>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1 px-2", !pageHeader?.active && "hidden")} />
+        <div ref={toolsRef} className={cn("relative shrink-0", !pageHeader?.active && "hidden")}>
+          <button type="button" aria-label="페이지 및 서비스 도구" aria-expanded={toolsOpen} aria-controls="mobile-page-tools" onClick={() => setToolsOpen(value => !value)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-neutral-200/60 dark:hover:bg-neutral-800">
+            <MoreHorizontal size={20} />
+          </button>
+          <div id="mobile-page-tools" hidden={!toolsOpen} className="absolute right-0 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
+            <div ref={pageHeader?.setActionsTarget} />
+            {pageHeader?.active && <div className="mt-3 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-700">
+              <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
+              <ThemeChanger />
+              <MiniSession session={session} status={status} />
+            </div>}
+          </div>
+        </div>
+        <div className={cn("flex items-center gap-2 shrink-0", pageHeader?.active && "hidden")}>
+          {!pageHeader?.active && <>
           {!inGame && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
           <ThemeChanger />
           <MiniSession session={session} status={status} />
+          </>}
         </div>
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav aria-label="하단 메뉴" className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 transition-[height] duration-200 motion-reduce:transition-none",
-        compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1" : "h-[64px]",
+        compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1 [&>a]:gap-0 [&>button]:gap-0 [&>a>span]:sr-only [&>button>span]:sr-only" : "h-[64px]",
         barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />

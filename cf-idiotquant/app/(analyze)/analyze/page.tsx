@@ -25,10 +25,18 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import FinancialFreshnessNotice from '@/components/financial-freshness';
+import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
+import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
+import { resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
+import type { StockSearchName } from '@/lib/utils/stockSuggestions';
 import ResultShare from '@/components/result-share';
 import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
+import styles from './analyze.module.css';
+
+const ANALYZE_WIDTH = cn(PAGE_WIDTH.data, styles.container);
 
 // =========================================================================
 // Dynamic imports
@@ -78,15 +86,14 @@ const SearchAutocomplete = dynamic(
   { loading: () => <SearchSkeleton /> }
 );
 
-const SearchGuide = dynamic(
-  () => import('@/app/(search)/search/components/SearchGuide').then(mod => ({ default: mod.SearchGuide }))
-);
+const AnalysisIntro = dynamic(() => import('./components/AnalysisIntro'));
 
 // =========================================================================
 // 정적 데이터 싱글톤 로더
 // =========================================================================
 interface StaticStockData {
   allTickers: string[];
+  usStocks: StockSearchName[];
   corpCodeJson: Record<string, any>;
 }
 
@@ -98,9 +105,9 @@ const loadStaticStockData = (): Promise<StaticStockData> => {
   if (staticDataPromise) return staticDataPromise;
 
   staticDataPromise = Promise.all([
-    import('@/public/data/usStockSymbols/nasdaq_tickers.json'),
-    import('@/public/data/usStockSymbols/nyse_tickers.json'),
-    import('@/public/data/usStockSymbols/amex_tickers.json'),
+    import('@/public/data/usStockSymbols/nasdaq_full_tickers.json'),
+    import('@/public/data/usStockSymbols/nyse_full_tickers.json'),
+    import('@/public/data/usStockSymbols/amex_full_tickers.json'),
     import('@/public/data/validCorpCodeArray.json'),
     import('@/public/data/validCorpNameArray.json'),
     import('@/public/data/validCorpCode.json'),
@@ -112,12 +119,22 @@ const loadStaticStockData = (): Promise<StaticStockData> => {
     const overrideEntries: string[] = (overrides.data ?? []).flatMap((o: any) =>
       o.country === 'KR' ? [o.ticker, o.name].filter(Boolean) : [o.ticker].filter(Boolean)
     );
+    const usStocks: StockSearchName[] = [
+      ...nasdaq.default, ...nyse.default, ...amex.default,
+    ];
+    // 같은 티커의 관리자 이름도 검색 별칭으로 남긴다.
+    for (const entry of overrides.data ?? []) {
+      if (entry.country === 'US' && entry.ticker && entry.name) {
+        usStocks.push({ symbol: entry.ticker.toUpperCase(), name: entry.name });
+      }
+    }
     cachedStaticData = {
-      allTickers: [
-        ...nasdaq.default, ...nyse.default, ...amex.default,
+      allTickers: [...new Set([
+        ...usStocks.map(stock => stock.symbol),
         ...corpCode.default, ...corpName.default,
         ...overrideEntries,
-      ],
+      ])],
+      usStocks,
       corpCodeJson: corpCodeData.default,
     };
     return cachedStaticData;
@@ -238,10 +255,10 @@ const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
       <div className="blur-sm select-none pointer-events-none">
         {children}
       </div>
-      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-surface-dark-card/40 dark:to-surface-dark-card/95">
+      <div className={cn(styles.gateOverlay, "absolute inset-0 flex items-center justify-center")}>
         <Link
           href={loginHref}
-          className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 text-sm font-medium transition-colors"
+          className={styles.primary}
         >
           <Lock size={13} />
           로그인하여 전체 보기
@@ -334,17 +351,14 @@ function buildVerdict(m: VerdictMetrics) {
 
 const VERDICT_TONE = {
   good: {
-    box: 'border-neutral-200 dark:border-neutral-800',
     label: 'text-neutral-500 dark:text-neutral-400',
     text: 'text-neutral-800 dark:text-neutral-200',
   },
   neutral: {
-    box: 'border-neutral-200 dark:border-neutral-800',
     label: 'text-neutral-400',
     text: 'text-neutral-600 dark:text-neutral-300',
   },
   caution: {
-    box: 'border-neutral-200 dark:border-neutral-800',
     label: 'text-neutral-500 dark:text-neutral-400',
     text: 'text-neutral-800 dark:text-neutral-200',
   },
@@ -353,6 +367,23 @@ const VERDICT_TONE = {
 // =========================================================================
 // 메인 콘텐츠
 // =========================================================================
+function StockName({ name }: { name: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <button
+      type="button"
+      className={styles.stockName}
+      aria-expanded={expanded}
+      aria-label={`${name} 전체 이름 ${expanded ? '접기' : '보기'}`}
+      title={name}
+      onClick={() => setExpanded(value => !value)}
+    >
+      <span>{name}</span>
+      <ChevronDown size={14} aria-hidden="true" className={cn("shrink-0", expanded && "rotate-180")} />
+    </button>
+  );
+}
+
 function AnalyzeContent() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -369,7 +400,7 @@ function AnalyzeContent() {
   const fromScreener = searchParams.get('from') === 'screener';
 
   const [hasMounted, setHasMounted] = useState(false);
-  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
+  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], usStocks: [], corpCodeJson: {} });
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
@@ -377,6 +408,7 @@ function AnalyzeContent() {
   const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
   const [searchOpen, setSearchOpen] = useState(false);
+  const [headerCompact, setHeaderCompact] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -389,13 +421,14 @@ function AnalyzeContent() {
 
 
   const handleSearch = useCallback((stockName: string) => {
-    if (!stockName) return;
-    if (staticStockData.allTickers.length > 0 &&
-        !staticStockData.allTickers.some(t => t.toLowerCase() === stockName.toLowerCase())) {
-      addToast('error', `'${stockName}'은(는) 지원하지 않는 종목입니다.`);
+    if (!stockName.trim()) return;
+    const ticker = resolveStockSearchInput(stockName, staticStockData.allTickers);
+    if (!ticker) {
+      addToast('error', '국내·미국 종목명으로 검색 결과를 선택하거나 종목코드·티커를 확인해 주세요.');
       return;
     }
-    startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(stockName)}`); });
+    setSearchOpen(false);
+    startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`); });
   }, [router, addToast, staticStockData.allTickers]);
 
   useEffect(() => {
@@ -405,10 +438,28 @@ function AnalyzeContent() {
 
   const tickerFromUrl = searchParams.get('ticker');
 
+  useEffect(() => {
+    let frame: number | null = null;
+    const update = () => {
+      frame = null;
+      // 높이가 줄어 scrollY가 되돌아가도 헤더가 깜빡이지 않도록 복원 기준을 분리한다.
+      setHeaderCompact(previous => window.scrollY <= 24 ? false : previous || window.scrollY >= 128);
+    };
+    const onScroll = () => {
+      if (frame === null) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [tickerFromUrl]);
+
   const handleToggleLike = useCallback(() => {
     if (!tickerFromUrl) return;
     if (!session?.user) {
-      addToast('info', '로그인 후 관심 종목에 저장됩니다.');
+      addToast('info', '관심 종목을 저장하려면 로그인 후 하트를 다시 눌러 주세요.');
       return;
     }
     dispatch(reqToggleLike({ ticker: tickerFromUrl, name: name ?? undefined, isUs: krOrUs === 'US' }));
@@ -423,11 +474,12 @@ function AnalyzeContent() {
     ? (data.kiChart?.output1?.hts_kor_isnm || name)
     : (data.usSearchInfo?.output?.prdt_eng_name || data.usSearchInfo?.output?.ovrs_item_name || name);
 
+  const usAvailability = usAnalysisAvailability(data);
   const isLoaded =
     tickerFromUrl === name &&
     (
       (krOrUs === 'KR' && data.kiChart.state === 'fulfilled' && data.kiBS.state === 'fulfilled') ||
-      (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.finnhubData.state === 'fulfilled')
+      (krOrUs === 'US' && usAvailability.priceReady && usAvailability.financialsReady)
     );
 
   // 가격 정보만 필요한 섹션(StockCard·기본 지표)을 위한 조건 — 재무제표 없이도 주가·PBR·PER·EPS 표시
@@ -435,7 +487,7 @@ function AnalyzeContent() {
     tickerFromUrl === name &&
     (
       (krOrUs === 'KR' && data.kiPrice.state === 'fulfilled') ||
-      (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.usDetail?.output?.last !== "")
+      (krOrUs === 'US' && usAvailability.priceReady)
     );
 
   const currency = krOrUs === 'US' ? '$' : '₩';
@@ -533,27 +585,30 @@ function AnalyzeContent() {
   if (!hasMounted) return <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas" />;
 
   return (
-    <div id="analyze-page" className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-100 antialiased">
+    <div id="analyze-page" className={cn(styles.page, "min-h-screen antialiased")}>
 
       <ToastContainer toasts={toasts} onRemove={dismissToast} />
 
       {/* ── 헤더 ── */}
       <PageHeader
-        title={isPriceLoaded ? displayName : '종목 분석'}
-        description={!isPriceLoaded ? '종목을 검색하고, 재무지표와 여러 방법으로 계산한 가치를 비교하세요.' : undefined}
-        meta={isPriceLoaded ? <>
-          <span>{[tickerLabel, marketName].filter(Boolean).join(' · ')}</span>
-          <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
-          {gradeLabel && <span className="rounded border border-neutral-200 px-1.5 py-0.5 font-medium text-neutral-600 dark:border-surface-dark-border dark:text-neutral-300">{gradeLabel}</span>}
-        </> : undefined}
+        className={cn(styles.header, tickerFromUrl ? styles.resultHeader : styles.emptyHeader, headerCompact && styles.headerCompact)}
+        containerClassName={ANALYZE_WIDTH}
+        title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
+        mobileTitle={isPriceLoaded ? displayName || tickerLabel : '종목 분석'}
+        description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
         sticky
-        mobileCompact
-        actions={isPriceLoaded ? <>
-          <button type="button" onClick={handleToggleLike}
+        mobileCompact={!!tickerFromUrl}
+        mobileTitleInNavigation={!isPriceLoaded}
+        actions={tickerFromUrl ? <>
+          {isPriceLoaded && <>
+          {isLoggedIn ? <button type="button" onClick={handleToggleLike}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
             className={cn(PAGE_ACTION_CLS, isInWatchlist && 'text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400')}>
             <Heart size={14} fill={isInWatchlist ? 'currentColor' : 'none'} />
-          </button>
+          </button> : <Link href={loginHref} aria-label="로그인하고 관심 종목 저장" className={PAGE_ACTION_CLS}>
+            <Heart size={14} />
+            <span className="hidden sm:inline">로그인 후 저장</span>
+          </Link>}
           <ResultShare iconOnly disabled={!stockData || waitResponse} getSnapshot={() => {
             const snapshot = analysisSnapshot({
               title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
@@ -569,23 +624,39 @@ function AnalyzeContent() {
             }
             return snapshot;
           }} />
-          {!searchOpen && <button type="button" onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색" className={PAGE_ACTION_CLS}>
-            <Search size={14} />
-          </button>}
+          </>}
+
         </> : undefined}
       >
-        {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
-        {(!isPriceLoaded || searchOpen) && (
-          <div className={cn(PAGE_WIDTH.data, "py-4 flex items-center gap-2")}>
-            <div className="flex-1">
+        {tickerFromUrl && <div className={cn(ANALYZE_WIDTH, styles.quoteRow)}>
+          <div className={styles.quoteMeta} aria-label="현재 종목 시세">
+            <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
+            {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
+            <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
+            {isPriceLoaded && gradeLabel && <span className={cn(styles.quoteAux, styles.quoteGrade)}>{gradeLabel}</span>}
+          </div>
+          <button type="button" onClick={() => setSearchOpen(open => !open)}
+            aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
+            aria-expanded={searchOpen} aria-controls="analyze-stock-search"
+            className={cn(styles.quoteSearch, styles.searchAction)}>
+            <Search size={16} aria-hidden="true" /><span className="hidden sm:inline">검색</span>
+          </button>
+        </div>}
+        {/* 종목 선택 즉시 접는다. 조회 실패 중에도 돋보기로 다시 검색할 수 있다. */}
+        {(!tickerFromUrl || searchOpen) && (
+          <div id="analyze-stock-search" className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
+            <div className={cn("flex-1 min-w-0", styles.searchField)}>
               <SearchAutocomplete
-                placeHolder="국내 종목명 또는 미국 티커 입력"
+                autoFocus={searchOpen}
+                onEscape={() => setSearchOpen(false)}
+                placeHolder="종목명·티커 검색"
                 onSearchButton={handleSearch}
                 validCorpNameArray={staticStockData.allTickers}
+                stockNames={staticStockData.usStocks}
                 onSearchStateChange={() => {}}
               />
             </div>
-            {isPriceLoaded && (
+            {tickerFromUrl && (
               <button onClick={() => setSearchOpen(false)} aria-label="검색 닫기"
                 className={PAGE_ACTION_CLS}>
                 <X size={14} />
@@ -597,19 +668,14 @@ function AnalyzeContent() {
         {/* 상세 분석 탭 — 헤더 안에 두면 스크롤 위치와 무관하게 항상 닿는다.
             재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
         {isPriceLoaded && (
-          <div className={cn(PAGE_WIDTH.data, "pb-2.5")}>
-            <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800">
+          <div className={cn(ANALYZE_WIDTH, styles.tabsRow)}>
+            <div className={styles.tabStrip} aria-label="분석 보기 선택">
               {DETAIL_TABS.map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
                   aria-pressed={activeTab === key}
-                  className={cn(
-                    "flex-1 min-h-11 border-b-2 py-2 text-xs font-medium transition-colors",
-                    activeTab === key
-                      ? "border-neutral-900 text-neutral-900 dark:border-neutral-100 dark:text-neutral-100"
-                      : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-                  )}
+                  className={cn(styles.tab, activeTab === key && styles.tabActive)}
                 >
                   {label}
                 </button>
@@ -620,9 +686,9 @@ function AnalyzeContent() {
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
-          <div className="border-t border-neutral-100 dark:border-border-subtle-dark/50 bg-surface-canvas/50 dark:bg-surface-dark-card/30">
+          <div data-header-detail className={cn(styles.history, "border-t")}>
             {popularStocks.length > 0 && (
-              <div className={cn(PAGE_WIDTH.data, "py-2 flex items-center gap-3")}>
+              <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
                   <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">인기</span>
@@ -630,9 +696,9 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand-ink dark:hover:text-brand-ink transition-all whitespace-nowrap"
+                      className={cn(styles.historyButton, "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand-ink dark:hover:text-brand-ink transition-all whitespace-nowrap")}
                     >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-brand text-white font-black text-[8px] shrink-0">{i + 1}</span>
+                      <span className={cn(styles.rank, "w-3.5 h-3.5 flex items-center justify-center rounded-full text-[8px] shrink-0")}>{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -640,7 +706,7 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className={cn(PAGE_WIDTH.data, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
+              <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-border-subtle-dark/40")}>
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
@@ -658,27 +724,41 @@ function AnalyzeContent() {
       </PageHeader>
 
       {/* ── 메인 ── */}
-      {/* 좌우 여백은 PAGE_WIDTH.data 하나를 따른다(헤더·푸터도 같은 값).
+      {/* 좌우 여백은 ANALYZE_WIDTH 하나를 따른다(헤더·푸터도 같은 값).
           원래는 모바일 12px 을 따로 썼다 — 20px 바깥 여백에 카드 자신의 여백이 겹쳐
           글이 시작되는 자리가 390px 화면에서 40px 이 되던 문제를 막으려던 것이다.
           지금 프리셋은 16px 이라 그 합이 36px 이고, 무엇보다 페이지마다 본문
           시작선이 다른 쪽이 더 크게 걸린다. 카드 여백이 다시 두꺼워지면 여기가
           아니라 카드 쪽을 줄인다. */}
-      <main className={cn(PAGE_WIDTH.data, "py-4 sm:py-8")}>
+      <main className={cn(ANALYZE_WIDTH, styles.content, "pb-8")}>
 
         {!tickerFromUrl ? (
-          <SearchGuide />
+          <AnalysisIntro onSearch={handleSearch} />
         ) : (
           <>
             {waitResponse && !isPriceLoaded && <ResultSkeleton />}
+            {!waitResponse && tickerFromUrl === name && krOrUs === 'US' && !isPriceLoaded && (
+              <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-700">
+                <p>시세 정보를 불러오지 못했습니다. 잠시 후 다시 조회해 주세요.</p>
+                <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
+              </div>
+            )}
 
-            <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
+            <div className={cn(!isPriceLoaded && 'hidden')}>
+              {krOrUs === 'US' && data.usSearchInfo.state === 'rejected' && (
+                <p role="status" className="mb-4 text-xs leading-5 text-neutral-500 dark:text-neutral-400">
+                  종목 기본정보를 불러오지 못해 티커로 표시합니다. 조회된 시세와 재무정보는 계속 표시합니다.
+                </p>
+              )}
+              {isLoaded && !(krOrUs === 'US' && activeTab === 'financials') && (
+                <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />
+              )}
 
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
-                <div className={cn("border-b px-0 py-2 sm:px-0 sm:py-4 mb-3 sm:mb-5", VERDICT_TONE[verdict.tone].box)}>
+                <div className={styles.verdict} data-tone={verdict.tone}>
                   {/* 모바일 — 한 줄 요약. 눌러서 지표 4개를 펼친다(접힌 상태가 기본).
                       truncate 로 문장이 길어져도 줄바꿈이 생기지 않게 못 박는다. */}
                   <button
@@ -688,12 +768,12 @@ function AnalyzeContent() {
                     className="w-full min-h-11 flex items-center gap-1 sm:hidden text-left"
                   >
                     <span className={cn(
-                      "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
+                      "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-semibold font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
                       VERDICT_TONE[verdict.tone].label
                     )}>
                       {verdict.metCount}/{verdict.checks.length}
                     </span>
-                    <span className={cn("min-w-0 flex-1 text-[11.5px] font-extrabold truncate", VERDICT_TONE[verdict.tone].text)}>
+                    <span className={cn("min-w-0 flex-1 text-[11.5px] font-medium truncate", VERDICT_TONE[verdict.tone].text)}>
                       {verdict.lead}
                     </span>
                     <ChevronDown
@@ -708,7 +788,7 @@ function AnalyzeContent() {
                       {verdict.checks.map(c => (
                         <div key={c.label} className="flex items-center gap-2">
                           <span className={cn(
-                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
+                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-semibold text-white shrink-0",
                             c.ok ? "bg-emerald-600" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
@@ -716,7 +796,7 @@ function AnalyzeContent() {
                           <span className="text-[11.5px] font-bold text-neutral-600 dark:text-neutral-300 shrink-0">{c.label}</span>
                           <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
                           <span className={cn(
-                            "ml-auto text-[12px] font-black font-mono tabular-nums shrink-0",
+                            "ml-auto text-[12px] font-semibold font-mono tabular-nums shrink-0",
                             c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500"
                           )}>
                             {c.value}
@@ -727,18 +807,18 @@ function AnalyzeContent() {
                   )}
 
                   <div className="hidden sm:block">
-                    <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.1em] mb-2", VERDICT_TONE[verdict.tone].label)}>
+                    <p className={styles.verdictLabel}>
                       종합 판단 · 저평가 기준 {verdict.checks.length}개 중 {verdict.metCount}개 충족
                     </p>
-                    <p className={cn("text-[14.5px] font-extrabold leading-relaxed break-keep", VERDICT_TONE[verdict.tone].text)}>
+                    <p className={styles.verdictLead}>
                       {verdict.lead}
                     </p>
-                    <div className="grid grid-cols-2 gap-2 mt-3.5">
+                    <div className="grid grid-cols-2 gap-3 mt-4">
                       {verdict.checks.map(c => (
                         <div key={c.label}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-surface-dark-border/70 bg-white/70 dark:bg-surface-dark-canvas/40">
+                          className={cn(styles.check, "flex items-center gap-2.5 px-3 py-2 rounded-xl border")}>
                           <span className={cn(
-                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
+                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-semibold text-white shrink-0",
                             c.ok ? "bg-emerald-600" : "bg-neutral-300 dark:bg-surface-dark-elevated"
                           )}>
                             {c.ok ? '✓' : '✕'}
@@ -747,7 +827,7 @@ function AnalyzeContent() {
                           {/* 기준을 같이 적는다 — 값만 보면 왜 ✓/✕ 인지 알 수 없다 */}
                           <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
                           <span className={cn(
-                            "ml-auto text-[12.5px] font-black font-mono tabular-nums shrink-0",
+                            "ml-auto text-[12.5px] font-semibold font-mono tabular-nums shrink-0",
                             c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500"
                           )}>
                             {c.value}
@@ -818,16 +898,16 @@ function AnalyzeContent() {
                     </div>
                     <Link
                       href={loginHref}
-                      className="shrink-0 inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-neutral-300 px-3 text-xs font-medium text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
+                      className={styles.primary}
                     >
-                      로그인
+                      구글/카카오로 로그인
                       <ArrowRight size={14} />
                     </Link>
                   </div>
                 )}
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className={cn("min-w-0", activeTab !== 'strategy' && 'hidden')}>
+                <div className={cn(styles.panel, "min-w-0", activeTab !== 'strategy' && 'hidden')}>
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
@@ -838,7 +918,7 @@ function AnalyzeContent() {
 
                 {/* 지표 탭 (2/2) — 상세 지표 표 (블러). 위 카드와 같은 탭이다. */}
                 <div className={cn(activeTab !== 'metrics' && 'hidden')}>
-                  <BlurGate isLoggedIn={isLoggedIn}>
+                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <StockMetrics data={data} isUs={krOrUs === 'US'} />
                   </BlurGate>
                 </div>
@@ -860,13 +940,16 @@ function AnalyzeContent() {
                 {/* 재무제표 (블러) — 막대가 기본, 원본 숫자표는 토글로 남긴다.
                     막대에도 값을 함께 적지만 정렬·복사에는 표가 낫다. */}
                 <div className={cn(activeTab !== 'financials' && 'hidden')}>
+                  {krOrUs === 'US' && (
+                    <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
+                  )}
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                    <div className="flex flex-col gap-4">
+                    <div className={cn(styles.panel, "flex flex-col gap-4")}>
                       <div className="flex items-center gap-2">
-                        <p className="text-[10.5px] text-neutral-400">
+                        <p className={styles.sectionLabel}>
                           {krOrUs === 'KR' ? 'DART 공시 기준 · 억 원' : 'US-GAAP 기준 · USD'}
                         </p>
-                        <div className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
+                        <div className={cn(styles.segmented, "ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg")}>
                           {([['bars', '막대'], ['table', '표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}
@@ -875,7 +958,7 @@ function AnalyzeContent() {
                               className={cn(
                                 "px-2.5 py-1 rounded-lg text-[11px] transition-colors",
                                 financeView === mode
-                                  ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                  ? styles.segmentActive
                                   : "font-bold text-neutral-500 dark:text-neutral-400"
                               )}
                             >
@@ -894,7 +977,7 @@ function AnalyzeContent() {
                           <div className="overflow-x-auto">
                             {krOrUs === 'KR'
                               ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                              : <FinnhubTable data={data.finnhubData.data} />
+                              : <FinnhubTable data={data.finnhubData.data} source={data.finnhubData.source} />
                             }
                           </div>
                         </div>
@@ -905,6 +988,12 @@ function AnalyzeContent() {
 
               </div>
               ) : (
+              krOrUs === 'US' && !waitResponse ? (
+                <div role="alert" className="rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-700">
+                  <p>재무정보를 불러오지 못했습니다. 시세 정보는 확인할 수 있습니다.</p>
+                  <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
+                </div>
+              ) :
               /* 탭 하나 분량의 패널 한 장 — 실제로 표시되는 것도 선택된 탭 하나뿐이다 */
               <div className="animate-pulse">
                 <div className="h-[520px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark" />
@@ -916,7 +1005,7 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className={cn(PAGE_WIDTH.data, "pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-border-subtle-dark")}>
+      <footer className={cn(ANALYZE_WIDTH, styles.footer, "pt-8 pb-12 mt-12 border-t")}>
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-brand-ink" strokeWidth={2.5} />

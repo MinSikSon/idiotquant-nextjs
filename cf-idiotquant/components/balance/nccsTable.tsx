@@ -57,7 +57,7 @@ export default function OverseasNccsTable({ data, className = "" }: Props) {
                                         <th
                                             key={String(h.key)}
                                             className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-white dark:!bg-black border-b sticky top-0 z-20` +
-                                                (idx === 0 ? " left-0 shadow-sm" : "")}
+                                                (idx === 0 ? "left-0 shadow-none" : "")}
                                             style={{
                                                 ...(idx === 0 ? { position: "sticky", left: 0, zIndex: 30 } : {}),
                                             }}
@@ -72,7 +72,7 @@ export default function OverseasNccsTable({ data, className = "" }: Props) {
                             <tbody>
                                 {rows.length === 0 ? (
                                     <tr>
-                                        <td colSpan={HEADERS.length} className="p-6 text-center text-sm ">
+                                        <td colSpan={HEADERS.length} className="p-6 text-center text-sm">
                                             결과가 없습니다.
                                         </td>
                                     </tr>
@@ -85,7 +85,7 @@ export default function OverseasNccsTable({ data, className = "" }: Props) {
                                                         <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
                                                             <div className="flex gap-2">
                                                                 <button className="text-xs px-2 py-1 rounded-md !bg-slate-100 dark:!bg-slate-900 hover:!bg-slate-200">상세</button>
-                                                                <button className="text-xs px-2 py-1 rounded-md bg-brand-light dark:!bg-slate-900 hover:!bg-brand-light">취소</button>
+                                                                <button className="text-xs px-2 py-1 rounded-md bg-neutral-100 dark:!bg-slate-900 hover:!bg-neutral-100 dark:bg-neutral-800">취소</button>
                                                             </div>
                                                         </td>
                                                     );
@@ -102,13 +102,13 @@ export default function OverseasNccsTable({ data, className = "" }: Props) {
                                                         <Tooltip.Root>
                                                             <Tooltip.Trigger asChild>
                                                                 <div className="max-w-[220px] truncate" title={String(value)}>
-                                                                    <div className={`text-sm ${small ? "text-xs " : "text-sm "}`}>
+                                                                    <div className={`text-sm ${small ? "text-xs" : "text-sm"}`}>
                                                                         {String(value)}
                                                                     </div>
                                                                 </div>
                                                             </Tooltip.Trigger>
                                                             <Tooltip.Portal>
-                                                                <Tooltip.Content side="top" align="center" className="rounded-md px-2 py-1 text-xs !bg-slate-800 ">
+                                                                <Tooltip.Content side="top" align="center" className="rounded-md px-2 py-1 text-xs !bg-slate-800">
                                                                     {String(value)}
                                                                     <Tooltip.Arrow className="fill-current " />
                                                                 </Tooltip.Content>

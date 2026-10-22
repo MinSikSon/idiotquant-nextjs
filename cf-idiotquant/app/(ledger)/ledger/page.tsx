@@ -26,7 +26,8 @@ import {
 } from "@/lib/features/ledger/categories";
 import { useEntryDrag } from "./useEntryDrag";
 import { BalancePanel } from "./BalancePanel";
-import { DEFAULT_BALANCE_RANGE } from "@/lib/features/ledger/balances";
+import AssetGoalPanel from "./AssetGoalPanel";
+import { DEFAULT_BALANCE_RANGE, netWorth } from "@/lib/features/ledger/balances";
 
 /* ─── 공통 클래스 ──────────────────────────────────────────────── */
 const CTL_CLS =
@@ -115,7 +116,7 @@ const inviteUrl = (token: string) =>
     `${typeof window === "undefined" ? "" : window.location.origin}/ledger/join/${token}`;
 
 export default function LedgerPage() {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const dispatch = useAppDispatch();
 
     const month = useAppSelector(selectLedgerMonth);
@@ -129,6 +130,9 @@ export default function LedgerPage() {
     const mutating = useAppSelector(selectLedgerMutating);
     const error = useAppSelector(selectLedgerError);
     const balances = useAppSelector(selectLedgerBalances);
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    const goalStorageKey = userId ? `ledger_asset_goal_v1:${encodeURIComponent(userId)}:${encodeURIComponent(activeOwner ?? userId)}` : null;
+    const goalBalance = balances.find(balance => balance.month === month);
 
     const [barKind, setBarKind] = useState<LedgerKind>("income");
     /** 잔액 차트가 보는 달 수. 「1년 / 2년 / 전체」를 고르면 바뀐다. */
@@ -476,6 +480,7 @@ export default function LedgerPage() {
     const header = (
         <PageHeader
             title={viewingShared ? `${activeLedger?.owner_name ?? "공유"}님의 가계부` : "가계부"}
+            mobileTitleInNavigation={!viewingShared}
             meta={
                 viewingShared
                     ? <><span>함께 쓰는 가계부</span><span aria-hidden>·</span><span>기입·수정이 모두 반영됩니다</span></>
@@ -563,7 +568,7 @@ export default function LedgerPage() {
                 )}
 
                 {/* 모바일에서는 선택 카드가 상단 메뉴(48px)에 닿으면 고정된다. */}
-                <div className={cn(CARD_CLS, "sticky top-[48px] z-30 md:static md:z-auto")}>
+                <div className={cn(CARD_CLS, "sticky top-[var(--topbar-h)] z-30 md:static md:z-auto")}>
                     <div className="flex items-center justify-center gap-1 p-1.5">
                         <button
                             type="button"
@@ -789,6 +794,11 @@ export default function LedgerPage() {
                     }}
                     onClear={() => dispatch(reqDeleteLedgerBalance(month))}
                 />
+
+                {goalStorageKey && (
+                    <AssetGoalPanel key={goalStorageKey} storageKey={goalStorageKey} month={month}
+                        current={goalBalance ? netWorth(goalBalance) : null} />
+                )}
 
                 {/* ⑤ 기입 — 데스크톱은 흐름 안의 버튼, 모바일은 아래 고정 FAB */}
                 <button

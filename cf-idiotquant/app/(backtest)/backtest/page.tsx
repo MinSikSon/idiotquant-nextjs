@@ -1133,6 +1133,7 @@ function BacktestContent() {
             <PageHeader
                 icon={<History size={18} strokeWidth={2.5} />}
                 title="전략 히스토리"
+                mobileTitleInNavigation
                 meta="기준일 후보 수 추이 · 기준일 대비 현재 주가 수익률 · 개별 종목 30일 차트"
                 actions={formattedLatestDate && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-light dark:bg-brand-muted/40 text-brand-ink">

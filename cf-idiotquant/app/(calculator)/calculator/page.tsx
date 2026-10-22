@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "
 import { Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { PAGE_WIDTH } from "@/components/pageHeader";
+import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 import ResultShare from "@/components/result-share";
 import AssetGoal from "@/components/AssetGoal";
 import { calculatorSnapshot } from "@/lib/share/calculator";
@@ -366,13 +366,11 @@ function Calculator() {
             <div className={PAGE_WIDTH.data}>
 
                 {/* ── 문서 머리 ─────────────────────────────────── */}
-                <header className="flex items-end justify-between gap-2 sm:gap-5 flex-wrap">
-                    <div>
-                        <h1 className="text-[18px] min-[380px]:text-xl sm:text-2xl font-medium tracking-tight leading-[1.28] text-neutral-900 dark:text-white break-keep">
-                            복리 수익률 계산기
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto">
+                <PageHeader
+                    title="복리 수익률 계산기"
+                    containerClassName="p-0"
+                    className="border-0 bg-transparent dark:bg-transparent [&>[data-header-main]]:p-0 [&_h1]:text-[18px] [&_h1]:min-[380px]:text-xl [&_h1]:sm:text-2xl [&_h1]:font-medium [&_h1]:leading-[1.28]"
+                    actions={<>
                         {/* 설명 스위치는 좁은 화면에만 둔다 — 넓은 화면에서는 접는 것이 없으니
                             눌러도 아무 일이 일어나지 않는 버튼이 된다. */}
                         <button
@@ -393,8 +391,8 @@ function Calculator() {
                             <span className="hidden min-[380px]:inline">설명</span>
                         </button>
                         <ResultShare getSnapshot={() => calculatorSnapshot(effective, detail, result)} />
-                    </div>
-                </header>
+                    </>}
+                />
 
                 <div className="lg:grid lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start lg:gap-8">
                 <section className="min-w-0" aria-label="계산 조건">

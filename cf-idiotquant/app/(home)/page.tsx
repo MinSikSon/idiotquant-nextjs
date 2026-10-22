@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import GuestLanding from "./GuestLanding";
+import ScanRefreshNotice from "@/components/scan-refresh-notice";
 
 const HeroArt = dynamic(() => import("./HeroArt"), { ssr: false });
 
@@ -15,7 +16,7 @@ export default function HomePage() {
   const dispatch = useAppDispatch();
   const ncavDailyList = useAppSelector(selectNcavDailyList);
   // 미리보기는 일부 종목만 가져오고 전체 개수는 API 메타데이터를 사용한다.
-  useEffect(() => { dispatch(reqGetNcavDailyList({ date: "latest", limit: 60 })); }, [dispatch]);
+  useEffect(() => { dispatch(reqGetNcavDailyList({ date: "latest", preview: true })); }, [dispatch]);
 
   const scanLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
   // 조건에 맞은 전체 수. 목록은 그중 일부만 받아 오므로 length 로 세면 안 된다.
@@ -30,6 +31,9 @@ export default function HomePage() {
       scanDate={scanDate}
       backgroundArt={<HeroArt />}
       isLoggedIn={status === "loading" || !!session}
+      refreshStatus={<ScanRefreshNotice refreshing={ncavDailyList.refreshing}
+        error={ncavDailyList.receivedAt !== null ? ncavDailyList.error : null}
+        onRetry={() => dispatch(reqGetNcavDailyList({ date: "latest", preview: true, force: true }))} />}
     />
   );
 

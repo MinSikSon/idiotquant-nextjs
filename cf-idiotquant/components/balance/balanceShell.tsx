@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./balanceTheme.module.css";
+
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
@@ -25,7 +27,6 @@ export function BalanceShell({
   toasts, onRemoveToast,
   breadcrumb, title, lastUpdated,
   countryToggle, autoRefresh, onToggleAutoRefresh, isLoading, onRefresh, headerExtra, footerBadge,
-  dividerClass,
   accountSelector,
   navSections, mobileTab, onMobileTabChange,
   sections,
@@ -42,7 +43,6 @@ export function BalanceShell({
   onRefresh: () => void;
   headerExtra?: React.ReactNode;
   footerBadge?: React.ReactNode;
-  dividerClass: string;
   accountSelector?: React.ReactNode;
   navSections: NavSection[];
   mobileTab: string;
@@ -50,19 +50,19 @@ export function BalanceShell({
   sections: BalanceSection[];
 }) {
   return (
-    <div className="landing-style-page min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas transition-colors duration-300">
+    <div className={styles.page}>
 
       <ToastContainer toasts={toasts} onRemove={onRemoveToast} />
 
-      <div className="max-w-[1600px] mx-auto px-2.5 py-4 md:px-4 md:py-10 space-y-3 md:space-y-6">
+      <div className="max-w-[1280px] mx-auto px-2 py-2 md:px-4 md:py-10 space-y-2 md:space-y-6">
 
         {/* 헤더 */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-5">
-          <div className="space-y-2.5 min-w-0">
-            {breadcrumb}
+        <header className={cn(styles.header, "flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-5")}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:block md:space-y-2.5 min-w-0">
+            <div className="hidden w-full md:block">{breadcrumb}</div>
             {title}
             {lastUpdated ? (
-              <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-mono">
+              <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 tabular-nums">
                 <Clock size={11} />
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
@@ -71,7 +71,7 @@ export function BalanceShell({
             )}
           </div>
 
-          <div className="flex flex-col items-stretch md:items-end gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 md:flex-col md:items-end md:gap-2">
             {countryToggle}
             <BalanceHeaderActions
               autoRefresh={autoRefresh}
@@ -80,11 +80,11 @@ export function BalanceShell({
               onRefresh={onRefresh}
               extra={headerExtra}
             />
-            {footerBadge}
+            <div className="hidden md:block">{footerBadge}</div>
           </div>
         </header>
 
-        <div className={cn("h-px bg-gradient-to-r from-transparent to-transparent opacity-60", dividerClass)} />
+        <div className="h-px bg-neutral-200 dark:bg-neutral-800" />
 
         {/* 계좌 선택 (탭 위 최상단) */}
         {accountSelector}

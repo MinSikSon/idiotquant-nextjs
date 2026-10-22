@@ -218,6 +218,7 @@ export default function TickerMapPage() {
         width="content"
         icon={<BookOpen size={18} />}
         title="종목명 매핑 관리"
+        mobileTitleInNavigation
         meta="티커 코드 ↔ 종목명 오버라이드 조회 및 관리"
         actions={isAdmin && (
           <button

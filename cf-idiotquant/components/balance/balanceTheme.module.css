@@ -1,0 +1,82 @@
+/* Shared by KR/US and every balance tab; the rest of the site keeps its theme. */
+.page {
+  --radius-panel: 12px;
+  --radius-input: 8px;
+  --radius-control: 6px;
+  --brand-ink: 41 40 39;
+  --brand-ink-hover: 66 64 61;
+  min-height: 100vh;
+  background: #f2f0eb;
+  color: #292827;
+  font-variant-numeric: tabular-nums;
+}
+
+:global(.dark) .page {
+  --brand-ink: 238 236 231;
+  --brand-ink-hover: 255 255 255;
+  background: #1b1819;
+  color: #eeece7;
+}
+
+.page :is(h1, h2) {
+  font-weight: 460;
+  letter-spacing: -0.025em;
+}
+
+/* Mobile uses a single quiet ledger instead of four floating KPI cards. */
+@media (max-width: 479px) {
+  .page :global(#section-kpi) {
+    overflow: hidden;
+    border: 1px solid #e3e3e2;
+    border-radius: 12px;
+    background: white;
+  }
+
+  .page :global(#section-kpi) > div {
+    min-height: 44px;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .page :global(#section-kpi) > div + div {
+    border-top: 1px solid #e3e3e2;
+  }
+
+  :global(.dark) .page :global(#section-kpi),
+  :global(.dark) .page :global(#section-kpi) > div + div {
+    border-color: #393638;
+  }
+}
+
+@media (max-width: 767px) {
+  .header {
+    gap: 8px;
+  }
+
+  .header > div:last-child {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+
+@media (max-width: 639px) {
+  .page :global(.text-xs) { font-size: 11px; line-height: 1rem; }
+  .page :global(.text-sm) { font-size: 13px; line-height: 1.15rem; }
+  .page :global(.text-base) { font-size: 14px; line-height: 1.25rem; }
+  .page :global(.text-lg) { font-size: 16px; line-height: 1.4rem; }
+  .page :global(.text-xl) { font-size: 18px; line-height: 1.5rem; }
+  .page :global(.text-2xl) { font-size: 20px; line-height: 1.6rem; }
+  .page :global(.px-2\.5) { padding-inline: 0.5rem; }
+  .page :global(.px-3) { padding-inline: 0.625rem; }
+  .page :global(.px-4) { padding-inline: 0.75rem; }
+  .page :global(.px-5),
+  .page :global(.px-6) { padding-inline: 0.875rem; }
+  .page :global(.p-3) { padding: 0.625rem; }
+  .page :global(.p-4) { padding: 0.75rem; }
+  .page :global(.p-5),
+  .page :global(.p-6) { padding: 0.875rem; }
+}

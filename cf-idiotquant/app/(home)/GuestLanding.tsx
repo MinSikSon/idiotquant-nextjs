@@ -6,6 +6,7 @@ import { HOME_FAQ } from "@/lib/seo-content";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined, GitCompareArrows, ArrowUpRight } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import styles from "./home.module.css";
+import { matchesGuestPer } from "@/lib/utils/guestStocks";
 
 type GuestLandingProps = {
   list: NcavDailyItem[];
@@ -14,6 +15,7 @@ type GuestLandingProps = {
   scanDate: string | null;
   backgroundArt: ReactNode;
   isLoggedIn?: boolean;
+  refreshStatus?: ReactNode;
 };
 
 const formatPrice = (value: number) =>
@@ -21,15 +23,15 @@ const formatPrice = (value: number) =>
 
 const tools = [
   { href: "/screener", icon: SlidersHorizontal, number: "01", title: "기준으로 발굴", description: "NCAV, 저PBR, 저PER. 숫자로 후보를 좁혀보세요.", action: "종목 발굴" },
-  { href: "/compare", icon: GitCompareArrows, number: "02", title: "나란히 비교", description: "여러 회사의 핵심 지표를 같은 기준으로 살펴보세요.", action: "종목 비교" },
-  { href: "/analyze", icon: ChartNoAxesCombined, number: "03", title: "근거까지 분석", description: "재무 정보부터 기업 가치까지, 숫자의 이유를 확인하세요.", action: "종목 분석" },
+  { href: "/analyze", icon: ChartNoAxesCombined, number: "02", title: "근거까지 분석", description: "발굴한 종목을 눌러 지표와 기업 가치를 확인하세요. 상세 재무·위험도는 로그인 후 볼 수 있습니다.", action: "종목 분석" },
+  { href: "/compare", icon: GitCompareArrows, number: "03", title: "나란히 비교", description: "날짜를 먼저 추가한 뒤 후보 종목을 검색해 담으세요. 날짜별 종가·변화율과 현재 지표를 비교합니다.", action: "종목 비교" },
 ];
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false }: GuestLandingProps) {
+export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false, refreshStatus }: GuestLandingProps) {
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "최신 데이터";
-  const preview = list.filter(item => Number.isFinite(item.per) && item.per > 0 && item.per <= 20).slice(0, 5);
+  const preview = list.filter(matchesGuestPer).slice(0, 5);
 
   return (
     <div id="public-home" className={styles.home}>
@@ -44,13 +46,14 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
               <Link href="/screener?mincap=500" className={styles.primary}>오늘의 종목 발굴 <ArrowRight size={16} aria-hidden="true" /></Link>
               <Link href="/analyze" className={styles.secondary}><Search size={16} aria-hidden="true" /> 종목 분석하기</Link>
             </div>
-            <p className={styles.note}>{isLoggedIn ? "발굴 → 비교 → 분석, 나만의 기준으로 이어가세요." : "가입 없이, 바로 시작할 수 있습니다."}</p>
+            <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 비교, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·필터·상세 분석은 로그인 후 제공됩니다."}</p>
           </div>
 
           <section aria-labelledby="preview-title" className={styles.preview}>
             <div className={styles.previewTop}><span className={styles.eyebrow}>DISCOVERY</span><span className={styles.date}>{dateLabel}</span></div>
             <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading && !preview.length ? "조회 중" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
-            <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기</p>
+            <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기 · 종목을 누르면 분석으로 이동합니다.</p>
+            {refreshStatus}
             <div className={styles.table}>
               <div className={styles.tableHead}><span>종목 / 현재가</span><span>PER <small>배</small></span><span>PBR <small>배</small></span><span /></div>
               {isLoading && !preview.length ? (
@@ -64,12 +67,12 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
                 </Link>
               )) : <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>PER 조건에 맞는 미리보기 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
             </div>
-            <Link href="/screener?mincap=500" className={styles.previewFooter}>발굴 결과 전체 보기 <ArrowRight size={15} aria-hidden="true" /></Link>
+            <Link href="/screener?mincap=500" className={styles.previewFooter}>{isLoggedIn ? "발굴 결과 전체 보기" : "발굴 종목 더 살펴보기"} <ArrowRight size={15} aria-hidden="true" /></Link>
           </section>
         </section>
 
         <section id="features" className={styles.features} aria-labelledby="tools-title">
-          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>YOUR WORKFLOW</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 비교하고, 이해하세요.</p></div>
+          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>YOUR WORKFLOW</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 비교하세요.</p></div>
           <div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, number, title, description, action }) => (
             <Link href={href} key={href} className={styles.tool} aria-label={action}>
               <div className={styles.toolTop}><Icon size={21} strokeWidth={1.6} aria-hidden="true" /><span>{number}</span></div>

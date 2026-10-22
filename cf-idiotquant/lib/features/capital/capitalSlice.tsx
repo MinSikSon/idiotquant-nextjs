@@ -94,7 +94,7 @@ export interface StockGroup {
     quant_rule?: QuantRule;
     budget_krw?: number;   // 그룹별 월 예산(DCA 리필). 미설정 시 계좌예산 fallback.
     side?: "buy" | "sell"; // 그룹별 매수/매도 방향. 미설정 시 buy.
-    dca?: boolean;         // DCA(정액매수) 모드. NCAV 조건 무시하고 예산으로 매수 (ETF 등). 미설정 시 false.
+    dca?: boolean;         // DCA(정액매매) 모드. 매수/매도 방향에 따라 적립 예산으로 수량 계산. 미설정 시 false.
 }
 
 export interface UsCapitalStockItem {
@@ -108,6 +108,22 @@ export interface UsCapitalStockItem {
     name?: string;
 }
 
+/** 실제 포인트 증가와 함께 저장되는 자동 충전 관측값 */
+export interface RefillTick { at: number; buy_krw: number; sell_krw: number; }
+export interface RefillPlan {
+    at: number;
+    period_minutes: number;
+    account_monthly_krw: number;
+    groups: {
+        group_id: string | null;
+        side: "buy" | "sell";
+        monthly_budget_krw: number;
+        stock_count: number;
+        per_stock_krw: number;
+        per_tick_krw: number;
+    }[];
+}
+
 export interface KrUsCapitalType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     time_stamp: { current: string; prev: string; prevPrev: string };
@@ -119,6 +135,8 @@ export interface KrUsCapitalType {
     corp_scan_index: number;
     action: string;
     frst_bltn_exrt: number;
+    refill_plan?: RefillPlan;
+    refill_history?: RefillTick[];
 }
 
 interface CapitalTokenRefillType {
