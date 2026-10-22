@@ -303,24 +303,24 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {/* 메인 요약 카드 (계좌 선택기는 페이지 상단 AccountSelector로 이동됨) */}
-            <details className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden"><summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">보유 자산 상세 지표</summary>
+            <details className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden"><summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">보유 주식 기준 상세 지표</summary>
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-border-subtle-dark">
                     <SummaryItem
                         icon={<Percent size={13} />}
-                        label="평가 손익률"
+                        label="보유 주식 수익률"
                         value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
                         subValue={`손익 합계: ${formatValue(evlu_smtl - pchs_smtl, "MONEY")}`}
                         colorClass={totalProfitRate >= 0 ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"}
                     />
                     <SummaryItem
                         icon={<BadgeDollarSign size={13} />}
-                        label="총 평가금액"
+                        label="보유 주식 평가금액"
                         value={formatValue(evlu_smtl, "MONEY")}
                         subValue={`매입 합계: ${formatValue(pchs_smtl, "MONEY")}`}
                     />
                     <SummaryItem
                         icon={<Landmark size={13} />}
-                        label="순자산 (NAV)"
+                        label="주식 + 예수금 (단순 합산)"
                         value={formatValue(evlu_smtl + cash, "MONEY")}
                         subValue={isUs && exRate ? `추정 달러잔고: 약 $${Math.round((evlu_smtl + cash) / exRate).toLocaleString()}` : `예수금: ${formatValue(cash, "MONEY")}`}
                         colorClass="text-indigo-500"

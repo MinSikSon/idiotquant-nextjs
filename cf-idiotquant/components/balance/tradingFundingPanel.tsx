@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { Clock3, RefreshCw, Wallet, Zap } from "lucide-react";
+import { Clock3, Wallet, Zap } from "lucide-react";
 import type { KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
 import { fundingMetrics, refillBuckets, refillWindowOpen, type TradingCash } from "@/lib/features/capital/fundingInsights";
 import { DetailHelp } from "./detailHelp";
@@ -11,14 +11,12 @@ const won = (value: number) => `₩${Math.round(value).toLocaleString("ko-KR")}`
 const pct = (value: number | null) => value === null ? "—" : value > 0 && value < 0.01 ? "<0.01%" : `${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}%`;
 const time = (at: number) => new Date(at).toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false });
 
-export default function TradingFundingPanel({ country, capital, cash, tradingActive, live, onToggleLive, onRefresh }: {
+export default function TradingFundingPanel({ country, capital, cash, tradingActive, live }: {
     country: "KR" | "US";
     capital: KrUsCapitalType;
     cash: TradingCash;
     tradingActive: boolean | null;
     live: boolean;
-    onToggleLive: () => void;
-    onRefresh: () => void;
 }) {
     const chartId = useId();
     const [now, setNow] = useState(0);
@@ -52,10 +50,6 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
         <section className="mb-3 space-y-3 sm:mb-5 sm:space-y-4 rounded-2xl border border-neutral-200 bg-white p-3 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5" aria-label="충전 흐름과 예수금">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-neutral-900 dark:text-neutral-100"><Zap size={16} className="text-neutral-900 dark:text-neutral-100" /> 예수금 대비 자동 충전<DetailHelp label="충전·예산 계산 기준">예산 합계 비중은 ON인 풀의 활성 종목 적립 포인트(매수·매도) ÷ 현재 예수금입니다. 월 충전계획 비중은 마지막 실행의 매수 풀 월 예산 기준입니다. 충전은 예산 장부 적립이며 실제 현금 이체·예약이 아닙니다. 주문가능금액은 미결제·증거금 등에 따라 예수금과 다를 수 있습니다. 시간당 금액은 {metrics.period}분 배분 속도의 환산값이며 그래프는 실제 충전 기록만 표시합니다.</DetailHelp></h3>
-                <div className="flex gap-2">
-                    <button type="button" onClick={onToggleLive} aria-pressed={live} className={cn("min-h-11 rounded-lg border px-3 text-xs font-bold", live ? "border-neutral-300/30 dark:border-neutral-600/30 bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100" : "border-neutral-200 text-neutral-500 dark:border-border-subtle-dark dark:text-neutral-400")}>실시간 {live ? "ON" : "OFF"}</button>
-                    <button type="button" onClick={onRefresh} aria-label="예수금과 충전 기록 새로고침" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 dark:border-border-subtle-dark dark:text-neutral-400"><RefreshCw size={15} className={cash.state === "pending" || capital.state === "pending" ? "animate-spin" : ""} /></button>
-                </div>
             </div>
 
             <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
@@ -92,7 +86,6 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                     <p className={cn("flex items-center gap-1.5 text-xs font-bold", enabled ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500 dark:text-neutral-400")}><Clock3 size={13} />{status}</p>
                     <details><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">충전 속도·최근 충전 상세</summary><div className="space-y-3">
                     <div className="rounded-xl border border-neutral-200 p-4 dark:border-border-subtle-dark">
-                        <p className={cn("flex items-center gap-1.5 text-xs font-bold", enabled ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500 dark:text-neutral-400")}><Clock3 size={13} />{status}</p>
                         <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{country === "KR" ? "08:00–18:00" : "21:00–06:00"} KST · {metrics.period}분 주기 · {live ? "잔고·기록 30초마다 갱신" : "새로고침하면 최신 기록 반영"}</p>
                         <dl className="mt-4 grid grid-cols-2 gap-3">
                             <div className="min-w-0"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">{metrics.period}분당 매수 충전</dt><dd className="mt-1 break-all text-lg font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{metrics.hasPlan ? `+${won(metrics.buyPerTick)}` : "—"}</dd></div>
