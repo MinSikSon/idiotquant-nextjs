@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Wallet, Coins, Percent,
-  Database, User, PieChart, ClipboardList, Power, SlidersHorizontal, Activity, KeyRound,
+  Database, User, ClipboardList, Power, Activity, KeyRound,
   ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark,
 } from "lucide-react";
 import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
@@ -621,11 +621,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           tab: "section-kpi",
           node: (
             <SectionPanel id="section-portfolio" summary="자산 구성·수익률 차트">
-              <SectionHeader
-                icon={<PieChart size={16} />}
-                title="포트폴리오 자산 구성"
-                subtitle="보유 종목별 비중·수익률 한눈에 보기 (상세·주문은 잔고 패널)"
-              />
               <PortfolioChartSection
                 output1={kiBalance.output1 || []}
                 isUs={false}
@@ -659,7 +654,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
             <SectionPanel id="section-stocks">
               <SectionHeader
                 icon={<Database size={16} />}
-                title="NCAV 운용 종목 관리"
+                title="자동매매 운영"
                 subtitle="전략 자동매매 종목 풀 및 토큰(예산) 관리"
                 badge={
                   krCapital.state === "pending"
@@ -669,7 +664,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     : null
                 }
               />
-              <TradingFundingPanel country="KR" capital={krCapital} cash={tradingCash("KR", kiBalance)} tradingActive={tradingStatus.KR} live={autoRefresh} onToggleLive={() => setAutoRefresh(value => !value)} onRefresh={handleRefresh} />
+              <TradingFundingPanel country="KR" capital={krCapital} cash={tradingCash("KR", kiBalance)} tradingActive={tradingStatus.KR} live={autoRefresh} />
               <TradingFlowSummary
                 country="KR"
                 tradingActive={tradingStatus.KR}
@@ -677,8 +672,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 stockList={krCapital.stock_list ?? []}
                 quantRule={krQuantRule?.rule}
                 budget={krBudget}
-                onToggleTrading={handleToggleTrading}
-                togglePending={tradingStatus.state === "pending"}
                 className="mb-5"
               />
               <TradingCyclePanel country="KR" tradingActive={tradingStatus.KR} capital={krCapital} activity={krActivity} budget={krBudget} />
@@ -716,18 +709,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           tab: "section-stocks",
           node: hasCapital ? (
             <SectionPanel id="section-conditions" summary="자동매매 조건·예산 설정" hasError={krQuantRule.state === "rejected" || krQuantRule.saveState === "rejected" || krBudget.state === "rejected" || krBudget.saveState === "rejected"}>
-              <SectionHeader
-                icon={<SlidersHorizontal size={16} />}
-                title="자동매매 트레이딩 조건"
-                subtitle="백엔드 quant rule(NCAV 비율·필터·활성 종목 수 등) 조회 및 수정"
-                badge={
-                  krQuantRule.state === "pending"
-                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : krQuantRule.is_override
-                    ? <span className="text-[10px] tabular-nums text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800/30 px-2 py-0.5 rounded-full">계좌 전용</span>
-                    : <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">기본값</span>
-                }
-              />
               <RefillSettings
                 data={krBudget}
                 isMaster={isMaster}
@@ -746,17 +727,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-activity",
           tab: "section-stocks",
           node: hasCapital ? (
-            <SectionPanel id="section-activity" summary="상세 자동매매 현황" hasError={krActivity.state === "rejected"}>
-              <SectionHeader
-                icon={<Activity size={16} />}
-                title="자동매매 현황"
-                subtitle="스케줄러(5분마다) 가동 상태 · 토큰 리필 · 최근 자동 체결 내역"
-                badge={
-                  krActivity.state === "pending"
-                    ? <span className="text-[10px] tabular-nums text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-full">최근 {krActivity.logs.length}건</span>
-                }
-              />
+            <SectionPanel id="section-activity" summary="자동매매 실행·주문 접수 기록" hasError={krActivity.state === "rejected"}>
               <TradingActivityPanel
                 country="KR"
                 capital={krCapital}
@@ -772,7 +743,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
             <SectionPanel id="section-orders">
               <SectionHeader
                 icon={<OrderSectionIcon viewerTab={viewerTab} />}
-                title="당일 주문 내역"
+                title="증권사 주문·체결 내역"
                 subtitle="한국투자증권 실시간 체결 및 미체결 조회"
                 action={
                   <OrderTabAction
@@ -786,7 +757,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 }
               />
 
-              <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-border-subtle-dark">
+              <p className="mb-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">자동매매 접수 기록과 실제 체결 결과는 다를 수 있습니다. <span className="block sm:inline">좌우로 스크롤해 상세 항목을 확인하세요.</span></p>
+              <div tabIndex={0} role="region" aria-label="증권사 주문 상세 표" className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-border-subtle-dark">
                 <table className="w-full text-sm text-left min-w-[600px]">
                   <TableHeader headers={[
                     { label: "주문시간 / 번호" },
@@ -823,14 +795,17 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <SectionHeader
                 icon={<KeyRound size={16} />}
                 title="자동매매 계정 관리"
-                subtitle="등록된 계정을 선택해 KIS App Key/Secret·계좌번호·월 예산·ON/OFF 를 관리 (admin 전용)"
+                subtitle="증권사 연결 정보와 계좌 기본 예산을 관리합니다. 매매 실행 스위치는 상단에서 변경합니다."
               />
-              <TradingAccountList
-                country="KR"
-                balanceKey={balanceKey}
-                onSelect={setBalanceKey}
-                refreshToken={accountListToken}
-              />
+              <details className="mb-3">
+                <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">등록 계정 목록 · 선택</summary>
+                <TradingAccountList
+                  country="KR"
+                  balanceKey={balanceKey}
+                  onSelect={setBalanceKey}
+                  refreshToken={accountListToken}
+                />
+              </details>
               <TradingAccountPanel
                 country="KR"
                 balanceKey={balanceKey}

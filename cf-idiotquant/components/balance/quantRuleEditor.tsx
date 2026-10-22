@@ -121,7 +121,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">트레이딩 조건 (quant rule)</span>
+            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">종목 선정 조건</span>
             <span className="text-[11px] text-neutral-400">
               {data?.is_override ? "계좌 전용 조건 적용 중" : "전역 기본값 적용 중 (저장 시 계좌 전용으로 전환)"}
             </span>
@@ -136,9 +136,13 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
 
       {noAccount && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-2.5 py-2 md:px-4 md:py-3 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-400">
-          이 계좌에는 자동매매 계정(trading_account)이 없어 조건을 저장할 수 없습니다. 표시값은 전역 기본값입니다.
+          이 계좌에는 자동매매 계정이 없어 조건을 저장할 수 없습니다. 표시값은 전역 기본값입니다.
         </div>
       )}
+
+      {data?.state === "pending" && <p role="status" className="text-xs text-neutral-500">조건을 불러오는 중…</p>}
+      {data?.state === "rejected" && <p role="alert" className="text-xs text-rose-500">조건 조회에 실패했습니다. 페이지를 새로고침해 다시 시도하세요.</p>}
+      {data?.saveState === "rejected" && <p role="alert" className="text-xs text-rose-500">조건을 저장하지 못했습니다. 입력 내용을 확인하고 다시 저장하세요.</p>}
 
       {/* 필드 그리드 */}
       <div className="grid grid-cols-1 gap-1.5 sm:gap-3 sm:grid-cols-2">

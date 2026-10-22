@@ -144,7 +144,7 @@ export default function TradingActivityPanel({
           <p className={cn("text-sm font-semibold", open ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500 dark:text-neutral-400")}>
             {open ? "매매 시간대 · 5분마다 실행" : "매매 시간대 아님 · 대기"}
           </p>
-          <p className="text-[11px] text-neutral-400 mt-0.5">{country} 스케줄 {windowLabel} · 마지막 실행 {relTime(capital?.time_stamp?.current)}</p>
+          <p className="text-[11px] text-neutral-400 mt-0.5">{country} 스케줄 {windowLabel}</p>
         </div>
         {onRefresh && (
           <button
@@ -168,7 +168,7 @@ export default function TradingActivityPanel({
       {/* 현재 매매 대상 (활성 그룹 소속 · action=active) — 워커가 이 종목들을 자동매매 */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 mb-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">현재 매매 대상</p>
-        <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
+        <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목</p>
       </div>
       <div className="mb-2 space-y-1 sm:hidden">
         {activeStocks.length === 0 && <p className="rounded-xl border border-neutral-200 p-4 text-xs text-neutral-500 dark:border-border-subtle-dark">활성 그룹에 매매 대상 종목이 없습니다.</p>}
@@ -241,7 +241,7 @@ export default function TradingActivityPanel({
       </div>
 
       {/* 최근 자동 체결 */}
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100 mb-2">최근 자동 주문 접수 · 포인트 기록</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 dark:text-neutral-100 mb-2">자동매매 주문 접수 기록</p>
       <details className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
         <summary className="min-h-11 cursor-pointer py-3 font-medium">주문 접수와 실제 체결·포인트의 차이</summary>
         <p className="pb-3 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">주문금액은 로그의 가격 × 주문 수량이며 실제 체결금액과 다를 수 있습니다. 기록된 포인트는 차감 전 값입니다. 매수·정액매도 접수 시 포인트가 차감되지만, 이 로그에는 차감 후 잔액과 실제 체결 확인이 없어 차감·체결 검증은 할 수 없습니다.</p>

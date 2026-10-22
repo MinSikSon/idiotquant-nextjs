@@ -51,8 +51,8 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
     });
     setSaving(false);
     if (ok) {
-      setMsg({ type: "ok", text: "계정이 저장되었습니다." });
       await load();
+      setMsg({ type: "ok", text: "계정이 저장되었습니다." });
       onChanged?.();
     } else {
       setMsg({ type: "err", text: error || "저장에 실패했습니다." });
@@ -65,8 +65,8 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
     const okDel = await deleteTradingAccount(country, balanceKey);
     setSaving(false);
     if (okDel) {
-      setMsg({ type: "ok", text: "계정이 삭제되었습니다." });
       await load();
+      setMsg({ type: "ok", text: "계정이 삭제되었습니다." });
       onChanged?.();
     } else {
       setMsg({ type: "err", text: "삭제에 실패했습니다." });
@@ -94,12 +94,12 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">App Key {exists && <span className="text-neutral-400">(미입력 시 기존 유지)</span>}</span>
+          <span className="text-[11px] text-neutral-500">App Key</span>
           <input className={inputCls} value={appkey} onChange={e => setAppkey(e.target.value)}
             placeholder={info?.appkey_masked || "KIS App Key"} autoComplete="off" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">App Secret {exists && <span className="text-neutral-400">(미입력 시 기존 유지)</span>}</span>
+          <span className="text-[11px] text-neutral-500">App Secret</span>
           <input type="password" className={inputCls} value={appsecret} onChange={e => setAppsecret(e.target.value)}
             placeholder={info?.has_secret ? "●●●● 저장됨" : "KIS App Secret"} autoComplete="new-password" />
         </label>
@@ -109,7 +109,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
             placeholder="예: 50123456" autoComplete="off" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-neutral-500">월 예산(원)</span>
+          <span className="text-[11px] text-neutral-500">계좌 기본 월 예산(원)</span>
           <input type="number" min={0} step={100000} className={inputCls} value={budget} onChange={e => setBudget(e.target.value)}
             placeholder="예: 2000000" />
         </label>
@@ -119,10 +119,10 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
         <label className="flex items-center gap-2 text-xs font-bold text-neutral-600 dark:text-neutral-300 cursor-pointer">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)}
             className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
-          자동매매 대상에 포함
+          스케줄러 대상 계정으로 등록
         </label>
         {msg && (
-          <span className={cn("text-xs font-bold", msg.type === "ok" ? "text-neutral-900 dark:text-neutral-100" : "text-red-500")}>{msg.text}</span>
+          <span role={msg.type === "err" ? "alert" : "status"} className={cn("text-xs font-bold", msg.type === "ok" ? "text-neutral-900 dark:text-neutral-100" : "text-red-500")}>{msg.text}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
           {exists && (
@@ -139,8 +139,12 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
       </div>
 
       <p className="mt-3 text-[11px] leading-relaxed text-neutral-400">
-        KIS App Key/Secret·계좌번호를 등록하면 이 계정으로 자동매매가 실행됩니다. App Secret은 저장 후 다시 표시되지 않습니다(보안). 월 예산은 틱당 적립량(DCA) 계산에 사용됩니다.
+        App Key·Secret은 비워두면 기존 값을 유지하며, Secret은 저장 후 표시되지 않습니다.
       </p>
+      <details className="text-[11px] text-neutral-400">
+        <summary className="min-h-11 cursor-pointer py-3 font-medium">예산·계정 등록 안내</summary>
+        <p className="leading-relaxed">계좌 기본 월 예산은 자동매매 충전 기준입니다. 풀별 예산은 자동매매 탭에서 변경합니다. 대상 계정 등록과 상단 매매 실행 ON/OFF는 별도 설정입니다.</p>
+      </details>
     </div>
   );
 }
