@@ -1,52 +1,7 @@
-import { Action, combineSlices, configureStore, ThunkAction } from "@reduxjs/toolkit"
-import { financialInfoSlice } from "./features/financialInfo/financialInfoSlice";
-import { marketInfoSlice } from "./features/marketInfo/marketInfoSlice";
-import { strategySlice } from "./features/strategy/strategySlice";
-import { backtestSlice } from "./features/backtest/backtestSlice";
-import { loginSlice } from "./features/login/loginSlice";
-import { kakaoSlice } from "./features/kakao/kakaoSlice";
-import { cloudflareSlice } from "./features/cloudflare/cloudflareSlice";
-import { filterSlice } from "./features/filter/filterSlice";
-import { koreaInvestmentSlice } from "./features/koreaInvestment/koreaInvestmentSlice";
-import { koreaInvestmentUsMarketSlice } from "./features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import { algorithmTradeSlice } from "./features/algorithmTrade/algorithmTradeSlice";
-import { fmpUsMarketSlice } from "./features/fmpUsMarket/fmpUsMarketSlice";
-import { finnhubUsMarketSlice } from "./features/finnhubUsMarket/finnhubUsMarketSlice";
-import { searchHistorySlice } from "./features/searchHistory/searchHistorySlice";
-import { timestampSlice } from "./features/timestamp/timestampSlice";
-import { controlSlice } from "./features/control/controlSlice";
-import { capitalSlice } from "./features/capital/capitalSlice";
-import { searchLogSlice } from "./features/searchLog/searchLogSlice";
-import { stockLikesSlice } from "./features/stockLikes/stockLikesSlice";
-import { ledgerSlice } from "./features/ledger/ledgerSlice";
-import { calculatorSlice } from "./features/calculator/calculatorSlice";
+import { Action, configureStore, ThunkAction } from "@reduxjs/toolkit"
+import { reducerRegistry } from "./reducerRegistry";
 
-import { compareSlice } from "./features/compare/compareSlice";
-
-const rootReducer: any = combineSlices(
-    financialInfoSlice,
-    marketInfoSlice,
-    strategySlice,
-    backtestSlice,
-    loginSlice,
-    kakaoSlice,
-    cloudflareSlice,
-    filterSlice,
-    koreaInvestmentSlice,
-    koreaInvestmentUsMarketSlice,
-    algorithmTradeSlice,
-    fmpUsMarketSlice,
-    finnhubUsMarketSlice,
-    searchHistorySlice,
-    timestampSlice,
-    controlSlice,
-    capitalSlice,
-    searchLogSlice,
-    stockLikesSlice,
-    ledgerSlice,
-    calculatorSlice,
-    compareSlice,
-);
+const rootReducer: any = reducerRegistry;
 
 export type RootState = ReturnType<typeof rootReducer>;
 

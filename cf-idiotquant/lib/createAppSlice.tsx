@@ -1,5 +1,9 @@
 import { asyncThunkCreator, buildCreateSlice } from "@reduxjs/toolkit";
+import { reducerRegistry } from "./reducerRegistry";
 
-export const createAppSlice = buildCreateSlice({
+const buildSlice = buildCreateSlice({
     creators: { asyncThunk: asyncThunkCreator },
-})
+});
+
+export const createAppSlice: typeof buildSlice = (options) =>
+    buildSlice(options).injectInto(reducerRegistry);

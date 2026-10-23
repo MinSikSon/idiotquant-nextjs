@@ -11,7 +11,7 @@ import {
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getScanDailyDates, getScanWeeklyPeriods } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import {
-    selectLikedTickers, selectLikedList, selectTogglePending,
+    selectLikedTickers, selectLikedList, selectTogglePending, selectLikesState,
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ import {
 import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
 import FactorWorkbench from "@/components/research/FactorWorkbench";
+import WatchlistChanges from "@/components/watchlistChanges";
 
 import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
@@ -531,6 +532,7 @@ function ScreenerContent() {
     const ncavDailyList = useAppSelector(selectNcavDailyList);
     const likedTickersArr = useAppSelector(selectLikedTickers);
     const likedList = useAppSelector(selectLikedList);
+    const likesState = useAppSelector(selectLikesState);
     const likedTickers = useMemo(() => new Set(likedTickersArr), [likedTickersArr]);
 
     // URL query params → localStorage(전체 필터 스냅샷) 순 fallback으로 상태 초기화
@@ -1886,6 +1888,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 종목 리스트 ── */}
+            {showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges key={`${session.user.id}:${country}`} items={likedList} userId={session.user.id} country={country} />}
             {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">

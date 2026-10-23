@@ -1,0 +1,38 @@
+name: Service checks
+
+on:
+  pull_request:
+    paths:
+      - 'cf-idiotquant/**'
+      - '.github/workflows/service-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'cf-idiotquant/**'
+      - '.github/workflows/service-checks.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cf-idiotquant
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: cf-idiotquant/.nvmrc
+          cache: npm
+          cache-dependency-path: cf-idiotquant/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

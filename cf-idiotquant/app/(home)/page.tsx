@@ -28,6 +28,8 @@ export default function HomePage() {
       list={ncavDailyList.list}
       totalCount={matchedCount}
       isLoading={scanLoading}
+      hasError={ncavDailyList.state === "rejected" && ncavDailyList.receivedAt === null}
+      onRetry={() => dispatch(reqGetNcavDailyList({ date: "latest", preview: true, force: true }))}
       scanDate={scanDate}
       backgroundArt={<HeroArt />}
       isLoggedIn={status === "loading" || !!session}

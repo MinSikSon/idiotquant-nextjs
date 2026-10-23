@@ -17,6 +17,21 @@ function offline() {
     (globalThis as any).fetch = async () => { throw new TypeError("Failed to fetch"); };
 }
 
+test("HTTP 실패는 JSON 모양과 무관하게 success:false로 통일한다", async () => {
+    for (const [body, status] of [
+        [{ error: "Unauthorized" }, 401],
+        [{ success: true, data: [] }, 500],
+        [[], 403],
+    ] as const) {
+        serve(JSON.stringify(body), status);
+        const result = await apiRequest("/user/ledger");
+        assert.equal(result.success, false);
+        assert.equal(result.status, status);
+        assert.equal(typeof result.error, "string");
+        assert.ok(result.error.length > 0);
+    }
+});
+
 test("정상 JSON 은 본문 그대로, status 를 얹어서 · 워커가 HTML 오류 페이지를 주면 던지지 않고 읽히는 말로 바꾼다", async () => {
     // ── 정상 JSON 은 본문 그대로, status 를 얹어서
     {

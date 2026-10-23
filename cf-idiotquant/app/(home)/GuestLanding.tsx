@@ -12,6 +12,8 @@ type GuestLandingProps = {
   list: NcavDailyItem[];
   totalCount: number;
   isLoading: boolean;
+  hasError?: boolean;
+  onRetry?: () => void;
   scanDate: string | null;
   backgroundArt: ReactNode;
   isLoggedIn?: boolean;
@@ -27,7 +29,7 @@ const tools = [
   { href: "/compare", icon: GitCompareArrows, number: "03", title: "나란히 비교", description: "날짜를 먼저 추가한 뒤 후보 종목을 검색해 담으세요. 날짜별 종가·변화율과 현재 지표를 비교합니다.", action: "종목 비교" },
 ];
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false, refreshStatus }: GuestLandingProps) {
+export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false, refreshStatus, hasError = false, onRetry }: GuestLandingProps) {
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "최신 데이터";
@@ -51,8 +53,12 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
 
           <section aria-labelledby="preview-title" className={styles.preview}>
             <div className={styles.previewTop}><span className={styles.eyebrow}>DISCOVERY</span><span className={styles.date}>{dateLabel}</span></div>
-            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading && !preview.length ? "조회 중" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
+            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
             <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기 · 종목을 누르면 분석으로 이동합니다.</p>
+            {hasError && <div role="alert" className="mx-4 my-3 rounded-lg border border-amber-300/50 p-3 text-sm">
+              <p>{preview.length ? "새 데이터를 불러오지 못했습니다. 이전 조회 결과를 표시합니다." : "발굴 종목을 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."}</p>
+              <button type="button" onClick={onRetry} disabled={isLoading} className="mt-2 min-h-11 font-semibold underline underline-offset-4">다시 불러오기</button>
+            </div>}
             {refreshStatus}
             <div className={styles.table}>
               <div className={styles.tableHead}><span>종목 / 현재가</span><span>PER <small>배</small></span><span>PBR <small>배</small></span><span /></div>
@@ -65,7 +71,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
                   <span className={styles.metric}>{item.pbr > 0 ? item.pbr.toFixed(2) : "—"}</span>
                   <ArrowUpRight size={14} aria-hidden="true" className={styles.rowArrow} />
                 </Link>
-              )) : <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>PER 조건에 맞는 미리보기 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
+              )) : !hasError && <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>PER 조건에 맞는 미리보기 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
             </div>
             <Link href="/screener?mincap=500" className={styles.previewFooter}>{isLoggedIn ? "발굴 결과 전체 보기" : "발굴 종목 더 살펴보기"} <ArrowRight size={15} aria-hidden="true" /></Link>
           </section>

@@ -23,8 +23,9 @@ import {
   type ComparisonStock, selectComparison, setQuery, setDateInput, setError,
   stockLoadStarted, stockReceived, stockLoadFinished, dateLoadStarted, datePriceReceived,
   dateLoadFinished, removeDate as removeComparisonDate, removeStock, applyLimits,
-  importStarted, importAdvanced, importFinished, clearComparison,
+  importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
 } from '@/lib/features/compare/compareSlice';
+import { COMPARISON_STORAGE_KEY, readComparisonSnapshot, serializeComparison } from '@/lib/features/compare/storage';
 
 type RecentStock = Pick<ComparisonStock, 'ticker' | 'name' | 'market'>;
 const RECENT_STOCKS_KEY = 'idiotquant:compare:recent-stocks:v1';
@@ -97,6 +98,33 @@ export default function ComparePage() {
   const [recentStocks, setRecentStocks] = useState<RecentStock[]>([]);
   const [recentLoaded, setRecentLoaded] = useState(false);
   const importedRef = useRef(false);
+  const [comparisonReady, setComparisonReady] = useState(false);
+  const [storageFailed, setStorageFailed] = useState(false);
+
+  useEffect(() => {
+    if (sessionLoading) return;
+    try {
+      // 발굴에서 가져온 링크와 현재 세션의 작업이 저장본보다 우선한다.
+      if (!new URLSearchParams(window.location.search).has('tickers') && !stocks.length && !dates.length && !loading && !dateLoading) {
+        const saved = readComparisonSnapshot(localStorage.getItem(COMPARISON_STORAGE_KEY));
+        if (saved) dispatch(restoreComparison({ ...saved, stocks: saved.stocks.slice(0, limits.stocks), dates: saved.dates.slice(0, limits.dates) }));
+      }
+    } catch { setStorageFailed(true); }
+    setComparisonReady(true);
+    // 저장본 복원은 페이지 진입 시 세션 한도가 정해진 뒤 한 번만 한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionLoading]);
+
+  useEffect(() => {
+    if (!comparisonReady || loading || dateLoading) return;
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(COMPARISON_STORAGE_KEY, serializeComparison({ stocks, dates, query, dateInput }));
+        setStorageFailed(false);
+      } catch { setStorageFailed(true); }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [comparisonReady, stocks, dates, query, dateInput, loading, dateLoading]);
 
   useEffect(() => {
     try {
@@ -235,7 +263,7 @@ export default function ComparePage() {
       title="종목 비교"
       mobileTitleInNavigation
       description="① 날짜 추가 → ② 종목 추가 → ③ 날짜별 종가와 변화율 비교"
-      meta="다른 페이지에 다녀와도 비교 내용이 유지됩니다."
+      meta={storageFailed ? "브라우저 저장을 사용할 수 없습니다. 현재 화면에서 비교할 수 있습니다." : "비교 내용은 이 브라우저에 저장됩니다. 시세·지표는 조회 당시 기준입니다."}
       mobileCompact
       actions={<>
         <ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />
@@ -346,7 +374,7 @@ export default function ComparePage() {
                 </div>)}
               </div>
               <div className="border-t border-neutral-100 px-3 py-3 dark:border-neutral-800">
-                <p className="text-xs text-neutral-500">현재 기준 지표</p>
+                <p className="text-xs text-neutral-500">조회 당시 지표</p>
                 <dl className="mt-2 grid grid-cols-3 gap-x-3 gap-y-3">
                   {rows.map(row => <div key={row.label} className={row.label === '현재 상장주식 수' ? 'col-span-3 flex items-baseline justify-between gap-3' : 'min-w-0'}>
                     <dt className="text-xs text-neutral-500">{row.label}</dt>
@@ -366,7 +394,7 @@ export default function ComparePage() {
             <thead><tr className="border-b border-neutral-200 dark:border-neutral-700">
               <th className="sticky left-0 z-10 min-w-44 bg-white px-4 py-4 text-left text-xs font-medium text-neutral-500 dark:bg-surface-dark-card">종목</th>
               {dates.map(date => <th key={date} className="min-w-40 px-4 py-4 text-left text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 종가</th>)}
-              {rows.map(row => <th key={row.label} className="min-w-24 px-4 py-4 text-left text-xs font-medium text-neutral-500">{row.label}<span className="block text-[10px] font-normal">현재 기준</span></th>)}
+              {rows.map(row => <th key={row.label} className="min-w-24 px-4 py-4 text-left text-xs font-medium text-neutral-500">{row.label}<span className="block text-[10px] font-normal">조회 당시</span></th>)}
             </tr></thead>
             <tbody>{stocks.map(stock => <tr key={stock.id} className="border-b border-neutral-100 last:border-0 dark:border-neutral-800">
               <th className="sticky left-0 z-10 bg-white px-4 py-4 text-left dark:bg-surface-dark-card">
@@ -379,7 +407,7 @@ export default function ComparePage() {
           </table>
         </div>
       </section>}
-      <p className="mt-5 text-xs leading-5 text-neutral-500">비교 가격은 제공된 시세의 종가 기준입니다. 액면분할·병합이 있었던 종목은 시세에 반영된 조정 방식에 따라 가격과 변화율 비교가 부정확할 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 현재 기준입니다.</p>
+      <p className="mt-5 text-xs leading-5 text-neutral-500">비교 가격은 제공된 시세의 종가 기준입니다. 액면분할·병합이 있었던 종목은 시세에 반영된 조정 방식에 따라 가격과 변화율 비교가 부정확할 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
     </main>
   </div>;
 }

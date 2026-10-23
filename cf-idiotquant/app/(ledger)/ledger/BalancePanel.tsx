@@ -113,7 +113,7 @@ const SERIES = {
  * 떨어져 나가 잡음이 된다는 게 이 방식을 쓰는 이유다.
  */
 function seriesEndLabel(s: (typeof SERIES)[keyof typeof SERIES], lastIndex: number, offsetY: number | undefined) {
-    return (props: { x?: string | number; y?: string | number; index?: number; value?: string | number }) => {
+    return function SeriesEndLabel(props: { x?: string | number; y?: string | number; index?: number; value?: string | number }) {
         const { x, y, index, value } = props;
         if (index !== lastIndex || x == null || y == null || value == null) return null;
         const nx = Number(x);
