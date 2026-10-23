@@ -501,7 +501,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             disabled={tradingStatus.state === "pending" || tradingStatus.US === null}
             title={tradingStatus.US === null ? "자동매매 상태 확인 중" : tradingStatus.US ? "자동매매 비활성화" : "자동매매 활성화"}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+              "flex shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-xl text-[11px] md:text-xs font-bold border transition-all",
               tradingStatus.US
                 ? "bg-neutral-100 dark:bg-neutral-800/30 text-neutral-900 dark:text-neutral-100 border-neutral-300 dark:border-neutral-600/40"
                 : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",
@@ -512,7 +512,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
             {tradingStatus.US === null ? "자동매매" : tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
           </button>
           {exRate > 0 && (
-            <div className="order-last flex w-full items-center gap-2 py-1 sm:order-none sm:w-auto sm:bg-white sm:dark:bg-surface-dark-card sm:px-3 sm:py-2 sm:rounded-xl sm:border sm:border-neutral-200 sm:dark:border-border-subtle-dark">
+            <div className="flex shrink-0 items-center gap-2 py-1 sm:bg-white sm:dark:bg-surface-dark-card sm:px-3 sm:py-2 sm:rounded-xl sm:border sm:border-neutral-200 sm:dark:border-border-subtle-dark">
               <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><ArrowLeftRight size={12} aria-hidden="true" />고시환율</span>
               <span className="text-sm tabular-nums font-semibold text-neutral-900 dark:text-neutral-100">
                 {exRate.toLocaleString()}원
