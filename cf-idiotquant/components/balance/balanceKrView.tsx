@@ -521,7 +521,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           disabled={tradingStatus.state === "pending" || tradingStatus.KR === null}
           title={tradingStatus.KR === null ? "자동매매 상태 확인 중" : tradingStatus.KR ? "자동매매 비활성화" : "자동매매 활성화"}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+            "flex shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-xl text-[11px] md:text-xs font-bold border transition-all",
             tradingStatus.KR
               ? "bg-neutral-100 dark:bg-neutral-800/30 text-neutral-900 dark:text-neutral-100 border-neutral-300 dark:border-neutral-600/40"
               : "bg-white dark:bg-surface-dark-card text-neutral-400 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400",

@@ -93,16 +93,17 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
   if (!isMaster) return null;
   const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
   return (
-    <div className="flex flex-wrap items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
-      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-[10px] font-semibold uppercase">
+    <div className="flex items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
+      <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-[10px] font-semibold uppercase">
         <Key size={12} /> MASTER MODE
       </div>
-      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">계좌 선택</span>
-      <div className="relative inline-block">
+      <span className="hidden shrink-0 text-xs font-semibold text-neutral-500 dark:text-neutral-400 sm:inline">계좌 선택</span>
+      <div className="relative min-w-0 flex-1 sm:flex-none">
         <select
           value={balanceKey}
+          aria-label="계좌 선택"
           onChange={(e) => setBalanceKey(e.target.value)}
-          className="appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-200 dark:border-border-subtle-dark rounded-lg"
+          className="w-full min-w-0 truncate appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-200 dark:border-border-subtle-dark rounded-lg"
         >
           {list.length > 0 ? (
             list.map((item: any) => (
@@ -283,12 +284,12 @@ export function BalanceHeaderActions({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-1.5 md:gap-2 flex-wrap [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:gap-2 md:[&>button]:px-3">
+    <div className="flex shrink-0 items-center gap-1 whitespace-nowrap md:gap-2 [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:[&>button]:px-3">
       {extra}
       <button
         onClick={onToggleAutoRefresh}
         className={cn(
-          "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+          "flex shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-xl text-[11px] md:text-xs font-bold border transition-all",
           autoRefresh
             ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
             : "bg-white dark:bg-surface-dark-card text-neutral-500 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400"
@@ -301,10 +302,10 @@ export function BalanceHeaderActions({
         onClick={onRefresh}
         disabled={isLoading}
         aria-label="잔고 새로고침"
-        className="flex min-w-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
+        className="flex min-w-11 shrink-0 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
       >
         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
-        <span className="hidden sm:inline">새로고침</span>
+        <span className="hidden md:inline">새로고침</span>
       </button>
     </div>
   );

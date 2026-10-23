@@ -71,15 +71,17 @@ export function BalanceShell({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 md:flex-col md:items-end md:gap-2">
-            {countryToggle}
-            <BalanceHeaderActions
-              autoRefresh={autoRefresh}
-              onToggleAutoRefresh={onToggleAutoRefresh}
-              isLoading={isLoading}
-              onRefresh={onRefresh}
-              extra={headerExtra}
-            />
+          <div className="flex min-w-0 flex-col items-start gap-1.5 md:items-end md:gap-2">
+            <div className="flex max-w-full items-center gap-1 overflow-x-auto md:flex-col md:items-end md:gap-2">
+              {countryToggle}
+              <BalanceHeaderActions
+                autoRefresh={autoRefresh}
+                onToggleAutoRefresh={onToggleAutoRefresh}
+                isLoading={isLoading}
+                onRefresh={onRefresh}
+                extra={headerExtra}
+              />
+            </div>
             <div className="hidden md:block">{footerBadge}</div>
           </div>
         </header>
