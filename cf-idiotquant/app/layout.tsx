@@ -31,6 +31,7 @@ export const viewport: Viewport = {
   ],
 };
 import { StoreProvider } from "./StoreProvider";
+import PageInputShortcuts from "@/components/page-input-shortcuts";
 import NavbarWithSimpleLinks from "@/components/navigation";
 import { ThemeProviderClient } from "./ThemeProviderClient";
 import { AuthProvider } from "@/components/auth-provider";
@@ -204,6 +205,7 @@ export default function RootLayout({
                 "pb-[64px] md:pb-0",
                 "min-h-[100dvh] md:min-h-[calc(100dvh-64px)] overflow-x-clip"
               )}>
+                <PageInputShortcuts />
                 {children}
               </main>
               </MobilePageHeaderProvider>

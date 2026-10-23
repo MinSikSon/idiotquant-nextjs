@@ -133,6 +133,9 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
                 
                 <input
                     ref={inputRef}
+                    data-page-input
+                    aria-keyshortcuts="/ Escape"
+                    title="/ 검색창으로 이동 · Esc 입력 종료"
                     autoFocus={autoFocus}
                     autoComplete="off"
                     placeholder={placeHolder}

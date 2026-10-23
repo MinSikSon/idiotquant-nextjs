@@ -635,7 +635,7 @@ function AnalyzeContent() {
             <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
             {isPriceLoaded && gradeLabel && <span className={cn(styles.quoteAux, styles.quoteGrade)}>{gradeLabel}</span>}
           </div>
-          <button type="button" onClick={() => setSearchOpen(open => !open)}
+          <button type="button" data-page-input-trigger aria-keyshortcuts="/" title="/ 종목 검색" onClick={() => setSearchOpen(open => !open)}
             aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
             aria-expanded={searchOpen} aria-controls="analyze-stock-search"
             className={cn(styles.quoteSearch, styles.searchAction)}>
