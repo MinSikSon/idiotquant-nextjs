@@ -113,6 +113,8 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
             </div>
             <input
                 id={id}
+                data-page-input={id === "initial" ? "" : undefined}
+                aria-keyshortcuts={id === "initial" ? "/ Escape" : undefined}
                 type="range"
                 min={min}
                 max={max}

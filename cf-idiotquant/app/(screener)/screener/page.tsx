@@ -1362,6 +1362,10 @@ function ScreenerContent() {
                             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-600 pointer-events-none" />
                             <input
                                 type="text"
+                                data-page-input
+                                aria-label="종목명 또는 코드로 검색"
+                                aria-keyshortcuts="/ Escape"
+                                title="/ 검색창으로 이동 · Esc 입력 종료"
                                 value={searchQuery}
                                 onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
                                 placeholder="종목명 또는 코드로 검색"

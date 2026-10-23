@@ -104,7 +104,7 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
             </div>
           )) : <p role="status" className="px-3 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">일치하는 메뉴가 없습니다.</p>}
         </div>
-        <div className="flex items-center gap-4 border-t border-neutral-200 px-4 py-3 text-[11px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"><span><kbd>↑ ↓</kbd> 선택</span><span><kbd>Enter</kbd> 이동</span><span><kbd>Esc</kbd> 닫기</span></div>
+        <div className="flex items-center gap-4 border-t border-neutral-200 px-4 py-3 text-[11px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"><span><kbd>↑ ↓</kbd> 선택</span><span><kbd>Enter</kbd> 이동</span><span><kbd>Esc</kbd> 닫기</span><span><kbd>/</kbd> 페이지 입력</span></div>
         <p className="px-4 pb-3 text-[11px] text-neutral-500 dark:text-neutral-400">다음에는 {option} + 1·2·3으로 발굴·비교·분석에 바로 이동하세요.</p>
       </dialog>
     </>
