@@ -24,7 +24,14 @@ export async function createBackendHeaders(
     headers.set('content-type', 'application/json');
     if (!user) return headers;
     if (!user.id) throw new ProxyIdentityError(401, '세션이 만료되었습니다. 다시 로그인해 주세요.');
-    if (!secret) throw new ProxyIdentityError(503, '인증 서비스 설정을 확인 중입니다. 잠시 후 다시 시도해 주세요.');
+    if (!secret) {
+        // 기존 Worker 배포와의 호환 경로. 외부 헤더는 위에서 제거했으며,
+        // auth()로 검증한 서버 세션의 신원만 전달한다.
+        // 양쪽에 INTERNAL_JWT_SECRET을 설정하면 아래 JWT 검증 경로를 사용한다.
+        headers.set('x-user-id', user.id);
+        headers.set('x-user-role', user.role ?? 'user');
+        return headers;
+    }
 
     const token = await new SignJWT({ userId: user.id, role: user.role ?? 'user' })
         .setProtectedHeader({ alg: 'HS256' })
