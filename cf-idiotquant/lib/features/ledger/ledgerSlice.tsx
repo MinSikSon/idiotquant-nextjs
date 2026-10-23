@@ -1,4 +1,4 @@
-import type { PayloadAction } from "@reduxjs/toolkit";
+import { isPending, isFulfilled, isRejected, type PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import {
     getLedger, addLedgerEntry, updateLedgerEntry, deleteLedgerEntry, reorderLedgerEntries,
@@ -42,6 +42,8 @@ interface LedgerState {
     balances: LedgerBalance[];
     mutating: boolean;
     error: string | null;
+    requests: Record<string, true>;
+    latestReads: Record<string, string>;
 }
 
 
@@ -58,6 +60,8 @@ const initialState: LedgerState = {
     balances: [],
     mutating: false,
     error: null,
+    requests: {},
+    latestReads: {},
 };
 
 export const ledgerSlice = createAppSlice({
@@ -67,6 +71,9 @@ export const ledgerSlice = createAppSlice({
         setLedgerMonth: create.reducer((state, action: PayloadAction<string>) => {
             if (state.month === action.payload) return;
             state.month = action.payload;
+            delete state.latestReads["ledger/reqGetLedger"];
+            delete state.latestReads["ledger/reqGetLedgerBalances"];
+            state.balances = [];
             // 이전 달 내역을 비운다. 남겨두면 새 응답이 오기 전까지 8월 제목 아래에
             // 7월 합계가 떠 있게 된다 — 잠깐이라도 틀린 숫자를 보여주지 않는다.
             state.entries = [];
@@ -85,11 +92,13 @@ export const ledgerSlice = createAppSlice({
                 // ◀▶ 를 연달아 누르면 먼저 보낸 요청이 나중에 도착할 수 있다. 그대로 반영하면
                 // 화면은 8월인데 목록은 6월인 상태가 된다 — 지금 보고 있는 달의 응답만 받는다.
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId] || state.latestReads["ledger/reqGetLedger"] !== action.meta.requestId) return;
                     if (action.meta.arg !== state.month) return;
                     state.entries = (action.payload?.data ?? []) as LedgerEntry[];
                     state.state = "fulfilled";
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId] || state.latestReads["ledger/reqGetLedger"] !== action.meta.requestId) return;
                     if (action.meta.arg !== state.month) return;
                     state.state = "rejected";
                     state.error = action.error?.message ?? null;
@@ -106,6 +115,7 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     const entry = action.payload?.data as LedgerEntry | undefined;
                     if (!entry) return;
@@ -116,6 +126,7 @@ export const ledgerSlice = createAppSlice({
                     }
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -148,6 +159,7 @@ export const ledgerSlice = createAppSlice({
                 },
                 // 워커가 그 날을 다시 읽어 준다 — 수정자까지 맞춰진 값으로 갈아끼운다.
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     const moved = (action.payload?.data?.entries ?? []) as LedgerEntry[];
                     if (moved.length === 0) return;
                     const movedIds = new Set(moved.map((e) => e.id));
@@ -156,7 +168,8 @@ export const ledgerSlice = createAppSlice({
                 },
                 // 되돌리기는 화면이 그 달을 다시 읽어서 한다 — 여기서 dispatch 하면
                 // 슬라이스가 자기 자신을 부르는 모양이 된다.
-                rejected: (state, action) => { state.error = action.error?.message ?? null; },
+                rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return; state.error = action.error?.message ?? null; },
             }
         ),
 
@@ -167,6 +180,10 @@ export const ledgerSlice = createAppSlice({
         setActiveOwner: create.reducer((state, action: PayloadAction<string | null>) => {
             if (state.activeOwner === action.payload) return;
             state.activeOwner = action.payload;
+            state.requests = {};
+            state.latestReads = {};
+            state.balances = [];
+            state.mutating = false;
             state.entries = [];
             state.categories = [];
             state.state = "pending";
@@ -183,11 +200,16 @@ export const ledgerSlice = createAppSlice({
             },
             {
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.ledgers = (action.payload?.data?.ledgers ?? []) as LedgerAccess[];
                     state.members = (action.payload?.data?.members ?? []) as LedgerMember[];
                     // 나가 있던 가계부에서 빠졌다면 내 것으로 되돌린다 — 아니면 계속 404 를 받는다.
                     if (state.activeOwner && !state.ledgers.some(l => l.owner_user_id === state.activeOwner)) {
                         state.activeOwner = null;
+                        state.requests = {};
+                        state.latestReads = {};
+                        state.balances = [];
+                        state.mutating = false;
                         state.entries = [];
                         state.categories = [];
                     }
@@ -206,10 +228,12 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; state.inviteToken = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.inviteToken = (action.payload?.data?.token as string) ?? null;
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -225,6 +249,7 @@ export const ledgerSlice = createAppSlice({
             },
             {
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId] || state.latestReads["ledger/reqGetLedgerCategories"] !== action.meta.requestId) return;
                     state.categories = (action.payload?.data ?? []) as StoredCategory[];
                 },
                 // 항목을 못 불러와도 프리셋으로는 기입할 수 있다 — 화면을 막지 않는다.
@@ -241,6 +266,7 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     const category = action.payload?.data as StoredCategory | undefined;
                     if (!category) return;
@@ -249,6 +275,7 @@ export const ledgerSlice = createAppSlice({
                     state.categories = [...state.categories, category];
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -266,12 +293,14 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     const category = action.payload?.data as StoredCategory | undefined;
                     if (!category) return;
                     state.categories = state.categories.map((c) => (c.id === category.id ? category : c));
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -287,6 +316,7 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.categories = state.categories.filter((c) => c.id !== action.payload);
                     // 워커가 지우기 직전에 그 내역들을 custom:<라벨> 로 굳혔다. 화면의 내역도
@@ -298,6 +328,7 @@ export const ledgerSlice = createAppSlice({
                     );
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -313,6 +344,7 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     const entry = action.payload?.data as LedgerEntry | undefined;
                     if (!entry) return;
@@ -327,6 +359,7 @@ export const ledgerSlice = createAppSlice({
                         .sort(byRecent);
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -342,10 +375,12 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.entries = state.entries.filter((e) => e.id !== action.payload);
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -370,10 +405,12 @@ export const ledgerSlice = createAppSlice({
                 // 규약으로, **지금 보고 있는 달의 응답만** 받는다. 구간만 바꾼 요청도
                 // 같은 달이므로 그대로 받는다.
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId] || state.latestReads["ledger/reqGetLedgerBalances"] !== action.meta.requestId) return;
                     if (action.meta.arg.month !== state.month) return;
                     state.balances = (action.payload?.data?.balances ?? []) as LedgerBalance[];
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId] || state.latestReads["ledger/reqGetLedgerBalances"] !== action.meta.requestId) return;
                     if (action.meta.arg.month !== state.month) return;
                     state.error = action.error?.message ?? null;
                 },
@@ -397,6 +434,7 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     const saved = action.payload?.data?.balance as LedgerBalance | undefined;
                     if (!saved) return;
@@ -406,6 +444,7 @@ export const ledgerSlice = createAppSlice({
                     state.balances = [...rest, saved].sort((a, b) => a.month.localeCompare(b.month));
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
@@ -421,16 +460,35 @@ export const ledgerSlice = createAppSlice({
             {
                 pending: (state) => { state.mutating = true; state.error = null; },
                 fulfilled: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.balances = state.balances.filter((b) => b.month !== action.payload);
                 },
                 rejected: (state, action) => {
+                    if (!state.requests[action.meta.requestId]) return;
                     state.mutating = false;
                     state.error = action.error?.message ?? null;
                 },
             }
         ),
     }),
+    extraReducers: (builder) => {
+        builder.addMatcher(
+            (action): action is { type: string; meta: { requestId: string } } =>
+                isPending(action) && action.type.startsWith("ledger/"),
+            (state, action) => {
+                state.requests[action.meta.requestId] = true;
+                if (["ledger/reqGetLedger", "ledger/reqGetLedgerCategories", "ledger/reqGetLedgerBalances"].includes(action.type.slice(0, -8))) {
+                    state.latestReads[action.type.slice(0, -8)] = action.meta.requestId;
+                }
+            },
+        );
+        builder.addMatcher(
+            (action): action is { type: string; meta: { requestId: string } } =>
+                (isFulfilled(action) || isRejected(action)) && action.type.startsWith("ledger/"),
+            (state, action) => { delete state.requests[action.meta.requestId]; },
+        );
+    },
     selectors: {
         selectLedgerMonth: (state) => state.month,
         selectLedgerEntries: (state) => state.entries,

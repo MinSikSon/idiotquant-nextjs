@@ -1,4 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { ComparisonSnapshot } from './storage';
+import { reducerRegistry } from '../../reducerRegistry';
 
 export type ComparisonPrice = { price?: number; priceDate?: string; loading?: boolean; error?: string };
 export type ComparisonStock = {
@@ -30,6 +32,9 @@ export const compareSlice = createSlice({
   name: 'compare',
   initialState,
   reducers: {
+    restoreComparison(_state, action: PayloadAction<ComparisonSnapshot>) {
+      return { ...initialState, ...action.payload };
+    },
     setQuery(state, action: PayloadAction<string>) { state.query = action.payload; },
     setDateInput(state, action: PayloadAction<string>) { state.dateInput = action.payload; },
     setError(state, action: PayloadAction<string>) { state.error = action.payload; },
@@ -80,11 +85,11 @@ export const compareSlice = createSlice({
     },
   },
   selectors: { selectComparison: state => state },
-});
+}).injectInto(reducerRegistry);
 
 export const {
   setQuery, setDateInput, setError, stockLoadStarted, stockReceived, stockLoadFinished,
   dateLoadStarted, datePriceReceived, dateLoadFinished, removeDate, removeStock, applyLimits,
-  importStarted, importAdvanced, importFinished, clearComparison,
+  importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
 } = compareSlice.actions;
 export const { selectComparison } = compareSlice.selectors;

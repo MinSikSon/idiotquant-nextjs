@@ -63,6 +63,18 @@ export async function apiRequest(subUrl: string, options: ApiRequestOptions = {}
         console.error(`[api] ${method} ${subUrl} → ${res.status}, JSON 아님:`, text.slice(0, 500));
     }
 
+    if (!res.ok) {
+        const payload = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+            ? parsed as Record<string, unknown> : {};
+        return {
+            ...payload,
+            success: false,
+            status: res.status,
+            error: typeof payload.error === "string" && payload.error.trim()
+                ? payload.error : messageFor(res.status),
+        } satisfies ApiFailure;
+    }
+
     if (parsed === null || typeof parsed !== "object") {
         return { success: false, status: res.status, error: messageFor(res.status) } satisfies ApiFailure;
     }

@@ -76,16 +76,16 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
 // StockMetrics
 // =========================================================================
 export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
-  if (!data) return null;
 
   const n = (val: any) => {
     const num = Number(val);
     return isNaN(num) ? 0 : num;
   };
 
-  const isDelistedSuspect = !isUs && data.kiChart?.output1 ? n(data.kiChart.output1.lstn_stcn) === 0 : false;
+  const isDelistedSuspect = !isUs && data?.kiChart?.output1 ? n(data.kiChart.output1.lstn_stcn) === 0 : false;
 
   const metrics: MetricItem[] = useMemo(() => {
+    if (!data) return [];
     if (isUs) {
       const detail = data.usDetail?.output;
       const search = data.usSearchInfo?.output;
@@ -169,6 +169,8 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       ];
     }
   }, [data, isUs]);
+
+  if (!data) return null;
 
   if (metrics.length === 0) return null;
 
