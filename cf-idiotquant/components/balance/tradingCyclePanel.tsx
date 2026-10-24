@@ -33,8 +33,8 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
     const logValue = (value: number) => ready ? money(value) : activity.state === "rejected" ? "조회 실패" : "조회 중…";
 
     return (
-        <section className="mb-5 space-y-2 sm:space-y-4" aria-label="자동매매 플랜">
-            <div className="rounded-2xl border border-neutral-300/20 dark:border-neutral-600/20 bg-neutral-100 px-3 pb-3 dark:bg-neutral-800/20 sm:p-5">
+        <section className="mb-3 space-y-1.5 sm:mb-5 sm:space-y-4" aria-label="자동매매 플랜">
+            <div className="rounded-2xl border border-neutral-300/20 dark:border-neutral-600/20 bg-neutral-100 px-2.5 pb-2.5 dark:bg-neutral-800/20 sm:p-5">
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-100"><button type="button" onClick={() => setPlanExpanded(value => !value)} aria-expanded={planExpanded} aria-controls={`${panelId}-plan`} className="flex min-h-11 items-center gap-1.5"><Coins size={16} className="text-neutral-900 dark:text-neutral-100" />자동매매 플랜<ChevronDown size={13} className={cn("transition-transform", planExpanded && "rotate-180")} /></button></h3>
                 </div>
@@ -45,16 +45,16 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                         <span>{groups.length}개 풀<span className="hidden sm:inline"> · 그룹별 예산 설정 가능</span></span>
                     </div>
                 </div>
-                <ol id={`${panelId}-plan`} className={cn("mt-3 grid-cols-4 gap-1 border-t border-neutral-300/15 dark:border-neutral-600/15 pt-3 text-center text-[11px] font-bold text-neutral-900 dark:text-neutral-100 sm:mt-4 sm:text-xs", planExpanded ? "grid" : "hidden")}>
+                <ol id={`${panelId}-plan`} className={cn("mt-2 grid-cols-4 gap-1 border-t border-neutral-300/15 dark:border-neutral-600/15 pt-2 text-center text-[11px] font-bold text-neutral-900 dark:text-neutral-100 sm:mt-4 sm:pt-3 sm:text-xs", planExpanded ? "grid" : "hidden")}>
                     {["예산 설정", "포인트 적립", "조건 확인", "주문·차감"].map((step, index) => <li key={step} className="min-w-0"><span className="mb-1 block text-[10px] opacity-60">0{index + 1}</span>{step}</li>)}
                 </ol>
             </div>
 
-            <div className="flex flex-wrap items-baseline justify-between gap-1 pt-1 sm:pt-0">
+            <div className="flex flex-wrap items-baseline justify-between gap-1 pt-0.5 sm:pt-0">
                 <h4 className="text-sm font-bold text-neutral-800 dark:text-neutral-100">내 자동매매 풀</h4>
                 <span className="text-[11px] text-neutral-500 dark:text-neutral-400"><span className="sm:hidden">눌러서 상세 보기</span><span className="hidden sm:inline">포인트는 종목마다 따로 적립됩니다</span></span>
             </div>
-            <div className="grid gap-2 sm:gap-3 lg:grid-cols-2">
+            <div className="grid gap-1.5 sm:gap-3 lg:grid-cols-2">
                 {rows.map(row => {
                     const { group } = row;
                     const groupRefill = capital.refill_plan?.groups.find(item => item.group_id === group.id);
@@ -73,18 +73,18 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                     const compactStatus = tradingActive === null ? "확인 중" : !tradingActive ? "매매 OFF" : group.is_trading_active === false ? "풀 OFF" : !active.length ? "종목 대기" : fullSell ? "전량 매도" : funded ? "조건 대기" : !known.length ? "시세 대기" : "적립 중";
                     return (
                         <article key={group.id} className="min-w-0 overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-border-subtle-dark dark:bg-surface-dark-card sm:rounded-2xl sm:p-4">
-                            <button type="button" aria-expanded={expanded} aria-controls={detailId} aria-label={`${group.name} 상세 ${expanded ? "접기" : "보기"}`} onClick={() => setExpandedPools(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })} className="w-full space-y-1.5 px-3 py-3 text-left">
+                            <button type="button" aria-expanded={expanded} aria-controls={detailId} aria-label={`${group.name} 상세 ${expanded ? "접기" : "보기"}`} onClick={() => setExpandedPools(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })} className="w-full space-y-1 px-2.5 py-2.5 text-left sm:space-y-1.5 sm:px-3 sm:py-3">
                                 <span className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-bold text-neutral-900 dark:text-neutral-100" title={group.name}>{group.name}</span><span className={cn("shrink-0 text-[11px] font-bold", sell ? "text-rose-500 dark:text-rose-400" : "text-neutral-900 dark:text-neutral-100")}>{group.dca ? "정액" : "일반"}{sell ? "매도" : "매수"}</span><ChevronDown size={14} className={cn("shrink-0 text-neutral-400 transition-transform", expanded && "rotate-180")} /></span>
                                 <span className="flex items-baseline justify-between gap-2"><span className="min-w-0 truncate text-[11px] text-neutral-500 dark:text-neutral-400">활성 {active.length}/{row.stocks.length} · {compactStatus}</span><span className="shrink-0 text-sm font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{won(tokens(row.stocks))}</span></span>
                             </button>
-                            <div id={detailId} className={cn("border-t border-neutral-100 px-3 pb-3 dark:border-border-subtle-dark sm:border-0 sm:p-0", !expanded && "hidden")}>
-                            <p className="mt-3 break-words text-sm font-bold text-neutral-900 dark:text-neutral-100">{group.name}</p>
-                            <div className="mt-4 flex flex-wrap items-end justify-between gap-2">
+                            <div id={detailId} className={cn("border-t border-neutral-100 px-2.5 pb-2.5 dark:border-border-subtle-dark sm:border-0 sm:p-0", !expanded && "hidden")}>
+                            <p className="mt-2 break-words text-sm font-bold text-neutral-900 dark:text-neutral-100 sm:mt-3">{group.name}</p>
+                            <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2 sm:mt-4">
                                 <div><p className="text-xs text-neutral-500 dark:text-neutral-400">적립 포인트</p><p className="mt-1 break-all text-2xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{won(tokens(row.stocks))}</p></div>
                                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400">월 예산 {Number(group.budget_krw) > 0 ? won(group.budget_krw!) : "계좌 예산 분배"}</p>
                             </div>
                             {groupRefill && <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">마지막 실행 기준 {capital.refill_plan?.period_minutes}분마다 <b className="tabular-nums text-neutral-900 dark:text-neutral-100">+{won(groupRefill.per_tick_krw)}</b> · 종목당 +{won(groupRefill.per_stock_krw)}</p>}
-                            <div className="mt-4 rounded-xl bg-surface-canvas p-3 dark:bg-surface-dark">
+                            <div className="mt-3 rounded-xl bg-surface-canvas p-2.5 dark:bg-surface-dark sm:mt-4 sm:p-3">
                                 <p className={cn("flex items-center gap-1.5 text-xs font-bold", paused ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-900 dark:text-neutral-100")}><span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", paused ? "bg-neutral-400" : "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900")} />{status}</p>
                                 {fullSell ? <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">정액매도 OFF · 포인트와 무관하게 보유 전량을 매도합니다.</p> : closest?.budget ? <>
                                     <div className="mt-3 flex flex-wrap justify-between gap-1 text-[11px] text-neutral-500 dark:text-neutral-400"><span className="break-words">{closest.stock.name || closest.stock.symbol} · 1주 예산</span><span>{closest.budget.missing > 0 ? `${won(closest.budget.missing)} 더 필요` : `예산 기준 ${closest.budget.shares.toLocaleString("ko-KR")}주`}</span></div>
@@ -92,7 +92,7 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                                     <p className="mt-2 text-[10px] text-neutral-500 dark:text-neutral-400">저장된 시세 기준 · 조건 충족 시 주문{sell ? " · 보유 수량 한도" : ""}</p>
                                 </> : <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">{active.length ? "유효한 시세와 환율이 있어야 적립 진행률을 표시합니다." : "활성 종목이 선정되면 종목별 적립 진행률이 표시됩니다."}</p>}
                             </div>
-                            <dl className="mt-4 grid grid-cols-2 gap-3">
+                            <dl className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
                                 <div className="min-w-0"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">누적 매수 주문금</dt><dd className="mt-1 break-all text-sm font-bold tabular-nums dark:text-neutral-100">{logValue(totals.buy)}</dd></div>
                                 <div className="min-w-0"><dt className="text-[11px] text-neutral-500 dark:text-neutral-400">누적 매도 주문금</dt><dd className="mt-1 break-all text-sm font-bold tabular-nums dark:text-neutral-100">{logValue(totals.sell)}</dd></div>
                             </dl>
