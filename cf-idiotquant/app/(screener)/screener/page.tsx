@@ -868,10 +868,27 @@ function ScreenerContent() {
         minMarketCap, maxPbr, maxPer, minRoe, minNcav,
     }), [country, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
 
-    const baseList = useMemo(
-        () => (showLikedOnly ? normalizedLikedList : ncavDailyList.list) as Record<string, any>[],
-        [showLikedOnly, normalizedLikedList, ncavDailyList.list]
-    );
+    const [usEnglishNames, setUsEnglishNames] = useState<Map<string, string> | null>(null);
+    useEffect(() => {
+        if (country !== 'US' || usEnglishNames) return;
+        let cancelled = false;
+        Promise.all(['nasdaq', 'nyse', 'amex'].map(async market => {
+            const response = await fetch(`/data/usStockSymbols/${market}_full_tickers.json`);
+            if (!response.ok) throw new Error(`US names: ${response.status}`);
+            return response.json() as Promise<{ symbol: string; name: string }[]>;
+        })).then(lists => {
+            if (!cancelled) setUsEnglishNames(new Map(lists.flat().map(item => [item.symbol.trim().toUpperCase(), item.name])));
+        }).catch(error => console.error('미국 영문 종목명 로딩 실패', error));
+        return () => { cancelled = true; };
+    }, [country, usEnglishNames]);
+
+    const baseList = useMemo(() => {
+        const list = (showLikedOnly ? normalizedLikedList : ncavDailyList.list) as Record<string, any>[];
+        return country === 'US' ? list.map(item => ({
+            ...item,
+            eng_name: item.eng_name?.trim() || usEnglishNames?.get(String(item.ticker ?? '').trim().toUpperCase()),
+        })) : list;
+    }, [showLikedOnly, normalizedLikedList, ncavDailyList.list, country, usEnglishNames]);
 
     const filteredList = useMemo(() => {
         return sortList([...applyFilters(baseList, filters)], sortKey, sortOrder);

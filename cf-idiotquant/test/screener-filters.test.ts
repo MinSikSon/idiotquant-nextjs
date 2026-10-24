@@ -197,3 +197,28 @@ test("ROE 를 모르는 종목은 맨 아래로 — 0 으로 두면 적자 사�
         assert.deepEqual(names(sortList([...list], "per", "desc")), ["있음", "없음"]);
     }
 });
+
+
+test("미국 한글 표시명이어도 영문 원명으로 홀딩스·우선주를 제외하고 검색한다", () => {
+    const list = [
+        stock({ ticker: "CORP", name: "일반 회사", eng_name: "Example Corp" }),
+        stock({ ticker: "HLD", name: "지주 회사", eng_name: "Example HOLDINGS Inc." }),
+        stock({ ticker: "HLD2", name: "다른 지주", eng_name: "Example Holding Inc." }),
+        stock({ ticker: "PREF", name: "우선 회사", eng_name: "Example Preferred Stock" }),
+        stock({ ticker: "DEP", name: "예탁 회사", eng_name: "Example Depositary Shares" }),
+    ];
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", excludeHoldings: true, excludePreferred: true }))), ["일반 회사"]);
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", q: "holdings" }))), ["지주 회사"]);
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", q: "지주 회사" }))), ["지주 회사"]);
+    assert.deepEqual(names(applyFilters(list, none({ country: "US", q: "corp" }))), ["일반 회사"]);
+});
+
+test("영문명 누락은 표시명으로 판별하고 국내 종목은 영문명을 사용하지 않는다", () => {
+    const list = [
+        stock({ name: "Fallback Holdings", eng_name: "  " }),
+        stock({ name: "Fallback Preferred", eng_name: null }),
+    ];
+    assert.equal(applyFilters(list, none({ country: "US", excludeHoldings: true, excludePreferred: true })).length, 0);
+    const kr = [stock({ name: "삼성전자", eng_name: "Example Holdings Preferred" })];
+    assert.equal(applyFilters(kr, none({ excludeHoldings: true, excludePreferred: true })).length, 1);
+});
