@@ -47,26 +47,26 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
     const unit = range === 60 ? "5분" : "1시간";
 
     return (
-        <section className="mb-2 space-y-2 sm:mb-5 sm:space-y-4 rounded-2xl border border-neutral-200 bg-white p-2.5 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5" aria-label="충전 흐름과 예수금">
+        <section className="mb-1.5 space-y-1.5 sm:mb-5 sm:space-y-4 rounded-2xl border border-neutral-200 bg-white p-2 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-5" aria-label="충전 흐름과 예수금">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="flex items-center gap-1 text-xs sm:gap-2 sm:text-sm font-bold text-neutral-900 dark:text-neutral-100"><Zap size={16} className="text-neutral-900 dark:text-neutral-100" /><span className="sm:hidden">예수금·충전</span><span className="hidden sm:inline">예수금 대비 자동 충전</span><DetailHelp label="충전·예산 계산 기준">예산 합계 비중은 ON인 풀의 활성 종목 적립 포인트(매수·매도) ÷ 현재 예수금입니다. 월 충전계획 비중은 마지막 실행의 매수 풀 월 예산 기준입니다. 충전은 예산 장부 적립이며 실제 현금 이체·예약이 아닙니다. 주문가능금액은 미결제·증거금 등에 따라 예수금과 다를 수 있습니다. 시간당 금액은 {metrics.period}분 배분 속도의 환산값이며 그래프는 실제 충전 기록만 표시합니다.</DetailHelp></h3>
             </div>
 
-            <div className="grid gap-2 sm:gap-4 lg:grid-cols-2">
-                <div className="min-w-0 rounded-xl bg-surface-canvas p-2.5 sm:p-4 dark:bg-surface-dark">
+            <div className="grid gap-1.5 sm:gap-4 lg:grid-cols-2">
+                <div className="min-w-0 rounded-xl bg-surface-canvas p-2 sm:p-4 dark:bg-surface-dark">
                     <p className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400"><Wallet size={13} /> {country === "KR" ? "국내 예수금" : "미국 달러 예수금"}{cash.state === "pending" && " · 갱신 중"}</p>
                     <p className="mt-1 sm:mt-2 break-words text-lg sm:text-2xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-50">{cashValue}</p>
                     <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{country === "US" ? cash.krw === null ? "달러 잔고·환율 확인 대기" : `원화 환산 ${won(cash.krw)} · $1 = ${won(cash.rate!)}` : "증권사 잔고의 예수금 총액 기준"}</p>
-                    <div className="mt-3 border-t border-neutral-200 pt-3 sm:mt-4 sm:pt-4 dark:border-border-subtle-dark">
+                    <div className="mt-2.5 border-t border-neutral-200 pt-2.5 sm:mt-4 sm:pt-4 dark:border-border-subtle-dark">
                         <div className="flex flex-wrap items-center justify-between gap-1">
                             <h4 className="flex items-center text-xs font-bold text-neutral-800 dark:text-neutral-100">활성 자동매매 예산 합계<DetailHelp label="활성 예산">ON인 풀의 활성 종목 적립 포인트 합계이며 매도 예산도 포함합니다. 비활성 종목과 OFF 풀은 제외합니다. 자동매매 실행이 OFF여도 적립된 예산은 남아 있습니다.</DetailHelp></h4>
                             <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{budgetKnown ? `${metrics.activePools}개 풀 · ${metrics.activeStocks}종목` : budgetLabel}</span>
                         </div>
-                        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                             <p className="min-w-0 break-all text-xl sm:text-2xl font-semibold tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50">{budgetKnown ? won(metrics.activeTotal) : budgetLabel}</p>
                             <p className="text-xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{budgetKnown ? pct(metrics.activeRatio) : "—"}<span className="ml-1 text-[11px] font-normal text-neutral-500 dark:text-neutral-400">/ 예수금</span></p>
                         </div>
-                        <div role="img" aria-label={`활성 종목 적립 예산은 예수금의 ${budgetKnown ? pct(metrics.activeRatio) : "확인 중"}`} className="mt-3 flex h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-surface-dark-muted">
+                        <div role="img" aria-label={`활성 종목 적립 예산은 예수금의 ${budgetKnown ? pct(metrics.activeRatio) : "확인 중"}`} className="mt-2 flex h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-surface-dark-muted sm:mt-3">
                             {budgetKnown && <><div className="h-full bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900" style={{ width: `${metrics.activeTotal > 0 ? ratioWidth * metrics.activeBuy / metrics.activeTotal : 0}%` }} /><div className="h-full bg-rose-400" style={{ width: `${metrics.activeTotal > 0 ? ratioWidth * metrics.activeSell / metrics.activeTotal : 0}%` }} /></>}
                         </div>
                         <details className="mt-1 text-xs text-neutral-500 dark:text-neutral-400"><summary className="min-h-11 cursor-pointer py-3 font-medium">매수·매도 예산 구성</summary><dl className="grid grid-cols-2 gap-2 text-xs">
@@ -82,7 +82,7 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                     {cash.krw !== null && cash.krw <= 0 && <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">예수금이 0 이하이므로 비중을 계산하지 않습니다.</p>}
                 </div>
 
-                <div className="min-w-0 space-y-3">
+                <div className="min-w-0 space-y-2 sm:space-y-3">
                     <p className={cn("flex items-center gap-1.5 text-xs font-bold", enabled ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-500 dark:text-neutral-400")}><Clock3 size={13} />{status}</p>
                     <details><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">충전 속도·최근 충전 상세</summary><div className="space-y-3">
                     <div className="rounded-xl border border-neutral-200 p-4 dark:border-border-subtle-dark">
