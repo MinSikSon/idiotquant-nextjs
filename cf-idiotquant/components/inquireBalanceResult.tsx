@@ -207,7 +207,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }, [searchQuery, MARKET_STOCK_MASTER]);
 
     return (
-        <div className="space-y-3 md:space-y-6">
+        <div className="space-y-2 md:space-y-6">
             <ToastContainer toasts={toasts} onRemove={removeToast} />
             {/* 헤더 섹션 */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
@@ -343,7 +343,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             })()}
 
             {/* 테이블 섹션 */}
-            <div className="overflow-hidden bg-white dark:bg-surface-dark-card rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-none">
+            <div className="overflow-hidden bg-white dark:bg-surface-dark-card rounded-xl md:rounded-[2rem] border border-neutral-200 dark:border-border-subtle-dark shadow-none">
                 <SortableBalanceTable
                     inventoryData={props.kiBalance.output1 || []}
                     isUs={isUs}

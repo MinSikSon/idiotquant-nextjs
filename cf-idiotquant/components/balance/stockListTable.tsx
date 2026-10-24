@@ -414,7 +414,7 @@ function StockListTable({
   };
 
   return (
-    <div className={cn("w-full space-y-5", className)}>
+    <div className={cn("w-full space-y-3 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
       <section className="rounded-xl border border-neutral-200 bg-white p-2.5 md:p-4 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
         <div className="flex flex-wrap items-center justify-between gap-3">
