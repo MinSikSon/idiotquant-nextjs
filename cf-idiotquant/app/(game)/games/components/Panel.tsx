@@ -112,9 +112,9 @@ export default function Panel({
                 if (onClose && fromBackdrop.current && e.target === e.currentTarget) onClose();
             }}
         >
-            <div ref={panelRef} role="dialog" aria-modal={side ? undefined : true} aria-labelledby={titleId} tabIndex={-1} onKeyDown={keepFocusInside} style={accent ? { borderColor: accent } : undefined} className={`max-h-[calc(100%-1rem)] sm:max-h-[calc(100%-3rem)] w-full ${size === "wide" ? "max-w-3xl" : "max-w-[520px]"} overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] ${accent ? "border-2 border-t-[6px]" : ""} font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]`}>
-                <div className="flex items-center justify-between border-b border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-strong)]">
-                    <span id={titleId} style={accent ? { color: accent, fontWeight: 700 } : undefined}>{title}</span>
+            <div data-game-panel ref={panelRef} role="dialog" aria-modal={side ? undefined : true} aria-labelledby={titleId} tabIndex={-1} onKeyDown={keepFocusInside} style={accent ? { borderColor: accent } : undefined} className={`max-h-[calc(100%-1rem)] sm:max-h-[calc(100%-3rem)] w-full ${size === "wide" ? "max-w-3xl" : "max-w-[520px]"} overflow-auto border border-[var(--rg-line)] bg-[var(--rg-panel)] ${accent ? "border-2 border-t-[6px]" : ""} font-[family-name:var(--font-plex-mono)] text-[13px] text-[var(--rg-text)] shadow-[0_0_0_1px_var(--rg-shadow)]`}>
+                <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-[var(--rg-panel)] border-b border-[var(--rg-line-soft)] px-3 py-2 text-[var(--rg-strong)]">
+                    <span className="font-bold" id={titleId} style={accent ? { color: accent, fontWeight: 700 } : undefined}>{title}</span>
                     {onClose && (
                         <button
                             type="button"

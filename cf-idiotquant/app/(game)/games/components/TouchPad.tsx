@@ -104,6 +104,7 @@ function Key({
         <button
             type="button"
             title={title}
+            aria-label={title}
             aria-disabled={disabled || undefined}
             onPointerDown={
                 hold
@@ -166,13 +167,13 @@ function Key({
                 // 가로채 가고, 그 순간 `pointercancel` 이 떠서 연타가 끊긴다.
                 "grid touch-none select-none place-items-center rounded-[3px] border border-[var(--rg-key-line)] bg-[var(--rg-hover)]",
                 "font-[family-name:var(--font-plex-mono)] leading-none text-[var(--rg-text)]",
-                "active:translate-y-px active:bg-[var(--rg-press)]",
+                "active:translate-y-px active:bg-[var(--rg-press)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rg-gold)]",
                 hot ? "border-[var(--rg-gold)] bg-[var(--rg-raised)] font-bold text-[var(--rg-strong)]" : "",
                 warn ? "border-[var(--rg-trap)] bg-[var(--rg-raised)] font-bold text-[var(--rg-trap)]" : "",
                 disabled ? "border-[var(--rg-off-line)] bg-[var(--rg-off-bg)] text-[var(--rg-off-ink)]" : "",
                 // **줄 높이가 글자 수를 따라가면 안 된다.** 안 접으면 긴 이름 하나가
                 // 두 줄로 접히면서 그 줄만 키가 커지고, 격자가 다시 어긋난다.
-                wide ? "h-8 w-full overflow-hidden whitespace-nowrap px-1 text-[10px]" : "h-12 w-12 text-[13px]",
+                wide ? "h-8 w-full overflow-hidden whitespace-nowrap px-1 text-[10px] lg:h-9 lg:text-[11px]" : "h-12 w-12 text-[13px]",
             ].join(" ")}
         >
             {children}
@@ -235,7 +236,7 @@ export default function TouchPad({
         return () => clearTimeout(timer);
     }, [blockedReason]);
     return (
-        <div className="relative mx-auto flex max-w-[560px] items-start gap-3 px-2 py-2 md:max-lg:fixed md:max-lg:inset-x-0 md:max-lg:bottom-2 md:max-lg:z-40 md:max-lg:pointer-events-none md:max-lg:max-w-none md:max-lg:justify-between md:max-lg:gap-0 md:max-lg:px-3 md:max-lg:py-0">
+        <div className="relative mx-auto flex max-w-[640px] items-start gap-3 px-2 py-2 md:max-lg:fixed md:max-lg:inset-x-0 md:max-lg:bottom-2 md:max-lg:z-40 md:max-lg:pointer-events-none md:max-lg:max-w-none md:max-lg:justify-between md:max-lg:gap-0 md:max-lg:px-3 md:max-lg:py-0">
             {blockedReason && (
                 <div role="status" className="pointer-events-none absolute inset-x-2 bottom-full z-10 rounded-[3px] border border-[var(--rg-line)] bg-[var(--rg-panel)] px-2 py-1 text-center text-xs text-[var(--rg-strong)] shadow-md">
                     {blockedReason}
@@ -268,7 +269,7 @@ export default function TouchPad({
             <div className="pointer-events-auto flex min-w-0 flex-1 flex-col gap-1 md:max-lg:w-[min(42vw,360px)] md:max-lg:flex-none">
                 <div className="grid min-w-0 grid-cols-3 content-start gap-1">
                     {actions.map((a) => (
-                        <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={a.off ?? a.hint}>
+                        <Key key={a.label} wide hot={a.hot && !a.off} onPress={a.on} disabled={!!a.off} onBlocked={() => setBlockedReason(a.off ?? "")} title={`${a.label} — ${a.off ?? a.hint ?? a.detail ?? ""}`}>
                             <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 leading-tight">
                                 <span className="flex max-w-full items-center gap-1">
                                     <span className="truncate">{a.label}</span>
