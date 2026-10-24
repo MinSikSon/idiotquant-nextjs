@@ -220,7 +220,7 @@ export interface Item {
     corpseTurn?: number;
     /** 제물 가치 계산에 쓰는 몬스터 레벨. */
     corpseValue?: number;
-    /** 사체의 무게(au). 제물 가치와 별개로 종별 물리 무게를 보존한다. */
+    /** 사체의 원래 무게(au). 실제 운반 무게는 itemWeight에서 10%로 계산한다. */
     corpseWeight?: number;
     /** 통조림으로 보존된 시체는 상하지 않으며 제물·부활 대상이 되지 않는다. */
     corpseTinned?: boolean;

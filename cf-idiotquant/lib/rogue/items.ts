@@ -370,10 +370,11 @@ const RELIC_WEIGHT: Record<string, number> = {
 };
 
 export function itemWeight(it: Item): number {
+    // 원래 무게는 저장에 남기고 운반할 때만 10%로 센다. 기존 시체에도 같은 비율을 적용한다.
     const unit = it.kind === "weapon" ? (WEAPON_WEIGHT[it.type] ?? 40)
         : it.kind === "armor" ? (ARMOR_WEIGHT[it.type] ?? 200)
         : it.kind === "gold" ? Math.floor((it.count + 50) / 100)
-        : it.kind === "food" ? it.corpseOf ? it.corpseTinned ? 10 : (it.corpseWeight ?? 0) : 20
+        : it.kind === "food" ? it.corpseOf ? it.corpseTinned ? 10 : Math.ceil((it.corpseWeight ?? 0) / 10) : 20
         : it.kind === "potion" ? 20
         : it.kind === "scroll" ? 5
         : it.kind === "spellbook" ? 50

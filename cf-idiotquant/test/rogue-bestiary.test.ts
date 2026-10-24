@@ -13,11 +13,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { bestiaryProgress, bestiaryRows, bestiarySlots, newGame, perform, survey } from "@/lib/rogue/game";
-import { makeItem } from "@/lib/rogue/items";
-import { addToPack, carryCapacity, makeHero, packWeight } from "@/lib/rogue/hero";
+import { itemWeight, makeItem } from "@/lib/rogue/items";
+import { addToPack, encumbrance, makeHero, packWeight } from "@/lib/rogue/hero";
 import { MONSTERS, depthRange, randomMonsterChar, spawnMonster } from "@/lib/rogue/monsters";
 import { defenseOf } from "@/lib/rogue/items";
 import { Rng } from "@/lib/rogue/rng";
+import { deserialize, serialize } from "@/lib/rogue/storage";
 import { idx, type GameState } from "@/lib/rogue/types";
 
 /** 내 옆에 원하는 놈을 한 마리 세운다. 그 칸은 반드시 비운다. */
@@ -83,51 +84,77 @@ test("잡기 전에는 속을 안 보이고, 한 마리 잡으면 알게 된다"
     }
 });
 
-test("NetHack 시체 무게와 직업별 기본 운반 한도를 반영한다", () => {
-    assert.equal(MONSTERS.J.corpseWeight, 1300, "재버워크는 NetHack 기준 1,300 aum이어야 한다");
-    assert.equal(MONSTERS.T.corpseWeight, 800, "일반 트롤은 NetHack 기준 800 aum이어야 한다");
+test("시체 운반 무게는 원래의 10%이며 모든 직업이 시작 장비와 함께 옮길 수 있다", () => {
+    assert.equal(MONSTERS.J.corpseWeight, 1300, "종별 원래 무게는 보존한다");
+    assert.equal(MONSTERS.T.corpseWeight, 800, "종별 원래 무게는 보존한다");
 
-    const origins = ["knight", "rogue", "alchemist", "scholar", "ranger", "archeologist", "elementalist"] as const;
-    const cannotPick = (origin: typeof origins[number], weight: number) => {
-        const hero = makeHero(new Rng(1), (() => { let id = 1; return () => id++; })(), origin);
+    // ── 작은 시체부터 용까지 같은 비율, 여러 구는 개수만큼 센다
+    for (const [raw, expected] of [[0, 0], [1, 1], [30, 3], [850, 85], [1300, 130], [1800, 180], [4500, 450]]) {
         const corpse = makeItem("food", "food", 999, -1, -1);
         corpse.corpseOf = "검증용 시체";
-        corpse.corpseWeight = weight;
-        return addToPack(hero, corpse) === null;
-    };
-
-    // 기본 능력치와 시작 장비를 그대로 둔 새 캐릭터 기준. 중간에 주운 짐이 있으면
-    // 이보다 더 가벼운 시체도 못 들 수 있다.
-    const expected: Record<typeof origins[number], { emu: boolean; yeti: boolean; jabberwock: boolean; dragon: boolean }> = {
-        knight:       { emu: false, yeti: false, jabberwock: false, dragon: true },
-        rogue:        { emu: true,  yeti: false, jabberwock: false, dragon: true },
-        alchemist:    { emu: true,  yeti: false, jabberwock: false, dragon: true },
-        scholar:      { emu: true,  yeti: true,  jabberwock: false, dragon: true },
-        ranger:       { emu: false, yeti: false, jabberwock: false, dragon: true },
-        archeologist: { emu: false, yeti: false, jabberwock: false, dragon: true },
-        elementalist: { emu: true,  yeti: true,  jabberwock: false, dragon: true },
-    };
-    for (const origin of origins) {
-        assert.equal(cannotPick(origin, MONSTERS.E.corpseWeight!), expected[origin].emu, `${origin}: 에뮤 시체 운반 판정`);
-        assert.equal(cannotPick(origin, MONSTERS.Y.corpseWeight!), expected[origin].yeti, `${origin}: 예티 시체 운반 판정`);
-        assert.equal(cannotPick(origin, MONSTERS.J.corpseWeight!), expected[origin].jabberwock, `${origin}: 재버워크 시체 운반 판정`);
-        assert.equal(cannotPick(origin, MONSTERS.D.corpseWeight!), expected[origin].dragon, `${origin}: 용 시체 운반 판정`);
+        corpse.corpseWeight = raw;
+        assert.equal(itemWeight(corpse), expected, `원래 무게 ${raw}의 운반 무게`);
+        corpse.count = 3;
+        assert.equal(itemWeight(corpse), expected * 3, "시체 더미는 한 구의 무게 × 개수");
+        corpse.corpseTinned = true;
+        assert.equal(itemWeight(corpse), 30, "통조림은 여전히 한 개당 10");
     }
-    for (const origin of origins) {
-        assert.equal(cannotPick(origin, MONSTERS.C.corpseWeight!), true, `${origin}: 켄타우로스 시체 운반 판정`);
-    }
+    assert.equal(itemWeight(makeItem("food", "food", 998, -1, -1)), 20, "일반 식량 무게는 유지한다");
 
+    // ── 기본 장비를 버리지 않아도 시체를 주울 수 있고, 에뮤 한 구는 과적을 만들지 않는다
+    const origins = ["knight", "rogue", "alchemist", "scholar", "ranger", "archeologist", "elementalist"] as const;
     for (const origin of origins) {
         for (const def of Object.values(MONSTERS)) {
             if (!def.corpseWeight) continue;
             const hero = makeHero(new Rng(1), (() => { let id = 1; return () => id++; })(), origin);
+            const before = packWeight(hero);
             const corpse = makeItem("food", "food", 999, -1, -1);
             corpse.corpseOf = def.name;
             corpse.corpseWeight = def.corpseWeight;
-            const overloaded = packWeight(hero) + def.corpseWeight >= carryCapacity(hero) * 3;
-            assert.equal(addToPack(hero, corpse) === null, overloaded, `${origin}: ${def.name} 시체의 무게 한도`);
+            assert.ok(addToPack(hero, corpse), `${origin}: ${def.name} 시체를 시작 장비와 함께 운반한다`);
+            assert.equal(packWeight(hero), before + Math.ceil(def.corpseWeight / 10), "배낭에도 줄인 무게를 한 번만 적용한다");
+            if (def.ch === "E") assert.equal(encumbrance(hero), 0, `${origin}: 에뮤 한 구에 과적되지 않는다`);
         }
     }
+
+    // ── 실제 줍기 명령도 같은 무게를 쓰고 추가 과적 없이 턴을 진행한다
+    let pickupState = newGame(302);
+    const picker = pickupState.heroes[0];
+    const beforePickup = packWeight(picker);
+    const emu = makeItem("food", "food", pickupState.nextItemId++, picker.x, picker.y);
+    emu.corpseOf = "에뮤";
+    emu.corpseWeight = 1800;
+    emu.corpseTurn = pickupState.turn;
+    emu.corpseValue = 1;
+    pickupState.level.items = [emu];
+    pickupState.level.monsters = [];
+    pickupState = perform(pickupState, { t: "pickup" });
+    assert.ok(pickupState.heroes[0].pack.some((it) => it.id === emu.id), "줍기 명령으로 시체를 배낭에 담는다");
+    assert.equal(packWeight(pickupState.heroes[0]), beforePickup + 180, "실제 줍기도 줄인 무게를 적용한다");
+    assert.equal(encumbrance(pickupState.heroes[0]), 0, "실제 줍기 뒤에도 과적되지 않는다");
+
+    // ── 기존 저장의 원래 무게도 곧바로 줄여 읽고, 다시 저장해도 반복 축소하지 않는다
+    const state = newGame(301);
+    const corpse = makeItem("food", "food", state.nextItemId++, -1, -1);
+    corpse.corpseOf = "용";
+    corpse.corpseWeight = 4500;
+    corpse.corpseValue = 10;
+    corpse.corpseTurn = state.turn;
+    state.heroes[0].pack = [corpse];
+    let restored: GameState | null = deserialize(serialize(state));
+    assert.ok(restored, "시체를 든 기존 저장을 읽는다");
+    for (let i = 0; i < 2; i++) {
+        const hero: GameState["heroes"][number] = restored!.heroes[0];
+        assert.equal(hero.pack[0].corpseWeight, 4500, "저장에는 원래 무게를 보존한다");
+        assert.equal(packWeight(hero), 450, "저장 재개 시 운반 무게는 10%를 한 번만 적용한다");
+        restored = deserialize(serialize(restored!));
+        assert.ok(restored, "다시 저장한 판도 읽는다");
+    }
+    delete corpse.corpseWeight;
+    const legacy = deserialize(serialize(state));
+    assert.ok(legacy, "시체 무게 필드가 없던 저장도 읽는다");
+    assert.equal(legacy.heroes[0].pack[0].corpseWeight, 4500, "옛 저장은 종별 원래 무게를 채운다");
+    assert.equal(packWeight(legacy.heroes[0]), 450, "옛 저장에서 복원한 무게도 10%만 센다");
 });
 
 test("무엇으로 잡았든 도감에 오른다 — 도망친 놈은 아니다", () => {
