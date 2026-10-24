@@ -525,11 +525,11 @@ export function NavbarWithSimpleLinks() {
           </Link>
         </div>
         <div ref={headerCompact ? pageHeader?.setTitleTarget : null} className={cn("min-w-0 flex-1 pr-2", !(pageHeader?.active && headerCompact) && "hidden")} />
-        <div ref={toolsRef} className={cn("relative shrink-0", !(pageHeader?.active && headerCompact) && "hidden")}>
+        <div ref={toolsRef} className={cn("shrink-0", !(pageHeader?.active && headerCompact) && "hidden")}>
           <button type="button" aria-label="페이지 및 서비스 도구" aria-expanded={toolsOpen} aria-controls="mobile-page-tools" onClick={() => setToolsOpen(value => !value)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-neutral-200/60 dark:hover:bg-neutral-800">
             <MoreHorizontal size={20} />
           </button>
-          <div id="mobile-page-tools" hidden={!toolsOpen} className="absolute right-0 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
+          <div id="mobile-page-tools" hidden={!toolsOpen} className="absolute right-3 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
             <div ref={pageHeader?.setActionsTarget} />
           </div>
         </div>
