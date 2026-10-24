@@ -11,7 +11,7 @@ import { applyFilters, sortList, roeOf, grahamOk, marketOf, sectorOf, isPreferre
 /** 아무것도 안 거르는 기본값. 테스트마다 한 조건씩만 켠다. */
 const none = (over: Partial<ScreenerFilters> = {}): ScreenerFilters => ({
     strategies: new Set(), mode: "OR", q: "",
-    excludeHoldings: false, excludeDeficit: false, excludePreferred: false,
+    excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false,
     excludeHalted: false, excludeManaged: false, excludeDelisting: false,
     sectors: new Set(), markets: new Set(),
     maxW52Pos: 0, minTrAmt: 0, minMarketCap: 0,
@@ -221,4 +221,40 @@ test("영문명 누락은 표시명으로 판별하고 국내 종목은 영문�
     assert.equal(applyFilters(list, none({ country: "US", excludeHoldings: true, excludePreferred: true })).length, 0);
     const kr = [stock({ name: "삼성전자", eng_name: "Example Holdings Preferred" })];
     assert.equal(applyFilters(kr, none({ excludeHoldings: true, excludePreferred: true })).length, 1);
+});
+
+test("ADR 제외는 미국 영문명의 ADR·ADS·미국예탁주식 표기를 판별한다", () => {
+    const adrNames = [
+        "Example Inc. Sponsored ADR",
+        "Example Inc. ADRs",
+        "Example Inc. ADS",
+        "Example Inc. ADSs (each representing two ordinary shares)",
+        "Example Inc. American Depositary Shares",
+        "Example Inc. American Depository Share",
+        "Example Inc. American Depositary Receipts",
+        "Example Inc. american depository receipt",
+    ];
+    const adrs = adrNames.map((eng_name, index) => stock({ ticker: `ADR${index}`, name: `해외기업${index}`, eng_name }));
+    const common = stock({ ticker: "COMMON", name: "일반 회사", eng_name: "Example Ordinary Shares" });
+    const list = [common, ...adrs];
+    assert.deepEqual(applyFilters(list, none({ country: "US", excludeAdr: true })), [common]);
+    assert.equal(applyFilters(list, none({ country: "US" })).length, list.length);
+    assert.equal(applyFilters(list, none({ country: "KR", excludeAdr: true })).length, list.length);
+});
+
+test("ADR 제외는 영문명 누락 시 표시명을 쓰고 회사명·우선주 예탁주식은 남긴다", () => {
+    const ordinary = [
+        stock({ name: "ADS-TEC ENERGY PLC Ordinary Shares" }),
+        stock({ name: "ADTRAN Holdings Inc. Common Stock" }),
+        stock({ name: "Example Depositary Shares Representing Preferred Stock" }),
+        stock({ name: "Example American Corporation Common Stock" }),
+        stock({ name: "영문명 미수집", eng_name: null }),
+    ];
+    const list = [
+        ...ordinary,
+        stock({ name: "Example Sponsored ADR", eng_name: " " }),
+        stock({ name: "Example ADS", eng_name: null }),
+    ];
+    assert.deepEqual(applyFilters(list, none({ country: "US", excludeAdr: true })), ordinary);
+    assert.deepEqual(applyFilters(list, none({ country: "US", excludeAdr: true, q: "ADS-TEC" })), [ordinary[0]]);
 });
