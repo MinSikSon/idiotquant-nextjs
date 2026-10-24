@@ -76,6 +76,7 @@ export interface ScreenerFilters {
     excludeHoldings: boolean;
     excludeDeficit: boolean;
     excludePreferred: boolean;
+    excludeAdr: boolean;
     excludeHalted: boolean;
     excludeManaged: boolean;
     excludeDelisting: boolean;
@@ -103,7 +104,7 @@ export const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = 
     sector:    { sectors: new Set<string>() },
     w52:       { maxW52Pos: 0 },
     liquidity: { minTrAmt: 0 },
-    exclude:   { excludeHoldings: false, excludePreferred: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false },
+    exclude:   { excludeHoldings: false, excludePreferred: false, excludeAdr: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false },
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -134,6 +135,10 @@ export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): R
     if (f.excludeHoldings)  out = out.filter(item => !/홀딩스|\bholdings?\b/i.test(filterNameOf(item, country)));
     if (f.excludeDeficit)   out = out.filter(profitableScanStock);
     if (f.excludePreferred) out = out.filter(item => !isPreferredStock(filterNameOf(item, country), item.ticker ?? "", country));
+    // ADS-TEC 같은 회사명이나 미국 우선주의 Depositary Shares는 ADR로 분류하지 않는다.
+    if (country === "US" && f.excludeAdr) out = out.filter(item =>
+        !/\bAmerican\s+depos(?:itary|itory)\s+(?:shares?|receipts?)\b|(?:^|\s)(?:ADRs?|ADSs?)(?=$|[\s(,.;])/i.test(filterNameOf(item, country))
+    );
     if (f.minMarketCap > 0) out = out.filter(item => scanMarketCap(item, country) >= f.minMarketCap);
     if (f.maxPbr > 0)  out = out.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= f.maxPbr);
     if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer && (country !== "US" || profitableScanStock(item)));
