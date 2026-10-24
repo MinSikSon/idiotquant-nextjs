@@ -384,7 +384,7 @@ export function SectionPanel({ id, children, className, summary, hasError }: { i
     <section
       id={id}
       className={cn(
-        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-2.5 sm:p-3 md:p-6",
+        "bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark p-2 sm:p-3 md:p-6",
         "animate-in fade-in duration-500",
         className
       )}

@@ -5,6 +5,8 @@
   --radius-control: 6px;
   --brand-ink: 41 40 39;
   --brand-ink-hover: 66 64 61;
+  --balance-separator: #e3e0dc;
+  --balance-kpi: #ffffff;
   min-height: 100vh;
   background: #f2f0eb;
   color: #292827;
@@ -14,6 +16,8 @@
 :global(.dark) .page {
   --brand-ink: 238 236 231;
   --brand-ink-hover: 255 255 255;
+  --balance-separator: #393638;
+  --balance-kpi: #242122;
   background: #1b1819;
   color: #eeece7;
 }
@@ -23,28 +27,26 @@
   letter-spacing: -0.025em;
 }
 
-/* Mobile uses a single quiet ledger instead of four floating KPI cards. */
+/* Mobile KPI cards share a thin theme-aware divider instead of exposing a white grid gap. */
 @media (max-width: 479px) {
   .page :global(#section-kpi) {
+    gap: 1px;
     overflow: hidden;
-    border: 1px solid #e3e3e2;
+    border: 1px solid var(--balance-separator);
     border-radius: 12px;
-    background: white;
+    background: var(--balance-separator);
   }
 
   .page :global(#section-kpi) > div {
-    min-height: 44px;
+    min-height: 58px;
     border: 0;
     border-radius: 0;
+    background: var(--balance-kpi);
+    padding: 8px 10px;
   }
 
   .page :global(#section-kpi) > div + div {
-    border-top: 1px solid #e3e3e2;
-  }
-
-  :global(.dark) .page :global(#section-kpi),
-  :global(.dark) .page :global(#section-kpi) > div + div {
-    border-color: #393638;
+    border-top: 0;
   }
 }
 
