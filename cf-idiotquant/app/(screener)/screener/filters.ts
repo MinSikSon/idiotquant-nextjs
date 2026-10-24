@@ -62,6 +62,10 @@ export function resolveStrategies(item: Record<string, any>): string[] {
 export const primaryStrategyOf = (i: any): string =>
     STRATEGY_PRESETS.find(p => p.clientFilter?.(i))?.id ?? resolveStrategies(i)[0] ?? "";
 
+// 미국 종목은 한글 표시명 대신 영문 원명으로 종목 유형을 판별한다.
+const filterNameOf = (item: { eng_name?: string; name?: string }, country: "KR" | "US"): string =>
+    (country === "US" ? item.eng_name?.trim() : "") || item.name || "";
+
 /* ── 필터 ─────────────────────────────────────────────────────── */
 
 export interface ScreenerFilters {
@@ -122,13 +126,14 @@ export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): R
         const q = f.q.toLowerCase();
         out = out.filter(item =>
             (item.ticker ?? "").toLowerCase().includes(q) ||
-            (item.name ?? "").toLowerCase().includes(q)
+            (item.name ?? "").toLowerCase().includes(q) ||
+            filterNameOf(item, country).toLowerCase().includes(q)
         );
     }
 
-    if (f.excludeHoldings)  out = out.filter(item => !/홀딩스|\bholdings?\b/i.test(item.name ?? ""));
+    if (f.excludeHoldings)  out = out.filter(item => !/홀딩스|\bholdings?\b/i.test(filterNameOf(item, country)));
     if (f.excludeDeficit)   out = out.filter(profitableScanStock);
-    if (f.excludePreferred) out = out.filter(item => !isPreferredStock(item.name ?? "", item.ticker ?? "", country));
+    if (f.excludePreferred) out = out.filter(item => !isPreferredStock(filterNameOf(item, country), item.ticker ?? "", country));
     if (f.minMarketCap > 0) out = out.filter(item => scanMarketCap(item, country) >= f.minMarketCap);
     if (f.maxPbr > 0)  out = out.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= f.maxPbr);
     if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer && (country !== "US" || profitableScanStock(item)));
