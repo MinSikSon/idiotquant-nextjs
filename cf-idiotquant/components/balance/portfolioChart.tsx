@@ -78,7 +78,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
 
   if (pieData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-3">
+      <div className="flex flex-col items-center justify-center py-5 md:py-12 gap-3">
         <div className="p-4 rounded-2xl bg-surface-canvas dark:bg-surface-dark-muted">
           <InboxIcon size={24} className="text-neutral-400" />
         </div>
@@ -90,17 +90,17 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
   const totalValue = pieData.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 md:gap-6 items-start">
+    <div className="flex flex-row gap-2 md:gap-6 items-start">
       {/* 파이차트 */}
-      <div className="w-full sm:flex-1 sm:min-w-0">
-        <ResponsiveContainer width="100%" height={260}>
+      <div className="w-28 shrink-0 sm:w-full sm:flex-1 sm:min-w-0 h-32 sm:h-[260px]">
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={95}
+              innerRadius="50%"
+              outerRadius="80%"
               dataKey="value"
               startAngle={90}
               endAngle={-270}
@@ -115,7 +115,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
       </div>
 
       {/* 종목별 비중 리스트 */}
-      <div className="w-full sm:flex-1 sm:min-w-0 space-y-1 sm:space-y-2.5 sm:max-h-[260px] sm:overflow-y-auto">
+      <div className="min-w-0 flex-1 space-y-1 sm:space-y-2.5 max-h-48 sm:max-h-[260px] overflow-y-auto">
         {pieData.map((item, index) => {
           const percent = (item.value / totalValue) * 100;
           const formatter = fmtKrw;
@@ -127,7 +127,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
                 style={{ backgroundColor: colors[index % colors.length] }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-neutral-900 dark:text-white break-words">
+                <p className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white break-words">
                   {item.name}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
@@ -166,7 +166,7 @@ function ProfitBarChart({ output1, isUs }: PortfolioPieChartProps) {
 
   if (barData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-3">
+      <div className="flex flex-col items-center justify-center py-5 md:py-12 gap-3">
         <div className="p-4 rounded-2xl bg-surface-canvas dark:bg-surface-dark-muted">
           <InboxIcon size={24} className="text-neutral-400" />
         </div>
@@ -177,7 +177,7 @@ function ProfitBarChart({ output1, isUs }: PortfolioPieChartProps) {
 
   return (
     <div className="w-full overflow-x-auto">
-    <div style={{ minWidth: 320 }}>
+    <div className="min-w-0">
     <ResponsiveContainer width="100%" height={Math.max(barData.length * 34 + 40, 240)}>
       <BarChart
         data={barData}

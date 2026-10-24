@@ -183,14 +183,14 @@ export function KpiCard({ label, value, sub, icon, valueColor = "text-neutral-90
   if (value === null) return <KpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-2.5 py-2 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3 min-[480px]:p-3 md:p-5">
+    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 p-2.5 md:gap-3 md:p-5">
 
-      <div className="flex items-center gap-2 min-[480px]:justify-between">
-        <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
-        <div aria-hidden="true" className="order-first shrink-0 text-neutral-500 min-[480px]:order-last dark:text-neutral-400">{icon}</div>
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[11px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
+        <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-500 dark:text-neutral-400">{icon}</div>
       </div>
-      <div className="min-w-0 text-right min-[480px]:text-left">
-        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-semibold tracking-tight tabular-nums break-words", valueColor)}>{value}</div>
+      <div className="min-w-0 text-left">
+        <div className={cn("text-[clamp(0.8rem,3.6vw,1.125rem)] md:text-2xl font-semibold tracking-tight tabular-nums break-words", valueColor)}>{value}</div>
       </div>
     </div>
   );
@@ -211,14 +211,14 @@ export function UsdKpiCard({
   if (loading || mainValue === null) return <UsdKpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl px-2.5 py-2 min-[480px]:p-3 md:p-5 shadow-none overflow-hidden grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 min-[480px]:flex min-[480px]:flex-col min-[480px]:items-stretch min-[480px]:justify-between min-[480px]:gap-3">
+    <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-2.5 md:p-5 shadow-none overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 md:gap-3">
 
-      <div className="flex items-center gap-2 min-[480px]:justify-between">
-        <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
-        <div aria-hidden="true" className="order-first shrink-0 text-neutral-500 min-[480px]:order-last dark:text-neutral-400">{icon}</div>
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[11px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
+        <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-500 dark:text-neutral-400">{icon}</div>
       </div>
-      <div className="min-w-0 text-right min-[480px]:text-left">
-        <div className={cn("text-base min-[480px]:text-xl sm:text-2xl font-semibold tracking-tight tabular-nums break-words", mainColor)}>{mainValue}</div>
+      <div className="min-w-0 text-left">
+        <div className={cn("text-[clamp(0.8rem,3.6vw,1.125rem)] md:text-2xl font-semibold tracking-tight tabular-nums break-words", mainColor)}>{mainValue}</div>
 
       </div>
     </div>
@@ -327,14 +327,14 @@ export function pnlValueColor(positive: boolean) {
 // =========================================================================
 export function KpiCardSkeleton() {
   return (
-    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+    <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 p-2.5 md:gap-3 md:p-5">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
       <div className="flex items-center justify-between">
         <div className="h-3 w-20 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
-        <div className="h-8 w-8 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
+        <div className="hidden md:block h-8 w-8 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
       </div>
       <div>
-        <div className="h-7 w-32 bg-neutral-200 dark:bg-surface-dark-elevated rounded-lg animate-pulse mb-2" />
+        <div className="h-5 w-3/4 md:h-7 md:w-32 bg-neutral-200 dark:bg-surface-dark-elevated rounded-lg animate-pulse mb-2" />
         <div className="h-3 w-24 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
       </div>
     </div>
@@ -347,10 +347,10 @@ export function UsdKpiCardSkeleton() {
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
       <div className="flex items-center justify-between">
         <div className="h-3 w-20 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
-        <div className="h-8 w-8 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
+        <div className="hidden md:block h-8 w-8 bg-neutral-200 dark:bg-surface-dark-elevated rounded-xl animate-pulse" />
       </div>
       <div>
-        <div className="h-7 w-32 bg-neutral-200 dark:bg-surface-dark-elevated rounded-lg animate-pulse mb-2" />
+        <div className="h-5 w-3/4 md:h-7 md:w-32 bg-neutral-200 dark:bg-surface-dark-elevated rounded-lg animate-pulse mb-2" />
         <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark">
           <div className="h-3 w-24 bg-neutral-200 dark:bg-surface-dark-elevated rounded animate-pulse" />
         </div>
@@ -361,8 +361,8 @@ export function UsdKpiCardSkeleton() {
 
 export function ChartSectionSkeleton() {
   return (
-    <div className="flex flex-col sm:flex-row gap-6 items-center py-8">
-      <div className="w-48 h-48 rounded-full bg-surface-canvas dark:bg-surface-dark-muted animate-pulse shrink-0" />
+    <div className="flex gap-3 md:gap-6 items-center py-3 md:py-8">
+      <div className="w-28 h-28 md:w-48 md:h-48 rounded-full bg-surface-canvas dark:bg-surface-dark-muted animate-pulse shrink-0" />
       <div className="flex-1 space-y-3 w-full">
         {[1, 2, 3, 4, 5].map(i => (
           <div key={i} className="flex items-center gap-3">

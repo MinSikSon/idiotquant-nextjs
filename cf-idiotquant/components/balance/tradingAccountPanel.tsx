@@ -73,7 +73,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
     }
   };
 
-  const inputCls = "w-full rounded-lg border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-3 py-2 text-sm";
+  const inputCls = "w-full min-w-0 min-h-11 rounded-lg border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-3 py-2 text-base md:text-sm";
   const exists = !!info?.exists;
 
   return (
@@ -92,23 +92,23 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
         <span className="text-[11px] tabular-nums text-neutral-400">{balanceKey || "-"}</span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1">
+      <div className="grid grid-cols-2 gap-2 md:gap-3">
+        <label className="min-w-0 col-span-2 sm:col-span-1 flex flex-col gap-1">
           <span className="text-[11px] text-neutral-500">App Key</span>
           <input className={inputCls} value={appkey} onChange={e => setAppkey(e.target.value)}
             placeholder={info?.appkey_masked || "KIS App Key"} autoComplete="off" />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="min-w-0 col-span-2 sm:col-span-1 flex flex-col gap-1">
           <span className="text-[11px] text-neutral-500">App Secret</span>
           <input type="password" className={inputCls} value={appsecret} onChange={e => setAppsecret(e.target.value)}
             placeholder={info?.has_secret ? "●●●● 저장됨" : "KIS App Secret"} autoComplete="new-password" />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="min-w-0 flex flex-col gap-1">
           <span className="text-[11px] text-neutral-500">계좌번호</span>
           <input className={inputCls} value={accountNumber} onChange={e => setAccountNumber(e.target.value)}
             placeholder="예: 50123456" autoComplete="off" />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="min-w-0 flex flex-col gap-1">
           <span className="text-[11px] text-neutral-500">계좌 기본 월 예산(원)</span>
           <input type="number" min={0} step={100000} className={inputCls} value={budget} onChange={e => setBudget(e.target.value)}
             placeholder="예: 2000000" />

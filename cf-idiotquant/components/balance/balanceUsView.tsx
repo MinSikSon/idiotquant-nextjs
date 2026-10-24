@@ -72,6 +72,7 @@ const PortfolioChartSection = dynamic(
   { ssr: false, loading: () => <ChartSectionSkeleton /> }
 );
 import { type NavSection } from "@/components/balance/sectionNav";
+import { MobileOrderList } from "./mobileOrderList";
 import { BalanceShell } from "@/components/balance/balanceShell";
 import {
   useToast,
@@ -526,7 +527,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-kpi",
           node: (
             <>
-              <section id="section-kpi" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-1.5 md:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+              <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 md:gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <UsdKpiCard
                   label="총 자산 (USD)"
                   mainValue={isFirstLoad ? null : fmtUsd(totalAssetUsd)}
@@ -775,8 +776,29 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 }
               />
 
-              <p className="mb-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">자동매매 접수 기록과 실제 체결 결과는 다를 수 있습니다. <span className="block sm:inline">좌우로 스크롤해 상세 항목을 확인하세요.</span></p>
-              <div tabIndex={0} role="region" aria-label="증권사 주문 상세 표" className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-border-subtle-dark">
+              <p className="mb-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">자동매매 접수 기록과 실제 체결 결과는 다를 수 있습니다. <span className="block md:hidden">주문을 눌러 상세 항목을 확인하세요.</span><span className="hidden md:inline">좌우로 스크롤해 상세 항목을 확인하세요.</span></p>
+              <MobileOrderList
+                orders={(viewerTab === "ccnl" ? kiCcnl.output ?? [] : kiNccs.output ?? []).map(item => {
+                    const buy = item.sll_buy_dvsn_cd_name?.includes("매수") || item.sll_buy_dvsn_cd === "02";
+                    return {
+                      id: item.odno, name: item.prdt_name, buy,
+                      side: item.sll_buy_dvsn_cd_name || (buy ? "매수" : "매도"),
+                      time: formatTime(item.ord_tmd),
+                      price: Number(item.ft_ord_unpr3) > 0 ? fmtUsd(item.ft_ord_unpr3) : "—",
+                      quantity: `주문 ${item.ft_ord_qty || 0}주 · 체결 ${item.ft_ccld_qty || 0}주`,
+                      details: [
+                        { label: "주문번호", value: item.odno || "—" },
+                        { label: "시장 · 통화", value: [item.tr_mket_name, item.tr_crcy_cd].filter(Boolean).join(" · ") || "—" },
+                        { label: "체결가", value: Number(item.ft_ccld_unpr3) > 0 ? fmtUsd(item.ft_ccld_unpr3) : "—" },
+                        { label: "체결금액", value: Number(item.ft_ccld_amt3) > 0 ? fmtUsd(item.ft_ccld_amt3) : "—" },
+                        { label: "처리상태", value: item.prcs_stat_name || (viewerTab === "nccs" ? "대기" : "—") },
+                        { label: "미체결", value: `${item.nccs_qty || 0}주` },
+                      ],
+                    };
+                })}
+                emptyMessage={viewerTab === "ccnl" ? "금일 체결된 거래 내역이 없습니다." : "현재 미체결 주문이 없습니다."}
+              />
+              <div tabIndex={0} role="region" aria-label="증권사 주문 상세 표" className="hidden md:block overflow-x-auto rounded-xl border border-neutral-100 dark:border-border-subtle-dark">
                 <table className="w-full text-sm text-left min-w-[860px]">
                   <TableHeader headers={[
                     { label: "주문시각 / 번호" },
