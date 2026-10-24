@@ -216,6 +216,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     return (
       <Link
         href="/profile"
+        aria-label="내 계정"
         className="w-7 h-7 rounded-xl bg-neutral-200 dark:bg-surface-dark-elevated flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-brand/50 transition-all"
       >
         {session?.user?.name?.[0] ?? "U"}
@@ -516,33 +517,26 @@ export function NavbarWithSimpleLinks() {
       <header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
         barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
-        <div className={cn("flex items-center gap-1.5 min-w-0", pageHeader?.active && "shrink-0")}>
+        <div className={cn("flex flex-1 items-center gap-1.5 min-w-0 pr-3", pageHeader?.active && headerCompact && "hidden")}>
           <Link href="/" aria-label="IdiotQuant 홈" className="flex min-w-0 items-center gap-1.5">
-            {pageHeader?.active ? <Home size={18} className="m-3" /> : headerCompact ? <span className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{pageLabel}</span> : <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              idiot<span className={inGame ? "text-[var(--rg-gold)]" : "text-brand-ink"}>{inGame ? "games" : "quant"}</span>
+            {headerCompact ? <span className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{pageLabel}</span> : <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+              idiot<span className="text-brand-ink">quant</span>
             </span>}
           </Link>
         </div>
-        <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1 px-2", !pageHeader?.active && "hidden")} />
-        <div ref={toolsRef} className={cn("relative shrink-0", !pageHeader?.active && "hidden")}>
+        <div ref={headerCompact ? pageHeader?.setTitleTarget : null} className={cn("min-w-0 flex-1 pr-2", !(pageHeader?.active && headerCompact) && "hidden")} />
+        <div ref={toolsRef} className={cn("relative shrink-0", !(pageHeader?.active && headerCompact) && "hidden")}>
           <button type="button" aria-label="페이지 및 서비스 도구" aria-expanded={toolsOpen} aria-controls="mobile-page-tools" onClick={() => setToolsOpen(value => !value)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-neutral-200/60 dark:hover:bg-neutral-800">
             <MoreHorizontal size={20} />
           </button>
           <div id="mobile-page-tools" hidden={!toolsOpen} className="absolute right-0 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
             <div ref={pageHeader?.setActionsTarget} />
-            {pageHeader?.active && <div className="mt-3 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-700">
-              <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
-              <ThemeChanger />
-              <MiniSession session={session} status={status} />
-            </div>}
           </div>
         </div>
-        <div className={cn("flex items-center gap-2 shrink-0", pageHeader?.active && "hidden")}>
-          {!pageHeader?.active && <>
-          {!inGame && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
+        <div className="flex items-center gap-2 shrink-0">
+          <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
           <ThemeChanger />
           <MiniSession session={session} status={status} />
-          </>}
         </div>
       </header>
 
