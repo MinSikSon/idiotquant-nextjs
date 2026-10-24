@@ -2223,8 +2223,10 @@ export default function Rogue() {
                 type="button"
                 onClick={() => setSheet("log")}
                 aria-label="기록 열기 — 지나온 메시지"
+                data-game-log
                 className="grid h-[5rem] w-full shrink-0 grid-rows-4 overflow-hidden border-b border-[var(--rg-line-faint)] bg-[var(--rg-bg)] py-0.5 text-left font-[family-name:var(--font-plex-mono)] text-[12px] text-[var(--rg-msg)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] sm:text-[13px]"
             >
+                {recent.length === 0 && <span className="col-span-1 row-span-4 flex items-center justify-between gap-3 px-3 text-[var(--rg-faint)]"><span><span className="text-[var(--rg-gold)]">&gt; </span>던전이 당신의 첫 걸음을 기다립니다.</span><span className="hidden text-[10px] sm:inline">기록 열기 ↗</span></span>}
                 {recent.map((m, i) => (
                     <span key={`${state.turn}-${i}`} className={`flex min-w-0 items-center gap-1.5 overflow-hidden border-b border-[var(--rg-line-faint)] px-2 last:border-b-0 ${isImportantMessage(m) ? "font-bold text-[var(--rg-strong)]" : ""}`}>
                         <span aria-hidden className="shrink-0 text-[var(--rg-gold)]">{i === 0 ? ">" : ":"}</span>
@@ -2400,7 +2402,8 @@ export default function Rogue() {
                 return (
                     <div
                         key={i}
-                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.1] text-[var(--rg-text)] [&_*]:!text-[var(--rg-text)] sm:text-[13px] ${expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]" : "max-h-[3.5rem] flex-wrap whitespace-normal overflow-x-hidden overflow-y-auto [scrollbar-width:thin]"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
+                        data-game-status
+                className={`flex h-auto shrink-0 content-start items-center gap-x-[1ch] px-2 py-1 font-[family-name:var(--font-plex-mono)] text-[12px] leading-[1.1] text-[var(--rg-text)] sm:text-[13px] ${expandedPartyStats !== i ? "flex-nowrap whitespace-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]" : "max-h-[3.5rem] flex-wrap whitespace-normal overflow-x-hidden overflow-y-auto [scrollbar-width:thin]"} ${i === 0 ? "border-t border-[var(--rg-line-faint)]" : "pt-0"}`}
                     >
                         {coop && (
                             <button
@@ -2451,8 +2454,8 @@ export default function Rogue() {
                         </div>}
                         <button type="button" onClick={() => { setStatusKind("dlvl"); setSheetOwner(i); setSheet("status"); }} className="shrink-0 hover:underline">Dlvl:{level.depth}</button>
                         <button type="button" onClick={() => { setStatusKind("gold"); setSheetOwner(i); setSheet("status"); }} className={`${statChip} shrink-0 text-[var(--rg-gold)]`}>$:{h.gold}</button>
-                        <span className={`shrink-0 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
-                            HP:{h.hp}({h.maxHp}){h.hp <= 0 && " 쓰러짐"}
+                        <span data-health={h.hp <= h.maxHp / 4 ? "danger" : "normal"} className={`shrink-0 ${h.hp <= h.maxHp / 4 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-strong)]"}`}>
+                            HP:{h.hp}({h.maxHp}){h.hp <= 0 ? " 쓰러짐" : h.hp <= h.maxHp / 4 ? " 위험" : ""}
                         </span>
                         {([
                             ["defense", `AC:${heroArmorClass(h)}`],
@@ -2467,9 +2470,9 @@ export default function Rogue() {
                             )
                         }
                         {expandedPartyStats === i && h.guarded && <span className=" text-[var(--rg-armor)] font-bold">Guarded ({h.guardTurns ?? 0})</span>}
-                        {expandedPartyStats === i && h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
-                        {expandedPartyStats === i && h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
-                        {expandedPartyStats === i && h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
+                        {h.confused > 0 && <span className="text-[var(--rg-potion)]">Confused</span>}
+                        {h.blind > 0 && <span className="text-[var(--rg-potion)]">Blind</span>}
+                        {h.stuck > 0 && <span className="text-[var(--rg-monster)]">Held</span>}
                         {expandedPartyStats === i && h.race && <span className="text-[var(--rg-faint)]" title="직업별 기본 종족. 같은 종족의 시체를 먹으면 행운이 감소합니다.">{RACE_NAME[h.race]}</span>}
                         {expandedPartyStats === i && (!coop || foodCount <= 2) && <span className={` ${foodCount <= 2 ? "font-bold text-[var(--rg-trap)]" : "text-[var(--rg-food)]"}`} title="배낭에 남은 식량">
                             식량:{foodCount}
@@ -2509,7 +2512,7 @@ export default function Rogue() {
                 );
             })}
 
-            <div className="shrink-0 border-t border-[var(--rg-line-faint)]">
+            <div data-game-controls className="shrink-0 border-t border-[var(--rg-line-faint)]">
                 <TouchPad
                     onOptions={() => setSheet("options")}
                     onAutoPickup={() => run({ t: "toggleAutopickup" })}
@@ -3465,14 +3468,21 @@ export default function Rogue() {
                             } else startWithOrigin("knight");
                         }}
                     >
-                        <div className="space-y-2 text-xs">
+                        <div className="space-y-3 text-xs">
+                            {originFor.t === "new" && <div className="border-l-2 border-[var(--rg-gold)] bg-[var(--rg-hover)] px-3 py-3">
+                                <p className="mb-1 text-[10px] tracking-[0.18em] text-[var(--rg-gold)]">ROGUE / DUNGEON EXPEDITION</p>
+                                <h2 className="text-lg font-bold text-[var(--rg-strong)]">내려가는 용기. 돌아오는 지혜.</h2>
+                                <p className="mt-2 leading-relaxed text-[var(--rg-muted)]">지하 26층의 옌더의 증표를 찾아 1층으로 돌아오세요. 한 걸음이 한 턴, 멈춰 있으면 던전도 기다립니다.</p>
+                                <p className="mt-2 text-[10px] text-[var(--rg-faint)]">@ 모험가 · &gt; 내려가는 계단 · 자동 저장 · 죽으면 판 종료</p>
+                            </div>}
                             <div role="group" aria-label="캐릭터 미리보기" className="grid grid-cols-7 gap-1">
                                 {ORIGIN_LIST.map((orig) => (
                                     <button key={orig.id} type="button" aria-label={`${orig.name} 미리보기`} aria-pressed={selectedOrigin === orig.id}
                                         title={orig.name} onClick={() => setSelectedOrigin(orig.id)}
                                         className={`grid min-h-11 min-w-0 place-items-center rounded-[3px] border font-mono text-xl leading-none transition-colors hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] ${selectedOrigin === orig.id ? "border-[var(--rg-gold)] bg-[var(--rg-hover)]" : "border-[var(--rg-line-soft)] bg-[var(--rg-raised)]"}`}
                                         style={{ color: orig.iconInk }}>
-                                        {orig.icon}
+                                        <span aria-hidden>{orig.icon}</span>
+                                        <span className="text-[9px] leading-tight">{orig.name.split(" ").pop()}</span>
                                     </button>
                                 ))}
                             </div>
@@ -3515,8 +3525,8 @@ export default function Rogue() {
                                             <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--rg-gold)]">Hp {orig.baseHp}</span>
                                         </div>
                                         <p className="text-[11px] text-[var(--rg-faint)]">시작 능력치 · <span className="font-bold text-[var(--rg-gold)]">강점</span>은 15 이상 · 능력치를 눌러 설명 보기</p>
-                                        <div className="mb-2 flex flex-col items-center gap-2 sm:flex-row">
-                                            <OriginStatRadar origin={orig} className="h-auto w-full max-w-[205px] shrink-0" />
+                                        <div className="mb-2 flex items-center gap-2">
+                                            <OriginStatRadar origin={orig} className="h-auto w-[42%] max-w-[205px] shrink-0" />
                                             <div className="grid w-full grid-cols-3 gap-1 font-mono text-xs tabular-nums">
                                                 {ORIGIN_STATS.map((stat) => {
                                                     const value = orig[stat.key];
@@ -3538,7 +3548,7 @@ export default function Rogue() {
                                             <b className="text-[var(--rg-gold)]">Lv {ADVANCE_LEVEL} 전직 · {orig.advancedName}</b>
                                             <p className="mt-0.5 text-[var(--rg-faint)]">★ {orig.advancedSkillName} — {orig.advancedSkillDescription}</p>
                                         </div>
-                                        <button type="button" onClick={() => pickOrigin(orig.id)} disabled={originFor.t === "guest" && roomParty.length === 0} className="mt-3 w-full rounded-[3px] border border-[var(--rg-line)] px-3 py-2 font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] disabled:opacity-40">
+                                        <button type="button" onClick={() => pickOrigin(orig.id)} disabled={originFor.t === "guest" && roomParty.length === 0} className="mt-3 min-h-11 w-full rounded-[3px] border border-[var(--rg-gold)] bg-[var(--rg-hover)] px-3 py-2 font-bold text-[var(--rg-strong)] hover:bg-[var(--rg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--rg-strong)] disabled:opacity-40">
                                             {originFor.t === "guest" && roomParty.length === 0 ? "방 연결 중…" : `${orig.name} 선택`}
                                         </button>
                                     </section>

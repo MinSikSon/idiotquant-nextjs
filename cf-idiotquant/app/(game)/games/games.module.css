@@ -1,0 +1,70 @@
+/* All inks come from the shared light/dark dungeon palette. */
+.terminal {
+    font-variant-numeric: tabular-nums;
+    isolation: isolate;
+}
+
+.terminal [data-game-log] {
+    background: var(--rg-panel);
+    border-left: 2px solid var(--rg-gold);
+}
+
+.terminal [data-game-log] > span:first-child {
+    color: var(--rg-strong);
+}
+
+.terminal [data-game-status] {
+    background: var(--rg-panel);
+    min-height: 30px;
+    scrollbar-color: var(--rg-line) transparent;
+}
+
+.terminal [data-health] {
+    border-bottom: 2px solid var(--rg-ally);
+    padding-block: 2px;
+}
+
+.terminal [data-health="danger"] {
+    color: var(--rg-trap);
+    border-color: var(--rg-trap);
+}
+
+.terminal [data-game-controls] {
+    background: var(--rg-panel);
+    box-shadow: 0 -1px 0 var(--rg-line-soft);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.terminal [data-game-controls] button {
+    transition: background-color 120ms, border-color 120ms;
+}
+
+.terminal [data-game-controls] button[aria-disabled="true"] {
+    border-style: dashed;
+}
+
+.terminal [data-game-panel] {
+    border-top: 3px solid var(--rg-gold);
+    box-shadow: 0 12px 40px var(--rg-scrim), 0 0 0 1px var(--rg-line-soft);
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rg-line) var(--rg-panel);
+}
+
+.terminal [data-game-panel] input,
+.terminal [data-game-panel] select {
+    min-height: 36px;
+}
+
+@media (hover: hover) {
+    .terminal [data-game-controls] button:not([aria-disabled="true"]):hover {
+        border-color: var(--rg-label);
+        background: var(--rg-raised);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .terminal [data-game-controls] button {
+        transition: none;
+    }
+}

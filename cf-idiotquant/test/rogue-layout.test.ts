@@ -200,6 +200,11 @@ test("상태 줄은 최종 수치를 보여 주고 누르면 근거를 기록에
     assert.match(rogue, /Dlvl:\{level\.depth\}/, "현재 층이 Dlvl로 표시된다");
     assert.doesNotMatch(rogue, /i === 0 && <button[^>]*>Dlvl:/, "멀티플레이 동료 상태 줄에 Dlvl이 없다");
     assert.match(rogue, /const statChip = /, "핵심 스탯 표기가 없다");
+    // 위험·파티 색은 부모의 강제 글자색에 덮이면 안 된다.
+    assert.ok(!rogue.includes("[&_*]:!text-"), "상태 줄이 자식의 위험·파티 색을 강제로 덮는다");
+    for (const condition of ["confused", "blind", "stuck"]) {
+        assert.ok(!rogue.includes(`expandedPartyStats === i && h.${condition} > 0`), `${condition} 상태가 상세 보기에만 표시된다`);
+    }
     assert.doesNotMatch(rogue, /현재 체력 \/ 최대 체력/, "HP에 같은 뜻의 상세 설명이 중복된다");
     assert.doesNotMatch(rogue, /성장: 힘/, "중복 성장 요약이 남아 있다");
     assert.match(
