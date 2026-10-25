@@ -64,6 +64,7 @@ import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
 import StockListTable from "@/components/balance/stockListTable";
+import { postCapitalGroupDistributeBudget } from "@/lib/features/capital/capitalAPI";
 import dynamic from "next/dynamic";
 import { ChartSectionSkeleton } from "@/components/balance/shared";
 // recharts(무거움)를 초기 번들에서 제외 — 차트 섹션 표시 시점에 로드
@@ -372,6 +373,11 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCreateGroup = useCallback((name: string, tickers?: string[]) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name, tickers })), [dispatch, balanceKey]);
   const doRenameGroup = useCallback((groupId: string, name: string) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } })), [dispatch, balanceKey]);
   const doToggleGroupTrading = useCallback((groupId: string, isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } })), [dispatch, balanceKey]);
+  const doDistributeGroupBudget = useCallback(async (groupId: string) => {
+    await postCapitalGroupDistributeBudget("US", balanceKey, groupId);
+    dispatch(reqGetUsCapital(balanceKey));
+    addToast("success", "그룹의 적립 예산을 균등 분배했습니다.");
+  }, [dispatch, balanceKey, addToast]);
   const doDeleteGroup = useCallback((groupId: string) => dispatch(reqPostUsCapitalGroupDelete({ key: balanceKey, groupId })), [dispatch, balanceKey]);
   const doMoveStock = useCallback((ticker: string, groupId: string | null) => dispatch(reqPostUsCapitalStockGroup({ key: balanceKey, ticker, groupId })), [dispatch, balanceKey]);
   const doBulkMove = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalStocksGroup({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
@@ -712,6 +718,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 onRenameGroup={doRenameGroup}
                 onToggleGroupTrading={doToggleGroupTrading}
                 onDeleteGroup={doDeleteGroup}
+                onDistributeGroupBudget={doDistributeGroupBudget}
                 onMoveStock={doMoveStock}
                 onBulkMove={doBulkMove}
                 onCopyLikes={doCopyLikes}

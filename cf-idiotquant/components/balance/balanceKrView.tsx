@@ -52,6 +52,7 @@ import { getInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentA
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
+import { postCapitalGroupDistributeBudget } from "@/lib/features/capital/capitalAPI";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import RefillSettings from "@/components/balance/refillSettings";
 import TradingFundingPanel from "@/components/balance/tradingFundingPanel";
@@ -401,6 +402,11 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCreateGroup = useCallback((name: string, tickers?: string[]) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name, tickers })), [dispatch, balanceKey]);
   const doRenameGroup = useCallback((groupId: string, name: string) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } })), [dispatch, balanceKey]);
   const doToggleGroupTrading = useCallback((groupId: string, isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } })), [dispatch, balanceKey]);
+  const doDistributeGroupBudget = useCallback(async (groupId: string) => {
+    await postCapitalGroupDistributeBudget("KR", balanceKey, groupId);
+    dispatch(reqGetKrCapital(balanceKey));
+    addToast("success", "그룹의 적립 예산을 균등 분배했습니다.");
+  }, [dispatch, balanceKey, addToast]);
   const doDeleteGroup = useCallback((groupId: string) => dispatch(reqPostKrCapitalGroupDelete({ key: balanceKey, groupId })), [dispatch, balanceKey]);
   const doMoveStock = useCallback((ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId })), [dispatch, balanceKey]);
   const doBulkMove = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
@@ -690,6 +696,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 onRenameGroup={doRenameGroup}
                 onToggleGroupTrading={doToggleGroupTrading}
                 onDeleteGroup={doDeleteGroup}
+                onDistributeGroupBudget={doDistributeGroupBudget}
                 onMoveStock={doMoveStock}
                 onBulkMove={doBulkMove}
                 onCopyLikes={doCopyLikes}
