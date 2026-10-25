@@ -31,6 +31,7 @@ import {
   Clock3,
   RotateCcw,
   SlidersHorizontal,
+  MoreHorizontal,
 } from "lucide-react";
 import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantRule } from "@/lib/features/capital/capitalSlice";
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
@@ -789,6 +790,7 @@ function GroupSection({
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
   groupQuantRule, groupBudget, groupSide, groupDca, onSaveGroupSettings,
 }: GroupSectionProps) {
+  const [showManagement, setShowManagement] = useState(false);
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [draftActiveCount, setDraftActiveCount] = useState<string>("");
   const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
@@ -822,13 +824,22 @@ function GroupSection({
 
   return (
     <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-24 overflow-hidden rounded-xl border bg-white shadow-none dark:bg-surface-dark-canvas", accentBorder)}>
+      <div className="flex items-center border-b border-neutral-100 bg-neutral-50/60 dark:border-border-subtle-dark dark:bg-surface-dark-card/40 sm:hidden">
+        <button type="button" onClick={onToggleCollapse} disabled={rows.length === 0} aria-expanded={rows.length > 0 ? !collapsed : undefined} aria-label={rows.length > 0 ? `${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}` : `${title} 등록된 종목 없음`} className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto_14px] items-center gap-1.5 px-2.5 text-left">
+          <span className="truncate text-xs font-bold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
+          <span className="whitespace-nowrap text-[10px] text-neutral-500 dark:text-neutral-400">{count}종목{!hideTrading && ` · ${tradingActive ? "ON" : "OFF"}`}</span>
+          <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{tokenTotal > 0 ? `₩${Math.round(tokenTotal).toLocaleString("ko-KR")}` : ""}</span>
+          {rows.length > 0 && (collapsed ? <ChevronRight size={14} className="text-neutral-400" /> : <ChevronDown size={14} className="text-neutral-400" />)}
+        </button>
+        <button type="button" onClick={() => setShowManagement(value => !value)} aria-label={`${title} 관리`} aria-expanded={showManagement} aria-controls={`pool-management-${sectionKey}`} className={cn("flex min-h-11 min-w-11 items-center justify-center border-l border-neutral-100 text-neutral-500 dark:border-border-subtle-dark dark:text-neutral-400", showManagement && "bg-neutral-100 dark:bg-surface-dark-muted")}><MoreHorizontal size={18} /></button>
+      </div>
       {/* 헤더 */}
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40">
-        <button onClick={onToggleCollapse} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
+      <div id={`pool-management-${sectionKey}`} className={cn("flex-wrap items-center gap-2 px-3 py-2 sm:flex sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40", showManagement ? "flex" : "hidden")}>
+        <button onClick={onToggleCollapse} aria-expanded={!collapsed} aria-label={`${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}`} className="hidden sm:block text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
-        <div className="flex items-center gap-2 min-w-0">
-          {icon}
+        <div className="flex flex-wrap items-center gap-2 min-w-0 sm:flex-nowrap">
+          <span className="hidden sm:contents">{icon}</span>
           {editing ? (
             <input
               autoFocus
@@ -836,10 +847,11 @@ function GroupSection({
               onChange={(e) => onEditNameChange?.(e.target.value)}
               onBlur={onCommitRename}
               onKeyDown={(e) => { if (e.key === "Enter") onCommitRename?.(); }}
-              className="rounded-md border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-0.5 text-sm font-bold"
+              aria-label="그룹 이름"
+              className="min-h-11 w-full min-w-0 rounded-md border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-0.5 text-base font-bold sm:min-h-0 sm:w-auto sm:text-sm"
             />
           ) : (
-            <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">{title}</h3>
+            <h3 className="hidden sm:block text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">{title}</h3>
           )}
           {!hideTrading && groupSide && (
             <span className={cn(
@@ -857,21 +869,22 @@ function GroupSection({
             </span>
           )}
           {onStartRename && !editing && (
-            <button onClick={onStartRename} className="text-neutral-300 hover:text-neutral-600 dark:hover:text-neutral-200">
+            <button onClick={onStartRename} aria-label={`${title} 이름 변경`} className="flex min-h-11 items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 sm:min-h-0 hover:text-neutral-600 dark:hover:text-neutral-200">
               <Pencil className="w-3.5 h-3.5" />
+              <span className="sm:hidden">이름 변경</span>
             </button>
           )}
-          <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400 rounded-full">
+          <span className="hidden sm:inline px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400 rounded-full">
             {count}종목
           </span>
           {tokenTotal > 0 && (
-            <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/30 rounded-full" title="이 그룹 예산(토큰) 합계">
+            <span className="hidden sm:inline px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/30 rounded-full" title="이 그룹 예산(토큰) 합계">
               예산 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}
             </span>
           )}
           {/* 그룹 전체선택 (데스크탑·모바일 공통) */}
           {showCheck && !collapsed && (
-            <label className="inline-flex cursor-pointer items-center gap-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-1 whitespace-nowrap text-xs font-bold text-neutral-500 dark:text-neutral-400 sm:min-h-0 sm:text-[10px]">
               <input
                 type="checkbox"
                 checked={allChecked}
@@ -885,7 +898,7 @@ function GroupSection({
           {subtitle && <span className="hidden sm:inline text-[11px] text-neutral-400">{subtitle}</span>}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
           {/* 종목 목록 복사 (종목명만 / 상세) */}
           <CopyStockButtons rows={copyRows} label={title} />
           {/* 적용 조건 칩 (그룹 ON 일 때) */}
@@ -949,7 +962,7 @@ function GroupSection({
           )}
           {/* 삭제 */}
           {onDelete && (
-            <button onClick={onDelete} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 transition-colors">
+            <button onClick={onDelete} aria-label={`${title} 그룹 삭제`} className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 transition-colors sm:min-h-0 sm:min-w-0">
               <Trash2 className="w-4 h-4" />
             </button>
           )}
@@ -1232,8 +1245,8 @@ function GroupSection({
         {/* 모바일 한 줄 요약 — 지표·예산 조작은 펼친 뒤 표시 */}
         <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
           {rows.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-10 opacity-40">
-              <Search className="w-8 h-8" />
+            <div className="flex items-center gap-2 px-2.5 py-3 text-neutral-500 dark:text-neutral-400 sm:flex-col sm:py-10 sm:opacity-40">
+              <Search className="hidden w-8 h-8 sm:block" />
               <p className="text-xs">{emptyText}</p>
             </div>
           ) : (
