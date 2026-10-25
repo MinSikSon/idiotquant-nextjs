@@ -32,6 +32,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
   MoreHorizontal,
+  Equal,
 } from "lucide-react";
 import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantRule } from "@/lib/features/capital/capitalSlice";
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
@@ -152,6 +153,7 @@ interface Props {
   onRenameGroup?: (groupId: string, name: string) => void;
   onToggleGroupTrading?: (groupId: string, isActive: boolean) => void;
   onDeleteGroup?: (groupId: string) => void;
+  onDistributeGroupBudget?: (groupId: string) => Promise<void>;
   onMoveStock?: (ticker: string, groupId: string | null) => void;
   onBulkMove?: (tickers: string[], groupId: string | null) => void;
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
@@ -231,6 +233,7 @@ function StockListTable({
   onRenameGroup,
   onToggleGroupTrading,
   onDeleteGroup,
+  onDistributeGroupBudget,
   onMoveStock,
   onBulkMove,
   onCopyLikes,
@@ -662,6 +665,7 @@ function StockListTable({
           groupSide={g.side}
           groupDca={g.dca}
           onSaveGroupSettings={isMaster && onSaveGroupSettings ? (settings) => onSaveGroupSettings(g.id, settings) : undefined}
+          onDistributeBudget={isMaster && session?.user?.role === "admin" && onDistributeGroupBudget ? () => onDistributeGroupBudget(g.id) : undefined}
         />
       ))}
 
@@ -781,6 +785,7 @@ interface GroupSectionProps {
   groupSide?: "buy" | "sell";
   groupDca?: boolean;
   onSaveGroupSettings?: (settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => void;
+  onDistributeBudget?: () => Promise<void>;
 }
 
 function GroupSection({
@@ -788,8 +793,10 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
-  groupQuantRule, groupBudget, groupSide, groupDca, onSaveGroupSettings,
+  groupQuantRule, groupBudget, groupSide, groupDca, onSaveGroupSettings, onDistributeBudget,
 }: GroupSectionProps) {
+  const [distributing, setDistributing] = useState(false);
+  const [distributionError, setDistributionError] = useState("");
   const [showManagement, setShowManagement] = useState(false);
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [draftActiveCount, setDraftActiveCount] = useState<string>("");
@@ -901,6 +908,20 @@ function GroupSection({
         <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
           {/* 종목 목록 복사 (종목명만 / 상세) */}
           <CopyStockButtons rows={copyRows} label={title} />
+          {onDistributeBudget && (
+            <button type="button" disabled={distributing || rows.length < 2 || tokenTotal <= 0}
+              onClick={async () => {
+                setDistributing(true);
+                setDistributionError("");
+                try { await onDistributeBudget(); }
+                catch (error) { setDistributionError(error instanceof Error ? error.message : "예산 균등 분배에 실패했습니다."); }
+                finally { setDistributing(false); }
+              }}
+              title="현재 적립 예산을 비활성 포함 모든 종목에 균등 분배합니다. 총액과 월 충전계획은 유지됩니다."
+              className="inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border border-neutral-200 px-2.5 text-xs font-bold text-neutral-600 disabled:opacity-40 dark:border-border-subtle-dark dark:text-neutral-300 sm:min-h-0 sm:py-1.5">
+              <Equal size={14} />{distributing ? "분배 중…" : "예산 균등 분배"}
+            </button>
+          )}
           {/* 적용 조건 칩 (그룹 ON 일 때) */}
           {conditionChips && conditionChips.length > 0 && (
             <div className="hidden md:flex items-center gap-1">
@@ -969,6 +990,7 @@ function GroupSection({
         </div>
       </div>
 
+      {distributionError && <p role="alert" className="px-3 py-2 text-xs text-red-600 dark:text-red-400">{distributionError}</p>}
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
         <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2.5 py-2 md:px-4 md:py-3">

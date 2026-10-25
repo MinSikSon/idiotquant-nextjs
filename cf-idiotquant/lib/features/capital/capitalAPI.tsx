@@ -1,4 +1,5 @@
 import { AdditionalHeaders, getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
+import { apiRequest } from "../apiRequest";
 
 // KR Capital API
 export const getKrCapital: any = async (key: string) => {
@@ -84,6 +85,11 @@ export const postUsCapitalTokenMinusOne: any = async (key: string, num: number, 
 // 종목 그룹 관리 API (KR / US)
 // ============================================================================
 type GroupUpdates = { name?: string; is_trading_active?: boolean; quant_rule?: object | null; budget_krw?: number | null; side?: "buy" | "sell"; dca?: boolean };
+
+export async function postCapitalGroupDistributeBudget(country: "KR" | "US", key: string, groupId: string): Promise<void> {
+    const result = await apiRequest(`/${country.toLowerCase()}/capital/groups/${encodeURIComponent(groupId)}/distribute-budget?kakao-id=${encodeURIComponent(key)}`, { method: "POST" });
+    if (result?.success !== true) throw new Error(result?.error || "예산 균등 분배에 실패했습니다.");
+}
 
 // KR
 export const postKrCapitalGroupCreate: any = async (key: string, name: string, tickers?: string[]) =>
