@@ -89,8 +89,13 @@ function capitalStatus(action: string | undefined | null, groupActive: boolean, 
 // 좋아요는 관심목록 전용(자동매매 대상 아님). 매매하려면 '복사'로 실제 그룹에 넣는다.
 const WATCH_STATUS = STOCK_STATUS.watch;
 
-function StatusBadge({ status }: { status?: EffStatus }) {
+function StatusBadge({ status, compact = false }: { status?: EffStatus; compact?: boolean }) {
   if (!status) return <span className="text-neutral-500">미확인</span>;
+  if (compact) return (
+    <span title={status.description} className={cn("inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium", status.tone === "active" ? "text-blue-600 dark:text-blue-300" : "text-neutral-500 dark:text-neutral-400")}>
+      <span aria-hidden="true" className={cn("h-1 w-1 rounded-full", status.tone === "active" ? "bg-blue-500" : "bg-neutral-400")} />{status.label}
+    </span>
+  );
   const map: Record<Tone, string> = {
     active: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
     idle: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
@@ -420,7 +425,7 @@ function StockListTable({
   return (
     <div className={cn("w-full space-y-3 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
-      <section className="rounded-xl border border-neutral-200 bg-white p-2.5 md:p-4 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
+      <section className="rounded-2xl border-0 bg-neutral-50 p-3 md:border md:border-neutral-200 md:bg-white md:p-4 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           <div className="hidden items-center gap-2 md:flex">
             <span className={cn(
@@ -438,11 +443,14 @@ function StockListTable({
               <span className="text-sm font-medium text-neutral-500">자동매매가 꺼져 있어 어떤 종목도 매매되지 않습니다.</span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] tabular-nums">
-            <span className="rounded-md bg-emerald-50 px-2 py-1 font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">매매 대상 {summary.active}</span>
-            <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">선정 대기 {summary.idle}</span>
-            <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-neutral-600 dark:bg-red-900/30 dark:text-red-400">매매 제외 {summary.excluded}</span>
-          </div>
+          <dl className="grid w-full grid-cols-3 gap-2 tabular-nums md:flex md:w-auto md:gap-4">
+            {([
+              ["매매 대상", summary.active], ["선정 대기", summary.idle], ["매매 제외", summary.excluded],
+            ] as const).map(([label, count], index) => <div key={label} className="min-w-0 md:flex md:items-center md:gap-1">
+              <dt className="text-[11px] text-neutral-500 dark:text-neutral-400">{label}</dt>
+              <dd className={cn("mt-1 text-[20px] font-semibold leading-6 md:mt-0 md:text-sm", index === 0 ? "text-blue-600 dark:text-blue-300" : "text-neutral-900 dark:text-neutral-100")}>{count}<span className="ml-0.5 text-[11px] font-normal text-neutral-400">종목</span></dd>
+            </div>)}
+          </dl>
         </div>
 
         <div className="flex items-center justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400 md:hidden">
@@ -486,8 +494,8 @@ function StockListTable({
 
       {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
       {isMaster && (
-        <section className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 p-1 dark:border-neutral-700 dark:bg-surface-dark-card">
-          <div className="flex items-center justify-between px-2.5 py-2 md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
+        <section className="overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50 p-1 dark:border-neutral-800 dark:bg-surface-dark-card">
+          <div className="hidden items-center justify-between px-2.5 py-2 md:flex md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
               <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300">포인트 수동 관리</h3>
@@ -497,7 +505,7 @@ function StockListTable({
             </span>
           </div>
           <div className="p-2.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+            <details className="group/manual min-w-0"><summary className="flex min-h-12 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
             <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-none border border-red-200 dark:border-red-800 overflow-hidden">
@@ -838,15 +846,15 @@ function GroupSection({
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
-    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-24 overflow-hidden rounded-xl border bg-white shadow-none dark:bg-surface-dark-canvas", accentBorder)}>
-      <div className="flex items-center border-b border-neutral-100 bg-neutral-50/60 dark:border-border-subtle-dark dark:bg-surface-dark-card/40 sm:hidden">
-        <button type="button" onClick={onToggleCollapse} disabled={rows.length === 0} aria-expanded={rows.length > 0 ? !collapsed : undefined} aria-label={rows.length > 0 ? `${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}` : `${title} 등록된 종목 없음`} className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto_14px] items-center gap-1.5 px-2.5 text-left">
-          <span className="truncate text-xs font-bold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
+    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-2xl border-0 bg-white shadow-none dark:bg-surface-dark-canvas sm:border", accentBorder)}>
+      <div className="flex items-center bg-neutral-50 dark:bg-neutral-800/50 sm:hidden">
+        <button type="button" onClick={onToggleCollapse} disabled={rows.length === 0} aria-expanded={rows.length > 0 ? !collapsed : undefined} aria-label={rows.length > 0 ? `${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}` : `${title} 등록된 종목 없음`} className="grid min-h-12 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto_14px] items-center gap-1.5 px-3 text-left">
+          <span className="truncate text-[14px] font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
           <span className="whitespace-nowrap text-[10px] text-neutral-500 dark:text-neutral-400">{count}종목{!hideTrading && ` · ${tradingActive ? "ON" : "OFF"}`}</span>
           <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{tokenTotal > 0 ? `₩${Math.round(tokenTotal).toLocaleString("ko-KR")}` : ""}</span>
           {rows.length > 0 && (collapsed ? <ChevronRight size={14} className="text-neutral-400" /> : <ChevronDown size={14} className="text-neutral-400" />)}
         </button>
-        <button type="button" onClick={() => setShowManagement(value => !value)} aria-label={`${title} 관리`} aria-expanded={showManagement} aria-controls={`pool-management-${sectionKey}`} className={cn("flex min-h-11 min-w-11 items-center justify-center border-l border-neutral-100 text-neutral-500 dark:border-border-subtle-dark dark:text-neutral-400", showManagement && "bg-neutral-100 dark:bg-surface-dark-muted")}><MoreHorizontal size={18} /></button>
+        <button type="button" onClick={() => setShowManagement(value => !value)} aria-label={`${title} 관리`} aria-expanded={showManagement} aria-controls={`pool-management-${sectionKey}`} className={cn("flex min-h-11 min-w-11 items-center justify-center text-neutral-400 dark:text-neutral-500", showManagement && "bg-neutral-100 dark:bg-surface-dark-muted")}><MoreHorizontal size={18} /></button>
       </div>
       {/* 헤더 */}
       <div id={`pool-management-${sectionKey}`} className={cn("flex-wrap items-center gap-2 px-3 py-2 sm:flex sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40", showManagement ? "flex" : "hidden")}>
@@ -1273,7 +1281,7 @@ function GroupSection({
         </div>
 
         {/* 모바일 한 줄 요약 — 지표·예산 조작은 펼친 뒤 표시 */}
-        <div className="md:hidden divide-y divide-neutral-100 dark:divide-border-subtle-dark">
+        <div className="md:hidden divide-y divide-neutral-100/70 dark:divide-neutral-800/60">
           {rows.length === 0 ? (
             <div className="flex items-center gap-2 px-2.5 py-3 text-neutral-500 dark:text-neutral-400 sm:flex-col sm:py-10 sm:opacity-40">
               <Search className="hidden w-8 h-8 sm:block" />
@@ -1283,16 +1291,16 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("flex items-start gap-1 px-2.5", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
+                className={cn("flex items-start gap-1 px-3", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
               >
-                {showCheck && <label className="flex min-h-11 w-7 shrink-0 cursor-pointer items-center justify-center">
+                {showCheck && <label className="flex min-h-12 w-7 shrink-0 cursor-pointer items-center justify-center">
                   <input type="checkbox" aria-label={`${row.name || row.symbol} 선택`} checked={isPicked(row.symbol)} onChange={() => onTogglePick(sectionKey, row.symbol)} className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
                 </label>}
                 <details className="group/stock min-w-0 flex-1">
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
-                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
-                    <StatusBadge status={row.status} />
-                    {row.movable && <span className="shrink-0 whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
+                    <StatusBadge status={row.status} compact />
+                    {row.movable && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
                   </summary>
                   <div className="pb-3 pt-1">
