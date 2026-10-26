@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { currentLogGroup, executionAmount, executionTotals, numericValue, stockBudgetProgress } from "../lib/features/capital/tradingSummary.ts";
+import { tradingCursorIndex, currentLogGroup, executionAmount, executionTotals, numericValue, stockBudgetProgress } from "../lib/features/capital/tradingSummary.ts";
 
 const buy = { ts: 1, buyOrSell: "buy", stck_prpr: "12500", ORD_QTY: "3" };
 
@@ -52,4 +52,17 @@ test("미국 적립 진행률은 환율을 반영하고 결측 시세·환율은
     assert.equal(stockBudgetProgress(stock, "US", 0), null);
     assert.equal(stockBudgetProgress({ ...stock, condition: undefined }, "KR"), null);
     assert.equal(stockBudgetProgress(stock, "US", 1e308), null);
+});
+
+
+test("저장된 IDX는 비활성 종목을 포함한 전체 목록에서 정규화한다", () => {
+    const stocks = [{ action: "active" }, { action: "inactive" }, { action: "active" }];
+    assert.equal(stocks[tradingCursorIndex(1, stocks.length)!].action, "inactive");
+    assert.equal(tradingCursorIndex(0, 3), 0);
+    assert.equal(tradingCursorIndex(4, 3), 1);
+    assert.equal(tradingCursorIndex(-1, 3), 2);
+    assert.equal(tradingCursorIndex(1.8, 3), 1);
+    assert.equal(tradingCursorIndex("2", 3), 2);
+    for (const value of [null, undefined, "", "invalid", Infinity]) assert.equal(tradingCursorIndex(value, 3), null);
+    assert.equal(tradingCursorIndex(0, 0), null);
 });

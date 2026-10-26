@@ -53,3 +53,11 @@ export function stockBudgetProgress(stock: UsCapitalStockItem, country: "KR" | "
         missing: Math.max(0, unitKrw - points),
     };
 }
+
+/** Stored cursor addresses the complete stock_list, before inactive stocks are skipped. */
+export function tradingCursorIndex(value: unknown, length: number): number | null {
+    if (value === null || value === undefined || value === "" || length <= 0) return null;
+    const index = Number(value);
+    if (!Number.isFinite(index)) return null;
+    return ((Math.trunc(index) % length) + length) % length;
+}
