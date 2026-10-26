@@ -1,5 +1,6 @@
 "use client";
 
+import { tradingCursorIndex } from "@/lib/features/capital/tradingSummary";
 import { DetailHelp } from "./detailHelp";
 
 import React, { useState, useMemo } from "react";
@@ -128,6 +129,7 @@ function formatConditions(r?: QuantRule): string[] {
 
 /** 그룹 섹션·찜 섹션이 공통으로 쓰는 정규화된 행 */
 interface DisplayRow {
+  currentCursor?: boolean;
   symbol: string;
   name?: string;           // 표시용 종목명 (있으면 symbol 과 함께 노출)
   per?: number | string | null;
@@ -253,6 +255,8 @@ function StockListTable({
   monthlyPerStock = 0,
 }: Props) {
   const stockList = data?.stock_list ?? [];
+  const cursorIndex = tradingCursorIndex(data?.token_info?.refill_stock_index, stockList.length);
+  const cursorStock = cursorIndex === null ? undefined : stockList[cursorIndex];
   const candidatePool = data?.candidate_pool ?? [];  // 미지정 NCAV 후보 (워커가 stock_list 와 분리)
   const groups: StockGroup[] = data?.groups ?? [];
 
@@ -288,13 +292,13 @@ function StockListTable({
     // stock_list = 그룹 소속(매매 대상). 그룹별 버킷 + 레거시 좋아요 분리.
     for (const s of stockList) {
       if (s.group_id === LIKES_GROUP_ID) {
-        likesPoolRows.push(normalizeCapital(s, WATCH_STATUS));
+        likesPoolRows.push({ ...normalizeCapital(s, WATCH_STATUS), currentCursor: s === cursorStock });
         continue;
       }
       const g = s.group_id ? gmap.get(s.group_id) : null;
       const groupActive = g ? g.is_trading_active !== false : false;
       const status = capitalStatus(s.action, groupActive, countryTradingActive);
-      const row = normalizeCapital(s, status);
+      const row = { ...normalizeCapital(s, status), currentCursor: s === cursorStock };
       if (s.group_id && gmap.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
       else unassigned.push(row); // 안전망: 혹시 stock_list 에 미지정이 남아 있으면 미지정으로
     }
@@ -304,7 +308,7 @@ function StockListTable({
       unassigned.push(normalizeCapital(s, capitalStatus(s.action, false, countryTradingActive)));
     }
     return { byGroup, unassigned, likesPoolRows };
-  }, [stockList, candidatePool, realGroups, countryTradingActive, likesActive]);
+  }, [stockList, candidatePool, realGroups, countryTradingActive, likesActive, cursorStock]);
 
   // 좋아요 섹션 = 운용 중인 좋아요 종목(토큰/상태) + 아직 운용 풀에 없는 찜(읽기 전용 워치리스트)
   // metricsOverride 로 비어있는 지표(US 등)를 보강한다.
@@ -460,6 +464,12 @@ function StockListTable({
             {Object.values(STOCK_STATUS).map(status => <p key={status.tone} className="mt-2"><b>{status.label}</b> · {status.description}</p>)}
           </DetailHelp>
         </div>
+
+        {cursorStock && <div className="flex min-h-9 items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-300">
+          <span className="shrink-0 font-semibold">현재 IDX {cursorIndex}</span>
+          <span className="min-w-0 truncate font-medium" title={cursorStock.name || cursorStock.symbol}>{cursorStock.name || cursorStock.symbol}</span>
+          <DetailHelp label="현재 IDX">저장된 전체 종목 목록의 순회 시작 위치입니다(0부터 시작). 다음 실행에서 비활성 종목은 건너뛰므로 실제 주문 중인 종목을 뜻하지 않습니다. 자동매매가 OFF여도 마지막 위치는 유지됩니다.</DetailHelp>
+        </div>}
 
         {/* 적용 조건 */}
         <details className="hidden mt-2 border-t border-neutral-100 dark:border-border-subtle-dark md:block"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">적용 조건 {conditionChips.length}개</summary><div className="flex flex-wrap items-center gap-1.5">
@@ -1164,6 +1174,7 @@ function GroupSection({
                 rows.map((row, idx) => (
                   <tr key={`${sectionKey}-${row.symbol}-${idx}`} className={cn(
                     "group transition-colors",
+                    row.currentCursor && "bg-blue-50 dark:bg-blue-950/30",
                     isPicked(row.symbol) ? "bg-neutral-100 dark:bg-neutral-800/20" : "hover:bg-neutral-100/30 dark:hover:bg-neutral-800/10"
                   )}>
                     {showCheck && (
@@ -1177,6 +1188,7 @@ function GroupSection({
                       </td>
                     )}
                     <td className="px-4 py-3">
+                      {row.currentCursor && <span className="mb-1 block text-[10px] font-semibold text-blue-600 dark:text-blue-300">현재 IDX</span>}
                       <button onClick={() => openDetail(row.raw)} className="flex items-center gap-2 group/btn min-w-0">
                         <div className="shrink-0 p-1.5 rounded-md bg-surface-canvas dark:bg-surface-dark-muted transition-all">
                           <TrendingUp className="w-3.5 h-3.5" />
@@ -1291,13 +1303,14 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("flex items-start gap-1 px-3", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
+                className={cn("flex items-start gap-1 px-3", row.currentCursor && "bg-blue-50 dark:bg-blue-950/30", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
               >
                 {showCheck && <label className="flex min-h-12 w-7 shrink-0 cursor-pointer items-center justify-center">
                   <input type="checkbox" aria-label={`${row.name || row.symbol} 선택`} checked={isPicked(row.symbol)} onChange={() => onTogglePick(sectionKey, row.symbol)} className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
                 </label>}
                 <details className="group/stock min-w-0 flex-1">
                   <summary className="flex min-h-12 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
+                    {row.currentCursor && <span aria-label="현재 IDX" title="현재 IDX · 다음 순회 시작 위치" className="shrink-0 text-[10px] font-bold text-blue-600 dark:text-blue-300">IDX</span>}
                     <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
                     <StatusBadge status={row.status} compact />
                     {row.movable && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
