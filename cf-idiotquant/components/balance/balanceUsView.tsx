@@ -60,6 +60,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import TradingFundingPanel from "@/components/balance/tradingFundingPanel";
 import { tradingCash } from "@/lib/features/capital/fundingInsights";
+import TradingMobileWorkspace from "@/components/balance/tradingMobileWorkspace";
 import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
@@ -694,6 +695,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     : null
                 }
               />
+              <TradingMobileWorkspace overview={<>
               <TradingFundingPanel country="US" capital={usCapital} cash={tradingCash("US", kiBalance)} tradingActive={tradingStatus.US} live={autoRefresh} />
               <TradingFlowSummary
                 country="US"
@@ -701,9 +703,10 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 groups={usCapital.groups ?? []}
                 stockList={usCapital.stock_list ?? []}
                 quantRule={usQuantRule?.rule}
-                className="mb-5"
+                className="mb-2 md:mb-5"
               />
               <TradingCyclePanel country="US" tradingActive={tradingStatus.US} capital={usCapital} activity={usActivity} />
+              </>}>
               <StockListTable
                 data={usCapital}
                 kakaoTotal={kakaoTotal}
@@ -730,6 +733,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 quantRule={usQuantRule.rule}
                 metricsOverride={usLikeMetrics}
               />
+              </TradingMobileWorkspace>
             </SectionPanel>
           ) : null,
         },

@@ -57,6 +57,7 @@ import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import RefillSettings from "@/components/balance/refillSettings";
 import TradingFundingPanel from "@/components/balance/tradingFundingPanel";
 import { tradingCash } from "@/lib/features/capital/fundingInsights";
+import TradingMobileWorkspace from "@/components/balance/tradingMobileWorkspace";
 import TradingCyclePanel from "@/components/balance/tradingCyclePanel";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
@@ -671,6 +672,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     : null
                 }
               />
+              <TradingMobileWorkspace overview={<>
               <TradingFundingPanel country="KR" capital={krCapital} cash={tradingCash("KR", kiBalance)} tradingActive={tradingStatus.KR} live={autoRefresh} />
               <TradingFlowSummary
                 country="KR"
@@ -679,9 +681,10 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 stockList={krCapital.stock_list ?? []}
                 quantRule={krQuantRule?.rule}
                 budget={krBudget}
-                className="mb-5"
+                className="mb-2 md:mb-5"
               />
               <TradingCyclePanel country="KR" tradingActive={tradingStatus.KR} capital={krCapital} activity={krActivity} budget={krBudget} />
+              </>}>
               <StockListTable
                 data={krCapital}
                 kakaoTotal={kakaoTotal}
@@ -709,6 +712,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 metricsOverride={krLikeMetrics}
                 monthlyPerStock={krBudget?.monthly_per_stock}
               />
+              </TradingMobileWorkspace>
             </SectionPanel>
           ) : null,
         },
