@@ -421,8 +421,8 @@ function StockListTable({
     <div className={cn("w-full space-y-3 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
       <section className="rounded-xl border border-neutral-200 bg-white p-2.5 md:p-4 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-canvas">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
+          <div className="hidden items-center gap-2 md:flex">
             <span className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
               countryTradingActive ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white" : "bg-neutral-200 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400"
@@ -445,8 +445,16 @@ function StockListTable({
           </div>
         </div>
 
+        <div className="flex items-center justify-between gap-2 text-[11px] text-neutral-500 dark:text-neutral-400 md:hidden">
+          <span>운용 {summary.total}종목 · 자동매매 {countryTradingActive ? "ON" : "OFF"}</span>
+          <DetailHelp label="조건·상태 안내">
+            <p>{conditionChips.length ? conditionChips.join(" · ") : "조건 정보를 불러오는 중…"}</p>
+            {Object.values(STOCK_STATUS).map(status => <p key={status.tone} className="mt-2"><b>{status.label}</b> · {status.description}</p>)}
+          </DetailHelp>
+        </div>
+
         {/* 적용 조건 */}
-        <details className="mt-2 border-t border-neutral-100 dark:border-border-subtle-dark"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">적용 조건 {conditionChips.length}개</summary><div className="flex flex-wrap items-center gap-1.5">
+        <details className="hidden mt-2 border-t border-neutral-100 dark:border-border-subtle-dark md:block"><summary className="min-h-11 cursor-pointer py-3 text-xs font-bold text-neutral-500 dark:text-neutral-400">적용 조건 {conditionChips.length}개</summary><div className="flex flex-wrap items-center gap-1.5">
           {conditionChips.length > 0 ? conditionChips.map((c, i) => (
             <span key={i} className="rounded-full bg-surface-canvas px-2 py-0.5 text-[11px] tabular-nums text-neutral-600 dark:bg-surface-dark-card dark:text-neutral-300">{c}</span>
           )) : (
@@ -454,13 +462,13 @@ function StockListTable({
           )}
         </div></details>
 
-        <div className="mt-1 flex items-center text-[11px] text-neutral-500 dark:text-neutral-400">매매·좋아요 안내<DetailHelp label="매매·좋아요 안내">자동매매 ON → 그룹 ON → 설정 조건을 충족하는 NCAV 상위 종목이 매매 대상이 됩니다. 좋아요는 관심목록이며, 매매하려면 복사로 풀에 넣으세요.</DetailHelp></div>
+        <div className="hidden md:flex mt-1 items-center text-[11px] text-neutral-500 dark:text-neutral-400">매매·좋아요 안내<DetailHelp label="매매·좋아요 안내">자동매매 ON → 그룹 ON → 설정 조건을 충족하는 NCAV 상위 종목이 매매 대상이 됩니다. 좋아요는 관심목록이며, 매매하려면 복사로 풀에 넣으세요.</DetailHelp></div>
 
         {/* 상태 설명 토글 */}
         <button
           onClick={() => setShowLegend(v => !v)}
           aria-expanded={showLegend}
-          className="mt-2 inline-flex min-h-9 items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+          className="mt-2 hidden md:inline-flex min-h-9 items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
         >
           {showLegend ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />} 종목 상태 설명
         </button>
