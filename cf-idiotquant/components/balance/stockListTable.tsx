@@ -427,9 +427,9 @@ function StockListTable({
   };
 
   return (
-    <div className={cn("w-full space-y-3 md:space-y-5", className)}>
+    <div className={cn("w-full space-y-1.5 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
-      <section className="rounded-2xl border-0 bg-neutral-50 p-3 md:border md:border-neutral-200 md:bg-white md:p-4 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
+      <section className="rounded-2xl border-0 bg-neutral-50 px-3 py-1.5 md:border md:border-neutral-200 md:bg-white md:p-4 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           <div className="hidden items-center gap-2 md:flex">
             <span className={cn(
@@ -465,7 +465,7 @@ function StockListTable({
           </DetailHelp>
         </div>
 
-        {cursorStock && <div className="flex min-h-9 items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-300">
+        {cursorStock && <div className="flex min-h-7 items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-300">
           <span className="shrink-0 font-semibold">현재 IDX {cursorIndex}</span>
           <span className="min-w-0 truncate font-medium" title={cursorStock.name || cursorStock.symbol}>{cursorStock.name || cursorStock.symbol}</span>
           <DetailHelp label="현재 IDX">저장된 전체 종목 목록의 순회 시작 위치입니다(0부터 시작). 다음 실행에서 비활성 종목은 건너뛰므로 실제 주문 중인 종목을 뜻하지 않습니다. 자동매매가 OFF여도 마지막 위치는 유지됩니다.</DetailHelp>
@@ -514,8 +514,8 @@ function StockListTable({
               Master Only
             </span>
           </div>
-          <div className="p-2.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <details className="group/manual min-w-0"><summary className="flex min-h-12 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+          <div className="px-2.5 py-0.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
+            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
             <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-none border border-red-200 dark:border-red-800 overflow-hidden">
@@ -858,7 +858,7 @@ function GroupSection({
   return (
     <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-2xl border-0 bg-white shadow-none dark:bg-surface-dark-canvas sm:border", accentBorder)}>
       <div className="flex items-center bg-neutral-50 dark:bg-neutral-800/50 sm:hidden">
-        <button type="button" onClick={onToggleCollapse} disabled={rows.length === 0} aria-expanded={rows.length > 0 ? !collapsed : undefined} aria-label={rows.length > 0 ? `${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}` : `${title} 등록된 종목 없음`} className="grid min-h-12 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto_14px] items-center gap-1.5 px-3 text-left">
+        <button type="button" onClick={onToggleCollapse} disabled={rows.length === 0} aria-expanded={rows.length > 0 ? !collapsed : undefined} aria-label={rows.length > 0 ? `${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}` : `${title} 등록된 종목 없음`} className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto_14px] items-center gap-1.5 px-3 text-left">
           <span className="truncate text-[14px] font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
           <span className="whitespace-nowrap text-[10px] text-neutral-500 dark:text-neutral-400">{count}종목{!hideTrading && ` · ${tradingActive ? "ON" : "OFF"}`}</span>
           <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{tokenTotal > 0 ? `₩${Math.round(tokenTotal).toLocaleString("ko-KR")}` : ""}</span>
@@ -1295,7 +1295,7 @@ function GroupSection({
         {/* 모바일 한 줄 요약 — 지표·예산 조작은 펼친 뒤 표시 */}
         <div className="md:hidden divide-y divide-neutral-100/70 dark:divide-neutral-800/60">
           {rows.length === 0 ? (
-            <div className="flex items-center gap-2 px-2.5 py-3 text-neutral-500 dark:text-neutral-400 sm:flex-col sm:py-10 sm:opacity-40">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 text-neutral-500 dark:text-neutral-400 sm:flex-col sm:py-10 sm:opacity-40">
               <Search className="hidden w-8 h-8 sm:block" />
               <p className="text-xs">{emptyText}</p>
             </div>
@@ -1305,18 +1305,18 @@ function GroupSection({
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
                 className={cn("flex items-start gap-1 px-3", row.currentCursor && "bg-blue-50 dark:bg-blue-950/30", isPicked(row.symbol) && "bg-neutral-100 dark:bg-neutral-800/20")}
               >
-                {showCheck && <label className="flex min-h-12 w-7 shrink-0 cursor-pointer items-center justify-center">
+                {showCheck && <label className="flex min-h-11 w-7 shrink-0 cursor-pointer items-center justify-center">
                   <input type="checkbox" aria-label={`${row.name || row.symbol} 선택`} checked={isPicked(row.symbol)} onChange={() => onTogglePick(sectionKey, row.symbol)} className="h-4 w-4 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400" />
                 </label>}
                 <details className="group/stock min-w-0 flex-1">
-                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
                     {row.currentCursor && <span aria-label="현재 IDX" title="현재 IDX · 다음 순회 시작 위치" className="shrink-0 text-[10px] font-bold text-blue-600 dark:text-blue-300">IDX</span>}
                     <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
                     <StatusBadge status={row.status} compact />
                     {row.movable && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
                   </summary>
-                  <div className="pb-3 pt-1">
+                  <div className="pb-1.5 pt-1">
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <button onClick={() => openDetail(row.raw)} className="min-w-0 text-left text-sm font-bold text-neutral-900 dark:text-neutral-100">
                         <span className="block break-words">{row.name || row.symbol}</span><span className="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">{row.symbol} · 상세 분석 보기</span>

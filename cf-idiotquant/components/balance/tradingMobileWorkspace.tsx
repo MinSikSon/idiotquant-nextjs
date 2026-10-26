@@ -10,7 +10,7 @@ export default function TradingMobileWorkspace({ overview, children }: { overvie
 
   return (
     <div>
-      <nav aria-label="자동매매 화면" className="mb-3 flex gap-1 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800 md:hidden">
+      <nav aria-label="자동매매 화면" className="mb-1.5 flex gap-1 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800 md:hidden">
         {([ ["stocks", "종목 관리"], ["overview", "예산·현황"] ] as const).map(([key, label]) => (
           <button key={key} type="button" aria-pressed={view === key} aria-controls={`${id}-${key}`} onClick={() => setView(key)} className={cn("min-h-11 flex-1 rounded-lg px-3 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-500", view === key ? "bg-white text-blue-600 shadow-sm dark:bg-neutral-700 dark:text-blue-300" : "text-neutral-500 dark:text-neutral-400")}>
             {label}
