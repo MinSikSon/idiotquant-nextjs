@@ -33,8 +33,8 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
     const logValue = (value: number) => ready ? money(value) : activity.state === "rejected" ? "조회 실패" : "조회 중…";
 
     return (
-        <section className="mb-3 space-y-1.5 sm:mb-5 sm:space-y-4" aria-label="자동매매 플랜">
-            <div className="rounded-2xl border border-transparent bg-neutral-50 px-2.5 pb-2.5 dark:bg-neutral-800/40 sm:p-5">
+        <section className="mb-1.5 space-y-1 sm:mb-5 sm:space-y-4" aria-label="자동매매 플랜">
+            <div className="rounded-2xl border border-transparent bg-neutral-50 px-2.5 pb-1.5 dark:bg-neutral-800/40 sm:p-5">
                 <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-100"><button type="button" onClick={() => setPlanExpanded(value => !value)} aria-expanded={planExpanded} aria-controls={`${panelId}-plan`} className="flex min-h-11 items-center gap-1.5"><Coins size={16} className="text-neutral-900 dark:text-neutral-100" />자동매매 플랜<ChevronDown size={13} className={cn("transition-transform", planExpanded && "rotate-180")} /></button></h3>
                 </div>
@@ -73,14 +73,14 @@ export default function TradingCyclePanel({ country, capital, activity, budget, 
                     const compactStatus = tradingActive === null ? "확인 중" : !tradingActive ? "매매 OFF" : group.is_trading_active === false ? "풀 OFF" : !active.length ? "종목 대기" : fullSell ? "전량 매도" : funded ? "조건 대기" : !known.length ? "시세 대기" : "적립 중";
                     return (
                         <article key={group.id} className="min-w-0 overflow-hidden rounded-xl border border-neutral-100 bg-white dark:border-neutral-800 dark:bg-surface-dark-card sm:rounded-2xl sm:p-4">
-                            <button type="button" aria-expanded={expanded} aria-controls={detailId} aria-label={`${group.name} 상세 ${expanded ? "접기" : "보기"}`} onClick={() => setExpandedPools(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_14px] items-center gap-x-1.5 px-2.5 py-2 text-left sm:grid-cols-[minmax(0,1fr)_auto_14px] sm:gap-x-2 sm:gap-y-1.5 sm:px-3 sm:py-3">
+                            <button type="button" aria-expanded={expanded} aria-controls={detailId} aria-label={`${group.name} 상세 ${expanded ? "접기" : "보기"}`} onClick={() => setExpandedPools(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_14px] items-center gap-x-1.5 px-2.5 py-1 text-left sm:grid-cols-[minmax(0,1fr)_auto_14px] sm:gap-x-2 sm:gap-y-1.5 sm:px-3 sm:py-3">
                                 <span className="min-w-0 truncate text-[13px] font-semibold text-neutral-900 dark:text-neutral-100 sm:text-sm" title={group.name}>{group.name}</span>
                                 <span className={cn("whitespace-nowrap text-[10px] font-bold sm:text-[11px]", sell ? "text-rose-500 dark:text-rose-400" : "text-neutral-900 dark:text-neutral-100")}>{group.dca ? "정액" : "일반"}{sell ? "매도" : "매수"}</span>
                                 <span className="whitespace-nowrap text-[10px] text-neutral-500 dark:text-neutral-400 sm:col-start-1 sm:row-start-2 sm:text-[11px]"><span className="sr-only sm:not-sr-only">활성 </span>{active.length}/{row.stocks.length} · {compactStatus}</span>
                                 <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100 sm:col-span-2 sm:col-start-2 sm:row-start-2 sm:justify-self-end sm:text-sm">{won(tokens(row.stocks))}</span>
                                 <ChevronDown size={14} className={cn("text-neutral-400 transition-transform sm:col-start-3 sm:row-start-1", expanded && "rotate-180")} />
                             </button>
-                            <div id={detailId} className={cn("border-t border-neutral-100 px-2.5 pb-2.5 dark:border-border-subtle-dark sm:border-0 sm:p-0", !expanded && "hidden")}>
+                            <div id={detailId} className={cn("border-t border-neutral-100 px-2.5 pb-1.5 dark:border-border-subtle-dark sm:border-0 sm:p-0", !expanded && "hidden")}>
                             <p className="mt-2 break-words text-sm font-bold text-neutral-900 dark:text-neutral-100 sm:mt-3">{group.name}</p>
                             <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2 sm:mt-4">
                                 <div><p className="text-xs text-neutral-500 dark:text-neutral-400">적립 포인트</p><p className="mt-1 break-all text-2xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{won(tokens(row.stocks))}</p></div>
