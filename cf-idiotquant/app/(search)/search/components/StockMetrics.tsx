@@ -23,19 +23,19 @@ interface MetricItem {
 function MetricCard({ m }: { m: MetricItem }) {
   return (
     <div className={cn(
-      "px-0 py-3 sm:p-3.5 rounded-none sm:rounded-lg border-0 border-b sm:border relative group cursor-help transition-colors select-none",
+      "px-0 py-3 sm:p-3.5 rounded-none sm:rounded-lg border-0 border-b sm:border transition-colors",
       m.highlight
         ? "bg-transparent border-neutral-200 dark:border-neutral-800"
         : "bg-transparent border-neutral-200 dark:border-neutral-800"
     )}>
       <p className={cn(
-        "text-[9px] font-bold uppercase tracking-wider mb-1.5 truncate",
+        "text-xs font-semibold mb-2",
         m.highlight ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400"
       )}>
         {m.label}
       </p>
       <p className={cn(
-        "text-sm font-black font-mono tabular-nums leading-tight",
+        "text-lg font-semibold font-mono tabular-nums leading-tight break-all",
         m.highlight
           ? "text-neutral-900 dark:text-neutral-100"
           : "text-neutral-900 dark:text-white"
@@ -45,18 +45,13 @@ function MetricCard({ m }: { m: MetricItem }) {
       {m.sub && (
         <div className="flex items-center gap-1 mt-1.5">
           <Calendar size={9} className="text-neutral-400 shrink-0" />
-          <span className="text-[9px] text-neutral-400 font-mono">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
             {m.sub.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")}
           </span>
         </div>
       )}
 
-      {/* 호버 툴팁 */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-neutral-900 dark:bg-surface-dark-card text-white text-[10px] p-2.5 rounded-xl shadow-lg border border-neutral-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
-        <p className="font-bold text-neutral-400 text-[9px] pb-1 mb-1 tracking-widest font-mono uppercase border-b border-neutral-700">{m.label}</p>
-        <p className="text-neutral-200 font-medium">{m.desc}</p>
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-neutral-900 dark:border-t-neutral-800" />
-      </div>
+      <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 break-keep">{m.desc}</p>
     </div>
   );
 }
@@ -66,7 +61,7 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
   return (
     <div className="flex items-center gap-2 mb-2.5">
       <span className="text-neutral-400">{icon}</span>
-      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">{label}</span>
+      <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
       <div className="flex-1 h-px bg-neutral-100 dark:bg-surface-dark-muted" />
     </div>
   );
@@ -99,7 +94,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       // PER·PBR 은 같은 탭 위쪽 종목 카드가 크게 보여준다 — 여기서 또 적으면 같은 숫자가 두 번이다.
       return [
         { label: "EPS",     val: n(detail.epsx) ? `$${n(detail.epsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
-        { label: "BPS",     val: n(detail.bpsx) ? `$${n(detail.bpsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순자산. 청산 시 1주당 주주에게 돌아가는 자산 가치입니다." },
+        { label: "BPS",     val: n(detail.bpsx) ? `$${n(detail.bpsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순자산. 장부상 순자산을 주식 수로 나눈 값입니다." },
         { label: "52주 최고", val: n(detail.h52p) ? `$${Number(detail.h52p).toFixed(2)}` : "—", sub: detail.h52d ? `${detail.h52d.slice(0,4)}-${detail.h52d.slice(4,6)}-${detail.h52d.slice(6,8)}` : "", type: "price", desc: "최근 52주간 가장 높았던 주가입니다." },
         { label: "52주 최저", val: n(detail.l52p) ? `$${Number(detail.l52p).toFixed(2)}` : "—", sub: detail.l52d ? `${detail.l52d.slice(0,4)}-${detail.l52d.slice(4,6)}-${detail.l52d.slice(6,8)}` : "", type: "price", desc: "최근 52주간 가장 낮았던 주가입니다." },
         { label: "시가총액",  val: `$${formatKoreanUnit(usMarketCap)}`, type: "volume", desc: "상장주식 전체를 현재 주가로 평가한 총 금액입니다." },
@@ -158,7 +153,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       // PER·PBR 은 같은 탭 위쪽 종목 카드가 크게 보여준다 — 여기서 또 적으면 같은 숫자가 두 번이다.
       return [
         { label: "EPS",     val: n(p.eps) ? `${n(p.eps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
-        { label: "BPS",     val: n(p.bps) ? `${n(p.bps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순자산. 청산 시 1주당 주주에게 돌아가는 자산 가치입니다." },
+        { label: "BPS",     val: n(p.bps) ? `${n(p.bps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순자산. 장부상 순자산을 주식 수로 나눈 값입니다." },
         { label: "52주 최고", val: finalHigh.val > 0 ? `${Math.round(finalHigh.val).toLocaleString()}원` : "—", sub: fmt52Date(finalHigh.date), type: "price", desc: "최근 52주간 가장 높았던 주가입니다." },
         { label: "52주 최저", val: finalLow.val  > 0 ? `${Math.round(finalLow.val).toLocaleString()}원`  : "—", sub: fmt52Date(finalLow.date),  type: "price", desc: "최근 52주간 가장 낮았던 주가입니다." },
         { label: "시가총액",  val: formatKoreanUnit(calculatedMarketCap), type: "volume", desc: "상장주식 전체를 현재 주가로 평가한 총 금액입니다." },
@@ -191,8 +186,8 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
             <h4 className="text-xs font-extrabold text-neutral-800 dark:text-neutral-200 tracking-tight leading-tight">
               시장 지표
             </h4>
-            <p className="text-[9px] text-neutral-400 font-mono font-bold uppercase tracking-wider mt-0.5">
-              Market Indicators
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono font-bold uppercase tracking-wider mt-0.5">
+              주당 가치 · 가격 범위 · 거래 규모
             </p>
           </div>
         </div>
@@ -227,7 +222,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {/* 밸류에이션 지표 */}
         {valuationMetrics.length > 0 && (
           <div>
-            <SectionLabel icon={<Layers size={11} />} label="밸류에이션" />
+            <SectionLabel icon={<Layers size={11} />} label="한 주당 이익과 순자산" />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {valuationMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>

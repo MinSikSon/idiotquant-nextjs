@@ -277,7 +277,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   if (!result) {
     return (
       <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark p-0 sm:p-6">
-        <p className="text-sm text-neutral-500">연간 공시 재무자료를 확인할 수 없습니다.</p>
+        <p className="text-sm text-neutral-500">위험도를 점검할 재무 자료가 부족합니다.</p>
       </div>
     );
   }
@@ -293,15 +293,15 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         <div className="flex items-center gap-2">
           <ShieldAlert size={16} className="text-neutral-500 dark:text-neutral-400" />
           <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">미국 상장유지 위험도</span>
-          <span className="text-[10px] text-neutral-400 font-mono">NYSE / NASDAQ</span>
+          <span className="text-xs text-neutral-400 font-mono">NYSE / NASDAQ</span>
         </div>
-        <span className={cn("px-2.5 py-0.5 rounded-lg text-[11px] font-black border", cfg.badge)}>
+        <span className={cn("px-2.5 py-0.5 rounded-lg text-sm font-black border", cfg.badge)}>
           {overallGrade}
         </span>
       </div>
 
       <div className="p-0 sm:p-5 space-y-5">
-        <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{cfg.sub}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{cfg.sub}</p>
 
         {/* 기준 목록 */}
         <div className="space-y-2">
@@ -313,11 +313,12 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
+                  <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
                     <span className={cn("text-xs font-black font-mono tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>
                   </div>
-                  <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{c.note}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{c.note}</p>
                   {c.law !== "참고지표" && (
-                    <p className="text-[9px] text-neutral-400 dark:text-neutral-500 mt-0.5 font-mono">{c.law}</p>
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 font-mono">{c.law}</p>
                   )}
                 </div>
               </div>
@@ -328,17 +329,17 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         {/* 영업이익 연간 바 차트 */}
         {opYears.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-2.5">
-              연도별 영업이익 추이 (연간 공시)
+            <p className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-2.5">
+              연간 공시 기준 영업이익 추이
             </p>
             <div className="space-y-2">
               {opYears.map(y => (
                 <div key={y.year} className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-neutral-400 w-10 shrink-0">{y.year}</span>
+                  <span className="text-xs font-mono text-neutral-400 w-10 shrink-0">{y.year}</span>
                   <div className="flex-1 flex items-center gap-1.5">
                     <OpBar val={y.op} max={maxAbsOp} />
                     <span className={cn(
-                      "text-[10px] font-black font-mono w-24 text-right shrink-0",
+                      "text-xs font-black font-mono w-24 text-right shrink-0",
                       y.op >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
                     )}>
                       {fmtUSD(y.op)}
@@ -348,7 +349,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               ))}
             </div>
             {consLossCount > 0 && (
-              <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 mt-2">
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mt-2">
                 현재 {consLossCount}년 연속 영업손실
               </p>
             )}
@@ -362,19 +363,19 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
               <Eye size={13} className="text-orange-600 dark:text-orange-400" />
               <span className="text-xs font-bold text-orange-700 dark:text-orange-400">흑자전환 의심 패턴 감지</span>
             </div>
-            <p className="text-[11px] text-orange-600 dark:text-orange-400 mb-2">
+            <p className="text-sm text-orange-600 dark:text-orange-400 mb-2">
               직전 {opYears.length - 1}개 연도 영업손실 후 흑자전환 — 재무 왜곡 여부 확인 권장
             </p>
             {flags.map(f => (
               <div key={f.label} className="flex items-start gap-1.5 mt-1">
-                <span className="text-orange-500 font-bold text-[10px] shrink-0 mt-0.5">•</span>
-                <p className="text-[10px] text-orange-600 dark:text-orange-400">
+                <span className="text-orange-500 font-bold text-xs shrink-0 mt-0.5">•</span>
+                <p className="text-xs text-orange-600 dark:text-orange-400">
                   <span className="font-bold">{f.label}</span> — {f.desc}
                 </p>
               </div>
             ))}
             {flags.length === 0 && (
-              <p className="text-[10px] text-orange-600 dark:text-orange-400">패턴 감지, 특정 의심 신호 없음</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400">패턴 감지, 특정 의심 신호 없음</p>
             )}
           </div>
         )}
