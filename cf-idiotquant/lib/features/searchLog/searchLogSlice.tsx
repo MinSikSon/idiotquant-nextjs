@@ -18,7 +18,11 @@ export const searchLogSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         reqPostSearchLog: create.asyncThunk(
-            async (data: any) => await postSearchLog(data),
+            async (data: Parameters<typeof postSearchLog>[0]) => {
+                const result = await postSearchLog(data);
+                if (result?.success === false) throw new Error(result.error || '검색 기록 저장 실패');
+                return result;
+            },
             {
                 pending: (state) => { state.postStatus = "pending"; },
                 fulfilled: (state) => { state.postStatus = "fulfilled"; },
@@ -26,7 +30,11 @@ export const searchLogSlice = createAppSlice({
             }
         ),
         reqGetSearchLog: create.asyncThunk(
-            async (count: string) => await getSearchLog(count),
+            async (count: string) => {
+                const result = await getSearchLog(count);
+                if (result?.success === false) throw new Error(result.error || '인기 검색 조회 실패');
+                return result;
+            },
             {
                 pending: (state) => { state.getStatus = "pending"; },
                 fulfilled: (state, action) => {
