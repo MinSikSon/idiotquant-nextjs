@@ -239,18 +239,18 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             <span className="text-[13.5px] font-extrabold text-neutral-700 dark:text-neutral-200 tracking-tight">
               모델별 적정주가
             </span>
-            <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-md uppercase tracking-wider">
-              {axis.rows.length} Models
+            <span className="ml-auto text-xs font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-surface-canvas dark:bg-surface-dark-card px-2 py-0.5 rounded-md uppercase tracking-wider">
+              {axis.rows.length}개 모델
             </span>
           </div>
-          <p className="mb-3 text-[11px] text-neutral-500 dark:text-neutral-400">
-            모델마다 다른 기준으로 계산한 예상 가격입니다. <span className="sm:hidden">이름을 누르면 설명을 볼 수 있어요.</span><span className="hidden sm:inline">이름을 클릭하거나 마우스를 올리면 설명을 볼 수 있어요.</span>
+          <p className="mb-3 text-sm text-neutral-500 dark:text-neutral-400">
+            세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다. <span className="sm:hidden">이름을 누르면 설명을 볼 수 있어요.</span><span className="hidden sm:inline">이름을 클릭하거나 마우스를 올리면 설명을 볼 수 있어요.</span>
           </p>
 
           {showBaseNote && (
-            <p className="mb-2.5 text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500 break-keep">
-              아래 괴리율은 모델이 계산에 쓴 {currency}{Math.round(axis.modelBase).toLocaleString()} 기준입니다
-              (현재 시세 {currency}{Math.round(axis.curPrice).toLocaleString()}).
+            <p className="mb-2.5 text-sm leading-relaxed text-neutral-400 dark:text-neutral-500 break-keep">
+              아래 괴리율은 모델이 계산에 쓴 {currency}{axis.modelBase.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })} 기준입니다
+              (현재 시세 {currency}{axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}).
             </p>
           )}
 
@@ -267,10 +267,10 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                 {axis.curPrice > 0 && (
                   <>
                     <span
-                      className="absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-bold font-mono text-neutral-500 dark:text-neutral-400"
+                      className="absolute -translate-x-1/2 whitespace-nowrap text-xs font-bold font-mono text-neutral-500 dark:text-neutral-400"
                       style={{ left: `${curLabelPos}%` }}
                     >
-                      현재가 {Math.round(axis.curPrice).toLocaleString()}
+                      현재가 {axis.curPrice.toLocaleString(undefined, { maximumFractionDigits: isUs ? 2 : 0 })}
                     </span>
                     {/* 라벨과 첫 행의 세로선을 잇는 토막 — 선이 라벨에서 시작하는 것처럼 보인다 */}
                     <div
@@ -310,7 +310,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     >
                       <span className="block break-keep sm:truncate">{r.config.name}</span>
                     </button>
-                    <p className="hidden sm:block text-[9.5px] text-neutral-500 dark:text-neutral-400 truncate">{r.config.description.short}</p>
+                    <p className="hidden sm:block text-xs text-neutral-500 dark:text-neutral-400 truncate">{r.config.description.short}</p>
                   </div>
 
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
@@ -352,13 +352,13 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
                   </span>
-                  <p className="col-span-4 sm:hidden text-[11px] leading-snug text-neutral-600 dark:text-neutral-300 break-keep">
+                  <p className="col-span-4 sm:hidden text-sm leading-snug text-neutral-600 dark:text-neutral-300 break-keep">
                     {r.config.description.short}
                   </p>
                   {isExplained && (
                     <div
                       id={`model-explanation-${r.type}`}
-                      className="col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep"
+                      className="col-span-4 rounded-lg bg-surface-canvas dark:bg-surface-dark-canvas p-3 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 break-keep"
                     >
                       <p><strong className="text-neutral-900 dark:text-white">계산 방식</strong> · {r.config.description.detail}</p>
                       {r.config.description.caution && (
@@ -387,6 +387,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                aria-pressed={activeTab === tab.id}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150",
                   activeTab === tab.id
@@ -409,7 +410,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
           {/* 카드 그리드 */}
           {filteredModels.length > 0 ? (
-            <div className="py-3 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="py-3 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
               {filteredModels.map(m => (
                 <StrategyCard
                   key={m.type}
@@ -455,7 +456,7 @@ interface StrategyCardProps {
 }
 
 function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const config = MODEL_CONFIG[modelType] ?? DEFAULT_CONFIG;
 
@@ -484,8 +485,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
       {/* 카드 헤더 */}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between cursor-pointer hover:bg-surface-muted-hover/50 dark:hover:bg-surface-dark-hover/50 transition-colors select-none"
+        className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
@@ -506,12 +506,19 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                 {config.category === "ASSET" ? "자산가치" : "수익가치"}
               </span>
             </div>
-            <p className="text-[10px] font-mono text-neutral-400 mt-0.5 truncate">{result.formula}</p>
+            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 mt-1 break-keep">{config.description.short}</p>
           </div>
         </div>
-        <div className="shrink-0 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-surface-muted-hover dark:hover:bg-surface-dark-card transition-colors ml-2">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(open => !open)}
+          aria-expanded={isExpanded}
+          aria-label={`${config.name} 세부 계산 ${isExpanded ? '접기' : '보기'}`}
+          className="shrink-0 min-h-11 inline-flex items-center gap-1 px-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 ml-2"
+        >
+          {isExpanded ? '접기' : '계산 보기'}
           {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </div>
+        </button>
       </div>
 
       {/* 카드 바디 */}
@@ -519,9 +526,10 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
         <>
           {/* 모델 설명 */}
           <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-50 dark:border-border-subtle-dark/60 bg-surface-canvas/30 dark:bg-surface-dark-card/10">
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
-              {config.description.short}
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+              {config.description.detail}
             </p>
+            <p className="mt-2 text-xs leading-relaxed font-mono text-neutral-500 dark:text-neutral-400 break-words">계산식 · {result.formula}</p>
           </div>
 
           {/* 핵심 지표 그리드 */}
@@ -552,7 +560,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     <th
                       key={i}
                       className={cn(
-                        "px-2 sm:px-5 py-2.5 text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider font-mono whitespace-nowrap",
+                        "px-2 sm:px-5 py-2.5 text-xs font-extrabold text-neutral-400 uppercase tracking-wider font-mono whitespace-nowrap",
                         i > 0 && "text-right"
                       )}
                     >
@@ -622,7 +630,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           {/* 푸터 노트 */}
           <div className="px-0 sm:px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/30 dark:bg-surface-dark-card/10 flex items-start gap-2">
             <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 leading-relaxed">
               {result.footerNotice}
             </p>
           </div>

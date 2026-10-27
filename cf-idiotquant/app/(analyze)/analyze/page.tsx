@@ -283,14 +283,38 @@ const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 
 // 상세 분석 탭 — 화면 크기와 무관하게 같은 사용 모델을 쓴다.
 // (예전엔 모바일만 탭이고 데스크톱은 네 섹션이 전부 펼쳐져 스크롤이 길었다)
 const DETAIL_TABS = [
-  { key: 'strategy', label: '전략' },
+  { key: 'strategy', label: '적정가치' },
   // 카드(시세·등급·차트)와 상세 지표는 둘 다 "지금 이 종목의 숫자"다. 탭을 갈라 두면
   // PER·PBR 같은 같은 값을 양쪽에서 다시 보게 되고, 어느 탭을 눌러야 할지 매번 판단해야 한다.
-  { key: 'metrics', label: '지표' },
-  { key: 'risk', label: '위험도' },
-  { key: 'financials', label: '재무' },
+  { key: 'metrics', label: '주요 지표' },
+  { key: 'risk', label: '위험 점검' },
+  { key: 'financials', label: '재무 흐름' },
 ] as const;
 type DetailTab = typeof DETAIL_TABS[number]['key'];
+
+const TAB_GUIDES: Record<DetailTab, { title: string; description: string; steps: string[] }> = {
+  strategy: {
+    title: '현재 가격을 여러 기준으로 비교해 보세요',
+    description: '자산, 이익, 현금흐름에 따라 계산한 가격이 달라집니다. 모델별 차이를 먼저 보고, 관심 있는 모델의 가정을 확인하세요.',
+    steps: ['현재가와 계산 가격 비교', '모델 이름을 눌러 의미 확인', '세부 계산에서 가정 비교'],
+  },
+  metrics: {
+    title: '가격과 기업의 기초 체력을 함께 살펴보세요',
+    description: '핵심 지표로 자산·이익 대비 가격을 보고, 가격 추이와 거래 지표를 함께 확인할 수 있습니다. — 표시는 값이 없거나 계산할 수 없는 항목입니다.',
+    steps: ['핵심 지표 확인', '가격 추이 살펴보기', '주당 가치와 거래 규모 확인'],
+  },
+  risk: {
+    title: '주의가 필요한 항목과 그 근거를 확인하세요',
+    description: '항목별 판정과 실제 수치를 함께 보세요. 재무 수치에 따른 점검 결과이며, 거래소의 공식 상장폐지 결정이나 확률을 뜻하지 않습니다.',
+    steps: ['전체 점검 결과', '주의·위험 항목의 근거', '연간 손익 흐름 확인'],
+  },
+  financials: {
+    title: '회사의 재산과 돈의 흐름을 읽어보세요',
+    description: '재무상태표는 가진 자산과 갚을 빚을, 손익계산서는 일정 기간의 매출과 이익을 보여줍니다. 추이는 그래프로, 정확한 수치는 표로 확인하세요.',
+    steps: ['공시 기준일과 단위 확인', '같은 항목의 기간별 변화 비교', '숫자표로 세부 금액 확인'],
+  },
+};
+
 
 // =========================================================================
 // 종합 판단 — 지표 값에서 문장과 색을 생성한다.
@@ -670,13 +694,13 @@ function AnalyzeContent() {
             재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
         {isPriceLoaded && (
           <div className={cn(ANALYZE_WIDTH, styles.tabsRow)}>
-            <div className={styles.tabStrip} aria-label="분석 보기 선택">
+            <div role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
               {DETAIL_TABS.map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
                   aria-pressed={activeTab === key}
-                  className={cn(styles.tab, activeTab === key && styles.tabActive)}
+                  className={cn(styles.tab, "text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2", activeTab === key && styles.tabActive)}
                 >
                   {label}
                 </button>
@@ -760,21 +784,20 @@ function AnalyzeContent() {
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
                 <div className={styles.verdict} data-tone={verdict.tone}>
-                  {/* 모바일 — 한 줄 요약. 눌러서 지표 4개를 펼친다(접힌 상태가 기본).
-                      truncate 로 문장이 길어져도 줄바꿈이 생기지 않게 못 박는다. */}
+                  {/* 종합 판단은 짧게 보여주고, 클릭하면 근거 지표를 펼친다. */}
                   <button
                     type="button"
                     onClick={() => setVerdictOpen(o => !o)}
                     aria-expanded={verdictOpen}
-                    className="w-full min-h-11 flex items-center gap-1 sm:hidden text-left"
+                    className="w-full min-h-11 flex items-center gap-2 text-left"
                   >
                     <span className={cn(
                       "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-semibold font-mono tabular-nums bg-white/70 dark:bg-surface-dark-canvas/50",
                       VERDICT_TONE[verdict.tone].label
                     )}>
-                      {verdict.metCount}/{verdict.checks.length}
+                      {verdict.metCount}/{verdict.checks.length} 충족
                     </span>
-                    <span className={cn("min-w-0 flex-1 text-[11.5px] font-medium truncate", VERDICT_TONE[verdict.tone].text)}>
+                    <span className={cn("min-w-0 flex-1 text-sm font-semibold leading-relaxed", VERDICT_TONE[verdict.tone].text)}>
                       {verdict.lead}
                     </span>
                     <ChevronDown
@@ -785,7 +808,7 @@ function AnalyzeContent() {
 
                   {/* 펼친 내용 — 좁은 폭이라 한 줄에 하나씩. 기준을 같이 적어야 왜 ✓/✕ 인지 읽힌다 */}
                   {verdictOpen && (
-                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-surface-dark-border/70 flex flex-col gap-1.5 sm:hidden">
+                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-surface-dark-border/70 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {verdict.checks.map(c => (
                         <div key={c.label} className="flex items-center gap-2">
                           <span className={cn(
@@ -806,39 +829,21 @@ function AnalyzeContent() {
                       ))}
                     </div>
                   )}
-
-                  <div className="hidden sm:block">
-                    <p className={styles.verdictLabel}>
-                      종합 판단 · 저평가 기준 {verdict.checks.length}개 중 {verdict.metCount}개 충족
-                    </p>
-                    <p className={styles.verdictLead}>
-                      {verdict.lead}
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      {verdict.checks.map(c => (
-                        <div key={c.label}
-                          className={cn(styles.check, "flex items-center gap-2.5 px-3 py-2 rounded-xl border")}>
-                          <span className={cn(
-                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-semibold text-white shrink-0",
-                            c.ok ? "bg-emerald-600" : "bg-neutral-300 dark:bg-surface-dark-elevated"
-                          )}>
-                            {c.ok ? '✓' : '✕'}
-                          </span>
-                          <span className="text-[11.5px] font-bold text-neutral-600 dark:text-neutral-300 truncate">{c.label}</span>
-                          {/* 기준을 같이 적는다 — 값만 보면 왜 ✓/✕ 인지 알 수 없다 */}
-                          <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
-                          <span className={cn(
-                            "ml-auto text-[12.5px] font-semibold font-mono tabular-nums shrink-0",
-                            c.ok ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500"
-                          )}>
-                            {c.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
+
+              <section className={styles.tabGuide} aria-label={`${DETAIL_TABS.find(tab => tab.key === activeTab)?.label} 읽는 방법`}>
+                <h2>{TAB_GUIDES[activeTab].title}</h2>
+                <p>{TAB_GUIDES[activeTab].description}</p>
+                <details>
+                  <summary>이 탭을 읽는 순서</summary>
+                  <ol>
+                    {TAB_GUIDES[activeTab].steps.map((step, index) => (
+                      <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>
+                    ))}
+                  </ol>
+                </details>
+              </section>
 
               {/* 지표 탭 (1/2) — 종목 카드. 핵심 지표(NCAV·PBR·PER·ROE)를 카드가 크게 보여주고,
                   아래 상세 지표 표가 나머지를 잇는다. 결론이 위, 근거가 아래.
@@ -946,18 +951,18 @@ function AnalyzeContent() {
                   )}
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <div className={cn(styles.panel, "flex flex-col gap-4")}>
-                      <div className="flex items-center gap-2">
-                        <p className={styles.sectionLabel}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-300">
                           {krOrUs === 'KR' ? '최신 분기 공시 기준 · 억 원' : '최신 공시 기준 · USD'}
                         </p>
                         <div className={cn(styles.segmented, "ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg")}>
-                          {([['bars', '막대'], ['table', '표']] as const).map(([mode, label]) => (
+                          {([['bars', '추이 그래프'], ['table', '숫자표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}
                               onClick={() => setFinanceView(mode)}
                               aria-pressed={financeView === mode}
                               className={cn(
-                                "px-2.5 py-1 rounded-lg text-[11px] transition-colors",
+                                "min-h-11 px-3 py-2 rounded-lg text-sm transition-colors",
                                 financeView === mode
                                   ? styles.segmentActive
                                   : "font-bold text-neutral-500 dark:text-neutral-400"
@@ -969,7 +974,11 @@ function AnalyzeContent() {
                         </div>
                       </div>
 
-                      <p className="mb-3 text-xs text-neutral-500">NCAV는 최신 재무상태표 기준입니다. 손익·현금흐름은 각 공시의 기간 기준이며, 연간 이익 기반 가치평가와 연속 적자 판단에는 연간 자료를 사용합니다.</p>
+                      <details className={styles.readingNote}>
+                        <summary>분기·연간 자료는 어떻게 읽나요?</summary>
+                        <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름은 표시된 기간 동안의 금액이므로, 분기·누적·연간을 구분해 비교하세요.</p>
+                        <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
+                      </details>
 
                       {financeView === 'bars' ? (
                         krOrUs === 'KR'

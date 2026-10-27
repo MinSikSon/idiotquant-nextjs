@@ -37,7 +37,7 @@ function Stack({ row }: { row: StackRow }) {
                         title={`${seg.label} ${seg.pct.toFixed(1)}%`}
                         style={{ width: `${seg.pct}%` }}
                         className={cn(
-                            "grid place-items-center min-w-0 overflow-hidden whitespace-nowrap font-mono text-[10.5px] font-black",
+                            "grid place-items-center min-w-0 overflow-hidden whitespace-nowrap font-mono text-sm font-black",
                             TONE_BG[seg.tone],
                             seg.pale ? "opacity-45 text-neutral-900 dark:text-white" : "text-white"
                         )}
@@ -63,7 +63,7 @@ function Stack({ row }: { row: StackRow }) {
 // ── 증감 배지 ────────────────────────────────────────────────────────────
 function DeltaBadge({ item }: { item: BarItem }) {
     const d = periodDelta(item.values);
-    if (d.turnedLoss) return <span className="font-mono text-[10.5px] font-bold text-rose-500 dark:text-rose-400">적자전환</span>;
+    if (d.turnedLoss) return <span className="font-mono text-sm font-bold text-rose-500 dark:text-rose-400">적자전환</span>;
 
     // 현금흐름처럼 음수가 정상인 항목은 변화율이 오해를 부른다 — 유출이 −4,200 → −5,900 으로
     // 커진 것을 "−40.5%" 로 적으면 줄어든 것처럼 읽힌다. 규모의 방향으로 바꿔 말한다.
@@ -72,7 +72,7 @@ function DeltaBadge({ item }: { item: BarItem }) {
         const oldest = [...item.values].reverse().find(v => v !== null) ?? null;
         if (latest !== null && oldest !== null && latest < 0 && oldest < 0) {
             return (
-                <span className="font-mono text-[10.5px] font-bold text-neutral-400">
+                <span className="font-mono text-sm font-bold text-neutral-400">
                     유출 {Math.abs(latest) >= Math.abs(oldest) ? "확대" : "축소"}
                 </span>
             );
@@ -85,7 +85,7 @@ function DeltaBadge({ item }: { item: BarItem }) {
     const flat = Math.abs(d.pct) < 0.05;
     return (
         <span className={cn(
-            "font-mono text-[10.5px] font-bold tabular-nums",
+            "font-mono text-sm font-bold tabular-nums",
             item.neutral || flat ? "text-neutral-400"
                 : good ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
         )}>
@@ -110,7 +110,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
 
     return (
         <div className="flex flex-col gap-1">
-            <div className="flex items-baseline gap-1.5">
+            <div className="flex flex-wrap items-baseline gap-1.5">
                 <span className={cn(
                     "text-[12.5px] font-bold flex items-center gap-1.5",
                     item.isTotal ? "text-neutral-900 dark:text-white" : "text-neutral-700 dark:text-neutral-300"
@@ -135,11 +135,11 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                 return (
                     <div key={periods[i] ?? i} className="grid min-h-8 grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
                         <span className={cn(
-                            "flex flex-col whitespace-nowrap font-mono text-[10px] leading-4 tabular-nums",
-                            isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-400 dark:text-neutral-500"
+                            "flex flex-col whitespace-nowrap font-mono text-xs leading-4 tabular-nums",
+                            isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-500 dark:text-neutral-400"
                         )} title={period} aria-label={period}>
                             <span aria-hidden="true">{date}</span>
-                            {basis && <span aria-hidden="true" className="text-[9px] font-normal leading-3 text-neutral-500 dark:text-neutral-400">{basis}</span>}
+                            {basis && <span aria-hidden="true" className="text-[11px] font-normal leading-3 text-neutral-500 dark:text-neutral-400">{basis}</span>}
                         </span>
 
                         <div className={cn(
@@ -165,7 +165,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
 
                         <span className={cn(
                             "whitespace-nowrap text-right font-mono tabular-nums",
-                            isLatest ? "text-[11px] font-bold text-neutral-800 dark:text-neutral-100" : "text-[10px] text-neutral-400 dark:text-neutral-500",
+                            isLatest ? "text-xs font-bold text-neutral-800 dark:text-neutral-100" : "text-xs text-neutral-500 dark:text-neutral-400",
                             v !== null && v < 0 && "text-rose-500 dark:text-rose-400"
                         )}>
                             {f(v)}
@@ -183,7 +183,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
         <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
             <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h4 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100">{model.title}</h4>
-                <span className="font-mono text-[10px] text-neutral-400">
+                <span className="font-mono text-xs text-neutral-400">
                     {compactPeriod(model.periods[0] ?? "").date} → {compactPeriod(model.periods[model.periods.length - 1] ?? "").date}
                     {unit === "eok" ? " · 억 원" : " · USD"}
                 </span>
@@ -191,7 +191,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
 
             {model.stacks.length > 0 && (
                 <div className="px-0 sm:px-5 py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-3.5">
-                    <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-neutral-400">
+                    <span className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
                         한눈에 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
                     {model.stacks.map(s => <Stack key={s.title} row={s} />)}
@@ -201,7 +201,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             <div className="px-0 sm:px-5 pb-5">
                 {model.groups.map(g => (
                     <div key={g.labelEn}>
-                        <div className="flex items-center gap-1.5 mt-5 mb-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-neutral-400">
+                        <div className="flex items-center gap-1.5 mt-5 mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
                             <i className={cn("w-[7px] h-[7px] rounded-full shrink-0", TONE_BG[g.tone])} />
                             {g.labelEn}
                         </div>
@@ -221,9 +221,13 @@ export function FinancialBars({ bs, is, unit }: { bs: BarModel | null; is: BarMo
     if (!bs && !is) return null;
     return (
         <div className="flex flex-col gap-4">
+            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+                각 항목의 첫 줄이 가장 최근 자료입니다. 막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최근 값을 비교합니다.
+            </p>
+            {unit === "usd" && <p className="text-xs text-neutral-500 dark:text-neutral-400">금액 단위: USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러</p>}
             {bs && <StatementCard model={bs} unit={unit} />}
             {is && <StatementCard model={is} unit={unit} />}
-            <p className="text-[10.5px] leading-relaxed text-neutral-400 dark:text-neutral-500 break-keep px-1">
+            <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep px-1">
                 막대 길이는 <span className="font-bold">항목별</span>로 자기 기간 최댓값을 100% 로 잡은 것입니다 —
                 같은 항목의 세로 비교용이며, 항목끼리의 길이 비교는 의미가 없습니다.
                 맨 위 구성 막대만 한 줄 합계가 100% 입니다.
