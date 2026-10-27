@@ -691,11 +691,11 @@ function AnalyzeContent() {
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
-                  <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">인기</span>
+                  <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider" title="최근 7일 검색 기준 · 최근 검색에 더 높은 가중치">인기</span>
                 </div>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
-                    <button key={i} onClick={() => handleSearch(s.ticker)}
+                    <button key={s.ticker} onClick={() => handleSearch(s.ticker)}
                       className={cn(styles.historyButton, "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-surface-dark-card text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-border-subtle-dark hover:border-brand/70 hover:text-brand-ink dark:hover:text-brand-ink transition-all whitespace-nowrap")}
                     >
                       <span className={cn(styles.rank, "w-3.5 h-3.5 flex items-center justify-center rounded-full text-[8px] shrink-0")}>{i + 1}</span>

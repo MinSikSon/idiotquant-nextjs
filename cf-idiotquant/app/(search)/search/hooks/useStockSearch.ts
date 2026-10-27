@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"; // useCallback 추가
+import { useState, useCallback, useRef } from "react"; // useCallback 추가
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import corpCodeJson from "@/public/data/validCorpCode.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
@@ -71,8 +71,10 @@ import {
 } from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
 import { addKrMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 import { reqPostSearchLog } from "@/lib/features/searchLog/searchLogSlice";
+import { searchLogFromQuote } from "@/lib/features/searchLog/tracking";
 
 const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
+const krNamesByCode = new Map(Object.entries(corpCodeJson).map(([name, entry]) => [entry.stock_code, name]));
 
 export function useStockSearch() {
     const dispatch = useAppDispatch();
@@ -90,20 +92,7 @@ export function useStockSearch() {
     const usDaily = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
     const finnhubData = useAppSelector(selectFinnhubFinancialsAsReported);
 
-    const lastLoggedTicker = useRef<string>("");
     const searchIdRef = useRef(0);
-    // 로깅 Side Effect
-    useEffect(() => {
-        const currentTicker = name.toUpperCase();
-        if (currentTicker && currentTicker !== lastLoggedTicker.current) {
-            dispatch(reqPostSearchLog({
-                ticker: currentTicker,
-                name: name,
-                isUs: krOrUs === "US"
-            }));
-            lastLoggedTicker.current = currentTicker;
-        }
-    }, [name, krOrUs, dispatch]);
 
     // [중요] useCallback으로 감싸서 함수 참조값을 고정합니다.
     const onSearch = useCallback(async (stockName: string) => {
@@ -118,10 +107,10 @@ export function useStockSearch() {
 
         try {
             const upper = stockName.toUpperCase();
-            const searchKr = (code: string) => {
+            const searchKr = async (code: string) => {
                 setKrOrUs("KR");
                 dispatch(resetKrStockData());
-                return Promise.allSettled([
+                const [price] = await Promise.allSettled([
                     dispatch(reqGetInquirePrice({ PDNO: code })),
                     dispatch(reqGetInquireDailyItemChartPrice({
                         PDNO: code,
@@ -131,11 +120,15 @@ export function useStockSearch() {
                     dispatch(reqGetBalanceSheet({ PDNO: code })),
                     dispatch(reqGetIncomeStatement({ PDNO: code })),
                 ]);
+                if (searchId === searchIdRef.current && price.status === 'fulfilled') {
+                    const entry = searchLogFromQuote(code, false, price.value.payload, krNamesByCode.get(code) ?? stockName);
+                    if (entry) void dispatch(reqPostSearchLog(entry));
+                }
             };
-            const searchUs = () => {
+            const searchUs = async () => {
                 setKrOrUs("US");
                 const ticker = upper;
-                return Promise.allSettled([
+                const [info, price] = await Promise.allSettled([
                     dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker })),
                     dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker })),
                     dispatch(reqGetOverseasPriceQuotationsDailyPrice({
@@ -144,6 +137,11 @@ export function useStockSearch() {
                     })),
                     dispatch(reqGetFinnhubUsFinancialsReported(ticker)),
                 ]);
+                if (searchId === searchIdRef.current && price.status === 'fulfilled') {
+                    const metadata = info.status === 'fulfilled' ? info.value.payload as any : null;
+                    const entry = searchLogFromQuote(ticker, true, price.value.payload, metadata?.output?.prdt_name ?? ticker);
+                    if (entry) void dispatch(reqPostSearchLog(entry));
+                }
             };
 
             if (us_tickers.includes(upper)) { await searchUs(); return; }
