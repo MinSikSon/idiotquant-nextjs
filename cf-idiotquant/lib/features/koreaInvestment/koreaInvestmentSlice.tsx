@@ -393,6 +393,8 @@ export interface KoreaInvestmentIncomeStatement {
   msg_cd: string;        // 응답코드
   msg1: string;          // 응답메세지
   output: KoreaInvestmentIncomeStatementOutput[];
+  annualOutput?: KoreaInvestmentIncomeStatementOutput[];
+  frequency?: "annual" | "quarterly";
 }
 
 export interface KiInquireBalanceRlzPlResponseBodyOutput1 {

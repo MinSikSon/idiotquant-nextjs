@@ -117,7 +117,7 @@ interface Props {
 
 export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
   const result = useMemo(() => {
-    const allReports: any[] = finnhubData?.data ?? [];
+    const allReports: any[] = finnhubData?.annualData ?? finnhubData?.data ?? [];
     const annuals = allReports
       .filter((r: any) => /^(10-K|20-F|40-F)(\/A)?$/.test(r.form ?? ""))
       .sort((a: any, b: any) => (b.year ?? 0) - (a.year ?? 0))
@@ -126,7 +126,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
     if (annuals.length === 0) return null;
 
     const latest = annuals[0];
-    const bs = latest.report?.bs ?? [];
+    const bs = finnhubData?.data?.[0]?.report?.bs ?? [];
     const ic = latest.report?.ic ?? [];
     const cf = latest.report?.cf ?? [];
 

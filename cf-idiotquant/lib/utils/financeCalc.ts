@@ -1,3 +1,5 @@
+import { annualKrIncomeRows, annualUsReport, latestFirst } from "./financialPeriods";
+
 export const ONE_HUNDRED_MILLION = 100000000;
 
 // 이미 억 단위인 값을 조/억으로 포맷 (접미사 없음)
@@ -82,6 +84,7 @@ export interface FinnhubFinancialsAsReportedType {
     cik: string;
     data: FinnhubFinancialsAsReportedDataType[];
     symbol: string;
+    annualData?: FinnhubFinancialsAsReportedDataType[];
 }
 
 // ============================================================================
@@ -113,8 +116,8 @@ function findFinnhubValue(list: FinnhubFinancialsAsReportedDataReportCommonType[
 // ============================================================================
 
 export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
-    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(latestFirst<any>(kiBS?.output)?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(latestFirst<any>(kiBS?.output)?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
@@ -152,8 +155,8 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: numb
     // (예: "-" 같은 비수치 문자열)까지 막기 위함이고, 음수(자본잠식)는 그대로 보존한다.
     // 0이면 아래 total_cptl > 0 가드로 ROE 0이 되고, 적정주가도 0이라
     // ValuationSection 의 targetPrice > 0 필터에서 걸러져 축 요약을 오염시키지 않는다.
-    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
-    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    const total_cptl = (Number(latestFirst<any>(kiBS?.output)?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(annualKrIncomeRows<any>(kiIS)?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
@@ -240,8 +243,8 @@ export function calculateKrDCF(kiCF: any, kiChart: any, wacc: number = 10.0, ter
 
 export function calculateKrMultipliers(kiBS: any, kiIS: any, kiChart: any): ValuationResult {
     // 값이 없거나 숫자가 아니면 0 (1로 폴백하면 값이 폭주 — calculateKrSRIM 주석 참고)
-    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
-    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    const total_cptl = (Number(latestFirst<any>(kiBS?.output)?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(annualKrIncomeRows<any>(kiIS)?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
@@ -275,7 +278,7 @@ export function calculateKrMultipliers(kiBS: any, kiIS: any, kiChart: any): Valu
 
 export function calculateKrPbrBand(kiBS: any, kiChart: any): ValuationResult {
     // 값이 없거나 숫자가 아니면 0 (1로 폴백하면 값이 폭주 — calculateKrSRIM 주석 참고)
-    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
+    const total_cptl = (Number(latestFirst<any>(kiBS?.output)?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
@@ -311,7 +314,7 @@ export function calculateKrPbrBand(kiBS: any, kiChart: any): ValuationResult {
 // ============================================================================
 
 export function calculateUsNcav(finnhub: FinnhubFinancialsAsReportedType, detail: any): ValuationResult | string {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const bs = latestFirst(finnhub?.data)?.[0]?.report?.bs ?? [];
     
     // us-gaap_ 유무와 상관없이 매칭 처리
     const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
@@ -352,8 +355,8 @@ export function calculateUsNcav(finnhub: FinnhubFinancialsAsReportedType, detail
 }
 
 export function calculateUsSRIM(finnhub: FinnhubFinancialsAsReportedType, detail: any, baseKe: number = 8.0): ValuationResult | string {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const ic = finnhub?.data?.[0]?.report?.ic ?? [];
+    const bs = latestFirst(finnhub?.data)?.[0]?.report?.bs ?? [];
+    const ic = annualUsReport(finnhub)?.report?.ic ?? [];
 
     const total_equity = findFinnhubValue(bs, ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]);
     const net_income = findFinnhubValue(ic, ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]);
@@ -385,12 +388,12 @@ export function calculateUsSRIM(finnhub: FinnhubFinancialsAsReportedType, detail
             { label: "자본총계", value: `$${(total_equity / 1000000).toLocaleString()}M` },
             { label: "현재가", value: `$${last.toLocaleString()}` }
         ],
-        footerNotice: "미국 채권 시장 벤치마크 수익률 스프레드를 가산하여 안전마진을 가산합니다."
+        footerNotice: "순이익은 최근 연간 공시 기준입니다. 미국 채권 시장 벤치마크 수익률 스프레드를 가산하여 안전마진을 가산합니다."
     };
 }
 
 export function calculateUsPEG(finnhub: FinnhubFinancialsAsReportedType, detail: any, defaultGrowthRate: number = 15.0): ValuationResult | string {
-    const ic = finnhub?.data?.[0]?.report?.ic ?? [];
+    const ic = annualUsReport(finnhub)?.report?.ic ?? [];
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
@@ -421,12 +424,12 @@ export function calculateUsPEG(finnhub: FinnhubFinancialsAsReportedType, detail:
             { label: "가정 성장률", value: `${defaultGrowthRate.toFixed(1)}%` },
             { label: "현재가", value: `$${last.toLocaleString()}` }
         ],
-        footerNotice: "PEG 지표가 1.0배 미만이면 성장 속도 대비 주가가 저렴함을 뜻합니다."
+        footerNotice: "순이익은 최근 연간 공시 기준입니다. PEG 지표가 1.0배 미만이면 성장 속도 대비 주가가 저렴함을 뜻합니다."
     };
 }
 
 export function calculateUsDCF(finnhub: FinnhubFinancialsAsReportedType, detail: any, wacc: number = 9.0, terminalGrowth: number = 2.5): ValuationResult | string {
-    const cf = finnhub?.data?.[0]?.report?.cf ?? [];
+    const cf = annualUsReport(finnhub)?.report?.cf ?? [];
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
@@ -470,12 +473,12 @@ export function calculateUsDCF(finnhub: FinnhubFinancialsAsReportedType, detail:
             { label: "할인율", value: `${wacc.toFixed(1)}%` },
             { label: "현재가", value: `$${last.toLocaleString()}` }
         ],
-        footerNotice: "빅테크 및 성숙기 기업의 현금 생성 능력 가치를 절대 연산합니다."
+        footerNotice: "영업현금흐름은 최근 연간 공시 기준입니다. 빅테크 및 성숙기 기업의 현금 생성 능력 가치를 절대 연산합니다."
     };
 }
 
 export function calculateUsMultipliers(finnhub: FinnhubFinancialsAsReportedType, detail: any): ValuationResult | string {
-    const ic = finnhub?.data?.[0]?.report?.ic ?? [];
+    const ic = annualUsReport(finnhub)?.report?.ic ?? [];
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
@@ -505,7 +508,7 @@ export function calculateUsMultipliers(finnhub: FinnhubFinancialsAsReportedType,
             { label: "순이익", value: `$${(net_income / 1000000).toLocaleString()}M` },
             { label: "현재가", value: `$${last.toLocaleString()}` }
         ],
-        footerNotice: "고성장 기술주나 전통 소비재의 상대적 밸류에이션 위치를 가늠합니다."
+        footerNotice: "순이익은 최근 연간 공시 기준입니다. 고성장 기술주나 전통 소비재의 상대적 밸류에이션 위치를 가늠합니다."
     };
 }
 
@@ -514,15 +517,15 @@ export function calculateUsMultipliers(finnhub: FinnhubFinancialsAsReportedType,
 // ============================================================================
 
 export function calculateKrNcavValue(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(latestFirst<any>(kiBS?.output)?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(latestFirst<any>(kiBS?.output)?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     return Number(((cras - lblt) / lstn).toFixed(0));
 }
 
 export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(latestFirst<any>(kiBS?.output)?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(latestFirst<any>(kiBS?.output)?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
     const target = (cras - lblt) / lstn;
@@ -530,8 +533,8 @@ export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
 }
 
 export function getKrNcavGrade(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(latestFirst<any>(kiBS?.output)?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(latestFirst<any>(kiBS?.output)?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
     if (!lstn || !prpr) return { grade: "N/A", color: "text-neutral-400", cardGradeColor: "from-zinc-500/20 to-zinc-500/5" };
@@ -547,8 +550,8 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
 
 export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
     // 값이 없거나 숫자가 아니면 0 (1로 폴백하면 값이 폭주 — calculateKrSRIM 주석 참고)
-    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
-    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    const total_cptl = (Number(latestFirst<any>(kiBS?.output)?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(annualKrIncomeRows<any>(kiIS)?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const ROE = total_cptl > 0 ? (thtr_ntin / total_cptl) * 100 : 0;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1) === 0 ? 1 : Number(kiChart?.output1?.lstn_stcn ?? 1);
     const targetPrice = baseKe > 0 ? (total_cptl * (ROE / baseKe)) / lstn : 0;
@@ -556,7 +559,7 @@ export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe:
 }
 
 export function calculateUsNcavValue(finnhub: FinnhubFinancialsAsReportedType, detail: any) {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const bs = latestFirst(finnhub?.data)?.[0]?.report?.bs ?? [];
     const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
     const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
     const rawShar = detail?.output?.shar;
@@ -565,7 +568,7 @@ export function calculateUsNcavValue(finnhub: FinnhubFinancialsAsReportedType, d
 }
 
 export function calculateUsNcavRatio(finnhub: FinnhubFinancialsAsReportedType, detail: any) {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const bs = latestFirst(finnhub?.data)?.[0]?.report?.bs ?? [];
     const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
     const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
     const rawShar = detail?.output?.shar;
@@ -575,7 +578,7 @@ export function calculateUsNcavRatio(finnhub: FinnhubFinancialsAsReportedType, d
 }
 
 export function getUsNcavGrade(finnhub: FinnhubFinancialsAsReportedType, detail: any) {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const bs = latestFirst(finnhub?.data)?.[0]?.report?.bs ?? [];
     const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
     const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
     const lstn = Number(detail.output?.shar || 1);

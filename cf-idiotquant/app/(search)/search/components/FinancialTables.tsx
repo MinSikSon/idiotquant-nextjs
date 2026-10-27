@@ -1,5 +1,6 @@
 "use client";
 
+import { latestFirst } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
@@ -142,7 +143,7 @@ const TAB_TRIGGER_BASE = [
 ].join(" ");
 
 function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any }) {
-    const periods: any[] = useMemo(() => (data?.output ?? []).slice(0, 5), [data]);
+    const periods: any[] = useMemo(() => latestFirst<any>(data?.output).slice(0, 5), [data]);
 
     if (!periods.length) return (
         <div className="py-16 text-center text-sm text-neutral-400 dark:text-neutral-600">

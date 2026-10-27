@@ -947,7 +947,7 @@ function AnalyzeContent() {
                     <div className={cn(styles.panel, "flex flex-col gap-4")}>
                       <div className="flex items-center gap-2">
                         <p className={styles.sectionLabel}>
-                          {krOrUs === 'KR' ? 'DART 공시 기준 · 억 원' : 'US-GAAP 기준 · USD'}
+                          {krOrUs === 'KR' ? '최신 분기 공시 기준 · 억 원' : '최신 공시 기준 · USD'}
                         </p>
                         <div className={cn(styles.segmented, "ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg")}>
                           {([['bars', '막대'], ['table', '표']] as const).map(([mode, label]) => (
@@ -967,6 +967,8 @@ function AnalyzeContent() {
                           ))}
                         </div>
                       </div>
+
+                      <p className="mb-3 text-xs text-neutral-500">NCAV는 최신 재무상태표 기준입니다. 손익·현금흐름은 각 공시의 기간 기준이며, 연간 이익 기반 가치평가와 연속 적자 판단에는 연간 자료를 사용합니다.</p>
 
                       {financeView === 'bars' ? (
                         krOrUs === 'KR'
