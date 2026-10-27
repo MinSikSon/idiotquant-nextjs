@@ -42,7 +42,7 @@ function Stack({ row }: { row: StackRow }) {
                             seg.pale ? "opacity-45 text-neutral-900 dark:text-white" : "text-white"
                         )}
                     >
-                        {seg.pct >= 12 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}
+                        {seg.pct >= 20 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}
                     </div>
                 ))}
             </div>
@@ -95,6 +95,14 @@ function DeltaBadge({ item }: { item: BarItem }) {
 }
 
 // ── 항목 하나(최근 → 과거) ───────────────────────────────────────────────
+function compactPeriod(period: string) {
+    const dates = period.match(/\d{4}-\d{2}-\d{2}/g);
+    const date = dates?.at(-1)?.slice(2).replaceAll("-", ".")
+        ?? period.replace(/^(\d{2})(\d{2})\./, "$2.").replace(/^FY(\d{4})$/, "$1");
+    const basis = period.includes(" · ") ? period.split(" · ").at(-1)?.replace("분기 공시", "분기") : undefined;
+    return { date, basis };
+}
+
 function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[]; unit: Unit }) {
     const geo = barGeometry(item.values);
     const f = blockFormatter(unit, item.values);
@@ -112,7 +120,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                 </span>
                 <DeltaBadge item={item} />
                 <span className={cn(
-                    "ml-auto font-mono text-[12.5px] font-black tabular-nums",
+                    "ml-auto shrink-0 whitespace-nowrap font-mono text-[12.5px] font-black tabular-nums",
                     latest !== null && latest < 0 ? "text-rose-500 dark:text-rose-400" : "text-neutral-900 dark:text-white"
                 )}>
                     {f(latest)}
@@ -122,13 +130,16 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
             {item.values.map((v, i) => {
                 const bar = geo.bars[i];
                 const isLatest = i === 0;
+                const period = periods[i] ?? "";
+                const { date, basis } = compactPeriod(period);
                 return (
-                    <div key={periods[i] ?? i} className="grid grid-cols-[1.9rem_1fr_3.6rem] items-center gap-1.5">
+                    <div key={periods[i] ?? i} className="grid min-h-8 grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
                         <span className={cn(
-                            "font-mono text-[10px] tabular-nums",
+                            "flex flex-col whitespace-nowrap font-mono text-[10px] leading-4 tabular-nums",
                             isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-400 dark:text-neutral-500"
-                        )}>
-                            {(periods[i] ?? "").replace(/^(\d{2})(\d{2})\./, "$2.").replace(/^FY\d{2}/, m => `'${m.slice(4)}`)}
+                        )} title={period} aria-label={period}>
+                            <span aria-hidden="true">{date}</span>
+                            {basis && <span aria-hidden="true" className="text-[9px] font-normal leading-3 text-neutral-500 dark:text-neutral-400">{basis}</span>}
                         </span>
 
                         <div className={cn(
@@ -153,7 +164,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                         </div>
 
                         <span className={cn(
-                            "text-right font-mono tabular-nums",
+                            "whitespace-nowrap text-right font-mono tabular-nums",
                             isLatest ? "text-[11px] font-bold text-neutral-800 dark:text-neutral-100" : "text-[10px] text-neutral-400 dark:text-neutral-500",
                             v !== null && v < 0 && "text-rose-500 dark:text-rose-400"
                         )}>
@@ -173,7 +184,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h4 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100">{model.title}</h4>
                 <span className="font-mono text-[10px] text-neutral-400">
-                    {model.periods[0]} → {model.periods[model.periods.length - 1]}
+                    {compactPeriod(model.periods[0] ?? "").date} → {compactPeriod(model.periods[model.periods.length - 1] ?? "").date}
                     {unit === "eok" ? " · 억 원" : " · USD"}
                 </span>
             </div>
@@ -181,7 +192,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             {model.stacks.length > 0 && (
                 <div className="px-0 sm:px-5 py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-3.5">
                     <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-neutral-400">
-                        한눈에 · {model.periods[0]}
+                        한눈에 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
                     {model.stacks.map(s => <Stack key={s.title} row={s} />)}
                 </div>
