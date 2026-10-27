@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import { GradeHelp } from './components/GradeHelp';
 import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
@@ -633,7 +634,7 @@ function AnalyzeContent() {
             <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
             {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
             <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
-            {isPriceLoaded && gradeLabel && <span className={cn(styles.quoteAux, styles.quoteGrade)}>{gradeLabel}</span>}
+            {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
           </div>
           <button type="button" data-page-input-trigger aria-keyshortcuts="/" title="/ 종목 검색" onClick={() => setSearchOpen(open => !open)}
             aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
