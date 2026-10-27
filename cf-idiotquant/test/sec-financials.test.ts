@@ -25,7 +25,7 @@ test('SOHU SEC 자료를 기존 평가 모델이 읽으며 NCAV는 실제 유동
 
 test('SEC 자료의 재무 차트·기준일·출처가 원래 공시와 일치한다', () => {
   const bars = buildUsBars(financial.data);
-  assert.deepEqual(bars.bs?.periods, ['FY2025']);
+  assert.deepEqual(bars.bs?.periods, ['2025-12-31 · 연간']);
   assert.equal(bars.bs?.groups[0].items.find(item => item.label === '유동자산 합계')?.values[0], 967918000);
   const periods = analysisFinancialPeriods({ finnhubData: financial }, 'US');
   assert.equal(financialFreshness(periods, new Date('2026-10-17T03:00:00Z')).status, 'fresh');

@@ -1,5 +1,7 @@
 "use client";
 
+import { annualKrIncomeRows, latestFirst } from "@/lib/utils/financialPeriods";
+
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -98,8 +100,8 @@ function OpBar({ val, max }: { val: number; max: number }) {
 
 export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
   const result = useMemo(() => {
-    const bs = kiBS?.output?.[0];
-    const rawPeriods: any[] = kiIS?.output ?? [];
+    const bs = latestFirst<any>(kiBS?.output)[0];
+    const rawPeriods: any[] = annualKrIncomeRows<any>(kiIS);
     if (!bs || rawPeriods.length === 0) return null;
 
     // ── IS: 최신순 정렬 ───────────────────────────────────────────────

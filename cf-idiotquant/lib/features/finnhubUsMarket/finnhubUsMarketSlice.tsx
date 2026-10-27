@@ -35,6 +35,7 @@ export interface FinnhubFinancialsAsReportedType {
     cik: string;
     source?: "finnhub" | "sec";
     data: FinnhubFinancialsAsReportedDataType[];
+    annualData?: FinnhubFinancialsAsReportedDataType[];
     symbol: string;
 }
 interface FinnhubUsMaretType {

@@ -1,5 +1,6 @@
 "use client";
 
+import { latestFirst, usReportPeriodLabel } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { financialSourceLabel } from "@/lib/utils/financialFreshness";
@@ -13,6 +14,8 @@ type FinnhubReport = {
     startDate?: string;
     endDate?: string;
     year?: number;
+    form?: string;
+    periodType?: string;
     report?: {
         bs?: Array<Record<string, any>>;
         ic?: Array<Record<string, any>>;
@@ -274,7 +277,7 @@ function SectionTable({
                                         "text-[9px] font-black uppercase tracking-wider font-mono",
                                         idx === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
                                     )}>
-                                        {idx === 0 ? "Latest" : `FY T-${idx}`}
+                                        {idx === 0 ? "Latest" : `이전 공시 ${idx}`}
                                     </span>
                                     <span className={cn(
                                         "text-xs font-bold tabular-nums",
@@ -382,8 +385,8 @@ function SectionTable({
 export default function FinnhubTable({ data = [], className = "", source }: Props) {
     const columns = useMemo(() => {
         const reports = Array.isArray(data) ? data : [];
-        return reports.slice(0, 5).map((r) => {
-            const dateStr = (r.endDate || r.filedDate || r.acceptedDate || "").split(" ")[0];
+        return latestFirst(reports).slice(0, 5).map((r) => {
+            const dateStr = usReportPeriodLabel(r);
             const map = new Map<string, number | null>();
             const merge = (arr: any[] = []) => {
                 arr.forEach((item) => {

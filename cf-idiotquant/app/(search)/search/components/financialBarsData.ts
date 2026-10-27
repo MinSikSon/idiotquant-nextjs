@@ -1,3 +1,5 @@
+import { latestFirst, usReportPeriodLabel } from "@/lib/utils/financialPeriods";
+
 // 재무제표 막대 뷰의 계산 — React 비의존. 표현은 FinancialBars.tsx 가 맡는다.
 //
 // 두 가지 축 규칙이 섞여 있어서 헷갈리기 쉬운데, 의도된 것이다.
@@ -165,8 +167,8 @@ function krValues(periods: any[], key: string): (number | null)[] {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: BarModel | null } {
-    const bsRows: any[] = (kiBS?.output ?? []).slice(0, 5);
-    const isRows: any[] = (kiIS?.output ?? []).slice(0, 5);
+    const bsRows: any[] = latestFirst<any>(kiBS?.output).slice(0, 5);
+    const isRows: any[] = latestFirst<any>(kiIS?.output).slice(0, 5);
 
     const toGroups = (defs: typeof KR_BS_GROUPS, rows: any[]): BarGroup[] =>
         defs.map(g => ({
@@ -244,8 +246,7 @@ type UsKey = keyof typeof US_CONCEPTS;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function usColumns(reports: any[]): { label: string; map: Map<string, number | null> }[] {
-    return (Array.isArray(reports) ? reports : []).slice(0, 5).map(r => {
-        const dateStr = String(r?.endDate || r?.filedDate || r?.acceptedDate || "").split(" ")[0];
+    return latestFirst(Array.isArray(reports) ? reports : []).slice(0, 5).map(r => {
         const map = new Map<string, number | null>();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const merge = (arr: any[] = []) => arr.forEach(item => {
@@ -255,7 +256,7 @@ function usColumns(reports: any[]): { label: string; map: Map<string, number | n
         merge(r?.report?.bs);
         merge(r?.report?.ic);
         merge(r?.report?.cf);
-        return { label: dateStr ? dateStr.slice(0, 4) : "—", map };
+        return { label: usReportPeriodLabel(r), map };
     });
 }
 
@@ -273,7 +274,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
     if (!cols.length) return { bs: null, is: null };
 
     const series = (key: UsKey) => cols.map(c => pick(c.map, key));
-    const periods = cols.map(c => `FY${c.label}`);
+    const periods = cols.map(c => c.label);
     const latest = (key: UsKey) => pick(cols[0].map, key);
 
     const assets = latest("assets");
