@@ -98,6 +98,19 @@ export default function LineChart(props: any) {
 
     // 상단 미니바 혹은 인라인 배치를 판단하는 플래그
     const isMiniMode = props.height <= 36 || props.show_yaxis_label === false;
+    const interactive = !!props.interactive;
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const activeIndex = hoveredIndex ?? selectedIndex;
+    const activeRow = activeIndex === null ? undefined : data[activeIndex];
+    const activeSeries = props.data_array?.[0];
+    const activePrice = activeRow?.[activeSeries?.name];
+    const activeDate = String(activeRow?.label ?? '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3');
+    const pointIndex = (state: { activeTooltipIndex?: string | number | null; isTooltipActive?: boolean }) => {
+        if (!state.isTooltipActive || state.activeTooltipIndex == null) return null;
+        const index = Number(state.activeTooltipIndex);
+        return Number.isInteger(index) && index >= 0 && index < data.length ? index : null;
+    };
 
     // 차트 외곽 마진 설정 (미니모드일 때는 패딩 공백 없이 영역을 꽉 채우도록 수치 극소화)
     // 마커 라벨은 점 바깥에 그려진다. 마지막 캔들에 찍힌 마커는 오른쪽 끝에 붙으므로
@@ -108,8 +121,35 @@ export default function LineChart(props: any) {
         : { top: hasMarkers ? 18 : 10, right: hasMarkers ? 24 : 10, left: 0, bottom: 5 };
 
     return (
+        <div>
+        {interactive && (
+            <div className="flex min-h-7 items-center justify-between gap-2 px-2 text-[11px] tabular-nums">
+                {activeRow && typeof activePrice === 'number' ? (
+                    <>
+                        <span className="text-neutral-500 dark:text-neutral-400">{activeDate}</span>
+                        <span className="font-semibold text-neutral-900 dark:text-white">
+                            종가 {activePrice.toLocaleString('ko-KR', {
+                                style: 'currency', currency: props.currency ?? 'KRW',
+                            })}
+                        </span>
+                    </>
+                ) : (
+                    <span className="text-neutral-500 dark:text-neutral-400">차트에 마우스를 올리거나 터치하여 날짜·종가 확인</span>
+                )}
+            </div>
+        )}
         <ResponsiveContainer width={props.width ?? "100%"} height={props.height ?? 120}>
-            <AreaChart data={data} margin={chartMargin}>
+            <AreaChart
+                data={data}
+                margin={chartMargin}
+                onMouseMove={interactive ? state => setHoveredIndex(pointIndex(state)) : undefined}
+                onMouseLeave={interactive ? () => setHoveredIndex(null) : undefined}
+                onClick={interactive ? state => setSelectedIndex(pointIndex(state)) : undefined}
+                onTouchMove={interactive ? state => {
+                    setHoveredIndex(null);
+                    setSelectedIndex(pointIndex(state));
+                } : undefined}
+            >
                 <defs>
                     {props.data_array?.map((s: any, index: number) => {
                         // 만약 개별 데이터 배열에 커스텀 컬러가 명시되어 있다면 최우선 적용
@@ -147,10 +187,10 @@ export default function LineChart(props: any) {
                     width={props.show_yaxis_label === false ? 0 : 35}
                 />
 
-                {/* 미니 차트 레이아웃 내부에서는 마우스 상호작용 툴팁 오버레이 비활성화 */}
-                {!isMiniMode && (
+                {/* 상호작용을 켠 미니 차트는 떠 있는 툴팁 대신 상단에 날짜·종가를 표시한다. */}
+                {(!isMiniMode || interactive) && (
                     <Tooltip
-                        content={<CustomTooltip mode={mode} />}
+                        content={interactive ? () => null : <CustomTooltip mode={mode} />}
                         cursor={{ stroke: tailwindPalette[mode].grid, strokeWidth: 1, strokeDasharray: "4 4" }}
                     />
                 )}
@@ -186,7 +226,7 @@ export default function LineChart(props: any) {
                             fill={`url(#grad_${s.name.replace(/\s+/g, '_')})`}
                             isAnimationActive={false}
                             dot={false}
-                            activeDot={!isMiniMode ? {
+                            activeDot={!isMiniMode || interactive ? {
                                 r: 3.5,
                                 stroke: finalColor,
                                 strokeWidth: 1.5,
@@ -195,6 +235,17 @@ export default function LineChart(props: any) {
                         />
                     );
                 })}
+
+                {interactive && activeRow && typeof activePrice === 'number' && (
+                    <ReferenceDot
+                        x={activeRow.label}
+                        y={activePrice}
+                        r={3.5}
+                        fill={activeSeries.color || colorPalette[0]}
+                        stroke={mode === 'dark' ? '#09090b' : '#ffffff'}
+                        strokeWidth={1.5}
+                    />
+                )}
 
                 {/* 선택 옵션: 가격 위에 겹쳐 그리는 보조지표(이동평균선·볼린저밴드).
                     별도 영역을 만들지 않고 겹치는 이유는 모바일에서 차트 높이를 더 못 쓰기
@@ -243,5 +294,6 @@ export default function LineChart(props: any) {
                 ))}
             </AreaChart>
         </ResponsiveContainer>
+        </div>
     );
 }

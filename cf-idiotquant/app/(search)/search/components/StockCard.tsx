@@ -304,12 +304,15 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
             <Activity size={9} className="text-neutral-400" />
             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">가격 추이</p>
           </div>
-          <div className="h-[68px] rounded-xl overflow-hidden border border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas">
+          <div className="rounded-xl overflow-hidden border border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas">
             <LineChart
+              key={stock.code ?? stock.ticker}
               data_array={[{ name: "P", data: chartConfig.data, color: cfg.chartColor }]}
               category_array={chartConfig.categories}
               height={68}
               show_yaxis_label={false}
+              interactive
+              currency={stock.isUs ? 'USD' : 'KRW'}
               legend_disable
             />
           </div>
