@@ -129,6 +129,7 @@ function formatConditions(r?: QuantRule): string[] {
 
 /** 그룹 섹션·찜 섹션이 공통으로 쓰는 정규화된 행 */
 interface DisplayRow {
+  isLiked?: boolean;
   currentCursor?: boolean;
   symbol: string;
   name?: string;           // 표시용 종목명 (있으면 symbol 과 함께 노출)
@@ -285,6 +286,7 @@ function StockListTable({
   // group_id === "__likes__" 인 운용 종목은 '미지정'이 아니라 좋아요 섹션으로 보낸다.
   const { byGroup, unassigned, likesPoolRows } = useMemo(() => {
     const gmap = new Map(realGroups.map(g => [g.id, g]));
+    const likedTickers = new Set(likedList.map(lk => lk.ticker));
     const byGroup = new Map<string, DisplayRow[]>();
     realGroups.forEach(g => byGroup.set(g.id, []));
     const unassigned: DisplayRow[] = [];
@@ -298,7 +300,7 @@ function StockListTable({
       const g = s.group_id ? gmap.get(s.group_id) : null;
       const groupActive = g ? g.is_trading_active !== false : false;
       const status = capitalStatus(s.action, groupActive, countryTradingActive);
-      const row = { ...normalizeCapital(s, status), currentCursor: s === cursorStock };
+      const row = { ...normalizeCapital(s, status), currentCursor: s === cursorStock, isLiked: !!g && likedTickers.has(s.symbol) };
       if (s.group_id && gmap.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
       else unassigned.push(row); // 안전망: 혹시 stock_list 에 미지정이 남아 있으면 미지정으로
     }
@@ -308,7 +310,7 @@ function StockListTable({
       unassigned.push(normalizeCapital(s, capitalStatus(s.action, false, countryTradingActive)));
     }
     return { byGroup, unassigned, likesPoolRows };
-  }, [stockList, candidatePool, realGroups, countryTradingActive, likesActive, cursorStock]);
+  }, [stockList, candidatePool, realGroups, countryTradingActive, likesActive, cursorStock, likedList]);
 
   // 좋아요 섹션 = 운용 중인 좋아요 종목(토큰/상태) + 아직 운용 풀에 없는 찜(읽기 전용 워치리스트)
   // metricsOverride 로 비어있는 지표(US 등)를 보강한다.
@@ -1207,6 +1209,7 @@ function GroupSection({
                             </span>
                           )}
                         </span>
+                        {row.isLiked && <Heart className="h-3.5 w-3.5 shrink-0 fill-current text-rose-500" role="img" aria-label="좋아요한 종목" />}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -1312,6 +1315,7 @@ function GroupSection({
                   <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 [&::-webkit-details-marker]:hidden">
                     {row.currentCursor && <span aria-label="현재 IDX" title="현재 IDX · 다음 순회 시작 위치" className="shrink-0 text-[10px] font-bold text-blue-600 dark:text-blue-300">IDX</span>}
                     <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
+                    {row.isLiked && <Heart className="h-3.5 w-3.5 shrink-0 fill-current text-rose-500" role="img" aria-label="좋아요한 종목" />}
                     <StatusBadge status={row.status} compact />
                     {row.movable && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />
