@@ -32,6 +32,7 @@ import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
 import { resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import type { StockSearchName } from '@/lib/utils/stockSuggestions';
 import ResultShare from '@/components/result-share';
+import { StockLogo } from '@/components/stockLogo';
 import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
@@ -616,6 +617,7 @@ function AnalyzeContent() {
 
       {/* ── 헤더 ── */}
       <PageHeader
+        icon={isPriceLoaded ? <StockLogo key={tickerLabel} ticker={tickerLabel} name={displayName} isUs={krOrUs === 'US'} /> : undefined}
         className={cn(styles.header, tickerFromUrl ? styles.resultHeader : styles.emptyHeader, headerCompact && styles.headerCompact)}
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
@@ -850,6 +852,7 @@ function AnalyzeContent() {
                   카드는 시세만 있으면 그려지므로 재무 로딩(isLoaded) 밖에 둔다. */}
               <div className={cn("mb-6", activeTab !== 'metrics' && 'hidden')}>
                 <StockCard
+                  showLogo={false}
                   stock={krOrUs === 'US' ? {
                     code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
                     grade: stockData?.grade,

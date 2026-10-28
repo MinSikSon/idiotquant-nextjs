@@ -223,7 +223,7 @@ export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: Ba
 // ── 미국 (Finnhub) ───────────────────────────────────────────────────────
 const US_CONCEPTS = {
     cash: ["us-gaap_CashAndCashEquivalentsAtCarryingValue", "CashAndCashEquivalentsAtCarryingValue"],
-    ar: ["us-gaap_AccountsReceivableNetCurrent", "AccountsReceivableNetCurrent"],
+    ar: ["us-gaap_AccountsReceivableNetCurrent", "AccountsReceivableNetCurrent", "us-gaap_ReceivablesNetCurrent", "ReceivablesNetCurrent"],
     inventory: ["us-gaap_InventoryNet", "InventoryNet"],
     currentAssets: ["us-gaap_AssetsCurrent", "AssetsCurrent"],
     assets: ["us-gaap_Assets", "Assets"],
@@ -233,6 +233,7 @@ const US_CONCEPTS = {
     revenue: [
         "us-gaap_RevenueFromContractWithCustomerExcludingAssessedTax",
         "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "us-gaap_RevenueFromContractWithCustomerIncludingAssessedTax", "RevenueFromContractWithCustomerIncludingAssessedTax",
         "us-gaap_Revenues", "Revenues", "us-gaap_SalesRevenueNet", "SalesRevenueNet",
     ],
     operating: ["us-gaap_OperatingIncomeLoss", "OperatingIncomeLoss"],
@@ -263,7 +264,7 @@ function usColumns(reports: any[]): { label: string; map: Map<string, number | n
 const pick = (map: Map<string, number | null>, key: UsKey): number | null => {
     for (const c of US_CONCEPTS[key]) {
         const v = map.get(c);
-        if (v !== undefined) return v;
+        if (v !== undefined && v !== null) return v;
     }
     return null;
 };
@@ -301,7 +302,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
             {
                 labelEn: "자산 ASSETS", tone: "green", items: [
                     { label: "현금성 자산", tone: "green", values: series("cash") },
-                    { label: "매출채권", tone: "green", values: series("ar") },
+                    { label: "매출·수취채권", tone: "green", values: series("ar") },
                     { label: "재고자산", tone: "green", values: series("inventory") },
                     { label: "유동자산 합계", tone: "green", isTotal: true, values: series("currentAssets") },
                     { label: "자산 총계", tone: "green", isTotal: true, values: series("assets") },

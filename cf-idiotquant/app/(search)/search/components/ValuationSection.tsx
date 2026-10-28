@@ -244,7 +244,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </span>
           </div>
           <p className="mb-3 text-sm text-neutral-500 dark:text-neutral-400">
-            세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다. <span className="sm:hidden">이름을 누르면 설명을 볼 수 있어요.</span><span className="hidden sm:inline">이름을 클릭하거나 마우스를 올리면 설명을 볼 수 있어요.</span>
+            세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다.
           </p>
 
           {showBaseNote && (
@@ -304,11 +304,12 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                       }}
                       onFocus={event => { if (event.currentTarget.matches(":focus-visible")) setHoveredModel(r.type); }}
                       onBlur={() => setHoveredModel(null)}
+                      aria-label={`${r.config.name} 모델 설명`}
                       aria-expanded={isExplained}
                       aria-controls={isExplained ? `model-explanation-${r.type}` : undefined}
-                      className="w-full text-left text-[12px] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
+                      className="inline-flex min-h-11 w-full items-center gap-1 text-left text-[12px] font-medium text-neutral-900 dark:text-neutral-100 hover:text-neutral-600 dark:hover:text-neutral-300 focus-visible:outline-2 focus-visible:outline-brand rounded-sm"
                     >
-                      <span className="block break-keep sm:truncate">{r.config.name}</span>
+                      <span className="whitespace-nowrap sm:hidden">{r.config.name.split(" ")[0]}</span><span className="hidden sm:inline sm:truncate">{r.config.name}</span><ChevronDown size={12} aria-hidden="true" className={cn("shrink-0 text-neutral-400 transition-transform", isExplained && "rotate-180")} />
                     </button>
                     <p className="hidden sm:block text-xs text-neutral-500 dark:text-neutral-400 truncate">{r.config.description.short}</p>
                   </div>
@@ -484,20 +485,24 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />
 
       {/* 카드 헤더 */}
-      <div
-        className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between"
+      <button
+        type="button"
+        onClick={() => setIsExpanded(open => !open)}
+        aria-expanded={isExpanded}
+        aria-label={`${config.name} 세부 계산 ${isExpanded ? '접기' : '보기'}`}
+        className="group w-full rounded-lg sm:rounded-none px-3 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/70 dark:bg-white/[0.025] sm:bg-transparent dark:sm:bg-transparent text-left hover:bg-neutral-100/60 dark:hover:bg-white/5 active:bg-neutral-100 dark:active:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand transition-colors"
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-start gap-2.5 min-w-0">
           <div className={cn(
             "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
             config.iconBg, config.iconColor
           )}>
             {config.icon}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight">
-                {result.title}
+              <h3 className="text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight break-keep">
+                {config.name}
               </h3>
               <span className={cn(
                 "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0",
@@ -506,20 +511,13 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                 {config.category === "ASSET" ? "자산가치" : "수익가치"}
               </span>
             </div>
-            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 mt-1 break-keep">{config.description.short}</p>
           </div>
+          <span aria-hidden="true" className="shrink-0 grid h-8 w-8 place-items-center rounded-full border border-neutral-200 dark:border-neutral-700 text-neutral-500 group-hover:bg-neutral-200/60 dark:group-hover:bg-white/10">
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsExpanded(open => !open)}
-          aria-expanded={isExpanded}
-          aria-label={`${config.name} 세부 계산 ${isExpanded ? '접기' : '보기'}`}
-          className="shrink-0 min-h-11 inline-flex items-center gap-1 px-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 ml-2"
-        >
-          {isExpanded ? '접기' : '계산 보기'}
-          {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </button>
-      </div>
+        <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 break-keep">{config.description.short}</p>
+      </button>
 
       {/* 카드 바디 */}
       {isExpanded && (

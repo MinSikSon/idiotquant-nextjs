@@ -66,13 +66,14 @@ interface StockCardProps {
   chartNotice?: 'suspended' | 'delisted';
   rawData?: any;
   isCompact?: boolean;
+  showLogo?: boolean;
   stockXpProfile?: StockXpProfile;
 }
 
 // =========================================================================
 // StockCard
 // =========================================================================
-export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) => {
+export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: StockCardProps) => {
   const [imgError, setImgError] = useState(false);
   /** 등급 배지를 눌렀나. 이 등급이 **어떻게 나온 값인지**를 그 자리에서 펼친다. */
   const [gradeOpen, setGradeOpen] = useState(false);
@@ -144,7 +145,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
         {/* 로고 + 종목명 + 등급 */}
         <div className="flex items-center gap-4">
           {/* 로고 */}
-          <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-border-subtle-dark bg-white dark:bg-white shrink-0 flex items-center justify-center overflow-hidden">
+          {showLogo && <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-border-subtle-dark bg-white dark:bg-white shrink-0 flex items-center justify-center overflow-hidden">
             {!imgError ? (
               <Image
                 key={stock?.ticker}
@@ -160,7 +161,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
                 {(stock?.name ?? stock?.ticker ?? "?").charAt(0).toUpperCase()}
               </span>
             )}
-          </div>
+          </div>}
 
           {/* 텍스트 */}
           <div className="flex-1 min-w-0">
