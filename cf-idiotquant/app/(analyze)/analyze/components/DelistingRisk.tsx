@@ -81,19 +81,11 @@ function OpBar({ val, max }: { val: number; max: number }) {
   const pct = max > 0 ? Math.min(Math.abs(val) / max, 1) * 100 : 0;
   const isPos = val >= 0;
   return (
-    <div className="flex-1 flex items-center gap-1.5 min-w-0">
-      <div className="flex-1 h-2.5 bg-neutral-100 dark:bg-surface-dark-muted rounded-full overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-all", isPos ? "bg-emerald-400 dark:bg-emerald-500" : "bg-red-400 dark:bg-red-500")}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className={cn(
-        "text-xs font-black font-mono tabular-nums w-20 text-right shrink-0",
-        isPos ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
-      )}>
-        {val >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(val))}
-      </span>
+    <div className="h-2.5 min-w-0 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
+      <div
+        className={cn("h-full rounded-full transition-all", isPos ? "bg-emerald-400 dark:bg-emerald-500" : "bg-red-400 dark:bg-red-500")}
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }
@@ -335,7 +327,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             : STATUS_ROW_CLS["양호"],
           )}>
             {/* 섹션 헤더 */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-1.5">
                 {consLossStatus === "위험"
                   ? <TrendingDown size={13} className="text-red-500 shrink-0" />
@@ -343,7 +335,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                   ? <TrendingDown size={13} className="text-amber-500 shrink-0" />
                   : <TrendingUp size={13} className="text-emerald-500 shrink-0" />
                 }
-                <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">영업이익 연속 손실 이력</span>
+                <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">영업이익 연속 손실 이력</span>
               </div>
               <span className={cn(
                 "text-xs font-black px-2 py-0.5 rounded font-mono",
@@ -356,14 +348,22 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             </div>
 
             {/* 연도별 바 */}
-            <div className="space-y-1.5">
+            <div className="space-y-4 sm:space-y-3">
               {opYears.map((y, i) => (
-                <div key={y.year} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-neutral-400 w-10 shrink-0 font-mono">{y.year}</span>
-                  <OpBar val={y.op} max={maxAbsOp} />
-                  {i === 0 && (
-                    <span className="text-xs text-neutral-400 shrink-0 font-mono">최신</span>
-                  )}
+                <div key={y.year} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[6rem_minmax(0,1fr)_auto]">
+                  <span className="flex items-center gap-2 whitespace-nowrap text-sm font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
+                    {y.year}
+                    {i === 0 && <span className="text-xs font-sans text-neutral-500 dark:text-neutral-400">최신</span>}
+                  </span>
+                  <span className={cn(
+                    "text-right text-sm font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
+                    y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+                  )}>
+                    {y.op >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(y.op))}
+                  </span>
+                  <div className="col-span-2 min-w-0 sm:order-2 sm:col-span-1">
+                    <OpBar val={y.op} max={maxAbsOp} />
+                  </div>
                 </div>
               ))}
             </div>

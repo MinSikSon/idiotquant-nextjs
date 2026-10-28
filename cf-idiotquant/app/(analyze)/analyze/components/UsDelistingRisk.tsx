@@ -99,7 +99,7 @@ function OpBar({ val, max }: { val: number; max: number }) {
   const pct = max > 0 ? Math.min(Math.abs(val) / max, 1) * 100 : 0;
   const isPos = val >= 0;
   return (
-    <div className="flex-1 h-2.5 bg-neutral-100 dark:bg-surface-dark-muted rounded-full overflow-hidden">
+    <div className="h-2.5 min-w-0 bg-neutral-100 dark:bg-surface-dark-muted rounded-full overflow-hidden">
       <div
         className={cn("h-full rounded-full transition-all",
           isPos ? "bg-emerald-400 dark:bg-emerald-500" : "bg-red-400 dark:bg-red-500"
@@ -332,18 +332,18 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
             <p className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-2.5">
               연간 공시 기준 영업이익 추이
             </p>
-            <div className="space-y-2">
+            <div className="space-y-4 sm:space-y-3">
               {opYears.map(y => (
-                <div key={y.year} className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-neutral-400 w-10 shrink-0">{y.year}</span>
-                  <div className="flex-1 flex items-center gap-1.5">
+                <div key={y.year} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[3rem_minmax(0,1fr)_auto]">
+                  <span className="whitespace-nowrap text-sm font-mono tabular-nums text-neutral-600 dark:text-neutral-300">{y.year}</span>
+                  <span className={cn(
+                    "text-right text-sm font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
+                    y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+                  )}>
+                    {fmtUSD(y.op)}
+                  </span>
+                  <div className="col-span-2 min-w-0 sm:order-2 sm:col-span-1">
                     <OpBar val={y.op} max={maxAbsOp} />
-                    <span className={cn(
-                      "text-xs font-black font-mono w-24 text-right shrink-0",
-                      y.op >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
-                    )}>
-                      {fmtUSD(y.op)}
-                    </span>
                   </div>
                 </div>
               ))}
