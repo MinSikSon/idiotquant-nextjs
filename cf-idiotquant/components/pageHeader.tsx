@@ -30,7 +30,7 @@ import { useMobilePageHeader } from "@/components/mobile-page-header";
    때도 PAGE_WIDTH[width] 를 그대로 가져다 쓴다. */
 export const PAGE_WIDTH = {
   content: "max-w-4xl mx-auto px-4 sm:px-6",  // 읽는 화면 — 프로필 · 관리자 · 약관
-  data: "max-w-[1600px] mx-auto px-4 sm:px-6",     // 표 · 그리드 화면 — 분석 · 비교 · 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
+  data: "w-full mx-auto px-4 sm:px-6",     // 표 · 그리드 화면 — 분석 · 비교 · 발굴 · 계산기 · 백테스트 · 가계부 · 잔고
 } as const;
 
 export type PageWidth = keyof typeof PAGE_WIDTH;
