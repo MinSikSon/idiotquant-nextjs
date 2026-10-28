@@ -41,7 +41,7 @@ export function GradeHelp({ grade, upside }: { grade: string; upside: number }) 
               <X size={14} aria-hidden="true" />
             </Popover.Close>
           </div>
-          <p className="mt-2">유동자산에서 총부채를 뺀 순유동자산(NCAV)이 현재 주가에 비해 얼마나 큰지 나타내는 등급입니다.</p>
+          <p className="mt-2">순유동자산(NCAV)은 유동자산에서 총부채를 뺀 값입니다. 등급은 이 값이 현재 주가에 비해 얼마나 큰지 나타냅니다.</p>
           <p className="mt-2 rounded-lg bg-neutral-50 p-2 dark:bg-surface-dark-muted">
             주당 NCAV = (유동자산 − 총부채) ÷ 발행주식수<br />
             업사이드(%) = (주당 NCAV ÷ 현재가 − 1) × 100
