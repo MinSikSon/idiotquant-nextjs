@@ -2,6 +2,7 @@
 
 import { latestFirst } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
+import { MobileFinancialComparison } from "./MobileFinancialComparison";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -152,7 +153,13 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
     );
 
     return (
-        <div className="max-w-full overflow-x-auto overscroll-x-contain" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+        <>
+            <MobileFinancialComparison
+                periods={periods.map(period => String(period.stac_yymm ?? "").replace(/^(\d{4})(\d{2})$/, "$1.$2") || "—")}
+                sections={sections.map(section => ({ label: section.label, rows: section.rows.map(row => ({ ...row, values: periods.map(period => Number(period[row.key] ?? 0)) })) }))}
+                formatValue={value => value === null || value === 0 ? "—" : formatKoreanUnit(value * ONE_HUNDRED_MILLION)}
+            />
+        <div className="hidden sm:block max-w-full overflow-x-auto overscroll-x-contain" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
             <table className="w-full table-fixed border-collapse text-[13px] sm:text-sm" style={{ minWidth: `${(periods.length + 1) * 7}rem` }}>
                 <colgroup>
                     <col className="w-28 sm:w-44" />
@@ -287,6 +294,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                 </tbody>
             </table>
         </div>
+        </>
     );
 }
 
