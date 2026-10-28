@@ -2,7 +2,6 @@
 
 import { latestFirst } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
-import { MobileFinancialComparison } from "./MobileFinancialComparison";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -98,9 +97,9 @@ function InfoPopover({ label, description }: { label: string; description: strin
                 <button
                     type="button"
                     aria-label={`${label} 설명`}
-                    className="shrink-0 rounded-xl p-0.5 text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-surface-dark-muted dark:hover:text-neutral-100 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                    <Info size={11} />
+                    <Info size={14} aria-hidden="true" />
                 </button>
             </Popover.Trigger>
             <Popover.Portal>
@@ -127,7 +126,7 @@ function YoYBadge({ pct }: { pct: number | null }) {
     const isUp = pct >= 0;
     return (
         <span className={cn(
-            "inline-flex items-center gap-0.5 text-[9px] font-bold font-mono",
+            "inline-flex items-center gap-0.5 text-[11px] font-semibold font-mono",
             isUp ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
         )}>
             {isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
@@ -153,22 +152,19 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
     );
 
     return (
-        <>
-            <MobileFinancialComparison
-                periods={periods.map(period => String(period.stac_yymm ?? "").replace(/^(\d{4})(\d{2})$/, "$1.$2") || "—")}
-                sections={sections.map(section => ({ label: section.label, rows: section.rows.map(row => ({ ...row, values: periods.map(period => Number(period[row.key] ?? 0)) })) }))}
-                formatValue={value => value === null || value === 0 ? "—" : formatKoreanUnit(value * ONE_HUNDRED_MILLION)}
-            />
-        <div className="hidden sm:block max-w-full overflow-x-auto overscroll-x-contain" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
-            <table className="w-full table-fixed border-collapse text-[13px] sm:text-sm" style={{ minWidth: `${(periods.length + 1) * 7}rem` }}>
+        <div className="min-w-0">
+            <p className="border-b border-neutral-200 px-3 py-2 text-xs leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">좌우로 밀어 이전 공시와 비교하세요. 항목명은 왼쪽에 고정됩니다.</p>
+        <div className="max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+            <table className="w-full table-fixed border-separate border-spacing-0 text-[13px] sm:text-sm" style={{ minWidth: `${124 + periods.length * 144}px` }}>
+                <caption className="sr-only">계정과목별 최근 공시와 이전 공시의 재무 수치</caption>
                 <colgroup>
-                    <col className="w-28 sm:w-44" />
-                    {periods.map((_, index) => <col key={index} className="w-28 sm:w-32" />)}
+                    <col className="w-[124px] sm:w-44" />
+                    {periods.map((_, index) => <col key={index} className="w-[144px] sm:w-44" />)}
                 </colgroup>
                 <thead>
                     <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
-                        <th className="sticky left-0 z-10 bg-white dark:bg-surface-dark-card px-2 sm:px-5 py-2 sm:py-3 text-left w-28 sm:w-44">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 font-mono select-none">
+                        <th scope="col" className="sticky left-0 z-20 border-b border-r border-neutral-200 bg-neutral-50 px-3 py-3 text-left dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-5">
+                            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 select-none">
                                 계정과목
                             </span>
                         </th>
@@ -178,20 +174,21 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                             return (
                                 <th
                                     key={i}
+                                    scope="col"
                                     className={cn(
-                                        "px-2 sm:px-5 py-2 sm:py-3 text-right w-28 sm:w-32",
+                                        "border-b border-r border-neutral-200 px-3 py-3 text-right align-top dark:border-border-subtle-dark sm:px-5",
                                         i === 0 && "bg-brand-light/50 dark:bg-brand-muted/10"
                                     )}
                                 >
                                     <div className="flex flex-col items-end gap-0.5">
                                         <span className={cn(
-                                            "text-[9px] font-black uppercase tracking-wider font-mono",
+                                            "text-[11px] font-semibold",
                                             i === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
                                         )}>
-                                            {i === 0 ? "최근 결산" : `T − ${i}`}
+                                            {i === 0 ? "최근 공시" : `이전 공시 ${i}`}
                                         </span>
                                         <span className={cn(
-                                            "text-xs font-bold tabular-nums",
+                                            "text-[13px] font-semibold leading-5 tabular-nums whitespace-normal break-keep",
                                             i === 0 ? "text-neutral-900 dark:text-white" : "text-neutral-500 dark:text-neutral-400"
                                         )}>
                                             {date || "—"}
@@ -207,18 +204,18 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                         <React.Fragment key={section.label}>
                             {/* Section group header */}
                             <tr>
-                                <td
+                                <th
                                     colSpan={periods.length + 1}
-                                    className="sticky left-0 px-2 sm:px-5 pt-3 sm:pt-4 pb-1.5 bg-white dark:bg-surface-dark-card"
+                                    className="border-b border-neutral-200 bg-neutral-50 px-3 py-2.5 text-left dark:border-border-subtle-dark dark:bg-surface-dark-muted sm:px-5"
                                 >
                                     <div className={cn(
-                                        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest font-mono select-none",
+                                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold select-none",
                                         section.accent
                                     )}>
                                         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", section.dotColor)} />
-                                        <span className="sm:hidden">{section.label}</span><span className="hidden sm:inline">{section.labelEn}</span>
+                                        <span>{section.label}</span>
                                     </div>
-                                </td>
+                                </th>
                             </tr>
 
                             {section.rows.map((row) => {
@@ -237,8 +234,8 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                         )}
                                     >
                                         {/* Label */}
-                                        <td className={cn(
-                                            "sticky left-0 z-10 px-2 sm:px-5 py-2 sm:py-3 transition-colors duration-100",
+                                        <th scope="row" className={cn(
+                                            "sticky left-0 z-10 border-b border-r border-neutral-200 px-3 py-3 text-left font-normal transition-colors duration-100 dark:border-border-subtle-dark sm:px-5",
                                             row.isTotal
                                                 ? "bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-surface-muted-hover dark:group-hover:bg-surface-dark-muted"
                                                 : "bg-white dark:bg-surface-dark-card group-hover:bg-surface-muted-hover/60 dark:group-hover:bg-surface-dark-muted/10"
@@ -258,14 +255,14 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                                 </span>
                                                 <InfoPopover label={row.label} description={row.description} />
                                             </div>
-                                        </td>
+                                        </th>
 
                                         {/* Values */}
                                         {vals.map((val, i) => (
                                             <td
                                                 key={i}
                                                 className={cn(
-                                                    "px-2 sm:px-5 py-2 sm:py-3 text-right font-mono tabular-nums whitespace-nowrap",
+                                                    "border-b border-r border-neutral-200 px-3 py-3 text-right font-mono tabular-nums whitespace-nowrap dark:border-border-subtle-dark sm:px-5",
                                                     i === 0 && "bg-brand-light/30 dark:bg-brand-muted/5"
                                                 )}
                                             >
@@ -278,7 +275,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                                                 : row.isTotal
                                                                     ? "font-bold text-neutral-900 dark:text-neutral-100"
                                                                     : "font-medium text-neutral-700 dark:text-neutral-300",
-                                                        i === 0 ? "text-[13px]" : "text-xs opacity-80"
+                                                        "text-[13px] sm:text-sm"
                                                     )}>
                                                         {val === 0 ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
                                                     </span>
@@ -294,7 +291,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                 </tbody>
             </table>
         </div>
-        </>
+        </div>
     );
 }
 

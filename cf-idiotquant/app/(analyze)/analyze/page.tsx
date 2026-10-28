@@ -430,8 +430,8 @@ function AnalyzeContent() {
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
-  // 재무 탭 — 숫자표가 기본, 추이는 그래프로 전환해 본다
-  const [financeView, setFinanceView] = useState<'bars' | 'table'>('table');
+  // 재무 탭 — 추이 그래프와 기간별 숫자표를 전환한다
+  const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
   const [searchOpen, setSearchOpen] = useState(false);
   const [headerCompact, setHeaderCompact] = useState(false);
@@ -944,7 +944,7 @@ function AnalyzeContent() {
                   )}
                 </div>
 
-                {/* 재무제표 (블러) — 숫자표를 기본으로 보여주고 추이 그래프로 전환한다. */}
+                {/* 재무제표 (블러) — 추이 그래프와 기간별 숫자표. */}
                 <div className={cn(activeTab !== 'financials' && 'hidden')}>
                   {krOrUs === 'US' && (
                     <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
@@ -956,7 +956,7 @@ function AnalyzeContent() {
                           {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>
                         <div className={cn(styles.segmented, "ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg")}>
-                          {([['table', '숫자표'], ['bars', '추이 그래프']] as const).map(([mode, label]) => (
+                          {([['bars', '추이 그래프'], ['table', '숫자표']] as const).map(([mode, label]) => (
                             <button
                               key={mode}
                               onClick={() => setFinanceView(mode)}
