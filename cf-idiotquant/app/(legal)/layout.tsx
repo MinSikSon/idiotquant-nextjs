@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas px-4 py-10 md:py-16">
-            <div className="mx-auto max-w-2xl">
+            <div className="mx-auto max-w-2xl lg:max-w-none">
 
                 {/* Brand */}
                 <div className="flex justify-center mb-8">
@@ -17,7 +17,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
                     </Link>
                 </div>
 
-                <article className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-6 py-8 md:px-10 md:py-10">
+                <article className="desktop-document bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-6 py-8 md:px-10 md:py-10">
                     {children}
                 </article>
 

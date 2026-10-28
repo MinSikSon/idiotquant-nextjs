@@ -95,6 +95,29 @@
 .footer > div > div { display: flex; flex-wrap: wrap; gap: 16px; }
 .home :is(a, summary):focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
 @keyframes pulse { 50% { opacity: .45; } }
+/* 넓은 화면에서도 소개 열이 남는 공간을 차지해 목록을 밀어내지 않게 한다. */
+@media (min-width: 1024px) {
+  .hero { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 32px; padding-block: 56px; }
+  .preview { margin-top: 0; }
+  .tableHead, .stockRow { grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) minmax(60px, 1fr) 14px; }
+  .sectionHeading { justify-content: flex-start; gap: 32px; }
+  .tool p { max-width: none; }
+  .faq { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 32px; }
+}
+/* 큰 모니터에서는 도구 안내도 첫 화면의 세 번째 열로 배치한다. */
+@media (min-width: 1440px) {
+  .home > .container { display: grid; grid-template-columns: minmax(0, 1fr) 340px; column-gap: 32px; align-items: center; }
+  .hero { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); }
+  .features { border-top: 0; padding: 32px 0; }
+  .sectionHeading { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .sectionHeading h2 { font-size: 25px; }
+  .toolGrid { grid-template-columns: 1fr; gap: 12px; margin-top: 20px; }
+  .tool { padding: 20px; }
+  .tool h3 { margin-top: 12px; font-size: 18px; }
+  .tool p { margin-top: 6px; }
+  .toolAction { margin-top: 12px; }
+  .faq { grid-column: 1 / -1; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); }
+}
 @media (max-width: 1023px) {
   .container { padding-inline: 28px; }
   .hero { gap: 32px; padding-block: 64px; }

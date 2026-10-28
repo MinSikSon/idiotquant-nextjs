@@ -13,7 +13,7 @@ export default function LoginPage() {
     return (
         <div className="landing-style-page min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-surface-canvas dark:bg-surface-dark-canvas">
 
-            <div className="relative w-full max-w-sm flex flex-col gap-8">
+            <div className="relative w-full max-w-sm lg:max-w-6xl flex flex-col gap-8">
 
                 <Suspense fallback={null}>
                     <WithdrawCooldownBanner />
@@ -32,7 +32,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                <div className="desktop-login-card bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
 
                     {/* Card header */}
                     <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-border-subtle-dark">

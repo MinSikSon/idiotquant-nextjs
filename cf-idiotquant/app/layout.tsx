@@ -175,7 +175,7 @@ export default function RootLayout({
         lora.variable,
         notoSerifKr.variable,
         jetbrainsMono.variable,
-        "min-h-screen font-sans antialiased",
+        "desktop-workspace min-h-screen font-sans antialiased",
         "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-50"
       )}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }} />

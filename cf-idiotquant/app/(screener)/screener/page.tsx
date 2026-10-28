@@ -49,7 +49,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_56px_40px_40px_24px] sm:grid-cols-[minmax(0,1fr)_62px_46px_46px_28px] lg:grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px]";
+const TABLE_COLUMNS = "grid-cols-[minmax(0,1fr)_56px_40px_40px_24px] sm:grid-cols-[minmax(0,1fr)_62px_46px_46px_28px] lg:grid-cols-[minmax(160px,2fr)_minmax(110px,1.25fr)_minmax(88px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(68px,1fr)_minmax(112px,1fr)]";
 
 // 비로그인에게 보여 주는 줄 수. 검색엔진과 처음 온 사람에게 "무엇이 나오는 화면인지"는
 // 보여 주되, 목록 전체는 계정이 있어야 본다.

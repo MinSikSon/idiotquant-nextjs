@@ -30,6 +30,10 @@
   --analysis-glass: rgb(27 24 25 / .94);
 }
 .page .container { max-width: 1200px; }
+@media (min-width: 1024px) {
+  .page .container { max-width: none; }
+  .page .introHeading { justify-content: flex-start; gap: 32px; }
+}
 .page .header {
   background: var(--analysis-glass);
   border-color: var(--analysis-line);
