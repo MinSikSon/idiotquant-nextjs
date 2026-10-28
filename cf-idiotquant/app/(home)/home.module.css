@@ -26,7 +26,7 @@
   --home-lilac: #3a3048;
   --home-lilac-text: #e5d9fa;
 }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+.container { width: 100%; margin: 0 auto; padding: 0 24px; }
 .hero { position: relative; isolation: isolate; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 48px; padding: 80px 0 88px; }
 .heroArt { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; opacity: .9; mask-image: linear-gradient(to right, transparent, #000 42%); }
 .heroContent { min-width: 0; }

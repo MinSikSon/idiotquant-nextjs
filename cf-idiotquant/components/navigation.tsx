@@ -469,7 +469,7 @@ export function NavbarWithSimpleLinks() {
 
       {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
       {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/85 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/85">
-        <div className="mx-auto flex min-h-[64px] max-w-[1600px] items-center gap-6 px-5 sm:px-8 lg:gap-8 lg:px-10">
+        <div className="mx-auto flex min-h-[64px] w-full items-center gap-6 px-5 sm:px-6 lg:gap-8">
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             idiot<span className="text-brand-ink">quant</span>
           </Link>
