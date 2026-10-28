@@ -6,7 +6,7 @@ export default function PageAnswers({ title, path, items }: {
   title: string; path: string; items: readonly FaqItem[];
 }) {
   return (
-    <section aria-label={`${title} 도움말`} className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+    <section aria-label={`${title} 도움말`} className="desktop-page-answers mx-auto max-w-5xl lg:max-w-none px-4 py-10 sm:px-6 sm:py-14">
       <h2 className="text-lg font-semibold tracking-tight">{title} 자주 묻는 질문</h2>
       <div className="mt-5 divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
         {items.map(({ q, a }) => (

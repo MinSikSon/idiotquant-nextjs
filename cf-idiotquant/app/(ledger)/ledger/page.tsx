@@ -539,7 +539,7 @@ export default function LedgerPage() {
                 </div>
             )}
 
-            <div className="max-w-3xl lg:max-w-none mx-auto px-2 sm:px-6 py-5 space-y-3.5">
+            <div className="max-w-3xl lg:max-w-none mx-auto px-2 sm:px-6 desktop-panel-grid py-5 space-y-3.5 lg:space-y-0">
 
                 {/* ⓪ 가계부 전환 — 볼 수 있는 가계부가 둘 이상일 때만 나온다.
                     혼자 쓰는 사람에게는 없던 UI 가 생기지 않는다. */}
