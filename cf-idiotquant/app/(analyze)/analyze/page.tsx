@@ -834,18 +834,16 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              <section className={styles.tabGuide} aria-label={`${DETAIL_TABS.find(tab => tab.key === activeTab)?.label} 읽는 방법`}>
+              <details className={styles.tabGuide} aria-label={`${DETAIL_TABS.find(tab => tab.key === activeTab)?.label} 읽는 방법`}>
+                <summary className="flex items-center justify-between gap-2">{DETAIL_TABS.find(tab => tab.key === activeTab)?.label} 읽는 법<ChevronDown size={16} aria-hidden="true" /></summary>
                 <h2>{TAB_GUIDES[activeTab].title}</h2>
                 <p>{TAB_GUIDES[activeTab].description}</p>
-                <details>
-                  <summary>이 탭을 읽는 순서</summary>
-                  <ol>
+                <ol>
                     {TAB_GUIDES[activeTab].steps.map((step, index) => (
                       <li key={step}><span aria-hidden="true">{index + 1}</span>{step}</li>
                     ))}
-                  </ol>
-                </details>
-              </section>
+                </ol>
+              </details>
 
               {/* 지표 탭 (1/2) — 종목 카드. 핵심 지표(NCAV·PBR·PER·ROE)를 카드가 크게 보여주고,
                   아래 상세 지표 표가 나머지를 잇는다. 결론이 위, 근거가 아래.
@@ -953,10 +951,10 @@ function AnalyzeContent() {
                     <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} source={data.finnhubData?.source} banner />
                   )}
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                    <div className={cn(styles.panel, "flex flex-col gap-4")}>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                          {krOrUs === 'KR' ? '최신 분기 공시 기준 · 억 원' : '최신 공시 기준 · USD'}
+                    <div className={cn(styles.panel, styles.financialPanel, "flex min-w-0 flex-col gap-3 sm:gap-4")}>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300">
+                          {krOrUs === 'KR' ? '분기 공시 · 억 원' : '공시 · USD'}
                         </p>
                         <div className={cn(styles.segmented, "ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg")}>
                           {([['bars', '추이 그래프'], ['table', '숫자표']] as const).map(([mode, label]) => (
@@ -977,26 +975,24 @@ function AnalyzeContent() {
                         </div>
                       </div>
 
-                      <details className={styles.readingNote}>
-                        <summary>분기·연간 자료는 어떻게 읽나요?</summary>
-                        <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름은 표시된 기간 동안의 금액이므로 분기·누적·연간을 구분해 비교하세요.</p>
-                        <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
-                      </details>
-
                       {financeView === 'bars' ? (
                         krOrUs === 'KR'
                           ? <FinancialBars {...buildKrBars(data.kiBS, data.kiIS)} unit="eok" />
                           : <FinancialBars {...buildUsBars(data.finnhubData?.data ?? [])} unit="usd" />
                       ) : (
-                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                          <div className="overflow-x-auto">
-                            {krOrUs === 'KR'
-                              ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                              : <FinnhubTable data={data.finnhubData.data} source={data.finnhubData.source} />
-                            }
-                          </div>
+                        <div className="min-w-0 overflow-hidden bg-white dark:bg-surface-dark-card sm:rounded-2xl sm:border border-neutral-200 dark:border-border-subtle-dark">
+                          {krOrUs === 'KR'
+                            ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
+                            : <FinnhubTable data={data.finnhubData.data} source={data.finnhubData.source} />
+                          }
                         </div>
                       )}
+
+                      <details className={styles.readingNote}>
+                        <summary className="flex items-center justify-between gap-2">분기·연간 기준<ChevronDown size={16} aria-hidden="true" /></summary>
+                        <p>자산과 부채는 공시 기준일의 잔액입니다. 매출·이익·현금흐름은 표시된 기간 동안의 금액이므로 분기·누적·연간을 구분해 비교하세요.</p>
+                        <p>NCAV는 최신 재무상태표를, 연간 이익 기반 가치평가와 연속 적자 점검은 연간 자료를 사용합니다.</p>
+                      </details>
                     </div>
                   </BlurGate>
                 </div>
