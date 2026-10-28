@@ -2,6 +2,7 @@
 
 import { latestFirst, usReportPeriodLabel } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
+import { MobileFinancialComparison } from "./MobileFinancialComparison";
 import { cn } from "@/lib/utils";
 import { financialSourceLabel } from "@/lib/utils/financialFreshness";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -256,7 +257,13 @@ function SectionTable({
     if (!columns.length) return null;
 
     return (
-        <div className="max-w-full overflow-x-auto overscroll-x-contain" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+        <>
+            <MobileFinancialComparison
+                periods={columns.map(column => column.label || "—")}
+                sections={sections.map(section => ({ label: section.label, rows: section.items.map(item => ({ ...item, values: columns.map(column => findVal(column.map, item.concept)) })) }))}
+                formatValue={fmtUSD}
+            />
+        <div className="hidden sm:block max-w-full overflow-x-auto overscroll-x-contain" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
             <table className="w-full table-fixed border-collapse text-[13px] sm:text-sm" style={{ minWidth: `${(columns.length + 1) * 7}rem` }}>
                 <colgroup>
                     <col className="w-28 sm:w-44" />
@@ -384,6 +391,7 @@ function SectionTable({
                 </tbody>
             </table>
         </div>
+        </>
     );
 }
 
