@@ -692,6 +692,7 @@ function StockListTable({
           groupBudget={g.budget_krw}
           groupSide={g.side}
           groupDca={g.dca}
+          onDeleteStock={isMaster ? onDeleteStock : undefined}
           onSaveGroupSettings={isMaster && onSaveGroupSettings ? (settings) => onSaveGroupSettings(g.id, settings) : undefined}
           onDistributeBudget={isMaster && session?.user?.role === "admin" && onDistributeGroupBudget ? () => onDistributeGroupBudget(g.id) : undefined}
         />
@@ -1282,6 +1283,7 @@ function GroupSection({
                         <button
                           onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }}
                           title="종목 제거"
+                          aria-label={`${row.name || row.symbol} 종목 제거`}
                           className="rounded-md p-1 text-neutral-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                         >
                           <X className="w-3.5 h-3.5" />
