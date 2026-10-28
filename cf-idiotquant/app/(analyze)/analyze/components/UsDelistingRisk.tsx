@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
-  AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Minus, Eye,
+  AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Minus, Eye, ChevronDown,
 } from "lucide-react";
 
 type Status = "위험" | "주의" | "양호" | "—";
@@ -293,7 +293,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
         <div className="flex items-center gap-2">
           <ShieldAlert size={16} className="text-neutral-500 dark:text-neutral-400" />
           <span className="text-sm font-bold text-neutral-800 dark:text-neutral-100">미국 상장유지 위험도</span>
-          <span className="text-xs text-neutral-400 font-mono">NYSE / NASDAQ</span>
+          <span className="hidden sm:inline text-xs text-neutral-400 font-mono">NYSE / NASDAQ</span>
         </div>
         <span className={cn("px-2.5 py-0.5 rounded-lg text-sm font-black border", cfg.badge)}>
           {overallGrade}
@@ -308,17 +308,17 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
           {criteria.map(c => {
             const Icon = STATUS_ICON[c.status];
             return (
-              <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("flex items-start gap-3 p-3 rounded-xl border", STATUS_ROW_CLS[c.status])}>
-                <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
+              <div key={c.label} data-share-risk-row data-share-label={c.label} data-share-status={c.status} data-share-value={c.value} data-share-note={c.note} data-share-law={c.law} className={cn("p-3 rounded-xl border break-keep", STATUS_ROW_CLS[c.status])}>
+
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
-                  <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
-                    <span className={cn("text-xs font-black font-mono tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+                    <span className="inline-flex min-w-0 items-center gap-2 text-xs font-bold text-neutral-700 dark:text-neutral-300"><Icon size={14} className={cn("shrink-0", STATUS_COLOR[c.status])} />{c.label}</span>
+                  <span className={cn("shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
+                    <span className={cn("shrink-0 whitespace-nowrap text-xs font-black font-mono tabular-nums", STATUS_COLOR[c.status])}>{c.value}</span>
                   </div>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{c.note}</p>
                   {c.law !== "참고지표" && (
-                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 font-mono">{c.law}</p>
+                    <details className="group mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-neutral-200 px-3 font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">판정 기준<ChevronDown size={15} aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-180" /></summary><p className="mt-2 break-words">{c.law}</p></details>
                   )}
                 </div>
               </div>

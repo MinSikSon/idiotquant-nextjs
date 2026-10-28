@@ -108,6 +108,15 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
     const f = blockFormatter(unit, item.values);
     const latest = item.values.find(v => v !== null) ?? null;
 
+    if (item.values.every(v => v === null)) {
+        return (
+            <div className="flex min-h-11 items-center justify-between gap-3 border-b border-neutral-100 py-2 text-xs dark:border-neutral-800">
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300 break-keep">{item.label}</span>
+                <span className="shrink-0 whitespace-nowrap text-neutral-500 dark:text-neutral-400">제공 자료 없음</span>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-baseline gap-1.5">
@@ -225,6 +234,7 @@ export function FinancialBars({ bs, is, unit }: { bs: BarModel | null; is: BarMo
                 각 항목의 첫 줄이 가장 최근 자료입니다. 막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최근 값을 비교합니다.
             </p>
             {unit === "usd" && <p className="text-xs text-neutral-500 dark:text-neutral-400">금액 단위: USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러</p>}
+            {unit === "usd" && <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">—는 제공된 공시 데이터에 해당 값이 없다는 뜻이며, 0과 다릅니다.</p>}
             {bs && <StatementCard model={bs} unit={unit} />}
             {is && <StatementCard model={is} unit={unit} />}
             <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep px-1">

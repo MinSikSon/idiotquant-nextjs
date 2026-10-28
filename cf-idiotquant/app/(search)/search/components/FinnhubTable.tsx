@@ -45,8 +45,8 @@ const BS_SECTIONS: SectionDef[] = [
                 description: "즉시 현금화 가능한 가장 안전한 자산 — 위기 시 기업 방어력을 나타냄",
             },
             {
-                label: "매출채권",
-                concept: ["us-gaap_AccountsReceivableNetCurrent", "AccountsReceivableNetCurrent"],
+                label: "매출·수취채권",
+                concept: ["us-gaap_AccountsReceivableNetCurrent", "AccountsReceivableNetCurrent", "us-gaap_ReceivablesNetCurrent", "ReceivablesNetCurrent"],
                 description: "외상 판매 후 고객으로부터 받아야 할 채권 — 회수 지연 시 현금흐름 악화",
             },
             {
@@ -102,6 +102,7 @@ const IS_SECTIONS: SectionDef[] = [
                 concept: [
                     "us-gaap_RevenueFromContractWithCustomerExcludingAssessedTax",
                     "RevenueFromContractWithCustomerExcludingAssessedTax",
+                    "us-gaap_RevenueFromContractWithCustomerIncludingAssessedTax", "RevenueFromContractWithCustomerIncludingAssessedTax",
                     "us-gaap_Revenues",
                     "Revenues",
                     "us-gaap_SalesRevenueNet",
@@ -171,7 +172,7 @@ const CF_SECTIONS: SectionDef[] = [
 
 function fmtUSD(v: number | null): string {
     if (v === null || v === undefined || Number.isNaN(v)) return "-";
-    if (v === 0) return "—";
+    if (v === 0) return "$0";
     const abs = Math.abs(v);
     const sign = v < 0 ? "-" : "";
     if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
@@ -188,7 +189,7 @@ function pctChange(curr: number | null, prev: number | null): number | null {
 function findVal(map: Map<string, number | null>, concepts: string[]): number | null {
     for (const c of concepts) {
         const v = map.get(c);
-        if (v !== undefined) return v;
+        if (v !== undefined && v !== null) return v;
     }
     return null;
 }
