@@ -136,7 +136,7 @@ export const SearchGuide = () => {
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">NCAV Grade</p>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white tracking-tight mb-1">NCAV 업사이드 기준 6단계 등급</h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-6">
-              시가총액 대비 순유동자산 초과 비율에 따라 자동 산정됩니다.
+              순유동자산이 시가총액을 초과하는 비율에 따라 자동 산정됩니다.
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
@@ -167,10 +167,10 @@ export const SearchGuide = () => {
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 font-mono">Valuation Models</p>
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white tracking-tight mb-1">주식 가치를 보는 6가지 방법</h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-6">
-              자산을 보는 2가지, 이익과 현금을 보는 4가지 방법이 있습니다. 종목과 시장에 따라 계산할 수 있는 방법이 달라요.
+              자산을 보는 2가지, 이익과 현금을 보는 4가지 방법이 있습니다. 종목과 시장에 따라 계산할 수 있는 방법이 다릅니다.
             </p>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3 sm:hidden">모델을 누르면 계산 방식과 주의점을 볼 수 있어요.</p>
-            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3 hidden sm:block">모델을 클릭하거나 마우스를 올리면 계산 방식과 주의점을 볼 수 있어요.</p>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3 sm:hidden">모델을 누르면 계산 방식과 주의점을 볼 수 있습니다.</p>
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-3 hidden sm:block">모델을 클릭하거나 마우스를 올리면 계산 방식과 주의점을 볼 수 있습니다.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {MODELS.map(m => {
