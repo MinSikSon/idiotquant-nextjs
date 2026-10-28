@@ -37,12 +37,13 @@ function Stack({ row }: { row: StackRow }) {
                         title={`${seg.label} ${seg.pct.toFixed(1)}%`}
                         style={{ width: `${seg.pct}%` }}
                         className={cn(
-                            "grid place-items-center min-w-0 overflow-hidden whitespace-nowrap font-mono text-sm font-black",
+                            "relative grid place-items-center min-w-0 overflow-hidden whitespace-nowrap font-mono text-xs sm:text-sm font-bold",
                             TONE_BG[seg.tone],
-                            seg.pale ? "opacity-45 text-neutral-900 dark:text-white" : "text-white"
+                            seg.pale ? "text-neutral-900 dark:text-white" : "text-white"
                         )}
                     >
-                        {seg.pct >= 20 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}
+                        {seg.pale && <span aria-hidden="true" className="absolute inset-0 bg-white/70 dark:bg-black/30" />}
+                        <span className="relative">{seg.pct >= 20 ? `${seg.label} ${Math.round(seg.pct)}%` : seg.pct >= 6 ? `${Math.round(seg.pct)}%` : ""}</span>
                     </div>
                 ))}
             </div>
@@ -129,7 +130,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                 </span>
                 <DeltaBadge item={item} />
                 <span className={cn(
-                    "ml-auto shrink-0 whitespace-nowrap font-mono text-[12.5px] font-black tabular-nums",
+                    "ml-auto hidden sm:block shrink-0 whitespace-nowrap font-mono text-[12.5px] font-black tabular-nums",
                     latest !== null && latest < 0 ? "text-rose-500 dark:text-rose-400" : "text-neutral-900 dark:text-white"
                 )}>
                     {f(latest)}
@@ -142,7 +143,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
                 const period = periods[i] ?? "";
                 const { date, basis } = compactPeriod(period);
                 return (
-                    <div key={periods[i] ?? i} className="grid min-h-8 grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
+                    <div key={periods[i] ?? i} className="grid min-h-7 sm:min-h-8 grid-cols-[3.25rem_minmax(0,1fr)_4.25rem] sm:grid-cols-[4.5rem_minmax(0,1fr)_4rem] items-center gap-1.5">
                         <span className={cn(
                             "flex flex-col whitespace-nowrap font-mono text-xs leading-4 tabular-nums",
                             isLatest ? "font-bold text-neutral-700 dark:text-neutral-200" : "text-neutral-500 dark:text-neutral-400"
@@ -190,7 +191,7 @@ function TrendBlock({ item, periods, unit }: { item: BarItem; periods: string[];
 function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
     return (
         <div className="bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-            <div className="px-0 sm:px-5 py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className="px-0 sm:px-5 py-2 sm:py-3.5 border-b border-neutral-100 dark:border-border-subtle-dark flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h4 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100">{model.title}</h4>
                 <span className="font-mono text-xs text-neutral-400">
                     {compactPeriod(model.periods[0] ?? "").date} → {compactPeriod(model.periods[model.periods.length - 1] ?? "").date}
@@ -199,7 +200,7 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             </div>
 
             {model.stacks.length > 0 && (
-                <div className="px-0 sm:px-5 py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-3.5">
+                <div className="px-0 sm:px-5 py-2 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5">
                     <span className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
                         한눈에 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
@@ -207,14 +208,14 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
                 </div>
             )}
 
-            <div className="px-0 sm:px-5 pb-5">
+            <div className="px-0 sm:px-5 pb-3 sm:pb-5">
                 {model.groups.map(g => (
                     <div key={g.labelEn}>
-                        <div className="flex items-center gap-1.5 mt-5 mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
+                        <div className="flex items-center gap-1.5 mt-3 sm:mt-5 mb-1.5 sm:mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
                             <i className={cn("w-[7px] h-[7px] rounded-full shrink-0", TONE_BG[g.tone])} />
                             {g.labelEn}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 sm:gap-y-4">
                             {g.items.map(item => (
                                 <TrendBlock key={item.label} item={item} periods={model.periods} unit={unit} />
                             ))}
@@ -229,19 +230,15 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
 export function FinancialBars({ bs, is, unit }: { bs: BarModel | null; is: BarModel | null; unit: Unit }) {
     if (!bs && !is) return null;
     return (
-        <div className="flex flex-col gap-4">
-            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-                각 항목의 첫 줄이 가장 최근 자료입니다. 막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최근 값을 비교합니다.
-            </p>
-            {unit === "usd" && <p className="text-xs text-neutral-500 dark:text-neutral-400">금액 단위: USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러</p>}
-            {unit === "usd" && <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">—는 제공된 공시 데이터에 해당 값이 없다는 뜻이며, 0과 다릅니다.</p>}
+        <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
             {bs && <StatementCard model={bs} unit={unit} />}
             {is && <StatementCard model={is} unit={unit} />}
-            <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep px-1">
-                막대 길이는 <span className="font-bold">항목별</span>로 자기 기간 최댓값을 100% 로 잡은 것입니다 —
-                같은 항목의 세로 비교용이며, 항목끼리의 길이 비교는 의미가 없습니다.
-                맨 위 구성 막대만 한 줄 합계가 100% 입니다.
-            </p>
+            <details className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+                <summary className="flex min-h-11 cursor-pointer items-center font-medium">그래프 읽는 법</summary>
+                <p>각 항목의 첫 줄이 최신 자료입니다. 막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최신 값을 비교합니다.</p>
+                <p className="mt-2">항목별 최댓값을 100%로 표시하며, 항목끼리 막대 길이를 비교할 수 없습니다. 구성 막대는 한 줄의 합계가 100%입니다.</p>
+                {unit === "usd" && <p className="mt-2">USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러. —는 공시 자료에 값이 없다는 뜻이며 0과 다릅니다.</p>}
+            </details>
         </div>
     );
 }

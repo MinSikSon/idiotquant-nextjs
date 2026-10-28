@@ -240,7 +240,7 @@ function YoYBadge({ pct }: { pct: number | null }) {
 }
 
 const TAB_TRIGGER_BASE = [
-    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-150",
+    "flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-md text-xs font-bold [&_svg]:hidden sm:[&_svg]:block transition-all duration-150",
     "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200",
     "data-[state=active]:bg-white dark:data-[state=active]:bg-surface-dark-elevated",
     "data-[state=active]:shadow-sm",
@@ -256,20 +256,24 @@ function SectionTable({
     if (!columns.length) return null;
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+        <div className="max-w-full overflow-x-auto overscroll-x-contain" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
+            <table className="w-full table-fixed border-collapse text-[13px] sm:text-sm" style={{ minWidth: `${(columns.length + 1) * 7}rem` }}>
+                <colgroup>
+                    <col className="w-28 sm:w-44" />
+                    {columns.map((_, index) => <col key={index} className="w-28 sm:w-36" />)}
+                </colgroup>
                 <thead>
                     <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
-                        <th className="sticky left-0 z-10 bg-white dark:bg-surface-dark-card px-5 py-3 text-left min-w-[12rem] w-48">
+                        <th className="sticky left-0 z-10 bg-white dark:bg-surface-dark-card px-2 sm:px-5 py-2 sm:py-3 text-left w-28 sm:w-44">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 font-mono select-none">
-                                Financial Metric
+                                계정과목
                             </span>
                         </th>
                         {columns.map((col, idx) => (
                             <th
                                 key={idx}
                                 className={cn(
-                                    "px-5 py-3 text-right min-w-[9rem]",
+                                    "px-2 sm:px-5 py-2 sm:py-3 text-right w-28 sm:w-36",
                                     idx === 0 && "bg-brand-light/50 dark:bg-brand-muted/10"
                                 )}
                             >
@@ -298,14 +302,14 @@ function SectionTable({
                             <tr>
                                 <td
                                     colSpan={columns.length + 1}
-                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-surface-dark-card"
+                                    className="sticky left-0 px-2 sm:px-5 pt-3 sm:pt-4 pb-1.5 bg-white dark:bg-surface-dark-card"
                                 >
                                     <div className={cn(
                                         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest font-mono select-none",
                                         section.accent
                                     )}>
                                         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", section.dotColor)} />
-                                        {section.labelEn}
+                                        <span className="sm:hidden">{section.label}</span><span className="hidden sm:inline">{section.labelEn}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -326,21 +330,21 @@ function SectionTable({
                                     >
                                         {/* Label */}
                                         <td className={cn(
-                                            "sticky left-0 z-10 px-5 py-3 transition-colors duration-100",
+                                            "sticky left-0 z-10 px-2 sm:px-5 py-2 sm:py-3 transition-colors duration-100",
                                             item.isTotal
-                                                ? "bg-surface-canvas dark:bg-surface-dark-card/20 group-hover:bg-surface-muted-hover/70 dark:group-hover:bg-surface-dark-muted/40"
+                                                ? "bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-surface-muted-hover dark:group-hover:bg-surface-dark-muted"
                                                 : "bg-white dark:bg-surface-dark-card group-hover:bg-surface-muted-hover/60 dark:group-hover:bg-surface-dark-muted/10"
                                         )}>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1 sm:gap-2">
                                                 {item.isTotal
                                                     ? <div className="w-0.5 h-4 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" />
-                                                    : <div className="w-0.5 h-4 shrink-0" />
+                                                    : null
                                                 }
                                                 <span className={cn(
-                                                    "truncate",
+                                                    "min-w-0 whitespace-normal break-keep leading-snug",
                                                     item.isTotal
                                                         ? "font-bold text-neutral-900 dark:text-neutral-100"
-                                                        : "font-medium text-neutral-600 dark:text-neutral-400 pl-1"
+                                                        : "font-medium text-neutral-600 dark:text-neutral-400"
                                                 )}>
                                                     {item.label}
                                                 </span>
@@ -353,7 +357,7 @@ function SectionTable({
                                             <td
                                                 key={colIdx}
                                                 className={cn(
-                                                    "px-5 py-3 text-right font-mono tabular-nums",
+                                                    "px-2 sm:px-5 py-2 sm:py-3 text-right font-mono tabular-nums whitespace-nowrap",
                                                     colIdx === 0 && "bg-brand-light/30 dark:bg-brand-muted/5"
                                                 )}
                                             >
@@ -406,7 +410,7 @@ export default function FinnhubTable({ data = [], className = "", source }: Prop
     if (!columns.length) return null;
 
     const footer = (
-        <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 sm:px-5 py-2 sm:py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse shrink-0" />
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
                 {[financialSourceLabel(source), 'US-GAAP', 'USD'].filter(Boolean).join(' · ')}
@@ -423,28 +427,28 @@ export default function FinnhubTable({ data = [], className = "", source }: Prop
         <div className={cn("w-full", className)}>
             <Tabs.Root defaultValue="bs">
                 {/* Tab Bar */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/50 dark:bg-surface-dark-card/20">
-                    <Tabs.List className="flex gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
+                <div className="flex items-center justify-between gap-2 px-0 sm:px-5 py-1.5 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas/50 dark:bg-surface-dark-card/20">
+                    <Tabs.List className="grid w-full grid-cols-3 sm:flex sm:w-auto gap-1 bg-surface-canvas dark:bg-surface-dark-card rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
                             className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-brand-ink-hover dark:data-[state=active]:text-brand-ink")}
                         >
                             <BookOpen size={12} />
-                            Balance Sheet
+                            재무상태표
                         </Tabs.Trigger>
                         <Tabs.Trigger
                             value="is"
                             className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-300")}
                         >
                             <BarChart2 size={12} />
-                            Income
+                            손익계산서
                         </Tabs.Trigger>
                         <Tabs.Trigger
                             value="cf"
                             className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-amber-700 dark:data-[state=active]:text-amber-300")}
                         >
                             <Banknote size={12} />
-                            Cash Flow
+                            현금흐름
                         </Tabs.Trigger>
                     </Tabs.List>
                     <span className="text-[9px] font-mono font-bold text-neutral-400 dark:text-neutral-600 uppercase tracking-widest hidden sm:block">

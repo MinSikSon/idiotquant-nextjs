@@ -254,3 +254,20 @@
 
 .tabGuide details { margin-top: 12px; font-size: 13px; }
 .tabGuide summary { cursor: pointer; font-weight: 600; padding-block: 4px; }
+
+.tabGuide > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+.tabGuide[open] > summary { margin-bottom: 12px; }
+.tabGuide[open] > summary svg { transform: rotate(180deg); }
+@media (max-width: 639px) {
+  .tabGuide { margin-bottom: 12px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+  .tabGuide h2 { font-size: 14px; }
+  .tabGuide p { line-height: 1.6; }
+  .tabGuide ol { margin-top: 10px; }
+  .readingNote { padding: 0; border: 0; border-radius: 0; font-size: 13px; line-height: 1.6; }
+  .page .financialPanel { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+}
+
+.tabGuide > summary, .readingNote > summary { min-height: 44px; list-style: none; }
+.tabGuide > summary::-webkit-details-marker, .readingNote > summary::-webkit-details-marker { display: none; }
+.tabGuide > summary svg, .readingNote > summary svg { flex-shrink: 0; transition: transform .2s; }
+.readingNote[open] > summary svg { transform: rotate(180deg); }
