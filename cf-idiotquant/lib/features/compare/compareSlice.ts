@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { ComparisonSnapshot } from './storage';
 import { reducerRegistry } from '../../reducerRegistry';
 
-export type ComparisonPrice = { price?: number; priceDate?: string; loading?: boolean; error?: string };
+export type ComparisonPrice = { price?: number; marketCap?: number; priceDate?: string; loading?: boolean; error?: string };
 export type ComparisonStock = {
   id: string; name: string; ticker: string; market: 'KR' | 'US';
   currentShares?: number;
