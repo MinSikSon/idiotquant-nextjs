@@ -17,6 +17,8 @@ import { getInquireDailyItemChartPrice, getInquirePrice } from '@/lib/features/k
 import { getOverseasPriceQuotationsDailyPrice, getQuotationsPriceDetail, getQuotationsSearchInfo } from '@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketAPI';
 import { calculatePriceReturns, summarizeReturns } from './priceReturns';
 import { historicalPrice } from './historicalPrice';
+import { getScanDailyByTicker } from '@/lib/features/algorithmTrade/algorithmTradeAPI';
+import { comparisonPrice, comparisonUnavailableReason, historicalMarketCap } from '@/lib/features/compare/pricing';
 import { isUsTicker, resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
@@ -49,20 +51,22 @@ const localToday = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-async function getHistoricalPrice(ticker: string, market: 'KR' | 'US', date: string) {
+async function getHistoricalPrice(ticker: string, market: 'KR' | 'US', date: string, history: unknown) {
   const end = date.replaceAll('-', '');
   const startDate = new Date(`${date}T00:00:00Z`);
   startDate.setUTCDate(startDate.getUTCDate() - 14);
   const result = market === 'KR'
     ? await getInquireDailyItemChartPrice(ticker, startDate.toISOString().slice(0, 10).replaceAll('-', ''), end)
     : await getOverseasPriceQuotationsDailyPrice(ticker, end);
-  return historicalPrice(result, market, end);
+  const price = historicalPrice(result, market, end);
+  return { ...price, marketCap: historicalMarketCap(history, market, price.priceDate) };
 }
 
 async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, dates: string[]): Promise<ComparisonStock> {
   const domesticName = Object.entries(corpCodes as Record<string, { stock_code?: string }>).find(([, item]) => item.stock_code === ticker)?.[0] ?? nameHint;
+  const historyPromise = market === 'KR' ? getScanDailyByTicker(ticker, 200).catch(() => undefined) : Promise.resolve(undefined);
   const pricesPromise = Promise.all(dates.map(async date => {
-    try { return [date, await getHistoricalPrice(ticker, market, date)] as const; }
+    try { return [date, await getHistoricalPrice(ticker, market, date, await historyPromise)] as const; }
     catch (e) { return [date, { error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }] as const; }
   }));
   let stock: ComparisonStock;
@@ -185,7 +189,7 @@ export default function ComparePage() {
   }, [query]);
   const priceReturns = useMemo(() => calculatePriceReturns(stocks.flatMap(stock => dates.map(date => ({
     id: `${stock.id}:${date}`, ticker: stock.ticker, market: stock.market,
-    price: stock.prices[date]?.price, priceDate: stock.prices[date]?.priceDate,
+    price: comparisonPrice(stock, stock.prices[date]), priceDate: stock.prices[date]?.priceDate,
   })))), [stocks, dates]);
   const returnStats = useMemo(() => dates.map(date => ({
     date,
@@ -227,7 +231,8 @@ export default function ComparePage() {
     if (!date || sessionLoading || dates.includes(date) || dates.length >= limits.dates || loading || dateLoading) return;
     dispatch(dateLoadStarted(date));
     await Promise.all(stocks.map(async stock => {
-      const result = await getHistoricalPrice(stock.ticker, stock.market, date)
+      const history = stock.market === 'KR' ? await getScanDailyByTicker(stock.ticker, 200).catch(() => undefined) : undefined;
+      const result = await getHistoricalPrice(stock.ticker, stock.market, date, history)
         .catch(e => ({ error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }));
       dispatch(datePriceReceived({ id: stock.id, date, price: result }));
     }));
@@ -242,9 +247,11 @@ export default function ComparePage() {
   function priceContent(stock: ComparisonStock, date: string) {
     const item = stock.prices[date];
     const result = priceReturns.get(`${stock.id}:${date}`);
+    const adjusted = comparisonPrice(stock, item);
     return item?.loading ? <Loader2 size={16} className="animate-spin" aria-label="가격 조회 중" /> : item?.price ? <>
-      <p>{stock.currency}{show(item.price)}</p>
-      <p className="mt-1 text-xs font-normal text-neutral-500">{formatDate(item.priceDate!)} 종가</p>
+      <p>{adjusted == null ? '환산 자료 없음' : `${stock.currency}${show(adjusted)}`}</p>
+      <p className="mt-1 text-xs font-normal text-neutral-500">{formatDate(item.priceDate!)} {adjusted == null ? `참고 종가 ${stock.currency}${show(item.price)}` : '시총 환산가'}</p>
+      {adjusted == null && <p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-400">{comparisonUnavailableReason(stock, item)} 변화율 집계에서 제외됩니다.</p>}
       {result && <p className={`mt-1 text-xs font-semibold ${result.baseline ? 'text-neutral-500' : result.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{result.baseline ? '변화율 기준' : `${result.percent >= 0 ? '+' : ''}${show(result.percent)}%`}</p>}
     </> : <span className="text-xs font-normal text-rose-600 dark:text-rose-400">{item?.error ?? '가격 없음'}</span>;
   }
@@ -262,7 +269,7 @@ export default function ComparePage() {
     <PageHeader
       title="종목 비교"
       mobileTitleInNavigation
-      description="① 날짜 추가 → ② 종목 추가 → ③ 날짜별 종가와 변화율 비교"
+      description="① 날짜 추가 → ② 종목 추가 → ③ 시총 환산가와 변화율 비교"
       meta={storageFailed ? "브라우저 저장을 사용할 수 없습니다. 현재 화면에서 비교할 수 있습니다." : "비교 내용은 이 브라우저에 저장됩니다. 시세·지표는 조회 당시 기준입니다."}
       mobileCompact
       actions={<>
@@ -277,7 +284,7 @@ export default function ComparePage() {
     <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
       <section aria-label="비교 날짜">
         <h2 className="text-sm font-semibold">1. 비교 날짜 추가</h2>
-        <p className="mt-2 text-xs text-neutral-500">날짜 하나로 종가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
+        <p className="mt-2 text-xs text-neutral-500">날짜 하나로 환산가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
         <div className="mt-2 grid min-w-0 gap-2 sm:flex sm:items-end">
           <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
             가격 기준일
@@ -294,7 +301,7 @@ export default function ComparePage() {
             <button type="button" onClick={() => removeDate(date)} disabled={dateLoading || loading} aria-label={`${date} 날짜 제거`} className="rounded p-0.5 text-neutral-400 hover:text-neutral-800 disabled:opacity-50 dark:hover:text-white"><X size={13} /></button>
           </span>)}
         </div>}
-        <p className="mt-2 text-xs text-neutral-500">휴장일은 선택일 이전의 최근 거래일 종가를 사용하며, 실제 거래일을 함께 표시합니다.</p>
+        <p className="mt-2 text-xs text-neutral-500">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>
       </section>
 
       <section className="mt-8" aria-label="비교 종목 추가">
@@ -328,7 +335,7 @@ export default function ComparePage() {
 
       {returnStats.length > 0 && <section className="mt-6" aria-label="날짜별 주가 변화율 통계">
         <h2 className="text-sm font-semibold sm:text-base">날짜별 주가 변화율 통계</h2>
-        <p className="mt-1 hidden text-xs text-neutral-500 sm:block">각 종목의 가장 이른 거래일 종가와 비교할 수 있는 종목만 집계합니다.</p>
+        <p className="mt-1 hidden text-xs text-neutral-500 sm:block">시총 환산가가 있는 종목만 가장 이른 환산 가능 거래일 대비 변화율을 집계합니다.</p>
         <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-surface-dark-card sm:p-4">
             <div className="flex items-center justify-between gap-2 sm:block">
@@ -347,6 +354,7 @@ export default function ComparePage() {
           {stocks.map(stock => {
             const latestDate = dates.at(-1);
             const latest = latestDate ? stock.prices[latestDate] : undefined;
+            const latestPrice = comparisonPrice(stock, latest);
             const latestReturn = latestDate ? priceReturns.get(`${stock.id}:${latestDate}`) : undefined;
             const hasReturn = latestReturn && latest?.priceDate !== latestReturn.baselineDate;
             return <details key={stock.id} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-surface-dark-card">
@@ -357,11 +365,12 @@ export default function ComparePage() {
                   <ChevronDown size={15} className="shrink-0 text-neutral-400 transition-transform group-open:rotate-180" aria-hidden />
                 </div>
                 {latestDate ? <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="shrink-0 text-neutral-500">{formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} 종가</span>
+                  <span className="shrink-0 text-neutral-500">{formatDate(latest?.priceDate ?? latestDate.replaceAll('-', ''))} {latestPrice == null ? '환산가' : '시총 환산가'}</span>
                   <span className={`min-w-0 text-right font-semibold tabular-nums ${latest?.error ? 'text-rose-600 dark:text-rose-400' : ''}`}>
-                    {latest?.loading ? '조회 중' : latest?.price ? `${stock.currency}${show(latest.price)}` : latest?.error ?? '가격 없음'}
+                    {latest?.loading ? '조회 중' : latest?.price ? latestPrice == null ? '환산 자료 없음' : `${stock.currency}${show(latestPrice)}` : latest?.error ?? '가격 없음'}
                   </span>
                 </div> : <p className="mt-1.5 text-xs text-neutral-500">비교 날짜를 추가하면 가격을 볼 수 있습니다.</p>}
+                {latest?.price && !latest.loading && latestPrice == null && <p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-400">{comparisonUnavailableReason(stock, latest)} 변화율 집계에서 제외됩니다.</p>}
                 {hasReturn && <div className="mt-1 flex items-center justify-between gap-2 text-xs">
                   <span className="text-neutral-500">{formatDate(latestReturn.baselineDate)} 대비</span>
                   <span className={`font-semibold tabular-nums ${latestReturn.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{latestReturn.percent >= 0 ? '+' : ''}{show(latestReturn.percent)}%</span>
@@ -369,7 +378,7 @@ export default function ComparePage() {
               </summary>
               <div className="divide-y divide-neutral-100 border-t border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
                 {dates.map(date => <div key={date} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 px-3 py-2.5 text-sm">
-                  <p className="text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 종가</p>
+                  <p className="text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 환산가</p>
                   <div className="text-right font-semibold tabular-nums">{priceContent(stock, date)}</div>
                 </div>)}
               </div>
@@ -393,7 +402,7 @@ export default function ComparePage() {
           <table className="w-full min-w-max border-collapse text-sm">
             <thead><tr className="border-b border-neutral-200 dark:border-neutral-700">
               <th className="sticky left-0 z-10 min-w-44 bg-white px-4 py-4 text-left text-xs font-medium text-neutral-500 dark:bg-surface-dark-card">종목</th>
-              {dates.map(date => <th key={date} className="min-w-40 px-4 py-4 text-left text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 종가</th>)}
+              {dates.map(date => <th key={date} className="min-w-40 px-4 py-4 text-left text-xs font-medium text-neutral-500">{formatDate(date.replaceAll('-', ''))} 환산가</th>)}
               {rows.map(row => <th key={row.label} className="min-w-24 px-4 py-4 text-left text-xs font-medium text-neutral-500">{row.label}<span className="block text-[10px] font-normal">조회 당시</span></th>)}
             </tr></thead>
             <tbody>{stocks.map(stock => <tr key={stock.id} className="border-b border-neutral-100 last:border-0 dark:border-neutral-800">
@@ -407,7 +416,7 @@ export default function ComparePage() {
           </table>
         </div>
       </section>}
-      <p className="mt-5 text-xs leading-5 text-neutral-500">비교 가격은 제공된 시세의 종가 기준입니다. 액면분할·병합이 있었던 종목은 시세에 반영된 조정 방식에 따라 가격과 변화율 비교가 부정확할 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
+      <p className="mt-5 text-xs leading-5 text-neutral-500">시총 환산가는 액면분할·병합 외에 증자·감자에 따른 주식 수 변화도 반영합니다. 국내 종목별 최근 200개 일별 저장값에서 실제 거래일과 일치하는 시가총액 또는 같은 시점에 저장된 가격·상장주식 수를 사용하며, 저장 시점의 시총이므로 종가와 차이가 있을 수 있습니다. 미국 종목은 거래일이 확인된 과거 시총이 아직 연동되지 않았습니다. 시총 또는 현재 주식 수가 없으면 제공 종가를 참고용으로 표시하고 변화율 집계에서 제외합니다. 기존 저장본에 시총이 없으면 종목을 제거한 뒤 다시 추가해 주세요. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
     </main>
   </div>;
 }

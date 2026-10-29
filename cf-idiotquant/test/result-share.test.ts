@@ -84,14 +84,27 @@ test('발굴 결과는 받은 순서·시가총액 단위·ROE를 보존하고 �
 });
 
 test('비교 결과는 선택일·실제 거래일·현재 지표·변화율을 함께 공유한다', () => {
-  const stock: ComparisonStock = { id: 'one', ticker: '005930', name: '삼성전자', market: 'KR', currency: '₩', per: 10, prices: {
-    '2026-10-01': { price: 100, priceDate: '20261001' }, '2026-10-11': { price: 110, priceDate: '20261009' },
+  const stock: ComparisonStock = { id: 'one', ticker: '005930', name: '삼성전자', market: 'KR', currency: '₩', per: 10, currentShares: 10, prices: {
+    '2026-10-01': { price: 1000, marketCap: 1000, priceDate: '20261001' }, '2026-10-11': { price: 110, marketCap: 1100, priceDate: '20261009' },
   } };
   const snapshot = compareSnapshot([stock], ['2026-10-01', '2026-10-11']);
-  assert.deepEqual(snapshot.tables[0].columns.slice(0, 3), ['종목', '2026-10-01 종가', '2026-10-11 종가']);
-  assert.ok(snapshot.tables[0].rows[0][2].includes('20261009 종가'));
+  assert.deepEqual(snapshot.tables[0].columns.slice(0, 3), ['종목', '2026-10-01 환산가', '2026-10-11 환산가']);
+  assert.ok(snapshot.tables[0].rows[0][2].includes('20261009 시총 환산가'));
   assert.ok(snapshot.tables[0].rows[0][2].includes('10%'));
   assert.equal(snapshot.tables[1].rows[0][1], '10%');
+});
+
+test('과거 종가만 저장된 비교 결과는 환산 불가로 공유하고 변화율 통계에서 제외한다', () => {
+  const stock: ComparisonStock = { id: 'old', ticker: 'AAPL', name: 'Apple', market: 'US', currency: '$', currentShares: 10, prices: {
+    '2026-10-01': { price: 100, priceDate: '20261001' },
+    '2026-10-02': { price: 10, marketCap: 100, priceDate: '20261002' },
+  } };
+  const snapshot = compareSnapshot([stock], ['2026-10-01', '2026-10-02']);
+  assert.ok(snapshot.tables[0].rows[0][1].includes('환산 자료 없음'));
+  assert.ok(snapshot.tables[0].rows[0][1].includes('당시 자료가 제공되지 않아'));
+  assert.ok(snapshot.tables[0].rows[0][1].includes('변화율 집계에서 제외'));
+  assert.ok(snapshot.tables[0].rows[0][1].includes('참고 종가 $100'));
+  assert.equal(snapshot.tables.length, 1);
 });
 
 test('분석 공유는 이미 받은 가격·조회된 시세를 사용하고 비로그인 상세 데이터는 포함하지 않는다', async () => {
