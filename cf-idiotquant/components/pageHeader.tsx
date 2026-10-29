@@ -106,7 +106,7 @@ export function PageHeader({
   return (
     <>
     {integrated && createPortal(<div data-mobile-page-title className="flex min-w-0 items-center gap-2">
-      {icon && <span className="flex shrink-0 items-center" aria-hidden>{icon}</span>}
+      {icon && <span className="flex shrink-0 items-center">{icon}</span>}
       <div className="min-w-0">
       <h1 title={mobileTitle} className="truncate text-sm font-semibold leading-5 text-neutral-900 dark:text-white">{mobileTitle ?? title}</h1>
       {compactMeta && <div className="truncate text-xs leading-4 text-neutral-600 dark:text-neutral-300">{compactMeta}</div>}
@@ -133,7 +133,7 @@ export function PageHeader({
         )}>
           <div className="min-w-0 flex-1">
             <div data-header-title className="flex items-center gap-2">
-              {icon && <span className="shrink-0 text-neutral-500 flex items-center" aria-hidden>{icon}</span>}
+              {icon && <span className="shrink-0 text-neutral-500 flex items-center">{icon}</span>}
               <h1 className={cn("text-xl font-semibold tracking-[-0.04em] text-neutral-900 dark:text-white truncate", mobileCompact && "text-base sm:text-xl")}>
                 {title}
               </h1>
