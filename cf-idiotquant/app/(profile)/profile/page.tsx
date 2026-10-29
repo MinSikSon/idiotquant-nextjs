@@ -23,6 +23,7 @@ import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import { computeSolidity, quadrantOf, type SolidityPoint } from "@/lib/utils/portfolioSolidity";
 import SolidityPlane from "@/components/profile/solidityPlane";
 import UsageCard from "@/components/profile/usageCard";
+import { WATCHLIST_MARKETS, matchesWatchlistMarket, type WatchlistMarket } from "@/lib/features/stockLikes/markets";
 
 // 아직 아무것도 담지 않은 사용자에게 좌표평면이 무엇을 말하는지 보여주기 위한 예시.
 // 실제 종목이 아니며 카드 머리에 "예시"라고 못박는다 — 자기 종목으로 오해하면
@@ -84,9 +85,11 @@ export default function ProfilePage() {
     const dispatch = useAppDispatch();
     const likedList = useAppSelector(selectLikedList);
     const likesState = useAppSelector(selectLikesState);
+    const [watchlistMarket, setWatchlistMarket] = useState<WatchlistMarket>("all");
+    const filteredLikedList = likedList.filter(item => matchesWatchlistMarket(item, watchlistMarket));
 
     // 관심 종목 복사용 행 (ROE는 EPS/BPS로 계산)
-    const likedCopyRows: CopyStock[] = likedList.map(item => ({
+    const likedCopyRows: CopyStock[] = filteredLikedList.map(item => ({
         name: item.stock_name ?? item.ticker,
         ticker: item.ticker,
         ncav: item.ncav_ratio,
@@ -497,9 +500,38 @@ export default function ProfilePage() {
                     </div>
 
                     {likedList.length > 0 && (
-                        <div className="px-5 pb-2 flex items-center justify-end gap-2">
-                            <span className="text-[10px] text-neutral-400 font-medium">목록 복사</span>
-                            <CopyStockButtons rows={likedCopyRows} label="관심 종목" />
+                        <div className="px-5 pb-3">
+                            <div role="group" aria-label="관심 종목 시장·거래소 필터" className="grid grid-cols-3 gap-1.5 py-2">
+                                {WATCHLIST_MARKETS.map(market => {
+                                    const count = likedList.filter(item => matchesWatchlistMarket(item, market.value)).length;
+                                    if (market.value === "unknown" && count === 0) return null;
+                                    return (
+                                        <button
+                                            key={market.value}
+                                            type="button"
+                                            aria-pressed={watchlistMarket === market.value}
+                                            onClick={() => setWatchlistMarket(market.value)}
+                                            className={cn(
+                                                "rounded-lg px-1 py-2 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand",
+                                                watchlistMarket === market.value
+                                                    ? "bg-brand-light text-brand-ink dark:bg-brand-muted/30"
+                                                    : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-surface-dark-muted dark:text-neutral-400 dark:hover:bg-surface-dark-hover"
+                                            )}
+                                        >
+                                            {market.label} <span className="tabular-nums">{count}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                                <span role="status" className="text-[10px] text-neutral-400 font-medium">전체 {likedList.length}개 중 {filteredLikedList.length}개</span>
+                                {filteredLikedList.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-neutral-400 font-medium">목록 복사</span>
+                                        <CopyStockButtons rows={likedCopyRows} label="관심 종목" />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -515,9 +547,16 @@ export default function ProfilePage() {
                                 <Link href="/screener" className="text-brand-ink hover:underline font-bold">발굴 페이지</Link>에서 종목을 추가해보세요
                             </p>
                         </div>
+                    ) : filteredLikedList.length === 0 ? (
+                        <div className="px-5 py-6 text-center">
+                            <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">선택한 시장의 관심 종목이 없습니다</p>
+                            <button type="button" onClick={() => setWatchlistMarket("all")} className="mt-2 text-[11px] font-bold text-brand-ink hover:underline">
+                                전체보기
+                            </button>
+                        </div>
                     ) : (
                         <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
-                            {likedList.map(item => (
+                            {filteredLikedList.map(item => (
                                 <div key={item.ticker} className="flex items-center gap-2 px-5 py-3">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5 flex-wrap">
