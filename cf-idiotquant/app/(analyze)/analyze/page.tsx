@@ -570,6 +570,14 @@ function AnalyzeContent() {
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         mobileTitle={isPriceLoaded ? displayName || tickerLabel : '종목 분석'}
         description={!isPriceLoaded ? '기업의 숫자를 읽고, 가치의 근거를 찾아보세요.' : undefined}
+        meta={tickerFromUrl ? <>
+          <div className="flex min-w-0 items-center gap-1.5" aria-label="현재 종목 시세">
+            <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
+            {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
+            <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
+            {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
+          </div>
+        </> : undefined}
         sticky
         mobileCompact={!!tickerFromUrl}
         mobileTitleInNavigation={!isPriceLoaded}
@@ -599,23 +607,15 @@ function AnalyzeContent() {
             return snapshot;
           }} />
           </>}
-
-        </> : undefined}
-      >
-        {tickerFromUrl && <div className={cn(ANALYZE_WIDTH, styles.quoteRow)}>
-          <div className={styles.quoteMeta} aria-label="현재 종목 시세">
-            <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
-            {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
-            <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
-            {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
-          </div>
           <button type="button" data-page-input-trigger aria-keyshortcuts="/" title="/ 종목 검색" onClick={() => setSearchOpen(open => !open)}
             aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
             aria-expanded={searchOpen} aria-controls="analyze-stock-search"
-            className={cn(styles.quoteSearch, styles.searchAction)}>
+            className={PAGE_ACTION_CLS}>
             <Search size={16} aria-hidden="true" /><span className="hidden sm:inline">검색</span>
           </button>
-        </div>}
+
+        </> : undefined}
+      >
         {/* 종목 선택 즉시 접는다. 조회 실패 중에도 돋보기로 다시 검색할 수 있다. */}
         {(!tickerFromUrl || searchOpen) && (
           <div id="analyze-stock-search" className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
@@ -728,6 +728,9 @@ function AnalyzeContent() {
                 <FinancialFreshnessNotice periods={analysisFinancialPeriods(data, krOrUs)} banner />
               )}
 
+              <div className={styles.analysisWorkspace}>
+              <aside className={styles.analysisSidebar} aria-label="분석 요약과 도움말">
+                <p className={styles.sidebarLabel}>분석 요약</p>
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
                   모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
@@ -757,7 +760,7 @@ function AnalyzeContent() {
 
                   {/* 펼친 내용 — 좁은 폭이라 한 줄에 하나씩. 기준을 같이 적어야 왜 ✓/✕ 인지 읽힌다 */}
                   {verdictOpen && (
-                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-surface-dark-border/70 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className={cn(styles.verdictChecks, "mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-surface-dark-border/70 grid grid-cols-1 sm:grid-cols-2 gap-3")}>
                       {verdict.checks.map(c => (
                         <div key={c.label} className="flex items-center gap-2">
                           <span className={cn(
@@ -792,6 +795,8 @@ function AnalyzeContent() {
                 </ol>
               </details>
 
+              </aside>
+              <div className={styles.detailContent}>
               {/* 지표 탭 (1/2) — 종목 카드. 핵심 지표(NCAV·PBR·PER·ROE)를 카드가 크게 보여주고,
                   아래 상세 지표 표가 나머지를 잇는다. 결론이 위, 근거가 아래.
                   카드는 시세만 있으면 그려지므로 재무 로딩(isLoaded) 밖에 둔다. */}
@@ -956,6 +961,8 @@ function AnalyzeContent() {
                 <div className="h-[520px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark" />
               </div>
               )}
+              </div>
+              </div>
             </div>
           </>
         )}

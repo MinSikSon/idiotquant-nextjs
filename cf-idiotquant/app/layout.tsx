@@ -203,7 +203,7 @@ export default function RootLayout({
               <main className={cn(
                 "pt-[48px] md:pt-0",
                 "pb-[64px] md:pb-0",
-                "min-h-[100dvh] md:min-h-[calc(100dvh-64px)] overflow-x-clip"
+                "min-h-[100dvh] md:min-h-[calc(100dvh-48px)] overflow-x-clip"
               )}>
                 <PageInputShortcuts />
                 {children}

@@ -2,6 +2,7 @@
 
 import styles from "./balanceTheme.module.css";
 
+import { PageHeader } from "@/components/pageHeader";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
@@ -54,39 +55,25 @@ export function BalanceShell({
 
       <ToastContainer toasts={toasts} onRemove={onRemoveToast} />
 
-      <div className="max-w-[1280px] lg:max-w-none mx-auto px-2 py-2 md:px-6 md:py-10 space-y-2 md:space-y-6">
-
-        {/* 헤더 */}
-        <header className={cn(styles.header, "flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-5")}>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:block md:space-y-2.5 min-w-0">
-            <div className="hidden w-full md:block">{breadcrumb}</div>
-            {title}
-            {lastUpdated ? (
-              <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 tabular-nums">
-                <Clock size={11} />
-                {lastUpdated.toLocaleTimeString("ko-KR")} 기준
-              </p>
-            ) : (
-              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-surface-dark-elevated animate-pulse" />
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-col items-start gap-1.5 md:items-end md:gap-2">
-            <div className="flex max-w-full items-center gap-1 overflow-x-auto md:flex-col md:items-end md:gap-2">
-              {countryToggle}
-              <BalanceHeaderActions
-                autoRefresh={autoRefresh}
-                onToggleAutoRefresh={onToggleAutoRefresh}
-                isLoading={isLoading}
-                onRefresh={onRefresh}
-                extra={headerExtra}
-              />
-            </div>
-            <div className="hidden md:block">{footerBadge}</div>
-          </div>
-        </header>
-
-        <div className="h-px bg-neutral-200 dark:bg-neutral-800" />
+      <PageHeader
+        title={title}
+        description={breadcrumb}
+        meta={<>
+          {lastUpdated && <span className="inline-flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString("ko-KR")} 기준</span>}
+          {footerBadge}
+        </>}
+        actions={<>
+          {countryToggle}
+          <BalanceHeaderActions
+            autoRefresh={autoRefresh}
+            onToggleAutoRefresh={onToggleAutoRefresh}
+            isLoading={isLoading}
+            onRefresh={onRefresh}
+            extra={headerExtra}
+          />
+        </>}
+      />
+      <div className="w-full mx-auto px-2.5 py-2 md:px-6 md:py-4 space-y-2 md:space-y-4">
 
         {/* 계좌 선택 (탭 위 최상단) */}
         {accountSelector}

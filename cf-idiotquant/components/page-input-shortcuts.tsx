@@ -61,8 +61,10 @@ export default function PageInputShortcuts() {
       }
       if (event.key !== "/" || event.shiftKey || event.repeat || editing(active)) return;
       if (focusInput()) { event.preventDefault(); return; }
-      const trigger = main!.querySelector<HTMLButtonElement>("[data-page-input-trigger]");
-      if (trigger && visible(trigger) && !trigger.disabled) {
+      // 페이지 도구는 상단바로 이동하며 좁은 화면에서는 닫힌 메뉴 안에 있다.
+      const trigger = document.querySelector<HTMLButtonElement>("[data-page-actions] [data-page-input-trigger], main [data-page-input-trigger]");
+      const tools = trigger?.closest<HTMLElement>("details, [data-page-tools-panel]");
+      if (trigger && !trigger.disabled && (visible(trigger) || tools && (visible(tools) || tools.id === "mobile-page-tools"))) {
         event.preventDefault();
         waitForInput(false);
         trigger.click();

@@ -490,16 +490,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           </span>
         </nav>
       }
-      title={
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl sm:text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
-            US Portfolio
-          </h1>
-          <span className="flex items-center gap-1 px-3 py-1.5 bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white rounded-xl text-[10px] font-semibold tracking-widest uppercase shadow-none">
-            <DollarSign size={11} /> USD Account
-          </span>
-        </div>
-      }
+      title="미국 포트폴리오"
       headerExtra={
         <>
           {/* 상태를 모를 때(null) 버튼을 아예 빼면, 조회가 끝나는 몇 초 뒤 헤더에 버튼이

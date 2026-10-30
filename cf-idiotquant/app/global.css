@@ -295,7 +295,7 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
 }
 
 @media (min-width: 768px) {
-  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 64px; }
+  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 48px; }
 }
 
 @media (min-width: 768px) {
@@ -523,3 +523,5 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
   .desktop-page-answers > div { margin-top: 0; }
   .desktop-page-answers > nav { grid-column: 2; margin-top: 0; }
 }
+
+[data-page-tools]:has([data-page-actions]:empty) { display: none; }
