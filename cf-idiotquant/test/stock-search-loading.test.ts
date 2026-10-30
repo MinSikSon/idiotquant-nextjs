@@ -9,6 +9,8 @@ const source = readFileSync(
   new URL('../app/(search)/search/hooks/useStockSearch.ts', import.meta.url),
   'utf8'
 );
+const corpCodes = JSON.parse(readFileSync(new URL('../public/data/validCorpCode.json', import.meta.url), 'utf8'));
+const corpNames = JSON.parse(readFileSync(new URL('../public/data/validCorpNameArray.json', import.meta.url), 'utf8'));
 const script = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.CommonJS,
@@ -18,17 +20,18 @@ const script = ts.transpileModule(source, {
 }).outputText;
 function harness() {
   const states: unknown[] = [];
-  const pending: { type: string; resolve: () => void; reject: () => void }[] =
+  const pending: { type: string; payload: unknown; resolve: () => void; reject: () => void }[] =
     [];
   const actions = new Proxy(
     {},
     { get: (_, key) => (payload: unknown) => ({ type: String(key), payload }) }
   );
-  const dispatch = (action: { type: string }) => {
+  const dispatch = (action: { type: string; payload: unknown }) => {
     if (!action.type.startsWith('reqGet')) return action;
     return new Promise((resolve, reject) =>
       pending.push({
         type: action.type,
+        payload: action.payload,
         resolve: () => resolve({}),
         reject: () => reject(new Error('시세 서버 오류')),
       })
@@ -72,7 +75,7 @@ function harness() {
           useAppSelector: () => ({ state: 'idle' }),
         };
       if (name.endsWith('validCorpCode.json'))
-        return { 삼성전자: { stock_code: '005930' } };
+        return corpCodes;
       if (name.endsWith('nasdaq_tickers.json')) return ['AAPL'];
       if (name.endsWith('nyse_tickers.json')) return ['BRK.B'];
       if (name.endsWith('amex_tickers.json')) return [];
@@ -82,6 +85,28 @@ function harness() {
   });
   const hook = output.exports.useStockSearch!();
   return { hook, pending, loading: () => states[2] };
+}
+
+test('케이아이이는 분석 페이지의 검색·자동완성 목록에 포함된다', () => {
+  assert.ok(corpNames.includes('케이아이이'));
+  assert.equal(corpCodes['케이아이이']?.stock_code, '009140');
+});
+
+for (const name of ['케이아이이', '경인전자', '009140']) {
+  test(`${name}: 국내 종목 009140으로 시세와 재무제표를 요청한다`, async () => {
+    const { hook, pending } = harness();
+    const work = hook.onSearch(name);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(pending.map(request => request.type), [
+      'reqGetInquirePrice', 'reqGetInquireDailyItemChartPrice',
+      'reqGetBalanceSheet', 'reqGetIncomeStatement',
+    ]);
+    for (const request of pending) {
+      assert.equal((request.payload as { PDNO: string }).PDNO, '009140');
+      request.resolve();
+    }
+    await work;
+  });
 }
 
 for (const ticker of ['삼성전자', '005930', 'AAPL']) {

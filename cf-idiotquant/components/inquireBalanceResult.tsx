@@ -398,10 +398,10 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
         );
     };
     const goAnalyze = (item: any) => {
-        // US: ticker code (AAPL), KR: stock name (삼성전자) — analyze page searches by name for KR
+        // 종목명 변경과 무관하게 조회할 수 있도록 보유 종목코드를 우선한다.
         const ticker = isUs
             ? (item.pdno || item.ovrs_pdno)
-            : (item.prdt_name || item.ovrs_item_name || item.pdno);
+            : (item.pdno || item.prdt_name || item.ovrs_item_name);
         if (ticker) router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`);
     };
 

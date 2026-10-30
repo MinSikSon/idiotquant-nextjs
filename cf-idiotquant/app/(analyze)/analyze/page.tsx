@@ -511,7 +511,8 @@ function AnalyzeContent() {
       const grade = isLoaded ? getKrNcavGrade(data.kiBS, data.kiChart) : undefined;
       const fairValue = isLoaded ? calculateKrNcavValue(data.kiBS, data.kiChart) : 0;
       const srimScore = isLoaded ? getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart) : undefined;
-      const stockTicker = (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '';
+      const stockTicker = data.kiChart?.output1?.stck_shrn_iscd
+        || (/^\d{6}$/.test(name) ? name : (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '');
       const bps = Number(data?.kiPrice?.output?.bps ?? 0);
       return { ncavRatio, pbr, per, eps, bps, curPrice, grade, fairValue, srimScore, stockTicker };
     } else {
