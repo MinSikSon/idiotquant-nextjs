@@ -1,25 +1,15 @@
 "use client";
 
+import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
 
-/* ─────────────────────────────────────────────────────────────────────────
-   공통 페이지 헤더 — 발굴·적정 주가 등 주요 화면이 같은 골격을 쓰도록 한 규칙.
-
-   제목 (20px/600)
-   메타 정보 (12px)                              [액션들]
-   ─────────────────────────────────────── 1px
-
-   ── 이 골격을 쓰지 않는 화면 (일부러 뺀 것이지 빠뜨린 것이 아니다) ──
-   (home) · (quant)   랜딩. 히어로가 첫 화면이라 여기에 머리를 얹으면 밋밋해진다.
-   (game)             브라운관 안이다. retroPalette.ts 가 색을 따로 정한다.
-   (legal)            가운데 정렬된 단독 문서. 자체 로고 머리를 이미 갖고 있다.
-   분석은 검색 전에는 페이지 제목, 검색 후에는 종목명을 제목으로 쓴다.
-   검색줄·분석 탭은 children으로 내려 공통 헤더 안에 유지한다.
-
-   ───────────────────────────────────────────────────────────────────────── */
+/* 페이지 제목·메타·작업 버튼은 공통 내비게이션의 슬롯으로 보낸다.
+   모바일과 좁은 데스크톱에서는 작업 버튼을 도구 메뉴에 담고,
+   검색줄·분석 탭(children)만 본문 위에 남긴다.
+   슬롯이 없는 독립 화면에서는 자체 헤더로 표시한다. */
 
 /* 본문 폭 — 화면 성격에 따라 둘 중 하나다.
    하나로 밀면 표가 많은 화면이 답답해지고 읽는 화면은 한 줄이 너무 길어진다.
@@ -77,7 +67,7 @@ export function PageHeader({
   children?: React.ReactNode;
   /** 본문 폭 프리셋. 페이지의 <main> 도 같은 값을 써야 한다. */
   width?: PageWidth;
-  /** 스크롤해도 헤더를 위에 남긴다 — 지금 보는 대상(종목명·가격)이 계속 보여야 하는 화면용. */
+  /** 검색줄·탭을 공통 내비게이션 바로 아래에 고정한다. */
   sticky?: boolean;
   /** 좁은 화면에서 제목·요약·아이콘을 짧은 헤더로 배치한다. */
   mobileCompact?: boolean;
@@ -96,7 +86,9 @@ export function PageHeader({
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
-  const integrated = mobile && !!slots?.titleTarget && !!slots?.actionsTarget;
+  const titleTarget = mobile ? slots?.titleTarget : slots?.desktopTitleTarget;
+  const actionsTarget = mobile ? slots?.actionsTarget : slots?.desktopActionsTarget;
+  const integrated = !!titleTarget && !!actionsTarget;
   const setActive = slots?.setActive;
   useEffect(() => {
     setActive?.(integrated);
@@ -105,28 +97,36 @@ export function PageHeader({
 
   return (
     <>
-    {integrated && createPortal(<div data-mobile-page-title className="flex min-w-0 items-center gap-2">
-      {icon && <span className="flex shrink-0 items-center">{icon}</span>}
+    {integrated && createPortal(<div data-page-title className="flex min-w-0 items-center gap-2">
+      {icon && <span className="flex shrink-0 items-center [&>div]:!h-7 [&>div]:!w-7">{icon}</span>}
       <div className="min-w-0">
-      <h1 title={mobileTitle} className="truncate text-sm font-semibold leading-5 text-neutral-900 dark:text-white">{mobileTitle ?? title}</h1>
-      {compactMeta && <div className="truncate text-xs leading-4 text-neutral-600 dark:text-neutral-300">{compactMeta}</div>}
-    </div></div>, slots!.titleTarget!)}
-    {integrated && createPortal(<div className="space-y-3">
-      <div className="text-sm font-semibold text-neutral-900 dark:text-white">{mobileTitle ?? title}</div>
-      {actions && <div data-mobile-page-actions className="flex flex-wrap items-center gap-2">{actions}</div>}
-    </div>, slots!.actionsTarget!)}
+        <h1 className="truncate text-sm font-semibold tracking-tight text-neutral-900 dark:text-white">{mobile ? mobileTitle ?? title : title}</h1>
+        {(compactMeta || meta) && <div className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{compactMeta ?? meta}</div>}
+      </div>
+      {(description || typeof meta === "string") && <details className="relative shrink-0">
+        <summary aria-label="페이지 설명" className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden"><Info size={15} /></summary>
+        <div className="fixed left-4 right-4 top-14 z-50 w-auto md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:w-60 rounded-xl border border-neutral-200 bg-white p-3 text-xs leading-6 text-neutral-600 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-300">{description}{typeof meta === "string" && <p className={description ? "mt-2" : undefined}>{meta}</p>}</div>
+      </details>}
+    </div>, titleTarget!)}
+    {integrated && createPortal(<div data-page-actions className="flex flex-wrap items-center gap-2" onClick={event => {
+      if ((event.target as HTMLElement).closest("[data-page-input-trigger]")) {
+        event.currentTarget.closest("details")?.removeAttribute("open");
+      }
+    }}>{actions}</div>, actionsTarget!)}
     <header
       data-page-header
-      data-mobile-integrated={integrated || undefined}
+      data-mobile-integrated={mobile && integrated || undefined}
+      data-integrated={integrated || undefined}
       data-title-in-navigation={mobileTitleInNavigation || undefined}
       data-header-title-only={mobileTitleInNavigation && !actions && !compactMeta || undefined}
       className={cn(
         PAGE_HEADER_CHROME,
-        sticky && "sticky top-0 z-30",
+        sticky && "sticky top-[var(--topbar-h)] z-30",
+        integrated && !children && "hidden",
         className
       )}
     >
-      <div data-header-main className={cn(containerClassName ?? PAGE_WIDTH[width], "pt-5 pb-[18px]", mobileCompact && "py-2.5 sm:pt-5 sm:pb-[18px]")}>
+      {!integrated && <div data-header-main className={cn(containerClassName ?? PAGE_WIDTH[width], "py-2.5")}>
         <div data-header-row className={cn(
           "flex flex-col sm:flex-row sm:items-end justify-between gap-3",
           mobileCompact && "flex-row items-center gap-2 sm:items-end sm:gap-3"
@@ -151,10 +151,6 @@ export function PageHeader({
           </div>
           {!integrated && actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
         </div>
-      </div>
-      {integrated && (description || meta) && <div data-mobile-header-details className={cn(containerClassName ?? PAGE_WIDTH[width], "space-y-1 py-2 text-xs text-neutral-500 dark:text-neutral-400")}>
-        {description && <p>{description}</p>}
-        {meta && <div className="flex flex-wrap items-center gap-1.5">{meta}</div>}
       </div>}
       {children}
     </header>

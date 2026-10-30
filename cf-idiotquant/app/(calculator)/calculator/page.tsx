@@ -362,7 +362,7 @@ function Calculator() {
 
     return (
         <div
-            className="landing-style-page group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas pt-3 sm:pt-8 pb-20 sm:pb-24"
+            className="landing-style-page group min-h-screen bg-surface-canvas dark:bg-surface-dark-canvas pt-3 sm:pt-4 pb-20 sm:pb-24"
             data-help={showHelp ? "on" : "off"}
         >
             <div className={PAGE_WIDTH.data}>
@@ -370,6 +370,7 @@ function Calculator() {
                 {/* ── 문서 머리 ─────────────────────────────────── */}
                 <PageHeader
                     title="복리 수익률 계산기"
+                    mobileTitle="복리 계산기"
                     containerClassName="p-0"
                     className="border-0 bg-transparent dark:bg-transparent [&>[data-header-main]]:p-0 [&_h1]:text-[18px] [&_h1]:min-[380px]:text-xl [&_h1]:sm:text-2xl [&_h1]:font-medium [&_h1]:leading-[1.28]"
                     actions={<>

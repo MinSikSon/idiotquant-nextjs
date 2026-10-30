@@ -513,14 +513,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           )}
         </nav>
       }
-      title={
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl sm:text-3xl font-medium tracking-tight text-neutral-900 dark:text-neutral-100 md:text-4xl">
-            Portfolio Balance
-          </h1>
-          <span className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">KR</span>
-        </div>
-      }
+      title="국내 포트폴리오"
       // 상태를 모를 때(null) 버튼을 아예 빼면, 조회가 끝나는 몇 초 뒤 헤더에 버튼이
       // 불쑥 끼어들며 레이아웃이 밀린다. 자리는 처음부터 지키고 비활성으로만 둔다.
       headerExtra={(

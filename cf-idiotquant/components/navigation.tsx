@@ -295,6 +295,14 @@ export function NavbarWithSimpleLinks() {
   const barStyle = inGame
       ? ({ background: "var(--rg-bg)", borderColor: "var(--rg-line-faint)" } as const)
       : undefined;
+  const [wideHeader, setWideHeader] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1280px)");
+    const update = () => setWideHeader(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const [bottomBarCompact, setBottomBarCompact] = useState(false);
@@ -469,12 +477,12 @@ export function NavbarWithSimpleLinks() {
 
       {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
       {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/85 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/85">
-        <div className="mx-auto flex min-h-[64px] w-full items-center gap-6 px-5 sm:px-6 lg:gap-8">
+        <div className="mx-auto flex min-h-[48px] w-full items-center gap-3 px-4 lg:gap-6 lg:px-6">
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             idiot<span className="text-brand-ink">quant</span>
           </Link>
-          <nav aria-label="주요 메뉴" className="flex min-w-0 flex-1 items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300 lg:gap-6 lg:text-sm">
-            {MAIN_NAV.filter(item => item.href !== "/").map(item => (
+          <nav aria-label="주요 메뉴" className={cn("flex min-w-0 items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300 lg:gap-6", pageHeader?.active ? "shrink-0" : "flex-1")}>
+            {!pageHeader?.active && MAIN_NAV.filter(item => item.href !== "/").map(item => (
               <Link key={item.href} href={item.href} aria-current={active(pathname, item.href) ? "page" : undefined}
                 className={cn("whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
                   active(pathname, item.href) && "font-semibold text-brand-ink dark:text-brand-ink")}>
@@ -485,10 +493,10 @@ export function NavbarWithSimpleLinks() {
               <button type="button" onClick={() => setMoreOpen(v => !v)} aria-expanded={moreOpen} aria-controls="desktop-more-menu"
                 className={cn("inline-flex items-center gap-1 whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
                   moreActive && "text-brand-ink dark:text-brand-ink")}>
-                더 보기 <ChevronDown size={14} className={cn("transition-transform", moreOpen && "rotate-180")} />
+                {pageHeader?.active ? "메뉴" : "더 보기"} <ChevronDown size={14} className={cn("transition-transform", moreOpen && "rotate-180")} />
               </button>
               {moreOpen && <div id="desktop-more-menu" className="absolute left-0 top-full z-50 mt-2 min-w-44 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
-                {utilityNav.map(item => (
+                {(pageHeader?.active ? [...MAIN_NAV, ...utilityNav] : utilityNav).map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)}
                     className={cn("block rounded-xl px-3 py-2 text-sm transition-colors hover:bg-brand-light dark:hover:bg-brand-muted",
                       active(pathname, item.href) && "font-semibold text-brand-ink dark:text-brand-ink")}>
@@ -498,8 +506,13 @@ export function NavbarWithSimpleLinks() {
               </div>}
             </div>
           </nav>
-          <div className="flex shrink-0 items-center gap-3">
-            <QuickNavigation items={[...MAIN_NAV, ...utilityNav]} />
+          <div ref={pageHeader?.setDesktopTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
+          <details key={pathname} data-page-tools open={wideHeader} className={cn("relative shrink-0", !pageHeader?.active && "hidden")}>
+            <summary aria-label="페이지 도구" className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-500 xl:hidden [&::-webkit-details-marker]:hidden"><MoreHorizontal size={20} /></summary>
+            <div ref={pageHeader?.setDesktopActionsTarget} className={wideHeader ? "" : "absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-surface-dark-card"} />
+          </details>
+          <div className="flex shrink-0 items-center gap-2">
+            <QuickNavigation compact={pageHeader?.active} items={[...MAIN_NAV, ...utilityNav]} />
             <ThemeChanger compact />
             {status === "authenticated" ? <>
               <Link href="/profile" className="max-w-28 truncate rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-neutral-400">
@@ -517,26 +530,26 @@ export function NavbarWithSimpleLinks() {
       <header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
         barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
-        <div className={cn("flex flex-1 items-center gap-1.5 min-w-0 pr-3", pageHeader?.active && headerCompact && "hidden")}>
+        <div className={cn("flex flex-1 items-center gap-1.5 min-w-0 pr-3", pageHeader?.active && "hidden")}>
           <Link href="/" aria-label="IdiotQuant 홈" className="flex min-w-0 items-center gap-1.5">
             {headerCompact ? <span className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{pageLabel}</span> : <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
               idiot<span className="text-brand-ink">quant</span>
             </span>}
           </Link>
         </div>
-        <div ref={headerCompact ? pageHeader?.setTitleTarget : null} className={cn("min-w-0 flex-1 pr-2", !(pageHeader?.active && headerCompact) && "hidden")} />
-        <div ref={toolsRef} className={cn("shrink-0", !(pageHeader?.active && headerCompact) && "hidden")}>
+        <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1 pr-2", !(pageHeader?.active) && "hidden")} />
+        <div ref={toolsRef} className={cn("shrink-0", !(pageHeader?.active) && "hidden")}>
           <button type="button" aria-label="페이지 및 서비스 도구" aria-expanded={toolsOpen} aria-controls="mobile-page-tools" onClick={() => setToolsOpen(value => !value)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-neutral-200/60 dark:hover:bg-neutral-800">
             <MoreHorizontal size={20} />
           </button>
-          <div id="mobile-page-tools" hidden={!toolsOpen} className="absolute right-3 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
+          <div id="mobile-page-tools" data-page-tools-panel hidden={!toolsOpen} className="absolute right-3 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
             <div ref={pageHeader?.setActionsTarget} />
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-700"><ThemeChanger /><MiniSession session={session} status={status} /></div>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
-          <ThemeChanger />
-          <MiniSession session={session} status={status} />
+          {!pageHeader?.active && <><ThemeChanger /><MiniSession session={session} status={status} /></>}
         </div>
       </header>
 

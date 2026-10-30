@@ -271,3 +271,68 @@
 .tabGuide > summary::-webkit-details-marker, .readingNote > summary::-webkit-details-marker { display: none; }
 .tabGuide > summary svg, .readingNote > summary svg { flex-shrink: 0; transition: transform .2s; }
 .readingNote[open] > summary svg { transform: rotate(180deg); }
+
+
+.analysisSidebar, .detailContent { min-width: 0; }
+.sidebarLabel { display: none; }
+
+@media (min-width: 1024px) {
+  .header [data-header-row] { align-items: center; }
+  .header [data-header-title] { gap: 12px; }
+  .header h1 { font-size: 24px; }
+  .header [data-header-detail] { font-size: 13px; gap: 10px; }
+  .searchRow > div:first-child { max-width: 720px; }
+  .tabs { width: fit-content; min-width: 560px; gap: 8px; }
+  .tabs button { flex: none; min-width: 132px; padding-inline: 20px; }
+
+  .analysisWorkspace {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+    gap: 32px;
+  }
+  .analysisSidebar {
+    padding: 20px;
+    border: 1px solid rgb(115 115 115 / 20%);
+    border-radius: 16px;
+    background: rgb(115 115 115 / 4%);
+  }
+  .sidebarLabel {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .analysisSidebar .verdict { padding: 12px 0 20px; margin-bottom: 20px; }
+  .verdict > button { flex-wrap: wrap; gap: 10px; }
+  .verdict > button > span:nth-child(2) { flex-basis: 100%; order: 1; font-size: 15px; }
+  .verdict > button > svg { margin-left: auto; }
+  .verdictChecks { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .verdictChecks > div { flex-wrap: wrap; }
+  .verdictChecks > div > span:nth-child(3) { order: 1; flex-basis: 100%; padding-left: 24px; margin-top: -6px; }
+  .analysisSidebar .tabGuide { padding: 0; margin: 0; border: 0; border-radius: 0; background: none; }
+  .tabGuide summary { font-size: 13px; }
+  .tabGuide h2 { font-size: 16px; margin-top: 16px; }
+  .tabGuide p { font-size: 13px; line-height: 1.75; }
+  .tabGuide ol { flex-direction: column; gap: 12px; }
+  .tabGuide li { align-items: flex-start; font-size: 12px; }
+  .tabGuide li span { width: 20px; height: 20px; font-size: 11px; }
+}
+
+@media (min-width: 1440px) {
+  .analysisWorkspace { grid-template-columns: 300px minmax(0, 1fr); gap: 40px; }
+}
+
+.header[data-integrated] > div:last-child { padding-bottom: 0; }
+.header[data-integrated] [aria-label="분석 내용 선택"] button { min-height: 40px; padding-block: 8px; }
+
+.header[data-integrated] .tabsRow { padding-block: 0; }
+.header[data-integrated] .tabStrip { border: 0; border-radius: 0; background: transparent; padding: 0; }
+.header[data-integrated] .tab { min-height: 40px; }
+:global([data-page-title]) .stockName { min-height: 0; font-size: inherit; line-height: inherit; }
+:global([data-page-title]) .quotePrice { font-size: inherit; }
+@media (min-width: 1024px) {
+  .tabStrip { width: fit-content; min-width: 560px; }
+  .tab { flex: none; min-width: 132px; }
+  .analysisSidebar { background: var(--analysis-panel); border-color: var(--analysis-line); }
+}
