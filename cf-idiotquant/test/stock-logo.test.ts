@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { discoverLogo, handleLogoRequest, isPublicIpv4, isPublicIpv6, logoCandidates, publicWebsite, readLimited } from '../lib/server/stockLogo.ts';
 
 const SERVER = 'https://kr-logo-api.tofu89223.workers.dev';
@@ -7,6 +8,7 @@ const ORIGIN = 'https://idiotquant.com';
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aOZkAAAAASUVORK5CYII=';
 const pngBytes = Uint8Array.from(atob(PNG), c => c.charCodeAt(0));
 const admin = { role: 'admin' };
+const placeholder = readFileSync(new URL('./fixtures/stock-logo-placeholder.svg', import.meta.url), 'utf8');
 
 function request(method: string, body?: object, origin = ORIGIN) {
     return new Request(`${ORIGIN}/api/admin/stock-logo?ticker=100030`, {
@@ -69,6 +71,32 @@ test('조회 오류와 로고 누락을 구분한다', async t => {
     assert.deepEqual(await (await handleLogoRequest(request('GET'), admin, undefined)).json(), { missing: false });
     status = 503;
     assert.equal((await handleLogoRequest(request('GET'), admin, undefined)).status, 502);
+});
+
+test('200으로 반환되는 기본 클립보드 아이콘도 미등록으로 표시한다', async t => {
+    t.mock.method(globalThis, 'fetch', async () => new Response(placeholder.replace(/\s+/g, ' '), {
+        headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' },
+    }));
+    const response = await handleLogoRequest(request('GET'), admin, undefined);
+    assert.deepEqual(await response.json(), { missing: true });
+});
+
+test('실제 SVG 로고는 미등록으로 오인하지 않는다', async t => {
+    t.mock.method(globalThis, 'fetch', async () => new Response('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0h20v20z"/></svg>', {
+        headers: { 'Content-Type': 'image/svg+xml' },
+    }));
+    assert.deepEqual(await (await handleLogoRequest(request('GET'), admin, undefined)).json(), { missing: false });
+});
+
+test('기본 클립보드 아이콘은 관리자가 수집한 로고로 등록할 수 있다', async t => {
+    let uploaded = false;
+    t.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+        if (String(input).endsWith('/upload')) { uploaded = true; return Response.json({ success: true }); }
+        return new Response(placeholder, { headers: { 'Content-Type': 'image/svg+xml' } });
+    });
+    const response = await handleLogoRequest(request('PUT', { ticker: '032280', name: '삼일', imageBase64: PNG }), admin, 'test-password');
+    assert.equal(response.status, 200);
+    assert.equal(uploaded, true);
 });
 
 test('홈페이지에서 찾은 이미지를 미리보기로만 반환한다', async t => {

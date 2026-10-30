@@ -178,6 +178,13 @@ export async function discoverLogo(website: string) {
 
 export async function logoMissing(ticker: string): Promise<boolean> {
     const response = await fetch(`${LOGO_SERVER}/view/${ticker}`, { cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(8_000) });
+    if (response.ok && response.headers.get('content-type')?.toLowerCase().includes('image/svg+xml')) {
+        // 서버에 기업 로고 대신 저장된 클립보드 기본 아이콘. 실제 SVG 로고는 유지한다.
+        const svg = new TextDecoder().decode(await readLimited(response, MAX_IMAGE_BYTES)).replace(/\s+/g, '');
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(svg));
+        const fingerprint = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+        return fingerprint === '84720f91559d93b23d0faa43b7604a7c1327e346f990fb4238970b59c00a7340';
+    }
     await response.body?.cancel();
     if (response.status === 404) return true;
     if (!response.ok) throw new LogoError('로고 서버에 연결할 수 없습니다.', 502);
