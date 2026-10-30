@@ -19,13 +19,13 @@ export function StockLogo({ ticker, name, isUs }: { ticker: string; name: string
     : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${ticker}`;
 
   useEffect(() => {
-    if (!failed || !isAdmin || isUs) return;
+    if (!isAdmin || isUs) return;
     const controller = new AbortController();
     fetch(`/api/admin/stock-logo?ticker=${encodeURIComponent(ticker)}`, { signal: controller.signal })
       .then(async response => { if (response.ok) setMissing((await response.json()).missing === true); })
       .catch(() => { /* 통신 오류만으로 등록 버튼을 표시하지 않는다. */ });
     return () => controller.abort();
-  }, [failed, isAdmin, isUs, ticker]);
+  }, [isAdmin, isUs, ticker]);
 
   const logo = failed ? (name.trim() || ticker || "?").charAt(0).toUpperCase() : (
     <Image src={version ? `${src}?v=${version}` : src} alt="" fill unoptimized className="object-contain p-1" onError={() => setFailed(true)} />
