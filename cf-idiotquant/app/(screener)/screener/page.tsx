@@ -1229,7 +1229,7 @@ function ScreenerContent() {
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="w-full mx-auto flex items-center gap-1 px-4 sm:px-6">
-                    <div className="flex gap-1" role="tablist" aria-label="발굴 시장">
+                    <div className="flex gap-1" data-compact-tabs role="tablist" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
                             key={value}

@@ -295,7 +295,7 @@ body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
 }
 
 @media (min-width: 768px) {
-  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: 48px; }
+  body:not(:has(#public-home, #game-canvas)) main .sticky.top-0 { top: var(--topbar-h,48px); }
 }
 
 @media (min-width: 768px) {
@@ -479,8 +479,6 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 /* 모바일에서는 모든 경로의 상단바를 요약하고, 페이지 머리의 부가 설명을 접는다.
    입력·버튼을 조작하는 동안에는 전체 머리를 유지한다. */
 @media (max-width: 767px) {
-  html[data-mobile-header-compact="true"] { --topbar-h: 44px; }
-  html[data-mobile-header-compact="true"] [data-mobile-header] { height: 44px; }
   /* 페이지명은 상단바에 한 번만 보인다. h1은 스크린 리더의 문서 구조에 남긴다. */
   html[data-mobile-header-compact="true"] [data-title-in-navigation] [data-header-title] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   html[data-mobile-header-compact="true"] [data-title-in-navigation] [data-header-detail] { display: none; }
@@ -524,4 +522,44 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
   .desktop-page-answers > nav { grid-column: 2; margin-top: 0; }
 }
 
-[data-page-tools]:has([data-page-actions]:empty) { display: none; }
+
+/* 작업은 항상 노출한다. 스크롤 시 패딩과 높이만 줄여 본문 공간을 확보한다. */
+html[data-navigation-compact="true"] { --page-tab-h: 32px; --page-tab-py: 2px; }
+[data-navigation-header] { overflow-anchor: none; }
+.navigation-main { min-height: 48px; transition: min-height 150ms ease; }
+.navigation-desktop-actions { min-width: 0; flex-shrink: 0; }
+[data-navigation-actions]:has([data-page-actions]:empty) { display: none; }
+[data-navigation-actions] :is(button, a) {
+  min-height: 36px;
+  line-height: 20px;
+  padding-block: 6px;
+  transition: min-height 150ms ease, padding 150ms ease, background-color 150ms ease;
+}
+[data-navigation-actions] [data-balance-header-actions] { display: contents; }
+[data-navigation-actions] [data-balance-header-actions] > div { padding-block: 6px; }
+[data-navigation-actions] [data-page-actions] { align-items: center; }
+[data-compact-tabs] > div { margin-block: 0; padding-block: 3px; }
+[data-compact-tabs] button { min-height: 40px; padding-block: 6px; }
+html[data-navigation-compact="true"] .navigation-main { min-height: 40px; }
+html[data-navigation-compact="true"] [data-navigation-actions] :is(button, a) {
+  min-height: 30px;
+  padding-block: 3px;
+}
+html[data-navigation-compact="true"] [data-navigation-actions] [data-balance-header-actions] > div { padding-block: 3px; }
+html[data-navigation-compact="true"] [data-header-market-switch] { padding-block: 1px; }
+html[data-navigation-compact="true"] [data-compact-tabs] > div { padding-block: 1px; }
+html[data-navigation-compact="true"] [data-compact-tabs] button { min-height: 32px; padding-block: 2px; }
+html[data-navigation-compact="true"] [data-account-selector] { padding-block: 4px; }
+html[data-navigation-compact="true"] [data-account-selector] select { padding-block: 3px; }
+html[data-navigation-compact="true"] [data-page-title] { gap: 6px; }
+@media (max-width: 1279px) and (min-width: 768px) {
+  .navigation-desktop-actions { order: 1; width: 100%; padding-bottom: 4px; }
+}
+@media (max-width: 767px) {
+  [data-navigation-actions] [data-page-actions] { gap: 4px; }
+  [data-navigation-actions] :is(button, a) { min-width: 32px; padding-inline: 9px; }
+  html[data-navigation-compact="true"] .navigation-service-actions :is(button, a) { height: 32px; min-height: 32px; padding-block: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navigation-main, [data-navigation-actions] :is(button, a) { transition: none; }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, Fragment } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -239,33 +239,6 @@ export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const pageHeader = useMobilePageHeader();
-  const [toolsOpen, setToolsOpen] = useState(false);
-  const toolsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setToolsOpen(false); }, [pathname, pageHeader?.active]);
-  useEffect(() => {
-    if (!toolsOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && !toolsRef.current?.contains(event.target)) setToolsOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
-        setToolsOpen(false);
-        toolsRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-      }
-    };
-    const onFocusIn = (event: FocusEvent) => {
-      if (event.target instanceof Element && !event.target.closest("dialog") && !toolsRef.current?.contains(event.target)) setToolsOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("focusin", onFocusIn);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("focusin", onFocusIn);
-    };
-  }, [toolsOpen]);
-
   // 관리자가 일반 사용자 화면을 보는 중인가. **권한이 아니라 표시**만 접는다 —
   // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
   const viewAsUser = useViewAsUser();
@@ -295,14 +268,6 @@ export function NavbarWithSimpleLinks() {
   const barStyle = inGame
       ? ({ background: "var(--rg-bg)", borderColor: "var(--rg-line-faint)" } as const)
       : undefined;
-  const [wideHeader, setWideHeader] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 1280px)");
-    const update = () => setWideHeader(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSheet, setMoreSheet] = useState(false);
   const [bottomBarCompact, setBottomBarCompact] = useState(false);
@@ -349,6 +314,41 @@ export function NavbarWithSimpleLinks() {
     document.documentElement.dataset.mobileHeaderCompact = String(headerCompact);
     return () => { delete document.documentElement.dataset.mobileHeaderCompact; };
   }, [headerCompact]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const headers = Array.from(document.querySelectorAll<HTMLElement>("[data-navigation-header]"));
+    let compact = false;
+    let frame: number | null = null;
+    const measure = () => {
+      const header = headers.find(element => element.getBoundingClientRect().height > 0);
+      if (header) root.style.setProperty("--topbar-h", `${header.getBoundingClientRect().height}px`);
+    };
+    const update = () => {
+      frame = null;
+      // 충분한 간격을 두어 높이가 줄면서 생긴 스크롤 보정이 다시 펼침을 유발하지 않게 한다.
+      compact = !inGame && window.scrollY > 24 && (compact || window.scrollY >= 128);
+      root.dataset.navigationCompact = String(compact);
+      measure();
+    };
+    const onScroll = () => {
+      if (frame === null) frame = window.requestAnimationFrame(update);
+    };
+    const observer = new ResizeObserver(measure);
+    headers.forEach(header => observer.observe(header));
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    mobile.addEventListener("change", onScroll);
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      mobile.removeEventListener("change", onScroll);
+      delete root.dataset.navigationCompact;
+      root.style.removeProperty("--topbar-h");
+    };
+  }, [pathname, inGame]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -476,8 +476,8 @@ export function NavbarWithSimpleLinks() {
       </aside>}
 
       {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
-      {!inGame && <header className="hidden md:block sticky top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/85 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/85">
-        <div className="mx-auto flex min-h-[48px] w-full items-center gap-3 px-4 lg:gap-6 lg:px-6">
+      {!inGame && <header data-navigation-header className="hidden md:block sticky top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/85 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/85">
+        <div className="navigation-main mx-auto flex min-h-[48px] w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 lg:gap-x-6 lg:px-6">
           <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
             idiot<span className="text-brand-ink">quant</span>
           </Link>
@@ -507,10 +507,7 @@ export function NavbarWithSimpleLinks() {
             </div>
           </nav>
           <div ref={pageHeader?.setDesktopTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-          <details key={pathname} data-page-tools open={wideHeader} className={cn("relative shrink-0", !pageHeader?.active && "hidden")}>
-            <summary aria-label="페이지 도구" className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-500 xl:hidden [&::-webkit-details-marker]:hidden"><MoreHorizontal size={20} /></summary>
-            <div ref={pageHeader?.setDesktopActionsTarget} className={wideHeader ? "" : "absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-surface-dark-card"} />
-          </details>
+          <div ref={pageHeader?.setDesktopActionsTarget} data-navigation-actions className={cn("navigation-desktop-actions", !pageHeader?.active && "hidden")} />
           <div className="flex shrink-0 items-center gap-2">
             <QuickNavigation compact={pageHeader?.active} items={[...MAIN_NAV, ...utilityNav]} />
             <ThemeChanger compact />
@@ -526,31 +523,26 @@ export function NavbarWithSimpleLinks() {
         </div>
       </header>}
 
-      {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 border-b flex items-center justify-between px-5",
-        barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
+      {/* 모바일에서도 작업 버튼을 도구 메뉴에 숨기지 않고 바로 표시한다. */}
+      <header data-navigation-header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 z-40 border-b",
+        barStyle ? "" : "bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
-        <div className={cn("flex flex-1 items-center gap-1.5 min-w-0 pr-3", pageHeader?.active && "hidden")}>
-          <Link href="/" aria-label="IdiotQuant 홈" className="flex min-w-0 items-center gap-1.5">
-            {headerCompact ? <span className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{pageLabel}</span> : <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              idiot<span className="text-brand-ink">quant</span>
-            </span>}
-          </Link>
-        </div>
-        <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1 pr-2", !(pageHeader?.active) && "hidden")} />
-        <div ref={toolsRef} className={cn("shrink-0", !(pageHeader?.active) && "hidden")}>
-          <button type="button" aria-label="페이지 및 서비스 도구" aria-expanded={toolsOpen} aria-controls="mobile-page-tools" onClick={() => setToolsOpen(value => !value)} className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-neutral-200/60 dark:hover:bg-neutral-800">
-            <MoreHorizontal size={20} />
-          </button>
-          <div id="mobile-page-tools" data-page-tools-panel hidden={!toolsOpen} className="absolute right-3 top-full z-50 mt-1 w-[min(320px,calc(100vw-24px))] rounded-xl border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
-            <div ref={pageHeader?.setActionsTarget} />
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-700"><ThemeChanger /><MiniSession session={session} status={status} /></div>
+        <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-4">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
+            {!pageHeader?.active && (headerCompact ? (
+              <span className="truncate text-base font-semibold text-neutral-900 dark:text-white">{pageLabel}</span>
+            ) : (
+              <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
+            ))}
+          </div>
+          <div className="navigation-service-actions flex shrink-0 items-center gap-1">
+            <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
+            <ThemeChanger compact />
+            <MiniSession session={session} status={status} />
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
-          {!pageHeader?.active && <><ThemeChanger /><MiniSession session={session} status={status} /></>}
-        </div>
+        <div ref={pageHeader?.setActionsTarget} data-navigation-actions className={cn("navigation-mobile-actions px-4 pb-1.5", !pageHeader?.active && "hidden")} />
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}

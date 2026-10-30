@@ -93,7 +93,7 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
   if (!isMaster) return null;
   const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
   return (
-    <div className="flex items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
+    <div data-account-selector className="flex items-center gap-2 md:gap-3 bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark px-2.5 py-2 md:px-4 md:py-3 shadow-none">
       <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-[10px] font-semibold uppercase">
         <Key size={12} /> MASTER MODE
       </div>
@@ -284,7 +284,7 @@ export function BalanceHeaderActions({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-1 whitespace-nowrap md:gap-2 [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:[&>button]:px-3">
+    <div data-balance-header-actions className="flex min-w-0 flex-wrap items-center gap-1 md:gap-2 [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:[&>button]:px-3">
       {extra}
       <button
         onClick={onToggleAutoRefresh}

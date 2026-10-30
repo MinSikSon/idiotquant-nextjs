@@ -336,3 +336,7 @@
   .tab { flex: none; min-width: 132px; }
   .analysisSidebar { background: var(--analysis-panel); border-color: var(--analysis-line); }
 }
+
+/* 작업 도구와 탭은 스크롤할 때 높이만 줄이고 계속 표시한다. */
+.header[data-integrated] .tab { min-height: var(--page-tab-h, 40px); padding-block: var(--page-tab-py, 6px); }
+:global(html[data-navigation-compact="true"]) .page .headerCompact .tab { min-height: 32px; padding-block: 2px; }

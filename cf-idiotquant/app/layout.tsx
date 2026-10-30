@@ -201,7 +201,7 @@ export default function RootLayout({
                   padding 은 box-sizing:border-box 라 이 높이에 포함된다(위 48 + 아래 64).
                   가로만 자를 때 clip 을 써야 sticky 헤더의 기준이 이 main 으로 바뀌지 않는다. */}
               <main className={cn(
-                "pt-[48px] md:pt-0",
+                "pt-[var(--topbar-h,48px)] md:pt-0",
                 "pb-[64px] md:pb-0",
                 "min-h-[100dvh] md:min-h-[calc(100dvh-48px)] overflow-x-clip"
               )}>

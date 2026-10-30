@@ -18,7 +18,7 @@ function CountryToggle({ country, onChange }: { country: Country; onChange: (c: 
     { id: "us", label: "미국", code: "US" },
   ];
   return (
-    <div className="flex shrink-0 items-center gap-0.5 md:gap-1 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl">
+    <div data-header-market-switch className="flex shrink-0 items-center gap-0.5 md:gap-1 bg-surface-canvas dark:bg-surface-dark-muted p-1 rounded-xl">
       {items.map(it => (
         <button
           key={it.id}
