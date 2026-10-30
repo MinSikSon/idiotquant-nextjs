@@ -19,6 +19,8 @@ import { calculatePriceReturns, summarizeReturns } from './priceReturns';
 import { historicalPrice } from './historicalPrice';
 import { getScanDailyByTicker } from '@/lib/features/algorithmTrade/algorithmTradeAPI';
 import { comparisonPrice, comparisonUnavailableReason, historicalMarketCap } from '@/lib/features/compare/pricing';
+import { buildStockSearchIndex, findStockSuggestions } from '@/lib/utils/stockSuggestions';
+import { loadStaticStockData, type StaticStockData } from '@/lib/utils/stockSearchData';
 import { isUsTicker, resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
@@ -100,10 +102,20 @@ export default function ComparePage() {
   const dispatch = useAppDispatch();
   const { query, dateInput, dates, stocks, loading, dateLoading, error, importProgress, importSource } = useAppSelector(selectComparison);
   const [recentStocks, setRecentStocks] = useState<RecentStock[]>([]);
+  const [searchData, setSearchData] = useState<StaticStockData | null>(null);
+
   const [recentLoaded, setRecentLoaded] = useState(false);
   const importedRef = useRef(false);
   const [comparisonReady, setComparisonReady] = useState(false);
   const [storageFailed, setStorageFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    loadStaticStockData().then(data => { if (active) setSearchData(data); }).catch(() => {
+      if (active) dispatch(setError('검색용 종목 목록을 불러오지 못했습니다. 종목코드나 티커로 추가해 주세요.'));
+    });
+    return () => { active = false; };
+  }, [dispatch]);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -180,13 +192,11 @@ export default function ComparePage() {
     if (sessionLoading) return;
     dispatch(applyLimits(limits));
   }, [sessionLoading, limits.dates, limits.stocks, dispatch]);
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    const kr = (corpNames as string[]).filter(n => n.toLowerCase().includes(q)).slice(0, 5);
-    const us = [...usTickers].filter(t => t.toLowerCase().includes(q)).slice(0, 5);
-    return [...kr, ...us];
-  }, [query]);
+  const searchIndex = useMemo(() => buildStockSearchIndex(
+    searchData?.allTickers ?? [...corpNames, ...usTickers], searchData?.usStocks,
+  ), [searchData]);
+  const companyNames = useMemo(() => new Map(searchData?.usStocks.map(stock => [stock.symbol, stock])), [searchData]);
+  const suggestions = useMemo(() => findStockSuggestions(searchIndex, query), [searchIndex, query]);
   const priceReturns = useMemo(() => calculatePriceReturns(stocks.flatMap(stock => dates.map(date => ({
     id: `${stock.id}:${date}`, ticker: stock.ticker, market: stock.market,
     price: comparisonPrice(stock, stock.prices[date]), priceDate: stock.prices[date]?.priceDate,
@@ -203,8 +213,8 @@ export default function ComparePage() {
     const value = raw.trim();
     if (!value || sessionLoading || stocks.length >= limits.stocks || loading || dateLoading) return;
     if (!dates.length) { dispatch(setError('비교할 날짜를 먼저 추가해 주세요.')); return; }
-    const upper = resolveStockSearchInput(value, [...usTickers]) ?? value.toUpperCase();
-    const code = (corpCodes as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^\d{6}$/.test(value) ? value : undefined);
+    const upper = resolveStockSearchInput(value, searchData?.allTickers ?? [...usTickers]) ?? value.toUpperCase();
+    const code = ((searchData?.corpCodeJson ?? corpCodes) as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^\d{6}$/.test(value) ? value : undefined);
     const isUs = !code && (usTickers.has(upper) || isUsTicker(upper));
     const ticker = code ?? (isUs ? upper : '');
     if (!ticker) { dispatch(setError('종목명 또는 6자리 종목코드를 확인해 주세요. 미국 종목은 티커를 입력할 수 있습니다.')); return; }
@@ -224,7 +234,7 @@ export default function ComparePage() {
     finally { dispatch(stockLoadFinished()); }
   }
 
-  function submit(e: FormEvent) { e.preventDefault(); void addStock(query); }
+  function submit(e: FormEvent) { e.preventDefault(); void addStock(suggestions[0] ?? query); }
 
   async function addDate() {
     const date = dateInput;
@@ -310,8 +320,8 @@ export default function ComparePage() {
         <form onSubmit={submit} className="relative mt-2 flex gap-2">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 005930, AAPL" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-xl border border-neutral-300 bg-white pl-10 pr-3 text-base outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card sm:text-sm" />
-            {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}</button></li>)}</ul>}
+            <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 클라우드플레어, NET" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-xl border border-neutral-300 bg-white pl-10 pr-3 text-base outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card sm:text-sm" />
+            {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}{companyNames.get(s) && <span className="ml-2 text-xs text-neutral-500">{companyNames.get(s)!.koreanName ?? companyNames.get(s)!.name}</span>}</button></li>)}</ul>}
           </div>
           <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
         </form>
