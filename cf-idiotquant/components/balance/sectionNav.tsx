@@ -24,8 +24,8 @@ export function SectionNav({
   onMobileTabChange?: (id: string) => void;
 }) {
   return (
-    <nav aria-label="포트폴리오 보기" className="sticky top-[var(--topbar-h,48px)] z-30 border-b border-neutral-200 bg-surface-canvas/95 backdrop-blur-md dark:border-neutral-700 dark:bg-surface-dark-canvas/95">
-      <div className="mx-2 my-1 flex items-center gap-1 overflow-x-auto rounded-xl bg-surface-muted/70 p-1 scrollbar-hide dark:bg-surface-dark-muted md:mx-0 md:my-0 md:gap-2 md:overflow-x-auto md:rounded-none md:bg-transparent md:p-0 md:py-3 md:dark:bg-transparent">
+    <nav data-compact-tabs aria-label="포트폴리오 보기" className="sticky top-[var(--topbar-h,48px)] z-30 border-b border-neutral-200 bg-surface-canvas/95 backdrop-blur-md dark:border-neutral-700 dark:bg-surface-dark-canvas/95">
+      <div className="mx-2 my-1 flex items-center gap-1 overflow-x-auto rounded-xl bg-surface-muted/70 p-1 scrollbar-hide dark:bg-surface-dark-muted md:mx-0 md:my-0 md:gap-2 md:overflow-x-auto md:rounded-none md:bg-transparent md:p-0 md:py-1 md:dark:bg-transparent">
         {sections.map(({ id, label, icon }) => (
           <button
             key={id}

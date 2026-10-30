@@ -575,13 +575,13 @@ function AnalyzeContent() {
             <span className={styles.quoteTicker}>{isPriceLoaded ? tickerLabel : tickerFromUrl}</span>
             {isPriceLoaded && marketName && <span className={styles.quoteAux}>{marketName}</span>}
             <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
-            {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
           </div>
         </> : undefined}
         sticky
         mobileCompact={!!tickerFromUrl}
         mobileTitleInNavigation={!isPriceLoaded}
         actions={tickerFromUrl ? <>
+            {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
           {isPriceLoaded && <>
           {isLoggedIn ? <button type="button" onClick={handleToggleLike}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
@@ -643,7 +643,7 @@ function AnalyzeContent() {
             재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
         {isPriceLoaded && (
           <div className={cn(ANALYZE_WIDTH, styles.tabsRow)}>
-            <div role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
+            <div data-compact-tabs role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
               {DETAIL_TABS.map(({ key, label }) => (
                 <button
                   key={key}

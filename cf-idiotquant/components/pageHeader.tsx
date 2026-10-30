@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
 
 /* 페이지 제목·메타·작업 버튼은 공통 내비게이션의 슬롯으로 보낸다.
-   모바일과 좁은 데스크톱에서는 작업 버튼을 도구 메뉴에 담고,
+   작업 버튼은 화면 폭과 관계없이 도구줄에 표시하고,
    검색줄·분석 탭(children)만 본문 위에 남긴다.
    슬롯이 없는 독립 화면에서는 자체 헤더로 표시한다. */
 
@@ -108,11 +108,7 @@ export function PageHeader({
         <div className="fixed left-4 right-4 top-14 z-50 w-auto md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:w-60 rounded-xl border border-neutral-200 bg-white p-3 text-xs leading-6 text-neutral-600 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-300">{description}{typeof meta === "string" && <p className={description ? "mt-2" : undefined}>{meta}</p>}</div>
       </details>}
     </div>, titleTarget!)}
-    {integrated && createPortal(<div data-page-actions className="flex flex-wrap items-center gap-2" onClick={event => {
-      if ((event.target as HTMLElement).closest("[data-page-input-trigger]")) {
-        event.currentTarget.closest("details")?.removeAttribute("open");
-      }
-    }}>{actions}</div>, actionsTarget!)}
+    {integrated && createPortal(<div data-page-actions role="group" aria-label="페이지 작업" className="flex flex-wrap items-center gap-1.5">{actions}</div>, actionsTarget!)}
     <header
       data-page-header
       data-mobile-integrated={mobile && integrated || undefined}
@@ -121,7 +117,7 @@ export function PageHeader({
       data-header-title-only={mobileTitleInNavigation && !actions && !compactMeta || undefined}
       className={cn(
         PAGE_HEADER_CHROME,
-        sticky && "sticky top-[var(--topbar-h)] z-30",
+        sticky && "sticky top-[var(--topbar-h,48px)] z-30",
         integrated && !children && "hidden",
         className
       )}

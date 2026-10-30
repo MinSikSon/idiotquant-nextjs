@@ -58,7 +58,7 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
     // ── 게임 경로에는 하단 탭이 없으므로 상단 헤더 높이만 뺀다
     {
         const layout = read(LAYOUT);
-        const pt = /pt-\[(\d+)px\]/.exec(layout);
+        const pt = /pt-\[var\(--topbar-h,(\d+)px\)\]/.exec(layout);
         const pb = /pb-\[(\d+)px\]/.exec(layout);
         assert.ok(pt && pb, `${LAYOUT} 에서 위아래 여백을 못 찾았다`);
 
@@ -82,15 +82,16 @@ test("모바일 게임은 상단 헤더만큼만 빼고 하단 여백을 없앤�
     {
         const layout = read(LAYOUT);
         const nav = read(NAV);
-        const pt = Number(/pt-\[(\d+)px\]/.exec(layout)![1]);
+        const css = read("app/global.css");
+        const pt = Number(/pt-\[var\(--topbar-h,(\d+)px\)\]/.exec(layout)![1]);
         const pb = Number(/pb-\[(\d+)px\]/.exec(layout)![1]);
 
         // 공통 상단 머리줄과 하단 탭 바 치수는 레이아웃 여백 값과 일치해야 한다.
         // 게임은 하단 탭이 숨겨져 있어 해당 padding 만 별도로 없앤다.
-        assert.ok(
-            nav.includes(`h-[${pt}px]`),
-            `위 머리줄의 높이가 ${pt}px 가 아니다 — 레이아웃의 pt 와 어긋난다`,
-        );
+        const headerHeight = /\.navigation-main\s*\{\s*min-height:\s*(\d+)px/.exec(css);
+        assert.ok(headerHeight, "공통 헤더의 기본 높이를 찾지 못했다");
+        assert.equal(Number(headerHeight[1]), pt, "헤더의 기본 높이와 레이아웃의 기본 상단 여백이 다르다");
+        assert.match(nav, /root\.style\.setProperty\("--topbar-h"/, "실제 헤더 높이를 레이아웃에 반영하지 않는다");
         assert.ok(
             nav.includes(`h-[${pb}px]`),
             `아래 탭 바의 높이가 ${pb}px 가 아니다 — 레이아웃의 pb 와 어긋난다`,
