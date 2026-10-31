@@ -16,7 +16,7 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
   const list = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
-  const [modifier, setModifier] = useState("Ctrl");
+  const [modifier, setModifier] = useState<string | null>(null);
   const [option, setOption] = useState("Alt");
   const router = useRouter();
   const commands = useMemo(() => navigationCommands(items), [items]);
@@ -68,8 +68,6 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
     if (!dialog.current?.open) return;
     list.current?.children[selected]?.scrollIntoView({ block: "nearest" });
   }, [selected, query]);
-
-  useEffect(() => { dialog.current?.close(); }, [pathname]);
 
   return (
     <>
