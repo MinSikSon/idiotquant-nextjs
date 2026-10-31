@@ -227,9 +227,11 @@ function MiniSession({ session, status }: { session: any; status: string }) {
   return (
     <Link
       href="/login"
+      aria-label="로그인"
       className="px-3 py-1.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-semibold transition-colors"
     >
-      로그인
+      <LogIn size={16} className="navigation-login-icon hidden" aria-hidden="true" />
+      <span className="navigation-login-label">로그인</span>
     </Link>
   );
 }
@@ -524,7 +526,7 @@ export function NavbarWithSimpleLinks() {
       </header>}
 
       {/* 모바일에서도 작업 버튼을 도구 메뉴에 숨기지 않고 바로 표시한다. */}
-      <header data-navigation-header data-mobile-header className={cn("md:hidden fixed top-0 left-0 right-0 z-40 border-b",
+      <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header md:hidden fixed top-0 left-0 right-0 z-40 border-b",
         barStyle ? "" : "bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-4">
@@ -537,7 +539,7 @@ export function NavbarWithSimpleLinks() {
             ))}
           </div>
           <div className="navigation-service-actions flex shrink-0 items-center gap-1">
-            <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />
+            {!pageHeader?.active && <QuickNavigation compact items={[...MAIN_NAV, ...utilityNav]} />}
             <ThemeChanger compact />
             <MiniSession session={session} status={status} />
           </div>
