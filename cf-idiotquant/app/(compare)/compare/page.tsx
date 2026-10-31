@@ -284,10 +284,10 @@ export default function ComparePage() {
       mobileCompact
       actions={<>
         <ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />
-        <button type="button" onClick={() => dispatch(clearComparison())}
+        <button type="button" aria-label="전체 비우기" onClick={() => dispatch(clearComparison())}
           disabled={loading || dateLoading || (!stocks.length && !dates.length && !query && !dateInput && !error)}
           className={PAGE_ACTION_CLS}>
-          <Trash2 size={15} aria-hidden="true" /> 전체 비우기
+          <Trash2 size={15} aria-hidden="true" /><span className="hidden sm:inline">전체 비우기</span>
         </button>
       </>}
     />

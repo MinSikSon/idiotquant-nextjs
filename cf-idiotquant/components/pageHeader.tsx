@@ -60,7 +60,7 @@ export function PageHeader({
   mobileTitle?: string;
   description?: React.ReactNode;
   meta?: React.ReactNode;
-  /** 모바일 스크롤 요약에도 남길 핵심 정보(예: 현재가). */
+  /** 모바일 헤더에 남길 핵심 정보(예: 현재가). */
   compactMeta?: React.ReactNode;
   actions?: React.ReactNode;
   /** 검색줄·탭처럼 페이지별로 필요한 도구를 헤더 아래에 둔다. */
@@ -89,6 +89,7 @@ export function PageHeader({
   const titleTarget = mobile ? slots?.titleTarget : slots?.desktopTitleTarget;
   const actionsTarget = mobile ? slots?.actionsTarget : slots?.desktopActionsTarget;
   const integrated = !!titleTarget && !!actionsTarget;
+  const visibleMeta = mobile ? compactMeta : meta;
   const setActive = slots?.setActive;
   useEffect(() => {
     setActive?.(integrated);
@@ -101,7 +102,7 @@ export function PageHeader({
       {icon && <span className="flex shrink-0 items-center [&>div]:!h-7 [&>div]:!w-7">{icon}</span>}
       <div className="min-w-0">
         <h1 className="truncate text-sm font-semibold tracking-tight text-neutral-900 dark:text-white">{mobile ? mobileTitle ?? title : title}</h1>
-        {(compactMeta || meta) && <div className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{compactMeta ?? meta}</div>}
+        {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{visibleMeta}</div>}
       </div>
       {(description || typeof meta === "string") && <details className="relative shrink-0">
         <summary aria-label="페이지 설명" className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden"><Info size={15} /></summary>

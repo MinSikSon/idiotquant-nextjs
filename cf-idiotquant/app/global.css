@@ -563,3 +563,42 @@ html[data-navigation-compact="true"] [data-page-title] { gap: 6px; }
 @media (prefers-reduced-motion: reduce) {
   .navigation-main, [data-navigation-actions] :is(button, a) { transition: none; }
 }
+
+/* 종목과 작업, 서비스 설정을 한 줄에 배치한다. */
+@media (max-width: 767px) {
+  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 4px;
+    min-height: 48px;
+    padding: 4px 12px;
+  }
+  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) .navigation-main { display: contents; }
+  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) .navigation-mobile-actions { padding: 0; }
+  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) [data-page-actions] { flex-wrap: nowrap; gap: 2px; }
+  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) [data-page-actions] > :is(button, a) {
+    min-width: 32px;
+    min-height: 36px;
+    padding: 4px;
+    border-color: transparent;
+    background: transparent;
+  }
+  .navigation-mobile-header[data-page-active="true"] .navigation-service-actions { order: 3; gap: 2px; }
+  .navigation-mobile-header[data-page-active="true"] .navigation-mobile-actions { order: 2; }
+  .navigation-mobile-header[data-page-active="true"] .navigation-service-actions :is(button, a) { display: flex; align-items: center; justify-content: center; width: 28px; min-width: 28px; height: 32px; padding: 2px; background: transparent; color: inherit; border: 0; }
+  .navigation-mobile-header[data-page-active="true"] .navigation-login-icon { display: block; }
+  .navigation-mobile-header[data-page-active="true"] .navigation-login-label { display: none; }
+  [data-mobile-header] [data-page-title] { gap: 6px; }
+  [data-mobile-header] [data-page-title] h1 { font-size: 14px; line-height: 18px; }
+  [data-mobile-header] [data-page-title-meta] { font-size: 11px; line-height: 14px; }
+  [aria-label="분석 보기 선택"] button { white-space: nowrap; font-size: 13px; }
+  [data-mobile-header] [data-page-title] > span > :is(div, button, span) { width: 24px; height: 24px; }
+  html[data-navigation-compact="true"] .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) { min-height: 40px; padding-block: 2px; }
+  html[data-navigation-compact="true"] .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) [data-page-actions] > :is(button, a) { min-height: 32px; padding-block: 2px; }
+}
+
+@media (max-width: 360px) {
+  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) { padding-inline: 8px; gap: 2px; }
+  [data-mobile-header] [data-page-title] > span, [data-mobile-header] [data-analyze-ticker] { display: none; }
+}

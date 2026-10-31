@@ -577,6 +577,10 @@ function AnalyzeContent() {
             <span className={cn(styles.price, styles.quotePrice)}>{isPriceLoaded ? headerPrice : waitResponse ? '조회 중…' : '시세 미확인'}</span>
           </div>
         </> : undefined}
+        compactMeta={isPriceLoaded ? <>
+          <span data-analyze-ticker>{tickerLabel}</span>
+          <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
+        </> : undefined}
         sticky
         mobileCompact={!!tickerFromUrl}
         mobileTitleInNavigation={!isPriceLoaded}
@@ -956,9 +960,16 @@ function AnalyzeContent() {
                   <button type="button" onClick={() => onSearch(tickerFromUrl)} className={`${PAGE_ACTION_CLS} mt-3`}>다시 조회</button>
                 </div>
               ) :
-              /* 탭 하나 분량의 패널 한 장 — 실제로 표시되는 것도 선택된 탭 하나뿐이다 */
-              <div className="animate-pulse">
-                <div className="h-[520px] bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark" />
+              <div role="status" aria-live="polite" className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-border-subtle-dark dark:bg-surface-dark-card">
+                <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  재무 정보를 불러오는 중입니다
+                </div>
+                <p className="mt-1 text-xs leading-5 text-neutral-500">시세는 먼저 표시됩니다. 분석 결과는 데이터가 도착하면 이어서 표시됩니다.</p>
+                <div aria-hidden="true" className="mt-4 space-y-3 animate-pulse">
+                  <div className="h-3 w-2/3 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
+                  <div className="h-3 w-1/2 rounded bg-neutral-100 dark:bg-surface-dark-muted" />
+                </div>
               </div>
               )}
               </div>
