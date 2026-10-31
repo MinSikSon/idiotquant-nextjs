@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState, Fragment } from "react";
-import { useMobilePageHeader } from "@/components/mobile-page-header";
+import { useEffect, useState, useRef, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
+import { useMobilePageHeader } from "@/components/mobile-page-header";
+import { NavigationPopover } from "@/components/navigation-popover";
+import { navigationScroll, type NavigationScrollState } from "@/lib/navigation-scroll";
 import QuickNavigation from "@/components/quick-navigation";
 import { cn } from "@/lib/utils";
-import { nextMobileHeaderCompact } from "@/lib/utils/mobileHeader";
 import { useViewAsUser, setViewAsUser } from "@/lib/viewAsUser";
 import {
+  CircleUserRound,
   Home,
   Filter,
   Search,
@@ -71,20 +73,23 @@ const PORTFOLIO_NAV = [
   { label: "포트폴리오", href: "/balance", icon: Eye },
 ];
 
-const MOBILE_PAGE_LABELS = [
+const MOBILE_PAGE_TITLES = [
   { href: "/admin/ticker-map", label: "종목 매핑" },
   { href: "/ledger/join", label: "가계부 초대" },
-  { href: "/login/callback", label: "로그인" },
-  { href: "/share", label: "공유 결과" },
-  { href: "/privacy", label: "개인정보 처리방침" },
-  { href: "/terms", label: "이용약관" },
-  { href: "/profile", label: "내 계정" },
-  { href: "/backtest", label: "과거 검증" },
-  { href: "/quant", label: "퀀트 투자" },
-  { href: "/login", label: "로그인" },
-  ...MAIN_NAV, ...MORE_NAV, ...PORTFOLIO_NAV,
+  { href: "/games/crafting-prototype", label: "제작 게임" },
+  ...MAIN_NAV,
+  ...MORE_NAV,
+  ...PORTFOLIO_NAV,
   { href: "/admin", label: "회원 관리" },
-  { href: "/game", label: "게임" },
+  { href: "/profile", label: "내 계정" },
+  { href: "/login", label: "로그인" },
+  { href: "/search", label: "종목 검색" },
+  { href: "/backtest", label: "백테스트" },
+  { href: "/algorithm-trade", label: "자동매매" },
+  { href: "/quant", label: "퀀트 투자" },
+  { href: "/share", label: "공유 결과" },
+  { href: "/terms", label: "이용약관" },
+  { href: "/privacy", label: "개인정보 처리방침" },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────── */
@@ -144,7 +149,7 @@ function TabItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex h-full min-h-[44px] flex-1 flex-col items-center justify-center gap-[3px] py-2 transition-colors",
+        "flex h-full min-h-[44px] min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] py-1 transition-colors",
         // 랜딩의 각진 버튼 모양을 모바일 탭에도 사용한다.
         "rounded-xl",
         isActive
@@ -241,6 +246,7 @@ export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const pageHeader = useMobilePageHeader();
+
   // 관리자가 일반 사용자 화면을 보는 중인가. **권한이 아니라 표시**만 접는다 —
   // 주소를 치면 그대로 열리고, 서버는 이 값을 아예 모른다(lib/viewAsUser.ts).
   const viewAsUser = useViewAsUser();
@@ -271,86 +277,47 @@ export function NavbarWithSimpleLinks() {
       ? ({ background: "var(--rg-bg)", borderColor: "var(--rg-line-faint)" } as const)
       : undefined;
   const [moreOpen, setMoreOpen] = useState(false);
-  const [moreSheet, setMoreSheet] = useState(false);
-  const [bottomBarCompact, setBottomBarCompact] = useState(false);
-  const [headerCompact, setHeaderCompact] = useState(false);
-  const pageLabel = MOBILE_PAGE_LABELS.find(item => active(pathname, item.href))?.label ?? "IdiotQuant";
-  const compactBottomBar = bottomBarCompact && !moreSheet;
+  const [sheetState, setSheetState] = useState({ pathname, open: false });
+  if (sheetState.pathname !== pathname) setSheetState({ pathname, open: false });
+  const moreSheet = sheetState.pathname === pathname && sheetState.open;
+  const setMoreSheet = (open: boolean) => setSheetState({ pathname, open });
+  const [bottomState, setBottomState] = useState({ pathname, hidden: false });
+  if (bottomState.pathname !== pathname) setBottomState({ pathname, hidden: false });
+  const bottomHidden = bottomState.pathname === pathname && bottomState.hidden;
+  const setBottomHidden = (hidden: boolean) => setBottomState(previous => previous.pathname === pathname && previous.hidden === hidden ? previous : { pathname, hidden });
+  const [gameScroll, setGameScroll] = useState({ pathname, scrolled: false });
+  if (gameScroll.pathname !== pathname) setGameScroll({ pathname, scrolled: false });
+  const gameScrolled = gameScroll.scrolled;
+  const bottomNav = useRef<HTMLElement>(null);
+  const mobilePageTitle = MOBILE_PAGE_TITLES.find(item => active(pathname, item.href, item.href === "/"))?.label;
   const showMore = moreOpen || moreActive;
 
   useEffect(() => {
-    setBottomBarCompact(false);
-    setHeaderCompact(false);
-
-    const mobile = window.matchMedia("(max-width: 767px)");
-    let previousY = Math.max(0, window.scrollY);
-    let frame: number | null = null;
-    const update = () => {
-      frame = null;
-      const currentY = Math.max(0, window.scrollY);
-      setHeaderCompact(previous => nextMobileHeaderCompact(previous, currentY, mobile.matches));
-      if (inGame || !mobile.matches || currentY <= 64) {
-        setBottomBarCompact(false);
-      } else {
-        // 손떨림 정도의 움직임에는 바 크기를 바꾸지 않는다.
-        if (Math.abs(currentY - previousY) < 8) return;
-        setBottomBarCompact(currentY > previousY);
-      }
-      previousY = currentY;
-    };
-
+    if (inGame) {
+      const update = () => {
+        const scrolled = window.scrollY > 64;
+        setGameScroll(previous => previous.pathname === pathname && previous.scrolled === scrolled ? previous : { pathname, scrolled });
+      };
+      window.addEventListener("scroll", update, { passive: true });
+      return () => window.removeEventListener("scroll", update);
+    }
+    let state: NavigationScrollState = { y: Math.max(0, window.scrollY), direction: 0, travel: 0, hidden: false };
     const onScroll = () => {
-      if (frame === null) frame = window.requestAnimationFrame(update);
+      state = navigationScroll(state, window.scrollY,
+        window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2,
+        moreSheet || !!bottomNav.current?.querySelector(":focus-visible"));
+      setBottomState(previous => previous.pathname === pathname && previous.hidden === state.hidden ? previous : { pathname, hidden: state.hidden });
     };
-    onScroll();
+    const observer = new ResizeObserver(onScroll);
+    observer.observe(document.body);
     window.addEventListener("scroll", onScroll, { passive: true });
-    mobile.addEventListener("change", onScroll);
+    window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      mobile.removeEventListener("change", onScroll);
-      if (frame !== null) window.cancelAnimationFrame(frame);
-    };
-  }, [pathname, inGame]);
-
-  useEffect(() => {
-    document.documentElement.dataset.mobileHeaderCompact = String(headerCompact);
-    return () => { delete document.documentElement.dataset.mobileHeaderCompact; };
-  }, [headerCompact]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const mobile = window.matchMedia("(max-width: 767px)");
-    const headers = Array.from(document.querySelectorAll<HTMLElement>("[data-navigation-header]"));
-    let compact = false;
-    let frame: number | null = null;
-    const measure = () => {
-      const header = headers.find(element => element.getBoundingClientRect().height > 0);
-      if (header) root.style.setProperty("--topbar-h", `${header.getBoundingClientRect().height}px`);
-    };
-    const update = () => {
-      frame = null;
-      // 충분한 간격을 두어 높이가 줄면서 생긴 스크롤 보정이 다시 펼침을 유발하지 않게 한다.
-      compact = !inGame && window.scrollY > 24 && (compact || window.scrollY >= 128);
-      root.dataset.navigationCompact = String(compact);
-      measure();
-    };
-    const onScroll = () => {
-      if (frame === null) frame = window.requestAnimationFrame(update);
-    };
-    const observer = new ResizeObserver(measure);
-    headers.forEach(header => observer.observe(header));
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    mobile.addEventListener("change", onScroll);
-    return () => {
-      if (frame !== null) window.cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
-      mobile.removeEventListener("change", onScroll);
-      delete root.dataset.navigationCompact;
-      root.style.removeProperty("--topbar-h");
+      window.removeEventListener("resize", onScroll);
     };
-  }, [pathname, inGame]);
+  }, [pathname, inGame, moreSheet]);
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -369,6 +336,17 @@ export function NavbarWithSimpleLinks() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
   }, []);
+
+  const serviceMenu = (compact: boolean) => <div className="navigation-service-menu flex flex-col gap-1">
+      {[...MAIN_NAV, ...utilityNav].map(item => <Link key={item.href} href={item.href}
+        aria-current={active(pathname, item.href, item.href === "/") ? "page" : undefined}
+        className="flex min-h-11 items-center rounded-lg px-3 hover:bg-neutral-100 dark:hover:bg-neutral-800">{item.label}</Link>)}
+      <div className="flex items-center gap-2 border-t border-neutral-200 p-2 dark:border-neutral-700"><ThemeChanger /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
+      {status === "authenticated" ? <>
+        <Link href="/profile" className="flex min-h-11 min-w-0 items-center px-3"><span className="truncate">{session?.user?.name || "내 계정"} · 내 계정</span></Link>
+        <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="min-h-11 px-3 text-left">로그아웃</button>
+      </> : status === "unauthenticated" ? <Link href="/login" className="flex min-h-11 items-center px-3">로그인</Link> : <span className="p-3">계정 확인 중…</span>}
+    </div>;
 
   return (
     <>
@@ -477,63 +455,32 @@ export function NavbarWithSimpleLinks() {
         </div>
       </aside>}
 
-      {/* 공개 랜딩과 같은 가로 헤더를 일반 페이지 전체에서 사용한다. */}
-      {!inGame && <header data-navigation-header className="hidden md:block sticky top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/85 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/85">
-        <div className="navigation-main mx-auto flex min-h-[48px] w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 lg:gap-x-6 lg:px-6">
-          <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+      {!inGame && <header data-navigation-header className="navigation-header fixed inset-x-0 top-0 z-40 border-b border-neutral-300/50 bg-surface-canvas/95 backdrop-blur-[12px] dark:border-neutral-700/60 dark:bg-surface-dark-canvas/95 md:sticky">
+        <div className="navigation-main flex h-12 items-center gap-2 px-3 md:gap-4 md:px-6">
+          <Link href="/" className={cn("shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white", pathname !== "/" && "hidden md:block")}>
             idiot<span className="text-brand-ink">quant</span>
           </Link>
-          <nav aria-label="주요 메뉴" className={cn("flex min-w-0 items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300 lg:gap-6", pageHeader?.active ? "shrink-0" : "flex-1")}>
-            {!pageHeader?.active && MAIN_NAV.filter(item => item.href !== "/").map(item => (
-              <Link key={item.href} href={item.href} aria-current={active(pathname, item.href) ? "page" : undefined}
-                className={cn("whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
-                  active(pathname, item.href) && "font-semibold text-brand-ink dark:text-brand-ink")}>
-                {item.label}
-              </Link>
-            ))}
-            <div className="relative">
-              <button type="button" onClick={() => setMoreOpen(v => !v)} aria-expanded={moreOpen} aria-controls="desktop-more-menu"
-                className={cn("inline-flex items-center gap-1 whitespace-nowrap py-2 font-medium transition-colors hover:text-neutral-950 dark:hover:text-white",
-                  moreActive && "text-brand-ink dark:text-brand-ink")}>
-                {pageHeader?.active ? "메뉴" : "더 보기"} <ChevronDown size={14} className={cn("transition-transform", moreOpen && "rotate-180")} />
-              </button>
-              {moreOpen && <div id="desktop-more-menu" className="absolute left-0 top-full z-50 mt-2 min-w-44 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">
-                {(pageHeader?.active ? [...MAIN_NAV, ...utilityNav] : utilityNav).map(item => (
-                  <Link key={item.href} href={item.href} onClick={() => setMoreOpen(false)}
-                    className={cn("block rounded-xl px-3 py-2 text-sm transition-colors hover:bg-brand-light dark:hover:bg-brand-muted",
-                      active(pathname, item.href) && "font-semibold text-brand-ink dark:text-brand-ink")}>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>}
-            </div>
-          </nav>
-          <div ref={pageHeader?.setDesktopTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-          <div ref={pageHeader?.setDesktopActionsTarget} data-navigation-actions className={cn("navigation-desktop-actions", !pageHeader?.active && "hidden")} />
-          <div className="flex shrink-0 items-center gap-2">
-            <QuickNavigation compact={pageHeader?.active} items={[...MAIN_NAV, ...utilityNav]} />
-            <ThemeChanger compact />
-            {status === "authenticated" ? <>
-              <Link href="/profile" className="max-w-28 truncate rounded-xl border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-neutral-400">
-                {session?.user?.name || "내 계정"}
-              </Link>
-              <button type="button" onClick={() => signOut({ callbackUrl: "/" })} aria-label="로그아웃" title="로그아웃"
-                className="text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"><LogOut size={16} /></button>
-            </> : status === "unauthenticated" ?
-              <Link href="/login" className="rounded-xl bg-brand px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-hover">로그인</Link> : null}
+          <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
+          {!pageHeader?.active && <span className="min-w-0 flex-1 truncate text-sm font-semibold">{pathname === "/" ? null : mobilePageTitle}</span>}
+          <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />
+          <div className="hidden shrink-0 md:block">
+            <NavigationPopover label="사용자 및 서비스 메뉴" trigger={<button type="button" aria-label="사용자 및 서비스 메뉴" className="navigation-icon"><CircleUserRound size={21} /></button>}>
+              {serviceMenu(false)}
+            </NavigationPopover>
           </div>
         </div>
+        <div ref={pageHeader?.setTabsTarget} />
       </header>}
 
-      {/* 모바일에서도 작업 버튼을 도구 메뉴에 숨기지 않고 바로 표시한다. */}
-      <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header md:hidden fixed top-0 left-0 right-0 z-40 border-b",
+      {/* 게임 전용 모바일 헤더는 기존 구성을 유지한다. */}
+      {inGame && <header data-navigation-header data-mobile-header data-page-active={pageHeader?.active || undefined} className={cn("navigation-mobile-header md:hidden fixed top-0 left-0 right-0 z-40 border-b",
         barStyle ? "" : "bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}
         style={barStyle}>
         <div className="navigation-main flex min-h-12 items-center justify-between gap-2 px-4">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
-            {!pageHeader?.active && (headerCompact ? (
-              <span className="truncate text-base font-semibold text-neutral-900 dark:text-white">{pageLabel}</span>
+            {!pageHeader?.active && (gameScrolled && mobilePageTitle ? (
+              <span className="truncate text-base font-semibold text-neutral-900 dark:text-white">{mobilePageTitle}</span>
             ) : (
               <Link href="/" className="shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white">idiot<span className="text-brand-ink">quant</span></Link>
             ))}
@@ -545,61 +492,23 @@ export function NavbarWithSimpleLinks() {
           </div>
         </div>
         <div ref={pageHeader?.setActionsTarget} data-navigation-actions className={cn("navigation-mobile-actions px-4 pb-1.5", !pageHeader?.active && "hidden")} />
-      </header>
+      </header>}
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav aria-label="하단 메뉴" className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 transition-[height] duration-200 motion-reduce:transition-none",
-        compactBottomBar ? "h-[44px] [&>a]:py-1 [&>button]:py-1 [&>a]:gap-0 [&>button]:gap-0 [&>a>span]:sr-only [&>button>span]:sr-only" : "h-[64px]",
-        barStyle ? "" : "bg-surface-canvas/90 backdrop-blur-[12px] dark:bg-surface-dark-canvas/90 border-neutral-300/50 dark:border-neutral-700/60")}
-        style={barStyle}>
+      <nav ref={bottomNav} aria-label="하단 메뉴" data-bottom-navigation data-hidden={bottomHidden && !moreSheet || undefined}
+        onFocusCapture={() => setBottomHidden(false)}
+        className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />
         <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
-        <button
-          type="button"
-          onClick={() => setMoreSheet(v => !v)}
-          className={cn(
-            "flex h-full min-h-[44px] flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
-            moreActive || moreSheet
-              ? "text-brand-ink dark:text-brand-ink"
-              : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
-          )}
-        >
-          <MoreHorizontal size={20} strokeWidth={moreActive ? 2.2 : 1.6} />
-          <span className="text-[10px] font-semibold leading-none">더보기</span>
-        </button>
+        <NavigationPopover label="더보기" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
+          <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-500", moreActive && "text-brand-ink")}>
+            <MoreHorizontal size={20} /><span className="text-[10px] font-semibold leading-none">더보기</span>
+          </button>
+        }>{!inGame && serviceMenu(true)}</NavigationPopover>
       </nav>
-
-      {/* ══ MOBILE '더보기' 시트 ══════════════════════════════════════ */}
-      {moreSheet && (
-        <>
-          <div className="md:hidden fixed inset-0 z-40" onClick={() => setMoreSheet(false)} />
-          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-md bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-neutral-700 shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
-            {utilityNav.map(item => {
-              const Icon = item.icon;
-              const isActive = active(pathname, item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMoreSheet(false)}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
-                    isActive
-                      ? "bg-brand-light dark:bg-brand-muted text-brand-ink dark:text-brand-ink"
-                      : "text-neutral-600 dark:text-neutral-300 hover:bg-brand-light dark:hover:bg-brand-muted"
-                  )}
-                >
-                  <Icon size={16} className="shrink-0" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </>
-      )}
 
       {/* ══ 일반 사용자 화면으로 보는 중 ══════════════════════════════
           켜 놓고 잊으면 "메뉴가 왜 없지" 가 되므로 어디서나 보이는 자리에 둔다.
@@ -610,7 +519,7 @@ export function NavbarWithSimpleLinks() {
         <button
           type="button"
           onClick={() => setViewAsUser(false)}
-          className="fixed z-50 bottom-[76px] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-xl border border-brand-light-hover bg-brand-light px-3.5 py-2 text-[11px] font-bold text-brand-ink shadow-lg hover:bg-[#e5e3ff] dark:border-brand/40 dark:bg-brand-muted dark:text-brand-ink-hover"
+          className="fixed z-50 bottom-[calc(var(--bottombar-h)+12px)] left-3 md:bottom-4 md:left-4 flex items-center gap-2 rounded-xl border border-brand-light-hover bg-brand-light px-3.5 py-2 text-[11px] font-bold text-brand-ink shadow-lg hover:bg-[#e5e3ff] dark:border-brand/40 dark:bg-brand-muted dark:text-brand-ink-hover"
         >
           <EyeOff size={13} className="shrink-0" />
           일반 사용자 화면

@@ -6,6 +6,7 @@ import { buildStockSearchIndex, findStockSuggestions, type StockSearchName } fro
 import { Search, CornerDownLeft, AlertCircle, X } from "lucide-react";
 
 interface SearchAutocompleteProps {
+    className?: string;
     validCorpNameArray: string[];
     stockNames?: StockSearchName[];
     onSearchButton: (value: string) => void;
@@ -41,7 +42,7 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
     );
 };
 
-const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
+const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearchButton, placeHolder, onSearchStateChange, autoFocus = false, onEscape }: SearchAutocompleteProps) => {
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -115,7 +116,7 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
     };
 
     return (
-        <div className="relative w-full z-[60]">
+        <div className={cn("relative w-full z-20", className)}>
             {/* 검색 아키텍처 입력 폼 바디 */}
             <div 
                 className={cn(
@@ -163,7 +164,7 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
                         }, 200);
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full text-[16px] sm:text-sm bg-transparent focus:outline-none text-neutral-900 dark:text-neutral-100 font-semibold placeholder-neutral-400 dark:placeholder-neutral-600 font-sans tracking-tight"
+                    className="w-full min-w-0 min-h-[44px] text-[16px] sm:text-sm bg-transparent focus:outline-none text-neutral-900 dark:text-neutral-100 font-semibold placeholder-neutral-400 dark:placeholder-neutral-600 font-sans tracking-tight"
                 />
                 
                 {query && (
@@ -173,7 +174,7 @@ const SearchAutocomplete = ({ validCorpNameArray, stockNames, onSearchButton, pl
                             if (onSearchStateChange) onSearchStateChange(isFocused, true);
                             inputRef.current?.focus();
                         }}
-                        className="p-1 hover:bg-neutral-200/60 dark:hover:bg-surface-dark-muted/60 rounded-lg transition-colors shrink-0 group"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center p-1 hover:bg-neutral-200/60 dark:hover:bg-surface-dark-muted/60 rounded-lg transition-colors shrink-0 group"
                         type="button"
                         aria-label="검색어 초기화"
                     >

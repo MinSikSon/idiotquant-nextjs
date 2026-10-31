@@ -37,7 +37,7 @@ export function GradeHelp({ grade, upside }: { grade: string; upside: number }) 
         >
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-semibold text-neutral-900 dark:text-white">등급 산정 기준</h3>
-            <Popover.Close aria-label="등급 설명 닫기" className="inline-flex h-8 w-8 items-center justify-center rounded hover:bg-neutral-100 dark:hover:bg-surface-dark-muted">
+            <Popover.Close aria-label="등급 설명 닫기" className="inline-flex h-[44px] w-[44px] items-center justify-center rounded hover:bg-neutral-100 dark:hover:bg-surface-dark-muted">
               <X size={14} aria-hidden="true" />
             </Popover.Close>
           </div>

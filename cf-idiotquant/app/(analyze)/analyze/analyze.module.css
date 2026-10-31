@@ -132,7 +132,6 @@
   .page .searchRow { padding-block: 12px; }
   .page .header h1 { font-size: 24px; }
   .page .tab { min-height: 44px; padding-inline: 10px; font-size: 14px; }
-  .page .headerCompact .tab { min-height: 44px; }
   .page .panel { padding: 16px; }
   .page .financialPanel { padding: 16px 0; border-inline: 0; border-radius: 0; background: transparent; }
   .verdictChecks > div { flex-wrap: wrap; }
@@ -147,3 +146,9 @@
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { transition-duration: 0ms; animation-duration: 0ms; }
 }
+
+/* 공통 헤더에 옮긴 탭도 분석 색상과 동일 너비를 유지한다. */
+:global([data-page-tabs]) .page .tabStrip { width: 100%; gap: 0; }
+:global([data-page-tabs]) .page .tab { flex: 1 0 0; min-width: 44px; min-height: 44px; padding-inline: 4px; }
+:global([data-page-tabs]) .page .tabActive { color: var(--analysis-lilac-ink); }
+:global([data-page-tabs]) .page .tabActive::after { left: 0; right: 0; }

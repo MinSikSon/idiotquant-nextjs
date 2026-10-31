@@ -2,8 +2,8 @@
 
 import styles from "./balanceTheme.module.css";
 
-import { PageHeader } from "@/components/pageHeader";
-import { Clock } from "lucide-react";
+import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
+import { Clock, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
 import {
@@ -62,24 +62,24 @@ export function BalanceShell({
           {lastUpdated && <span className="inline-flex items-center gap-1"><Clock size={10} />{lastUpdated.toLocaleTimeString("ko-KR")} 기준</span>}
           {footerBadge}
         </>}
+        primaryAction={<button type="button" onClick={onRefresh} disabled={isLoading} aria-label="새로고침" className={PAGE_ACTION_CLS}><RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /></button>}
+        tabs={<SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={onMobileTabChange} />}
         actions={<>
-          {countryToggle}
           <BalanceHeaderActions
             autoRefresh={autoRefresh}
             onToggleAutoRefresh={onToggleAutoRefresh}
             isLoading={isLoading}
             onRefresh={onRefresh}
+            hideRefresh
             extra={headerExtra}
           />
         </>}
       />
       <div className="w-full mx-auto px-2.5 py-2 md:px-6 md:py-4 space-y-2 md:space-y-4">
 
-        {/* 계좌 선택 (탭 위 최상단) */}
+        {/* 국가·계좌 선택은 본문과 함께 스크롤한다. */}
+        {countryToggle}
         {accountSelector}
-
-        {/* 섹션 네비게이션 */}
-        <SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={onMobileTabChange} />
 
         {/* 섹션 본문 — 활성 탭에 속한 패널을 모두 표시한다.
             탭 id 와 패널 id 를 1:1 로 보면, 탭을 묶는 순간 짝 없는 패널이 조용히 사라진다. */}

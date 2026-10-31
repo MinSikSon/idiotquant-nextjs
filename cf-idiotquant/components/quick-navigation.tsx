@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowUpRight, Search } from "lucide-react";
 import { navigationCommands, navigationShortcut, searchNavigation } from "@/lib/navigationCommands";
@@ -9,15 +10,15 @@ type QuickLink = { href: string; label: string };
 
 export default function QuickNavigation({ items, compact = false }: { items: QuickLink[]; compact?: boolean }) {
   const id = useId();
+  const pathname = usePathname();
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
-  const [modifier, setModifier] = useState("Ctrl");
+  const [modifier, setModifier] = useState<string | null>(null);
   const [option, setOption] = useState("Alt");
   const router = useRouter();
-  const pathname = usePathname();
   const commands = useMemo(() => navigationCommands(items), [items]);
   const results = useMemo(() => searchNavigation(commands, query), [commands, query]);
 
@@ -27,6 +28,8 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
     dialog.current?.showModal();
     input.current?.focus();
   }
+
+  useEffect(() => { dialog.current?.close(); }, [pathname]);
 
   function navigate(href: string) {
     dialog.current?.close();
@@ -66,16 +69,14 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
     list.current?.children[selected]?.scrollIntoView({ block: "nearest" });
   }, [selected, query]);
 
-  useEffect(() => { dialog.current?.close(); }, [pathname]);
-
   return (
     <>
       <button type="button" onClick={open} aria-label="빠른 이동" aria-haspopup="dialog" aria-keyshortcuts="Meta+K Control+K"
-        className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-neutral-200 px-2.5 text-xs text-neutral-500 transition-colors duration-100 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-neutral-200 px-2.5 text-xs text-neutral-500 transition-colors duration-100 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
         <Search size={14} aria-hidden="true" />
         {!compact && <><span className="hidden xl:inline">빠른 이동</span><kbd className="text-[10px]">{modifier} K</kbd></>}
       </button>
-      <dialog ref={dialog} aria-label="빠른 이동" onClick={event => { if (event.target === dialog.current) dialog.current.close(); }}
+      {modifier && createPortal(<dialog ref={dialog} aria-label="빠른 이동" onClick={event => { if (event.target === dialog.current) dialog.current.close(); }}
         className="fixed inset-0 m-auto w-[calc(100%_-_32px)] max-w-lg overflow-hidden rounded-2xl border border-neutral-200 bg-white p-0 text-neutral-900 shadow-2xl backdrop:bg-black/50 dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-100">
         <div className="flex items-center gap-3 border-b border-neutral-200 px-4 dark:border-neutral-700">
           <Search size={17} aria-hidden="true" className="shrink-0 text-neutral-500" />
@@ -91,7 +92,7 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
               }
               if (event.key === "Enter" && results[selected]) { event.preventDefault(); navigate(results[selected].href); }
             }} />
-          <button type="button" aria-label="빠른 이동 닫기" onClick={() => dialog.current?.close()} className="rounded border border-neutral-200 px-1.5 py-1 text-[10px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">ESC</button>
+          <button type="button" aria-label="빠른 이동 닫기" onClick={() => dialog.current?.close()} className="min-h-[44px] min-w-[44px] rounded border border-neutral-200 px-1.5 py-1 text-[10px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">ESC</button>
         </div>
         <div className="flex items-center justify-between px-5 pt-4 pb-2 text-[10px] font-medium tracking-wide text-neutral-500 dark:text-neutral-400"><span>{query.trim() ? "검색 결과" : "발굴에서 분석까지"}</span><span>{results.length}개 메뉴</span></div>
         <div ref={list} id={`${id}-results`} role="listbox" aria-label="메뉴" className="max-h-[50dvh] overflow-y-auto p-2">
@@ -106,7 +107,7 @@ export default function QuickNavigation({ items, compact = false }: { items: Qui
         </div>
         <div className="flex items-center gap-4 border-t border-neutral-200 px-4 py-3 text-[11px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"><span><kbd>↑ ↓</kbd> 선택</span><span><kbd>Enter</kbd> 이동</span><span><kbd>Esc</kbd> 닫기</span><span><kbd>/</kbd> 페이지 입력</span></div>
         <p className="px-4 pb-3 text-[11px] text-neutral-500 dark:text-neutral-400">다음에는 {option} + 1·2·3으로 발굴·비교·분석에 바로 이동하세요.</p>
-      </dialog>
+      </dialog>, document.body)}
     </>
   );
 }

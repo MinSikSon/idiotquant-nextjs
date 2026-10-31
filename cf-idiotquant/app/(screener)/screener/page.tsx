@@ -563,7 +563,6 @@ function ScreenerContent() {
     const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() =>
         (searchParams.get('mode') ?? saved.mode) === 'AND' ? 'AND' : 'OR'
     );
-    const [strategyOpen, setStrategyOpen] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     // 분포·산점도는 유용하지만 매번 목록보다 먼저 읽을 정보는 아니다. 기본은 결과에
     // 집중하고, 비교가 필요할 때만 같은 자리에서 펼친다.
@@ -1206,6 +1205,30 @@ function ScreenerContent() {
                         </>
                     )
                 )}
+                tabs={isLoggedIn && (
+                    <div role="group" aria-label="발굴 전략" className="navigation-strategy-tabs flex overflow-x-auto no-scrollbar">
+                        <StrategyCell
+                            label="전체" count={strategyCounts.all} active={isAllActive}
+                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
+                        />
+                        {STRATEGY_PRESETS.map(preset => (
+                            <StrategyCell
+                                key={preset.id}
+                                label={preset.label}
+                                count={strategyCounts[preset.id] ?? 0}
+                                active={activeStrategyIds.has(preset.id)}
+                                activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
+                                title={preset.hint}
+                                onClick={() => toggleStrategy(preset.id)}
+                                compact
+                            />
+                        ))}
+                    </div>
+                )}
+                primaryAction={isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
+                        <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
+                        <span className="hidden sm:inline">새로고침</span>
+                    </button>}
                 actions={<>
                     <ResultShare disabled={isLoading || !(isLoggedIn ? filteredList.length : guestRecommendations.length)}
                         getSnapshot={() => screenerSnapshot(
@@ -1214,10 +1237,7 @@ function ScreenerContent() {
                             ncavDailyList.scanDate, country,
                             isLoggedIn ? activeConditions.map(condition => condition.label) : ['PER 0 초과·20 이하', '순유동자산 비율 순 상위 종목']
                         )} />
-                    {isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
-                        <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
-                        <span className="hidden sm:inline">새로고침</span>
-                    </button>}
+
                 </>}
             />
 
@@ -1306,9 +1326,9 @@ function ScreenerContent() {
                 </div>
             )}
 
-            {/* ── 전략 탭 + 통합 툴바 (sticky) ── */}
+            {/* 전략 조건과 검색·정렬·필터는 본문과 함께 스크롤한다. */}
             <div className={cn(
-                "sticky top-0 z-30 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-md",
+                "bg-white/95 dark:bg-surface-dark/95",
                 "border-b border-neutral-200 dark:border-surface-dark-border",
                 !isLoggedIn && "hidden"
             )}>
@@ -1324,55 +1344,29 @@ function ScreenerContent() {
                         검색·정렬은 그대로 둔다 — 받은 열 줄 안에서 정확히 동작한다. */}
                     {isLoggedIn && <>
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
-                        <button
-                            type="button"
-                            onClick={() => setStrategyOpen(v => !v)}
-                            aria-expanded={strategyOpen}
-                            className="min-w-0 flex-1 flex items-center gap-2 text-left"
-                        >
+                        <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
                             <span className="text-[11px] font-black text-neutral-600 dark:text-neutral-300">전략</span>
                             <span className="min-w-0 truncate text-[11px] font-bold text-brand-ink">
                                 {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
                             </span>
-                            <ChevronRight size={14} className={cn("shrink-0 text-neutral-400 transition-transform", strategyOpen && "rotate-90")} />
-                        </button>
+                        </div>
                         {activeStrategyIds.size > 1 && (
                             <div className="shrink-0 flex items-center rounded-full border border-neutral-200 dark:border-surface-dark-border overflow-hidden text-[9px] font-black sm:text-[10px]">
-                                <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("px-2 py-1.5", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
-                                <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("px-2 py-1.5 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
+                                <button onClick={() => setFilterMode('OR')} aria-label="선택 전략 중 하나 이상 만족" title="선택한 전략 중 하나 이상 충족" className={cn("min-h-[44px] min-w-[44px] px-2 py-1.5", filterMode === 'OR' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>OR</button>
+                                <button onClick={() => setFilterMode('AND')} aria-label="선택 전략 모두 만족" title="선택한 전략을 모두 충족" className={cn("min-h-[44px] min-w-[44px] px-2 py-1.5 border-l border-neutral-200 dark:border-surface-dark-border", filterMode === 'AND' ? "bg-brand text-white" : "text-neutral-500 dark:text-neutral-400")}>AND</button>
                             </div>
                         )}
                         <button
                             onClick={() => setShowGuide(o => !o)}
                             title="전략 설명 보기"
                             aria-label="전략 설명 보기"
-                            className={cn("shrink-0 p-1.5 rounded-lg transition-colors", showGuide ? "bg-brand-light text-brand-ink" : "text-neutral-400 hover:text-neutral-600")}
+                            className={cn("shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 rounded-lg transition-colors", showGuide ? "bg-brand-light text-brand-ink" : "text-neutral-400 hover:text-neutral-600")}
                         >
                             <Info size={14} />
                         </button>
                     </div>
 
-                    <div className={cn(
-                        "gap-1.5 overflow-x-auto no-scrollbar pb-2.5 md:grid md:grid-cols-5 xl:grid-cols-10",
-                        strategyOpen ? "flex md:grid" : "hidden"
-                    )}>
-                        <StrategyCell
-                            label="전체" count={strategyCounts.all} active={isAllActive}
-                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
-                        />
-                        {STRATEGY_PRESETS.map(preset => (
-                            <StrategyCell
-                                key={preset.id}
-                                label={preset.label}
-                                count={strategyCounts[preset.id] ?? 0}
-                                active={activeStrategyIds.has(preset.id)}
-                                activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
-                                title={preset.hint}
-                                onClick={() => toggleStrategy(preset.id)}
-                                compact
-                            />
-                        ))}
-                    </div>
+
                     </>}
 
                     {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
@@ -1391,7 +1385,7 @@ function ScreenerContent() {
                                 value={searchQuery}
                                 onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
                                 placeholder="종목명 또는 코드로 검색"
-                                className="h-[38px] sm:h-auto w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+                                className="min-h-[44px] w-full pl-8 pr-3 py-2 text-xs font-medium bg-surface-canvas dark:bg-surface-dark-card border border-neutral-200 dark:border-surface-dark-border rounded-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
                             />
                         </div>
 
@@ -1403,7 +1397,7 @@ function ScreenerContent() {
                                 setSortKey(key); setSortOrder(order); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             aria-label="결과 정렬"
-                            className="h-[38px] sm:h-auto shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            className="min-h-[44px] shrink-0 w-[112px] sm:w-auto max-w-[132px] px-2 sm:px-2.5 py-2 rounded-lg text-[11px] sm:text-xs font-bold border border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-300 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
                         >
                             <option value="ncav_ratio:desc">NCAV 높은 순</option>
                             <option value="ncav_ratio:asc">NCAV 낮은 순</option>
@@ -1430,7 +1424,7 @@ function ScreenerContent() {
                         <button
                             onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                             className={cn(
-                                "shrink-0 flex min-h-[38px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap sm:px-3",
+                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap sm:px-3",
                                 filterOpen
                                     ? "bg-brand border-brand text-white shadow-sm"
                                     : activeFilterCount > 0
@@ -1459,7 +1453,7 @@ function ScreenerContent() {
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "shrink-0 flex min-h-[38px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap sm:px-3",
+                                "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap sm:px-3",
                                 showLikedOnly
                                     ? "bg-rose-500 border-rose-500 text-white shadow-sm"
                                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
@@ -2067,7 +2061,7 @@ function ScreenerContent() {
                                 {showInsights ? '해석 접기' : '결과 해석'}
                             </button>
                             <details className="relative sm:hidden">
-                                <summary aria-label="결과 복사 메뉴" className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 marker:hidden dark:border-surface-dark-border dark:text-neutral-400">···</summary>
+                                <summary aria-label="결과 복사 메뉴" className="flex h-[44px] w-[44px] cursor-pointer list-none items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 marker:hidden dark:border-surface-dark-border dark:text-neutral-400">···</summary>
                                 <div className="absolute right-0 top-full z-10 mt-1 flex w-max items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg dark:border-surface-dark-border dark:bg-surface-dark-card">
                                     <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                                 </div>
