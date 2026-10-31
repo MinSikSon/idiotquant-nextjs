@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { formatKoreanUnit } from "@/lib/utils/financeCalc";
 import { cn } from "@/lib/utils";
+import ui from "@/components/research/research-ui.module.css";
 import {
   BarChart3, Calendar, DollarSign, Coins,
   TrendingUp, Layers, Activity, AlertTriangle,
@@ -22,20 +23,15 @@ interface MetricItem {
 // =========================================================================
 function MetricCard({ m }: { m: MetricItem }) {
   return (
-    <div className={cn(
-      "px-0 py-3 sm:p-3.5 rounded-none sm:rounded-lg border-0 border-b sm:border transition-colors",
-      m.highlight
-        ? "bg-transparent border-neutral-200 dark:border-neutral-800"
-        : "bg-transparent border-neutral-200 dark:border-neutral-800"
-    )}>
+    <div className={ui.metric}>
       <p className={cn(
-        "text-xs font-semibold mb-2",
-        m.highlight ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-400"
+        "text-[14px] font-medium mb-2",
+        m.highlight ? "text-neutral-500 dark:text-neutral-400" : "text-neutral-600 dark:text-neutral-300"
       )}>
         {m.label}
       </p>
       <p className={cn(
-        "text-lg font-semibold font-mono tabular-nums leading-tight break-all",
+        "text-[22px] font-semibold tabular-nums leading-snug break-words",
         m.highlight
           ? "text-neutral-900 dark:text-neutral-100"
           : "text-neutral-900 dark:text-white"
@@ -44,14 +40,14 @@ function MetricCard({ m }: { m: MetricItem }) {
       </p>
       {m.sub && (
         <div className="flex items-center gap-1 mt-1.5">
-          <Calendar size={9} className="text-neutral-400 shrink-0" />
-          <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+          <Calendar size={9} className="text-neutral-600 dark:text-neutral-300 shrink-0" />
+          <span className="text-[13px] text-neutral-500 dark:text-neutral-400 font-mono">
             {m.sub.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")}
           </span>
         </div>
       )}
 
-      <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400 break-keep">{m.desc}</p>
+      <p className={ui.metricDescription}>{m.desc}</p>
     </div>
   );
 }
@@ -60,8 +56,8 @@ function MetricCard({ m }: { m: MetricItem }) {
 function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div className="flex items-center gap-2 mb-2.5">
-      <span className="text-neutral-400">{icon}</span>
-      <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
+      <span className="text-neutral-600 dark:text-neutral-300">{icon}</span>
+      <span className="text-[15px] font-semibold text-neutral-600 dark:text-neutral-300">{label}</span>
       <div className="flex-1 h-px bg-neutral-100 dark:bg-surface-dark-muted" />
     </div>
   );
@@ -174,26 +170,26 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
   const volumeMetrics    = metrics.filter(m => m.type === "volume");
 
   return (
-    <div className="w-full h-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark flex flex-col">
+    <div className={cn(ui.surface, "w-full flex flex-col")}>
 
       {/* ── 헤더 ── */}
-      <div className="px-0 sm:px-5 py-4 border-b border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2.5">
+      <div className={ui.sectionHead}>
+        <div className="flex items-center gap-x-6">
           <div className="w-7 h-7 bg-surface-canvas dark:bg-surface-dark-card rounded-lg flex items-center justify-center border border-neutral-200 dark:border-surface-dark-border shrink-0">
             <BarChart3 size={14} className="text-neutral-500 dark:text-neutral-400" />
           </div>
           <div>
-            <h4 className="text-xs font-extrabold text-neutral-800 dark:text-neutral-200 tracking-tight leading-tight">
+            <h4 className={ui.sectionTitle}>
               시장 지표
             </h4>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono font-bold uppercase tracking-wider mt-0.5">
+            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 font-mono font-bold uppercase tracking-normal mt-0.5">
               주당 가치 · 가격 범위 · 거래 규모
             </p>
           </div>
         </div>
 
         <div className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-black font-mono uppercase tracking-wider shrink-0",
+          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[13px] font-semibold font-mono uppercase tracking-normal shrink-0",
           isUs
             ? "bg-transparent text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700"
             : "bg-transparent text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700"
@@ -208,22 +204,22 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
 
       {/* ── 상장폐지 의심 배너 ── */}
       {isDelistedSuspect && (
-        <div className="px-0 sm:px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-2.5">
+        <div className="px-0 sm:px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-x-6">
           <AlertTriangle size={14} className="text-red-500 dark:text-red-400 shrink-0" />
-          <p className="text-xs font-bold text-red-600 dark:text-red-400 leading-snug">
+          <p className="text-[13px] font-bold text-red-600 dark:text-red-400 leading-snug">
             상장폐지 의심 종목 — 상장주식수 정보가 제공되지 않습니다. 투자 전 반드시 확인하세요.
           </p>
         </div>
       )}
 
       {/* ── 콘텐츠 ── */}
-      <div className="flex-1 py-3 sm:p-5 space-y-4">
+      <div className="flex-1 p-4 sm:p-6 space-y-6">
 
         {/* 밸류에이션 지표 */}
         {valuationMetrics.length > 0 && (
           <div>
             <SectionLabel icon={<Layers size={11} />} label="한 주당 이익과 순자산" />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className={ui.metricGrid}>
               {valuationMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
           </div>
@@ -233,7 +229,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {priceMetrics.length > 0 && (
           <div>
             <SectionLabel icon={<TrendingUp size={11} />} label="52주 가격 범위" />
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className={ui.metricGrid}>
               {priceMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
           </div>
@@ -243,7 +239,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         {volumeMetrics.length > 0 && (
           <div>
             <SectionLabel icon={<Activity size={11} />} label="시장 데이터" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <div className={ui.metricGrid}>
               {volumeMetrics.map((m, i) => <MetricCard key={i} m={m} />)}
             </div>
           </div>

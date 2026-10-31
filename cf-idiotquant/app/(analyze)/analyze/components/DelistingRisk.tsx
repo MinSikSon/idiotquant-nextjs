@@ -50,8 +50,8 @@ const STATUS_ICON: Record<CriterionStatus, React.ElementType> = {
 const STATUS_COLOR: Record<CriterionStatus, string> = {
   "위험": "text-red-600 dark:text-red-400",
   "주의": "text-amber-600 dark:text-amber-400",
-  "양호": "text-emerald-600 dark:text-emerald-400",
-  "—":    "text-neutral-400",
+  "양호": "text-emerald-700 dark:text-emerald-300",
+  "—":    "text-neutral-600 dark:text-neutral-300",
 };
 
 const STATUS_ROW_CLS: Record<CriterionStatus, string> = {
@@ -282,22 +282,22 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             <ShieldAlert size={14} className="text-neutral-500 dark:text-neutral-400" />
           </div>
           <div>
-            <h4 className="text-xs font-extrabold text-neutral-800 dark:text-neutral-200 tracking-tight leading-tight">
+            <h4 className="text-[13px] font-semibold text-neutral-800 dark:text-neutral-200 tracking-tight leading-tight">
               상장폐지 위험도
             </h4>
-            <p className="text-xs text-neutral-400 font-mono font-bold uppercase tracking-wider mt-0.5">
+            <p className="text-[13px] text-neutral-600 dark:text-neutral-300 font-mono font-bold uppercase tracking-normal mt-0.5">
               Delisting Risk · KRX 기준
             </p>
           </div>
         </div>
-        <span className={cn("px-2.5 py-1 rounded-lg text-sm font-black border shrink-0", cfg.badge)}>
+        <span className={cn("px-2.5 py-1 rounded-lg text-[15px] font-semibold border shrink-0", cfg.badge)}>
           {overall}
         </span>
       </div>
 
       {/* ── 본문 ── */}
       <div className="p-0 sm:p-5 space-y-2">
-        <p className="text-xs text-neutral-400 pb-1">{cfg.sub}</p>
+        <p className="text-[13px] text-neutral-600 dark:text-neutral-300 pb-1">{cfg.sub}</p>
 
         {/* 기준 항목 목록 */}
         {criteria.map(c => {
@@ -307,12 +307,12 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
               <Icon size={14} className={cn("mt-0.5 shrink-0", STATUS_COLOR[c.status])} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-                  <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
-                  <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
-                  <span className={cn("text-xs font-black font-mono tabular-nums shrink-0", STATUS_COLOR[c.status])}>{c.value}</span>
+                  <span className="text-[13px] font-bold text-neutral-700 dark:text-neutral-300">{c.label}</span>
+                  <span className={cn("rounded-md px-2 py-0.5 text-[13px] font-semibold", STATUS_COLOR[c.status])}>{c.status === "—" ? "자료 없음" : c.status}</span>
+                  <span className={cn("text-[13px] font-semibold font-mono tabular-nums shrink-0", STATUS_COLOR[c.status])}>{c.value}</span>
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">{c.note}</p>
-                <details className="mt-2 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="cursor-pointer py-1 font-medium">판정 기준 보기</summary><p className="mt-1">{c.law}</p></details>
+                <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">{c.note}</p>
+                <details className="mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400"><summary className="cursor-pointer py-1 font-medium">판정 기준 보기</summary><p className="mt-1">{c.law}</p></details>
               </div>
             </div>
           );
@@ -335,10 +335,10 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
                   ? <TrendingDown size={13} className="text-amber-500 shrink-0" />
                   : <TrendingUp size={13} className="text-emerald-500 shrink-0" />
                 }
-                <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">영업이익 연속 손실 이력</span>
+                <span className="text-[15px] font-bold text-neutral-700 dark:text-neutral-300">영업이익 연속 손실 이력</span>
               </div>
               <span className={cn(
-                "text-xs font-black px-2 py-0.5 rounded font-mono",
+                "text-[13px] font-semibold px-2 py-0.5 rounded font-mono",
                 consLossCount >= 4 ? "text-red-600 bg-red-100 dark:bg-red-950/30 dark:text-red-400"
                 : consLossCount >= 2 ? "text-amber-600 bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400"
                 : "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400"
@@ -351,12 +351,12 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             <div className="space-y-4 sm:space-y-3">
               {opYears.map((y, i) => (
                 <div key={y.year} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 sm:grid-cols-[6rem_minmax(0,1fr)_auto]">
-                  <span className="flex items-center gap-2 whitespace-nowrap text-sm font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
+                  <span className="flex items-center gap-2 whitespace-nowrap text-[15px] font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
                     {y.year}
-                    {i === 0 && <span className="text-xs font-sans text-neutral-500 dark:text-neutral-400">최신</span>}
+                    {i === 0 && <span className="text-[13px] font-sans text-neutral-500 dark:text-neutral-400">최신</span>}
                   </span>
                   <span className={cn(
-                    "text-right text-sm font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
+                    "text-right text-[15px] font-bold font-mono tabular-nums whitespace-nowrap sm:order-3",
                     y.op >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
                   )}>
                     {y.op >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(y.op))}
@@ -368,7 +368,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
               ))}
             </div>
 
-            <p className="text-xs text-neutral-400 mt-2">
+            <p className="text-[13px] text-neutral-600 dark:text-neutral-300 mt-2">
               KOSPI 기준 4년 연속 영업손실 시 관리종목 지정 (유가증권 제47조)
             </p>
           </div>
@@ -380,10 +380,10 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
             <div className="flex items-start gap-2 mb-2.5">
               <Eye size={14} className="text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
               <div>
-                <span className="text-xs font-bold text-orange-700 dark:text-orange-400">
+                <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">
                   관리종목 회피 의심 패턴
                 </span>
-                <p className="text-xs text-orange-600/80 dark:text-orange-400/70 mt-0.5 leading-relaxed">
+                <p className="text-[13px] text-orange-600/80 dark:text-orange-400/70 mt-0.5 leading-relaxed">
                   직전 {prevLossCount}년 연속 영업손실 후 당기 흑자전환 — 4년차 관리종목 지정을 피하기 위해 영업이익을 조정했을 가능성을 검토합니다.
                 </p>
               </div>
@@ -393,28 +393,28 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
               <div className="space-y-2 mt-1">
                 {flags.map(f => (
                   <div key={f.label} className="flex items-start gap-2 pl-1">
-                    <span className="text-orange-500 text-xs mt-0.5 shrink-0">•</span>
+                    <span className="text-orange-500 text-[13px] mt-0.5 shrink-0">•</span>
                     <div>
-                      <span className="text-xs font-bold text-orange-700 dark:text-orange-400">{f.label}: </span>
-                      <span className="text-xs text-orange-600/80 dark:text-orange-400/70 leading-relaxed">{f.desc}</span>
+                      <span className="text-[13px] font-bold text-orange-700 dark:text-orange-400">{f.label}: </span>
+                      <span className="text-[13px] text-orange-600/80 dark:text-orange-400/70 leading-relaxed">{f.desc}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-orange-600/70 dark:text-orange-400/60 pl-5">
+              <p className="text-[13px] text-orange-600/70 dark:text-orange-400/60 pl-5">
                 패턴은 감지되었으나 구체적 의심 신호는 데이터 범위 내에서 발견되지 않았습니다.
               </p>
             )}
 
-            <p className="text-xs text-orange-500/60 dark:text-orange-400/50 mt-2 font-mono">
+            <p className="text-[13px] text-orange-500/60 dark:text-orange-400/50 mt-2 font-mono">
               ※ 이 분석은 정량적 패턴 탐지이며 실제 분식 판단은 감사보고서 확인 필요
             </p>
           </div>
         )}
 
         {/* ── 푸터 ─────────────────────────────────────────────────── */}
-        <p className="text-xs text-neutral-400 pt-2 leading-relaxed border-t border-neutral-100 dark:border-border-subtle-dark">
+        <p className="text-[13px] text-neutral-600 dark:text-neutral-300 pt-2 leading-relaxed border-t border-neutral-100 dark:border-border-subtle-dark">
           유가증권시장 상장규정 제47조 · 코스닥시장 상장규정 제38조 기준. 재무데이터는 DART 공시 기준이며
           실제 관리종목 지정 여부는 KRX 심사 결과에 따릅니다.
         </p>

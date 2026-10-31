@@ -194,16 +194,16 @@ function findVal(map: Map<string, number | null>, concepts: string[]): number | 
     return null;
 }
 
-function InfoPopover({ label, description }: { label: string; description: string }) {
+function InfoPopover({ label, description, isTotal }: { label: string; description: string; isTotal?: boolean }) {
     return (
         <Popover.Root>
             <Popover.Trigger asChild>
                 <button
                     type="button"
                     aria-label={`${label} 설명`}
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-surface-dark-muted dark:hover:text-neutral-100 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className={cn("inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-md text-left leading-relaxed hover:bg-neutral-100 dark:hover:bg-surface-dark-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2", isTotal ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-medium text-neutral-700 dark:text-neutral-300")}
                 >
-                    <Info size={14} aria-hidden="true" />
+                    <span>{label}</span><Info size={14} aria-hidden="true" className="shrink-0 text-neutral-500 dark:text-neutral-400" />
                 </button>
             </Popover.Trigger>
             <Popover.Portal>
@@ -212,10 +212,10 @@ function InfoPopover({ label, description }: { label: string; description: strin
                     sideOffset={6}
                     avoidCollisions
                     collisionPadding={12}
-                    className="z-[200] w-64 rounded-xl bg-neutral-900 border border-neutral-700/60 p-4 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+                    className="z-[200] w-80 max-w-[calc(100vw-24px)] rounded-xl bg-neutral-900 border border-neutral-700/60 p-4 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
                 >
-                    <p className="text-[10px] font-black text-amber-400 mb-1.5 uppercase tracking-wider">{label}</p>
-                    <p className="text-[11.5px] text-neutral-300 leading-relaxed">{description}</p>
+                    <p className="text-[13px] font-semibold text-amber-400 mb-1.5 uppercase tracking-normal">{label}</p>
+                    <p className="text-[13px] text-neutral-300 leading-relaxed">{description}</p>
                     <Popover.Arrow className="fill-neutral-700/60" />
                 </Popover.Content>
             </Popover.Portal>
@@ -224,14 +224,14 @@ function InfoPopover({ label, description }: { label: string; description: strin
 }
 
 function YoYBadge({ pct }: { pct: number | null }) {
-    if (pct === null || Math.abs(pct) < 0.05) {
+    if (pct === null || !Number.isFinite(pct) || Math.abs(pct) < 0.05) {
         return <span className="text-neutral-300 dark:text-neutral-700"><Minus size={8} /></span>;
     }
     const isUp = pct >= 0;
     return (
         <span className={cn(
-            "inline-flex items-center gap-0.5 text-[11px] font-semibold font-mono",
-            isUp ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
+            "inline-flex items-center gap-0.5 text-[13px] font-semibold font-mono",
+            isUp ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
         )}>
             {isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
             {isUp ? "+" : ""}{pct.toFixed(1)}%
@@ -240,7 +240,7 @@ function YoYBadge({ pct }: { pct: number | null }) {
 }
 
 const TAB_TRIGGER_BASE = [
-    "flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-md text-xs font-bold [&_svg]:hidden sm:[&_svg]:block transition-all duration-150",
+    "flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-md text-[13px] font-bold [&_svg]:hidden sm:[&_svg]:block transition-all duration-150",
     "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200",
     "data-[state=active]:bg-white dark:data-[state=active]:bg-surface-dark-elevated",
     "data-[state=active]:shadow-sm",
@@ -257,18 +257,18 @@ function SectionTable({
 
     return (
         <div className="min-w-0">
-            <p className="border-b border-neutral-200 px-3 py-2 text-xs leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">좌우로 밀어 이전 공시와 비교하세요. 항목명은 왼쪽에 고정됩니다.</p>
+            <p className="border-b border-neutral-200 px-3 py-2 text-[13px] leading-5 text-neutral-600 dark:border-border-subtle-dark dark:text-neutral-300 sm:hidden">좌우로 밀어 이전 공시와 비교하세요. 항목명은 왼쪽에 고정됩니다.</p>
         <div className="max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand" role="region" aria-label="기간별 재무 수치" tabIndex={0}>
-            <table className="w-full table-fixed border-separate border-spacing-0 text-[13px] sm:text-sm" style={{ minWidth: `${124 + columns.length * 144}px` }}>
+            <table className="w-full table-fixed border-separate border-spacing-0 text-[15px]" style={{ minWidth: `${160 + columns.length * 160}px` }}>
                 <caption className="sr-only">계정과목별 최근 공시와 이전 공시의 재무 수치</caption>
                 <colgroup>
-                    <col className="w-[124px] sm:w-44" />
-                    {columns.map((_, index) => <col key={index} className="w-[144px] sm:w-44" />)}
+                    <col className="w-[160px] sm:w-44" />
+                    {columns.map((_, index) => <col key={index} className="w-[160px] sm:w-44" />)}
                 </colgroup>
                 <thead>
                     <tr className="border-b border-neutral-200 dark:border-border-subtle-dark">
-                        <th scope="col" className="sticky left-0 z-20 border-b border-r border-neutral-200 bg-neutral-50 px-3 py-3 text-left dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-5">
-                            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 select-none">
+                        <th scope="col" className="sticky left-0 z-20 border-b border-r border-neutral-200 bg-neutral-50 px-4 py-4 text-left dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-5">
+                            <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 select-none">
                                 계정과목
                             </span>
                         </th>
@@ -277,19 +277,19 @@ function SectionTable({
                                 key={idx}
                                 scope="col"
                                 className={cn(
-                                    "border-b border-r border-neutral-200 px-3 py-3 text-right align-top dark:border-border-subtle-dark sm:px-5",
+                                    "border-b border-r border-neutral-200 px-4 py-4 text-right align-top dark:border-border-subtle-dark sm:px-5",
                                     idx === 0 && "bg-brand-light/50 dark:bg-brand-muted/10"
                                 )}
                             >
                                 <div className="flex flex-col items-end gap-0.5">
                                     <span className={cn(
-                                        "text-[11px] font-semibold",
-                                        idx === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
+                                        "text-[13px] font-semibold",
+                                        idx === 0 ? "text-brand-ink dark:text-brand-ink" : "text-neutral-600 dark:text-neutral-300"
                                     )}>
                                         {idx === 0 ? "최근 공시" : `이전 공시 ${idx}`}
                                     </span>
                                     <span className={cn(
-                                        "text-[13px] font-semibold leading-5 tabular-nums whitespace-normal break-keep",
+                                        "text-[14px] font-semibold leading-6 tabular-nums whitespace-normal break-keep",
                                         idx === 0 ? "text-neutral-900 dark:text-white" : "text-neutral-500 dark:text-neutral-400"
                                     )}>
                                         {col.label || "—"}
@@ -309,7 +309,7 @@ function SectionTable({
                                     className="border-b border-neutral-200 bg-neutral-50 px-3 py-2.5 text-left dark:border-border-subtle-dark dark:bg-surface-dark-muted sm:px-5"
                                 >
                                     <div className={cn(
-                                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold select-none",
+                                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[13px] font-semibold select-none",
                                         section.accent
                                     )}>
                                         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", section.dotColor)} />
@@ -334,26 +334,12 @@ function SectionTable({
                                     >
                                         {/* Label */}
                                         <th scope="row" className={cn(
-                                            "sticky left-0 z-10 border-b border-r border-neutral-200 px-3 py-3 text-left font-normal transition-colors duration-100 dark:border-border-subtle-dark sm:px-5",
+                                            "sticky left-0 z-10 border-b border-r border-neutral-200 px-4 py-4 text-left font-normal transition-colors duration-100 dark:border-border-subtle-dark sm:px-5",
                                             item.isTotal
                                                 ? "bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-surface-muted-hover dark:group-hover:bg-surface-dark-muted"
                                                 : "bg-white dark:bg-surface-dark-card group-hover:bg-surface-muted-hover/60 dark:group-hover:bg-surface-dark-muted/10"
                                         )}>
-                                            <div className="flex items-center gap-1 sm:gap-2">
-                                                {item.isTotal
-                                                    ? <div className="w-0.5 h-4 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" />
-                                                    : null
-                                                }
-                                                <span className={cn(
-                                                    "min-w-0 whitespace-normal break-keep leading-snug",
-                                                    item.isTotal
-                                                        ? "font-bold text-neutral-900 dark:text-neutral-100"
-                                                        : "font-medium text-neutral-600 dark:text-neutral-400"
-                                                )}>
-                                                    {item.label}
-                                                </span>
-                                                <InfoPopover label={item.label} description={item.description} />
-                                            </div>
+                                            <InfoPopover label={item.label} description={item.description} isTotal={item.isTotal} />
                                         </th>
 
                                         {/* Values */}
@@ -361,7 +347,7 @@ function SectionTable({
                                             <td
                                                 key={colIdx}
                                                 className={cn(
-                                                    "border-b border-r border-neutral-200 px-3 py-3 text-right font-mono tabular-nums whitespace-nowrap dark:border-border-subtle-dark sm:px-5",
+                                                    "border-b border-r border-neutral-200 px-4 py-4 text-right font-mono tabular-nums whitespace-nowrap dark:border-border-subtle-dark sm:px-5",
                                                     colIdx === 0 && "bg-brand-light/30 dark:bg-brand-muted/5"
                                                 )}
                                             >
@@ -372,7 +358,7 @@ function SectionTable({
                                                             : item.isTotal
                                                                 ? "font-bold text-neutral-900 dark:text-neutral-100"
                                                                 : "font-medium text-neutral-700 dark:text-neutral-300",
-                                                        "text-[13px] sm:text-sm"
+                                                        "text-[15px]"
                                                     )}>
                                                         {fmtUSD(v)}
                                                     </span>
@@ -417,11 +403,11 @@ export default function FinnhubTable({ data = [], className = "", source }: Prop
     const footer = (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 sm:px-5 py-2 sm:py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse shrink-0" />
-            <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
+            <span className="text-[13px] text-neutral-600 dark:text-neutral-300 font-mono">
                 {[financialSourceLabel(source), 'US-GAAP', 'USD'].filter(Boolean).join(' · ')}
             </span>
             <div className="ml-auto flex items-center gap-2">
-                <span className="text-[9px] font-mono text-neutral-400 dark:text-neutral-600 flex items-center gap-1">
+                <span className="text-[13px] font-mono text-neutral-600 dark:text-neutral-300 flex items-center gap-1">
                     <TrendingUp size={8} className="text-emerald-500" /> YoY vs prior year
                 </span>
             </div>
@@ -456,7 +442,7 @@ export default function FinnhubTable({ data = [], className = "", source }: Prop
                             현금흐름
                         </Tabs.Trigger>
                     </Tabs.List>
-                    <span className="text-[9px] font-mono font-bold text-neutral-400 dark:text-neutral-600 uppercase tracking-widest hidden sm:block">
+                    <span className="text-[13px] font-mono font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal hidden sm:block">
                         SEC · US-GAAP
                     </span>
                 </div>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
+import ui from "@/components/research/research-ui.module.css";
 import { TrendingUp, TrendingDown, Activity, AlertTriangle, HelpCircle } from "lucide-react";
 import LineChart from "@/components/LineChart";
 import { CopyStockButtons } from "@/components/copyStockButtons";
@@ -102,7 +103,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
   // 색은 기준 충족 시에만 초록, 아니면 중립.
   // NCAV는 배수(순유동자산/시가총액)로 적는다. 업사이드 %는 위 가격 배지에 이미 있다.
   const NEUTRAL = "text-neutral-800 dark:text-neutral-200";
-  const GOOD = "text-emerald-600 dark:text-emerald-400";
+  const GOOD = "text-emerald-700 dark:text-emerald-300";
   const ncavMultiple = stock?.ncavMultiple ?? null;
   const roe = stock?.roe ?? null;
   const per = Number(stock?.per ?? 0);
@@ -136,11 +137,11 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
   ];
 
   return (
-    <div className="w-full bg-transparent sm:bg-white dark:sm:bg-surface-dark-card rounded-none border-0 sm:rounded-xl sm:border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+    <div className={ui.surface}>
 
       {/* ── 메인 정보 ── 좁은 화면에서는 카드 자신의 여백도 한 칸 줄인다. 페이지 여백과
            겹쳐 글이 시작되는 자리가 화면 폭의 10분의 1을 넘어가면 그만큼 값이 잘린다. */}
-      <div className={"py-3 sm:p-5"}>
+      <div className={ui.stockMain}>
 
         {/* 로고 + 종목명 + 등급 */}
         <div className="flex items-center gap-4">
@@ -157,7 +158,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
                 onError={() => setImgError(true)}
               />
             ) : (
-              <span className="text-[18px] font-black text-neutral-600 dark:text-neutral-300 leading-none">
+              <span className="text-[18px] font-semibold text-neutral-600 dark:text-neutral-300 leading-none">
                 {(stock?.name ?? stock?.ticker ?? "?").charAt(0).toUpperCase()}
               </span>
             )}
@@ -167,15 +168,15 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h2 className="font-black text-neutral-900 dark:text-white text-[15px] leading-snug line-clamp-2">
+                <h2 className={ui.stockTitle}>
                   {stock?.name}
                 </h2>
                 <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate">
+                  <p className="text-[13px] font-mono text-neutral-600 dark:text-neutral-300 truncate">
                     {stock?.ticker} · {market}
                   </p>
                   {sector && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 text-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-300">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[13px] font-bold bg-neutral-100 text-neutral-600 dark:bg-surface-dark-muted dark:text-neutral-300">
                       {sector}
                     </span>
                   )}
@@ -200,31 +201,31 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
             </div>
 
             {/* 가격 + 업사이드 */}
-            <div className="flex items-center gap-2 mt-2.5">
-              <span className="text-xl font-black font-mono tabular-nums text-neutral-900 dark:text-white leading-none">
+            <div className={ui.priceRow}>
+              <span className={ui.price}>
                 {currency}{String(stock?.curPrice ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
               </span>
               <span className={cn(
-                "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border",
+                "inline-flex flex-wrap items-center gap-1 px-2 py-1 rounded-lg text-[13px] font-bold border",
                 isUp
                   ? "bg-green-50 dark:bg-brand-muted/30 border-green-200 dark:border-brand/20 text-brand-ink-hover dark:text-brand-ink"
                   : "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400"
               )}>
                 {isUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-                {isUp ? "+" : ""}{ncavUpside.toFixed(1)}%
+                <span>NCAV 업사이드</span> {isUp ? "+" : ""}{ncavUpside.toFixed(1)}%
               </span>
             </div>
           </div>
         </div>
 
         {/* ── 등급 레이블 스트립 ── */}
-        <div className="mt-3 flex items-center gap-2.5 py-2 border-t border-neutral-200 dark:border-border-subtle-dark">
+        <div className={ui.gradeDescription}>
           <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", "bg-neutral-400")} />
-          <span className={cn("text-[9px] font-black uppercase tracking-[0.15em] font-mono shrink-0", "text-neutral-500 dark:text-neutral-400")}>
+          <span className={cn("text-[13px] font-semibold tracking-normal font-mono shrink-0", "text-neutral-500 dark:text-neutral-400")}>
             {cfg.label}
           </span>
           <span className="text-neutral-300 dark:text-surface-dark-muted shrink-0">·</span>
-          <span className="text-[9px] text-neutral-500 dark:text-neutral-400 leading-tight">
+          <span className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-tight">
             {cfg.desc}
           </span>
         </div>
@@ -235,21 +236,21 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
             배지에 쓴 업사이드(ncavScore)를 그대로 견준다. */}
         {gradeOpen && (
           <div className="mt-2 rounded-xl border border-neutral-200/70 dark:border-border-subtle-dark/70 bg-white/70 dark:bg-surface-dark-canvas/60 p-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">
+            <p className="text-[13px] font-semibold tracking-normal text-neutral-600 dark:text-neutral-300">
               등급 산정 기준
             </p>
 
             {gradeKnown ? (
               <>
-                <p className="mt-1.5 text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
+                <p className="mt-1.5 text-[13px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
                   업사이드 = (순유동자산 − 총부채) ÷ 발행주식수 ÷ 현재가 − 1
                 </p>
-                <p className="mt-1 text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
+                <p className="mt-1 text-[13px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
                   이 종목은{" "}
-                  <span className={cn("font-black font-mono tabular-nums", isUp ? "text-brand-ink-hover dark:text-brand-ink" : "text-red-600 dark:text-red-400")}>
+                  <span className={cn("font-semibold font-mono tabular-nums", isUp ? "text-brand-ink-hover dark:text-brand-ink" : "text-red-600 dark:text-red-400")}>
                     {isUp ? "+" : ""}{ncavUpside.toFixed(1)}%
                   </span>
-                  {" "}라서 <span className="font-black">{grade}</span> 입니다.
+                  {" "}라서 <span className="font-semibold">{grade}</span> 입니다.
                 </p>
 
                 <div className="mt-2.5 flex flex-col gap-px overflow-hidden rounded-lg border border-neutral-200/70 dark:border-border-subtle-dark/70">
@@ -257,25 +258,25 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
                     <div
                       key={g}
                       className={cn(
-                        "flex items-center gap-2 px-2.5 py-1.5 text-[10.5px]",
+                        "flex items-center gap-2 px-2.5 py-1.5 text-[13px]",
                         g === grade
                           ? "bg-neutral-100 dark:bg-surface-dark-muted"
                           : "bg-white/70 dark:bg-surface-dark-card/50",
                       )}
                     >
                       <span className={cn(
-                        "w-8 shrink-0 font-black font-mono",
-                        g === grade ? "text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500",
+                        "w-8 shrink-0 font-semibold font-mono",
+                        g === grade ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-300",
                       )}>
                         {g}
                       </span>
                       <span className={cn(
                         "w-16 shrink-0 font-mono tabular-nums",
-                        g === grade ? "text-neutral-700 dark:text-neutral-200" : "text-neutral-400 dark:text-neutral-500",
+                        g === grade ? "text-neutral-700 dark:text-neutral-200" : "text-neutral-600 dark:text-neutral-300",
                       )}>
                         {GRADE_CONFIG[g].cut}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-neutral-400 dark:text-neutral-500">
+                      <span className="min-w-0 flex-1 truncate text-neutral-600 dark:text-neutral-300">
                         {GRADE_CONFIG[g].label}
                       </span>
                     </div>
@@ -283,13 +284,13 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
                 </div>
 
                 {/* 등급이 무엇을 안 보는지까지 적는다 — 안 적으면 "좋은 회사" 로 읽힌다 */}
-                <p className="mt-2 text-[10px] text-neutral-400 dark:text-neutral-500 leading-relaxed break-keep">
+                <p className="mt-2 text-[13px] text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">
                   자산가치(그레이엄 NCAV) 하나만 봅니다. 수익성·성장·상장폐지 위험은 이 등급에
                   들어가지 않으니 아래 지표와 함께 보세요.
                 </p>
               </>
             ) : (
-              <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+              <p className="mt-1.5 text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
                 재무 데이터를 읽지 못해 등급을 매기지 못했습니다. 등급은 순유동자산 기준
                 업사이드로 정해지는데, 그 값을 계산할 재무제표가 없습니다.
               </p>
@@ -300,17 +301,17 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
 
       {/* ── 미니 차트 ── */}
       {hasChart ? (
-        <div className="px-0 sm:px-5 pb-4">
+        <div className={ui.chart}>
           <div className="flex items-center gap-1.5 mb-2">
-            <Activity size={9} className="text-neutral-400" />
-            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">가격 추이</p>
+            <Activity size={9} className="text-neutral-600 dark:text-neutral-300" />
+            <p className="text-[13px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-normal">가격 추이</p>
           </div>
-          <div className="rounded-xl overflow-hidden border border-neutral-100 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas">
+          <div className={ui.chartCanvas}>
             <LineChart
               key={stock.code ?? stock.ticker}
               data_array={[{ name: "P", data: chartConfig.data, color: cfg.chartColor }]}
               category_array={chartConfig.categories}
-              height={68}
+              height={144}
               show_yaxis_label={false}
               interactive
               currency={stock.isUs ? 'USD' : 'KRW'}
@@ -319,7 +320,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
           </div>
         </div>
       ) : chartNotice ? (
-        <div className="px-0 sm:px-5 pb-4">
+        <div className={ui.chart}>
           <div className={cn(
             "flex items-start gap-2 px-3 py-2.5 rounded-xl border",
             chartNotice === 'delisted'
@@ -327,7 +328,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
               : "border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20"
           )}>
             <AlertTriangle size={12} className={cn("shrink-0 mt-0.5", chartNotice === 'delisted' ? "text-red-500" : "text-amber-500")} />
-            <p className={cn("text-[10px] font-medium leading-relaxed", chartNotice === 'delisted' ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400")}>
+            <p className={cn("text-[13px] font-medium leading-relaxed", chartNotice === 'delisted' ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400")}>
               {chartNotice === 'suspended'
                 ? "거래정지된 종목입니다. 가격 추이를 제공할 수 없습니다."
                 : "상장폐지된 종목입니다. 가격 추이를 제공할 수 없습니다."}
@@ -337,21 +338,21 @@ export const StockCard = ({ stock, chartConfig, chartNotice, showLogo = true }: 
       ) : null}
 
       {/* ── 핵심 지표 ── gap-px + 셀 배경으로 구분선을 그린다. 2열로 접혀도 선이 어긋나지 않는다. */}
-      <div className="border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+      <div className={ui.stats}>
         {statsRow.map(({ label, value, desc, colorCls }) => (
-          <div key={label} className="border-b border-neutral-100 dark:border-border-subtle-dark bg-transparent sm:bg-white dark:sm:bg-surface-dark-card px-0 py-3 sm:px-4 sm:py-3.5 flex flex-col gap-1">
-            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-            <p className={cn("text-[17px] font-black font-mono tabular-nums leading-none", colorCls)}>
+          <div key={label} className={ui.stat}>
+            <p className={ui.statLabel}>{label}</p>
+            <p className={cn(ui.statValue, colorCls)}>
               {value}
             </p>
-            <p className="text-[9.5px] text-neutral-400">{desc}</p>
+            <p className={ui.statDescription}>{desc}</p>
           </div>
         ))}
       </div>
 
       {/* ── 복사 ── 카드가 이미 종목명·티커·지표를 다 들고 있어 복사 대상도 여기서 만든다 */}
       <div className="border-t border-neutral-100 dark:border-border-subtle-dark px-4 py-2 flex items-center justify-end gap-2">
-        <span className="text-[11px] text-neutral-400 font-medium">복사</span>
+        <span className="text-[13px] text-neutral-600 dark:text-neutral-300 font-medium">복사</span>
         <CopyStockButtons rows={[{
           name: stock?.name,
           ticker: stock?.ticker || stock?.code,

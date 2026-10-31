@@ -33,7 +33,7 @@ export function GradeHelp({ grade, upside }: { grade: string; upside: number }) 
           align="start"
           sideOffset={8}
           collisionPadding={12}
-          className="z-[100] w-80 max-w-[calc(100vw-24px)] max-h-[min(32rem,80dvh)] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-4 text-xs leading-relaxed text-neutral-600 shadow-xl dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-300"
+          className="z-[100] w-80 max-w-[calc(100vw-24px)] max-h-[min(32rem,80dvh)] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-4 text-[13px] leading-relaxed text-neutral-600 shadow-xl dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-300"
         >
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-semibold text-neutral-900 dark:text-white">등급 산정 기준</h3>
