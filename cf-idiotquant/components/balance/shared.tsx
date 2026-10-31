@@ -98,12 +98,12 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
         <Key size={12} /> MASTER MODE
       </div>
       <span className="hidden shrink-0 text-xs font-semibold text-neutral-500 dark:text-neutral-400 sm:inline">계좌 선택</span>
-      <div className="relative min-w-0 flex-1 sm:flex-none">
+      <div className="relative min-w-0 flex-1 sm:w-80 sm:max-w-[50%] sm:flex-none">
         <select
           value={balanceKey}
           aria-label="계좌 선택"
           onChange={(e) => setBalanceKey(e.target.value)}
-          className="w-full min-w-0 truncate appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-200 dark:border-border-subtle-dark rounded-lg"
+          className="w-full min-h-[44px] min-w-0 truncate appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-200 dark:border-border-subtle-dark rounded-lg"
         >
           {list.length > 0 ? (
             list.map((item: any) => (
@@ -275,12 +275,14 @@ export function OrderSectionIcon({ viewerTab }: { viewerTab: "ccnl" | "nccs" }) 
 export function BalanceHeaderActions({
   autoRefresh, onToggleAutoRefresh,
   isLoading, onRefresh,
+  hideRefresh = false,
   extra,
 }: {
   autoRefresh: boolean;
   onToggleAutoRefresh: () => void;
   isLoading: boolean;
   onRefresh: () => void;
+  hideRefresh?: boolean;
   extra?: React.ReactNode;
 }) {
   return (
@@ -298,7 +300,7 @@ export function BalanceHeaderActions({
         <Activity size={13} className={autoRefresh ? "animate-pulse text-emerald-500" : ""} />
         {autoRefresh ? "자동갱신 ON" : "자동갱신"}
       </button>
-      <button
+      {!hideRefresh && <button
         onClick={onRefresh}
         disabled={isLoading}
         aria-label="잔고 새로고침"
@@ -306,7 +308,7 @@ export function BalanceHeaderActions({
       >
         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
         <span className="hidden md:inline">새로고침</span>
-      </button>
+      </button>}
     </div>
   );
 }

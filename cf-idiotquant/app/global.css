@@ -6,7 +6,8 @@
 :root {
   --sidebar-w: 220px;
   --topbar-h: 48px;
-  --bottombar-h: 64px;
+  --bottombar-h: calc(52px + env(safe-area-inset-bottom, 0px));
+  --navigation-h: 48px;
   --brand-ink: 113 76 182;
   --brand-ink-hover: 89 54 153;
   --radius-control: 4px;
@@ -476,20 +477,6 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
   letter-spacing: -0.04em;
 }
 
-/* 모바일에서는 모든 경로의 상단바를 요약하고, 페이지 머리의 부가 설명을 접는다.
-   입력·버튼을 조작하는 동안에는 전체 머리를 유지한다. */
-@media (max-width: 767px) {
-  /* 페이지명은 상단바에 한 번만 보인다. h1은 스크린 리더의 문서 구조에 남긴다. */
-  html[data-mobile-header-compact="true"] [data-title-in-navigation] [data-header-title] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  html[data-mobile-header-compact="true"] [data-title-in-navigation] [data-header-detail] { display: none; }
-  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-main] { padding-top: 8px; padding-bottom: 8px; }
-  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-row] { flex-direction: row; align-items: center; gap: 8px; }
-  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) h1 { font-size: 16px; line-height: 1.4; }
-  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-detail] { display: none; }
-  html[data-mobile-header-compact="true"] [data-page-header]:not(:focus-within) [data-header-compact-meta] { display: flex; }
-  html[data-mobile-header-compact="true"] [data-page-header][data-header-title-only] [data-header-main] { height: 0; padding-top: 0; padding-bottom: 0; }
-}
-
 /* 모든 라우트가 공유하는 데스크탑 작업 영역. 16:9에서는 화면을 채우고,
    더 넓은 모니터에서는 높이를 기준으로 폭을 제한한다. 긴 본문은 자연스럽게 스크롤한다. */
 @media (min-width: 1024px) {
@@ -523,82 +510,43 @@ html:has(#rogue-root) body { background-color: var(--rg-bg); }
 }
 
 
-/* 작업은 항상 노출한다. 스크롤 시 패딩과 높이만 줄여 본문 공간을 확보한다. */
-html[data-navigation-compact="true"] { --page-tab-h: 32px; --page-tab-py: 2px; }
-[data-navigation-header] { overflow-anchor: none; }
-.navigation-main { min-height: 48px; transition: min-height 150ms ease; }
-.navigation-desktop-actions { min-width: 0; flex-shrink: 0; }
-[data-navigation-actions]:has([data-page-actions]:empty) { display: none; }
-[data-navigation-actions] :is(button, a) {
-  min-height: 36px;
-  line-height: 20px;
-  padding-block: 6px;
-  transition: min-height 150ms ease, padding 150ms ease, background-color 150ms ease;
-}
-[data-navigation-actions] [data-balance-header-actions] { display: contents; }
-[data-navigation-actions] [data-balance-header-actions] > div { padding-block: 6px; }
-[data-navigation-actions] [data-page-actions] { align-items: center; }
-[data-compact-tabs] > div { margin-block: 0; padding-block: 3px; }
-[data-compact-tabs] button { min-height: 40px; padding-block: 6px; }
-html[data-navigation-compact="true"] .navigation-main { min-height: 40px; }
-html[data-navigation-compact="true"] [data-navigation-actions] :is(button, a) {
-  min-height: 30px;
-  padding-block: 3px;
-}
-html[data-navigation-compact="true"] [data-navigation-actions] [data-balance-header-actions] > div { padding-block: 3px; }
-html[data-navigation-compact="true"] [data-header-market-switch] { padding-block: 1px; }
-html[data-navigation-compact="true"] [data-compact-tabs] > div { padding-block: 1px; }
-html[data-navigation-compact="true"] [data-compact-tabs] button { min-height: 32px; padding-block: 2px; }
-html[data-navigation-compact="true"] [data-account-selector] { padding-block: 4px; }
-html[data-navigation-compact="true"] [data-account-selector] select { padding-block: 3px; }
-html[data-navigation-compact="true"] [data-page-title] { gap: 6px; }
-@media (max-width: 1279px) and (min-width: 768px) {
-  .navigation-desktop-actions { order: 1; width: 100%; padding-bottom: 4px; }
-}
-@media (max-width: 767px) {
-  [data-navigation-actions] [data-page-actions] { gap: 4px; }
-  [data-navigation-actions] :is(button, a) { min-width: 32px; padding-inline: 9px; }
-  html[data-navigation-compact="true"] .navigation-service-actions :is(button, a) { height: 32px; min-height: 32px; padding-block: 3px; }
-}
+/* 공통 헤더는 스크롤과 무관하게 한 줄 48px를 유지한다. */
+.navigation-main { height: 48px; min-height: 48px; overflow-anchor: none; }
+.navigation-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; }
+.navigation-icon:hover { background: rgb(115 115 115 / 10%); }
+[data-navigation-actions] { min-width: 0; }
+[data-page-header][data-integrated]:empty { display: none; }
+[data-primary-action] { display: flex; }
+[data-primary-action] :is(button, a) { min-width: 44px; min-height: 44px; max-height: 44px; white-space: nowrap; }
+.navigation-popover[hidden] { display: none; }
+.navigation-popover :is(button, a, summary, select) { min-height: 44px; min-width: 44px; }
+[data-page-secondary-actions] [data-balance-header-actions] { display: flex; flex-wrap: wrap; gap: 8px; }
+[data-page-secondary-actions] > :is(button, a) { width: 100%; justify-content: flex-start; }
+[data-bottom-navigation] { height: var(--bottombar-h); padding-bottom: env(safe-area-inset-bottom, 0px); transition: transform 180ms ease; }
+[data-bottom-navigation][data-hidden] { transform: translateY(100%); }
+/* flex-basis 0로 텍스트 길이에 관계없이 다섯 탭을 같은 폭으로 배분한다. */
+[data-bottom-navigation] > :is(a, button) { flex: 1 1 0; min-width: 0; }
+html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
+[data-page-tabs] { height: 44px; background: inherit; }
+[data-page-tabs] > div { padding-block: 0; }
+[data-page-tabs] :is([role="group"], [data-compact-tabs] > div, .navigation-strategy-tabs) { display: flex; width: 100%; gap: 0; height: 44px; padding: 0; margin: 0; overflow-x: auto; border-radius: 0; }
+[data-page-tabs] :is(button, a) { flex: 1 0 0; min-width: 44px; min-height: 44px; height: 44px; margin: 0; padding-block: 0; white-space: nowrap; border-radius: 0; }
+[data-page-tabs] .navigation-strategy-tabs > button { min-width: 100px; }
+[data-page-tabs] .navigation-strategy-tabs > button > span { display: inline; }
 @media (prefers-reduced-motion: reduce) {
-  .navigation-main, [data-navigation-actions] :is(button, a) { transition: none; }
+  [data-bottom-navigation] { transition: none; }
 }
 
-/* 종목과 작업, 서비스 설정을 한 줄에 배치한다. */
-@media (max-width: 767px) {
-  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-    gap: 4px;
-    min-height: 48px;
-    padding: 4px 12px;
-  }
-  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) .navigation-main { display: contents; }
-  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) .navigation-mobile-actions { padding: 0; }
-  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) [data-page-actions] { flex-wrap: nowrap; gap: 2px; }
-  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) [data-page-actions] > :is(button, a) {
-    min-width: 32px;
-    min-height: 36px;
-    padding: 4px;
-    border-color: transparent;
-    background: transparent;
-  }
-  .navigation-mobile-header[data-page-active="true"] .navigation-service-actions { order: 3; gap: 2px; }
-  .navigation-mobile-header[data-page-active="true"] .navigation-mobile-actions { order: 2; }
-  .navigation-mobile-header[data-page-active="true"] .navigation-service-actions :is(button, a) { display: flex; align-items: center; justify-content: center; width: 28px; min-width: 28px; height: 32px; padding: 2px; background: transparent; color: inherit; border: 0; }
-  .navigation-mobile-header[data-page-active="true"] .navigation-login-icon { display: block; }
-  .navigation-mobile-header[data-page-active="true"] .navigation-login-label { display: none; }
-  [data-mobile-header] [data-page-title] { gap: 6px; }
-  [data-mobile-header] [data-page-title] h1 { font-size: 14px; line-height: 18px; }
-  [data-mobile-header] [data-page-title-meta] { font-size: 11px; line-height: 14px; }
-  [aria-label="분석 보기 선택"] button { white-space: nowrap; font-size: 13px; }
-  [data-mobile-header] [data-page-title] > span > :is(div, button, span) { width: 24px; height: 24px; }
-  html[data-navigation-compact="true"] .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) { min-height: 40px; padding-block: 2px; }
-  html[data-navigation-compact="true"] .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) [data-page-actions] > :is(button, a) { min-height: 32px; padding-block: 2px; }
-}
+.navigation-main [data-page-title-meta] > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.navigation-main [data-page-title-meta] > :last-child { flex-shrink: 0; }
 
-@media (max-width: 360px) {
-  .navigation-mobile-header[data-page-active="true"]:not(:has([data-balance-header-actions])) { padding-inline: 8px; gap: 2px; }
-  [data-mobile-header] [data-page-title] > span, [data-mobile-header] [data-analyze-ticker] { display: none; }
-}
+[data-compact-tabs] [role="tab"], [data-header-market-switch] button { min-height: 44px; min-width: 44px; flex: 1 1 0; }
+
+.navigation-header { border-bottom-width: 0; }
+.navigation-header .navigation-main { border-bottom: 1px solid; border-color: inherit; }
+
+[data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) button { border-width: 0 0 2px; border-bottom-color: transparent; background: transparent; box-shadow: none; }
+[data-page-tabs] [data-compact-tabs] button { min-width: 96px; }
+[data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) :is([aria-pressed="true"], [aria-current="page"]) { border-bottom-color: rgb(var(--brand-ink)); color: rgb(var(--brand-ink)); }
+
+[data-page-secondary-actions] > button > span.hidden { display: inline; }

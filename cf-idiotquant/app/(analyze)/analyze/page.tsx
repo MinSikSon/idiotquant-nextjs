@@ -380,7 +380,6 @@ function AnalyzeContent() {
   const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
   const [searchOpen, setSearchOpen] = useState(false);
-  const [headerCompact, setHeaderCompact] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -410,23 +409,6 @@ function AnalyzeContent() {
 
   const tickerFromUrl = searchParams.get('ticker');
 
-  useEffect(() => {
-    let frame: number | null = null;
-    const update = () => {
-      frame = null;
-      // 높이가 줄어 scrollY가 되돌아가도 헤더가 깜빡이지 않도록 복원 기준을 분리한다.
-      setHeaderCompact(previous => window.scrollY <= 24 ? false : previous || window.scrollY >= 128);
-    };
-    const onScroll = () => {
-      if (frame === null) frame = window.requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (frame !== null) window.cancelAnimationFrame(frame);
-    };
-  }, [tickerFromUrl]);
 
   const handleToggleLike = useCallback(() => {
     if (!tickerFromUrl) return;
@@ -565,7 +547,7 @@ function AnalyzeContent() {
       {/* ── 헤더 ── */}
       <PageHeader
         icon={isPriceLoaded ? <StockLogo key={tickerLabel} ticker={tickerLabel} name={displayName} isUs={krOrUs === 'US'} /> : undefined}
-        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader, headerCompact && styles.headerCompact)}
+        className={cn(styles.header, !tickerFromUrl && styles.emptyHeader)}
         containerClassName={ANALYZE_WIDTH}
         title={isPriceLoaded ? <StockName key={tickerFromUrl} name={displayName || tickerLabel} /> : '종목 분석'}
         mobileTitle={isPriceLoaded ? displayName || tickerLabel : '종목 분석'}
@@ -581,21 +563,48 @@ function AnalyzeContent() {
           <span data-analyze-ticker>{tickerLabel}</span>
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
-        sticky
-        mobileCompact={!!tickerFromUrl}
-        mobileTitleInNavigation={!isPriceLoaded}
-        actions={tickerFromUrl ? <>
+        mobileCompact
+        primaryAction={          <button type="button" data-page-input-trigger aria-keyshortcuts="/" title="/ 종목 검색" onClick={() => {
+              if (isPriceLoaded && searchOpen) { setSearchOpen(false); return; }
+              setSearchOpen(true);
+              requestAnimationFrame(() => {
+                const search = document.getElementById('analyze-stock-search');
+                search?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+                search?.scrollIntoView({ block: 'center' });
+              });
+            }}
+            aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
+            aria-expanded={!isPriceLoaded || searchOpen} aria-controls="analyze-stock-search"
+            className={cn(PAGE_ACTION_CLS, 'text-brand-ink border-brand/30', searchOpen && 'bg-brand/10')}>
+            <Search size={14} aria-hidden="true" /><span className="hidden sm:inline">검색</span>
+          </button>}
+        tabs={isPriceLoaded && (
+          <div className={cn(ANALYZE_WIDTH, styles.page, styles.tabsRow)}>
+            <div data-analysis-tabs role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
+              {DETAIL_TABS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  aria-pressed={activeTab === key}
+                  className={cn(styles.tab, "text-[15px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2", activeTab === key && styles.tabActive)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        actions={isPriceLoaded ? <>
             {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
-          {isPriceLoaded && <>
           {isLoggedIn ? <button type="button" onClick={handleToggleLike}
             aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
             className={cn(PAGE_ACTION_CLS, isInWatchlist && 'text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400')}>
-            <Heart size={14} fill={isInWatchlist ? 'currentColor' : 'none'} />
+            <Heart size={14} fill={isInWatchlist ? 'currentColor' : 'none'} /><span>{isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}</span>
           </button> : <Link href={loginHref} aria-label="로그인하고 관심 종목 저장" className={PAGE_ACTION_CLS}>
             <Heart size={14} />
             <span className="hidden sm:inline">로그인 후 저장</span>
           </Link>}
-          <ResultShare iconOnly disabled={!stockData || waitResponse} getSnapshot={() => {
+          <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
             const snapshot = analysisSnapshot({
               title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
               market: krOrUs, values: stockData!, ncav: ncavMultiple, roe, data, bars: technicalBars,
@@ -610,23 +619,16 @@ function AnalyzeContent() {
             }
             return snapshot;
           }} />
-          </>}
-          <button type="button" data-page-input-trigger aria-keyshortcuts="/" title="/ 종목 검색" onClick={() => setSearchOpen(open => !open)}
-            aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
-            aria-expanded={searchOpen} aria-controls="analyze-stock-search"
-            className={PAGE_ACTION_CLS}>
-            <Search size={16} aria-hidden="true" /><span className="hidden sm:inline">검색</span>
-          </button>
 
         </> : undefined}
       >
-        {/* 종목 선택 즉시 접는다. 조회 실패 중에도 돋보기로 다시 검색할 수 있다. */}
-        {(!tickerFromUrl || searchOpen) && (
+        {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
+        {(!isPriceLoaded || searchOpen) && (
           <div id="analyze-stock-search" className={cn(ANALYZE_WIDTH, styles.searchRow, "flex items-center gap-2")}>
             <div className={cn("flex-1 min-w-0", styles.searchField)}>
               <SearchAutocomplete
+                onEscape={() => { setSearchOpen(false); document.querySelector<HTMLButtonElement>('[data-page-input-trigger]')?.focus(); }}
                 autoFocus={searchOpen}
-                onEscape={() => setSearchOpen(false)}
                 placeHolder="종목명·티커 검색"
                 onSearchButton={handleSearch}
                 validCorpNameArray={staticStockData.allTickers}
@@ -634,31 +636,12 @@ function AnalyzeContent() {
                 onSearchStateChange={() => {}}
               />
             </div>
-            {tickerFromUrl && (
-              <button onClick={() => setSearchOpen(false)} aria-label="검색 닫기"
+            {isPriceLoaded && (
+              <button onClick={() => { setSearchOpen(false); document.querySelector<HTMLButtonElement>('[data-page-input-trigger]')?.focus(); }} aria-label="검색 닫기"
                 className={PAGE_ACTION_CLS}>
                 <X size={14} />
               </button>
             )}
-          </div>
-        )}
-
-        {/* 상세 분석 탭 — 헤더 안에 두면 스크롤 위치와 무관하게 항상 닿는다.
-            재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
-        {isPriceLoaded && (
-          <div className={cn(ANALYZE_WIDTH, styles.tabsRow)}>
-            <div data-compact-tabs role="group" className={styles.tabStrip} aria-label="분석 보기 선택">
-              {DETAIL_TABS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  aria-pressed={activeTab === key}
-                  className={cn(styles.tab, "text-[15px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2", activeTab === key && styles.tabActive)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 

@@ -1,14 +1,15 @@
 "use client";
 
-import { Info } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import { NavigationPopover } from "@/components/navigation-popover";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMobilePageHeader } from "@/components/mobile-page-header";
 
 /* 페이지 제목·메타·작업 버튼은 공통 내비게이션의 슬롯으로 보낸다.
-   작업 버튼은 화면 폭과 관계없이 도구줄에 표시하고,
-   검색줄·분석 탭(children)만 본문 위에 남긴다.
+   핵심 작업과 페이지 작업 메뉴는 상단 한 줄에, 탭은 바로 아래에 표시한다.
+   검색·필터(children)는 본문과 함께 스크롤한다.
    슬롯이 없는 독립 화면에서는 자체 헤더로 표시한다. */
 
 /* 본문 폭 — 화면 성격에 따라 둘 중 하나다.
@@ -45,9 +46,10 @@ export function PageHeader({
   meta,
   compactMeta,
   actions,
+  primaryAction,
+  tabs,
   children,
   width = "data",
-  sticky = false,
   mobileCompact = false,
   mobileTitleInNavigation = false,
   containerClassName,
@@ -63,12 +65,15 @@ export function PageHeader({
   /** 모바일 헤더에 남길 핵심 정보(예: 현재가). */
   compactMeta?: React.ReactNode;
   actions?: React.ReactNode;
-  /** 검색줄·탭처럼 페이지별로 필요한 도구를 헤더 아래에 둔다. */
+  /** 상단 한 줄에 표시할 핵심 작업 하나. */
+  primaryAction?: React.ReactNode;
+  /** 상단바 바로 아래에 고정할 한 줄의 내용 전환 탭. */
+  tabs?: React.ReactNode;
+  /** 검색·필터처럼 본문과 함께 스크롤할 도구. */
   children?: React.ReactNode;
   /** 본문 폭 프리셋. 페이지의 <main> 도 같은 값을 써야 한다. */
   width?: PageWidth;
-  /** 검색줄·탭을 공통 내비게이션 바로 아래에 고정한다. */
-  sticky?: boolean;
+
   /** 좁은 화면에서 제목·요약·아이콘을 짧은 헤더로 배치한다. */
   mobileCompact?: boolean;
   /** 모바일 상단바가 페이지명을 표시하면 반복되는 제목을 시각적으로 접는다. 종목명 등 대상 제목은 유지한다. */
@@ -86,10 +91,10 @@ export function PageHeader({
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
-  const titleTarget = mobile ? slots?.titleTarget : slots?.desktopTitleTarget;
-  const actionsTarget = mobile ? slots?.actionsTarget : slots?.desktopActionsTarget;
+  const titleTarget = slots?.titleTarget;
+  const actionsTarget = slots?.actionsTarget;
   const integrated = !!titleTarget && !!actionsTarget;
-  const visibleMeta = mobile ? compactMeta : meta;
+  const visibleMeta = compactMeta != null ? mobile ? compactMeta : meta ?? compactMeta : undefined;
   const setActive = slots?.setActive;
   useEffect(() => {
     setActive?.(integrated);
@@ -104,12 +109,15 @@ export function PageHeader({
         <h1 className="truncate text-sm font-semibold tracking-tight text-neutral-900 dark:text-white">{mobile ? mobileTitle ?? title : title}</h1>
         {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{visibleMeta}</div>}
       </div>
-      {(description || typeof meta === "string") && <details className="relative shrink-0">
-        <summary aria-label="페이지 설명" className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 [&::-webkit-details-marker]:hidden"><Info size={15} /></summary>
-        <div className="fixed left-4 right-4 top-14 z-50 w-auto md:absolute md:left-0 md:right-auto md:top-full md:mt-2 md:w-60 rounded-xl border border-neutral-200 bg-white p-3 text-xs leading-6 text-neutral-600 shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-300">{description}{typeof meta === "string" && <p className={description ? "mt-2" : undefined}>{meta}</p>}</div>
-      </details>}
     </div>, titleTarget!)}
-    {integrated && createPortal(<div data-page-actions role="group" aria-label="페이지 작업" className="flex flex-wrap items-center gap-1.5">{actions}</div>, actionsTarget!)}
+    {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
+      {primaryAction && <div data-primary-action>{primaryAction}</div>}
+      {(actions || description || meta) && <NavigationPopover label="페이지 작업" trigger={<button type="button" aria-label="페이지 작업" className="navigation-icon"><MoreHorizontal size={20} /></button>}>
+        <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
+        {(description || meta) && <div className="border-t border-neutral-200 p-3 text-xs leading-6 dark:border-neutral-700">{description}{meta && <div>{meta}</div>}</div>}
+      </NavigationPopover>}
+    </div>, actionsTarget!)}
+    {slots?.tabsTarget && tabs && createPortal(<div data-page-tabs>{tabs}</div>, slots.tabsTarget)}
     <header
       data-page-header
       data-mobile-integrated={mobile && integrated || undefined}
@@ -118,7 +126,6 @@ export function PageHeader({
       data-header-title-only={mobileTitleInNavigation && !actions && !compactMeta || undefined}
       className={cn(
         PAGE_HEADER_CHROME,
-        sticky && "sticky top-[var(--topbar-h,48px)] z-30",
         integrated && !children && "hidden",
         className
       )}
@@ -146,10 +153,11 @@ export function PageHeader({
             )}
             {compactMeta && <div data-header-compact-meta className="hidden mt-1 text-xs font-medium">{compactMeta}</div>}
           </div>
-          {!integrated && actions && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{actions}</div>}
+          {!integrated && (actions || primaryAction) && <div className={cn("flex items-center gap-2 shrink-0", mobileCompact && "gap-1 sm:gap-2")}>{primaryAction}{actions}</div>}
         </div>
       </div>}
       {children}
+      {!slots?.tabsTarget && tabs && <div data-page-tabs>{tabs}</div>}
     </header>
     </>
   );

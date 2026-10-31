@@ -25,6 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#141416' },
@@ -198,12 +199,12 @@ export default function RootLayout({
                   보이는 동안에는 화면보다 늘 커진다 — 내용이 다 들어가는 페이지에서도
                   주소창 높이만큼 끌려 내려갔다 튕겨 오는 헛스크롤이 생긴다. dvh 는 지금
                   보이는 높이라 그 차이가 없다.
-                  padding 은 box-sizing:border-box 라 이 높이에 포함된다(위 48 + 아래 64).
+                  padding 은 box-sizing:border-box 라 이 높이에 포함된다(상단바와 고정 탭 + 하단 52px 및 기기 안전 영역).
                   가로만 자를 때 clip 을 써야 sticky 헤더의 기준이 이 main 으로 바뀌지 않는다. */}
               <main className={cn(
-                "pt-[var(--topbar-h,48px)] md:pt-0",
-                "pb-[64px] md:pb-0",
-                "min-h-[100dvh] md:min-h-[calc(100dvh-48px)] overflow-x-clip"
+                "pt-[var(--navigation-h,48px)] md:pt-0",
+                "pb-[var(--bottombar-h)] md:pb-0",
+                "min-h-[100dvh] md:min-h-[calc(100dvh-var(--navigation-h,48px))] overflow-x-clip"
               )}>
                 <PageInputShortcuts />
                 {children}

@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
+
+// 금융 화면의 안전 영역 확장이 게임의 기존 뷰포트에 영향을 주지 않게 한다.
+export const viewport: Viewport = { viewportFit: "auto" };
 
 /**
  * 한글 픽셀 폰트 — 게임 라우트에만.

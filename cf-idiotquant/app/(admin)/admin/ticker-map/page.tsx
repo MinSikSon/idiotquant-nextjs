@@ -220,12 +220,13 @@ export default function TickerMapPage() {
         title="종목명 매핑 관리"
         mobileTitleInNavigation
         meta="티커 코드 ↔ 종목명 오버라이드 조회 및 관리"
-        actions={isAdmin && (
+        primaryAction={isAdmin && (
           <button
             onClick={() => { setShowAddForm(v => !v); setAddError(null); }}
+            aria-label="오버라이드 추가"
             className="flex items-center gap-1.5 px-3.5 py-2 bg-brand text-white rounded-lg text-xs font-black hover:bg-brand-hover transition-colors"
           >
-            <Plus size={14} /> 오버라이드 추가
+            <Plus size={14} /><span className="hidden sm:inline">추가</span>
           </button>
         )}
       />
@@ -280,7 +281,7 @@ export default function TickerMapPage() {
                 key={opt.value}
                 onClick={() => { setCountry(opt.value); setPage(1); }}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-black transition-colors",
+                  "min-h-[44px] min-w-[44px] flex-1 px-3 py-1.5 text-xs font-black transition-colors",
                   country === opt.value
                     ? "bg-brand text-white"
                     : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
@@ -296,7 +297,7 @@ export default function TickerMapPage() {
                 key={opt.value}
                 onClick={() => { setSource(opt.value as any); setPage(1); }}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg font-bold transition-colors",
+                  "min-h-[44px] min-w-[44px] flex-1 px-2.5 py-1 rounded-lg font-bold transition-colors",
                   source === opt.value
                     ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
                     : "bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 hover:bg-neutral-200 dark:hover:bg-surface-dark-elevated"
