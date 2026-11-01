@@ -10,6 +10,19 @@ export function comparisonPrice(stock: Pick<ComparisonStock, 'currentShares'>, p
   return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
+export function comparisonPrices(stock: Pick<ComparisonStock, 'currentShares' | 'prices'>, dates: string[]) {
+  const available = dates.filter(date => {
+    const item = stock.prices[date];
+    return !item?.loading && Number.isFinite(item?.price) && item.price! > 0;
+  });
+  // 한 종목의 변화율에 환산가와 종가가 섞이지 않도록 기준을 통일한다.
+  const closing = available.some(date => comparisonPrice(stock, stock.prices[date]) == null);
+  const prices: Record<string, number | undefined> = Object.fromEntries(dates.map(date => [
+    date, available.includes(date) ? closing ? stock.prices[date].price : comparisonPrice(stock, stock.prices[date]) : undefined,
+  ]));
+  return { closing, prices };
+}
+
 export function comparisonUnavailableReason(stock: Pick<ComparisonStock, 'market' | 'currentShares'>, price?: ComparisonPrice): string {
   if (!price?.marketCap || !Number.isFinite(price.marketCap) || price.marketCap <= 0) {
     return stock.market === 'US'
