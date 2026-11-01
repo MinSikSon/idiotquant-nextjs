@@ -1,7 +1,45 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { comparisonPrice, historicalMarketCap } from '../lib/features/compare/pricing.ts';
+import { comparisonPrice, comparisonPrices, historicalMarketCap } from '../lib/features/compare/pricing.ts';
 import { calculatePriceReturns } from '../app/(compare)/compare/priceReturns.ts';
+
+test('미국 종목에 환산가가 없어도 종가로 변화율을 비교한다', () => {
+  const dates = ['2024-10-29', '2026-10-29'];
+  const stock = { currentShares: undefined, prices: {
+    [dates[0]]: { price: 100, priceDate: '20241029' },
+    [dates[1]]: { price: 300, priceDate: '20261029' },
+  } };
+  const comparison = comparisonPrices(stock, dates);
+  assert.equal(comparison.closing, true);
+  const returns = calculatePriceReturns(dates.map(date => ({
+    id: date, ticker: 'NET', market: 'US', price: comparison.prices[date], priceDate: stock.prices[date].priceDate,
+  })));
+  assert.equal(returns.get(dates[1])?.percent, 200);
+});
+
+test('일부 환산가가 없어도 환산가와 종가를 섞지 않는다', () => {
+  const stock = { currentShares: 10, prices: {
+    before: { price: 100, marketCap: 500 }, after: { price: 150 },
+  } };
+  assert.deepEqual(comparisonPrices(stock, ['before', 'after']), {
+    closing: true, prices: { before: 100, after: 150 },
+  });
+  assert.deepEqual(comparisonPrices(stock, ['before']), {
+    closing: false, prices: { before: 50 },
+  });
+});
+
+test('가격 없음·조회 중·잘못된 종가는 비교와 기준 선택에서 제외한다', () => {
+  const stock = { currentShares: 10, prices: {
+    valid: { price: 100, marketCap: 500 }, loading: { price: 200, loading: true },
+    missing: {}, zero: { price: 0 }, negative: { price: -1 }, infinite: { price: Infinity },
+  } };
+  const dates = [...Object.keys(stock.prices), 'absent'];
+  const comparison = comparisonPrices(stock, dates);
+  assert.equal(comparison.closing, false);
+  assert.equal(comparison.prices.valid, 50);
+  for (const date of dates.filter(date => date !== 'valid')) assert.equal(comparison.prices[date], undefined);
+});
 
 for (const [name, shares, oldPrice, newPrice] of [
   ['분할', 1000, 1000, 100], ['병합', 10, 10, 100],

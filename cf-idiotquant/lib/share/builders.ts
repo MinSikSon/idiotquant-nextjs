@@ -1,4 +1,4 @@
-import { comparisonPrice, comparisonUnavailableReason } from '@/lib/features/compare/pricing';
+import { comparisonPrices } from '@/lib/features/compare/pricing';
 import type { ComparisonStock } from '@/lib/features/compare/compareSlice';
 import { calculatePriceReturns, summarizeReturns } from '@/app/(compare)/compare/priceReturns';
 import { scanRoePercent } from '@/lib/utils/scanFinancials';
@@ -40,22 +40,23 @@ export function screenerSnapshot(items: Record<string, any>[], sourcePath: strin
 export function compareSnapshot(stocks: ComparisonStock[], dates: string[]): ResultSnapshot {
   const snapshot = base('compare', '종목 비교 결과', '/compare');
   snapshot.summary = [{ label: '비교 종목', value: `${stocks.length}개` }, { label: '비교 날짜', value: `${dates.length}개` }];
+  const pricesByStock = new Map(stocks.map(stock => [stock.id, comparisonPrices(stock, dates)]));
   const returns = calculatePriceReturns(stocks.flatMap(stock => dates.map(date => ({
     id: `${stock.id}:${date}`, ticker: stock.ticker, market: stock.market,
-    price: comparisonPrice(stock, stock.prices[date]), priceDate: stock.prices[date]?.priceDate,
+    price: pricesByStock.get(stock.id)?.prices[date], priceDate: stock.prices[date]?.priceDate,
   }))));
   snapshot.tables = [{
-    title: '날짜별 시총 환산가와 현재 지표',
-    columns: ['종목', ...dates.map(date => `${date} 환산가`), 'PER', 'PBR', 'EPS', 'BPS', 'ROE', '현재 상장주식 수'],
+    title: '날짜별 비교 가격과 현재 지표',
+    columns: ['종목', ...dates.map(date => `${date} 가격`), 'PER', 'PBR', 'EPS', 'BPS', 'ROE', '현재 상장주식 수'],
     rows: stocks.map(stock => [
       `${stock.name} (${stock.ticker} · ${stock.market})`,
       ...dates.map(date => {
         const price = stock.prices[date];
+        if (price?.loading) return '조회 중';
         if (price?.price == null) return price?.error || '가격 없음';
-        const adjusted = comparisonPrice(stock, price);
-        if (adjusted == null) return `환산 자료 없음 · ${comparisonUnavailableReason(stock, price)} 변화율 집계에서 제외됩니다. · ${price.priceDate ?? date} 참고 종가 ${shareNumber(price.price, '', stock.currency)}`;
+        const comparison = pricesByStock.get(stock.id)!;
         const change = returns.get(`${stock.id}:${date}`);
-        return `${shareNumber(adjusted, '', stock.currency)} · ${price.priceDate ?? date} 시총 환산가${change ? ` · ${change.baseline ? '변화율 기준일' : shareNumber(change.percent, '%')}` : ''}`;
+        return `${shareNumber(comparison.prices[date], '', stock.currency)} · ${price.priceDate ?? date} ${comparison.closing ? '종가 기준' : '시총 환산가'}${change ? ` · ${change.baseline ? '변화율 기준일' : shareNumber(change.percent, '%')}` : ''}`;
       }),
       shareNumber(stock.per, '배'), shareNumber(stock.pbr, '배'), shareNumber(stock.eps, '', stock.currency),
       shareNumber(stock.bps, '', stock.currency), shareNumber(stock.roe, '%'), shareNumber(stock.currentShares, '주'),
@@ -71,6 +72,6 @@ export function compareSnapshot(stocks: ComparisonStock[], dates: string[]): Res
     if (summary) stats.rows.push([date, shareNumber(summary.average, '%'), shareNumber(summary.median, '%'), `${summary.positiveCount} / ${summary.count}`]);
   }
   if (stats.rows.length) snapshot.tables.push(stats);
-  snapshot.notes.push('환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 시총은 저장 시점 기준으로 종가와 차이가 있을 수 있으며 분할·병합 외 증자·감자도 반영합니다. 환산 불가한 제공 종가는 변화율 집계에서 제외합니다. 재무지표는 조회 당시 기준이며 배당·비용은 포함하지 않습니다.');
+  snapshot.notes.push('환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 시총은 저장 시점 기준으로 종가와 차이가 있을 수 있으며 분할·병합 외 증자·감자도 반영합니다. 환산가가 없는 날짜가 있으면 해당 종목의 모든 날짜를 제공 종가 기준으로 비교하고 변화율 집계에 포함합니다. 종가 기준 비교에는 주식 수 변화가 반영되지 않을 수 있습니다. 재무지표는 조회 당시 기준이며 배당·비용은 포함하지 않습니다.');
   return snapshot;
 }
