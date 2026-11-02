@@ -13,6 +13,11 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const path = pathArray.join('/');
 
         const session = await auth();
+        const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
+        if (isTradingOperations &&
+            (session?.user as { role?: string } | undefined)?.role !== 'admin') {
+            return NextResponse.json({ success: false, error: "관리자 권한이 필요합니다." }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+        }
         const urlObj = new URL(req.url);
 
         // 💡 [핵심 교정 1]: Next.js가 [...path] 구조 때문에 searchParams에 강제로 주입한 path 쿼리 제거
@@ -38,6 +43,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const fetchOptions: RequestInit = {
             method,
             headers: backendHeaders,
+            ...(isTradingOperations ? { cache: 'no-store' as const } : {}),
         };
 
         /* 본문은 보낸 그대로 넘긴다.

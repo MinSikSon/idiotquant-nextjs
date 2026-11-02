@@ -49,6 +49,7 @@ describe('프록시 JWT → Worker → 로컬 D1 통합', { skip: !workerRoot ||
             '0004_stock_data_universal.sql', '0006_stock_likes.sql', '0013_stock_info.sql', '0014_risk_flags.sql',
             '0024_ledger_entries.sql', '0025_ledger_categories.sql', '0026_ledger_sharing.sql',
             '0027_ledger_category_refs.sql', '0028_ledger_entry_authors.sql', '0029_ledger_entry_position.sql',
+            '0040_trading_operations.sql',
         ];
         for (const name of migrations) {
             const sql = readFileSync(join(workerRoot!, 'migrations', name), 'utf8').replace(/--.*$/gm, '');
@@ -117,6 +118,32 @@ describe('프록시 JWT → Worker → 로컬 D1 통합', { skip: !workerRoot ||
     test('JWT의 관리자 주장보다 DB 권한을 우선한다', async () => {
         assert.equal((await request('/admin/usage', { ...user, role: 'admin' })).status, 403);
         assert.equal((await request('/admin/usage', { ...admin, role: 'user' })).status, 200);
+    });
+
+    test('자동매매 운영 API는 DB 관리자만 허용하고 실제 D1 실행 단계를 반환한다', async () => {
+        assert.equal((await request('/admin/trading/status', null)).status, 403);
+        assert.equal((await request('/admin/trading/status', { ...user, role: 'admin' })).status, 403);
+        assert.equal((await runtime.dispatchFetch('http://worker.test/admin/trading/status', { headers: { 'X-User-Id': admin.id, 'X-User-Role': 'admin' } })).status, 403);
+        const { observeOperation } = await import(join(workerRoot!, 'src/lib/operationObserver.js'));
+        let runId = '';
+        await observeOperation({ D1_IDIOTQUANT_MAIN: db }, { job: 'trade', country: 'KR', userId: 'fixture-account' }, async (observer: { run: { id: string }; start: (stage: string, context?: object, parent?: string) => Promise<void>; result: (code: string) => Promise<void> }) => {
+            runId = observer.run.id;
+            await observer.start('process');
+            await observer.start('order', { symbol: '005930', quantity: 1, appkey: 'never-persist-this' }, 'process');
+            await observer.result('order_error');
+            await observer.start('save');
+        });
+        const response = await request(`/admin/trading/runs/${runId}`, admin);
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        const run = (await response.json()).data;
+        assert.equal(run.status, 'partial');
+        assert.equal(run.steps.find((step: { stage: string }) => step.stage === 'order').status, 'failed');
+        assert.ok(!JSON.stringify(run).includes('never-persist-this'));
+        const list = await request('/admin/trading/runs?job=trade&country=KR', admin);
+        assert.equal((await list.json()).data.items[0].id, runId);
+        const overview = await request('/admin/trading/status?country=US', admin);
+        assert.equal((await overview.json()).data.stages.trade[0].id, 'auth');
     });
 
     test('다른 사용자의 가계부는 차단하고 공유 멤버에게만 허용한다', async () => {
