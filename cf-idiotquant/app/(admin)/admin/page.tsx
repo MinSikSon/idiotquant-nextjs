@@ -139,6 +139,10 @@ export default function AdminPage() {
         </Link>
       </div>
 
+      <Link href="/admin/trading" className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white p-4 text-sm font-bold text-neutral-800 hover:border-brand dark:border-border-subtle-dark dark:bg-surface-dark-card dark:text-neutral-100">
+        자동매매 운영 현황 <ArrowRight size={14} />
+      </Link>
+
       {/* 재가입 쿨다운 설정 */}
       <div className="bg-white dark:bg-surface-dark border border-neutral-200/70 dark:border-surface-dark-border rounded-xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-1">
