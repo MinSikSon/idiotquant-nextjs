@@ -111,7 +111,7 @@ function SideItem({
         "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-all duration-150",
         isActive
           ? "bg-surface-muted/80 dark:bg-surface-dark-muted text-neutral-900 dark:text-neutral-50 font-semibold"
-          : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
+          : "font-medium text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
       )}
     >
       {emoji && isActive ? (
@@ -129,7 +129,7 @@ function SideItem({
           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
           isActive
             ? "bg-brand-light dark:bg-brand-muted/50 text-brand-ink dark:text-brand-ink"
-            : "bg-neutral-200/60 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400"
+            : "bg-neutral-200/60 dark:bg-surface-dark-muted text-neutral-600 dark:text-neutral-400"
         )}>
           {badge}
         </span>
@@ -154,7 +154,7 @@ function TabItem({
         "rounded-xl",
         isActive
           ? "text-brand-ink dark:text-brand-ink"
-          : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+          : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
       <Icon size={20} strokeWidth={isActive ? 2 : 1.6} />
@@ -188,7 +188,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-neutral-600 dark:text-neutral-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
             title="로그아웃"
           >
             <LogOut size={14} />
@@ -396,12 +396,12 @@ export function NavbarWithSimpleLinks() {
               "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
               moreActive
                 ? "text-neutral-900 dark:text-neutral-50"
-                : "text-neutral-500 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
+                : "text-neutral-600 dark:text-neutral-400 hover:bg-surface-muted-hover dark:hover:bg-surface-dark-hover hover:text-neutral-900 dark:hover:text-neutral-100"
             )}
           >
             <MoreHorizontal size={16} strokeWidth={1.8} className="shrink-0" />
             <span className="flex-1 truncate text-left">더 보기</span>
-            <ChevronDown size={14} className={cn("shrink-0 text-neutral-400 transition-transform", showMore && "rotate-180")} />
+            <ChevronDown size={14} className={cn("shrink-0 text-neutral-600 dark:text-neutral-400 transition-transform", showMore && "rotate-180")} />
           </button>
           {showMore && moreNav.map(item => (
             <SideItem
@@ -417,7 +417,7 @@ export function NavbarWithSimpleLinks() {
             <>
               <div className="pt-4 pb-1.5 px-1">
                 <div className="h-px bg-neutral-100 dark:bg-surface-dark-border mb-3" />
-                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                   Portfolio
                 </span>
               </div>
@@ -432,7 +432,7 @@ export function NavbarWithSimpleLinks() {
               ))}
               <div className="pt-4 pb-1.5 px-1">
                 <div className="h-px bg-neutral-100 dark:bg-surface-dark-border mb-3" />
-                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-widest">
                   Admin
                 </span>
               </div>
@@ -504,7 +504,7 @@ export function NavbarWithSimpleLinks() {
         <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />
         <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <NavigationPopover label="더보기" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
-          <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-500", moreActive && "text-brand-ink")}>
+          <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-600 dark:text-neutral-400", moreActive && "text-brand-ink dark:text-brand-ink")}>
             <MoreHorizontal size={20} /><span className="text-[10px] font-semibold leading-none">더보기</span>
           </button>
         }>{!inGame && serviceMenu(true)}</NavigationPopover>

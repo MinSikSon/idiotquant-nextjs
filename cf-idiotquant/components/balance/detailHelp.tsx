@@ -14,7 +14,7 @@ export function DetailHelp({ label, children }: { label: string; children: React
     useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
     return <Popover.Root open={open} onOpenChange={value => { setOpen(value); if (!value) pinned.current = false; }}>
         <Popover.Trigger asChild>
-            <button type="button" aria-label={`${label} 설명`} onPointerEnter={event => { if (event.pointerType === "mouse") { cancelClose(); setOpen(true); } }} onPointerLeave={closeLater} onClick={event => { event.preventDefault(); cancelClose(); pinned.current = !pinned.current; setOpen(pinned.current); }} className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 dark:hover:bg-surface-dark-muted">
+            <button type="button" aria-label={`${label} 설명`} onPointerEnter={event => { if (event.pointerType === "mouse") { cancelClose(); setOpen(true); } }} onPointerLeave={closeLater} onClick={event => { event.preventDefault(); cancelClose(); pinned.current = !pinned.current; setOpen(pinned.current); }} className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400 dark:hover:bg-surface-dark-muted">
                 <Info size={14} aria-hidden="true" />
             </button>
         </Popover.Trigger>
