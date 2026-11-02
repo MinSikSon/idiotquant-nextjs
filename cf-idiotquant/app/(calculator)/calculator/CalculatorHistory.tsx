@@ -166,7 +166,7 @@ export default function CalculatorHistory({ detail, snapshot, onLoad }: Props) {
                                         </span>
                                     </div>
                                     <span className={cn(
-                                        "block text-[10px] font-bold font-[family-name:var(--font-mono)] tabular-nums mt-0.5",
+                                        "block text-[10px] font-bold font-mono tabular-nums mt-0.5",
                                         run.final_value < 0
                                             ? "text-[#b91c1c] dark:text-[#ef6a6a]"
                                             : "text-emerald-700 dark:text-[#2fa85a]"

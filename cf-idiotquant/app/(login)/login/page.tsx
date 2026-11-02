@@ -54,8 +54,8 @@ export default function LoginPage() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-snug">{b.label}</p>
-                                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 leading-snug">{b.desc}</p>
+                                    <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200 leading-normal">{b.label}</p>
+                                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 leading-normal">{b.desc}</p>
                                 </div>
                             </div>
                         ))}

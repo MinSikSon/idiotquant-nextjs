@@ -52,7 +52,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
           </div>
 
           <section aria-labelledby="preview-title" className={styles.preview}>
-            <div className={styles.previewTop}><span className={styles.eyebrow}>DISCOVERY</span><span className={styles.date}>{dateLabel}</span></div>
+            <div className={styles.previewTop}><span className={styles.eyebrow}>Discovery</span><span className={styles.date}>{dateLabel}</span></div>
             <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
             <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기 · 종목을 누르면 분석으로 이동합니다.</p>
             {hasError && <div role="alert" className="mx-4 my-3 rounded-lg border border-amber-300/50 p-3 text-sm">
@@ -78,7 +78,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
         </section>
 
         <section id="features" className={styles.features} aria-labelledby="tools-title">
-          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>YOUR WORKFLOW</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 비교하세요.</p></div>
+          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Your workflow</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 비교하세요.</p></div>
           <div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, number, title, description, action }) => (
             <Link href={href} key={href} className={styles.tool} aria-label={action}>
               <div className={styles.toolTop}><Icon size={21} strokeWidth={1.6} aria-hidden="true" /><span>{number}</span></div>
@@ -88,7 +88,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
         </section>
 
         <section id="faq" className={styles.faq} aria-labelledby="faq-title">
-          <div><p className={styles.eyebrow}>A LITTLE GUIDANCE</p><h2 id="faq-title">처음이라면,<br />여기서 시작하세요.</h2><Link href="/quant" className={styles.guideLink}>퀀트 투자와 전략 안내 <ArrowUpRight size={14} aria-hidden="true" /></Link></div>
+          <div><p className={styles.eyebrow}>A little guidance</p><h2 id="faq-title">처음이라면,<br />여기서 시작하세요.</h2><Link href="/quant" className={styles.guideLink}>퀀트 투자와 전략 안내 <ArrowUpRight size={14} aria-hidden="true" /></Link></div>
           <div className={styles.questions}>{HOME_FAQ.map(({ q, a }) => (
             <details key={q}><summary>{q}<span aria-hidden="true">＋</span></summary><p>{a}</p></details>
           ))}</div>

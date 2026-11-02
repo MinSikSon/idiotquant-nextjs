@@ -31,7 +31,7 @@ function MetricCard({ m }: { m: MetricItem }) {
         {m.label}
       </p>
       <p className={cn(
-        "text-[22px] font-semibold tabular-nums leading-snug break-words",
+        "text-[22px] font-semibold tabular-nums leading-normal break-words",
         m.highlight
           ? "text-neutral-900 dark:text-neutral-100"
           : "text-neutral-900 dark:text-white"
@@ -206,7 +206,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       {isDelistedSuspect && (
         <div className="px-0 sm:px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-x-6">
           <AlertTriangle size={14} className="text-red-500 dark:text-red-400 shrink-0" />
-          <p className="text-[13px] font-bold text-red-600 dark:text-red-400 leading-snug">
+          <p className="text-[13px] font-bold text-red-600 dark:text-red-400 leading-normal">
             상장폐지 의심 종목 — 상장주식수 정보가 제공되지 않습니다. 투자 전 반드시 확인하세요.
           </p>
         </div>

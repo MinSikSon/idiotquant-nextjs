@@ -42,10 +42,10 @@ const LABEL_CLS = "text-[13px] font-bold text-neutral-700 dark:text-neutral-300"
 const FOLD = "hidden group-data-[help=on]:block sm:block";
 
 const HINT_CLS = cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-neutral-400");
-const NUM_CLS = "font-[family-name:var(--font-mono)] tabular-nums";
+const NUM_CLS = "font-mono tabular-nums";
 
 const INPUT_CLS = cn(
-    "font-[family-name:var(--font-mono)] tabular-nums text-base sm:text-[15px] font-bold text-right",
+    "font-mono tabular-nums text-base sm:text-[15px] font-bold text-right",
     "text-neutral-900 dark:text-neutral-50 bg-surface-canvas dark:bg-surface-dark-canvas",
     "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-2 sm:px-3 py-2 min-h-11 sm:min-h-0 min-w-0 w-full sm:w-[150px]",
     "focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand",
@@ -62,7 +62,7 @@ const LIFT = "transition-colors duration-150";
 function StepLabel({ tag }: { tag: string }) {
     return (
         <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400 shrink-0">
+            <span className="text-[10px] font-medium tracking-[0.12em] text-neutral-500 dark:text-neutral-400 shrink-0">
                 {tag}
             </span>
             <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
@@ -372,7 +372,7 @@ function Calculator() {
                     title="복리 수익률 계산기"
                     mobileTitle="복리 계산기"
                     containerClassName="p-0"
-                    className="border-0 bg-transparent dark:bg-transparent [&>[data-header-main]]:p-0 [&_h1]:text-[18px] [&_h1]:min-[380px]:text-xl [&_h1]:sm:text-2xl [&_h1]:font-medium [&_h1]:leading-[1.28]"
+                    className="border-0 bg-transparent dark:bg-transparent [&>[data-header-main]]:p-0 [&_h1]:text-[18px] [&_h1]:min-[380px]:text-xl [&_h1]:sm:text-2xl [&_h1]:font-semibold [&_h1]:leading-[1.28]"
                     actions={<>
                         {/* 설명 스위치는 좁은 화면에만 둔다 — 넓은 화면에서는 접는 것이 없으니
                             눌러도 아무 일이 일어나지 않는 버튼이 된다. */}
@@ -400,7 +400,7 @@ function Calculator() {
                 <div className="lg:grid lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start lg:gap-8">
                 <section className="min-w-0" aria-label="계산 조건">
                 {/* ── 입력 ──────────────────────────────────────── */}
-                <SectionHead tag="INPUT" title="조건" action={
+                <SectionHead tag="Input" title="조건" action={
                     <Segmented
                         label="표시 항목"
                         value={detail}
@@ -617,7 +617,7 @@ function Calculator() {
 
                 <section className="min-w-0" aria-label="계산 결과">
                 {/* ── 결과 ──────────────────────────────────────── */}
-                <SectionHead tag="RESULT" title="결과" note={basisOf(effective)} />
+                <SectionHead tag="Result" title="결과" note={basisOf(effective)} />
 
                 <div className={cn(CARD, "flex items-end justify-between gap-2 sm:gap-5 flex-wrap px-3 sm:px-5 py-3 sm:py-6")}>
                     <div>
@@ -741,13 +741,13 @@ function Calculator() {
                 )}
 
                 {/* ── 그래프 ────────────────────────────────────── */}
-                <SectionHead tag="GROWTH" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
+                <SectionHead tag="Growth" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
                 <div className="mt-3 sm:mt-4">
                     <GrowthChart rows={result.rows} />
                 </div>
 
                 {/* ── 표 ────────────────────────────────────────── */}
-                <SectionHead tag="BREAKDOWN" title="연도별 명세" note="단위: 만원" />
+                <SectionHead tag="Breakdown" title="연도별 명세" note="단위: 만원" />
                 <div className={cn(CARD, "overflow-x-auto mt-3 p-1.5")}>
                     <table className="w-full border-collapse text-[13px]">
                         <thead>
@@ -823,7 +823,7 @@ function Calculator() {
                 )}
 
                 {/* ── 저장한 계산 ───────────────────────────────── */}
-                <SectionHead tag="SAVED" title="저장한 계산" note="로그인한 사람만" />
+                <SectionHead tag="Saved" title="저장한 계산" note="로그인한 사람만" />
                 <div className="mt-3 sm:mt-4">
                     <CalculatorHistory
                         detail={detail}

@@ -68,6 +68,22 @@ const config = {
           '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
         },
       },
+      fontSize: {
+        xs: ["0.75rem", { lineHeight: "var(--ui-line-height-xs, 1rem)" }],
+        sm: ["0.875rem", { lineHeight: "var(--ui-line-height-sm, 1.25rem)" }],
+      },
+      // 금융·공통 화면은 400/600, 게임·관리자는 각 유틸리티의 기존 굵기를 쓴다.
+      fontWeight: {
+        thin: "var(--ui-font-regular, 100)",
+        extralight: "var(--ui-font-regular, 200)",
+        light: "var(--ui-font-regular, 300)",
+        normal: "400",
+        medium: "var(--ui-font-regular, 500)",
+        semibold: "600",
+        bold: "var(--ui-font-emphasis, 700)",
+        extrabold: "var(--ui-font-emphasis, 800)",
+        black: "var(--ui-font-emphasis, 900)",
+      },
       fontFamily: {
         sans: ["Pretendard Variable", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "Menlo", "monospace"],

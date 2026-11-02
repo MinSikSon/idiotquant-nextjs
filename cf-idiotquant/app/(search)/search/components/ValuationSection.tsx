@@ -353,7 +353,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
                   </span>
-                  <p className="col-span-4 sm:hidden text-[15px] leading-snug text-neutral-600 dark:text-neutral-300 break-keep">
+                  <p className="col-span-4 sm:hidden text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep">
                     {r.config.description.short}
                   </p>
                   {isExplained && (

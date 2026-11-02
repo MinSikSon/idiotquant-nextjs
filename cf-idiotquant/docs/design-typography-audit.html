@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IdiotQuant — 타이포그래피 적용 보고서</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f0eb;color:#292827;font:400 16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px}h1,h2,h3,strong{font-weight:600}h1{font-size:clamp(28px,4vw,42px);line-height:1.3;margin:12px 0}h2{font-size:23px;margin:36px 0 12px}p{max-width:76ch}a{color:#593699;text-underline-offset:3px}.meta{font-size:14px;color:#66615e}.card{background:white;border:1px solid #dedbd5;border-radius:8px;padding:24px;margin:20px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sample{font-size:24px;line-height:1.5}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dedbd5;padding:12px 10px}th{font-weight:600}code{font-size:13px}li{margin:8px 0}.numbers{font-variant-numeric:tabular-nums;text-align:right}.tag{font-size:13px;color:#593699}small{font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:28px 18px}.card{padding:18px}}@media(prefers-color-scheme:dark){body{background:#1b1819;color:#eeece7}.card{background:#262123;border-color:#43383c}th,td{border-color:#43383c}.meta{color:#bcb0ad}a,.tag{color:#c9b0ef}}
+</style><main>
+<div class="tag">디자인 개선 · 4 / 8 · 2026-11-03</div>
+<h1>한 서체, 두 굵기로 읽는 금융 화면</h1>
+<p>홈·공통·금융 화면의 타이포그래피를 Pretendard와 일반 400·강조 600으로 통일했다. 작은 설명문의 줄 높이는 최소 1.5로 맞추고, 계산기의 별도 고정폭 서체를 공통 산세리프로 바꿨다.</p>
+<p class="meta">근거: <a href="https://news.hada.io/topic?id=31746">큰 효과를 만드는 작은 UI 디자인 팁들</a>의 산세리프 단일화·두 굵기·문장형 대소문자·본문 줄 높이 원칙. 원문이 허용한 semi-bold 대안을 서비스 강조 굵기 600으로 채택했다.</p>
+<div class="grid"><section class="card"><h2 style="margin-top:0">이전</h2><div class="sample">400 · 460 · 500 · 540<br>550 · 600 · 650 · 700 · 900</div><p>화면별 굵기가 달랐고, 계산기 숫자는 JetBrains Mono를 직접 지정했다. 12px 기본 본문 줄 높이는 16px, 14px은 20px이었다.</p></section><section class="card"><h2 style="margin-top:0">적용</h2><div class="sample">일반 설명 400<br><strong>제목·강조 600</strong></div><p>숫자도 Pretendard로 읽되 <code>tabular-nums</code>와 우측 정렬을 유지한다. 12px은 18px, 14px은 21px 줄 높이를 사용한다.</p></section></div>
+<h2>역할별 규칙</h2><div class="table-wrap"><table><thead><tr><th>역할</th><th>규칙</th><th>적용 방식</th></tr></thead><tbody>
+<tr><td>일반 텍스트</td><td>400</td><td>normal·medium 및 가는 굵기를 일반 토큰으로 연결</td></tr>
+<tr><td>제목·강조·주요 동작</td><td>600</td><td>semibold·bold·extrabold·black을 강조 토큰으로 연결. CSS 모듈·차트의 직접 굵기도 정리</td></tr>
+<tr><td>본문 크기</td><td>기존 역할별 크기 유지</td><td>설명은 12–16px, 홈 소개 14/16px, 분석 설명 14/15px. 제목은 화면 위계에 따라 별도 크기</td></tr>
+<tr><td>본문 줄 높이</td><td>기본 1.6 · 작은 기본 크기 1.5</td><td>기존 1.8·1.85·2는 유지. 로그인 설명·가치평가 주의문·매매 흐름 설명의 tight/snug도 1.5로 보정</td></tr>
+<tr><td>숫자·표</td><td>Pretendard + 동일 숫자 폭</td><td>금액 단위·정렬·계산 로직은 유지</td></tr>
+<tr><td>장식 영문</td><td>문장형 대소문자</td><td>홈 Discovery / Your workflow, 계산기 Input / Result 등. PER·PBR·NCAV·티커 같은 약어는 유지</td></tr>
+</tbody></table></div>
+<h2>범위와 예외</h2><p>게임의 픽셀·고정폭 서체와 기존 굵기는 그대로 둔다. 관리자는 레이아웃 표식을 통해 새 굵기·줄 높이 토큰에서 제외한다. 모바일 상단바와 포털도 같은 금융 토큰을 상속한다. 큰 제목, 한 줄 종목명, 요약 수치, 조밀한 차트 축은 본문과 다른 줄 높이를 허용한다. 모든 작은 보조 레이블을 일괄 확대하지는 않았다.</p>
+<h2>브라우저에서 확인한 결과</h2><ul>
+<li>홈·분석 안내·발굴 결과·계산기·비교 화면의 표시 텍스트 굵기는 400·600으로 확인했다.</li>
+<li>모바일 390px 계산기·홈·분석·발굴과 데스크톱 1440px 비교 화면에서 문서 가로 넘침이 없었다. 계산기 숫자는 Pretendard와 tabular-nums를 사용한다.</li>
+<li>홈 설명 1.6–1.85, 분석 설명 1.6–2, 비교 설명 1.5–2의 줄 높이를 확인했다. 더 넓은 기존 줄 간격을 덮어쓰지 않는다.</li>
+<li>라이트·다크 테마에서 대표 화면을 확인했다. 임시 표본 화면에서 잔고 제목 600, 분석 제목 600, 지표 설명 400을 확인했다.</li>
+<li>임시 표본 화면에서 게임·관리자 표식이 있으면 기존 300·500·700·900 굵기가 유지되고, 금융 화면으로 이동하면 400·600으로 전환되는 것을 확인했다. 게임 고정폭 서체와 관리자 기존 산세리프 표시도 확인했다.</li>
+</ul><p class="meta">인증이 필요한 잔고·관리자 전체 흐름이나 실제 주문·가계부 저장은 실행하지 않았다. 해당 화면은 공통 CSS 표본과 소스 검토로 확인했다. 임시 검증 경로는 최종 소스에서 제거했다.</p>
+<h2>자동 검증</h2><p>최종 소스의 <code>npm run check</code>에서 타입 검사와 테스트 586개가 통과했고, lint 오류는 0개였다(기존 경고 129개). <code>npm run build</code>도 통과했다. 임시 경로 제거 후 생성 캐시를 정리했고, 외부 Google Fonts 처리 오류는 소스 변경 없이 빌드를 재실행해 해소됐다. CI 상태는 PR에서 확인할 수 있다. 이 보고서는 UI 타이포그래피 적용 기록이며 전체 서비스의 접근성 인증을 의미하지 않는다.</p>
+<h2>다음 항목</h2><p>5. 여백과 정렬 — 관련 요소를 간격으로 묶고 화면별 시작선과 그룹 사이 간격을 정리한다.</p>
+</main></html>

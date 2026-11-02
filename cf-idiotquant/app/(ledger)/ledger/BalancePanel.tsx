@@ -515,7 +515,7 @@ export function BalancePanel({
                                 <XAxis
                                     dataKey="month" tickFormatter={monthTick}
                                     tickLine={false} axisLine={false} interval="preserveStartEnd"
-                                    tick={{ fontSize: 10, fontWeight: 700 }}
+                                    tick={{ fontSize: 10, fontWeight: 600 }}
                                     className="text-neutral-400 dark:text-neutral-500"
                                 />
                                 {/* **범위를 손으로 정하지 않는다.** 여백을 붙여 넘기면 0 이
@@ -524,7 +524,7 @@ export function BalancePanel({
                                 <YAxis
                                     tickFormatter={compact} width={44}
                                     tickLine={false} axisLine={false}
-                                    tick={{ fontSize: 10, fontWeight: 700 }}
+                                    tick={{ fontSize: 10, fontWeight: 600 }}
                                     className="text-neutral-400 dark:text-neutral-500"
                                 />
                                 {/* 0 선 — 부채·순자산이 이 선을 넘나든다. */}
