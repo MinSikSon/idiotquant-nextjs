@@ -254,6 +254,17 @@ function StrategyCell({ label, count, active, activeCls, title, onClick, compact
     );
 }
 
+function ScreenerStep({ number, label }: { number: number; label: string }) {
+    return (
+        <span className="inline-flex shrink-0 items-center gap-2 text-xs font-extrabold text-neutral-700 dark:text-neutral-200">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-light text-[11px] font-black tabular-nums text-brand-ink dark:bg-brand-muted/40">
+                <span className="sr-only">단계 </span>{number}
+            </span>
+            {label}
+        </span>
+    );
+}
+
 // =========================================================================
 // SortableHeader
 // =========================================================================
@@ -1205,26 +1216,6 @@ function ScreenerContent() {
                         </>
                     )
                 )}
-                tabs={isLoggedIn && (
-                    <div role="group" aria-label="발굴 전략" className="navigation-strategy-tabs flex overflow-x-auto no-scrollbar">
-                        <StrategyCell
-                            label="전체" count={strategyCounts.all} active={isAllActive}
-                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
-                        />
-                        {STRATEGY_PRESETS.map(preset => (
-                            <StrategyCell
-                                key={preset.id}
-                                label={preset.label}
-                                count={strategyCounts[preset.id] ?? 0}
-                                active={activeStrategyIds.has(preset.id)}
-                                activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
-                                title={preset.hint}
-                                onClick={() => toggleStrategy(preset.id)}
-                                compact
-                            />
-                        ))}
-                    </div>
-                )}
                 primaryAction={isLoggedIn && <button onClick={handleRefresh} disabled={isLoading || ncavDailyList.refreshing} className={PAGE_ACTION_CLS} title="목록 새로고침" aria-label="목록 새로고침">
                         <RefreshCw size={13} className={isLoading || ncavDailyList.refreshing ? "animate-spin" : ""} />
                         <span className="hidden sm:inline">새로고침</span>
@@ -1248,7 +1239,8 @@ function ScreenerContent() {
             )}
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <div className="w-full mx-auto flex items-center gap-1 px-4 sm:px-6">
+                <div className="w-full mx-auto flex flex-wrap items-center gap-x-2 gap-y-1 px-4 sm:px-6">
+                    {isLoggedIn && <ScreenerStep number={1} label="시장 선택" />}
                     <div className="flex gap-1" data-compact-tabs role="tablist" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
@@ -1345,7 +1337,7 @@ function ScreenerContent() {
                     {isLoggedIn && <>
                     <div className="flex w-full items-center gap-2 py-2 sm:py-2.5">
                         <div className="min-w-0 flex-1 flex items-center gap-2 text-left">
-                            <span className="text-[11px] font-black text-neutral-600 dark:text-neutral-300">전략</span>
+                            <ScreenerStep number={2} label="전략 선택" />
                             <span className="min-w-0 truncate text-[11px] font-bold text-brand-ink">
                                 {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
                             </span>
@@ -1366,11 +1358,29 @@ function ScreenerContent() {
                         </button>
                     </div>
 
-
+                    <div role="group" aria-label="발굴 전략" className="flex gap-1 overflow-x-auto no-scrollbar pb-3 md:grid md:grid-cols-5 lg:grid-cols-10">
+                        <StrategyCell
+                            label="전체" count={strategyCounts.all} active={isAllActive}
+                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies} compact
+                        />
+                        {STRATEGY_PRESETS.map(preset => (
+                            <StrategyCell
+                                key={preset.id}
+                                label={preset.label}
+                                count={strategyCounts[preset.id] ?? 0}
+                                active={activeStrategyIds.has(preset.id)}
+                                activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
+                                title={preset.hint}
+                                onClick={() => toggleStrategy(preset.id)}
+                                compact
+                            />
+                        ))}
+                    </div>
                     </>}
 
                     {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
                         세로 공간만 먹고 무엇이 주된 조작인지 위계가 없었다. */}
+                    <div className="pb-2"><ScreenerStep number={3} label="검색·필터·정렬" /></div>
                     <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:pb-3">
                         <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:flex-1">
                         {/* 검색 */}
@@ -1923,6 +1933,7 @@ function ScreenerContent() {
             {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
 
             <div className="w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
+                {isLoggedIn && <h2 className="mb-3"><ScreenerStep number={4} label="결과 확인" /></h2>}
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
