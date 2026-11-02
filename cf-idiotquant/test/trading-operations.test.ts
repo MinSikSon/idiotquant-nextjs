@@ -34,8 +34,8 @@ test('조회 API는 no-store·중단 신호를 전달하고 오류·비JSON을 �
             return Response.json({ success: true, data: { scheduler: null } });
         };
         assert.deepEqual(await fetchOperations('status', controller.signal), { scheduler: null });
-        globalThis.fetch = async () => Response.json({ success: false, error: '관리자 권한이 필요합니다.' }, { status: 403 });
-        await assert.rejects(fetchOperations('status', controller.signal), /관리자 권한/);
+        globalThis.fetch = async () => Response.json({ success: false, error: '관리자 권한이 필요합니다.', code: 'WORKER_ADMIN_REQUIRED' }, { status: 403 });
+        await assert.rejects(fetchOperations('status', controller.signal), /관리자 권한.*WORKER_ADMIN_REQUIRED/);
         globalThis.fetch = async () => new Response('<html>unavailable</html>', { status: 502 });
         await assert.rejects(fetchOperations('status', controller.signal), /실행 기록/);
     } finally { globalThis.fetch = original; }

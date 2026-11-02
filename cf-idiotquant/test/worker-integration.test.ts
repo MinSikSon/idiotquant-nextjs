@@ -121,9 +121,9 @@ describe('프록시 JWT → Worker → 로컬 D1 통합', { skip: !workerRoot ||
     });
 
     test('자동매매 운영 API는 DB 관리자만 허용하고 실제 D1 실행 단계를 반환한다', async () => {
-        assert.equal((await request('/admin/trading/status', null)).status, 403);
+        assert.equal((await request('/admin/trading/status', null)).status, 401);
         assert.equal((await request('/admin/trading/status', { ...user, role: 'admin' })).status, 403);
-        assert.equal((await runtime.dispatchFetch('http://worker.test/admin/trading/status', { headers: { 'X-User-Id': admin.id, 'X-User-Role': 'admin' } })).status, 403);
+        assert.equal((await runtime.dispatchFetch('http://worker.test/admin/trading/status', { headers: { 'X-User-Id': admin.id, 'X-User-Role': 'admin' } })).status, 401);
         const { observeOperation } = await import(join(workerRoot!, 'src/lib/operationObserver.js'));
         let runId = '';
         await observeOperation({ D1_IDIOTQUANT_MAIN: db }, { job: 'trade', country: 'KR', userId: 'fixture-account' }, async (observer: { run: { id: string }; start: (stage: string, context?: object, parent?: string) => Promise<void>; result: (code: string) => Promise<void> }) => {
