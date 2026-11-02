@@ -107,7 +107,7 @@ export function PageHeader({
       {icon && <span className="flex shrink-0 items-center [&>div]:!h-7 [&>div]:!w-7">{icon}</span>}
       <div className="min-w-0">
         <h1 className="truncate text-sm font-semibold tracking-tight text-neutral-900 dark:text-white">{mobile ? mobileTitle ?? title : title}</h1>
-        {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{visibleMeta}</div>}
+        {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-600 dark:text-neutral-400">{visibleMeta}</div>}
       </div>
     </div>, titleTarget!)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
@@ -145,7 +145,7 @@ export function PageHeader({
             {description && <p data-header-detail className="mt-1.5 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-300">{description}</p>}
             {meta && (
               <div data-header-detail className={cn(
-                "mt-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500 flex items-center flex-wrap gap-x-1.5 gap-y-1",
+                "mt-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 flex items-center flex-wrap gap-x-1.5 gap-y-1",
                 mobileCompact && "mt-1 sm:mt-1.5"
               )}>
                 {meta}
@@ -183,7 +183,7 @@ export function ContextBar({
       <div className={cn(containerClassName ?? PAGE_WIDTH[width], "py-2.5 flex items-center justify-between gap-2")}>
         <div className="flex items-center gap-1.5 min-w-0">
           {emoji && <span className="text-[11px] leading-none shrink-0" aria-hidden>{emoji}</span>}
-          <span className="text-[10px] font-extrabold text-neutral-400 dark:text-neutral-500 uppercase tracking-[0.12em] truncate">
+          <span className="text-[10px] font-extrabold text-neutral-600 dark:text-neutral-400 uppercase tracking-[0.12em] truncate">
             {label}
           </span>
         </div>

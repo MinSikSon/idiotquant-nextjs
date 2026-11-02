@@ -53,7 +53,7 @@ export function LoadingState({ message = "계좌 데이터를 불러오는 중..
       <div className="p-4 rounded-2xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark shadow-none">
         <Loader2 className="w-7 h-7 text-neutral-900 dark:text-neutral-100 animate-spin" />
       </div>
-      <p className="text-sm font-bold text-neutral-400">{message}</p>
+      <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400">{message}</p>
     </div>
   );
 }
@@ -67,7 +67,7 @@ export function SectionHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2 pb-1.5 md:gap-3 md:mb-5 md:pb-4 border-b border-neutral-100 dark:border-border-subtle-dark/80">
       <div className="flex items-center gap-1.5 md:gap-3">
-        <div className="p-1.5 md:p-2 text-neutral-500 dark:text-neutral-400 shrink-0">
+        <div className="p-1.5 md:p-2 text-neutral-600 dark:text-neutral-400 shrink-0">
           {icon}
         </div>
         <div>
@@ -97,13 +97,13 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
       <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-1 md:px-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-lg text-[10px] font-semibold uppercase">
         <Key size={12} /> MASTER MODE
       </div>
-      <span className="hidden shrink-0 text-xs font-semibold text-neutral-500 dark:text-neutral-400 sm:inline">계좌 선택</span>
+      <span className="hidden shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-400 sm:inline">계좌 선택</span>
       <div className="relative min-w-0 flex-1 sm:w-80 sm:max-w-[50%] sm:flex-none">
         <select
           value={balanceKey}
           aria-label="계좌 선택"
           onChange={(e) => setBalanceKey(e.target.value)}
-          className="w-full min-h-[44px] min-w-0 truncate appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-200 dark:border-border-subtle-dark rounded-lg"
+          className="w-full min-h-[44px] min-w-0 truncate appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-500 dark:border-neutral-500 rounded-lg"
         >
           {list.length > 0 ? (
             list.map((item: any) => (
@@ -115,7 +115,7 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
             <option value="">계좌 목록 로딩 중...</option>
           )}
         </select>
-        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-600 dark:text-neutral-400" />
       </div>
     </div>
   );
@@ -129,7 +129,7 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
         "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
         active
           ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none"
-          : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300"
+          : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-300"
       )}
     >
       {children}
@@ -142,9 +142,9 @@ export function EmptyState({ message, icon }: { message: string; icon?: React.Re
   return (
     <div className="flex flex-col items-center justify-center py-6 md:py-14 gap-2 md:gap-3">
       <div className="p-3 rounded-2xl bg-surface-canvas dark:bg-surface-dark-muted">
-        {icon ?? <InboxIcon size={20} className="text-neutral-400" />}
+        {icon ?? <InboxIcon size={20} className="text-neutral-600 dark:text-neutral-400" />}
       </div>
-      <p className="text-sm text-neutral-400 font-medium">{message}</p>
+      <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">{message}</p>
     </div>
   );
 }
@@ -167,7 +167,7 @@ export function MetricChip({ icon, label, value, valueClass = "text-neutral-900 
 }) {
   return (
     <div className="min-w-0 bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-xl px-2.5 py-1.5 md:px-4 md:py-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-col md:items-stretch">
-      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide"><span aria-hidden="true" className="shrink-0">{icon}</span>{label}</span>
       <span className={cn("text-sm tabular-nums font-semibold break-words", valueClass)}>{value}</span>
     </div>
   );
@@ -186,8 +186,8 @@ export function KpiCard({ label, value, sub, icon, valueColor = "text-neutral-90
     <div className="relative bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 p-2.5 md:gap-3 md:p-5">
 
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[11px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
-        <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-500 dark:text-neutral-400">{icon}</div>
+        <span className="text-[11px] md:text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{sub}</DetailHelp></span>
+        <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-600 dark:text-neutral-400">{icon}</div>
       </div>
       <div className="min-w-0 text-left">
         <div className={cn("text-[clamp(0.8rem,3.6vw,1.125rem)] md:text-2xl font-semibold tracking-tight tabular-nums break-words", valueColor)}>{value}</div>
@@ -214,8 +214,8 @@ export function UsdKpiCard({
     <div className="relative bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark rounded-2xl p-2.5 md:p-5 shadow-none overflow-hidden flex min-w-0 flex-col justify-between gap-1.5 md:gap-3">
 
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[11px] md:text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
-        <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-500 dark:text-neutral-400">{icon}</div>
+        <span className="text-[11px] md:text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide leading-tight">{label}<DetailHelp label={label}>{subLabel}: <b className={subColor}>{subValue}</b></DetailHelp></span>
+        <div aria-hidden="true" className="hidden md:block shrink-0 text-neutral-600 dark:text-neutral-400">{icon}</div>
       </div>
       <div className="min-w-0 text-left">
         <div className={cn("text-[clamp(0.8rem,3.6vw,1.125rem)] md:text-2xl font-semibold tracking-tight tabular-nums break-words", mainColor)}>{mainValue}</div>

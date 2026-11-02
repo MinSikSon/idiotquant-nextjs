@@ -5,6 +5,7 @@
   --analysis-ink: #26252d;
   --analysis-muted: #625e6d;
   --analysis-line: #dedce5;
+  --analysis-control-line: #85818d;
   --analysis-soft: #f5f4f7;
   --analysis-action: #7459b4;
   --analysis-action-hover: #62469e;
@@ -48,8 +49,8 @@
 .primary:hover { background: var(--analysis-action-hover); }
 .page .searchRow { padding-block: 16px; }
 .searchField { min-width: 0; }
-.page .searchField > div > div:first-child { min-height: 48px; border-radius: 10px; border-color: var(--analysis-line); background: var(--analysis-soft); box-shadow: none; }
-.page .searchField > div > div:first-child:focus-within { border-color: var(--analysis-action); outline: 2px solid var(--analysis-lilac-ink); outline-offset: 2px; }
+.page .searchField > div > div:first-child { min-height: 48px; border-radius: 10px; border-color: var(--analysis-control-line); background: var(--analysis-soft); box-shadow: none; }
+.page .searchField > div > div:first-child:focus-within { border-color: var(--analysis-lilac-ink); outline: 2px solid var(--analysis-lilac-ink); outline-offset: 2px; }
 .page .searchField :global(input[role="combobox"]) { min-height: 32px; font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--analysis-ink); }
 .page .searchField :global(input)::placeholder { color: var(--analysis-muted); opacity: 1; }
 .page .searchField :global([role="listbox"]) { border-color: var(--analysis-line); background: var(--analysis-panel); }

@@ -121,15 +121,15 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
             <div 
                 className={cn(
                     "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-xl border transition-colors duration-150",
-                    "bg-white dark:bg-surface-dark-card border-neutral-200 dark:border-border-subtle-dark",
+                    "bg-white dark:bg-surface-dark-card border-neutral-500 dark:border-neutral-500",
                     isFocused 
-                        ? "bg-white dark:bg-surface-dark-canvas border-brand/70 dark:border-brand/70 ring-2 ring-brand/10 dark:ring-brand/15"
-                        : "hover:border-neutral-300 dark:hover:border-neutral-700"
+                        ? "bg-white dark:bg-surface-dark-canvas border-brand-ink dark:border-brand-ink ring-2 ring-brand-ink dark:ring-brand-ink"
+                        : "hover:border-neutral-600 dark:hover:border-neutral-400"
                 )}
             >
                 <Search className={cn(
                     "h-4.5 w-4.5 transition-colors duration-200 shrink-0",
-                    isFocused ? "text-brand-ink dark:text-brand-ink" : "text-neutral-400 dark:text-neutral-500"
+                    isFocused ? "text-brand-ink dark:text-brand-ink" : "text-neutral-600 dark:text-neutral-400"
                 )} />
                 
                 <input
@@ -164,7 +164,7 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                         }, 200);
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full min-w-0 min-h-[44px] text-[16px] sm:text-sm bg-transparent focus:outline-none text-neutral-900 dark:text-neutral-100 font-semibold placeholder-neutral-400 dark:placeholder-neutral-600 font-sans tracking-tight"
+                    className="w-full min-w-0 min-h-[44px] text-[16px] sm:text-sm bg-transparent focus:outline-none text-neutral-900 dark:text-neutral-100 font-semibold placeholder-neutral-600 dark:placeholder-neutral-400 font-sans tracking-tight"
                 />
                 
                 {query && (
@@ -178,7 +178,7 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                         type="button"
                         aria-label="검색어 초기화"
                     >
-                        <X className="h-4 w-4 text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors" />
+                        <X className="h-4 w-4 text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors" />
                     </button>
                 )}
             </div>
@@ -212,7 +212,7 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                                 >
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate"><HighlightText text={company?.koreanName || company?.name || suggestion} query={query} /></span>
-                                        {company && <span className={cn("mt-0.5 block truncate text-[11px]", isSelected ? "text-white/80" : "text-neutral-500 dark:text-neutral-400")}>
+                                        {company && <span className={cn("mt-0.5 block truncate text-[11px]", isSelected ? "text-inherit" : "text-neutral-600 dark:text-neutral-400")}>
                                             <HighlightText text={`${suggestion} · ${company.name}`} query={query} />
                                         </span>}
                                     </span>
@@ -228,10 +228,10 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                         })
                     ) : (
                         /* 결과물이 매칭되지 않을 경우 폴백 안내 카드 */
-                        <div className="py-6 px-4 flex flex-col items-center justify-center gap-1.5 text-center text-neutral-400 dark:text-neutral-500">
-                            <AlertCircle size={16} className="text-neutral-300 dark:text-neutral-700" />
+                        <div className="py-6 px-4 flex flex-col items-center justify-center gap-1.5 text-center text-neutral-600 dark:text-neutral-400">
+                            <AlertCircle size={16} className="text-neutral-600 dark:text-neutral-400" />
                             <div className="text-xs font-bold tracking-tight">매칭된 자산 데이터가 없습니다</div>
-                            <div className="text-[10px] font-medium text-neutral-400/80 max-w-[240px]">
+                            <div className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400 max-w-[240px]">
                                 국내·미국 종목명으로 찾거나, 정확한 종목코드·티커를 입력하고 엔터를 눌러 조회하세요.
                             </div>
                         </div>
