@@ -82,7 +82,7 @@ export default function TradingFlowSummary({
             {ready ? <Zap size={14} /> : <AlertTriangle size={14} />}
           </span>
           <div className="min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:block">
-            <p className={cn("text-sm font-semibold leading-tight", ready ? "text-neutral-900 dark:text-neutral-100" : "text-amber-700 dark:text-amber-400")}>
+            <p className={cn("text-sm font-semibold leading-normal", ready ? "text-neutral-900 dark:text-neutral-100" : "text-amber-700 dark:text-amber-400")}>
               {ready ? "자동매매 가동 중" : "자동매매 대기"}
             </p>
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">

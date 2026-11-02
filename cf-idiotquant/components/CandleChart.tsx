@@ -206,7 +206,7 @@ export default function CandleChart({
                             value: m.label,
                             position: m.labelPosition ?? "top",
                             fontSize: 9,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             fontFamily: "Pretendard Variable, sans-serif",
                             fill: m.color,
                         } : undefined}

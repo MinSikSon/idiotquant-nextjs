@@ -267,7 +267,23 @@ html.dark {
 
 html { scroll-behavior: smooth; }
 
-/* 일반 화면의 지표와 표도 랜딩의 Pretendard를 사용한다. 게임의 고정폭 글자는 유지한다. */
+/* 타이포그래피: 일반 400, 제목·강조 600. 게임·관리자는 기존 서체와 굵기를 유지한다.
+   body에 두어 모바일 헤더 슬롯·포털에도 같은 토큰이 상속되게 한다. */
+body:not(:has(#game-canvas, [data-admin-screen])) {
+  --ui-font-regular: 400;
+  --ui-font-emphasis: 600;
+  --ui-line-height-xs: 1.5;
+  --ui-line-height-sm: 1.5;
+}
+
+:where(body:not(:has(#game-canvas, [data-admin-screen]))) :where(p) {
+  line-height: 1.6;
+}
+
+:where(body:not(:has(#game-canvas, [data-admin-screen]))) :is(b, strong) {
+  font-weight: 600;
+}
+
 body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
   font-family: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-variant-numeric: tabular-nums;

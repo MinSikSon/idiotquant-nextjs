@@ -203,7 +203,7 @@ export default function LineChart(props: any) {
                         iconSize={6}
                         wrapperStyle={{
                             fontSize: "10px",
-                            fontWeight: 700,
+                            fontWeight: 600,
                             fontFamily: "Pretendard Variable, sans-serif",
                             letterSpacing: "0.05em",
                             textTransform: "uppercase",
@@ -286,7 +286,7 @@ export default function LineChart(props: any) {
                             value: m.label,
                             position: m.labelPosition ?? "top",
                             fontSize: 9,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             fontFamily: "Pretendard Variable, sans-serif",
                             fill: m.color,
                         } : undefined}
