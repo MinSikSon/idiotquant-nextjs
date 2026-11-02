@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
-import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import { cn } from '@/lib/utils';
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
 import ResultShare from '@/components/result-share';
 import { compareSnapshot } from '@/lib/share/builders';
 import { useSession } from 'next-auth/react';
@@ -301,7 +302,7 @@ export default function ComparePage() {
             가격 기준일
             <input type="date" value={dateInput} max={localToday()} onChange={e => dispatch(setDateInput(e.target.value))} disabled={sessionLoading || dateLoading || loading} className="relative mt-1 block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-neutral-300 bg-white px-3 text-center text-base text-neutral-900 outline-none focus:border-[#635bdb] dark:border-neutral-700 dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:text-sm [&::-webkit-date-and-time-value]:m-0 [&::-webkit-date-and-time-value]:flex [&::-webkit-date-and-time-value]:h-full [&::-webkit-date-and-time-value]:w-full [&::-webkit-date-and-time-value]:min-h-0 [&::-webkit-date-and-time-value]:items-center [&::-webkit-date-and-time-value]:justify-center [&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center [&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2" />
           </label>
-          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-[#635bdb] px-3 text-sm font-semibold text-brand-ink disabled:opacity-50 dark:text-brand-ink sm:px-4">
+          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className={PAGE_PRIMARY_ACTION_CLS}>
             {dateLoading ? <Loader2 size={16} className="shrink-0 animate-spin" /> : <Plus size={16} className="shrink-0" />} 날짜 추가
           </button>
         </div>
@@ -324,7 +325,7 @@ export default function ComparePage() {
             <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 클라우드플레어, NET" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className="h-12 w-full rounded-xl border border-neutral-300 bg-white pl-10 pr-3 text-base outline-none focus:border-[#635bdb] disabled:opacity-50 dark:border-neutral-700 dark:bg-surface-dark-card sm:text-sm" />
             {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}{companyNames.get(s) && <span className="ml-2 text-xs text-neutral-500">{companyNames.get(s)!.koreanName ?? companyNames.get(s)!.name}</span>}</button></li>)}</ul>}
           </div>
-          <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span className="hidden sm:inline">추가</span></button>
+          <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className={cn(PAGE_PRIMARY_ACTION_CLS, "h-12")}>{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span>종목 추가</span></button>
         </form>
         <p className="mt-2 text-xs text-neutral-500">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
         {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-500">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}

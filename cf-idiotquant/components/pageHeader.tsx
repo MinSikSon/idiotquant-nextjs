@@ -38,6 +38,14 @@ export const PAGE_ACTION_CLS =
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "disabled:opacity-50 disabled:cursor-not-allowed shrink-0";
 
+// 입력·추가·저장처럼 작업을 진행하는 동작에 쓴다. 새로고침·공유·닫기는 PAGE_ACTION_CLS.
+// 다크 채움은 흰 글자 4.5:1과 캔버스 대비 3:1을 함께 확보한다.
+export const PAGE_PRIMARY_ACTION_CLS =
+  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2.5 text-xs font-semibold transition-colors " +
+  "bg-brand text-white hover:bg-brand-hover dark:bg-[#a15669] dark:hover:bg-[#a85b6e] " +
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink " +
+  "disabled:opacity-50 disabled:cursor-not-allowed";
+
 export function PageHeader({
   icon,
   title,

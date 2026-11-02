@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Pencil, Users, Link2, 
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
-import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
+import { PageHeader, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import type { LedgerEntry, NewLedgerEntry } from "@/lib/features/ledger/ledgerAPI";
 import {
     setLedgerMonth, reqGetLedger, reqAddLedgerEntry, reqUpdateLedgerEntry, reqDeleteLedgerEntry,
@@ -803,7 +803,7 @@ export default function LedgerPage() {
                 <button
                     type="button"
                     onClick={() => openAdd()}
-                    className="hidden sm:flex w-full items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-brand hover:bg-brand-hover text-white text-[13px] font-black transition-colors"
+                    className={cn(PAGE_PRIMARY_ACTION_CLS, "hidden w-full py-3.5 sm:flex")}
                 >
                     <Plus size={15} strokeWidth={2.6} />
                     기입하기
@@ -934,7 +934,7 @@ export default function LedgerPage() {
                 <button
                     type="button"
                     onClick={() => openAdd()}
-                    className="sm:hidden fixed right-4 bottom-[76px] z-40 min-h-[52px] px-5 rounded-full bg-brand text-white text-sm font-black flex items-center gap-1.5 shadow-lg shadow-brand/40 active:scale-95 transition-transform"
+                    className={cn(PAGE_PRIMARY_ACTION_CLS, "fixed right-4 bottom-[76px] z-40 min-h-[52px] rounded-full px-5 text-sm sm:hidden")}
                 >
                     <Plus size={18} strokeWidth={2.8} />
                     기입
@@ -1307,7 +1307,7 @@ export default function LedgerPage() {
                                     {editing ? "취소" : "닫기"}
                                 </button>
                                 <button type="submit" disabled={mutating || !fAmount}
-                                    className="flex-1 min-h-[50px] rounded-xl bg-brand hover:bg-brand-hover text-white text-[15px] font-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    className={cn(PAGE_PRIMARY_ACTION_CLS, "min-h-[50px] flex-1 text-[15px]")}>
                                     {mutating ? "저장 중…" : editing ? "수정" : "저장"}
                                 </button>
                             </div>
