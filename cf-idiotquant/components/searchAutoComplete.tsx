@@ -2,6 +2,7 @@
 
 import { useState, useMemo, KeyboardEvent, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { buildStockSearchIndex, findStockSuggestions, type StockSearchName } from "@/lib/utils/stockSuggestions";
 import { Search, CornerDownLeft, AlertCircle, X } from "lucide-react";
 
@@ -90,14 +91,18 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
         inputRef.current?.blur();
     };
 
+    const submitSearch = () => {
+        const target = (selectedIndex >= 0 && suggestions[selectedIndex]) ? suggestions[selectedIndex] : query;
+        executeSearch(target);
+    };
+
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         // 한글 입력기(IME) 조합 중 엔터 처리가 더블 트리거되는 버그 차단
         if (e.nativeEvent.isComposing) return;
 
         if (e.key === "Enter") {
             e.preventDefault();
-            const target = (selectedIndex >= 0 && suggestions[selectedIndex]) ? suggestions[selectedIndex] : query;
-            executeSearch(target);
+            submitSearch();
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
             if (suggestions.length === 0) return;
@@ -181,6 +186,16 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                         <X className="h-4 w-4 text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors" />
                     </button>
                 )}
+                <button
+                    type="button"
+                    aria-label="종목 검색 실행"
+                    disabled={!query.trim()}
+                    onMouseDown={event => event.preventDefault()}
+                    onClick={submitSearch}
+                    className={PAGE_PRIMARY_ACTION_CLS}
+                >
+                    검색
+                </button>
             </div>
 
             {/* 자동완성 드롭다운 오버레이 슬롯 */}

@@ -21,10 +21,10 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, CheckCircle,
-  Search, Heart, X, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
+  Search, Heart, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from '@/components/pageHeader';
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
 import { GradeHelp } from './components/GradeHelp';
 import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
@@ -564,7 +564,7 @@ function AnalyzeContent() {
           <span className="font-semibold tabular-nums text-neutral-900 dark:text-white">{headerPrice}</span>
         </> : undefined}
         mobileCompact
-        primaryAction={          <button type="button" data-page-input-trigger aria-keyshortcuts="/" title="/ 종목 검색" onClick={() => {
+        primaryAction={isPriceLoaded && <button type="button" data-page-input-trigger aria-keyshortcuts="/" title={searchOpen ? "검색창 닫기" : "/ 종목 검색"} onClick={() => {
               if (isPriceLoaded && searchOpen) { setSearchOpen(false); return; }
               setSearchOpen(true);
               requestAnimationFrame(() => {
@@ -574,9 +574,9 @@ function AnalyzeContent() {
               });
             }}
             aria-label={searchOpen ? '검색창 닫기' : '다른 종목 검색'}
-            aria-expanded={!isPriceLoaded || searchOpen} aria-controls="analyze-stock-search"
-            className={cn(PAGE_ACTION_CLS, 'text-brand-ink border-brand/30', searchOpen && 'bg-brand/10')}>
-            <Search size={14} aria-hidden="true" /><span className="hidden sm:inline">검색</span>
+            aria-expanded={searchOpen} aria-controls="analyze-stock-search"
+            className={searchOpen ? PAGE_ACTION_CLS : PAGE_PRIMARY_ACTION_CLS}>
+            <Search size={14} aria-hidden="true" /><span>{searchOpen ? "검색 닫기" : "종목 검색"}</span>
           </button>}
         tabs={isPriceLoaded && (
           <div className={cn(ANALYZE_WIDTH, styles.page, styles.tabsRow)}>
@@ -636,12 +636,7 @@ function AnalyzeContent() {
                 onSearchStateChange={() => {}}
               />
             </div>
-            {isPriceLoaded && (
-              <button onClick={() => { setSearchOpen(false); document.querySelector<HTMLButtonElement>('[data-page-input-trigger]')?.focus(); }} aria-label="검색 닫기"
-                className={PAGE_ACTION_CLS}>
-                <X size={14} />
-              </button>
-            )}
+
           </div>
         )}
 

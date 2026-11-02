@@ -385,7 +385,7 @@ function Calculator() {
                             className={cn(
                                 "sm:hidden inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-2 min-h-11 min-w-11 justify-center rounded-xl border", LIFT,
                                 showHelp
-                                    ? "bg-brand border-brand text-white"
+                                    ? "border-neutral-300 bg-neutral-100 text-neutral-900 underline decoration-2 underline-offset-4 dark:border-neutral-600 dark:bg-surface-dark-hover dark:text-neutral-100"
                                     : cn("border-neutral-200 dark:border-surface-dark-border bg-white dark:bg-surface-dark-card",
                                          "text-neutral-700 dark:text-neutral-300")
                             )}

@@ -8,8 +8,6 @@
   --home-glass: rgb(255 255 255 / .85);
   --home-action: #421d24;
   --home-action-hover: #5a2a33;
-  --home-lilac: #e5dcfa;
-  --home-lilac-text: #421d24;
   background: var(--home-bg);
   color: var(--home-text);
 }
@@ -23,8 +21,6 @@
   --home-glass: rgb(38 33 35 / .85);
   --home-action: #a15669;
   --home-action-hover: #a85b6e;
-  --home-lilac: #3a3048;
-  --home-lilac-text: #e5d9fa;
 }
 .container { width: 100%; margin: 0 auto; padding: 0 24px; }
 .hero { position: relative; isolation: isolate; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 48px; padding: 80px 0 88px; }
@@ -39,8 +35,8 @@
 .primary, .secondary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 10px; padding: 0 20px; border-radius: 16px; font-size: 14px; font-weight: 460; transition: background-color 100ms; }
 .primary { color: #fff; background: var(--home-action); }
 .primary:hover { background: var(--home-action-hover); }
-.secondary { border: 1px solid transparent; background: var(--home-lilac); color: var(--home-lilac-text); }
-.secondary:hover { border-color: currentColor; }
+.secondary { border: 1px solid var(--home-line); background: transparent; color: var(--home-text); }
+.secondary:hover { background: var(--home-hover); }
 .note { margin-top: 16px; font-size: 12px; color: var(--home-secondary); }
 .preview { width: 100%; min-width: 0; margin-top: 48px; overflow: hidden; border: 1px solid var(--home-line); background: var(--home-glass); backdrop-filter: blur(12px); border-radius: 16px; }
 .previewTop { display: flex; justify-content: space-between; align-items: center; padding: 24px 24px 0; }
