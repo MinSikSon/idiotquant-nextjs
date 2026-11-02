@@ -24,7 +24,7 @@ export default function TechnicalSummary({ bars, currency }: { bars: PriceBar[];
             <details className="mt-3 text-[13px] text-neutral-600 dark:text-neutral-300">
                 <summary className="min-h-11 cursor-pointer py-3 font-medium">계산 기준과 데이터 범위</summary>
                 <p className="mt-2 leading-6">등락률은 최신 종가를 20개 또는 60개 앞선 시세의 종가와 비교한 값입니다. 이동평균은 최신 시세를 포함한 최근 20개 또는 60개 종가의 평균입니다. 거래량은 최신 값을 제외한 직전 20개 시세의 평균과 비교합니다. RSI는 14개 시세 간격의 가격 변화를 Wilder 방식으로 계산합니다. 누락된 시세는 보충하지 않으며, 수정주가 반영 여부와 진행 중인 거래일·월의 값은 원본 시세에 따릅니다. 실시간 주문 흐름이나 기관·외국인 수급 지표는 포함하지 않습니다.</p>
-                <a className="mt-2 inline-block text-brand-ink hover:underline" href="https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/relative-strength-index-rsi" target="_blank" rel="noreferrer">RSI 계산 방법 참고</a>
+                <a className="mt-2 inline-block text-brand-ink underline underline-offset-4" href="https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/relative-strength-index-rsi" target="_blank" rel="noreferrer">RSI 계산 방법 참고</a>
             </details>
         </section>
     );

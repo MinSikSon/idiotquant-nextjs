@@ -158,7 +158,7 @@ function TabItem({
       )}
     >
       <Icon size={20} strokeWidth={isActive ? 2 : 1.6} />
-      <span className="text-[10px] font-semibold leading-none">{label}</span>
+      <span className={cn("text-[10px] font-semibold leading-none", isActive && "underline decoration-2 underline-offset-4")}>{label}</span>
     </Link>
   );
 }
@@ -340,7 +340,7 @@ export function NavbarWithSimpleLinks() {
   const serviceMenu = (compact: boolean) => <div className="navigation-service-menu flex flex-col gap-1">
       {[...MAIN_NAV, ...utilityNav].map(item => <Link key={item.href} href={item.href}
         aria-current={active(pathname, item.href, item.href === "/") ? "page" : undefined}
-        className="flex min-h-11 items-center rounded-lg px-3 hover:bg-neutral-100 dark:hover:bg-neutral-800">{item.label}</Link>)}
+        className="flex min-h-11 items-center rounded-lg px-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 aria-[current=page]:font-semibold aria-[current=page]:underline aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-4">{item.label}</Link>)}
       <div className="flex items-center gap-2 border-t border-neutral-200 p-2 dark:border-neutral-700"><ThemeChanger /><QuickNavigation compact={compact} items={[...MAIN_NAV, ...utilityNav]} /></div>
       {status === "authenticated" ? <>
         <Link href="/profile" className="flex min-h-11 min-w-0 items-center px-3"><span className="truncate">{session?.user?.name || "내 계정"} · 내 계정</span></Link>
@@ -505,7 +505,7 @@ export function NavbarWithSimpleLinks() {
         <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <NavigationPopover label="더보기" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-600 dark:text-neutral-400", moreActive && "text-brand-ink dark:text-brand-ink")}>
-            <MoreHorizontal size={20} /><span className="text-[10px] font-semibold leading-none">더보기</span>
+            <MoreHorizontal size={20} /><span className={cn("text-[10px] font-semibold leading-none", moreActive && "underline decoration-2 underline-offset-4")}>더보기</span>
           </button>
         }>{!inGame && serviceMenu(true)}</NavigationPopover>
       </nav>

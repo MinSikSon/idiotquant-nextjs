@@ -21,7 +21,7 @@ export default function PageAnswers({ title, path, items }: {
           ['/quant', '퀀트 투자 안내'], ['/screener', '종목 발굴'],
           ['/compare', '종목 비교'], ['/analyze', '주식 분석'], ['/calculator', '복리 계산기'],
         ].filter(([href]) => href !== path).map(([href, label]) => (
-          <Link key={href} href={href} className="hover:underline">{label}</Link>
+          <Link key={href} href={href} className="underline underline-offset-4">{label}</Link>
         ))}
       </nav>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(items, path)).replace(/</g, '\\u003c') }} />

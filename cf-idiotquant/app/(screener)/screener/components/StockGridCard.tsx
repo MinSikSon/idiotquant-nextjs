@@ -45,6 +45,7 @@ const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boole
         <p className="text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
         <p className={cn("text-[13px] font-mono font-bold tabular-nums mt-0.5", ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200")}>
             {value}
+            {ok && <><span aria-hidden="true" title="강조 기준 충족"> ✓</span><span className="sr-only"> 강조 기준 충족</span></>}
         </p>
     </div>
 );
@@ -92,6 +93,9 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                         <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                     </div>
                     <button
+                        type="button"
+                        aria-label={`${item.name} 관심 종목`}
+                        aria-pressed={isLiked}
                         onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
                         className={cn("flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg shrink-0 transition-colors",
                             isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
