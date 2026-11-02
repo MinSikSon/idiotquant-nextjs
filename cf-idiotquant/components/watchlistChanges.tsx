@@ -41,7 +41,7 @@ export default function WatchlistChanges({ items, userId, country }: { items: Li
             <table className="w-full min-w-[520px] text-left text-xs">
                 <thead><tr className="text-neutral-500"><th className="py-2">종목 / 기준일</th><th>전략 변화</th><th>가격 변화</th><th>PBR</th><th>PER</th><th>NCAV</th></tr></thead>
                 <tbody>{result.changes.map(change => <tr key={change.after.ticker} className="border-t border-neutral-100 dark:border-neutral-800">
-                    <td className="py-3 pr-3"><Link className="font-semibold hover:underline" href={`/analyze?ticker=${encodeURIComponent(change.after.ticker)}`}>{change.after.name}</Link><span className="mt-1 block text-[10px] text-neutral-500">{change.before.scanDate} → {change.after.scanDate}</span></td>
+                    <td className="py-3 pr-3"><Link className="font-semibold underline underline-offset-4" href={`/analyze?ticker=${encodeURIComponent(change.after.ticker)}`}>{change.after.name}</Link><span className="mt-1 block text-[10px] text-neutral-500">{change.before.scanDate} → {change.after.scanDate}</span></td>
                     <td className="pr-3">{change.entered.map(id => <span key={`in-${id}`} className="block">+ {strategyName(id)} 편입</span>)}{change.exited.map(id => <span key={`out-${id}`} className="block">− {strategyName(id)} 이탈</span>)}{!change.entered.length && !change.exited.length && "변화 없음"}</td>
                     <td className="pr-3 tabular-nums">{change.pricePercent === null ? "—" : `${change.pricePercent > 0 ? "+" : ""}${change.pricePercent.toFixed(2)}%`}</td>
                     {(["pbr", "per", "ncav"] as const).map(field => <td key={field} className="pr-3 tabular-nums">{number(change.before[field])} → {number(change.after[field])}</td>)}

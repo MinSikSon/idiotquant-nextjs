@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart } from "lucide-react";
+import { ChevronRight, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
@@ -43,6 +43,7 @@ const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null
             value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
         )}>
             {x(value)}
+            {ok && value !== null && <><span aria-hidden="true" title="강조 기준 충족"> ✓</span><span className="sr-only"> 강조 기준 충족</span></>}
         </p>
     </div>
 );
@@ -59,7 +60,16 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
     return (
         <div
             onClick={() => onClick(item.ticker, item.name)}
-            className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2.5 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md transition-all"
+            onKeyDown={event => {
+                if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    onClick(item.ticker, item.name);
+                }
+            }}
+            role="link"
+            tabIndex={0}
+            aria-label={`${item.name} 분석 보기`}
+            className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2.5 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink transition-all"
         >
             <div className="flex items-start gap-2 mb-2 sm:mb-3">
                 <div className="min-w-0 flex-1">
@@ -71,6 +81,9 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
                     <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                 </div>
                 <button
+                    type="button"
+                    aria-label={`${item.name} 관심 종목`}
+                    aria-pressed={isLiked}
                     onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
                     className={cn("p-1 rounded-lg shrink-0 transition-colors",
                         isLiked ? "text-rose-500" : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400")}
@@ -106,6 +119,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
                         ? " — 유동자산으로 부채를 덮지 못합니다."
                         : " — 시가총액에는 못 미칩니다."}
             </p>
+            <span className="mt-2 flex items-center justify-end gap-0.5 text-[11px] font-semibold text-brand-ink">분석 <ChevronRight size={12} aria-hidden="true" /></span>
         </div>
     );
 }

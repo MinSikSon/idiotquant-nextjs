@@ -207,6 +207,13 @@ function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): s
         : "px-0.5 sm:px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-surface-dark-hover text-neutral-400";
 }
 
+function MetricStatus({ highlight, metric, item }: { highlight: HighlightMap | null; metric: MetricKey; item: any }) {
+    if (!highlight?.[metric]) return null;
+    const matched = highlight[metric]!(item);
+    const label = matched ? "강조 기준 충족" : "강조 기준 미충족";
+    return <span className="ml-0.5" title={label}><span aria-hidden="true">{matched ? "✓" : "×"}</span><span className="sr-only"> {label}</span></span>;
+}
+
 // =========================================================================
 // 필터 적용 — 순수 함수로 분리한 이유: 필터 서랍의 파생 카운트(→N·−N)를 계산하려면
 // "지금과 조금 다른 조건"으로 같은 필터를 여러 번 돌려야 한다. 화면에 그리는 목록과
@@ -246,7 +253,7 @@ function StrategyCell({ label, count, active, activeCls, title, onClick, compact
                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-surface-dark-card"
             )}
         >
-            <span className="text-[11.5px] font-extrabold truncate max-w-full px-1">{label}</span>
+            <span className={cn("text-[11.5px] font-extrabold truncate max-w-full px-1", active && "underline decoration-2 underline-offset-4")}>{label}</span>
             <span className={cn("text-[10px] font-black font-mono tabular-nums", active ? "opacity-75" : "text-neutral-400", compact && "md:mt-0.5")}>
                 {count}
             </span>
@@ -311,8 +318,17 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
 
     return (
         <div
-            className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0", TABLE_COLUMNS)}
+            className={cn("group grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-3 hover:bg-brand-light/40 dark:hover:bg-surface-dark-card/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-border-subtle-dark last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-ink", TABLE_COLUMNS)}
             onClick={() => onClick(item.ticker, item.name)}
+            onKeyDown={event => {
+                if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    onClick(item.ticker, item.name);
+                }
+            }}
+            role="link"
+            tabIndex={0}
+            aria-label={`${item.name} 분석 보기`}
         >
             <div className="min-w-0">
                 <div className="min-w-0 flex items-center gap-1.5">
@@ -343,19 +359,19 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                     ncav >= 0.7 ? "text-amber-500" : "text-neutral-400",
                     hlPillCls(highlight, "ncav_ratio", item)
                 )}>
-                    {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
+                    {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}<MetricStatus highlight={highlight} metric="ncav_ratio" item={item} />
                 </span>
             </div>
 
             <div className="text-right whitespace-nowrap">
                 <span className={cn("text-xs sm:text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "pbr", item))}>
-                    {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}
+                    {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}<MetricStatus highlight={highlight} metric="pbr" item={item} />
                 </span>
             </div>
 
             <div className="text-right whitespace-nowrap">
                 <span className={cn("text-xs sm:text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "per", item))}>
-                    {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}
+                    {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}<MetricStatus highlight={highlight} metric="per" item={item} />
                 </span>
             </div>
 
@@ -366,7 +382,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                     roe > 0 ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400",
                     hlPillCls(highlight, "roe", item)
                 )}>
-                    {roe > 0 ? `${roe.toFixed(1)}%` : "—"}
+                    {roe > 0 ? `${roe.toFixed(1)}%` : "—"}<MetricStatus highlight={highlight} metric="roe" item={item} />
                 </span>
             </div>
 
@@ -472,15 +488,18 @@ function DrawerCard({ label, remain, dashed, span2, children }: {
 function DrawerChip({ active, onClick, children, title }: { active: boolean; onClick: () => void; children: React.ReactNode; title?: string }) {
     return (
         <button
+            type="button"
+            aria-pressed={active}
             onClick={onClick}
             title={title}
             className={cn(
-                "px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors",
+                "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors",
                 active
                     ? "bg-brand border-brand text-white"
                     : "bg-surface-canvas dark:bg-surface-dark border-neutral-200 dark:border-surface-dark-border text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
             )}
         >
+            {active && <Check size={12} aria-hidden="true" />}
             {children}
         </button>
     );
@@ -491,7 +510,7 @@ function DrawerCheck({ checked, onChange, label, delta }: {
     checked: boolean; onChange: (v: boolean) => void; label: string; delta: number;
 }) {
     return (
-        <label className="flex items-center gap-2.5 cursor-pointer select-none py-0.5">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none py-0.5 rounded focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-ink">
             <span
                 className={cn(
                     "w-[15px] h-[15px] rounded-md flex items-center justify-center shrink-0 transition-colors",
@@ -1241,13 +1260,12 @@ function ScreenerContent() {
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <div className="w-full mx-auto flex flex-wrap items-center gap-x-2 gap-y-1 px-4 sm:px-6">
                     {isLoggedIn && <ScreenerStep number={1} label="시장 선택" />}
-                    <div className="flex gap-1" data-compact-tabs role="tablist" aria-label="발굴 시장">
+                    <div className="flex gap-1" data-compact-tabs role="group" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
                             key={value}
                             type="button"
-                            role="tab"
-                            aria-selected={country === value}
+                            aria-pressed={country === value}
                             onClick={() => {
                                 if (country === value) return;
                                 setCountry(value);
@@ -1268,7 +1286,7 @@ function ScreenerContent() {
                             }}
                             className={cn(
                                 "px-4 py-3 text-sm font-bold border-b-2 transition-colors",
-                                country === value ? "border-brand text-brand-ink" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                                country === value ? "border-brand-ink text-brand-ink underline decoration-2 underline-offset-4" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
                             )}
                         >{label}</button>
                         ))}
@@ -1432,6 +1450,8 @@ function ScreenerContent() {
                             버튼이 감싸는 flex 줄 한가운데 있고 아래로 sticky 끝·칩 줄이 끼어서,
                             테두리를 지우면 이어지는 대신 스타일이 벗겨진 것처럼 보인다. */}
                         <button
+                            type="button"
+                            aria-expanded={filterOpen}
                             onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                             className={cn(
                                 "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap sm:px-3",
@@ -1458,6 +1478,9 @@ function ScreenerContent() {
 
                         {/* 관심 종목 */}
                         <button
+                            type="button"
+                            aria-pressed={showLikedOnly}
+                            aria-label="관심 종목만 보기"
                             onClick={() => {
                                 if (!isLoggedIn) { requireLogin(); return; }
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
@@ -2088,13 +2111,14 @@ function ScreenerContent() {
                                     <button
                                         key={o.id}
                                         disabled={o.disabled}
+                                        aria-pressed={groupMode === o.id}
                                         onClick={() => setGroupMode(o.id)}
                                         title={o.disabled ? "업종 데이터 연동 예정" : undefined}
                                         className={cn(
                                             "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
                                             o.disabled && "opacity-40 cursor-not-allowed",
                                             groupMode === o.id
-                                                ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                                ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white shadow-sm underline decoration-2 underline-offset-4"
                                                 : "font-bold text-neutral-500 dark:text-neutral-400"
                                         )}
                                     >
@@ -2112,7 +2136,7 @@ function ScreenerContent() {
                                         className={cn(
                                             "rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors sm:px-2.5",
                                             viewMode === id
-                                                ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm"
+                                                ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm underline decoration-2 underline-offset-4"
                                                 : "text-neutral-500 dark:text-neutral-400"
                                         )}
                                     >
@@ -2124,6 +2148,8 @@ function ScreenerContent() {
                                 <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                             </div>
                         </div>
+
+                        {viewMode === 'table' && metricHighlight && <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">✓ 강조 기준 충족 · × 강조 기준 미충족</p>}
 
                         {/* 지표 설명과 산점도는 필요할 때만 펼친다 — 목록을 훑는 흐름을 막지 않는다. */}
                         {showInsights && <>

@@ -124,11 +124,13 @@ export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, is
 export function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
         "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
         active
-          ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none"
+          ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none underline decoration-2 underline-offset-4"
           : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-300"
       )}
     >
