@@ -38,3 +38,12 @@ test('키가 없는 기존 배포에서는 검증된 세션 신원만 전달하�
     await assert.rejects(createBackendHeaders(new Headers(), {}, undefined), (error: unknown) =>
         error instanceof ProxyIdentityError && error.status === 401);
 });
+
+
+test('관리자 운영 조회는 프론트 키가 없으면 서명 없는 요청을 보내지 않는다', async () => {
+    await assert.rejects(createBackendHeaders(new Headers(), { id: 'verified', role: 'admin' }, undefined, true), (error: unknown) =>
+        error instanceof ProxyIdentityError && error.status === 503 && error.code === 'FRONTEND_SIGNING_KEY_MISSING');
+    const headers = await createBackendHeaders(new Headers(), { id: 'verified', role: 'admin' }, 'test-only-key', true);
+    assert.ok(headers.get('authorization')?.startsWith('Bearer '));
+    assert.equal(headers.has('x-user-id'), false);
+});

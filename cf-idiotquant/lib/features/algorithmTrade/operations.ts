@@ -68,7 +68,8 @@ export async function fetchOperations<T>(path: string, signal: AbortSignal): Pro
     const response = await fetch(`/api/proxy/admin/trading/${path}`, { cache: 'no-store', signal });
     const payload = await response.json().catch(() => null);
     if (!response.ok || payload?.success !== true || !payload.data) {
-        throw new Error(typeof payload?.error === 'string' ? payload.error : '실행 기록을 불러오지 못했습니다.');
+        const message = typeof payload?.error === 'string' ? payload.error : '실행 기록을 불러오지 못했습니다.';
+        throw new Error(typeof payload?.code === 'string' ? `${message} (${payload.code})` : message);
     }
     return payload.data as T;
 }

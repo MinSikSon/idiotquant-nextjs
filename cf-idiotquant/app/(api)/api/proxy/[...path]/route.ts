@@ -16,7 +16,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
         const isTradingOperations = pathArray[0] === 'admin' && pathArray[1] === 'trading';
         if (isTradingOperations &&
             (session?.user as { role?: string } | undefined)?.role !== 'admin') {
-            return NextResponse.json({ success: false, error: "관리자 권한이 필요합니다." }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+            return NextResponse.json({ success: false, error: "로그인 세션에 관리자 권한이 없습니다. 다시 로그인해 주세요.", code: "FRONTEND_ADMIN_REQUIRED" }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
         }
         const urlObj = new URL(req.url);
 
@@ -32,6 +32,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
             req.headers,
             session?.user as { id?: string; role?: string } | undefined,
             process.env.INTERNAL_JWT_SECRET,
+            isTradingOperations,
         );
 
         const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
@@ -95,7 +96,7 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
 
     } catch (error) {
         if (error instanceof ProxyIdentityError) {
-            return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+            return NextResponse.json({ success: false, error: error.message, code: error.code }, { status: error.status, headers: { 'Cache-Control': 'no-store' } });
         }
         console.error("Proxy Fatal Error:", error);
         return NextResponse.json(
