@@ -1,0 +1,27 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IdiotQuant — 여백과 정렬 적용 보고서</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f2f0eb;color:#292827;font:400 16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px}h1,h2,h3,strong{font-weight:600}h1{font-size:clamp(28px,4vw,42px);line-height:1.3;margin:12px 0}h2{font-size:23px;margin:36px 0 12px}p{max-width:76ch}a{color:#593699;text-underline-offset:3px}.meta{font-size:14px;color:#66615e}.card{background:white;border:1px solid #dedbd5;border-radius:8px;padding:24px;margin:20px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sample{font-size:24px;line-height:1.5}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dedbd5;padding:12px 10px}th{font-weight:600}code{font-size:13px}li{margin:8px 0}.numbers{font-variant-numeric:tabular-nums;text-align:right}.tag{font-size:13px;color:#593699}small{font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:28px 18px}.card{padding:18px}}@media(prefers-color-scheme:dark){body{background:#1b1819;color:#eeece7}.card{background:#262123;border-color:#43383c}th,td{border-color:#43383c}.meta{color:#bcb0ad}a,.tag{color:#c9b0ef}}
+</style><main><div class="tag">디자인 개선 · 5 / 8 · 2026-11-03</div>
+<h1>시작선을 맞추고, 간격으로 묶기</h1>
+<p>홈·발굴·비교·계산기·가계부·잔고의 바깥 여백과 주요 그룹 간격을 정리했다. 설명과 입력은 가까이, 독립된 패널과 단계는 더 멀리 배치한다.</p>
+<p class="meta">근거: <a href="https://news.hada.io/topic?id=31746">큰 효과를 만드는 작은 UI 디자인 팁들</a>의 여백으로 관련 요소 묶기·연속된 선에 맞춰 정렬하기 원칙. 게임·관리자 전용 화면은 적용 범위에서 제외했다.</p>
+<h2>적용 기준</h2><div class="grid"><section class="card"><h3>그룹 내부</h3><p>설명·제목·입력 레이블은 4·8·12의 간격을 중심으로 배치한다. 비교 설명과 입력 영역 사이에는 16을 두고, 같은 입력 묶음의 컨트롤 사이에는 12를 둔다.</p></section><section class="card"><h3>독립된 그룹 사이</h3><p>잔고 선택기와 패널, 분석 안내 단계는 24, 계산기 조건과 결과는 32를 사용한다. 숫자 표·차트·한 줄 컨트롤의 세부 간격은 역할에 맞게 유지한다.</p></section></div>
+<p class="meta">Tailwind 간격의 숫자는 기본 16px 글자 크기에서의 기준값이다. 공통 좌우 여백은 1rem·1.5rem이며, 기존 모바일 115% 글자 확대 설정에서는 실제 18.4px·27.6px로 확대된다. 홈도 같은 단위와 640px 분기점을 따른다.</p>
+<h2>화면별 변경</h2><div class="table-wrap"><table><thead><tr><th>화면</th><th>발견한 문제</th><th>적용 결과</th></tr></thead><tbody>
+<tr><td>공통 시작선</td><td>홈 22/28px, 잔고 10px, 가계부 8px 등 서로 다른 바깥 여백</td><td>모바일 1rem, 640px부터 1.5rem. 잔고는 기존 PAGE_WIDTH 공통 프리셋 사용</td></tr>
+<tr><td>홈</td><td>설명 길이에 따라 도구 카드 링크가 다른 높이에 위치. 1440px에서 소개와 도구 안내의 시작 높이 차이</td><td>카드 세로 flex와 자동 여백으로 링크 하단 정렬. 넓은 화면의 세 영역은 상단 정렬. 카드 안쪽 간격은 8·16·24 중심으로 정리</td></tr>
+<tr><td>발굴</td><td>일부 상태 안내는 8px, 다른 컨트롤은 16px. 비로그인 결과 안쪽에 데스크톱 24px이 중복</td><td>상태 안내 시작선을 통일하고 결과 내부 중복 여백 제거. 결과 제목과 도움말 시작선 일치</td></tr>
+<tr><td>계산기</td><td>첫 제목 위 공백이 중복되고, 조건의 표시 전환 버튼 높이 때문에 좌우 첫 카드가 어긋남</td><td>머리와 내용 사이 24, 조건·결과 사이 32. 첫 제목의 중복 위 여백 제거, 제목 행 최소 높이 48로 좌우 제목·카드 정렬</td></tr>
+<tr><td>비교</td><td>긴 설명 바로 아래 입력이 8 간격으로 붙어 있음</td><td>설명→입력 묶음 16, 입력과 버튼 사이 12로 그룹 관계 구분</td></tr>
+<tr><td>분석</td><td>본문 시작 28/20, 안내 단계 간격 모바일 8, 모델 간격 20 등 혼용</td><td>본문 시작 24, 단계·모델 사이 24, 제목과 설명 사이 8. 모바일 모델 안쪽 16</td></tr>
+<tr><td>잔고·가계부</td><td>잔고의 별도 모바일 규칙이 px-4를 12px로 축소. 선택기와 패널 사이 구분 부족</td><td>모바일 안쪽 여백을 재정의하던 규칙 제거. 잔고 선택기 내부 12·패널 사이 24, 가계부 바깥 시작선과 패널 사이 간격 정리</td></tr>
+</tbody></table></div>
+<h2>브라우저 확인</h2><ul>
+<li>모바일 320px 홈·비교·발굴·잔고 표본의 왼쪽 시작선은 약 18.4px였다. 390px 계산기도 같은 시작선을 사용하고 조건·결과 사이 간격은 약 36.8px(2rem)이었다.</li>
+<li>700px 홈 시작선은 약 27.6px(1.5rem), 1440px 발굴 결과·도움말 시작선은 24px였다. 발굴의 데스크톱 중복 여백이 제거됐다.</li>
+<li>1440px 계산기의 좌우 제목 상단과 첫 카드 상단이 각각 일치했고, 두 열 사이 간격은 32px였다.</li>
+<li>1280px 홈 도구 카드 3개의 링크 하단이 일치했다. 1440px 홈 소개와 도구 안내의 시작 높이가 일치했다.</li>
+<li>잔고 공통 골격 표본에서 선택기 내부 간격 12, 그룹·패널 사이 24를 확인했다. 숨겨진 패널이 앞에 있어도 flex gap에 추가 빈칸이 생기지 않았으며 탭 왕복이 정상 동작했다.</li>
+<li>390px 분석 안내 단계 사이 간격은 24px였다. 확인한 모바일·태블릿·데스크톱 대표 화면에서 문서 가로 넘침이 없었다. 라이트·다크 테마를 확인했다.</li>
+</ul><p class="meta">잔고는 인증 없이 공통 BalanceShell을 사용하는 임시 표본으로 확인했다. 가계부의 인증 데이터 화면과 잔고의 실제 주문·계좌 동작은 실행하지 않았다. 해당 영역은 소스 검토 범위를 함께 기록한다. 임시 검증 경로는 최종 소스에서 제거했다.</p>
+<h2>자동 검증</h2><p id="validation">최종 소스의 npm run check가 통과했다. 타입 검사와 테스트 586개가 성공했고 lint 오류는 0개였다(기존 경고 129개). npm run build도 통과했다. 최종 빌드에 임시 검증 경로는 포함되지 않는다. CI 결과는 PR에서 확인할 수 있다.</p>
+<h2>다음 항목</h2><p>6. 같은 기능의 형태·동작 통일 — 컨트롤의 반경·높이·아이콘·상태 표현을 점검한다.</p></main></html>

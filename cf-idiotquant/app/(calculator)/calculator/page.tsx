@@ -236,9 +236,9 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
 
 function SectionHead({ tag, title, note, action }: { tag: string; title: string; note?: string; action?: ReactNode }) {
     return (
-        <div className="mt-4 sm:mt-10 mb-2 sm:mb-3">
+        <div className="mt-8 sm:mt-10 mb-3">
             <div className="hidden sm:block"><StepLabel tag={tag} /></div>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex min-h-12 items-center gap-3 flex-wrap">
                 <h2 className="text-[19px] sm:text-[21px] font-black tracking-tight text-neutral-900 dark:text-white break-keep">
                     {title}
                 </h2>
@@ -397,8 +397,8 @@ function Calculator() {
                     </>}
                 />
 
-                <div className="lg:grid lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start lg:gap-8">
-                <section className="min-w-0" aria-label="계산 조건">
+                <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,490px)_minmax(0,1fr)] lg:items-start">
+                <section className="min-w-0 [&>div:first-child]:mt-0" aria-label="계산 조건">
                 {/* ── 입력 ──────────────────────────────────────── */}
                 <SectionHead tag="Input" title="조건" action={
                     <Segmented
@@ -615,7 +615,7 @@ function Calculator() {
                 )}
                 </section>
 
-                <section className="min-w-0" aria-label="계산 결과">
+                <section className="min-w-0 [&>div:first-child]:mt-0" aria-label="계산 결과">
                 {/* ── 결과 ──────────────────────────────────────── */}
                 <SectionHead tag="Result" title="결과" note={basisOf(effective)} />
 
