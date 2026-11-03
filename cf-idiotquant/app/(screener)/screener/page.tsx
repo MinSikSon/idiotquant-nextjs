@@ -1327,7 +1327,7 @@ function ScreenerContent() {
             {/* ── 수집 중 안내 배너 ── */}
             {isLoggedIn && scanningInProgress && !showLikedOnly && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200/70 dark:border-amber-800/30">
-                    <div className="w-full mx-auto px-2 sm:px-6 py-2.5 flex items-center gap-2">
+                    <div className="w-full mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
                         <p className="min-w-0 truncate whitespace-nowrap text-xs text-amber-700 dark:text-amber-400 font-medium">
                             최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
@@ -1884,7 +1884,7 @@ function ScreenerContent() {
                    기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
             {bannerPreset && (
                 <div className="bg-brand-light dark:bg-brand-muted/25 border-b border-brand-light dark:border-brand/40">
-                    <div className="w-full mx-auto px-2 sm:px-6 py-2.5 flex items-start gap-2">
+                    <div className="w-full mx-auto px-4 sm:px-6 py-2.5 flex items-start gap-2">
                         <span className={cn(
                             "shrink-0 mt-px px-1.5 py-0.5 rounded-md text-[10px] font-extrabold",
                             STRATEGY_BADGE[bannerPreset.id] ?? "bg-brand-light text-brand-ink-hover"
@@ -1902,7 +1902,7 @@ function ScreenerContent() {
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
                 <div className="bg-white dark:bg-surface-dark-card border-b border-neutral-200 dark:border-border-subtle-dark">
-                    <div className="w-full mx-auto px-2 sm:px-6 py-5">
+                    <div className="w-full mx-auto px-4 sm:px-6 py-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-black text-neutral-900 dark:text-white">전략 설명</h2>
                             <button
@@ -2025,7 +2025,7 @@ function ScreenerContent() {
                 {!isLoading && (isLoggedIn ? filteredList.length > 0 : guestRecommendations.length > 0) && (
                     <>
                     {!isLoggedIn ? (
-                        <section className="w-full mx-auto px-0 sm:px-6">
+                        <section className="w-full">
                             <div className="mb-3 flex items-baseline justify-between gap-3">
                                 <h2 className="text-sm font-black text-neutral-900 dark:text-white">PER 조건에 맞는 발굴 종목 {guestRecommendations.length}개</h2>
                                 {formattedDate && <span className="text-[10.5px] font-mono text-neutral-400">{formattedDate}</span>}

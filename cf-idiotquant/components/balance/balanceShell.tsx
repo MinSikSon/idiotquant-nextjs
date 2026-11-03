@@ -2,7 +2,7 @@
 
 import styles from "./balanceTheme.module.css";
 
-import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
+import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS } from "@/components/pageHeader";
 import { Clock, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
@@ -75,11 +75,13 @@ export function BalanceShell({
           />
         </>}
       />
-      <div className="w-full mx-auto px-2.5 py-2 md:px-6 md:py-4 space-y-2 md:space-y-4">
+      <div className={cn(PAGE_WIDTH.data, "flex flex-col gap-6 py-6")}>
 
         {/* 국가·계좌 선택은 본문과 함께 스크롤한다. */}
-        {countryToggle}
-        {accountSelector}
+        {(countryToggle || accountSelector) && <div className="flex flex-col gap-3">
+          {countryToggle}
+          {accountSelector}
+        </div>}
 
         {/* 섹션 본문 — 활성 탭에 속한 패널을 모두 표시한다.
             탭 id 와 패널 id 를 1:1 로 보면, 탭을 묶는 순간 짝 없는 패널이 조용히 사라진다. */}
