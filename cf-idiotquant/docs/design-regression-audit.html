@@ -34,7 +34,7 @@
 <tr><td>5. 여백·정렬</td><td><a href="design-spacing-audit.html">여백 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1028">#1028</a></td><td>당시 320/390/700/1280/1440px와 임시 잔고 shell 확인</td></tr>
 <tr><td>6. 컨트롤</td><td><a href="design-controls-audit.html">컨트롤 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1029">#1029</a></td><td>소스·자동 검사·생성 CSS 확인. 화면 직접 검증 미완료</td></tr>
 <tr><td>7. 장식 정리</td><td><a href="design-decoration-audit.html">장식 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1030">#1030</a></td><td>소스·자동 검사·생성 CSS 확인. 화면 직접 검증 미완료</td></tr>
-<tr><td>8. 예외·회귀</td><td>현재 보고서</td><td id="validation">타입 검사·테스트 586개 통과. lint 오류 0, 기존 경고 129개. 로컬 빌드는 Google Fonts 로더 오류와 외부 연결 오류로 통과하지 못했다. CI 빌드 결과는 PR에서 별도 확인한다.</td></tr>
+<tr><td>8. 예외·회귀</td><td>현재 보고서</td><td id="validation">타입 검사·테스트 586개 통과. lint 오류 0, 기존 경고 129개. 로컬 빌드는 외부 폰트 오류 후 캐시를 제거한 재시도에서 통과했다. 생성 CSS의 최소 2.75rem 높이·너비, 입력 경계·placeholder·2px 포커스 규칙도 확인했다. CI 결과는 PR에서 별도 확인한다.</td></tr>
 </tbody></table></div>
 <h2>최종 인수를 위해 남은 화면 확인</h2><ol>
 <li>320/390/700/1280/1440px, 밝은/어두운 테마에서 가로 넘침·줄바꿈·카드 정렬을 확인한다.</li>
