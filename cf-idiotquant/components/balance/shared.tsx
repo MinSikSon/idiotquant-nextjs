@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { DetailHelp } from "./detailHelp";
 import { cn } from "@/lib/utils";
+import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
+import { PAGE_ACTION_CLS } from "@/components/pageHeader";
 
 // =========================================================================
 // 유틸
@@ -128,7 +130,8 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
+        "min-h-11 min-w-11 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap",
+        CONTROL_FOCUS_CLS,
         active
           ? "bg-white dark:bg-surface-dark-canvas text-neutral-950 dark:text-white shadow-none underline decoration-2 underline-offset-4"
           : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-300"
@@ -291,9 +294,13 @@ export function BalanceHeaderActions({
     <div data-balance-header-actions className="flex min-w-0 flex-wrap items-center gap-1 md:gap-2 [&>button]:min-h-11 [&>button]:justify-center [&>button]:px-2 md:[&>button]:px-3">
       {extra}
       <button
+        type="button"
+        aria-label="자동갱신"
+        aria-pressed={autoRefresh}
         onClick={onToggleAutoRefresh}
         className={cn(
-          "flex shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-xl text-[11px] md:text-xs font-bold border transition-all",
+          "flex min-h-11 min-w-11 shrink-0 items-center gap-1 px-2 py-2 md:gap-1.5 md:px-3 rounded-lg text-[11px] md:text-xs font-semibold border transition-colors",
+          CONTROL_FOCUS_CLS,
           autoRefresh
             ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
             : "bg-white dark:bg-surface-dark-card text-neutral-500 border-neutral-200 dark:border-border-subtle-dark hover:border-neutral-400"
@@ -303,10 +310,11 @@ export function BalanceHeaderActions({
         {autoRefresh ? "자동갱신 ON" : "자동갱신"}
       </button>
       {!hideRefresh && <button
+        type="button"
         onClick={onRefresh}
         disabled={isLoading}
         aria-label="잔고 새로고침"
-        className="flex min-w-11 shrink-0 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-surface-dark-card border border-neutral-200 dark:border-border-subtle-dark text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
+        className={PAGE_ACTION_CLS}
       >
         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
         <span className="hidden md:inline">새로고침</span>

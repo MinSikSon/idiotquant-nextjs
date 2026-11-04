@@ -1,8 +1,5 @@
 /* Shared by KR/US and every balance tab; the rest of the site keeps its theme. */
 .page {
-  --radius-panel: 12px;
-  --radius-input: 8px;
-  --radius-control: 6px;
   --brand-ink: 41 40 39;
   --brand-ink-hover: 66 64 61;
   --balance-separator: #e3e0dc;
@@ -33,7 +30,7 @@
     gap: 1px;
     overflow: hidden;
     border: 1px solid var(--balance-separator);
-    border-radius: 12px;
+    border-radius: var(--radius-panel);
     background: var(--balance-separator);
   }
 

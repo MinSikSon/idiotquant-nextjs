@@ -1,5 +1,5 @@
 /* 분석 컴포넌트의 제목·수치·간격. 색상은 페이지 테마를 따른다. */
-.surface { min-width: 0; border: 1px solid var(--analysis-line); border-radius: 16px; background: var(--analysis-panel); color: var(--analysis-ink); overflow: hidden; }
+.surface { min-width: 0; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); color: var(--analysis-ink); overflow: hidden; }
 .stockMain { padding: 24px; }
 .stockTitle { font-size: 20px; font-weight: 600; line-height: 1.5; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .priceRow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; margin-top: 20px; }

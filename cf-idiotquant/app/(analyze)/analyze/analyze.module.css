@@ -11,9 +11,6 @@
   --analysis-action-hover: #62469e;
   --analysis-lilac: #f0ebf9;
   --analysis-lilac-ink: #634599;
-  --radius-panel: 16px;
-  --radius-input: 10px;
-  --radius-control: 8px;
   background: var(--analysis-canvas);
   color: var(--analysis-ink);
   font-size: 15px;
@@ -45,11 +42,11 @@
 .quoteTicker { font-variant-numeric: tabular-nums; }
 .quotePrice, .price { color: var(--analysis-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .quoteAux { color: var(--analysis-muted); }
-.primary { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: 8px; background: var(--analysis-action); color: #fff; font-size: 14px; font-weight: 600; }
+.primary { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: var(--radius-control); background: var(--analysis-action); color: #fff; font-size: 14px; font-weight: 600; }
 .primary:hover { background: var(--analysis-action-hover); }
 .page .searchRow { padding-block: 16px; }
 .searchField { min-width: 0; }
-.page .searchField > div > div:first-child { min-height: 48px; border-radius: 10px; border-color: var(--analysis-control-line); background: var(--analysis-soft); box-shadow: none; }
+.page .searchField > div > div:first-child { min-height: 48px; border-radius: var(--radius-input); border-color: var(--analysis-control-line); background: var(--analysis-soft); box-shadow: none; }
 .page .searchField > div > div:first-child:focus-within { border-color: var(--analysis-lilac-ink); outline: 2px solid var(--analysis-lilac-ink); outline-offset: 2px; }
 .page .searchField :global(input[role="combobox"]) { min-height: 32px; font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--analysis-ink); }
 .page .searchField :global(input)::placeholder { color: var(--analysis-muted); opacity: 1; }
@@ -64,22 +61,22 @@
 .tabActive::after { position: absolute; content: ''; height: 2px; bottom: 0; left: 12px; right: 12px; background: var(--analysis-lilac-ink); }
 .page .history { border-color: var(--analysis-line); }
 .historyButton, .rank { font-variant-numeric: tabular-nums; }
-.page .historyButton { background: var(--analysis-soft); border-color: transparent; border-radius: 8px; font-size: 14px; font-weight: 400; }
+.page .historyButton { background: var(--analysis-soft); border-color: transparent; border-radius: var(--radius-control); font-size: 14px; font-weight: 400; }
 .page .rank { color: var(--analysis-lilac-ink); background: var(--analysis-lilac); font-size: 12px; }
 .page .content { padding-top: 24px; }
 .loginNotice { min-width: 0; }
 .analysisSidebar, .detailContent { min-width: 0; }
 .sidebarLabel { display: none; }
-.verdict { margin-bottom: 24px; padding: 16px; border: 1px solid var(--analysis-line); border-left: 3px solid var(--analysis-muted); border-radius: 12px; background: var(--analysis-panel); }
+.verdict { margin-bottom: 24px; padding: 16px; border: 1px solid var(--analysis-line); border-left: 3px solid var(--analysis-muted); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .verdict[data-tone="good"] { border-left-color: #32794f; }
 .verdict[data-tone="caution"] { border-left-color: #a57425; }
 .verdictChecks { font-size: 14px; }
-.page .panel { padding: 24px; border: 1px solid var(--analysis-line); border-radius: 16px; background: var(--analysis-panel); }
+.page .panel { padding: 24px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .segmented { display: flex; flex-wrap: wrap; border: 1px solid var(--analysis-line); background: var(--analysis-soft); }
 .segmentActive { background: var(--analysis-panel); color: var(--analysis-lilac-ink); font-weight: 600; }
 .gateOverlay { background: var(--analysis-panel); }
 .page .footer { border-color: var(--analysis-line); }
-.page :is(button, a, summary):focus-visible { outline: 2px solid var(--analysis-lilac-ink); outline-offset: 3px; }
+.page :is(button, a, summary):focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: 2px; }
 .tabGuide { margin-bottom: 24px; color: var(--analysis-muted); }
 .tabGuide > summary, .readingNote > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 600; color: var(--analysis-ink); }
 .tabGuide summary::-webkit-details-marker, .readingNote summary::-webkit-details-marker { display: none; }
@@ -103,13 +100,13 @@
 .step p { color: var(--analysis-muted); font-size: 15px; line-height: 1.8; }
 .quickSearches { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-bottom: 32px; }
 .quickSearches > span { margin-right: 8px; color: var(--analysis-muted); font-size: 14px; }
-.quickSearches button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--analysis-line); border-radius: 8px; font-size: 14px; color: var(--analysis-ink); background: var(--analysis-panel); }
+.quickSearches button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--analysis-line); border-radius: var(--radius-control); font-size: 14px; color: var(--analysis-ink); background: var(--analysis-panel); }
 .quickSearches button:hover { background: var(--analysis-lilac); }
 .methods { border-top: 1px solid var(--analysis-line); }
 .methods > summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; min-height: 56px; padding-block: 16px; font-size: 15px; font-weight: 600; color: var(--analysis-ink); }
 .methods[open] > summary svg { transform: rotate(180deg); }
 .models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding: 8px 0 24px; }
-.model { padding: 24px; border: 1px solid var(--analysis-line); border-radius: 12px; background: var(--analysis-panel); }
+.model { padding: 24px; border: 1px solid var(--analysis-line); border-radius: var(--radius-panel); background: var(--analysis-panel); }
 .model h3 { color: var(--analysis-ink); font-size: 16px; font-weight: 600; }
 .model p { margin-top: 8px; font-size: 14px; line-height: 1.8; color: var(--analysis-muted); }
 .model .caution { padding-top: 8px; border-top: 1px solid var(--analysis-line); }
