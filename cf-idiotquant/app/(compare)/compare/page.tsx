@@ -311,8 +311,6 @@ export default function ComparePage() {
 
   return <div className="min-h-screen bg-surface-canvas text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100">
     {pendingImport && <ImportConfirmation
-      existingCount={stocks.length}
-      incomingCount={planComparisonImport(stocks, pendingImport.tickers, pendingImport.market, limits.stocks).added.length}
       limit={limits.stocks}
       onDecision={replace => {
         const request = pendingImport;

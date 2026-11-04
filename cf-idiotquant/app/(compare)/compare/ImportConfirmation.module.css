@@ -1,0 +1,9 @@
+.countdown {
+  transform-origin: left;
+  animation: countdown 5s linear forwards;
+}
+
+@keyframes countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
