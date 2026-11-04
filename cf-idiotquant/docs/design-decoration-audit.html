@@ -1,0 +1,26 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IdiotQuant — 장식 정리 적용 보고서</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f2f0eb;color:#292827;font:400 16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px}h1,h2,h3,strong{font-weight:600}h1{font-size:clamp(28px,4vw,42px);line-height:1.3;margin:12px 0}h2{font-size:23px;margin:36px 0 12px}p{max-width:76ch}a{color:#593699;text-underline-offset:3px}.meta{font-size:14px;color:#66615e}.card{background:white;border:1px solid #dedbd5;border-radius:8px;padding:24px;margin:20px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sample{font-size:24px;line-height:1.5}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dedbd5;padding:12px 10px}th{font-weight:600}code{font-size:13px}li{margin:8px 0}.numbers{font-variant-numeric:tabular-nums;text-align:right}.tag{font-size:13px;color:#593699}small{font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:28px 18px}.card{padding:18px}}@media(prefers-color-scheme:dark){body{background:#1b1819;color:#eeece7}.card{background:#262123;border-color:#43383c}th,td{border-color:#43383c}.meta{color:#bcb0ad}a,.tag{color:#c9b0ef}}
+</style><main><div class="tag">디자인 개선 · 7 / 8 · 2026-11-04</div>
+<h1>구분에 필요한 표현만 남기기</h1>
+<p>홈·분석 안내·계산기·발굴 화면에서 정보 역할이 겹치는 선·배경·그림자·유리 효과를 줄였다. 앞 단계에서 정리한 여백과 제목, 숫자, 링크 단서가 그룹과 동작을 전달하도록 했다.</p>
+<p class="meta">근거: <a href="https://news.hada.io/topic?id=31746">큰 효과를 만드는 작은 UI 디자인 팁들</a>의 불필요한 장식 제거 원칙. 변경은 네 개 화면의 표현에 한정한다.</p>
+<h2>정리한 표현</h2><div class="table-wrap"><table><thead><tr><th>화면</th><th>이전</th><th>적용</th></tr></thead><tbody>
+<tr><td>홈 미리보기</td><td>반투명 표면과 12px 배경 블러</td><td>테마별 불투명 패널 표면으로 교체. 표의 경계와 행 구분선은 유지</td></tr>
+<tr><td>홈 도구 안내</td><td>각 링크 카드의 테두리·채움·둥근 상자</td><td>테두리와 기본 채움을 제거. 여백·순서 번호·제목·화살표로 구조를 전달하고 hover 배경과 키보드 포커스는 유지</td></tr>
+<tr><td>분석 안내</td><td>세 관점의 위 구분선, 모델 설명마다 별도 카드 경계·채움</td><td>제목·번호·간격으로 그룹을 구분. 모델 가정 주의문을 구분하는 내부 선은 유지</td></tr>
+<tr><td>계산기</td><td>영문 섹션 레이블 옆의 반복 수평선</td><td>선만 제거. 섹션 제목·레이블과 조건/결과 간격은 유지</td></tr>
+<tr><td>발굴</td><td>표·카드·선택 버튼·추가 동작의 shadow-sm, 보조 분석 버튼의 강한 hover 채움</td><td>작은 그림자 10곳을 제거하고 보조 분석 동작 hover를 중성 표면으로 변경. 선택 밑줄·색상·텍스트와 실제 경계는 유지</td></tr>
+<tr><td>발굴 필터 하단</td><td>반투명 고정 바와 배경 블러</td><td>불투명 테마 표면 사용. 상단 구분선과 적용 동작은 유지</td></tr>
+</tbody></table></div>
+<h2>남긴 표현의 이유</h2><ul>
+<li>입력 테두리와 포커스는 입력 위치와 현재 조작 대상을 전달한다.</li>
+<li>표 경계·행 구분선은 서로 다른 데이터 행과 묶음을 구분한다.</li>
+<li>선택 배경·밑줄·선택됨 텍스트는 사용자의 현재 조건을 전달한다.</li>
+<li>로딩 스피너·스켈레톤은 대기 상태를 전달한다. 제거하지 않았다.</li>
+<li>팝오버·메뉴의 그림자는 다른 내용 위에 떠 있는 계층을 구분한다. 발굴 툴팁·메뉴의 shadow-lg는 유지했다.</li>
+<li>홈의 브랜드 소개용 3D와 게임·관리자 전용 화면은 이번 변경에 포함하지 않았다.</li>
+</ul>
+<h2>검증</h2><p id="validation">npm run check에서 타입 검사와 테스트 586개가 통과했고, lint 오류는 0개였다(기존 경고 129개). npm run build도 통과했다. 생성 CSS에서 홈 미리보기의 불투명 표면, 도구 안내의 경계·채움 제거, 분석 모델·단계의 장식 제거를 확인했다.</p>
+<p id="browser-status">브라우저 자동화 연결 오류와 Mac 잠금으로 이번 실행의 화면 직접 검증을 수행하지 못했다. 소스와 생성 CSS로 확인했으며, 화면 크기별 읽기 흐름과 hover·포커스 모양은 직접 확인한 것으로 표시하지 않는다. 다음 회귀 점검에서 확인할 공백으로 남긴다.</p>
+<p class="meta">동작·조회·저장 로직은 수정하지 않았다. 기존 회귀 테스트 통과는 화면 크기별 읽기 흐름이나 hover·포커스 모양의 직접 확인을 대신하지 않는다.</p>
+<h2>다음 항목</h2><p>8. 화면별 예외와 회귀 점검 — 앞 단계의 적용 범위·예외·검증 공백을 종합 확인한다.</p></main></html>

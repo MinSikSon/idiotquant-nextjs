@@ -66,7 +66,6 @@ function StepLabel({ tag }: { tag: string }) {
             <span className="text-[10px] font-medium tracking-[0.12em] text-neutral-500 dark:text-neutral-400 shrink-0">
                 {tag}
             </span>
-            <div className="h-px flex-1 bg-neutral-200 dark:bg-border-subtle-dark" />
         </div>
     );
 }
