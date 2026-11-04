@@ -401,7 +401,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                     <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
                 </button>
                 <button
-                    className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-brand group-hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
+                    className="hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-canvas dark:bg-surface-dark-card group-hover:bg-neutral-200 dark:group-hover:bg-surface-dark-hover text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
                     onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
                 >
                     분석
@@ -1456,7 +1456,7 @@ function ScreenerContent() {
                             className={cn(
                                 "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-colors whitespace-nowrap sm:px-3",
                                 filterOpen
-                                    ? "bg-brand border-brand text-white shadow-sm"
+                                    ? "bg-brand border-brand text-white"
                                     : activeFilterCount > 0
                                         ? "bg-brand-light dark:bg-brand-muted/30 border-brand-light-hover dark:border-brand/40 text-brand-ink-hover dark:text-brand-ink"
                                         : "bg-white dark:bg-surface-dark-card border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
@@ -1488,7 +1488,7 @@ function ScreenerContent() {
                             className={cn(
                                 "shrink-0 flex min-h-[44px] items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap sm:px-3",
                                 showLikedOnly
-                                    ? "bg-rose-500 border-rose-500 text-white shadow-sm"
+                                    ? "bg-rose-500 border-rose-500 text-white"
                                     : "border-neutral-200 dark:border-surface-dark-border text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-surface-dark-card"
                             )}
                         >
@@ -1872,8 +1872,8 @@ function ScreenerContent() {
                             </DrawerCard>
                         </div>
                     </div>
-                    <div className="sticky bottom-0 border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur-md dark:border-surface-dark-border dark:bg-surface-dark/95 sm:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-                        <button onClick={() => setFilterOpen(false)} className="w-full rounded-xl bg-brand py-3 text-sm font-extrabold text-white shadow-sm">
+                    <div className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 dark:border-surface-dark-border dark:bg-surface-dark sm:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+                        <button onClick={() => setFilterOpen(false)} className="w-full rounded-xl bg-brand py-3 text-sm font-extrabold text-white">
                             {filteredList.length}종목 결과 보기
                         </button>
                     </div>
@@ -2118,7 +2118,7 @@ function ScreenerContent() {
                                             "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
                                             o.disabled && "opacity-40 cursor-not-allowed",
                                             groupMode === o.id
-                                                ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white shadow-sm underline decoration-2 underline-offset-4"
+                                                ? "bg-white dark:bg-surface-dark font-extrabold text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
                                                 : "font-bold text-neutral-500 dark:text-neutral-400"
                                         )}
                                     >
@@ -2136,7 +2136,7 @@ function ScreenerContent() {
                                         className={cn(
                                             "rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors sm:px-2.5",
                                             viewMode === id
-                                                ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white shadow-sm underline decoration-2 underline-offset-4"
+                                                ? "bg-white dark:bg-surface-dark text-neutral-900 dark:text-white underline decoration-2 underline-offset-4"
                                                 : "text-neutral-500 dark:text-neutral-400"
                                         )}
                                     >
@@ -2159,7 +2159,7 @@ function ScreenerContent() {
 
                         {viewMode === 'ratio' ? (
                             groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
@@ -2174,7 +2174,7 @@ function ScreenerContent() {
                             )
                         ) : viewMode === 'card' ? (
                             groups ? (
-                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                     <GroupedResults {...groupedProps} bodyClassName={CARD_GRID_BODY}
                                         renderRow={(item: any) => (
                                             <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} />
@@ -2188,7 +2188,7 @@ function ScreenerContent() {
                                 </div>
                             )
                         ) : (
-                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden shadow-sm">
+                        <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                                 <div className={cn("grid gap-1.5 lg:gap-4 items-center px-2 py-2.5 sm:px-4 lg:px-6 lg:py-4 bg-[#fcfaf7] dark:bg-surface-dark border-b border-neutral-200 dark:border-border-subtle-dark", TABLE_COLUMNS)}>
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="hidden lg:block text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
@@ -2215,7 +2215,7 @@ function ScreenerContent() {
                         )}
 
                         {previewCapped && (
-                            <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-6 text-center shadow-sm">
+                            <div className="mt-8 rounded-2xl border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-6 text-center">
                                 <Lock size={18} className="mx-auto mb-3 text-neutral-400" />
                                 <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
                                     {matchedTotal - PREVIEW_SIZE}개 종목이 더 있습니다
@@ -2225,7 +2225,7 @@ function ScreenerContent() {
                                 </p>
                                 <button
                                     onClick={requireLogin}
-                                    className="mt-4 px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold transition-colors shadow-sm"
+                                    className="mt-4 px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-bold transition-colors"
                                 >
                                     로그인하고 전체 보기
                                 </button>
