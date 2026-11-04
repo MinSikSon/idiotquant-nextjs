@@ -34,6 +34,7 @@ import {
 import { COMPARISON_STORAGE_KEY, readComparisonSnapshot, serializeComparison } from '@/lib/features/compare/storage';
 import { planComparisonImport } from '@/lib/features/compare/import';
 import ImportConfirmation from './ImportConfirmation';
+import { isComparisonDate, localToday } from '@/lib/features/compare/dates';
 
 type RecentStock = Pick<ComparisonStock, 'ticker' | 'name' | 'market'>;
 type ScreenerImport = { source: string; market: 'KR' | 'US'; date: string; tickers: string[] };
@@ -53,10 +54,6 @@ const positiveShares = (value: unknown): number | undefined => {
 };
 const show = (n: number | undefined, digits = 2) => n == null ? '—' : n.toLocaleString('ko-KR', { maximumFractionDigits: digits });
 const formatDate = (date: string) => /^\d{8}$/.test(date) ? `${date.slice(0, 4)}.${date.slice(4, 6)}.${date.slice(6)}` : date;
-const localToday = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-};
 
 async function getHistoricalPrice(ticker: string, market: 'KR' | 'US', date: string, history: unknown) {
   const end = date.replaceAll('-', '');
@@ -114,6 +111,8 @@ export default function ComparePage() {
   const [comparisonReady, setComparisonReady] = useState(false);
   const [storageFailed, setStorageFailed] = useState(false);
   const [pendingImport, setPendingImport] = useState<ScreenerImport | null>(null);
+  const today = localToday();
+  const dateInvalid = !!dateInput && !isComparisonDate(dateInput, today);
 
   useEffect(() => {
     let active = true;
@@ -167,6 +166,10 @@ export default function ComparePage() {
     catch { /* 저장소가 막혀 있어도 종목 비교는 계속 쓸 수 있다. */ }
   }, [recentStocks, recentLoaded]);
   const runImport = useCallback(async (request: ScreenerImport, replace: boolean) => {
+    if (!isComparisonDate(request.date)) {
+      dispatch(setError('비교 날짜는 오늘 또는 이전의 올바른 날짜를 선택해 주세요.'));
+      return;
+    }
     const plan = planComparisonImport(stocks, request.tickers, request.market, limits.stocks);
     const tickers = replace ? plan.selected : plan.added;
     const importDates = replace ? [request.date] : [...new Set([...dates, request.date])].sort();
@@ -208,6 +211,10 @@ export default function ComparePage() {
       .slice(0, limits.stocks);
     if (!tickers.length) return;
     const selectedDate = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}`;
+    if (!isComparisonDate(selectedDate)) {
+      dispatch(setError('비교 날짜는 오늘 또는 이전의 올바른 날짜를 선택해 주세요.'));
+      return;
+    }
     const source = JSON.stringify([market, date, tickers]);
     if (importSource === source) return;
     const request: ScreenerImport = { source, market, date: selectedDate, tickers };
@@ -265,7 +272,7 @@ export default function ComparePage() {
 
   async function addDate() {
     const date = dateInput;
-    if (!date || sessionLoading || dates.includes(date) || dates.length >= limits.dates || loading || dateLoading) return;
+    if (!isComparisonDate(date) || sessionLoading || dates.includes(date) || dates.length >= limits.dates || loading || dateLoading) return;
     dispatch(dateLoadStarted(date));
     await Promise.all(stocks.map(async stock => {
       const history = stock.market === 'KR' ? await getScanDailyByTicker(stock.ticker, 200).catch(() => undefined) : undefined;
@@ -335,12 +342,13 @@ export default function ComparePage() {
         <div className="mt-4 grid min-w-0 gap-3 sm:flex sm:items-end">
           <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
             가격 기준일
-            <input type="date" value={dateInput} max={localToday()} onChange={e => dispatch(setDateInput(e.target.value))} disabled={sessionLoading || dateLoading || loading} className={cn(CONTROL_INPUT_CLS, "relative mt-1 block h-11 w-full min-w-0 max-w-full appearance-none bg-white px-3 text-center text-base text-neutral-900 outline-none dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:text-sm [&::-webkit-date-and-time-value]:m-0 [&::-webkit-date-and-time-value]:flex [&::-webkit-date-and-time-value]:h-full [&::-webkit-date-and-time-value]:w-full [&::-webkit-date-and-time-value]:min-h-0 [&::-webkit-date-and-time-value]:items-center [&::-webkit-date-and-time-value]:justify-center [&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center [&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2")} />
+            <input type="date" value={dateInput} max={today} aria-invalid={dateInvalid || undefined} aria-describedby={dateInvalid ? "compare-date-error" : undefined} onChange={e => dispatch(setDateInput(e.target.value))} disabled={sessionLoading || dateLoading || loading} className={cn(CONTROL_INPUT_CLS, "relative mt-1 block h-11 w-full min-w-0 max-w-full appearance-none bg-white px-3 text-center text-base text-neutral-900 outline-none dark:bg-surface-dark-card dark:text-neutral-100 sm:w-56 sm:text-sm [&::-webkit-date-and-time-value]:m-0 [&::-webkit-date-and-time-value]:flex [&::-webkit-date-and-time-value]:h-full [&::-webkit-date-and-time-value]:w-full [&::-webkit-date-and-time-value]:min-h-0 [&::-webkit-date-and-time-value]:items-center [&::-webkit-date-and-time-value]:justify-center [&::-webkit-date-and-time-value]:text-center [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center [&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2")} />
           </label>
-          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !dateInput || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className={PAGE_PRIMARY_ACTION_CLS}>
+          <button type="button" onClick={() => void addDate()} disabled={sessionLoading || !isComparisonDate(dateInput, today) || dates.includes(dateInput) || dates.length >= limits.dates || dateLoading || loading} className={PAGE_PRIMARY_ACTION_CLS}>
             {dateLoading ? <Loader2 size={16} className="shrink-0 animate-spin" /> : <Plus size={16} className="shrink-0" />} 날짜 추가
           </button>
         </div>
+        {dateInvalid && <p id="compare-date-error" role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400">오늘 또는 이전의 올바른 날짜를 선택해 주세요.</p>}
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">날짜 {dates.length}/{limits.dates}개 · {sessionStatus === 'authenticated' ? '로그인' : '비로그인'} 기준</p>
         {dates.length > 0 && <div className="mt-3 flex flex-wrap gap-2">
           {dates.map(date => <span key={date} className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium dark:border-neutral-700 dark:bg-surface-dark-card">
