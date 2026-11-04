@@ -1,0 +1,31 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IdiotQuant — 후속 화면 회귀 검증</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f2f0eb;color:#292827;font:400 16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px}h1,h2,h3,strong{font-weight:600}h1{font-size:clamp(28px,4vw,42px);line-height:1.3;margin:12px 0}h2{font-size:23px;margin:36px 0 12px}p{max-width:76ch}a{color:#593699;text-underline-offset:3px}.meta{font-size:14px;color:#66615e}.card{background:white;border:1px solid #dedbd5;border-radius:8px;padding:24px;margin:20px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sample{font-size:24px;line-height:1.5}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dedbd5;padding:12px 10px}th{font-weight:600}code{font-size:13px}li{margin:8px 0}.numbers{font-variant-numeric:tabular-nums;text-align:right}.tag{font-size:13px;color:#593699}small{font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:28px 18px}.card{padding:18px}}@media(prefers-color-scheme:dark){body{background:#1b1819;color:#eeece7}.card{background:#262123;border-color:#43383c}th,td{border-color:#43383c}.meta{color:#bcb0ad}a,.tag{color:#c9b0ef}}
+@media(max-width:650px){table{min-width:640px}th:first-child,td:first-child{min-width:90px}}</style><main>
+<div class="tag">디자인 개선 · 후속 화면 검증 · 2026-11-04</div><h1>공개 화면 50개 조건 확인</h1>
+<p>PR #1031의 소스와 동일한 프로덕션 빌드를 로컬에서 열어, 앞서 연결 문제로 남겨 둔 화면 검증을 진행했다. 앱 내 브라우저는 Mac 잠금과 별개로 정상 연결됐다. 이번 변경은 검증 기록이며 제품 소스 수정은 없다.</p>
+<div class="card"><strong>공개 화면의 반응형 점검 완료 · 인증 기능 전체 인수는 미완료</strong><p>홈·계산기·분석 시작·비교 빈 결과/날짜 칩·비로그인 발굴 화면에서, 두 테마 × 다섯 화면 폭의 50개 조건 모두 페이지 전체의 가로 넘침이 없었다. 이 수치는 DOM의 viewport/scrollWidth 대조이며 모든 내부 요소의 겹침이나 모든 상태의 시각 검증을 뜻하지 않는다.</p></div>
+<h2>반응형 점검</h2><div class="table-wrap"><table><thead><tr><th>화면</th><th>조건</th><th>결과·범위</th></tr></thead><tbody>
+<tr><td>홈</td><td>light/dark · 320/390/700/1280/1440px</td><td>가로 넘침 없음. 미리보기 표와 도구 링크 구조 확인. 도구 링크의 배경 transparent·border 0·shadow none 확인</td></tr>
+<tr><td>계산기 상세</td><td>동일한 10개 조건</td><td>가로 넘침 없음. 모바일 입력 높이 약 50.6px, 데스크톱 44px. 경계 rgb(115,115,115). 모바일 목표 입력 18.4px</td></tr>
+<tr><td>분석 시작</td><td>동일한 10개 조건</td><td>가로 넘침 없음. 검색·인기 종목·안내의 모바일 배치를 화면으로 확인. 데이터가 있는 상세 분석은 별도 범위</td></tr>
+<tr><td>비교</td><td>동일한 10개 조건</td><td>가로 넘침 없음. 날짜 칩이 있는 상태의 제거 영역 데스크톱 44×44px. 종목 데이터가 있는 표·카드는 미확인</td></tr>
+<tr><td>발굴 공개 목록</td><td>동일한 10개 조건</td><td>가로 넘침 없음. 실제 로드된 국내 공개 종목 카드와 시장 선택의 밑줄·pressed 상태 확인. 로그인 상세 필터는 미확인</td></tr>
+</tbody></table></div><p class="meta">일부 대표 화면의 스크린샷도 확인했다(계산기 light 390px, 분석 dark 390px, 홈 light 1280px, 비교 dark 390px, 발굴 dark 390px). 모바일 root 글자 확대 규칙에 따라 2.75rem은 약 50.6px이 된다. 실제 모바일 기기·모든 브라우저 호환성 검사는 아니다.</p>
+<h2>실행한 상호작용</h2><div class="table-wrap"><table><thead><tr><th>대상</th><th>확인 결과</th></tr></thead><tbody>
+<tr><td>계산기</td><td>상세 전환, 초기 투자금 1,000→2,000 변경 후 평가금액 자동 반영(2억 6,262만원→2억 9,521만원), 목표 30,000 입력 후 달성률 98.4% 표시, 목표 해제로 0 복귀. Tab 후 2px 포커스 확인</td></tr>
+<tr><td>검색 ARIA</td><td>빈 입력은 expanded=false·controls/active 참조 없음. 결과 없음은 expanded=true·listbox 존재. AAPL 추천에서 ArrowDown 후 suggestion-1 존재 확인. Escape 후 팝업·참조 제거. 초기화 후 검색 버튼 비활성 확인</td></tr>
+<tr><td>비교 날짜</td><td>키보드 입력 이벤트로 날짜 추가·제거와 종목 검색 활성화를 확인. 자동화 도구의 fill만으로는 DOM 값과 React 상태가 일치하지 않아 단순 fill을 사용자 입력 성공으로 간주하지 않음. 실제 거래일 가격 조회는 수행하지 않음</td></tr>
+<tr><td>발굴 시장</td><td>미국 선택 후 국내 pressed 해제·미국 pressed 설정과 로딩 상태 확인. 미국 결과 전체 내용은 검증하지 않음</td></tr>
+</tbody></table></div>
+<h2>잔고 공통 컴포넌트와 제외 조건</h2><p>실제 계좌 대신 임시 로컬 fixture에서 기존 BalanceShell·DetailHelp를 렌더링했다. 개발 서버 준비와 hydration 이후에 상호작용을 확인했으며, fixture는 저장소에 남기지 않는다.</p><ul>
+<li>요약→상세→요약 전환 시 해당 패널 표시가 바뀌었다. 페이지 작업 메뉴에서 자동갱신 버튼의 aria-pressed=true 변경을 확인했다. 실제 자동 조회는 연결하지 않았다.</li>
+<li>도움말은 Enter로 열리고 닫기 버튼과 Escape로 닫혔다. 390px에서 x=12, 오른쪽=378, 너비=366px로 화면 안에 배치됐다. 닫기 영역은 약 50.6×50.6px이었다. 데스크톱 팝오버 너비는 320px, 반경은 두 환경 모두 8px이었다.</li>
+<li>일반 금융 표본의 font-bold 실측은 600, text-sm 줄 높이는 24.15px이었다. 관리자 또는 게임 표식을 넣으면 새 금융 토큰이 제거돼 기존 굵기 700·줄 높이 23px로 돌아왔고, 표식 제거 후 600·24.15px로 복귀했다. 실제 관리자·게임 전체 화면 확인을 대신하지 않는다.</li>
+</ul>
+<h2>추가 발견과 남은 확인</h2><ul>
+<li>비교 날짜 입력은 max 속성이 있지만 키보드로 미래 날짜를 만든 뒤 날짜 추가가 가능한 상태를 관찰했다. 이번 UI 문서 변경에는 날짜 검증 로직을 섞지 않았다. 다음 기능 보완에서 addDate의 날짜 유효성·미래 날짜 제한을 검사하고 회귀 테스트로 고정할 대상이다.</li>
+<li>실제 계좌·로그인 상세 발굴 필터·저장·거래는 실행하지 않았다. 인증된 잔고 전체 화면과 실제 관리자·게임 화면, 종목 데이터가 있는 비교 표/카드, 상세 분석·리서치의 최종 확인은 남는다.</li>
+<li>검색 Enter와 명시적 검색의 요청이 정확히 한 번 실행되는지, IME 조합 및 실제 모바일 날짜 선택기 동작은 이번 실행에서 계측하지 않았다.</li>
+<li>측정 결과는 최신 공개 화면의 범위에 한정된다. 전체 서비스의 접근성·거래 기능·브라우저 호환성 인증으로 해석하지 않는다.</li>
+</ul>
+<h2>검증 환경과 연결</h2><p>로컬 프로덕션 서버 3112, 임시 컴포넌트 검증 서버 3113, 앱 내 브라우저를 사용했다. 인증 계정 없이 검사했고 원래 작업 폴더의 미커밋 변경은 보존했다. 제품 소스가 동일하므로 이전 타입 검사·테스트 586개·빌드 결과를 재사용하며, 문서의 내부 링크와 변경 범위는 별도로 확인한다.</p><p><a href="design-regression-audit.html">종합 회귀 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1031">소스 보완 PR #1031</a></p></main></html>

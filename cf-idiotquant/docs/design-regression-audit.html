@@ -4,7 +4,7 @@
 <div class="tag">디자인 개선 · 8번째 항목 · 2026-11-04</div>
 <h1>화면별 예외와 회귀 점검</h1>
 <p>앞선 일곱 단계의 적용 범위를 소스로 점검하고, 계산기·비교·목표 자산·검색에서 빠진 대비와 조작 영역을 보완했다. 소스·자동 검사와 화면 직접 검증의 결과를 구분한다.</p>
-<div class="card"><strong>현재 판정: 소스 회귀 점검 및 보완 완료 · 최신 화면 직접 검증 미완료</strong><p>브라우저 연결 오류와 Mac 잠금으로 6–8단계 변경의 화면 검증이 남았다. 1–5단계의 과거 화면 확인을 최신 변경의 통과 근거로 사용하지 않는다. 전체 화면의 접근성 인증이나 8개 항목의 최종 인수 완료를 뜻하지 않는다.</p></div>
+<div class="card"><strong>현재 판정: 소스 보완 및 공개 화면 후속 검증 완료 · 인증 화면 검증 일부 남음</strong><p>최초 점검은 브라우저 연결 오류와 Mac 잠금으로 화면 검증을 수행하지 못했다. 이후 앱 내 브라우저로 공개 화면 5곳의 50개 조건과 임시 잔고 컴포넌트를 확인했다. <a href="design-browser-regression.html">후속 화면 검증 결과</a>를 함께 읽는다. 실제 인증 화면과 데이터가 있는 비교 결과의 검증은 남아 있으며, 전체 접근성 인증을 뜻하지 않는다.</p></div>
 <p class="meta">기준: <a href="https://news.hada.io/topic?id=31746">큰 효과를 만드는 작은 UI 디자인 팁들</a>. 금융·공통 UI를 대상으로 하며 게임·관리자 전용 화면은 별도 규칙을 유지한다.</p>
 <h2>이번에 보완한 누락</h2><div class="table-wrap"><table><thead><tr><th>대상</th><th>발견</th><th>보완</th></tr></thead><tbody>
 <tr><td>계산기·비교·목표 자산 입력</td><td>연한 입력 경계, 화면마다 다른 포커스와 placeholder</td><td>공통 입력 클래스에 neutral-500 경계, light neutral-600 / dark neutral-400 placeholder, 2px 키보드 포커스와 최소 2.75rem 높이를 정의했다.</td></tr>
@@ -26,7 +26,7 @@
 <tr><td>게임</td><td>공통 전역 규칙의 제외 조건 점검</td><td>게임 파일 변경 없음. 전용 서체·토큰 유지. 실제 화면 회귀 확인은 남음</td></tr>
 <tr><td>관리자</td><td>새 서체 굵기·줄 높이 토큰에서 제외하는 wrapper</td><td>관리자 변경 파일은 layout의 제외 표식뿐. 기존 서체 규칙 유지. 관리자 화면 직접 확인은 남음</td></tr>
 </tbody></table></div>
-<h2>여덟 단계의 근거와 검증 상태</h2><div class="table-wrap"><table><thead><tr><th>항목</th><th>상세 보고서·PR</th><th>검증 구분</th></tr></thead><tbody>
+<h2>여덟 단계의 근거와 최초 검증 상태</h2><div class="table-wrap"><table><thead><tr><th>항목</th><th>상세 보고서·PR</th><th>검증 구분</th></tr></thead><tbody>
 <tr><td>1. 대비</td><td><a href="design-audit.html">대비 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1024">#1024</a></td><td>당시 대표 화면 확인. 서비스 전체 AA 판정 아님</td></tr>
 <tr><td>2. 상호작용 상태</td><td><a href="design-interaction-audit.html">상태 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1025">#1025</a></td><td>당시 화면·키보드 확인</td></tr>
 <tr><td>3. 주요 행동</td><td><a href="design-primary-actions-audit.html">행동 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1026">#1026</a></td><td>당시 공개 화면 확인</td></tr>
@@ -36,7 +36,7 @@
 <tr><td>7. 장식 정리</td><td><a href="design-decoration-audit.html">장식 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1030">#1030</a></td><td>소스·자동 검사·생성 CSS 확인. 화면 직접 검증 미완료</td></tr>
 <tr><td>8. 예외·회귀</td><td>현재 보고서</td><td id="validation">타입 검사·테스트 586개 통과. lint 오류 0, 기존 경고 129개. 로컬 빌드는 외부 폰트 오류 후 캐시를 제거한 재시도에서 통과했다. 생성 CSS의 최소 2.75rem 높이·너비, 입력 경계·placeholder·2px 포커스 규칙도 확인했다. CI 결과는 PR에서 별도 확인한다.</td></tr>
 </tbody></table></div>
-<h2>최종 인수를 위해 남은 화면 확인</h2><ol>
+<h2>최초 점검에서 남긴 확인 목록</h2><p>아래는 최초 기록이다. 후속 실행의 완료·미완료 구분은 <a href="design-browser-regression.html">화면 검증 보고서</a>를 기준으로 한다.</p><ol>
 <li>320/390/700/1280/1440px, 밝은/어두운 테마에서 가로 넘침·줄바꿈·카드 정렬을 확인한다.</li>
 <li>Tab 이동 시 포커스 외곽선과 입력·도움말·초기화·제거 버튼의 영역 및 잘림을 확인한다.</li>
 <li>검색의 빈 입력·추천·결과 없음, 화살표·Enter·명시적 검색의 단일 실행, Escape 후 닫힘과 ARIA 참조를 확인한다.</li>
