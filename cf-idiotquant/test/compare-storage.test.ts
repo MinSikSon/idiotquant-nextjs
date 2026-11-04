@@ -25,3 +25,17 @@ test('깨진 저장본·다른 버전을 거절하고 잘못된 날짜·종목�
     assert.deepEqual(restored.dates, ['2026-10-01']);
     assert.deepEqual(restored.stocks, []);
 });
+
+
+test('예전에 저장된 미래 날짜와 가격은 복원하지 않고 유효한 비교는 보존한다', () => {
+    const raw = serializeComparison({ dates: ['2026-11-04', '2026-11-05', '2026-02-30'], dateInput: '2026-11-05', query: '삼성', stocks: [{
+        id: 'KR:005930', market: 'KR', ticker: '005930', name: '삼성전자', currency: '₩',
+        prices: { '2026-11-04': { price: 60000 }, '2026-11-05': { price: 61000 } },
+    }] });
+    const restored = readComparisonSnapshot(raw, '2026-11-04')!;
+    assert.deepEqual(restored.dates, ['2026-11-04']);
+    assert.equal(restored.dateInput, '');
+    assert.equal(restored.query, '삼성');
+    assert.deepEqual(restored.stocks[0].prices, { '2026-11-04': { price: 60000 } });
+    assert.deepEqual(readComparisonSnapshot(raw, '2026-11-05')!.dates, ['2026-11-04', '2026-11-05']);
+});

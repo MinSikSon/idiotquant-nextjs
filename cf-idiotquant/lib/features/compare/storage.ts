@@ -1,16 +1,15 @@
+import { isComparisonDate, localToday } from './dates';
 import type { ComparisonPrice, ComparisonStock } from './compareSlice';
 
 export const COMPARISON_STORAGE_KEY = 'idiotquant:compare:workspace:v1';
 export type ComparisonSnapshot = { dates: string[]; stocks: ComparisonStock[]; dateInput: string; query: string };
-const validDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-  && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const numeric = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
-export function readComparisonSnapshot(raw: string | null): ComparisonSnapshot | null {
+export function readComparisonSnapshot(raw: string | null, today = localToday()): ComparisonSnapshot | null {
   try {
     const value = JSON.parse(raw ?? 'null');
     if (value?.version !== 1 || !Array.isArray(value.dates) || !Array.isArray(value.stocks)) return null;
-    const dates = [...new Set(value.dates.filter(validDate))].slice(0, 10) as string[];
+    const dates = [...new Set(value.dates.filter((date: unknown) => isComparisonDate(date, today)))].slice(0, 10) as string[];
     const stocks: ComparisonStock[] = [];
     for (const item of value.stocks.slice(0, 20)) {
       if (!item || (item.market !== 'KR' && item.market !== 'US') || typeof item.ticker !== 'string'
@@ -36,7 +35,7 @@ export function readComparisonSnapshot(raw: string | null): ComparisonSnapshot |
       }
       stocks.push(stock);
     }
-    return { dates, stocks, dateInput: validDate(value.dateInput) ? value.dateInput : '', query: typeof value.query === 'string' ? value.query.slice(0, 100) : '' };
+    return { dates, stocks, dateInput: isComparisonDate(value.dateInput, today) ? value.dateInput : '', query: typeof value.query === 'string' ? value.query.slice(0, 100) : '' };
   } catch { return null; }
 }
 
