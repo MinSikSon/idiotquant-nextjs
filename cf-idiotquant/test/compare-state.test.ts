@@ -85,6 +85,29 @@ test('새 스크리너 가져오기는 이전 비교표와 섞지 않으며 중�
   assert.equal(store.getState().compare.stocks.length, 1);
 });
 
+for (const limit of [4, 20]) {
+  test(`기존 ${limit}종목이 있어도 스크리너에서 한도 이상의 종목을 가져오면 ${limit}종목을 넘지 않는다`, () => {
+    const store = createStore();
+    addStock(store);
+    for (let index = 1; index < limit; index++) {
+      const ticker = String(index).padStart(6, '0');
+      store.dispatch(stockReceived({ stock: { ...stock, id: `old-${ticker}`, ticker }, limit }));
+    }
+    assert.equal(store.getState().compare.stocks.length, limit);
+    store.dispatch(importStarted({ source: 'new-screener', date: '2026-10-15', total: limit + 1 }));
+    for (let index = 0; index <= limit; index++) {
+      const ticker = String(index + 100).padStart(6, '0');
+      store.dispatch(stockReceived({ stock: { ...stock, id: `new-${ticker}`, ticker }, limit }));
+      store.dispatch(importAdvanced(index + 1));
+      assert.ok(store.getState().compare.stocks.length <= limit);
+    }
+    store.dispatch(importFinished());
+    assert.equal(store.getState().compare.stocks.length, limit);
+    assert.equal(store.getState().compare.loading, false);
+    assert.equal(store.getState().compare.importProgress, null);
+  });
+}
+
 test('개별 날짜와 종목을 지운 후 늦게 도착한 가격은 되살리지 않는다', () => {
   const store = createStore();
   addStock(store);
@@ -94,6 +117,28 @@ test('개별 날짜와 종목을 지운 후 늦게 도착한 가격은 되살리
   assert.equal(store.getState().compare.stocks[0].prices['2026-10-15'], undefined);
   store.dispatch(removeStock(stock.id));
   assert.equal(store.getState().compare.stocks.length, 0);
+});
+
+test('한도 내 가져오기는 기존 종목·날짜·가격을 유지하고 새 날짜를 함께 조회한다', () => {
+  const store = createStore();
+  addStock(store);
+  store.dispatch(importStarted({ source: 'append', date: '2026-10-15', total: 1, keepExisting: true }));
+  assert.deepEqual(store.getState().compare.dates, ['2026-10-01', '2026-10-15']);
+  assert.deepEqual(store.getState().compare.stocks[0].prices['2026-10-01'], stock.prices['2026-10-01']);
+  assert.deepEqual(store.getState().compare.stocks[0].prices['2026-10-15'], { loading: true });
+  store.dispatch(datePriceReceived({ id: stock.id, date: '2026-10-15', price: { price: 66000 } }));
+  store.dispatch(stockReceived({ stock: { ...stock, id: 'new', ticker: '000660' }, limit: 4 }));
+  store.dispatch(importFinished());
+  assert.equal(store.getState().compare.stocks.length, 2);
+  assert.equal(store.getState().compare.stocks[0].prices['2026-10-15'].price, 66000);
+});
+
+test('같은 날짜의 종목을 추가해도 기존 가격을 로딩 상태로 덮어쓰지 않는다', () => {
+  const store = createStore();
+  addStock(store);
+  store.dispatch(importStarted({ source: 'append', date: '2026-10-01', total: 1, keepExisting: true }));
+  assert.deepEqual(store.getState().compare.stocks[0], stock);
+  assert.deepEqual(store.getState().compare.dates, ['2026-10-01']);
 });
 
 test('저장된 비교 결과에도 로그인 상태별 날짜·종목 한도를 적용한다', () => {

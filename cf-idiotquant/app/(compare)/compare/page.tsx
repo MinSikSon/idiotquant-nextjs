@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -32,8 +32,11 @@ import {
   importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
 } from '@/lib/features/compare/compareSlice';
 import { COMPARISON_STORAGE_KEY, readComparisonSnapshot, serializeComparison } from '@/lib/features/compare/storage';
+import { planComparisonImport } from '@/lib/features/compare/import';
+import ImportConfirmation from './ImportConfirmation';
 
 type RecentStock = Pick<ComparisonStock, 'ticker' | 'name' | 'market'>;
+type ScreenerImport = { source: string; market: 'KR' | 'US'; date: string; tickers: string[] };
 const RECENT_STOCKS_KEY = 'idiotquant:compare:recent-stocks:v1';
 const RECENT_STOCKS_LIMIT = 10;
 const GUEST_LIMITS = { stocks: 4, dates: 2 };
@@ -110,6 +113,7 @@ export default function ComparePage() {
   const importedRef = useRef(false);
   const [comparisonReady, setComparisonReady] = useState(false);
   const [storageFailed, setStorageFailed] = useState(false);
+  const [pendingImport, setPendingImport] = useState<ScreenerImport | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -122,8 +126,8 @@ export default function ComparePage() {
   useEffect(() => {
     if (sessionLoading) return;
     try {
-      // 발굴에서 가져온 링크와 현재 세션의 작업이 저장본보다 우선한다.
-      if (!new URLSearchParams(window.location.search).has('tickers') && !stocks.length && !dates.length && !loading && !dateLoading) {
+      // 직접 발굴 링크로 진입해도 저장된 종목을 복원한 뒤 초과 여부를 확인한다.
+      if (!stocks.length && !dates.length && !loading && !dateLoading) {
         const saved = readComparisonSnapshot(localStorage.getItem(COMPARISON_STORAGE_KEY));
         if (saved) dispatch(restoreComparison({ ...saved, stocks: saved.stocks.slice(0, limits.stocks), dates: saved.dates.slice(0, limits.dates) }));
       }
@@ -162,8 +166,38 @@ export default function ComparePage() {
     try { window.localStorage.setItem(RECENT_STOCKS_KEY, JSON.stringify(recentStocks)); }
     catch { /* 저장소가 막혀 있어도 종목 비교는 계속 쓸 수 있다. */ }
   }, [recentStocks, recentLoaded]);
+  const runImport = useCallback(async (request: ScreenerImport, replace: boolean) => {
+    const plan = planComparisonImport(stocks, request.tickers, request.market, limits.stocks);
+    const tickers = replace ? plan.selected : plan.added;
+    const importDates = replace ? [request.date] : [...new Set([...dates, request.date])].sort();
+    if (importDates.length > limits.dates) {
+      dispatch(setError(`비교 날짜는 최대 ${limits.dates}개입니다. 기존 날짜를 하나 지운 뒤 다시 가져와 주세요.`));
+      return;
+    }
+    dispatch(importStarted({ source: request.source, date: request.date, total: tickers.length, keepExisting: !replace }));
+    try {
+      if (!replace && !dates.includes(request.date)) {
+        for (const stock of stocks) {
+          const history = stock.market === 'KR' ? await getScanDailyByTicker(stock.ticker, 200).catch(() => undefined) : undefined;
+          const price = await getHistoricalPrice(stock.ticker, stock.market, request.date, history)
+            .catch(e => ({ error: e instanceof Error ? e.message : '가격을 불러오지 못했습니다.' }));
+          dispatch(datePriceReceived({ id: stock.id, date: request.date, price }));
+        }
+      }
+      let failed = 0;
+      for (const [index, ticker] of tickers.entries()) {
+        try {
+          const stock = await loadStock(ticker, request.market, ticker, importDates);
+          dispatch(stockReceived({ stock, limit: limitsRef.current.stocks }));
+        } catch { failed++; }
+        dispatch(importAdvanced(index + 1));
+      }
+      if (failed) dispatch(setError(`${failed}개 종목의 시세를 불러오지 못했습니다. 나머지 종목은 비교표에 추가했습니다.`));
+    } finally { dispatch(importFinished()); }
+  }, [stocks, dates, limits.stocks, limits.dates, dispatch]);
+
   useEffect(() => {
-    if (sessionLoading || loading || dateLoading || importedRef.current) return;
+    if (!comparisonReady || sessionLoading || loading || dateLoading || importedRef.current) return;
     importedRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const market = params.get('country');
@@ -176,20 +210,10 @@ export default function ComparePage() {
     const selectedDate = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6)}`;
     const source = JSON.stringify([market, date, tickers]);
     if (importSource === source) return;
-    dispatch(importStarted({ source, date: selectedDate, total: tickers.length }));
-    void (async () => {
-      let failed = 0;
-      for (const [index, ticker] of tickers.entries()) {
-        try {
-          const stock = await loadStock(ticker, market, ticker, [selectedDate]);
-          dispatch(stockReceived({ stock, limit: limitsRef.current.stocks }));
-        } catch { failed++; }
-        dispatch(importAdvanced(index + 1));
-      }
-      if (failed) dispatch(setError(`${failed}개 종목의 시세를 불러오지 못했습니다. 나머지 종목은 비교표에 추가했습니다.`));
-      dispatch(importFinished());
-    })();
-  }, [sessionLoading, limits.stocks, importSource, loading, dateLoading, dispatch]);
+    const request: ScreenerImport = { source, market, date: selectedDate, tickers };
+    if (planComparisonImport(stocks, tickers, market, limits.stocks).exceedsLimit) setPendingImport(request);
+    else void runImport(request, false);
+  }, [comparisonReady, sessionLoading, limits.stocks, importSource, loading, dateLoading, stocks, runImport]);
   useEffect(() => {
     if (sessionLoading) return;
     dispatch(applyLimits(limits));
@@ -279,6 +303,16 @@ export default function ComparePage() {
   ];
 
   return <div className="min-h-screen bg-surface-canvas text-neutral-900 dark:bg-surface-dark-canvas dark:text-neutral-100">
+    {pendingImport && <ImportConfirmation
+      existingCount={stocks.length}
+      incomingCount={planComparisonImport(stocks, pendingImport.tickers, pendingImport.market, limits.stocks).added.length}
+      limit={limits.stocks}
+      onDecision={replace => {
+        const request = pendingImport;
+        setPendingImport(null);
+        if (replace) void runImport(request, true);
+      }}
+    />}
     <PageHeader
       title="종목 비교"
       mobileTitleInNavigation
