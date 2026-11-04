@@ -69,7 +69,19 @@ export const compareSlice = createSlice({
       state.dates = state.dates.slice(0, action.payload.dates);
       state.stocks = state.stocks.slice(0, action.payload.stocks);
     },
-    importStarted(state, action: PayloadAction<{ source: string; date: string; total: number }>) {
+    importStarted(state, action: PayloadAction<{ source: string; date: string; total: number; keepExisting?: boolean }>) {
+      if (action.payload.keepExisting) {
+        state.importSource = action.payload.source;
+        state.dateInput = action.payload.date;
+        state.loading = true;
+        state.error = '';
+        state.importProgress = { loaded: 0, total: action.payload.total };
+        if (!state.dates.includes(action.payload.date)) {
+          state.dates = [...state.dates, action.payload.date].sort();
+          for (const stock of state.stocks) stock.prices[action.payload.date] = { loading: true };
+        }
+        return;
+      }
       return {
         ...initialState, importSource: action.payload.source, dateInput: action.payload.date,
         dates: [action.payload.date], loading: true, importProgress: { loaded: 0, total: action.payload.total },
