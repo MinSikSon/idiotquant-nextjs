@@ -1,0 +1,46 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IdiotQuant — 화면별 예외와 회귀 점검</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f2f0eb;color:#292827;font:400 16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px}h1,h2,h3,strong{font-weight:600}h1{font-size:clamp(28px,4vw,42px);line-height:1.3;margin:12px 0}h2{font-size:23px;margin:36px 0 12px}p{max-width:76ch}a{color:#593699;text-underline-offset:3px}.meta{font-size:14px;color:#66615e}.card{background:white;border:1px solid #dedbd5;border-radius:8px;padding:24px;margin:20px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sample{font-size:24px;line-height:1.5}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dedbd5;padding:12px 10px}th{font-weight:600}code{font-size:13px}li{margin:8px 0}.numbers{font-variant-numeric:tabular-nums;text-align:right}.tag{font-size:13px;color:#593699}small{font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:28px 18px}.card{padding:18px}}@media(prefers-color-scheme:dark){body{background:#1b1819;color:#eeece7}.card{background:#262123;border-color:#43383c}th,td{border-color:#43383c}.meta{color:#bcb0ad}a,.tag{color:#c9b0ef}}
+</style><main>
+<div class="tag">디자인 개선 · 8번째 항목 · 2026-11-04</div>
+<h1>화면별 예외와 회귀 점검</h1>
+<p>앞선 일곱 단계의 적용 범위를 소스로 점검하고, 계산기·비교·목표 자산·검색에서 빠진 대비와 조작 영역을 보완했다. 소스·자동 검사와 화면 직접 검증의 결과를 구분한다.</p>
+<div class="card"><strong>현재 판정: 소스 회귀 점검 및 보완 완료 · 최신 화면 직접 검증 미완료</strong><p>브라우저 연결 오류와 Mac 잠금으로 6–8단계 변경의 화면 검증이 남았다. 1–5단계의 과거 화면 확인을 최신 변경의 통과 근거로 사용하지 않는다. 전체 화면의 접근성 인증이나 8개 항목의 최종 인수 완료를 뜻하지 않는다.</p></div>
+<p class="meta">기준: <a href="https://news.hada.io/topic?id=31746">큰 효과를 만드는 작은 UI 디자인 팁들</a>. 금융·공통 UI를 대상으로 하며 게임·관리자 전용 화면은 별도 규칙을 유지한다.</p>
+<h2>이번에 보완한 누락</h2><div class="table-wrap"><table><thead><tr><th>대상</th><th>발견</th><th>보완</th></tr></thead><tbody>
+<tr><td>계산기·비교·목표 자산 입력</td><td>연한 입력 경계, 화면마다 다른 포커스와 placeholder</td><td>공통 입력 클래스에 neutral-500 경계, light neutral-600 / dark neutral-400 placeholder, 2px 키보드 포커스와 최소 2.75rem 높이를 정의했다.</td></tr>
+<tr><td>계산기·비교·목표 자산 설명</td><td>밝은 캔버스 위 neutral-500, 비교 화면의 어두운 테마 보조 글자색 누락</td><td>관련 보조 글자를 light neutral-600 / dark neutral-400으로 정리했다. 선택·상태의 의미 색상은 유지한다.</td></tr>
+<tr><td>검색 초기화·비교 제거·목표 해제</td><td>작은 아이콘 버튼과 36px 목표 해제 버튼</td><td>공통 아이콘 버튼과 페이지 보조 버튼으로 최소 2.75rem 조작 영역, 포커스와 비활성 상태를 맞췄다.</td></tr>
+<tr><td>검색 combobox</td><td>결과 없음 팝업이 열려도 aria-expanded가 false이며, 닫힌 팝업의 선택 항목을 참조할 수 있음</td><td>실제 팝업 표시 조건으로 expanded와 controls를 맞추고, 열린 팝업에 존재하는 선택 항목만 activedescendant로 참조한다.</td></tr>
+<tr><td>목표 자산 모바일 입력</td><td>13px label 글자 크기를 상속</td><td>모바일 입력은 text-base, 큰 화면은 text-sm을 명시했다. 입력 파싱·상한·저장 동작은 유지한다.</td></tr>
+</tbody></table></div>
+<h2>대비 근거</h2><p>소스의 색상 토큰을 WCAG 상대 휘도 공식으로 계산한 값이다. 실제 브라우저 픽셀, 투명도 합성, 모든 상태의 실측값은 아니다. 아래 표면에 놓인 일반 입력 경계는 3:1, 보조 텍스트는 4.5:1 기준을 넘는다.</p>
+<div class="table-wrap"><table><thead><tr><th>표면</th><th>경계 #737373</th><th>글자 light #525252 / dark #a3a3a3</th></tr></thead><tbody>
+<tr><td>흰색 #ffffff</td><td>4.74:1</td><td>7.81:1</td></tr><tr><td>밝은 캔버스 #f2f0eb</td><td>4.16:1</td><td>6.86:1</td></tr><tr><td>어두운 카드 #1c1c20</td><td>3.58:1</td><td>6.73:1</td></tr><tr><td>어두운 캔버스 #1b1819</td><td>3.72:1</td><td>6.99:1</td></tr>
+</tbody></table></div><p class="meta">비활성 요소의 opacity, hover 표면, 강조색, 분석 전용 테마의 조합은 이 표로 판정하지 않는다. 포커스는 테마의 brand-ink를 사용한다.</p>
+<h2>화면별 적용과 예외</h2><div class="table-wrap"><table><thead><tr><th>화면·영역</th><th>공통 적용</th><th>유지한 예외 / 확인 한계</th></tr></thead><tbody>
+<tr><td>홈</td><td>바깥 여백·서체·동작 계층·불투명 패널</td><td>큰 소개 제목과 3D는 브랜드 소개 역할. 도구 카드의 최신 장식 제거 후 배치는 직접 재확인 필요</td></tr>
+<tr><td>발굴·검색·비교</td><td>선택 단서·주요 동작·보조 글자·입력과 제거 버튼</td><td>표의 숫자 우측 정렬·tabular-nums와 행 구분선 유지. 비교 데이터 로딩과 날짜·종목 제거의 화면 확인 필요</td></tr>
+<tr><td>분석·리서치</td><td>400/600 굵기·읽기 간격·검색 주요 동작</td><td>분석 전용 테마와 조밀한 차트 축은 역할별 규칙 유지. 차트 수치는 일반 문단의 줄 높이 적용 대상이 아님</td></tr>
+<tr><td>계산기</td><td>조건·결과 간격·선택 밑줄·공통 입력</td><td>자동 계산 흐름 유지. 불필요한 계산 버튼을 추가하지 않음</td></tr>
+<tr><td>잔고·가계부·목표 자산</td><td>외곽 정렬·탭·도움말·보조/저장 동작·목표 입력</td><td>촘촘한 숫자와 모바일 데이터 크기는 별도 유지. 실제 계좌 조회·거래·저장은 수행하지 않음</td></tr>
+<tr><td>게임</td><td>공통 전역 규칙의 제외 조건 점검</td><td>게임 파일 변경 없음. 전용 서체·토큰 유지. 실제 화면 회귀 확인은 남음</td></tr>
+<tr><td>관리자</td><td>새 서체 굵기·줄 높이 토큰에서 제외하는 wrapper</td><td>관리자 변경 파일은 layout의 제외 표식뿐. 기존 서체 규칙 유지. 관리자 화면 직접 확인은 남음</td></tr>
+</tbody></table></div>
+<h2>여덟 단계의 근거와 검증 상태</h2><div class="table-wrap"><table><thead><tr><th>항목</th><th>상세 보고서·PR</th><th>검증 구분</th></tr></thead><tbody>
+<tr><td>1. 대비</td><td><a href="design-audit.html">대비 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1024">#1024</a></td><td>당시 대표 화면 확인. 서비스 전체 AA 판정 아님</td></tr>
+<tr><td>2. 상호작용 상태</td><td><a href="design-interaction-audit.html">상태 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1025">#1025</a></td><td>당시 화면·키보드 확인</td></tr>
+<tr><td>3. 주요 행동</td><td><a href="design-primary-actions-audit.html">행동 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1026">#1026</a></td><td>당시 공개 화면 확인</td></tr>
+<tr><td>4. 타이포그래피</td><td><a href="design-typography-audit.html">서체 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1027">#1027</a></td><td>당시 공개 화면·임시 범위 fixture 확인</td></tr>
+<tr><td>5. 여백·정렬</td><td><a href="design-spacing-audit.html">여백 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1028">#1028</a></td><td>당시 320/390/700/1280/1440px와 임시 잔고 shell 확인</td></tr>
+<tr><td>6. 컨트롤</td><td><a href="design-controls-audit.html">컨트롤 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1029">#1029</a></td><td>소스·자동 검사·생성 CSS 확인. 화면 직접 검증 미완료</td></tr>
+<tr><td>7. 장식 정리</td><td><a href="design-decoration-audit.html">장식 보고서</a> · <a href="https://github.com/MinSikSon/idiotquant-nextjs/pull/1030">#1030</a></td><td>소스·자동 검사·생성 CSS 확인. 화면 직접 검증 미완료</td></tr>
+<tr><td>8. 예외·회귀</td><td>현재 보고서</td><td id="validation">타입 검사·테스트 586개 통과. lint 오류 0, 기존 경고 129개. 로컬 빌드는 Google Fonts 로더 오류와 외부 연결 오류로 통과하지 못했다. CI 빌드 결과는 PR에서 별도 확인한다.</td></tr>
+</tbody></table></div>
+<h2>최종 인수를 위해 남은 화면 확인</h2><ol>
+<li>320/390/700/1280/1440px, 밝은/어두운 테마에서 가로 넘침·줄바꿈·카드 정렬을 확인한다.</li>
+<li>Tab 이동 시 포커스 외곽선과 입력·도움말·초기화·제거 버튼의 영역 및 잘림을 확인한다.</li>
+<li>검색의 빈 입력·추천·결과 없음, 화살표·Enter·명시적 검색의 단일 실행, Escape 후 닫힘과 ARIA 참조를 확인한다.</li>
+<li>비교 날짜·종목 추가/제거 및 대기 중 비활성 상태, 계산기 숫자 입력·단위 선택과 자동 결과를 확인한다.</li>
+<li>도움말 열기·닫기·Escape, 목표 자산 입력·해제와 조밀한 잔고 화면을 안전한 fixture로 확인한다.</li>
+<li>게임·관리자의 새 금융 UI 토큰 제외 범위를 실제 화면에서 확인한다.</li>
+</ol><p class="meta">자동 검사는 위 화면 상호작용을 실행하는 E2E 검사가 아니다. 실제 계좌·거래·저장 검증을 완료로 표시하지 않는다. 보고서 자체의 최신 브라우저 렌더링 확인도 같은 연결 제한으로 남아 있다.</p></main></html>

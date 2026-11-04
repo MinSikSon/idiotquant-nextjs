@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { CONTROL_FOCUS_CLS, CONTROL_INPUT_CLS } from "@/lib/ui-controls";
 import { assetGoalProgress } from "@/lib/assetGoal";
 
 export default function AssetGoal({ target, current, onChange, format, unit, max, note, children }: {
@@ -32,12 +34,12 @@ export default function AssetGoal({ target, current, onChange, format, unit, max
                             }
                         }}
                         onBlur={() => setDraft(null)}
-                        className="w-40 max-w-full rounded-lg border border-neutral-200 dark:border-border-subtle-dark bg-surface-canvas dark:bg-surface-dark-canvas px-3 py-2 text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-brand" />
-                    <span className="text-xs text-neutral-500">{unit}</span>
+                        className={cn(CONTROL_INPUT_CLS, "w-40 max-w-full bg-surface-canvas dark:bg-surface-dark-canvas px-3 py-2 text-base sm:text-sm text-right tabular-nums")} />
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400">{unit}</span>
                 </label>
-                {target > 0 && <button type="button" onClick={() => { setDraft(null); onChange(0); }} className="min-h-[36px] px-2 text-xs font-bold text-neutral-500 dark:text-neutral-400">목표 해제</button>}
+                {target > 0 && <button type="button" onClick={() => { setDraft(null); onChange(0); }} className={cn("min-h-11 min-w-11 rounded-lg px-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400", CONTROL_FOCUS_CLS)}>목표 해제</button>}
             </div>
-            <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">{note} · 0은 목표 미설정</p>
+            <p className="mt-2 text-[11px] text-neutral-600 dark:text-neutral-400">{note} · 0은 목표 미설정</p>
             {target > 0 && (progress ? (
                 <div className="mt-3 space-y-2 text-xs">
                     <div className="flex flex-wrap justify-between gap-2 font-bold">

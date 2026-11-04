@@ -2,6 +2,7 @@
 
 import { useState, useMemo, KeyboardEvent, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { CONTROL_ICON_BUTTON_CLS } from "@/lib/ui-controls";
 import { PAGE_PRIMARY_ACTION_CLS } from "@/components/pageHeader";
 import { buildStockSearchIndex, findStockSuggestions, type StockSearchName } from "@/lib/utils/stockSuggestions";
 import { Search, CornerDownLeft, AlertCircle, X } from "lucide-react";
@@ -120,6 +121,8 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
         }
     };
 
+    const popupOpen = isFocused && !!query.trim();
+
     return (
         <div className={cn("relative w-full z-20", className)}>
             {/* 검색 아키텍처 입력 폼 바디 */}
@@ -149,9 +152,9 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                     role="combobox"
                     aria-label="종목 검색"
                     aria-autocomplete="list"
-                    aria-expanded={isFocused && suggestions.length > 0}
-                    aria-controls="search-listbox"
-                    aria-activedescendant={selectedIndex >= 0 ? `suggestion-${selectedIndex}` : undefined}
+                    aria-expanded={popupOpen}
+                    aria-controls={popupOpen ? "search-listbox" : undefined}
+                    aria-activedescendant={popupOpen && selectedIndex >= 0 && suggestions[selectedIndex] ? `suggestion-${selectedIndex}` : undefined}
                     onChange={(e) => {
                         const val = e.target.value;
                         setQuery(val);
@@ -179,7 +182,7 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
                             if (onSearchStateChange) onSearchStateChange(isFocused, true);
                             inputRef.current?.focus();
                         }}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center p-1 hover:bg-neutral-200/60 dark:hover:bg-surface-dark-muted/60 rounded-lg transition-colors shrink-0 group"
+                        className={cn(CONTROL_ICON_BUTTON_CLS, "p-1 group")}
                         type="button"
                         aria-label="검색어 초기화"
                     >
@@ -199,7 +202,7 @@ const SearchAutocomplete = ({ className, validCorpNameArray, stockNames, onSearc
             </div>
 
             {/* 자동완성 드롭다운 오버레이 슬롯 */}
-            {isFocused && query.trim() && (
+            {popupOpen && (
                 <ul
                     ref={dropdownRef}
                     id="search-listbox"

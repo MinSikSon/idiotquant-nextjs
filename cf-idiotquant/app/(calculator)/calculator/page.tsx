@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "
 import { Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
+import { CONTROL_FOCUS_CLS, CONTROL_INPUT_CLS } from "@/lib/ui-controls";
 import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 import ResultShare from "@/components/result-share";
 import AssetGoal from "@/components/AssetGoal";
@@ -42,14 +42,14 @@ const LABEL_CLS = "text-[13px] font-bold text-neutral-700 dark:text-neutral-300"
    여러 컴포넌트가 같이 쓰는 규칙이라 prop 을 층층이 내리는 대신 CSS 로 잇는다. */
 const FOLD = "hidden group-data-[help=on]:block sm:block";
 
-const HINT_CLS = cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-neutral-400");
+const HINT_CLS = cn(FOLD, "text-[11px] font-medium text-neutral-600 dark:text-neutral-400");
 const NUM_CLS = "font-mono tabular-nums";
 
 const INPUT_CLS = cn(
     "font-mono tabular-nums text-base sm:text-[15px] font-bold text-right",
     "text-neutral-900 dark:text-neutral-50 bg-surface-canvas dark:bg-surface-dark-canvas",
-    "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-2 sm:px-3 py-2 min-h-11 min-w-0 w-full sm:w-[150px]",
-    CONTROL_FOCUS_CLS,
+    "px-2 sm:px-3 py-2 min-w-0 w-full sm:w-[150px]",
+    CONTROL_INPUT_CLS,
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
 
@@ -63,7 +63,7 @@ const LIFT = "transition-colors duration-150";
 function StepLabel({ tag }: { tag: string }) {
     return (
         <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <span className="text-[10px] font-medium tracking-[0.12em] text-neutral-500 dark:text-neutral-400 shrink-0">
+            <span className="text-[10px] font-medium tracking-[0.12em] text-neutral-600 dark:text-neutral-400 shrink-0">
                 {tag}
             </span>
         </div>
@@ -108,7 +108,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                     <span className={cn(NUM_CLS, "text-[19px] font-semibold text-neutral-900 dark:text-neutral-50")}>
                         {format(value)}
                     </span>
-                    <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">{unit}</span>
+                    <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">{unit}</span>
                 </div>
             </div>
             <input
@@ -127,7 +127,7 @@ function SliderRow({ id, label, hint, unit, value, range, format, onChange }: {
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-lg"
                 )}
             />
-            <div className="hidden group-data-[help=on]:flex sm:flex justify-between text-[10.5px] text-neutral-500 dark:text-neutral-400 -mt-0.5">
+            <div className="hidden group-data-[help=on]:flex sm:flex justify-between text-[10.5px] text-neutral-600 dark:text-neutral-400 -mt-0.5">
                 <span>{format(min)}</span>
                 <span>{format(max)}</span>
             </div>
@@ -180,7 +180,7 @@ function RateFieldRow({ id, label, hint, value, onChange }: {
                     id={id} value={value} onCommit={onChange} allowNegative
                     className={cn(INPUT_CLS, "w-[92px] sm:w-[92px] shrink-0")}
                 />
-                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400 shrink-0">%</span>
+                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400 shrink-0">%</span>
             </div>
         </div>
     );
@@ -212,7 +212,7 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
         <div className={cn("flex items-center justify-between gap-3 px-3 sm:px-5 py-1.5 sm:py-3 border-b last:border-b-0", DIVIDE)}>
             {/* 한 번 굴린 결과는 "일어날 수 있는 하나"일 뿐이다. 그 사실을 적어 두지 않으면
                 마음에 드는 숫자가 나올 때까지 굴리고 그걸 예상으로 삼게 된다. */}
-            <span className={cn(FOLD, "text-[11px] font-medium text-neutral-500 dark:text-neutral-400 leading-relaxed")}>
+            <span className={cn(FOLD, "text-[11px] font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed")}>
                 아래 결과는 이 범위에서 나올 수 있는 <b className="font-bold text-neutral-700 dark:text-neutral-300">여러 갈래 중 하나</b>입니다.
                 <br className="hidden sm:block" /> 몇 번 굴려 보면 같은 조건이라도 결과가 얼마나 벌어지는지 보입니다.
             </span>
@@ -244,7 +244,7 @@ function SectionHead({ tag, title, note, action }: { tag: string; title: string;
                 </h2>
                 {action && <div className="ml-auto">{action}</div>}
                 {note && (
-                    <span className={cn(FOLD, "ml-auto text-[11px] font-medium text-neutral-500 dark:text-neutral-400 text-right")}>
+                    <span className={cn(FOLD, "ml-auto text-[11px] font-medium text-neutral-600 dark:text-neutral-400 text-right")}>
                         {note}
                     </span>
                 )}
@@ -467,7 +467,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="initial" value={inputs.initial}
                                     onCommit={(v) => set("initial", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">만원</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">만원</span>
                             </div>
                         </div>
 
@@ -478,7 +478,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="monthly" value={inputs.monthly}
                                     onCommit={(v) => set("monthly", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">만원</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">만원</span>
                             </div>
                         </div>
 
@@ -507,7 +507,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="years" value={inputs.years}
                                     onCommit={(v) => set("years", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">년</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">년</span>
                             </div>
                         </div>
                     </>
@@ -557,7 +557,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="inflation" value={inputs.inflation}
                                     onCommit={(v) => set("inflation", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">%</span>
                             </div>
                         </div>
 
@@ -568,7 +568,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="usdChange" value={inputs.usdChange} allowNegative
                                     onCommit={(v) => set("usdChange", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">%/년</span>
                             </div>
                         </div>
 
@@ -579,7 +579,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="goldChange" value={inputs.goldChange} allowNegative
                                     onCommit={(v) => set("goldChange", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">%/년</span>
                             </div>
                         </div>
 
@@ -590,7 +590,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="krwM2Growth" value={inputs.krwM2Growth} allowNegative
                                     onCommit={(v) => set("krwM2Growth", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">%/년</span>
                             </div>
                         </div>
 
@@ -601,7 +601,7 @@ function Calculator() {
                             <div className="flex items-center gap-2">
                                 <NumberField id="usdM2Growth" value={inputs.usdM2Growth} allowNegative
                                     onCommit={(v) => set("usdM2Growth", v)} className={INPUT_CLS} />
-                                <span className="text-[12.5px] text-neutral-500 dark:text-neutral-400">%/년</span>
+                                <span className="text-[12.5px] text-neutral-600 dark:text-neutral-400">%/년</span>
                             </div>
                         </div>
                     </>
@@ -609,7 +609,7 @@ function Calculator() {
                 </div>
 
                 {!detailed && (
-                    <p className={cn(FOLD, "text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-3 px-1")}>
+                    <p className={cn(FOLD, "text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mt-3 px-1")}>
                         이 단계의 가정 — {SIMPLE_ASSUMPTIONS.join(" · ")}
                     </p>
                 )}
@@ -621,7 +621,7 @@ function Calculator() {
 
                 <div className={cn(CARD, "flex items-end justify-between gap-2 sm:gap-5 flex-wrap px-3 sm:px-5 py-3 sm:py-6")}>
                     <div>
-                        <div className="text-[10px] font-black tracking-[0.15em] text-neutral-500 dark:text-neutral-400 uppercase">
+                        <div className="text-[10px] font-black tracking-[0.15em] text-neutral-600 dark:text-neutral-400 uppercase">
                             만기 평가금액
                         </div>
                         <div className={cn(
@@ -631,7 +631,7 @@ function Calculator() {
                             {won(result.final)}
                         </div>
                         {effective.inflation > 0 && (
-                            <p className="text-[12.5px] text-neutral-500 dark:text-neutral-400 mt-1.5">
+                            <p className="text-[12.5px] text-neutral-600 dark:text-neutral-400 mt-1.5">
                                 물가 {effective.inflation.toFixed(1)}% 반영 시 오늘의 구매력으로{" "}
                                 <strong className="font-bold text-neutral-600 dark:text-neutral-300">{won(result.real)}</strong>
                             </p>
@@ -659,7 +659,7 @@ function Calculator() {
                             i === 1 && cn("sm:border-r lg:border-r-0 xl:border-r", DIVIDE),
                             i < 2 && cn("border-b sm:border-b-0 lg:border-b xl:border-b-0", DIVIDE)
                         )}>
-                            <div className="text-[11.5px] text-neutral-500 dark:text-neutral-400">{cell.k}</div>
+                            <div className="text-[11.5px] text-neutral-600 dark:text-neutral-400">{cell.k}</div>
                             <div className={cn(
                                 NUM_CLS, "text-[19px] font-semibold mt-0.5",
                                 cell.tone === "gain" && "text-emerald-700 dark:text-[#2fa85a]",
@@ -675,7 +675,7 @@ function Calculator() {
                     <AssetGoal target={inputs.target} current={result.final} onChange={v => set("target", v)}
                         format={won} unit="만원" max={100_000_000_000}
                         note="만기 명목 평가금액 기준 · 이 브라우저에 자동 저장">
-                        <p className="text-neutral-500 dark:text-neutral-400">
+                        <p className="text-neutral-600 dark:text-neutral-400">
                             {goalYear === undefined ? `설정한 ${inputs.years}년 안에는 목표에 도달하지 않습니다.`
                                 : goalYear === 0 ? "초기 투자금이 이미 목표에 도달했습니다."
                                 : `연말 평가금액 기준 첫 도달: ${goalYear}년차`}
@@ -697,15 +697,15 @@ function Calculator() {
                                         <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]")}>
                                             {relative === null ? "—" : pct(relative)}
                                         </div>
-                                        <div className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 mt-1">{status} · {assumption}</div>
-                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+                                        <div className="text-[11px] font-bold text-neutral-600 dark:text-neutral-400 mt-1">{status} · {assumption}</div>
+                                        <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
                                             비교 자산의 만기 가치 {won(benchmark)}
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <p className="mt-2 px-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        <p className="mt-2 px-1 text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
                             입력한 변동률이 매년 일정하다고 가정합니다. 달러·금은 실제 수량이 아니라 원화 투자 결과와 보유 가치를 비교한 값입니다.
                         </p>
                     </>
@@ -723,13 +723,13 @@ function Calculator() {
                                         <div className={cn(NUM_CLS, "text-[23px] font-semibold mt-1", relative !== null && relative < 0 ? "text-[#b91c1c] dark:text-[#ef6a6a]" : "text-emerald-700 dark:text-[#2fa85a]")}>
                                             {relative === null ? "—" : pct(relative)}
                                         </div>
-                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">{assumption}</div>
-                                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2">M2 증가 속도를 맞춘 만기 금액 {won(benchmark)}</div>
+                                        <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-1">{assumption}</div>
+                                        <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-2">M2 증가 속도를 맞춘 만기 금액 {won(benchmark)}</div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <p className="mt-2 px-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        <p className="mt-2 px-1 text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
                             M2는 통화량 지표입니다. 이 비교는 실제 구매력·환율 변화나 양적완화의 효과를 추정하지 않습니다.
                             과거 발표치는{" "}
                             <a href="https://snapshot.bok.or.kr/search/M2" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-ink">한국은행</a>
@@ -757,7 +757,7 @@ function Calculator() {
                                     : ["연차", "납입 원금", "투자수익", "평가금액", "수익률"]
                                 ).map((h, i) => (
                                     <th key={h} className={cn(
-                                        "text-[11px] font-semibold tracking-[0.1em] text-neutral-500 dark:text-neutral-400",
+                                        "text-[11px] font-semibold tracking-[0.1em] text-neutral-600 dark:text-neutral-400",
                                         cn("py-2 sm:py-2.5 px-2.5 sm:px-3 whitespace-nowrap border-b", DIVIDE),
                                         i === 0 ? "text-left" : "text-right"
                                     )}>
@@ -778,7 +778,7 @@ function Calculator() {
                                     bottom ? "border-neutral-200 dark:border-surface-dark-border" : DIVIDE);
                                 return (
                                     <tr key={d.year} className={cn(final && "font-semibold")}>
-                                        <td className={cn(cell, "text-neutral-500 dark:text-neutral-400")}>{d.year}년</td>
+                                        <td className={cn(cell, "text-neutral-600 dark:text-neutral-400")}>{d.year}년</td>
                                         {/* 그 해에 실제로 뽑힌 수익률 — 이 열이 있어야 "매년 다르다"가 보인다. */}
                                         {ranged && (
                                             <td className={cn(
@@ -853,7 +853,7 @@ function Calculator() {
                             "M2 비교는 입력한 통화량 증가율을 일정하게 적용한 시나리오이며, 실제 물가상승률이나 통화 가치 하락률을 뜻하지 않습니다.",
                             "이 계산서는 단순 모형이며 거래비용·중도 인출을 반영하지 않습니다.",
                         ].map((n) => (
-                            <li key={n} className="text-[11.5px] text-neutral-500 dark:text-neutral-400 leading-[1.85]">
+                            <li key={n} className="text-[11.5px] text-neutral-600 dark:text-neutral-400 leading-[1.85]">
                                 {n}
                             </li>
                         ))}
