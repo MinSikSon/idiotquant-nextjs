@@ -1,0 +1,25 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IdiotQuant — 컨트롤 일관성 적용 보고서</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f2f0eb;color:#292827;font:400 16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px}h1,h2,h3,strong{font-weight:600}h1{font-size:clamp(28px,4vw,42px);line-height:1.3;margin:12px 0}h2{font-size:23px;margin:36px 0 12px}p{max-width:76ch}a{color:#593699;text-underline-offset:3px}.meta{font-size:14px;color:#66615e}.card{background:white;border:1px solid #dedbd5;border-radius:8px;padding:24px;margin:20px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.sample{font-size:24px;line-height:1.5}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dedbd5;padding:12px 10px}th{font-weight:600}code{font-size:13px}li{margin:8px 0}.numbers{font-variant-numeric:tabular-nums;text-align:right}.tag{font-size:13px;color:#593699}small{font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:28px 18px}.card{padding:18px}}@media(prefers-color-scheme:dark){body{background:#1b1819;color:#eeece7}.card{background:#262123;border-color:#43383c}th,td{border-color:#43383c}.meta{color:#bcb0ad}a,.tag{color:#c9b0ef}}
+</style><main><div class="tag">디자인 개선 · 6 / 8 · 2026-11-04</div>
+<h1>같은 컨트롤은 같은 규칙으로</h1>
+<p>홈·분석·잔고에 남아 있던 화면별 모서리 값을 공통 토큰으로 연결하고, 주요 버튼·보조 버튼·선택 버튼의 포커스와 터치 영역을 정리했다. 선택 상태는 색상과 함께 밑줄·상태 속성으로 전달한다.</p>
+<p class="meta">근거: <a href="https://news.hada.io/topic?id=31746">큰 효과를 만드는 작은 UI 디자인 팁들</a>의 일관된 형태와 동작 원칙. 기존 공통 기준인 컨트롤 4px·패널 8px을 적용한다.</p>
+<h2>형태 규칙</h2><div class="table-wrap"><table><thead><tr><th>역할</th><th>이전 차이</th><th>적용</th></tr></thead><tbody>
+<tr><td>컨트롤</td><td>홈 버튼 16px, 분석 버튼 8px·입력 10px, 잔고 컨트롤 6px·입력 8px</td><td>--radius-control·--radius-input의 공통 4px 사용. 분석·잔고의 화면별 토큰 덮어쓰기 제거</td></tr>
+<tr><td>패널</td><td>홈·분석·리서치 16px, 잔고 12px</td><td>--radius-panel의 공통 8px 사용. 도움말 팝오버도 패널 반경 적용</td></tr>
+<tr><td>터치 영역</td><td>도움말 28×28, 닫기 36×36. 잔고 TabButton에는 최소 크기 없음</td><td>도움말·닫기·선택 버튼은 2.75rem(기본 44px) 기준. 계산기 숫자 입력의 데스크톱 최소 높이 예외 제거</td></tr>
+<tr><td>같은 입력 동작</td><td>비교 날짜 입력·추가 44 기준, 종목 검색·추가 48 기준</td><td>둘 다 h-11 기준으로 맞춰 입력과 버튼 높이를 일치시킴</td></tr>
+<tr><td>아이콘</td><td>계산기 설명·무작위 입력 아이콘 획 2.4·2.2</td><td>lucide 기본 2로 맞춤. 의미를 담는 문자·로고·차트는 별도 유지</td></tr>
+</tbody></table></div>
+<h2>상태와 동작 규칙</h2><ul>
+<li>공통 주요·보조 버튼, 계산기 입력·선택 버튼, 잔고 선택·자동갱신, 도움말 열기·닫기에 같은 2px 키보드 포커스 클래스를 연결했다. 테마별 brand-ink를 사용한다.</li>
+<li>공통 주요·보조 버튼은 같은 비활성 투명도·커서를 사용한다. 잔고 새로고침도 공통 보조 동작 클래스를 사용한다.</li>
+<li>계산기 선택 버튼은 기존 aria-pressed에 밑줄을 추가했다. 포커스 외곽선이 잘리지 않도록 그룹의 overflow-hidden을 제거하고 첫·마지막 버튼에 모서리를 적용했다.</li>
+<li>잔고 자동갱신은 고정 접근성 이름과 aria-pressed를 제공한다. 자동갱신·새로고침에 type=button을 명시해 폼 안에서도 제출 버튼으로 해석되지 않게 한다.</li>
+<li>도움말의 기존 마우스 미리보기·클릭 고정·Radix 닫기 처리는 유지하며, 열기·닫기 버튼의 크기와 포커스만 맞췄다.</li>
+</ul>
+<h2>범위와 예외</h2><p>서비스 카드·입력·버튼을 대상으로 한다. 아바타·상태 점·번호 배지는 원형, 표와 붙어 있는 영역은 평면으로 유지한다. 홈의 주요 동작은 소개 영역에 맞는 48px 최소 높이를 유지한다. 게임의 별도 반경 토큰과 관리자 전용 소스는 변경하지 않았다. 공통 버튼의 포커스 개선은 공통 컴포넌트를 사용하는 화면에 반영된다.</p>
+<p class="meta">2.75rem은 루트 글자 크기 16px에서 44px이다. 기존 모바일 115% 글자 확대 설정에서는 약 50.6px로 커진다. 문서의 수치는 코드 기준이며 이번 실행에서 브라우저로 실측하지 않았다.</p>
+<h2>검증과 한계</h2><p id="validation">npm run check에서 타입 검사와 기존 회귀 테스트 586개가 통과했고, lint 오류는 0개였다(기존 경고 129개). npm run build도 통과했다. 첫 빌드의 외부 Google Fonts 처리 오류는 코드 변경 없이 재실행해 해소했다. 생성 CSS에서 4px·8px 토큰, 2.75rem 크기, 2px 키보드 포커스, 비활성 커서 규칙이 포함된 것을 확인했다.</p>
+<p>브라우저 자동화 연결에서 페이지 이동·DOM 읽기 오류가 반복되어 화면 크기별 레이아웃, 실제 키보드 포커스 이동, 도움말 열기·닫기를 직접 검증하지 못했다. 해당 항목은 완료한 브라우저 검증으로 표시하지 않는다. 변경된 속성과 이벤트 연결은 소스로 검토하고, 스타일 생성은 프로덕션 산출물로 확인한다. 기존 회귀 테스트 통과는 이 UI 동작의 직접 검증을 뜻하지 않는다.</p>
+<h2>다음 항목</h2><p>7. 불필요한 테두리·배경·효과 정리 — 정보 구분과 동작 전달에 필요한 표현을 중심으로 점검한다.</p></main></html>

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "
 import { Dice5, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { CONTROL_FOCUS_CLS } from "@/lib/ui-controls";
 import { PageHeader, PAGE_WIDTH } from "@/components/pageHeader";
 import ResultShare from "@/components/result-share";
 import AssetGoal from "@/components/AssetGoal";
@@ -47,8 +48,8 @@ const NUM_CLS = "font-mono tabular-nums";
 const INPUT_CLS = cn(
     "font-mono tabular-nums text-base sm:text-[15px] font-bold text-right",
     "text-neutral-900 dark:text-neutral-50 bg-surface-canvas dark:bg-surface-dark-canvas",
-    "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-2 sm:px-3 py-2 min-h-11 sm:min-h-0 min-w-0 w-full sm:w-[150px]",
-    "focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand",
+    "border border-neutral-200 dark:border-surface-dark-border rounded-xl px-2 sm:px-3 py-2 min-h-11 min-w-0 w-full sm:w-[150px]",
+    CONTROL_FOCUS_CLS,
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 );
 
@@ -227,7 +228,7 @@ function RerollRow({ onReroll }: { onReroll: () => void }) {
                     "focus:outline-none focus:ring-2 focus:ring-brand"
                 )}
             >
-                <Dice5 size={13} strokeWidth={2.2} />
+                <Dice5 size={13} strokeWidth={2} />
                 다시 굴리기
             </button>
         </div>
@@ -262,7 +263,7 @@ function Segmented<T extends string | number>({
     label: string;
 }) {
     return (
-        <div role="group" aria-label={label} className={cn("inline-flex rounded-xl overflow-hidden w-fit border border-neutral-200 dark:border-surface-dark-border")}>
+        <div role="group" aria-label={label} className={cn("inline-flex rounded-xl w-fit border border-neutral-200 dark:border-surface-dark-border")}>
             {options.map((o, i) => (
                 <button
                     key={String(o.v)}
@@ -270,12 +271,12 @@ function Segmented<T extends string | number>({
                     onClick={() => onChange(o.v)}
                     aria-pressed={value === o.v}
                     className={cn(
-                        "text-[12.5px] font-bold px-3.5 py-1.5 min-h-[44px] min-w-[44px] flex-1 basis-0 transition-colors",
+                        "text-[12.5px] font-bold px-3.5 py-1.5 min-h-11 min-w-11 flex-1 basis-0 first:rounded-l-lg last:rounded-r-lg transition-colors",
                         i > 0 && "border-l border-neutral-200 dark:border-surface-dark-border",
                         value === o.v
-                            ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-surface-dark-canvas"
+                            ? "bg-neutral-900 dark:bg-neutral-100 text-[#faf9f7] dark:text-surface-dark-canvas underline decoration-2 underline-offset-4"
                             : "bg-white dark:bg-surface-dark-card text-neutral-600 dark:text-neutral-400 hover:bg-[#f2efe9] dark:hover:bg-surface-dark-hover",
-                        "focus:outline-none focus:ring-2 focus:ring-brand focus:z-10"
+                        CONTROL_FOCUS_CLS, "focus-visible:z-10"
                     )}
                 >
                     {o.label}
@@ -390,7 +391,7 @@ function Calculator() {
                                          "text-neutral-700 dark:text-neutral-300")
                             )}
                         >
-                            <Info size={13} strokeWidth={2.4} />
+                            <Info size={13} strokeWidth={2} />
                             <span className="hidden min-[380px]:inline">설명</span>
                         </button>
                         <ResultShare getSnapshot={() => calculatorSnapshot(effective, detail, result)} />
@@ -543,7 +544,7 @@ function Calculator() {
 
                         <div className={ROW_CLS}>
                             <span className={LABEL_CLS}>세금</span>
-                            <label className="inline-flex items-center gap-2 text-[13px] font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer w-fit min-h-11 sm:min-h-0">
+                            <label className="inline-flex items-center gap-2 text-[13px] font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer w-fit min-h-11">
                                 <input type="checkbox" checked={inputs.tax} onChange={(e) => set("tax", e.target.checked)}
                                     className="w-4 h-4 accent-brand cursor-pointer" />
                                 이자소득세 {TAX_RATE}% 차감
