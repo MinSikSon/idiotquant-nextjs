@@ -579,7 +579,11 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostKrCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => postKrCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => {
+                const result = await postKrCapitalGroupUpdate(key, groupId, updates);
+                if (result?.success === false) throw new Error(result.error || "그룹 설정을 적용하지 못했습니다.");
+                return result;
+            },
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
@@ -629,7 +633,11 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostUsCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => postUsCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => {
+                const result = await postUsCapitalGroupUpdate(key, groupId, updates);
+                if (result?.success === false) throw new Error(result.error || "그룹 설정을 적용하지 못했습니다.");
+                return result;
+            },
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
