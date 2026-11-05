@@ -16,7 +16,7 @@ test('GTEC 연결 재무상태표는 비지배지분 포함 자본을 사용해 
     StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest: 53_268_888,
     LiabilitiesAndStockholdersEquity: 115_576_195,
   }));
-  const funding = bs?.stacks.find(row => row.title === '그 자산은 누구 돈인가');
+  const funding = bs?.stacks.find(row => row.title === '부채와 자본 비중');
   assert.ok(funding);
   assert.deepEqual(funding.segs.map(seg => seg.label), ['부채', '자본']);
   assert.ok(Math.abs(funding.segs.reduce((sum, seg) => sum + seg.pct, 0) - 100) < 0.000001);
@@ -30,7 +30,7 @@ test('부채 항목이 없을 때 부채·자본 합계를 부채로 오인하�
     StockholdersEquity: 40,
   }));
   assert.equal(bs?.groups[1].items[0].values[0], null);
-  assert.equal(bs?.stacks.some(row => row.title === '그 자산은 누구 돈인가'), false);
+  assert.equal(bs?.stacks.some(row => row.title === '부채와 자본 비중'), false);
 });
 
 test('NEON 유동 수취채권의 접두사 유무를 지원하며 미공시 재고는 결측으로 보존한다', () => {

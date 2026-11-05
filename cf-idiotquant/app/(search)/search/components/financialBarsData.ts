@@ -187,11 +187,11 @@ export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: Ba
         const at = (key: string) => num(bsRows[0]?.[key]);
         const asset = at("total_aset");
         const stacks = [
-            makeStack("자산은 무엇으로 이루어져 있나", asset, [
+            makeStack("자산 구성", asset, [
                 { label: "유동자산", value: at("cras"), tone: "green" },
                 { label: "고정자산", value: at("fxas"), tone: "green", pale: true },
             ], undefined, asset === null ? undefined : `총 ${fmtEok(asset)}억`),
-            makeStack("그 자산은 누구 돈인가", asset, [
+            makeStack("부채와 자본 비중", asset, [
                 { label: "부채", value: at("total_lblt"), tone: "rose" },
                 { label: "자본", value: at("total_cptl"), tone: "emerald" },
             ], [
@@ -207,7 +207,7 @@ export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: Ba
         const sale = at("sale_account");
         const op = at("bsop_prti");
         const stacks = [
-            makeStack("매출 100원이 어디로 갔나", sale, [
+            makeStack("매출 대비 비용과 이익", sale, [
                 { label: "매출원가", value: at("sale_cost"), tone: "indigo", pale: true },
                 { label: "판관비", value: at("sell_mang"), tone: "violet", pale: true },
                 { label: "영업이익", value: op, tone: "violet" },
@@ -281,11 +281,11 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
     const assets = latest("assets");
     const currentAssets = latest("currentAssets");
     const bsStacks = [
-        makeStack("자산은 무엇으로 이루어져 있나", assets, [
+        makeStack("자산 구성", assets, [
             { label: "유동자산", value: currentAssets, tone: "green" },
             { label: "비유동", value: assets !== null && currentAssets !== null ? assets - currentAssets : null, tone: "green", pale: true },
         ], undefined, assets === null ? undefined : `총 ${fmtUsd(assets)}`),
-        makeStack("그 자산은 누구 돈인가", assets, [
+        makeStack("부채와 자본 비중", assets, [
             { label: "부채", value: latest("liabilities"), tone: "rose" },
             { label: "자본", value: latest("equity"), tone: "emerald" },
         ], [
@@ -320,7 +320,7 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
     const revenue = latest("revenue");
     const operating = latest("operating");
     const isStacks = [
-        makeStack("매출 $100 이 어디로 갔나", revenue, [
+        makeStack("매출 대비 비용과 이익", revenue, [
             { label: "비용", value: revenue !== null && operating !== null ? revenue - operating : null, tone: "indigo", pale: true },
             { label: "영업이익", value: operating, tone: "violet" },
         ], operating !== null && revenue ? [{ label: `영업이익 ${fmtUsd(operating)} · 영업이익률 ${((operating / revenue) * 100).toFixed(1)}%`, tone: "violet" }] : undefined,
