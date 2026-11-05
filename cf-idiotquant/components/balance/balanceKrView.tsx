@@ -711,7 +711,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-conditions",
           tab: "section-stocks",
           node: hasCapital ? (
-            <SectionPanel id="section-conditions" summary="자동매매 조건·예산 설정" hasError={krQuantRule.state === "rejected" || krQuantRule.saveState === "rejected" || krBudget.state === "rejected" || krBudget.saveState === "rejected"}>
+            <SectionPanel id="section-conditions" summary="계좌 기본 조건·예산 설정" hasError={krQuantRule.state === "rejected" || krQuantRule.saveState === "rejected" || krBudget.state === "rejected" || krBudget.saveState === "rejected"}>
               <RefillSettings
                 data={krBudget}
                 isMaster={isMaster}

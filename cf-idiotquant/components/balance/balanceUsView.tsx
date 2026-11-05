@@ -730,7 +730,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
           id: "section-conditions",
           tab: "section-stocks",
           node: hasCapital ? (
-            <SectionPanel id="section-conditions" summary="자동매매 조건·예산 설정" hasError={usQuantRule.state === "rejected" || usQuantRule.saveState === "rejected"}>
+            <SectionPanel id="section-conditions" summary="계좌 기본 조건·예산 설정" hasError={usQuantRule.state === "rejected" || usQuantRule.saveState === "rejected"}>
               <QuantRuleEditor
                 data={usQuantRule}
                 isMaster={isMaster}
