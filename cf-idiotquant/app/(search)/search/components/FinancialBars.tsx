@@ -26,10 +26,10 @@ const blockFormatter = (unit: Unit, values: (number | null)[]) =>
 function Stack({ row }: { row: StackRow }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <p className="text-[13px] font-bold text-neutral-800 dark:text-neutral-100">
-                {row.title}
-                {row.note && <span className="ml-1.5 text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">{row.note}</span>}
-            </p>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 break-keep">
+                <p className="text-[13px] font-bold text-neutral-800 dark:text-neutral-100">{row.title}</p>
+                {row.note && <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">{row.note}</span>}
+            </div>
             <div className="flex h-7 rounded-lg overflow-hidden bg-neutral-100 dark:bg-[#322f2a]">
                 {row.segs.map(seg => (
                     <div
@@ -200,9 +200,9 @@ function StatementCard({ model, unit }: { model: BarModel; unit: Unit }) {
             </div>
 
             {model.stacks.length > 0 && (
-                <div className="px-0 sm:px-5 py-2 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5">
+                <div className="px-3 sm:px-5 py-3 sm:py-4 bg-surface-canvas dark:bg-surface-dark border-b border-neutral-100 dark:border-border-subtle-dark flex flex-col gap-2 sm:gap-3.5">
                     <span className="font-mono text-[13px] font-bold uppercase tracking-[0.16em] text-neutral-600 dark:text-neutral-300">
-                        한눈에 · {compactPeriod(model.periods[0] ?? "").date}
+                        한눈에 보기 · {compactPeriod(model.periods[0] ?? "").date}
                     </span>
                     {model.stacks.map(s => <Stack key={s.title} row={s} />)}
                 </div>
