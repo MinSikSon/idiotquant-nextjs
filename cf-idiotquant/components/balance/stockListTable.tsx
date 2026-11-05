@@ -440,6 +440,7 @@ function StockListTable({
     <div className={cn("w-full space-y-1.5 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
       <section className="rounded-2xl border-0 bg-neutral-50 px-3 py-1.5 md:border md:border-neutral-200 md:bg-white md:p-4 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
+        <h3 className="mb-2 text-xs font-semibold text-neutral-600 dark:text-neutral-300"><span className="mr-2 tabular-nums text-neutral-400">01</span>운용 현황</h3>
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           <div className="hidden items-center gap-2 md:flex">
             <span className={cn(
@@ -518,14 +519,14 @@ function StockListTable({
           <div className="hidden items-center justify-between px-2.5 py-2 md:flex md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
-              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300">포인트 수동 관리</h3>
+              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300"><span className="mr-2 tabular-nums text-neutral-400">02</span>포인트 수동 관리</h3>
             </div>
             <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded uppercase tracking-wider">
               Master Only
             </span>
           </div>
           <div className="px-2.5 py-0.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden"><span className="tabular-nums text-neutral-400 md:hidden">02</span>수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
             <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-none border border-red-200 dark:border-red-800 overflow-hidden">
@@ -590,12 +591,12 @@ function StockListTable({
       {isMaster && picked.size > 0 && (
         <section aria-label="선택 종목 작업" className="sticky top-2 z-20 space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-4">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{pickedSymbols.length}개 종목 선택됨</p>
+            <div className="min-w-0"><h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-300"><span className="mr-2 tabular-nums text-neutral-400">03</span>선택 종목 작업</h3><p className="mt-1 text-sm font-bold text-neutral-900 dark:text-neutral-100">{pickedSymbols.length}개 종목 선택됨</p></div>
             <button type="button" onClick={clearPick} className="flex min-h-11 items-center gap-1 px-2 text-xs text-neutral-500 dark:text-neutral-400"><X size={14} />선택 해제</button>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <label className="min-w-0 space-y-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-              <span className="block">할 작업</span>
+              <span className="block">1. 할 작업</span>
               <select value={selectionAction} onChange={e => setBulkAction(e.target.value)} className="min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-100">
                 {pickedOperatingSymbols.length > 0 && <option value="move">그룹으로 이동</option>}
                 {onCopyLikes && pickedInterestSymbols.length > 0 && <option value="copy">관심 종목 복사</option>}
@@ -605,7 +606,7 @@ function StockListTable({
             </label>
             {selectionAction === "move" || selectionAction === "copy" ? (
               <label className="min-w-0 space-y-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                <span className="block">대상 그룹</span>
+                <span className="block">2. 대상 그룹</span>
                 <select value={bulkTarget} onChange={e => setBulkTarget(e.target.value)} className="min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-100">
                   <option value="__select__" disabled>대상 그룹 선택</option>
                   <option value="">미지정 (자동매매 제외)</option>
@@ -620,6 +621,7 @@ function StockListTable({
               else doBulkMove(bulkTarget || null);
             }} className={cn("col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-bold sm:col-span-1 disabled:cursor-not-allowed disabled:opacity-40", selectionAction === "remove" ? "bg-red-600 text-white hover:bg-red-700" : "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900")}>
               {selectionAction === "copy" ? <Copy size={16} /> : selectionAction === "create" ? <FolderPlus size={16} /> : selectionAction === "remove" ? <Trash2 size={16} /> : <ArrowRightLeft size={16} />}
+              <span className="tabular-nums">3.</span>
               {selectionAction === "copy" ? `${pickedInterestSymbols.length}개 관심 종목 복사` : selectionAction === "create" ? `${pickedOperatingSymbols.length}개로 그룹 만들기` : selectionAction === "remove" ? `${pickedOperatingSymbols.length}개 목록에서 제거` : `${pickedOperatingSymbols.length}개 종목 이동`}
             </button>
           </div>
@@ -629,6 +631,7 @@ function StockListTable({
 
       {/* ===== 2. 좋아요(찜) 그룹 섹션 — 예약 그룹 ===== */}
       <GroupSection
+        numberLabel="04"
         sectionKey={LIKES_GROUP_ID}
         title="좋아요 종목"
         subtitle="관심목록 — 매매하려면 선택 후 '복사'로 그룹에 넣으세요"
@@ -653,9 +656,10 @@ function StockListTable({
       />
 
       {/* ===== 3. 사용자 그룹 섹션들 ===== */}
-      {realGroups.map((g) => (
+      {realGroups.map((g, index) => (
         <GroupSection
           key={g.id}
+          numberLabel={`05.${index + 1}`}
           sectionKey={g.id}
           title={g.name}
           icon={<FolderOpen className="w-4 h-4 text-neutral-900 dark:text-neutral-100" />}
@@ -697,6 +701,7 @@ function StockListTable({
 
       {/* ===== 4. 미지정 섹션 ===== */}
       <GroupSection
+        numberLabel="06"
         sectionKey="__unassigned__"
         title="미지정"
         subtitle="그룹 미지정 종목 — 자동매매 OFF. 그룹에 추가하면 ON/OFF 설정 가능"
@@ -776,6 +781,7 @@ function StockListTable({
 // 그룹 섹션
 // =========================================================================
 interface GroupSectionProps {
+  numberLabel: string;
   sectionKey: string;
   title: string;
   subtitle?: string;
@@ -815,7 +821,7 @@ interface GroupSectionProps {
 }
 
 function GroupSection({
-  sectionKey, title, subtitle, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
+  numberLabel, sectionKey, title, subtitle, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
@@ -858,6 +864,7 @@ function GroupSection({
     <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-2xl border-0 bg-white shadow-none dark:bg-surface-dark-canvas sm:border", accentBorder)}>
       <button type="button" onClick={onToggleCollapse} aria-expanded={!collapsed} aria-controls={`pool-content-${sectionKey}`} aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
         className="flex min-h-14 w-full items-center gap-3 bg-neutral-50 px-3 py-3 text-left hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 sm:px-4">
+        <span className="shrink-0 self-start rounded-md bg-neutral-200/60 px-2 py-1 text-[11px] font-semibold tabular-nums text-neutral-600 dark:bg-neutral-700/60 dark:text-neutral-300">{numberLabel}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -870,6 +877,7 @@ function GroupSection({
       </button>
       <div id={`pool-content-${sectionKey}`} hidden={collapsed}>
       {/* 그룹 관리 도구 */}
+      <p className="px-3 pt-3 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 sm:px-4">{numberLabel}-1 · 그룹 관리</p>
       <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-3 py-2 dark:border-border-subtle-dark dark:bg-surface-dark-canvas sm:gap-3 sm:px-4 sm:py-3">
         <div className="grid w-full grid-cols-2 gap-2">
           {/* 그룹별 트레이딩 조건 편집 버튼 */}
@@ -990,9 +998,10 @@ function GroupSection({
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
         <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2.5 py-2 md:px-4 md:py-3">
+          <h4 className="mb-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300">{numberLabel}-2 · 매매 설정</h4>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
             <fieldset className="col-span-2 w-full min-w-0">
-              <legend className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-100">운용 모드</legend>
+              <legend className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-100">1. 운용 모드</legend>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {[
                   { dca: false, label: "퀀트", description: "재무·NCAV 조건을 확인해 매수합니다." },
@@ -1009,7 +1018,7 @@ function GroupSection({
                 {draftDca ? "DCA는 주문 시 NCAV·재무 조건 검사를 건너뜁니다. 대상 선정에는 활성 종목 수와 계좌·그룹의 선정 필터가 계속 적용됩니다." : "퀀트는 선정 필터와 NCAV 순위로 대상을 정합니다. 매수는 조건 충족 시 적립 포인트 범위에서 실행합니다."}
               </p>
             </fieldset>
-            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">방향·예산</span>
+            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">2. 방향·예산</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">방향</label>
               <div className="inline-flex w-full sm:w-auto rounded-lg border border-neutral-300 dark:border-surface-dark-elevated overflow-hidden">
@@ -1039,7 +1048,7 @@ function GroupSection({
                 className="min-h-11 sm:min-h-0 w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
-            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">{draftDca ? "대상 선정 제한" : "퀀트 조건"}</span>
+            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">3. {draftDca ? "대상 선정 제한" : "퀀트 조건"}</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" htmlFor={`${sectionKey}-active-count`}>활성 종목 수</label>
               <input
@@ -1119,6 +1128,7 @@ function GroupSection({
       {/* 본문 — 데스크탑: 테이블 / 모바일: 한 줄 요약 + 펼침 */}
       {!collapsed && (
         <>
+        <p className="px-3 py-2 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 sm:px-4">{numberLabel}-3 · 종목 목록</p>
         <div className="hidden md:block relative overflow-x-auto">
           <table className="w-full text-left text-[12px] border-collapse">
             <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-surface-dark-card/50 dark:text-neutral-400">
