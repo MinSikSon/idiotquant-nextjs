@@ -47,6 +47,12 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function ComponentNumber({ value }: { value: string }) {
+  return <span className="inline-flex min-h-6 min-w-7 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white px-1.5 text-[11px] font-semibold tabular-nums leading-none text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">{value}</span>;
+}
+
+const formatSectionNumber = (value: number) => String(value).padStart(2, "0");
+
 // KR 종목코드(6자리) → 종목명 매핑. validCorpCodeArray / validCorpNameArray 는 같은 순서의 병렬 배열.
 const KR_CODE_TO_NAME: Record<string, string> = (() => {
   const codes = validCorpCodeArray as string[];
@@ -404,6 +410,8 @@ function StockListTable({
   const pickedInterestSymbols = Array.from(new Set(Array.from(picked).filter(key => key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)).map(key => key.split(PICK_SEP)[1])));
   const pickedOperatingSymbols = Array.from(new Set(Array.from(picked).filter(key => !key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)).map(key => key.split(PICK_SEP)[1])));
   const selectionAction = pickedOperatingSymbols.length === 0 ? "copy" : pickedInterestSymbols.length === 0 && bulkAction === "copy" ? "move" : bulkAction;
+  const likesSectionNumber = 2 + Number(isMaster) + Number(isMaster && picked.size > 0);
+  const firstGroupNumber = likesSectionNumber + 1;
 
   const doBulkMove = (groupId: string | null) => {
     const tickers = pickedOperatingSymbols;
@@ -439,8 +447,8 @@ function StockListTable({
   return (
     <div className={cn("w-full space-y-1.5 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
-      <section className="rounded-2xl border-0 bg-neutral-50 px-3 py-1.5 md:border md:border-neutral-200 md:bg-white md:p-4 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
-        <h3 className="mb-2 text-xs font-semibold text-neutral-600 dark:text-neutral-300"><span className="mr-2 tabular-nums text-neutral-400">01</span>운용 현황</h3>
+      <section className="rounded-none border-0 border-b border-neutral-200 bg-neutral-50 px-2 py-2 md:bg-white md:px-2 md:py-3 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
+        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="01" />운용 현황</h3>
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           <div className="hidden items-center gap-2 md:flex">
             <span className={cn(
@@ -515,18 +523,18 @@ function StockListTable({
 
       {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
       {isMaster && (
-        <section className="overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50 p-1 dark:border-neutral-800 dark:bg-surface-dark-card">
+        <section className="overflow-hidden rounded-none border-0 border-b border-neutral-200 bg-neutral-50 p-0 dark:border-neutral-800 dark:bg-surface-dark-card">
           <div className="hidden items-center justify-between px-2.5 py-2 md:flex md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
-              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300"><span className="mr-2 tabular-nums text-neutral-400">02</span>포인트 수동 관리</h3>
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="02" />포인트 수동 관리</h3>
             </div>
             <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded uppercase tracking-wider">
               Master Only
             </span>
           </div>
           <div className="px-2.5 py-0.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden"><span className="tabular-nums text-neutral-400 md:hidden">02</span>수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden"><span className="md:hidden"><ComponentNumber value="02" /></span>수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
             <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-none border border-red-200 dark:border-red-800 overflow-hidden">
@@ -589,9 +597,9 @@ function StockListTable({
 
       {/* ===== 선택 종목 작업 ===== */}
       {isMaster && picked.size > 0 && (
-        <section aria-label="선택 종목 작업" className="sticky top-2 z-20 space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-4">
+        <section aria-label="선택 종목 작업" className="sticky top-2 z-20 space-y-3 rounded-none border-0 border-y border-neutral-200 bg-white px-2 py-3 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-2 sm:py-3">
           <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0"><h3 className="text-xs font-semibold text-neutral-600 dark:text-neutral-300"><span className="mr-2 tabular-nums text-neutral-400">03</span>선택 종목 작업</h3><p className="mt-1 text-sm font-bold text-neutral-900 dark:text-neutral-100">{pickedSymbols.length}개 종목 선택됨</p></div>
+            <div className="min-w-0"><h3 className="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="03" />선택 종목 작업</h3><p className="mt-1 text-sm font-bold text-neutral-900 dark:text-neutral-100">{pickedSymbols.length}개 종목 선택됨</p></div>
             <button type="button" onClick={clearPick} className="flex min-h-11 items-center gap-1 px-2 text-xs text-neutral-500 dark:text-neutral-400"><X size={14} />선택 해제</button>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
@@ -631,7 +639,7 @@ function StockListTable({
 
       {/* ===== 2. 좋아요(찜) 그룹 섹션 — 예약 그룹 ===== */}
       <GroupSection
-        numberLabel="04"
+        numberLabel={formatSectionNumber(likesSectionNumber)}
         sectionKey={LIKES_GROUP_ID}
         title="좋아요 종목"
         subtitle="관심목록 — 매매하려면 선택 후 '복사'로 그룹에 넣으세요"
@@ -659,7 +667,7 @@ function StockListTable({
       {realGroups.map((g, index) => (
         <GroupSection
           key={g.id}
-          numberLabel={`05.${index + 1}`}
+          numberLabel={formatSectionNumber(firstGroupNumber + index)}
           sectionKey={g.id}
           title={g.name}
           icon={<FolderOpen className="w-4 h-4 text-neutral-900 dark:text-neutral-100" />}
@@ -701,7 +709,7 @@ function StockListTable({
 
       {/* ===== 4. 미지정 섹션 ===== */}
       <GroupSection
-        numberLabel="06"
+        numberLabel={formatSectionNumber(firstGroupNumber + realGroups.length)}
         sectionKey="__unassigned__"
         title="미지정"
         subtitle="그룹 미지정 종목 — 자동매매 OFF. 그룹에 추가하면 ON/OFF 설정 가능"
@@ -861,10 +869,10 @@ function GroupSection({
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
-    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-2xl border-0 bg-white shadow-none dark:bg-surface-dark-canvas sm:border", accentBorder)}>
+    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-none border-0 border-b bg-white shadow-none dark:bg-surface-dark-canvas", accentBorder)}>
       <button type="button" onClick={onToggleCollapse} aria-expanded={!collapsed} aria-controls={`pool-content-${sectionKey}`} aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
-        className="flex min-h-14 w-full items-center gap-3 bg-neutral-50 px-3 py-3 text-left hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 sm:px-4">
-        <span className="shrink-0 self-start rounded-md bg-neutral-200/60 px-2 py-1 text-[11px] font-semibold tabular-nums text-neutral-600 dark:bg-neutral-700/60 dark:text-neutral-300">{numberLabel}</span>
+        className="flex min-h-14 w-full items-center gap-2 bg-neutral-50 px-2 py-3 text-left hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800">
+        <ComponentNumber value={numberLabel} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -877,8 +885,8 @@ function GroupSection({
       </button>
       <div id={`pool-content-${sectionKey}`} hidden={collapsed}>
       {/* 그룹 관리 도구 */}
-      <p className="px-3 pt-3 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 sm:px-4">{numberLabel}-1 · 그룹 관리</p>
-      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-3 py-2 dark:border-border-subtle-dark dark:bg-surface-dark-canvas sm:gap-3 sm:px-4 sm:py-3">
+      <p className="flex items-center gap-2 px-2 pt-3 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.1`} />그룹 관리</p>
+      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-2 py-2 dark:border-border-subtle-dark dark:bg-surface-dark-canvas sm:gap-3 sm:py-3">
         <div className="grid w-full grid-cols-2 gap-2">
           {/* 그룹별 트레이딩 조건 편집 버튼 */}
           {onSaveGroupSettings && (
@@ -997,8 +1005,8 @@ function GroupSection({
       {distributionError && <p role="alert" className="px-3 py-2 text-xs text-red-600 dark:text-red-400">{distributionError}</p>}
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
-        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2.5 py-2 md:px-4 md:py-3">
-          <h4 className="mb-3 text-xs font-semibold text-neutral-600 dark:text-neutral-300">{numberLabel}-2 · 매매 설정</h4>
+        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2 py-2 md:py-3">
+          <h4 className="mb-3 flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.2`} />매매 설정</h4>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
             <fieldset className="col-span-2 w-full min-w-0">
               <legend className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-100">1. 운용 모드</legend>
@@ -1128,7 +1136,7 @@ function GroupSection({
       {/* 본문 — 데스크탑: 테이블 / 모바일: 한 줄 요약 + 펼침 */}
       {!collapsed && (
         <>
-        <p className="px-3 py-2 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 sm:px-4">{numberLabel}-3 · 종목 목록</p>
+        <p className="flex items-center gap-2 px-2 py-2 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.${showRuleEditor && onSaveGroupSettings ? 3 : 2}`} />종목 목록</p>
         <div className="hidden md:block relative overflow-x-auto">
           <table className="w-full text-left text-[12px] border-collapse">
             <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-surface-dark-card/50 dark:text-neutral-400">
