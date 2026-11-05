@@ -121,7 +121,7 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
             <SlidersHorizontal className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">종목 선정 조건</span>
+            <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">기본 선정·퀀트 조건</span>
             <span className="text-[11px] text-neutral-400">
               {data?.is_override ? "계좌 전용 조건 적용 중" : "전역 기본값 적용 중 (저장 시 계좌 전용으로 전환)"}
             </span>
@@ -143,6 +143,8 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {data?.state === "pending" && <p role="status" className="text-xs text-neutral-500">조건을 불러오는 중…</p>}
       {data?.state === "rejected" && <p role="alert" className="text-xs text-rose-500">조건 조회에 실패했습니다. 페이지를 새로고침해 다시 시도하세요.</p>}
       {data?.saveState === "rejected" && <p role="alert" className="text-xs text-rose-500">조건을 저장하지 못했습니다. 입력 내용을 확인하고 다시 저장하세요.</p>}
+
+      <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">운용 모드는 각 그룹에서 선택합니다. 아래 조건은 그룹별 설정이 없을 때 사용하는 기본값이며, DCA도 대상 선정 필터와 활성 종목 수 제한은 적용받습니다.</p>
 
       {/* 필드 그리드 */}
       <div className="grid grid-cols-1 gap-1.5 sm:gap-3 sm:grid-cols-2">

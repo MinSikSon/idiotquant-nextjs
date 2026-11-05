@@ -28,7 +28,7 @@ interface Props {
 // 자동매매가 실제로 일어나는 조건(자동매매 ON → 활성 대상 → 운용 종목 → 예산)을
 // 파이프라인으로 시각화하고, 막혀 있으면 무엇이 필요한지 알려준다.
 export default function TradingFlowSummary({
-  country, tradingActive, groups, stockList, quantRule, budget,
+  country, tradingActive, groups, stockList, budget,
   onToggleTrading, togglePending, className,
 }: Props) {
   const realGroups = groups.filter(g => g.id !== LIKES_GROUP_ID);
@@ -58,14 +58,12 @@ export default function TradingFlowSummary({
   if (!hasActiveTarget) missing.push("그룹 ON");
   if (budget && budget.monthly_budget_krw <= 0) missing.push("월 예산 설정");
 
-  // 조건 요약 (상위 N종목 · NCAV ≥ x · 종목당 틱 배분)
-  const activeCount = quantRule?.active_count;
-  const ncav = quantRule?.ncav_ratio;
-  const perStock = budget && budget.per_tick_per_stock > 0 ? budget.per_tick_per_stock : 0;
+  // 그룹별 운용 모드를 요약한다. 계좌 기본 퀀트 조건을 DCA 조건처럼 표시하지 않는다.
+  const quantGroups = activeGroups.filter(group => !group.dca).length;
+  const dcaGroups = activeGroups.filter(group => group.dca).length;
   const condBits: string[] = [];
-  if (activeCount != null && activeCount > 0) condBits.push(`상위 ${activeCount}종목`);
-  if (ncav != null && ncav > 0) condBits.push(`NCAV ≥ ${ncav}`);
-  if (perStock > 0) condBits.push(`5분당 종목당 ${won(perStock)}`);
+  if (quantGroups) condBits.push(`퀀트 ${quantGroups}그룹`);
+  if (dcaGroups) condBits.push(`DCA ${dcaGroups}그룹`);
 
   return (
     <div className={cn(
