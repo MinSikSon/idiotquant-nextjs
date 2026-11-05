@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { KeyRound, Save, Trash2, Power } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { KeyRound, Save, Trash2, Power, ShieldCheck, LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   fetchTradingAccount, saveTradingAccount, deleteTradingAccount, TradingAccountInfo,
+  checkTradingAccountToken, TradingAccountTokenCheck,
 } from "@/lib/features/algorithmTrade/tradingAccountAPI";
 
 // 자동매매 계정(trading_accounts) 등록/수정/삭제 패널 (admin 전용, 선택 계정 kakaoId 대상)
@@ -14,6 +15,9 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
   const [info, setInfo] = useState<TradingAccountInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [tokenCheck, setTokenCheck] = useState<TradingAccountTokenCheck | null>(null);
+  const checkRequest = useRef(0);
   const [appkey, setAppkey] = useState("");
   const [appsecret, setAppsecret] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -24,6 +28,9 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
   const load = useCallback(async () => {
     if (!balanceKey || balanceKey === "undefined") return;
     setLoading(true);
+    checkRequest.current += 1;
+    setChecking(false);
+    setTokenCheck(null);
     setMsg(null);
     const d = await fetchTradingAccount(country, balanceKey);
     setInfo(d);
@@ -36,6 +43,18 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
   }, [country, balanceKey]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => () => { checkRequest.current += 1; }, [country, balanceKey]);
+
+  const onCheckToken = async () => {
+    const requestId = ++checkRequest.current;
+    setChecking(true);
+    setTokenCheck(null);
+    const result = await checkTradingAccountToken(country, balanceKey);
+    if (requestId !== checkRequest.current) return;
+    setTokenCheck(result);
+    setChecking(false);
+  };
 
   const onSave = async () => {
     setSaving(true);
@@ -115,6 +134,29 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
         </label>
       </div>
 
+      {exists && (
+        <div className="mt-3 rounded-lg border border-neutral-200 dark:border-border-subtle-dark p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300">KIS 토큰 유효성</span>
+            <button type="button" onClick={onCheckToken} disabled={checking || saving || loading}
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated px-3 py-2 text-xs font-bold disabled:opacity-50">
+              {checking ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+              {checking ? "확인 중…" : "토큰 유효성 확인"}
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-neutral-400">저장된 App Key/Secret으로 확인합니다. 수정한 값은 먼저 저장해 주세요. 만료된 토큰은 필요 시 갱신합니다.</p>
+          <div role="status" aria-live="polite" className="mt-2 text-xs leading-relaxed">
+            {tokenCheck && (
+              <p className={cn("font-bold", tokenCheck.valid === true ? "text-neutral-900 dark:text-neutral-100" : tokenCheck.valid === false ? "text-red-500" : "text-neutral-600 dark:text-neutral-300")}>
+                {tokenCheck.valid === true ? "유효 · " : tokenCheck.valid === false ? "유효하지 않음 · " : "확인 불가 · "}
+                {tokenCheck.message}{tokenCheck.code && ` (${tokenCheck.code})`}
+              </p>
+            )}
+            {tokenCheck?.checked_at && <p className="mt-1 text-[11px] text-neutral-400">확인 시각: {new Date(tokenCheck.checked_at).toLocaleString("ko-KR")}</p>}
+          </div>
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-xs font-bold text-neutral-600 dark:text-neutral-300 cursor-pointer">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)}
@@ -126,12 +168,12 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
         )}
         <div className="ml-auto flex items-center gap-2">
           {exists && (
-            <button onClick={onDelete} disabled={saving}
+            <button onClick={onDelete} disabled={saving || checking || loading}
               className="flex items-center gap-1.5 rounded-lg border border-neutral-200 dark:border-surface-dark-elevated px-3 py-2 text-xs font-bold text-neutral-500 hover:text-red-600 hover:border-red-300 disabled:opacity-50">
               <Trash2 className="w-3.5 h-3.5" /> 삭제
             </button>
           )}
-          <button onClick={onSave} disabled={saving || loading}
+          <button onClick={onSave} disabled={saving || loading || checking}
             className="flex items-center gap-1.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-900 dark:hover:bg-neutral-100 disabled:opacity-50">
             <Save className="w-3.5 h-3.5" /> {saving ? "저장 중…" : "저장"}
           </button>
