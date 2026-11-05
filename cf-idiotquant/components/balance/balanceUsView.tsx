@@ -9,8 +9,7 @@ import {
   PieChart, ClipboardList, TrendingDown, Power, Activity, KeyRound,
   ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Landmark, Banknote, Layers, Coins,
 } from "lucide-react";
-import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
-import TradingAccountList from "@/components/balance/tradingAccountList";
+import TradingAccountManager from "@/components/balance/tradingAccountManager";
 import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -230,7 +229,6 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const tradingStatus = useAppSelector(selectTradingStatus);
 
   const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || "");
-  const [accountListToken, setAccountListToken] = useState(0); // 계정 저장/삭제 후 목록 재조회 트리거
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -842,22 +840,12 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 title="자동매매 계정 관리"
                 subtitle="증권사 연결 정보와 계좌 기본 예산을 관리합니다. 매매 실행 스위치는 상단에서 변경합니다."
               />
-              <details className="mb-3">
-                <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">등록 계정 목록 · 선택</summary>
-                <TradingAccountList
-                  country="US"
-                  balanceKey={balanceKey}
-                  onSelect={setBalanceKey}
-                  refreshToken={accountListToken}
-                />
-              </details>
-              <TradingAccountPanel
+              <TradingAccountManager
                 country="US"
                 balanceKey={balanceKey}
                 onChanged={() => {
                   fetchAll(balanceKey);
                   dispatch(reqFetchTradingStatus({ country: "US", key: balanceKey }));
-                  setAccountListToken(t => t + 1);
                 }}
               />
             </SectionPanel>
