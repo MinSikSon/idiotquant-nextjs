@@ -32,7 +32,6 @@ import {
   Clock3,
   RotateCcw,
   SlidersHorizontal,
-  MoreHorizontal,
   Equal,
 } from "lucide-react";
 import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantRule } from "@/lib/features/capital/capitalSlice";
@@ -47,6 +46,12 @@ import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons"
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+function ComponentNumber({ value }: { value: string }) {
+  return <span className="inline-flex min-h-6 min-w-7 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white px-1.5 text-[11px] font-semibold tabular-nums leading-none text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">{value}</span>;
+}
+
+const formatSectionNumber = (value: number) => String(value).padStart(2, "0");
 
 // KR 종목코드(6자리) → 종목명 매핑. validCorpCodeArray / validCorpNameArray 는 같은 순서의 병렬 배열.
 const KR_CODE_TO_NAME: Record<string, string> = (() => {
@@ -267,10 +272,11 @@ function StockListTable({
   const [editingName, setEditingName] = useState("");
   const [creating, setCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [showLegend, setShowLegend] = useState(false);
-  const [bulkTarget, setBulkTarget] = useState<string>("");
+  const [bulkTarget, setBulkTarget] = useState<string>("__select__");
+  const [bulkAction, setBulkAction] = useState("move");
 
   // 관리자 여부 확인 (기존 로직 유지)
   const isMaster = useMemo(() =>
@@ -369,7 +375,7 @@ function StockListTable({
   };
 
   const toggleCollapse = (key: string) =>
-    setCollapsed(prev => {
+    setExpandedGroups(prev => {
       const next = new Set(prev);
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
@@ -389,7 +395,11 @@ function StockListTable({
       tickers.forEach(t => { const k = pickKey(section, t); select ? next.add(k) : next.delete(k); });
       return next;
     });
-  const clearPick = () => setPicked(new Set());
+  const clearPick = () => {
+    setPicked(new Set());
+    setBulkAction("move");
+    setBulkTarget("__select__");
+  };
 
   // 선택된 키에서 종목(symbol)만 추출(섹션 간 중복 제거) — 일괄 작업용
   const pickedSymbols = useMemo(
@@ -397,21 +407,27 @@ function StockListTable({
     [picked]
   );
 
+  const pickedInterestSymbols = Array.from(new Set(Array.from(picked).filter(key => key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)).map(key => key.split(PICK_SEP)[1])));
+  const pickedOperatingSymbols = Array.from(new Set(Array.from(picked).filter(key => !key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)).map(key => key.split(PICK_SEP)[1])));
+  const selectionAction = pickedOperatingSymbols.length === 0 ? "copy" : pickedInterestSymbols.length === 0 && bulkAction === "copy" ? "move" : bulkAction;
+  const likesSectionNumber = 2 + Number(isMaster) + Number(isMaster && picked.size > 0);
+  const firstGroupNumber = likesSectionNumber + 1;
+
   const doBulkMove = (groupId: string | null) => {
-    const tickers = pickedSymbols;
+    const tickers = pickedOperatingSymbols;
     if (tickers.length === 0) return;
     if (onBulkMove) onBulkMove(tickers, groupId);
     else tickers.forEach(t => onMoveStock?.(t, groupId)); // 폴백
     clearPick();
   };
   const doCopyToGroup = (groupId: string | null) => {
-    const tickers = pickedSymbols;
+    const tickers = pickedInterestSymbols;
     if (tickers.length === 0) return;
     onCopyLikes?.(tickers, groupId);
     clearPick();
   };
   const doBulkRemove = () => {
-    const tickers = pickedSymbols;
+    const tickers = pickedOperatingSymbols;
     if (tickers.length === 0) return;
     if (window.confirm(`선택한 ${tickers.length}개 종목을 제거할까요?`)) {
       onBulkRemove?.(tickers);
@@ -419,7 +435,7 @@ function StockListTable({
     }
   };
   const doCreateGroupFromPicked = () => {
-    const tickers = pickedSymbols;
+    const tickers = pickedOperatingSymbols;
     if (tickers.length === 0) return;
     const name = window.prompt(`선택한 ${tickers.length}개 종목으로 만들 그룹 이름을 입력하세요`);
     if (name && name.trim()) {
@@ -431,7 +447,8 @@ function StockListTable({
   return (
     <div className={cn("w-full space-y-1.5 md:space-y-5", className)}>
       {/* ===== 0. 자동매매 요약 대시보드 ===== */}
-      <section className="rounded-2xl border-0 bg-neutral-50 px-3 py-1.5 md:border md:border-neutral-200 md:bg-white md:p-4 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
+      <section className="rounded-none border-0 border-b border-neutral-200 bg-neutral-50 px-2 py-2 md:bg-white md:px-2 md:py-3 shadow-none dark:bg-neutral-900/40 md:dark:border-border-subtle-dark md:dark:bg-surface-dark-canvas">
+        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="01" />운용 현황</h3>
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           <div className="hidden items-center gap-2 md:flex">
             <span className={cn(
@@ -506,18 +523,18 @@ function StockListTable({
 
       {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
       {isMaster && (
-        <section className="overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50 p-1 dark:border-neutral-800 dark:bg-surface-dark-card">
+        <section className="overflow-hidden rounded-none border-0 border-b border-neutral-200 bg-neutral-50 p-0 dark:border-neutral-800 dark:bg-surface-dark-card">
           <div className="hidden items-center justify-between px-2.5 py-2 md:flex md:px-4 md:py-3 border-b border-red-100 dark:border-red-900/20">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
-              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300">포인트 수동 관리</h3>
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="02" />포인트 수동 관리</h3>
             </div>
             <span className="px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded uppercase tracking-wider">
               Master Only
             </span>
           </div>
           <div className="px-2.5 py-0.5 md:p-4 flex flex-wrap items-center gap-2 md:gap-4">
-            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
+            <details className="group/manual min-w-0"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden"><span className="md:hidden"><ComponentNumber value="02" /></span>수동 충전·차감<ChevronDown size={13} className="transition-transform group-open/manual:rotate-180" /></summary>
             <div className="flex flex-wrap gap-2 pb-2">
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <div key={`batch-${amt}`} className="inline-flex rounded-lg shadow-none border border-red-200 dark:border-red-800 overflow-hidden">
@@ -578,60 +595,51 @@ function StockListTable({
         </section>
       )}
 
-      {/* ===== 선택 작업 바 (이동 / 복사) ===== */}
+      {/* ===== 선택 종목 작업 ===== */}
       {isMaster && picked.size > 0 && (
-        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-300/40 bg-neutral-100 px-3 py-2.5 shadow-none dark:border-neutral-600/40 dark:bg-neutral-800/30 sm:px-4">
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 dark:text-neutral-100">
-            <ArrowRightLeft className="w-3.5 h-3.5" /> {pickedSymbols.length}개 선택
-          </span>
-          <button onClick={clearPick} className="rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-surface-dark-canvas sm:order-last sm:ml-auto">
-            <X className="w-4 h-4" />
-          </button>
-          <select
-            value={bulkTarget}
-            onChange={(e) => setBulkTarget(e.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-neutral-300/40 dark:border-neutral-600/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-surface-dark-canvas sm:flex-none"
-          >
-            <option value="">미지정</option>
-            {realGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-          {onCopyLikes && (
-            <button
-              onClick={() => doCopyToGroup(bulkTarget || null)}
-              title="좋아요 종목을 선택한 그룹의 운용 종목으로 복사 (원본 좋아요 유지)"
-              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-neutral-900 dark:hover:bg-neutral-100"
-            >
-              <Copy className="w-3.5 h-3.5" /> 복사
+        <section aria-label="선택 종목 작업" className="sticky top-2 z-20 space-y-3 rounded-none border-0 border-y border-neutral-200 bg-white px-2 py-3 shadow-none dark:border-border-subtle-dark dark:bg-surface-dark-card sm:px-2 sm:py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0"><h3 className="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200"><ComponentNumber value="03" />선택 종목 작업</h3><p className="mt-1 text-sm font-bold text-neutral-900 dark:text-neutral-100">{pickedSymbols.length}개 종목 선택됨</p></div>
+            <button type="button" onClick={clearPick} className="flex min-h-11 items-center gap-1 px-2 text-xs text-neutral-500 dark:text-neutral-400"><X size={14} />선택 해제</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label className="min-w-0 space-y-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+              <span className="block">1. 할 작업</span>
+              <select value={selectionAction} onChange={e => setBulkAction(e.target.value)} className="min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-100">
+                {pickedOperatingSymbols.length > 0 && <option value="move">그룹으로 이동</option>}
+                {onCopyLikes && pickedInterestSymbols.length > 0 && <option value="copy">관심 종목 복사</option>}
+                {onCreateGroup && pickedOperatingSymbols.length > 0 && <option value="create">새 그룹 만들기</option>}
+                {onBulkRemove && pickedOperatingSymbols.length > 0 && <option value="remove">운용 목록에서 제거</option>}
+              </select>
+            </label>
+            {selectionAction === "move" || selectionAction === "copy" ? (
+              <label className="min-w-0 space-y-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                <span className="block">2. 대상 그룹</span>
+                <select value={bulkTarget} onChange={e => setBulkTarget(e.target.value)} className="min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-100">
+                  <option value="__select__" disabled>대상 그룹 선택</option>
+                  <option value="">미지정 (자동매매 제외)</option>
+                  {realGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </label>
+            ) : <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{selectionAction === "create" ? "실행하면 새 그룹 이름을 입력합니다." : "운용 목록에서만 제거하며 보유 주식을 매도하지 않습니다."}</p>}
+            <button type="button" disabled={(selectionAction === "move" || selectionAction === "copy") && bulkTarget === "__select__"} onClick={() => {
+              if (selectionAction === "copy") doCopyToGroup(bulkTarget || null);
+              else if (selectionAction === "create") doCreateGroupFromPicked();
+              else if (selectionAction === "remove") doBulkRemove();
+              else doBulkMove(bulkTarget || null);
+            }} className={cn("col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-bold sm:col-span-1 disabled:cursor-not-allowed disabled:opacity-40", selectionAction === "remove" ? "bg-red-600 text-white hover:bg-red-700" : "bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900")}>
+              {selectionAction === "copy" ? <Copy size={16} /> : selectionAction === "create" ? <FolderPlus size={16} /> : selectionAction === "remove" ? <Trash2 size={16} /> : <ArrowRightLeft size={16} />}
+              <span className="tabular-nums">3.</span>
+              {selectionAction === "copy" ? `${pickedInterestSymbols.length}개 관심 종목 복사` : selectionAction === "create" ? `${pickedOperatingSymbols.length}개로 그룹 만들기` : selectionAction === "remove" ? `${pickedOperatingSymbols.length}개 목록에서 제거` : `${pickedOperatingSymbols.length}개 종목 이동`}
             </button>
-          )}
-          <button
-            onClick={() => doBulkMove(bulkTarget || null)}
-            title="운용 종목을 선택한 그룹으로 이동"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-300/40 dark:border-neutral-600/40 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-900 dark:text-neutral-100 hover:bg-neutral-900/10 dark:hover:bg-neutral-100/10 dark:bg-surface-dark-canvas"
-          >
-            <ArrowRightLeft className="w-3.5 h-3.5" /> 이동
-          </button>
-          <button
-            onClick={doCreateGroupFromPicked}
-            title="선택한 운용 종목으로 새 그룹 생성(이동)"
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-50 dark:border-border-subtle-dark dark:bg-surface-dark-card"
-          >
-            <FolderPlus className="w-3.5 h-3.5" /> 새 그룹
-          </button>
-          {onBulkRemove && (
-            <button
-              onClick={doBulkRemove}
-              title="선택한 종목을 운용 목록에서 제거"
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-red-300 bg-white px-2.5 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:border-red-900 dark:bg-surface-dark-canvas dark:hover:bg-red-950"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> 삭제
-            </button>
-          )}
-        </div>
+          </div>
+          {selectionAction === "copy" && <p className="text-[11px] text-neutral-500 dark:text-neutral-400">좋아요는 그대로 유지하고 선택한 관심 종목을 대상 그룹에 추가합니다.</p>}
+        </section>
       )}
 
       {/* ===== 2. 좋아요(찜) 그룹 섹션 — 예약 그룹 ===== */}
       <GroupSection
+        numberLabel={formatSectionNumber(likesSectionNumber)}
         sectionKey={LIKES_GROUP_ID}
         title="좋아요 종목"
         subtitle="관심목록 — 매매하려면 선택 후 '복사'로 그룹에 넣으세요"
@@ -643,7 +651,7 @@ function StockListTable({
         tradingActive={false}
         hideTrading
         emptyText="좋아요한 종목이 없습니다. 검색·분석 페이지에서 ♥ 를 눌러 추가하세요."
-        collapsed={collapsed.has(LIKES_GROUP_ID)}
+        collapsed={!expandedGroups.has(LIKES_GROUP_ID)}
         onToggleCollapse={() => toggleCollapse(LIKES_GROUP_ID)}
         picked={picked}
         onTogglePick={togglePick}
@@ -656,9 +664,10 @@ function StockListTable({
       />
 
       {/* ===== 3. 사용자 그룹 섹션들 ===== */}
-      {realGroups.map((g) => (
+      {realGroups.map((g, index) => (
         <GroupSection
           key={g.id}
+          numberLabel={formatSectionNumber(firstGroupNumber + index)}
           sectionKey={g.id}
           title={g.name}
           icon={<FolderOpen className="w-4 h-4 text-neutral-900 dark:text-neutral-100" />}
@@ -678,7 +687,7 @@ function StockListTable({
             if (window.confirm(`'${g.name}' 그룹을 삭제할까요? 소속 종목은 '미지정'으로 이동합니다.`)) onDeleteGroup(g.id);
           } : undefined}
           emptyText="이 그룹에 종목이 없습니다."
-          collapsed={collapsed.has(g.id)}
+          collapsed={!expandedGroups.has(g.id)}
           onToggleCollapse={() => toggleCollapse(g.id)}
           picked={picked}
           onTogglePick={togglePick}
@@ -700,6 +709,7 @@ function StockListTable({
 
       {/* ===== 4. 미지정 섹션 ===== */}
       <GroupSection
+        numberLabel={formatSectionNumber(firstGroupNumber + realGroups.length)}
         sectionKey="__unassigned__"
         title="미지정"
         subtitle="그룹 미지정 종목 — 자동매매 OFF. 그룹에 추가하면 ON/OFF 설정 가능"
@@ -710,7 +720,7 @@ function StockListTable({
         isMaster={isMaster}
         tradingActive={false}
         emptyText="미지정 종목이 없습니다."
-        collapsed={collapsed.has("__unassigned__")}
+        collapsed={!expandedGroups.has("__unassigned__")}
         onToggleCollapse={() => toggleCollapse("__unassigned__")}
         picked={picked}
         onTogglePick={togglePick}
@@ -779,6 +789,7 @@ function StockListTable({
 // 그룹 섹션
 // =========================================================================
 interface GroupSectionProps {
+  numberLabel: string;
   sectionKey: string;
   title: string;
   subtitle?: string;
@@ -818,7 +829,7 @@ interface GroupSectionProps {
 }
 
 function GroupSection({
-  sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
+  numberLabel, sectionKey, title, subtitle, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
@@ -826,7 +837,6 @@ function GroupSection({
 }: GroupSectionProps) {
   const [distributing, setDistributing] = useState(false);
   const [distributionError, setDistributionError] = useState("");
-  const [showManagement, setShowManagement] = useState(false);
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [draftActiveCount, setDraftActiveCount] = useState<string>("");
   const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
@@ -859,96 +869,25 @@ function GroupSection({
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
-    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-2xl border-0 bg-white shadow-none dark:bg-surface-dark-canvas sm:border", accentBorder)}>
-      <div className="flex items-center bg-neutral-50 dark:bg-neutral-800/50 sm:hidden">
-        <button type="button" onClick={onToggleCollapse} disabled={rows.length === 0} aria-expanded={rows.length > 0 ? !collapsed : undefined} aria-label={rows.length > 0 ? `${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}` : `${title} 등록된 종목 없음`} className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto_14px] items-center gap-1.5 px-3 text-left">
-          <span className="truncate text-[14px] font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
-          <span className="whitespace-nowrap text-[10px] text-neutral-500 dark:text-neutral-400">{count}종목{!hideTrading && ` · ${tradingActive ? "ON" : "OFF"}`}</span>
-          <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{tokenTotal > 0 ? `₩${Math.round(tokenTotal).toLocaleString("ko-KR")}` : ""}</span>
-          {rows.length > 0 && (collapsed ? <ChevronRight size={14} className="text-neutral-400" /> : <ChevronDown size={14} className="text-neutral-400" />)}
-        </button>
-        <button type="button" onClick={() => setShowManagement(value => !value)} aria-label={`${title} 관리`} aria-expanded={showManagement} aria-controls={`pool-management-${sectionKey}`} className={cn("flex min-h-11 min-w-11 items-center justify-center text-neutral-400 dark:text-neutral-500", showManagement && "bg-neutral-100 dark:bg-surface-dark-muted")}><MoreHorizontal size={18} /></button>
-      </div>
-      {/* 헤더 */}
-      <div id={`pool-management-${sectionKey}`} className={cn("flex-wrap items-center gap-2 px-3 py-2 sm:flex sm:gap-3 sm:px-4 sm:py-3 border-b border-neutral-100 dark:border-border-subtle-dark bg-neutral-50/60 dark:bg-surface-dark-card/40", showManagement ? "flex" : "hidden")}>
-        <button onClick={onToggleCollapse} aria-expanded={!collapsed} aria-label={`${title} 종목 목록 ${collapsed ? "펼치기" : "접기"}`} className="hidden sm:block text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-        <div className="flex flex-wrap items-center gap-2 min-w-0 sm:flex-nowrap">
-          <span className="hidden sm:contents">{icon}</span>
-          {editing ? (
-            <input
-              autoFocus
-              value={editingName}
-              onChange={(e) => onEditNameChange?.(e.target.value)}
-              onBlur={onCommitRename}
-              onKeyDown={(e) => { if (e.key === "Enter") onCommitRename?.(); }}
-              aria-label="그룹 이름"
-              className="min-h-11 w-full min-w-0 rounded-md border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-0.5 text-base font-bold sm:min-h-0 sm:w-auto sm:text-sm"
-            />
-          ) : (
-            <h3 className="hidden sm:block text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">{title}</h3>
-          )}
-          {accent === "green" && (
-            <span className={cn("shrink-0 rounded-md px-2 py-1 text-[10px] font-bold", groupDca ? "bg-amber-400/20 text-amber-700 dark:text-amber-400" : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100")}>
-              {groupDca ? "DCA · 정액" : "퀀트"} · {groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"}
-            </span>
-          )}
-          {onStartRename && !editing && (
-            <button onClick={onStartRename} aria-label={`${title} 이름 변경`} className="flex min-h-11 items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 sm:min-h-0 hover:text-neutral-600 dark:hover:text-neutral-200">
-              <Pencil className="w-3.5 h-3.5" />
-              <span className="sm:hidden">이름 변경</span>
-            </button>
-          )}
-          <span className="hidden sm:inline px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-500 dark:bg-surface-dark-muted dark:text-neutral-400 rounded-full">
-            {count}종목
+    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-none border-0 border-b bg-white shadow-none dark:bg-surface-dark-canvas", accentBorder)}>
+      <button type="button" onClick={onToggleCollapse} aria-expanded={!collapsed} aria-controls={`pool-content-${sectionKey}`} aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
+        className="flex min-h-14 w-full items-center gap-2 bg-neutral-50 px-2 py-3 text-left hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800">
+        <ComponentNumber value={numberLabel} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
+            <span>{count}종목{!hideTrading && ` · 자동매매 ${tradingActive ? "ON" : "OFF"}`}</span>
+            {accent === "green" && <span>{groupDca ? "DCA · 정액" : "퀀트"} · {groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"}</span>}
+            {tokenTotal > 0 && <span className="font-medium tabular-nums">적립 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}</span>}
           </span>
-          {tokenTotal > 0 && (
-            <span className="hidden sm:inline px-2 py-0.5 text-[10px] tabular-nums font-bold bg-neutral-100 text-neutral-900 dark:text-neutral-100 dark:bg-neutral-800/30 rounded-full" title="이 그룹 예산(토큰) 합계">
-              예산 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}
-            </span>
-          )}
-          {/* 그룹 전체선택 (데스크탑·모바일 공통) */}
-          {showCheck && !collapsed && (
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-1 whitespace-nowrap text-xs font-bold text-neutral-500 dark:text-neutral-400 sm:min-h-0 sm:text-[10px]">
-              <input
-                type="checkbox"
-                checked={allChecked}
-                ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
-                onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
-                className="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400"
-              />
-              전체
-            </label>
-          )}
-          {subtitle && <span className="hidden sm:inline text-[11px] text-neutral-400">{subtitle}</span>}
-        </div>
-
-        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
-          {/* 종목 목록 복사 (종목명만 / 상세) */}
-          <CopyStockButtons rows={copyRows} label={title} />
-          {onDistributeBudget && (
-            <button type="button" disabled={distributing || rows.length < 2 || tokenTotal <= 0}
-              onClick={async () => {
-                setDistributing(true);
-                setDistributionError("");
-                try { await onDistributeBudget(); }
-                catch (error) { setDistributionError(error instanceof Error ? error.message : "예산 균등 분배에 실패했습니다."); }
-                finally { setDistributing(false); }
-              }}
-              title="현재 적립 예산을 비활성 포함 모든 종목에 균등 분배합니다. 총액과 월 충전계획은 유지됩니다."
-              className="inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border border-neutral-200 px-2.5 text-xs font-bold text-neutral-600 disabled:opacity-40 dark:border-border-subtle-dark dark:text-neutral-300 sm:min-h-0 sm:py-1.5">
-              <Equal size={14} />{distributing ? "분배 중…" : "예산 균등 분배"}
-            </button>
-          )}
-          {/* 적용 조건 칩 (그룹 ON 일 때) */}
-          {conditionChips && conditionChips.length > 0 && (
-            <div className="hidden md:flex items-center gap-1">
-              {conditionChips.map((c, i) => (
-                <span key={i} className="rounded-full bg-neutral-900/10 dark:bg-neutral-100/10 px-2 py-0.5 text-[10px] tabular-nums text-neutral-900 dark:text-neutral-100">{c}</span>
-              ))}
-            </div>
-          )}
+        </span>
+        <span className="flex shrink-0 items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">{collapsed ? "펼치기" : "접기"}<ChevronDown size={16} className={cn("transition-transform", !collapsed && "rotate-180")} /></span>
+      </button>
+      <div id={`pool-content-${sectionKey}`} hidden={collapsed}>
+      {/* 그룹 관리 도구 */}
+      <p className="flex items-center gap-2 px-2 pt-3 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.1`} />그룹 관리</p>
+      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-2 py-2 dark:border-border-subtle-dark dark:bg-surface-dark-canvas sm:gap-3 sm:py-3">
+        <div className="grid w-full grid-cols-2 gap-2">
           {/* 그룹별 트레이딩 조건 편집 버튼 */}
           {onSaveGroupSettings && (
             <button
@@ -967,10 +906,10 @@ function GroupSection({
                 "min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg p-1.5 transition-colors",
                 showRuleEditor
                   ? "bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100"
-                  : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-surface-dark-muted dark:hover:text-neutral-200"
+                  : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-surface-dark-muted dark:text-neutral-200"
               )}
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-3.5 h-3.5" /><span className="ml-1.5 text-xs font-medium">매매 설정</span>
             </button>
           )}
           {/* 자동매매 토글 (좋아요 섹션은 hideTrading 으로 숨기고 '관심목록' 표시) */}
@@ -1000,10 +939,64 @@ function GroupSection({
               자동매매 {tradingActive ? "ON" : "OFF"}
             </span>
           )}
+        </div>
+        <div className="contents">
+          {editing && (
+            <input autoFocus value={editingName} onChange={e => onEditNameChange?.(e.target.value)} onBlur={onCommitRename}
+              onKeyDown={e => { if (e.key === "Enter") onCommitRename?.(); }} aria-label="그룹 이름"
+              className="min-h-11 w-full min-w-0 rounded-lg border border-neutral-300 bg-white px-2 text-base dark:border-surface-dark-elevated dark:bg-surface-dark-canvas sm:w-auto sm:text-sm" />
+          )}
+          {onStartRename && !editing && (
+            <button onClick={onStartRename} aria-label={`${title} 이름 변경`} className="flex min-h-11 items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 sm:min-h-0 hover:text-neutral-600 dark:hover:text-neutral-200">
+              <Pencil className="w-3.5 h-3.5" />
+              <span>이름 변경</span>
+            </button>
+          )}
+          {/* 그룹 전체선택 (데스크탑·모바일 공통) */}
+          {showCheck && !collapsed && (
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-1 whitespace-nowrap text-xs font-bold text-neutral-500 dark:text-neutral-400 sm:min-h-0 sm:text-[10px]">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
+                className="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-900 dark:text-neutral-100 focus:ring-neutral-500 dark:focus:ring-neutral-400"
+              />
+              전체 선택
+            </label>
+          )}
+          {subtitle && <span className="hidden sm:inline text-[11px] text-neutral-400">{subtitle}</span>}
+        </div>
+
+        <div className="contents">
+          {/* 종목 목록 복사 (종목명만 / 상세) */}
+          <CopyStockButtons rows={copyRows} label={title} />
+          {onDistributeBudget && (
+            <button type="button" disabled={distributing || rows.length < 2 || tokenTotal <= 0}
+              onClick={async () => {
+                setDistributing(true);
+                setDistributionError("");
+                try { await onDistributeBudget(); }
+                catch (error) { setDistributionError(error instanceof Error ? error.message : "예산 균등 분배에 실패했습니다."); }
+                finally { setDistributing(false); }
+              }}
+              title="현재 적립 예산을 비활성 포함 모든 종목에 균등 분배합니다. 총액과 월 충전계획은 유지됩니다."
+              className="inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg border border-neutral-200 px-2.5 text-xs font-bold text-neutral-600 disabled:opacity-40 dark:border-border-subtle-dark dark:text-neutral-300 sm:min-h-0 sm:py-1.5">
+              <Equal size={14} />{distributing ? "분배 중…" : "예산 균등 분배"}
+            </button>
+          )}
+          {/* 적용 조건 칩 (그룹 ON 일 때) */}
+          {conditionChips && conditionChips.length > 0 && (
+            <div className="hidden md:flex items-center gap-1">
+              {conditionChips.map((c, i) => (
+                <span key={i} className="rounded-full bg-neutral-900/10 dark:bg-neutral-100/10 px-2 py-0.5 text-[10px] tabular-nums text-neutral-900 dark:text-neutral-100">{c}</span>
+              ))}
+            </div>
+          )}
           {/* 삭제 */}
           {onDelete && (
             <button onClick={onDelete} aria-label={`${title} 그룹 삭제`} className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 transition-colors sm:min-h-0 sm:min-w-0">
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" /><span className="ml-1 text-xs">그룹 삭제</span>
             </button>
           )}
         </div>
@@ -1012,10 +1005,11 @@ function GroupSection({
       {distributionError && <p role="alert" className="px-3 py-2 text-xs text-red-600 dark:text-red-400">{distributionError}</p>}
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
-        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2.5 py-2 md:px-4 md:py-3">
+        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2 py-2 md:py-3">
+          <h4 className="mb-3 flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.2`} />매매 설정</h4>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
             <fieldset className="col-span-2 w-full min-w-0">
-              <legend className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-100">운용 모드</legend>
+              <legend className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-100">1. 운용 모드</legend>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {[
                   { dca: false, label: "퀀트", description: "재무·NCAV 조건을 확인해 매수합니다." },
@@ -1032,7 +1026,7 @@ function GroupSection({
                 {draftDca ? "DCA는 주문 시 NCAV·재무 조건 검사를 건너뜁니다. 대상 선정에는 활성 종목 수와 계좌·그룹의 선정 필터가 계속 적용됩니다." : "퀀트는 선정 필터와 NCAV 순위로 대상을 정합니다. 매수는 조건 충족 시 적립 포인트 범위에서 실행합니다."}
               </p>
             </fieldset>
-            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">방향·예산</span>
+            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">2. 방향·예산</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">방향</label>
               <div className="inline-flex w-full sm:w-auto rounded-lg border border-neutral-300 dark:border-surface-dark-elevated overflow-hidden">
@@ -1062,7 +1056,7 @@ function GroupSection({
                 className="min-h-11 sm:min-h-0 w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
               />
             </div>
-            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">{draftDca ? "대상 선정 제한" : "퀀트 조건"}</span>
+            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">3. {draftDca ? "대상 선정 제한" : "퀀트 조건"}</span>
             <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" htmlFor={`${sectionKey}-active-count`}>활성 종목 수</label>
               <input
@@ -1142,6 +1136,7 @@ function GroupSection({
       {/* 본문 — 데스크탑: 테이블 / 모바일: 한 줄 요약 + 펼침 */}
       {!collapsed && (
         <>
+        <p className="flex items-center gap-2 px-2 py-2 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.${showRuleEditor && onSaveGroupSettings ? 3 : 2}`} />종목 목록</p>
         <div className="hidden md:block relative overflow-x-auto">
           <table className="w-full text-left text-[12px] border-collapse">
             <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-surface-dark-card/50 dark:text-neutral-400">
@@ -1389,6 +1384,7 @@ function GroupSection({
         </div>
         </>
       )}
+      </div>
     </section>
   );
 }

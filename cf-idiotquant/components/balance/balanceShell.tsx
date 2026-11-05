@@ -75,7 +75,7 @@ export function BalanceShell({
           />
         </>}
       />
-      <div className={cn(PAGE_WIDTH.data, "flex flex-col gap-6 py-6")}>
+      <div className={cn(PAGE_WIDTH.data, "flex flex-col gap-6 py-6", mobileTab === "section-stocks" && "px-0 sm:px-0")}>
 
         {/* 국가·계좌 선택은 본문과 함께 스크롤한다. */}
         {(countryToggle || accountSelector) && <div className="flex flex-col gap-3">

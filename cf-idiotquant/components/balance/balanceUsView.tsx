@@ -671,7 +671,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
         {
           id: "section-stocks",
           node: hasCapital ? (
-            <SectionPanel id="section-stocks">
+            <SectionPanel id="section-stocks" className="rounded-none border-x-0 px-0 sm:px-0 md:px-0">
               <SectionHeader
                 icon={<Database size={16} />}
                 title="자동매매 운영"
