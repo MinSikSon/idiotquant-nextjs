@@ -2,6 +2,7 @@
 
 import { tradingCursorIndex } from "@/lib/features/capital/tradingSummary";
 import { DetailHelp } from "./detailHelp";
+import GroupStrategyEditor, { type GroupStrategySettings } from "./groupStrategyEditor";
 
 import React, { useState, useMemo } from "react";
 import {
@@ -172,7 +173,7 @@ interface Props {
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   onDeleteStock?: (ticker: string) => void;
   onBulkRemove?: (tickers: string[]) => void;
-  onSaveGroupSettings?: (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => void;
+  onSaveGroupSettings?: (groupId: string, settings: GroupStrategySettings) => Promise<unknown>;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -824,7 +825,7 @@ interface GroupSectionProps {
   groupBudget?: number;
   groupSide?: "buy" | "sell";
   groupDca?: boolean;
-  onSaveGroupSettings?: (settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => void;
+  onSaveGroupSettings?: (settings: GroupStrategySettings) => Promise<unknown>;
   onDistributeBudget?: () => Promise<void>;
 }
 
@@ -838,11 +839,6 @@ function GroupSection({
   const [distributing, setDistributing] = useState(false);
   const [distributionError, setDistributionError] = useState("");
   const [showRuleEditor, setShowRuleEditor] = useState(false);
-  const [draftActiveCount, setDraftActiveCount] = useState<string>("");
-  const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
-  const [draftBudget, setDraftBudget] = useState<string>("");
-  const [draftSide, setDraftSide] = useState<"buy" | "sell">("buy");
-  const [draftDca, setDraftDca] = useState<boolean>(false);
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
@@ -891,14 +887,7 @@ function GroupSection({
           {/* 그룹별 트레이딩 조건 편집 버튼 */}
           {onSaveGroupSettings && (
             <button
-              onClick={() => {
-                setDraftActiveCount(String(groupQuantRule?.active_count ?? ""));
-                setDraftNcavRatio(String(groupQuantRule?.ncav_ratio ?? ""));
-                setDraftBudget(groupBudget != null ? String(groupBudget) : "");
-                setDraftSide(groupSide === "sell" ? "sell" : "buy");
-                setDraftDca(!!groupDca);
-                setShowRuleEditor(v => !v);
-              }}
+              onClick={() => setShowRuleEditor(true)}
               title="운용 모드·방향·예산 설정"
               aria-label={`${title} 매매 설정`}
               aria-expanded={showRuleEditor}
@@ -1005,132 +994,15 @@ function GroupSection({
       {distributionError && <p role="alert" className="px-3 py-2 text-xs text-red-600 dark:text-red-400">{distributionError}</p>}
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
-        <div className="border-b border-neutral-100 dark:border-border-subtle-dark bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-2 py-2 md:py-3">
-          <h4 className="mb-3 flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.2`} />매매 설정</h4>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
-            <fieldset className="col-span-2 w-full min-w-0">
-              <legend className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-100">1. 운용 모드</legend>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {[
-                  { dca: false, label: "퀀트", description: "재무·NCAV 조건을 확인해 매수합니다." },
-                  { dca: true, label: "DCA · 정액 적립", description: "적립 포인트를 모아 1주 단위로 주문합니다." },
-                ].map(mode => (
-                  <button key={mode.label} type="button" aria-pressed={draftDca === mode.dca} onClick={() => setDraftDca(mode.dca)}
-                    className={cn("min-h-16 rounded-xl border p-3 text-left transition-colors", draftDca === mode.dca ? "border-neutral-400 bg-neutral-100 text-neutral-900 dark:border-neutral-500 dark:bg-neutral-800 dark:text-neutral-100" : "border-neutral-200 bg-white text-neutral-500 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400")}>
-                    <span className="block text-sm font-bold">{mode.label}</span>
-                    <span className="mt-1 block text-[11px]">{mode.description}</span>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">
-                {draftDca ? "DCA는 주문 시 NCAV·재무 조건 검사를 건너뜁니다. 대상 선정에는 활성 종목 수와 계좌·그룹의 선정 필터가 계속 적용됩니다." : "퀀트는 선정 필터와 NCAV 순위로 대상을 정합니다. 매수는 조건 충족 시 적립 포인트 범위에서 실행합니다."}
-              </p>
-            </fieldset>
-            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">2. 방향·예산</span>
-            <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0">방향</label>
-              <div className="inline-flex w-full sm:w-auto rounded-lg border border-neutral-300 dark:border-surface-dark-elevated overflow-hidden">
-                <button type="button" aria-pressed={draftSide === "buy"} onClick={() => setDraftSide("buy")}
-                  className={cn("min-h-11 sm:min-h-0 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
-                    draftSide === "buy" ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
-                  매수
-                </button>
-                <button type="button" aria-pressed={draftSide === "sell"} onClick={() => setDraftSide("sell")}
-                  className={cn("min-h-11 sm:min-h-0 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 text-xs font-bold transition-colors",
-                    draftSide === "sell" ? "bg-rose-500 text-white" : "bg-white dark:bg-surface-dark-canvas text-neutral-500")}>
-                  매도
-                </button>
-              </div>
-            </div>
-            {draftSide === "sell" && <p className="col-span-2 text-[11px] text-rose-500">{draftDca ? "적립 포인트 ÷ 1주 가격으로 수량을 계산하고 보유 수량 내에서 매도합니다. 주문 접수 성공 시 사용 포인트를 차감합니다." : "퀀트 매도는 포인트·매수 조건과 무관하게 선정된 종목의 보유 수량 전량을 매도합니다."}</p>}
-            <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" htmlFor={`${sectionKey}-budget`}>월 적립 예산(원)</label>
-              <input
-                type="number"
-                min={0}
-                step={10000}
-                id={`${sectionKey}-budget`}
-                value={draftBudget}
-                onChange={e => setDraftBudget(e.target.value)}
-                placeholder="계좌예산 분배"
-                className="min-h-11 sm:min-h-0 w-full sm:w-28 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
-              />
-            </div>
-            <span className="col-span-2 mt-2 w-full text-xs font-bold text-neutral-800 dark:text-neutral-100">3. {draftDca ? "대상 선정 제한" : "퀀트 조건"}</span>
-            <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" htmlFor={`${sectionKey}-active-count`}>활성 종목 수</label>
-              <input
-                type="number"
-                min={1}
-                max={200}
-                step={1}
-                id={`${sectionKey}-active-count`}
-                value={draftActiveCount}
-                onChange={e => setDraftActiveCount(e.target.value)}
-                placeholder="계좌 기본값"
-                className="min-h-11 sm:min-h-0 w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
-              />
-            </div>
-            {!draftDca && draftSide === "buy" && <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-              <label className="text-xs sm:text-[11px] text-neutral-500 shrink-0" htmlFor={`${sectionKey}-ncav`}>NCAV 비율</label>
-              <input
-                type="number"
-                min={0}
-                step={0.1}
-                id={`${sectionKey}-ncav`}
-                value={draftNcavRatio}
-                onChange={e => setDraftNcavRatio(e.target.value)}
-                placeholder="계좌 기본값"
-                className="min-h-11 sm:min-h-0 w-full sm:w-20 rounded border border-neutral-300 dark:border-surface-dark-elevated bg-white dark:bg-surface-dark-canvas px-2 py-1.5 sm:py-1 text-base sm:text-xs"
-              />
-            </div>}
-            <div className="col-span-2 flex items-center gap-1.5 justify-end sm:ml-auto">
-              {(groupQuantRule || groupBudget != null) && (
-                <button
-                  onClick={() => { onSaveGroupSettings({ quant_rule: null, budget_krw: null }); setShowRuleEditor(false); }}
-                  className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-surface-dark-elevated"
-                >
-                  조건·예산 기본값
-                </button>
-              )}
-              <button
-                onClick={() => setShowRuleEditor(false)}
-                className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-neutral-500 border border-neutral-200 dark:border-surface-dark-elevated"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => {
-                  const rule: QuantRule = { ...groupQuantRule };
-                  delete rule.active_count;
-                  const ac = parseInt(draftActiveCount, 10);
-                  if (!isNaN(ac) && ac > 0) rule.active_count = ac;
-                  if (!draftDca && draftSide === "buy") {
-                    delete rule.ncav_ratio;
-                    const nr = parseFloat(draftNcavRatio);
-                    if (!isNaN(nr)) rule.ncav_ratio = nr;
-                  }
-                  const b = parseInt(draftBudget, 10);
-                  onSaveGroupSettings({
-                    quant_rule: Object.keys(rule).length > 0 ? rule : null,
-                    budget_krw: !isNaN(b) && b > 0 ? b : null,
-                    side: draftSide,
-                    dca: draftDca,
-                  });
-                  setShowRuleEditor(false);
-                }}
-                className="min-h-11 sm:min-h-0 flex-1 sm:flex-none rounded-lg px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-bold bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white hover:bg-neutral-800"
-              >
-                저장
-              </button>
-            </div>
-          </div>
-          {!draftDca && draftSide === "buy" && groupQuantRule && (
-            <p className="mt-1.5 text-[10px] text-neutral-400">
-              현재 그룹 조건: {formatConditions(groupQuantRule).join(" · ")}
-            </p>
-          )}
-        </div>
+        <GroupStrategyEditor
+          groupQuantRule={groupQuantRule}
+          groupBudget={groupBudget}
+          groupSide={groupSide}
+          groupDca={groupDca}
+          tradingActive={tradingActive}
+          onApply={onSaveGroupSettings}
+          onClose={() => setShowRuleEditor(false)}
+        />
       )}
 
       {/* 본문 — 데스크탑: 테이블 / 모바일: 한 줄 요약 + 펼침 */}
