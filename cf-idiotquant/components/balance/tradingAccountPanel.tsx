@@ -50,10 +50,14 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
     const requestId = ++checkRequest.current;
     setChecking(true);
     setTokenCheck(null);
-    const result = await checkTradingAccountToken(country, balanceKey);
-    if (requestId !== checkRequest.current) return;
-    setTokenCheck(result);
-    setChecking(false);
+    try {
+      const result = await checkTradingAccountToken(country, balanceKey);
+      if (requestId === checkRequest.current) setTokenCheck(result);
+    } catch {
+      if (requestId === checkRequest.current) setTokenCheck({ valid: null, message: "토큰 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." });
+    } finally {
+      if (requestId === checkRequest.current) setChecking(false);
+    }
   };
 
   const onSave = async () => {

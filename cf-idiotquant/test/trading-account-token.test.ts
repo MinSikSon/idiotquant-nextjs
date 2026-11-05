@@ -31,3 +31,30 @@ test('네트워크 실패는 확인 불가로 반환한다', async t => {
     assert.equal(result.valid, null);
     assert.match(result.message, /네트워크/);
 });
+
+for (const error of [{ message: 'upstream unavailable' }, ['service error'], 502]) {
+    test(`HTTP 200의 비문자열 오류도 화면에 안전한 메시지로 반환한다: ${JSON.stringify(error)}`, async t => {
+        t.mock.method(globalThis, 'fetch', async () => Response.json({ success: false, error }));
+        const result = await checkTradingAccountToken('KR', 'syb2025');
+        assert.equal(result.valid, null);
+        assert.equal(typeof result.message, 'string');
+    });
+}
+
+test('성공 응답의 선택 필드가 객체여도 화면에 넘기지 않는다', async t => {
+    t.mock.method(globalThis, 'fetch', async () => Response.json({
+        success: true,
+        data: { valid: true, message: '인증 성공', code: { detail: 'bad code' }, checked_at: { value: 'invalid date' } },
+    }));
+    const result = await checkTradingAccountToken('KR', 'syb2025');
+    assert.equal(result.valid, true);
+    assert.equal(result.code, undefined);
+    assert.equal(result.checked_at, undefined);
+});
+
+test('날짜로 변환할 수 없는 확인 시각은 화면에 넘기지 않는다', async t => {
+    t.mock.method(globalThis, 'fetch', async () => Response.json({
+        success: true, data: { valid: true, message: '인증 성공', checked_at: 'not-a-date' },
+    }));
+    assert.equal((await checkTradingAccountToken('KR', 'syb2025')).checked_at, undefined);
+});

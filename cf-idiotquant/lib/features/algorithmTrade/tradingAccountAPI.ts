@@ -68,7 +68,13 @@ export interface TradingAccountTokenCheck {
 export async function checkTradingAccountToken(country: "KR" | "US", key: string): Promise<TradingAccountTokenCheck> {
   const json = await apiRequest(`/trading/account?country=${country}&kakao-id=${encodeURIComponent(key)}`, { method: "PATCH" });
   if (json.success !== true || !json.data || ![true, false, null].includes(json.data.valid) || typeof json.data.message !== "string") {
-    return { valid: null, message: json.error || "토큰 유효성을 확인하지 못했습니다." };
+    return { valid: null, message: typeof json.error === "string" && json.error.trim() ? json.error : "토큰 유효성을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." };
   }
-  return json.data as TradingAccountTokenCheck;
+  const { valid, message, code, checked_at } = json.data;
+  return {
+    valid,
+    message,
+    ...(typeof code === "string" ? { code } : {}),
+    ...(typeof checked_at === "string" && Number.isFinite(Date.parse(checked_at)) ? { checked_at } : {}),
+  };
 }
