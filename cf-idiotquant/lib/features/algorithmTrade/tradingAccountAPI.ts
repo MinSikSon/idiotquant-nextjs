@@ -57,3 +57,18 @@ export async function deleteTradingAccount(country: "KR" | "US", key: string): P
   const json = await apiRequest(`/trading/account?country=${country}&kakao-id=${encodeURIComponent(key)}`, { method: "DELETE" });
   return json.success === true && !!json.data?.deleted;
 }
+
+export interface TradingAccountTokenCheck {
+  valid: boolean | null;
+  message: string;
+  code?: string;
+  checked_at?: string;
+}
+
+export async function checkTradingAccountToken(country: "KR" | "US", key: string): Promise<TradingAccountTokenCheck> {
+  const json = await apiRequest(`/trading/account?country=${country}&kakao-id=${encodeURIComponent(key)}`, { method: "PATCH" });
+  if (json.success !== true || !json.data || ![true, false, null].includes(json.data.valid) || typeof json.data.message !== "string") {
+    return { valid: null, message: json.error || "토큰 유효성을 확인하지 못했습니다." };
+  }
+  return json.data as TradingAccountTokenCheck;
+}
