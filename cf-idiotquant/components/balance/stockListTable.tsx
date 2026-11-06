@@ -411,8 +411,7 @@ function StockListTable({
   const pickedInterestSymbols = Array.from(new Set(Array.from(picked).filter(key => key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)).map(key => key.split(PICK_SEP)[1])));
   const pickedOperatingSymbols = Array.from(new Set(Array.from(picked).filter(key => !key.startsWith(`${LIKES_GROUP_ID}${PICK_SEP}`)).map(key => key.split(PICK_SEP)[1])));
   const selectionAction = pickedOperatingSymbols.length === 0 ? "copy" : pickedInterestSymbols.length === 0 && bulkAction === "copy" ? "move" : bulkAction;
-  const likesSectionNumber = 2 + Number(isMaster) + Number(isMaster && picked.size > 0);
-  const firstGroupNumber = likesSectionNumber + 1;
+  const groupsSectionNumber = formatSectionNumber(2 + Number(isMaster) + Number(isMaster && picked.size > 0));
 
   const doBulkMove = (groupId: string | null) => {
     const tickers = pickedOperatingSymbols;
@@ -638,9 +637,11 @@ function StockListTable({
         </section>
       )}
 
+      <section aria-label="종목 그룹" className="space-y-1.5 md:space-y-3">
+        <h2 className="flex items-center gap-2 px-2 py-3 text-sm font-semibold text-neutral-900 dark:text-neutral-100"><ComponentNumber value={groupsSectionNumber} />종목 그룹</h2>
       {/* ===== 2. 좋아요(찜) 그룹 섹션 — 예약 그룹 ===== */}
       <GroupSection
-        numberLabel={formatSectionNumber(likesSectionNumber)}
+        numberLabel={`${groupsSectionNumber}.1`}
         sectionKey={LIKES_GROUP_ID}
         title="좋아요 종목"
         subtitle="관심목록 — 매매하려면 선택 후 '복사'로 그룹에 넣으세요"
@@ -668,7 +669,7 @@ function StockListTable({
       {realGroups.map((g, index) => (
         <GroupSection
           key={g.id}
-          numberLabel={formatSectionNumber(firstGroupNumber + index)}
+          numberLabel={`${groupsSectionNumber}.${index + 2}`}
           sectionKey={g.id}
           title={g.name}
           icon={<FolderOpen className="w-4 h-4 text-neutral-900 dark:text-neutral-100" />}
@@ -710,7 +711,7 @@ function StockListTable({
 
       {/* ===== 4. 미지정 섹션 ===== */}
       <GroupSection
-        numberLabel={formatSectionNumber(firstGroupNumber + realGroups.length)}
+        numberLabel={`${groupsSectionNumber}.${realGroups.length + 2}`}
         sectionKey="__unassigned__"
         title="미지정"
         subtitle="그룹 미지정 종목 — 자동매매 OFF. 그룹에 추가하면 ON/OFF 설정 가능"
@@ -733,6 +734,8 @@ function StockListTable({
         monthlyPerStock={monthlyPerStock}
         onDeleteStock={onDeleteStock}
       />
+
+      </section>
 
       {/* 상세 분석 모달 */}
       {isOpen && (
@@ -860,19 +863,22 @@ function GroupSection({
   const baseCols = 6; // 종목/상태/PER·PBR/BPS·EPS/시총/NCAV
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0) + (onDeleteStock ? 1 : 0);
 
-  const accentBorder = accent === "rose" ? "border-rose-200 dark:border-rose-900/30"
+  const highlightTrading = !hideTrading && tradingActive;
+  const accentBorder = highlightTrading ? "border-emerald-500 dark:border-emerald-500"
+    : accent === "rose" ? "border-rose-200 dark:border-rose-900/30"
     : accent === "green" ? "border-neutral-300/20 dark:border-neutral-600/20"
     : "border-neutral-200 dark:border-border-subtle-dark";
 
   return (
-    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-none border-0 border-b bg-white shadow-none dark:bg-surface-dark-canvas", accentBorder)}>
+    <section id={`trading-pool-${sectionKey}`} className={cn("scroll-mt-36 overflow-hidden rounded-none border-0 border-b bg-white shadow-none dark:bg-surface-dark-canvas", highlightTrading && "border-l-4", accentBorder)}>
       <button type="button" onClick={onToggleCollapse} aria-expanded={!collapsed} aria-controls={`pool-content-${sectionKey}`} aria-label={`${title} ${collapsed ? "펼치기" : "접기"}`}
-        className="flex min-h-14 w-full items-center gap-2 bg-neutral-50 px-2 py-3 text-left hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800">
+        className={cn("flex min-h-14 w-full items-center gap-2 px-2 py-3 text-left", highlightTrading ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50" : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800")}>
         <ComponentNumber value={numberLabel} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100" title={title}>{title}</span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
-            <span>{count}종목{!hideTrading && ` · 자동매매 ${tradingActive ? "ON" : "OFF"}`}</span>
+            <span>{count}종목</span>
+            {!hideTrading && <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-bold", highlightTrading ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" : "text-neutral-500 dark:text-neutral-400")}><Power size={12} />자동매매 {tradingActive ? "ON" : "OFF"}</span>}
             {accent === "green" && <span>{groupDca ? "DCA · 정액" : "퀀트"} · {groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"}</span>}
             {tokenTotal > 0 && <span className="font-medium tabular-nums">적립 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}</span>}
           </span>
@@ -909,10 +915,11 @@ function GroupSection({
           ) : onToggleTrading ? (
             <button
               onClick={onToggleTrading}
+              aria-pressed={tradingActive}
               className={cn(
                 "min-h-11 sm:min-h-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
                 tradingActive
-                  ? "bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 text-white hover:bg-neutral-900 dark:hover:bg-neutral-100"
+                  ? "bg-emerald-700 text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700"
                   : "bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-surface-dark-muted dark:text-neutral-400"
               )}
             >
@@ -922,7 +929,7 @@ function GroupSection({
           ) : (
             <span className={cn(
               "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
-              tradingActive ? "bg-neutral-900/10 dark:bg-neutral-100/10 text-neutral-900 dark:text-neutral-100" : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted"
+              tradingActive ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-neutral-100 text-neutral-400 dark:bg-surface-dark-muted"
             )}>
               <Power className="w-3.5 h-3.5" />
               자동매매 {tradingActive ? "ON" : "OFF"}
