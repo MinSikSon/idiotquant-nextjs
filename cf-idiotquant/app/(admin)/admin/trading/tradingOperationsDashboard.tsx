@@ -186,7 +186,7 @@ export default function TradingOperationsDashboard() {
                     {run && <section className={styles.panel}><div className={styles.panelHead}><h2><Clock size={14} />실행 기록</h2><span className={styles.note}>{run.id}</span></div><ol className={styles.events}>{[...run.steps].reverse().slice(0, 15).map(item => <li key={item.seq}><time>{time(item.finished_at ?? item.started_at)}</time><Badge status={stepStatus(item, run, now)} /><span>{[...stages, ...(meta?.stages.details ?? [])].find(stage => stage.id === item.stage)?.label ?? item.stage}{item.context.symbol && ` · ${item.context.symbol}`}{item.reason && ` · ${reason(item.reason)}`}</span></li>)}</ol>{run.parent_id && <p className={styles.note}>스케줄 분기 실행: {run.parent_id}</p>}</section>}
                 </div>
             </div>
-            <footer className={styles.footer}><span><Database size={12} />최근 24시간 · 화면 표시 중 5초마다 조회{hasOldData ? ' · 조회 실패' : ''}</span><span>최근 응답 {time(overview?.data.server_time ?? null)} KST</span></footer>
+            <footer className={styles.footer}><span><Database size={12} />최근 24시간 · 단계 상세는 실행 종료 후 반영 · 5초마다 조회{hasOldData ? ' · 조회 실패' : ''}</span><span>최근 응답 {time(overview?.data.server_time ?? null)} KST</span></footer>
         </main>
     </>;
 }

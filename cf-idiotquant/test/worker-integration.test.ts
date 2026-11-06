@@ -49,7 +49,7 @@ describe('프록시 JWT → Worker → 로컬 D1 통합', { skip: !workerRoot ||
             '0004_stock_data_universal.sql', '0006_stock_likes.sql', '0013_stock_info.sql', '0014_risk_flags.sql',
             '0024_ledger_entries.sql', '0025_ledger_categories.sql', '0026_ledger_sharing.sql',
             '0027_ledger_category_refs.sql', '0028_ledger_entry_authors.sql', '0029_ledger_entry_position.sql',
-            '0040_trading_operations.sql',
+            '0040_trading_operations.sql', '0041_operation_snapshots.sql',
         ];
         for (const name of migrations) {
             const sql = readFileSync(join(workerRoot!, 'migrations', name), 'utf8').replace(/--.*$/gm, '');
