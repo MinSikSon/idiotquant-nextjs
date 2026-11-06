@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { NavigationPopover } from "@/components/navigation-popover";
 import { cn } from "@/lib/utils";
 import { CONTROL_FOCUS_CLS, CONTROL_DISABLED_CLS } from "@/lib/ui-controls";
@@ -120,7 +120,7 @@ export function PageHeader({
     </div>, titleTarget!)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
       {primaryAction && <div data-primary-action>{primaryAction}</div>}
-      {(actions || description || meta) && <NavigationPopover label="페이지 작업" trigger={<button type="button" aria-label="페이지 작업" className="navigation-icon"><MoreHorizontal size={20} /></button>}>
+      {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><span>도구</span><ChevronDown size={14} aria-hidden="true" /></button>}>
         <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
         {(description || meta) && <div className="border-t border-neutral-200 p-3 text-xs leading-6 dark:border-neutral-700">{description}{meta && <div>{meta}</div>}</div>}
       </NavigationPopover>}
