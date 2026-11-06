@@ -22,6 +22,7 @@ import {
   Eye,
   ShieldCheck,
   MoreHorizontal,
+  LayoutGrid,
   ChevronDown,
   NotebookText,
   EyeOff,
@@ -499,13 +500,13 @@ export function NavbarWithSimpleLinks() {
         onFocusCapture={() => setBottomHidden(false)}
         className={cn(inGame ? "hidden" : "md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-center px-3 bg-surface-canvas/95 backdrop-blur-[12px] dark:bg-surface-dark-canvas/95 border-neutral-300/50 dark:border-neutral-700/60")}>
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
-        {/* 게임(Rogue)은 아래쪽 탭이 아니라 "더보기" 안에 있다(MORE_NAV) */}
+        {/* 게임(Rogue)은 아래쪽 탭이 아니라 "메뉴" 안에 있다(MORE_NAV) */}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         <TabItem href="/compare"    label="비교"   icon={GitCompareArrows} isActive={pathname.startsWith("/compare")} />
         <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
-        <NavigationPopover label="더보기" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
+        <NavigationPopover label="서비스 메뉴" side="top" onOpenChange={open => { setMoreSheet(open); setBottomHidden(false); }} trigger={
           <button type="button" className={cn("flex h-full min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-neutral-600 dark:text-neutral-400", moreActive && "text-brand-ink dark:text-brand-ink")}>
-            <MoreHorizontal size={20} /><span className={cn("text-[10px] font-semibold leading-none", moreActive && "underline decoration-2 underline-offset-4")}>더보기</span>
+            <LayoutGrid size={20} aria-hidden="true" /><span className={cn("text-[10px] font-semibold leading-none", moreActive && "underline decoration-2 underline-offset-4")}>메뉴</span>
           </button>
         }>{!inGame && serviceMenu(true)}</NavigationPopover>
       </nav>
