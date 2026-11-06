@@ -348,7 +348,7 @@ export default function ProfilePage() {
                                 </Link>
                             )}
 
-                            {/* 일반 사용자 화면으로 보기 — 관리자 전용 메뉴를 접어 두고 본다.
+                            {/* 일반 사용자 화면으로 보기 — 관리자 전용 메뉴와 조회 기능을 접어 두고 본다.
                                 권한은 그대로다: 주소를 직접 치면 관리자 화면이 열린다. */}
                             <button
                                 type="button"
@@ -370,8 +370,8 @@ export default function ProfilePage() {
                                     </span>
                                     <span className="block text-[11px] text-neutral-400 dark:text-neutral-500">
                                         {viewAsUser
-                                            ? "관리자 메뉴를 접어 두고 있습니다 — 권한은 그대로입니다"
-                                            : "관리자에게만 보이는 메뉴를 숨겨 봅니다"}
+                                            ? "일반 사용자 화면을 보는 중입니다 · 종목 발굴은 최신 데이터만 조회합니다"
+                                            : "관리자 전용 메뉴와 과거 일자·주간 조회를 숨겨 봅니다"}
                                     </span>
                                 </span>
                                 <span className={cn(

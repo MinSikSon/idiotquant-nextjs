@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useMemo, useState, useCallback, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useViewAsUser } from "@/lib/viewAsUser";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectNcavDailyList, reqGetNcavDailyList,
@@ -42,7 +43,7 @@ import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialF
 import FactorWorkbench from "@/components/research/FactorWorkbench";
 import WatchlistChanges from "@/components/watchlistChanges";
 
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
+import { RefreshCw, ChevronRight, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -261,13 +262,13 @@ function StrategyCell({ label, count, active, activeCls, title, onClick, compact
     );
 }
 
-function ScreenerStep({ number, label }: { number: number; label: string }) {
+function ScreenerStep({ number, label, compact = false }: { number: number; label: string; compact?: boolean }) {
     return (
         <span className="inline-flex shrink-0 items-center gap-2 text-xs font-extrabold text-neutral-700 dark:text-neutral-200">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-light text-[11px] font-black tabular-nums text-brand-ink dark:bg-brand-muted/40">
                 <span className="sr-only">단계 </span>{number}
             </span>
-            {label}
+            <span className={compact ? "sr-only sm:not-sr-only" : undefined}>{label}</span>
         </span>
     );
 }
@@ -547,7 +548,8 @@ function ScreenerContent() {
     const searchParams = useSearchParams();
     const { data: session, status: sessionStatus } = useSession();
     const isLoggedIn = !!session;
-    const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
+    const viewAsUser = useViewAsUser();
+    const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin" && !viewAsUser;
     const [selectedDate, setSelectedDate] = useState("latest");
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [weeklyPeriods, setWeeklyPeriods] = useState<string[]>([]);
@@ -1258,8 +1260,8 @@ function ScreenerContent() {
             )}
 
             <div className="border-b border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
-                <div className="w-full mx-auto flex flex-wrap items-center gap-x-2 gap-y-1 px-4 sm:px-6">
-                    {isLoggedIn && <ScreenerStep number={1} label="시장 선택" />}
+                <div className="w-full mx-auto flex items-center gap-2 px-4 sm:px-6">
+                    {isLoggedIn && <ScreenerStep number={1} label="시장 선택" compact={isAdmin} />}
                     <div className="flex gap-1" data-compact-tabs role="group" aria-label="발굴 시장">
                         {([['KR', '국내'], ['US', '미국']] as const).map(([value, label]) => (
                         <button
@@ -1285,18 +1287,26 @@ function ScreenerContent() {
                                 setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "px-4 py-3 text-sm font-bold border-b-2 transition-colors",
+                                "px-3 py-3 text-sm font-bold border-b-2 transition-colors sm:px-4",
                                 country === value ? "border-brand-ink text-brand-ink underline decoration-2 underline-offset-4" : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
                             )}
                         >{label}</button>
                         ))}
                     </div>
                     {isAdmin && (
-                        <div className="ml-auto flex items-center gap-2">
-                            <label htmlFor="screener-date" className="hidden sm:inline text-xs font-semibold text-neutral-500 dark:text-neutral-400">조회 날짜</label>
+                        <div className="relative ml-auto min-w-0 max-w-[168px] rounded-full py-1.5 focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-2 dark:focus-within:ring-offset-surface-dark-card">
+                            <div className={cn(
+                                "pointer-events-none flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold",
+                                datesError ? "border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400" : "border-neutral-200 bg-neutral-50 text-neutral-600 dark:border-surface-dark-border dark:bg-surface-dark-hover dark:text-neutral-300",
+                                datesLoading && "opacity-50",
+                            )} aria-hidden="true">
+                                {datesLoading ? <Loader2 size={13} className="shrink-0 animate-spin" /> : <CalendarDays size={13} className="shrink-0" />}
+                                <span className="truncate">{datesError ? "날짜 조회 실패" : selectedDate === "latest" ? "최신 스캔" : `${weeklyPeriod ? "주간 " : ""}${selectedDate.replace("weekly:", "").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1.$2.$3")}`}</span>
+                                <ChevronDown size={12} className="shrink-0 text-neutral-400" />
+                            </div>
                             <select
                                 id="screener-date"
-                                aria-label="조회 날짜"
+                                aria-label={datesError ? "조회 날짜 · 날짜 조회 실패" : "조회 날짜"}
                                 value={selectedDate}
                                 onChange={event => {
                                     setSelectedDate(event.target.value);
@@ -1304,7 +1314,7 @@ function ScreenerContent() {
                                     setDisplayCount(DAILY_PAGE_SIZE);
                                 }}
                                 disabled={datesLoading || datesError}
-                                className="w-[130px] rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-medium text-neutral-700 dark:border-surface-dark-border dark:bg-surface-dark-card dark:text-neutral-200"
+                                className="absolute inset-0 h-full w-full cursor-pointer rounded-full opacity-0 disabled:cursor-wait"
                             >
                                 <option value="latest">최신 스캔</option>
                                 {availableDates.map(date => (
@@ -1316,7 +1326,6 @@ function ScreenerContent() {
                                     ))}
                                 </optgroup>}
                             </select>
-                            {datesError && <span className="text-xs text-red-500">날짜 조회 실패</span>}
                         </div>
                     )}
                 </div>
