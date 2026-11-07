@@ -46,6 +46,18 @@
 .previewTitle h2 { font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
 .count { flex-shrink: 0; padding: 3px 7px; border-radius: 3px; background: var(--home-hover); color: var(--home-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
 .previewDescription { padding: 8px 24px 24px; color: var(--home-secondary); font-size: 12px; }
+.previewFilters { display: flex; flex-wrap: wrap; gap: 6px; padding: 16px 24px 0; }
+.previewFilters button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--home-line); border-radius: var(--radius-control); color: var(--home-secondary); font-size: 12px; white-space: nowrap; }
+.previewFilters button[aria-pressed="true"] { color: rgb(var(--brand-ink)); background: rgb(var(--brand-ink) / .1); border-color: rgb(var(--brand-ink) / .5); }
+.previewFilters button:hover { background: var(--home-hover); }
+.home button:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: 2px; }
+.stockExamples { padding: 20px 24px; border-top: 1px solid var(--home-line); }
+.stockExamples h3 { font-size: 15px; font-weight: 600; }
+.stockExamples > p { margin-top: 4px; font-size: 12px; color: var(--home-secondary); }
+.stockExamples .previewFilters { padding: 12px 0; }
+.exampleLinks { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.exampleLinks a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13px; }
+.exampleLinks a:hover { color: rgb(var(--brand-ink)); }
 .tableHead, .stockRow { display: grid; grid-template-columns: minmax(0, 1fr) 60px 60px 14px; gap: 14px; align-items: center; padding: 0 24px; }
 .tableHead { min-height: 34px; background: var(--home-bg); border-block: 1px solid var(--home-line); font-size: 11px; color: var(--home-secondary); }
 .tableHead > :nth-child(2), .tableHead > :nth-child(3) { text-align: right; }
@@ -119,7 +131,8 @@
   .hero { gap: 32px; padding-block: 64px; }
   .tableHead, .stockRow { grid-template-columns: minmax(0, 1fr) 42px 42px 12px; gap: 10px; padding-inline: 18px; }
   .previewTop, .previewTitle { padding-inline: 18px; }
-  .previewDescription { padding-inline: 18px; }
+  .previewDescription, .previewFilters { padding-inline: 18px; }
+  .stockExamples { padding-inline: 18px; }
   .tool { padding: 24px; }
   .faq { gap: 32px; }
   .footer > div { flex-wrap: wrap; }
