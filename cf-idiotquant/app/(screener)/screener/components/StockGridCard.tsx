@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Heart } from "lucide-react";
+import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
 import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
@@ -50,10 +51,11 @@ const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boole
     </div>
 );
 
-export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
+export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison }: {
     item: Item;
     onClick: (ticker: string, name: string) => void;
     isLiked: boolean;
+    comparison?: ComparisonChoice;
     onToggleLike: (ticker: string, name: string) => void;
 }) {
     const strategy = STRATEGY_PRESETS_CLIENT.find(p => p.clientFilter?.(item))?.id ?? item.strategies?.[0] ?? null;
@@ -81,6 +83,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
         >
             <div className="p-2 sm:p-3.5">
                 <div className="flex items-center gap-1.5 mb-1 sm:gap-2 sm:mb-2.5">
+                    <ComparisonCheckbox choice={comparison} name={item.name} />
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-[12px] sm:text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</span>

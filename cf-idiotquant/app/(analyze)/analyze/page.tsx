@@ -8,6 +8,7 @@ import {
   useEffect,
   Suspense,
   useMemo,
+  useRef,
   useCallback,
   memo,
   startTransition
@@ -15,7 +16,7 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { selectIsLiked, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
+import { selectLikedList, selectTogglePending, selectLikesState, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
 import dynamic from 'next/dynamic';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
@@ -33,6 +34,7 @@ import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
 import { resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import ResultShare from '@/components/result-share';
 import { StockLogo } from '@/components/stockLogo';
+import { analysisHref, comparisonHref, completeWatchRequest, matchesWatchStock, PENDING_WATCH_KEY, readPendingWatch, screenerReturnPath } from '@/lib/investmentFlow';
 import { analysisSnapshot } from '@/lib/share/analysis';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBarsData';
@@ -370,7 +372,12 @@ function AnalyzeContent() {
   const isLoggedIn = !!session;
   const { toasts, addToast, removeToast: dismissToast } = useToast();
 
-  const fromScreener = searchParams.get('from') === 'screener';
+  const returnTo = screenerReturnPath(searchParams.get('returnTo')) ?? (searchParams.get('from') === 'screener' ? '/screener' : null);
+  const resumeStarted = useRef(false);
+  const [watchSaving, setWatchSaving] = useState(false);
+  const likedList = useAppSelector(selectLikedList);
+  const togglePending = useAppSelector(selectTogglePending);
+  const likesState = useAppSelector(selectLikesState);
 
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], usStocks: [], corpCodeJson: {} });
@@ -385,7 +392,6 @@ function AnalyzeContent() {
   useEffect(() => {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
-    dispatch(reqGetMyLikes());
     loadStaticStockData().then(setStaticStockData).catch(() => {
       addToast('error', '주식 데이터를 불러올 수 없습니다.');
     });
@@ -401,7 +407,7 @@ function AnalyzeContent() {
     }
     setSearchOpen(false);
     startTransition(() => { router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`); });
-  }, [router, addToast, staticStockData.allTickers]);
+  }, [router, addToast, staticStockData.allTickers, setSearchOpen]);
 
   useEffect(() => {
     const ticker = searchParams.get('ticker');
@@ -409,20 +415,6 @@ function AnalyzeContent() {
   }, [searchParams, name, onSearch]);
 
   const tickerFromUrl = searchParams.get('ticker');
-
-
-  const handleToggleLike = useCallback(() => {
-    if (!tickerFromUrl) return;
-    if (!session?.user) {
-      addToast('info', '관심 종목을 저장하려면 로그인 후 하트를 다시 눌러 주세요.');
-      return;
-    }
-    dispatch(reqToggleLike({ ticker: tickerFromUrl, name: name ?? undefined, isUs: krOrUs === 'US' }));
-  }, [dispatch, tickerFromUrl, session, name, krOrUs, addToast]);
-
-  const loginHref = tickerFromUrl
-    ? `/login?callbackUrl=${encodeURIComponent(`/analyze?ticker=${tickerFromUrl}`)}`
-    : '/login';
 
   // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
   const displayName = krOrUs === 'KR'
@@ -446,7 +438,59 @@ function AnalyzeContent() {
     );
 
   const currency = krOrUs === 'US' ? '$' : '₩';
-  const isInWatchlist = useAppSelector(state => selectIsLiked(state, tickerFromUrl ?? ''));
+  const watchStock = useMemo(() => ({ ticker: tickerFromUrl ?? '', name: displayName ?? tickerFromUrl ?? '', isUs: krOrUs === 'US' }), [tickerFromUrl, displayName, krOrUs]);
+  const isInWatchlist = isLoggedIn && likedList.some(item => matchesWatchStock(item, watchStock));
+  const likeBusy = watchSaving || (isLoggedIn && likesState === 'pending') || togglePending.some(ticker => ticker === watchStock.ticker || ticker === watchStock.name);
+  const analysisPath = tickerFromUrl ? analysisHref(tickerFromUrl, returnTo ?? undefined) : '/analyze';
+  const loginHref = `/login?callbackUrl=${encodeURIComponent(analysisPath)}`;
+
+  useEffect(() => {
+    if (session?.user?.id) dispatch(reqGetMyLikes());
+  }, [session?.user?.id, dispatch]);
+
+  const handleToggleLike = async () => {
+    if (!tickerFromUrl || likeBusy) return;
+    if (!session?.user) {
+      try { sessionStorage.setItem(PENDING_WATCH_KEY, JSON.stringify({ ...watchStock, createdAt: Date.now() })); }
+      catch { addToast('info', '로그인 후 이 종목을 다시 담아주세요.'); }
+      router.push(loginHref);
+      return;
+    }
+    setWatchSaving(true);
+    try {
+      await dispatch(reqToggleLike({ ticker: watchStock.isUs ? watchStock.ticker : watchStock.name, name: watchStock.name, isUs: watchStock.isUs })).unwrap();
+      addToast('success', isInWatchlist ? '관심 종목에서 해제했습니다.' : '관심 종목에 저장했습니다.');
+    } catch {
+      await dispatch(reqGetMyLikes());
+      addToast('error', '관심 종목을 저장하지 못했습니다. 다시 시도해 주세요.');
+    } finally { setWatchSaving(false); }
+  };
+
+  useEffect(() => {
+    if (!session?.user?.id || !isPriceLoaded || resumeStarted.current) return;
+    let intent;
+    try { intent = readPendingWatch(sessionStorage.getItem(PENDING_WATCH_KEY), watchStock.ticker); }
+    catch { return; }
+    if (!intent) return;
+    resumeStarted.current = true;
+    const requested = intent;
+    setWatchSaving(true);
+    void (async () => {
+      try {
+        // 토글 API이므로 조회 성공 후 한 번만 소비하고, 기존 저장은 해제하지 않는다.
+        await completeWatchRequest(requested,
+          async () => (await dispatch(reqGetMyLikes()).unwrap())?.data ?? [],
+          () => sessionStorage.removeItem(PENDING_WATCH_KEY),
+          stock => dispatch(reqToggleLike({ ticker: stock.isUs ? stock.ticker : stock.name, name: stock.name, isUs: stock.isUs })).unwrap(),
+        );
+        addToast('success', '관심 종목에 저장했습니다.');
+      } catch {
+        await dispatch(reqGetMyLikes());
+        addToast('error', '관심 종목 저장을 완료하지 못했습니다. 담기 버튼으로 다시 시도해 주세요.');
+      } finally { setWatchSaving(false); }
+    })();
+  }, [session?.user?.id, isPriceLoaded, watchStock.ticker, dispatch, addToast]);
+
 
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
@@ -596,15 +640,7 @@ function AnalyzeContent() {
           </div>
         )}
         actions={isPriceLoaded ? <>
-            {isPriceLoaded && gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
-          {isLoggedIn ? <button type="button" onClick={handleToggleLike}
-            aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'}
-            className={cn(PAGE_ACTION_CLS, isInWatchlist && 'text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400')}>
-            <Heart size={14} fill={isInWatchlist ? 'currentColor' : 'none'} /><span>{isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}</span>
-          </button> : <Link href={loginHref} aria-label="로그인하고 관심 종목 저장" className={PAGE_ACTION_CLS}>
-            <Heart size={14} />
-            <span className="hidden sm:inline">로그인 후 저장</span>
-          </Link>}
+          {gradeLabel && <GradeHelp key={tickerLabel} grade={gradeLabel} upside={stockData?.ncavRatio ?? 0} />}
           <ResultShare disabled={!stockData || waitResponse} getSnapshot={() => {
             const snapshot = analysisSnapshot({
               title: displayName || tickerLabel, sourcePath: `/analyze?ticker=${encodeURIComponent(tickerFromUrl || tickerLabel)}`,
@@ -688,6 +724,16 @@ function AnalyzeContent() {
           시작선이 다른 쪽이 더 크게 걸린다. 카드 여백이 다시 두꺼워지면 여기가
           아니라 카드 쪽을 줄인다. */}
       <main className={cn(ANALYZE_WIDTH, styles.content, "pb-8")}>
+        {isPriceLoaded && <nav aria-label="분석 다음 행동" className="mb-4 flex flex-wrap items-center gap-2">
+          {returnTo && <Link href={returnTo} aria-label="발굴 목록으로" className="inline-flex min-h-11 items-center gap-1 px-2 text-sm text-neutral-600 dark:text-neutral-300"><ChevronLeft size={16} /><span className="sm:hidden">목록</span><span className="hidden sm:inline">발굴 목록으로</span></Link>}
+          <button type="button" onClick={() => void handleToggleLike()} disabled={likeBusy}
+            aria-label={isInWatchlist ? '관심 종목에서 빼기' : '관심 종목에 담기'} aria-pressed={isInWatchlist}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50">
+            <Heart size={16} fill={isInWatchlist ? 'currentColor' : 'none'} />{likeBusy ? '저장 중…' : isInWatchlist ? '관심 종목 해제' : '관심 종목 담기'}
+          </button>
+          <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center rounded-xl border border-neutral-200 px-3 text-sm dark:border-neutral-700">비교에 추가</Link>
+        </nav>}
+
 
         {!tickerFromUrl ? (
           <AnalysisIntro onSearch={handleSearch} />

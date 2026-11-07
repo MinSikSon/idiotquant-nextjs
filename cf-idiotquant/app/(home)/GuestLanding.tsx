@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { HOME_FAQ } from "@/lib/seo-content";
-import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined, GitCompareArrows, ArrowUpRight } from "lucide-react";
+import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined, Heart, ArrowUpRight } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import styles from "./home.module.css";
 import { matchesGuestPer } from "@/lib/utils/guestStocks";
@@ -27,7 +27,7 @@ const formatPrice = (value: number) =>
 const tools = [
   { href: "/screener", icon: SlidersHorizontal, number: "01", title: "기준으로 발굴", description: "NCAV, 저PBR, 저PER. 숫자로 후보를 좁혀보세요.", action: "종목 발굴" },
   { href: "/analyze", icon: ChartNoAxesCombined, number: "02", title: "근거까지 분석", description: "발굴한 종목을 눌러 지표와 기업 가치를 확인하세요. 상세 재무·위험도는 로그인 후 볼 수 있습니다.", action: "종목 분석" },
-  { href: "/compare", icon: GitCompareArrows, number: "03", title: "나란히 비교", description: "날짜를 먼저 추가한 뒤 후보 종목을 검색해 담으세요. 날짜별 종가·변화율과 현재 지표를 비교합니다.", action: "종목 비교" },
+  { href: "/screener?filter=liked", icon: Heart, number: "03", title: "담고 다시 확인", description: "관심종목을 저장하고 변화와 분석을 이어서 확인하세요.", action: "관심종목" },
 ];
 
 export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false, refreshStatus, hasError = false, onRetry }: GuestLandingProps) {
@@ -54,7 +54,7 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
               <Link href="/screener?mincap=500" className={styles.primary}>오늘의 종목 발굴 <ArrowRight size={16} aria-hidden="true" /></Link>
               <Link href="/analyze" className={styles.secondary}><Search size={16} aria-hidden="true" /> 종목 분석하기</Link>
             </div>
-            <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 비교, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·고급 필터·상세 분석은 로그인 후 제공됩니다."}</p>
+            <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 관심 저장, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·고급 필터·상세 분석은 로그인 후 제공됩니다."}</p>
           </div>
 
           <section aria-labelledby="preview-title" className={styles.preview}>
@@ -97,13 +97,14 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
         </section>
 
         <section id="features" className={styles.features} aria-labelledby="tools-title">
-          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Your workflow</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 비교하세요.</p></div>
+          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Your workflow</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 다시 확인하세요.</p></div>
           <div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, number, title, description, action }) => (
-            <Link href={href} key={href} className={styles.tool} aria-label={action}>
+            <Link href={href.includes("filter=liked") && !isLoggedIn ? `/login?callbackUrl=${encodeURIComponent(href)}` : href} key={href} className={styles.tool} aria-label={action}>
               <div className={styles.toolTop}><Icon size={21} strokeWidth={1.6} aria-hidden="true" /><span>{number}</span></div>
               <h3>{title}</h3><p>{description}</p><span className={styles.toolAction}>{action} <ArrowRight size={15} aria-hidden="true" /></span>
             </Link>
           ))}</div>
+          <p className={styles.note}>후보가 여러 개라면 <Link href="/compare" className="underline underline-offset-4">종목 비교</Link>에서 나란히 살펴보세요.</p>
         </section>
 
         <section id="faq" className={styles.faq} aria-labelledby="faq-title">

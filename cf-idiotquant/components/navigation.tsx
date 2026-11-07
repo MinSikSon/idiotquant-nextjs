@@ -25,6 +25,7 @@ import {
   LayoutGrid,
   ChevronDown,
   NotebookText,
+  Heart,
   EyeOff,
   Swords,
   GitCompareArrows,
@@ -52,6 +53,7 @@ const MAIN_NAV: NavItem[] = [
 
 // '더 보기'로 숨기는 보조 메뉴
 const MORE_NAV: NavItem[] = [
+  { label: "내 관심종목", href: "/screener?filter=liked", icon: Heart, authOnly: true },
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
   { label: "가계부",    href: "/ledger",      icon: NotebookText, authOnly: true },
   // 게임은 주 메뉴가 아니라 여기 있다 — 매일 쓰는 도구가 아니라 가끔 켜는 것이다.

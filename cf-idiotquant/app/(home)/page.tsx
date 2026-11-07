@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import GuestLanding from "./GuestLanding";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
+import { HomeWatchlist } from "@/components/home-watchlist";
 
 const HeroArt = dynamic(() => import("./HeroArt"), { ssr: false });
 
@@ -24,6 +25,8 @@ export default function HomePage() {
   const scanDate = ncavDailyList.scanDate;
 
   return (
+    <>
+    {session?.user?.id && <HomeWatchlist key={session.user.id} />}
     <GuestLanding
       list={ncavDailyList.list}
       totalCount={matchedCount}
@@ -32,11 +35,12 @@ export default function HomePage() {
       onRetry={() => dispatch(reqGetNcavDailyList({ date: "latest", preview: true, force: true }))}
       scanDate={scanDate}
       backgroundArt={<HeroArt />}
-      isLoggedIn={status === "loading" || !!session}
+      isLoggedIn={status === "authenticated"}
       refreshStatus={<ScanRefreshNotice refreshing={ncavDailyList.refreshing}
         error={ncavDailyList.receivedAt !== null ? ncavDailyList.error : null}
         onRetry={() => dispatch(reqGetNcavDailyList({ date: "latest", preview: true, force: true }))} />}
     />
+    </>
   );
 
 }
