@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { VALUATION_MODEL_DESCRIPTIONS, type ValuationModelDescription } from "./valuationModelDescriptions";
 import type { ValuationResult } from "@/lib/utils/financeCalc";
 import { valuationModels } from "@/lib/utils/valuationModels";
+import { valuationSummary } from "@/lib/utils/valuationSummary";
 
 type ValuationModelType = "NCAV" | "SRIM" | "DCF" | "PER" | "PEG" | "PBR" | string;
 type FilterTabType = "ALL" | "ASSET" | "EARNING";
@@ -162,35 +163,23 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
   // 축 요약 — 모델들이 제시한 적정주가와 현재가를 한 눈금 위에 세워, 지금 가격이 그 사이
   // 어디쯤인지 바로 읽히게 한다. 위치는 반드시 가격에서 계산한다(눈대중 배치는 어긋난다).
   const axis = useMemo(() => {
-    const rows = models
-      .map(({ type, result }) => {
-        const baseRow =
-          result.rows.find((r: any) =>
-            /1\.0|100|기준|적정/i.test((r.multiplier || r.label || r.weight || "").toString().replace(/\s+/g, ""))
-          ) ?? result.rows[0];
-        return {
-          type,
-          config: MODEL_CONFIG[type] ?? DEFAULT_CONFIG,
-          formula: result.formula,
-          targetPrice: baseRow?.targetPrice ?? 0,
-          returnPct: baseRow?.returnPct ?? 0,
-        };
-      })
-      .filter(r => r.targetPrice > 0);
+    const rows = valuationSummary(models).map(row => ({
+      ...row,
+      config: MODEL_CONFIG[row.type] ?? DEFAULT_CONFIG,
+    }));
 
     // 모델이 계산에 쓴 기준가 — returnPct = targetPrice / 기준가 − 1 이므로 역산할 수 있다.
     // 예전에는 이 값을 그대로 "현재가"라고 적었는데, 첫 유효 모델 하나에서 나온 값이라
     // 화면 상단 시세와 다른 시점일 수 있다. 이제는 시세를 우선 쓰고 이 값은 대조용으로 남긴다.
-    const ref = rows.find(r => r.returnPct > -100);
-    const modelBase = ref ? ref.targetPrice / (1 + ref.returnPct / 100) : 0;
+    const ref = rows.find(r => r.targetPrice !== null && r.returnPct !== null && r.returnPct > -100);
+    const modelBase = ref?.targetPrice != null && ref.returnPct !== null ? ref.targetPrice / (1 + ref.returnPct / 100) : 0;
     // 시세를 못 읽는 경우(로딩 전·응답 누락)에는 기존대로 역산값으로 떨어진다 — 눈금이 비는 것보다 낫다.
     const curPrice = marketPrice > 0 ? marketPrice : modelBase;
 
-    const prices = [...rows.map(r => r.targetPrice), curPrice].filter(p => p > 0);
-    if (prices.length === 0) return null;
+    const prices = [...rows.flatMap(r => r.targetPrice !== null ? [r.targetPrice] : []), curPrice].filter(p => p > 0);
 
-    const lo = Math.min(...prices);
-    const hi = Math.max(...prices);
+    const lo = prices.length ? Math.min(...prices) : 0;
+    const hi = prices.length ? Math.max(...prices) : 1;
     const pad = (hi - lo) * 0.12 || hi * 0.1 || 1;
     const min = Math.max(0, lo - pad);
     const max = hi + pad;
@@ -198,7 +187,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
 
     // min·max 는 pos() 안에서만 쓰인다(끝값 라벨을 걷어내며 밖으로 내보낼 이유가 없어졌다).
     return {
-      rows: [...rows].sort((a, b) => b.targetPrice - a.targetPrice),
+      rows: [...rows].sort((a, b) => (b.targetPrice ?? 0) - (a.targetPrice ?? 0)),
       curPrice, modelBase, usedMarketPrice: marketPrice > 0, pos,
     };
   }, [models, marketPrice]);
@@ -245,7 +234,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </span>
           </div>
           <p className="mb-3 text-[15px] text-neutral-500 dark:text-neutral-400 break-keep">
-            세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다.
+            세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다. 가격을 산출하지 못한 모델도 함께 표시합니다.
           </p>
 
           {showBaseNote && (
@@ -286,8 +275,8 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </div>
 
             {axis.rows.map(r => {
-              const isPositive = r.returnPct >= 0;
-              const target = axis.pos(r.targetPrice);
+              const isPositive = r.returnPct !== null && r.returnPct >= 0;
+              const target = r.targetPrice !== null ? axis.pos(r.targetPrice) : null;
               const isExplained = (hoveredModel ?? selectedModel) === r.type;
               return (
                 <div
@@ -318,8 +307,8 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   {/* self-stretch — 셀이 행 높이를 꽉 채워야 현재가 세로선이 행 사이에서 끊기지 않는다.
                       행 패딩(py-2.5)은 -inset-y-2.5 로 넘겨 다음 행 선과 맞붙는다. */}
                   <div className="relative self-stretch min-h-4">
-                    <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 rounded-full bg-[#f2f0ec] dark:bg-surface-dark-hover" />
-                    {axis.curPrice > 0 && (
+                    {target !== null && <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 rounded-full bg-[#f2f0ec] dark:bg-surface-dark-hover" />}
+                    {axis.curPrice > 0 && target !== null && (
                       <>
                         <div
                           className="absolute -inset-y-3 w-px -ml-px bg-neutral-900/40 dark:bg-white/40"
@@ -335,27 +324,27 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                         />
                       </>
                     )}
-                    <div
+                    {target !== null && r.targetPrice !== null && <div
                       title={`${r.config.name} ${currency}${r.targetPrice.toLocaleString()}`}
                       className={cn(
                         "absolute top-1/2 -mt-1.5 w-3 h-3 -ml-1.5 rounded-full ring-[2.5px] ring-white dark:ring-surface-dark-card",
                         r.config.dotBg
                       )}
                       style={{ left: `${target}%` }}
-                    />
+                    />}
                   </div>
 
                   <span className="whitespace-nowrap text-[14px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right">
-                    {currency}{r.targetPrice.toLocaleString()}
+                    {r.targetPrice !== null ? `${currency}${r.targetPrice.toLocaleString()}` : "산출 불가"}
                   </span>
                   <span className={cn(
                     "whitespace-nowrap text-[13px] font-semibold font-mono tabular-nums text-right",
-                    isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
+                    r.returnPct === null ? "text-neutral-500 dark:text-neutral-400" : isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
                   )}>
-                    {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
+                    {r.returnPct !== null ? `${isPositive ? "+" : ""}${r.returnPct.toFixed(0)}%` : "—"}
                   </span>
-                  <p className="col-span-4 sm:hidden text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep">
-                    {r.config.description.short}
+                  <p className={cn("col-span-4 text-[15px] leading-normal text-neutral-600 dark:text-neutral-300 break-keep", !r.notice && "sm:hidden")}>
+                    {r.notice ?? r.config.description.short}
                   </p>
                   {isExplained && (
                     <div
