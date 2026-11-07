@@ -132,8 +132,9 @@ const DEFAULT_CONFIG: ModelConfig = {
   textColor: "text-neutral-700 dark:text-neutral-200",
 };
 
-// 눈금 행과 모델 행이 같은 그리드를 써야 라벨과 점의 x 좌표가 일치한다
-const AXIS_GRID = "grid grid-cols-[64px_minmax(24px,1fr)_86px_44px] sm:grid-cols-[150px_minmax(0,1fr)_104px_56px] gap-1.5 sm:gap-3 items-center";
+// 가격·괴리율의 실제 너비를 모든 행이 공유하고, 남은 공간을 트랙에 쓴다.
+const AXIS_GRID = "grid grid-cols-[56px_minmax(24px,1fr)_max-content_max-content] sm:grid-cols-[150px_minmax(32px,1fr)_max-content_max-content] gap-x-2 sm:gap-x-3";
+const AXIS_ROW = "col-span-4 grid grid-cols-[subgrid] items-center";
 
 // =========================================================================
 // ValuationSection
@@ -243,7 +244,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               {axis.rows.length}개 모델
             </span>
           </div>
-          <p className="mb-3 text-[15px] text-neutral-500 dark:text-neutral-400">
+          <p className="mb-3 text-[15px] text-neutral-500 dark:text-neutral-400 break-keep">
             세로선은 현재가, 점은 모델별 계산 가격입니다. 오른쪽 %는 계산 기준가와의 차이입니다.
           </p>
 
@@ -257,11 +258,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
-          <div className="overflow-hidden">
+          <div className={cn(AXIS_GRID, "overflow-hidden")}>
             {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
                 축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
                 12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
-            <div className={cn(AXIS_GRID, "px-0 sm:px-4 pt-2 pb-1")}>
+            <div className={cn(AXIS_ROW, "px-0 sm:px-4 pt-2 pb-1")}>
               <div />
               <div className="relative h-4">
                 {axis.curPrice > 0 && (
@@ -293,7 +294,7 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                   key={r.type}
                   onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredModel(r.type); }}
                   onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredModel(null); }}
-                  className={cn(AXIS_GRID, "px-0 sm:px-4 py-2.5 bg-transparent sm:bg-white dark:sm:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
+                  className={cn(AXIS_ROW, "px-0 sm:px-4 py-2.5 bg-transparent sm:bg-white dark:sm:bg-surface-dark-card border-t border-neutral-100 dark:border-border-subtle-dark")}
                 >
                   <div className="min-w-0">
                     <button
@@ -344,11 +345,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
                     />
                   </div>
 
-                  <span className="text-[14px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right">
+                  <span className="whitespace-nowrap text-[14px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100 text-right">
                     {currency}{r.targetPrice.toLocaleString()}
                   </span>
                   <span className={cn(
-                    "text-[13px] font-semibold font-mono tabular-nums text-right",
+                    "whitespace-nowrap text-[13px] font-semibold font-mono tabular-nums text-right",
                     isPositive ? "text-emerald-700 dark:text-emerald-300" : "text-red-500 dark:text-red-400"
                   )}>
                     {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
