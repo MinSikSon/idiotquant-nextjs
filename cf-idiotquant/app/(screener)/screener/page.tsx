@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { SecondarySection } from "@/components/secondary-section";
 import { useEffect, useMemo, useState, useCallback, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -1962,7 +1963,6 @@ function ScreenerContent() {
 
             {/* ── 종목 리스트 ── */}
             {showLikedOnly && likesState === "fulfilled" && session?.user?.id && <WatchlistChanges key={`${session.user.id}:${country}`} items={likedList} userId={session.user.id} country={country} />}
-            {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
 
             <div className="w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-5 pb-20">
                 {isLoggedIn && <h2 className="mb-3"><ScreenerStep number={4} label="결과 확인" /></h2>}
@@ -2094,6 +2094,7 @@ function ScreenerContent() {
                             >{filteredList.length > compareLimit ? `상위 ${compareLimit}개 비교` : `${compareTickers.length}종목 비교`}</button>}
                             <button
                                 onClick={() => setShowInsights(v => !v)}
+                                aria-expanded={showInsights}
                                 className={cn(
                                     "ml-auto rounded-lg px-2.5 py-1.5 text-[11px] font-bold border transition-colors whitespace-nowrap",
                                     showInsights
@@ -2103,13 +2104,8 @@ function ScreenerContent() {
                             >
                                 {showInsights ? '해석 접기' : '결과 해석'}
                             </button>
-                            <details className="relative sm:hidden">
-                                <summary aria-label="결과 복사 메뉴" className="flex h-[44px] w-[44px] cursor-pointer list-none items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 marker:hidden dark:border-surface-dark-border dark:text-neutral-400">···</summary>
-                                <div className="absolute right-0 top-full z-10 mt-1 flex w-max items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg dark:border-surface-dark-border dark:bg-surface-dark-card">
-                                    <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
-                                </div>
-                            </details>
                         </div>
+                        <SecondarySection title="보기 설정 · 묶기 · 복사" className="mb-3">
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                             <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                                 {([
@@ -2153,11 +2149,12 @@ function ScreenerContent() {
                                     </button>
                                 ))}
                             </div>
-                            <div className="hidden sm:flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                                 <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                             </div>
                         </div>
 
+                        </SecondarySection>
                         {viewMode === 'table' && metricHighlight && <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">✓ 강조 기준 충족 · × 강조 기준 미충족</p>}
 
                         {/* 지표 설명과 산점도는 필요할 때만 펼친다 — 목록을 훑는 흐름을 막지 않는다. */}
@@ -2256,6 +2253,7 @@ function ScreenerContent() {
                     </>
                 )}
             </div>
+            {isLoggedIn && <FactorWorkbench items={ncavDailyList.country === country ? filteredList : []} scanDate={ncavDailyList.country === country ? ncavDailyList.scanDate : null} country={country} isAdmin={isAdmin} availableDates={availableDates} />}
         </div>
         </Tooltip.Provider>
     );

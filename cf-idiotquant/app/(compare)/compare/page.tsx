@@ -1,5 +1,6 @@
 'use client';
 
+import { SecondarySection } from "@/components/secondary-section";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
@@ -354,7 +355,6 @@ export default function ComparePage() {
             <button type="button" onClick={() => removeDate(date)} disabled={dateLoading || loading} aria-label={`${date} 날짜 제거`} className={CONTROL_ICON_BUTTON_CLS}><X size={13} /></button>
           </span>)}
         </div>}
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>
       </section>
 
       <section className="mt-8" aria-label="비교 종목 추가">
@@ -386,19 +386,6 @@ export default function ComparePage() {
         </div>
       </section>}
 
-      {returnStats.length > 0 && <section className="mt-6" aria-label="날짜별 주가 변화율 통계">
-        <h2 className="text-sm font-semibold sm:text-base">날짜별 주가 변화율 통계</h2>
-        <p className="mt-1 hidden text-xs text-neutral-600 dark:text-neutral-400 sm:block">종목별 가장 이른 거래일 대비 변화율을 집계합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다.</p>
-        <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-surface-dark-card sm:p-4">
-            <div className="flex items-center justify-between gap-2 sm:block">
-              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
-              <p className={`text-sm font-semibold tabular-nums sm:mt-2 sm:text-xl ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
-            </div>
-            <p className="mt-0.5 text-[11px] text-neutral-600 dark:text-neutral-400 sm:mt-1 sm:text-xs">중앙값 {summary.median >= 0 ? '+' : ''}{show(summary.median)}% · 상승 {summary.positiveCount}/{summary.count}종목</p>
-          </div>)}
-        </div>
-      </section>}
       {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
         <p className="text-sm font-medium">{dates.length ? '비교할 종목을 추가해 주세요.' : '비교할 날짜를 먼저 추가해 주세요.'}</p>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{dates.length ? '예: 삼성전자와 SK하이닉스, 또는 AAPL과 MSFT' : '날짜를 등록하면 종목별 가격을 해당 날짜마다 조회합니다.'}</p>
@@ -470,7 +457,23 @@ export default function ComparePage() {
           </table>
         </div>
       </section>}
+      {returnStats.length > 0 && <SecondarySection title="날짜별 주가 변화율 통계" className="mt-5">
+        <p className="mt-1 hidden text-xs text-neutral-600 dark:text-neutral-400 sm:block">종목별 가장 이른 거래일 대비 변화율을 집계합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다.</p>
+        <div className="mt-2 grid gap-1.5 sm:mt-3 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {returnStats.map(({ date, summary }) => summary && <div key={date} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-surface-dark-card sm:p-4">
+            <div className="flex items-center justify-between gap-2 sm:block">
+              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{formatDate(date.replaceAll('-', ''))} · {summary.count}종목</p>
+              <p className={`text-sm font-semibold tabular-nums sm:mt-2 sm:text-xl ${summary.average >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>평균 {summary.average >= 0 ? '+' : ''}{show(summary.average)}%</p>
+            </div>
+            <p className="mt-0.5 text-[11px] text-neutral-600 dark:text-neutral-400 sm:mt-1 sm:text-xs">중앙값 {summary.median >= 0 ? '+' : ''}{show(summary.median)}% · 상승 {summary.positiveCount}/{summary.count}종목</p>
+          </div>)}
+        </div>
+      </SecondarySection>}
+      <p className="mt-5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">시세·지표는 조회 당시 기준입니다. 변화율은 배당·수수료·세금을 포함한 실제 투자 수익률과 다릅니다.</p>
+      <SecondarySection title="가격 산정 방식과 데이터 기준" className="mt-3">
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>
       <p className="mt-5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">시총 환산가는 액면분할·병합 외에 증자·감자에 따른 주식 수 변화도 반영합니다. 국내 종목별 최근 200개 일별 저장값에서 실제 거래일과 일치하는 시가총액 또는 같은 시점에 저장된 가격·상장주식 수를 사용하며, 저장 시점의 시총이므로 종가와 차이가 있을 수 있습니다. 미국 종목은 거래일이 확인된 과거 시총이 아직 연동되지 않았습니다. 환산가가 없는 날짜가 있으면 해당 종목의 모든 날짜에 제공 종가를 사용해 변화율을 집계합니다. 종가 기준 비교에는 주식 수 변화가 반영되지 않을 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
+      </SecondarySection>
     </main>
   </div>;
 }

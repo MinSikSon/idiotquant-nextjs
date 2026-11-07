@@ -1,5 +1,6 @@
 "use client";
 
+import { SecondarySection } from "@/components/secondary-section";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -240,25 +241,6 @@ export default function ProfilePage() {
                     </div>
                 )}
 
-                {/* 담기 전에 무엇을 보게 되는지 — 담을 이유를 설명해야 할 자리에서
-                    핵심 개념을 숨기고 있었다. */}
-                {isNewUser && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                        <div className="px-5 pt-4 pb-1 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-brand-ink" />
-                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                    탄탄함이란
-                                </span>
-                            </div>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400">
-                                예시
-                            </span>
-                        </div>
-                        <SolidityPlane points={SAMPLE_POINTS} value={72} safety={78} trapCount={2} sample />
-                    </div>
-                )}
-
                 {/* Profile card */}
                 <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
                     <div className="flex items-center gap-4 px-5 py-5">
@@ -384,93 +366,6 @@ export default function ProfilePage() {
                                     )} />
                                 </span>
                             </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
-                {likedList.length > 0 && (
-                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                                <Blocks size={12} className="text-brand-ink" />
-                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                                    포트폴리오 탄탄함
-                                </span>
-                            </div>
-                            <span className="text-[10px] text-neutral-400">관심 {likedList.length}종목 기반</span>
-                        </div>
-
-                        {/* 3D 레고 타워 */}
-                        <div className="h-60 sm:h-72 bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-surface-dark-card">
-                            <PortfolioLegoTower items={likedList} />
-                        </div>
-
-                        {/* 탄탄함 지수 */}
-                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
-                            <div className="shrink-0">
-                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
-                                <p className="text-3xl font-black text-brand-ink tabular-nums leading-none mt-1">
-                                    {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
-                                </p>
-                            </div>
-                            <div className="flex-1 min-w-0 pb-0.5">
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-xs font-black text-neutral-700 dark:text-neutral-200">{solidityLabel}</span>
-                                    <span className="text-[10px] text-neutral-400">
-                                        블록 {Math.min(likedList.length, 18)}{likedList.length > 18 ? ` / ${likedList.length}` : ""}
-                                    </span>
-                                </div>
-                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
-                                    <div className="h-full rounded-full bg-gradient-to-r from-brand to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 지수를 두 축으로 편 좌표평면 — 같은 72점이라도 "싸지만 위험"과
-                            "안 싸지만 안전"은 전혀 다른 상태다. 막대 하나로는 구분되지 않는다. */}
-                        <SolidityPlane
-                            points={solid.points}
-                            value={solid.base}
-                            safety={solid.safety}
-                            trapCount={solid.trapCount}
-                        />
-
-                        {/* 왜 깎였는지 — 근거 없이 낮은 숫자만 보여주면 예전보다 못하다.
-                            깎일 이유가 없으면 이 줄 자체가 뜨지 않는다. */}
-                        {solidity < solid.base && (
-                            <div className="px-5 -mt-1 pb-3 flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] text-neutral-400">
-                                    저평가 <span className="font-mono font-bold">{solid.base}</span>
-                                    <span className="mx-1">→</span>
-                                    탄탄함 <span className="font-mono font-bold">{solidity}</span>
-                                </span>
-                                {solid.riskCount > 0 && (
-                                    <span
-                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
-                                        title="정리매매·거래정지·관리종목·시장경고·저유동 종목은 지금 팔기 어려워 탄탄함에 온전히 기여하지 못합니다"
-                                    >
-                                        거래 위험 {solid.riskCount}종목
-                                    </span>
-                                )}
-                                {solid.concentrationPenalty > 0 && solid.topSector && (
-                                    <span
-                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                                        title="한 업종에 몰리면 개별 종목이 좋아도 함께 무너집니다"
-                                    >
-                                        {solid.topSector.name} {Math.round(solid.topSector.ratio * 100)}% 쏠림
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* 등급 분포 */}
-                        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
-                            {TONE_ORDER.filter(t => toneCounts[t]).map(t => (
-                                <span key={t} className={cn("inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full", TONE_CSS[t])}>
-                                    <span aria-hidden>{TONE_MEDAL[t]}</span>{TONE_LABEL[t]} {toneCounts[t]}
-                                </span>
-                            ))}
                         </div>
                     </div>
                 )}
@@ -645,6 +540,115 @@ export default function ProfilePage() {
                         </div>
                     )}
                 </div>
+                )}
+
+                {/* 시각화 예시는 시작하기와 관심종목 확인 다음에 선택해서 본다. */}
+                {isNewUser && (
+                    <SecondarySection title="관심종목 탄탄함 예시">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                        <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Blocks size={12} className="text-brand-ink" />
+                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                    탄탄함이란
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-surface-dark-muted text-neutral-500 dark:text-neutral-400">
+                                예시
+                            </span>
+                        </div>
+                        <SolidityPlane points={SAMPLE_POINTS} value={72} safety={78} trapCount={2} sample />
+                    </div>
+                    </SecondarySection>
+                )}
+
+                {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
+                {likedList.length > 0 && (
+                    <SecondarySection title="관심종목 구성 · 탄탄함 분석">
+                    <div className="bg-white dark:bg-surface-dark-card rounded-2xl border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Blocks size={12} className="text-brand-ink" />
+                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                    포트폴리오 탄탄함
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-neutral-400">관심 {likedList.length}종목 기반</span>
+                        </div>
+
+                        {/* 3D 레고 타워 */}
+                        <div className="h-60 sm:h-72 bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-surface-dark-card">
+                            <PortfolioLegoTower items={likedList} />
+                        </div>
+
+                        {/* 탄탄함 지수 */}
+                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-border-subtle-dark">
+                            <div className="shrink-0">
+                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
+                                <p className="text-3xl font-black text-brand-ink tabular-nums leading-none mt-1">
+                                    {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
+                                </p>
+                            </div>
+                            <div className="flex-1 min-w-0 pb-0.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-black text-neutral-700 dark:text-neutral-200">{solidityLabel}</span>
+                                    <span className="text-[10px] text-neutral-400">
+                                        블록 {Math.min(likedList.length, 18)}{likedList.length > 18 ? ` / ${likedList.length}` : ""}
+                                    </span>
+                                </div>
+                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-muted overflow-hidden">
+                                    <div className="h-full rounded-full bg-gradient-to-r from-brand to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 지수를 두 축으로 편 좌표평면 — 같은 72점이라도 "싸지만 위험"과
+                            "안 싸지만 안전"은 전혀 다른 상태다. 막대 하나로는 구분되지 않는다. */}
+                        <SolidityPlane
+                            points={solid.points}
+                            value={solid.base}
+                            safety={solid.safety}
+                            trapCount={solid.trapCount}
+                        />
+
+                        {/* 왜 깎였는지 — 근거 없이 낮은 숫자만 보여주면 예전보다 못하다.
+                            깎일 이유가 없으면 이 줄 자체가 뜨지 않는다. */}
+                        {solidity < solid.base && (
+                            <div className="px-5 -mt-1 pb-3 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] text-neutral-400">
+                                    저평가 <span className="font-mono font-bold">{solid.base}</span>
+                                    <span className="mx-1">→</span>
+                                    탄탄함 <span className="font-mono font-bold">{solidity}</span>
+                                </span>
+                                {solid.riskCount > 0 && (
+                                    <span
+                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                                        title="정리매매·거래정지·관리종목·시장경고·저유동 종목은 지금 팔기 어려워 탄탄함에 온전히 기여하지 못합니다"
+                                    >
+                                        거래 위험 {solid.riskCount}종목
+                                    </span>
+                                )}
+                                {solid.concentrationPenalty > 0 && solid.topSector && (
+                                    <span
+                                        className="text-[9.5px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                                        title="한 업종에 몰리면 개별 종목이 좋아도 함께 무너집니다"
+                                    >
+                                        {solid.topSector.name} {Math.round(solid.topSector.ratio * 100)}% 쏠림
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 등급 분포 */}
+                        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+                            {TONE_ORDER.filter(t => toneCounts[t]).map(t => (
+                                <span key={t} className={cn("inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full", TONE_CSS[t])}>
+                                    <span aria-hidden>{TONE_MEDAL[t]}</span>{TONE_LABEL[t]} {toneCounts[t]}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    </SecondarySection>
                 )}
 
                 {/* Account actions */}

@@ -1,5 +1,6 @@
 "use client";
 
+import { SecondarySection } from "@/components/secondary-section";
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Dice5, Info } from "lucide-react";
 
@@ -671,6 +672,13 @@ function Calculator() {
                     ))}
                 </div>
 
+                {/* ── 그래프 ────────────────────────────────────── */}
+                <SectionHead tag="Growth" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
+                <div className="mt-3 sm:mt-4">
+                    <GrowthChart rows={result.rows} />
+                </div>
+
+                <SecondarySection title="자산 목표" className="mt-4">
                 <div className="mt-3 max-sm:[&_input]:text-base max-sm:[&_input]:min-h-11">
                     <AssetGoal target={inputs.target} current={result.final} onChange={v => set("target", v)}
                         format={won} unit="만원" max={100_000_000_000}
@@ -683,10 +691,10 @@ function Calculator() {
                         </p>
                     </AssetGoal>
                 </div>
+                </SecondarySection>
 
                 {detailed && (
-                    <>
-                        <SectionHead tag="VALUE" title="가치 희석 비교" note="각 납입 시점부터 보유한 경우와 비교" />
+                    <SecondarySection title="가치 희석 비교" className="mt-4">
                         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
                             {comparisons.map(({ label, benchmark, assumption }) => {
                                 const relative = benchmark > 0 ? (result.final / benchmark - 1) * 100 : null;
@@ -708,12 +716,11 @@ function Calculator() {
                         <p className="mt-2 px-1 text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
                             입력한 변동률이 매년 일정하다고 가정합니다. 달러·금은 실제 수량이 아니라 원화 투자 결과와 보유 가치를 비교한 값입니다.
                         </p>
-                    </>
+                    </SecondarySection>
                 )}
 
                 {detailed && (
-                    <>
-                        <SectionHead tag="MONEY SUPPLY" title="통화량 증가 대비" note="M2 증가율을 직접 입력한 가정" />
+                    <SecondarySection title="통화량 증가 대비" className="mt-4">
                         <div className="grid gap-3 sm:grid-cols-2">
                             {moneyComparisons.map(({ label, benchmark, assumption }) => {
                                 const relative = benchmark > 0 ? (result.final / benchmark - 1) * 100 : null;
@@ -737,17 +744,11 @@ function Calculator() {
                             <a href="https://www.federalreserve.gov/releases/h6/current/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-ink">미국 연준</a>
                             에서 확인할 수 있습니다.
                         </p>
-                    </>
+                    </SecondarySection>
                 )}
 
-                {/* ── 그래프 ────────────────────────────────────── */}
-                <SectionHead tag="Growth" title="자산 구성 추이" note="가로축 연차 · 세로축 평가금액" />
-                <div className="mt-3 sm:mt-4">
-                    <GrowthChart rows={result.rows} />
-                </div>
-
                 {/* ── 표 ────────────────────────────────────────── */}
-                <SectionHead tag="Breakdown" title="연도별 명세" note="단위: 만원" />
+                <SecondarySection title="연도별 명세 · 단위: 만원" className="mt-4">
                 <div className={cn(CARD, "overflow-x-auto mt-3 p-1.5")}>
                     <table className="w-full border-collapse text-[13px]">
                         <thead>
@@ -822,8 +823,10 @@ function Calculator() {
                     </button>
                 )}
 
+                </SecondarySection>
+
                 {/* ── 저장한 계산 ───────────────────────────────── */}
-                <SectionHead tag="Saved" title="저장한 계산" note="로그인한 사람만" />
+                <SecondarySection title="계산 저장 · 불러오기" className="mt-4">
                 <div className="mt-3 sm:mt-4">
                     <CalculatorHistory
                         detail={detail}
@@ -840,8 +843,10 @@ function Calculator() {
                     />
                 </div>
 
+                </SecondarySection>
+
                 {/* ── 각주 ──────────────────────────────────────── */}
-                <div className={cn(CARD, FOLD, "mt-6 sm:mt-10 px-5 py-4")}>
+                <SecondarySection title="계산 방식과 가정" className="mt-4">
                     <ol className="list-decimal pl-5 space-y-0.5 marker:font-mono">
                         {[
                             "적립금은 매월 초 납입되고, 이자는 매월 발생하여 선택한 주기마다 원금에 편입됩니다.",
@@ -858,7 +863,7 @@ function Calculator() {
                             </li>
                         ))}
                     </ol>
-                </div>
+                </SecondarySection>
                 </section>
                 </div>
             </div>

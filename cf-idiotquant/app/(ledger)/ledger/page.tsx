@@ -1,5 +1,6 @@
 "use client";
 
+import { SecondarySection } from "@/components/secondary-section";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -725,80 +726,6 @@ export default function LedgerPage() {
                     </div>
                 </div>
 
-                {/* ③ 항목별 막대 */}
-                <section className={CARD_CLS}>
-                    <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
-                        <h2 className={FIELD_LABEL_CLS}>항목별</h2>
-                        <div className="flex rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
-                            {KIND_ORDER.map(k => (
-                                <button
-                                    key={k}
-                                    type="button"
-                                    onClick={() => setBarKind(k)}
-                                    aria-pressed={barKind === k}
-                                    className={cn(
-                                        "px-3 min-h-[34px] text-[11px] font-black transition-colors",
-                                        barKind === k
-                                            ? KIND_STYLE[k].solid
-                                            : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
-                                    )}
-                                >
-                                    {KIND_STYLE[k].label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="px-4 py-3.5 flex flex-col gap-3">
-                        {buckets.length === 0 ? (
-                            <div className="py-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
-                                이 달에 기록된 {KIND_STYLE[barKind].label}이 없습니다.
-                            </div>
-                        ) : buckets.map(b => (
-                            /* 이름과 막대를 위아래로 — "주식 배당" 같은 긴 이름이 잘리지 않는다 */
-                            <div key={b.label} className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-1">
-                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">{b.label}</span>
-                                <span className="text-xs font-black tabular-nums text-neutral-800 dark:text-neutral-200 whitespace-nowrap">
-                                    {b.sum.toLocaleString("ko-KR")}
-                                    <span className="ml-1.5 text-[11px] font-medium text-neutral-400">{b.pct}%</span>
-                                </span>
-                                <span className="col-span-2 h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-hover overflow-hidden">
-                                    <span
-                                        className={cn("block h-full rounded-full transition-all duration-300", KIND_STYLE[barKind].bar)}
-                                        style={{ width: `${Math.max(b.pct, 2)}%` }}
-                                    />
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* ④ 자산·부채 — 위까지가 **흐름**(이 달 들어오고 나간 돈)이고
-                    여기서부터가 **잔고**(달이 끝난 시점에 가진 것과 갚을 것)다.
-                    흐름을 아무리 더해도 잔고가 안 나오므로 따로 적는다. */}
-                <BalancePanel
-                    month={month}
-                    thisMonthKst={thisMonth}
-                    balances={balances}
-                    mutating={mutating}
-                    range={balanceRange}
-                    onRange={setBalanceRange}
-                    onMonth={(m) => dispatch(setLedgerMonth(m))}
-                    onSave={async (assets, liabilities, items) => {
-                        // **결과를 돌려준다.** 예전에는 던지고 잊어서, 워커가 404 를 내도
-                        // 폼이 닫히고 값은 그대로였다 — 「저장했는데 반영이 안 된다」의 정체다.
-                        const r = await dispatch(reqPutLedgerBalance({ month, assets, liabilities, items }));
-                        const failed = (r as unknown as { error?: { message?: string } }).error;
-                        return failed ? (failed.message ?? "알 수 없는 오류") : null;
-                    }}
-                    onClear={() => dispatch(reqDeleteLedgerBalance(month))}
-                />
-
-                {goalStorageKey && (
-                    <AssetGoalPanel key={goalStorageKey} storageKey={goalStorageKey} month={month}
-                        current={goalBalance ? netWorth(goalBalance) : null} />
-                )}
-
                 {/* ⑤ 기입 — 데스크톱은 흐름 안의 버튼, 모바일은 아래 고정 FAB */}
                 <button
                     type="button"
@@ -921,6 +848,87 @@ export default function LedgerPage() {
                         </div>
                     )}
                 </section>
+
+                {/* ③ 항목별 막대 */}
+                <SecondarySection title="항목별 수입·소비·저축">
+                <section className={CARD_CLS}>
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2.5 border-b border-neutral-100 dark:border-border-subtle-dark">
+                        <h2 className={FIELD_LABEL_CLS}>항목별</h2>
+                        <div className="flex rounded-lg border border-neutral-200 dark:border-border-subtle-dark overflow-hidden">
+                            {KIND_ORDER.map(k => (
+                                <button
+                                    key={k}
+                                    type="button"
+                                    onClick={() => setBarKind(k)}
+                                    aria-pressed={barKind === k}
+                                    className={cn(
+                                        "px-3 min-h-[34px] text-[11px] font-black transition-colors",
+                                        barKind === k
+                                            ? KIND_STYLE[k].solid
+                                            : "bg-white dark:bg-surface-dark-card text-neutral-500 hover:bg-neutral-50 dark:hover:bg-surface-dark-muted"
+                                    )}
+                                >
+                                    {KIND_STYLE[k].label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="px-4 py-3.5 flex flex-col gap-3">
+                        {buckets.length === 0 ? (
+                            <div className="py-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
+                                이 달에 기록된 {KIND_STYLE[barKind].label}이 없습니다.
+                            </div>
+                        ) : buckets.map(b => (
+                            /* 이름과 막대를 위아래로 — "주식 배당" 같은 긴 이름이 잘리지 않는다 */
+                            <div key={b.label} className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-1">
+                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">{b.label}</span>
+                                <span className="text-xs font-black tabular-nums text-neutral-800 dark:text-neutral-200 whitespace-nowrap">
+                                    {b.sum.toLocaleString("ko-KR")}
+                                    <span className="ml-1.5 text-[11px] font-medium text-neutral-400">{b.pct}%</span>
+                                </span>
+                                <span className="col-span-2 h-2 rounded-full bg-neutral-100 dark:bg-surface-dark-hover overflow-hidden">
+                                    <span
+                                        className={cn("block h-full rounded-full transition-all duration-300", KIND_STYLE[barKind].bar)}
+                                        style={{ width: `${Math.max(b.pct, 2)}%` }}
+                                    />
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+                </SecondarySection>
+
+                {/* ④ 자산·부채 — 위까지가 **흐름**(이 달 들어오고 나간 돈)이고
+                    여기서부터가 **잔고**(달이 끝난 시점에 가진 것과 갚을 것)다.
+                    흐름을 아무리 더해도 잔고가 안 나오므로 따로 적는다. */}
+                <SecondarySection title="자산·부채 관리">
+                <BalancePanel
+                    month={month}
+                    thisMonthKst={thisMonth}
+                    balances={balances}
+                    mutating={mutating}
+                    range={balanceRange}
+                    onRange={setBalanceRange}
+                    onMonth={(m) => dispatch(setLedgerMonth(m))}
+                    onSave={async (assets, liabilities, items) => {
+                        // **결과를 돌려준다.** 예전에는 던지고 잊어서, 워커가 404 를 내도
+                        // 폼이 닫히고 값은 그대로였다 — 「저장했는데 반영이 안 된다」의 정체다.
+                        const r = await dispatch(reqPutLedgerBalance({ month, assets, liabilities, items }));
+                        const failed = (r as unknown as { error?: { message?: string } }).error;
+                        return failed ? (failed.message ?? "알 수 없는 오류") : null;
+                    }}
+                    onClear={() => dispatch(reqDeleteLedgerBalance(month))}
+                />
+
+                </SecondarySection>
+
+                {goalStorageKey && (
+                    <SecondarySection title="자산 목표">
+                    <AssetGoalPanel key={goalStorageKey} storageKey={goalStorageKey} month={month}
+                        current={goalBalance ? netWorth(goalBalance) : null} />
+                    </SecondarySection>
+                )}
 
                 {loadState === "rejected" && !sheetOpen && (
                     <p className="text-center text-xs font-bold text-red-600 dark:text-red-400">
