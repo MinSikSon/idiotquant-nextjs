@@ -1,4 +1,5 @@
 "use client";
+import type { RebalancingPolicy, RebalancingPreview, RebalancingActionHandler, RebalancingAction } from "@/lib/features/capital/rebalancing";
 
 import { tradingCursorIndex } from "@/lib/features/capital/tradingSummary";
 import { DetailHelp } from "./detailHelp";
@@ -173,6 +174,9 @@ interface Props {
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   onDeleteStock?: (ticker: string) => void;
   onBulkRemove?: (tickers: string[]) => void;
+  currency?: "KRW" | "USD";
+  onRebalancingAction?: (groupId: string, action: RebalancingAction, body?: Record<string, unknown>) => ReturnType<RebalancingActionHandler>;
+  onPreviewRebalancing?: (groupId: string, policy: RebalancingPolicy) => Promise<RebalancingPreview>;
   onSaveGroupSettings?: (groupId: string, settings: GroupStrategySettings) => Promise<unknown>;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
@@ -254,6 +258,9 @@ function StockListTable({
   onDeleteStock,
   onBulkRemove,
   onSaveGroupSettings,
+  currency = "KRW",
+  onPreviewRebalancing,
+  onRebalancingAction,
   likedList = [],
   onToggleLikesTrading,
   countryTradingActive = false,
@@ -679,7 +686,7 @@ function StockListTable({
           isMaster={isMaster}
           tradingActive={g.is_trading_active !== false}
           onToggleTrading={isMaster && onToggleGroupTrading ? () => onToggleGroupTrading(g.id, !(g.is_trading_active !== false)) : undefined}
-          conditionChips={g.is_trading_active !== false ? (g.dca || g.side === "sell" ? [`활성 상한 ${g.quant_rule?.active_count ?? quantRule?.active_count ?? 20}종목`] : formatConditions(g.quant_rule ?? quantRule).slice(0, 2)) : []}
+          conditionChips={g.rebalancing ? ["목표 비중 · 체결 추적"] : g.is_trading_active !== false ? (g.dca || g.side === "sell" ? [`활성 상한 ${g.quant_rule?.active_count ?? quantRule?.active_count ?? 20}종목`] : formatConditions(g.quant_rule ?? quantRule).slice(0, 2)) : []}
           editing={editingGroupId === g.id}
           editingName={editingName}
           onEditNameChange={setEditingName}
@@ -703,6 +710,10 @@ function StockListTable({
           groupBudget={g.budget_krw}
           groupSide={g.side}
           groupDca={g.dca}
+          groupRebalancing={g.rebalancing}
+          onAction={onRebalancingAction ? (action, body) => onRebalancingAction(g.id, action, body) : undefined}
+          currency={currency}
+          onPreviewRebalancing={onPreviewRebalancing ? policy => onPreviewRebalancing(g.id, policy) : undefined}
           onDeleteStock={isMaster ? onDeleteStock : undefined}
           onSaveGroupSettings={isMaster && onSaveGroupSettings ? (settings) => onSaveGroupSettings(g.id, settings) : undefined}
           onDistributeBudget={isMaster && session?.user?.role === "admin" && onDistributeGroupBudget ? () => onDistributeGroupBudget(g.id) : undefined}
@@ -828,6 +839,10 @@ interface GroupSectionProps {
   groupBudget?: number;
   groupSide?: "buy" | "sell";
   groupDca?: boolean;
+  groupRebalancing?: RebalancingPolicy | null;
+  currency?: "KRW" | "USD";
+  onAction?: RebalancingActionHandler;
+  onPreviewRebalancing?: (policy: RebalancingPolicy) => Promise<RebalancingPreview>;
   onSaveGroupSettings?: (settings: GroupStrategySettings) => Promise<unknown>;
   onDistributeBudget?: () => Promise<void>;
 }
@@ -837,7 +852,7 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
-  groupQuantRule, groupBudget, groupSide, groupDca, onSaveGroupSettings, onDistributeBudget,
+  groupQuantRule, groupBudget, groupSide, groupDca, groupRebalancing, currency, onPreviewRebalancing, onAction, onSaveGroupSettings, onDistributeBudget,
 }: GroupSectionProps) {
   const [distributing, setDistributing] = useState(false);
   const [distributionError, setDistributionError] = useState("");
@@ -879,7 +894,7 @@ function GroupSection({
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
             <span>{count}종목</span>
             {!hideTrading && <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-bold", highlightTrading ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" : "text-neutral-500 dark:text-neutral-400")}><Power size={12} />자동매매 {tradingActive ? "ON" : "OFF"}</span>}
-            {accent === "green" && <span>{groupDca ? "DCA · 정액" : "퀀트"} · {groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"}</span>}
+            {accent === "green" && <span>{groupRebalancing ? "목표 비중" : `${groupDca ? "DCA · 정액" : "퀀트"} · ${groupSide === "sell" ? (groupDca ? "매도" : "전량 매도") : "매수"}`}</span>}
             {tokenTotal > 0 && <span className="font-medium tabular-nums">적립 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}</span>}
           </span>
         </span>
@@ -1006,6 +1021,11 @@ function GroupSection({
           groupBudget={groupBudget}
           groupSide={groupSide}
           groupDca={groupDca}
+          groupRebalancing={groupRebalancing}
+          stocks={rows.map(row => ({ symbol: row.symbol, name: row.name }))}
+          currency={currency}
+          onPreview={onPreviewRebalancing}
+          onAction={onAction}
           tradingActive={tradingActive}
           onApply={onSaveGroupSettings}
           onClose={() => setShowRuleEditor(false)}

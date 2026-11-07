@@ -1,5 +1,7 @@
 "use client";
 
+import { postRebalancingPreview, requestRebalancingAction } from "@/lib/features/capital/capitalAPI";
+import type { RebalancingPolicy, RebalancingAction } from "@/lib/features/capital/rebalancing";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -412,7 +414,9 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
   const doDeleteStock = useCallback((ticker: string) => dispatch(reqPostKrCapitalStockRemove({ key: balanceKey, ticker })), [dispatch, balanceKey]);
   const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostKrCapitalStocksRemove({ key: balanceKey, tickers })), [dispatch, balanceKey]);
-  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })).unwrap(), [dispatch, balanceKey]);
+  const doRebalancingAction = useCallback((groupId: string, action: RebalancingAction, body?: Record<string, unknown>) => requestRebalancingAction("KR", balanceKey, groupId, action, body), [balanceKey]);
+  const doPreviewRebalancing = useCallback((groupId: string, policy: RebalancingPolicy) => postRebalancingPreview("KR", balanceKey, groupId, policy), [balanceKey]);
+  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean; rebalancing?: RebalancingPolicy | null }) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })).unwrap(), [dispatch, balanceKey]);
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
   const doSaveBudget = (monthly_budget_krw: number) => dispatch(reqPostKrCapitalBudget({ key: balanceKey, monthly_budget_krw }));
 
@@ -676,7 +680,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               />
               <TradingCyclePanel country="KR" tradingActive={tradingStatus.KR} capital={krCapital} activity={krActivity} budget={krBudget} />
               </>}>
-              <StockListTable
+              <StockListTable key={balanceKey} currency="KRW" onPreviewRebalancing={doPreviewRebalancing} onRebalancingAction={doRebalancingAction}
                 data={krCapital}
                 kakaoTotal={kakaoTotal}
                 doTokenPlusAll={doTokenPlusAll}

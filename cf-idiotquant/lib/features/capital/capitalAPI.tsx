@@ -1,3 +1,4 @@
+import type { RebalancingPolicy, RebalancingPreview, RebalancingAction, RebalancingRun } from "./rebalancing";
 import { AdditionalHeaders, getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 import { apiRequest } from "../apiRequest";
 
@@ -84,7 +85,7 @@ export const postUsCapitalTokenMinusOne: any = async (key: string, num: number, 
 // ============================================================================
 // 종목 그룹 관리 API (KR / US)
 // ============================================================================
-type GroupUpdates = { name?: string; is_trading_active?: boolean; quant_rule?: object | null; budget_krw?: number | null; side?: "buy" | "sell"; dca?: boolean };
+type GroupUpdates = { rebalancing?: RebalancingPolicy | null; name?: string; is_trading_active?: boolean; quant_rule?: object | null; budget_krw?: number | null; side?: "buy" | "sell"; dca?: boolean };
 
 export async function postCapitalGroupDistributeBudget(country: "KR" | "US", key: string, groupId: string): Promise<void> {
     const result = await apiRequest(`/${country.toLowerCase()}/capital/groups/${encodeURIComponent(groupId)}/distribute-budget?kakao-id=${encodeURIComponent(key)}`, { method: "POST" });
@@ -164,3 +165,16 @@ export const postKrCapitalStocksRemove: any = async (key: string, tickers: strin
     postKoreaInvestmentRequest(`/kr/capital/stocks/remove?kakao-id=${key}`, {}, { tickers });
 export const postUsCapitalStocksRemove: any = async (key: string, tickers: string[]) =>
     postKoreaInvestmentRequest(`/us/capital/stocks/remove?kakao-id=${key}`, {}, { tickers });
+
+export async function postRebalancingPreview(country: "KR" | "US", key: string, groupId: string, rebalancing: RebalancingPolicy): Promise<RebalancingPreview> {
+    const result = await postKoreaInvestmentRequest(`/${country.toLowerCase()}/capital/groups/${encodeURIComponent(groupId)}/rebalance-preview?kakao-id=${encodeURIComponent(key)}`, {}, { rebalancing });
+    if (result?.success !== true || !result.preview) throw new Error(result?.error || "주문 미리보기를 불러오지 못했습니다.");
+    return result.preview;
+}
+
+export async function requestRebalancingAction(country: "KR" | "US", key: string, groupId: string, action: RebalancingAction, body: Record<string, unknown> = {}): Promise<{ run?: RebalancingRun; runs?: RebalancingRun[] }> {
+    const path = `/${country.toLowerCase()}/capital/groups/${encodeURIComponent(groupId)}/rebalance-${action}?kakao-id=${encodeURIComponent(key)}`;
+    const result = action === "runs" ? await getKoreaInvestmentRequest(path, {}) : await postKoreaInvestmentRequest(path, {}, body);
+    if (result?.success !== true) throw new Error(result?.error || "실행 상태를 확인하지 못했습니다.");
+    return result;
+}

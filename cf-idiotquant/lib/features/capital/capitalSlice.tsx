@@ -1,3 +1,4 @@
+import type { RebalancingPolicy } from "./rebalancing";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule, getKrCapitalBudget, postKrCapitalBudget, postKrCapitalTokenResetAll, postKrCapitalTokenResetOne, postUsCapitalTokenResetAll, postUsCapitalTokenResetOne, postKrCapitalStockRemove, postUsCapitalStockRemove, postKrCapitalStocksRemove, postUsCapitalStocksRemove, getKrCapitalActivity, getUsCapitalActivity } from "./capitalAPI";
@@ -88,6 +89,7 @@ export interface StockCondition {
 }
 
 export interface StockGroup {
+    rebalancing?: RebalancingPolicy | null;
     id: string;
     name: string;
     is_trading_active: boolean;
@@ -579,7 +581,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostKrCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => {
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { rebalancing?: RebalancingPolicy | null, name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => {
                 const result = await postKrCapitalGroupUpdate(key, groupId, updates);
                 if (result?.success === false) throw new Error(result.error || "그룹 설정을 적용하지 못했습니다.");
                 return result;
@@ -633,7 +635,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostUsCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => {
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { rebalancing?: RebalancingPolicy | null, name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => {
                 const result = await postUsCapitalGroupUpdate(key, groupId, updates);
                 if (result?.success === false) throw new Error(result.error || "그룹 설정을 적용하지 못했습니다.");
                 return result;
