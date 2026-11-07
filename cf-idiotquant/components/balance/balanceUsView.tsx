@@ -1,5 +1,7 @@
 "use client";
 
+import { postRebalancingPreview, requestRebalancingAction } from "@/lib/features/capital/capitalAPI";
+import type { RebalancingPolicy, RebalancingAction } from "@/lib/features/capital/rebalancing";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -383,7 +385,9 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
   const doDeleteStock = useCallback((ticker: string) => dispatch(reqPostUsCapitalStockRemove({ key: balanceKey, ticker })), [dispatch, balanceKey]);
   const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostUsCapitalStocksRemove({ key: balanceKey, tickers })), [dispatch, balanceKey]);
-  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })).unwrap(), [dispatch, balanceKey]);
+  const doRebalancingAction = useCallback((groupId: string, action: RebalancingAction, body?: Record<string, unknown>) => requestRebalancingAction("US", balanceKey, groupId, action, body), [balanceKey]);
+  const doPreviewRebalancing = useCallback((groupId: string, policy: RebalancingPolicy) => postRebalancingPreview("US", balanceKey, groupId, policy), [balanceKey]);
+  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean; rebalancing?: RebalancingPolicy | null }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })).unwrap(), [dispatch, balanceKey]);
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
   const out2 = kiBalance?.output2?.[0];
@@ -696,7 +700,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
               />
               <TradingCyclePanel country="US" tradingActive={tradingStatus.US} capital={usCapital} activity={usActivity} />
               </>}>
-              <StockListTable
+              <StockListTable key={balanceKey} currency="USD" onPreviewRebalancing={doPreviewRebalancing} onRebalancingAction={doRebalancingAction}
                 data={usCapital}
                 kakaoTotal={kakaoTotal}
                 doTokenPlusAll={doTokenPlusAll}

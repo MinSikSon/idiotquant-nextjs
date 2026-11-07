@@ -22,6 +22,7 @@ function editor(overrides: Record<string, unknown> = {}) {
     onApply: async (settings: unknown) => { calls.push(settings); }, onClose: () => { closed++; }, ...overrides };
   const output = { exports: {} as any };
   runInNewContext(editorScript, { exports: output.exports, require(name: string) {
+    if (name === "./weightStrategyEditor") return { default: () => null };
     if (name !== "react") return require(name);
     return {
       useState(initial: unknown) { const index = cursor++; if (!(index in states)) states[index] = initial; return [states[index], (next: any) => { states[index] = typeof next === "function" ? next(states[index]) : next; }]; },
@@ -51,7 +52,7 @@ test("탭 선택은 저장하지 않고 편집값을 유지하며 적용 버튼�
   assert.equal(h.closed(), 1);
 });
 
-test("변경 취소와 기본값 선택은 요청하지 않으며 목표 비중은 적용할 수 없다", () => {
+test("변경 취소와 기본값 선택은 요청하지 않으며 목표 비중은 별도 편집기로 연다", () => {
   const h = editor();
   h.change("방향", "sell");
   h.click("변경 취소");
@@ -59,8 +60,8 @@ test("변경 취소와 기본값 선택은 요청하지 않으며 목표 비중�
   h.click("조건·예산 기본값");
   assert.equal(h.calls.length, 0);
   assert.equal(h.button("변경사항 적용").props.disabled, false);
-  h.click("목표 비중준비 중보유 평가액을 목표 비중에 맞게 조정합니다.");
-  assert.equal(h.button("준비 중").props.disabled, true);
+  h.click("목표 비중보유 평가액을 목표 비중에 맞게 조정합니다.");
+  assert.equal(h.nodes(h.render()).filter(node => node.type === "button").some(node => h.text(node).includes("준비 중")), false);
   assert.equal(h.calls.length, 0);
 });
 
@@ -129,4 +130,12 @@ test("KR·US 그룹 저장 API의 success:false를 rejected로 전달한다", as
     assert.equal((store.getState().capital as any)[`${market.toLowerCase()}GroupOp`].state, "fulfilled");
     response = { success: false, error: "저장 실패" };
   }
+});
+
+test("목표 비중에서 퀀트 전환 시 기존 정책을 명시적으로 해제한다", async () => {
+  const h = editor({ groupRebalancing: { execution: "buy_only", cash_bp: 10000, tolerance_bp: 0, cash_minor: 0, min_order_minor: 0, targets: [] } });
+  h.click("퀀트재무·NCAV 조건을 확인해 매매합니다.");
+  await h.click("이 전략으로 적용");
+  assert.equal(h.calls[0].rebalancing, null);
+  assert.equal(h.calls[0].dca, false);
 });
