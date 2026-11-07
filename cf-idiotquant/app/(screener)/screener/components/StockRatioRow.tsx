@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Heart } from "lucide-react";
+import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { cn } from "@/lib/utils";
 import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
@@ -48,10 +49,11 @@ const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null
     </div>
 );
 
-export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
+export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison }: {
     item: Item;
     onClick: (ticker: string, name: string) => void;
     isLiked: boolean;
+    comparison?: ComparisonChoice;
     onToggleLike: (ticker: string, name: string) => void;
 }) {
     const m = ratioMetrics(item);
@@ -72,6 +74,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
             className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2.5 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink transition-all"
         >
             <div className="flex items-start gap-2 mb-2 sm:mb-3">
+                <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">

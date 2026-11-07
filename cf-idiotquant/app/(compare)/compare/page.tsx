@@ -246,8 +246,8 @@ export default function ComparePage() {
 
   async function addStock(raw: string) {
     const value = raw.trim();
-    if (!value || sessionLoading || stocks.length >= limits.stocks || loading || dateLoading) return;
-    if (!dates.length) { dispatch(setError('비교할 날짜를 먼저 추가해 주세요.')); return; }
+    if (!value || !comparisonReady || sessionLoading || stocks.length >= limits.stocks || loading || dateLoading) return;
+    const selectedDates = dates.length ? dates : [localToday()];
     const upper = resolveStockSearchInput(value, searchData?.allTickers ?? [...usTickers]) ?? value.toUpperCase();
     const code = ((searchData?.corpCodeJson ?? corpCodes) as Record<string, { stock_code?: string }>)[value]?.stock_code ?? (/^\d{6}$/.test(value) ? value : undefined);
     const isUs = !code && (usTickers.has(upper) || isUsTicker(upper));
@@ -256,9 +256,13 @@ export default function ComparePage() {
     if (stocks.some(stock => stock.ticker === ticker && stock.market === (isUs ? 'US' : 'KR'))) {
       dispatch(setError('이미 추가한 종목입니다. 날짜를 추가하면 해당 종목의 가격도 함께 조회됩니다.')); return;
     }
+    if (!dates.length) {
+      dispatch(dateLoadStarted(selectedDates[0]));
+      dispatch(dateLoadFinished());
+    }
     dispatch(stockLoadStarted());
     try {
-      const stock = await loadStock(ticker, isUs ? 'US' : 'KR', value, dates);
+      const stock = await loadStock(ticker, isUs ? 'US' : 'KR', value, selectedDates);
       dispatch(stockReceived({ stock, limit: limitsRef.current.stocks }));
       setRecentStocks(current => [
         { ticker: stock.ticker, name: stock.name, market: stock.market },
@@ -335,8 +339,36 @@ export default function ComparePage() {
       </>}
     />
     <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
-      <section aria-label="비교 날짜">
-        <h2 className="text-sm font-semibold">1. 비교 날짜 추가</h2>
+      <section aria-label="비교 종목 추가">
+        <h2 className="text-sm font-semibold">비교 종목</h2>
+        <form onSubmit={submit} className="relative mt-4 flex gap-3">
+          <div className="relative min-w-0 flex-1">
+            <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
+            <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 클라우드플레어, NET" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks} className={cn(CONTROL_INPUT_CLS, "h-11 w-full bg-white pl-10 pr-3 text-base outline-none disabled:opacity-50 dark:bg-surface-dark-card sm:text-sm")} />
+            {suggestions.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}{companyNames.get(s) && <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-400">{companyNames.get(s)!.koreanName ?? companyNames.get(s)!.name}</span>}</button></li>)}</ul>}
+          </div>
+          <button disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className={cn(PAGE_PRIMARY_ACTION_CLS, "h-11")}>{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span>종목 추가</span></button>
+        </form>
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
+        {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
+        {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+      </section>
+
+      {recentStocks.length > 0 && !query.trim() && stocks.length < limits.stocks && <section className="mt-5" aria-label="최근 검색한 종목">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">최근 검색</h2>
+          <button type="button" onClick={() => setRecentStocks([])} className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">기록 지우기</button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {recentStocks.map(stock => <button key={`${stock.market}:${stock.ticker}`} type="button" onClick={() => void addStock(stock.market === 'US' ? stock.ticker : stock.name)} disabled={loading || dateLoading || stocks.some(item => item.ticker === stock.ticker && item.market === stock.market)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-xs font-medium hover:border-[#635bdb] hover:text-brand-ink disabled:cursor-default disabled:opacity-45 dark:border-neutral-700 dark:bg-surface-dark-card dark:hover:text-brand-ink">
+            {stock.name} <span className="ml-1 font-mono text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market}</span>
+          </button>)}
+        </div>
+      </section>}
+
+      <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">{dates.length ? `비교 기준일: ${dates.map(date => formatDate(date.replaceAll('-', ''))).join(', ')}` : '종목을 추가하면 최근 거래일 가격으로 비교합니다.'}</p>
+      <SecondarySection title="비교 날짜 추가·변경" className="mt-4">
         <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">날짜 하나로 환산가를 나란히 보고, 서로 다른 거래일을 두 개 이상 추가하면 가장 이른 거래일 대비 변화율도 비교할 수 있습니다.</p>
         <div className="mt-4 grid min-w-0 gap-3 sm:flex sm:items-end">
           <label className="block min-w-0 text-xs font-medium text-neutral-600 dark:text-neutral-300">
@@ -355,40 +387,11 @@ export default function ComparePage() {
             <button type="button" onClick={() => removeDate(date)} disabled={dateLoading || loading} aria-label={`${date} 날짜 제거`} className={CONTROL_ICON_BUTTON_CLS}><X size={13} /></button>
           </span>)}
         </div>}
-      </section>
-
-      <section className="mt-8" aria-label="비교 종목 추가">
-        <h2 className="text-sm font-semibold">2. 비교 종목 추가</h2>
-        {!dates.length && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">위에서 가격 기준일을 선택하고 ‘날짜 추가’를 누르면 종목 검색을 시작할 수 있습니다.</p>}
-        <form onSubmit={submit} className="relative mt-4 flex gap-3">
-          <div className="relative min-w-0 flex-1">
-            <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
-            <input data-page-input aria-label="비교할 종목 검색" aria-keyshortcuts="/ Escape" title="/ 검색창으로 이동 · Esc 입력 종료" value={query} onChange={e => dispatch(setQuery(e.target.value))} placeholder="예: 삼성전자, 클라우드플레어, NET" disabled={sessionLoading || loading || dateLoading || stocks.length >= limits.stocks || !dates.length} className={cn(CONTROL_INPUT_CLS, "h-11 w-full bg-white pl-10 pr-3 text-base outline-none disabled:opacity-50 dark:bg-surface-dark-card sm:text-sm")} />
-            {suggestions.length > 0 && dates.length > 0 && <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-surface-dark-card">{suggestions.map(s => <li key={s}><button type="button" onClick={() => void addStock(s)} disabled={loading || dateLoading} className="w-full px-4 py-2.5 text-left text-sm hover:bg-neutral-50 disabled:opacity-50 dark:hover:bg-neutral-800">{s}{companyNames.get(s) && <span className="ml-2 text-xs text-neutral-600 dark:text-neutral-400">{companyNames.get(s)!.koreanName ?? companyNames.get(s)!.name}</span>}</button></li>)}</ul>}
-          </div>
-          <button disabled={sessionLoading || loading || dateLoading || !dates.length || stocks.length >= limits.stocks || !query.trim()} aria-label="종목 추가" className={cn(PAGE_PRIMARY_ACTION_CLS, "h-11")}>{loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}<span>종목 추가</span></button>
-        </form>
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">종목 {stocks.length}/{limits.stocks}개 · 국내와 미국 종목을 함께 볼 수 있습니다. PER·PBR 등 재무지표는 현재 기준입니다.</p>
-        {sessionStatus === 'unauthenticated' && <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">로그인 없이 {GUEST_LIMITS.stocks}종목·{GUEST_LIMITS.dates}개 날짜까지, 로그인하면 {MEMBER_LIMITS.stocks}종목·{MEMBER_LIMITS.dates}개 날짜까지 비교할 수 있습니다.</p>}
-        {importProgress && <p role="status" className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">스크리너 종목을 불러오는 중 · {importProgress.loaded}/{importProgress.total}</p>}
-        {error && <p role="alert" className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
-      </section>
-
-      {recentStocks.length > 0 && !query.trim() && dates.length > 0 && stocks.length < limits.stocks && <section className="mt-5" aria-label="최근 검색한 종목">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">최근 검색</h2>
-          <button type="button" onClick={() => setRecentStocks([])} className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">기록 지우기</button>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {recentStocks.map(stock => <button key={`${stock.market}:${stock.ticker}`} type="button" onClick={() => void addStock(stock.market === 'US' ? stock.ticker : stock.name)} disabled={loading || dateLoading || stocks.some(item => item.ticker === stock.ticker && item.market === stock.market)} className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-xs font-medium hover:border-[#635bdb] hover:text-brand-ink disabled:cursor-default disabled:opacity-45 dark:border-neutral-700 dark:bg-surface-dark-card dark:hover:text-brand-ink">
-            {stock.name} <span className="ml-1 font-mono text-neutral-600 dark:text-neutral-400">{stock.ticker} · {stock.market}</span>
-          </button>)}
-        </div>
-      </section>}
+      </SecondarySection>
 
       {stocks.length === 0 ? <section className="mt-8 border-t border-neutral-200 px-0 py-8 dark:border-neutral-700">
-        <p className="text-sm font-medium">{dates.length ? '비교할 종목을 추가해 주세요.' : '비교할 날짜를 먼저 추가해 주세요.'}</p>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{dates.length ? '예: 삼성전자와 SK하이닉스, 또는 AAPL과 MSFT' : '날짜를 등록하면 종목별 가격을 해당 날짜마다 조회합니다.'}</p>
+        <p className="text-sm font-medium">비교할 종목을 추가해 주세요.</p>
+        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">종목을 추가하면 최근 거래일 가격으로 시작합니다. 날짜를 추가하면 과거 가격도 비교할 수 있습니다.</p>
       </section> : <section className="mt-5 sm:mt-8" aria-label="종목 비교 결과">
         <div className="space-y-2 md:hidden">
           {stocks.map(stock => {
