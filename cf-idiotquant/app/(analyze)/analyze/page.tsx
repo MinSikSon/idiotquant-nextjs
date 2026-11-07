@@ -1,5 +1,6 @@
 'use client';
 
+import { SecondarySection } from "@/components/secondary-section";
 import TechnicalSummary from '@/components/research/TechnicalSummary';
 import { normalizeBars } from '@/lib/research/technical';
 import {
@@ -823,7 +824,7 @@ function AnalyzeContent() {
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
               {isLoaded ? (
               <div className="space-y-4 sm:space-y-6">
-                {activeTab === 'metrics' && <TechnicalSummary bars={technicalBars} currency={currency} />}
+                {activeTab === 'metrics' && <SecondarySection title="기술적 지표 더 보기"><TechnicalSummary bars={technicalBars} currency={currency} /></SecondarySection>}
                 {/* 비로그인 안내 — 블러 구간에 들어가기 직전 한 번만.
                     예전엔 헤더 배지·블러 오버레이·페이지 맨 아래 CTA 로 같은 말이 흩어져 있었다. */}
                 {!isLoggedIn && (
@@ -859,9 +860,11 @@ function AnalyzeContent() {
 
                 {/* 지표 탭 (2/2) — 상세 지표 표 (블러). 위 카드와 같은 탭이다. */}
                 <div className={cn(activeTab !== 'metrics' && 'hidden')}>
-                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                    <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                  </BlurGate>
+                  <SecondarySection title="상세 투자 지표 더 보기">
+                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                      <StockMetrics data={data} isUs={krOrUs === 'US'} />
+                    </BlurGate>
+                  </SecondarySection>
                 </div>
 
                 {/* 상장폐지 위험도 (블러) */}
