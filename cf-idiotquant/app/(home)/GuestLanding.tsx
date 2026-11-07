@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { HOME_FAQ } from "@/lib/seo-content";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined, GitCompareArrows, ArrowUpRight } from "lucide-react";
 import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import styles from "./home.module.css";
 import { matchesGuestPer } from "@/lib/utils/guestStocks";
+import { HOME_STOCK_FILTERS, LARGE_CAP_EXAMPLES, homeStockPreview, type HomeStockFilter } from "@/lib/utils/homeStockPreview";
 
 type GuestLandingProps = {
   list: NcavDailyItem[];
@@ -33,7 +34,12 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
   const dateLabel = scanDate
     ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
     : "최신 데이터";
-  const preview = list.filter(matchesGuestPer).slice(0, 5);
+  const [filter, setFilter] = useState<HomeStockFilter>("per20");
+  const [exampleMarket, setExampleMarket] = useState<"KR" | "US">("KR");
+  const selectedFilter = HOME_STOCK_FILTERS.find(item => item.id === filter)!;
+  const sampleCount = list.filter(matchesGuestPer).length;
+  const preview = homeStockPreview(list, filter);
+  const resultsHref = `/screener?maxper=${filter === "per10" ? 10 : 20}${filter === "low_pbr" || filter === "ncav" ? `&strategies=${filter}` : ""}`;
 
   return (
     <div id="public-home" className={styles.home}>
@@ -48,19 +54,22 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
               <Link href="/screener?mincap=500" className={styles.primary}>오늘의 종목 발굴 <ArrowRight size={16} aria-hidden="true" /></Link>
               <Link href="/analyze" className={styles.secondary}><Search size={16} aria-hidden="true" /> 종목 분석하기</Link>
             </div>
-            <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 비교, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·필터·상세 분석은 로그인 후 제공됩니다."}</p>
+            <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 비교, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·고급 필터·상세 분석은 로그인 후 제공됩니다."}</p>
           </div>
 
           <section aria-labelledby="preview-title" className={styles.preview}>
             <div className={styles.previewTop}><span className={styles.eyebrow}>Discovery</span><span className={styles.date}>{dateLabel}</span></div>
-            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `전체 ${totalCount.toLocaleString()}개`}</span></div>
-            <p className={styles.previewDescription}>PER 0 초과·20 이하인 종목 미리보기 · 종목을 누르면 분석으로 이동합니다.</p>
+            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `수집 ${totalCount.toLocaleString()}개`}</span></div>
+            <div className={styles.previewFilters} role="group" aria-label="미리보기 조건">
+              {HOME_STOCK_FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}
+            </div>
+            <p className={styles.previewDescription}>PER 20 이하 미리보기 {sampleCount}개 중, {selectedFilter.description}인 종목을 최대 5개 표시합니다. 종목을 누르면 분석으로 이동합니다.</p>
             {hasError && <div role="alert" className="mx-4 my-3 rounded-lg border border-amber-300/50 p-3 text-sm">
               <p>{preview.length ? "새 데이터를 불러오지 못했습니다. 이전 조회 결과를 표시합니다." : "발굴 종목을 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."}</p>
               <button type="button" onClick={onRetry} disabled={isLoading} className="mt-2 min-h-11 font-semibold underline underline-offset-4">다시 불러오기</button>
             </div>}
             {refreshStatus}
-            <div className={styles.table}>
+            <div className={styles.table} aria-live="polite" aria-busy={isLoading}>
               <div className={styles.tableHead}><span>종목 / 현재가</span><span>PER <small>배</small></span><span>PBR <small>배</small></span><span /></div>
               {isLoading && !preview.length ? (
                 <div role="status" aria-label="발굴 종목을 불러오는 중" className={styles.skeletons}>{[0, 1, 2, 3, 4].map(i => <div key={i} className={styles.skeleton} />)}</div>
@@ -71,9 +80,19 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
                   <span className={styles.metric}>{item.pbr > 0 ? item.pbr.toFixed(2) : "—"}</span>
                   <ArrowUpRight size={14} aria-hidden="true" className={styles.rowArrow} />
                 </Link>
-              )) : !hasError && <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>PER 조건에 맞는 미리보기 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
+              )) : !hasError && <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>이 미리보기 안에는 선택한 조건에 맞는 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
             </div>
-            <Link href="/screener?mincap=500" className={styles.previewFooter}>{isLoggedIn ? "발굴 결과 전체 보기" : "발굴 종목 더 살펴보기"} <ArrowRight size={15} aria-hidden="true" /></Link>
+            <section className={styles.stockExamples} aria-labelledby="stock-examples-title">
+              <h3 id="stock-examples-title">대형주로 분석 시작하기</h3>
+              <p>익숙한 국내·미국 기업부터 살펴보세요.</p>
+              <div className={styles.previewFilters} role="group" aria-label="대형주 예시 시장">
+                {(["KR", "US"] as const).map(market => <button key={market} type="button" aria-pressed={exampleMarket === market} onClick={() => setExampleMarket(market)}>{market === "KR" ? "국내 주식" : "미국 주식"}</button>)}
+              </div>
+              <div className={styles.exampleLinks} aria-live="polite">
+                {LARGE_CAP_EXAMPLES[exampleMarket].map(item => <Link key={item.ticker} href={`/analyze?ticker=${item.ticker}`} aria-label={`${item.name} 종목 분석`}>{item.name}<ArrowUpRight size={13} aria-hidden="true" /></Link>)}
+              </div>
+            </section>
+            <Link href={resultsHref} className={styles.previewFooter}>{isLoggedIn ? "발굴 결과 전체 보기" : "발굴 종목 더 살펴보기"} <ArrowRight size={15} aria-hidden="true" /></Link>
           </section>
         </section>
 
