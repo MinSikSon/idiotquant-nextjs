@@ -1,36 +1,56 @@
-import { matchesGuestPer } from "./guestStocks";
-
 export const HOME_STOCK_FILTERS = [
-    { id: "per20", label: "PER 20 이하", description: "PER 0 초과·20 이하" },
-    { id: "per10", label: "PER 10 이하", description: "PER 0 초과·10 이하" },
-    { id: "low_pbr", label: "저PBR", description: "PBR 0 초과·0.5 미만" },
-    { id: "ncav", label: "NCAV", description: "순유동자산이 시가총액 이상" },
+    { id: "large_cap", label: "대형주", description: "시가총액이 큰 순" },
+    { id: "per10", label: "저PER", description: "PER 0 초과·10 이하 · PER 낮은 순" },
+    { id: "low_pbr", label: "저PBR", description: "PBR 0 초과·0.5 미만 · PBR 낮은 순" },
+    { id: "ncav", label: "NCAV", description: "순유동자산/시가총액 100% 이상 · 비율 높은 순" },
 ] as const;
 export type HomeStockFilter = typeof HOME_STOCK_FILTERS[number]["id"];
+export type HomeStock = {
+    ticker: string; name: string; last_price: number; per: number; pbr: number;
+    ncav_ratio: number; market_cap: number; scan_date: string;
+};
+export type HomeStockPreview = {
+    groups: Record<HomeStockFilter, HomeStock[]>;
+    counts: Record<HomeStockFilter, number>;
+    total: number; loaded: number; scanDate: string | null;
+};
 
-// 서버의 고정 PER 미리보기 안에서만 전환한다. 조건별 추가 요청은 하지 않는다.
-export function homeStockPreview<T extends { per: number; pbr: number; ncav_ratio: number; market_cap: number }>(list: T[], filter: HomeStockFilter): T[] {
-    return list.filter(item => matchesGuestPer(item) && (
-        filter === "per10" ? item.per <= 10 :
-        filter === "low_pbr" ? Number.isFinite(item.pbr) && item.pbr > 0 && item.pbr < 0.5 :
-        filter === "ncav" ? Number.isFinite(item.ncav_ratio) && item.ncav_ratio >= 1 : true
-    )).sort((a, b) => (Number.isFinite(b.market_cap) ? b.market_cap : 0) - (Number.isFinite(a.market_cap) ? a.market_cap : 0)).slice(0, 5);
+// 수집 시총 단위는 국내 억 원, 미국 달러다.
+export function formatHomeMarketCap(value: number, country: "KR" | "US") {
+    if (!Number.isFinite(value) || value <= 0) return "—";
+    const amount = (value / (country === "US" ? 1e9 : 1e4)).toLocaleString("ko-KR", { maximumFractionDigits: 1 });
+    return country === "US" ? `$${amount}B` : `${amount}조 원`;
 }
 
-// 분석 시작용 고정 예시. 시세·지표를 얻기 위한 종목별 API 호출은 하지 않는다.
-export const LARGE_CAP_EXAMPLES = {
-    KR: [
-        { ticker: "005930", name: "삼성전자" },
-        { ticker: "000660", name: "SK하이닉스" },
-        { ticker: "005380", name: "현대차" },
-        { ticker: "373220", name: "LG에너지솔루션" },
-        { ticker: "207940", name: "삼성바이오로직스" },
-    ],
-    US: [
-        { ticker: "AAPL", name: "애플" },
-        { ticker: "NVDA", name: "엔비디아" },
-        { ticker: "MSFT", name: "마이크로소프트" },
-        { ticker: "GOOGL", name: "알파벳" },
-        { ticker: "AMZN", name: "아마존" },
-    ],
-} as const;
+export function matchesHomeFilter(item: Pick<HomeStock, "per" | "pbr" | "ncav_ratio" | "market_cap">, filter: HomeStockFilter) {
+    if (filter === "large_cap") return Number.isFinite(item.market_cap) && item.market_cap > 0;
+    if (filter === "low_pbr") return Number.isFinite(item.pbr) && item.pbr > 0 && item.pbr < 0.5;
+    if (filter === "ncav") return Number.isFinite(item.ncav_ratio) && item.ncav_ratio >= 1;
+    return Number.isFinite(item.per) && item.per > 0 && item.per <= 10;
+}
+
+export function homeStockPreview<T extends Pick<HomeStock, "per" | "pbr" | "ncav_ratio" | "market_cap">>(list: T[], filter: HomeStockFilter): T[] {
+    const cap = (item: T) => Number.isFinite(item.market_cap) ? item.market_cap : 0;
+    return list.filter(item => matchesHomeFilter(item, filter)).sort((a, b) => {
+        const order = filter === "large_cap" ? cap(b) - cap(a)
+            : filter === "ncav" ? b.ncav_ratio - a.ncav_ratio
+                : filter === "low_pbr" ? a.pbr - b.pbr : a.per - b.per;
+        return order || cap(b) - cap(a);
+    }).slice(0, 5);
+}
+
+export function buildHomeStockPreview(list: HomeStock[], total: number, scanDate: string | null): HomeStockPreview {
+    return {
+        groups: Object.fromEntries(HOME_STOCK_FILTERS.map(({ id }) => [id, homeStockPreview(list, id)])) as HomeStockPreview["groups"],
+        counts: Object.fromEntries(HOME_STOCK_FILTERS.map(({ id }) => [id, list.filter(item => matchesHomeFilter(item, id)).length])) as HomeStockPreview["counts"],
+        loaded: list.length, total, scanDate,
+    };
+}
+
+export function homeResultsHref(filter: HomeStockFilter, country: "KR" | "US") {
+    const params = new URLSearchParams({ country });
+    if (filter === "large_cap") params.set("sort", "market_cap:desc");
+    else if (filter === "per10") params.set("maxper", "10");
+    else params.set("strategies", filter);
+    return `/screener?${params}`;
+}

@@ -1,28 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { HOME_FAQ } from "@/lib/seo-content";
 import { ArrowRight, Search, SlidersHorizontal, ChartNoAxesCombined, Heart, ArrowUpRight } from "lucide-react";
-import type { NcavDailyItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import styles from "./home.module.css";
-import { matchesGuestPer } from "@/lib/utils/guestStocks";
-import { HOME_STOCK_FILTERS, LARGE_CAP_EXAMPLES, homeStockPreview, type HomeStockFilter } from "@/lib/utils/homeStockPreview";
+import { HOME_STOCK_FILTERS, formatHomeMarketCap, homeResultsHref, type HomeStockFilter, type HomeStockPreview } from "@/lib/utils/homeStockPreview";
 
 type GuestLandingProps = {
-  list: NcavDailyItem[];
-  totalCount: number;
-  isLoading: boolean;
-  hasError?: boolean;
-  onRetry?: () => void;
-  scanDate: string | null;
   backgroundArt: ReactNode;
   isLoggedIn?: boolean;
-  refreshStatus?: ReactNode;
 };
 
-const formatPrice = (value: number) =>
-  value > 0 ? `₩${Math.round(value).toLocaleString("ko-KR")}` : "—";
+const formatPrice = (value: number, market: "KR" | "US") =>
+  Number.isFinite(value) && value > 0 ? `${market === "US" ? "$" : "₩"}${value.toLocaleString("ko-KR", { maximumFractionDigits: market === "US" ? 2 : 0 })}` : "—";
+const metric = (value: number, digits: number) => Number.isFinite(value) && value > 0 ? value.toFixed(digits) : "—";
 
 const tools = [
   { href: "/screener", icon: SlidersHorizontal, number: "01", title: "기준으로 발굴", description: "NCAV, 저PBR, 저PER. 숫자로 후보를 좁혀보세요.", action: "종목 발굴" },
@@ -30,16 +22,29 @@ const tools = [
   { href: "/screener?filter=liked", icon: Heart, number: "03", title: "담고 다시 확인", description: "관심종목을 저장하고 변화와 분석을 이어서 확인하세요.", action: "관심종목" },
 ];
 
-export default function GuestLanding({ list, totalCount, isLoading, scanDate, backgroundArt, isLoggedIn = false, refreshStatus, hasError = false, onRetry }: GuestLandingProps) {
-  const dateLabel = scanDate
-    ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
-    : "최신 데이터";
-  const [filter, setFilter] = useState<HomeStockFilter>("per20");
-  const [exampleMarket, setExampleMarket] = useState<"KR" | "US">("KR");
+export default function GuestLanding({ backgroundArt, isLoggedIn = false }: GuestLandingProps) {
+  const [filter, setFilter] = useState<HomeStockFilter>("large_cap");
+  const [market, setMarket] = useState<"KR" | "US">("KR");
+  const [snapshot, setSnapshot] = useState<{ market: "KR" | "US"; data: HomeStockPreview } | null>(null);
+  const [requestState, setRequestState] = useState<{ market: string; failed: boolean; loading: boolean }>({ market: "KR", failed: false, loading: true });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/public/home-stocks?country=${market}`, { signal: controller.signal, cache: attempt ? "reload" : "default" })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.groups) throw new Error("unavailable");
+        if (!controller.signal.aborted) { setSnapshot({ market, data }); setRequestState({ market, failed: false, loading: false }); }
+      }).catch(() => { if (!controller.signal.aborted) setRequestState({ market, failed: true, loading: false }); });
+    return () => controller.abort();
+  }, [market, attempt]);
+  const data = snapshot?.market === market ? snapshot.data : null;
+  const isLoading = requestState.market !== market || requestState.loading;
+  const hasError = requestState.market === market && requestState.failed;
+  const preview = data?.groups[filter] ?? [];
   const selectedFilter = HOME_STOCK_FILTERS.find(item => item.id === filter)!;
-  const sampleCount = list.filter(matchesGuestPer).length;
-  const preview = homeStockPreview(list, filter);
-  const resultsHref = `/screener?maxper=${filter === "per10" ? 10 : 20}${filter === "low_pbr" || filter === "ncav" ? `&strategies=${filter}` : ""}`;
+  const dateLabel = data?.scanDate ? `${data.scanDate.slice(0, 4)}.${data.scanDate.slice(4, 6)}.${data.scanDate.slice(6, 8)}` : "최신 수집 기준";
+  const resultsHref = homeResultsHref(filter, market);
 
   return (
     <div id="public-home" className={styles.home}>
@@ -57,41 +62,36 @@ export default function GuestLanding({ list, totalCount, isLoading, scanDate, ba
             <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 관심 저장, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·고급 필터·상세 분석은 로그인 후 제공됩니다."}</p>
           </div>
 
-          <section aria-labelledby="preview-title" className={styles.preview}>
+          <section id="stock-preview" aria-labelledby="preview-title" className={styles.preview}>
             <div className={styles.previewTop}><span className={styles.eyebrow}>Discovery</span><span className={styles.date}>{dateLabel}</span></div>
-            <div className={styles.previewTitle}><h2 id="preview-title">오늘의 발굴 종목</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `수집 ${totalCount.toLocaleString()}개`}</span></div>
+            <div className={styles.previewTitle}><h2 id="preview-title">종목 둘러보기</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `수집 ${(data?.total ?? 0).toLocaleString()}개`}</span></div>
+            <div className={styles.previewFilters} role="group" aria-label="종목 시장">
+              {(["KR", "US"] as const).map(country => <button key={country} type="button" aria-pressed={market === country} onClick={() => { if (country !== market) { setMarket(country); setRequestState({ market: country, failed: false, loading: true }); } }}>{country === "KR" ? "국내 주식" : "미국 주식"}</button>)}
+            </div>
             <div className={styles.previewFilters} role="group" aria-label="미리보기 조건">
               {HOME_STOCK_FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}
             </div>
-            <p className={styles.previewDescription}>PER 20 이하 미리보기 {sampleCount}개 중, {selectedFilter.description}인 종목을 최대 5개 표시합니다. 종목을 누르면 분석으로 이동합니다.</p>
+            <p className={styles.previewDescription}>{selectedFilter.description}. {data ? `조회 ${data.loaded.toLocaleString()}개${filter === "large_cap" ? "" : ` · 조건 충족 ${data.counts[filter].toLocaleString()}개`} · 상위 ${preview.length}개.` : "수집 지표를 불러옵니다."} 종목을 누르면 분석으로 이동합니다.</p>
             {hasError && <div role="alert" className="mx-4 my-3 rounded-lg border border-amber-300/50 p-3 text-sm">
               <p>{preview.length ? "새 데이터를 불러오지 못했습니다. 이전 조회 결과를 표시합니다." : "발굴 종목을 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."}</p>
-              <button type="button" onClick={onRetry} disabled={isLoading} className="mt-2 min-h-11 font-semibold underline underline-offset-4">다시 불러오기</button>
+              <button type="button" onClick={() => { setRequestState({ market, failed: false, loading: true }); setAttempt(value => value + 1); }} disabled={isLoading} className="mt-2 min-h-11 font-semibold underline underline-offset-4">다시 불러오기</button>
             </div>}
-            {refreshStatus}
             <div className={styles.table} aria-live="polite" aria-busy={isLoading}>
-              <div className={styles.tableHead}><span>종목 / 현재가</span><span>PER <small>배</small></span><span>PBR <small>배</small></span><span /></div>
+              <div className={styles.tableHead}><span>종목 / 수집 주가</span><span>{filter === "ncav" ? "NCAV" : "PER"} <small>{filter === "ncav" ? "%" : "배"}</small></span><span>PBR <small>배</small></span><span /></div>
               {isLoading && !preview.length ? (
                 <div role="status" aria-label="발굴 종목을 불러오는 중" className={styles.skeletons}>{[0, 1, 2, 3, 4].map(i => <div key={i} className={styles.skeleton} />)}</div>
               ) : preview.length ? preview.map((item) => (
-                <Link href={`/analyze?ticker=${encodeURIComponent(item.ticker)}`} key={item.ticker} className={styles.stockRow} aria-label={`${item.name} 종목 분석`}>
-                  <div className={styles.company}><strong>{item.name}</strong><span>{item.ticker} <span aria-hidden="true">·</span> {formatPrice(item.last_price)}</span></div>
-                  <span className={styles.metric}>{item.per > 0 ? item.per.toFixed(1) : "—"}</span>
-                  <span className={styles.metric}>{item.pbr > 0 ? item.pbr.toFixed(2) : "—"}</span>
+                <Link href={`/analyze?ticker=${encodeURIComponent(item.ticker)}`} key={item.ticker} className={`${styles.stockRow} ${filter === "large_cap" ? styles.largeCapRow : ""}`} aria-label={`${item.name} 종목 분석`}>
+                  <div className={styles.company}><strong title={item.name}>{item.name}</strong><span>{item.ticker} · {formatPrice(item.last_price, market)}</span>
+                    {filter === "large_cap" && <span className={styles.marketCap}>시총 {formatHomeMarketCap(item.market_cap, market)}</span>}
+                    {item.scan_date !== data?.scanDate && <span className={styles.marketCap}>{item.scan_date?.slice(4, 6)}.{item.scan_date?.slice(6, 8)} 수집</span>}
+                  </div>
+                  <span className={styles.metric}>{filter === "ncav" ? metric(item.ncav_ratio * 100, 0) : metric(item.per, 1)}</span>
+                  <span className={styles.metric}>{metric(item.pbr, 2)}</span>
                   <ArrowUpRight size={14} aria-hidden="true" className={styles.rowArrow} />
                 </Link>
-              )) : !hasError && <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>이 미리보기 안에는 선택한 조건에 맞는 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
+              )) : !hasError && <div className={styles.empty}><SlidersHorizontal size={24} aria-hidden="true" /><p>조회한 종목 중 선택한 조건에 맞는 종목이 없습니다.</p><Link href="/screener">발굴 기준 살펴보기 <ArrowRight size={14} aria-hidden="true" /></Link></div>}
             </div>
-            <section className={styles.stockExamples} aria-labelledby="stock-examples-title">
-              <h3 id="stock-examples-title">대형주로 분석 시작하기</h3>
-              <p>익숙한 국내·미국 기업부터 살펴보세요.</p>
-              <div className={styles.previewFilters} role="group" aria-label="대형주 예시 시장">
-                {(["KR", "US"] as const).map(market => <button key={market} type="button" aria-pressed={exampleMarket === market} onClick={() => setExampleMarket(market)}>{market === "KR" ? "국내 주식" : "미국 주식"}</button>)}
-              </div>
-              <div className={styles.exampleLinks} aria-live="polite">
-                {LARGE_CAP_EXAMPLES[exampleMarket].map(item => <Link key={item.ticker} href={`/analyze?ticker=${item.ticker}`} aria-label={`${item.name} 종목 분석`}>{item.name}<ArrowUpRight size={13} aria-hidden="true" /></Link>)}
-              </div>
-            </section>
             <Link href={resultsHref} className={styles.previewFooter}>{isLoggedIn ? "발굴 결과 전체 보기" : "발굴 종목 더 살펴보기"} <ArrowRight size={15} aria-hidden="true" /></Link>
           </section>
         </section>
