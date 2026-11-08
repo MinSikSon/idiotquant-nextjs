@@ -7,6 +7,7 @@
  * 동작은 한 줄도 바꾸지 않았다(옮기기만 했다). 이제 test/screener-filters.test.ts 가 건다.
  */
 
+import { isValuationEligible } from "@/lib/utils/stockValuationEligibility";
 import { STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS } from "@/lib/constants/strategies";
 import { isHalted, isManaged, isDelisting, w52Position } from "@/lib/utils/stockRisk";
 import { profitableScanStock, scanMarketCap, scanRoePercent, scanTradingAmount } from "@/lib/utils/scanFinancials";
@@ -109,8 +110,8 @@ export const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<string, any>[] {
-    let out = list;
     const country = f.country ?? "KR";
+    let out = list.filter(item => isValuationEligible(item, country));
 
     if (f.strategies.size > 0) {
         const check = f.mode === "AND" ? "every" : "some";

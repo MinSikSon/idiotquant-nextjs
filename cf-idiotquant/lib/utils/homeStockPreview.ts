@@ -1,3 +1,5 @@
+import { isValuationEligible } from "./stockValuationEligibility";
+
 export const HOME_STOCK_FILTERS = [
     { id: "large_cap", label: "대형주", description: "시가총액이 큰 순" },
     { id: "per10", label: "저PER", description: "PER 0 초과·10 이하 · PER 낮은 순" },
@@ -6,7 +8,7 @@ export const HOME_STOCK_FILTERS = [
 ] as const;
 export type HomeStockFilter = typeof HOME_STOCK_FILTERS[number]["id"];
 export type HomeStock = {
-    ticker: string; name: string; last_price: number; per: number; pbr: number;
+    ticker: string; name: string; country?: "KR" | "US"; last_price: number; per: number; pbr: number;
     ncav_ratio: number; market_cap: number; scan_date: string;
 };
 export type HomeStockPreview = {
@@ -23,6 +25,7 @@ export function formatHomeMarketCap(value: number, country: "KR" | "US") {
 }
 
 export function matchesHomeFilter(item: Pick<HomeStock, "per" | "pbr" | "ncav_ratio" | "market_cap">, filter: HomeStockFilter) {
+    if (!isValuationEligible(item)) return false;
     if (filter === "large_cap") return Number.isFinite(item.market_cap) && item.market_cap > 0;
     if (filter === "low_pbr") return Number.isFinite(item.pbr) && item.pbr > 0 && item.pbr < 0.5;
     if (filter === "ncav") return Number.isFinite(item.ncav_ratio) && item.ncav_ratio >= 1;

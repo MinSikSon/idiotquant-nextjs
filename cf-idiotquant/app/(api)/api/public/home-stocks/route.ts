@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildHomeStockPreview, type HomeStock } from "@/lib/utils/homeStockPreview";
+import { isValuationEligible } from "@/lib/utils/stockValuationEligibility";
 import nasdaq from "@/public/data/usStockSymbols/nasdaq_full_tickers.json";
 import nyse from "@/public/data/usStockSymbols/nyse_full_tickers.json";
 import amex from "@/public/data/usStockSymbols/amex_full_tickers.json";
@@ -16,8 +17,8 @@ export async function GET(request: Request) {
         const response = await fetch(`${base}/scan/daily?date=latest&strategy=all&limit=2500&sort=market_cap&order=desc&country=${country}`);
         const result = await response.json();
         if (!response.ok || result?.success === false || !Array.isArray(result?.data)) throw new Error("scan unavailable");
-        const list: HomeStock[] = result.data.map((item: HomeStock) => ({
-            ticker: item.ticker, name: country === "US" ? usNames.get(item.ticker) || item.name : item.name, last_price: item.last_price,
+        const list: HomeStock[] = result.data.filter((item: HomeStock) => isValuationEligible(item, country)).map((item: HomeStock) => ({
+            country, ticker: item.ticker, name: country === "US" ? usNames.get(item.ticker) || item.name : item.name, last_price: item.last_price,
             per: item.per, pbr: item.pbr, ncav_ratio: item.ncav_ratio,
             market_cap: item.market_cap, scan_date: item.scan_date,
         }));

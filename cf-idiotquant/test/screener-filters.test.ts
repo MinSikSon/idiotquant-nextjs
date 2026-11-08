@@ -135,9 +135,9 @@ test("값을 모르는 종목은 유동성·52주 조건에서 통과시킨다 �
     // ── 조건을 여러 개 걸면 모두 만족하는 것만 남는다
     {
         const list = [
-            stock({ name: "다만족", pbr: 0.4, per: 8, eps: 100, ncav_ratio: 1.2 }),
-            stock({ name: "PBR탈락", pbr: 0.9, per: 8, eps: 100, ncav_ratio: 1.2 }),
-            stock({ name: "적자탈락", pbr: 0.4, per: 8, eps: -1, ncav_ratio: 1.2 }),
+            stock({ name: "다만족", pbr: 0.4, per: 8, eps: 100, bps: 100000, ncav_ratio: 1.2 }),
+            stock({ name: "PBR탈락", pbr: 0.9, per: 8, eps: 100, bps: 100000, ncav_ratio: 1.2 }),
+            stock({ name: "적자탈락", pbr: 0.4, per: 8, eps: -1, bps: 100000, ncav_ratio: 1.2 }),
         ];
         const f = none({ maxPbr: 0.5, maxPer: 10, minNcav: 1.0, excludeDeficit: true });
         assert.deepEqual(names(applyFilters(list, f)), ["다만족"]);
@@ -201,10 +201,10 @@ test("ROE 를 모르는 종목은 맨 아래로 — 0 으로 두면 적자 사�
 
 test("미국 한글 표시명이어도 영문 원명으로 홀딩스·우선주를 제외하고 검색한다", () => {
     const list = [
-        stock({ ticker: "CORP", name: "일반 회사", eng_name: "Example Corp" }),
+        stock({ ticker: "TESTCORP", name: "일반 회사", eng_name: "Example Corp" }),
         stock({ ticker: "HLD", name: "지주 회사", eng_name: "Example HOLDINGS Inc." }),
         stock({ ticker: "HLD2", name: "다른 지주", eng_name: "Example Holding Inc." }),
-        stock({ ticker: "PREF", name: "우선 회사", eng_name: "Example Preferred Stock" }),
+        stock({ ticker: "TESTPREF", name: "우선 회사", eng_name: "Example Preferred Stock" }),
         stock({ ticker: "DEP", name: "예탁 회사", eng_name: "Example Depositary Shares" }),
     ];
     assert.deepEqual(names(applyFilters(list, none({ country: "US", excludeHoldings: true, excludePreferred: true }))), ["일반 회사"]);
