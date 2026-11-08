@@ -559,6 +559,36 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
 [data-compact-tabs] [role="tab"], [data-header-market-switch] button { min-height: 44px; min-width: 44px; flex: 1 1 0; }
 
 .navigation-header { border-bottom-width: 0; }
+.discovery-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.discovery-filters > :is(button, a) {
+  display: inline-flex;
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.discovery-filters > :is([aria-pressed="true"], [aria-current="page"]) {
+  border-bottom-color: currentColor;
+  font-weight: 600;
+  color: rgb(var(--brand-ink));
+}
+.discovery-filters > :is(button, a):hover { background: rgb(115 115 115 / 10%); }
+.discovery-filters > :is(button, a):focus-visible {
+  outline: 2px solid rgb(var(--brand-ink));
+  outline-offset: -2px;
+}
 .navigation-header .navigation-main { border-bottom: 1px solid; border-color: inherit; }
 
 [data-page-tabs] :is(.navigation-strategy-tabs, [data-compact-tabs]) button { border-width: 0 0 2px; border-bottom-color: transparent; background: transparent; box-shadow: none; }

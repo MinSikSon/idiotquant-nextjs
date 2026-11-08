@@ -35,7 +35,7 @@ export const PAGE_HEADER_CHROME =
 // 헤더 우측 액션 버튼 — 세 화면이 같은 모양을 쓰도록 클래스를 한 곳에 둔다
 export const PAGE_ACTION_CLS =
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors " +
-  "border border-neutral-200 dark:border-surface-dark-border bg-transparent " +
+  "border border-neutral-500 dark:border-neutral-500 bg-transparent " +
   "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-surface-dark-hover " +
   "shrink-0 " + CONTROL_FOCUS_CLS + " " + CONTROL_DISABLED_CLS;
 

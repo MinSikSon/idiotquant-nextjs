@@ -52,23 +52,23 @@ export default function GuestLanding({ backgroundArt, isLoggedIn = false }: Gues
         <section className={styles.hero}>
           <div className={styles.heroArt} aria-hidden="true">{backgroundArt}</div>
           <div className={styles.heroContent}>
-            <p className={styles.eyebrow}><span className={styles.marker} /> 숫자로 시작하는 가치투자</p>
-            <h1>더 적은 탐색.<br /><span>더 깊은 확신.</span></h1>
+            <p className={styles.eyebrow}>숫자로 시작하는 가치투자</p>
+            <h1>투자 후보를 찾고,<br /><span>가치를 확인하세요.</span></h1>
             <p className={styles.intro}>좋은 회사를 찾는 일에 집중하세요.<br />종목 발굴부터 비교, 기업 가치 분석까지<br className={styles.desktopBreak} /> 필요한 숫자를 한곳에 모았습니다.</p>
             <div className={styles.actions}>
-              <Link href="/screener?mincap=500" className={styles.primary}>오늘의 종목 발굴 <ArrowRight size={16} aria-hidden="true" /></Link>
+              <Link href={resultsHref} className={styles.primary}>조건으로 종목 찾기 <ArrowRight size={16} aria-hidden="true" /></Link>
               <Link href="/analyze" className={styles.secondary}><Search size={16} aria-hidden="true" /> 종목 분석하기</Link>
             </div>
             <p className={styles.note}>{isLoggedIn ? "발굴 → 분석 → 관심 저장, 나만의 기준으로 이어가세요." : "가입 없이 발굴 미리보기·기본 분석을 이용하세요. 전체 목록·고급 필터·상세 분석은 로그인 후 제공됩니다."}</p>
           </div>
 
           <section id="stock-preview" aria-labelledby="preview-title" className={styles.preview}>
-            <div className={styles.previewTop}><span className={styles.eyebrow}>Discovery</span><span className={styles.date}>{dateLabel}</span></div>
+            <div className={styles.previewTop}><span className={styles.eyebrow}>종목 발굴</span><span className={styles.date}>{dateLabel}</span></div>
             <div className={styles.previewTitle}><h2 id="preview-title">종목 둘러보기</h2><span className={styles.count}>{isLoading ? "조회 중" : hasError ? "조회 실패" : `수집 ${(data?.total ?? 0).toLocaleString()}개`}</span></div>
-            <div className={styles.previewFilters} role="group" aria-label="종목 시장">
+            <div className={`${styles.previewFilters} discovery-filters`} role="group" aria-label="종목 시장">
               {(["KR", "US"] as const).map(country => <button key={country} type="button" aria-pressed={market === country} onClick={() => { if (country !== market) { setMarket(country); setRequestState({ market: country, failed: false, loading: true }); } }}>{country === "KR" ? "국내 주식" : "미국 주식"}</button>)}
             </div>
-            <div className={styles.previewFilters} role="group" aria-label="미리보기 조건">
+            <div className={`${styles.previewFilters} discovery-filters`} role="group" aria-label="미리보기 조건">
               {HOME_STOCK_FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}
             </div>
             <p className={styles.previewDescription}>{selectedFilter.description}. {data ? `평가 대상 ${data.loaded.toLocaleString()}개${filter === "large_cap" ? "" : ` · 조건 충족 ${data.counts[filter].toLocaleString()}개`} · 상위 ${preview.length}개.` : "수집 지표를 불러옵니다."} 종목을 누르면 분석으로 이동합니다.</p>
@@ -97,10 +97,10 @@ export default function GuestLanding({ backgroundArt, isLoggedIn = false }: Gues
         </section>
 
         <section id="features" className={styles.features} aria-labelledby="tools-title">
-          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Your workflow</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 다시 확인하세요.</p></div>
+          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>이용 순서</p><h2 id="tools-title">생각의 흐름을 끊지 않도록.</h2></div><p>찾고, 이해하고, 다시 확인하세요.</p></div>
           <div className={styles.toolGrid}>{tools.map(({ href, icon: Icon, number, title, description, action }) => (
             <Link href={href.includes("filter=liked") && !isLoggedIn ? `/login?callbackUrl=${encodeURIComponent(href)}` : href} key={href} className={styles.tool} aria-label={action}>
-              <div className={styles.toolTop}><Icon size={21} strokeWidth={1.6} aria-hidden="true" /><span>{number}</span></div>
+              <div className={styles.toolTop}><Icon size={21} strokeWidth={2} aria-hidden="true" /><span>{number}</span></div>
               <h3>{title}</h3><p>{description}</p><span className={styles.toolAction}>{action} <ArrowRight size={15} aria-hidden="true" /></span>
             </Link>
           ))}</div>
@@ -108,7 +108,7 @@ export default function GuestLanding({ backgroundArt, isLoggedIn = false }: Gues
         </section>
 
         <section id="faq" className={styles.faq} aria-labelledby="faq-title">
-          <div><p className={styles.eyebrow}>A little guidance</p><h2 id="faq-title">처음이라면,<br />여기서 시작하세요.</h2><Link href="/quant" className={styles.guideLink}>퀀트 투자와 전략 안내 <ArrowUpRight size={14} aria-hidden="true" /></Link></div>
+          <div><p className={styles.eyebrow}>이용 안내</p><h2 id="faq-title">처음이라면,<br />여기서 시작하세요.</h2><Link href="/quant" className={styles.guideLink}>퀀트 투자와 전략 안내 <ArrowUpRight size={14} aria-hidden="true" /></Link></div>
           <div className={styles.questions}>{HOME_FAQ.map(({ q, a }) => (
             <details key={q}><summary>{q}<span aria-hidden="true">＋</span></summary><p>{a}</p></details>
           ))}</div>

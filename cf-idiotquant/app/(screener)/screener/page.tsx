@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import GuestDiscovery from "./components/GuestDiscovery";
 import { ComparisonCheckbox, type ComparisonChoice } from "@/components/comparison-checkbox";
 import { analysisHref, comparisonHref, PENDING_WATCH_KEY, toggleComparisonSelection } from "@/lib/investmentFlow";
 import { SecondarySection } from "@/components/secondary-section";
@@ -575,11 +576,12 @@ function ScreenerContent() {
 
     // URL query params → localStorage(전체 필터 스냅샷) 순 fallback으로 상태 초기화
     // (다른 페이지 다녀와 URL 파라미터가 없어도 마지막 필터를 그대로 복원)
-    const saved = useMemo(() => {
-        if (typeof window === 'undefined') return {} as Record<string, any>;
+    const [saved] = useState(() => {
+        // 공개 미리보기에서 이어오면 이전 개인 필터 대신 명시한 조건부터 시작한다.
+        if (searchParams.get("from") === "preview" || typeof window === 'undefined') return {} as Record<string, any>;
         try { return JSON.parse(localStorage.getItem('screener:filters') || '{}') as Record<string, any>; }
         catch { return {} as Record<string, any>; }
-    }, []);
+    });
     const [country, setCountry] = useState<"KR" | "US">(() =>
         (searchParams.get('country') ?? saved.country) === 'US' ? 'US' : 'KR'
     );
@@ -2310,6 +2312,12 @@ function ScreenerContent() {
     );
 }
 
+function ScreenerEntry() {
+    const { status } = useSession();
+    if (status === "loading") return <div role="status" className="flex min-h-64 items-center justify-center gap-2 text-sm"><Loader2 className="animate-spin" size={18} />계정을 확인하는 중…</div>;
+    return status === "authenticated" ? <ScreenerContent /> : <GuestDiscovery />;
+}
+
 // =========================================================================
 // 페이지 내보내기
 // =========================================================================
@@ -2320,7 +2328,7 @@ export default function ScreenerPage() {
                 <Loader2 className="animate-spin text-brand-ink" size={24} />
             </div>
         }>
-            <ScreenerContent />
+            <ScreenerEntry />
         </Suspense>
     );
 }
