@@ -71,7 +71,7 @@ export default function GuestLanding({ backgroundArt, isLoggedIn = false }: Gues
             <div className={styles.previewFilters} role="group" aria-label="미리보기 조건">
               {HOME_STOCK_FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}
             </div>
-            <p className={styles.previewDescription}>{selectedFilter.description}. {data ? `조회 ${data.loaded.toLocaleString()}개${filter === "large_cap" ? "" : ` · 조건 충족 ${data.counts[filter].toLocaleString()}개`} · 상위 ${preview.length}개.` : "수집 지표를 불러옵니다."} 종목을 누르면 분석으로 이동합니다.</p>
+            <p className={styles.previewDescription}>{selectedFilter.description}. {data ? `평가 대상 ${data.loaded.toLocaleString()}개${filter === "large_cap" ? "" : ` · 조건 충족 ${data.counts[filter].toLocaleString()}개`} · 상위 ${preview.length}개.` : "수집 지표를 불러옵니다."} 종목을 누르면 분석으로 이동합니다.</p>
             {hasError && <div role="alert" className="mx-4 my-3 rounded-lg border border-amber-300/50 p-3 text-sm">
               <p>{preview.length ? "새 데이터를 불러오지 못했습니다. 이전 조회 결과를 표시합니다." : "발굴 종목을 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."}</p>
               <button type="button" onClick={() => { setRequestState({ market, failed: false, loading: true }); setAttempt(value => value + 1); }} disabled={isLoading} className="mt-2 min-h-11 font-semibold underline underline-offset-4">다시 불러오기</button>

@@ -30,6 +30,7 @@ import { StockRatioRow } from "./components/StockRatioRow";
 import ScreenerUsageGuide from "./components/ScreenerUsageGuide";
 import { LiquidityBadge, w52Position } from "./components/LiquidityBadge";
 import { scanTradingAmount } from "@/lib/utils/scanFinancials";
+import { isValuationEligible } from "@/lib/utils/stockValuationEligibility";
 import { matchesGuestPer } from "@/lib/utils/guestStocks";
 import { isUsTicker } from "@/lib/utils/stockSearchInput";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
@@ -940,11 +941,11 @@ function ScreenerContent() {
     // 원본 미리보기 목록에서 항상 같은 기준으로 뽑는다.
     const guestRecommendations = useMemo(() =>
         sortList(
-            ncavDailyList.list.filter(matchesGuestPer),
+            ncavDailyList.list.filter(item => isValuationEligible(item, country) && matchesGuestPer(item)),
             'ncav_ratio',
             'desc'
         ).slice(0, PREVIEW_SIZE),
-        [ncavDailyList.list]
+        [ncavDailyList.list, country]
     );
 
     // 조건 하나만 다르게 걸었을 때 남는 개수 — 서랍의 −N 표기용
