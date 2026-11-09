@@ -22,13 +22,14 @@ import { calculatePriceReturns, summarizeReturns } from './priceReturns';
 import { historicalPrice } from './historicalPrice';
 import { getScanDailyByTicker } from '@/lib/features/algorithmTrade/algorithmTradeAPI';
 import { comparisonPrices, historicalMarketCap } from '@/lib/features/compare/pricing';
+import { getExternalMarketCap } from '@/lib/features/compare/marketCap';
 import { buildStockSearchIndex, findStockSuggestions } from '@/lib/utils/stockSuggestions';
 import { loadStaticStockData, type StaticStockData } from '@/lib/utils/stockSearchData';
 import { isUsTicker, resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
-  type ComparisonPrice, type ComparisonStock, selectComparison, setQuery, setDateInput, setError,
-  stockLoadStarted, stockReceived, stockLoadFinished, dateLoadStarted, datePriceReceived,
+  type ComparisonStock, selectComparison, setQuery, setDateInput, setError,
+  stockLoadStarted, stockReceived, stockLoadFinished, dateLoadStarted, datePriceReceived, marketCapReceived,
   dateLoadFinished, removeDate as removeComparisonDate, removeStock, applyLimits,
   importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
 } from '@/lib/features/compare/compareSlice';
@@ -68,16 +69,7 @@ async function getHistoricalPrice(ticker: string, market: 'KR' | 'US', date: str
   if (marketCap) return { ...price, marketCap };
   if (market === 'US') return price;
   // 휴장일에는 선택일이 아니라 KIS가 확인한 실제 거래일로 외부 시총을 조회한다.
-  const priceDate = price.priceDate;
-  const params = new URLSearchParams({ ticker, market, date: `${priceDate.slice(0, 4)}-${priceDate.slice(4, 6)}-${priceDate.slice(6)}` });
-  try {
-    const response = await fetch(`/api/public/compare/market-cap?${params}`, { signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error('market cap unavailable');
-    const external: ComparisonPrice = await response.json();
-    return { ...price, marketCap: external.marketCap, marketCapSource: external.marketCapSource, marketCapError: external.marketCapError };
-  } catch {
-    return { ...price, marketCapError: '외부 과거 시총 조회에 실패했습니다.' };
-  }
+  return { ...price, ...await getExternalMarketCap(ticker, price.priceDate) };
 }
 
 async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, dates: string[]): Promise<ComparisonStock> {
@@ -123,6 +115,7 @@ export default function ComparePage() {
   const [recentLoaded, setRecentLoaded] = useState(false);
   const importedRef = useRef(false);
   const [comparisonReady, setComparisonReady] = useState(false);
+  const backfilledCaps = useRef(new Set<string>());
   const [storageFailed, setStorageFailed] = useState(false);
   const [pendingImport, setPendingImport] = useState<ScreenerImport | null>(null);
   const today = localToday();
@@ -150,6 +143,27 @@ export default function ComparePage() {
     // 저장본 복원은 페이지 진입 시 세션 한도가 정해진 뒤 한 번만 한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLoading]);
+
+  useEffect(() => {
+    if (!comparisonReady || sessionLoading || loading || dateLoading) return;
+    for (const stock of stocks) {
+      if (stock.market !== 'KR') continue;
+      const missing = dates.flatMap(date => {
+        const price = stock.prices[date];
+        const key = `${stock.id}:${date}:${price?.priceDate}`;
+        if (price?.loading || !price?.price || !price.priceDate || price.marketCap || backfilledCaps.current.has(key)) return [];
+        backfilledCaps.current.add(key);
+        return [{ date, priceDate: price.priceDate }];
+      });
+      // 같은 종목의 날짜는 순차 조회해 저장본 복원 시 요청이 몰리지 않게 한다.
+      void (async () => {
+        for (const { date, priceDate } of missing) {
+          const update = await getExternalMarketCap(stock.ticker, priceDate);
+          dispatch(marketCapReceived({ id: stock.id, date, priceDate, update }));
+        }
+      })();
+    }
+  }, [comparisonReady, sessionLoading, loading, dateLoading, stocks, dates, dispatch]);
 
   useEffect(() => {
     if (!comparisonReady || loading || dateLoading) return;

@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { ComparisonSnapshot } from './storage';
 import { reducerRegistry } from '../../reducerRegistry';
+import type { MarketCapUpdate } from './marketCap';
 
 export type ComparisonPrice = { price?: number; marketCap?: number; marketCapSource?: 'data-go-kr'; marketCapError?: string; priceDate?: string; loading?: boolean; error?: string };
 export type ComparisonStock = {
@@ -57,6 +58,15 @@ export const compareSlice = createSlice({
       const stock = state.stocks.find(item => item.id === id);
       if (stock?.prices[date]?.loading) stock.prices[date] = price;
     },
+    marketCapReceived(state, action: PayloadAction<{ id: string; date: string; priceDate: string; update: MarketCapUpdate }>) {
+      const { id, date, priceDate, update } = action.payload;
+      const stock = state.stocks.find(item => item.id === id);
+      const price = stock?.prices[date];
+      // 삭제·재조회 중이거나 더 최신인 조회값은 늦게 도착한 보정으로 덮지 않는다.
+      if (stock?.market === 'KR' && price && !price.loading && price.priceDate === priceDate && !price.marketCap) {
+        Object.assign(price, update);
+      }
+    },
     dateLoadFinished(state) { state.dateLoading = false; },
     removeDate(state, action: PayloadAction<string>) {
       state.dates = state.dates.filter(date => date !== action.payload);
@@ -101,7 +111,7 @@ export const compareSlice = createSlice({
 
 export const {
   setQuery, setDateInput, setError, stockLoadStarted, stockReceived, stockLoadFinished,
-  dateLoadStarted, datePriceReceived, dateLoadFinished, removeDate, removeStock, applyLimits,
+  dateLoadStarted, datePriceReceived, marketCapReceived, dateLoadFinished, removeDate, removeStock, applyLimits,
   importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
 } = compareSlice.actions;
 export const { selectComparison } = compareSlice.selectors;
