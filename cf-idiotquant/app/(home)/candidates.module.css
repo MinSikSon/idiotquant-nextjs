@@ -145,41 +145,42 @@
   .strategies { margin-top: 14px; }
   .strategies > div > span { padding: 4px 8px; font-size: 12px; }
   .cardActions label, .cardActions a { font-size: 13px; }
-  /* 모바일 로고형: 로고를 요약 영역 높이에 맞추고 핵심 정보만 오른쪽에 둔다. */
-  .cardGrid .candidate { display: grid; grid-template-columns: 88px minmax(0, 1fr) 65px; grid-template-areas: "logo identity identity" "logo price price" "logo metrics metrics" "logo strategies strategies" "logo risk actions"; align-items: center; gap: 2px 8px; padding: 8px; }
+  /* 모바일 로고형: 로고를 2/3로 줄이고 핵심 정보를 두 줄로 모은다. */
+  .cardGrid .candidate { display: grid; grid-template-columns: 59px minmax(0, 1fr) auto 44px; grid-template-areas: "logo identity price actions" "logo metrics strategies risk"; align-items: center; gap: 2px 8px; padding: 0 8px; }
   .cardGrid .identity, .cardGrid .identity > div:last-child { display: contents; }
-  .cardGrid .logo { grid-area: logo; align-self: stretch; min-height: 88px; }
-  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 88px; height: 100%; min-height: 88px; border-radius: 8px; font-size: 28px; }
+  .cardGrid .logo { grid-area: logo; align-self: center; }
+  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 59px; height: 65px; border-radius: 8px; font-size: 22px; }
   .cardGrid .logo :global(img) { padding: 2px; }
-  .cardGrid .candidate:has(.risk[open]) .logo { align-self: start; }
-  .cardGrid .candidate:has(.risk[open]) .logo > :global(span), .cardGrid .candidate:has(.risk[open]) .logo > :global(button) { height: 88px; }
-  .cardGrid .company { grid-area: identity; font-size: 15px; line-height: 1.35; }
+  .cardGrid .company { grid-area: identity; font-size: 14px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cardGrid .identity p { display: none; }
   .cardGrid .price { grid-area: price; margin: 0; gap: 0; }
   .cardGrid .price > span, .cardGrid .price small { display: none; }
-  .cardGrid .price strong { font-size: 19px; line-height: 1.35; }
-  .cardGrid .metrics { grid-area: metrics; display: flex; flex-wrap: wrap; gap: 2px 12px; padding: 0; border: 0; }
+  .cardGrid .price strong { font-size: 16px; line-height: 1.35; }
+  .cardGrid .metrics { grid-area: metrics; grid-column: 2 / 4; display: flex; flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; }
   .cardGrid .metrics > div { display: inline-flex; align-items: baseline; gap: 4px; }
   .cardGrid .metrics > div:nth-child(n + 3) { display: none; }
   .cardGrid .metrics dd { margin: 0; font-size: 11px; }
   .cardGrid .metrics small { display: none; }
-  .cardGrid .strategies { grid-area: strategies; margin: 0; }
+  .cardGrid .strategies { grid-area: strategies; grid-column: 2 / 4; justify-self: end; margin: 0; }
   .cardGrid .strategies p { justify-content: flex-start; gap: 6px; font-size: 11px; }
+  .cardGrid .strategySuffix, .cardGrid .compareText { display: none; }
   .cardGrid .strategies > div { display: none; }
   .cardGrid .risk { grid-area: risk; min-width: 0; margin: 0; border: 0; }
-  .cardGrid .risk summary { gap: 5px; font-size: 11px; }
+  .cardGrid .risk summary { gap: 5px; font-size: 11px; justify-content: center; }
+  .cardGrid .risk:not([open]) summary > span:first-of-type, .cardGrid .risk:not([open]) .compactHint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .cardGrid .riskPrefix { display: none; }
   .cardGrid .compactHint { display: inline; margin-left: auto; color: var(--home-secondary); text-decoration: underline; text-underline-offset: 3px; }
   .cardGrid .risk summary > :last-child { margin-left: 0; }
-  .cardGrid .risk[open] { grid-column: 1 / -1; }
+  .cardGrid .risk[open] { grid-column: 1 / -1; grid-row: 3; }
+  .cardGrid .risk[open] summary { justify-content: flex-start; }
   .cardGrid .compactMore { display: block; padding-top: 8px; }
   .compactMore dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin-bottom: 12px; }
   .compactMore dt { color: var(--home-secondary); font-size: 11px; }
   .compactMore dd { margin-top: 2px; font-size: 13px; font-variant-numeric: tabular-nums; }
-  .cardGrid .cardActions { grid-area: actions; justify-content: flex-end; border: 0; margin-top: 0; }
-  .cardGrid .cardActions label { font-size: 11px; gap: 5px; }
+  .cardGrid .cardActions { grid-area: actions; justify-content: center; border: 0; margin-top: 0; }
+  .cardGrid .cardActions label { justify-content: center; width: 44px; font-size: 11px; gap: 0; }
   .cardGrid .cardActions a { display: none; }
-  .cardGrid .candidate:has(.risk[open]) .cardActions { grid-row: 6; grid-column: 1 / -1; margin: 0; }
+  .cardGrid .candidate:has(.risk[open]) .cardActions { grid-row: 4; grid-column: 1 / -1; margin: 0; }
   .list .candidate { padding: 14px 10px; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) minmax(100px, .7fr); }
   .list .identity p { font-size: 11px; }
   .list .company { font-size: 15px; }
@@ -196,18 +197,14 @@
   .compareTray button { font-size: 12px; }
 }
 
-@media (min-width: 375px) and (max-width: 767px) {
-  .cardGrid .candidate { grid-template-columns: 88px minmax(0, 1fr) 76px; grid-template-rows: minmax(22px, auto) 26px 22px 22px; grid-template-areas: "logo identity actions" "logo price actions" "logo metrics risk" "logo strategies risk"; }
-  .cardGrid .cardActions { align-self: center; justify-content: flex-start; }
-  .cardGrid .risk:not([open]) summary { display: grid; grid-template-columns: 18px max-content 8px; grid-template-rows: 22px 22px; gap: 2px 4px; }
-  .cardGrid .risk:not([open]) summary > svg { justify-self: center; }
-  .cardGrid .risk:not([open]) summary > span:first-of-type { grid-column: 2 / -1; white-space: nowrap; }
-  .cardGrid .risk:not([open]) .riskLabelPrefix { display: none; }
-  .cardGrid .risk:not([open]) .compactHint { grid-column: 2; margin-left: 0; }
-  .cardGrid .risk[open] { grid-row: 5; }
-}
-
 @media (max-width: 359px) {
+  .cardGrid .candidate { column-gap: 4px; }
+  .cardGrid .company { font-size: 13px; }
+  .cardGrid .price strong { font-size: 14px; }
+  .cardGrid .metrics { gap: 6px; }
+  .cardGrid .metrics > div { gap: 2px; }
+  .cardGrid .metrics dt, .cardGrid .metrics dd, .cardGrid .strategies p { font-size: 10px; }
+  .cardGrid .strategies p { gap: 3px; }
   .cardGrid .compactHint { display: none; }
   .filterLine { flex-wrap: wrap; }
   .filterLine:first-child { flex-wrap: wrap; }
