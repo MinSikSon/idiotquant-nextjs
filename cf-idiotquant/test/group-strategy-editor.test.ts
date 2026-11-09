@@ -17,7 +17,7 @@ function editor(overrides: Record<string, unknown> = {}) {
   const states: any[] = [];
   const calls: any[] = [];
   let cursor = 0, closed = 0;
-  const props = { groupDca: false, groupSide: "buy", tradingActive: true,
+  const props = { accountQuantRule: undefined as Record<string, unknown> | undefined, groupDca: false, groupSide: "buy", tradingActive: true,
     groupBudget: 100000, groupQuantRule: { active_count: 20, ncav_ratio: 1.5, max_pbr: 2 },
     onApply: async (settings: unknown) => { calls.push(settings); }, onClose: () => { closed++; }, ...overrides };
   const output = { exports: {} as any };
@@ -138,4 +138,36 @@ test("목표 비중에서 퀀트 전환 시 기존 정책을 명시적으로 해
   await h.click("이 전략으로 적용");
   assert.equal(h.calls[0].rebalancing, null);
   assert.equal(h.calls[0].dca, false);
+});
+
+test("세부 조건을 그룹에 저장하고 빈 값은 상속하며 0·false·빈 키워드는 명시적으로 보존한다", async () => {
+  const h = editor({ accountQuantRule: { min_eps: 100, exclude_call_warrants: true, exclude_key_word: ["지주"] } });
+  h.change("최대 PBR", "1.2");
+  h.change("최소 EPS", "0");
+  h.change("최소 BPS", "-100");
+  h.change("콜워런트 제외", "false");
+  h.change("제외 키워드 설정", "custom");
+  h.change("종목명 제외 키워드", "");
+  await h.click("변경사항 적용");
+  assert.deepEqual(JSON.parse(JSON.stringify(h.calls[0].quant_rule)), { active_count: 20, ncav_ratio: 1.5, max_pbr: 1.2, min_eps: 0, min_bps: -100, exclude_call_warrants: false, exclude_key_word: [] });
+});
+
+test("정액 적립·매도에도 세부 선정 조건을 저장하며 개별 조건을 계좌값으로 복원한다", async () => {
+  const h = editor({ groupDca: true, groupSide: "sell", groupQuantRule: { max_pbr: 2, min_per: 1 } });
+  h.change("최대 PBR", "");
+  h.change("최소 PER", "3");
+  h.change("제외 키워드 설정", "custom");
+  h.change("종목명 제외 키워드", " 지주, , Holding ");
+  await h.click("변경사항 적용");
+  assert.deepEqual(JSON.parse(JSON.stringify(h.calls[0].quant_rule)), { min_per: 3, exclude_key_word: ["지주", "Holding"] });
+});
+
+test("PBR 범위 오류는 저장을 막고 계좌 조건이 편집 중 바뀌면 재열기를 요구한다", () => {
+  const h = editor({ accountQuantRule: { min_pbr: 1 } });
+  h.change("최대 PBR", "0.5");
+  assert.equal(h.button("변경사항 적용").props.disabled, true);
+  h.change("최대 PBR", "3");
+  assert.equal(h.button("변경사항 적용").props.disabled, false);
+  h.props.accountQuantRule = { min_pbr: 4 };
+  assert.equal(h.button("변경사항 적용").props.disabled, true);
 });
