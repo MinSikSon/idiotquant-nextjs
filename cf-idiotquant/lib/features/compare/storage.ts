@@ -28,6 +28,8 @@ export function readComparisonSnapshot(raw: string | null, today = localToday())
         const clean: ComparisonPrice = {};
         if (numeric(price?.price) && price.price >= 0) clean.price = price.price;
         if (numeric(price?.marketCap) && price.marketCap > 0) clean.marketCap = price.marketCap;
+        if (price?.marketCapSource === 'data-go-kr') clean.marketCapSource = price.marketCapSource;
+        if (typeof price?.marketCapError === 'string') clean.marketCapError = price.marketCapError.slice(0, 200);
         if (typeof price?.priceDate === 'string' && /^\d{8}$/.test(price.priceDate)) clean.priceDate = price.priceDate;
         if (typeof price?.error === 'string') clean.error = price.error.slice(0, 200);
         if (price?.loading) clean.error = '조회가 중단되었습니다. 날짜를 다시 추가해 주세요.';
