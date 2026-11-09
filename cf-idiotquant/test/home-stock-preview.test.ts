@@ -49,6 +49,8 @@ test("시가총액은 국내 억 원과 미국 달러의 원본 단위를 구분
     assert.equal(formatHomeMarketCap(11312549, "KR"), "1,131.3조 원");
     assert.equal(formatHomeMarketCap(5115300000000, "US"), "$5,115.3B");
     assert.equal(formatHomeMarketCap(NaN, "KR"), "—");
+    assert.equal(formatHomeMarketCap(71, "KR"), "71억 원");
+    assert.equal(formatHomeMarketCap(73283984, "US"), "$73.3M");
 });
 
 test("홈에서 고른 시장·조건·정렬을 발굴 URL과 공개 미리보기에서 동일하게 해석한다", () => {

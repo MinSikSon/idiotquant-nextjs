@@ -1,0 +1,167 @@
+.discovery { position: relative; padding: 0 0 48px; scroll-margin-top: 60px; }
+.filters { border-block: 1px solid var(--home-line); padding: 6px 0; }
+.filterLine { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 20px; }
+.collection { color: var(--home-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.riskControls { position: relative; }
+.riskControls summary { display: flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; cursor: pointer; list-style: none; }
+.riskControls summary::-webkit-details-marker { display: none; }
+.riskControls > div { position: absolute; right: 0; top: 100%; z-index: 30; width: 270px; padding: 12px 16px; border: 1px solid var(--home-secondary); border-radius: 6px; background: var(--home-panel); }
+.riskControls p { color: var(--home-secondary); font-size: 12px; }
+.recommendedBadge { position: absolute; top: -10px; left: 14px; font-size: 11px; font-weight: 600; padding: 3px 8px; border: 1px solid var(--home-line); border-radius: 4px; background: var(--home-hover); color: var(--home-text); }
+.list .candidate:has(.recommendedBadge) { padding-top: 28px; }
+.list .recommendedBadge { top: 0; left: 12px; font-size: 10px; padding-block: 2px; border-radius: 0 0 4px 4px; }
+.riskFilter { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; cursor: pointer; }
+.discovery input { width: 18px; height: 18px; accent-color: rgb(var(--brand-ink)); flex-shrink: 0; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0 20px; }
+.toolbar h2 { font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
+.toolbar h2 span { color: var(--home-secondary); margin-left: 6px; font-size: 16px; }
+.toolbar p { margin-top: 4px; font-size: 13px; color: var(--home-secondary); }
+.viewSwitch { display: flex; flex-shrink: 0; padding: 3px; border: 1px solid var(--home-secondary); border-radius: 6px; }
+.viewSwitch button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; font-size: 13px; }
+.viewSwitch button[aria-pressed="true"] { background: var(--home-text); color: var(--home-bg); border-radius: 3px; font-weight: 600; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+.results { min-width: 0; }
+.mobilePick { display: none; }
+.cardGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.candidate { position: relative; min-width: 0; padding: 20px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
+.candidate[data-selected] { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
+.identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.identity > div:last-child { min-width: 0; }
+.logo > :global(span), .logo > :global(button) { width: 44px; height: 44px; border-radius: 10px; }
+.company { display: block; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--home-line); text-underline-offset: 4px; }
+.identity p { margin-top: 3px; color: var(--home-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 22px 0 16px; font-variant-numeric: tabular-nums; }
+.price > span { flex: 1 0 100%; font-size: 11px; color: var(--home-secondary); }
+.price strong { font-size: 24px; font-weight: 600; letter-spacing: -.03em; }
+.price small { font-size: 11px; color: var(--home-secondary); }
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; border-block: 1px solid var(--home-line); padding: 16px 0; }
+.metrics div { min-width: 0; }
+.metrics dt { font-size: 11px; color: var(--home-secondary); }
+.metrics dd { margin-top: 3px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.metrics small { font-size: 11px; margin-left: 3px; color: var(--home-secondary); }
+.strategies { margin-top: 16px; }
+.strategies p { display: flex; justify-content: space-between; font-size: 11px; color: var(--home-secondary); }
+.strategies strong { color: var(--home-text); font-weight: 600; }
+.strategies > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.strategies > div > span { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--home-line); padding: 4px 6px; font-size: 11px; border-radius: 4px; color: var(--home-secondary); }
+.strategies > div > span[data-met="true"] { color: var(--home-text); font-weight: 600; background: var(--home-hover); }
+.risk { margin-top: 12px; border-top: 1px solid var(--home-line); }
+.risk summary { display: flex; align-items: center; gap: 6px; list-style: none; min-height: 44px; cursor: pointer; font-size: 12px; }
+.risk summary::-webkit-details-marker { display: none; }
+.risk summary > :last-child { margin-left: auto; }
+.risk[open] summary > :last-child { transform: rotate(45deg); }
+.risk[data-risk="caution"] summary { color: #98451d; }
+:global(html.dark) .risk[data-risk="caution"] summary { color: #f5b38b; }
+.risk > div { color: var(--home-secondary); font-size: 12px; padding-bottom: 12px; }
+.risk > div p + p { margin-top: 8px; }
+.cardActions { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--home-line); }
+.cardActions label, .cardActions a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; }
+.cardActions label { cursor: pointer; }
+.cardActions a { color: rgb(var(--brand-ink)); text-decoration: underline; text-underline-offset: 4px; }
+.cardActions label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.recommendation { position: sticky; top: 72px; border-top: 3px solid var(--home-text); background: var(--home-panel); border-radius: 0 0 8px 8px; padding: 24px; }
+.recommendationLabel { display: flex; align-items: center; gap: 7px; color: var(--home-secondary); font-size: 11px; }
+.todayDot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.recommendation h2 { font-size: 22px; font-weight: 600; letter-spacing: -.03em; margin-top: 8px; }
+.recommendationContext { font-size: 12px; color: var(--home-secondary); margin-top: 6px; }
+.pickCompany { display: flex; align-items: center; gap: 12px; margin-top: 28px; }
+.pickCompany h3 { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.pickCompany p { font-size: 12px; color: var(--home-secondary); margin-top: 4px; }
+.pickPrice { display: block; font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 16px; letter-spacing: -.03em; }
+.pickReason { margin-top: 12px; color: var(--home-secondary); font-size: 13px; }
+.pickFacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.pickFacts span { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+.pickAction { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; margin-top: 24px; padding: 10px 14px; border-radius: 4px; background: var(--home-action); color: white; font-size: 13px; font-weight: 600; }
+.pickAction:hover { background: var(--home-action-hover); }
+.method { margin-top: 16px; border-top: 1px solid var(--home-line); font-size: 12px; }
+.method summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; text-decoration: underline; text-underline-offset: 4px; }
+.method p { color: var(--home-secondary); margin-bottom: 10px; }
+.pickNote { color: var(--home-secondary); font-size: 11px; border-top: 1px solid var(--home-line); padding-top: 12px; }
+.recommendationEmpty { padding: 24px 0; font-size: 13px; color: var(--home-secondary); }
+.recommendationEmpty h3 { color: var(--home-text); font-weight: 600; margin: 10px 0; }
+.resultsFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 0; }
+.resultsFooter p { font-size: 12px; color: var(--home-secondary); }
+.resultsFooter a { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; color: rgb(var(--brand-ink)); text-decoration: underline; text-underline-offset: 4px; }
+.loading, .empty { padding: 60px 24px; border-block: 1px solid var(--home-line); font-size: 14px; }
+.empty h3 { font-weight: 600; }
+.empty p { color: var(--home-secondary); margin-top: 10px; }
+.empty button { min-height: 44px; text-decoration: underline; margin-top: 12px; }
+.compareTray { position: sticky; bottom: calc(var(--bottombar-h) + 8px); z-index: 20; display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: var(--home-panel); border: 1px solid var(--home-secondary); border-radius: 8px; box-shadow: 0 4px 16px #0002; }
+.compareTray > div { margin-right: auto; }
+.compareTray strong { display: block; font-size: 14px; font-weight: 600; }
+.compareTray span { font-size: 12px; color: var(--home-secondary); }
+.compareTray button { min-height: 44px; font-size: 13px; text-decoration: underline; }
+.compareTray a { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 4px; background: var(--home-action); color: white; font-size: 13px; font-weight: 600; }
+.list { display: grid; gap: 0; border-top: 1px solid var(--home-line); }
+.list .candidate { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(100px, .8fr) minmax(190px, 1.3fr) minmax(170px, 1.2fr); grid-template-areas: "identity price metrics strategies" "actions price metrics risk"; gap: 8px 16px; border-width: 0 0 1px; border-radius: 0; align-items: center; padding: 16px; }
+.list .identity { grid-area: identity; }
+.list .logo { display: none; }
+.list .price { grid-area: price; margin: 0; }
+.list .price strong { font-size: 20px; }
+.list .price small { flex-basis: 100%; }
+.list .metrics { grid-area: metrics; border: 0; padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.list .metrics dd { font-size: 14px; }
+.list .strategies { grid-area: strategies; margin: 0; }
+.list .risk { grid-area: risk; margin: 0; border: 0; }
+.list .cardActions { grid-area: actions; border: 0; }
+.list .cardActions a { display: none; }
+@media (max-width: 1279px) {
+  .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+  .list .candidate { grid-template-columns: minmax(140px, 1fr) minmax(100px, .8fr); grid-template-areas: "identity price" "metrics metrics" "strategies strategies" "risk actions"; }
+  .list .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .workspace { display: flex; flex-direction: column; gap: 24px; }
+  .results, .recommendation { width: 100%; }
+  .mobilePick { display: flex; order: -1; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-left: 3px solid var(--home-text); background: var(--home-panel); }
+  .mobilePick span { display: block; font-size: 10px; color: var(--home-secondary); }
+  .mobilePick strong { display: block; font-size: 14px; font-weight: 600; margin-top: 3px; }
+  .mobilePick small { font-size: 10px; color: var(--home-secondary); }
+  .mobilePick a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 16px; font-weight: 600; white-space: nowrap; text-decoration: underline; text-underline-offset: 4px; }
+  .recommendation { position: static; padding: 20px; }
+  .discovery { padding-bottom: 32px; }
+  .filterLine { gap: 0; flex-wrap: nowrap; }
+  .filterLine :global(.discovery-filters) > button { padding-inline: 10px; }
+  .riskControls summary { font-size: 12px; gap: 4px; }
+
+  .collection { font-size: 11px; }
+  .filterLine:first-child { flex-wrap: nowrap; gap: 8px; }
+  .toolbar { align-items: flex-start; gap: 8px; padding-top: 20px; }
+  .toolbar h2 { font-size: 19px; }
+  .toolbar p { font-size: 11px; max-width: 160px; }
+  .viewSwitch button { font-size: 12px; padding-inline: 8px; gap: 4px; }
+  .viewSwitch svg { width: 14px; }
+  .cardGrid { grid-template-columns: 1fr; gap: 14px; }
+  .candidate { padding: 18px; }
+  .identity { gap: 12px; }
+  .company { font-size: 17px; }
+  .identity p { font-size: 12px; }
+  .price { margin-top: 16px; }
+  .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .metrics dd { font-size: 16px; }
+  .metrics small { font-size: 10px; margin-left: 2px; }
+  .strategies { margin-top: 14px; }
+  .strategies > div > span { padding: 4px 8px; font-size: 12px; }
+  .cardActions label, .cardActions a { font-size: 13px; }
+  .list .candidate { padding: 14px 10px; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) minmax(100px, .7fr); }
+  .list .identity p { font-size: 11px; }
+  .list .company { font-size: 15px; }
+  .list .price { justify-content: flex-end; text-align: right; }
+  .list .price > span { font-size: 10px; }
+  .list .price strong { font-size: 19px; }
+  .list .metrics { gap: 8px; padding-block: 10px; border-block: 1px solid var(--home-line); }
+  .list .strategies p { display: none; }
+  .list .strategies > div { margin: 0; }
+  .list .cardActions { justify-content: flex-end; }
+  .compareTray { gap: 12px; padding: 10px 12px; }
+  .compareTray span { display: none; }
+  .compareTray a { font-size: 12px; padding-inline: 10px; }
+  .compareTray button { font-size: 12px; }
+}
+
+@media (max-width: 359px) {
+  .filterLine { flex-wrap: wrap; }
+  .filterLine:first-child { flex-wrap: wrap; }
+  .toolbar { flex-wrap: wrap; }
+}
