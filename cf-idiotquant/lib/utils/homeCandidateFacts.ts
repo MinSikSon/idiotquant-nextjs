@@ -39,8 +39,8 @@ export function homeCandidateFacts(stock: HomeStock, now = new Date()) {
     return { conditions, matched: conditions.filter(condition => condition.met === true).length, profitable, roe, status, issues: [...caution, ...unknown], freshness };
 }
 
-/** 현재 표시 후보 중 기본 점검 통과 → 조건 충족 수 → 시총 순. 임의 점수나 수익 예측은 사용하지 않는다. */
+/** 현재 표시 후보 중 기본 점검 통과·가격 조건 1개 이상 충족 → 충족 수 → 시총 순. 임의 점수나 수익 예측은 사용하지 않는다. */
 export function pickHomeCandidate(stocks: HomeStock[], now = new Date()) {
-    return stocks.filter(stock => isValuationEligible(stock) && homeCandidateFacts(stock, now).status === "checked" && homeCandidateFacts(stock, now).profitable === true)
+    return stocks.filter(stock => isValuationEligible(stock) && homeCandidateFacts(stock, now).status === "checked" && homeCandidateFacts(stock, now).profitable === true && homeCandidateFacts(stock, now).matched > 0)
         .sort((a, b) => homeCandidateFacts(b, now).matched - homeCandidateFacts(a, now).matched || b.market_cap - a.market_cap || a.ticker.localeCompare(b.ticker))[0] ?? null;
 }
