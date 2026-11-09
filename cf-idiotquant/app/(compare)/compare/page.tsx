@@ -361,18 +361,18 @@ function ComparePageContent() {
       description="① 날짜 추가 → ② 종목 추가 → ③ 환산가 또는 종가로 변화율 비교"
       meta={storageFailed ? "브라우저 저장을 사용할 수 없습니다. 현재 화면에서 비교할 수 있습니다." : "비교 내용은 이 브라우저에 저장됩니다. 시세·지표는 조회 당시 기준입니다."}
       mobileCompact
-      actions={<>
-        <ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />
-        <button type="button" aria-label="전체 비우기" onClick={() => dispatch(clearComparison())}
-          disabled={loading || dateLoading || (!stocks.length && !dates.length && !query && !dateInput && !error)}
-          className={PAGE_ACTION_CLS}>
-          <Trash2 size={15} aria-hidden="true" /><span className="hidden sm:inline">전체 비우기</span>
-        </button>
-      </>}
+      actions={<ResultShare getSnapshot={() => compareSnapshot(stocks, dates)} disabled={loading || dateLoading || !stocks.length} />}
     />
     <main className={`${PAGE_WIDTH.data} py-6 sm:py-8`}>
       <section aria-label="비교 종목 추가">
-        <h2 className="text-sm font-semibold">비교 종목</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">비교 종목</h2>
+          <button type="button" aria-label="전체 비우기" onClick={() => dispatch(clearComparison())}
+            disabled={loading || dateLoading || (!stocks.length && !dates.length && !query && !dateInput && !error)}
+            className={PAGE_ACTION_CLS}>
+            <Trash2 size={15} aria-hidden="true" /><span>전체 비우기</span>
+          </button>
+        </div>
         <form onSubmit={submit} className="relative mt-4 flex gap-3">
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-400" />
