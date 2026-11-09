@@ -1,5 +1,7 @@
 import { fetchHistoricalMarketCap } from '@/lib/server/historicalMarketCap';
 
+export const runtime = 'edge';
+
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const ticker = params.get('ticker') ?? '';
