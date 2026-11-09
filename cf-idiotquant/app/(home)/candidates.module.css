@@ -150,7 +150,7 @@
   .strategies > div > span { padding: 4px 8px; font-size: 12px; }
   .cardActions label { font-size: 13px; }
   /* 모바일 로고형: 로고를 2/3로 줄이고 핵심 정보를 두 줄로 모은다. */
-  .cardGrid .candidate { display: grid; grid-template-columns: 59px minmax(0, 1fr) auto 44px; grid-template-rows: minmax(44px, auto) minmax(44px, auto); grid-template-areas: "logo identity price actions" "logo metrics strategies risk"; align-items: center; gap: 2px 8px; padding: 0 8px; }
+  .cardGrid .candidate { display: grid; grid-template-columns: 59px minmax(0, 1fr) auto auto auto; grid-template-rows: minmax(44px, auto) minmax(44px, auto); grid-template-areas: "logo identity price price actions" "logo metrics strategies risk analyze"; align-items: center; gap: 2px 8px; padding: 0 8px; }
   .cardGrid .identity, .cardGrid .identity > div:last-child { display: contents; }
   .cardGrid .logo { grid-area: logo; align-self: center; }
   .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 59px; height: 65px; border-radius: 8px; font-size: 22px; }
@@ -160,12 +160,12 @@
   .cardGrid .price { grid-area: price; margin: 0; gap: 0; }
   .cardGrid .price > span, .cardGrid .price small { display: none; }
   .cardGrid .price strong { font-size: 16px; line-height: 1.35; }
-  .cardGrid .metrics { grid-area: metrics; grid-column: 2 / 4; display: flex; flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; }
+  .cardGrid .metrics { grid-area: metrics; display: flex; flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; }
   .cardGrid .metrics > div { display: inline-flex; align-items: baseline; gap: 4px; }
   .cardGrid .metrics > div:nth-child(n + 3) { display: none; }
   .cardGrid .metrics dd { margin: 0; font-size: 11px; }
   .cardGrid .metrics small { display: none; }
-  .cardGrid .strategies { grid-area: strategies; grid-column: 2 / 4; justify-self: end; margin: 0; }
+  .cardGrid .strategies { grid-area: strategies; justify-self: end; margin: 0; }
   .cardGrid .strategies p { justify-content: flex-start; gap: 6px; font-size: 11px; }
   .cardGrid .strategySuffix, .cardGrid .compareText { display: none; }
   .cardGrid .strategies > div { display: none; }
@@ -183,8 +183,8 @@
   .compactMore dd { margin-top: 2px; font-size: 13px; font-variant-numeric: tabular-nums; }
   .cardGrid .cardActions { grid-area: actions; justify-content: center; border: 0; margin-top: 0; }
   .cardGrid .cardActions label { justify-content: center; width: 44px; font-size: 11px; gap: 0; }
-  .cardGrid .analyzeLink { grid-column: 1 / -1; grid-row: 3; justify-self: end; }
-  .cardGrid .candidate:has(.risk[open]) .analyzeLink { grid-row: 4; }
+  .cardGrid .analyzeLink { grid-area: analyze; justify-self: end; gap: 3px; font-size: 11px; white-space: nowrap; }
+
   .list .candidate { padding: 14px 10px; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) minmax(100px, .7fr); }
   .list .identity p { font-size: 11px; }
   .list .company { font-size: 15px; }
@@ -202,7 +202,10 @@
 }
 
 @media (max-width: 359px) {
-  .cardGrid .candidate { column-gap: 4px; }
+  .cardGrid .candidate { grid-template-columns: 48px minmax(0, 1fr) auto auto auto; column-gap: 4px; }
+  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 48px; height: 56px; }
+  .cardGrid .analyzeLink { font-size: 10px; }
+  .cardGrid .analyzeLink svg { display: none; }
   .cardGrid .company { font-size: 13px; }
   .cardGrid .price strong { font-size: 14px; }
   .cardGrid .metrics { gap: 6px; }
