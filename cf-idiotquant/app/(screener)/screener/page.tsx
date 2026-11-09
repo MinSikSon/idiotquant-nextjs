@@ -339,12 +339,14 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
         >
             <div className="min-w-0 flex items-center gap-2">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
-                <div className="min-w-0 flex items-center gap-1.5">
-                    <p className="min-w-0 truncate font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
-                    <span className="hidden xl:inline shrink-0 text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
-                    <span className="hidden xl:inline"><LiquidityBadge item={item} /></span>
+                <div className="min-w-0 flex-1">
+                    <p className="break-words font-semibold text-xs text-neutral-900 dark:text-white sm:text-sm" title={item.name}>{item.name}</p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
+                        <LiquidityBadge item={item} />
+                    </div>
+                    <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                 </div>
-                <FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} />
             </div>
 
             <div className="hidden lg:flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
@@ -1104,7 +1106,6 @@ function ScreenerContent() {
     };
 
     const scanDate = ncavDailyList.scanDate;
-    const compareHref = compareTickers.length ? comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE')) : null;
     const formattedDate = scanDate
         ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}${weeklyPeriod ? " 주간" : ""}`
         : null;
@@ -1252,7 +1253,7 @@ function ScreenerContent() {
     const comparisonControls = <>
                             <button type="button" onClick={() => {
                                 if (!compareMode) setCompareMode(true);
-                                else if (compareHref) router.push(compareHref);
+                                else if (compareTickers.length) router.push(comparisonHref(country, compareTickers, scanDate || new Date().toLocaleDateString('sv-SE'), crypto.randomUUID()));
                             }} disabled={compareMode && !compareTickers.length}
                                 className="min-h-11 rounded-lg border border-brand/30 px-3 text-xs font-semibold text-brand-ink disabled:opacity-50">
                                 {compareMode ? `선택한 ${compareTickers.length}개 비교` : '비교할 종목 선택'}
