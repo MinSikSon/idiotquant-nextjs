@@ -25,10 +25,15 @@
 .cardGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .candidate { position: relative; min-width: 0; padding: 20px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
 .candidate[data-selected] { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
+.selectionButton { position: absolute; inset: 0; z-index: 1; border-radius: inherit; cursor: pointer; }
+.selectionButton:disabled { cursor: not-allowed; }
+.selectionButton:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
+.logo:has(button), .risk, .cardActions, .analyzeLink { position: relative; z-index: 2; }
+.analyzeLink { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 44px; font-size: 12px; color: rgb(var(--brand-ink)); text-decoration: underline; text-underline-offset: 4px; }
 .identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .identity > div:last-child { min-width: 0; }
 .logo > :global(span), .logo > :global(button) { width: 44px; height: 44px; border-radius: 10px; }
-.company { display: block; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--home-line); text-underline-offset: 4px; }
+.company { display: block; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .identity p { margin-top: 3px; color: var(--home-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
 .price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 22px 0 16px; font-variant-numeric: tabular-nums; }
 .price > span { flex: 1 0 100%; font-size: 11px; color: var(--home-secondary); }
@@ -56,9 +61,8 @@
 .risk > div { color: var(--home-secondary); font-size: 12px; padding-bottom: 12px; }
 .risk > div p + p { margin-top: 8px; }
 .cardActions { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--home-line); }
-.cardActions label, .cardActions a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; }
+.cardActions label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; }
 .cardActions label { cursor: pointer; }
-.cardActions a { color: rgb(var(--brand-ink)); text-decoration: underline; text-underline-offset: 4px; }
 .cardActions label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
 .recommendation { position: sticky; top: 72px; border-top: 3px solid var(--home-text); background: var(--home-panel); border-radius: 0 0 8px 8px; padding: 24px; }
 .recommendationLabel { display: flex; align-items: center; gap: 7px; color: var(--home-secondary); font-size: 11px; }
@@ -105,7 +109,7 @@
 .list .strategies { grid-area: strategies; margin: 0; }
 .list .risk { grid-area: risk; margin: 0; border: 0; }
 .list .cardActions { grid-area: actions; border: 0; }
-.list .cardActions a { display: none; }
+.list .analyzeLink { grid-column: 1 / -1; justify-self: end; }
 @media (max-width: 1279px) {
   .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
@@ -144,9 +148,9 @@
   .metrics small { font-size: 10px; margin-left: 2px; }
   .strategies { margin-top: 14px; }
   .strategies > div > span { padding: 4px 8px; font-size: 12px; }
-  .cardActions label, .cardActions a { font-size: 13px; }
+  .cardActions label { font-size: 13px; }
   /* 모바일 로고형: 로고를 2/3로 줄이고 핵심 정보를 두 줄로 모은다. */
-  .cardGrid .candidate { display: grid; grid-template-columns: 59px minmax(0, 1fr) auto 44px; grid-template-areas: "logo identity price actions" "logo metrics strategies risk"; align-items: center; gap: 2px 8px; padding: 0 8px; }
+  .cardGrid .candidate { display: grid; grid-template-columns: 59px minmax(0, 1fr) auto 44px; grid-template-rows: minmax(44px, auto) minmax(44px, auto); grid-template-areas: "logo identity price actions" "logo metrics strategies risk"; align-items: center; gap: 2px 8px; padding: 0 8px; }
   .cardGrid .identity, .cardGrid .identity > div:last-child { display: contents; }
   .cardGrid .logo { grid-area: logo; align-self: center; }
   .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 59px; height: 65px; border-radius: 8px; font-size: 22px; }
@@ -179,8 +183,8 @@
   .compactMore dd { margin-top: 2px; font-size: 13px; font-variant-numeric: tabular-nums; }
   .cardGrid .cardActions { grid-area: actions; justify-content: center; border: 0; margin-top: 0; }
   .cardGrid .cardActions label { justify-content: center; width: 44px; font-size: 11px; gap: 0; }
-  .cardGrid .cardActions a { display: none; }
-  .cardGrid .candidate:has(.risk[open]) .cardActions { grid-row: 4; grid-column: 1 / -1; margin: 0; }
+  .cardGrid .analyzeLink { grid-column: 1 / -1; grid-row: 3; justify-self: end; }
+  .cardGrid .candidate:has(.risk[open]) .analyzeLink { grid-row: 4; }
   .list .candidate { padding: 14px 10px; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) minmax(100px, .7fr); }
   .list .identity p { font-size: 11px; }
   .list .company { font-size: 15px; }
