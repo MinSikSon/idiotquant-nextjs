@@ -1,7 +1,8 @@
 'use client';
 
 import { SecondarySection } from "@/components/secondary-section";
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -34,7 +35,7 @@ import {
   importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
 } from '@/lib/features/compare/compareSlice';
 import { COMPARISON_STORAGE_KEY, readComparisonSnapshot, serializeComparison } from '@/lib/features/compare/storage';
-import { planComparisonImport } from '@/lib/features/compare/import';
+import { comparisonImportSource, planComparisonImport } from '@/lib/features/compare/import';
 import ImportConfirmation from './ImportConfirmation';
 import { defaultComparisonDates, isComparisonDate, localToday } from '@/lib/features/compare/dates';
 
@@ -101,7 +102,8 @@ async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, 
   return stock;
 }
 
-export default function ComparePage() {
+function ComparePageContent() {
+  const searchParams = useSearchParams();
   const { status: sessionStatus } = useSession();
   const limits = sessionStatus === 'authenticated' ? MEMBER_LIMITS : GUEST_LIMITS;
   const sessionLoading = sessionStatus === 'loading';
@@ -113,7 +115,7 @@ export default function ComparePage() {
   const [searchData, setSearchData] = useState<StaticStockData | null>(null);
 
   const [recentLoaded, setRecentLoaded] = useState(false);
-  const importedRef = useRef(false);
+  const importedRef = useRef<string | null>(null);
   const [comparisonReady, setComparisonReady] = useState(false);
   const backfilledCaps = useRef(new Set<string>());
   const [storageFailed, setStorageFailed] = useState(false);
@@ -229,9 +231,8 @@ export default function ComparePage() {
   }, [stocks, dates, limits.stocks, limits.dates, dispatch]);
 
   useEffect(() => {
-    if (!comparisonReady || sessionLoading || loading || dateLoading || importedRef.current) return;
-    importedRef.current = true;
-    const params = new URLSearchParams(window.location.search);
+    if (!comparisonReady || sessionLoading || loading || dateLoading) return;
+    const params = searchParams;
     const market = params.get('country');
     const date = params.get('date');
     if ((market !== 'KR' && market !== 'US') || !date || !/^\d{8}$/.test(date)) return;
@@ -244,12 +245,13 @@ export default function ComparePage() {
       dispatch(setError('비교 날짜는 오늘 또는 이전의 올바른 날짜를 선택해 주세요.'));
       return;
     }
-    const source = JSON.stringify([market, date, tickers]);
-    if (importSource === source) return;
+    const source = comparisonImportSource(market, date, tickers, params.get('request'));
+    if (importSource === source || importedRef.current === source) return;
+    importedRef.current = source;
     const request: ScreenerImport = { source, market, date: selectedDate, tickers };
     if (planComparisonImport(stocks, tickers, market, limits.stocks).exceedsLimit) setPendingImport(request);
     else void runImport(request, false);
-  }, [comparisonReady, sessionLoading, limits.stocks, importSource, loading, dateLoading, stocks, runImport]);
+  }, [comparisonReady, sessionLoading, limits.stocks, importSource, loading, dateLoading, stocks, runImport, searchParams]);
   useEffect(() => {
     if (sessionLoading) return;
     dispatch(applyLimits(limits));
@@ -509,4 +511,8 @@ export default function ComparePage() {
       </SecondarySection>
     </main>
   </div>;
+}
+
+export default function ComparePage() {
+  return <Suspense fallback={<p className="p-6 text-sm text-neutral-500">비교 내용을 불러오는 중...</p>}><ComparePageContent /></Suspense>;
 }

@@ -1,3 +1,5 @@
+import { isComparisonDate, localToday } from './features/compare/dates';
+
 export const WATCHLIST_HREF = "/screener?filter=liked";
 export const PENDING_WATCH_KEY = "idiotquant:pending-watch:v1";
 
@@ -43,8 +45,14 @@ export function readPendingWatch(raw: string | null, ticker: string, now = Date.
     } catch { return null; }
 }
 
-export function comparisonHref(country: "KR" | "US", tickers: string[], date: string) {
-    return `/compare?${new URLSearchParams({ country, tickers: [...new Set(tickers)].join(","), date: date.replaceAll("-", "") })}`;
+export function comparisonHref(country: "KR" | "US", tickers: string[], date: string, request?: string) {
+    const compact = date.replaceAll('-', '');
+    const day = `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6)}`;
+    // 수집일이 브라우저의 오늘보다 앞서 있으면 거래 가격을 조회할 수 있는 오늘을 쓴다.
+    const comparisonDate = isComparisonDate(day) ? compact : localToday().replaceAll('-', '');
+    const params = new URLSearchParams({ country, tickers: [...new Set(tickers)].join(","), date: comparisonDate });
+    if (request) params.set('request', request);
+    return `/compare?${params}`;
 }
 
 export function toggleComparisonSelection(current: string[], ticker: string, limit: number) {

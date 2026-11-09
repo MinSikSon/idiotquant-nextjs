@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { planComparisonImport, startImportCountdown } from '../lib/features/compare/import.ts';
+import { comparisonImportSource, planComparisonImport, startImportCountdown } from '../lib/features/compare/import.ts';
+
+test('같은 종목·날짜도 비교 버튼을 새로 누르면 별도의 가져오기 요청이다', () => {
+  const first = comparisonImportSource('US', '20261109', ['FBIO', 'SOHU', 'LAB', 'QFIN'], 'click-1');
+  const second = comparisonImportSource('US', '20261109', ['FBIO', 'SOHU', 'LAB', 'QFIN'], 'click-2');
+  assert.notEqual(first, second);
+  assert.equal(first, comparisonImportSource('US', '20261109', ['FBIO', 'SOHU', 'LAB', 'QFIN'], 'click-1'));
+});
 
 for (const limit of [4, 20]) {
   test(`${limit}종목 한도: 중복은 제외하고 합계가 한도를 넘을 때만 교체 동의를 요청한다`, () => {

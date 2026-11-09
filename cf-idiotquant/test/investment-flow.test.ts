@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { analysisHref, comparisonHref, completeWatchRequest, matchesWatchStock, readPendingWatch, screenerReturnPath, toggleComparisonSelection } from '@/lib/investmentFlow';
+import { localToday } from '@/lib/features/compare/dates';
+
+test('비교 버튼의 새 요청을 링크에 보존하고 미래 수집일은 오늘로 보정한다', () => {
+    const url = new URL(comparisonHref('US', ['FBIO', 'SOHU', 'LAB', 'QFIN'], '2999-11-10', 'click-2'), 'https://idiotquant.local');
+    assert.equal(url.searchParams.get('date'), localToday().replaceAll('-', ''));
+    assert.equal(url.searchParams.get('request'), 'click-2');
+    assert.equal(url.searchParams.get('tickers'), 'FBIO,SOHU,LAB,QFIN');
+    assert.equal(new URL(comparisonHref('KR', ['005930'], '2024-11-08'), 'https://idiotquant.local').searchParams.get('date'), '20241108');
+});
 
 test('발굴 조건은 분석과 로그인 복귀 주소에서 보존한다', () => {
     const source = '/screener?country=US&strategies=ncav&filter=liked&q=A%26B';
