@@ -193,6 +193,16 @@
   .compareTray button { font-size: 12px; }
 }
 
+@media (min-width: 375px) and (max-width: 767px) {
+  .cardGrid .candidate { grid-template-columns: 88px minmax(0, 1fr) 76px; grid-template-areas: "logo identity actions" "logo price actions" "logo metrics risk" "logo strategies risk"; }
+  .cardGrid .cardActions { align-self: start; }
+  .cardGrid .risk:not([open]) summary { display: grid; grid-template-columns: 15px minmax(0, 1fr) 8px; gap: 2px 4px; }
+  .cardGrid .risk:not([open]) summary > span:first-of-type { grid-column: 2 / -1; white-space: nowrap; }
+  .cardGrid .risk:not([open]) .riskLabelPrefix { display: none; }
+  .cardGrid .risk:not([open]) .compactHint { grid-column: 2; margin-left: 0; }
+  .cardGrid .risk[open] { grid-row: 5; }
+}
+
 @media (max-width: 359px) {
   .cardGrid .compactHint { display: none; }
   .filterLine { flex-wrap: wrap; }
