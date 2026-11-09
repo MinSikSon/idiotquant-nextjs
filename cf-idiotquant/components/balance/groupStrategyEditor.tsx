@@ -20,6 +20,7 @@ interface Props {
   onAction?: RebalancingActionHandler;
   onPreview?: (policy: RebalancingPolicy) => Promise<RebalancingPreview>;
   groupQuantRule?: QuantRule;
+  accountQuantRule?: QuantRule;
   groupBudget?: number;
   groupSide?: "buy" | "sell";
   groupDca?: boolean;
@@ -34,29 +35,44 @@ const modes = [
   { id: "weight", label: "목표 비중", description: "보유 평가액을 목표 비중에 맞게 조정합니다." },
 ] as const;
 
+const selectionFields = [
+  { key: "max_pbr", label: "최대 PBR", min: 0 },
+  { key: "min_pbr", label: "최소 PBR", min: 0 },
+  { key: "min_per", label: "최소 PER" },
+  { key: "min_eps", label: "최소 EPS" },
+  { key: "min_bps", label: "최소 BPS" },
+] as const;
+
 const inputClass = "min-h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-base dark:border-border-subtle-dark dark:bg-surface-dark-canvas";
 const buttonClass = "min-h-11 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 dark:border-border-subtle-dark";
 
-export default function GroupStrategyEditor({ groupRebalancing, stocks = [], currency = "KRW", onPreview, onAction, groupQuantRule, groupBudget, groupSide, groupDca, tradingActive, onApply, onClose }: Props) {
+export default function GroupStrategyEditor({ groupRebalancing, stocks = [], currency = "KRW", onPreview, onAction, groupQuantRule, accountQuantRule, groupBudget, groupSide, groupDca, tradingActive, onApply, onClose }: Props) {
   const initial = {
     mode: groupRebalancing ? "weight" as const : groupDca ? "dca" as const : "quant" as const,
     side: groupSide === "sell" ? "sell" as const : "buy" as const,
     budget: groupBudget == null ? "" : String(groupBudget),
     count: String(groupQuantRule?.active_count ?? ""),
     ncav: String(groupQuantRule?.ncav_ratio ?? ""),
+    details: Object.fromEntries(selectionFields.map(({ key }) => [key, String(groupQuantRule?.[key] ?? "")])) as Record<string, string>,
+    warrants: groupQuantRule?.exclude_call_warrants == null ? "" : String(groupQuantRule.exclude_call_warrants),
+    keywordMode: groupQuantRule?.exclude_key_word == null ? "inherit" : "custom",
+    keywords: (groupQuantRule?.exclude_key_word ?? []).join(", "),
     rebalancing: JSON.stringify({ policy: groupRebalancing ?? null, symbols: stocks.map(s => s.symbol).sort() }),
   };
   const [baseline] = useState(initial);
-  const [draft, setDraft] = useState<{ mode: "quant" | "dca" | "weight"; side: "buy" | "sell"; budget: string; count: string; ncav: string; rebalancing: string }>(initial);
+  const [draft, setDraft] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [resetRule, setResetRule] = useState(false);
   const [error, setError] = useState("");
   const inFlight = useRef(false);
   const dca = draft.mode === "dca";
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline) || (resetRule && !!groupQuantRule && Object.keys(groupQuantRule).length > 0);
-  const stale = JSON.stringify(initial) !== JSON.stringify(baseline);
+  const [accountBaseline] = useState(JSON.stringify(accountQuantRule));
+  const stale = JSON.stringify(initial) !== JSON.stringify(baseline) || JSON.stringify(accountQuantRule) !== accountBaseline;
   const validNumber = (value: string, min: number, max = Infinity, integer = false) => value.trim() === "" || (Number.isFinite(Number(value)) && Number(value) >= min && Number(value) <= max && (!integer || Number.isInteger(Number(value))));
-  const valid = validNumber(draft.budget, 0, 1_000_000_000, true) && validNumber(draft.count, 1, 200, true) && (dca || draft.side === "sell" || validNumber(draft.ncav, 0));
+  const effectiveMaxPbr = draft.details.max_pbr.trim() ? Number(draft.details.max_pbr) : Number(accountQuantRule?.max_pbr ?? 0);
+  const effectiveMinPbr = draft.details.min_pbr.trim() ? Number(draft.details.min_pbr) : Number(accountQuantRule?.min_pbr ?? 0);
+  const valid = validNumber(draft.budget, 0, 1_000_000_000, true) && validNumber(draft.count, 1, 200, true) && (dca || draft.side === "sell" || validNumber(draft.ncav, 0)) && selectionFields.every(field => validNumber(draft.details[field.key], "min" in field ? field.min : -Infinity)) && (!effectiveMaxPbr || effectiveMaxPbr > effectiveMinPbr);
   const setField = (field: keyof typeof draft, value: string) => { setDraft(previous => ({ ...previous, [field]: value })); setError(""); };
 
   async function apply() {
@@ -71,6 +87,14 @@ export default function GroupStrategyEditor({ groupRebalancing, stocks = [], cur
       delete rule.ncav_ratio;
       if (draft.ncav.trim()) rule.ncav_ratio = Number(draft.ncav);
     }
+    for (const { key } of selectionFields) {
+      delete rule[key];
+      if (draft.details[key].trim()) rule[key] = Number(draft.details[key]);
+    }
+    delete rule.exclude_call_warrants;
+    if (draft.warrants !== "") rule.exclude_call_warrants = draft.warrants === "true";
+    delete rule.exclude_key_word;
+    if (draft.keywordMode === "custom") rule.exclude_key_word = draft.keywords.split(",").map(word => word.trim()).filter(Boolean);
     try {
       await onApply({ quant_rule: Object.keys(rule).length ? rule : null, budget_krw: Number(draft.budget) > 0 ? Number(draft.budget) : null, side: draft.side, dca, ...(groupRebalancing ? { rebalancing: null } : {}) });
       onClose();
@@ -86,10 +110,10 @@ export default function GroupStrategyEditor({ groupRebalancing, stocks = [], cur
     <section aria-label="그룹 운용 전략 편집" className="space-y-4 border-b border-neutral-100 bg-neutral-50 p-3 dark:border-border-subtle-dark dark:bg-surface-dark-card sm:p-4">
       <fieldset disabled={saving} className="min-w-0 space-y-4">
         <legend className="mb-2 text-sm font-bold text-neutral-900 dark:text-neutral-100">1. 운용 전략</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="전략 화면 선택">
-          {modes.map(mode => <button key={mode.id} type="button" aria-pressed={draft.mode === mode.id} onClick={() => setField("mode", mode.id)} className={`min-h-20 rounded-xl border p-3 text-left ${draft.mode === mode.id ? "border-brand bg-brand/10 text-brand-ink" : "border-neutral-200 bg-white text-neutral-500 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400"}`}>
-            <span className="flex flex-wrap items-center gap-2 text-sm font-bold">{mode.label}{mode.id === baseline.mode && <span className="text-[11px] text-brand-ink">적용 중</span>}</span>
-            <span className="mt-1 block text-xs">{mode.description}</span>
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2" role="group" aria-label="전략 화면 선택">
+          {modes.map(mode => <button key={mode.id} type="button" aria-pressed={draft.mode === mode.id} onClick={() => setField("mode", mode.id)} className={`flex h-full min-h-20 min-w-0 flex-col items-start rounded-xl border p-2 text-left sm:p-3 ${draft.mode === mode.id ? "border-brand bg-brand/10 text-brand-ink" : "border-neutral-200 bg-white text-neutral-500 dark:border-border-subtle-dark dark:bg-surface-dark-canvas dark:text-neutral-400"}`}>
+            <span className="flex min-h-10 flex-wrap content-start items-center gap-x-1 gap-y-0.5 text-xs font-bold sm:min-h-0 sm:gap-2 sm:text-sm">{mode.label}{mode.id === baseline.mode && <span className="text-[10px] text-brand-ink sm:text-[11px]">적용 중</span>}</span>
+            <span className="mt-1 block break-keep text-[11px] leading-relaxed sm:text-xs">{mode.description}</span>
           </button>)}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-border-subtle-dark dark:bg-surface-dark-canvas" aria-live="polite">
@@ -104,17 +128,27 @@ export default function GroupStrategyEditor({ groupRebalancing, stocks = [], cur
             <label className="space-y-1 text-xs">방향<select className={inputClass} value={draft.side} onChange={event => setField("side", event.target.value)}><option value="buy">매수</option><option value="sell">매도</option></select></label>
             <label className="space-y-1 text-xs">월 적립 예산 (원)<input className={inputClass} type="number" min={0} max={1_000_000_000} step={1} value={draft.budget} placeholder="계좌예산 분배" onChange={event => setField("budget", event.target.value)} /></label>
             <h4 className="text-xs font-bold sm:col-span-2">3. {dca ? "대상 선정 제한" : "퀀트 조건"}</h4>
-            <label className="space-y-1 text-xs">활성 종목 수<input className={inputClass} type="number" min={1} max={200} step={1} value={draft.count} placeholder="계좌 기본값" onChange={event => setField("count", event.target.value)} /></label>
-            {!dca && draft.side === "buy" && <label className="space-y-1 text-xs">NCAV 비율<input className={inputClass} type="number" min={0} step="any" value={draft.ncav} placeholder="계좌 기본값" onChange={event => setField("ncav", event.target.value)} /></label>}
+            <label className="space-y-1 text-xs">활성 종목 수<input className={inputClass} type="number" min={1} max={200} step={1} value={draft.count} placeholder={`계좌 기본값: ${accountQuantRule?.active_count ?? 20}`} onChange={event => setField("count", event.target.value)} /></label>
+            {!dca && draft.side === "buy" && <label className="space-y-1 text-xs">NCAV 비율<input className={inputClass} type="number" min={0} step="any" value={draft.ncav} placeholder={`계좌 기본값: ${accountQuantRule?.ncav_ratio ?? 1}`} onChange={event => setField("ncav", event.target.value)} /></label>}
           </div>
+          <details open className="rounded-xl border border-neutral-200 p-3 dark:border-border-subtle-dark">
+            <summary className="min-h-11 cursor-pointer text-sm font-bold">세부 선정 조건</summary>
+            <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">이 그룹의 대상 선정에 적용합니다. 숫자는 비워 두면 계좌 기본값을 사용하고, 0이면 해당 제한을 적용하지 않습니다. 정액 적립에도 적용됩니다.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {selectionFields.map(field => <label key={field.key} className="space-y-1 text-xs">{field.label}<input className={inputClass} type="number" min={"min" in field ? field.min : undefined} step="any" value={draft.details[field.key]} placeholder={`계좌 기본값: ${accountQuantRule?.[field.key] ?? 0}`} onChange={event => { setDraft(previous => ({ ...previous, details: { ...previous.details, [field.key]: event.target.value } })); setError(""); }} /></label>)}
+              <label className="space-y-1 text-xs">콜워런트 제외<select className={inputClass} value={draft.warrants} onChange={event => setField("warrants", event.target.value)}><option value="">계좌 기본값{accountQuantRule?.exclude_call_warrants == null ? "" : accountQuantRule.exclude_call_warrants ? " (제외)" : " (포함)"}</option><option value="true">제외</option><option value="false">포함</option></select><span className="block text-neutral-500">PER·PBR·EPS·BPS가 모두 0인 종목을 제외합니다.</span></label>
+              <label className="space-y-1 text-xs sm:col-span-2">제외 키워드 설정<select className={inputClass} value={draft.keywordMode} onChange={event => setField("keywordMode", event.target.value)}><option value="inherit">계좌 기본값 사용</option><option value="custom">그룹별 직접 지정</option></select></label>
+              {draft.keywordMode === "custom" ? <label className="space-y-1 text-xs sm:col-span-2">종목명 제외 키워드<input className={inputClass} value={draft.keywords} placeholder="쉼표로 구분 (예: 홀딩스, 지주)" onChange={event => setField("keywords", event.target.value)} /><span className="block text-neutral-500">종목명에 포함되면 제외합니다. 비워 두면 키워드로 제외하지 않습니다.</span></label> : <p className="text-xs text-neutral-500 sm:col-span-2">계좌 제외 키워드: {accountQuantRule?.exclude_key_word?.join(", ") || "없음"}</p>}
+            </div>
+          </details>
           {draft.side === "sell" && <p className="text-xs text-rose-600 dark:text-rose-400">{dca ? "적립 포인트로 수량을 계산하고 보유 수량 내에서 매도합니다." : "퀀트 매도는 포인트·매수 조건과 무관하게 선정된 종목의 보유 수량 전량을 매도합니다."}</p>}
           <p className="text-xs text-neutral-500 dark:text-neutral-400">빈 값은 계좌 기본값을 사용합니다. 월 예산 0원도 계좌예산 분배로 돌아갑니다.</p>
         </>}
         {stale && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">다른 곳에서 설정이 변경되었습니다. 편집기를 닫고 최신 설정으로 다시 열어 주세요.</p>}
-        {!valid && draft.mode !== "weight" && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">예산은 0~10억의 정수, 활성 종목 수는 1~200의 정수, NCAV 비율은 0 이상으로 입력해 주세요.</p>}
+        {!valid && draft.mode !== "weight" && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">예산은 0~10억의 정수, 활성 종목 수는 1~200의 정수, NCAV·PBR은 0 이상으로 입력해 주세요. 세부 조건은 유효한 숫자로 입력하고 최대 PBR은 최소 PBR보다 크게 설정해 주세요.</p>}
         {error && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
         {draft.mode !== "weight" && <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" className={buttonClass} onClick={() => { setDraft(previous => ({ ...previous, budget: "", count: "", ncav: "" })); setResetRule(true); setError(""); }}>조건·예산 기본값</button>
+          <button type="button" className={buttonClass} onClick={() => { setDraft(previous => ({ ...previous, budget: "", count: "", ncav: "", details: Object.fromEntries(selectionFields.map(({ key }) => [key, ""])), warrants: "", keywordMode: "inherit", keywords: "" })); setResetRule(true); setError(""); }}>조건·예산 기본값</button>
           <button type="button" className={buttonClass} onClick={() => { setDraft(baseline); setResetRule(false); setError(""); }} disabled={!dirty}>변경 취소</button>
           <button type="button" className={buttonClass} onClick={onClose}>닫기</button>
           <button type="button" onClick={apply} disabled={!dirty || !valid || stale || saving} className={`${buttonClass} border-transparent bg-brand text-white hover:bg-brand-hover`}>{saving ? "적용 중…" : draft.mode !== baseline.mode ? "이 전략으로 적용" : "변경사항 적용"}</button>

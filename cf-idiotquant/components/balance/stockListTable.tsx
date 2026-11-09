@@ -686,7 +686,7 @@ function StockListTable({
           isMaster={isMaster}
           tradingActive={g.is_trading_active !== false}
           onToggleTrading={isMaster && onToggleGroupTrading ? () => onToggleGroupTrading(g.id, !(g.is_trading_active !== false)) : undefined}
-          conditionChips={g.rebalancing ? ["목표 비중 · 체결 추적"] : g.is_trading_active !== false ? (g.dca || g.side === "sell" ? [`활성 상한 ${g.quant_rule?.active_count ?? quantRule?.active_count ?? 20}종목`] : formatConditions(g.quant_rule ?? quantRule).slice(0, 2)) : []}
+          conditionChips={g.rebalancing ? ["목표 비중 · 체결 추적"] : g.is_trading_active !== false ? (g.dca || g.side === "sell" ? [`활성 상한 ${g.quant_rule?.active_count ?? quantRule?.active_count ?? 20}종목`] : formatConditions({ ...quantRule, ...g.quant_rule }).slice(0, 2)) : []}
           editing={editingGroupId === g.id}
           editingName={editingName}
           onEditNameChange={setEditingName}
@@ -706,6 +706,7 @@ function StockListTable({
           doTokenResetOne={doTokenResetOne}
           openDetail={openDetail}
           monthlyPerStock={monthlyPerStock}
+          accountQuantRule={quantRule}
           groupQuantRule={g.quant_rule}
           groupBudget={g.budget_krw}
           groupSide={g.side}
@@ -835,6 +836,7 @@ interface GroupSectionProps {
   openDetail: (raw: any) => void;
   monthlyPerStock?: number;
   onDeleteStock?: (ticker: string) => void;
+  accountQuantRule?: QuantRule;
   groupQuantRule?: QuantRule;
   groupBudget?: number;
   groupSide?: "buy" | "sell";
@@ -852,7 +854,7 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
-  groupQuantRule, groupBudget, groupSide, groupDca, groupRebalancing, currency, onPreviewRebalancing, onAction, onSaveGroupSettings, onDistributeBudget,
+  accountQuantRule, groupQuantRule, groupBudget, groupSide, groupDca, groupRebalancing, currency, onPreviewRebalancing, onAction, onSaveGroupSettings, onDistributeBudget,
 }: GroupSectionProps) {
   const [distributing, setDistributing] = useState(false);
   const [distributionError, setDistributionError] = useState("");
@@ -1017,6 +1019,7 @@ function GroupSection({
       {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
       {showRuleEditor && onSaveGroupSettings && (
         <GroupStrategyEditor
+          accountQuantRule={accountQuantRule}
           groupQuantRule={groupQuantRule}
           groupBudget={groupBudget}
           groupSide={groupSide}
