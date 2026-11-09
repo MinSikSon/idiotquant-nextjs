@@ -85,9 +85,9 @@ const config = {
         black: "var(--ui-font-emphasis, 900)",
       },
       fontFamily: {
-        sans: ["Pretendard Variable", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "Menlo", "monospace"],
-        serif: ["var(--font-serif-latin)", "Lora", "var(--font-serif-kr)", "Noto Serif KR", "Georgia", "serif"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
+        serif: ["var(--font-serif-kr)"],
       },
       colors: {
         background: "var(--background)",

@@ -4,6 +4,10 @@
 
 /* ── Layout tokens ── */
 :root {
+  --font-sans: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-sans);
+  --font-serif-latin: var(--font-sans);
+  --font-serif-kr: var(--font-sans);
   --sidebar-w: 220px;
   --topbar-h: 48px;
   --bottombar-h: calc(52px + env(safe-area-inset-bottom, 0px));
@@ -284,8 +288,8 @@ body:not(:has(#game-canvas, [data-admin-screen])) {
   font-weight: 600;
 }
 
-body:not(:has(#game-canvas)) :is(.font-mono, .font-serif) {
-  font-family: "Pretendard Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+body :is(.font-mono, .font-serif) {
+  font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
