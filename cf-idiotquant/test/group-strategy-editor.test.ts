@@ -22,6 +22,7 @@ function editor(overrides: Record<string, unknown> = {}) {
     onApply: async (settings: unknown) => { calls.push(settings); }, onClose: () => { closed++; }, ...overrides };
   const output = { exports: {} as any };
   runInNewContext(editorScript, { exports: output.exports, require(name: string) {
+    if (name === "./detailHelp") return { DetailHelp: () => null };
     if (name === "./weightStrategyEditor") return { default: () => null };
     if (name !== "react") return require(name);
     return {
