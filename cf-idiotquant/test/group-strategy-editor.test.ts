@@ -172,3 +172,57 @@ test("PBR 범위 오류는 저장을 막고 계좌 조건이 편집 중 바뀌�
   h.props.accountQuantRule = { min_pbr: 4 };
   assert.equal(h.button("변경사항 적용").props.disabled, true);
 });
+
+
+test("주문 처리 중 409 응답은 JSON 원문 대신 서버 사유를 전달하고 편집값을 보존한다", async () => {
+  const message = "계좌 주문 처리 중입니다. 실행을 중단하고 접수 주문 정산 후 설정을 변경해 주세요.";
+  const output = { exports: {} as any };
+  runInNewContext(compile("../lib/features/koreaInvestment/koreaInvestmentAPI.tsx"), {
+    exports: output.exports,
+    fetch: async () => new Response(JSON.stringify({ success: false, error: message }), { status: 409 }),
+  });
+  for (const market of ["kr", "us"]) {
+    let serialized: { message: string } | undefined;
+    try { await output.exports.postKoreaInvestmentRequest(`/${market}/capital/groups/group/update`, {}, { dca: false }); }
+    catch (error: any) { serialized = { message: error.message }; }
+    assert.deepEqual(serialized, { message });
+    const h = editor({ groupDca: true, onApply: async () => { throw serialized; } });
+    h.click("퀀트재무·NCAV 조건을 확인해 매매합니다.");
+    h.change("월 적립 예산", "300000");
+    await h.click("이 전략으로 적용");
+    const text = h.text(h.render());
+    assert.ok(text.includes(message));
+    assert.match(text, /남은 주문 중단/);
+    assert.match(text, /체결 확인·이어가기/);
+    assert.doesNotMatch(text, /연결 상태|\{"success"/);
+    assert.equal(h.closed(), 0);
+    assert.ok(h.nodes(h.render()).some(node => node.type === "input" && node.props.value === "300000"));
+    assert.equal(h.button("이 전략으로 적용").props.disabled, false);
+  }
+});
+
+test("서버 사유가 없는 실패에도 연결 오류로 단정하지 않고 재시도를 안내한다", async () => {
+  const h = editor({ onApply: async () => { throw undefined; } });
+  h.change("월 적립 예산", "300000");
+  await h.click("변경사항 적용");
+  assert.match(h.text(h.render()), /잠시 후 다시 시도/);
+  assert.doesNotMatch(h.text(h.render()), /연결 상태/);
+  assert.equal(h.closed(), 0);
+});
+
+
+test("POST 오류는 error·message·증권사 msg1과 평문 응답을 호환한다", async () => {
+  for (const [body, message] of [
+    [JSON.stringify({ error: "설정 변경 불가", message: "일반 안내" }), "설정 변경 불가"],
+    [JSON.stringify({ error: {}, message: "권한 없음" }), "권한 없음"],
+    [JSON.stringify({ msg1: "증권사 주문 확인 필요" }), "증권사 주문 확인 필요"],
+    ["요청 거절", "요청 거절"],
+    [JSON.stringify({ success: false }), "프록시 서버 통신 실패 (POST: 409)"],
+  ]) {
+    const output = { exports: {} as any };
+    runInNewContext(compile("../lib/features/koreaInvestment/koreaInvestmentAPI.tsx"), {
+      exports: output.exports, fetch: async () => new Response(body, { status: 409 }),
+    });
+    await assert.rejects(output.exports.postKoreaInvestmentRequest("/kr/capital/groups/group/update"), { message });
+  }
+});

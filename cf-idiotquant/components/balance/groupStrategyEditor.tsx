@@ -115,8 +115,10 @@ export default function GroupStrategyEditor({ groupRebalancing, stocks = [], cur
     try {
       await onApply({ quant_rule: Object.keys(rule).length ? rule : null, budget_krw: Number(draft.budget) > 0 ? Number(draft.budget) : null, side: draft.side, dca, ...(groupRebalancing ? { rebalancing: null } : {}) });
       onClose();
-    } catch {
-      setError("전략을 적용하지 못했습니다. 편집값은 유지됩니다. 연결 상태를 확인하고 다시 시도해 주세요.");
+    } catch (cause) {
+      // unwrap() rejects with a serialized Redux error, not necessarily an Error instance.
+      const message = cause && typeof cause === "object" && "message" in cause && typeof cause.message === "string" ? cause.message.trim() : "";
+      setError(`전략을 적용하지 못했습니다. 편집값은 유지됩니다. ${message || "요청에 실패했습니다. 잠시 후 다시 시도해 주세요."}`);
     } finally {
       inFlight.current = false;
       setSaving(false);
@@ -172,7 +174,10 @@ export default function GroupStrategyEditor({ groupRebalancing, stocks = [], cur
         </>}
         {stale && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">다른 곳에서 설정이 변경되었습니다. 편집기를 닫고 최신 설정으로 다시 열어 주세요.</p>}
         {!valid && draft.mode !== "weight" && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">예산은 0~10억의 정수, 활성 종목 수는 1~200의 정수, NCAV·PBR은 0 이상으로 입력해 주세요. 세부 조건은 유효한 숫자로 입력하고 최대 PBR은 최소 PBR보다 크게 설정해 주세요.</p>}
-        {error && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+        {error && <div role="alert" className="space-y-2 text-xs text-rose-600 dark:text-rose-400">
+            <p>{error}</p>
+            {error.includes("계좌 주문 처리 중") && <p>계좌의 다른 주문이나 목표 비중 실행이 진행 중이거나 주문 결과 확인이 필요한 상태입니다. 목표 비중 실행 중이라면 해당 그룹의 ‘목표 비중’ 탭에서 ‘남은 주문 중단’ 후 ‘체결 확인·이어가기’로 접수 주문 결과를 확인해 주세요. 중단해도 접수 주문이 취소되지는 않습니다. 증권사 주문 내역을 확인한 뒤에도 계속 차단되면 관리자에게 문의해 주세요.</p>}
+          </div>}
         {draft.mode !== "weight" && <div className="flex flex-wrap justify-end gap-2">
           <button type="button" className={buttonClass} onClick={() => { setDraft(previous => ({ ...previous, budget: "", count: "", ncav: "", details: Object.fromEntries(selectionFields.map(({ key }) => [key, ""])), warrants: "", keywordMode: "inherit", keywords: "" })); setResetRule(true); setError(""); }}>조건·예산 기본값</button>
           <button type="button" className={buttonClass} onClick={() => { setDraft(baseline); setResetRule(false); setError(""); }} disabled={!dirty}>변경 취소</button>
