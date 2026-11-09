@@ -1,27 +1,6 @@
 import "@/app/global.css";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Lora, Noto_Serif_KR, JetBrains_Mono } from "next/font/google";
-
-const lora = Lora({
-  subsets: ["latin"],
-  variable: "--font-serif-latin",
-  display: "swap",
-});
-
-const notoSerifKr = Noto_Serif_KR({
-  weight: ["400", "500", "700", "900"],
-  subsets: ["latin"],
-  variable: "--font-serif-kr",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -152,8 +131,7 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* Pretendard — 일반 화면의 본문·지표 서체. 가변 폰트 동적 서브셋이라
-            실제 쓰인 글자만 내려받는다. 게임 화면의 픽셀·고정폭 글꼴은 별도로 유지한다. */}
+        {/* Pretendard 가변 폰트 — unicode-range에 따라 필요한 서브셋을 내려받는다. */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
@@ -173,9 +151,6 @@ export default function RootLayout({
         />
       </head>
       <body className={cn(
-        lora.variable,
-        notoSerifKr.variable,
-        jetbrainsMono.variable,
         "desktop-workspace min-h-screen font-sans antialiased",
         "bg-surface-canvas dark:bg-surface-dark-canvas text-neutral-900 dark:text-neutral-50"
       )}>
