@@ -41,7 +41,7 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
     const enabled = tradingActive === true && inWindow;
     const status = tradingActive === null ? "상태 확인 중" : !tradingActive ? "자동매매 OFF · 충전 대기" : !inWindow ? "스케줄 밖 · 충전 대기" : metrics.hasPlan && !capital.refill_plan?.groups.length ? "활성 충전 대상 없음" : metrics.hasPlan && metrics.buyPerTick + metrics.sellPerTick === 0 ? "충전 배분액 0원" : latest && ageMinutes !== null && ageMinutes <= 10 ? "최근 충전 확인" : "충전 기록 확인 대기";
     const cashValue = cash.amount === null ? cash.state === "rejected" ? "잔고 조회 실패" : "잔고 확인 중" : cash.currency === "USD" ? `$${cash.amount.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : won(cash.amount);
-    const ratioWidth = Math.max(0, Math.min(100, metrics.activeRatio ?? 0));
+    const ratioWidth = Math.max(0, Math.min(100, metrics.budgetRatio ?? 0));
     const budgetKnown = capital.state === "fulfilled" || (capital.state === "pending" && capital.stock_list.length > 0);
     const budgetLabel = capital.state === "rejected" ? "조회 실패" : "확인 중";
     const unit = range === 60 ? "5분" : "1시간";
@@ -59,21 +59,21 @@ export default function TradingFundingPanel({ country, capital, cash, tradingAct
                     <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{country === "US" ? cash.krw === null ? "달러 잔고·환율 확인 대기" : `원화 환산 ${won(cash.krw)} · $1 = ${won(cash.rate!)}` : "증권사 잔고의 예수금 총액 기준"}</p>
                     <div className="mt-2.5 border-t border-neutral-200 pt-2.5 sm:mt-4 sm:pt-4 dark:border-border-subtle-dark">
                         <div className="flex flex-wrap items-center justify-between gap-1">
-                            <h4 className="flex items-center text-xs font-bold text-neutral-800 dark:text-neutral-100">활성 자동매매 예산 합계<DetailHelp label="활성 예산">ON인 풀의 활성 종목 적립 포인트 합계이며 매도 예산도 포함합니다. 비활성 종목과 OFF 풀은 제외합니다. 자동매매 실행이 OFF여도 적립된 예산은 남아 있습니다.</DetailHelp></h4>
-                            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{budgetKnown ? `${metrics.activePools}개 풀 · ${metrics.activeStocks}종목` : budgetLabel}</span>
+                            <h4 className="flex items-center text-xs font-bold text-neutral-800 dark:text-neutral-100">자동매매 잔여 예산 합계<DetailHelp label="잔여 예산">운용 풀에 남은 매수·매도 적립 포인트 합계입니다. 선정 대기 종목과 OFF 풀도 포함하며 관심목록과 미지정 종목은 제외합니다. 잔여 예산이 있어도 자동매매가 켜지고 매매 대상으로 선정되어야 주문합니다.</DetailHelp></h4>
+                            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{budgetKnown ? `${metrics.budgetPools}개 풀 · ${metrics.budgetStocks}종목` : budgetLabel}</span>
                         </div>
                         <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                            <p className="min-w-0 break-all text-xl sm:text-2xl font-semibold tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50">{budgetKnown ? won(metrics.activeTotal) : budgetLabel}</p>
-                            <p className="text-xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{budgetKnown ? pct(metrics.activeRatio) : "—"}<span className="ml-1 text-[11px] font-normal text-neutral-500 dark:text-neutral-400">/ 예수금</span></p>
+                            <p className="min-w-0 break-all text-xl sm:text-2xl font-semibold tracking-tight tabular-nums text-neutral-900 dark:text-neutral-50">{budgetKnown ? won(metrics.budgetTotal) : budgetLabel}</p>
+                            <p className="text-xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{budgetKnown ? pct(metrics.budgetRatio) : "—"}<span className="ml-1 text-[11px] font-normal text-neutral-500 dark:text-neutral-400">/ 예수금</span></p>
                         </div>
-                        <div role="img" aria-label={`활성 종목 적립 예산은 예수금의 ${budgetKnown ? pct(metrics.activeRatio) : "확인 중"}`} className="mt-2 flex h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-surface-dark-muted sm:mt-3">
-                            {budgetKnown && <><div className="h-full bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900" style={{ width: `${metrics.activeTotal > 0 ? ratioWidth * metrics.activeBuy / metrics.activeTotal : 0}%` }} /><div className="h-full bg-rose-400" style={{ width: `${metrics.activeTotal > 0 ? ratioWidth * metrics.activeSell / metrics.activeTotal : 0}%` }} /></>}
+                        <div role="img" aria-label={`잔여 적립 예산은 예수금의 ${budgetKnown ? pct(metrics.budgetRatio) : "확인 중"}`} className="mt-2 flex h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-surface-dark-muted sm:mt-3">
+                            {budgetKnown && <><div className="h-full bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900" style={{ width: `${metrics.budgetTotal > 0 ? ratioWidth * metrics.budgetBuy / metrics.budgetTotal : 0}%` }} /><div className="h-full bg-rose-400" style={{ width: `${metrics.budgetTotal > 0 ? ratioWidth * metrics.budgetSell / metrics.budgetTotal : 0}%` }} /></>}
                         </div>
                         <details className="mt-1 text-xs text-neutral-500 dark:text-neutral-400"><summary className="min-h-11 cursor-pointer py-3 font-medium">매수·매도 예산 구성</summary><dl className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-surface-dark-card"><dt className="text-[11px] text-neutral-900 dark:text-neutral-100">● 매수 예산</dt><dd className="mt-1 break-all font-bold tabular-nums dark:text-neutral-100">{budgetKnown ? won(metrics.activeBuy) : "—"}</dd><dd className="mt-1 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">예수금의 {budgetKnown ? pct(metrics.activeBuyRatio) : "—"}</dd></div>
-                            <div className="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-surface-dark-card"><dt className="text-[11px] text-rose-500 dark:text-rose-400">■ 매도 예산</dt><dd className="mt-1 break-all font-bold tabular-nums dark:text-neutral-100">{budgetKnown ? won(metrics.activeSell) : "—"}</dd><dd className="mt-1 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">예수금의 {budgetKnown ? pct(metrics.activeSellRatio) : "—"}</dd></div>
+                            <div className="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-surface-dark-card"><dt className="text-[11px] text-neutral-900 dark:text-neutral-100">● 매수 예산</dt><dd className="mt-1 break-all font-bold tabular-nums dark:text-neutral-100">{budgetKnown ? won(metrics.budgetBuy) : "—"}</dd><dd className="mt-1 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">예수금의 {budgetKnown ? pct(metrics.budgetBuyRatio) : "—"}</dd></div>
+                            <div className="min-w-0 rounded-lg bg-white/70 p-2 dark:bg-surface-dark-card"><dt className="text-[11px] text-rose-500 dark:text-rose-400">■ 매도 예산</dt><dd className="mt-1 break-all font-bold tabular-nums dark:text-neutral-100">{budgetKnown ? won(metrics.budgetSell) : "—"}</dd><dd className="mt-1 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">예수금의 {budgetKnown ? pct(metrics.budgetSellRatio) : "—"}</dd></div>
                         </dl></details>
-                        {budgetKnown && metrics.activeRatio !== null && metrics.activeRatio > 100 && <p className="mt-1 text-[11px] font-bold text-neutral-900 dark:text-neutral-100">적립 예산이 현재 예수금보다 {won(metrics.activeTotal - cash.krw!)} 많습니다.</p>}
+                        {budgetKnown && metrics.budgetRatio !== null && metrics.budgetRatio > 100 && <p className="mt-1 text-[11px] font-bold text-neutral-900 dark:text-neutral-100">적립 예산이 현재 예수금보다 {won(metrics.budgetTotal - cash.krw!)} 많습니다.</p>}
                     </div>
                     <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-neutral-200 pt-3 text-xs dark:border-border-subtle-dark">
                         <p className="text-neutral-500 dark:text-neutral-400">월 매수 충전계획</p>

@@ -17,23 +17,23 @@ export function fundingMetrics(capital: KrUsCapitalType, cashKrw: number | null)
     const buyMonthly = buyGroups.reduce((sum, group) => sum + group.monthly_budget_krw, 0);
     const buyPerTick = buyGroups.reduce((sum, group) => sum + group.per_tick_krw, 0);
     const sellPerTick = groups.filter(group => group.side === "sell").reduce((sum, group) => sum + group.per_tick_krw, 0);
-    // 현재 ON인 풀의 활성 종목만 합산한다. 마지막 리필 계획은 설정 변경보다 늦을 수 있다.
-    const activeGroups = new Map((capital.groups ?? []).filter(group => group.id !== "__likes__" && group.is_trading_active !== false).map(group => [group.id, group]));
-    let activeBuy = 0, activeSell = 0, activeStocks = 0;
-    const activePools = new Set<string>();
+    // 적립된 예산은 선정 상태나 풀 ON/OFF와 무관하게 남는다. 관심목록·미지정 종목은 제외한다.
+    const budgetGroups = new Map((capital.groups ?? []).filter(group => group.id !== "__likes__").map(group => [group.id, group]));
+    let budgetBuy = 0, budgetSell = 0, budgetStocks = 0;
+    const budgetPools = new Set<string>();
     for (const stock of capital.stock_list ?? []) {
-        const group = stock.group_id ? activeGroups.get(stock.group_id) : undefined;
-        if (!group || stock.action !== "active") continue;
+        const group = stock.group_id ? budgetGroups.get(stock.group_id) : undefined;
+        if (!group) continue;
         const amount = Math.max(0, numericValue(stock.token) ?? 0);
-        if (group.side === "sell") activeSell += amount;
-        else activeBuy += amount;
-        activeStocks++;
-        activePools.add(group.id);
+        if (group.side === "sell") budgetSell += amount;
+        else budgetBuy += amount;
+        budgetStocks++;
+        budgetPools.add(group.id);
     }
-    const activeTotal = activeBuy + activeSell;
+    const budgetTotal = budgetBuy + budgetSell;
     const period = capital.refill_plan?.period_minutes || 5;
     const ratio = (value: number) => cashKrw !== null && cashKrw > 0 ? value / cashKrw * 100 : null;
-    return { activeBuy, activeSell, activeTotal, activeStocks, activePools: activePools.size, activeRatio: ratio(activeTotal), activeBuyRatio: ratio(activeBuy), activeSellRatio: ratio(activeSell),
+    return { budgetBuy, budgetSell, budgetTotal, budgetStocks, budgetPools: budgetPools.size, budgetRatio: ratio(budgetTotal), budgetBuyRatio: ratio(budgetBuy), budgetSellRatio: ratio(budgetSell),
         hasPlan: !!capital.refill_plan, buyMonthly, buyPerTick, sellPerTick, period,
         buyPerHour: buyPerTick * 60 / period, sellPerHour: sellPerTick * 60 / period,
         monthlyRatio: capital.refill_plan ? ratio(buyMonthly) : null,
