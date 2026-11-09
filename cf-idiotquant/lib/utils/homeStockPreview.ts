@@ -23,6 +23,8 @@ export type HomeStockPreview = {
 // 수집 시총 단위는 국내 억 원, 미국 달러다.
 export function formatHomeMarketCap(value: number, country: "KR" | "US") {
     if (!Number.isFinite(value) || value <= 0) return "—";
+    if (country === "KR" && value < 1e4) return `${value.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}억 원`;
+    if (country === "US" && value < 1e9) return `$${(value / 1e6).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}M`;
     const amount = (value / (country === "US" ? 1e9 : 1e4)).toLocaleString("ko-KR", { maximumFractionDigits: 1 });
     return country === "US" ? `$${amount}B` : `${amount}조 원`;
 }
