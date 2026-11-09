@@ -228,7 +228,10 @@ export async function postKoreaInvestmentRequest(
 
     if (!res.ok) {
         let message = text;
-        try { message = JSON.parse(text)?.message || text; } catch { /* 평문 응답 */ }
+        try {
+            const payload = JSON.parse(text);
+            message = [payload?.error, payload?.message, payload?.msg1].find(value => typeof value === "string" && value.trim()) || `프록시 서버 통신 실패 (POST: ${res.status})`;
+        } catch { /* 평문 응답 */ }
         throw new Error(message || `프록시 서버 통신 실패 (POST: ${res.status})`);
     }
 
