@@ -27,7 +27,7 @@ import { loadStaticStockData, type StaticStockData } from '@/lib/utils/stockSear
 import { isUsTicker, resolveStockSearchInput } from '@/lib/utils/stockSearchInput';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
-  type ComparisonStock, selectComparison, setQuery, setDateInput, setError,
+  type ComparisonPrice, type ComparisonStock, selectComparison, setQuery, setDateInput, setError,
   stockLoadStarted, stockReceived, stockLoadFinished, dateLoadStarted, datePriceReceived,
   dateLoadFinished, removeDate as removeComparisonDate, removeStock, applyLimits,
   importStarted, importAdvanced, importFinished, clearComparison, restoreComparison,
@@ -64,7 +64,20 @@ async function getHistoricalPrice(ticker: string, market: 'KR' | 'US', date: str
     ? await getInquireDailyItemChartPrice(ticker, startDate.toISOString().slice(0, 10).replaceAll('-', ''), end)
     : await getOverseasPriceQuotationsDailyPrice(ticker, end);
   const price = historicalPrice(result, market, end);
-  return { ...price, marketCap: historicalMarketCap(history, market, price.priceDate) };
+  const marketCap = historicalMarketCap(history, market, price.priceDate);
+  if (marketCap) return { ...price, marketCap };
+  if (market === 'US') return price;
+  // 휴장일에는 선택일이 아니라 KIS가 확인한 실제 거래일로 외부 시총을 조회한다.
+  const priceDate = price.priceDate;
+  const params = new URLSearchParams({ ticker, market, date: `${priceDate.slice(0, 4)}-${priceDate.slice(4, 6)}-${priceDate.slice(6)}` });
+  try {
+    const response = await fetch(`/api/public/compare/market-cap?${params}`, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error('market cap unavailable');
+    const external: ComparisonPrice = await response.json();
+    return { ...price, marketCap: external.marketCap, marketCapSource: external.marketCapSource, marketCapError: external.marketCapError };
+  } catch {
+    return { ...price, marketCapError: '외부 과거 시총 조회에 실패했습니다.' };
+  }
 }
 
 async function loadStock(ticker: string, market: 'KR' | 'US', nameHint: string, dates: string[]): Promise<ComparisonStock> {
@@ -301,6 +314,8 @@ export default function ComparePage() {
     return item?.loading ? <Loader2 size={16} className="animate-spin" aria-label="가격 조회 중" /> : item?.price ? <>
       <p>{`${stock.currency}${show(value)}`}</p>
       <p className="mt-1 text-xs font-normal text-neutral-600 dark:text-neutral-400">{formatDate(item.priceDate!)} {comparison.closing ? '종가 기준' : '시총 환산가'}</p>
+      {item.marketCap && <p className="mt-1 text-xs font-normal text-neutral-500">당시 시총 {stock.currency}{show(item.marketCap, 0)} · {item.marketCapSource === 'data-go-kr' ? '공공데이터포털' : '일별 저장값'}</p>}
+      {item.marketCapError && <p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-400">{item.marketCapError}</p>}
       {result && <p className={`mt-1 text-xs font-semibold ${result.baseline ? 'text-neutral-600 dark:text-neutral-400' : result.percent >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>{result.baseline ? '변화율 기준' : `${result.percent >= 0 ? '+' : ''}${show(result.percent)}%`}</p>}
     </> : <span className="text-xs font-normal text-rose-600 dark:text-rose-400">{item?.error ?? '가격 없음'}</span>;
   }
@@ -474,8 +489,8 @@ export default function ComparePage() {
       </SecondarySection>}
       <p className="mt-5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">시세·지표는 조회 당시 기준입니다. 변화율은 배당·수수료·세금을 포함한 실제 투자 수익률과 다릅니다.</p>
       <SecondarySection title="가격 산정 방식과 데이터 기준" className="mt-3">
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 시총이 없으면 같은 시점에 저장된 가격 × 당시 상장주식 수로 역산합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>
-      <p className="mt-5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">시총 환산가는 액면분할·병합 외에 증자·감자에 따른 주식 수 변화도 반영합니다. 국내 종목별 최근 200개 일별 저장값에서 실제 거래일과 일치하는 시가총액 또는 같은 시점에 저장된 가격·상장주식 수를 사용하며, 저장 시점의 시총이므로 종가와 차이가 있을 수 있습니다. 미국 종목은 거래일이 확인된 과거 시총이 아직 연동되지 않았습니다. 환산가가 없는 날짜가 있으면 해당 종목의 모든 날짜에 제공 종가를 사용해 변화율을 집계합니다. 종가 기준 비교에는 주식 수 변화가 반영되지 않을 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">환산가 = 해당 거래일 시가총액 ÷ 조회 당시 현재 상장주식 수. 국내 일별 저장값에 시총이나 당시 가격·상장주식 수가 없으면 공공데이터포털에서 해당 거래일의 시총을 조회합니다. 미국 종목은 종가 기준으로 비교합니다. 환산가가 없는 날짜가 있으면 해당 종목은 모든 날짜를 종가 기준으로 비교합니다. 휴장일은 선택일 이전의 최근 거래일을 사용합니다.</p>
+      <p className="mt-5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">시총 환산가는 현재 주식 수 기준의 가격이며 액면분할·병합 외에 증자·감자에 따른 주식 수 변화도 반영합니다. 국내 일별 저장값은 수집 시점의 시총이므로 종가와 차이가 있을 수 있습니다. 외부 자료는 서비스의 제공 범위와 조회 권한에 따라 없을 수 있습니다. 환산가가 없는 날짜가 있으면 해당 종목의 모든 날짜에 제공 종가를 사용해 변화율을 집계합니다. 종가 기준 비교에는 주식 수 변화가 반영되지 않을 수 있습니다. 변화율은 배당금·수수료·세금을 포함한 실제 투자 수익률과 다릅니다. PER·PBR·EPS·BPS·ROE는 조회 당시 기준이며 저장된 값은 자동 갱신되지 않습니다.</p>
       </SecondarySection>
     </main>
   </div>;
