@@ -51,3 +51,14 @@ test("PER가 낮아도 순유동자산이 음수이면 주의 표시하고 추�
     assert.ok(homeCandidateFacts(negative, now).issues.includes("순유동자산 음수"));
     assert.equal(pickHomeCandidate([negative], now), null);
 });
+
+
+test("기본 점검을 통과해도 가격 조건 0개 충족이면 시총과 관계없이 추천을 보류한다", () => {
+    const zero = { ...stock, ticker: "ZERO", per: 29.48, pbr: 3.02, ncav_ratio: .17639, market_cap: 11312549 };
+    assert.equal(homeCandidateFacts(zero, now).status, "checked");
+    assert.equal(homeCandidateFacts(zero, now).matched, 0);
+    assert.equal(pickHomeCandidate([zero], now), null);
+    const one = { ...stock, ticker: "ONE", pbr: 3, ncav_ratio: .2 };
+    assert.equal(homeCandidateFacts(one, now).matched, 1);
+    assert.equal(pickHomeCandidate([zero, one], now)?.ticker, "ONE");
+});
