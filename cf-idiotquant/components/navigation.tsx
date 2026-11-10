@@ -463,6 +463,18 @@ export function NavbarWithSimpleLinks() {
           <Link href="/" className={cn("shrink-0 text-lg font-bold tracking-tight text-neutral-900 dark:text-white", pathname !== "/" && "hidden md:block")}>
             idiot<span className="text-brand-ink">quant</span>
           </Link>
+          <nav aria-label="주요 서비스" className="hidden shrink-0 items-center gap-1 md:flex">
+            {MAIN_NAV.filter(item => item.href !== "/").map(item => (
+              <Link key={item.href} href={item.href} aria-label={item.label}
+                aria-current={active(pathname, item.href) ? "page" : undefined}
+                className={cn("inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-medium lg:px-3 lg:text-sm",
+                  active(pathname, item.href)
+                    ? "bg-brand-light text-brand-ink dark:bg-brand-muted/50"
+                    : "text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800")}>
+                <span className="hidden lg:inline">종목&nbsp;</span>{item.label.replace("종목 ", "")}
+              </Link>
+            ))}
+          </nav>
           <div ref={pageHeader?.setTitleTarget} className={cn("min-w-0 flex-1", !pageHeader?.active && "hidden")} />
           {!pageHeader?.active && <span className="min-w-0 flex-1 truncate text-sm font-semibold">{pathname === "/" ? null : mobilePageTitle}</span>}
           <div ref={pageHeader?.setActionsTarget} data-navigation-actions className="shrink-0" />

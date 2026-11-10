@@ -22,7 +22,7 @@
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
 .results { min-width: 0; }
 .mobilePick { display: none; }
-.cardGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; align-items: start; }
 .candidate { position: relative; min-width: 0; padding: 20px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
 .candidate[data-selected] { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
 .selectionButton { position: absolute; inset: 0; z-index: 1; border-radius: inherit; cursor: pointer; }
@@ -111,10 +111,30 @@
 .list .cardActions { grid-area: actions; border: 0; }
 .list .analyzeLink { grid-column: 1 / -1; justify-self: end; }
 @media (max-width: 1279px) {
-  .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
   .list .candidate { grid-template-columns: minmax(140px, 1fr) minmax(100px, .8fr); grid-template-areas: "identity price" "metrics metrics" "strategies strategies" "risk actions"; }
   .list .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+/* 데스크톱은 핵심 지표를 남기고 조건별 설명을 위험 점검 안에서 펼친다. */
+@media (min-width: 768px) {
+  .cardGrid .candidate { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "identity identity" "price price" "metrics metrics" "strategies strategies" "risk risk" "actions analyze"; column-gap: 8px; padding: 14px; }
+  .cardGrid .identity { grid-area: identity; gap: 8px; }
+  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 36px; height: 36px; border-radius: 8px; }
+  .cardGrid .company { font-size: 14px; }
+  .cardGrid .price { grid-area: price; margin: 10px 0; }
+  .cardGrid .price > span { flex: 0 1 auto; }
+  .cardGrid .price strong { font-size: 20px; }
+  .cardGrid .price small { display: none; }
+  .cardGrid .metrics { grid-area: metrics; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px 0; }
+  .cardGrid .metrics dd { font-size: 14px; }
+  .cardGrid .metrics small { font-size: 10px; margin-left: 2px; }
+  .cardGrid .strategies { grid-area: strategies; margin-top: 10px; }
+  .cardGrid .strategies > div { display: none; }
+  .cardGrid .risk { grid-area: risk; margin-top: 8px; }
+  .cardGrid .compactMore { display: block; }
+  .cardGrid .compactMore dl { display: none; }
+  .cardGrid .cardActions { grid-area: actions; }
+  .cardGrid .analyzeLink { grid-area: analyze; border-top: 1px solid var(--home-line); }
 }
 @media (max-width: 767px) {
   .workspace { display: flex; flex-direction: column; gap: 24px; }

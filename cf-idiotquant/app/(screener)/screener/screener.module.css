@@ -1,0 +1,7 @@
+/* 카드 폭을 기준으로 열 수를 늘려 넓은 화면의 여백을 줄인다. */
+@media (min-width: 1024px) {
+  .stockGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    align-items: start;
+  }
+}
