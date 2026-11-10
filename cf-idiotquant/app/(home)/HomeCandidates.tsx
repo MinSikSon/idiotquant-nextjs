@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useViewAsUser } from "@/lib/viewAsUser";
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, ChevronDown, CircleHelp, LayoutGrid, List, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { StockLogo } from "@/components/stockLogo";
 import { comparisonHref, toggleComparisonSelection } from "@/lib/investmentFlow";
-import { financialSourceLabel } from "@/lib/utils/financialFreshness";
+import { visibleFinancialSourceLabel } from "@/lib/utils/financialFreshness";
 import { homeCandidateFacts, pickHomeCandidate } from "@/lib/utils/homeCandidateFacts";
 import { HOME_STOCK_FILTERS, formatHomeMarketCap, homeResultsHref, type HomeStock, type HomeStockFilter, type HomeStockPreview } from "@/lib/utils/homeStockPreview";
 import styles from "./candidates.module.css";
@@ -20,6 +22,9 @@ const riskIcon = { caution: TriangleAlert, unknown: CircleHelp, checked: ShieldC
 type Props = { isLoggedIn: boolean };
 
 export default function HomeCandidates({ isLoggedIn }: Props) {
+    const { data: session } = useSession();
+    const viewAsUser = useViewAsUser();
+    const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin" && !viewAsUser;
     const [market, setMarket] = useState<"KR" | "US">("KR");
     const [filter, setFilter] = useState<HomeStockFilter>("large_cap");
     const [view, setView] = useState<"logo" | "list">("logo");
@@ -83,6 +88,7 @@ export default function HomeCandidates({ isLoggedIn }: Props) {
                             : <div className={view === "logo" ? styles.cardGrid : styles.list} aria-label={`${view === "logo" ? "로고형" : "목록형"} 후보 목록`}>
                                 {items.map(item => {
                                     const facts = homeCandidateFacts(item, now);
+                                    const sourceLabel = visibleFinancialSourceLabel(item.financial_source, isAdmin) || (isAdmin ? "출처 미확인" : "");
                                     const RiskIcon = riskIcon[facts.status as keyof typeof riskIcon];
                                     return <article key={`${market}:${item.ticker}`} className={styles.candidate} data-selected={selected.includes(item.ticker) || undefined} data-ticker={item.ticker}>
                                         <button type="button" className={styles.selectionButton} aria-label={`${item.name} 비교 선택`} aria-pressed={selected.includes(item.ticker)} disabled={!selected.includes(item.ticker) && selected.length >= 4} onClick={() => setSelected(current => toggleComparisonSelection(current, item.ticker, 4))} />
@@ -101,7 +107,7 @@ export default function HomeCandidates({ isLoggedIn }: Props) {
                                             <div><div className={styles.compactMore}>
                                                 <dl><div><dt>ROE</dt><dd>{number(facts.roe)}%</dd></div><div><dt>NCAV 비율</dt><dd>{number(item.ncav_ratio * 100, 0)}%</dd></div><div><dt>시가총액</dt><dd>{formatHomeMarketCap(item.market_cap, market)}</dd></div><div><dt>주가 수집일</dt><dd>{date(item.scan_date)}</dd></div></dl>
                                                 <p>{facts.conditions.map(condition => `${condition.label}: ${condition.met === true ? "충족" : condition.met === false ? "미충족" : "미확인"}`).join(" · ")}</p>
-                                            </div><p>{facts.issues.length ? facts.issues.join(" · ") : "흑자·양의 순자산·순유동자산·재무 기준일의 기초 점검을 통과했습니다."}</p><p>{facts.freshness.periods || "재무 기준일 미확인"} · {financialSourceLabel(item.financial_source) || "출처 미확인"}</p><p>부채·상장폐지·변동성은 상세 분석에서 추가 확인하세요.</p></div>
+                                            </div><p>{facts.issues.length ? facts.issues.join(" · ") : "흑자·양의 순자산·순유동자산·재무 기준일의 기초 점검을 통과했습니다."}</p><p>{facts.freshness.periods || "재무 기준일 미확인"}{sourceLabel && <> · {sourceLabel}</>}</p><p>부채·상장폐지·변동성은 상세 분석에서 추가 확인하세요.</p></div>
                                         </details>
                                         <div className={styles.cardActions}><label><input type="checkbox" aria-label={`${item.name} 비교 선택`} checked={selected.includes(item.ticker)} disabled={!selected.includes(item.ticker) && selected.length >= 4} onChange={() => setSelected(current => toggleComparisonSelection(current, item.ticker, 4))} /><span className={styles.compareText}>비교 담기</span></label></div>
                                         <Link href={`/analyze?ticker=${encodeURIComponent(item.ticker)}`} className={styles.analyzeLink} aria-label={`${item.name} 더 보기 · 상세 분석`}>더 보기 <ArrowRight size={14} aria-hidden="true" /></Link>

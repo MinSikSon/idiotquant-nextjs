@@ -2,8 +2,10 @@
 
 import { latestFirst, usReportPeriodLabel } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
+import { useSession } from "next-auth/react";
+import { useViewAsUser } from "@/lib/viewAsUser";
 import { cn } from "@/lib/utils";
-import { financialSourceLabel } from "@/lib/utils/financialFreshness";
+import { visibleFinancialSourceLabel } from "@/lib/utils/financialFreshness";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Popover from "@radix-ui/react-popover";
 import { TrendingUp, TrendingDown, Info, BookOpen, BarChart2, Banknote, Minus } from "lucide-react";
@@ -379,6 +381,9 @@ function SectionTable({
 }
 
 export default function FinnhubTable({ data = [], className = "", source }: Props) {
+    const { data: session } = useSession();
+    const viewAsUser = useViewAsUser();
+    const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin" && !viewAsUser;
     const columns = useMemo(() => {
         const reports = Array.isArray(data) ? data : [];
         return latestFirst(reports).slice(0, 5).map((r) => {
@@ -404,7 +409,7 @@ export default function FinnhubTable({ data = [], className = "", source }: Prop
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 sm:px-5 py-2 sm:py-3 border-t border-neutral-100 dark:border-border-subtle-dark">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse shrink-0" />
             <span className="text-[13px] text-neutral-600 dark:text-neutral-300 font-mono">
-                {[financialSourceLabel(source), 'US-GAAP', 'USD'].filter(Boolean).join(' · ')}
+                {[visibleFinancialSourceLabel(source, isAdmin), 'US-GAAP', 'USD'].filter(Boolean).join(' · ')}
             </span>
             <div className="ml-auto flex items-center gap-2">
                 <span className="text-[13px] font-mono text-neutral-600 dark:text-neutral-300 flex items-center gap-1">
