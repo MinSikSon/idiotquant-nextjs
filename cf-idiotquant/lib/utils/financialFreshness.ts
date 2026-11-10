@@ -167,3 +167,9 @@ export function financialSourceLabel(source: unknown): string {
   if (source === 'kis') return '한국투자증권';
   return '';
 }
+
+/** 일반 화면에는 재사용이 허용된 출처만 표시한다. 미확인 출처는 공개하지 않는다. */
+export function visibleFinancialSourceLabel(source: unknown, isAdmin: boolean): string {
+  // SEC 공개 공시 재사용 정책: https://www.sec.gov/about/webmaster-frequently-asked-questions
+  return isAdmin || source === 'sec' ? financialSourceLabel(source) : '';
+}

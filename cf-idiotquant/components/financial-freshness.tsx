@@ -1,8 +1,12 @@
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useViewAsUser } from "@/lib/viewAsUser";
 import { AlertTriangle, Info } from 'lucide-react';
 import {
   financialFreshness,
   collectionFinancialFreshness,
-  financialSourceLabel,
+  visibleFinancialSourceLabel,
   type FinancialPeriod,
 } from '@/lib/utils/financialFreshness';
 
@@ -12,12 +16,15 @@ export default function FinancialFreshnessNotice(props: {
   source?: string | null;
   collectionDate?: unknown;
 }) {
+  const { data: session } = useSession();
+  const viewAsUser = useViewAsUser();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin" && !viewAsUser;
   const { periods, banner = false, source } = props;
   const collected = 'collectionDate' in props;
   const result = collected
     ? collectionFinancialFreshness(periods, props.collectionDate)
     : financialFreshness(periods);
-  const sourceLabel = financialSourceLabel(source);
+  const sourceLabel = visibleFinancialSourceLabel(source, isAdmin);
   if (result.status === 'fresh' && !sourceLabel) return null;
   const Icon = result.status === 'stale' ? AlertTriangle : Info;
   const tone =

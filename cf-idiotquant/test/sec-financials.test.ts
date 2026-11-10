@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { calculateUsNcav, calculateUsSRIM } from '../lib/utils/financeCalc.ts';
-import { financialSourceLabel, analysisFinancialPeriods, financialFreshness } from '../lib/utils/financialFreshness.ts';
+import { visibleFinancialSourceLabel, financialSourceLabel, analysisFinancialPeriods, financialFreshness } from '../lib/utils/financialFreshness.ts';
 import { buildUsBars } from '../app/(search)/search/components/financialBarsData.ts';
 import { analysisSnapshot } from '../lib/share/analysis.ts';
 import { screenerSnapshot } from '../lib/share/builders.ts';
@@ -46,4 +46,17 @@ test('공유받은 분석·발굴 결과에도 SEC 출처와 재무 기준일이
     financial_bs_date: '2025-12-31', financial_is_date: '2025-12-31' }], '/screener', '20261017', 'US', []);
   const table = parseSnapshot(serializeSnapshot(screener)).tables[0];
   assert.equal(table.rows[0][table.columns.indexOf('재무 출처')], 'SEC EDGAR');
+});
+
+test('공개 재사용 출처는 일반 사용자에게, 제한·미확인 출처는 관리자에게만 표시한다', () => {
+  assert.equal(visibleFinancialSourceLabel('sec', false), 'SEC EDGAR');
+  assert.equal(visibleFinancialSourceLabel('sec', true), 'SEC EDGAR');
+  for (const source of ['finnhub', 'kis']) {
+    assert.equal(visibleFinancialSourceLabel(source, false), '');
+    assert.equal(visibleFinancialSourceLabel(source, true), financialSourceLabel(source));
+  }
+  for (const source of [undefined, null, '', 'unknown', 'future-provider']) {
+    assert.equal(visibleFinancialSourceLabel(source, false), '');
+    assert.equal(visibleFinancialSourceLabel(source, true), '');
+  }
 });
