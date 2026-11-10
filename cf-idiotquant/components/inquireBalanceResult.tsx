@@ -433,7 +433,25 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
         <div className="divide-y divide-neutral-100 dark:divide-border-subtle-dark">
             {sortedItems.length > 0 && (
                 <div className="grid grid-cols-[minmax(0,1fr)_4rem_3.5rem_1rem] gap-1.5 px-2 pb-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
-                    <span>종목</span><span className="text-right">평가액</span><span className="text-right">수익률</span><span aria-hidden />
+                    <span className="self-center">종목</span>
+                    {([{ key: "evlu_amt", label: "평가액" }, { key: "profit_rt", label: "수익률" }]).map(({ key, label }) => {
+                        const isActive = sortConfig.key === key;
+                        const SortIcon = isActive ? (sortConfig.direction === "asc" ? ChevronUp : ChevronDown) : ChevronsUpDown;
+                        const nextDirection = isActive && sortConfig.direction === "desc" ? "오름차순" : "내림차순";
+                        return (
+                            <button
+                                key={key}
+                                type="button"
+                                onClick={() => handleSort(key)}
+                                aria-label={`${label} ${nextDirection} 정렬`}
+                                title={isActive ? `${label} ${sortConfig.direction === "asc" ? "오름차순" : "내림차순"} 정렬 중` : undefined}
+                                className={`flex min-h-11 items-center justify-end gap-0.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-ink ${isActive ? "text-brand-ink" : "hover:text-brand-ink"}`}
+                            >
+                                {label}<SortIcon size={11} aria-hidden="true" />
+                            </button>
+                        );
+                    })}
+                    <span aria-hidden />
                 </div>
             )}
             {sortedItems.length === 0 && (
