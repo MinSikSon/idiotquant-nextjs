@@ -137,6 +137,7 @@ function formatConditions(r?: QuantRule): string[] {
 /** 그룹 섹션·찜 섹션이 공통으로 쓰는 정규화된 행 */
 interface DisplayRow {
   isLiked?: boolean;
+  groupNames?: string[];
   currentCursor?: boolean;
   symbol: string;
   name?: string;           // 표시용 종목명 (있으면 symbol 과 함께 노출)
@@ -331,10 +332,14 @@ function StockListTable({
   const likedRows = useMemo(() => {
     const poolSymbols = new Set(likesPoolRows.map(r => r.symbol));
     const applyOverride = (row: DisplayRow): DisplayRow => {
+      const groupNames = realGroups
+        .filter(group => byGroup.get(group.id)?.some(stock => stock.symbol === row.symbol))
+        .map(group => group.name);
       const o = metricsOverride?.[row.symbol];
-      if (!o) return row;
+      if (!o) return { ...row, groupNames };
       return {
         ...row,
+        groupNames,
         per: row.per ?? o.per,
         pbr: row.pbr ?? o.pbr,
         bps: row.bps ?? o.bps,
@@ -346,7 +351,7 @@ function StockListTable({
       .filter(lk => !poolSymbols.has(lk.ticker))
       .map(lk => normalizeLiked(lk, WATCH_STATUS));
     return [...likesPoolRows, ...watchlistRows].map(applyOverride);
-  }, [likesPoolRows, likedList, likesActive, countryTradingActive, metricsOverride]);
+  }, [likesPoolRows, likedList, metricsOverride, realGroups, byGroup]);
 
   // 요약 카운트 (좋아요(__likes__) 레거시 항목은 관심목록이라 매매 집계에서 제외)
   const summary = useMemo(() => {
@@ -905,8 +910,8 @@ function GroupSection({
       <div id={`pool-content-${sectionKey}`} hidden={collapsed}>
       {/* 그룹 관리 도구 */}
       <p className="flex items-center gap-2 px-2 pt-3 text-xs font-medium text-neutral-600 dark:text-neutral-300"><ComponentNumber value={`${numberLabel}.1`} />그룹 관리</p>
-      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-white px-2 py-2 dark:border-border-subtle-dark dark:bg-surface-dark-canvas sm:gap-3 sm:py-3">
-        <div className="grid w-full grid-cols-2 gap-2">
+      <div className={cn("flex items-center gap-2 border-b border-neutral-100 bg-white px-2 py-2 dark:border-border-subtle-dark dark:bg-surface-dark-canvas sm:gap-3 sm:py-3", hideTrading ? "flex-nowrap overflow-x-auto whitespace-nowrap [&>*]:shrink-0" : "flex-wrap")}>
+        <div className={hideTrading ? "contents" : "grid w-full grid-cols-2 gap-2"}>
           {/* 그룹별 트레이딩 조건 편집 버튼 */}
           {onSaveGroupSettings && (
             <button
@@ -978,7 +983,7 @@ function GroupSection({
               전체 선택
             </label>
           )}
-          {subtitle && <span className="hidden sm:inline text-[11px] text-neutral-400">{subtitle}</span>}
+          {subtitle && <span className={cn("hidden text-[11px] text-neutral-400", !hideTrading && "sm:inline")}>{subtitle}</span>}
         </div>
 
         <div className="contents">
@@ -1119,6 +1124,11 @@ function GroupSection({
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={row.status} />
+                      {!!row.groupNames?.length && (
+                        <span className="mt-1 block text-[11px] font-semibold text-neutral-700 dark:text-neutral-300" aria-label={`소속 그룹: ${row.groupNames.join(", ")}`}>
+                          {row.groupNames.join(" · ")}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex flex-col items-center tabular-nums">
@@ -1222,6 +1232,11 @@ function GroupSection({
                     {row.currentCursor && <span aria-label="현재 IDX" title="현재 IDX · 다음 순회 시작 위치" className="shrink-0 text-[10px] font-bold text-blue-600 dark:text-blue-300">IDX</span>}
                     <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">{row.name || row.symbol}</span>
                     {row.isLiked && <Heart className="h-3.5 w-3.5 shrink-0 fill-current text-rose-500" role="img" aria-label="좋아요한 종목" />}
+                    {!!row.groupNames?.length && (
+                      <span className="max-w-[50%] overflow-x-auto whitespace-nowrap text-[11px] font-semibold text-neutral-700 dark:text-neutral-300" aria-label={`소속 그룹: ${row.groupNames.join(", ")}`}>
+                        {row.groupNames.join(" · ")}
+                      </span>
+                    )}
                     <StatusBadge status={row.status} compact />
                     {row.movable && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-neutral-900 dark:text-neutral-100" aria-label={`포인트 ${Number(row.token ?? 0).toLocaleString()}원`}>₩{Number(row.token ?? 0).toLocaleString()}</span>}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-open/stock:rotate-180" aria-hidden="true" />

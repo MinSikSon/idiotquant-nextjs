@@ -20,7 +20,7 @@ const steps = [
 export default function ScreenerUsageGuide() {
     return (
         <div className="mx-auto max-w-[1600px] lg:max-w-none px-4 py-3 sm:px-6">
-            <details open className="group rounded-xl border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
+            <details className="group rounded-xl border border-neutral-200 bg-white dark:border-surface-dark-border dark:bg-surface-dark-card">
                 <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 marker:hidden [&::-webkit-details-marker]:hidden">
                     <span className="text-sm font-bold">스크리너 사용 가이드</span>
                     <span className="text-xs text-neutral-500 dark:text-neutral-400">전략 선택 → 필터 조정 → 분석·저장 → 비교</span>

@@ -13,13 +13,14 @@ import {
 export default function FinancialFreshnessNotice(props: {
   periods: FinancialPeriod[];
   banner?: boolean;
+  compact?: boolean;
   source?: string | null;
   collectionDate?: unknown;
 }) {
   const { data: session } = useSession();
   const viewAsUser = useViewAsUser();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin" && !viewAsUser;
-  const { periods, banner = false, source } = props;
+  const { periods, banner = false, compact = false, source } = props;
   const collected = 'collectionDate' in props;
   const result = collected
     ? collectionFinancialFreshness(periods, props.collectionDate)
@@ -34,14 +35,14 @@ export default function FinancialFreshnessNotice(props: {
   if (!banner)
     return (
       <span
-        className={`inline-flex max-w-full flex-col items-start text-[10px] font-medium ${tone}`}
+        className={`inline-flex max-w-full ${compact ? "items-center overflow-hidden whitespace-nowrap" : "flex-col items-start"} text-[10px] font-medium ${tone}`}
         title={`${sourceLabel ? `재무 출처: ${sourceLabel}. ` : ''}${result.message}${!collected && result.periods ? ` (${result.periods})` : ''}`}
       >
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex min-w-0 items-center gap-1">
           <Icon size={11} className="shrink-0" aria-hidden="true" />
-          <span>{sourceLabel}{sourceLabel && result.status !== 'fresh' ? ' · ' : ''}{result.status !== 'fresh' ? result.label : ''}</span>
+          <span className={compact ? "truncate" : undefined}>{sourceLabel}{sourceLabel && result.status !== 'fresh' ? ' · ' : ''}{result.status !== 'fresh' ? result.label : ''}</span>
         </span>
-        {collected && result.status !== 'fresh' && (
+        {!compact && collected && result.status !== 'fresh' && (
           <span className="mt-0.5 text-[10px] font-normal leading-4">{result.message}</span>
         )}
       </span>

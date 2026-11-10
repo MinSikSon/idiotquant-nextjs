@@ -346,7 +346,7 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                         <span className="text-[10px] text-neutral-400 font-mono">{item.ticker}</span>
                         <LiquidityBadge item={item} />
                     </div>
-                    <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
+                    <div className="mt-1"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                 </div>
             </div>
 
@@ -448,7 +448,7 @@ const GuestRecommendationCard = memo(function GuestRecommendationCard({ item, ra
                         {item.ticker}
                         {strategy && <span className="font-sans font-bold tracking-normal text-neutral-700 dark:text-neutral-300">· {STRATEGY_LABEL[strategy] ?? strategy}</span>}
                     </span>
-                    <span className="mt-1 block"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
+                    <span className="mt-1 block"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></span>
                 </span>
                 <span className="shrink-0 text-right">
                     <span className="block text-[10px] font-bold text-neutral-400">PER</span>
@@ -2161,7 +2161,7 @@ function ScreenerContent() {
                             </button>)}</div>
                         </div>}
                         <SecondarySection title="보기 설정 · 묶기 · 복사" className="mb-3">
-                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap">
                             <div role="group" aria-label="결과 묶기" className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-lg bg-[#f2f0ec] dark:bg-surface-dark-hover">
                                 {([
                                     { id: 'none',     label: '안 묶기' },
@@ -2204,7 +2204,7 @@ function ScreenerContent() {
                                     </button>
                                 ))}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-2">
                                 <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                             </div>
                         </div>
