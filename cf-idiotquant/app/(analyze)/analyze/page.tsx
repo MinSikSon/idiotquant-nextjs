@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { PageHeader, PAGE_WIDTH, PAGE_ACTION_CLS, PAGE_PRIMARY_ACTION_CLS } from '@/components/pageHeader';
 import { GradeHelp } from './components/GradeHelp';
+import StockLikeStats from '@/components/stockLikeStats';
 import FinancialFreshnessNotice from '@/components/financial-freshness';
 import { analysisFinancialPeriods } from '@/lib/utils/financialFreshness';
 import { usAnalysisAvailability } from '@/lib/utils/usAnalysisAvailability';
@@ -375,6 +376,7 @@ function AnalyzeContent() {
   const returnTo = screenerReturnPath(searchParams.get('returnTo')) ?? (searchParams.get('from') === 'screener' ? '/screener' : null);
   const resumeStarted = useRef(false);
   const [watchSaving, setWatchSaving] = useState(false);
+  const [likeStatsRevision, setLikeStatsRevision] = useState(0);
   const likedList = useAppSelector(selectLikedList);
   const togglePending = useAppSelector(selectTogglePending);
   const likesState = useAppSelector(selectLikesState);
@@ -459,6 +461,7 @@ function AnalyzeContent() {
     setWatchSaving(true);
     try {
       await dispatch(reqToggleLike({ ticker: watchStock.isUs ? watchStock.ticker : watchStock.name, name: watchStock.name, isUs: watchStock.isUs })).unwrap();
+      setLikeStatsRevision(value => value + 1);
       addToast('success', isInWatchlist ? '관심 종목에서 해제했습니다.' : '관심 종목에 저장했습니다.');
     } catch {
       await dispatch(reqGetMyLikes());
@@ -483,6 +486,7 @@ function AnalyzeContent() {
           () => sessionStorage.removeItem(PENDING_WATCH_KEY),
           stock => dispatch(reqToggleLike({ ticker: stock.isUs ? stock.ticker : stock.name, name: stock.name, isUs: stock.isUs })).unwrap(),
         );
+        setLikeStatsRevision(value => value + 1);
         addToast('success', '관심 종목에 저장했습니다.');
       } catch {
         await dispatch(reqGetMyLikes());
@@ -734,6 +738,12 @@ function AnalyzeContent() {
           <Link href={comparisonHref(krOrUs, [tickerLabel], new Date().toLocaleDateString('sv-SE'))} className="inline-flex min-h-11 items-center rounded-xl border border-neutral-200 px-3 text-sm dark:border-neutral-700">비교에 추가</Link>
         </nav>}
 
+
+        {(!tickerFromUrl || isPriceLoaded) && <StockLikeStats
+          country={isPriceLoaded ? krOrUs : undefined}
+          ticker={isPriceLoaded ? tickerLabel : undefined}
+          revision={likeStatsRevision}
+        />}
 
         {!tickerFromUrl ? (
           <AnalysisIntro onSearch={handleSearch} />
