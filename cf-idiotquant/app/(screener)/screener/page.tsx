@@ -47,6 +47,7 @@ import FinancialFreshnessNotice from "@/components/financial-freshness";
 import { scanFinancialPeriods, scanCollectionDate } from "@/lib/utils/financialFreshness";
 import FactorWorkbench from "@/components/research/FactorWorkbench";
 import WatchlistChanges from "@/components/watchlistChanges";
+import styles from "./screener.module.css";
 
 import { RefreshCw, ChevronRight, ChevronDown, CalendarDays, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
@@ -183,8 +184,8 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
 // 자산 비율 보기는 필요할 때 선택하는 상세 보기로 남긴다.
 const DEFAULT_VIEW: ViewMode = 'card';
 // 묶었을 때 카드·비율 뷰의 그룹 본문 — 격자 뷰라 격자 클래스를 그대로 넘긴다.
-const GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3';
-const CARD_GRID_BODY = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 p-1.5 sm:gap-3 sm:p-3';
+const GRID_BODY = cn('grid grid-cols-1 sm:grid-cols-2 gap-3 p-3', styles.stockGrid);
+const CARD_GRID_BODY = cn('grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-1.5 sm:gap-3 sm:p-3', styles.stockGrid);
 // URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
 const parseViewMode = (v: string | null | undefined): ViewMode =>
     (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
@@ -2226,7 +2227,7 @@ function ScreenerContent() {
                                         )} />
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3", styles.stockGrid)}>
                                     {visibleList.map((item: any) => (
                                         <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
                                     ))}
@@ -2241,7 +2242,7 @@ function ScreenerContent() {
                                         )} />
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 sm:gap-3">
+                                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3", styles.stockGrid)}>
                                     {visibleList.map((item: any) => (
                                         <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(country === 'US' ? item.ticker : item.name)} onToggleLike={handleToggleLike} comparison={comparisonFor(item)} />
                                     ))}
