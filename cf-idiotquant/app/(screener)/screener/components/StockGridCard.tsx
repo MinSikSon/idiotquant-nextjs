@@ -42,9 +42,9 @@ function cautions(i: Item): string[] {
 }
 
 const Metric = ({ label, value, ok }: { label: string; value: string; ok?: boolean }) => (
-    <div className="text-center">
+    <div className="flex shrink-0 items-baseline gap-1 whitespace-nowrap">
         <p className="text-[9.5px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-        <p className={cn("text-[13px] font-mono font-bold tabular-nums mt-0.5", ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200")}>
+        <p className={cn("text-[13px] font-mono font-bold tabular-nums", ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200")}>
             {value}
             {ok && <><span aria-hidden="true" title="강조 기준 충족"> ✓</span><span className="sr-only"> 강조 기준 충족</span></>}
         </p>
@@ -85,15 +85,13 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
                 <div className="flex items-center gap-1.5 mb-1 sm:gap-2 sm:mb-1.5">
                     <ComparisonCheckbox choice={comparison} name={item.name} />
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-[12px] sm:text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</span>
+                        <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="min-w-0 truncate text-sm font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
+                            {item.ticker !== item.name && <span className="shrink-0 text-[10px] font-mono text-neutral-400">{item.ticker}</span>}
                             {sector && <span title={sector} className="hidden sm:inline max-w-[5rem] truncate text-[9px] font-bold text-neutral-400">{sector}</span>}
+                            <span className="shrink-0"><LiquidityBadge item={item} /></span>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                            <span className="text-[10px] font-mono tracking-[0.05em] text-neutral-400 shrink-0">{item.ticker}</span>
-                            <LiquidityBadge item={item} />
-                        </div>
-                        <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
+                        <div className="mt-1 min-w-0"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                     </div>
                     <button
                         type="button"
@@ -108,7 +106,7 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike, comparison
                     </button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-0.5 py-1 sm:gap-1 sm:py-1.5 border-y border-neutral-100 dark:border-border-subtle-dark">
+                <div className="flex items-center justify-between gap-3 overflow-x-auto py-1 sm:py-1.5 border-y border-neutral-100 dark:border-border-subtle-dark">
                     <Metric label="NCAV" value={ncav > 0 ? `${ncav.toFixed(2)}x` : "—"} ok={ncav >= 1} />
                     <Metric label="PBR" value={pbr > 0 ? pbr.toFixed(2) : "—"} ok={pbr > 0 && pbr < 1} />
                     <Metric label="ROE" value={roe > 0 ? `${roe.toFixed(1)}%` : "—"} ok={roe >= 8} />

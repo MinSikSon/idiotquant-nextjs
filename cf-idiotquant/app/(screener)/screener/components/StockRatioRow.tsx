@@ -37,10 +37,10 @@ function Bar({ label, value, scale, color, hint, us }: {
 }
 
 const Ratio = ({ label, value, ok, hint }: { label: string; value: number | null; ok: boolean; hint: string }) => (
-    <div className="text-center" title={hint}>
+    <div className="flex shrink-0 items-baseline gap-1 whitespace-nowrap" title={hint}>
         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
         <p className={cn(
-            "text-[13px] font-mono font-bold tabular-nums mt-0.5",
+            "text-[13px] font-mono font-bold tabular-nums",
             value === null ? "text-neutral-400" : ok ? "text-brand-ink" : "text-neutral-700 dark:text-neutral-200"
         )}>
             {x(value)}
@@ -73,15 +73,15 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
             aria-label={`${item.name} 분석 보기`}
             className="cursor-pointer rounded-md border border-neutral-200 dark:border-border-subtle-dark bg-white dark:bg-surface-dark-card p-2.5 sm:p-4 hover:border-brand-light-hover dark:hover:border-brand-hover/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink transition-all"
         >
-            <div className="flex items-start gap-2 mb-2 sm:mb-3">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <ComparisonCheckbox choice={comparison} name={item.name} />
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                        <span className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400 shrink-0">{item.ticker}</span>
-                        <LiquidityBadge item={item} />
+                    <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="min-w-0 truncate text-sm font-extrabold text-neutral-900 dark:text-white leading-tight" title={item.name}>{item.name}</span>
+                        {item.ticker !== item.name && <span className="shrink-0 text-[10px] font-mono text-neutral-400">{item.ticker}</span>}
+                        <span className="shrink-0"><LiquidityBadge item={item} /></span>
                     </div>
-                    <div className="mt-1"><FinancialFreshnessNotice periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
+                    <div className="mt-1 min-w-0"><FinancialFreshnessNotice compact periods={scanFinancialPeriods(item)} source={item.financial_source} collectionDate={scanCollectionDate(item)} /></div>
                 </div>
                 <button
                     type="button"
@@ -105,7 +105,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                      hint="시가총액 — 시장이 이 회사에 매긴 값" />
             </div>
 
-            <div className="mt-2 sm:mt-3 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark grid grid-cols-3 gap-1">
+            <div className="mt-2 sm:mt-3 pt-2 border-t border-neutral-100 dark:border-border-subtle-dark flex items-center justify-between gap-3 overflow-x-auto">
                 <Ratio label="순유동/시총" value={m.ncavMultiple} ok={(m.ncavMultiple ?? 0) >= 1}
                        hint="(유동자산 − 부채총계) ÷ 시가총액. 1x 이상이면 청산가치가 시가총액보다 큽니다." />
                 <Ratio label="부채/유동자산" value={m.debtToAssets} ok={m.debtToAssets !== null && m.debtToAssets < 1}
@@ -114,7 +114,7 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike, comparison
                        hint="시가총액 ÷ 유동자산. 낮을수록 자산 대비 싸게 거래됩니다." />
             </div>
 
-            <p className="mt-2 text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400 break-keep">
+            <p className="mt-2 overflow-x-auto whitespace-nowrap text-[10.5px] leading-relaxed text-neutral-500 dark:text-neutral-400">
                 순유동자산 <span className="font-mono font-bold">{money(m.netCurrent, us)}</span>
                 {m.ncavMultiple !== null && m.ncavMultiple >= 1
                     ? " — 시가총액보다 큽니다(청산가치 이하 거래)."
