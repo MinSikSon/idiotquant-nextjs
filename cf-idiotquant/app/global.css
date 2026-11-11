@@ -653,6 +653,7 @@ html:has(.navigation-header [data-page-tabs]) { --navigation-h: 92px; }
   [data-search-content] [data-search-field] > button[aria-label="종목 검색 실행"] { width: 44px; max-width: 44px; padding: 0; }
 }
 @media (max-width: 767px) {
+  .navigation-header .navigation-main { border-bottom-width: 0; }
   .navigation-identity { padding-top: var(--navigation-h, 48px); }
   .navigation-identity ~ main { padding-top: 0; }
 }

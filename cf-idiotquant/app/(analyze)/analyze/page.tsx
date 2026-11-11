@@ -659,7 +659,7 @@ function AnalyzeContent() {
 
         {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
         {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
-          <div data-header-detail className={cn(styles.history, "border-t")}>
+          <div data-header-detail className={cn(styles.history, "md:border-t")}>
             {popularStocks.length > 0 && (
               <div className={cn(ANALYZE_WIDTH, "py-2 flex items-center gap-3")}>
                 <div className="flex items-center gap-1.5 shrink-0">
