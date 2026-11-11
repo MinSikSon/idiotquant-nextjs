@@ -63,6 +63,7 @@ function Stack({ row }: { row: StackRow }) {
 
 // ── 증감 배지 ────────────────────────────────────────────────────────────
 function DeltaBadge({ item }: { item: BarItem }) {
+    if (item.hideDelta) return null;
     const d = periodDelta(item.values);
     if (d.turnedLoss) return <span className="font-mono text-[15px] font-bold text-rose-700 dark:text-rose-300">적자전환</span>;
 
@@ -237,6 +238,8 @@ export function FinancialBars({ bs, is, unit }: { bs: BarModel | null; is: BarMo
                 <summary className="flex min-h-11 cursor-pointer items-center font-medium">그래프 읽는 법</summary>
                 <p>각 항목의 첫 줄이 최신 자료입니다. 막대 길이는 같은 항목의 기간별 변화만 비교하세요. 증감률은 표시된 자료 중 가장 오래된 값과 최신 값을 비교합니다.</p>
                 <p className="mt-2">항목별 최댓값을 100%로 표시하며, 항목끼리 막대 길이를 비교할 수 없습니다. 구성 막대는 한 줄의 합계가 100%입니다.</p>
+                {unit === "eok" && <p className="mt-2">세전손익(계산)은 경상이익 + 특별이익 − 특별손실, 법인세 등(차액)은 여기에서 당기순이익을 뺀 값입니다. 법인세 외 조정이 포함될 수 있으며, 필요한 값이 없으면 제공 자료 없음 또는 —로 표시합니다.</p>}
+                {unit === "usd" && <p className="mt-2">법인세비용(혜택)은 공시된 비용이며 현금 납부액과 다릅니다. 음수는 세금 혜택입니다. 세전이익은 계속영업 기준입니다.</p>}
                 {unit === "usd" && <p className="mt-2">USD · K = 천 달러 · M = 백만 달러 · B = 십억 달러. —는 공시 자료에 값이 없다는 뜻이며 0과 다릅니다.</p>}
             </details>
         </div>

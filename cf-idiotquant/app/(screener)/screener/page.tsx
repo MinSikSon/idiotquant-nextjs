@@ -37,7 +37,7 @@ import { isUsTicker } from "@/lib/utils/stockSearchInput";
 import ScanRefreshNotice from "@/components/scan-refresh-notice";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS, STRATEGY_HEX } from "@/lib/constants/strategies";
 import {
-    safeNum, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
+    safeNum, parseIncomeTaxBound, isPreferredStock, marketOf, sectorOf, roeOf, grahamOk,
     resolveStrategies, primaryStrategyOf,
     applyFilters, sortList, FILTER_GROUP_ORDER, GROUP_DEFAULTS, DEFAULT_SORT, VALID_SORT_KEYS,
     type ScreenerFilters, type FilterGroupKey, type DiscoverySortKey, type SortOrder,
@@ -657,6 +657,8 @@ function ScreenerContent() {
     const [maxPbr, setMaxPbr] = useState<number>(() => initNum('maxpbr', 'maxpbr'));
     const [maxPer, setMaxPer] = useState<number>(() => initNum('maxper', 'maxper'));
     const [minRoe, setMinRoe] = useState<number>(() => initNum('minroe', 'minroe'));
+    const [minIncomeTax, setMinIncomeTax] = useState<number | null>(() => parseIncomeTaxBound(searchParams.get('mintax') ?? saved.mintax));
+    const [maxIncomeTax, setMaxIncomeTax] = useState<number | null>(() => parseIncomeTaxBound(searchParams.get('maxtax') ?? saved.maxtax));
     const [minNcav, setMinNcav] = useState<number>(() => initNum('minncav', 'minncav'));
 
     // 저장된 필터 조합 — 자주 쓰는 조건을 이름 붙여 두면 다음에 한 번에 불러올 수 있다.
@@ -764,12 +766,14 @@ function ScreenerContent() {
         if (maxPer > 0) params.set('maxper', String(maxPer));
         if (minRoe > 0) params.set('minroe', String(minRoe));
         if (minNcav > 0) params.set('minncav', String(minNcav));
+        if (minIncomeTax !== null) params.set('mintax', String(minIncomeTax));
+        if (maxIncomeTax !== null) params.set('maxtax', String(maxIncomeTax));
         if (showLikedOnly) params.set('filter', 'liked');
         if (searchQuery.trim()) params.set('q', searchQuery.trim());
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
+    }, [country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, searchQuery, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -803,6 +807,8 @@ function ScreenerContent() {
         if (maxPer > 0) snapshot.maxper = maxPer;
         if (minRoe > 0) snapshot.minroe = minRoe;
         if (minNcav > 0) snapshot.minncav = minNcav;
+        if (minIncomeTax !== null) snapshot.mintax = minIncomeTax;
+        if (maxIncomeTax !== null) snapshot.maxtax = maxIncomeTax;
         if (showLikedOnly) snapshot.filter = 'liked';
         if (searchQuery.trim()) snapshot.q = searchQuery.trim();
         if (groupMode !== 'none') snapshot.group = groupMode;
@@ -817,7 +823,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
+    }, [queryString, country, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList({ date: requestedDate, weeklyPeriod, limit: isLoggedIn ? undefined : PREVIEW_SIZE, country }));
@@ -870,6 +876,7 @@ function ScreenerContent() {
         setMaxPer(0);
         setMinRoe(0);
         setMinNcav(0);
+        setMinIncomeTax(null); setMaxIncomeTax(null);
         setShowLikedOnly(false);
         setDisplayCount(DAILY_PAGE_SIZE);
         localStorage.removeItem('screener:filters');
@@ -912,8 +919,8 @@ function ScreenerContent() {
         q: searchQuery,
         excludeHoldings, excludeDeficit, excludePreferred, excludeAdr: country === 'US' && excludeAdr, excludeHalted, excludeManaged, excludeDelisting,
         sectors, markets, maxW52Pos, minTrAmt,
-        minMarketCap, maxPbr, maxPer, minRoe, minNcav,
-    }), [country, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
+        minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax,
+    }), [country, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors, markets, maxW52Pos, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, minIncomeTax, maxIncomeTax]);
 
     const [usEnglishNames, setUsEnglishNames] = useState<Map<string, string> | null>(null);
     useEffect(() => {
@@ -1027,6 +1034,7 @@ function ScreenerContent() {
     // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
     const funnel = useMemo(() => {
         const none: ScreenerFilters = {
+            country,
             strategies: new Set(), mode: 'OR', q: '',
             excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeAdr: false, excludeHalted: false, excludeManaged: false, excludeDelisting: false,
             sectors: new Set<string>(), markets: new Set<string>(), maxW52Pos: 0, minTrAmt: 0,
@@ -1037,7 +1045,7 @@ function ScreenerContent() {
             { label: '전략',      patch: { strategies: filters.strategies, mode: filters.mode } },
             { label: '검색',      patch: { q: filters.q } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
-            { label: '수익·제외', patch: { minRoe: filters.minRoe, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr } },
+            { label: '수익·제외', patch: { minRoe: filters.minRoe, minIncomeTax: filters.minIncomeTax, maxIncomeTax: filters.maxIncomeTax, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred, excludeAdr: filters.excludeAdr } },
             { label: '시장·업종', patch: { markets: filters.markets, sectors: filters.sectors } },
             { label: '위치·유동성', patch: { maxW52Pos: filters.maxW52Pos, minTrAmt: filters.minTrAmt, excludeHalted: filters.excludeHalted, excludeManaged: filters.excludeManaged, excludeDelisting: filters.excludeDelisting } },
         ];
@@ -1116,9 +1124,9 @@ function ScreenerContent() {
         : null;
     const scanningInProgress = ncavDailyList.scanningInProgress;
 
-    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, country === 'US' && excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
+    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, country === 'US' && excludeAdr, excludeHalted, excludeManaged, excludeDelisting, sectors.size > 0, markets.size > 0, maxW52Pos > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0, minIncomeTax !== null, maxIncomeTax !== null].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || (country === 'US' && excludeAdr) || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || (country === 'US' && excludeAdr) || excludeHalted || excludeManaged || excludeDelisting || sectors.size > 0 || markets.size > 0 || maxW52Pos > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || minIncomeTax !== null || maxIncomeTax !== null || sortKey !== DEFAULT_SORT || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
     // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
@@ -1169,6 +1177,8 @@ function ScreenerContent() {
 
     // 현재 걸려 있는 상세 조건 목록 — 서랍 카운트·빈 결과 제안이 공유한다
     const activeConditions = useMemo(() => ([
+        minIncomeTax !== null && { label: `법인세 등 ≥ ${minIncomeTax}${country === 'US' ? 'M달러' : '억'}`, override: { minIncomeTax: null }, clear: () => setMinIncomeTax(null) },
+        maxIncomeTax !== null && { label: `법인세 등 ≤ ${maxIncomeTax}${country === 'US' ? 'M달러' : '억'}`, override: { maxIncomeTax: null }, clear: () => setMaxIncomeTax(null) },
         minMarketCap > 0 && { label: `시총 ${minMarketCap}${country === 'US' ? 'M달러' : '억'}+`, override: { minMarketCap: 0 } as Partial<ScreenerFilters>, clear: () => setMinMarketCap(0) },
         maxPbr > 0       && { label: `PBR ≤ ${maxPbr}`,        override: { maxPbr: 0 } as Partial<ScreenerFilters>,       clear: () => setMaxPbr(0) },
         maxPer > 0       && { label: `PER ≤ ${maxPer}`,        override: { maxPer: 0 } as Partial<ScreenerFilters>,       clear: () => setMaxPer(0) },
@@ -1186,7 +1196,7 @@ function ScreenerContent() {
         sectors.size > 0 && { label: `업종 ${sectors.size}개`,    override: { sectors: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setSectors(new Set()) },
         markets.size > 0 && { label: `시장 ${Array.from(markets).join('·')}`, override: { markets: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setMarkets(new Set()) },
     ].filter(Boolean) as { label: string; override: Partial<ScreenerFilters>; clear: () => void }[]),
-    [country, minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
+    [country, minMarketCap, maxPbr, maxPer, minNcav, minRoe, minIncomeTax, maxIncomeTax, excludeDeficit, excludeHoldings, excludePreferred, excludeAdr, excludeHalted, excludeManaged, excludeDelisting, minTrAmt, maxW52Pos, sectors, markets]);
 
     // 결과가 0개일 때 — "무엇을 풀면 몇 개가 돌아오는지"를 짚어준다. 그냥 "없습니다"로 끝내면
     // 어떤 조건이 결과를 죽였는지 사용자가 하나씩 꺼보며 찾아야 한다.
@@ -1201,6 +1211,7 @@ function ScreenerContent() {
     // 상세 필터만 초기화 — 전략 선택은 남긴다 (전략은 "무엇을 보는지", 필터는 "얼마나 좁히는지")
     const clearDetailFilters = useCallback(() => {
         setMinMarketCap(0); setMaxPbr(0); setMaxPer(0); setMinRoe(0); setMinNcav(0);
+        setMinIncomeTax(null); setMaxIncomeTax(null);
         setExcludeHoldings(false); setExcludeDeficit(false); setExcludePreferred(false); setExcludeAdr(false);
         setExcludeHalted(false); setExcludeManaged(false); setExcludeDelisting(false);
         setSectors(new Set()); setMarkets(new Set()); setMaxW52Pos(0); setMinTrAmt(0);
@@ -1243,6 +1254,8 @@ function ScreenerContent() {
         setMaxPer(safeNum(p.get('maxper')));
         setMinRoe(safeNum(p.get('minroe')));
         setMinNcav(safeNum(p.get('minncav')));
+        setMinIncomeTax(parseIncomeTaxBound(p.get('mintax')));
+        setMaxIncomeTax(parseIncomeTaxBound(p.get('maxtax')));
         setSearchQuery(p.get('q') ?? '');
         setShowLikedOnly(p.get('filter') === 'liked');
         const group = p.get('group');
@@ -1330,6 +1343,7 @@ function ScreenerContent() {
                                 // 두 시장의 시가총액·거래대금 입력 단위가 달라 이전 값을 옮길 수 없다.
                                 setMinMarketCap(0);
                                 setMinTrAmt(0);
+                                setMinIncomeTax(null); setMaxIncomeTax(null);
                                 setExcludeAdr(false);
                                 setExcludeHalted(false);
                                 setExcludeManaged(false);
@@ -1570,6 +1584,8 @@ function ScreenerContent() {
                         그대로 보이므로 두 번 나열할 이유가 없다. */}
                     {!filterOpen && (() => {
                         const chips: { key: string; label: string; clear: () => void }[] = [];
+                        if (minIncomeTax !== null) chips.push({ key: 'mintax', label: `법인세 등 ≥ ${minIncomeTax}${country === 'US' ? 'M달러' : '억'}`, clear: () => setMinIncomeTax(null) });
+                        if (maxIncomeTax !== null) chips.push({ key: 'maxtax', label: `법인세 등 ≤ ${maxIncomeTax}${country === 'US' ? 'M달러' : '억'}`, clear: () => setMaxIncomeTax(null) });
                         if (searchQuery)     chips.push({ key: 'q',   label: `검색 "${searchQuery}"`, clear: () => { setSearchQuery(''); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${country === 'US' ? `${minMarketCap}M달러+` : (MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`)}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minNcav > 0)     chips.push({ key: 'ncav', label: `NCAV ≥ ${minNcav}`, clear: () => { setMinNcav(0); setDisplayCount(DAILY_PAGE_SIZE); } });
@@ -1752,6 +1768,19 @@ function ScreenerContent() {
                                 <label className="mt-3 block text-xs text-neutral-500">직접 입력 · ROE (%)
                                     <input aria-label="ROE (%) 직접 입력" type="number" min="0" step="0.1" value={minRoe || ''} placeholder="미적용" onChange={e => { setMinRoe(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
                                 </label>
+                                <fieldset className="mt-3 border-t border-neutral-200 pt-3 dark:border-surface-dark-border">
+                                    <legend className="text-xs font-bold">{country === 'KR' ? '법인세 등(차액) · 억 원' : '법인세비용(혜택) · 백만 달러'}</legend>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <label className="text-xs text-neutral-500">최소 금액
+                                            <input aria-label="법인세 등 최소 금액" type="number" step="any" value={minIncomeTax ?? ''} placeholder="미적용" onChange={e => { setMinIncomeTax(parseIncomeTaxBound(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                        </label>
+                                        <label className="text-xs text-neutral-500">최대 금액
+                                            <input aria-label="법인세 등 최대 금액" type="number" step="any" value={maxIncomeTax ?? ''} placeholder="미적용" onChange={e => { setMaxIncomeTax(parseIncomeTaxBound(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }} className="mt-1 w-full rounded border border-neutral-200 bg-transparent px-2 py-2 text-base dark:border-surface-dark-border sm:text-sm" />
+                                        </label>
+                                    </div>
+                                    <p className="mt-2 text-xs leading-5 text-neutral-500">{country === 'KR' ? '경상이익 + 특별이익 − 특별손실 − 당기순이익의 차액이며, 공시 법인세비용과 다를 수 있습니다.' : '공시된 법인세비용이며 음수는 세금 혜택입니다.'} 최신 수집 재무기간 기준이며, 조건 적용 시 자료가 없는 종목은 제외합니다. 0·음수도 입력할 수 있습니다.</p>
+                                    {minIncomeTax !== null && maxIncomeTax !== null && minIncomeTax > maxIncomeTax && <p role="alert" className="mt-1 text-xs text-rose-500">최소 금액이 최대 금액보다 큽니다.</p>}
+                                </fieldset>
                             </DrawerCard>
 
                             {/* 시장 — 코스닥은 같은 지표라도 변동성·유동성 성격이 다르다. */}

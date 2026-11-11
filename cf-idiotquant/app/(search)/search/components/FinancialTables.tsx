@@ -1,5 +1,6 @@
 "use client";
 
+import { krIncomeValue } from "@/lib/utils/financialIncome";
 import { latestFirst } from "@/lib/utils/financialPeriods";
 import React, { useMemo } from "react";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "@/lib/utils/financeCalc";
@@ -75,11 +76,26 @@ const IS_SECTIONS: SectionDef[] = [
         ],
     },
     {
+        label: "영업외손익",
+        labelEn: "NON-OPERATING",
+        accent: "border-amber-400/50 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+        dotColor: "bg-amber-400",
+        rows: [
+            { label: "영업외수익", key: "bsop_non_ernn", description: "이자·배당 등 본업 외 활동에서 발생한 수익" },
+            { label: "영업외비용", key: "bsop_non_expn", description: "이자비용 등 본업 외 활동에서 발생한 비용" },
+            { label: "경상이익", key: "op_prfi", isTotal: true, description: "영업이익에 영업외손익을 반영한 이익" },
+            { label: "특별이익", key: "spec_prfi", description: "제공 재무제표에서 특별이익으로 분류한 금액" },
+            { label: "특별손실", key: "spec_loss", description: "제공 재무제표에서 특별손실로 분류한 금액" },
+        ],
+    },
+    {
         label: "순이익",
         labelEn: "NET INCOME",
         accent: "border-teal-400/50 bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300",
         dotColor: "bg-teal-400",
         rows: [
+            { label: "세전손익(계산)", key: "pretax_income", isTotal: true, description: "경상이익 + 특별이익 − 특별손실. 필요한 항목이 없으면 표시하지 않습니다." },
+            { label: "법인세 등(차액)", key: "tax_difference", description: "계산한 세전손익 − 당기순이익. 법인세 외 조정이 포함될 수 있어 공시 법인세비용과 다를 수 있습니다." },
             { label: "당기순이익", key: "thtr_ntin", isTotal: true, description: "세금·금융비용 모두 반영한 최종 순이익 (Bottom-line)" },
         ],
     },
@@ -219,9 +235,9 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                             </tr>
 
                             {section.rows.map((row) => {
-                                const vals = periods.map((p) => Number(p[row.key as keyof typeof p] ?? 0));
-                                const yoy = vals.length >= 2 ? pctChange(vals[0], vals[1]) : null;
-                                const isNeg0 = vals[0] < 0;
+                                const vals = periods.map((p) => krIncomeValue(p, row.key));
+                                const yoy = vals.length >= 2 && vals[0] !== null && vals[1] !== null ? pctChange(vals[0], vals[1]) : null;
+                                const isNeg0 = vals[0] !== null && vals[0] < 0;
 
                                 return (
                                     <tr
@@ -256,16 +272,16 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                                     <span className={cn(
                                                         isNeg0 && i === 0
                                                             ? "text-rose-600 dark:text-rose-400 font-bold"
-                                                            : val < 0
+                                                            : val !== null && val < 0
                                                                 ? "text-rose-500 dark:text-rose-500 font-medium"
                                                                 : row.isTotal
                                                                     ? "font-bold text-neutral-900 dark:text-neutral-100"
                                                                     : "font-medium text-neutral-700 dark:text-neutral-300",
                                                         "text-[15px]"
                                                     )}>
-                                                        {val === 0 ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                                        {val === null ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
                                                     </span>
-                                                    {i === 0 && <YoYBadge pct={yoy} />}
+                                                    {i === 0 && row.key !== "tax_difference" && <YoYBadge pct={yoy} />}
                                                 </div>
                                             </td>
                                         ))}

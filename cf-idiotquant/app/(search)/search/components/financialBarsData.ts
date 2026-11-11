@@ -1,3 +1,4 @@
+import { krIncomeValue } from "@/lib/utils/financialIncome";
 import { latestFirst, usReportPeriodLabel } from "@/lib/utils/financialPeriods";
 
 // 재무제표 막대 뷰의 계산 — React 비의존. 표현은 FinancialBars.tsx 가 맡는다.
@@ -20,6 +21,8 @@ export interface BarItem {
     costLike?: boolean;
     /** 좋고 나쁨을 단정할 수 없는 항목(현금흐름) — 배지를 중립으로 */
     neutral?: boolean;
+    /** 세금 차액처럼 증감 방향의 해석이 어려운 항목은 배지 생략 */
+    hideDelta?: boolean;
 }
 
 export interface BarGroup { labelEn: string; tone: Tone; items: BarItem[] }
@@ -152,17 +155,18 @@ const KR_BS_GROUPS: { labelEn: string; tone: Tone; rows: [string, string, boolea
 const KR_IS_GROUPS: { labelEn: string; tone: Tone; rows: [string, string, boolean?][] }[] = [
     { labelEn: "수익 REVENUE", tone: "indigo", rows: [["매출액", "sale_account", true], ["매출원가", "sale_cost"], ["매출총이익", "sale_totl_prfi"]] },
     { labelEn: "영업 OPERATING", tone: "violet", rows: [["판관비", "sell_mang"], ["영업이익", "bsop_prti", true]] },
-    { labelEn: "순이익 NET INCOME", tone: "teal", rows: [["당기순이익", "thtr_ntin", true]] },
+    { labelEn: "영업외손익 NON-OPERATING", tone: "amber", rows: [["영업외수익", "bsop_non_ernn"], ["영업외비용", "bsop_non_expn"], ["경상이익", "op_prfi", true], ["특별이익", "spec_prfi"], ["특별손실", "spec_loss"]] },
+    { labelEn: "순이익 NET INCOME", tone: "teal", rows: [["세전손익(계산)", "pretax_income", true], ["법인세 등(차액)", "tax_difference"], ["당기순이익", "thtr_ntin", true]] },
 ];
 
-const KR_COST_KEYS = new Set(["flow_lblt", "fix_lblt", "total_lblt", "sale_cost", "sell_mang"]);
+const KR_COST_KEYS = new Set(["flow_lblt", "fix_lblt", "total_lblt", "sale_cost", "sell_mang", "bsop_non_expn", "spec_loss"]);
 
 const krPeriodLabel = (raw: unknown): string =>
     String(raw ?? "").replace(/^(\d{4})(\d{2})$/, "$1.$2") || "—";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function krValues(periods: any[], key: string): (number | null)[] {
-    return periods.map(p => num(p?.[key]));
+    return periods.map(p => krIncomeValue(p, key));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,6 +183,7 @@ export function buildKrBars(kiBS: any, kiIS: any): { bs: BarModel | null; is: Ba
                 isTotal,
                 tone: g.tone,
                 costLike: KR_COST_KEYS.has(key),
+                hideDelta: key === "tax_difference",
                 values: krValues(rows, key),
             })),
         }));
@@ -237,6 +242,8 @@ const US_CONCEPTS = {
         "us-gaap_Revenues", "Revenues", "us-gaap_SalesRevenueNet", "SalesRevenueNet",
     ],
     operating: ["us-gaap_OperatingIncomeLoss", "OperatingIncomeLoss"],
+    pretax: ["us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxExpenseBenefit", "IncomeLossFromContinuingOperationsBeforeIncomeTaxExpenseBenefit", "us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest", "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"],
+    incomeTax: ["us-gaap_IncomeTaxExpenseBenefit", "IncomeTaxExpenseBenefit"],
     netIncome: ["us-gaap_NetIncomeLoss", "NetIncomeLoss"],
     cfo: ["us-gaap_NetCashProvidedByUsedInOperatingActivities", "NetCashProvidedByUsedInOperatingActivities"],
     cfi: ["us-gaap_NetCashProvidedByUsedInInvestingActivities", "NetCashProvidedByUsedInInvestingActivities"],
@@ -336,6 +343,8 @@ export function buildUsBars(reports: any[]): { bs: BarModel | null; is: BarModel
                 labelEn: "수익 · 이익 REVENUE & PROFIT", tone: "indigo", items: [
                     { label: "매출액", tone: "indigo", isTotal: true, values: series("revenue") },
                     { label: "영업이익", tone: "violet", isTotal: true, values: series("operating") },
+                    { label: "세전이익(계속영업)", tone: "teal", isTotal: true, values: series("pretax") },
+                    { label: "법인세비용(혜택)", tone: "amber", hideDelta: true, values: series("incomeTax") },
                     { label: "순이익", tone: "teal", isTotal: true, values: series("netIncome") },
                 ],
             },

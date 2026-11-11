@@ -6,7 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { applyFilters, sortList, roeOf, grahamOk, marketOf, sectorOf, isPreferredStock, resolveStrategies, safeNum, type ScreenerFilters } from "@/app/(screener)/screener/filters";
+import { applyFilters, parseIncomeTaxBound, sortList, roeOf, grahamOk, marketOf, sectorOf, isPreferredStock, resolveStrategies, safeNum, type ScreenerFilters } from "@/app/(screener)/screener/filters";
 
 /** 아무것도 안 거르는 기본값. 테스트마다 한 조건씩만 켠다. */
 const none = (over: Partial<ScreenerFilters> = {}): ScreenerFilters => ({
@@ -257,4 +257,27 @@ test("ADR 제외는 영문명 누락 시 표시명을 쓰고 회사명·우선�
     ];
     assert.deepEqual(applyFilters(list, none({ country: "US", excludeAdr: true })), ordinary);
     assert.deepEqual(applyFilters(list, none({ country: "US", excludeAdr: true, q: "ADS-TEC" })), [ordinary[0]]);
+});
+
+
+test('법인세 금액 범위는 0·음수를 포함하고 미수집 종목은 제외한다', () => {
+    const list = [-5, 0, 10, 20, null, undefined, ''].map((tax, index) => ({
+        name: String(index), income_tax: tax == null || tax === '' ? tax : Number(tax) * 100_000_000,
+    }));
+    assert.deepEqual(names(applyFilters(list, none({ minIncomeTax: 0, maxIncomeTax: 10 }))), ['1', '2']);
+    assert.deepEqual(names(applyFilters(list, none({ maxIncomeTax: 0 }))), ['0', '1']);
+    assert.deepEqual(names(applyFilters(list, none({ minIncomeTax: -5, maxIncomeTax: -5 }))), ['0']);
+    assert.deepEqual(applyFilters(list, none({ minIncomeTax: 20, maxIncomeTax: 10 })), []);
+    assert.equal(applyFilters(list, none({ minIncomeTax: null, maxIncomeTax: null })).length, list.length);
+});
+
+test('미국 법인세 필터 단위는 백만 달러이다', () => {
+    const list = [{ name: '경계', income_tax: 2_500_000 }, { name: '초과', income_tax: 3_000_000 }, { name: '누락' }];
+    assert.deepEqual(names(applyFilters(list, none({ country: 'US', minIncomeTax: 2.5, maxIncomeTax: 2.5 }))), ['경계']);
+});
+
+test('법인세 입력·URL 복원은 0과 음수를 보존하고 빈 값은 해제한다', () => {
+    assert.equal(parseIncomeTaxBound('0'), 0);
+    assert.equal(parseIncomeTaxBound('-1.5'), -1.5);
+    for (const raw of [null, undefined, '', ' ', 'NaN', 'Infinity']) assert.equal(parseIncomeTaxBound(raw), null);
 });
