@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { NavigationPopover } from "@/components/navigation-popover";
 import { cn } from "@/lib/utils";
 import { CONTROL_FOCUS_CLS, CONTROL_DISABLED_CLS } from "@/lib/ui-controls";
@@ -113,14 +113,14 @@ export function PageHeader({
     <>
     {integrated && createPortal(<div data-page-title className="flex min-w-0 items-center gap-2">
       {icon && <span className="flex shrink-0 items-center [&>div]:!h-7 [&>div]:!w-7">{icon}</span>}
-      <div className="min-w-0">
-        <h1 className="truncate text-sm font-semibold tracking-tight text-neutral-900 dark:text-white">{mobile ? mobileTitle ?? title : title}</h1>
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-base font-semibold tracking-tight text-neutral-900 dark:text-white md:text-sm">{mobile ? mobileTitle ?? title : title}</h1>
         {visibleMeta && <div data-page-title-meta className="flex max-h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] leading-4 text-neutral-600 dark:text-neutral-400">{visibleMeta}</div>}
       </div>
     </div>, titleTarget!)}
     {integrated && createPortal(<div data-page-actions className="flex flex-nowrap items-center">
       {primaryAction && <div data-primary-action>{primaryAction}</div>}
-      {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><span>도구</span><ChevronDown size={14} aria-hidden="true" /></button>}>
+      {(actions || description || meta) && <NavigationPopover label="페이지 도구" trigger={<button type="button" aria-label="페이지 도구" className={cn("inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium text-neutral-600 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-surface-dark-hover", CONTROL_FOCUS_CLS)}><MoreHorizontal size={20} className="md:hidden" aria-hidden="true" /><span className="hidden md:inline">도구</span><ChevronDown size={14} className="hidden md:block" aria-hidden="true" /></button>}>
         <div data-page-secondary-actions className="flex flex-col gap-2">{actions}</div>
         {(description || meta) && <div className="border-t border-neutral-200 p-3 text-xs leading-6 dark:border-neutral-700">{description}{meta && <div>{meta}</div>}</div>}
       </NavigationPopover>}
