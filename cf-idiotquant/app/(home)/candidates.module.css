@@ -7,63 +7,15 @@
 .riskControls summary::-webkit-details-marker { display: none; }
 .riskControls > div { position: absolute; right: 0; top: 100%; z-index: 30; width: 270px; padding: 12px 16px; border: 1px solid var(--home-secondary); border-radius: 6px; background: var(--home-panel); }
 .riskControls p { color: var(--home-secondary); font-size: 12px; }
-.recommendedBadge { position: absolute; top: -10px; left: 14px; font-size: 11px; font-weight: 600; padding: 3px 8px; border: 1px solid var(--home-line); border-radius: 4px; background: var(--home-hover); color: var(--home-text); }
-.list .candidate:has(.recommendedBadge) { padding-top: 28px; }
-.list .recommendedBadge { top: 0; left: 12px; font-size: 10px; padding-block: 2px; border-radius: 0 0 4px 4px; }
 .riskFilter { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; cursor: pointer; }
 .discovery input { width: 18px; height: 18px; accent-color: rgb(var(--brand-ink)); flex-shrink: 0; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0 20px; }
 .toolbar h2 { font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
 .toolbar h2 span { color: var(--home-secondary); margin-left: 6px; font-size: 16px; }
 .toolbar p { margin-top: 4px; font-size: 13px; color: var(--home-secondary); }
-.viewSwitch { display: flex; flex-shrink: 0; padding: 3px; border: 1px solid var(--home-secondary); border-radius: 6px; }
-.viewSwitch button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; font-size: 13px; }
-.viewSwitch button[aria-pressed="true"] { background: var(--home-text); color: var(--home-bg); border-radius: 3px; font-weight: 600; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
 .results { min-width: 0; }
 .mobilePick { display: none; }
-.cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; align-items: start; }
-.candidate { position: relative; min-width: 0; padding: 20px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
-.candidate[data-selected] { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
-.selectionButton { position: absolute; inset: 0; z-index: 1; border-radius: inherit; cursor: pointer; }
-.selectionButton:disabled { cursor: not-allowed; }
-.selectionButton:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: -2px; }
-.logo:has(button), .risk, .cardActions, .analyzeLink { position: relative; z-index: 2; }
-.analyzeLink { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 44px; font-size: 12px; color: rgb(var(--brand-ink)); text-decoration: underline; text-underline-offset: 4px; }
-.identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.identity > div:last-child { min-width: 0; }
-.logo > :global(span), .logo > :global(button) { width: 44px; height: 44px; border-radius: 10px; }
-.company { display: block; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
-.identity p { margin-top: 3px; color: var(--home-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
-.price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 22px 0 16px; font-variant-numeric: tabular-nums; }
-.price > span { flex: 1 0 100%; font-size: 11px; color: var(--home-secondary); }
-.price strong { font-size: 24px; font-weight: 600; letter-spacing: -.03em; }
-.price small { font-size: 11px; color: var(--home-secondary); }
-.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; border-block: 1px solid var(--home-line); padding: 16px 0; }
-.metrics div { min-width: 0; }
-.metrics dt { font-size: 11px; color: var(--home-secondary); }
-.metrics dd { margin-top: 3px; font-size: 16px; font-variant-numeric: tabular-nums; }
-.metrics small { font-size: 11px; margin-left: 3px; color: var(--home-secondary); }
-.strategies { margin-top: 16px; }
-.strategies p { display: flex; justify-content: space-between; font-size: 11px; color: var(--home-secondary); }
-.strategies strong { color: var(--home-text); font-weight: 600; }
-.strategies > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
-.strategies > div > span { display: inline-flex; align-items: center; gap: 3px; border: 1px solid var(--home-line); padding: 4px 6px; font-size: 11px; border-radius: 4px; color: var(--home-secondary); }
-.strategies > div > span[data-met="true"] { color: var(--home-text); font-weight: 600; background: var(--home-hover); }
-.compactMore, .compactHint { display: none; }
-.risk { margin-top: 12px; border-top: 1px solid var(--home-line); }
-.risk summary { display: flex; align-items: center; gap: 6px; list-style: none; min-height: 44px; cursor: pointer; font-size: 12px; }
-.risk summary::-webkit-details-marker { display: none; }
-.risk summary > :last-child { margin-left: auto; }
-.risk[open] summary > :last-child { transform: rotate(45deg); }
-.risk[data-risk="caution"] summary { color: #98451d; }
-:global(html.dark) .risk[data-risk="caution"] summary { color: #f5b38b; }
-.risk > div { color: var(--home-secondary); font-size: 12px; padding-bottom: 12px; }
-.risk > div p + p { margin-top: 8px; }
-.cardActions { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--home-line); }
-.cardActions label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; }
-.cardActions label { cursor: pointer; }
-.cardActions label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
 .recommendation { position: sticky; top: 72px; border-top: 3px solid var(--home-text); background: var(--home-panel); border-radius: 0 0 8px 8px; padding: 24px; }
 .recommendationLabel { display: flex; align-items: center; gap: 7px; color: var(--home-secondary); font-size: 11px; }
 .todayDot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -91,50 +43,8 @@
 .empty h3 { font-weight: 600; }
 .empty p { color: var(--home-secondary); margin-top: 10px; }
 .empty button { min-height: 44px; text-decoration: underline; margin-top: 12px; }
-.compareTray { position: sticky; bottom: calc(var(--bottombar-h) + 8px); z-index: 20; display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: var(--home-panel); border: 1px solid var(--home-secondary); border-radius: 8px; box-shadow: 0 4px 16px #0002; }
-.compareTray > div { margin-right: auto; }
-.compareTray strong { display: block; font-size: 14px; font-weight: 600; }
-.compareTray span { font-size: 12px; color: var(--home-secondary); }
-.compareTray button { min-height: 44px; font-size: 13px; text-decoration: underline; }
-.compareTray a { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border-radius: 4px; background: var(--home-action); color: white; font-size: 13px; font-weight: 600; }
-.list { display: grid; gap: 0; border-top: 1px solid var(--home-line); }
-.list .candidate { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(100px, .8fr) minmax(190px, 1.3fr) minmax(170px, 1.2fr); grid-template-areas: "identity price metrics strategies" "actions price metrics risk"; gap: 8px 16px; border-width: 0 0 1px; border-radius: 0; align-items: center; padding: 16px; }
-.list .identity { grid-area: identity; }
-.list .logo { display: none; }
-.list .price { grid-area: price; margin: 0; }
-.list .price strong { font-size: 20px; }
-.list .price small { flex-basis: 100%; }
-.list .metrics { grid-area: metrics; border: 0; padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.list .metrics dd { font-size: 14px; }
-.list .strategies { grid-area: strategies; margin: 0; }
-.list .risk { grid-area: risk; margin: 0; border: 0; }
-.list .cardActions { grid-area: actions; border: 0; }
-.list .analyzeLink { grid-column: 1 / -1; justify-self: end; }
 @media (max-width: 1279px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
-  .list .candidate { grid-template-columns: minmax(140px, 1fr) minmax(100px, .8fr); grid-template-areas: "identity price" "metrics metrics" "strategies strategies" "risk actions"; }
-  .list .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-/* 데스크톱은 핵심 지표를 남기고 조건별 설명을 위험 점검 안에서 펼친다. */
-@media (min-width: 768px) {
-  .cardGrid .candidate { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "identity identity" "price price" "metrics metrics" "strategies strategies" "risk risk" "actions analyze"; column-gap: 8px; padding: 14px; }
-  .cardGrid .identity { grid-area: identity; gap: 8px; }
-  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 36px; height: 36px; border-radius: 8px; }
-  .cardGrid .company { font-size: 14px; }
-  .cardGrid .price { grid-area: price; margin: 10px 0; }
-  .cardGrid .price > span { flex: 0 1 auto; }
-  .cardGrid .price strong { font-size: 20px; }
-  .cardGrid .price small { display: none; }
-  .cardGrid .metrics { grid-area: metrics; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px 0; }
-  .cardGrid .metrics dd { font-size: 14px; }
-  .cardGrid .metrics small { font-size: 10px; margin-left: 2px; }
-  .cardGrid .strategies { grid-area: strategies; margin-top: 10px; }
-  .cardGrid .strategies > div { display: none; }
-  .cardGrid .risk { grid-area: risk; margin-top: 8px; }
-  .cardGrid .compactMore { display: block; }
-  .cardGrid .compactMore dl { display: none; }
-  .cardGrid .cardActions { grid-area: actions; }
-  .cardGrid .analyzeLink { grid-area: analyze; border-top: 1px solid var(--home-line); }
 }
 @media (max-width: 767px) {
   .workspace { display: flex; flex-direction: column; gap: 24px; }
@@ -154,86 +64,33 @@
   .filterLine:first-child { flex-wrap: nowrap; gap: 8px; }
   .toolbar { align-items: flex-start; gap: 8px; padding-top: 20px; }
   .toolbar h2 { font-size: 19px; }
-  .toolbar p { font-size: 11px; max-width: 160px; }
-  .viewSwitch button { font-size: 12px; padding-inline: 8px; gap: 4px; }
-  .viewSwitch svg { width: 14px; }
-  .cardGrid { grid-template-columns: 1fr; gap: 8px; }
-  .candidate { padding: 18px; }
-  .identity { gap: 12px; }
-  .company { font-size: 17px; }
-  .identity p { font-size: 12px; }
-  .price { margin-top: 16px; }
-  .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  .metrics dd { font-size: 16px; }
-  .metrics small { font-size: 10px; margin-left: 2px; }
-  .strategies { margin-top: 14px; }
-  .strategies > div > span { padding: 4px 8px; font-size: 12px; }
-  .cardActions label { font-size: 13px; }
-  /* 모바일 로고형: 로고를 2/3로 줄이고 핵심 정보를 두 줄로 모은다. */
-  .cardGrid .candidate { display: grid; grid-template-columns: 59px minmax(0, 1fr) auto auto auto; grid-template-rows: minmax(44px, auto) minmax(44px, auto); grid-template-areas: "logo identity price price actions" "logo metrics strategies risk analyze"; align-items: center; gap: 2px 8px; padding: 0 8px; }
-  .cardGrid .identity, .cardGrid .identity > div:last-child { display: contents; }
-  .cardGrid .logo { grid-area: logo; align-self: center; }
-  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 59px; height: 65px; border-radius: 8px; font-size: 22px; }
-  .cardGrid .logo :global(img) { padding: 2px; }
-  .cardGrid .company { grid-area: identity; font-size: 14px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cardGrid .identity p { display: none; }
-  .cardGrid .price { grid-area: price; margin: 0; gap: 0; }
-  .cardGrid .price > span, .cardGrid .price small { display: none; }
-  .cardGrid .price strong { font-size: 16px; line-height: 1.35; }
-  .cardGrid .metrics { grid-area: metrics; display: flex; flex-wrap: nowrap; gap: 8px; padding: 0; border: 0; }
-  .cardGrid .metrics > div { display: inline-flex; align-items: baseline; gap: 4px; }
-  .cardGrid .metrics > div:nth-child(n + 3) { display: none; }
-  .cardGrid .metrics dd { margin: 0; font-size: 11px; }
-  .cardGrid .metrics small { display: none; }
-  .cardGrid .strategies { grid-area: strategies; justify-self: end; margin: 0; }
-  .cardGrid .strategies p { justify-content: flex-start; gap: 6px; font-size: 11px; }
-  .cardGrid .strategySuffix, .cardGrid .compareText { display: none; }
-  .cardGrid .strategies > div { display: none; }
-  .cardGrid .risk { grid-area: risk; min-width: 0; margin: 0; border: 0; }
-  .cardGrid .risk summary { gap: 5px; font-size: 11px; justify-content: center; }
-  .cardGrid .risk:not([open]) summary > span:first-of-type, .cardGrid .risk:not([open]) .compactHint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .cardGrid .riskPrefix { display: none; }
-  .cardGrid .compactHint { display: inline; margin-left: auto; color: var(--home-secondary); text-decoration: underline; text-underline-offset: 3px; }
-  .cardGrid .risk summary > :last-child { margin-left: 0; }
-  .cardGrid .risk[open] { grid-column: 1 / -1; grid-row: 3; }
-  .cardGrid .risk[open] summary { justify-content: flex-start; }
-  .cardGrid .compactMore { display: block; padding-top: 8px; }
-  .compactMore dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin-bottom: 12px; }
-  .compactMore dt { color: var(--home-secondary); font-size: 11px; }
-  .compactMore dd { margin-top: 2px; font-size: 13px; font-variant-numeric: tabular-nums; }
-  .cardGrid .cardActions { grid-area: actions; justify-content: center; border: 0; margin-top: 0; }
-  .cardGrid .cardActions label { justify-content: center; width: 44px; font-size: 11px; gap: 0; }
-  .cardGrid .analyzeLink { grid-area: analyze; justify-self: end; gap: 3px; font-size: 11px; white-space: nowrap; }
+  .toolbar p { font-size: 11px; }
 
-  .list .candidate { padding: 14px 10px; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) minmax(100px, .7fr); }
-  .list .identity p { font-size: 11px; }
-  .list .company { font-size: 15px; }
-  .list .price { justify-content: flex-end; text-align: right; }
-  .list .price > span { font-size: 10px; }
-  .list .price strong { font-size: 19px; }
-  .list .metrics { gap: 8px; padding-block: 10px; border-block: 1px solid var(--home-line); }
-  .list .strategies p { display: none; }
-  .list .strategies > div { margin: 0; }
-  .list .cardActions { justify-content: flex-end; }
-  .compareTray { gap: 12px; padding: 10px 12px; }
-  .compareTray span { display: none; }
-  .compareTray a { font-size: 12px; padding-inline: 10px; }
-  .compareTray button { font-size: 12px; }
 }
 
 @media (max-width: 359px) {
-  .cardGrid .candidate { grid-template-columns: 48px minmax(0, 1fr) auto auto auto; column-gap: 4px; }
-  .cardGrid .logo > :global(span), .cardGrid .logo > :global(button) { width: 48px; height: 56px; }
-  .cardGrid .analyzeLink { font-size: 10px; }
-  .cardGrid .analyzeLink svg { display: none; }
-  .cardGrid .company { font-size: 13px; }
-  .cardGrid .price strong { font-size: 14px; }
-  .cardGrid .metrics { gap: 6px; }
-  .cardGrid .metrics > div { gap: 2px; }
-  .cardGrid .metrics dt, .cardGrid .metrics dd, .cardGrid .strategies p { font-size: 10px; }
-  .cardGrid .strategies p { gap: 3px; }
-  .cardGrid .compactHint { display: none; }
   .filterLine { flex-wrap: wrap; }
   .filterLine:first-child { flex-wrap: wrap; }
   .toolbar { flex-wrap: wrap; }
+}
+
+.cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.candidate { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; align-items: center; gap: 4px 12px; min-width: 0; padding: 14px; border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-panel); }
+.candidateLink { position: absolute; inset: 0; border-radius: inherit; }
+.candidateLink:hover { background: var(--home-hover); opacity: .3; }
+.candidateLink:focus-visible { outline: 2px solid rgb(var(--brand-ink)); outline-offset: 2px; }
+.logo { grid-area: logo; }
+.logo:has(button) { position: relative; z-index: 1; }
+.logo > :global(span), .logo > :global(button) { width: 56px; height: 56px; border-radius: 8px; font-size: 22px; }
+.company { grid-area: company; min-width: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.price { grid-area: price; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+@media (max-width: 767px) {
+  .cardGrid { grid-template-columns: 1fr; gap: 8px; }
+  .candidate { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-areas: "logo company price"; gap: 10px; padding: 12px; }
+  .company { font-size: 14px; }
+  .price { font-size: 16px; white-space: nowrap; }
+}
+@media (max-width: 359px) {
+  .candidate { grid-template-columns: 48px minmax(0, 1fr); grid-template-areas: "logo company" "logo price"; }
+  .logo > :global(span), .logo > :global(button) { width: 48px; height: 48px; }
 }
